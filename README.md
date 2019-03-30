@@ -63,11 +63,14 @@ mpiexec -n ncpus ./solve.py $opts
 
 The result is written/appended to the file `flow.dat`, and the parameters used are written/appended to the file `params.dat`, one line for each solution. If solving an eigenvalue problem, the eigenvalues are written/appended to the file `eigenvalues.dat`. If solving with magnetic fields, an additional file `magnetic.dat` is created/appended. 
 
-We include a python script, `getresults.py`, that reads the files described above and associates file columns with appropriate python variable names. For example, under IPython, do:
-```python
-%run -i getresults.py
-```  
-
+We include a set of scripts:
+```
+dodirs.sh
+dosubs.sh
+reap.sh
+getresults.py
+```
+to aid in submitting/collecting results of a large number of runs to/from a PBS-managed cluster. The code itself can run however even on a single cpu machine (albeit slowly). 
 
 ## Authors
 
