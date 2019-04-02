@@ -235,7 +235,7 @@ def main():
 				success = 0
 				print('Solver crashed, got nan\'s!')
 			else:
-				success = 1 # got actual numbers (... but it could still be a bad solution)
+				success = 1 # got actual numbers ... but it could still be a bad solution ;)
 				print('Solution(s) computed')
 		
 	PETSc.COMM_WORLD.Barrier()
@@ -318,9 +318,9 @@ def main():
 					np.savetxt(deig,eigval)
 			
 			
-			# ---------------------------------------------------------- write solution vector to disk
+			# ---------------------------------------------------------- write solution vector('s) to disk
 			
-			if par.write_eig == 1:
+			if par.write_eig == 1: # one solution per columns
 				
 				np.savetxt('real_flow.field',ru)
 				np.savetxt('imag_flow.field',iu)
