@@ -23,7 +23,7 @@ tar xvf petsc-lite-3.10.5.tar.gz
 cd petsc-3.10.5
 ```
 We need PETSc built with support for complex scalars. We need also the external packages `mumps` and `superlu_dist`.
-Therefore configure command should include the options:
+Therefore the configure command should include the options:
 ```
 --with-scalar-type=complex --download-mumps=1 --download-superlu_dist=1
 ```
