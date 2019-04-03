@@ -26,8 +26,49 @@ e=".eig"
 
 for d in $(ls -1d $1*)
 do
-    cat $d/params.dat >> $1$p
-    cat $d/flow.dat >> $1$f
-    cat $d/magnetic.dat >> $1$m
-    cat $d/eigenvalues.dat >> $1$e
+
+	if [ -f $d/params.dat ]
+	then
+		cat $d/params.dat >> $1$p
+	fi
+	
+	if [ -f $d/flow.dat ]
+	then
+		cat $d/flow.dat >> $1$f
+	fi
+	
+	if [ -f $d/magnetic.dat ]
+	then
+		cat $d/magnetic.dat >> $1$m
+	fi
+	
+	if [ -f $d/eigenvalues.dat ]
+	then
+		cat $d/eigenvalues.dat >> $1$e
+	fi
+
 done
+
+if [ -f $1$p ]
+then
+	echo "Parameters written to $1$p"
+fi
+
+if [ -f $1$f ]
+then
+	echo "Flow velocity data written to $1$f"
+fi
+
+if [ -f $1$m ]
+then
+	echo "Magnetic field data written to $1$m"
+fi
+
+if [ -f $1$m ]
+then
+	echo "Eigenvalues written to $1$e"
+fi
+
+
+
+
