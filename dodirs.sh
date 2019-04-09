@@ -20,7 +20,7 @@
 # will generate directories named run_Ek_-5.0, run_Ek_-5.1, ...
 # and so on up to run_Ek_-6.0. In each directory the file parameters.py
 # will have the appropriate value assigned to the parameter Ek, the Ekman number,
-# ranging from Ek =10**-5.0 to Ek =10**-6.0 across all the diectories.
+# ranging from Ek =10**-5.0 to Ek =10**-6.0 across all the directories.
 # 
 # If the argument 'e' is changed to 'd' then 'var' will have values
 # that change linearly instead of as powers of ten. For example:

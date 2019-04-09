@@ -64,7 +64,7 @@ then
 	echo "Magnetic field data written to $1$m"
 fi
 
-if [ -f $1$m ]
+if [ -f $1$e ]
 then
 	echo "Eigenvalues written to $1$e"
 fi
