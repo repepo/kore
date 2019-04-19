@@ -414,17 +414,15 @@ def ken_dis( a, b, N, lmax, m, symm, ricb, rcmb, ncpus, w, projection, forcing):
 	
 	# these are the cheb coefficients, reorganized
 	Pk2 = np.reshape(Pk0,(int((lmax-m+1)/2),N))
-	Tk2 = np.reshape(Tk0,(int((lmax-m+1)/2),N))
-	
-	Ncut = min(1200,N) 
+	Tk2 = np.reshape(Tk0,(int((lmax-m+1)/2),N)) 
 	
 	# process each l component in parallel
 	pool = mp.Pool(processes=ncpus)
 	
-	p = [ pool.apply_async(pol_worker, args=( l, Pk2[k,:Ncut], Ncut, m, ricb, rcmb, w, projection, forcing))\
+	p = [ pool.apply_async(pol_worker, args=( l, Pk2[k,:N], N, m, ricb, rcmb, w, projection, forcing))\
 	 for k,l in enumerate(np.arange(m_top,lmax_top,2)) ]
 	
-	t = [ pool.apply_async(tor_worker, args=( l, Tk2[k,:Ncut], Ncut, m, ricb, rcmb, w, projection, forcing))\
+	t = [ pool.apply_async(tor_worker, args=( l, Tk2[k,:N], N, m, ricb, rcmb, w, projection, forcing))\
 	 for k,l in enumerate(np.arange(m_bot,lmax_bot,2)) ]
 	
 	res_pol = np.sum([p1.get() for p1 in p],0)
