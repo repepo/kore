@@ -9,28 +9,6 @@ import parameters as par
 import utils as ut
 
 
-# ----------------------------- global variables, read only for the pool workers
-
-# xk are the colocation points, from -1 to 1
-i = np.arange(0,par.N)
-xk = np.cos( (i+0.5)*np.pi/par.N )
-
-# Chebyshev polynomials evaluated at xk
-chx = ch.chebvander(xk,par.N-1)
-
-# rk are the radial colocation points, from ricb to rcmb
-rk = 0.5*(ut.rcmb-par.ricb)*( xk + 1 ) + par.ricb
-
-# the following are needed to compute integrals
-sqx = np.sqrt(1-xk**2)
-r2 = rk**2
-r3 = rk**3
-r4 = rk**4
-
-# ------------------------------------------------------------------------------
-
-
-
 def pol_worker( l, Pk, N, m, ricb, rcmb, w, projection, forcing): # ------------ 
 	'''
 	Here we compute various integrals that involve poloidal components, degree l
@@ -53,10 +31,16 @@ def pol_worker( l, Pk, N, m, ricb, rcmb, w, projection, forcing): # ------------
 	plm2 = np.zeros(np.shape(xk),dtype=complex)
 	plm3 = np.zeros(np.shape(xk),dtype=complex)	
 	
+	plm0 = ch.chebval(xk, Pk)
+	plm1 = ch.chebval(xk, dPk)
+	plm2 = ch.chebval(xk, d2Pk)
+	plm3 = ch.chebval(xk, d3Pk)
+	'''
 	plm0 = np.dot(chx,Pk,plm0)
 	plm1 = np.dot(chx,dPk,plm1)
 	plm2 = np.dot(chx,d2Pk,plm2)
 	plm3 = np.dot(chx,d3Pk,plm3)
+	'''
 	
 	# the radial scalars
 	qlm0 = L*plm0/rk
@@ -180,9 +164,14 @@ def tor_worker( l, Tk, N, m, ricb, rcmb, w, projection, forcing): # ------------
 	tlm1 = np.zeros(np.shape(xk),dtype=complex)
 	tlm2 = np.zeros(np.shape(xk),dtype=complex)
 	
+	tlm0 = ch.chebval(xk, Tk)
+	tlm1 = ch.chebval(xk, dTk)
+	tlm2 = ch.chebval(xk, d2Tk)
+	'''
 	tlm0 = np.dot(chx,Tk,tlm0)
 	tlm1 = np.dot(chx,dTk,tlm1)
 	tlm2 = np.dot(chx,d2Tk,tlm2)
+	'''
 	
 	
 	# -------------------------------------------------------------------------- kinetic Energy, toroidal
@@ -308,10 +297,14 @@ def pol_ohm( l, Pk, N, ricb, rcmb): # ------------------------------------------
 	plm1 = np.zeros(np.shape(xk),dtype=complex)
 	plm2 = np.zeros(np.shape(xk),dtype=complex)
 	
+	plm0 = ch.chebval(xk, Pk)
+	plm1 = ch.chebval(xk, dPk)
+	plm2 = ch.chebval(xk, d2Pk)
+	'''
 	plm0 = np.dot(chx,Pk,plm0)
 	plm1 = np.dot(chx,dPk,plm1)
 	plm2 = np.dot(chx,d2Pk,plm2)
-	
+	'''
 
 	qlm0 = L*plm0/rk
 	qlm1 = (L*plm1 - qlm0)/rk
@@ -352,8 +345,12 @@ def tor_ohm( l, Tk, N, ricb, rcmb): # ------------------------------------------
 	tlm0 = np.zeros(np.shape(xk),dtype=complex)
 	tlm1 = np.zeros(np.shape(xk),dtype=complex)
 	
+	tlm0 = ch.chebval(xk, Tk)
+	tlm1 = ch.chebval(xk, dTk)
+	'''
 	tlm0 = np.dot(chx,Tk,tlm0)
 	tlm1 = np.dot(chx,dTk,tlm1)
+	'''
 	
 	# -------------------------------------------------------------------------- magnetic field energy, toroidal
 	
@@ -380,6 +377,24 @@ def ken_dis( a, b, N, lmax, m, symm, ricb, rcmb, ncpus, w, projection, forcing):
 	Computes total kinetic energy, internal and kinetic energy dissipation,
 	and input power from body forces.
 	'''
+	
+	# xk are the colocation points, from -1 to 1
+	i = np.arange(0,N)
+	global xk
+	xk = np.cos( (i+0.5)*np.pi/N )
+	# rk are the radial colocation points, from ricb to rcmb
+	global rk 
+	rk = 0.5*(rcmb-ricb)*( xk + 1 ) + ricb
+	# the following are needed to compute the integrals
+	global sqx 
+	sqx = np.sqrt(1-xk**2)
+	global r2
+	r2 = rk**2
+	global r3 
+	r3 = rk**3
+	global r4
+	r4 = rk**4
+	
 	
 	if m > 0 :
 		symm1 = symm
@@ -451,6 +466,23 @@ def ohm_dis( a, b, N, lmax, m, bsymm, ricb, rcmb, ncpus):
 	bsymm is the symmetry of the *induced magnetic field*, which is
 	opposed to that of the flow if the applied field is antisymmetric.
 	'''
+	
+	# xk are the colocation points, from -1 to 1
+	i = np.arange(0,N)
+	global xk
+	xk = np.cos( (i+0.5)*np.pi/N )
+	# rk are the radial colocation points, from ricb to rcmb
+	global rk 
+	rk = 0.5*(rcmb-ricb)*( xk + 1 ) + ricb
+	# the following are needed to compute the integrals
+	global sqx 
+	sqx = np.sqrt(1-xk**2)
+	global r2
+	r2 = rk**2
+	global r3 
+	r3 = rk**3
+	global r4
+	r4 = rk**4
 	
 	if m > 0 :
 		bsymm1 = bsymm

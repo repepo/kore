@@ -254,7 +254,7 @@ def main():
 			
 			for i in range(success):
 				
-				#print('Solution',i)
+				print('Processing solution',i)
 				
 				a = np.copy(ru[:,i])
 				b = np.copy(iu[:,i])
