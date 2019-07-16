@@ -1,6 +1,10 @@
 # tintin
 
-Numerical code to solve the linear Navier-Stokes and induction equations for a viscous, incompressible and conductive fluid enclosed within a rotating spherical shell. 
+Numerical code to solve the linear Navier-Stokes and induction equations for a viscous, incompressible and conductive fluid enclosed within a rotating spherical shell.
+
+Tintin is free for everyone to use, with no restrictions. Too often in the scientific literature the numerical methods used are presented with enough detail to guarantee reproducibility, but only *in principle*. Without access to the actual implementation of those methods, which would require a significant amount of work and time to develop, readers are left effectively without the possibility to reproduce or verify the results presented. This leads to very slow scientific progress. We share our code to avoid this.
+
+If this code is useful for your research, we invite you to cite the relevant papers (coming soon) and hope that you can also contribute to the project. 
 
 ## Getting Started
 
@@ -157,7 +161,7 @@ to aid in submitting/collecting results of a large number of runs to/from a PBS-
 
 ## Authors
 
-* **Santiago Andres Triana** - *Python implementation*
+* **Santiago Andres Triana** - *This implementation*
 * **Jeremy Rekier** - *Sparse spectral method*
 * **Antony Trinh** - *Tensor calculus*
 
