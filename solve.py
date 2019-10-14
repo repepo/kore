@@ -388,8 +388,8 @@ def main():
 				
 			print('--- -------------- -------------- ---------- ----------')
 			
-			#find closest to tracking target and write to target file
-			if par.track_target == 1:
+			#find closest eigenvalue to tracking target and write to target file
+			if (par.track_target == 1)&(par.forcing == 0):
 				j = y==min(y)
 				if par.magnetic == 1:
 					with open('track_target','wb') as tg:
