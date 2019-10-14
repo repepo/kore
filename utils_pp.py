@@ -9,7 +9,7 @@ import parameters as par
 import utils as ut
 
 
-def pol_worker( l, Pk, N, m, ricb, rcmb, w, projection, forcing): # ------------ 
+def pol_worker( l, Pk, N, m, ricb, rcmb, w, projection, forcing, Ra, Rb): # ------------ 
 	'''
 	Here we compute various integrals that involve poloidal components, degree l
 	We use Chebyshev-Gauss quadratures
@@ -26,15 +26,15 @@ def pol_worker( l, Pk, N, m, ricb, rcmb, w, projection, forcing): # ------------
 
 	# plm's are the poloidal scalars evaluated at the colocation points
 	
-	plm0 = np.zeros(np.shape(xk),dtype=complex)
-	plm1 = np.zeros(np.shape(xk),dtype=complex)
-	plm2 = np.zeros(np.shape(xk),dtype=complex)
-	plm3 = np.zeros(np.shape(xk),dtype=complex)	
+	plm0 = np.zeros(np.shape(x0),dtype=complex)
+	plm1 = np.zeros(np.shape(x0),dtype=complex)
+	plm2 = np.zeros(np.shape(x0),dtype=complex)
+	plm3 = np.zeros(np.shape(x0),dtype=complex)	
 	
-	plm0 = ch.chebval(xk, Pk)
-	plm1 = ch.chebval(xk, dPk)
-	plm2 = ch.chebval(xk, d2Pk)
-	plm3 = ch.chebval(xk, d3Pk)
+	plm0 = ch.chebval(x0, Pk)
+	plm1 = ch.chebval(x0, dPk)
+	plm2 = ch.chebval(x0, d2Pk)
+	plm3 = ch.chebval(x0, d3Pk)
 	'''
 	plm0 = np.dot(chx,Pk,plm0)
 	plm1 = np.dot(chx,dPk,plm1)
@@ -42,7 +42,7 @@ def pol_worker( l, Pk, N, m, ricb, rcmb, w, projection, forcing): # ------------
 	plm3 = np.dot(chx,d3Pk,plm3)
 	'''
 	
-	# the radial scalars
+	# the radial scalars, rk goes from Ra to Rb
 	qlm0 = L*plm0/rk
 	qlm1 = (L*plm1 - qlm0)/rk
 	qlm2 = (L*plm2-2*qlm1)/rk
@@ -61,7 +61,7 @@ def pol_worker( l, Pk, N, m, ricb, rcmb, w, projection, forcing): # ------------
 	f2 = r2*L*np.absolute( slm0 )**2
 	
 	# for the integrals we use Chebyshev-Gauss quadratures
-	Ken_pol_l = (np.pi/N)*(rcmb-ricb)*0.5*np.sum( sqx*f0*( f1+f2) )
+	Ken_pol_l = (np.pi/N)*(Rb-Ra)*0.5*np.sum( sqx*f0*( f1+f2) )
 	
 	
 	# -------------------------------------------------------------------------- internal energy dissipation, poloidal
@@ -72,7 +72,7 @@ def pol_worker( l, Pk, N, m, ricb, rcmb, w, projection, forcing): # ------------
 	f2 = 3*np.absolute(rk*qlm1)**2
 	f3 = L*(l-1)*(l+2)*np.absolute(slm0)**2
 	# integral is
-	Dint_pol_l = (np.pi/N)*(rcmb-ricb)*0.5*np.sum( sqx*f0*( f1+f2+f3 ) )
+	Dint_pol_l = (np.pi/N)*(Rb-Ra)*0.5*np.sum( sqx*f0*( f1+f2+f3 ) )
 
 	
 	# -------------------------------------------------------------------------- kinetic energy dissipation rate, poloidal
@@ -85,7 +85,7 @@ def pol_worker( l, Pk, N, m, ricb, rcmb, w, projection, forcing): # ------------
 	f4 = 2 * rk * np.conj(qlm0)*qlm1 + r2 * np.conj(qlm0) * qlm2
 	f5 = 2 * L *( np.conj(qlm0)*slm0 + qlm0*np.conj(slm0) )
  	# integral is
-	Dkin_pol_l = (np.pi/N)*(rcmb-ricb)*0.5*np.sum( sqx*f0*( f1+f2+f3+f4+f5 ) )
+	Dkin_pol_l = (np.pi/N)*(Rb-Ra)*0.5*np.sum( sqx*f0*( f1+f2+f3+f4+f5 ) )
 	
 	
 	if (projection == 1 and forcing == 0) or forcing == 1: # ------------------- power from Lin2018 forcing, poloidal
@@ -96,7 +96,7 @@ def pol_worker( l, Pk, N, m, ricb, rcmb, w, projection, forcing): # ------------
 			#f2 = 7j* np.conj(slm0) *( 3*r3 - 2*(ricb**5)/r2 ) 
 			f1 = 7j * r3 * ( np.conj(qlm0) + 3*np.conj(slm0) )
 			f2 = 7j *(ricb**5)* ( np.conj(qlm0) - 2*np.conj(slm0) )/r2
-			power_pol_l =  (np.pi/N)*(rcmb-ricb)*0.5*np.sum( sqx*f0*( f1+f2 ) )
+			power_pol_l =  (np.pi/N)*(Rb-Ra)*0.5*np.sum( sqx*f0*( f1+f2 ) )
 		else:
 			power_pol_l =  0
 			
@@ -117,7 +117,7 @@ def pol_worker( l, Pk, N, m, ricb, rcmb, w, projection, forcing): # ------------
 			else:
 				f0 = 0
 				f1 = 0
-			power_pol_l = (np.pi/N)*(rcmb-ricb)*0.5*np.sum( sqx*f0*( f1 ) )
+			power_pol_l = (np.pi/N)*(Rb-Ra)*0.5*np.sum( sqx*f0*( f1 ) )
 		else:
 			power_pol_l = 0
 					
@@ -132,7 +132,7 @@ def pol_worker( l, Pk, N, m, ricb, rcmb, w, projection, forcing): # ------------
 			f0 = -8j*np.pi*XC/35
 			f1 = 7 * XA * r3 * ( np.conj(qlm0) + 3*np.conj(slm0) )
 			f2 = 7 * XB * ( np.conj(qlm0) - 2*np.conj(slm0) )/r2		
-			power_pol_l = (np.pi/N)*(rcmb-ricb)*0.5*np.sum( sqx*f0*( f1 + f2 ) )
+			power_pol_l = (np.pi/N)*(Rb-Ra)*0.5*np.sum( sqx*f0*( f1 + f2 ) )
 		else:
 			power_pol_l =  0
 					
@@ -149,7 +149,7 @@ def pol_worker( l, Pk, N, m, ricb, rcmb, w, projection, forcing): # ------------
 
 	
 
-def tor_worker( l, Tk, N, m, ricb, rcmb, w, projection, forcing): # ------------
+def tor_worker( l, Tk, N, m, ricb, rcmb, w, projection, forcing, Ra, Rb): # ------------
 	'''
 	Here we compute integrals that involve toroidal components, degree l
 	Same way as for the poloidals above
@@ -160,13 +160,13 @@ def tor_worker( l, Tk, N, m, ricb, rcmb, w, projection, forcing): # ------------
 	dTk  = ut.Dcheb(Tk,ricb,rcmb)
 	d2Tk = ut.Dcheb(dTk,ricb,rcmb)
 	
-	tlm0 = np.zeros(np.shape(xk),dtype=complex)
-	tlm1 = np.zeros(np.shape(xk),dtype=complex)
-	tlm2 = np.zeros(np.shape(xk),dtype=complex)
+	tlm0 = np.zeros(np.shape(x0),dtype=complex)
+	tlm1 = np.zeros(np.shape(x0),dtype=complex)
+	tlm2 = np.zeros(np.shape(x0),dtype=complex)
 	
-	tlm0 = ch.chebval(xk, Tk)
-	tlm1 = ch.chebval(xk, dTk)
-	tlm2 = ch.chebval(xk, d2Tk)
+	tlm0 = ch.chebval(x0, Tk)
+	tlm1 = ch.chebval(x0, dTk)
+	tlm2 = ch.chebval(x0, d2Tk)
 	'''
 	tlm0 = np.dot(chx,Tk,tlm0)
 	tlm1 = np.dot(chx,dTk,tlm1)
@@ -179,7 +179,7 @@ def tor_worker( l, Tk, N, m, ricb, rcmb, w, projection, forcing): # ------------
 	f0 = 4*np.pi/(2*l+1)
 	f1 = (r2)*L*np.absolute(tlm0)**2
 	# integral is:
-	Ken_tor_l = (np.pi/N)*(rcmb-ricb)*0.5 * np.sum( sqx*f0*( f1 ) )
+	Ken_tor_l = (np.pi/N)*(Rb-Ra)*0.5 * np.sum( sqx*f0*( f1 ) )
 	
 	
 	# -------------------------------------------------------------------------- internal energy dissipation, toroidal
@@ -188,7 +188,7 @@ def tor_worker( l, Tk, N, m, ricb, rcmb, w, projection, forcing): # ------------
 	f1 = L*np.absolute( rk*tlm1-tlm0 )**2
 	f2 = L*(l-1)*(l+2)*np.absolute( tlm0 )**2
 	# integral is
-	Dint_tor_l =  (np.pi/N)*(rcmb-ricb)*0.5 * np.sum( sqx*f0*( f1+f2 ) )
+	Dint_tor_l =  (np.pi/N)*(Rb-Ra)*0.5 * np.sum( sqx*f0*( f1+f2 ) )
 	
 	
 	# -------------------------------------------------------------------------- kinetic energy dissipation rate, toroidal
@@ -198,7 +198,7 @@ def tor_worker( l, Tk, N, m, ricb, rcmb, w, projection, forcing): # ------------
 	f2 = 2 * rk * L * np.conj(tlm0) * tlm1
 	f3 = -(L**2)*( np.conj(tlm0)*tlm0 )
 	# integral is:
-	Dkin_tor_l = (np.pi/N) * (rcmb-ricb)*0.5 * np.sum( sqx*f0*( f1+f2+f3 ) )
+	Dkin_tor_l = (np.pi/N) * (Rb-Ra)*0.5 * np.sum( sqx*f0*( f1+f2+f3 ) )
 	
 	
 	if (projection == 1 and forcing == 0) or forcing == 1: # ------------------- power from Lin2018 forcing, toroidal
@@ -206,7 +206,7 @@ def tor_worker( l, Tk, N, m, ricb, rcmb, w, projection, forcing): # ------------
 		if l==3 and m==2:
 			f0 = (8*np.pi/35)/(ricb**5-1)
 			f1 = 10*np.sqrt(5)*(ricb**5)* np.conj(tlm0) /r2
-			power_tor_l =  (np.pi/N)*(rcmb-ricb)*0.5*np.sum( sqx*f0*( f1 ) )
+			power_tor_l =  (np.pi/N)*(Rb-Ra)*0.5*np.sum( sqx*f0*( f1 ) )
 		else:
 			power_tor_l =  0
 
@@ -225,7 +225,7 @@ def tor_worker( l, Tk, N, m, ricb, rcmb, w, projection, forcing): # ------------
 			else:
 				f0 = 0
 				f1 = 0
-			power_tor_l = (np.pi/N)*(rcmb-ricb)*0.5*np.sum( sqx*f0*( f1 ) )
+			power_tor_l = (np.pi/N)*(Rb-Ra)*0.5*np.sum( sqx*f0*( f1 ) )
 
 		elif l == 3:
 			if m == 0:
@@ -240,7 +240,7 @@ def tor_worker( l, Tk, N, m, ricb, rcmb, w, projection, forcing): # ------------
 			else:
 				f0 = 0
 				f1 = 0
-			power_tor_l = (np.pi/N)*(rcmb-ricb)*0.5*np.sum( sqx*f0*( f1 ) )
+			power_tor_l = (np.pi/N)*(Rb-Ra)*0.5*np.sum( sqx*f0*( f1 ) )
 		
 		else:
 			power_tor_l = 0
@@ -256,7 +256,7 @@ def tor_worker( l, Tk, N, m, ricb, rcmb, w, projection, forcing): # ------------
 		if l==3 and m==2:
 			f0 = -8j*np.pi*XC/35
 			f1 = -10j*np.sqrt(5)*XB*np.conj(tlm0)/r2
-			power_tor_l = (np.pi/N)*(rcmb-ricb)*0.5*np.sum( sqx*f0*( f1 ) )
+			power_tor_l = (np.pi/N)*(Rb-Ra)*0.5*np.sum( sqx*f0*( f1 ) )
 		else:
 			power_tor_l =  0
 			
@@ -266,12 +266,12 @@ def tor_worker( l, Tk, N, m, ricb, rcmb, w, projection, forcing): # ------------
 		if l==1 and m==0:
 			f0 = -16*np.pi/105
 			f1 = 7 * np.conj(tlm0)
-			power_tor_l = (np.pi/N)*(rcmb-ricb)*0.5*np.sum( sqx*f0*( f1 ) )
+			power_tor_l = (np.pi/N)*(Rb-Ra)*0.5*np.sum( sqx*f0*( f1 ) )
 			print('Tor Power =',power_tor_l)
 		elif l==3 and m==0:
 			f0 = -16*np.pi/105
 			f1 = 27* np.conj(tlm0)
-			power_tor_l = (np.pi/N)*(rcmb-ricb)*0.5*np.sum( sqx*f0*( f1 ) )
+			power_tor_l = (np.pi/N)*(Rb-Ra)*0.5*np.sum( sqx*f0*( f1 ) )
 			print('Tor Power =',power_tor_l)			
 		else:
 			power_tor_l =  0
@@ -286,20 +286,20 @@ def tor_worker( l, Tk, N, m, ricb, rcmb, w, projection, forcing): # ------------
 		
 		
 
-def pol_ohm( l, Pk, N, ricb, rcmb): # ------------------------------------------
+def pol_ohm( l, Pk, N, ricb, rcmb, Ra, Rb): # ------------------------------------------
 	
 	L  = l*(l+1)
 	
 	dPk  = ut.Dcheb(Pk,ricb,rcmb)
 	d2Pk = ut.Dcheb(dPk,ricb,rcmb)
 	
-	plm0 = np.zeros(np.shape(xk),dtype=complex)
-	plm1 = np.zeros(np.shape(xk),dtype=complex)
-	plm2 = np.zeros(np.shape(xk),dtype=complex)
+	plm0 = np.zeros(np.shape(x0),dtype=complex)
+	plm1 = np.zeros(np.shape(x0),dtype=complex)
+	plm2 = np.zeros(np.shape(x0),dtype=complex)
 	
-	plm0 = ch.chebval(xk, Pk)
-	plm1 = ch.chebval(xk, dPk)
-	plm2 = ch.chebval(xk, d2Pk)
+	plm0 = ch.chebval(x0, Pk)
+	plm1 = ch.chebval(x0, dPk)
+	plm2 = ch.chebval(x0, d2Pk)
 	'''
 	plm0 = np.dot(chx,Pk,plm0)
 	plm1 = np.dot(chx,dPk,plm1)
@@ -318,7 +318,7 @@ def pol_ohm( l, Pk, N, ricb, rcmb): # ------------------------------------------
 	f1 = (rk**2)*np.absolute( qlm0 )**2
 	f2 = (rk**2)*L*np.absolute( slm0 )**2
 	
-	benergy_pol_l = 0.5*(rcmb-ricb)*(np.pi/N)*np.sum( sqx*f0*( f1+f2 ) ) 
+	benergy_pol_l = 0.5*(Rb-Ra)*(np.pi/N)*np.sum( sqx*f0*( f1+f2 ) ) 
 	
 	
 	# -------------------------------------------------------------------------- Ohmic dissipation, poloidal
@@ -326,14 +326,14 @@ def pol_ohm( l, Pk, N, ricb, rcmb): # ------------------------------------------
 	f0 = 4*np.pi*L/(2*l+1)
 	f1 = np.absolute( qlm0 - slm0 - rk*slm1 )**2
 	
-	odis_pol_l = 0.5*(rcmb-ricb)*(np.pi/N)*np.sum( sqx*f0*f1 ) 
+	odis_pol_l = 0.5*(Rb-Ra)*(np.pi/N)*np.sum( sqx*f0*f1 ) 
 	
 	
 	return [benergy_pol_l, odis_pol_l]
 
 
 	
-def tor_ohm( l, Tk, N, ricb, rcmb): # ------------------------------------------
+def tor_ohm( l, Tk, N, ricb, rcmb, Ra, Rb): # ------------------------------------------
 	
 	L  = l*(l+1)
 
@@ -342,11 +342,11 @@ def tor_ohm( l, Tk, N, ricb, rcmb): # ------------------------------------------
 	
 	dTk  = ut.Dcheb(Tk,ricb,rcmb)
 
-	tlm0 = np.zeros(np.shape(xk),dtype=complex)
-	tlm1 = np.zeros(np.shape(xk),dtype=complex)
+	tlm0 = np.zeros(np.shape(x0),dtype=complex)
+	tlm1 = np.zeros(np.shape(x0),dtype=complex)
 	
-	tlm0 = ch.chebval(xk, Tk)
-	tlm1 = ch.chebval(xk, dTk)
+	tlm0 = ch.chebval(x0, Tk)
+	tlm1 = ch.chebval(x0, dTk)
 	'''
 	tlm0 = np.dot(chx,Tk,tlm0)
 	tlm1 = np.dot(chx,dTk,tlm1)
@@ -357,7 +357,7 @@ def tor_ohm( l, Tk, N, ricb, rcmb): # ------------------------------------------
 	f0 = 4*np.pi/(2*l+1)
 	f1 = (rk**2)*L*np.absolute( tlm0 )**2
 
-	benergy_tor_l = 0.5*(rcmb-ricb)*(np.pi/N)*np.sum( sqx*f0*( f1 ) ) 
+	benergy_tor_l = 0.5*(Rb-Ra)*(np.pi/N)*np.sum( sqx*f0*( f1 ) ) 
 		
 	# -------------------------------------------------------------------------- Ohmic dissipation, toroidal
 	
@@ -365,14 +365,14 @@ def tor_ohm( l, Tk, N, ricb, rcmb): # ------------------------------------------
 	f1 = np.absolute( rk*tlm1 + tlm0 )**2
 	f2 = L*np.absolute( tlm0 )**2 
 	
-	odis_tor_l = 0.5*(rcmb-ricb)*(np.pi/N)*np.sum( sqx*f0*( f1+f2 ) ) 
+	odis_tor_l = 0.5*(Rb-Ra)*(np.pi/N)*np.sum( sqx*f0*( f1+f2 ) ) 
 	
 	
 	return [benergy_tor_l, odis_tor_l]
 	
 
 
-def ken_dis( a, b, N, lmax, m, symm, ricb, rcmb, ncpus, w, projection, forcing):
+def ken_dis( a, b, N, lmax, m, symm, ricb, rcmb, ncpus, w, projection, forcing, Ra, Rb):
 	'''
 	Computes total kinetic energy, internal and kinetic energy dissipation,
 	and input power from body forces.
@@ -380,11 +380,14 @@ def ken_dis( a, b, N, lmax, m, symm, ricb, rcmb, ncpus, w, projection, forcing):
 	
 	# xk are the colocation points, from -1 to 1
 	i = np.arange(0,N)
-	global xk
 	xk = np.cos( (i+0.5)*np.pi/N )
-	# rk are the radial colocation points, from ricb to rcmb
+	global x0
+	x0 = ( (Rb-Ra)*xk + (Ra+Rb) - (ricb+rcmb) )/(rcmb-ricb)
+	
+	# rk are the radial colocation points, from Ra to Rb
 	global rk 
-	rk = 0.5*(rcmb-ricb)*( xk + 1 ) + ricb
+	rk = 0.5*(rcmb-ricb)*( x0 + 1 ) + ricb
+	
 	# the following are needed to compute the integrals
 	global sqx 
 	sqx = np.sqrt(1-xk**2)
@@ -434,10 +437,10 @@ def ken_dis( a, b, N, lmax, m, symm, ricb, rcmb, ncpus, w, projection, forcing):
 	# process each l component in parallel
 	pool = mp.Pool(processes=ncpus)
 	
-	p = [ pool.apply_async(pol_worker, args=( l, Pk2[k,:N], N, m, ricb, rcmb, w, projection, forcing))\
+	p = [ pool.apply_async(pol_worker, args=( l, Pk2[k,:N], N, m, ricb, rcmb, w, projection, forcing, Ra, Rb))\
 	 for k,l in enumerate(np.arange(m_top,lmax_top,2)) ]
 	
-	t = [ pool.apply_async(tor_worker, args=( l, Tk2[k,:N], N, m, ricb, rcmb, w, projection, forcing))\
+	t = [ pool.apply_async(tor_worker, args=( l, Tk2[k,:N], N, m, ricb, rcmb, w, projection, forcing, Ra, Rb))\
 	 for k,l in enumerate(np.arange(m_bot,lmax_bot,2)) ]
 	
 	res_pol = np.sum([p1.get() for p1 in p],0)
@@ -460,7 +463,7 @@ def ken_dis( a, b, N, lmax, m, symm, ricb, rcmb, ncpus, w, projection, forcing):
 
 
 
-def ohm_dis( a, b, N, lmax, m, bsymm, ricb, rcmb, ncpus):
+def ohm_dis( a, b, N, lmax, m, bsymm, ricb, rcmb, ncpus, Ra, Rb):
 	'''
 	Computes the total energy in the induced magnetic field and the Ohmic dissipation.
 	bsymm is the symmetry of the *induced magnetic field*, which is
@@ -469,11 +472,13 @@ def ohm_dis( a, b, N, lmax, m, bsymm, ricb, rcmb, ncpus):
 	
 	# xk are the colocation points, from -1 to 1
 	i = np.arange(0,N)
-	global xk
 	xk = np.cos( (i+0.5)*np.pi/N )
+	global x0
+	x0 = ( (Rb-Ra)*xk + (Ra+Rb) - (ricb+rcmb) )/(rcmb-ricb)
+		
 	# rk are the radial colocation points, from ricb to rcmb
 	global rk 
-	rk = 0.5*(rcmb-ricb)*( xk + 1 ) + ricb
+	rk = 0.5*(rcmb-ricb)*( x0 + 1 ) + ricb
 	# the following are needed to compute the integrals
 	global sqx 
 	sqx = np.sqrt(1-xk**2)
@@ -522,8 +527,8 @@ def ohm_dis( a, b, N, lmax, m, bsymm, ricb, rcmb, ncpus):
 	
 	# process each l component in parallel
 	pool = mp.Pool(processes=ncpus)
-	p = [ pool.apply_async(pol_ohm,args=(l, Pk2[k,:], N, ricb, rcmb)) for k,l in enumerate(np.arange(m_top,lmax_top,2.)) ]
-	t = [ pool.apply_async(tor_ohm,args=(l, Tk2[k,:], N, ricb, rcmb)) for k,l in enumerate(np.arange(m_bot,lmax_bot,2.)) ]
+	p = [ pool.apply_async(pol_ohm,args=(l, Pk2[k,:], N, ricb, rcmb, Ra, Rb)) for k,l in enumerate(np.arange(m_top,lmax_top,2.)) ]
+	t = [ pool.apply_async(tor_ohm,args=(l, Tk2[k,:], N, ricb, rcmb, Ra, Rb)) for k,l in enumerate(np.arange(m_bot,lmax_bot,2.)) ]
 	
 	res_pol = np.sum([p1.get() for p1 in p],0)
 	res_tor = np.sum([t1.get() for t1 in t],0)

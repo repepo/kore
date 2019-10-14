@@ -203,6 +203,7 @@ def main():
 		K = PETSc.KSP()
 		K.create(PETSc.COMM_WORLD)
 		K.setOperators(MA)
+		K.setTolerances(rtol=par.tol,max_it=par.maxit)
 		K.setFromOptions()
 		
 		# solve
@@ -248,13 +249,40 @@ def main():
 			toc1 = timer()
 			
 			kid = np.zeros((success,7))
+			Dint_partial = np.zeros((success,3))
+			p2t = np.zeros(success)
+			y = np.zeros(success)
+			
+			
 			if par.magnetic == 1:
-				ohm = np.zeros((success,4))
-			params = np.zeros((success,17))
+				ohm = np.zeros((success,4))			
+				Dohm_partial = np.zeros((success,3))
+				o2v = np.zeros(success)
+				
+				
+			params = np.zeros((success,18))
+			
+			thk = np.sqrt(par.Ek)
+			R1 = par.ricb + 15*thk
+			R2 = ut.rcmb - 15*thk
+			R3 = ut.rcmb - 30*thk
+		
+			print('Post-processing:')	 
+			print('--- -------------- -------------- ---------- ----------')
+			print('Sol    Damping        Frequency     Error1     Error2  ')
+			print('--- -------------- -------------- ---------- ----------')
+			#print('{2d}   {:11.9f}   {:11.9f}   {:10.2g}   {:10.2g}'.format(i, sigma, w, err1, err2))
+			
+			if par.track_target == 1:  # eigenvalue tracking enabled
+				#read target data
+				x = np.loadtxt('track_target')
+			
+			
+			
 			
 			for i in range(success):
 				
-				print('Processing solution',i)
+				#print('Processing solution',i)
 				
 				a = np.copy(ru[:,i])
 				b = np.copy(iu[:,i])
@@ -267,49 +295,126 @@ def main():
 					sigma = 0
 				
 				kid[i,:] = upp.ken_dis( a, b, par.N, par.lmax, par.m, par.symm, \
-				par.ricb, ut.rcmb, par.ncpus, w, par.projection, par.forcing)
+				par.ricb, ut.rcmb, par.ncpus, w, par.projection, par.forcing, par.ricb, ut.rcmb)
 		
-				KE = kid[i,0]+kid[i,1]
+				k1 = upp.ken_dis( a, b, par.N, par.lmax, par.m, par.symm, \
+				par.ricb, ut.rcmb, par.ncpus, w, par.projection, par.forcing, par.ricb, R1)
 				
-				#print('--')
+				k2 = upp.ken_dis( a, b, par.N, par.lmax, par.m, par.symm, \
+				par.ricb, ut.rcmb, par.ncpus, w, par.projection, par.forcing, R2, ut.rcmb)
+				
+				k3 = upp.ken_dis( a, b, par.N, par.lmax, par.m, par.symm, \
+				par.ricb, ut.rcmb, par.ncpus, w, par.projection, par.forcing, R3, ut.rcmb)
+				
+				Dint_partial[i,0] = k1[2]*par.Ek
+				Dint_partial[i,1] = k2[2]*par.Ek
+				Dint_partial[i,2] = k3[2]*par.Ek
+				
+				KP = kid[i,0]
+				KT = kid[i,1]
+				p2t[i] = KP/KT
+				KE = KP + KT
+				Dint = kid[i,2]*par.Ek
+				Dkin = kid[i,3]*par.Ek
+				
+				repow = kid[i,5]
+				
+				err1 = abs(-Dint/Dkin -1)
+				
+				if par.track_target == 1:	
+					# compute distance (mismatch) to tracking target
+					y0 = abs( (x[0]-sigma)/sigma )		# damping mismatch
+					y1 = abs( (x[1]-w)/w )				# frequency mismatch
+					y2 = abs( (x[2]-p2t[i])/p2t[i] )	# poloidal to toroidal energy ratio mismatch
+					y[i] = y0 + y1 + y2					# overall mismatch
+					   
 				#print('omega*Energy =', w*KE )
 				#print('Imag power   =', kid[i,6] )
 				#print('Imag dissip  =', Ek*kid[i,4] )
-				print('--')
-				print('sigma*Energy   =', sigma*KE    )
-				print('kinetic Dissp  =', kid[i,3]*par.Ek )
-				print('real Power     =', kid[i,5]    )
-				print('internal Dissp =', kid[i,2]*par.Ek )
-				print('--')
+				#print('--')
+				#print('sigma*Energy   =', sigma*KE    )
+				#print('kinetic Dissp  =', kid[i,3]*par.Ek )
+				#print('real Power     =', kid[i,5]    )
+				#print('internal Dissp =', kid[i,2]*par.Ek )
+
 				
 				if par.magnetic == 1:
 					
 					a = np.copy(rb[:,i])
 					b = np.copy(ib[:,i])
 					
-					ohm[i,:] = upp.ohm_dis( a, b, par.N, par.lmax, par.m, -par.symm, par.ricb, ut.rcmb, par.ncpus)
+					ohm[i,:] = upp.ohm_dis( a, b, par.N, par.lmax, par.m, -par.symm, par.ricb, ut.rcmb, par.ncpus, par.ricb, ut.rcmb)
 					# use -symm above because magnetic field has the opposite
 					# symmetry as the flow field --if applied field is antisymm (vertical uniform).
 					
+					o1 = upp.ohm_dis( a, b, par.N, par.lmax, par.m, -par.symm, par.ricb, ut.rcmb, par.ncpus, par.ricb, R1)
+					o2 = upp.ohm_dis( a, b, par.N, par.lmax, par.m, -par.symm, par.ricb, ut.rcmb, par.ncpus, R2, ut.rcmb)
+					o3 = upp.ohm_dis( a, b, par.N, par.lmax, par.m, -par.symm, par.ricb, ut.rcmb, par.ncpus, R3, ut.rcmb)
+					
+					Dohm_partial[i,0] = (o1[2] + o1[3])*par.Le2*par.Em
+					Dohm_partial[i,1] = (o2[2] + o2[3])*par.Le2*par.Em
+					Dohm_partial[i,2] = (o3[2] + o3[3])*par.Le2*par.Em
+					
+					Dohm = (ohm[i,2]+ohm[i,3])*par.Le2*par.Em	
+					#err2 = abs( 1+(Dohm-Dkin)/(sigma*KE) )
+					
+					o2v[i] = Dohm/Dint
+					
+					if par.track_target == 1:
+						y3 = abs( (x[3]-o2v[i])/o2v[i] )
+						y[i] += y3 	#include ohmic to viscous dissipation ratio in the tracking
+				
+				else:
+					
+					Dohm = 0
+				
+				
+				if par.forcing != 0:
+					if repow != 0:							# body forcing (input power should match total dissipation)
+						err2 = abs( (repow-(Dohm-Dkin))/repow )
+					else:									# boundary flow forcing (input power to be implemented)
+						err2 = -1.0	
+				elif par.forcing == 0:						# eigenvalue problem (damping should match total dissipation)
+					err2 = abs( 1+(Dohm-Dkin)/(sigma*KE) )
+				
+				
+				
+				print('{:2d}   {: 12.9f}   {: 12.9f}   {:8.2e}   {:8.2e}'.format(i, sigma, w, err1, err2))
+				
+					
+					
 				params[i,:] = np.array([par.Ek, par.m, par.symm, par.ricb, par.bci, par.bco, par.projection, par.forcing, \
-				par.forcing_amplitude, par.forcing_frequency, par.magnetic, par.Em, par.Le2, par.N, par.lmax, toc1-tic, par.ncpus])
+				par.forcing_amplitude, par.forcing_frequency, par.magnetic, par.Em, par.Le2, par.N, par.lmax, toc1-tic, par.ncpus, par.tol])
 				
-				
+			print('--- -------------- -------------- ---------- ----------')
 			
+			#find closest to tracking target and write to target file
+			if par.track_target == 1:
+				j = y==min(y)
+				if par.magnetic == 1:
+					with open('track_target','wb') as tg:
+						np.savetxt( tg, np.c_[ eigval[j,0], eigval[j,1], p2t[j], o2v[j] ] )
+				else:
+					with open('track_target','wb') as tg:
+						np.savetxt( tg, np.c_[ eigval[j,0], eigval[j,1], p2t[j] ] )
+				print('Closest to target is solution', np.where(j==1)[0][0])
+				
+				
+				
 			# ---------------------------------------------------------- write post-processed data and parameters to disk
 			
 			#print('Writing results')
 			
 			with open('params.dat','ab') as dpar:
 				np.savetxt(dpar, params, \
-				fmt=['%.6e','%d','%d','%.8e','%d','%d','%d','%d','%.6e','%.6e','%d','%.6e','%.6e','%d','%d','%.2f', '%d'])  
+				fmt=['%.9e','%d','%d','%.9e','%d','%d','%d','%d','%.9e','%.9e','%d','%.9e','%.9e','%d','%d','%.2f', '%d', '%.2e'])  
 			
 			with open('flow.dat','ab') as dflo:
-				np.savetxt(dflo, kid)
+				np.savetxt(dflo, np.c_[kid, Dint_partial])
 		    
 			if par.magnetic == 1:
 				with open('magnetic.dat','ab') as dmag:
-					np.savetxt(dmag, ohm)
+					np.savetxt(dmag, np.c_[ohm, Dohm_partial])
 	
 			if par.forcing == 0:
 				with open('eigenvalues.dat','ab') as deig:
@@ -327,6 +432,13 @@ def main():
 					
 					np.savetxt('real_magnetic.field',rb)
 					np.savetxt('imag_magnetic.field',ib)
+					
+					
+					
+					
+			
+					
+					
 		
 		toc2 = timer()
 		print('Solve done in',toc2-tic,'seconds')
