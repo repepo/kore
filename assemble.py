@@ -275,11 +275,12 @@ def main():
 				d2P = (2-l*(l+1))*P/(par.ricb**2)
 			
 				if par.bci == 0: # stress-free
-					bdat = -1j*ut.wf*np.array([P, d2P])
+					#bdat = -1j*ut.wf*np.array([P, d2P])
+					bdat = np.array([P, d2P])
 					
 				elif par.bci == 1: # no-slip
-					bdat = -1j*ut.wf*np.array([P,  dP])
-			
+					#bdat = -1j*ut.wf*np.array([P,  dP])
+					bdat = np.array([P,  dP])
 			
 				B = ss.csr_matrix( ( bdat, (row,col) ), shape=(ut.sizmat,1) )
 				np.savez('B_forced.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
