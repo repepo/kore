@@ -33,6 +33,8 @@ if len(u.shape)==1:
 KP = u[:,0] 						# Poloidal kinetic energy
 KT = u[:,1] 						# Toroidal kinetic energy
 K  = KP + KT
+t2p = KT/KP
+p2t = KP/KT
 
 ricb = p[:,3] 						# inner core radius
 wf   = p[:,9] 						# forcing frequency
@@ -54,18 +56,22 @@ if shape(p)[1]>=15:
 	lmax = p[:,14]
 
 if sum(forcing) == 0: 	# reads eigenvalue data
-	w = loadtxt(sys.argv[1]+'.eig')
+	if len(sys.argv) == 2:
+		w = loadtxt(sys.argv[1]+'.eig')
+	else:
+		w = loadtxt('eigenvalues.dat')
 	if len(w.shape)==1:	
 		w = w.reshape((-1,len(w)))
 
 err1 = abs(-Dint/Dkin -1)
 
 if shape(u)[1]>=10:
-	vd1 = u[:,7]+u[:,8]
-	vd2 = u[:,7]+u[:,9]
+	# viscous dissipation in the bulk, without boundary layers
+	vd1 = Dint - (u[:,7] + u[:,8])
+	vd2 = Dint - (u[:,7] + u[:,9])
 	
 if shape(p)[1]>=17:
-	t = p[:,15]
+	tsol = p[:,15]
 	ncpus = p[:,16]
    
 magnetic = p[:,10]
@@ -87,18 +93,18 @@ if sum(magnetic) == np.shape(p)[0]: # reads magnetic data
 
 	d = Dohm/Dint 					# Ohmic to viscous dissipation ratio
 	
-	if sum(Le) != 0:
-		z = d*Em/Le**2
+	#if sum(Le) != 0:
+	#	z = d*Em/Le**2
 
 	if shape(b)[1]>=7 :
-		od1 = b[:,4]+b[:,5]
-		od2 = b[:,4]+b[:,6]
+		od1 = Dohm - (b[:,4] + b[:,5])
+		od2 = Dohm - (b[:,4] + b[:,6])
 		d1 = od1/vd1				# dissip ratio in the bulk, without boundary layers
 		d2 = od2/vd2				# a bit deeper in the bulk
 		
-		if sum(Le) != 0:
-			z1 = d1*Em/Le**2
-			z2 = d2*Em/Le**2
+	#	if sum(Le) != 0:
+	#		z1 = d1*Em/Le**2
+	#		z2 = d2*Em/Le**2
 else:
 	Dohm = 0
 	
@@ -113,6 +119,13 @@ elif sum(forcing) == 0:						# eigenvalue problem (damping should match total di
 # total dissipation
 D = Dint + Dohm
 
+so = Dohm/K
+sv = Dint/K
+
+dsq = D/sqrt(Ek)
+
+# quality factor
+Q = K/D
 	
 
 	

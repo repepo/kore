@@ -93,7 +93,7 @@ def main():
 	if par.forcing == 1: # --------------------------------------------------------------------------------- Yufeng forcing
 		'''
 		Builds the right hand side vector for the forced problem
-		Lin 2017 body forcing
+		Lin 2018 body forcing
 		l=3, m=2 Toroidal scalar only
 		equatorially symmetric
 		'''
@@ -272,7 +272,7 @@ def main():
 				
 				P   = par.ricb*par.forcing_amplitude/(l*(l+1))
 				dP  = -P/par.ricb
-				d2P = (2-l*(l+1)*P)/(par.ricb**2)
+				d2P = (2-l*(l+1))*P/(par.ricb**2)
 			
 				if par.bci == 0: # stress-free
 					bdat = -1j*ut.wf*np.array([P, d2P])
@@ -1149,7 +1149,7 @@ def bc_b_spherical(l,loc):
 		out[1,:] = (l+1) * bv.P0_cmb + bv.P1_cmb   # cmb
 		
 		row0 = 2*ut.n + int( par.N * ( l - ut.m_bot)/2 )	# starting row
-		col0 = 2*ut.n + int( par.N * ( l - ut.m_bot)/2 )   # starting col
+		col0 = 2*ut.n + int( par.N * ( l - ut.m_bot)/2 )	# starting col
 		
 	elif loc == '1curl': # use loc_top l's here (if external magnetic field is antisymm)
 

@@ -180,6 +180,7 @@ def main():
 				
 				success = 0
 				print('No converged solution found')
+				np.savetxt('no_conv_solution',[0])
 				
 		MA.destroy()
 		MB.destroy()
@@ -251,6 +252,8 @@ def main():
 			kid = np.zeros((success,7))
 			Dint_partial = np.zeros((success,3))
 			p2t = np.zeros(success)
+			err1 = np.zeros(success)
+			err2 = np.zeros(success)
 			y = np.zeros(success)
 			
 			
@@ -266,11 +269,13 @@ def main():
 			R1 = par.ricb + 15*thk
 			R2 = ut.rcmb - 15*thk
 			R3 = ut.rcmb - 30*thk
+			
+			print('Ek = 10**{:<8.4f}'.format(np.log10(par.Ek)))
 		
 			print('Post-processing:')	 
-			print('--- -------------- -------------- ---------- ----------')
-			print('Sol    Damping        Frequency     Error1     Error2  ')
-			print('--- -------------- -------------- ---------- ----------')
+			print('--- -------------- -------------- ---------- ---------- ---------- ----------')
+			print('Sol    Damping        Frequency     Error1     Error2    ohm2visc    tor2pol ')
+			print('--- -------------- -------------- ---------- ---------- ---------- ----------')
 			#print('{2d}   {:11.9f}   {:11.9f}   {:10.2g}   {:10.2g}'.format(i, sigma, w, err1, err2))
 			
 			if par.track_target == 1:  # eigenvalue tracking enabled
@@ -296,13 +301,16 @@ def main():
 				
 				kid[i,:] = upp.ken_dis( a, b, par.N, par.lmax, par.m, par.symm, \
 				par.ricb, ut.rcmb, par.ncpus, w, par.projection, par.forcing, par.ricb, ut.rcmb)
-		
+
+				# inner core boundary layer
 				k1 = upp.ken_dis( a, b, par.N, par.lmax, par.m, par.symm, \
 				par.ricb, ut.rcmb, par.ncpus, w, par.projection, par.forcing, par.ricb, R1)
 				
+				# core-mantle boundary layer1
 				k2 = upp.ken_dis( a, b, par.N, par.lmax, par.m, par.symm, \
 				par.ricb, ut.rcmb, par.ncpus, w, par.projection, par.forcing, R2, ut.rcmb)
 				
+				# core-mantle boundary layer2
 				k3 = upp.ken_dis( a, b, par.N, par.lmax, par.m, par.symm, \
 				par.ricb, ut.rcmb, par.ncpus, w, par.projection, par.forcing, R3, ut.rcmb)
 				
@@ -319,7 +327,7 @@ def main():
 				
 				repow = kid[i,5]
 				
-				err1 = abs(-Dint/Dkin -1)
+				err1[i] = abs(-Dint/Dkin -1)
 				
 				if par.track_target == 1:	
 					# compute distance (mismatch) to tracking target
@@ -371,24 +379,24 @@ def main():
 				
 				if par.forcing != 0:
 					if repow != 0:							# body forcing (input power should match total dissipation)
-						err2 = abs( (repow-(Dohm-Dkin))/repow )
+						err2[i] = abs( (repow-(Dohm-Dkin))/repow )
 					else:									# boundary flow forcing (input power to be implemented)
-						err2 = -1.0	
+						err2[i] = -1.0	
 				elif par.forcing == 0:						# eigenvalue problem (damping should match total dissipation)
-					err2 = abs( 1+(Dohm-Dkin)/(sigma*KE) )
+					err2[i] = abs( 1+(Dohm-Dkin)/(sigma*KE) )
 				
 				
 				
-				print('{:2d}   {: 12.9f}   {: 12.9f}   {:8.2e}   {:8.2e}'.format(i, sigma, w, err1, err2))
+				print('{:2d}   {: 12.9f}   {: 12.9f}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}'.format(i, sigma, w, err1[i], err2[i], Dohm/Dint, KT/KP))
 				
 					
 					
 				params[i,:] = np.array([par.Ek, par.m, par.symm, par.ricb, par.bci, par.bco, par.projection, par.forcing, \
 				par.forcing_amplitude, par.forcing_frequency, par.magnetic, par.Em, par.Le2, par.N, par.lmax, toc1-tic, par.ncpus, par.tol])
 				
-			print('--- -------------- -------------- ---------- ----------')
+			print('--- -------------- -------------- ---------- ---------- ---------- ----------')
 			
-			#find closest eigenvalue to tracking target and write to target file
+			# find closest eigenvalue to tracking target and write to target file
 			if (par.track_target == 1)&(par.forcing == 0):
 				j = y==min(y)
 				if par.magnetic == 1:
@@ -398,6 +406,19 @@ def main():
 					with open('track_target','wb') as tg:
 						np.savetxt( tg, np.c_[ eigval[j,0], eigval[j,1], p2t[j] ] )
 				print('Closest to target is solution', np.where(j==1)[0][0])
+				if err2[j]>0.1:
+					np.savetxt('big_error', np.c_[err1[j],err2[j]] )
+			
+			
+			# use this when writing the first target, it finds the solution with smallest p2t (hopefully spinover)
+			elif (par.track_target == 2)&(par.forcing == 0):
+				j = p2t==min(p2t)
+				if par.magnetic == 1:
+					with open('track_target','wb') as tg:
+						np.savetxt( tg, np.c_[ eigval[j,0], eigval[j,1], p2t[j], o2v[j] ] )
+				else:
+					with open('track_target','wb') as tg:
+						np.savetxt( tg, np.c_[ eigval[j,0], eigval[j,1], p2t[j] ] )
 				
 				
 				
