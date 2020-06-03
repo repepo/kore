@@ -88,7 +88,7 @@ def Dlam(lamb,N):
 	Order lamb (>=1) derivative matrix, size N*N
 	'''
 	const1 = (2./(rcmb-par.ricb))**lamb
-	const2 = sm.factorial(lamb-1.)*2**(lamb-1.)
+	const2 = scsp.factorial(lamb-1.)*2**(lamb-1.)
 	tmp = lamb + np.arange(0,N-lamb)
     
 	return const1*const2*ss.diags(tmp,lamb, format='csr')
@@ -440,3 +440,5 @@ def load_csr(filename):
 	return ss.csr_matrix((loader['data'], loader['indices'], loader['indptr']), shape=loader['shape'])
 
 	
+def r2dTdr(r):
+	return -r.min()*r.max()

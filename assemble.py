@@ -418,10 +418,29 @@ def main():
 				tmp[1] = tmp[1] + row
 				tmp[2] = tmp[2] + col
 				for q in [0,1,2]:
-					loc_list[q]= np.concatenate((loc_list[q], tmp[q]))	
-	
-	
-	
+					loc_list[q]= np.concatenate((loc_list[q], tmp[q]))
+
+
+		if par.thermal == 1: # adds (d/dt)*T in the temperature equation to matrix B
+
+				# ------------------------------------------------------------------ B, theta, nocurl (temperature)
+				for k,l in enumerate(loc_bot): 	# loc_bot here because of applied
+												# field symmetry
+					row = 4*nb*par.N + ( rank*bpp + k )* par.N
+					col = row
+
+					# Physics ----
+					block = r4It
+					# ------------
+
+					# update loc_list
+					block.eliminate_zeros()
+					block = block.tocoo()
+					tmp = [block.data, block.row, block.col]
+					tmp[1] = tmp[1] + row
+					tmp[2] = tmp[2] + col
+					for q in [0,1,2]:
+						loc_list[q]= np.concatenate((loc_list[q], tmp[q]))
 				
 		# ---------------------------------------------------------------------- B matrix assembly
 		# We use comm.Allgather here to figure out the right size 
