@@ -39,6 +39,8 @@ p2t = KP/KT
 ricb = p[:,3] 						# inner core radius
 wf   = p[:,9] 						# forcing frequency
 Ek   = p[:,0] 						# Ekman number
+ek   = log10(Ek).round(decimals=6)
+
 
 Dkin = u[:,3]*Ek 					# Kinetic energy dissipation
 Dint = u[:,2]*Ek 					# Internal energy dissipation
@@ -62,6 +64,9 @@ if sum(forcing) == 0: 	# reads eigenvalue data
 		w = loadtxt('eigenvalues.dat')
 	if len(w.shape)==1:	
 		w = w.reshape((-1,len(w)))
+
+	scd = -w[:,0]/sqrt(Ek)
+
 
 err1 = abs(-Dint/Dkin -1)
 
@@ -90,6 +95,12 @@ if sum(magnetic) == np.shape(p)[0]: # reads magnetic data
 	Em   = p[:,11] 					# Magnetic Ekman number
 	Dohm = (b[:,2]+b[:,3])*Le2*Em 	# Ohmic dissipation
 	Le   = sqrt(Le2) 				# Lehnert number
+	Pm   = Ek/Em					# Magnetic Prandtl number
+	Lam  = Le2/Em					# Elsasser number
+
+	pm = log10(Pm).round(decimals=4)
+	ss = log10(Lam).round(decimals=4);
+
 
 	d = Dohm/Dint 					# Ohmic to viscous dissipation ratio
 	
@@ -128,5 +139,11 @@ dsq = D/sqrt(Ek)
 Q = K/D
 	
 
-	
-	
+'''
+mm = (0.2355*(M/K)-0.063)*D
+err3 = abs( 1+(Dohm-Dkin+mm)/(w[:,0]*K) )
+
+E = K+Le2*M
+
+err4 = abs( (-w[:,0]*E/D)-1)
+'''

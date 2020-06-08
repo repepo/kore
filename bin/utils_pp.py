@@ -326,7 +326,8 @@ def pol_ohm( l, Pk, N, ricb, rcmb, Ra, Rb): # ----------------------------------
 	f0 = 4*np.pi*L/(2*l+1)
 	f1 = np.absolute( qlm0 - slm0 - rk*slm1 )**2
 	
-	odis_pol_l = 0.5*(Rb-Ra)*(np.pi/N)*np.sum( sqx*f0*f1 ) 
+	odis_pol_l = 0.5*(Rb-Ra)*(np.pi/N)*np.sum( sqx*f0*f1 )
+	
 	
 	
 	return [benergy_pol_l, odis_pol_l]
@@ -524,6 +525,11 @@ def ohm_dis( a, b, N, lmax, m, bsymm, ricb, rcmb, ncpus, Ra, Rb):
 	# these are the cheb coefficients, reorganized
 	Pk2 = np.reshape(Pk0,(int((lmax-m+1)/2),N))
 	Tk2 = np.reshape(Tk0,(int((lmax-m+1)/2),N))
+	
+	#tmp = pol_ohm(1, Pk2[0,:], N, ricb, rcmb, Ra, Rb)
+	#print('l=1, pol',tmp[1]*par.Le2*par.Em)
+	#tmp = tor_ohm(2, Tk2[0,:], N, ricb, rcmb, Ra, Rb)
+	#print('l=2, tor',tmp[1]*par.Le2*par.Em)
 	
 	# process each l component in parallel
 	pool = mp.Pool(processes=ncpus)

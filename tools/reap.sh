@@ -22,7 +22,7 @@ p=".par"
 f=".flo"
 m=".mag"
 e=".eig"
-
+s=".sla"
 
 for d in $(ls -1d $1*)
 do
@@ -47,6 +47,22 @@ do
 		cat $d/eigenvalues.dat >> $1$e
 	fi
 
+	if [ -f $d/slayer.dat ]
+	then
+		cat $d/slayer.dat >> $1$s
+	fi
+
+	if [ -f $d/lions.out ]
+	then
+		cat $d/lions.out >> $1$f
+	fi
+
+	if [ -f $d/params.out ]
+	then
+		cat $d/params.out >> $1$p
+	fi
+	
+
 done
 
 if [ -f $1$p ]
@@ -69,6 +85,10 @@ then
 	echo "Eigenvalues written to $1$e"
 fi
 
+if [ -f $1$s ]
+then
+	echo "Shear layer data written to $1$s"
+fi
 
 
 
