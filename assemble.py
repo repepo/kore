@@ -270,7 +270,10 @@ def main():
 				row = np.arange(pos,pos+2)
 				col = np.zeros(2)
 				
-				P   = par.ricb*par.forcing_amplitude/(l*(l+1))
+				hft = 0.0025 # Inner core hydrostating flattening
+				C   = (1j)*(2/3)*np.sqrt(6)*hft*par.ricb
+				
+				P   = ( par.ricb/(l*(l+1)) ) * C * par.forcing_amplitude
 				dP  = -P/par.ricb
 				d2P = (2-l*(l+1))*P/(par.ricb**2)
 			
