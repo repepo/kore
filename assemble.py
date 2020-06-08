@@ -313,7 +313,10 @@ def main():
 	
 			else:
 				
-				print('Longitudinal ibration requires m = 0, symm = 1 and no-slip boundaries')
+				print('Longitudinal libration requires m = 0, symm = 1 and no-slip boundaries')
+
+
+
 		
 		
 		
@@ -652,18 +655,38 @@ def main():
 			lore = 1j*par.m*( -L*r2It + 2*r3D1t + r4D2t )
 			tmp = lore*par.Le2
 			# ---------------------------------------
-		
+
 			# bookkeeping
 			tmp.eliminate_zeros()
 			tmp = tmp.tocoo()
 			blk = [tmp.data, tmp.row + row, tmp.col + col3]
-			for q in [0,1,2]:	
+			for q in [0,1,2]:
 					loc_list[q]= np.concatenate( ( loc_list[q], blk[q] ) )
 
 
-		
+		if par.thermal == 1: # includes thermal forcing
+
+
+			# Thermal term, purely radial, only poloidal
+			# ------------------------------------------------------------------ A, theta, 2curl (hydro, thermal)
+
+			col4 = 4*nb*par.N + row
+
+			# Physics -------------------------------
+			buo = L * r1Ib * ut.grav(r1Ib)
+			tmp = buo * par.Ra * par.Ek**2 / par.Pr
+			# ---------------------------------------
+
+			# bookkeeping
+			tmp.eliminate_zeros()
+			tmp = tmp.tocoo()
+			blk = [tmp.data, tmp.row + row, tmp.col + col4]
+			for q in [0,1,2]:
+					loc_list[q]= np.concatenate( ( loc_list[q], blk[q] ) )
+
+
 	# ------------------------------------------------------------------------------------------------------ A matrix, 1curl hydro
-	
+
 	for k,l in enumerate(loc_bot): # 1curl Navier-Stokes equations
 	
 		L = l*(l+1.)
@@ -1034,9 +1057,56 @@ def main():
 			for q in [0,1,2]:	
 				loc_list[q]= np.concatenate( ( loc_list[q], bc_b_list[q] ) )
 			# -----------------------------------------------------------
-			
-	
-	
+
+	if par.thermal == 1:
+
+		for k,l in enumerate(loc_bot): # Heat equation
+
+			L = l*(l+1)
+			row = 4*nb*par.N + ( rank*bpp + k )* par.N
+
+
+			# Poloidal velociy terms ( ur dT/dr )
+			# ------------------------------------------------------------------ A, u_pol, nocurl (heat)
+
+			col0 = ( rank*bpp + k )* par.N
+
+			# Physics ----------------------
+			adv = L * ut.r2dTdr(r1It,ricb,rcmb)
+			tmp = adv
+			# ------------------------------
+
+
+			# bookkeeping
+			tmp.eliminate_zeros()
+			tmp = tmp.tocoo()
+			blk = [tmp.data, tmp.row + row, tmp.col + col0]
+			for q in [0,1,2]:
+				loc_list[q]= np.concatenate( ( loc_list[q], blk[q] ) )
+
+			# Temperature diffusion (nabla^2 \theta)
+			# ------------------------------------------------------------------ A, theta, nocurl (heat)
+
+			col4 = 4*nb*par.N + ( rank*bpp + k )* par.N
+
+			# Physics ----------------------
+			difus =  par.E/par.Pr * (-L * r2Ib + r4D2b + 2*r3D1b)
+			tmp = difus
+			# ------------------------------
+
+			# bookkeeping
+			tmp.eliminate_zeros()
+			tmp = tmp.tocoo()
+			blk = [tmp.data, tmp.row + row, tmp.col + col4]
+			for q in [0,1,2]:
+				loc_list[q]= np.concatenate( ( loc_list[q], blk[q] ) )
+
+			# -----------------------------------------------------------
+			# include thermal boundary conditions and update loc_list
+			bc_theta_list = bc_theta_spherical( l )
+			for q in [0,1,2]:
+				loc_list[q]= np.concatenate( ( loc_list[q], bc_theta_list[q] ) )
+
 	# -------------------------------------------------------------------------- A matrix assembly
 	# We use comm.allgather here to figure out the right size 
 	# for the local variables bdat, brow and bcol.
@@ -1187,6 +1257,22 @@ def bc_b_spherical(l,loc):
 	return out2
 
 
+def bc_theta_spherical(l):
+	'''
+	Fixed temperature boundary conditions for heat equation
+	'''
+	out = ss.dok_matrix((2, par.N),dtype=complex)
+
+	out[0,:] = -0.1 * bv.P0_icb  # icb
+	out[1,:] = 0.9 * bv.P0_cmb   # cmb
+
+	row0 = 2*ut.n + int( par.N * ( l - ut.m_bot)/2 )	# starting row
+	col0 = 2*ut.n + int( par.N * ( l - ut.m_bot)/2 )	# starting col
+
+	out = out.tocoo()
+	out2 = [out.data, out.row + row0, out.col + col0]
+
+	return out2
 
 
 

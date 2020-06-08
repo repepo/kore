@@ -440,5 +440,8 @@ def load_csr(filename):
 	return ss.csr_matrix((loader['data'], loader['indices'], loader['indptr']), shape=loader['shape'])
 
 	
-def r2dTdr(r):
-	return -r.min()*r.max()
+def r2dTdr(rmat,ricb,rcmb):
+	return -ricb * rcmb
+
+def grav(rmat):
+	return rmat
