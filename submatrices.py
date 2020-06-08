@@ -114,10 +114,15 @@ def main(ncpus):
 	r1Ib  = S10*M10
 	Ib    = S10
 	
-	bot    = [ r2D2b,  r2D1b,  r2Ib,  r1D1b,  r1Ib,  Ib ]
-	blabel = ['r2D2b','r2D1b','r2Ib','r1D1b','r1Ib','Ib']
+	# Matrices needed for the thermal equation
+	r4D2b = M42*D2
+	r3D1b = S1*M31*D1
+	r4Ib  = S10*M40
 	
-	
+	bot    = [ r2D2b,  r2D1b,  r2Ib,  r1D1b,  r1Ib,  Ib,  r4D2b,  r3D1b,  r4Ib ]
+	blabel = ['r2D2b','r2D1b','r2Ib','r1D1b','r1Ib','Ib','r4D2b','r3D1b','r4Ib']
+
+		
 	# Matrices needed for the top half (t) for the double curl equations
 	r4D4t = M44*D4
 	r4D3t = S3*M43*D3
