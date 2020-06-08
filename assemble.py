@@ -661,7 +661,7 @@ def main():
 			tmp = tmp.tocoo()
 			blk = [tmp.data, tmp.row + row, tmp.col + col3]
 			for q in [0,1,2]:
-					loc_list[q]= np.concatenate( ( loc_list[q], blk[q] ) )
+				loc_list[q]= np.concatenate( ( loc_list[q], blk[q] ) )
 
 
 		if par.thermal == 1: # includes thermal forcing
