@@ -88,6 +88,11 @@ def main():
 	r1D1b = ss.csr_matrix(sio.mmread('r1D1b'))
 	r1Ib  = ss.csr_matrix(sio.mmread('r1Ib'))
 	Ib    = ss.csr_matrix(sio.mmread('Ib'))
+	
+	# for thermal equation
+	r4D2b = ss.csr_matrix(sio.mmread('r4D2b'))
+	r3D1b = ss.csr_matrix(sio.mmread('r3D1b'))
+	r4Ib  = ss.csr_matrix(sio.mmread('r4Ib'))
 
 
 	if par.forcing == 1: # --------------------------------------------------------------------------------- Yufeng forcing
