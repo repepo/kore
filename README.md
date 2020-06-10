@@ -34,7 +34,7 @@ cd petsc-3.12.5
 We need PETSc built with support for complex scalars. We need also the external packages `superlu_dist` (which we just downloaded) and `mumps`.
 Therefore the configure command should include the options:
 ```
---with-scalar-type=complex --download-mumps=1 --download-superlu_dist=superlu_dist_5.4.0.tar.gz
+--with-scalar-type=complex --download-mumps=1 --download-superlu_dist=../superlu_dist_5.4.0.tar.gz
 ```
 Additional options might be needed according to your specific system, please consult the PETSc installation documentation [here](https://www.mcs.anl.gov/petsc/documentation/installation.html). PETSc requires a working MPI installation, either `mpich` or `openmpi`. In our own experience, it saves a lot of headache if we include `mpich` as an external package to be installed along with PETSc. Therefore we include the option `--download-mpich=1`
 Just to provide an example, the configure command needed in our own computing cluster is (get yourself some coffee, this step takes several minutes to complete):
