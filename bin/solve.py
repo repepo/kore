@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 '''
-tintin solves
+kore solver script
 
 To use, first export desired solver options:
 > export opts='...'
 
 and then execute:
-> mpiexec -n ncpus ./solve.py $opts
+> mpiexec -n ncpus ./bin/solve.py $opts
 '''
 
 import sys
@@ -410,8 +410,9 @@ def main():
 					np.savetxt('big_error', np.c_[err1[j],err2[j]] )
 			
 			
-			# use this when writing the first target, it finds the solution with smallest p2t (hopefully spinover)
+			# use this when writing the first target, it finds the solution with smallest p2t (useful to track the spin-over mode)
 			elif (par.track_target == 2)&(par.forcing == 0):
+				# here we select the solution with smallest poloidal to toroidal energy ratio and write thr track_target file:
 				j = p2t==min(p2t)
 				if par.magnetic == 1:
 					with open('track_target','wb') as tg:
