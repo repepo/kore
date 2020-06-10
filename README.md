@@ -60,13 +60,14 @@ PETSc and MPI are now ready!
 #### Installing SLEPc
 Download release 3.12.2. Unpack and cd to the installation directory:
 ```
-http://slepc.upv.es/download/distrib/slepc-3.12.2.tar.gz
+cd
+wget http://slepc.upv.es/download/distrib/slepc-3.12.2.tar.gz
 tar xvf slepc-3.12.2.tar.gz
 cd slepc-3.12.2
 ```
 Make sure the environment variables `PETSC_DIR` and `PETSC_ARCH` are exported already: if you modified your `.profile` as suggested above then simply do
 ```
-source .profile
+source ~/.profile
 ``` 
 Then configure, build and test SLEPc (modify `/path/to` as needed):
 ```
@@ -83,6 +84,7 @@ SLEPc is now ready.
 #### Installing petsc4py, slepc4py and mpi4py
 Get the petsc4py tarball and unpack:
 ```
+cd
 wget https://bitbucket.org/petsc/petsc4py/downloads/petsc4py-3.12.0.tar.gz
 tar xvf petsc4py-3.12.0.tar.gz
 ```
@@ -94,6 +96,7 @@ python3 setup.py install --user
 ```
 Follow a completely analogous procedure for slepc4py and mpi4py. Download the tarballs with:
 ```
+cd
 wget https://bitbucket.org/slepc/slepc4py/downloads/slepc4py-3.12.0.tar.gz
 wget https://bitbucket.org/mpi4py/mpi4py/downloads/mpi4py-3.0.3.tar.gz
 ```
@@ -101,6 +104,7 @@ wget https://bitbucket.org/mpi4py/mpi4py/downloads/mpi4py-3.0.3.tar.gz
 #### Installing wigxjpf
 This is a library to compute Wigner-3j and 6j symbols, useful to compute the products of spherical harmonics. Download and unpack:
 ```
+cd
 wget http://fy.chalmers.se/subatom/wigxjpf/wigxjpf-1.11.tar.gz
 tar xvf wigxjpf-1.11.tar.gz
 ```
@@ -117,6 +121,7 @@ python3 setup.py install --user
 Simply download and unzip the tar file under the downloads section.
 
 ```sh
+cd
 wget https://bitbucket.org/repepo/Kore/downloads/kore-0.2.tar.gz
 tar xvf kore-0.2.tar.gz
 ```
