@@ -24,44 +24,45 @@ If this code is useful for your research, we invite you to cite the relevant pap
 
 #### Installing PETSc
 
-Download release 3.10.5. We use this version and not the latest because we need a matching petsc4py, which at the time of this writing is only version 3.10.1, therefore we are restricted to PETSc's 3.10 series. Unpack and cd to the installation directory:
+Download PETSc release 3.12.5. This release supports SuperLU_DIST version 5.4.0, which has lower memory usage than the newest version. We need to download SuperLU_DIST (no need to unpack it) and then download and unpack PETSc:
 ```
-wget http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-lite-3.10.5.tar.gz
-tar xvf petsc-lite-3.10.5.tar.gz
-cd petsc-3.10.5
+wget https://portal.nersc.gov/project/sparse/superlu/superlu_dist_5.4.0.tar.gz
+wget http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-lite-3.12.5.tar.gz
+tar xvf petsc-lite-3.12.5.tar.gz
+cd petsc-3.12.5
 ```
-We need PETSc built with support for complex scalars. We need also the external packages `mumps` and `superlu_dist`.
+We need PETSc built with support for complex scalars. We need also the external packages `mumps` and `superlu_dist` (which we just downloaded).
 Therefore the configure command should include the options:
 ```
---with-scalar-type=complex --download-mumps=1 --download-superlu_dist=1
+--with-scalar-type=complex --download-mumps=1 --download-superlu_dist=superlu_dist_5.4.0.tar.gz
 ```
 Additional options might be needed according to your specific system, please consult the PETSc installation documentation [here](https://www.mcs.anl.gov/petsc/documentation/installation.html). PETSc requires a working MPI installation, either `mpich` or `openmpi`. In our own experience, it saves a lot of headache if we include `mpich` as an external package to be installed along with PETSc. Therefore we include the option `--download-mpich=1`
 Just to provide an example, the configure command needed in our own computing cluster is (get yourself some coffee, this step takes several minutes to complete):
 ```
-./configure --download-mpich --with-scalar-type=complex --download-mumps=1 --download-parmetis --download-metis --download-scalapack=1 --download-fblaslapack=1 --with-debugging=0 --download-superlu_dist=1 --download-ptscotch=1 CXXOPTFLAGS='-O3 -march=native' FOPTFLAGS='-O3 -march=native' COPTFLAGS='-O3 -march=native' --with-cxx-dialect=C++11
+./configure --download-mpich --with-scalar-type=complex --download-mumps=1 --download-parmetis --download-metis --download-scalapack=1 --download-fblaslapack=1 --with-debugging=0 --download-superlu_dist=superlu_dist_5.4.0.tar.gz --download-ptscotch=1 CXXOPTFLAGS='-O3 -march=native' FOPTFLAGS='-O3 -march=native' COPTFLAGS='-O3 -march=native' --with-cxx-dialect=C++11
 ```
 If everything goes well then you can build the libraries (modify `/path/to` as needed):
 ```
-make PETSC_DIR=/path/to/petsc-3.10.5 PETSC_ARCH=arch-linux2-c-opt all
+make PETSC_DIR=/path/to/petsc-3.12.5 PETSC_ARCH=slu540
 ```
 then test the libraries:
 ```
-make PETSC_DIR=/path/to/petsc-3.10.5 PETSC_ARCH=arch-linux2-c-opt check
+make PETSC_DIR=/path/to/petsc-3.12.5 PETSC_ARCH=slu540 check
 ```
-The MPI executables are now installed under `/path/to/petsc-3.10.5/arch-linux2-c-opt/bin/` so we need to prepend that directory to the `$PATH` variable. A  good place to do that could be in your `.profile`. Include the following lines:
+The MPI executables are now installed under `/path/to/petsc-3.12.5/slu540/bin/` so we need to prepend that directory to the `$PATH` variable. A  good place to do that could be in your `.profile`. Include the following lines:
 ```
-export PETSC_DIR=/path/to/petsc-3.10.5
-export PETSC_ARCH=arch-linux2-c-opt
-export PATH=$PETSC_DIR/arch-linux2-c-opt/bin/:$HOME/.local/bin/:$PATH
+export PETSC_DIR=/path/to/petsc-3.12.5
+export PETSC_ARCH=slu540
+export PATH=$PETSC_DIR/$PETSC_ARCH/bin:$PATH
 ```
 PETSc and MPI are now ready!
 
 #### Installing SLEPc
-Download release 3.10.2. Unpack and cd to the installation directory:
+Download release 3.12.2. Unpack and cd to the installation directory:
 ```
-http://slepc.upv.es/download/distrib/slepc-3.10.2.tar.gz
-tar xvf slepc-3.10.2.tar.gz
-cd slepc-3.10.2
+http://slepc.upv.es/download/distrib/slepc-3.12.2.tar.gz
+tar xvf slepc-3.12.2.tar.gz
+cd slepc-3.12.2
 ```
 Make sure the environment variables `PETSC_DIR` and `PETSC_ARCH` are exported already: if you modified your `.profile` as suggested above then simply do
 ```
@@ -70,40 +71,44 @@ source .profile
 Then configure, build and test SLEPc (modify `/path/to` as needed):
 ```
 ./configure
-make SLEPC_DIR=/path/to/slepc-3.10.2 PETSC_DIR=/path/to/petsc-3.10.5 PETSC_ARCH=arch-linux2-c-opt
-make SLEPC_DIR=/path/to/slepc-3.10.2 PETSC_DIR=/path/to/petsc-3.10.5 check
+make SLEPC_DIR=/path/to/slepc-3.12.2 PETSC_DIR=/path/to/petsc-3.12.5 PETSC_ARCH=slu540
+make SLEPC_DIR=/path/to/slepc-3.12.2 PETSC_DIR=/path/to/petsc-3.12.5 check
 ```
 Finally, export the variable `SLEPC_DIR`. (Adding this line to your `.profile` is a good idea)
 ```
-export SLEPC_DIR=/path/to/slepc-3.10.2
+export SLEPC_DIR=/path/to/slepc-3.12.2
 ```
 SLEPc is now ready.
 
 #### Installing petsc4py, slepc4py and mpi4py
 Get the petsc4py tarball and unpack:
 ```
-wget https://bitbucket.org/petsc/petsc4py/downloads/petsc4py-3.10.1.tar.gz
-tar xvf petsc4py-3.10.1.tar.gz
+wget https://bitbucket.org/petsc/petsc4py/downloads/petsc4py-3.12.0.tar.gz
+tar xvf petsc4py-3.12.0.tar.gz
 ```
 Then build and install to python3:
 ```
-cd petsc4py-3.10.1
+cd petsc4py-3.12.0
 python3 setup.py build
 python3 setup.py install --user
 ```
-Follow a completely analogous procedure for slepc4py and mpi4py.
+Follow a completely analogous procedure for slepc4py and mpi4py. Download the tarballs with:
+```
+wget https://bitbucket.org/slepc/slepc4py/downloads/slepc4py-3.12.0.tar.gz
+wget https://bitbucket.org/mpi4py/mpi4py/downloads/mpi4py-3.0.3.tar.gz
+```
 
 #### Installing wigxjpf
 This is a library to compute Wigner-3j and 6j symbols. Download and unpack:
 ```
-wget http://fy.chalmers.se/subatom/wigxjpf/wigxjpf-1.9.tar.gz
-tar xvf wigxjpf-1.9.tar.gz
+wget http://fy.chalmers.se/subatom/wigxjpf/wigxjpf-1.11.tar.gz
+tar xvf wigxjpf-1.11.tar.gz
 ```
 Then build and install:
 ```
-cd wigxjpf-1.9
+cd wigxjpf-1.11
 make
-python3 pywigxjpf/setup.py install --user
+python3 setup.py install --user
 ```
 
 
