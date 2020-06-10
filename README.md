@@ -31,7 +31,7 @@ wget http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-lite-3.12.5.tar.gz
 tar xvf petsc-lite-3.12.5.tar.gz
 cd petsc-3.12.5
 ```
-We need PETSc built with support for complex scalars. We need also the external packages `mumps` and `superlu_dist` (which we just downloaded).
+We need PETSc built with support for complex scalars. We need also the external packages `superlu_dist` (which we just downloaded) and `mumps`.
 Therefore the configure command should include the options:
 ```
 --with-scalar-type=complex --download-mumps=1 --download-superlu_dist=superlu_dist_5.4.0.tar.gz
@@ -99,7 +99,7 @@ wget https://bitbucket.org/mpi4py/mpi4py/downloads/mpi4py-3.0.3.tar.gz
 ```
 
 #### Installing wigxjpf
-This is a library to compute Wigner-3j and 6j symbols. Download and unpack:
+This is a library to compute Wigner-3j and 6j symbols, useful to compute the products of spherical harmonics. Download and unpack:
 ```
 wget http://fy.chalmers.se/subatom/wigxjpf/wigxjpf-1.11.tar.gz
 tar xvf wigxjpf-1.11.tar.gz
