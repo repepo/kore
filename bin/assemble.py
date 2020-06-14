@@ -435,8 +435,7 @@ def main():
 		if par.thermal == 1: # adds (d/dt)*T in the temperature equation to matrix B
 
 			# ------------------------------------------------------------------ B, theta, nocurl (temperature)
-			for k,l in enumerate(loc_bot): 	# loc_bot here because of applied
-											# field symmetry
+			for k,l in enumerate(loc_top): 	# loc_top here because of equatorial symmetry
 				row = ut.lastrowfac*nb*par.N + ( rank*bpp + k )* par.N
 				col = row
 
@@ -1067,7 +1066,7 @@ def main():
 
 	if par.thermal == 1:
 
-		for k,l in enumerate(loc_bot): # Heat equation
+		for k,l in enumerate(loc_top): # Heat equation
 
 			L = l*(l+1)
 			row = ut.lastrowfac*nb*par.N + ( rank*bpp + k )* par.N
