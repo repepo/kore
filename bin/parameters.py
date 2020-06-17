@@ -39,7 +39,7 @@ def wattr(n,Ek):
 
 
 
-# -------------------------------------------------- Physical parameters
+# ------------------------------------------------------------------------------ Physical parameters
 
 # Azimuthal wave number m (>=0)
 m = 1
@@ -83,7 +83,8 @@ forcing_amplitude = 1.0
 # and some hypothetical forcing. Cases as described above (use only 1,3 or 4)
 projection = 1
 
-# Whether to include magnetic fields (imposes vertical uniform field)
+
+# ------------------------------ Whether to include magnetic fields (imposes vertical uniform field)
 # magnetic = 0 solves the purely hydrodynamical problem.
 magnetic = 0
 
@@ -102,12 +103,33 @@ Le2 = Lambda*Ek/Pm
 # Le2 = Le**2
 Le = np.sqrt(Le2)
 
-# writes eigenvalue or solution vector to disk if = 1	
+
+# --------- Whether to include the heat equation (imposes a background temperature gradient profile)
+# thermal = 0
+thermal = 1
+
+# Background temperature gradient (following Dormy 2004)
+heating = 'internal'       # internal heating,     dT/dr = r
+# heating = 'differential'   # differential heating, dT/dr = r**-2
+
+# Dimensionless Brunt-Vaisala frequency
+Brunt = 1
+
+# Prandtl number
+Prandtl = 1
+
+# Thermal boundary conditions
+# 0 for isothermal, theta=0
+# 1 for constant heat flux, (d/dr)theta=0
+bci_thermal = 0   # icb
+bco_thermal = 0   # cmb
+
+
+# ---------------------------------------------- writes eigenvalue or solution vector to disk if = 1	
 write_eig = 0
 
 
-
-# ----------------------------------------------------------- Resolution
+# --------------------------------------------------------------------------------------- Resolution
 
 # Number of cpus
 ncpus = 4
@@ -125,7 +147,7 @@ lmax = int( 2*ncpus*( np.floor_divide( g*N, 2*ncpus ) ) + m - 1 )
 
 
 
-# -------------------------------------------- Eigenvalue solver options
+# ------------------------------------------------------------------------ Eigenvalue solver options
 
 # Set track_target = 1 to track an eigenvalue
 # assumes a preexisting 'track_target' file with target data
