@@ -688,7 +688,7 @@ def main():
 
 			# Physics -------------------
 			buoy = L * r4It		
-			tmp = - (par.brunt**2) * buoy
+			tmp = - (par.Brunt**2) * buoy
 			# ---------------------------
 					
 			# bookkeeping
@@ -1087,7 +1087,7 @@ def main():
 		# ---------------------------------------------------------------------------------------------- A matrix, nocurl thermal
 		for k,l in enumerate(loc_top): # here use the l's from loc_top 
 		
-			row = (2+2*par.thermal)*nb*par.N + (rank*bpp + k )* par.N
+			row = (2+2*par.magnetic)*nb*par.N + (rank*bpp + k )* par.N
 			L = l*(l+1)
 			
 			
@@ -1107,7 +1107,7 @@ def main():
 			# bookkeeping
 			tmp.eliminate_zeros()
 			tmp = tmp.tocoo()
-			blk = [tmp.data, tmp.row + row, tmp.col + col4]	
+			blk = [tmp.data, tmp.row + row, tmp.col + col0]	
 			for q in [0,1,2]:	
 					loc_list[q]= np.concatenate( ( loc_list[q], blk[q] ) )	
 			
@@ -1115,7 +1115,7 @@ def main():
 			# temperature (theta) terms: (Ek/Pr)*nabla**2(theta)
 			# ------------------------------------------------------------------ A, theta, nocurl (thermal)			
 			
-			col4 = (2+2*par.thermal)*nb*par.N + ( rank*bpp + k )* par.N
+			col4 = (2+2*par.magnetic)*nb*par.N + ( rank*bpp + k )* par.N
 	
 			# Physics ---------------------------------
 			difus = - L*Ib + 2*r1D1b + r2D2b
@@ -1181,6 +1181,10 @@ def main():
 	comm.Gather(bcol,fcol,root=0)
 
 	if rank == 0:
+
+		#print('sizmat=',ut.sizmat)
+		#print('nb=',nb)
+		#print('bpp=',bpp)
 		
 		ix = np.where(frow >= 0)
 		A = ss.csr_matrix((fdat[ix], (frow[ix], fcol[ix])), shape=(ut.sizmat,ut.sizmat), dtype=complex)
