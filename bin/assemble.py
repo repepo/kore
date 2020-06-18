@@ -93,6 +93,7 @@ def main():
 	r4D2b = ss.csr_matrix(sio.mmread('r4D2b'))
 	r3D1b = ss.csr_matrix(sio.mmread('r3D1b'))
 	r4Ib  = ss.csr_matrix(sio.mmread('r4Ib'))
+	r3Ib  = ss.csr_matrix(sio.mmread('r3Ib'))
 
 
 	if par.forcing == 1: # --------------------------------------------------------------------------------- Yufeng forcing
