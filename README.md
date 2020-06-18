@@ -1,6 +1,6 @@
 # Kore
 
-Kore is a numerical tool to study the core flow within rapidly rotating planets or other rotating fluids contained within near-spherical boundaries. The current version solves the *linear* Navier-Stokes and induction equations for a viscous, incompressible and conductive fluid with an externally imposed axial and homogeneous magnetic field, and enclosed within a rotating spherical shell.
+*KOR-ee*, from the greek **Κόρη**, the queen of the underworld, daughter of Zeus and Demeter. Kore is a numerical tool to study the core flow within rapidly rotating planets or other rotating fluids contained within near-spherical boundaries. The current version solves the *linear* Navier-Stokes and induction equations for a viscous, incompressible and conductive fluid with an externally imposed axial and homogeneous magnetic field, and enclosed within a rotating spherical shell.
 
 Kore assumes all dynamical variables to oscillate in a harmonic fashion. The oscillation frequency can be imposed externally, as is the case when doing forced motion studies (e.g. *tidal* forcing), or it can be obtained as part of the solution to an eigenvalue problem. In Kore's current implementation, the eigenmodes are the *inertial* modes of the rotating fluid. Inertial modes are the global modes of a rotating flow in which the Coriolis force participates prominently in the restoring force balance.  
 
@@ -14,7 +14,7 @@ If this code is useful for your research, we invite you to cite the relevant pap
 
 ### Prerequisites
 
-* python3
+* python3 (<3.8)
 * [PETSc](https://www.mcs.anl.gov/petsc/) with complex scalars, mumps and superlu_dist.
 * [SLEPc](http://slepc.upv.es/)
 * [petsc4py](https://bitbucket.org/petsc/petsc4py/src/master/)
@@ -24,86 +24,95 @@ If this code is useful for your research, we invite you to cite the relevant pap
 
 #### Installing PETSc
 
-Download release 3.10.5. We use this version and not the latest because we need a matching petsc4py, which at the time of this writing is only version 3.10.1, therefore we are restricted to PETSc's 3.10 series. Unpack and cd to the installation directory:
+Download PETSc release 3.12.5. This release supports SuperLU_DIST version 5.4.0, which has lower memory usage than the newest version. We need to download SuperLU_DIST (no need to unpack it) and then download and unpack PETSc:
 ```
-wget http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-lite-3.10.5.tar.gz
-tar xvf petsc-lite-3.10.5.tar.gz
-cd petsc-3.10.5
+wget https://portal.nersc.gov/project/sparse/superlu/superlu_dist_5.4.0.tar.gz
+wget http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-lite-3.12.5.tar.gz
+tar xvf petsc-lite-3.12.5.tar.gz
+cd petsc-3.12.5
 ```
-We need PETSc built with support for complex scalars. We need also the external packages `mumps` and `superlu_dist`.
+We need PETSc built with support for complex scalars. We need also the external packages `superlu_dist` (which we just downloaded) and `mumps`.
 Therefore the configure command should include the options:
 ```
---with-scalar-type=complex --download-mumps=1 --download-superlu_dist=1
+--with-scalar-type=complex --download-mumps=1 --download-superlu_dist=../superlu_dist_5.4.0.tar.gz
 ```
 Additional options might be needed according to your specific system, please consult the PETSc installation documentation [here](https://www.mcs.anl.gov/petsc/documentation/installation.html). PETSc requires a working MPI installation, either `mpich` or `openmpi`. In our own experience, it saves a lot of headache if we include `mpich` as an external package to be installed along with PETSc. Therefore we include the option `--download-mpich=1`
 Just to provide an example, the configure command needed in our own computing cluster is (get yourself some coffee, this step takes several minutes to complete):
 ```
-./configure --download-mpich --with-scalar-type=complex --download-mumps=1 --download-parmetis --download-metis --download-scalapack=1 --download-fblaslapack=1 --with-debugging=0 --download-superlu_dist=1 --download-ptscotch=1 CXXOPTFLAGS='-O3 -march=native' FOPTFLAGS='-O3 -march=native' COPTFLAGS='-O3 -march=native' --with-cxx-dialect=C++11
+./configure --download-mpich --with-scalar-type=complex --download-mumps=1 --download-parmetis --download-metis --download-scalapack=1 --download-fblaslapack=1 --with-debugging=0 --download-superlu_dist=../superlu_dist_5.4.0.tar.gz --download-ptscotch=1 CXXOPTFLAGS='-O3 -march=native' FOPTFLAGS='-O3 -march=native' COPTFLAGS='-O3 -march=native' --with-cxx-dialect=C++11
 ```
 If everything goes well then you can build the libraries (modify `/path/to` as needed):
 ```
-make PETSC_DIR=/path/to/petsc-3.10.5 PETSC_ARCH=arch-linux2-c-opt all
+make PETSC_DIR=/path/to/petsc-3.12.5 PETSC_ARCH=slu540
 ```
 then test the libraries:
 ```
-make PETSC_DIR=/path/to/petsc-3.10.5 PETSC_ARCH=arch-linux2-c-opt check
+make PETSC_DIR=/path/to/petsc-3.12.5 PETSC_ARCH=slu540 check
 ```
-The MPI executables are now installed under `/path/to/petsc-3.10.5/arch-linux2-c-opt/bin/` so we need to prepend that directory to the `$PATH` variable. A  good place to do that could be in your `.profile`. Include the following lines:
+The MPI executables are now installed under `/path/to/petsc-3.12.5/slu540/bin/` so we need to prepend that directory to the `$PATH` variable. A  good place to do that could be in your `.profile`. Include the following lines:
 ```
-export PETSC_DIR=/path/to/petsc-3.10.5
-export PETSC_ARCH=arch-linux2-c-opt
-export PATH=$PETSC_DIR/arch-linux2-c-opt/bin/:$HOME/.local/bin/:$PATH
+export PETSC_DIR=/path/to/petsc-3.12.5
+export PETSC_ARCH=slu540
+export PATH=$PETSC_DIR/$PETSC_ARCH/bin:$PATH
 ```
 PETSc and MPI are now ready!
 
 #### Installing SLEPc
-Download release 3.10.2. Unpack and cd to the installation directory:
+Download release 3.12.2. Unpack and cd to the installation directory:
 ```
-http://slepc.upv.es/download/distrib/slepc-3.10.2.tar.gz
-tar xvf slepc-3.10.2.tar.gz
-cd slepc-3.10.2
+cd
+wget http://slepc.upv.es/download/distrib/slepc-3.12.2.tar.gz
+tar xvf slepc-3.12.2.tar.gz
+cd slepc-3.12.2
 ```
 Make sure the environment variables `PETSC_DIR` and `PETSC_ARCH` are exported already: if you modified your `.profile` as suggested above then simply do
 ```
-source .profile
+source ~/.profile
 ``` 
 Then configure, build and test SLEPc (modify `/path/to` as needed):
 ```
 ./configure
-make SLEPC_DIR=/path/to/slepc-3.10.2 PETSC_DIR=/path/to/petsc-3.10.5 PETSC_ARCH=arch-linux2-c-opt
-make SLEPC_DIR=/path/to/slepc-3.10.2 PETSC_DIR=/path/to/petsc-3.10.5 check
+make SLEPC_DIR=/path/to/slepc-3.12.2 PETSC_DIR=/path/to/petsc-3.12.5 PETSC_ARCH=slu540
+make SLEPC_DIR=/path/to/slepc-3.12.2 PETSC_DIR=/path/to/petsc-3.12.5 check
 ```
 Finally, export the variable `SLEPC_DIR`. (Adding this line to your `.profile` is a good idea)
 ```
-export SLEPC_DIR=/path/to/slepc-3.10.2
+export SLEPC_DIR=/path/to/slepc-3.12.2
 ```
 SLEPc is now ready.
 
 #### Installing petsc4py, slepc4py and mpi4py
 Get the petsc4py tarball and unpack:
 ```
-wget https://bitbucket.org/petsc/petsc4py/downloads/petsc4py-3.10.1.tar.gz
-tar xvf petsc4py-3.10.1.tar.gz
+cd
+wget https://bitbucket.org/petsc/petsc4py/downloads/petsc4py-3.12.0.tar.gz
+tar xvf petsc4py-3.12.0.tar.gz
 ```
 Then build and install to python3:
 ```
-cd petsc4py-3.10.1
+cd petsc4py-3.12.0
 python3 setup.py build
 python3 setup.py install --user
 ```
-Follow a completely analogous procedure for slepc4py and mpi4py.
+Follow a completely analogous procedure for slepc4py and mpi4py. Download the tarballs with:
+```
+cd
+wget https://bitbucket.org/slepc/slepc4py/downloads/slepc4py-3.12.0.tar.gz
+wget https://bitbucket.org/mpi4py/mpi4py/downloads/mpi4py-3.0.3.tar.gz
+```
 
 #### Installing wigxjpf
-This is a library to compute Wigner-3j and 6j symbols. Download and unpack:
+This is a library to compute Wigner-3j and 6j symbols, useful to compute the products of spherical harmonics. Download and unpack:
 ```
-wget http://fy.chalmers.se/subatom/wigxjpf/wigxjpf-1.9.tar.gz
-tar xvf wigxjpf-1.9.tar.gz
+cd
+wget http://fy.chalmers.se/subatom/wigxjpf/wigxjpf-1.11.tar.gz
+tar xvf wigxjpf-1.11.tar.gz
 ```
 Then build and install:
 ```
-cd wigxjpf-1.9
+cd wigxjpf-1.11
 make
-python3 pywigxjpf/setup.py install --user
+python3 setup.py install --user
 ```
 
 
@@ -112,27 +121,28 @@ python3 pywigxjpf/setup.py install --user
 Simply download and unzip the tar file under the downloads section.
 
 ```sh
-wget https://bitbucket.org/repepo/Kore/downloads/kore-0.1.tar.gz
-tar xvf kore-0.1.tar.gz
+cd
+wget https://bitbucket.org/repepo/Kore/downloads/kore-0.2.tar.gz
+tar xvf kore-0.2.tar.gz
 ```
 For regular work, make a copy of the source directory, keeping the original source clean. For example:
 
 ```sh
-cp -r kore-0.1 kore_work1
-cd kore_work1
+cp -r kore-0.2 kwork1
+cd kwork1
 ```
 
-Modify the `parameters.py` file as desired.
+Modify the `parameters.py` under `kwork1/bin/` file as desired.
 
 Then generate the submatrices:
 ```sh
-./submatrices.py ncpus
+./bin/submatrices.py ncpus
 ```
 where `ncpus` is the number of cpu's (cores) in your system.
 
 To assemble the main matrices do:
 ```sh
-mpiexec -n ncpus ./assemble.py
+mpiexec -n ncpus ./bin/assemble.py
 ```
 
 If you are solving an *eigenvalue* problem, do the following export:
@@ -149,12 +159,12 @@ Others options might be required depending on the size of the matrices.
 
 To solve the problem do
 ```sh
-mpiexec -n ncpus ./solve.py $opts
+mpiexec -n ncpus ./bin/solve.py $opts
 ```
 
 The result is written/appended to the file `flow.dat`, and the parameters used are written/appended to the file `params.dat`, one line for each solution. If solving an eigenvalue problem, the eigenvalues are written/appended to the file `eigenvalues.dat`. If solving with magnetic fields, an additional file `magnetic.dat` is created/appended. 
 
-We include a set of scripts:
+We include a set of scripts in the `tools` folder:
 ```
 dodirs.sh
 dosubs.sh
@@ -168,6 +178,7 @@ to aid in submitting/collecting results of a large number of runs to/from a PBS-
 * **Santiago Andres Triana** - *This implementation*
 * **Jeremy Rekier** - *Sparse spectral method*
 * **Antony Trinh** - *Tensor calculus*
+* **Ankit Barik** - *Convection branch*
 
 ## License
 

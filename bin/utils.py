@@ -62,9 +62,6 @@ T5		T4					T5		T6
 # this gives the size (rows or columns) of the main matrices
 sizmat = 2*n + 2*n*par.magnetic + n*par.thermal
 
-# factor for last (temperature) row/column
-lastrowfac = 2*par.magnetic + 2
-
 def chebco(powr, N, tol, ricb, rcmb):
 	'''
 	Returns the first N Chebyshev coefficients

@@ -333,7 +333,7 @@ def main():
 
 	
 		
-	elif par.forcing == 0: # -------------------------------------------------------- B matrix, no forcing (eigenvalue problem)
+	elif par.forcing == 0: # ----------------------------------------------------------------------------------------------------- B matrix, no forcing (eigenvalue problem)
 		'''
 		Builds the right hand side B matrix to solve
 		the generalized eigenvalue problem A.x = lambda.B.x
@@ -429,20 +429,24 @@ def main():
 				tmp[1] = tmp[1] + row
 				tmp[2] = tmp[2] + col
 				for q in [0,1,2]:
-					loc_list[q]= np.concatenate((loc_list[q], tmp[q]))
-
-
-		if par.thermal == 1: # adds (d/dt)*T in the temperature equation to matrix B
-
-			# ------------------------------------------------------------------ B, theta, nocurl (temperature)
-			for k,l in enumerate(loc_top): 	# loc_top here because of equatorial symmetry
-				row = ut.lastrowfac*nb*par.N + ( rank*bpp + k )* par.N
+					loc_list[q]= np.concatenate((loc_list[q], tmp[q]))	
+	
+	
+		if par.thermal == 1: # adds (d/dt)*theta in the heat equation to matrix B 
+			
+			# ------------------------------------------------------------------ B, theta_pol, nocurl (heat)
+			for k,l in enumerate(loc_top):	# loc_top here because theta
+											# follows the same symmetry as u
+				row = (2+2*par.magnetic)*nb*par.N + ( rank*bpp + k )* par.N
 				col = row
-
-				# Physics ----
-				block = r4Ib
-				# ------------
-
+								
+				# Physics -------------------------
+				if par.heating == 'internal':
+					block = r2Ib
+				elif par.heating == 'differential':
+					block = r3Ib
+				# ---------------------------------
+				
 				# update loc_list
 				block.eliminate_zeros()
 				block = block.tocoo()
@@ -450,8 +454,13 @@ def main():
 				tmp[1] = tmp[1] + row
 				tmp[2] = tmp[2] + col
 				for q in [0,1,2]:
-					loc_list[q]= np.concatenate((loc_list[q], tmp[q]))
-
+					loc_list[q]= np.concatenate((loc_list[q], tmp[q]))					
+	
+	
+	
+	
+	
+				
 		# ---------------------------------------------------------------------- B matrix assembly
 		# We use comm.Allgather here to figure out the right size 
 		# for the local variables bdat, brow and bcol.
@@ -496,12 +505,14 @@ def main():
 			B = B/Bnorm
 		
 			toc = timer()
-			print('Matrix B assembled in', toc-tic, 'seconds')
+			print('--------------------------------------------')
+			print(' Matrix B assembled in', '{: 4.3f}'.format(toc-tic), 'seconds')
 			tic = timer()
 
 			np.savez('B.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
 			toc = timer()
-			print('Matrix B written to disk in', toc-tic, 'seconds')
+			print(' Matrix B written to disk in', '{: 4.3f}'.format(toc-tic), 'seconds')
+			print('--------------------------------------------')
 		
 		comm.Barrier()
 	
@@ -512,7 +523,7 @@ def main():
 	if rank == 0:
 		tic = timer()
 
-	# -------------------------------------------------------------------------------------------------- A matrix, 2curl hydro
+	# --------------------------------------------------------------------------------------------------------------------------------------- A matrix, 2curl hydro
 	
 	for k,l in enumerate(loc_top): # 2curl hydro eqs
 		
@@ -670,29 +681,32 @@ def main():
 			for q in [0,1,2]:
 				loc_list[q]= np.concatenate( ( loc_list[q], blk[q] ) )
 
+				
 
-		if par.thermal == 1: # includes thermal forcing
+		if par.thermal == 1 : # include the buoyancy force
+			
+			# Buoyancy force, theta terms 
+			# ------------------------------------------------------------------ A, theta, 2curl (hydro, buoyancy)			
 
-			# Thermal term, purely radial, only poloidal
-			# ------------------------------------------------------------------ A, theta, 2curl (hydro, thermal)
+			col4 = (2+2*par.magnetic)*nb*par.N + row
 
-			col4 = ut.lastrowfac*nb*par.N + row
-
-			# Physics -------------------------------
-			buo = L * ut.grav(r1It)
-			tmp = buo * par.Ra * par.Ek**2 / par.Pr
-			# ---------------------------------------
-
+			# Physics -------------------
+			buoy = L * r4It		
+			tmp = -(par.Brunt**2) * buoy
+			# ---------------------------
+					
 			# bookkeeping
 			tmp.eliminate_zeros()
 			tmp = tmp.tocoo()
 			blk = [tmp.data, tmp.row + row, tmp.col + col4]
-			for q in [0,1,2]:
-					loc_list[q]= np.concatenate( ( loc_list[q], blk[q] ) )
+			for q in [0,1,2]:	
+					loc_list[q]= np.concatenate( ( loc_list[q], blk[q] ) )					
 
 
-	# ------------------------------------------------------------------------------------------------------ A matrix, 1curl hydro
 
+		
+	# ---------------------------------------------------------------------------------------------------------------- A matrix, 1curl hydro
+	
 	for k,l in enumerate(loc_bot): # 1curl Navier-Stokes equations
 	
 		L = l*(l+1.)
@@ -752,12 +766,12 @@ def main():
 
 		col1 = nb*par.N + ( rank*bpp + k )* par.N
 		
-		# Physics -------------------
+		# Physics ----------------------
 		visc = r2D2b + 2*r1D1b - L*Ib
 		cori = -2j*par.m*r2Ib
 		iwu  = L*r2Ib*(1j*ut.wf)
 		tmp = iwu + cori - par.Ek*L*visc
-		# ---------------------------
+		# ------------------------------
 		
 		# bookkeeping
 		tmp.eliminate_zeros()
@@ -784,10 +798,10 @@ def main():
 
 			col2 = 2*nb*par.N + ( rank*bpp + k )* par.N
 		
-			# Physics -----------------------------
+			# Physics ---------------------------------
 			lore = 1j*par.m*( -L*Ib + 2*r1D1b + r2D2b )
 			tmp = lore*par.Le2
-			# -------------------------------------
+			# -----------------------------------------
 		
 			# bookkeeping
 			tmp.eliminate_zeros()
@@ -844,6 +858,7 @@ def main():
 				blk = [tmp.data, tmp.row + row, tmp.col + col3b]
 				for q in [0,1,2]:	
 					loc_list[q]= np.concatenate( ( loc_list[q], blk[q] ) )
+	
 		
 
 	if par.magnetic == 1: # includes the induction equation
@@ -852,14 +867,14 @@ def main():
 		# instead of 4 to make room for the magnetic (insulating) boundary conditions
 		# their label ends with 'b' instead of 't'
 	
-		# ---------------------------------------------------------------------------------------------- A matrix, nocurl induction
+		# ----------------------------------------------------------------------------------------------------- A matrix, nocurl induction
 		for k,l in enumerate(loc_bot): # here use the l's from loc_bot 
 		
 			row = 2*nb*par.N + (rank*bpp + k )* par.N
 			L = l*(l+1.)
 		
 		
-			# Poloidal velociy terms ( nabla x u x B0 )
+			# Poloidal velocity terms ( nabla x u x B0 )
 			# ------------------------------------------------------------------ A, u_pol, nocurl (induction)
 			
 			# l-1 terms ---------------------------------------
@@ -959,7 +974,7 @@ def main():
 
 
 
-		# --------------------------------------------------------------------------------------- A matrix, 1curl induction
+		# ----------------------------------------------------------------------------------------------------------------------- A matrix, 1curl induction
 		for k,l in enumerate(loc_top): # use l's from loc_top for 1curl eqs
 			
 			L = l*(l+1.)
@@ -1063,56 +1078,75 @@ def main():
 			for q in [0,1,2]:	
 				loc_list[q]= np.concatenate( ( loc_list[q], bc_b_list[q] ) )
 			# -----------------------------------------------------------
-
-	if par.thermal == 1:
-
-		for k,l in enumerate(loc_top): # Heat equation
-
+			
+	
+	
+	
+	if par.thermal == 1: # includes the heat equation
+		
+		# Submatrices here for nocurl have only 2 rows empty at the top
+		# instead of 4 to make room for the thermal boundary conditions
+		# their label ends with 'b' instead of 't'
+	
+		# --------------------------------------------------------------------------------------------------------------------------- A matrix, nocurl thermal
+		for k,l in enumerate(loc_top): # here use the l's from loc_top 
+		
+			row = (2+2*par.magnetic)*nb*par.N + (rank*bpp + k )* par.N
 			L = l*(l+1)
-			row = ut.lastrowfac*nb*par.N + ( rank*bpp + k )* par.N
-
-
-			# Poloidal velociy terms ( ur dT/dr )
-			# ------------------------------------------------------------------ A, u_pol, nocurl (heat)
+			
+			
+			# Poloidal velocity terms: -u_r * (d/dr)T
+			# ------------------------------------------------------------------ A, u_pol, nocurl (thermal)				
 
 			col0 = ( rank*bpp + k )* par.N
-
-			# Physics ----------------------
-			adv = L * ut.r2dTdr(Ib,par.ricb,ut.rcmb)
-			tmp = adv
-			# ------------------------------
-
+			
+			# Physics ---------------------------------
+			if par.heating == 'internal' :
+				conv = L*r2Ib
+			elif par.heating == 'differential' :
+				conv = L*Ib
+			tmp = - conv 
+			# -----------------------------------------
+	
 			# bookkeeping
 			tmp.eliminate_zeros()
 			tmp = tmp.tocoo()
-			blk = [tmp.data, tmp.row + row, tmp.col + col0]
-			for q in [0,1,2]:
-				loc_list[q]= np.concatenate( ( loc_list[q], blk[q] ) )
-
-			# Temperature diffusion (nabla^2 \theta)
-			# ------------------------------------------------------------------ A, theta, nocurl (heat)
-
-			col4 = ut.lastrowfac*nb*par.N + ( rank*bpp + k )* par.N
-
-			# Physics ----------------------
-			difus =  par.Ek/par.Pr * (-L * r2Ib + r4D2b + 2*r3D1b)
-			tmp = difus
-			# ------------------------------
-
+			blk = [tmp.data, tmp.row + row, tmp.col + col0]	
+			for q in [0,1,2]:	
+					loc_list[q]= np.concatenate( ( loc_list[q], blk[q] ) )	
+			
+					
+			# temperature (theta) terms: (Ek/Pr)*nabla**2(theta)
+			# ------------------------------------------------------------------ A, theta, nocurl (thermal)			
+			
+			col4 = (2+2*par.magnetic)*nb*par.N + ( rank*bpp + k )* par.N
+	
+			# Physics ---------------------------------
+			difus = - L*Ib + 2*r1D1b + r2D2b
+			tmp = (par.Ek/par.Prandtl) * difus
+			# -----------------------------------------
+	
 			# bookkeeping
 			tmp.eliminate_zeros()
 			tmp = tmp.tocoo()
-			blk = [tmp.data, tmp.row + row, tmp.col + col4]
-			for q in [0,1,2]:
-				loc_list[q]= np.concatenate( ( loc_list[q], blk[q] ) )
-
-			# -----------------------------------------------------------
+			blk = [tmp.data, tmp.row + row, tmp.col + col4]	
+			for q in [0,1,2]:	
+					loc_list[q]= np.concatenate( ( loc_list[q], blk[q] ) )			
+			
+									
+			# ------------------------------------------------------------------
 			# include thermal boundary conditions and update loc_list
 			bc_theta_list = bc_theta_spherical( l )
-			for q in [0,1,2]:
+			for q in [0,1,2]:	
 				loc_list[q]= np.concatenate( ( loc_list[q], bc_theta_list[q] ) )
-
-	# -------------------------------------------------------------------------- A matrix assembly
+			# ------------------------------------------------------------------	
+	
+	
+	
+	
+	
+	
+	# -------------------------------------------------------------------------------------------------------------------------------- A matrix assembly
 	# We use comm.allgather here to figure out the right size 
 	# for the local variables bdat, brow and bcol.
 	# They all need to be the same size for comm.Gather to work with them.
@@ -1158,12 +1192,13 @@ def main():
 			A = A/Bnorm
 	
 		toc = timer()
-		print('Matrix A assembled in', toc-tic, 'seconds')
+		print(' Matrix A assembled in', '{: 4.3f}'.format(toc-tic), 'seconds')
 		tic = timer()
 
 		np.savez('A.npz', data=A.data, indices=A.indices, indptr=A.indptr, shape=A.shape)
 		toc = timer()
-		print('Matrix A written to disk in', toc-tic, 'seconds')
+		print(' Matrix A written to disk in', '{: 4.3f}'.format(toc-tic), 'seconds')
+		print('--------------------------------------------')
 	
 	comm.Barrier()
 	
@@ -1278,6 +1313,35 @@ def bc_theta_spherical(l):
 	out2 = [out.data, out.row + row0, out.col + col0]
 
 	return out2
+
+
+def bc_theta_spherical(l):
+	'''
+	Thermal boundary conditions for the temperature field,
+	either isothermal or constant heat flux.
+	'''		
+	out = ss.dok_matrix((2,par.N),dtype=complex)
+
+	if   par.bci_thermal == 0: # isothermal icb
+		out[ 0,:] = bv.Ta[:,0] # theta=0
+		
+	elif par.bci_thermal == 1: # constant heat flux	at icb
+		out[ 0,:] = bv.Ta[:,1] # theta'=0
+		
+	if   par.bco_thermal == 0: # isothermal cmb
+		out[ 1,:] = bv.Tb[:,0] # theta=0
+
+	elif par.bco_thermal == 1: # constant heat flux at cmb	
+		out[ 1,:] = bv.Tb[:,1] # theta'=0
+			
+	row0 = (2+2*par.magnetic)*ut.n + int(par.N*(l-ut.m_top)/2)
+	col0 = (2+2*par.magnetic)*ut.n + int(par.N*(l-ut.m_top)/2)
+				
+	out = out.tocoo()	
+	out2 = [out.data, out.row + row0, out.col + col0]
+					
+	return out2
+
 
 
 
