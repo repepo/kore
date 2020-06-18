@@ -330,7 +330,7 @@ def main():
 
 	
 		
-	elif par.forcing == 0: # ----------------------------------------------------------------------- B matrix, no forcing (eigenvalue problem)
+	elif par.forcing == 0: # ----------------------------------------------------------------------------------------------------- B matrix, no forcing (eigenvalue problem)
 		'''
 		Builds the right hand side B matrix to solve
 		the generalized eigenvalue problem A.x = lambda.B.x
@@ -502,12 +502,14 @@ def main():
 			B = B/Bnorm
 		
 			toc = timer()
-			print('Matrix B assembled in', toc-tic, 'seconds')
+			print('--------------------------------------------')
+			print(' Matrix B assembled in', '{: 4.3f}'.format(toc-tic), 'seconds')
 			tic = timer()
 
 			np.savez('B.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
 			toc = timer()
-			print('Matrix B written to disk in', toc-tic, 'seconds')
+			print(' Matrix B written to disk in', '{: 4.3f}'.format(toc-tic), 'seconds')
+			print('--------------------------------------------')
 		
 		comm.Barrier()
 	
@@ -518,7 +520,7 @@ def main():
 	if rank == 0:
 		tic = timer()
 
-	# ----------------------------------------------------------------------------------------------------------- A matrix, 2curl hydro
+	# --------------------------------------------------------------------------------------------------------------------------------------- A matrix, 2curl hydro
 	
 	for k,l in enumerate(loc_top): # 2curl hydro eqs
 		
@@ -688,7 +690,7 @@ def main():
 
 			# Physics -------------------
 			buoy = L * r4It		
-			tmp = - (par.Brunt**2) * buoy
+			tmp = -(par.Brunt**2) * buoy
 			# ---------------------------
 					
 			# bookkeeping
@@ -970,7 +972,7 @@ def main():
 
 
 
-		# --------------------------------------------------------------------------------------- A matrix, 1curl induction
+		# ----------------------------------------------------------------------------------------------------------------------- A matrix, 1curl induction
 		for k,l in enumerate(loc_top): # use l's from loc_top for 1curl eqs
 			
 			L = l*(l+1.)
@@ -1084,7 +1086,7 @@ def main():
 		# instead of 4 to make room for the thermal boundary conditions
 		# their label ends with 'b' instead of 't'
 	
-		# ---------------------------------------------------------------------------------------------- A matrix, nocurl thermal
+		# --------------------------------------------------------------------------------------------------------------------------- A matrix, nocurl thermal
 		for k,l in enumerate(loc_top): # here use the l's from loc_top 
 		
 			row = (2+2*par.magnetic)*nb*par.N + (rank*bpp + k )* par.N
@@ -1119,7 +1121,7 @@ def main():
 	
 			# Physics ---------------------------------
 			difus = - L*Ib + 2*r1D1b + r2D2b
-			tmp = difus
+			tmp = (par.Ek/par.Prandtl) * difus
 			# -----------------------------------------
 	
 			# bookkeeping
@@ -1142,7 +1144,7 @@ def main():
 	
 	
 	
-	# -------------------------------------------------------------------------- A matrix assembly
+	# -------------------------------------------------------------------------------------------------------------------------------- A matrix assembly
 	# We use comm.allgather here to figure out the right size 
 	# for the local variables bdat, brow and bcol.
 	# They all need to be the same size for comm.Gather to work with them.
@@ -1181,10 +1183,6 @@ def main():
 	comm.Gather(bcol,fcol,root=0)
 
 	if rank == 0:
-
-		#print('sizmat=',ut.sizmat)
-		#print('nb=',nb)
-		#print('bpp=',bpp)
 		
 		ix = np.where(frow >= 0)
 		A = ss.csr_matrix((fdat[ix], (frow[ix], fcol[ix])), shape=(ut.sizmat,ut.sizmat), dtype=complex)
@@ -1192,12 +1190,13 @@ def main():
 			A = A/Bnorm
 	
 		toc = timer()
-		print('Matrix A assembled in', toc-tic, 'seconds')
+		print(' Matrix A assembled in', '{: 4.3f}'.format(toc-tic), 'seconds')
 		tic = timer()
 
 		np.savez('A.npz', data=A.data, indices=A.indices, indptr=A.indptr, shape=A.shape)
 		toc = timer()
-		print('Matrix A written to disk in', toc-tic, 'seconds')
+		print(' Matrix A written to disk in', '{: 4.3f}'.format(toc-tic), 'seconds')
+		print('--------------------------------------------')
 	
 	comm.Barrier()
 	

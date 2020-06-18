@@ -20,7 +20,7 @@ def Ncheb(Ek):
 		out = 380*x-2700
 	else:
 		out = 104*x-216
-	return int(1.1*out)
+	return int(0.5*out)
 
 def wattr(n,Ek):
 	'''
@@ -42,11 +42,11 @@ def wattr(n,Ek):
 # ------------------------------------------------------------------------------ Physical parameters
 
 # Azimuthal wave number m (>=0)
-m = 1
+m = 0
 
 # For equatorially symmetric modes set symm = 1. 
 # Set symm = -1 for antisymmetric.
-symm = -1
+symm = 1
 
 # Inner core radius, CMB radius is one. Use bci = 2 below if ricb = 0.
 # Do not set ricb = 0 unless the regularity condition is implemented
@@ -55,14 +55,14 @@ ricb = 0.35
 # Inner core spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow
 # Use 2 for no inner core (regularity condition), *not implemented here*
-bci = 1
+bci = 0
 
 # CMB spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow
-bco = 1
+bco = 0
 
-# Ekman number
-Ek = 10**-4
+# Ekman number (use 2* to match Dintrans 1999)
+Ek = 2*10**-7
 
 forcing = 0  # For eigenvalue problems
 # forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
@@ -112,11 +112,11 @@ thermal = 1
 heating = 'internal'       # internal heating,     dT/dr = r
 # heating = 'differential'   # differential heating, dT/dr = r**-2
 
-# Dimensionless Brunt-Vaisala frequency
-Brunt = 1
+# Dimensionless Brunt-Vaisala frequency (use 2* to match Dintrans 1999)
+Brunt = 2*2.5
 
 # Prandtl number
-Prandtl = 1
+Prandtl = 1.0
 
 # Thermal boundary conditions
 # 0 for isothermal, theta=0
@@ -132,14 +132,17 @@ write_eig = 0
 # --------------------------------------------------------------------------------------- Resolution
 
 # Number of cpus
-ncpus = 4
+ncpus = 24
 
 # Truncation level
 N = Ncheb(Ek) 
+#N = 25 
 
 # Approx lmax/N ratio
-g = 1.0  
+g = 2.0  
 lmax = int( 2*ncpus*( np.floor_divide( g*N, 2*ncpus ) ) + m - 1 )
+#lmax = 7
+
 
 # Max angular degree lmax, must be even if m is odd,
 # and lmax-m+1 should be divisible by 2*ncpus 
@@ -162,8 +165,8 @@ if track_target == 1 :  # read target from file and sets target accordingly
     rtau = tt[0]
     itau = tt[1]
 else:                   # set target manually
-    rtau = 0
-    itau = 1
+    rtau = 0  #-2*3.847e-3
+    itau = 2*1.053
 
 # tau is the actual target for the solver
 # real part is damping
@@ -177,13 +180,13 @@ which_eigenpairs = 'TM'
 # M magnitude, R real, I imaginary
 
 # Number of desired eigenvalues
-nev = 4
+nev = 2
 
 # Number of vectors in Krylov space for solver
 # ncv = 100
 
 # Maximum iterations to converge to an eigenvector
-maxit = 30
+maxit = 100
 
 # Tolerance for solver
 tol = 1e-13

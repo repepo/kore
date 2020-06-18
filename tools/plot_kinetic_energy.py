@@ -7,6 +7,8 @@ import matplotlib
 import matplotlib.tri as tri
 import numpy.polynomial.chebyshev as ch
 
+sys.path.insert(1,'bin/')
+
 import utils as ut
 import parameters as par
 
@@ -205,13 +207,17 @@ triang.set_mask(mask)
 
 
 #matplotlib.rcParams['text.usetex'] = True
-matplotlib.rcParams['image.cmap'] = 'rainbow'
+#matplotlib.rcParams['image.cmap'] = 'rainbow'
+#matplotlib.rcParams['image.cmap'] = 'inferno'
+matplotlib.rcParams['image.cmap'] = 'magma'
+#matplotlib.rcParams['image.cmap'] = 'gist_heat'
 
 fig=plt.figure(figsize=(6,8))
 # ------------------------------------------------------------------- ur
 ax1=fig.add_subplot(111)
 ax1.set_title(r'Kinetic energy density',size=16)
-im1=ax1.tricontourf( triang, ur2[id_in]+ut2[id_in]+up2[id_in] , 70)
+im1=ax1.tricontourf( triang, np.log10(ur2[id_in]+ut2[id_in]+up2[id_in]) , 70)
+#im1=ax1.tricontourf( triang, ur2[id_in]+ut2[id_in]+up2[id_in] , 70)
 for c in im1.collections:
               c.set_edgecolor('face')   
 ax1.set_aspect('equal')
