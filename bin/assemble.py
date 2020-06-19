@@ -94,6 +94,7 @@ def main():
 	r3D1b = ss.csr_matrix(sio.mmread('r3D1b'))
 	r4Ib  = ss.csr_matrix(sio.mmread('r4Ib'))
 	r3Ib  = ss.csr_matrix(sio.mmread('r3Ib'))
+	r3D2b = ss.csr_matrix(sio.mmread('r3D2b'))
 
 
 	if par.forcing == 1: # --------------------------------------------------------------------------------- Yufeng forcing
@@ -1121,7 +1122,10 @@ def main():
 			col4 = (2+2*par.magnetic)*nb*par.N + ( rank*bpp + k )* par.N
 	
 			# Physics ---------------------------------
-			difus = - L*Ib + 2*r1D1b + r2D2b
+			if par.heating == 'internal' :
+				difus = - L*Ib + 2*r1D1b + r2D2b
+			elif par.heating == 'differential' :
+				difus = - L*r1Ib + 2*r2D1b + r3D2b
 			tmp = (par.Ek/par.Prandtl) * difus
 			# -----------------------------------------
 	
