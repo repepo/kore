@@ -10,6 +10,7 @@ import numpy.polynomial.chebyshev as ch
 import numpy as np
 
 import parameters as par
+#import bc_variables as bv
 
 
 # some global variables
@@ -439,4 +440,118 @@ def load_csr(filename):
 	loader = np.load(filename)
 	return ss.csr_matrix((loader['data'], loader['indices'], loader['indptr']), shape=loader['shape'])
 
+
+
+
+def Tk(x, N, lamb_max):
+	'''
+	Chebyshev polynomial from order 0 to N (as rows)
+	and its derivatives ** with respect to r **, up to lamb_max (as columns),
+	evaluated at x=-1 (r=ricb) or x=1 (r=rcmb).
+	'''
 	
+	out = np.zeros((N+1,lamb_max+1))
+	
+	for k in range(0,N+1):
+		
+		out[k,0] = x**k
+		
+		tmp = 1.
+		for i in range(0, lamb_max):
+			tmp = tmp * ( k**2 - i**2 )/( 2.*i + 1. )
+			out[k,i+1] = x**(k+i+1.) * tmp * (2./(rcmb-par.ricb))**(i+1)
+		
+	return out
+
+
+
+
+def gamma_visc(a1,a2,a3):
+
+	out = np.zeros((1,n+n),dtype=complex) 
+		
+	
+	#Tb3 = copy(Tb2)
+	#Tb3[nc:,:] = 0
+	#Tb3 = np.copy(bv.Tb)
+	Tb3 = Tk( 1, par.N-1, 5)
+	
+	
+	P0 = Tb3[:,0]
+	P1 = Tb3[:,1]
+	P2 = Tb3[:,2]
+	P3 = Tb3[:,3]
+	P4 = Tb3[:,4]
+	P5 = Tb3[:,5]
+
+	T0 = Tb3[:,0]
+	T1 = Tb3[:,1]
+	T2 = Tb3[:,2]
+	T3 = Tb3[:,3]
+	T4 = Tb3[:,4]
+	
+		
+	# this is for a spheroid with long semiaxis a=1
+	
+	I = 1j
+	
+	pol2 = (  a1*((0. + 24.624956739107787*I)*P0 - (0. + 24.624956739107787*I)*P1 + (0. + 12.312478369553894 *I)*P2 
+				+ (0. + 4.104159456517965 *I)*P3) 
+			+ a2*((0. + 5.2767764440945255*I)*P0 - (0. + 5.2767764440945255*I)*P1 + (0. + 2.6383882220472628 *I)*P2 
+				- (0. + 9.67409014750663  *I)*P3 - (0. + 1.758925481364842 *I)*P4) 
+			+ a3*((0. - 1.758925481364842 *I)*P0 + (0. + 1.758925481364842 *I)*P1 - (0. + 0.879462740682421  *I)*P2 
+				+ (0. + 0.2931542468941404*I)*P3 + (0. + 3.517850962729684 *I)*P4 + (0. + 0.4885904114902339 *I)*P5) )
+			
+	pol4 = (  a2*((0. - 42.817918360629186*I)*P0 + (0. + 42.817918360629186*I)*P1 + (0. + 3.5681598633857656 *I)*P2 
+				- (0. + 6.422687754094378 *I)*P3 - (0. + 0.7136319726771531*I)*P4)  
+			+ a3*((0. - 31.140304262275777*I)*P0 + (0. + 31.140304262275777*I)*P1 - (0. + 20.111446502719772 *I)*P2 
+				+ (0. + 2.465274087430165 *I)*P3 + (0. + 3.6979111311452484*I)*P4 + (0. + 0.324378169398706  *I)*P5))
+			
+	pol6 = (  a3*((0. + 45.56049760657571*I)*P0 - (0. + 45.56049760657571  *I)*P1 - (0. + 22.780248803287854 *I)*P2 
+				+ (0. + 3.254321257612551*I)*P3 + (0. + 1.30172850304502   *I)*P4 + (0. + 0.07231825016916779*I)*P5))
+			
+	tol1 = ( -11.847687835088976     *T0 + 11.847687835088976*T1 
+			+ a1*(9.47815026807118   *T0 - 9.47815026807118  *T1 - 4.73907513403559  *T2) 
+			+ a2*(2.031032200300967  *T0 - 2.031032200300967 *T1 + 5.077580500752418 *T2 + 1.5232741502257257 *T3) 
+			+ a3*(0.4513404889557705 *T0 - 0.4513404889557705*T1 - 1.8241678095295728*T3 - 0.37611707412980877*T4))
+			
+	tol3 = (  a1*(39.799940335196546 *T0 - 6.633323389199425 *T1 - 3.3166616945997127*T2) 
+			+ a2*(-19.899970167598273*T0 - 13.26664677839885 *T1 + 8.291654236499282 *T2 + 1.6583308472998564 *T3) 
+			+ a3*(-14.472705576435107*T0 + 7.93988708707204  *T1 + 2.010097996727099 *T2 - 3.5679239441906003 *T3 - 0.5025244991817748  *T4))
+			
+	tol5 = (  a2*(-57.208391908193846*T0 - 9.534731984698974 *T1 + 3.8138927938795897*T2 + 0.4767365992349487 *T3) 
+			+ a3*(4.400645531399526  *T0 + 34.960683943896235*T1 + 0.6845448604399262*T2 - 2.725955426394706  *T3 - 0.24448030729997366 *T4))
+			
+	tol7 = (  a3*(59.85704517989213  *T0 + 24.316924604331177*T1 - 0.8016568550878411*T2 - 0.7571203631385165 *T3 - 0.044536491949324505*T4))
+	
+	
+	# assemble the torque (row vector)
+		
+	for l in np.arange(m_top,lmax_top,2.):
+		
+		colP = int( (par.N)*(l-m_top)/2 )
+		
+		if l==2 and par.m==1:
+			out[0,colP:colP+par.N] = pol2
+		elif l==4 and par.m==1:
+			out[0,colP:colP+par.N] = pol4
+		elif l==6 and par.m==1:
+			out[0,colP:colP+par.N] = pol6
+
+	for l in np.arange(m_bot,lmax_bot,2.):
+		
+		colT = n + int( (par.N)*(l-m_bot)/2 )
+		
+		if l==1 and par.m==1:
+			out[0,colT:colT+par.N] = tol1
+		elif l==3 and par.m==1:
+			out[0,colT:colT+par.N] = tol3
+		elif l==5 and par.m==1:
+			out[0,colT:colT+par.N] = tol5
+		elif l==7 and par.m==1:
+			out[0,colT:colT+par.N] = tol7
+			
+	
+	return out
+
+

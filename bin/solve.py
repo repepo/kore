@@ -255,6 +255,7 @@ def main():
 			err1 = np.zeros(success)
 			err2 = np.zeros(success)
 			y = np.zeros(success)
+			vtorq = np.zeros(success,dtype=complex) 
 			
 			
 			if par.magnetic == 1:
@@ -273,10 +274,10 @@ def main():
 			print('Ek = 10**{:<8.4f}'.format(np.log10(par.Ek)))
 		
 			print('Post-processing:')	 
-			print('--- -------------- -------------- ---------- ---------- ---------- ----------')
-			print('Sol    Damping        Frequency     Error1     Error2    ohm2visc    tor2pol ')
-			print('--- -------------- -------------- ---------- ---------- ---------- ----------')
-			#print('{2d}   {:11.9f}   {:11.9f}   {:10.2g}   {:10.2g}'.format(i, sigma, w, err1, err2))
+			print('--- -------------- -------------- ---------- ---------- ---------- ---------- ----------')
+			print('Sol    Damping        Frequency     Error1     Error2    ohm2visc    tor2pol   |trq|/A ')
+			print('--- -------------- -------------- ---------- ---------- ---------- ---------- ----------')
+			#print('{2d}   {:11.9f}   {:11.9f}   {:10.2g}   {:10.2g}   {:10.2g}'.format(i, sigma, w, err1, err2))
 			
 			if par.track_target == 1:  # eigenvalue tracking enabled
 				#read target data
@@ -326,6 +327,10 @@ def main():
 				Dkin = kid[i,3]*par.Ek
 				
 				repow = kid[i,5]
+				
+				vtorq[i] = np.dot(par.Ek*ut.gamma_visc(0,0,0),a+1j*b)
+				#print(np.shape(vtorq))
+				
 				
 				err1[i] = abs(-Dint/Dkin -1)
 				
@@ -387,14 +392,14 @@ def main():
 				
 				
 				
-				print('{:2d}   {: 12.9f}   {: 12.9f}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}'.format(i, sigma, w, err1[i], err2[i], Dohm/Dint, KT/KP))
+				print('{:2d}   {: 12.9f}   {: 12.9f}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}'.format(i, sigma, w, err1[i], err2[i], Dohm/Dint, KT/KP, np.abs(vtorq[i])/np.sqrt(KE) ))
 				
 					
 					
 				params[i,:] = np.array([par.Ek, par.m, par.symm, par.ricb, par.bci, par.bco, par.projection, par.forcing, \
 				par.forcing_amplitude, par.forcing_frequency, par.magnetic, par.Em, par.Le2, par.N, par.lmax, toc1-tic, par.ncpus, par.tol])
 				
-			print('--- -------------- -------------- ---------- ---------- ---------- ----------')
+			print('--- -------------- -------------- ---------- ---------- ---------- ---------- ----------')
 			
 			# find closest eigenvalue to tracking target and write to target file
 			if (par.track_target == 1)&(par.forcing == 0):
@@ -432,7 +437,7 @@ def main():
 				fmt=['%.9e','%d','%d','%.9e','%d','%d','%d','%d','%.9e','%.9e','%d','%.9e','%.9e','%d','%d','%.2f', '%d', '%.2e'])  
 			
 			with open('flow.dat','ab') as dflo:
-				np.savetxt(dflo, np.c_[kid, Dint_partial])
+				np.savetxt(dflo, np.c_[kid, Dint_partial, np.real(vtorq), np.imag(vtorq)])
 		    
 			if par.magnetic == 1:
 				with open('magnetic.dat','ab') as dmag:
