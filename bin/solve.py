@@ -168,10 +168,16 @@ def main():
 				ru = rEigv[:2*ut.n,:]
 				iu = iEigv[:2*ut.n,:]
 				
+				numEig = rEigv.shape[0]
+
 				if par.magnetic == 1:
-					rb = rEigv[2*ut.n:,:]
-					ib = iEigv[2*ut.n:,:]
+					rb = rEigv[2*ut.n:numEig - par.thermal * ut.n,:]
+					ib = iEigv[2*ut.n:numEig - par.thermal * ut.n,:]
 				
+				if par.thermal == 1:
+					rT = rEigv[(2 + 2*par.magnetic)*ut.n:,:]
+					iT = rEigv[(2 + 2*par.magnetic)*ut.n:,:]
+
 				success = sol.nconv
 				
 		else:

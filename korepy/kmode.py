@@ -28,8 +28,12 @@ class kmode(sol):
         sol.__init__(self,self.solnum,self.lmax,self.m,self.symm,self.N,self.Ek,
                      self.ricb,self.rcmb,self.n,self.nr,self.ntheta,self.nphi)
         
-        self.r,self.theta,self.phi,self.ur,self.utheta,self.uphi = sol.get_sol(self,datDir='/home/ankit/kore/bin/')
+        if par.magnetic == 1:
+            self.r,self.theta,self.phi,self.ur,self.utheta,self.uphi,self.br,self.btheta,self.bphi = sol.get_sol(self,datDir='/home/ankit/kore/bin/')
+        else:
+            self.r,self.theta,self.phi,self.ur,self.utheta,self.uphi = sol.get_sol(self,datDir='/home/ankit/kore/bin/')
 
+            
     def surf(self,field='ur',r=0.5,cm='seismic',levels=30,cmap='RdBu_r'):
             
         idxPlot = find_rad(self.r,r)
