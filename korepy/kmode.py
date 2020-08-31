@@ -46,13 +46,13 @@ class kmode(sol):
             data = self.utheta[...,idxPlot]
         
         if field in ['br','BR','bR','Br']:
-            data = self.ur[...,idxPlot]
+            data = self.br[...,idxPlot]
 
         if field in ['bp','BP','bP','Bp']:
-            data = self.uphi[...,idxPlot]
+            data = self.bphi[...,idxPlot]
 
         if field in ['bt','BT','bT','Bt']:
-            data = self.utheta[...,idxPlot]
+            data = self.btheta[...,idxPlot]
 
 
         radContour(self.theta,self.phi,data,levels=levels,cmap=cmap)
@@ -80,13 +80,13 @@ class kmode(sol):
             data = self.utheta[idxPlot,...]
         
         if field in ['br','BR','buR','Br']:
-            data = self.ur[idxPlot,...]
+            data = self.br[idxPlot,...]
 
         if field in ['bp','BP','bP','Bp']:
-            data = self.uphi[idxPlot,...]
+            data = self.bphi[idxPlot,...]
 
         if field in ['bt','BT','bT','Bt']:
-            data = self.utheta[idxPlot,...]
+            data = self.btheta[idxPlot,...]
 
 
         merContour(self.r,self.theta,data,levels=levels,cmap=cmap)
@@ -108,13 +108,13 @@ class kmode(sol):
             data = self.utheta[:,idxPlot,:]
 
         if field in ['br','BR','bR','Br']:
-            data = self.ur[:,idxPlot,:]
+            data = self.br[:,idxPlot,:]
 
         if field in ['bp','BP','bP','Bp']:
-            data = self.uphi[:,idxPlot,:]
+            data = self.bphi[:,idxPlot,:]
 
         if field in ['bt','BT','bT','Bt']:
-            data = self.utheta[:,idxPlot,:]
+            data = self.btheta[:,idxPlot,:]
          
         eqContour(self.r,self.phi,data,levels=levels,cmap=cmap)
 
