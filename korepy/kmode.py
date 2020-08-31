@@ -25,7 +25,7 @@ class kmode(sol):
             self.nphi   = int(3 * self.lmax/2) * 2
             self.ntheta = int(self.nphi/2)
         
-        sol.__init__(self,solnum,self.lmax,self.m,self.symm,self.N,self.Ek,
+        sol.__init__(self,self.solnum,self.lmax,self.m,self.symm,self.N,self.Ek,
                      self.ricb,self.rcmb,self.n,self.nr,self.ntheta,self.nphi)
         
         self.r,self.theta,self.phi,self.ur,self.utheta,self.uphi = sol.get_sol(self,datDir='/home/ankit/kore/bin/')
@@ -44,6 +44,16 @@ class kmode(sol):
 
         if field in ['ut','UT','uT','Ut']:
             data = self.utheta[...,idxPlot]
+        
+        if field in ['br','BR','bR','Br']:
+            data = self.ur[...,idxPlot]
+
+        if field in ['bp','BP','bP','Bp']:
+            data = self.uphi[...,idxPlot]
+
+        if field in ['bt','BT','bT','Bt']:
+            data = self.utheta[...,idxPlot]
+
 
         radContour(self.theta,self.phi,data,levels=levels,cmap=cmap)
 
@@ -68,6 +78,16 @@ class kmode(sol):
 
         if field in ['ut','UT','uT','Ut']:
             data = self.utheta[idxPlot,...]
+        
+        if field in ['br','BR','buR','Br']:
+            data = self.ur[idxPlot,...]
+
+        if field in ['bp','BP','bP','Bp']:
+            data = self.uphi[idxPlot,...]
+
+        if field in ['bt','BT','bT','Bt']:
+            data = self.utheta[idxPlot,...]
+
 
         merContour(self.r,self.theta,data,levels=levels,cmap=cmap)
         plt.axis('off')
@@ -86,7 +106,16 @@ class kmode(sol):
 
         if field in ['ut','UT','uT','Ut']:
             data = self.utheta[:,idxPlot,:]
-        
+
+        if field in ['br','BR','bR','Br']:
+            data = self.ur[:,idxPlot,:]
+
+        if field in ['bp','BP','bP','Bp']:
+            data = self.uphi[:,idxPlot,:]
+
+        if field in ['bt','BT','bT','Bt']:
+            data = self.utheta[:,idxPlot,:]
+         
         eqContour(self.r,self.phi,data,levels=levels,cmap=cmap)
 
         plt.axis('off')

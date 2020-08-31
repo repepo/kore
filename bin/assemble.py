@@ -940,7 +940,7 @@ def main():
 			tmp = tmp.tocoo()
 			blk = [tmp.data, tmp.row + row, tmp.col + col1]	
 			for q in [0,1,2]:	
-					loc_list[q]= np.concatenate( ( loc_list[q], blk[q] ) )
+				loc_list[q]= np.concatenate( ( loc_list[q], blk[q] ) )
 					
 		
 			# Poloidal magnetic field terms (diffusion + iwb term)
@@ -959,7 +959,7 @@ def main():
 			tmp = tmp.tocoo()
 			blk = [tmp.data, tmp.row + row, tmp.col + col2]	
 			for q in [0,1,2]:	
-					loc_list[q]= np.concatenate( ( loc_list[q], blk[q] ) )
+				loc_list[q]= np.concatenate( ( loc_list[q], blk[q] ) )
 			
 			
 			# Toroidal magnetic terms (diffusion term + iwb term)
@@ -998,7 +998,7 @@ def main():
 			tmp = tmp.tocoo()
 			blk = [tmp.data, tmp.row + row, tmp.col + col0]
 			for q in [0,1,2]:	
-					loc_list[q]= np.concatenate( ( loc_list[q], blk[q] ) )
+				loc_list[q]= np.concatenate( ( loc_list[q], blk[q] ) )
 				
 
 			# Toroidal velocity terms
@@ -1071,7 +1071,7 @@ def main():
 			tmp = tmp.tocoo()
 			blk = [tmp.data, tmp.row + row, tmp.col + col3]	
 			for q in [0,1,2]:	
-					loc_list[q]= np.concatenate( ( loc_list[q], blk[q] ) )
+				loc_list[q]= np.concatenate( ( loc_list[q], blk[q] ) )
 	
 			
 			# -----------------------------------------------------------
@@ -1106,7 +1106,7 @@ def main():
 			if par.heating == 'internal' :
 				conv = L*r2Ib
 			elif par.heating == 'differential' :
-				conv = L*Ib
+				conv = - L*Ib * (par.ricb)/(ut.rcmb - par.ricb)
 			tmp = - conv 
 			# -----------------------------------------
 	
@@ -1115,7 +1115,7 @@ def main():
 			tmp = tmp.tocoo()
 			blk = [tmp.data, tmp.row + row, tmp.col + col0]	
 			for q in [0,1,2]:	
-					loc_list[q]= np.concatenate( ( loc_list[q], blk[q] ) )	
+				loc_list[q]= np.concatenate( ( loc_list[q], blk[q] ) )
 			
 					
 			# temperature (theta) terms: (Ek/Pr)*nabla**2(theta)
@@ -1134,9 +1134,9 @@ def main():
 			# bookkeeping
 			tmp.eliminate_zeros()
 			tmp = tmp.tocoo()
-			blk = [tmp.data, tmp.row + row, tmp.col + col4]	
-			for q in [0,1,2]:	
-					loc_list[q]= np.concatenate( ( loc_list[q], blk[q] ) )			
+			blk = [tmp.data, tmp.row + row, tmp.col + col4]
+			for q in [0,1,2]:
+				loc_list[q]= np.concatenate( ( loc_list[q], blk[q] ) )
 			
 									
 			# ------------------------------------------------------------------

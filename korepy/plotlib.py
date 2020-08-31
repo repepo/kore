@@ -32,6 +32,9 @@ def radContour(theta,phi,dat,levels=30,cmap='RdBu_r',colbar=True):
 
     cont = plt.contourf(xx,yy,dat,levels,cmap=cmap)
 
+    for c in cont.collections:
+        c.set_edgecolor("face")
+
     if colbar:
         cbar = plt.colorbar(cont)
     
@@ -43,6 +46,9 @@ def merContour(r,theta,dat,levels=30,cmap='RdBu_r',colbar=True):
 
     cont = plt.contourf(xx,yy,dat,levels,cmap=cmap)
 
+    for c in cont.collections:
+        c.set_edgecolor("face")
+
     if colbar:
         cbar = plt.colorbar(cont)
 
@@ -53,6 +59,9 @@ def eqContour(r,phi,dat,levels=30,cmap='RdBu_r',colbar=True):
     yy = r2D * np.sin(phi2D)
 
     cont = plt.contourf(xx,yy,dat,levels,cmap=cmap)
+
+    for c in cont.collections:
+        c.set_edgecolor("face")
 
     if colbar:
         cbar = plt.colorbar(cont)
