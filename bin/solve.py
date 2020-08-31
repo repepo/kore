@@ -465,7 +465,12 @@ def main():
 					
 					np.savetxt('real_magnetic.field',rb)
 					np.savetxt('imag_magnetic.field',ib)
+
+				if par.thermal == 1:
 					
+					np.savetxt('real_temp.field',rT)
+					np.savetxt('imag_temp.field',iT)
+
 					
 					
 					

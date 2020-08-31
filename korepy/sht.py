@@ -72,7 +72,7 @@ class sol:
 
 		return lmax_top,m_top,lmax_bot,m_bot,symm1
 
-	def transform_spec2spat(self,a,b,chx,symm1,m_top,lmax_top,r):
+	def spec2spat_vec(self,a,b,chx,symm1,m_top,lmax_top,r):
 
 		Plj0 = a[:self.n] + 1j*b[:self.n] 		#  N elements on each l block
 		Tlj0 = a[self.n:self.n+self.n] + 1j*b[self.n:self.n+self.n] 	#  N elements on each l block
@@ -161,8 +161,53 @@ class sol:
 
 		return ur,utheta,uphi,theta,phi
 
+	def spec2spat_scal(self,a,b,chx,symm1,m_top,lmax_top,r):
+
+		Plj0 = a + 1j*b
+
+		Plj  = np.reshape(Plj0,(int((self.lmax-self.m+1)/2),self.N))
+		Plr = np.zeros((int((self.lmax-self.m+1)/2), self.nr),dtype=complex)
+
+		np.matmul( Plj, chx.T, Plr )
+
+		ll = np.arange(m_top,lmax_top,2)
+
+		# start index for l. Do not confuse with indices for the Cheb expansion!
+		idP = int( (1-symm1)/2 )
+
+		plx = idP+self.lmax-self.m+1
+
+		Stmp = np.zeros([self.lmax - self.m + 1,self.nr],dtype=complex)
+		Stmp[idP:plx:2, :] = Plr
+
+		# SHTns init
+
+		polar_opt = 1e-10
+
+		norm=shtns.sht_schmidt | shtns.SHT_NO_CS_PHASE
+
+		sh = shtns.sht(self.lmax,mmax=self.m,norm=norm,nthreads=1)
+		ntheta, nphi = sh.set_grid(self.ntheta, self.nphi, polar_opt=polar_opt)
+
+		S = np.zeros([sh.nlm,self.nr],dtype=complex)
+
+		mmask = sh.m == self.m
+
+		S[mmask, :] = Stmp
+
+		temp     = np.zeros([ntheta,nphi,self.nr]) 
+
+
+		for ir in range(self.nr):
+			temp[...,ir] = sh.synth(S[:,ir])
+
+		temp     = np.transpose(temp, (1,0,2))
+		return temp
+
+
 	def get_sol(self,datDir):
 
+		out = []
 
 		a = np.loadtxt(datDir+'real_flow.field',usecols=self.solnum)
 		b = np.loadtxt(datDir+'imag_flow.field',usecols=self.solnum)
@@ -171,7 +216,9 @@ class sol:
 
 		lmax_top,m_top,lmax_bot,m_bot,symm1 = self.get_symm(self.symm)
 
-		ur,utheta,uphi,theta,phi = self.transform_spec2spat(a,b,chx,symm1,m_top,lmax_top,self.r)
+		ur,utheta,uphi,theta,phi = self.spec2spat_vec(a,b,chx,symm1,m_top,lmax_top,self.r)
+
+		out.append([r,theta,phi,ur,utheta,uphi])
 
 		if par.magnetic == 1:
 
@@ -183,12 +230,18 @@ class sol:
 
 			lmax_top,m_top,lmax_bot,m_bot,symm1 = self.get_symm(bsymm)
 
-			br,btheta,bphi,theta,phi = self.transform_spec2spat(a,b,chx,symm1,m_top,lmax_top,self.r)
+			br,btheta,bphi,theta,phi = self.spec2spat_vec(a,b,chx,symm1,m_top,lmax_top,self.r)
 
-			return r,theta,phi,ur,utheta,uphi,br,btheta,bphi
-		
+			out.append([br,btheta,bphi])
+
 		if par.thermal == 1:
-			pass
+			a = np.loadtxt(datDir+'real_temp.field',usecols=self.solnum)
+			b = np.loadtxt(datDir+'imag_temp.field',usecols=self.solnum)
 
-		else:
-			return r,theta,phi,ur,utheta,uphi
+			lmax_top,m_top,lmax_bot,m_bot,symm1 = self.get_symm(self.symm)
+
+			temp = self.spec2spat_scal(a,b,chx,symm1,m_top,lmax_top,self.r)
+
+			out.append(temp)
+		
+		return out

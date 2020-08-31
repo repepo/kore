@@ -168,9 +168,15 @@ def main():
 				ru = rEigv[:2*ut.n,:]
 				iu = iEigv[:2*ut.n,:]
 				
+				numEig = rEigv.shape[0]
+
 				if par.magnetic == 1:
-					rb = rEigv[2*ut.n:,:]
-					ib = iEigv[2*ut.n:,:]
+					rb = rEigv[2*ut.n:numEig - par.thermal * ut.n,:]
+					ib = iEigv[2*ut.n:numEig - par.thermal * ut.n,:]
+				
+				if par.thermal == 1:
+					rT = rEigv[(2 + 2*par.magnetic)*ut.n:,:]
+					iT = rEigv[(2 + 2*par.magnetic)*ut.n:,:]
 				
 				success = sol.nconv
 				
@@ -347,13 +353,11 @@ def main():
 					
 					np.savetxt('real_magnetic.field',rb)
 					np.savetxt('imag_magnetic.field',ib)
+
+				if par.thermal == 1:
 					
-					
-					
-					
-			
-					
-					
+					np.savetxt('real_temp.field',rT)
+					np.savetxt('imag_temp.field',iT)
 		
 		toc2 = timer()
 		print('Solve done in',toc2-tic,'seconds')
