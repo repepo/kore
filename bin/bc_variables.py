@@ -28,9 +28,9 @@ def Tk(x, N, lamb_max):
 
 
 
-# to use in the b.c.
+# to use in the b.c. and the torque calculation
 Ta = Tk(-1, par.N-1, 4)
-Tb = Tk( 1, par.N-1, 4)
+Tb = Tk( 1, par.N-1, 5)
 
 
 
