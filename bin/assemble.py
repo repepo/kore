@@ -1304,24 +1304,6 @@ def bc_b_spherical(l,loc):
 
 def bc_theta_spherical(l):
 	'''
-	Fixed temperature boundary conditions for heat equation
-	'''
-	out = ss.dok_matrix((2, par.N),dtype=complex)
-
-	out[0,:] =  0.8 * bv.P0_icb  # icb
-	out[1,:] = -0.2 * bv.P0_cmb  # cmb
-
-	row0 = ut.lastrowfac*ut.n + int( par.N * ( l - ut.m_bot)/2 )	# starting row
-	col0 = ut.lastrowfac*ut.n + int( par.N * ( l - ut.m_bot)/2 )	# starting col
-
-	out = out.tocoo()
-	out2 = [out.data, out.row + row0, out.col + col0]
-
-	return out2
-
-
-def bc_theta_spherical(l):
-	'''
 	Thermal boundary conditions for the temperature field,
 	either isothermal or constant heat flux.
 	'''		
