@@ -10,7 +10,7 @@ def find_phi(phi,phiPlot):
 def hammer2cart(ttheta, pphi, colat=False):
     """
     This function is used to define the Hammer projection used when
-    plotting surface contours 
+    plotting surface contours
     """
 
     if not colat: # for lat and phi \in [-pi, pi]
@@ -35,6 +35,13 @@ def radContour(theta,phi,dat,levels=30,cmap='RdBu_r',colbar=True):
     for c in cont.collections:
         c.set_edgecolor("face")
 
+    thB = np.linspace(np.pi/2, -np.pi/2, len(theta))
+    xxout, yyout  = hammer2cart(thB, -np.pi-1e-3)
+    xxin, yyin  = hammer2cart(thB, np.pi+1e-3)
+
+    plt.plot(xxout,yyout,'k',lw=1)
+    plt.plot(xxin,yyin,'k',lw=1)
+
     if colbar:
         cbar = plt.colorbar(cont)
     
@@ -45,6 +52,11 @@ def merContour(r,theta,dat,levels=30,cmap='RdBu_r',colbar=True):
     yy = r2D * np.cos(theta2D)
 
     cont = plt.contourf(xx,yy,dat,levels,cmap=cmap)
+
+    plt.plot(r[0]*np.sin(theta),r[0]*np.cos(theta),'k',lw=1)
+    plt.plot(r[-1]*np.sin(theta),r[-1]*np.cos(theta),'k',lw=1)
+    plt.plot([0,0], [ r.min(),r.max() ], 'k', lw=1)
+    plt.plot([0,0], [ -r.max(),-r.min() ], 'k', lw=1)
 
     for c in cont.collections:
         c.set_edgecolor("face")
@@ -59,6 +71,9 @@ def eqContour(r,phi,dat,levels=30,cmap='RdBu_r',colbar=True):
     yy = r2D * np.sin(phi2D)
 
     cont = plt.contourf(xx,yy,dat,levels,cmap=cmap)
+
+    plt.plot(r[0]*np.cos(phi), r[0]*np.sin(phi),'k',lw=1)
+    plt.plot(r[-1]*np.cos(phi), r[-1]*np.sin(phi),'k',lw=1)
 
     for c in cont.collections:
         c.set_edgecolor("face")

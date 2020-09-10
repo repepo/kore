@@ -136,6 +136,31 @@ Brunt = np.sqrt(Ra/Prandtl) * Ek
 bci_thermal = 0   # icb
 bco_thermal = 0   # cmb
 
+# --------- Whether to include the chemical convection (imposes a background chemical gradient profile)
+
+chemical = 0
+
+# Background chemical gradient (similar to temperature profiles from Dormy 2004)
+chem_type = 'internal'       # internal sources,     dC/dr = r
+#chem_type = 'differential'  # source and sink at boundaries, dC/dr = r**-2
+
+# Prandtl number
+Prandtl_chem = 100.0
+
+# Rayleigh number
+Ra_chem_gap = 5e5 * np.sin(5*np.pi/8.)
+
+
+Ra_chem = Ra_chem_gap /(1.0-ricb)**3
+
+
+Brunt_chem = np.sqrt(Ra_chem/Prandtl_chem) * Ek
+
+# Thermal boundary conditions
+# 0 for fixed composition, C=0
+# 1 for fixed flux, (dC/dr)=0
+bci_chemical = 0   # icb
+bco_chemical = 0   # cmb
 
 # ---------------------------------------------- writes eigenvalue or solution vector to disk if = 1	
 write_eig = 1

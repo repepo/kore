@@ -61,7 +61,7 @@ T5		T4					T5		T6
 '''
 
 # this gives the size (rows or columns) of the main matrices
-sizmat = 2*n + 2*n*par.magnetic + n*par.thermal
+sizmat = 2*n + 2*n*par.magnetic + n*par.thermal + n*par.chemical
 
 def chebco(powr, N, tol, ricb, rcmb):
 	'''

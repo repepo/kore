@@ -5,7 +5,7 @@ import matplotlib
 import matplotlib.tri as tri
 import numpy.polynomial.chebyshev as ch
 import sys
-sys.path.append('/home/ankit/kore/bin')
+import os
 
 import utils as ut
 import parameters as par
@@ -243,5 +243,16 @@ class sol:
 			temp = self.spec2spat_scal(a,b,chx,symm1,m_top,lmax_top,self.r)
 
 			out.append(temp)
-		
+
+		if par.chemical == 1:
+			a = np.loadtxt(datDir+'real_chem.field',usecols=self.solnum)
+			b = np.loadtxt(datDir+'imag_chem.field',usecols=self.solnum)
+
+			lmax_top,m_top,lmax_bot,m_bot,symm1 = self.get_symm(self.symm)
+
+			temp = self.spec2spat_scal(a,b,chx,symm1,m_top,lmax_top,self.r)
+
+			out.append(temp)
+
+
 		return out

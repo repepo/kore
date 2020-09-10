@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 from .sht import *
 from .plotlib import *
 import sys
-sys.path.append('/home/ankit/kore/bin')
+import os
 
 import utils as ut
 import parameters as par
@@ -24,51 +24,85 @@ class kmode(sol):
         if nphi is None or ntheta is None:
             self.nphi   = int(3 * self.lmax/2) * 2
             self.ntheta = int(self.nphi/2)
-        
+
+        if self.ntheta%2 != 0:
+            self.ntheta -= 1
+            self.nphi = self.ntheta*2
+
         sol.__init__(self,self.solnum,self.lmax,self.m,self.symm,self.N,self.Ek,
                      self.ricb,self.rcmb,self.n,self.nr,self.ntheta,self.nphi)
-        
-        out = sol.get_sol(self,datDir='/home/ankit/kore/bin/')
+
+        out = sol.get_sol(self,datDir=os.environ['KORE_HOME']+'/bin/')
 
         # Unpacking
 
         if par.thermal == 1:
-            if par.magnetic == 1:
-                [self.r,self.theta,self.phi,self.ur,self.utheta,self.uphi],[self.br,self.btheta,self.bphi],self.temp = out
+            if par.chemical == 1:
+                if par.magnetic == 1:
+                    [self.r,self.theta,self.phi,self.ur,self.utheta,self.uphi],\
+                        [self.br,self.btheta,self.bphi],self.temp,self.chem = out
+                else:
+                    [self.r,self.theta,self.phi,self.ur,self.utheta,self.uphi],self.temp,self.chem = out
             else:
-                [self.r,self.theta,self.phi,self.ur,self.utheta,self.uphi],self.temp = out
+                if par.magnetic == 1:
+                    [self.r,self.theta,self.phi,self.ur,self.utheta,self.uphi],[self.br,self.btheta,self.bphi],self.temp = out
+                else:
+                    [self.r,self.theta,self.phi,self.ur,self.utheta,self.uphi],self.temp = out
+        elif par.magnetic == 1:
+            [self.r,self.theta,self.phi,self.ur,self.utheta,self.uphi],[self.br,self.btheta,self.bphi] = out
         else:
-            [self.r,self.theta,self.phi,self.ur,self.utheta,self.uphi] = out        
+            [self.r,self.theta,self.phi,self.ur,self.utheta,self.uphi] = out
 
 
-    def surf(self,field='ur',r=0.5,cm='seismic',levels=30,cmap='RdBu_r'):
-            
-        idxPlot = find_rad(self.r,r)
-
-        plt.figure(figsize=(12,6))
+    def get_data(self,field):
 
         if field in ['ur','UR','uR','Ur']:
-            data = self.ur[...,idxPlot]
+            data = self.ur
+            titl = r'$u_r$'
 
         if field in ['up','UP','uP','Up']:
-            data = self.uphi[...,idxPlot]
+            data = self.uphi
+            titl = r'$u_\phi$'
 
         if field in ['ut','UT','uT','Ut']:
-            data = self.utheta[...,idxPlot]
-        
+            data = self.utheta
+            titl = r'$u_\theta$'
+
         if field in ['br','BR','bR','Br']:
-            data = self.br[...,idxPlot]
+            data = self.br
+            titl = r'$B_r$'
 
         if field in ['bp','BP','bP','Bp']:
-            data = self.bphi[...,idxPlot]
+            data = self.bphi
+            titl = r'$B_\phi$'
 
         if field in ['bt','BT','bT','Bt']:
-            data = self.btheta[...,idxPlot]
+            data = self.btheta
+            titl = r'$B_\theta$'
 
         if field in ['T','Temp','temp']:
-            data = self.temp[...,idxPlot]
+            data = self.temp
+            titl = r'Temperature'
 
+        if field in ['C','Chem','chem']:
+            data = self.chem
+            titl = r'Composition'
+
+        return data, titl
+
+    def surf(self,field='ur',r=0.5,cm='seismic',levels=30,cmap='RdBu_r'):
+
+        idxPlot = find_rad(self.r,r)
+
+        data, titl = self.get_data(field)
+
+        data = data[...,idxPlot]
+
+        plt.figure(figsize=(12,6))
         radContour(self.theta,self.phi,data,levels=levels,cmap=cmap)
+
+        titl = titl + r' at $r/r_o = %.2f$' %(self.r[idxPlot]/self.r.max())
+        plt.title(titl,fontsize=30)
 
         plt.axis('off')
 
@@ -79,65 +113,33 @@ class kmode(sol):
         phi *= np.pi/180.
         idxPlot = find_phi(self.phi,phi)
 
-        print(idxPlot)
+        data, titl = self.get_data(field)
+        data = data[idxPlot,...]
 
         plt.figure(figsize=(5,10))
 
-        if field in ['ur','UR','uR','Ur']:
-            data = self.ur[idxPlot,...]
-
-        if field in ['up','UP','uP','Up']:
-            data = self.uphi[idxPlot,...]
-
-        if field in ['ut','UT','uT','Ut']:
-            data = self.utheta[idxPlot,...]
-        
-        if field in ['br','BR','buR','Br']:
-            data = self.br[idxPlot,...]
-
-        if field in ['bp','BP','bP','Bp']:
-            data = self.bphi[idxPlot,...]
-
-        if field in ['bt','BT','bT','Bt']:
-            data = self.btheta[idxPlot,...]
-
-        if field in ['T','Temp','temp']:
-            data = self.temp[idxPlot,...]
-
-
         merContour(self.r,self.theta,data,levels=levels,cmap=cmap)
+
+        titl = titl + r' at $\phi=%.1f^\circ$' %(self.phi[idxPlot] * 180/np.pi)
+        plt.title(titl,fontsize=20)
+
         plt.axis('off')
 
         plt.show()
-    
+
     def equat(self,field='ur',levels=30,cmap='RdBu_r'):
 
         idxPlot = int(self.ntheta/2)
 
-        if field in ['ur','UR','uR','Ur']:
-            data = self.ur[:,idxPlot,:]
+        data, titl = self.get_data(field)
+        data = data[:,idxPlot,:]
 
-        if field in ['up','UP','uP','Up']:
-            data = self.uphi[:,idxPlot,:]
-
-        if field in ['ut','UT','uT','Ut']:
-            data = self.utheta[:,idxPlot,:]
-
-        if field in ['br','BR','bR','Br']:
-            data = self.br[:,idxPlot,:]
-
-        if field in ['bp','BP','bP','Bp']:
-            data = self.bphi[:,idxPlot,:]
-
-        if field in ['bt','BT','bT','Bt']:
-            data = self.btheta[:,idxPlot,:]
-
-        if field in ['T','Temp','temp']:
-            data = self.temp[:,idxPlot,:] 
+        plt.figure(figsize=(6.2,5))
 
         eqContour(self.r,self.phi,data,levels=levels,cmap=cmap)
 
+        titl = titl + ' at equator'
+        plt.title(titl,fontsize=20)
+
         plt.axis('off')
         plt.show()
-
-        

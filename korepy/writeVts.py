@@ -102,9 +102,14 @@ def writeVts(mode, scals=[],vecs=[]):
         values.append(bphi)
 
     if any(elem in ["T","temp"] for elem in scals):
-        temp = np.asfortranarray(mode.temperature)
+        temp = np.asfortranarray(mode.temp)
         keys.append("Temperature")
         values.append(temp)
+
+    if any(elem in ["C","chem"] for elem in scals):
+        chem = np.asfortranarray(mode.chem)
+        keys.append("Composition")
+        values.append(chem)
 
     dataDict = dict(zip(keys,values))
 

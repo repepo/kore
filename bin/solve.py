@@ -175,8 +175,13 @@ def main():
 					ib = iEigv[2*ut.n:numEig - par.thermal * ut.n,:]
 				
 				if par.thermal == 1:
-					rT = rEigv[(2 + 2*par.magnetic)*ut.n:,:]
-					iT = rEigv[(2 + 2*par.magnetic)*ut.n:,:]
+					rT = rEigv[(2 + 2*par.magnetic)*ut.n:numEig - par.chemical*ut.n,:]
+					iT = rEigv[(2 + 2*par.magnetic)*ut.n:numEig - par.chemical*ut.n,:]
+
+				if par.chemical == 1:
+					rC = rEigv[(2 + 2*par.magnetic+par.thermal)*ut.n:,:]
+					iC = rEigv[(2 + 2*par.magnetic+par.thermal)*ut.n:,:]
+
 
 				success = sol.nconv
 				
@@ -460,24 +465,29 @@ def main():
 				
 				np.savetxt('real_flow.field',ru)
 				np.savetxt('imag_flow.field',iu)
-			
+
 				if par.magnetic == 1:
-					
+
 					np.savetxt('real_magnetic.field',rb)
 					np.savetxt('imag_magnetic.field',ib)
 
 				if par.thermal == 1:
-					
+
 					np.savetxt('real_temp.field',rT)
 					np.savetxt('imag_temp.field',iT)
 
-					
-					
-					
-			
-					
-					
-		
+				if par.chemical == 1:
+
+					np.savetxt('real_chem.field',rC)
+					np.savetxt('imag_chem.field',iC)
+
+
+
+
+
+
+
+
 		toc2 = timer()
 		print('Solve done in',toc2-tic,'seconds')
 	
