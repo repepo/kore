@@ -8,7 +8,7 @@ import utils as ut
 import parameters as par
 
 class kmode(sol):
-    def __init__(self,solnum=0,nr=100,nphi=None,ntheta=None):
+    def __init__(self,datDir=os.environ['KORE_HOME']+'/bin/',solnum=0,nr=100,nphi=None,ntheta=None):
 
         self.solnum = solnum
         self.nr     = nr
@@ -32,7 +32,7 @@ class kmode(sol):
         sol.__init__(self,self.solnum,self.lmax,self.m,self.symm,self.N,self.Ek,
                      self.ricb,self.rcmb,self.n,self.nr,self.ntheta,self.nphi)
 
-        out = sol.get_sol(self,datDir=os.environ['KORE_HOME']+'/bin/')
+        out = sol.get_sol(self,datDir=datDir)
 
         # Unpacking
 

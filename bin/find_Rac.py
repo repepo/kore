@@ -8,8 +8,8 @@ from scipy.optimize import newton, brentq
 
 opts='-st_type sinvert -eps_error_relative'
 
-mmin = 12
-mmax = 12
+mmin = 9
+mmax = 15
 marr = np.arange(mmin,mmax+1)
 
 comm = MPI.COMM_WORLD
@@ -19,18 +19,21 @@ mperproc = int(len(marr)/ncpus)
 
 comm.scatter(marr,root=0)
 
-Ra = 3.4e5
+Ramin = 3e5
+
+def get_ncpus(N,cpumax):
+    for k in range(cpumax,1,-1):
+        if N%k == 0:
+            return k
 
 def get_sigma(Ra,ncpus, opts):
     Ra = 10**Ra
-    os.system('sed -i "s/RaUsr/%f/" parameters.py' %Ra)
-    os.system('mpiexec -n %d ./assemble.py' %ncpus)    
-    os.system('mpiexec -n %d ./solve_nopp.py %s' %(ncpus,opts))
+    os.system('sed -i "0,/Ra_gap.*/s//Ra_gap=%f/" parameters.py' %Ra)
+    os.system('mpiexec -n %d ./assemble.py > /dev/null' %ncpus)
+    os.system('mpiexec -n %d ./solve_nopp.py %s > /dev/null' %(ncpus,opts))
     eig = np.loadtxt('eigenvalues.dat')
     Idx = np.argmax(eig[:,0])
     sigma_c = eig[Idx,0]
-
-    print(sigma_c)
 
     return sigma_c
 
@@ -58,16 +61,28 @@ def bracket_brentq(f, x1, x2=None, dx=0.3, tol=1e-6, maxiter=200, args=None):
     x0 = brentq(f, x1, x2, maxiter=maxiter, xtol=tol, rtol=tol, args=args)
     return x0
 
+if rank == 0:
+    print("###############################",flush=True)
+    print("# Kore linear convection mode #",flush=True)
+    print("###############################",flush=True)
+    print("",flush=True)
+
 for m in range(mperproc):
     mIdx = rank*mperproc + m
     mdir = 'Rac_m' + str(marr[mIdx])
     os.mkdir(mdir)
-    print("Rank %d -> directory %d" %(rank,marr[mIdx]))
+    print("\nRank %d -> m = %d\n" %(rank,marr[mIdx]),flush=True)
     os.chdir(mdir)
     os.system('cp ../params_conv.py parameters.py')
     os.system('cp ../assemble.py ../utils*.py ../solve_nopp.py ../submatrices.py ../bc_variables.py .')
     os.system('sed -i "s/mUsr/%d/" parameters.py' %marr[mIdx]) 
-    os.system('sed -i "s/RaUsr/%f/" parameters.py' %Ra)
+    os.system('sed -i "s/RaUsr/%f/" parameters.py' %Ramin)
     os.system('./submatrices.py %d' %ncpus)
-    Rac = bracket_brentq(get_sigma,np.log10(Ra),args=(ncpus,opts))
-    print(10**Rac)
+    import parameters as par
+    ncpus = get_ncpus(par.N,20)
+    Rac = bracket_brentq(get_sigma,np.log10(Ramin),args=(ncpus,opts))
+    Rac=10**Rac
+    eig = np.loadtxt('eigenvalues.dat')
+    idx_c = np.argmax(eig[:,0])
+    sigma_c,omega_c = eig[idx_c,:]
+    np.savetxt('crit_Ek_%.2e_eta_%f' %(par.Ek_gap,par.ricb), [par.Ek_gap,par.ricb,Rac,marr[mIdx],sigma_c,omega_c],newline=" ")

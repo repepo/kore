@@ -338,7 +338,7 @@ def main():
 					np.savetxt(dmag, np.c_[ohm, Dohm_partial])
 	
 			if par.forcing == 0:
-				with open('eigenvalues.dat','ab') as deig:
+				with open('eigenvalues.dat','wb') as deig:
 					np.savetxt(deig,eigval)
 			
 			
