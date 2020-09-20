@@ -3,13 +3,14 @@
 import numpy as np
 import os
 import sys
+import importlib
 from mpi4py import MPI
-from scipy.optimize import newton, brentq
+from scipy.optimize import brentq
 
 opts='-st_type sinvert -eps_error_relative'
 
-mmin = 9
-mmax = 15
+mmin = 12
+mmax = 13
 marr = np.arange(mmin,mmax+1)
 
 comm = MPI.COMM_WORLD
@@ -40,7 +41,6 @@ def get_sigma(Ra,ncpus, opts):
 # Function copied from SINGE - looks for Ra bounds
 def bracket_brentq(f, x1, x2=None, dx=0.3, tol=1e-6, maxiter=200, args=None):
     y1 = f(x1, *args)
-    print(y1)
     dx = abs(dx)         # dx must be positive.
     if x2 is not None:   # check that we actually have a bracket
         y2 = get_sigma(x2, *args)
@@ -55,7 +55,6 @@ def bracket_brentq(f, x1, x2=None, dx=0.3, tol=1e-6, maxiter=200, args=None):
             x2 += dx
             y2 = f(x2, *args)
             if y2*y1 < 0: break
-            print(x2)
             x1,y1 = x2,y2
     # Now that we know that the root is between x1 and x2, we use Brent's method:
     x0 = brentq(f, x1, x2, maxiter=maxiter, xtol=tol, rtol=tol, args=args)
@@ -70,19 +69,27 @@ if rank == 0:
 for m in range(mperproc):
     mIdx = rank*mperproc + m
     mdir = 'Rac_m' + str(marr[mIdx])
-    os.mkdir(mdir)
-    print("\nRank %d -> m = %d\n" %(rank,marr[mIdx]),flush=True)
+    if not os.path.exists(mdir):
+        os.mkdir(mdir)
+    print("Rank %d -> m = %d\n" %(rank,marr[mIdx]),flush=True)
     os.chdir(mdir)
     os.system('cp ../params_conv.py parameters.py')
     os.system('cp ../assemble.py ../utils*.py ../solve_nopp.py ../submatrices.py ../bc_variables.py .')
     os.system('sed -i "s/mUsr/%d/" parameters.py' %marr[mIdx]) 
     os.system('sed -i "s/RaUsr/%f/" parameters.py' %Ramin)
     os.system('./submatrices.py %d' %ncpus)
-    import parameters as par
+    par = importlib.import_module(mdir+'.parameters')
     ncpus = get_ncpus(par.N,20)
     Rac = bracket_brentq(get_sigma,np.log10(Ramin),args=(ncpus,opts))
     Rac=10**Rac
     eig = np.loadtxt('eigenvalues.dat')
     idx_c = np.argmax(eig[:,0])
     sigma_c,omega_c = eig[idx_c,:]
-    np.savetxt('crit_Ek_%.2e_eta_%f' %(par.Ek_gap,par.ricb), [par.Ek_gap,par.ricb,Rac,marr[mIdx],sigma_c,omega_c],newline=" ")
+
+    np.savetxt('crit_Ek_%.2e_eta_%f.dat' %(par.Ek_gap,par.ricb),
+    [par.Ek_gap , par.ricb , Rac , marr[mIdx] , sigma_c , omega_c],
+    newline=" ")
+    
+    os.chdir('..')
+
+os.system("awk '{print $0}' */crit* > crit_params.dat")
