@@ -79,7 +79,8 @@ for m in range(mperproc):
     os.system('sed -i "s/RaUsr/%f/" parameters.py' %Ramin)
     os.system('./submatrices.py %d' %ncpus)
     par = importlib.import_module(mdir+'.parameters')
-    ncpus = get_ncpus(par.N,20)
+    nb = int((par.lmax - par.m + 1)/2)
+    ncpus = get_ncpus(nb,20)
     Rac = bracket_brentq(get_sigma,np.log10(Ramin),args=(ncpus,opts))
     Rac=10**Rac
     eig = np.loadtxt('eigenvalues.dat')
