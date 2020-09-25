@@ -7,252 +7,259 @@ import numpy.polynomial.chebyshev as ch
 import sys
 import os
 
-import utils as ut
-import parameters as par
 import shtns
 
 class sol:
-	def __init__(self,solnum,lmax,m,symm,N,Ek,ricb,rcmb,n,nr,ntheta,nphi):
-
-		self.solnum = solnum
-		self.lmax   = lmax
-		self.m      = m
-		self.symm   = symm
-		self.N      = N
-		self.Ek     = Ek
-		self.ricb   = ricb
-		self.rcmb   = rcmb
-		self.n      = n
-		self.nr     = nr
-		self.ntheta = ntheta
-		self.nphi   = nphi
-
-	def get_radial(self):
+    def __init__(self,solnum,lmax,m,symm,N,Ek,ricb,rcmb,n,nr,ntheta,nphi):
+
+        self.solnum = solnum
+        self.lmax   = lmax
+        self.m      = m
+        self.symm   = symm
+        self.N      = N
+        self.Ek     = Ek
+        self.ricb   = ricb
+        self.rcmb   = rcmb
+        self.n      = n
+        self.nr     = nr
+        self.ntheta = ntheta
+        self.nphi   = nphi
+
+    def get_radial(self):
 
-		gap = self.rcmb-self.ricb
-		self.r = np.linspace(self.ricb,self.rcmb,self.nr)
+        gap = self.rcmb-self.ricb
+        self.r = np.linspace(self.ricb,self.rcmb,self.nr)
 
-		if self.ricb == 0:
-			self.r = self.r[1:]
-			self.nr = self.nr - 1
+        if self.ricb == 0:
+            self.r = self.r[1:]
+            self.nr = self.nr - 1
 
-		x = 2.*(self.r-self.ricb)/gap - 1.
+        x = 2.*(self.r-self.ricb)/gap - 1.
 
-		# matrix with Chebishev polynomials at every x point for all degrees:
-		chx = ch.chebvander(x,self.N-1) # this matrix has nr rows and N-1 cols
+        # matrix with Chebishev polynomials at every x point for all degrees:
+        chx = ch.chebvander(x,self.N-1) # this matrix has nr rows and N-1 cols
 
-		return self.r, chx
+        return self.r, chx
 
-	def get_symm(self,symm):
+    def get_symm(self,symm):
 
-		if self.m > 0 :
-			symm1 = symm
-			if symm == 1:
-				m_top = self.m
-				m_bot = self.m+1						# equatorially self.symmetric case (self.symm=1)
-				lmax_top = self.lmax
-				lmax_bot = self.lmax+1
-			elif symm == -1:
-				m_top = self.m+1
-				m_bot = self.m				# equatorially antiself.symmetric case (self.symm=-1)
-				lmax_top = self.lmax+1
-				lmax_bot = self.lmax
-		elif self.m == 0 :
-			symm1 = -symm 
-			if symm == 1:
-				m_top = 2
-				m_bot = 1						# equatorially self.symmetric case (self.symm=1)
-				lmax_top = self.lmax+2
-				lmax_bot = self.lmax+1
-			elif symm == -1:
-				m_top = 1
-				m_bot = 2				# equatorially antiself.symmetric case (self.symm=-1)
-				lmax_top = self.lmax+1
-				lmax_bot = self.lmax+2
+        if self.m > 0 :
+            symm1 = symm
+            if symm == 1:
+                m_top = self.m
+                m_bot = self.m+1                        # equatorially self.symmetric case (self.symm=1)
+                lmax_top = self.lmax
+                lmax_bot = self.lmax+1
+            elif symm == -1:
+                m_top = self.m+1
+                m_bot = self.m                # equatorially antiself.symmetric case (self.symm=-1)
+                lmax_top = self.lmax+1
+                lmax_bot = self.lmax
+        elif self.m == 0 :
+            symm1 = -symm 
+            if symm == 1:
+                m_top = 2
+                m_bot = 1                        # equatorially self.symmetric case (self.symm=1)
+                lmax_top = self.lmax+2
+                lmax_bot = self.lmax+1
+            elif symm == -1:
+                m_top = 1
+                m_bot = 2                # equatorially antiself.symmetric case (self.symm=-1)
+                lmax_top = self.lmax+1
+                lmax_bot = self.lmax+2
 
-		return lmax_top,m_top,lmax_bot,m_bot,symm1
+        return lmax_top,m_top,lmax_bot,m_bot,symm1
 
-	def spec2spat_vec(self,a,b,chx,symm1,m_top,lmax_top,r):
+    def spec2spat_vec(self,a,b,chx,symm1,m_top,lmax_top,r):
 
-		Plj0 = a[:self.n] + 1j*b[:self.n] 		#  N elements on each l block
-		Tlj0 = a[self.n:self.n+self.n] + 1j*b[self.n:self.n+self.n] 	#  N elements on each l block
+        Plj0 = a[:self.n] + 1j*b[:self.n]         #  N elements on each l block
+        Tlj0 = a[self.n:self.n+self.n] + 1j*b[self.n:self.n+self.n]     #  N elements on each l block
 
-		Plj  = np.reshape(Plj0,(int((self.lmax-self.m+1)/2),self.N))
-		Tlj  = np.reshape(Tlj0,(int((self.lmax-self.m+1)/2),self.N))
-		dPlj = np.zeros(np.shape(Plj),dtype=complex)
+        Plj  = np.reshape(Plj0,(int((self.lmax-self.m+1)/2),self.N))
+        Tlj  = np.reshape(Tlj0,(int((self.lmax-self.m+1)/2),self.N))
+        dPlj = np.zeros(np.shape(Plj),dtype=complex)
 
-		Plr = np.zeros((int((self.lmax-self.m+1)/2), self.nr),dtype=complex)
-		dP  = np.zeros((int((self.lmax-self.m+1)/2), self.nr),dtype=complex)
-		rP  = np.zeros((int((self.lmax-self.m+1)/2), self.nr),dtype=complex)
-		Qlr = np.zeros((int((self.lmax-self.m+1)/2), self.nr),dtype=complex)
-		Slr = np.zeros((int((self.lmax-self.m+1)/2), self.nr),dtype=complex)
-		Tlr = np.zeros((int((self.lmax-self.m+1)/2), self.nr),dtype=complex)
+        Plr = np.zeros((int((self.lmax-self.m+1)/2), self.nr),dtype=complex)
+        dP  = np.zeros((int((self.lmax-self.m+1)/2), self.nr),dtype=complex)
+        rP  = np.zeros((int((self.lmax-self.m+1)/2), self.nr),dtype=complex)
+        Qlr = np.zeros((int((self.lmax-self.m+1)/2), self.nr),dtype=complex)
+        Slr = np.zeros((int((self.lmax-self.m+1)/2), self.nr),dtype=complex)
+        Tlr = np.zeros((int((self.lmax-self.m+1)/2), self.nr),dtype=complex)
 
-		np.matmul( Plj, chx.T, Plr )
-		np.matmul( Tlj, chx.T, Tlr )
+        np.matmul( Plj, chx.T, Plr )
+        np.matmul( Tlj, chx.T, Tlr )
 
-		#rI = ss.diags(r**-1,0)
+        #rI = ss.diags(r**-1,0)
 
-		ll = np.arange(m_top,lmax_top,2)
-		#L = ss.diags(ll*(ll+1),0)
+        ll = np.arange(m_top,lmax_top,2)
+        #L = ss.diags(ll*(ll+1),0)
 
-		for k in range(np.size(ll)):
-			dPlj[k,:] = ut.Dcheb(Plj[k,:], self.ricb, self.rcmb)
+        for k in range(np.size(ll)):
+            dPlj[k,:] = ut.Dcheb(Plj[k,:], self.ricb, self.rcmb)
 
-		np.matmul(dPlj, chx.T, dP)
+        np.matmul(dPlj, chx.T, dP)
 
-		rP  = Plr * ss.diags(r**-1,0)
-		Qlr = ss.diags(ll*(ll+1),0) * rP
-		Slr = rP + dP
+        rP  = Plr * ss.diags(r**-1,0)
+        Qlr = ss.diags(ll*(ll+1),0) * rP
+        Slr = rP + dP
 
-		# start index for l. Do not confuse with indices for the Cheb expansion!
-		idP = int( (1-symm1)/2 )
-		idT = int( (1+symm1)/2 )
+        # start index for l. Do not confuse with indices for the Cheb expansion!
+        idP = int( (1-symm1)/2 )
+        idT = int( (1+symm1)/2 )
 
-		plx = idP+self.lmax-self.m+1
-		tlx = idT+self.lmax-self.m+1
+        plx = idP+self.lmax-self.m+1
+        tlx = idT+self.lmax-self.m+1
 
-		# Set up arrays in SHTns style
+        # Set up arrays in SHTns style
 
-		Qtmp = np.zeros([self.lmax - self.m + 1,self.nr],dtype=complex)
-		Stmp = np.zeros([self.lmax - self.m + 1,self.nr],dtype=complex)
-		Ttmp = np.zeros([self.lmax - self.m + 1,self.nr],dtype=complex)
+        Qtmp = np.zeros([self.lmax - self.m + 1,self.nr],dtype=complex)
+        Stmp = np.zeros([self.lmax - self.m + 1,self.nr],dtype=complex)
+        Ttmp = np.zeros([self.lmax - self.m + 1,self.nr],dtype=complex)
 
-		Qtmp[idP:plx:2, :] = Qlr
-		Stmp[idP:plx:2, :] = Slr
-		Ttmp[idT:tlx:2, :] = Tlr
+        Qtmp[idP:plx:2, :] = Qlr
+        Stmp[idP:plx:2, :] = Slr
+        Ttmp[idT:tlx:2, :] = Tlr
 
 
-		# SHTns init
+        # SHTns init
 
-		polar_opt = 1e-10
+        polar_opt = 1e-10
 
-		norm=shtns.sht_schmidt | shtns.SHT_NO_CS_PHASE
+        norm=shtns.sht_schmidt | shtns.SHT_NO_CS_PHASE
 
-		sh = shtns.sht(self.lmax,mmax=self.m,norm=norm,nthreads=1)
-		ntheta, nphi = sh.set_grid(self.ntheta, self.nphi, polar_opt=polar_opt)
+        sh = shtns.sht(self.lmax,mmax=self.m,norm=norm,nthreads=1)
+        ntheta, nphi = sh.set_grid(self.ntheta, self.nphi, polar_opt=polar_opt)
 
-		S = np.zeros([sh.nlm,self.nr],dtype=complex)
-		Q = np.zeros([sh.nlm,self.nr],dtype=complex)
-		T = np.zeros([sh.nlm,self.nr],dtype=complex)
+        S = np.zeros([sh.nlm,self.nr],dtype=complex)
+        Q = np.zeros([sh.nlm,self.nr],dtype=complex)
+        T = np.zeros([sh.nlm,self.nr],dtype=complex)
 
-		ur     = np.zeros([ntheta,nphi,self.nr]) 
-		utheta = np.zeros([ntheta,nphi,self.nr])
-		uphi   = np.zeros([ntheta,nphi,self.nr])
+        ur     = np.zeros([ntheta,nphi,self.nr]) 
+        utheta = np.zeros([ntheta,nphi,self.nr])
+        uphi   = np.zeros([ntheta,nphi,self.nr])
 
-		mmask = sh.m == self.m
+        mmask = sh.m == self.m
 
-		Q[mmask, :] = Qtmp 
-		S[mmask, :] = Stmp 
-		T[mmask, :] = Ttmp 
+        Q[mmask, :] = Qtmp 
+        S[mmask, :] = Stmp 
+        T[mmask, :] = Ttmp 
 
-		for ir in range(self.nr):
-			ur[...,ir],utheta[...,ir],uphi[...,ir] = sh.synth(Q[:,ir], S[:,ir], T[:,ir])
+        for ir in range(self.nr):
+            ur[...,ir],utheta[...,ir],uphi[...,ir] = sh.synth(Q[:,ir], S[:,ir], T[:,ir])
 
 
-		# Transpose to form (nphi, ntheta, self.nr) - old magic style habit
+        # Transpose to form (nphi, ntheta, self.nr) - old magic style habit
 
-		ur     = np.transpose(ur, (1,0,2))
-		utheta = np.transpose(utheta, (1,0,2))
-		uphi   = np.transpose(uphi, (1,0,2))
+        ur     = np.transpose(ur, (1,0,2))
+        utheta = np.transpose(utheta, (1,0,2))
+        uphi   = np.transpose(uphi, (1,0,2))
 
-		theta = np.arccos(sh.cos_theta)
-		phi   = np.linspace(0.,2*np.pi,nphi)
+        theta = np.arccos(sh.cos_theta)
+        phi   = np.linspace(0.,2*np.pi,nphi)
 
-		return ur,utheta,uphi,theta,phi
+        return ur,utheta,uphi,theta,phi
 
-	def spec2spat_scal(self,a,b,chx,symm1,m_top,lmax_top,r):
+    def spec2spat_scal(self,a,b,chx,symm1,m_top,lmax_top,r):
 
-		Plj0 = a + 1j*b
+        Plj0 = a + 1j*b
 
-		Plj  = np.reshape(Plj0,(int((self.lmax-self.m+1)/2),self.N))
-		Plr = np.zeros((int((self.lmax-self.m+1)/2), self.nr),dtype=complex)
+        Plj  = np.reshape(Plj0,(int((self.lmax-self.m+1)/2),self.N))
+        Plr = np.zeros((int((self.lmax-self.m+1)/2), self.nr),dtype=complex)
 
-		np.matmul( Plj, chx.T, Plr )
+        np.matmul( Plj, chx.T, Plr )
 
-		ll = np.arange(m_top,lmax_top,2)
+        ll = np.arange(m_top,lmax_top,2)
 
-		# start index for l. Do not confuse with indices for the Cheb expansion!
-		idP = int( (1-symm1)/2 )
+        # start index for l. Do not confuse with indices for the Cheb expansion!
+        idP = int( (1-symm1)/2 )
 
-		plx = idP+self.lmax-self.m+1
+        plx = idP+self.lmax-self.m+1
 
-		Stmp = np.zeros([self.lmax - self.m + 1,self.nr],dtype=complex)
-		Stmp[idP:plx:2, :] = Plr
+        Stmp = np.zeros([self.lmax - self.m + 1,self.nr],dtype=complex)
+        Stmp[idP:plx:2, :] = Plr
 
-		# SHTns init
+        # SHTns init
 
-		polar_opt = 1e-10
+        polar_opt = 1e-10
 
-		norm=shtns.sht_schmidt | shtns.SHT_NO_CS_PHASE
+        norm=shtns.sht_schmidt | shtns.SHT_NO_CS_PHASE
 
-		sh = shtns.sht(self.lmax,mmax=self.m,norm=norm,nthreads=1)
-		ntheta, nphi = sh.set_grid(self.ntheta, self.nphi, polar_opt=polar_opt)
+        sh = shtns.sht(self.lmax,mmax=self.m,norm=norm,nthreads=1)
+        ntheta, nphi = sh.set_grid(self.ntheta, self.nphi, polar_opt=polar_opt)
 
-		S = np.zeros([sh.nlm,self.nr],dtype=complex)
+        S = np.zeros([sh.nlm,self.nr],dtype=complex)
 
-		mmask = sh.m == self.m
+        mmask = sh.m == self.m
 
-		S[mmask, :] = Stmp
+        S[mmask, :] = Stmp
 
-		temp     = np.zeros([ntheta,nphi,self.nr]) 
+        temp     = np.zeros([ntheta,nphi,self.nr]) 
 
 
-		for ir in range(self.nr):
-			temp[...,ir] = sh.synth(S[:,ir])
+        for ir in range(self.nr):
+            temp[...,ir] = sh.synth(S[:,ir])
 
-		temp     = np.transpose(temp, (1,0,2))
-		return temp
+        temp     = np.transpose(temp, (1,0,2))
+        return temp
 
 
-	def get_sol(self,datDir):
+    def get_sol(self,datDir):
 
-		out = []
+        if datDir[-1] != '/':
+            datDir += '/'
+        if sys.path[0] != datDir:
+            sys.path.insert(0,datDir)
 
-		a = np.loadtxt(datDir+'real_flow.field',usecols=self.solnum)
-		b = np.loadtxt(datDir+'imag_flow.field',usecols=self.solnum)
+        global ut, par
+        import utils as ut
+        import parameters as par
 
-		r,chx = self.get_radial()
+        out = []
 
-		lmax_top,m_top,lmax_bot,m_bot,symm1 = self.get_symm(self.symm)
+        a = np.loadtxt(datDir+'real_flow.field',usecols=self.solnum)
+        b = np.loadtxt(datDir+'imag_flow.field',usecols=self.solnum)
 
-		ur,utheta,uphi,theta,phi = self.spec2spat_vec(a,b,chx,symm1,m_top,lmax_top,self.r)
+        r,chx = self.get_radial()
 
-		out.append([r,theta,phi,ur,utheta,uphi])
+        lmax_top,m_top,lmax_bot,m_bot,symm1 = self.get_symm(self.symm)
 
-		if par.magnetic == 1:
+        ur,utheta,uphi,theta,phi = self.spec2spat_vec(a,b,chx,symm1,m_top,lmax_top,self.r)
 
-			a = np.loadtxt(datDir+'real_magnetic.field',usecols=self.solnum)
-			b = np.loadtxt(datDir+'imag_magnetic.field',usecols=self.solnum)
+        out.append([r,theta,phi,ur,utheta,uphi])
 
-			# modified to have the bfield with the opposite symmetry as the flow
-			bsymm = -self.symm
+        if par.magnetic == 1:
 
-			lmax_top,m_top,lmax_bot,m_bot,symm1 = self.get_symm(bsymm)
+            a = np.loadtxt(datDir+'real_magnetic.field',usecols=self.solnum)
+            b = np.loadtxt(datDir+'imag_magnetic.field',usecols=self.solnum)
 
-			br,btheta,bphi,theta,phi = self.spec2spat_vec(a,b,chx,symm1,m_top,lmax_top,self.r)
+            # modified to have the bfield with the opposite symmetry as the flow
+            bsymm = -self.symm
 
-			out.append([br,btheta,bphi])
+            lmax_top,m_top,lmax_bot,m_bot,symm1 = self.get_symm(bsymm)
 
-		if par.thermal == 1:
-			a = np.loadtxt(datDir+'real_temp.field',usecols=self.solnum)
-			b = np.loadtxt(datDir+'imag_temp.field',usecols=self.solnum)
+            br,btheta,bphi,theta,phi = self.spec2spat_vec(a,b,chx,symm1,m_top,lmax_top,self.r)
 
-			lmax_top,m_top,lmax_bot,m_bot,symm1 = self.get_symm(self.symm)
+            out.append([br,btheta,bphi])
 
-			temp = self.spec2spat_scal(a,b,chx,symm1,m_top,lmax_top,self.r)
+        if par.thermal == 1:
+            a = np.loadtxt(datDir+'real_temp.field',usecols=self.solnum)
+            b = np.loadtxt(datDir+'imag_temp.field',usecols=self.solnum)
 
-			out.append(temp)
+            lmax_top,m_top,lmax_bot,m_bot,symm1 = self.get_symm(self.symm)
 
-		if par.chemical == 1:
-			a = np.loadtxt(datDir+'real_chem.field',usecols=self.solnum)
-			b = np.loadtxt(datDir+'imag_chem.field',usecols=self.solnum)
+            temp = self.spec2spat_scal(a,b,chx,symm1,m_top,lmax_top,self.r)
 
-			lmax_top,m_top,lmax_bot,m_bot,symm1 = self.get_symm(self.symm)
+            out.append(temp)
 
-			temp = self.spec2spat_scal(a,b,chx,symm1,m_top,lmax_top,self.r)
+        if par.chemical == 1:
+            a = np.loadtxt(datDir+'real_chem.field',usecols=self.solnum)
+            b = np.loadtxt(datDir+'imag_chem.field',usecols=self.solnum)
 
-			out.append(temp)
+            lmax_top,m_top,lmax_bot,m_bot,symm1 = self.get_symm(self.symm)
 
+            temp = self.spec2spat_scal(a,b,chx,symm1,m_top,lmax_top,self.r)
 
-		return out
+            out.append(temp)
+
+
+        return out

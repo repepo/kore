@@ -4,11 +4,17 @@ from .plotlib import *
 import sys
 import os
 
-import utils as ut
-import parameters as par
-
 class kmode(sol):
-    def __init__(self,datDir=os.environ['KORE_HOME']+'/bin/',solnum=0,nr=100,nphi=None,ntheta=None):
+    def __init__(self,datDir,solnum=0,nr=100,nphi=None,ntheta=None):
+
+        if datDir[-1] != '/':
+            datDir += '/'
+        if sys.path[0] != datDir:
+            sys.path.insert(0,datDir)
+
+        global ut, par
+        import utils as ut
+        import parameters as par
 
         self.solnum = solnum
         self.nr     = nr
