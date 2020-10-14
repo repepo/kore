@@ -20,7 +20,7 @@ def Ncheb(Ek):
 		out = 380*x-2700
 	else:
 		out = 104*x-216
-	return int(0.5*out)
+	return int(0.7*out)
 
 def wattr(n,Ek):
 	'''
@@ -42,11 +42,11 @@ def wattr(n,Ek):
 # ------------------------------------------------------------------------------ Physical parameters
 
 # Azimuthal wave number m (>=0)
-m = 0
+m = 1
 
 # For equatorially symmetric modes set symm = 1. 
 # Set symm = -1 for antisymmetric.
-symm = 1
+symm = -1
 
 # Inner core radius, CMB radius is one. Use bci = 2 below if ricb = 0.
 # Do not set ricb = 0 unless the regularity condition is implemented
@@ -55,14 +55,14 @@ ricb = 0.35
 # Inner core spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow
 # Use 2 for no inner core (regularity condition), *not implemented here*
-bci = 0
+bci = 1
 
 # CMB spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow
-bco = 0
+bco = 1
 
 # Ekman number (use 2* to match Dintrans 1999)
-Ek = 2*10**-7
+Ek = 10**-4
 
 forcing = 0  # For eigenvalue problems
 # forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
@@ -86,27 +86,30 @@ projection = 1
 
 # ------------------------------ Whether to include magnetic fields (imposes vertical uniform field)
 # magnetic = 0 solves the purely hydrodynamical problem.
-magnetic = 0
+magnetic = 1
+
+# magnetic boundary conditions on the ICB:
+# insult = 0  # Inner core as a perfect electrical conductor
+insult = 1  # Inner core as an electrical insulator
+
+# nxE = 'material'  # Assumes the tangential component of the material electric field to be continuous across the ICB. [nxE']=0
+nxE = 'spatial'   # Assumes the tangential component of the spatial electric field to be continuous across the ICB. [nxE]=0
+
 
 # Elsasser number
-Lambda =10**0.4
+Lambda = 0.01
 
 # Magnetic Ekman number
-Pm = 10**-5.5
-Em = Ek/Pm 
-#Em = 10*Ek**(2/3)
-#Em = 1e-6
+Pm = 10**-3; Em = Ek/Pm 
 
 # Lehnert number
-# Le = 10**-0.5
-Le2 = Lambda*Ek/Pm
-# Le2 = Le**2
-Le = np.sqrt(Le2)
+# Le = 10**-3; Le2 = Le**2
+Le2 = Lambda*Ek/Pm; Le = np.sqrt(Le2)
 
 
 # --------- Whether to include the heat equation (imposes a background temperature gradient profile)
-# thermal = 0
-thermal = 1
+thermal = 0
+# thermal = 1
 
 # Background temperature gradient (following Dormy 2004)
 heating = 'internal'       # internal heating,     dT/dr = r
@@ -132,14 +135,14 @@ write_eig = 0
 # --------------------------------------------------------------------------------------- Resolution
 
 # Number of cpus
-ncpus = 24
+ncpus = 4
 
 # Truncation level
 N = Ncheb(Ek) 
-#N = 25 
+# N = 25 
 
 # Approx lmax/N ratio
-g = 2.0  
+g = 1.0  
 lmax = int( 2*ncpus*( np.floor_divide( g*N, 2*ncpus ) ) + m - 1 )
 #lmax = 7
 
@@ -165,8 +168,8 @@ if track_target == 1 :  # read target from file and sets target accordingly
     rtau = tt[0]
     itau = tt[1]
 else:                   # set target manually
-    rtau = 0  #-2*3.847e-3
-    itau = 2*1.053
+    rtau = 0
+    itau = 1
 
 # tau is the actual target for the solver
 # real part is damping
@@ -186,7 +189,7 @@ nev = 2
 # ncv = 100
 
 # Maximum iterations to converge to an eigenvector
-maxit = 100
+maxit = 50
 
 # Tolerance for solver
 tol = 1e-13
