@@ -38,10 +38,10 @@ def main(ncpus):
 	a4 = ut.chebco(4, par.N, tol, par.ricb, ut.rcmb)
 	
 	# Basis transformation 
-	S0 = ut.Slam(0, par.N)
-	S1 = ut.Slam(1, par.N)
-	S2 = ut.Slam(2, par.N)
-	S3 = ut.Slam(3, par.N)
+	S0 = ut.Slam(0, par.N) # From Chebyshev basis ( C^(0) basis ) to C^(1) basis
+	S1 = ut.Slam(1, par.N) # From C^(1) basis to C^(2) basis
+	S2 = ut.Slam(2, par.N) # From C^(2) basis to C^(3) basis
+	S3 = ut.Slam(3, par.N) # From C^(3) basis to C^(4) basis
 	
 	# Derivatives
 	D1 = ut.Dlam(1, par.N)
@@ -106,7 +106,7 @@ def main(ncpus):
 	M43 = matlist[12]
 	M44 = matlist[13]
 	
-	# Matrices needed for the bottom half (b) for the single curl equations
+	# Matrices needed for the bottom half (b) for the single curl equations, C^(2) basis
 	r2D2b = M22*D2
 	r2D1b = S1*M21*D1
 	r2Ib  = S10*M20
@@ -114,7 +114,7 @@ def main(ncpus):
 	r1Ib  = S10*M10
 	Ib    = S10
 	
-	# Matrices needed for the thermal equation
+	# Matrices needed for the thermal equation, C^(2) basis
 	r4D2b = M42*D2
 	r3D2b = M32*D2
 	r3D1b = S1*M31*D1
@@ -123,9 +123,23 @@ def main(ncpus):
 	
 	bot    = [ r2D2b,  r2D1b,  r2Ib,  r1D1b,  r1Ib,  Ib,  r4D2b,  r3D1b,  r4Ib , r3Ib , r3D2b ]
 	blabel = ['r2D2b','r2D1b','r2Ib','r1D1b','r1Ib','Ib','r4D2b','r3D1b','r4Ib','r3Ib','r3D2b']
+	
+	## Matrices needed for the consoidal component of the induction equation, C^(3) basis
+	#S21  = S2*S1
+	#S210 = S21*S0
+	#r3D3c = M33*D3
+	#r3D2c = S2*M32*D2
+	#r3D1c = S21*M31*D1
+	#r2D2c = S2*M22*D2
+	#r2D1c = S21*M21*D1
+	#r2Ic  = S210*M20
+	#r1D1c = S21*M11*D1
+	#Ic    = S210
+	
+	#con    = [ r3D3c , r3D2c , r3D1c , r2D2c , r2D1c , r2Ic , r1D1c , Ic ]
+	#clabel = ['r3D3c','r3D2c','r3D1c','r2D2c','r2D1c','r2Ic','r1D1c','Ic']
 
-		
-	# Matrices needed for the top half (t) for the double curl equations
+	# Matrices needed for the top half (t) for the double curl equations, C^(4) basis
 	r4D4t = M44*D4
 	r4D3t = S3*M43*D3
 	r4D2t = S32*M42*D2
@@ -159,6 +173,33 @@ def main(ncpus):
 	for i in range( 0, np.size(bot) ):
 		tmp = ss.vstack( [ z2 , bot[i][:-2,:] ], format='csr' )	
 		sio.mmwrite( blabel[i], tmp )
+		
+		
+	# Matrices needed for the consoidal component of the induction equation, C^(3) basis
+	if (par.innercore == 'perfect conductor, material') or (par.innercore == 'perfect conductor, spatial'):
+		
+		S21  = S2*S1
+		S210 = S21*S0
+		r3D3c = M33*D3
+		r3D2c = S2*M32*D2
+		r3D1c = S21*M31*D1
+		r2D2c = S2*M22*D2
+		r2D1c = S21*M21*D1
+		r2Ic  = S210*M20
+		r1D1c = S21*M11*D1
+		Ic    = S210
+		
+		con    = [ r3D3c , r3D2c , r3D1c , r2D2c , r2D1c , r2Ic , r1D1c , Ic ]
+		clabel = ['r3D3c','r3D2c','r3D1c','r2D2c','r2D1c','r2Ic','r1D1c','Ic']	
+		
+		# Now chop the last 3 rows of consoidal matrices and
+		# shift rows down to make room for boundary conditions
+		zc = ss.csr_matrix((3,par.N))
+		for i in range( 0, np.size(con) ):
+			tmp = ss.vstack( [ zc , con[i][:-3,:] ], format='csr' )
+			sio.mmwrite( clabel[i], tmp )
+
+
 		
 	toc = timer()
 	

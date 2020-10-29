@@ -20,7 +20,7 @@ def Ncheb(Ek):
 		out = 380*x-2700
 	else:
 		out = 104*x-216
-	return int(0.7*out)
+	return int(1.0*out)
 
 def wattr(n,Ek):
 	'''
@@ -55,14 +55,14 @@ ricb = 0.35
 # Inner core spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow
 # Use 2 for no inner core (regularity condition), *not implemented here*
-bci = 1
+bci = 0
 
 # CMB spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow
 bco = 1
 
 # Ekman number (use 2* to match Dintrans 1999)
-Ek = 10**-4
+Ek = 10**-3
 
 forcing = 0  # For eigenvalue problems
 # forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
@@ -73,7 +73,7 @@ forcing = 0  # For eigenvalue problems
 # forcing = 6  # Buffett2010 ICB radial velocity boundary forcing, m=1,antisymm
 # forcing = 7  # Longitudinal libration boundary forcing, m=0, symm, no-slip
 
-# Use this when solving a forced problem 
+# Forcing frequency and amplitude (ignored if forcing = 0)
 freq0 = -0.9975
 delta = 0
 forcing_frequency = freq0 + delta  # negative is prograde
@@ -84,30 +84,32 @@ forcing_amplitude = 1.0
 projection = 1
 
 
-# ------------------------------ Whether to include magnetic fields (imposes vertical uniform field)
-# magnetic = 0 solves the purely hydrodynamical problem.
-magnetic = 1
+
+# ------------------------------------------------------------------------ Magnetic field parameters
+
+# magnetic = 0   # solves the purely hydrodynamical problem.
+magnetic = 1   # soves the MHD problem, with imposed axial field
 
 # magnetic boundary conditions on the ICB:
-# insult = 0  # Inner core as a perfect electrical conductor
-insult = 1  # Inner core as an electrical insulator
+# innercore = 'insulator'
+# innercore = 'perfect conductor, material'  # tangential *material* electric field jump [nxE']=0 across the ICB
+innercore = 'perfect conductor, spatial'   # tangential *spatial* electric field jump [nxE]=0 across the ICB
+# Note: 'material' or 'spatial' are identical if ICB is no-slip (bci = 1 above)
 
-# nxE = 'material'  # Assumes the tangential component of the material electric field to be continuous across the ICB. [nxE']=0
-nxE = 'spatial'   # Assumes the tangential component of the spatial electric field to be continuous across the ICB. [nxE]=0
-
-
-# Elsasser number
-Lambda = 0.01
-
-# Magnetic Ekman number
-Pm = 10**-3; Em = Ek/Pm 
-
-# Lehnert number
-# Le = 10**-3; Le2 = Le**2
-Le2 = Lambda*Ek/Pm; Le = np.sqrt(Le2)
+# Magnetic field strength and magnetic diffusivity:
+# Either use the Elsasser number and magnetic Prandtl number (uncomment the following three lines):
+# Lambda = 0.01
+# Pm = 10**-4
+# Em = Ek/Pm; Le2 = Lambda*Em; Le = np.sqrt(Le2)
+# Or use the Lehnert number and magnetic Ekman number (uncomment the following three lines):
+Le = 0.01
+Em = 1e-3
+Le2 = Le**2
 
 
-# --------- Whether to include the heat equation (imposes a background temperature gradient profile)
+
+# ------------------------------------------------------------------------------- Thermal parameters
+
 thermal = 0
 # thermal = 1
 
@@ -124,36 +126,37 @@ Prandtl = 1.0
 # Thermal boundary conditions
 # 0 for isothermal, theta=0
 # 1 for constant heat flux, (d/dr)theta=0
-bci_thermal = 0   # icb
-bco_thermal = 0   # cmb
+bci_thermal = 0   # ICB
+bco_thermal = 0   # CMB
 
 
-# ---------------------------------------------- writes eigenvalue or solution vector to disk if = 1	
+
+# ------------------------------------------------------------ writes solution vector to disk if = 1	
 write_eig = 0
+# write_eig = 1
+
 
 
 # --------------------------------------------------------------------------------------- Resolution
 
 # Number of cpus
-ncpus = 4
+ncpus = 24
 
-# Truncation level
+# Chebyshev polynomial truncation level
 N = Ncheb(Ek) 
-# N = 25 
+# N = 20
 
-# Approx lmax/N ratio
+# Spherical harmonic truncation lmax and approx lmax/N ratio:
 g = 1.0  
 lmax = int( 2*ncpus*( np.floor_divide( g*N, 2*ncpus ) ) + m - 1 )
-#lmax = 7
 
-
-# Max angular degree lmax, must be even if m is odd,
+# If manually setting the max angular degree lmax, then it must be even if m is odd,
 # and lmax-m+1 should be divisible by 2*ncpus 
-# lmax = (ncpus*2) * N0 + m - 1
+# lmax = 8
 
 
 
-# ------------------------------------------------------------------------ Eigenvalue solver options
+# ----------------------------------------------------------------------------------- Solver options
 
 # Set track_target = 1 to track an eigenvalue
 # assumes a preexisting 'track_target' file with target data
@@ -161,7 +164,6 @@ lmax = int( 2*ncpus*( np.floor_divide( g*N, 2*ncpus ) ) + m - 1 )
 track_target = 0
 # track_target = 1
 # track_target = 2
-
 
 if track_target == 1 :  # read target from file and sets target accordingly
     tt = np.loadtxt('track_target')
@@ -175,7 +177,7 @@ else:                   # set target manually
 # real part is damping
 # imaginary part is frequency (positive is retrograde)
 tau = rtau + itau*1j
-#tau = 2*(wattr(n0,Ek/2))
+# tau = 2*(wattr(n0,Ek/2))
 
 which_eigenpairs = 'TM'
 # L/S/T & M/R/I
@@ -183,7 +185,7 @@ which_eigenpairs = 'TM'
 # M magnitude, R real, I imaginary
 
 # Number of desired eigenvalues
-nev = 2
+nev = 3
 
 # Number of vectors in Krylov space for solver
 # ncv = 100
