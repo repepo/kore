@@ -62,35 +62,37 @@ class kmode(sol):
 
     def get_data(self,field):
 
-        if field in ['ur','UR','uR','Ur']:
+        field = field.lower()
+
+        if field in ['ur','vr']:
             data = self.ur
             titl = r'$u_r$'
 
-        if field in ['up','UP','uP','Up']:
+        if field in ['up','vp']:
             data = self.uphi
             titl = r'$u_\phi$'
 
-        if field in ['ut','UT','uT','Ut']:
+        if field in ['ut','vt']:
             data = self.utheta
             titl = r'$u_\theta$'
 
-        if field in ['br','BR','bR','Br']:
+        if field == 'br':
             data = self.br
             titl = r'$B_r$'
 
-        if field in ['bp','BP','bP','Bp']:
+        if field == 'bp':
             data = self.bphi
             titl = r'$B_\phi$'
 
-        if field in ['bt','BT','bT','Bt']:
+        if field == 'bt':
             data = self.btheta
             titl = r'$B_\theta$'
 
-        if field in ['T','Temp','temp']:
+        if field in ['t','temp']:
             data = self.temp
             titl = r'Temperature'
 
-        if field in ['C','Chem','chem']:
+        if field in ['c','chem']:
             data = self.chem
             titl = r'Composition'
 

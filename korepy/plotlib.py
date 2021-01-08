@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 import numpy as np
 
 def find_rad(r,rPlot):
@@ -30,7 +31,9 @@ def radContour(theta,phi,dat,levels=30,cmap='RdBu_r',colbar=True):
     phi2D, theta2D = np.meshgrid(phi,theta,indexing='ij')
     xx,yy = hammer2cart(theta2D,phi2D,colat=True)
 
-    cont = plt.contourf(xx,yy,dat,levels,cmap=cmap)
+    datMax = (np.abs(dat)).max()
+    divnorm = colors.TwoSlopeNorm(vmin=-datMax, vcenter=0, vmax=datMax)
+    cont = plt.contourf(xx,yy,dat,levels,cmap=cmap,norm=divnorm)
 
     for c in cont.collections:
         c.set_edgecolor("face")
@@ -51,7 +54,9 @@ def merContour(r,theta,dat,levels=30,cmap='RdBu_r',colbar=True):
     xx = r2D * np.sin(theta2D)
     yy = r2D * np.cos(theta2D)
 
-    cont = plt.contourf(xx,yy,dat,levels,cmap=cmap)
+    datMax = (np.abs(dat)).max()
+    divnorm = colors.TwoSlopeNorm(vmin=-datMax, vcenter=0, vmax=datMax)
+    cont = plt.contourf(xx,yy,dat,levels,cmap=cmap,norm=divnorm)
 
     plt.plot(r[0]*np.sin(theta),r[0]*np.cos(theta),'k',lw=1)
     plt.plot(r[-1]*np.sin(theta),r[-1]*np.cos(theta),'k',lw=1)
@@ -70,7 +75,9 @@ def eqContour(r,phi,dat,levels=30,cmap='RdBu_r',colbar=True):
     xx = r2D * np.cos(phi2D)
     yy = r2D * np.sin(phi2D)
 
-    cont = plt.contourf(xx,yy,dat,levels,cmap=cmap)
+    datMax = (np.abs(dat)).max()
+    divnorm = colors.TwoSlopeNorm(vmin=-datMax, vcenter=0, vmax=datMax)
+    cont = plt.contourf(xx,yy,dat,levels,cmap=cmap,norm=divnorm)
 
     plt.plot(r[0]*np.cos(phi), r[0]*np.sin(phi),'k',lw=1)
     plt.plot(r[-1]*np.cos(phi), r[-1]*np.sin(phi),'k',lw=1)

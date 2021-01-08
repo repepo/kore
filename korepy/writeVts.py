@@ -6,7 +6,7 @@ try:
     from evtk.hl import gridToVTK
 except:
     print("Use of the writeVts feature requires the evtk library.")
-    print("You can get it here: https://bitbucket.org/pauloh/pyevtk/ ")
+    print("You can get it here: https://github.com/paulo-herrera/PyEVTK ")
 
 def get_grid(r,theta,phi,nr,ntheta,nphi):
 
