@@ -4,6 +4,7 @@ import numpy as np
 import os
 import sys
 import importlib
+from mpi4py import MPI
 from scipy.optimize import brentq
 
 opts='-st_type sinvert -eps_error_relative'
@@ -11,6 +12,13 @@ opts='-st_type sinvert -eps_error_relative'
 mmin = 12
 mmax = 13
 marr = np.arange(mmin,mmax+1)
+
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+ncpus = comm.Get_size()
+mperproc = int(len(marr)/ncpus)
+
+comm.scatter(marr,root=0)
 
 Ramin = 3e5
 
@@ -21,9 +29,6 @@ def get_ncpus(N,cpumax):
 
 def get_sigma(Ra,ncpus, opts):
     Ra = 10**Ra
-
-    print("Ra = %e" %Ra)
-
     os.system('sed -i "0,/Ra_gap.*/s//Ra_gap=%f/" parameters.py' %Ra)
     os.system('mpiexec -n %d ./assemble.py > /dev/null' %ncpus)
     os.system('mpiexec -n %d ./solve_nopp.py %s > /dev/null' %(ncpus,opts))
@@ -55,35 +60,27 @@ def bracket_brentq(f, x1, x2=None, dx=0.3, tol=1e-6, maxiter=200, args=None):
     x0 = brentq(f, x1, x2, maxiter=maxiter, xtol=tol, rtol=tol, args=args)
     return x0
 
+if rank == 0:
+    print("###############################",flush=True)
+    print("# Kore linear convection mode #",flush=True)
+    print("###############################",flush=True)
+    print("",flush=True)
 
-print("###############################",flush=True)
-print("# Kore linear convection mode #",flush=True)
-print("###############################",flush=True)
-print("",flush=True)
-
-
-for mIdx, m in enumerate(marr):
-
-    mdir = 'Rac_m' + str(m)
-
+for m in range(mperproc):
+    mIdx = rank*mperproc + m
+    mdir = 'Rac_m' + str(marr[mIdx])
     if not os.path.exists(mdir):
         os.mkdir(mdir)
-
-    print("m = %d\n" %m,flush=True)
-
+    print("Rank %d -> m = %d\n" %(rank,marr[mIdx]),flush=True)
     os.chdir(mdir)
-
     os.system('cp ../params_conv.py parameters.py')
     os.system('cp ../assemble.py ../utils*.py ../solve_nopp.py ../submatrices.py ../bc_variables.py .')
-    os.system('sed -i "s/mUsr/%d/" parameters.py' %m) 
+    os.system('sed -i "s/mUsr/%d/" parameters.py' %marr[mIdx]) 
     os.system('sed -i "s/RaUsr/%f/" parameters.py' %Ramin)
+    os.system('./submatrices.py %d' %ncpus)
     par = importlib.import_module(mdir+'.parameters')
     nb = int((par.lmax - par.m + 1)/2)
     ncpus = get_ncpus(nb,20)
-    os.system('./submatrices.py %d' %ncpus)
-
-# Compute Rac
-
     Rac = bracket_brentq(get_sigma,np.log10(Ramin),args=(ncpus,opts))
     Rac=10**Rac
     eig = np.loadtxt('eigenvalues.dat')
@@ -91,9 +88,9 @@ for mIdx, m in enumerate(marr):
     sigma_c,omega_c = eig[idx_c,:]
 
     np.savetxt('crit_Ek_%.2e_eta_%f.dat' %(par.Ek_gap,par.ricb),
-    [par.Ek_gap , par.ricb , Rac , int(m) , sigma_c , omega_c],
+    [par.Ek_gap , par.ricb , Rac , marr[mIdx] , sigma_c , omega_c],
     newline=" ")
     
     os.chdir('..')
 
-os.system("awk '{print $0}' */crit* > crit_params_Ek_%.2e_eta_%.2f.dat"  %(par.Ek_gap,par.ricb))
+os.system("awk '{print $0}' */crit* > crit_params.dat")
