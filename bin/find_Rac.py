@@ -5,6 +5,8 @@ import os
 import sys
 import importlib
 from scipy.optimize import brentq
+from timeit import default_timer as timer
+import datetime
 
 opts='-st_type sinvert -eps_error_relative'
 
@@ -13,6 +15,8 @@ mmax = 13
 marr = np.arange(mmin,mmax+1)
 
 Ramin = 3e5
+
+ra_cache = {}
 
 def get_ncpus(N,cpumax):
     for k in range(cpumax,1,-1):
@@ -61,8 +65,11 @@ print("# Kore linear convection mode #",flush=True)
 print("###############################",flush=True)
 print("",flush=True)
 
+tic = timer()
 
 for mIdx, m in enumerate(marr):
+
+    tic1 = timer()
 
     mdir = 'Rac_m' + str(m)
 
@@ -83,6 +90,7 @@ for mIdx, m in enumerate(marr):
     os.system('./submatrices.py %d' %ncpus)
 
 # Compute Rac
+    ra_cache = {}
 
     Rac = bracket_brentq(get_sigma,np.log10(Ramin),args=(ncpus,opts))
     Rac=10**Rac
@@ -93,7 +101,18 @@ for mIdx, m in enumerate(marr):
     np.savetxt('crit_Ek_%.2e_eta_%f.dat' %(par.Ek_gap,par.ricb),
     [par.Ek_gap , par.ricb , Rac , int(m) , sigma_c , omega_c],
     newline=" ")
+   
+    toc1 = timer()
+
+    tform = str(datetime.timedelta(seconds=toc1 - tic1))
+    
+    print("Rac for m=%d found in %s" %(m,tform),flush=True)
     
     os.chdir('..')
 
 os.system("awk '{print $0}' */crit* > crit_params_Ek_%.2e_eta_%.2f.dat"  %(par.Ek_gap,par.ricb))
+
+toc2 = timer()
+ttot = str(datetime.timedelta(seconds=toc2 - tic))
+
+print("Rac for m = %d to m = %d found in %s" %(mmin,mmax,ttot),flush=True)

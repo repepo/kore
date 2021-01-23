@@ -22,6 +22,8 @@ comm.scatter(marr,root=0)
 
 Ramin = 3e5
 
+ra_cache = {}
+
 def get_ncpus(N,cpumax):
     for k in range(cpumax,1,-1):
         if N%k == 0:
@@ -77,10 +79,12 @@ for m in range(mperproc):
     os.system('cp ../assemble.py ../utils*.py ../solve_nopp.py ../submatrices.py ../bc_variables.py .')
     os.system('sed -i "s/mUsr/%d/" parameters.py' %marr[mIdx]) 
     os.system('sed -i "s/RaUsr/%f/" parameters.py' %Ramin)
-    os.system('./submatrices.py %d' %ncpus)
     par = importlib.import_module(mdir+'.parameters')
     nb = int((par.lmax - par.m + 1)/2)
     ncpus = get_ncpus(nb,20)
+    os.system('./submatrices.py %d' %ncpus)
+    
+    ra_cache = {}
     Rac = bracket_brentq(get_sigma,np.log10(Ramin),args=(ncpus,opts))
     Rac=10**Rac
     eig = np.loadtxt('eigenvalues.dat')
