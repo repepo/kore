@@ -28,14 +28,18 @@ def get_sigma(Ra,ncpus, opts):
 
     print("Ra = %e" %Ra)
 
-    os.system('sed -i "0,/Ra_gap.*/s//Ra_gap=%f/" parameters.py' %Ra)
-    os.system('mpiexec -n %d ./assemble.py > /dev/null' %ncpus)
-    os.system('mpiexec -n %d ./solve_nopp.py %s > /dev/null' %(ncpus,opts))
-    eig = np.loadtxt('eigenvalues.dat')
-    Idx = np.argmax(eig[:,0])
-    sigma_c = eig[Idx,0]
+    if Ra in ra_cache:
+        return ra_cache[Ra]
+    else:
+        os.system('sed -i "0,/Ra_gap.*/s//Ra_gap=%f/" parameters.py' %Ra)
+        os.system('mpiexec -n %d ./assemble.py > /dev/null' %ncpus)
+        os.system('mpiexec -n %d ./solve_nopp.py %s > /dev/null' %(ncpus,opts))
+        eig = np.loadtxt('eigenvalues.dat')
+        Idx = np.argmax(eig[:,0])
+        sigma_c = eig[Idx,0]
+        ra_cache[Ra] = sigma_c
 
-    return sigma_c
+        return sigma_c
 
 # Function copied from SINGE - looks for Ra bounds
 def bracket_brentq(f, x1, x2=None, dx=0.3, tol=1e-6, maxiter=200, args=None):
