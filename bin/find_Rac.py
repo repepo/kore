@@ -10,6 +10,10 @@ import datetime
 
 opts='-st_type sinvert -eps_error_relative'
 
+# For high res
+
+#opts='-st_type sinvert -st_pc_factor_mat_solver_type mumps -mat_mumps_icntl_14 3000 -eps_true_residual'
+
 mmin = 12
 mmax = 13
 marr = np.arange(mmin,mmax+1)
@@ -80,7 +84,9 @@ for mIdx, m in enumerate(marr):
     if not os.path.exists(mdir):
         os.mkdir(mdir)
 
-    print("m = %d\n" %m,flush=True)
+    print("=======",flush=True)
+    print("m = %d" %m,flush=True)
+    print("=======\n",flush=True)
 
     os.chdir(mdir)
 
@@ -110,7 +116,9 @@ for mIdx, m in enumerate(marr):
 
     tform = str(datetime.timedelta(seconds=toc1 - tic1))
     
+    print("\n======================================",flush=True)
     print("Rac for m=%d found in %s" %(m,tform),flush=True)
+    print("==================================\n\n")
     
     os.chdir('..')
 
