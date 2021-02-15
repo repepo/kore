@@ -57,7 +57,7 @@ class kmode(sol):
         elif par.magnetic == 1:
             [self.r,self.theta,self.phi,self.ur,self.utheta,self.uphi],[self.br,self.btheta,self.bphi] = out
         else:
-            [self.r,self.theta,self.phi,self.ur,self.utheta,self.uphi] = out
+            [self.r,self.theta,self.phi,self.ur,self.utheta,self.uphi] = out[0]
 
 
     def get_data(self,field):

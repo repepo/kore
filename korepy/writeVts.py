@@ -3,7 +3,7 @@
 
 import numpy as np
 try:
-    from evtk.hl import gridToVTK
+    from pyevtk.hl import gridToVTK
 except:
     print("Use of the writeVts feature requires the evtk library.")
     print("You can get it here: https://github.com/paulo-herrera/PyEVTK ")
