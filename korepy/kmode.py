@@ -26,6 +26,8 @@ class kmode(sol):
         self.ricb   = par.ricb
         self.rcmb   = 1
         self.n      = ut.n
+        self.nphi   = nphi
+        self.ntheta = ntheta
 
         if nphi is None or ntheta is None:
             self.nphi   = int(3 * self.lmax/2) * 2
