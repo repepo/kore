@@ -28,7 +28,17 @@ class sol:
     def get_radial(self):
 
         gap = self.rcmb-self.ricb
-        self.r = np.linspace(self.ricb,self.rcmb,self.nr)
+
+        # Gauss-Lobatto grid
+
+        coeff = np.zeros(self.nr + 1)
+        coeff[-1] = 1.
+
+        x_aux = ch.chebroots(coeff)
+
+        self.r = 0.5*(x_aux+1) * gap + self.ricb
+
+#        self.r = np.linspace(self.ricb,self.rcmb,self.nr)
 
         if self.ricb == 0:
             self.r = self.r[1:]
@@ -56,7 +66,7 @@ class sol:
                 lmax_top = self.lmax+1
                 lmax_bot = self.lmax
         elif self.m == 0 :
-            symm1 = -symm 
+            symm1 = -symm
             if symm == 1:
                 m_top = 2
                 m_bot = 1                        # equatorially self.symmetric case (self.symm=1)
@@ -134,15 +144,15 @@ class sol:
         Q = np.zeros([sh.nlm,self.nr],dtype=complex)
         T = np.zeros([sh.nlm,self.nr],dtype=complex)
 
-        ur     = np.zeros([ntheta,nphi,self.nr]) 
+        ur     = np.zeros([ntheta,nphi,self.nr])
         utheta = np.zeros([ntheta,nphi,self.nr])
         uphi   = np.zeros([ntheta,nphi,self.nr])
 
         mmask = sh.m == self.m
 
-        Q[mmask, :] = Qtmp 
-        S[mmask, :] = Stmp 
-        T[mmask, :] = Ttmp 
+        Q[mmask, :] = Qtmp
+        S[mmask, :] = Stmp
+        T[mmask, :] = Ttmp
 
         for ir in range(self.nr):
             ur[...,ir],utheta[...,ir],uphi[...,ir] = sh.synth(Q[:,ir], S[:,ir], T[:,ir])
@@ -193,7 +203,7 @@ class sol:
 
         S[mmask, :] = Stmp
 
-        temp     = np.zeros([ntheta,nphi,self.nr]) 
+        temp     = np.zeros([ntheta,nphi,self.nr])
 
 
         for ir in range(self.nr):

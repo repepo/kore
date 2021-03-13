@@ -100,7 +100,7 @@ class kmode(sol):
 
         return data, titl
 
-    def surf(self,field='ur',r=0.5,cm='seismic',levels=30,cmap='RdBu_r'):
+    def surf(self,field='ur',r=0.5,cm='seismic',levels=30,cmap='RdBu_r',colbar=True):
 
         idxPlot = find_rad(self.r,r)
 
@@ -109,16 +109,17 @@ class kmode(sol):
         data = data[...,idxPlot]
 
         plt.figure(figsize=(12,6))
-        radContour(self.theta,self.phi,data,levels=levels,cmap=cmap)
+        radContour(self.theta,self.phi,data,levels=levels,cmap=cmap,colbar=colbar)
 
         titl = titl + r' at $r/r_o = %.2f$' %(self.r[idxPlot]/self.r.max())
         plt.title(titl,fontsize=30)
 
+        plt.axis('equal')
         plt.axis('off')
-
+        plt.tight_layout()
         plt.show()
 
-    def slice(self, field='ur',phi=0,levels=30,cmap='RdBu_r'):
+    def slice(self, field='ur',phi=0,levels=30,cmap='RdBu_r',colbar=True):
 
         phi *= np.pi/180.
         idxPlot = find_phi(self.phi,phi)
@@ -128,16 +129,17 @@ class kmode(sol):
 
         plt.figure(figsize=(5,10))
 
-        merContour(self.r,self.theta,data,levels=levels,cmap=cmap)
+        merContour(self.r,self.theta,data,levels=levels,cmap=cmap,colbar=colbar)
 
         titl = titl + r' at $\phi=%.1f^\circ$' %(self.phi[idxPlot] * 180/np.pi)
         plt.title(titl,fontsize=20)
 
+        plt.axis('equal')
         plt.axis('off')
-
+        plt.tight_layout()
         plt.show()
 
-    def equat(self,field='ur',levels=30,cmap='RdBu_r'):
+    def equat(self,field='ur',levels=30,cmap='RdBu_r',colbar=True):
 
         idxPlot = int(self.ntheta/2)
 
@@ -146,10 +148,12 @@ class kmode(sol):
 
         plt.figure(figsize=(6.2,5))
 
-        eqContour(self.r,self.phi,data,levels=levels,cmap=cmap)
+        eqContour(self.r,self.phi,data,levels=levels,cmap=cmap,colbar=colbar)
 
         titl = titl + ' at equator'
         plt.title(titl,fontsize=20)
 
+        plt.axis('equal')
         plt.axis('off')
+        plt.tight_layout()
         plt.show()

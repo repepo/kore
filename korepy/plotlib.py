@@ -47,7 +47,7 @@ def radContour(theta,phi,dat,levels=30,cmap='RdBu_r',colbar=True):
 
     if colbar:
         cbar = plt.colorbar(cont)
-    
+
 def merContour(r,theta,dat,levels=30,cmap='RdBu_r',colbar=True):
 
     theta2D, r2D = np.meshgrid(theta,r,indexing='ij')
