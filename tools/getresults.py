@@ -143,6 +143,8 @@ dsq = D/sqrt(Ek)
 # quality factor
 Q = K/D
 	
+#rms error
+rms = sqrt(err1**2+err2**2)
 
 '''
 mm = (0.2355*(M/K)-0.063)*D

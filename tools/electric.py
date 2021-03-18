@@ -55,19 +55,22 @@ Flj   = np.reshape(Flj0,(-1,N))
 Glj   = np.reshape(Glj0,(-1,N))
 
 lm1 = 2*np.shape(Plj)[0] # this should be =lmax-m+1
+lmm = lm1-1
 
 # These are the l-indices for u and b
-s = int(symm*0.5+0.5) # s=0 if antisymm, s=1 if symm
+s = int(symm*0.5+0.5) # s=0 if u is antisymm, s=1 if u is symm
 if m>0:
-	lut = np.arange( m+s  , m+s   +lm1-1, 2) #pol
-	lup = np.arange( m+1-s, m+1-s +lm1-1, 2) #tor
-	lbg = np.arange( m+1-s, m+1-s +lm1-1, 2) #pol
-	lbf = np.arange( m+s  , m+s   +lm1-1, 2) #tor
+	lup = np.arange( m+1-s, m+1-s +lmm, 2) # u pol
+	lut = np.arange( m+s  , m+s   +lmm, 2) # u tor
+	#lbf = np.arange( m+s  , m+s   +lmm, 2) # b pol
+	#lbg = np.arange( m+1-s, m+1-s +lmm, 2) # b tor
 elif m==0:
-	lut = np.arange( 2-s, 2-s +lm1-1, 2) #pol
-	lup = np.arange( 1+s, 1+s +lm1-1, 2) #tor	
-	lbg = np.arange( 1+s, 1+s +lm1-1, 2) #pol
-	lbf = np.arange( 2-s, 2-s +lm1-1, 2) #tor
+	lup = np.arange( 1+s, 1+s +lmm, 2) # u pol
+	lut = np.arange( 2-s, 2-s +lmm, 2) # u tor
+	#lbf = np.arange( 2-s, 2-s +lmm, 2) # b pol
+	#lbg = np.arange( 1+s, 1+s +lmm, 2) # b tor
+lbf = lut
+lbg = lup	
 
 
 if ricb == 0:

@@ -55,14 +55,14 @@ ricb = 0.35
 # Inner core spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow
 # Use 2 for no inner core (regularity condition), *not implemented here*
-bci = 0
+bci = 1
 
 # CMB spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow
 bco = 1
 
 # Ekman number (use 2* to match Dintrans 1999)
-Ek = 10**-3
+Ek = 10**-4
 
 forcing = 0  # For eigenvalue problems
 # forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
@@ -86,9 +86,8 @@ projection = 1
 
 
 # ------------------------------------------------------------------------ Magnetic field parameters
-
-# magnetic = 0   # solves the purely hydrodynamical problem.
-magnetic = 1   # soves the MHD problem, with imposed axial field
+magnetic = 0   # solves the purely hydrodynamical problem.
+# magnetic = 1   # soves the MHD problem, with imposed axial field
 
 # magnetic boundary conditions on the ICB:
 # innercore = 'insulator'
@@ -109,7 +108,6 @@ Le2 = Le**2
 
 
 # ------------------------------------------------------------------------------- Thermal parameters
-
 thermal = 0
 # thermal = 1
 
@@ -140,7 +138,7 @@ write_eig = 0
 # --------------------------------------------------------------------------------------- Resolution
 
 # Number of cpus
-ncpus = 24
+ncpus = 4
 
 # Chebyshev polynomial truncation level
 N = Ncheb(Ek) 

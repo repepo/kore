@@ -8,6 +8,8 @@ import numpy as np
 import parameters as par
 import utils as ut
 
+mp.set_start_method('fork')
+
 
 def pol_worker( l, Pk, N, m, ricb, rcmb, w, projection, forcing, Ra, Rb): # ------------ 
 	'''
@@ -55,6 +57,7 @@ def pol_worker( l, Pk, N, m, ricb, rcmb, w, projection, forcing, Ra, Rb): # ----
 	
 	
 	# -------------------------------------------------------------------------- kinetic energy, poloidal
+	# Volume integral of (1/2)* u.u
 	
 	f0 = 4*np.pi/(2*l+1)
 	f1 = r2*np.absolute( qlm0 )**2
@@ -65,18 +68,18 @@ def pol_worker( l, Pk, N, m, ricb, rcmb, w, projection, forcing, Ra, Rb): # ----
 	
 	
 	# -------------------------------------------------------------------------- internal energy dissipation, poloidal
-	# (symm\nabla u):(symm\nabla u)
+	# Volume integral of (symm\nabla u):(symm\nabla u)
 	
 	f0 = 4*np.pi/(2*l+1)
 	f1 = L*np.absolute(qlm0 + rk*slm1 - slm0)**2
 	f2 = 3*np.absolute(rk*qlm1)**2
 	f3 = L*(l-1)*(l+2)*np.absolute(slm0)**2
-	# integral is
-	Dint_pol_l = (np.pi/N)*(Rb-Ra)*0.5*np.sum( sqx*f0*( f1+f2+f3 ) )
+	# integral is a positive real number, take 2* to match Dkin
+	Dint_pol_l = 2*(np.pi/N)*(Rb-Ra)*0.5*np.sum( sqx*f0*( f1+f2+f3 ) )
 
 	
 	# -------------------------------------------------------------------------- kinetic energy dissipation rate, poloidal
-	# (1/2)* u.nabla^2 u
+	# Volume integral of u.nabla^2 u, (as a complex number, use 2*real part) 
 	
 	f0 = 4*np.pi/(2*l+1)
 	f1 = L * r2 * np.conj(slm0) * slm2
@@ -84,8 +87,8 @@ def pol_worker( l, Pk, N, m, ricb, rcmb, w, projection, forcing, Ra, Rb): # ----
 	f3 = -(L**2)*( np.conj(slm0)*slm0 ) - (l**2+l+2) * ( np.conj(qlm0)*qlm0 )
 	f4 = 2 * rk * np.conj(qlm0)*qlm1 + r2 * np.conj(qlm0) * qlm2
 	f5 = 2 * L *( np.conj(qlm0)*slm0 + qlm0*np.conj(slm0) )
- 	# integral is
-	Dkin_pol_l = (np.pi/N)*(Rb-Ra)*0.5*np.sum( sqx*f0*( f1+f2+f3+f4+f5 ) )
+ 	# kinetic energy dissipation is 2*real part of the integral
+	Dkin_pol_l = 2*np.real( (np.pi/N)*(Rb-Ra)*0.5*np.sum( sqx*f0*( f1+f2+f3+f4+f5 ) ) )
 	
 	
 	if (projection == 1 and forcing == 0) or forcing == 1: # ------------------- power from Lin2018 forcing, poloidal
@@ -188,7 +191,7 @@ def tor_worker( l, Tk, N, m, ricb, rcmb, w, projection, forcing, Ra, Rb): # ----
 	f1 = L*np.absolute( rk*tlm1-tlm0 )**2
 	f2 = L*(l-1)*(l+2)*np.absolute( tlm0 )**2
 	# integral is
-	Dint_tor_l =  (np.pi/N)*(Rb-Ra)*0.5 * np.sum( sqx*f0*( f1+f2 ) )
+	Dint_tor_l =  2* (np.pi/N)*(Rb-Ra)*0.5 * np.sum( sqx*f0*( f1+f2 ) )
 	
 	
 	# -------------------------------------------------------------------------- kinetic energy dissipation rate, toroidal
@@ -198,7 +201,7 @@ def tor_worker( l, Tk, N, m, ricb, rcmb, w, projection, forcing, Ra, Rb): # ----
 	f2 = 2 * rk * L * np.conj(tlm0) * tlm1
 	f3 = -(L**2)*( np.conj(tlm0)*tlm0 )
 	# integral is:
-	Dkin_tor_l = (np.pi/N) * (Rb-Ra)*0.5 * np.sum( sqx*f0*( f1+f2+f3 ) )
+	Dkin_tor_l = 2*np.real( (np.pi/N) * (Rb-Ra)*0.5 * np.sum( sqx*f0*( f1+f2+f3 ) ) )
 	
 	
 	if (projection == 1 and forcing == 0) or forcing == 1: # ------------------- power from Lin2018 forcing, toroidal
@@ -323,7 +326,7 @@ def pol_ohm( l, Pk, N, ricb, rcmb, Ra, Rb): # ----------------------------------
 	
 	# -------------------------------------------------------------------------- Ohmic dissipation, poloidal
 	
-	f0 = 4*np.pi*L/(2*l+1)
+	f0 = 8*np.pi*L/(2*l+1)
 	f1 = np.absolute( qlm0 - slm0 - rk*slm1 )**2
 	
 	odis_pol_l = 0.5*(Rb-Ra)*(np.pi/N)*np.sum( sqx*f0*f1 )
@@ -362,7 +365,7 @@ def tor_ohm( l, Tk, N, ricb, rcmb, Ra, Rb): # ----------------------------------
 		
 	# -------------------------------------------------------------------------- Ohmic dissipation, toroidal
 	
-	f0 = 4*np.pi*L/(2*l+1)
+	f0 = 8*np.pi*L/(2*l+1)
 	f1 = np.absolute( rk*tlm1 + tlm0 )**2
 	f2 = L*np.absolute( tlm0 )**2 
 	
@@ -371,6 +374,26 @@ def tor_ohm( l, Tk, N, ricb, rcmb, Ra, Rb): # ----------------------------------
 	
 	return [benergy_tor_l, odis_tor_l]
 	
+	
+
+def thermal_worker(l, Hk, Pk, N, ricb, rcmb, Ra, Rb):	
+
+	L  = l*(l+1)
+	
+	hlm0 = np.zeros(np.shape(x0),dtype=complex)	
+	hlm0 = ch.chebval(x0, Hk)
+
+	plm0 = np.zeros(np.shape(x0),dtype=complex)	
+	plm0 = ch.chebval(x0, Pk)
+	
+	# -------------------------------------------------------------------------- buoyancy power
+	f0 = 4*np.pi*L/(2*l+1)
+	f1 = r2 * 2 * np.real( np.conj(plm0) * hlm0 )
+	buoyancy_power_l = 0.5*(Rb-Ra)*(np.pi/N)*np.sum( sqx*f0*f1 )
+	
+	return [buoyancy_power_l]
+
+
 
 
 def ken_dis( a, b, N, lmax, m, symm, ricb, rcmb, ncpus, w, projection, forcing, Ra, Rb):
@@ -551,3 +574,66 @@ def ohm_dis( a, b, N, lmax, m, bsymm, ricb, rcmb, ncpus, Ra, Rb):
 	
 	return np.real([MagEnerPol, MagEnerTor, OhmDissPol, OhmDissTor])
 
+
+
+def thermal_dis( atemp, btemp, au, bu, N, lmax, m, symm, ricb, rcmb, ncpus, Ra, Rb):
+	'''
+	Returns the power associated with the buoyancy force.
+	In the future will also compute thermal dissipation and other
+	quantities related to the temperature equation.
+	'''
+	
+	# xk are the colocation points, from -1 to 1
+	i = np.arange(0,N)
+	xk = np.cos( (i+0.5)*np.pi/N )
+	global x0
+	x0 = ( (Rb-Ra)*xk + (Ra+Rb) - (ricb+rcmb) )/(rcmb-ricb)
+		
+	# rk are the radial colocation points, from ricb to rcmb
+	global rk 
+	rk = 0.5*(rcmb-ricb)*( x0 + 1 ) + ricb
+	# the following are needed to compute the integrals
+	global sqx 
+	sqx = np.sqrt(1-xk**2)
+	global r2
+	r2 = rk**2
+	
+	
+	# l-indices for u. lup are also the indices for the temperature
+	#lmm = 2*np.shape(Plj)[0] -1 # this should be =lmax-m
+	lmm = lmax-m
+	s = int(symm*0.5+0.5) # s=0 if u is antisymm, s=1 if u is symm
+	if m>0:
+		lup = np.arange( m+1-s, m+1-s +lmm, 2) # u pol
+		#lut = np.arange( m+s  , m+s   +lmm, 2) # u tor
+	elif m==0:
+		lup = np.arange( 1+s, 1+s +lmm, 2) # u pol
+		#lut = np.arange( 2-s, 2-s +lmm, 2) # u tor
+	
+	
+	n = int(N*(lmax-m+1)/2)
+	# Use n=(N/2)*(lmax-m+1)/2 if there is no inner core
+	
+	evtemp = atemp + 1j*btemp
+	Hk0 = evtemp[0:  n] #  N/2 elements on each l block
+	
+	evu = au + 1j*bu
+	Pk0 = evu[0:  n]
+	
+	
+	# these are the cheb coefficients, reorganized
+	Hk2 = np.reshape(Hk0,(int((lmax-m+1)/2),N))
+	Pk2 = np.reshape(Pk0,(int((lmax-m+1)/2),N))
+	
+	# process each l component in parallel
+	pool = mp.Pool(processes=ncpus)
+	p = [ pool.apply_async(thermal_worker,args=(l, Hk2[k,:], Pk2[k,:], N, ricb, rcmb, Ra, Rb)) for k,l in enumerate(lup) ]	
+	res_pol = np.sum([p1.get() for p1 in p],0)
+	
+	pool.close()
+	pool.join()
+	
+	buoy_power = res_pol[0]
+	
+	
+	return [buoy_power]

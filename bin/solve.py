@@ -158,26 +158,34 @@ def main():
 		
 			if rank == 0:
 			
-				# Eigenvalues
+				# Eigenvalues, 1 row per solution found, column 0 is the real part, column 1 is the imaginary part
 				eigval = np.hstack([np.real(sol.k).transpose(),np.imag(sol.k).transpose()])
 				
-				# Eigenvectors
+				# Eigenvectors, each column is a solution
 				rEigv = np.copy(np.real(sol.vec))
 				iEigv = np.copy(np.imag(sol.vec))
 				
-				ru = rEigv[:2*ut.n,:]
-				iu = iEigv[:2*ut.n,:]
+				# each solution for u has 2*ut.n coeffs
+				ru = rEigv[ :2*ut.n, : ]
+				iu = iEigv[ :2*ut.n, : ]
 				
+				# each solution for b has 2*ut.n coefs
 				if par.magnetic == 1:
-					rb = rEigv[2*ut.n:,:]
-					ib = iEigv[2*ut.n:,:]
-				
+					offset = 2*ut.n
+					rb = rEigv[ offset : offset + 2*ut.n, : ]
+					ib = iEigv[ offset : offset + 2*ut.n, : ]
+					
+				# each solution for the temperature has ut.n coeffs	
+				if par.thermal == 1:
+					offset = 2*ut.n + par.magnetic * 2*ut.n 
+					rtemp = rEigv[ offset : offset + ut.n, : ]
+					itemp = iEigv[ offset : offset + ut.n, : ]
+					
 				success = sol.nconv
 				
 		else:
 			
 			if rank == 0:
-				
 				success = 0
 				print('No converged solution found')
 				np.savetxt('no_conv_solution',[0])
@@ -252,19 +260,20 @@ def main():
 			kid = np.zeros((success,7))
 			Dint_partial = np.zeros((success,3))
 			p2t = np.zeros(success)
-			err1 = np.zeros(success)
-			err2 = np.zeros(success)
+			resid1 = np.zeros(success)
+			resid2 = np.zeros(success)
 			y = np.zeros(success)
 			vtorq = np.zeros(success,dtype=complex) 
-			
 			
 			if par.magnetic == 1:
 				ohm = np.zeros((success,4))			
 				Dohm_partial = np.zeros((success,3))
 				o2v = np.zeros(success)
 				
+			if par.thermal == 1:
+				therm = np.zeros((success,1))	
 				
-			params = np.zeros((success,18))
+			params = np.zeros((success,21))
 			
 			thk = np.sqrt(par.Ek)
 			R1 = par.ricb + 15*thk
@@ -275,16 +284,12 @@ def main():
 		
 			print('Post-processing:')	 
 			print('--- -------------- -------------- ---------- ---------- ---------- ---------- ----------')
-			print('Sol    Damping        Frequency     Error1     Error2    ohm2visc    tor2pol   |trq|/A ')
+			print('Sol    Damping        Frequency     Resid1     Resid2    ohm2visc    tor2pol   |trq|/A ')
 			print('--- -------------- -------------- ---------- ---------- ---------- ---------- ----------')
-			#print('{2d}   {:11.9f}   {:11.9f}   {:10.2g}   {:10.2g}   {:10.2g}'.format(i, sigma, w, err1, err2))
 			
 			if par.track_target == 1:  # eigenvalue tracking enabled
 				#read target data
 				x = np.loadtxt('track_target')
-			
-			
-			
 			
 			for i in range(success):
 				
@@ -330,9 +335,9 @@ def main():
 				
 				vtorq[i] = np.dot(par.Ek*ut.gamma_visc(0,0,0),a+1j*b)
 				#print(np.shape(vtorq))
-				
-				
-				err1[i] = abs(-Dint/Dkin -1)
+								
+				#err1[i] = abs(-Dint/Dkin -1)
+				resid1[i] = abs( Dint + Dkin ) / max( abs(Dint), abs(Dkin) )
 				
 				if par.track_target == 1:	
 					# compute distance (mismatch) to tracking target
@@ -341,15 +346,6 @@ def main():
 					y2 = abs( (x[2]-p2t[i])/p2t[i] )	# poloidal to toroidal energy ratio mismatch
 					y[i] = y0 + y1 + y2					# overall mismatch
 					   
-				#print('omega*Energy =', w*KE )
-				#print('Imag power   =', kid[i,6] )
-				#print('Imag dissip  =', Ek*kid[i,4] )
-				#print('--')
-				#print('sigma*Energy   =', sigma*KE    )
-				#print('kinetic Dissp  =', kid[i,3]*par.Ek )
-				#print('real Power     =', kid[i,5]    )
-				#print('internal Dissp =', kid[i,2]*par.Ek )
-
 				
 				if par.magnetic == 1:
 					
@@ -369,8 +365,6 @@ def main():
 					Dohm_partial[i,2] = (o3[2] + o3[3])*par.Le2*par.Em
 					
 					Dohm = (ohm[i,2]+ohm[i,3])*par.Le2*par.Em	
-					#err2 = abs( 1+(Dohm-Dkin)/(sigma*KE) )
-					
 					o2v[i] = Dohm/Dint
 					
 					if par.track_target == 1:
@@ -378,26 +372,39 @@ def main():
 						y[i] += y3 	#include ohmic to viscous dissipation ratio in the tracking
 				
 				else:
-					
 					Dohm = 0
 				
 				
+				if par.thermal == 1:
+					atemp = np.copy(rtemp[:,i])
+					btemp = np.copy(itemp[:,i])
+					therm[i,:] = upp.thermal_dis( atemp, btemp, a, b, par.N, par.lmax, par.m, par.symm, par.ricb, ut.rcmb, par.ncpus, par.ricb, ut.rcmb)
+					Dtemp = therm[i,0]*par.Brunt**2
+				else:
+					Dtemp = 0
+									
+				
 				if par.forcing != 0:
-					if repow != 0:							# body forcing (input power should match total dissipation)
-						err2[i] = abs( (repow-(Dohm-Dkin))/repow )
+					if repow != 0:							# body forcing (input power should match total dissipation) Needs rewriting ...
+						resid2[i] = abs( (repow-(Dohm-Dkin))/repow )
 					else:									# boundary flow forcing (input power to be implemented)
-						err2[i] = -1.0	
+						resid2[i] = -1.0	
 				elif par.forcing == 0:						# eigenvalue problem (damping should match total dissipation)
-					err2[i] = abs( 1+(Dohm-Dkin)/(sigma*KE) )
+					resid2[i] = abs( 2*sigma*KE - Dkin - Dtemp + Dohm ) / max( abs(2*sigma*KE), abs(Dkin), abs(Dohm), abs(Dtemp) )
+				# Note that above I'm using -Dohm as a replacement of the power associated with the Lorentz force (they don't necessarily match)
+				
+				#print('Dkin  =' ,Dkin)
+				#print('Dint  =' ,Dint)
+				#print('Dohm  =' ,Dohm)
+				#print('Dtemp =' ,Dtemp)
+				#print('2sK   = ',2*sigma*KE)
+				#print('resid2 = ',resid2[i])
+				
+				print('{:2d}   {: 12.9f}   {: 12.9f}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}'.format(i, sigma, w, resid1[i], resid2[i], Dohm/Dint, KT/KP, np.abs(vtorq[i])/np.sqrt(KE) ))
 				
 				
-				
-				print('{:2d}   {: 12.9f}   {: 12.9f}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}'.format(i, sigma, w, err1[i], err2[i], Dohm/Dint, KT/KP, np.abs(vtorq[i])/np.sqrt(KE) ))
-				
-					
-					
 				params[i,:] = np.array([par.Ek, par.m, par.symm, par.ricb, par.bci, par.bco, par.projection, par.forcing, \
-				par.forcing_amplitude, par.forcing_frequency, par.magnetic, par.Em, par.Le2, par.N, par.lmax, toc1-tic, par.ncpus, par.tol])
+				par.forcing_amplitude, par.forcing_frequency, par.magnetic, par.Em, par.Le2, par.N, par.lmax, toc1-tic, par.ncpus, par.tol, par.thermal, par.Prandtl, par.Brunt])
 				
 			print('--- -------------- -------------- ---------- ---------- ---------- ---------- ----------')
 			
@@ -429,12 +436,12 @@ def main():
 				
 				
 			# ---------------------------------------------------------- write post-processed data and parameters to disk
-			
 			#print('Writing results')
 			
 			with open('params.dat','ab') as dpar:
 				np.savetxt(dpar, params, \
-				fmt=['%.9e','%d','%d','%.9e','%d','%d','%d','%d','%.9e','%.9e','%d','%.9e','%.9e','%d','%d','%.2f', '%d', '%.2e'])  
+				#fmt=['%.9e','%d','%d','%.9e','%d','%d','%d','%d','%.9e','%.9e','%d','%.9e','%.9e','%d','%d','%.2f', '%d', '%.2e'])  
+				fmt=['%.9e','%d','%d','%.9e','%d','%d','%d','%d','%.9e','%.9e','%d','%.9e','%.9e','%d','%d','%.2f', '%d', '%.2e', '%d', '%.9e', '%.9e'])
 			
 			with open('flow.dat','ab') as dflo:
 				np.savetxt(dflo, np.c_[kid, Dint_partial, np.real(vtorq), np.imag(vtorq)])
@@ -442,31 +449,30 @@ def main():
 			if par.magnetic == 1:
 				with open('magnetic.dat','ab') as dmag:
 					np.savetxt(dmag, np.c_[ohm, Dohm_partial])
+					
+			if par.thermal ==1:
+				with open('thermal.dat','ab') as dtmp:
+					np.savetxt(dtmp, therm)	
 	
 			if par.forcing == 0:
 				with open('eigenvalues.dat','ab') as deig:
-					np.savetxt(deig,eigval)
+					np.savetxt(deig, eigval)
 			
 			
 			# ---------------------------------------------------------- write solution vector('s) to disk
 			
 			if par.write_eig == 1: # one solution per columns
-				
 				np.savetxt('real_flow.field',ru)
 				np.savetxt('imag_flow.field',iu)
-			
 				if par.magnetic == 1:
-					
 					np.savetxt('real_magnetic.field',rb)
 					np.savetxt('imag_magnetic.field',ib)
+				if par.thermal == 1:
+					np.savetxt('real_temperature.field',rtemp)
+					np.savetxt('imag_temperature.field',itemp)	
 					
 					
 					
-					
-			
-					
-					
-		
 		toc2 = timer()
 		print('Solve done in',toc2-tic,'seconds')
 	
