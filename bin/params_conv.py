@@ -140,7 +140,7 @@ bco_thermal = 0   # cmb
 
 composition = 0
 
-# Background chemical gradient (similar to temperature profiles from Dormy 2004)
+# Background compositional gradient (similar to temperature profiles from Dormy 2004)
 comp_type = 'internal'       # internal sources,     dC/dr = r
 #comp_type = 'differential'  # source and sink at boundaries, dC/dr = r**-2
 

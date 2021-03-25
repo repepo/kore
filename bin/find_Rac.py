@@ -10,9 +10,9 @@ import datetime
 
 opts='-st_type sinvert -eps_error_relative'
 
-# For high res
+# For high res and stiff problems
 
-#opts='-st_type sinvert -st_pc_factor_mat_solver_type mumps -mat_mumps_icntl_14 3000 -eps_true_residual'
+#opts='-st_type sinvert -st_pc_factor_mat_solver_type mumps -mat_mumps_icntl_14 3000 -eps_true_residual -eps_balance twoside'
 
 mmin = 12
 mmax = 13

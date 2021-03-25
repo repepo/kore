@@ -474,16 +474,16 @@ def main():
 
 		if par.compositional == 1: # adds (d/dt)*C in the heat equation to matrix B
 
-			# ------------------------------------------------------------------ B, C_pol, nocurl (chem)
+			# ------------------------------------------------------------------ B, C_pol, nocurl (composition)
 			for k,l in enumerate(loc_top):	# loc_top here because C
 											# follows the same symmetry as u and theta
 				row = (2+2*par.magnetic+par.thermal)*nb*par.N + ( rank*bpp + k )* par.N
 				col = row
 
 				# Physics -------------------------
-				if par.chem_type == 'internal':
+				if par.comp_source == 'internal':
 					block = r2Ib
-				elif par.chem_type == 'differential':
+				elif par.comp_source == 'differential':
 					block = r3Ib
 				# ---------------------------------
 
@@ -1219,7 +1219,7 @@ def main():
 			# ------------------------------------------------------------------	
 
 
-	if par.composition == 1: # includes compositional convection
+	if par.compositional == 1: # includes compositional convection
 
 		# Submatrices here for nocurl have only 2 rows empty at the top
 		# instead of 4 to make room for the compositional boundary conditions
@@ -1716,16 +1716,16 @@ def bc_comp_spherical(l):
 	'''
 	out = ss.dok_matrix((2,par.N),dtype=complex)
 
-	if   par.bci_compositional == 0: # fixed composition at icb
+	if   par.bci_comp == 0: # fixed composition at icb
 		out[ 0,:] = bv.Ta[:,0] # C=0
 
-	elif par.bci_compositional == 1: # constant flux	at icb
+	elif par.bci_comp == 1: # constant flux	at icb
 		out[ 0,:] = bv.Ta[:,1] # C'=0
 
-	if   par.bco_compositional == 0: # fixed composition at cmb
+	if   par.bco_comp == 0: # fixed composition at cmb
 		out[ 1,:] = bv.Tb[:,0] # C=0
 
-	elif par.bco_compositional == 1: # constant flux at cmb
+	elif par.bco_comp == 1: # constant flux at cmb
 		out[ 1,:] = bv.Tb[:,1] # C'=0
 
 	row0 = (2+2*par.magnetic+par.thermal)*ut.n + int(par.N*(l-ut.m_top)/2)

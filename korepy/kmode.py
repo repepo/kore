@@ -45,17 +45,17 @@ class kmode(sol):
         # Unpacking
 
         if par.thermal == 1:
-            if par.chemical == 1:
+            if par.compositional == 1:
                 if par.magnetic == 1:
                     [self.r,self.theta,self.phi,self.ur,self.utheta,self.uphi],\
-                        [self.br,self.btheta,self.bphi],self.temp,self.chem = out
+                        [self.br,self.btheta,self.bphi],self.temperature,self.composition = out
                 else:
-                    [self.r,self.theta,self.phi,self.ur,self.utheta,self.uphi],self.temp,self.chem = out
+                    [self.r,self.theta,self.phi,self.ur,self.utheta,self.uphi],self.temperature,self.composition = out
             else:
                 if par.magnetic == 1:
-                    [self.r,self.theta,self.phi,self.ur,self.utheta,self.uphi],[self.br,self.btheta,self.bphi],self.temp = out
+                    [self.r,self.theta,self.phi,self.ur,self.utheta,self.uphi],[self.br,self.btheta,self.bphi],self.temperature = out
                 else:
-                    [self.r,self.theta,self.phi,self.ur,self.utheta,self.uphi],self.temp = out
+                    [self.r,self.theta,self.phi,self.ur,self.utheta,self.uphi],self.temperature = out
         elif par.magnetic == 1:
             [self.r,self.theta,self.phi,self.ur,self.utheta,self.uphi],[self.br,self.btheta,self.bphi] = out
         else:
@@ -90,12 +90,12 @@ class kmode(sol):
             data = self.btheta
             titl = r'$B_\theta$'
 
-        if field in ['t','temp']:
-            data = self.temp
+        if field in ['t','temp','temperature']:
+            data = self.temperature
             titl = r'Temperature'
 
-        if field in ['c','chem']:
-            data = self.chem
+        if field in ['c','comp','composition']:
+            data = self.composition
             titl = r'Composition'
 
         return data, titl

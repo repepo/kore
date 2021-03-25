@@ -42,11 +42,11 @@ def wattr(n,Ek):
 # ------------------------------------------------------------------------------ Physical parameters
 
 # Azimuthal wave number m (>=0)
-m = 1
+m = 20
 
 # For equatorially symmetric modes set symm = 1. 
 # Set symm = -1 for antisymmetric.
-symm = -1
+symm = 1
 
 # Inner core radius, CMB radius is one. Use bci = 2 below if ricb = 0.
 # Do not set ricb = 0 unless the regularity condition is implemented
@@ -62,7 +62,7 @@ bci = 1
 bco = 1
 
 # Ekman number (use 2* to match Dintrans 1999)
-Ek = 10**-4
+Ek = 1e-4
 
 forcing = 0  # For eigenvalue problems
 # forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
@@ -108,7 +108,7 @@ Le2 = Le**2
 
 
 # ------------------------------------------------------------------------------- Thermal parameters
-thermal = 0
+thermal = 1
 # thermal = 1
 
 # Background temperature gradient (following Dormy 2004)
@@ -129,11 +129,11 @@ bco_thermal = 0   # CMB
 
 # --------- Whether to include the compositional convection (imposes a background compositional gradient profile)
 
-composition = 0
+compositional = 1
 
-# Background chemical gradient (similar to temperature profiles from Dormy 2004)
-comp_type = 'internal'       # internal sources,     dC/dr = r
-#comp_type = 'differential'  # source and sink at boundaries, dC/dr = r**-2
+# Background compositional gradient (similar to temperature profiles from Dormy 2004)
+comp_source = 'internal'       # internal sources,     dC/dr = r
+#comp_source = 'differential'  # source and sink at boundaries, dC/dr = r**-2
 
 # Schmidt number
 Schmidt = 100.0
@@ -153,7 +153,7 @@ bco_comp = 0   # cmb
 
 
 # ------------------------------------------------------------ writes solution vector to disk if = 1	
-write_eig = 0
+write_eig = 1
 # write_eig = 1
 
 
@@ -161,7 +161,7 @@ write_eig = 0
 # --------------------------------------------------------------------------------------- Resolution
 
 # Number of cpus
-ncpus = 4
+ncpus = 48
 
 # Chebyshev polynomial truncation level
 N = Ncheb(Ek) 

@@ -180,7 +180,7 @@ def main():
 					offset = 2*ut.n + par.magnetic * 2*ut.n 
 					rtemp = rEigv[ offset : offset + ut.n, : ]
 					itemp = iEigv[ offset : offset + ut.n, : ]
-				if par.composition == 1:
+				if par.compositional == 1:
 					offset  = (2 + 2*par.magnetic + par.thermal)*ut.n
 					rcomp = rEigv[offset:,:]
 					icomp = rEigv[offset:,:]	
@@ -277,7 +277,7 @@ def main():
 			if par.thermal == 1:
 				therm = np.zeros((success,1))	
 
-			if par.composition == 1:
+			if par.compositional == 1:
 				comp = np.zeros((success,1))	
 				
 			params = np.zeros((success,21))
@@ -390,7 +390,7 @@ def main():
 				else:
 					Dtemp = 0
 				
-				if par.composition == 1:
+				if par.compositional == 1:
 					atemp = np.copy(rcomp[:,i])
 					btemp = np.copy(icomp[:,i])
 					comp[i,:] = upp.thermal_dis( atemp, btemp, a, b, par.N, par.lmax, par.m, par.symm, par.ricb, ut.rcmb, par.ncpus, par.ricb, ut.rcmb)
@@ -486,9 +486,9 @@ def main():
 				if par.thermal == 1:
 					np.savetxt('real_temperature.field',rtemp)
 					np.savetxt('imag_temperature.field',itemp)	
-				if par.chemical == 1:
-					np.savetxt('real_composition.field',rchem)
-					np.savetxt('imag_composition.field',ichem)
+				if par.compositional == 1:
+					np.savetxt('real_composition.field',rcomp)
+					np.savetxt('imag_composition.field',icomp)
 					
 
 		toc2 = timer()

@@ -252,8 +252,8 @@ class sol:
             out.append([br,btheta,bphi])
 
         if par.thermal == 1:
-            a = np.loadtxt(datDir+'real_temp.field',usecols=self.solnum)
-            b = np.loadtxt(datDir+'imag_temp.field',usecols=self.solnum)
+            a = np.loadtxt(datDir+'real_temperature.field',usecols=self.solnum)
+            b = np.loadtxt(datDir+'imag_temperature.field',usecols=self.solnum)
 
             lmax_top,m_top,lmax_bot,m_bot,symm1 = self.get_symm(self.symm)
 
@@ -261,9 +261,9 @@ class sol:
 
             out.append(temp)
 
-        if par.chemical == 1:
-            a = np.loadtxt(datDir+'real_chem.field',usecols=self.solnum)
-            b = np.loadtxt(datDir+'imag_chem.field',usecols=self.solnum)
+        if par.compositional == 1:
+            a = np.loadtxt(datDir+'real_composition.field',usecols=self.solnum)
+            b = np.loadtxt(datDir+'imag_composition.field',usecols=self.solnum)
 
             lmax_top,m_top,lmax_bot,m_bot,symm1 = self.get_symm(self.symm)
 
