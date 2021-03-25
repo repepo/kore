@@ -7,6 +7,8 @@ import matplotlib
 import matplotlib.tri as tri
 import numpy.polynomial.chebyshev as ch
 
+sys.path.insert(1,'bin/')
+
 import utils as ut
 import parameters as par
 

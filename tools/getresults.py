@@ -75,6 +75,11 @@ if shape(u)[1]>=10:
 	vd1 = Dint - (u[:,7] + u[:,8])
 	vd2 = Dint - (u[:,7] + u[:,9])
 	
+if shape(u)[1]>=12:
+	# torque
+	trq = u[:,10] + 1j*u[:,11]	
+	
+	
 if shape(p)[1]>=17:
 	tsol = p[:,15]
 	ncpus = p[:,16]
@@ -138,6 +143,8 @@ dsq = D/sqrt(Ek)
 # quality factor
 Q = K/D
 	
+#rms error
+rms = sqrt(err1**2+err2**2)
 
 '''
 mm = (0.2355*(M/K)-0.063)*D
