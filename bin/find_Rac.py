@@ -27,6 +27,15 @@ def get_ncpus(N,cpumax):
         if N%k == 0:
             return k
 
+def runKoreRes(Rac): # Print residuals once Rac is found
+    Ra = 10**Rac
+
+    print("Ra = %e" %Ra)
+
+    os.system('sed -i "0,/Ra_gap.*/s//Ra_gap=%f/" parameters.py' %Ra)
+    os.system('mpiexec -n %d ./assemble.py' %ncpus)
+    os.system('mpiexec -n %d ./solve.py %s' %(ncpus,opts))
+
 def get_sigma(Ra,ncpus, opts):
     Ra = 10**Ra
 
@@ -91,7 +100,7 @@ for mIdx, m in enumerate(marr):
     os.chdir(mdir)
 
     os.system('cp ../params_conv.py parameters.py')
-    os.system('cp ../assemble.py ../utils*.py ../solve_nopp.py ../submatrices.py ../bc_variables.py .')
+    os.system('cp ../assemble.py ../utils*.py ../solve.py ../solve_nopp.py ../submatrices.py ../bc_variables.py .')
     os.system('sed -i "s/mUsr/%d/" parameters.py' %m) 
     os.system('sed -i "s/RaUsr/%f/" parameters.py' %Ramin)
     par = importlib.import_module(mdir+'.parameters')
@@ -103,6 +112,7 @@ for mIdx, m in enumerate(marr):
     ra_cache = {}
 
     Rac = bracket_brentq(get_sigma,np.log10(Ramin),args=(ncpus,opts))
+    runKoreRes(Rac)
     Rac=10**Rac
     eig = np.loadtxt('eigenvalues.dat')
     idx_c = np.argmax(eig[:,0])
