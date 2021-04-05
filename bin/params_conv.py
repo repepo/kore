@@ -106,7 +106,7 @@ Em = Ek/Pm
 Le2 = Lambda*Ek/Pm
 # Le2 = Le**2
 Le = np.sqrt(Le2)
-
+innercore = 'perfect conductor, material'
 
 # --------- Whether to include the heat equation (imposes a background temperature gradient profile)
 # thermal = 0
@@ -126,7 +126,8 @@ Prandtl = 1.0
 Ra_gap = RaUsr #3.3e5
 
 
-Ra = Ra_gap /(1.0-ricb)**3
+Ra = Ra_gap /(1.0-ricb)**3 # differential heating
+#Ra = Ra_gap /(1.0-ricb)**4 # internal heating
 
 Brunt = np.sqrt(Ra/Prandtl) * Ek
 
@@ -138,11 +139,11 @@ bco_thermal = 0   # cmb
 
 # --------- Whether to include the compositional convection (imposes a background compositional gradient profile)
 
-composition = 0
+compositional = 0
 
 # Background compositional gradient (similar to temperature profiles from Dormy 2004)
-comp_type = 'internal'       # internal sources,     dC/dr = r
-#comp_type = 'differential'  # source and sink at boundaries, dC/dr = r**-2
+comp_source = 'internal'       # internal sources,     dC/dr = r
+#comp_source = 'differential'  # source and sink at boundaries, dC/dr = r**-2
 
 # Schmidt number
 Schmidt = 100.0
