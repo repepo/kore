@@ -5,7 +5,7 @@ import sys
 import os
 
 class kmode(sol):
-    def __init__(self,datDir,solnum=0,nr=100,nphi=None,ntheta=None):
+    def __init__(self,datDir,solnum=0,nr=100,nphi=None,ntheta=None,nthreads=1):
 
         if datDir[-1] != '/':
             datDir += '/'
@@ -16,18 +16,19 @@ class kmode(sol):
         import utils as ut
         import parameters as par
 
-        self.solnum = solnum
-        self.nr     = nr
-        self.lmax   = par.lmax
-        self.m      = par.m
-        self.symm   = par.symm
-        self.N      = par.N
-        self.Ek     = par.Ek
-        self.ricb   = par.ricb
-        self.rcmb   = 1
-        self.n      = ut.n
-        self.nphi   = nphi
-        self.ntheta = ntheta
+        self.solnum   = solnum
+        self.nr       = nr
+        self.lmax     = par.lmax
+        self.m        = par.m
+        self.symm     = par.symm
+        self.N        = par.N
+        self.Ek       = par.Ek
+        self.ricb     = par.ricb
+        self.rcmb     = 1
+        self.n        = ut.n
+        self.nphi     = nphi
+        self.ntheta   = ntheta
+        self.nthreads = nthreads
 
         if nphi is None or ntheta is None:
             self.nphi   = int(3 * self.lmax/2) * 2
@@ -38,7 +39,8 @@ class kmode(sol):
             self.nphi = self.ntheta*2
 
         sol.__init__(self,self.solnum,self.lmax,self.m,self.symm,self.N,self.Ek,
-                     self.ricb,self.rcmb,self.n,self.nr,self.ntheta,self.nphi)
+                     self.ricb,self.rcmb,self.n,self.nr,self.ntheta,self.nphi,
+                     self.nthreads)
 
         out = sol.get_sol(self,datDir=datDir)
 

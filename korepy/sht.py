@@ -10,20 +10,21 @@ import os
 import shtns
 
 class sol:
-    def __init__(self,solnum,lmax,m,symm,N,Ek,ricb,rcmb,n,nr,ntheta,nphi):
+    def __init__(self,solnum,lmax,m,symm,N,Ek,ricb,rcmb,n,nr,ntheta,nphi,nthreads):
 
-        self.solnum = solnum
-        self.lmax   = lmax
-        self.m      = m
-        self.symm   = symm
-        self.N      = N
-        self.Ek     = Ek
-        self.ricb   = ricb
-        self.rcmb   = rcmb
-        self.n      = n
-        self.nr     = nr
-        self.ntheta = ntheta
-        self.nphi   = nphi
+        self.solnum   = solnum
+        self.lmax     = lmax
+        self.m        = m
+        self.symm     = symm
+        self.N        = N
+        self.Ek       = Ek
+        self.ricb     = ricb
+        self.rcmb     = rcmb
+        self.n        = n
+        self.nr       = nr
+        self.ntheta   = ntheta
+        self.nphi     = nphi
+        self.nthreads = nthreads
 
     def get_radial(self):
 
@@ -137,7 +138,7 @@ class sol:
 
         norm=shtns.sht_schmidt | shtns.SHT_NO_CS_PHASE
 
-        sh = shtns.sht(self.lmax,mmax=1,mres=self.m,norm=norm,nthreads=1)
+        sh = shtns.sht(self.lmax,mmax=1,mres=self.m,norm=norm,nthreads=self.nthreads)
         ntheta, nphi = sh.set_grid(self.ntheta, self.nphi, polar_opt=polar_opt)
 
         S = np.zeros([sh.nlm,self.nr],dtype=complex)
