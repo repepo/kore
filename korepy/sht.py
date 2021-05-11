@@ -137,7 +137,7 @@ class sol:
 
         norm=shtns.sht_schmidt | shtns.SHT_NO_CS_PHASE
 
-        sh = shtns.sht(self.lmax,mmax=self.m,norm=norm,nthreads=1)
+        sh = shtns.sht(self.lmax,mmax=1,mres=self.m,norm=norm,nthreads=1)
         ntheta, nphi = sh.set_grid(self.ntheta, self.nphi, polar_opt=polar_opt)
 
         S = np.zeros([sh.nlm,self.nr],dtype=complex)
