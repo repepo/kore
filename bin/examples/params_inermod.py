@@ -123,7 +123,7 @@ heating = 'differential'   # differential heating, dT/dr = r**-2
 Prandtl = 1.0
 
 # Rayleigh number
-Ra_gap = RaUsr #3.3e5
+Ra_gap = 3.3e5
 
 if heating == 'differential':
     Ra = Ra_gap /(1.0-ricb)**3 # differential heating
