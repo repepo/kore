@@ -90,13 +90,13 @@ projection = 1
 
 # ------------------------------ Whether to include magnetic fields (imposes vertical uniform field)
 # magnetic = 0 solves the purely hydrodynamical problem.
-magnetic = 0
+magnetic = 1
 
 # Elsasser number
-Lambda =10**0.4
+Lambda = 1e-2
 
 # Magnetic Ekman number
-Pm = 10**-5.5
+Pm = 1e-2
 Em = Ek/Pm
 #Em = 10*Ek**(2/3)
 #Em = 1e-6

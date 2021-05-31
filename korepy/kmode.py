@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 from .sht import *
 from .plotlib import *
 import sys
-import os
+
 
 class kmode(sol):
     def __init__(self,datDir,solnum=0,nr=100,nphi=None,ntheta=None,nthreads=1):
