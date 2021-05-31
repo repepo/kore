@@ -166,7 +166,7 @@ class sol:
         uphi   = np.transpose(uphi, (1,0,2))
 
         theta = np.arccos(sh.cos_theta)
-        phi   = np.linspace(0.,2*np.pi,nphi)
+        phi   = np.linspace(0.,2*np.pi,nphi*self.m + 1)
 
         return ur,utheta,uphi,theta,phi
 

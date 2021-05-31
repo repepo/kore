@@ -39,10 +39,14 @@ class kmode(sol):
             self.nphi = self.ntheta*2
 
         sol.__init__(self,self.solnum,self.lmax,self.m,self.symm,self.N,self.Ek,
-                     self.ricb,self.rcmb,self.n,self.nr,self.ntheta,self.nphi,
-                     self.nthreads)
+                     self.ricb,self.rcmb,self.n,self.nr,self.ntheta,
+                     self.nphi//self.m, self.nthreads)
 
         out = sol.get_sol(self,datDir=datDir)
+
+        # Fix nphi
+
+        self.nphi = int(self.nphi*self.m + 1)
 
         # Unpacking
 
@@ -99,6 +103,8 @@ class kmode(sol):
         if field in ['c','comp','composition']:
             data = self.composition
             titl = r'Composition'
+
+        data = symmetrize(data,self.m)
 
         return data, titl
 
