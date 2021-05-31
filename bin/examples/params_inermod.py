@@ -42,12 +42,12 @@ def wattr(n,Ek):
 # ------------------------------------------------------------------------------ Physical parameters
 
 # Azimuthal wave number m (>=0)
-m = mUsr
+m = 2
 
 
 # For equatorially symmetric modes set symm = 1. 
 # Set symm = -1 for antisymmetric.
-symm = 1
+symm = -1
 
 # Inner core radius, CMB radius is one. Use bci = 2 below if ricb = 0.
 # Do not set ricb = 0 unless the regularity condition is implemented
@@ -56,16 +56,16 @@ ricb = 0.5
 # Inner core spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow
 # Use 2 for no inner core (regularity condition), *not implemented here*
-bci = 1
+bci = 0
 
 # CMB spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow
-bco = 1
+bco = 0
 
 # Ekman number (use 2* to match Dintrans 1999)
 #Ek = 2*10**-7
 
-Ek_gap = 1.633e-4
+Ek_gap = 1e-4
 Ek = Ek_gap * (1-ricb)**2
 
 forcing = 0  # For eigenvalue problems
@@ -110,7 +110,7 @@ innercore = 'perfect conductor, material'
 
 # --------- Whether to include the heat equation (imposes a background temperature gradient profile)
 # thermal = 0
-thermal = 1
+thermal = 0
 
 # Background temperature gradient (following Dormy 2004)
 #heating = 'internal'       # internal heating,     dT/dr = r
@@ -206,15 +206,15 @@ if track_target == 1 :  # read target from file and sets target accordingly
     itau = tt[1]
 else:                   # set target manually
     rtau = 0  #-2*3.847e-3
-    itau = 2*1.053
+    itau = 2/3
 
 # tau is the actual target for the solver
 # real part is damping
 # imaginary part is frequency (positive is retrograde)
-tau = 0. # rtau + itau*1j
+tau = rtau + itau*1j
 #tau = 2*(wattr(n0,Ek/2))
 
-which_eigenpairs = 'TR'
+which_eigenpairs = 'TI'
 # L/S/T & M/R/I
 # L largest, S smallest, T target
 # M magnitude, R real, I imaginary
