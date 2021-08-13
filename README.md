@@ -24,7 +24,7 @@ If this code is useful for your research, we invite you to cite the relevant pap
 
 #### Installing PETSc
 
-Download PETSc release 3.12.5. This release supports SuperLU_DIST version 5.4.0, which has lower memory usage than the newest version. We need to download SuperLU_DIST (no need to unpack it) and then download and unpack PETSc:
+Download PETSc release 3.12.5. This release supports SuperLU_DIST version 5.4.0, which has much lower memory footprint than the newest version. We need to download SuperLU_DIST (no need to unpack it) and then download and unpack PETSc:
 ```
 wget https://portal.nersc.gov/project/sparse/superlu/superlu_dist_5.4.0.tar.gz
 wget http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-lite-3.12.5.tar.gz
@@ -117,9 +117,11 @@ python3 setup.py install --user
 
 
 ### Installing and running `Kore`
-
-Simply download and unzip the tar file under the downloads section.
-
+Clone the repository with
+```
+git clone https://bitbucket.org/repepo/kore.git
+```
+Or download and unzip the tar file under the downloads section.
 ```sh
 cd
 wget https://bitbucket.org/repepo/Kore/downloads/kore-0.2.tar.gz
