@@ -1,60 +1,38 @@
 import numpy as np
+#import targets as tg
 
-def som(alpha,E):
-	'''
-	spin-over freq and damping according to Zhang (2004)
-	'''
-	eps2 = 2*alpha - alpha**2
-	reG = -2.62047 - 0.42634 * eps2
-	imG = 0.25846 + 0.76633 * eps2
-	sigma = 1./(2.-eps2) #inviscid freq
-	G = reG + 1.j*imG
-	return  1j*( 2*sigma - 1j*G * E**0.5 )
 
 def Ncheb(Ek):
-	'''
-	Returns the truncation level N for the Chebyshev expansion according to the Ekman number
-	'''
-	x=-np.log10(Ek)
-	if x>=9 :
-		out = 380*x-2700
-	else:
-		out = 104*x-216
-	return int(1.0*out)
-
-def wattr(n,Ek):
-	'''
-	Useful to set targets when reproducing Figs 3 and 4 of Rieutord & Valdettaro, JFM (2018)
-	See also equation (3.2) in that paper
-	'''
-	w0 = 0.782413
-	tau1 = 0.485
-	phi1 = -np.pi/3
-	tau2 = 1.82
-	phi2 = -np.pi/4
-	out0 = 1j*w0
-	out1 = -2*tau1*( np.cos(phi1)+1j*np.sin(phi1) )*(Ek**(1/3))
-	out2 = -(n+0.5)*np.sqrt(2)*tau2*( np.cos(phi2)+1j*np.sin(phi2) )*(Ek**(1/2))
-	return out0+out1+out2
+    '''
+    Returns the truncation level N for the Chebyshev expansion according to the Ekman number
+    Please experiment and adapt to your particular problem.
+    '''
+    x=-np.log10(Ek)
+    if x>=9 :
+        out = 380*x-2700
+    else:
+        out = 104*x-216
+    out1 = max(50, int(0.7*out))
+    return out1 + out1%2
 
 
 
-# ------------------------------------------------------------------------------ Physical parameters
+# ----------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------- Hydrodynamic parameters
+# ----------------------------------------------------------------------------------------------------------------------
 
 # Azimuthal wave number m (>=0)
 m = 1
 
-# For equatorially symmetric modes set symm = 1. 
-# Set symm = -1 for antisymmetric.
+# Equatorial symmetry. Use 1 for symmetric, -1 for antisymmetric. 
 symm = -1
 
-# Inner core radius, CMB radius is one. Use bci = 2 below if ricb = 0.
-# Do not set ricb = 0 unless the regularity condition is implemented
-ricb = 0.35
+# Inner core radius, CMB radius is unity. 
+ricb = 0
 
 # Inner core spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow
-# Use 2 for no inner core (regularity condition), *not implemented here*
+# Ignored if ricb = 0
 bci = 1
 
 # CMB spherical boundary conditions
@@ -62,7 +40,7 @@ bci = 1
 bco = 1
 
 # Ekman number (use 2* to match Dintrans 1999)
-Ek = 10**-4
+Ek = 10**-6
 
 forcing = 0  # For eigenvalue problems
 # forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
@@ -74,7 +52,7 @@ forcing = 0  # For eigenvalue problems
 # forcing = 7  # Longitudinal libration boundary forcing, m=0, symm, no-slip
 
 # Forcing frequency and amplitude (ignored if forcing = 0)
-freq0 = -0.9975
+freq0 = 1
 delta = 0
 forcing_frequency = freq0 + delta  # negative is prograde
 forcing_amplitude = 1.0 
@@ -85,41 +63,59 @@ projection = 1
 
 
 
-# ------------------------------------------------------------------------ Magnetic field parameters
-magnetic = 0   # solves the purely hydrodynamical problem.
-# magnetic = 1   # soves the MHD problem, with imposed axial field
+# ----------------------------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------- Magnetic field parameters
+# ----------------------------------------------------------------------------------------------------------------------
 
-# magnetic boundary conditions on the ICB:
-# innercore = 'insulator'
+magnetic = 0  # Use 0 for pure hydro, 1 for MHD. ** Needs ricb > 0 ** 
+
+# Imposed background magnetic field
+B0 = 'axial'  # Axial, uniform field along the spin axis
+# B0 = 'dipole'  # Singular at origin
+
+# Magnetic boundary conditions on the ICB:
+innercore = 'insulator'
 # innercore = 'perfect conductor, material'  # tangential *material* electric field jump [nxE']=0 across the ICB
-innercore = 'perfect conductor, spatial'   # tangential *spatial* electric field jump [nxE]=0 across the ICB
+# innercore = 'perfect conductor, spatial'   # tangential *spatial* electric field jump [nxE]=0 across the ICB
 # Note: 'material' or 'spatial' are identical if ICB is no-slip (bci = 1 above)
 
 # Magnetic field strength and magnetic diffusivity:
-# Either use the Elsasser number and magnetic Prandtl number (uncomment the following three lines):
+# Either use the Elsasser number and the magnetic Prandtl number (uncomment and set the following three lines):
 # Lambda = 0.01
 # Pm = 10**-4
 # Em = Ek/Pm; Le2 = Lambda*Em; Le = np.sqrt(Le2)
-# Or use the Lehnert number and magnetic Ekman number (uncomment the following three lines):
+# Or use the Lehnert number and the magnetic Ekman number (uncomment and set the following three lines):
 Le = 0.01
 Em = 1e-3
 Le2 = Le**2
 
 
 
-# ------------------------------------------------------------------------------- Thermal parameters
-thermal = 0
-# thermal = 1
+# ----------------------------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------------------- Thermal parameters
+# ----------------------------------------------------------------------------------------------------------------------
 
-# Background temperature gradient (following Dormy 2004)
-heating = 'internal'       # internal heating,     dT/dr = r
-# heating = 'differential'   # differential heating, dT/dr = r**-2
+thermal = 1  # Use 1 or 0 to include or not the temperature equation and the buoyancy force (Boussinesq)
 
-# Dimensionless Brunt-Vaisala frequency (use 2* to match Dintrans 1999)
-Brunt = 2*2.5
-
-# Prandtl number
+# Prandtl number: ratio of viscous to thermal diffusivity
 Prandtl = 1.0
+
+# Background isentropic temperature gradient choices, uncomment the appropriate line below:
+# heating = 'internal'      # dT/dr = beta * (r/rcmb),     temp scale = rcmb*beta, Dintrans1999
+# heating = 'differential'  # dT/dr = beta * (r/rcmb)**-2, temp scale = Delta T,   Dormy2004, set Ra below
+# heating = 'two zone'      # temp scale = Omega^2*rcmb/(alpha*g_0), Vidal2015, use extra args below
+heating = 'user defined'  # Uses the function BVprof in utils.py , use extra args below if needed 
+
+# Ratio of Brunt-Vaisala freq. to rotation. If differential heating then set the Rayleigh number, otherwise just Brunt.
+# Ra = 10**6  # Rayleigh number
+# Brunt = np.sqrt(Ra/Prandtl) * Ek
+Brunt = 2.0
+
+# Additional arguments for 'Two zone' or 'User defined' case (modify if needed).
+rc  = 100  # transition radius
+h   = 0.1  # transition width
+sym = -1    # radial symmetry 
+args = [rc, h, sym]  
 
 # Thermal boundary conditions
 # 0 for isothermal, theta=0
@@ -129,40 +125,35 @@ bco_thermal = 0   # CMB
 
 
 
-# ------------------------------------------------------------ writes solution vector to disk if = 1	
-write_eig = 0
-# write_eig = 1
-
-
-
-# --------------------------------------------------------------------------------------- Resolution
+# ----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------- Resolution
+# ----------------------------------------------------------------------------------------------------------------------
 
 # Number of cpus
-ncpus = 4
+ncpus = 24
 
-# Chebyshev polynomial truncation level
-N = Ncheb(Ek) 
-# N = 20
+# Chebyshev polynomial truncation level. Must be even if ricb = 0. See def at top.
+# N = Ncheb(Ek)
+N = 250
 
 # Spherical harmonic truncation lmax and approx lmax/N ratio:
-g = 1.0  
+g = 2.0
 lmax = int( 2*ncpus*( np.floor_divide( g*N, 2*ncpus ) ) + m - 1 )
-
 # If manually setting the max angular degree lmax, then it must be even if m is odd,
 # and lmax-m+1 should be divisible by 2*ncpus 
 # lmax = 8
 
 
 
-# ----------------------------------------------------------------------------------- Solver options
+# ----------------------------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------- SLEPc solver options
+# ----------------------------------------------------------------------------------------------------------------------
 
-# Set track_target = 1 to track an eigenvalue
-# assumes a preexisting 'track_target' file with target data
-# Set track_target = 2 to write initial 'track_target' filem, see also solve.py
+# rnd1 = 0
+# Set track_target = 1 below to track an eigenvalue, 0 otherwise.
+# Assumes a preexisting 'track_target' file with target data
+# Set track_target = 2 to write initial 'track_target' file, see also solve.py
 track_target = 0
-# track_target = 1
-# track_target = 2
-
 if track_target == 1 :  # read target from file and sets target accordingly
     tt = np.loadtxt('track_target')
     rtau = tt[0]
@@ -175,9 +166,8 @@ else:                   # set target manually
 # real part is damping
 # imaginary part is frequency (positive is retrograde)
 tau = rtau + itau*1j
-# tau = 2*(wattr(n0,Ek/2))
 
-which_eigenpairs = 'TM'
+which_eigenpairs = 'TM'  # Use 'TM' for shift-and-invert
 # L/S/T & M/R/I
 # L largest, S smallest, T target
 # M magnitude, R real, I imaginary
@@ -193,3 +183,10 @@ maxit = 50
 
 # Tolerance for solver
 tol = 1e-13
+
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------- Writes solution vector to disk if = 1
+# ----------------------------------------------------------------------------------------------------------------------
+write_solution = 1

@@ -68,7 +68,8 @@ if sum(forcing) == 0: 	# reads eigenvalue data
 	scd = -w[:,0]/sqrt(Ek)
 
 
-err1 = abs(-Dint/Dkin -1)
+err1 = abs(-Dint/Dkin -1) # old way
+resid1 = abs( Dint + Dkin ) / amax( [abs(Dint), abs(Dkin)], 0 ) # new way
 
 if shape(u)[1]>=10:
 	# viscous dissipation in the bulk, without boundary layers
@@ -83,6 +84,17 @@ if shape(u)[1]>=12:
 if shape(p)[1]>=17:
 	tsol = p[:,15]
 	ncpus = p[:,16]
+	
+if shape(p)[1]>=21:
+	tol = p[:,17]
+	#thermal = p[:,18]
+	#Prandtl = p[:,19]
+	#Brunt = p[:,20]
+	
+	# use this for the Ra_c, rXX_E-7 runs in the cluster
+	Ra_gap = p[:,18]
+	Prandtl = p[:,19]
+	thermal = p[:,20]	
    
 magnetic = p[:,10]
 if sum(magnetic) == np.shape(p)[0]: # reads magnetic data
@@ -124,6 +136,18 @@ if sum(magnetic) == np.shape(p)[0]: # reads magnetic data
 else:
 	Dohm = 0
 	
+if sum(thermal) == np.shape(p)[0]: # reads thermal data
+	if len(sys.argv) == 2:
+		#th = loadtxt(sys.argv[1]+'.thm')  # reap.sh not updated yet to generate this file!
+		pass
+	else:
+		th = loadtxt('thermal.dat')
+		
+	#if len(th.shape)==1:	
+	#	th = th.reshape((-1,len(b)))		
+	
+	
+	
 if sum(forcing) > 0:
 	if sum(rpow) != 0:						# body forcing (input power should match total dissipation)
 		err2 = abs( (rpow-(Dohm-Dkin))/rpow )
@@ -131,6 +155,9 @@ if sum(forcing) > 0:
 		err2 = -1	
 elif sum(forcing) == 0:						# eigenvalue problem (damping should match total dissipation)
 	err2 = abs( 1+(Dohm-Dkin)/(w[:,0]*K) )
+	
+# to do: include resid2 calculation	
+	
 
 # total dissipation
 D = Dint + Dohm
@@ -146,11 +173,4 @@ Q = K/D
 #rms error
 rms = sqrt(err1**2+err2**2)
 
-'''
-mm = (0.2355*(M/K)-0.063)*D
-err3 = abs( 1+(Dohm-Dkin+mm)/(w[:,0]*K) )
 
-E = K+Le2*M
-
-err4 = abs( (-w[:,0]*E/D)-1)
-'''

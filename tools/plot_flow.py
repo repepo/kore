@@ -44,8 +44,12 @@ Ntheta = int(sys.argv[3]) # number of points in the theta direction
 
 gap = rcmb-ricb
 r = np.linspace(ricb,rcmb,nR)
-
-x = 2.*(r-ricb)/gap - 1. 
+if ricb == 0:
+    r = r[1:]
+    nR = nR - 1
+    x = r/gap
+else :
+    x = 2.*(r-ricb)/gap - 1. 
 
 chx = ch.chebvander(x,par.N-1) # this matrix has nR rows and N-1 cols
 
@@ -79,21 +83,33 @@ elif m == 0 :
 		lmax_top = lmax+1
 		lmax_bot = lmax+2
 
-if ricb == 0:
-	r = r[1:]
-	nR = nR - 1
-gap = rcmb-ricb
-r = np.linspace(ricb,rcmb,nR)
-x = 2.*(r-ricb)/gap - 1.
+
+
 
 # matrix with Chebishev polynomials at every x point for all degrees:
-chx = ch.chebvander(x,par.N-1) # this matrix has nR rows and N-1 cols
+#chx = ch.chebvander(x,par.N-1) # this matrix has nR rows and N-1 cols
 	
 Plj0 = a[:n] + 1j*b[:n] 		#  N elements on each l block
 Tlj0 = a[n:n+n] + 1j*b[n:n+n] 	#  N elements on each l block
 
-Plj  = np.reshape(Plj0,(int((lmax-m+1)/2),N))
-Tlj  = np.reshape(Tlj0,(int((lmax-m+1)/2),N))
+Plj0  = np.reshape(Plj0,(int((lmax-m+1)/2),ut.N1))
+Tlj0  = np.reshape(Tlj0,(int((lmax-m+1)/2),ut.N1))
+
+Plj = np.zeros((int((lmax-m+1)/2),N),dtype=complex)
+Tlj = np.zeros((int((lmax-m+1)/2),N),dtype=complex)
+
+if ricb == 0 :
+    iP = (m + 1 - ut.s)%2
+    iT = (m + ut.s)%2
+    for k in np.arange(int((lmax-m+1)/2)) :
+        Plj[k,iP::2] = Plj0[k,:]
+        Tlj[k,iT::2] = Tlj0[k,:]
+else :
+    Plj = Plj0
+    Tlj = Tlj0
+
+
+
 dPlj = np.zeros(np.shape(Plj),dtype=complex)
 
 Plr = np.zeros((int((lmax-m+1)/2), nR),dtype=complex)
