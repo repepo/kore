@@ -390,7 +390,7 @@ def main():
                     therm[i,:] = upp.thermal_dis( atemp, btemp, a, b, par.N, par.lmax, par.m, par.symm, par.ricb, ut.rcmb, par.ncpus, par.ricb, ut.rcmb)
                     if par.heating == 'two zone' or par.heating == 'user defined' :
                         Dtemp = therm[i,0]
-                        print('Dtemp=',Dtemp)
+                        #print('Dtemp=',Dtemp)
                     else:
                         Dtemp = therm[i,0]*par.Brunt**2
                 else:
