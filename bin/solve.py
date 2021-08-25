@@ -388,8 +388,9 @@ def main():
                     atemp = np.copy(rtemp[:,i])
                     btemp = np.copy(itemp[:,i])
                     therm[i,:] = upp.thermal_dis( atemp, btemp, a, b, par.N, par.lmax, par.m, par.symm, par.ricb, ut.rcmb, par.ncpus, par.ricb, ut.rcmb)
-                    if par.heating == 'two layer' or par.heating == 'user defined' :
+                    if par.heating == 'two zone' or par.heating == 'user defined' :
                         Dtemp = therm[i,0]
+                        print('Dtemp=',Dtemp)
                     else:
                         Dtemp = therm[i,0]*par.Brunt**2
                 else:
@@ -405,12 +406,12 @@ def main():
                     resid2[i] = abs( 2*sigma*KE - Dkin - Dtemp + Dohm ) / max( abs(2*sigma*KE), abs(Dkin), abs(Dohm), abs(Dtemp) )
                 # Note that above I'm using -Dohm as a replacement of the power associated with the Lorentz force (they don't necessarily match)
                 
-                #print('Dkin  =' ,Dkin)
-                #print('Dint  =' ,Dint)
-                #print('Dohm  =' ,Dohm)
-                #print('Dtemp =' ,Dtemp)
-                #print('2sK   = ',2*sigma*KE)
-                #print('resid2 = ',resid2[i])
+                # print('Dkin  =' ,Dkin)
+                # print('Dint  =' ,Dint)
+                # print('Dohm  =' ,Dohm)
+                # print('Dtemp =' ,Dtemp)
+                # print('2sK   = ',2*sigma*KE)
+                # print('resid2 = ',resid2[i])
                 
                 print('{:2d}   {: 12.9f}   {: 12.9f}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}'.format(i, sigma, w, resid1[i], resid2[i], Dohm/Dint, KT/KP, np.abs(vtorq[i])/np.sqrt(KE) ))
                 
