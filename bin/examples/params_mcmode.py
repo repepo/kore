@@ -172,7 +172,7 @@ write_eig = 1
 # --------------------------------------------------------------------------------------- Resolution
 
 # Number of cpus
-ncpus = 24
+ncpus = 4
 
 # Truncation level
 N = Ncheb(Ek)
