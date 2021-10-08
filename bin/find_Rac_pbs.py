@@ -90,7 +90,7 @@ idx_c = np.argmax(eig[:,0])
 sigma_c,omega_c = eig[idx_c,:]
 
 with open('critical.dat','ab') as dcrit:
-	np.savetxt(dcrit, [par.Ek_gap , par.ricb , Rac , int(par.m) , sigma_c , omega_c])	
+	np.savetxt(dcrit, [par.Ek_gap , par.ricb , Rac , int(par.m) , sigma_c , omega_c])
 
 toc1 = timer()
 tform = str(datetime.timedelta(seconds=toc1 - tic1))
@@ -98,4 +98,4 @@ tform = str(datetime.timedelta(seconds=toc1 - tic1))
 print("\n======================================",flush=True)
 print("Rac for m=%d found in %s" %(par.m,tform),flush=True)
 print("==================================\n\n")
-    
+

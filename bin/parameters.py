@@ -24,10 +24,10 @@ def Ncheb(Ek):
 # Azimuthal wave number m (>=0)
 m = 1
 
-# Equatorial symmetry. Use 1 for symmetric, -1 for antisymmetric. 
+# Equatorial symmetry. Use 1 for symmetric, -1 for antisymmetric.
 symm = -1
 
-# Inner core radius, CMB radius is unity. 
+# Inner core radius, CMB radius is unity.
 ricb = 0
 
 # Inner core spherical boundary conditions
@@ -55,7 +55,7 @@ forcing = 0  # For eigenvalue problems
 freq0 = 1
 delta = 0
 forcing_frequency = freq0 + delta  # negative is prograde
-forcing_amplitude = 1.0 
+forcing_amplitude = 1.0
 
 # if solving an eigenvalue problem, compute projection of eigenmode
 # and some hypothetical forcing. Cases as described above (use only 1,3 or 4)
@@ -67,7 +67,7 @@ projection = 1
 # -------------------------------------------------------------------------------------------- Magnetic field parameters
 # ----------------------------------------------------------------------------------------------------------------------
 
-magnetic = 0  # Use 0 for pure hydro, 1 for MHD. ** Needs ricb > 0 ** 
+magnetic = 0  # Use 0 for pure hydro, 1 for MHD. ** Needs ricb > 0 **
 
 # Imposed background magnetic field
 B0 = 'axial'  # Axial, uniform field along the spin axis
@@ -104,7 +104,7 @@ Prandtl = 1.0
 # heating = 'internal'      # dT/dr = beta * (r/rcmb),     temp scale = rcmb*beta, Dintrans1999
 # heating = 'differential'  # dT/dr = beta * (r/rcmb)**-2, temp scale = Delta T,   Dormy2004, set Ra below
 # heating = 'two zone'      # temp scale = Omega^2*rcmb/(alpha*g_0), Vidal2015, use extra args below
-heating = 'user defined'  # Uses the function BVprof in utils.py , use extra args below if needed 
+heating = 'user defined'  # Uses the function BVprof in utils.py , use extra args below if needed
 
 # Ratio of Brunt-Vaisala freq. to rotation. If differential heating then set the Rayleigh number, otherwise just Brunt.
 # Ra = 10**6  # Rayleigh number
@@ -114,8 +114,8 @@ Brunt = 2.0
 # Additional arguments for 'Two zone' or 'User defined' case (modify if needed).
 rc  = 100  # transition radius
 h   = 0.1  # transition width
-sym = -1    # radial symmetry 
-args = [rc, h, sym]  
+sym = -1    # radial symmetry
+args = [rc, h, sym]
 
 # Thermal boundary conditions
 # 0 for isothermal, theta=0
@@ -140,7 +140,7 @@ N = 250
 g = 2.0
 lmax = int( 2*ncpus*( np.floor_divide( g*N, 2*ncpus ) ) + m - 1 )
 # If manually setting the max angular degree lmax, then it must be even if m is odd,
-# and lmax-m+1 should be divisible by 2*ncpus 
+# and lmax-m+1 should be divisible by 2*ncpus
 # lmax = 8
 
 
