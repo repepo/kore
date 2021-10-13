@@ -2,7 +2,7 @@ import numpy as np
 import scipy.sparse as ss
 import shtns
 
-def spec2spat_vec(M,ut,par,chx,a,b,vsymm,nthreads):
+def spec2spat_vec(M,ut,par,chx,a,b,vsymm,nthreads,lat=None,vort=False):
 
     # Rearrange and separate poloidal and toroidal parts
 
@@ -34,6 +34,11 @@ def spec2spat_vec(M,ut,par,chx,a,b,vsymm,nthreads):
     dP   = np.zeros( (lm1, M.nr), dtype=complex )
     rP   = np.zeros( (lm1, M.nr), dtype=complex )
     dPlj = np.zeros(  np.shape(Plj), dtype=complex )
+    if vort:
+        ddPlj = np.zeros(  np.shape(Plj), dtype=complex )
+        dTlj  = np.zeros(  np.shape(Tlj), dtype=complex )
+        dT    = np.zeros( (lm1, M.nr), dtype=complex )
+        ddP   = np.zeros( (lm1, M.nr), dtype=complex )
 
     # These are the l values (ll) and indices (idp,idt)
     s = int(vsymm*0.5+0.5) # s=0 if antisymm, s=1 if symm
@@ -54,7 +59,16 @@ def spec2spat_vec(M,ut,par,chx,a,b,vsymm,nthreads):
     # populate dPlj and dP
     for k in range(int(lm1/2)):
         dPlj[k,:] = ut.Dcheb(Plj[k,:], M.ricb, M.rcmb)
-    dP[idp,:] = np.matmul(dPlj, chx.T)
+        dP[idp,:] = np.matmul(dPlj, chx.T)
+    if vort:
+        print("vort = ",vort)
+        for k in range(int(lm1/2)):
+            dTlj[k,:] = ut.Dcheb(Tlj[k,:], M.ricb, M.rcmb)
+            ddPlj[k,:] = ut.Dcheb(dPlj[k,:], M.ricb, M.rcmb)
+            dT[idt,:] = np.matmul(dTlj, chx.T)
+            ddP[idp,:] = np.matmul(ddPlj, chx.T)
+
+
 
     # populate Qlr and Slr
     rI = ss.diags(M.r**-1,0)
@@ -96,21 +110,87 @@ def spec2spat_vec(M,ut,par,chx,a,b,vsymm,nthreads):
     ntheta, nphi = sh.set_grid( M.ntheta+M.ntheta%2, M.nphi, polar_opt=1e-10)
     M.theta = np.arccos(sh.cos_theta)
     M.phi   = np.linspace(0., 2*np.pi, M.nphi*mres+1, endpoint=True)
-
-    # init the spatial component arrays
-    ur     = np.zeros([M.nr, ntheta, nphi] )
-    utheta = np.zeros([M.nr, ntheta, nphi] )
-    uphi   = np.zeros([M.nr, ntheta, nphi] )
     M.ntheta = ntheta
     M.nphi   = nphi
 
-    # the final call to shtns for each radius
-    for ir in range(M.nr):
-        ur[ir,...], utheta[ir,...],  uphi[ir,...] = sh.synth( Q[ir,:], S[ir,:], T[ir,:])
+    # init the spatial component arrays
+    if not vort:
+        if lat is None:
+            ur     = np.zeros([M.nr, ntheta, nphi] )
+            utheta = np.zeros([M.nr, ntheta, nphi] )
+            uphi   = np.zeros([M.nr, ntheta, nphi] )
 
-    return Q,S,T,ur,utheta,uphi
+        # the final call to shtns for each radius
+            for ir in range(M.nr):
+                ur[ir,...], utheta[ir,...],  uphi[ir,...] = sh.synth( Q[ir,:], S[ir,:], T[ir,:])
 
-def spec2spat_scal(M,ut,par,chx,a,b,vsymm,nthreads):
+            return Q,S,T,ur,utheta,uphi
+        else:
+            ur     = np.zeros([M.nr,nphi])
+            utheta = np.zeros([M.nr,nphi])
+            uphi   = np.zeros([M.nr,nphi])
+
+            cost = np.cos(lat * np.pi/180)
+
+            for ir in range(M.nr):
+                sh.SHqst_to_lat(Q[ir,:], S[ir,:], T[ir,:], cost,
+                ur[ir,:], utheta[ir,:], uphi[ir,:])
+
+            return Q,S,T,ur,utheta,uphi
+    else:
+
+        r2I = ss.diags(M.r**-2,0)
+        r2P = Plr * r2I
+
+        Qtmp = L * Tlr
+        Stmp = dT + Tlr * rI
+        Ttmp = L * r2P - 2 * dP * rI - ddP
+
+        Qvort = np.zeros([M.nr, nlm], dtype=complex)
+        Svort = np.zeros([M.nr, nlm], dtype=complex)
+        Tvort = np.zeros([M.nr, nlm], dtype=complex)
+
+        # Reusing ql, sl, tl
+
+        if M.m == 0 :  #pad with zeros for the l=0 component
+            ql = np.r_[ np.zeros((1,M.nr)) ,Qtmp ]
+            sl = np.r_[ np.zeros((1,M.nr)) ,Stmp ]
+            tl = np.r_[ np.zeros((1,M.nr)) ,Ttmp ]
+        else :
+            ql = Qtmp
+            sl = Stmp
+            tl = Ttmp
+
+        Qvort[:, np.sign(M.m)*(lmax2+1):] = ql.T
+        Svort[:, np.sign(M.m)*(lmax2+1):] = sl.T
+        Tvort[:, np.sign(M.m)*(lmax2+1):] = tl.T
+
+
+        if lat is None:
+            vort_r     = np.zeros([M.nr, ntheta, nphi])
+            vort_t     = np.zeros([M.nr, ntheta, nphi])
+            vort_p     = np.zeros([M.nr, ntheta, nphi])
+
+            for ir in range(M.nr):
+                vort_r[ir,...], vort_t[ir,...],  vort_p[ir,...] = sh.synth( Qvort[ir,:], Svort[ir,:], Tvort[ir,:])
+
+            return Qvort,Svort,Tvort,vort_r,vort_t,vort_p
+
+        else:
+            vort_r     = np.zeros([M.nr,nphi])
+            vort_t     = np.zeros([M.nr,nphi])
+            vort_p     = np.zeros([M.nr,nphi])
+
+            cost = np.cos(lat * np.pi/180)
+
+            for ir in range(M.nr):
+                sh.SHqst_to_lat(Qvort[ir,:], Svort[ir,:], Tvort[ir,:], cost,
+                vort_r[ir,:], vort_t[ir,:], vort_p[ir,:])
+
+            return Qvort,Svort,Tvort,vort_r,vort_t,vort_p
+
+
+def spec2spat_scal(M,ut,par,chx,a,b,vsymm,nthreads,lat=None):
 
     # Rearrange and separate poloidal and toroidal parts
 
@@ -167,14 +247,19 @@ def spec2spat_scal(M,ut,par,chx,a,b,vsymm,nthreads):
     M.phi   = np.linspace(0., 2*np.pi, M.nphi*mres+1, endpoint=True)
 
     # init the spatial component arrays
-    scal     = np.zeros([M.nr, ntheta, nphi] )
     M.ntheta = ntheta
     M.nphi   = nphi
 
-    # the final call to shtns for each radius
-    for ir in range(M.nr):
-        scal[ir,...] = sh.synth( Q[ir,:])
+    if lat is None:
+        scal     = np.zeros([M.nr, ntheta, nphi] )
+        # the final call to shtns for each radius
+        for ir in range(M.nr):
+            scal[ir,...] = sh.synth( Q[ir,:])
 
-    return Q,scal
+        return Q,scal
+    else:
+        scal = np.zeros([M.nr,nphi])
+        cost = np.cos(lat*np.pi/180.)
 
-def get_vorticity(M,)
+        for ir in range(M.nr):
+            sh.SH_to_lat(Q[ir,:],cost,scal[ir,:])
