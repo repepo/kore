@@ -82,9 +82,9 @@ class kmode:
 
             if not vort:
 
-                exec('self.'+field+'r'     + '= sol[4]')
-                exec('self.'+field+'theta' + '= sol[5]')
-                exec('self.'+field+'phi'   + '= sol[6]')
+                exec('self.'+field+'r'     + '= sol[3]')
+                exec('self.'+field+'theta' + '= sol[4]')
+                exec('self.'+field+'phi'   + '= sol[5]')
 
             else:
                 if field == 'u':

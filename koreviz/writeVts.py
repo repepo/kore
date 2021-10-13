@@ -11,7 +11,7 @@ try:
         import evtk
         gridToVTK = evtk.hl.gridToVTK
 except:
-    print("movie2vtk requires the use of evtk library!")
+    print("writeVts requires the use of evtk library!")
     print("You can get it from https://github.com/paulo-herrera/PyEVTK")
 
 def get_grid(r,theta,phi,nr,ntheta,nphi):
@@ -108,14 +108,14 @@ def writeVts(mode, scals=[],vecs=[]):
         values.append(bphi)
 
     if any(elem in ["T","temp"] for elem in scals):
-        temp = np.asfortranarray(mode.temp)
+        temp = np.asfortranarray(mode.temperature)
         keys.append("Temperature")
         values.append(temp)
 
     if any(elem in ["C","chem"] for elem in scals):
-        chem = np.asfortranarray(mode.chem)
+        comp = np.asfortranarray(mode.composition)
         keys.append("Composition")
-        values.append(chem)
+        values.append(comp)
 
     dataDict = dict(zip(keys,values))
 
