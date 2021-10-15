@@ -14,7 +14,7 @@ class kmode:
 
     def __init__(self, lat=None,vort=False,datadir='.',field='u', solnum=0, nr=None, nphi=None, nthreads=4 ):
 
-        sys.path.insert(0,os.getcwd())
+        sys.path.insert(0,datadir+'/bin')
 
         import parameters as par
         import utils as ut
@@ -37,12 +37,21 @@ class kmode:
         else:
             self.nr = nr
 
-        if nphi is None:
-            self.nphi = par.lmax * 3 // self.m # Orszag's 1/3 rule
-        else:
-            self.nphi = nphi // self.m
+        if self.m == 0:
 
-        self.ntheta = (self.nphi * self.m) // 2
+            if nphi is None:
+                self.nphi = par.lmax * 3 # Orszag's 1/3 rule
+            else:
+                self.nphi = nphi
+            self.ntheta = self.nphi // 2
+
+        else:
+
+            if nphi is None:
+                self.nphi = par.lmax * 3 // self.m  # Orszag's 1/3 rule
+            else:
+                self.nphi = nphi // self.m
+            self.ntheta = (self.nphi * self.m) // 2
 
         # set the radial grid
         i = np.arange(0,self.nr)
@@ -155,11 +164,18 @@ class kmode:
     def surf(self, field='ur', r=0.5, levels=48, cmap='seismic', colbar=True):
         # Surface plot at constant radius
 
-        data = np.zeros([ self.ntheta, self.nphi*self.m + 1])
-        ir = np.argmin(abs(self.r-r))
-        dat_tmp,titl = self.get_data(field=field)
-        data[:,:-1] = np.tile( dat_tmp[ir,...], self.m )
-        data[:, -1] = data[:,0]
+        if self.m == 0:
+            data = np.zeros([ self.ntheta, self.nphi + 1])
+            ir = np.argmin(abs(self.r-r))
+            dat_tmp,titl = self.get_data(field=field)
+            data[:,:-1] = dat_tmp[ir,...]
+            data[:, -1] = data[:,0]
+        else:
+            data = np.zeros([ self.ntheta, self.nphi*self.m + 1])
+            ir = np.argmin(abs(self.r-r))
+            dat_tmp,titl = self.get_data(field=field)
+            data[:,:-1] = np.tile( dat_tmp[ir,...], self.m )
+            data[:, -1] = data[:,0]
 
         plt.figure(figsize=(12,6))
         cont = radContour( self.theta, self.phi, data.T, levels=levels, cmap=cmap)
@@ -173,7 +189,6 @@ class kmode:
 
         plt.tight_layout()
         plt.show()
-
 
 
     def merid(self, field='ur', azim=0, levels=48, cmap='seismic', colbar=True):
@@ -203,11 +218,19 @@ class kmode:
     def equat(self, field='ur', levels=48, cmap='seismic', colbar=True):
         # Equatorial cross section
 
-        data = np.zeros([ self.nr, self.nphi*self.m + 1])
-        itheta = np.argmin( abs( self.theta - np.pi/2 ) )
-        dat_tmp,titl = self.get_data(field)
-        data[:,:-1] = np.tile( dat_tmp[:,itheta,:], self.m )
-        data[:, -1] = data[:,0]
+        if self.m == 0:
+            data = np.zeros([ self.nr, self.nphi + 1])
+            itheta = np.argmin( abs( self.theta - np.pi/2 ) )
+            dat_tmp,titl = self.get_data(field)
+            data[:,:-1] = dat_tmp[:,itheta,:]
+            data[:, -1] = data[:,0]
+        else:
+            data = np.zeros([ self.nr, self.nphi*self.m + 1])
+            itheta = np.argmin( abs( self.theta - np.pi/2 ) )
+            dat_tmp,titl = self.get_data(field)
+            print(np.shape(data),np.shape(dat_tmp))
+            data[:,:-1] = np.tile( dat_tmp[:,itheta,:], self.m )
+            data[:, -1] = data[:,0]
 
         plt.figure(figsize=(11,9))
         cont = eqContour(self.r, self.phi, data.T, levels=levels, cmap=cmap)

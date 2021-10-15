@@ -46,7 +46,7 @@ def get_cart(vr,vt,vp,r3D,th3D,p3D):
 
 def writeVts(mode, scals=[],vecs=[]):
 
-    r3D,th3D,p3D, x3D,y3D,z3D, s3D = get_grid(mode.r,mode.theta,mode.phi,mode.nr,mode.ntheta,mode.nphi)
+    r3D,th3D,p3D, x3D,y3D,z3D, s3D = get_grid(mode.r,mode.theta,mode.phi,mode.nr,mode.ntheta,mode.nphi*mode.m)
 
     keys = []
     values = []

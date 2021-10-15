@@ -14,6 +14,16 @@ def add_colorbar(im, aspect=40, pad_fraction=0.5, **kwargs):
     plt.sca(current_ax)
     return im.axes.figure.colorbar(im, cax=cax, **kwargs)
 
+def get_col_lims(dat):
+    if (dat.min()<0) and (dat.max()>0) :
+	    datMax = (np.abs(dat)).max()
+	    datMin = -datMax
+    else:
+	    datMax = dat.max()
+	    datMin = dat.min()
+    datCenter = (datMin+datMax)/2
+
+    return datMin,datCenter,datMax
 
 def hammer2cart(ttheta, pphi, colat=False):
     """
@@ -39,13 +49,7 @@ def radContour(theta,phi,dat,levels=30,cmap='RdBu_r'):
     phi2D, theta2D = np.meshgrid(phi,theta,indexing='ij')
     xx,yy = hammer2cart(theta2D,phi2D,colat=True)
 
-    if (dat.min()<0) and (dat.max()>0) :
-	    datMax = (np.abs(dat)).max()
-	    datMin = -datMax
-    else:
-	    datMax = dat.max()
-	    datMin = dat.min()
-    datCenter = (datMin+datMax)/2
+    datMin,datCenter,datMax = get_col_lims(dat)
 
     divnorm = colors.TwoSlopeNorm(vmin=datMin, vcenter=datCenter, vmax=datMax)
     cont = plt.contourf(xx,yy,dat,levels,cmap=cmap,norm=divnorm)
@@ -55,11 +59,11 @@ def radContour(theta,phi,dat,levels=30,cmap='RdBu_r'):
 
     thB = np.linspace(np.pi/2, -np.pi/2, len(theta))
     xxout, yyout  = hammer2cart(thB, -np.pi-1e-3)
-    xxin, yyin  = hammer2cart(thB, np.pi+1e-3) 
- 
+    xxin, yyin  = hammer2cart(thB, np.pi+1e-3)
+
     plt.plot(xxout,yyout,'k',lw=0.6)
     plt.plot(xxin,yyin,'k',lw=0.6)
- 
+
     return cont
 
 
@@ -69,14 +73,8 @@ def merContour(r,theta,dat,levels=30,cmap='RdBu_r'):
     xx = r2D * np.sin(theta2D)
     yy = r2D * np.cos(theta2D)
 
-    if (dat.min()<0) and (dat.max()>0) :
-	    datMax = (np.abs(dat)).max()
-	    datMin = -datMax
-    else:
-	    datMax = dat.max()
-	    datMin = dat.min()
-    datCenter = (datMin+datMax)/2
-    
+    datMin,datCenter,datMax = get_col_lims(dat)
+
     divnorm = colors.TwoSlopeNorm(vmin=datMin, vcenter=datCenter, vmax=datMax)
     cont = plt.contourf(xx,yy,dat,levels,cmap=cmap,norm=divnorm)
 
@@ -97,14 +95,8 @@ def eqContour(r,phi,dat,levels=30,cmap='RdBu_r'):
     xx = r2D * np.cos(phi2D)
     yy = r2D * np.sin(phi2D)
 
-    if (dat.min()<0) and (dat.max()>0) :
-	    datMax = (np.abs(dat)).max()
-	    datMin = -datMax
-    else:
-	    datMax = dat.max()
-	    datMin = dat.min()
-    datCenter = (datMin+datMax)/2
-	
+    datMin,datCenter,datMax = get_col_lims(dat)
+
     divnorm = colors.TwoSlopeNorm(vmin=datMin, vcenter=datCenter, vmax=datMax)
     cont = plt.contourf(xx,yy,dat,levels,cmap=cmap,norm=divnorm)
 
@@ -113,5 +105,5 @@ def eqContour(r,phi,dat,levels=30,cmap='RdBu_r'):
 
     for c in cont.collections:
         c.set_edgecolor("face")
-    
+
     return cont
