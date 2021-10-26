@@ -9,9 +9,10 @@
 # directories with dodirs.sh. It will produce the files:
 # 
 # somename.par, collecting all parameters, 
-# somename.flo, with flow data,
-# somename.eig, with the eigenvalues, (if forcing = 0)
+# somename.flo, with flow data,          (if hydro = 1)
+# somename.eig, with the eigenvalues,    (if forcing = 0)
 # somename.mag, with magnetic field data (if magnetic = 1)
+# somename.thm, with thermal data        (if thermal = 1)
 #
 # Use the script getresults.py to further
 # process the results.
@@ -23,6 +24,7 @@ f=".flo"
 m=".mag"
 e=".eig"
 s=".sla"
+t=".thm"
 
 for d in $(ls -1d $1*)
 do
@@ -46,6 +48,11 @@ do
 	then
 		cat $d/eigenvalues.dat >> $1$e
 	fi
+    
+	if [ -f $d/thermal.dat ]
+	then
+		cat $d/thermal.dat >> $1$t
+	fi    
 
 	if [ -f $d/slayer.dat ]
 	then
@@ -62,8 +69,8 @@ do
 		cat $d/params.out >> $1$p
 	fi
 	
-
 done
+
 
 if [ -f $1$p ]
 then
@@ -83,6 +90,11 @@ fi
 if [ -f $1$e ]
 then
 	echo "Eigenvalues written to $1$e"
+fi
+
+if [ -f $1$t ]
+then
+	echo "Thermal data written to $1$t"
 fi
 
 if [ -f $1$s ]

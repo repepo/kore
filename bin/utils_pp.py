@@ -7,6 +7,7 @@ import numpy as np
 
 import parameters as par
 import utils as ut
+import bc_variables as bc
 
 mp.set_start_method('fork')
 
@@ -74,6 +75,9 @@ def thermal_worker(l, Hk0, Pk0, N, ricb, rcmb, Ra, Rb):
     f0 = 4*np.pi*L/(2*l+1)
     f1 = r2 * 2 * np.real( np.conj(plm0) * hlm0 )
     buoyancy_power_l = 0.5*(Rb-Ra)*(np.pi/N)*np.sum( sqx*f0*f1 )
+    
+    #if l<10:
+    #    print(l,buoyancy_power_l)
     
     return [buoyancy_power_l]
 
@@ -385,6 +389,40 @@ def tor_worker( l, Tk0, N, m, ricb, rcmb, w, projection, forcing, Ra, Rb): # ---
             print('Tor Power =',power_tor_l)            
         else:
             power_tor_l =  0
+
+
+    elif forcing == 7:  # ------------------------------------- Power from longitudinal libration, boundary flow forcing
+        
+        if l==1 and m==0:
+            
+            T0icb = bc.Ta[:,0]
+            T0cmb = bc.Tb[:,0]
+            T1icb = bc.Ta[:,1]
+            T1cmb = bc.Tb[:,1]
+            
+            icb_torque = (16*np.pi/3)*(par.ricb**2)*np.imag( np.dot( par.ricb*T1icb - T0icb, Tk[0,:] ) )
+            cmb_torque = (16*np.pi/3)*np.imag( np.dot( T1cmb - T0cmb, Tk[0,:] ) )
+            
+            pow_icb = (par.forcing_frequency)*par.forcing_amplitude_icb * icb_torque * par.Ek
+            #print('pow_icb=',pow_icb)
+            pow_cmb = (par.forcing_frequency)*par.forcing_amplitude_cmb * cmb_torque * par.Ek
+            #print('pow_cmb=',pow_cmb)
+            
+            power_tor_l = np.real(pow_cmb) - np.real(pow_icb)  # net power is cmb power - icb power
+            
+        else:
+            power_tor_l = 0
+        
+
+    elif forcing == 8:  # ----------------------------- Power from Poincaré force (longitudinal libration), body forcing
+        
+        if l==1 and m==0:
+            f0 = 8*np.pi/3
+            f1 = 2*np.real( tlm0 ) * r3
+            power_tor_l = (np.pi/N)*(Rb-Ra)*0.5*np.sum( sqx*f0*( f1 ) ) * (par.forcing_frequency**2)*par.forcing_amplitude_cmb
+        else:
+            power_tor_l = 0
+
                 
     else:
         power_tor_l = 0
@@ -730,6 +768,7 @@ def thermal_dis( atemp, btemp, au, bu, N, lmax, m, symm, ricb, rcmb, ncpus, Ra, 
     sqx = np.sqrt(1-xk**2)
     global r2
     r2 = rk**2
+    #print('rk[-1]=',rk[-1])
     
     
     # l-indices for u. lup are also the indices for the temperature
@@ -765,7 +804,9 @@ def thermal_dis( atemp, btemp, au, bu, N, lmax, m, symm, ricb, rcmb, ncpus, Ra, 
     pool.close()
     pool.join()
     
-    buoy_power = res_pol[0]
-    
+    if par.heating == 'two zone' or par.heating == 'user defined' :
+        buoy_power = res_pol[0]
+    else:
+        buoy_power = res_pol[0]*par.Brunt**2
     
     return [buoy_power]

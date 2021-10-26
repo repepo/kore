@@ -63,18 +63,22 @@ def radContour(theta,phi,dat,levels=30,cmap='RdBu_r'):
     return cont
 
 
-def merContour(r,theta,dat,levels=30,cmap='RdBu_r'):
+def merContour(r,theta,dat,levels=30,cmap='RdBu_r',limits=[0,0]):
 
     theta2D, r2D = np.meshgrid(theta,r,indexing='ij')
     xx = r2D * np.sin(theta2D)
     yy = r2D * np.cos(theta2D)
 
-    if (dat.min()<0) and (dat.max()>0) :
-	    datMax = (np.abs(dat)).max()
-	    datMin = -datMax
+    if limits[0]==limits[1]:
+        if (dat.min()<0) and (dat.max()>0) :
+            datMax = (np.abs(dat)).max()
+            datMin = -datMax
+        else:
+            datMax = dat.max()
+            datMin = dat.min()
     else:
-	    datMax = dat.max()
-	    datMin = dat.min()
+        datMin = min(limits)
+        datMax = max(limits)
     datCenter = (datMin+datMax)/2
     
     divnorm = colors.TwoSlopeNorm(vmin=datMin, vcenter=datCenter, vmax=datMax)

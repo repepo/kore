@@ -232,12 +232,20 @@ def main():
         
         if rank == 0:
             
-            ru = np.reshape(np.real(VR[:2*ut.n]),(-1,1))
-            iu = np.reshape(np.imag(VR[:2*ut.n]),(-1,1))
+            if par.hydro == 1:
+                offset = 0            
+                ru = np.reshape(np.real(VR[ offset : offset + 2*ut.n ]),(-1,1))
+                iu = np.reshape(np.imag(VR[ offset : offset + 2*ut.n ]),(-1,1))
             
             if par.magnetic == 1:
-                rb = np.reshape(np.real(VR[2*ut.n:]),(-1,1))
-                ib = np.reshape(np.imag(VR[2*ut.n:]),(-1,1))
+                offset = par.hydro * 2*ut.n
+                rb = np.reshape(np.real(VR[ offset : offset + 2*ut.n ]),(-1,1))
+                ib = np.reshape(np.imag(VR[ offset : offset + 2*ut.n ]),(-1,1))
+                
+            if par.thermal == 1:
+                offset = par.hydro * 2*ut.n + par.magnetic * 2*ut.n
+                rtemp = np.reshape(np.real(VR[ offset : offset + ut.n ]),(-1,1))
+                itemp = np.reshape(np.imag(VR[ offset : offset + ut.n ]),(-1,1))
                     
             if np.sum([np.isnan(ru), np.isnan(iu), np.isinf(ru), np.isinf(iu)]) > 0:
                 success = 0
@@ -263,7 +271,8 @@ def main():
             resid1 = np.zeros(success)
             resid2 = np.zeros(success)
             y = np.zeros(success)
-            vtorq = np.zeros(success,dtype=complex) 
+            vtorq = np.zeros(success,dtype=complex)
+            vtorq_icb = np.zeros(success,dtype=complex)
             
             if par.magnetic == 1:
                 ohm = np.zeros((success,4))         
@@ -273,7 +282,7 @@ def main():
             if par.thermal == 1:
                 therm = np.zeros((success,1))   
                 
-            params = np.zeros((success,21))
+            params = np.zeros((success,22))
             
             thk = np.sqrt(par.Ek)
             R1 = par.ricb + 15*thk
@@ -330,23 +339,16 @@ def main():
                 KT = kid[i,1]
                 p2t[i] = KP/KT
                 KE = KP + KT
-                #print('')
-                #print('K = ',KE)
-                #print('')
+            
                 Dint = kid[i,2]*par.Ek
                 Dkin = kid[i,3]*par.Ek
                 
                 repow = kid[i,5]
                 
                 expsol = upp.expand_sol(a+1j*b)
-                #print(np.shape(a+1j*b))
-                #print(np.shape(ut.gamma_visc(0,0,0)))
-                #print(np.shape(expsol))
+                
                 vtorq[i] = np.dot(par.Ek*ut.gamma_visc(0,0,0),expsol)
-                #print(np.shape(vtorq))
-                                
-                #err1[i] = abs(-Dint/Dkin -1)
-                resid1[i] = abs( Dint + Dkin ) / max( abs(Dint), abs(Dkin) )
+                vtorq_icb[i] = np.dot(par.Ek*ut.gamma_visc_icb(par.ricb),expsol)
                 
                 if par.track_target == 1:   
                     # compute distance (mismatch) to tracking target
@@ -376,48 +378,77 @@ def main():
                     Dohm = (ohm[i,2]+ohm[i,3])*par.Le2*par.Em   
                     o2v[i] = Dohm/Dint
                     
+                    ME = (ohm[i,0]+ohm[i,1]) # Magnetic energy
+                    
                     if par.track_target == 1:
                         y3 = abs( (x[3]-o2v[i])/o2v[i] )
                         y[i] += y3  #include ohmic to viscous dissipation ratio in the tracking
                 
                 else:
+                    
                     Dohm = 0
+                    ME = 0
                 
                 
                 if par.thermal == 1:
+                    
                     atemp = np.copy(rtemp[:,i])
                     btemp = np.copy(itemp[:,i])
                     therm[i,:] = upp.thermal_dis( atemp, btemp, a, b, par.N, par.lmax, par.m, par.symm, par.ricb, ut.rcmb, par.ncpus, par.ricb, ut.rcmb)
-                    if par.heating == 'two zone' or par.heating == 'user defined' :
-                        Dtemp = therm[i,0]
-                        #print('Dtemp=',Dtemp)
-                    else:
-                        Dtemp = therm[i,0]*par.Brunt**2
+                    
+                    Dtemp = therm[i,0]
+                    
                 else:
+                    
                     Dtemp = 0
                                     
+                                    
+                # ------------------------------------------------------ Computing residuals to check the power balance:
+                #
+                # pss is the rate of working of stresses at the boundary
+                # pvf is the rate of working of external volume force
+                # Dint is the rate of change of internal energy
+                # Dkin is the kinetic energy dissipation (viscous dissipation)
+                # Dtemp is the rate of working of the buoyancy force
+                # Dohm is the Ohmic dissipation or Joule heating
+                # KE is kinetic energy
+                # ME is magnetic energy
+                # resid1 is the relative residual of Dkin + Dint - pss = 0
+                # resid2 is the relative residual of 2*sigma*(KE + Le2*ME) - Dkin - Dtemp + Dohm - pvf = 0
                 
-                if par.forcing != 0:
-                    if repow != 0:                          # body forcing (input power should match total dissipation) Needs rewriting ...
-                        resid2[i] = abs( (repow-(Dohm-Dkin))/repow )
-                    else:                                   # boundary flow forcing (input power to be implemented)
-                        resid2[i] = -1.0    
-                elif par.forcing == 0:                      # eigenvalue problem (damping should match total dissipation)
-                    resid2[i] = abs( 2*sigma*KE - Dkin - Dtemp + Dohm ) / max( abs(2*sigma*KE), abs(Dkin), abs(Dohm), abs(Dtemp) )
-                # Note that above I'm using -Dohm as a replacement of the power associated with the Lorentz force (they don't necessarily match)
-                
+                if par.forcing == 0:
+                    pss = 0
+                    pvf = 0
+                elif par.forcing == 7: # Libration as boundary flow forcing 
+                    pvf = 0      # power of volume forces (Poincare)
+                    pss = repow  # power of stresses
+                elif par.forcing == 8:  # Libration as a volume force 
+                    pss = 0      # power of stresses
+                    pvf = repow  # power of volume forces (Poincare)
+
                 # print('Dkin  =' ,Dkin)
                 # print('Dint  =' ,Dint)
                 # print('Dohm  =' ,Dohm)
                 # print('Dtemp =' ,Dtemp)
-                # print('2sK   = ',2*sigma*KE)
+                # print('pss   = ',pss)
+                # print('pvf   = ',pvf)
+                # print('resid1 = ',resid1[i])
                 # print('resid2 = ',resid2[i])
+                # print('2sigmaK = ',2*sigma*KE)
+                # print('2Le2sigmaM = ',2*sigma*ME*par.Le2)
                 
-                print('{:2d}   {: 12.9f}   {: 12.9f}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}'.format(i, sigma, w, resid1[i], resid2[i], Dohm/Dint, KT/KP, np.abs(vtorq[i])/np.sqrt(KE) ))
+                resid1[i] = abs( Dint + Dkin - pss ) / max( abs(Dint), abs(Dkin), abs(pss) )
+                resid2[i] = abs( 2*sigma*(KE + par.Le2*ME) - Dkin - Dtemp + Dohm - pvf ) / \
+                 max( abs(2*sigma*(KE+par.Le2*ME)), abs(Dkin), abs(Dohm), abs(Dtemp), abs(pvf) )
                 
+                # ------------------------------------------------------------------------------------------------------
+                
+                print('{:2d}   {: 12.9f}   {: 12.9f}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}'.format(i, sigma,\
+                 w, resid1[i], resid2[i], Dohm/Dint, KT/KP, np.abs(vtorq[i])/np.sqrt(KE) ))
                 
                 params[i,:] = np.array([par.Ek, par.m, par.symm, par.ricb, par.bci, par.bco, par.projection, par.forcing, \
-                par.forcing_amplitude, par.forcing_frequency, par.magnetic, par.Em, par.Le2, par.N, par.lmax, toc1-tic, par.ncpus, par.tol, par.thermal, par.Prandtl, par.Brunt])
+                 par.forcing_amplitude_cmb, par.forcing_frequency, par.magnetic, par.Em, par.Le2, par.N, par.lmax, toc1-tic, \
+                 par.ncpus, par.tol, par.thermal, par.Prandtl, par.Brunt, par.forcing_amplitude_icb])
                 
             print('--- -------------- -------------- ---------- ---------- ---------- ---------- ----------')
             
@@ -454,10 +485,10 @@ def main():
             with open('params.dat','ab') as dpar:
                 np.savetxt(dpar, params, \
                 #fmt=['%.9e','%d','%d','%.9e','%d','%d','%d','%d','%.9e','%.9e','%d','%.9e','%.9e','%d','%d','%.2f', '%d', '%.2e'])  
-                fmt=['%.9e','%d','%d','%.9e','%d','%d','%d','%d','%.9e','%.9e','%d','%.9e','%.9e','%d','%d','%.2f', '%d', '%.2e', '%d', '%.9e', '%.9e'])
+                fmt=['%.9e','%d','%d','%.9e','%d','%d','%d','%d','%.9e','%.9e','%d','%.9e','%.9e','%d','%d','%.2f', '%d', '%.2e', '%d', '%.9e', '%.9e', '%.9e'])
             
             with open('flow.dat','ab') as dflo:
-                np.savetxt(dflo, np.c_[kid, Dint_partial, np.real(vtorq), np.imag(vtorq)])
+                np.savetxt(dflo, np.c_[kid, Dint_partial, np.real(vtorq), np.imag(vtorq), np.real(vtorq_icb), np.imag(vtorq_icb)])
             
             if par.magnetic == 1:
                 with open('magnetic.dat','ab') as dmag:
@@ -475,8 +506,9 @@ def main():
             # ---------------------------------------------------------- write solution vector('s) to disk
             
             if par.write_solution == 1: # one solution per columns
-                np.savetxt('real_flow.field',ru)
-                np.savetxt('imag_flow.field',iu)
+                if par.hydro == 1:
+                    np.savetxt('real_flow.field',ru)
+                    np.savetxt('imag_flow.field',iu)
                 if par.magnetic == 1:
                     np.savetxt('real_magnetic.field',rb)
                     np.savetxt('imag_magnetic.field',ib)

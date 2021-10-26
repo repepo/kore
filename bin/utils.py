@@ -677,8 +677,34 @@ def gamma_visc(a1,a2,a3):
             out[0,colT:colT+par.N] = tol5
         elif l==7 and par.m==1:
             out[0,colT:colT+par.N] = tol7
-            
     
+    # axial torque for a spherical cmb, take 2*real after multiplying by the solution vector       
+    if par.m == 0 and par.symm == 1:
+        R = 1  #rcmb
+        # axial torque depends on the l=1, m=0 toroidal component only 
+        out[0,n0:n0+par.N] = (8*np.pi/3)*(R**2)*( R*T1 - T0 )
+            
     return out
 
+
+def gamma_visc_icb(ricb):
+    '''
+    Axial viscous torque on the inner core, spherical. Take 2*real after multiplying by the solution vector
+    '''
+    
+    out = np.zeros((1,n0+n0),dtype=complex)
+    
+    if par.m == 0 and par.symm == 1 and par.ricb > 0:
+        
+        T = Tk( -1, par.N-1, 1)
+        T0 = T[:,0]
+        T1 = T[:,1]
+        R = ricb
+        # axial torque depends on the l=1, m=0 toroidal component only 
+        out[0,n0:n0+par.N] = (8*np.pi/3)*(R**2)*( R*T1 - T0 )
+
+    return out
+    
+    
+    
 

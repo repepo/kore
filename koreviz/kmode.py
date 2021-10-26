@@ -197,7 +197,7 @@ class kmode:
         
 
         
-    def merid(self, comp='rad', azim=0, levels=48, cmap=cmr.prinsenvlag, colbar=True):
+    def merid(self, comp='rad', azim=0, levels=48, cmap=cmr.prinsenvlag, colbar=True,limits=[0,0]):
         # Meridional cross section
         
         iphi = np.argmin(abs( self.phi - (azim*np.pi/180) )) % self.nphi
@@ -208,7 +208,7 @@ class kmode:
             data = np.log10(data)
 
         plt.figure(figsize=(6,9))
-        cont = merContour( self.r, self.theta, data.T, levels=levels, cmap=cmap)
+        cont = merContour( self.r, self.theta, data.T, levels=levels, cmap=cmap,limits=limits)
         plt.axis('equal')
         plt.axis('off')
         if colbar:

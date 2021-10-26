@@ -133,7 +133,7 @@ def main(ncpus):
 
         elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
         
-            labl += [ 'u40', 'u51', 'u53', 'u64', 'u50', 'u61', 'u11', 'u10', 'u21', 'u32' ]
+            labl += [ 'u40', 'u51', 'u53', 'u64', 'u50', 'u61', 'u11', 'u10', 'u21', 'u32', 'u62', 'u00' ]
             
     if par.thermal == 1 :
         
