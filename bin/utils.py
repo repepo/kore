@@ -22,7 +22,7 @@ else:
 
 rcmb   = 1
 
-N1     = int(par.N/2) * int(1 + np.sign(par.ricb))  # N/2 if no IC, N if present
+N1     = int(par.N/2) * int(1 + np.sign(par.ricb)) + int(N%2)*np.sign(par.ricb) # N/2 if no IC, N if present, N%2 takes care of odd N
 n      = int(N1*(par.lmax-par.m+1)/2)
 n0     = int(par.N*(par.lmax-par.m+1)/2)
 m      = par.m
