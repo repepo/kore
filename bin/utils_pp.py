@@ -434,18 +434,26 @@ def tor_worker( l, Tk0, N, m, ricb, rcmb, w, projection, forcing, Ra, Rb): # ---
         
         
 
-def pol_ohm( l, Pk, N, ricb, rcmb, Ra, Rb): # ------------------------------------------
+def pol_ohm( l, Pk0, N, ricb, rcmb, Ra, Rb): # ------------------------------------------
+    
+    Pk = np.zeros((1,N),dtype=complex)
+    if ricb == 0 :
+        #iP = (par.m + ut.s)%2
+        iP = ( par.m + (1-ut.s) )%2
+        Pk[0,iP::2] = Pk0
+    else :
+        Pk[0,:] = Pk0
     
     L  = l*(l+1)
     
-    dPk  = ut.Dcheb(Pk,ricb,rcmb)
+    dPk  = ut.Dcheb(Pk[0,:],ricb,rcmb)
     d2Pk = ut.Dcheb(dPk,ricb,rcmb)
     
     plm0 = np.zeros(np.shape(x0),dtype=complex)
     plm1 = np.zeros(np.shape(x0),dtype=complex)
     plm2 = np.zeros(np.shape(x0),dtype=complex)
     
-    plm0 = ch.chebval(x0, Pk)
+    plm0 = ch.chebval(x0, Pk[0,:])
     plm1 = ch.chebval(x0, dPk)
     plm2 = ch.chebval(x0, d2Pk)
     '''
@@ -463,8 +471,8 @@ def pol_ohm( l, Pk, N, ricb, rcmb, Ra, Rb): # ----------------------------------
     # -------------------------------------------------------------------------- magnetic field energy, poloidal
     
     f0 = 4*np.pi/(2*l+1)
-    f1 = (rk**2)*np.absolute( qlm0 )**2
-    f2 = (rk**2)*L*np.absolute( slm0 )**2
+    f1 = r2*np.absolute( qlm0 )**2
+    f2 = r2*L*np.absolute( slm0 )**2
     
     benergy_pol_l = 0.5*(Rb-Ra)*(np.pi/N)*np.sum( sqx*f0*( f1+f2 ) ) 
     
@@ -482,19 +490,38 @@ def pol_ohm( l, Pk, N, ricb, rcmb, Ra, Rb): # ----------------------------------
 
 
     
-def tor_ohm( l, Tk, N, ricb, rcmb, Ra, Rb): # ------------------------------------------
+def tor_ohm( l, Tk0, N, ricb, rcmb, Ra, Rb): # ------------------------------------------
+    
+    
+    Tk = np.zeros((1,N),dtype=complex)
+    
+    # Here I do the opposite as the (toroidal) flow because of the antisymmetric background field
+    
+    # iT is the starting index of the Chebishev polynomials
+    # if required Cheb degrees are even: 0,2,4,.. then iT=0
+    # if degrees are odd then iT=1
+    
+    # required degrees are even if m+1-s is even and vice versa 
+    
+    if ricb == 0 :
+        iT = (par.m + ut.s)%2
+        #iT = ( par.m + (1-ut.s) )%2   
+        Tk[0,iT::2] = Tk0
+    else :
+        Tk[0,:] = Tk0
+    
     
     L  = l*(l+1)
 
     # Tk is the full set of cheb coefficients for a given l
     # we use the full domain [-1,1] if an inner core is present
     
-    dTk  = ut.Dcheb(Tk,ricb,rcmb)
+    dTk  = ut.Dcheb(Tk[0,:],ricb,rcmb)
 
     tlm0 = np.zeros(np.shape(x0),dtype=complex)
     tlm1 = np.zeros(np.shape(x0),dtype=complex)
     
-    tlm0 = ch.chebval(x0, Tk)
+    tlm0 = ch.chebval(x0, Tk[0,:])
     tlm1 = ch.chebval(x0, dTk)
     '''
     tlm0 = np.dot(chx,Tk,tlm0)
@@ -504,7 +531,7 @@ def tor_ohm( l, Tk, N, ricb, rcmb, Ra, Rb): # ----------------------------------
     # -------------------------------------------------------------------------- magnetic field energy, toroidal
     
     f0 = 4*np.pi/(2*l+1)
-    f1 = (rk**2)*L*np.absolute( tlm0 )**2
+    f1 = r2*L*np.absolute( tlm0 )**2
 
     benergy_tor_l = 0.5*(Rb-Ra)*(np.pi/N)*np.sum( sqx*f0*( f1 ) ) 
         
@@ -638,16 +665,23 @@ def ohm_dis( a, b, N, lmax, m, bsymm, ricb, rcmb, ncpus, Ra, Rb):
     bsymm is the symmetry of the *induced magnetic field*, which is
     opposed to that of the flow if the applied field is antisymmetric.
     '''
-    
+
     # xk are the colocation points, from -1 to 1
     i = np.arange(0,N)
     xk = np.cos( (i+0.5)*np.pi/N )
     global x0
-    x0 = ( (Rb-Ra)*xk + (Ra+Rb) - (ricb+rcmb) )/(rcmb-ricb)
+    if ricb > 0 :
+        x0 = ( (Rb-Ra)*xk + (Ra+Rb) - (ricb+rcmb) )/(rcmb-ricb)
+    else :
+        x0 = ( (Rb-Ra)*xk + (Ra+Rb) )/(2*rcmb)
         
     # rk are the radial colocation points, from ricb to rcmb
     global rk 
-    rk = 0.5*(rcmb-ricb)*( x0 + 1 ) + ricb
+    if ricb > 0:
+        rk = 0.5*(rcmb-ricb)*( x0 + 1 ) + ricb
+    else :
+        rk = rcmb*x0
+
     # the following are needed to compute the integrals
     global sqx 
     sqx = np.sqrt(1-xk**2)
@@ -683,16 +717,16 @@ def ohm_dis( a, b, N, lmax, m, bsymm, ricb, rcmb, ncpus, Ra, Rb):
             lmax_top = lmax+1
             lmax_bot = lmax+2
     
-    n = int(N*(lmax-m+1)/2)
-    # Use n=(N/2)*(lmax-m+1)/2 if there is no inner core
+    N1 = int( (N/2) * (1 + np.sign(ricb)) )  # N/2 if no IC, N if present
+    n = int(N1*(lmax-m+1)/2)   
     
-    ev0 = a + 1j*b
-    Pk0 = ev0[0:  n] #  N/2 elements on each l block
-    Tk0 = ev0[n:2*n] #  N/2 elemens on each l block
+    ev0 = a + 1j * b
+    Pk0 = ev0[:n] 
+    Tk0 = ev0[n:n+n]
     
     # these are the cheb coefficients, reorganized
-    Pk2 = np.reshape(Pk0,(int((lmax-m+1)/2),N))
-    Tk2 = np.reshape(Tk0,(int((lmax-m+1)/2),N))
+    Pk0 = np.reshape(Pk0,(int((lmax-m+1)/2),N1))
+    Tk0 = np.reshape(Tk0,(int((lmax-m+1)/2),N1))
     
     #tmp = pol_ohm(1, Pk2[0,:], N, ricb, rcmb, Ra, Rb)
     #print('l=1, pol',tmp[1]*par.Le2*par.Em)
@@ -701,8 +735,8 @@ def ohm_dis( a, b, N, lmax, m, bsymm, ricb, rcmb, ncpus, Ra, Rb):
     
     # process each l component in parallel
     pool = mp.Pool(processes=ncpus)
-    p = [ pool.apply_async(pol_ohm,args=(l, Pk2[k,:], N, ricb, rcmb, Ra, Rb)) for k,l in enumerate(np.arange(m_top,lmax_top,2.)) ]
-    t = [ pool.apply_async(tor_ohm,args=(l, Tk2[k,:], N, ricb, rcmb, Ra, Rb)) for k,l in enumerate(np.arange(m_bot,lmax_bot,2.)) ]
+    p = [ pool.apply_async(pol_ohm,args=(l, Pk0[k,:], N, ricb, rcmb, Ra, Rb)) for k,l in enumerate(np.arange(m_top,lmax_top,2.)) ]
+    t = [ pool.apply_async(tor_ohm,args=(l, Tk0[k,:], N, ricb, rcmb, Ra, Rb)) for k,l in enumerate(np.arange(m_bot,lmax_bot,2.)) ]
     
     res_pol = np.sum([p1.get() for p1 in p],0)
     res_tor = np.sum([t1.get() for t1 in t],0)

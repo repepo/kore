@@ -80,7 +80,11 @@ elif sum(forcing) == 8*np.shape(p)[0]:  # libration, volume forcing
     pss = zeros( np.shape(p)[0] )
     pvf = rpow
     
-
+elif sum(forcing) == 9*np.shape(p)[0]:  # m=2 boundary forcing, needs fixing
+    sigma = zeros( np.shape(p)[0] )
+    pss = rpow
+    pvf = zeros( np.shape(p)[0] )
+    
 if shape(u)[1]>=10:
     # viscous dissipation in the bulk, without boundary layers
     vd1 = Dint - (u[:,7] + u[:,8])
@@ -157,11 +161,12 @@ if sum(thermal) == np.shape(p)[0]: # reads thermal data
     else:
         th = loadtxt('thermal.dat')
         
-    if len(th.shape)==1:    
-        th = b.reshape((-1,len(th)))
-        Dtemp = th[:,0]
-    elif size(th)==1:
-        Dtemp = array([th])
+    #if len(th.shape)==1:    
+    #    th = th.reshape((-1,len(th)))
+    #    Dtemp = th[:,0]
+    #elif size(th)==1:
+    #    Dtemp = array([th])
+    Dtemp = array([th])[0]
 
 else:
     

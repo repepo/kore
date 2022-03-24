@@ -29,44 +29,46 @@ t=".thm"
 for d in $(ls -1d $1*)
 do
 
-	if [ -f $d/params.dat ]
-	then
-		cat $d/params.dat >> $1$p
-	fi
-	
 	if [ -f $d/flow.dat ]
 	then
-		cat $d/flow.dat >> $1$f
+        lines=`grep -c ^ $d/flow.dat`
+        head -n $lines $d/flow.dat >> $1$f   
+		#cat $d/flow.dat >> $1$f
+	fi
+
+	if [ -f $d/eigenvalues.dat ]
+	then
+        head -n $lines $d/eigenvalues.dat >> $1$e
+	fi
+
+	if [ -f $d/params.dat ]
+	then
+		head -n $lines $d/params.dat >> $1$p
 	fi
 	
 	if [ -f $d/magnetic.dat ]
 	then
-		cat $d/magnetic.dat >> $1$m
-	fi
-	
-	if [ -f $d/eigenvalues.dat ]
-	then
-		cat $d/eigenvalues.dat >> $1$e
+		head -n $lines $d/magnetic.dat >> $1$m
 	fi
     
 	if [ -f $d/thermal.dat ]
 	then
-		cat $d/thermal.dat >> $1$t
+		head -n $lines $d/thermal.dat >> $1$t
 	fi    
 
 	if [ -f $d/slayer.dat ]
 	then
-		cat $d/slayer.dat >> $1$s
+		head -n $lines $d/slayer.dat >> $1$s
 	fi
 
 	if [ -f $d/lions.out ]
 	then
-		cat $d/lions.out >> $1$f
+		head -n $lines $d/lions.out >> $1$f
 	fi
 
 	if [ -f $d/params.out ]
 	then
-		cat $d/params.out >> $1$p
+		head -n $lines $d/params.out >> $1$p
 	fi
 	
 done

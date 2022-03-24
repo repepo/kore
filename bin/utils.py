@@ -1,5 +1,6 @@
 from scipy.linalg import toeplitz
 from scipy.linalg import hankel
+import scipy.optimize as so
 import scipy.sparse as ss
 import scipy.special as scsp
 import scipy.fftpack as sft
@@ -41,6 +42,11 @@ if m_top == 0: m_top = 2
 if m_bot == 0: m_bot = 2
 lmax_top = lmax + 1 + (1-2*np.sign(m))*s
 lmax_bot = lmax + 1 + (1-2*np.sign(m))*(1-s)
+
+if par.B0 in ['axial','dipole','G21 dipole']:
+    symmB0 = -1
+elif par.B0 == 'FDM':
+    symmB0 = int((-1)**par.B0_l)
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -120,6 +126,350 @@ def BVprof(r,args):
 
 
 
+def jl_smx(l,x,d):
+    '''
+    Spherical Bessel function of the first kind and derivatives,
+    small argument (x<<1) only, 0 <= d <= 3
+    '''
+    c1 =  (2**l)*scsp.factorial(l)/scsp.factorial(2*l+1)
+    c2 = -(2**l)*scsp.factorial(l+1)/scsp.factorial(2*l+3)
+    c3 =  (2**l)*scsp.factorial(l+2)/(2*scsp.factorial(2*l+5))
+    
+    if d == 0:
+        out = c1*x**l + c2*x**(l+2) + c3*x**(l+4)
+    
+    elif d == 1:
+        out = c1*l*x**(l-1) + c2*(l+2)*x**(l+1) + c3*(l+4)*x**(l+3)
+    
+    elif d == 2:
+        if l>=2:
+            out = c1*l*(l-1)*x**(l-2) + c2*(l+2)*(l+1)*x**l + c3*(l+4)*(l+3)*x**(l+2)
+        elif l==1: 
+            out = c2*(l+2)*(l+1)*x**l + c3*(l+4)*(l+3)*x**(l+2)
+    
+    elif d == 3:
+        if l>=3:
+            out = c1*l*(l-1)*(l-2)*x**(l-3) + c2*(l+2)*(l+1)*l*x**(l-1) + c3*(l+4)*(l+3)*(l+2)*x**(l+1)
+        else:
+            out = c2*(l+2)*(l+1)*l*x**(l-1) + c3*(l+4)*(l+3)*(l+2)*x**(l+1)
+            
+    return out
+
+
+def jl(l,x,d):
+    '''
+    Spherical Bessel function of the first kind
+    d is zero or 1
+    '''
+    out = np.zeros_like(x)
+    
+    k = x<1e-3
+    out[k]  = jl_smx(l,x[k],d) 
+    out[~k] = scsp.spherical_jn(l,x[~k],derivative=d)
+    
+    return out
+
+
+
+def nl(l,x,d):
+    '''
+    Spherical Bessel function of the second kind
+    '''
+    return scsp.spherical_yn(l,x,derivative=d)
+
+
+
+def findbeta(args):
+    '''
+    root finding for beta, needed for the Free Decay Modes
+    '''
+    beta0 = args[0]
+    ell   = args[1]
+    ricb  = args[2]
+    
+    def f0(x, ric, l): 
+        if ric>0:
+            # Zhang & Fearn, GAFD (1995), page 196.
+            return jl(l+1,x*ric,0) * nl(l-1,x,0) - jl(l-1,x,0) * nl(l+1,x*ric,0)
+        elif ric==0:
+            # Gubbins & Roberts (1987), page 49.
+            return jl(l-1,x,0) 
+
+    sol = so.root( f0, beta0, args=(ricb, ell) )
+    beta1 = sol.x[0]
+
+    return beta1
+    
+
+
+def h0(rr, kind, args):
+    '''
+    Radial poloidal function for the background magnetic field times
+    a power of r
+    args[0] = guess for beta (FDM, radial complexity)
+    args[1] = order l (FDM, l=1 is dipole)
+    args[2] = ricb
+    args[3] = power of r
+    
+    If extending to r<0 then this function has parity (-1)**(l+rp)
+    '''
+    b    = args[0]
+    l    = args[1]
+    ricb = args[2]
+    rp   = args[3]
+    
+    #print('rp=',rp)
+    
+    r = rr[rr>0]
+    
+    if   kind == 'axial':       # axial uniform field in the z direction
+        l = 1
+        c = 1/2
+        out = (1/2)*r**(1+rp)
+        #out = r**(1+rp)
+
+    elif kind == 'dipole' and ricb > 0 :      # dipole, singular at r=0
+        l = 1
+        c = 1/2
+        out = (1/2)*r**(-2+rp)
+
+    elif kind == 'G21 dipole':  # Felix's dipole (Gerick 2021)
+        l = 1
+        c = (1/6)-(1/10)
+        out = (1/6)*r**(1+rp) - (1/10)*r**(3+rp)
+
+    elif kind == 'FDM':         # poloidal Free Decay Mode 
+        b = findbeta(args)
+        x = b*r
+        
+        if ricb==0:
+            c = jl(l,b,0)
+            # Gubbins & Roberts (1987), page 49, eq. 3.67
+            out = jl(l,x,0)*r**rp
+        else:
+            c = jl(l,b,0)*nl(-1 + l,b,0) - jl(-1 + l,b,0)*nl(l,b,0)
+            # Zhang & Fearn, GAFD (1995), page 196, eq. 2.7
+            out = ( jl(l,x,0)*nl(-1 + l,b,0) - jl(-1 + l,b,0)*nl(l,x,0) )*r**rp  
+
+    # this sets the rms radial field at the cmb as 1        
+    c0 = np.sqrt(2*l+1)/(l*(l+1))
+    #out = out*(c0/c)
+    
+    out2 = np.zeros_like(rr)
+    out2[rr>0] = out
+    if ricb == 0 :
+        out2[rr<0] = np.flipud(out)*(-1)**(l+rp)
+    
+    cnorm = par.cnorm
+    #cnorm = 4.06714  # Zhang1995 normalization, does not match Zhang's results :( 
+    #cnorm = 3.86375  # Schmidt 2012 normalization, matches their results
+    
+    return out2*cnorm
+
+
+
+def h1(rr, kind, args):
+    '''
+    First radial derivative of the function h0, times a power of r
+    '''
+    b    = args[0]
+    l    = args[1]
+    ricb = args[2]
+    rp   = args[3]
+    
+    r = rr[rr>0]
+    
+    if kind == 'axial':         # axial uniform field in the z direction
+        l = 1
+        c = 1/2
+        out = (1/2)*r**rp
+        #out = r**rp
+    
+    elif kind == 'dipole' and ricb > 0 :      # dipole, singular at r=0
+        l = 1
+        c = 1/2
+        out = -r**(-3+rp)
+    
+    elif kind == 'G21 dipole':  # Felix's dipole (Gerick 2021)
+        l = 1
+        c = (1/6)-(1/10)
+        out = (1/6)*r**rp - (3/10)*r**(2+rp)
+    
+    elif kind == 'FDM':
+        b = findbeta(args)
+        x = b*r
+        if ricb==0:
+            c = jl(l,b,0)
+            out = b*jl(l,x,1)*r**rp
+        else:
+            c = jl(l,b,0)*nl(-1 + l,b,0) - jl(-1 + l,b,0)*nl(l,b,0)
+            out = ( b*(jl(l,x,1)*nl(-1 + l,b,0) - jl(-1 + l,b,0)*nl(l,x,1)) )*r**rp
+
+    c0 = np.sqrt(2*l+1)/(l*(l+1))
+    #out = out*(c0/c)
+    
+    out2 = np.zeros_like(rr)
+    out2[rr>0] = out
+    if ricb == 0 :
+        out2[rr<0] = np.flipud(out)*(-1)**(l-1+rp)
+    
+    cnorm = par.cnorm
+    #cnorm = 4.06714  # Zhang1995 normalization, does not match :(
+    #cnorm = 3.86375  # Schmidt 2012 normalization
+    
+    return out2*cnorm
+    
+
+
+def h2(rr, kind, args):
+    '''
+    Second radial derivative of the function h0, times a power of r
+    '''
+    b    = args[0]
+    l    = args[1]
+    ricb = args[2]
+    rp   = args[3]
+    
+    r = rr[rr>0]
+    
+    if kind == 'axial':         # axial uniform field in the z direction
+        l = 1
+        c = 1/2
+        out = np.zeros_like(r)
+    
+    elif kind == 'dipole' and ricb > 0 :      # dipole, singular at r=0
+        l = 1
+        c = 1/2
+        out = 3*r**(-4+rp)
+    
+    elif kind == 'G21 dipole':  # Felix's dipole (Gerick 2021)
+        l = 1
+        c = (1/6)-(1/10)
+        out = (6/10)*r**(1+rp)
+    
+    elif kind == 'FDM':
+        b = findbeta(args)
+        x = b*r
+        if ricb==0:
+            c = jl(l,b,0)
+            k = x<1e-3
+            out = np.zeros_like(r)
+            out[ k] = b**2*jl_smx(l,x[k],2)*r[k]**rp
+            out[~k] = b**2*jl(-1 + l,x[~k],1)*r[~k]**rp + ((1 + l)*(jl(l,x[~k],0) - x[~k]*jl(l,x[~k],1)))*r[~k]**(-2+rp)
+        else:
+            c = jl(l,b,0)*nl(-1 + l,b,0) - jl(-1 + l,b,0)*nl(l,b,0)
+            out= ((x**2*jl(-1 + l,x,1) + (1 + l)*(jl(l,x,0) - x*jl(l,x,1)))*nl(-1 + l,b,0) \
+             - jl(-1 + l,b,0)*(x**2*nl(-1 + l,x,1) + (1 + l)*(nl(l,x,0) - b*r*nl(l,x,1))))*r**(-2+rp)
+
+    c0 = np.sqrt(2*l+1)/(l*(l+1))
+    #out = out*(c0/c)
+
+    out2 = np.zeros_like(rr)
+    out2[rr>0] = out
+    if ricb == 0 :
+        out2[rr<0] = np.flipud(out)*(-1)**(l+rp)
+    
+    cnorm = par.cnorm
+    #cnorm = 4.06714  # Zhang1995 normalization, does not match :(
+    #cnorm = 3.86375  # Schmidt 2012 normalization
+    
+    return out2*cnorm
+
+
+
+def h3(rr, kind, args):
+    '''
+    Third radial derivative of the function h0, times a power of r
+    '''
+    b    = args[0]
+    l    = args[1]
+    ricb = args[2]
+    rp   = args[3] 
+    
+    r = rr[rr>0]
+    
+    if kind == 'axial':         # axial uniform field in the z direction
+        l = 1
+        c = 1/2
+        out = np.zeros_like(r)
+    
+    elif kind == 'dipole' and ricb > 0 :      # dipole, singular at r=0
+        l = 1
+        c = 1/2
+        out = -12*r**(-5+rp)
+    
+    elif kind == 'G21 dipole':  # Felix's dipole (Gerick 2021)
+        l = 1
+        c = (1/6)-(1/10)
+        out = (6/10)*r**rp
+    
+    elif kind == 'FDM':
+        
+        b = findbeta(args)
+        x = b*r
+        
+        if l>=2:
+            
+            if ricb==0:
+                c = jl(l,b,0)
+                
+                k = x<1e-3
+                x0 = x[ k]  # small x
+                x1 = x[~k]  # the rest
+                
+                out = np.zeros_like(r)
+                out[ k] = b**3*jl_smx(l,x0,3)*r[k]**rp
+                
+                out[~k] = (x1**3*jl(-2 + l,x1,1) + l*x1*jl(-1 + l,x1,0) - x1**2*jl(-1 + l,x1,1) \
+                 - 2*l*x1**2*jl(-1 + l,x1,1) - 3*jl(l,x1,0) - 4*l*jl(l,x1,0) - l**2*jl(l,x1,0) \
+                 + 3*x1*jl(l,x1,1) + 4*l*x1*jl(l,x1,1) + l**2*x1*jl(l,x1,1))*r[~k]**(-3+rp)
+        
+            else:
+                c = ( jl(l,b,0)*nl(-1 + l,b,0) - jl(-1 + l,b,0)*nl(l,b,0) )*r**rp
+                
+                out = ((b**3*r**3*jl(-2 + l,b*r,1) + b*l*r*jl(-1 + l,b*r,0) - b**2*r**2*jl(-1 + l,b*r,1) \
+                 - 2*b**2*l*r**2*jl(-1 + l,b*r,1) - 3*jl(l,b*r,0) - 4*l*jl(l,b*r,0) - l**2*jl(l,b*r,0) + 3*b*r*jl(l,b*r,1) \
+                 + 4*b*l*r*jl(l,b*r,1) + b*l**2*r*jl(l,b*r,1))*nl(-1 + l,b,0) + jl(-1 + l,b,0)*(-(b**3*r**3*nl(-2 + l,b*r,1)) \
+                 - b*l*r*nl(-1 + l,b*r,0) + b**2*r**2*nl(-1 + l,b*r,1) + 2*b**2*l*r**2*nl(-1 + l,b*r,1) + 3*nl(l,b*r,0) \
+                 + 4*l*nl(l,b*r,0) + l**2*nl(l,b*r,0) - 3*b*r*nl(l,b*r,1) - 4*b*l*r*nl(l,b*r,1) - b*l**2*r*nl(l,b*r,1)))*r**(-3+rp)
+        
+        elif l==1:
+            
+            if ricb==0:
+                c = jl(l,b,0)
+                
+                k = x<1e-3
+                x0 = x[ k]  # small x
+                x1 = x[~k]  # the rest
+                
+                out = np.zeros_like(r)
+                out[ k] = b**3*jl_smx(l,x0,3)*r[k]**rp
+                
+                out[~k] = (-2*x1**2*jl(0,x1,1) - 8*jl(1,x1,0) + x1*(8 - x1**2)*jl(1,x1,1))*r[~k]**(-3+rp)
+                
+            else:
+                c = jl(l,b,0)*nl(-1 + l,b,0) - jl(-1 + l,b,0)*nl(l,b,0)
+                
+                out = (-2*b**2*r**2*jl(0,b*r,1)*nl(0,b,0) - 8*jl(1,b*r,0)*nl(0,b,0) + 8*b*r*jl(1,b*r,1)*nl(0,b,0) \
+                 - b**3*r**3*jl(1,b*r,1)*nl(0,b,0) + 2*b**2*r**2*jl(0,b,0)*nl(0,b*r,1) + 8*jl(0,b,0)*nl(1,b*r,0) \
+                 - 8*b*r*jl(0,b,0)*nl(1,b*r,1) + b**3*r**3*jl(0,b,0)*nl(1,b*r,1))*r**(-3+rp)
+    
+    c0 = np.sqrt(2*l+1)/(l*(l+1))
+    #out = out*(c0/c)
+             
+    out2 = np.zeros_like(rr)
+    out2[rr>0] = out
+    if ricb == 0 :
+        out2[rr<0] = np.flipud(out)*(-1)**(l-1+rp)
+    
+    cnorm = par.cnorm
+    #cnorm = 4.06714  # Zhang1995 normalization, does not match :(
+    #cnorm = 3.86375  # Schmidt 2012 normalization
+    
+    return out2*cnorm
+
+
+
 def chebco(powr, N, tol, ricb, rcmb):
     '''
     Returns the first N Chebyshev coefficients
@@ -133,10 +483,8 @@ def chebco(powr, N, tol, ricb, rcmb):
         ai = ( rcmb*xi )**powr                       
     else:
         ai = ( ricb + (rcmb-ricb)*(xi+1)/2. )**powr  # With inner core -> Chebyshev domain [-1,1] mapped to [ ricb, rcmb]
-
-    tmp = sft.dct(ai)
     
-    out = tmp/N
+    out = sft.dct(ai)/N
     out[0]=out[0]/2.
     out[np.absolute(out)<=tol]=0.
     
@@ -193,6 +541,43 @@ def chebco_BVprof(args, N, ricb, rcmb, tol):
     out[0] = out[0] / 2.
     out[np.absolute(out) <= tol] = 0.
     return out  
+
+
+
+def chebco_h(args, kind, N, rcmb, tol):
+    '''
+    Computes the Chebyshev coeffs of the h0 function and derivatives
+    times a power of r
+    '''
+    
+    beta = args[0]  # beta
+    l    = args[1]  # l
+    ricb = args[2]  # ricb
+    rx   = args[3]  # power of r
+    
+    dx   = args[4]  # derivative order
+    
+    i = np.arange(0, N)
+    xi = np.cos(np.pi * (i + 0.5) / N)
+
+    if ricb > 0:
+        ri = (ricb + (rcmb - ricb) * (xi + 1) / 2.)
+    elif ricb == 0 :
+        ri = rcmb * xi
+    
+    if   dx == 0 :
+        fi = h0(ri, kind, args[:4])
+    elif dx == 1 :
+        fi = h1(ri, kind, args[:4])
+    elif dx == 2 :
+        fi = h2(ri, kind, args[:4])
+    elif dx == 3 :
+        fi = h3(ri, kind, args[:4])
+    
+    out = sft.dct(fi) / N
+    out[0] = out[0] / 2.
+    out[np.absolute(out) <= tol] = 0.
+    return out 
 
 
 
@@ -270,90 +655,98 @@ def Mlam(a0,lamb,vector_parity):
     Multiplication matrix. a0 are the cofficients in the C^(lamb) basis and lamb
     is the order of the C^(lamb) basis. (This basis should match the
     one from the highest derivative order appearing in the equation)
-    ''' 
-    N = np.size(a0)
-    bw = max(np.nonzero(a0)[0])
-
-    a1 = np.zeros(2*N)
-    a1[:N] = a0
-    
-    if vector_parity != 0: # no inner core case
-    
-        # Overall operator parity given by a0 parity * lambda parity
-        # check a0 parity like this: first nonzero a0 coefficient
-        # a0 is the full vector of coefficients, including even and odd, size N
-        tmp = np.nonzero(a0)[0]
-        ix = tmp[-1] # index of *last* non zero coefficient
-        rpower_parity = 1 - 2*(ix%2)
-        lamb_parity = 1 - 2*(lamb%2)
-        operator_parity = rpower_parity * lamb_parity
-        overall_parity = vector_parity * operator_parity  
-        # rows to be deleted determined by overall_parity (after multiplying with DX and the eigenvector)
-        # j even when overall_parity = 1 and vice versa
-        # columns to be deleted determined by vector_parity (after multiplying with DX and the eigenvector)
-        # k even when vector_parity = 1 and vice versa
-        idj = int((1-overall_parity)/2)
-        idk = int((1-vector_parity*lamb_parity)/2)
-        jrange = range(idj,N,2)
-        
-    else: # vector_parity = 0, inner core case
-        
-        jrange = range(0,N)
-        
-    
-    if lamb > 0:
-        
-        out = ss.dok_matrix((N,N))
-        for j in jrange:
-            
-            k1 = max( 0, j-bw-1 )
-            k2 = min( N, j+bw+2 )
-            ka = range(k1,k2)
-            
-            if vector_parity != 0:
-                krange = ka[ka[idk]%2::2]
-            else:
-                krange = ka
-                        
-            for k in krange:
-                
-                s0 = max(0,k-j)
-                s = np.arange(s0,k+1)
-                idx = 2*s+j-k
-                a = a1[idx]
-                
-                if s0 == 0:
-                    cvec = csl(s,lamb,k,j-k)
-                elif s0 == k-j:
-                    cvec = csl(s,lamb,k,k-j)
-                
-                out[j,k] = np.dot(a,cvec)
-                
-        out = out.tocsr()
-                
-    else:
-        
-        a2 = np.copy(a0);
-        a2[0] = 2*a2[0]
-        tmp1 = toeplitz(a2)
-        tmp2 = hankel(a2)
-        tmp2[0,:]=np.zeros(N)
-    
-        tmp = 0.5*(tmp1+tmp2)
-
-        if vector_parity != 0:
-            idj0 = int((1+overall_parity)/2)
-            idk0 = int((1+vector_parity*lamb_parity)/2)
-            for j in range(idj0,N,2):
-                tmp[j,:]=np.zeros(N)
-            for k in range(idk0,N,2):
-                tmp[:,k]=np.zeros(N)
-
-        out = ss.csr_matrix(tmp)
     '''
-    The case lamb = 1 should be reducible too to a Hankel+Toeplitz
-    not done yet
-    ''' 
+    
+    if np.sum(abs(a0)) > 0 : 
+    
+        N = np.size(a0)
+        bw = max(np.nonzero(a0)[0])
+    
+        a1 = np.zeros(2*N)
+        a1[:N] = a0
+        
+        if vector_parity != 0: # no inner core case
+        
+            # Overall operator parity given by a0 parity * lambda parity
+            # check a0 parity like this: first nonzero a0 coefficient
+            # a0 is the full vector of coefficients, including even and odd, size N
+            tmp = np.nonzero(a0)[0]
+            ix = tmp[-1] # index of *last* non zero coefficient
+            rpower_parity = 1 - 2*(ix%2)
+            lamb_parity = 1 - 2*(lamb%2)
+            operator_parity = rpower_parity * lamb_parity
+            overall_parity = vector_parity * operator_parity  
+            # rows to be deleted determined by overall_parity (after multiplying with DX and the eigenvector)
+            # j even when overall_parity = 1 and vice versa
+            # columns to be deleted determined by vector_parity (after multiplying with DX and the eigenvector)
+            # k even when vector_parity = 1 and vice versa
+            idj = int((1-overall_parity)/2)
+            idk = int((1-vector_parity*lamb_parity)/2)
+            jrange = range(idj,N,2)
+            
+        else: # vector_parity = 0, inner core case
+            
+            jrange = range(0,N)
+            
+        
+        if lamb > 0:
+            
+            out = ss.dok_matrix((N,N))
+            for j in jrange:
+                
+                k1 = max( 0, j-bw-1 )
+                k2 = min( N, j+bw+2 )
+                ka = range(k1,k2)
+                
+                if vector_parity != 0:
+                    krange = ka[ka[idk]%2::2]
+                else:
+                    krange = ka
+                            
+                for k in krange:
+                    
+                    s0 = max(0,k-j)
+                    s = np.arange(s0,k+1)
+                    idx = 2*s+j-k
+                    a = a1[idx]
+                    
+                    if s0 == 0:
+                        cvec = csl(s,lamb,k,j-k)
+                    elif s0 == k-j:
+                        cvec = csl(s,lamb,k,k-j)
+                    
+                    out[j,k] = np.dot(a,cvec)
+                    
+            out = out.tocsr()
+                    
+        else:
+            
+            a2 = np.copy(a0);
+            a2[0] = 2*a2[0]
+            tmp1 = toeplitz(a2)
+            tmp2 = hankel(a2)
+            tmp2[0,:]=np.zeros(N)
+        
+            tmp = 0.5*(tmp1+tmp2)
+    
+            if vector_parity != 0:
+                idj0 = int((1+overall_parity)/2)
+                idk0 = int((1+vector_parity*lamb_parity)/2)
+                for j in range(idj0,N,2):
+                    tmp[j,:]=np.zeros(N)
+                for k in range(idk0,N,2):
+                    tmp[:,k]=np.zeros(N)
+    
+            out = ss.csr_matrix(tmp)
+        '''
+        The case lamb = 1 should be reducible too to a Hankel+Toeplitz
+        not done yet
+        '''
+    
+    else: 
+        
+        out = 0
+        
     return out
     
 

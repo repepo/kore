@@ -282,7 +282,7 @@ def main():
             if par.thermal == 1:
                 therm = np.zeros((success,1))   
                 
-            params = np.zeros((success,22))
+            params = np.zeros((success,24))
             
             thk = np.sqrt(par.Ek)
             R1 = par.ricb + 15*thk
@@ -304,8 +304,8 @@ def main():
                 
                 #print('Processing solution',i)
                 
-                a = np.copy(ru[:,i])
-                b = np.copy(iu[:,i])
+                rflow = np.copy(ru[:,i])
+                iflow = np.copy(iu[:,i])
                 
                 if par.forcing == 0:
                     w = eigval[i,1]
@@ -316,7 +316,7 @@ def main():
                 
                 #print('a = ',a[:10]/a[0])
                 
-                kid[i,:] = upp.ken_dis( a, b, par.N, par.lmax, par.m, par.symm, \
+                kid[i,:] = upp.ken_dis( rflow, iflow, par.N, par.lmax, par.m, par.symm, \
                 par.ricb, ut.rcmb, par.ncpus, w, par.projection, par.forcing, par.ricb, ut.rcmb)
 
                 # inner core boundary layer
@@ -345,7 +345,7 @@ def main():
                 
                 repow = kid[i,5]
                 
-                expsol = upp.expand_sol(a+1j*b)
+                expsol = upp.expand_sol(rflow+1j*iflow)
                 
                 vtorq[i] = np.dot(par.Ek*ut.gamma_visc(0,0,0),expsol)
                 vtorq_icb[i] = np.dot(par.Ek*ut.gamma_visc_icb(par.ricb),expsol)
@@ -360,20 +360,20 @@ def main():
                 
                 if par.magnetic == 1:
                     
-                    a = np.copy(rb[:,i])
-                    b = np.copy(ib[:,i])
+                    rmag = np.copy(rb[:,i])
+                    imag = np.copy(ib[:,i])
                     
-                    ohm[i,:] = upp.ohm_dis( a, b, par.N, par.lmax, par.m, -par.symm, par.ricb, ut.rcmb, par.ncpus, par.ricb, ut.rcmb)
+                    ohm[i,:] = upp.ohm_dis( rmag, imag, par.N, par.lmax, par.m, -par.symm, par.ricb, ut.rcmb, par.ncpus, par.ricb, ut.rcmb)
                     # use -symm above because magnetic field has the opposite
                     # symmetry as the flow field --if applied field is antisymm (vertical uniform).
                     
-                    o1 = upp.ohm_dis( a, b, par.N, par.lmax, par.m, -par.symm, par.ricb, ut.rcmb, par.ncpus, par.ricb, R1)
-                    o2 = upp.ohm_dis( a, b, par.N, par.lmax, par.m, -par.symm, par.ricb, ut.rcmb, par.ncpus, R2, ut.rcmb)
-                    o3 = upp.ohm_dis( a, b, par.N, par.lmax, par.m, -par.symm, par.ricb, ut.rcmb, par.ncpus, R3, ut.rcmb)
+                    #o1 = upp.ohm_dis( rmag, imag, par.N, par.lmax, par.m, -par.symm, par.ricb, ut.rcmb, par.ncpus, par.ricb, R1)
+                    #o2 = upp.ohm_dis( rmag, imag, par.N, par.lmax, par.m, -par.symm, par.ricb, ut.rcmb, par.ncpus, R2, ut.rcmb)
+                    #o3 = upp.ohm_dis( rmag, imag, par.N, par.lmax, par.m, -par.symm, par.ricb, ut.rcmb, par.ncpus, R3, ut.rcmb)
                     
-                    Dohm_partial[i,0] = (o1[2] + o1[3])*par.Le2*par.Em
-                    Dohm_partial[i,1] = (o2[2] + o2[3])*par.Le2*par.Em
-                    Dohm_partial[i,2] = (o3[2] + o3[3])*par.Le2*par.Em
+                    Dohm_partial[i,0] = 0  #(o1[2] + o1[3])*par.Le2*par.Em
+                    Dohm_partial[i,1] = 0  #(o2[2] + o2[3])*par.Le2*par.Em
+                    Dohm_partial[i,2] = 0  #(o3[2] + o3[3])*par.Le2*par.Em
                     
                     Dohm = (ohm[i,2]+ohm[i,3])*par.Le2*par.Em   
                     o2v[i] = Dohm/Dint
@@ -394,7 +394,7 @@ def main():
                     
                     atemp = np.copy(rtemp[:,i])
                     btemp = np.copy(itemp[:,i])
-                    therm[i,:] = upp.thermal_dis( atemp, btemp, a, b, par.N, par.lmax, par.m, par.symm, par.ricb, ut.rcmb, par.ncpus, par.ricb, ut.rcmb)
+                    therm[i,:] = upp.thermal_dis( atemp, btemp, rflow, iflow, par.N, par.lmax, par.m, par.symm, par.ricb, ut.rcmb, par.ncpus, par.ricb, ut.rcmb)
                     
                     Dtemp = therm[i,0]
                     
@@ -425,7 +425,14 @@ def main():
                 elif par.forcing == 8:  # Libration as a volume force 
                     pss = 0      # power of stresses
                     pvf = repow  # power of volume forces (Poincare)
-
+                elif par.forcing == 9: # Radial boundary flow forcing 
+                    pvf = 0      # power of volume forces (Poincare)
+                    pss = repow  # power of stresses
+                
+                resid1[i] = abs( Dint + Dkin - pss ) / max( abs(Dint), abs(Dkin), abs(pss) )
+                resid2[i] = abs( 2*sigma*(KE + par.Le2*ME) - Dkin - Dtemp + Dohm - pvf ) / \
+                 max( abs(2*sigma*(KE+par.Le2*ME)), abs(Dkin), abs(Dohm), abs(Dtemp), abs(pvf) )
+                
                 # print('Dkin  =' ,Dkin)
                 # print('Dint  =' ,Dint)
                 # print('Dohm  =' ,Dohm)
@@ -437,9 +444,6 @@ def main():
                 # print('2sigmaK = ',2*sigma*KE)
                 # print('2Le2sigmaM = ',2*sigma*ME*par.Le2)
                 
-                resid1[i] = abs( Dint + Dkin - pss ) / max( abs(Dint), abs(Dkin), abs(pss) )
-                resid2[i] = abs( 2*sigma*(KE + par.Le2*ME) - Dkin - Dtemp + Dohm - pvf ) / \
-                 max( abs(2*sigma*(KE+par.Le2*ME)), abs(Dkin), abs(Dohm), abs(Dtemp), abs(pvf) )
                 
                 # ------------------------------------------------------------------------------------------------------
                 
@@ -448,7 +452,7 @@ def main():
                 
                 params[i,:] = np.array([par.Ek, par.m, par.symm, par.ricb, par.bci, par.bco, par.projection, par.forcing, \
                  par.forcing_amplitude_cmb, par.forcing_frequency, par.magnetic, par.Em, par.Le2, par.N, par.lmax, toc1-tic, \
-                 par.ncpus, par.tol, par.thermal, par.Prandtl, par.Brunt, par.forcing_amplitude_icb])
+                 par.ncpus, par.tol, par.thermal, par.Prandtl, par.Brunt, par.forcing_amplitude_icb, par.rc, par.h ])
                 
             print('--- -------------- -------------- ---------- ---------- ---------- ---------- ----------')
             
@@ -485,7 +489,7 @@ def main():
             with open('params.dat','ab') as dpar:
                 np.savetxt(dpar, params, \
                 #fmt=['%.9e','%d','%d','%.9e','%d','%d','%d','%d','%.9e','%.9e','%d','%.9e','%.9e','%d','%d','%.2f', '%d', '%.2e'])  
-                fmt=['%.9e','%d','%d','%.9e','%d','%d','%d','%d','%.9e','%.9e','%d','%.9e','%.9e','%d','%d','%.2f', '%d', '%.2e', '%d', '%.9e', '%.9e', '%.9e'])
+                fmt=['%.9e','%d','%d','%.9e','%d','%d','%d','%d','%.9e','%.9e','%d','%.9e','%.9e','%d','%d','%.2f', '%d', '%.2e', '%d', '%.9e', '%.9e', '%.9e', '%.9e','%.9e'])
             
             with open('flow.dat','ab') as dflo:
                 np.savetxt(dflo, np.c_[kid, Dint_partial, np.real(vtorq), np.imag(vtorq), np.real(vtorq_icb), np.imag(vtorq_icb)])

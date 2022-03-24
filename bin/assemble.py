@@ -43,8 +43,11 @@ def main():
     sizas = comm.Get_size()
     rank  = comm.Get_rank()
     
+    ll_flo = ut.ell( par.m, par.lmax, par.symm)  # the ell indices for the flow u
+    ll_mag = ut.ell( par.m, par.lmax, par.symm*ut.symmB0)  # if B0 is antisymm then u has the opposite symm of b  
+    
     if rank == 0:
-        alltop, allbot = ut.ell( par.m, par.lmax, par.symm)
+        alltop, allbot = ll_flo
     else:
         alltop = None
         allbot = None
@@ -58,29 +61,86 @@ def main():
     # split the vectors with l values and distribute to all cpu's (ranks)
     comm.Scatter(alltop, loc_top, root=0)
     comm.Scatter(allbot, loc_bot, root=0)
+    
 
+    '''
     # assign operator names and read corresponding submatrices
     fname = [f for f in glob.glob('*.mtx')]
+    
     for label in fname :
+        
+        
+        
+        label = label[:-4]  # chop the ".mtx" in the name
+    
         section = label[0]
-        rx      = label[1]
-        dx      = label[2]
-        if rx == '0' :
-            rlabel = ''
-        elif rx == '7' :
-            rlabel = 'Nr'
-        else :
-            rlabel = 'r' + rx
+        dx      = label[-1]
+
+        if len(label) == 3:
+            rx = label[1]
+            if rx == '0' :
+                rlabel = ''
+            else :
+                rlabel = 'r' + rx
+            hlabel = ''
+            
+        if len(label) == 4 :
+            
+            rx = label[2]
+            
+            if rx == '0' :
+                rlabel = ''
+            
+            elif rx == '7' :
+                rlabel = 'Nr'
+            
+            else :
+                rlabel = 'r' + rx
+            
+            hlabel = ''
+                
+        elif len(label) == 5 :
+            
+            rx = label[2]
+            
+            hx = label[3]
+            
+            if   rx == '0' :
+                rlabel = ''
+            
+            elif rx == '1' :
+                rlabel = 'r'
+            
+            elif rx == '6' :
+                rlabel = 'q'
+            
+            else :
+                rlabel = 'r' + rx
+            
+            if hx == '0' :
+                hlabel = 'h'
+            else :
+                hlabel = 'h' + hx
+                
         if dx == '0' :
             dlabel = 'I'
         else :
             dlabel = 'D' + dx
-        varlabel = rlabel + dlabel + section  # e.g. r3D2v
-        #print(varlabel)
-        globals()[varlabel] = ss.csr_matrix(sio.mmread(label))
+
+        varlabel = rlabel + hlabel + dlabel + section
         
-    #print(np.shape(r2Iu))
-  
+        if rank==0:
+            print(label, varlabel)
+
+        globals()[varlabel] = ss.csr_matrix(sio.mmread(label))
+    '''    
+
+    if ut.symmB0 == 1:  # symmetric B0
+        loc_mag_f = loc_top
+        loc_mag_g = loc_bot
+    elif ut.symmB0 == -1:  # antisymmetric B0
+        loc_mag_f = loc_bot
+        loc_mag_g = loc_top
 
 
     if par.forcing == 1: # --------------------------------------------------------------------------------- Yufeng forcing
@@ -346,7 +406,37 @@ def main():
                 
                 print(' ** Longitudinal libration requires m = 0, symm = 1 and no-slip boundaries **')        
         
+    
+    elif par.forcing == 9: # ----------------------------------------------------------- m=2 radial velocity forcing
+        
+        # m=2 radial velocity forcing at the icb or cmb, l=2 Poloidal scalar only, equatorially symmetric.
+        if rank == 0:
             
+            print('--------------------------------------------')
+            print(' m=2 radial velocity forcing ')
+            print('--------------------------------------------')
+            
+            if (par.symm == 1 and par.m==2) and (par.bci+par.bco==2):
+                
+                l = 2   #
+                L = l*(l+1)
+                
+                pos = ut.N1*np.where(alltop==l)[0][0]
+                row = np.arange(pos,pos+2)
+                col = np.zeros(2)
+                
+                # amplitude is max libration angle
+                C_icb = L*par.m*par.forcing_frequency*par.forcing_amplitude_icb/par.ricb  # to be checked
+                C_cmb = L*par.m*par.forcing_frequency*par.forcing_amplitude_cmb
+                
+                bdat = np.array([C_cmb, C_icb])
+                
+                B = ss.csr_matrix( ( bdat, (row,col) ), shape=(ut.sizmat,1) )                
+                np.savez('B_forced.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
+            
+            else:
+                
+                print('This boundary flow forcing needs symm = 1 and m = 2 and bci=bco=1')        
 
     
         
@@ -356,26 +446,16 @@ def main():
         the generalized eigenvalue problem A.x = lambda.B.x
         '''
         if rank == 0:
-            tic = timer()            
-            print('--------------------------------------------')
-            print('-----  Generalized eigenvalue problem  -----')
+            tic = timer()
             
         if par.hydro == 1:
             
-            # ---------------------------------------------------------------------- B matrix, 2curl (hydro), section u
+            # ----------------------------------------------------------------------- B matrix, 2curl (hydro), section u
             for k,l in enumerate(loc_top):
             
                 row = ( rank*bpp + k )* ut.N1
                 col = row
             
-                #L = l*(l+1)
-            
-                # # Physics ------------------------------------------------
-                # if ((par.magnetic == 1) and (par.B0 == 'dipole')) :
-                    # block = -L*( L*r4Iu - 2*r5D1u - r6D2u )  # r6* r.2curl
-                # else: 
-                    # block = -L*( L*r2Iu - 2*r3D1u - r4D2u )  # r4* r.2curl
-                # # --------------------------------------------------------
                 block = -op.u(l,'u','upol',0)
         
                 # update loc_list
@@ -390,21 +470,12 @@ def main():
                     for q in [0,1,2]:
                         loc_list[q]= np.concatenate((loc_list[q], tmp[q]))
             
-            # ---------------------------------------------------------------------- B matrix, 1curl (hydro), section v
+            # ----------------------------------------------------------------------- B matrix, 1curl (hydro), section v
             for k,l in enumerate(loc_bot):
             
                 row = nb*ut.N1 + ( rank*bpp + k )* ut.N1
                 col = row
     
-                #L = l*(l+1)
-        
-                # # Physics -----------------------------------------
-                # if ((par.magnetic == 1) and (par.B0 == 'dipole')) :
-                    # block = -L*r5Iv  # r5* 2curl
-                # else :
-                    # #block = -L*r2Iv  # r2* 1curl
-                    # block = -op.u(l,'v','utor',0)
-                # # -------------------------------------------------
                 block = -op.u(l,'v','utor',0)
                 
                 # update loc_list
@@ -419,27 +490,17 @@ def main():
         
         if par.magnetic == 1: # adds -(d/dt)*b in the induction equation to matrix B
             
-            # ------------------------------------------------------------------ B matrix (induction eq.), section f
-            for k,l in enumerate(loc_bot):  # loc_bot here because of applied
-                                            # field symmetry
+            # ---------------------------------------------------------------------- B matrix (induction eq.), section f            
+            for k,l in enumerate(loc_mag_f):  # same as loc_bot if B0 is antisymm
+                                            
                 row = par.hydro*(2*nb*ut.N1) + ( rank*bpp + k )* ut.N1
                 col = row
-        
-                L = l*(l+1)
-        
-                # Physics --------------------------------------------------
-                if par.B0 == 'axial':
-                    if ((par.ricb > 0) and ('conductor' in par.innercore)) :
-                        block = -( r3D1f + r2If )  # r3*consoidal
-                    else:
-                        block = -L*r2If            # r2* r.nocurl
-                elif par.B0 == 'dipole':
-                    if ((par.ricb > 0) and (par.innercore == 'insulator')) :
-                        block = -L*r4If            # r4* r.nocurl
-                    else:
-                        print('Only insulating inner core available!')
-                # ----------------------------------------------------------
-    
+
+                if par.ricb == 0 or (par.innercore in ['insulator', 'TWA']) :
+                    block = -op.b(l,'f','bpol',0)
+                else :
+                    print('These magnetic parameters are not coded yet')
+
                 # update loc_list
                 block.eliminate_zeros()
                 block = block.tocoo()
@@ -450,20 +511,16 @@ def main():
                     loc_list[q]= np.concatenate((loc_list[q], tmp[q]))
     
 
-            # ------------------------------------------------------------------ B matrix, 1curl (induction eq.), section g
-            for k,l in enumerate(loc_top):  # loc_top here because of applied
-                                            # field symmetry
+            # --------------------------------------------------------------- B matrix, 1curl (induction eq.), section g
+            for k,l in enumerate(loc_mag_g):  # same as loc_top if B0 is antisymm
+
                 row = par.hydro*(2*nb*ut.N1) + nb*ut.N1 + ( rank*bpp + k )* ut.N1
                 col = row
 
-                L = l*(l+1)
-
-                # Physics ------------
-                if par.B0 == 'axial' :
-                    block = -L*r2Ig
+                if par.ricb == 0 or (par.innercore in ['insulator', 'TWA']) :
+                    block = -op.b(l,'g','btor',0)
                 else :
-                    block = -L*r5Ig
-                # --------------------
+                    print('These magnetic parameters are not coded yet')                
 
                 # update loc_list
                 block.eliminate_zeros()
@@ -477,18 +534,19 @@ def main():
     
         if par.thermal == 1: # adds (d/dt)*theta in the heat equation to matrix B 
             
-            # ------------------------------------------------------------------ B, theta_pol, nocurl (heat)
+            # ------------------------------------------------------------------- B, theta_pol, nocurl (heat), section h
             for k,l in enumerate(loc_top):  # loc_top here because theta
                                             # follows the same symmetry as u
                 row = 2*(par.hydro + par.magnetic)*nb*ut.N1 + ( rank*bpp + k )* ut.N1
                 col = row
                                 
-                # Physics -------------------------------------------------------------
-                if (par.heating == 'internal') or (par.heating == 'two zone' or par.heating == 'user defined') :
-                    block = r2Ih
-                elif par.heating == 'differential' :
-                    block = r3Ih
-                # ---------------------------------------------------------------------
+#                # Physics -------------------------------------------------------------
+#                if (par.heating == 'internal') or (par.heating == 'two zone' or par.heating == 'user defined') :
+#                    block = r2Ih
+#                elif par.heating == 'differential' :
+#                    block = r3Ih
+#                # ---------------------------------------------------------------------
+                block = op.theta(l,'h','', 0)
                 
                 # update loc_list
                 block.eliminate_zeros()
@@ -577,25 +635,16 @@ def main():
             row = ( rank*bpp + k )* ut.N1
             
             # Poloidal velocity terms
-            # ---------------------------------------------------------------------- A matrix, u_pol 2curl (hydro), section u
+            # ----------------------------------------------------------------- A matrix, u_pol 2curl (hydro), section u
             
             col0 = ( rank*bpp + k )* ut.N1
             
-            # Physics----------------------------------------------------
-            # if (par.magnetic ==1 and par.B0 == 'dipole'):   # r6* r.2curl
-                # visc =  -r6D4u - 4*r5D3u + 2*L*r4D2u - L*(l-1)*(l+2)*r2Iu  
-                # cori = ( 2.j*par.m )*( r6D2u + 2*r5D1u - L*r4Iu )
-                # iwu  = L*( - r6D2u - 2*r5D1u + L*r4Iu )*(1j*ut.wf)          
-            # else:                                           # r4* r.2curl
-                # visc =  -r4D4u - 4*r3D3u + 2*L*r2D2u - L*(l-1)*(l+2)*Iu  
-                # cori = ( 2.j*par.m )*( r4D2u + 2*r3D1u - L*r2Iu )
-                # iwu  = L*( - r4D2u - 2*r3D1u + L*r2Iu )*(1j*ut.wf)
-            #tmp = iwu + cori - par.Ek*L*visc
-            # -----------------------------------------------------------
+            # Physics ---------------------------------
             iwu  = op.u(l,'u','upol',0)*1j*ut.wf
             cori = op.coriolis(l,'u','upol',0)
             visc = op.viscous_diffusion(l,'u','upol',0)
             tmp = iwu + cori - visc
+            # -----------------------------------------
             
             # bookkeeping
             tmp.eliminate_zeros()
@@ -611,26 +660,20 @@ def main():
     
     
             # Toroidal velocity terms
-            # ---------------------------------------------------------------------- A matrix, u_tor, 2curl (hydro), section u
+            # ---------------------------------------------------------------- A matrix, u_tor, 2curl (hydro), section u
             
             # l-1 terms ------------------------------------------------
-            if ((l-1 >= ut.m_top) and (ut.symm1==1)) or (ut.symm1==-1) :
-                
+            #if ((l-1 >= ut.m_top) and (ut.symm1==1)) or (ut.symm1==-1) :
+            if l-1 in ll_flo[1] :  # for u_tor, so we use ll_flo[1]
+            
                 if ut.symm1 == 1 :
                     col1a = nb*ut.N1 + ( rank*bpp + k - 1 )*ut.N1 # left of diag if symm
                 elif ut.symm1 == -1 :
                     col1a = nb*ut.N1 + ( rank*bpp + k )*ut.N1 # on diag if antisymm 
                 
-                # C = (l**2-1.)*np.sqrt(l**2-par.m**2) / (2*l-1.)
-                
-                # # Physics --------------------------------------------
-                # if (par.magnetic == 1 and par.B0 == 'dipole'):   
-                    # cori = 2.*C*( (l-1.)*r5Iu - r6D1u )  # r6* r.2curl
-                # else:                                           
-                    # cori = 2.*C*( (l-1.)*r3Iu - r4D1u )  # r4* r.2curl
-                # tmp = cori
-                # ----------------------------------------------------
+                # Physics ------------------------
                 tmp = op.coriolis(l,'u','utor',-1)
+                # --------------------------------
                 
                 # bookkeeping
                 tmp.eliminate_zeros()
@@ -640,23 +683,17 @@ def main():
                     loc_list[q]= np.concatenate( ( loc_list[q], blk[q] ) )
     
             # l+1 terms -----------------------------------------------------
-            if ((l+1 <= ut.lmax_top-1) and (ut.symm1==-1)) or (ut.symm1==1) :
-                
+            #if ((l+1 <= ut.lmax_top-1) and (ut.symm1==-1)) or (ut.symm1==1) :
+            if l+1 in ll_flo[1] :
+            
                 if ut.symm1 == -1 :
                     col1b = nb*ut.N1 + ( rank*bpp + k + 1 )* ut.N1 # right of diag if antisymm
                 elif ut.symm1 == 1 :
                     col1b = nb*ut.N1 + ( rank*bpp + k )* ut.N1 # on diag if symm
                 
-                # C = l*(l+2.)*np.sqrt((l+par.m+1.)*(l-par.m+1)) / (2.*l+3.)
-                
-                # # Physics ---------------------------------------------
-                # if (par.magnetic == 1 and par.B0 == 'dipole'):
-                    # cori = -2.*C*( (l+2.)*r5Iu + r6D1u )  # r6* r.2curl
-                # else:
-                    # cori = -2.*C*( (l+2.)*r3Iu + r4D1u )  # r4* r.2curl
-                # tmp = cori
-                # -----------------------------------------------------
+                # Physics -----------------------
                 tmp = op.coriolis(l,'u','utor',1)
+                # -------------------------------
                 
                 # bookkeeping
                 tmp.eliminate_zeros()
@@ -675,30 +712,28 @@ def main():
     
     
     
-            if par.magnetic == 1: # includes Lorentz force, applied uniform field along z
+            if par.magnetic == 1: # includes Lorentz force
                 
                 
-                # Lorentz force, poloidal magnetic field terms 
-                # ------------------------------------------------------------------ A, b_pol, 2curl (hydro, Lorentz), section u
+                # Lorentz force, poloidal magnetic field terms (bpol)
+                # ---------------------------------------------------------- A, b_pol, 2curl (hydro, Lorentz), section u
                 
                 # l-1 terms ------------------------------------------------
-                if ((l-1 >= ut.m_top) and (ut.symm1==1)) or (ut.symm1==-1) :
+                #if ((l-1 >= ut.m_top) and (ut.symm1==1)) or (ut.symm1==-1) :
+                if l-1 in ll_mag[0] :  # for b_pol, so we use ll_mag[0]
                 
                     if ut.symm1 == 1 :
-                        col2a = 2*nb*ut.N1 + ( rank*bpp + k - 1 )* ut.N1 # left of diag if symm
+                        col2a = 2*nb*ut.N1 + ( rank*bpp + k - 1 )* ut.N1 # left of diag if flow is symm
                     elif ut.symm1 == -1 :
                         col2a = 2*nb*ut.N1 + ( rank*bpp + k )* ut.N1 # on the diag if antisymm  
                 
-                    C = np.sqrt(l**2-par.m**2)*(l**2-1)/(2*l-1)
+                    # Physics ----------------------------------------------
+                    if par.ricb == 0 or (par.innercore in ['insulator', 'TWA']) :
+                        tmp = par.Le2 * op.lorentz(l,'u','bpol',-1)
+                    else :
+                        print('These magnetic parameters are not coded yet')
+                    # ------------------------------------------------------
                     
-                    # Physics ---------------------------------------------------------------------------
-                    if par.B0 == 'axial':
-                        lore = C*( L*(l-1)*r1Iu - L*r2D1u - (l-3)*r3D2u + r4D3u )                          # r4* r.2curl
-                    elif par.B0 == 'dipole':
-                        lore = C*( r3D3u + 0.5*l*r2D2u + (2*l-l**2-6)*r1D1u + 0.5*(-8*l+9*l**2-l**3)*Iu )  # r6* r.2curl
-                    tmp = lore*par.Le2
-                    # -----------------------------------------------------------------------------------
-                
                     # bookkeeping
                     tmp.eliminate_zeros()
                     tmp = tmp.tocoo()
@@ -708,23 +743,21 @@ def main():
                 
                 
                 # l+1 terms -----------------------------------------------------
-                if ((l+1 <= ut.lmax_top-1) and (ut.symm1==-1)) or (ut.symm1==1) :
+                #if ((l+1 <= ut.lmax_top-1) and (ut.symm1==-1)) or (ut.symm1==1) :
+                if l+1 in ll_mag[0] :  # for b_pol, so we use ll_mag[0]
                 
                     if ut.symm1 == -1 :
                         col2b = 2*nb*ut.N1 + ( rank*bpp + k + 1 )*ut.N1 # right of diag if antisymm
                     elif ut.symm1 == 1 :
                         col2b = 2*nb*ut.N1 + ( rank*bpp + k )* ut.N1 # on diag if symm  
                 
-                    C = np.sqrt((1+l+par.m)*(1+l-par.m))*l*(l+2)/(2*l+3)
+                    # Physics ----------------------------------------------
+                    if par.ricb == 0 or (par.innercore in ['insulator', 'TWA']) :
+                        tmp = par.Le2 * op.lorentz(l,'u','bpol',1)
+                    else :
+                        print('These magnetic parameters are not coded yet')
+                    # ------------------------------------------------------
                     
-                    # Physics ----------------------------------------------------------------------------------
-                    if par.B0 == 'axial':
-                        lore = C*( -L*(l+2)*r1Iu - L*r2D1u + (l+4)*r3D2u + r4D3u )                                # r4* r.2curl
-                    elif par.B0 == 'dipole':
-                        lore = C*( r3D3u -0.5*(l+1)*r2D2u - (9+4*l+l**2)*r1D1u + 0.5*(18+29*l+12*l**2+l**3)*Iu )  # r6* r.2curl
-                    tmp = lore*par.Le2
-                    # ------------------------------------------------------------------------------------------
-                
                     # bookkeeping
                     tmp.eliminate_zeros()
                     tmp = tmp.tocoo()
@@ -733,19 +766,18 @@ def main():
                         loc_list[q]= np.concatenate( ( loc_list[q], blk[q] ) )
                         
     
-                # Lorentz force, toroidal magnetic field terms
-                # ------------------------------------------------------------------ A, b_tor, 2curl (hydro, Lorentz), section u
+                # Lorentz force, toroidal magnetic field terms (btor)
+                # ---------------------------------------------------------- A, b_tor, 2curl (hydro, Lorentz), section u
     
                 col3 = 3*nb*ut.N1 + row
             
-                # Physics ------------------------------------------
-                if par.B0 == 'axial':
-                    lore = 1j*par.m*( -L*r2Iu + 2*r3D1u + r4D2u )     # r4* r.2curl
-                elif par.B0 == 'dipole':
-                    lore = 1j*par.m*( r3D2u - r2D1u + (2*L-3)*r1Iu )  # r6* r.2curl 
-                tmp = lore*par.Le2
-                # --------------------------------------------------
-            
+                # Physics ----------------------------------------------
+                if par.ricb == 0 or (par.innercore in ['insulator', 'TWA']) :
+                    tmp = par.Le2 * op.lorentz(l,'u','btor',0)
+                else :
+                    print('These magnetic parameters are not coded yet')
+                # ------------------------------------------------------
+                
                 # bookkeeping
                 tmp.eliminate_zeros()
                 tmp = tmp.tocoo()
@@ -759,23 +791,23 @@ def main():
             if par.thermal == 1 : # include the buoyancy force
                 
                 # Buoyancy force, theta terms 
-                # ------------------------------------------------------------------ A, theta, 2curl (hydro, buoyancy)          
+                # --------------------------------------------------------- A, theta, 2curl (hydro, buoyancy), section u          
     
                 col4 = (2+2*par.magnetic)*nb*ut.N1 + row
     
-                # Physics ---------------------------------------
-                if (par.magnetic == 1) and (par.B0 == 'dipole') :
-                    buoy = L * r6Iu
-                else:
-                    buoy = L * r4Iu
-                    
-                if par.heating == 'two zone' or par.heating == 'user defined' :
-                    BVsq = 1
-                else :
-                    BVsq = par.Brunt**2
-                tmp = - BVsq * buoy
-                #print(l,L, BVsq, tmp.todense()[4,:3])
-                # -----------------------------------------------
+#                # Physics ---------------------------------------
+#                if (par.magnetic == 1) and (par.B0 == 'dipole') :
+#                    buoy = L * r6Iu
+#                else:
+#                    buoy = L * r4Iu
+#                    
+#                if par.heating == 'two zone' or par.heating == 'user defined' :
+#                    BVsq = 1
+#                else :
+#                    BVsq = par.Brunt**2
+#                tmp = - BVsq * buoy
+#                # -----------------------------------------------
+                tmp = -op.buoyancy(l,'u','',0)
                         
                 # bookkeeping
                 tmp.eliminate_zeros()
@@ -795,26 +827,20 @@ def main():
             row = nb*ut.N1 + (rank*bpp + k )* ut.N1
             
             # Poloidal velocity terms
-            # ---------------------------------------------------------------------- A, u_pol, 1curl (hydro), section v
+            # ---------------------------------------------------------------------_- A, u_pol, 1curl (hydro), section v
             
             # l-1 terms ------------------------------------------------
-            if ((l-1 >= ut.m_bot) and (ut.symm1==-1)) or (ut.symm1==1) :
-                
+            #if ((l-1 >= ut.m_bot) and (ut.symm1==-1)) or (ut.symm1==1) :
+            if l-1 in ll_flo[0] :  # for u_pol, so we use ll_flo[0]
+            
                 if ut.symm1 == -1 :
                     col0a = ( rank*bpp + k - 1 )* ut.N1 # left of diag if antisymm
                 elif ut.symm1 == 1 :
                     col0a = ( rank*bpp + k )* ut.N1     # on the diag if symm   
                 
-                # C = (l**2-1)*np.sqrt(l**2-par.m**2)/(2*l-1)
-                
-                # # Physics ------------------------------------
-                # if (par.magnetic == 1 and par.B0 == 'dipole'):
-                    # cori = 2*C*( (l-1.)*r4Iv - r5D1v )  # r5* r.1curl
-                # else:
-                    # cori = 2*C*( (l-1.)*r1Iv - r2D1v )  # r2* r.1curl
-                # tmp = cori
-                # --------------------------------------------
+                # Physics ------------------------
                 tmp = op.coriolis(l,'v','upol',-1)
+                # --------------------------------
                 
                 # bookkeeping
                 tmp.eliminate_zeros()
@@ -825,23 +851,17 @@ def main():
                 
                 
             # l+1 terms -----------------------------------------------------
-            if ((l+1 <= ut.lmax_bot-1) and (ut.symm1==1)) or (ut.symm1==-1) :
+            #if ((l+1 <= ut.lmax_bot-1) and (ut.symm1==1)) or (ut.symm1==-1) :
+            if l+1 in ll_flo[0] :  # for u_pol, so we use ll_flo[0]
                 
                 if ut.symm1 == 1 :
                     col0b = ( rank*bpp + k + 1 )* ut.N1 # right of diag if symm
                 elif ut.symm1 == -1 :
                     col0b = ( rank*bpp + k )* ut.N1     # on diag if antisymm
                     
-                # C = l*(l+2)*np.sqrt((l+1+par.m)*(l+1-par.m))/(2*l+3)
-                
-                # # Physics ------------------------------------
-                # if (par.magnetic == 1 and par.B0 == 'dipole'):
-                    # cori = 2.*C*( -(l+2.)*r4Iv - r5D1v )  # r5* r.1curl
-                # else:
-                    # cori = 2.*C*( -(l+2.)*r1Iv - r2D1v )  # r2* r.1curl
-                # tmp = cori
-                # --------------------------------------------
+                # Physics -----------------------
                 tmp = op.coriolis(l,'v','upol',1)
+                # -------------------------------
                 
                 # bookkeeping
                 tmp.eliminate_zeros()
@@ -852,25 +872,16 @@ def main():
         
         
             # Toroidal velocity terms
-            # ---------------------------------------------------------------------- A, u_tor, 1curl (hydro), section v
+            # ----------------------------------------------------------------------- A, u_tor, 1curl (hydro), section v
     
             col1 = nb*ut.N1 + ( rank*bpp + k )* ut.N1
             
-            # # Physics ------------------------------------
-            # if (par.magnetic == 1 and par.B0 == 'dipole'):  # r5* r.1curl
-                # visc = r5D2v + 2*r4D1v - L*r3Iv
-                # cori = -2j*par.m*r5Iv
-                # iwu  = L*r5Iv*(1j*ut.wf)
-            # else:                                           # r2* r.1curl
-                # visc = r2D2v + 2*r1D1v - L*Iv
-                # cori = -2j*par.m*r2Iv
-                # iwu  = L*r2Iv*(1j*ut.wf)
-            # tmp = iwu + cori - par.Ek*L*visc
-            # --------------------------------------------
+            # Physics ---------------------------------
             iwu  = op.u(l,'v','utor',0)*1j*ut.wf
             cori = op.coriolis(l,'v','utor',0)
             visc = op.viscous_diffusion(l,'v','utor',0)
             tmp = iwu + cori - visc
+            # -----------------------------------------
             
             # bookkeeping
             tmp.eliminate_zeros()
@@ -892,19 +903,17 @@ def main():
             if par.magnetic == 1: # includes the Lorentz force, applied uniform field along z
                 
                 
-                # Poloidal magnetic field terms (Lorentz force)
-                # ------------------------------------------------------------------ A, b_pol, 1curl (hydro, Lorentz), section v
+                # Poloidal magnetic field terms (Lorentz force) bpol
+                # ---------------------------------------------------------- A, b_pol, 1curl (hydro, Lorentz), section v
     
                 col2 = 2*nb*ut.N1 + ( rank*bpp + k )* ut.N1
             
-                # Physics -------------------------------------
-                lore = 1j*par.m*( -L*Iv + 2*r1D1v + r2D2v )
-                if par.B0 == 'axial':
-                    lore = 1j*par.m*( -L*Iv + 2*r1D1v + r2D2v )  # r2* r.1curl
-                elif par.B0 == 'dipole':
-                    lore = 1j*par.m*( -L*Iv + 2*r1D1v + r2D2v )  # r5* r.1curl 
-                tmp = lore*par.Le2
-                # ---------------------------------------------
+                # Physics ----------------------------------------------
+                if par.ricb == 0 or (par.innercore in ['insulator', 'TWA']) :
+                    tmp = par.Le2 * op.lorentz(l,'v','bpol',0)
+                else :
+                    print('These magnetic parameters are not coded yet')
+                # ------------------------------------------------------
             
                 # bookkeeping
                 tmp.eliminate_zeros()
@@ -915,25 +924,23 @@ def main():
     
     
                 # Toroidal magnetic terms (Lorentz force)
-                # ------------------------------------------------------------------ A, b_tor, 1curl (hydro, Lorentz), section v
+                # ---------------------------------------------------------- A, b_tor, 1curl (hydro, Lorentz), section v
             
                 # l-1 terms ------------------------------------------------
-                if ((l-1 >= ut.m_bot) and (ut.symm1==-1)) or (ut.symm1==1) :
+                #if ((l-1 >= ut.m_bot) and (ut.symm1==-1)) or (ut.symm1==1) :
+                if l-1 in ll_mag[1] :  # for b_tor, so we use ll_mag[1]
                     
                     if ut.symm1 == -1 :
                         col3a = 3*nb*ut.N1 + ( rank*bpp + k - 1 )* ut.N1    # left of diag if antisymm
                     elif ut.symm1 == 1 :
                         col3a = 3*nb*ut.N1 + ( rank*bpp + k )* ut.N1    # on the diag if symm
         
-                    C = np.sqrt((l-par.m)*(l+par.m))*(l**2-1)/(2*l-1)
-                    
-                    # Physics ------------------------------
-                    if par.B0 == 'axial':
-                        lore = C*( (l-1)*r1Iv - r2D1v )      # r2* r.1curl
-                    elif par.B0 == 'dipole':
-                        lore = C*( -0.5*(l+2)*r1Iv - r2D1v )  # r5* r.1curl
-                    tmp = lore*par.Le2
-                    # --------------------------------------
+                    # Physics ----------------------------------------------
+                    if par.ricb == 0 or (par.innercore in ['insulator', 'TWA']) :
+                        tmp = par.Le2 * op.lorentz(l,'v','btor',-1)
+                    else :
+                        print('These magnetic parameters are not coded yet')
+                    # ------------------------------------------------------
                     
                     # bookkeeping
                     tmp.eliminate_zeros()
@@ -944,23 +951,21 @@ def main():
                 
     
                 # l+1 terms --------------------------------------------
-                if ((l+1 <= ut.lmax_bot-1) and (ut.symm1==1)) or (ut.symm1==-1) :
+                #if ((l+1 <= ut.lmax_bot-1) and (ut.symm1==1)) or (ut.symm1==-1) :
+                if l+1 in ll_mag[1] :  # for b_tor, so we use ll_mag[1]
                     
                     if ut.symm1 == 1 :
                         col3b = 3*nb*ut.N1 + ( rank*bpp + k + 1 )* ut.N1    # right of diag if symm
                     elif ut.symm1 == -1 :
                         col3b = 3*nb*ut.N1 + ( rank*bpp + k )* ut.N1        # on diag if antisymm
                         
-                    C = np.sqrt((l+par.m+1)*(l+1-par.m))*l*(l+2)/(2*l+3)
-                    
-                    # Physics -----------------------------
-                    if par.B0 == 'axial':
-                        lore = C*( -(l+2)*r1Iv - r2D1v )     # r2* r.1curl
-                    elif par.B0 == 'dipole':
-                        lore = C*( 0.5*(l-1)*r1Iv - r2D1v )  # r5* r.1curl
-                    tmp = lore*par.Le2
-                    # -------------------------------------
-                    
+                    # Physics ----------------------------------------------
+                    if par.ricb == 0 or (par.innercore in ['insulator', 'TWA']) :
+                        tmp = par.Le2 * op.lorentz(l,'v','btor',1)
+                    else :
+                        print('These magnetic parameters are not coded yet')
+                    # ------------------------------------------------------
+
                     # bookkeeping
                     tmp.eliminate_zeros()
                     tmp = tmp.tocoo()
@@ -972,14 +977,12 @@ def main():
 
     if par.magnetic == 1: # includes the induction equation
         
-        # Submatrices here for nocurl and 1curl eqs have only 3 and 2 rows empty at the top
-        # respectively instead of 4 to make room for the magnetic (insulating) boundary conditions
-        # their label ends with 'c' or 'b' instead of 't'
-    
+        # Submatrices here for nocurl and 1curl eqs have only 3 and 2 rows empty at the top, respectively
+        # instead of 4 to make room for the magnetic (insulating) boundary conditions
     
         # ----------------------------------------------------------------------------------------------------- A matrix, nocurl induction eq, section f
         
-        for k,l in enumerate(loc_bot): # here use the l's from loc_bot 
+        for k,l in enumerate(loc_mag_f): # same as loc_bot if B0 is antisymm 
         
             row = par.hydro*(2*nb*ut.N1) + (rank*bpp + k )* ut.N1
             L = l*(l+1.)
@@ -987,29 +990,23 @@ def main():
             if par.hydro == 1:
                 
                 # Poloidal velocity terms: curl ( B0 x u )
-                # ------------------------------------------------------------------ A, u_pol, nocurl (induction term), section f
+                # --------------------------------------------------------- A, u_pol, nocurl (induction term), section f
                 
                 # l-1 terms ------------------------------------------------
-                if ((l-1 >= ut.m_bot) and (ut.symm1==-1)) or (ut.symm1==1) :
-                    
+                #if ((l-1 >= ut.m_bot) and (ut.symm1==-1)) or (ut.symm1==1) :
+                if l-1 in ll_flo[0] :  # for u_pol, so we use ll_flo[0]
+                
                     if ut.symm1 == -1 :
                         col0a = ( rank*bpp + k - 1 )* ut.N1 # left of diag if antisymm
                     elif ut.symm1 == 1 :
                         col0a = ( rank*bpp + k )* ut.N1     # on the diag if symm
                     
-                    # Physics --------------------------------------------------
-                    if par.B0 == 'axial':
-                        if ((par.ricb > 0) and ('conductor' in par.innercore)) :
-                            C = (l-1)*np.sqrt(l**2-par.m**2)/(l*(2*l-1))
-                            induc = C*( (l-2)*r2D1f - r3D2f )
-                        else :  # insulator
-                            C = np.sqrt( (l-par.m)*(l+par.m) )*(l**2-1)/(2*l-1)
-                            induc = C*( (l-1)*r1If - r2D1f )   
-                    elif ((par.B0 == 'dipole') and (par.ricb > 0) and (par.innercore == 'insulator')) :
-                        C = np.sqrt( (l-par.m)*(l+par.m) )*(l**2-1)/(2*l-1)
-                        induc = -C*( r1D1f + (l+2)*0.5*If )
-                    tmp = induc
-                    # ----------------------------------------------------------
+                    # Physics ----------------------------------------------
+                    if par.ricb == 0 or (par.innercore in ['insulator', 'TWA']) :
+                        tmp = op.induction(l,'f','upol',-1)
+                    else :
+                        print('These magnetic parameters are not coded yet')
+                    # ------------------------------------------------------
                         
                     # bookkeeping
                     tmp.eliminate_zeros()
@@ -1020,26 +1017,20 @@ def main():
                     
             
                 # l+1 terms -----------------------------------------------------
-                if ((l+1 <= ut.lmax_bot-1) and (ut.symm1==1)) or (ut.symm1==-1) :
-                    
+                #if ((l+1 <= ut.lmax_bot-1) and (ut.symm1==1)) or (ut.symm1==-1) :
+                if l+1 in ll_flo[0] :  # for u_pol, so we use ll_flo[0]
+                
                     if ut.symm1 == 1 :
                         col0b = ( rank*bpp + k + 1 )* ut.N1 # right of diag if symm
                     elif ut.symm1 == -1 :
                         col0b = ( rank*bpp + k )* ut.N1     # on diag if antisymm
                 
-                    # Physics ------------------------------------------------------------------------
-                    if par.B0 == 'axial' :
-                        if ((par.ricb > 0) and ('conductor' in par.innercore)) :
-                            C = -(l+2)*np.sqrt( (l+1-par.m)*(l+par.m+1) )/( (l+1)*(2*l+3) )
-                            induc = C*( (l+3)*r2D1f + r3D2f )
-                        else :  # insulator
-                            C = -np.sqrt( (l+1-par.m)*(l+par.m+1) )*l*(l+2)/(2*l+3)
-                            induc = C*( (l+2)*r1If + r2D1f )
-                    elif ((par.B0 == 'dipole') and (par.ricb > 0) and (par.innercore == 'insulator')):
-                        C = np.sqrt( (l+1-par.m)*(l+par.m+1) )*l*(l+2)/(2*l+3)
-                        induc = C*( 0.5*(l-1)*If - r1D1f )                                               
-                    tmp = induc
-                    # --------------------------------------------------------------------------------
+                    # Physics ----------------------------------------------
+                    if par.ricb == 0 or (par.innercore in ['insulator', 'TWA']) :
+                        tmp = op.induction(l,'f','upol',1)
+                    else :
+                        print('These magnetic parameters are not coded yet')                   
+                    # ------------------------------------------------------
                     
                     # bookkeeping
                     tmp.eliminate_zeros()
@@ -1050,20 +1041,16 @@ def main():
                     
             
                 # Toroidal velocity terms
-                # ------------------------------------------------------------------ A, u_tor, nocurl (induction term), section f
+                # --------------------------------------------------------- A, u_tor, nocurl (induction term), section f
                 
                 col1 = nb*ut.N1 + (rank*bpp + k )* ut.N1
                         
-                # Physics ------------------------------------------------------------------------
-                if par.B0 == 'axial':
-                    if ((par.ricb > 0) and ('conductor' in par.innercore)) :
-                        induc = (-1j*par.m/L)*( r3D1f + r2If )
-                    else :  # insulator
-                        induc = -1j*par.m* r2If                                                  
-                elif ((par.B0 == 'dipole') and (par.ricb > 0) and (par.innercore == 'insulator')):
-                    induc = -1j*par.m* r1If
-                tmp = induc
-                # --------------------------------------------------------------------------------
+                # Physics ----------------------------------------------
+                if par.ricb == 0 or (par.innercore in ['insulator', 'TWA']) :
+                    tmp = op.induction(l,'f','utor',0)
+                else :
+                    print('These magnetic parameters are not coded yet')
+                # ------------------------------------------------------
                 
                 # bookkeeping
                 tmp.eliminate_zeros()
@@ -1078,20 +1065,14 @@ def main():
             
             col2  =  par.hydro*(2*nb*ut.N1) + (rank*bpp + k )* ut.N1
             
-            # Physics ------------------------------------------------------------------------
-            if par.B0 == 'axial':
-                if ((par.ricb > 0) and ('conductor' in par.innercore)) :
-                    difus = r3D3f + 3*r2D2f - L*r1D1f + L*If
-                    iwb = (1j*ut.wf)*( r3D1f + r2If )
-                else :
-                    difus = L*( - L*If + 2*r1D1f + r2D2f ) 
-                    iwb = L*1j*ut.wf*r2If
-            elif ((par.B0 == 'dipole') and (par.ricb > 0) and (par.innercore == 'insulator')):
-                    difus = L*( - L*r2If + 2*r3D1f + r4D2f ) 
-                    iwb = L*1j*ut.wf* r4If
-            tmp = iwb - par.Em*difus
-            # --------------------------------------------------------------------------------
-            
+            # Physics ----------------------------------------------
+            if par.ricb == 0 or (par.innercore in ['insulator', 'TWA']) :
+                difus = op.magnetic_diffusion(l,'f','bpol',0)
+                iwb   = 1j*ut.wf * op.b(l,'f','bpol',0)
+                tmp   = iwb - par.Em * difus
+            else :
+                print('These magnetic parameters are not coded yet')
+            # ------------------------------------------------------
             
             # bookkeeping
             tmp.eliminate_zeros()
@@ -1108,24 +1089,28 @@ def main():
     
             # ----------------------------------------------------------------------------------------
             # include magnetic boundary conditions and update loc_list
-            if par.innercore == 'TWA' :
-                bc_b_list_inner = bc_b_thinlayer(l, 'nocurl', 1/par.mu, par.c_icb, par.c1_icb, 'icb')
-            else:
-                bc_b_list_inner = bc_b_icb( l, 'nocurl', par.innercore, rank, bpp, k)
+            if par.ricb > 0 :
+                if par.innercore == 'TWA' :
+                    bc_b_list_inner = bc_b_thinlayer(l, 'nocurl', 1/par.mu, par.c_icb, par.c1_icb, 'icb')
+                else:
+                    bc_b_list_inner = bc_b_icb( l, 'nocurl', par.innercore, rank, bpp, k)
             
             if par.mantle == 'TWA':
                 bc_b_list_outer = bc_b_thinlayer(l, 'nocurl', 1/par.mu, par.c_cmb, par.c1_cmb, 'cmb')
             else:
-                bc_b_list_outer = bc_b_cmb( l, 'nocurl', par.innercore )
+                bc_b_list_outer = bc_b_cmb( l, 'section_f', par.innercore )
             
-            for q in [0,1,2]:   
-                loc_list[q]= np.concatenate( ( loc_list[q], bc_b_list_inner[q], bc_b_list_outer[q] ) )
+            for q in [0,1,2]:
+                if par.ricb > 0:
+                    loc_list[q]= np.concatenate( ( loc_list[q], bc_b_list_inner[q], bc_b_list_outer[q] ) )
+                else:
+                    loc_list[q]= np.concatenate( ( loc_list[q], bc_b_list_outer[q] ) )
             # ----------------------------------------------------------------------------------------
     
 
 
         # ----------------------------------------------------------------------------------------------------------------------- A matrix, 1curl induction, section g
-        for k,l in enumerate(loc_top): # use l's from loc_top for 1curl eqs
+        for k,l in enumerate(loc_mag_g): # same as loc_top if B0 is antisymm
             
             L = l*(l+1.)
             row = nb*ut.N1*(1+2*par.hydro) + ( rank*bpp + k )* ut.N1  
@@ -1133,17 +1118,16 @@ def main():
             if par.hydro == 1:
             
                 # Poloidal velociy terms
-                # ------------------------------------------------------------------ A, u_pol, 1curl (induction), section g
+                # --------------------------------------------------------------- A, u_pol, 1curl (induction), section g
                 
                 col0 = ( rank*bpp + k )* ut.N1
                 
-                # Physics -----------------------------------------
-                if par.B0 == 'axial':
-                    induc = 1j*par.m*( -L*Ig + 2*r1D1g + r2D2g )     # r2* r.1curl
-                elif par.B0 == 'dipole':
-                    induc = 1j*par.m*( (2*L-3)*Ig - r1D1g + r2D2g )  # r5* r.1curl
-                tmp = induc
-                # -------------------------------------------------
+                # Physics ----------------------------------------------
+                if par.ricb == 0 or (par.innercore in ['insulator', 'TWA']) :
+                    tmp   = op.induction(l,'g','upol',0)
+                else :
+                    print('These magnetic parameters are not coded yet')
+                # ------------------------------------------------------
                 
                 # bookkeeping
                 tmp.eliminate_zeros()
@@ -1154,25 +1138,23 @@ def main():
                     
     
                 # Toroidal velocity terms
-                # ------------------------------------------------------------------ A, u_tor, 1curl (induction), section g
+                # --------------------------------------------------------------- A, u_tor, 1curl (induction), section g
                             
                 # l-1 terms ------------------------------------------------
-                if ((l-1 >= ut.m_top) and (ut.symm1==1)) or (ut.symm1==-1) :
-                    
+                #if ((l-1 >= ut.m_top) and (ut.symm1==1)) or (ut.symm1==-1) :
+                if l-1 in ll_flo[1] :  # for u_tor, so we use ll_flo[1]
+                
                     if ut.symm1 == 1 :
                         col1a = nb*ut.N1 + ( rank*bpp + k - 1 )* ut.N1 # left of diag if symm
                     elif ut.symm1 == -1 :
                         col1a = nb*ut.N1 + ( rank*bpp + k )* ut.N1 # on the diag if antisymm    
                 
-                    C = np.sqrt( (l-par.m)*(l+par.m) )*(l**2-1)/(2*l-1)
-                    
-                    # Physics ------------------------------
-                    if par.B0 == 'axial':
-                        induc = C*( (l-1)*r1Ig - r2D1g )      # r2* r.1curl
-                    elif par.B0 == 'dipole':
-                        induc = C*( 0.5*(4-l)*r1Ig - r2D1g )  # r5* r.1curl
-                    tmp = induc
-                    # --------------------------------------
+                    # Physics ----------------------------------------------
+                    if par.ricb == 0 or (par.innercore in ['insulator', 'TWA']) :
+                        tmp   = op.induction(l,'g','utor',-1)
+                    else :
+                        print('These magnetic parameters are not coded yet')
+                    # ------------------------------------------------------
                     
                     # bookkeeping
                     tmp.eliminate_zeros()
@@ -1183,22 +1165,20 @@ def main():
                         
             
                 # l+1 terms --------------------------------------------
-                if ((l+1 <= ut.lmax_top-1) and (ut.symm1==-1)) or (ut.symm1==1) :
-                    
+                #if ((l+1 <= ut.lmax_top-1) and (ut.symm1==-1)) or (ut.symm1==1) :
+                if l+1 in ll_flo[1] :  # for u_tor, so we use ll_flo[1]
+                
                     if ut.symm1 == -1 :
                         col1b = nb*ut.N1 + ( rank*bpp + k + 1 )* ut.N1 # right of diag if antisymm
                     elif ut.symm1 == 1 :
                         col1b = nb*ut.N1 + ( rank*bpp + k )* ut.N1 # on diag if symm
-                
-                    C = np.sqrt( (l+par.m+1)*(l+1-par.m) )*l*(l+2)/(2*l+3)
                     
-                    # Physics ------------------------------
-                    if par.B0 == 'axial':
-                        induc = C*( -(l+2)*r1Ig - r2D1g )     # r2* r.1curl
-                    elif par.B0 == 'dipole':
-                        induc = C*( 0.5*(l+5)*r1Ig - r2D1g )  # r5* r.1curl
-                    tmp = induc
-                    # --------------------------------------
+                    # Physics ----------------------------------------------
+                    if par.ricb == 0 or (par.innercore in ['insulator', 'TWA']) :
+                        tmp   = op.induction(l,'g','utor',1)
+                    else :
+                        print('These magnetic parameters are not coded yet')
+                    # ------------------------------------------------------
                     
                     # bookkeeping
                     tmp.eliminate_zeros()
@@ -1209,24 +1189,23 @@ def main():
                 
 
             # Poloidal magnetic terms (diffusion + iwb term)
-            # ------------------------------------------------------------------ A, b_pol, 1curl (induction), section g
+            # ------------------------------------------------------------------- A, b_pol, 1curl (induction), section g
             # nothing
     
             
             # Toroidal magnetic terms (diffusion + iwb term)
-            # ------------------------------------------------------------------ A, b_tor, 1curl (induction), section g
+            # ------------------------------------------------------------------- A, b_tor, 1curl (induction), section g
     
             col3 = nb*ut.N1*(1+2*par.hydro) + ( rank*bpp + k )* ut.N1
             
-            # Physics ------------------------------------
-            if (par.magnetic == 1 and par.B0 == 'dipole'):  # r5* r.1curl
-                difus = - L*r3Ig + 2*r4D1g + r5D2g
-                iwb   = L*r5Ig*(1j*ut.wf)
-            else:                                           # r2* r.1curl
-                difus = - L*Ig + 2*r1D1g + r2D2g
-                iwb   = L*r2Ig*(1j*ut.wf)
-            tmp = iwb - difus*L*par.Em
-            # --------------------------------------------
+            # Physics ----------------------------------------------
+            if par.ricb == 0 or (par.innercore in ['insulator', 'TWA']) :
+                difus = op.magnetic_diffusion(l,'g','btor',0)
+                iwb   = 1j*ut.wf * op.b(l,'g','btor',0)
+                tmp = iwb - par.Em * difus
+            else :
+                print('These magnetic parameters are not coded yet')
+            # ------------------------------------------------------
             
             # bookkeeping
             tmp.eliminate_zeros()
@@ -1238,18 +1217,22 @@ def main():
             
             # ----------------------------------------------------------------------------------------
             # include magnetic boundary conditions and update loc_list
-            if par.innercore == 'TWA' :
-                bc_b_list_inner = bc_b_thinlayer(l, '1curl', 1/par.mu, par.c_icb, par.c1_icb, 'icb')
-            else:
-                bc_b_list_inner = bc_b_icb( l, '1curl', par.innercore, rank, bpp, k)
+            if par.ricb > 0 :
+                if par.innercore == 'TWA' :
+                    bc_b_list_inner = bc_b_thinlayer(l, '1curl', 1/par.mu, par.c_icb, par.c1_icb, 'icb')
+                else:
+                    bc_b_list_inner = bc_b_icb( l, '1curl', par.innercore, rank, bpp, k)
             
             if par.mantle == 'TWA':
                 bc_b_list_outer = bc_b_thinlayer(l, '1curl', 1/par.mu, par.c_cmb, par.c1_cmb, 'cmb')
             else:
-                bc_b_list_outer = bc_b_cmb( l, '1curl', par.innercore )
+                bc_b_list_outer = bc_b_cmb( l, 'section_g', par.innercore )
                 
-            for q in [0,1,2]:   
-                loc_list[q]= np.concatenate( ( loc_list[q], bc_b_list_inner[q], bc_b_list_outer[q] ) )
+            for q in [0,1,2]:
+                if par.ricb > 0:
+                    loc_list[q]= np.concatenate( ( loc_list[q], bc_b_list_inner[q], bc_b_list_outer[q] ) )
+                else:
+                    loc_list[q]= np.concatenate( ( loc_list[q], bc_b_list_outer[q] ) )
             # ----------------------------------------------------------------------------------------
             
     
@@ -1259,30 +1242,28 @@ def main():
         
         # Submatrices here for nocurl have only 2 rows empty at the top
         # instead of 4 to make room for the thermal boundary conditions
-        # their label ends with 'b' instead of 't'
     
         # --------------------------------------------------------------------------------------------------------------------------- A matrix, nocurl thermal, section h
         for k,l in enumerate(loc_top): # here use the l's from loc_top 
         
             row = (2+2*par.magnetic)*nb*ut.N1 + (rank*bpp + k )* ut.N1
-            L = l*(l+1)
-            
             
             # Poloidal velocity terms: -u_r * (d/dr)T
-            # ------------------------------------------------------------------ A, u_pol, nocurl (thermal), section h              
+            # -------------------------------------------------------------------- A, u_pol, nocurl (thermal), section h              
 
             col0 = ( rank*bpp + k )* ut.N1
             
-            # Physics --------------------------
-            if par.heating == 'internal' :
-                conv = L*r2Ih
-                #conv = L*r4Ih
-            elif par.heating == 'differential' :
-                conv = - L*Ih * par.ricb/(ut.rcmb-par.ricb)
-            elif par.heating == 'two zone' or par.heating == 'user defined' :
-                conv = L * (par.Brunt**2) * NrIh
-            tmp = - conv 
-            # ----------------------------------
+#            # Physics --------------------------
+#            if par.heating == 'internal' :
+#                conv = L*r2Ih
+#                #conv = L*r4Ih
+#            elif par.heating == 'differential' :
+#                conv = - L*Ih * par.ricb/(ut.rcmb-par.ricb)
+#            elif par.heating == 'two zone' or par.heating == 'user defined' :
+#                conv = L * (par.Brunt**2) * NrIh
+#            tmp = - conv 
+#            # ----------------------------------
+            tmp = op.advection(l,'h','upol',0)
     
             # bookkeeping
             tmp.eliminate_zeros()
@@ -1293,17 +1274,18 @@ def main():
             
                     
             # temperature (theta) terms: (Ek/Pr)*nabla**2(theta)
-            # ------------------------------------------------------------------ A, theta, nocurl (thermal), section h          
+            # -------------------------------------------------------------------- A, theta, nocurl (thermal), section h          
             
             col4 = (2+2*par.magnetic)*nb*ut.N1 + ( rank*bpp + k )* ut.N1
     
-            # Physics ----------------------------
-            if (par.heating == 'internal') or (par.heating == 'two zone' or par.heating == 'user defined') :
-                difus = - L*Ih + 2*r1D1h + r2D2h
-            elif par.heating == 'differential' :
-                difus = - L*r1Ih + 2*r2D1h + r3D2h
-            tmp = (par.Ek/par.Prandtl) * difus
-            # ------------------------------------
+#            # Physics ----------------------------
+#            if (par.heating == 'internal') or (par.heating == 'two zone' or par.heating == 'user defined') :
+#                difus = - L*Ih + 2*r1D1h + r2D2h
+#            elif par.heating == 'differential' :
+#                difus = - L*r1Ih + 2*r2D1h + r3D2h
+#            tmp = (par.Ek/par.Prandtl) * difus
+#            # ------------------------------------
+            tmp = op.thermal_diffusion(l,'h','',0)
     
             # bookkeeping
             tmp.eliminate_zeros()
@@ -1399,7 +1381,7 @@ def bc_u_spherical(l,loc):
     num_rows_u = int(2 + 2*np.sign(par.ricb))  # 2 if no IC, 4 if present
     num_rows_v = int(1 + 1*np.sign(par.ricb))  # 1 if no IC, 2 if present
     
-    ixu = ( par.m + 1 - ut.s )%2
+    ixu = ( par.m + 1 - ut.s )%2  # 
     ixv = ( par.m + ut.s )%2
     if par.ricb > 0 :
         Tbu = bv.Tb
@@ -1466,7 +1448,7 @@ def bc_theta_spherical(l):
     Thermal boundary conditions for the temperature field,
     either isothermal or constant heat flux.
     '''   
-    num_rows_h = 1 + 1*np.sign(par.ricb)  # 1 if no IC, 2 if present          
+    num_rows_h = int(1 + 1*np.sign(par.ricb))  # 1 if no IC, 2 if present          
     #num_rows_h = 2
     out = ss.dok_matrix((num_rows_h,ut.N1),dtype=complex)
     
@@ -1575,30 +1557,55 @@ def bc_b_cmb(l,loc, innercore):
     '''
     Insulating boundary conditions for the magnetic field at the CMB
     '''
-    if loc == 'nocurl': # use loc_bot l's here (if external magnetic field is antisymm)
+    
+    # b must have the opposite symmetry as the flow u, if the background field is antisymmetric
+    if par.ricb > 0 :
+        Tbf = bv.Tb
+        Tbg = bv.Tb
+        delta_row = 1  # to make room for the icb bc
+    else:
+        if ut.symmB0 == -1:  # antisymmetric B0
+            ixf = ( par.m + ut.s )%2
+            ixg = ( par.m + 1 - ut.s )%2
+        elif ut.symmB0 == 1:  # symmetric B0
+            ixf = ( par.m + 1 - ut.s )%2
+            ixg = ( par.m + ut.s )%2
+        Tbf = bv.Tb[ixf::2,:]
+        Tbg = bv.Tb[ixg::2,:]
+        delta_row = 0
+
+    
+    if loc == 'section_f': # use loc_bot l's here (if external magnetic field is antisymm)
 
         out = ss.dok_matrix((1, ut.N1),dtype=complex)
         
-        out[0,:] = (l+1) * bv.P0_cmb + ut.rcmb * bv.P1_cmb   # cmb
+        #out[0,:] = (l+1) * bv.P0_cmb + ut.rcmb * bv.P1_cmb   # cmb
+        out[0,:] = (l+1) * Tbf[:,0] + ut.rcmb * Tbf[:,1]   # cmb
         
         row0 = 2*par.hydro*ut.n + int( ut.N1 * ( l - ut.m_bot)/2 )    # starting row
         col0 = row0
         
-        if 'perfect conductor' in innercore :
-            row0 = row0+1 # one row down extra to make room for two rows for the icb bc
-            
+        if (par.ricb > 0) and ('perfect conductor' in innercore) :
+            # one row extra to make room for the two rows of bc's needed for the icb if perfectly conducting
+            delta_row += 1   
         
-    elif loc == '1curl': # use loc_top l's here (if external magnetic field is antisymm)
+    elif loc == 'section_g': # use loc_top l's here (if external magnetic field is antisymm)
 
         out = ss.dok_matrix((1, ut.N1),dtype=complex)
         
-        out[0,:] = bv.T0_cmb  # cmb
+        #out[0,:] = bv.T0_cmb  # cmb
+        out[0,:] = Tbg[:,0]
         
         row0 = (2*par.hydro+1)*ut.n + int( ut.N1*(l - ut.m_top)/2 )   # starting row
         col0 = row0
     
+    # cmb bc goes on the first row if ricb = 0,
+    # or on the second row if ricb>0,
+    # or on the third row if the inner core is perfectly conducting (section_f only).
+    row1 = row0 + delta_row
+
     out = out.tocoo()   
-    out2 = [out.data, out.row + row0 + 1, out.col + col0]  # row0+1 here because cmb bc goes on the second row (or third if inner core is a perf. conductor)
+    out2 = [out.data, out.row + row1, out.col + col0]
 
     return out2
 

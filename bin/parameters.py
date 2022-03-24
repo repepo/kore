@@ -5,15 +5,11 @@ import numpy as np
 def Ncheb(Ek):
     '''
     Returns the truncation level N for the Chebyshev expansion according to the Ekman number
-    Please experiment and adapt to your particular problem.
+    Please experiment and adapt to your particular problem. N must be even.
     '''
-    x=-np.log10(Ek)
-    if x>=9 :
-        out = 380*x-2700
-    else:
-        out = 104*x-216
-    out1 = max(50, int(0.6*out))
-    return out1 + out1%2
+    out = int(15*Ek**-0.2)
+    
+    return max(48, out + out%2)
 
 
 
@@ -23,13 +19,13 @@ def Ncheb(Ek):
 hydro = 1
 
 # Azimuthal wave number m (>=0)
-m = 0
+m = 1
 
-# Equatirial symmetry. Use 1 for symmetric, -1 for antisymmetric. 
-symm = 1
+# Equatorial symmetry. Use 1 for symmetric, -1 for antisymmetric. 
+symm = -1
 
 # Inner core radius, CMB radius is unity. 
-ricb = 0.5
+ricb = 0.35
 
 # Inner core spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow
@@ -41,9 +37,10 @@ bci = 1
 bco = 1
 
 # Ekman number (use 2* to match Dintrans 1999)
-Ek = 10**-4
+# Ek_gap = 1e-7; Ek = Ek_gap*(1-ricb)**2
+Ek = 10**-5
 
-# forcing = 0  # For eigenvalue problems
+forcing = 0  # For eigenvalue problems
 # forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
 # forcing = 2  # For boundary flow forcing, use with bci=1 and bco=1.
 # forcing = 3  # For Rovira-Navarro 2018 tidal body forcing, m=0,2 must be symm, m=1 antisymm. Leaks power!
@@ -51,10 +48,11 @@ Ek = 10**-4
 # forcing = 5  # second test case, Lin body forcing with X(r)=1/r, m=0,symm. OK
 # forcing = 6  # Buffett2010 ICB radial velocity boundary forcing, m=1,antisymm
 # forcing = 7  # Longitudinal libration boundary forcing, m=0, symm, no-slip
-forcing = 8  # Longitudinal libration as a Poincaré force (body force) in the mantle frame, m=0, symm, no-slip
+# forcing = 8  # Longitudinal libration as a Poincaré force (body force) in the mantle frame, m=0, symm, no-slip
+# forcing = 9  # Radial, symmetric, m=2 boundary flow forcing. 
 
 # Forcing frequency (ignored if forcing = 0)
-freq0 = 0.67
+freq0 = 1.3095
 delta = 0
 forcing_frequency = freq0 + delta  # negative is prograde
 
@@ -71,12 +69,15 @@ projection = 1
 # ----------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------- Magnetic field parameters
 # ----------------------------------------------------------------------------------------------------------------------
-
-magnetic = 0  # Use 0 for pure hydro, 1 for MHD. ** Needs ricb > 0 ** 
+magnetic = 0  # Use 0 for pure hydro, 1 for MHD
 
 # Imposed background magnetic field
-B0 = 'axial'  # Axial, uniform field along the spin axis
-# B0 = 'dipole'  # Singular at origin
+# B0 = 'axial'       # Axial, uniform field along the spin axis
+# B0 = 'dipole'      # classic dipole, singular at origin, needs ricb>0
+# B0 = 'G21 dipole'  # Felix's dipole (Gerick GJI 2021)
+B0 = 'FDM'         # Free Decay Mode (Zhang & Fearn 1994,1995; Schmitt 2012)
+beta = 3.0         # guess for FDM's beta
+B0_l = 1           # l number for the FDM mode
 
 # Magnetic boundary conditions at the ICB:
 innercore = 'insulator'
@@ -98,39 +99,46 @@ mu = 1
 
 # Magnetic field strength and magnetic diffusivity:
 # Either use the Elsasser number and the magnetic Prandtl number (uncomment and set the following three lines):
-#Lambda = 0.1
-#Pm = 1
-#Em = Ek/Pm; Le2 = Lambda*Em; Le = np.sqrt(Le2)
+# Lambda = 0.1
+# Pm = 1
+# Em = Ek/Pm; Le2 = Lambda*Em; Le = np.sqrt(Le2)
 # Or use the Lehnert number and the magnetic Ekman number (uncomment and set the following three lines):
-Le = 0.001
-Em = 1e-3
+Le = 10**-2
+Em = 1e-4
 Le2 = Le**2
+
+# Normalizations for B0
+# cnorm = 3.86375                       # Schmitt 2012,         ricb = 0.35
+# cnorm = 4.067144                      # Zhang & Fearn 1994,   ricb = 0.35
+# cnorm = 15*np.sqrt(21/(46*np.pi))     # G21 dipole,           ricb = 0
+# cnorm = 1.09436                       # simplest FDM, l=1,    ricb = 0
+cnorm = 3.43802                       # simplest FDM, l=1,    ricb = 0.001
 
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------- Thermal parameters
 # ----------------------------------------------------------------------------------------------------------------------
-
 thermal = 0  # Use 1 or 0 to include or not the temperature equation and the buoyancy force (Boussinesq)
 
 # Prandtl number: ratio of viscous to thermal diffusivity
-Prandtl = 0.01
+Prandtl = 1.0
 
 # Background isentropic temperature gradient choices, uncomment the appropriate line below:
 # heating = 'internal'      # dT/dr = beta * (r/rcmb),     temp scale = rcmb*beta, Dintrans1999
-# heating = 'differential'  # dT/dr = beta * (r/rcmb)**-2, temp scale = Delta T,   Dormy2004, set Ra below
-heating = 'two zone'      # temp scale = Omega^2*rcmb/(alpha*g_0), Vidal2015, use extra args below
+heating = 'differential'  # dT/dr = beta * (r/rcmb)**-2, temp scale = Delta T,   Dormy2004, set Ra below
+# heating = 'two zone'      # temp scale = Omega^2*rcmb/(alpha*g_0), Vidal2015, use extra args below
 # heating = 'user defined'  # Uses the function BVprof in utils.py , use extra args below if needed 
 
 # Ratio of Brunt-Vaisala freq. to rotation. If differential heating then set the Rayleigh number, otherwise just Brunt.
-# Ra = 10**6  # Rayleigh number
-# Brunt = np.sqrt(Ra/Prandtl) * Ek
-Brunt = 100.0
+# Ra_gap = 145512758; Ra = Ra_gap/(1.0-ricb)**3
+Ra = 10**6  # Rayleigh number
+Brunt = np.sqrt(Ra/Prandtl) * Ek
+# Brunt = 1
 
 # Additional arguments for 'Two zone' or 'User defined' case (modify if needed).
-rc  = 1  # transition radius
-h   = 0.4  # transition width
+rc  = 0.7  # transition radius
+h   = 0.1  # transition width
 sym = -1    # radial symmetry 
 args = [rc, h, sym]  
 
@@ -147,11 +155,11 @@ bco_thermal = 0   # CMB
 # ----------------------------------------------------------------------------------------------------------------------
 
 # Number of cpus
-ncpus = 8
+ncpus = 24
 
 # Chebyshev polynomial truncation level. Must be even if ricb = 0. See def at top.
 N = Ncheb(Ek)
-# N = 408
+# N = 480
 
 # Spherical harmonic truncation lmax and approx lmax/N ratio:
 g = 1.0

@@ -13,7 +13,7 @@ import parameters as par
 
 class kmode:
     
-    def __init__(self, field='u', solnum=0, nr=par.N, ntheta=par.lmax+3, nphi=10, nthreads=4 ):
+    def __init__(self, field='u', solnum=0, nr=par.N+2, ntheta=par.lmax+3, nphi=10, nthreads=4 ):
 
         self.solnum = solnum
         self.nr     = nr
@@ -33,8 +33,8 @@ class kmode:
         n           = ut.n
         
         # set the radial grid
-        i = np.arange(0,nr)
-        x = np.cos( (i+0.5)*np.pi/nr )
+        i = np.arange(0,nr-2)
+        x = np.r_[ 1, np.cos( (i+0.5)*np.pi/nr ), -1]
         r = 0.5*gap*(x+1) + ricb;
         self.r = r
         if ricb == 0 :
