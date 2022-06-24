@@ -13,16 +13,18 @@ sys.path.insert(1,'bin/')
 import utils as ut
 import parameters as par
 
+from matplotlib import rc
 rc('text', usetex=True) 
 
-cmap = 'plasma'
+cmap = 'cool'
+cmap2 = cmr.neon_r
 
 '''
 
 Script to plot meridional cuts of the flow
 Use as:
 
-python3 plot_flow.py nsol nR ntheta theta0 theta1
+python3 plot_poltor.py nsol nR ntheta theta0 theta1
 
 nsol   : solution number
 nR     : number of points in radius
@@ -58,7 +60,9 @@ else :
 
 chx = ch.chebvander(x,par.N-1) # this matrix has nR rows and N-1 cols
 
+#--------------------------------
 phi = 0. # select meridional cut
+#--------------------------------
 
 a = np.loadtxt('real_flow.field',usecols=solnum)
 b = np.loadtxt('imag_flow.field',usecols=solnum)
@@ -157,6 +161,8 @@ ur     = np.zeros( (nR)*Ntheta, dtype=complex)
 utheta = np.zeros( (nR)*Ntheta, dtype=complex)
 uphi   = np.zeros( (nR)*Ntheta, dtype=complex)
 
+pol = np.zeros( (nR)*Ntheta, dtype=complex)
+tor = np.zeros( (nR)*Ntheta, dtype=complex)
 
 
 #ylm = zeros((lmax-m+1,1),dtype=complex128)
@@ -192,6 +198,7 @@ for kt in range(Ntheta):
 		s[k]   = r[kr]*np.sin(theta[kt])
 		z[k]   = r[kr]*np.cos(theta[kt])
 		
+		pol[k] = np.dot( Plr[:,kr], ylm[idP:plx:2] )
 		ur[k] = np.dot( Qlr[:,kr], ylm[idP:plx:2] )
 		#ur2[k] = absolute(dot( Qlm[:,kr], ylm[idP:plx:2] ))**2		
 
@@ -201,6 +208,7 @@ for kt in range(Ntheta):
 		utheta[k] = tmp1+tmp2+tmp3
 		#ut2[k] = absolute(tmp1+tmp2+tmp3)**2
 		
+		tor[k] = np.dot( Tlr[:,kr], ylm[idT:tlx:2] )
 		tmp1 = np.dot(     (l1[idT:tlx:2]+1) * Tlr[:,kr]/np.tan(theta[kt]), ylm[idT:tlx:2]     )
 		tmp2 = np.dot( -clm[idT+1:tlx+1:2,0] * Tlr[:,kr]/np.sin(theta[kt]), ylm[idT+1:tlx+1:2] )
 		tmp3 = np.dot(                  1j*m * Slr[:,kr]/np.sin(theta[kt]), ylm[idP:plx:2]     )
@@ -228,38 +236,132 @@ triang.set_mask(mask)
 
 
 #matplotlib.rcParams['text.usetex'] = True
-matplotlib.rcParams['image.cmap'] = 'rainbow'
+#matplotlib.rcParams['image.cmap'] = 'rainbow'
 
-fig=plt.figure(figsize=(14,7))
+#fig=plt.figure(figsize=(14,5))
+fig, ax = plt.subplots(nrows=1,ncols=5,sharey='row',figsize=(13,5))
+#fig.subplots_adjust(hspace=0.01)
+
+
+
 # ------------------------------------------------------------------- ur
-ax1=fig.add_subplot(131)
+#ax[0,0]=fig.add_subplot(151)
 #ax1.set_title(r'$|u_r|$',size=22)
-ax1.text(0.1,0,r'$\mathbf{\hat r}\cdot\mathbf{u_0}$',size=20)
-im1=ax1.tricontourf( triang, np.absolute(ur[id_in]), 70, cmap=cmap)
+ax[0].text(0.31,0,r'$|\mathbf{\hat r}\cdot\mathbf{u}_0|$',size=17)
+im1=ax[0].tricontourf( triang, np.absolute(ur[id_in]), 70, cmap=cmap)
 for c in im1.collections:
               c.set_edgecolor('face')   
-ax1.set_aspect('equal')
-plt.colorbar(im1,aspect=70)
+ax[0].plot(r[0]*np.sin(theta),r[0]*np.cos(theta),'k',lw=0.4)
+ax[0].plot(r[-1]*np.sin(theta),r[-1]*np.cos(theta),'k',lw=0.4)
+ax[0].plot([0,0], [ r.min(),r.max() ], 'k', lw=0.4)
+ax[0].plot([0,0], [ -r.max(),-r.min() ], 'k', lw=0.4)
+ax[0].set_aspect('equal')
+ax[0].set_axis_off()
+
+cax = ax[0].inset_axes([0.02,-0.55,0.02,1.1],transform=ax[0].transData)
+plt.colorbar(im1,aspect=70,ax=ax[0],cax=cax)
 
 # --------------------------------------------------------------- utheta
-ax2=fig.add_subplot(132)
+#ax2=fig.add_subplot(152)
 #ax2.set_title(r'$|u_\theta|$',size=22)
-ax2.text(0.1,0,r'$\mathbf{\hat \theta}\cdot\mathbf{u_0}$',size=20)
-im2=ax2.tricontourf( triang, np.absolute(utheta[id_in]), 70, cmap=cmap)
+ax[1].text(0.31,0,r'$|\mathbf{\hat \theta}\cdot\mathbf{u}_0|$',size=17)
+im2=ax[1].tricontourf( triang, np.absolute(utheta[id_in]), 70, cmap=cmap)
 for c in im2.collections:
               c.set_edgecolor('face')
-ax2.set_aspect('equal')
-plt.colorbar(im2,aspect=70)
+ax[1].plot(r[0]*np.sin(theta),r[0]*np.cos(theta),'k',lw=0.4)
+ax[1].plot(r[-1]*np.sin(theta),r[-1]*np.cos(theta),'k',lw=0.4)
+ax[1].plot([0,0], [ r.min(),r.max() ], 'k', lw=0.4)
+ax[1].plot([0,0], [ -r.max(),-r.min() ], 'k', lw=0.4)
+ax[1].set_aspect('equal')
+ax[1].set_axis_off()
+
+cax = ax[1].inset_axes([0.02,-0.55,0.02,1.1],transform=ax[1].transData)
+plt.colorbar(im2,aspect=70,ax=ax[1],cax=cax)
 
 # ----------------------------------------------------------------- uphi
-ax3=fig.add_subplot(133)
+#ax3=fig.add_subplot(153)
 #ax3.set_title(r'$|u_\phi|$',size=22)
-ax3.text(0.1,0,r'$\mathbf{\hat \phi}\cdot\mathbf{u_0}$',size=20)
-im3=ax3.tricontourf( triang, np.absolute(uphi[id_in]), 70, cmap=cmap)
+ax[2].text(0.31,0,r'$|\mathbf{\hat \phi}\cdot\mathbf{u}_0|$',size=17)
+im3=ax[2].tricontourf( triang, np.absolute(uphi[id_in]), 70, cmap=cmap)
 for c in im3.collections:
               c.set_edgecolor('face')
-ax3.set_aspect('equal')
-plt.colorbar(im3,aspect=70)
+ax[2].plot(r[0]*np.sin(theta),r[0]*np.cos(theta),'k',lw=0.4)
+ax[2].plot(r[-1]*np.sin(theta),r[-1]*np.cos(theta),'k',lw=0.4)
+ax[2].plot([0,0], [ r.min(),r.max() ], 'k', lw=0.4)
+ax[2].plot([0,0], [ -r.max(),-r.min() ], 'k', lw=0.4)
+ax[2].set_aspect('equal')
+ax[2].set_axis_off()
+
+cax = ax[2].inset_axes([0.02,-0.55,0.02,1.1],transform=ax[2].transData)
+plt.colorbar(im3,aspect=70,ax=ax[2],cax=cax)
+
+
+# ------------------------------------------------------------------- pol
+#ax4=fig.add_subplot(154)
+#ax1.set_title(r'$|u_r|$',size=22)
+ax[3].text(0.38,0,r'$|\mathcal{P}|$',size=17)
+im4=ax[3].tricontourf( triang, np.absolute(pol[id_in]), 70, cmap=cmap2)
+#im4=ax4.tricontourf( triang, np.real(pol[id_in]), 70, cmap=cmap)
+for c in im4.collections:
+              c.set_edgecolor('face')   
+ax[3].plot(r[0]*np.sin(theta),r[0]*np.cos(theta),'k',lw=0.4)
+ax[3].plot(r[-1]*np.sin(theta),r[-1]*np.cos(theta),'k',lw=0.4)
+ax[3].plot([0,0], [ r.min(),r.max() ], 'k', lw=0.4)
+ax[3].plot([0,0], [ -r.max(),-r.min() ], 'k', lw=0.4)
+ax[3].set_aspect('equal')
+ax[3].set_axis_off()
+
+cax = ax[3].inset_axes([0.02,-0.55,0.02,1.1],transform=ax[3].transData)
+plt.colorbar(im4,aspect=70,ax=ax[3],cax=cax)
+
+
+
+# ----------------------------------------------------------------- tor
+#ax5=fig.add_subplot(155)
+#ax3.set_title(r'$|u_\phi|$',size=22)
+ax[4].text(0.35,0,r'$|\mathcal{T}|$',size=17)
+im5=ax[4].tricontourf( triang, np.absolute(tor[id_in]), 70, cmap=cmap2)
+#im5=ax5.tricontourf( triang, np.real(tor[id_in]), 70, cmap=cmap)
+for c in im5.collections:
+              c.set_edgecolor('face')
+ax[4].plot(r[0]*np.sin(theta),r[0]*np.cos(theta),'k',lw=0.4)
+ax[4].plot(r[-1]*np.sin(theta),r[-1]*np.cos(theta),'k',lw=0.4)
+ax[4].plot([0,0], [ r.min(),r.max() ], 'k', lw=0.4)
+ax[4].plot([0,0], [ -r.max(),-r.min() ], 'k', lw=0.4)
+ax[4].set_aspect('equal')
+ax[4].set_axis_off()
+
+cax = ax[4].inset_axes([0.02,-0.55,0.02,1.1],transform=ax[4].transData)
+plt.colorbar(im5,aspect=70,ax=ax[4],cax=cax)
+
+
 # ----------------------------------------------------------------------
 plt.tight_layout()
 plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

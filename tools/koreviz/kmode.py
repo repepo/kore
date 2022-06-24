@@ -34,7 +34,7 @@ class kmode:
         
         # set the radial grid
         i = np.arange(0,nr-2)
-        x = np.r_[ 1, np.cos( (i+0.5)*np.pi/nr ), -1+1e-9]
+        x = np.r_[ 1, np.cos( (i+0.5)*np.pi/nr ), -1]
         r = 0.5*gap*(x+1) + ricb;
         self.r = r
         if ricb == 0 :
@@ -146,7 +146,7 @@ class kmode:
         self.mmax = int( np.sign(self.m) )
         self.mres = max(1,self.m)
         self.sh   = shtns.sht( lmax2, mmax=self.mmax, mres=self.mres, norm=norm, nthreads=nthreads )
-        ntheta, nphi = self.sh.set_grid( ntheta+ntheta%2, nphi, shtns.sht_reg_poles, polar_opt=1e-10)
+        ntheta, nphi = self.sh.set_grid( ntheta+ntheta%2, nphi, polar_opt=1e-10)
         self.theta = np.arccos(self.sh.cos_theta)
         self.phi   = np.linspace(0., 2*np.pi, nphi*self.mres+1, endpoint=True)
 
@@ -173,8 +173,6 @@ class kmode:
             data = self.uphi
         elif component in ['energy','ener','e']:
             data = (1/2)*(self.ur**2 + self.utheta**2 + self.uphi**2)
-        elif component in ['amplitude','amp','a']:
-            data = np.sqrt( (1/2)*(self.ur**2 + self.utheta**2 + self.uphi**2) )
         
         return data
 
@@ -205,9 +203,9 @@ class kmode:
         iphi = np.argmin(abs( self.phi - (azim*np.pi/180) )) % self.nphi
         data = self.get_data(comp)[:,:,iphi]
         
-        if comp in ['energy','ener','e', 'amplitude','amp','a']:
+        if comp in ['energy','ener','e']:
             cmap = cmr.tropical_r
-            #data = np.log10(data)
+            data = np.log10(data)
 
         plt.figure(figsize=(6,9))
         cont = merContour( self.r, self.theta, data.T, levels=levels, cmap=cmap,limits=limits)
@@ -215,7 +213,6 @@ class kmode:
         plt.axis('off')
         if colbar:
             cbar = add_colorbar(cont,aspect=60)
-            cbar.ax.tick_params(labelsize=13) 
         plt.tight_layout()
         plt.show()
 

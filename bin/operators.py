@@ -173,7 +173,9 @@ def viscous_diffusion(l, section, component, offdiag):  # ----------------------
     out = 0
     L= l*(l+1)
     
-    if offdiag == 0:
+    inviscid = (par.Ek == 0)
+    
+    if (offdiag == 0)&(not inviscid):
         
         if section == 'u' and component == 'upol':
             
@@ -206,7 +208,7 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
             if offdiag == -1:  # (l-1) terms
                 
                 C = np.sqrt(l**2-par.m**2)*(l**2-1)/(2*l-1)
-                if par.B0 in ['axial', 'G21 dipole', 'FDM'] :  # r4*r.1curl
+                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :  # r4*r.1curl
                     out1 = -2*(l**2+2)*rhD1u -2*(l-2)*r2h1D1u - (l-4)*r2hD2u - (l-2)*r3h1D2u  
                     out2 = L*(l+2)*hIu + L*(l-4)*rh1Iu + l*r2h2Iu + l*r3h3Iu + 2*r3hD3u
                 elif par.B0 == 'dipole':
@@ -218,7 +220,7 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
             elif offdiag == 1:  # (l+1) terms
                 
                 C = np.sqrt((1+l+par.m)*(1+l-par.m))*l*(l+2)/(2*l+3)
-                if par.B0 in ['axial', 'G21 dipole', 'FDM'] :  # r4*r.1curl
+                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :  # r4*r.1curl
                     out1 = -2*(l**2+2*l+3)*rhD1u + 2*(l+3)*r2h1D1u + (l+5)*r2hD2u + (l+3)*r3h1D2u 
                     out2 = -L*(l-1)*hIu - L*(l+5)*rh1Iu - (l+1)*r2h2Iu - (l+1)*r3h3Iu + 2*r3hD3u
                 elif par.B0 == 'dipole':
@@ -229,7 +231,7 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
                 
         elif component == 'btor' and offdiag == 0:  # l terms
             
-            if par.B0 in ['axial', 'G21 dipole', 'FDM'] :  # r4*r.1curl
+            if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :  # r4*r.1curl
                 out = 2j*par.m*( -rhIu - (l**2+l-1)*r2h1Iu + r2hD1u + r3h1D1u + r3hD2u )
             elif par.B0 == 'dipole':
                 # same but +r2
@@ -240,7 +242,7 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
         
         if component == 'bpol' and offdiag == 0:
             
-            if par.B0 in ['axial', 'G21 dipole', 'FDM'] :
+            if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
                 out = 1j*par.m*( 4*hD1v - L*( 2*h1Iv + rh2Iv ) + 2*rhD2v )  # r2*r.1curl
             
             elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
@@ -251,7 +253,7 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
             if offdiag == -1:
                 
                 C = np.sqrt((l-par.m)*(l+par.m))*(l**2-1)/(2*l-1)  
-                if par.B0 in ['axial', 'G21 dipole', 'FDM'] :
+                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
                     out = C*( (l-2)*hIv + l*rh1Iv -2*rhD1v )  # r2*r.1curl
                     
                 elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
@@ -260,7 +262,7 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
             elif offdiag == 1:
                 
                 C = -np.sqrt((l+par.m+1)*(l+1-par.m))*l*(l+2)/(2*l+3)
-                if par.B0 in ['axial', 'G21 dipole', 'FDM'] :
+                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
                     out = C*( (l+3)*hIv + (l+1)*rh1Iv + 2*rhD1v )  # r2*r.1curl
                     
                 elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
@@ -312,13 +314,13 @@ def b(l, section, component, offdiag):
     if offdiag == 0:
         
         if section == 'f' and component == 'bpol':  #  r² 𝐫⋅𝐛   (×r² if dipole)  
-            if par.B0 in ['axial', 'G21 dipole', 'FDM'] :
+            if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
                 out = L* r2If
             elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
                 out = L* r4If
         
         elif section == 'g' and component == 'btor':  # r² 𝐫⋅∇×𝐛   (×r³ if dipole)
-            if par.B0 in ['axial', 'G21 dipole', 'FDM'] :
+            if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
                 out = L* r2Ig
             elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
                 out = L* r5Ig
@@ -333,6 +335,8 @@ def induction(l, section, component, offdiag):
     The induction term ∇×(𝐁₀×𝐮)
     '''
     
+    l = np.float128(l)  # to avoid overflow errors at high N
+    
     out = 0
     L = l*(l+1)
     
@@ -343,7 +347,7 @@ def induction(l, section, component, offdiag):
             if offdiag == -1:  # l-1 terms
                 
                 C = np.sqrt(l**2-par.m**2)*(l**2-1)/(2*l-1)
-                if par.B0 in ['axial', 'G21 dipole', 'FDM'] :
+                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
                     out = C*( (l-2)*hIf + l*rh1If - 2*rhD1f )
                 elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
                     out = C*( (l-2)*r2hIf + l*r3h1If - 2*r3hD1f )
@@ -351,14 +355,14 @@ def induction(l, section, component, offdiag):
             elif offdiag == 1:  # l+1 terms
                 
                 C = np.sqrt((l+1)**2-par.m**2)*l*(l+2)/(2*l+3)
-                if par.B0 in ['axial', 'G21 dipole', 'FDM'] :
+                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
                     out = C*( -(l+3)*hIf -(l+1)*rh1If -2*rhD1f )
                 elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
                     out = C*( -(l+3)*r2hIf -(l+1)*r3h1If -2*r3hD1f )
                 
         elif component == 'utor' and offdiag == 0:  # l terms
             
-            if par.B0 in ['axial', 'G21 dipole', 'FDM'] :
+            if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
                 out = -2j*par.m* rhIf
             elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
                 out = -2j*par.m* r3hIf
@@ -366,7 +370,7 @@ def induction(l, section, component, offdiag):
     elif section == 'g':  # --------------------------------------------- 1curl  r² 𝐫⋅∇×( ∇×(𝐁₀×𝐮) )  (×r³ if dipole)
         
         if component == 'upol'and offdiag == 0:  # l terms
-            if par.B0 in ['axial', 'G21 dipole', 'FDM'] : 
+            if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] : 
                 out = 2j*par.m*( hD1g + rh1D1g -(l**2+l+1)*qhIg + h1Ig + (L/2)*rh2Ig + rhD2g )  # qh=h/r
             elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
                 out = 2j*par.m*( r3hD1g + r4h1D1g -(l**2+l+1)*r2hIg + r3h1Ig + (L/2)*r4h2Ig + r4hD2g )
@@ -379,7 +383,7 @@ def induction(l, section, component, offdiag):
                 C1 = np.sqrt( (l**2-1)/(4*l**3-l) )
                 C2 = np.sqrt( l*(l**2-1)/(4*l**2-1) )
                 
-                if par.B0 in ['axial', 'G21 dipole', 'FDM'] : 
+                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] : 
                     out = C*( C2* hIg -2*C1* rhD1g + (C2-2*C1)* rh1Ig )
                 elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
                     out = C*( C2* r3hIg -2*C1* r4hD1g + (C2-2*C1)* r4h1Ig )
@@ -390,7 +394,7 @@ def induction(l, section, component, offdiag):
                 C1 = np.sqrt( l*(l+2)/(3+11*l+12*l**2+4*l**3) )
                 C2 = np.sqrt( L*(l+2)/(3+4*l*(l+2)) )
                 
-                if par.B0 in ['axial', 'G21 dipole', 'FDM'] : 
+                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] : 
                     out = C*( -C2* hIg -2*C1* rhD1g -(2*C1+C2)* rh1Ig )
                 elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
                     out = C*( -C2* r3hIg -2*C1* r4hD1g -(2*C1+C2)* r4h1Ig )
@@ -411,13 +415,13 @@ def magnetic_diffusion(l, section, component, offdiag):
     if offdiag == 0:
         
         if section == 'f' and component == 'bpol':  #  r² 𝐫⋅∇²𝐛   (×r² if dipole)
-            if par.B0 in ['axial', 'G21 dipole', 'FDM'] :
+            if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
                 out = L*( -L*If + 2*r1D1f + r2D2f )
             elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
                 out = L*( -L*r2If + 2*r3D1f + r4D2f )
         
         elif section == 'g' and component == 'btor':  # r² 𝐫⋅∇×(∇²𝐛)  (×r³ if dipole)
-            if par.B0 in ['axial', 'G21 dipole', 'FDM'] :
+            if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
                 out = L*( -L*Ig + 2*r1D1g + r2D2g )
             elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
                 out = L*( -L*r3Ig + 2*r4D1g + r5D2g )

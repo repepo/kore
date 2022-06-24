@@ -61,32 +61,19 @@ def main():
     # split the vectors with l values and distribute to all cpu's (ranks)
     comm.Scatter(alltop, loc_top, root=0)
     comm.Scatter(allbot, loc_bot, root=0)
-    
 
-    '''
     # assign operator names and read corresponding submatrices
     fname = [f for f in glob.glob('*.mtx')]
     
     for label in fname :
         
-        
-        
-        label = label[:-4]  # chop the ".mtx" in the name
+        label = label[:-4]
     
         section = label[0]
+        rx      = label[1]
         dx      = label[-1]
-
-        if len(label) == 3:
-            rx = label[1]
-            if rx == '0' :
-                rlabel = ''
-            else :
-                rlabel = 'r' + rx
-            hlabel = ''
-            
-        if len(label) == 4 :
-            
-            rx = label[2]
+        
+        if len(label) == 3 :
             
             if rx == '0' :
                 rlabel = ''
@@ -99,11 +86,9 @@ def main():
             
             hlabel = ''
                 
-        elif len(label) == 5 :
+        elif len(label) == 4 :
             
-            rx = label[2]
-            
-            hx = label[3]
+            hx = label[2]
             
             if   rx == '0' :
                 rlabel = ''
@@ -128,12 +113,9 @@ def main():
             dlabel = 'D' + dx
 
         varlabel = rlabel + hlabel + dlabel + section
-        
-        if rank==0:
-            print(label, varlabel)
 
         globals()[varlabel] = ss.csr_matrix(sio.mmread(label))
-    '''    
+  
 
     if ut.symmB0 == 1:  # symmetric B0
         loc_mag_f = loc_top
@@ -141,7 +123,7 @@ def main():
     elif ut.symmB0 == -1:  # antisymmetric B0
         loc_mag_f = loc_bot
         loc_mag_g = loc_top
-
+    #print('rank=',rank,loc_mag_f)
 
     if par.forcing == 1: # --------------------------------------------------------------------------------- Yufeng forcing
         '''
@@ -158,7 +140,7 @@ def main():
                 row = np.arange(pos,pos+ut.N1) # start at pos+2 because of the 2 rows with bc's
                 col = np.zeros(ut.N1)
 
-                bdat = op.Ig*ut.chebco(-2, ut.N1, 3e-16, par.ricb, ut.rcmb) * ( -4*np.sqrt(5)*(par.ricb**5)/(1-par.ricb**5) ) * par.forcing_amplitude_cmb
+                bdat = Ib*ut.chebco(-2, ut.N1, 3e-16, par.ricb, ut.rcmb) * ( -4*np.sqrt(5)*(par.ricb**5)/(1-par.ricb**5) ) * par.forcing_amplitude
                 B = ss.csr_matrix( ( bdat, (row,col) ), shape=(ut.sizmat,1) )
                 
                 np.savez('B_forced.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
@@ -416,7 +398,7 @@ def main():
             print(' m=2 radial velocity forcing ')
             print('--------------------------------------------')
             
-            if (par.symm == 1 and par.m==2) and (par.bci==1):
+            if (par.symm == 1 and par.m==2) and (par.bci+par.bco==2):
                 
                 l = 2   #
                 L = l*(l+1)
@@ -425,12 +407,9 @@ def main():
                 row = np.arange(pos,pos+2)
                 col = np.zeros(2)
                 
-                #C_icb = L*par.m*par.forcing_frequency*par.forcing_amplitude_icb/par.ricb  # to be checked
-                #C_cmb = L*par.m*par.forcing_frequency*par.forcing_amplitude_cmb
-                
-                # forcing amplitude is the radial velocity amplitude
-                C_icb = par.forcing_amplitude_icb * par.ricb / L
-                C_cmb = par.forcing_amplitude_cmb * ut.rcmb / L
+                # amplitude is max libration angle
+                C_icb = L*par.m*par.forcing_frequency*par.forcing_amplitude_icb/par.ricb  # to be checked
+                C_cmb = L*par.m*par.forcing_frequency*par.forcing_amplitude_cmb
                 
                 bdat = np.array([C_cmb, C_icb])
                 
@@ -439,7 +418,7 @@ def main():
             
             else:
                 
-                print('This boundary flow forcing needs symm = 1 and m = 2 and bci = 1')        
+                print('This boundary flow forcing needs symm = 1 and m = 2 and bci=bco=1')        
 
     
         
@@ -453,12 +432,20 @@ def main():
             
         if par.hydro == 1:
             
-            # ----------------------------------------------------------------------- B matrix, 2curl (hydro), section u
+            # ---------------------------------------------------------------------- B matrix, 2curl (hydro), section u
             for k,l in enumerate(loc_top):
             
                 row = ( rank*bpp + k )* ut.N1
                 col = row
             
+                #L = l*(l+1)
+            
+                # # Physics ------------------------------------------------
+                # if ((par.magnetic == 1) and (par.B0 == 'dipole')) :
+                    # block = -L*( L*r4Iu - 2*r5D1u - r6D2u )  # r6* r.2curl
+                # else: 
+                    # block = -L*( L*r2Iu - 2*r3D1u - r4D2u )  # r4* r.2curl
+                # # --------------------------------------------------------
                 block = -op.u(l,'u','upol',0)
         
                 # update loc_list
@@ -473,12 +460,20 @@ def main():
                     for q in [0,1,2]:
                         loc_list[q]= np.concatenate((loc_list[q], tmp[q]))
             
-            # ----------------------------------------------------------------------- B matrix, 1curl (hydro), section v
+            # ---------------------------------------------------------------------- B matrix, 1curl (hydro), section v
             for k,l in enumerate(loc_bot):
             
                 row = nb*ut.N1 + ( rank*bpp + k )* ut.N1
                 col = row
     
+                #L = l*(l+1)
+        
+                # # Physics -----------------------------------------
+                # if ((par.magnetic == 1) and (par.B0 == 'dipole')) :
+                #     block = -L*r5Iv  # r5* 2curl
+                # else :
+                #     block = -L*r2Iv  # r2* 1curl
+                # # -------------------------------------------------
                 block = -op.u(l,'v','utor',0)
                 
                 # update loc_list
@@ -493,16 +488,31 @@ def main():
         
         if par.magnetic == 1: # adds -(d/dt)*b in the induction equation to matrix B
             
-            # ---------------------------------------------------------------------- B matrix (induction eq.), section f            
+            # ------------------------------------------------------------------ B matrix (induction eq.), section f            
             for k,l in enumerate(loc_mag_f):  # same as loc_bot if B0 is antisymm
                                             
                 row = par.hydro*(2*nb*ut.N1) + ( rank*bpp + k )* ut.N1
                 col = row
-
+        
+                L = l*(l+1)
+        
+                # # Physics --------------------------------------------------
+                # if par.B0 == 'axial':
+                #     if ((par.ricb > 0) and ('conductor' in par.innercore)) :
+                #         block = -( r3D1f + r2If )  # r3*consoidal
+                #     else:
+                #         block = -L*r2If            # r2* r.nocurl
+                # elif par.B0 == 'dipole':
+                #     if ((par.ricb > 0) and (par.innercore == 'insulator')) :
+                #         block = -L*r4If            # r4* r.nocurl
+                #     else:
+                #         print('Only insulating inner core available!')
+                # # ----------------------------------------------------------
                 if par.ricb == 0 or (par.innercore in ['insulator', 'TWA']) :
                     block = -op.b(l,'f','bpol',0)
                 else :
                     print('These magnetic parameters are not coded yet')
+
 
                 # update loc_list
                 block.eliminate_zeros()
@@ -514,12 +524,20 @@ def main():
                     loc_list[q]= np.concatenate((loc_list[q], tmp[q]))
     
 
-            # --------------------------------------------------------------- B matrix, 1curl (induction eq.), section g
+            # ------------------------------------------------------------------ B matrix, 1curl (induction eq.), section g
             for k,l in enumerate(loc_mag_g):  # same as loc_top if B0 is antisymm
 
                 row = par.hydro*(2*nb*ut.N1) + nb*ut.N1 + ( rank*bpp + k )* ut.N1
                 col = row
 
+                L = l*(l+1)
+
+                # # Physics ------------
+                # if par.B0 == 'axial' :
+                #    block = -L*r2Ig
+                # else :
+                #    block = -L*r5Ig
+                # # --------------------
                 if par.ricb == 0 or (par.innercore in ['insulator', 'TWA']) :
                     block = -op.b(l,'g','btor',0)
                 else :
@@ -537,19 +555,18 @@ def main():
     
         if par.thermal == 1: # adds (d/dt)*theta in the heat equation to matrix B 
             
-            # ------------------------------------------------------------------- B, theta_pol, nocurl (heat), section h
+            # ------------------------------------------------------------------ B, theta_pol, nocurl (heat)
             for k,l in enumerate(loc_top):  # loc_top here because theta
                                             # follows the same symmetry as u
                 row = 2*(par.hydro + par.magnetic)*nb*ut.N1 + ( rank*bpp + k )* ut.N1
                 col = row
                                 
-#                # Physics -------------------------------------------------------------
-#                if (par.heating == 'internal') or (par.heating == 'two zone' or par.heating == 'user defined') :
-#                    block = r2Ih
-#                elif par.heating == 'differential' :
-#                    block = r3Ih
-#                # ---------------------------------------------------------------------
-                block = op.theta(l,'h','', 0)
+                # Physics -------------------------------------------------------------
+                if (par.heating == 'internal') or (par.heating == 'two zone' or par.heating == 'user defined') :
+                    block = r2Ih
+                elif par.heating == 'differential' :
+                    block = r3Ih
+                # ---------------------------------------------------------------------
                 
                 # update loc_list
                 block.eliminate_zeros()
@@ -638,7 +655,7 @@ def main():
             row = ( rank*bpp + k )* ut.N1
             
             # Poloidal velocity terms
-            # ----------------------------------------------------------------- A matrix, u_pol 2curl (hydro), section u
+            # ---------------------------------------------------------------------- A matrix, u_pol 2curl (hydro), section u
             
             col0 = ( rank*bpp + k )* ut.N1
             
@@ -663,7 +680,7 @@ def main():
     
     
             # Toroidal velocity terms
-            # ---------------------------------------------------------------- A matrix, u_tor, 2curl (hydro), section u
+            # ---------------------------------------------------------------------- A matrix, u_tor, 2curl (hydro), section u
             
             # l-1 terms ------------------------------------------------
             #if ((l-1 >= ut.m_top) and (ut.symm1==1)) or (ut.symm1==-1) :
@@ -719,7 +736,7 @@ def main():
                 
                 
                 # Lorentz force, poloidal magnetic field terms (bpol)
-                # ---------------------------------------------------------- A, b_pol, 2curl (hydro, Lorentz), section u
+                # ------------------------------------------------------------------ A, b_pol, 2curl (hydro, Lorentz), section u
                 
                 # l-1 terms ------------------------------------------------
                 #if ((l-1 >= ut.m_top) and (ut.symm1==1)) or (ut.symm1==-1) :
@@ -770,7 +787,7 @@ def main():
                         
     
                 # Lorentz force, toroidal magnetic field terms (btor)
-                # ---------------------------------------------------------- A, b_tor, 2curl (hydro, Lorentz), section u
+                # ------------------------------------------------------------------ A, b_tor, 2curl (hydro, Lorentz), section u
     
                 col3 = 3*nb*ut.N1 + row
             
@@ -794,23 +811,22 @@ def main():
             if par.thermal == 1 : # include the buoyancy force
                 
                 # Buoyancy force, theta terms 
-                # --------------------------------------------------------- A, theta, 2curl (hydro, buoyancy), section u          
+                # ------------------------------------------------------------------ A, theta, 2curl (hydro, buoyancy)          
     
                 col4 = (2+2*par.magnetic)*nb*ut.N1 + row
     
-#                # Physics ---------------------------------------
-#                if (par.magnetic == 1) and (par.B0 == 'dipole') :
-#                    buoy = L * r6Iu
-#                else:
-#                    buoy = L * r4Iu
-#                    
-#                if par.heating == 'two zone' or par.heating == 'user defined' :
-#                    BVsq = 1
-#                else :
-#                    BVsq = par.Brunt**2
-#                tmp = - BVsq * buoy
-#                # -----------------------------------------------
-                tmp = -op.buoyancy(l,'u','',0)
+                # Physics ---------------------------------------
+                if (par.magnetic == 1) and (par.B0 == 'dipole') :
+                    buoy = L * r6Iu
+                else:
+                    buoy = L * r4Iu
+                    
+                if par.heating == 'two zone' or par.heating == 'user defined' :
+                    BVsq = 1
+                else :
+                    BVsq = par.Brunt**2
+                tmp = - BVsq * buoy
+                # -----------------------------------------------
                         
                 # bookkeeping
                 tmp.eliminate_zeros()
@@ -830,7 +846,7 @@ def main():
             row = nb*ut.N1 + (rank*bpp + k )* ut.N1
             
             # Poloidal velocity terms
-            # ---------------------------------------------------------------------_- A, u_pol, 1curl (hydro), section v
+            # ---------------------------------------------------------------------- A, u_pol, 1curl (hydro), section v
             
             # l-1 terms ------------------------------------------------
             #if ((l-1 >= ut.m_bot) and (ut.symm1==-1)) or (ut.symm1==1) :
@@ -875,7 +891,7 @@ def main():
         
         
             # Toroidal velocity terms
-            # ----------------------------------------------------------------------- A, u_tor, 1curl (hydro), section v
+            # ---------------------------------------------------------------------- A, u_tor, 1curl (hydro), section v
     
             col1 = nb*ut.N1 + ( rank*bpp + k )* ut.N1
             
@@ -897,11 +913,8 @@ def main():
             # -----------------------------------------------------------
             # include boundary conditions and update loc_list
             bc_u_list = bc_u_spherical( l, 'section_v' )
-            if (bc_u_list is None):  # no bc neded in the inviscid case
-                pass
-            else:
-                for q in [0,1,2]:   
-                    loc_list[q]= np.concatenate( ( loc_list[q], bc_u_list[q] ) )
+            for q in [0,1,2]:   
+                loc_list[q]= np.concatenate( ( loc_list[q], bc_u_list[q] ) )
             # -----------------------------------------------------------
     
     
@@ -910,7 +923,7 @@ def main():
                 
                 
                 # Poloidal magnetic field terms (Lorentz force) bpol
-                # ---------------------------------------------------------- A, b_pol, 1curl (hydro, Lorentz), section v
+                # ------------------------------------------------------------------ A, b_pol, 1curl (hydro, Lorentz), section v
     
                 col2 = 2*nb*ut.N1 + ( rank*bpp + k )* ut.N1
             
@@ -930,7 +943,7 @@ def main():
     
     
                 # Toroidal magnetic terms (Lorentz force)
-                # ---------------------------------------------------------- A, b_tor, 1curl (hydro, Lorentz), section v
+                # ------------------------------------------------------------------ A, b_tor, 1curl (hydro, Lorentz), section v
             
                 # l-1 terms ------------------------------------------------
                 #if ((l-1 >= ut.m_bot) and (ut.symm1==-1)) or (ut.symm1==1) :
@@ -996,11 +1009,11 @@ def main():
             if par.hydro == 1:
                 
                 # Poloidal velocity terms: curl ( B0 x u )
-                # --------------------------------------------------------- A, u_pol, nocurl (induction term), section f
+                # ------------------------------------------------------------------ A, u_pol, nocurl (induction term), section f
                 
                 # l-1 terms ------------------------------------------------
                 #if ((l-1 >= ut.m_bot) and (ut.symm1==-1)) or (ut.symm1==1) :
-                if l-1 in ll_flo[0] :  # for u_pol, so we use ll_flo[0]
+                if l-1 in ll_flo[0] :  # for u_pol, so we use ll_flo[0]     ###################################################################################
                 
                     if ut.symm1 == -1 :
                         col0a = ( rank*bpp + k - 1 )* ut.N1 # left of diag if antisymm
@@ -1047,7 +1060,7 @@ def main():
                     
             
                 # Toroidal velocity terms
-                # --------------------------------------------------------- A, u_tor, nocurl (induction term), section f
+                # ------------------------------------------------------------------ A, u_tor, nocurl (induction term), section f
                 
                 col1 = nb*ut.N1 + (rank*bpp + k )* ut.N1
                         
@@ -1124,7 +1137,7 @@ def main():
             if par.hydro == 1:
             
                 # Poloidal velociy terms
-                # --------------------------------------------------------------- A, u_pol, 1curl (induction), section g
+                # ------------------------------------------------------------------ A, u_pol, 1curl (induction), section g
                 
                 col0 = ( rank*bpp + k )* ut.N1
                 
@@ -1144,7 +1157,7 @@ def main():
                     
     
                 # Toroidal velocity terms
-                # --------------------------------------------------------------- A, u_tor, 1curl (induction), section g
+                # ------------------------------------------------------------------ A, u_tor, 1curl (induction), section g
                             
                 # l-1 terms ------------------------------------------------
                 #if ((l-1 >= ut.m_top) and (ut.symm1==1)) or (ut.symm1==-1) :
@@ -1195,12 +1208,12 @@ def main():
                 
 
             # Poloidal magnetic terms (diffusion + iwb term)
-            # ------------------------------------------------------------------- A, b_pol, 1curl (induction), section g
+            # ------------------------------------------------------------------ A, b_pol, 1curl (induction), section g
             # nothing
     
             
             # Toroidal magnetic terms (diffusion + iwb term)
-            # ------------------------------------------------------------------- A, b_tor, 1curl (induction), section g
+            # ------------------------------------------------------------------ A, b_tor, 1curl (induction), section g
     
             col3 = nb*ut.N1*(1+2*par.hydro) + ( rank*bpp + k )* ut.N1
             
@@ -1253,23 +1266,24 @@ def main():
         for k,l in enumerate(loc_top): # here use the l's from loc_top 
         
             row = (2+2*par.magnetic)*nb*ut.N1 + (rank*bpp + k )* ut.N1
+            L = l*(l+1)
+            
             
             # Poloidal velocity terms: -u_r * (d/dr)T
-            # -------------------------------------------------------------------- A, u_pol, nocurl (thermal), section h              
+            # ------------------------------------------------------------------ A, u_pol, nocurl (thermal), section h              
 
             col0 = ( rank*bpp + k )* ut.N1
             
-#            # Physics --------------------------
-#            if par.heating == 'internal' :
-#                conv = L*r2Ih
-#                #conv = L*r4Ih
-#            elif par.heating == 'differential' :
-#                conv = - L*Ih * par.ricb/(ut.rcmb-par.ricb)
-#            elif par.heating == 'two zone' or par.heating == 'user defined' :
-#                conv = L * (par.Brunt**2) * NrIh
-#            tmp = - conv 
-#            # ----------------------------------
-            tmp = op.advection(l,'h','upol',0)
+            # Physics --------------------------
+            if par.heating == 'internal' :
+                conv = L*r2Ih
+                #conv = L*r4Ih
+            elif par.heating == 'differential' :
+                conv = - L*Ih * par.ricb/(ut.rcmb-par.ricb)
+            elif par.heating == 'two zone' or par.heating == 'user defined' :
+                conv = L * (par.Brunt**2) * NrIh
+            tmp = - conv 
+            # ----------------------------------
     
             # bookkeeping
             tmp.eliminate_zeros()
@@ -1280,18 +1294,17 @@ def main():
             
                     
             # temperature (theta) terms: (Ek/Pr)*nabla**2(theta)
-            # -------------------------------------------------------------------- A, theta, nocurl (thermal), section h          
+            # ------------------------------------------------------------------ A, theta, nocurl (thermal), section h          
             
             col4 = (2+2*par.magnetic)*nb*ut.N1 + ( rank*bpp + k )* ut.N1
     
-#            # Physics ----------------------------
-#            if (par.heating == 'internal') or (par.heating == 'two zone' or par.heating == 'user defined') :
-#                difus = - L*Ih + 2*r1D1h + r2D2h
-#            elif par.heating == 'differential' :
-#                difus = - L*r1Ih + 2*r2D1h + r3D2h
-#            tmp = (par.Ek/par.Prandtl) * difus
-#            # ------------------------------------
-            tmp = op.thermal_diffusion(l,'h','',0)
+            # Physics ----------------------------
+            if (par.heating == 'internal') or (par.heating == 'two zone' or par.heating == 'user defined') :
+                difus = - L*Ih + 2*r1D1h + r2D2h
+            elif par.heating == 'differential' :
+                difus = - L*r1Ih + 2*r2D1h + r3D2h
+            tmp = (par.Ek/par.Prandtl) * difus
+            # ------------------------------------
     
             # bookkeeping
             tmp.eliminate_zeros()
@@ -1382,18 +1395,10 @@ def main():
 def bc_u_spherical(l,loc):
     '''
     Spherical boundary conditions for the velocity field,
-    either no-penetration (for the inviscid case), stress-free or no-slip.
+    either stress-free or no-slip.
     '''
-    inviscid = (par.Ek == 0) #boolean
-    
-    L = l*(l+1)
-
-    if inviscid:
-        num_rows_u = 1
-        num_rows_v = 0
-    else:
-        num_rows_u = int(2 + 2*np.sign(par.ricb))  # 2 if no IC, 4 if present
-        num_rows_v = int(1 + 1*np.sign(par.ricb))  # 1 if no IC, 2 if present
+    num_rows_u = int(2 + 2*np.sign(par.ricb))  # 2 if no IC, 4 if present
+    num_rows_v = int(1 + 1*np.sign(par.ricb))  # 1 if no IC, 2 if present
     
     ixu = ( par.m + 1 - ut.s )%2  # 
     ixv = ( par.m + ut.s )%2
@@ -1404,76 +1409,51 @@ def bc_u_spherical(l,loc):
         Tbu = bv.Tb[ixu::2,:]
         Tbv = bv.Tb[ixv::2,:]
     
-    if loc == 'section_u':  # 2curl eqs
+    if   loc == 'section_u': # 2curl eqs
     
         out = ss.dok_matrix((num_rows_u, ut.N1),dtype=complex)
         
-        if inviscid:
+        if   par.bco == 0: # stress-free cmb    
+            out[ 0,:] = Tbu[:,0]  # P  =0
+            out[ 1,:] = Tbu[:,2]  # P''=0
+        
+        elif par.bco == 1: # no-slip cmb
+            out[ 0,:] = Tbu[:,0]  # P  =0
+            out[ 1,:] = Tbu[:,1]  # P' =0
+                
+        if par.ricb > 0 :
             
-            out[ 0,:] = Tbu[:,0]  # u_r=0
+            if   par.bci == 0: # stress-free icb
+                out[ 2,:] = bv.Ta[:,0]  # P  =0
+                out[ 3,:] = bv.Ta[:,2]  # P''=0
         
-        else:
-        
-            if par.bco == 0: # stress-free cmb
-                
-                if par.forcing == 9:  # m=2 radial forcing
-                    out[ 0,:] = Tbu[:,0]  # P  = whatever we set on the B matrix
-                    out[ 1,:] = Tbu[:,2] - (2-L)*Tbu[:,0]/ut.rcmb**2  # Nat Schaeffer's bc notes, eq. 49: P''=(2-L)*P/rcmb^2
-                    #out[ 1,:] = Tbu[:,2]  # P''=0
-                else:    
-                    out[ 0,:] = Tbu[:,0]  # P  =0
-                    out[ 1,:] = Tbu[:,2]  # P''=0
-        
-            elif par.bco == 1: # no-slip cmb
-                
-                if par.forcing == 9:  # m=2 radial forcing
-                    out[ 0,:] = Tbu[:,0]             # P  = whatever we set on the B matrix
-                    out[ 1,:] = Tbu[:,1] + Tbu[:,0]  # P' + P/r = 0
-                    #out[ 1,:] = Tbu[:,1]             # P' = 0
-                else:
-                    out[ 0,:] = Tbu[:,0]  # P  =0
-                    out[ 1,:] = Tbu[:,1]  # P' =0
-        
-            if par.ricb > 0:
-        
-                if par.bci == 0: # stress-free icb
-                    out[ 2,:] = bv.Ta[:,0]  # P  =0
-                    out[ 3,:] = bv.Ta[:,2]  # P''=0
-        
-                elif par.bci == 1: # no-slip icb
-                    out[ 2,:] = bv.Ta[:,0]  # P  =0
-                    out[ 3,:] = bv.Ta[:,1]  # P' =0
+            elif par.bci == 1: # no-slip icb
+                out[ 2,:] = bv.Ta[:,0]  # P  =0
+                out[ 3,:] = bv.Ta[:,1]  # P' =0
             
         row0 = int(ut.N1*(l-ut.m_top)/2)
         col0 = int(ut.N1*(l-ut.m_top)/2)
                 
     elif loc == 'section_v': # 1curl eqs
         
-        if inviscid:
+        out = ss.dok_matrix((num_rows_v, ut.N1),dtype=complex)
         
-            return None
-            
-        else:
-            
-            out = ss.dok_matrix((num_rows_v, ut.N1),dtype=complex)
-            
-            if   par.bco == 0: # stress-free cmb
-                out[ 0,:] = Tbv[:,1] - Tbv[:,0]/ut.rcmb  # T'-(T/r)=0   
-                            
-            elif par.bco == 1: # no-slip cmb
-                out[ 0,:] = Tbv[:,0]  # T=0
-            
-            if par.ricb > 0 :
-                
-                if   par.bci == 0: # stress-free icb
-                    out[ 1,:] = bv.Ta[:,1]-bv.Ta[:,0]/par.ricb  # T'-(T/r)=0
+        if   par.bco == 0: # stress-free cmb
+            out[ 0,:] = Tbv[:,1] - Tbv[:,0]/ut.rcmb  # T'-(T/r)=0   
+                        
+        elif par.bco == 1: # no-slip cmb
+            out[ 0,:] = Tbv[:,0]  # T=0
         
-                elif par.bci == 1: # no-slip icb
-                    out[ 1,:] = bv.Ta[:,0]  # T=0
-                
-            row0 = ut.n + int( ut.N1*(l-ut.m_bot)/2 )
-            col0 = ut.n + int( ut.N1*(l-ut.m_bot)/2 )
+        if par.ricb > 0 :
             
+            if   par.bci == 0: # stress-free icb
+                out[ 1,:] = bv.Ta[:,1]-bv.Ta[:,0]/par.ricb  # T'-(T/r)=0
+    
+            elif par.bci == 1: # no-slip icb
+                out[ 1,:] = bv.Ta[:,0]  # T=0
+            
+        row0 = ut.n + int( ut.N1*(l-ut.m_bot)/2 )
+        col0 = ut.n + int( ut.N1*(l-ut.m_bot)/2 )  
 
     out = out.tocoo()   
     out2 = [out.data, out.row + row0, out.col + col0]

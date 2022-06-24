@@ -7,7 +7,10 @@ def Ncheb(Ek):
     Returns the truncation level N for the Chebyshev expansion according to the Ekman number
     Please experiment and adapt to your particular problem. N must be even.
     '''
-    out = int(15*Ek**-0.2)
+    if Ek !=0 :
+        out = int(15*Ek**-0.2)
+    else:
+        out = 48  # 
     
     return max(48, out + out%2)
 
@@ -25,7 +28,7 @@ m = 1
 symm = -1
 
 # Inner core radius, CMB radius is unity. 
-ricb = 0.35
+ricb = 0
 
 # Inner core spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow
@@ -36,7 +39,7 @@ bci = 1
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow
 bco = 1
 
-# Ekman number (use 2* to match Dintrans 1999)
+# Ekman number (use 2* to match Dintrans 1999). Ek can be set to 0 if ricb=0
 # Ek_gap = 1e-7; Ek = Ek_gap*(1-ricb)**2
 Ek = 10**-5
 
@@ -52,13 +55,13 @@ forcing = 0  # For eigenvalue problems
 # forcing = 9  # Radial, symmetric, m=2 boundary flow forcing. 
 
 # Forcing frequency (ignored if forcing = 0)
-freq0 = 1.3095
+freq0 = 2/3
 delta = 0
 forcing_frequency = freq0 + delta  # negative is prograde
 
 # Forcing amplitude. Body forcing amplitude will use the cmb value
 forcing_amplitude_cmb = 1.0
-forcing_amplitude_icb = 1.0
+forcing_amplitude_icb = 0.0
 
 # if solving an eigenvalue problem, compute projection of eigenmode
 # and some hypothetical forcing. Cases as described above (use only 1,3 or 4)
@@ -72,12 +75,14 @@ projection = 1
 magnetic = 0  # Use 0 for pure hydro, 1 for MHD
 
 # Imposed background magnetic field
-# B0 = 'axial'       # Axial, uniform field along the spin axis
-# B0 = 'dipole'      # classic dipole, singular at origin, needs ricb>0
-# B0 = 'G21 dipole'  # Felix's dipole (Gerick GJI 2021)
-B0 = 'FDM'         # Free Decay Mode (Zhang & Fearn 1994,1995; Schmitt 2012)
-beta = 3.0         # guess for FDM's beta
-B0_l = 1           # l number for the FDM mode
+# B0 = 'axial'          # Axial, uniform field along the spin axis
+# B0 = 'dipole'         # classic dipole, singular at origin, needs ricb>0
+# B0 = 'G21 dipole'     # Felix's dipole (Gerick GJI 2021)
+B0 = 'Luo_S1'         # Same as above, actually (Luo & Jackson PRSA 2022) 
+# B0 = 'Luo_S2'         # Not coded yet
+# B0 = 'FDM'            # Free Poloidal Decay Mode (Zhang & Fearn 1994,1995; Schmitt 2012)
+beta = 3.0              # guess for FDM's beta
+B0_l = 1                # l number for the FDM mode
 
 # Magnetic boundary conditions at the ICB:
 innercore = 'insulator'
@@ -108,11 +113,13 @@ Em = 1e-4
 Le2 = Le**2
 
 # Normalizations for B0
+# cnorm = 'rms_cmb'                     # Sets the rms field at the CMB as unity
+cnorm = 'mag_energy'                  # Unit magnetic energy
 # cnorm = 3.86375                       # Schmitt 2012,         ricb = 0.35
 # cnorm = 4.067144                      # Zhang & Fearn 1994,   ricb = 0.35
 # cnorm = 15*np.sqrt(21/(46*np.pi))     # G21 dipole,           ricb = 0
 # cnorm = 1.09436                       # simplest FDM, l=1,    ricb = 0
-cnorm = 3.43802                       # simplest FDM, l=1,    ricb = 0.001
+# cnorm = 3.43802                       # simplest FDM, l=1,    ricb = 0.001
 
 
 

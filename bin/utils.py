@@ -43,7 +43,7 @@ if m_bot == 0: m_bot = 2
 lmax_top = lmax + 1 + (1-2*np.sign(m))*s
 lmax_bot = lmax + 1 + (1-2*np.sign(m))*(1-s)
 
-if par.B0 in ['axial','dipole','G21 dipole']:
+if par.B0 in ['axial','dipole','G21 dipole','Luo_S1']:
     symmB0 = -1
 elif par.B0 == 'FDM':
     symmB0 = int((-1)**par.B0_l)
@@ -218,7 +218,6 @@ def h0(rr, kind, args):
     ricb = args[2]
     rp   = args[3]
     
-    #print('rp=',rp)
     
     r = rr[rr>0]
     
@@ -237,6 +236,16 @@ def h0(rr, kind, args):
         l = 1
         c = (1/6)-(1/10)
         out = (1/6)*r**(1+rp) - (1/10)*r**(3+rp)
+        
+    elif kind == 'Luo_S1':
+        l = 1
+        c = 2
+        out = (5 - 3*r**2)*r**(1+rp)
+        
+    elif kind == 'Luo_S2':
+        l = 2
+        c = 4
+        out = (157-296*r**2+143*r**4)*r**(2+rp)        
 
     elif kind == 'FDM':         # poloidal Free Decay Mode 
         b = findbeta(args)
@@ -250,21 +259,14 @@ def h0(rr, kind, args):
             c = jl(l,b,0)*nl(-1 + l,b,0) - jl(-1 + l,b,0)*nl(l,b,0)
             # Zhang & Fearn, GAFD (1995), page 196, eq. 2.7
             out = ( jl(l,x,0)*nl(-1 + l,b,0) - jl(-1 + l,b,0)*nl(l,x,0) )*r**rp  
-
-    # this sets the rms radial field at the cmb as 1        
-    c0 = np.sqrt(2*l+1)/(l*(l+1))
-    #out = out*(c0/c)
     
     out2 = np.zeros_like(rr)
     out2[rr>0] = out
-    if ricb == 0 :
+    if (ricb == 0) and (np.size(rr[rr>0]) == np.size(rr[rr<0])):
         out2[rr<0] = np.flipud(out)*(-1)**(l+rp)
+
     
-    cnorm = par.cnorm
-    #cnorm = 4.06714  # Zhang1995 normalization, does not match Zhang's results :( 
-    #cnorm = 3.86375  # Schmidt 2012 normalization, matches their results
-    
-    return out2*cnorm
+    return out2
 
 
 
@@ -294,6 +296,16 @@ def h1(rr, kind, args):
         l = 1
         c = (1/6)-(1/10)
         out = (1/6)*r**rp - (3/10)*r**(2+rp)
+        
+    elif kind == 'Luo_S1':
+        l = 1
+        c = 2
+        out = (5 - 9*r**2)*r**rp
+        
+    elif kind == 'Luo_S2':
+        l = 2
+        c = 4
+        out = 2*r**(1 + rp)*(157 - 592*r**2 + 429*r**4)
     
     elif kind == 'FDM':
         b = findbeta(args)
@@ -304,20 +316,14 @@ def h1(rr, kind, args):
         else:
             c = jl(l,b,0)*nl(-1 + l,b,0) - jl(-1 + l,b,0)*nl(l,b,0)
             out = ( b*(jl(l,x,1)*nl(-1 + l,b,0) - jl(-1 + l,b,0)*nl(l,x,1)) )*r**rp
-
-    c0 = np.sqrt(2*l+1)/(l*(l+1))
-    #out = out*(c0/c)
     
     out2 = np.zeros_like(rr)
     out2[rr>0] = out
-    if ricb == 0 :
+    if (ricb == 0) and (np.size(rr[rr>0]) == np.size(rr[rr<0])):
         out2[rr<0] = np.flipud(out)*(-1)**(l-1+rp)
+
     
-    cnorm = par.cnorm
-    #cnorm = 4.06714  # Zhang1995 normalization, does not match :(
-    #cnorm = 3.86375  # Schmidt 2012 normalization
-    
-    return out2*cnorm
+    return out2
     
 
 
@@ -346,6 +352,16 @@ def h2(rr, kind, args):
         l = 1
         c = (1/6)-(1/10)
         out = (6/10)*r**(1+rp)
+        
+    elif kind == 'Luo_S1':
+        l = 1
+        c = 2
+        out = -18*r**(1+rp)
+        
+    elif kind == 'Luo_S2':
+        l = 2
+        c = 4
+        out = 2*r**rp*(157 - 1776*r**2 + 2145*r**4)    
     
     elif kind == 'FDM':
         b = findbeta(args)
@@ -361,19 +377,13 @@ def h2(rr, kind, args):
             out= ((x**2*jl(-1 + l,x,1) + (1 + l)*(jl(l,x,0) - x*jl(l,x,1)))*nl(-1 + l,b,0) \
              - jl(-1 + l,b,0)*(x**2*nl(-1 + l,x,1) + (1 + l)*(nl(l,x,0) - b*r*nl(l,x,1))))*r**(-2+rp)
 
-    c0 = np.sqrt(2*l+1)/(l*(l+1))
-    #out = out*(c0/c)
-
     out2 = np.zeros_like(rr)
     out2[rr>0] = out
-    if ricb == 0 :
+    if (ricb == 0) and (np.size(rr[rr>0]) == np.size(rr[rr<0])):
         out2[rr<0] = np.flipud(out)*(-1)**(l+rp)
     
-    cnorm = par.cnorm
-    #cnorm = 4.06714  # Zhang1995 normalization, does not match :(
-    #cnorm = 3.86375  # Schmidt 2012 normalization
     
-    return out2*cnorm
+    return out2
 
 
 
@@ -402,6 +412,16 @@ def h3(rr, kind, args):
         l = 1
         c = (1/6)-(1/10)
         out = (6/10)*r**rp
+        
+    elif kind == 'Luo_S1':
+        l = 1
+        c = 2
+        out = -18*r**rp
+        
+    elif kind == 'Luo_S2':
+        l = 2
+        c = 4
+        out = 24*r**(1 + rp)*(-296 + 715*r**2) 
     
     elif kind == 'FDM':
         
@@ -453,20 +473,14 @@ def h3(rr, kind, args):
                 out = (-2*b**2*r**2*jl(0,b*r,1)*nl(0,b,0) - 8*jl(1,b*r,0)*nl(0,b,0) + 8*b*r*jl(1,b*r,1)*nl(0,b,0) \
                  - b**3*r**3*jl(1,b*r,1)*nl(0,b,0) + 2*b**2*r**2*jl(0,b,0)*nl(0,b*r,1) + 8*jl(0,b,0)*nl(1,b*r,0) \
                  - 8*b*r*jl(0,b,0)*nl(1,b*r,1) + b**3*r**3*jl(0,b,0)*nl(1,b*r,1))*r**(-3+rp)
-    
-    c0 = np.sqrt(2*l+1)/(l*(l+1))
-    #out = out*(c0/c)
              
     out2 = np.zeros_like(rr)
     out2[rr>0] = out
-    if ricb == 0 :
+    if (ricb == 0) and (np.size(rr[rr>0]) == np.size(rr[rr<0])):
         out2[rr<0] = np.flipud(out)*(-1)**(l-1+rp)
+
     
-    cnorm = par.cnorm
-    #cnorm = 4.06714  # Zhang1995 normalization, does not match :(
-    #cnorm = 3.86375  # Schmidt 2012 normalization
-    
-    return out2*cnorm
+    return out2
 
 
 
@@ -578,6 +592,57 @@ def chebco_h(args, kind, N, rcmb, tol):
     out[0] = out[0] / 2.
     out[np.absolute(out) <= tol] = 0.
     return out 
+
+
+def B0_norm():
+    '''
+    Returns the normalization constant of the applied magnetic field
+    '''
+    
+    ricb = par.ricb    
+    args = [ par.beta, par.B0_l, ricb, 0 ]
+    kind = par.B0
+    
+    if kind in ['axial','dipole','G21 dipole','Luo_S1']:
+        l = 1
+    elif kind == 'Luo_S2':
+        l = 2
+    elif kind == 'FDM':
+        l = par.B0_l
+        
+    L = l*(l+1)
+    
+    if par.cnorm == 'rms_cmb':  # rms of radial magnetic field at the cmb is set to 1
+
+        rk = np.array([1.0])
+        out = np.sqrt(2*l+1) / ( l*(l+1) * h0(rk, kind, args) )
+
+    elif par.cnorm == 'mag_energy':  # total magnetic energy is set to 1
+        
+        N = 240
+        i = np.arange(0,N)
+        xk = np.cos( (i+0.5)*np.pi/N )  # colocation points, from -1 to 1
+        sqx = np.sqrt(1-xk**2)
+        rk = 0.5*(1-ricb)*( xk + 1 ) + ricb
+        r2 = rk**2
+        
+        y0 = h0(rk, kind, args)
+        y1 = h1(rk, kind, args) 
+        
+        f0 = 4*np.pi*L/(2*l+1)
+        f1 = (L+1)*y0**2
+        f2 = 2*rk*y0*y1
+        f3 = r2*y1**2
+        
+        integ = (np.pi/N) * ( (1-ricb)/2 ) * np.sum( sqx*f0*( f1+f2+f3 ) )
+        out = 1/np.sqrt(integ)  
+    
+    else:
+        
+        out = par.cnorm
+    
+
+    return out
 
 
 

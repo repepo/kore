@@ -289,10 +289,7 @@ def main():
             R2 = ut.rcmb - 15*thk
             R3 = ut.rcmb - 30*thk
             
-            if par.Ek != 0:
-                print('Ek = 10**{:<8.4f}'.format(np.log10(par.Ek)))
-            else:
-                print('Ek = 0')
+            print('Ek = 10**{:<8.4f}'.format(np.log10(par.Ek)))
         
             print('Post-processing:')    
             print('--- -------------- -------------- ---------- ---------- ---------- ---------- ----------')
@@ -379,10 +376,7 @@ def main():
                     Dohm_partial[i,2] = 0  #(o3[2] + o3[3])*par.Le2*par.Em
                     
                     Dohm = (ohm[i,2]+ohm[i,3])*par.Le2*par.Em   
-                    if Dint != 0:
-                        o2v[i] = Dohm/Dint
-                    else:
-                        o2v[i] = np.inf
+                    o2v[i] = Dohm/Dint
                     
                     ME = (ohm[i,0]+ohm[i,1]) # Magnetic energy
                     
@@ -425,9 +419,6 @@ def main():
                 if par.forcing == 0:
                     pss = 0
                     pvf = 0
-                elif par.forcing == 1:
-                    pss = 0
-                    pvf = repow
                 elif par.forcing == 7: # Libration as boundary flow forcing 
                     pvf = 0      # power of volume forces (Poincare)
                     pss = repow  # power of stresses
@@ -438,10 +429,7 @@ def main():
                     pvf = 0      # power of volume forces (Poincare)
                     pss = repow  # power of stresses
                 
-                if par.Ek != 0:
-                    resid1[i] = abs( Dint + Dkin - pss ) / max( abs(Dint), abs(Dkin), abs(pss) )
-                else:
-                    resid1[i] = np.nan
+                resid1[i] = abs( Dint + Dkin - pss ) / max( abs(Dint), abs(Dkin), abs(pss) )
                 resid2[i] = abs( 2*sigma*(KE + par.Le2*ME) - Dkin - Dtemp + Dohm - pvf ) / \
                  max( abs(2*sigma*(KE+par.Le2*ME)), abs(Dkin), abs(Dohm), abs(Dtemp), abs(pvf) )
                 
@@ -460,7 +448,7 @@ def main():
                 # ------------------------------------------------------------------------------------------------------
                 
                 print('{:2d}   {: 12.9f}   {: 12.9f}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}'.format(i, sigma,\
-                 w, resid1[i], resid2[i], o2v[i], KT/KP, np.abs(vtorq[i])/np.sqrt(KE) ))
+                 w, resid1[i], resid2[i], Dohm/Dint, KT/KP, np.abs(vtorq[i])/np.sqrt(KE) ))
                 
                 params[i,:] = np.array([par.Ek, par.m, par.symm, par.ricb, par.bci, par.bco, par.projection, par.forcing, \
                  par.forcing_amplitude_cmb, par.forcing_frequency, par.magnetic, par.Em, par.Le2, par.N, par.lmax, toc1-tic, \

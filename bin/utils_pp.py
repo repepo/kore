@@ -624,12 +624,9 @@ def ken_dis( a, b, N, lmax, m, symm, ricb, rcmb, ncpus, w, projection, forcing, 
     Tk0 = np.reshape(Tk0,(int((lmax-m+1)/2),N1))
     
     lltop = np.arange(m_top,lmax_top,2)
-    #print('ltop = ', lltop[:4])
     llbot = np.arange(m_bot,lmax_bot,2)
-    #print('lbot = ', llbot[:4])
     
-    
-    
+
     # process each l component in parallel
     pool = mp.Pool(processes=ncpus)
     

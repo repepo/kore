@@ -6,24 +6,27 @@ import matplotlib.pyplot as plt
 import matplotlib
 import matplotlib.tri as tri
 import numpy.polynomial.chebyshev as ch
+import cmasher as cmr
 
 sys.path.insert(1,'bin/')
 
 import utils as ut
 import parameters as par
 
+rc('text', usetex=True) 
+
+cmap = 'plasma'
+
 '''
 
-Script to plot meridional cuts of the flow's kinetic energy density
+Script to plot uphi as a function of radius at the equator
 Use as:
 
-python3 plot_kinetic_energy.py nsol nR ntheta theta0 theta1
+python3 plot_uphi.py nsol nR ntheta theta0 theta1
 
 nsol   : solution number
 nR     : number of points in radius
-ntheta : number of points in the theta direction
-theta0 : starting colatitude
-theta1 : final colatitude
+
 
 '''
 
@@ -40,12 +43,16 @@ rcmb = 1
 n    = ut.n
 
 nR = int(sys.argv[2]) # number of radial points
-Ntheta = int(sys.argv[3]) # number of points in the theta direction
+Ntheta = 1 # number of points in the theta direction
 
 gap = rcmb-ricb
 r = np.linspace(ricb,rcmb,nR)
-
-x = 2.*(r-ricb)/gap - 1. 
+if ricb == 0:
+    r = r[1:]
+    nR = nR - 1
+    x = r/gap
+else :
+    x = 2.*(r-ricb)/gap - 1. 
 
 chx = ch.chebvander(x,par.N-1) # this matrix has nR rows and N-1 cols
 
@@ -79,21 +86,33 @@ elif m == 0 :
 		lmax_top = lmax+1
 		lmax_bot = lmax+2
 
-if ricb == 0:
-	r = r[1:]
-	nR = nR - 1
-gap = rcmb-ricb
-r = np.linspace(ricb,rcmb,nR)
-x = 2.*(r-ricb)/gap - 1.
+
+
 
 # matrix with Chebishev polynomials at every x point for all degrees:
-chx = ch.chebvander(x,par.N-1) # this matrix has nR rows and N-1 cols
+#chx = ch.chebvander(x,par.N-1) # this matrix has nR rows and N-1 cols
 	
 Plj0 = a[:n] + 1j*b[:n] 		#  N elements on each l block
 Tlj0 = a[n:n+n] + 1j*b[n:n+n] 	#  N elements on each l block
 
-Plj  = np.reshape(Plj0,(int((lmax-m+1)/2),N))
-Tlj  = np.reshape(Tlj0,(int((lmax-m+1)/2),N))
+Plj0  = np.reshape(Plj0,(int((lmax-m+1)/2),ut.N1))
+Tlj0  = np.reshape(Tlj0,(int((lmax-m+1)/2),ut.N1))
+
+Plj = np.zeros((int((lmax-m+1)/2),N),dtype=complex)
+Tlj = np.zeros((int((lmax-m+1)/2),N),dtype=complex)
+
+if ricb == 0 :
+    iP = (m + 1 - ut.s)%2
+    iT = (m + ut.s)%2
+    for k in np.arange(int((lmax-m+1)/2)) :
+        Plj[k,iP::2] = Plj0[k,:]
+        Tlj[k,iT::2] = Tlj0[k,:]
+else :
+    Plj = Plj0
+    Tlj = Tlj0
+
+
+
 dPlj = np.zeros(np.shape(Plj),dtype=complex)
 
 Plr = np.zeros((int((lmax-m+1)/2), nR),dtype=complex)
@@ -121,20 +140,22 @@ Qlr = ss.diags(ll*(ll+1),0) * rP
 Slr = rP + dP
 
 
-
+'''
 theta = np.linspace(float(sys.argv[4])*np.pi/180,float(sys.argv[5])*np.pi/180,Ntheta+2)
 theta = theta[1:-1]
+'''
+theta = np.array([np.pi/2])
 
 s = np.zeros( nR*Ntheta )
 z = np.zeros( nR*Ntheta )
 
-ur2 = np.zeros( (nR)*Ntheta )
-ut2 = np.zeros( (nR)*Ntheta )
-up2 = np.zeros( (nR)*Ntheta )
+#ur2 = np.zeros( (nR)*Ntheta )
+#ut2 = np.zeros( (nR)*Ntheta )
+#up2 = np.zeros( (nR)*Ntheta )
 
-#ur     = np.zeros( (nR)*Ntheta, dtype=complex)
-#utheta = np.zeros( (nR)*Ntheta, dtype=complex)
-#uphi   = np.zeros( (nR)*Ntheta, dtype=complex)
+ur     = np.zeros( (nR)*Ntheta, dtype=complex)
+utheta = np.zeros( (nR)*Ntheta, dtype=complex)
+uphi   = np.zeros( (nR)*Ntheta, dtype=complex)
 
 
 
@@ -171,58 +192,46 @@ for kt in range(Ntheta):
 		s[k]   = r[kr]*np.sin(theta[kt])
 		z[k]   = r[kr]*np.cos(theta[kt])
 		
-		#ur[k] = np.dot( Qlr[:,kr], ylm[idP:plx:2] )
-		ur2[k] = np.absolute(np.dot( Qlr[:,kr], ylm[idP:plx:2] ))**2		
+		ur[k] = np.dot( Qlr[:,kr], ylm[idP:plx:2] )
+		#ur2[k] = absolute(dot( Qlm[:,kr], ylm[idP:plx:2] ))**2		
 
 		tmp1 = np.dot(   -(l1[idP:plx:2]+1) * Slr[:,kr]/np.tan(theta[kt]), ylm[idP:plx:2]     )
 		tmp2 = np.dot( clm[idP+1:plx+1:2,0] * Slr[:,kr]/np.sin(theta[kt]), ylm[idP+1:plx+1:2] )
 		tmp3 = np.dot(                 1j*m * Tlr[:,kr]/np.sin(theta[kt]), ylm[idT:tlx:2]     )
-		#utheta[k] = tmp1+tmp2+tmp3
-		ut2[k] = np.absolute(tmp1+tmp2+tmp3)**2
+		utheta[k] = tmp1+tmp2+tmp3
+		#ut2[k] = absolute(tmp1+tmp2+tmp3)**2
 		
 		tmp1 = np.dot(     (l1[idT:tlx:2]+1) * Tlr[:,kr]/np.tan(theta[kt]), ylm[idT:tlx:2]     )
 		tmp2 = np.dot( -clm[idT+1:tlx+1:2,0] * Tlr[:,kr]/np.sin(theta[kt]), ylm[idT+1:tlx+1:2] )
 		tmp3 = np.dot(                  1j*m * Slr[:,kr]/np.sin(theta[kt]), ylm[idP:plx:2]     )
-		#uphi[k] = tmp1+tmp2+tmp3
-		up2[k] = np.absolute(tmp1+tmp2+tmp3)**2
+		uphi[k] = tmp1+tmp2+tmp3
+		#up2[k] = absolute(tmp1+tmp2+tmp3)**2
 			
 		#uz[k] = ur[k]*cos(theta[kt]) - ut[k]*sin(theta[kt])		
 		k=k+1
 
+ur2 = np.abs(ur)
+k = np.argmax(ur2)
+phase_at_max = np.angle(ur[k])
+ur = ur*np.exp(-1j*phase_at_max)
 
-a = 1.
-c = 1.
-id_in = np.where((s**2/(a**2)) + (z**2/(c**2)) < 1.)
-s1 = s[id_in]
-z1 = z[id_in]
+#ut2 = np.abs(utheta)
+#k = np.argmax(ut2)
+#phase_at_max = np.angle(utheta[k])
+#utheta = utheta*np.exp(-1j*phase_at_max)
 
-triang = tri.Triangulation(s1, z1)
-# Mask off unwanted triangles (inner core)
-xmid = s1[triang.triangles].mean(axis=1)
-x2 = xmid*xmid
-ymid = z1[triang.triangles].mean(axis=1)
-y2 = ymid*ymid
-mask = np.where( (x2 + y2 <= ricb**2), 1, 0)
-triang.set_mask(mask)
+up2 = np.abs(uphi)
+k = np.argmax(up2)
+phase_at_max = np.angle(uphi[k])
+uphi = uphi*np.exp(-1j*phase_at_max)
 
 
-#matplotlib.rcParams['text.usetex'] = True
-#matplotlib.rcParams['image.cmap'] = 'rainbow'
-#matplotlib.rcParams['image.cmap'] = 'inferno'
-matplotlib.rcParams['image.cmap'] = 'magma'
-#matplotlib.rcParams['image.cmap'] = 'gist_heat'
 
-fig=plt.figure(figsize=(6,8))
-# ------------------------------------------------------------------- ur
-ax1=fig.add_subplot(111)
-ax1.set_title(r'Kinetic energy density',size=16)
-#im1=ax1.tricontourf( triang, np.log10(ur2[id_in]+ut2[id_in]+up2[id_in]) , 70)
-im1=ax1.tricontourf( triang, ur2[id_in]+ut2[id_in]+up2[id_in] , 70)
-for c in im1.collections:
-              c.set_edgecolor('face')   
-ax1.set_aspect('equal')
-plt.colorbar(im1)
 
-# ----------------------------------------------------------------------
-plt.tight_layout()
+plt.figure()
+plt.plot(r,np.real(ur),label=r'$u_r$')
+#plt.plot(r,np.real(utheta),label=r'$u_\theta$')
+plt.plot(r,np.real(uphi),label=r'$u_\phi$')
+plt.legend()
 plt.show()
+
