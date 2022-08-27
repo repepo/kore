@@ -100,7 +100,7 @@ c_cmb  = 0  # Ratio (h*mu_wall)/(rcmb*mu_fluid)  (if mantle='TWA')
 c1_cmb = 0.001  # Thin wall to fluid conductance ratio (if mantle='TWA')
 
 # Relative permeability (fluid/vacuum)
-mu = 1 
+mu = 1.0 
 
 # Magnetic field strength and magnetic diffusivity:
 # Either use the Elsasser number and the magnetic Prandtl number (uncomment and set the following three lines):

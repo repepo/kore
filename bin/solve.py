@@ -265,14 +265,15 @@ def main():
             
             toc1 = timer()
             
-            kid = np.zeros((success,7))
+            kid          = np.zeros((success,7))
             Dint_partial = np.zeros((success,3))
-            p2t = np.zeros(success)
-            resid1 = np.zeros(success)
-            resid2 = np.zeros(success)
-            y = np.zeros(success)
-            vtorq = np.zeros(success,dtype=complex)
-            vtorq_icb = np.zeros(success,dtype=complex)
+            p2t          = np.zeros(success)
+            resid1       = np.zeros(success)
+            resid2       = np.zeros(success)
+            y            = np.zeros(success)
+            vtorq        = np.zeros(success,dtype=complex)
+            vtorq_icb    = np.zeros(success,dtype=complex)
+            mtorq        = np.zeros(success,dtype=complex)
             
             if par.magnetic == 1:
                 ohm = np.zeros((success,4))         
@@ -282,7 +283,7 @@ def main():
             if par.thermal == 1:
                 therm = np.zeros((success,1))   
                 
-            params = np.zeros((success,24))
+            params = np.zeros((success,29))
             
             thk = np.sqrt(par.Ek)
             R1 = par.ricb + 15*thk
@@ -295,9 +296,9 @@ def main():
                 print('Ek = 0')
         
             print('Post-processing:')    
-            print('--- -------------- -------------- ---------- ---------- ---------- ---------- ----------')
-            print('Sol    Damping        Frequency     Resid1     Resid2    ohm2visc    tor2pol   |trq|/A ')
-            print('--- -------------- -------------- ---------- ---------- ---------- ---------- ----------')
+            print('--- -------------- -------------- ---------- ---------- ---------- ---------- ---------- ----------')
+            print('Sol    Damping        Frequency     Resid1     Resid2    ohm2visc    tor2pol   |trq|/A     magtrq  ')
+            print('--- -------------- -------------- ---------- ---------- ---------- ---------- ---------- ----------')
             
             if par.track_target == 1:  # eigenvalue tracking enabled
                 #read target data
@@ -386,6 +387,9 @@ def main():
                     
                     ME = (ohm[i,0]+ohm[i,1]) # Magnetic energy
                     
+                    if par.mantle='TWA':
+                        mtorq[i] = np.dot( ut.gamma_magnetic(), rmag+1j*imag ) 
+                    
                     if par.track_target == 1:
                         y3 = abs( (x[3]-o2v[i])/o2v[i] )
                         y[i] += y3  #include ohmic to viscous dissipation ratio in the tracking
@@ -459,14 +463,24 @@ def main():
                 
                 # ------------------------------------------------------------------------------------------------------
                 
-                print('{:2d}   {: 12.9f}   {: 12.9f}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}'.format(i, sigma,\
-                 w, resid1[i], resid2[i], o2v[i], KT/KP, np.abs(vtorq[i])/np.sqrt(KE) ))
+                print('{:2d}   {: 12.9f}   {: 12.9f}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}'.format(i, sigma,\
+                 w, resid1[i], resid2[i], o2v[i], KT/KP, np.abs(vtorq[i])/np.sqrt(KE), 2*np.real(mtorq[i]) ))
                 
+                #params[i,:] = np.array([par.Ek, par.m, par.symm, par.ricb, par.bci, par.bco, par.projection, par.forcing, \
+                # par.forcing_amplitude_cmb, par.forcing_frequency, par.magnetic, par.Em, par.Le2, par.N, par.lmax, toc1-tic, \
+                # par.ncpus, par.tol, par.thermal, par.Prandtl, par.Brunt, par.forcing_amplitude_icb, par.rc, par.h ])
+                 
+                if par.mantle == 'insulator':
+                    mantle_mag_bc = 0
+                elif par.mantle == 'TWA':
+                    mantle_mag_bc = 1
+                 
                 params[i,:] = np.array([par.Ek, par.m, par.symm, par.ricb, par.bci, par.bco, par.projection, par.forcing, \
                  par.forcing_amplitude_cmb, par.forcing_frequency, par.magnetic, par.Em, par.Le2, par.N, par.lmax, toc1-tic, \
-                 par.ncpus, par.tol, par.thermal, par.Prandtl, par.Brunt, par.forcing_amplitude_icb, par.rc, par.h ])
+                 par.ncpus, par.tol, par.thermal, par.Prandtl, par.Brunt, par.forcing_amplitude_icb, par.rc, par.h, \
+                 mantle_mag_bc, par.c_cmb, par.c1_cmb, par.mu, ut.par.B0_norm ])
                 
-            print('--- -------------- -------------- ---------- ---------- ---------- ---------- ----------')
+            print('--- -------------- -------------- ---------- ---------- ---------- ---------- ---------- ----------')
             
             # find closest eigenvalue to tracking target and write to target file
             if (par.track_target == 1)&(par.forcing == 0):
@@ -501,14 +515,17 @@ def main():
             with open('params.dat','ab') as dpar:
                 np.savetxt(dpar, params, \
                 #fmt=['%.9e','%d','%d','%.9e','%d','%d','%d','%d','%.9e','%.9e','%d','%.9e','%.9e','%d','%d','%.2f', '%d', '%.2e'])  
-                fmt=['%.9e','%d','%d','%.9e','%d','%d','%d','%d','%.9e','%.9e','%d','%.9e','%.9e','%d','%d','%.2f', '%d', '%.2e', '%d', '%.9e', '%.9e', '%.9e', '%.9e','%.9e'])
+                #fmt=['%.9e','%d','%d','%.9e','%d','%d','%d','%d','%.9e','%.9e','%d','%.9e','%.9e','%d','%d','%.2f', '%d', '%.2e',\
+                # '%d', '%.9e', '%.9e', '%.9e', '%.9e','%.9e'])
+                fmt=['%.9e','%d','%d','%.9e','%d','%d','%d','%d','%.9e','%.9e','%d','%.9e','%.9e','%d','%d','%.2f', '%d', '%.2e',\
+                 '%d', '%.9e', '%.9e', '%.9e', '%.9e','%.9e','%d','%.9e','%.9e','%.9e','%.9e'])
             
             with open('flow.dat','ab') as dflo:
                 np.savetxt(dflo, np.c_[kid, Dint_partial, np.real(vtorq), np.imag(vtorq), np.real(vtorq_icb), np.imag(vtorq_icb)])
             
             if par.magnetic == 1:
                 with open('magnetic.dat','ab') as dmag:
-                    np.savetxt(dmag, np.c_[ohm, Dohm_partial])
+                    np.savetxt(dmag, np.c_[ohm, Dohm_partial, np.real(mtorq), np.imag(mtorq)])
                     
             if par.thermal ==1:
                 with open('thermal.dat','ab') as dtmp:

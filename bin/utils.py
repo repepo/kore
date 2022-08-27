@@ -1164,5 +1164,36 @@ def gamma_visc_icb(ricb):
     return out
     
     
+def gamma_magnetic():
+    '''
+    Axial magnetic torque on the mantle (spherical) when there is a thin conductive layer at bottom. Needs m=0 and symm=1. 
+    '''
     
+    if (par.magnetic==1 and par.m == 0 and par.symm==1 and par.mantle='TWA'):
+        
+        out = np.zeros((1,n0+n0),dtype=complex)
+        G = Tk( 1, par.N-1, 0)
+        R = 1
+        h_cmb = B0_norm() * h0(R, par.B0, [par.beta, par.B0_l, par.ricb, 0])
+        
+        if par.B0_l == 1:  # Either uniform axial or dipole background field, induced magnetic field b is thus antisymmetric
+            
+            # the torque is prop. to the l=2 toroidal component of b
+            out[0,n0:n0+par.N] = (16*np.pi/5) * G * h_cmb
+            
+        elif par.B0_l == 2:  # Quadrupole background field, induced magnetic field b is thus symmetric
+            
+            # torque prop. to l=1 and l=3 toroidal component of b 
+            out[0,n0:n0+par.N]          = -(16*np.pi/5)     * G  # l=1
+            out[0,n0+par.N: n0+2*par.N] =  (16*18*np.pi/35) * G  # l=3
+    
+    else:
+    
+        out = 0
+    
+    # Take the product between the output of this function and the solution for b to obtain the dimensionless torque
+    # Then multiply by Elsasser*R_cmb^3*rho*eta to make the torque dimensional
+    # (rho is the density and eta is the magnetic diffusivity, both of the fluid core).
+    
+    return out    
 
