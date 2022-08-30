@@ -364,9 +364,9 @@ def main():
                 row = np.arange(pos,pos+2)
                 col = np.zeros(2)
                 
-                # amplitude is libration amplitude in radians
-                C_icb = 1j*par.forcing_frequency*(par.forcing_amplitude_icb/2)*par.ricb
-                C_cmb = 1j*par.forcing_frequency*(par.forcing_amplitude_cmb/2)  # rcmb is 1
+                # forcing amplitude is (1/2) of libration amplitude in radians
+                C_icb = 1j*par.forcing_frequency*(par.forcing_amplitude_icb)*par.ricb
+                C_cmb = 1j*par.forcing_frequency*(par.forcing_amplitude_cmb)  # rcmb is 1
                 
                 bdat = np.array([C_cmb, C_icb])
                 
