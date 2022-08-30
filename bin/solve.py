@@ -297,7 +297,7 @@ def main():
         
             print('Post-processing:')    
             print('--- -------------- -------------- ---------- ---------- ---------- ---------- ---------- ----------')
-            print('Sol    Damping        Frequency     Resid1     Resid2    ohm2visc    tor2pol   |trq|/A     magtrq  ')
+            print('Sol    Damping        Frequency     Resid1     Resid2    ohm2visc    tor2pol   visc trq   mag trq  ')
             print('--- -------------- -------------- ---------- ---------- ---------- ---------- ---------- ----------')
             
             if par.track_target == 1:  # eigenvalue tracking enabled
@@ -351,8 +351,8 @@ def main():
                 
                 expsol = upp.expand_sol(rflow+1j*iflow)
                 
-                vtorq[i] = np.dot(par.Ek*ut.gamma_visc(0,0,0),expsol)
-                vtorq_icb[i] = np.dot(par.Ek*ut.gamma_visc_icb(par.ricb),expsol)
+                vtorq[i] = par.Ek * np.dot( ut.gamma_visc(0,0,0), expsol)
+                vtorq_icb[i] = par.Ek * np.dot( ut.gamma_visc_icb(par.ricb), expsol)
                 
                 if par.track_target == 1:   
                     # compute distance (mismatch) to tracking target
@@ -387,8 +387,8 @@ def main():
                     
                     ME = (ohm[i,0]+ohm[i,1]) # Magnetic energy
                     
-                    if par.mantle='TWA':
-                        mtorq[i] = np.dot( ut.gamma_magnetic(), rmag+1j*imag ) 
+                    if par.mantle == 'TWA':
+                        mtorq[i] = par.Le2 * np.dot( ut.gamma_magnetic(), upp.expand_sol(rmag+1j*imag) ) 
                     
                     if par.track_target == 1:
                         y3 = abs( (x[3]-o2v[i])/o2v[i] )
@@ -463,8 +463,10 @@ def main():
                 
                 # ------------------------------------------------------------------------------------------------------
                 
+                #print('{:2d}   {: 12.9f}   {: 12.9f}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}'.format(i, sigma,\
+                # w, resid1[i], resid2[i], o2v[i], KT/KP, np.abs(vtorq[i])/np.sqrt(KE), 2*np.real(mtorq[i]) ))
                 print('{:2d}   {: 12.9f}   {: 12.9f}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}'.format(i, sigma,\
-                 w, resid1[i], resid2[i], o2v[i], KT/KP, np.abs(vtorq[i])/np.sqrt(KE), 2*np.real(mtorq[i]) ))
+                 w, resid1[i], resid2[i], o2v[i], KT/KP, np.abs(2*np.real(vtorq[i])), np.abs(2*np.real(mtorq[i])) ))
                 
                 #params[i,:] = np.array([par.Ek, par.m, par.symm, par.ricb, par.bci, par.bco, par.projection, par.forcing, \
                 # par.forcing_amplitude_cmb, par.forcing_frequency, par.magnetic, par.Em, par.Le2, par.N, par.lmax, toc1-tic, \
@@ -478,7 +480,7 @@ def main():
                 params[i,:] = np.array([par.Ek, par.m, par.symm, par.ricb, par.bci, par.bco, par.projection, par.forcing, \
                  par.forcing_amplitude_cmb, par.forcing_frequency, par.magnetic, par.Em, par.Le2, par.N, par.lmax, toc1-tic, \
                  par.ncpus, par.tol, par.thermal, par.Prandtl, par.Brunt, par.forcing_amplitude_icb, par.rc, par.h, \
-                 mantle_mag_bc, par.c_cmb, par.c1_cmb, par.mu, ut.par.B0_norm ])
+                 mantle_mag_bc, par.c_cmb, par.c1_cmb, par.mu, ut.B0_norm() ])
                 
             print('--- -------------- -------------- ---------- ---------- ---------- ---------- ---------- ----------')
             

@@ -1169,11 +1169,11 @@ def gamma_magnetic():
     Axial magnetic torque on the mantle (spherical) when there is a thin conductive layer at bottom. Needs m=0 and symm=1. 
     '''
     
-    if (par.magnetic==1 and par.m == 0 and par.symm==1 and par.mantle='TWA'):
+    if (par.magnetic==1 and par.m == 0 and par.symm==1 and par.mantle=='TWA'):
         
         out = np.zeros((1,n0+n0),dtype=complex)
-        G = Tk( 1, par.N-1, 0)
-        R = 1
+        G = Tk( 1, par.N-1, 0)[:,0]
+        R = np.array([1.0])
         h_cmb = B0_norm() * h0(R, par.B0, [par.beta, par.B0_l, par.ricb, 0])
         
         if par.B0_l == 1:  # Either uniform axial or dipole background field, induced magnetic field b is thus antisymmetric

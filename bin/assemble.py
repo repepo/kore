@@ -143,7 +143,7 @@ def main():
         loc_mag_g = loc_top
 
 
-    if par.forcing == 1: # --------------------------------------------------------------------------------- Yufeng forcing
+    if par.forcing == 1: # --------------------------------------------------------------------------------- Yufeng's forcing
         '''
         Builds the right hand side vector for the forced problem
         Lin 2018 body forcing
@@ -364,9 +364,9 @@ def main():
                 row = np.arange(pos,pos+2)
                 col = np.zeros(2)
                 
-                # amplitude is max libration angle
-                C_icb = 1j*par.forcing_frequency*par.forcing_amplitude_icb*par.ricb
-                C_cmb = 1j*par.forcing_frequency*par.forcing_amplitude_cmb  # rcmb is 1
+                # amplitude is libration amplitude in radians
+                C_icb = 1j*par.forcing_frequency*(par.forcing_amplitude_icb/2)*par.ricb
+                C_cmb = 1j*par.forcing_frequency*(par.forcing_amplitude_cmb/2)  # rcmb is 1
                 
                 bdat = np.array([C_cmb, C_icb])
                 
