@@ -61,80 +61,7 @@ def main():
     # split the vectors with l values and distribute to all cpu's (ranks)
     comm.Scatter(alltop, loc_top, root=0)
     comm.Scatter(allbot, loc_bot, root=0)
-    
-
-    '''
-    # assign operator names and read corresponding submatrices
-    fname = [f for f in glob.glob('*.mtx')]
-    
-    for label in fname :
-        
-        
-        
-        label = label[:-4]  # chop the ".mtx" in the name
-    
-        section = label[0]
-        dx      = label[-1]
-
-        if len(label) == 3:
-            rx = label[1]
-            if rx == '0' :
-                rlabel = ''
-            else :
-                rlabel = 'r' + rx
-            hlabel = ''
-            
-        if len(label) == 4 :
-            
-            rx = label[2]
-            
-            if rx == '0' :
-                rlabel = ''
-            
-            elif rx == '7' :
-                rlabel = 'Nr'
-            
-            else :
-                rlabel = 'r' + rx
-            
-            hlabel = ''
-                
-        elif len(label) == 5 :
-            
-            rx = label[2]
-            
-            hx = label[3]
-            
-            if   rx == '0' :
-                rlabel = ''
-            
-            elif rx == '1' :
-                rlabel = 'r'
-            
-            elif rx == '6' :
-                rlabel = 'q'
-            
-            else :
-                rlabel = 'r' + rx
-            
-            if hx == '0' :
-                hlabel = 'h'
-            else :
-                hlabel = 'h' + hx
-                
-        if dx == '0' :
-            dlabel = 'I'
-        else :
-            dlabel = 'D' + dx
-
-        varlabel = rlabel + hlabel + dlabel + section
-        
-        if rank==0:
-            print(label, varlabel)
-
-        globals()[varlabel] = ss.csr_matrix(sio.mmread(label))
-    '''    
-
+ 
     if ut.symmB0 == 1:  # symmetric B0
         loc_mag_f = loc_top
         loc_mag_g = loc_bot
@@ -365,8 +292,8 @@ def main():
                 col = np.zeros(2)
                 
                 # forcing amplitude is (1/2) of libration amplitude in radians
-                C_icb = 1j*par.forcing_frequency*(par.forcing_amplitude_icb)*par.ricb
-                C_cmb = 1j*par.forcing_frequency*(par.forcing_amplitude_cmb)  # rcmb is 1
+                C_icb = 1j* par.forcing_frequency * par.forcing_amplitude_icb * par.ricb
+                C_cmb = 1j* par.forcing_frequency * par.forcing_amplitude_cmb  # rcmb is 1
                 
                 bdat = np.array([C_cmb, C_icb])
                 

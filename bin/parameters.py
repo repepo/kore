@@ -28,7 +28,7 @@ m = 1
 symm = -1
 
 # Inner core radius, CMB radius is unity. 
-ricb = 0
+ricb = 0.35
 
 # Inner core spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow
@@ -41,7 +41,7 @@ bco = 1
 
 # Ekman number (use 2* to match Dintrans 1999). Ek can be set to 0 if ricb=0
 # Ek_gap = 1e-7; Ek = Ek_gap*(1-ricb)**2
-Ek = 10**-5
+Ek = 10**-4
 
 forcing = 0  # For eigenvalue problems
 # forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
@@ -52,11 +52,11 @@ forcing = 0  # For eigenvalue problems
 # forcing = 6  # Buffett2010 ICB radial velocity boundary forcing, m=1,antisymm
 # forcing = 7  # Longitudinal libration boundary forcing, m=0, symm, no-slip
 # forcing = 8  # Longitudinal libration as a Poincaré force (body force) in the mantle frame, m=0, symm, no-slip
-# forcing = 9  # Radial, symmetric, m=2 boundary flow forcing. 
+# forcing = 9  # Radial, symmetric, m=2 boundary flow forcing. If 
 
 # Forcing frequency (ignored if forcing = 0)
-freq0 = 2/3
-delta = 0
+freq0 = 0.67
+delta = 0  # Auxiliary variable, useful for ramps 
 forcing_frequency = freq0 + delta  # negative is prograde
 
 # Forcing amplitude. Body forcing amplitude will use the cmb value
@@ -75,10 +75,10 @@ projection = 1
 magnetic = 0  # Use 0 for pure hydro, 1 for MHD
 
 # Imposed background magnetic field
-# B0 = 'axial'          # Axial, uniform field along the spin axis
+B0 = 'axial'          # Axial, uniform field along the spin axis
 # B0 = 'dipole'         # classic dipole, singular at origin, needs ricb>0
 # B0 = 'G21 dipole'     # Felix's dipole (Gerick GJI 2021)
-B0 = 'Luo_S1'         # Same as above, actually (Luo & Jackson PRSA 2022) 
+# B0 = 'Luo_S1'         # Same as above, actually (Luo & Jackson PRSA 2022) 
 # B0 = 'Luo_S2'         # Not coded yet
 # B0 = 'FDM'            # Free Poloidal Decay Mode (Zhang & Fearn 1994,1995; Schmitt 2012)
 beta = 3.0              # guess for FDM's beta
@@ -87,8 +87,8 @@ B0_l = 1                # l number for the FDM mode
 # Magnetic boundary conditions at the ICB:
 innercore = 'insulator'
 # innercore = 'TWA'  # Thin conductive wall layer (Roberts, Glatzmaier & Clune, 2010)
-# c_icb     = 0  #Ratio (h*mu_wall)/(ricb*mu_fluid) (if innercore='TWA')
-# c1_icb    = 1  # Thin wall to fluid conductance ratio (if innercore='TWA')
+c_icb     = 1e-4  # Ratio (h*mu_wall)/(ricb*mu_fluid) (if innercore='TWA')
+c1_icb    = 1e-4  # Thin wall to fluid conductance ratio (if innercore='TWA')
 # innercore = 'perfect conductor, material'  # tangential *material* electric field jump [nxE']=0 across the ICB
 # innercore = 'perfect conductor, spatial'   # tangential *spatial* electric field jump [nxE]=0 across the ICB
 # Note: 'perfect conductor, material' or 'perfect conductor, spatial' are identical if ICB is no-slip (bci = 1 above)
@@ -96,25 +96,25 @@ innercore = 'insulator'
 # Magnetic boundary conditions at the CMB
 mantle   = 'insulator'
 # mantle = 'TWA'  # Thin conductive wall layer (Roberts, Glatzmaier & Clune, 2010)
-c_cmb  = 0  # Ratio (h*mu_wall)/(rcmb*mu_fluid)  (if mantle='TWA')
-c1_cmb = 0.001  # Thin wall to fluid conductance ratio (if mantle='TWA')
+c_cmb  = 1e-4  # Ratio (h*mu_wall)/(rcmb*mu_fluid)  (if mantle='TWA')
+c1_cmb = 1e-4  # Thin wall to fluid conductance ratio (if mantle='TWA')
 
 # Relative permeability (fluid/vacuum)
 mu = 1.0 
 
 # Magnetic field strength and magnetic diffusivity:
-# Either use the Elsasser number and the magnetic Prandtl number (uncomment and set the following three lines):
-# Lambda = 0.1
-# Pm = 1
-# Em = Ek/Pm; Le2 = Lambda*Em; Le = np.sqrt(Le2)
-# Or use the Lehnert number and the magnetic Ekman number (uncomment and set the following three lines):
-Le = 10**-2
-Em = 1e-4
-Le2 = Le**2
+# Either use the Elsasser number and the magnetic Prandtl number (i.e. Lambda and Pm: uncomment and set the following three lines):
+Lambda = 0.1
+Pm = 0.001
+Em = Ek/Pm; Le2 = Lambda*Em; Le = np.sqrt(Le2)
+# Or use the Lehnert number and the magnetic Ekman number (i.e. Le and Em: uncomment and set the following three lines):
+# Le = 10**-2
+# Em = 1e-4
+# Le2 = Le**2
 
-# Normalizations for B0
-# cnorm = 'rms_cmb'                     # Sets the rms field at the CMB as unity
-cnorm = 'mag_energy'                  # Unit magnetic energy
+# Normalization of the background magnetic field
+cnorm = 'rms_cmb'                     # Sets the radial rms field at the CMB as unity
+# cnorm = 'mag_energy'                  # Unit magnetic energy
 # cnorm = 3.86375                       # Schmitt 2012,         ricb = 0.35
 # cnorm = 4.067144                      # Zhang & Fearn 1994,   ricb = 0.35
 # cnorm = 15*np.sqrt(21/(46*np.pi))     # G21 dipole,           ricb = 0
@@ -133,8 +133,8 @@ Prandtl = 1.0
 
 # Background isentropic temperature gradient choices, uncomment the appropriate line below:
 # heating = 'internal'      # dT/dr = beta * (r/rcmb),     temp scale = rcmb*beta, Dintrans1999
-heating = 'differential'  # dT/dr = beta * (r/rcmb)**-2, temp scale = Delta T,   Dormy2004, set Ra below
-# heating = 'two zone'      # temp scale = Omega^2*rcmb/(alpha*g_0), Vidal2015, use extra args below
+# heating = 'differential'  # dT/dr = beta * (r/rcmb)**-2, temp scale = Delta T,   Dormy2004, set Ra below
+heating = 'two zone'      # temp scale = Omega^2*rcmb/(alpha*g_0), Vidal2015, use extra args below
 # heating = 'user defined'  # Uses the function BVprof in utils.py , use extra args below if needed 
 
 # Ratio of Brunt-Vaisala freq. to rotation. If differential heating then set the Rayleigh number, otherwise just Brunt.

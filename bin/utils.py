@@ -616,6 +616,7 @@ def B0_norm():
 
         rk = np.array([1.0])
         out = np.sqrt(2*l+1) / ( l*(l+1) * h0(rk, kind, args) )
+        out = out[0]
 
     elif par.cnorm == 'mag_energy':  # total magnetic energy is set to 1
         
@@ -641,7 +642,6 @@ def B0_norm():
         
         out = par.cnorm
     
-
     return out
 
 

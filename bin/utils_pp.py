@@ -13,7 +13,9 @@ mp.set_start_method('fork')
 
 
 def expand_sol(sol):
-    
+    '''
+    Expans the ricb=0 solution with ut.N1 coeffs to have full N coeffs, filling with zeros accordingly 
+    '''
     if par.ricb == 0 :
     
         N  = par.N
