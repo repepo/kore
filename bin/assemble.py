@@ -1458,15 +1458,28 @@ def bc_b_thinlayer(l, loc, mu_vf, c, c1, boundary):
     
     out = ss.dok_matrix((1, ut.N1),dtype=complex)
     
+    if par.ricb == 0:
+        if ut.symmB0 == -1:  # antisymmetric B0
+            ixf = ( par.m + ut.s )%2
+            ixg = ( par.m + 1 - ut.s )%2
+        elif ut.symmB0 == 1:  # symmetric B0
+            ixf = ( par.m + 1 - ut.s )%2
+            ixg = ( par.m + ut.s )%2
+        Tbf = bv.Tb[ixf::2,:]
+        Tbg = bv.Tb[ixg::2,:]
+    else:
+        Tbf = bv.Tb
+        Tbg = bv.Tb
+    
     if   boundary == 'cmb':
-        
+                
         epsj = 1
         rj   = ut.rcmb
-        f    = bv.P0_cmb
-        f1   = bv.P1_cmb
-        f2   = bv.P2_cmb
-        g    = bv.T0_cmb
-        g1   = bv.T1_cmb
+        f    = Tbf[:,0]  #bv.P0_cmb
+        f1   = Tbf[:,1]  #bv.P1_cmb
+        f2   = Tbf[:,2]  #bv.P2_cmb
+        g    = Tbg[:,0]  #bv.T0_cmb
+        g1   = Tbg[:,1]  #bv.T1_cmb
         
         if 'perfect conductor' in par.innercore :
             delta_row = 2  # first two rows needed for the icb bc
