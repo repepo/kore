@@ -274,11 +274,11 @@ def main():
             vtorq        = np.zeros(success,dtype=complex)
             vtorq_icb    = np.zeros(success,dtype=complex)
             mtorq        = np.zeros(success,dtype=complex)
+            o2v          = np.zeros(success)
             
             if par.magnetic == 1:
                 ohm = np.zeros((success,4))         
                 Dohm_partial = np.zeros((success,3))
-                o2v = np.zeros(success)
                 
             if par.thermal == 1:
                 therm = np.zeros((success,1))   
