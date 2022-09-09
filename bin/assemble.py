@@ -1453,7 +1453,6 @@ def bc_b_thinlayer(l, loc, mu_vf, c, c1, boundary):
     '''
     Thin wall approximation boundary condition, following Roberts, Glatzmaier & Clune, GAFD 2010
     Assumes a thin electrically conducting layer at the top of the IC or at the bottom of the mantle.
-    Needs ricb>0 (to do: if ricb=0 the rows need to be adjusted, coming soon). 
     '''
     
     out = ss.dok_matrix((1, ut.N1),dtype=complex)
@@ -1481,10 +1480,13 @@ def bc_b_thinlayer(l, loc, mu_vf, c, c1, boundary):
         g    = Tbg[:,0]  #bv.T0_cmb
         g1   = Tbg[:,1]  #bv.T1_cmb
         
-        if 'perfect conductor' in par.innercore :
-            delta_row = 2  # first two rows needed for the icb bc
-        else :
-            delta_row = 1  # first row for the icb bc
+        if par.ricb > 0:
+            if 'perfect conductor' in par.innercore :
+                delta_row = 2  # first two rows needed for the icb bc
+            else :
+                delta_row = 1  # first row for the icb bc
+        else:
+            delta_row = 0
         
     elif boundary == 'icb':
         
