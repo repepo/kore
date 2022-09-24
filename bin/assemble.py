@@ -43,8 +43,8 @@ def main():
     sizas = comm.Get_size()
     rank  = comm.Get_rank()
     
-    ll_flo = ut.ell( par.m, par.lmax, par.symm)  # the ell indices for the flow u
-    ll_mag = ut.ell( par.m, par.lmax, par.symm*ut.symmB0)  # if B0 is antisymm then u has the opposite symm of b  
+    ll_flo = ut.ell( par.m, par.lmax, par.symm)[:2]  # the ell indices for the flow u
+    ll_mag = ut.ell( par.m, par.lmax, par.symm*ut.symmB0)[:2]  # if B0 is antisymm then u has the opposite symm of b  
     
     if rank == 0:
         alltop, allbot = ll_flo
@@ -1486,7 +1486,7 @@ def bc_b_thinlayer(l, loc, mu_vf, c, c1, boundary):
             else :
                 delta_row = 1  # first row for the icb bc
         else:
-            delta_row = 0
+            delta_row = 0  # no ic, just cmb bc
         
     elif boundary == 'icb':
         

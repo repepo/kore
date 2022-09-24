@@ -45,8 +45,12 @@ lmax_bot = lmax + 1 + (1-2*np.sign(m))*(1-s)
 
 if par.B0 in ['axial','dipole','G21 dipole','Luo_S1']:
     symmB0 = -1
+elif par.B0 == 'Luo_S2':
+    symmB0 = 1
 elif par.B0 == 'FDM':
     symmB0 = int((-1)**par.B0_l)
+    
+bsymm = par.symm * symmB0  # induced magnetic field (b) symmetry follows from u and B0
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -57,16 +61,11 @@ def ell( m, lmax, vsymm) :
     # ll are *all* the l values and (idp,idt) are the indices for poloidals and toroidals respectively 
     lm1 = lmax - m + 1
     s   = int( vsymm*0.5 + 0.5 ) # s=0 if antisymm, s=1 if symm
-    if m>0:
-        idp = np.arange( 1-s, lm1, 2, dtype=int)
-        idt = np.arange( s  , lm1, 2, dtype=int)
-        ll  = np.arange( m  , lmax+1, dtype=int)
-    elif m==0:
-        idp = np.arange( s  , lm1, 2, dtype=int)
-        idt = np.arange( 1-s, lm1, 2, dtype=int)
-        ll  = np.arange( m+1, lmax+2, dtype=int)
+    idp = np.arange( (np.sign(m)+s  )%2, lm1, 2, dtype=int)
+    idt = np.arange( (np.sign(m)+s+1)%2, lm1, 2, dtype=int)
+    ll  = np.arange( m+1-np.sign(m), lmax+2-np.sign(m), dtype=int)
     
-    return [ ll[idp], ll[idt] ]
+    return [ ll[idp], ll[idt], ll ]
 
 
 

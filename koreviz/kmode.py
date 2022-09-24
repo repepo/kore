@@ -9,6 +9,7 @@ import sys
 sys.path.insert(1,'bin/')
 import utils as ut
 import parameters as par
+import utils_pp as upp
 
 
 class kmode:
@@ -31,55 +32,48 @@ class kmode:
         rcmb        = 1
         gap         = rcmb - ricb
         n           = ut.n
+        n0          = ut.n0
         
         # set the radial grid
-        i = np.arange(0,nr-2)
-        x = np.r_[ 1, np.cos( (i+0.5)*np.pi/nr ), -1+1e-9]
-        r = 0.5*gap*(x+1) + ricb;
+        if ricb > 0:
+            i = np.arange(0,nr-2)
+            xk = np.r_[ 1, np.cos( (i+0.5)*np.pi/nr ), -1]  # include endpoints ricb and rcmb
+        elif ricb==0:
+            i = np.arange(0,nr-1)
+            xk = np.r_[ 1, np.cos( (i+0.5)*np.pi/nr )    ]  # include rcmb but not the origin if ricb=0
+        r = 0.5*gap*(xk+1) + ricb;
+        x0 = upp.xcheb(r,ricb,rcmb)
         self.r = r
-        if ricb == 0 :
-            x0 = 0.5 + x/2
-        else :
-            x0 = x
         
         # matrix with Chebyshev polynomials at every x point for all degrees:
         chx = ch.chebvander(x0,par.N-1) # this matrix has nr rows and N-1 cols
         
         # read fields from disk
         if field == 'u':
-            a = np.loadtxt('real_flow.field',usecols=solnum)
-            b = np.loadtxt('imag_flow.field',usecols=solnum)
+            a0 = np.loadtxt('real_flow.field',usecols=solnum)
+            b0 = np.loadtxt('imag_flow.field',usecols=solnum)
             vsymm = par.symm
         elif field == 'b':
-            a = np.loadtxt('real_magnetic.field',usecols=solnum)
-            b = np.loadtxt('imag_magnetic.field',usecols=solnum)
-            vsymm = -par.symm # because external mag field is antisymmetric wrt the equator (if dipole or axial)
+            a0 = np.loadtxt('real_magnetic.field',usecols=solnum)
+            b0 = np.loadtxt('imag_magnetic.field',usecols=solnum)
+            vsymm = ut.bsymm
         elif field == 't':
-            a = np.loadtxt('real_temperature.field',usecols=solnum)
-            b = np.loadtxt('imag_temperature.field',usecols=solnum)
+            a0 = np.loadtxt('real_temperature.field',usecols=solnum)
+            b0 = np.loadtxt('imag_temperature.field',usecols=solnum)
             vsymm = par.symm
-               
-        # Rearrange and separate poloidal and toroidal parts
         
-        Plj0 = a[:n] + 1j*b[:n]         #  N elements on each l block
-        Tlj0 = a[n:n+n] + 1j*b[n:n+n]   #  N elements on each l block
+        # expand solution in case ricb=0
+        aib = upp.expand_sol(a0+1j*b0,vsymm)
+        a = np.real(aib)
+        b = np.imag(aib)
+        
+        # Rearrange and separate poloidal and toroidal parts
+        Plj0 = a[:n0] + 1j*b[:n0]         #  N elements on each l block
+        Tlj0 = a[n0:n0+n0] + 1j*b[n0:n0+n0]   #  N elements on each l block
         
         lm1  = lmax-m+1    
-        Plj0  = np.reshape(Plj0,(int(lm1/2),ut.N1))
-        Tlj0  = np.reshape(Tlj0,(int(lm1/2),ut.N1))
-
-        Plj = np.zeros((int(lm1/2),par.N),dtype=complex)
-        Tlj = np.zeros((int(lm1/2),par.N),dtype=complex)
-
-        if ricb == 0 :
-            iP = (m + 1 - ut.s)%2
-            iT = (m + ut.s)%2
-            for k in np.arange(int(lm1/2)) :
-                Plj[k,iP::2] = Plj0[k,:]
-                Tlj[k,iT::2] = Tlj0[k,:]
-        else :
-            Plj = Plj0
-            Tlj = Tlj0
+        Plj  = np.reshape(Plj0,(int(lm1/2),par.N))
+        Tlj  = np.reshape(Tlj0,(int(lm1/2),par.N))
 
         # init arrays
         Plr  = np.zeros( (lm1, nr), dtype=complex )
@@ -90,20 +84,28 @@ class kmode:
         rP   = np.zeros( (lm1, nr), dtype=complex )
         dPlj = np.zeros(  np.shape(Plj), dtype=complex )
         
-        # These are the l values (ll) and indices (idp,idt)
-        s = int(vsymm*0.5+0.5) # s=0 if antisymm, s=1 if symm
+        # # These are the l values (ll) and indices (idp,idt)
+        # sy = int(vsymm*0.5+0.5) # sy=0 if antisymm, sy=1 if symm
+        # idp = np.arange( (np.sign(m)+sy  )%2, lm1, 2, dtype=int)
+        # idt = np.arange( (np.sign(m)+sy+1)%2, lm1, 2, dtype=int)
+        # ll = ut.ell(m,lmax,vsymm)[2]
+        
+        sy = int(vsymm*0.5+0.5) # s=0 if antisymm, s=1 if symm
         if m>0:
-            idp = np.arange( 1-s, lm1, 2)
-            idt = np.arange( s  , lm1, 2)
+            idp = np.arange( 1-sy, lm1, 2)
+            idt = np.arange( sy  , lm1, 2)
             ll  = np.arange( m, lmax+1 )
         elif m==0:
-            idp = np.arange( s  , lm1, 2)
-            idt = np.arange( 1-s, lm1, 2)
+            idp = np.arange( sy  , lm1, 2)
+            idt = np.arange( 1-sy, lm1, 2)
             ll  = np.arange( m+1, lmax+2 )
 
         # populate Plr and Tlr
         Plr[idp,:] = np.matmul( Plj, chx.T)
         Tlr[idt,:] = np.matmul( Tlj, chx.T)
+        
+        # print(np.amax(np.abs(Plr)))
+        # print(np.amax(np.abs(Tlr)))
         
         # populate dPlj and dP
         for k in range(int(lm1/2)):
@@ -139,6 +141,15 @@ class kmode:
         self.S[:, np.sign(m)*(lmax2+1):] = sl.T
         self.T[:, np.sign(m)*(lmax2+1):] = tl.T
         self.ell = np.arange(m,lmax+1)
+        
+        self.Plr = Plr
+        self.Plj = Plj
+        self.dP  = dP
+        self.rI  = rI
+        self.L   = L
+        self.rP  = rP
+        self.Tlr = Tlr
+        self.Tlj = Tlj
         
         # SHTns init
         #norm = shtns.sht_schmidt | shtns.SHT_NO_CS_PHASE

@@ -12,9 +12,22 @@ import bc_variables as bc
 mp.set_start_method('fork')
 
 
-def expand_sol(sol):
+def xcheb(r,ricb,rcmb):
+	# returns points in the domain of the Cheb polynomial solutions
+    # [-1,1] corresponds to [ ricb,rcmb] if ricb>0
+    # [-1,1] corresponds to [-rcmb,rcmb] if ricb=0
+	Rb = rcmb
+	Ra = ricb + (np.sign(ricb)-1)*rcmb	
+	out = 2*(r-Ra)/(Rb-Ra) - 1
+	
+	return out
+
+
+def expand_sol(sol,vsymm):
     '''
-    Expans the ricb=0 solution with ut.N1 coeffs to have full N coeffs, filling with zeros accordingly 
+    Expands the ricb=0 solution with ut.N1 coeffs to have full N coeffs,
+    filling with zeros according to the equatorial symmetry.
+    vsymm=-1 for equatorially antisymmetric, vsymm=1 for symmetric
     '''
     if par.ricb == 0 :
     
@@ -34,8 +47,10 @@ def expand_sol(sol):
         Plj = np.zeros((int(lm1/2),par.N),dtype=complex)
         Tlj = np.zeros((int(lm1/2),par.N),dtype=complex)
         
-        iP = (par.m + 1 - ut.s)%2
-        iT = (par.m + ut.s)%2
+        s = int( (vsymm+1)/2 )  # s=0 if vsymm=-1, s=1 if vsymm=1
+        
+        iP = (par.m + 1 - s)%2  # even/odd Cheb polynomial for poloidals according to the parity of m+1-s 
+        iT = (par.m + s)%2
         for k in np.arange(int(lm1/2)) :
             Plj[k,iP::2] = Plj0[k,:]
             Tlj[k,iT::2] = Tlj0[k,:]
@@ -47,7 +62,6 @@ def expand_sol(sol):
     
     else :
         out = sol
-    
     
     return out
 
@@ -98,8 +112,8 @@ def pol_worker( l, Pk0, N, m, ricb, rcmb, w, projection, forcing, Ra, Rb): # ---
     # required degrees are even if m+1-s is even and vice versa 
     
     if ricb == 0 :
-        iP = ( m + (1-ut.s) )%2   
-        Pk[0,iP::2] = Pk0
+        iP = ( m + 1 - ut.s )%2   
+        Pk[0,iP::2] = Pk0  # expand the solution so that it has N coeffs
     else :
         Pk[0,:] = Pk0
     
@@ -109,7 +123,7 @@ def pol_worker( l, Pk0, N, m, ricb, rcmb, w, projection, forcing, Ra, Rb): # ---
     d2Pk = ut.Dcheb(dPk,ricb,rcmb)  # 2nd derivative
     d3Pk = ut.Dcheb(d2Pk,ricb,rcmb) # 3rd derivative
 
-    # plm's are the poloidal scalars evaluated at the colocation points
+    # plm's are the poloidal scalars evaluated at points in the Cheb polynomial domain of the solution
     
     plm0 = np.zeros(np.shape(x0),dtype=complex)
     plm1 = np.zeros(np.shape(x0),dtype=complex)
@@ -247,21 +261,15 @@ def tor_worker( l, Tk0, N, m, ricb, rcmb, w, projection, forcing, Ra, Rb): # ---
     Here we compute integrals that involve toroidal components, degree l
     Same way as for the poloidals above
     '''
+    
     Tk = np.zeros((1,N),dtype=complex)
+    
     if ricb == 0 :
-        
         iT = (m + ut.s)%2      
-        Tk[0,iT::2] = Tk0
-        
+        Tk[0,iT::2] = Tk0  # expand the solution so that it has N coeffs
     else :
-        
         Tk[0,:] = Tk0
         
-    # if l<4:
-        # print('')
-        # print('l, Tk = ', l, Tk[0,:4])
-        # print('')
-    
     L  = l*(l+1)
     
     dTk  = ut.Dcheb(Tk[0,:],ricb,rcmb)
@@ -439,9 +447,12 @@ def tor_worker( l, Tk0, N, m, ricb, rcmb, w, projection, forcing, Ra, Rb): # ---
 def pol_ohm( l, Pk0, N, ricb, rcmb, Ra, Rb): # ------------------------------------------
     
     Pk = np.zeros((1,N),dtype=complex)
+    
+    vsymm = ut.bsymm  # b field symmetry follows from both u and B0
+    s = int( (vsymm+1)/2 ) # s=0 if b is antisymm, s=1 if b is symm
+    
     if ricb == 0 :
-        #iP = (par.m + ut.s)%2
-        iP = ( par.m + (1-ut.s) )%2
+        iP = ( par.m + 1 - s )%2
         Pk[0,iP::2] = Pk0
     else :
         Pk[0,:] = Pk0
@@ -455,6 +466,7 @@ def pol_ohm( l, Pk0, N, ricb, rcmb, Ra, Rb): # ---------------------------------
     plm1 = np.zeros(np.shape(x0),dtype=complex)
     plm2 = np.zeros(np.shape(x0),dtype=complex)
     
+    # this is where the evaluation happens
     plm0 = ch.chebval(x0, Pk[0,:])
     plm1 = ch.chebval(x0, dPk)
     plm2 = ch.chebval(x0, d2Pk)
@@ -497,7 +509,8 @@ def tor_ohm( l, Tk0, N, ricb, rcmb, Ra, Rb): # ---------------------------------
     
     Tk = np.zeros((1,N),dtype=complex)
     
-    # Here I do the opposite as the (toroidal) flow because of the antisymmetric background field
+    vsymm = ut.bsymm  # b field symmetry follows from both u and B0
+    s = int( (vsymm+1)/2 ) # s=0 if b is antisymm, s=1 if b is symm
     
     # iT is the starting index of the Chebishev polynomials
     # if required Cheb degrees are even: 0,2,4,.. then iT=0
@@ -506,12 +519,10 @@ def tor_ohm( l, Tk0, N, ricb, rcmb, Ra, Rb): # ---------------------------------
     # required degrees are even if m+1-s is even and vice versa 
     
     if ricb == 0 :
-        iT = (par.m + ut.s)%2
-        #iT = ( par.m + (1-ut.s) )%2   
+        iT = (par.m + s)%2
         Tk[0,iT::2] = Tk0
     else :
         Tk[0,:] = Tk0
-    
     
     L  = l*(l+1)
 
@@ -556,29 +567,19 @@ def ken_dis( a, b, N, lmax, m, symm, ricb, rcmb, ncpus, w, projection, forcing, 
     and input power from body forces.
     '''
     
-    # xk are the colocation points for the integration, from -1 to 1
+    # xk are the grid points for the integration (Gauss-Chebyshev quadrature), from -1 to 1
     i = np.arange(0,N)
     xk = np.cos( (i+0.5)*np.pi/N )
-     
-    # x0 are points in [-1,1] mapped to [ricb,rcmb] domain (if ricb>0)
-    # or mapped to [-rcmb,rcmb] (if ricb=0) 
-    global x0
-    if ricb > 0 :
-        x0 = ( (Rb-Ra)*xk + (Ra+Rb) - (ricb+rcmb) )/(rcmb-ricb)
-    else :
-        x0 = ( (Rb-Ra)*xk + (Ra+Rb) )/(2*rcmb)
-        
-        
-    #print('x0 = ',x0[0],x0[-1])
     
-    # rk are the radial colocation points, from Ra to Rb
+    # rk are the corresponding radial points, from Ra to Rb
     global rk
-    if ricb > 0:
-        rk = 0.5*(rcmb-ricb)*( x0 + 1 ) + ricb
-    else :
-        rk = rcmb*x0
+    rk = 0.5*(Rb-Ra)*( xk + 1 ) + Ra
     
-    # the following are needed to compute the integrals
+    # x0 are the points in the domain of the Cheb poynomial solutions
+    global x0
+    x0 = xcheb(rk, par.ricb, 1)
+    
+    # the following are needed to compute the integrals (i.e. the quadratures)
     global sqx 
     sqx = np.sqrt(1-xk**2)
     global r2
@@ -587,35 +588,9 @@ def ken_dis( a, b, N, lmax, m, symm, ricb, rcmb, ncpus, w, projection, forcing, 
     r3 = rk**3
     global r4
     r4 = rk**4
-    
-    
-    if m > 0 :
-        symm1 = symm
-        if symm == 1:
-            m_top = m
-            m_bot = m+1             # equatorially symmetric case (symm=1)
-            lmax_top = lmax
-            lmax_bot = lmax+1
-        elif symm == -1:
-            m_top = m+1
-            m_bot = m               # equatorially antisymmetric case (symm=-1)
-            lmax_top = lmax+1
-            lmax_bot = lmax
-    elif m == 0 :
-        symm1 = -symm 
-        if symm == 1:
-            m_top = 2
-            m_bot = 1               # equatorially symmetric case (symm=1)
-            lmax_top = lmax+2
-            lmax_bot = lmax+1
-        elif symm == -1:
-            m_top = 1
-            m_bot = 2               # equatorially antisymmetric case (symm=-1)
-            lmax_top = lmax+1
-            lmax_bot = lmax+2
-    
-    N1 = int( (N/2) * (1 + np.sign(ricb)) )  # N/2 if no IC, N if present
-    n = int(N1*(lmax-m+1)/2)   
+
+    n=ut.n
+    N1=ut.N1
     
     ev0 = a + 1j * b
     Pk0 = ev0[:n] 
@@ -625,18 +600,19 @@ def ken_dis( a, b, N, lmax, m, symm, ricb, rcmb, ncpus, w, projection, forcing, 
     Pk0 = np.reshape(Pk0,(int((lmax-m+1)/2),N1))
     Tk0 = np.reshape(Tk0,(int((lmax-m+1)/2),N1))
     
-    lltop = np.arange(m_top,lmax_top,2)
-    llbot = np.arange(m_bot,lmax_bot,2)
+    ll0 = ut.ell(m,lmax,symm)
+    llpol = ll0[0]
+    lltor = ll0[1]
     
 
     # process each l component in parallel
     pool = mp.Pool(processes=ncpus)
     
     p = [ pool.apply_async(pol_worker, args=( l, Pk0[k,:], N, m, ricb, rcmb, w, projection, forcing, Ra, Rb))\
-     for k,l in enumerate(np.arange(m_top,lmax_top,2)) ]
+     for k,l in enumerate(llpol) ]
     
     t = [ pool.apply_async(tor_worker, args=( l, Tk0[k,:], N, m, ricb, rcmb, w, projection, forcing, Ra, Rb))\
-     for k,l in enumerate(np.arange(m_bot,lmax_bot,2)) ]
+     for k,l in enumerate(lltor) ]
     
     res_pol = np.sum([p1.get() for p1 in p],0)
     res_tor = np.sum([t1.get() for t1 in t],0)
@@ -665,22 +641,18 @@ def ohm_dis( a, b, N, lmax, m, bsymm, ricb, rcmb, ncpus, Ra, Rb):
     opposed to that of the flow if the applied field is antisymmetric.
     '''
 
-    # xk are the colocation points, from -1 to 1
+    # xk are the grid points for the integration (Gauss-Chebyshev quadrature), from -1 to 1
     i = np.arange(0,N)
     xk = np.cos( (i+0.5)*np.pi/N )
+    
+    # rk are the corresponding radial points, from Ra to Rb
+    global rk
+    rk = 0.5*(Rb-Ra)*( xk + 1 ) + Ra
+    
+    # x0 are the points in the domain of the Cheb poynomial solutions
     global x0
-    if ricb > 0 :
-        x0 = ( (Rb-Ra)*xk + (Ra+Rb) - (ricb+rcmb) )/(rcmb-ricb)
-    else :
-        x0 = ( (Rb-Ra)*xk + (Ra+Rb) )/(2*rcmb)
+    x0 = xcheb(rk, par.ricb, 1)
         
-    # rk are the radial colocation points, from ricb to rcmb
-    global rk 
-    if ricb > 0:
-        rk = 0.5*(rcmb-ricb)*( x0 + 1 ) + ricb
-    else :
-        rk = rcmb*x0
-
     # the following are needed to compute the integrals
     global sqx 
     sqx = np.sqrt(1-xk**2)
@@ -690,34 +662,9 @@ def ohm_dis( a, b, N, lmax, m, bsymm, ricb, rcmb, ncpus, Ra, Rb):
     r3 = rk**3
     global r4
     r4 = rk**4
-    
-    if m > 0 :
-        bsymm1 = bsymm
-        if bsymm == 1:
-            m_top = m
-            m_bot = m+1             # equatorially symmetric case (symm=1)
-            lmax_top = lmax
-            lmax_bot = lmax+1
-        elif bsymm == -1:
-            m_top = m+1
-            m_bot = m               # equatorially antisymmetric case (symm=-1)
-            lmax_top = lmax+1
-            lmax_bot = lmax
-    elif m == 0 :
-        bsymm1 = -bsymm 
-        if bsymm == 1:
-            m_top = 2
-            m_bot = 1               # equatorially symmetric case (symm=1)
-            lmax_top = lmax+2
-            lmax_bot = lmax+1
-        elif bsymm == -1:
-            m_top = 1
-            m_bot = 2               # equatorially antisymmetric case (symm=-1)
-            lmax_top = lmax+1
-            lmax_bot = lmax+2
-    
-    N1 = int( (N/2) * (1 + np.sign(ricb)) )  # N/2 if no IC, N if present
-    n = int(N1*(lmax-m+1)/2)   
+
+    n = ut.n
+    N1 = ut.N1
     
     ev0 = a + 1j * b
     Pk0 = ev0[:n] 
@@ -727,15 +674,14 @@ def ohm_dis( a, b, N, lmax, m, bsymm, ricb, rcmb, ncpus, Ra, Rb):
     Pk0 = np.reshape(Pk0,(int((lmax-m+1)/2),N1))
     Tk0 = np.reshape(Tk0,(int((lmax-m+1)/2),N1))
     
-    #tmp = pol_ohm(1, Pk2[0,:], N, ricb, rcmb, Ra, Rb)
-    #print('l=1, pol',tmp[1]*par.Le2*par.Em)
-    #tmp = tor_ohm(2, Tk2[0,:], N, ricb, rcmb, Ra, Rb)
-    #print('l=2, tor',tmp[1]*par.Le2*par.Em)
+    ll = ut.ell(m,lmax,bsymm)
+    llpol = ll[0]
+    lltor = ll[1]
     
     # process each l component in parallel
     pool = mp.Pool(processes=ncpus)
-    p = [ pool.apply_async(pol_ohm,args=(l, Pk0[k,:], N, ricb, rcmb, Ra, Rb)) for k,l in enumerate(np.arange(m_top,lmax_top,2.)) ]
-    t = [ pool.apply_async(tor_ohm,args=(l, Tk0[k,:], N, ricb, rcmb, Ra, Rb)) for k,l in enumerate(np.arange(m_bot,lmax_bot,2.)) ]
+    p = [ pool.apply_async(pol_ohm,args=(l, Pk0[k,:], N, ricb, rcmb, Ra, Rb)) for k,l in enumerate(llpol) ]
+    t = [ pool.apply_async(tor_ohm,args=(l, Tk0[k,:], N, ricb, rcmb, Ra, Rb)) for k,l in enumerate(lltor) ]
     
     res_pol = np.sum([p1.get() for p1 in p],0)
     res_tor = np.sum([t1.get() for t1 in t],0)
@@ -780,7 +726,8 @@ def thermal_dis( atemp, btemp, au, bu, N, lmax, m, symm, ricb, rcmb, ncpus, Ra, 
     # xk are the colocation points for the integration, from -1 to 1
     i = np.arange(0,N)
     xk = np.cos( (i+0.5)*np.pi/N )
-     
+    
+    ''' 
     # x0 are points in [-1,1] mapped to [ricb,rcmb] domain (if ricb>0)
     # or mapped to [-rcmb,rcmb] (if ricb=0) 
     global x0
@@ -795,6 +742,13 @@ def thermal_dis( atemp, btemp, au, bu, N, lmax, m, symm, ricb, rcmb, ncpus, Ra, 
         rk = 0.5*(rcmb-ricb)*( x0 + 1 ) + ricb
     else :
         rk = rcmb*x0
+    '''
+    
+    global x0
+    x0 = ( (Rb-Ra)*xk + (Ra+Rb) - (ricb+rcmb) )/(rcmb-ricb)
+    global rk
+    rk = 0.5*(rcmb-ricb)*( x0 + 1 ) + ricb
+    
     
     # the following are needed to compute the integrals
     global sqx 
