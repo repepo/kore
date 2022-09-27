@@ -154,7 +154,12 @@ def coriolis(l, section, component, offdiag):  # -------------------------------
                 else:
                     out = -2j*par.m*r2Iv                          # r2* r.1curl(2z x u)     
             
-    return out
+    if (par.magnetic==1 and par.tA==1):
+        scale_factor = 1.0/par.Le
+    else:
+        scale_factor = 1.0
+    
+    return scale_factor * out
     
     
     
@@ -191,7 +196,12 @@ def viscous_diffusion(l, section, component, offdiag):  # ----------------------
             else:
                 out = L*( -L*Iv + 2*r1D1v + r2D2v )                            # r2* r.1curl( nabla^2 u )
         
-    return par.Ek*out
+    if (par.magnetic==1 and par.tA==1):
+        scale_factor = par.Ek/(par.Le)
+    else:
+        scale_factor = par.Ek
+    
+    return scale_factor * out
 
 
 
@@ -268,8 +278,12 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
                 elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
                     out = C*( (l+3)*r3hIv + (l+1)*r4h1Iv + 2*r4hD1v )  # r5*r.1curl
 
-        
-    return out
+    if (par.magnetic==1 and par.tA==1):
+        scale_factor = 1.0
+    else:
+        scale_factor = par.Le2
+                
+    return scale_factor * out
 
 
 
@@ -426,7 +440,12 @@ def magnetic_diffusion(l, section, component, offdiag):
             elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
                 out = L*( -L*r3Ig + 2*r4D1g + r5D2g )
         
-    return out
+    if (par.magnetic==1 and par.tA==1):
+        scale_factor = par.Em/par.Le
+    else:
+        scale_factor = par.Em
+    
+    return scale_factor * out
 
 
 

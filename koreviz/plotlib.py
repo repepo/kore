@@ -34,17 +34,21 @@ def hammer2cart(ttheta, pphi, colat=False):
     return xx, yy
 
 
-def radContour(theta,phi,dat,levels=30,cmap='RdBu_r'):
+def radContour(theta,phi,dat,levels=42,cmap='RdBu_r',limits=[0,0]):
 
     phi2D, theta2D = np.meshgrid(phi,theta,indexing='ij')
     xx,yy = hammer2cart(theta2D,phi2D,colat=True)
 
-    if (dat.min()<0) and (dat.max()>0) :
-	    datMax = (np.abs(dat)).max()
-	    datMin = -datMax
+    if limits[0]==limits[1]:
+        if (dat.min()<0) and (dat.max()>0) :
+            datMax = (np.abs(dat)).max()
+            datMin = -datMax
+        else:
+            datMax = dat.max()
+            datMin = dat.min()
     else:
-	    datMax = dat.max()
-	    datMin = dat.min()
+        datMin = min(limits)
+        datMax = max(limits)
     datCenter = (datMin+datMax)/2
 
     divnorm = colors.TwoSlopeNorm(vmin=datMin, vcenter=datCenter, vmax=datMax)
@@ -63,7 +67,7 @@ def radContour(theta,phi,dat,levels=30,cmap='RdBu_r'):
     return cont
 
 
-def merContour(r,theta,dat,levels=30,cmap='RdBu_r',limits=[0,0]):
+def merContour(r,theta,dat,levels=42,cmap='RdBu_r',limits=[0,0]):
 
     theta2D, r2D = np.meshgrid(theta,r,indexing='ij')
     xx = r2D * np.sin(theta2D)
@@ -95,18 +99,22 @@ def merContour(r,theta,dat,levels=30,cmap='RdBu_r',limits=[0,0]):
     return cont
 
 
-def eqContour(r,phi,dat,levels=30,cmap='RdBu_r'):
+def eqContour(r,phi,dat,levels=42,cmap='RdBu_r',limits=[0,0]):
 
     phi2D, r2D = np.meshgrid(phi,r,indexing='ij')
     xx = r2D * np.cos(phi2D)
     yy = r2D * np.sin(phi2D)
 
-    if (dat.min()<0) and (dat.max()>0) :
-	    datMax = (np.abs(dat)).max()
-	    datMin = -datMax
+    if limits[0]==limits[1]:
+        if (dat.min()<0) and (dat.max()>0) :
+            datMax = (np.abs(dat)).max()
+            datMin = -datMax
+        else:
+            datMax = dat.max()
+            datMin = dat.min()
     else:
-	    datMax = dat.max()
-	    datMin = dat.min()
+        datMin = min(limits)
+        datMax = max(limits)
     datCenter = (datMin+datMax)/2
 	
     divnorm = colors.TwoSlopeNorm(vmin=datMin, vcenter=datCenter, vmax=datMax)

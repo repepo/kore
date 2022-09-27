@@ -14,7 +14,7 @@ import utils_pp as upp
 
 class kmode:
     
-    def __init__(self, field='u', solnum=0, nr=par.N+2, ntheta=par.lmax+3, nphi=10, nthreads=4 ):
+    def __init__(self, field='u', solnum=0, nr=par.N+2, ntheta=par.lmax+3, nphi=10, nthreads=4, phase=0 ):
 
         self.solnum = solnum
         self.nr     = nr
@@ -62,8 +62,8 @@ class kmode:
             b0 = np.loadtxt('imag_temperature.field',usecols=solnum)
             vsymm = par.symm
         
-        # expand solution in case ricb=0
-        aib = upp.expand_sol(a0+1j*b0,vsymm)
+        # expand solution in case ricb=0, multiply by complex phase factor 
+        aib = upp.expand_sol(a0+1j*b0,vsymm)*(np.cos(phase)+1j*np.sin(phase))
         a = np.real(aib)
         b = np.imag(aib)
         
@@ -191,7 +191,7 @@ class kmode:
 
         
  
-    def surf(self, comp='rad', r=(par.ricb+1)/2, levels=48, cmap=cmr.prinsenvlag, colbar=True):
+    def surf(self, comp='rad', r=(par.ricb+1)/2, levels=48, cmap=cmr.prinsenvlag, colbar=True,limits=[0,0]):
         # Surface plot at constant radius
 
         data = np.zeros([ self.ntheta, self.nphi*self.mres + 1])
@@ -200,7 +200,7 @@ class kmode:
         data[:, -1] = data[:,0]
  
         plt.figure(figsize=(12,6))
-        cont = radContour( self.theta, self.phi, data.T, levels=levels, cmap=cmap)
+        cont = radContour( self.theta, self.phi, data.T, levels=levels, cmap=cmap,limits=limits)
         plt.axis('equal')
         plt.axis('off')
         if colbar:
@@ -232,7 +232,7 @@ class kmode:
 
 
 
-    def equat(self, comp='rad', levels=48, cmap=cmr.prinsenvlag, colbar=True):
+    def equat(self, comp='rad', levels=48, cmap=cmr.prinsenvlag, colbar=True,limits=[0,0]):
         # Equatorial cross section
         
         data = np.zeros([ self.nr, self.nphi*self.mres + 1])
@@ -241,7 +241,7 @@ class kmode:
         data[:, -1] = data[:,0]
         
         plt.figure(figsize=(11,9))
-        cont = eqContour(self.r, self.phi, data.T, levels=levels, cmap=cmap)                
+        cont = eqContour(self.r, self.phi, data.T, levels=levels, cmap=cmap,limits=limits)                
         plt.axis('equal')
         plt.axis('off')
         if colbar:

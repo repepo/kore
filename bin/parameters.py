@@ -75,10 +75,10 @@ projection = 1
 magnetic = 0  # Use 0 for pure hydro, 1 for MHD
 
 # Imposed background magnetic field
-B0 = 'axial'          # Axial, uniform field along the spin axis
+# B0 = 'axial'          # Axial, uniform field along the spin axis
 # B0 = 'dipole'         # classic dipole, singular at origin, needs ricb>0
 # B0 = 'G21 dipole'     # Felix's dipole (Gerick GJI 2021)
-# B0 = 'Luo_S1'         # Same as above, actually (Luo & Jackson PRSA 2022) 
+B0 = 'Luo_S1'         # Same as above, actually (Luo & Jackson PRSA 2022) 
 # B0 = 'Luo_S2'         # Not coded yet
 # B0 = 'FDM'            # Free Poloidal Decay Mode (Zhang & Fearn 1994,1995; Schmitt 2012)
 beta = 3.0              # guess for FDM's beta
@@ -104,17 +104,21 @@ mu = 1.0
 
 # Magnetic field strength and magnetic diffusivity:
 # Either use the Elsasser number and the magnetic Prandtl number (i.e. Lambda and Pm: uncomment and set the following three lines):
-Lambda = 0.1
-Pm = 0.001
-Em = Ek/Pm; Le2 = Lambda*Em; Le = np.sqrt(Le2)
+# Lambda = 0.1
+# Pm = 0.001
+# Em = Ek/Pm; Le2 = Lambda*Em; Le = np.sqrt(Le2)
 # Or use the Lehnert number and the magnetic Ekman number (i.e. Le and Em: uncomment and set the following three lines):
-# Le = 10**-2
-# Em = 1e-4
-# Le2 = Le**2
+Le = 10**-3; Lu=2e3
+Em = Le/Lu
+Le2 = Le**2
+
+# Time scale, use tA=0 for rotation time scale (best for inertial modes) or tA=1 for Alfvén time scale (best for Torsional and MC modes). 
+# Still experimental, not tested yet with thermal=1  
+tA = 0
 
 # Normalization of the background magnetic field
-cnorm = 'rms_cmb'                     # Sets the radial rms field at the CMB as unity
-# cnorm = 'mag_energy'                  # Unit magnetic energy
+# cnorm = 'rms_cmb'                     # Sets the radial rms field at the CMB as unity
+cnorm = 'mag_energy'                  # Unit magnetic energy
 # cnorm = 3.86375                       # Schmitt 2012,         ricb = 0.35
 # cnorm = 4.067144                      # Zhang & Fearn 1994,   ricb = 0.35
 # cnorm = 15*np.sqrt(21/(46*np.pi))     # G21 dipole,           ricb = 0

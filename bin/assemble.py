@@ -659,7 +659,7 @@ def main():
                 
                     # Physics ----------------------------------------------
                     if par.ricb == 0 or (par.innercore in ['insulator', 'TWA']) :
-                        tmp = par.Le2 * op.lorentz(l,'u','bpol',-1)
+                        tmp = op.lorentz(l,'u','bpol',-1)
                     else :
                         print('These magnetic parameters are not coded yet')
                     # ------------------------------------------------------
@@ -683,7 +683,7 @@ def main():
                 
                     # Physics ----------------------------------------------
                     if par.ricb == 0 or (par.innercore in ['insulator', 'TWA']) :
-                        tmp = par.Le2 * op.lorentz(l,'u','bpol',1)
+                        tmp = op.lorentz(l,'u','bpol',1)
                     else :
                         print('These magnetic parameters are not coded yet')
                     # ------------------------------------------------------
@@ -703,7 +703,7 @@ def main():
             
                 # Physics ----------------------------------------------
                 if par.ricb == 0 or (par.innercore in ['insulator', 'TWA']) :
-                    tmp = par.Le2 * op.lorentz(l,'u','btor',0)
+                    tmp = op.lorentz(l,'u','btor',0)
                 else :
                     print('These magnetic parameters are not coded yet')
                 # ------------------------------------------------------
@@ -843,7 +843,7 @@ def main():
             
                 # Physics ----------------------------------------------
                 if par.ricb == 0 or (par.innercore in ['insulator', 'TWA']) :
-                    tmp = par.Le2 * op.lorentz(l,'v','bpol',0)
+                    tmp = op.lorentz(l,'v','bpol',0)
                 else :
                     print('These magnetic parameters are not coded yet')
                 # ------------------------------------------------------
@@ -870,7 +870,7 @@ def main():
         
                     # Physics ----------------------------------------------
                     if par.ricb == 0 or (par.innercore in ['insulator', 'TWA']) :
-                        tmp = par.Le2 * op.lorentz(l,'v','btor',-1)
+                        tmp = op.lorentz(l,'v','btor',-1)
                     else :
                         print('These magnetic parameters are not coded yet')
                     # ------------------------------------------------------
@@ -894,7 +894,7 @@ def main():
                         
                     # Physics ----------------------------------------------
                     if par.ricb == 0 or (par.innercore in ['insulator', 'TWA']) :
-                        tmp = par.Le2 * op.lorentz(l,'v','btor',1)
+                        tmp = op.lorentz(l,'v','btor',1)
                     else :
                         print('These magnetic parameters are not coded yet')
                     # ------------------------------------------------------
@@ -1002,7 +1002,7 @@ def main():
             if par.ricb == 0 or (par.innercore in ['insulator', 'TWA']) :
                 difus = op.magnetic_diffusion(l,'f','bpol',0)
                 iwb   = 1j*ut.wf * op.b(l,'f','bpol',0)
-                tmp   = iwb - par.Em * difus
+                tmp   = iwb - difus
             else :
                 print('These magnetic parameters are not coded yet')
             # ------------------------------------------------------
@@ -1135,7 +1135,7 @@ def main():
             if par.ricb == 0 or (par.innercore in ['insulator', 'TWA']) :
                 difus = op.magnetic_diffusion(l,'g','btor',0)
                 iwb   = 1j*ut.wf * op.b(l,'g','btor',0)
-                tmp = iwb - par.Em * difus
+                tmp = iwb - difus
             else :
                 print('These magnetic parameters are not coded yet')
             # ------------------------------------------------------
