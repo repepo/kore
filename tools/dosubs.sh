@@ -18,6 +18,6 @@ do
 	cd ~/data/$folder
 
 	sleep 0.2
-	qsub subramp.sh
+	qsub tools/subramp.sh
 	
 done

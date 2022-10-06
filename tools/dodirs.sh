@@ -52,13 +52,14 @@ do
 
 	cd ~/data/$folder
 	
-	cp ~/tintin-0.1/* . # copies the source files
+	cp -r ~/kore/* . # copies the source files
+	#cp ~/kore/underflow.py .
 
 	# modify variables
-	sed -i 's,^\('$var'[ ]*=\).*,\1'$value',' parameters.py	
+	sed -i 's,^\('$var'[ ]*=\).*,\1'$value',' bin/parameters.py	
 
-	sed -i 's,^\(#PBS -N \).*,\1'$folder',' subramp.sh
+	sed -i 's,^\(#PBS -N \).*,\1'$folder',' tools/subramp.sh
 	
-	sed -i 's,^\(dir=\).*,\1'$folder',' subramp.sh
+	sed -i 's,^\(dir=\).*,\1'$folder',' tools/subramp.sh
 	
 done

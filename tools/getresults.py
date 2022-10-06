@@ -1,5 +1,5 @@
 import sys
-from numpy import loadtxt
+import numpy as np
 
 '''
 Reads results collected with the reap.sh script into python.
@@ -19,11 +19,11 @@ ken_dis: [KP, KT, internal_dis, rekin_dis, imkin_dis, repower, impower]
 '''
 
 if len(sys.argv) == 2:
-    u = loadtxt(sys.argv[1]+'.flo') # flow data
-    p = loadtxt(sys.argv[1]+'.par') # parameters
+    u = np.loadtxt(sys.argv[1]+'.flo') # flow data
+    p = np.loadtxt(sys.argv[1]+'.par') # parameters
 else:
-    u = loadtxt('flow.dat')         # flow data
-    p = loadtxt('params.dat')       # parameters
+    u = np.loadtxt('flow.dat')         # flow data
+    p = np.loadtxt('params.dat')       # parameters
     
 if len(u.shape)==1:
     u = u.reshape((-1,len(u)))
@@ -38,20 +38,21 @@ p2t = KP/KT
 ricb = p[:,3]                       # inner core radius
 wf   = p[:,9]                       # forcing frequency
 Ek   = p[:,0]                       # Ekman number
-ek   = log10(Ek).round(decimals=6)
+ek   = np.log10(Ek).round(decimals=6)
 
-Dkin = u[:,3]*Ek                    # Kinetic energy dissipation
-Dint = u[:,2]*Ek                    # Internal energy dissipation
+Dkin0 = u[:,3]                    # Kinetic energy dissipation
+Dint0 = u[:,2]                    # Internal energy dissipation
 rpow = u[:,5]                       # Input power for forced problems, real part
 ipow = u[:,6]                       # Input power for forced problems, imaginary part
- 
+
+
 forcing = p[:,7]
 
 bci = p[:,4]                        # inner core boundary condition
 bco = p[:,5]                        # cmb boundary condition
 amp = p[:,8]                        # forcing amplitude (cmb)
 
-if shape(p)[1]>=15:
+if np.shape(p)[1]>=15:
     N    = p[:,13]
     lmax = p[:,14]
 
@@ -59,50 +60,50 @@ if shape(p)[1]>=15:
 if sum(forcing) == 0:   # reads eigenvalue data
     
     if len(sys.argv) == 2:
-        w = loadtxt(sys.argv[1]+'.eig')
+        w = np.loadtxt(sys.argv[1]+'.eig')
     else:
-        w = loadtxt('eigenvalues.dat')
+        w = np.loadtxt('eigenvalues.dat')
     if len(w.shape)==1: 
         w = w.reshape((-1,len(w)))
 
     sigma = w[:,0]
-    pss = zeros( np.shape(p)[0] )
-    pvf = zeros( np.shape(p)[0] )
-    scd = -sigma/sqrt(Ek)
+    pss = np.zeros( np.shape(p)[0] )
+    pvf = np.zeros( np.shape(p)[0] )
+    scd = -sigma/np.sqrt(Ek)
     
 elif sum(forcing) == 7*np.shape(p)[0]:  # libration, boundary forcing
-    sigma = zeros( np.shape(p)[0] )
-    pvf = zeros( np.shape(p)[0] )
+    sigma = np.zeros( np.shape(p)[0] )
+    pvf = np.zeros( np.shape(p)[0] )
     pss = rpow
 
 elif sum(forcing) == 8*np.shape(p)[0]:  # libration, volume forcing
-    sigma = zeros( np.shape(p)[0] )
-    pss = zeros( np.shape(p)[0] )
+    sigma = np.zeros( np.shape(p)[0] )
+    pss = np.zeros( np.shape(p)[0] )
     pvf = rpow
     
 elif sum(forcing) == 9*np.shape(p)[0]:  # m=2 boundary forcing, needs fixing
-    sigma = zeros( np.shape(p)[0] )
+    sigma = np.zeros( np.shape(p)[0] )
     pss = rpow
-    pvf = zeros( np.shape(p)[0] )
+    pvf = np.zeros( np.shape(p)[0] )
     
-if shape(u)[1]>=10:
+#if shape(u)[1]>=10:
     # viscous dissipation in the bulk, without boundary layers
-    vd1 = Dint - (u[:,7] + u[:,8])
-    vd2 = Dint - (u[:,7] + u[:,9])
+    #vd1 = Dint - (u[:,7] + u[:,8])
+    #vd2 = Dint - (u[:,7] + u[:,9])
     
-if shape(u)[1]>=12:
+if np.shape(u)[1]>=12:
     # cmb torque, use 2*real part of this
     trq = u[:,10] + 1j*u[:,11]
     
-if shape(u)[1]>=14:
+if np.shape(u)[1]>=14:
     # icb torque, use 2*real part of this
     trq_icb = u[:,12] + 1j*u[:,13]
     
-if shape(p)[1]>=17:
+if np.shape(p)[1]>=17:
     tsol = p[:,15]
     ncpus = p[:,16]
     
-if shape(p)[1]>=21:
+if np.shape(p)[1]>=21:
     tol = p[:,17]
     thermal = p[:,18]
     Prandtl = p[:,19]
@@ -115,69 +116,80 @@ if shape(p)[1]>=21:
 
    
 magnetic = p[:,10]
+if np.shape(p)[1]>=30:
+    tA = p[:,29]*magnetic
+else:
+	tA = 0
+	
+    
 if sum(magnetic) == np.shape(p)[0]: # reads magnetic data
 
     if len(sys.argv) == 2:
-        b = loadtxt(sys.argv[1]+'.mag')
+        b = np.loadtxt(sys.argv[1]+'.mag')
     else:
-        b = loadtxt('magnetic.dat')
+        b = np.loadtxt('magnetic.dat')
         
     if len(b.shape)==1: 
         b = b.reshape((-1,len(b)))
         
-    M    = b[:,0] + b[:,1]          # Total magnetic field energy
+    M0    = b[:,0] + b[:,1]          # Total magnetic field energy
     Le2  = p[:,12]                  # Lehnert number squared
     Em   = p[:,11]                  # Magnetic Ekman number
-    Dohm = (b[:,2]+b[:,3])*Le2*Em   # Ohmic dissipation
-    Le   = sqrt(Le2)                # Lehnert number
+    Dohm0 = (b[:,2]+b[:,3])   # Ohmic dissipation
+    Le   = np.sqrt(Le2)                # Lehnert number
     Pm   = Ek/Em                    # Magnetic Prandtl number
     Lam  = Le2/Em                   # Elsasser number
 
-    pm = log10(Pm).round(decimals=4)
-    ss = log10(Lam).round(decimals=4);
-
-    d = Dohm/Dint                   # Ohmic to viscous dissipation ratio
+    pm = np.log10(Pm).round(decimals=4)
+    ss = np.log10(Lam).round(decimals=4);
     
-    if shape(b)[1]>=7 :
-        od1 = Dohm - (b[:,4] + b[:,5])
-        od2 = Dohm - (b[:,4] + b[:,6])
-        d1 = od1/vd1                # dissip ratio in the bulk, without boundary layers
-        d2 = od2/vd2                # a bit deeper in the bulk
+    #if shape(b)[1]>=7 :
+    #    od1 = Dohm - (b[:,4] + b[:,5])
+    #    od2 = Dohm - (b[:,4] + b[:,6])
+    #    d1 = od1/vd1                # dissip ratio in the bulk, without boundary layers
+    #    d2 = od2/vd2                # a bit deeper in the bulk
         
 else:
     
-    M = zeros( np.shape(p)[0] )
-    Dohm = zeros( np.shape(p)[0] )
+    M0 = np.zeros( np.shape(p)[0] )
+    Dohm0 = np.zeros( np.shape(p)[0] )
 
 Le2  = p[:,12]                  # Lehnert number squared
 Em   = p[:,11]                  # Magnetic Ekman number
+
+M = M0*( (1-tA)*Le2 + tA*1.0 )
+
+Dint = Dint0*( (1-tA)*Ek + tA*Ek/Le )
+Dkin = Dkin0*( (1-tA)*Ek + tA*Ek/Le )
+Dohm = Dohm0*( (1-tA)*Le2*Em + tA*Em/Le )
+
+d = Dohm/Dint                   # Ohmic to viscous dissipation ratio
 
 
 
 if sum(thermal) == np.shape(p)[0]: # reads thermal data
     
     if len(sys.argv) == 2:
-        th = loadtxt(sys.argv[1]+'.thm')
+        th = np.loadtxt(sys.argv[1]+'.thm')
     else:
-        th = loadtxt('thermal.dat')
+        th = np.loadtxt('thermal.dat')
         
     #if len(th.shape)==1:    
     #    th = th.reshape((-1,len(th)))
     #    Dtemp = th[:,0]
     #elif size(th)==1:
     #    Dtemp = array([th])
-    Dtemp = array([th])[0]
+    Dtemp = np.array([th])[0]
 
 else:
     
-    Dtemp = zeros( np.shape(p)[0] )
+    Dtemp = np.zeros( np.shape(p)[0] )
                 
                 
+resid1 = abs( Dint + Dkin - pss ) / np.amax( [ abs(Dint), abs(Dkin), abs(pss) ], 0 )
 
-resid1 = abs( Dint + Dkin - pss ) / amax( [ abs(Dint), abs(Dkin), abs(pss) ], 0 )
-
-resid2 = abs( 2*sigma*(K + Le2*M) - Dkin - Dtemp + Dohm - pvf ) / \
- amax( [ abs(2*sigma*(K+Le2*M)), abs(Dkin), abs(Dohm), abs(Dtemp), abs(pvf) ], 0 )
+resid2 = abs( 2*sigma*(K + M) - Dkin - Dtemp + Dohm - pvf ) / \
+ np.amax( [ abs(2*sigma*(K+M)), abs(Dkin), abs(Dohm), abs(Dtemp), abs(pvf) ], 0 )
 
         
 
