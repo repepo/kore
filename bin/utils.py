@@ -56,6 +56,20 @@ bsymm = par.symm * symmB0  # induced magnetic field (b) symmetry follows from u 
 
 
 
+def packit( lista_local, mtx, row, col):
+    '''
+    Appends sparse matrix data, row, and col info to lista_local
+    '''
+    mtx.eliminate_zeros()
+    mtx = mtx.tocoo()
+    blk = [mtx.data, mtx.row + row, mtx.col + col]
+    for q in [0,1,2]:   
+        lista_local[q]= np.concatenate( ( lista_local[q], blk[q] ) )
+        
+    return lista_local
+
+
+
 def ell( m, lmax, vsymm) :
     # Returns the l values for the poloidal flow (section u) and l values for toroidal flow (section v)
     # ll are *all* the l values and (idp,idt) are the indices for poloidals and toroidals respectively 
@@ -617,7 +631,7 @@ def B0_norm():
         out = np.sqrt(2*l+1) / ( l*(l+1) * h0(rk, kind, args) )
         out = out[0]
 
-    elif par.cnorm == 'mag_energy':  # total magnetic energy is set to 1
+    elif par.cnorm in ['mag_energy', 'Schmitt2012']:  # total magnetic energy is set to 1 or 2
         
         N = 240
         i = np.arange(0,N)
@@ -635,7 +649,11 @@ def B0_norm():
         f3 = r2*y1**2
         
         integ = (np.pi/N) * ( (1-ricb)/2 ) * np.sum( sqx*f0*( f1+f2+f3 ) )
-        out = 1/np.sqrt(integ)  
+        
+        if par.cnorm == 'mag_energy':
+            out = 1/np.sqrt(integ)
+        elif par.cnorm == 'Schmitt2012':
+            out = 2/np.sqrt(integ)
     
     else:
         

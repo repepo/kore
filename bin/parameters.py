@@ -79,7 +79,7 @@ magnetic = 0  # Use 0 for pure hydro, 1 for MHD
 # B0 = 'dipole'         # classic dipole, singular at origin, needs ricb>0
 # B0 = 'G21 dipole'     # Felix's dipole (Gerick GJI 2021)
 B0 = 'Luo_S1'         # Same as above, actually (Luo & Jackson PRSA 2022) 
-# B0 = 'Luo_S2'         # Not coded yet
+# B0 = 'Luo_S2'         # Quadrupole
 # B0 = 'FDM'            # Free Poloidal Decay Mode (Zhang & Fearn 1994,1995; Schmitt 2012)
 beta = 3.0              # guess for FDM's beta
 B0_l = 1                # l number for the FDM mode
@@ -118,8 +118,9 @@ tA = 0
 
 # Normalization of the background magnetic field
 # cnorm = 'rms_cmb'                     # Sets the radial rms field at the CMB as unity
-cnorm = 'mag_energy'                  # Unit magnetic energy
-# cnorm = 3.86375                       # Schmitt 2012,         ricb = 0.35
+cnorm = 'mag_energy'                  # Unit magnetic energy as in Luo & Jackson 2022 (I. Torsional oscillations)
+# cnorm = 'Schmitt2012'                 # as above but times 2
+# cnorm = 3.86375                       # G101 of Schmitt 2012, ricb = 0.35
 # cnorm = 4.067144                      # Zhang & Fearn 1994,   ricb = 0.35
 # cnorm = 15*np.sqrt(21/(46*np.pi))     # G21 dipole,           ricb = 0
 # cnorm = 1.09436                       # simplest FDM, l=1,    ricb = 0

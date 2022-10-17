@@ -27,10 +27,13 @@ def main(ncpus):
     
     warnings.simplefilter('ignore', ss.SparseEfficiencyWarning)
     
-    twozone  = ((par.thermal == 1) and (par.heating == 'two zone'))               # boolean
-    userdef  = ((par.thermal == 1) and (par.heating == 'user defined'))           # boolean
-    cdipole  = ((par.magnetic == 1) and (par.B0 == 'dipole') and (par.ricb > 0))  # boolean
-    inviscid = ((par.Ek == 0) and (par.ricb == 0))                                # boolean
+    twozone    = ((par.thermal == 1) and (par.heating == 'two zone'))               # boolean
+    userdef    = ((par.thermal == 1) and (par.heating == 'user defined'))           # boolean
+    cdipole    = ((par.magnetic == 1) and (par.B0 == 'dipole') and (par.ricb > 0))  # boolean
+    inviscid   = ((par.Ek == 0) and (par.ricb == 0))                                # boolean
+    quadrupole = ((par.B0 == 'Luo_S2') or ((par.B0 == 'FDM') and (par.B0_l == 2)))  # boolean
+
+
 
     tic = timer()
     print('N =', par.N,', lmax =', par.lmax)
@@ -77,7 +80,7 @@ def main(ncpus):
                 rdh[i][j] = cnorm * ut.chebco_h( args, par.B0, par.N, 1, tol)
                 
         # rdh is a 2D list where each element is the set of Chebyshev coeffs
-        # of the function (r**rpw)*(d/dr)***(h_l(r))
+        # of the function (r**rpw)*(d/dr)**j*(h_l(r))
         # in the last row the power of r is -1
         # columns are derivative order, first column (col 0) is for the function h itself  
 
@@ -171,6 +174,9 @@ def main(ncpus):
         else:
             labl += [ 'u101', 'u211', 'u202', 'u312', 'u000', 'u110', 'u220', 'u330', 'u303', 'u100', 'u210', 'u201', 'u311', 'u302' ] 
             arg2 += [   vF  ,   vF  ,   vF  ,   vF  ,   vF  ,   vF  ,   vF  ,   vF  ,   vF  ,   vG  ,   vG  ,   vG  ,   vG  ,   vG   ]  # vF for bpol, vG for btor
+            if quadrupole :
+                labl += [ 'u321', 'u320' ]
+                arg2 += [   vF  ,   vG   ]
             
     if par.thermal == 1 :
         # Buoyancy force
@@ -359,7 +365,10 @@ def main(ncpus):
             
             elif len(lablx) == 3 :
                 hx = int(lablx[1])
-                operator_parity = (-1)**( hx + 1 + rpw[rx] + dx )  # h(r) is odd if B0 antisymmetric (axial, G21 dipole, or l=1 FDM)
+                if ut.symmB0 == -1:
+                    operator_parity = (-1)**( hx + 1 + rpw[rx] + dx )  # h(r) is odd if B0 antisymmetric (axial, G21 dipole, or l=1 FDM)
+                elif ut.symmB0 == 1:
+                    operator_parity = (-1)**( hx + rpw[rx] + dx )
             
             elif len(lablx) == 2 :
                 operator_parity = 1-((rx+dx)%2)*2
