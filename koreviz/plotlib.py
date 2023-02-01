@@ -22,6 +22,12 @@ def default_cmap(field):
             cm = cmr.prinsenvlag
         except:
             cm = 'seismic'
+    elif field in ['ener','energy','ke','e']:
+        try:
+            import cmasher as cmr
+            cm = cmr.ember
+        except:
+            cm = 'magma'
     elif field[0] in ['b','j']:
         try:
             import cmasher as cmr
