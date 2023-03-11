@@ -8,7 +8,7 @@ def Ncheb(Ek):
     Please experiment and adapt to your particular problem. N must be even.
     '''
     if Ek !=0 :
-        out = int(15*Ek**-0.2)
+        out = int(17*Ek**-0.2)
     else:
         out = 48  #
 
@@ -22,26 +22,29 @@ def Ncheb(Ek):
 hydro = 1
 
 # Azimuthal wave number m (>=0)
-m = 4
+m = 1
 
 # Equatorial symmetry. Use 1 for symmetric, -1 for antisymmetric.
 symm = 1
 
 # Inner core radius, CMB radius is unity.
-ricb = 0.35
+ricb = 0
 
 # Inner core spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow
 # Ignored if ricb = 0
-bci = 0
+bci = 1
 
 # CMB spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow
-bco = 0
+bco = 1
 
 # Ekman number (use 2* to match Dintrans 1999). Ek can be set to 0 if ricb=0
-# Ek_gap = 1e-7; Ek = Ek_gap*(1-ricb)**2
-Ek = 2/1.2e3
+# CoriolisNumber = 1.2e3
+# Ek_gap = 2/CoriolisNumber 
+# Ek = Ek_gap*(1-ricb)**2
+Ek = 1e-5
+
 
 forcing = 0  # For eigenvalue problems
 # forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
@@ -134,20 +137,21 @@ cnorm = 'mag_energy'                  # Unit magnetic energy as in Luo & Jackson
 thermal = 1  # Use 1 or 0 to include or not the temperature equation and the buoyancy force (Boussinesq)
 
 # Prandtl number: ratio of viscous to thermal diffusivity
-Prandtl = 1.0
+Prandtl = 0.3
 
-# Background isentropic temperature gradient choices, uncomment the appropriate line below:
-heating = 'internal'      # dT/dr = beta * (r/rcmb),     temp scale = rcmb*beta, Dintrans1999
-# heating = 'differential'  # dT/dr = beta * (r/rcmb)**-2, temp scale = Delta T,   Dormy2004, set Ra below
-# heating = 'two zone'      # temp scale = Omega^2*rcmb/(alpha*g_0), Vidal2015, use extra args below
-# heating = 'user defined'  # Uses the function BVprof in utils.py , use extra args below if needed
+# Background isentropic temperature gradient dT/dr choices, uncomment the appropriate line below:
+heating = 'internal'      # dT/dr = -beta * r         temp_scale = beta * ro**2
+# heating = 'differential'  # dT/dr = -beta * r**-2     temp_scale = Ti-To      beta = (Ti-To)*ri*ro/(ro-ri)
+# heating = 'two zone'      # dT/dr = K * ut.twozone()  temp_scale = -ro * K
+# heating = 'user defined'  # dT/dr = K * ut.BVprof()   temp_scale = -ro * K
 
-# Ratio of Brunt-Vaisala freq. to rotation. If differential heating then set the Rayleigh number, otherwise just Brunt.
-# Ra_gap = 145512758; Ra = Ra_gap/(1.0-ricb)**3
-Ra_gap = 3e4
-Ra = Ra_gap/(1.0-ricb)**4  # Rayleigh number
-Brunt = np.sqrt(abs(Ra)/Prandtl) * Ek
-# Brunt = 1
+# Rayleigh number as Ra = alpha * g0 * ro^3 * temp_scale / (nu*kappa), alpha is the thermal expansion coeff,
+# g0 the gravity accel at ro, ro is the cmb radius (the lenght scale), nu is viscosity, kappa is thermal diffusivity.
+# Ra = 1e6
+# Ra_Silva = -3e4; Ra = Ra_Silva * (1/(1-ricb))**6
+Ra_Monville = -1.7e6; Ra = 2*Ra_Monville
+
+Brunt = -(Ra/Prandtl)*Ek**2
 
 # Additional arguments for 'Two zone' or 'User defined' case (modify if needed).
 rc  = 0.7  # transition radius
@@ -158,28 +162,28 @@ args = [rc, h, sym]
 # Thermal boundary conditions
 # 0 for isothermal, theta=0
 # 1 for constant heat flux, (d/dr)theta=0
-bci_thermal = 0   # ICB
-bco_thermal = 0   # CMB
+bci_thermal = 1   # ICB
+bco_thermal = 1   # CMB
 
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------------- Compositional parameters
+# ----------------------------------------------------------------------------------------------------------------------
 compositional = 1  # Use 1 or 0 to include compositional transport or not
 
 # Schmidt number: ratio of viscous to compositional diffusivity (usually >> 1)
-Schmidt = 10
+Schmidt = 3.0
 
-# Background isentropic composition gradient choices, uncomment the appropriate line below:
-comp_background = 'internal'      # dC/dr = beta * (r/rcmb),     comp scale = rcmb*beta
-# comp_background = 'differential'  # dC/dr = beta * (r/rcmb)**-2, comp scale = Delta C
-# comp_background = 'two zone'      # temp scale = Omega^2*rcmb/(alpha*g_0), Vidal2015, use extra args below
-# comp_background = 'user defined'  # Uses the function BVprof in utils.py , use extra args below if needed
+# Background isentropic composition gradient dC/dr choices, uncomment the appropriate line below:
+comp_background = 'internal'      # dC/dr = -beta * r         comp_scale = beta * ro**2
+# comp_background = 'differential'  # dC/dr = -beta * r**-2     comp_scale = Ci-Co
 
-# Ratio of Brunt-Vaisala freq. to rotation. If differential heating then set the Rayleigh number, otherwise just Brunt.
-# Ra_gap = 145512758; Ra = Ra_gap/(1.0-ricb)**3
+# Compositional Rayleigh number
+# Ra_comp_Silva = 4e4; Ra_comp = Ra_comp_Silva * (1/(1-ricb))**6
+Ra_comp_Monville = 5.76e7; Ra_comp = 2*Ra_comp_Monville
 
-Ra_comp_gap = -5e4
-
-Ra_comp = Ra_comp_gap/(1.0-ricb)**4
-Brunt_comp = np.sqrt(abs(Ra_comp)/Schmidt) * Ek
-# Brunt = 1
+Brunt_comp = -(Ra_comp/Schmidt)*Ek**2
 
 # Additional arguments for 'Two zone' or 'User defined' case (modify if needed).
 rc  = 0.7  # transition radius
@@ -190,8 +194,9 @@ args_comp = [rc, h, sym]
 # Compositional boundary conditions
 # 0 for constant composition, xi=0
 # 1 for constant flux, (d/dr)xi=0
-bci_compositional = 0   # ICB
-bco_compositional = 0   # CMB
+bci_compositional = 1   # ICB
+bco_compositional = 1   # CMB
+
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -203,7 +208,7 @@ ncpus = 24
 
 # Chebyshev polynomial truncation level. Must be even if ricb = 0. See def at top.
 N = Ncheb(Ek)
-# N = 480
+#N = 24
 
 # Spherical harmonic truncation lmax and approx lmax/N ratio:
 g = 1.0
@@ -229,7 +234,7 @@ if track_target == 1 :  # read target from file and sets target accordingly
     itau = tt[1]
 else:                   # set target manually
     rtau = 0
-    itau = 0
+    itau = 1.45e-5
 
 # tau is the actual target for the solver
 # real part is damping
@@ -242,13 +247,13 @@ which_eigenpairs = 'TR'  # Use 'TM' for shift-and-invert
 # M magnitude, R real, I imaginary
 
 # Number of desired eigenvalues
-nev = 8
+nev = 10
 
 # Number of vectors in Krylov space for solver
 # ncv = 100
 
 # Maximum iterations to converge to an eigenvector
-maxit = 200
+maxit = 30
 
 # Tolerance for solver
 tol = 1e-13
@@ -258,4 +263,4 @@ tol = 1e-13
 # ----------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------- Writes solution vector to disk if = 1
 # ----------------------------------------------------------------------------------------------------------------------
-write_solution = 1
+write_solution = 0
