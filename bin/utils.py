@@ -98,10 +98,10 @@ def remroco(matrix, overall_parity, vector_parity):
 
 def twozone(r,args):
     '''
-    Symmetrized squared Brunt-Vaisala profile (dimensionless), extended to negative r
+    Symmetrized dT/dr (dimensionless), extended to negative r
     rc is the transition radius, h the transition width, sym is 1 or -1
     depending on the radial parity desired
-    ** Neutral inner zone, stratified outer zone ** (Vidal2015)
+    ** Neutrally buoyant inner zone, stratified outer zone ** (Vidal2015)
     '''
     rc  = args[0]
     h   = args[1]
@@ -119,14 +119,14 @@ def twozone(r,args):
 
 def BVprof(r,args):
     '''
-    Symmetrized squared Brunt-Vaisala profile (dimensionless), extended to negative r.
+    Symmetrized dT/dr (dimensionless), extended to negative r.
     Define this function so that it is an odd function of r
     '''
     out = np.zeros_like(r)
     for i,x in enumerate(r):
-        #out[i] = x         # squared BV propto r like in Dintrans1999
-        #out[i] = x*abs(x)  # squared BV propto r^2
-        #out[i] = x**3      # squared BV propto r^3
+        #out[i] = x         # dT/dr propto r like in Dintrans1999
+        #out[i] = x*abs(x)  # dT/dr propto r^2
+        #out[i] = x**3      # dT/dr propto r^3
         rc = args[0]
         h  = args[1]
         if abs(x) < rc/2 :

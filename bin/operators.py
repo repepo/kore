@@ -56,17 +56,7 @@ for label in fname :
 
     globals()[varlabel] = ss.csr_matrix(sio.mmread(label))
 
-# Sign of Ra is going to be important for heat + compositional convection
 
-try:
-    signOfRa = np.sign(par.Ra)
-except:
-    signOfRa = -1.0 # If Ra is not provided, instead only Brunt is present in parameters
-
-try:
-    signOfRa_comp = np.sign(par.Ra_comp)
-except:
-    signOfRa_comp = -1.0
 
 # ----------------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------- Navier-Stokes equation operators
@@ -363,46 +353,49 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
 
 
 
-
 def buoyancy(l, section, component, offdiag):  # -------------------------------------------------------- buoyancy force
 
     out = 0
     L = l*(l+1)
+    time_scale = 'rotation'  # other time scales to be implemented later
+    
+    if time_scale == 'rotation':
+        omgtau = 1.0
+    elif time_scale == 'viscous':  
+        omgtau = 1/par.Ek
 
     if (section == 'u') and (offdiag == 0) :
 
         if (par.magnetic == 1) and (par.B0 == 'dipole') :
-            buoy = L * r6Iu
+            buoy = r6Iu
         else:
-            buoy = L * r4Iu
+            buoy = r4Iu
 
-        if par.heating == 'two zone' or par.heating == 'user defined' :
-            BVsq = 1
-        else :
-            BVsq = signOfRa * par.Brunt**2
-
-    out = BVsq * buoy
+    out = L * buoy * (par.Ra/par.Prandtl) * (omgtau*par.Ek)**2
 
     return out
 
-def comp_buoyancy(l, section, component, offdiag):  # -------------------------------------------------------- buoyancy force
+
+
+def comp_buoyancy(l, section, component, offdiag):  # ------------------------------------- compositional buoyancy force
 
     out = 0
     L = l*(l+1)
+    time_scale = 'rotation'  # other time scales to be implemented later
+    
+    if time_scale == 'rotation':
+        omgtau = 1
+    elif time_scale == 'viscous':  
+        omgtau = 1/par.Ek
 
     if (section == 'u') and (offdiag == 0) :
 
         if (par.magnetic == 1) and (par.B0 == 'dipole') :
-            buoy = L * r6Iu
+            buoy = r6Iu
         else:
-            buoy = L * r4Iu
+            buoy = r4Iu
 
-        if par.comp_background == 'two zone' or par.comp_background == 'user defined' :
-            BVsq = 1
-        else :
-            BVsq = signOfRa_comp * par.Brunt_comp**2
-
-    out = BVsq * buoy
+    out = L * buoy * (par.Ra_comp/par.Schmidt) * (omgtau*par.Ek)**2
 
     return out
 
@@ -605,11 +598,8 @@ def magnetic_diffusion(l, section, component, offdiag):
 
 
 
-
-
-
 # ----------------------------------------------------------------------------------------------------------------------
-# ---------------------------------------------------------------------------------------------- Heat equation operators
+# ---------------------------------------------------------------------------------- Heat/Composition equation operators
 # ----------------------------------------------------------------------------------------------------------------------
 
 
@@ -626,57 +616,62 @@ def theta(l, section, component, offdiag):
 
     return out
 
+
+
 def composition(l, section, component, offdiag):
 
     out = 0
-    if (section == 'h') and (offdiag == 0) :
+    if (section == 'i') and (offdiag == 0) :
 
         if par.comp_background == 'differential' :
-            out = r3Ih
+            out = r3Ii
         else:
-            out = r2Ih
+            out = r2Ii
 
     return out
 
-def thermal_advection(l, section, component, offdiag):
+
+
+def thermal_advection(l, section, component, offdiag):  # -u_r * dT/dr
 
     out = 0
     L = l*(l+1)
-
     rcmb = 1
+    gap = rcmb - par.ricb
 
     if ((section == 'h') and (component == 'upol')) and (offdiag == 0) :
 
-        if par.heating == 'internal' :
-            conv = signOfRa * L*r2Ih
-            #conv = L*r4Ih
-        elif par.heating == 'differential' :
-            conv = signOfRa * L*Ih * par.ricb/(rcmb-par.ricb)
-        elif par.heating == 'two zone' or par.heating == 'user defined' :
-            conv = - L * (par.Brunt**2) * NrIh
-        out = conv
+        if par.heating == 'internal':  
+            conv = r2Ih  # dT/dr = -beta*r. Heat equation is times r**2
+        elif par.heating == 'differential':  
+            conv = Ih * par.ricb/gap  # dT/dr = -beta * r**2. Heat equation is times r**3
+        elif par.heating == 'two zone' or par.heating == 'user defined':
+            conv = NrIh  # dT/dr specified in ut.twozone or ut.BVprof. Heat equation is times r**2 
+        
+        out = L * conv
 
     return out
+
+
 
 def compositional_advection(l, section, component, offdiag):
 
     out = 0
     L = l*(l+1)
-
     rcmb = 1
+    gap = rcmb - par.ricb
 
-    if ((section == 'h') and (component == 'upol')) and (offdiag == 0) :
+    if ((section == 'i') and (component == 'upol')) and (offdiag == 0) :
 
-        if par.comp_background == 'internal' :
-            conv = signOfRa_comp * L*r2Ih
-            #conv = L*r4Ih
-        elif par.comp_background == 'differential' :
-            conv = signOfRa_comp * L*Ih * par.ricb/(rcmb-par.ricb)
-        elif par.comp_background == 'two zone' or par.comp_background == 'user defined' :
-            conv = - L * (par.Brunt_comp**2) * NrIh
-        out = conv
+        if par.comp_background == 'differential':  
+            conv = Ii * par.ricb/gap  # Composition eq. times r**3
+        else:  
+            conv = r2Ii  # Composition eq. times r**2        
+        
+        out = L * conv
 
     return out
+
 
 
 def thermal_diffusion(l, section, component, offdiag):
@@ -686,30 +681,33 @@ def thermal_diffusion(l, section, component, offdiag):
 
     if section == 'h' and offdiag == 0 :
 
-        if (par.heating == 'internal') or (par.heating == 'two zone' or par.heating == 'user defined') :
-            difus = - L*Ih + 2*r1D1h + r2D2h
-        elif par.heating == 'differential' :
-            difus = - L*r1Ih + 2*r2D1h + r3D2h
+        if par.heating == 'differential':
+            difus = - L*r1Ih + 2*r2D1h + r3D2h  # eq. times r**3
+        else:
+            difus = - L*Ih + 2*r1D1h + r2D2h  # eq. times r**2
+
         out = (par.Ek/par.Prandtl) * difus
 
-
     return out
+
+
 
 def compositional_diffusion(l, section, component, offdiag):
 
     out = 0
     L = l*(l+1)
 
-    if section == 'h' and offdiag == 0 :
+    if section == 'i' and offdiag == 0 :
 
-        if (par.comp_background == 'internal') or (par.comp_background == 'two zone' or par.comp_background == 'user defined') :
-            difus = - L*Ih + 2*r1D1h + r2D2h
-        elif par.comp_background == 'differential' :
-            difus = - L*r1Ih + 2*r2D1h + r3D2h
+        if par.comp_background == 'differential' :
+            difus = - L*r1Ii + 2*r2D1i + r3D2i  # eq. times r**3
+        else:
+            difus = - L*Ii + 2*r1D1i + r2D2i  # eq. times r**2
+
         out = (par.Ek/par.Schmidt) * difus
 
-
     return out
+
 
 
 # ----------------------------------------------------------------------------------------------------------------------

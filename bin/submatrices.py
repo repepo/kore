@@ -114,10 +114,10 @@ def main(ncpus):
 
     # Sets the Gegenbauer basis order for each section
     if ((par.magnetic == 1) and ('conductor' in par.innercore)) :
-        gebasis = [  4,   2,   3,   2,   2  ]
+        gebasis = [  4,   2,   3,   2,   2,   2  ]
     else:
-        gebasis = [  4,   2,   2,   2,   2  ]
-    section     = [ 'u', 'v', 'f', 'g', 'h' ]
+        gebasis = [  4,   2,   2,   2,   2,   2  ]
+    section     = [ 'u', 'v', 'f', 'g', 'h', 'i' ]
 
     if inviscid:
         gebasis[0] = 2  # only up to second derivatives in section u
@@ -178,7 +178,7 @@ def main(ncpus):
                 labl += [ 'u321', 'u320' ]
                 arg2 += [   vF  ,   vG   ]
 
-    if par.thermal == 1 :
+    if (par.thermal == 1) or (par.compositional==1) :
         # Buoyancy force
         if cdipole :
             labl += [ 'u60' ]
@@ -283,25 +283,21 @@ def main(ncpus):
 
     if par.compositional == 1 :
     # -------------------------------------------------------------------------------------------------------------------------------------------
-    # Matrices needed for the compositional equation ------------------------------------------------------------------------------------ Heat - section h
+    # Matrices needed for the compositional equation ------------------------------------------------------------------ Compositional - section i
     # -------------------------------------------------------------------------------------------------------------------------------------------
 
         if par.comp_background == 'differential' :
 
-            labl += [ 'h00', 'h10', 'h21',  'h32', 'h30' ]  # here the operators have mixed symmetries, this is a problem if ricb == 0
+            labl += [ 'i00', 'i10', 'i21',  'i32', 'i30' ]  # here the operators have mixed symmetries, this is a problem if ricb == 0
             arg2 += [   vP ,   vP ,   vP ,    vP ,   vP  ]
 
         elif (par.comp_background == 'internal' or (twozone or userdef) ) :
 
-            labl += [ 'h20', 'h00', 'h11',  'h22' ]
+            labl += [ 'i20', 'i00', 'i11',  'i22' ]
             if not cdipole:
                 arg2 += [   vP ,   vP ,   vP ,    vP  ]
 
-            if (twozone or userdef) :
 
-                labl += [ 'h70' ]  # this is for ut.twozone or ut.BVprof
-                if not cdipole:
-                    arg2 += [   vP  ]
     # -------------------------------------------------------------------------------------------------------------------------------------------
 
 

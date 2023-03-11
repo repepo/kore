@@ -480,7 +480,7 @@ def main():
 
         if par.compositional == 1: # adds (d/dt)*xi in the compositional equation to matrix B
 
-            # ------------------------------------------------------------------- B, theta_pol, nocurl (heat), section h
+            # ------------------------------------------------------------------- B, theta_pol, nocurl (heat), section i
             for k,l in enumerate(loc_top):  # loc_top here because xi
                                             # follows the same symmetry as u
                 row = (2*par.hydro + 2*par.magnetic + par.thermal)*nb*ut.N1 + ( rank*bpp + k )* ut.N1
@@ -492,7 +492,7 @@ def main():
 #                elif par.heating == 'differential' :
 #                    block = r3Ih
 #                # ---------------------------------------------------------------------
-                block = op.composition(l,'h','', 0)
+                block = op.composition(l,'i','', 0)
 
                 # update loc_list
                 block.eliminate_zeros()
@@ -1416,7 +1416,7 @@ def main():
         # Submatrices here for nocurl have only 2 rows empty at the top
         # instead of 4 to make room for the thermal boundary conditions
 
-        # --------------------------------------------------------------------------------------------------------------------------- A matrix, nocurl thermal, section h
+        # --------------------------------------------------------------------------------------------------------------------------- A matrix, nocurl thermal, section i
         for k,l in enumerate(loc_top): # here use the l's from loc_top
 
             row = (2+2*par.magnetic+par.thermal)*nb*ut.N1 + (rank*bpp + k )* ut.N1
@@ -1427,7 +1427,7 @@ def main():
             col0 = ( rank*bpp + k )* ut.N1
 
 #            # ----------------------------------
-            tmp = op.compositional_advection(l,'h','upol',0)
+            tmp = op.compositional_advection(l,'i','upol',0)
 
             # bookkeeping
             tmp.eliminate_zeros()
@@ -1450,7 +1450,7 @@ def main():
 #                difus = - L*r1Ih + 2*r2D1h + r3D2h
 #            tmp = (par.Ek/par.Schmidt) * difus
 #            # ------------------------------------
-            tmp = op.compositional_diffusion(l,'h','',0)
+            tmp = op.compositional_diffusion(l,'i','',0)
 
             # bookkeeping
             tmp.eliminate_zeros()
