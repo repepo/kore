@@ -1,4 +1,5 @@
 # Kore
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 *KOR-ee*, from the greek **Κόρη**, the queen of the underworld, daughter of Zeus and Demeter. Kore is a numerical tool to study the core flow within rapidly rotating planets or other rotating fluids contained within near-spherical boundaries. The current version solves the *linear* Navier-Stokes and induction equations for a viscous, incompressible and conductive fluid with an externally imposed axial and homogeneous magnetic field, and enclosed within a rotating spherical shell.
 
