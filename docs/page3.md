@@ -1,7 +1,7 @@
 # Non-dimensionalization
 
 
-For numerical convenience we render *dimensionless* the Navier Stokes equation, the induction equation, and the heat equation. Such procedure is possible thanks to the Buckingham-$\pi$ theorem.
+For numerical convenience we use *dimensionless* variables when solving the Navier Stokes equation, the induction equation, and the heat equation. A non-dimensionalization procedure is always possible thanks to the Buckingham-$\pi$ theorem.
 
 
 ## The momentum equation
