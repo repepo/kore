@@ -2,7 +2,7 @@ site_name: Kore User Manual
 
 theme:
   name: material
-  logo: assets/new_logo.png
+  logo: assets/test2.png
   language: en
   features:
     - navigation.tracking
