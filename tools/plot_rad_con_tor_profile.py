@@ -15,7 +15,7 @@ Computes the radial profile of kinetic energy, internal energy dissipation,
 and kinetic energy dissipation (theta,phi integrated).
 
 Use as 
-%run -i tools/plot_radial_profile.py sol nR R1 R2
+%run -i tools/plot_rad_con_tor_profile.py sol nR R1 R2
 solnum is the solution muber (0 if forced problem)
 nR     is the number of points in radius
 R1     from radius R1

@@ -4,8 +4,8 @@
 ncpus=24
 
 
-#./submatrices.py $ncpus >> out00
-#mpiexec -n $ncpus ./assemble.py >> out0
+#./bin/submatrices.py $ncpus >> out00
+#mpiexec -n $ncpus ./bin/assemble.py >> out0
 
 
 # For forced problems use:
@@ -48,8 +48,8 @@ do
 	#echo $i
 
 	./submatrices.py $ncpus >> out00
-	#mpiexec -n $ncpus ./assemble.py >> out0
-	#mpiexec -n $ncpus ./solve.py $opts >> out1
+	#mpiexec -n $ncpus ./bin/assemble.py >> out0
+	#mpiexec -n $ncpus ./bin/solve.py $opts >> out1
 
 	#for k in $(seq 0 0.002 0.008)
 	for k in $(seq 1 1 1)
@@ -68,8 +68,8 @@ do
 
 		#echo Solving...
 		#./submatrices.py $ncpus >> out00
-		mpiexec -n $ncpus ./assemble.py >> out0
-		mpiexec -n $ncpus ./solve.py $opts >> out1
+		mpiexec -n $ncpus ./bin/assemble.py >> out0
+		mpiexec -n $ncpus ./bin/solve.py $opts >> out1
 	done
 
 done
