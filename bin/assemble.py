@@ -516,8 +516,6 @@ def main():
 
 
 
-
-
     if rank == 0:
         tic = timer()
 

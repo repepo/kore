@@ -128,13 +128,15 @@ cnorm = 'mag_energy'                  # Unit magnetic energy as in Luo & Jackson
 # cnorm = 15*np.sqrt(21/(46*np.pi))     # G21 dipole,           ricb = 0
 # cnorm = 1.09436                       # simplest FDM, l=1,    ricb = 0
 # cnorm = 3.43802                       # simplest FDM, l=1,    ricb = 0.001
+# cnorm = 1/1.46557531                  # Luo_S1, Bs_rms=1, outside r=0.35
+# cnorm = 1/62.07211308                 # Luo_S2, Bs_rms=1, outside r=0.35
 
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------- Thermal parameters
 # ----------------------------------------------------------------------------------------------------------------------
-thermal = 1  # Use 1 or 0 to include or not the temperature equation and the buoyancy force (Boussinesq)
+thermal = 0  # Use 1 or 0 to include or not the temperature equation and the buoyancy force (Boussinesq)
 
 # Prandtl number: ratio of viscous to thermal diffusivity
 Prandtl = 0.3
@@ -170,7 +172,7 @@ bco_thermal = 1   # CMB
 # ----------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------- Compositional parameters
 # ----------------------------------------------------------------------------------------------------------------------
-compositional = 1  # Use 1 or 0 to include compositional transport or not
+compositional = 0  # Use 1 or 0 to include compositional transport or not
 
 # Schmidt number: ratio of viscous to compositional diffusivity (usually >> 1)
 Schmidt = 3.0
