@@ -57,10 +57,10 @@ def main(ncpus):
     r6  = ut.chebco(6, par.N, tol, par.ricb, ut.rcmb)
 
     if twozone :
-        r2z = ut.chebco_twozone(par.args, par.N, par.ricb, ut.rcmb, 1e-6)
+        r2z = ut.chebco_twozone(par.args, par.N, par.ricb, ut.rcmb, par.tol_tc)
         rp = [1, r1, r2, r3, r4, r5, r6, r2z]
     elif userdef :
-        rbv = ut.chebco_BVprof(par.args, par.N, par.ricb, ut.rcmb, 1e-5)
+        rbv = ut.chebco_BVprof(par.args, par.N, par.ricb, ut.rcmb, par.tol_tc)
         rp = [1, r1, r2, r3, r4, r5, r6, rbv]
     else :
         rp = [1, r1, r2, r3, r4, r5, r6]

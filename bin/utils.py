@@ -124,17 +124,17 @@ def BVprof(r,args):
     '''
     out = np.zeros_like(r)
     for i,x in enumerate(r):
-        #out[i] = x         # dT/dr propto r like in Dintrans1999
+        out[i] = x         # dT/dr propto r like in Dintrans1999
         #out[i] = x*abs(x)  # dT/dr propto r^2
         #out[i] = x**3      # dT/dr propto r^3
-        rc = args[0]
-        h  = args[1]
-        if abs(x) < rc/2 :
-            out[i] = np.tanh( 4*x/h )
-        elif x >= rc/2 :
-            out[i] = 0.5*(1 - np.tanh( 4*(x-rc)/h  ))
-        elif x <= -rc/2 :
-            out[i] = -0.5*(1 - np.tanh( 4*(abs(x)-rc)/h  ))
+        #rc = args[0]
+        #h  = args[1]
+        #if abs(x) < rc/2 :
+        #    out[i] = np.tanh( 4*x/h )
+        #elif x >= rc/2 :
+        #    out[i] = 0.5*(1 - np.tanh( 4*(x-rc)/h  ))
+        #elif x <= -rc/2 :
+        #    out[i] = -0.5*(1 - np.tanh( 4*(abs(x)-rc)/h  ))
     return out
 
 

@@ -22,29 +22,28 @@ def Ncheb(Ek):
 hydro = 1
 
 # Azimuthal wave number m (>=0)
-m = 1
+m = 0
 
 # Equatorial symmetry. Use 1 for symmetric, -1 for antisymmetric.
 symm = 1
 
 # Inner core radius, CMB radius is unity.
-ricb = 0
+ricb = 0.35
 
 # Inner core spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow
 # Ignored if ricb = 0
-bci = 1
+bci = 0
 
 # CMB spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow
-bco = 1
+bco = 0
 
 # Ekman number (use 2* to match Dintrans 1999). Ek can be set to 0 if ricb=0
 # CoriolisNumber = 1.2e3
 # Ek_gap = 2/CoriolisNumber 
 # Ek = Ek_gap*(1-ricb)**2
-Ek = 1e-5
-
+Ek = 2*10**-7
 
 forcing = 0  # For eigenvalue problems
 # forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
@@ -53,14 +52,14 @@ forcing = 0  # For eigenvalue problems
 # forcing = 4  # first test case, Lin body forcing with X(r)=(A*r^2 + B/r^3)*C, (using Jeremy's calculation), m=2,symm. OK
 # forcing = 5  # second test case, Lin body forcing with X(r)=1/r, m=0,symm. OK
 # forcing = 6  # Buffett2010 ICB radial velocity boundary forcing, m=1,antisymm
-# forcing = 7  # Longitudinal libration boundary forcing, m=0, symm, no-slip
+# forcing = 7  # Longitudinal libration boundary forcing, m={0, 2}, symm, no-slip
 # forcing = 8  # Longitudinal libration as a Poincaré force (body force) in the mantle frame, m=0, symm, no-slip
 # forcing = 9  # Radial, symmetric, m=2 boundary flow forcing. If
 
 # Forcing frequency (ignored if forcing = 0)
 freq0 = 0.67
-delta = 0  # Auxiliary variable, useful for ramps
-forcing_frequency = freq0 + delta  # negative is prograde
+delta = -1  # Auxiliary variable, useful for ramps
+forcing_frequency = freq0 * delta  # negative is prograde
 
 # Forcing amplitude. Body forcing amplitude will use the cmb value
 forcing_amplitude_cmb = 1.0
@@ -79,9 +78,9 @@ magnetic = 0  # Use 0 for pure hydro, 1 for MHD
 
 # Imposed background magnetic field
 # B0 = 'axial'          # Axial, uniform field along the spin axis
-# B0 = 'dipole'         # classic dipole, singular at origin, needs ricb>0
+B0 = 'dipole'         # classic dipole, singular at origin, needs ricb>0
 # B0 = 'G21 dipole'     # Felix's dipole (Gerick GJI 2021)
-B0 = 'Luo_S1'         # Same as above, actually (Luo & Jackson PRSA 2022)
+# B0 = 'Luo_S1'         # Same as above, actually (Luo & Jackson PRSA 2022)
 # B0 = 'Luo_S2'         # Quadrupole
 # B0 = 'FDM'            # Free Poloidal Decay Mode (Zhang & Fearn 1994,1995; Schmitt 2012)
 beta = 3.0              # guess for FDM's beta
@@ -120,44 +119,46 @@ Le2 = Le**2
 tA = 0
 
 # Normalization of the background magnetic field
-# cnorm = 'rms_cmb'                     # Sets the radial rms field at the CMB as unity
-cnorm = 'mag_energy'                  # Unit magnetic energy as in Luo & Jackson 2022 (I. Torsional oscillations)
+cnorm = 'rms_cmb'                     # Sets the radial rms field at the CMB as unity
+# cnorm = 'mag_energy'                  # Unit magnetic energy as in Luo & Jackson 2022 (I. Torsional oscillations)
 # cnorm = 'Schmitt2012'                 # as above but times 2
 # cnorm = 3.86375                       # G101 of Schmitt 2012, ricb = 0.35
 # cnorm = 4.067144                      # Zhang & Fearn 1994,   ricb = 0.35
 # cnorm = 15*np.sqrt(21/(46*np.pi))     # G21 dipole,           ricb = 0
 # cnorm = 1.09436                       # simplest FDM, l=1,    ricb = 0
 # cnorm = 3.43802                       # simplest FDM, l=1,    ricb = 0.001
-# cnorm = 1/1.46557531                  # Luo_S1, Bs_rms=1, outside r=0.35
-# cnorm = 1/62.07211308                 # Luo_S2, Bs_rms=1, outside r=0.35
 
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------- Thermal parameters
 # ----------------------------------------------------------------------------------------------------------------------
-thermal = 0  # Use 1 or 0 to include or not the temperature equation and the buoyancy force (Boussinesq)
+thermal = 1  # Use 1 or 0 to include or not the temperature equation and the buoyancy force (Boussinesq)
 
 # Prandtl number: ratio of viscous to thermal diffusivity
-Prandtl = 0.3
+Prandtl = 1
 
 # Background isentropic temperature gradient dT/dr choices, uncomment the appropriate line below:
-heating = 'internal'      # dT/dr = -beta * r         temp_scale = beta * ro**2
+# heating = 'internal'      # dT/dr = -beta * r         temp_scale = beta * ro**2
 # heating = 'differential'  # dT/dr = -beta * r**-2     temp_scale = Ti-To      beta = (Ti-To)*ri*ro/(ro-ri)
-# heating = 'two zone'      # dT/dr = K * ut.twozone()  temp_scale = -ro * K
+heating = 'two zone'      # dT/dr = K * ut.twozone()  temp_scale = -ro * K
 # heating = 'user defined'  # dT/dr = K * ut.BVprof()   temp_scale = -ro * K
 
 # Rayleigh number as Ra = alpha * g0 * ro^3 * temp_scale / (nu*kappa), alpha is the thermal expansion coeff,
-# g0 the gravity accel at ro, ro is the cmb radius (the lenght scale), nu is viscosity, kappa is thermal diffusivity.
-# Ra = 1e6
+# g0 the gravity accel at ro, ro is the cmb radius (the length scale), nu is viscosity, kappa is thermal diffusivity.
+# Ra = 21605024
 # Ra_Silva = -3e4; Ra = Ra_Silva * (1/(1-ricb))**6
-Ra_Monville = -1.7e6; Ra = 2*Ra_Monville
+# Ra_Monville = -1.7e6; Ra = 2*Ra_Monville
 
-Brunt = -(Ra/Prandtl)*Ek**2
+# Brunt Väisälä frequency as N = np.sqrt(- alpha * g0 * temp_scale) / r_o ) , alpha is the thermal expansion coeff,
+# g0 the gravity accel at ro, ro is the cmb radius (the length scale), divided by the time scale.
+Brunt = 2*2.5
+
+Ra = -Brunt**2*Prandtl/(Ek**2)
 
 # Additional arguments for 'Two zone' or 'User defined' case (modify if needed).
-rc  = 0.7  # transition radius
-h   = 0.1  # transition width
+rc  = 0.96  # transition radius
+h   = 2*0.005  # transition width
 sym = -1    # radial symmetry
 args = [rc, h, sym]
 
@@ -185,7 +186,10 @@ comp_background = 'internal'      # dC/dr = -beta * r         comp_scale = beta 
 # Ra_comp_Silva = 4e4; Ra_comp = Ra_comp_Silva * (1/(1-ricb))**6
 Ra_comp_Monville = 5.76e7; Ra_comp = 2*Ra_comp_Monville
 
-Brunt_comp = -(Ra_comp/Schmidt)*Ek**2
+# Compositional Brunt Väisälä frequency
+# Brunt_comp = 2*2.5
+
+# Ra_comp = -Brunt_comp**2*Prandtl/(Ek**2)
 
 # Additional arguments for 'Two zone' or 'User defined' case (modify if needed).
 rc  = 0.7  # transition radius
@@ -206,7 +210,7 @@ bco_compositional = 1   # CMB
 # ----------------------------------------------------------------------------------------------------------------------
 
 # Number of cpus
-ncpus = 24
+ncpus = 4
 
 # Chebyshev polynomial truncation level. Must be even if ricb = 0. See def at top.
 N = Ncheb(Ek)
@@ -236,33 +240,35 @@ if track_target == 1 :  # read target from file and sets target accordingly
     itau = tt[1]
 else:                   # set target manually
     rtau = 0
-    itau = 1.45e-5
+    itau = 2*1.130
 
 # tau is the actual target for the solver
 # real part is damping
 # imaginary part is frequency (positive is retrograde)
 tau = rtau + itau*1j
 
-which_eigenpairs = 'TR'  # Use 'TM' for shift-and-invert
+which_eigenpairs = 'TM'  # Use 'TM' for shift-and-invert
 # L/S/T & M/R/I
 # L largest, S smallest, T target
 # M magnitude, R real, I imaginary
 
 # Number of desired eigenvalues
-nev = 10
+nev = 3
 
 # Number of vectors in Krylov space for solver
 # ncv = 100
 
 # Maximum iterations to converge to an eigenvector
-maxit = 30
+maxit = 50
 
 # Tolerance for solver
 tol = 1e-13
+# Tolerance for the thermal/compositional matrix
+tol_tc = 1e-6
 
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------- Writes solution vector to disk if = 1
 # ----------------------------------------------------------------------------------------------------------------------
-write_solution = 0
+write_solution = 1

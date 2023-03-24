@@ -273,11 +273,11 @@ def main():
         # libration in longitude as a boundary flow forcing
         if rank == 0:
 
-            print('--------------------------------------------')
-            print(' Longitudinal libration - boundary forcing  ')
-            print('--------------------------------------------')
-
             if par.m == 0 and par.symm == 1 and par.bci == 1 and par.bco == 1:
+
+                print('--------------------------------------------')
+                print('Longitudinal libration - axial forcing (m = 0)')
+                print('--------------------------------------------')
 
                 l = 1   # l=1 Toroidal boundary forcing
 
@@ -286,12 +286,34 @@ def main():
                 col = np.zeros(2)
 
                 # forcing amplitude is (1/2) of libration amplitude in radians
-                C_icb = 1j* par.forcing_frequency * par.forcing_amplitude_icb * par.ricb
-                C_cmb = 1j* par.forcing_frequency * par.forcing_amplitude_cmb  # rcmb is 1
+                C_icb = 1j* par.forcing_frequency * par.forcing_amplitude_icb * par.ricb / 2
+                C_cmb = 1j* par.forcing_frequency * par.forcing_amplitude_cmb / 2 # rcmb is 1
 
                 bdat = np.array([C_cmb, C_icb])
 
                 B = ss.csr_matrix( ( bdat, (row,col) ), shape=(ut.sizmat,1) )
+                np.savez('B_forced.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
+
+            elif par.m == 2 and par.symm == 1 and par.bci == 1 and par.bco == 1:
+
+                print('--------------------------------------------')
+                print('Longitudinal libration - radial forcing (m = {:n})'.format(np.sign(par.forcing_frequency)*par.m))
+                print('--------------------------------------------')
+
+                l = 2  # up to first order the moving boundary corresponds to the degree 2 components.
+                L = l * (l + 1)
+
+                pos = ut.N1 * np.where(alltop == l)[0][0]
+                row = np.arange(pos, pos + 2)
+                col = np.zeros(2)
+
+                # amplitude for the l=2 components
+                C_cmb = -par.forcing_frequency / L * par.forcing_amplitude_cmb
+                C_icb = -par.forcing_frequency / L * par.forcing_amplitude_icb * (par.ricb ** 2)
+
+                bdat = np.array([C_cmb, C_icb])
+
+                B = ss.csr_matrix((bdat, (row, col)), shape=(ut.sizmat, 1))
                 np.savez('B_forced.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
 
             else:
@@ -513,6 +535,8 @@ def main():
             print('--------------------------------------------')
 
         comm.Barrier()
+
+
 
 
 

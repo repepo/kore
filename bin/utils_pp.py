@@ -700,7 +700,7 @@ def ohm_dis( a, b, N, lmax, m, bsymm, ricb, rcmb, ncpus, Ra, Rb):
 
 
 
-def thermal_dis( atemp, btemp, au, bu, N, lmax, m, symm, ricb, rcmb, ncpus, Ra, Rb):
+def thermal_dis( atemp, btemp, au, bu, N, lmax, m, symm, ricb, rcmb, ncpus, Ra, Rb, thermal=True):
     '''
     Returns the power associated with the buoyancy force.
     In the future will also compute thermal dissipation and other
@@ -791,9 +791,9 @@ def thermal_dis( atemp, btemp, au, bu, N, lmax, m, symm, ricb, rcmb, ncpus, Ra, 
     pool.close()
     pool.join()
 
-    if par.heating == 'two zone' or par.heating == 'user defined' :
-        buoy_power = res_pol[0]
+    if thermal:
+        buoy_power = -(par.Ra/par.Prandtl)*(par.Ek**2)*res_pol[0]
     else:
-        buoy_power = res_pol[0]*par.Brunt**2
+        buoy_power = -(par.Ra_comp/par.Prandtl)*(par.Ek**2)*res_pol[0]
 
     return [buoy_power]

@@ -418,7 +418,7 @@ def main():
 
                     acomp = np.copy(rcomp[:,i])
                     bcomp = np.copy(icomp[:,i])
-                    comp[i,:] = upp.thermal_dis( acomp, bcomp, rflow, iflow, par.N, par.lmax, par.m, par.symm, par.ricb, ut.rcmb, par.ncpus, par.ricb, ut.rcmb)
+                    comp[i,:] = upp.thermal_dis( acomp, bcomp, rflow, iflow, par.N, par.lmax, par.m, par.symm, par.ricb, ut.rcmb, par.ncpus, par.ricb, ut.rcmb, thermal=False)
 
                     Dcomp = comp[i,0]
 
@@ -473,7 +473,6 @@ def main():
                 # print('2sigmaK = ',2*sigma*KE)
                 # print('2Le2sigmaM = ',2*sigma*ME*Le2)
 
-
                 # ------------------------------------------------------------------------------------------------------
 
                 #print('{:2d}   {: 12.9f}   {: 12.9f}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}'.format(i, sigma,\
@@ -492,7 +491,7 @@ def main():
 
                 params[i,:] = np.array([par.Ek, par.m, par.symm, par.ricb, par.bci, par.bco, par.projection, par.forcing,
                  par.forcing_amplitude_cmb, par.forcing_frequency, par.magnetic, par.Em, par.Le2, par.N, par.lmax, toc1-tic,
-                 par.ncpus, par.tol, par.thermal, par.Prandtl, par.Brunt, par.compositional, par.Schmidt, par.Brunt_comp,
+                 par.ncpus, par.tol, par.thermal, par.Prandtl, par.Ra, par.compositional, par.Schmidt, par.Ra_comp,
                  par.forcing_amplitude_icb, par.rc, par.h, mantle_mag_bc, par.c_cmb, par.c1_cmb, par.mu, ut.B0_norm(), par.tA ])
 
             print('--- -------------- -------------- ---------- ---------- ---------- ---------- ---------- ----------')
@@ -507,8 +506,8 @@ def main():
                     with open('track_target','wb') as tg:
                         np.savetxt( tg, np.c_[ eigval[j,0], eigval[j,1], p2t[j] ] )
                 print('Closest to target is solution', np.where(j==1)[0][0])
-                if err2[j]>0.1:
-                    np.savetxt('big_error', np.c_[err1[j],err2[j]] )
+                if resid2[j]>0.1:
+                    np.savetxt('big_error', np.c_[resid1[j],resid2[j]] )
 
 
             # use this when writing the first target, it finds the solution with smallest p2t (useful to track the spin-over mode)
@@ -540,6 +539,9 @@ def main():
 
             with open('flow.dat','ab') as dflo:
                 np.savetxt(dflo, np.c_[kid, Dint_partial, np.real(vtorq), np.imag(vtorq), np.real(vtorq_icb), np.imag(vtorq_icb)])
+
+            with open('error.dat', 'ab') as derr:
+                np.savetxt(derr, np.c_[resid1, resid2])
 
             if par.magnetic == 1:
                 with open('magnetic.dat','ab') as dmag:
