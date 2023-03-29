@@ -1286,9 +1286,9 @@ def bc_b_thinlayer(l, loc, mu_vf, c, c1, boundary):
     Thin wall approximation boundary condition, following Roberts, Glatzmaier & Clune, GAFD 2010
     Assumes a thin electrically conducting layer at the top of the IC or at the bottom of the mantle.
     '''
-
+    
     out = ss.dok_matrix((1, ut.N1),dtype=complex)
-
+    
     if par.ricb == 0:
         if ut.symmB0 == -1:  # antisymmetric B0
             ixf = ( par.m + ut.s )%2
@@ -1301,9 +1301,9 @@ def bc_b_thinlayer(l, loc, mu_vf, c, c1, boundary):
     else:
         Tbf = bv.Tb
         Tbg = bv.Tb
-
+    
     if boundary == 'cmb':
-
+                
         epsj = 1
         rj   = ut.rcmb
         f    = Tbf[:,0]  #bv.P0_cmb
@@ -1311,7 +1311,7 @@ def bc_b_thinlayer(l, loc, mu_vf, c, c1, boundary):
         f2   = Tbf[:,2]  #bv.P2_cmb
         g    = Tbg[:,0]  #bv.T0_cmb
         g1   = Tbg[:,1]  #bv.T1_cmb
-
+        
         if par.ricb > 0:
             if 'perfect conductor' in par.innercore :
                 delta_row = 2  # first two rows needed for the icb bc
@@ -1319,9 +1319,9 @@ def bc_b_thinlayer(l, loc, mu_vf, c, c1, boundary):
                 delta_row = 1  # first row for the icb bc
         else:
             delta_row = 0  # no ic, just cmb bc
-
+        
     elif boundary == 'icb':
-
+        
         epsj = -1
         rj   = par.ricb
         f    = bv.P0_icb
@@ -1329,37 +1329,43 @@ def bc_b_thinlayer(l, loc, mu_vf, c, c1, boundary):
         f2   = bv.P2_icb
         g    = bv.T0_icb
         g1   = bv.T1_icb
-
+        
         delta_row = 0
-
+    
     F  = rj*f
     F1 = rj*f1 + f
     F2 = 2*f1 + rj*f2
     G  = rj*g
-    G1 = rj*g1 + g
-
+    G1 = rj*g1 + g    
+    
     kj = (l+0.5)*epsj-0.5
     nabF = F2 - l*(l+1)*F/rj
-
-    if loc == 'nocurl':
-
+    
+    if loc == 'nocurl':  # section f
+        
         out[0,:] = mu_vf*F1 + (kj/rj)*F + epsj*kj*c*F1 + epsj*c1*rj*(mu_vf+0.5*epsj*kj*c)*nabF
-
-        row0 = 2*par.hydro*ut.n + int( ut.N1 * ( l - ut.m_bot)/2 )    # starting row
+        
+        if ut.symmB0 == -1:
+            row0 = 2*par.hydro*ut.n + int( ut.N1 * ( l - ut.m_bot)/2 )    # starting row
+        elif ut.symmB0 == 1:
+            row0 = 2*par.hydro*ut.n + int( ut.N1 * ( l - ut.m_top)/2 )
         col0 = row0
-
-    elif loc == '1curl':
-
+    
+    elif loc == '1curl':  # section g
+        
         out[0,:] = G + epsj*rj*c1*G1
-
-        row0 = (2*par.hydro+1)*ut.n + int( ut.N1*(l - ut.m_top)/2 )   # starting row
+        
+        if ut.symmB0 == -1:
+            row0 = (2*par.hydro+1)*ut.n + int( ut.N1*(l - ut.m_top)/2 )   # starting row
+        elif ut.symmB0 == 1:
+            row0 = (2*par.hydro+1)*ut.n + int( ut.N1*(l - ut.m_bot)/2 )
         col0 = row0
-
+    
     row1 = row0 + delta_row
-
+    
     out = out.tocoo()
     out2 = [out.data, out.row + row1, out.col + col0]
-
+    
     return out2
 
 
