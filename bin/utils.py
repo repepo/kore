@@ -612,52 +612,58 @@ def B0_norm():
     Returns the normalization constant of the applied magnetic field
     '''
 
-    ricb = par.ricb
-    args = [ par.beta, par.B0_l, ricb, 0 ]
-    kind = par.B0
+    if par.magnetic == 1:
 
-    if kind in ['axial','dipole','G21 dipole','Luo_S1']:
-        l = 1
-    elif kind == 'Luo_S2':
-        l = 2
-    elif kind == 'FDM':
-        l = par.B0_l
-
-    L = l*(l+1)
-
-    if par.cnorm == 'rms_cmb':  # rms of radial magnetic field at the cmb is set to 1
-
-        rk = np.array([1.0])
-        out = np.sqrt(2*l+1) / ( l*(l+1) * h0(rk, kind, args) )
-        out = out[0]
-
-    elif par.cnorm in ['mag_energy', 'Schmitt2012']:  # total magnetic energy is set to 1 or 2
-
-        N = 240
-        i = np.arange(0,N)
-        xk = np.cos( (i+0.5)*np.pi/N )  # colocation points, from -1 to 1
-        sqx = np.sqrt(1-xk**2)
-        rk = 0.5*(1-ricb)*( xk + 1 ) + ricb
-        r2 = rk**2
-
-        y0 = h0(rk, kind, args)
-        y1 = h1(rk, kind, args)
-
-        f0 = 4*np.pi*L/(2*l+1)
-        f1 = (L+1)*y0**2
-        f2 = 2*rk*y0*y1
-        f3 = r2*y1**2
-
-        integ = (np.pi/N) * ( (1-ricb)/2 ) * np.sum( sqx*f0*( f1+f2+f3 ) )
-
-        if par.cnorm == 'mag_energy':
-            out = 1/np.sqrt(integ)
-        elif par.cnorm == 'Schmitt2012':
-            out = 2/np.sqrt(integ)
-
+        ricb = par.ricb
+        args = [ par.beta, par.B0_l, ricb, 0 ]
+        kind = par.B0
+    
+        if kind in ['axial','dipole','G21 dipole','Luo_S1']:
+            l = 1
+        elif kind == 'Luo_S2':
+            l = 2
+        elif kind == 'FDM':
+            l = par.B0_l
+    
+        L = l*(l+1)
+    
+        if par.cnorm == 'rms_cmb':  # rms of radial magnetic field at the cmb is set to 1
+    
+            rk = np.array([1.0])
+            out = np.sqrt(2*l+1) / ( l*(l+1) * h0(rk, kind, args) )
+            out = out[0]
+    
+        elif par.cnorm in ['mag_energy', 'Schmitt2012']:  # total magnetic energy is set to 1 or 2
+    
+            N = 240
+            i = np.arange(0,N)
+            xk = np.cos( (i+0.5)*np.pi/N )  # colocation points, from -1 to 1
+            sqx = np.sqrt(1-xk**2)
+            rk = 0.5*(1-ricb)*( xk + 1 ) + ricb
+            r2 = rk**2
+    
+            y0 = h0(rk, kind, args)
+            y1 = h1(rk, kind, args)
+    
+            f0 = 4*np.pi*L/(2*l+1)
+            f1 = (L+1)*y0**2
+            f2 = 2*rk*y0*y1
+            f3 = r2*y1**2
+    
+            integ = (np.pi/N) * ( (1-ricb)/2 ) * np.sum( sqx*f0*( f1+f2+f3 ) )
+    
+            if par.cnorm == 'mag_energy':
+                out = 1/np.sqrt(integ)
+            elif par.cnorm == 'Schmitt2012':
+                out = 2/np.sqrt(integ)
+    
+        else:
+    
+            out = par.cnorm
+            
     else:
-
-        out = par.cnorm
+        
+        out = 0
 
     return out
 
