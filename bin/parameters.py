@@ -134,7 +134,7 @@ cnorm = 'rms_cmb'                     # Sets the radial rms field at the CMB as 
 # ----------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------- Thermal parameters
 # ----------------------------------------------------------------------------------------------------------------------
-thermal =01  # Use 1 or 0 to include or not the temperature equation and the buoyancy force (Boussinesq)
+thermal = 0  # Use 1 or 0 to include or not the temperature equation and the buoyancy force (Boussinesq)
 
 # Prandtl number: ratio of viscous to thermal diffusivity
 Prandtl = 1
