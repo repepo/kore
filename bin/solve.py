@@ -281,6 +281,7 @@ def main():
             p2t          = np.zeros(success)
             resid1       = np.zeros(success)
             resid2       = np.zeros(success)
+            resid3       = np.zeros(success)
             y            = np.zeros(success)
             vtorq        = np.zeros(success,dtype=complex)
             vtorq_icb    = np.zeros(success,dtype=complex)
@@ -292,23 +293,30 @@ def main():
                 Dohm_partial = np.zeros((success,3))
 
             if par.thermal == 1:
-                therm = np.zeros((success,1))
+                therm = np.zeros((success,4))
 
             if par.compositional == 1:
-                comp = np.zeros((success,1))
+                comp = np.zeros((success,4))
 
             params = np.zeros((success,33))
 
-            tA = par.magnetic == 1 and par.tA == 1  # Boolean
-            if tA:
+            if par.timescale == 'rotation':
+                Le2 = par.Le2
+                Ek = par.Ek
+                Em = par.Em
+            elif par.timescale == 'viscous':
+                Le2 = par.Le2/(par.Ek**2)
+                Ek = 1.0
+                Em = par.Em/par.Ek
+            elif par.timescale == 'alfven':
                 Le2 = 1.0
                 Ek  = par.Ek/par.Le
                 Em  = par.Em/par.Le
-            else:
-                Le2 = par.Le2
-                Ek  = par.Ek
-                Em  = par.Em
 
+            Ra = par.Ra
+            Pr = par.Prandtl
+            Ra_comp = par.Ra_comp
+            Sc = par.Schmidt
 
             if par.Ek != 0:
                 print('Ek = 10**{:<8.4f}'.format(np.log10(par.Ek)))
@@ -408,11 +416,17 @@ def main():
                     btemp = np.copy(itemp[:,i])
                     therm[i,:] = upp.thermal_dis( atemp, btemp, rflow, iflow, par.N, par.lmax, par.m, par.symm, par.ricb, ut.rcmb, par.ncpus, par.ricb, ut.rcmb)
 
-                    Dtemp = therm[i,0]
+                    Dbuoy = therm[i,0]*(Ek**2)*Ra/Pr
+                    TE = therm[i,1]
+                    Dtemp = therm[i,2]*Ek/Pr
+                    Dadv = therm[i,3]
 
                 else:
 
+                    Dbuoy = 0
+                    TE = 0
                     Dtemp = 0
+                    Dadv = 0
 
                 if par.compositional== 1:
 
@@ -420,11 +434,17 @@ def main():
                     bcomp = np.copy(icomp[:,i])
                     comp[i,:] = upp.thermal_dis( acomp, bcomp, rflow, iflow, par.N, par.lmax, par.m, par.symm, par.ricb, ut.rcmb, par.ncpus, par.ricb, ut.rcmb, thermal=False)
 
-                    Dcomp = comp[i,0]
+                    Dbuoy_comp = comp[i,0]*(Ek**2)*Ra_comp/Sc
+                    CE = comp[i,1]
+                    Dcomp = comp[i,2]*(Ek/Sc)
+                    Dadv_comp = comp[i,3]
 
                 else:
 
+                    Dbuoy_comp = 0
+                    CE = 0
                     Dcomp = 0
+                    Dadv_comp = 0
 
                 # ------------------------------------------------------ Computing residuals to check the power balance:
                 #
@@ -459,8 +479,16 @@ def main():
                     resid1[i] = abs( Dint + Dkin - pss ) / max( abs(Dint), abs(Dkin), abs(pss) )
                 else:
                     resid1[i] = np.nan
-                resid2[i] = ( abs( 2*sigma*(KE + Le2*ME) - Dkin - Dtemp - Dcomp + Dohm - pvf ) /
-                 max( abs(2*sigma*(KE+Le2*ME)), abs(Dkin), abs(Dohm), abs(Dtemp), abs(Dcomp), abs(pvf) ) )
+
+                resid2[i] = ( abs( 2*sigma*(KE + Le2*ME) - Dkin - Dbuoy - Dbuoy_comp + Dohm - pvf ) /
+                 max( abs(2*sigma*(KE+Le2*ME)), abs(Dkin), abs(Dohm), abs(Dbuoy), abs(Dbuoy_comp), abs(pvf) ) )
+
+                if par.thermal == 1:
+                    resid3[i] = abs(2*sigma*(TE) - Dadv - Dtemp) / max(abs(2*sigma*(TE)), abs(Dadv), abs(Dtemp))
+                elif (par.thermal == 0) & (par.compositional == 1):
+                    resid3[i] = abs(2*sigma*(CE) - Dadv_comp - Dcomp)/max(abs(2*sigma*(CE)), abs(Dadv_comp), abs(Dcomp))
+                else:
+                    resid3[i] = np.nan
 
                 # print('Dkin  =' ,Dkin)
                 # print('Dint  =' ,Dint)
@@ -489,10 +517,17 @@ def main():
                 elif par.mantle == 'TWA':
                     mantle_mag_bc = 1
 
+                if par.timescale == 'rotation':
+                    time_scale = 0
+                elif par.timescale == 'viscous':
+                    time_scale = 1
+                elif par.timescale == 'alfven':
+                    time_scale = 2
+
                 params[i,:] = np.array([par.Ek, par.m, par.symm, par.ricb, par.bci, par.bco, par.projection, par.forcing,
                  par.forcing_amplitude_cmb, par.forcing_frequency, par.magnetic, par.Em, par.Le2, par.N, par.lmax, toc1-tic,
                  par.ncpus, par.tol, par.thermal, par.Prandtl, par.Ra, par.compositional, par.Schmidt, par.Ra_comp,
-                 par.forcing_amplitude_icb, par.rc, par.h, mantle_mag_bc, par.c_cmb, par.c1_cmb, par.mu, ut.B0_norm(), par.tA ])
+                 par.forcing_amplitude_icb, par.rc, par.h, mantle_mag_bc, par.c_cmb, par.c1_cmb, par.mu, ut.B0_norm(), time_scale ])
 
             print('--- -------------- -------------- ---------- ---------- ---------- ---------- ---------- ----------')
 
@@ -541,7 +576,7 @@ def main():
                 np.savetxt(dflo, np.c_[kid, Dint_partial, np.real(vtorq), np.imag(vtorq), np.real(vtorq_icb), np.imag(vtorq_icb)])
 
             with open('error.dat', 'ab') as derr:
-                np.savetxt(derr, np.c_[resid1, resid2])
+                np.savetxt(derr, np.c_[resid1, resid2, resid3])
 
             if par.magnetic == 1:
                 with open('magnetic.dat','ab') as dmag:
@@ -549,11 +584,11 @@ def main():
 
             if par.thermal ==1:
                 with open('thermal.dat','ab') as dtmp:
-                    np.savetxt(dtmp, therm)
+                    np.savetxt(dtmp, np.c_[therm])
 
             if par.compositional==1:
                 with open('compositional.dat','ab') as dcmp:
-                    np.savetxt(dcmp, comp)
+                    np.savetxt(dcmp, np.c_[comp])
 
             if par.forcing == 0:
                 with open('eigenvalues.dat','ab') as deig:

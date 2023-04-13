@@ -66,7 +66,7 @@ def expand_sol(sol,vsymm):
     return out
 
 
-def thermal_worker(l, Hk0, Pk0, N, ricb, rcmb, Ra, Rb):
+def thermal_worker(l, Hk0, Pk0, N, ricb, rcmb, Ra, Rb, thermal):
 
     L  = l*(l+1)
 
@@ -81,21 +81,74 @@ def thermal_worker(l, Hk0, Pk0, N, ricb, rcmb, Ra, Rb):
         Hk[0,:] = Hk0
         Pk[0,:] = Pk0
 
+    dHk  = ut.Dcheb(Hk[0,:],ricb,rcmb)   # cheb coeffs of the first derivative
+    d2Hk = ut.Dcheb(dHk,ricb,rcmb)  # 2nd derivative
+
     hlm0 = np.zeros(np.shape(x0),dtype=complex)
+    hlm1 = np.zeros(np.shape(x0),dtype=complex)
+    hlm2 = np.zeros(np.shape(x0),dtype=complex)
+
     hlm0 = ch.chebval(x0, Hk[0,:])
+    hlm1 = ch.chebval(x0, dHk)
+    hlm2 = ch.chebval(x0, d2Hk)
 
     plm0 = np.zeros(np.shape(x0),dtype=complex)
+
     plm0 = ch.chebval(x0, Pk[0,:])
 
+    f0 = 4 * np.pi / (2 * l + 1)
+
     # -------------------------------------------------------------------------- buoyancy power
-    f0 = 4*np.pi*L/(2*l+1)
-    f1 = r2 * 2 * np.real( np.conj(plm0) * hlm0 )
-    buoyancy_power_l = 0.5*(Rb-Ra)*(np.pi/N)*np.sum( sqx*f0*f1 )
 
-    #if l<10:
-    #    print(l,buoyancy_power_l)
+    f1 = r2 * L * np.conj(plm0) * hlm0
+    f2 = r2 * L * np.conj(hlm0) * plm0
+    Dbuoy_l = 0.5*(Rb-Ra)*(np.pi/N)*np.sum( sqx*f0*(f1+f2) )
 
-    return [buoyancy_power_l]
+    # -------------------------------------------------------------------------- thermal energy
+
+    f1 = r2 * np.conj(hlm0)*hlm0
+    Ten_l = 0.5*(Rb-Ra)*(np.pi/N)*np.sum( sqx*f0*(f1) )
+
+    # -------------------------------------------------------------------------- thermal dissipation
+
+    f1 = 2 * rk * np.conj(hlm0) * hlm1
+    f2 = r2 * np.conj(hlm0) * hlm2
+    f3 = -2 * L * np.conj(hlm0) * hlm0
+    f4 = 2 * rk * np.conj(hlm1) * hlm0
+    f5 = r2 * np.conj(hlm2) * hlm0
+    Dtemp_l = 0.5 * (Rb - Ra) * (np.pi / N) * np.sum(sqx * f0 * (f1 + f2 + f3 + f4 + f5))
+
+    # -------------------------------------------------------------------------- advection term heat equation
+
+    if thermal:
+
+        if par.heating == "internal":
+            f1 = r2 * L * np.conj(plm0) * hlm0
+            f2 = r2 * L * np.conj(hlm0) * plm0
+        elif par.heating == "differential":
+            f1 = L * np.conj(plm0) * hlm0/rk
+            f2 = L * np.conj(hlm0) * plm0/rk
+        elif par.heating == "two zone":
+            fr = rk * ut.twozone(rk, par.args)
+            f1 = fr * L * np.conj(plm0) * hlm0
+            f2 = fr * L * np.conj(hlm0) * plm0
+        elif par.heating == "user defined":
+            fr = rk * ut.BVprof(rk, par.args)
+            f1 = fr * L * np.real(np.conj(plm0) * hlm0)
+            f2 = fr * L * np.conj(hlm0) * plm0
+
+    else:
+
+        if par.comp_background == "internal":
+            f1 = r2 * L * np.conj(plm0) * hlm0
+            f2 = r2 * L * np.conj(hlm0) * plm0
+        elif par.comp_background == "differential":
+            f1 = L * np.conj(plm0) * hlm0/rk
+            f2 = L * np.conj(hlm0) * plm0/rk
+
+    Dadv_l = 0.5 * (Rb - Ra) * (np.pi / N) * np.sum(sqx * f0 * (f1 + f2))
+
+    return [np.real(Dbuoy_l), np.real(Ten_l), np.real(Dtemp_l), np.real(Dadv_l)]
 
 
 def pol_worker( l, Pk0, N, m, ricb, rcmb, w, projection, forcing, Ra, Rb): # ------------
@@ -778,22 +831,16 @@ def thermal_dis( atemp, btemp, au, bu, N, lmax, m, symm, ricb, rcmb, ncpus, Ra, 
     evu = au + 1j*bu
     Pk0 = evu[0:  n]
 
-
     # these are the cheb coefficients, reorganized
     Hk2 = np.reshape(Hk0,(int((lmax-m+1)/2),N1))
     Pk2 = np.reshape(Pk0,(int((lmax-m+1)/2),N1))
 
     # process each l component in parallel
     pool = mp.Pool(processes=ncpus)
-    p = [ pool.apply_async(thermal_worker,args=(l, Hk2[k,:], Pk2[k,:], N, ricb, rcmb, Ra, Rb)) for k,l in enumerate(lup) ]
+    p = [ pool.apply_async(thermal_worker,args=(l, Hk2[k,:], Pk2[k,:], N, ricb, rcmb, Ra, Rb, thermal)) for k,l in enumerate(lup) ]
     res_pol = np.sum([p1.get() for p1 in p],0)
 
     pool.close()
     pool.join()
 
-    if thermal:
-        buoy_power = -(par.Ra/par.Prandtl)*(par.Ek**2)*res_pol[0]
-    else:
-        buoy_power = -(par.Ra_comp/par.Prandtl)*(par.Ek**2)*res_pol[0]
-
-    return [buoy_power]
+    return res_pol
