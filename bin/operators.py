@@ -167,10 +167,12 @@ def coriolis(l, section, component, offdiag):  # -------------------------------
                     out = -2j*par.m*r2Iv                          # r2* r.1curl(2z x u)
                         
             
-    if (par.magnetic==1 and par.tA==1):
-        scale_factor = 1.0/par.Le
-    else:
+    if (par.timescale == 'rotation'):
         scale_factor = 1.0
+    elif (par.timescale == 'viscous'):
+        scale_factor = 1.0/par.Ek
+    elif (par.timescale == 'alfven'):
+        scale_factor = 1.0/par.Le
     
     return [ scale_factor*out, offd ]
     
@@ -207,11 +209,13 @@ def viscous_diffusion(l, section, component, offdiag):  # ----------------------
             else:
                 out = L*( -L*Iv + 2*r1D1v + r2D2v )                            # r2* r.1curl( nabla^2 u )
         
-    if (par.magnetic==1 and par.tA==1):
-        scale_factor = par.Ek/(par.Le)
-    else:
+    if (par.timescale == 'rotation'):
         scale_factor = par.Ek
-    
+    elif (par.timescale == 'viscous'):
+        scale_factor = 1.0
+    elif (par.timescale == 'alfven'):
+        scale_factor = par.Ek/(par.Le)
+
     return scale_factor * out
 
 
@@ -400,10 +404,12 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
                 offd = 1
 
 
-    if (par.magnetic==1 and par.tA==1):
-        scale_factor = 1.0
-    else:
+    if (par.timescale == 'rotation'):
         scale_factor = par.Le2
+    elif (par.timescale == 'viscous'):
+        scale_factor = par.Le2/(par.Ek**2)
+    elif (par.timescale == 'alfven'):
+        scale_factor = 1.0
                 
     return [scale_factor*out, offd]
 
@@ -413,12 +419,13 @@ def buoyancy(l, section, component, offdiag):  # -------------------------------
 
     out = 0
     L = l*(l+1)
-    time_scale = 'rotation'  # other time scales to be implemented later
     
-    if time_scale == 'rotation':
-        omgtau = 1.0
-    elif time_scale == 'viscous':  
-        omgtau = 1/par.Ek
+    if par.timescale == 'rotation':
+        scale_factor = (par.Ra/par.Prandtl) * (par.Ek)**2
+    elif par.timescale == 'viscous':
+        scale_factor = (par.Ra/par.Prandtl)
+    elif par.timescale == 'alfven':
+        scale_factor = (par.Ra/par.Prandtl) * (par.Ek/par.Le)**2
 
     if (section == 'u') and (offdiag == 0) :
 
@@ -427,7 +434,7 @@ def buoyancy(l, section, component, offdiag):  # -------------------------------
         else:
             buoy = r4Iu
 
-    out = L * buoy * (par.Ra/par.Prandtl) * (omgtau*par.Ek)**2
+    out = L * buoy * scale_factor
 
     return out
 
@@ -439,10 +446,12 @@ def comp_buoyancy(l, section, component, offdiag):  # --------------------------
     L = l*(l+1)
     time_scale = 'rotation'  # other time scales to be implemented later
     
-    if time_scale == 'rotation':
-        omgtau = 1
-    elif time_scale == 'viscous':  
-        omgtau = 1/par.Ek
+    if par.timescale == 'rotation':
+        scale_factor = (par.Ra_comp/par.Schmidt) * (par.Ek)**2
+    elif par.timescale == 'viscous':
+        scale_factor = (par.Ra_comp/par.Schmidt)
+    elif par.timescale == 'alfven':
+        scale_factor = (par.Ra_comp/par.Schmidt) * (par.Ek/par.Le)**2
 
     if (section == 'u') and (offdiag == 0) :
 
@@ -451,7 +460,7 @@ def comp_buoyancy(l, section, component, offdiag):  # --------------------------
         else:
             buoy = r4Iu
 
-    out = L * buoy * (par.Ra_comp/par.Schmidt) * (omgtau*par.Ek)**2
+    out = L * buoy * scale_factor
 
     return out
 
@@ -684,11 +693,13 @@ def magnetic_diffusion(l, section, component, offdiag):
             elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
                 out = L*( -L*r3Ig + 2*r4D1g + r5D2g )
         
-    if (par.magnetic==1 and par.tA==1):
-        scale_factor = par.Em/par.Le
-    else:
+    if (par.timescale == 'rotation'):
         scale_factor = par.Em
-    
+    elif (par.timescale == 'viscous'):
+        scale_factor = par.Em/par.Ek
+    elif (par.timescale == 'alfven'):
+        scale_factor = par.Em/par.Le
+
     return scale_factor * out
 
 
@@ -740,6 +751,13 @@ def thermal_diffusion(l, section, component, offdiag):
     out = 0
     L = l*(l+1)
 
+    if (par.timescale == 'rotation'):
+        scale_factor = par.Ek/par.Prandtl
+    elif (par.timescale == 'viscous'):
+        scale_factor = 1/par.Prandtl
+    elif (par.timescale == 'alfven'):
+        scale_factor = par.Ek/(par.Prandtl*par.Le)
+
     if section == 'h' and offdiag == 0 :
 
         if par.heating == 'differential':
@@ -747,7 +765,8 @@ def thermal_diffusion(l, section, component, offdiag):
         else:
             difus = - L*Ih + 2*r1D1h + r2D2h  # eq. times r**2
 
-        out = (par.Ek/par.Prandtl) * difus
+
+        out = scale_factor * difus
 
     return out
 
@@ -798,6 +817,13 @@ def compositional_diffusion(l, section, component, offdiag):
     out = 0
     L = l*(l+1)
 
+    if (par.timescale == 'rotation'):
+        scale_factor = par.Ek/par.Schmidt
+    elif (par.timescale == 'viscous'):
+        scale_factor = 1/par.Schmidt
+    elif (par.timescale == 'alfven'):
+        scale_factor = par.Ek/(par.Schmidt*par.Le)
+
     if section == 'i' and offdiag == 0 :
 
         if par.comp_background == 'differential' :
@@ -805,7 +831,7 @@ def compositional_diffusion(l, section, component, offdiag):
         else:
             difus = - L*Ii + 2*r1D1i + r2D2i  # eq. times r**2
 
-        out = (par.Ek/par.Schmidt) * difus
+        out = scale_factor * difus
 
     return out
 
