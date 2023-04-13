@@ -45,11 +45,13 @@ lmax_bot = lmax + 1 + (1-2*np.sign(m))*(1-s)
 
 if par.B0 in ['axial','dipole','G21 dipole','Luo_S1']:
     symmB0 = -1
+    B0_l   =  1
 elif par.B0 == 'Luo_S2':
     symmB0 = 1
+    B0_l   = 2
 elif par.B0 == 'FDM':
     symmB0 = int((-1)**par.B0_l)
-
+    B0_l   = par.B0_l
 bsymm = par.symm * symmB0  # induced magnetic field (b) symmetry follows from u and B0
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -231,33 +233,26 @@ def h0(rr, kind, args):
     ricb = args[2]
     rp   = args[3]
 
-
     r = rr[rr>0]
 
     if   kind == 'axial':       # axial uniform field in the z direction
         l = 1
-        c = 1/2
         out = (1/2)*r**(1+rp)
-        #out = r**(1+rp)
 
     elif kind == 'dipole' and ricb > 0 :      # dipole, singular at r=0
         l = 1
-        c = 1/2
         out = (1/2)*r**(-2+rp)
 
     elif kind == 'G21 dipole':  # Felix's dipole (Gerick 2021)
         l = 1
-        c = (1/6)-(1/10)
         out = (1/6)*r**(1+rp) - (1/10)*r**(3+rp)
 
     elif kind == 'Luo_S1':
         l = 1
-        c = 2
         out = (5 - 3*r**2)*r**(1+rp)
 
     elif kind == 'Luo_S2':
         l = 2
-        c = 4
         out = (157-296*r**2+143*r**4)*r**(2+rp)
 
     elif kind == 'FDM':         # poloidal Free Decay Mode
@@ -265,11 +260,9 @@ def h0(rr, kind, args):
         x = b*r
 
         if ricb==0:
-            c = jl(l,b,0)
             # Gubbins & Roberts (1987), page 49, eq. 3.67
             out = jl(l,x,0)*r**rp
         else:
-            c = jl(l,b,0)*nl(-1 + l,b,0) - jl(-1 + l,b,0)*nl(l,b,0)
             # Zhang & Fearn, GAFD (1995), page 196, eq. 2.7
             out = ( jl(l,x,0)*nl(-1 + l,b,0) - jl(-1 + l,b,0)*nl(l,x,0) )*r**rp
 
@@ -277,7 +270,6 @@ def h0(rr, kind, args):
     out2[rr>0] = out
     if (ricb == 0) and (np.size(rr[rr>0]) == np.size(rr[rr<0])):
         out2[rr<0] = np.flipud(out)*(-1)**(l+rp)
-
 
     return out2
 
@@ -296,45 +288,36 @@ def h1(rr, kind, args):
 
     if kind == 'axial':         # axial uniform field in the z direction
         l = 1
-        c = 1/2
         out = (1/2)*r**rp
-        #out = r**rp
 
     elif kind == 'dipole' and ricb > 0 :      # dipole, singular at r=0
         l = 1
-        c = 1/2
         out = -r**(-3+rp)
 
     elif kind == 'G21 dipole':  # Felix's dipole (Gerick 2021)
         l = 1
-        c = (1/6)-(1/10)
         out = (1/6)*r**rp - (3/10)*r**(2+rp)
 
     elif kind == 'Luo_S1':
         l = 1
-        c = 2
         out = (5 - 9*r**2)*r**rp
 
     elif kind == 'Luo_S2':
         l = 2
-        c = 4
         out = 2*r**(1 + rp)*(157 - 592*r**2 + 429*r**4)
 
     elif kind == 'FDM':
         b = findbeta(args)
         x = b*r
         if ricb==0:
-            c = jl(l,b,0)
             out = b*jl(l,x,1)*r**rp
         else:
-            c = jl(l,b,0)*nl(-1 + l,b,0) - jl(-1 + l,b,0)*nl(l,b,0)
             out = ( b*(jl(l,x,1)*nl(-1 + l,b,0) - jl(-1 + l,b,0)*nl(l,x,1)) )*r**rp
 
     out2 = np.zeros_like(rr)
     out2[rr>0] = out
     if (ricb == 0) and (np.size(rr[rr>0]) == np.size(rr[rr<0])):
         out2[rr<0] = np.flipud(out)*(-1)**(l-1+rp)
-
 
     return out2
 
@@ -353,40 +336,33 @@ def h2(rr, kind, args):
 
     if kind == 'axial':         # axial uniform field in the z direction
         l = 1
-        c = 1/2
         out = np.zeros_like(r)
 
     elif kind == 'dipole' and ricb > 0 :      # dipole, singular at r=0
         l = 1
-        c = 1/2
         out = 3*r**(-4+rp)
 
     elif kind == 'G21 dipole':  # Felix's dipole (Gerick 2021)
         l = 1
-        c = (1/6)-(1/10)
         out = (6/10)*r**(1+rp)
 
     elif kind == 'Luo_S1':
         l = 1
-        c = 2
         out = -18*r**(1+rp)
 
     elif kind == 'Luo_S2':
         l = 2
-        c = 4
         out = 2*r**rp*(157 - 1776*r**2 + 2145*r**4)
 
     elif kind == 'FDM':
         b = findbeta(args)
         x = b*r
         if ricb==0:
-            c = jl(l,b,0)
             k = x<1e-3
             out = np.zeros_like(r)
             out[ k] = b**2*jl_smx(l,x[k],2)*r[k]**rp
             out[~k] = b**2*jl(-1 + l,x[~k],1)*r[~k]**rp + ((1 + l)*(jl(l,x[~k],0) - x[~k]*jl(l,x[~k],1)))*r[~k]**(-2+rp)
         else:
-            c = jl(l,b,0)*nl(-1 + l,b,0) - jl(-1 + l,b,0)*nl(l,b,0)
             out= ((x**2*jl(-1 + l,x,1) + (1 + l)*(jl(l,x,0) - x*jl(l,x,1)))*nl(-1 + l,b,0) \
              - jl(-1 + l,b,0)*(x**2*nl(-1 + l,x,1) + (1 + l)*(nl(l,x,0) - b*r*nl(l,x,1))))*r**(-2+rp)
 
@@ -394,7 +370,6 @@ def h2(rr, kind, args):
     out2[rr>0] = out
     if (ricb == 0) and (np.size(rr[rr>0]) == np.size(rr[rr<0])):
         out2[rr<0] = np.flipud(out)*(-1)**(l+rp)
-
 
     return out2
 
@@ -413,27 +388,22 @@ def h3(rr, kind, args):
 
     if kind == 'axial':         # axial uniform field in the z direction
         l = 1
-        c = 1/2
         out = np.zeros_like(r)
 
     elif kind == 'dipole' and ricb > 0 :      # dipole, singular at r=0
         l = 1
-        c = 1/2
         out = -12*r**(-5+rp)
 
     elif kind == 'G21 dipole':  # Felix's dipole (Gerick 2021)
         l = 1
-        c = (1/6)-(1/10)
         out = (6/10)*r**rp
 
     elif kind == 'Luo_S1':
         l = 1
-        c = 2
         out = -18*r**rp
 
     elif kind == 'Luo_S2':
         l = 2
-        c = 4
         out = 24*r**(1 + rp)*(-296 + 715*r**2)
 
     elif kind == 'FDM':
@@ -444,7 +414,6 @@ def h3(rr, kind, args):
         if l>=2:
 
             if ricb==0:
-                c = jl(l,b,0)
 
                 k = x<1e-3
                 x0 = x[ k]  # small x
@@ -458,7 +427,6 @@ def h3(rr, kind, args):
                  + 3*x1*jl(l,x1,1) + 4*l*x1*jl(l,x1,1) + l**2*x1*jl(l,x1,1))*r[~k]**(-3+rp)
 
             else:
-                c = ( jl(l,b,0)*nl(-1 + l,b,0) - jl(-1 + l,b,0)*nl(l,b,0) )*r**rp
 
                 out = ((b**3*r**3*jl(-2 + l,b*r,1) + b*l*r*jl(-1 + l,b*r,0) - b**2*r**2*jl(-1 + l,b*r,1) \
                  - 2*b**2*l*r**2*jl(-1 + l,b*r,1) - 3*jl(l,b*r,0) - 4*l*jl(l,b*r,0) - l**2*jl(l,b*r,0) + 3*b*r*jl(l,b*r,1) \
@@ -469,7 +437,6 @@ def h3(rr, kind, args):
         elif l==1:
 
             if ricb==0:
-                c = jl(l,b,0)
 
                 k = x<1e-3
                 x0 = x[ k]  # small x
@@ -481,7 +448,6 @@ def h3(rr, kind, args):
                 out[~k] = (-2*x1**2*jl(0,x1,1) - 8*jl(1,x1,0) + x1*(8 - x1**2)*jl(1,x1,1))*r[~k]**(-3+rp)
 
             else:
-                c = jl(l,b,0)*nl(-1 + l,b,0) - jl(-1 + l,b,0)*nl(l,b,0)
 
                 out = (-2*b**2*r**2*jl(0,b*r,1)*nl(0,b,0) - 8*jl(1,b*r,0)*nl(0,b,0) + 8*b*r*jl(1,b*r,1)*nl(0,b,0) \
                  - b**3*r**3*jl(1,b*r,1)*nl(0,b,0) + 2*b**2*r**2*jl(0,b,0)*nl(0,b*r,1) + 8*jl(0,b,0)*nl(1,b*r,0) \
@@ -491,7 +457,6 @@ def h3(rr, kind, args):
     out2[rr>0] = out
     if (ricb == 0) and (np.size(rr[rr>0]) == np.size(rr[rr<0])):
         out2[rr<0] = np.flipud(out)*(-1)**(l-1+rp)
-
 
     return out2
 
@@ -617,14 +582,8 @@ def B0_norm():
         ricb = par.ricb
         args = [ par.beta, par.B0_l, ricb, 0 ]
         kind = par.B0
-    
-        if kind in ['axial','dipole','G21 dipole','Luo_S1']:
-            l = 1
-        elif kind == 'Luo_S2':
-            l = 2
-        elif kind == 'FDM':
-            l = par.B0_l
-    
+        
+        l = B0_l
         L = l*(l+1)
     
         if par.cnorm == 'rms_cmb':  # rms of radial magnetic field at the cmb is set to 1
@@ -1199,16 +1158,16 @@ def gamma_magnetic():
         R = np.array([1.0])
         h_cmb = B0_norm() * h0(R, par.B0, [par.beta, par.B0_l, par.ricb, 0])
 
-        if par.B0_l == 1:  # Either uniform axial or dipole background field, induced magnetic field b is thus antisymmetric
+        if B0_l == 1:  # Either uniform axial or dipole background field, induced magnetic field b is thus antisymmetric
 
             # the torque is prop. to the l=2 toroidal component of b
             out[0,n0:n0+par.N] = (16*np.pi/5) * G * h_cmb
 
-        elif par.B0_l == 2:  # Quadrupole background field, induced magnetic field b is thus symmetric
+        elif B0_l == 2:  # Quadrupole background field, induced magnetic field b is thus symmetric
 
             # torque prop. to l=1 and l=3 toroidal component of b
-            out[0,n0:n0+par.N]          = -(16*np.pi/5)     * G  # l=1
-            out[0,n0+par.N: n0+2*par.N] =  (16*18*np.pi/35) * G  # l=3
+            out[0,n0:n0+par.N]          = -(16*np.pi/5)     * G * h_cmb # l=1
+            out[0,n0+par.N: n0+2*par.N] =  (16*18*np.pi/35) * G * h_cmb # l=3
 
     else:
 
