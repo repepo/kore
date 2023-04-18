@@ -29,8 +29,8 @@ def load_results(filename):
                                                              "rvtorq_icb", "ivtorq_icb"])
         df = pd.concat([df, flo], axis=1)
     if exists(filename + '.mag'):
-        mag = pd.read_csv(filename + '.mag', sep=' ', names=["MP", "MT", "ohm_disP", "ohm_disT", "Dohm1", "Dohm2",
-                                                             "Dohm3", "rmtorq_cmb", "imtorq_cmb"])
+        mag = pd.read_csv(filename + '.mag', sep=' ', names=["MP", "MT", "DohmP", "DohmT", "Dohm1", "Dohm2",
+                                                             "Dohm3", "rmtorq", "imtorq"])
         df = pd.concat([df, mag], axis=1)
     if exists(filename + '.tmp'):
         tmp = pd.read_csv(filename + '.tmp', sep=' ', names=['Dbuoy', 'TE', 'Dtemp', 'Dadv'])
@@ -93,7 +93,7 @@ else:
 if (df['time_scale'] == 1).all():
     df['scale_factor'] = 1/df['Ek']
 elif (df['time_scale'] == 2).all():
-    df['scale_factor'] = 1/df['Le']
+    df['scale_factor'] = 1/np.sqrt(df['Le2'])
 else:
     df['scale_factor'] = np.ones(len(df))
 
@@ -155,15 +155,11 @@ else:
     df['Pm'] = df['Ek']/df['Em']
     df['Lam'] = df['Le2']/df['Em']
 
-    df['ME'] = df['MP'] + df['MT']
+    df['ME'] = (df['MP'] + df['MT'])*df['Le2']*(df['scale_factor']**2)
     df['mtorq'] = df['rmtorq'] + 1j*df['imtorq']
-    df['Dohm'] = (df['DohmP'] + df['DohmT'])*df['Le2']*df['Em']*df['scale_factor']
+    df['Dohm'] = (df['DohmP'] + df['DohmT'])*df['Le2']*df['Em']*(df['scale_factor']**2)
 
     df['o2v'] = df['Dohm']/df['Dint']
-
-    if (df['tA'] == 1).all():
-        df['Dkin'] = df['Dkin'] / df['Le']
-        df['Dint'] = df['Dint'] / df['Le']
 
     if (df['Dohm1'] != 0).all() or (df['Dohm2'] != 0).all() or (df['Dohm3'] != 0).all():
         df['Dohm_bulk1'] = df['Dohm'] - df['Dohm1'] - df['Dohm2']
@@ -180,10 +176,10 @@ if (df['thermal'] == 0).all():
     del df['Ra']
     del df['rc']
     del df['h']
-    df['Dtemp'] = np.zeros(len(df))
+    df['Dbuoy'] = np.zeros(len(df))
 else:
     df['Brunt'] = scimath.sqrt(-df['Ra']/df['Prandtl'])*df['Ek']
-    df['Dbuoy'] = df['Dbuoy']*df['scale_factor']*(df['Ek']**2)*df['Ra']/df['Prandtl']
+    df['Dbuoy'] = df['Dbuoy']*(df['scale_factor']**2)*(df['Ek']**2)*df['Ra']/df['Prandtl']
     df['Dtemp'] = df['Dtemp']*df['scale_factor']*df['Ek']/df['Prandtl']
 
 # compositional parameters
@@ -193,7 +189,7 @@ if (df['compositional'] == 0).all():
     df['Dbuoy_comp'] = np.zeros(len(df))
 else:
     df['Brunt_comp'] = scimath.sqrt(-df['Ra_comp']/df['Schmidt'])*df['Ek']
-    df['Dbuoy_comp'] = df['Dbuoy_comp']*df['scale_factor']*(df['Ek']**2)*df['Ra_comp']/df['Schmidt']
+    df['Dbuoy_comp'] = df['Dbuoy_comp']*(df['scale_factor']**2)*(df['Ek']**2)*df['Ra_comp']/df['Schmidt']
     df['Dcomp'] = df['Dcomp']*df['scale_factor']*df['Ek']/df['Schmidt']
 
 # additional parameters

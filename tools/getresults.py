@@ -117,9 +117,9 @@ if np.shape(p)[1]>=21:
    
 magnetic = p[:,10]
 if np.shape(p)[1]>=30:
-    tA = p[:,29]*magnetic
+    time_scale = p[:,29]
 else:
-	tA = 0
+	time_scale = 0
 	
     
 if sum(magnetic) == np.shape(p)[0]: # reads magnetic data
@@ -157,11 +157,24 @@ else:
 Le2  = p[:,12]                  # Lehnert number squared
 Em   = p[:,11]                  # Magnetic Ekman number
 
-M = M0*( (1-tA)*Le2 + tA*1.0 )
+if time_scale == 0:
+    M = M0*( Le2 )
 
-Dint = Dint0*( (1-tA)*Ek + tA*Ek/Le )
-Dkin = Dkin0*( (1-tA)*Ek + tA*Ek/Le )
-Dohm = Dohm0*( (1-tA)*Le2*Em + tA*Em/Le )
+    Dint = Dint0*( Ek )
+    Dkin = Dkin0*( Ek )
+    Dohm = Dohm0*( Le2*Em )
+elif time_scale == 1:
+    M = M0
+
+    Dint = Dint0*( Ek/Le )
+    Dkin = Dkin0*( Ek/Le )
+    Dohm = Dohm0*( Em/Le )
+elif time_scale == 2:
+    M = M0* ( Le2/(Ek**2) )
+
+    Dint = Dint0
+    Dkin = Dkin0
+    Dohm = Dohm0* ( Le2*Em/(Ek**2) )
 
 d = Dohm/Dint                   # Ohmic to viscous dissipation ratio
 
