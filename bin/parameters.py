@@ -22,13 +22,13 @@ def Ncheb(Ek):
 hydro = 1
 
 # Azimuthal wave number m (>=0)
-m = 0
+m = 1
 
 # Equatorial symmetry. Use 1 for symmetric, -1 for antisymmetric.
-symm = 1
+symm = -1
 
 # Inner core radius, CMB radius is unity.
-ricb = 0.35
+ricb = 0
 
 # Inner core spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow
@@ -43,31 +43,31 @@ bco = 1
 # CoriolisNumber = 1.2e3
 # Ek_gap = 2/CoriolisNumber 
 # Ek = Ek_gap*(1-ricb)**2
-Ek = 10**-5
+Ek = 10**-6
 
 # time scale
 timescale = 'rotation'     # for the rotation timescale with tau = Omega and Omega tau = 1
 # timescale = 'viscous'    # for the viscous timescale with  tau = L^2/nu and Omega tau = 1/Ek
 # timescale = 'alfven'     # for the Alfvén timescale with tau = sqrt(mu_0 rho)L/B0 and Omega tau = 1/Le
 
-# forcing = 0  # For eigenvalue problems
+forcing = 0  # For eigenvalue problems
 # forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
 # forcing = 2  # For boundary flow forcing, use with bci=1 and bco=1.
 # forcing = 3  # For Rovira-Navarro 2018 tidal body forcing, m=0,2 must be symm, m=1 antisymm. Leaks power!
 # forcing = 4  # first test case, Lin body forcing with X(r)=(A*r^2 + B/r^3)*C, (using Jeremy's calculation), m=2,symm. OK
 # forcing = 5  # second test case, Lin body forcing with X(r)=1/r, m=0,symm. OK
 # forcing = 6  # Buffett2010 ICB radial velocity boundary forcing, m=1,antisymm
-forcing = 7  # Longitudinal libration boundary forcing, m={0, 2}, symm, no-slip
+# forcing = 7  # Longitudinal libration boundary forcing, m={0, 2}, symm, no-slip
 # forcing = 8  # Longitudinal libration as a Poincaré force (body force) in the mantle frame, m=0, symm, no-slip
 # forcing = 9  # Radial, symmetric, m=2 boundary flow forcing. If
 
 # Forcing frequency (ignored if forcing = 0)
-freq0 = 0.00027
+freq0 = 1.0
 delta = 1.0  # Auxiliary variable, useful for ramps
 forcing_frequency = freq0 * delta  # negative is prograde
 
 # Forcing amplitude. Body forcing amplitude will use the cmb value
-forcing_amplitude_cmb = 2*0.0036
+forcing_amplitude_cmb = 1.0
 forcing_amplitude_icb = 0.0
 
 # if solving an eigenvalue problem, compute projection of eigenmode
@@ -79,7 +79,7 @@ projection = 1
 # ----------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------- Magnetic field parameters
 # ----------------------------------------------------------------------------------------------------------------------
-magnetic = 1  # Use 0 for pure hydro, 1 for MHD
+magnetic = 0  # Use 0 for pure hydro, 1 for MHD
 
 # Imposed background magnetic field
 B0 = 'axial'          # Axial, uniform field along the spin axis
@@ -92,8 +92,7 @@ beta = 3.0              # guess for FDM's beta
 B0_l = 1                # l number for the FDM mode
 
 # Magnetic boundary conditions at the ICB:
-#innercore = 'insulator'
-innercore = 'conducting' # Inner core conductivity equal to the fluid's (CURRENTLY ONLY WORKS FOR bci=1)
+innercore = 'insulator'
 # innercore = 'TWA'  # Thin conductive wall layer (Roberts, Glatzmaier & Clune, 2010)
 c_icb     = 1e-4  # Ratio (h*mu_wall)/(ricb*mu_fluid) (if innercore='TWA')
 c1_icb    = 1e-4  # Thin wall to fluid conductance ratio (if innercore='TWA')
@@ -116,14 +115,13 @@ mu = 1.0
 # Pm = 0.001
 # Em = Ek/Pm; Le2 = Lambda*Em; Le = np.sqrt(Le2)
 # Or use the Lehnert number and the magnetic Ekman number (i.e. Le and Em: uncomment and set the following three lines):
-Le = 0.014
-Pm = 0.1
-Em = Ek/Pm
+Le = 10**-3; Lu=2e3
+Em = Le/Lu
 Le2 = Le**2
 
 # Normalization of the background magnetic field
-# cnorm = 'rms_cmb'                     # Sets the radial rms field at the CMB as unity
-cnorm = 'mag_energy'                  # Unit magnetic energy as in Luo & Jackson 2022 (I. Torsional oscillations)
+cnorm = 'rms_cmb'                     # Sets the radial rms field at the CMB as unity
+# cnorm = 'mag_energy'                  # Unit magnetic energy as in Luo & Jackson 2022 (I. Torsional oscillations)
 # cnorm = 'Schmitt2012'                 # as above but times 2
 # cnorm = 3.86375                       # G101 of Schmitt 2012, ricb = 0.35
 # cnorm = 4.067144                      # Zhang & Fearn 1994,   ricb = 0.35
@@ -281,4 +279,4 @@ tol_tc = 1e-6
 # ----------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------- Writes solution vector to disk if = 1
 # ----------------------------------------------------------------------------------------------------------------------
-write_solution = 1
+write_solution = 0
