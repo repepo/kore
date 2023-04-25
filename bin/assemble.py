@@ -432,7 +432,7 @@ def main():
                 row = par.hydro*(2*nb*ut.N1) + ( rank*bpp + k )* ut.N1
                 col = row
 
-                if par.ricb == 0 or (par.innercore in ['insulator', 'TWA']) :
+                if par.ricb == 0 or (par.innercore in ['insulator', 'TWA', 'conducting']) :
                     mtx = -op.b(l,'f','bpol',0)
                 else :
                     print('These magnetic parameters are not coded yet')
@@ -446,7 +446,7 @@ def main():
                 row = par.hydro*(2*nb*ut.N1) + nb*ut.N1 + ( rank*bpp + k )* ut.N1
                 col = row
 
-                if par.ricb == 0 or (par.innercore in ['insulator', 'TWA']) :
+                if par.ricb == 0 or (par.innercore in ['insulator', 'TWA', 'conducting']) :
                     mtx = -op.b(l,'g','btor',0)
                 else :
                     print('These magnetic parameters are not coded yet')
@@ -1473,6 +1473,44 @@ def bc_b_icb(l,loc, innercore, rank, bpp, k):
         out = icb_diag.tocoo()
         out2 = [out.data, out.row + row0, out.col + col0]
 
+    elif innercore == 'conducting': #------------------------------------------------------------------------------- inner core with conductivity equal to the outer core's
+        # only one row needed for the bc in the conductor case
+        icb_diag = ss.dok_matrix((1, ut.N1),dtype=complex)
+
+        if loc == 'nocurl': # use loc_bot l's here (if external magnetic field is antisymm) --------
+
+            # Physics ------------------------------------------
+            bessel_wavenumber = (1-1j)*np.sqrt(par.forcing_frequency/2/par.Em)
+            # the line just below works for lmax~150. 
+            #icb_diag[0,:] = ut.jl(l,bessel_wavenumber*par.ricb,0) * bv.P0_icb - bessel_wavenumber * ut.jl(l,bessel_wavenumber*par.ricb,1) * bv.P1_icb
+            # the line below should work for all lmax
+            icb_diag[0,:] = bv.P0_icb - bessel_wavenumber * ut.dlogjl(l,bessel_wavenumber*par.ricb) * bv.P1_icb
+            # --------------------------------------------------
+
+            if ut.symmB0 == -1:
+                row0 = 2*par.hydro*ut.n + int( ut.N1 * ( l - ut.m_bot)/2 )  # starting row
+            elif ut.symmB0 == 1:
+                row0 = 2*par.hydro*ut.n + int( ut.N1 * ( l - ut.m_top)/2 )  # starting row
+            col0 = row0
+
+        elif loc == '1curl': # use loc_top l's here (if external magnetic field is antisymm) -------
+
+            # Physics ---------------
+            bessel_wavenumber = (1-1j)*np.sqrt(par.forcing_frequency/2/par.Em)
+            # the line just below works for lmax~150. 
+            #icb_diag[0,:] = ut.jl(l,bessel_wavenumber*par.ricb,0) * bv.T0_icb - bessel_wavenumber * ut.jl(l,bessel_wavenumber*par.ricb,1) * bv.T1_icb
+            # the line below should work for all lmax
+            icb_diag[0,:] = bv.T0_icb - bessel_wavenumber * ut.dlogjl(l,bessel_wavenumber*par.ricb) * bv.T1_icb
+            # -----------------------
+
+            if ut.symmB0 == -1:
+                row0 = (2*par.hydro+1)*ut.n + int( ut.N1*(l - ut.m_top)/2 )  # starting row
+            elif ut.symmB0 == 1:
+                row0 = (2*par.hydro+1)*ut.n + int( ut.N1*(l - ut.m_bot)/2 )  # starting row
+            col0 = row0
+
+        out = icb_diag.tocoo()
+        out2 = [out.data, out.row + row0, out.col + col0]
 
     elif (innercore == 'perfect conductor, spatial') or (innercore == 'perfect conductor, material'):   #----- perfectly conducting inner core
 
