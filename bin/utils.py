@@ -192,7 +192,46 @@ def nl(l,x,d):
     '''
     return scsp.spherical_yn(l,x,derivative=d)
 
+def dlogjl(l,x):
+    '''
+    Log derivative of spherical Bessel function of the first kind
+    '''
+    # functional form of the numerator and denominator in the continued fraction
+    def num(k,x):
+        return -1
+    def denom(k,x):
+        return (1 + 2*k) / x
+    
+    # Lentz-Thompson algorithm
+    def lentz_thompson(a, b, b0, eps=1e-15, acc=1e-12):
+        if b0 == 0:
+            f0 = eps
+        else:
+            f0 = b0
+        c0 = f0;d0 = 0
+        c = c0;d = d0;f = f0
+        for i in range(len(a)):
+            c = b[i] + a[i] / c
+            if c == 0:
+                c = eps
+            d = b[i] + a[i] * d
+            if d == 0:
+                d = eps
+            d = 1 / d
+            Delta = c * d
+            f = f * Delta
+            if abs(Delta - 1) < acc:
+                break
+        return f
 
+    # first 100 numerators and denominators in continued fraction
+    a = [num(k,x) for k in range(l+1, l+101)]
+    b = [denom(k,x) for k in range(l+1, l+101)]
+
+    # first term in the sum (in front of first quotient)
+    b0 = l / x
+
+    return lentz_thompson(a, b, b0, eps=1e-30, acc=1e-14)
 
 def findbeta(args):
     '''
