@@ -313,6 +313,8 @@ def main():
                 Ek  = par.Ek/par.Le
                 Em  = par.Em/par.Le
 
+            if (par.Ek==0):
+                Brunt = par.Brunt
             Ra = par.Ra
             Pr = par.Prandtl
             Ra_comp = par.Ra_comp
@@ -416,7 +418,10 @@ def main():
                     btemp = np.copy(itemp[:,i])
                     therm[i,:] = upp.thermal_dis( atemp, btemp, rflow, iflow, par.N, par.lmax, par.m, par.symm, par.ricb, ut.rcmb, par.ncpus, par.ricb, ut.rcmb)
 
-                    Dbuoy = therm[i,0]*(Ek**2)*Ra/Pr
+                    if (par.Ek==0):
+                        Dbuoy = therm[i,0]*(-1)*Brunt**2
+                    else:
+                        Dbuoy = therm[i,0]*(Ek**2)*Ra/Pr
                     TE = therm[i,1]
                     Dtemp = therm[i,2]*Ek/Pr
                     Dadv = therm[i,3]

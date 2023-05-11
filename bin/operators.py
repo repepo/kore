@@ -421,7 +421,10 @@ def buoyancy(l, section, component, offdiag):  # -------------------------------
     L = l*(l+1)
     
     if par.timescale == 'rotation':
-        scale_factor = (par.Ra/par.Prandtl) * (par.Ek)**2
+        if (par.Ek == 0): #if inviscid, use Brunt-Väisälä frequency. Else use Rayleigh number.
+            scale_factor = -1*(par.Brunt)**2
+        else:
+            scale_factor = (par.Ra/par.Prandtl) * (par.Ek)**2
     elif par.timescale == 'viscous':
         scale_factor = (par.Ra/par.Prandtl)
     elif par.timescale == 'alfven':
@@ -752,7 +755,10 @@ def thermal_diffusion(l, section, component, offdiag):
     L = l*(l+1)
 
     if (par.timescale == 'rotation'):
-        scale_factor = par.Ek/par.Prandtl
+        if (par.Ek==0): #if inviscid, use thermal Ekman number
+            scale_factor = par.Eth
+        else:
+            scale_factor = par.Ek/par.Prandtl
     elif (par.timescale == 'viscous'):
         scale_factor = 1/par.Prandtl
     elif (par.timescale == 'alfven'):

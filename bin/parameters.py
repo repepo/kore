@@ -43,7 +43,8 @@ bco = 1
 # CoriolisNumber = 1.2e3
 # Ek_gap = 2/CoriolisNumber 
 # Ek = Ek_gap*(1-ricb)**2
-Ek = 10**-6
+# Ek = 10**-4
+Ek = 0
 
 # time scale
 timescale = 'rotation'     # for the rotation timescale with tau = Omega and Omega tau = 1
@@ -138,29 +139,32 @@ cnorm = 'rms_cmb'                     # Sets the radial rms field at the CMB as 
 # ----------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------- Thermal parameters
 # ----------------------------------------------------------------------------------------------------------------------
-thermal = 0  # Use 1 or 0 to include or not the temperature equation and the buoyancy force (Boussinesq)
+thermal = 1  # Use 1 or 0 to include or not the temperature equation and the buoyancy force (Boussinesq)
 
 # Prandtl number: ratio of viscous to thermal diffusivity
-Prandtl = 1.0
+Prandtl = 0.1
 
 # Background isentropic temperature gradient dT/dr choices, uncomment the appropriate line below:
-heating = 'internal'      # dT/dr = -beta * r         temp_scale = beta * ro**2
+# heating = 'internal'      # dT/dr = -beta * r         temp_scale = beta * ro**2
 # heating = 'differential'  # dT/dr = -beta * r**-2     temp_scale = Ti-To      beta = (Ti-To)*ri*ro/(ro-ri)
-# heating = 'two zone'      # dT/dr = K * ut.twozone()  temp_scale = -ro * K
+heating = 'two zone'      # dT/dr = K * ut.twozone()  temp_scale = -ro * K
 # heating = 'user defined'  # dT/dr = K * ut.BVprof()   temp_scale = -ro * K
 
 # Rayleigh number as Ra = alpha * g0 * ro^3 * temp_scale / (nu*kappa), alpha is the thermal expansion coeff,
 # g0 the gravity accel at ro, ro is the cmb radius (the length scale), nu is viscosity, kappa is thermal diffusivity.
-Ra = 0.0
+# Ra = 0.0
 # Ra_Silva = -3e4; Ra = Ra_Silva * (1/(1-ricb))**6
 # Ra_Monville = -1.7e6; Ra = 2*Ra_Monville
 
 # dimensionless Brunt Väisälä frequency (CMB) as N = np.sqrt( alpha * g0 * temp_scale * r * dT/dr) / r_o ) ,
 # alpha is the thermal expansion coeff, # g0 the gravity accel at ro, ro is the cmb radius (the length scale)
 # dT/dr is the dimensionless background temperature gradient (can only be used when Ek != 0 )
-# Brunt = 2*2.5
+Brunt = 10
 
 # Ra = -Brunt**2*Prandtl/(Ek**2)
+Ra = 0
+
+Eth = 5e-1
 
 
 # Additional arguments for 'Two zone' or 'User defined' case (modify if needed).
@@ -248,7 +252,7 @@ if track_target == 1 :  # read target from file and sets target accordingly
     itau = tt[1]
 else:                   # set target manually
     rtau = 0.0
-    itau = 1.0
+    itau = 0.6119
 
 # tau is the actual target for the solver
 # real part is damping
@@ -279,4 +283,4 @@ tol_tc = 1e-6
 # ----------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------- Writes solution vector to disk if = 1
 # ----------------------------------------------------------------------------------------------------------------------
-write_solution = 0
+write_solution = 1
