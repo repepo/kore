@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 '''
-kore solver script
+kore solver script. Writes solutions to disk.
 
 To use, first export desired solver options:
 > export opts='...'
 
 and then execute:
-> mpiexec -n ncpus ./bin/solve.py $opts
+> mpiexec -n ncpus ./bin/solve_nopp.py $opts
+
+You can use the postprocess.py script after the solutions are written to disk.
 '''
 
 import sys
@@ -21,7 +23,6 @@ import numpy as np
 
 import parameters as par
 import utils as ut
-import utils_pp as upp
 
 
 
@@ -181,6 +182,12 @@ def main():
                     rtemp = rEigv[ offset : offset + ut.n, : ]
                     itemp = iEigv[ offset : offset + ut.n, : ]
                     
+                # each solution for the composition has ut.n coeffs
+                if par.compositional == 1:
+                    offset = 2*ut.n + par.magnetic * 2*ut.n + par.thermal * ut.n
+                    rcomp = rEigv[ offset : offset + ut.n, : ]
+                    icomp = iEigv[ offset : offset + ut.n, : ]                    
+                    
                 success = sol.nconv
                 
         else:
@@ -246,6 +253,11 @@ def main():
                 offset = par.hydro * 2*ut.n + par.magnetic * 2*ut.n
                 rtemp = np.reshape(np.real(VR[ offset : offset + ut.n ]),(-1,1))
                 itemp = np.reshape(np.imag(VR[ offset : offset + ut.n ]),(-1,1))
+                
+            if par.compositional == 1:
+                offset = par.hydro * 2*ut.n + par.magnetic * 2*ut.n + par.thermal * ut.n
+                rcomp = np.reshape(np.real(VR[ offset : offset + ut.n ]),(-1,1))
+                icomp = np.reshape(np.imag(VR[ offset : offset + ut.n ]),(-1,1))                
                     
             if np.sum([np.isnan(ru), np.isnan(iu), np.isinf(ru), np.isinf(iu)]) > 0:
                 success = 0
@@ -264,20 +276,33 @@ def main():
         if success > 0:
             
             if par.forcing == 0:
-                with open('eigenvalues.dat','ab') as deig:
+                with open('eigenvalues0.dat','wb') as deig:
                     np.savetxt(deig, eigval)
             
-            # one solution per columns
+            # one solution per column
             if par.hydro == 1:
-                np.savetxt('real_flow.field',ru)
-                np.savetxt('imag_flow.field',iu)
+                with open('real_flow.field','wb') as dflo1:
+                    np.savetxt(dflo1, ru)
+                with open('imag_flow.field','wb') as dflo2:
+                    np.savetxt(dflo2, iu)
+            
             if par.magnetic == 1:
-                np.savetxt('real_magnetic.field',rb)
-                np.savetxt('imag_magnetic.field',ib)
+                with open('real_magnetic.field','wb') as dmag1:
+                    np.savetxt(dmag1, rb)
+                with open('imag_magnetic.field','wb') as dmag2:
+                    np.savetxt(dmag2, ib)
+            
             if par.thermal == 1:
-                np.savetxt('real_temperature.field',rtemp)
-                np.savetxt('imag_temperature.field',itemp)  
+                with open('real_temperature.field','wb') as dtemp1:
+                    np.savetxt(dtemp1, rtemp)
+                with open('imag_temperature.field','wb') as dtemp2:
+                    np.savetxt(dtemp2, itemp)
                     
+            if par.compositional == 1:
+                with open('real_composition.field','wb') as dcomp1:
+                    np.savetxt(dcomp1, rcomp)
+                with open('imag_composition.field','wb') as dcomp2:
+                    np.savetxt(dcomp2, icomp)
                     
         toc2 = timer()
         print('Solve done in',toc2-tic,'seconds')
