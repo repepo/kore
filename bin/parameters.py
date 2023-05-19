@@ -15,24 +15,26 @@ def Ncheb(Ek):
     return max(48, out + out%2)
 
 
+aux = 1.0  # Auxiliary variable, useful e.g. for ramps
+
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 # ---------------------------------------------------------------------------------------------- Hydrodynamic parameters
 # ----------------------------------------------------------------------------------------------------------------------
-hydro = 1
+hydro = 1  # Just leave this on for the time being
 
 # Azimuthal wave number m (>=0)
 m = 1
 
-# Equatorial symmetry. Use 1 for symmetric, -1 for antisymmetric.
+# Equatorial symmetry of the flow field. Use 1 for symmetric, -1 for antisymmetric.
 symm = -1
 
 # Inner core radius, CMB radius is unity.
 ricb = 0
 
 # Inner core spherical boundary conditions
-# Use 0 for stress-free, 1 for no-slip or forced boundary flow
-# Ignored if ricb = 0
+# Use 0 for stress-free, 1 for no-slip or forced boundary flow. Ignored if ricb = 0
 bci = 1
 
 # CMB spherical boundary conditions
@@ -45,12 +47,7 @@ bco = 1
 # Ek = Ek_gap*(1-ricb)**2
 Ek = 10**-6
 
-# time scale
-timescale = 'rotation'     # for the rotation timescale with tau = Omega and Omega tau = 1
-# timescale = 'viscous'    # for the viscous timescale with  tau = L^2/nu and Omega tau = 1/Ek
-# timescale = 'alfven'     # for the Alfvén timescale with tau = sqrt(mu_0 rho)L/B0 and Omega tau = 1/Le
-
-forcing = 0  # For eigenvalue problems
+forcing = 0  # Uncomment this line for eigenvalue problems
 # forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
 # forcing = 2  # For boundary flow forcing, use with bci=1 and bco=1.
 # forcing = 3  # For Rovira-Navarro 2018 tidal body forcing, m=0,2 must be symm, m=1 antisymm. Leaks power!
@@ -59,19 +56,17 @@ forcing = 0  # For eigenvalue problems
 # forcing = 6  # Buffett2010 ICB radial velocity boundary forcing, m=1,antisymm
 # forcing = 7  # Longitudinal libration boundary forcing, m={0, 2}, symm, no-slip
 # forcing = 8  # Longitudinal libration as a Poincaré force (body force) in the mantle frame, m=0, symm, no-slip
-# forcing = 9  # Radial, symmetric, m=2 boundary flow forcing. If
+# forcing = 9  # Radial, symmetric, m=2 boundary flow forcing.
 
-# Forcing frequency (ignored if forcing = 0)
-freq0 = 1.0
-delta = 1.0  # Auxiliary variable, useful for ramps
-forcing_frequency = freq0 * delta  # negative is prograde
+# Forcing frequency (ignored if forcing == 0)
+forcing_frequency = 1.0  # negative is prograde
 
 # Forcing amplitude. Body forcing amplitude will use the cmb value
 forcing_amplitude_cmb = 1.0
 forcing_amplitude_icb = 0.0
 
 # if solving an eigenvalue problem, compute projection of eigenmode
-# and some hypothetical forcing. Cases as described above (use only 1,3 or 4)
+# and some hypothetical forcing. Cases as described above (available only for 1,3 or 4)
 projection = 1
 
 
@@ -94,8 +89,8 @@ B0_l = 1                # l number for the FDM mode
 # Magnetic boundary conditions at the ICB:
 innercore = 'insulator'
 # innercore = 'TWA'  # Thin conductive wall layer (Roberts, Glatzmaier & Clune, 2010)
-c_icb     = 1e-4  # Ratio (h*mu_wall)/(ricb*mu_fluid) (if innercore='TWA')
-c1_icb    = 1e-4  # Thin wall to fluid conductance ratio (if innercore='TWA')
+c_icb     = 0  # Ratio (h*mu_wall)/(ricb*mu_fluid) (if innercore='TWA')
+c1_icb    = 0  # Thin wall to fluid conductance ratio (if innercore='TWA')
 # innercore = 'perfect conductor, material'  # tangential *material* electric field jump [nxE']=0 across the ICB
 # innercore = 'perfect conductor, spatial'   # tangential *spatial* electric field jump [nxE]=0 across the ICB
 # Note: 'perfect conductor, material' or 'perfect conductor, spatial' are identical if ICB is no-slip (bci = 1 above)
@@ -103,8 +98,8 @@ c1_icb    = 1e-4  # Thin wall to fluid conductance ratio (if innercore='TWA')
 # Magnetic boundary conditions at the CMB
 mantle   = 'insulator'
 # mantle = 'TWA'  # Thin conductive wall layer (Roberts, Glatzmaier & Clune, 2010)
-c_cmb  = 1e-4  # Ratio (h*mu_wall)/(rcmb*mu_fluid)  (if mantle='TWA')
-c1_cmb = 1e-4  # Thin wall to fluid conductance ratio (if mantle='TWA')
+c_cmb  = 0  # Ratio (h*mu_wall)/(rcmb*mu_fluid)  (if mantle='TWA')
+c1_cmb = 0  # Thin wall to fluid conductance ratio (if mantle='TWA')
 
 # Relative permeability (fluid/vacuum)
 mu = 1.0
@@ -152,16 +147,14 @@ heating = 'internal'      # dT/dr = -beta * r         temp_scale = beta * ro**2
 # Rayleigh number as Ra = alpha * g0 * ro^3 * temp_scale / (nu*kappa), alpha is the thermal expansion coeff,
 # g0 the gravity accel at ro, ro is the cmb radius (the length scale), nu is viscosity, kappa is thermal diffusivity.
 Ra = 0.0
-# Ra_Silva = -3e4; Ra = Ra_Silva * (1/(1-ricb))**6
-# Ra_Monville = -1.7e6; Ra = 2*Ra_Monville
+# Ra_Silva = 0.0; Ra = Ra_Silva * (1/(1-ricb))**6
+# Ra_Monville = 0.0; Ra = 2*Ra_Monville
 
-# dimensionless Brunt Väisälä frequency (CMB) as N = np.sqrt( alpha * g0 * temp_scale * r * dT/dr) / r_o ) ,
-# alpha is the thermal expansion coeff, # g0 the gravity accel at ro, ro is the cmb radius (the length scale)
-# dT/dr is the dimensionless background temperature gradient (can only be used when Ek != 0 )
-# Brunt = 2*2.5
-
-# Ra = -Brunt**2*Prandtl/(Ek**2)
-
+# Alternatively, you can specify directly the squared ratio of a reference Brunt-Väisälä freq. and the rotation rate.
+# The reference Brunt-Väisälä freq. squared is defined as -alpha*g0*temp_scale/ro. See the non-dimensionalization notes
+# in the documentation. 
+# BV2 = -Ra * Ek**2 / Prandtl
+BV2 = 0.0
 
 # Additional arguments for 'Two zone' or 'User defined' case (modify if needed).
 rc  = 0.7  # transition radius
@@ -182,7 +175,7 @@ bco_thermal = 1   # CMB
 # ----------------------------------------------------------------------------------------------------------------------
 compositional = 0  # Use 1 or 0 to include compositional transport or not (Boussinesq)
 
-# Schmidt number: ratio of viscous to compositional diffusivity (usually >> 1)
+# Schmidt number: ratio of viscous to compositional diffusivity
 Schmidt = 1.0
 
 # Background isentropic composition gradient dC/dr choices, uncomment the appropriate line below:
@@ -191,13 +184,13 @@ comp_background = 'internal'      # dC/dr = -beta * r         comp_scale = beta 
 
 # Compositional Rayleigh number
 Ra_comp = 0.0
-# Ra_comp_Silva = 4e4; Ra_comp = Ra_comp_Silva * (1/(1-ricb))**6
-# Ra_comp_Monville = 5.76e7; Ra_comp = 2*Ra_comp_Monville
+# Ra_comp_Silva = 0.0; Ra_comp = Ra_comp_Silva * (1/(1-ricb))**6
+# Ra_comp_Monville = 0.0; Ra_comp = 2*Ra_comp_Monville
 
-# Compositional Brunt Väisälä frequency (can only be used when Ek != 0)
-# Brunt_comp = 2.
-
-# Ra_comp = -Brunt_comp**2*Schmidt/(Ek**2)
+# Alternatively, specify directly the squared ratio of a reference compositional Brunt-Väisälä frequency
+# and the rotation rate.
+# BV2_comp = -Ra_comp * Ek**2 / Schmidt
+BV2_comp = 0.0
 
 # Additional arguments for 'Two zone' or 'User defined' case (modify if needed).
 rc  = 0.7  # transition radius
@@ -214,13 +207,25 @@ bco_compositional = 1   # CMB
 
 
 # ----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------- Time scale
+# ----------------------------------------------------------------------------------------------------------------------
+# Choose the time scale by specifying the dimensionless angular velocity using the desired time scale. Please see
+# the non-dimensionalization notes in the documentation. Uncomment your choice:
+OmgTau = 1     # Rotation time scale
+# OmgTau = 1/Ek  # Viscous diffusion time scale
+# OmgTau = 1/Le  # Alfvén time scale
+# OmgTau = 1/Em  # Magnetic diffusion time scale
+
+
+
+# ----------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------- Resolution
 # ----------------------------------------------------------------------------------------------------------------------
 
 # Number of cpus
 ncpus = 4
 
-# Chebyshev polynomial truncation level. Must be even if ricb = 0. See def at top.
+# Chebyshev polynomial truncation level. Use function def at top or set manually. N must be even if ricb = 0.
 N = Ncheb(Ek)
 # N = 24
 
@@ -240,7 +245,7 @@ lmax = int( 2*ncpus*( np.floor_divide( g*N, 2*ncpus ) ) + m - 1 )
 # rnd1 = 0
 # Set track_target = 1 below to track an eigenvalue, 0 otherwise.
 # Assumes a preexisting 'track_target' file with target data
-# Set track_target = 2 to write initial 'track_target' file, see also solve.py
+# Set track_target = 2 to write initial 'track_target' file, see also postprocess.py
 track_target = 0
 if track_target == 1 :  # read target from file and sets target accordingly
     tt = np.loadtxt('track_target')
@@ -270,13 +275,10 @@ nev = 3
 maxit = 50
 
 # Tolerance for solver
-tol = 1e-13
+tol = 1e-15
 # Tolerance for the thermal/compositional matrix
 tol_tc = 1e-6
 
-
-
 # ----------------------------------------------------------------------------------------------------------------------
-# -------------------------------------------------------------------------------- Writes solution vector to disk if = 1
 # ----------------------------------------------------------------------------------------------------------------------
-write_solution = 0
+# ----------------------------------------------------------------------------------------------------------------------
