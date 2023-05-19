@@ -4,6 +4,7 @@
 For numerical convenience we use *dimensionless* variables when solving the Navier Stokes equation, the induction equation, and the heat equation. A non-dimensionalization procedure is always possible thanks to the Buckingham-$\pi$ theorem.
 
 
+
 ## The momentum equation
 
 In a reference frame rotating with angular speed $\Omega$, the dimensional form of the *linear* momentum equation (i.e. the Navier-Stokes equation) describing the acceleration $\partial_t \mathbf{u}$ of a small fluid parcel with density $\rho$, including buoyancy and the Lorentz force, is:  
@@ -43,7 +44,7 @@ $$
 \partial_t \mathbf{u} + 2\,\Omega\tau\,\mathbf{\hat z}\times\mathbf{u}=- \nabla p + \frac{\tau^2 B_0^2}{L^2\rho_0 \mu_0}(\nabla \times \mathbf{B})\times \mathbf{B} + \tau^2 \frac{\alpha g_0 \theta^*}{R} r \theta \mathbf{\hat r}+\tau\frac{\nu}{L^2}\nabla^2 \mathbf{u}.
 $$
 
-Above we have chosen the pressure scale as $P*=\rho_0 L^2/\tau^2$. For the time being we leave the temperature scale $\theta^*$ unspecified, and define the *Ekman number* $E$ as
+Above we have chosen the pressure scale as $P^*=\rho_0 L^2/\tau^2$. For the time being we leave the temperature scale $\theta^*$ unspecified, and define the *Ekman number* $E$ as
 
 $$
 E \equiv \frac{\nu}{\Omega L^2},
@@ -77,9 +78,15 @@ Alternatively, if we deal with problems without viscosity or thermal diffusion w
 
 $$
 N_0^2 \equiv -\frac{\alpha g_0 \theta^*}{R}.
-$$ 
+$$
 
-Then the momentum equation reads
+If the Rayleigh number is finite then we can write
+
+$$
+E^2\frac{Ra}{Pr} = -\frac{N_0^2}{\Omega^2}.
+$$
+
+The momentum equation, using the reference Brunt-Väisälä frequency reads
 
 $$
 \partial_t \mathbf{u} + 2\,(\Omega\tau)\,\mathbf{\hat z}\times\mathbf{u}=-\nabla p + (\Omega\tau)^2 Le^2(\nabla \times \mathbf{B})\times \mathbf{B}  - (\Omega\tau)^2 \frac{N_0^2}{\Omega^2}\,\theta\, r\, \mathbf{\hat r}+(\Omega\tau)\,E\,\nabla^2 \mathbf{u}.
@@ -87,6 +94,8 @@ $$
 
 
 A common choice for the time scale is the rotation time scale, so $\tau=1/\Omega$ and the $(\Omega\tau)$ factors go away. Another choice is the viscous diffusion time scale, with $\tau=L^2/\nu$, in which case $\Omega\tau=1/E$. Yet another choice is the Alfvén wave time scale, with $\tau=L \sqrt{\mu_0\rho_0}/B_0$ so that $\Omega\tau=1/Le$.
+
+
 
 ## The induction equation
 
@@ -113,6 +122,7 @@ where $E_\eta$ is the *magnetic Ekman number* defined as
 $$
 E_\eta \equiv \frac{\eta}{\Omega L^2}.
 $$
+
 
 
 ## The heat equation
