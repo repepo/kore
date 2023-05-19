@@ -99,7 +99,7 @@ $$
 where $\eta$ is the magnetic diffusivity. Making the dimensional scale factors explicit we get
 
 $$
-\frac{B_0}{\tau} \partial_t \mathbf{B} = \frac{B_0}{\tau} (\nabla\times\mathbf{u})\times\mathbf{B}+\eta \frac{B_0}{L^2}  \nabla^2\mathbf{B},
+\frac{B_0}{\tau} \partial_t \mathbf{B} = \frac{B_0}{\tau} \nabla \times (\mathbf{u} \times \mathbf{B}) + \eta \frac{B_0}{L^2}  \nabla^2\mathbf{B},
 $$
 
 where $\mathbf{u}, \mathbf{B}, t$ are now dimensionless. Multiply now by $\tau/B_0$ and obtain
