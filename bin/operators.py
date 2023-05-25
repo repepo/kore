@@ -12,11 +12,16 @@ fname = [f for f in glob.glob('*.mtx')]
 
 for label in fname :
     
-    label = label[:-4]
-
+    label = label[:-4]  # to get rid of the ".mtx"
     section = label[0]
-    rx      = label[1]
-    dx      = label[-1]
+    prof_id = ''
+    if len(label) == 7 :
+        prof_id = label[1:4]
+        rx      = label[4]
+    else:
+		rx = label[1]
+    dx = label[-1]
+
 
     if len(label) == 3 :
         if rx == '0' :
@@ -26,7 +31,7 @@ for label in fname :
         else :
             rlabel = 'r' + rx
         hlabel = ''
-            
+        
     elif len(label) == 4 :
         
         hx = label[2]
@@ -45,12 +50,27 @@ for label in fname :
         else :
             hlabel = 'h' + hx
             
+    elif len(label) == 7 :
+		
+        if rx == '0' :
+            rlabel = ''
+        elif rx == '1' :
+            rlabel = 'r'
+        else :
+            rlabel = 'r' + rx
+            
+        if label[5] == 0 :
+			proflabel = prof_id
+		else:
+			proflabel = prof_id + label[5]
+            
+		
     if dx == '0' :
         dlabel = 'I'
     else :
         dlabel = 'D' + dx
 
-    varlabel = rlabel + hlabel + dlabel + section
+    varlabel = rlabel + hlabel + proflabel + dlabel + section
 
     globals()[varlabel] = ss.csr_matrix(sio.mmread(label))
 
@@ -641,13 +661,15 @@ def magnetic_diffusion(l, section, component, offdiag):
         
         if section == 'f' and component == 'bpol':  #  r² 𝐫⋅∇²𝐛   (×r² if dipole)
             if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
-                out = L*( -L*If + 2*r1D1f + r2D2f )
+                #out = L*( -L*If + 2*r1D1f + r2D2f )
+                out = L*( -L*etaIf + 2*retaD1f + r2etaD2f )
             elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
                 out = L*( -L*r2If + 2*r3D1f + r4D2f )
         
         elif section == 'g' and component == 'btor':  # r² 𝐫⋅∇×(∇²𝐛)  (×r³ if dipole)
             if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
-                out = L*( -L*Ig + 2*r1D1g + r2D2g )
+                #out = L*( -L*Ig + 2*r1D1g + r2D2g )
+                out = L*( -L*etaIg + 2*retaD1g + r2etaD2g + reta1Ig + r2eta1D1g) 
             elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
                 out = L*( -L*r3Ig + 2*r4D1g + r5D2g )
 

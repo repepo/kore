@@ -33,7 +33,7 @@ def main(ncpus):
     inviscid   = ((par.Ek == 0) and (par.ricb == 0))                                # boolean
     quadrupole = ((par.B0 == 'Luo_S2') or ((par.B0 == 'FDM') and (par.B0_l == 2)))  # boolean
 
-
+    radial_profiles = ['eta', 'vsc', 'rho']
 
     tic = timer()
     print('N =', par.N,', lmax =', par.lmax)
@@ -70,6 +70,13 @@ def main(ncpus):
 
         rdh = [ [ [] for j in range(4) ] for i in range(7) ]
         rpw = [ 0, 1, 2, 3, 4, 5, -1]  # powers of r needed for the h function
+
+		rd_eta = [ [ [] for j in range(2) ] for i in range(3) ]
+        for i,rpw1 in enumerate( rpw[:3] ):
+			# Cheb coeffs of the mag. diffusion profile times a power of r 
+            rd_eta[i][0] = ut.chebco_f( ut.mag_diffus, i, par.N, par.ricb, ut.rcmb, par.tol_tc )
+            # and the derivative
+            rd_eta[i][1] = ut.Dcheb( rd_eta[i][0], par.ricb, ut.rcmb )
 
         cnorm = ut.B0_norm()  # Normalization
 
@@ -232,8 +239,9 @@ def main(ncpus):
                 labl += [ 'f000', 'f110', 'f101', 'f100' ]
                 arg2 += [   vP  ,   vP  ,   vP  ,   vT   ]
                 # magnetic diffusion
-                labl += [ 'f00', 'f11', 'f22' ]
-                arg2 += [   vF ,   vF ,   vF  ]
+                #labl += [ 'f00', 'f11', 'f22' ]
+                #arg2 += [   vF ,   vF ,   vF  ]
+				labl += [ 'feta000', 'feta101', 'feta202' ]  # missing arg2 because we don't want to bother with no inner core for now
 
 
     # -------------------------------------------------------------------------------------------------------------------------------------------
@@ -255,8 +263,9 @@ def main(ncpus):
             labl += [ 'g001', 'g111',  'g600', 'g010', 'g120', 'g102', 'g000', 'g101', 'g110' ]  # 'g600' is for (1/r)*h(r)
             arg2 += [   vP  ,   vP  ,    vP  ,   vP  ,   vP  ,   vP  ,   vT  ,   vT  ,   vT   ]
             # magnetic diffusion
-            labl += [ 'g00', 'g11',  'g22' ]
-            arg2 += [   vG ,   vG ,    vG  ]
+            #labl += [ 'g00', 'g11',  'g22' ]
+            #arg2 += [   vG ,   vG ,    vG  ]
+            labl += [ 'geta000', 'geta101', 'geta202', 'geta110', 'geta211' ]  # missing arg2 because we don't want to bother with no inner core for now
 
 
     if par.thermal == 1 :
@@ -336,13 +345,27 @@ def main(ncpus):
                 parg1 += [ dx ]             # dx is derivative order
                 parg2 += [ arg2[k] ]        # vector_parity
 
-            if len(lablx) == 3 :
+            elif len(lablx) == 3 :
 
                 hx = int(lablx[1])
                 plabl += [ lablx ]
                 parg0 += [ S[dx] * rdh[rx][hx] ]
                 parg1 += [ dx ]
                 parg2 += [ arg2[k] ]
+                
+            elif len(lablx) == 6 :
+				
+                prof_id = lablx[:3]  # this describes which radial profile is needed
+                rx = lablx[3]  # power of r
+                
+                if prof_idx == 'eta':
+					rprof = rd_eta
+					
+                profx = int(lablx[4])
+                plabl += [ lablx ]
+                parg0 += [ S[dx] * rprof[rx][profx] ]
+                parg1 += [ dx ]
+                parg2 += [ arg2[k] ]				
 
 
 
@@ -363,7 +386,10 @@ def main(ncpus):
 
         lablx = labl1[1:]
         secx = labl1[0]  # the section
-        rx   = int(lablx[0])
+        if len(lablx) == 6 :
+			rx = int(lablx[3]) 
+        else:
+            rx = int(lablx[0])
         dx   = int(lablx[-1])
         gbx  = gebasis[section.index(secx)]
 
