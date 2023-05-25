@@ -504,7 +504,7 @@ def h3(rr, kind, args):
     return out2
 
 
-def chebco_f(func,N,ricb,rcmb,tol,args=None):
+def chebco_f(func,rdegree,N,ricb,rcmb,tol,args=None):
     '''
     Returns the first N Chebyshev coefficients
     from 0 to N-1, of the function
@@ -521,7 +521,7 @@ def chebco_f(func,N,ricb,rcmb,tol,args=None):
     elif ricb == 0 :
         ri = rcmb * xi
 
-    tmp = sft.dct(func(ri))
+    tmp = sft.dct(ri**rdegree * func(ri))
 
     out = tmp / N
     out[0] = out[0] / 2.
