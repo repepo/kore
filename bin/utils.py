@@ -139,7 +139,8 @@ def BVprof(r,args):
         #    out[i] = -0.5*(1 - np.tanh( 4*(abs(x)-rc)/h  ))
     return out
 
-
+def sigma(r):
+    return 1
 
 def jl_smx(l,x,d):
     '''
@@ -201,7 +202,7 @@ def dlogjl(l,x):
         return -1
     def denom(k,x):
         return (1 + 2*k) / x
-    
+
     # Lentz-Thompson algorithm
     def lentz_thompson(a, b, b0, eps=1e-15, acc=1e-12):
         if b0 == 0:
@@ -500,6 +501,31 @@ def h3(rr, kind, args):
     return out2
 
 
+def chebco_f(func,N,ricb,rcmb,tol,args=None):
+    '''
+    Returns the first N Chebyshev coefficients
+    from 0 to N-1, of the function
+    r * twozone(r,rc,h,sym)
+    where rc is the radius of the neutral core
+    and h is the transition thickness
+    sym is the desired parity, in case of no inner core
+    '''
+    i = np.arange(0, N)
+    xi = np.cos(np.pi * (i + 0.5) / N)
+
+    if ricb > 0:
+        ri = (ricb + (rcmb - ricb) * (xi + 1) / 2.)
+    elif ricb == 0 :
+        ri = rcmb * xi
+
+    tmp = sft.dct(func(ri))
+
+    out = tmp / N
+    out[0] = out[0] / 2.
+    out[np.absolute(out) <= tol] = 0.
+    return out
+
+
 
 def chebco(powr, N, tol, ricb, rcmb):
     '''
@@ -621,46 +647,46 @@ def B0_norm():
         ricb = par.ricb
         args = [ par.beta, par.B0_l, ricb, 0 ]
         kind = par.B0
-        
+
         l = B0_l
         L = l*(l+1)
-    
+
         if par.cnorm == 'rms_cmb':  # rms of radial magnetic field at the cmb is set to 1
-    
+
             rk = np.array([1.0])
             out = np.sqrt(2*l+1) / ( l*(l+1) * h0(rk, kind, args) )
             out = out[0]
-    
+
         elif par.cnorm in ['mag_energy', 'Schmitt2012']:  # total magnetic energy is set to 1 or 2
-    
+
             N = 240
             i = np.arange(0,N)
             xk = np.cos( (i+0.5)*np.pi/N )  # colocation points, from -1 to 1
             sqx = np.sqrt(1-xk**2)
             rk = 0.5*(1-ricb)*( xk + 1 ) + ricb
             r2 = rk**2
-    
+
             y0 = h0(rk, kind, args)
             y1 = h1(rk, kind, args)
-    
+
             f0 = 4*np.pi*L/(2*l+1)
             f1 = (L+1)*y0**2
             f2 = 2*rk*y0*y1
             f3 = r2*y1**2
-    
+
             integ = (np.pi/N) * ( (1-ricb)/2 ) * np.sum( sqx*f0*( f1+f2+f3 ) )
-    
+
             if par.cnorm == 'mag_energy':
                 out = 1/np.sqrt(integ)
             elif par.cnorm == 'Schmitt2012':
                 out = 2/np.sqrt(integ)
-    
+
         else:
-    
+
             out = par.cnorm
-            
+
     else:
-        
+
         out = 0
 
     return out
