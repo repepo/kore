@@ -198,7 +198,7 @@ def viscous_diffusion(l, section, component, offdiag):  # ----------------------
             else:
                 out = L*( -L*Iv + 2*r1D1v + r2D2v )                            # r2* r.1curl( nabla^2 u )
         
-return par.OmgTau * Ek * out
+return par.OmgTau * par.Ek * out
 
 
 

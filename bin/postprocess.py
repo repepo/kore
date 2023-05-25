@@ -28,15 +28,9 @@ def main():
     # ------------------------------------------------------------------ Postprocessing: compute energy, dissipation, etc.
     tic = timer()
     
-    fname_ev = 'eigenvalues.dat'
+    fname_ev = 'eigenvalues0.dat'
     fname_tm = 'timing.dat'
-    
-    fname_ru = 'real_flow.field'
-    fname_iu = 'imag_flow.field'
 
-    fname_rb = 'real_magnetic.field'
-    fname_ib = 'imag_magnetic.field'    
-    
     if os.path.isfile(fname_ev):
         eigval = np.loadtxt(fname_ev)    
         
@@ -45,6 +39,19 @@ def main():
         if np.size(timing)>1:
             timing = timing[-1]
     
+    fname_ru = 'real_flow.field'
+    fname_iu = 'imag_flow.field'
+
+    fname_rb = 'real_magnetic.field'
+    fname_ib = 'imag_magnetic.field'
+
+    fname_rt = 'real_temperature.field'
+    fname_it = 'imag_temperature.field'
+
+    fname_rc = 'real_composition.field'
+    fname_ic = 'imag_composition.field'    
+
+    
     if os.path.isfile(fname_ru) and os.path.isfile(fname_iu):
         ru = np.loadtxt(fname_ru)
         iu = np.loadtxt(fname_iu)
@@ -52,6 +59,14 @@ def main():
     if os.path.isfile(fname_rb) and os.path.isfile(fname_ib):
         rb = np.loadtxt(fname_rb)
         ib = np.loadtxt(fname_ib)
+        
+    if os.path.isfile(fname_rt) and os.path.isfile(fname_it):
+        rt = np.loadtxt(fname_rt)
+        it = np.loadtxt(fname_it)
+    
+    if os.path.isfile(fname_rc) and os.path.isfile(fname_ic):
+        rc = np.loadtxt(fname_rc)
+        ic = np.loadtxt(fname_ic)
     
     success = np.shape(ru)[1]
 
@@ -72,9 +87,13 @@ def main():
         Dohm_partial = np.zeros((success,3))
         
     if par.thermal == 1:
-        therm = np.zeros((success,1))   
+        therm = np.zeros((success,1))
         
-    params = np.zeros((success,30))
+    if par.compositional == 1:
+        comp = np.zeros((success,4))
+
+    params = np.zeros((success,33))
+    #params = np.zeros((success,30))
     
     tA = par.magnetic == 1 and par.tA == 1  # Boolean
     if tA:
