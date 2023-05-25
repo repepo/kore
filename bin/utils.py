@@ -523,6 +523,9 @@ def chebco_f(func,rdegree,N,ricb,rcmb,tol,args=None):
 
     tmp = sft.dct(ri**rdegree * func(ri))
 
+    print(tmp)
+    print('rdegree=',rdegree)
+
     out = tmp / N
     out[0] = out[0] / 2.
     out[np.absolute(out) <= tol] = 0.
@@ -779,6 +782,9 @@ def Mlam(a0,lamb,vector_parity):
 
         a1 = np.zeros(2*N)
         a1[:N] = a0
+        
+        #if a0.dtype == np.complex128:
+        #    print(a0) 
 
         if vector_parity != 0: # no inner core case
 
@@ -876,7 +882,7 @@ def Dcheb(ck, ricb, rcmb):
     c = np.copy(ck)
     c[0] = 2.*c[0]
     s =  np.size(c)
-    out = np.zeros(s,dtype=np.complex128)
+    out = np.zeros_like(c)  #,dtype=np.complex128)
     out[-2] = 2.*(s-1.)*c[-1]
     for k in range(s-3,-1,-1):
         out[k] = out[k+2] + 2.*(k+1)*ck[k+1]

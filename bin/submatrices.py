@@ -71,9 +71,9 @@ def main(ncpus):
         rdh = [ [ [] for j in range(4) ] for i in range(7) ]
         rpw = [ 0, 1, 2, 3, 4, 5, -1]  # powers of r needed for the h function
 
-		rd_eta = [ [ [] for j in range(2) ] for i in range(3) ]
+        rd_eta = [ [ [] for j in range(2) ] for i in range(3) ]
         for i,rpw1 in enumerate( rpw[:3] ):
-			# Cheb coeffs of the mag. diffusion profile times a power of r 
+            # Cheb coeffs of the mag. diffusion profile times a power of r 
             rd_eta[i][0] = ut.chebco_f( ut.mag_diffus, i, par.N, par.ricb, ut.rcmb, par.tol_tc )
             # and the derivative
             rd_eta[i][1] = ut.Dcheb( rd_eta[i][0], par.ricb, ut.rcmb )
@@ -241,7 +241,7 @@ def main(ncpus):
                 # magnetic diffusion
                 #labl += [ 'f00', 'f11', 'f22' ]
                 #arg2 += [   vF ,   vF ,   vF  ]
-				labl += [ 'feta000', 'feta101', 'feta202' ]  # missing arg2 because we don't want to bother with no inner core for now
+                labl += [ 'feta000', 'feta101', 'feta202' ]  # missing arg2 because we don't want to bother with no inner core for now
 
 
     # -------------------------------------------------------------------------------------------------------------------------------------------
@@ -335,7 +335,10 @@ def main(ncpus):
 
             # if lablx has two digits then the first one is the power of r, last one is the derivative order
             # if lablx has three digits then the middle one is the derivative order of the function h(r), first and second digits as above
-            rx = int(lablx[ 0])
+            if len(lablx) == 6 :
+                rx = int(lablx[3])
+            else:
+                rx = int(lablx[0])
             dx = int(lablx[-1])
 
             if len(lablx) == 2 and rx > 0 :
@@ -345,7 +348,7 @@ def main(ncpus):
                 parg1 += [ dx ]             # dx is derivative order
                 parg2 += [ arg2[k] ]        # vector_parity
 
-            elif len(lablx) == 3 :
+            if len(lablx) == 3 :
 
                 hx = int(lablx[1])
                 plabl += [ lablx ]
@@ -353,20 +356,19 @@ def main(ncpus):
                 parg1 += [ dx ]
                 parg2 += [ arg2[k] ]
                 
-            elif len(lablx) == 6 :
-				
-                prof_id = lablx[:3]  # this describes which radial profile is needed
-                rx = lablx[3]  # power of r
+            if len(lablx) == 6 :
                 
-                if prof_idx == 'eta':
-					rprof = rd_eta
-					
+                prof_id = lablx[:3]  # this describes which radial profile is needed
+                
+                if prof_id == 'eta':
+                    rprof = rd_eta
+                    
                 profx = int(lablx[4])
                 plabl += [ lablx ]
                 parg0 += [ S[dx] * rprof[rx][profx] ]
                 parg1 += [ dx ]
-                parg2 += [ arg2[k] ]				
-
+                parg2 += [ arg2[k] ]                
+                print(rprof[rx][profx])
 
 
     # Now generate the matrices in parallel -----------------------------------------------------------------------------------------------------
@@ -387,7 +389,7 @@ def main(ncpus):
         lablx = labl1[1:]
         secx = labl1[0]  # the section
         if len(lablx) == 6 :
-			rx = int(lablx[3]) 
+            rx = int(lablx[3]) 
         else:
             rx = int(lablx[0])
         dx   = int(lablx[-1])

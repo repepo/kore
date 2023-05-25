@@ -15,11 +15,12 @@ for label in fname :
     label = label[:-4]  # to get rid of the ".mtx"
     section = label[0]
     prof_id = ''
+    hlabel = ''
     if len(label) == 7 :
         prof_id = label[1:4]
         rx      = label[4]
     else:
-		rx = label[1]
+        rx = label[1]
     dx = label[-1]
 
 
@@ -30,9 +31,8 @@ for label in fname :
             rlabel = 'Nr'
         else :
             rlabel = 'r' + rx
-        hlabel = ''
         
-    elif len(label) == 4 :
+    if len(label) == 4 :
         
         hx = label[2]
         
@@ -50,8 +50,8 @@ for label in fname :
         else :
             hlabel = 'h' + hx
             
-    elif len(label) == 7 :
-		
+    if len(label) == 7 :
+        
         if rx == '0' :
             rlabel = ''
         elif rx == '1' :
@@ -60,17 +60,19 @@ for label in fname :
             rlabel = 'r' + rx
             
         if label[5] == 0 :
-			proflabel = prof_id
-		else:
-			proflabel = prof_id + label[5]
+            proflabel = prof_id
+        else:
+            proflabel = prof_id + label[5]
             
-		
+        
     if dx == '0' :
         dlabel = 'I'
     else :
         dlabel = 'D' + dx
 
     varlabel = rlabel + hlabel + proflabel + dlabel + section
+    
+    print(label,varlabel)
 
     globals()[varlabel] = ss.csr_matrix(sio.mmread(label))
 
@@ -183,7 +185,7 @@ def coriolis(l, section, component, offdiag):  # -------------------------------
                 else:
                     out = -2j*par.m*r2Iv                          # r2* r.1curl(2z x u)
                         
-return [ par.OmgTau * out, offd ]
+    return [ par.OmgTau * out, offd ]
     
 
 
@@ -218,7 +220,7 @@ def viscous_diffusion(l, section, component, offdiag):  # ----------------------
             else:
                 out = L*( -L*Iv + 2*r1D1v + r2D2v )                            # r2* r.1curl( nabla^2 u )
         
-return par.OmgTau * Ek * out
+    return par.OmgTau * Ek * out
 
 
 

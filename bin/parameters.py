@@ -31,7 +31,7 @@ m = 1
 symm = -1
 
 # Inner core radius, CMB radius is unity.
-ricb = 0
+ricb = 0.35
 
 # Inner core spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow. Ignored if ricb = 0
@@ -45,7 +45,7 @@ bco = 1
 # CoriolisNumber = 1.2e3
 # Ek_gap = 2/CoriolisNumber 
 # Ek = Ek_gap*(1-ricb)**2
-Ek = 10**-6
+Ek = 10**-4
 
 forcing = 0  # Uncomment this line for eigenvalue problems
 # forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
@@ -74,7 +74,7 @@ projection = 1
 # ----------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------- Magnetic field parameters
 # ----------------------------------------------------------------------------------------------------------------------
-magnetic = 0  # Use 0 for pure hydro, 1 for MHD
+magnetic = 1  # Use 0 for pure hydro, 1 for MHD
 
 # Imposed background magnetic field
 B0 = 'axial'          # Axial, uniform field along the spin axis
