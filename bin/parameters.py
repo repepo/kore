@@ -43,7 +43,7 @@ bco = 1
 
 # Ekman number (use 2* to match Dintrans 1999). Ek can be set to 0 if ricb=0
 # CoriolisNumber = 1.2e3
-# Ek_gap = 2/CoriolisNumber 
+# Ek_gap = 2/CoriolisNumber
 # Ek = Ek_gap*(1-ricb)**2
 Ek = 10**-4
 
@@ -152,7 +152,7 @@ Ra = 0.0
 
 # Alternatively, you can specify directly the squared ratio of a reference Brunt-Väisälä freq. and the rotation rate.
 # The reference Brunt-Väisälä freq. squared is defined as -alpha*g0*temp_scale/ro. See the non-dimensionalization notes
-# in the documentation. 
+# in the documentation.
 # BV2 = -Ra * Ek**2 / Prandtl
 BV2 = 0.0
 

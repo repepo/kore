@@ -523,9 +523,6 @@ def chebco_f(func,rdegree,N,ricb,rcmb,tol,args=None):
 
     tmp = sft.dct(ri**rdegree * func(ri))
 
-    print(tmp)
-    print('rdegree=',rdegree)
-
     out = tmp / N
     out[0] = out[0] / 2.
     out[np.absolute(out) <= tol] = 0.
@@ -782,9 +779,9 @@ def Mlam(a0,lamb,vector_parity):
 
         a1 = np.zeros(2*N)
         a1[:N] = a0
-        
+
         #if a0.dtype == np.complex128:
-        #    print(a0) 
+        #    print(a0)
 
         if vector_parity != 0: # no inner core case
 

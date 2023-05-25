@@ -73,7 +73,7 @@ def main(ncpus):
 
         rd_eta = [ [ [] for j in range(2) ] for i in range(3) ]
         for i,rpw1 in enumerate( rpw[:3] ):
-            # Cheb coeffs of the mag. diffusion profile times a power of r 
+            # Cheb coeffs of the mag. diffusion profile times a power of r
             rd_eta[i][0] = ut.chebco_f( ut.mag_diffus, i, par.N, par.ricb, ut.rcmb, par.tol_tc )
             # and the derivative
             rd_eta[i][1] = ut.Dcheb( rd_eta[i][0], par.ricb, ut.rcmb )
@@ -355,20 +355,19 @@ def main(ncpus):
                 parg0 += [ S[dx] * rdh[rx][hx] ]
                 parg1 += [ dx ]
                 parg2 += [ arg2[k] ]
-                
+
             if len(lablx) == 6 :
-                
+
                 prof_id = lablx[:3]  # this describes which radial profile is needed
-                
+
                 if prof_id == 'eta':
                     rprof = rd_eta
-                    
+
                 profx = int(lablx[4])
                 plabl += [ lablx ]
                 parg0 += [ S[dx] * rprof[rx][profx] ]
                 parg1 += [ dx ]
-                parg2 += [ arg2[k] ]                
-                print(rprof[rx][profx])
+                parg2 += [ arg2[k] ]
 
 
     # Now generate the matrices in parallel -----------------------------------------------------------------------------------------------------
@@ -389,7 +388,7 @@ def main(ncpus):
         lablx = labl1[1:]
         secx = labl1[0]  # the section
         if len(lablx) == 6 :
-            rx = int(lablx[3]) 
+            rx = int(lablx[3])
         else:
             rx = int(lablx[0])
         dx   = int(lablx[-1])
