@@ -139,8 +139,11 @@ def BVprof(r,args):
         #    out[i] = -0.5*(1 - np.tanh( 4*(abs(x)-rc)/h  ))
     return out
 
-def sigma(r):
-    return 1
+def conductivity(r):
+    return np.ones_like(r)
+
+def mag_diffus(r):
+    return 1./conductivity(r)
 
 def jl_smx(l,x,d):
     '''
