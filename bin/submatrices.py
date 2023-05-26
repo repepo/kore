@@ -76,7 +76,8 @@ def main(ncpus):
             # Cheb coeffs of the mag. diffusion profile times a power of r
             rd_eta[i][0] = ut.chebco_f( ut.mag_diffus, i, par.N, par.ricb, ut.rcmb, par.tol_tc )
             # and the derivative
-            rd_eta[i][1] = ut.Dcheb( rd_eta[i][0], par.ricb, ut.rcmb )
+            rd_eta[i][1] = ut.Dcheb( rd_eta[i][0], par.ricb, ut.rcmb )   ####### this is a bug
+            # we need the coeffs of r**i * (d/dr) ut.mag_diffus(r), NOT the coeffs (d/dr)( r**i * ut.mag_diffus(r) ) as coded above
 
         cnorm = ut.B0_norm()  # Normalization
 
