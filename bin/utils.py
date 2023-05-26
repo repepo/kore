@@ -139,11 +139,17 @@ def BVprof(r,args):
         #    out[i] = -0.5*(1 - np.tanh( 4*(abs(x)-rc)/h  ))
     return out
 
+
+
 def conductivity(r):
     return np.ones_like(r)
 
+
+
 def mag_diffus(r):
     return 1./conductivity(r)
+
+
 
 def jl_smx(l,x,d):
     '''
@@ -504,14 +510,12 @@ def h3(rr, kind, args):
     return out2
 
 
-def chebco_f(func,rdegree,N,ricb,rcmb,tol,args=None):
+
+def chebco_f(func,rpower,N,ricb,rcmb,tol,args=None):
     '''
     Returns the first N Chebyshev coefficients
     from 0 to N-1, of the function
-    r * twozone(r,rc,h,sym)
-    where rc is the radius of the neutral core
-    and h is the transition thickness
-    sym is the desired parity, in case of no inner core
+    r**rpower * func(r)
     '''
     i = np.arange(0, N)
     xi = np.cos(np.pi * (i + 0.5) / N)
@@ -521,7 +525,7 @@ def chebco_f(func,rdegree,N,ricb,rcmb,tol,args=None):
     elif ricb == 0 :
         ri = rcmb * xi
 
-    tmp = sft.dct(ri**rdegree * func(ri))
+    tmp = sft.dct(ri**rpower * func(ri))
 
     out = tmp / N
     out[0] = out[0] / 2.
