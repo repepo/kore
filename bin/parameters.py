@@ -137,6 +137,8 @@ thermal = 0  # Use 1 or 0 to include or not the temperature equation and the buo
 
 # Prandtl number: ratio of viscous to thermal diffusivity
 Prandtl = 1.0
+# Thermal Ekamn number
+Etherm = Ek/Prandtl
 
 # Background isentropic temperature gradient dT/dr choices, uncomment the appropriate line below:
 heating = 'internal'      # dT/dr = -beta * r         temp_scale = beta * ro**2
@@ -177,6 +179,8 @@ compositional = 0  # Use 1 or 0 to include compositional transport or not (Bouss
 
 # Schmidt number: ratio of viscous to compositional diffusivity
 Schmidt = 1.0
+# Compositional Ekamn number
+Ecomp = Ek/Schmidt 
 
 # Background isentropic composition gradient dC/dr choices, uncomment the appropriate line below:
 comp_background = 'internal'      # dC/dr = -beta * r         comp_scale = beta * ro**2
