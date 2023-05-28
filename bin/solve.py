@@ -300,23 +300,25 @@ def main():
 
             params = np.zeros((success,33))
 
-            if par.timescale == 'rotation':
-                Le2 = par.Le2
-                Ek = par.Ek
-                Em = par.Em
-            elif par.timescale == 'viscous':
-                Le2 = par.Le2/(par.Ek**2)
-                Ek = 1.0
-                Em = par.Em/par.Ek
-            elif par.timescale == 'alfven':
-                Le2 = 1.0
-                Ek  = par.Ek/par.Le
-                Em  = par.Em/par.Le
-
-            Ra = par.Ra
-            Pr = par.Prandtl
+            # if par.timescale == 'rotation':
+                # Le2 = par.Le2
+                # Ek = par.Ek
+                # Em = par.Em
+            # elif par.timescale == 'viscous':
+                # Le2 = par.Le2/(par.Ek**2)
+                # Ek = 1.0
+                # Em = par.Em/par.Ek
+            # elif par.timescale == 'Alfvén':
+                # Le2 = 1.0
+                # Ek  = par.Ek/par.Le
+                # Em  = par.Em/par.Le
+            Le2     = par.Le2
+            Ek      = par.Ek
+            Em      = par.Em
+            Ra      = par.Ra
+            Pr      = par.Prandtl
             Ra_comp = par.Ra_comp
-            Sc = par.Schmidt
+            Sc      = par.Schmidt
 
             if par.Ek != 0:
                 print('Ek = 10**{:<8.4f}'.format(np.log10(par.Ek)))
@@ -359,7 +361,7 @@ def main():
                 KE = KP + KT
 
                 Dint = kid[i,2]*Ek
-                Dkin = kid[i,3]*Ek
+                Dkin = kid[i,3]*Ek*par.OmgTau
 
                 repow = kid[i,5]
 
@@ -521,7 +523,7 @@ def main():
                     time_scale = 0
                 elif par.timescale == 'viscous':
                     time_scale = 1
-                elif par.timescale == 'alfven':
+                elif par.timescale == 'Alfvén':
                     time_scale = 2
 
                 params[i,:] = np.array([par.Ek, par.m, par.symm, par.ricb, par.bci, par.bco, par.projection, par.forcing,
