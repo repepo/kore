@@ -76,6 +76,7 @@ def main():
     p2t          = np.zeros(success)
     resid1       = np.zeros(success)
     resid2       = np.zeros(success)
+    resid3       = np.zeros(success)
     y            = np.zeros(success)
     vtorq        = np.zeros(success,dtype=complex)
     vtorq_icb    = np.zeros(success,dtype=complex)
@@ -95,15 +96,7 @@ def main():
     params = np.zeros((success,33))
     #params = np.zeros((success,30))
     
-    tA = par.magnetic == 1 and par.tA == 1  # Boolean
-    if tA:
-        Le2 = 1.0
-        Ek  = par.Ek/par.Le
-        Em  = par.Em/par.Le
-    else:
-        Le2 = par.Le2
-        Ek  = par.Ek
-        Em  = par.Em
+
         
     if par.Ek != 0:
         print('Ek = 10**{:<8.4f}'.format(np.log10(par.Ek)))
@@ -148,15 +141,15 @@ def main():
         p2t[i] = KP/KT
         KE = KP + KT
     
-        Dint = kid[i,2]*Ek
-        Dkin = kid[i,3]*Ek
+        Dint = kid[i,2]*par.Ek
+        Dkin = kid[i,3]*par.Ek
         
         repow = kid[i,5]
         
         expsol = upp.expand_sol(rflow+1j*iflow, par.symm)
         
-        vtorq[i] = Ek * np.dot( ut.gamma_visc(0,0,0), expsol)
-        vtorq_icb[i] = Ek * np.dot( ut.gamma_visc_icb(par.ricb), expsol)
+        vtorq[i] = par.Ek * np.dot( ut.gamma_visc(0,0,0), expsol)
+        vtorq_icb[i] = par.Ek * np.dot( ut.gamma_visc_icb(par.ricb), expsol)
         
         if par.track_target == 1:   
             # compute distance (mismatch) to tracking target
@@ -171,15 +164,13 @@ def main():
             rmag = np.copy(rb[:,i])
             imag = np.copy(ib[:,i])
             
-            ohm[i,:] = upp.ohm_dis( rmag, imag, par.N, par.lmax, par.m, ut.bsymm, par.ricb, ut.rcmb, par.ncpus, par.ricb, ut.rcmb)
-            # use -symm above because magnetic field has the opposite
-            # symmetry as the flow field --if applied field is antisymm (vertical uniform).
+            ohm[i,:] = upp.ohm_dis( rmag, imag, par.N, par.lmax, par.m, ut.bsymm, par.ricb, ut.rcmb, par.ncpus, par.ricb, ut.rcmb )
             
             Dohm_partial[i,0] = 0  #(o1[2] + o1[3])*par.Le2*par.Em
             Dohm_partial[i,1] = 0  #(o2[2] + o2[3])*par.Le2*par.Em
             Dohm_partial[i,2] = 0  #(o3[2] + o3[3])*par.Le2*par.Em
             
-            Dohm = (ohm[i,2]+ohm[i,3])*Le2*Em   
+            Dohm = (ohm[i,2]+ohm[i,3])*par.Le2*par.Em   
             if Dint != 0:
                 o2v[i] = Dohm/Dint
             else:
@@ -188,7 +179,7 @@ def main():
             ME = (ohm[i,0]+ohm[i,1]) # Magnetic energy
             
             if par.mantle == 'TWA':
-                mtorq[i] = Le2 * np.dot( ut.gamma_magnetic(), upp.expand_sol(rmag+1j*imag, par.symm*ut.symmB0) ) 
+                mtorq[i] = par.Le2 * np.dot( ut.gamma_magnetic(), upp.expand_sol(rmag+1j*imag, par.symm*ut.symmB0) ) 
             
             if par.track_target == 1:
                 y3 = abs( (x[3]-o2v[i])/o2v[i] )
@@ -201,16 +192,40 @@ def main():
         
         
         if par.thermal == 1:
-            
-            atemp = np.copy(rtemp[:,i])
-            btemp = np.copy(itemp[:,i])
+
+            atemp = np.copy(rt[:,i])
+            btemp = np.copy(it[:,i])
             therm[i,:] = upp.thermal_dis( atemp, btemp, rflow, iflow, par.N, par.lmax, par.m, par.symm, par.ricb, ut.rcmb, par.ncpus, par.ricb, ut.rcmb)
-            
-            Dtemp = therm[i,0]
-            
+
+            Dbuoy = therm[i,0]*(-par.BV2)
+            TE = therm[i,1]
+            Dtemp = therm[i,2]*par.Etherm
+            Dadv = therm[i,3]
+
         else:
-            
+
+            Dbuoy = 0
+            TE = 0
             Dtemp = 0
+            Dadv = 0
+
+        if par.compositional== 1:
+
+            acomp = np.copy(rc[:,i])
+            bcomp = np.copy(ic[:,i])
+            comp[i,:] = upp.thermal_dis( acomp, bcomp, rflow, iflow, par.N, par.lmax, par.m, par.symm, par.ricb, ut.rcmb, par.ncpus, par.ricb, ut.rcmb, thermal=False)
+
+            Dbuoy_comp = comp[i,0]*(-par.BV2_comp)
+            CE = comp[i,1]
+            Dcomp = comp[i,2]*par.Ecomp
+            Dadv_comp = comp[i,3]
+
+        else:
+
+            Dbuoy_comp = 0
+            CE = 0
+            Dcomp = 0
+            Dadv_comp = 0
                             
                             
         # ------------------------------------------------------ Computing residuals to check the power balance:
@@ -246,8 +261,15 @@ def main():
             resid1[i] = abs( Dint + Dkin - pss ) / max( abs(Dint), abs(Dkin), abs(pss) )
         else:
             resid1[i] = np.nan
-        resid2[i] = abs( 2*sigma*(KE + Le2*ME) - Dkin - Dtemp + Dohm - pvf ) / \
-         max( abs(2*sigma*(KE+Le2*ME)), abs(Dkin), abs(Dohm), abs(Dtemp), abs(pvf) )
+        resid2[i] = abs( 2*sigma*(KE + par.Le2*ME) - Dkin - Dtemp + Dohm - pvf ) / \
+                    max( abs(2*sigma*(KE + par.Le2*ME)), abs(Dkin), abs(Dohm), abs(Dtemp), abs(pvf) )
+        
+        if par.thermal == 1:
+            resid3[i] = abs(2*sigma*(TE) - Dadv - Dtemp) / max(abs(2*sigma*(TE)), abs(Dadv), abs(Dtemp))
+        elif (par.thermal == 0) & (par.compositional == 1):
+            resid3[i] = abs(2*sigma*(CE) - Dadv_comp - Dcomp)/max(abs(2*sigma*(CE)), abs(Dadv_comp), abs(Dcomp))
+        else:
+            resid3[i] = np.nan
         
         # print('Dkin  =' ,Dkin)
         # print('Dint  =' ,Dint)
@@ -279,10 +301,10 @@ def main():
         
         toc = timer()
         
-        params[i,:] = np.array([par.Ek, par.m, par.symm, par.ricb, par.bci, par.bco, par.projection, par.forcing, \
-         par.forcing_amplitude_cmb, par.forcing_frequency, par.magnetic, par.Em, par.Le2, par.N, par.lmax, timing+toc-tic, \
-         par.ncpus, par.tol, par.thermal, par.Prandtl, par.Brunt, par.forcing_amplitude_icb, par.rc, par.h, \
-         mantle_mag_bc, par.c_cmb, par.c1_cmb, par.mu, ut.B0_norm(), par.tA ])
+        params[i,:] = np.array([par.Ek, par.m, par.symm, par.ricb, par.bci, par.bco, par.projection, par.forcing,
+                 par.forcing_amplitude_cmb, par.forcing_frequency, par.magnetic, par.Em, par.Le2, par.N, par.lmax, timing+toc-tic,
+                 par.ncpus, par.tol, par.thermal, par.Etherm, par.BV2, par.compositional, par.Ecomp, par.BV2_comp,
+                 par.forcing_amplitude_icb, par.rc, par.h, mantle_mag_bc, par.c_cmb, par.c1_cmb, par.mu, ut.B0_norm(), par.OmgTau ])
         
     print('--- -------------- -------------- ---------- ---------- ---------- ---------- ---------- ----------')
     
@@ -296,8 +318,8 @@ def main():
             with open('track_target','wb') as tg:
                 np.savetxt( tg, np.c_[ eigval[j,0], eigval[j,1], p2t[j] ] )
         print('Closest to target is solution', np.where(j==1)[0][0])
-        if err2[j]>0.1:
-            np.savetxt('big_error', np.c_[err1[j],err2[j]] )
+        #if err2[j]>0.1:
+        #    np.savetxt('big_error', np.c_[err1[j],err2[j]] )
     
     
     # use this when writing the first target, it finds the solution with smallest p2t (useful to track the spin-over mode)
@@ -318,12 +340,11 @@ def main():
     #print('Writing results')
     
     with open('params.dat','ab') as dpar:
-        np.savetxt(dpar, params, \
-        #fmt=['%.9e','%d','%d','%.9e','%d','%d','%d','%d','%.9e','%.9e','%d','%.9e','%.9e','%d','%d','%.2f', '%d', '%.2e'])  
-        #fmt=['%.9e','%d','%d','%.9e','%d','%d','%d','%d','%.9e','%.9e','%d','%.9e','%.9e','%d','%d','%.2f', '%d', '%.2e',\
-        # '%d', '%.9e', '%.9e', '%.9e', '%.9e','%.9e'])
-        fmt=['%.9e','%d','%d','%.9e','%d','%d','%d','%d','%.9e','%.9e','%d','%.9e','%.9e','%d','%d','%.2f', '%d', '%.2e',\
-         '%d', '%.9e', '%.9e', '%.9e', '%.9e','%.9e','%d','%.9e','%.9e','%.9e','%.9e','%d'])
+        np.savetxt(dpar, params, 
+        fmt=['%.9e','%d'  ,'%d'  ,'%.9e' ,'%d'   ,'%d'  ,'%d'  ,'%d'  ,
+             '%.9e','%.9e','%d'  ,'%.9e' ,'%.9e' ,'%d'  ,'%d'  ,'%.2f',
+             '%d'  ,'%.2e', '%d' ,'%.9e' ,'%.9e' ,'%d'  ,'%.9e','%.9e',
+             '%.9e','%.9e','%.9e','%d'   ,'%.9e' ,'%.9e','%.9e','%.9e','%d'])
     
     with open('flow.dat','ab') as dflo:
         np.savetxt(dflo, np.c_[kid, Dint_partial, np.real(vtorq), np.imag(vtorq), np.real(vtorq_icb), np.imag(vtorq_icb)])
@@ -332,12 +353,17 @@ def main():
         with open('magnetic.dat','ab') as dmag:
             np.savetxt(dmag, np.c_[ohm, Dohm_partial, np.real(mtorq), np.imag(mtorq)])
             
-    if par.thermal ==1:
+    if par.thermal == 1:
         with open('thermal.dat','ab') as dtmp:
             np.savetxt(dtmp, therm) 
 
-    
-    
+    if par.compositional == 1:
+        with open('compositional.dat','ab') as dcmp:
+            np.savetxt(dcmp, np.c_[comp])
+
+    if par.forcing == 0:
+        with open('eigenvalues.dat','ab') as deig:
+            np.savetxt(deig, eigval)    
     
     # ------------------------------------------------------------------ done
     return 0

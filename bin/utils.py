@@ -141,6 +141,16 @@ def BVprof(r,args):
 
 
 
+def conductivity(r):
+    return np.ones_like(r)
+
+
+
+def mag_diffus(r):
+    return 1./conductivity(r)
+
+
+
 def jl_smx(l,x,d):
     '''
     Spherical Bessel function of the first kind and derivatives,
@@ -201,7 +211,7 @@ def dlogjl(l,x):
         return -1
     def denom(k,x):
         return (1 + 2*k) / x
-    
+
     # Lentz-Thompson algorithm
     def lentz_thompson(a, b, b0, eps=1e-15, acc=1e-12):
         if b0 == 0:
@@ -501,6 +511,29 @@ def h3(rr, kind, args):
 
 
 
+def chebco_f(func,rpower,N,ricb,rcmb,tol,args=None):
+    '''
+    Returns the first N Chebyshev coefficients
+    from 0 to N-1, of the function
+    r**rpower * func(r)
+    '''
+    i = np.arange(0, N)
+    xi = np.cos(np.pi * (i + 0.5) / N)
+
+    if ricb > 0:
+        ri = (ricb + (rcmb - ricb) * (xi + 1) / 2.)
+    elif ricb == 0 :
+        ri = rcmb * xi
+
+    tmp = sft.dct(ri**rpower * func(ri))
+
+    out = tmp / N
+    out[0] = out[0] / 2.
+    out[np.absolute(out) <= tol] = 0.
+    return out
+
+
+
 def chebco(powr, N, tol, ricb, rcmb):
     '''
     Returns the first N Chebyshev coefficients
@@ -621,46 +654,46 @@ def B0_norm():
         ricb = par.ricb
         args = [ par.beta, par.B0_l, ricb, 0 ]
         kind = par.B0
-        
+
         l = B0_l
         L = l*(l+1)
-    
+
         if par.cnorm == 'rms_cmb':  # rms of radial magnetic field at the cmb is set to 1
-    
+
             rk = np.array([1.0])
             out = np.sqrt(2*l+1) / ( l*(l+1) * h0(rk, kind, args) )
             out = out[0]
-    
+
         elif par.cnorm in ['mag_energy', 'Schmitt2012']:  # total magnetic energy is set to 1 or 2
-    
+
             N = 240
             i = np.arange(0,N)
             xk = np.cos( (i+0.5)*np.pi/N )  # colocation points, from -1 to 1
             sqx = np.sqrt(1-xk**2)
             rk = 0.5*(1-ricb)*( xk + 1 ) + ricb
             r2 = rk**2
-    
+
             y0 = h0(rk, kind, args)
             y1 = h1(rk, kind, args)
-    
+
             f0 = 4*np.pi*L/(2*l+1)
             f1 = (L+1)*y0**2
             f2 = 2*rk*y0*y1
             f3 = r2*y1**2
-    
+
             integ = (np.pi/N) * ( (1-ricb)/2 ) * np.sum( sqx*f0*( f1+f2+f3 ) )
-    
+
             if par.cnorm == 'mag_energy':
                 out = 1/np.sqrt(integ)
             elif par.cnorm == 'Schmitt2012':
                 out = 2/np.sqrt(integ)
-    
+
         else:
-    
+
             out = par.cnorm
-            
+
     else:
-        
+
         out = 0
 
     return out
@@ -750,6 +783,9 @@ def Mlam(a0,lamb,vector_parity):
 
         a1 = np.zeros(2*N)
         a1[:N] = a0
+
+        #if a0.dtype == np.complex128:
+        #    print(a0)
 
         if vector_parity != 0: # no inner core case
 
@@ -847,7 +883,7 @@ def Dcheb(ck, ricb, rcmb):
     c = np.copy(ck)
     c[0] = 2.*c[0]
     s =  np.size(c)
-    out = np.zeros(s,dtype=np.complex128)
+    out = np.zeros_like(c)  #,dtype=np.complex128)
     out[-2] = 2.*(s-1.)*c[-1]
     for k in range(s-3,-1,-1):
         out[k] = out[k+2] + 2.*(k+1)*ck[k+1]

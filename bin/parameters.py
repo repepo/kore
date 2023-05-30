@@ -31,7 +31,7 @@ m = 1
 symm = -1
 
 # Inner core radius, CMB radius is unity.
-ricb = 0
+ricb = 0.35
 
 # Inner core spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow. Ignored if ricb = 0
@@ -43,9 +43,9 @@ bco = 1
 
 # Ekman number (use 2* to match Dintrans 1999). Ek can be set to 0 if ricb=0
 # CoriolisNumber = 1.2e3
-# Ek_gap = 2/CoriolisNumber 
+# Ek_gap = 2/CoriolisNumber
 # Ek = Ek_gap*(1-ricb)**2
-Ek = 10**-6
+Ek = 10**-4
 
 forcing = 0  # Uncomment this line for eigenvalue problems
 # forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
@@ -74,7 +74,7 @@ projection = 1
 # ----------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------- Magnetic field parameters
 # ----------------------------------------------------------------------------------------------------------------------
-magnetic = 0  # Use 0 for pure hydro, 1 for MHD
+magnetic = 1  # Use 0 for pure hydro, 1 for MHD
 
 # Imposed background magnetic field
 B0 = 'axial'          # Axial, uniform field along the spin axis
@@ -137,6 +137,8 @@ thermal = 0  # Use 1 or 0 to include or not the temperature equation and the buo
 
 # Prandtl number: ratio of viscous to thermal diffusivity
 Prandtl = 1.0
+# Thermal Ekamn number
+Etherm = Ek/Prandtl
 
 # Background isentropic temperature gradient dT/dr choices, uncomment the appropriate line below:
 heating = 'internal'      # dT/dr = -beta * r         temp_scale = beta * ro**2
@@ -152,7 +154,7 @@ Ra = 0.0
 
 # Alternatively, you can specify directly the squared ratio of a reference Brunt-Väisälä freq. and the rotation rate.
 # The reference Brunt-Väisälä freq. squared is defined as -alpha*g0*temp_scale/ro. See the non-dimensionalization notes
-# in the documentation. 
+# in the documentation.
 # BV2 = -Ra * Ek**2 / Prandtl
 BV2 = 0.0
 
@@ -177,6 +179,8 @@ compositional = 0  # Use 1 or 0 to include compositional transport or not (Bouss
 
 # Schmidt number: ratio of viscous to compositional diffusivity
 Schmidt = 1.0
+# Compositional Ekamn number
+Ecomp = Ek/Schmidt 
 
 # Background isentropic composition gradient dC/dr choices, uncomment the appropriate line below:
 comp_background = 'internal'      # dC/dr = -beta * r         comp_scale = beta * ro**2
