@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 '''
-kore assembles 
+kore assembles
 
 Use as:
 mpiexec -n ncpus  ./bin/assemble.py
@@ -403,14 +403,14 @@ def main():
                 col = row
 
                 mtx = -op.u(l,'u','upol',0)
-            
+
                 if l == loc_top[0]:  # create loc_list if first iteration
                     mtx.eliminate_zeros()
                     mtx = mtx.tocoo()
                     loc_list = [mtx.data, mtx.row + row , mtx.col + col]
                 else:  # append to loc_list if it already exists
-                    loc_list = ut.packit(loc_list, mtx, row, col)               
-                        
+                    loc_list = ut.packit(loc_list, mtx, row, col)
+
 
             # ----------------------------------------------------------------------- B matrix, 1curl (hydro), section v
             for k,l in enumerate(loc_bot):
@@ -419,9 +419,9 @@ def main():
                 col = row
 
                 mtx = -op.u(l,'v','utor',0)
-                
+
                 loc_list = ut.packit(loc_list, mtx, row, col)
-                
+
 
 
         if par.magnetic == 1: # adds -(d/dt)*b in the induction equation to matrix B
@@ -437,7 +437,15 @@ def main():
                 else :
                     print('These magnetic parameters are not coded yet')
 
-                loc_list = ut.packit(loc_list, mtx, row, col)
+                if par.hydro == 0:
+                    if l == loc_bot[0]:  # create loc_list if first iteration
+                        mtx.eliminate_zeros()
+                        mtx = mtx.tocoo()
+                        loc_list = [mtx.data, mtx.row + row , mtx.col + col]
+                    else:  # append to loc_list if it already exists
+                        loc_list = ut.packit(loc_list, mtx, row, col)
+                else:
+                    loc_list = ut.packit(loc_list, mtx, row, col)
 
 
             # --------------------------------------------------------------- B matrix, 1curl (induction eq.), section g
@@ -545,12 +553,12 @@ def main():
 
 
     if par.hydro == 1:
-        
+
         # ------------------------------------------------------------------------------------------------------------------------------------------------
         # -------------------------------------------------------------------------------------------------------------- A matrix, 2curl hydro (section u)
         # ------------------------------------------------------------------------------------------------------------------------------------------------
         for k,l in enumerate(loc_top): # 2curl hydro eqs
-            
+
             col0 = ( rank*bpp + k )* ut.N1
             row  = col0
 
@@ -559,7 +567,7 @@ def main():
             # ------------------------------------------------------------------------------- A, 2curl (section u), upol
             # ----------------------------------------------------------------------------------------------------------
             basecol = 0
-            
+
             # Physics ----------------------------------------------
             iwu  = op.u(l,'u','upol',0)*1j*ut.wf
             cori = op.coriolis(l,'u','upol',0)[0]
@@ -573,17 +581,17 @@ def main():
                 loc_list = [mtx.data, mtx.row + row , mtx.col + col]
             else:  # append to loc_list if it already exists
                 loc_list = ut.packit(loc_list, mtx, row, col)
-    
-    
+
+
             # Toroidal velocity terms (utor) ---------------------------------------------------------------------------
             # ------------------------------------------------------------------------------- A, 2curl (section u), utor
             # ----------------------------------------------------------------------------------------------------------
             basecol = nb*ut.N1
-            
+
             for i in [-1,1]:
-                
+
                 if l+i in ll_flo[1] :
-                
+
                     # Physics ---------------------------------------
                     mtx = op.coriolis(l,'u','utor',i)
                     # -----------------------------------------------
@@ -592,45 +600,45 @@ def main():
 
 
             if par.magnetic == 1: # include Lorentz force
-                
+
                 # Lorentz force, poloidal magnetic field terms (bpol) --------------------------------------------------
                 # --------------------------------------------------------------------------- A, 2curl (section u), bpol
                 # ------------------------------------------------------------------------------------------------------
                 basecol = 2*nb*ut.N1  # bpol
 
                 for i in [ -2, -1, 0, 1, 2 ]:
-                    
+
                     if l+i in ll_mag[0]:  # for bpol, so we use ll_mag[0]
-                        
+
                         # Physics ---------------------------------------
                         mtx = op.lorentz(l,'u','bpol', i)
                         # -----------------------------------------------
                         col = basecol + col0 + mtx[1] * ut.N1
-                        loc_list = ut.packit( loc_list, mtx[0], row, col)   
+                        loc_list = ut.packit( loc_list, mtx[0], row, col)
 
-                 
+
                 # Lorentz force, toroidal magnetic field terms (btor) --------------------------------------------------
                 # --------------------------------------------------------------------------- A, 2curl (section u), btor
                 # ------------------------------------------------------------------------------------------------------
                 basecol = 3*nb*ut.N1  # btor
 
                 for i in [ -1, 0, 1 ]:
-                    
+
                     if l+i in ll_mag[1]:
-                        
+
                         # Physics ---------------------------------------
-                        mtx = op.lorentz(l,'u','btor', i)               
+                        mtx = op.lorentz(l,'u','btor', i)
                         # -----------------------------------------------
                         col = basecol + col0 + mtx[1] * ut.N1
                         loc_list = ut.packit( loc_list, mtx[0], row, col)
 
 
             if par.thermal == 1 : # include the buoyancy force
-                
-                # Buoyancy force, theta (temperature) terms ------------------------------------------------------------ 
+
+                # Buoyancy force, theta (temperature) terms ------------------------------------------------------------
                 # --------------------------------------------------------------------------- A, 2curl (section u), temp
                 # ------------------------------------------------------------------------------------------------------
-                basecol = ( 2 + 2*par.magnetic )*nb*ut.N1          
+                basecol = ( 2 + 2*par.magnetic )*nb*ut.N1
 
                 # Physics ------------------------------------
                 mtx = -op.buoyancy(l,'u','',0)
@@ -641,10 +649,10 @@ def main():
 
             if par.compositional == 1 : # include the compositional buoyancy
 
-                # Compositional buoyancy force, xi (composition) terms ------------------------------------------------- 
+                # Compositional buoyancy force, xi (composition) terms -------------------------------------------------
                 # --------------------------------------------------------------------------- A, 2curl (section u), comp
                 # ------------------------------------------------------------------------------------------------------
-                basecol = ( 2 + 2*par.magnetic + par.thermal )*nb*ut.N1          
+                basecol = ( 2 + 2*par.magnetic + par.thermal )*nb*ut.N1
 
                 # Physics ------------------------------------
                 mtx = -op.comp_buoyancy(l,'u','',0)
@@ -657,7 +665,7 @@ def main():
             # ---------------------------- include poloidal velocity boundary conditions and update loc_list (section u)
             # ----------------------------------------------------------------------------------------------------------
             bc_u_list = bc_u_spherical( l, 'section_u' )
-            for q in [0,1,2]:   
+            for q in [0,1,2]:
                 loc_list[q]= np.concatenate( ( loc_list[q], bc_u_list[q] ) )
             # ----------------------------------------------------------------------------------------------------------
 
@@ -667,7 +675,7 @@ def main():
         # -------------------------------------------------------------------------------------------------------------- A matrix, 1curl hydro (section v)
         # ------------------------------------------------------------------------------------------------------------------------------------------------
         for k,l in enumerate(loc_bot): # 1curl Navier-Stokes equations
-        
+
             col0 = (rank*bpp + k )* ut.N1
             row  = col0 + nb*ut.N1
 
@@ -676,23 +684,23 @@ def main():
             # ------------------------------------------------------------------------------- A, 1curl (section v), upol
             # ----------------------------------------------------------------------------------------------------------
             basecol = 0
-            
+
             for i in [ -1, 1 ]:
-                
+
                 if l+i in ll_flo[0]:  # for upol, so we use ll_flo[0]
-                    
+
                     # Physics ---------------------------------------
                     mtx = op.coriolis(l,'v','upol', i)
                     # -----------------------------------------------
                     col = basecol + col0 + mtx[1]*ut.N1
                     loc_list = ut.packit( loc_list, mtx[0], row, col)
 
-        
+
             # Toroidal velocity terms ----------------------------------------------------------------------------------
             # ------------------------------------------------------------------------------- A, 1curl (section v), utor
             # ----------------------------------------------------------------------------------------------------------
             basecol = nb*ut.N1
-    
+
             # Physics ------------------------------------
             iwu  = op.u(l,'v','utor',0)*1j*ut.wf
             cori = op.coriolis(l,'v','utor',0)[0]
@@ -704,16 +712,16 @@ def main():
 
 
             if par.magnetic == 1: # includes the Lorentz force
-                                
+
                 # Lorentz force, poloidal magnetic field terms (bpol) --------------------------------------------------
                 # --------------------------------------------------------------------------- A, 1curl (section v), bpol
                 # ------------------------------------------------------------------------------------------------------
                 basecol = 2*nb*ut.N1  #bpol
-                
+
                 for i in [ -1, 0, 1 ]:
-                    
+
                     if l+i in ll_mag[0]:
-                        
+
                         # Physics ---------------------------------------
                         mtx = op.lorentz(l,'v','bpol', i)
                         # -----------------------------------------------
@@ -727,9 +735,9 @@ def main():
                 basecol = 3*nb*ut.N1  # btor
 
                 for i in [ -2, -1, 0, 1, 2 ]:
-                    
+
                     if l+i in ll_mag[1]:  # for b_tor, so we use ll_mag[1]
-                    
+
                         # Physics ---------------------------------------
                         mtx = op.lorentz( l, 'v', 'btor', i)
                         # -----------------------------------------------
@@ -749,36 +757,36 @@ def main():
             if (bc_u_list is None):  # no bc needed in section v if inviscid
                 pass
             else:
-                for q in [0,1,2]:   
+                for q in [0,1,2]:
                     loc_list[q]= np.concatenate( ( loc_list[q], bc_u_list[q] ) )
             # ----------------------------------------------------------------------------------------------------------
 
 
 
     if par.magnetic == 1: # includes the induction equation
-        
+
         # Submatrices here for nocurl and 1curl eqs have only 3 and 2 rows empty at the top, respectively
         # instead of 4 to make room for the magnetic boundary conditions
         # -----------------------------------------------------------------------------------------------------------------------------------------------------
         # -------------------------------------------------------------------------------------------------------------- A matrix, nocurl induction (section f)
         # -----------------------------------------------------------------------------------------------------------------------------------------------------
         for k,l in enumerate(loc_mag_f): # same as loc_bot if B0 is antisymm, or as loc_top if B0 is symm
-        
+
             col0 = (rank*bpp + k )* ut.N1
             row  = par.hydro*(2*nb*ut.N1) + col0
 
 
             if par.hydro == 1:
-                
+
                 # Poloidal velocity terms: curl ( B0 x u ) -------------------------------------------------------------
                 # ---------------------------------------------------------------- A, nocurl induction (section f), upol
                 # ------------------------------------------------------------------------------------------------------
                 basecol = 0
-                
+
                 for i in [ -2, -1, 0, 1, 2 ]:
-                    
+
                     if l+i in ll_flo[0]:
-                        
+
                         # Physics ---------------------------------------
                         mtx = op.induction(l, 'f', 'upol', i)
                         # -----------------------------------------------
@@ -792,16 +800,16 @@ def main():
                 basecol = nb*ut.N1  # utor
 
                 for i in [ -1, 0, 1 ]:
-                    
+
                     if l+i in ll_flo[1]:
-                        
+
                         # Physics ---------------------------------------
                         mtx = op.induction(l,'f','utor', i)
                         # -----------------------------------------------
                         col = basecol + col0 + mtx[1] * ut.N1
                         loc_list = ut.packit( loc_list, mtx[0], row, col)
-                            
-            
+
+
             # Poloidal magnetic field terms (diffusion + iwb term) -----------------------------------------------------
             # -------------------------------------------------------------------- A, nocurl induction (section f), bpol
             # ----------------------------------------------------------------------------------------------------------
@@ -814,19 +822,19 @@ def main():
             # --------------------------------------------
             col  =  basecol + col0
             loc_list = ut.packit( loc_list, mtx, row, col)
-            
+
 
             # Toroidal magnetic terms (diffusion term + iwb term) ------------------------------------------------------
             # -------------------------------------------------------------------- A, nocurl induction (section f), btor
             # ----------------------------------------------------------------------------------------------------------
             # Empty
-            
-            
+
+
             # ----------------------------------------------------------------------------------------------------------
             # ----------------------------------------------------------------------------- No temp or comp terms needed
             # ----------------------------------------------------------------------------------------------------------
-            
-            
+
+
             # ----------------------------------------------------------------------------------------------------------
             # ------------------------------------- include magnetic boundary conditions and update loc_list (section f)
             # ----------------------------------------------------------------------------------------------------------
@@ -835,12 +843,12 @@ def main():
                     bc_b_list_inner = bc_b_thinlayer(l, 'nocurl', 1/par.mu, par.c_icb, par.c1_icb, 'icb')
                 else:
                     bc_b_list_inner = bc_b_icb( l, 'nocurl', par.innercore, rank, bpp, k)
-            
+
             if par.mantle == 'TWA':
                 bc_b_list_outer = bc_b_thinlayer(l, 'nocurl', 1/par.mu, par.c_cmb, par.c1_cmb, 'cmb')
             else:
                 bc_b_list_outer = bc_b_cmb( l, 'section_f', par.innercore )
-            
+
             for q in [0,1,2]:
                 if par.ricb > 0:
                     loc_list[q]= np.concatenate( ( loc_list[q], bc_b_list_inner[q], bc_b_list_outer[q] ) )
@@ -853,57 +861,57 @@ def main():
         # -------------------------------------------------------------------------------------------------------------- A matrix, 1curl induction (section g)
         # ----------------------------------------------------------------------------------------------------------------------------------------------------
         for k,l in enumerate(loc_mag_g): # same as loc_top if B0 is antisymm
-            
-            col0 = ( rank*bpp + k )* ut.N1
-            row  = nb*ut.N1*(1+2*par.hydro) + col0  
 
-            
+            col0 = ( rank*bpp + k )* ut.N1
+            row  = nb*ut.N1*(1+2*par.hydro) + col0
+
+
             if par.hydro == 1:
-            
+
                 # Poloidal velocity terms ------------------------------------------------------------------------------
                 # ----------------------------------------------------------------- A, 1curl induction (section g), upol
                 # ------------------------------------------------------------------------------------------------------
                 basecol = 0
-                
+
                 for i in [ -1, 0, 1]:
-                    
+
                     if l+i in ll_flo[0]:
-                        
+
                         # Physics ---------------------------------------
                         mtx = op.induction(l,'g','upol',i)
                         # -----------------------------------------------
                         col = basecol + col0 + mtx[1] * ut.N1
                         loc_list = ut.packit( loc_list, mtx[0], row, col)
 
-                
+
                 # Toroidal velocity terms ------------------------------------------------------------------------------
                 # ----------------------------------------------------------------- A, 1curl induction (section g), utor
                 # ------------------------------------------------------------------------------------------------------
                 basecol = nb*ut.N1
-                
+
                 for i in [ -2, -1, 0, 1, 2 ]:
-                    
+
                     if l+i in ll_flo[1]:
-                    
+
                         # Physics ---------------------------------------
                         mtx = op.induction(l,'g','utor',i)
                         # -----------------------------------------------
-                        col = basecol + col0 + mtx[1] * ut.N1                    
+                        col = basecol + col0 + mtx[1] * ut.N1
                         loc_list = ut.packit( loc_list, mtx[0], row, col)
-                    
-                    
+
+
             # Poloidal magnetic terms (diffusion + iwb term) -----------------------------------------------------------
             # --------------------------------------------------------------------- A, 1curl induction (section g), bpol
             # ----------------------------------------------------------------------------------------------------------
             # Empty
 
-    
-            
+
+
             # Toroidal magnetic terms (diffusion + iwb term) -----------------------------------------------------------
             # --------------------------------------------------------------------- A, 1curl induction (section g), btor
             # ----------------------------------------------------------------------------------------------------------
             basecol = nb*ut.N1*(1+2*par.hydro)
-            
+
             # Physics ------------------------------------
             difus = op.magnetic_diffusion(l,'g','btor',0)
             iwb   = 1j*ut.wf * op.b(l,'g','btor',0)
@@ -916,8 +924,8 @@ def main():
             # ----------------------------------------------------------------------------------------------------------
             # ----------------------------------------------------------------------------- No temp or comp terms needed
             # ----------------------------------------------------------------------------------------------------------
-            
-            
+
+
             # ----------------------------------------------------------------------------------------------------------
             # ------------------------------------- include magnetic boundary conditions and update loc_list (section g)
             # ----------------------------------------------------------------------------------------------------------
@@ -926,12 +934,12 @@ def main():
                     bc_b_list_inner = bc_b_thinlayer(l, '1curl', 1/par.mu, par.c_icb, par.c1_icb, 'icb')
                 else:
                     bc_b_list_inner = bc_b_icb( l, '1curl', par.innercore, rank, bpp, k)
-            
+
             if par.mantle == 'TWA':
                 bc_b_list_outer = bc_b_thinlayer(l, '1curl', 1/par.mu, par.c_cmb, par.c1_cmb, 'cmb')
             else:
                 bc_b_list_outer = bc_b_cmb( l, 'section_g', par.innercore )
-                
+
             for q in [0,1,2]:
                 if par.ricb > 0:
                     loc_list[q]= np.concatenate( ( loc_list[q], bc_b_list_inner[q], bc_b_list_outer[q] ) )
@@ -942,22 +950,22 @@ def main():
 
 
     if par.thermal == 1: # includes the heat equation
-        
+
         # Submatrices here for nocurl have only 2 rows empty at the top
         # instead of 4 to make room for the thermal boundary conditions
 
         # --------------------------------------------------------------------------------------------------------------------------------------------------
         # -------------------------------------------------------------------------------------------------------------- A matrix, heat equation (section h)
         # --------------------------------------------------------------------------------------------------------------------------------------------------
-        for k,l in enumerate(loc_top): # here use the l's from loc_top 
-        
+        for k,l in enumerate(loc_top): # here use the l's from loc_top
+
             col0 = (rank*bpp + k )* ut.N1
             row = (2+2*par.magnetic)*nb*ut.N1 + col0
-            
+
             # Poloidal velocity terms: -u_r * (d/dr)T ------------------------------------------------------------------
             # ----------------------------------------------------------------------- A, heat equation (section h), upol
             # ----------------------------------------------------------------------------------------------------------
-            basecol = 0             
+            basecol = 0
 
             # Physics ------------------------------------
             mtx = op.thermal_advection(l,'h','upol',0)
@@ -965,46 +973,46 @@ def main():
             col = basecol + col0
             loc_list = ut.packit( loc_list, mtx, row, col)
 
-            
+
             # temperature (theta) terms: (Ek/Pr)*nabla**2(theta) -------------------------------------------------------
             # ----------------------------------------------------------------------- A, heat equation (section h), temp
             # ----------------------------------------------------------------------------------------------------------
-            basecol = (2+2*par.magnetic)*nb*ut.N1       
-            
+            basecol = (2+2*par.magnetic)*nb*ut.N1
+
             # Physics ----------------------------
             mtx = op.thermal_diffusion(l,'h','',0)
             # ------------------------------------
             col = basecol + col0
-            loc_list = ut.packit( loc_list, mtx, row, col)    
-            
-            
+            loc_list = ut.packit( loc_list, mtx, row, col)
+
+
             # ----------------------------------------------------------------------------------------------------------
             # -------------------------------------------------- include thermal boundary conditions and update loc_list
             # ----------------------------------------------------------------------------------------------------------
             bc_theta_list = bc_theta_spherical( l )
-            for q in [0,1,2]:   
+            for q in [0,1,2]:
                 loc_list[q]= np.concatenate( ( loc_list[q], bc_theta_list[q] ) )
             # ----------------------------------------------------------------------------------------------------------
 
 
 
     if par.compositional == 1: # includes the composition equation
-        
+
         # Submatrices here for nocurl have only 2 rows empty at the top
         # instead of 4 to make room for the thermal boundary conditions
 
         # ---------------------------------------------------------------------------------------------------------------------------------------------------------
         # -------------------------------------------------------------------------------------------------------------- A matrix, composition equation (section i)
         # ---------------------------------------------------------------------------------------------------------------------------------------------------------
-        for k,l in enumerate(loc_top): # here use the l's from loc_top 
-        
+        for k,l in enumerate(loc_top): # here use the l's from loc_top
+
             col0 = (rank*bpp + k )* ut.N1
             row = ( 2 + 2*par.magnetic + par.thermal )*nb*ut.N1 + col0
-            
+
             # Poloidal velocity terms: -u_r * (d/dr)xi -----------------------------------------------------------------
             # ---------------------------------------------------------------- A, composition equation (section i), upol
             # ----------------------------------------------------------------------------------------------------------
-            basecol = 0             
+            basecol = 0
 
             # Physics --------------------------------------
             mtx = op.compositional_advection(l,'i','upol',0)
@@ -1012,24 +1020,24 @@ def main():
             col = basecol + col0
             loc_list = ut.packit( loc_list, mtx, row, col)
 
-            
+
             # Compositional (xi) terms: (Ek/Sc)*nabla**2(xi) -----------------------------------------------------------
             # ---------------------------------------------------------------- A, composition equation (section i), comp
             # ----------------------------------------------------------------------------------------------------------
-            basecol = ( 2 + 2*par.magnetic + par.thermal )*nb*ut.N1 
-            
+            basecol = ( 2 + 2*par.magnetic + par.thermal )*nb*ut.N1
+
             # Physics ----------------------------------
             mtx = op.compositional_diffusion(l,'i','',0)
             # ------------------------------------------
             col = basecol + col0
-            loc_list = ut.packit( loc_list, mtx, row, col)    
-            
-            
+            loc_list = ut.packit( loc_list, mtx, row, col)
+
+
             # ----------------------------------------------------------------------------------------------------------
             # -------------------------------------------- include compositional boundary conditions and update loc_list
             # ----------------------------------------------------------------------------------------------------------
             bc_xi_list = bc_xi_spherical( l )
-            for q in [0,1,2]:   
+            for q in [0,1,2]:
                 loc_list[q]= np.concatenate( ( loc_list[q], bc_xi_list[q] ) )
             # ----------------------------------------------------------------------------------------------------------
 
@@ -1286,9 +1294,9 @@ def bc_b_thinlayer(l, loc, mu_vf, c, c1, boundary):
     Thin wall approximation boundary condition, following Roberts, Glatzmaier & Clune, GAFD 2010
     Assumes a thin electrically conducting layer at the top of the IC or at the bottom of the mantle.
     '''
-    
+
     out = ss.dok_matrix((1, ut.N1),dtype=complex)
-    
+
     if par.ricb == 0:
         if ut.symmB0 == -1:  # antisymmetric B0
             ixf = ( par.m + ut.s )%2
@@ -1301,9 +1309,9 @@ def bc_b_thinlayer(l, loc, mu_vf, c, c1, boundary):
     else:
         Tbf = bv.Tb
         Tbg = bv.Tb
-    
+
     if boundary == 'cmb':
-                
+
         epsj = 1
         rj   = ut.rcmb
         f    = Tbf[:,0]  #bv.P0_cmb
@@ -1311,7 +1319,7 @@ def bc_b_thinlayer(l, loc, mu_vf, c, c1, boundary):
         f2   = Tbf[:,2]  #bv.P2_cmb
         g    = Tbg[:,0]  #bv.T0_cmb
         g1   = Tbg[:,1]  #bv.T1_cmb
-        
+
         if par.ricb > 0:
             if 'perfect conductor' in par.innercore :
                 delta_row = 2  # first two rows needed for the icb bc
@@ -1319,9 +1327,9 @@ def bc_b_thinlayer(l, loc, mu_vf, c, c1, boundary):
                 delta_row = 1  # first row for the icb bc
         else:
             delta_row = 0  # no ic, just cmb bc
-        
+
     elif boundary == 'icb':
-        
+
         epsj = -1
         rj   = par.ricb
         f    = bv.P0_icb
@@ -1329,43 +1337,43 @@ def bc_b_thinlayer(l, loc, mu_vf, c, c1, boundary):
         f2   = bv.P2_icb
         g    = bv.T0_icb
         g1   = bv.T1_icb
-        
+
         delta_row = 0
-    
+
     F  = rj*f
     F1 = rj*f1 + f
     F2 = 2*f1 + rj*f2
     G  = rj*g
-    G1 = rj*g1 + g    
-    
+    G1 = rj*g1 + g
+
     kj = (l+0.5)*epsj-0.5
     nabF = F2 - l*(l+1)*F/rj
-    
+
     if loc == 'nocurl':  # section f
-        
+
         out[0,:] = mu_vf*F1 + (kj/rj)*F + epsj*kj*c*F1 + epsj*c1*rj*(mu_vf+0.5*epsj*kj*c)*nabF
-        
+
         if ut.symmB0 == -1:
             row0 = 2*par.hydro*ut.n + int( ut.N1 * ( l - ut.m_bot)/2 )    # starting row
         elif ut.symmB0 == 1:
             row0 = 2*par.hydro*ut.n + int( ut.N1 * ( l - ut.m_top)/2 )
         col0 = row0
-    
+
     elif loc == '1curl':  # section g
-        
+
         out[0,:] = G + epsj*rj*c1*G1
-        
+
         if ut.symmB0 == -1:
             row0 = (2*par.hydro+1)*ut.n + int( ut.N1*(l - ut.m_top)/2 )   # starting row
         elif ut.symmB0 == 1:
             row0 = (2*par.hydro+1)*ut.n + int( ut.N1*(l - ut.m_bot)/2 )
         col0 = row0
-    
+
     row1 = row0 + delta_row
-    
+
     out = out.tocoo()
     out2 = [out.data, out.row + row1, out.col + col0]
-    
+
     return out2
 
 
@@ -1481,7 +1489,7 @@ def bc_b_icb(l,loc, innercore, rank, bpp, k):
 
             # Physics ------------------------------------------
             bessel_wavenumber = (1-1j)*np.sqrt(par.forcing_frequency/2/par.Em)
-            # the line just below works for lmax~150. 
+            # the line just below works for lmax~150.
             #icb_diag[0,:] = ut.jl(l,bessel_wavenumber*par.ricb,0) * bv.P0_icb - bessel_wavenumber * ut.jl(l,bessel_wavenumber*par.ricb,1) * bv.P1_icb
             # the line below should work for all lmax
             icb_diag[0,:] = bv.P0_icb - bessel_wavenumber * ut.dlogjl(l,bessel_wavenumber*par.ricb) * bv.P1_icb
@@ -1497,7 +1505,7 @@ def bc_b_icb(l,loc, innercore, rank, bpp, k):
 
             # Physics ---------------
             bessel_wavenumber = (1-1j)*np.sqrt(par.forcing_frequency/2/par.Em)
-            # the line just below works for lmax~150. 
+            # the line just below works for lmax~150.
             #icb_diag[0,:] = ut.jl(l,bessel_wavenumber*par.ricb,0) * bv.T0_icb - bessel_wavenumber * ut.jl(l,bessel_wavenumber*par.ricb,1) * bv.T1_icb
             # the line below should work for all lmax
             icb_diag[0,:] = bv.T0_icb - bessel_wavenumber * ut.dlogjl(l,bessel_wavenumber*par.ricb) * bv.T1_icb

@@ -33,7 +33,7 @@ vsymm  = par.symm
 symm1 = (2*np.sign(par.m) - 1) * par.symm  # symm1=par.symm if m>0, symm1 = -par.symm if m=0
 
 # this gives the size (rows or columns) of the main matrices
-sizmat = 2*n + 2*n*par.magnetic + n*par.thermal + n*par.compositional
+sizmat = 2*n*par.hydro + 2*n*par.magnetic + n*par.thermal + n*par.compositional
 
 s = int( (vsymm+1)/2 ) # s=0 if antisymm, s=1 if symm
 m_top = m + 1-s
