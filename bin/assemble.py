@@ -438,7 +438,7 @@ def main():
                     print('These magnetic parameters are not coded yet')
 
                 if par.hydro == 0:
-                    if l == loc_bot[0]:  # create loc_list if first iteration
+                    if l == loc_mag_f[0]:  # create loc_list if first iteration
                         mtx.eliminate_zeros()
                         mtx = mtx.tocoo()
                         loc_list = [mtx.data, mtx.row + row , mtx.col + col]
