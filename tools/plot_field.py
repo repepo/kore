@@ -28,7 +28,7 @@ field  : whether to plot flow velocity or magnetic field ('u' or 'b')
 opt    : 'raw' for real part (phase and phi dependent!), or 'abs' for the magnitude
 '''
 
-rc('text', usetex=True)
+plt.rc('text', usetex=True)
 
 solnum = int(sys.argv[1])
 
