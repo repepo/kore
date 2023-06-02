@@ -821,7 +821,16 @@ def main():
             mtx   = iwb - difus
             # --------------------------------------------
             col  =  basecol + col0
-            loc_list = ut.packit( loc_list, mtx, row, col)
+
+            if par.hydro == 0:
+                if l == loc_mag_f[0]:  # create loc_list if first iteration
+                    mtx.eliminate_zeros()
+                    mtx = mtx.tocoo()
+                    loc_list = [mtx.data, mtx.row + row , mtx.col + col]
+                else:  # append to loc_list if it already exists
+                    loc_list = ut.packit(loc_list, mtx, row, col)
+            else:
+                loc_list = ut.packit(loc_list, mtx, row, col)
 
 
             # Toroidal magnetic terms (diffusion term + iwb term) ------------------------------------------------------

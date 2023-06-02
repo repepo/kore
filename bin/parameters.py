@@ -22,7 +22,7 @@ aux = 1.0  # Auxiliary variable, useful e.g. for ramps
 # ----------------------------------------------------------------------------------------------------------------------
 # ---------------------------------------------------------------------------------------------- Hydrodynamic parameters
 # ----------------------------------------------------------------------------------------------------------------------
-hydro = 1  # Just leave this on for the time being
+hydro = 1  # set to 1 to include the Navier-Stokes equation for the flow velocity, set to 0 otherwise
 
 # Azimuthal wave number m (>=0)
 m = 1
@@ -74,7 +74,7 @@ projection = 1
 # ----------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------- Magnetic field parameters
 # ----------------------------------------------------------------------------------------------------------------------
-magnetic = 1  # Use 0 for pure hydro, 1 for MHD
+magnetic = 0  # set to 1 if including the induction equation and the Lorentz force
 
 # Imposed background magnetic field
 B0 = 'axial'          # Axial, uniform field along the spin axis
@@ -137,7 +137,7 @@ thermal = 0  # Use 1 or 0 to include or not the temperature equation and the buo
 
 # Prandtl number: ratio of viscous to thermal diffusivity
 Prandtl = 1.0
-# Thermal Ekamn number
+# "Thermal" Ekman number
 Etherm = Ek/Prandtl
 
 # Background isentropic temperature gradient dT/dr choices, uncomment the appropriate line below:
@@ -179,7 +179,7 @@ compositional = 0  # Use 1 or 0 to include compositional transport or not (Bouss
 
 # Schmidt number: ratio of viscous to compositional diffusivity
 Schmidt = 1.0
-# Compositional Ekamn number
+# "Compositional" Ekman number
 Ecomp = Ek/Schmidt 
 
 # Background isentropic composition gradient dC/dr choices, uncomment the appropriate line below:
