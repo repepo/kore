@@ -52,7 +52,7 @@ if field == 'u':
 elif field == 'b':
     a = np.loadtxt('real_magnetic.field',usecols=solnum)
     b = np.loadtxt('imag_magnetic.field',usecols=solnum)
-    vsymm = -par.symm # because external mag field is antisymmetric wrt the equator (if dipole or axial)
+    vsymm = par.symm * ut.symmB0 
        
 # Rearrange and separate poloidal and toroidal parts
 Plj0 = a[:n] + 1j*b[:n]         #  N elements on each l block
