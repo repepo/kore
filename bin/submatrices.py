@@ -77,10 +77,8 @@ def main(ncpus):
             rd_eta[i][0] = ut.chebco_f( ut.mag_diffus, i, par.N, par.ricb, ut.rcmb, par.tol_tc )
             # and the derivative
             rd_eta[i][1] = ( ut.Dcheb( rd_eta[i][0], par.ricb, ut.rcmb )
-                            - i*ut.chebco_f( ut.mag_diffus,i-1,par.N, par.ricb, ut.rcmb, par.tol_tc)
-                            )
-            ####### needs testing
-            # we need the coeffs of r**i * (d/dr) ut.mag_diffus(r), NOT the coeffs (d/dr)( r**i * ut.mag_diffus(r) ) as coded above
+                            - i*ut.chebco_f( ut.mag_diffus,i-1,par.N, par.ricb, ut.rcmb, par.tol_tc) )
+            
 
         cnorm = ut.B0_norm()  # Normalization
 
@@ -246,6 +244,7 @@ def main(ncpus):
                 #labl += [ 'f00', 'f11', 'f22' ]
                 #arg2 += [   vF ,   vF ,   vF  ]
                 labl += [ 'feta000', 'feta101', 'feta202' ]  # missing arg2 because we don't want to bother with no inner core for now
+                arg2 += [   vF ,   vF ,   vF  ]
 
 
     # -------------------------------------------------------------------------------------------------------------------------------------------
@@ -269,7 +268,8 @@ def main(ncpus):
             # magnetic diffusion
             #labl += [ 'g00', 'g11',  'g22' ]
             #arg2 += [   vG ,   vG ,    vG  ]
-            labl += [ 'geta000', 'geta101', 'geta202', 'geta110', 'geta211' ]  # missing arg2 because we don't want to bother with no inner core for now
+            labl += [ 'geta000', 'geta101', 'geta202', 'geta110', 'geta211' ]
+            arg2 += [       vG ,       vG ,       vG ,       vG ,       vG  ]
 
 
     if par.thermal == 1 :

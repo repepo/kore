@@ -142,6 +142,9 @@ def BVprof(r,args):
 
 
 def conductivity(r):
+    '''
+    This function needs to be an even function of r when ricb=0
+    '''
     return np.ones_like(r)
 
 
