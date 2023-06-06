@@ -1,10 +1,9 @@
-# utility for postprocessing solutions
+# utility defs for postprocessing solutions
 
 import multiprocessing as mp
 import scipy.fftpack as sft
 import numpy.polynomial.chebyshev as ch
 import numpy as np
-
 import parameters as par
 import utils as ut
 import bc_variables as bc
@@ -44,7 +43,7 @@ def funcheb(ck0, r, ricb, rcmb):
     else:
         x00 = xcheb(r, ricb, rcmb)  # use the radial points given as argument
 
-    out = np.zeros((np.size(r), np.size(ck0)), ck0.dtype)
+    out = np.zeros((np.size(x00), np.size(ck0)), ck0.dtype)
     out[:,0] = ch.chebval(x00, ck0)
     out[:,1] = ch.chebval(x00, ck1)
     out[:,2] = ch.chebval(x00, ck2)
@@ -60,9 +59,7 @@ def cg_quad(f, Ra, Rb, N, sqx):
     Assumes f is sampled over [Ra,Rb], with sqx=np.sqrt(1-xk**2),
     where xk are the radial grid points for the Chebyshev-Guauss quadrature. 
     '''
-    
     out = (np.pi/N) * np.sum( sqx * f ) * (Rb-Ra)/2
- 
     return out
 
 
@@ -71,18 +68,17 @@ def kinetic_energy_pol(l, qlm0, slm0):
     '''
     Returns the integrand to compute the poloidal kinetic energy, l-component
     '''
-
     f0 = 4*np.pi/(2*l+1)
     f1 = r2 * np.absolute( qlm0 )**2
     f2 = r2 * l*(l+1) * np.absolute( slm0 )**2  # r2 is rk**2, a global variable
-
     return f0*(f1+f2)
 
-def kinetic_dissipation_pol(l, qlm0, qlm1, qlm2, slm0, slm1, slm2):
+
+
+def kinetic_dissip_pol(l, qlm0, qlm1, qlm2, slm0, slm1, slm2):
     '''
     Returns the integrand to compute the kinetic energy dissipation, poloidal l-component
     '''
-    
     L = l*(l+1)
     f0 = 4*np.pi/(2*l+1)
     f1 = L * r2 * np.conj(slm0) * slm2
@@ -90,20 +86,19 @@ def kinetic_dissipation_pol(l, qlm0, qlm1, qlm2, slm0, slm1, slm2):
     f3 = -(L**2)*( np.conj(slm0)*slm0 ) - (l**2+l+2) * ( np.conj(qlm0)*qlm0 )
     f4 = 2 * rk * np.conj(qlm0)*qlm1 + r2 * np.conj(qlm0) * qlm2
     f5 = 2 * L *( np.conj(qlm0)*slm0 + qlm0*np.conj(slm0) )
-    
     return 2*np.real( f0*( f1+f2+f3+f4+f5 ) )
 
-def internal_dissipation_pol(l, qlm0, qlm1, slm0, slm1):
+
+
+def internl_dissip_pol(l, qlm0, qlm1, slm0, slm1):
     '''
     Returns the integrand to compute the internal energy dissipation, poloidal l-component
-    '''
-    
+    '''    
     L = l*(l+1)
     f0 = 4*np.pi/(2*l+1)
     f1 = L*np.absolute(qlm0 + rk*slm1 - slm0)**2
     f2 = 3*np.absolute(rk*qlm1)**2
     f3 = L*(l-1)*(l+2)*np.absolute(slm0)**2
-
     return 2*f0*( f1+f2+f3 )
 
 
@@ -112,41 +107,37 @@ def kinetic_energy_tor(l, tlm0):
     '''
     Returns the integrand to compute the toroidal kinetic energy, l-component
     '''
-
     f0 = 4*np.pi/(2*l+1)
     f1 = r2 * l*(l+1) * np.absolute(tlm0)**2  # r2 is rk**2, a global variable
-
     return f0*f1
 
-def internal_dissipation_tor(l, tlm0, tlm1):
+
+
+def internl_dissip_tor(l, tlm0, tlm1):
     '''
     Returns the integrand to compute the internal energy dissipation, toroidal l-component
     '''
-    
     L = l*(l+1)
     f0 = 4*np.pi/(2*l+1)
     f1 = L*np.absolute( rk*tlm1-tlm0 )**2
     f2 = L*(l-1)*(l+2)*np.absolute( tlm0 )**2    
-
     return 2*f0*( f1+f2 )
 
-def kinetic_dissipation_tor(l, tlm0, tlm1, tlm2):
+
+
+def kinetic_dissip_tor(l, tlm0, tlm1, tlm2):
     '''
     Returns the integrand to compute the kinetic energy dissipation, toroidal l-component
     '''
-
     L = l*(l+1)
     f0 = 4*np.pi/(2*l+1)
     f1 = L * r2 * np.conj(tlm0) * tlm2
     f2 = 2 * rk * L * np.conj(tlm0) * tlm1
     f3 = -(L**2)*( np.conj(tlm0)*tlm0 )
-
-    return 2*np.real( f0*(f1+f2) )
-
+    return 2*np.real( f0*(f1+f2+f3) )
 
 
                     
-
 def expand_sol(sol,vsymm):
     '''
     Expands the ricb=0 solution with ut.N1 coeffs to have full N coeffs,
@@ -282,9 +273,8 @@ def pol_worker( l, Pk, N, ricb, rcmb, Ra, Rb): # ------------
     Here we compute various integrals that involve poloidal components, degree l
     We use Chebyshev-Gauss quadratures
     '''
-
-    # plm's are the poloidal scalars and derivatives evaluated
-    # at points in the Cheb polynomial domain of the solution    
+    # plm's are the poloidal scalars and its derivatives evaluated
+    # at the grid points in the Cheb polynomial domain of the solution    
     f_pol = funcheb(Pk, r=None, ricb=ricb, rcmb=rcmb)
     plm0 = f_pol[:,0]
     plm1 = f_pol[:,1]
@@ -302,38 +292,28 @@ def pol_worker( l, Pk, N, ricb, rcmb, Ra, Rb): # ------------
     slm1 = plm2 + (qlm1/L)
     slm2 = plm3 + (qlm2/L)
 
-    # -------------------------------------------------------------------------- kinetic energy, poloidal
-    # Volume integral of (1/2)* u.u
-    f = kinetic_energy_pol(l, qlm0, slm0)  # this is the integrand
-    Ken_pol_l = cg_quad(f, Ra, Rb, N, sqx) # the resulting integral
-
-
-    # -------------------------------------------------------------------------- internal energy dissipation, poloidal
-    # Volume integral of (symm\nabla u):(symm\nabla u)
-    f = internal_dissipation_pol(l, qlm0, qlm1, slm0, slm1)
-    Dint_pol_l = cg_quad(f, Ra, Rb, N, sqx)
-
-
-    # -------------------------------------------------------------------------- kinetic energy dissipation rate, poloidal
-    # Volume integral of u.nabla^2 u
-    f = kinetic_dissipation_pol(l, qlm0, qlm1, qlm2, slm0, slm1, slm2)
-    Dkin_pol_l = cg_quad(f, Ra, Rb, N, sqx)
+    # Integrands
+    f_kep = kinetic_energy_pol(l, qlm0, slm0)  
+    f_idp = internl_dissip_pol(l, qlm0, qlm1, slm0, slm1)
+    f_kdp = kinetic_dissip_pol(l, qlm0, qlm1, qlm2, slm0, slm1, slm2)
+    
+    # Integrals
+    Kene_pol_l = cg_quad(f_kep, Ra, Rb, N, sqx) # the resulting integral
+    Dint_pol_l = cg_quad(f_idp, Ra, Rb, N, sqx)
+    Dkin_pol_l = cg_quad(f_kdp, Ra, Rb, N, sqx)
         
-     
     power_pol_l = 0  ### To fix later
-
-
-    return [Ken_pol_l, Dint_pol_l, np.real(Dkin_pol_l), np.imag(Dkin_pol_l),\
+   
+    return [Kene_pol_l, Dint_pol_l, np.real(Dkin_pol_l), np.imag(Dkin_pol_l),\
      np.real(power_pol_l), np.imag(power_pol_l)]
 
 
 
-def tor_worker( l, Tk, N, m, ricb, rcmb, projection, forcing, Ra, Rb): # ------------
+def tor_worker( l, Tk, N, ricb, rcmb, Ra, Rb): # ------------
     '''
     Here we compute various integrals that involve toroidal components, degree l
     We use Chebyshev-Gauss quadratures
     '''
-
     # tlm's are the toroidal scalars and derivatives evaluated
     # at points in the Cheb polynomial domain of the solution    
     f_tor = funcheb(Tk, r=None, ricb=ricb, rcmb=rcmb)
@@ -341,28 +321,20 @@ def tor_worker( l, Tk, N, m, ricb, rcmb, projection, forcing, Ra, Rb): # -------
     tlm1 = f_tor[:,1]
     tlm2 = f_tor[:,2]
 
-
-    # -------------------------------------------------------------------------- kinetic Energy, toroidal
-    f = kinetic_energy_tor(l, tlm0)
-    Ken_tor_l = cg_quad(f, Ra, Rb, N, sqx)
-
-
-    # -------------------------------------------------------------------------- internal energy dissipation, toroidal
-    f = internal_dissipation_tor(l, tlm0, tlm1)
-    Dint_tor_l =  cg_quad(f, Ra, Rb, sqx)
-
-
-    # -------------------------------------------------------------------------- kinetic energy dissipation rate, toroidal
-    f = kinetic_dissipation_tor(l, tlm0, tlm1, tlm2)
-    Dkin_tor_l = cg_quad(f, Ra, Rb, sqx)
+    # Integrands
+    f_ket = kinetic_energy_tor(l, tlm0)
+    f_idt = internl_dissip_tor(l, tlm0, tlm1)
+    f_kdt = kinetic_dissip_tor(l, tlm0, tlm1, tlm2)
+    
+    # Integrals
+    Kene_tor_l = cg_quad(f_ket, Ra, Rb, N, sqx)
+    Dint_tor_l = cg_quad(f_idt, Ra, Rb, N, sqx)
+    Dkin_tor_l = cg_quad(f_kdt, Ra, Rb, N, sqx)
  
+    power_tor_l = 0  ### To fix later   
 
-    power_tor_l = 0  ### To fix later
-
-
-    return [Ken_tor_l, Dint_tor_l, np.real(Dkin_tor_l), np.imag(Dkin_tor_l),\
+    return [Kene_tor_l, Dint_tor_l, np.real(Dkin_tor_l), np.imag(Dkin_tor_l),\
      np.real(power_tor_l), np.imag(power_tor_l)]
-
 
 
 
@@ -483,7 +455,7 @@ def tor_ohm( l, Tk0, N, ricb, rcmb, Ra, Rb): # ---------------------------------
 
 
 
-def ken_dis( u_sol, w, Ra, Rb, ncpus):
+def ken_dis( u_sol, Ra, Rb, ncpus):
     '''
     Computes total kinetic energy, internal and kinetic energy dissipation,
     and input power from body forces.
@@ -511,30 +483,31 @@ def ken_dis( u_sol, w, Ra, Rb, ncpus):
     global r4
     r4 = rk**4
 
-
     # separate poloidal and toroidal coeffs
     Pk0 = u_sol[ 0    : ut.n   ]
     Tk0 = u_sol[ ut.n : 2*ut.n ]
 
     # these are the cheb coefficients, reorganized as a 2D array
     # rows are for l's, columns for cheb coeff order
+    # rows will be processed in parallel
     Pk0 = np.reshape(Pk0,(int((par.lmax-par.m+1)/2),par.N))
     Tk0 = np.reshape(Tk0,(int((par.lmax-par.m+1)/2),par.N))
 
+    # the l numbers for poloidals and toroidals
     ll0 = ut.ell(par.m, par.lmax, par.symm)
     llpol = ll0[0]
     lltor = ll0[1]
 
-
     # process each l component in parallel
     pool = mp.Pool(processes=ncpus)
+    p = [ pool.apply_async(pol_worker,
+          args=( l, Pk0[row,:], par.N, par.ricb, ut.rcmb, Ra, Rb)) 
+          for row,l in enumerate(llpol) ]
+    t = [ pool.apply_async(tor_worker, 
+          args=( l, Tk0[row,:], par.N, par.ricb, ut.rcmb, Ra, Rb))
+          for row,l in enumerate(lltor) ]
 
-    p = [ pool.apply_async(pol_worker, args=( l, Pk0[k,:], par.N, par.m, par.ricb, par.rcmb, w, par.projection, par.forcing, Ra, Rb))\
-          for k,l in enumerate(llpol) ]
-
-    t = [ pool.apply_async(tor_worker, args=( l, Tk0[k,:], par.N, par.m, par.ricb, par.rcmb, w, par.projection, par.forcing, Ra, Rb))\
-          for k,l in enumerate(lltor) ]
-
+    # Sum all l-contributions
     res_pol = np.sum([p1.get() for p1 in p],0)
     res_tor = np.sum([t1.get() for t1 in t],0)
 

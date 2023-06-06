@@ -9,14 +9,11 @@ Usage:
 
 import sys
 sys.path.insert(1,'bin/')
-
 import scipy.io as sio
 import scipy.sparse as ss
 from timeit import default_timer as timer
 import os.path
-
 import numpy as np
-
 import parameters as par
 import utils as ut
 import utils_pp_new as upp
@@ -135,13 +132,8 @@ def main(ncpus):
             # Expand solution in case ricb=0
             u_sol = upp.expand_sol( rflow + 1j*iflow, par.symm)
 
-
-            kid[i,:] = upp.ken_dis( u_sol, w, Ra=par.ricb, Rb=1, ncpus=ncpus)
-
-            #kid[i,:] = upp.ken_dis( rflow, iflow, par.N, par.lmax, par.m, par.symm, \
-            #par.ricb, ut.rcmb, par.ncpus, w, par.projection, par.forcing, par.ricb, ut.rcmb)
-
-       
+            # the actual calculation
+            kid[i,:] = upp.ken_dis( u_sol, Ra=par.ricb, Rb=1, ncpus=int(ncpus))
 
             KP = kid[i,0]
             KT = kid[i,1]
@@ -153,10 +145,8 @@ def main(ncpus):
 
             repow = kid[i,5]
 
-            expsol = upp.expand_sol(rflow+1j*iflow, par.symm)
-
-            vtorq[i] = par.Ek * np.dot( ut.gamma_visc(0,0,0), expsol)
-            vtorq_icb[i] = par.Ek * np.dot( ut.gamma_visc_icb(par.ricb), expsol)
+            vtorq[i] = par.Ek * np.dot( ut.gamma_visc(0,0,0), u_sol)
+            vtorq_icb[i] = par.Ek * np.dot( ut.gamma_visc_icb(par.ricb), u_sol)
 
             if par.track_target == 1:
                 # compute distance (mismatch) to tracking target
@@ -386,6 +376,6 @@ def main(ncpus):
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv[1]))
 
 
