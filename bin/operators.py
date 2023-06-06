@@ -207,17 +207,30 @@ def viscous_diffusion(l, section, component, offdiag):  # ----------------------
 
         if section == 'u' and component == 'upol':
 
-            if (par.magnetic == 1 and par.B0 == 'dipole'):
-                out = L*( -L*(l+2)*(l-1)*r2Iu + 2*L*r4D2u - 4*r5D3u - r6D4u )  # r6* r.2curl( nabla^2 u )
+            if par.anelastic:
+                out = L * ( (-L*(l+2)*(l-1)*Iu - (L+2)*rrho1Iu - 2*(L-1)*r2rho2Iu + r3rho3Iu)
+                           -(L-2)*r2rho1D1u + 6*r3rho2D1u + r4rho3D1u
+                           + 2*r2D2u + 5*r3rho1D2u + 2*r4rho2D2u
+                           - 4*r3D3u + r4rho1D3u
+                           - r4D4u )
             else:
-                out = L*( -L*(l+2)*(l-1)*Iu + 2*L*r2D2u - 4*r3D3u - r4D4u )    # r4* r.2curl( nabla^2 u )
+
+                if (par.magnetic == 1 and par.B0 == 'dipole'):
+                    out = L*( -L*(l+2)*(l-1)*r2Iu + 2*L*r4D2u - 4*r5D3u - r6D4u )  # r6* r.2curl( nabla^2 u )
+                else:
+                    out = L*( -L*(l+2)*(l-1)*Iu + 2*L*r2D2u - 4*r3D3u - r4D4u )    # r4* r.2curl( nabla^2 u )
 
         elif section == 'v' and component == 'utor':
 
-            if (par.magnetic == 1 and par.B0 == 'dipole'):
-                out = L*( -L*r3Iv + 2*r4D1v + r5D2v )                          # r5* r.1curl( nabla^2 u )
+            if par.anelastic:
+                out = L * ( -L*Iv - 3*rrho1Iv - r2rho2Iv
+                            + 2*r1D1v-r2rho1D1v
+                            +r2D2v)
             else:
-                out = L*( -L*Iv + 2*r1D1v + r2D2v )                            # r2* r.1curl( nabla^2 u )
+                if (par.magnetic == 1 and par.B0 == 'dipole'):
+                    out = L*( -L*r3Iv + 2*r4D1v + r5D2v )                          # r5* r.1curl( nabla^2 u )
+                else:
+                    out = L*( -L*Iv + 2*r1D1v + r2D2v )                            # r2* r.1curl( nabla^2 u )
 
     return par.OmgTau * par.Ek * out
 

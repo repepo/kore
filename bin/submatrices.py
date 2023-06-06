@@ -65,6 +65,19 @@ def main(ncpus):
     else :
         rp = [1, r1, r2, r3, r4, r5, r6]
 
+    if par.anelastic:
+        rd_rho = [ [ [] for j in range(5) ] for i in range(5) ]
+
+        for i in range(5):
+            for j in range(5):
+            # Cheb coeffs of the ln density profile times a power of r
+                if j==0:
+                    rd_rho[i][j] = ut.chebco_f( ut.log_density, par.N, par.ricb, ut.rcmb, par.tol_tc )
+                else:
+                    # and the derivative
+                    ck = ut.Dcheb(rd_rho[i][j-1],par.ricb,ut.rcmb)
+                    rn  = ut.chebco(j, par.N, tol, par.ricb, ut.rcmb)
+                    rd_rho[i][j] = ut.chebProduct(ck,rn,par.N,par.tol_tc)
 
     if par.magnetic == 1 :
 
@@ -72,13 +85,14 @@ def main(ncpus):
         rpw = [ 0, 1, 2, 3, 4, 5, -1]  # powers of r needed for the h function
 
         rd_eta = [ [ [] for j in range(2) ] for i in range(3) ]
+
+
         for i,rpw1 in enumerate( rpw[:3] ):
             # Cheb coeffs of the mag. diffusion profile times a power of r
-            rd_eta[i][0] = ut.chebco_f( ut.mag_diffus, i, par.N, par.ricb, ut.rcmb, par.tol_tc )
+            rd_eta[i][0] = ut.chebco_rf( ut.mag_diffus, i, par.N, par.ricb, ut.rcmb, par.tol_tc )
             # and the derivative
             rd_eta[i][1] = ( ut.Dcheb( rd_eta[i][0], par.ricb, ut.rcmb )
-                            - i*ut.chebco_f( ut.mag_diffus,i-1,par.N, par.ricb, ut.rcmb, par.tol_tc) )
-            
+                            - i*ut.chebco_rf( ut.mag_diffus,i-1,par.N, par.ricb, ut.rcmb, par.tol_tc) )
 
         cnorm = ut.B0_norm()  # Normalization
 
@@ -176,6 +190,13 @@ def main(ncpus):
         labl += [ 'u00', 'u22', 'u33', 'u44' ]
         arg2 += [   vP ,   vP ,   vP ,   vP  ]
 
+    # Density profile
+    if par.anelastic:
+        labl += ['urho110','urho220','urho330',
+                 'urho211','urho321','urho432',
+                 'urho312','urho422','urho431',
+                 'urho413','u44']
+
     if par.magnetic == 1 :
         # Lorentz force
         if cdipole :
@@ -208,6 +229,9 @@ def main(ncpus):
         labl += [ 'v20', 'v10', 'v21', 'v00', 'v11', 'v22' ]
         arg2 += [   vT ,   vP ,   vP ,   vT ,   vT ,   vT  ]
 
+    if par.anelastic:
+        labl += ['vrho110','vrho220','vrho211']
+
     if par.magnetic == 1 :
         # Lorentz force
         if cdipole :
@@ -215,7 +239,6 @@ def main(ncpus):
         else:
             labl += [ 'v001', 'v010', 'v120', 'v102', 'v000', 'v110', 'v101' ]
             arg2 += [   vF  ,   vF  ,   vF  ,   vF  ,   vG  ,   vG  ,   vG   ]
-
 
     if par.magnetic == 1 :
     # -------------------------------------------------------------------------------------------------------------------------------------------
@@ -366,6 +389,9 @@ def main(ncpus):
 
                 if prof_id == 'eta':
                     rprof = rd_eta
+                if par.anelastic:
+                    if prof_id == 'rho':
+                        rprof = rd_rho
 
                 profx = int(lablx[4])
                 plabl += [ lablx ]

@@ -47,6 +47,8 @@ bco = 1
 # Ek = Ek_gap*(1-ricb)**2
 Ek = 10**-4
 
+anelastic = 0
+
 forcing = 0  # Uncomment this line for eigenvalue problems
 # forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
 # forcing = 2  # For boundary flow forcing, use with bci=1 and bco=1.
@@ -180,7 +182,7 @@ compositional = 0  # Use 1 or 0 to include compositional transport or not (Bouss
 # Schmidt number: ratio of viscous to compositional diffusivity
 Schmidt = 1.0
 # "Compositional" Ekman number
-Ecomp = Ek/Schmidt 
+Ecomp = Ek/Schmidt
 
 # Background isentropic composition gradient dC/dr choices, uncomment the appropriate line below:
 comp_background = 'internal'      # dC/dr = -beta * r         comp_scale = beta * ro**2

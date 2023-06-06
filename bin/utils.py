@@ -142,7 +142,7 @@ def BVprof(r,args):
 
 def log_density(r):
 
-    return np.zeros_like(r)
+    return -4*np.log(r)
 
 
 def conductivity(r):
@@ -517,9 +517,29 @@ def h3(rr, kind, args):
 
     return out2
 
+def chebco_f(func,N,ricb,rcmb,tol,args=None):
+    '''
+    Returns the first N Chebyshev coefficients
+    from 0 to N-1, of the function
+    r**rpower * func(r)
+    '''
+    i = np.arange(0, N)
+    xi = np.cos(np.pi * (i + 0.5) / N)
+
+    if ricb > 0:
+        ri = (ricb + (rcmb - ricb) * (xi + 1) / 2.)
+    elif ricb == 0 :
+        ri = rcmb * xi
+
+    tmp = sft.dct(func(ri))
+
+    out = tmp / N
+    out[0] = out[0] / 2.
+    out[np.absolute(out) <= tol] = 0.
+    return out
 
 
-def chebco_f(func,rpower,N,ricb,rcmb,tol,args=None):
+def chebco_rf(func,rpower,N,ricb,rcmb,tol,args=None):
     '''
     Returns the first N Chebyshev coefficients
     from 0 to N-1, of the function
@@ -540,7 +560,22 @@ def chebco_f(func,rpower,N,ricb,rcmb,tol,args=None):
     out[np.absolute(out) <= tol] = 0.
     return out
 
+def chebProduct(ck,dk,N,tol):
+    '''
+    Computes the Chebyshev expansion of a product of
+    two Chebyshev series defined by ck and dk
+    '''
 
+    out = np.zeros([len(ck)+len(dk)])
+    for i in range(len(ck)):
+        for j in range(len(dk)):
+            if (ck[i] != 0) and (dk[j] != 0):
+                out[int(abs(i+j))] += ck[i]*dk[j]/2
+                out[int(abs(i-j))]   += ck[i]*dk[j]/2
+
+    out[np.absolute(out) <= tol] = 0.
+
+    return out[:N]
 
 def chebco(powr, N, tol, ricb, rcmb):
     '''
@@ -903,23 +938,6 @@ def Dcheb(ck, ricb, rcmb):
         out1 = 2*out/(rcmb-ricb)
 
     return out1
-
-def ChebProduct(ck,dk,N,tol):
-    '''
-    Computes the Chebyshev expansion of a product of
-    two Chebyshev series defined by ck and dk
-    '''
-
-    out = np.zeros([len(ck)+len(dk)])
-    for i in range(len(ck)):
-        for j in range(len(dk)):
-            if (ck[i] != 0) and (dk[j] != 0):
-                out[int(abs(i+j))] += ck[i]*dk[j]/2
-                out[int(abs(i-j))]   += ck[i]*dk[j]/2
-
-    out[np.absolute(out) <= tol] = 0.
-
-    return out[:N]
 
 
 def marc_tide(omega, l, m, loc, N, ricb, rcmb):
