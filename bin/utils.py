@@ -139,10 +139,123 @@ def BVprof(r,args):
         #    out[i] = -0.5*(1 - np.tanh( 4*(abs(x)-rc)/h  ))
     return out
 
+def chebco_f(func,N,ricb,rcmb,tol,args=None):
+    '''
+    Returns the first N Chebyshev coefficients
+    from 0 to N-1, of the function
+    r**rpower * func(r)
+    '''
+    i = np.arange(0, N)
+    xi = np.cos(np.pi * (i + 0.5) / N)
+
+    if ricb > 0:
+        ri = (ricb + (rcmb - ricb) * (xi + 1) / 2.)
+    elif ricb == 0 :
+        ri = rcmb * xi
+
+    tmp = sft.dct(func(ri))
+
+    out = tmp / N
+    out[0] = out[0] / 2.
+    out[np.absolute(out) <= tol] = 0.
+    return out
+
+
+def chebco_rf(func,rpower,N,ricb,rcmb,tol,args=None):
+    '''
+    Returns the first N Chebyshev coefficients
+    from 0 to N-1, of the function
+    r**rpower * func(r)
+    '''
+    i = np.arange(0, N)
+    xi = np.cos(np.pi * (i + 0.5) / N)
+
+    if ricb > 0:
+        ri = (ricb + (rcmb - ricb) * (xi + 1) / 2.)
+    elif ricb == 0 :
+        ri = rcmb * xi
+
+    tmp = sft.dct(ri**rpower * func(ri))
+
+    out = tmp / N
+    out[0] = out[0] / 2.
+    out[np.absolute(out) <= tol] = 0.
+    return out
+
+def chebProduct(ck,dk,N,tol):
+    '''
+    Computes the Chebyshev expansion of a product of
+    two Chebyshev series defined by ck and dk
+    '''
+
+    out = np.zeros([len(ck)+len(dk)])
+
+    # In house code
+    # for i in range(len(ck)):
+    #     for j in range(len(dk)):
+    #         if (ck[i] != 0) and (dk[j] != 0):
+    #             out[int(abs(i+j))] += ck[i]*dk[j]/2
+    #             out[int(abs(i-j))]   += ck[i]*dk[j]/2
+
+    # Using chebmul instead
+
+    out2 = ch.chebmul(ck,dk)
+    out[:len(out2)] = out2
+
+    out[np.absolute(out) <= tol] = 0.
+
+    return out[:N]
+
+
+def chebInt(ck):
+    '''
+    Returns first N Chebyshev coefficients of the indefinite integral
+    of Chebyshev series ck
+    '''
+
+    C = ch.Chebyshev(ck)
+    CInt = C.integ()
+
+    return CInt.coef
+
+
+
+def chebco(powr, N, tol, ricb, rcmb):
+    '''
+    Returns the first N Chebyshev coefficients
+    from 0 to N-1, of the function
+    ( ricb + (rcmb-ricb)*( x + 1 )/2. )**powr
+    '''
+    i = np.arange(0,N)
+    xi = np.cos(np.pi*(i+0.5)/N)
+
+    if ricb == 0:                                    # No inner core ---> Chebyshev domain [-1,1] mapped to [-rcmb, rcmb]
+        ai = ( rcmb*xi )**powr
+    else:
+        ai = ( ricb + (rcmb-ricb)*(xi+1)/2. )**powr  # With inner core -> Chebyshev domain [-1,1] mapped to [ ricb, rcmb]
+
+    out = sft.dct(ai)/N
+    out[0]=out[0]/2.
+    out[np.absolute(out)<=tol]=0.
+
+    return out
+
+
+def density(r):
+
+    return 1./r**2
 
 def log_density(r):
 
-    return -4*np.log(r)
+    return np.log(density(r))
+
+def gravity(r):
+    ck = chebco_f(density(r))
+    dk = chebco(2)
+
+    ckdk = chebProduct(ck,dk)
+
+    return 4*np.pi*chebInt(ckdk)
 
 
 def conductivity(r):
@@ -516,87 +629,6 @@ def h3(rr, kind, args):
         out2[rr<0] = np.flipud(out)*(-1)**(l-1+rp)
 
     return out2
-
-def chebco_f(func,N,ricb,rcmb,tol,args=None):
-    '''
-    Returns the first N Chebyshev coefficients
-    from 0 to N-1, of the function
-    r**rpower * func(r)
-    '''
-    i = np.arange(0, N)
-    xi = np.cos(np.pi * (i + 0.5) / N)
-
-    if ricb > 0:
-        ri = (ricb + (rcmb - ricb) * (xi + 1) / 2.)
-    elif ricb == 0 :
-        ri = rcmb * xi
-
-    tmp = sft.dct(func(ri))
-
-    out = tmp / N
-    out[0] = out[0] / 2.
-    out[np.absolute(out) <= tol] = 0.
-    return out
-
-
-def chebco_rf(func,rpower,N,ricb,rcmb,tol,args=None):
-    '''
-    Returns the first N Chebyshev coefficients
-    from 0 to N-1, of the function
-    r**rpower * func(r)
-    '''
-    i = np.arange(0, N)
-    xi = np.cos(np.pi * (i + 0.5) / N)
-
-    if ricb > 0:
-        ri = (ricb + (rcmb - ricb) * (xi + 1) / 2.)
-    elif ricb == 0 :
-        ri = rcmb * xi
-
-    tmp = sft.dct(ri**rpower * func(ri))
-
-    out = tmp / N
-    out[0] = out[0] / 2.
-    out[np.absolute(out) <= tol] = 0.
-    return out
-
-def chebProduct(ck,dk,N,tol):
-    '''
-    Computes the Chebyshev expansion of a product of
-    two Chebyshev series defined by ck and dk
-    '''
-
-    out = np.zeros([len(ck)+len(dk)])
-    for i in range(len(ck)):
-        for j in range(len(dk)):
-            if (ck[i] != 0) and (dk[j] != 0):
-                out[int(abs(i+j))] += ck[i]*dk[j]/2
-                out[int(abs(i-j))]   += ck[i]*dk[j]/2
-
-    out[np.absolute(out) <= tol] = 0.
-
-    return out[:N]
-
-def chebco(powr, N, tol, ricb, rcmb):
-    '''
-    Returns the first N Chebyshev coefficients
-    from 0 to N-1, of the function
-    ( ricb + (rcmb-ricb)*( x + 1 )/2. )**powr
-    '''
-    i = np.arange(0,N)
-    xi = np.cos(np.pi*(i+0.5)/N)
-
-    if ricb == 0:                                    # No inner core ---> Chebyshev domain [-1,1] mapped to [-rcmb, rcmb]
-        ai = ( rcmb*xi )**powr
-    else:
-        ai = ( ricb + (rcmb-ricb)*(xi+1)/2. )**powr  # With inner core -> Chebyshev domain [-1,1] mapped to [ ricb, rcmb]
-
-    out = sft.dct(ai)/N
-    out[0]=out[0]/2.
-    out[np.absolute(out)<=tol]=0.
-
-    return out
-
 
 
 def chebco_twozone(args, N, ricb, rcmb, tol):
