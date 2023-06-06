@@ -140,6 +140,10 @@ def BVprof(r,args):
     return out
 
 
+def log_density(r):
+
+    return np.zeros_like(r)
+
 
 def conductivity(r):
     '''
@@ -150,6 +154,7 @@ def conductivity(r):
 
 
 def mag_diffus(r):
+
     return 1./conductivity(r)
 
 
@@ -899,6 +904,22 @@ def Dcheb(ck, ricb, rcmb):
 
     return out1
 
+def ChebProduct(ck,dk,N,tol):
+    '''
+    Computes the Chebyshev expansion of a product of
+    two Chebyshev series defined by ck and dk
+    '''
+
+    out = np.zeros([len(ck)+len(dk)])
+    for i in range(len(ck)):
+        for j in range(len(dk)):
+            if (ck[i] != 0) and (dk[j] != 0):
+                out[int(abs(i+j))] += ck[i]*dk[j]/2
+                out[int(abs(i-j))]   += ck[i]*dk[j]/2
+
+    out[np.absolute(out) <= tol] = 0.
+
+    return out[:N]
 
 
 def marc_tide(omega, l, m, loc, N, ricb, rcmb):
