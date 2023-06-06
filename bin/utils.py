@@ -139,6 +139,7 @@ def BVprof(r,args):
         #    out[i] = -0.5*(1 - np.tanh( 4*(abs(x)-rc)/h  ))
     return out
 
+
 def chebco_f(func,N,ricb,rcmb,tol,args=None):
     '''
     Returns the first N Chebyshev coefficients
@@ -182,6 +183,79 @@ def chebco_rf(func,rpower,N,ricb,rcmb,tol,args=None):
     out[np.absolute(out) <= tol] = 0.
     return out
 
+
+def chebco(powr, N, tol, ricb, rcmb):
+    '''
+    Returns the first N Chebyshev coefficients
+    from 0 to N-1, of the function
+    ( ricb + (rcmb-ricb)*( x + 1 )/2. )**powr
+    '''
+    i = np.arange(0,N)
+    xi = np.cos(np.pi*(i+0.5)/N)
+
+    if ricb == 0:                                    # No inner core ---> Chebyshev domain [-1,1] mapped to [-rcmb, rcmb]
+        ai = ( rcmb*xi )**powr
+    else:
+        ai = ( ricb + (rcmb-ricb)*(xi+1)/2. )**powr  # With inner core -> Chebyshev domain [-1,1] mapped to [ ricb, rcmb]
+
+    out = sft.dct(ai)/N
+    out[0]=out[0]/2.
+    out[np.absolute(out)<=tol]=0.
+
+    return out
+
+
+def chebco_twozone(args, N, ricb, rcmb, tol):
+    '''
+    Returns the first N Chebyshev coefficients
+    from 0 to N-1, of the function
+    r * twozone(r,rc,h,sym)
+    where rc is the radius of the neutral core
+    and h is the transition thickness
+    sym is the desired parity, in case of no inner core
+    '''
+    i = np.arange(0, N)
+    xi = np.cos(np.pi * (i + 0.5) / N)
+
+    if ricb > 0:
+        ri = (ricb + (rcmb - ricb) * (xi + 1) / 2.)
+    elif ricb == 0 :
+        ri = rcmb * xi
+    #args = [rc, h, sym]
+    fi = ri * twozone(ri,args)  # the ri here comes from r^2 u_r = r^2*[ l(l+1) P/r ]
+
+    tmp = sft.dct(fi)
+
+    out = tmp / N
+    out[0] = out[0] / 2.
+    out[np.absolute(out) <= tol] = 0.
+    return out
+
+
+
+def chebco_BVprof(args, N, ricb, rcmb, tol):
+    '''
+    Returns the first N Chebyshev coefficients
+    from 0 to N-1, of the function
+    r * BVprof(r,args)
+    '''
+    i = np.arange(0, N)
+    xi = np.cos(np.pi * (i + 0.5) / N)
+
+    if ricb > 0:
+        ri = (ricb + (rcmb - ricb) * (xi + 1) / 2.)
+    elif ricb == 0 :
+        ri = rcmb * xi
+    fi = ri * BVprof(ri,args)  # this function should be even, i.e., BVprof should be odd.
+
+    tmp = sft.dct(fi)
+
+    out = tmp / N
+    out[0] = out[0] / 2.
+    out[np.absolute(out) <= tol] = 0.
+    return out
+
+
 def chebProduct(ck,dk,N,tol):
     '''
     Computes the Chebyshev expansion of a product of
@@ -219,26 +293,28 @@ def chebInt(ck):
     return CInt.coef
 
 
-
-def chebco(powr, N, tol, ricb, rcmb):
+def Dcheb(ck, ricb, rcmb):
     '''
-    Returns the first N Chebyshev coefficients
-    from 0 to N-1, of the function
-    ( ricb + (rcmb-ricb)*( x + 1 )/2. )**powr
+    The derivative of a Chebyshev expansion with coefficients ck
+    returns the coefficients of the derivative in the Chebyshev basis
+    assumes ck computed for r in the domain [ricb,rcmb] (if ricb>0)
+    or r in [-rcmb,rcmb] if ricb=0.
     '''
-    i = np.arange(0,N)
-    xi = np.cos(np.pi*(i+0.5)/N)
+    c = np.copy(ck)
+    c[0] = 2.*c[0]
+    s =  np.size(c)
+    out = np.zeros_like(c)  #,dtype=np.complex128)
+    out[-2] = 2.*(s-1.)*c[-1]
+    for k in range(s-3,-1,-1):
+        out[k] = out[k+2] + 2.*(k+1)*ck[k+1]
+    out[0] = out[0]/2.
 
-    if ricb == 0:                                    # No inner core ---> Chebyshev domain [-1,1] mapped to [-rcmb, rcmb]
-        ai = ( rcmb*xi )**powr
-    else:
-        ai = ( ricb + (rcmb-ricb)*(xi+1)/2. )**powr  # With inner core -> Chebyshev domain [-1,1] mapped to [ ricb, rcmb]
+    if ricb == 0 :
+        out1 = out/rcmb
+    else :
+        out1 = 2*out/(rcmb-ricb)
 
-    out = sft.dct(ai)/N
-    out[0]=out[0]/2.
-    out[np.absolute(out)<=tol]=0.
-
-    return out
+    return out1
 
 
 def density(r):
@@ -631,58 +707,6 @@ def h3(rr, kind, args):
     return out2
 
 
-def chebco_twozone(args, N, ricb, rcmb, tol):
-    '''
-    Returns the first N Chebyshev coefficients
-    from 0 to N-1, of the function
-    r * twozone(r,rc,h,sym)
-    where rc is the radius of the neutral core
-    and h is the transition thickness
-    sym is the desired parity, in case of no inner core
-    '''
-    i = np.arange(0, N)
-    xi = np.cos(np.pi * (i + 0.5) / N)
-
-    if ricb > 0:
-        ri = (ricb + (rcmb - ricb) * (xi + 1) / 2.)
-    elif ricb == 0 :
-        ri = rcmb * xi
-    #args = [rc, h, sym]
-    fi = ri * twozone(ri,args)  # the ri here comes from r^2 u_r = r^2*[ l(l+1) P/r ]
-
-    tmp = sft.dct(fi)
-
-    out = tmp / N
-    out[0] = out[0] / 2.
-    out[np.absolute(out) <= tol] = 0.
-    return out
-
-
-
-def chebco_BVprof(args, N, ricb, rcmb, tol):
-    '''
-    Returns the first N Chebyshev coefficients
-    from 0 to N-1, of the function
-    r * BVprof(r,args)
-    '''
-    i = np.arange(0, N)
-    xi = np.cos(np.pi * (i + 0.5) / N)
-
-    if ricb > 0:
-        ri = (ricb + (rcmb - ricb) * (xi + 1) / 2.)
-    elif ricb == 0 :
-        ri = rcmb * xi
-    fi = ri * BVprof(ri,args)  # this function should be even, i.e., BVprof should be odd.
-
-    tmp = sft.dct(fi)
-
-    out = tmp / N
-    out[0] = out[0] / 2.
-    out[np.absolute(out) <= tol] = 0.
-    return out
-
-
-
 def chebco_h(args, kind, N, rcmb, tol):
     '''
     Computes the Chebyshev coeffs of the h0 function and derivatives
@@ -945,31 +969,6 @@ def Mlam(a0,lamb,vector_parity):
         out = 0
 
     return out
-
-
-
-def Dcheb(ck, ricb, rcmb):
-    '''
-    The derivative of a Chebyshev expansion with coefficients ck
-    returns the coefficients of the derivative in the Chebyshev basis
-    assumes ck computed for r in the domain [ricb,rcmb] (if ricb>0)
-    or r in [-rcmb,rcmb] if ricb=0.
-    '''
-    c = np.copy(ck)
-    c[0] = 2.*c[0]
-    s =  np.size(c)
-    out = np.zeros_like(c)  #,dtype=np.complex128)
-    out[-2] = 2.*(s-1.)*c[-1]
-    for k in range(s-3,-1,-1):
-        out[k] = out[k+2] + 2.*(k+1)*ck[k+1]
-    out[0] = out[0]/2.
-
-    if ricb == 0 :
-        out1 = out/rcmb
-    else :
-        out1 = 2*out/(rcmb-ricb)
-
-    return out1
 
 
 def marc_tide(omega, l, m, loc, N, ricb, rcmb):
