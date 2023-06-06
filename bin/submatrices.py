@@ -195,7 +195,7 @@ def main(ncpus):
         labl += ['urho110','urho220','urho330',
                  'urho211','urho321','urho432',
                  'urho312','urho422','urho431',
-                 'urho413','u44']
+                 'urho413']
 
     if par.magnetic == 1 :
         # Lorentz force
