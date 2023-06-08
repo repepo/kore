@@ -140,7 +140,7 @@ def main(ncpus):
             p2t[i] = KP/KT
             KE = KP + KT
 
-            Dint = kid[i,2]*par.Ek
+            Dint = kid[i,2]
             Dkin = kid[i,3]*par.Ek
 
             repow = kid[i,5]
@@ -171,9 +171,6 @@ def main(ncpus):
 
             ohm[i,:] = upp.ohm_dis( rmag, imag, par.N, par.lmax, par.m, ut.bsymm, par.ricb, ut.rcmb, par.ncpus, par.ricb, ut.rcmb )
 
-            Dohm_partial[i,0] = 0  #(o1[2] + o1[3])*par.Le2*par.Em
-            Dohm_partial[i,1] = 0  #(o2[2] + o2[3])*par.Le2*par.Em
-            Dohm_partial[i,2] = 0  #(o3[2] + o3[3])*par.Le2*par.Em
 
             Dohm = (ohm[i,2]+ohm[i,3])*par.Le2*par.Em
             if Dint != 0:
