@@ -12,15 +12,84 @@ import bc_variables as bc
 mp.set_start_method('fork')
 
 
+
 def xcheb(r,ricb,rcmb):
-	# returns points in the domain of the Cheb polynomial solutions
-    # [-1,1] corresponds to [ ricb,rcmb] if ricb>0
-    # [-1,1] corresponds to [-rcmb,rcmb] if ricb=0
+	# returns points in the appropriate domain of the Cheb polynomial solutions
+    # Domain [-1,1] corresponds to [ ricb,rcmb] if ricb>0
+    # Domain [-1,1] corresponds to [-rcmb,rcmb] if ricb=0
 	Rb = rcmb
 	Ra = ricb + (np.sign(ricb)-1)*rcmb
 	out = 2*(r-Ra)/(Rb-Ra) - 1
 
 	return out
+
+
+
+def funcheb(ck0, r, ricb, rcmb):
+    '''
+    Returns the function represented by the Chebyshev coeffs ck0, evaluated at the radii r.
+    If r is None then uses the x0 points defined globally.
+    First column is the function itself, second column is its derivative with respect to r,
+    third column is the second derivative, and fourth column is the third derivative.
+    Rows correspond to the radial points.
+    Use this only when the Cheb coeffs are the full set, i.e. after using expand_sol if ricb=0.
+    '''
+
+    ck1 = ut.Dcheb(ck0, ricb, rcmb)  # coeffs for the 1st. derivative
+    ck2 = ut.Dcheb(ck1, ricb, rcmb)  # coeffs for the 2nd. derivative
+    ck3 = ut.Dcheb(ck2, ricb, rcmb)  # coeffs for the 3rd. derivative
+
+    if r == None:
+        x00 = x0  # use the globally defined x0
+    else:
+        x00 = xcheb(r, ricb, rcmb)  # use the radial points given as argument
+
+    out = np.zeros((np.size(r), np.size(ck0)), ck0.dtype)
+    out[:,0] = ch.chebval(x00, ck0)
+    out[:,1] = ch.chebval(x00, ck1)
+    out[:,2] = ch.chebval(x00, ck2)
+    out[:,4] = ch.chebval(x00, ck3)
+
+    return out
+
+
+
+def cg_quad(f, Ra, Rb, N, sqx):
+    '''
+    Computes the radial integral of f as a Chebyshev-Gauss quadrature.
+    Assumes f is sampled over [Ra,Rb], with sqx=np.sqrt(1-xk**2),
+    where xk are the radial grid points for the Chebyshev-Guauss quadrature. 
+    '''
+    
+    out = (np.pi/N) * np.sum( sqx * f ) * (Rb-Ra)/2
+ 
+    return out
+
+
+
+def kinetic_energy_pol(l, qlm0, slm0):
+    '''
+    Returns the integrand to compute the poloidal kinetic energy, l-component
+    '''
+
+    f0 = 4*np.pi/(2*l+1)
+    f1 = r2 * np.absolute( qlm0 )**2
+    f2 = r2 * l*(l+1) * np.absolute( slm0 )**2  # r2 is rk**2, a global variable
+
+    return f0*(f1+f2)
+
+
+
+def kinetic_energy_tor(l, tlm0):
+    '''
+    Returns the integrand to compute the toroidal kinetic energy, l-component
+    '''
+
+    f0 = 4*np.pi/(2*l+1)
+    f1 = r2 * l*(l+1) * np.absolute(tlm0)**2  # r2 is rk**2, a global variable
+
+    return f0*f1   
+
 
 
 def expand_sol(sol,vsymm):
@@ -64,6 +133,7 @@ def expand_sol(sol,vsymm):
         out = sol
 
     return out
+
 
 
 def thermal_worker(l, Hk0, Pk0, N, ricb, rcmb, Ra, Rb, thermal):
@@ -239,14 +309,14 @@ def pol_worker( l, Pk0, N, m, ricb, rcmb, w, projection, forcing, Ra, Rb): # ---
     f5 = 2 * L *( np.conj(qlm0)*slm0 + qlm0*np.conj(slm0) )
     # kinetic energy dissipation is 2*real part of the integral
     Dkin_pol_l = 2*np.real( (np.pi/N)*(Rb-Ra)*0.5*np.sum( sqx*f0*( f1+f2+f3+f4+f5 ) ) )
-    '''
+    
     if l<4:
         print('')
-        print('K = ', Ken_pol_l)
-        print('Dint = ',Dint_pol_l)
-        print('Dkin =',Dkin_pol_l)
+        print('Kpol = ', Ken_pol_l)
+        print('Dint_pol = ',Dint_pol_l)
+        print('Dkin_pol =',Dkin_pol_l)
         print('')
-    '''
+    
 
     if (projection == 1 and forcing == 0) or forcing == 1: # ------------------- power from Lin2018 forcing, poloidal
 
@@ -370,14 +440,14 @@ def tor_worker( l, Tk0, N, m, ricb, rcmb, w, projection, forcing, Ra, Rb): # ---
     f3 = -(L**2)*( np.conj(tlm0)*tlm0 )
     # integral is:
     Dkin_tor_l = 2*np.real( (np.pi/N) * (Rb-Ra)*0.5 * np.sum( sqx*f0*( f1+f2+f3 ) ) )
-    '''
+    
     if l<4:
         print('')
         print('Ktor = ', Ken_tor_l)
-        print('Dint = ',Dint_tor_l)
-        print('Dkin =',Dkin_tor_l)
+        print('Dint_tor = ',Dint_tor_l)
+        print('Dkin_tor =',Dkin_tor_l)
         print('')
-    '''
+    
     if (projection == 1 and forcing == 0) or forcing == 1: # ------------------- power from Lin2018 forcing, toroidal
 
         if l==3 and m==2:
@@ -628,7 +698,7 @@ def ken_dis( a, b, N, lmax, m, symm, ricb, rcmb, ncpus, w, projection, forcing, 
     global rk
     rk = 0.5*(Rb-Ra)*( xk + 1 ) + Ra
 
-    # x0 are the points in the domain of the Cheb poynomial solutions
+    # x0 are the points in the appropriate domain of the Chebyshev polynomial solutions
     global x0
     x0 = xcheb(rk, par.ricb, 1)
 

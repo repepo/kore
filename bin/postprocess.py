@@ -139,13 +139,13 @@ def main():
             Dint_partial[i,1] = 0 #k2[2]*par.Ek
             Dint_partial[i,2] = 0 #k3[2]*par.Ek
 
-            KP = kid[i,0]
-            KT = kid[i,1]
+            KP = kid[i,0]; print('KP=',KP)
+            KT = kid[i,1]; print('KT=',KT)
             p2t[i] = KP/KT
             KE = KP + KT
 
-            Dint = kid[i,2]*par.Ek
-            Dkin = kid[i,3]*par.Ek
+            Dint = kid[i,2]*par.Ek; print('Dint=',Dint)
+            Dkin = kid[i,3]*par.Ek; print('Dkin=',Dkin)
 
             repow = kid[i,5]
 

@@ -77,7 +77,7 @@ def kinetic_energy_pol(l, qlm0, slm0):
 
 def kinetic_dissip_pol(l, qlm0, qlm1, qlm2, slm0, slm1, slm2):
     '''
-    Returns the integrand to compute the kinetic energy dissipation, poloidal l-component
+    Returns the integrand to compute the kinetic energy dissipation rate, poloidal l-component
     '''
     L = l*(l+1)
     f0 = 4*np.pi/(2*l+1)
@@ -86,7 +86,7 @@ def kinetic_dissip_pol(l, qlm0, qlm1, qlm2, slm0, slm1, slm2):
     f3 = -(L**2)*( np.conj(slm0)*slm0 ) - (l**2+l+2) * ( np.conj(qlm0)*qlm0 )
     f4 = 2 * rk * np.conj(qlm0)*qlm1 + r2 * np.conj(qlm0) * qlm2
     f5 = 2 * L *( np.conj(qlm0)*slm0 + qlm0*np.conj(slm0) )
-    return 2*np.real( f0*( f1+f2+f3+f4+f5 ) )
+    return par.OmgTau * par.Ek * 2*np.real( f0*( f1+f2+f3+f4+f5 ) )
 
 
 
@@ -134,7 +134,7 @@ def kinetic_dissip_tor(l, tlm0, tlm1, tlm2):
     f1 = L * r2 * np.conj(tlm0) * tlm2
     f2 = 2 * rk * L * np.conj(tlm0) * tlm1
     f3 = -(L**2)*( np.conj(tlm0)*tlm0 )
-    return 2*np.real( f0*(f1+f2+f3) )
+    return par.OmgTau * par.Ek * 2*np.real( f0*(f1+f2+f3) )
 
 
                     
@@ -298,7 +298,7 @@ def pol_worker( l, Pk, N, ricb, rcmb, Ra, Rb): # ------------
     f_kdp = kinetic_dissip_pol(l, qlm0, qlm1, qlm2, slm0, slm1, slm2)
     
     # Integrals
-    Kene_pol_l = cg_quad(f_kep, Ra, Rb, N, sqx) # the resulting integral
+    Kene_pol_l = cg_quad(f_kep, Ra, Rb, N, sqx)
     Dint_pol_l = cg_quad(f_idp, Ra, Rb, N, sqx)
     Dkin_pol_l = cg_quad(f_kdp, Ra, Rb, N, sqx)
         
