@@ -113,11 +113,17 @@ class kmode:
 
             if transform:
                 if not vort:
+                    if field == 'u':
+                        self.ur, self.utheta, self.uphi = sol[3:]
+                    elif field == 'b':
+                        self.br, self.btheta, self.bphi = sol[3:]
 
-                    exec('self.'+field+'r'     + '= sol[3]')
-                    exec('self.'+field+'theta' + '= sol[4]')
-                    exec('self.'+field+'phi'   + '= sol[5]')
-
+                    # if par.anelastic:
+                    #     self.rho = ut.density(self.r)
+                    #     for irho in range(self.nr):
+                    #         self.ur[irho,...]     /= self.rho[irho]
+                    #         self.utheta[irho,...] /= self.rho[irho]
+                    #         self.uphi[irho,...]   /= self.rho[irho]
                 else:
                     if field == 'u':
                         self.vort_r, self.vort_t, self.vort_p = sol[3:]

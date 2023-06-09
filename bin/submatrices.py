@@ -66,18 +66,18 @@ def main(ncpus):
         rp = [1, r1, r2, r3, r4, r5, r6]
 
     if par.anelastic:
-        rd_rho = [ [ [] for j in range(5) ] for i in range(5) ]
+        rd_rho = [ [ [] for j in range(5) ] for i in range(5) ] #Cheb coeffs to r^n D^m log(rho)
+        dnrho = [ [] for i in range(5) ] #Cheb coeffs of nth derivative of log(density)
+        dnrho[0] = ut.chebco_f( ut.log_density, par.N, par.ricb, ut.rcmb, par.tol_tc )
 
         for i in range(5):
-            for j in range(5):
+            rn  = ut.chebco(i, par.N, tol, par.ricb, ut.rcmb)
+            rd_rho[i][0] =  ut.chebProduct(dnrho[0],rn,par.N,par.tol_tc)
+            for j in range(1,5):
             # Cheb coeffs of the ln density profile times a power of r
-                if j==0:
-                    rd_rho[i][j] = ut.chebco_f( ut.log_density, par.N, par.ricb, ut.rcmb, par.tol_tc )
-                else:
-                    # and the derivative
-                    ck = ut.Dcheb(rd_rho[i][j-1],par.ricb,ut.rcmb)
-                    rn  = ut.chebco(j, par.N, tol, par.ricb, ut.rcmb)
-                    rd_rho[i][j] = ut.chebProduct(ck,rn,par.N,par.tol_tc)
+
+                dnrho[j] = ut.Dcheb(dnrho[j-1],par.ricb,ut.rcmb)
+                rd_rho[i][j] = ut.chebProduct(dnrho[j],rn,par.N,par.tol_tc)
 
     if par.magnetic == 1 :
 

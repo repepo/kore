@@ -210,7 +210,7 @@ def viscous_diffusion(l, section, component, offdiag):  # ----------------------
             if par.anelastic:
                 out = L * ( (-L*(l+2)*(l-1)*Iu - (L+2)*rrho1Iu - 2*(L-1)*r2rho2Iu + r3rho3Iu)
                            -(L-2)*r2rho1D1u + 6*r3rho2D1u + r4rho3D1u
-                           + 2*r2D2u + 5*r3rho1D2u + 2*r4rho2D2u
+                           + 2*L*r2D2u + 5*r3rho1D2u + 2*r4rho2D2u
                            - 4*r3D3u + r4rho1D3u
                            - r4D4u )
             else:

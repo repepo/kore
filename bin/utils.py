@@ -4,7 +4,6 @@ import scipy.optimize as so
 import scipy.sparse as ss
 import scipy.special as scsp
 import scipy.fftpack as sft
-import scipy.misc as sm
 import numpy.polynomial.chebyshev as ch
 import numpy as np
 
@@ -256,31 +255,6 @@ def chebco_BVprof(args, N, ricb, rcmb, tol):
     return out
 
 
-def chebProduct(ck,dk,N,tol):
-    '''
-    Computes the Chebyshev expansion of a product of
-    two Chebyshev series defined by ck and dk
-    '''
-
-    out = np.zeros([len(ck)+len(dk)])
-
-    # In house code
-    # for i in range(len(ck)):
-    #     for j in range(len(dk)):
-    #         if (ck[i] != 0) and (dk[j] != 0):
-    #             out[int(abs(i+j))] += ck[i]*dk[j]/2
-    #             out[int(abs(i-j))]   += ck[i]*dk[j]/2
-
-    # Using chebmul instead
-
-    out2 = ch.chebmul(ck,dk)
-    out[:len(out2)] = out2
-
-    out[np.absolute(out) <= tol] = 0.
-
-    return out[:N]
-
-
 def chebInt(ck):
     '''
     Returns first N Chebyshev coefficients of the indefinite integral
@@ -319,7 +293,7 @@ def Dcheb(ck, ricb, rcmb):
 
 def density(r):
 
-    return 1./r**2
+    return np.ones_like(r)
 
 def log_density(r):
 
@@ -333,7 +307,6 @@ def gravity(r):
 
     return 4*np.pi*chebInt(ckdk)
 
-
 def conductivity(r):
     '''
     This function needs to be an even function of r when ricb=0
@@ -344,7 +317,7 @@ def conductivity(r):
 
 def mag_diffus(r):
 
-    return 1./conductivity(r)
+    return 1/conductivity(r)
 
 
 
@@ -970,6 +943,32 @@ def Mlam(a0,lamb,vector_parity):
 
     return out
 
+def chebProduct(ck,dk,N,tol):
+    '''
+    Computes the Chebyshev expansion of a product of
+    two Chebyshev series defined by ck and dk
+    '''
+
+    out = np.zeros([len(ck)+len(dk)])
+
+    # In house code
+    # for i in range(len(ck)):
+    #     for j in range(len(dk)):
+    #         if (ck[i] != 0) and (dk[j] != 0):
+    #             out[int(abs(i+j))] += ck[i]*dk[j]/2
+    #             out[int(abs(i-j))]   += ck[i]*dk[j]/2
+
+    # Using chebmul instead
+
+    # out2 = ch.chebmul(ck,dk)
+    # out[:len(out2)] = out2
+
+    # Using Mlam
+    out = Mlam(ck,0,0)*dk
+
+    out[np.absolute(out) <= tol] = 0.
+
+    return out
 
 def marc_tide(omega, l, m, loc, N, ricb, rcmb):
     '''

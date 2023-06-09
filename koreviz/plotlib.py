@@ -19,7 +19,7 @@ def default_cmap(field):
     if field[0] == 'u' or field[:4]=='vort':
         try:
             import cmasher as cmr
-            cm = cmr.prinsenvlag
+            cm = cmr.prinsenvlag_r
         except:
             cm = 'seismic'
     elif field in ['ener','energy','ke','e']:
