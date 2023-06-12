@@ -12,42 +12,39 @@ mp.set_start_method('fork')
 
 
 
-def xcheb(r,ricb,rcmb):
+def xcheb(r, ricb, rcmb):
 	# returns points in the appropriate domain of the Cheb polynomial solutions
     # Domain [-1,1] corresponds to [ ricb,rcmb] if ricb>0
-    # Domain [-1,1] corresponds to [-rcmb,rcmb] if ricb=0
-	Rb = rcmb
-	Ra = ricb + (np.sign(ricb)-1)*rcmb
-	out = 2*(r-Ra)/(Rb-Ra) - 1
+    # Domain [-1,1] corresponds to [-rcmb,rcmb] if ricb==0
+	r1 = rcmb
+	r0 = ricb + (np.sign(ricb)-1)*rcmb  # r0=-rcmb if ricb==0; r0=ricb if ricmb>0 
+	out = 2*(r-r0)/(r1-r0) - 1
 
 	return out
 
 
 
-def funcheb(ck0, r, ricb, rcmb):
+def funcheb(ck0, r, ricb, rcmb, n):
     '''
     Returns the function represented by the Chebyshev coeffs ck0, evaluated at the radii r.
-    If r is None then uses the x0 points defined globally.
+    If r is None then uses the rk (i.e. the associated x0) points defined globally.
     First column is the function itself, second column is its derivative with respect to r,
-    third column is the second derivative, and fourth column is the third derivative.
-    Rows correspond to the radial points.
+    and so on up to the n-th derivative. Rows correspond to the radial points.
     Use this only when the Cheb coeffs are the full set, i.e. after using expand_sol if ricb=0.
     '''
-
-    ck1 = ut.Dcheb(ck0, ricb, rcmb)  # coeffs for the 1st. derivative
-    ck2 = ut.Dcheb(ck1, ricb, rcmb)  # coeffs for the 2nd. derivative
-    ck3 = ut.Dcheb(ck2, ricb, rcmb)  # coeffs for the 3rd. derivative
+    
+    out = np.zeros((np.size(x00), n+1), ck0.dtype)  # n+1 cols
+    dk = ut.Dn_cheb(ck0, ricb, rcmb, n)  # coeffs for the derivatives, n cols
 
     if r == None:
         x00 = x0  # use the globally defined x0
     else:
-        x00 = xcheb(r, ricb, rcmb)  # use the radial points given as argument
+        x00 = xcheb(r, ricb, rcmb)  # use the explicit radial points given as argument
+    
+    out[:,0] = ch.chebval(x00, ck0)  # the function itself
 
-    out = np.zeros((np.size(x00), np.size(ck0)), ck0.dtype)
-    out[:,0] = ch.chebval(x00, ck0)
-    out[:,1] = ch.chebval(x00, ck1)
-    out[:,2] = ch.chebval(x00, ck2)
-    out[:,3] = ch.chebval(x00, ck3)
+    for j in range(1,n+1):
+        out[:,j] = ch.chebval(x00, dk[:,j-1])  # and the derivatives
 
     return out
 
@@ -275,7 +272,7 @@ def pol_worker( l, Pk, N, ricb, rcmb, Ra, Rb): # ------------
     '''
     # plm's are the poloidal scalars and its derivatives evaluated
     # at the grid points in the Cheb polynomial domain of the solution    
-    f_pol = funcheb(Pk, r=None, ricb=ricb, rcmb=rcmb)
+    f_pol = funcheb(Pk, r=None, ricb=ricb, rcmb=rcmb, n=3)
     plm0 = f_pol[:,0]
     plm1 = f_pol[:,1]
     plm2 = f_pol[:,2]
@@ -316,7 +313,7 @@ def tor_worker( l, Tk, N, ricb, rcmb, Ra, Rb): # ------------
     '''
     # tlm's are the toroidal scalars and derivatives evaluated
     # at points in the Cheb polynomial domain of the solution    
-    f_tor = funcheb(Tk, r=None, ricb=ricb, rcmb=rcmb)
+    f_tor = funcheb(Tk, r=None, ricb=ricb, rcmb=rcmb, n=2)
     tlm0 = f_tor[:,0]
     tlm1 = f_tor[:,1]
     tlm2 = f_tor[:,2]
@@ -457,15 +454,17 @@ def tor_ohm( l, Tk0, N, ricb, rcmb, Ra, Rb): # ---------------------------------
 
 def ken_dis( u_sol, Ra, Rb, ncpus):
     '''
-    Computes total kinetic energy, internal and kinetic energy dissipation,
-    and input power from body forces.
+    Computes kinetic energy, internal and kinetic energy dissipation,
+    and input power from body forces. Integrated From r=Ra to r=Rb, and
+    angularly over the whole sphere. Processed in parallel using ncpus.
     '''
 
-    # xk are the grid points for the integration (Gauss-Chebyshev quadrature), from -1 to 1
+    # xk are the grid points for the integration using Gauss-Chebyshev quadratures.
+    # Always go from -1 to 1
     i = np.arange(0,par.N)
     xk = np.cos( (i+0.5)*np.pi/par.N )
 
-    # rk are the corresponding radial points, from Ra to Rb
+    # rk are the corresponding radial points in the desired integration interval: from Ra to Rb
     global rk
     rk = 0.5*(Rb-Ra)*( xk + 1 ) + Ra
 
