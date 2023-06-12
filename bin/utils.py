@@ -290,7 +290,9 @@ def Dcheb(ck, ricb, rcmb):
 
     return out1
 
-
+#------------------------------------------
+# Anelastic profiles
+#------------------------------------------
 def density(r):
 
     return np.ones_like(r)
@@ -299,13 +301,33 @@ def log_density(r):
 
     return np.log(density(r))
 
-def gravity(r):
-    ck = chebco_f(density(r))
-    dk = chebco(2)
+# def gravCoeff(r):
+#     ck = chebco_f(density(r),par.N,par.ricb,rcmb,par.tol_tc)
+#     dk = chebco(2,par.N,1e-9,par.ricb,rcmb)
 
-    ckdk = chebProduct(ck,dk)
+#     ckdk = chebProduct(ck,dk)
 
-    return 4*np.pi*chebInt(ckdk)
+#     return 4*np.pi*chebInt(ckdk)
+
+# def temperature(r):
+
+#     return np.ones_like(r)
+
+# def log_temperature(r):
+
+#     return np.log(temperature(r))
+
+# def alpha(r):
+
+#     return np.ones_like(r)
+
+# def buoFac(r):
+
+#     return density(r)*alpha(r)*temperature(r)*gravity(r)
+
+#------------------------------------------
+# Magnetic : Variable conductivity
+#------------------------------------------
 
 def conductivity(r):
     '''
@@ -313,13 +335,11 @@ def conductivity(r):
     '''
     return np.ones_like(r)
 
-
-
 def mag_diffus(r):
 
-    return 1/conductivity(r)
+    return 1./conductivity(r)
 
-
+#------------------------------------------
 
 def jl_smx(l,x,d):
     '''

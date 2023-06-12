@@ -22,6 +22,50 @@ import sys
 import parameters as par
 import utils as ut
 
+def get_radial_derivatives(func,rorder,Dorder,tol):
+
+    '''
+    This function computes terms of the form r^n d^m/dr^m of a
+    radial profile in Chebyshev space.
+
+    Parameters
+    ----------
+    func   : function
+        Radial profile in the form of a function (can be found in utils)
+    rorder : integer
+        Highest order of radial power
+    Dorder : integer
+        Highest order of radial derivative
+    tol    : real
+        Tolerance for Chebyshev transforms for radial powers
+
+    Returns
+    -------
+    rd_prof : 2D list
+        List such that rd_prof[i][j] defines the Chebyshev coefficients of
+        r^i d^j/dr^j of the radial profile
+    '''
+
+    # Make sure these are integers
+    rorder = int(rorder)
+    Dorder = int(Dorder)
+
+    rd_prof = [ [ [] for j in range(Dorder+1) ] for i in range(rorder+1) ] #List for Cheb coeffs to r^n D^m profile
+    dnprof = [ [] for i in range(Dorder+1) ] #List for Cheb coeffs of nth derivative of profile
+    # Cheb coeffs of profile
+    dnprof[0] = ut.chebco_f( func, par.N, par.ricb, ut.rcmb, par.tol_tc )
+
+    for i in range(rorder+1):
+        rn  = ut.chebco(i, par.N, tol, par.ricb, ut.rcmb) #Cheb coeffs of r^i
+        rd_prof[i][0] =  ut.chebProduct(dnprof[0],rn,par.N,par.tol_tc) #Cheb coeffs of r^i profile
+        for j in range(1,Dorder+1):
+        # Cheb coeffs of r^i D^j profile
+            if i==0:
+                # These only need to be computed once
+                dnprof[j] = ut.Dcheb(dnprof[j-1],par.ricb,ut.rcmb)
+            rd_prof[i][j] = ut.chebProduct(dnprof[j],rn,par.N,par.tol_tc)
+
+    return rd_prof
 
 def main(ncpus):
 
@@ -33,7 +77,7 @@ def main(ncpus):
     inviscid   = ((par.Ek == 0) and (par.ricb == 0))                                # boolean
     quadrupole = ((par.B0 == 'Luo_S2') or ((par.B0 == 'FDM') and (par.B0_l == 2)))  # boolean
 
-    radial_profiles = ['eta', 'vsc', 'rho']
+    # radial_profiles = ['eta', 'rho', 'tem','buo']
 
     tic = timer()
     print('N =', par.N,', lmax =', par.lmax)
@@ -66,33 +110,17 @@ def main(ncpus):
         rp = [1, r1, r2, r3, r4, r5, r6]
 
     if par.anelastic:
-        rd_rho = [ [ [] for j in range(5) ] for i in range(5) ] #Cheb coeffs to r^n D^m log(rho)
-        dnrho = [ [] for i in range(5) ] #Cheb coeffs of nth derivative of log(density)
-        dnrho[0] = ut.chebco_f( ut.log_density, par.N, par.ricb, ut.rcmb, par.tol_tc )
 
-        for i in range(5):
-            rn  = ut.chebco(i, par.N, tol, par.ricb, ut.rcmb)
-            rd_rho[i][0] =  ut.chebProduct(dnrho[0],rn,par.N,par.tol_tc)
-            for j in range(1,5):
-            # Cheb coeffs of the ln density profile times a power of r
-
-                dnrho[j] = ut.Dcheb(dnrho[j-1],par.ricb,ut.rcmb)
-                rd_rho[i][j] = ut.chebProduct(dnrho[j],rn,par.N,par.tol_tc)
+        rd_rho = get_radial_derivatives(ut.log_density,4,4,tol) # Density : Requires derivatives and radial powers up to fourth order
+        # rd_tem = get_radial_derivatives(ut.temperature,2,2,tol) # Temperature : Requires derivatives and radial powers up to second order
+        # rd_buo = get_radial_derivatives(ut.buoFac,)
 
     if par.magnetic == 1 :
 
         rdh = [ [ [] for j in range(4) ] for i in range(7) ]
         rpw = [ 0, 1, 2, 3, 4, 5, -1]  # powers of r needed for the h function
 
-        rd_eta = [ [ [] for j in range(2) ] for i in range(3) ]
-
-
-        for i,rpw1 in enumerate( rpw[:3] ):
-            # Cheb coeffs of the mag. diffusion profile times a power of r
-            rd_eta[i][0] = ut.chebco_rf( ut.mag_diffus, i, par.N, par.ricb, ut.rcmb, par.tol_tc )
-            # and the derivative
-            rd_eta[i][1] = ( ut.Dcheb( rd_eta[i][0], par.ricb, ut.rcmb )
-                            - i*ut.chebco_rf( ut.mag_diffus,i-1,par.N, par.ricb, ut.rcmb, par.tol_tc) )
+        rd_eta = get_radial_derivatives(ut.mag_diffus,2,1,tol) #Magnetic diffusivity profile
 
         cnorm = ut.B0_norm()  # Normalization
 
