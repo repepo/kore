@@ -32,8 +32,7 @@ def funcheb(ck0, r, ricb, rcmb, n):
     and so on up to the n-th derivative. Rows correspond to the radial points.
     Use this only when the Cheb coeffs are the full set, i.e. after using expand_sol if ricb=0.
     '''
-    
-    out = np.zeros((np.size(x00), n+1), ck0.dtype)  # n+1 cols
+
     dk = ut.Dn_cheb(ck0, ricb, rcmb, n)  # coeffs for the derivatives, n cols
 
     if r == None:
@@ -41,8 +40,8 @@ def funcheb(ck0, r, ricb, rcmb, n):
     else:
         x00 = xcheb(r, ricb, rcmb)  # use the explicit radial points given as argument
     
+    out = np.zeros((np.size(x00), n+1), ck0.dtype)  # n+1 cols
     out[:,0] = ch.chebval(x00, ck0)  # the function itself
-
     for j in range(1,n+1):
         out[:,j] = ch.chebval(x00, dk[:,j-1])  # and the derivatives
 
@@ -83,7 +82,7 @@ def kinetic_dissip_pol(l, qlm0, qlm1, qlm2, slm0, slm1, slm2):
     f3 = -(L**2)*( np.conj(slm0)*slm0 ) - (l**2+l+2) * ( np.conj(qlm0)*qlm0 )
     f4 = 2 * rk * np.conj(qlm0)*qlm1 + r2 * np.conj(qlm0) * qlm2
     f5 = 2 * L *( np.conj(qlm0)*slm0 + qlm0*np.conj(slm0) )
-    return par.OmgTau * par.Ek * 2*np.real( f0*( f1+f2+f3+f4+f5 ) )
+    return 2*np.real( f0*( f1+f2+f3+f4+f5 ) )
 
 
 
@@ -131,7 +130,7 @@ def kinetic_dissip_tor(l, tlm0, tlm1, tlm2):
     f1 = L * r2 * np.conj(tlm0) * tlm2
     f2 = 2 * rk * L * np.conj(tlm0) * tlm1
     f3 = -(L**2)*( np.conj(tlm0)*tlm0 )
-    return par.OmgTau * par.Ek * 2*np.real( f0*(f1+f2+f3) )
+    return 2*np.real( f0*(f1+f2+f3) )
 
 
                     
@@ -516,9 +515,11 @@ def ken_dis( u_sol, Ra, Rb, ncpus):
     KP = res_pol[0]
     KT = res_tor[0]
 
-    internal_dis = res_pol[1]+res_tor[1]
-    rekin_dis = res_pol[2]+res_tor[2]
-    imkin_dis = res_pol[3]+res_tor[3]
+    #print('KP =',KP, 'KT =',KT)
+
+    internal_dis = par.OmgTau*par.Ek * ( res_pol[1] + res_tor[1] )  # TO DO: double check the factors here ...
+    rekin_dis    = par.OmgTau*par.Ek * ( res_pol[2] + res_tor[2] )
+    imkin_dis    = par.OmgTau*par.Ek * ( res_pol[3] + res_tor[3] )
 
     repower = res_pol[4]+res_tor[4]
     impower = res_pol[5]+res_tor[5]
