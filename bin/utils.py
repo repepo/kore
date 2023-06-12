@@ -901,6 +901,25 @@ def Dcheb(ck, ricb, rcmb):
 
 
 
+def Dn_cheb(ck, ricb, rcmb, n):
+    '''
+    Returns the Chebyshev coefficients of the derivatives (up to order n)
+    of a Chebyshev expansion with coefficients ck. Assumes ck is computed
+    for r in the domain [ricb,rcmb] (if ricb>0) or r in [-rcmb,rcmb] if ricb=0.
+    First column correspond to the first derivative, last column to the
+    n-th derivative.
+    '''
+    c = np.copy(ck)
+    s = np.size(c)
+    out = np.zeros((s,n), ck.dtype)
+    out[:,0] = Dcheb(c, ricb, rcmb)
+    for j in range(1,n):
+        out[:,j] = Dcheb( out[:, j-1], ricb, rcmb)
+
+    return out
+
+
+
 def marc_tide(omega, l, m, loc, N, ricb, rcmb):
     '''
     Tidal body force as used by Rovira-Navarro et al, 2018
