@@ -141,7 +141,8 @@ def main(ncpus):
             KE = KP + KT
 
             Dint = kid[i,2]
-            Dkin = kid[i,3]*par.Ek
+            Dkin = kid[i,3]
+            #print('Dint =',Dint, 'Dkin =',Dkin)
 
             repow = kid[i,5]
 
