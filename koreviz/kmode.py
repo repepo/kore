@@ -115,15 +115,14 @@ class kmode:
                 if not vort:
                     if field == 'u':
                         self.ur, self.utheta, self.uphi = sol[3:]
+                        if par.anelastic: #Comment the block out if you want momentum/mass flux
+                            self.rho = ut.density(self.r)
+                            for irho in range(self.nr):
+                                self.ur[irho,...]     /= self.rho[irho]
+                                self.utheta[irho,...] /= self.rho[irho]
+                                self.uphi[irho,...]   /= self.rho[irho]
                     elif field == 'b':
                         self.br, self.btheta, self.bphi = sol[3:]
-
-                    # if par.anelastic:
-                    #     self.rho = ut.density(self.r)
-                    #     for irho in range(self.nr):
-                    #         self.ur[irho,...]     /= self.rho[irho]
-                    #         self.utheta[irho,...] /= self.rho[irho]
-                    #         self.uphi[irho,...]   /= self.rho[irho]
                 else:
                     if field == 'u':
                         self.vort_r, self.vort_t, self.vort_p = sol[3:]
