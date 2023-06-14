@@ -1,14 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import numpy.polynomial.chebyshev as ch
-import scipy.sparse as ss
-import shtns
 from glob import glob
 #import cmasher as cmr
 from .plotlib import add_colorbar,default_cmap,radContour,merContour,eqContour
 from .libkoreviz import spec2spat_vec,spec2spat_scal
 import sys
-import os
 
 
 class kmode:
