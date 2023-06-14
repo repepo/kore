@@ -139,6 +139,7 @@ def BVprof(r,args):
     return out
 
 
+
 def chebco_f(func,N,ricb,rcmb,tol,args=None):
     '''
     Returns the first N Chebyshev coefficients
@@ -159,6 +160,7 @@ def chebco_f(func,N,ricb,rcmb,tol,args=None):
     out[0] = out[0] / 2.
     out[np.absolute(out) <= tol] = 0.
     return out
+
 
 
 def chebco_rf(func,rpower,N,ricb,rcmb,tol,args=None):
@@ -183,6 +185,7 @@ def chebco_rf(func,rpower,N,ricb,rcmb,tol,args=None):
     return out
 
 
+
 def chebco(powr, N, tol, ricb, rcmb):
     '''
     Returns the first N Chebyshev coefficients
@@ -202,6 +205,7 @@ def chebco(powr, N, tol, ricb, rcmb):
     out[np.absolute(out)<=tol]=0.
 
     return out
+
 
 
 def chebco_twozone(args, N, ricb, rcmb, tol):
@@ -255,6 +259,7 @@ def chebco_BVprof(args, N, ricb, rcmb, tol):
     return out
 
 
+
 def chebInt(ck):
     '''
     Returns first N Chebyshev coefficients of the indefinite integral
@@ -265,6 +270,7 @@ def chebInt(ck):
     CInt = C.integ()
 
     return CInt.coef
+
 
 
 def Dcheb(ck, ricb, rcmb):
@@ -289,6 +295,8 @@ def Dcheb(ck, ricb, rcmb):
         out1 = 2*out/(rcmb-ricb)
 
     return out1
+
+
 
 #------------------------------------------
 # Anelastic profiles
@@ -341,6 +349,8 @@ def mag_diffus(r):
 
 #------------------------------------------
 
+
+
 def jl_smx(l,x,d):
     '''
     Spherical Bessel function of the first kind and derivatives,
@@ -371,6 +381,7 @@ def jl_smx(l,x,d):
     return out
 
 
+
 def jl(l,x,d):
     '''
     Spherical Bessel function of the first kind
@@ -391,6 +402,8 @@ def nl(l,x,d):
     Spherical Bessel function of the second kind
     '''
     return scsp.spherical_yn(l,x,derivative=d)
+
+
 
 def dlogjl(l,x):
     '''
@@ -432,6 +445,8 @@ def dlogjl(l,x):
     b0 = l / x
 
     return lentz_thompson(a, b, b0, eps=1e-30, acc=1e-14)
+
+
 
 def findbeta(args):
     '''

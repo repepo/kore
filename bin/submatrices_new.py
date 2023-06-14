@@ -195,12 +195,11 @@ def main(ncpus):
 
     labl = []
     arg2 = []
-    # -------------------------------------------------------------------------------------------------------------------------------------------
-    # Matrices needed for the Navier-Stokes equation, double curl equations ------------------------------------------- NavStok 2curl - section u
-    # -------------------------------------------------------------------------------------------------------------------------------------------
-
     
     if par.hydro == 1:
+        # -------------------------------------------------------------------------------------------------------------------------------------------
+        # Matrices needed for the Navier-Stokes equation, double curl equations ------------------------------------------- NavStok 2curl - section u
+        # -------------------------------------------------------------------------------------------------------------------------------------------
 
         # u
         arg2  += [     vP ,     vP ,     vP  ]
@@ -214,10 +213,12 @@ def main(ncpus):
         arg2   += [     vP ,     vP ,     vP ,     vP  ]
         labl_u += [ 'r0_D0', 'r2_D2', 'r3_D3', 'r4_D4' ]
 
-        # Density profile
+        # More viscous diffusion, anelastic terms
         if par.anelastic:
+            arg2   += [       vP   ,        vP    ,       vP    ,       vP    ,       vP    ,
+                              vP   ,        vP    ,       vP    ,       vP     ]
             labl_u += [ 'r1_rho1_D0', 'r2_rho2_D0', 'r3_rho3_D0', 'r2_rho1_D1', 'r3_rho2_D1',
-                        'r4_rho3_D2', 'r3_rho1_D2', 'r4_rho2_D2', 'r4_rho3_D1', 'r4_rho1_D3' ]
+                        'r3_rho1_D2', 'r4_rho2_D2', 'r4_rho3_D1', 'r4_rho1_D3' ]
 
         if par.magnetic == 1 :
             # add Lorentz force
@@ -246,64 +247,81 @@ def main(ncpus):
             # append "_u" to all section u labels
             labl += [ labl1+'_u' ]
 
-        
+ 
+        # -------------------------------------------------------------------------------------------------------------------------------------------
+        # Matrices needed for the Navier-Stokes equation, single curl equations ------------------------------------------- NavStok 1curl - section v
+        # -------------------------------------------------------------------------------------------------------------------------------------------
     
-    # -------------------------------------------------------------------------------------------------------------------------------------------
-    # Matrices needed for the Navier-Stokes equation, single curl equations ------------------------------------------- NavStok 1curl - section v
-    # -------------------------------------------------------------------------------------------------------------------------------------------
+        # u
+        arg2  += [     vT  ]
+        labl_v = [ 'r2_D0' ]
+        
+        # Coriolis
+        arg2   += [     vP ,     vP  ]
+        labl_v += [ 'r1_D0', 'r2_D1' ]
+        
+        # Viscous diffusion
+        arg2   += [     vT ,     vT ,     vT  ]
+        labl_v += [ 'r0_D0', 'r1_D1', 'r2_D2' ]        
+        
+        # More viscous diffusion, anelastic terms
+        if par.anelastic:
+            arg2   += [       vT    ,       vT    ,       vT     ]
+            labl_v += [ 'r1_rho1_D0', 'r2_rho2_D0', 'r2_rho1_D1' ]
+    
+        if par.magnetic == 1 :
+            # Lorentz force
+            labl_v += [ 'r0_h0_D1', 'r0_h1_D0', 'r1_h2_D0', 'r1_h0_D2', 'r0_h0_D0', 'r1_h1_D0', 'r1_h0_D1' ]
+            arg2   += [     vF    ,     vF    ,     vF    ,     vF    ,     vG    ,     vG    ,     vG     ]
+            
 
-    if cdipole :
-        #       [   u    corio  corio  visc   visc   visc  ]
-        labl += [ 'v50', 'v40', 'v51', 'v30', 'v41', 'v52' ]
-    else:
-        #       [   u    corio  corio  visc   visc   visc  ]
-        labl += [ 'v20', 'v10', 'v21', 'v00', 'v11', 'v22' ]
-        arg2 += [   vT ,   vP ,   vP ,   vT ,   vT ,   vT  ]
+        for labl1 in labl_v:
 
-    if par.anelastic:
-        labl += ['vrho110','vrho220','vrho211']
+            if cdipole:  # increase the power of r by 3:
+                old_rpow = labl1[:2]
+                new_rpow = 'r'+str( int(old_rpow[1])+3 )
+                labl1 = labl1.replace(old_rpow, new_rpow, 1)
+
+            # append "_v" to all section v labels
+            labl += [ labl1+'_v' ]
+
+
 
     if par.magnetic == 1 :
-        # Lorentz force
-        if cdipole :
-            labl += [ 'v301', 'v310', 'v420', 'v402', 'v300', 'v410', 'v401' ]
-        else:
-            labl += [ 'v001', 'v010', 'v120', 'v102', 'v000', 'v110', 'v101' ]
-            arg2 += [   vF  ,   vF  ,   vF  ,   vF  ,   vG  ,   vG  ,   vG   ]
+        # -------------------------------------------------------------------------------------------------------------------------------------------
+        # Matrices needed for the Induction equation, no-curl or consoidal equations -------------------------------------- Induct nocurl - section f
+        # -------------------------------------------------------------------------------------------------------------------------------------------
+        
+        #if ((par.ricb > 0) and ('conductor' in par.innercore)) :  # conducting inner core, consoidal component, needs work, don't use!
+        #    labl += [ 'f21',  'f32', 'f31',  'f20',   'f33',  'f22', 'f11', 'f00' ]
+            
+        # b
+        labl_f  = [ 'r2_D0' ]
+        arg2   += [     vF  ]
+        
+        # induction
+        labl_f += [ 'r0_h0_D0', 'r1_h1_D0', 'r1_h0_D1', 'r1_h0_D0' ]
+        arg2   += [     vP    ,     vP    ,     vP    ,     vT     ]
+        
+        # magnetic diffusion
+        labl_f += [ 'r0_eta0_D0', 'r1_eta0_D1', 'r2_eta0_D2' ]  
+        arg2   += [      vF     ,      vF     ,      vF      ]
+        
+        
+        for labl1 in labl_f:
 
-    if par.magnetic == 1 :
-    # -------------------------------------------------------------------------------------------------------------------------------------------
-    # Matrices needed for the Induction equation, no-curl or consoidal equations -------------------------------------- Induct nocurl - section f
-    # -------------------------------------------------------------------------------------------------------------------------------------------
+            if cdipole:  # increase the power of r by 2:
+                old_rpow = labl1[:2]
+                new_rpow = 'r'+str( int(old_rpow[1])+2 )
+                labl1 = labl1.replace(old_rpow, new_rpow, 1)
 
-        if cdipole :  # as above but times r^2
-            #  b
-            labl += [ 'f40' ]
-            # induction
-            labl += [ 'f200', 'f310', 'f301', 'f300' ]
-            # magnetic diffusion
-            labl += [ 'f20', 'f31', 'f42' ]
+            # append "_f" to all section f labels
+            labl += [ labl1+'_f' ]
+        
 
-        else:
-            if ((par.ricb > 0) and ('conductor' in par.innercore)) :  # conducting inner core, consoidal component, needs work
-                labl += [ 'f21',  'f32', 'f31',  'f20',   'f33',  'f22', 'f11', 'f00' ]
-            else :
-                #  b
-                labl += [ 'f20' ]
-                arg2 += [   vF  ]
-                # induction
-                labl += [ 'f000', 'f110', 'f101', 'f100' ]
-                arg2 += [   vP  ,   vP  ,   vP  ,   vT   ]
-                # magnetic diffusion
-                #labl += [ 'f00', 'f11', 'f22' ]
-                #arg2 += [   vF ,   vF ,   vF  ]
-                labl += [ 'feta000', 'feta101', 'feta202' ]  # missing arg2 because we don't want to bother with no inner core for now
-                arg2 += [   vF ,   vF ,   vF  ]
-
-
-    # -------------------------------------------------------------------------------------------------------------------------------------------
-    # Matrices needed for the Induction equation, single curl equations ------------------------------------------------ Induct 1curl - section g
-    # -------------------------------------------------------------------------------------------------------------------------------------------
+        # -------------------------------------------------------------------------------------------------------------------------------------------
+        # Matrices needed for the Induction equation, single curl equations ------------------------------------------------ Induct 1curl - section g
+        # -------------------------------------------------------------------------------------------------------------------------------------------
 
         if cdipole :
             # b
@@ -312,18 +330,36 @@ def main(ncpus):
             labl += [ 'g301', 'g411',  'g200', 'g310', 'g420', 'g402', 'g300', 'g401', 'g410' ]  # e.g. 'g200' is for (r**2)*h(r)
             # magnetic diffusion
             labl += [ 'g30', 'g41',  'g52' ]
-        else:
-            # b
-            labl += [ 'g20' ]
-            arg2 += [   vG   ]
-            # induction
-            labl += [ 'g001', 'g111',  'g600', 'g010', 'g120', 'g102', 'g000', 'g101', 'g110' ]  # 'g600' is for (1/r)*h(r)
-            arg2 += [   vP  ,   vP  ,    vP  ,   vP  ,   vP  ,   vP  ,   vT  ,   vT  ,   vT   ]
-            # magnetic diffusion
-            #labl += [ 'g00', 'g11',  'g22' ]
-            #arg2 += [   vG ,   vG ,    vG  ]
-            labl += [ 'geta000', 'geta101', 'geta202', 'geta110', 'geta211' ]
-            arg2 += [       vG ,       vG ,       vG ,       vG ,       vG  ]
+        
+            
+        # b
+        labl_g  = [ 'r2_D0' ]  # 
+        arg2   += [    vG   ]
+        
+        # induction
+        labl_g += [ 'r0_h0_D1', 'r1_h1_D1', 'r6_h0_D0', 'r0_h1_D0', 'r1_h2_D0', 'r1_h0_D2',
+                    'r0_h0_D0', 'r1_h0_D1', 'r1_h1_D0' ]  # 'r6_h0_D0' is for (1/r)*h(r)
+        arg2   += [     vP    ,     vP    ,     vP     ,    vP    ,     vP    ,     vP    ,
+                        vT    ,     vT    ,     vT     ]
+        
+        # magnetic diffusion
+        labl_g += [ 'r0_eta0_D0', 'r1_eta0_D1', 'r2_eta0_D2', 'r1_eta1_D0', 'r2_eta1_D1' ]
+        arg2   += [      vG     ,      vG     ,      vG     ,      vG     ,      vG      ]
+        
+
+        for labl1 in labl_g:
+
+            if cdipole:  # increase the power of r by 3:
+                old_rpow = labl1[:2]
+                new_rpow = 'r'+str( int(old_rpow[1])+3 )
+                if new_rpow == 'r9':  # for (1/r)*h(r)
+                    new_rpow = 'r2'
+                labl1 = labl1.replace(old_rpow, new_rpow, 1)
+
+            # append "_g" to all section g labels
+            labl += [ labl1+'_g' ]
+        
+        
 
 
     if par.thermal == 1 :
@@ -333,20 +369,28 @@ def main(ncpus):
 
         if par.heating == 'differential' :
 
-            labl += [ 'h00', 'h10', 'h21',  'h32', 'h30' ]  # here the operators have mixed symmetries, this is a problem if ricb == 0
-            arg2 += [   vP ,   vP ,   vP ,    vP ,   vP  ]
+            labl_h = [ 'r0_D0', 'r1_D0', 'r2_D1',  'r3_D2', 'r3_D0' ]  # here the operators have mixed symmetries!?, this is potentially a problem when ricb == 0
+            arg2  += [     vP ,     vP ,     vP ,      vP ,     vP  ]
 
         elif (par.heating == 'internal' or (twozone or userdef) ) :
 
-            labl += [ 'h20', 'h00', 'h11',  'h22' ]
+            labl_h = [ 'r2_D0', 'r0_D0', 'r1_D1', 'r2_D2' ]
             if not cdipole:
-                arg2 += [   vP ,   vP ,   vP ,    vP  ]
+                arg2 += [  vP ,     vP ,     vP ,     vP  ]
 
             if (twozone or userdef) :
 
-                labl += [ 'h70' ]  # this is for ut.twozone or ut.BVprof
+                labl_h += [ 'r7_D0' ]  # this is for ut.twozone or ut.BVprof
                 if not cdipole:
                     arg2 += [   vP  ]
+                
+                
+        for labl1 in labl_h:
+            # append "_h" to all section h labels
+            labl += [ labl1+'_h' ]           
+                    
+                    
+                    
 
     if par.compositional == 1 :
     # -------------------------------------------------------------------------------------------------------------------------------------------
@@ -355,14 +399,21 @@ def main(ncpus):
 
         if par.comp_background == 'differential' :
 
-            labl += [ 'i00', 'i10', 'i21',  'i32', 'i30' ]  # here the operators have mixed symmetries, this is a problem if ricb == 0
-            arg2 += [   vP ,   vP ,   vP ,    vP ,   vP  ]
+            labl_i = [ 'r0_D0', 'r1_D0', 'r2_D1',  'r3_D2', 'r3_D0' ]  # here the operators have mixed symmetries, this is a problem if ricb == 0
+            arg2  += [     vP ,     vP ,     vP ,      vP ,     vP  ]
 
         elif (par.comp_background == 'internal' or (twozone or userdef) ) :
 
-            labl += [ 'i20', 'i00', 'i11',  'i22' ]
+            labl_i = [ 'r2_D0', 'r0_D0', 'r1_D1',  'r2_D2' ]
             if not cdipole:
-                arg2 += [   vP ,   vP ,   vP ,    vP  ]
+                arg2 += [ vP ,     vP ,     vP ,      vP  ]
+
+
+        for labl1 in labl_i:
+            # append "_i" to all section i labels
+            labl += [ labl1+'_i' ]  
+
+
 
 
     # -------------------------------------------------------------------------------------------------------------------------------------------
