@@ -6,14 +6,15 @@ import scipy.special as scsp
 import scipy.fftpack as sft
 import numpy.polynomial.chebyshev as ch
 import numpy as np
-
 import parameters as par
 
 '''
-Various function definitions and utilities
+A library of various function definitions and utilities
 '''
 
+# ----------------------------------------------------------------------------------------------------------------------
 # First some global variables: -----------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 if par.forcing == 0:
     wf = 0
@@ -54,59 +55,60 @@ elif par.B0 == 'FDM':
 bsymm = par.symm * symmB0  # induced magnetic field (b) symmetry follows from u and B0
 
 # ----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 
 
-def get_radial_derivatives( func, rorder, Dorder, tol):
+def decode_label( labl ):
     '''
-    This function computes terms of the form r^n d^m/dr^m of a
-    radial profile in Chebyshev space.
-
-    Parameters
-    ----------
-    func   : function
-        Radial profile in the form of a function (can be found in utils)
-    rorder : integer
-        Highest order of radial power
-    Dorder : integer
-        Highest order of radial derivative
-    tol    : real
-        Tolerance for Chebyshev transforms for radial powers
-
-    Returns
-    -------
-    rd_prof : 2D list
-        List such that rd_prof[i][j] defines the Chebyshev coefficients of
-        r^i d^j/dr^j of the radial profile
+    Returns the stripped label, the indices rx, hx, dx, the section,
+    and up to two profile identifiers with their corresponding derivative order
+    [ lablx, rx, hx, dx, section, profid1, dp1, profid2, dp2 ]
     '''
 
-    # Make sure these are integers
-    rorder = int(rorder)
-    Dorder = int(Dorder)
+    [ lablx, rx, hx, dx, section, profid1, dp1, profid2, dp2 ] = [ None ]*9
 
-    rd_prof = [ [ [] for j in range(Dorder+1) ] for i in range(rorder+1) ] #List for Cheb coeffs to r^n D^m profile
-    dnprof = [ [] for i in range(Dorder+1) ] #List for Cheb coeffs of nth derivative of profile
-    # Cheb coeffs of profile
-    dnprof[0] = chebco_f( func, par.N, par.ricb, rcmb, par.tol_tc )
+    lablx = labl[:-2]  # label without the section
+    
+    if labl[:2] == 'q1':
+        rx = 6
+    elif labl[0] == 'r':
+        rx = int(labl[1])  # index of the power of r
 
-    for i in range(rorder+1):
-        rn  = chebco(i, par.N, tol, par.ricb, rcmb) #Cheb coeffs of r^i
-        rd_prof[i][0] =  chebProduct(dnprof[0],rn,par.N,par.tol_tc) #Cheb coeffs of r^i profile
-        for j in range(1,Dorder+1):
-        # Cheb coeffs of r^i D^j profile
-            if i==0:
-                # These only need to be computed once
-                dnprof[j] = Dcheb(dnprof[j-1],par.ricb,rcmb)
-            rd_prof[i][j] = chebProduct(dnprof[j],rn,par.N,par.tol_tc)
+    dx = int(labl[-3])  # operator's derivative order 
+    section = labl[-1]    # section
 
-    return rd_prof
+    if   len(labl) in [10, 15, 20]:  # h is there
+        
+        hx = int(labl[4])
+        
+        if len(labl) in [ 15, 20]:   # h and at least 1 profile
+            profid1 = labl[6:9]
+            dp1 = int(labl[9])
+
+            if len(labl) == 20:      # h and 2 profiles, e.g. 'r1_h0_rho2_eta1_D0_f'
+                profid1 = labl[11:14]
+                dp1 = int(labl[14])
+
+    elif len(labl) in [12, 17]:  # no h and at least 1 profile
+
+        profid1 = labl[3:6]  
+        dp1 = int(labl[6])
+
+        if len(labl) == 17:  # no h and 2 profiles, e.g. 'r0_rho1_eta3_D2_u'
+
+            profid2 = labl[8:11]  
+            dp2 = int(labl[11])
+
+    return [ lablx, rx, hx, dx, section, profid1, dp1, profid2, dp2 ]
 
 
 
 def labelit( labl, section, rplus=0):
     '''
     Appends a section string to each label in the list labl.
-    Optionally increases the r power in each label by rplus.
+    Optionally, it increases the r power in each label by rplus.
     '''
        
     out = []
@@ -114,9 +116,15 @@ def labelit( labl, section, rplus=0):
     for labl1 in labl:
                
         if rplus>0:  # increase the power of r in the label by rplus:
+            
             old_rpow = labl1[:2]
-            new_rpow = 'r' + str( int(old_rpow[1]) + rplus )
-            if new_rpow == 'r9': new_rpow = 'r2'  # for (1/r)*h(r)
+            r_or_q = old_rpow[0]
+            if old_rpow == 'q1':
+                orpw = -1
+            else:
+                orpw = int(old_rpow[1])
+            
+            new_rpow = r_or_q + str( orpw + rplus )  
             labl1 = labl1.replace(old_rpow, new_rpow, 1)
             
         # append the appropriate section string
@@ -364,6 +372,52 @@ def Dcheb(ck, ricb, rcmb):
         out1 = 2*out/(rcmb-ricb)
 
     return out1
+
+
+
+def get_radial_derivatives( func, rorder, Dorder, tol):
+    '''
+    This function computes terms of the form r^n d^m/dr^m of a
+    radial profile in Chebyshev space.
+
+    Parameters
+    ----------
+    func   : function
+        Radial profile in the form of a function (can be found in utils)
+    rorder : integer
+        Highest order of radial power
+    Dorder : integer
+        Highest order of radial derivative
+    tol    : real
+        Tolerance for Chebyshev transforms for radial powers
+
+    Returns
+    -------
+    rd_prof : 2D list
+        List such that rd_prof[i][j] defines the Chebyshev coefficients of
+        r^i d^j/dr^j of the radial profile
+    '''
+
+    # Make sure these are integers
+    rorder = int(rorder)
+    Dorder = int(Dorder)
+
+    rd_prof = [ [ [] for j in range(Dorder+1) ] for i in range(rorder+1) ] #List for Cheb coeffs to r^n D^m profile
+    dnprof = [ [] for i in range(Dorder+1) ] #List for Cheb coeffs of nth derivative of profile
+    # Cheb coeffs of profile
+    dnprof[0] = chebco_f( func, par.N, par.ricb, rcmb, par.tol_tc )
+
+    for i in range(rorder+1):
+        rn  = chebco(i, par.N, tol, par.ricb, rcmb) #Cheb coeffs of r^i
+        rd_prof[i][0] =  chebProduct(dnprof[0],rn,par.N,par.tol_tc) #Cheb coeffs of r^i profile
+        for j in range(1,Dorder+1):
+        # Cheb coeffs of r^i D^j profile
+            if i==0:
+                # These only need to be computed once
+                dnprof[j] = Dcheb(dnprof[j-1],par.ricb,rcmb)
+            rd_prof[i][j] = chebProduct(dnprof[j],rn,par.N,par.tol_tc)
+
+    return rd_prof
 
 
 
