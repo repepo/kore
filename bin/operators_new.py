@@ -12,66 +12,7 @@ fname = [f for f in glob.glob('*.mtx')]
 
 for label in fname :
 
-    label = label[:-4]  # to get rid of the ".mtx"
-    section = label[0]
-    prof_id = ''
-    proflabel = ''
-    hlabel = ''
-    if len(label) == 7 :
-        prof_id = label[1:4]
-        rx      = label[4]
-    else:
-        rx = label[1]
-    dx = label[-1]
-
-
-    if len(label) == 3 :
-        if rx == '0' :
-            rlabel = ''
-        elif rx == '7' :
-            rlabel = 'Nr'
-        else :
-            rlabel = 'r' + rx
-
-    if len(label) == 4 :
-
-        hx = label[2]
-
-        if rx == '0' :
-            rlabel = ''
-        elif rx == '1' :
-            rlabel = 'r'
-        elif rx == '6' :
-            rlabel = 'q'
-        else :
-            rlabel = 'r' + rx
-
-        if hx == '0' :
-            hlabel = 'h'
-        else :
-            hlabel = 'h' + hx
-
-    if len(label) == 7 :
-
-        if rx == '0' :
-            rlabel = ''
-        elif rx == '1' :
-            rlabel = 'r'
-        else :
-            rlabel = 'r' + rx
-
-        if label[5] == '0' :
-            proflabel = prof_id
-        else:
-            proflabel = prof_id + label[5]
-
-
-    if dx == '0' :
-        dlabel = 'I'
-    else :
-        dlabel = 'D' + dx
-
-    varlabel = rlabel + hlabel + proflabel + dlabel + section
+    varlabel = label[:-4]
 
     globals()[varlabel] = ss.csr_matrix(sio.mmread(label))
 
@@ -725,7 +666,7 @@ def thermal_advection(l, section, component, offdiag):  # -u_r * dT/dr
         elif par.heating == 'differential':
             conv = r0_D0_h * par.ricb/gap  # dT/dr = -beta * r**2. Heat equation is times r**3
         elif par.heating == 'two zone' or par.heating == 'user defined':
-            conv = Nr1_D0_h  # dT/dr specified in ut.twozone or ut.BVprof. Heat equation is times r**2
+            conv = r1_tem1_D0_h  # dT/dr specified in ut.twozone or ut.BVprof. Heat equation is times r**2
 
         out = L * conv
 
