@@ -57,6 +57,75 @@ bsymm = par.symm * symmB0  # induced magnetic field (b) symmetry follows from u 
 
 
 
+def get_radial_derivatives( func, rorder, Dorder, tol):
+    '''
+    This function computes terms of the form r^n d^m/dr^m of a
+    radial profile in Chebyshev space.
+
+    Parameters
+    ----------
+    func   : function
+        Radial profile in the form of a function (can be found in utils)
+    rorder : integer
+        Highest order of radial power
+    Dorder : integer
+        Highest order of radial derivative
+    tol    : real
+        Tolerance for Chebyshev transforms for radial powers
+
+    Returns
+    -------
+    rd_prof : 2D list
+        List such that rd_prof[i][j] defines the Chebyshev coefficients of
+        r^i d^j/dr^j of the radial profile
+    '''
+
+    # Make sure these are integers
+    rorder = int(rorder)
+    Dorder = int(Dorder)
+
+    rd_prof = [ [ [] for j in range(Dorder+1) ] for i in range(rorder+1) ] #List for Cheb coeffs to r^n D^m profile
+    dnprof = [ [] for i in range(Dorder+1) ] #List for Cheb coeffs of nth derivative of profile
+    # Cheb coeffs of profile
+    dnprof[0] = chebco_f( func, par.N, par.ricb, rcmb, par.tol_tc )
+
+    for i in range(rorder+1):
+        rn  = chebco(i, par.N, tol, par.ricb, rcmb) #Cheb coeffs of r^i
+        rd_prof[i][0] =  chebProduct(dnprof[0],rn,par.N,par.tol_tc) #Cheb coeffs of r^i profile
+        for j in range(1,Dorder+1):
+        # Cheb coeffs of r^i D^j profile
+            if i==0:
+                # These only need to be computed once
+                dnprof[j] = Dcheb(dnprof[j-1],par.ricb,rcmb)
+            rd_prof[i][j] = chebProduct(dnprof[j],rn,par.N,par.tol_tc)
+
+    return rd_prof
+
+
+
+def labelit( labl, section, rplus=0):
+    '''
+    Appends a section string to each label in the list labl.
+    Optionally increases the r power in each label by rplus.
+    '''
+       
+    out = []
+
+    for labl1 in labl:
+               
+        if rplus>0:  # increase the power of r in the label by rplus:
+            old_rpow = labl1[:2]
+            new_rpow = 'r' + str( int(old_rpow[1]) + rplus )
+            if new_rpow == 'r9': new_rpow = 'r2'  # for (1/r)*h(r)
+            labl1 = labl1.replace(old_rpow, new_rpow, 1)
+            
+        # append the appropriate section string
+        out += [ labl1 + '_' + section ]
+    
+    return out
+
+
+
 def packit( lista_local, mtx, row, col):
     '''
     Appends sparse matrix data, row, and col info to lista_local
@@ -715,6 +784,7 @@ def h3(rr, kind, args):
     return out2
 
 
+
 def chebco_h(args, kind, N, rcmb, tol):
     '''
     Computes the Chebyshev coeffs of the h0 function and derivatives
@@ -749,6 +819,7 @@ def chebco_h(args, kind, N, rcmb, tol):
     out[0] = out[0] / 2.
     out[np.absolute(out) <= tol] = 0.
     return out
+
 
 
 def B0_norm():
@@ -978,6 +1049,8 @@ def Mlam(a0,lamb,vector_parity):
 
     return out
 
+
+
 def chebProduct(ck,dk,N,tol):
     '''
     Computes the Chebyshev expansion of a product of
@@ -1004,6 +1077,8 @@ def chebProduct(ck,dk,N,tol):
     out[np.absolute(out) <= tol] = 0.
 
     return out
+
+
 
 def marc_tide(omega, l, m, loc, N, ricb, rcmb):
     '''
@@ -1214,7 +1289,6 @@ def Tk(x, N, lamb_max):
 
 
 
-
 def gamma_visc(a1,a2,a3):
 
     out = np.zeros((1,n0+n0),dtype=complex)
@@ -1309,6 +1383,7 @@ def gamma_visc(a1,a2,a3):
     return out
 
 
+
 def gamma_visc_icb(ricb):
     '''
     Axial viscous torque on the inner core, spherical. Take 2*real after multiplying by the solution vector
@@ -1326,6 +1401,7 @@ def gamma_visc_icb(ricb):
         out[0,n0:n0+par.N] = (8*np.pi/3)*(R**2)*( R*T1 - T0 )
 
     return out
+
 
 
 def gamma_magnetic():

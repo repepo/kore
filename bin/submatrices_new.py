@@ -6,9 +6,9 @@ To use:
 > ./bin/submatrices.py ncpus
 where ncpus is the number of cores
 
-This program generates in parallel the operators involved in the differential
-equations as submatrices. These submatrices are required for the assembly
-of the main matrices A and B.
+This program generates (in parallel) the operators involved in the differential
+equations as submatrices. They will be written to disk as .mtx files.
+These submatrices are required for the assembly of the main matrices A and B.
 '''
 
 from timeit import default_timer as timer
@@ -18,54 +18,8 @@ import scipy.io as sio
 import numpy as np
 import warnings
 import sys
-
 import parameters as par
 import utils as ut
-
-def get_radial_derivatives(func,rorder,Dorder,tol):
-
-    '''
-    This function computes terms of the form r^n d^m/dr^m of a
-    radial profile in Chebyshev space.
-
-    Parameters
-    ----------
-    func   : function
-        Radial profile in the form of a function (can be found in utils)
-    rorder : integer
-        Highest order of radial power
-    Dorder : integer
-        Highest order of radial derivative
-    tol    : real
-        Tolerance for Chebyshev transforms for radial powers
-
-    Returns
-    -------
-    rd_prof : 2D list
-        List such that rd_prof[i][j] defines the Chebyshev coefficients of
-        r^i d^j/dr^j of the radial profile
-    '''
-
-    # Make sure these are integers
-    rorder = int(rorder)
-    Dorder = int(Dorder)
-
-    rd_prof = [ [ [] for j in range(Dorder+1) ] for i in range(rorder+1) ] #List for Cheb coeffs to r^n D^m profile
-    dnprof = [ [] for i in range(Dorder+1) ] #List for Cheb coeffs of nth derivative of profile
-    # Cheb coeffs of profile
-    dnprof[0] = ut.chebco_f( func, par.N, par.ricb, ut.rcmb, par.tol_tc )
-
-    for i in range(rorder+1):
-        rn  = ut.chebco(i, par.N, tol, par.ricb, ut.rcmb) #Cheb coeffs of r^i
-        rd_prof[i][0] =  ut.chebProduct(dnprof[0],rn,par.N,par.tol_tc) #Cheb coeffs of r^i profile
-        for j in range(1,Dorder+1):
-        # Cheb coeffs of r^i D^j profile
-            if i==0:
-                # These only need to be computed once
-                dnprof[j] = ut.Dcheb(dnprof[j-1],par.ricb,ut.rcmb)
-            rd_prof[i][j] = ut.chebProduct(dnprof[j],rn,par.N,par.tol_tc)
-
-    return rd_prof
 
 
 
@@ -95,6 +49,7 @@ def main(ncpus):
 
     tol = 1e-9
     # Chebyshev coefficients of powers of r
+    r0  = ut.chebco(0, par.N, tol, par.ricb, ut.rcmb)
     r1  = ut.chebco(1, par.N, tol, par.ricb, ut.rcmb)
     r2  = ut.chebco(2, par.N, tol, par.ricb, ut.rcmb)
     r3  = ut.chebco(3, par.N, tol, par.ricb, ut.rcmb)
@@ -104,16 +59,16 @@ def main(ncpus):
 
     if twozone :
         r2z = ut.chebco_twozone(par.args, par.N, par.ricb, ut.rcmb, par.tol_tc)
-        rp = [1, r1, r2, r3, r4, r5, r6, r2z]
+        rp = [r0, r1, r2, r3, r4, r5, r6, r2z]
     elif userdef :
         rbv = ut.chebco_BVprof(par.args, par.N, par.ricb, ut.rcmb, par.tol_tc)
-        rp = [1, r1, r2, r3, r4, r5, r6, rbv]
+        rp = [r0, r1, r2, r3, r4, r5, r6, rbv]
     else :
-        rp = [1, r1, r2, r3, r4, r5, r6]
+        rp = [r0, r1, r2, r3, r4, r5, r6]
 
 
     if par.anelastic:
-        rd_rho = get_radial_derivatives(ut.log_density,4,4,tol) # Density : Requires derivatives and radial powers up to fourth order
+        rd_rho = ut.get_radial_derivatives(ut.log_density,4,4,tol) # Density : Requires derivatives and radial powers up to fourth order
         # rd_tem = get_radial_derivatives(ut.temperature,2,2,tol) # Temperature : Requires derivatives and radial powers up to second order
         # rd_buo = get_radial_derivatives(ut.buoFac,)
 
@@ -123,7 +78,7 @@ def main(ncpus):
         rdh = [ [ [] for j in range(4) ] for i in range(7) ]
         rpw = [ 0, 1, 2, 3, 4, 5, -1]  # powers of r needed for the h function
 
-        rd_eta = get_radial_derivatives(ut.mag_diffus,2,1,tol)  # Magnetic diffusivity profile
+        rd_eta = ut.get_radial_derivatives(ut.mag_diffus,2,1,tol)  # Magnetic diffusivity profile
 
         cnorm = ut.B0_norm()  # Normalization
 
@@ -137,13 +92,15 @@ def main(ncpus):
         # columns are derivative order, first column (col 0) is for the function h itself
 
 
-    # Basis transformations
-    S0 = ut.Slam(0, par.N) # From Chebyshev basis ( C^(0) basis ) to C^(1) basis
+    # Gegenbauer basis transformations
+    S0 = ut.Slam(0, par.N) # From the Chebyshev basis ( C^(0) basis ) to C^(1) basis
     S1 = ut.Slam(1, par.N) # From C^(1) basis to C^(2) basis
     S2 = ut.Slam(2, par.N) # From C^(2) basis to C^(3) basis
     S3 = ut.Slam(3, par.N) # From C^(3) basis to C^(4) basis
 
-    # Derivatives
+    # Matrices to compute derivatives
+    # The result will be in a higher Gegenbauer order basis according to
+    # the order of the derivative, e.g. D3 will change the basis from C^(0) to C^(3)
     D1 = ut.Dlam(1, par.N)
     D2 = ut.Dlam(2, par.N)
     D3 = ut.Dlam(3, par.N)
@@ -236,16 +193,7 @@ def main(ncpus):
             arg2   += [     vP  ]
             labl_u += [ 'r4_D0' ]
 
-
-        for labl1 in labl_u:
-
-            if cdipole:  # increase the power of r by 2:
-                old_rpow = labl1[:2]
-                new_rpow = 'r'+str( int(old_rpow[1])+2 )
-                labl1 = labl1.replace(old_rpow, new_rpow, 1)
-
-            # append "_u" to all section u labels
-            labl += [ labl1+'_u' ]
+        labl += ut.labelit( labl_u, section='u', rplus=2*cdipole)
 
  
         # -------------------------------------------------------------------------------------------------------------------------------------------
@@ -274,17 +222,7 @@ def main(ncpus):
             labl_v += [ 'r0_h0_D1', 'r0_h1_D0', 'r1_h2_D0', 'r1_h0_D2', 'r0_h0_D0', 'r1_h1_D0', 'r1_h0_D1' ]
             arg2   += [     vF    ,     vF    ,     vF    ,     vF    ,     vG    ,     vG    ,     vG     ]
             
-
-        for labl1 in labl_v:
-
-            if cdipole:  # increase the power of r by 3:
-                old_rpow = labl1[:2]
-                new_rpow = 'r'+str( int(old_rpow[1])+3 )
-                labl1 = labl1.replace(old_rpow, new_rpow, 1)
-
-            # append "_v" to all section v labels
-            labl += [ labl1+'_v' ]
-
+        labl += ut.labelit( labl_v, section='v', rplus=3*cdipole)
 
 
     if par.magnetic == 1 :
@@ -307,31 +245,13 @@ def main(ncpus):
         labl_f += [ 'r0_eta0_D0', 'r1_eta0_D1', 'r2_eta0_D2' ]  
         arg2   += [      vF     ,      vF     ,      vF      ]
         
-        
-        for labl1 in labl_f:
-
-            if cdipole:  # increase the power of r by 2:
-                old_rpow = labl1[:2]
-                new_rpow = 'r'+str( int(old_rpow[1])+2 )
-                labl1 = labl1.replace(old_rpow, new_rpow, 1)
-
-            # append "_f" to all section f labels
-            labl += [ labl1+'_f' ]
+        labl += ut.labelit( labl_f, section='f', rplus=2*cdipole)
         
 
         # -------------------------------------------------------------------------------------------------------------------------------------------
         # Matrices needed for the Induction equation, single curl equations ------------------------------------------------ Induct 1curl - section g
         # -------------------------------------------------------------------------------------------------------------------------------------------
-
-        if cdipole :
-            # b
-            labl += [ 'g50', 'g00' ]  # g00 needed in case of Lin2017 forcing
-            # induction
-            labl += [ 'g301', 'g411',  'g200', 'g310', 'g420', 'g402', 'g300', 'g401', 'g410' ]  # e.g. 'g200' is for (r**2)*h(r)
-            # magnetic diffusion
-            labl += [ 'g30', 'g41',  'g52' ]
         
-            
         # b
         labl_g  = [ 'r2_D0' ]  # 
         arg2   += [    vG   ]
@@ -346,26 +266,16 @@ def main(ncpus):
         labl_g += [ 'r0_eta0_D0', 'r1_eta0_D1', 'r2_eta0_D2', 'r1_eta1_D0', 'r2_eta1_D1' ]
         arg2   += [      vG     ,      vG     ,      vG     ,      vG     ,      vG      ]
         
-
-        for labl1 in labl_g:
-
-            if cdipole:  # increase the power of r by 3:
-                old_rpow = labl1[:2]
-                new_rpow = 'r'+str( int(old_rpow[1])+3 )
-                if new_rpow == 'r9':  # for (1/r)*h(r)
-                    new_rpow = 'r2'
-                labl1 = labl1.replace(old_rpow, new_rpow, 1)
-
-            # append "_g" to all section g labels
-            labl += [ labl1+'_g' ]
+        labl += ut.labelit( labl_g, section='g', rplus=3*cdipole)
+        # might need to add r0_D0_g for Lin2017 forcing:
+        # labl += [ 'r0_D0_g' ]
+        # arg2 += [     vG    ]
         
-        
-
 
     if par.thermal == 1 :
-    # -------------------------------------------------------------------------------------------------------------------------------------------
-    # Matrices needed for the heat equation ------------------------------------------------------------------------------------ Heat - section h
-    # -------------------------------------------------------------------------------------------------------------------------------------------
+        # -------------------------------------------------------------------------------------------------------------------------------------------
+        # Matrices needed for the heat equation ------------------------------------------------------------------------------------ Heat - section h
+        # -------------------------------------------------------------------------------------------------------------------------------------------
 
         if par.heating == 'differential' :
 
@@ -384,18 +294,13 @@ def main(ncpus):
                 if not cdipole:
                     arg2 += [   vP  ]
                 
-                
-        for labl1 in labl_h:
-            # append "_h" to all section h labels
-            labl += [ labl1+'_h' ]           
+        labl += ut.labelit( labl_h, section='h', rplus=0)
+            
                     
-                    
-                    
-
     if par.compositional == 1 :
-    # -------------------------------------------------------------------------------------------------------------------------------------------
-    # Matrices needed for the compositional equation ------------------------------------------------------------------ Compositional - section i
-    # -------------------------------------------------------------------------------------------------------------------------------------------
+        # -------------------------------------------------------------------------------------------------------------------------------------------
+        # Matrices needed for the compositional equation ------------------------------------------------------------------ Compositional - section i
+        # -------------------------------------------------------------------------------------------------------------------------------------------
 
         if par.comp_background == 'differential' :
 
@@ -408,21 +313,14 @@ def main(ncpus):
             if not cdipole:
                 arg2 += [ vP ,     vP ,     vP ,      vP  ]
 
-
-        for labl1 in labl_i:
-            # append "_i" to all section i labels
-            labl += [ labl1+'_i' ]  
-
-
+        labl += ut.labelit( labl_i, section='i', rplus=0)
+    
 
 
     # -------------------------------------------------------------------------------------------------------------------------------------------
-
-
-
-
     # Pre-process the list with multiplication matrices labels to avoid duplicates --------------------------------------------------------------
-    # Also generate the list of arguments parg0 and parg1
+    # Also generate the list of arguments parg0 and parg1 ---------------------------------------------------------------------------------------
+
     plabl = []
     parg0 = []
     parg1 = []
@@ -430,87 +328,80 @@ def main(ncpus):
 
     if cdipole or (par.ricb > 0) :  # set vector_parity = 0, i.e. is not needed
         arg2 = np.size(labl)*[0]
-    #argnopar = np.size(labl)*[0]
-
 
     for k,labl1 in enumerate(labl) :
 
-        lablx = labl1[1:]  # strip the leading character in label (representing the section), lablx is 2 or 3 digits long
+        lablx = labl1[:-2]  # strip the last two characters in the label (representing the section)
 
         idx = [ j for j,x in enumerate(plabl) if x == lablx ]  # find indices of same labels as lablx in plabl
         vpx = [ parg2[i] for i in idx ]  # find the vector_parities of those
 
         if not(arg2[k] in vpx) :       # add to the processing list if not already there
 
-            # if lablx has two digits then the first one is the power of r, last one is the derivative order
-            # if lablx has three digits then the middle one is the derivative order of the function h(r), first and second digits as above
-            if len(lablx) == 6 :
-                rx = int(lablx[3])
-            else:
-                rx = int(lablx[0])
-            dx = int(lablx[-1])
+            rx = int(lablx[ 1])  # second digit is the power of r 
+            dx = int(lablx[-1])  # last digit is the derivative order of the operator
 
-            if len(lablx) == 2 and rx > 0 :
+            if len(lablx) == 5 :  # rX_DX
 
-                plabl += [ lablx ]          # labels in plabl are two or three digit strings, we process here the two digit ones only
+                plabl += [ lablx ]          # label
+                #tmp = S[dx]*rp[rx]; print('tmp=',tmp)
                 parg0 += [ S[dx]*rp[rx] ]   # power of r in the C^(dx) basis
                 parg1 += [ dx ]             # dx is derivative order
                 parg2 += [ arg2[k] ]        # vector_parity
 
-            if len(lablx) == 3 :
+            elif len(lablx) == 8 :  # rX_hX_DX
 
-                hx = int(lablx[1])
+                hx = int(lablx[4])
                 plabl += [ lablx ]
                 parg0 += [ S[dx] * rdh[rx][hx] ]
                 parg1 += [ dx ]
                 parg2 += [ arg2[k] ]
 
-            if len(lablx) == 6 :
+            elif len(lablx) == 10 :  # rX_proX_DX
 
-                prof_id = lablx[:3]  # this describes which radial profile is needed
-
+                prof_id = lablx[3:6]  # this describes which radial profile is needed
                 if prof_id == 'eta':
                     rprof = rd_eta
-                if par.anelastic:
-                    if prof_id == 'rho':
-                        rprof = rd_rho
+                elif prof_id == 'rho':
+                    rprof = rd_rho
 
-                profx = int(lablx[4])
+                profx = int(lablx[6])
                 plabl += [ lablx ]
                 parg0 += [ S[dx] * rprof[rx][profx] ]
                 parg1 += [ dx ]
                 parg2 += [ arg2[k] ]
 
 
-    # Now generate the matrices in parallel -----------------------------------------------------------------------------------------------------
+    # -------------------------------------------------------------------------------------------------------------------------------------------
+    # Generate the Mlam matrices in parallel ----------------------------------------------------------------------------------------------------
+    # -------------------------------------------------------------------------------------------------------------------------------------------
     pool = mp.Pool( processes = int(ncpus) )
     tmp = [ pool.apply_async( ut.Mlam, args = ( parg0[k], parg1[k], parg2[k]) ) for k in range(np.size(parg0,0)) ]
-    #tmp = [ pool.apply_async( ut.Mlam, args = ( parg0[k], parg1[k], argnopar[k]) ) for k in range(np.size(parg0,0)) ]
-
-    # recover results
+    # recover resulting list of matrices
     matlist = [tmp1.get() for tmp1 in tmp]
     pool.close()
     pool.join()
     # -------------------------------------------------------------------------------------------------------------------------------------------
+    # -------------------------------------------------------------------------------------------------------------------------------------------
+    # -------------------------------------------------------------------------------------------------------------------------------------------
 
 
-    # finishing steps
+    # Now we need to multiply the matrices on the right by the appropriate derivative matrix,
+    # and change basis accordingly:
     for k,labl1 in enumerate(labl) :
 
-        lablx = labl1[1:]
-        secx = labl1[0]  # the section
-        if len(lablx) == 6 :
-            rx = int(lablx[3])
-        else:
-            rx = int(lablx[0])
-        dx   = int(lablx[-1])
-        gbx  = gebasis[section.index(secx)]
+        lablx = labl1[:-2]                    # operator label without the trailing section, e.g. without "_u" 
+        secx  = labl1[ -1]                    # the section (u, v, f, g, h, or i)
+        rx    = int(lablx [1])                # the power of r
+        dx    = int(lablx[-1])                # operator's derivative order
+        gbx   = gebasis[section.index(secx)]  # order of the Gegenbauer basis according to the section
 
-        # Multiply by appropriate derivative operator on the right and change to C^(4), C^(3) or C^(2) basis depending on section
-        if lablx == '00' :  # this one is the identity, just changes basis
-            matrix = G[gbx-1][gbx-dx]
+        # Multiply by appropriate derivative matrix on the right and change to C^(4), C^(3) or C^(2) basis depending on section
+        if lablx == 'r0_D0' :  # this one is the identity, we just need to change basis
+            matrix = G[gbx-1][gbx-dx]  # dx here should be 0
         else :
             idx = [ j for j,x in enumerate(plabl) if ((x == lablx) and (parg2[j] == arg2[k])) ]  # find matrix index in plabl
+            # and compute finally the full operator
             matrix = G[gbx-1][gbx-dx] * matlist[idx[0]] * D[dx]
 
         # If no inner core then remove unneeded rows and cols
@@ -519,15 +410,19 @@ def main(ncpus):
             if rx == 7 :  # this one just for the twozone or BVprof function, choose accordingly here!
                 operator_parity = 1  # build the twozone or BVprof functions such that the *operator* parity is 1. Operator must be even
 
-            elif len(lablx) == 3 :
-                hx = int(lablx[1])
+            elif len(lablx) == 8 :
+                hx = int(lablx[4])
                 if ut.symmB0 == -1:
                     operator_parity = (-1)**( hx + 1 + rpw[rx] + dx )  # h(r) is odd if B0 antisymmetric (axial, G21 dipole, or l=1 FDM)
                 elif ut.symmB0 == 1:
                     operator_parity = (-1)**( hx + rpw[rx] + dx )
 
-            elif len(lablx) == 2 :
+            elif len(lablx) == 4 :
                 operator_parity = 1-((rx+dx)%2)*2
+
+            ####
+            # TO DO: assign operator_parity to operators with longer labels, i.e. involving 'eta' or 'rho' 
+            ####
 
             vector_parity   = arg2[k]
             overall_parity  = vector_parity * operator_parity
@@ -547,7 +442,7 @@ def main(ncpus):
     # -------------------------------------------------------------------------------------------------------------------------------------------
 
     toc = timer()
-    print('Blocks generated and written to disk in', toc-tic, 'seconds')
+    print('Submatrices generated and written to disk in', toc-tic, 'seconds')
 
     return 0
 
