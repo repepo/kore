@@ -208,7 +208,7 @@ def viscous_diffusion(l, section, component, offdiag):  # ----------------------
         if section == 'u' and component == 'upol':
 
             if par.anelastic:
-                out = L * ( (-L*(l+2)*(l-1)*r0_D0_u - (L+2)*r4_rho1_D3_u - 2*(L-1)*r2_rho2_D0_u + r3_rho3_D0_u)
+                out = L * ( (-L*(l+2)*(l-1)*r0_D0_u - (L+2)*r1_rho1_D0_u - 2*(L-1)*r2_rho2_D0_u + r3_rho3_D0_u)
                            -(L-2)*r2_rho1_D1_u + 6*r3_rho2_D1_u + r4_rho3_D1_u
                            + 2*L*r2_D2_u + 5*r3_rho1_D2_u + 2*r4_rho2_D2_u
                            - 4*r3_D3_u + r4_rho1_D3_u
@@ -223,7 +223,7 @@ def viscous_diffusion(l, section, component, offdiag):  # ----------------------
         elif section == 'v' and component == 'utor':
 
             if par.anelastic:
-                out = L * ( -L*r0_D0_v - 3*r4_rho1_D3_v - r2_rho2_D0_v
+                out = L * ( -L*r0_D0_v - 3*r1_rho1_D0_v - r2_rho2_D0_v
                             + 2*r1_D1_v-r2_rho1_D1_v
                             +r2_D2_v)
             else:
@@ -252,7 +252,7 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
             if offdiag == -2:  # (l-2) terms  (quadrupole)
 
                 C = (3*(-2 - l + l**2)*np.sqrt((l - m)*(-1 + l + m))*np.sqrt((-1 + l - m)*(l + m)))/(3 - 8*l + 4*l**2)
-                out1 = r0_h0_D0_u*(2*l + 3*l**2 + l**3) - r3_rho3_D0_u*(6 - 7*l + 3*l**2) + r3_rho1_D2_u*(2 + l - 6*l**2 + l**3)
+                out1 = r0_h0_D0_u*(2*l + 3*l**2 + l**3) - r1_h0_D1_u*(6 - 7*l + 3*l**2) + r1_h1_D0_u*(2 + l - 6*l**2 + l**3)
                 out2 = - r2_h0_D2_u*(-6 + l) - 2*r2_h1_D1_u*(-2 + l) + r2_h2_D0_u*(-2 + l) - r3_h2_D1_u + 3*r3_h0_D3_u
                 out3 = - r3_h1_D2_u*(-3 + l) + r3_h3_D0_u*(-1 + l)
                 out = C*(out1+out2+out3)
@@ -264,12 +264,12 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
 
                 C = np.sqrt(l**2-par.m**2)*(l**2-1)/(2*l-1)
                 if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :  # r4*r.2curl
-                    out1 = -2*(l**2+2)*r3_rho3_D0_u -2*(l-2)*r2_h1_D1_u - (l-4)*r2_h0_D2_u - (l-2)*r3_h1_D2_u
-                    out2 = L*(l+2)*r0_h0_D0_u + L*(l-4)*r3_rho1_D2_u + l*r2_h2_D0_u + l*r3_h3_D0_u + 2*r3_h0_D3_u
+                    out1 = -2*(l**2+2)*r1_h0_D1_u -2*(l-2)*r2_h1_D1_u - (l-4)*r2_h0_D2_u - (l-2)*r3_h1_D2_u
+                    out2 = L*(l+2)*r0_h0_D0_u + L*(l-4)*r1_h1_D0_u + l*r2_h2_D0_u + l*r3_h3_D0_u + 2*r3_h0_D3_u
                 elif par.B0 == 'dipole':
                     # same but +r2
                     out1 = -2*(l**2+2)*r3_h0_D1_u -2*(l-2)*r4_h1_D1_u - (l-4)*r4_h0_D2_u - (l-2)*r5_h1_D2_u
-                    out2 = L*(l+2)*r4_rho2_D2_u + L*(l-4)*r3_h1_D0_u + l*r4_h2_D0_u + l*r5_h3_D0_u + 2*r5_h0_D3_u
+                    out2 = L*(l+2)*r2_h0_D0_u + L*(l-4)*r3_h1_D0_u + l*r4_h2_D0_u + l*r5_h3_D0_u + 2*r5_h0_D3_u
                 out = C*(out1+out2)
 
                 if ut.symm1 == 1:
@@ -279,7 +279,7 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
             elif offdiag == 0:  # l terms  (quadrupole)
 
                 C = (3*(l + l**2 - 3*m**2))/(-3 + 4*l + 4*l**2)
-                out = C*( 3*r0_h0_D0_u*l*(1 + l)*(-2 + l + l**2) - 3*r3_rho1_D2_u*L**2 + 2*r3_rho3_D0_u*(6 - 4*l - 5*l**2 - 2*l**3 - l**4) \
+                out = C*( 3*r0_h0_D0_u*l*(1 + l)*(-2 + l + l**2) - 3*r1_h1_D0_u*L**2 + 2*r1_h0_D1_u*(6 - 4*l - 5*l**2 - 2*l**3 - l**4) \
                           + 3*r2_h2_D0_u*L + r2_h0_D2_u*(-12 + 5*l + 5*l**2) + 2*r2_h1_D1_u*(-6 + 5*l + 5*l**2) + 2*r3_h2_D1_u*L \
                           + r3_h3_D0_u*L + 2*r3_h0_D3_u*(-3 + l + l**2) + 3*r3_h1_D2_u*(-2 + l + l**2) )
 
@@ -288,12 +288,12 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
 
                 C = np.sqrt((1+l+par.m)*(1+l-par.m))*l*(l+2)/(2*l+3)
                 if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :  # r4*r.2curl
-                    out1 = -2*(l**2+2*l+3)*r3_rho3_D0_u + 2*(l+3)*r2_h1_D1_u + (l+5)*r2_h0_D2_u + (l+3)*r3_h1_D2_u
-                    out2 = -L*(l-1)*r0_h0_D0_u - L*(l+5)*r3_rho1_D2_u - (l+1)*r2_h2_D0_u - (l+1)*r3_h3_D0_u + 2*r3_h0_D3_u
+                    out1 = -2*(l**2+2*l+3)*r1_h0_D1_u + 2*(l+3)*r2_h1_D1_u + (l+5)*r2_h0_D2_u + (l+3)*r3_h1_D2_u
+                    out2 = -L*(l-1)*r0_h0_D0_u - L*(l+5)*r1_h1_D0_u - (l+1)*r2_h2_D0_u - (l+1)*r3_h3_D0_u + 2*r3_h0_D3_u
                 elif par.B0 == 'dipole':
                     # same but +r2
                     out1 = -2*(l**2+2*l+3)*r3_h0_D1_u + 2*(l+3)*r4_h1_D1_u + (l+5)*r4_h0_D2_u + (l+3)*r5_h1_D2_u
-                    out2 = -L*(l-1)*r4_rho2_D2_u - L*(l+5)*r3_h1_D0_u - (l+1)*r4_h2_D0_u - (l+1)*r5_h3_D0_u + 2*r5_h0_D3_u
+                    out2 = -L*(l-1)*r2_h0_D0_u - L*(l+5)*r3_h1_D0_u - (l+1)*r4_h2_D0_u - (l+1)*r5_h3_D0_u + 2*r5_h0_D3_u
                 out = C*(out1+out2)
 
                 if ut.symm1 == -1:
@@ -303,7 +303,7 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
             elif offdiag == 2:  # (l+2) terms  (quadrupole)
 
                 C = (3*l*(3 + l)*np.sqrt((1 + l - m)*(2 + l + m))*np.sqrt(2 + 3*l + l**2 + m - m**2))/(15 + 16*l + 4*l**2)
-                out = C*( r0_h0_D0_u*(l - l**3) - r3_rho3_D0_u*(16 + 13*l + 3*l**2) - r3_rho1_D2_u*(6 + 16*l + 9*l**2 + l**3) + 2*r2_h1_D1_u*(3 + l) \
+                out = C*( r0_h0_D0_u*(l - l**3) - r1_h0_D1_u*(16 + 13*l + 3*l**2) - r1_h1_D0_u*(6 + 16*l + 9*l**2 + l**3) + 2*r2_h1_D1_u*(3 + l) \
                           - r2_h2_D0_u*(3 + l) + r2_h0_D2_u*(7 + l) - r3_h2_D1_u + 3*r3_h0_D3_u + r3_h1_D2_u*(4 + l) - r3_h3_D0_u*(2 + l) )
 
                 offd = 1
@@ -315,7 +315,7 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
             if offdiag == -1:  # (l-1) terms  (quadrupole)
 
                 C = (6j*m*np.sqrt(l**2 - m**2))/(-1 + 2*l)
-                out = C*( -r3_h2_D1_u*(3-3*l-2*l**2) - r2_h0_D1_u*(l-3) - r2_h1_D0_u*(-3+2*l+l**2) + 3*r3_h0_D2_u - r3_h1_D1_u*(l-3) - r3_h2_D0_u*l )
+                out = C*( -r1_h0_D0_u*(3-3*l-2*l**2) - r2_h0_D1_u*(l-3) - r2_h1_D0_u*(-3+2*l+l**2) + 3*r3_h0_D2_u - r3_h1_D1_u*(l-3) - r3_h2_D0_u*l )
 
                 if ut.symm1 == 1:
                     offd = -1
@@ -324,16 +324,16 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
             elif offdiag == 0:  # l terms
 
                 if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :  # r4*r.2curl
-                    out = 2j*par.m*( -r3_h2_D1_u - (l**2+l-1)*r2_h1_D0_u + r2_h0_D1_u + r3_h1_D1_u + r3_h0_D2_u )
+                    out = 2j*par.m*( -r1_h0_D0_u - (l**2+l-1)*r2_h1_D0_u + r2_h0_D1_u + r3_h1_D1_u + r3_h0_D2_u )
                 elif par.B0 == 'dipole':
                     # same but +r2
-                    out = 2j*par.m*( -r4_rho3_D1_u - (l**2+l-1)*r4_h1_D0_u + r4_h0_D1_u + r5_h1_D1_u + r5_h0_D2_u )
+                    out = 2j*par.m*( -r3_h0_D0_u - (l**2+l-1)*r4_h1_D0_u + r4_h0_D1_u + r5_h1_D1_u + r5_h0_D2_u )
 
 
             elif offdiag == 1:  # (l+1) terms  (quadrupole)
 
                 C = (6j*m*np.sqrt(1 + 2*l + l**2 - m**2))/(3 + 2*l)
-                out = C*( r3_h2_D1_u*(-4+l+2*l**2) + r2_h0_D1_u*(4+l) - r2_h1_D0_u*(-4+l**2) + 3*r3_h0_D2_u + r3_h2_D0_u*(1+l) + r3_h1_D1_u*(4+l) )
+                out = C*( r1_h0_D0_u*(-4+l+2*l**2) + r2_h0_D1_u*(4+l) - r2_h1_D0_u*(-4+l**2) + 3*r3_h0_D2_u + r3_h2_D0_u*(1+l) + r3_h1_D1_u*(4+l) )
 
                 if ut.symm1 == -1:
                     offd = 1
@@ -348,7 +348,7 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
             if offdiag == -1:  # (l-1) terms  (quadrupole)
 
                 C = (3j*m*np.sqrt(l**2 - m**2))/(-1 + 2*l)
-                out = C*( 12*r0_h0_D1_v - 2*r0_h1_D0_v*(-1 + l)*l + 6*r2_rho2_D0_v - r2_rho1_D1_v*(-1 + l)*l )
+                out = C*( 12*r0_h0_D1_v - 2*r0_h1_D0_v*(-1 + l)*l + 6*r1_h0_D2_v - r1_h2_D0_v*(-1 + l)*l )
 
                 if ut.symm1 == -1:
                     offd = -1
@@ -357,7 +357,7 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
             elif offdiag == 0:  # l terms (dipole)
 
                 if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
-                    out = 1j*par.m*( 4*r0_h0_D1_v - L*( 2*r0_h1_D0_v + r2_rho1_D1_v ) + 2*r2_rho2_D0_v )  # r2*r.1curl
+                    out = 1j*par.m*( 4*r0_h0_D1_v - L*( 2*r0_h1_D0_v + r1_h2_D0_v ) + 2*r1_h0_D2_v )  # r2*r.1curl
                 elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
                     out = 1j*par.m*( 4*r3_h0_D1_v - L*( 2*r3_h1_D0_v + r4_h2_D0_v ) + 2*r4_h0_D2_v )  # r5*r.1curl
 
@@ -365,7 +365,7 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
             elif offdiag == 1:  # (l+1) terms  (quadrupole)
 
                 C = (3j*m*np.sqrt((1 + l - m)*(1 + l + m)))/(3 + 2*l)
-                out = C*( 12*r0_h0_D1_v - 2*r0_h1_D0_v*(1 + l)*(2 + l) + 6*r2_rho2_D0_v - r2_rho1_D1_v*(1 + l)*(2 + l) )
+                out = C*( 12*r0_h0_D1_v - 2*r0_h1_D0_v*(1 + l)*(2 + l) + 6*r1_h0_D2_v - r1_h2_D0_v*(1 + l)*(2 + l) )
 
                 if ut.symm1 == 1:
                     ofd = 1
@@ -377,7 +377,7 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
             if offdiag == -2:  # (l-2) terms  (quadrupole)
 
                 C = (3*(-2 + l)*(1 + l)*np.sqrt((l - m)*(-1 + l + m))*np.sqrt((-1 + l - m)*(l + m)))/(3 - 8*l + 4*l**2)
-                out = C*( r0_h0_D0_v*(-4 + l) - 3*r3_rho3_D0_v + r3_rho1_D2_v*(-1 + l) )
+                out = C*( r0_h0_D0_v*(-4 + l) - 3*r1_h0_D1_v + r1_h1_D0_v*(-1 + l) )
 
                 offd = -1
 
@@ -386,9 +386,9 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
 
                 C = np.sqrt((l-par.m)*(l+par.m))*(l**2-1)/(2*l-1)
                 if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
-                    out = C*( (l-2)*r0_h0_D0_v + l*r3_rho1_D2_v -2*r3_rho3_D0_v )  # r2*r.1curl
+                    out = C*( (l-2)*r0_h0_D0_v + l*r1_h1_D0_v -2*r1_h0_D1_v )  # r2*r.1curl
                 elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
-                    out = C*( (l-2)*r4_rho3_D1_v + l*r4_h1_D0_v -2*r4_h0_D1_v )  # r5*r.1curl
+                    out = C*( (l-2)*r3_h0_D0_v + l*r4_h1_D0_v -2*r4_h0_D1_v )  # r5*r.1curl
 
                 if ut.symm1 == -1:
                     offd = -1
@@ -397,16 +397,16 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
             elif offdiag == 0:  # l terms  (quadrupole)
 
                 C = (3*(l + l**2 - 3*m**2))/(-3 + 4*l*(1 + l))
-                out = C*( r0_h0_D0_v*(6 - l - l**2) + r3_rho1_D2_v*L - 2*r3_rho3_D0_v*(-3 + l + l**2) )
+                out = C*( r0_h0_D0_v*(6 - l - l**2) + r1_h1_D0_v*L - 2*r1_h0_D1_v*(-3 + l + l**2) )
 
 
             elif offdiag == 1:
 
                 C = -np.sqrt((l+par.m+1)*(l+1-par.m))*l*(l+2)/(2*l+3)
                 if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
-                    out = C*( (l+3)*r0_h0_D0_v + (l+1)*r3_rho1_D2_v + 2*r3_rho3_D0_v )  # r2*r.1curl
+                    out = C*( (l+3)*r0_h0_D0_v + (l+1)*r1_h1_D0_v + 2*r1_h0_D1_v )  # r2*r.1curl
                 elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
-                    out = C*( (l+3)*r4_rho3_D1_v + (l+1)*r4_h1_D0_v + 2*r4_h0_D1_v )  # r5*r.1curl
+                    out = C*( (l+3)*r3_h0_D0_v + (l+1)*r4_h1_D0_v + 2*r4_h0_D1_v )  # r5*r.1curl
 
                 if ut.symm1 == 1:
                     offd = 1
@@ -415,7 +415,7 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
             elif offdiag == 2:  # (l+2) terms  (quadrupole)
 
                 C = (3*l*(3 + l)*np.sqrt((2 + l - m)*(1 + l + m))*np.sqrt((1 + l - m)*(2 + l + m)))/((3 + 2*l)*(5 + 2*l))
-                out = C*( -r0_h0_D0_v*(5 + l) - 3*r3_rho3_D0_v - r3_rho1_D2_v*(2 + l) )
+                out = C*( -r0_h0_D0_v*(5 + l) - 3*r1_h0_D1_v - r1_h1_D0_v*(2 + l) )
 
                 offd = 1
 
@@ -513,7 +513,7 @@ def induction(l, section, component, offdiag):
 
                 C1 = 3*(-2 + l)*(1 + l)*np.sqrt((l - m)*(-1 + l + m))*np.sqrt((-1 + l - m)*(l + m))
                 C2 = 3 - 8*l + 4*l**2
-                out = ( r0_h0_D0_f*(-4 + l) - 3*r3_rho3_D0_f + r3_rho1_D2_f*(-1 + l) )*C1/C2
+                out = ( r0_h0_D0_f*(-4 + l) - 3*r1_h0_D1_f + r1_h1_D0_f*(-1 + l) )*C1/C2
 
                 offd = -1
 
@@ -521,9 +521,9 @@ def induction(l, section, component, offdiag):
 
                 C = np.sqrt(l**2-par.m**2)*(l**2-1)/(2*l-1)
                 if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1'] :
-                    out = C*( (l-2)*r0_h0_D0_f + l*r3_rho1_D2_f - 2*r3_rho3_D0_f )
+                    out = C*( (l-2)*r0_h0_D0_f + l*r1_h1_D0_f - 2*r1_h0_D1_f )
                 elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
-                    out = C*( (l-2)*r4_rho2_D2_f + l*r3_h1_D0_f - 2*r3_h0_D1_f )
+                    out = C*( (l-2)*r2_h0_D0_f + l*r3_h1_D0_f - 2*r3_h0_D1_f )
 
                 if ut.symm1 == -1:
                     offd = -1
@@ -531,15 +531,15 @@ def induction(l, section, component, offdiag):
             elif offdiag == 0:  # l terms (quadrupole)
 
                 C = (3*(l + l**2 - 3*m**2))/(-3 + 4*l*(1 + l))
-                out = C*( r0_h0_D0_f*(6 - l - l**2) + r3_rho1_D2_f*l*(1 + l) - 2*r3_rho3_D0_f*(-3 + l + l**2) )
+                out = C*( r0_h0_D0_f*(6 - l - l**2) + r1_h1_D0_f*l*(1 + l) - 2*r1_h0_D1_f*(-3 + l + l**2) )
 
             elif offdiag == 1:  # l+1 terms (dipole)
 
                 C = np.sqrt((l+1)**2-par.m**2)*l*(l+2)/(2*l+3)
                 if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
-                    out = C*( -(l+3)*r0_h0_D0_f -(l+1)*r3_rho1_D2_f -2*r3_rho3_D0_f )
+                    out = C*( -(l+3)*r0_h0_D0_f -(l+1)*r1_h1_D0_f -2*r1_h0_D1_f )
                 elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
-                    out = C*( -(l+3)*r4_rho2_D2_f -(l+1)*r3_h1_D0_f -2*r3_h0_D1_f )
+                    out = C*( -(l+3)*r2_h0_D0_f -(l+1)*r3_h1_D0_f -2*r3_h0_D1_f )
 
                 if ut.symm1 == 1:
                     offd = 1
@@ -548,7 +548,7 @@ def induction(l, section, component, offdiag):
 
                 C1 = 3*l*(3 + l)*np.sqrt((2 + l - m)*(1 + l + m))*np.sqrt((1 + l - m)*(2 + l + m))
                 C2 = (3 + 2*l)*(5 + 2*l)
-                out = ( r0_h0_D0_f*(-5 - l) - 3*r3_rho3_D0_f - r3_rho1_D2_f*(2 + l) )*C1/C2
+                out = ( r0_h0_D0_f*(-5 - l) - 3*r1_h0_D1_f - r1_h1_D0_f*(2 + l) )*C1/C2
 
                 offd = 1
 
@@ -556,7 +556,7 @@ def induction(l, section, component, offdiag):
 
             if offdiag == -1:  # l-1 terms (quadrupole)
 
-                out = 18j * r3_h2_D1_f * m * np.sqrt(l**2-m**2)/(1-2*l)
+                out = 18j * r1_h0_D0_f * m * np.sqrt(l**2-m**2)/(1-2*l)
 
                 if ut.symm1 == 1:
                     offd = -1
@@ -564,13 +564,13 @@ def induction(l, section, component, offdiag):
             elif offdiag == 0:  # l terms (dipole)
 
                 if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
-                    out = -2j*par.m* r3_h2_D1_f
+                    out = -2j*par.m* r1_h0_D0_f
                 elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
-                    out = -2j*par.m* r4_rho3_D1_f
+                    out = -2j*par.m* r3_h0_D0_f
 
             elif offdiag == 1:  # l+1 terms (quadrupole)
 
-                out = -18j * r3_h2_D1_f * m * np.sqrt((1+l-m)*(1+l+m))/(3+2*l)
+                out = -18j * r1_h0_D0_f * m * np.sqrt((1+l-m)*(1+l+m))/(3+2*l)
 
                 if ut.symm1 == -1:
                     offd = 1
@@ -583,7 +583,7 @@ def induction(l, section, component, offdiag):
             if offdiag == -1:  # l-1 terms (quadrupole)
 
                 C = (3j * m * np.sqrt(l**2 - m**2))/(-1 + 2*l)
-                out = C*( -2*r0_h1_D0_g*(-3 + l) - 2*r0_h0_D1_g*(-3 + l) - 2*qr0_h0_D0_g*(3 + l**2) + 6*r2_rho2_D0_g - 2*r2_eta1_D1_1g*(-3 + l) + r2_rho1_D1_g*(-1 + l)*l )
+                out = C*( -2*r0_h1_D0_g*(-3 + l) - 2*r0_h0_D1_g*(-3 + l) - 2*q1_h0_D0_g*(3 + l**2) + 6*r1_h0_D2_g - 2*r1_h1_D1_g*(-3 + l) + r1_h2_D0_g*(-1 + l)*l )
 
                 if ut.symm1 == -1:
                     offd = -1
@@ -591,14 +591,14 @@ def induction(l, section, component, offdiag):
             elif offdiag == 0:  # l terms (dipole)
 
                 if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
-                    out = 2j*par.m*( r0_h0_D1_g + r2_eta1_D1_1g -(l**2+l+1)*qr0_h0_D0_g + r0_h1_D0_g + (L/2)*r2_rho1_D1_g + r2_rho2_D0_g )  # qh=h/r
+                    out = 2j*par.m*( r0_h0_D1_g + r1_h1_D1_g -(l**2+l+1)*q1_h0_D0_g + r0_h1_D0_g + (L/2)*r1_h2_D0_g + r1_h0_D2_g )  # qh=h/r
                 elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
-                    out = 2j*par.m*( r3_h0_D1_g + r4_h1_D1_g -(l**2+l+1)*r4_rho2_D2_g + r3_h1_D0_g + (L/2)*r4_h2_D0_g + r4_h0_D2_g )
+                    out = 2j*par.m*( r3_h0_D1_g + r4_h1_D1_g -(l**2+l+1)*r2_h0_D0_g + r3_h1_D0_g + (L/2)*r4_h2_D0_g + r4_h0_D2_g )
 
             elif offdiag == 1:  # l+1 terms (quadrupole)
 
                 C = (3j*m*np.sqrt((1 + l - m)*(1 + l + m)))/(3 + 2*l)
-                out = C*( 2*(4+l)*( r0_h1_D0_g + r0_h0_D1_g + r2_eta1_D1_1g ) - 2*qr0_h0_D0_g*(4 + 2*l + l**2) + 6*r2_rho2_D0_g + r2_rho1_D1_g*(2 + 3*l + l**2) )
+                out = C*( 2*(4+l)*( r0_h1_D0_g + r0_h0_D1_g + r1_h1_D1_g ) - 2*q1_h0_D0_g*(4 + 2*l + l**2) + 6*r1_h0_D2_g + r1_h2_D0_g*(2 + 3*l + l**2) )
 
                 if ut.symm1 == 1:
                     offd = 1
@@ -608,7 +608,7 @@ def induction(l, section, component, offdiag):
             if offdiag == -2:  # l-2 terms (quadrupole)
 
                 C = (3*(-2 + l)*(1 + l)*np.sqrt((l - m)*(-1 + l + m))*np.sqrt((-1 + l - m)*(l + m)))/(3 - 8*l + 4*l**2)
-                out = C*( r0_h0_D0_g*l - 3*r3_rho3_D0_g + r3_rho1_D2_g*(-3 + l) )
+                out = C*( r0_h0_D0_g*l - 3*r1_h0_D1_g + r1_h1_D0_g*(-3 + l) )
 
                 offd = -1
 
@@ -619,9 +619,9 @@ def induction(l, section, component, offdiag):
                 C2 = np.sqrt( l*(l**2-1)/(4*l**2-1) )
 
                 if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
-                    out = C*( C2* r0_h0_D0_g -2*C1* r3_rho3_D0_g + (C2-2*C1)* r3_rho1_D2_g )
+                    out = C*( C2* r0_h0_D0_g -2*C1* r1_h0_D1_g + (C2-2*C1)* r1_h1_D0_g )
                 elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
-                    out = C*( C2* r4_rho3_D1_g -2*C1* r4_h0_D1_g + (C2-2*C1)* r4_h1_D0_g )
+                    out = C*( C2* r3_h0_D0_g -2*C1* r4_h0_D1_g + (C2-2*C1)* r4_h1_D0_g )
 
                 if ut.symm1 == 1:
                     offd = -1
@@ -629,7 +629,7 @@ def induction(l, section, component, offdiag):
             elif offdiag == 0:  # l terms (quadrupole)
 
                 C = (3*(l + l**2 - 3*m**2))/(-3 + 4*l*(1 + l))
-                out = C*( -r0_h0_D0_g*L - 2*r3_rho3_D0_g*(-3 + l + l**2) - 3*r3_rho1_D2_g*(-2 + l + l**2) )
+                out = C*( -r0_h0_D0_g*L - 2*r1_h0_D1_g*(-3 + l + l**2) - 3*r1_h1_D0_g*(-2 + l + l**2) )
 
             elif offdiag == 1:  # l+1 terms
 
@@ -639,15 +639,15 @@ def induction(l, section, component, offdiag):
                 C2 = np.sqrt( L*(l+2)/(3+4*l*(l+2)) )
 
                 if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
-                    out = C*( -C2* r0_h0_D0_g -2*C1* r3_rho3_D0_g -(2*C1+C2)* r3_rho1_D2_g )
+                    out = C*( -C2* r0_h0_D0_g -2*C1* r1_h0_D1_g -(2*C1+C2)* r1_h1_D0_g )
                 elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
-                    out = C*( -C2* r4_rho3_D1_g -2*C1* r4_h0_D1_g -(2*C1+C2)* r4_h1_D0_g )
+                    out = C*( -C2* r3_h0_D0_g -2*C1* r4_h0_D1_g -(2*C1+C2)* r4_h1_D0_g )
                 '''
                 C = l*(l+2)*np.sqrt(1+2*l+l**2-par.m**2)/(3+2*l)
                 if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
-                    out = C * ( -r3_rho3_D0_g - (l+1)* r0_h0_D0_g - (l+3) * r3_rho1_D2_g )
+                    out = C * ( -r1_h0_D1_g - (l+1)* r0_h0_D0_g - (l+3) * r1_h1_D0_g )
                 elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
-                    out = C * ( -r4_h0_D1_g - (l+1)* r4_rho3_D1_g - (l+3) * r4_h1_D0_g )
+                    out = C * ( -r4_h0_D1_g - (l+1)* r3_h0_D0_g - (l+3) * r4_h1_D0_g )
 
                 if ut.symm1 == -1:
                     offd = 1
@@ -655,7 +655,7 @@ def induction(l, section, component, offdiag):
             elif offdiag == 2:  # l+2 terms (quadrupole)
 
                 C = (3*l*(3 + l)*np.sqrt(2 + 3*l + l**2 - m - m**2)*np.sqrt(2 + 3*l + l**2 + m - m**2))/(15 + 16*l + 4*l**2)
-                out = C*( -r0_h0_D0_g*(1 + l) - 3*r3_rho3_D0_g - r3_rho1_D2_g*(4 + l) )
+                out = C*( -r0_h0_D0_g*(1 + l) - 3*r1_h0_D1_g - r1_h1_D0_g*(4 + l) )
 
                 offd = 1
 
@@ -676,14 +676,14 @@ def magnetic_diffusion(l, section, component, offdiag):
         if section == 'f' and component == 'bpol':  #  r² 𝐫⋅∇²𝐛   (×r² if dipole)
             if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
                 #out = L*( -L*r0_D0_f + 2*r1_D1_f + r2_D2_f )
-                out = L*( -L*etar0_D0_f + 2*r3_rho2_D1_f + r2etaD2f )
+                out = L*( -L*r0_eta0_D0_f + 2*r1_eta0_D1_f + r2_eta0_D2_f )
             elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
                 out = L*( -L*r2_D0_f + 2*r3_D1_f + r4_D2_f )
 
         elif section == 'g' and component == 'btor':  # r² 𝐫⋅∇×(∇²𝐛)  (×r³ if dipole)
             if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
                 #out = L*( -L*r0_D0_g + 2*r1_D1_g + r2_D2_g )
-                out = L*( -L*etar0_D0_g + 2*r3_rho2_D1_g + r2etaD2g + reta1r0_D0_g + r2_eta1_D1_g)
+                out = L*( -L*r0_eta0_D0_g + 2*r1_eta0_D1_g + r2_eta0_D2_g + r1_eta1_D0_g + r2_eta1_D1_g)
             elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
                 out = L*( -L*r3_D0_g + 2*r4_D1_g + r5_D2_g )
 
@@ -725,7 +725,7 @@ def thermal_advection(l, section, component, offdiag):  # -u_r * dT/dr
         elif par.heating == 'differential':
             conv = r0_D0_h * par.ricb/gap  # dT/dr = -beta * r**2. Heat equation is times r**3
         elif par.heating == 'two zone' or par.heating == 'user defined':
-            conv = Nr3_h1_D2_h  # dT/dr specified in ut.twozone or ut.BVprof. Heat equation is times r**2
+            conv = Nr1_D0_h  # dT/dr specified in ut.twozone or ut.BVprof. Heat equation is times r**2
 
         out = L * conv
 
