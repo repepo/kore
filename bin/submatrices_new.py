@@ -57,14 +57,14 @@ def main(ncpus):
     r5  = ut.chebco(5, par.N, tol, par.ricb, ut.rcmb)
     r6  = ut.chebco(6, par.N, tol, par.ricb, ut.rcmb)
 
-    if twozone :
-        r2z = ut.chebco_twozone(par.args, par.N, par.ricb, ut.rcmb, par.tol_tc)
-        rp = [r0, r1, r2, r3, r4, r5, r6, r2z]
-    elif userdef :
-        rbv = ut.chebco_BVprof(par.args, par.N, par.ricb, ut.rcmb, par.tol_tc)
-        rp = [r0, r1, r2, r3, r4, r5, r6, rbv]
-    else :
-        rp = [r0, r1, r2, r3, r4, r5, r6]
+ 
+    rp = [r0, r1, r2, r3, r4, r5, r6]
+
+    # these are the cheb coeffs of r*twozone or r*BVprof.
+    if twozone:
+        rd_ent = [ [ ut.chebco_rf(ut.twozone, rpower=1, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=par.args) ] ]
+    elif userdef:
+        rd_ent = [ [ ut.chebco_rf( ut.BVprof, rpower=1, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=par.args) ] ]
 
 
     if par.anelastic:
@@ -289,7 +289,8 @@ def main(ncpus):
 
             if (twozone or userdef) :
 
-                labl_h += [ 'r7_D0' ]  # this is for ut.twozone or ut.BVprof
+                # this is for ut.twozone or ut.BVprof, we have r0 in the label because there is an r already included in the functions
+                labl_h += [ 'r0_dSb0_D0' ]  
                 if not cdipole:
                     arg2 += [   vP  ]
                 
@@ -355,6 +356,7 @@ def main(ncpus):
 
                 if   profid1 == 'eta':  rprof = rd_eta
                 elif profid1 == 'rho':  rprof = rd_rho
+                elif profid1 == 'dSb':  rprof = rd_ent
                 profx = dp1
                 parg0 += [ S[dx] * rprof[rx][profx] ]
                 parg1 += [ dx ]
@@ -379,10 +381,6 @@ def main(ncpus):
     # and change basis accordingly:
     for k,labl1 in enumerate(labl) :
 
-        #lablx = labl1[:-2]                    # operator label without the trailing section, e.g. without "_u" 
-        #secx  = labl1[ -1]                    # the section (u, v, f, g, h, or i)
-        #rx    = int(lablx [1])                # the power of r
-        #dx    = int(lablx[-1])                # operator's derivative order
         gbx   = gebasis[section.index(secx)]  # order of the Gegenbauer basis according to the section
 
         [ lablx, rx, hx, dx, secx, profid1, dp1, profid2, dp2 ] = ut.decode_label(labl1)
@@ -397,7 +395,7 @@ def main(ncpus):
         # If no inner core then remove unneeded rows and cols
         if par.ricb == 0 :
 
-            if rx == 7 :  # this one just for the twozone or BVprof function, choose accordingly here!
+            if profid1 == 'dSb' :  # this one just for the twozone or BVprof function, choose accordingly here!
                 operator_parity = 1  # build the twozone or BVprof functions such that the *operator* parity is 1. Operator must be even
 
             elif hx is not None:

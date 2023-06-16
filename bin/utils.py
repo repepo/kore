@@ -72,7 +72,7 @@ def decode_label( labl ):
     lablx = labl[:-2]  # label without the section
     
     if labl[:2] == 'q1':
-        rx = 6
+        rx = 6  # this is an index, not a power, it corresponds to r**-1
     elif labl[0] == 'r':
         rx = int(labl[1])  # index of the power of r
 
