@@ -70,19 +70,19 @@ def decode_label( labl ):
     [ lablx, rx, hx, dx, section, profid1, dp1, profid2, dp2 ] = [ None ]*9
 
     lablx = labl[:-2]  # label without the section
-    
+
     if labl[:2] == 'q1':
         rx = 6  # this is an index, not a power, it corresponds to r**-1
     elif labl[0] == 'r':
         rx = int(labl[1])  # index of the power of r
 
-    dx = int(labl[-3])  # operator's derivative order 
+    dx = int(labl[-3])  # operator's derivative order
     section = labl[-1]    # section
 
     if   len(labl) in [10, 15, 20]:  # h is there
-        
+
         hx = int(labl[4])
-        
+
         if len(labl) in [ 15, 20]:   # h and at least 1 profile
             profid1 = labl[6:9]
             dp1 = int(labl[9])
@@ -93,12 +93,12 @@ def decode_label( labl ):
 
     elif len(labl) in [12, 17]:  # no h and at least 1 profile
 
-        profid1 = labl[3:6]  
+        profid1 = labl[3:6]
         dp1 = int(labl[6])
 
         if len(labl) == 17:  # no h and 2 profiles, e.g. 'r0_rho1_eta3_D2_u'
 
-            profid2 = labl[8:11]  
+            profid2 = labl[8:11]
             dp2 = int(labl[11])
 
     return [ lablx, rx, hx, dx, section, profid1, dp1, profid2, dp2 ]
@@ -110,26 +110,26 @@ def labelit( labl, section, rplus=0):
     Appends a section string to each label in the list labl.
     Optionally, it increases the r power in each label by rplus.
     '''
-       
+
     out = []
 
     for labl1 in labl:
-               
+
         if rplus>0:  # increase the power of r in the label by rplus:
-            
+
             old_rpow = labl1[:2]
             r_or_q = old_rpow[0]
             if old_rpow == 'q1':
                 orpw = -1
             else:
                 orpw = int(old_rpow[1])
-            
-            new_rpow = r_or_q + str( orpw + rplus )  
+
+            new_rpow = r_or_q + str( orpw + rplus )
             labl1 = labl1.replace(old_rpow, new_rpow, 1)
-            
+
         # append the appropriate section string
         out += [ labl1 + '_' + section ]
-    
+
     return out
 
 
@@ -195,7 +195,7 @@ def twozone(r,args):
 
 
 
-def BVprof(r,args):
+def BVprof(r,args=None):
     '''
     Symmetrized dT/dr (dimensionless), extended to negative r.
     Define this function so that it is an odd function of r
@@ -231,7 +231,10 @@ def chebco_f(func,N,ricb,rcmb,tol,args=None):
     elif ricb == 0 :
         ri = rcmb * xi
 
-    tmp = sft.dct(func(ri))
+    if args is None:
+        tmp = sft.dct(func(ri))
+    else:
+        tmp = sft.dct(func(ri,args))
 
     out = tmp / N
     out[0] = out[0] / 2.
@@ -254,7 +257,10 @@ def chebco_rf(func,rpower,N,ricb,rcmb,tol,args=None):
     elif ricb == 0 :
         ri = rcmb * xi
 
-    tmp = sft.dct(ri**rpower * func(ri))
+    if args in None:
+        tmp = sft.dct(ri**rpower * func(ri))
+    else:
+        tmp = sft.dct(ri**rpower * func(ri,args))
 
     out = tmp / N
     out[0] = out[0] / 2.
@@ -334,19 +340,6 @@ def chebco_BVprof(args, N, ricb, rcmb, tol):
     out[0] = out[0] / 2.
     out[np.absolute(out) <= tol] = 0.
     return out
-
-
-
-def chebInt(ck):
-    '''
-    Returns first N Chebyshev coefficients of the indefinite integral
-    of Chebyshev series ck
-    '''
-
-    C = ch.Chebyshev(ck)
-    CInt = C.integ()
-
-    return CInt.coef
 
 
 
@@ -432,29 +425,42 @@ def log_density(r):
 
     return np.log(density(r))
 
-# def gravCoeff(r):
-#     ck = chebco_f(density(r),par.N,par.ricb,rcmb,par.tol_tc)
-#     dk = chebco(2,par.N,1e-9,par.ricb,rcmb)
+def temperature(r):
 
-#     ckdk = chebProduct(ck,dk)
+    return np.ones_like(r)
 
-#     return 4*np.pi*chebInt(ckdk)
+def log_temperature(r):
 
-# def temperature(r):
+    return np.log(temperature(r))
 
-#     return np.ones_like(r)
+def alpha(r):
 
-# def log_temperature(r):
+    return np.ones_like(r)
 
-#     return np.log(temperature(r))
+def buoFac(r):
+    '''
+    Profile of buoyancy = rho*alpha*T*g
+    gravity is multiplied later in Cheb space
+    '''
 
-# def alpha(r):
+    return density(r)*alpha(r)*temperature(r)#*gravity(r)
 
-#     return np.ones_like(r)
+def gravCoeff():
 
-# def buoFac(r):
+    '''
+    Integrates density profile in Cheb space and gives Cheb
+    coefficients of gravity profile, normalized to the value
+    at the outer boundary. No rescaling needed. We checked.
+    '''
 
-#     return density(r)*alpha(r)*temperature(r)*gravity(r)
+    ck = chebco_f(density,par.N,0,rcmb,par.tol_tc)
+    dk = chebco(2,par.N,1e-9,0,rcmb)
+
+    ckdk = chebProduct(ck,dk,par.N,par.tol_tc)
+    gk = ch.chebint(ckdk)
+    g0 = ch.chebval(1,gk)
+
+    return gk/g0
 
 #------------------------------------------
 # Magnetic : Variable conductivity
