@@ -57,7 +57,7 @@ def main(ncpus):
     r5  = ut.chebco(5, par.N, tol, par.ricb, ut.rcmb)
     r6  = ut.chebco(6, par.N, tol, par.ricb, ut.rcmb)
 
- 
+
     rp = [r0, r1, r2, r3, r4, r5, r6]
 
     # these are the cheb coeffs of r*twozone or r*BVprof.
@@ -76,7 +76,7 @@ def main(ncpus):
     if par.magnetic == 1 :
 
         cnorm = ut.B0_norm()  # Normalization
-        
+
         rpw = [ 0, 1, 2, 3, 4, 5, -1]  # powers of r needed for the h function
         rdh = [ [ [] for j in range(4) ] for i in range(7) ]
         for i,rpw1  in enumerate( rpw ):
@@ -151,7 +151,7 @@ def main(ncpus):
 
     labl = []
     arg2 = []
-    
+
     if par.hydro == 1:
         # -------------------------------------------------------------------------------------------------------------------------------------------
         # Matrices needed for the Navier-Stokes equation, double curl equations ------------------------------------------- NavStok 2curl - section u
@@ -194,33 +194,33 @@ def main(ncpus):
 
         labl += ut.labelit( labl_u, section='u', rplus=2*cdipole)
 
- 
+
         # -------------------------------------------------------------------------------------------------------------------------------------------
         # Matrices needed for the Navier-Stokes equation, single curl equations ------------------------------------------- NavStok 1curl - section v
         # -------------------------------------------------------------------------------------------------------------------------------------------
-    
+
         # u
         arg2  += [     vT  ]
         labl_v = [ 'r2_D0' ]
-        
+
         # Coriolis
         arg2   += [     vP ,     vP  ]
         labl_v += [ 'r1_D0', 'r2_D1' ]
-        
+
         # Viscous diffusion
         arg2   += [     vT ,     vT ,     vT  ]
-        labl_v += [ 'r0_D0', 'r1_D1', 'r2_D2' ]        
-        
+        labl_v += [ 'r0_D0', 'r1_D1', 'r2_D2' ]
+
         # More viscous diffusion, anelastic terms
         if par.anelastic:
             arg2   += [       vT    ,       vT    ,       vT     ]
             labl_v += [ 'r1_rho1_D0', 'r2_rho2_D0', 'r2_rho1_D1' ]
-    
+
         if par.magnetic == 1 :
             # Lorentz force
             labl_v += [ 'r0_h0_D1', 'r0_h1_D0', 'r1_h2_D0', 'r1_h0_D2', 'r0_h0_D0', 'r1_h1_D0', 'r1_h0_D1' ]
             arg2   += [     vF    ,     vF    ,     vF    ,     vF    ,     vG    ,     vG    ,     vG     ]
-            
+
         labl += ut.labelit( labl_v, section='v', rplus=3*cdipole)
 
 
@@ -228,48 +228,48 @@ def main(ncpus):
         # -------------------------------------------------------------------------------------------------------------------------------------------
         # Matrices needed for the Induction equation, no-curl or consoidal equations -------------------------------------- Induct nocurl - section f
         # -------------------------------------------------------------------------------------------------------------------------------------------
-        
+
         #if ((par.ricb > 0) and ('conductor' in par.innercore)) :  # conducting inner core, consoidal component, needs work, don't use!
         #    labl += [ 'f21',  'f32', 'f31',  'f20',   'f33',  'f22', 'f11', 'f00' ]
-            
+
         # b
         labl_f  = [ 'r2_D0' ]
         arg2   += [     vF  ]
-        
+
         # induction
         labl_f += [ 'r0_h0_D0', 'r1_h1_D0', 'r1_h0_D1', 'r1_h0_D0' ]
         arg2   += [     vP    ,     vP    ,     vP    ,     vT     ]
-        
+
         # magnetic diffusion
-        labl_f += [ 'r0_eta0_D0', 'r1_eta0_D1', 'r2_eta0_D2' ]  
+        labl_f += [ 'r0_eta0_D0', 'r1_eta0_D1', 'r2_eta0_D2' ]
         arg2   += [      vF     ,      vF     ,      vF      ]
-        
+
         labl += ut.labelit( labl_f, section='f', rplus=2*cdipole)
-        
+
 
         # -------------------------------------------------------------------------------------------------------------------------------------------
         # Matrices needed for the Induction equation, single curl equations ------------------------------------------------ Induct 1curl - section g
         # -------------------------------------------------------------------------------------------------------------------------------------------
-        
+
         # b
-        labl_g  = [ 'r2_D0' ]  # 
+        labl_g  = [ 'r2_D0' ]  #
         arg2   += [    vG   ]
-        
+
         # induction
         labl_g += [ 'r0_h0_D1', 'r1_h1_D1', 'q1_h0_D0', 'r0_h1_D0', 'r1_h2_D0', 'r1_h0_D2',
                     'r0_h0_D0', 'r1_h0_D1', 'r1_h1_D0' ]  # 'q1_h0_D0' is for (1/r)*h(r)
         arg2   += [     vP    ,     vP    ,     vP     ,    vP    ,     vP    ,     vP    ,
                         vT    ,     vT    ,     vT     ]
-        
+
         # magnetic diffusion
         labl_g += [ 'r0_eta0_D0', 'r1_eta0_D1', 'r2_eta0_D2', 'r1_eta1_D0', 'r2_eta1_D1' ]
         arg2   += [      vG     ,      vG     ,      vG     ,      vG     ,      vG      ]
-        
+
         labl += ut.labelit( labl_g, section='g', rplus=3*cdipole)
         # might need to add r0_D0_g for Lin2017 forcing:
         # labl += [ 'r0_D0_g' ]
         # arg2 += [     vG    ]
-        
+
 
     if par.thermal == 1 :
         # -------------------------------------------------------------------------------------------------------------------------------------------
@@ -290,13 +290,13 @@ def main(ncpus):
             if (twozone or userdef) :
 
                 # this is for ut.twozone or ut.BVprof, we have r0 in the label because there is an r already included in the functions
-                labl_h += [ 'r0_dSb0_D0' ]  
+                labl_h += [ 'r0_drS0_D0' ]
                 if not cdipole:
                     arg2 += [   vP  ]
-                
+
         labl += ut.labelit( labl_h, section='h', rplus=0)
-            
-                    
+
+
     if par.compositional == 1 :
         # -------------------------------------------------------------------------------------------------------------------------------------------
         # Matrices needed for the compositional equation ------------------------------------------------------------------ Compositional - section i
@@ -314,7 +314,7 @@ def main(ncpus):
                 arg2 += [ vP ,     vP ,     vP ,      vP  ]
 
         labl += ut.labelit( labl_i, section='i', rplus=0)
-    
+
 
 
     # -------------------------------------------------------------------------------------------------------------------------------------------
@@ -338,8 +338,8 @@ def main(ncpus):
 
         if not(arg2[k] in vpx) :       # add to the processing list if not already there
 
-            plabl += [ lablx] 
-            
+            plabl += [ lablx]
+
             if len(lablx) == 5 :  # rX_DX
 
                 parg0 += [ S[dx]*rp[rx] ]   # power of r in the C^(dx) basis
@@ -356,7 +356,7 @@ def main(ncpus):
 
                 if   profid1 == 'eta':  rprof = rd_eta
                 elif profid1 == 'rho':  rprof = rd_rho
-                elif profid1 == 'dSb':  rprof = rd_ent
+                elif profid1 == 'drS':  rprof = rd_ent
                 profx = dp1
                 parg0 += [ S[dx] * rprof[rx][profx] ]
                 parg1 += [ dx ]
@@ -381,9 +381,9 @@ def main(ncpus):
     # and change basis accordingly:
     for k,labl1 in enumerate(labl) :
 
-        gbx   = gebasis[section.index(secx)]  # order of the Gegenbauer basis according to the section
 
         [ lablx, rx, hx, dx, secx, profid1, dp1, profid2, dp2 ] = ut.decode_label(labl1)
+        gbx   = gebasis[section.index(secx)]  # order of the Gegenbauer basis according to the section
 
         # Multiply by appropriate derivative matrix on the right and change to C^(4), C^(3) or C^(2) basis depending on section
         idx = [ j for j,x in enumerate(plabl) if ((x == lablx) and (parg2[j] == arg2[k])) ]  # find matrix index in plabl
@@ -395,7 +395,7 @@ def main(ncpus):
         # If no inner core then remove unneeded rows and cols
         if par.ricb == 0 :
 
-            if profid1 == 'dSb' :  # this one just for the twozone or BVprof function, choose accordingly here!
+            if profid1 == 'drS' :  # this one just for the twozone or BVprof function, choose accordingly here!
                 operator_parity = 1  # build the twozone or BVprof functions such that the *operator* parity is 1. Operator must be even
 
             elif hx is not None:
@@ -408,7 +408,7 @@ def main(ncpus):
                 operator_parity = 1-((rx+dx)%2)*2
 
             ####
-            # TO DO: assign operator_parity to operators with longer labels, i.e. involving 'eta' or 'rho' 
+            # TO DO: assign operator_parity to operators with longer labels, i.e. involving 'eta' or 'rho'
             ####
 
             vector_parity   = arg2[k]
