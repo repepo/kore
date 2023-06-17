@@ -676,7 +676,6 @@ def thermal_advection(l, section, component, offdiag):  # -u_r * dT/dr
 
 def thermal_diffusion(l, section, component, offdiag):
 
-    out = 0
     L = l*(l+1)
 
     if section == 'h' and offdiag == 0 :
@@ -732,15 +731,7 @@ def compositional_advection(l, section, component, offdiag):
 
 def compositional_diffusion(l, section, component, offdiag):
 
-    out = 0
     L = l*(l+1)
-
-    if (par.timescale == 'rotation'):
-        scale_factor = par.Ek/par.Schmidt
-    elif (par.timescale == 'viscous'):
-        scale_factor = 1/par.Schmidt
-    elif (par.timescale == 'alfven'):
-        scale_factor = par.Ek/(par.Schmidt*par.Le)
 
     if section == 'i' and offdiag == 0 :
 
@@ -749,7 +740,6 @@ def compositional_diffusion(l, section, component, offdiag):
         else:
             difus = - L*r0_D0_i + 2*r1_D1_i + r2_D2_i  # eq. times r**2
 
-        out = scale_factor * difus
 
     return difus * par.OmgTau * par.Ek / par.Schmidt
 
