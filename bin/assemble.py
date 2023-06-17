@@ -24,7 +24,8 @@ import glob
 import bc_variables as bv
 import parameters as par
 import utils as ut
-import operators as op
+#import operators as op
+import operators_new as op
 
 
 
@@ -480,7 +481,7 @@ def main():
             # ------------------------------------------------------------------- B, theta_pol, nocurl (heat), section i
             for k,l in enumerate(loc_top):  # loc_top here because xi
                                             # follows the same symmetry as u
-                row = (2*par.hydro + 2*par.magnetic + par.thermal)*nb*ut.N1 + ( rank*bpp + k )* ut.N1
+                row = (2*(par.hydro + par.magnetic) + par.thermal)*nb*ut.N1 + ( rank*bpp + k )* ut.N1
                 col = row
 
                 mtx = op.composition(l,'i','', 0)
@@ -641,7 +642,7 @@ def main():
                 basecol = ( 2 + 2*par.magnetic )*nb*ut.N1
 
                 # Physics ------------------------------------
-                mtx = -op.buoyancy(l,'u','',0)
+                mtx = op.buoyancy(l,'u','',0)
                 # --------------------------------------------
                 col = basecol + col0
                 loc_list = ut.packit( loc_list, mtx, row, col)
@@ -655,7 +656,7 @@ def main():
                 basecol = ( 2 + 2*par.magnetic + par.thermal )*nb*ut.N1
 
                 # Physics ------------------------------------
-                mtx = -op.comp_buoyancy(l,'u','',0)
+                mtx = op.comp_buoyancy(l,'u','',0)
                 # --------------------------------------------
                 col = basecol + col0
                 loc_list = ut.packit( loc_list, mtx, row, col)
@@ -969,7 +970,7 @@ def main():
         for k,l in enumerate(loc_top): # here use the l's from loc_top
 
             col0 = (rank*bpp + k )* ut.N1
-            row = (2+2*par.magnetic)*nb*ut.N1 + col0
+            row = (2*par.hydro+2*par.magnetic)*nb*ut.N1 + col0
 
             # Poloidal velocity terms: -u_r * (d/dr)T ------------------------------------------------------------------
             # ----------------------------------------------------------------------- A, heat equation (section h), upol
@@ -986,7 +987,7 @@ def main():
             # temperature (theta) terms: (Ek/Pr)*nabla**2(theta) -------------------------------------------------------
             # ----------------------------------------------------------------------- A, heat equation (section h), temp
             # ----------------------------------------------------------------------------------------------------------
-            basecol = (2+2*par.magnetic)*nb*ut.N1
+            basecol = (2*par.hydro+2*par.magnetic)*nb*ut.N1
 
             # Physics ----------------------------
             mtx = op.thermal_diffusion(l,'h','',0)
@@ -1016,7 +1017,7 @@ def main():
         for k,l in enumerate(loc_top): # here use the l's from loc_top
 
             col0 = (rank*bpp + k )* ut.N1
-            row = ( 2 + 2*par.magnetic + par.thermal )*nb*ut.N1 + col0
+            row = ( 2*par.hydro + 2*par.magnetic + par.thermal )*nb*ut.N1 + col0
 
             # Poloidal velocity terms: -u_r * (d/dr)xi -----------------------------------------------------------------
             # ---------------------------------------------------------------- A, composition equation (section i), upol
@@ -1033,7 +1034,7 @@ def main():
             # Compositional (xi) terms: (Ek/Sc)*nabla**2(xi) -----------------------------------------------------------
             # ---------------------------------------------------------------- A, composition equation (section i), comp
             # ----------------------------------------------------------------------------------------------------------
-            basecol = ( 2 + 2*par.magnetic + par.thermal )*nb*ut.N1
+            basecol = ( 2*par.hydro + 2*par.magnetic + par.thermal )*nb*ut.N1
 
             # Physics ----------------------------------
             mtx = op.compositional_diffusion(l,'i','',0)

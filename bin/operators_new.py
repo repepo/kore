@@ -666,7 +666,7 @@ def thermal_advection(l, section, component, offdiag):  # -u_r * dT/dr
         elif par.heating == 'differential':
             conv = r0_D0_h * par.ricb/gap  # dT/dr = -beta * r**2. Heat equation is times r**3
         elif par.heating == 'two zone' or par.heating == 'user defined':
-            conv = r1_tem1_D0_h  # dT/dr specified in ut.twozone or ut.BVprof. Heat equation is times r**2
+            conv = r0_drS0_D0_h  # dT/dr or dS/dr specified in ut.twozone or ut.BVprof. Heat equation is times r**2
 
         out = L * conv
 

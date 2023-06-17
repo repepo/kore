@@ -383,7 +383,8 @@ def main(ncpus):
 
 
         [ lablx, rx, hx, dx, secx, profid1, dp1, profid2, dp2 ] = ut.decode_label(labl1)
-        gbx   = gebasis[section.index(secx)]  # order of the Gegenbauer basis according to the section
+
+        gbx   = gebasis[section.index(secx)]  # order of the Gegenbauer basis according to the section, must be after decode_label!
 
         # Multiply by appropriate derivative matrix on the right and change to C^(4), C^(3) or C^(2) basis depending on section
         idx = [ j for j,x in enumerate(plabl) if ((x == lablx) and (parg2[j] == arg2[k])) ]  # find matrix index in plabl
