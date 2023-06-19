@@ -48,7 +48,7 @@ jobs:
         run: |
           ulimit -s unlimited
           cd ${{github.workspace}}/bin
-          ./submatrices.py 2
+          ./submatrices_new.py 2
           mpiexec -n 2 ./assemble.py
           opts='-st_type sinvert -eps_error_relative ::ascii_info_detail'
           mpiexec -n 2 ./solve_nopp.py $opts
