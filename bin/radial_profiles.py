@@ -53,7 +53,7 @@ def BVprof(r,args=None):
 #------------------------------------------
 
 def entropy_gradient(r):
-    out = np.ones_like(r):
+    out = np.ones_like(r)
     return out
 
 
