@@ -32,8 +32,9 @@ jobs:
       # Runs a set of commands using the runners shell
       - name: Install pre-requisites
         run: |
+          sudo apt-get update
           sudo apt-get -y install libpetsc-complex3.15-dev
-          sudo apt-get -y install libslepc-complex-dev
+          sudo apt-get -y install libslepc-complex3.15-dev
           sudo apt-get -y install libpython3.10-dev
           wget https://bootstrap.pypa.io/get-pip.py
           python3 get-pip.py
