@@ -47,8 +47,5 @@ jobs:
       - name: Run test
         run: |
           ulimit -s unlimited
-          cd ${{github.workspace}}/bin
-          ./submatrices_new.py 2
-          mpiexec -n 2 ./assemble.py
-          opts='-st_type sinvert -eps_error_relative ::ascii_info_detail'
-          mpiexec -n 2 ./solve_nopp.py $opts
+          cd ${{github.workspace}}/examples
+          python3 kore_test.py
