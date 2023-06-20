@@ -1,6 +1,5 @@
 .DS_Store
 *.mtx
 *.npz
-*.dat
 *.field
 *__pycache__*
