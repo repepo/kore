@@ -666,7 +666,9 @@ def thermal_advection(l, section, component, offdiag):  # -u_r * dT/dr
         elif par.heating == 'differential':
             conv = r0_D0_h * par.ricb/gap  # dT/dr = -beta * r**2. Heat equation is times r**3
         elif par.heating == 'two zone' or par.heating == 'user defined':
-            conv = r0_drS0_D0_h  # dT/dr or dS/dr specified in ut.twozone or ut.BVprof. Heat equation is times r**2
+            conv = r0_drS0_D0_h  # dT/dr or dS/dr specified in rap.twozone or rap.BVprof. Heat equation is times r**2
+        elif par.anelastic:
+            conv = r0_drS0_D0_h  # (r*S0')*D0s
 
         out = L * conv
 
@@ -680,10 +682,16 @@ def thermal_diffusion(l, section, component, offdiag):
 
     if section == 'h' and offdiag == 0 :
 
-        if par.heating == 'differential':
-            difus = - L*r1_D0_h + 2*r2_D1_h + r3_D2_h  # eq. times r**3
+        if not par.anelastic:
+
+            if par.heating == 'differential':
+                difus = - L*r1_D0_h + 2*r2_D1_h + r3_D2_h  # eq. times r**3
+            else:
+                difus = - L*r0_D0_h + 2*r1_D1_h + r2_D2_h  # eq. times r**2
+
         else:
-            difus = - L*r0_D0_h + 2*r1_D1_h + r2_D2_h  # eq. times r**2
+
+            difus = - L*r0_kho0_D0_h + 2*r1_kho0_D1_h + r2_kho0_D2_h + r2_kho0_lnT1_D1_h + r2_kho1_D1_h
 
     return difus * par.OmgTau * par.Ek / par.Prandtl
 

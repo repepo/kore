@@ -174,54 +174,10 @@ def remroco(matrix, overall_parity, vector_parity):
 
 
 
-def twozone(r,args):
-    '''
-    Symmetrized dT/dr (dimensionless), extended to negative r
-    rc is the transition radius, h the transition width, sym is 1 or -1
-    depending on the radial parity desired
-    ** Neutrally buoyant inner zone, stratified outer zone ** (Vidal2015)
-    '''
-    rc  = args[0]
-    h   = args[1]
-    sym = args[2]
-
-    out = np.zeros_like(r)
-    for i,x in enumerate(r):
-        if x >= 0 :
-            out[i] = (1 + np.tanh( 2*(x-rc)/h  ))/2
-        elif x < 0 :
-            out[i] = sym*(1 + np.tanh( 2*(abs(x)-rc)/h  ))/2
-    return out
-
-
-
-def BVprof(r,args=None):
-    '''
-    Symmetrized dT/dr (dimensionless), extended to negative r.
-    Define this function so that it is an odd function of r
-    '''
-    out = np.zeros_like(r)
-    for i,x in enumerate(r):
-        out[i] = x         # dT/dr propto r like in Dintrans1999
-        #out[i] = x*abs(x)  # dT/dr propto r^2
-        #out[i] = x**3      # dT/dr propto r^3
-        #rc = args[0]
-        #h  = args[1]
-        #if abs(x) < rc/2 :
-        #    out[i] = np.tanh( 4*x/h )
-        #elif x >= rc/2 :
-        #    out[i] = 0.5*(1 - np.tanh( 4*(x-rc)/h  ))
-        #elif x <= -rc/2 :
-        #    out[i] = -0.5*(1 - np.tanh( 4*(abs(x)-rc)/h  ))
-    return out
-
-
-
 def chebco_f(func,N,ricb,rcmb,tol,args=None):
     '''
     Returns the first N Chebyshev coefficients
-    from 0 to N-1, of the function
-    r**rpower * func(r)
+    from 0 to N-1, of func(r)
     '''
     i = np.arange(0, N)
     xi = np.cos(np.pi * (i + 0.5) / N)
@@ -291,58 +247,6 @@ def chebco(powr, N, tol, ricb, rcmb):
 
 
 
-def chebco_twozone(args, N, ricb, rcmb, tol):
-    '''
-    Returns the first N Chebyshev coefficients
-    from 0 to N-1, of the function
-    r * twozone(r,rc,h,sym)
-    where rc is the radius of the neutral core
-    and h is the transition thickness
-    sym is the desired parity, in case of no inner core
-    '''
-    i = np.arange(0, N)
-    xi = np.cos(np.pi * (i + 0.5) / N)
-
-    if ricb > 0:
-        ri = (ricb + (rcmb - ricb) * (xi + 1) / 2.)
-    elif ricb == 0 :
-        ri = rcmb * xi
-    #args = [rc, h, sym]
-    fi = ri * twozone(ri,args)  # the ri here comes from r^2 u_r = r^2*[ l(l+1) P/r ]
-
-    tmp = sft.dct(fi)
-
-    out = tmp / N
-    out[0] = out[0] / 2.
-    out[np.absolute(out) <= tol] = 0.
-    return out
-
-
-
-def chebco_BVprof(args, N, ricb, rcmb, tol):
-    '''
-    Returns the first N Chebyshev coefficients
-    from 0 to N-1, of the function
-    r * BVprof(r,args)
-    '''
-    i = np.arange(0, N)
-    xi = np.cos(np.pi * (i + 0.5) / N)
-
-    if ricb > 0:
-        ri = (ricb + (rcmb - ricb) * (xi + 1) / 2.)
-    elif ricb == 0 :
-        ri = rcmb * xi
-    fi = ri * BVprof(ri,args)  # this function should be even, i.e., BVprof should be odd.
-
-    tmp = sft.dct(fi)
-
-    out = tmp / N
-    out[0] = out[0] / 2.
-    out[np.absolute(out) <= tol] = 0.
-    return out
-
-
-
 def Dcheb(ck, ricb, rcmb):
     '''
     The derivative of a Chebyshev expansion with coefficients ck
@@ -365,6 +269,58 @@ def Dcheb(ck, ricb, rcmb):
         out1 = 2*out/(rcmb-ricb)
 
     return out1
+
+
+
+def Dn_cheb(ck, ricb, rcmb, Dorder):
+    '''
+    Returns the Chebyshev coefficients of the derivatives (up to order n)
+    of a Chebyshev expansion with coefficients ck. Assumes ck is computed
+    for r in the domain [ricb,rcmb] (if ricb>0) or r in [-rcmb,rcmb] if ricb=0.
+    First column correspond to the first derivative, last column to the
+    n-th derivative.
+    '''
+    c = np.copy(ck)
+    s = np.size(c)
+    out = np.zeros((s,Dorder), ck.dtype)
+    out[:,0] = Dcheb(c, ricb, rcmb)
+    for j in range(1,Dorder):
+        out[:,j] = Dcheb( out[:, j-1], ricb, rcmb)
+
+    return out
+
+
+
+def chebify(func, Dorder, tol):
+    '''
+    Returns the Chebyshev coeffs of function func,
+    and its derivatives (as columns) up to order Dorder.
+    '''
+    c0 = chebco_rf( func, 0, par.N, par.ricb, rcmb, tol)
+    out = np.c_[ c0, Dn_cheb(c0, par.ricb, rcmb, Dorder) ]
+    
+    return out
+
+
+
+def cheb3Product(ck1, ck2, ck3, tol):
+    '''
+    Computes the product of three Chebyshev series
+    '''
+    out = Mlam(ck1,0,0) * ( Mlam(ck2,0,0) * ck3 )
+    out[ np.absolute(out) <= tol ] = 0.0
+    return out
+
+
+
+def cheb2Product(ck1, ck2, tol):
+    '''
+    Computes the product of two Chebyshev series
+    '''
+    out = Mlam(ck1,0,0) * ck2
+    out[ np.absolute(out) <= tol ] = 0.0
+    return out
+
 
 
 
@@ -411,72 +367,6 @@ def get_radial_derivatives( func, rorder, Dorder, tol):
             rd_prof[i][j] = chebProduct(dnprof[j],rn,par.N,par.tol_tc)
 
     return rd_prof
-
-
-
-#------------------------------------------
-# Anelastic profiles
-#------------------------------------------
-def density(r):
-
-    return np.ones_like(r)
-
-def log_density(r):
-
-    return np.log(density(r))
-
-def temperature(r):
-
-    return np.ones_like(r)
-
-def log_temperature(r):
-
-    return np.log(temperature(r))
-
-def alpha(r):
-
-    return np.ones_like(r)
-
-def buoFac(r):
-    '''
-    Profile of buoyancy = rho*alpha*T*g
-    gravity is multiplied later in Cheb space
-    '''
-
-    return density(r)*alpha(r)*temperature(r)#*gravity(r)
-
-def gravCoeff():
-
-    '''
-    Integrates density profile in Cheb space and gives Cheb
-    coefficients of gravity profile, normalized to the value
-    at the outer boundary. No rescaling needed. We checked.
-    '''
-
-    ck = chebco_f(density,par.N,0,rcmb,par.tol_tc)
-    dk = chebco(2,par.N,1e-9,0,rcmb)
-
-    ckdk = chebProduct(ck,dk,par.N,par.tol_tc)
-    gk = ch.chebint(ckdk)
-    g0 = ch.chebval(1,gk)
-
-    return gk/g0
-
-#------------------------------------------
-# Magnetic : Variable conductivity
-#------------------------------------------
-
-def conductivity(r):
-    '''
-    This function needs to be an even function of r when ricb=0
-    '''
-    return np.ones_like(r)
-
-def mag_diffus(r):
-
-    return 1./conductivity(r)
-
-#------------------------------------------
 
 
 
@@ -1111,29 +1001,13 @@ def Mlam(a0,lamb,vector_parity):
 
 
 
-def chebProduct(ck,dk,N,tol):
+def chebProduct(ck,dk,tol):
     '''
     Computes the Chebyshev expansion of a product of
     two Chebyshev series defined by ck and dk
     '''
-
-    out = np.zeros([len(ck)+len(dk)])
-
-    # In house code
-    # for i in range(len(ck)):
-    #     for j in range(len(dk)):
-    #         if (ck[i] != 0) and (dk[j] != 0):
-    #             out[int(abs(i+j))] += ck[i]*dk[j]/2
-    #             out[int(abs(i-j))]   += ck[i]*dk[j]/2
-
-    # Using chebmul instead
-
-    # out2 = ch.chebmul(ck,dk)
-    # out[:len(out2)] = out2
-
-    # Using Mlam
+    out = np.zeros_like(ck)
     out = Mlam(ck,0,0)*dk
-
     out[np.absolute(out) <= tol] = 0.
 
     return out

@@ -20,6 +20,7 @@ import warnings
 import sys
 import parameters as par
 import utils as ut
+import radial_profiles as rap
 
 
 
@@ -57,20 +58,27 @@ def main(ncpus):
     r5  = ut.chebco(5, par.N, tol, par.ricb, ut.rcmb)
     r6  = ut.chebco(6, par.N, tol, par.ricb, ut.rcmb)
 
-
     rp = [r0, r1, r2, r3, r4, r5, r6]
 
     # these are the cheb coeffs of r*twozone or r*BVprof.
     if twozone:
-        rd_ent = [ [ ut.chebco_rf(ut.twozone, rpower=1, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=par.args) ] ]
+        cd_ent = [ [ ut.chebco_rf(rap.twozone, rpower=1, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=par.args) ] ]
     elif userdef:
-        rd_ent = [ [ ut.chebco_rf( ut.BVprof, rpower=1, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=par.args) ] ]
+        cd_ent = [ [ ut.chebco_rf( rap.BVprof, rpower=1, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=par.args) ] ]
 
-
-    if par.anelastic:
-        rd_rho = ut.get_radial_derivatives(ut.log_density,4,4,tol) # Density : Requires derivatives and radial powers up to fourth order
+    elif par.anelastic:
+        #rd_rho = ut.get_radial_derivatives(rap.log_density,4,4,tol) # Density : Requires derivatives and radial powers up to fourth order
         # rd_tem = ut.get_radial_derivatives(ut.temperature,2,2,tol) # Temperature : Requires derivatives and radial powers up to second order
         # rd_buo = ut.get_radial_derivatives(ut.buoFac,)
+        #rd_kho = ut.get_radial_derivatives(rap.kappa_rho,2,1,tol) # thermaldiffusivity * density
+        #rd_lnT = ut.get_radial_derivatives(rap.log_temperature,2,1,tol) # Log(Temperature)
+
+        cd_rho = ut.chebify( rap.density, 2, tol)
+        cd_kho = ut.chebify( rap.kappa_rho, 1, tol)
+        cd_lho = ut.chebify( rap.log_density, 4, tol)
+        cd_lnT = ut.chebify( rap.log_temperature, 1, tol)
+        cd_ent = [ [ ut.chebco_rf( rap.entropy_gradient, rpower=1, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=None) ] ]
+       
 
 
     if par.magnetic == 1 :
@@ -88,8 +96,8 @@ def main(ncpus):
         # in the last row (row 6) the power of r is -1
         # columns are derivative order, first column (col 0) is for the function h itself
 
-        rd_eta = ut.get_radial_derivatives(ut.mag_diffus,2,1,tol)  # Magnetic diffusivity profile
-
+        #rd_eta = ut.get_radial_derivatives(rap.magnetic_diffusivity,2,1,tol)  # Magnetic diffusivity profile
+        cd_eta = ut.chebify( rap.magnetic_diffusivity, 1, tol)
 
     # Gegenbauer basis transformations
     S0 = ut.Slam(0, par.N) # From the Chebyshev basis ( C^(0) basis ) to C^(1) basis
@@ -294,6 +302,14 @@ def main(ncpus):
                 if not cdipole:
                     arg2 += [   vP  ]
 
+        elif par.anelastic:  
+            
+            # 
+            labl_h = ['r0_drS0_D0']
+
+            # difus = - L*r0_kho0_D0_h + 2*r1_kho0_D1_h + r2_kho0_D2_h + r2_kho0_lnT1_D1_h + r2_kho1_D1_h
+            labl_h += [ 'r0_kho0_D0', 'r1_kho0_D1', 'r2_kho0_D2', 'r2_kho0_lnT1_D1', 'r2_kho1_D1' ]
+
         labl += ut.labelit( labl_h, section='h', rplus=0)
 
 
@@ -342,25 +358,29 @@ def main(ncpus):
 
             if len(lablx) == 5 :  # rX_DX
 
-                parg0 += [ S[dx]*rp[rx] ]   # power of r in the C^(dx) basis
-                parg1 += [ dx ]             # dx is derivative order
-                parg2 += [ arg2[k] ]        # vector_parity
-
+                c0arg = rp[rx]  # power of r in the C^(0) basis
+                
             elif len(lablx) == 8 :  # rX_hX_DX
 
-                parg0 += [ S[dx] * rdh[rx][hx] ]  # note that rpw[rx=6] = -1
-                parg1 += [ dx ]
-                parg2 += [ arg2[k] ]
+                c0arg = rdh[rx][hx]  # note that rpw[rx=6] = -1
 
             elif len(lablx) == 10 :  # rX_proX_DX
 
-                if   profid1 == 'eta':  rprof = rd_eta
-                elif profid1 == 'rho':  rprof = rd_rho
-                elif profid1 == 'drS':  rprof = rd_ent
-                profx = dp1
-                parg0 += [ S[dx] * rprof[rx][profx] ]
-                parg1 += [ dx ]
-                parg2 += [ arg2[k] ]
+                if   profid1 == 'eta':  ck1 = cd_eta
+                elif profid1 == 'rho':  ck1 = cd_rho
+                elif profid1 == 'drS':  ck1 = cd_ent
+                c0arg = ut.cheb2Product( rp[rx], ck1[dp1], tol)
+               
+            elif len(lablx) == 15 :  # rX_proX_proX_DX
+
+                if profid1 == 'kho' and profid2 == 'lnT':
+                    ck1 = cd_kho
+                    ck2 = cd_lnT
+                c0arg = ut.cheb3Product( rp[rx], ck1[dp1], ck2[dp2], tol)
+                   
+            parg0 += [ S[dx]*c0arg ]    # Gegenbauer basis change from C^(0) to C^(dx)
+            parg1 += [ dx ]             # dx is derivative order
+            parg2 += [ arg2[k] ]        # vector_parity
 
 
     # -------------------------------------------------------------------------------------------------------------------------------------------
