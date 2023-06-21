@@ -372,10 +372,13 @@ def buoyancy(l, section, component, offdiag):  # -------------------------------
 
     if (section == 'u') and (offdiag == 0) :
 
-        if (par.magnetic == 1) and (par.B0 == 'dipole') :
-            buoy = r6_D0_u
+        if par.anelastic:
+            buoy = r3_buo0_D0_u
         else:
-            buoy = r4_D0_u
+            if (par.magnetic == 1) and (par.B0 == 'dipole') :
+                buoy = r6_D0_u
+            else:
+                buoy = r4_D0_u
 
     out = L * buoy
 
@@ -643,10 +646,13 @@ def theta(l, section, component, offdiag):
     out = 0
     if (section == 'h') and (offdiag == 0) :
 
-        if par.heating == 'differential' :
-            out = r3_D0_h
+        if par.anelastic:
+            out = r2_rho0_D0_h
         else:
-            out = r2_D0_h
+            if par.heating == 'differential' :
+                out = r3_D0_h
+            else:
+                out = r2_D0_h
 
     return out
 
@@ -661,14 +667,15 @@ def thermal_advection(l, section, component, offdiag):  # -u_r * dT/dr
 
     if ((section == 'h') and (component == 'upol')) and (offdiag == 0) :
 
-        if par.heating == 'internal':
-            conv = r2_D0_h  # dT/dr = -beta*r. Heat equation is times r**2
-        elif par.heating == 'differential':
-            conv = r0_D0_h * par.ricb/gap  # dT/dr = -beta * r**2. Heat equation is times r**3
-        elif par.heating == 'two zone' or par.heating == 'user defined':
-            conv = r0_drS0_D0_h  # dT/dr or dS/dr specified in rap.twozone or rap.BVprof. Heat equation is times r**2
-        elif par.anelastic:
+        if par.anelastic:
             conv = r0_drS0_D0_h  # (r*S0')*D0s
+        else:
+            if par.heating == 'internal':
+                conv = r2_D0_h  # dT/dr = -beta*r. Heat equation is times r**2
+            elif par.heating == 'differential':
+                conv = r0_D0_h * par.ricb/gap  # dT/dr = -beta * r**2. Heat equation is times r**3
+            elif par.heating == 'two zone' or par.heating == 'user defined':
+                conv = r0_drS0_D0_h  # dT/dr or dS/dr specified in rap.twozone or rap.BVprof. Heat equation is times r**2
 
         out = L * conv
 

@@ -62,9 +62,9 @@ def main(ncpus):
 
     # these are the cheb coeffs of r*twozone or r*BVprof.
     if twozone:
-        cd_ent = [ [ ut.chebco_rf(rap.twozone, rpower=1, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=par.args) ] ]
+        cd_ent = ut.chebco_rf(rap.twozone, rpower=1, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=par.args).reshape([par.N,1])
     elif userdef:
-        cd_ent = [ [ ut.chebco_rf( rap.BVprof, rpower=1, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=par.args) ] ]
+        cd_ent = ut.chebco_rf( rap.BVprof, rpower=1, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=par.args).reshape([par.N,1])
 
     elif par.anelastic:
         #rd_rho = ut.get_radial_derivatives(rap.log_density,4,4,tol) # Density : Requires derivatives and radial powers up to fourth order
@@ -77,9 +77,11 @@ def main(ncpus):
         cd_kho = ut.chebify( rap.kappa_rho, 1, tol)
         cd_lho = ut.chebify( rap.log_density, 4, tol)
         cd_lnT = ut.chebify( rap.log_temperature, 1, tol)
-        cd_ent = [ [ ut.chebco_rf( rap.entropy_gradient, rpower=1, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=None) ] ]
 
+        cd_ent = ut.chebco_rf( rap.entropy_gradient, rpower=1, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=None).reshape([par.N,1])
 
+        cd_buo = ut.chebco_rf(rap.buoFac,0,par.N,par.ricb,ut.rcmb,tol)
+        cd_buo = ut.cheb2Product(cd_buo,rap.gravCoeff(),tol).reshape([par.N,1])
 
     if par.magnetic == 1 :
 
@@ -197,8 +199,12 @@ def main(ncpus):
 
         if (par.thermal == 1) or (par.compositional==1) :
             # add Buoyancy force
-            arg2   += [     vP  ]
-            labl_u += [ 'r4_D0' ]
+
+            if par.anelastic:
+                labl_u += ['r3_buo0_D0']
+            else:
+                arg2   += [     vP  ]
+                labl_u += [ 'r4_D0' ]
 
         labl += ut.labelit( labl_u, section='u', rplus=2*cdipole)
 
@@ -283,32 +289,34 @@ def main(ncpus):
         # -------------------------------------------------------------------------------------------------------------------------------------------
         # Matrices needed for the heat equation ------------------------------------------------------------------------------------ Heat - section h
         # -------------------------------------------------------------------------------------------------------------------------------------------
+        if par.anelastic:
 
-        if par.heating == 'differential' :
-
-            labl_h = [ 'r0_D0', 'r1_D0', 'r2_D1',  'r3_D2', 'r3_D0' ]  # here the operators have mixed symmetries!?, this is potentially a problem when ricb == 0
-            arg2  += [     vP ,     vP ,     vP ,      vP ,     vP  ]
-
-        elif (par.heating == 'internal' or (twozone or userdef) ) :
-
-            labl_h = [ 'r2_D0', 'r0_D0', 'r1_D1', 'r2_D2' ]
-            if not cdipole:
-                arg2 += [  vP ,     vP ,     vP ,     vP  ]
-
-            if (twozone or userdef) :
-
-                # this is for ut.twozone or ut.BVprof, we have r0 in the label because there is an r already included in the functions
-                labl_h += [ 'r0_drS0_D0' ]
-                if not cdipole:
-                    arg2 += [   vP  ]
-
-        elif par.anelastic:
-
-            #
+            #Advection
             labl_h = ['r0_drS0_D0']
 
             # difus = - L*r0_kho0_D0_h + 2*r1_kho0_D1_h + r2_kho0_D2_h + r2_kho0_lnT1_D1_h + r2_kho1_D1_h
             labl_h += [ 'r0_kho0_D0', 'r1_kho0_D1', 'r2_kho0_D2', 'r2_kho0_lnT1_D1', 'r2_kho1_D1' ]
+            labl_h += ['r2_rho0_D0'] #ds/dt
+        else:
+            if par.heating == 'differential' :
+
+                labl_h = [ 'r0_D0', 'r1_D0', 'r2_D1',  'r3_D2', 'r3_D0' ]  # here the operators have mixed symmetries!?, this is potentially a problem when ricb == 0
+                arg2  += [     vP ,     vP ,     vP ,      vP ,     vP  ]
+
+            elif (par.heating == 'internal' or (twozone or userdef) ) :
+
+                labl_h = [ 'r2_D0', 'r0_D0', 'r1_D1', 'r2_D2' ]
+                if not cdipole:
+                    arg2 += [  vP ,     vP ,     vP ,     vP  ]
+
+                if (twozone or userdef) :
+
+                    # this is for ut.twozone or ut.BVprof, we have r0 in the label because there is an r already included in the functions
+                    labl_h += [ 'r0_drS0_D0' ]
+                    if not cdipole:
+                        arg2 += [   vP  ]
+
+
 
         labl += ut.labelit( labl_h, section='h', rplus=0)
 
@@ -370,6 +378,7 @@ def main(ncpus):
                 elif profid1 == 'rho':  ck1 = cd_rho
                 elif profid1 == 'drS':  ck1 = cd_ent
                 elif profid1 == 'lho':  ck1 = cd_lho
+                elif profid1 == 'buo':  ck1 = cd_buo
                 c0arg = ut.cheb2Product( rp[rx], ck1[:,dp1], tol)
 
             elif len(lablx) == 15 :  # rX_proX_proX_DX

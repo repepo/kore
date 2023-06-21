@@ -53,7 +53,7 @@ def BVprof(r,args=None):
 #------------------------------------------
 
 def entropy_gradient(r):
-    out = np.ones_like(r)
+    out = np.zeros_like(r)
     return out
 
 
@@ -119,16 +119,17 @@ def gravCoeff():
     '''
     Integrates density profile in Cheb space and gives Cheb
     coefficients of gravity profile, normalized to the value
-    at the outer boundary. No rescaling needed. We checked.
+    at the outer boundary. This works. We checked.
     '''
-    ck = ut.chebco_f(density,par.N,0,ut.rcmb,par.tol_tc)
-    dk = ut.chebco(2,par.N,1e-9,0,ut.rcmb)
+    ck = ut.chebco_f(density,par.N,par.ricb,ut.rcmb,par.tol_tc)
 
-    ckdk = ut.chebProduct(ck,dk,par.N,par.tol_tc)
-    gk = ch.chebint(ckdk)
+    x0 = -(par.ricb + ut.rcmb)/(ut.rcmb - par.ricb)
+    gk = (ut.rcmb - par.ricb)/2. * ch.chebint(ck,lbnd=x0)
+
     g0 = ch.chebval(1,gk)
     out = gk/g0
-    return out
+
+    return out[:par.N]
 
 
 
