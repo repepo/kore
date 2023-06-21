@@ -149,10 +149,10 @@ def viscous_diffusion(l, section, component, offdiag):  # ----------------------
         if section == 'u' and component == 'upol':
 
             if par.anelastic:
-                out = L * ( (-L*(l+2)*(l-1)*r0_D0_u - (L+2)*r1_rho1_D0_u - 2*(L-1)*r2_rho2_D0_u + r3_rho3_D0_u)
-                           -(L-2)*r2_rho1_D1_u + 6*r3_rho2_D1_u + r4_rho3_D1_u
-                           + 2*L*r2_D2_u + 5*r3_rho1_D2_u + 2*r4_rho2_D2_u
-                           - 4*r3_D3_u + r4_rho1_D3_u
+                out = L * ( (-L*(l+2)*(l-1)*r0_D0_u - (L+2)*r1_lho1_D0_u - 2*(L-1)*r2_lho2_D0_u + r3_lho3_D0_u)
+                           -(L-2)*r2_lho1_D1_u + 6*r3_lho2_D1_u + r4_lho3_D1_u
+                           + 2*L*r2_D2_u + 5*r3_lho1_D2_u + 2*r4_lho2_D2_u
+                           - 4*r3_D3_u + r4_lho1_D3_u
                            - r4_D4_u )
             else:
 
@@ -164,8 +164,8 @@ def viscous_diffusion(l, section, component, offdiag):  # ----------------------
         elif section == 'v' and component == 'utor':
 
             if par.anelastic:
-                out = L * ( -L*r0_D0_v - 3*r1_rho1_D0_v - r2_rho2_D0_v
-                            + 2*r1_D1_v-r2_rho1_D1_v
+                out = L * ( -L*r0_D0_v - 3*r1_lho1_D0_v - r2_lho2_D0_v
+                            + 2*r1_D1_v-r2_lho1_D1_v
                             +r2_D2_v)
             else:
                 if (par.magnetic == 1 and par.B0 == 'dipole'):

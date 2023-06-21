@@ -78,7 +78,7 @@ def main(ncpus):
         cd_lho = ut.chebify( rap.log_density, 4, tol)
         cd_lnT = ut.chebify( rap.log_temperature, 1, tol)
         cd_ent = [ [ ut.chebco_rf( rap.entropy_gradient, rpower=1, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=None) ] ]
-       
+
 
 
     if par.magnetic == 1 :
@@ -181,8 +181,8 @@ def main(ncpus):
         if par.anelastic:
             arg2   += [       vP   ,        vP    ,       vP    ,       vP    ,       vP    ,
                               vP   ,        vP    ,       vP    ,       vP     ]
-            labl_u += [ 'r1_rho1_D0', 'r2_rho2_D0', 'r3_rho3_D0', 'r2_rho1_D1', 'r3_rho2_D1',
-                        'r3_rho1_D2', 'r4_rho2_D2', 'r4_rho3_D1', 'r4_rho1_D3' ]
+            labl_u += [ 'r1_lho1_D0', 'r2_lho2_D0', 'r3_lho3_D0', 'r2_lho1_D1', 'r3_lho2_D1',
+                        'r3_lho1_D2', 'r4_lho2_D2', 'r4_lho3_D1', 'r4_lho1_D3' ]
 
         if par.magnetic == 1 :
             # add Lorentz force
@@ -222,7 +222,7 @@ def main(ncpus):
         # More viscous diffusion, anelastic terms
         if par.anelastic:
             arg2   += [       vT    ,       vT    ,       vT     ]
-            labl_v += [ 'r1_rho1_D0', 'r2_rho2_D0', 'r2_rho1_D1' ]
+            labl_v += [ 'r1_lho1_D0', 'r2_lho2_D0', 'r2_lho1_D1' ]
 
         if par.magnetic == 1 :
             # Lorentz force
@@ -302,9 +302,9 @@ def main(ncpus):
                 if not cdipole:
                     arg2 += [   vP  ]
 
-        elif par.anelastic:  
-            
-            # 
+        elif par.anelastic:
+
+            #
             labl_h = ['r0_drS0_D0']
 
             # difus = - L*r0_kho0_D0_h + 2*r1_kho0_D1_h + r2_kho0_D2_h + r2_kho0_lnT1_D1_h + r2_kho1_D1_h
@@ -359,7 +359,7 @@ def main(ncpus):
             if len(lablx) == 5 :  # rX_DX
 
                 c0arg = rp[rx]  # power of r in the C^(0) basis
-                
+
             elif len(lablx) == 8 :  # rX_hX_DX
 
                 c0arg = rdh[rx][hx]  # note that rpw[rx=6] = -1
@@ -369,15 +369,16 @@ def main(ncpus):
                 if   profid1 == 'eta':  ck1 = cd_eta
                 elif profid1 == 'rho':  ck1 = cd_rho
                 elif profid1 == 'drS':  ck1 = cd_ent
-                c0arg = ut.cheb2Product( rp[rx], ck1[dp1], tol)
-               
+                elif profid1 == 'lho':  ck1 = cd_lho
+                c0arg = ut.cheb2Product( rp[rx], ck1[:,dp1], tol)
+
             elif len(lablx) == 15 :  # rX_proX_proX_DX
 
                 if profid1 == 'kho' and profid2 == 'lnT':
                     ck1 = cd_kho
                     ck2 = cd_lnT
-                c0arg = ut.cheb3Product( rp[rx], ck1[dp1], ck2[dp2], tol)
-                   
+                c0arg = ut.cheb3Product( rp[rx], ck1[:,dp1], ck2[:,dp2], tol)
+
             parg0 += [ S[dx]*c0arg ]    # Gegenbauer basis change from C^(0) to C^(dx)
             parg1 += [ dx ]             # dx is derivative order
             parg2 += [ arg2[k] ]        # vector_parity

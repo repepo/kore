@@ -213,7 +213,7 @@ def chebco_rf(func,rpower,N,ricb,rcmb,tol,args=None):
     elif ricb == 0 :
         ri = rcmb * xi
 
-    if args in None:
+    if args is None:
         tmp = sft.dct(ri**rpower * func(ri))
     else:
         tmp = sft.dct(ri**rpower * func(ri,args))
@@ -298,7 +298,7 @@ def chebify(func, Dorder, tol):
     '''
     c0 = chebco_rf( func, 0, par.N, par.ricb, rcmb, tol)
     out = np.c_[ c0, Dn_cheb(c0, par.ricb, rcmb, Dorder) ]
-    
+
     return out
 
 
