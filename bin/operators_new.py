@@ -636,16 +636,35 @@ def magnetic_diffusion(l, section, component, offdiag):
         if section == 'f' and component == 'bpol':  #  r² 𝐫⋅∇²𝐛   (×r² if dipole)
             if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
                 #out = L*( -L*r0_D0_f + 2*r1_D1_f + r2_D2_f )
-                out = L*( -L*r0_eta0_D0_f + 2*r1_eta0_D1_f + r2_eta0_D2_f )
+                if not par.anelastic:
+                    out = L*( -L*r0_eta0_D0_f + 2*r1_eta0_D1_f + r2_eta0_D2_f )
+                else:
+                    out = L*( -L*r0_eho0_D0_f + 2*r1_eho0_D1_f + r2_eho0_D2_f )
+                
             elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
-                out = L*( -L*r2_D0_f + 2*r3_D1_f + r4_D2_f )
+                #out = L*( -L*r2_D0_f + 2*r3_D1_f + r4_D2_f )
+                if not par.anelastic:
+                    out = L*( -L*r2_eta0_D0_f + 2*r3_eta0_D1_f + r4_eta0_D2_f )
+                else:
+                    out = L*( -L*r2_eho0_D0_f + 2*r3_eho0_D1_f + r4_eho0_D2_f )
+
 
         elif section == 'g' and component == 'btor':  # r² 𝐫⋅∇×(∇²𝐛)  (×r³ if dipole)
+
             if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
                 #out = L*( -L*r0_D0_g + 2*r1_D1_g + r2_D2_g )
-                out = L*( -L*r0_eta0_D0_g + 2*r1_eta0_D1_g + r2_eta0_D2_g + r1_eta1_D0_g + r2_eta1_D1_g)
+                if not par.anelastic:
+                    out = L*( -L*r0_eta0_D0_g + 2*r1_eta0_D1_g + r2_eta0_D2_g + r1_eta1_D0_g + r2_eta1_D1_g)
+                else:
+                    out = L*( -L*r0_eho0_D0_g + 2*r1_eho0_D1_g + r2_eho0_D2_g + r1_eho1_D0_g + r2_eho1_D1_g - r1_eta0_rho1_D0_g - r2_eta0_rho1_D1_g )
+
             elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
-                out = L*( -L*r3_D0_g + 2*r4_D1_g + r5_D2_g )
+                #out = L*( -L*r3_D0_g + 2*r4_D1_g + r5_D2_g )
+                if not par.anelastic:
+                    out = L*( -L*r3_eta0_D0_g + 2*r4_eta0_D1_g + r5_eta0_D2_g + r4_eta1_D0_g + r5_eta1_D1_g)
+                else:
+                    out = L*( -L*r3_eho0_D0_g + 2*r4_eho0_D1_g + r5_eho0_D2_g + r4_eho1_D0_g + r5_eho1_D1_g - r4_eta0_rho1_D0_g - r5_eta0_rho1_D1_g )
+
 
     return par.OmgTau * par.Em * out
 

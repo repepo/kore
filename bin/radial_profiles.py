@@ -150,4 +150,11 @@ def magnetic_diffusivity(r):
     out = 1./conductivity(r)
     return out
 
+
+
+def eta_rho(r):
+    out = magnetic_diffusivity(r)*density(r)
+    return out
+
+
 #------------------------------------------
