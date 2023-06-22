@@ -247,9 +247,12 @@ def main(ncpus):
         #    labl += [ 'f21',  'f32', 'f31',  'f20',   'f33',  'f22', 'f11', 'f00' ]
 
         # b
-        labl_f  = [ 'r2_D0' ]
+        if not par.anelastic:
+            labl_f  = [ 'r2_D0' ]
+        else:
+            labl_f  = [ 'r2_rho0_D0' ]
         arg2   += [     vF  ]
-
+        
         # induction
         labl_f += [ 'r0_h0_D0', 'r1_h1_D0', 'r1_h0_D1', 'r1_h0_D0' ]
         arg2   += [     vP    ,     vP    ,     vP    ,     vT     ]
@@ -266,7 +269,10 @@ def main(ncpus):
         # -------------------------------------------------------------------------------------------------------------------------------------------
 
         # b
-        labl_g  = [ 'r2_D0' ]  #
+        if not par.anelastic:
+            labl_f  = [ 'r2_D0' ]
+        else:
+            labl_f  = [ 'r2_rho0_D0' ]
         arg2   += [    vG   ]
 
         # induction
@@ -274,6 +280,9 @@ def main(ncpus):
                     'r0_h0_D0', 'r1_h0_D1', 'r1_h1_D0' ]  # 'q1_h0_D0' is for (1/r)*h(r)
         arg2   += [     vP    ,     vP    ,     vP     ,    vP    ,     vP    ,     vP    ,
                         vT    ,     vT    ,     vT     ]
+        if par.anelastic:
+            labl_g += [ 'r0_h0_lho1_D0', 'r1_h0_lho1_D0' ]
+            arg2   += [        vP      ,        vT       ]
 
         # magnetic diffusion
         labl_g += [ 'r0_eta0_D0', 'r1_eta0_D1', 'r2_eta0_D2', 'r1_eta1_D0', 'r2_eta1_D1' ]

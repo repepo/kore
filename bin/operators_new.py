@@ -422,15 +422,27 @@ def b(l, section, component, offdiag):
 
         if section == 'f' and component == 'bpol':  #  r² 𝐫⋅𝐛   (×r² if dipole)
             if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
-                out = L* r2_D0_f
+                if not par.anelastic:
+                    out = L* r2_D0_f
+                else:
+                    out = L* r2_rho0_D0_f
             elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
-                out = L* r4_D0_f
+                if not par.anelastic:
+                    out = L* r4_D0_f
+                else:
+                    out = L* r4_rho0_D0_f
 
         elif section == 'g' and component == 'btor':  # r² 𝐫⋅∇×𝐛   (×r³ if dipole)
             if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
-                out = L* r2_D0_g
+                if not par.anelastic:
+                    out = L* r2_D0_g
+                else:
+                    out = L* r2_rho0_D0_g
             elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
-                out = L* r5_D0_g
+                if not par.anelastic:
+                    out = L* r5_D0_g
+                else:
+                    out = L* r5_rho0_D0_g
 
     return out
 
@@ -508,9 +520,9 @@ def induction(l, section, component, offdiag):
             elif offdiag == 0:  # l terms (dipole)
 
                 if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
-                    out = -2j*par.m* r1_h0_D0_f
+                    out = -2j*m* r1_h0_D0_f
                 elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
-                    out = -2j*par.m* r3_h0_D0_f
+                    out = -2j*m* r3_h0_D0_f
 
             elif offdiag == 1:  # l+1 terms (quadrupole)
 
@@ -535,9 +547,16 @@ def induction(l, section, component, offdiag):
             elif offdiag == 0:  # l terms (dipole)
 
                 if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
-                    out = 2j*par.m*( r0_h0_D1_g + r1_h1_D1_g -(l**2+l+1)*q1_h0_D0_g + r0_h1_D0_g + (L/2)*r1_h2_D0_g + r1_h0_D2_g )  # qh=h/r
+                    out = 2j*m*( r0_h0_D1_g + r1_h1_D1_g -(l**2+l+1)*q1_h0_D0_g + r0_h1_D0_g + (L/2)*r1_h2_D0_g + r1_h0_D2_g )  # qh=h/r
+                    if par.anelastic:
+                        out += 2j*m*( (L/2)*r1_h1_lho1_D0_g - (1/2)*(l**2+l+2)*r0_h0_lho1_D0_g )
+
                 elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
-                    out = 2j*par.m*( r3_h0_D1_g + r4_h1_D1_g -(l**2+l+1)*r2_h0_D0_g + r3_h1_D0_g + (L/2)*r4_h2_D0_g + r4_h0_D2_g )
+                    out = 2j*m*( r3_h0_D1_g + r4_h1_D1_g -(l**2+l+1)*r2_h0_D0_g + r3_h1_D0_g + (L/2)*r4_h2_D0_g + r4_h0_D2_g )
+                    if par.anelastic:
+                        out += 2j*m*( (L/2)*r4_h1_lho1_D0_g - (1/2)*(l**2+l+2)*r3_h0_lho1_D0_g )
+
+                
 
             elif offdiag == 1:  # l+1 terms (quadrupole)
 
@@ -558,14 +577,16 @@ def induction(l, section, component, offdiag):
 
             elif offdiag == -1:  # l-1 terms (dipole)
 
-                C  = (2*l+1)*np.sqrt( l*(l**2-1)*(l**2-par.m**2)/(4*l**2-1) )
-                C1 = np.sqrt( (l**2-1)/(4*l**3-l) )
-                C2 = np.sqrt( l*(l**2-1)/(4*l**2-1) )
-
+                C = (l**2-1)*np.sqrt( l**2-m**2)/(2*l-1)
                 if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
-                    out = C*( C2* r0_h0_D0_g -2*C1* r1_h0_D1_g + (C2-2*C1)* r1_h1_D0_g )
+                    out = C*( l* r0_h0_D0_g -2* r1_h0_D1_g + (l-2)* r1_h1_D0_g )
+                    if par.anelastic:
+                        out += 2*C* r1_h0_lho1_D0_g
+
                 elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
-                    out = C*( C2* r3_h0_D0_g -2*C1* r4_h0_D1_g + (C2-2*C1)* r4_h1_D0_g )
+                    out = C*( l* r3_h0_D0_g -2* r4_h0_D1_g + (l-2)* r4_h1_D0_g )
+                    if par.anelastic:
+                        out += 2*C* r4_h0_lho1_D0_g
 
                 if ut.symm1 == 1:
                     offd = -1
@@ -577,21 +598,16 @@ def induction(l, section, component, offdiag):
 
             elif offdiag == 1:  # l+1 terms
 
-                '''
-                C  = np.sqrt( (l+2)*(2*l+1)*L*((l+1)**2-par.m**2)/(2*l+3) )
-                C1 = np.sqrt( l*(l+2)/(3+11*l+12*l**2+4*l**3) )
-                C2 = np.sqrt( L*(l+2)/(3+4*l*(l+2)) )
+                C = l*(l+2)*np.sqrt((l+1)**2-m**2)/(3+2*l)
+                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
+                    out = C * ( -2* r1_h0_D1_g - (l+1)* r0_h0_D0_g - (l+3) * r1_h1_D0_g )
+                    if par.anelastic:
+                        out += 2*C* r1_h0_lho1_D0_g
 
-                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
-                    out = C*( -C2* r0_h0_D0_g -2*C1* r1_h0_D1_g -(2*C1+C2)* r1_h1_D0_g )
                 elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
-                    out = C*( -C2* r3_h0_D0_g -2*C1* r4_h0_D1_g -(2*C1+C2)* r4_h1_D0_g )
-                '''
-                C = l*(l+2)*np.sqrt(1+2*l+l**2-par.m**2)/(3+2*l)
-                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
-                    out = C * ( -r1_h0_D1_g - (l+1)* r0_h0_D0_g - (l+3) * r1_h1_D0_g )
-                elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
-                    out = C * ( -r4_h0_D1_g - (l+1)* r3_h0_D0_g - (l+3) * r4_h1_D0_g )
+                    out = C * ( -2* r4_h0_D1_g - (l+1)* r3_h0_D0_g - (l+3) * r4_h1_D0_g )
+                    if par.anelastic:
+                        out += 2*C* r4_h0_lho1_D0_g
 
                 if ut.symm1 == -1:
                     offd = 1
