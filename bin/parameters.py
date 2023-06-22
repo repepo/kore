@@ -48,6 +48,7 @@ bco = 1
 Ek = 10**-4
 
 anelastic = 0
+variable_viscosity = 0
 
 forcing = 0  # Uncomment this line for eigenvalue problems
 # forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
@@ -159,6 +160,13 @@ Ra = 0.0
 # in the documentation.
 # BV2 = -Ra * Ek**2 / Prandtl
 BV2 = 0.0
+
+ampStrat = 0
+rStrat   = 0.6
+thickStrat=0.1
+slopeStrat=75
+
+dent_args = [ampStrat,rStrat,thickStrat,slopeStrat]
 
 # Additional arguments for 'Two zone' or 'User defined' case (modify if needed).
 rc  = 0.7  # transition radius
