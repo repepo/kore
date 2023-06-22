@@ -77,8 +77,9 @@ def main(ncpus):
         cd_kho = ut.chebify( rap.kappa_rho, 1, tol)
         cd_lho = ut.chebify( rap.log_density, 4, tol)
         cd_lnT = ut.chebify( rap.log_temperature, 1, tol)
+        cd_vsc = ut.chebify(rap.viscosity,2,tol)
 
-        cd_ent = ut.chebco_rf( rap.entropy_gradient, rpower=1, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=None).reshape([par.N,1])
+        cd_ent = ut.chebco_rf( rap.entropy_gradient, rpower=1, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=par.dent_args).reshape([par.N,1])
 
         cd_buo = ut.chebco_rf(rap.buoFac,0,par.N,par.ricb,ut.rcmb,tol)
         cd_buo = ut.cheb2Product(cd_buo,rap.gravCoeff(),tol).reshape([par.N,1])
@@ -186,6 +187,16 @@ def main(ncpus):
             labl_u += [ 'r1_lho1_D0', 'r2_lho2_D0', 'r3_lho3_D0', 'r2_lho1_D1', 'r3_lho2_D1',
                         'r3_lho1_D2', 'r4_lho2_D2', 'r4_lho3_D1', 'r4_lho1_D3' ]
 
+            # And even more viscous diffusion,
+            if par.variable_viscosity:
+                labl_u += ['r0_vsc0_D0', 'r1_vsc0_lho1_D0', 'r1_vsc1_D0', 'r2_vsc0_D2',
+                        'r2_vsc0_lho1_D1', 'r2_vsc0_lho2_D0', 'r2_vsc1_lho1_D0',
+                        'r2_vsc2_D0', 'r3_vsc0_D3', 'r3_vsc0_lho1_D2', 'r3_vsc0_lho2_D1',
+                        'r3_vsc0_lho3_D0', 'r3_vsc1_D2', 'r3_vsc1_lho1_D1', 'r3_vsc1_lho2_D0',
+                        'r3_vsc2_lho1_D0', 'r4_vsc0_D4', 'r4_vsc0_lho1_D3', 'r4_vsc0_lho2_D2',
+                        'r4_vsc0_lho3_D1', 'r4_vsc1_D3', 'r4_vsc1_lho1_D2', 'r4_vsc1_lho2_D1',
+                        'r4_vsc2_D2', 'r4_vsc2_lho1_D1']
+
         if par.magnetic == 1 :
             # add Lorentz force
             arg2   += [     vF    ,     vF    ,     vF    ,     vF    ,     vF    ,     vF    ,     vF    ,
@@ -229,6 +240,10 @@ def main(ncpus):
         if par.anelastic:
             arg2   += [       vT    ,       vT    ,       vT     ]
             labl_v += [ 'r1_lho1_D0', 'r2_lho2_D0', 'r2_lho1_D1' ]
+
+            if par.variable_viscosity:
+                labl_v += ['r0_vsc0_D0', 'r1_vsc0_D1', 'r1_vsc0_lho1_D0', 'r2_vsc0_D2',
+                           'r2_vsc0_lho1_D1', 'r2_vsc1_D1', 'r2_vsc1_lho1_D0']
 
         if par.magnetic == 1 :
             # Lorentz force
@@ -388,6 +403,8 @@ def main(ncpus):
                 elif profid1 == 'drS':  ck1 = cd_ent
                 elif profid1 == 'lho':  ck1 = cd_lho
                 elif profid1 == 'buo':  ck1 = cd_buo
+                elif profid1 == 'vsc':  ck1 = cd_vsc
+
                 c0arg = ut.cheb2Product( rp[rx], ck1[:,dp1], tol)
 
             elif len(lablx) == 15 :  # rX_proX_proX_DX
@@ -395,6 +412,10 @@ def main(ncpus):
                 if profid1 == 'kho' and profid2 == 'lnT':
                     ck1 = cd_kho
                     ck2 = cd_lnT
+                if profid1 == 'vsc' and profid2 == 'lho':
+                    ck1 = cd_vsc
+                    ck2 = cd_lho
+
                 c0arg = ut.cheb3Product( rp[rx], ck1[:,dp1], ck2[:,dp2], tol)
 
             parg0 += [ S[dx]*c0arg ]    # Gegenbauer basis change from C^(0) to C^(dx)

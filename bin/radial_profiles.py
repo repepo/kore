@@ -52,8 +52,18 @@ def BVprof(r,args=None):
 # Anelastic profiles
 #------------------------------------------
 
-def entropy_gradient(r):
-    out = np.zeros_like(r)
+def entropy_gradient(r,args=None):
+    if args is not None:
+        ampStrat = args[0]
+        rStrat   = args[1]
+        thickStrat=args[2]
+        slopeStrat=args[3]
+
+        out = ( 0.25 * (ampStrat+1.) * (1.+np.tanh(slopeStrat*(r-rStrat))) *
+                                    (1.-np.tanh(slopeStrat*(r-rStrat-thickStrat)))
+                                        - 1. )
+    else:
+        out = np.zeros_like(r)
     return out
 
 
