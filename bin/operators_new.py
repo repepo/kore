@@ -149,11 +149,28 @@ def viscous_diffusion(l, section, component, offdiag):  # ----------------------
         if section == 'u' and component == 'upol':
 
             if par.anelastic:
-                out = L * ( (-L*(l+2)*(l-1)*r0_D0_u - (L+2)*r1_rho1_D0_u - 2*(L-1)*r2_rho2_D0_u + r3_rho3_D0_u)
-                           -(L-2)*r2_rho1_D1_u + 6*r3_rho2_D1_u + r4_rho3_D1_u
-                           + 2*L*r2_D2_u + 5*r3_rho1_D2_u + 2*r4_rho2_D2_u
-                           - 4*r3_D3_u + r4_rho1_D3_u
+                out = L * ( (-L*(l+2)*(l-1)*r0_D0_u - (L+2)*r1_lho1_D0_u - 2*(L-1)*r2_lho2_D0_u + r3_lho3_D0_u)
+                           -(L-2)*r2_lho1_D1_u + 6*r3_lho2_D1_u + r4_lho3_D1_u
+                           + 2*L*r2_D2_u + 5*r3_lho1_D2_u + 2*r4_lho2_D2_u
+                           - 4*r3_D3_u + r4_lho1_D3_u
                            - r4_D4_u )
+
+                if par.variable_viscosity:
+
+                    out = L * ( -L*(l+2)*(l-1)*r0_vsc0_D0_u - (L+2)*r1_vsc0_lho1_D0_u - 2 * (L+1) * r1_vsc1_D0_u
+                                -2*(L-1)*(r2_vsc0_lho2_D0_u + r2_vsc1_lho1_D0_u) - (l+2)*(l-1)*r2_vsc2_D0_u
+                                + r3_vsc0_lho3_D0_u + 2*r3_vsc1_lho2_D0_u + r3_vsc2_lho1_D0_u
+
+                                + (2-L)*r2_vsc0_lho1_D1_u + 6 * (r3_vsc0_lho2_D1_u + r3_vsc1_lho1_D1_u)
+                                + r4_vsc0_lho3_D1_u + 2*r4_vsc1_lho2_D1_u + r4_vsc2_lho1_D1_u
+
+                                + 2*L*r2_vsc0_D2_u + 5*r3_vsc0_lho1_D2_u - 4*r3_vsc1_D2_u + 2*r4_vsc0_lho2_D2_u
+                                + 2*r4_vsc1_lho1_D2_u - r4_vsc2_D2_u
+
+                                -4*r3_vsc0_D3_u + r4_vsc0_lho1_D3_u - 2*r4_vsc1_D3_u
+
+                                - r4_vsc0_D4_u
+                                )
             else:
 
                 if (par.magnetic == 1 and par.B0 == 'dipole'):
@@ -164,9 +181,16 @@ def viscous_diffusion(l, section, component, offdiag):  # ----------------------
         elif section == 'v' and component == 'utor':
 
             if par.anelastic:
-                out = L * ( -L*r0_D0_v - 3*r1_rho1_D0_v - r2_rho2_D0_v
-                            + 2*r1_D1_v-r2_rho1_D1_v
+                out = L * ( -L*r0_D0_v - 3*r1_lho1_D0_v - r2_lho2_D0_v
+                            + 2*r1_D1_v-r2_lho1_D1_v
                             +r2_D2_v)
+
+                out = L * ( -L*r0_vsc0_D0_v - 3*r1_vsc0_lho1_D0_v - r2_vsc1_lho1_D0_v
+
+                           + 2*r1_vsc0_D1_v - r2_vsc0_lho1_D1_v + r2_vsc1_D1_v
+
+                           + r2_vsc0_D2_v
+                          )
             else:
                 if (par.magnetic == 1 and par.B0 == 'dipole'):
                     out = L*( -L*r3_D0_v + 2*r4_D1_v + r5_D2_v )                          # r5* r.1curl( nabla^2 u )
@@ -372,10 +396,13 @@ def buoyancy(l, section, component, offdiag):  # -------------------------------
 
     if (section == 'u') and (offdiag == 0) :
 
-        if (par.magnetic == 1) and (par.B0 == 'dipole') :
-            buoy = r6_D0_u
+        if par.anelastic:
+            buoy = r3_buo0_D0_u
         else:
-            buoy = r4_D0_u
+            if (par.magnetic == 1) and (par.B0 == 'dipole') :
+                buoy = r6_D0_u
+            else:
+                buoy = r4_D0_u
 
     out = L * buoy
 
@@ -419,15 +446,27 @@ def b(l, section, component, offdiag):
 
         if section == 'f' and component == 'bpol':  #  r² 𝐫⋅𝐛   (×r² if dipole)
             if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
-                out = L* r2_D0_f
+                if not par.anelastic:
+                    out = L* r2_D0_f
+                else:
+                    out = L* r2_rho0_D0_f
             elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
-                out = L* r4_D0_f
+                if not par.anelastic:
+                    out = L* r4_D0_f
+                else:
+                    out = L* r4_rho0_D0_f
 
         elif section == 'g' and component == 'btor':  # r² 𝐫⋅∇×𝐛   (×r³ if dipole)
             if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
-                out = L* r2_D0_g
+                if not par.anelastic:
+                    out = L* r2_D0_g
+                else:
+                    out = L* r2_rho0_D0_g
             elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
-                out = L* r5_D0_g
+                if not par.anelastic:
+                    out = L* r5_D0_g
+                else:
+                    out = L* r5_rho0_D0_g
 
     return out
 
@@ -505,9 +544,9 @@ def induction(l, section, component, offdiag):
             elif offdiag == 0:  # l terms (dipole)
 
                 if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
-                    out = -2j*par.m* r1_h0_D0_f
+                    out = -2j*m* r1_h0_D0_f
                 elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
-                    out = -2j*par.m* r3_h0_D0_f
+                    out = -2j*m* r3_h0_D0_f
 
             elif offdiag == 1:  # l+1 terms (quadrupole)
 
@@ -532,9 +571,16 @@ def induction(l, section, component, offdiag):
             elif offdiag == 0:  # l terms (dipole)
 
                 if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
-                    out = 2j*par.m*( r0_h0_D1_g + r1_h1_D1_g -(l**2+l+1)*q1_h0_D0_g + r0_h1_D0_g + (L/2)*r1_h2_D0_g + r1_h0_D2_g )  # qh=h/r
+                    out = 2j*m*( r0_h0_D1_g + r1_h1_D1_g -(l**2+l+1)*q1_h0_D0_g + r0_h1_D0_g + (L/2)*r1_h2_D0_g + r1_h0_D2_g )  # qh=h/r
+                    if par.anelastic:
+                        out += 2j*m*( (L/2)*r1_h1_lho1_D0_g - (1/2)*(l**2+l+2)*r0_h0_lho1_D0_g )
+
                 elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
-                    out = 2j*par.m*( r3_h0_D1_g + r4_h1_D1_g -(l**2+l+1)*r2_h0_D0_g + r3_h1_D0_g + (L/2)*r4_h2_D0_g + r4_h0_D2_g )
+                    out = 2j*m*( r3_h0_D1_g + r4_h1_D1_g -(l**2+l+1)*r2_h0_D0_g + r3_h1_D0_g + (L/2)*r4_h2_D0_g + r4_h0_D2_g )
+                    if par.anelastic:
+                        out += 2j*m*( (L/2)*r4_h1_lho1_D0_g - (1/2)*(l**2+l+2)*r3_h0_lho1_D0_g )
+
+                
 
             elif offdiag == 1:  # l+1 terms (quadrupole)
 
@@ -555,14 +601,16 @@ def induction(l, section, component, offdiag):
 
             elif offdiag == -1:  # l-1 terms (dipole)
 
-                C  = (2*l+1)*np.sqrt( l*(l**2-1)*(l**2-par.m**2)/(4*l**2-1) )
-                C1 = np.sqrt( (l**2-1)/(4*l**3-l) )
-                C2 = np.sqrt( l*(l**2-1)/(4*l**2-1) )
-
+                C = (l**2-1)*np.sqrt( l**2-m**2)/(2*l-1)
                 if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
-                    out = C*( C2* r0_h0_D0_g -2*C1* r1_h0_D1_g + (C2-2*C1)* r1_h1_D0_g )
+                    out = C*( l* r0_h0_D0_g -2* r1_h0_D1_g + (l-2)* r1_h1_D0_g )
+                    if par.anelastic:
+                        out += 2*C* r1_h0_lho1_D0_g
+
                 elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
-                    out = C*( C2* r3_h0_D0_g -2*C1* r4_h0_D1_g + (C2-2*C1)* r4_h1_D0_g )
+                    out = C*( l* r3_h0_D0_g -2* r4_h0_D1_g + (l-2)* r4_h1_D0_g )
+                    if par.anelastic:
+                        out += 2*C* r4_h0_lho1_D0_g
 
                 if ut.symm1 == 1:
                     offd = -1
@@ -574,21 +622,16 @@ def induction(l, section, component, offdiag):
 
             elif offdiag == 1:  # l+1 terms
 
-                '''
-                C  = np.sqrt( (l+2)*(2*l+1)*L*((l+1)**2-par.m**2)/(2*l+3) )
-                C1 = np.sqrt( l*(l+2)/(3+11*l+12*l**2+4*l**3) )
-                C2 = np.sqrt( L*(l+2)/(3+4*l*(l+2)) )
+                C = l*(l+2)*np.sqrt((l+1)**2-m**2)/(3+2*l)
+                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
+                    out = C * ( -2* r1_h0_D1_g - (l+1)* r0_h0_D0_g - (l+3) * r1_h1_D0_g )
+                    if par.anelastic:
+                        out += 2*C* r1_h0_lho1_D0_g
 
-                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
-                    out = C*( -C2* r0_h0_D0_g -2*C1* r1_h0_D1_g -(2*C1+C2)* r1_h1_D0_g )
                 elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
-                    out = C*( -C2* r3_h0_D0_g -2*C1* r4_h0_D1_g -(2*C1+C2)* r4_h1_D0_g )
-                '''
-                C = l*(l+2)*np.sqrt(1+2*l+l**2-par.m**2)/(3+2*l)
-                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
-                    out = C * ( -r1_h0_D1_g - (l+1)* r0_h0_D0_g - (l+3) * r1_h1_D0_g )
-                elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
-                    out = C * ( -r4_h0_D1_g - (l+1)* r3_h0_D0_g - (l+3) * r4_h1_D0_g )
+                    out = C * ( -2* r4_h0_D1_g - (l+1)* r3_h0_D0_g - (l+3) * r4_h1_D0_g )
+                    if par.anelastic:
+                        out += 2*C* r4_h0_lho1_D0_g
 
                 if ut.symm1 == -1:
                     offd = 1
@@ -617,16 +660,35 @@ def magnetic_diffusion(l, section, component, offdiag):
         if section == 'f' and component == 'bpol':  #  r² 𝐫⋅∇²𝐛   (×r² if dipole)
             if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
                 #out = L*( -L*r0_D0_f + 2*r1_D1_f + r2_D2_f )
-                out = L*( -L*r0_eta0_D0_f + 2*r1_eta0_D1_f + r2_eta0_D2_f )
+                if not par.anelastic:
+                    out = L*( -L*r0_eta0_D0_f + 2*r1_eta0_D1_f + r2_eta0_D2_f )
+                else:
+                    out = L*( -L*r0_eho0_D0_f + 2*r1_eho0_D1_f + r2_eho0_D2_f )
+                
             elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
-                out = L*( -L*r2_D0_f + 2*r3_D1_f + r4_D2_f )
+                #out = L*( -L*r2_D0_f + 2*r3_D1_f + r4_D2_f )
+                if not par.anelastic:
+                    out = L*( -L*r2_eta0_D0_f + 2*r3_eta0_D1_f + r4_eta0_D2_f )
+                else:
+                    out = L*( -L*r2_eho0_D0_f + 2*r3_eho0_D1_f + r4_eho0_D2_f )
+
 
         elif section == 'g' and component == 'btor':  # r² 𝐫⋅∇×(∇²𝐛)  (×r³ if dipole)
+
             if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
                 #out = L*( -L*r0_D0_g + 2*r1_D1_g + r2_D2_g )
-                out = L*( -L*r0_eta0_D0_g + 2*r1_eta0_D1_g + r2_eta0_D2_g + r1_eta1_D0_g + r2_eta1_D1_g)
+                if not par.anelastic:
+                    out = L*( -L*r0_eta0_D0_g + 2*r1_eta0_D1_g + r2_eta0_D2_g + r1_eta1_D0_g + r2_eta1_D1_g)
+                else:
+                    out = L*( -L*r0_eho0_D0_g + 2*r1_eho0_D1_g + r2_eho0_D2_g + r1_eho1_D0_g + r2_eho1_D1_g - r1_eta0_rho1_D0_g - r2_eta0_rho1_D1_g )
+
             elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
-                out = L*( -L*r3_D0_g + 2*r4_D1_g + r5_D2_g )
+                #out = L*( -L*r3_D0_g + 2*r4_D1_g + r5_D2_g )
+                if not par.anelastic:
+                    out = L*( -L*r3_eta0_D0_g + 2*r4_eta0_D1_g + r5_eta0_D2_g + r4_eta1_D0_g + r5_eta1_D1_g)
+                else:
+                    out = L*( -L*r3_eho0_D0_g + 2*r4_eho0_D1_g + r5_eho0_D2_g + r4_eho1_D0_g + r5_eho1_D1_g - r4_eta0_rho1_D0_g - r5_eta0_rho1_D1_g )
+
 
     return par.OmgTau * par.Em * out
 
@@ -643,10 +705,13 @@ def theta(l, section, component, offdiag):
     out = 0
     if (section == 'h') and (offdiag == 0) :
 
-        if par.heating == 'differential' :
-            out = r3_D0_h
+        if par.anelastic:
+            out = r2_rho0_D0_h
         else:
-            out = r2_D0_h
+            if par.heating == 'differential' :
+                out = r3_D0_h
+            else:
+                out = r2_D0_h
 
     return out
 
@@ -661,12 +726,15 @@ def thermal_advection(l, section, component, offdiag):  # -u_r * dT/dr
 
     if ((section == 'h') and (component == 'upol')) and (offdiag == 0) :
 
-        if par.heating == 'internal':
-            conv = r2_D0_h  # dT/dr = -beta*r. Heat equation is times r**2
-        elif par.heating == 'differential':
-            conv = r0_D0_h * par.ricb/gap  # dT/dr = -beta * r**2. Heat equation is times r**3
-        elif par.heating == 'two zone' or par.heating == 'user defined':
-            conv = r0_drS0_D0_h  # dT/dr or dS/dr specified in ut.twozone or ut.BVprof. Heat equation is times r**2
+        if par.anelastic:
+            conv = r0_drS0_D0_h  # (r*S0')*D0s
+        else:
+            if par.heating == 'internal':
+                conv = r2_D0_h  # dT/dr = -beta*r. Heat equation is times r**2
+            elif par.heating == 'differential':
+                conv = r0_D0_h * par.ricb/gap  # dT/dr = -beta * r**2. Heat equation is times r**3
+            elif par.heating == 'two zone' or par.heating == 'user defined':
+                conv = r0_drS0_D0_h  # dT/dr or dS/dr specified in rap.twozone or rap.BVprof. Heat equation is times r**2
 
         out = L * conv
 
@@ -680,10 +748,16 @@ def thermal_diffusion(l, section, component, offdiag):
 
     if section == 'h' and offdiag == 0 :
 
-        if par.heating == 'differential':
-            difus = - L*r1_D0_h + 2*r2_D1_h + r3_D2_h  # eq. times r**3
+        if not par.anelastic:
+
+            if par.heating == 'differential':
+                difus = - L*r1_D0_h + 2*r2_D1_h + r3_D2_h  # eq. times r**3
+            else:
+                difus = - L*r0_D0_h + 2*r1_D1_h + r2_D2_h  # eq. times r**2
+
         else:
-            difus = - L*r0_D0_h + 2*r1_D1_h + r2_D2_h  # eq. times r**2
+
+            difus = - L*r0_kho0_D0_h + 2*r1_kho0_D1_h + r2_kho0_D2_h + r2_kho0_lnT1_D1_h + r2_kho1_D1_h
 
     return difus * par.OmgTau * par.Ek / par.Prandtl
 

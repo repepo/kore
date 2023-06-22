@@ -68,7 +68,7 @@ def main():
         loc_mag_g = loc_top
 
 
-    if   par.forcing == 1: # -------------------------------------------------------------------------- Yufeng's forcing
+    if par.forcing == 1: # -------------------------------------------------------------------------- Yufeng's forcing
         '''
         Builds the right hand side vector for the forced problem
         Lin 2018 body forcing
