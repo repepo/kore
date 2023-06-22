@@ -48,6 +48,7 @@ bco = 1
 Ek = 1e-3
 
 anelastic = 0
+variable_viscosity = 0
 
 forcing = 0  # Uncomment this line for eigenvalue problems
 # forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
