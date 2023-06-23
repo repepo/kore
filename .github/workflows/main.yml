@@ -33,18 +33,10 @@ jobs:
       - name: Install pre-requisites
         run: |
           sudo apt-get update
-          sudo apt-get -y install libpetsc-complex3.15-dev
-          sudo apt-get -y install libslepc-complex3.15-dev
-          sudo apt-get -y install libpython3.10-dev
-          wget https://bootstrap.pypa.io/get-pip.py
-          python3 get-pip.py
-          export PATH=$HOME/.local/bin:$PATH
-          export PETSC_DIR=/usr/lib/petscdir/petsc-complex
-          export SLEPC_DIR=/usr/lib/slepcdir/slepc-complex
-          python3 -m pip install cython numpy scipy 
-          python3 -m pip install mpi4py
-          python3 -m pip install petsc4py==3.15 slepc4py==3.15
-
+          sudo apt-get -y install python3-mpi4py python3-slepc4py-complex3.15
+          export PETSC_DIR=/usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-complex
+          export SLEPC_DIR=/usr/lib/slepcdir/slepc3.15/x86_64-linux-gnu-complex
+        
       - name: Run test
         run: |
           ulimit -s unlimited
