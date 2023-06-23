@@ -2,4 +2,5 @@
 *.mtx
 *.npz
 *.field
+*.dat
 *__pycache__*
