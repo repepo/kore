@@ -260,7 +260,7 @@ if track_target == 1 :  # read target from file and sets target accordingly
     itau = tt[1]
 else:                   # set target manually
     rtau = 0.0
-    itau = 1.0
+    itau = 1.005733
 
 # tau is the actual target for the solver
 # real part is damping
@@ -273,7 +273,7 @@ which_eigenpairs = 'TM'  # Use 'TM' for shift-and-invert
 # M magnitude, R real, I imaginary
 
 # Number of desired eigenvalues
-nev = 3
+nev = 1
 
 # Number of vectors in Krylov space for solver
 # ncv = 100
