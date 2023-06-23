@@ -49,4 +49,4 @@ jobs:
         run: |
           ulimit -s unlimited
           cd ${{github.workspace}}/examples
-          python3 kore_test.py
+          python3 kore_test.py --nranks 2

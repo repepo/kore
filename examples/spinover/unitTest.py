@@ -100,7 +100,7 @@ class spinoverTest(unittest.TestCase):
                 print(result.failures[-1][-1])
 
     def outputFileDiff(self):
-        datRef = readData('%s/reference_eig.dat' % self.dir)
+        datRef = readData('%s/reference.eig' % self.dir)
         datTmp = readData('%s/eigenvalues0.dat' % self.dir)
         np.testing.assert_allclose(datRef, datTmp, rtol=self.precision,
                                    atol=1e-20)
