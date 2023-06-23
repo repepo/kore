@@ -55,8 +55,7 @@ class spinoverTest(unittest.TestCase):
         for f in glob("%s/*.field" %dir):
             os.remove(f)
         for f in glob("%s/*.dat" %dir):
-            if f != "%s/reference_eig.dat" %dir:
-                os.remove(f)
+            os.remove(f)
         for file in self.aux_files:
             if os.path.exists("%s/%s" %(dir,file)):
                 os.remove("%s/%s" %(dir,file))
