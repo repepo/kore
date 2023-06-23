@@ -230,7 +230,7 @@ OmgTau = 1     # Rotation time scale
 # ----------------------------------------------------------------------------------------------------------------------
 
 # Number of cpus
-ncpus = 4
+ncpus = 2
 
 # Chebyshev polynomial truncation level. Use function def at top or set manually. N must be even if ricb = 0.
 N = Ncheb(Ek)
@@ -259,8 +259,8 @@ if track_target == 1 :  # read target from file and sets target accordingly
     rtau = tt[0]
     itau = tt[1]
 else:                   # set target manually
-    rtau = 0.0
-    itau = 1.005733
+    rtau = -0.1
+    itau = 1.0
 
 # tau is the actual target for the solver
 # real part is damping
@@ -282,7 +282,7 @@ nev = 1
 maxit = 50
 
 # Tolerance for solver
-tol = 1e-15
+tol = 1e-13
 # Tolerance for the thermal/compositional matrix
 tol_tc = 1e-6
 
