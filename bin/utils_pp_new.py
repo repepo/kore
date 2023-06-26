@@ -16,6 +16,7 @@ def xcheb(r, ricb, rcmb):
 	# returns points in the appropriate domain of the Cheb polynomial solutions
     # Domain [-1,1] corresponds to [ ricb,rcmb] if ricb>0
     # Domain [-1,1] corresponds to [-rcmb,rcmb] if ricb==0
+
 	r1 = rcmb
 	r0 = ricb + (np.sign(ricb)-1)*rcmb  # r0=-rcmb if ricb==0; r0=ricb if ricmb>0 
 	out = 2*(r-r0)/(r1-r0) - 1
@@ -55,7 +56,52 @@ def cg_quad(f, Ra, Rb, N, sqx):
     Assumes f is sampled over [Ra,Rb], with sqx=np.sqrt(1-xk**2),
     where xk are the radial grid points for the Chebyshev-Guauss quadrature. 
     '''
+
     out = (np.pi/N) * np.sum( sqx * f ) * (Rb-Ra)/2
+ 
+    return out
+
+
+
+def expand_sol(sol,vsymm):
+    '''
+    Expands the ricb=0 solution with ut.N1 coeffs to have full N coeffs,
+    filling with zeros according to the equatorial symmetry.
+    vsymm=-1 for equatorially antisymmetric, vsymm=1 for symmetric
+    '''
+ 
+    if par.ricb == 0 :
+
+        lm1 = par.lmax-par.m+1
+
+        # separate poloidal and toroidal coeffs
+        P0 = sol[ 0    : ut.n   ]
+        T0 = sol[ ut.n : 2*ut.n ]
+
+        # these are the cheb coefficients, reorganized
+        Plj0 = np.reshape(P0,(int(lm1/2),par.N1))
+        Tlj0 = np.reshape(T0,(int(lm1/2),par.N1))
+
+        # create new arrays
+        Plj = np.zeros((int(lm1/2),par.N),dtype=complex)
+        Tlj = np.zeros((int(lm1/2),par.N),dtype=complex)
+
+        # assign according to symmetry
+        s = int( (vsymm+1)/2 )  # s=0 if vsymm=-1, s=1 if vsymm=1
+        iP = (par.m + 1 - s)%2  # even/odd Cheb polynomial for poloidals according to the parity of m+1-s
+        iT = (par.m + s)%2
+        for k in np.arange(int(lm1/2)) :
+            Plj[k,iP::2] = Plj0[k,:]
+            Tlj[k,iT::2] = Tlj0[k,:]
+
+        # rebuild solution vector
+        P2 = np.ravel(Plj)
+        T2 = np.ravel(Tlj)
+        out = np.r_[P2,T2]
+
+    else :
+        out = sol
+
     return out
 
 
@@ -133,51 +179,34 @@ def kinetic_dissip_tor(l, tlm0, tlm1, tlm2):
     return 2*np.real( f0*(f1+f2+f3) )
 
 
-                    
-def expand_sol(sol,vsymm):
-    '''
-    Expands the ricb=0 solution with ut.N1 coeffs to have full N coeffs,
-    filling with zeros according to the equatorial symmetry.
-    vsymm=-1 for equatorially antisymmetric, vsymm=1 for symmetric
-    '''
-    if par.ricb == 0 :
 
-        N  = par.N
-        N1 = ut.N1 # N/2 if no IC, N if present
-        n  = ut.n
+def lorentz_rad(l, component. offdiag):
 
-        lm1 = par.lmax-par.m+1
+    out = 0
 
-        P0 = sol[:n]
-        T0 = sol[n:n+n]
+    if offdiag == -2:
 
-        # these are the cheb coefficients, reorganized
-        Plj0 = np.reshape(P0,(int(lm1/2),N1))
-        Tlj0 = np.reshape(T0,(int(lm1/2),N1))
+    elif offdiag == 0:
 
-        Plj = np.zeros((int(lm1/2),par.N),dtype=complex)
-        Tlj = np.zeros((int(lm1/2),par.N),dtype=complex)
+    elif offdiag == 2: 
 
-        s = int( (vsymm+1)/2 )  # s=0 if vsymm=-1, s=1 if vsymm=1
-
-        iP = (par.m + 1 - s)%2  # even/odd Cheb polynomial for poloidals according to the parity of m+1-s
-        iT = (par.m + s)%2
-        for k in np.arange(int(lm1/2)) :
-            Plj[k,iP::2] = Plj0[k,:]
-            Tlj[k,iT::2] = Tlj0[k,:]
-
-        P2 = np.ravel(Plj)
-        T2 = np.ravel(Tlj)
-
-        out = np.r_[P2,T2]
-
-    else :
-        out = sol
 
     return out
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+                    
 def thermal_worker(l, Hk0, Pk0, N, ricb, rcmb, Ra, Rb, thermal):
 
     L  = l*(l+1)

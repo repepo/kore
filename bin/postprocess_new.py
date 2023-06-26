@@ -126,22 +126,24 @@ def main(ncpus):
 
         #print('Processing solution',i)
         if par.hydro == 1:
+            
             rflow = np.copy(ru[:,i])
             iflow = np.copy(iu[:,i])
 
             # Expand solution in case ricb=0
             u_sol = upp.expand_sol( rflow + 1j*iflow, par.symm)
 
-            # the actual calculation
+            # the actual calculation, integrating over the whole fluid volume,
+            # i.e. from Ra=ricb to Rb = rcmb
             kid[i,:] = upp.ken_dis( u_sol, Ra=par.ricb, Rb=1, ncpus=int(ncpus))
 
-            KP = kid[i,0]
-            KT = kid[i,1]
+            KP = kid[i,0]  # Poloidal kinetic energy
+            KT = kid[i,1]  # Toroidal kinetic energy
             p2t[i] = KP/KT
-            KE = KP + KT
+            KE = KP + KT   # Total kinetic energy
 
-            Dint = kid[i,2]
-            Dkin = kid[i,3]
+            Dint = kid[i,2]  # Internal energy dissipation rate
+            Dkin = kid[i,3]  # kinetic energy dissipation rate
             #print('Dint =',Dint, 'Dkin =',Dkin)
 
             repow = kid[i,5]
