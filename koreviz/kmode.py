@@ -18,6 +18,7 @@ class kmode:
         import parameters as par
         import utils as ut
         import utils_pp as upp
+        import radial_profiles as rap
 
         self.solnum = solnum
         self.lmax   = par.lmax
@@ -113,7 +114,7 @@ class kmode:
                     if field == 'u':
                         self.ur, self.utheta, self.uphi = sol[3:]
                         if par.anelastic: #Comment the block out if you want momentum/mass flux
-                            self.rho = ut.density(self.r)
+                            self.rho = rap.density(self.r)
                             for irho in range(self.nr):
                                 self.ur[irho,...]     /= self.rho[irho]
                                 self.utheta[irho,...] /= self.rho[irho]

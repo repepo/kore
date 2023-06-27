@@ -101,6 +101,7 @@ def main(ncpus):
 
         #rd_eta = ut.get_radial_derivatives(rap.magnetic_diffusivity,2,1,tol)  # Magnetic diffusivity profile
         cd_eta = ut.chebify( rap.magnetic_diffusivity, 1, tol)
+        cd_eho = ut.chebify( rap.eta_rho, 1, tol)
 
     # Gegenbauer basis transformations
     S0 = ut.Slam(0, par.N) # From the Chebyshev basis ( C^(0) basis ) to C^(1) basis
@@ -267,13 +268,16 @@ def main(ncpus):
         else:
             labl_f  = [ 'r2_rho0_D0' ]
         arg2   += [     vF  ]
-        
+
         # induction
         labl_f += [ 'r0_h0_D0', 'r1_h1_D0', 'r1_h0_D1', 'r1_h0_D0' ]
         arg2   += [     vP    ,     vP    ,     vP    ,     vT     ]
 
         # magnetic diffusion
-        labl_f += [ 'r0_eta0_D0', 'r1_eta0_D1', 'r2_eta0_D2' ]
+        if par.anelastic:
+            labl_f += [ 'r0_eho0_D0', 'r1_eho0_D1', 'r2_eho0_D2' ]
+        else:
+            labl_f += [ 'r0_eta0_D0', 'r1_eta0_D1', 'r2_eta0_D2' ]
         arg2   += [      vF     ,      vF     ,      vF      ]
 
         labl += ut.labelit( labl_f, section='f', rplus=2*cdipole)
@@ -285,9 +289,9 @@ def main(ncpus):
 
         # b
         if not par.anelastic:
-            labl_f  = [ 'r2_D0' ]
+            labl_g  = [ 'r2_D0' ]
         else:
-            labl_f  = [ 'r2_rho0_D0' ]
+            labl_g  = [ 'r2_rho0_D0' ]
         arg2   += [    vG   ]
 
         # induction
@@ -296,11 +300,14 @@ def main(ncpus):
         arg2   += [     vP    ,     vP    ,     vP     ,    vP    ,     vP    ,     vP    ,
                         vT    ,     vT    ,     vT     ]
         if par.anelastic:
-            labl_g += [ 'r0_h0_lho1_D0', 'r1_h0_lho1_D0' ]
+            labl_g += [ 'r0_h0_lho1_D0', 'r1_h1_lho1_D0' ]
             arg2   += [        vP      ,        vT       ]
 
         # magnetic diffusion
-        labl_g += [ 'r0_eta0_D0', 'r1_eta0_D1', 'r2_eta0_D2', 'r1_eta1_D0', 'r2_eta1_D1' ]
+        if par.anelastic:
+            labl_g += [ 'r0_eho0_D0', 'r1_eho0_D1', 'r2_eho0_D2','r1_eta1_rho0_D0','r2_eta1_rho0_D1' ]
+        else:
+            labl_g += [ 'r0_eta0_D0', 'r1_eta0_D1', 'r2_eta0_D2', 'r1_eta1_D0', 'r2_eta1_D1' ]
         arg2   += [      vG     ,      vG     ,      vG     ,      vG     ,      vG      ]
 
         labl += ut.labelit( labl_g, section='g', rplus=3*cdipole)
@@ -404,6 +411,7 @@ def main(ncpus):
                 elif profid1 == 'lho':  ck1 = cd_lho
                 elif profid1 == 'buo':  ck1 = cd_buo
                 elif profid1 == 'vsc':  ck1 = cd_vsc
+                elif profid1 == 'eho':  ck1 = cd_eho
 
                 c0arg = ut.cheb2Product( rp[rx], ck1[:,dp1], tol)
 
@@ -415,6 +423,9 @@ def main(ncpus):
                 if profid1 == 'vsc' and profid2 == 'lho':
                     ck1 = cd_vsc
                     ck2 = cd_lho
+                if profid1 == 'eta' and profid2 == 'rho':
+                    ck1 = cd_eta
+                    ck2 = cd_rho
 
                 c0arg = ut.cheb3Product( rp[rx], ck1[:,dp1], ck2[:,dp2], tol)
 
