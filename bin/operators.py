@@ -632,9 +632,9 @@ def induction(l, section, component, offdiag):
                 '''
                 C = l*(l+2)*np.sqrt(1+2*l+l**2-par.m**2)/(3+2*l)
                 if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
-                    out = C * ( -rhD1g - (l+1)* hIg - (l+3) * rh1Ig )
+                    out = C * ( -2*rhD1g - (l+1)* hIg - (l+3) * rh1Ig )
                 elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
-                    out = C * ( -r4hD1g - (l+1)* r3hIg - (l+3) * r4h1Ig )
+                    out = C * ( -2*r4hD1g - (l+1)* r3hIg - (l+3) * r4h1Ig )
 
                 if ut.symm1 == -1:
                     offd = 1
