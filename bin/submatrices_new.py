@@ -479,6 +479,9 @@ def main(ncpus):
             elif len(lablx) == 5 :
                 operator_parity = 1-((rx+dx)%2)*2
 
+            elif len(lablx) == 10 and profid1 == 'eta':  # the eta profile must be an even funnction of r 
+                operator_parity = 1-(( rx + dp1 + dx )%2)*2
+                
             ####
             # TO DO: assign operator_parity to operators with longer labels, i.e. involving 'eta' or 'rho'
             ####
