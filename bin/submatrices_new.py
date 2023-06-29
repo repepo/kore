@@ -300,8 +300,8 @@ def main(ncpus):
         arg2   += [     vP    ,     vP    ,     vP     ,    vP    ,     vP    ,     vP    ,
                         vT    ,     vT    ,     vT     ]
         if par.anelastic:
-            labl_g += [ 'r0_h0_lho1_D0', 'r1_h1_lho1_D0' ]
-            arg2   += [        vP      ,        vT       ]
+            labl_g += [ 'r0_h0_lho1_D0', 'r1_h1_lho1_D0', 'r1_h0_lho1_D0' ]
+            arg2   += [        vP      ,        vT       ,        vT      ]
 
         # magnetic diffusion
         if par.anelastic:
