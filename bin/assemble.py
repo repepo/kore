@@ -22,7 +22,7 @@ import sys
 import glob
 
 import bc_variables as bv
-import parameters as par
+from parameters import par
 import utils as ut
 #import operators as op
 import operators_new as op

@@ -2,7 +2,7 @@ import glob
 import scipy.sparse as ss
 import scipy.io as sio
 import numpy as np
-import parameters as par
+from parameters import par
 import utils as ut
 
 # In the following loop we read all submatrices needed,

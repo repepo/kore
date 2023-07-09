@@ -5,7 +5,7 @@ import scipy.fftpack as sft
 import numpy.polynomial.chebyshev as ch
 import numpy as np
 
-import parameters as par
+from parameters import par
 import utils as ut
 import bc_variables as bc
 

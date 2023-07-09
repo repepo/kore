@@ -20,7 +20,8 @@ class spinoverTest(unittest.TestCase):
         self.solve_opts = solve_opts
         self.startDir = os.getcwd()
         self.description = "Spin-over mode at Ek=1e-3"
-        self.aux_files = ['submatrices_new.py',
+        self.aux_files = ['params_default.py',
+                          'submatrices_new.py',
                           'assemble.py',
                           'operators_new.py',
                           'utils_pp.py',

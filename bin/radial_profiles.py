@@ -1,6 +1,6 @@
 import numpy as np
 import utils as ut
-import parameters as par
+from parameters import par
 import numpy.polynomial.chebyshev as ch
 
 

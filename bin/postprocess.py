@@ -17,7 +17,7 @@ import os.path
 
 import numpy as np
 
-import parameters as par
+from parameters import par
 import utils as ut
 import utils_pp as upp
 
