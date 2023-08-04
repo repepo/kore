@@ -405,6 +405,7 @@ def main(ncpus):
 
             elif len(lablx) == 10 :  # rX_proX_DX
 
+
                 if   profid1 == 'eta':  ck1 = cd_eta
                 elif profid1 == 'rho':  ck1 = cd_rho
                 elif profid1 == 'drS':  ck1 = cd_ent
@@ -415,8 +416,16 @@ def main(ncpus):
 
                 c0arg = ut.cheb2Product( rp[rx], ck1[:,dp1], tol)
 
+            elif len(lablx) == 13 : # rX_hX_profX_DX
+
+                if profid1 == 'lho':  ck1 = cd_lho
+
+                c0arg = ut.cheb2Product( rdh[rx][hx], ck1[:,dp1], tol)
+
             elif len(lablx) == 15 :  # rX_proX_proX_DX
 
+                # exec('ck1 = cd_%s' %profid1)
+                # exec('ck2 = cd_%s' %profid2)
                 if profid1 == 'kho' and profid2 == 'lnT':
                     ck1 = cd_kho
                     ck2 = cd_lnT
@@ -479,9 +488,9 @@ def main(ncpus):
             elif len(lablx) == 5 :
                 operator_parity = 1-((rx+dx)%2)*2
 
-            elif len(lablx) == 10 and profid1 == 'eta':  # the eta profile must be an even funnction of r 
+            elif len(lablx) == 10 and profid1 == 'eta':  # the eta profile must be an even funnction of r
                 operator_parity = 1-(( rx + dp1 + dx )%2)*2
-                
+
             ####
             # TO DO: assign operator_parity to operators with longer labels, i.e. involving 'eta' or 'rho'
             ####
