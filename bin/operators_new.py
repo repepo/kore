@@ -571,12 +571,12 @@ def induction(l, section, component, offdiag):
                 if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
                     out = 2j*m*( r0_h0_D1_g + r1_h1_D1_g -(L+1)*q1_h0_D0_g + r0_h1_D0_g + (L/2)*r1_h2_D0_g + r1_h0_D2_g )  # qh=h/r
                     if par.anelastic:
-                        out += 2j*m*( - (L/2)*r1_h1_lho1_D0_g - (1/2)*(l**2+l+2)*r0_h0_lho1_D0_g )
+                        out += 2j*m*( - (L/2)*r1_h1_lho1_D0_g - (1/2)*(L+2)*r0_h0_lho1_D0_g - r1_h0_lho1_D1_g )
 
                 elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
                     out = 2j*m*( r3_h0_D1_g + r4_h1_D1_g -(l**2+l+1)*r2_h0_D0_g + r3_h1_D0_g + (L/2)*r4_h2_D0_g + r4_h0_D2_g )
                     if par.anelastic:
-                        out += 2j*m*( -(L/2)*r4_h1_lho1_D0_g - (1/2)*(l**2+l+2)*r3_h0_lho1_D0_g )
+                        out += 2j*m*( -(L/2)*r4_h1_lho1_D0_g - (1/2)*(l**2+l+2)*r3_h0_lho1_D0_g - r4_h0_lho1_D1_g)
 
 
 
