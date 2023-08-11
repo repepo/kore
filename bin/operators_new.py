@@ -676,9 +676,9 @@ def magnetic_diffusion(l, section, component, offdiag):
             if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
 
                 if par.anelastic:
-                    out = L*( 2*r1_eho0_D1_g - L* r0_eho0_D0_g + r2_eho0_D2_g - r1_eta1_rho0_D0_g - r2_eta1_rho0_D1_g )
+                    out = L*( 2*r1_eho0_D1_g - L* r0_eho0_D0_g + r2_eho0_D2_g + r1_eta1_rho0_D0_g + r2_eta1_rho0_D1_g )
                 else:
-                    out = L*( 2*r1_eta0_D1_g - L* r0_eta0_D0_g + r2_eta0_D2_g - r1_eta1_D0_g - r2_eta1_D1_g )
+                    out = L*( 2*r1_eta0_D1_g - L* r0_eta0_D0_g + r2_eta0_D2_g + r1_eta1_D0_g + r2_eta1_D1_g )
 
             elif ((par.B0 == 'dipole') and (par.ricb > 0)) :  # extra ×r^3 if dipole
 
