@@ -26,6 +26,12 @@ import parameters as par
 import utils as ut
 #import operators as op
 import operators_new as op
+import radial_profiles as rap
+
+
+
+
+
 
 
 
@@ -1126,6 +1132,14 @@ def bc_u_spherical(l,loc):
     '''
     inviscid = (par.Ek == 0) #boolean
 
+    if par.anelastic == 1:
+        lho = ut.chebco_f( rap.log_density, par.N, par.ricb, ut.rcmb, 1e-9)
+        lho1_a = np.dot(lho, bv.Ta[:,1])  # icb
+        lho1_b = np.dot(lho, bv.Tb[:,1])  # cmb
+    else:
+        lho1_a = 0.
+        lho1_b = 0.
+
     L = l*(l+1)
 
     if inviscid:
@@ -1162,7 +1176,7 @@ def bc_u_spherical(l,loc):
                     #out[ 1,:] = Tbu[:,2]  # P''=0
                 else:
                     out[ 0,:] = Tbu[:,0]  # P  =0
-                    out[ 1,:] = Tbu[:,2]  # P''=0
+                    out[ 1,:] = ut.rcmb*Tbu[:,2] - lho1_b*Tbu[:,1]  # rcmb*P'' - log rho'*P' =0
 
             elif par.bco == 1: # no-slip cmb
 
@@ -1178,7 +1192,7 @@ def bc_u_spherical(l,loc):
 
                 if par.bci == 0: # stress-free icb
                     out[ 2,:] = bv.Ta[:,0]  # P  =0
-                    out[ 3,:] = bv.Ta[:,2]  # P''=0
+                    out[ 3,:] = par.ricb * bv.Ta[:,2] - lho1_a * bv.Ta[:,1]   # ricb*P'' - log rho'*P' = 0
 
                 elif par.bci == 1: # no-slip icb
                     out[ 2,:] = bv.Ta[:,0]  # P  =0
@@ -1198,7 +1212,7 @@ def bc_u_spherical(l,loc):
             out = ss.dok_matrix((num_rows_v, ut.N1),dtype=complex)
 
             if   par.bco == 0: # stress-free cmb
-                out[ 0,:] = Tbv[:,1] - Tbv[:,0]/ut.rcmb  # T'-(T/r)=0
+                out[ 0,:] = -ut.rcmb * Tbv[:,1] + (1+ut.rcmb*lho1_b)*Tbv[:,0]  # -rcmb*T'+(1+rcmb*log rho')*T=0
 
             elif par.bco == 1: # no-slip cmb
                 out[ 0,:] = Tbv[:,0]  # T=0
@@ -1206,7 +1220,8 @@ def bc_u_spherical(l,loc):
             if par.ricb > 0 :
 
                 if   par.bci == 0: # stress-free icb
-                    out[ 1,:] = bv.Ta[:,1]-bv.Ta[:,0]/par.ricb  # T'-(T/r)=0
+                    out[ 1,:] = -par.ricb * bv.Ta[:,1] + (1+par.ricb*lho1_a)*bv.Ta[:,0]  # -ricb*T'+(1+ricb*log rho')*T=0
+                    #bv.Ta[:,1]-bv.Ta[:,0]/par.ricb  # T'-(T/r)=0
 
                 elif par.bci == 1: # no-slip icb
                     out[ 1,:] = bv.Ta[:,0]  # T=0
