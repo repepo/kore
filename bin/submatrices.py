@@ -475,6 +475,10 @@ def main(ncpus):
             elif len(lablx) == 2 :
                 operator_parity = 1-((rx+dx)%2)*2
 
+            elif len(lablx) == 6 and lablx[:3] == 'eta':  # the eta profile must be an even funnction of r
+                dp1 = int(lablx[-2])
+                operator_parity = 1-(( rx + dp1 + dx )%2)*2
+
             vector_parity   = arg2[k]
             overall_parity  = vector_parity * operator_parity
             matrix = ut.remroco( matrix, overall_parity, vector_parity)
