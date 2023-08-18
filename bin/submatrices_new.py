@@ -79,7 +79,7 @@ def main(ncpus):
         cd_lnT = ut.chebify( rap.log_temperature, 1, tol)
         cd_vsc = ut.chebify(rap.viscosity,2,tol)
 
-        cd_ent = ut.chebco_rf( rap.entropy_gradient, rpower=1, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=par.dent_args).reshape([par.N,1])
+        cd_ent = ut.chebco_rf( rap.entropy_gradient, rpower=0, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=par.dent_args).reshape([par.N,1])
 
         cd_buo = ut.chebco_rf(rap.buoFac,0,par.N,par.ricb,ut.rcmb,tol)
         cd_buo = ut.cheb2Product(cd_buo,rap.gravCoeff(),tol).reshape([par.N,1])
@@ -323,7 +323,7 @@ def main(ncpus):
         if par.anelastic:
 
             #Advection
-            labl_h = ['r0_drS0_D0']
+            labl_h = ['r0_drS0_D0','r1_drS0_D0']
 
             # difus = - L*r0_kho0_D0_h + 2*r1_kho0_D1_h + r2_kho0_D2_h + r2_kho0_lnT1_D1_h + r2_kho1_D1_h
             labl_h += [ 'r0_kho0_D0', 'r1_kho0_D1', 'r2_kho0_D2', 'r2_kho0_lnT1_D1', 'r2_kho1_D1' ]
@@ -413,6 +413,7 @@ def main(ncpus):
                 elif profid1 == 'buo':  ck1 = cd_buo
                 elif profid1 == 'vsc':  ck1 = cd_vsc
                 elif profid1 == 'eho':  ck1 = cd_eho
+                elif profid1 == 'kho':  ck1 = cd_kho
 
                 c0arg = ut.cheb2Product( rp[rx], ck1[:,dp1], tol)
 
@@ -441,6 +442,8 @@ def main(ncpus):
             parg0 += [ S[dx]*c0arg ]    # Gegenbauer basis change from C^(0) to C^(dx)
             parg1 += [ dx ]             # dx is derivative order
             parg2 += [ arg2[k] ]        # vector_parity
+
+            del c0arg # To prevent re-use of c0arg in next iteration
 
 
     # -------------------------------------------------------------------------------------------------------------------------------------------

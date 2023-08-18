@@ -479,7 +479,18 @@ def main():
 
                 mtx = op.theta(l,'h','', 0)
 
-                loc_list = ut.packit(loc_list, mtx, row, col)
+                if par.hydro == 0:
+                    if l == loc_top[0]:  # create loc_list if first iteration
+                        mtx.eliminate_zeros()
+                        mtx = mtx.tocoo()
+                        loc_list = [mtx.data, mtx.row + row , mtx.col + col]
+                    else:  # append to loc_list if it already exists
+                        loc_list = ut.packit(loc_list, mtx, row, col)
+                else:
+                    loc_list = ut.packit(loc_list, mtx, row, col)
+
+
+                # loc_list = ut.packit(loc_list, mtx, row, col)
 
 
         if par.compositional == 1: # adds (d/dt)*xi in the compositional equation to matrix B
@@ -983,11 +994,13 @@ def main():
             # ----------------------------------------------------------------------------------------------------------
             basecol = 0
 
-            # Physics ------------------------------------
-            mtx = op.thermal_advection(l,'h','upol',0)
-            # --------------------------------------------
-            col = basecol + col0
-            loc_list = ut.packit( loc_list, mtx, row, col)
+            if par.hydro == 1:
+                # Physics ------------------------------------
+                mtx = op.thermal_advection(l,'h','upol',0)
+                # --------------------------------------------
+                col = basecol + col0
+
+                loc_list = ut.packit( loc_list, mtx, row, col)
 
 
             # temperature (theta) terms: (Ek/Pr)*nabla**2(theta) -------------------------------------------------------
@@ -999,7 +1012,18 @@ def main():
             mtx = op.thermal_diffusion(l,'h','',0)
             # ------------------------------------
             col = basecol + col0
-            loc_list = ut.packit( loc_list, mtx, row, col)
+
+            if par.hydro == 0:
+                if l == loc_top[0]:  # create loc_list if first iteration
+                    mtx.eliminate_zeros()
+                    mtx = mtx.tocoo()
+                    loc_list = [mtx.data, mtx.row + row , mtx.col + col]
+                else:  # append to loc_list if it already exists
+                    loc_list = ut.packit(loc_list, mtx, row, col)
+            else:
+                loc_list = ut.packit(loc_list, mtx, row, col)
+
+            # loc_list = ut.packit( loc_list, mtx, row, col)
 
 
             # ----------------------------------------------------------------------------------------------------------

@@ -725,7 +725,7 @@ def thermal_advection(l, section, component, offdiag):  # -u_r * dT/dr
     if ((section == 'h') and (component == 'upol')) and (offdiag == 0) :
 
         if par.anelastic:
-            conv = r0_drS0_D0_h  # (r*S0')*D0s
+            conv = -r1_drS0_D0_h  # (r*S0')*D0s
         else:
             if par.heating == 'internal':
                 conv = r2_D0_h  # dT/dr = -beta*r. Heat equation is times r**2
