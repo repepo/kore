@@ -129,15 +129,22 @@ def gravCoeff():
     '''
     Integrates density profile in Cheb space and gives Cheb
     coefficients of gravity profile, normalized to the value
-    at the outer boundary. This works. We checked.
+    at the outer boundary. This works. We checked. Again.
     '''
     ck = ut.chebco_f(density,par.N,par.ricb,ut.rcmb,par.tol_tc)
 
-    x0 = -(par.ricb + ut.rcmb)/(ut.rcmb - par.ricb)
-    gk = (ut.rcmb - par.ricb)/2. * ch.chebint(ck,lbnd=x0)
+    # x0 = -(par.ricb + ut.rcmb)/(ut.rcmb - par.ricb)
+    if par.ricb > 0:
+        gk = (ut.rcmb - par.ricb)/2. * ch.chebint(ck,lbnd=-1)
 
-    g0 = ch.chebval(1,gk)
-    out = gk/g0
+        g0 = ch.chebval(1,gk)
+        out = gk/g0
+
+        out[0] += par.g_icb # Value of g at ricb normalized by value at rcmb
+    else:
+        gk = ut.rcmb * ch.chebint(ck,lbnd=0) # g at origin goes to zero
+        g0 = ch.chebval(1,gk)
+        out = gk/g0
 
     return out[:par.N]
 
