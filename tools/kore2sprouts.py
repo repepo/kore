@@ -21,18 +21,20 @@ def main(Anpz):
     
     N = par.N
 
-    ll = int(A.shape[0]/(4*N))
+    neq = 3
 
-    gb = np.array([4,2,2,2])  # the basis order for each section
+    ll = int(A.shape[0]/(neq*N))
+
+    gb = np.array([4,2,2])  # the basis order for each section
     
     N1 = N-gb  # number of rows without bc's for each section
     
-    nbc = 2*np.sum(gb)  # total number of bc rows
+    nbc = ll*np.sum(gb)  # total number of bc rows
 
     Aout = ss.dok_matrix(A.shape, dtype=complex)
         
         
-    for j in range(4):  #loop over the four sections
+    for j in range(neq):  #loop over the four sections
     
         for k in range(ll):
             
