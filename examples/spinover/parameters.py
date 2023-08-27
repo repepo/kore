@@ -1,4 +1,5 @@
 import numpy as np
+import sys
 #import targets as tg
 
 
@@ -43,12 +44,31 @@ bco = 1
 
 # Ekman number (use 2* to match Dintrans 1999). Ek can be set to 0 if ricb=0
 # CoriolisNumber = 1.2e3
-# Ek_gap = 2/CoriolisNumber
+# Ek_gap = 2e-5
 # Ek = Ek_gap*(1-ricb)**2
 Ek = 1e-3
 
 anelastic = 0
 variable_viscosity = 0
+
+#---------------------------------------------------------------------------------------
+# Options for setting interior profiles and options for a polytropic gas, Nrho and polind
+# are ignored when an interior model other than polytrope or jones2009 is used
+#--------------------------------------------------------------------------------------
+
+Nrho = 0.0 # ln(\rho_i/\rho_o), number of density scale heights
+polind = 1.0 # Polytropic index : p = \rho^(1 + 1/n) , p = \rho T for ideal gas, R = 1
+autograv = 0 # Automatic computation of gravity
+g_icb = 0.0 # Value of g at icb, is set to zero when ricb = 0
+interior_model = None #'polytrope' # Interior model, available options are: polytrope, jupiter, pns
+g0 = 0; g1 = 1; g2=0 # Easy way to control gravity, g(r) = g0 + g1 r/rcmb + g2 rcmb^2/r^2
+r_cutoff = 0.99 #Cut-off radius for interior model fit while using jupiter or pns models
+
+## Check if broken
+
+if ricb == 0 and g2 == 1:
+    print("Cannot have 1/r^2 gravity when ricb = 0")
+    sys.exit()
 
 forcing = 0  # Uncomment this line for eigenvalue problems
 # forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
@@ -139,7 +159,7 @@ cnorm = 'rms_cmb'                     # Sets the radial rms field at the CMB as 
 thermal = 0  # Use 1 or 0 to include or not the temperature equation and the buoyancy force (Boussinesq)
 
 # Prandtl number: ratio of viscous to thermal diffusivity
-Prandtl = 1.0
+Prandtl = 1
 # "Thermal" Ekman number
 Etherm = Ek/Prandtl
 
@@ -151,7 +171,8 @@ heating = 'internal'      # dT/dr = -beta * r         temp_scale = beta * ro**2
 
 # Rayleigh number as Ra = alpha * g0 * ro^3 * temp_scale / (nu*kappa), alpha is the thermal expansion coeff,
 # g0 the gravity accel at ro, ro is the cmb radius (the length scale), nu is viscosity, kappa is thermal diffusivity.
-Ra = 0.0
+# Ra_gap=0.0
+# Ra = Ra_gap / (1-ricb)**3
 # Ra_Silva = 0.0; Ra = Ra_Silva * (1/(1-ricb))**6
 # Ra_Monville = 0.0; Ra = 2*Ra_Monville
 
@@ -160,6 +181,13 @@ Ra = 0.0
 # in the documentation.
 # BV2 = -Ra * Ek**2 / Prandtl
 BV2 = 0.0
+
+ampStrat = 0
+rStrat   = 0.6
+thickStrat=0.1
+slopeStrat=75
+
+dent_args = None #[ampStrat,rStrat,thickStrat,slopeStrat]
 
 # Additional arguments for 'Two zone' or 'User defined' case (modify if needed).
 rc  = 0.7  # transition radius
@@ -170,8 +198,8 @@ args = [rc, h, sym]
 # Thermal boundary conditions
 # 0 for isothermal, theta=0
 # 1 for constant heat flux, (d/dr)theta=0
-bci_thermal = 1   # ICB
-bco_thermal = 1   # CMB
+bci_thermal = 0   # ICB
+bco_thermal = 0   # CMB
 
 
 
@@ -230,7 +258,7 @@ OmgTau = 1     # Rotation time scale
 # ----------------------------------------------------------------------------------------------------------------------
 
 # Number of cpus
-ncpus = 2
+ncpus = 4
 
 # Chebyshev polynomial truncation level. Use function def at top or set manually. N must be even if ricb = 0.
 N = Ncheb(Ek)
@@ -259,7 +287,7 @@ if track_target == 1 :  # read target from file and sets target accordingly
     rtau = tt[0]
     itau = tt[1]
 else:                   # set target manually
-    rtau = -0.1
+    rtau = 0.0
     itau = 1.0
 
 # tau is the actual target for the solver
@@ -273,7 +301,7 @@ which_eigenpairs = 'TM'  # Use 'TM' for shift-and-invert
 # M magnitude, R real, I imaginary
 
 # Number of desired eigenvalues
-nev = 1
+nev = 4
 
 # Number of vectors in Krylov space for solver
 # ncv = 100
@@ -282,7 +310,7 @@ nev = 1
 maxit = 50
 
 # Tolerance for solver
-tol = 1e-13
+tol = 1e-15
 # Tolerance for the thermal/compositional matrix
 tol_tc = 1e-6
 

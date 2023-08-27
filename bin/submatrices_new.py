@@ -81,8 +81,11 @@ def main(ncpus):
 
         cd_ent = ut.chebco_rf( rap.entropy_gradient, rpower=0, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=par.dent_args).reshape([par.N,1])
 
-        cd_buo = ut.chebco_rf(rap.buoFac,0,par.N,par.ricb,ut.rcmb,tol)
-        cd_buo = ut.cheb2Product(cd_buo,rap.gravCoeff(),tol).reshape([par.N,1])
+        if par.autograv:
+            cd_buo = ut.chebco_rf(rap.buoFac,0,par.N,par.ricb,ut.rcmb,tol)
+            cd_buo = ut.cheb2Product(cd_buo,rap.gravCoeff(),tol).reshape([par.N,1])
+        else:
+            cd_buo = ut.chebco_rf(rap.buoFac,0,par.N,par.ricb,ut.rcmb,tol).reshape([par.N,1])
 
     if par.magnetic == 1 :
 

@@ -3,43 +3,44 @@
 import numpy as np
 import os
 import sys
-import importlib
 from scipy.optimize import brentq
 from timeit import default_timer as timer
 import datetime
 
-sys.path.insert(1,'bin/')
+sys.path.insert(1,os.getcwd()+'/bin')
 import parameters as par
 
 '''
 Script to find the critical Rayleigh number for unstable convection.
-Needs modification to solve.py to write eigenvalues2.dat (with -wb options)
-Needs also a Ra_gap variable in parameters.py
+Needs a Ra_gap variable in parameters.py.
 '''
 
-opts='-st_type sinvert -st_pc_factor_mat_solver_type mumps -mat_mumps_icntl_14 1000 -eps_true_residual -eps_balance twoside'
+def runKoreRes(Rac,opts): # Print residuals once Rac is found
+    Ra = 10**Rac
 
-ra_cache = {}
-
-Ramin = 2.96e10
-
+    os.system('sed -i "0,/Ra_gap.*/s//Ra_gap=%f/" ./bin/parameters.py' %Ra)
+    os.system('mpiexec -n %d ./bin/assemble.py' %par.ncpus)
+    os.system('mpiexec -n %d ./bin/solve_nopp.py %s' %(par.ncpus,opts))
+    # os.system('./bin/postprocess.py')
 
 def get_sigma(Ra,ncpus, opts):
     Ra = 10**Ra
 
-    print("Ra = %e" %Ra)
+    print("Ra = %e" %Ra,flush=True)
 
     if Ra in ra_cache:
         return ra_cache[Ra]
     else:
-        os.system('sed -i "0,/Ra_gap.*/s//Ra_gap=%f/" bin/parameters.py' %Ra)
-        os.system('mpiexec -n %d ./bin/assemble.py > out0' %ncpus)
-        os.system('mpiexec -n %d ./bin/solve.py %s >> out1' %(ncpus,opts))
-        eig0 = np.loadtxt('eigenvalues2.dat')
+        os.system('sed -i "0,/Ra_gap.*/s//Ra_gap=%f/" ./bin/parameters.py' %Ra)
+        os.system('mpiexec -n %d ./bin/assemble.py > /dev/null' %ncpus)
+        os.system('mpiexec -n %d ./bin/solve_nopp.py %s > /dev/null' %(ncpus,opts))
+        eig0 = np.loadtxt('eigenvalues0.dat')
         eig = np.reshape(eig0, (-1, 2))
         Idx = np.argmax(eig[:,0])
         sigma_c = eig[Idx,0]
         ra_cache[Ra] = sigma_c
+
+        os.remove('eigenvalues0.dat')
 
         return sigma_c
 
@@ -71,31 +72,39 @@ print("###############################",flush=True)
 print("# Kore linear convection mode #",flush=True)
 print("###############################",flush=True)
 print("",flush=True)
-tic1 = timer()
 print("=======",flush=True)
 print("m = %d" %par.m,flush=True)
 print("=======\n",flush=True)
 
-#os.system('sed -i "s/RaUsr/%f/" bin/parameters.py' %Ramin)
-os.system('./bin/submatrices.py %d > out00' %par.ncpus)
+tic1 = timer()
+
+os.system('./bin/submatrices_new.py %d > /dev/null' %par.ncpus)
 
 # -------------------------------------------------------------------------------- Compute Rac
+opts='-st_type sinvert -st_pc_factor_mat_solver_type mumps -mat_mumps_icntl_14 1000 -eps_true_residual -eps_balance twoside'
+
+Ramin = 1.e6
+
 ra_cache = {}
 
 Rac = bracket_brentq(get_sigma,np.log10(Ramin),args=(par.ncpus,opts))
+opts += '-eps_error_relative ::ascii_info_detail'
+runKoreRes(Rac,opts)
 Rac=10**Rac
-eig0 = np.loadtxt('eigenvalues2.dat')
+eig0 = np.loadtxt('eigenvalues0.dat')
 eig = np.reshape(eig0, (-1, 2))
 idx_c = np.argmax(eig[:,0])
 sigma_c,omega_c = eig[idx_c,:]
 
-with open('critical.dat','ab') as dcrit:
-	np.savetxt(dcrit, [par.Ek_gap , par.ricb , Rac , int(par.m) , sigma_c , omega_c])	
+X = np.array([par.Ek_gap , par.ricb , Rac , int(par.m) , sigma_c , omega_c])
+fmt = ['%.3e','%.2f','%.5e','%d','%.5e','%.5e']
+
+with open('critical.dat','a') as dcrit:
+	np.savetxt(dcrit, X.reshape(1,X.shape[0]), fmt=fmt)
 
 toc1 = timer()
 tform = str(datetime.timedelta(seconds=toc1 - tic1))
 
 print("\n======================================",flush=True)
 print("Rac for m=%d found in %s" %(par.m,tform),flush=True)
-print("==================================\n\n")
-    
+print("======================================\n\n",flush=True)
