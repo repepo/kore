@@ -63,13 +63,14 @@ def getPolyParams():
     '''
 
     radratio = par.ricb/ut.rcmb
-    c0 = ( (-2*par.g2 - np.exp(par.Nrho/par.polind)*(2*par.g0 + par.g1 - 2*par.g2)*radratio
+    Nrhofac = np.exp(par.Nrho/par.polind)
+    c0 = ( (-2*par.g2 - (2*par.g0 + par.g1 - 2*par.g2)*Nrhofac*radratio
             + 2*par.g0*radratio**2 + par.g1*radratio**3)/
             ((-1 + radratio)*(2*par.g2 + radratio*(2*par.g0 + par.g1 + par.g1*radratio))) )
-    c1 = ( (-2*(-1 + np.exp(par.Nrho/par.polind))*radratio)/
-            ((-1 + radratio)*(2*par.g2 + radratio*(2*par.g0 + par.g1 + par.g1*radratio))*ut.rcmb) )
+    c1 = ( (-2*(-1 + Nrhofac)*radratio)/
+          ((-1 + radratio)*(2*par.g2 + radratio*(2*par.g0 + par.g1 + par.g1*radratio))*ut.rcmb) )
 
-    return c0,c1
+    return c0,c1,Nrhofac
 
 
 def getEOSparams():
@@ -101,7 +102,7 @@ def getEOSparams():
 
 
 if par.interior_model == 'polytrope':
-    c0,c1 = getPolyParams()
+    c0,c1,Nrhofac = getPolyParams()
 
     def gint(r): # Indefinite integral of gravity
         return par.g0*r + (par.g1*r**2)/(2.*ut.rcmb) - (par.g2*ut.rcmb**2)/r
@@ -110,7 +111,7 @@ if par.interior_model == 'polytrope':
 
     if par.g2 == 1 and (par.g0+par.g1+par.g2) == 1:
         def zeta(r):
-            return c1/r + c0
+            return -c1 * gint(r) + c0
 else:
     coeffDens, coeffTemp, coeffAlpha, coeffGrav = getEOSparams()
 
@@ -130,9 +131,11 @@ def entropy_gradient(r,args=None):
                                     (1.-np.tanh(slopeStrat*(r-rStrat-thickStrat)))
                                         - 1. )
     elif ( par.interior_model == 'polytrope' and
-          par.g2 == 1 and (par.g0+par.g1+par.g2) == 1): #Analytical solution is only possible when gravity is 1/r^2
+          par.g2 == 1 and (par.g0+par.g1+par.g2) == 1): #Analytical solution is only possible when gravity is 1/r^2, there is probably a better way to write this.
 
-        out = -par.polind/(1 - zeta(par.ricb)**(-par.polind)) * c1/( zeta(r)**(par.polind+1) ) * 1/r**2
+        out = ( ((-1 + Nrhofac)*Nrhofac**par.polind * par.polind*par.ricb)/
+               ((-1 + Nrhofac**par.polind)*r**2*(-1 + par.ricb/ut.rcmb)) /
+                zeta(r)**(par.polind+1) )
     else:
         out = np.zeros_like(r)
     return out
