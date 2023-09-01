@@ -27,7 +27,8 @@ class spinoverTest(unittest.TestCase):
                           'utils.py',
                           'solve_nopp.py',
                           'bc_variables.py',
-                          'radial_profiles.py'
+                          'radial_profiles.py',
+                          'autocompute.py'
                           ]
 
     def setUp(self):
