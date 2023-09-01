@@ -21,7 +21,7 @@ import sys
 import parameters as par
 import utils as ut
 import radial_profiles as rap
-
+import autocompute as ac
 
 
 def main(ncpus):
@@ -74,18 +74,25 @@ def main(ncpus):
         #rd_lnT = ut.get_radial_derivatives(rap.log_temperature,2,1,tol) # Log(Temperature)
 
         cd_rho = ut.chebify( rap.density, 2, tol)
-        cd_kho = ut.chebify( rap.kappa_rho, 1, tol)
         cd_lho = ut.chebify( rap.log_density, 4, tol)
-        cd_lnT = ut.chebify( rap.log_temperature, 1, tol)
-        cd_vsc = ut.chebify(rap.viscosity,2,tol)
+        cd_vsc = ut.chebify( rap.viscosity, 2, tol)
 
-        cd_ent = ut.chebco_rf( rap.entropy_gradient, rpower=0, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=par.dent_args).reshape([par.N,1])
+        if par.thermal == 1:
 
-        if par.autograv:
-            cd_buo = ut.chebco_rf(rap.buoFac,0,par.N,par.ricb,ut.rcmb,tol)
-            cd_buo = ut.cheb2Product(cd_buo,rap.gravCoeff(),tol).reshape([par.N,1])
-        else:
-            cd_buo = ut.chebco_rf(rap.buoFac,0,par.N,par.ricb,ut.rcmb,tol).reshape([par.N,1])
+            cd_lnT = ut.chebify( rap.log_temperature, 1, tol)
+            cd_kho = ut.chebify( rap.kappa_rho, 1, tol)
+
+            if par.entropyGrad == 'auto':
+                cd_ent = ac.get_equilibrium_entropy()
+            else:
+                cd_ent = ut.chebco_rf( rap.entropy_gradient, rpower=0, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=par.dent_args).reshape([par.N,1])
+
+            if par.autograv:
+                cd_buo = ut.chebco_rf(rap.buoFac,0,par.N,par.ricb,ut.rcmb,tol)
+                cd_buo = ut.cheb2Product(cd_buo,ac.gravCoeff(),tol).reshape([par.N,1])
+            else:
+                cd_buo = ut.chebco_rf(rap.buoFac,0,par.N,par.ricb,ut.rcmb,tol).reshape([par.N,1])
+
 
     if par.magnetic == 1 :
 
@@ -331,6 +338,7 @@ def main(ncpus):
             # difus = - L*r0_kho0_D0_h + 2*r1_kho0_D1_h + r2_kho0_D2_h + r2_kho0_lnT1_D1_h + r2_kho1_D1_h
             labl_h += [ 'r0_kho0_D0', 'r1_kho0_D1', 'r2_kho0_D2', 'r2_kho0_lnT1_D1', 'r2_kho1_D1' ]
             labl_h += ['r2_rho0_D0'] #ds/dt
+            labl_h += ['r0_D1','r1_lnT1_D1','r1_lho1_D1','r1_lnk1_D1','r1_D2'] #To solve for equilibrium S
         else:
             if par.heating == 'differential' :
 

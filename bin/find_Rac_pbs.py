@@ -15,6 +15,16 @@ Script to find the critical Rayleigh number for unstable convection.
 Needs a Ra_gap variable in parameters.py.
 '''
 
+opts='-st_type sinvert -st_pc_factor_mat_solver_type mumps -mat_mumps_icntl_14 1000 -eps_true_residual -eps_balance twoside'
+optsRes = opts + ' -eps_error_relative ::ascii_info_detail'
+
+Ramin = 2.e5
+
+mmin = 5
+mmax = 9
+
+marr = np.arange(mmin,mmax+1)
+
 def runKoreRes(Rac,opts): # Print residuals once Rac is found
     Ra = 10**Rac
 
@@ -72,39 +82,44 @@ print("###############################",flush=True)
 print("# Kore linear convection mode #",flush=True)
 print("###############################",flush=True)
 print("",flush=True)
-print("=======",flush=True)
-print("m = %d" %par.m,flush=True)
-print("=======\n",flush=True)
 
 tic1 = timer()
 
-os.system('./bin/submatrices_new.py %d > /dev/null' %par.ncpus)
-
 # -------------------------------------------------------------------------------- Compute Rac
-opts='-st_type sinvert -st_pc_factor_mat_solver_type mumps -mat_mumps_icntl_14 1000 -eps_true_residual -eps_balance twoside'
 
-Ramin = 1.e6
+for m in marr:
 
-ra_cache = {}
+    print("=======",flush=True)
+    print(" m = %d" %m,flush=True)
+    print("=======\n",flush=True)
 
-Rac = bracket_brentq(get_sigma,np.log10(Ramin),args=(par.ncpus,opts))
-opts += '-eps_error_relative ::ascii_info_detail'
-runKoreRes(Rac,opts)
-Rac=10**Rac
-eig0 = np.loadtxt('eigenvalues0.dat')
-eig = np.reshape(eig0, (-1, 2))
-idx_c = np.argmax(eig[:,0])
-sigma_c,omega_c = eig[idx_c,:]
+    ra_cache = {}
 
-X = np.array([par.Ek_gap , par.ricb , Rac , int(par.m) , sigma_c , omega_c])
-fmt = ['%.3e','%.2f','%.5e','%d','%.5e','%.5e']
+    os.system('sed -i "0,/m =.*/s//m = %d/" ./bin/parameters.py' %m)
+    os.system('./bin/submatrices_new.py %d > /dev/null' %par.ncpus)
+    Rac = bracket_brentq(get_sigma,np.log10(Ramin),args=(par.ncpus,opts))
+    runKoreRes(Rac,optsRes)
+    Rac=10**Rac
+    eig0 = np.loadtxt('eigenvalues0.dat')
+    eig = np.reshape(eig0, (-1, 2))
+    idx_c = np.argmax(eig[:,0])
+    sigma_c,omega_c = eig[idx_c,:]
 
-with open('critical.dat','a') as dcrit:
-	np.savetxt(dcrit, X.reshape(1,X.shape[0]), fmt=fmt)
+    X = np.array([par.Ek_gap , par.ricb , Rac , int(m) , sigma_c , omega_c])
+    fmt = ['%.3e','%.2f','%.5e','%d','%.5e','%.5e']
+
+    with open('critical_params.dat','a') as dcrit:
+        np.savetxt(dcrit, X.reshape(1,X.shape[0]), fmt=fmt)
+
+    toc2 = timer()
+
+    tsinglem = str(datetime.timedelta(seconds=toc2 - tic1))
+
+    print("Rac for m=%d computed in %s\n\n" %(m, tsinglem))
 
 toc1 = timer()
 tform = str(datetime.timedelta(seconds=toc1 - tic1))
 
 print("\n======================================",flush=True)
-print("Rac for m=%d found in %s" %(par.m,tform),flush=True)
+print("Rac for m=%d to m=%d found in %s" %(mmin,mmax,tform),flush=True)
 print("======================================\n\n",flush=True)

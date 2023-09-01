@@ -1,7 +1,6 @@
 import numpy as np
 import utils as ut
 import parameters as par
-import numpy.polynomial.chebyshev as ch
 
 
 
@@ -194,10 +193,21 @@ def thermal_diffusivity(r):
     out = np.ones_like(r)
     return out
 
+def log_thermal_diffusivity(r):
+    out = np.log(thermal_diffusivity(r))
+    return out
 
 
 def kappa_rho(r):
     out = thermal_diffusivity(r)*density(r)
+    return out
+
+def heat_source(r):
+    out = 1
+    return out
+
+def epsilon_h(r):
+    out = r*heat_source(r)/(density(r)*temperature(r)*thermal_diffusivity(r))
     return out
 
 
@@ -215,37 +225,13 @@ def gravity(r):
 def buoFac(r):
     '''
     Profile of buoyancy = rho*alpha*T*g
-    gravity is multiplied later in Cheb space
+    If autocomputed, gravity is multiplied later in Cheb space
     '''
     if par.autograv:
         out = density(r)*alpha(r)*temperature(r)
     else:
         out = density(r)*alpha(r)*temperature(r)*gravity(r)
     return out
-
-
-def gravCoeff():
-    '''
-    Integrates density profile in Cheb space and gives Cheb
-    coefficients of gravity profile, normalized to the value
-    at the outer boundary. This works. We checked. Again.
-    '''
-    ck = ut.chebco_f(density,par.N,par.ricb,ut.rcmb,par.tol_tc)
-
-    # x0 = -(par.ricb + ut.rcmb)/(ut.rcmb - par.ricb)
-    if par.ricb > 0:
-        gk = (ut.rcmb - par.ricb)/2. * ch.chebint(ck,lbnd=-1)
-
-        g_ref = ch.chebval(1,gk)
-        out = gk/g_ref
-
-        out[0] += par.g_icb # Value of g at ricb normalized by value at rcmb
-    else:
-        gk = ut.rcmb * ch.chebint(ck,lbnd=0) # g at origin goes to zero
-        g_ref = ch.chebval(1,gk)
-        out = gk/g_ref
-
-    return out[:par.N]
 
 
 
