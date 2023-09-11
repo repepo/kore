@@ -23,7 +23,7 @@ else:
 
 rcmb   = 1
 
-N1     = int(par.N/2) * int(1 + np.sign(par.ricb)) + int((par.N%2)*np.sign(par.ricb)) # N/2 if no IC, N if present
+N1     = int(par.N*(0.5 + 0.5*np.sign(par.ricb)))   # N/2 if no IC, N if present
 n      = int(N1*(par.lmax-par.m+1)/2)
 n0     = int(par.N*(par.lmax-par.m+1)/2)
 m      = par.m
@@ -617,10 +617,10 @@ def chebco_h(args, kind, N, rcmb, tol):
     times a power of r
     '''
 
-    beta = args[0]  # beta
-    l    = args[1]  # l
+    #beta = args[0]  # beta
+    #l    = args[1]  # l
     ricb = args[2]  # ricb
-    rx   = args[3]  # power of r
+    #rx   = args[3]  # power of r
 
     dx   = args[4]  # derivative order
 

@@ -13,15 +13,15 @@ mp.set_start_method('fork')
 
 
 def xcheb(r, ricb, rcmb):
-	# returns points in the appropriate domain of the Cheb polynomial solutions
+    # returns points in the appropriate domain of the Cheb polynomial solutions
     # Domain [-1,1] corresponds to [ ricb,rcmb] if ricb>0
     # Domain [-1,1] corresponds to [-rcmb,rcmb] if ricb==0
 
-	r1 = rcmb
-	r0 = ricb + (np.sign(ricb)-1)*rcmb  # r0=-rcmb if ricb==0; r0=ricb if ricmb>0 
-	out = 2*(r-r0)/(r1-r0) - 1
+    r1 = rcmb
+    r0 = ricb + (np.sign(ricb)-1)*rcmb  # r0=-rcmb if ricb==0; r0=ricb if ricmb>0 
+    out = 2*(r-r0)/(r1-r0) - 1
 
-	return out
+    return out
 
 
 
@@ -106,6 +106,49 @@ def expand_sol(sol,vsymm):
 
 
 
+def expand_reshape_sol(sol, vsymm):
+    '''
+    Expands the ricb=0 solution with ut.N1 coeffs to have full N coeffs,
+    filling with zeros according to the equatorial symmetry.
+    vsymm=-1 for equatorially antisymmetric, vsymm=1 for symmetric
+    Returns a list with two 2D arrays, for poloidal and toroidal coeffs.
+    rows for l, columns for Cheb order
+    '''
+ 
+    lm1 = par.lmax-par.m+1
+
+    # separate poloidal and toroidal coeffs
+    P0 = sol[ 0    : ut.n   ]
+    T0 = sol[ ut.n : 2*ut.n ]
+    
+    if par.ricb==0:  # need to expand from N1 to N coeffs
+
+        Plj0 = np.reshape(P0,(int(lm1/2),ut.N1))
+        Tlj0 = np.reshape(T0,(int(lm1/2),ut.N1))
+
+        # create new expanded arrays
+        Plj = np.zeros((int(lm1/2),par.N),dtype=complex)
+        Tlj = np.zeros((int(lm1/2),par.N),dtype=complex)
+
+        # assign elements according to symmetry
+        s = int( (vsymm+1)/2 )  # s=0 if vsymm=-1, s=1 if vsymm=1
+        iP = (par.m + 1 - s)%2  # even/odd Cheb polynomial for poloidals according to the parity of m+1-s
+        iT = (par.m + s)%2
+        for k in np.arange(int(lm1/2)) :
+            Plj[k,iP::2] = Plj0[k,:]
+            Tlj[k,iT::2] = Tlj0[k,:]
+
+    else:  # No need to expand, just reshape
+        
+        Plj = np.reshape(P0,(int(lm1/2),par.N))
+        Tlj = np.reshape(T0,(int(lm1/2),par.N))
+
+    out = [Plj, Tlj]
+
+    return out
+
+
+
 def kinetic_energy_pol(l, qlm0, slm0):
     '''
     Returns the integrand to compute the poloidal kinetic energy, l-component
@@ -179,19 +222,233 @@ def kinetic_dissip_tor(l, tlm0, tlm1, tlm2):
     return 2*np.real( f0*(f1+f2+f3) )
 
 
+def l_worker( l, lp, lt, u_sol2, bsol2, Ra, Rb, N, sqx ):
+    
+    P = u_sol2[0]
+    T = u_sol2[1]
 
-def lorentz_rad(l, component. offdiag):
+    [ plm0, plm1, plm2, plm3] = [0, 0, 0, 0] 
+    [ qlm0, qlm1, qlm2]       = [0, 0, 0] 
+    [ slm0, slm1, slm2]       = [0, 0, 0] 
+    [ tlm0, tlm1, tlm2]       = [0, 0, 0]
 
-    out = 0
+    [ kinep, kinet] = [0, 0]
+    [ kindp, kindt] = [0, 0]
+    [ intdp, intdt] = [0, 0]
+    
+    L = l*(l+1)
 
-    if offdiag == -2:
+    if l in lp:
 
-    elif offdiag == 0:
+        idx   = list(lp).index(l) 
+        f_pol = funcheb(P[idx,:], r=None, ricb=par.ricb, rcmb=ut.rcmb, n=3)
+        plm0  = f_pol[:,0]
+        plm1  = f_pol[:,1]
+        plm2  = f_pol[:,2]
+        plm3  = f_pol[:,3] 
+        qlm0  = L*plm0/rk
+        qlm1  = (L*plm1 - qlm0)/rk
+        qlm2  = (L*plm2-2*qlm1)/rk
+        slm0  = plm1 + (plm0/rk)
+        slm1  = plm2 + (qlm1/L)
+        slm2  = plm3 + (qlm2/L)
+        
+        kinep = kinetic_energy_pol(l, qlm0, slm0)
+        kindp = kinetic_dissip_pol(l, qlm0, qlm1, qlm2, slm0, slm1, slm2 )
+        intdp = internl_dissip_pol(l, qlm0, qlm1, slm0, slm1)
 
-    elif offdiag == 2: 
+    elif l in lt:
+
+        idx   = list(lt).index(l) 
+        f_tor = funcheb(T[idx,:], r=None, ricb=par.ricb, rcmb=ut.rcmb, n=2)
+        tlm0  = f_tor[:,0]
+        tlm1  = f_tor[:,1]
+        tlm2  = f_tor[:,2]
+
+        kinet = kinetic_energy_tor(l, tlm0)
+        kindt = kinetic_dissip_tor(l, tlm0, tlm1, tlm2)
+        intdt = internl_dissip_tor(l, tlm0, tlm1)
+
+    # Integrals
+    Kene_l = cg_quad( kinep + kinet, Ra, Rb, N, sqx)
+    Dkin_l = cg_quad( kindp + kindt, Ra, Rb, N, sqx)
+    Dint_l = cg_quad( intdp + intdt, Ra, Rb, N, sqx)
+
+    return [ Kene_l, Dkin_l, Dint_l ]
 
 
-    return out
+
+def lorentz_pp( l, b_sol2 ):
+    
+    m   = par.m
+    ll0 = ut.ell( m, par.lmax, ut.bsymm)
+    lp  = ll0[0]  # l's for poloidals
+    lt  = ll0[1]  # l's for toroidals
+    ricb = par.ricb
+    rcmb = ut.rcmb
+    
+    P = b_sol2[0]
+    T = b_sol2[1]
+
+    h0 = ut.h0(rk, par.B0, [par.beta, par.B0_l, ricb, 0])
+    h1 = ut.h1(rk, par.B0, [par.beta, par.B0_l, ricb, 0])
+    h2 = ut.h2(rk, par.B0, [par.beta, par.B0_l, ricb, 0])
+
+    out_rad = np.zeros_like(rk)
+    out_con = np.zeros_like(rk)
+    out_tor = np.zeros_like(rk)
+    
+    if l-2 in lp:       
+        L     = l-2
+        L1    = L*(L+1)
+        idx   = list(lp).index(L) 
+        f_pol = funcheb(P[idx,:], r=None, ricb=ricb, rcmb=rcmb, n=2)
+        plm0  = f_pol[:,0]
+        plm1  = f_pol[:,1]
+        plm2  = f_pol[:,2]
+        qlm0  = L1*plm0/rk
+        qlm1  = (L1*plm1 - qlm0)/rk
+        slm0  = plm1 + (plm0/rk)
+        slm1  = plm2 + (qlm1/L1)
+
+        C_rad    = 3*(-2 + l)*np.sqrt((-1 + l - m)*(l - m)*(-1 + l + m)*(l + m))/(3 + 4*(-2 + l)*l)
+        out_rad += C_rad*( -h0*(qlm0/r2 + 5*slm0/r2 - slm1/rk) + h2*slm0 + h1*(-qlm0/rk + 3*slm0/rk + slm1) )
+
+        C_con    = 3*np.sqrt((-1 + l - m)*(l - m)*(-1 + l + m)*(l + m))/(3*l + 4*(-2 + l)*l**2)
+        out_con += C_con*( -3*h0*l*qlm0/r2 + qlm0*(2*h1/rk + h2) + 3*h0*(-2 + l)*(slm0/r2 + slm1/rk) )
+
+    elif l-2 in lt:
+        L     = l-2
+        L1    = L*(L+1)
+        idx   = list(lt).index(L) 
+        f_tor = funcheb(T[idx,:], r=None, ricb=ricb, rcmb=rcmb, n=1)
+        tlm0  = f_tor[:,0]
+        tlm1  = f_tor[:,1]
+
+        C_tor    = -3*(-2 + l)*np.sqrt((-1 + l - m)*(l - m)*(-1 + l + m)*(l + m))/(l*(3 + 4*(-2 + l)*l))
+        out_tor += C_tor*( h0*(-4 + l)*tlm0/r2 + h1*(-1 + l)*tlm0/rk - 3*h0*tlm1/rk )
+
+    if l-1 in lt:
+        L     = l-1
+        L1    = L*(L+1)
+        idx   = list(lt).index(L) 
+        f_tor = funcheb(T[idx,:], r=None, ricb=ricb, rcmb=rcmb, n=1)
+        tlm0  = f_tor[:,0]
+        tlm1  = f_tor[:,1]
+           
+        C_rad    = 3j*m*np.sqrt(l**2-m**2)/(2*l-1) 
+        out_rad += C_rad*( h0*(-5*tlm0/r2 + tlm1/rk) + 3*h1*tlm0/rk + h2*tlm0 + h1*tlm1 )
+
+        C_con    = 3j*m*np.sqrt(l**2 - m**2)/(l*(1 + l)*(-1 + 2*l))
+        out_con += C_con*( h0*(6 + (-1 + l)*l)*tlm0/r2 + h1*(-1 + l)*l*tlm0/rk + 6*h0*tlm1/rk )
+
+    elif l-1 in lp:
+        L     = l-1
+        L1    = L*(L+1)
+        idx   = list(lp).index(L) 
+        f_pol = funcheb(P[idx,:], r=None, ricb=ricb, rcmb=rcmb, n=2)
+        plm0  = f_pol[:,0]
+        plm1  = f_pol[:,1]
+        plm2  = f_pol[:,2]
+        qlm0  = L1*plm0/rk
+        qlm1  = (L1*plm1 - qlm0)/rk
+        slm0  = plm1 + (plm0/rk)
+        slm1  = plm2 + (qlm1/L1)
+
+        C_tor    =  3j*m*np.sqrt(l**2 - m**2)/(l*(1 + l)*(-1 + 2*l))      
+        out_tor += C_tor*( qlm0*(2*h1/rk + h2) - 6*h0*(slm0/r2 + slm1/rk) )
+
+    if l in lp:
+        L     = l
+        L1    = L*(L+1)
+        idx   = list(lp).index(L) 
+        f_pol = funcheb(P[idx,:], r=None, ricb=ricb, rcmb=rcmb, n=2)
+        plm0  = f_pol[:,0]
+        plm1  = f_pol[:,1]
+        plm2  = f_pol[:,2]
+        qlm0  = L1*plm0/rk
+        qlm1  = (L1*plm1 - qlm0)/rk
+        slm0  = plm1 + (plm0/rk)
+        slm1  = plm2 + (qlm1/L1)
+
+        C_rad    = -3*(l+l**2-3*m**2)/(-3+4*l*(l+1))
+        out_rad += C_rad*( -h0*(qlm0/r2 + 5*slm0/r2 - slm1/rk) + h2*slm0 + h1*(-qlm0/rk + 3*slm0/rk + slm1) )
+
+        C_con    = 3*(l + l**2 - 3*m**2)/(l*(1 + l)*(-3 + 4*l*(1 + l)))
+        out_con += C_con*( -2*h0*l*(1 + l)*qlm0/r2 + qlm0*(2*h1/rk + h2) + 2*h0*(-3 + l + l**2)*(slm0/r2 + slm1/rk) )
+
+    elif l in lt:
+        L     = l
+        L1    = L*(L+1)
+        idx   = list(lt).index(L) 
+        f_tor = funcheb(T[idx,:], r=None, ricb=ricb, rcmb=rcmb, n=1)
+        tlm0  = f_tor[:,0]
+        tlm1  = f_tor[:,1]
+    
+        C_tor    = 3*(l + l**2 - 3*m**2)/(l*(1 + l)*(-3 + 4*l*(1 + l)))
+        out_tor += C_tor*( h0*(-6 + l + l**2)*tlm0/r2 - h1*l*(1 + l)*tlm0/rk + 2*h0*(-3 + l + l**2)*tlm1/rk )
+
+    if l+1 in lt:
+        L     = l+1
+        L1    = L*(L+1)
+        idx   = list(lt).index(L) 
+        f_tor = funcheb(T[idx,:], r=None, ricb=ricb, rcmb=rcmb, n=1)
+        tlm0  = f_tor[:,0]
+        tlm1  = f_tor[:,1]
+    
+        C_rad    = 3j*m*np.sqrt((l+1-m)*(l+1+m))/(2*l+3)
+        out_rad += C_rad*( h0*(-5*tlm0/r2 + tlm1/rk) + 3*h1*tlm0/rk + h2*tlm0 + h1*tlm1 )
+
+        C_con    = 3j*m*np.sqrt((1 + l - m)*(1 + l + m))/(l*(1 + l)*(3 + 2*l))
+        out_con += C_con*( h0*(8 + l*(3 + l))*tlm0/r2 + h1*(1 + l)*(2 + l)*tlm0/rk + 6*h0*tlm1/rk )
+
+    elif l+1 in lp:
+        L     = l+1
+        L1    = L*(L+1)
+        idx   = list(lp).index(L) 
+        f_pol = funcheb(P[idx,:], r=None, ricb=ricb, rcmb=rcmb, n=2)
+        plm0  = f_pol[:,0]
+        plm1  = f_pol[:,1]
+        plm2  = f_pol[:,2]
+        qlm0  = L1*plm0/rk
+        qlm1  = (L1*plm1 - qlm0)/rk
+        slm0  = plm1 + (plm0/rk)
+        slm1  = plm2 + (qlm1/L1)
+
+        C_tor    = 3j*m*np.sqrt((1 + l - m)*(1 + l + m))/(l*(1 + l)*(3 + 2*l))
+        out_tor += C_tor*( qlm0*(2*h1/rk + h2) - 6*h0*(slm0/r2 + slm1/rk) )
+    
+    if l+2 in lp:
+        L     = l+2
+        L1    = L*(L+1)
+        idx   = list(lp).index(L) 
+        f_pol = funcheb(P[idx,:], r=None, ricb=ricb, rcmb=rcmb, n=2)
+        plm0  = f_pol[:,0]
+        plm1  = f_pol[:,1]
+        plm2  = f_pol[:,2]
+        qlm0  = L1*plm0/rk
+        qlm1  = (L1*plm1 - qlm0)/rk
+        slm0  = plm1 + (plm0/rk)
+        slm1  = plm2 + (qlm1/L1)
+
+        C_rad    = -3*(l+3)*np.sqrt((1+l-m)*(2+l-m)*(1+l+m)*(2+l+m))/((2*l+3)*(2*l+5))
+        out_rad += C_rad*( -h0*(qlm0/r2 + 5*slm0/r2 - slm1/rk) + h2*slm0 + h1*(-qlm0/rk + 3*slm0/rk + slm1) )
+
+        C_con    = -3*np.sqrt((1 + l - m)*(2 + l - m)*(1 + l + m)*(2 + l + m))/((1 + l)*(3 + 2*l)*(5 + 2*l))
+        out_con += C_con*( 3*h0*(1 + l)*qlm0/r2 + qlm0*(2*h1/rk + h2) - 3*h0*(3 + l)*(slm0/r2 + slm1/rk) )
+
+    elif l+2 in lt:
+        L     = l+2
+        L1    = L*(L+1)
+        idx   = list(lt).index(L) 
+        f_tor = funcheb(T[idx,:], r=None, ricb=ricb, rcmb=rcmb, n=1)
+        tlm0  = f_tor[:,0]
+        tlm1  = f_tor[:,1]
+    
+        C_tor    = 3*(l+3)*np.sqrt((1 + l - m)*(2 + l - m)*(1 + l + m)*(2 + l + m))/((1 + l)*(3 + 2*l)*(5 + 2*l))
+        out_tor += C_tor*( h0*(l+5)*tlm0/r2 + h1*(l+2)*tlm0/rk + 3*h0*tlm1/rk )
+
+    return [out_rad, out_con, out_tor]
 
 
 
@@ -479,8 +736,7 @@ def tor_ohm( l, Tk0, N, ricb, rcmb, Ra, Rb): # ---------------------------------
     return [benergy_tor_l, odis_tor_l]
 
 
-
-def ken_dis( u_sol, Ra, Rb, ncpus):
+def diagnose( usol2, bsol2, Ra, Rb, ncpus):
     '''
     Computes kinetic energy, internal and kinetic energy dissipation,
     and input power from body forces. Integrated From r=Ra to r=Rb, and
@@ -510,15 +766,58 @@ def ken_dis( u_sol, Ra, Rb, ncpus):
     global r4
     r4 = rk**4
 
-    # separate poloidal and toroidal coeffs
-    Pk0 = u_sol[ 0    : ut.n   ]
-    Tk0 = u_sol[ ut.n : 2*ut.n ]
+    [ lp, lt, ll ] = ut.ell(par.m, par.lmax, par.symm)
+    
+    # process each l component in parallel
+    pool = mp.Pool(processes=ncpus)
+    pp = [ pool.apply_async(l_worker,
+          args=( l, lp, lt, usol2, bsol2,  Ra, Rb, par.N, sqx)) 
+          for row,l in enumerate(ll) ]
 
-    # these are the cheb coefficients, reorganized as a 2D array
-    # rows are for l's, columns for cheb coeff order
-    # rows will be processed in parallel
-    Pk0 = np.reshape(Pk0,(int((par.lmax-par.m+1)/2),par.N))
-    Tk0 = np.reshape(Tk0,(int((par.lmax-par.m+1)/2),par.N))
+    out = [pp0.get() for pp0 in pp]
+    pool.close()
+    pool.join()
+
+    return out
+
+
+
+
+
+
+
+def ken_dis( u_sol2, Ra, Rb, ncpus):
+    '''
+    Computes kinetic energy, internal and kinetic energy dissipation,
+    and input power from body forces. Integrated From r=Ra to r=Rb, and
+    angularly over the whole sphere. Processed in parallel using ncpus.
+    '''
+
+    # xk are the grid points for the integration using Gauss-Chebyshev quadratures.
+    # Always go from -1 to 1
+    i = np.arange(0,par.N)
+    xk = np.cos( (i+0.5)*np.pi/par.N )
+
+    # rk are the corresponding radial points in the desired integration interval: from Ra to Rb
+    global rk
+    rk = 0.5*(Rb-Ra)*( xk + 1 ) + Ra
+
+    # x0 are the points in the appropriate domain of the Chebyshev polynomial solutions
+    global x0
+    x0 = xcheb(rk, par.ricb, 1)
+
+    # the following are needed to compute the integrals (i.e. the quadratures)
+    global sqx
+    sqx = np.sqrt(1-xk**2)
+    global r2
+    r2 = rk**2
+    global r3
+    r3 = rk**3
+    global r4
+    r4 = rk**4
+
+    Pk = u_sol2[0]
+    Tk = u_sol2[1]
 
     # the l numbers for poloidals and toroidals
     ll0 = ut.ell(par.m, par.lmax, par.symm)
@@ -528,10 +827,10 @@ def ken_dis( u_sol, Ra, Rb, ncpus):
     # process each l component in parallel
     pool = mp.Pool(processes=ncpus)
     p = [ pool.apply_async(pol_worker,
-          args=( l, Pk0[row,:], par.N, par.ricb, ut.rcmb, Ra, Rb)) 
+          args=( l, Pk[row,:], par.N, par.ricb, ut.rcmb, Ra, Rb)) 
           for row,l in enumerate(llpol) ]
     t = [ pool.apply_async(tor_worker, 
-          args=( l, Tk0[row,:], par.N, par.ricb, ut.rcmb, Ra, Rb))
+          args=( l, Tk[row,:], par.N, par.ricb, ut.rcmb, Ra, Rb))
           for row,l in enumerate(lltor) ]
 
     # Sum all l-contributions
@@ -557,7 +856,8 @@ def ken_dis( u_sol, Ra, Rb, ncpus):
 
 
 
-def ohm_dis( a, b, N, lmax, m, bsymm, ricb, rcmb, ncpus, Ra, Rb):
+#def ohm_dis( a, b, N, lmax, m, bsymm, ricb, rcmb, ncpus, Ra, Rb):
+def ohm_dis( b_sol, Ra, Rb, ncpus):
     '''
     Computes the total energy in the induced magnetic field and the Ohmic dissipation.
     bsymm is the symmetry of the *induced magnetic field*, which is
@@ -586,18 +886,14 @@ def ohm_dis( a, b, N, lmax, m, bsymm, ricb, rcmb, ncpus, Ra, Rb):
     global r4
     r4 = rk**4
 
-    n = ut.n
-    N1 = ut.N1
-
-    ev0 = a + 1j * b
-    Pk0 = ev0[:n]
-    Tk0 = ev0[n:n+n]
+    Pk0 = b_sol[ 0    : ut.n   ]
+    Tk0 = b_sol[ ut.n : 2*ut.n ]
 
     # these are the cheb coefficients, reorganized
-    Pk0 = np.reshape(Pk0,(int((lmax-m+1)/2),N1))
-    Tk0 = np.reshape(Tk0,(int((lmax-m+1)/2),N1))
+    Pk0 = np.reshape(Pk0,(int((par.lmax-par.m+1)/2),par.N))
+    Tk0 = np.reshape(Tk0,(int((par.lmax-par.m+1)/2),par.N))
 
-    ll = ut.ell(m,lmax,bsymm)
+    ll = ut.ell(par.m,par.lmax,ut.bsymm)
     llpol = ll[0]
     lltor = ll[1]
 

@@ -3,7 +3,7 @@
 kore postprocessing script
 
 Usage:
-> python3 ./bin/postprocess.py
+> python3 ./bin/postprocess.py ncpus
 
 '''
 
@@ -71,9 +71,8 @@ def main(ncpus):
         success = np.shape(rb)[1]
 
 
-    kid          = np.zeros((success,7))
-    Dint_partial = np.zeros((success,3))
-    p2t          = np.zeros(success)
+    #kid          = np.zeros((success,7))
+    t2p          = np.zeros(success)
     resid1       = np.zeros(success)
     resid2       = np.zeros(success)
     resid3       = np.zeros(success)
@@ -85,7 +84,6 @@ def main(ncpus):
 
     if par.magnetic == 1:
         ohm = np.zeros((success,4))
-        Dohm_partial = np.zeros((success,3))
 
     if par.thermal == 1:
         therm = np.zeros((success,1))
@@ -113,8 +111,7 @@ def main(ncpus):
         x = np.loadtxt('track_target')
 
 
-
-
+    # Begin processing all solutions
     for i in range(success):
 
         if par.forcing == 0:
@@ -124,29 +121,32 @@ def main(ncpus):
             w = ut.wf
             sigma = 0
 
-        #print('Processing solution',i)
+        u_sol2 = 0
+        b_sol2 = 0
+
         if par.hydro == 1:
-            
             rflow = np.copy(ru[:,i])
             iflow = np.copy(iu[:,i])
+            # Expand solution
+            u_sol2 = upp.expand_reshape_sol( rflow + 1j*iflow, par.symm)
 
-            # Expand solution in case ricb=0
-            u_sol = upp.expand_sol( rflow + 1j*iflow, par.symm)
+        if par.magnetic == 1:
+            rmag = np.copy(rb[:,i])
+            imag = np.copy(ib[:,i])
+            # Expand solution
+            b_sol2 = upp.expand_reshape_sol( rmag + 1j*imag, ut.bsymm)
+
+
+        # Process solution i 
+        if par.hydro == 1:
 
             # the actual calculation, integrating over the whole fluid volume,
             # i.e. from Ra=ricb to Rb = rcmb
-            kid[i,:] = upp.ken_dis( u_sol, Ra=par.ricb, Rb=1, ncpus=int(ncpus))
+            kid = upp.diagnose( u_sol2, b_sol2, par.ricb, ut.rcmb, int(ncpus) )
 
-            KP = kid[i,0]  # Poloidal kinetic energy
-            KT = kid[i,1]  # Toroidal kinetic energy
-            p2t[i] = KP/KT
-            KE = KP + KT   # Total kinetic energy
-
-            Dint = kid[i,2]  # Internal energy dissipation rate
-            Dkin = kid[i,3]  # kinetic energy dissipation rate
-            #print('Dint =',Dint, 'Dkin =',Dkin)
-
-            repow = kid[i,5]
+            [ KE, Dkin0, Dint0 ] = np.sum( kid, 0)
+            Dkin = par.OmgTau*par.Ek*Dkin0
+            #resid1[i] = abs( Dint0 + Dkin0 ) / max( abs(Dint0), abs(Dkin0) )
 
             vtorq[i] = par.Ek * np.dot( ut.gamma_visc(0,0,0), u_sol)
             vtorq_icb[i] = par.Ek * np.dot( ut.gamma_visc_icb(par.ricb), u_sol)
@@ -162,18 +162,15 @@ def main(ncpus):
 
             Dint = 0
             Dkin = 0
-            KE = np.nan
+            KE = 0
             KT = 0
-            KP = np.nan
+            KP = 0
 
 
         if par.magnetic == 1:
 
-            rmag = np.copy(rb[:,i])
-            imag = np.copy(ib[:,i])
-
-            ohm[i,:] = upp.ohm_dis( rmag, imag, par.N, par.lmax, par.m, ut.bsymm, par.ricb, ut.rcmb, par.ncpus, par.ricb, ut.rcmb )
-
+            #ohm[i,:] = upp.ohm_dis( rmag, imag, par.N, par.lmax, par.m, ut.bsymm, par.ricb, ut.rcmb, par.ncpus, par.ricb, ut.rcmb )
+            ohm[i,:] = upp.ohm_dis( b_sol, Ra=par.ricb, Rb=1, ncpus=int(ncpus))
 
             Dohm = (ohm[i,2]+ohm[i,3])*par.Le2*par.Em
             if Dint != 0:
@@ -263,7 +260,7 @@ def main(ncpus):
             pss = repow  # power of stresses
 
         if par.Ek != 0 and par.hydro == 1:
-            resid1[i] = abs( Dint + Dkin - pss ) / max( abs(Dint), abs(Dkin), abs(pss) )
+            resid1[i] = abs( Dint0 + Dkin0 - pss ) / max( abs(Dint0), abs(Dkin0), abs(pss) )
         else:
             resid1[i] = np.nan
         resid2[i] = abs( 2*sigma*(KE + par.Le2*ME) - Dkin - Dtemp + Dohm - pvf ) / \
@@ -340,7 +337,7 @@ def main(ncpus):
 
 
 
-
+    '''
     # ---------------------------------------------------------- write post-processed data and parameters to disk
     #print('Writing results')
 
@@ -370,6 +367,8 @@ def main(ncpus):
         with open('eigenvalues.dat','ab') as deig:
             np.savetxt(deig, eigval)
 
+    '''
+
     # ------------------------------------------------------------------ done
     return 0
 
@@ -377,5 +376,3 @@ def main(ncpus):
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1]))
-
-
