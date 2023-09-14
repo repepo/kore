@@ -79,8 +79,8 @@ def expand_sol(sol,vsymm):
         T0 = sol[ ut.n : 2*ut.n ]
 
         # these are the cheb coefficients, reorganized
-        Plj0 = np.reshape(P0,(int(lm1/2),par.N1))
-        Tlj0 = np.reshape(T0,(int(lm1/2),par.N1))
+        Plj0 = np.reshape(P0,(int(lm1/2),ut.N1))
+        Tlj0 = np.reshape(T0,(int(lm1/2),ut.N1))
 
         # create new arrays
         Plj = np.zeros((int(lm1/2),par.N),dtype=complex)
@@ -160,6 +160,16 @@ def kinetic_energy_pol(l, qlm0, slm0):
 
 
 
+def kinetic_energy_tor(l, tlm0):
+    '''
+    Returns the integrand to compute the toroidal kinetic energy, l-component
+    '''
+    f0 = 4*np.pi/(2*l+1)
+    f1 = r2 * l*(l+1) * np.absolute(tlm0)**2  # r2 is rk**2, a global variable
+    return f0*f1
+
+
+
 def kinetic_dissip_pol(l, qlm0, qlm1, qlm2, slm0, slm1, slm2):
     '''
     Returns the integrand to compute the kinetic energy dissipation rate, poloidal l-component
@@ -172,6 +182,19 @@ def kinetic_dissip_pol(l, qlm0, qlm1, qlm2, slm0, slm1, slm2):
     f4 = 2 * rk * np.conj(qlm0)*qlm1 + r2 * np.conj(qlm0) * qlm2
     f5 = 2 * L *( np.conj(qlm0)*slm0 + qlm0*np.conj(slm0) )
     return 2*np.real( f0*( f1+f2+f3+f4+f5 ) )
+
+
+
+def kinetic_dissip_tor(l, tlm0, tlm1, tlm2):
+    '''
+    Returns the integrand to compute the kinetic energy dissipation, toroidal l-component
+    '''
+    L = l*(l+1)
+    f0 = 4*np.pi/(2*l+1)
+    f1 = L * r2 * np.conj(tlm0) * tlm2
+    f2 = 2 * rk * L * np.conj(tlm0) * tlm1
+    f3 = -(L**2)*( np.conj(tlm0)*tlm0 )
+    return 2*np.real( f0*(f1+f2+f3) )
 
 
 
@@ -188,16 +211,6 @@ def internl_dissip_pol(l, qlm0, qlm1, slm0, slm1):
 
 
 
-def kinetic_energy_tor(l, tlm0):
-    '''
-    Returns the integrand to compute the toroidal kinetic energy, l-component
-    '''
-    f0 = 4*np.pi/(2*l+1)
-    f1 = r2 * l*(l+1) * np.absolute(tlm0)**2  # r2 is rk**2, a global variable
-    return f0*f1
-
-
-
 def internl_dissip_tor(l, tlm0, tlm1):
     '''
     Returns the integrand to compute the internal energy dissipation, toroidal l-component
@@ -210,19 +223,24 @@ def internl_dissip_tor(l, tlm0, tlm1):
 
 
 
-def kinetic_dissip_tor(l, tlm0, tlm1, tlm2):
-    '''
-    Returns the integrand to compute the kinetic energy dissipation, toroidal l-component
-    '''
-    L = l*(l+1)
+def lorentz_work_pol(l, qlm0, slm0, qlmb, slmb):
+
     f0 = 4*np.pi/(2*l+1)
-    f1 = L * r2 * np.conj(tlm0) * tlm2
-    f2 = 2 * rk * L * np.conj(tlm0) * tlm1
-    f3 = -(L**2)*( np.conj(tlm0)*tlm0 )
-    return 2*np.real( f0*(f1+f2+f3) )
+    f1 = r2 * 2 * np.real( qlm0*np.conj(qlmb))
+    f2 = r2 * l*(l+1) * 2 * np.real( slm0*np.conj(slmb))
+    return f0*(f1+f2)
 
 
-def l_worker( l, lp, lt, u_sol2, bsol2, Ra, Rb, N, sqx ):
+
+def lorentz_work_tor(l, tlm0, tlmb):
+    
+    f0 = 4*np.pi/(2*l+1)
+    f1 = r2 * l*(l+1) * 2 * np.real( tlm0*np.conj(tlmb))
+    return f0*f1
+
+
+
+def l_worker( l, lp, lt, u_sol2, b_sol2, Ra, Rb, N, sqx ):
     
     P = u_sol2[0]
     T = u_sol2[1]
@@ -235,8 +253,12 @@ def l_worker( l, lp, lt, u_sol2, bsol2, Ra, Rb, N, sqx ):
     [ kinep, kinet] = [0, 0]
     [ kindp, kindt] = [0, 0]
     [ intdp, intdt] = [0, 0]
+    [ wlorp, wlort] = [0, 0]
     
     L = l*(l+1)
+
+    if par.magnetic == 1:
+        [ qlmb, slmb, tlmb] = lorentz_pp(l, b_sol2)  # the Lorentz force components
 
     if l in lp:
 
@@ -256,6 +278,8 @@ def l_worker( l, lp, lt, u_sol2, bsol2, Ra, Rb, N, sqx ):
         kinep = kinetic_energy_pol(l, qlm0, slm0)
         kindp = kinetic_dissip_pol(l, qlm0, qlm1, qlm2, slm0, slm1, slm2 )
         intdp = internl_dissip_pol(l, qlm0, qlm1, slm0, slm1)
+        if par.magnetic:
+            wlorp = lorentz_work_pol(l, qlm0, slm0, qlmb, slmb)
 
     elif l in lt:
 
@@ -268,13 +292,16 @@ def l_worker( l, lp, lt, u_sol2, bsol2, Ra, Rb, N, sqx ):
         kinet = kinetic_energy_tor(l, tlm0)
         kindt = kinetic_dissip_tor(l, tlm0, tlm1, tlm2)
         intdt = internl_dissip_tor(l, tlm0, tlm1)
+        if par.magnetic:
+            wlort = lorentz_work_tor(l, tlm0, tlmb)
 
     # Integrals
     Kene_l = cg_quad( kinep + kinet, Ra, Rb, N, sqx)
     Dkin_l = cg_quad( kindp + kindt, Ra, Rb, N, sqx)
     Dint_l = cg_quad( intdp + intdt, Ra, Rb, N, sqx)
+    Wlor_l = cg_quad( wlorp + wlort, Ra, Rb, N, sqx)
 
-    return [ Kene_l, Dkin_l, Dint_l ]
+    return [ Kene_l, Dkin_l, Dint_l, Wlor_l ]
 
 
 
@@ -294,9 +321,11 @@ def lorentz_pp( l, b_sol2 ):
     h1 = ut.h1(rk, par.B0, [par.beta, par.B0_l, ricb, 0])
     h2 = ut.h2(rk, par.B0, [par.beta, par.B0_l, ricb, 0])
 
-    out_rad = np.zeros_like(rk)
-    out_con = np.zeros_like(rk)
-    out_tor = np.zeros_like(rk)
+    cnorm = ut.B0_norm()
+
+    out_rad = np.zeros_like(rk, dtype='complex128')
+    out_con = np.zeros_like(rk, dtype='complex128')
+    out_tor = np.zeros_like(rk, dtype='complex128')
     
     if l-2 in lp:       
         L     = l-2
@@ -448,19 +477,7 @@ def lorentz_pp( l, b_sol2 ):
         C_tor    = 3*(l+3)*np.sqrt((1 + l - m)*(2 + l - m)*(1 + l + m)*(2 + l + m))/((1 + l)*(3 + 2*l)*(5 + 2*l))
         out_tor += C_tor*( h0*(l+5)*tlm0/r2 + h1*(l+2)*tlm0/rk + 3*h0*tlm1/rk )
 
-    return [out_rad, out_con, out_tor]
-
-
-
-
-
-
-
-
-
-
-
-
+    return [out_rad * cnorm, out_con * cnorm, out_tor * cnorm]
 
 
                     
@@ -774,7 +791,7 @@ def diagnose( usol2, bsol2, Ra, Rb, ncpus):
           args=( l, lp, lt, usol2, bsol2,  Ra, Rb, par.N, sqx)) 
           for row,l in enumerate(ll) ]
 
-    out = [pp0.get() for pp0 in pp]
+    out = np.array([pp0.get() for pp0 in pp])
     pool.close()
     pool.join()
 
@@ -865,8 +882,8 @@ def ohm_dis( b_sol, Ra, Rb, ncpus):
     '''
 
     # xk are the grid points for the integration (Gauss-Chebyshev quadrature), from -1 to 1
-    i = np.arange(0,N)
-    xk = np.cos( (i+0.5)*np.pi/N )
+    i = np.arange(0,par.N)
+    xk = np.cos( (i+0.5)*np.pi/par.N )
 
     # rk are the corresponding radial points, from Ra to Rb
     global rk
@@ -899,8 +916,8 @@ def ohm_dis( b_sol, Ra, Rb, ncpus):
 
     # process each l component in parallel
     pool = mp.Pool(processes=ncpus)
-    p = [ pool.apply_async(pol_ohm,args=(l, Pk0[k,:], N, ricb, rcmb, Ra, Rb)) for k,l in enumerate(llpol) ]
-    t = [ pool.apply_async(tor_ohm,args=(l, Tk0[k,:], N, ricb, rcmb, Ra, Rb)) for k,l in enumerate(lltor) ]
+    p = [ pool.apply_async(pol_ohm,args=(l, Pk0[k,:], par.N, par.ricb, ut.rcmb, Ra, Rb)) for k,l in enumerate(llpol) ]
+    t = [ pool.apply_async(tor_ohm,args=(l, Tk0[k,:], par.N, par.ricb, ut.rcmb, Ra, Rb)) for k,l in enumerate(lltor) ]
 
     res_pol = np.sum([p1.get() for p1 in p],0)
     res_tor = np.sum([t1.get() for t1 in t],0)
