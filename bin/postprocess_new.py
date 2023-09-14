@@ -129,12 +129,18 @@ def main(ncpus):
             iflow = np.copy(iu[:,i])
             # Expand solution
             u_sol2 = upp.expand_reshape_sol( rflow + 1j*iflow, par.symm)
+            u_sol  = upp.expand_sol( rflow + 1j*iflow, par.symm)
+            [ lp, lt, ll] = ut.ell(par.m, par.lmax, par.symm)
+            lpi = np.searchsorted(ll,lp);  # Poloidal indices
+            lti = np.searchsorted(ll,lt);  # Toroidal indices
+
 
         if par.magnetic == 1:
             rmag = np.copy(rb[:,i])
             imag = np.copy(ib[:,i])
             # Expand solution
             b_sol2 = upp.expand_reshape_sol( rmag + 1j*imag, ut.bsymm)
+            b_sol  = upp.expand_sol( rmag + 1j*imag, ut.bsymm)
 
 
         # Process solution i 
@@ -143,9 +149,16 @@ def main(ncpus):
             # the actual calculation, integrating over the whole fluid volume,
             # i.e. from Ra=ricb to Rb = rcmb
             kid = upp.diagnose( u_sol2, b_sol2, par.ricb, ut.rcmb, int(ncpus) )
-
-            [ KE, Dkin0, Dint0 ] = np.sum( kid, 0)
-            Dkin = par.OmgTau*par.Ek*Dkin0
+            
+            KP = np.sum( kid[lpi,0])
+            KT = np.sum( kid[lti,0])
+            
+            [ KE, Dkin0, Dint0, Wlor0 ] = np.sum( kid, 0)
+            
+            Dkin = par.OmgTau * par.Ek * Dkin0
+            Dint = par.OmgTau * par.Ek * Dint0
+            Wlor = par.OmgTau**2 * par.Le2 * Wlor0
+            
             #resid1[i] = abs( Dint0 + Dkin0 ) / max( abs(Dint0), abs(Dkin0) )
 
             vtorq[i] = par.Ek * np.dot( ut.gamma_visc(0,0,0), u_sol)
@@ -263,8 +276,16 @@ def main(ncpus):
             resid1[i] = abs( Dint0 + Dkin0 - pss ) / max( abs(Dint0), abs(Dkin0), abs(pss) )
         else:
             resid1[i] = np.nan
-        resid2[i] = abs( 2*sigma*(KE + par.Le2*ME) - Dkin - Dtemp + Dohm - pvf ) / \
-                    max( abs(2*sigma*(KE + par.Le2*ME)), abs(Dkin), abs(Dohm), abs(Dtemp), abs(pvf) )
+
+        print('2sigmaK = ', 2*sigma*KE )
+        print('Lorentz = ', Wlor )
+        print('Viscous = ', Dkin )
+        print('Dohm = ',Dohm)
+        
+        #resid2[i] = abs( 2*sigma*(KE + par.Le2*ME) - Dkin - Dtemp + Dohm - pvf ) / \
+        #            max( abs(2*sigma*(KE + par.Le2*ME)), abs(Dkin), abs(Dohm), abs(Dtemp), abs(pvf) )
+        resid2[i] = abs( 2*sigma*KE - Dkin - Wlor)/ \
+                    max(abs(2*sigma*KE), abs(Dkin), abs(Wlor))    
 
         if par.thermal == 1:
             resid3[i] = abs(2*sigma*(TE) - Dadv - Dtemp) / max(abs(2*sigma*(TE)), abs(Dadv), abs(Dtemp))
