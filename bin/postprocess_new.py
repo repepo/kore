@@ -95,16 +95,17 @@ def main(ncpus):
     #params = np.zeros((success,30))
 
 
-
     if par.Ek != 0:
         print('Ek = 10**{:<8.4f}'.format(np.log10(par.Ek)))
     else:
         print('Ek = 0')
 
+
     print('Post-processing:')
-    print('--- -------------- -------------- ---------- ---------- ---------- ---------- ---------- ----------')
-    print('Sol    Damping        Frequency     Resid1     Resid2    ohm2visc    tor2pol   visc trq   mag trq  ')
-    print('--- -------------- -------------- ---------- ---------- ---------- ---------- ---------- ----------')
+    print('---+--------------+--------------+----------+----------+----------+----------+----------|----------')
+    print('Sol⋅   Damping    ⋅   Frequency  ⋅  Resid1  ⋅  Resid2  ⋅ ohm2visc ⋅  tor2pol ⋅ visc trq   mag trq  ')
+    print('---+--------------+--------------+----------+----------+----------+----------+----------|----------')
+
 
     if par.track_target == 1:  # eigenvalue tracking enabled
         #read target data
@@ -123,8 +124,10 @@ def main(ncpus):
 
         u_sol2 = 0
         b_sol2 = 0
+        t_sol2 = 0
+        c_sol2 = 0
 
-        if par.hydro == 1:
+        if par.hydro:
             rflow = np.copy(ru[:,i])
             iflow = np.copy(iu[:,i])
             # Expand solution
@@ -134,33 +137,44 @@ def main(ncpus):
             lpi = np.searchsorted(ll,lp);  # Poloidal indices
             lti = np.searchsorted(ll,lt);  # Toroidal indices
 
-
-        if par.magnetic == 1:
+        if par.magnetic:
             rmag = np.copy(rb[:,i])
             imag = np.copy(ib[:,i])
             # Expand solution
             b_sol2 = upp.expand_reshape_sol( rmag + 1j*imag, ut.bsymm)
             b_sol  = upp.expand_sol( rmag + 1j*imag, ut.bsymm)
-
-
-        # Process solution i 
-        if par.hydro == 1:
-
-            # the actual calculation, integrating over the whole fluid volume,
-            # i.e. from Ra=ricb to Rb = rcmb
-            kid = upp.diagnose( u_sol2, b_sol2, par.ricb, ut.rcmb, int(ncpus) )
+                        
+        if par.thermal:
+            rthm = np.copy(rt[:,i])
+            ithm = np.copy(it[:,i])
+            # Expand solution
+            t_sol2  = upp.expand_reshape_sol( rthm + 1j*ithm, par.symm)
             
-            KP = np.sum( kid[lpi,0])
-            KT = np.sum( kid[lti,0])
+        if par.compositional:
+            rcmp = np.copy(rc[:,i])
+            icmp = np.copy(ic[:,i])
+            # Expand solution
+            c_sol2  = upp.expand_reshape_sol( rcmp + 1j*icmp, par.symm)		   			
+
+    
+        # diagnose solution
+        [ udgn, bdgn, tdgn, cdgn ] = upp.diagnose( u_sol2, b_sol2, t_sol2, c_sol2, par.ricb, ut.rcmb, int(ncpus) )
+
+
+        if par.hydro:
             
-            [ KE, Dkin0, Dint0, Wlor0 ] = np.sum( kid, 0)
+            KP = np.sum( udgn[lpi,0])  # Poloidal kinetic energy
+            KT = np.sum( udgn[lti,0])  # Toroidal kinetic energy
+            
+            [ KE, Dkin0, Dint0, Wlor0, Wthm0, Wcmp0 ] = np.sum( udgn, 0)
             
             Dkin = par.OmgTau * par.Ek * Dkin0
             Dint = par.OmgTau * par.Ek * Dint0
             Wlor = par.OmgTau**2 * par.Le2 * Wlor0
+            Wthm = par.OmgTau**2 * par.BV2 * Wthm0
+            Wcmp = par.OmgTau**2 * par.BV2_comp * Wcmp0
             
-            #resid1[i] = abs( Dint0 + Dkin0 ) / max( abs(Dint0), abs(Dkin0) )
-
+            # Viscous torques
             vtorq[i] = par.Ek * np.dot( ut.gamma_visc(0,0,0), u_sol)
             vtorq_icb[i] = par.Ek * np.dot( ut.gamma_visc_icb(par.ricb), u_sol)
 
@@ -173,28 +187,23 @@ def main(ncpus):
 
         else:
 
-            Dint = 0
-            Dkin = 0
-            KE = 0
-            KT = 0
-            KP = 0
+            [ KE, KP, KT, Dkin, Dint, Wlor, Wthm, Wcmp ] = [0, 0, 0, 0, 0, 0, 0, 0]
+            
 
+        if par.magnetic:
 
-        if par.magnetic == 1:
+            [ ME0, Dohm0 ] = np.sum( bdgn,0 )
+            
+            ME   = ME0   * par.OmgTau**2 * par.Le2
+            Dohm = Dohm0 * par.OmgTau**3 * par.Le2 * par.Em
 
-            #ohm[i,:] = upp.ohm_dis( rmag, imag, par.N, par.lmax, par.m, ut.bsymm, par.ricb, ut.rcmb, par.ncpus, par.ricb, ut.rcmb )
-            ohm[i,:] = upp.ohm_dis( b_sol, Ra=par.ricb, Rb=1, ncpus=int(ncpus))
-
-            Dohm = (ohm[i,2]+ohm[i,3])*par.Le2*par.Em
             if Dint != 0:
                 o2v[i] = Dohm/Dint
             else:
                 o2v[i] = np.inf
 
-            ME = (ohm[i,0]+ohm[i,1]) # Magnetic energy
-
             if par.mantle == 'TWA':
-                mtorq[i] = par.Le2 * np.dot( ut.gamma_magnetic(), upp.expand_sol(rmag+1j*imag, par.symm*ut.symmB0) )
+                mtorq[i] = par.Le2 * np.dot( ut.gamma_magnetic(), b_sol )  # need to double check the constants here
 
             if par.track_target == 1:
                 y3 = abs( (x[3]-o2v[i])/o2v[i] )
@@ -202,11 +211,10 @@ def main(ncpus):
 
         else:
 
-            Dohm = 0
-            ME = 0
+            [ ME, Dohm ] = [0, 0]
 
 
-        if par.thermal == 1:
+        if par.thermal:
 
             atemp = np.copy(rt[:,i])
             btemp = np.copy(it[:,i])
@@ -277,10 +285,10 @@ def main(ncpus):
         else:
             resid1[i] = np.nan
 
-        print('2sigmaK = ', 2*sigma*KE )
-        print('Lorentz = ', Wlor )
-        print('Viscous = ', Dkin )
-        print('Dohm = ',Dohm)
+        #print('2sigmaK = ', 2*sigma*KE )
+        #print('Lorentz = ', Wlor )
+        #print('Viscous = ', Dkin )
+        #print('Dohm = ',Dohm)
         
         #resid2[i] = abs( 2*sigma*(KE + par.Le2*ME) - Dkin - Dtemp + Dohm - pvf ) / \
         #            max( abs(2*sigma*(KE + par.Le2*ME)), abs(Dkin), abs(Dohm), abs(Dtemp), abs(pvf) )
