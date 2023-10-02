@@ -43,6 +43,7 @@ if m_bot == 0: m_bot = 2
 lmax_top = lmax + 1 + (1-2*np.sign(m))*s
 lmax_bot = lmax + 1 + (1-2*np.sign(m))*(1-s)
 
+beta_actual = 0
 if par.B0 in ['axial','dipole','G21 dipole','Luo_S1']:
     symmB0 = -1
     B0_l   =  1
@@ -52,7 +53,28 @@ elif par.B0 == 'Luo_S2':
 elif par.B0 == 'FDM':
     symmB0 = int((-1)**par.B0_l)
     B0_l   = par.B0_l
+
 bsymm = par.symm * symmB0  # induced magnetic field (b) symmetry follows from u and B0
+
+B0list = ['axial', 'dipole', 'G21 dipole', 'Luo_S1', 'Luo_S2', 'FDM']
+B0type = B0list.index(par.B0)
+
+if par.innercore == 'insulator':
+    innercore_mag_bc = 0
+elif par.innercore == 'TWA':
+    innercore_mag_bc = 1
+
+if par.mantle == 'insulator':
+    mantle_mag_bc = 0
+elif par.mantle == 'TWA':
+    mantle_mag_bc = 1
+
+thermal_heating_list = ['internal', 'differential', 'two zone', 'user defined']
+heating = thermal_heating_list.index(par.heating)
+
+compositional_background_list = ['internal', 'differential']
+compositional_background = compositional_background_list.index(par.comp_background)
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -184,6 +206,7 @@ def jl_smx(l,x,d):
     return out
 
 
+
 def jl(l,x,d):
     '''
     Spherical Bessel function of the first kind
@@ -204,6 +227,8 @@ def nl(l,x,d):
     Spherical Bessel function of the second kind
     '''
     return scsp.spherical_yn(l,x,derivative=d)
+
+
 
 def dlogjl(l,x):
     '''
@@ -246,6 +271,8 @@ def dlogjl(l,x):
 
     return lentz_thompson(a, b, b0, eps=1e-30, acc=1e-14)
 
+
+
 def findbeta(args):
     '''
     root finding for beta, needed for the Free Decay Modes
@@ -266,6 +293,11 @@ def findbeta(args):
     beta1 = sol.x[0]
 
     return beta1
+
+
+
+if par.B0 == 'FDM':
+    beta_actual = findbeta([par.beta, B0_l, par.ricb])
 
 
 
@@ -645,6 +677,7 @@ def chebco_h(args, kind, N, rcmb, tol):
     out[0] = out[0] / 2.
     out[np.absolute(out) <= tol] = 0.
     return out
+
 
 
 def B0_norm():

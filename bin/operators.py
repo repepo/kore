@@ -700,7 +700,6 @@ def theta(l, section, component, offdiag):
 
 def thermal_advection(l, section, component, offdiag):  # -u_r * dT/dr
 
-    out = 0
     L = l*(l+1)
     rcmb = 1
     gap = rcmb - par.ricb
@@ -714,15 +713,12 @@ def thermal_advection(l, section, component, offdiag):  # -u_r * dT/dr
         elif par.heating == 'two zone' or par.heating == 'user defined':
             conv = NrIh  # dT/dr specified in ut.twozone or ut.BVprof. Heat equation is times r**2
 
-        out = L * conv
-
-    return out
+    return L * conv
 
 
 
 def thermal_diffusion(l, section, component, offdiag):
 
-    out = 0
     L = l*(l+1)
 
     if section == 'h' and offdiag == 0 :
@@ -758,7 +754,6 @@ def composition(l, section, component, offdiag):
 
 def compositional_advection(l, section, component, offdiag):
 
-    out = 0
     L = l*(l+1)
     rcmb = 1
     gap = rcmb - par.ricb
@@ -770,23 +765,13 @@ def compositional_advection(l, section, component, offdiag):
         else:
             conv = r2Ii  # Composition eq. times r**2
 
-        out = L * conv
-
-    return out
+    return L * conv
 
 
 
 def compositional_diffusion(l, section, component, offdiag):
 
-    out = 0
     L = l*(l+1)
-
-    if (par.timescale == 'rotation'):
-        scale_factor = par.Ek/par.Schmidt
-    elif (par.timescale == 'viscous'):
-        scale_factor = 1/par.Schmidt
-    elif (par.timescale == 'alfven'):
-        scale_factor = par.Ek/(par.Schmidt*par.Le)
 
     if section == 'i' and offdiag == 0 :
 
@@ -794,8 +779,6 @@ def compositional_diffusion(l, section, component, offdiag):
             difus = - L*r1Ii + 2*r2D1i + r3D2i  # eq. times r**3
         else:
             difus = - L*Ii + 2*r1D1i + r2D2i  # eq. times r**2
-
-        out = scale_factor * difus
 
     return difus * par.OmgTau * par.Ek / par.Schmidt
 
