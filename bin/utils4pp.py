@@ -160,6 +160,64 @@ def expand_reshape_sol(sol, vsymm):
 
 
 
+def cheb2space_pol(L, lp, P, ns):
+    '''
+    Returns qlm's (radial) and slm's (consoidal) L-components up to derivatives of order ns (<3)
+    '''
+
+    L1    = L*(L+1)
+    idx   = list(lp).index(L) 
+    f_pol = funcheb(P[idx,:], r=None, ricb=par.ricb, rcmb=ut.rcmb, n=ns+1)
+    
+    plm = []
+    qlm = []
+    slm = []
+
+    for i in range(ns+2):
+        plm.append(f_pol[:,i])
+    
+    qlm0  = L1*plm[0]/rk
+    qlm.append(qlm0)
+
+    slm0 = plm[1] + (plm[0]/rk)
+    slm.append(slm0)
+
+    if ns>0:
+
+        qlm1 = (L1*plm[1] - qlm0)/rk
+        qlm.append(qlm1)
+
+        slm1 = plm[2] + (qlm1/L1)
+        slm.append(slm1)
+
+    if ns>1:
+
+        qlm2 = (L1*plm[2]-2*qlm1)/rk
+        qlm.append(qlm2)
+
+        slm2 = plm[3] + (qlm2/L1)
+        slm.append(slm2)
+
+    return [qlm, slm]
+
+
+
+def cheb2space_tor(L, lt, T, ns):
+    '''
+    Returns tlm's (toroidal) L-components up to derivatives of order ns (<3)
+    '''
+
+    idx   = list(lt).index(L) 
+    f_tor = funcheb(T[idx,:], r=None, ricb=par.ricb, rcmb=ut.rcmb, n=ns)
+
+    tlm = []
+    for i in range(ns+1):
+        tlm.append(f_tor[:,i])
+
+    return tlm
+
+
+
 def energy_pol(l, qlm0, slm0):
     '''
     Returns the integrand to compute the poloidal energy, kinetic or magnetic, l-component
@@ -375,12 +433,7 @@ def flow_worker( l, lp, lt, u_sol2, b_sol2, t_sol2, c_sol2, Ra, Rb, N, sqx ):
     
     P = u_sol2[0]
     T = u_sol2[1]
-
-    [ plm0, plm1, plm2, plm3 ] = [0, 0, 0, 0] 
-    [ qlm0, qlm1, qlm2 ]       = [0, 0, 0] 
-    [ slm0, slm1, slm2 ]       = [0, 0, 0] 
-    [ tlm0, tlm1, tlm2 ]       = [0, 0, 0]
-
+  
     [ kinep, kinet ] = [0, 0]
     [ kindp, kindt ] = [0, 0]
     [ intdp, intdt ] = [0, 0]
@@ -390,29 +443,18 @@ def flow_worker( l, lp, lt, u_sol2, b_sol2, t_sol2, c_sol2, Ra, Rb, N, sqx ):
     L = l*(l+1)
 
     if par.magnetic:
-        [ qlmb, slmb, tlmb ] = lorentz_pp(l, b_sol2)  # the l-component of the Lorentz force
+        [ qlmb, slmb, tlmb ] = lorentz4pp(l, b_sol2)  # the l-component of the Lorentz force
         
     if par.thermal:
-        hlm0 = buoyancy_pp(l, lp, t_sol2)  # the l-component of the thermal buoyancy force
+        hlm0 = buoyancy4pp(l, lp, t_sol2)  # the l-component of the thermal buoyancy force
         
     if par.compositional:
-        clm0 = buoyancy_pp(l, lp, c_sol2)  # the l-component of the compositional buoyancy force
+        clm0 = buoyancy4pp(l, lp, c_sol2)  # the l-component of the compositional buoyancy force
         
 
     if l in lp:
 
-        idx   = list(lp).index(l) 
-        f_pol = funcheb(P[idx,:], r=None, ricb=par.ricb, rcmb=ut.rcmb, n=3)
-        plm0  = f_pol[:,0]
-        plm1  = f_pol[:,1]
-        plm2  = f_pol[:,2]
-        plm3  = f_pol[:,3] 
-        qlm0  = L*plm0/rk
-        qlm1  = (L*plm1 - qlm0)/rk
-        qlm2  = (L*plm2-2*qlm1)/rk
-        slm0  = plm1 + (plm0/rk)
-        slm1  = plm2 + (qlm1/L)
-        slm2  = plm3 + (qlm2/L)
+        [ [ qlm0, qlm1, qlm2 ], [ slm0, slm1, slm2 ] ] = cheb2space_pol(l, lp, P, 2)
         
         kinep = energy_pol(l, qlm0, slm0 )
         kindp = diffus_pol(l, qlm0, qlm1, qlm2, slm0, slm1, slm2 )
@@ -420,17 +462,13 @@ def flow_worker( l, lp, lt, u_sol2, b_sol2, t_sol2, c_sol2, Ra, Rb, N, sqx ):
         if par.magnetic:
             wlorp = lorentz_power_pol(l, qlm0, slm0, qlmb, slmb )
         if par.thermal:
-            wther = buoyancy_power(l, plm0, hlm0 )
+            wther = buoyancy_power(l, qlm0*rk/(l*(l+1)), hlm0 )
         if par.compositional:
-            wcomp = buoyancy_power(l, plm0, clm0 ) 
+            wcomp = buoyancy_power(l, qlm0*rk/(l*(l+1)), clm0 ) 
 
     elif l in lt:
 
-        idx   = list(lt).index(l) 
-        f_tor = funcheb(T[idx,:], r=None, ricb=par.ricb, rcmb=ut.rcmb, n=2)
-        tlm0  = f_tor[:,0]
-        tlm1  = f_tor[:,1]
-        tlm2  = f_tor[:,2]
+        [ tlm0, tlm1, tlm2 ] = cheb2space_tor(l, lt, T, 2)
 
         kinet = energy_tor(l, tlm0)
         kindt = diffus_tor(l, tlm0, tlm1, tlm2)
@@ -453,17 +491,13 @@ def flow_worker( l, lp, lt, u_sol2, b_sol2, t_sol2, c_sol2, Ra, Rb, N, sqx ):
 def magnetic_worker(l, lp, lt, b_sol2, u_sol2, Ra, Rb, N, sqx):
     '''
     Returns the l-component of the magnetic energy (1/2) ∫ 𝐛⋅𝐛 dV,
-    and the Ohmic dissipation ∫ |∇×𝐛|² dV integrated over the fluid volume.
+    the magnetic diffusion via ∫ 𝐛⋅∇²𝐛 dV, and the l-component
+    of the induction term (integrated too).
     '''
     
     F = b_sol2[0]
     G = b_sol2[1]
-
-    [ plm0, plm1, plm2, plm3 ] = [0, 0, 0, 0] 
-    [ qlm0, qlm1, qlm2 ]       = [0, 0, 0] 
-    [ slm0, slm1, slm2 ]       = [0, 0, 0] 
-    [ tlm0, tlm1, tlm2 ]       = [0, 0, 0]
-
+ 
     [ menep, menet] = [0, 0]
     [ mdfsp, mdfst] = [0, 0]
     [ indup, indut] = [0, 0]
@@ -471,35 +505,21 @@ def magnetic_worker(l, lp, lt, b_sol2, u_sol2, Ra, Rb, N, sqx):
     L = l*(l+1)
 
     if par.hydro:
-        [ qlmi, slmi, tlmi ] = induction_pp(l, u_sol2)  # the l-component of the induction term 
+
+        [ qlmi, slmi, tlmi ] = induction4pp(l, u_sol2)  # the l-component of the induction term 
 
     if l in lp:
 
-        idx   = list(lp).index(l) 
-        f_pol = funcheb(F[idx,:], r=None, ricb=par.ricb, rcmb=ut.rcmb, n=3)
-        plm0  = f_pol[:,0]
-        plm1  = f_pol[:,1]
-        plm2  = f_pol[:,2]
-        plm3  = f_pol[:,3] 
-        qlm0  = L*plm0/rk
-        qlm1  = (L*plm1 - qlm0)/rk
-        qlm2  = (L*plm2-2*qlm1)/rk
-        slm0  = plm1 + (plm0/rk)
-        slm1  = plm2 + (qlm1/L)
-        slm2  = plm3 + (qlm2/L)
-        
+        [ [qlm0, qlm1, qlm2], [slm0, slm1, slm2] ] = cheb2space_pol(l, lp, F, 2)
+
         menep = energy_pol(l, qlm0, slm0)
         mdfsp = diffus_pol(l, qlm0, qlm1, qlm2, slm0, slm1, slm2 )
         indup = dotprod_pol(l, qlm0, slm0, qlmi, slmi)
 
     elif l in lt:
 
-        idx   = list(lt).index(l) 
-        f_tor = funcheb(G[idx,:], r=None, ricb=par.ricb, rcmb=ut.rcmb, n=2)
-        tlm0  = f_tor[:,0]
-        tlm1  = f_tor[:,1]
-        tlm2  = f_tor[:,2]
-
+        [tlm0, tlm1, tlm2] = cheb2space_tor(l, lt, G, 2)
+        
         menet = energy_tor(l, tlm0)
         mdfst = diffus_tor(l, tlm0, tlm1, tlm2)
         indut = dotprod_tor(l, tlm0, tlmi)
@@ -521,28 +541,18 @@ def thermal_worker(l, lp, t_sol2, u_sol2, Ra, Rb, N, sqx, flag):
     integrated over the fluid volume.
     '''
 
-    [ hlm0, hlm1, hlm2 ] = [0, 0, 0]
-
-    F = u_sol2[0]
-    plm0 = 0
-
     [ thene , thdis, thadv ] = [0, 0, 0]
 
-    if l in lp:       
-        idx   = list(lp).index(l) 
-        h_pol = funcheb( t_sol2[idx,:], r=None, ricb=par.ricb, rcmb=ut.rcmb, n=2 )
-        hlm0  = h_pol[:,0]
-        hlm1  = h_pol[:,1]
-        hlm2  = h_pol[:,2]
+    if l in lp:
 
-        f_pol = funcheb( F[idx,:], r=None, ricb=par.ricb, rcmb=ut.rcmb, n=0 )
-        #print(np.shape(f_pol))
-        plm0 = f_pol[:,0] 
-        
+        [ hlm0, hlm1, hlm2 ] = cheb2space_tor(l, lp, t_sol2, 2)  # _tor is the one needed here, for the temperature (a scalar)
+
         thene = thermal_energy(l, hlm0)
         thdis = thermal_dissip(l, hlm0, hlm1, hlm2)
-        thadv = thermal_advect(l, hlm0, plm0, flag)
-
+        if par.hydro:
+            [ [qlm0], [_] ] = cheb2space_pol(l, lp, u_sol2[0], 0)  # _pol is the one needed here, for the velocity
+            thadv = thermal_advect(l, hlm0, qlm0*rk/(l*(l+1)), flag)
+        
     # Integrals
     Tene_l = cg_quad( thene, Ra, Rb, N, sqx )
     Dthm_l = cg_quad( thdis, Ra, Rb, N, sqx )
@@ -552,25 +562,23 @@ def thermal_worker(l, lp, t_sol2, u_sol2, Ra, Rb, N, sqx, flag):
 
 
 
-def lorentz_pp( l, b_sol2 ):
+def lorentz4pp( l, b_sol2 ):
     '''
     Returns the l-component of the Lorentz force.
-    Use it to compute the rate of working (power) of the Lorentz force.
+    Use it to compute the rate of working (power) of the Lorentz force. For quadrupolar B0
     '''
     
     m   = par.m
     ll0 = ut.ell( m, par.lmax, ut.bsymm)
     lp  = ll0[0]  # l's for poloidals
     lt  = ll0[1]  # l's for toroidals
-    ricb = par.ricb
-    rcmb = ut.rcmb
     
     P = b_sol2[0]
     T = b_sol2[1]
 
-    h0 = ut.h0(rk, par.B0, [par.beta, par.B0_l, ricb, 0])
-    h1 = ut.h1(rk, par.B0, [par.beta, par.B0_l, ricb, 0])
-    h2 = ut.h2(rk, par.B0, [par.beta, par.B0_l, ricb, 0])
+    h0 = ut.h0(rk, par.B0, [par.beta, par.B0_l, par.ricb, 0])
+    h1 = ut.h1(rk, par.B0, [par.beta, par.B0_l, par.ricb, 0])
+    h2 = ut.h2(rk, par.B0, [par.beta, par.B0_l, par.ricb, 0])
 
     cnorm = ut.B0_norm()
 
@@ -578,18 +586,9 @@ def lorentz_pp( l, b_sol2 ):
     out_con = np.zeros_like(rk, dtype='complex128')
     out_tor = np.zeros_like(rk, dtype='complex128')
     
-    if l-2 in lp:       
-        L     = l-2
-        L1    = L*(L+1)
-        idx   = list(lp).index(L) 
-        f_pol = funcheb(P[idx,:], r=None, ricb=ricb, rcmb=rcmb, n=2)
-        plm0  = f_pol[:,0]
-        plm1  = f_pol[:,1]
-        plm2  = f_pol[:,2]
-        qlm0  = L1*plm0/rk
-        qlm1  = (L1*plm1 - qlm0)/rk
-        slm0  = plm1 + (plm0/rk)
-        slm1  = plm2 + (qlm1/L1)
+    if l-2 in lp:
+
+        [ [ qlm0, _ ], [ slm0, slm1 ] ] = cheb2space_pol(l-2, lp, P, 1)
 
         C_rad    = 3*(-2 + l)*np.sqrt((-1 + l - m)*(l - m)*(-1 + l + m)*(l + m))/(3 + 4*(-2 + l)*l)
         out_rad += C_rad*( -h0*(qlm0/r2 + 5*slm0/r2 - slm1/rk) + h2*slm0 + h1*(-qlm0/rk + 3*slm0/rk + slm1) )
@@ -598,23 +597,15 @@ def lorentz_pp( l, b_sol2 ):
         out_con += C_con*( -3*h0*l*qlm0/r2 + qlm0*(2*h1/rk + h2) + 3*h0*(-2 + l)*(slm0/r2 + slm1/rk) )
 
     elif l-2 in lt:
-        L     = l-2
-        L1    = L*(L+1)
-        idx   = list(lt).index(L) 
-        f_tor = funcheb(T[idx,:], r=None, ricb=ricb, rcmb=rcmb, n=1)
-        tlm0  = f_tor[:,0]
-        tlm1  = f_tor[:,1]
+
+        [ tlm0, tlm1 ] = cheb2space_tor(l-2, lt, T, 1)
 
         C_tor    = -3*(-2 + l)*np.sqrt((-1 + l - m)*(l - m)*(-1 + l + m)*(l + m))/(l*(3 + 4*(-2 + l)*l))
         out_tor += C_tor*( h0*(-4 + l)*tlm0/r2 + h1*(-1 + l)*tlm0/rk - 3*h0*tlm1/rk )
 
     if l-1 in lt:
-        L     = l-1
-        L1    = L*(L+1)
-        idx   = list(lt).index(L) 
-        f_tor = funcheb(T[idx,:], r=None, ricb=ricb, rcmb=rcmb, n=1)
-        tlm0  = f_tor[:,0]
-        tlm1  = f_tor[:,1]
+
+        [ tlm0, tlm1 ] = cheb2space_tor(l-1, lt, T, 1)
            
         C_rad    = 3j*m*np.sqrt(l**2-m**2)/(2*l-1) 
         out_rad += C_rad*( h0*(-5*tlm0/r2 + tlm1/rk) + 3*h1*tlm0/rk + h2*tlm0 + h1*tlm1 )
@@ -623,33 +614,15 @@ def lorentz_pp( l, b_sol2 ):
         out_con += C_con*( h0*(6 + (-1 + l)*l)*tlm0/r2 + h1*(-1 + l)*l*tlm0/rk + 6*h0*tlm1/rk )
 
     elif l-1 in lp:
-        L     = l-1
-        L1    = L*(L+1)
-        idx   = list(lp).index(L) 
-        f_pol = funcheb(P[idx,:], r=None, ricb=ricb, rcmb=rcmb, n=2)
-        plm0  = f_pol[:,0]
-        plm1  = f_pol[:,1]
-        plm2  = f_pol[:,2]
-        qlm0  = L1*plm0/rk
-        qlm1  = (L1*plm1 - qlm0)/rk
-        slm0  = plm1 + (plm0/rk)
-        slm1  = plm2 + (qlm1/L1)
+
+        [ [ qlm0, _ ], [ slm0, slm1 ] ] = cheb2space_pol(l-1, lp, P, 1)
 
         C_tor    =  3j*m*np.sqrt(l**2 - m**2)/(l*(1 + l)*(-1 + 2*l))      
         out_tor += C_tor*( qlm0*(2*h1/rk + h2) - 6*h0*(slm0/r2 + slm1/rk) )
 
     if l in lp:
-        L     = l
-        L1    = L*(L+1)
-        idx   = list(lp).index(L) 
-        f_pol = funcheb(P[idx,:], r=None, ricb=ricb, rcmb=rcmb, n=2)
-        plm0  = f_pol[:,0]
-        plm1  = f_pol[:,1]
-        plm2  = f_pol[:,2]
-        qlm0  = L1*plm0/rk
-        qlm1  = (L1*plm1 - qlm0)/rk
-        slm0  = plm1 + (plm0/rk)
-        slm1  = plm2 + (qlm1/L1)
+
+        [ [ qlm0, _ ], [ slm0, slm1 ] ] = cheb2space_pol(l, lp, P, 1)
 
         C_rad    = -3*(l+l**2-3*m**2)/(-3+4*l*(l+1))
         out_rad += C_rad*( -h0*(qlm0/r2 + 5*slm0/r2 - slm1/rk) + h2*slm0 + h1*(-qlm0/rk + 3*slm0/rk + slm1) )
@@ -658,23 +631,15 @@ def lorentz_pp( l, b_sol2 ):
         out_con += C_con*( -2*h0*l*(1 + l)*qlm0/r2 + qlm0*(2*h1/rk + h2) + 2*h0*(-3 + l + l**2)*(slm0/r2 + slm1/rk) )
 
     elif l in lt:
-        L     = l
-        L1    = L*(L+1)
-        idx   = list(lt).index(L) 
-        f_tor = funcheb(T[idx,:], r=None, ricb=ricb, rcmb=rcmb, n=1)
-        tlm0  = f_tor[:,0]
-        tlm1  = f_tor[:,1]
+
+        [ tlm0, tlm1 ] = cheb2space_tor(l, lt, T, 1)
     
         C_tor    = 3*(l + l**2 - 3*m**2)/(l*(1 + l)*(-3 + 4*l*(1 + l)))
         out_tor += C_tor*( h0*(-6 + l + l**2)*tlm0/r2 - h1*l*(1 + l)*tlm0/rk + 2*h0*(-3 + l + l**2)*tlm1/rk )
 
     if l+1 in lt:
-        L     = l+1
-        L1    = L*(L+1)
-        idx   = list(lt).index(L) 
-        f_tor = funcheb(T[idx,:], r=None, ricb=ricb, rcmb=rcmb, n=1)
-        tlm0  = f_tor[:,0]
-        tlm1  = f_tor[:,1]
+
+        [ tlm0, tlm1 ] = cheb2space_tor(l+1, lt, T, 1)
     
         C_rad    = 3j*m*np.sqrt((l+1-m)*(l+1+m))/(2*l+3)
         out_rad += C_rad*( h0*(-5*tlm0/r2 + tlm1/rk) + 3*h1*tlm0/rk + h2*tlm0 + h1*tlm1 )
@@ -683,33 +648,15 @@ def lorentz_pp( l, b_sol2 ):
         out_con += C_con*( h0*(8 + l*(3 + l))*tlm0/r2 + h1*(1 + l)*(2 + l)*tlm0/rk + 6*h0*tlm1/rk )
 
     elif l+1 in lp:
-        L     = l+1
-        L1    = L*(L+1)
-        idx   = list(lp).index(L) 
-        f_pol = funcheb(P[idx,:], r=None, ricb=ricb, rcmb=rcmb, n=2)
-        plm0  = f_pol[:,0]
-        plm1  = f_pol[:,1]
-        plm2  = f_pol[:,2]
-        qlm0  = L1*plm0/rk
-        qlm1  = (L1*plm1 - qlm0)/rk
-        slm0  = plm1 + (plm0/rk)
-        slm1  = plm2 + (qlm1/L1)
+
+        [ [ qlm0, _ ], [ slm0, slm1 ] ] = cheb2space_pol(l+1, lp, P, 1)
 
         C_tor    = 3j*m*np.sqrt((1 + l - m)*(1 + l + m))/(l*(1 + l)*(3 + 2*l))
         out_tor += C_tor*( qlm0*(2*h1/rk + h2) - 6*h0*(slm0/r2 + slm1/rk) )
     
     if l+2 in lp:
-        L     = l+2
-        L1    = L*(L+1)
-        idx   = list(lp).index(L) 
-        f_pol = funcheb(P[idx,:], r=None, ricb=ricb, rcmb=rcmb, n=2)
-        plm0  = f_pol[:,0]
-        plm1  = f_pol[:,1]
-        plm2  = f_pol[:,2]
-        qlm0  = L1*plm0/rk
-        qlm1  = (L1*plm1 - qlm0)/rk
-        slm0  = plm1 + (plm0/rk)
-        slm1  = plm2 + (qlm1/L1)
+
+        [ [ qlm0, _ ], [ slm0, slm1 ] ] = cheb2space_pol(l+2, lp, P, 1)
 
         C_rad    = -3*(l+3)*np.sqrt((1+l-m)*(2+l-m)*(1+l+m)*(2+l+m))/((2*l+3)*(2*l+5))
         out_rad += C_rad*( -h0*(qlm0/r2 + 5*slm0/r2 - slm1/rk) + h2*slm0 + h1*(-qlm0/rk + 3*slm0/rk + slm1) )
@@ -718,12 +665,8 @@ def lorentz_pp( l, b_sol2 ):
         out_con += C_con*( 3*h0*(1 + l)*qlm0/r2 + qlm0*(2*h1/rk + h2) - 3*h0*(3 + l)*(slm0/r2 + slm1/rk) )
 
     elif l+2 in lt:
-        L     = l+2
-        L1    = L*(L+1)
-        idx   = list(lt).index(L) 
-        f_tor = funcheb(T[idx,:], r=None, ricb=ricb, rcmb=rcmb, n=1)
-        tlm0  = f_tor[:,0]
-        tlm1  = f_tor[:,1]
+
+        [ tlm0, tlm1 ] = cheb2space_tor(l+2, lt, T, 1)
     
         C_tor    = 3*(l+3)*np.sqrt((1 + l - m)*(2 + l - m)*(1 + l + m)*(2 + l + m))/((1 + l)*(3 + 2*l)*(5 + 2*l))
         out_tor += C_tor*( h0*(l+5)*tlm0/r2 + h1*(l+2)*tlm0/rk + 3*h0*tlm1/rk )
@@ -732,9 +675,9 @@ def lorentz_pp( l, b_sol2 ):
 
 
 
-def induction_pp( l, u_sol2 ):
+def induction4pp( l, u_sol2 ):
     '''
-    Returns the l-component of the induction term ∇×(𝐮×𝐁₀)
+    Returns the l-component of the induction term ∇×(𝐮×𝐁₀), quadrupolar B0
     '''
     
     m   = par.m
@@ -757,138 +700,73 @@ def induction_pp( l, u_sol2 ):
     out_con = np.zeros_like(rk, dtype='complex128')
     out_tor = np.zeros_like(rk, dtype='complex128')
     
-    if l-2 in lp:       
-        L     = l-2
-        L1    = L*(L+1)
-        idx   = list(lp).index(L) 
-        f_pol = funcheb(P[idx,:], r=None, ricb=ricb, rcmb=rcmb, n=2)
-        plm0  = f_pol[:,0]
-        plm1  = f_pol[:,1]
-        plm2  = f_pol[:,2]
-        qlm0  = L1*plm0/rk
-        qlm1  = (L1*plm1 - qlm0)/rk
-        slm0  = plm1 + (plm0/rk)
-        slm1  = plm2 + (qlm1/L1)
+    if l-2 in lp:
+
+        [ [ qlm0, qlm1], [slm0, slm1] ] =  cheb2space_pol(l-2, lp, P, 1)
 
         out_rad += (3*(1 + l)*np.sqrt((-1 + l - m)*(l - m)*(-1 + l + m)*(l + m))*(-(h0*qlm0) - h1*qlm0*rk + 3*h0*(-2 + l)*slm0))/((3 + 4*(-2 + l)*l)*r2)
 
         out_con += (3*np.sqrt((-1 + l - m)*(l - m)*(-1 + l + m)*(l + m))*(-(qlm1*(h0 + h1*rk)) - qlm0*(2*h1 + h2*rk) + 3*h1*(-2 + l)*slm0 + 3*h0*(-2 + l)*slm1))/(l*(3 + 4*(-2 + l)*l)*rk)
 
     elif l-2 in lt:
-        L     = l-2
-        L1    = L*(L+1)
-        idx   = list(lt).index(L) 
-        f_tor = funcheb(T[idx,:], r=None, ricb=ricb, rcmb=rcmb, n=1)
-        tlm0  = f_tor[:,0]
-        tlm1  = f_tor[:,1]
+
+        [ tlm0, tlm1]  =  cheb2space_tor(l-2, lt, T, 1)
 
         out_tor += (-3*(-2 + l)*np.sqrt((-1 + l - m)*(l - m)*(-1 + l + m)*(l + m))*(h0*l*tlm0 + h1*(-3 + l)*rk*tlm0 - 3*h0*rk*tlm1))/(l*(3 + 4*(-2 + l)*l)*r2)
 
     if l-1 in lt:
-        L     = l-1
-        L1    = L*(L+1)
-        idx   = list(lt).index(L) 
-        f_tor = funcheb(T[idx,:], r=None, ricb=ricb, rcmb=rcmb, n=1)
-        tlm0  = f_tor[:,0]
-        tlm1  = f_tor[:,1]
+
+        [ tlm0, tlm1]  =  cheb2space_tor(l-1, lt, T, 1)
            
         out_rad  += (18j*h0*m*np.sqrt(l**2 - m**2)*tlm0)/((-1 + 2*l)*r2)
 
         out_con += (18j*m*np.sqrt(l**2 - m**2)*(h1*tlm0 + h0*tlm1))/(l*(-1 + l + 2*l**2)*rk)
 
     elif l-1 in lp:
-        L     = l-1
-        L1    = L*(L+1)
-        idx   = list(lp).index(L) 
-        f_pol = funcheb(P[idx,:], r=None, ricb=ricb, rcmb=rcmb, n=2)
-        plm0  = f_pol[:,0]
-        plm1  = f_pol[:,1]
-        plm2  = f_pol[:,2]
-        qlm0  = L1*plm0/rk
-        qlm1  = (L1*plm1 - qlm0)/rk
-        slm0  = plm1 + (plm0/rk)
-        slm1  = plm2 + (qlm1/L1)
+
+        [ [ qlm0, qlm1], [slm0, slm1] ] =  cheb2space_pol(l-1, lp, P, 1)
 
         out_tor += (3j*m*np.sqrt(l**2 - m**2)*(-(qlm0*rk*(2*h1 + h2*rk)) + h0*l*(1 + l)*slm0 + h1*rk*(-(qlm1*rk) + (-6 + l + l**2)*slm0) - h0*rk*(qlm1 + 6*slm1)))/(l*(1 + l)*(-1 + 2*l)*r2)
 
     if l in lp:
-        L     = l
-        L1    = L*(L+1)
-        idx   = list(lp).index(L) 
-        f_pol = funcheb(P[idx,:], r=None, ricb=ricb, rcmb=rcmb, n=2)
-        plm0  = f_pol[:,0]
-        plm1  = f_pol[:,1]
-        plm2  = f_pol[:,2]
-        qlm0  = L1*plm0/rk
-        qlm1  = (L1*plm1 - qlm0)/rk
-        slm0  = plm1 + (plm0/rk)
-        slm1  = plm2 + (qlm1/L1)
+
+        [ [ qlm0, qlm1], [slm0, slm1] ] =  cheb2space_pol(l, lp, P, 1)
 
         out_rad += (-3*(l + l**2 - 3*m**2)*(h1*qlm0*rk + h0*(qlm0 - 2*(-3 + l + l**2)*slm0)))/((-3 + 4*l*(1 + l))*r2)
 
         out_con += (-3*(l + l**2 - 3*m**2)*(qlm1*(h0 + h1*rk) + qlm0*(2*h1 + h2*rk) - 2*h1*(-3 + l + l**2)*slm0 - 2*h0*(-3 + l + l**2)*slm1))/(l*(1 + l)*(-3 + 4*l*(1 + l))*rk)
 
     elif l in lt:
-        L     = l
-        L1    = L*(L+1)
-        idx   = list(lt).index(L) 
-        f_tor = funcheb(T[idx,:], r=None, ricb=ricb, rcmb=rcmb, n=1)
-        tlm0  = f_tor[:,0]
-        tlm1  = f_tor[:,1]
+
+        [ tlm0, tlm1]  =  cheb2space_tor(l, lt, T, 1)
     
         out_tor += (3*(l + l**2 - 3*m**2)*(h0*l*(1 + l)*tlm0 + 3*h1*(-2 + l + l**2)*rk*tlm0 + 2*h0*(-3 + l + l**2)*rk*tlm1))/(l*(1 + l)*(-3 + 4*l*(1 + l))*r2)
 
     if l+1 in lt:
-        L     = l+1
-        L1    = L*(L+1)
-        idx   = list(lt).index(L) 
-        f_tor = funcheb(T[idx,:], r=None, ricb=ricb, rcmb=rcmb, n=1)
-        tlm0  = f_tor[:,0]
-        tlm1  = f_tor[:,1]
+
+        [ tlm0, tlm1]  =  cheb2space_tor(l+1, lt, T, 1)
     
         out_rad += (18j*h0*m*np.sqrt((1 + l - m)*(1 + l + m))*tlm0)/((3 + 2*l)*r2)
 
         out_con += (18j*m*np.sqrt((1 + l - m)*(1 + l + m))*(h1*tlm0 + h0*tlm1))/(l*(1 + l)*(3 + 2*l)*rk)
 
     elif l+1 in lp:
-        L     = l+1
-        L1    = L*(L+1)
-        idx   = list(lp).index(L) 
-        f_pol = funcheb(P[idx,:], r=None, ricb=ricb, rcmb=rcmb, n=2)
-        plm0  = f_pol[:,0]
-        plm1  = f_pol[:,1]
-        plm2  = f_pol[:,2]
-        qlm0  = L1*plm0/rk
-        qlm1  = (L1*plm1 - qlm0)/rk
-        slm0  = plm1 + (plm0/rk)
-        slm1  = plm2 + (qlm1/L1)
+
+        [ [ qlm0, qlm1], [slm0, slm1] ] =  cheb2space_pol(l+1, lp, P, 1)
 
         out_tor += (3j*m*np.sqrt((1 + l - m)*(1 + l + m))*(-(qlm0*rk*(2*h1 + h2*rk)) + h0*l*(1 + l)*slm0 + h1*rk*(-(qlm1*rk) + (-6 + l + l**2)*slm0) - h0*rk*(qlm1 + 6*slm1)))/(l*(1 + l)*(3 + 2*l)*r2) 
     
     if l+2 in lp:
-        L     = l+2
-        L1    = L*(L+1)
-        idx   = list(lp).index(L) 
-        f_pol = funcheb(P[idx,:], r=None, ricb=ricb, rcmb=rcmb, n=2)
-        plm0  = f_pol[:,0]
-        plm1  = f_pol[:,1]
-        plm2  = f_pol[:,2]
-        qlm0  = L1*plm0/rk
-        qlm1  = (L1*plm1 - qlm0)/rk
-        slm0  = plm1 + (plm0/rk)
-        slm1  = plm2 + (qlm1/L1)
+
+        [ [ qlm0, qlm1], [slm0, slm1] ] =  cheb2space_pol(l+2, lp, P, 1)
 
         out_rad += (3*l*np.sqrt((1 + l - m)*(2 + l - m)*(1 + l + m)*(2 + l + m))*(h1*qlm0*rk + h0*(qlm0 + 3*(3 + l)*slm0)))/((3 + 2*l)*(5 + 2*l)*r2)
 
         out_con += (3*np.sqrt((1 + l - m)*(2 + l - m)*(1 + l + m)*(2 + l + m))*(h2*qlm0*rk + h1*(2*qlm0 + qlm1*rk + 3*(3 + l)*slm0) + h0*(qlm1 + 3*(3 + l)*slm1)))/((1 + l)*(3 + 2*l)*(5 + 2*l)*rk)
 
     elif l+2 in lt:
-        L     = l+2
-        L1    = L*(L+1)
-        idx   = list(lt).index(L) 
-        f_tor = funcheb(T[idx,:], r=None, ricb=ricb, rcmb=rcmb, n=1)
-        tlm0  = f_tor[:,0]
-        tlm1  = f_tor[:,1]
+
+        [ tlm0, tlm1]  =  cheb2space_tor(l+2, lt, T, 1)
     
         out_tor += (3*(3 + l)*np.sqrt((1 + l - m)*(2 + l - m)*(1 + l + m)*(2 + l + m))*(h1*(4 + l)*rk*tlm0 + h0*(tlm0 + l*tlm0 + 3*rk*tlm1)))/((1 + l)*(3 + 2*l)*(5 + 2*l)*r2)
 
@@ -896,7 +774,7 @@ def induction_pp( l, u_sol2 ):
 
 
 
-def buoyancy_pp(l, lp, tsol2):
+def buoyancy4pp(l, lp, tsol2):
     '''
     Returns the l-component of the buoyancy force.
     Use it to compute the rate of working (power) of buoyancy, either thermal or compositional
@@ -906,7 +784,6 @@ def buoyancy_pp(l, lp, tsol2):
     
     if l in lp:
         idx   = list(lp).index(l) 
-        #print(np.shape(tsol2[idx,:]))
         f_pol = funcheb( tsol2[idx,:], r=None, ricb=par.ricb, rcmb=ut.rcmb, n=0 )
         hlm0  = f_pol[:,0]
         

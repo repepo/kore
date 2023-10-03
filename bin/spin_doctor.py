@@ -230,7 +230,7 @@ def main(ncpus):
             resid0[i] = np.nan
 
         if par.hydro:
-            resid1[i] = abs( 2*sigma*KE[i] - Dkin[i] - Wlor[i] - Wthm[i] )/ \
+            resid1[i] = abs( 2*sigma*KE[i] - Dkin[i] - Wlor[i] + Wthm[i] )/ \
                              max(abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wlor[i]), abs(Wthm[i]))
         
         if par.magnetic:
