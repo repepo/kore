@@ -4,17 +4,17 @@ import scipy.optimize as so
 import scipy.sparse as ss
 import scipy.special as scsp
 import scipy.fftpack as sft
-import scipy.misc as sm
 import numpy.polynomial.chebyshev as ch
 import numpy as np
-
 import parameters as par
 
 '''
-Various function definitions and utilities
+A library of various function definitions and utilities
 '''
 
+# ----------------------------------------------------------------------------------------------------------------------
 # First some global variables: -----------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 if par.forcing == 0:
     wf = 0
@@ -23,7 +23,7 @@ else:
 
 rcmb   = 1
 
-N1     = int(par.N*(0.5 + 0.5*np.sign(par.ricb)))   # N/2 if no IC, N if present
+N1     = int(par.N/2) * int(1 + np.sign(par.ricb)) + int((par.N%2)*np.sign(par.ricb)) # N/2 if no IC, N if present
 n      = int(N1*(par.lmax-par.m+1)/2)
 n0     = int(par.N*(par.lmax-par.m+1)/2)
 m      = par.m
@@ -53,7 +53,7 @@ elif par.B0 == 'Luo_S2':
 elif par.B0 == 'FDM':
     symmB0 = int((-1)**par.B0_l)
     B0_l   = par.B0_l
-
+    
 bsymm = par.symm * symmB0  # induced magnetic field (b) symmetry follows from u and B0
 
 B0list = ['axial', 'dipole', 'G21 dipole', 'Luo_S1', 'Luo_S2', 'FDM']

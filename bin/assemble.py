@@ -641,7 +641,7 @@ def main():
                 basecol = ( 2 + 2*par.magnetic )*nb*ut.N1
 
                 # Physics ------------------------------------
-                mtx = -op.buoyancy(l,'u','',0)
+                mtx = op.buoyancy(l,'u','',0)
                 # --------------------------------------------
                 col = basecol + col0
                 loc_list = ut.packit( loc_list, mtx, row, col)
@@ -655,7 +655,7 @@ def main():
                 basecol = ( 2 + 2*par.magnetic + par.thermal )*nb*ut.N1
 
                 # Physics ------------------------------------
-                mtx = -op.comp_buoyancy(l,'u','',0)
+                mtx = op.comp_buoyancy(l,'u','',0)
                 # --------------------------------------------
                 col = basecol + col0
                 loc_list = ut.packit( loc_list, mtx, row, col)
