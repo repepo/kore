@@ -198,8 +198,8 @@ if entropyGrad == 'ssl':
 # Additional arguments for 'Two zone' or 'User defined' case (modify if needed).
 rc   = 0.7  # transition radius
 h    = 0.1  # transition width
-sym  = -1    # radial symmetry
-args = [rc, h, sym]
+rsy  = -1    # radial symmetry
+args = [rc, h, rsy]
 
 # Thermal boundary conditions
 # 0 for isothermal, theta=0
@@ -239,10 +239,10 @@ Ra_comp = 0.0
 BV2_comp = 0.0
 
 # Additional arguments for 'Two zone' or 'User defined' case (modify if needed).
-rc  = 0.7  # transition radius
-h   = 0.1  # transition width
-sym = -1    # radial symmetry
-args_comp = [rc, h, sym]
+rcc  = 0.7  # transition radius
+hc   = 0.1  # transition width
+rsyc = -1    # radial symmetry
+args_comp = [rcc, hc, rsyc]
 
 # Compositional boundary conditions
 # 0 for constant composition, xi=0
