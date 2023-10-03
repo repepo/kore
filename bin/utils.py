@@ -43,6 +43,7 @@ if m_bot == 0: m_bot = 2
 lmax_top = lmax + 1 + (1-2*np.sign(m))*s
 lmax_bot = lmax + 1 + (1-2*np.sign(m))*(1-s)
 
+beta_actual = 0
 if par.B0 in ['axial','dipole','G21 dipole','Luo_S1']:
     symmB0 = -1
     B0_l   =  1
@@ -52,7 +53,27 @@ elif par.B0 == 'Luo_S2':
 elif par.B0 == 'FDM':
     symmB0 = int((-1)**par.B0_l)
     B0_l   = par.B0_l
+
 bsymm = par.symm * symmB0  # induced magnetic field (b) symmetry follows from u and B0
+
+B0list = ['axial', 'dipole', 'G21 dipole', 'Luo_S1', 'Luo_S2', 'FDM']
+B0type = B0list.index(par.B0)
+
+if par.innercore == 'insulator':
+    innercore_mag_bc = 0
+elif par.innercore == 'TWA':
+    innercore_mag_bc = 1
+
+if par.mantle == 'insulator':
+    mantle_mag_bc = 0
+elif par.mantle == 'TWA':
+    mantle_mag_bc = 1
+
+thermal_heating_list = ['internal', 'differential', 'two zone', 'user defined']
+heating = thermal_heating_list.index(par.heating)
+
+compositional_background_list = ['internal', 'differential']
+compositional_background = compositional_background_list.index(par.comp_background)
 
 # ----------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
@@ -487,6 +508,8 @@ def findbeta(args):
     beta1 = sol.x[0]
 
     return beta1
+if par.B0 == 'FDM':
+    beta_actual = findbeta([par.beta, B0_l, par.ricb])
 
 
 
@@ -737,14 +760,14 @@ def h3(rr, kind, args):
 
 def chebco_h(args, kind, N, rcmb, tol):
     '''
-    Computes the Chebyshev coeffs of the h0 function and derivatives
-    times a power of r
+    Computes the Chebyshev coeffs of the h0 function used to build B0,
+    and derivatives, times a power of r.
     '''
 
-    beta = args[0]  # beta
-    l    = args[1]  # l
+    #beta = args[0]  # beta
+    #l    = args[1]  # l
     ricb = args[2]  # ricb
-    rx   = args[3]  # power of r
+    #rx   = args[3]  # power of r
 
     dx   = args[4]  # derivative order
 
