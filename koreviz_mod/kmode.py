@@ -186,6 +186,8 @@ class kmode:
             data = (1/2)*(self.ur**2 + self.utheta**2 + self.uphi**2)
         elif component in ['amplitude','amp','a']:
             data = np.sqrt( (1/2)*(self.ur**2 + self.utheta**2 + self.uphi**2) )
+        elif component in ['logenergy','log']:
+            data = np.log10( (1/2)*(self.ur**2 + self.utheta**2 + self.uphi**2) )           
         
         return data
 
@@ -216,8 +218,8 @@ class kmode:
         iphi = np.argmin(abs( self.phi - (azim*np.pi/180) )) % self.nphi
         data = self.get_data(comp)[:,:,iphi]
         
-        if comp in ['energy','ener','e', 'amplitude','amp','a']:
-            cmap = cmr.tropical_r
+        #if comp in ['energy','ener','e', 'amplitude','amp','a', 'logenergy', 'log']:
+        #    cmap = cmr.tropical_r
             #data = np.log10(data)
 
         plt.figure(figsize=(6,9))
