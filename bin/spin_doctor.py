@@ -180,13 +180,13 @@ def main(ncpus):
         if par.thermal:
 
             [ TE[i], Dthm0, Wadv_thm[i] ] = np.sum( tdgn, 0) 
-            Dthm[i] = Dthm0 * par.Etherm
+            Dthm[i] = Dthm0 * par.OmgTau * par.Etherm
 
 
         if par.compositional:
             
             [ CE[i], Dcmp0, Wadv_cmp[i] ] = np.sum( cdgn, 0)
-            Dcmp[i] = Dcmp0 * par.Ecomp
+            Dcmp[i] = Dcmp0 * par.OmgTau * par.Ecomp
 
 
         # --------------------------------------------------------- Computing residuals to check the power balance:
