@@ -11,7 +11,8 @@ try:
         import evtk
         gridToVTK = evtk.hl.gridToVTK
 except:
-    print("writeVts requires the use of evtk library!")
+    print("If you need 3D visualization:")
+    print("writeVts requires the use of evtk library.")
     print("You can get it from https://github.com/paulo-herrera/PyEVTK")
 
 def get_grid(r,theta,phi,nr,ntheta,nphi):

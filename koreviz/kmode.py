@@ -17,22 +17,23 @@ class kmode:
 
         import parameters as par
         import utils as ut
-        import utils_pp as upp
+        import utils4pp as upp
         import radial_profiles as rap
 
-        self.solnum = solnum
-        self.lmax   = par.lmax
-        self.m      = par.m
-        self.symm   = par.symm
-        self.N      = par.N
-        self.ricb   = par.ricb
-        self.rcmb   = ut.rcmb
-        self.n      = ut.n
-        self.n0     = ut.n0
-        self.field  = field
-        gap         = self.rcmb - self.ricb
-        self.ut     = ut
-        self.par    = par
+        self.solnum   = solnum
+        self.lmax     = par.lmax
+        self.m        = par.m
+        self.symm     = par.symm
+        self.N        = par.N
+        self.ricb     = par.ricb
+        self.rcmb     = ut.rcmb
+        self.n        = ut.n
+        self.n0       = ut.n0
+        self.field    = field
+        gap           = self.rcmb - self.ricb
+        self.ut       = ut
+        self.par      = par
+        self.nthreads = nthreads
 
         if nr is None:
             self.nr = par.N + 2
@@ -295,3 +296,55 @@ class kmode:
         plt.tight_layout()
         plt.show()
 
+    def potextra(self,brcmb,rcmb,rout):
+
+        if self.field != 'b':
+            print("Potential extrapolation only valid when field='b'")
+            return 0
+
+        try:
+            import shtns
+        except ImportError:
+            print("Potential extrapolation requires the SHTns library")
+            print("It can be obtained here: https://bitbucket.org/nschaeff/shtns")
+
+        self.nrout = len(rout)
+        polar_opt = 1e-10
+
+        norm=shtns.sht_orthonormal | shtns.SHT_NO_CS_PHASE
+        lmax2 = int( self.lmax + 1 - np.sign(self.m) )
+        mmax = int( np.sign(self.m) )
+        mres = max(1,self.m)
+        sh   = shtns.sht( lmax2, mmax=mmax, mres=mres, norm=norm,
+                         nthreads=self.nthreads )
+        ntheta, nphi = sh.set_grid(self.ntheta, self.nphi,
+                                       polar_opt=polar_opt)
+
+        L = sh.l * (sh.l + 1)
+
+        brlm = sh.analys(brcmb)
+        bpolcmb = np.zeros_like(brlm)
+        bpolcmb[1:] = rcmb**2 * brlm[1:]/L[1:]
+        btor = np.zeros_like(brlm)
+
+        brout = np.zeros([ntheta,nphi,self.nrout])
+        btout = np.zeros([ntheta,nphi,self.nrout])
+        bpout = np.zeros([ntheta,nphi,self.nrout])
+
+        for k,radius in enumerate(rout):
+            print(("%d/%d" %(k,self.nrout)))
+
+            radratio = rcmb/radius
+            bpol = bpolcmb * radratio**(sh.l)
+            brlm = bpol * L/radius**2
+            brout[...,k] = sh.synth(brlm)
+
+            slm = -sh.l/radius * bpol
+
+            btout[...,k], bpout[...,k] = sh.synth(slm,btor)
+
+        brout = np.transpose(brout,(2,0,1))
+        btout = np.transpose(btout,(2,0,1))
+        bpout = np.transpose(bpout,(2,0,1))
+
+        return brout, btout, bpout
