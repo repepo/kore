@@ -83,7 +83,7 @@ def main(ncpus):
             cd_kho = ut.chebify( rap.kappa_rho, 1, tol)
 
             if par.entropyGrad == 'auto':
-                cd_ent = ac.get_equilibrium_entropy()
+                cd_ent = (ac.get_equilibrium_entropy()).reshape([par.N,1])
             else:
                 cd_ent = ut.chebco_rf( rap.entropy_gradient, rpower=0, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=par.dent_args).reshape([par.N,1])
 
