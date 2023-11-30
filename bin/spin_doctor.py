@@ -91,7 +91,7 @@ def main(ncpus):
     resid2      = np.zeros(success)
     resid3      = np.zeros(success)
     y           = np.zeros(success)                # for eigenmode tracking
-    press2      = np.zeros(success)
+    press0      = np.zeros(success)
     params      = np.zeros((success,51))
     # ------------------------------------------------------------------------------------------------------------------------
 
@@ -145,12 +145,9 @@ def main(ncpus):
             # Expand solution
             c_sol2  = upp.expand_reshape_sol( rcmp + 1j*icmp, par.symm)		   			
 
-    
-        press2[i] = upp.pressure4pp(2,sigma+1j*w, u_sol2)[0]  # the l=2 component of the pressure at the surface
-
 
         # diagnose solutions, in parallel
-        [ udgn, bdgn, tdgn, cdgn ] = upp.diagnose( u_sol2, b_sol2, t_sol2, c_sol2, par.ricb, ut.rcmb, int(ncpus) )
+        [ udgn, bdgn, tdgn, cdgn ] = upp.diagnose( u_sol2, b_sol2, t_sol2, c_sol2, par.ricb, ut.rcmb, int(ncpus), sigma+1j*w )
 
 
         if par.hydro:
@@ -158,7 +155,7 @@ def main(ncpus):
             KP[i] = np.sum( udgn[lpi,0])  # Poloidal kinetic energy
             KT[i] = np.sum( udgn[lti,0])  # Toroidal kinetic energy
             
-            [ KE[i], Dkin0, Dint0, Wlor0, Wthm0, Wcmp0 ] = np.sum( udgn, 0)
+            [ KE[i], Dkin0, Dint0, Wlor0, Wthm0, Wcmp0, _ ] = np.sum( udgn, 0)
             Dkin[i] = par.OmgTau * par.Ek * Dkin0
             Dint[i] = par.OmgTau * par.Ek * Dint0
             Wlor[i] = par.OmgTau**2 * par.Le2 * Wlor0
@@ -168,6 +165,8 @@ def main(ncpus):
             # Viscous torques
             vtorq[i] = par.Ek * np.dot( ut.gamma_visc(0,0,0), u_sol)  # need to double check the constants here
             vtorq_icb[i] = par.Ek * np.dot( ut.gamma_visc_icb(par.ricb), u_sol)
+
+            press0 = udgn[6][0] 
 
 
         if par.magnetic:
@@ -211,6 +210,8 @@ def main(ncpus):
         # resid2 is the relative residual of 2*sigma*ME - Indu - Mdfs = 0
         # resid3 is the relative residual of 2*sigma*TE - Dthm - Wadv_thm = 0
         # ---------------------------------------------------------------------------------------------------------
+
+        repow = 0  # power from the forcing needs to be computed, not coded yet. 
 
         if par.forcing == 0:
             pss = 0
@@ -390,7 +391,7 @@ def main(ncpus):
                                     resid0, resid1,
                                     np.real(vtorq), np.imag(vtorq),
                                     np.real(vtorq_icb), np.imag(vtorq_icb),
-                                    press2 ])
+                                    press0 ])
 
     if par.magnetic:
         with open('magnetic.dat','ab') as dmag:

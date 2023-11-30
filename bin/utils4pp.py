@@ -423,7 +423,7 @@ def thermal_advect(l, hlm0, plm0, flag):
 
 
 
-def flow_worker( l, lp, lt, u_sol2, b_sol2, t_sol2, c_sol2, Ra, Rb, N, sqx ):
+def flow_worker( l, lp, lt, u_sol2, b_sol2, t_sol2, c_sol2, Ra, Rb, N, sqx, eigval ):
     '''
     Computes the power balance from the momentum (the Navier-Stokes) equation.
     Includes kinetic energy, kinetic dissipation, internal dissipation, and the
@@ -482,9 +482,11 @@ def flow_worker( l, lp, lt, u_sol2, b_sol2, t_sol2, c_sol2, Ra, Rb, N, sqx ):
     Dint_l = cg_quad( intdp + intdt, Ra, Rb, N, sqx)
     Wlor_l = cg_quad( wlorp + wlort, Ra, Rb, N, sqx)
     Wthm_l = cg_quad( wther, Ra, Rb, N, sqx )
-    Wcmp_l = cg_quad( wcomp, Ra, Rb, N, sqx )   
+    Wcmp_l = cg_quad( wcomp, Ra, Rb, N, sqx )
 
-    return [ Kene_l, Dkin_l, Dint_l, Wlor_l, Wthm_l, Wcmp_l ]
+    press_l = pressure4pp(l, eigval, u_sol2)[0]  # the l component of the pressure at the cmb
+
+    return [ Kene_l, Dkin_l, Dint_l, Wlor_l, Wthm_l, Wcmp_l, np.abs(press_l) ]
 
 
 
@@ -798,7 +800,7 @@ def pressure4pp(l, eigval, u_sol2):
 
     m, Ek = par.m, par.Ek
 
-    ll0 = ut.ell( m, par.lmax, ut.symm)
+    ll0 = ut.ell( m, par.lmax, par.symm)
     lp  = ll0[0]  # l's for poloidals
     lt  = ll0[1]  # l's for toroidals
     L = l*(l+1)
@@ -806,7 +808,7 @@ def pressure4pp(l, eigval, u_sol2):
     P = u_sol2[0]
     T = u_sol2[1]
 
-    out = 0
+    out = np.zeros_like(rk, dtype='complex128')
 
     if l-1 in lt:
 
@@ -832,7 +834,7 @@ def pressure4pp(l, eigval, u_sol2):
 
 
 
-def diagnose( usol2, bsol2, tsol2, csol2, Ra, Rb, ncpus):
+def diagnose( usol2, bsol2, tsol2, csol2, Ra, Rb, ncpus, eigval):
     '''
     Computes kinetic energy, internal and kinetic energy dissipation,
     and input power from body forces. Integrated From r=Ra to r=Rb, and
@@ -874,7 +876,7 @@ def diagnose( usol2, bsol2, tsol2, csol2, Ra, Rb, ncpus):
 
     if par.hydro:
         ppu = [ pool.apply_async( flow_worker,
-                args=( l, lp_u, lt_u, usol2, bsol2, tsol2, csol2, Ra, Rb, par.N, sqx)) for l in ll ]
+                args=( l, lp_u, lt_u, usol2, bsol2, tsol2, csol2, Ra, Rb, par.N, sqx, eigval)) for l in ll ]
         out_u = np.array([pp0.get() for pp0 in ppu])
     
     if par.magnetic:
