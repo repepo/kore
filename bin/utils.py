@@ -21,19 +21,28 @@ if par.forcing == 0:
 else:
     wf = par.forcing_frequency
 
-rcmb   = 1
+rcmb   = 1  # change this at your own peril
 
 N1     = int(par.N/2) * int(1 + np.sign(par.ricb)) + int((par.N%2)*np.sign(par.ricb)) # N/2 if no IC, N if present
+Nic    = int(par.N_cic/2)
 n      = int(N1*(par.lmax-par.m+1)/2)
+nic    = int(Nic*(par.lmax_cic-par.m+1)/2)
 n0     = int(par.N*(par.lmax-par.m+1)/2)
 m      = par.m
 lmax   = par.lmax
 vsymm  = par.symm
 
+if ((par.innercore == 'conducting, Chebys') or ('perfect' in par.innercore)) and par.magnetic and par.ricb>0:
+    secf_projection = 'consoidal'  # Consoidal projection in section f, basis C^(3)
+    cic = 1
+else:
+    secf_projection = 'radial'     # Radial projection in section f, basis C^(2)
+    cic = 0
+
 symm1 = (2*np.sign(par.m) - 1) * par.symm  # symm1=par.symm if m>0, symm1 = -par.symm if m=0
 
 # this gives the size (rows or columns) of the main matrices
-sizmat = 2*n*par.hydro + 2*n*par.magnetic + n*par.thermal + n*par.compositional
+sizmat = 2*n*par.hydro + 2*n*par.magnetic + 2*nic*cic + n*par.thermal + n*par.compositional
 
 s = int( (vsymm+1)/2 ) # s=0 if antisymm, s=1 if symm
 m_top = m + 1-s
@@ -59,15 +68,11 @@ bsymm = par.symm * symmB0  # induced magnetic field (b) symmetry follows from u 
 B0list = ['axial', 'dipole', 'G21 dipole', 'Luo_S1', 'Luo_S2', 'FDM']
 B0type = B0list.index(par.B0)
 
-if par.innercore == 'insulator':
-    innercore_mag_bc = 0
-elif par.innercore == 'TWA':
-    innercore_mag_bc = 1
+ic_bc_list = ['insulator', 'TWA', 'conducting, Chebys']
+innercore_mag_bc = ic_bc_list.index(par.innercore)
 
-if par.mantle == 'insulator':
-    mantle_mag_bc = 0
-elif par.mantle == 'TWA':
-    mantle_mag_bc = 1
+mantle_bc_list = ['insulator', 'TWA']
+mantle_mag_bc = mantle_bc_list.index(par.mantle)
 
 thermal_heating_list = ['internal', 'differential', 'two zone', 'user defined']
 heating = thermal_heating_list.index(par.heating)
@@ -736,14 +741,14 @@ def B0_norm():
 
 
 
-def Dlam(lamb,N):
+def Dlam(lamb,N,R1,R2):
     '''
     Order lamb (>=1) derivative matrix, size N*N
     '''
-    if par.ricb == 0:
-        const1 = (1/rcmb)**lamb  # ok when rcmb is not 1
+    if R1 == 0:
+        const1 = (1/R2)**lamb  # ok when R2 is not 1
     else:
-        const1 = (2./(rcmb-par.ricb))**lamb
+        const1 = (2./(R2-R1))**lamb
     const2 = scsp.factorial(lamb-1.)*2**(lamb-1.)
     tmp = lamb + np.arange(0,N-lamb)
 

@@ -91,7 +91,8 @@ def main(ncpus):
     resid2      = np.zeros(success)
     resid3      = np.zeros(success)
     y           = np.zeros(success)                # for eigenmode tracking
-    params      = np.zeros((success,49))
+    press2      = np.zeros(success)
+    params      = np.zeros((success,51))
     # ------------------------------------------------------------------------------------------------------------------------
 
     print('\n  ★     Damping σ     Frequency ω    resid0     resid𝐮     resid𝐛     residθ     Tor/Pol    Mag/Kin     𝚪 mag  ')
@@ -145,6 +146,9 @@ def main(ncpus):
             c_sol2  = upp.expand_reshape_sol( rcmp + 1j*icmp, par.symm)		   			
 
     
+        press2[i] = upp.pressure4pp(2,sigma+1j*w, u_sol2)[0]  # the l=2 component of the pressure at the surface
+
+
         # diagnose solutions, in parallel
         [ udgn, bdgn, tdgn, cdgn ] = upp.diagnose( u_sol2, b_sol2, t_sol2, c_sol2, par.ricb, ut.rcmb, int(ncpus) )
 
@@ -311,8 +315,10 @@ def main(ncpus):
                                 par.N,
                                 par.lmax,
                                 
-                                timing+toc-tic
-                                ])  # 49 total 
+                                timing+toc-tic,
+                                par.mu_i2o,
+                                par.sigma_i2o
+                                ])  # 51 total 
 
     # ------------------------------------------------------------------------------------------------------------------------
     print(' ‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾\n')
@@ -375,7 +381,7 @@ def main(ncpus):
 
             '%.9e', '%d',   '%d',   '%d',
              
-            '%.2f'])
+            '%.2f', '%.9e', '%.9e' ])
 
     if par.hydro:   
         with open('flow.dat','ab') as dflo:
@@ -383,7 +389,8 @@ def main(ncpus):
                                     Dint, Wlor, Wthm, Wcmp,
                                     resid0, resid1,
                                     np.real(vtorq), np.imag(vtorq),
-                                    np.real(vtorq_icb), np.imag(vtorq_icb)])
+                                    np.real(vtorq_icb), np.imag(vtorq_icb),
+                                    press2 ])
 
     if par.magnetic:
         with open('magnetic.dat','ab') as dmag:

@@ -88,11 +88,13 @@ B0_l = 1                # l number for the FDM mode
 
 # Magnetic boundary conditions at the ICB:
 innercore = 'insulator'
+# innercore = 'conducting, Chebys'  # For eigenvalue problems
+# innercore = 'conducting, Bessel'  # For forced problems 
 # innercore = 'TWA'  # Thin conductive wall layer (Roberts, Glatzmaier & Clune, 2010)
-c_icb     = 0  # Ratio (h*mu_wall)/(ricb*mu_fluid) (if innercore='TWA')
-c1_icb    = 0  # Thin wall to fluid conductance ratio (if innercore='TWA')
 # innercore = 'perfect conductor, material'  # tangential *material* electric field jump [nxE']=0 across the ICB
 # innercore = 'perfect conductor, spatial'   # tangential *spatial* electric field jump [nxE]=0 across the ICB
+c_icb     = 0  # Ratio (h*mu_wall)/(ricb*mu_fluid) (if innercore='TWA')
+c1_icb    = 0  # Thin wall to fluid conductance ratio (if innercore='TWA')
 # Note: 'perfect conductor, material' or 'perfect conductor, spatial' are identical if ICB is no-slip (bci = 1 above)
 
 # Magnetic boundary conditions at the CMB
@@ -101,8 +103,10 @@ mantle   = 'insulator'
 c_cmb  = 0  # Ratio (h*mu_wall)/(rcmb*mu_fluid)  (if mantle='TWA')
 c1_cmb = 0  # Thin wall to fluid conductance ratio (if mantle='TWA')
 
-# Relative permeability (fluid/vacuum)
-mu = 1.0
+# Electrical conductivity and permeability
+mu        = 1.0  # magnetic permeability ratio fluid outer core / vacuum
+mu_i2o    = 1.0  # magnetic permeability ratio solid inner core / fluid outer core
+sigma_i2o = 1.0  # electrical conductivity ratio solid inner core / fluid outer core
 
 # Magnetic field strength and magnetic diffusivity:
 # Either use the Elsasser number and the magnetic Prandtl number (i.e. Lambda and Pm: uncomment and set the following three lines):
@@ -230,12 +234,13 @@ OmgTau = 1     # Rotation time scale
 ncpus = 4
 
 # Chebyshev polynomial truncation level. Use function def at top or set manually. N must be even if ricb = 0.
-N = Ncheb(Ek)
-# N = 24
+N     = Ncheb(Ek)  # for the fluid core
+N_cic = 16         # for the field inside the ic (innercore = 'conducting, Chebys') 
 
 # Spherical harmonic truncation lmax and approx lmax/N ratio:
 g = 1.0
-lmax = int( 2*ncpus*( np.floor_divide( g*N, 2*ncpus ) ) + m - 1 )
+lmax     = int( 2*ncpus*( np.floor_divide( g*N    , 2*ncpus ) ) + m - 1 )
+lmax_cic = int( 2*ncpus*( np.floor_divide( g*N_cic, 2*ncpus ) ) + m - 1 )
 # If manually setting the max angular degree lmax, then it must be even if m is odd,
 # and lmax-m+1 should be divisible by 2*ncpus
 # lmax = 8

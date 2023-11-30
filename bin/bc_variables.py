@@ -6,17 +6,17 @@ import parameters as par
 
 
 
-def Tk(x, N, lamb_max) :
+def Tk(x, N, lamb_max, R1, R2) :
     '''
     Chebyshev polynomial from order 0 to N (as rows)
     and its derivatives ** with respect to r **, up to lamb_max (as columns),
-    evaluated at x=-1 (r=ricb) or x=1 (r=rcmb).
+    evaluated at x=-1 (r=R1) or x=1 (r=R2).
     '''
     
-    if par.ricb == 0 :
-        ric = -ut.rcmb
+    if R1 == 0 :
+        ric = -R2
     else :
-        ric = par.ricb
+        ric = R1
     
     out = np.zeros((N+1,lamb_max+1))
     
@@ -27,33 +27,47 @@ def Tk(x, N, lamb_max) :
         tmp = 1.
         for i in range(0, lamb_max):
             tmp = tmp * ( k**2 - i**2 )/( 2*i + 1 )
-            out[k,i+1] = x**(k+i+1) * tmp * (2/(ut.rcmb - ric))**(i+1)
+            out[k,i+1] = x**(k+i+1) * tmp * (2/(R2 - ric))**(i+1)
         
     return out
     
     
-def Tcenter(N) :
-    '''
-    Chebyshev polynomial evaluated at x=0, from order 0 to N
-    Useful to set boundary condition at the center if no inner core present
-    i.e. when the Chebyshev domain is [-1,1]
-    '''
+# def Tcenter(N) :
+#     '''
+#     Chebyshev polynomial evaluated at x=0, from order 0 to N
+#     Useful to set boundary condition at the center if no inner core present
+#     i.e. when the Chebyshev domain is [-1,1]
+#     '''
     
-    out = np.zeros((N+1,1))
-    for k in range (0,N+1):
-        out[k] = np.cos( k * np.pi/2 )
-    out[abs(out)<0.1] = 0
+#     out = np.zeros((N+1,1))
+#     for k in range (0,N+1):
+#         out[k] = np.cos( k * np.pi/2 )
+#     out[abs(out)<0.1] = 0
     
-    return out
+#     return out
         
         
-
-
-
 # to use in the b.c. and the torque calculation
-Ta = Tk(-1, par.N-1, 4)
-Tb = Tk( 1, par.N-1, 5)
-Tc = Tcenter(par.N-1)
+Ta     = Tk(-1, par.N-1, 4, par.ricb, ut.rcmb)
+Tb     = Tk( 1, par.N-1, 5, par.ricb, ut.rcmb)
+
+if ut.cic:
+    Tb_cic = Tk( 1, par.N_cic-1, 2, 0, par.ricb)
+
+    if ut.symmB0 == -1:  # antisymmetric B0
+        ixf = ( par.m + ut.s )%2
+        ixg = ( par.m + 1 - ut.s )%2
+    elif ut.symmB0 == 1:  # symmetric B0
+        ixf = ( par.m + 1 - ut.s )%2
+        ixg = ( par.m + ut.s )%2
+    Tbfic = Tb_cic[ixf::2,:]
+    Tbgic = Tb_cic[ixg::2,:]
+
+
+
+#Tc = Tcenter(par.N-1)
+
+
 
 '''
 # For the ellipsoidal case 

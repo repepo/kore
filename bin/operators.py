@@ -75,6 +75,18 @@ for label in fname :
 
     globals()[varlabel] = ss.csr_matrix(sio.mmread(label))
 
+if ut.cic:  # for a conductive inner core
+
+    r2_D0f_ic = ss.csr_matrix(sio.mmread('r2_D0f_ic'))
+    r2_D0g_ic = ss.csr_matrix(sio.mmread('r2_D0g_ic'))
+    r0_D0f_ic = ss.csr_matrix(sio.mmread('r0_D0f_ic'))
+    r0_D0g_ic = ss.csr_matrix(sio.mmread('r0_D0g_ic'))
+    r1_D1f_ic = ss.csr_matrix(sio.mmread('r1_D1f_ic'))
+    r1_D1g_ic = ss.csr_matrix(sio.mmread('r1_D1g_ic'))
+    r2_D2f_ic = ss.csr_matrix(sio.mmread('r2_D2f_ic'))
+    r2_D2g_ic = ss.csr_matrix(sio.mmread('r2_D2g_ic'))
+    
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------- Navier-Stokes equation operators
@@ -457,23 +469,35 @@ def b(l, section, component, offdiag):
     '''
     The magnetic field 𝐛
     '''
-
+    cdipole = ((par.B0 == 'dipole') and (par.ricb > 0))  # boolean
     out = 0
     L = l*(l+1)
 
     if offdiag == 0:
 
-        if section == 'f' and component == 'bpol':  #  r² 𝐫⋅𝐛   (×r² if dipole)
-            if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
+        if section == 'f' and component == 'bpol' and ut.secf_projection == 'radial':  #  r² 𝐫⋅𝐛   (×r² if dipole)
+            if not cdipole:
                 out = L* r2If
-            elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
+            else:
                 out = L* r4If
+                
+        if section == 'f' and component == 'bpol' and ut.secf_projection == 'consoidal':
+            if not cdipole:
+                out = r2If + r3D1f
+            else:
+                print('Classic dipole + consoidal projection not coded yet')
 
         elif section == 'g' and component == 'btor':  # r² 𝐫⋅∇×𝐛   (×r³ if dipole)
-            if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
+            if not cdipole:
                 out = L* r2Ig
-            elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
+            else:
                 out = L* r5Ig
+
+        elif section == 'fic' and component == 'bpol_ic':
+            out = L * r2_D0f_ic
+        
+        elif section == 'gic' and component == 'btor_ic':
+            out = L * r2_D0g_ic       
 
     return out
 
@@ -481,7 +505,7 @@ def b(l, section, component, offdiag):
 
 def induction(l, section, component, offdiag):
     '''
-    The induction term ∇×(𝐁₀×𝐮)
+    The induction term ∇×(𝐁₀×𝐮), radial projection (section f) or radial projection of the curl (section g)
     '''
 
     out = 0
@@ -489,7 +513,7 @@ def induction(l, section, component, offdiag):
     m = par.m
     l = np.float128(l)  # to avoid overflow errors at high N
     L = l*(l+1)
-    cdipole = ((par.magnetic == 1) and (par.B0 == 'dipole') and (par.ricb > 0))  # boolean
+    cdipole = ((par.B0 == 'dipole') and (par.ricb > 0))  # boolean
 
 
     if section == 'f':  # ---------------------------------------------------- nocurl  r² 𝐫⋅∇×(𝐁₀×𝐮)  (×r² if classic dipole)
@@ -500,6 +524,7 @@ def induction(l, section, component, offdiag):
 
                 C1 = 3*(-2 + l)*(1 + l)*np.sqrt((l - m)*(-1 + l + m))*np.sqrt((-1 + l - m)*(l + m))
                 C2 = 3 - 8*l + 4*l**2
+                
                 out = ( hIf*(-4 + l) - 3*rhD1f + rh1If*(-1 + l) )*C1/C2
 
                 offd = -1
@@ -507,9 +532,10 @@ def induction(l, section, component, offdiag):
             elif offdiag == -1:  # l-1 terms (dipole)
 
                 C = np.sqrt(l**2-par.m**2)*(l**2-1)/(2*l-1)
-                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1'] :
+                
+                if not cdipole:
                     out = C*( (l-2)*hIf + l*rh1If - 2*rhD1f )
-                elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
+                else:
                     out = C*( (l-2)*r2hIf + l*r3h1If - 2*r3hD1f )
 
                 if ut.symm1 == -1:
@@ -518,14 +544,16 @@ def induction(l, section, component, offdiag):
             elif offdiag == 0:  # l terms (quadrupole)
 
                 C = (3*(l + l**2 - 3*m**2))/(-3 + 4*l*(1 + l))
+                
                 out = C*( hIf*(6 - l - l**2) + rh1If*l*(1 + l) - 2*rhD1f*(-3 + l + l**2) )
 
             elif offdiag == 1:  # l+1 terms (dipole)
 
                 C = np.sqrt((l+1)**2-par.m**2)*l*(l+2)/(2*l+3)
-                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
+
+                if not cdipole:
                     out = C*( -(l+3)*hIf -(l+1)*rh1If -2*rhD1f )
-                elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
+                else:
                     out = C*( -(l+3)*r2hIf -(l+1)*r3h1If -2*r3hD1f )
 
                 if ut.symm1 == 1:
@@ -535,6 +563,7 @@ def induction(l, section, component, offdiag):
 
                 C1 = 3*l*(3 + l)*np.sqrt((2 + l - m)*(1 + l + m))*np.sqrt((1 + l - m)*(2 + l + m))
                 C2 = (3 + 2*l)*(5 + 2*l)
+                
                 out = ( hIf*(-5 - l) - 3*rhD1f - rh1If*(2 + l) )*C1/C2
 
                 offd = 1
@@ -550,9 +579,9 @@ def induction(l, section, component, offdiag):
 
             elif offdiag == 0:  # l terms (dipole)
 
-                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
+                if not cdipole:
                     out = -2j*par.m* rhIf
-                elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
+                else:
                     out = -2j*par.m* r3hIf
 
             elif offdiag == 1:  # l+1 terms (quadrupole)
@@ -570,6 +599,7 @@ def induction(l, section, component, offdiag):
             if offdiag == -1:  # l-1 terms (quadrupole)
 
                 C = (3j * m * np.sqrt(l**2 - m**2))/(-1 + 2*l)
+                
                 out = C*( -2*h1Ig*(-3 + l) - 2*hD1g*(-3 + l) - 2*qhIg*(3 + l**2) + 6*rhD2g - 2*rh1D1g*(-3 + l) + rh2Ig*(-1 + l)*l )
 
                 if ut.symm1 == -1:
@@ -577,14 +607,15 @@ def induction(l, section, component, offdiag):
 
             elif offdiag == 0:  # l terms (dipole)
 
-                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
+                if not cdipole:
                     out = 2j*par.m*( hD1g + rh1D1g -(l**2+l+1)*qhIg + h1Ig + (L/2)*rh2Ig + rhD2g )  # qh=h/r
-                elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
+                else:
                     out = 2j*par.m*( r3hD1g + r4h1D1g -(l**2+l+1)*r2hIg + r3h1Ig + (L/2)*r4h2Ig + r4hD2g )
 
             elif offdiag == 1:  # l+1 terms (quadrupole)
 
                 C = (3j*m*np.sqrt((1 + l - m)*(1 + l + m)))/(3 + 2*l)
+                
                 out = C*( 2*(4+l)*( h1Ig + hD1g + rh1D1g ) - 2*qhIg*(4 + 2*l + l**2) + 6*rhD2g + rh2Ig*(2 + 3*l + l**2) )
 
                 if ut.symm1 == 1:
@@ -595,6 +626,7 @@ def induction(l, section, component, offdiag):
             if offdiag == -2:  # l-2 terms (quadrupole)
 
                 C = (3*(-2 + l)*(1 + l)*np.sqrt((l - m)*(-1 + l + m))*np.sqrt((-1 + l - m)*(l + m)))/(3 - 8*l + 4*l**2)
+                
                 out = C*( hIg*l - 3*rhD1g + rh1Ig*(-3 + l) )
 
                 offd = -1
@@ -605,9 +637,9 @@ def induction(l, section, component, offdiag):
                 C1 = np.sqrt( (l**2-1)/(4*l**3-l) )
                 C2 = np.sqrt( l*(l**2-1)/(4*l**2-1) )
 
-                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
+                if not cdipole:
                     out = C*( C2* hIg -2*C1* rhD1g + (C2-2*C1)* rh1Ig )
-                elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
+                else:
                     out = C*( C2* r3hIg -2*C1* r4hD1g + (C2-2*C1)* r4h1Ig )
 
                 if ut.symm1 == 1:
@@ -616,24 +648,16 @@ def induction(l, section, component, offdiag):
             elif offdiag == 0:  # l terms (quadrupole)
 
                 C = (3*(l + l**2 - 3*m**2))/(-3 + 4*l*(1 + l))
+                
                 out = C*( -hIg*L - 2*rhD1g*(-3 + l + l**2) - 3*rh1Ig*(-2 + l + l**2) )
 
             elif offdiag == 1:  # l+1 terms
 
-                '''
-                C  = np.sqrt( (l+2)*(2*l+1)*L*((l+1)**2-par.m**2)/(2*l+3) )
-                C1 = np.sqrt( l*(l+2)/(3+11*l+12*l**2+4*l**3) )
-                C2 = np.sqrt( L*(l+2)/(3+4*l*(l+2)) )
-
-                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
-                    out = C*( -C2* hIg -2*C1* rhD1g -(2*C1+C2)* rh1Ig )
-                elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
-                    out = C*( -C2* r3hIg -2*C1* r4hD1g -(2*C1+C2)* r4h1Ig )
-                '''
                 C = l*(l+2)*np.sqrt(1+2*l+l**2-par.m**2)/(3+2*l)
-                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
+
+                if not cdipole:
                     out = C * ( -2*rhD1g - (l+1)* hIg - (l+3) * rh1Ig )
-                elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
+                else:
                     out = C * ( -2*r4hD1g - (l+1)* r3hIg - (l+3) * r4h1Ig )
 
                 if ut.symm1 == -1:
@@ -642,6 +666,7 @@ def induction(l, section, component, offdiag):
             elif offdiag == 2:  # l+2 terms (quadrupole)
 
                 C = (3*l*(3 + l)*np.sqrt(2 + 3*l + l**2 - m - m**2)*np.sqrt(2 + 3*l + l**2 + m - m**2))/(15 + 16*l + 4*l**2)
+                
                 out = C*( -hIg*(1 + l) - 3*rhD1g - rh1Ig*(4 + l) )
 
                 offd = 1
@@ -650,31 +675,139 @@ def induction(l, section, component, offdiag):
 
 
 
+def induction_consoidal(l, component, offdiag):
+    '''
+    The induction term ∇×(𝐁₀×𝐮), consoidal projection.
+    Useful in section f if three rows of boundary conditions are needed in each submatrix. This because
+    the consoidal projection of the difussion term involves 3rd order derivatives, so we use the C^(3) basis.
+    '''
+
+    out = 0
+    offd = 0
+    m = par.m
+    l = np.float128(l)  # to avoid overflow errors at high N
+    L = l*(l+1)
+
+
+    if component == 'upol':
+
+
+        if offdiag == -2:  # l-2 terms (quadrupole)
+            
+            C = (3*(-2 + l)*np.sqrt((l - m)*(-1 + l + m))*np.sqrt((-1 + l - m)*(l + m))) / (l*(3 - 8*l + 4*l**2))
+            out = C*( hIf*(4 - l) + rh1If*(-4 + l) + rhD1f*(-4 + l) - 3*r2hD2f + r2h1D1f*(-4 + l) + r2h2If*(-1 + l) )
+
+            offd = -1
+
+        elif offdiag == -1:  # l-1 terms (dipole)
+
+            C = ((-1 + l)*np.sqrt(l**2 - m**2)) / (l*(-1 + 2*l))
+            out = C * ( hIf*(2 - l) + rh1If*(-2 + l) + rhD1f*(-2 + l) - 2*r2hD2f + r2h1D1f*(-2 + l) + r2h2If*l )
+
+            if ut.symm1 == -1:
+                offd = -1
+
+        elif offdiag == 0:  # l terms (quadrupole)            
+            
+            C = (3*(l + l**2 - 3*m**2)) / (l*(1 + l)*(-3 + 4*l + 4*l**2))
+            out = C*( hIf*(-6 + l + l**2) - rh1If*(-6 + l + l**2) - rhD1f*(-6 + l + l**2) + r2h2If*l*(1 + l) - r2h1D1f*(-6 + l + l**2) - 2*r2hD2f*(-3 + l + l**2) )
+
+        elif offdiag == 1:  # l+1 terms (dipole)
+            
+            C = ((2 + l)*np.sqrt((1 + l - m)*(1 + l + m))) / ((1 + l)*(3 + 2*l))
+            out = C * ( hIf*(3 + l) - rh1If*(3 + l) - rhD1f*(3 + l) - 2*r2hD2f - r2h2If*(1 + l) - r2h1D1f*(3 + l) )
+
+            if ut.symm1 == 1:
+                offd = 1
+
+        elif offdiag == 2:  # l+2 terms (quadrupole)
+            
+            C = ( 3.*(3 + l)*np.sqrt((2 + l - m)*(1 + l + m))*np.sqrt((1 + l - m)*(2 + l + m)) ) / ((1 + l)*(3 + 2*l)*(5 + 2*l))
+            out = C*( hIf*(5 + l) - rh1If*(5 + l) - rhD1f*(5 + l) - 3*r2hD2f - r2h2If*(2 + l) - r2h1D1f*(5 + l) )
+
+            offd = 1
+
+
+    elif component == 'utor':
+
+
+        if offdiag == -1:  # l-1 terms (quadrupole)
+
+            C = (18j*m*np.sqrt(l**2 - m**2))/(l*(-1 + l + 2*l**2))
+            out = C * ( -r2h1If - r2hD1f )
+
+            if ut.symm1 == 1:
+                offd = -1
+
+        elif offdiag == 0:  # l terms (dipole)
+            
+            out = -2j*m*( r2h1If + r2hD1f )/L
+
+        elif offdiag == 1:  # l+1 terms (quadrupole)
+
+            C = (18j*m*np.sqrt(1 + 2*l + l**2 - m**2))/(3*l + 5*l**2 + 2*l**3)
+            out = C * ( -r2h1If - r2hD1f )
+
+            if ut.symm1 == -1:
+                offd = 1
+
+
+    return [ out, offd ]
+
+
+
+
 def magnetic_diffusion(l, section, component, offdiag):
     '''
-    The magnetic difussion term Eₘ∇²𝐛
+    The magnetic difussion term −Eₘ ∇×(η∇×𝐛)
     '''
+    cdipole = (par.B0 == 'dipole') and (par.ricb > 0)
 
     out = 0
     L= l*(l+1)
 
     if offdiag == 0:
 
-        if section == 'f' and component == 'bpol':  #  r² 𝐫⋅∇²𝐛   (×r² if dipole)
-            if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
+        if section == 'f' and component == 'bpol' and ut.secf_projection == 'radial':  #  -r²𝐫⋅∇×(η∇×𝐛)   (×r² if dipole)
+
+            if not cdipole:
                 #out = L*( -L*If + 2*r1D1f + r2D2f )
                 out = L*( -L*etaIf + 2*retaD1f + r2etaD2f )
-            elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
-                out = L*( -L*r2If + 2*r3D1f + r4D2f )
+                #out = L*( -L*r0_eho0_D0 + 2*r1_eho0_D1 + r2_eho0_D2 )
+            else:
+                out = L*( -L*r2etaIf + 2*r3etaD1f + r4etaD2f )
 
-        elif section == 'g' and component == 'btor':  # r² 𝐫⋅∇×(∇²𝐛)  (×r³ if dipole)
-            if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
+        elif (section == 'f' and component == 'bpol' and ut.secf_projection == 'consoidal'):
+            
+            if not cdipole:
+                out = etaIf*L - retaD1f*L - reta1If*L + 3*r2etaD2f + 2*r2eta1D1f + r3etaD3f + r3eta1D2f
+                #out = r0_eho0_D0*L - r1_eho0_D1*L - r1_eho1_D0*L + 3*r2_eho0_D2 + 2*r2_eho1_D1 + r3_eho0_D3 + r3_eho1_D2
+            else:
+                print('Consoidal proj + classic dipole not coded yet')
+
+        elif section == 'g' and component == 'btor':  # -r²𝐫⋅∇×(∇×(η∇×𝐛))  (×r³ if dipole)
+            
+            if not cdipole:
                 #out = L*( -L*Ig + 2*r1D1g + r2D2g )
                 out = L*( -L*etaIg + 2*retaD1g + r2etaD2g + reta1Ig + r2eta1D1g)
-            elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
-                out = L*( -L*r3Ig + 2*r4D1g + r5D2g )
+                #out = L*( -L*r0_eho0_D0 + 2*r1_eho0_D1 + r1_eho1_D0 + r2_eho0_D2 + r2_eho1_D1 ) 
+            else:
+                out = L*( -L*r3etaIg + 2*r4etaD1g + r5etaD2g + r4eta1Ig + r5eta1D1g )
 
-    return par.OmgTau * par.Em * out
+        elif section == 'fic' and component == 'bpol_ic':  # for a conductive inner core
+
+            out = L*( -L*r0_D0f_ic + 2*r1_D1f_ic + r2_D2f_ic )
+
+        elif section == 'gic' and component == 'btor_ic':  # for a conductive inner core
+
+            out = L*( -L*r0_D0g_ic + 2*r1_D1g_ic + r2_D2g_ic )
+
+    if section in ['f', 'g']:
+        out2 = out * par.Em
+    elif section in ['fic', 'gic']:
+        out2 = out * par.Em /( par.mu_i2o * par.sigma_i2o )
+
+    return par.OmgTau * out2
 
 
 

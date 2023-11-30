@@ -791,6 +791,47 @@ def buoyancy4pp(l, lp, tsol2):
 
 
 
+def pressure4pp(l, eigval, u_sol2):
+    '''
+    Returns the l-component of the pressure. Does NOT account for magnetic pressure yet
+    '''
+
+    m, Ek = par.m, par.Ek
+
+    ll0 = ut.ell( m, par.lmax, ut.symm)
+    lp  = ll0[0]  # l's for poloidals
+    lt  = ll0[1]  # l's for toroidals
+    L = l*(l+1)
+
+    P = u_sol2[0]
+    T = u_sol2[1]
+
+    out = 0
+
+    if l-1 in lt:
+
+        [ tlm0, _ ] = cheb2space_tor(l-1, lt, T, 1)
+
+        C = -2*(l-1)*np.sqrt((l-m)*(l+m))/(l*(2*l-1))
+        out += C*rk*tlm0
+
+    if l in lp:
+
+        [ [qlm0, _ , _ ], [ slm0, slm1, slm2 ]] = cheb2space_pol(l, lp, P, 2)
+
+        out += ((2j*m*rk/L) + 2*Ek/rk)*qlm0 + ((2j*m*rk/L) - (Ek*L/rk) - eigval*rk )*slm0 + 2*Ek*slm1 + rk*Ek*slm2
+
+    if l+1 in lt:
+
+        [ tlm0, _ ]  =  cheb2space_tor(l+1, lt, T, 1)
+
+        C = -2*(l+2)*np.sqrt((l+1-m)*(l+1+m))/((l+1)*(2*l+3))
+        out += C*rk*tlm0
+
+    return out
+
+
+
 def diagnose( usol2, bsol2, tsol2, csol2, Ra, Rb, ncpus):
     '''
     Computes kinetic energy, internal and kinetic energy dissipation,

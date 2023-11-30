@@ -32,6 +32,7 @@ def main(ncpus):
     cdipole    = ((par.magnetic == 1) and (par.B0 == 'dipole') and (par.ricb > 0))  # boolean
     inviscid   = ((par.Ek == 0) and (par.ricb == 0))                                # boolean
     quadrupole = ((par.B0 == 'Luo_S2') or ((par.B0 == 'FDM') and (par.B0_l == 2)))  # boolean
+    cic        = ((par.innercore == 'conducting, Chebys') and (par.forcing == 0) and par.magnetic and (par.ricb>0) )  # boolean
 
     radial_profiles = ['eta', 'vsc', 'rho']
 
@@ -43,6 +44,8 @@ def main(ncpus):
     # if vP = -1 we need only odd parity Chebs
     vP = int( (1 - 2*(par.m%2)) * par.symm )
     vT = -vP
+    #vP = int( -1 * (1 - 2*(par.m%2)) * par.symm )
+    #vT = vP
     # for the magnetic field the parities are opposite to that of the flow if B0 is equatorially antisymmetric.
     vF = ut.symmB0*vP
     vG = -vF
@@ -71,13 +74,13 @@ def main(ncpus):
         rdh = [ [ [] for j in range(4) ] for i in range(7) ]
         rpw = [ 0, 1, 2, 3, 4, 5, -1]  # powers of r needed for the h function
 
-        rd_eta = [ [ [] for j in range(2) ] for i in range(3) ]
-        for i,rpw1 in enumerate( rpw[:3] ):
+        rd_eta = [ [ [] for j in range(2) ] for i in range(4) ]
+        for i,rpw1 in enumerate( rpw[:4] ):
             # Cheb coeffs of the mag. diffusion profile times a power of r
             rd_eta[i][0] = ut.chebco_f( ut.mag_diffus, i, par.N, par.ricb, ut.rcmb, par.tol_tc )
             # and the derivative
             rd_eta[i][1] = ( ut.Dcheb( rd_eta[i][0], par.ricb, ut.rcmb )
-                            - i*ut.chebco_f( ut.mag_diffus,i-1,par.N, par.ricb, ut.rcmb, par.tol_tc) )
+                            - i*ut.chebco_f( ut.mag_diffus, i-1, par.N, par.ricb, ut.rcmb, par.tol_tc) )
             
 
         cnorm = ut.B0_norm()  # Normalization
@@ -101,10 +104,10 @@ def main(ncpus):
     S3 = ut.Slam(3, par.N) # From C^(3) basis to C^(4) basis
 
     # Derivatives
-    D1 = ut.Dlam(1, par.N)
-    D2 = ut.Dlam(2, par.N)
-    D3 = ut.Dlam(3, par.N)
-    D4 = ut.Dlam(4, par.N)
+    D1 = ut.Dlam(1, par.N, par.ricb, ut.rcmb)
+    D2 = ut.Dlam(2, par.N, par.ricb, ut.rcmb)
+    D3 = ut.Dlam(3, par.N, par.ricb, ut.rcmb)
+    D4 = ut.Dlam(4, par.N, par.ricb, ut.rcmb)
     D  = [ 1, D1, D2, D3, D4 ]
 
     # Auxiliary basis transformations
@@ -122,10 +125,10 @@ def main(ncpus):
     G     = [ G1, G2, G3, G4 ]  # fixed this for the inviscid case
 
     # Sets the Gegenbauer basis order for each section
-    if ((par.magnetic == 1) and ('conductor' in par.innercore)) :
-        gebasis = [  4,   2,   3,   2,   2,   2  ]
+    if ((par.magnetic == 1) and (ut.secf_projection == 'consoidal')) :
+        gebasis = [  4,   2,   3,   2,   2,   2  ]  # C^(3) basis in section f (consoidal projection)
     else:
-        gebasis = [  4,   2,   2,   2,   2,   2  ]
+        gebasis = [  4,   2,   2,   2,   2,   2  ]  # C^(2) basis in section f (radial projection)
     section     = [ 'u', 'v', 'f', 'g', 'h', 'i' ]
 
     if inviscid:
@@ -222,7 +225,7 @@ def main(ncpus):
     # Matrices needed for the Induction equation, no-curl or consoidal equations -------------------------------------- Induct nocurl - section f
     # -------------------------------------------------------------------------------------------------------------------------------------------
 
-        if cdipole :  # as above but times r^2
+        if cdipole :  # as below but times r^2
             #  b
             labl += [ 'f40' ]
             # induction
@@ -231,8 +234,19 @@ def main(ncpus):
             labl += [ 'f20', 'f31', 'f42' ]
 
         else:
-            if ((par.ricb > 0) and ('conductor' in par.innercore)) :  # conducting inner core, consoidal component, needs work
-                labl += [ 'f21',  'f32', 'f31',  'f20',   'f33',  'f22', 'f11', 'f00' ]
+
+            if ut.secf_projection == 'consoidal':  # conducting inner core, consoidal component
+                #labl += [ 'f21',  'f32', 'f31',  'f20',   'f33',  'f22', 'f11', 'f00' ]
+                # b
+                labl += [ 'f20', 'f31' ]
+                arg2 += [   vF ,   vF  ]
+                # induction
+                labl += [ 'f000', 'f110', 'f101', 'f202', 'f211', 'f220', 'f210', 'f201' ]
+                arg2 += [    vP ,    vP ,    vP ,    vP ,    vP ,    vP ,    vT ,    vT  ]
+                # magnetic diffusion
+                labl += [ 'feta000', 'feta101', 'feta110', 'feta202', 'feta211', 'feta303', 'feta312' ]
+                arg2 += [       vF ,       vF ,       vF ,       vF ,       vF ,       vF ,       vF  ]
+
             else :
                 #  b
                 labl += [ 'f20' ]
@@ -243,7 +257,7 @@ def main(ncpus):
                 # magnetic diffusion
                 #labl += [ 'f00', 'f11', 'f22' ]
                 #arg2 += [   vF ,   vF ,   vF  ]
-                labl += [ 'feta000', 'feta101', 'feta202' ]  # missing arg2 because we don't want to bother with no inner core for now
+                labl += [ 'feta000', 'feta101', 'feta202' ]
                 arg2 += [   vF ,   vF ,   vF  ]
 
 
@@ -369,6 +383,7 @@ def main(ncpus):
 
                 profx = int(lablx[4])
                 plabl += [ lablx ]
+                #print('dx=',dx,'rx=',rx,'profx=',profx, np.shape(rprof))
                 parg0 += [ S[dx] * rprof[rx][profx] ]
                 parg1 += [ dx ]
                 parg2 += [ arg2[k] ]
@@ -421,7 +436,7 @@ def main(ncpus):
             elif len(lablx) == 2 :
                 operator_parity = 1-((rx+dx)%2)*2
 
-            elif len(lablx) == 6 and lablx[:3] == 'eta':  # the eta profile must be an even funnction of r
+            elif len(lablx) == 6 and lablx[:3] == 'eta':  # the eta profile must be an even function of r
                 dp1 = int(lablx[-2])
                 operator_parity = 1-(( rx + dp1 + dx )%2)*2
 
@@ -434,13 +449,75 @@ def main(ncpus):
             chop = int(gbx/2)
         else :
             chop = gbx
+ 
 
         if chop > 0:
             matrix = ss.vstack( [ Z[chop-1], matrix[:-chop,:] ], format='csr' )
 
         sio.mmwrite( labl1, matrix )
 
+
     # -------------------------------------------------------------------------------------------------------------------------------------------
+    # ---------------------------- Here we build the matrices needed to solve for the magnetic field inside an electrically conducting inner core 
+    # -------------------------------------------------------------------------------------------------------------------------------------------
+    
+    if cic:
+        # We take the radial component for the 'fic' section, and the 𝐫⋅∇× (aka 1 curl) for the 'gic' section,
+        # thus we use the C^(2) basis for both.     
+
+        Nic = par.N_cic
+
+        R1 = 0         # no inner core within the inner core!
+        R2 = par.ricb  # we use the [-1,1] cheb domain mapped to [-R2,R2]=[-ricb,ricb] 
+
+        r1ic = ut.chebco(1, Nic, 1e-9, R1, R2)  # Chebcos of r
+        r2ic = ut.chebco(2, Nic, 1e-9, R1, R2)  # Chebcos of r**2
+
+        S0ic = ut.Slam(0,Nic)  # Basis change from C^(0) to C^(1)
+        S1ic = ut.Slam(1,Nic)  # Basis change from C^(1) to C^(2)
+
+        D1ic = ut.Dlam( 1, Nic, R1, R2)  # d/dr operator
+        D2ic = ut.Dlam( 2, Nic, R1, R2)  # (d/dr)² operator
+
+        # using vector_parity = 0, so we need to use remroco later
+        M20 = ut.Mlam(               r2ic, 0, 0)  # ×r² operator, in the C^(0) basis
+        M11 = ut.Mlam(        S0ic * r1ic, 1, 0)  # ×r  operator, in the C^(1) basis
+        M22 = ut.Mlam( S1ic * S0ic * r2ic, 2, 0)  # ×r² operator, in the C^(2) basis
+        
+        r0D0 = S1ic * S0ic               # Identity, transformed to the C^(2) basis
+        r2D0 = S1ic * S0ic * M20         # r² operator, transformed to the C^(2) basis
+        r1D1 =        S1ic * M11 * D1ic  # r d/dr operator, transformed to the C^(2) basis
+        r2D2 =               M22 * D2ic  # r²(d/dr)² operator, naturally in the C^(2) basis
+
+        chop = 2  # remove last two rows and shift all rows down to make room for the bc's at the top
+        zic2 = ss.csr_matrix((chop,Nic))
+        r0D0 = ss.vstack( [ zic2, r0D0[:-chop,:] ], format='csr' )
+        r2D0 = ss.vstack( [ zic2, r2D0[:-chop,:] ], format='csr' )
+        r1D1 = ss.vstack( [ zic2, r1D1[:-chop,:] ], format='csr' )
+        r2D2 = ss.vstack( [ zic2, r2D2[:-chop,:] ], format='csr' )
+
+        # remove unneeded rows and cols, operator parity is 1 for all, only one row for bc's remain
+        r0D0f = ut.remroco( r0D0, vF, vF)   
+        r0D0g = ut.remroco( r0D0, vG, vG)   
+        r2D0f = ut.remroco( r2D0, vF, vF)
+        r2D0g = ut.remroco( r2D0, vG, vG)
+        r1D1f = ut.remroco( r1D1, vF, vF)
+        r1D1g = ut.remroco( r1D1, vG, vG)
+        r2D2f = ut.remroco( r2D2, vF, vF)
+        r2D2g = ut.remroco( r2D2, vG, vG)
+
+        sio.mmwrite('r0_D0f_ic', r0D0f)
+        sio.mmwrite('r0_D0g_ic', r0D0g)
+        sio.mmwrite('r2_D0f_ic', r2D0f)
+        sio.mmwrite('r2_D0g_ic', r2D0g)
+        sio.mmwrite('r1_D1f_ic', r1D1f)
+        sio.mmwrite('r1_D1g_ic', r1D1g)
+        sio.mmwrite('r2_D2f_ic', r2D2f)
+        sio.mmwrite('r2_D2g_ic', r2D2g)
+
+    # -------------------------------------------------------------------------------------------------------------------------------------------
+    # -------------------------------------------------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------------------------------- 
 
     toc = timer()
     print('Blocks generated and written to disk in', toc-tic, 'seconds')
