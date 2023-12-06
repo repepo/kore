@@ -166,7 +166,7 @@ def main(ncpus):
             vtorq[i] = par.Ek * np.dot( ut.gamma_visc(0,0,0), u_sol)  # need to double check the constants here
             vtorq_icb[i] = par.Ek * np.dot( ut.gamma_visc_icb(par.ricb), u_sol)
 
-            press0 = udgn[6][0] 
+            press0[i] = udgn[6][0] 
 
 
         if par.magnetic:
@@ -211,7 +211,7 @@ def main(ncpus):
         # resid3 is the relative residual of 2*sigma*TE - Dthm - Wadv_thm = 0
         # ---------------------------------------------------------------------------------------------------------
 
-        repow = 0  # power from the forcing needs to be computed, not coded yet. 
+        [repow, pss, pvf] = [0, 0, 0]  # power from the forcing needs to be computed, not coded yet. 
 
         if par.forcing == 0:
             pss = 0

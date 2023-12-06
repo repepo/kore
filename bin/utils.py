@@ -35,9 +35,12 @@ vsymm  = par.symm
 if ((par.innercore == 'conducting, Chebys') or ('perfect' in par.innercore)) and par.magnetic and par.ricb>0:
     secf_projection = 'consoidal'  # Consoidal projection in section f, basis C^(3)
     cic = 1
+    if par.innercore == 'conducting, Chebys':
+        icflag = 1
 else:
     secf_projection = 'radial'     # Radial projection in section f, basis C^(2)
     cic = 0
+    icflag = 0
 
 symm1 = (2*np.sign(par.m) - 1) * par.symm  # symm1=par.symm if m>0, symm1 = -par.symm if m=0
 
@@ -1296,13 +1299,13 @@ def gamma_magnetic():
         if B0_l == 1:  # Either uniform axial or dipole background field, induced magnetic field b is thus antisymmetric
 
             # the torque is prop. to the l=2 toroidal component of b
-            out[0,n0:n0+par.N] = (16*np.pi/5) * G * h_cmb
+            out[0,n0:n0+par.N] = -(16*np.pi/5) * G * h_cmb
 
         elif B0_l == 2:  # Quadrupole background field, induced magnetic field b is thus symmetric
 
             # torque prop. to l=1 and l=3 toroidal component of b
-            out[0,n0:n0+par.N]          = -(16*np.pi/5)     * G * h_cmb # l=1
-            out[0,n0+par.N: n0+2*par.N] =  (16*18*np.pi/35) * G * h_cmb # l=3
+            out[0,n0:n0+par.N]          =  (16*np.pi/5)     * G * h_cmb # l=1
+            out[0,n0+par.N: n0+2*par.N] = -(16*18*np.pi/35) * G * h_cmb # l=3
 
     else:
 
@@ -1314,3 +1317,34 @@ def gamma_magnetic():
 
     return out
 
+
+
+def gamma_magnetic_ic():
+    '''
+    Axial magnetic torque on the inner core (spherical). Needs m=0 and symm=1. 
+    '''
+
+    if (par.magnetic==1 and par.m == 0 and par.symm==1 and ( ('conducting' in par.innercore) or ('TWA' in par.innercore) ) ):
+
+        out = np.zeros((1,n0+n0),dtype=complex)
+        G = Tk( -1, par.N-1, 0)[:,0]
+        ric = np.array([par.ricb])
+        h_icb = B0_norm() * h0(ric, par.B0, [par.beta, par.B0_l, par.ricb, 0])
+
+        if B0_l == 1:  # Either uniform axial or dipole background field, induced magnetic field b is thus antisymmetric
+
+            # the torque is prop. to the l=2 toroidal component of b
+            out[0,n0:n0+par.N] = (16*np.pi/5) * G * h_icb
+
+        elif B0_l == 2:  # Quadrupole background field, induced magnetic field b is thus symmetric
+
+            # torque prop. to l=1 and l=3 toroidal component of b
+            out[0,n0:n0+par.N]          = -(16*np.pi/5)     * G * h_icb # l=1
+            out[0,n0+par.N: n0+2*par.N] =  (16*18*np.pi/35) * G * h_icb # l=3
+
+    else:
+
+        out = 0
+
+
+    return out

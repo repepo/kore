@@ -161,7 +161,7 @@ def main():
                 pos3 = ut.n + ut.N1*np.where(allbot==l)[0][0]
                 row3 = np.arange(pos3+2,pos3+ut.N1)
                 col3 = np.zeros(ut.N1-2)
-                bdat3 = ut.marc_tide(ut.wf,3,par.m,'bot',ut.N1, par.ricb, ut.rcmb)*par.forcing_amplitude
+                bdat3 = ut.marc_tide(ut.wf,3,par.m,'bot',ut.N1, par.ricb, ut.rcmb)*par.forcing_amplitude_cmb
                 tmp = [bdat3, row3, col3]
                 blist = tmp
 
@@ -169,7 +169,7 @@ def main():
                 pos2 = ut.N1*np.where(alltop==l)[0][0]
                 row2 = np.arange(pos2+4,pos2+ut.N1)
                 col2 = np.zeros(ut.N1-4)
-                bdat2 = ut.marc_tide(ut.wf,2,par.m,'top',ut.N1, par.ricb, ut.rcmb)*par.forcing_amplitude
+                bdat2 = ut.marc_tide(ut.wf,2,par.m,'top',ut.N1, par.ricb, ut.rcmb)*par.forcing_amplitude_cmb
                 tmp = [bdat2, row2, col2]
                 for q in [0,1,2]:
                     blist[q]= np.concatenate((blist[q], tmp[q]))
@@ -179,7 +179,7 @@ def main():
                     pos1 = ut.n + ut.N1*np.where(allbot==l)[0][0]
                     row1 = np.arange(pos1+2,pos1+ut.N1)
                     col1 = np.zeros(ut.N1-2)
-                    bdat1 = ut.marc_tide(ut.wf,1,par.m,'bot',ut.N1, par.ricb, ut.rcmb)*par.forcing_amplitude
+                    bdat1 = ut.marc_tide(ut.wf,1,par.m,'bot',ut.N1, par.ricb, ut.rcmb)*par.forcing_amplitude_cmb
                     tmp = [bdat1, row1, col1]
                     for q in [0,1,2]:
                         blist[q]= np.concatenate((blist[q], tmp[q]))

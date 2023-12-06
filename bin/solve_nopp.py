@@ -171,21 +171,27 @@ def main():
                     ru = rEigv[ :2*ut.n, : ]
                     iu = iEigv[ :2*ut.n, : ]
 
-                # each solution for b has 2*ut.n coefs
+                # each solution for b has 2*ut.n coeffs
                 if par.magnetic == 1:
                     offset = 2*ut.n*par.hydro
                     rb = rEigv[ offset : offset + 2*ut.n, : ]
                     ib = iEigv[ offset : offset + 2*ut.n, : ]
 
+                # each solution for b_ic has 2*ut.nic coeffs
+                if ut.icflag:
+                    offset = 2*ut.n + par.magnetic * 2*ut.n
+                    rb_ic = rEigv[ offset : offset + 2*ut.nic, : ]
+                    ib_ic = iEigv[ offset : offset + 2*ut.nic, : ]
+
                 # each solution for the temperature has ut.n coeffs
                 if par.thermal == 1:
-                    offset = 2*ut.n + par.magnetic * 2*ut.n
+                    offset = 2*ut.n + par.magnetic * 2*ut.n + ut.icflag * 2*ut.nic
                     rtemp = rEigv[ offset : offset + ut.n, : ]
                     itemp = iEigv[ offset : offset + ut.n, : ]
 
                 # each solution for the composition has ut.n coeffs
                 if par.compositional == 1:
-                    offset = 2*ut.n + par.magnetic * 2*ut.n + par.thermal * ut.n
+                    offset = 2*ut.n + par.magnetic * 2*ut.n + ut.icflag * 2*ut.nic + par.thermal * ut.n
                     rcomp = rEigv[ offset : offset + ut.n, : ]
                     icomp = iEigv[ offset : offset + ut.n, : ]
 
@@ -250,13 +256,18 @@ def main():
                 rb = np.reshape(np.real(VR[ offset : offset + 2*ut.n ]),(-1,1))
                 ib = np.reshape(np.imag(VR[ offset : offset + 2*ut.n ]),(-1,1))
 
+                if ut.icflag:
+                    offset = par.hydro * 2*ut.n + par.magnetic * 2*ut.n
+                    rb_ic = np.reshape(np.real(VR[ offset : offset + 2*ut.nic ]),(-1,1))
+                    ib_ic = np.reshape(np.imag(VR[ offset : offset + 2*ut.nic ]),(-1,1))
+
             if par.thermal == 1:
-                offset = par.hydro * 2*ut.n + par.magnetic * 2*ut.n
+                offset = par.hydro * 2*ut.n + par.magnetic * 2*ut.n + ut.icflag * 2*ut.nic 
                 rtemp = np.reshape(np.real(VR[ offset : offset + ut.n ]),(-1,1))
                 itemp = np.reshape(np.imag(VR[ offset : offset + ut.n ]),(-1,1))
 
             if par.compositional == 1:
-                offset = par.hydro * 2*ut.n + par.magnetic * 2*ut.n + par.thermal * ut.n
+                offset = par.hydro * 2*ut.n + par.magnetic * 2*ut.n + ut.icflag * 2*ut.nic + par.thermal * ut.n
                 rcomp = np.reshape(np.real(VR[ offset : offset + ut.n ]),(-1,1))
                 icomp = np.reshape(np.imag(VR[ offset : offset + ut.n ]),(-1,1))
 
@@ -281,25 +292,31 @@ def main():
                     np.savetxt(deig, eigval)
 
             # one solution per column
-            if par.hydro == 1:
+            if par.hydro:
                 with open('real_flow.field','wb') as dflo1:
                     np.savetxt(dflo1, ru)
                 with open('imag_flow.field','wb') as dflo2:
                     np.savetxt(dflo2, iu)
 
-            if par.magnetic == 1:
+            if par.magnetic:
                 with open('real_magnetic.field','wb') as dmag1:
                     np.savetxt(dmag1, rb)
                 with open('imag_magnetic.field','wb') as dmag2:
                     np.savetxt(dmag2, ib)
 
-            if par.thermal == 1:
+            if ut.icflag:
+                with open('real_magnetic_ic.field','wb') as dmag1_ic:
+                    np.savetxt(dmag1_ic, rb_ic)
+                with open('imag_magnetic_ic.field','wb') as dmag2_ic:
+                    np.savetxt(dmag2_ic, ib_ic)
+
+            if par.thermal:
                 with open('real_temperature.field','wb') as dtemp1:
                     np.savetxt(dtemp1, rtemp)
                 with open('imag_temperature.field','wb') as dtemp2:
                     np.savetxt(dtemp2, itemp)
 
-            if par.compositional == 1:
+            if par.compositional:
                 with open('real_composition.field','wb') as dcomp1:
                     np.savetxt(dcomp1, rcomp)
                 with open('imag_composition.field','wb') as dcomp2:
