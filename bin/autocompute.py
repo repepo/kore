@@ -11,17 +11,32 @@ import utils as ut
 import radial_profiles as rap
 
 
+def balance_heat_flux():
+
+    bc_val_bot = par.bci_thermal_val
+    bc_val_top = par.bco_thermal_val
+
+    tol = 1e-9
+
+    cd_eps = ut.chebco_f(rap.epsilon_h,par.N,par.ricb,ut.rcmb,tol)
+    epsInt = ch.chebint(cd_eps)
+
+    return eps0, bc_val_top, bc_val_bot
+
 def get_equilibrium_entropy():
     '''
     Function to compute equilibrium entropy gradient profile by solving
     Div(rho T kappa grad S) = Q
     '''
 
+    # Balance heat fluxes
+    eps0, bc_val_top, bc_val_bot = balance_heat_flux()
+
     tol = 1e-9
 
     r0  = ut.chebco(0, par.N, tol, par.ricb, ut.rcmb)
     r1  = ut.chebco(1, par.N, tol, par.ricb, ut.rcmb)
-    cd_eps = ut.chebco_f(rap.epsilon_h,par.N,par.ricb,ut.rcmb,tol)
+    cd_eps = ut.chebco_f(rap.epsilon_h,par.N,par.ricb,ut.rcmb,tol,args=eps0)
 
     D1 = ut.Dlam(1, par.N)
     D2 = ut.Dlam(2, par.N)

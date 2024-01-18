@@ -93,7 +93,17 @@ def getEOSparams():
         coeffGrav = [  359.26949772994396, -1647.4951402273955, 3114.971302818801,
                       -3121.9995586185805, 1768.8806269264637, -552.869900057094,
                        78.85393983296116, 1.8991569550910268, -0.5216321175523105]
-
+    elif par.interior_model == 'saturn':
+        coeffTemp= [ 2746322.598433222, -12819667.849508610, 24913613.036177561,
+        -26159709.956658602, 16027297.768664116, -5718555.197998112,
+        1089237.928095523, -77880.376328818 ]
+        coeffDens= [ 2746322.598433222, -12819667.849508610, 24913613.036177561,
+        -26159709.956658602, 16027297.768664116, -5718555.197998112]
+        coeffGrav= [ 2746322.598433222, -12819667.849508610, 24913613.036177561,
+        1089237.928095523, -77880.376328818 ]
+        coeffAlpha= [ 2746322.598433222, -12819667.849508610, 24913613.036177561,
+        -26159709.956658602, 16027297.768664116, -5718555.197998112,
+        1089237.928095523, -77880.376328818 ]
     # elif par.interior_model == 'pns': # To be implemented
     #     pass
 
@@ -202,12 +212,14 @@ def kappa_rho(r):
     out = thermal_diffusivity(r)*density(r)
     return out
 
-def heat_source(r):
-    out = 1
+def heat_source(r,eps0=0):
+    out = eps0
     return out
 
-def epsilon_h(r):
-    out = r*heat_source(r)/(density(r)*temperature(r)*thermal_diffusivity(r))
+def epsilon_h(r,eps0=0):
+    out = (eps0*r*heat_source(r,eps0)/
+           (density(r)*temperature(r)*
+            thermal_diffusivity(r)))
     return out
 
 
