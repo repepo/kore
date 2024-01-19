@@ -47,6 +47,7 @@ class kmode:
             else:
                 self.nphi = nphi
             self.ntheta = self.nphi // 2
+            self.nphi = max(128,self.nphi)
 
         else:
 
@@ -54,6 +55,8 @@ class kmode:
                 self.nphi = par.lmax * 3 // self.m  # Orszag's 1/3 rule
             else:
                 self.nphi = nphi // self.m
+
+            self.nphi = max(128//self.m,self.nphi)
             self.ntheta = (self.nphi * self.m) // 2
 
         # set the radial grid
