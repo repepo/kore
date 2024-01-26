@@ -210,3 +210,37 @@ def spec2spat_scal(M,ut,par,chx,a,b,vsymm,nthreads,transform=True):
         return Q,scal
     else:
         return [Q]
+
+def get_ang_momentum(M,epsilon_cmb):
+
+    l   = M.sh.l
+    m   = M.sh.m
+    r   = M.r
+    Slm = M.S[0,:]
+    Tlm = M.T[0,:]
+
+    Gamma_tor = np.zeros(M.sh.nlm,dtype=np.complex128)
+
+    Gamma_pol = 1j * m * Slm * M.rcmb * np.conjugate(epsilon_cmb)
+    clm1 = (l+2)/(2*l+3) * np.sqrt((l+m+1)*(l-m+1))
+    clm2 = (l-1)/(2*l-1) * np.sqrt((l+m)*(l-m))
+
+    for mm in [0,M.m]:
+        for ell in range(mm,M.lmax+1):
+            k = M.sh.idx(ell,mm)
+            if ell == mm:
+                Gamma_tor[k] = M.rcmb * ( clm1[k] * Tlm[M.sh.idx(ell+1,mm)])
+            elif ell == M.lmax:
+                Gamma_tor[k] = M.rcmb * ( -clm2[k] * Tlm[M.sh.idx(ell-1,mm)] )
+            else:
+                Gamma_tor[k] = M.rcmb * ( clm1[k] * Tlm[M.sh.idx(ell+1,mm)]
+                                         -clm2[k] * Tlm[M.sh.idx(ell-1,mm)] )
+            Gamma_tor[k] *= np.conjugate(epsilon_cmb[k])
+
+    torqlm = np.real( 4*np.pi/(2*l+1) * (Gamma_pol + Gamma_tor) )
+    mask = M.sh.m == 0
+    torqlm[~mask] *= 2
+    total_torq = np.sum(torqlm)
+
+    return total_torq
+
