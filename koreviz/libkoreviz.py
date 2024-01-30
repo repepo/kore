@@ -237,10 +237,13 @@ def get_ang_momentum(M,epsilon_cmb):
                                          -clm2[k] * Tlm[M.sh.idx(ell-1,mm)] )
             Gamma_tor[k] *= np.conjugate(epsilon_cmb[k])
 
-    torqlm = np.real( 4*np.pi/(2*l+1) * (Gamma_pol + Gamma_tor) )
+    torq_pollm = np.real( 4*np.pi/(2*l+1) * (Gamma_pol))
+    torq_torlm = np.real( 4*np.pi/(2*l+1) * (Gamma_tor))
     mask = M.sh.m == 0
-    torqlm[~mask] *= 2
-    total_torq = np.sum(torqlm)
+    torq_pollm[~mask] *= 2
+    torq_torlm[~mask] *= 2
+    torq_pol = np.sum(torq_pollm)
+    torq_tor = np.sum(torq_torlm)
 
-    return total_torq
+    return torq_pol, torq_tor
 
