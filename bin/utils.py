@@ -743,6 +743,39 @@ def B0_norm():
     return out
 
 
+def B0_norm2(ricb,cnorm):
+    '''
+    Computes the rms of the radial B0 at the cmb,
+    and the integral of B0**2 over the fluid volume.
+    '''
+    args = [ par.beta, par.B0_l, ricb, 0 ]
+    kind = par.B0
+
+    l = B0_l
+    L = l*(l+1)
+
+    # rms of radial magnetic field at the cmb
+    out1 = cnorm * np.sqrt(2*l+1) / ( L * h0(np.array([1.0]), kind, args) )
+    out1 = out1[0]
+
+    # Integral of B0**2 over the fluid volume
+    N = 240
+    i = np.arange(0,N)
+    xk = np.cos( (i+0.5)*np.pi/N )  # colocation points, from -1 to 1
+    sqx = np.sqrt(1-xk**2)
+    rk = 0.5*(1-ricb)*( xk + 1 ) + ricb
+    r2 = rk**2
+    y0 = h0(rk, kind, args) * cnorm
+    y1 = h1(rk, kind, args) * cnorm
+    f0 = 4*np.pi*L/(2*l+1)
+    f1 = (L+1)*y0**2
+    f2 = 2*rk*y0*y1
+    f3 = r2*y1**2
+    out2 = (np.pi/N) * ( (1-ricb)/2 ) * np.sum( sqx*f0*( f1+f2+f3 ) )
+
+    return [out1, out2]    
+
+
 
 def Dlam(lamb,N,R1,R2):
     '''

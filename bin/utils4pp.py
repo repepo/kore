@@ -23,7 +23,7 @@ def xcheb(r, ricb, rcmb):
 
     return out
 
-
+ 
 
 def funcheb(ck0, r, ricb, rcmb, n):
     '''
@@ -565,9 +565,96 @@ def thermal_worker(l, lp, t_sol2, u_sol2, Ra, Rb, N, sqx, flag):
 
 
 def lorentz4pp( l, b_sol2 ):
+
+    if   ut.B0_l == 1:
+        out = lorentz4pp_dipo(l, b_sol2)
+    elif ut.B0_l == 2:
+        out = lorentz4pp_quad(l, b_sol2)
+
+    return out
+
+
+
+def lorentz4pp_dipo( l, b_sol2 ):
     '''
     Returns the l-component of the Lorentz force.
-    Use it to compute the rate of working (power) of the Lorentz force. For quadrupolar B0
+    Use it to compute the rate of working (power) of the Lorentz force. For dipolar B0 only.
+    '''
+    
+    m   = par.m
+    ll0 = ut.ell( m, par.lmax, ut.bsymm)
+    lp  = ll0[0]  # l's for poloidals
+    lt  = ll0[1]  # l's for toroidals
+    
+    P = b_sol2[0]
+    T = b_sol2[1]
+
+    h0 = ut.h0(rk, par.B0, [par.beta, par.B0_l, par.ricb, 0])
+    h1 = ut.h1(rk, par.B0, [par.beta, par.B0_l, par.ricb, 0])
+    h2 = ut.h2(rk, par.B0, [par.beta, par.B0_l, par.ricb, 0])
+
+    cnorm = ut.B0_norm()
+
+    out_rad = np.zeros_like(rk, dtype='complex128')
+    out_con = np.zeros_like(rk, dtype='complex128')
+    out_tor = np.zeros_like(rk, dtype='complex128')
+
+    if l-1 in lp:
+
+        [ [ qlm0, _ ], [ slm0, slm1 ] ] = cheb2space_pol(l-1, lp, P, 1)
+
+        C_rad    = (-1 + l)*np.sqrt(l**2 - m**2)/(-1 + 2*l)
+        out_rad += C_rad*( -(h0*(qlm0/r2 + slm0/r2 - slm1/rk)) + (h2*slm0 + h1*(-qlm0/rk + 3*slm0/rk + slm1)) )
+
+        C_con    = np.sqrt(l**2 - m**2)/(l*(-1 + 2*l))
+        out_con += C_con*( (-2*h0*l*qlm0/r2 + qlm0*(2*h1/rk + h2) + 2*h0*(-1 + l)*(slm0/r2 + slm1/rk)) )
+
+    elif l-1 in lt:
+
+        [ tlm0, tlm1 ] = cheb2space_tor(l-1, lt, T, 1)
+
+        C_tor =  -(-1 + l)*np.sqrt(l**2 - m**2)/(l*(-1 + 2*l))
+        out_tor += C_tor*( h0*(-2 + l)*tlm0/r2 + h1*l*tlm0/rk - 2*h0*tlm1/rk )
+
+    if l in lt:
+        
+        [ tlm0, tlm1 ] = cheb2space_tor(l, lt, T, 1)
+        
+        out_rad += 1j*m*( h0*(-tlm0/r2 + tlm1/rk) + 3*h1*tlm0/rk + h2*tlm0 + h1*tlm1 )
+
+        out_con += 1j*m*( h0*(2 + l + l**2)*tlm0/r2 + h1*l*(1 + l)*tlm0/rk + 2*h0*tlm1/rk ) / (l*(1 + l))
+
+    elif l in lp:
+
+        [ [ qlm0, _ ], [ slm0, slm1 ] ] = cheb2space_pol(l, lp, P, 1)
+
+        out_tor += 1j*m*( qlm0*(2*h1/rk + h2) - 2*h0*(slm0/r2 + slm1/rk) ) / (l*(1 + l))
+
+    if l+1 in lp:
+
+        [ [ qlm0, _ ], [ slm0, slm1 ] ] = cheb2space_pol(l+1, lp, P, 1)
+
+        C_rad = (2 + l)*np.sqrt((1 + l - m)*(1 + l + m)) / (3 + 2*l)
+        out_rad += C_rad*( h0*(qlm0/r2 + slm0/r2 - slm1/rk) - (h2*slm0 + h1*(-qlm0/rk + 3*slm0/rk + slm1)) )
+        
+        C_con = np.sqrt((1 + l - m)*(1 + l + m)) / ((1 + l)*(3 + 2*l))
+        out_con += C_con*( -2*h0*(1 + l)*qlm0/r2 - qlm0*(2*h1/rk + h2) + 2*h0*(2 + l)*(slm0/r2 + slm1/rk) )
+
+    elif l+1 in lt:
+
+        [ tlm0, tlm1 ] = cheb2space_tor(l+1, lt, T, 1)
+
+        C_tor = (2 + l)*np.sqrt((1 + l - m)*(1 + l + m)) / ((1 + l)*(3 + 2*l))
+        out_tor += C_tor*( (h0*(3 + l)*tlm0/r2 + h1*(1 + l)*tlm0/rk + 2*h0*tlm1/rk) )
+
+    return [out_rad * cnorm, out_con * cnorm, out_tor * cnorm]
+
+
+
+def lorentz4pp_quad( l, b_sol2 ):
+    '''
+    Returns the l-component of the Lorentz force.
+    Use it to compute the rate of working (power) of the Lorentz force. For quadrupolar B0 only.
     '''
     
     m   = par.m
@@ -678,6 +765,88 @@ def lorentz4pp( l, b_sol2 ):
 
 
 def induction4pp( l, u_sol2 ):
+ 
+    if   ut.B0_l == 1:
+        out = induction4pp_dipo(l, u_sol2)
+    elif ut.B0_l == 2:
+        out = induction4pp_quad(l, u_sol2)
+
+    return out   
+
+
+
+def induction4pp_dipo( l, u_sol2 ):
+    '''
+    Returns the l-component of the induction term ∇×(𝐮×𝐁₀), dipolar B0
+    '''
+    
+    m   = par.m
+    ll0 = ut.ell( m, par.lmax, par.symm)
+    lp  = ll0[0]  # l's for poloidals
+    lt  = ll0[1]  # l's for toroidals
+    ricb = par.ricb
+    rcmb = ut.rcmb
+    
+    P = u_sol2[0]
+    T = u_sol2[1]
+
+    h0 = ut.h0(rk, par.B0, [par.beta, par.B0_l, ricb, 0])
+    h1 = ut.h1(rk, par.B0, [par.beta, par.B0_l, ricb, 0])
+    h2 = ut.h2(rk, par.B0, [par.beta, par.B0_l, ricb, 0])
+
+    cnorm = ut.B0_norm()
+
+    out_rad = np.zeros_like(rk, dtype='complex128')
+    out_con = np.zeros_like(rk, dtype='complex128')
+    out_tor = np.zeros_like(rk, dtype='complex128')
+    
+    if l-1 in lp:
+
+        [ [ qlm0, qlm1], [slm0, slm1] ] =  cheb2space_pol(l-1, lp, P, 1)
+           
+        out_rad += -(((1 + l)*np.sqrt(l**2 - m**2)*(h1*qlm0*rk + h0*(qlm0 - 2*(-1 + l)*slm0)))/((-1 + 2*l)*r2))
+
+        out_con += (np.sqrt(l**2 - m**2)*(-(qlm1*(h0 + h1*rk)) - qlm0*(2*h1 + h2*rk) + 2*h1*(-1 + l)*slm0 + 2*h0*(-1 + l)*slm1))/(l*(-1 + 2*l)*rk)
+
+    elif l-1 in lt:
+
+        [ tlm0, tlm1]  =  cheb2space_tor(l-1, lt, T, 1)
+
+        out_tor += -(((1 + 2*l)*(h1*(np.sqrt((l*(-1 + l**2))/(-1 + 4*l**2)) - 2*np.sqrt((1 - l**2)/(l - 4*l**3)))*rk*tlm0 + h0*(np.sqrt((l*(-1 + l**2))/(-1 + 4*l**2))*tlm0 - 2*np.sqrt((1 - l**2)/(l - 4*l**3))*rk*tlm1)))/(np.sqrt((l*(1 + l)*(-1 + 4*l**2))/((-1 + l)*(l**2 - m**2)))*r2))
+
+    if l in lt:
+
+        [ tlm0, tlm1]  =  cheb2space_tor(l, lt, T, 1)
+
+        out_rad += (2j*h0*m*tlm0)/r2
+
+        out_con += ((2j)*m*(h1*tlm0 + h0*tlm1))/(l*(1 + l)*rk)
+
+    elif l in lp:
+
+        [ [ qlm0, qlm1], [slm0, slm1] ] =  cheb2space_pol(l, lp, P, 1)
+
+        out_tor += ((-1j)*m*(h2*qlm0*r2 - h0*l*(1 + l)*slm0 + h1*rk*(2*qlm0 + qlm1*rk - (-2 + l + l**2)*slm0) + h0*rk*(qlm1 + 2*slm1)))/(l*(1 + l)*r2)
+
+    if l+1 in lp:
+
+        [ [ qlm0, qlm1], [slm0, slm1] ] =  cheb2space_pol(l+1, lp, P, 1)
+
+        out_rad += (l*np.sqrt((1 + l - m)*(1 + l + m))*(h1*qlm0*rk + h0*(qlm0 + 2*(2 + l)*slm0)))/((3 + 2*l)*r2)
+
+        out_con += (np.sqrt((1 + l - m)*(1 + l + m))*(h2*qlm0*rk + h1*(2*qlm0 + qlm1*rk + 2*(2 + l)*slm0) + h0*(qlm1 + 2*(2 + l)*slm1)))/((1 + l)*(3 + 2*l)*rk)
+
+    elif l+1 in lt:
+
+        [ tlm0, tlm1]  =  cheb2space_tor(l+1, lt, T, 1)
+
+        out_tor +=  ((1 + 2*l)*np.sqrt(((2 + l)*(1 + l - m)*(1 + l + m))/(3 + 4*l*(2 + l)))*(h1*(2*np.sqrt((l*(2 + l))/(3 + 11*l + 12*l**2 + 4*l**3)) + np.sqrt((l*(1 + l)*(2 + l))/(3 + 4*l*(2 + l))))*rk*tlm0 + h0*(np.sqrt((l*(1 + l)*(2 + l))/(3 + 4*l*(2 + l)))*tlm0 + 2*np.sqrt((l*(2 + l))/(3 + 11*l + 12*l**2 + 4*l**3))*rk*tlm1)))/(np.sqrt(l*(1 + l))*r2)
+    
+    return [out_rad * cnorm, out_con * cnorm, out_tor * cnorm]
+
+
+
+def induction4pp_quad( l, u_sol2 ):
     '''
     Returns the l-component of the induction term ∇×(𝐮×𝐁₀), quadrupolar B0
     '''

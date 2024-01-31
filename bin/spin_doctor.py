@@ -75,11 +75,12 @@ def main(ncpus):
     Wthm        = np.zeros(success)
     Wcmp        = np.zeros(success)
     vtorq       = np.zeros(success,dtype=complex)  # viscous torque on the mantle
-    vtorq_icb   = np.zeros(success,dtype=complex)  # viscous torque on the inner core
+    vtorq_ic    = np.zeros(success,dtype=complex)  # viscous torque on the IC
     ME          = np.zeros(success)
     Mdfs        = np.zeros(success)
     Indu        = np.zeros(success)
-    mtorq       = np.zeros(success,dtype=complex)  # electromagnetic torque on the mantle   
+    mtorq       = np.zeros(success,dtype=complex)  # electromagnetic torque on the mantle
+    mtorq_ic    = np.zeros(success,dtype=complex)  # electromagnetic torque on the IC   
     TE          = np.zeros(success)
     Wadv_thm    = np.zeros(success)
     Dthm        = np.zeros(success)
@@ -92,11 +93,12 @@ def main(ncpus):
     resid3      = np.zeros(success)
     y           = np.zeros(success)                # for eigenmode tracking
     press0      = np.zeros(success)
-    params      = np.zeros((success,51))
+    elldom      = np.zeros(success)
+    params      = np.zeros((success,53))
     # ------------------------------------------------------------------------------------------------------------------------
 
-    print('\n  ★     Damping σ     Frequency ω    resid0     resid𝐮     resid𝐛     residθ     Tor/Pol    Mag/Kin     𝚪 mag  ')
-    print(  ' ‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾')
+    print('\n  ★     Damping σ     Frequency ω    resid0     resid𝐮     resid𝐛     residθ     Tor/Pol    Mag/Kin    |𝚪|mag    |𝚪|magIC ')
+    print(  ' ‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾')
 
 
     if par.track_target == 1:  # eigenvalue tracking enabled
@@ -161,10 +163,11 @@ def main(ncpus):
             Wlor[i] = par.OmgTau**2 * par.Le2 * Wlor0
             Wthm[i] = par.OmgTau**2 * par.BV2 * Wthm0
             Wcmp[i] = par.OmgTau**2 * par.BV2_comp * Wcmp0
+            #print('Wlor=',Wlor[i])
             
             # Viscous torques
             vtorq[i] = par.Ek * np.dot( ut.gamma_visc(0,0,0), u_sol)  # need to double check the constants here
-            vtorq_icb[i] = par.Ek * np.dot( ut.gamma_visc_icb(par.ricb), u_sol)
+            vtorq_ic[i] = par.Ek * np.dot( ut.gamma_visc_icb(par.ricb), u_sol)
 
             press0[i] = udgn[6][0] 
 
@@ -177,7 +180,10 @@ def main(ncpus):
             Mdfs[i] = par.OmgTau * par.Em * Mdfs0
 
             if ((par.mantle == 'TWA') and (par.m==0) and (par.symm==1)):
-                mtorq[i] = par.Le2 * np.dot( ut.gamma_magnetic(), b_sol )  # need to double check the constants here
+                mtorq[i] = par.Le2 * np.dot( ut.gamma_magnetic(), b_sol )
+
+            if (par.innercore in ['conducting, Chebys', 'TWA']) and ((par.m==0) and (par.symm==1)):
+                mtorq_ic[i] = par.Le2 * np.dot( ut.gamma_magnetic_ic(), b_sol )
 
 
         if par.thermal:
@@ -237,10 +243,14 @@ def main(ncpus):
         if par.hydro:
             resid1[i] = abs( 2*sigma*KE[i] - Dkin[i] - Wlor[i] + Wthm[i] )/ \
                              max(abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wlor[i]), abs(Wthm[i]))
+            #print(2*sigma*KE[i])
         
         if par.magnetic:
             resid2[i] = abs( 2*sigma*ME0 - Indu[i] - Mdfs[i] ) / \
                              max( abs(2*sigma*ME0), abs(Indu[i]), abs(Mdfs[i]))
+            print('2σM =',2*sigma*ME0)
+            print('Indu=',Indu[i])
+            print('Mdfs=',Mdfs[i])
             
         if par.thermal:
             resid3[i] = abs( 2*sigma*TE[i] - Dthm[i] - Wadv_thm[i] ) / \
@@ -248,8 +258,8 @@ def main(ncpus):
         
     
         # ------------------------------------------------------------------------------------------------------------------
-        print(' {:2d}   {: 12.9f}   {: 12.9f}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}'.format( \
-               i, sigma, w, resid0[i], resid1[i], resid2[i], resid3[i], KT[i]/KP[i], ME[i]/KE[i], 2*np.abs(mtorq[i])/np.sqrt(KE[i]) ))
+        print(' {:2d}   {: 12.7f}   {: 12.7f}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}'.format( \
+               i, sigma, w, resid0[i], resid1[i], resid2[i], resid3[i], KT[i]/KP[i], ME[i]/KE[i], 2*np.abs(mtorq[i])/np.sqrt(KE[i]), 2*np.abs(mtorq_ic[i])/np.sqrt(KE[i]) ))
         # ------------------------------------------------------------------------------------------------------------------
 
 
@@ -318,11 +328,13 @@ def main(ncpus):
                                 
                                 timing+toc-tic,
                                 par.mu_i2o,
-                                par.sigma_i2o
-                                ])  # 51 total 
+                                par.sigma_i2o,
+                                par.aux1,
+                                par.aux2
+                                ])  # 53 total 
 
     # ------------------------------------------------------------------------------------------------------------------------
-    print(' ‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾\n')
+    print(' ‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾\n')
 
 
     '''
@@ -382,7 +394,7 @@ def main(ncpus):
 
             '%.9e', '%d',   '%d',   '%d',
              
-            '%.2f', '%.9e', '%.9e' ])
+            '%.2f', '%.9e', '%.9e' , '%.9e', '%.9e' ])
 
     if par.hydro:   
         with open('flow.dat','ab') as dflo:
@@ -390,13 +402,14 @@ def main(ncpus):
                                     Dint, Wlor, Wthm, Wcmp,
                                     resid0, resid1,
                                     np.real(vtorq), np.imag(vtorq),
-                                    np.real(vtorq_icb), np.imag(vtorq_icb),
-                                    press0 ])
+                                    np.real(vtorq_ic), np.imag(vtorq_ic),
+                                    press0, elldom ])
 
     if par.magnetic:
         with open('magnetic.dat','ab') as dmag:
             np.savetxt(dmag, np.c_[ ME, Mdfs, Indu, resid2,
-                                    np.real(mtorq), np.imag(mtorq)])
+                                    np.real(mtorq), np.imag(mtorq),
+                                    np.real(mtorq_ic), np.imag(mtorq_ic)])
 
     if par.thermal:
         with open('thermal.dat','ab') as dtmp:
