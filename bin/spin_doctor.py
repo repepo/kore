@@ -243,14 +243,12 @@ def main(ncpus):
         if par.hydro:
             resid1[i] = abs( 2*sigma*KE[i] - Dkin[i] - Wlor[i] + Wthm[i] )/ \
                              max(abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wlor[i]), abs(Wthm[i]))
-            #print(2*sigma*KE[i])
+            #print('2σK = ',2*sigma*KE[i], '-Dkin = ', -Dkin[i], '-Wlor = ', -Wlor[i])
         
         if par.magnetic:
             resid2[i] = abs( 2*sigma*ME0 - Indu[i] - Mdfs[i] ) / \
                              max( abs(2*sigma*ME0), abs(Indu[i]), abs(Mdfs[i]))
-            print('2σM =',2*sigma*ME0)
-            print('Indu=',Indu[i])
-            print('Mdfs=',Mdfs[i])
+            #print('2σM = ',2*sigma*ME0, '-Indu = ',-Indu[i], '-Mdfs = ', -Mdfs[i])
             
         if par.thermal:
             resid3[i] = abs( 2*sigma*TE[i] - Dthm[i] - Wadv_thm[i] ) / \
@@ -261,7 +259,7 @@ def main(ncpus):
         print(' {:2d}   {: 12.7f}   {: 12.7f}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}'.format( \
                i, sigma, w, resid0[i], resid1[i], resid2[i], resid3[i], KT[i]/KP[i], ME[i]/KE[i], 2*np.abs(mtorq[i])/np.sqrt(KE[i]), 2*np.abs(mtorq_ic[i])/np.sqrt(KE[i]) ))
         # ------------------------------------------------------------------------------------------------------------------
-
+        #print(' ')
 
         toc = timer()
         
