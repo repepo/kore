@@ -2,10 +2,6 @@
 
 ver="3.5.2"
 
-if test ! -d $HOME/local; then
-    mkdir $HOME/local
-fi
-
 wget https://bitbucket.org/nschaeff/shtns/downloads/shtns-$ver.tar.gz
 tar -xvf shtns-$ver.tar.gz
 rm shtns-$ver.tar.gz
