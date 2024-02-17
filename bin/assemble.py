@@ -390,7 +390,40 @@ def main():
             else:
 
                 print('This boundary flow forcing needs symm = 1 and m = 2 and bci = 1')
+ 
+    elif par.forcing == 10: # --------------------------------------------------------------- m=2 radial velocity forcing
 
+        # Order m radial velocity forcing at the icb or cmb, l=m poloidal scalar only, equatorially symmetric.
+        if rank == 0:
+
+            print('--------------------------------------------')
+            print(' m=%d radial forcing                        ' %par.m)
+            print('--------------------------------------------')
+
+            if ( par.symm == 1 ):
+
+                l = par.m   #
+                L = l*(l+1)
+
+                pos = ut.N1*np.where(alltop==l)[0][0]
+                row = np.arange(pos,pos+2)
+                col = np.zeros(2)
+
+                #C_icb = L*par.m*par.forcing_frequency*par.forcing_amplitude_icb/par.ricb  # to be checked
+                #C_cmb = L*par.m*par.forcing_frequency*par.forcing_amplitude_cmb
+
+                # forcing amplitude is the radial velocity amplitude
+                C_icb = 0.0
+                C_cmb = 1./L * 1.0
+
+                bdat = np.array([C_cmb, C_icb])
+
+                B = ss.csr_matrix( ( bdat, (row,col) ), shape=(ut.sizmat,1) )
+                np.savez('B_forced.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
+
+            else:
+
+                print('This boundary flow forcing needs symm = 1')
 
 
     elif par.forcing == 0: # ----------------------------------------------------------------------------------------------------- B matrix, no forcing (eigenvalue problem)

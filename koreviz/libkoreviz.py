@@ -237,7 +237,7 @@ def get_ang_momentum(M,epsilon_cmb):
                                          -clm2[k] * Tlm[M.sh.idx(ell-1,mm)] )
             Gamma_tor[k] *= np.conjugate(epsilon_cmb[k])
 
-    torq_pollm = np.real( 4*np.pi/(2*l+1) * (Gamma_pol))
+    torq_pollm = np.real( 4*np.pi/(2*l+1) * (Gamma_pol)) # elementwise (array) multiplication 
     torq_torlm = np.real( 4*np.pi/(2*l+1) * (Gamma_tor))
     mask = M.sh.m == 0
     torq_pollm[~mask] *= 2
@@ -246,4 +246,83 @@ def get_ang_momentum(M,epsilon_cmb):
     torq_tor = np.sum(torq_torlm)
 
     return torq_pol, torq_tor
+
+def get_coriolis_torque(M,epsilon_cmb):
+
+    l   = M.sh.l
+    m   = M.sh.m
+    r   = M.r
+    Qlm = M.Q[0,:]
+    Slm = M.S[0,:]
+    Tlm = M.T[0,:]
+
+    Gamma_rad = np.zeros(M.sh.nlm,dtype=np.complex128)
+    Gamma_con = np.zeros(M.sh.nlm,dtype=np.complex128)
+    Gamma_tor = np.zeros(M.sh.nlm,dtype=np.complex128)
+
+    clm_rad_p2 = -2/(2*l+3)/(2*l+5) * np.sqrt((l+m+1)*(l-m+1)) * np.sqrt((l+m+2)*(l-m+2))
+    clm_rad_0 = 4*(l**2+l-1+m**2)/(4*l*(l+1)-3)
+    clm_rad_m2 = 2/(4*l*(l-2)+3) * np.sqrt((l+m)*(l-m)) * np.sqrt((l-1)**2-m**2)
+
+    for mm in [0,M.m]:
+        for ell in range(mm,M.lmax+1):
+            k = M.sh.idx(ell,mm)
+            if ell <= mm+1:
+                Gamma_rad[k] = M.rcmb * ( clm_rad_p2[k] * Qlm[M.sh.idx(ell+2,mm)]
+                                          +clm_rad_0[k] * Qlm[M.sh.idx(ell,mm)]   )
+            elif ell >= M.lmax-1:
+                Gamma_rad[k] = M.rcmb * ( clm_rad_m2[k] * Qlm[M.sh.idx(ell-2,mm)] 
+                                          +clm_rad_0[k] * Qlm[M.sh.idx(ell,mm)]    )
+            else:
+                Gamma_rad[k] = M.rcmb * ( clm_rad_p2[k] * Qlm[M.sh.idx(ell+2,mm)]
+                                          +clm_rad_0[k] * Qlm[M.sh.idx(ell,mm)]
+                                         +clm_rad_m2[k] * Qlm[M.sh.idx(ell-2,mm)] )
+            Gamma_rad[k] *= np.conjugate(epsilon_cmb[k])
+
+    clm_con_p2 = -2*(l+3)/(2*l+3)/(2*l+5) * np.sqrt((l+m+1)*(l-m+1)) * np.sqrt((l+m+2)*(l-m+2))
+    clm_con_0 = -2*(l+l**2-3*m**2)/(4*l*(l+1)-3)
+    clm_con_m2 = 2*(l-2)/(4*l*(l-2)+3) * np.sqrt((l+m)*(l-m)) * np.sqrt((l-1)**2-m**2)
+
+    for mm in [0,M.m]:
+        for ell in range(mm,M.lmax+1):
+            k = M.sh.idx(ell,mm)
+            if ell <= mm+1:
+                Gamma_con[k] = M.rcmb * ( clm_con_p2[k] * Slm[M.sh.idx(ell+2,mm)]
+                                          +clm_con_0[k] * Slm[M.sh.idx(ell,mm)]   )
+            elif ell >= M.lmax-1:
+                Gamma_con[k] = M.rcmb * ( clm_con_m2[k] * Slm[M.sh.idx(ell-2,mm)] 
+                                          +clm_con_0[k] * Slm[M.sh.idx(ell,mm)]    )
+            else:
+                Gamma_con[k] = M.rcmb * ( clm_con_p2[k] * Slm[M.sh.idx(ell+2,mm)]
+                                          +clm_con_0[k] * Slm[M.sh.idx(ell,mm)]
+                                         +clm_con_m2[k] * Slm[M.sh.idx(ell-2,mm)] )
+            Gamma_con[k] *= np.conjugate(epsilon_cmb[k])
+
+    clm_tor_p1 = 2*1j*m*(l+2)/(2*l+3) * np.sqrt((l+m+1)*(l-m+1))
+    clm_tor_m1 = 2*1j*m*(l-1)/(2*l-1) * np.sqrt((l+m)*(l-m))
+
+    for mm in [0,M.m]:
+        for ell in range(mm,M.lmax+1):
+            k = M.sh.idx(ell,mm)
+            if ell == mm:
+                Gamma_tor[k] = M.rcmb * ( clm_tor_p1[k] * Tlm[M.sh.idx(ell+1,mm)])
+            elif ell == M.lmax:
+                Gamma_tor[k] = M.rcmb * ( clm_tor_m1[k] * Tlm[M.sh.idx(ell-1,mm)] )
+            else:
+                Gamma_tor[k] = M.rcmb * ( clm_tor_p1[k] * Tlm[M.sh.idx(ell+1,mm)]
+                                         +clm_tor_m1[k] * Tlm[M.sh.idx(ell-1,mm)] )
+            Gamma_tor[k] *= np.conjugate(epsilon_cmb[k])
+
+    torq_radlm = np.real( 4*np.pi/(2*l+1) * (Gamma_rad))
+    torq_conlm = np.real( 4*np.pi/(2*l+1) * (Gamma_con))
+    torq_torlm = np.real( 4*np.pi/(2*l+1) * (Gamma_tor))
+    mask = M.sh.m == 0
+    torq_radlm[~mask] *= 2
+    torq_conlm[~mask] *= 2
+    torq_torlm[~mask] *= 2
+    torq_rad = np.sum(torq_radlm)
+    torq_con = np.sum(torq_conlm)
+    torq_tor = np.sum(torq_conlm)
+
+    return torq_rad, torq_con, torq_tor
 
