@@ -127,13 +127,15 @@ $$
 
 ## The heat equation
 
-The heat equation in its dimensional form is
+### Boussinesq
+
+The heat equation under the Boussinesq approximation, in its dimensional form, is
 
 $$
-\partial_t \theta=-\mathbf{u}\cdot\nabla T+\kappa \nabla^2 \theta.
+\partial_t \theta=-\mathbf{u}\cdot\nabla T+\kappa \nabla^2 \theta,
 $$
 
-We assume that an isentropic temperature background $T(r)$ exists, which is only a function of radius. Its gradient is then $\nabla T=\mathbf{\hat r}\,\mathrm{d}T/\mathrm{d}r$. Now we write $\mathrm{d}T/\mathrm{d}r=C\,f(r)$, where $C$ is a scale factor for the gradient (can be negative) and $f(r)$ is a dimensionless function of $r$ (with $r$ also dimensionless). Then we can write the heat equation, using this time dimensionless variables exclusively as
+where $\theta$ is the temperature disturbance. We assume that an isentropic temperature background $T(r)$ exists, which is only a function of radius. Its gradient is then $\nabla T=\mathbf{\hat r}\,\mathrm{d}T/\mathrm{d}r$. Now we write $\mathrm{d}T/\mathrm{d}r=C\,f(r)$, where $C$ is a scale factor for the gradient (can be negative) and $f(r)$ is a dimensionless function of $r$ (with $r$ also dimensionless). Then we can write the heat equation, using this time dimensionless variables exclusively as
 
 $$
 \partial_t \theta=-\frac{LC}{\theta^*}\,u_r\,f(r)+(\Omega\tau)\frac{E}{Pr} \nabla^2 \theta.
@@ -150,3 +152,33 @@ A temperature profile with a linear gradient is common in the literature. In tha
 $$
 Ra = \frac{\alpha g_0 \beta R^5}{\nu\kappa}.
 $$
+
+
+### Anelastic
+When using the anelastic approximation we use the specific entropy $s$ as the main thermodynamical variable. We specify the structure of the planet (or star) with three radial background profiles: the density $\bar \rho(r)$, the temperature $\bar T(r)$, and the magnitude of gravitational acceleration $\bar g(r)$. The heat equation in dimensional form reads (Glatzmaier 2014, eq. 12.34)
+
+$$
+\bar \rho \bar T \partial_t s = -\bar \rho \bar T \frac{\mathrm{d} \bar s}{\mathrm{d}r} u_r + \nabla\cdot(\bar \kappa \bar \rho \bar T \nabla s),
+$$
+
+where $\bar s$ is the specific entropy background and $\bar \kappa$ is the thermal diffusivity, which can vary over the planet's radius. The specific entropy background $\bar s(r)$ *of an hydrostatic perfect gas* is related to the temperature and gravity acceleration backgrounds according to (Glatzmaier 2014, eq. 12.9)
+
+$$
+\bar T \frac{\mathrm{d} \bar s}{\mathrm{d}r} = c_p\frac{\mathrm{d} \bar T}{\mathrm{d}r} + \bar g,
+$$
+
+where $c_p$ is the specific heat capacity at constant pressure. In the anelastic approximation the *mass flux* $\bar \rho \mathbf{u}$ is divergenceless, so we use it as our kinematic variable. Thus it is convenient to keep the quantity $\bar \rho u_r$ together in the thermal equation. Also, since in simple polytropic structure models the density $\bar \rho$ and temperature background $\bar T$ become very small and vanish as we approach and reach the surface, it is a good idea to avoid dividing by those quantities. For instance, in polytropic models, the background entropy gradient $\mathrm{d} \bar s/\mathrm{d}r$ diverges as $r\rightarrow r_0$, the surface radius, but the product $\bar T \mathrm{d} \bar s/\mathrm{d}r$ stays finite.
+
+The *dimensionless* version of the heat equation is
+
+$$
+\bar \rho \bar T \partial_t s = -\bar \rho u_r  \left( \frac{\mathrm{d} \bar T}{\mathrm{d} r} + \frac{g_0 r_0}{T_0 c_p} \bar g \right)+ \frac{\kappa_0 \tau}{r_0^2} \nabla\cdot(\bar \kappa \bar \rho \bar T \nabla s),
+$$
+
+where all variables and background profiles are assumed to be dimensionless. The reference value $T_0$ refers to the temperature at the center of the star while the reference gravity $g_0$ and radius $r_0$ refer to the star's surface. The dimensionless factor $g_0 r_0/(T_0 c_p)$, in the case of a polytrope of index $n=1$, reduces to
+
+$$
+\frac{g_0 r_0}{T_0 c_p}=\frac{\gamma-1}{\gamma},
+$$
+
+where $\gamma=c_p/c_v$ is the adiabatic index.
