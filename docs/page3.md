@@ -175,7 +175,7 @@ $$
 \bar \rho \bar T \partial_t s = -\bar \rho u_r  \left( \frac{\mathrm{d} \bar T}{\mathrm{d} r} + \frac{g_0 r_0}{T_0 c_p} \bar g \right)+ \frac{\kappa_0 \tau}{r_0^2} \nabla\cdot(\bar \kappa \bar \rho \bar T \nabla s),
 $$
 
-where all variables and background profiles are assumed to be dimensionless. The reference value $T_0$ refers to the temperature at the center of the star while the reference gravity $g_0$ and radius $r_0$ refer to the star's surface. The dimensionless factor $g_0 r_0/(T_0 c_p)$, in the case of a polytrope of index $n=1$, reduces to
+where all variables and background profiles are assumed to be dimensionless. The reference values $T_0,\,\kappa_0$ denote to the temperature and thermal diffusion constant at the center of the star while the reference gravity $g_0$ and radius $r_0$ refer to the star's surface. The dimensionless factor $g_0 r_0/(T_0 c_p)$, in the case of a polytrope of index $n=1$, reduces to
 
 $$
 \frac{g_0 r_0}{T_0 c_p}=\frac{\gamma-1}{\gamma},
