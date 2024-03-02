@@ -31,10 +31,11 @@ def main(ncpus):
     twozone    = ((par.thermal == 1) and (par.heating == 'two zone'))               # boolean
     userdef    = ((par.thermal == 1) and (par.heating == 'user defined'))           # boolean
     cdipole    = ((par.magnetic == 1) and (par.B0 == 'dipole') and (par.ricb > 0))  # boolean
-    inviscid   = ((par.Ek == 0) and (par.ricb == 0))                                # boolean
+    inviscid   = (((par.Ek == 0) or (par.viscosa == 0)) and (par.ricb == 0))        # boolean
     quadrupole = ((par.B0 == 'Luo_S2') or ((par.B0 == 'FDM') and (par.B0_l == 2)))  # boolean
+    anelastic  = ((par.thermal == 1) and (par.anelastic==1))
+    boussinesq = ((par.thermal == 1) and (par.anelastic==0))
 
-    # radial_profiles = ['eta', 'rho', 'tem','buo']
 
     tic = timer()
     print('N =', par.N,', lmax =', par.lmax)
@@ -61,12 +62,14 @@ def main(ncpus):
     rp = [r0, r1, r2, r3, r4, r5, r6]
 
     # these are the cheb coeffs of r*twozone or r*BVprof.
-    if twozone:
-        cd_ent = ut.chebco_rf(rap.twozone, rpower=1, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=par.args).reshape([par.N,1])
-    elif userdef:
-        cd_ent = ut.chebco_rf( rap.BVprof, rpower=1, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=par.args).reshape([par.N,1])
+    if boussinesq:
+        if twozone:
+            cd_ent = ut.chebco_rf(rap.twozone, rpower=1, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=par.args).reshape([par.N,1])
+        elif userdef:
+            cd_ent = ut.chebco_rf( rap.BVprof, rpower=1, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=par.args).reshape([par.N,1])
 
-    elif par.anelastic:
+    elif anelastic:  ##
+		
         #rd_rho = ut.get_radial_derivatives(rap.log_density,4,4,tol) # Density : Requires derivatives and radial powers up to fourth order
         # rd_tem = ut.get_radial_derivatives(ut.temperature,2,2,tol) # Temperature : Requires derivatives and radial powers up to second order
         # rd_buo = ut.get_radial_derivatives(ut.buoFac,)
@@ -74,14 +77,21 @@ def main(ncpus):
         #rd_lnT = ut.get_radial_derivatives(rap.log_temperature,2,1,tol) # Log(Temperature)
 
         cd_rho = ut.chebify( rap.density, 2, tol)
-        cd_lho = ut.chebify( rap.log_density, 4, tol)
-        cd_vsc = ut.chebify( rap.viscosity, 2, tol)
+        #cd_lho = ut.chebify( rap.log_density, 4, tol)
+        #cd_vsc = ut.chebify( rap.viscosity, 2, tol)
+        
+        cd_rog = ut.chebify( rap.rog, 0, tol)
+        #cd_krT = ut.chebify( rap.krT, 1, tol)
+        cd_roT = ut.chebify( rap.roT, 0, tol)
+        cd_TdS = ut.chebify( rap.TdS, 0, tol)
 
+        '''
         if par.thermal == 1:
 
             cd_lnT = ut.chebify( rap.log_temperature, 1, tol)
             cd_kho = ut.chebify( rap.kappa_rho, 1, tol)
 
+		
             if par.entropyGrad == 'auto':
                 cd_ent = (ac.get_equilibrium_entropy()).reshape([par.N,1])
             else:
@@ -92,9 +102,9 @@ def main(ncpus):
                 cd_buo = ut.cheb2Product(cd_buo,ac.gravCoeff(),tol).reshape([par.N,1])
             else:
                 cd_buo = ut.chebco_rf(rap.buoFac,0,par.N,par.ricb,ut.rcmb,tol).reshape([par.N,1])
+		'''
 
-
-    if par.magnetic == 1 :
+    if par.magnetic:
 
         cnorm = ut.B0_norm()  # Normalization
 
@@ -187,10 +197,12 @@ def main(ncpus):
         arg2   += [     vT ,     vT  ]
         labl_u += [ 'r3_D0', 'r4_D1' ]
 
+        '''
         # Viscous diffusion
         arg2   += [     vP ,     vP ,     vP ,     vP  ]
         labl_u += [ 'r0_D0', 'r2_D2', 'r3_D3', 'r4_D4' ]
 
+        
         # More viscous diffusion, anelastic terms
         if par.anelastic:
             arg2   += [       vP   ,        vP    ,       vP    ,       vP    ,       vP    ,
@@ -207,6 +219,7 @@ def main(ncpus):
                         'r3_vsc2_lho1_D0', 'r4_vsc0_D4', 'r4_vsc0_lho1_D3', 'r4_vsc0_lho2_D2',
                         'r4_vsc0_lho3_D1', 'r4_vsc1_D3', 'r4_vsc1_lho1_D2', 'r4_vsc1_lho2_D1',
                         'r4_vsc2_D2', 'r4_vsc2_lho1_D1']
+        '''
 
         if par.magnetic == 1 :
             # add Lorentz force
@@ -223,7 +236,9 @@ def main(ncpus):
             # add Buoyancy force
 
             if par.anelastic:
-                labl_u += ['r3_buo0_D0']
+                #labl_u += ['r3_buo0_D0']
+                arg2   += [          vP  ]
+                labl_u += [ 'r0_rog0_D0' ]
             else:
                 arg2   += [     vP  ]
                 labl_u += [ 'r4_D0' ]
@@ -243,6 +258,7 @@ def main(ncpus):
         arg2   += [     vP ,     vP  ]
         labl_v += [ 'r1_D0', 'r2_D1' ]
 
+        '''
         # Viscous diffusion
         arg2   += [     vT ,     vT ,     vT  ]
         labl_v += [ 'r0_D0', 'r1_D1', 'r2_D2' ]
@@ -255,6 +271,7 @@ def main(ncpus):
             if par.variable_viscosity:
                 labl_v += ['r0_vsc0_D0', 'r1_vsc0_D1', 'r1_vsc0_lho1_D0', 'r2_vsc0_D2',
                            'r2_vsc0_lho1_D1', 'r2_vsc1_D1', 'r2_vsc1_lho1_D0']
+        '''
 
         if par.magnetic == 1 :
             # Lorentz force
@@ -331,7 +348,8 @@ def main(ncpus):
         # Matrices needed for the heat equation ------------------------------------------------------------------------------------ Heat - section h
         # -------------------------------------------------------------------------------------------------------------------------------------------
         if par.anelastic:
-
+			
+            """
             #Advection
             labl_h = ['r0_drS0_D0','r1_drS0_D0']
 
@@ -339,6 +357,20 @@ def main(ncpus):
             labl_h += [ 'r0_kho0_D0', 'r1_kho0_D1', 'r2_kho0_D2', 'r2_kho0_lnT1_D1', 'r2_kho1_D1' ]
             labl_h += ['r2_rho0_D0'] #ds/dt
             labl_h += ['r0_D1','r1_lnT1_D1','r1_lho1_D1','r1_lnk1_D1','r1_D2'] #To solve for equilibrium S
+			"""
+			
+			# entropy perturbation
+            labl_h = [ 'r0_roT0_D0' ]
+            arg2  += [          vP  ]
+			
+			# thermal advection
+            labl_h += [ 'r0_TdS0_D0' ]
+            arg2   += [          vP  ]
+			
+			# thermal diffusion
+			#labl_h += [ 'r0_krT0_D0', 'r1_krT0_D1', 'r2_krT1_D1', 'r2_krT0_D2' ]
+			#arg2   += []
+   
         else:
             if par.heating == 'differential' :
 
@@ -416,7 +448,6 @@ def main(ncpus):
 
             elif len(lablx) == 10 :  # rX_proX_DX
 
-
                 if   profid1 == 'eta':  ck1 = cd_eta
                 elif profid1 == 'rho':  ck1 = cd_rho
                 elif profid1 == 'drS':  ck1 = cd_ent
@@ -425,8 +456,15 @@ def main(ncpus):
                 elif profid1 == 'vsc':  ck1 = cd_vsc
                 elif profid1 == 'eho':  ck1 = cd_eho
                 elif profid1 == 'kho':  ck1 = cd_kho
+                elif profid1 == 'roT':  ck1 = cd_roT
+                elif profid1 == 'TdS':  ck1 = cd_TdS
+                elif profid1 == 'rog':  ck1 = cd_rog
 
-                c0arg = ut.cheb2Product( rp[rx], ck1[:,dp1], tol)
+                if rx==0:
+                    print(profid1)
+                    c0arg = ck1[:,dp1]
+                else:
+                    c0arg = ut.cheb2Product( rp[rx], ck1[:,dp1], tol)
 
             elif len(lablx) == 13 : # rX_hX_profX_DX
 
@@ -487,7 +525,7 @@ def main(ncpus):
         # ---------------------------------------------------------------------------------------------------------------------------------------
 
 
-        # If no inner core then remove unneeded rows and cols
+        # If no solid inner core then remove unneeded rows and cols
         if par.ricb == 0 :
 
             if profid1 == 'drS' :  # this one just for the twozone or BVprof function, choose accordingly here!
@@ -502,8 +540,11 @@ def main(ncpus):
             elif len(lablx) == 5 :
                 operator_parity = 1-((rx+dx)%2)*2
 
-            elif len(lablx) == 10 and profid1 == 'eta':  # the eta profile must be an even funnction of r
-                operator_parity = 1-(( rx + dp1 + dx )%2)*2
+            elif len(lablx) == 10:
+
+                if profid1 in [ 'eta', 'roT', 'TdS', 'rog' ]:  # these profiles must be an even functions of r
+                    operator_parity = 1-(( rx + dp1 + dx )%2)*2
+                
 
             ####
             # TO DO: assign operator_parity to operators with longer labels, i.e. involving 'eta' or 'rho'

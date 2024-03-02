@@ -318,7 +318,10 @@ def chebify(func, Dorder, tol):
     and its derivatives (as columns) up to order Dorder.
     '''
     c0 = chebco_rf( func, 0, par.N, par.ricb, rcmb, tol)
-    out = np.c_[ c0, Dn_cheb(c0, par.ricb, rcmb, Dorder) ]
+    if Dorder > 0:
+        out = np.c_[ c0, Dn_cheb(c0, par.ricb, rcmb, Dorder) ]
+    else:
+        out = np.reshape(c0,(-1,1))
 
     return out
 
@@ -342,6 +345,40 @@ def cheb2Product(ck1, ck2, tol):
     out[ np.absolute(out) <= tol ] = 0.0
     return out
 
+
+def xcheb(r, ricb, rcmb):
+    # returns points in the appropriate domain of the Cheb polynomial solutions
+    # Domain [-1,1] corresponds to [ ricb,rcmb] if ricb>0
+    # Domain [-1,1] corresponds to [-rcmb,rcmb] if ricb==0
+
+    r1 = rcmb
+    r0 = ricb + (np.sign(ricb)-1)*rcmb  # r0=-rcmb if ricb==0; r0=ricb if ricmb>0 
+    out = 2*(r-r0)/(r1-r0) - 1
+
+    return out
+
+
+
+def funcheb(ck0, r, ricb, rcmb, n):
+    '''
+    Returns the function represented by the Chebyshev coeffs ck0, evaluated at the radii r.
+    If r is None then uses the rk (i.e. the associated x0) points defined globally.
+    First column is the function itself, second column is its derivative with respect to r,
+    and so on up to the n-th derivative. Rows correspond to the radial points.
+    Use this only when the Cheb coeffs are the full set, i.e. after using expand_sol if ricb=0.
+    '''
+
+    x00 = xcheb(r, ricb, rcmb)  # use the explicit radial points given as argument
+    
+    out = np.zeros((np.size(x00), n+1), ck0.dtype)  # n+1 cols
+    out[:,0] = ch.chebval(x00, ck0)  # the function itself
+    
+    if n>0:
+        dk = ut.Dn_cheb(ck0, ricb, rcmb, n)  # coeffs for the derivatives, n cols
+        for j in range(1,n+1):
+            out[:,j] = ch.chebval(x00, dk[:,j-1])  # and the derivatives
+
+    return out
 
 
 

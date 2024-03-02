@@ -1039,22 +1039,23 @@ def main():
             # temperature (theta) terms: (Ek/Pr)*nabla**2(theta) -------------------------------------------------------
             # ----------------------------------------------------------------------- A, heat equation (section h), temp
             # ----------------------------------------------------------------------------------------------------------
-            basecol = (2*par.hydro+2*par.magnetic)*nb*ut.N1
+            if par.ThermaD > 0:
+                basecol = (2*par.hydro+2*par.magnetic)*nb*ut.N1
 
-            # Physics ----------------------------
-            mtx = op.thermal_diffusion(l,'h','',0)
-            # ------------------------------------
-            col = basecol + col0
+                # Physics ----------------------------
+                mtx = op.thermal_diffusion(l,'h','',0)
+                # ------------------------------------
+                col = basecol + col0
 
-            if par.hydro == 0:
-                if l == loc_top[0]:  # create loc_list if first iteration
-                    mtx.eliminate_zeros()
-                    mtx = mtx.tocoo()
-                    loc_list = [mtx.data, mtx.row + row , mtx.col + col]
-                else:  # append to loc_list if it already exists
+                if par.hydro == 0:
+                    if l == loc_top[0]:  # create loc_list if first iteration
+                        mtx.eliminate_zeros()
+                        mtx = mtx.tocoo()
+                        loc_list = [mtx.data, mtx.row + row , mtx.col + col]
+                    else:  # append to loc_list if it already exists
+                        loc_list = ut.packit(loc_list, mtx, row, col)
+                else:
                     loc_list = ut.packit(loc_list, mtx, row, col)
-            else:
-                loc_list = ut.packit(loc_list, mtx, row, col)
 
             # loc_list = ut.packit( loc_list, mtx, row, col)
 
@@ -1189,6 +1190,7 @@ def bc_u_spherical(l,loc):
     '''
     inviscid = (par.Ek == 0) #boolean
 
+    '''
     if par.anelastic == 1:
         lho = ut.chebco_f( rap.log_density, par.N, par.ricb, ut.rcmb, 1e-9)
         lho1_a = np.dot(lho, bv.Ta[:,1])  # icb
@@ -1196,6 +1198,7 @@ def bc_u_spherical(l,loc):
     else:
         lho1_a = 0.
         lho1_b = 0.
+    '''
 
     L = l*(l+1)
 

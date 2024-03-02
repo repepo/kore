@@ -1,7 +1,8 @@
 import numpy as np
 import utils as ut
 import parameters as par
-
+import pygyre as gy
+import scipy.interpolate as si
 
 
 def twozone(r,args):
@@ -47,19 +48,153 @@ def BVprof(r,args=None):
 
 
 
-#------------------------------------------
-# Anelastic profiles
-#------------------------------------------
+#-------------------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------- User-provided background profiles
+#-------------------------------------------------------------------------------------------------------------
 
+def density(r):
+    '''
+    Density, normalized by its value at the star's center.
+    '''
+    m = gy.read_model(par.model)
+    xm = m['x']
+    ym = m['rho/rho_0']
+    interp = si.make_interp_spline(xm, ym, k=3)
+    out = np.zeros_like(r)
+    for i,x in enumerate(r):
+        if x>=0:
+            out[i] = interp(x)
+        else:
+            out[i] = interp(-x)  # even function of r
+    return out
+
+
+def gravity(r):
+    '''
+    Magnitude of the gravitational acceleration, normalized by its value at the star's surface. 
+    '''
+    out = np.ones_like(r)
+    m = gy.read_model(par.model)
+    xm = m['x']
+    ym = m['dtheta']
+    ym = ym/ym[-1]
+    interp = si.make_interp_spline(xm, ym, k=3)
+    out = np.zeros_like(r)
+    for i,x in enumerate(r):
+        if x>=0:
+            out[i] = interp(x)
+        else:
+            out[i] = -interp(-x)  # odd function of r
+    return out  
+
+    
+def temperature(r):
+    '''
+    Temperature, normalized by its value at the star's center.
+    '''
+    m = gy.read_model(par.model)
+    xm = m['x']
+    ym = m['theta']
+    interp = si.make_interp_spline(xm, ym, k=3)
+    out = np.zeros_like(r)
+    for i,x in enumerate(r):
+        if x>=0:
+            out[i] = interp(x)
+        else:
+            out[i] = interp(-x)  # even function of r
+    return out
+
+
+def viscosity(r):
+    '''
+    Kinematic viscosity (aka momentum diffusivity)
+    '''
+    out = np.zeros_like(r)
+    return out  # even function of r
+
+        
+def kappa(r):
+    '''
+    Thermal diffusivity
+    '''
+    out = np.zeros_like(r)  # even function of r
+    return out
+
+
+# ---------------------------------------------------------------------------------------
+# The functions below are directly linked to the ones above, no user intervention needed.
+# ---------------------------------------------------------------------------------------
+
+def rog(r):
+    '''
+    r**3 * density * gravitational acceleration
+    '''
+    out = density(r) * gravity(r)  # even * odd = odd
+    return (r**3) * out # odd * odd = even function of r
+
+    
+def krT(r):
+    '''
+    Thermal diffusivity * density * temperature
+    '''
+    out = kappa(r) * density(r) * temperature(r)
+    return out  # even*even*even = even function of r
+
+    
+def roT(r):
+    '''
+    r**2 * density * temperature
+    '''
+    out = density(r) * temperature(r)  # even*even = even
+    return (r**2) * out  # even*even = even function of r
+
+
+def dTdr(r):
+    '''
+    Gradient of temperature.
+    '''
+    #dck = ut.chebify(tempe,1,par.tol)[:,1]
+    #out = ut.funcheb( dck, r, par.ricb, ut.rcmb, 0)
+    m = gy.read_model(par.model)
+    xm = m['x']
+    ym = m['dtheta'] * m['z'][-1]
+    interp = si.make_interp_spline(xm, ym, k=3)
+    out = np.zeros_like(r)
+    for i,x in enumerate(r):
+        if x>=0:
+            out[i] = interp(x)
+        else:
+            out[i] = -interp(-x)  # odd
+    return out  # odd function of r
+
+
+def TdS(r):
+    '''
+    r * temperature * entropy gradient (Glatzmaier2014, eq. 12.9),
+    gamma is the adiabatic index (e.g. use gamma=5/3 for a monoatomic perfect gas)
+    '''
+    m = gy.read_model(par.model)
+    z0 = m['z'][-1]
+    dtheta0 = m['dtheta'][-1]
+    n = m['n_poly'][-1]  # we assume there's just one single polytrope
+    gamma0 = (n+1) * z0 * (-dtheta0) * (1-1/par.gamma)
+    out = dTdr(r) + gamma0 * gravity(r)  # odd+odd = odd
+    return r * out  # odd*odd = even function of r
+
+# --------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------
+
+
+'''
 #---------------------------------------------------------
 # Get required parameters according to interior model
 #---------------------------------------------------------
 
 def getPolyParams():
-    '''
-    This function defines useful parameters required to compute polytropic profiles
-    defined by rho = T^n , p = rho^(1 + 1/n) and ideas gas law : p = rho T
-    '''
+    
+    #This function defines useful parameters required to compute polytropic profiles
+    #defined by rho = T^n , p = rho^(1 + 1/n) and ideas gas law : p = rho T
+    
 
     radratio = par.ricb/ut.rcmb
     Nrhofac = np.exp(par.Nrho/par.polind)
@@ -73,11 +208,11 @@ def getPolyParams():
 
 
 def getEOSparams():
-    '''
-    This function allows the user to set custom profiles defined by polynomial
-    coefficients. Coefficients are ordered from highest order to constant, as
-    required by numpy.polyval .
-    '''
+    
+    #This function allows the user to set custom profiles defined by polynomial
+    #coefficients. Coefficients are ordered from highest order to constant, as
+    #required by numpy.polyval .
+    
     # Set constant values for any missing profiles
 
     coeffDens = [1]; coeffTemp = [1]; coeffAlpha = [1]; coeffGrav = [1]
@@ -192,13 +327,6 @@ def alpha(r):
     return out
 
 
-
-def viscosity(r):  # kinematic nu
-    out = np.ones_like(r)
-    return out
-
-
-
 def thermal_diffusivity(r):
     out = np.ones_like(r)
     return out
@@ -235,16 +363,16 @@ def gravity(r):
 
 
 def buoFac(r):
-    '''
-    Profile of buoyancy = rho*alpha*T*g
-    If autocomputed, gravity is multiplied later in Cheb space
-    '''
+    
+    #Profile of buoyancy = rho*alpha*T*g
+    #If autocomputed, gravity is multiplied later in Cheb space
+    
     if par.autograv:
         out = density(r)*alpha(r)*temperature(r)
     else:
         out = density(r)*alpha(r)*temperature(r)*gravity(r)
     return out
-
+'''
 
 
 #------------------------------------------
@@ -259,17 +387,17 @@ def conductivity(r):
     return out
 
 
-
 def magnetic_diffusivity(r):
     out = 1./conductivity(r)
     return out
-
 
 
 def eta_rho(r):
     out = magnetic_diffusivity(r)*density(r)
     return out
 
+
+'''
 def write_profiles():
     i = np.arange(0, par.N)
     xi = np.cos(np.pi * (i + 0.5) / par.N)
@@ -299,3 +427,4 @@ def write_profiles():
 
     np.savetxt('profiles.dat',X,fmt='%.4f',header=' '.join(header),delimiter=' ')
 #------------------------------------------
+'''

@@ -121,7 +121,7 @@ def coriolis(l, section, component, offdiag):  # -------------------------------
                 else:
                     out = -2j*par.m*r2_D0_v                          # r2* r.1curl(2z x u)
 
-    return [ par.OmgTau * out, offd ]
+    return [ par.Ohmygod * out, offd ]
 
 
 
@@ -195,7 +195,7 @@ def viscous_diffusion(l, section, component, offdiag):  # ----------------------
                 else:
                     out = L*( -L*r0_D0_v + 2*r1_D1_v + r2_D2_v )                            # r2* r.1curl( nabla^2 u )
 
-    return par.OmgTau * par.Ek * out
+    return par.Viscosa * out
 
 
 
@@ -383,7 +383,7 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
                 offd = 1
 
 
-    return [ (par.OmgTau*par.Le)**2 * out, offd ]
+    return [ par.Lorenzo * out, offd ]
 
 
 
@@ -395,7 +395,9 @@ def buoyancy(l, section, component, offdiag):  # -------------------------------
     if (section == 'u') and (offdiag == 0) :
 
         if par.anelastic:
-            buoy = r3_buo0_D0_u
+            #buoy = r3_buo0_D0_u
+            buoy = r0_rog0_D0_u  # the r**3 factor included in rog
+            
         else:
             if (par.magnetic == 1) and (par.B0 == 'dipole') :
                 buoy = r6_D0_u
@@ -404,7 +406,7 @@ def buoyancy(l, section, component, offdiag):  # -------------------------------
 
     out = L * buoy
 
-    return par.OmgTau**2 * par.BV2 * out
+    return par.Beyonce * out
 
 
 
@@ -688,7 +690,7 @@ def magnetic_diffusion(l, section, component, offdiag):
                     out = L*( 2*r4_eta0_D1_g - L* r3_eta0_D0_g + r5_eta0_D2_g - r4_eta1_D0_g - r5_eta1_D1_g )
 
 
-    return par.OmgTau * par.Em * out
+    return par.MagnetD * out
 
 
 
@@ -699,12 +701,16 @@ def magnetic_diffusion(l, section, component, offdiag):
 
 
 def theta(l, section, component, offdiag):
+    '''
+    This is the temperature perturbation in the Bussinesq case,
+    or the specific entropy perturbation in the anelastic case. 
+    '''
 
-    out = 0
     if (section == 'h') and (offdiag == 0) :
 
         if par.anelastic:
-            out = r2_rho0_D0_h
+            #out = r2_rho0_D0_h
+            out = r0_roT0_D0_h  # r**2 factor included in roT
         else:
             if par.heating == 'differential' :
                 out = r3_D0_h
@@ -725,7 +731,9 @@ def thermal_advection(l, section, component, offdiag):  # -u_r * dT/dr
     if ((section == 'h') and (component == 'upol')) and (offdiag == 0) :
 
         if par.anelastic:
-            conv = -r1_drS0_D0_h  # (r*S0')*D0s
+            #conv = -r1_drS0_D0_h  # (r*S0')*D0s
+            conv = -r0_TdS0_D0_h  # r**1 factor included in TdS
+           
         else:
             if par.heating == 'internal':
                 conv = r2_D0_h  # dT/dr = -beta*r. Heat equation is times r**2
@@ -755,9 +763,10 @@ def thermal_diffusion(l, section, component, offdiag):
 
         else:
 
-            difus = - L*r0_kho0_D0_h + 2*r1_kho0_D1_h + r2_kho0_D2_h + r2_kho0_lnT1_D1_h + r2_kho1_D1_h
+            #difus = - L*r0_kho0_D0_h + 2*r1_kho0_D1_h + r2_kho0_D2_h + r2_kho0_lnT1_D1_h + r2_kho1_D1_h
+            difus = -L*r0_krT0_D0_h + 2*r1_krT0_D1_h + r2_krT1_D1_h + r2_krT0_D2_h
 
-    return difus * par.OmgTau * par.Ek / par.Prandtl
+    return difus * par.ThermaD
 
 
 

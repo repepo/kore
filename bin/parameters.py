@@ -26,34 +26,31 @@ aux = 1.0  # Auxiliary variable, useful e.g. for ramps
 hydro = 1  # set to 1 to include the Navier-Stokes equation for the flow velocity, set to 0 otherwise
 
 # Azimuthal wave number m (>=0)
-m = 1
+m = 0
 
 # Equatorial symmetry of the flow field. Use 1 for symmetric, -1 for antisymmetric.
 symm = -1
 
-# Inner core radius, CMB radius is unity.
-
-ricb = 0.35
+# Inner core radius, surface/CMB radius is unity.
+ricb = 0
 
 # Inner core spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow. Ignored if ricb = 0
-bci = 1
+bci = 0
 
 # CMB spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow
-bco = 1
+bco = 0
 
 # Ekman number (use 2* to match Dintrans 1999). Ek can be set to 0 if ricb=0
 # CoriolisNumber = 1.2e3
 # Ek = 2/CoriolisNumber
 # Ek_gap = 2e-4
 # Ek = Ek_gap*(1-ricb)**2
+Ek = 0
 
-Ek = 1e-3
 
-anelastic = 0
-variable_viscosity = 0
-
+'''
 #---------------------------------------------------------------------------------------
 # Options for setting interior profiles and options for a polytropic gas, Nrho and polind
 # are ignored when an interior model other than polytrope is used
@@ -69,6 +66,7 @@ g_icb = 0.0 # Value of g at icb, is set to zero when ricb = 0
 g0 = 0; g1 = 0; g2=1 # Easy way to control gravity, g(r) = g0 + g1 r/rcmb + g2 rcmb^2/r^2
 
 #--------------------------------------------------------------------------------------
+'''
 
 forcing = 0  # Uncomment this line for eigenvalue problems
 # forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
@@ -156,12 +154,15 @@ cnorm = 'rms_cmb'                     # Sets the radial rms field at the CMB as 
 # ----------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------- Thermal parameters
 # ----------------------------------------------------------------------------------------------------------------------
-thermal = 0  # Use 1 or 0 to include or not the temperature equation and the buoyancy force (Boussinesq)
+thermal = 1  # Use 1 or 0 to include or not the internal energy equation and the buoyancy force
 
-# Prandtl number: ratio of viscous to thermal diffusivity
-Prandtl = 1.
+# To use the Boussinesq approximation, set anelastic = 0 
+anelastic = 1
+
 # "Thermal" Ekman number
-Etherm = Ek/Prandtl
+# Prandtl = 1
+# Etherm = Ek/Prandtl
+Etherm = 0
 
 # Background isentropic temperature gradient dT/dr choices, uncomment the appropriate line below:
 heating = 'internal'      # dT/dr = -beta * r         temp_scale = beta * ro**2
@@ -183,7 +184,10 @@ heating = 'internal'      # dT/dr = -beta * r         temp_scale = beta * ro**2
 # BV2 = -Ra * Ek**2 / Prandtl
 BV2 = 0.0
 
+model = 'poly.simple.h5'  # Uses a polytropic structure model from GYRE
+gamma = 5/3  # adiabatic index
 
+'''
 entropyGrad = 'auto' # Automatically compute equilibrium entropy gradient
 
 if entropyGrad == 'ssl':
@@ -194,12 +198,14 @@ if entropyGrad == 'ssl':
     slopeStrat= 75
 
     dent_args = [ampStrat,rStrat,thickStrat,slopeStrat]
-
+'''
 # Additional arguments for 'Two zone' or 'User defined' case (modify if needed).
 rc   = 0.7  # transition radius
 h    = 0.1  # transition width
 rsy  = -1    # radial symmetry
 args = [rc, h, rsy]
+
+
 
 # Thermal boundary conditions
 # 0 for isothermal, theta=0
@@ -207,12 +213,14 @@ args = [rc, h, rsy]
 bci_thermal = 0   # ICB
 bco_thermal = 0   # CMB
 
+'''
 #Set boundary conditions to solve for equilibrium entropy gradient
-
 if entropyGrad == 'auto':
 
     bci_thermal_val = 1
     bco_thermal_val = 0
+'''
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------- Compositional parameters
@@ -253,15 +261,21 @@ bco_compositional = 1   # CMB
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-# ----------------------------------------------------------------------------------------------------------- Time scale
+# -------------------------------------------------------------------------------------- Unit of time and force switches
 # ----------------------------------------------------------------------------------------------------------------------
 # Choose the time scale by specifying the dimensionless angular velocity using the desired time scale. Please see
 # the non-dimensionalization notes in the documentation. Uncomment your choice:
-OmgTau = 1     # Rotation time scale
+# OmgTau = 1     # Rotation time scale
 # OmgTau = 1/Ek  # Viscous diffusion time scale
 # OmgTau = 1/Le  # Alfvén time scale
 # OmgTau = 1/Em  # Magnetic diffusion time scale
 
+Ohmygod = 0  # Omega*Tau,                 Coriolis force factor. Set to 1 for unit time Tau = 1/Omega
+Beyonce = 1  # (N0*Tau)**2,               Buoyancy force factor. Set to 1 for unit time Tau = 1/N0 = sqrt(r0/g0)
+Lorenzo = 0  # (Tau*B0/r0)**2/(rho0*mu0), Lorentz force factor. Set to 1 for Alfven time scale
+Viscosa = 0  # nu0 * Tau / r0**2,         Viscous force factor. Set to 1 for viscous diffusion time scale
+ThermaD = 0  # kappa0 * Tau / r0**2,      Thermal diffusion factor. Set to 1 for thermal diffusion time scale
+MagnetD = 0  # eta0 * Tau / r0**2,        Magnetic diffusion factor. Set to 1 for magnetic diffusion time scale
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -269,7 +283,7 @@ OmgTau = 1     # Rotation time scale
 # ----------------------------------------------------------------------------------------------------------------------
 
 # Number of cpus
-ncpus = 4
+ncpus = 24
 
 # Chebyshev polynomial truncation level. Use function def at top or set manually. N must be even if ricb = 0.
 N = Ncheb(Ek)
@@ -325,6 +339,7 @@ tol = 1e-15
 # Tolerance for the thermal/compositional matrix
 tol_tc = 1e-6
 
+'''
 # Check if anything is broken
 
 def runChecks():
@@ -333,7 +348,7 @@ def runChecks():
         sys.exit()
 
 runChecks()
-
+'''
 # ----------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
