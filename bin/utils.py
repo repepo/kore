@@ -142,6 +142,7 @@ def labelit( labl, section, rplus=0):
             r_or_q = old_rpow[0]
             if old_rpow == 'q1':
                 orpw = -1
+                r_or_q = 'r'
             else:
                 orpw = int(old_rpow[1])
 
