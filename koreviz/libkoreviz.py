@@ -6,36 +6,23 @@ import shtns
 def spec2spat_vec(M,ut,par,chx,a,b,vsymm,nthreads,
                   vort=False,transform=True):
 
-    # Rearrange and separate poloidal and toroidal parts
-
-    Plj0 = a[:M.n] + 1j*b[:M.n]         #  N elements on each l block
-    Tlj0 = a[M.n:2*M.n] + 1j*b[M.n:2*M.n]   #  N elements on each l block
-
+    # rearrange and separate poloidal and toroidal parts
+    Plj0 = a[:M.n0] + 1j*b[:M.n0]               #  N elements on each l block
+    Tlj0 = a[M.n0:2*M.n0] + 1j*b[M.n0:2*M.n0]   #  N elements on each l block
     lm1  = M.lmax-M.m+1
-    Plj0  = np.reshape(Plj0,(int(lm1/2),ut.N1))
-    Tlj0  = np.reshape(Tlj0,(int(lm1/2),ut.N1))
 
-    Plj = np.zeros((int(lm1/2),par.N),dtype=complex)
-    Tlj = np.zeros((int(lm1/2),par.N),dtype=complex)
-
-    if M.ricb == 0 :
-        iP = (M.m + 1 - ut.s)%2
-        iT = (M.m + ut.s)%2
-        for k in np.arange(int(lm1/2)) :
-            Plj[k,iP::2] = Plj0[k,:]
-            Tlj[k,iT::2] = Tlj0[k,:]
-    else :
-        Plj = Plj0
-        Tlj = Tlj0
+    Plj  = np.reshape(Plj0,(int(lm1/2),par.N))
+    Tlj  = np.reshape(Tlj0,(int(lm1/2),par.N))
+    dPlj = np.zeros(np.shape(Plj),dtype=complex)
 
     # init arrays
-    Plr  = np.zeros( (lm1, M.nr), dtype=complex )
-    Qlr  = np.zeros( (lm1, M.nr), dtype=complex )
-    Slr  = np.zeros( (lm1, M.nr), dtype=complex )
-    Tlr  = np.zeros( (lm1, M.nr), dtype=complex )
-    dP   = np.zeros( (lm1, M.nr), dtype=complex )
-    rP   = np.zeros( (lm1, M.nr), dtype=complex )
-    dPlj = np.zeros(  np.shape(Plj), dtype=complex )
+    Plr  = np.zeros( (int(lm1), M.nr), dtype=complex )
+    dP   = np.zeros( (int(lm1), M.nr), dtype=complex )
+    rP   = np.zeros( (int(lm1), M.nr), dtype=complex )
+    Qlr  = np.zeros( (int(lm1), M.nr), dtype=complex )
+    Slr  = np.zeros( (int(lm1), M.nr), dtype=complex )
+    Tlr  = np.zeros( (int(lm1), M.nr), dtype=complex )
+
     if vort:
         ddPlj = np.zeros(  np.shape(Plj), dtype=complex )
         dTlj  = np.zeros(  np.shape(Tlj), dtype=complex )
@@ -62,6 +49,7 @@ def spec2spat_vec(M,ut,par,chx,a,b,vsymm,nthreads,
     for k in range(int(lm1/2)):
         dPlj[k,:] = ut.Dcheb(Plj[k,:], M.ricb, M.rcmb)
         dP[idp,:] = np.matmul(dPlj, chx.T)
+
     if vort:
         for k in range(int(lm1/2)):
             dTlj[k,:] = ut.Dcheb(Tlj[k,:], M.ricb, M.rcmb)
@@ -71,20 +59,20 @@ def spec2spat_vec(M,ut,par,chx,a,b,vsymm,nthreads,
 
     # populate Qlr and Slr
     rI = ss.diags(M.r**-1,0)
-    L  = ss.diags(ll*(ll+1),0)
+    lI  = ss.diags(ll*(ll+1),0)
 
     if vort:
         r2I = ss.diags(M.r**-2,0)
         r2P = Plr * r2I
 
-        Qlr = L * Tlr  # l(l+1) * T
+        Qlr = lI * Tlr  # l(l+1) * T
         Slr = dT + Tlr * rI  # T' + T/r
-        Tlr = L * r2P - 2 * dP * rI - ddP # l(l+1) * P/r^2 - 2*P'/r - P"
+        Tlr = lI * r2P - 2 * dP * rI - ddP # l(l+1) * P/r^2 - 2*P'/r - P"
 
     else:
 
         rP  = Plr * rI  # P/r
-        Qlr = L * rP    # l(l+1)*P/r
+        Qlr = lI * rP    # l(l+1)*P/r
         Slr = rP + dP   # P' + P/r
 
     # Now in these Q, S, T arrays, the first lmax+1 indices are for m=0

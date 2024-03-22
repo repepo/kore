@@ -1,16 +1,20 @@
 import numpy as np
-import scipy.sparse as ss
-import scipy.sparse.linalg as ssl
-import sys
-import matplotlib.pyplot as plt
-import matplotlib
-import matplotlib.tri as tri
 import numpy.polynomial.chebyshev as ch
+import scipy.sparse as ss
+import scipy.special as scsp
+import sys
+import matplotlib
+import matplotlib.pyplot as plt
+import matplotlib.tri as tri
 import cmasher as cmr
+import matplotlib.colors as colors
+from matplotlib.axis import Axis
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from matplotlib.colors import LinearSegmentedColormap
 
 from utils import Dcheb
 from utils import Ylm_full
+from utils import Ylm
 from utils import ell
 from utils4pp import xcheb
 from utils4fig import expand_sol
@@ -23,13 +27,11 @@ plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 
 '''
-
-Script to plot meridional cuts of the poloidal and toroidal fields
+Script to plot meridional cuts of the flows energy density
 Use as:
+python3 path/to/plot_energy.py solnum theta0 theta1 field
 
-python3 path/to/plot_poltor.py nsol theta0 theta1 field
-
-nsol   : solution number
+solnum : solution number
 theta0 : starting colatitude
 theta1 : final colatitude
 field  : whether to plot flow velocity or magnetic field ('u' or 'b')
@@ -59,8 +61,6 @@ rcmb  = 1
 
 lmax  = int(p[47])
 N     = int(p[46])
-N1    = int(N/2) * int(1 + np.sign(ricb)) + int((N%2)*np.sign(ricb))
-n     = int(N1*(lmax-m+1)/2)
 n0    = int(N*(lmax-m+1)/2)
 
 nr    = N-1
@@ -70,14 +70,14 @@ ntta  = lmax-1
 r = np.linspace(ricb,rcmb,nr)
 
 if ricb == 0:
-	r = r[1:]
-	nr = nr - 1
+    r = r[1:]
+    nr = nr - 1
 x = xcheb(r,ricb,rcmb)
 
 # select meridional cut
-phi = 0
+phi = 0.
 
-# matrix with Chebyshev polynomials at every x0 point for all degrees:
+# matrix with Chebyshev polynomials at every x point for all degrees:
 chx = ch.chebvander(x, N-1) # this matrix has nr rows and N-1 cols
 
 # set up evenly spaced latitudinal grid
@@ -85,31 +85,33 @@ theta = np.linspace(theta0*np.pi/180, theta1*np.pi/180, ntta+2)
 theta = theta[1:-1]
 
 if field == 'u':
-	# read field from disk
-	a0 = np.loadtxt("real_flow.field", usecols=solnum)
-	b0 = np.loadtxt("imag_flow.field", usecols=solnum)
-	vsymm = symm
-	titlelabel = r'Velocity field $\mathbf{u_0}$'
+    # read field from disk
+    a0 = np.loadtxt("real_flow.field", usecols=solnum)
+    b0 = np.loadtxt("imag_flow.field", usecols=solnum)
+    vsymm = symm
+    titlelabel = r'Kinetic energy'
+    cmap = 'magma'
 elif field == 'b':
-	# read field from disk
-	a0 = np.loadtxt("real_magnetic.field", usecols=solnum)
-	b0 = np.loadtxt("imag_magnetic.field", usecols=solnum)
-	B0_type = int(p[15])
-	if B0_type in np.arange(4):
-		B0_symm = -1
-	elif B0_type == 4:
-		B0_symm = 1
-	elif B0_type == 5:
-		B0_l = p[17]
-		B0_symm = int((-1) ** (B0_l))
-	vsymm = symm * B0_symm
-	titlelabel = r'Magnetic field $\mathbf{b_0}$'
+    # read field from disk
+    a0 = np.loadtxt("real_magnetic.field", usecols=solnum)
+    b0 = np.loadtxt("imag_magnetic.field", usecols=solnum)
+    B0_type = int(p[15])
+    if B0_type in np.arange(4):
+        B0_symm = -1
+    elif B0_type == 4:
+        B0_symm = 1
+    elif B0_type == 5:
+        B0_l = p[17]
+        B0_symm = int((-1) ** (B0_l))
+    vsymm = symm * B0_symm
+    titlelabel = r'Magnetic energy'
+    cmap = 'cividis'
 
 # initialize indices
-ll0 = ell(m, lmax, vsymm)
+ll0   = ell(m, lmax, vsymm)
 llpol = ll0[0]
 lltor = ll0[1]
-ll = ll0[2]
+ll    = ll0[2]
 
 # --- COMPUTATION ---
 # expand solution in case ricb == 0
@@ -155,11 +157,12 @@ Slr = rP + dP
 s = np.zeros(nr * ntta)
 z = np.zeros(nr * ntta)
 
-pol = np.zeros((nr)*ntta, dtype=complex)
-tor = np.zeros((nr)*ntta, dtype=complex)
+ur2 = np.zeros((nr) * ntta)
+ut2 = np.zeros((nr) * ntta)
+up2 = np.zeros((nr) * ntta)
 
 # initialize spherical harmonics coefficients.
-clm = np.zeros((lmax-m+2,1))
+clm = np.zeros((lm1+1,1))
 for i,l in enumerate(ll):
 	clm[i] = np.sqrt((l-m)*(l+m))
 
@@ -170,18 +173,27 @@ idT = (np.sign(m)+sy+1)%2
 plx = idP+lmax-m+1
 tlx = idT+lmax-m+1
 
-# compute pol, tor
+# compute ur, utheta, uphi squared
 k = 0
 for kt in range(ntta):
-	ylm = np.r_[Ylm_full(lmax, m, theta[kt], phi),0]
-	for kr in range(0,nr):
-		s[k]   = r[kr]*np.sin(theta[kt])
-		z[k]   = r[kr]*np.cos(theta[kt])
-		
-		pol[k] = np.dot(Plr[:,kr], ylm[idP:plx:2])
-		tor[k] = np.dot( Tlr[:,kr], ylm[idT:tlx:2] )
+    ylm = np.r_[Ylm_full(lmax, m, theta[kt], phi),0]
+    for kr in range(0, nr):
+        s[k] = r[kr] * np.sin(theta[kt])
+        z[k] = r[kr] * np.cos(theta[kt])
 
-		k = k+1
+        ur2[k] = np.abs(np.dot(Qlr[:, kr], ylm[idP:plx:2])) ** 2
+
+        tmp1 = np.dot(-(llpol + 1) * Slr[:, kr] / np.tan(theta[kt]), ylm[idP:plx:2])
+        tmp2 = np.dot(clm[idP + 1:plx + 1:2, 0] * Slr[:, kr] / np.sin(theta[kt]), ylm[idP + 1:plx + 1:2])
+        tmp3 = np.dot(1j * m * Tlr[:, kr] / np.sin(theta[kt]), ylm[idT:tlx:2])
+        ut2[k] = np.abs(tmp1 + tmp2 + tmp3) ** 2
+
+        tmp1 = np.dot(             (lltor+1) * Tlr[:,kr]/np.tan(theta[kt]), ylm[idT:tlx:2]     )
+        tmp2 = np.dot( -clm[idT+1:tlx+1:2,0] * Tlr[:,kr]/np.sin(theta[kt]), ylm[idT+1:tlx+1:2] )
+        tmp3 = np.dot(                  1j*m * Slr[:,kr]/np.sin(theta[kt]), ylm[idP:plx:2]     )
+        up2[k] = np.abs(tmp1 + tmp2 + tmp3) ** 2
+
+        k = k + 1
 
 # only compute indices inside the core mantle boundary (|r| < rcmb)
 id_in = np.where(s**2 + z**2 < rcmb)
@@ -198,42 +210,32 @@ triang.set_mask(mask)
 
 # --- VISUALIZATION ---
 # set-up figure
-fig = plt.figure(figsize=(8,4))
-fig.suptitle(titlelabel, fontsize=16)
+fig = plt.figure(figsize=(6, 6))
 
-# plot pol
-ax1 = fig.add_subplot(121)
-ax1.set_aspect('equal')
-ax1.get_xaxis().set_visible(True)
-ax1.get_yaxis().set_visible(True)
+# plot kinetic energy density
+ax = fig.add_subplot(111)
+ax.set_aspect('equal')
+ax.axis('off')
 
-ax1.set_title('$|\mathcal{P}|$', size=14)
-im1 = ax1.tricontourf(triang, np.absolute(pol[id_in]), 70, cmap='cmr.gem')
-ax1.plot(r[0]*np.sin(theta), r[0]*np.cos(theta),'k',lw=0.4)
-ax1.plot(r[-1]*np.sin(theta), r[-1]*np.cos(theta),'k',lw=0.4)
+# set zero-values to very small
+res = ur2[id_in]+ut2[id_in]+up2[id_in]
+res[res == 0] = 1e-17
+im = ax.tricontourf(triang, np.log10(res), 70, cmap=cmap)
 
-div1 = make_axes_locatable(ax1)
-cax1 = div1.append_axes("right", size="5%", pad=0.05)
-plt.colorbar(im1, cax=cax1)
+ax.plot(r[0]*np.sin(theta), r[0]*np.cos(theta),'k',lw=0.4)
+ax.plot(r[-1]*np.sin(theta), r[-1]*np.cos(theta),'k',lw=0.4)
 
-# plot tor
-ax2 = fig.add_subplot(122)
-ax2.set_aspect('equal')
-ax2.get_xaxis().set_visible(True)
-ax2.get_yaxis().set_visible(True)
-
-ax2.set_title('$|\mathcal{T}|$', size=14)
-im2 = ax2.tricontourf(triang, np.absolute(tor[id_in]), 70, cmap='cmr.pepper')
-ax2.plot(r[0]*np.sin(theta), r[0]*np.cos(theta),'k',lw=0.4)
-ax2.plot(r[-1]*np.sin(theta), r[-1]*np.cos(theta),'k',lw=0.4)
-
-div2 = make_axes_locatable(ax2)
-cax2 = div2.append_axes("right", size="5%", pad=0.05)
-plt.colorbar(im2, cax=cax2)
+div = make_axes_locatable(ax)
+cax = div.append_axes("right", size="5%", pad=0.05)
+cbar = fig.colorbar(im, cax=cax)
+cbar.set_ticks(cbar.get_ticks()[1:-1])
+cbar.set_ticklabels('{:1.2e}'.format(-np.exp(t)) for t in cbar.get_ticks())
+cbar.set_label(titlelabel, fontsize=14)
 
 # add custom plotting arguments
+
 
 # show/save figure
 plt.tight_layout()
 plt.show()
-#plt.savefig('poltor.png'.format(ricb))
+#plt.savefig('energy.png'.format(ricb), dpi=300)

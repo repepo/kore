@@ -10,29 +10,30 @@ from .libkoreviz import spec2spat_vec,spec2spat_scal
 import sys
 import os
 
-
 class kmode:
 
-    def __init__(self, vort=False,datadir='.',field='u', solnum=0,
+    def __init__(self, vort=False,datadir='./',field='u', solnum=0,
                  nr=None, nphi=None, nthreads=4, phase=0, transform=True):
 
-        sys.path.insert(0,datadir+'/bin')
+        sys.path.insert(0,datadir+'bin')
 
         import parameters as par
         import utils as ut
-        import utils_pp as upp
+        import utils4pp as upp
 
         self.solnum = solnum
-        self.lmax   = par.lmax
+        self.field  = field
+
         self.m      = par.m
         self.symm   = par.symm
-        self.N      = par.N
+
         self.ricb   = par.ricb
-        self.rcmb   = ut.rcmb
-        self.n      = ut.n
+        self.rcmb   = 1
+
+        self.lmax   = par.lmax
+        self.N      = par.N
         self.n0     = ut.n0
-        self.field  = field
-        gap         = self.rcmb - self.ricb
+
         self.ut     = ut
         self.par    = par
 
@@ -57,44 +58,43 @@ class kmode:
                 self.nphi = nphi // self.m
             self.ntheta = (self.nphi * self.m) // 2
 
-        # set the radial grid
-        if self.ricb > 0:
-            i = np.arange(0,self.nr-2)
-            xk = np.r_[ 1, np.cos( (i+0.5)*np.pi/self.nr ), -1]  # include endpoints ricb and rcmb
-        elif self.ricb==0:
-            i = np.arange(0,self.nr-1)
-            xk = np.r_[ 1, np.cos( (i+0.5)*np.pi/self.nr )    ]  # include rcmb but not the origin if ricb=0
-        r = 0.5*gap*(xk+1) + self.ricb
-        x0 = upp.xcheb(r,self.ricb,self.rcmb)
+        # set up the evenly spaced radial grid
+        r = np.linspace(self.ricb, self.rcmb, self.nr)
+
+        if self.ricb == 0:
+            r = r[1:]
+            self.nr = self.nr -1
+        x = upp.xcheb(r, self.ricb, self.rcmb)
+
         self.r = r
 
         # matrix with Chebyshev polynomials at every x point for all degrees:
-        chx = ch.chebvander(x0,par.N-1) # this matrix has nr rows and N-1 cols
+        chx = ch.chebvander(x,self.N-1) # this matrix has nr rows and N-1 cols
 
         # read fields from disk
         if field == 'u':
-            a = np.loadtxt('real_flow.field',usecols=solnum)
-            b = np.loadtxt('imag_flow.field',usecols=solnum)
+            a = np.loadtxt(datadir + 'real_flow.field',usecols=solnum)
+            b = np.loadtxt(datadir + 'imag_flow.field',usecols=solnum)
             vsymm = par.symm
             vec = True
         elif field == 'b':
-            a = np.loadtxt('real_magnetic.field',usecols=solnum)
-            b = np.loadtxt('imag_magnetic.field',usecols=solnum)
+            a = np.loadtxt(datadir + 'real_magnetic.field',usecols=solnum)
+            b = np.loadtxt(datadir + 'imag_magnetic.field',usecols=solnum)
             vsymm = ut.bsymm
             vec = True
         elif field in ['t','temp','temperature']:
             if len(glob('*_temperature.field')) > 0:
-                a = np.loadtxt('real_temperature.field',usecols=solnum)
-                b = np.loadtxt('imag_temperature.field',usecols=solnum)
+                a = np.loadtxt(datadir + 'real_temperature.field',usecols=solnum)
+                b = np.loadtxt(datadir + 'imag_temperature.field',usecols=solnum)
             elif len(glob('*_temp.field')) > 0:
-                a = np.loadtxt('real_temp.field',usecols=solnum)
-                b = np.loadtxt('imag_temp.field',usecols=solnum)
+                a = np.loadtxt(datadir + 'real_temp.field',usecols=solnum)
+                b = np.loadtxt(datadir + 'imag_temp.field',usecols=solnum)
             field='temperature'
             vsymm = par.symm
             vec = False
         elif field in ['comp','composition']:
-            a = np.loadtxt('real_composition.field',usecols=solnum)
-            b = np.loadtxt('imag_composition.field',usecols=solnum)
+            a = np.loadtxt(datadir + 'real_composition.field',usecols=solnum)
+            b = np.loadtxt(datadir + 'imag_composition.field',usecols=solnum)
             field='composition'
             vsymm = par.symm
             vec = False
@@ -185,7 +185,6 @@ class kmode:
             titl = r'$\omega_z$'
 
         return data, titl
-
 
     def surf(self, field='ur', r=0.5, levels=48, cmap=None,
              colbar=True, titl=True, clim=[0,0]):
