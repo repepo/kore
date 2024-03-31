@@ -69,8 +69,9 @@ if par.mantle == 'insulator':
 elif par.mantle == 'TWA':
     mantle_mag_bc = 1
 
-thermal_heating_list = ['internal', 'differential', 'two zone', 'user defined']
-heating = thermal_heating_list.index(par.heating)
+if par.thermal:
+    thermal_heating_list = ['internal', 'differential', 'two zone', 'user defined']
+    heating = thermal_heating_list.index(par.heating)
 
 compositional_background_list = ['internal', 'differential']
 compositional_background = compositional_background_list.index(par.comp_background)

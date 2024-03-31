@@ -121,7 +121,7 @@ def coriolis(l, section, component, offdiag):  # -------------------------------
                 else:
                     out = -2j*par.m*r2_D0_v                          # r2* r.1curl(2z x u)
 
-    return [ par.Ohmygod * out, offd ]
+    return [ par.Gaspard * out, offd ]
 
 
 
@@ -195,7 +195,7 @@ def viscous_diffusion(l, section, component, offdiag):  # ----------------------
                 else:
                     out = L*( -L*r0_D0_v + 2*r1_D1_v + r2_D2_v )                            # r2* r.1curl( nabla^2 u )
 
-    return par.Viscosa * out
+    return par.ViscosD * out
 
 
 
@@ -383,7 +383,7 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
                 offd = 1
 
 
-    return [ par.Lorenzo * out, offd ]
+    return [ par.Hendrik * out, offd ]
 
 
 
@@ -396,7 +396,8 @@ def buoyancy(l, section, component, offdiag):  # -------------------------------
 
         if par.anelastic:
             #buoy = r3_buo0_D0_u
-            buoy = r0_rog0_D0_u  # the r**3 factor included in rog
+            buoy = r3_rog0_D0_u
+            #buoy = -1 * r3_bvs0_D0_u
             
         else:
             if (par.magnetic == 1) and (par.B0 == 'dipole') :
@@ -710,7 +711,8 @@ def theta(l, section, component, offdiag):
 
         if par.anelastic:
             #out = r2_rho0_D0_h
-            out = r0_roT0_D0_h  # r**2 factor included in roT
+            out = r2_roT0_D0_h
+            #out = r1_D0_h
         else:
             if par.heating == 'differential' :
                 out = r3_D0_h
@@ -732,7 +734,8 @@ def thermal_advection(l, section, component, offdiag):  # -u_r * dT/dr
 
         if par.anelastic:
             #conv = -r1_drS0_D0_h  # (r*S0')*D0s
-            conv = -r0_TdS0_D0_h  # r**1 factor included in TdS
+            conv = -r1_tds0_D0_h
+            #conv = r0_D0_h
            
         else:
             if par.heating == 'internal':

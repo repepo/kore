@@ -16,8 +16,8 @@ def Ncheb(Ek):
     return max(48, out + out%2)
 
 
-aux = 1.0  # Auxiliary variable, useful e.g. for ramps
-
+aux1 = 1.0  # Auxiliary variable, useful e.g. for ramps
+aux2 = 0
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -184,8 +184,10 @@ heating = 'internal'      # dT/dr = -beta * r         temp_scale = beta * ro**2
 # BV2 = -Ra * Ek**2 / Prandtl
 BV2 = 0.0
 
-model = 'poly.simple.h5'  # Uses a polytropic structure model from GYRE
-gamma = 5/3  # adiabatic index
+#model = 'poly.simple.h5'  # Uses a polytropic structure model from GYRE
+model = 'theprofile.data'  # Uses a structure model from MESA
+gamma = 5./3.  # adiabatic index
+r_cutoff = 0.837  # Will zero out the BV freq above this radius
 
 '''
 entropyGrad = 'auto' # Automatically compute equilibrium entropy gradient
@@ -270,12 +272,12 @@ bco_compositional = 1   # CMB
 # OmgTau = 1/Le  # Alfvén time scale
 # OmgTau = 1/Em  # Magnetic diffusion time scale
 
-Ohmygod = 0  # Omega*Tau,                 Coriolis force factor. Set to 1 for unit time Tau = 1/Omega
-Beyonce = 1  # (N0*Tau)**2,               Buoyancy force factor. Set to 1 for unit time Tau = 1/N0 = sqrt(r0/g0)
-Lorenzo = 0  # (Tau*B0/r0)**2/(rho0*mu0), Lorentz force factor. Set to 1 for Alfven time scale
-Viscosa = 0  # nu0 * Tau / r0**2,         Viscous force factor. Set to 1 for viscous diffusion time scale
-ThermaD = 0  # kappa0 * Tau / r0**2,      Thermal diffusion factor. Set to 1 for thermal diffusion time scale
-MagnetD = 0  # eta0 * Tau / r0**2,        Magnetic diffusion factor. Set to 1 for magnetic diffusion time scale
+Gaspard = 0.15  # Omega*Tau                   Coriolis force factor. Set to 1 for unit time Tau = 1/Omega
+Beyonce = 1  # (N0*Tau)**2                 Buoyancy force factor. Set to 1 for unit time Tau = 1/N0 = sqrt(r0/g0)
+Hendrik = 0  # (Tau*B0/r0)**2/(rho0*mu0)   Lorentz force factor. Set to 1 for Alfven time scale
+ViscosD = 0  # nu0 * Tau / r0**2           Viscous force factor. Set to 1 for viscous diffusion time scale
+ThermaD = 1e-7  # kappa0 * Tau / r0**2        Thermal diffusion factor. Set to 1 for thermal diffusion time scale
+MagnetD = 0  # eta0 * Tau / r0**2          Magnetic diffusion factor. Set to 1 for magnetic diffusion time scale
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -286,15 +288,15 @@ MagnetD = 0  # eta0 * Tau / r0**2,        Magnetic diffusion factor. Set to 1 fo
 ncpus = 24
 
 # Chebyshev polynomial truncation level. Use function def at top or set manually. N must be even if ricb = 0.
-N = Ncheb(Ek)
-# N = 24
+# N = Ncheb(Ek)
+N = 320
 
 # Spherical harmonic truncation lmax and approx lmax/N ratio:
 g = 1.0
-lmax = int( 2*ncpus*( np.floor_divide( g*N, 2*ncpus ) ) + m - 1 )
+#lmax = int( 2*ncpus*( np.floor_divide( g*N, 2*ncpus ) ) + m - 1 )
 # If manually setting the max angular degree lmax, then it must be even if m is odd,
 # and lmax-m+1 should be divisible by 2*ncpus
-# lmax = 7
+lmax = (2*ncpus*2 + m - 1)
 
 
 
@@ -312,21 +314,21 @@ if track_target == 1 :  # read target from file and sets target accordingly
     rtau = tt[0]
     itau = tt[1]
 else:                   # set target manually
-    rtau = 0.0
-    itau = 1.0
+    rtau = -1e-5
+    itau = 0.9
 
 # tau is the actual target for the solver
 # real part is damping
 # imaginary part is frequency (positive is retrograde)
 tau = rtau + itau*1j
 
-which_eigenpairs = 'TM'  # Use 'TM' for shift-and-invert
+which_eigenpairs = 'TR'  # Use 'TM' for shift-and-invert
 # L/S/T & M/R/I
 # L largest, S smallest, T target
 # M magnitude, R real, I imaginary
 
 # Number of desired eigenvalues
-nev = 4
+nev = 13
 
 # Number of vectors in Krylov space for solver
 # ncv = 100
