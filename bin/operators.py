@@ -73,7 +73,7 @@ for label in fname :
 
     varlabel = rlabel + hlabel + proflabel + dlabel + section
 
-    globals()[varlabel] = ss.csr_matrix(sio.mmread(label))
+    globals()[varlabel] = ss.csr_matrix(sio.mmread(label+'.mtx'))
 
 if ut.cic:  # for a conductive inner core
 
@@ -367,7 +367,7 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
                 out = C*( 12*hD1v - 2*h1Iv*(1 + l)*(2 + l) + 6*rhD2v - rh2Iv*(1 + l)*(2 + l) )
 
                 if ut.symm1 == 1:
-                    ofd = 1
+                    offd = 1
 
 
         elif component == 'btor':

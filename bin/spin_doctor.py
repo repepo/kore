@@ -166,8 +166,8 @@ def main(ncpus):
             #print('Wlor=',Wlor[i])
             
             # Viscous torques
-            vtorq[i] = par.Ek * np.dot( ut.gamma_visc(0,0,0), u_sol)  # need to double check the constants here
-            vtorq_ic[i] = par.Ek * np.dot( ut.gamma_visc_icb(par.ricb), u_sol)
+            vtorq[i] = par.Ek * np.dot( ut.gamma_visc(0,0,0)[0,:], u_sol)  # need to double check the constants here
+            vtorq_ic[i] = par.Ek * np.dot( ut.gamma_visc_icb(par.ricb)[0,:], u_sol)
 
             press0[i] = udgn[6][0] 
 

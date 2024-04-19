@@ -15,7 +15,8 @@ def Ncheb(Ek):
     return max(48, out + out%2)
 
 
-aux = 1.0  # Auxiliary variable, useful e.g. for ramps
+aux1 = 1.0  # Auxiliary variable, useful e.g. for ramps
+aux2 = 0.0
 
 
 

@@ -427,7 +427,7 @@ def main():
 
             # ----------------------------------------------------------------------- B matrix, 2curl (hydro), section u
             for k,l in enumerate(loc_top):
-
+                 
                 row = ( rank*bpp + k )* ut.N1
                 col = row
 

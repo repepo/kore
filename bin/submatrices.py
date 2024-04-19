@@ -454,7 +454,7 @@ def main(ncpus):
         if chop > 0:
             matrix = ss.vstack( [ Z[chop-1], matrix[:-chop,:] ], format='csr' )
 
-        sio.mmwrite( labl1, matrix )
+        sio.mmwrite( labl1+'.mtx', matrix )
 
 
     # -------------------------------------------------------------------------------------------------------------------------------------------
@@ -506,14 +506,14 @@ def main(ncpus):
         r2D2f = ut.remroco( r2D2, vF, vF)
         r2D2g = ut.remroco( r2D2, vG, vG)
 
-        sio.mmwrite('r0_D0f_ic', r0D0f)
-        sio.mmwrite('r0_D0g_ic', r0D0g)
-        sio.mmwrite('r2_D0f_ic', r2D0f)
-        sio.mmwrite('r2_D0g_ic', r2D0g)
-        sio.mmwrite('r1_D1f_ic', r1D1f)
-        sio.mmwrite('r1_D1g_ic', r1D1g)
-        sio.mmwrite('r2_D2f_ic', r2D2f)
-        sio.mmwrite('r2_D2g_ic', r2D2g)
+        sio.mmwrite('r0_D0f_ic.mtx', r0D0f)
+        sio.mmwrite('r0_D0g_ic.mtx', r0D0g)
+        sio.mmwrite('r2_D0f_ic.mtx', r2D0f)
+        sio.mmwrite('r2_D0g_ic.mtx', r2D0g)
+        sio.mmwrite('r1_D1f_ic.mtx', r1D1f)
+        sio.mmwrite('r1_D1g_ic.mtx', r1D1g)
+        sio.mmwrite('r2_D2f_ic.mtx', r2D2f)
+        sio.mmwrite('r2_D2g_ic.mtx', r2D2g)
 
     # -------------------------------------------------------------------------------------------------------------------------------------------
     # -------------------------------------------------------------------------------------------------------------------------------------------
