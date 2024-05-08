@@ -26,17 +26,17 @@ aux2 = 0.0
 hydro = 1  # set to 1 to include the Navier-Stokes equation for the flow velocity, set to 0 otherwise
 
 # Azimuthal wave number m (>=0)
-m = 1
+m = 0
 
 # Equatorial symmetry of the flow field. Use 1 for symmetric, -1 for antisymmetric.
-symm = -1
+symm = 1
 
 # Inner core radius, CMB radius is unity.
 ricb = 0.35
 
 # Inner core spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow. Ignored if ricb = 0
-bci = 1
+bci = 0
 
 # CMB spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow
@@ -46,24 +46,24 @@ bco = 1
 # CoriolisNumber = 1.2e3
 # Ek_gap = 2/CoriolisNumber
 # Ek = Ek_gap*(1-ricb)**2
-Ek = 10**-4
+Ek = 10**-5
 
-forcing = 0  # Uncomment this line for eigenvalue problems
+# forcing = 0  # Uncomment this line for eigenvalue problems
 # forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
 # forcing = 2  # For boundary flow forcing, use with bci=1 and bco=1.
 # forcing = 3  # For Rovira-Navarro 2018 tidal body forcing, m=0,2 must be symm, m=1 antisymm. Leaks power!
 # forcing = 4  # first test case, Lin body forcing with X(r)=(A*r^2 + B/r^3)*C, (using Jeremy's calculation), m=2,symm. OK
 # forcing = 5  # second test case, Lin body forcing with X(r)=1/r, m=0,symm. OK
 # forcing = 6  # Buffett2010 ICB radial velocity boundary forcing, m=1,antisymm
-# forcing = 7  # Longitudinal libration boundary forcing, m={0, 2}, symm, no-slip
+forcing = 7  # Longitudinal libration boundary forcing, m={0, 2}, symm, no-slip
 # forcing = 8  # Longitudinal libration as a Poincaré force (body force) in the mantle frame, m=0, symm, no-slip
 # forcing = 9  # Radial, symmetric, m=2 boundary flow forcing.
 
 # Forcing frequency (ignored if forcing == 0)
-forcing_frequency = 1.0  # negative is prograde
+forcing_frequency = 0.00027  # negative is prograde
 
 # Forcing amplitude. Body forcing amplitude will use the cmb value
-forcing_amplitude_cmb = 1.0
+forcing_amplitude_cmb = 0.0036
 forcing_amplitude_icb = 0.0
 
 # if solving an eigenvalue problem, compute projection of eigenmode
@@ -75,7 +75,7 @@ projection = 1
 # ----------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------- Magnetic field parameters
 # ----------------------------------------------------------------------------------------------------------------------
-magnetic = 0  # set to 1 if including the induction equation and the Lorentz force
+magnetic = 1  # set to 1 if including the induction equation and the Lorentz force
 
 # Imposed background magnetic field
 B0 = 'axial'          # Axial, uniform field along the spin axis
@@ -88,9 +88,9 @@ beta = 3.0              # guess for FDM's beta
 B0_l = 1                # l number for the FDM mode
 
 # Magnetic boundary conditions at the ICB:
-innercore = 'insulator'
+# innercore = 'insulator'
 # innercore = 'conducting, Chebys'  # For eigenvalue problems
-# innercore = 'conducting, Bessel'  # For forced problems 
+innercore = 'conducting, Bessel'  # For forced problems 
 # innercore = 'TWA'  # Thin conductive wall layer (Roberts, Glatzmaier & Clune, 2010)
 # innercore = 'perfect conductor, material'  # tangential *material* electric field jump [nxE']=0 across the ICB
 # innercore = 'perfect conductor, spatial'   # tangential *spatial* electric field jump [nxE]=0 across the ICB
@@ -115,13 +115,14 @@ sigma_i2o = 1.0  # electrical conductivity ratio solid inner core / fluid outer 
 # Pm = 0.001
 # Em = Ek/Pm; Le2 = Lambda*Em; Le = np.sqrt(Le2)
 # Or use the Lehnert number and the magnetic Ekman number (i.e. Le and Em: uncomment and set the following three lines):
-Le = 10**-3; Lu=2e3
-Em = Le/Lu
+Le = 0.014
+Pm = 0.4
+Em = Ek/Pm
 Le2 = Le**2
 
 # Normalization of the background magnetic field
-cnorm = 'rms_cmb'                     # Sets the radial rms field at the CMB as unity
-# cnorm = 'mag_energy'                  # Unit magnetic energy as in Luo & Jackson 2022 (I. Torsional oscillations)
+# cnorm = 'rms_cmb'                     # Sets the radial rms field at the CMB as unity
+cnorm = 'mag_energy'                  # Unit magnetic energy as in Luo & Jackson 2022 (I. Torsional oscillations)
 # cnorm = 'Schmitt2012'                 # as above but times 2
 # cnorm = 3.86375                       # G101 of Schmitt 2012, ricb = 0.35
 # cnorm = 4.067144                      # Zhang & Fearn 1994,   ricb = 0.35
@@ -236,6 +237,7 @@ ncpus = 4
 
 # Chebyshev polynomial truncation level. Use function def at top or set manually. N must be even if ricb = 0.
 N     = Ncheb(Ek)  # for the fluid core
+# N = 8
 N_cic = 16         # for the field inside the ic (innercore = 'conducting, Chebys') 
 
 # Spherical harmonic truncation lmax and approx lmax/N ratio:

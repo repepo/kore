@@ -71,7 +71,7 @@ bsymm = par.symm * symmB0  # induced magnetic field (b) symmetry follows from u 
 B0list = ['axial', 'dipole', 'G21 dipole', 'Luo_S1', 'Luo_S2', 'FDM']
 B0type = B0list.index(par.B0)
 
-ic_bc_list = ['insulator', 'TWA', 'conducting, Chebys']
+ic_bc_list = ['insulator', 'TWA', 'conducting, Chebys', 'conducting, Bessel']
 innercore_mag_bc = ic_bc_list.index(par.innercore)
 
 mantle_bc_list = ['insulator', 'TWA']
