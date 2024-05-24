@@ -158,7 +158,7 @@ def viscous_diffusion(l, section, component, offdiag):  # ----------------------
                                 + r3_vsc0_lho3_D0_u + 2*r3_vsc1_lho2_D0_u + r3_vsc2_lho1_D0_u
 
                                 + (2-L)*r2_vsc0_lho1_D1_u + 6 * (r3_vsc0_lho2_D1_u + r3_vsc1_lho1_D1_u)
-                                + r4_vsc0_lho3_D1_u + 2*r4_vsc1_lho2_D1_u + r4_vsc2_lho1_D1_u
+                                + r4_vsc0_lho3_D1_u + 2*r4_vsc1_lho2_D1_u + r4_vsc2_lho1_D1_u + 2*(L+1)*r2_vsc1_D1_u
 
                                 + 2*L*r2_vsc0_D2_u + 5*r3_vsc0_lho1_D2_u - 4*r3_vsc1_D2_u + 2*r4_vsc0_lho2_D2_u
                                 + 2*r4_vsc1_lho1_D2_u - r4_vsc2_D2_u
@@ -183,7 +183,7 @@ def viscous_diffusion(l, section, component, offdiag):  # ----------------------
 
                 if par.variable_viscosity:
 
-                    out = L * ( -L*r0_vsc0_D0_v - 3*r1_vsc0_lho1_D0_v - r2_vsc1_lho1_D0_v
+                    out = L * ( -L*r0_vsc0_D0_v - 3*r1_vsc0_lho1_D0_v - r2_vsc1_lho1_D0_v - r2_vsc0_lho2_D0_v - r1_vsc1_D0_v
 
                             + 2*r1_vsc0_D1_v - r2_vsc0_lho1_D1_v + r2_vsc1_D1_v
 

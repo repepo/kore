@@ -79,8 +79,8 @@ def main(ncpus):
         #rd_lnT = ut.get_radial_derivatives(rap.log_temperature,2,1,tol) # Log(Temperature)
 
         cd_rho = ut.chebify( rap.density, 2, tol)
-        #cd_lho = ut.chebify( rap.log_density, 4, tol)
-        #cd_vsc = ut.chebify( rap.viscosity, 2, tol)
+        cd_lho = ut.chebify( rap.log_density, 4, tol)
+        cd_vsc = ut.chebify( rap.viscosity, 2, tol)
         
         cd_rog = ut.chebify( rap.rog, 0, tol)
         cd_krT = ut.chebify( rap.krT, 1, tol)
@@ -207,7 +207,7 @@ def main(ncpus):
         arg2   += [     vT ,     vT  ]
         labl_u += [ 'r3_D0', 'r4_D1' ]
 
-        '''
+        
         # Viscous diffusion
         arg2   += [     vP ,     vP ,     vP ,     vP  ]
         labl_u += [ 'r0_D0', 'r2_D2', 'r3_D3', 'r4_D4' ]
@@ -229,7 +229,7 @@ def main(ncpus):
                         'r3_vsc2_lho1_D0', 'r4_vsc0_D4', 'r4_vsc0_lho1_D3', 'r4_vsc0_lho2_D2',
                         'r4_vsc0_lho3_D1', 'r4_vsc1_D3', 'r4_vsc1_lho1_D2', 'r4_vsc1_lho2_D1',
                         'r4_vsc2_D2', 'r4_vsc2_lho1_D1']
-        '''
+        
 
         if par.magnetic == 1 :
             # add Lorentz force
@@ -269,7 +269,7 @@ def main(ncpus):
         arg2   += [     vP ,     vP  ]
         labl_v += [ 'r1_D0', 'r2_D1' ]
 
-        '''
+        
         # Viscous diffusion
         arg2   += [     vT ,     vT ,     vT  ]
         labl_v += [ 'r0_D0', 'r1_D1', 'r2_D2' ]
@@ -282,7 +282,7 @@ def main(ncpus):
             if par.variable_viscosity:
                 labl_v += ['r0_vsc0_D0', 'r1_vsc0_D1', 'r1_vsc0_lho1_D0', 'r2_vsc0_D2',
                            'r2_vsc0_lho1_D1', 'r2_vsc1_D1', 'r2_vsc1_lho1_D0']
-        '''
+        
 
         if par.magnetic == 1 :
             # Lorentz force
