@@ -222,13 +222,13 @@ def main(ncpus):
 
             # And even more viscous diffusion,
             if par.variable_viscosity:
-                labl_u += ['r0_vsc0_D0', 'r1_vsc0_lho1_D0', 'r1_vsc1_D0', 'r2_vsc0_D2',
-                        'r2_vsc0_lho1_D1', 'r2_vsc0_lho2_D0', 'r2_vsc1_lho1_D0',
-                        'r2_vsc2_D0', 'r3_vsc0_D3', 'r3_vsc0_lho1_D2', 'r3_vsc0_lho2_D1',
-                        'r3_vsc0_lho3_D0', 'r3_vsc1_D2', 'r3_vsc1_lho1_D1', 'r3_vsc1_lho2_D0',
-                        'r3_vsc2_lho1_D0', 'r4_vsc0_D4', 'r4_vsc0_lho1_D3', 'r4_vsc0_lho2_D2',
-                        'r4_vsc0_lho3_D1', 'r4_vsc1_D3', 'r4_vsc1_lho1_D2', 'r4_vsc1_lho2_D1',
-                        'r4_vsc2_D2', 'r4_vsc2_lho1_D1']
+                labl_u += ['r0_vsc0_D0'     , 'r1_vsc0_lho1_D0', 'r1_vsc1_D0'     , 'r2_vsc0_D2'     ,
+                           'r2_vsc0_lho1_D1', 'r2_vsc0_lho2_D0', 'r2_vsc1_lho1_D0', 'r2_vsc1_D1'     ,
+                           'r2_vsc2_D0'     , 'r3_vsc0_D3'     , 'r3_vsc0_lho1_D2', 'r3_vsc0_lho2_D1',
+                           'r3_vsc0_lho3_D0', 'r3_vsc1_D2'     , 'r3_vsc1_lho1_D1', 'r3_vsc1_lho2_D0',
+                           'r3_vsc2_lho1_D0', 'r4_vsc0_D4'     , 'r4_vsc0_lho1_D3', 'r4_vsc0_lho2_D2',
+                           'r4_vsc0_lho3_D1', 'r4_vsc1_D3'     , 'r4_vsc1_lho1_D2', 'r4_vsc1_lho2_D1',
+                           'r4_vsc2_D2'     , 'r4_vsc2_lho1_D1' ]
         
 
         if par.magnetic == 1 :
