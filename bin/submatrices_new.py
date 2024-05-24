@@ -279,10 +279,9 @@ def main(ncpus):
             arg2   += [       vT    ,       vT    ,       vT     ]
             labl_v += [ 'r1_lho1_D0', 'r2_lho2_D0', 'r2_lho1_D1' ]
 
-            if par.variable_viscosity:
-                labl_v += ['r0_vsc0_D0', 'r1_vsc0_D1', 'r1_vsc0_lho1_D0', 'r2_vsc0_D2',
-                           'r2_vsc0_lho1_D1', 'r2_vsc1_D1', 'r2_vsc1_lho1_D0']
-        
+            if par.variable_viscosity:				
+				labl_v += ['r0_vsc0_D0'     , 'r1_vsc0_D1', 'r1_vsc0_lho1_D0', 'r2_vsc0_D2'     ,
+                           'r2_vsc0_lho1_D1', 'r2_vsc1_D1', 'r2_vsc1_lho1_D0', 'r2_vsc0_lho2_D0', 'r1_vsc1_D0']
 
         if par.magnetic == 1 :
             # Lorentz force
