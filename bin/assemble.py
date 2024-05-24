@@ -1632,7 +1632,7 @@ def bc_b_icb(l,loc, innercore, rank, bpp, k):
             # the line just below works for lmax~150.
             #icb_diag[0,:] = ut.jl(l,bessel_wavenumber*par.ricb,0) * bv.P0_icb - bessel_wavenumber * ut.jl(l,bessel_wavenumber*par.ricb,1) * bv.P1_icb
             # the line below should work for all lmax
-            icb_diag[0,:] = bv.P0_icb - bessel_wavenumber * ut.dlogjl(l,bessel_wavenumber*par.ricb) * bv.P1_icb
+            icb_diag[0,:] = bv.P0_icb - bessel_wavenumber/par.mu_i2o * ut.dlogjl(l,bessel_wavenumber*par.ricb) * bv.P1_icb + (1/par.mu_i2o-1)/par.ricb * bv.T1_icb
             # --------------------------------------------------
 
             if ut.symmB0 == -1:
@@ -1645,10 +1645,11 @@ def bc_b_icb(l,loc, innercore, rank, bpp, k):
 
             # Physics ---------------
             bessel_wavenumber = (1-1j)*np.sqrt(par.forcing_frequency/2/par.Em)
+            eta_i2o = (1/par.mu_i2o/par.sigma_i2o)
             # the line just below works for lmax~150.
             #icb_diag[0,:] = ut.jl(l,bessel_wavenumber*par.ricb,0) * bv.T0_icb - bessel_wavenumber * ut.jl(l,bessel_wavenumber*par.ricb,1) * bv.T1_icb
             # the line below should work for all lmax
-            icb_diag[0,:] = bv.T0_icb - bessel_wavenumber * ut.dlogjl(l,bessel_wavenumber*par.ricb) * bv.T1_icb
+            icb_diag[0,:] = par.Em*(bv.T0_icb - eta_i2o * bessel_wavenumber * ut.dlogjl(l,bessel_wavenumber*par.ricb) * bv.T1_icb + (eta_i2o-1)/par.ricb * bv.T1_icb)
             # -----------------------
 
             if ut.symmB0 == -1:
@@ -1662,7 +1663,6 @@ def bc_b_icb(l,loc, innercore, rank, bpp, k):
 
         # and now the velocity coupling terms
         if par.hydro == 1:
-
             if loc == '1curl': # ----------------------------------------------------------------------- 1curl
 
                 # first row (only one row needed here), goes with the -G'-(G/r) term
@@ -1684,6 +1684,7 @@ def bc_b_icb(l,loc, innercore, rank, bpp, k):
                     icb_minus = ss.dok_matrix((1, ut.N1),dtype=complex)
 
                     C = -(l-1)*np.sqrt(l**2-par.m**2)/(l*(2*l-1))
+                    C*=ut.B0_norm() # normalization factor
 
                     # Physics -------------------
                     icb_minus[0,:] = C*bv.T0_icb
@@ -1698,6 +1699,7 @@ def bc_b_icb(l,loc, innercore, rank, bpp, k):
                 icb_0 = ss.dok_matrix((1, ut.N1),dtype=complex)
 
                 C = 1j*par.m/L
+                C*=ut.B0_norm() # normalization factor
 
                 # Physics ---------------------------------------------------
                 icb_0[0,:] = C*( bv.P1_icb + (l**2+l+1)*bv.P0_icb/par.ricb )
@@ -1719,6 +1721,7 @@ def bc_b_icb(l,loc, innercore, rank, bpp, k):
                     icb_plus = ss.dok_matrix((1, ut.N1),dtype=complex)
 
                     C = -(l+2)*np.sqrt((l+par.m+1)*(l-par.m+1))/((2*l+3)*(l+1))
+                    C*=ut.B0_norm() # normalization factor
 
                     # Physics ------------------
                     icb_plus[0,:] = C*bv.T0_icb
