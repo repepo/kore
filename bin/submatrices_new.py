@@ -153,6 +153,9 @@ def main(ncpus):
         gebasis[0] = 2  # only up to second derivatives in section u
         gebasis[1] = 1  # up to first derivatives in section v
 
+    if par.Etherm ==0:  # only up to 0th derivatives in section h
+        gebasis[4] = 0
+
     # Zero matrices, used when making room for bc's
     N1 = int((1 + np.sign(par.ricb)) * int(par.N/2))
     z4 = ss.csr_matrix((4,N1))

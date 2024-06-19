@@ -1063,8 +1063,11 @@ def main():
             # -------------------------------------------------- include thermal boundary conditions and update loc_list
             # ----------------------------------------------------------------------------------------------------------
             bc_theta_list = bc_theta_spherical( l )
-            for q in [0,1,2]:
-                loc_list[q]= np.concatenate( ( loc_list[q], bc_theta_list[q] ) )
+            if (bc_theta_list is None): # no bc needed if zero thermal diffusivity
+                pass
+            else:
+                for q in [0,1,2]:
+                    loc_list[q]= np.concatenate( ( loc_list[q], bc_theta_list[q] ) )
             # ----------------------------------------------------------------------------------------------------------
 
 
@@ -1299,31 +1302,38 @@ def bc_theta_spherical(l):
     Thermal boundary conditions for the temperature field,
     either isothermal or constant heat flux.
     '''
-    num_rows_h = int(1 + 1*np.sign(par.ricb))  # 1 if no IC, 2 if present
-    #num_rows_h = 2
-    out = ss.dok_matrix((num_rows_h,ut.N1),dtype=complex)
 
-    ixh = ( par.m + 1 - ut.s )%2
-    if par.ricb > 0 :
-        Tbh = bv.Tb
+    if par.Etherm==0:
+        
+        return None
+    
     else:
-        Tbh = bv.Tb[ixh::2,:] # for cmb
-        #Tch = bv.Tc[ixh::2,0] # for origin
 
-    if par.bco_thermal == 0: # isothermal cmb
-        out[ 0,:] = Tbh[:,0] # theta=0
+        num_rows_h = int(1 + 1*np.sign(par.ricb))  # 1 if no IC, 2 if present
+        #num_rows_h = 2
+        out = ss.dok_matrix((num_rows_h,ut.N1),dtype=complex)
 
-    elif par.bco_thermal == 1: # constant heat flux at cmb
-        out[ 0,:] = Tbh[:,1]   # theta'=0
+        ixh = ( par.m + 1 - ut.s )%2
+        if par.ricb > 0 :
+            Tbh = bv.Tb
+        else:
+            Tbh = bv.Tb[ixh::2,:] # for cmb
+            #Tch = bv.Tc[ixh::2,0] # for origin
 
-    if par.ricb > 0 :
-        if par.bci_thermal == 0:   # isothermal icb
-            out[ 1,:] = bv.Ta[:,0] # theta=0
-        elif par.bci_thermal == 1: # constant heat flux at icb
-            out[ 1,:] = bv.Ta[:,1] # theta'=0
+        if par.bco_thermal == 0: # isothermal cmb
+            out[ 0,:] = Tbh[:,0] # theta=0
 
-    row0 = 2*(par.hydro+par.magnetic)*ut.n + int(ut.N1*(l-ut.m_top)/2)
-    col0 = row0
+        elif par.bco_thermal == 1: # constant heat flux at cmb
+            out[ 0,:] = Tbh[:,1]   # theta'=0
+
+        if par.ricb > 0 :
+            if par.bci_thermal == 0:   # isothermal icb
+                out[ 1,:] = bv.Ta[:,0] # theta=0
+            elif par.bci_thermal == 1: # constant heat flux at icb
+                out[ 1,:] = bv.Ta[:,1] # theta'=0
+
+        row0 = 2*(par.hydro+par.magnetic)*ut.n + int(ut.N1*(l-ut.m_top)/2)
+        col0 = row0
 
     out = out.tocoo()
     out2 = [out.data, out.row + row0, out.col + col0]
