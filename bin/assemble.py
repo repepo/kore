@@ -1042,7 +1042,9 @@ def main():
             basecol = (2*par.hydro+2*par.magnetic)*nb*ut.N1
 
             # Physics ----------------------------
-            mtx = op.thermal_diffusion(l,'h','',0)
+            iwtheta = 1j*ut.wf * op.theta(l,'h','', 0)
+            diffus = op.thermal_diffusion(l,'h','',0)
+            mtx = diffus - iwtheta
             # ------------------------------------
             col = basecol + col0
 

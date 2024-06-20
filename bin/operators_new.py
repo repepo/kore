@@ -754,7 +754,7 @@ def thermal_diffusion(l, section, component, offdiag):
 
             difus = - L*r0_kho0_D0_h + 2*r1_kho0_D1_h + r2_kho0_D2_h + r2_kho0_lnT1_D1_h + r2_kho1_D1_h
 
-    return difus * par.OmgTau * par.Ek / par.Prandtl
+    return difus * par.OmgTau * par.Etherm
 
 
 
