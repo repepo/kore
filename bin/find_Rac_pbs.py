@@ -30,7 +30,7 @@ def runKoreRes(Rac,opts): # Print residuals once Rac is found
 
     os.system('sed -i "0,/Ra_gap.*/s//Ra_gap=%f/" ./bin/parameters.py' %Ra)
     os.system('mpiexec -n %d ./bin/assemble.py' %par.ncpus)
-    os.system('mpiexec -n %d ./bin/solve_nopp.py %s' %(par.ncpus,opts))
+    os.system('mpiexec -n %d ./bin/solve.py %s' %(par.ncpus,opts))
     # os.system('./bin/postprocess.py')
 
 def get_sigma(Ra,ncpus, opts):
@@ -43,7 +43,7 @@ def get_sigma(Ra,ncpus, opts):
     else:
         os.system('sed -i "0,/Ra_gap.*/s//Ra_gap=%f/" ./bin/parameters.py' %Ra)
         os.system('mpiexec -n %d ./bin/assemble.py > /dev/null' %ncpus)
-        os.system('mpiexec -n %d ./bin/solve_nopp.py %s > /dev/null' %(ncpus,opts))
+        os.system('mpiexec -n %d ./bin/solve.py %s > /dev/null' %(ncpus,opts))
         eig0 = np.loadtxt('eigenvalues0.dat')
         eig = np.reshape(eig0, (-1, 2))
         Idx = np.argmax(eig[:,0])
@@ -96,7 +96,7 @@ for m in marr:
     ra_cache = {}
 
     os.system('sed -i "0,/m =.*/s//m = %d/" ./bin/parameters.py' %m)
-    os.system('./bin/submatrices_new.py %d > /dev/null' %par.ncpus)
+    os.system('./bin/submatrices.py %d > /dev/null' %par.ncpus)
     Rac = bracket_brentq(get_sigma,np.log10(Ramin),args=(par.ncpus,opts))
     runKoreRes(Rac,optsRes)
     Rac=10**Rac

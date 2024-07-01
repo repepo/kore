@@ -10,7 +10,7 @@ if [ "$1" == "purge" ]; then
     rm *.mtx *.npz
 fi
 
-./bin/submatrices_new.py $ncpus
+./bin/submatrices.py $ncpus
 mpiexec -n $ncpus ./bin/assemble.py
-mpiexec -n $ncpus ./bin/solve_nopp.py $opts
+mpiexec -n $ncpus ./bin/solve.py $opts
 #./postprocess.py

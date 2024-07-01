@@ -20,12 +20,12 @@ class spinoverTest(unittest.TestCase):
         self.solve_opts = solve_opts
         self.startDir = os.getcwd()
         self.description = "Spin-over mode at Ek=1e-3"
-        self.aux_files = ['submatrices_new.py',
+        self.aux_files = ['submatrices.py',
                           'assemble.py',
-                          'operators_new.py',
+                          'operators.py',
                           'utils_pp.py',
                           'utils.py',
-                          'solve_nopp.py',
+                          'solve.py',
                           'bc_variables.py',
                           'radial_profiles.py',
                           'autocompute.py'
@@ -40,9 +40,9 @@ class spinoverTest(unittest.TestCase):
         os.chdir(self.dir)
         for file in self.aux_files:
             os.system('cp ../../bin/%s .' %file)
-        os.system("./submatrices_new.py %d > /dev/null" %(self.ncpus))
+        os.system("./submatrices.py %d > /dev/null" %(self.ncpus))
         os.system("mpiexec -n %d ./assemble.py > /dev/null" %(self.ncpus))
-        os.system("mpiexec -n %d ./solve_nopp.py %s > /dev/null" %(self.ncpus,self.solve_opts))
+        os.system("mpiexec -n %d ./solve.py %s > /dev/null" %(self.ncpus,self.solve_opts))
 
     def list2reason(self, exc_list):
         if exc_list and exc_list[-1][0] is self:

@@ -25,7 +25,7 @@ import bc_variables as bv
 import parameters as par
 import utils as ut
 #import operators as op
-import operators_new as op
+import operators as op
 import radial_profiles as rap
 
 

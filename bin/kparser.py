@@ -53,7 +53,7 @@ for iline, line in enumerate(lines):
 
     lines_new.append(line)
 
-g = open('operators_new.py','w')
+g = open('operators.py','w')
 g.writelines(lines_new)
 g.close()
 f.close()
