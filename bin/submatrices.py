@@ -60,38 +60,42 @@ def main(ncpus):
 
     rp = [r0, r1, r2, r3, r4, r5, r6]
 
-    # these are the cheb coeffs of r*twozone or r*BVprof.
-    if twozone:
-        cd_ent = ut.chebco_rf(rap.twozone, rpower=1, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=par.args).reshape([par.N,1])
-    elif userdef:
-        cd_ent = ut.chebco_rf( rap.BVprof, rpower=1, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=par.args).reshape([par.N,1])
+    if par.simple_buoyancy:
+        cd_buo = ut.chebco_rf(rap.BVprof,0,par.N,par.ricb,ut.rcmb,tol).reshape([par.N,1])
+    else:
 
-    elif par.anelastic:
-        #rd_rho = ut.get_radial_derivatives(rap.log_density,4,4,tol) # Density : Requires derivatives and radial powers up to fourth order
-        # rd_tem = ut.get_radial_derivatives(ut.temperature,2,2,tol) # Temperature : Requires derivatives and radial powers up to second order
-        # rd_buo = ut.get_radial_derivatives(ut.buoFac,)
-        #rd_kho = ut.get_radial_derivatives(rap.kappa_rho,2,1,tol) # thermaldiffusivity * density
-        #rd_lnT = ut.get_radial_derivatives(rap.log_temperature,2,1,tol) # Log(Temperature)
+        # these are the cheb coeffs of r*twozone or r*BVprof.
+        if twozone:
+            cd_ent = ut.chebco_rf(rap.twozone, rpower=1, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=par.args).reshape([par.N,1])
+        elif userdef:
+            cd_ent = ut.chebco_rf( rap.BVprof, rpower=1, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=par.args).reshape([par.N,1])
 
-        cd_rho = ut.chebify( rap.density, 2, tol)
-        cd_lho = ut.chebify( rap.log_density, 4, tol)
-        cd_vsc = ut.chebify( rap.viscosity, 2, tol)
+        elif par.anelastic:
+            #rd_rho = ut.get_radial_derivatives(rap.log_density,4,4,tol) # Density : Requires derivatives and radial powers up to fourth order
+            # rd_tem = ut.get_radial_derivatives(ut.temperature,2,2,tol) # Temperature : Requires derivatives and radial powers up to second order
+            # rd_buo = ut.get_radial_derivatives(ut.buoFac,)
+            #rd_kho = ut.get_radial_derivatives(rap.kappa_rho,2,1,tol) # thermaldiffusivity * density
+            #rd_lnT = ut.get_radial_derivatives(rap.log_temperature,2,1,tol) # Log(Temperature)
 
-        if par.thermal == 1:
+            cd_rho = ut.chebify( rap.density, 2, tol)
+            cd_lho = ut.chebify( rap.log_density, 4, tol)
+            cd_vsc = ut.chebify( rap.viscosity, 2, tol)
 
-            cd_lnT = ut.chebify( rap.log_temperature, 1, tol)
-            cd_kho = ut.chebify( rap.kappa_rho, 1, tol)
+            if par.thermal == 1:
 
-            if par.entropyGrad == 'auto':
-                cd_ent = (ac.get_equilibrium_entropy()).reshape([par.N,1])
-            else:
-                cd_ent = ut.chebco_rf( rap.entropy_gradient, rpower=0, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=par.dent_args).reshape([par.N,1])
+                cd_lnT = ut.chebify( rap.log_temperature, 1, tol)
+                cd_kho = ut.chebify( rap.kappa_rho, 1, tol)
 
-            if par.autograv:
-                cd_buo = ut.chebco_rf(rap.buoFac,0,par.N,par.ricb,ut.rcmb,tol)
-                cd_buo = ut.cheb2Product(cd_buo,ac.gravCoeff(),tol).reshape([par.N,1])
-            else:
-                cd_buo = ut.chebco_rf(rap.buoFac,0,par.N,par.ricb,ut.rcmb,tol).reshape([par.N,1])
+                if par.entropyGrad == 'auto':
+                    cd_ent = (ac.get_equilibrium_entropy()).reshape([par.N,1])
+                else:
+                    cd_ent = ut.chebco_rf( rap.entropy_gradient, rpower=0, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=par.dent_args).reshape([par.N,1])
+
+                if par.autograv:
+                    cd_buo = ut.chebco_rf(rap.buoFac,0,par.N,par.ricb,ut.rcmb,tol)
+                    cd_buo = ut.cheb2Product(cd_buo,ac.gravCoeff(),tol).reshape([par.N,1])
+                else:
+                    cd_buo = ut.chebco_rf(rap.buoFac,0,par.N,par.ricb,ut.rcmb,tol).reshape([par.N,1])
 
 
     if par.magnetic == 1 :
@@ -222,10 +226,13 @@ def main(ncpus):
                 arg2   += [     vF    ,     vG    ]
                 labl_u += [ 'r3_h2_D1', 'r3_h2_D0']
 
-        if (par.thermal == 1) or (par.compositional==1) :
+        if (par.thermal == 1) or (par.compositional==1) or (par.simple_buoyancy == 1):
             # add Buoyancy force
 
             if par.anelastic:
+                labl_u += ['r3_buo0_D0']
+            elif par.simple_buoyancy == 1:
+                arg2   += [     vP  ]
                 labl_u += ['r3_buo0_D0']
             else:
                 arg2   += [     vP  ]

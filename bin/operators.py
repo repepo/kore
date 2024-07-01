@@ -393,6 +393,8 @@ def buoyancy(l, section, component, offdiag):  # -------------------------------
 
         if par.anelastic:
             buoy = r3_buo0_D0_u
+        elif par.simple_buoyancy:
+            buoy = L*r3_buo0_D0_u
         else:
             if (par.magnetic == 1) and (par.B0 == 'dipole') :
                 buoy = r6_D0_u

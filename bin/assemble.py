@@ -624,6 +624,9 @@ def main():
             cori = op.coriolis(l,'u','upol',0)[0]
             visc = op.viscous_diffusion(l,'u','upol',0)
             mtx = iwu + cori - visc
+            if par.simple_buoyancy == 1 and par.forcing != 0: # include the simple buoyancy force
+                mtx = mtx + op.buoyancy(l,'u','',0)/(1j*ut.wf)
+
             # ------------------------------------------------------
             col = basecol + col0
             if l == loc_top[0]:  # create loc_list if first iteration
@@ -696,6 +699,7 @@ def main():
                 # --------------------------------------------
                 col = basecol + col0
                 loc_list = ut.packit( loc_list, mtx, row, col)
+           
 
 
             if par.compositional == 1 : # include the compositional buoyancy
