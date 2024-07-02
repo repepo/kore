@@ -1236,7 +1236,7 @@ def bc_u_spherical(l,loc):
 
             if par.bco == 0: # stress-free cmb
 
-                if par.forcing == 9:  # m=2 radial forcing
+                if par.forcing == 9 or par.forcing ==10:  # m!=0 radial forcing
                     out[ 0,:] = Tbu[:,0]  # P  = whatever we set on the B matrix
                     out[ 1,:] = Tbu[:,2] - (2-L)*Tbu[:,0]/ut.rcmb**2  # Nat Schaeffer's bc notes, eq. 49: P''=(2-L)*P/rcmb^2
                     #out[ 1,:] = Tbu[:,2]  # P''=0
