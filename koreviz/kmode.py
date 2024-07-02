@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import numpy.polynomial.chebyshev as ch
 from glob import glob
-#import cmasher as cmr
 from .plotlib import add_colorbar,default_cmap,radContour,merContour,eqContour
 from .libkoreviz import spec2spat_vec,spec2spat_scal
 import sys
@@ -111,12 +110,12 @@ class kmode:
             sol = spec2spat_vec(self,ut,par,chx,a,b,vsymm,nthreads,
                                vort=vort,transform=transform)
 
-            self.Q,self.S,self.T = sol[:3]
+            self.Qlm,self.Slm,self.Plm,self.Tlm = sol[:4]
 
             if transform:
                 if not vort:
                     if field == 'u':
-                        self.ur, self.utheta, self.uphi = sol[3:]
+                        self.ur, self.utheta, self.uphi = sol[4:]
                         if par.anelastic: #Comment the block out if you want momentum/mass flux
                             self.rho = rap.density(self.r)
                             for irho in range(self.nr):
@@ -124,18 +123,18 @@ class kmode:
                                 self.utheta[irho,...] /= self.rho[irho]
                                 self.uphi[irho,...]   /= self.rho[irho]
                     elif field == 'b':
-                        self.br, self.btheta, self.bphi = sol[3:]
+                        self.br, self.btheta, self.bphi = sol[4:]
                 else:
                     if field == 'u':
-                        self.vort_r, self.vort_t, self.vort_p = sol[3:]
+                        self.vort_r, self.vort_t, self.vort_p = sol[4:]
                     elif field == 'b':
-                        self.jr, self.jtheta, self.jphi = sol[3:]
+                        self.jr, self.jtheta, self.jphi = sol[4:]
 
             del sol
 
         else:
             sol = spec2spat_scal(self,ut,par,chx,a,b,vsymm,nthreads,transform=transform)
-            self.Q = sol[0]
+            self.Qlm = sol[0]
             if transform:
                 scal = sol[1]
                 exec('self.'+field + '= scal')
