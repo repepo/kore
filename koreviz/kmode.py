@@ -100,6 +100,12 @@ class kmode:
             field='composition'
             vsymm = par.symm
             vec = False
+        elif field in ['press','pressure']:
+            a = np.loadtxt('real_pressure.field',usecols=solnum)
+            b = np.loadtxt('imag_pressure.field',usecols=solnum)
+            field='pressure'
+            vsymm = par.symm
+            vec = False
 
         # expand solution in case ricb=0, multiply by complex phase factor
         aib = upp.expand_sol(a+1j*b,vsymm)*(np.cos(phase)+1j*np.sin(phase))
@@ -178,6 +184,10 @@ class kmode:
         if field in ['c','comp','composition']:
             data = self.composition
             titl = r'Composition'
+
+        if field in ['p','press','pressure']:
+            data = self.pressure
+            titl = r'Pressure'
 
         if field in ['energy','ener','ke','e']:
             data = 0.5 * (self.ur**2 + self.utheta**2 + self.uphi**2)
