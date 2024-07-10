@@ -4,8 +4,8 @@
 import numpy as np
 import scipy.sparse as ss
 import numpy.polynomial.chebyshev as ch
-import matplotlib.pyplot as plt
 
+import sys
 sys.path.insert(1,'bin/')
 import utils as ut
 import parameters as par
@@ -100,8 +100,11 @@ rdPlj = np.zeros(np.shape(Plj),dtype=complex)
 rQlj = np.zeros(np.shape(Plj),dtype=complex)
 rSlj = np.zeros(np.shape(Plj),dtype=complex)
 rTlj = np.zeros(np.shape(Plj),dtype=complex)
-# d2Plj = np.zeros(np.shape(Plj),dtype=complex)
-# d3Plj = np.zeros(np.shape(Plj),dtype=complex)
+
+ir2Plj = np.zeros(np.shape(Plj),dtype=complex)
+irdPlj = np.zeros(np.shape(Plj),dtype=complex)
+d2Plj = np.zeros(np.shape(Plj),dtype=complex)
+rd3Plj = np.zeros(np.shape(Plj),dtype=complex)
 
 tol = 1e-9
 # Chebyshev coefficients of powers of r
@@ -124,7 +127,11 @@ for k in range(np.size(ll)):
     rSlj[k,:] = (rdPlj[k,:]+Plj[k,:])
     rTlj[k,:] = ut.cheb2Product(r1,Tlj[k,:],tol)
     # d2Plj[k,:] = ut.Dcheb(dPlj[k,:], ricb, rcmb)
-
+    if par.Ek > 0:
+        ir2Plj[k,:] = ut.cheb2Product(ir2,Plj[k,:],tol)
+        irdPlj[k,:] = ut.cheb2Product(ir,dPlj[k,:],tol)
+        d2Plj[k,:] = ut.Dcheb(dPlj[k,:], ricb, rcmb)
+        rd3Plj[k,:] = ut.cheb2Product(r1,ut.Dcheb(d2Plj[k,:], ricb, rcmb),tol)
 
 
 Tlr = np.zeros((int((lmax-m+1)/2), nR),dtype=complex)
@@ -153,12 +160,15 @@ for k in range(np.size(ll)):
     plj[k,:] = -1j*ut.wf*rSlj[k,:]
     plj[k,:] += +2*1j*m/(ll[k]*(ll[k]+1))*(rQlj[k,:]+rSlj[k,:])
     if ll[k] > m:
-        plj[k,:] += -(ll[k]-1)/(2*ll[k]-1)/ll[k]*np.sqrt((ll[k]-m)*(ll[k]+m))*rTlj[k-1,:]
+        plj[k,:] += -2*(ll[k]-1)/(2*ll[k]-1)/ll[k]*np.sqrt((ll[k]-m)*(ll[k]+m))*rTlj[k-1,:]
     if ll[k] < lmax:
-        plj[k,:] += -(ll[k]+2)/(2*ll[k]+3)/(ll[k]+1)*np.sqrt((ll[k]+m+1)*(ll[k]-m+1))*rTlj[k,:]
-    
+        plj[k,:] += -2*(ll[k]+2)/(2*ll[k]+3)/(ll[k]+1)*np.sqrt((ll[k]+m+1)*(ll[k]-m+1))*rTlj[k,:]
+    if par.Ek > 0:
+        plj[k,:] += par.Ek * (rd3Plj[k,:] + 3*d2Plj[k,:] - (ll[k]*(ll[k]+1)) * irdPlj[k,:] + (ll[k]*(ll[k]+1)) * ir2Plj[k,:])
+
 plr = np.zeros((int((lmax-m+1)/2), nR),dtype=complex)
 np.matmul( plj, chx.T, plr )
 
 np.savetxt('real_pressure.field',np.real(plj).flatten())
 np.savetxt('imag_pressure.field',np.imag(plj).flatten())
+
