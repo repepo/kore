@@ -92,33 +92,40 @@ def spec2spat_vec(M,ut,par,chx,a,b,vsymm,nthreads,
     # (this is the SHTns way with m=mres when m is not zero)
 
     lmax2 = int( M.lmax + 1 - np.sign(M.m) )  # the true max value of l
-    nlm = ( np.sign(M.m)+1 ) * (lmax2+1) - M.m
-    Q = np.zeros([M.nr, nlm], dtype=complex)
-    S = np.zeros([M.nr, nlm], dtype=complex)
-    T = np.zeros([M.nr, nlm], dtype=complex)
+#    nlm = ( np.sign(M.m)+1 ) * (lmax2+1) - M.m
 
     if M.m == 0 :  #pad with zeros for the l=0 component
         ql = np.r_[ np.zeros((1,M.nr)) ,Qlr ]
         sl = np.r_[ np.zeros((1,M.nr)) ,Slr ]
         tl = np.r_[ np.zeros((1,M.nr)) ,Tlr ]
+        pl = np.r_[ np.zeros((1,M.nr)) ,Plr ]
     else :
         ql = Qlr
         sl = Slr
         tl = Tlr
-
-    Q[:, np.sign(M.m)*(lmax2+1):] = ql.T
-    S[:, np.sign(M.m)*(lmax2+1):] = sl.T
-    T[:, np.sign(M.m)*(lmax2+1):] = tl.T
-    M.ell = np.arange(M.m,M.lmax+1)
+        pl = Plr #Only for output, not needed for transforms
 
 
     # SHTns init
-    #norm = shtns.sht_schmidt | shtns.SHT_NO_CS_PHASE
-    norm = shtns.sht_schmidt
+    norm = shtns.sht_schmidt | shtns.SHT_NO_CS_PHASE
     mmax = int( np.sign(M.m) )
     mres = max(1,M.m)
     sh   = shtns.sht( lmax2, mmax=mmax, mres=mres, norm=norm, nthreads=nthreads )
     M.sh = sh
+
+    # Create spectral arrays in SHTns style
+
+    Q = np.zeros([M.nr, sh.nlm], dtype=complex)
+    S = np.zeros([M.nr, sh.nlm], dtype=complex)
+    T = np.zeros([M.nr, sh.nlm], dtype=complex)
+    P = np.zeros([M.nr, sh.nlm], dtype=complex)
+
+    mask = sh.m == M.m
+
+    Q[:,mask] = ql.T
+    S[:,mask] = sl.T
+    T[:,mask] = tl.T
+    P[:,mask] = pl.T
 
     if transform:
         ntheta, nphi = sh.set_grid( M.ntheta+M.ntheta%2, M.nphi, polar_opt=1e-10)
@@ -136,9 +143,9 @@ def spec2spat_vec(M,ut,par,chx,a,b,vsymm,nthreads,
         for ir in range(M.nr):
             ur[ir,...], utheta[ir,...],  uphi[ir,...] = sh.synth( Q[ir,:], S[ir,:], T[ir,:])
 
-        return Q,S,T,ur,utheta,uphi
+        return Q,S,P,T,ur,utheta,uphi
     else:
-        return Q,S,T
+        return Q,S,P,T
 
 
 def spec2spat_scal(M,ut,par,chx,a,b,vsymm,nthreads,transform=True):
@@ -170,27 +177,28 @@ def spec2spat_scal(M,ut,par,chx,a,b,vsymm,nthreads,transform=True):
     elif M.m == 0:
         idp = np.arange( s  , lm1, 2)
 
-    # populate Plr and Tlr
+    # populate Plr
     Plr[idp,:] = np.matmul( Plj, chx.T)
 
     # (this is the SHTns way with m=mres when m is not zero)
 
     lmax2 = int( M.lmax + 1 - np.sign(M.m) )  # the true max value of l
-    nlm = ( np.sign(M.m)+1 ) * (lmax2+1) - M.m
-    Q = np.zeros([M.nr, nlm], dtype=complex)
+    # nlm = ( np.sign(M.m)+1 ) * (lmax2+1) - M.m
 
     if M.m == 0 :  #pad with zeros for the l=0 component
         ql = np.r_[ np.zeros((1,M.nr)) ,Plr ]
     else :
         ql = Plr
 
-    Q[:, np.sign(M.m)*(lmax2+1):] = ql.T
-    M.ell = np.arange(M.m,M.lmax+1)
-    norm = shtns.sht_schmidt
+    norm = shtns.sht_schmidt | shtns.SHT_NO_CS_PHASE
     mmax = int( np.sign(M.m) )
     mres = max(1,M.m)
     sh   = shtns.sht( lmax2, mmax=mmax, mres=mres, norm=norm, nthreads=nthreads )
     M.sh = sh
+
+    Q = np.zeros([M.nr, sh.nlm], dtype=complex)
+    mask = sh.m == M.m
+    Q[:,mask] = ql.T
 
     if transform:
         # SHTns init
@@ -216,8 +224,8 @@ def get_ang_momentum(M,epsilon_cmb):
     l   = M.sh.l
     m   = M.sh.m
     r   = M.r
-    Slm = M.S[0,:]
-    Tlm = M.T[0,:]
+    Slm = M.Slm[0,:]
+    Tlm = M.Tlm[0,:]
 
     Gamma_tor = np.zeros(M.sh.nlm,dtype=np.complex128)
 
@@ -237,7 +245,7 @@ def get_ang_momentum(M,epsilon_cmb):
                                          -clm2[k] * Tlm[M.sh.idx(ell-1,mm)] )
             Gamma_tor[k] *= np.conjugate(epsilon_cmb[k])
 
-    torq_pollm = np.real( 4*np.pi/(2*l+1) * (Gamma_pol)) # elementwise (array) multiplication 
+    torq_pollm = np.real( 4*np.pi/(2*l+1) * (Gamma_pol)) # elementwise (array) multiplication
     torq_torlm = np.real( 4*np.pi/(2*l+1) * (Gamma_tor))
     mask = M.sh.m == 0
     torq_pollm[~mask] *= 2
@@ -252,9 +260,9 @@ def get_coriolis_torque(M,epsilon_cmb):
     l   = M.sh.l
     m   = M.sh.m
     r   = M.r
-    Qlm = M.Q[0,:]
-    Slm = M.S[0,:]
-    Tlm = M.T[0,:]
+    Qlm = M.Qlm[0,:]
+    Slm = M.Slm[0,:]
+    Tlm = M.Tlm[0,:]
 
     Gamma_rad = np.zeros(M.sh.nlm,dtype=np.complex128)
     Gamma_con = np.zeros(M.sh.nlm,dtype=np.complex128)
@@ -271,7 +279,7 @@ def get_coriolis_torque(M,epsilon_cmb):
                 Gamma_rad[k] = M.rcmb * ( clm_rad_p2[k] * Qlm[M.sh.idx(ell+2,mm)]
                                           +clm_rad_0[k] * Qlm[M.sh.idx(ell,mm)]   )
             elif ell >= M.lmax-1:
-                Gamma_rad[k] = M.rcmb * ( clm_rad_m2[k] * Qlm[M.sh.idx(ell-2,mm)] 
+                Gamma_rad[k] = M.rcmb * ( clm_rad_m2[k] * Qlm[M.sh.idx(ell-2,mm)]
                                           +clm_rad_0[k] * Qlm[M.sh.idx(ell,mm)]    )
             else:
                 Gamma_rad[k] = M.rcmb * ( clm_rad_p2[k] * Qlm[M.sh.idx(ell+2,mm)]
@@ -290,7 +298,7 @@ def get_coriolis_torque(M,epsilon_cmb):
                 Gamma_con[k] = M.rcmb * ( clm_con_p2[k] * Slm[M.sh.idx(ell+2,mm)]
                                           +clm_con_0[k] * Slm[M.sh.idx(ell,mm)]   )
             elif ell >= M.lmax-1:
-                Gamma_con[k] = M.rcmb * ( clm_con_m2[k] * Slm[M.sh.idx(ell-2,mm)] 
+                Gamma_con[k] = M.rcmb * ( clm_con_m2[k] * Slm[M.sh.idx(ell-2,mm)]
                                           +clm_con_0[k] * Slm[M.sh.idx(ell,mm)]    )
             else:
                 Gamma_con[k] = M.rcmb * ( clm_con_p2[k] * Slm[M.sh.idx(ell+2,mm)]
