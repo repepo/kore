@@ -112,6 +112,17 @@ for k, l in enumerate(lp):
 plr = np.zeros((int((lmax-m+1)/2), nR),dtype=complex)
 np.matmul( plj, chx.T, plr )
 
+if par.magnetic:
+    rb = np.loadtxt('real_magnetic.field',usecols=solnum).reshape((2*ut.n,-1))
+    ib = np.loadtxt('imag_magnetic.field',usecols=solnum).reshape((2*ut.n,-1))
+
+    rfield = np.copy(rb[:,0])
+    ifield = np.copy(ib[:,0])
+    # Expand solution
+    [Flj, Glj] = upp.expand_reshape_sol( rflow + 1j*iflow, par.symm)
+    [ lp, lt, ll] = ut.ell(par.m, par.lmax, ut.bsymm)
+
+
 # save to file
 np.savetxt('real_pressure.field',np.real(plj).flatten())
 np.savetxt('imag_pressure.field',np.imag(plj).flatten())
