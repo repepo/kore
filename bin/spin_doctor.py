@@ -166,8 +166,8 @@ def main(ncpus):
             Wcmp[i] = par.OmgTau**2 * par.BV2_comp * Wcmp0
             
             # Viscous torques
-            vtorq[i] = par.Ek * np.dot( ut.gamma_visc(0,0,0), u_sol)  # need to double check the constants here
-            vtorq_ic[i] = par.Ek * np.dot( ut.gamma_visc_icb(par.ricb), u_sol)
+            vtorq[i] = par.OmgTau * par.Ek * np.dot( ut.gamma_visc(0,0,0), u_sol)  # need to double check the constants here
+            vtorq_ic[i] = par.OmgTau * par.Ek * np.dot( ut.gamma_visc_icb(par.ricb), u_sol)
 
             press0[i] = udgn[6][0]
 
@@ -180,13 +180,13 @@ def main(ncpus):
             Mdfs[i] = par.OmgTau * par.Em * Mdfs0
 
             if ((par.mantle == 'TWA') and (par.m==0) and (par.symm==1)):
-                mtorq[i] = par.Le2 * np.dot( ut.gamma_magnetic(), b_sol )  # need to double check the constants here
+                mtorq[i] = par.OmgTau**2 * par.Le2 * np.dot( ut.gamma_magnetic(), b_sol )  # need to double check the constants here
 
             if ((par.mantle == 'TWA') and (par.m==1) and (par.symm==1)):
-                mtorq[i] = par.Le2 * np.dot( ut.gamma_magnetic(), b_sol)
+                mtorq[i] = par.OmgTau**2 * par.Le2 * np.dot( ut.gamma_magnetic(), b_sol)
 
             if (par.innercore in ['conducting, Chebys', 'TWA']) and ((par.m==0) and (par.symm==1)):
-                mtorq_ic[i] = par.Le2 * np.dot( ut.gamma_magnetic_ic(), b_sol )
+                mtorq_ic[i] = par.OmgTau**2 * par.Le2 * np.dot( ut.gamma_magnetic_ic(), b_sol )
 
 
         if par.thermal:
