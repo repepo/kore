@@ -176,7 +176,6 @@ def main(ncpus):
 
             [ ME0, Mdfs0, Indu[i], Brms ] = np.sum( bdgn, 0)
             ME[i]   = ME0   * par.OmgTau**2 * par.Le2
-            #Dohm = Dohm0 * par.OmgTau**3 * par.Le2 * par.Em
             Mdfs[i] = par.OmgTau * par.Em * Mdfs0
 
             if ((par.mantle == 'TWA') and (par.m==0) and (par.symm==1)):
