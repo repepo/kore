@@ -45,8 +45,6 @@ def BVprof(r,args=None):
         #    out[i] = -0.5*(1 - np.tanh( 4*(abs(x)-rc)/h  ))
     return out
 
-
-
 #------------------------------------------
 # Anelastic profiles
 #------------------------------------------
@@ -245,6 +243,23 @@ def buoFac(r):
         out = density(r)*alpha(r)*temperature(r)*gravity(r)
     return out
 
+def h_mag(r):
+    if par.B0 == "axial":
+        out = 0.5*r
+    elif par.B0 == "dipole":
+        out = 0.5/r**2
+    elif par.B0 == "Luo_S1":
+        out = r*(5-3*r**2)
+    elif par.B0 == "G21 dipole":
+        out = r/6 - r**3/10
+    elif par.B0 == "Luo_S2":
+        out = r**2*(157-296*r**2+143*r**4)
+    else: 
+        # Print error message if other choice is made (FDM not coded yet)
+        print("Error: B0 not recognized")
+    
+    cnorm = ut.B0_norm()
+    return cnorm * out
 
 
 #------------------------------------------

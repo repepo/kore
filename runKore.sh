@@ -13,4 +13,7 @@ fi
 ./bin/submatrices.py $ncpus
 mpiexec -n $ncpus ./bin/assemble.py
 mpiexec -n $ncpus ./bin/solve.py $opts
+
+./get_pressure.py 0 100
+
 #./postprocess.py
