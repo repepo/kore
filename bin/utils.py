@@ -1290,7 +1290,7 @@ def gamma_visc(a1,a2,a3):
             out[0,colT:colT+par.N] = tol7
 
     # axial torque for a spherical cmb, take 2*real after multiplying by the solution vector
-    if par.m == 0 and par.symm == 1:
+    if (par.m == 0 or par.m == 1) and par.symm == 1:
         R = 1  #rcmb
         # axial torque depends on the l=1, m=0 toroidal component only
         out[0,n0:n0+par.N] = (8*np.pi/3)*(R**2)*( R*T1 - T0 )
