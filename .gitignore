@@ -4,4 +4,3 @@
 *.field
 *.dat
 *__pycache__*
-bin/parameters.py
