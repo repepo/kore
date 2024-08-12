@@ -176,7 +176,7 @@ def main(ncpus):
 
             [ ME0, Mdfs0, Indu[i], Brms ] = np.sum( bdgn, 0)
             ME[i]   = ME0   * par.OmgTau**2 * par.Le2
-            Mdfs[i] = par.OmgTau * par.Em * Mdfs0
+            Mdfs[i] = par.OmgTau**3 * par.Em * par.Le2 * Mdfs0
 
             if ((par.mantle == 'TWA') and (par.m==0) and (par.symm==1)):
                 mtorq[i] = par.OmgTau**2 * par.Le2 * np.dot( ut.gamma_magnetic(), b_sol )  # need to double check the constants here
