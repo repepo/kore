@@ -46,12 +46,12 @@ def default_cmap(field):
             cm = cmr.ocean
         except:
             cm = 'Blues_r'
-    elif field in ['press','pressure']:
-        try:
-            import cmasher as cmr
-            cm = cmr.amber
-        except:
-            cm = 'amber'
+    elif field in ['p','press','pressure']:
+        # try:
+        #     import cmasher as cmr
+        #     cm = cmr.freeze
+        # except:
+        cm = 'PuOr'
 
     return cm
 
