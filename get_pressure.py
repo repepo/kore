@@ -109,6 +109,9 @@ for k, l in enumerate(lp):
         idx = np.searchsorted(lt,l+1) # find the index of l+1 in lt
         plj[k,:] += -2*(l+2)/(2*l+3)/(l+1)*np.sqrt((l+m+1)*(l-m+1))*rTlj[idx,:]
 
+# =========================
+# QUADRUPOLE NOT CODED YET!
+#==========================
 if par.magnetic and par.Le2!=0:
     rb = np.loadtxt('real_magnetic.field',usecols=solnum).reshape((2*ut.n,-1))
     ib = np.loadtxt('imag_magnetic.field',usecols=solnum).reshape((2*ut.n,-1))

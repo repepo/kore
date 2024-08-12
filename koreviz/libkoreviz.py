@@ -334,3 +334,14 @@ def get_coriolis_torque(M,epsilon_cmb):
 
     return torq_rad, torq_con, torq_tor
 
+def get_pressure_torque(M,epsilon_cmb):
+
+    l   = M.sh.l
+    plm = M.Qlm[0,:] # Qlm is the pressure, 0 is the index of the cmb radius
+
+    torq_plm = np.imag( 4*np.pi/(2*l+1) * np.conjugate(epsilon_cmb) * plm * M.rcmb**3) # elementwise (array) multiplication
+    mask = M.sh.m == 0
+    torq_plm[~mask] *= 2
+    torq_p = np.sum(torq_plm)
+
+    return torq_p

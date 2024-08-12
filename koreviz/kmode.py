@@ -99,7 +99,7 @@ class kmode:
             field='composition'
             vsymm = par.symm
             vec = False
-        elif field in ['press','pressure']:
+        elif field in ['p','press','pressure']:
             a = np.loadtxt('real_pressure.field',usecols=solnum)
             b = np.loadtxt('imag_pressure.field',usecols=solnum)
             field='pressure'
