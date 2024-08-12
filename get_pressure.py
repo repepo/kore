@@ -109,6 +109,8 @@ for k, l in enumerate(lp):
         idx = np.searchsorted(lt,l+1) # find the index of l+1 in lt
         plj[k,:] += -2*(l+2)/(2*l+3)/(l+1)*np.sqrt((l+m+1)*(l-m+1))*rTlj[idx,:]
 
+# pljmag = np.zeros(np.shape(Plj),dtype=complex)
+
 # =========================
 # QUADRUPOLE NOT CODED YET!
 #==========================
@@ -143,11 +145,11 @@ if par.magnetic and par.Le2!=0:
     for k, l in enumerate(ltb):
         hdGlj[k,:] = ut.cheb2Product(h0,ut.Dcheb(Glj[k,:], ricb, rcmb),tol)
         h1Glj[k,:] = ut.cheb2Product(h1,Glj[k,:],tol)
-        irhGlj[k,:] = ut.cheb2Product(ir,ut.cheb2Product(ir,h0, tol), tol)
+        irhGlj[k,:] = ut.cheb2Product(ir,ut.cheb2Product(h0,Glj[k,:], tol), tol)
     
     for k, l in enumerate(lp):
         # diagonal terms
-        plj[k,:] += par.Le2*(1j*m*(l**2+l+2)/(l*(l+1))*irhGlj[k,:])
+        plj[k,:] += par.Le2*(1j*m*(l**2+l+2)/(l*(l+1))*irhGlj[k,:]+2*1j*m/(l*(l+1))*h1Glj[k,:])
         # off-diagonal terms
         if l-1 in ltb:
             idx = np.searchsorted(ltb,l-1) # find the index of l-1 in lt
