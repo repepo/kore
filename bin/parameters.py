@@ -1,4 +1,5 @@
 import numpy as np
+import sys
 #import targets as tg
 
 
@@ -31,6 +32,7 @@ m = 1
 symm = -1
 
 # Inner core radius, CMB radius is unity.
+
 ricb = 0.35
 
 # Inner core spherical boundary conditions
@@ -43,9 +45,30 @@ bco = 1
 
 # Ekman number (use 2* to match Dintrans 1999). Ek can be set to 0 if ricb=0
 # CoriolisNumber = 1.2e3
-# Ek_gap = 2/CoriolisNumber
+# Ek = 2/CoriolisNumber
+# Ek_gap = 2e-4
 # Ek = Ek_gap*(1-ricb)**2
-Ek = 10**-4
+
+Ek = 1e-3
+
+anelastic = 0
+variable_viscosity = 0
+
+#---------------------------------------------------------------------------------------
+# Options for setting interior profiles and options for a polytropic gas, Nrho and polind
+# are ignored when an interior model other than polytrope is used
+#--------------------------------------------------------------------------------------
+
+interior_model = 'polytrope' # Interior model, available options are: polytrope, jupiter, pns
+r_cutoff = 0.99 #Cut-off radius for interior model fit while using jupiter or pns models
+
+Nrho = 2.0 # ln(\rho_i/\rho_o), number of density scale heights
+polind = 2.0 # Polytropic index : p = \rho^(1 + 1/n) , p = \rho T for ideal gas, R = 1
+autograv = 0 # Automatic computation of gravity
+g_icb = 0.0 # Value of g at icb, is set to zero when ricb = 0
+g0 = 0; g1 = 0; g2=1 # Easy way to control gravity, g(r) = g0 + g1 r/rcmb + g2 rcmb^2/r^2
+
+#--------------------------------------------------------------------------------------
 
 forcing = 0  # Uncomment this line for eigenvalue problems
 # forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
@@ -136,7 +159,7 @@ cnorm = 'rms_cmb'                     # Sets the radial rms field at the CMB as 
 thermal = 0  # Use 1 or 0 to include or not the temperature equation and the buoyancy force (Boussinesq)
 
 # Prandtl number: ratio of viscous to thermal diffusivity
-Prandtl = 1.0
+Prandtl = 1.
 # "Thermal" Ekman number
 Etherm = Ek/Prandtl
 
@@ -148,29 +171,48 @@ heating = 'internal'      # dT/dr = -beta * r         temp_scale = beta * ro**2
 
 # Rayleigh number as Ra = alpha * g0 * ro^3 * temp_scale / (nu*kappa), alpha is the thermal expansion coeff,
 # g0 the gravity accel at ro, ro is the cmb radius (the length scale), nu is viscosity, kappa is thermal diffusivity.
-Ra = 0.0
+# Ra_gap = 0.0
+# Ra = Ra_gap / (1-ricb)**3
 # Ra_Silva = 0.0; Ra = Ra_Silva * (1/(1-ricb))**6
 # Ra_Monville = 0.0; Ra = 2*Ra_Monville
 
 # Alternatively, you can specify directly the squared ratio of a reference Brunt-Väisälä freq. and the rotation rate.
 # The reference Brunt-Väisälä freq. squared is defined as -alpha*g0*temp_scale/ro. See the non-dimensionalization notes
 # in the documentation.
+
 # BV2 = -Ra * Ek**2 / Prandtl
 BV2 = 0.0
 
+
+entropyGrad = 'auto' # Automatically compute equilibrium entropy gradient
+
+if entropyGrad == 'ssl':
+
+    ampStrat  = 0
+    rStrat    = 0.6
+    thickStrat= 0.1
+    slopeStrat= 75
+
+    dent_args = [ampStrat,rStrat,thickStrat,slopeStrat]
+
 # Additional arguments for 'Two zone' or 'User defined' case (modify if needed).
-rc  = 0.7  # transition radius
-h   = 0.1  # transition width
-rsy = -1    # radial symmetry
-args = [rc, h, rsy]
+rc   = 0.7  # transition radius
+h    = 0.1  # transition width
+sym  = -1    # radial symmetry
+args = [rc, h, sym]
 
 # Thermal boundary conditions
 # 0 for isothermal, theta=0
 # 1 for constant heat flux, (d/dr)theta=0
-bci_thermal = 1   # ICB
-bco_thermal = 1   # CMB
+bci_thermal = 0   # ICB
+bco_thermal = 0   # CMB
 
+#Set boundary conditions to solve for equilibrium entropy gradient
 
+if entropyGrad == 'auto':
+
+    bci_thermal_val = 1
+    bco_thermal_val = 0
 
 # ----------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------- Compositional parameters
@@ -180,7 +222,7 @@ compositional = 0  # Use 1 or 0 to include compositional transport or not (Bouss
 # Schmidt number: ratio of viscous to compositional diffusivity
 Schmidt = 1.0
 # "Compositional" Ekman number
-Ecomp = Ek/Schmidt 
+Ecomp = Ek/Schmidt
 
 # Background isentropic composition gradient dC/dr choices, uncomment the appropriate line below:
 comp_background = 'internal'      # dC/dr = -beta * r         comp_scale = beta * ro**2
@@ -197,10 +239,10 @@ Ra_comp = 0.0
 BV2_comp = 0.0
 
 # Additional arguments for 'Two zone' or 'User defined' case (modify if needed).
-rcc  = 0.7  # transition radius
-hc   = 0.1  # transition width
-rsyc = -1    # radial symmetry
-args_comp = [rcc, hc, rsyc]
+rc  = 0.7  # transition radius
+h   = 0.1  # transition width
+sym = -1    # radial symmetry
+args_comp = [rc, h, sym]
 
 # Compositional boundary conditions
 # 0 for constant composition, xi=0
@@ -238,7 +280,7 @@ g = 1.0
 lmax = int( 2*ncpus*( np.floor_divide( g*N, 2*ncpus ) ) + m - 1 )
 # If manually setting the max angular degree lmax, then it must be even if m is odd,
 # and lmax-m+1 should be divisible by 2*ncpus
-# lmax = 8
+# lmax = 7
 
 
 
@@ -270,7 +312,7 @@ which_eigenpairs = 'TM'  # Use 'TM' for shift-and-invert
 # M magnitude, R real, I imaginary
 
 # Number of desired eigenvalues
-nev = 3
+nev = 4
 
 # Number of vectors in Krylov space for solver
 # ncv = 100
@@ -282,6 +324,15 @@ maxit = 50
 tol = 1e-15
 # Tolerance for the thermal/compositional matrix
 tol_tc = 1e-6
+
+# Check if anything is broken
+
+def runChecks():
+    if ricb == 0 and g2 == 1:
+        print("Cannot have 1/r^2 gravity when ricb = 0")
+        sys.exit()
+
+runChecks()
 
 # ----------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
