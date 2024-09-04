@@ -57,6 +57,7 @@ variable_viscosity = 0
 #---------------------------------------------------------------------------------------
 # Options for setting interior profiles and options for a polytropic gas, Nrho and polind
 # are ignored when an interior model other than polytrope is used
+# All these options are only for anelastic models, ignored if anelastic=0
 #--------------------------------------------------------------------------------------
 
 interior_model = 'polytrope' # Interior model, available options are: polytrope, jupiter, pns
@@ -66,7 +67,7 @@ Nrho = 2.0 # ln(\rho_i/\rho_o), number of density scale heights
 polind = 2.0 # Polytropic index : p = \rho^(1 + 1/n) , p = \rho T for ideal gas, R = 1
 autograv = 0 # Automatic computation of gravity
 g_icb = 0.0 # Value of g at icb, is set to zero when ricb = 0
-g0 = 0; g1 = 0; g2=1 # Easy way to control gravity, g(r) = g0 + g1 r/rcmb + g2 rcmb^2/r^2
+g0 = 0; g1 = 1; g2=0 # Easy way to control gravity, g(r) = g0 + g1 r/rcmb + g2 rcmb^2/r^2
 
 #--------------------------------------------------------------------------------------
 
@@ -324,15 +325,6 @@ maxit = 50
 tol = 1e-15
 # Tolerance for the thermal/compositional matrix
 tol_tc = 1e-6
-
-# Check if anything is broken
-
-def runChecks():
-    if ricb == 0 and g2 == 1:
-        print("Cannot have 1/r^2 gravity when ricb = 0")
-        sys.exit()
-
-runChecks()
 
 # ----------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
