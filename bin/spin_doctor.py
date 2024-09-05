@@ -179,11 +179,9 @@ def main(ncpus):
             Indu[i] = Indu0 * par.OmgTau**2 * par.Le2
             Mdfs[i] = par.OmgTau**3 * par.Le2 * par.Em * Mdfs0
 
-            if ((par.mantle == 'TWA') and (par.m==0 or par.m==1) and (par.symm==1)):
-                mtorq[i] = par.OmgTau**2 * par.Le2 * np.dot( ut.gamma_magnetic(), b_sol )  # need to double check the constants here
-
-            if (par.innercore in ['conducting, Chebys', 'TWA']) and ((par.m==0) and (par.symm==1)):
-                mtorq_ic[i] = par.OmgTau**2 * par.Le2 * np.dot( ut.gamma_magnetic_ic(), b_sol )
+            # Magnetic torques
+            mtorq[i] = par.OmgTau**2 * par.Le2 * np.dot( ut.gamma_magnetic(), b_sol )  # need to double check the constants here
+            mtorq_ic[i] = par.OmgTau**2 * par.Le2 * np.dot( ut.gamma_magnetic_ic(), b_sol )
 
         if par.thermal:
 
