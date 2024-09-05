@@ -1289,7 +1289,7 @@ def gamma_visc(a1,a2,a3):
         elif l==7 and par.m==1:
             out[0,colT:colT+par.N] = tol7
 
-    # axial or equatorial torque for a spherical cmb, take 2*real after multiplying by the solution vector
+    # axial or equatorial torque for a spherical cmb, take the real part after multiplying by the solution vector
     if (par.m == 0 or par.m == 1) and par.symm == 1:
         R = 1  #rcmb
         # axial torque depends on the l=1 toroidal component only
@@ -1323,6 +1323,8 @@ def gamma_magnetic():
     '''
     Axial magnetic torque on the mantle (spherical) when there is a thin conductive layer at bottom. Needs m=0 and symm=1.
     '''
+
+    out = np.zeros((1,n0+n0), dtype=complex)
 
     if (par.magnetic==1 and par.m == 0 and par.symm==1 and par.mantle=='TWA'):
 
@@ -1362,19 +1364,14 @@ def gamma_magnetic():
 
         elif B0_l == 2:  # Quadrupole background field, induced magnetic field b is thus symmetric
             R = 1
+            if par.forcing == 0:
+                parity = np.sign(par.itau)
+            else:
+                parity = np.sign(par.forcing_frequency)
             # the torque is prop. to the l=1, l=3 toroidal component and l=2 poloidal component of b
             out[0,n0:n0+par.N]          = (8*np.pi/5) * (R**2) * G0 * h0_cmb #l=1 toroidal
             out[0,n0+par.N:n0+2*par.N]  = (96*np.sqrt(6)*np.pi/35) * (R**2) * G0 * h0_cmb #l=3 toroidal
-            out[0,0:par.N]              = np.sign(par.itau) * (24j*np.sqrt(3)*np.pi/5) * (R**2) * (F0 * h1_cmb - F1 * h0_cmb) #l=2 poloidal
-
-    else:
-        print('else')
-
-        out = 0
-
-    # Take the product between the output of this function and the solution for b to obtain the dimensionless torque
-    # Then multiply by Elsasser*R_cmb^3*rho*eta to make the torque dimensional
-    # (rho is the density and eta is the magnetic diffusivity, both of the fluid core).
+            out[0,0:par.N]              = parity * (24j*np.sqrt(3)*np.pi/5) * (R**2) * (F0 * h1_cmb - F1 * h0_cmb) #l=2 poloidal
 
     return out
 
