@@ -127,7 +127,7 @@ if par.magnetic and par.Le2!=0:
     irhdFlj = np.zeros(np.shape(Flj),dtype=complex)
     ir2hFlj = np.zeros(np.shape(Flj),dtype=complex)
     irh1Flj = np.zeros(np.shape(Flj),dtype=complex)
-    h2Flj = np.zeros(np.shape(Flj),dtype=complex)
+    hd2Flj = np.zeros(np.shape(Flj),dtype=complex)
 
     hdGlj = np.zeros(np.shape(Glj),dtype=complex)
     h1Glj = np.zeros(np.shape(Glj),dtype=complex)
@@ -140,7 +140,7 @@ if par.magnetic and par.Le2!=0:
 
     for k, l in enumerate(lpb):
         irhdFlj[k,:] = ut.cheb2Product(ir,ut.cheb2Product(h0,ut.Dcheb(Flj[k,:], ricb, rcmb),tol),tol)
-
+        hd2Flj[k,:] = ut.cheb2Product(h0,ut.Dcheb(ut.Dcheb(Flj[k,:], ricb, rcmb), ricb, rcmb),tol)
 
     for k, l in enumerate(ltb):
         hdGlj[k,:] = ut.cheb2Product(h0,ut.Dcheb(Glj[k,:], ricb, rcmb),tol)
@@ -149,15 +149,14 @@ if par.magnetic and par.Le2!=0:
     
     for k, l in enumerate(lp):
         # diagonal terms
-        plj[k,:] += par.Le2*(1j*m*(l**2+l+2)/(l*(l+1))*irhGlj[k,:]+2*1j*m/(l*(l+1))*h1Glj[k,:])
+        plj[k,:] += par.Le2*(1j*m*(l**2+l+2)/(l*(l+1))*irhGlj[k,:]+1j*m*h1Glj[k,:]+2*1j*m/(l*(l+1))*hdGlj[k,:])
         # off-diagonal terms
         if l-1 in ltb:
             idx = np.searchsorted(ltb,l-1) # find the index of l-1 in lt
-            plj[k,:] += -par.Le2*((l-1)*np.sqrt(l**2-m**2)/(2*l-1)*(2*l*ir2hFlj[idx,:]-2*irh1Flj[idx,:]-h2Flj[idx,:]))
+            plj[k,:] += par.Le2*(-2*(l-1)**2*np.sqrt(l**2-m**2)/(2*l-1)*ir2hFlj[idx,:]+4*(l-1)*np.sqrt(l**2-m**2)/l/(2*l-1)*irhdFlj[idx,:]+2*(l-1)*np.sqrt(l**2-m**2)/l/(2*l-1)*hd2Flj[idx,:])
         if l+1 in ltb:
             idx = np.searchsorted(ltb,l+1) # find the index of l+1 in lt
-            plj[k,:] += -par.Le2*((l+2)*np.sqrt((l+1)**2-m**2)/(2*l+3)*(2*(l+1)*ir2hFlj[idx,:]+2*irh1Flj[idx,:]+h2Flj[idx,:]))
-
+            plj[k,:] += par.Le2*(-2*(l+2)**2*np.sqrt((l+1)**2-m**2)/(2*l+3)*ir2hFlj[idx,:]+4*(l+2)*np.sqrt((l+1)**2-m**2)/(l+1)/(2*l+3)*irhdFlj[idx,:]+2*(l+2)*np.sqrt((l+1)**2-m**2)/(l+1)/(2*l+3)*hd2Flj[idx,:])
 
 # switch to spatial domain
 plr = np.zeros((int((lmax-m+1)/2), nR),dtype=complex)
