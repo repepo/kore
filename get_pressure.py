@@ -111,9 +111,6 @@ for k, l in enumerate(lp):
 
 # pljmag = np.zeros(np.shape(Plj),dtype=complex)
 
-# =========================
-# QUADRUPOLE NOT CODED YET!
-#==========================
 if par.magnetic and par.Le2!=0:
     rb = np.loadtxt('real_magnetic.field',usecols=solnum).reshape((2*ut.n,-1))
     ib = np.loadtxt('imag_magnetic.field',usecols=solnum).reshape((2*ut.n,-1))
@@ -147,16 +144,34 @@ if par.magnetic and par.Le2!=0:
         h1Glj[k,:] = ut.cheb2Product(h1,Glj[k,:],tol)
         irhGlj[k,:] = ut.cheb2Product(ir,ut.cheb2Product(h0,Glj[k,:], tol), tol)
     
-    for k, l in enumerate(lp):
-        # diagonal terms
-        plj[k,:] += par.Le2*(1j*m*(l**2+l+2)/(l*(l+1))*irhGlj[k,:]+1j*m*h1Glj[k,:]+2*1j*m/(l*(l+1))*hdGlj[k,:])
-        # off-diagonal terms
-        if l-1 in ltb:
-            idx = np.searchsorted(ltb,l-1) # find the index of l-1 in lt
-            plj[k,:] += par.Le2*(-2*(l-1)**2*np.sqrt(l**2-m**2)/(2*l-1)*ir2hFlj[idx,:]+4*(l-1)*np.sqrt(l**2-m**2)/l/(2*l-1)*irhdFlj[idx,:]+2*(l-1)*np.sqrt(l**2-m**2)/l/(2*l-1)*hd2Flj[idx,:])
-        if l+1 in ltb:
-            idx = np.searchsorted(ltb,l+1) # find the index of l+1 in lt
-            plj[k,:] += par.Le2*(-2*(l+2)**2*np.sqrt((l+1)**2-m**2)/(2*l+3)*ir2hFlj[idx,:]+4*(l+2)*np.sqrt((l+1)**2-m**2)/(l+1)/(2*l+3)*irhdFlj[idx,:]+2*(l+2)*np.sqrt((l+1)**2-m**2)/(l+1)/(2*l+3)*hd2Flj[idx,:])
+    if par.B0=='Luo_S2': # quadrupole
+        for k, l in enumerate(lp):
+            # diagonal terms
+            plj[k,:] += par.Le2*(6*(l**2+l-3)*(l**2+l-3*m**2)/(4*l*(l+1)/l/(l+1)))*(hd2Flj[k,:]+2*irhdFlj[k,:]-l*(l+1)*ir2hFlj[k,:])
+            # off-diagonal terms
+            if l-2 in lpb:
+                idx = np.searchsorted(lpb,l-2) # find the index of l-2 in lpb
+                plj[k,:] += par.Le2*(9*(l-2)*np.sqrt((l-m-1)*(l-m)*(l+m-1)*(l+m))/l/(4*l*(l-2)+3))*(hd2Flj[idx,:]+2*irhdFlj[idx,:]-(l-1)*(l-2)*ir2hFlj[idx,:])
+            if l-1 in ltb:
+                idx = np.searchsorted(ltb,l-1) # find the index of l-1 in ltb
+                plj[k,:] += par.Le2*(3*1j*m*np.sqrt((l-m)*(l+m))/l/(l+1)/(2*l-1))*(6*hdGlj[idx,:]+l*(l-1)*h1Glj[idx,:]+(l*(l-1)+6)*irhGlj[idx,:])
+            if l+1 in ltb:
+                idx = np.searchsorted(ltb,l+1) # find the index of l+1 in ltb
+                plj[k,:] += par.Le2*(3*1j*m*np.sqrt((l-m+1)*(l+m+1))/l/(l+1)/(2*l+3))*(6*hdGlj[idx,:]+(l+1)*(l+2)*h1Glj[idx,:]+(l*(l+3)+8)*irhGlj[idx,:])
+            if l+2 in ltb:
+                idx = np.searchsorted(lpb,l+2) # find the index of l+2 in ltb
+                plj[k,:] += par.Le2*(9*(l+3)*np.sqrt((l-m+1)*(l-m+2)*(l+m+1)*(l+m+2))/(l+1)/(2*l+3)/(2*l+5))*(hd2Flj[idx,:]+2*irhdFlj[idx,:]-(l+2)*(l+3)*ir2hFlj[idx,:])
+    else: # dipole
+        for k, l in enumerate(lp):
+            # diagonal terms
+            plj[k,:] += par.Le2*(1j*m*(l**2+l+2)/(l*(l+1))*irhGlj[k,:]+1j*m*h1Glj[k,:]+2*1j*m/(l*(l+1))*hdGlj[k,:])
+            # off-diagonal terms
+            if l-1 in lpb:
+                idx = np.searchsorted(lpb,l-1) # find the index of l-1 in lt
+                plj[k,:] += par.Le2*(-2*(l-1)**2*np.sqrt(l**2-m**2)/(2*l-1)*ir2hFlj[idx,:]+4*(l-1)*np.sqrt(l**2-m**2)/l/(2*l-1)*irhdFlj[idx,:]+2*(l-1)*np.sqrt(l**2-m**2)/l/(2*l-1)*hd2Flj[idx,:])
+            if l+1 in lpb:
+                idx = np.searchsorted(lpb,l+1) # find the index of l+1 in lt
+                plj[k,:] += par.Le2*(-2*(l+2)**2*np.sqrt((l+1)**2-m**2)/(2*l+3)*ir2hFlj[idx,:]+4*(l+2)*np.sqrt((l+1)**2-m**2)/(l+1)/(2*l+3)*irhdFlj[idx,:]+2*(l+2)*np.sqrt((l+1)**2-m**2)/(l+1)/(2*l+3)*hd2Flj[idx,:])
 
 # switch to spatial domain
 plr = np.zeros((int((lmax-m+1)/2), nR),dtype=complex)
