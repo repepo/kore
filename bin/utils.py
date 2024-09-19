@@ -1,5 +1,4 @@
-from scipy.linalg import toeplitz
-from scipy.linalg import hankel
+import scipy.linalg as las
 import scipy.optimize as so
 import scipy.sparse as ss
 import scipy.special as scsp
@@ -1036,7 +1035,8 @@ def Mlam(coefficients: np.ndarray,
                          + str(vector_parity) + '.')
 
     if truncation_order is None:
-        truncation_order = len(coefficients)-1 # There are no issues with truncation order / N here because it is all handled internally and there is no interfacing with the outside.
+        truncation_order = len(coefficients)-1 # There are no issues with "truncation order vs. N" here because it is all
+        # handled internally and there is no interfacing with the outside.
 
     if sum(abs(coefficients)) == 0.0:
 
