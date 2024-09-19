@@ -859,7 +859,8 @@ def Dlam(derivative_order: int,
         -> ss.csr_matrix:
     '''
     Returns the :math:`\\mathbf{\\mathcal D}_\\lambda` matrix of derivatives in Gegenbauer space. Direct
-    implementation of its definition in Olver and Townsend (2013).
+    implementation of its definition in Olver and Townsend (2013). The final if-else clause takes care of the fact
+    that Gegenbauer polynomials are evaluated at a coordinate x that is a function of r, and therefore the chain rule needs to be applied.
 
     :param derivative_order: The order :math:`\\lambda` of the derivative.
     :param truncation_order: The maximum order of the expansion of the result. Sets the size of the operator.
@@ -882,6 +883,11 @@ def Dlam(derivative_order: int,
         diagonal = np.array(range(derivative_order, truncation_order + 1))
         to_return = ss.diags(diagonal, offsets=derivative_order).A
         to_return = 2.0 ** (derivative_order - 1) * scsp.factorial(derivative_order - 1) * to_return
+
+    if par.ricb == 0:
+        to_return = to_return * (1/rcmb)**derivative_order  # ok when rcmb is not 1
+    else:
+        to_return = to_return * (2./(rcmb-par.ricb))**derivative_order
 
     return ss.csr_matrix(to_return)
 
