@@ -7,6 +7,8 @@ import scipy.fftpack as sft
 import numpy.polynomial.chebyshev as ch
 import numpy as np
 import parameters as par
+from typing import Union, Callable, Any
+from warnings import warn
 
 '''
 A library of various function definitions and utilities
@@ -852,176 +854,285 @@ def B0_norm():
 
 
 
-def Dlam(lamb,N):
+def Dlam(derivative_order: int,
+         truncation_order: int) \
+        -> ss.csr_matrix:
     '''
-    Order lamb (>=1) derivative matrix, size N*N
+    Returns the :math:`\\mathbf{\\mathcal D}_\\lambda` matrix of derivatives in Gegenbauer space. Direct
+    implementation of its definition in Olver and Townsend (2013).
+
+    :param derivative_order: The order :math:`\\lambda` of the derivative.
+    :param truncation_order: The maximum order of the expansion of the result. Sets the size of the operator.
+
     '''
-    if par.ricb == 0:
-        const1 = (1/rcmb)**lamb  # ok when rcmb is not 1
+
+    truncation_order = truncation_order - 1  # This line is here because I (Jorge) use "truncation order" to mean something slightly different from what the code means by "N".
+
+    if derivative_order < 0:
+        raise ValueError('(derivative_operator): Negative derivative order. Invalid.')
+
+    elif derivative_order > truncation_order:
+        warn('(derivative_operator): Derivative order higher than truncation order. Result is the zero array.')
+        to_return = np.zeros([truncation_order+1, truncation_order+1])
+
+    elif derivative_order == 0:
+        to_return = np.eye(truncation_order+1)
+
     else:
-        const1 = (2./(rcmb-par.ricb))**lamb
-    const2 = scsp.factorial(lamb-1.)*2**(lamb-1.)
-    tmp = lamb + np.arange(0,N-lamb)
+        diagonal = np.array(range(derivative_order, truncation_order + 1))
+        to_return = ss.diags(diagonal, offsets=derivative_order).A
+        to_return = 2.0 ** (derivative_order - 1) * scsp.factorial(derivative_order - 1) * to_return
 
-    return const1*const2*ss.diags(tmp,lamb, format='csr')
+    return ss.csr_matrix(to_return)
 
 
 
-def Slam(lamb,N):
+def Slam(basis_index: int,
+         truncation_order: int) \
+        -> ss.csr_matrix:
     '''
-    Converts C^(lamb) series coefficients to C^(lamb+1) series
+    Direct implementation of :math:`\\mathbf{\\mathcal{S}}_\\lambda` from Olver and Townsend (2013). Pre-multiplies a
+    vector of coefficients of a function in the :math:`C^{(\\lambda)}` and returns the vector of coefficients in the
+    :math:`C^{(\\lambda+1)}` basis.
+
+    :param basis_index: The Gegenbauer family index :math;`\\lambda`.
+    :param truncation_order: The maximum order of the expansion of the result. Sets the size of the operator.
+
     '''
 
-    if lamb == 0:
-        diag0 = 0.5*np.ones(N); diag0[0]=1.
-        diag1 = -0.5*np.ones(N-2)
+    truncation_order = truncation_order - 1 # This line is here because I (Jorge) use "truncation order" to mean something slightly different from what the code means by "N".
+
+    if basis_index < 0:
+        raise ValueError('(rotation_operator): Negative basis order. Invalid.')
+
+    if basis_index == 0:
+
+        diagonal0 = 0.5 * np.ones(truncation_order + 1)
+        diagonal0[0] = 1.0
+        diagonal2 = -0.5 * np.ones(truncation_order - 1)
+
     else:
-        tmp = np.arange(0.,N)
-        diag0 = lamb/(lamb+tmp)
-        diag1 = -lamb/(lamb+tmp[2:])
 
-    return ss.diags([diag0,diag1],[0,2], format='csr')
+        diagonal0 = basis_index / (basis_index + np.array(range(truncation_order + 1)))
+        diagonal2 = -basis_index / (basis_index + np.array(range(2, truncation_order + 1)))
+
+    return ss.diags([diagonal0, diagonal2], offsets=[0, 2], format = 'csr')
 
 
 
-def csl0( s, lamb, j, k):
+def starting_multiplication_coefficient(basis_index: int,
+                                        subindex: int,
+                                        idx1: int,
+                                        idx2: int) \
+        -> float:
     '''
-    Computes the c_s^lambda(j,k) needed for the Mlam (multiplication) matrix
-    '''
+    Computes the starting :math:`c_s^\\lambda(j,k)` coefficient for the matrix operator entry. This is the direct
+    implementation of Eq.(3.9) from Olver and Townsend (2013). Note that what is called :math:`j` in this function
+    according to the definition of :math:`c_s^\\lambda(j,k)` corresponds to the **column** of the matrix,
+    confusingly denoted :math:`k` outside of this function
 
-    p1=1; p3=1
-    for t in range(0,s):
-        p1 = p1*(lamb+t)/float(1+t)
-        p3 = p3*(2*lamb+j+k-2*s+t)/float(lamb+j+k-2*s+t)
-
-    p2=1; p4=1
-    for t in range(0,j-s):
-        p2 = p2*(lamb+t)/float(1+t)
-        p4 = p4*(k-s+1+t)/float(k-s+lamb+t)
-
-    return p1*p2*p3*p4*(j+k+lamb-2.*s)/float(j+k+lamb-s)
-
-
-
-def csl(svec,lamb,j,k):
-    '''
-    recursion for c_s^lambda, starting from c_svec[0]^lambda(j,k)
-    svec must be a vector of s values
-    **do not confuse with the (j,k) entry of the Mlam matrix**
-    '''
-    out = np.zeros(np.shape(svec))
-    out[0] = csl0(svec[0], lamb, j, k)
-    for i,s in enumerate(svec[0:-1],1) :
-        tmp1 = (j+k+lamb-s)*(lamb+s)*(j-s)*(2*lamb+j+k-s)*(k-s+lamb)
-        tmp2 = (j+k+lamb-s+1)*(s+1)*(lamb+j-s-1)*(lamb+j+k-s)*(k-s+1)
-        out[i] = out[i-1]*tmp1/float(tmp2)
-        k=k+2
-
-    return out
-
-
-
-def Mlam(a0,lamb,vector_parity):
-    '''
-    Multiplication matrix. a0 are the cofficients in the C^(lamb) basis and lamb
-    is the order of the C^(lamb) basis. (This basis should match the
-    one from the highest derivative order appearing in the equation)
+    :param basis_index: The basis index, :math:`\\lambda`.
+    :param subindex: The :math:`s` subindex.
+    :param idx1: The :math:`j` index.
+    :param idx2: The :math:`k` index.
     '''
 
-    if np.sum(abs(a0)) > 0 :
+    to_return = (idx1 + idx2 + basis_index - 2*subindex) / (idx1 + idx2 + basis_index - subindex)
 
-        N = np.size(a0)
-        bw = max(np.nonzero(a0)[0])
+    for t in range(subindex):
+        to_return = to_return * (basis_index+t) / (1+t)
+        to_return = to_return * (2*basis_index+idx1+idx2-2*subindex+t) / (basis_index+idx1+idx2-2*subindex+t)
 
-        a1 = np.zeros(2*N)
-        a1[:N] = a0
+    for t in range(idx1-subindex):
+        to_return = to_return * (basis_index+t) / (1+t)
+        to_return = to_return * (idx2-subindex+1+t) / (idx2-subindex+basis_index+t)
 
-        #if a0.dtype == np.complex128:
-        #    print(a0)
-
-        if vector_parity != 0: # no inner core case
-
-            # Overall operator parity given by a0 parity * lambda parity
-            # check a0 parity like this: first nonzero a0 coefficient
-            # a0 is the full vector of coefficients, including even and odd, size N
-            tmp = np.nonzero(a0)[0]
-            ix = tmp[-1] # index of *last* non zero coefficient
-            rpower_parity = 1 - 2*(ix%2)
-            lamb_parity = 1 - 2*(lamb%2)
-            operator_parity = rpower_parity * lamb_parity
-            overall_parity = vector_parity * operator_parity
-            # rows to be deleted determined by overall_parity (after multiplying with DX and the eigenvector)
-            # j even when overall_parity = 1 and vice versa
-            # columns to be deleted determined by vector_parity (after multiplying with DX and the eigenvector)
-            # k even when vector_parity = 1 and vice versa
-            idj = int((1-overall_parity)/2)
-            idk = int((1-vector_parity*lamb_parity)/2)
-            jrange = range(idj,N,2)
-
-        else: # vector_parity = 0, inner core case
-
-            jrange = range(0,N)
+    return to_return
 
 
-        if lamb > 0:
 
-            out = ss.dok_matrix((N,N))
-            for j in jrange:
+def multiplication_coefficients(basis_index: int,
+                                range_of_subindex: np.ndarray,
+                                idx1: int,
+                                range_of_idx2: np.ndarray) \
+        -> np.ndarray:
+    '''
+    Computes all the coefficients :math:`c_s^\\lambda(j,k)` for the matrix operator entry. This is the direct
+    implementation of the recursion right below Eq.(3.9) from Olver and Townsend (2013). Note that what is called
+    :math:`j` in this function according to the definition of :math:`c_s^\\lambda(j,k)` corresponds to the **column** of
+    the matrix, confusingly denoted :math:`k` outside of this function
 
-                k1 = max( 0, j-bw-1 )
-                k2 = min( N, j+bw+2 )
-                ka = range(k1,k2)
+    :param basis_index: The basis index, :math:`\\lambda`.
+    :param range_of_subindex: All :math:`s` involved in the sum.
+    :param idx1: The :math:`j` involved in the sum
+    :param range_of_idx2: All :math:`k` involved in the sum.
+    '''
 
-                if vector_parity != 0:
-                    krange = ka[ka[idk]%2::2]
-                else:
-                    krange = ka
+    to_return = np.zeros(len(range_of_subindex))
+    to_return[0] = starting_multiplication_coefficient(basis_index,
+                                                       int(range_of_subindex[0]),
+                                                       idx1,
+                                                       int(range_of_idx2[0]))
 
-                for k in krange:
+    for t in range(1, len(range_of_subindex)):
+        s = range_of_subindex[t-1]
+        idx2 = range_of_idx2[t-1]
 
-                    s0 = max(0,k-j)
-                    s = np.arange(s0,k+1)
-                    idx = 2*s+j-k
-                    a = a1[idx]
+        factor = (idx1 + idx2 + basis_index - s) / (idx1 + idx2 + basis_index - s + 1)
+        factor = factor * (basis_index + s) / (s + 1)
+        factor = factor * (idx1 - s) / (basis_index + idx1 - s - 1)
+        factor = factor * (2 * basis_index + idx1 + idx2 - s) / (basis_index + idx1 + idx2 - s)
+        factor = factor * (idx2 - s + basis_index) / (idx2 - s + 1)
 
-                    if s0 == 0:
-                        cvec = csl(s,lamb,k,j-k)
-                    elif s0 == k-j:
-                        cvec = csl(s,lamb,k,k-j)
+        to_return[t] = to_return[t - 1] * factor
 
-                    out[j,k] = np.dot(a,cvec)
+    return to_return
 
-            out = out.tocsr()
+
+
+def Mlam(coefficients: np.ndarray,
+         basis_index: int,
+         vector_parity: int,
+         truncation_order: Union[int|None] = None) \
+        -> Union[np.ndarray|ss.csr_array]:
+    '''
+    This function computes the :math:`\\mathcal{\\mathbf{M}}_\\lambda` operator, as described by Olver and Townsend (
+    2013).
+
+    - If :math:`\\lambda = 0`, the operator reduces to a Toeplitz + almost Hankel operators. This is the direct implementation of the equation right below Eq.(2.7) of Olver and Townsend (2013).
+    - If :math:`\\lambda = 1`, the operator reduces to a Toeplitz + Hankel operators. However, it can be also be written as the sum of Toeplitz operators, each one adding to the previous outside of the first row and column. This is what has been done in this implementation.
+    - Otherwise, each term in the operator is given by the expression between Eq.(3.7) and Eq.(3.8) of Olver and Townsend (2013).
+
+    The present implementation also considers the parity of all elements. In the application of interest,
+    this operator will be pre-multiplying the :math:`\\lambda`-th derivative of an eigenvector, so the parity of (a)
+    the eigenvector itself, (b) the derivative and (c) the function represented in this multiplication operator are
+    all taken into account to set certain rows and columns to zero.
+
+    In the cases for :math:`\\lambda = 0,1`, this has been done by creating the full operators with the Scipy
+    Toeplitz and Hankel functions, and then setting the appropriate rows and columns to 0. In the general case,
+    where the operator is to be filled element by element, the useful elements have been identified at the begining
+    and only those have been computed, skipping all the rest.
+
+    :param basis_index: The index of the Gegenbauer family, :math:`\\lambda`.
+    :param coefficients: The :math:`\\lambda`-th Gegenabuer coefficients of the factor represented in
+    :math:`\\mathbf{\\mnathcal{M}[a]}, :math:`a_k`.
+    :param vector_parity: The parity of the eigenvector.
+    :param truncation_order: The truncation order, setting the size of the operator. If ``None``, it infers the order
+    from the size of ``coefficients``. Defaults to None.
+
+    '''
+
+    if basis_index < 0:
+        raise ValueError('(multiplication_operator): Negative basis order. Invalid.')
+
+    if vector_parity not in [-1, 0, 1]:
+        raise ValueError('(multiplication_operator): Invalid vector parity. Only allowed is 0, 1 or -1. Got '
+                         + str(vector_parity) + '.')
+
+    if truncation_order is None:
+        truncation_order = len(coefficients)-1 # There are no issues with truncation order / N here because it is all handled internally and there is no interfacing with the outside.
+
+    if sum(abs(coefficients)) == 0.0:
+
+        to_return = np.zeros([truncation_order+1, truncation_order+1])
+
+    else:
+
+        # The parities of all individual elements. The parity of the factor represented in this multiplication
+        # operator is assessed using (the parity of) its last non-zero coefficient.
+        last_nonzero = np.nonzero(coefficients)[0][-1]
+        derivative_parity = int(1 - 2 * (basis_index % 2))
+        function_parity = int(1 - 2 * (last_nonzero % 2))
+        operator_parity = vector_parity * derivative_parity * function_parity
+
+        if basis_index == 0:
+
+            # Auxiliary padding. Always good to have enough zeros in case they are needed.
+            coefficients = np.pad(coefficients,(0, int(2 * truncation_order + 1) - len(coefficients)))
+
+            # Toeplitz matrix
+            rowcol = coefficients[:truncation_order + 1]
+            rowcol[0] = 2.0 * rowcol[0]
+            toeplitz = las.toeplitz(rowcol)
+
+            # Hankel matrix
+            col = coefficients[:truncation_order + 1]
+            row = coefficients[truncation_order:int(2 * truncation_order + 1)]
+            hankel = las.hankel(col, row)
+            hankel[0, :] = np.zeros(truncation_order + 1)
+
+            to_return = 0.5 * (toeplitz + hankel)
+
+        elif basis_index == 1:
+
+            # Auxiliary padding. Always good to have enough zeros in case they are needed.
+            coefficients = np.pad(coefficients, (0, int(2 * truncation_order + 1) - len(coefficients)))
+            to_return = las.toeplitz(coefficients[:truncation_order+1])
+            for idx in range(1,truncation_order+1):
+                to_return[idx:,idx:] = to_return[idx:,idx:] + las.toeplitz(coefficients[2*idx:truncation_order+idx+1])
 
         else:
 
-            a2 = np.copy(a0);
-            a2[0] = 2*a2[0]
-            tmp1 = toeplitz(a2)
-            tmp2 = hankel(a2)
-            tmp2[0,:]=np.zeros(N)
+            # In the general case, parity is taken care of at the very beginning.
+            if vector_parity * derivative_parity == 1:
+                column_range = range(0, truncation_order + 1, 2)
+            elif vector_parity * derivative_parity == -1:
+                column_range = range(1, truncation_order + 1, 2)
+            else:
+                column_range = range(truncation_order + 1)
 
-            tmp = 0.5*(tmp1+tmp2)
+            if operator_parity == 1:
+                row_range = range(0, truncation_order + 1, 2)
+            elif vector_parity == -1:
+                row_range = range(1, truncation_order + 1, 2)
+            else:
+                row_range = range(truncation_order + 1)
 
-            if vector_parity != 0:
-                idj0 = int((1+overall_parity)/2)
-                idk0 = int((1+vector_parity*lamb_parity)/2)
-                for j in range(idj0,N,2):
-                    tmp[j,:]=np.zeros(N)
-                for k in range(idk0,N,2):
-                    tmp[:,k]=np.zeros(N)
+            coefficients = coefficients[:last_nonzero+1]
 
-            out = ss.csr_matrix(tmp)
-        '''
-        The case lamb = 1 should be reducible too to a Hankel+Toeplitz
-        not done yet
-        '''
+            # Now we loop over all useful entries of the operator.
+            to_return = np.zeros([truncation_order+1,truncation_order+1])
+            for row in row_range:
+                for col in column_range:
 
-    else:
+                    # Range of s as defined by Olver and Townsend (2013). Between Eq.(3.7) and Eq.(3.8).
+                    range_of_s = np.array(range(max(0,col-row),col+1))
+                    range_of_p = 2 * range_of_s + row - col
+                    # The range of those indices are truncated according to the maximum "significant" order of the
+                    # provided factor coefficients.
+                    range_of_s = range_of_s[range_of_p < len(coefficients)]
+                    range_of_p = range_of_p[range_of_p < len(coefficients)]
 
-        out = 0
+                    if len(range_of_s) == 0:
+                        to_return[row, col] = 0.0
 
-    return out
+                    else:
+                        array_of_multiplication_coefficients = multiplication_coefficients(basis_index,
+                                                                                           range_of_s,
+                                                                                           col,
+                                                                                           range_of_p)
+
+                        to_return[row,col] = np.sum(coefficients[range_of_p] * array_of_multiplication_coefficients)
+
+        if (basis_index == 0 or basis_index == 1) and (vector_parity != 0):
+
+            # If the Toeplitz + Hankel simplifications were used, the parity is taken care of at the end by removing
+            # all unnecessary rows/columns.
+
+            if vector_parity * derivative_parity == 1:
+                columns_to_remove = np.array(range(1, truncation_order + 1, 2)).astype(int)
+            else:
+                columns_to_remove = np.array(range(0, truncation_order + 1, 2)).astype(int)
+
+            if operator_parity == 1:
+                rows_to_remove = np.array(range(1, truncation_order + 1, 2)).astype(int)
+            else:
+                rows_to_remove = np.array(range(0, truncation_order + 1, 2)).astype(int)
+
+            to_return[rows_to_remove, :] = np.zeros([len(rows_to_remove), truncation_order + 1])
+            to_return[:, columns_to_remove] = np.zeros([truncation_order + 1, len(columns_to_remove)])
+
+    return ss.csr_matrix(to_return)
 
 
 
