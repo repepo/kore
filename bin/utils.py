@@ -1290,7 +1290,7 @@ def gamma_visc(a1,a2,a3):
             out[0,colT:colT+par.N] = tol7
 
     # axial or equatorial torque for a spherical cmb, take the real part after multiplying by the solution vector
-    if (par.m == 0 or par.m == 1) and par.symm == 1:
+    if ((par.m == 0 or par.m == 1) and par.symm == 1 and par.bco == 1):
         R = 1  #rcmb
         # axial torque depends on the l=1 toroidal component only
         out[0,n0:n0+par.N] = (8*np.pi/3)*(R**2)*( R*T1 - T0 )
@@ -1326,7 +1326,7 @@ def gamma_magnetic():
 
     out = np.zeros((1,n0+n0), dtype=complex)
 
-    if (par.magnetic==1 and par.m == 0 and par.symm==1 and par.mantle=='TWA'):
+    if (par.magnetic==1 and par.m == 0 and par.symm==1 and par.mantle=='TWA' and par.bco==1):
 
         out = np.zeros((1,n0+n0),dtype=complex)
         G = Tk( 1, par.N-1, 0)[:,0]
@@ -1344,7 +1344,7 @@ def gamma_magnetic():
             out[0,n0:n0+par.N]          = -(32*np.pi/5)     * (R**2) * G * h_cmb # l=1
             out[0,n0+par.N: n0+2*par.N] =  (32*18*np.pi/35) * (R**2) * G * h_cmb # l=3
 
-    elif (par.magnetic==1 and par.m == 1 and par.symm==1 and par.mantle=='TWA'):
+    elif (par.magnetic==1 and par.m == 1 and par.symm==1 and par.mantle=='TWA' and par.bco==1):
 
         out = np.zeros((1,n0+n0),dtype=complex)
         F = Tk( 1, par.N-1, 1)
@@ -1382,9 +1382,10 @@ def gamma_magnetic_ic():
     Axial magnetic torque on the inner core (spherical). Needs m=0 and symm=1.
     '''
 
+    out = np.zeros((1, n0 + n0), dtype=complex)
+
     if (par.magnetic==1 and par.m == 0 and par.symm==1 and ( ('conducting' in par.innercore) or ('TWA' in par.innercore) ) ):
 
-        out = np.zeros((1,n0+n0),dtype=complex)
         G = Tk( -1, par.N-1, 0)[:,0]
         ric = np.array([par.ricb])
         h_icb = B0_norm() * h0(ric, par.B0, [par.beta, par.B0_l, par.ricb, 0])
@@ -1399,10 +1400,5 @@ def gamma_magnetic_ic():
             # torque prop. to l=1 and l=3 toroidal component of b
             out[0,n0:n0+par.N]          = -(16*np.pi/5)     * G * h_icb # l=1
             out[0,n0+par.N: n0+2*par.N] =  (16*18*np.pi/35) * G * h_icb # l=3
-
-    else:
-
-        out = 0
-
 
     return out

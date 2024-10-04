@@ -73,18 +73,18 @@ for label in fname :
 
     varlabel = rlabel + hlabel + proflabel + dlabel + section
 
-    globals()[varlabel] = ss.csr_matrix(sio.mmread(label))
+    globals()[varlabel] = ss.csr_matrix(sio.mmread(label + '.mtx'))
 
 if ut.cic:  # for a conductive inner core
 
-    r2_D0f_ic = ss.csr_matrix(sio.mmread('r2_D0f_ic'))
-    r2_D0g_ic = ss.csr_matrix(sio.mmread('r2_D0g_ic'))
-    r0_D0f_ic = ss.csr_matrix(sio.mmread('r0_D0f_ic'))
-    r0_D0g_ic = ss.csr_matrix(sio.mmread('r0_D0g_ic'))
-    r1_D1f_ic = ss.csr_matrix(sio.mmread('r1_D1f_ic'))
-    r1_D1g_ic = ss.csr_matrix(sio.mmread('r1_D1g_ic'))
-    r2_D2f_ic = ss.csr_matrix(sio.mmread('r2_D2f_ic'))
-    r2_D2g_ic = ss.csr_matrix(sio.mmread('r2_D2g_ic'))
+    r2_D0f_ic = ss.csr_matrix(sio.mmread('r2_D0f_ic.mtx'))
+    r2_D0g_ic = ss.csr_matrix(sio.mmread('r2_D0g_ic.mtx'))
+    r0_D0f_ic = ss.csr_matrix(sio.mmread('r0_D0f_ic.mtx'))
+    r0_D0g_ic = ss.csr_matrix(sio.mmread('r0_D0g_ic.mtx'))
+    r1_D1f_ic = ss.csr_matrix(sio.mmread('r1_D1f_ic.mtx'))
+    r1_D1g_ic = ss.csr_matrix(sio.mmread('r1_D1g_ic.mtx'))
+    r2_D2f_ic = ss.csr_matrix(sio.mmread('r2_D2f_ic.mtx'))
+    r2_D2g_ic = ss.csr_matrix(sio.mmread('r2_D2g_ic.mtx'))
 
 
 
@@ -259,10 +259,10 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
                 offd = -1
 
 
-            elif offdiag == -1:  # (l-1) terms
+            elif offdiag == -1:  # (l-1) terms (dipole)
 
                 C = np.sqrt(l**2-par.m**2)*(l**2-1)/(2*l-1)
-                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :  # r4*r.2curl
+                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1'] :  # r4*r.2curl
                     out1 = -2*(l**2+2)*rhD1u -2*(l-2)*r2h1D1u - (l-4)*r2hD2u - (l-2)*r3h1D2u
                     out2 = L*(l+2)*hIu + L*(l-4)*rh1Iu + l*r2h2Iu + l*r3h3Iu + 2*r3hD3u
                 elif par.B0 == 'dipole':
@@ -283,10 +283,10 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
                           + r3h3Iu*L + 2*r3hD3u*(-3 + l + l**2) + 3*r3h1D2u*(-2 + l + l**2) )
 
 
-            elif offdiag == 1:  # (l+1) terms
+            elif offdiag == 1:  # (l+1) terms (dipole)
 
                 C = np.sqrt((1+l+par.m)*(1+l-par.m))*l*(l+2)/(2*l+3)
-                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :  # r4*r.2curl
+                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1'] :  # r4*r.2curl
                     out1 = -2*(l**2+2*l+3)*rhD1u + 2*(l+3)*r2h1D1u + (l+5)*r2hD2u + (l+3)*r3h1D2u
                     out2 = -L*(l-1)*hIu - L*(l+5)*rh1Iu - (l+1)*r2h2Iu - (l+1)*r3h3Iu + 2*r3hD3u
                 elif par.B0 == 'dipole':
@@ -320,13 +320,15 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
                     offd = -1
 
 
-            elif offdiag == 0:  # l terms
+            elif offdiag == 0:  # l terms (dipole)
 
-                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :  # r4*r.2curl
+                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1'] :  # r4*r.2curl
                     out = 2j*par.m*( -rhIu - (l**2+l-1)*r2h1Iu + r2hD1u + r3h1D1u + r3hD2u )
                 elif par.B0 == 'dipole':
                     # same but +r2
                     out = 2j*par.m*( -r3hIu - (l**2+l-1)*r4h1Iu + r4hD1u + r5h1D1u + r5hD2u )
+                else:
+                    out = 0
 
 
             elif offdiag == 1:  # (l+1) terms  (quadrupole)
@@ -355,7 +357,7 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
 
             elif offdiag == 0:  # l terms (dipole)
 
-                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
+                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1'] :
                     out = 1j*par.m*( 4*hD1v - L*( 2*h1Iv + rh2Iv ) + 2*rhD2v )  # r2*r.1curl
                 elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
                     out = 1j*par.m*( 4*r3hD1v - L*( 2*r3h1Iv + r4h2Iv ) + 2*r4hD2v )  # r5*r.1curl
@@ -367,7 +369,7 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
                 out = C*( 12*hD1v - 2*h1Iv*(1 + l)*(2 + l) + 6*rhD2v - rh2Iv*(1 + l)*(2 + l) )
 
                 if ut.symm1 == 1:
-                    ofd = 1
+                    offd = 1
 
 
         elif component == 'btor':
@@ -381,10 +383,10 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
                 offd = -1
 
 
-            elif offdiag == -1:
+            elif offdiag == -1:  # (l-1) terms  (dipole)
 
                 C = np.sqrt((l-par.m)*(l+par.m))*(l**2-1)/(2*l-1)
-                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
+                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1'] :
                     out = C*( (l-2)*hIv + l*rh1Iv -2*rhD1v )  # r2*r.1curl
                 elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
                     out = C*( (l-2)*r3hIv + l*r4h1Iv -2*r4hD1v )  # r5*r.1curl
@@ -399,10 +401,10 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
                 out = C*( hIv*(6 - l - l**2) + rh1Iv*L - 2*rhD1v*(-3 + l + l**2) )
 
 
-            elif offdiag == 1:
+            elif offdiag == 1:  # (l+1) terms  (dipole)
 
                 C = -np.sqrt((l+par.m+1)*(l+1-par.m))*l*(l+2)/(2*l+3)
-                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1', 'Luo_S2'] :
+                if par.B0 in ['axial', 'G21 dipole', 'FDM', 'Luo_S1'] :
                     out = C*( (l+3)*hIv + (l+1)*rh1Iv + 2*rhD1v )  # r2*r.1curl
                 elif ((par.B0 == 'dipole') and (par.ricb > 0)) :
                     out = C*( (l+3)*r3hIv + (l+1)*r4h1Iv + 2*r4hD1v )  # r5*r.1curl
@@ -751,7 +753,7 @@ def induction_consoidal(l, component, offdiag):
 
 def magnetic_diffusion(l, section, component, offdiag):
     '''
-    The magnetic difussion term −Eₘ ∇×(η∇×𝐛)
+    The magnetic diffussion term −Eₘ ∇×(η∇×𝐛)
     '''
     cdipole = (par.B0 == 'dipole') and (par.ricb > 0)
 
@@ -911,3 +913,5 @@ def compositional_diffusion(l, section, component, offdiag):
 # ----------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
+
+# editing induction equation

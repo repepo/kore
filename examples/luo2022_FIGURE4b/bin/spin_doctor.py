@@ -91,14 +91,14 @@ def main(ncpus):
     resid1      = np.zeros(success)
     resid2      = np.zeros(success)
     resid3      = np.zeros(success)
-    norm        = np.zeros(success)
+    brms        = np.zeros(success)
     y           = np.zeros(success)                # for eigenmode tracking
     press0      = np.zeros(success)
     elldom      = np.zeros(success)
     params      = np.zeros((success,53))
     # ------------------------------------------------------------------------------------------------------------------------
 
-    print('\n  ★     Damping σ     Frequency ω    resid0     resid𝐮     resid𝐛     residθ     Tor/Pol    Mag/Kin    |𝚪|mag    |𝚪|magIC ')
+    print('\n  ★     Damping σ     Frequency ω    resid0     resid𝐮     resid𝐛     residθ     Tor/Pol    Mag/Kin    |𝚪|mag    |𝚪|visc ')
     print(  ' ‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾')
 
 
@@ -166,46 +166,37 @@ def main(ncpus):
             Wcmp[i] = par.OmgTau**2 * par.BV2_comp * Wcmp0
             
             # Viscous torques
-            vtorq[i] = par.Ek * np.dot( ut.gamma_visc(0,0,0), u_sol)  # need to double check the constants here
-            vtorq_ic[i] = par.Ek * np.dot( ut.gamma_visc_icb(par.ricb), u_sol)
+            vtorq[i] = par.OmgTau * par.Ek * np.dot( ut.gamma_visc(0,0,0), u_sol)[0]  # need to double check the constants here
+            vtorq_ic[i] = par.OmgTau * par.Ek * np.dot( ut.gamma_visc_icb(par.ricb), u_sol)[0]
 
             press0[i] = udgn[6][0]
 
 
         if par.magnetic:
 
-            [ ME0, Mdfs0, Indu[i], Brms ] = np.sum( bdgn, 0)
+            [ ME0, Mdfs0, Indu0, brms[i] ] = np.sum( bdgn, 0)
             ME[i]   = ME0   * par.OmgTau**2 * par.Le2
-            #Dohm = Dohm0 * par.OmgTau**3 * par.Le2 * par.Em
-            Mdfs[i] = par.OmgTau * par.Em * Mdfs0
+            Indu[i] = Indu0 * par.OmgTau**2 * par.Le2
+            Mdfs[i] = par.OmgTau**3 * par.Le2 * par.Em * Mdfs0
 
-            if ((par.mantle == 'TWA') and (par.m==0) and (par.symm==1)):
-                mtorq[i] = par.Le2 * np.dot( ut.gamma_magnetic(), b_sol )  # need to double check the constants here
-
-            if ((par.mantle == 'TWA') and (par.m==1) and (par.symm==1)):
-                mtorq[i] = par.Le2 * np.dot( ut.gamma_magnetic(), b_sol)
-
-            if (par.innercore in ['conducting, Chebys', 'TWA']) and ((par.m==0) and (par.symm==1)):
-                mtorq_ic[i] = par.Le2 * np.dot( ut.gamma_magnetic_ic(), b_sol )
-
+            # Magnetic torques
+            mtorq[i] = par.OmgTau**2 * par.Le2 * np.dot( ut.gamma_magnetic(), b_sol )[0]  # need to double check the constants here
+            mtorq_ic[i] = par.OmgTau**2 * par.Le2 * np.dot( ut.gamma_magnetic_ic(), b_sol )[0]
 
         if par.thermal:
 
-            [ TE[i], Dthm0, Wadv_thm[i] ] = np.sum( tdgn, 0)
-            Dthm[i] = Dthm0 * par.OmgTau * par.Etherm
+            [ TE0, Dthm0, Wadv_thm0 ] = np.sum( tdgn, 0)
+            TE[i]       = TE0       * par.OmgTau**2
+            Wadv_thm[i] = Wadv_thm0 * par.OmgTau**2
+            Dthm[i]     = Dthm0     * par.OmgTau**3 * par.Etherm
 
 
         if par.compositional:
-            
-            [ CE[i], Dcmp0, Wadv_cmp[i] ] = np.sum( cdgn, 0)
-            Dcmp[i] = Dcmp0 * par.OmgTau * par.Ecomp
 
-        if not par.forcing:
-            if par.magnetic:
-                norm[i] = Brms
-            else:
-                norm[i] = 1
-
+            [ CE0, Dcmp0, Wadv_cmp0 ] = np.sum( cdgn, 0)
+            CE[i]       = CE0 * par.OmgTau ** 2
+            Wadv_cmp[i] = Wadv_cmp0 * par.OmgTau ** 2
+            Dcmp[i]     = Dcmp0 * par.OmgTau ** 3 * par.Ecomp
 
         # --------------------------------------------------------- Computing residuals to check the power balance:
         # pss is the rate of working of stresses at the boundary
@@ -252,21 +243,19 @@ def main(ncpus):
         if par.hydro:
             resid1[i] = abs( 2*sigma*KE[i] - Dkin[i] - Wlor[i] + Wthm[i] )/ \
                              max(abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wlor[i]), abs(Wthm[i]))
-        
+
         if par.magnetic:
-            resid2[i] = abs( 2*sigma*ME0 - Indu[i] - Mdfs[i] ) / \
-                             max( abs(2*sigma*ME0), abs(Indu[i]), abs(Mdfs[i]))
-            
+            resid2[i] = abs( 2*sigma*ME[i] - Indu[i] - Mdfs[i] ) / \
+                             max( abs(2*sigma*ME[i]), abs(Indu[i]), abs(Mdfs[i]))
+
         if par.thermal:
             resid3[i] = abs( 2*sigma*TE[i] - Dthm[i] - Wadv_thm[i] ) / \
                              max( abs(2*sigma*TE[i]), abs(Dthm[i]), abs(Wadv_thm[i]))
-        
-    
+
         # ------------------------------------------------------------------------------------------------------------------
         print(' {:2d}   {: 12.7f}   {: 12.7f}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}'.format( \
-               i, sigma, w, resid0[i], resid1[i], resid2[i], resid3[i], KT[i]/KP[i], ME[i]/KE[i], 2*np.abs(mtorq[i])/np.sqrt(KE[i]), 2*np.abs(mtorq_ic[i])/np.sqrt(KE[i]) ))
+               i, sigma, w, resid0[i], resid1[i], resid2[i], resid3[i], KT[i]/KP[i], ME[i]/KE[i], np.abs(mtorq[i])/np.sqrt(KE[i])/par.OmgTau, np.abs(vtorq[i])/np.sqrt(KE[i])/par.OmgTau))
         # ------------------------------------------------------------------------------------------------------------------
-
 
         toc = timer()
         
@@ -414,7 +403,7 @@ def main(ncpus):
         with open('magnetic.dat','ab') as dmag:
             np.savetxt(dmag, np.c_[ ME, Mdfs, Indu, resid2,
                                     np.real(mtorq), np.imag(mtorq),
-                                    np.real(mtorq_ic), np.imag(mtorq_ic)])
+                                    np.real(mtorq_ic), np.imag(mtorq_ic), brms])
 
     if par.thermal:
         with open('thermal.dat','ab') as dtmp:
@@ -426,7 +415,7 @@ def main(ncpus):
 
     if not par.forcing:
         with open('eigenvalues.dat', 'ab') as deig:
-            np.savetxt(deig, np.c_[ eigval, norm ])
+            np.savetxt(deig, np.c_[ eigval])
 
     # ------------------------------------------------------------------ done
     return 0

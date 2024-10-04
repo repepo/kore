@@ -166,8 +166,8 @@ def main(ncpus):
             Wcmp[i] = par.OmgTau**2 * par.BV2_comp * Wcmp0
             
             # Viscous torques
-            vtorq[i] = par.OmgTau * par.Ek * np.dot( ut.gamma_visc(0,0,0), u_sol)  # need to double check the constants here
-            vtorq_ic[i] = par.OmgTau * par.Ek * np.dot( ut.gamma_visc_icb(par.ricb), u_sol)
+            vtorq[i] = par.OmgTau * par.Ek * np.dot( ut.gamma_visc(0,0,0), u_sol)[0]  # need to double check the constants here
+            vtorq_ic[i] = par.OmgTau * par.Ek * np.dot( ut.gamma_visc_icb(par.ricb), u_sol)[0]
 
             press0[i] = udgn[6][0]
 
@@ -180,8 +180,8 @@ def main(ncpus):
             Mdfs[i] = par.OmgTau**3 * par.Le2 * par.Em * Mdfs0
 
             # Magnetic torques
-            mtorq[i] = par.OmgTau**2 * par.Le2 * np.dot( ut.gamma_magnetic(), b_sol )  # need to double check the constants here
-            mtorq_ic[i] = par.OmgTau**2 * par.Le2 * np.dot( ut.gamma_magnetic_ic(), b_sol )
+            mtorq[i] = par.OmgTau**2 * par.Le2 * np.dot( ut.gamma_magnetic(), b_sol )[0]  # need to double check the constants here
+            mtorq_ic[i] = par.OmgTau**2 * par.Le2 * np.dot( ut.gamma_magnetic_ic(), b_sol )[0]
 
         if par.thermal:
 

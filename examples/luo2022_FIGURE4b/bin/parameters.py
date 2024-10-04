@@ -89,7 +89,7 @@ B0_l = 2                # l number for the FDM mode
 # Magnetic boundary conditions at the ICB:
 innercore = 'insulator'
 # innercore = 'conducting, Chebys'  # For eigenvalue problems
-# innercore = 'conducting, Bessel'  # For forced problems 
+# innercore = 'conducting, Bessel'  # For forced problems
 # innercore = 'TWA'  # Thin conductive wall layer (Roberts, Glatzmaier & Clune, 2010)
 # innercore = 'perfect conductor, material'  # tangential *material* electric field jump [nxE']=0 across the ICB
 # innercore = 'perfect conductor, spatial'   # tangential *spatial* electric field jump [nxE]=0 across the ICB

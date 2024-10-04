@@ -511,7 +511,7 @@ def magnetic_worker(l, lp, lt, b_sol2, u_sol2, Ra, Rb, N, sqx):
     [ menep, menet] = [0, 0]
     [ mdfsp, mdfst] = [0, 0]
     [ indup, indut] = [0, 0]
-    [ brrms, cmb  ]  = [0, 0]
+    [ brrms, cmb  ] = [0, 0]
     
     L = l*(l+1)
 

@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 
 # import targets as tg
@@ -10,14 +11,14 @@ def Ncheb(Ek):
     Please experiment and adapt to your particular problem. N must be even.
     '''
     if Ek != 0:
-        out = int(24 * Ek ** -0.2)
+        out = int(23.75 * Ek ** -0.2)
     else:
         out = 48  #
 
     return max(48, out + out % 2)
 
-
-aux1 = 1.00
+#df = pd.read_csv('targets.csv')
+aux1 =0
 aux2 = -0.661043
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -36,17 +37,17 @@ ricb = 0
 
 # Inner core spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow. Ignored if ricb = 0
-bci = 0
+bci = 1
 
 # CMB spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow
-bco = 0
+bco = 1
 
 # Ekman number (use 2* to match Dintrans 1999). Ek can be set to 0 if ricb=0
 # CoriolisNumber = 1.2e3
 # Ek_gap = 2/CoriolisNumber
 # Ek = Ek_gap*(1-ricb)**2
-Ek = 10 ** -3
+Ek = 10**-4
 
 forcing = 0  # Uncomment this line for eigenvalue problems
 # forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
@@ -97,8 +98,8 @@ c1_icb = 0  # Thin wall to fluid conductance ratio (if innercore='TWA')
 # Note: 'perfect conductor, material' or 'perfect conductor, spatial' are identical if ICB is no-slip (bci = 1 above)
 
 # Magnetic boundary conditions at the CMB
-mantle   = 'insulator'
-# mantle = 'TWA'  # Thin conductive wall layer (Roberts, Glatzmaier & Clune, 2010)
+# mantle   = 'insulator'
+mantle = 'TWA'  # Thin conductive wall layer (Roberts, Glatzmaier & Clune, 2010)
 c_cmb = 1e-5  # Ratio (h*mu_wall)/(rcmb*mu_fluid)  (if mantle='TWA')
 c1_cmb = 1e-5  # Thin wall to fluid conductance ratio (if mantle='TWA')
 
@@ -131,15 +132,15 @@ cnorm = 'mag_energy'  # Unit magnetic energy as in Luo & Jackson 2022 (I. Torsio
 # cnorm = 0.6972166887783963            # Luo_S1 ricb = 0, rms_Bs=1
 # cnorm = 0.005061566801979833          # Luo_S2 ricb = 0, unit mag_energy
 # cnorm = 0.0158567582314039            # Luo_S2 ricb = 0, rms_Bs=1
-
+# cnorm = 0.045852909911883524
 
 # ----------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------- Thermal parameters
 # ----------------------------------------------------------------------------------------------------------------------
-thermal = 0  # Use 1 or 0 to include or not the temperature equation and the buoyancy force (Boussinesq)
+thermal = 1  # Use 1 or 0 to include or not the temperature equation and the buoyancy force (Boussinesq)
 
 # Prandtl number: ratio of viscous to thermal diffusivity
-Prandtl = 0.02
+Prandtl = 1.
 # "Thermal" Ekman number
 Etherm = Ek / Prandtl
 # Etherm = 1e-4
@@ -163,8 +164,8 @@ heating = 'two zone'  # dT/dr = K * ut.twozone()  temp_scale = -ro * K
 BV2 = 1.
 
 # Additional arguments for 'Two zone' or 'User defined' case (modify if needed).
-rc = 0.5  # transition radius
-h = 0.1  # transition width
+rc = 0.75 # transition radius
+h = 0.1 # transition width
 rsy = -1  # radial symmetry
 args = [rc, h, rsy]
 
@@ -250,7 +251,7 @@ lmax_cic = int(2 * ncpus * (np.floor_divide(g * N_cic, 2 * ncpus)) + m - 1)
 # Set track_target = 1 below to track an eigenvalue, 0 otherwise.
 # Assumes a preexisting 'track_target' file with target data
 # Set track_target = 2 to write initial 'track_target' file, see also postprocess.py
-w = 0.1
+w = 1
 track_target = 0
 if track_target == 1:  # read target from file and sets target accordingly
     tt = np.loadtxt('track_target')

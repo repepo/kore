@@ -696,7 +696,7 @@ def B0_norm():
     if par.magnetic == 1:
 
         ricb = par.ricb
-        args = [ par.beta, par.B0_l, ricb, 0 ]
+        args = [ par.beta, B0_l, ricb, 0 ]
         kind = par.B0
 
         l = B0_l
@@ -712,7 +712,7 @@ def B0_norm():
 
             N = 240
             i = np.arange(0,N)
-            xk = np.cos( (i+0.5)*np.pi/N )  # colocation points, from -1 to 1
+            xk = np.cos( (i+0.5)*np.pi/N )  # collocation points, from -1 to 1
             sqx = np.sqrt(1-xk**2)
             rk = 0.5*(1-ricb)*( xk + 1 ) + ricb
             r2 = rk**2
@@ -1289,11 +1289,13 @@ def gamma_visc(a1,a2,a3):
         elif l==7 and par.m==1:
             out[0,colT:colT+par.N] = tol7
 
-    # axial torque for a spherical cmb, take 2*real after multiplying by the solution vector
-    if par.m == 0 and par.symm == 1:
+    # axial or equatorial torque for a spherical cmb, take the real part after multiplying by the solution vector
+    if ((par.m == 0 or par.m == 1) and par.symm == 1 and par.bco == 1):
         R = 1  #rcmb
-        # axial torque depends on the l=1, m=0 toroidal component only
+        # axial torque depends on the l=1 toroidal component only
         out[0,n0:n0+par.N] = (8*np.pi/3)*(R**2)*( R*T1 - T0 )
+        if m == 0:
+            out = 2*out
 
     return out
 
@@ -1312,7 +1314,7 @@ def gamma_visc_icb(ricb):
         T1 = T[:,1]
         R = ricb
         # axial torque depends on the l=1, m=0 toroidal component only
-        out[0,n0:n0+par.N] = (8*np.pi/3)*(R**2)*( R*T1 - T0 )
+        out[0,n0:n0+par.N] = (8*np.pi/3)*(R**2)*(R*T1 - T0 )
 
     return out
 
@@ -1322,7 +1324,9 @@ def gamma_magnetic():
     Axial magnetic torque on the mantle (spherical) when there is a thin conductive layer at bottom. Needs m=0 and symm=1.
     '''
 
-    if (par.magnetic==1 and par.m == 0 and par.symm==1 and par.mantle=='TWA'):
+    out = np.zeros((1,n0+n0), dtype=complex)
+
+    if (par.magnetic==1 and par.m == 0 and par.symm==1 and par.mantle=='TWA' and par.bco==1):
 
         out = np.zeros((1,n0+n0),dtype=complex)
         G = Tk( 1, par.N-1, 0)[:,0]
@@ -1330,17 +1334,17 @@ def gamma_magnetic():
         h_cmb = B0_norm() * h0(R, par.B0, [par.beta, par.B0_l, par.ricb, 0])
 
         if B0_l == 1:  # Either uniform axial or dipole background field, induced magnetic field b is thus antisymmetric
-
+            R = 1
             # the torque is prop. to the l=2 toroidal component of b
-            out[0,n0:n0+par.N] = -(16*np.pi/5) * G * h_cmb
+            out[0,n0:n0+par.N] = (32*np.pi/5) * (R**2) * G * h_cmb
 
         elif B0_l == 2:  # Quadrupole background field, induced magnetic field b is thus symmetric
-
+            R = 1
             # torque prop. to l=1 and l=3 toroidal component of b
-            out[0,n0:n0+par.N]          = -(16*np.pi/5)     * G * h_cmb # l=1
-            out[0,n0+par.N: n0+2*par.N] =  (16*18*np.pi/35) * G * h_cmb # l=3
+            out[0,n0:n0+par.N]          = -(32*np.pi/5)     * (R**2) * G * h_cmb # l=1
+            out[0,n0+par.N: n0+2*par.N] =  (32*18*np.pi/35) * (R**2) * G * h_cmb # l=3
 
-    elif (par.magnetic==1 and par.m == 1 and par.symm==1 and par.mantle=='TWA'):
+    elif (par.magnetic==1 and par.m == 1 and par.symm==1 and par.mantle=='TWA' and par.bco==1):
 
         out = np.zeros((1,n0+n0),dtype=complex)
         F = Tk( 1, par.N-1, 1)
@@ -1353,26 +1357,21 @@ def gamma_magnetic():
         h1_cmb = B0_norm() * h1(R, par.B0, [par.beta, par.B0_l, par.ricb, 0])
 
         if B0_l == 1: # Either uniform axial or dipole background field, induced magnetic field b is thus antisymmetric
-
+            R = 1
             # the torque is prop. to the l=2 toroidal component and l=1 poloidal component of b
-            out[0,n0:n0+par.N]  = (8*np.sqrt(3)*np.pi/5) * G0 * h0_cmb #l=2 toroidal
-            out[0,0:par.N]      = np.sign(par.itau) * ((8j*np.pi/3) * F0 * h1_cmb - (8j*np.pi*np.sqrt(3)) * F1 * h0_cmb) #l=1 poloidal
+            out[0,n0:n0+par.N]  = (8*np.sqrt(3)*np.pi/5) * (R**2) * G0 * h0_cmb #l=2 toroidal
+            out[0,0:par.N]      = np.sign(par.itau) * (8j*np.pi/3) * (R**2) * (F0 * h1_cmb -  F1 * h0_cmb) #l=1 poloidal
 
         elif B0_l == 2:  # Quadrupole background field, induced magnetic field b is thus symmetric
-
+            R = 1
+            if par.forcing == 0:
+                parity = np.sign(par.itau)
+            else:
+                parity = np.sign(par.forcing_frequency)
             # the torque is prop. to the l=1, l=3 toroidal component and l=2 poloidal component of b
-            out[0,n0:n0+par.N]          = (8*np.pi/5) * G0 * h0_cmb #l=1 toroidal
-            out[0,n0+par.N:n0+2*par.N]  = (96*np.sqrt(6)*np.pi/35) * G0 * h0_cmb #l=3 toroidal
-            out[0,0:par.N]              = np.sign(par.itau) * (24j*np.sqrt(3)*np.pi/5) * (F0 * h1_cmb - F1 * h0_cmb) #l=2 poloidal
-
-    else:
-        print('else')
-
-        out = 0
-
-    # Take the product between the output of this function and the solution for b to obtain the dimensionless torque
-    # Then multiply by Elsasser*R_cmb^3*rho*eta to make the torque dimensional
-    # (rho is the density and eta is the magnetic diffusivity, both of the fluid core).
+            out[0,n0:n0+par.N]          = (8*np.pi/5) * (R**2) * G0 * h0_cmb #l=1 toroidal
+            out[0,n0+par.N:n0+2*par.N]  = (96*np.sqrt(6)*np.pi/35) * (R**2) * G0 * h0_cmb #l=3 toroidal
+            out[0,0:par.N]              = parity * (24j*np.sqrt(3)*np.pi/5) * (R**2) * (F0 * h1_cmb - F1 * h0_cmb) #l=2 poloidal
 
     return out
 
@@ -1383,9 +1382,10 @@ def gamma_magnetic_ic():
     Axial magnetic torque on the inner core (spherical). Needs m=0 and symm=1.
     '''
 
+    out = np.zeros((1, n0 + n0), dtype=complex)
+
     if (par.magnetic==1 and par.m == 0 and par.symm==1 and ( ('conducting' in par.innercore) or ('TWA' in par.innercore) ) ):
 
-        out = np.zeros((1,n0+n0),dtype=complex)
         G = Tk( -1, par.N-1, 0)[:,0]
         ric = np.array([par.ricb])
         h_icb = B0_norm() * h0(ric, par.B0, [par.beta, par.B0_l, par.ricb, 0])
@@ -1400,10 +1400,5 @@ def gamma_magnetic_ic():
             # torque prop. to l=1 and l=3 toroidal component of b
             out[0,n0:n0+par.N]          = -(16*np.pi/5)     * G * h_icb # l=1
             out[0,n0+par.N: n0+2*par.N] =  (16*18*np.pi/35) * G * h_icb # l=3
-
-    else:
-
-        out = 0
-
 
     return out
