@@ -49,7 +49,7 @@ bco = 1
 # Ek_gap = 2e-4
 # Ek = Ek_gap*(1-ricb)**2
 
-Ek = 1e-3
+Ek = 1e-4
 
 anelastic = 0
 variable_viscosity = 0
@@ -134,13 +134,13 @@ mu = 1.0
 # Pm = 0.001
 # Em = Ek/Pm; Le2 = Lambda*Em; Le = np.sqrt(Le2)
 # Or use the Lehnert number and the magnetic Ekman number (i.e. Le and Em: uncomment and set the following three lines):
-Le = 10**-3; Lu=2e3
+Le = 1e-3; Lu=2e3
 Em = Le/Lu
 Le2 = Le**2
 
 # Normalization of the background magnetic field
-cnorm = 'rms_cmb'                     # Sets the radial rms field at the CMB as unity
-# cnorm = 'mag_energy'                  # Unit magnetic energy as in Luo & Jackson 2022 (I. Torsional oscillations)
+# cnorm = 'rms_cmb'                     # Sets the radial rms field at the CMB as unity
+cnorm = 'mag_energy'                  # Unit magnetic energy as in Luo & Jackson 2022 (I. Torsional oscillations)
 # cnorm = 'Schmitt2012'                 # as above but times 2
 # cnorm = 3.86375                       # G101 of Schmitt 2012, ricb = 0.35
 # cnorm = 4.067144                      # Zhang & Fearn 1994,   ricb = 0.35
@@ -199,8 +199,8 @@ if entropyGrad == 'ssl':
 # Additional arguments for 'Two zone' or 'User defined' case (modify if needed).
 rc   = 0.7  # transition radius
 h    = 0.1  # transition width
-sym  = -1    # radial symmetry
-args = [rc, h, sym]
+rsy  = -1    # radial symmetry
+args = [rc, h, rsy]
 
 # Thermal boundary conditions
 # 0 for isothermal, theta=0
@@ -240,10 +240,10 @@ Ra_comp = 0.0
 BV2_comp = 0.0
 
 # Additional arguments for 'Two zone' or 'User defined' case (modify if needed).
-rc  = 0.7  # transition radius
-h   = 0.1  # transition width
-sym = -1    # radial symmetry
-args_comp = [rc, h, sym]
+rcc  = 0.7  # transition radius
+hc   = 0.1  # transition width
+rsyc = -1    # radial symmetry
+args_comp = [rcc, hc, rsyc]
 
 # Compositional boundary conditions
 # 0 for constant composition, xi=0
@@ -274,7 +274,7 @@ ncpus = 4
 
 # Chebyshev polynomial truncation level. Use function def at top or set manually. N must be even if ricb = 0.
 N = Ncheb(Ek)
-# N = 24
+# N = 48
 
 # Spherical harmonic truncation lmax and approx lmax/N ratio:
 g = 1.0
@@ -313,7 +313,7 @@ which_eigenpairs = 'TM'  # Use 'TM' for shift-and-invert
 # M magnitude, R real, I imaginary
 
 # Number of desired eigenvalues
-nev = 4
+nev = 3
 
 # Number of vectors in Krylov space for solver
 # ncv = 100
