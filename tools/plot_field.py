@@ -28,7 +28,8 @@ field  : whether to plot flow velocity or magnetic field ('u' or 'b')
 opt    : 'raw' for real part (phase and phi dependent!), or 'abs' for the magnitude
 '''
 
-plt.rc('text', usetex=True)
+# Uncomment the following line to use TeX fonts. Requires TeX obviously. 
+#plt.rc('text', usetex=True)
 
 solnum = int(sys.argv[1])
 
