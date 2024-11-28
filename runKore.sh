@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ncpus=2
+ncpus=4
 
 opts='-st_type sinvert -eps_error_relative ::ascii_info_detail'
 #opts='-ksp_type preonly -pc_type lu'

@@ -121,7 +121,7 @@ def coriolis(l, section, component, offdiag):  # -------------------------------
                 else:
                     out = -2j*par.m*r2_D0_v                          # r2* r.1curl(2z x u)
 
-    return [ par.OmgTau * out, offd ]
+    return [ par.Gaspard * out, offd ]
 
 
 
@@ -166,7 +166,6 @@ def viscous_diffusion(l, section, component, offdiag):  # ----------------------
                                 -4* r3_vsc0_D3_u + r4_vsc0_lho1_D3_u - 2* r4_vsc1_D3_u
 
                                 - r4_vsc0_D4_u )
-
             else:
 
                 if (par.magnetic == 1 and par.B0 == 'dipole'):
@@ -182,17 +181,17 @@ def viscous_diffusion(l, section, component, offdiag):  # ----------------------
                             +r2_D2_v)
 
                 if par.variable_viscosity:
+
                     out = L * ( -L* r0_vsc0_D0_v - 3* r1_vsc0_lho1_D0_v - r2_vsc1_lho1_D0_v - r2_vsc0_lho2_D0_v - r1_vsc1_D0_v
                             + 2* r1_vsc0_D1_v - r2_vsc0_lho1_D1_v + r2_vsc1_D1_v
                             + r2_vsc0_D2_v )
-            
             else:
                 if (par.magnetic == 1 and par.B0 == 'dipole'):
                     out = L*( -L*r3_D0_v + 2*r4_D1_v + r5_D2_v )                          # r5* r.1curl( nabla^2 u )
                 else:
                     out = L*( -L*r0_D0_v + 2*r1_D1_v + r2_D2_v )                            # r2* r.1curl( nabla^2 u )
 
-    return par.OmgTau * par.Ek * out
+    return par.ViscosD * out
 
 
 
@@ -380,7 +379,7 @@ def lorentz(l, section, component, offdiag):  # --------------------------------
                 offd = 1
 
 
-    return [ (par.OmgTau*par.Le)**2 * out, offd ]
+    return [ par.Hendrik * out, offd ]
 
 
 
@@ -393,6 +392,8 @@ def buoyancy(l, section, component, offdiag):  # -------------------------------
 
         if par.anelastic:
             buoy = r3_buo0_D0_u
+            #buoy = -1 * r3_bvs0_D0_u
+
         else:
             if (par.magnetic == 1) and (par.B0 == 'dipole') :
                 buoy = r6_D0_u
@@ -401,7 +402,7 @@ def buoyancy(l, section, component, offdiag):  # -------------------------------
 
     out = L * buoy
 
-    return par.OmgTau**2 * par.BV2 * out
+    return par.Beyonce * out
 
 
 
@@ -685,7 +686,7 @@ def magnetic_diffusion(l, section, component, offdiag):
                     out = L*( 2*r4_eta0_D1_g - L* r3_eta0_D0_g + r5_eta0_D2_g - r4_eta1_D0_g - r5_eta1_D1_g )
 
 
-    return par.OmgTau * par.Em * out
+    return par.MagnetD * out
 
 
 
@@ -696,12 +697,17 @@ def magnetic_diffusion(l, section, component, offdiag):
 
 
 def theta(l, section, component, offdiag):
+    '''
+    This is the temperature perturbation in the Bussinesq case,
+    or the specific entropy perturbation in the anelastic case.
+    '''
 
-    out = 0
     if (section == 'h') and (offdiag == 0) :
 
         if par.anelastic:
-            out = r2_rho0_D0_h
+            #out = r2_rho0_D0_h
+            out = r2_roT0_D0_h
+            #out = r1_D0_h
         else:
             if par.heating == 'differential' :
                 out = r3_D0_h
@@ -712,7 +718,7 @@ def theta(l, section, component, offdiag):
 
 
 
-def thermal_advection(l, section, component, offdiag):  # -u_r * dT/dr
+def thermal_advection(l, section, component, offdiag):  # -u_r * dT/dr or -(rho * u_r) * (T * dS/dr)
 
     out = 0
     L = l*(l+1)
@@ -722,14 +728,14 @@ def thermal_advection(l, section, component, offdiag):  # -u_r * dT/dr
     if ((section == 'h') and (component == 'upol')) and (offdiag == 0) :
 
         if par.anelastic:
-            conv = -r1_drS0_D0_h  # (r*S0')*D0s
+            conv = -r1_tds0_D0_h # T*dS/dr
         else:
             if par.heating == 'internal':
                 conv = r2_D0_h  # dT/dr = -beta*r. Heat equation is times r**2
             elif par.heating == 'differential':
                 conv = r0_D0_h * par.ricb/gap  # dT/dr = -beta * r**2. Heat equation is times r**3
             elif par.heating == 'two zone' or par.heating == 'user defined':
-                conv = r0_drS0_D0_h  # dT/dr or dS/dr specified in rap.twozone or rap.BVprof. Heat equation is times r**2
+                conv = -r0_drS0_D0_h  # dT/dr or dS/dr specified in rap.twozone or rap.BVprof. Heat equation is times r**2
 
         out = L * conv
 
@@ -741,21 +747,26 @@ def thermal_diffusion(l, section, component, offdiag):
 
     L = l*(l+1)
 
-    if section == 'h' and offdiag == 0 :
+    out = 0
 
-        if not par.anelastic:
+    if par.ThermaD > 0:
 
-            if par.heating == 'differential':
-                difus = - L*r1_D0_h + 2*r2_D1_h + r3_D2_h  # eq. times r**3
+        if section == 'h' and offdiag == 0 :
+
+            if not par.anelastic:
+
+                if par.heating == 'differential':
+                    difus = - L*r1_D0_h + 2*r2_D1_h + r3_D2_h  # eq. times r**3
+                else:
+                    difus = - L*r0_D0_h + 2*r1_D1_h + r2_D2_h  # eq. times r**2
+
             else:
-                difus = - L*r0_D0_h + 2*r1_D1_h + r2_D2_h  # eq. times r**2
 
-        else:
+                #difus = - L*r0_kho0_D0_h + 2*r1_kho0_D1_h + r2_kho0_D2_h + r2_kho0_lnT1_D1_h + r2_kho1_D1_h
+                difus = -L*r0_krT0_D0_h + 2*r1_krT0_D1_h + r2_krT1_D1_h + r2_krT0_D2_h
 
-            difus = - L*r0_kho0_D0_h + 2*r1_kho0_D1_h + r2_kho0_D2_h + r2_kho0_lnT1_D1_h + r2_kho1_D1_h
-
-    return difus * par.OmgTau * par.Etherm
-
+        out = difus * par.ThermaD
+    return out
 
 
 # ----------------------------------------------------------------------------------------------------------------------

@@ -16,8 +16,8 @@ def Ncheb(Ek):
     return max(48, out + out%2)
 
 
-aux = 1.0  # Auxiliary variable, useful e.g. for ramps
-
+aux1 = 1.0  # Auxiliary variable, useful e.g. for ramps
+aux2 = 0
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -31,8 +31,7 @@ m = 1
 # Equatorial symmetry of the flow field. Use 1 for symmetric, -1 for antisymmetric.
 symm = -1
 
-# Inner core radius, CMB radius is unity.
-
+# Inner core radius, surface/CMB radius is unity.
 ricb = 0.35
 
 # Inner core spherical boundary conditions
@@ -49,7 +48,7 @@ bco = 1
 # Ek_gap = 2e-4
 # Ek = Ek_gap*(1-ricb)**2
 
-Ek = 1e-4
+Ek = 1e-3
 
 anelastic = 0
 variable_viscosity = 0
@@ -61,15 +60,18 @@ variable_viscosity = 0
 #--------------------------------------------------------------------------------------
 
 interior_model = 'polytrope' # Interior model, available options are: polytrope, jupiter, pns
-r_cutoff = 0.99 #Cut-off radius for interior model fit while using jupiter or pns models
+mesa_file='theprofile.data'
+gamma = 5./3.  # adiabatic index
+r_cutoff = 0.99 # Cut-off radius for interior model
 
 Nrho = 2.0 # ln(\rho_i/\rho_o), number of density scale heights
 polind = 2.0 # Polytropic index : p = \rho^(1 + 1/n) , p = \rho T for ideal gas, R = 1
 autograv = 0 # Automatic computation of gravity
 g_icb = 0.0 # Value of g at icb, is set to zero when ricb = 0
-g0 = 0; g1 = 1; g2=0 # Easy way to control gravity, g(r) = g0 + g1 r/rcmb + g2 rcmb^2/r^2
+g0 = 0; g1 = 0; g2=1 # Easy way to control gravity, g(r) = g0 + g1 r/rcmb + g2 rcmb^2/r^2
 
 #--------------------------------------------------------------------------------------
+
 
 forcing = 0  # Uncomment this line for eigenvalue problems
 # forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
@@ -130,13 +132,13 @@ mu = 1.0
 
 # Magnetic field strength and magnetic diffusivity:
 # Either use the Elsasser number and the magnetic Prandtl number (i.e. Lambda and Pm: uncomment and set the following three lines):
-# Lambda = 0.1
-# Pm = 0.001
-# Em = Ek/Pm; Le2 = Lambda*Em; Le = np.sqrt(Le2)
+Lambda = 0.1
+Pm = 0.001
+Em = Ek/Pm; Le2 = Lambda*Em; Le = np.sqrt(Le2)
 # Or use the Lehnert number and the magnetic Ekman number (i.e. Le and Em: uncomment and set the following three lines):
-Le = 1e-3; Lu=2e3
-Em = Le/Lu
-Le2 = Le**2
+# Le = 1e-3; Lu=2e3
+# Em = Le/Lu
+# Le2 = Le**2
 
 # Normalization of the background magnetic field
 # cnorm = 'rms_cmb'                     # Sets the radial rms field at the CMB as unity
@@ -157,23 +159,23 @@ cnorm = 'mag_energy'                  # Unit magnetic energy as in Luo & Jackson
 # ----------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------- Thermal parameters
 # ----------------------------------------------------------------------------------------------------------------------
-thermal = 0  # Use 1 or 0 to include or not the temperature equation and the buoyancy force (Boussinesq)
+thermal = 0  # Use 1 or 0 to include or not the internal energy equation and the buoyancy force
 
-# Prandtl number: ratio of viscous to thermal diffusivity
-Prandtl = 1.
 # "Thermal" Ekman number
+Prandtl = 1
 Etherm = Ek/Prandtl
+# Etherm = 0
 
 # Background isentropic temperature gradient dT/dr choices, uncomment the appropriate line below:
-heating = 'internal'      # dT/dr = -beta * r         temp_scale = beta * ro**2
-# heating = 'differential'  # dT/dr = -beta * r**-2     temp_scale = Ti-To      beta = (Ti-To)*ri*ro/(ro-ri)
+# heating = 'internal'      # dT/dr = -beta * r         temp_scale = beta * ro**2
+heating = 'differential'  # dT/dr = -beta * r**-2     temp_scale = Ti-To      beta = (Ti-To)*ri*ro/(ro-ri)
 # heating = 'two zone'      # dT/dr = K * ut.twozone()  temp_scale = -ro * K
 # heating = 'user defined'  # dT/dr = K * ut.BVprof()   temp_scale = -ro * K
 
 # Rayleigh number as Ra = alpha * g0 * ro^3 * temp_scale / (nu*kappa), alpha is the thermal expansion coeff,
 # g0 the gravity accel at ro, ro is the cmb radius (the length scale), nu is viscosity, kappa is thermal diffusivity.
-# Ra_gap = 0.0
-# Ra = Ra_gap / (1-ricb)**3
+Ra_gap=6e5
+Ra = Ra_gap / (1-ricb)**3
 # Ra_Silva = 0.0; Ra = Ra_Silva * (1/(1-ricb))**6
 # Ra_Monville = 0.0; Ra = 2*Ra_Monville
 
@@ -181,11 +183,12 @@ heating = 'internal'      # dT/dr = -beta * r         temp_scale = beta * ro**2
 # The reference Brunt-Väisälä freq. squared is defined as -alpha*g0*temp_scale/ro. See the non-dimensionalization notes
 # in the documentation.
 
-# BV2 = -Ra * Ek**2 / Prandtl
-BV2 = 0.0
+BV2 = -Ra * Ek**2 / Prandtl
+#BV2 = 0.0
 
 
-entropyGrad = 'auto' # Automatically compute equilibrium entropy gradient
+
+entropyGrad = None # Automatically compute equilibrium entropy gradient
 
 if entropyGrad == 'ssl':
 
@@ -202,18 +205,22 @@ h    = 0.1  # transition width
 rsy  = -1    # radial symmetry
 args = [rc, h, rsy]
 
+
+
 # Thermal boundary conditions
 # 0 for isothermal, theta=0
 # 1 for constant heat flux, (d/dr)theta=0
 bci_thermal = 0   # ICB
 bco_thermal = 0   # CMB
 
+'''
 #Set boundary conditions to solve for equilibrium entropy gradient
-
 if entropyGrad == 'auto':
 
     bci_thermal_val = 1
     bco_thermal_val = 0
+'''
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------- Compositional parameters
@@ -254,16 +261,29 @@ bco_compositional = 1   # CMB
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-# ----------------------------------------------------------------------------------------------------------- Time scale
+# -------------------------------------------------------------------------------------- Unit of time and force switches
 # ----------------------------------------------------------------------------------------------------------------------
 # Choose the time scale by specifying the dimensionless angular velocity using the desired time scale. Please see
 # the non-dimensionalization notes in the documentation. Uncomment your choice:
-OmgTau = 1     # Rotation time scale
+# OmgTau = 1     # Rotation time scale
 # OmgTau = 1/Ek  # Viscous diffusion time scale
 # OmgTau = 1/Le  # Alfvén time scale
 # OmgTau = 1/Em  # Magnetic diffusion time scale
 
+Gaspard = 1. #0.15  # Omega*Tau                   Coriolis force factor. Set to 1 for unit time Tau = 1/Omega
+Beyonce = BV2  # (N0*Tau)**2                 Buoyancy force factor. Set to 1 for unit time Tau = 1/N0 = sqrt(r0/g0)
+Hendrik = Le2  # (Tau*B0/r0)**2/(rho0*mu0)   Lorentz force factor. Set to 1 for Alfven time scale
+ViscosD = Ek  # nu0 * Tau / r0**2           Viscous force factor. Set to 1 for viscous diffusion time scale
+ThermaD = Etherm  # kappa0 * Tau / r0**2        Thermal diffusion factor. Set to 1 for thermal diffusion time scale
+MagnetD = Em  # eta0 * Tau / r0**2          Magnetic diffusion factor. Set to 1 for magnetic diffusion time scale
 
+
+# Gaspard = 1/Ek #0.15  # Omega*Tau                   Coriolis force factor. Set to 1 for unit time Tau = 1/Omega
+# Beyonce = BV2  # (N0*Tau)**2                 Buoyancy force factor. Set to 1 for unit time Tau = 1/N0 = sqrt(r0/g0)
+# Hendrik = Le2  # (Tau*B0/r0)**2/(rho0*mu0)   Lorentz force factor. Set to 1 for Alfven time scale
+# ViscosD = 1.  # nu0 * Tau / r0**2           Viscous force factor. Set to 1 for viscous diffusion time scale
+# ThermaD = 1/Prandtl  # kappa0 * Tau / r0**2        Thermal diffusion factor. Set to 1 for thermal diffusion time scale
+# MagnetD = 1/Pm  # eta0 * Tau / r0**2          Magnetic diffusion factor. Set to 1 for magnetic diffusion time scale
 
 # ----------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------- Resolution
@@ -281,7 +301,7 @@ g = 1.0
 lmax = int( 2*ncpus*( np.floor_divide( g*N, 2*ncpus ) ) + m - 1 )
 # If manually setting the max angular degree lmax, then it must be even if m is odd,
 # and lmax-m+1 should be divisible by 2*ncpus
-# lmax = 7
+# lmax = (2*ncpus*2 + m - 1)
 
 
 
@@ -299,7 +319,7 @@ if track_target == 1 :  # read target from file and sets target accordingly
     rtau = tt[0]
     itau = tt[1]
 else:                   # set target manually
-    rtau = 0.0
+    rtau = 0
     itau = 1.0
 
 # tau is the actual target for the solver
@@ -313,7 +333,7 @@ which_eigenpairs = 'TM'  # Use 'TM' for shift-and-invert
 # M magnitude, R real, I imaginary
 
 # Number of desired eigenvalues
-nev = 3
+nev = 5
 
 # Number of vectors in Krylov space for solver
 # ncv = 100
@@ -325,6 +345,7 @@ maxit = 50
 tol = 1e-15
 # Tolerance for the thermal/compositional matrix
 tol_tc = 1e-6
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------

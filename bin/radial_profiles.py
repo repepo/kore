@@ -1,8 +1,7 @@
 import numpy as np
 import utils as ut
 import parameters as par
-
-
+import autocompute as ac
 
 def twozone(r,args):
     '''
@@ -47,19 +46,25 @@ def BVprof(r,args=None):
 
 
 
-#------------------------------------------
-# Anelastic profiles
-#------------------------------------------
+#-------------------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------- User-provided background profiles
+#-------------------------------------------------------------------------------------------------------------
+def viscosity(r):
+    '''
+    Kinematic viscosity (aka momentum diffusivity)
+    '''
+    out = np.zeros_like(r)
+    return out  # even function of r
 
 #---------------------------------------------------------
 # Get required parameters according to interior model
 #---------------------------------------------------------
 
 def getPolyParams():
-    '''
-    This function defines useful parameters required to compute polytropic profiles
-    defined by rho = T^n , p = rho^(1 + 1/n) and ideas gas law : p = rho T
-    '''
+
+    #This function defines useful parameters required to compute polytropic profiles
+    #defined by rho = T^n , p = rho^(1 + 1/n) and ideas gas law : p = rho T
+
 
     radratio = par.ricb/ut.rcmb
     Nrhofac = np.exp(par.Nrho/par.polind)
@@ -73,11 +78,11 @@ def getPolyParams():
 
 
 def getEOSparams():
-    '''
-    This function allows the user to set custom profiles defined by polynomial
-    coefficients. Coefficients are ordered from highest order to constant, as
-    required by numpy.polyval .
-    '''
+
+    #This function allows the user to set custom profiles defined by polynomial
+    #coefficients. Coefficients are ordered from highest order to constant, as
+    #required by numpy.polyval .
+
     # Set constant values for any missing profiles
 
     coeffDens = [1]; coeffTemp = [1]; coeffAlpha = [1]; coeffGrav = [1]
@@ -144,9 +149,9 @@ def entropy_gradient(r,args=None):
 
         out = ( ((-1 + Nrhofac)*Nrhofac**par.polind * par.polind*par.ricb)/
                ((-1 + Nrhofac**par.polind)*r**2*(-1 + par.ricb/ut.rcmb)) /
-                zeta(r)**(par.polind+1) )
+                zeta(r)**(par.polind+1) ) * (1-par.ricb)
     else:
-        out = np.zeros_like(r)
+        out = -par.ricb/(1-par.ricb) * 1/r**2
     return out
 
 
@@ -192,13 +197,6 @@ def alpha(r):
     return out
 
 
-
-def viscosity(r):  # kinematic nu
-    out = np.ones_like(r)
-    return out
-
-
-
 def thermal_diffusivity(r):
     out = np.ones_like(r)
     return out
@@ -235,10 +233,10 @@ def gravity(r):
 
 
 def buoFac(r):
-    '''
-    Profile of buoyancy = rho*alpha*T*g
-    If autocomputed, gravity is multiplied later in Cheb space
-    '''
+
+    #Profile of buoyancy = rho*alpha*T*g
+    #If autocomputed, gravity is multiplied later in Cheb space
+
     if par.autograv:
         out = density(r)*alpha(r)*temperature(r)
     else:
@@ -259,16 +257,53 @@ def conductivity(r):
     return out
 
 
-
 def magnetic_diffusivity(r):
     out = 1./conductivity(r)
     return out
 
 
-
 def eta_rho(r):
     out = magnetic_diffusivity(r)*density(r)
     return out
+
+# ---------------------------------------------------------------------------------------
+# The functions below are directly linked to the ones above, no user intervention needed.
+# ---------------------------------------------------------------------------------------
+
+def rog(r):
+    '''
+    density * gravitational acceleration
+    '''
+    out = density(r) * gravity(r)  # even * odd = odd
+    return out # odd function of r
+
+
+def krT(r):
+    '''
+    Thermal diffusivity * density * temperature
+    '''
+    out = thermal_diffusivity(r) * density(r) * temperature(r)
+    return out  # even*even*even = even function of r
+
+
+def roT(r):
+    '''
+    density * temperature
+    '''
+    out = density(r) * temperature(r)
+    return out  # even*even = even function of r
+
+
+def tds(r):
+    if par.entropyGrad == 'auto':
+        cd_ent = ac.get_equilibrium_entropy()
+        dsdr   = ut.funcheb(cd_ent,r,par.ricb,ut.rcmb,par.N)
+        out    = temperature(r)*dsdr
+    else:
+        # out = BruVa2(r) * temperature(r) / gravity(r)
+        out = temperature(r) * entropy_gradient(r)
+    return out  # even * even / odd = odd
+
 
 def write_profiles():
     i = np.arange(0, par.N)

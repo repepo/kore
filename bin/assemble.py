@@ -390,7 +390,7 @@ def main():
             else:
 
                 print('This boundary flow forcing needs symm = 1 and m = 2 and bci = 1')
- 
+
     elif par.forcing == 10: # --------------------------------------------------------------- m=2 radial velocity forcing
 
         # Order m radial velocity forcing at the icb or cmb, l=m poloidal scalar only, equatorially symmetric.
@@ -1041,11 +1041,11 @@ def main():
             # ----------------------------------------------------------------------------------------------------------
             basecol = (2*par.hydro+2*par.magnetic)*nb*ut.N1
 
-            # Physics ----------------------------
+            # Physics --------------------------------------
             iwtheta = 1j*ut.wf * op.theta(l,'h','', 0)
             diffus = op.thermal_diffusion(l,'h','',0)
             mtx = diffus - iwtheta
-            # ------------------------------------
+            # ----------------------------------------------
             col = basecol + col0
 
             if par.hydro == 0:
@@ -1065,9 +1065,7 @@ def main():
             # -------------------------------------------------- include thermal boundary conditions and update loc_list
             # ----------------------------------------------------------------------------------------------------------
             bc_theta_list = bc_theta_spherical( l )
-            if (bc_theta_list is None): # no bc needed if zero thermal diffusivity
-                pass
-            else:
+            if bc_theta_list is not None:
                 for q in [0,1,2]:
                     loc_list[q]= np.concatenate( ( loc_list[q], bc_theta_list[q] ) )
             # ----------------------------------------------------------------------------------------------------------
@@ -1301,15 +1299,10 @@ def bc_u_spherical(l,loc):
 
 def bc_theta_spherical(l):
     '''
-    Thermal boundary conditions for the temperature field,
-    either isothermal or constant heat flux.
+    Thermal boundary conditions for the temperature/entropy field.
     '''
 
-    if par.Etherm==0:
-        
-        return None
-    
-    else:
+    if par.ThermaD > 0:
 
         num_rows_h = int(1 + 1*np.sign(par.ricb))  # 1 if no IC, 2 if present
         #num_rows_h = 2
@@ -1337,10 +1330,14 @@ def bc_theta_spherical(l):
         row0 = 2*(par.hydro+par.magnetic)*ut.n + int(ut.N1*(l-ut.m_top)/2)
         col0 = row0
 
-    out = out.tocoo()
-    out2 = [out.data, out.row + row0, out.col + col0]
+        out = out.tocoo()
+        out2 = [out.data, out.row + row0, out.col + col0]
 
-    return out2
+        return out2
+
+    else:
+
+        pass
 
 
 
