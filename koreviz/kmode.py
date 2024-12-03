@@ -27,7 +27,7 @@ class kmode:
         self.ricb     = par.ricb
         self.rcmb     = ut.rcmb
         self.n        = ut.n
-        self.n0       = ut.n0
+        self.n0       = int(self.N*(self.lmax-self.m+1)/2)
         self.field    = field
         gap           = self.rcmb - self.ricb
         self.ut       = ut
