@@ -73,13 +73,22 @@ def main(ncpus):
         rdh = [ [ [] for j in range(4) ] for i in range(7) ]
         rpw = [ 0, 1, 2, 3, 4, 5, -1]  # powers of r needed for the h function
 
-        rd_eta = [ [ [] for j in range(2) ] for i in range(4) ]
-        for i,rpw1 in enumerate( rpw[:4] ):
-            # Cheb coeffs of the mag. diffusion profile times a power of r
-            rd_eta[i][0] = ut.chebco_f( ut.mag_diffus, i, par.N, par.ricb, ut.rcmb, par.tol_tc )
-            # and the derivative
-            rd_eta[i][1] = ( ut.Dcheb( rd_eta[i][0], par.ricb, ut.rcmb )
-                            - i*ut.chebco_f( ut.mag_diffus,i-1,par.N, par.ricb, ut.rcmb, par.tol_tc) )
+        if cdipole:
+            rd_eta = [ [ [] for j in range(2) ] for i in range(6) ]
+            for i,rpw1 in enumerate( rpw[:6] ):
+                # Cheb coeffs of the mag. diffusion profile times a power of r
+                rd_eta[i][0] = ut.chebco_f( ut.mag_diffus, i, par.N, par.ricb, ut.rcmb, par.tol_tc )
+                # and the derivative
+                rd_eta[i][1] = ( ut.Dcheb( rd_eta[i][0], par.ricb, ut.rcmb )
+                                - i*ut.chebco_f( ut.mag_diffus,i-1,par.N, par.ricb, ut.rcmb, par.tol_tc) )
+        else:
+            rd_eta = [ [ [] for j in range(2) ] for i in range(4) ]
+            for i,rpw1 in enumerate( rpw[:4] ):
+                # Cheb coeffs of the mag. diffusion profile times a power of r
+                rd_eta[i][0] = ut.chebco_f( ut.mag_diffus, i, par.N, par.ricb, ut.rcmb, par.tol_tc )
+                # and the derivative
+                rd_eta[i][1] = ( ut.Dcheb( rd_eta[i][0], par.ricb, ut.rcmb )
+                                - i*ut.chebco_f( ut.mag_diffus,i-1,par.N, par.ricb, ut.rcmb, par.tol_tc) )
             
 
         cnorm = ut.B0_norm()  # Normalization
@@ -230,7 +239,7 @@ def main(ncpus):
             # induction
             labl += [ 'f200', 'f310', 'f301', 'f300' ]
             # magnetic diffusion
-            labl += [ 'f20', 'f31', 'f42' ]
+            labl += ['feta200', 'feta301', 'feta402']
 
         else:
 
@@ -270,7 +279,7 @@ def main(ncpus):
             # induction
             labl += [ 'g301', 'g411',  'g200', 'g310', 'g420', 'g402', 'g300', 'g401', 'g410' ]  # e.g. 'g200' is for (r**2)*h(r)
             # magnetic diffusion
-            labl += [ 'g30', 'g41',  'g52' ]
+            labl += ['geta300', 'geta410', 'geta401', 'geta511', 'geta502']
         else:
             # b
             labl += [ 'g20' ]
