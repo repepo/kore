@@ -381,7 +381,8 @@ def get_radial_derivatives( func, rorder, Dorder, tol):
 
     for i in range(rorder+1):
         rn  = chebco(i, par.N, tol, par.ricb, rcmb) #Cheb coeffs of r^i
-        rd_prof[i][0] =  chebProduct(dnprof[0],rn,par.N,par.tol_tc) #Cheb coeffs of r^i profile
+        rd_prof[i][0] =  (
+            chebProduct(dnprof[0],rn,par.N,par.tol_tc)) #Cheb coeffs of r^i profile
         for j in range(1,Dorder+1):
         # Cheb coeffs of r^i D^j profile
             if i==0:
@@ -758,8 +759,6 @@ def h3(rr, kind, args):
 
     return out2
 
-
-
 def chebco_h(args, kind, N, rcmb, tol):
     '''
     Computes the Chebyshev coeffs of the h0 function used to build B0,
@@ -794,8 +793,6 @@ def chebco_h(args, kind, N, rcmb, tol):
     out[0] = out[0] / 2.
     out[np.absolute(out) <= tol] = 0.
     return out
-
-
 
 def B0_norm():
     '''
@@ -851,8 +848,6 @@ def B0_norm():
 
     return out
 
-
-
 def Dlam(derivative_order: int,
          truncation_order: int) \
         -> ss.csr_matrix:
@@ -890,8 +885,6 @@ def Dlam(derivative_order: int,
 
     return ss.csr_matrix(to_return)
 
-
-
 def Slam(basis_index: int,
          truncation_order: int) \
         -> ss.csr_matrix:
@@ -923,8 +916,6 @@ def Slam(basis_index: int,
 
     return ss.diags([diagonal0, diagonal2], offsets=[0, 2], format = 'csr')
 
-
-
 def starting_multiplication_coefficient(basis_index: int,
                                         subindex: int,
                                         idx1: int,
@@ -953,8 +944,6 @@ def starting_multiplication_coefficient(basis_index: int,
         to_return = to_return * (idx2-subindex+1+t) / (idx2-subindex+basis_index+t)
 
     return to_return
-
-
 
 def multiplication_coefficients(basis_index: int,
                                 range_of_subindex: np.ndarray,
@@ -992,8 +981,6 @@ def multiplication_coefficients(basis_index: int,
         to_return[t] = to_return[t - 1] * factor
 
     return to_return
-
-
 
 def Mlam(coefficients: np.ndarray,
          basis_index: int,
@@ -1140,6 +1127,40 @@ def Mlam(coefficients: np.ndarray,
 
     return ss.csr_matrix(to_return)
 
+def product_in_chebyshev_basis(factors_coefficients: list[np.ndarray],
+                               tolerance: float = par.tol_tc) \
+        -> np.ndarray:
+
+    '''
+    It computes the Chebyshev coefficients of the product of any number of factors given their Chebyshev
+    coefficients. This is done by recursively calling the ``Mlam`` function until all factors are multiplied out.
+    This function **only** works in Chebyshev coefficients, i.e. the :math:`C^{(0)}` basis.
+
+    Each factor doesn't need to be expanded to the same degree. The function keeps padding with zeros where necessary to ensure that all required products can be performed.
+
+    TODO: NEEDS TO BE TESTED.
+
+    Note to us: This function unifies the ChebProduct (and its duplicate Cheb2Product) and the Cheb3Product functions.
+
+    :param factors_coefficients: List of coefficients of the factors, passed as a list of arrays.
+    :param tolerance: Cut-off magnitude. All coefficients of the result below this tolerance will be set to zero.
+    Defaults to the value provided in the ``parameters`` file.
+
+    '''
+    
+    to_return = factors_coefficients[0]
+    for idx in range(1,len(factors_coefficients)):
+        # We begin by padding if necessary
+        if len(factors_coefficients[idx]) > len(to_return):
+            to_return = np.concatenate((to_return, np.zeros(len(factors_coefficients[idx])-len(to_return))))
+        elif len(factors_coefficients[idx]) < len(to_return):
+            factors_coefficients[idx] = np.concatenate((factors_coefficients[idx], np.zeros(len(to_return)-len(factors_coefficients[idx]))))
+        # And now we multiply
+        to_return = Mlam(factors_coefficients[idx],0,0)*to_return
+
+    to_return[np.absolute(to_return) <= tolerance] = 0.0
+
+    return to_return
 
 
 def chebProduct(ck,dk,tol):
@@ -1292,14 +1313,10 @@ def ftest1(ricb):
 
     return np.array([A,B,C])
 
-
-
 def Ylm(l, m, theta, phi):
     # The Spherical Harmonics, seminormalized
     out = scsp.sph_harm(m, l, phi, theta)
     return out*np.sqrt(4*np.pi/(2*l+1))
-
-
 
 def Ylm_full(lmax, m, theta, phi):
     # array of Spherical Harmonics with a range of l's
@@ -1313,8 +1330,6 @@ def Ylm_full(lmax, m, theta, phi):
         out[l-m1]=Ylm(l,m,theta,phi)
     return out
 
-
-
 def Ylm_symm(lmax, m, theta, phi, symm, scalar):
     out = np.zeros((lmax-m+1)/2,dtype=np.complex128)
     if (symm == 1 and scalar == 'pol') or (symm == -1 and scalar == 'tor'):
@@ -1327,14 +1342,10 @@ def Ylm_symm(lmax, m, theta, phi, symm, scalar):
         out[(l-m_sym)/2]=Ylm(l,m,theta,phi)
     return out
 
-
-
 def load_csr(filename):
     # utility to load sparse matrices efficiently
     loader = np.load(filename)
     return ss.csr_matrix((loader['data'], loader['indices'], loader['indptr']), shape=loader['shape'])
-
-
 
 
 def Tk(x, N, lamb_max):
