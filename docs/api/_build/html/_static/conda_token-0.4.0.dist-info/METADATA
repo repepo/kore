@@ -1,0 +1,18 @@
+Metadata-Version: 2.1
+Name: conda-token
+Version: 0.4.0
+Summary: Set repository access token and configure default_channels
+Home-page: https://github.com/Anaconda/conda-token
+Author: Albert DeFusco
+Author-email: adefusco@anaconda.com
+License: BSD
+Keywords: conda-token
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+License-File: LICENSE
+Requires-Dist: conda (>=4.3)
+Requires-Dist: packaging
+Requires-Dist: conda-content-trust
+

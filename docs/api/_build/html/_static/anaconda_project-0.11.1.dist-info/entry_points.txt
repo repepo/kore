@@ -1,0 +1,2 @@
+[console_scripts]
+anaconda-project = anaconda_project.cli:main

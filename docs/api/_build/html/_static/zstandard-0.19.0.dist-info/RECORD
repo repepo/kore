@@ -1,0 +1,16 @@
+zstandard-0.19.0.dist-info/INSTALLER,sha256=zuuue4knoyJ-UwPPXg8fezS7VCrXJQrAP7zeNuwvFQg,4
+zstandard-0.19.0.dist-info/LICENSE,sha256=eI_oXlNySkCymQUcSryc901Csn55aDJbgIkcJfea20s,1484
+zstandard-0.19.0.dist-info/METADATA,sha256=nnzOQO3CJE93MLJ6VIg9Wacq-HFnqvjND8YKb1f45xE,2962
+zstandard-0.19.0.dist-info/RECORD,,
+zstandard-0.19.0.dist-info/REQUESTED,sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU,0
+zstandard-0.19.0.dist-info/WHEEL,sha256=SDelwq02b06fwplkQZvkz1He6jwwI0lX67IuoOqGvrc,105
+zstandard-0.19.0.dist-info/direct_url.json,sha256=23GwamhvYdcQVb8qTgrwF-lfj_ZduvMWRX2rEPmAUIU,79
+zstandard-0.19.0.dist-info/top_level.txt,sha256=J-wj94pPadY4ipFaanrYBlrMblOSegEYS8o_LdogrpU,10
+zstandard/__init__.py,sha256=imXNSrRBEuFDOgl9rufOhgAEeZXzKJ8T11i7ABwGpVM,7102
+zstandard/__init__.pyi,sha256=w7AmWAOu39_YMBFwHqZsJ1eIr6YrVkUq40sC4HPm8p4,13890
+zstandard/__pycache__/__init__.cpython-311.pyc,,
+zstandard/__pycache__/backend_cffi.cpython-311.pyc,,
+zstandard/_cffi.cpython-311-x86_64-linux-gnu.so,sha256=Dxqu6jreVpP_bQr1gABcFQ0TfP8kAUNKURlIZ7Df0zM,897512
+zstandard/backend_c.cpython-311-x86_64-linux-gnu.so,sha256=YoDSOriv86uUaybuXSgnIOaCYGOg2W36JPsWXu5Xe1I,762712
+zstandard/backend_cffi.py,sha256=nDdvVF6eAt84S4rSfPGd5ZAZb2xrAB0uRUFykDR4498,151371
+zstandard/py.typed,sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU,0

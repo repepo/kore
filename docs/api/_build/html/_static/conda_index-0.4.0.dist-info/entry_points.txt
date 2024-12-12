@@ -1,0 +1,5 @@
+[conda]
+index=conda_index.plugin
+
+[console_scripts]
+

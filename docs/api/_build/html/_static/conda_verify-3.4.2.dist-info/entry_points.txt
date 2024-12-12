@@ -1,0 +1,4 @@
+
+        [console_scripts]
+        conda-verify=conda_verify.cli:cli
+        

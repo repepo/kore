@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+ Retrieved from: https://fontawesome.com/v5.15/icons/play-circle
+ License: https://fontawesome.com/license
+ Modifications: scaled to 20x20px with additional 2px margin on all sides
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <path d="M 12,2 C 6.47581,2 2,6.47581 2,12 2,17.52419 6.47581,22 12,22 17.52419,22 22,17.52419 22,12 22,6.47581 17.52419,2 12,2 Z m 4.66532,10.96774 -7.09677,4.07258 c -0.6371,0.35484 -1.43952,-0.1008 -1.43952,-0.84677 v -8.3871 c 0,-0.74193 0.79839,-1.20161 1.43952,-0.84677 l 7.09677,4.31451 c 0.66129,0.37097 0.66129,1.32662 0,1.69355 z" fill="#000000" />
+</svg>

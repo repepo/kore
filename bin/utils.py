@@ -1020,7 +1020,7 @@ def Mlam(coefficients: np.ndarray,
 
     :param basis_index: The index of the Gegenbauer family, :math:`\\lambda`.
     :param coefficients: The :math:`\\lambda`-th Gegenabuer coefficients of the factor represented in
-    :math:`\\mathbf{\\mnathcal{M}[a]}, :math:`a_k`.
+    :math:`\\mathbf{\\mathcal{M}[a]}, :math:`a_k`.
     :param vector_parity: The parity of the eigenvector.
     :param truncation_order: The truncation order, setting the size of the operator. If ``None``, it infers the order
     from the size of ``coefficients``. Defaults to None.

@@ -1,0 +1,4 @@
+
+        [console_scripts]
+        conda-pack=conda_pack.cli:main
+      

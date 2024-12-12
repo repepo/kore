@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+ Retrieved from: https://fontawesome.com/v5.15/icons/exclamation-triangle
+ License: https://fontawesome.com/license
+ Modifications: scaled to 20x20px with additional 2px margin on all sides
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <path d="M21.775,18.389c0.641,1.111 -0.164,2.5 -1.444,2.5l-16.662,-0c-1.283,-0 -2.084,-1.391 -1.444,-2.5l8.331,-14.445c0.642,-1.111 2.248,-1.109 2.888,-0l8.331,14.445Zm-9.775,-2.986c-0.882,-0 -1.597,0.715 -1.597,1.597c-0,0.882 0.715,1.597 1.597,1.597c0.882,0 1.597,-0.715 1.597,-1.597c0,-0.882 -0.715,-1.597 -1.597,-1.597Zm-1.516,-5.741l0.257,4.722c0.012,0.221 0.195,0.394 0.416,0.394l1.686,-0c0.221,-0 0.404,-0.173 0.416,-0.394l0.257,-4.722c0.013,-0.239 -0.177,-0.44 -0.416,-0.44l-2.2,0c-0.239,0 -0.429,0.201 -0.416,0.44Z" fill="#F5A800" style="fill-rule:nonzero;" />
+</svg>

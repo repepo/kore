@@ -1,0 +1,2 @@
+[console_scripts]
+conda-token = conda_token.cli:cli

@@ -1,0 +1,25 @@
+Metadata-Version: 2.1
+Name: ruamel-yaml-conda
+Version: 0.17.21
+Summary: ruamel_yaml is a YAML parser/emitter that supports roundtrip preservation of comments, seq/map flow style, and map key order
+Author: Anthon van der Neut
+Author-email: a.van.der.neut@ruamel.eu
+Classifier: Programming Language :: Python :: 3 :: Only
+Classifier: Programming Language :: Python :: 3.5
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: Implementation :: CPython
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Classifier: Topic :: Text Processing :: Markup
+Classifier: Typing :: Typed
+Requires-Python: >=3
+License-File: LICENSE
+Requires-Dist: ruamel.yaml.clib (>=0.2.6) ; platform_python_implementation=="CPython" and python_version<"3.11"
+Provides-Extra: docs
+Requires-Dist: ryd ; extra == 'docs'
+Provides-Extra: jinja2
+Requires-Dist: ruamel.yaml.jinja2 (>=0.2) ; extra == 'jinja2'
+

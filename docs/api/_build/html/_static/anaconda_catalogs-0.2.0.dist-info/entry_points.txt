@@ -1,0 +1,2 @@
+[intake.drivers]
+anaconda_catalog = anaconda_catalogs.catalog:AnacondaCatalog

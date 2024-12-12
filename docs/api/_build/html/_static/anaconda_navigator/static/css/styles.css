@@ -1,0 +1,2339 @@
+/*****************************************************************************/
+/** NOTE: Do not use 'pt' sizes in declarations. Use 'px' only **/
+/* Dropdown == QComboBox                                                     */
+/* Div      ~=  QFrame                                                       */
+/* For custom widgets use [<state>="<lowercased boolean>"]                   */
+/* :checked   == [checked="true"]                                            */
+/* :disabled  == [disabled="false"]                                          */
+/* :enabled   == [enabled="true"]                                            */
+/* :focus     == [focused="true"]                                            */
+/* :hover     == [hovered="true"]                                            */
+/* :pressed   == [pressed="true"]                                            */
+/*****************************************************************************/
+/*****************************************************************************/
+/* Brand Colors                                                              */
+/*****************************************************************************/
+/*****************************************************************************/
+/* Mixins                                                                    */
+/*****************************************************************************/
+/*****************************************************************************/
+/* Global Qt Styles                                                         */
+/*****************************************************************************/
+/* Note: These styles alter the default QtWidgets (no subclasses here)       */
+QWidget {
+  border-radius: 0px;
+  border-width: 0px;
+  color: #000;
+  font: 300 normal 12px "Ubuntu";
+  margin: 0px;
+  padding: 0px;
+  selection-background-color: #43B02A;
+  selection-color: white; }
+  QWidget:focus {
+    outline: None;
+    text-decoration: underline; }
+  QWidget:disabled {
+    color: #999; }
+
+/*****************************************************************************/
+/* Line edits and text boxes                                                 */
+/*                                                                           */
+/* http://doc.qt.io/qt-4.8/stylesheet-examples.html#customizing-qlineedit    */
+/*****************************************************************************/
+QTextEdit {
+  /* This affects all textboxes, search boxes and form boxes. Must be adjusted
+   * to match the height of the buttons.
+   */
+  background-color: white;
+  border: 1px solid #707070;
+  border-radius: 4px;
+  font: 300 normal 12px "Ubuntu";
+  outline: none;
+  padding: 4px 6px;
+}
+QTextEdit:focus,
+QTextEdit:hover {
+  border: 1px solid #43B02A;
+}
+
+QLineEdit,
+QTextArea {
+  /* This affects all textboxes, search boxes and form boxes. Must be adjusted
+   * to match the height of the buttons.
+   */
+  background: white;
+  border: 1px solid #707070;
+  border-radius: 4px;
+  font: 300 normal 12px "Ubuntu";
+  max-height: 16px;
+  min-height: 16px;
+  padding: 4px 6px;
+}
+QLineEdit:focus,
+QLineEdit:hover,
+QTextArea:focus,
+QTextArea:hover {
+    border: 1px solid #43B02A;
+}
+
+LineEditSearch {
+  border-radius: 12px;
+}
+
+/*****************************************************************************/
+/* Scroll bar */
+/*****************************************************************************/
+QScrollBar {
+  /* http://doc.qt.io/qt-4.8/stylesheet-examples.html#customizing-qscrollbar */
+  /* Top section */
+  /* Bottom section */ }
+  /* Vertical Scroll */
+  QScrollBar:add-page:vertical, QScrollBar:sub-page:vertical {
+    background: none;
+  }
+  QScrollBar:vertical {
+    background: #d8d8d8;
+    margin: 20px 0 20px 0;
+    width: 16px;
+  }
+  QScrollBar:handle:vertical {
+    background-color: #bbb;
+    margin: 1px 0;
+    min-height: 8px;
+    max-height: 200px;
+  }
+  QScrollBar:up-arrow:vertical {
+    image: url('$IMAGE_PATH/icons/sort-asc.svg');
+    border: 0 solid grey;
+    width: 16px;
+    height: 16px;
+  }
+  QScrollBar:sub-line:vertical {
+    background-color: #bbb;
+    height: 20px;
+    subcontrol-position: top;
+    subcontrol-origin: margin;
+  }
+  QScrollBar:down-arrow:vertical {
+    image: url('$IMAGE_PATH/icons/sort-desc.svg');
+    border: 0 solid grey;
+    width: 16px;
+    height: 16px;
+  }
+  QScrollBar:add-line:vertical {
+    background-color: #bbb;
+    height: 20px;
+    subcontrol-position: bottom;
+    subcontrol-origin: margin;
+  }
+
+  /* Horizontal Scroll */
+  QScrollBar:add-page:horizontal, QScrollBar::sub-page:horizontal {
+    background: none;
+  }
+  QScrollBar:horizontal {
+    background: #d8d8d8;
+    margin: 0 20px 0 20px;
+    height: 16px;
+  }
+  QScrollBar:handle:horizontal {
+    background-color: #bbb;
+    margin: 0 1px;
+    min-width: 8px;
+    max-width: 200px;
+  }
+  QScrollBar:left-arrow:horizontal {
+    image: url('$IMAGE_PATH/icons/arrow-left.svg');
+    border: 0 solid grey;
+    height: 16px;
+    width: 16px;
+  }
+  QScrollBar:right-arrow:horizontal {
+    image: url('$IMAGE_PATH/icons/arrow-right.svg');
+    border: 0 solid grey;
+    height: 16px;
+    width: 16px;
+  }
+  QScrollBar:sub-line:horizontal {
+    background-color: #bbb;
+    width: 20px;
+    subcontrol-position: left;
+    subcontrol-origin: margin;
+  }
+  QScrollBar:add-line:horizontal {
+    background-color: #bbb;
+    width: 20px;
+    subcontrol-position: right;
+    subcontrol-origin: margin;
+  }
+
+  QScrollBar:handle:hover {
+    background-color: #ccc;
+  }
+  QScrollBar:sub-line:hover {
+      background-color: #ccc;
+  }
+
+/*****************************************************************************/
+/* Application Menu Bar (File, Help etc..., needed for linux and windows)    */
+/*                                                                           */
+/* http://doc.qt.io/qt-4.8/stylesheet-examples.html#customizing-qmenubar     */
+/*****************************************************************************/
+QMenuBar {
+  background: #ffffff; }
+  QMenuBar:item {
+    background: transparent;
+    border-radius: 0px;
+    padding: 4px 8px;
+    spacing: 3px; }
+    QMenuBar:item:selected {
+      /* when selected using mouse or keyboard */
+      background: #43B02A;
+      color: white; }
+    QMenuBar:item:pressed {
+      background: #cccccc;
+      color: black; }
+
+/*****************************************************************************/
+/* Contextual menus (Display of menu bar or right click contextual menus)    */
+/*                                                                           */
+/* http://doc.qt.io/qt-4.8/stylesheet-examples.html#customizing-qmenu        */
+/*****************************************************************************/
+QMenu {
+  background-color: white;
+  border: 1px solid grey;
+  menu-scrollable: 1;
+  /* Reserve space for selection border */ }
+  QMenu:separator {
+    background: gray;
+    width: 1px;
+    /* When vertical */
+    height: 1px;
+    /* When horizontal */ }
+  QMenu:indicator:checked {
+    image: url('$IMAGE_PATH/icons/check-active.svg'); }
+  QMenu:item {
+    border: 1px solid transparent;
+    /* Reserve space for selection border */
+    padding: 8px 24px; }
+    QMenu:item:selected {
+      background: #E0E0E0;
+      color: #43B02A; }
+    QMenu:item:disabled {
+      background: transparent;
+      color: #ccc; }
+
+/*****************************************************************************/
+/* Checkboxes                                                                */
+/*                                                                           */
+/* http://doc.qt.io/qt-4.8/stylesheet-examples.html#customizing-qcheckbox    */
+/*****************************************************************************/
+QCheckBox,
+QRadioButton {
+  outline: none; /* Remove the focus rectangle in ubuntu and osx */
+  padding-right: 6px;
+}
+QCheckBox:indicator,
+QRadioButton:indicator {
+  height: 16px;
+  width: 16px;
+}
+
+QCheckBox:indicator:disabled:unchecked {
+  image: url('$IMAGE_PATH/icons/check-box-disabled.svg');
+  color: #ccc;
+}
+QRadioButton:indicator:disabled:unchecked {
+  image: url('$IMAGE_PATH/icons/radio-button-disabled.svg');
+  color: #ccc;
+}
+
+QCheckBox:indicator:disabled:checked {
+  image: url('$IMAGE_PATH/icons/check-box-checked-disabled.svg');
+  color: #ccc;
+}
+QRadioButton:indicator:disabled:checked {
+  image: url('$IMAGE_PATH/icons/radio-button-checked-disabled.svg');
+  color: #ccc;
+}
+
+QCheckBox:indicator:unchecked {
+  image: url('$IMAGE_PATH/icons/check-box-blank.svg');
+}
+QRadioButton:indicator:unchecked {
+  image: url('$IMAGE_PATH/icons/radio-button-blank.svg');
+}
+
+QCheckBox:indicator:unchecked:hover,
+QCheckBox:indicator:unchecked:focus {
+  image: url('$IMAGE_PATH/icons/check-box-active.svg');
+}
+QRadioButton:indicator:unchecked:hover,
+QRadioButton:indicator:unchecked:focus {
+  image: url('$IMAGE_PATH/icons/radio-button-active.svg');
+}
+
+QCheckBox:indicator:unchecked:pressed {
+  image: url('$IMAGE_PATH/icons/check-box-blank.svg');
+}
+QRadioButton:indicator:unchecked:pressed {
+  image: url('$IMAGE_PATH/icons/radio-button-blank.svg');
+}
+
+QCheckBox:indicator:checked {
+  image: url('$IMAGE_PATH/icons/check-box-checked.svg');
+}
+QRadioButton:indicator:checked {
+  image: url('$IMAGE_PATH/icons/radio-button-checked.svg');
+}
+
+QCheckBox:indicator:checked:focus,
+QCheckBox:indicator:checked:checked:hover {
+  image: url('$IMAGE_PATH/icons/check-box-checked-active.svg');
+}
+QRadioButton:indicator:checked:focus,
+QRadioButton:indicator:checked:checked:hover {
+  image: url('$IMAGE_PATH/icons/radio-button-checked-active.svg');
+}
+
+/*****************************************************************************/
+/* QComboBox / Dropdown                                                      */
+/*                                                                           */
+/* http://doc.qt.io/qt-4.8/stylesheet-examples.html#customizing-qcombobox    */
+/*****************************************************************************/
+QComboBox {
+  background: white;
+  border: 1px solid grey;
+  border-radius: 4px;
+  padding-right: 16px;  /* Equal to the down arrow size */
+  /* Styles every list item within the dropdown list */
+  /* "Trigger" */
+  /* "Closed" state */
+  /* This is the actual dropdown box */
+}
+QComboBox:focus,
+QComboBox:hover {
+  border: 1px solid #62b849;
+}
+QComboBox:indicator {
+  image: none; /* This will appear in all lines */
+}
+QComboBox::down-arrow {
+  image: url('$IMAGE_PATH/icons/sort-desc.svg');
+  max-width: 16px;
+  min-width: 16px;
+}
+QComboBox::drop-down {
+  border-left-width: 1px;
+  border-left-color: darkgray;
+  border-left-style: solid;
+  subcontrol-origin: padding;
+  subcontrol-position: top right;
+  width: 15px;
+}
+QComboBox:on::drop-down {
+  /* Height can be changed here */
+  /*border-radius: 0;*/
+  height: 24px;
+  min-height: 24px;
+  min-width: 8em;
+  padding-top: 0;
+  padding-left: 24px;
+}
+QComboBox:on::drop-down#package-version {
+  /* Height can be changed here */
+  min-width: 1.5em;
+}
+QComboBox:on::drop-down#r-type {
+  /* Height can be changed here */
+  min-width: 1.5em;
+}
+QComboBox:on::drop-down#environment-selection {
+  /* Height can be changed here */
+  min-width: 18em;
+}
+QComboBox:item {
+  border: 1px solid transparent;
+  /* The presently selected item */
+  /* Hover states for all list items */
+}
+QComboBox:item:checked {
+  color: #35a615;
+  background-image: url('$IMAGE_PATH/icons/check.svg');
+}
+QComboBox:item:selected {
+  color: #35a615;
+  background: #f2f2f2;
+}
+QComboBox QAbstractItemView {
+  background: white;
+  border: 1px solid grey;
+  selection-background-color: #f2f2f2;
+  selection-color: white;
+}
+
+/*****************************************************************************/
+/* Frame / Containers                                                        */
+/*                                                                           */
+/* http://doc.qt.io/qt-4.8/stylesheet-examples.html#customizing-qframe       */
+/*****************************************************************************/
+FrameBody {
+  /* This is the main body container (Side bar plus content) */
+  background: white; }
+
+FrameTabBody {
+  /* This is the container for the content of the tabs */
+  border: 1px solid #ddd;
+  margin: 16px; }
+
+FrameTabHeader {
+  border-bottom: 1px solid #ddd;
+  padding: 12px;
+  max-height: 26px;
+  min-height: 26px;
+  /* Needed to guarantee a size on OSX and linux */ }
+  FrameTabHeader QLabel {
+    font-size: 16px; }
+
+FrameTabFooter {
+  border: 1px solid transparent;
+  border-top: 1px solid #ddd;
+  min-height: 20px;
+  padding: 6px; }
+
+/*****************************************************************************/
+/* QTabBars and QTabWidgets                                                  */
+/*                                                                           */
+/* http://doc.qt.io/qt-4.8/stylesheet-examples.html#customizing-qtabwidget-and-qtabbar */
+/*****************************************************************************/
+QTabWidget {
+  /* The tab widget frame */
+}
+QTabWidget:pane {
+  border-top: 0 solid #fff;
+}
+QTabWidget:tab-bar {
+  left: 12px;
+  /* move to the right by 5px */
+}
+
+QTabBar:tab {
+  background: #e6e6e6;
+  border: 0 solid #e6e6e6;
+  border-top: 2px solid #e6e6e6;
+  color: #43B02A;
+  min-width: 6em;
+  min-height: 20px;
+  padding: 8px 10px;
+}
+QTabBar:tab:hover {
+  background: #d8d8d8;
+  border-top: 2px solid #d8d8d8;
+  color: #43B02A;
+}
+QTabBar:tab:selected {
+  background: #fff;
+  color: #43B02A;
+  border-top: 2px solid #43B02A;
+}
+
+/*****************************************************************************/
+/* Dialogs (Preferences, quit, logger, update etc...)                        */
+/*                                                                           */
+/* http://doc.qt.io/qt-4.8/stylesheet-examples.html#customizing-qframe       */
+/*                                                                           */
+/* /anaconda_navigator/widgets/dialogs/                                      */
+/*****************************************************************************/
+FrameDialog {
+  /* Frame container for TitleBar and Body */
+  border: 1px solid #4F7588;
+  margin: 10px;
+}
+
+FrameDialogTitleBar {
+  background: #253746;
+  border-bottom: 1px solid #4F7588;
+  padding: 0 0 0 12px;
+  max-height: 32px;
+  min-height: 32px;
+}
+FrameDialogTitleBar QWidget {
+  color: white;
+}
+FrameDialogTitleBar ButtonDialogClose {
+  qproperty-icon: url('$IMAGE_PATH/icons/dialog-close.svg');
+  qproperty-iconSize: 14px 14px;
+}
+
+FrameDialogBody {
+  background: white;
+  padding: 16px;
+}
+FrameDialogBody ButtonNormal,
+FrameDialogBody ButtonPrimary,
+FrameDialogBody ButtonDanger {
+  border-width: 2px;
+  border-radius: 15px;
+  padding: 2px 24px;
+  min-width: 60px;
+  max-width: 120px;
+}
+
+/*****************************************************************************/
+/* Tooltips                                                                  */
+/*                                                                           */
+/*                                                                           */
+/*****************************************************************************/
+QToolTip {
+  font: 300 normal 11px "Ubuntu";
+  border: 1px solid #4F7588;
+  background: white;
+  padding: 8px;
+  opacity: 250;
+  color: black; }
+
+/*****************************************************************************/
+/* Spacers                                                                   */
+/*                                                                           */
+/*                                                                           */
+/*****************************************************************************/
+SpacerVertical {
+  /* Uses a QLabel to allow tweaking spacing between buttons in forms etc.   */
+  max-height: 12px;
+  min-height: 12px; }
+
+SpacerHorizontal {
+  /* Uses a QLabel to allow tweaking spacing between buttons in forms etc.   */
+  max-width: 12px;
+  min-width: 12px; }
+
+/*****************************************************************************/
+/* Tables                                                                    */
+/*                                                                           */
+/* http://doc.qt.io/qt-4.8/stylesheet-examples.html#customizing-qtableview   */
+/*****************************************************************************/
+QHeaderView:down-arrow {
+  image: url('$IMAGE_PATH/icons/sort-asc.svg');
+  max-width: 16px;
+  min-width: 16px;
+  max-height: 16px;
+  min-height: 16px; }
+QHeaderView:up-arrow {
+  image: url('$IMAGE_PATH/icons/sort-desc.svg');
+  max-width: 16px;
+  min-width: 16px;
+  max-height: 16px;
+  min-height: 16px; }
+QHeaderView:section {
+  /* Header of tables */
+  border: 1px solid #eee;
+  background-color: #eee;
+  color: black;
+  padding: 6px;
+  spacing: 10px; }
+  QHeaderView:section:hover, QHeaderView:section:focus {
+    background-color: #ddd;
+    border: 0px solid black; }
+
+QTableView {
+  border: 1px solid #ddd;
+  outline: none;
+  alternate-background-color: #efefef;
+  background-color: white; }
+
+/*****************************************************************************/
+/* ProgressBar                                                               */
+/*                                                                           */
+/* http://doc.qt.io/qt-4.8/stylesheet-examples.html#customizing-qprogressbar */
+/*****************************************************************************/
+QProgressBar {
+  border: 0px solid #E0E0E0;
+  border-radius: 4px;
+  background-color: #E0E0E0;
+  padding: 1px;
+  max-width: 240px;
+  max-height: 20px;
+  min-height: 20px; }
+  QProgressBar:chunk {
+    background-color: #00A3E0;
+    width: 10px;
+    margin: 0px; }
+
+/*****************************************************************************/
+/* Buttons */
+/*                                                                           */
+/*                                                                           */
+/*                                                                           */
+/*****************************************************************************/
+ButtonBase,
+ButtonToolBase {
+  color: black;
+  border: 1px solid transparent;
+  border-bottom: 2px solid transparent;
+  padding: 0 10px;
+  margin: 0;
+  outline: none; /* Remove the focus rect in ubuntu and macos */
+}
+
+ButtonBase:focus {
+  text-decoration: underline;
+}
+
+ButtonToggleCollapse {
+  border: 1px solid transparent;
+  border-bottom: 2px solid #aaa;
+  background: #ddd;
+  color: black;
+  qproperty-iconSize: 14px;
+}
+
+ButtonToggleCollapse:hover,
+ButtonToggleCollapse:focus {
+  background: #eeeeee;
+}
+
+ButtonToggleCollapse {
+  border: 1px solid #ddd;
+  border-top-width: 0;
+  border-bottom-width: 0;
+  max-width: 24px;
+  min-width: 24px;
+  qproperty-iconSize: 24px;
+}
+ButtonToggleCollapse[checked="false"] {
+  qproperty-icon: url('$IMAGE_PATH/icons/arrow-left.svg');
+}
+ButtonToggleCollapse[checked="true"] {
+  qproperty-icon: url('$IMAGE_PATH/icons/arrow-right.svg');
+}
+
+IconButton {
+  background-position: center;
+  background-repeat: no-repeat;
+  qproperty-icon: url(' ');
+  /*
+   * To use this style:
+   * - set `background-image` to a valid icon url
+   * - set `qproperty-iconSize` to a desired size of the icon
+   */
+}
+
+ButtonHomeRefresh {
+  background-image: url('$IMAGE_PATH/icons/refresh.svg');
+  qproperty-iconSize: 24px;
+}
+ButtonHomeRefresh:focus,
+ButtonHomeRefresh:hover {
+  background-image: url('$IMAGE_PATH/icons/refresh-hovered.svg');
+}
+ButtonHomeRefresh:pressed {
+  background-image: url('$IMAGE_PATH/icons/refresh-pressed.svg');
+}
+
+ButtonNormal {
+  background: #E0E0E0;
+  border-color: transparent;
+  border-radius: 13px;
+  border-style: solid;
+  border-width: 1px;
+  color: #5A5A5A;
+  font-weight: 700;
+  margin: 0;
+  max-height: 24px;
+  min-height: 24px;
+  outline: none;
+  padding: 0 16px;
+}
+ButtonNormal:focus {
+  text-decoration: underline;
+}
+ButtonNormal:disabled {
+  background: #ccc;
+  color: #aaa;
+}
+ButtonNormal:focus,
+ButtonNormal:hover {
+  background: #d3d3d3;
+}
+ButtonNormal:pressed {
+  background: #c7c7c7;
+}
+
+ButtonCancel {
+  background: #E0E0E0;
+  border-color: transparent;
+  border-radius: 13px;
+  border-style: solid;
+  border-width: 1px;
+  color: #5A5A5A;
+  font-weight: 700;
+  margin: 0;
+  max-height: 24px;
+  min-height: 24px;
+  outline: none;
+  padding: 0 16px;
+}
+ButtonCancel:focus {
+    text-decoration: underline;
+}
+ButtonCancel:disabled {
+  background: #ccc;
+  color: #aaa;
+}
+ButtonCancel:hover {
+  background: #d3d3d3;
+}
+ButtonCancel:pressed {
+  background: #c7c7c7;
+}
+
+ButtonPrimary {
+  background: #D9EFDB;
+  border-color: transparent;
+  border-radius: 13px;
+  border-style: solid;
+  border-width: 1px;
+  color: #00733C;
+  font-weight: 700;
+  margin: 0;
+  max-height: 24px;
+  min-height: 24px;
+  outline: none;
+  padding: 0 16px;
+}
+ButtonPrimary:focus {
+  text-decoration: underline;
+}
+ButtonPrimary:disabled {
+  background: #ccc;
+  color: #aaa;
+}
+ButtonPrimary:hover {
+  background: #A1D8A4;
+}
+ButtonPrimary:pressed {
+  background: #69C06D;
+}
+
+ButtonDanger {
+  background: #F1CAD1;
+  border-color: transparent;
+  border-radius: 13px;
+  border-style: solid;
+  border-width: 1px;
+  color: #7A0920;
+  font-weight: 700;
+  margin: 0;
+  max-height: 24px;
+  min-height: 24px;
+  outline: none;
+  padding: 0 16px;
+}
+ButtonDanger:focus {
+  text-decoration: underline;
+}
+ButtonDanger:disabled {
+  background: #ccc;
+  color: #aaa;
+}
+ButtonDanger:hover {
+  background: #E7A8B4;
+}
+ButtonDanger:pressed {
+  background: #DD8697;
+}
+
+FrameTabHeader ButtonNormal {
+  background-color: #F3F5F5;
+  border-color: #B7BEBE;
+  color: #000000;
+  font-weight: 500;
+}
+FrameTabHeader ButtonNormal:hover {
+  background-color: #E9EBEB;
+}
+FrameTabHeader ButtonNormal:pressed {
+  background-color: #DBDEDE;
+}
+
+ButtonLink {
+  background: none;
+  border: none;
+  color: #43B02A;
+  padding: 1px;
+  text-align: left;
+}
+ButtonLink:focus {
+  text-decoration: underline;
+}
+ButtonLink:hover, ButtonLink:focus {
+  color: #007041;
+}
+
+ButtonLabel:disabled {
+  color: black;
+}
+
+ButtonLogin {
+  background-color: #0D2125;
+  border-color: #FFFFFF;
+  border-radius: 20px;
+  border-style: outset;
+  border-width: 2px;
+  color: #FFF;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 24px 6px 18px;
+  qproperty-icon: url('$IMAGE_PATH/icons/account-expand.svg');
+  qproperty-iconSize: 20px;
+}
+ButtonLogin:focus {
+  text-decoration: none;
+}
+ButtonLogin:focus,
+ButtonLogin:hover {
+  background: #1A8241;
+}
+ButtonLogin:pressed {
+  background: #358720;
+}
+
+ButtonLabelLogin {
+  font: 16px/24px Museo Sans Rounded;
+}
+/*****************************************************************************/
+/* Header                                                                    */
+/*                                                                           */
+/*****************************************************************************/
+FrameHeader {
+  /* This is the top (anaconda logo, login buttons) container */
+  background: #FFFFFF;
+  min-height: 48px;
+  padding: 4px 25px;
+  border-bottom: 1px solid #E0E0E0; }
+  FrameHeader LabelBeta {
+    padding: 12px 5px 0 5px;
+    font: 100 normal 10px "Ubuntu";
+    color: white;
+    max-height: 1em;
+    min-height: 1em; }
+  FrameHeader ButtonLabel:disabled {
+    color: black; }
+  FrameHeader ButtonHeaderUpdate {
+    border: 1px dashed transparent;
+    color: #43B02A;
+    font: 400 normal 14px "Ubuntu";
+    padding: 4px;
+    qproperty-iconSize: 24px;
+    qproperty-icon: url('$IMAGE_PATH/icons/info-green.svg'); }
+    FrameHeader ButtonHeaderUpdate[hovered='true'], FrameHeader ButtonHeaderUpdate[focused='true'] {
+      qproperty-icon: url('$IMAGE_PATH/icons/info-green-active.svg');
+      color: #007041; }
+    FrameHeader ButtonHeaderUpdate[focused='true'] {
+      border: 1px dashed #ccc;
+      color: #007041; }
+    FrameHeader ButtonHeaderUpdate[pressed='true'] {
+      qproperty-icon: url('$IMAGE_PATH/icons/info.svg');
+      color: 0; }
+
+/*****************************************************************************/
+/* Sidebar                                                                   */
+/*                                                                           */
+/*****************************************************************************/
+FrameTabBar {
+  /* This is the side navigation bar container */
+  background: #E0E0E0;
+  border-right: 1px solid #E0E0E0;
+  margin: 0;
+  max-width: 200px;
+  min-width: 200px;
+}
+FrameTabBar FrameTabBarBottom {
+  padding: 20px;
+  padding-bottom: 42px;
+}
+FrameTabBar FrameTabBarBottom FrameTabBarLink {
+  padding: 20px 0;
+}
+FrameTabBar FrameTabBarBottom FrameTabBarLink ButtonLink {
+  text-align: center;
+  color: #000;
+  padding: 8px 12px;
+  margin: 6px 0;
+  background: white;
+}
+FrameTabBar FrameTabBarBottom FrameTabBarLink ButtonLink:hover {
+  color: #43B02A;
+}
+FrameTabBar FrameTabBarBottom FrameTabBarSocial {
+  padding: 0;
+}
+FrameTabBar FrameTabBarBottom FrameTabBarSocial ButtonLink {
+  background: transparent;
+  border: 1px dashed transparent;
+  font: 100 normal 1px "Ubuntu";
+  padding: 4px;
+  padding-left: 6px;
+  padding-right: 0;
+  margin: 0;
+  qproperty-iconSize: 24px;
+}
+FrameTabBar FrameTabBarBottom FrameTabBarSocial ButtonLink:focus,
+FrameTabBar FrameTabBarBottom FrameTabBarSocial ButtonLink:hover {
+  border: 1px dashed grey;
+}
+FrameTabBar FrameTabBarBottom FrameTabBarSocial ButtonLink#twitter {
+  qproperty-icon: url('$IMAGE_PATH/icons/twitter.svg');
+}
+FrameTabBar FrameTabBarBottom FrameTabBarSocial ButtonLink#twitter[hovered='true'] {
+  qproperty-icon: url('$IMAGE_PATH/icons/twitter-active.svg');
+}
+FrameTabBar FrameTabBarBottom FrameTabBarSocial ButtonLink#github {
+  qproperty-icon: url('$IMAGE_PATH/icons/github.svg');
+}
+FrameTabBar FrameTabBarBottom FrameTabBarSocial ButtonLink#github[hovered='true'] {
+  qproperty-icon: url('$IMAGE_PATH/icons/github-active.svg');
+}
+FrameTabBar FrameTabBarBottom FrameTabBarSocial ButtonLink#youtube {
+  qproperty-icon: url('$IMAGE_PATH/icons/youtube.svg');
+}
+FrameTabBar FrameTabBarBottom FrameTabBarSocial ButtonLink#youtube[hovered='true'] {
+  qproperty-icon: url('$IMAGE_PATH/icons/youtube-active.svg');
+}
+
+ButtonTab {
+  background: #E0E0E0;
+  border-bottom: 1px solid #E0E0E0;
+  font: 300 normal 14px "Ubuntu";
+  min-height: 32px;
+  max-height: 64px;
+  padding: 10 24px;
+  qproperty-iconSize: 24px;
+  /* Specific icons per button */ }
+  ButtonTab[checked="true"] {
+    background: #F5F5F5;
+    color: #43B02A; }
+  ButtonTab[checked="false"]:focus, ButtonTab[checked="false"]:hover {
+    background: #f1f1f1; }
+  ButtonTab:focus {
+    text-decoration: underline; }
+  ButtonTab#home[checked="true"] {
+    qproperty-icon: url('$IMAGE_PATH/icons/home-active.svg'); }
+  ButtonTab#home[checked="false"] {
+    qproperty-icon: url('$IMAGE_PATH/icons/home.svg'); }
+  ButtonTab#environments[checked="true"] {
+    qproperty-icon: url('$IMAGE_PATH/icons/env-active.svg'); }
+  ButtonTab#environments[checked="false"] {
+    qproperty-icon: url('$IMAGE_PATH/icons/env.svg'); }
+  ButtonTab#projects {
+    qproperty-iconSize: 24px;
+    padding: 10 24px; }
+    ButtonTab#projects[checked="true"] {
+      qproperty-icon: url('$IMAGE_PATH/icons/project-active.svg'); }
+    ButtonTab#projects[checked="false"] {
+      qproperty-icon: url('$IMAGE_PATH/icons/project.svg'); }
+  ButtonTab#community[checked="true"] {
+    qproperty-icon: url('$IMAGE_PATH/icons/community-active.svg'); }
+  ButtonTab#community[checked="false"] {
+    qproperty-icon: url('$IMAGE_PATH/icons/community.svg'); }
+  ButtonTab#learning[checked="true"] {
+    qproperty-icon: url('$IMAGE_PATH/icons/learning-active.svg'); }
+  ButtonTab#learning[checked="false"] {
+    qproperty-icon: url('$IMAGE_PATH/icons/learning.svg'); }
+
+LabelTabHeader {
+  margin: 0px;
+  color: #666;
+  padding: 6px; }
+
+ButtonSearch {
+  margin-right: 6px;
+  image: url('$IMAGE_PATH/icons/close.svg');
+  max-width: 20px;
+  min-width: 20px; }
+  ButtonSearch:disabled {
+    image: url('$IMAGE_PATH/icons/search.svg'); }
+  ButtonSearch[focused='true'] {
+    image: url('$IMAGE_PATH/icons/close-active.svg'); }
+
+ButtonShow {
+  margin-right: 6px;
+  image: url('$IMAGE_PATH/icons/eye.svg');
+  max-width: 20px;
+  min-width: 20px; }
+  ButtonShow:disabled {
+    image: url('$IMAGE_PATH/icons/eye-disabled.svg'); }
+  ButtonShow[focused='true'] {
+    image: url('$IMAGE_PATH/icons/eye-active.svg'); }
+
+/*****************************************************************************/
+/* Application list (Home Tab)                                               */
+/*                                                                           */
+/*                                                                           */
+/*****************************************************************************/
+ListWidgetApplication {
+  background-color: #eee;
+  padding: 5px;
+  outline: none; }
+
+WidgetApplication {
+  background: white;
+  border: 1px solid #ccc;
+  padding: 5;
+  margin: 5;
+  max-width: 240;
+  min-width: 240; }
+
+LabelApplicationIcon {
+  margin: 0px;
+  padding: 0px;
+  max-height: 64;
+  min-height: 64; }
+
+LabelApplicationName {
+  padding: 5px;
+  font: 100 normal 14px "Ubuntu";
+  max-height: 1em;
+  min-height: 1em; }
+
+FrameApplicationSpinner {
+  padding: 0px;
+  margin: 0px;
+  max-width: 16px;
+  min-width: 16px;
+  max-height: 16px;
+  min-height: 16px; }
+
+LabelApplicationLicense, ButtonApplicationLicense {
+  padding-left: 1px;
+  padding-right: 1px;
+  margin: 0px;
+  max-height: 20px;
+  min-height: 20px;
+  font: 600 normal 11px "Ubuntu"; }
+
+ButtonApplicationVersion {
+  max-height: 1em;
+  min-height: 1em;
+  font: 300 normal 11px "Ubuntu";
+  padding: 0px;
+  margin: 0px;
+  qproperty-icon: none;
+  qproperty-iconSize: 16px; }
+  ButtonApplicationVersion[pressed='true'] {
+    qproperty-icon: url('$IMAGE_PATH/icons/update-app-active.svg');
+    color: #00A3E0; }
+
+LabelApplicationDescription {
+  font: 100 normal 12px "Ubuntu";
+  max-height: 6.2em;
+  min-height: 6.2em;
+  padding: 0px; }
+
+ButtonApplicationInstall {
+  background: white;
+  border: 1px solid #43B02A;
+  color: #43B02A;
+  padding: 4 10px;
+  margin: 5px; }
+  ButtonApplicationInstall[focused='false'], ButtonApplicationInstall[hovered='false'] {
+    background-color: white; }
+  ButtonApplicationInstall[focused='true'], ButtonApplicationInstall[hovered='true'] {
+    color: white;
+    background-color: #43B02A; }
+  ButtonApplicationInstall[disabled='true'] {
+    background-color: #ddd;
+    color: #aaa; }
+  ButtonApplicationInstall:disabled {
+    border: 1px solid #bbb; }
+
+ButtonApplicationLaunch {
+  background: white;
+  border: 1px solid #00A3E0;
+  color: #00A3E0;
+  padding: 4 10px;
+  margin: 5px; }
+  ButtonApplicationLaunch[focused='false'], ButtonApplicationLaunch[hovered='false'] {
+    background-color: white; }
+  ButtonApplicationLaunch[focused='true'], ButtonApplicationLaunch[hovered='true'] {
+    color: white;
+    background-color: #00A3E0; }
+  ButtonApplicationLaunch[disabled='true'] {
+    background-color: #ddd;
+    color: #aaa; }
+  ButtonApplicationLaunch:disabled {
+    border: 1px solid #bbb; }
+
+/* "Settings" cog Buttons */
+ButtonApplicationOptions {
+  max-width: 16px;
+  min-width: 16px;
+  max-height: 16px;
+  min-height: 16px;
+  background: none;
+  border: 1px solid transparent;
+  image: url('$IMAGE_PATH/icons/settings.svg');
+  padding: 5px; }
+  ButtonApplicationOptions:hover, ButtonApplicationOptions:focus {
+    background: white;
+    border: 1px dashed grey; }
+  ButtonApplicationOptions:disabled {
+    border: 1px solid #fff;
+    background: none;
+    image: url('$IMAGE_PATH/icons/settings-disabled.svg'); }
+
+/*****************************************************************************/
+/* Environment list (Environment Tab)                                        */
+/*                                                                           */
+/*                                                                           */
+/*****************************************************************************/
+FrameEnvironmentsList {
+  max-width: 280px;
+  min-width: 280px;
+  background: white;
+}
+
+ListWidgetEnv {
+  background-color: #eee;
+  outline: 0;
+}
+
+EnvListDialog BaseListWidgetEnv ButtonEnvironmentName {
+  font-size: 16px;
+}
+
+EnvListDialog BaseListWidgetEnv {
+  border: 1px solid #CBCCCC;
+  background-color: #f2f2f2;
+}
+WidgetEnvironment {
+  background: #F5F5F5;
+  border-bottom: 1px solid #ccc;
+  border-left: 4px solid transparent;
+  outline: none;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+WidgetEnvironment[hovered='true'],
+WidgetEnvironment[focused='true'] {
+  border-left: 4px solid #43b02a;
+}
+WidgetEnvironment[pressed='true'] {
+  border-left: 4px solid #007041;
+  color: #007041;
+}
+WidgetEnvironment ButtonEnvironmentName {
+  color: black;
+  max-width: 160px;
+  min-width: 160px;
+  padding-bottom: 4px;
+  text-align: left;
+}
+WidgetEnvironment ButtonEnvironmentName[pressed='true'] {
+  color: #007041;
+}
+WidgetEnvironment ButtonEnvironmentName[hovered='true'] {
+  color: #43b02a;
+}
+WidgetEnvironment ButtonEnvironmentName:focus {
+  color: green;
+}
+WidgetEnvironment FrameEnvironmentIcon {
+  max-width: 20px;
+  min-width: 20px;
+  padding: 4px;
+}
+WidgetEnvironment ButtonEnvironmentOptions {
+  border: 1px dashed transparent;
+  padding: 5px;
+  qproperty-icon: url('$IMAGE_PATH/icons/env-options-active.svg');
+  qproperty-iconSize: 24px;
+}
+WidgetEnvironment ButtonEnvironmentOptions:hover,
+WidgetEnvironment ButtonEnvironmentOptions:focus {
+  border: 1px dashed #007041;
+}
+
+ButtonToolNormal {
+  background: #F5F5F5;
+  border: 1px solid transparent;
+  border-top-color: #ddd;
+  color: black;
+  max-height: 48px;
+  min-height: 48px;
+  min-width: 42px;
+  padding: 0;
+  qproperty-iconSize: 24px;
+}
+ButtonToolNormal:hover,
+ButtonToolNormal:focus {
+  background: #E0E0E0;
+}
+
+ButtonToolNormal#create {
+  qproperty-icon: url('$IMAGE_PATH/icons/env-add.svg');
+}
+ButtonToolNormal#create[hovered='true'][enabled='true'],
+ButtonToolNormal#create[focused='true'][enabled='true'] {
+  color: #43B02A;
+  qproperty-icon: url('$IMAGE_PATH/icons/env-add-active.svg');
+}
+
+ButtonToolNormal#clone {
+  qproperty-icon: url('$IMAGE_PATH/icons/env-clone.svg');
+}
+ButtonToolNormal#clone[hovered='true'][enabled='true'],
+ButtonToolNormal#clone[focused='true'][enabled='true'] {
+  color: #43B02A;
+  qproperty-icon: url('$IMAGE_PATH/icons/env-clone-active.svg');
+}
+
+ButtonToolNormal#import {
+  qproperty-icon: url('$IMAGE_PATH/icons/env-import.svg');
+}
+ButtonToolNormal#import[hovered='true'][enabled='true'],
+ButtonToolNormal#import[focused='true'][enabled='true'] {
+  color: #43B02A;
+  qproperty-icon: url('$IMAGE_PATH/icons/env-import-active.svg');
+}
+
+ButtonToolNormal#backup {
+  qproperty-icon: url('$IMAGE_PATH/icons/env-backup.svg');
+}
+ButtonToolNormal#backup[hovered='true'][enabled='true'],
+ButtonToolNormal#backup[focused='true'][enabled='true'] {
+  color: #43B02A;
+  qproperty-icon: url('$IMAGE_PATH/icons/env-backup-active.svg');
+}
+
+ButtonToolNormal#remove {
+  border-right: 1px solid transparent;
+  qproperty-icon: url('$IMAGE_PATH/icons/delete.svg');
+}
+ButtonToolNormal#remove[hovered='true'][enabled='true'],
+ButtonToolNormal#remove[focused='true'][enabled='true'] {
+  color: #BA0C2F;
+  qproperty-icon: url('$IMAGE_PATH/icons/delete-active.svg');
+}
+
+/*****************************************************************************/
+/* Environment dialogs (Environment Tab)                                     */
+/*                                                                           */
+/*                                                                           */
+/*****************************************************************************/
+LabelBase#environment-location {
+  font-style: italic;
+  font-size: 10px;
+  color: #666;
+}
+
+ButtonNormal#import {
+  qproperty-icon: url('$IMAGE_PATH/icons/open.svg');
+  qproperty-iconSize: 24px;
+}
+ButtonNormal#import[focused='true'] {
+  qproperty-icon: url('$IMAGE_PATH/icons/open-active.svg');
+}
+
+/*****************************************************************************/
+/* Projects                                                                  */
+/*                                                                           */
+/*                                                                           */
+/*****************************************************************************/
+FrameProjectDetailsHeader {
+  padding: 12px; }
+
+/*****************************************************************************/
+/* Content cards (Community and learning cards)                              */
+/*                                                                           */
+/*                                                                           */
+/*****************************************************************************/
+/* Mixin for building colored toggle buttons */
+ButtonToggle {
+  margin: 0px;
+  outline: none;
+  /* Remove the focus rectangle in Ubuntu and OSX */
+  padding: 0px 10px;
+  max-height: 24px;
+  min-height: 24px;
+  border: 1px solid #aaa; }
+  ButtonToggle:focus {
+    text-decoration: underline; }
+  ButtonToggle:disabled {
+    background: #ccc; }
+  ButtonToggle#documentation[checked='true'] {
+    background: #007041;
+    color: white; }
+    ButtonToggle#documentation[checked='true']:hover, ButtonToggle#documentation[checked='true']:focus {
+      background: #00a35c; }
+  ButtonToggle#documentation[checked='false'] {
+    background: white;
+    color: black; }
+    ButtonToggle#documentation[checked='false']:hover, ButtonToggle#documentation[checked='false']:focus {
+      background: #e6e6e6; }
+  ButtonToggle#training[checked='true'] {
+    background: #615E9B;
+    color: white; }
+    ButtonToggle#training[checked='true']:hover, ButtonToggle#training[checked='true']:focus {
+      background: #7e7cb0; }
+  ButtonToggle#training[checked='false'] {
+    background: white;
+    color: black; }
+    ButtonToggle#training[checked='false']:hover, ButtonToggle#training[checked='false']:focus {
+      background: #e6e6e6; }
+  ButtonToggle#video[checked='true'] {
+    background: #006298;
+    color: white; }
+    ButtonToggle#video[checked='true']:hover, ButtonToggle#video[checked='true']:focus {
+      background: #0084cb; }
+  ButtonToggle#video[checked='false'] {
+    background: white;
+    color: black; }
+    ButtonToggle#video[checked='false']:hover, ButtonToggle#video[checked='false']:focus {
+      background: #e6e6e6; }
+  ButtonToggle#webinar[checked='true'] {
+    background: #F3D03E;
+    color: white; }
+    ButtonToggle#webinar[checked='true']:hover, ButtonToggle#webinar[checked='true']:focus {
+      background: #f6db6e; }
+  ButtonToggle#webinar[checked='false'] {
+    background: white;
+    color: black; }
+    ButtonToggle#webinar[checked='false']:hover, ButtonToggle#webinar[checked='false']:focus {
+      background: #e6e6e6; }
+  ButtonToggle#event[checked='true'] {
+    background: #006298;
+    color: white; }
+    ButtonToggle#event[checked='true']:hover, ButtonToggle#event[checked='true']:focus {
+      background: #0084cb; }
+  ButtonToggle#event[checked='false'] {
+    background: white;
+    color: black; }
+    ButtonToggle#event[checked='false']:hover, ButtonToggle#event[checked='false']:focus {
+      background: #e6e6e6; }
+  ButtonToggle#forum[checked='true'] {
+    background: #615E9B;
+    color: white; }
+    ButtonToggle#forum[checked='true']:hover, ButtonToggle#forum[checked='true']:focus {
+      background: #7e7cb0; }
+  ButtonToggle#forum[checked='false'] {
+    background: white;
+    color: black; }
+    ButtonToggle#forum[checked='false']:hover, ButtonToggle#forum[checked='false']:focus {
+      background: #e6e6e6; }
+  ButtonToggle#social[checked='true'] {
+    background: #007041;
+    color: white; }
+    ButtonToggle#social[checked='true']:hover, ButtonToggle#social[checked='true']:focus {
+      background: #00a35c; }
+  ButtonToggle#social[checked='false'] {
+    background: white;
+    color: black; }
+    ButtonToggle#social[checked='false']:hover, ButtonToggle#social[checked='false']:focus {
+      background: #e6e6e6; }
+
+/* This widget has an odd behavior with css, hence all the variables below   */
+ListWidgetContent {
+  background: #eee;
+  outline: none;
+  padding: 0; }
+
+FrameContent {
+  background: white;
+  margin: 5;
+  padding: 0;
+  padding-bottom: 0px;
+  max-width: 190;
+  min-width: 190; }
+
+ButtonContentText {
+  color: white;
+  font-size: 13px;
+  margin: 0px;
+  padding: 0px;
+  max-height: 2em;
+  min-height: 2em;
+  max-width: 190;
+  min-width: 190; }
+  ButtonContentText#documentation {
+    background: #007041; }
+    ButtonContentText#documentation:focus, ButtonContentText#documentation:hover {
+      background: #003d23; }
+    ButtonContentText#documentation[active='true'] {
+      background: #003d23; }
+  ButtonContentText#training {
+    background: #615E9B; }
+    ButtonContentText#training:focus, ButtonContentText#training:hover {
+      background: #4c4b7b; }
+    ButtonContentText#training[active='true'] {
+      background: #4c4b7b; }
+  ButtonContentText#video {
+    background: #006298; }
+    ButtonContentText#video:focus, ButtonContentText#video:hover {
+      background: #004265; }
+    ButtonContentText#video[active='true'] {
+      background: #004265; }
+  ButtonContentText#webinar {
+    background: #F3D03E;
+    background: #F3D03E; }
+    ButtonContentText#webinar:focus, ButtonContentText#webinar:hover {
+      background: #efc20f; }
+    ButtonContentText#webinar[active='true'] {
+      background: #efc20f; }
+  ButtonContentText#event {
+    background: #006298; }
+    ButtonContentText#event:focus, ButtonContentText#event:hover {
+      background: #004265; }
+    ButtonContentText#event[active='true'] {
+      background: #004265; }
+  ButtonContentText#forum {
+    background: #615E9B; }
+    ButtonContentText#forum:focus, ButtonContentText#forum:hover {
+      background: #4c4b7b; }
+    ButtonContentText#forum[active='true'] {
+      background: #4c4b7b; }
+  ButtonContentText#social {
+    background: #007041; }
+    ButtonContentText#social:focus, ButtonContentText#social:hover {
+      background: #003d23; }
+    ButtonContentText#social[active='true'] {
+      background: #003d23; }
+
+FrameTabHeader#documentation, FrameContentHeader#documentation {
+  background: #007041; }
+FrameTabHeader#training, FrameContentHeader#training {
+  background: #615E9B; }
+FrameTabHeader#video, FrameContentHeader#video {
+  background: #006298; }
+FrameTabHeader#webinar, FrameContentHeader#webinar {
+  background: #F3D03E; }
+FrameTabHeader#event, FrameContentHeader#event {
+  background: #006298; }
+FrameTabHeader#forum, FrameContentHeader#forum {
+  background: #615E9B; }
+FrameTabHeader#social, FrameContentHeader#social {
+  background: #007041; }
+
+FrameContentHeader {
+  max-height: 7px;
+  min-height: 7px;
+  border: 1 solid #ccc;
+  border-bottom: 1px solid transparent; }
+
+FrameContentBody {
+  padding: 0px;
+  margin: 0px;
+  border: 1 solid #ccc; }
+
+LabelContentIcon {
+  border: 0px solid #ccc; }
+
+FrameContentIcon {
+  border-bottom: 1 solid #ccc;
+  max-height: 105;
+  min-height: 105;
+  max-width: 188;
+  min-width: 188; }
+
+LabelContentTitle {
+  padding: 5px;
+  margin: 0px;
+  max-height: 4.5em;
+  min-height: 4.5em; }
+  LabelContentTitle[active='true'] {
+    color: #43B02A; }
+
+ButtonContentInformation, LabelEmpty {
+  min-height: 16x;
+  padding-bottom: 2px;
+  font-size: 11px; }
+
+/* New styles to make merging easy */
+/*****************************************************************************/
+/* Channel dialog                                                            */
+/*                                                                           */
+/*                                                                           */
+/*****************************************************************************/
+ListWidgetChannels {
+  background: white;
+  border: 1px solid #ccc;
+  outline: none;
+  padding: 0px; }
+
+FrameChannels {
+  background: #eee;
+  border-bottom: 1px solid #ddd;
+  margin: 0px;
+  padding: 10;
+  max-height: 50;
+  min-height: 50; }
+  FrameChannels QLineEdit {
+    border: 1px solid transparent;
+    max-width: 250px;
+    min-width: 250px; }
+    FrameChannels QLineEdit:read-only {
+      background: #eee; }
+    FrameChannels QLineEdit:disabled {
+      background: #eee;
+      color: black; }
+  FrameChannels LabelConfigLocation {
+    padding: 6px;
+    max-width: 300;
+    min-width: 300;
+    max-height: 20px;
+    min-height: 20px;
+    font-style: italic;
+    font-size: 10px;
+    color: #666; }
+  FrameChannels LabelChannelInfo {
+    padding: 6px;
+    max-width: 24px;
+    min-width: 24px;
+    image: url('$IMAGE_PATH/icons/warning-active.svg'); }
+    FrameChannels LabelChannelInfo:disabled {
+      image: none; }
+  FrameChannels ButtonDanger {
+    background: transparent;
+    padding: 5px;
+    qproperty-icon: url('$IMAGE_PATH/icons/delete.svg');
+    qproperty-iconSize: 24px; }
+    FrameChannels ButtonDanger[focused='true'], FrameChannels ButtonDanger:focus {
+      background: transparent;
+      border: 1px dashed #BA0C2F;
+      qproperty-icon: url('$IMAGE_PATH/icons/delete-active.svg'); }
+    FrameChannels ButtonDanger:hover, FrameChannels ButtonDanger[hovered='true'] {
+      background: transparent;
+      qproperty-icon: url('$IMAGE_PATH/icons/delete-active.svg'); }
+
+/*****************************************************************************/
+/* Logger                                                                    */
+/*                                                                           */
+/*                                                                           */
+/*****************************************************************************/
+ListWidgetLog {
+  background: white;
+  border: 1px solid #ccc;
+  outline: none;
+  padding: 5px;
+  max-width: 660;
+  min-width: 660; }
+  ListWidgetLog:item {
+    padding: 5px;
+    border: 1px solid transparent; }
+    ListWidgetLog:item:selected {
+      color: #43B02A;
+      border: 1px solid #43B02A; }
+
+/*****************************************************************************/
+/* ListWidgetActionPackages and QListWidgetItem                              */
+/*                                                                           */
+/* http://doc.qt.io/qt-4.8/stylesheet-examples.html#customizing-qframe       */
+/*****************************************************************************/
+ListWidgetActionPackages {
+  background: white;
+  border: 1px solid #ccc;
+  outline: none;
+  padding: 0px;
+  max-width: 280;
+  min-width: 280; }
+  ListWidgetActionPackages:item {
+    background: #eee;
+    border-bottom: 1px solid #ddd;
+    padding: 5px; }
+    ListWidgetActionPackages:item:selected {
+      background: #43B02A;
+      color: white; }
+
+/*****************************************************************************/
+/* Quit running applications Dialog                                          */
+/*                                                                           */
+/*                                                                           */
+/*****************************************************************************/
+ListRunningApps {
+  background: white;
+  border: 1px solid #ccc;
+  outline: none;
+  padding: 0px;
+  max-width: 280;
+  min-width: 280; }
+
+FrameRunningApps {
+  background: #eee;
+  border-bottom: 1px solid #ddd;
+  margin: 0px;
+  padding: 10;
+  max-height: 19;
+  min-height: 19; }
+  FrameRunningApps QLabel {
+    padding: 0px;
+    margin: 0px; }
+
+StaticFrameDialog {
+  border: 1px solid #4F7588;
+  background: white;
+  border-radius: 8px;
+  margin: 0;
+  padding: 0;
+}
+
+StaticFrameDialogTitleBar {
+  background: white;
+  border-radius: 8px;
+  padding: 8px 0 0 0;
+  max-height: 32px;
+  min-height: 32px;
+}
+
+StaticFrameDialogBody {
+  background: white;
+  border-radius: 8px;
+  padding: 0px 15px 0px 56px;
+}
+
+LabelMainLoginTitle{
+  max-width: 640px;
+  white-space: pre-line;
+  font: 48px/58px "Ubuntu";
+  color: #000000;
+  margin-bottom: 15px;
+}
+
+LabelMainLoginText{
+  max-width: 640px;
+  white-space: pre-line;
+  font: normal 16px/24px "Ubuntu";
+  color: #4C4C4C;
+  margin-bottom: 5px;
+}
+
+LabelMainLoginSubTitle{
+  max-width: 640px;
+  font: 14px/32px "Ubuntu";
+  color: #6E7C7C;
+  text-transform: uppercase;
+  padding-left: 3px;
+}
+
+WidgetLoginCard {
+  border: 1px solid #707070;
+  border-radius: 4px;
+  min-width: 300px;
+  max-width: 300px;
+  min-height: 175px;
+  max-height: 175px;
+  padding: 3px;
+  margin: 7px;
+}
+
+WidgetLoginCard LabelLoginLogo {
+  min-width: 200px;
+  max-width: 200px;
+  min-height: 52px;
+  max-height: 52px;
+  margin: 5px 10px;
+}
+
+WidgetLoginCard QLabel{
+  text-align: left;
+  font: normal normal normal 12px/16px Museo Sans Rounded;
+  color: #4C4C4C;
+  margin: 5px 10px;
+ }
+
+WidgetLoginCard:hover {
+  border: 2px solid #43B02A;
+}
+
+WidgetLoginInfoFrame{
+  min-width: 300px;
+  max-width: 300px;
+  padding-right: 25px;
+  max-height: 230px;
+  margin-bottom: 110px;
+}
+
+WidgetLoginInfoFrame LabelLoginLogo{
+  margin: 7px 0;
+  max-height: 67px;
+}
+
+WidgetLoginInfoFrame QLabel{
+  white-space: pre-line;
+  font: normal 16px/24px "Ubuntu";
+  color: #4C4C4C;
+  margin-bottom: 5px;
+}
+
+
+WidgetLoginFormFrame{
+  min-width: 300px;
+  max-width: 300px;
+  max-height: 210px;
+  margin-bottom: 40px;
+  padding-right: 50px;
+}
+
+WidgetLoginFormFrame LabelMainLoginText{
+  font: normal normal normal 16px/24px Museo Sans Rounded;
+  color: #4C4C4C;
+}
+
+WidgetLoginFormFrame LabelMainLoginSubTitle{
+  font: italic normal normal 12px/16px Museo Sans Rounded;
+  color: #4C4C4C;
+  text-transform: none;
+}
+
+WidgetLoginFormFrame QLabel{
+  min-width: 15px;
+  font: normal 14px/16px "Ubuntu";
+  color: #6E7C7C;
+  margin: 5px 0 0 0;
+  padding: 0;
+}
+
+WidgetLoginFormFrame ButtonLabel{
+  font: lighter 12px/14px "Ubuntu";
+  color: #6E7C7C;
+}
+
+WidgetLoginFormFrame ButtonLink{
+  font: lighter 2px/14px "Ubuntu";
+  color: #43B049;
+}
+
+WidgetLoginFormFrame QLineEdit{
+  min-height: 30px;
+  border: 0.5px solid #707070;
+  border-radius: 4px;
+  font: normal normal normal 16px/24px "Ubuntu";
+  color: #373A36;
+  margin: 0 0 7px 0;
+}
+
+WidgetLoginFormFrame ButtonPrimary{
+  background-color: #0D2125;
+  border-style: outset;
+  border-width: 2px;
+  border-radius: 20px;
+  color: #FFFFFF;
+  padding: 6px;
+  margin: 10px;
+  min-width: 75px;
+  max-width: 75px;
+}
+WidgetLoginFormFrame ButtonPrimary:focus,
+WidgetLoginFormFrame ButtonPrimary:hover {
+  background: #1A8241;
+}
+WidgetLoginFormFrame ButtonPrimary:pressed {
+  background: #358720;
+}
+
+WidgetNoticeFrame {
+  margin-bottom: 20px;
+  margin-right: 40px;
+}
+
+WidgetNoticeFrame QLabel {
+  color: #4C4C4C;
+  font: normal 24px/32px "Ubuntu";
+  margin-bottom: 55px;
+  white-space: pre-line;
+}
+
+WidgetNoticeFrame ButtonCancel,
+WidgetNoticeFrame ButtonPrimary {
+  border-style: outset;
+  border-radius: 20px;
+  border-width: 2px;
+  margin-bottom: 10px;
+  max-width: 100px;
+  min-width: 100px;
+  padding: 6px;
+}
+
+MainLoginDialog{
+  min-width: 760px;
+  min-height: 705px;
+  border: 1px solid #707070;
+}
+
+MainLoginDialog{
+  min-width: 760px;
+  min-height: 705px;
+  border: 1px solid #707070;
+}
+
+MainLoginDialog WidgetLoginCardsFrame{
+  min-width: 650px;
+  max-width: 650px;
+  min-height: 400px;
+  padding-bottom: 50px;
+}
+
+BasePage {
+  min-width: 760px;
+  max-width: 760px;
+  min-height: 500px;
+  max-height: 500px;
+  border: 1px solid #707070;
+}
+
+BasePage LabelMainLoginTitle{
+  max-height: 120px;
+}
+
+NoticePage {
+  max-height: 400px;
+  max-width: 760px;
+  min-height: 400px;
+  min-width: 760px;
+}
+
+TrustServerDialog {
+  max-height: 400px;
+  max-width: 760px;
+  min-height: 400px;
+  min-width: 760px;
+}
+TrustServerDialog ButtonPrimary{
+  width: 180px;
+  text-decoration: none;
+}
+TrustServerDialog ButtonCancel{
+  width: 100px;
+}
+TrustServerDialog LabelMainLoginTitle {
+  font: 38px/48px "Ubuntu";
+}
+
+EnterpriseRepoSetDomainPage WidgetLoginFormFrame,
+TeamEditionSetDomainPage WidgetLoginFormFrame,
+CommercialEditionLoginPage WidgetLoginFormFrame,
+CommercialEditionLoginPage WidgetLoginInfoFrame
+{
+  min-width: 300px;
+  max-width: 300px;
+  max-height: 280px;
+  margin-bottom: 50px;
+  padding-right: 50px;
+}
+
+TeamEditionAddChannelsPage ButtonPrimary {
+  background-color: #0D2125;
+  border-style: outset;
+  border-width: 2px;
+  border-radius: 20px;
+  color: #FFFFFF;
+  padding: 6px;
+  margin: 20px 35px 20px 20px;
+  min-width: 100px;
+  max-width: 100px;
+}
+TeamEditionAddChannelsPage ButtonPrimary:hover {
+  background: #1A8241;
+}
+TeamEditionAddChannelsPage ButtonPrimary:pressed {
+  background: #358720;
+}
+TeamEditionAddChannelsPage QLabel{
+  min-width: 15px;
+  font: normal 14px/16px "Ubuntu";
+  color: #6E7C7C;
+  margin: 5px 0 0 0;
+  padding: 0;
+}
+TeamEditionAddChannelsPage LabelLoginLogo {
+  margin-bottom: 10px;
+}
+TeamEditionAddChannelsPage QLabel {
+  margin-bottom: 20px;
+}
+
+CloudLoginPage LabelMainLoginTitle{
+  font: 53px/63px "Ubuntu";
+  color: #000000;
+  margin: 0;
+  padding: -20px;
+}
+CloudLoginPage WidgetHeaderFrame
+{
+  max-width: 495px;
+  max-height: 85px;
+  margin: 0 75px 0 75px;
+}
+
+SelectableChannelsListTable {
+  gridline-color: #fff;
+}
+
+SelectableChannelsListTable::item {
+  background-color: #fff;
+  color: #000;
+}
+
+ButtonLoginCard, SecondaryButton{
+  text-align: left;
+  font: 16px/24px "Ubuntu";
+  color: #0075A9;
+  background: white;
+  text-transform: uppercase;
+  margin: 0 7px 7px 2px;
+}
+
+SecondaryButton{
+  text-align: left;
+  padding: 0;
+}
+
+ButtonLoginCard:focus, SecondaryButton:focus{
+  color: #0075A9;
+  background: #FFFFFF;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+ButtonLoginCard:hover, SecondaryButton:hover{
+  color: #00a9a9;
+  background: #FFFFFF;
+  text-transform: uppercase;
+}
+
+/*****************************************************************************/
+/* License Manager                                                           */
+/*                                                                           */
+/*                                                                           */
+/*****************************************************************************/
+LicenseTableView {
+  border: 1px solid #4F7588; }
+  LicenseTableView[dragin='true'] {
+    border: 1px solid #43B02A;
+    alternate-background-color: #A4D65E;
+    background-color: #A4D65E; }
+
+/*****************************************************************************/
+/* Project Tab                                                               */
+/*                                                                           */
+/*                                                                           */
+/*****************************************************************************/
+QPlainTextEdit {
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  padding: 0px;
+  margin: 0px; }
+
+DirView {
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  padding: 0px;
+  margin: 0px; }
+
+LabelSpecInfo {
+  image: url('$IMAGE_PATH/icons/info.svg');
+  max-width: 16px;
+  min-width: 16px;
+  max-height: 16px;
+  min-height: 16px; }
+
+ExplorerWidget QToolButton {
+  background: #E0E0E0;
+  border: 1px solid transparent;
+  color: black;
+  margin: 0px;
+  outline: none;
+  /* Remove the focus rectangle in Ubuntu and OSX */
+  padding: 0px 10px;
+  max-height: 24px;
+  min-height: 24px;
+  font: 300 normal 10px "Ubuntu"; }
+  ExplorerWidget QToolButton:focus {
+    text-decoration: underline; }
+  ExplorerWidget QToolButton:disabled {
+    background: #ccc; }
+  ExplorerWidget QToolButton:focus, ExplorerWidget QToolButton:hover {
+    background: #d3d3d3; }
+  ExplorerWidget QToolButton:pressed {
+    background: #c7c7c7; }
+
+/*****************************************************************************/
+/* Problems dialog                                                           */
+/*                                                                           */
+/*                                                                           */
+/*****************************************************************************/
+ListWidgetProblems {
+  background: #eee;
+  border: 1px solid #ccc;
+  outline: none;
+  padding: 0px; }
+  ListWidgetProblems:item {
+    background: #eee;
+    border-bottom: 1px solid #ccc;
+    padding: 5px;
+    max-width: 280px;
+    min-width: 280px; }
+    ListWidgetProblems:item:selected {
+      background: #ddd;
+      color: #000; }
+
+/*****************************************************************************/
+/* Advertisements                                                            */
+/*                                                                           */
+/*                                                                           */
+/*****************************************************************************/
+LabelImageLinkVertical QLabel {
+  background-color: white;
+  color: black;
+}
+
+/*****************************************************************************/
+/* Account selector dialog                                                   */
+/*                                                                           */
+/*                                                                           */
+/*****************************************************************************/
+AccountsFrame {
+  background-color: #FFFFFF;
+  border-color: #5A5A5A;
+  border-radius: 6px;
+  border-style: solid;
+  border-width: 1px;
+  margin: 0;
+  max-width: 300px;
+  min-width: 300px;
+  padding: 4px 0;
+}
+
+AccountsFrame AccountsTitle {
+  border-bottom-color: #E0E0E0;
+  border-bottom-style: solid;
+  border-bottom-width: 1px;
+}
+AccountsFrame AccountsTitle QLabel {
+  color: #000000;
+  font-size: 18px;
+  font-weight: 500;
+  margin: 8px 10px 18px;
+}
+
+AccountsFrame AccountsHeader {
+  border-bottom-color: #E0E0E0;
+  border-bottom-style: solid;
+  border-bottom-width: 1px;
+}
+AccountsFrame AccountsHeader QLabel {
+  color: #5A5A5A;
+  font-size: 11px;
+  font-weight: 700;
+  margin: 20px 10px 4px;
+}
+
+AccountsFrame AccountEntry {
+  background-color: #F5F5F5;
+  border-bottom-color: #E0E0E0;
+  border-bottom-style: solid;
+  border-bottom-width: 1px;
+}
+AccountsFrame AccountEntry AccountEntryPrefix {
+  color: #808180;
+  font-size: 10px;
+  font-weight: 500;
+  margin: 4px 10px 0;
+}
+AccountsFrame AccountEntry AccountEntryPrefix:disabled {
+  color: #CBCCCC;
+}
+AccountsFrame AccountEntry AccountEntryTitle {
+  color: #43B049;
+  font-size: 16px;
+  font-weight: 500;
+  margin: 1px 10px;
+}
+AccountsFrame AccountEntry AccountEntryTitle:disabled {
+  color: #808180;
+}
+AccountsFrame AccountEntry AccountEntryAction {
+  color: #5A5A5A;
+  font-size: 12px;
+  font-weight: 700;
+  margin: 1px 10px;
+}
+AccountsFrame AccountEntry AccountEntryAction:disabled {
+  color: #CBCCCC;
+}
+AccountsFrame AccountEntry AccountEntryPostfix {
+  color: #808180;
+  font-size: 10px;
+  font-weight: 500;
+  margin: 0 10px 4px;
+}
+AccountsFrame AccountEntry AccountEntryPostfix:disabled {
+  color: #CBCCCC;
+}
+
+/*****************************************************************************/
+/* Environment action dialogs                                                */
+/*****************************************************************************/
+
+OpenIconButton {
+  background-image: url('$IMAGE_PATH/icons/open.svg');
+  qproperty-iconSize: 24px;
+}
+
+EnvSelectorDialog BaseListWidgetEnv {
+  border: 1px solid #ccc;
+}
+
+WarningIcon {
+  qproperty-pixmap: url('$IMAGE_PATH/icons/exclamation.svg');
+}
+WarningLabel LabelBase {
+  margin-top: 4px;
+}
+WarningBlock {
+  background-color: #FFEBC0;
+  border-radius: 8px;
+  padding: 16px 26px;
+}
+
+ErrorIcon {
+  qproperty-pixmap: url('$IMAGE_PATH/icons/exclamation-circle.svg');
+  width: 20px;
+  height: 20px;
+}
+ErrorLabel LabelBase {
+  margin-left: 5px;
+  font: 400 normal 14px "Ubuntu";
+  color: #000000;
+}
+ErrorBlock {
+  background-color: #FAE7DC;
+  border-radius: 8px;
+  padding: 16px 26px;
+}
+
+InfoIcon {
+  qproperty-pixmap: url('$IMAGE_PATH/icons/check-circle.svg');
+  width: 20px;
+  height: 20px;
+}
+InfoLabel LabelBase {
+  margin-left: 5px;
+  font: 400 normal 14px "Ubuntu";
+  color: #000000;
+}
+InfoBlock {
+  background-color: #ECF5D9;
+  border-radius: 8px;
+  padding: 16px 26px;
+}
+
+/*****************************************************************************/
+/* Team edition alert                                                        */
+/*****************************************************************************/
+
+TeamEditionServerAlert {
+  margin: 0;
+  padding: 0;
+}
+TeamEditionServerAlert InfoBlock,
+TeamEditionServerAlert ErrorBlock {
+  border-radius: 0;
+  margin: 0;
+  padding: 14px 22px;
+}
+TeamEditionServerAlert InfoIcon {
+  qproperty-pixmap: url('$IMAGE_PATH/icons/team-edition-online.svg');
+}
+TeamEditionServerAlert ErrorIcon {
+  qproperty-pixmap: url('$IMAGE_PATH/icons/team-edition-offline.svg');
+}
+
+
+/*****************************************************************************/
+/* CloudDialogBase                                                         */
+/*****************************************************************************/
+
+CloudDialogFrame {
+  background: #FFFFFF;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
+}
+
+CloudDialogTobBorder {
+  background-color: #0CCA4A;
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+  min-height: 15px;
+  max-height: 15px;
+}
+
+CloudDialogTitleFrame {
+  max-height: 36px;
+  min-height: 36px;
+}
+
+CloudDialogTitleLabel {
+  font: 400 normal 24px/24px "Ubuntu";
+}
+
+CloudDialogCloseButton {
+  border-radius: 12px;
+}
+
+CloudDialogBodyFrame {
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+  padding: 8px;
+}
+
+/*****************************************************************************/
+/* Cloud dialogs                                                           */
+/*****************************************************************************/
+
+CloudHeading {
+  color: #000000;
+  font: 400 normal 36px/42px "Ubuntu";
+}
+
+CloudSubtitle {
+  color: #707070;
+  font: 400 normal 22px/26px "Ubuntu";
+}
+
+CloudErrorMessage {
+  background-color: #F8D7DA;
+  border: 1px solid #F5C6CB;
+  border-radius: 2px;
+  color: #721C24;
+  font: 600 normal 16px/24px "Ubuntu";
+  padding: 8px 16px;
+}
+
+CloudLabel {
+  color: #0F252D;
+  font: 400 normal 18px/22px "Ubuntu";
+}
+
+CloudInputLabel {
+  color: #6F7170;
+  font: 300 normal 14px/24px "Ubuntu";
+}
+
+CloudInputError {
+  color: #DC3545;
+  font: 300 normal 12px/18px "Ubuntu";
+}
+
+CloudInput {
+  background: white;
+  border: 1px solid #706F6F;
+  border-radius: 4px;
+  font: 300 normal 14px/28px "Ubuntu";
+  max-height: 18px;
+  min-height: 18px;
+  padding: 10px 14px;
+}
+CloudInput[status='normal'] {
+  border-color: #706F6F;
+}
+CloudInput[status='error'] {
+  border-color: #DC3545;
+}
+
+CloudButton {
+  background: #0CCA4A;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #FFFFFF;
+  font: 600 normal 16px/24px "Ubuntu";
+  max-height: 24px;
+  min-height: 24px;
+  outline: none;
+  padding: 8px 14px;
+}
+CloudButton:focus {
+  text-decoration: underline;
+}
+CloudButton:disabled {
+  background: #FFFFFF;
+  border-color: #ABB1BF;
+  color: #52596B;
+}
+CloudButton:disabled[status='busy'] {
+  background: #0CCA4A;
+  border-color: transparent;
+  color: #FFFFFF;
+}
+CloudButton:focus,
+CloudButton:hover {
+  background: #4FAB4F;
+}
+CloudButton:pressed {
+  background: #0BB241;
+  color: #F2F2F2;
+}
+
+CloudCheckBox {
+  color: #6F7170;
+  font: 300 normal 14px/24px "Ubuntu";
+}
+
+CloudLoginPage {
+  min-width: 534px;
+  min-height: 680px;
+}
+
+CloudLoginPage QLabel,
+CloudLoginPage QLabel:focus {
+  font-family: Inter;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+CloudLoginCloseButton,
+CloudLoginCloseButton:focus {
+  text-decoration: none;
+  font-family: Inter;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+CloudLoginSingInButton,
+CloudLoginSingInButton:focus {
+  background-color: #0CCA4A;
+  border-radius: 4px;
+  border: 1px solid #43B049;
+  text-decoration: none;
+  width: 281px;
+  height: 60px;
+
+  color: #06262D;
+  font-family: Inter;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 24px;
+}
+CloudLoginSingInButton:disabled {
+  background: #ABB1BF;
+  border-color: #ABB1BF;
+  color: #52596B;
+}
+
+BackgroundControlButton{
+  background-color: #43B049;
+  border: none;
+  border-radius: 5px;
+  width: 11px;
+  height: 11px;
+}
+BackgroundControlButton:pressed,
+BackgroundControlButton:checked {
+    background-color: #6C5AF6;
+}

@@ -1,0 +1,8 @@
+Metadata-Version: 2.1
+Name: clyent
+Version: 1.2.2
+Summary: Command line client Library for windwos and posix
+Home-page: http://github.com/binstar/clyent
+Author: Continuum Analytics
+Author-email: srossross@gmail.com
+License: BSD

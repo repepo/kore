@@ -1,0 +1,58 @@
+$color-primary: #43B02A;
+$color-primary-alt-1: #007041;
+$color-primary-alt-2: #A4D65E;
+$color-secondary: #00A3E0;
+$color-secondary-alt-1: #006298;
+$color-secondary-alt-2: #8BD3E6;
+$color-black: #101820;
+$color-gray-1: #253746;
+$color-gray-2: #4F7588;
+$color-grayscale-1: #E0E0E0;
+$color-grayscale-2: #F5F5F5;
+$color-grayscale-3: #FAFAFA;
+$color-grayscale-4: #FFFFFF;
+$color-danger: #BA0C2F;
+$scroll-bar-color: #bbb;
+$scroll-bar-background-color: #d8d8d8;
+$scroll-bar-hover-color: #ccc;
+$scroll-bar-size: 16;     // Width / Height of bar
+$scroll-bar-height: 20;     // Check if it is really needed
+$SHADOW_BLUR_RADIUS: 50;
+$WIDGET_APPLICATION_TOTAL_WIDTH: 260;   // Used by code. DO NOT CHANGE NAME!
+$WIDGET_APPLICATION_TOTAL_HEIGHT: 295;  // Used by code. DO NOT CHANGE NAME!
+$WIDGET_APPLICATION_PADDING: 5;         // Used by code. DO NOT CHANGE NAME!
+$WIDGET_APPLICATION_MARGIN: 5;          // Used by code. DO NOT CHANGE NAME!
+$widget-app-image-height: 64;
+$widget-app-border-width: 1;
+$widget-app-width: $WIDGET_APPLICATION_TOTAL_WIDTH - 2*$WIDGET_APPLICATION_PADDING - 2*$WIDGET_APPLICATION_MARGIN;
+$widget-app-height: $WIDGET_APPLICATION_TOTAL_HEIGHT - 2*$WIDGET_APPLICATION_PADDING - 2*$WIDGET_APPLICATION_MARGIN;
+$WIDGET_ENVIRONMENT_TOTAL_WIDTH: 170;   // Used by code. DO NOT CHANGE NAME!
+$WIDGET_ENVIRONMENT_TOTAL_HEIGHT: 42;   // Used by code. DO NOT CHANGE NAME!
+$WIDGET_IMPORT_ENVIRONMENT_TOTAL_HEIGHT: 55;
+$color-documentation: #007041;
+$color-video: #006298;
+$color-webinar: #F3D03E;
+$color-training: #615E9B;
+$color-event: #006298;
+$color-forum: #615E9B;
+$color-social: #007041;
+$WIDGET_CONTENT_TOTAL_WIDTH: 200;   // Used by code. DO NOT CHANGE NAME!
+$WIDGET_CONTENT_TOTAL_HEIGHT: 220;  // Used by code. DO NOT CHANGE NAME!
+$WIDGET_CONTENT_PADDING: 0;         // Used by code. DO NOT CHANGE NAME!
+$WIDGET_CONTENT_MARGIN: 5;          // Used by code. DO NOT CHANGE NAME!
+$widget-content-image-height: 105;
+$widget-content-border-width: 1;
+$widget-content-width: $WIDGET_CONTENT_TOTAL_WIDTH - 2*$WIDGET_CONTENT_PADDING - 2*$WIDGET_CONTENT_MARGIN;
+$widget-content-height: $WIDGET_CONTENT_TOTAL_HEIGHT - 2*$WIDGET_CONTENT_PADDING - 2*$WIDGET_CONTENT_MARGIN;
+$WIDGET_CHANNEL_DIALOG_WIDTH: 450;  // Used by code. DO NOT CHANGE NAME!
+$WIDGET_CHANNEL_TOTAL_WIDTH: 350;   // Used by code. DO NOT CHANGE NAME!
+$WIDGET_CHANNEL_TOTAL_HEIGHT: 55;   // Used by code. DO NOT CHANGE NAME!
+$WIDGET_CHANNEL_PADDING: 10;        // Used by code. DO NOT CHANGE NAME!
+$widget-channel-width: $WIDGET_CHANNEL_TOTAL_WIDTH - 2*$WIDGET_CHANNEL_PADDING -1;
+$widget-channel-height: $WIDGET_CHANNEL_TOTAL_HEIGHT - 2*$WIDGET_CHANNEL_PADDING - 1;
+$WIDGET_RUNNING_APPS_WIDTH: 450;  // Used by code. DO NOT CHANGE NAME!
+$WIDGET_RUNNING_APPS_TOTAL_WIDTH: 350;   // Used by code. DO NOT CHANGE NAME!
+$WIDGET_RUNNING_APPS_TOTAL_HEIGHT: 40;   // Used by code. DO NOT CHANGE NAME!
+$WIDGET_RUNNING_APPS_PADDING: 10;        // Used by code. DO NOT CHANGE NAME!
+$widget-running-apps-width: $WIDGET_RUNNING_APPS_TOTAL_WIDTH - 2*$WIDGET_RUNNING_APPS_PADDING -1;
+$widget-running-apps-height: $WIDGET_RUNNING_APPS_TOTAL_HEIGHT - 2*$WIDGET_RUNNING_APPS_PADDING - 1;

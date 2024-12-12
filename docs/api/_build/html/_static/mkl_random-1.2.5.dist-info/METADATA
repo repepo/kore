@@ -1,0 +1,98 @@
+Metadata-Version: 2.1
+Name: mkl_random
+Version: 1.2.5
+Summary: NumPy-based Python interface to Intel (R) MKL Random Number Generation functionality
+Home-page: http://github.com/IntelPython/mkl_random
+Download-URL: http://github.com/IntelPython/mkl_random
+Author: Intel Corporation
+Maintainer: Intel Corp.
+Maintainer-email: scripting@intel.com
+License: BSD
+Keywords: MKL,VSL,true randomness,pseudorandomness,Philox,MT-19937,SFMT-19937,MT-2203,ARS-5,R-250,MCG-31
+Platform: Windows
+Platform: Linux
+Platform: Mac OS-X
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Science/Research
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved
+Classifier: Programming Language :: C
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: Implementation :: CPython
+Classifier: Topic :: Software Development
+Classifier: Topic :: Scientific/Engineering
+Classifier: Operating System :: Microsoft :: Windows
+Classifier: Operating System :: POSIX
+Classifier: Operating System :: Unix
+Classifier: Operating System :: MacOS
+Requires-Python: >=3.7
+Description-Content-Type: text/markdown
+License-File: LICENSE.txt
+Requires-Dist: numpy >=1.16
+
+## ``mkl_random`` -- a NumPy-based Python interface to Intel (R) MKL Random Number Generation functionality
+[![Build Status](https://travis-ci.com/IntelPython/mkl_random.svg?branch=master)](https://travis-ci.com/IntelPython/mkl_random)
+
+`mkl_random` has started as Intel (R) Distribution for Python optimizations for NumPy.
+
+Per NumPy's community suggestions, voiced in https://github.com/numpy/numpy/pull/8209, it is being released as a
+stand-alone package.
+
+Prebuilt `mkl_random` can be installed into conda environment from Intel's channel on Anaconda cloud:
+
+```
+  conda install -c intel mkl_random
+```
+
+---
+
+To install mkl_random Pypi package please use following command:
+
+```
+   python -m pip install --i https://pypi.anaconda.org/intel/simple -extra-index-url https://pypi.org/simple mkl_random
+```
+
+If command above installs NumPy package from the Pypi, please use following command to install Intel optimized NumPy wheel package from Anaconda Cloud:
+
+```
+   python -m pip install --i https://pypi.anaconda.org/intel/simple -extra-index-url https://pypi.org/simple mkl_random numpy==<numpy_version>
+```
+
+Where `<numpy_version>` should be the latest version from https://anaconda.org/intel/numpy
+
+---
+
+`mkl_random` is not fixed-seed backward compatible drop-in replacement for `numpy.random`, meaning that it implements sampling from the same distributions as `numpy.random`.
+
+For distributions directly supported in Intel (R) Math Kernel Library (MKL), `method` keyword is supported:
+
+```
+   mkl_random.standard_normal(size=(10**5, 10**3), method='BoxMuller')
+```
+
+Additionally, `mkl_random` exposes different basic random number generation algorithms available in MKL. For example to use `SFMT19937` use
+
+```
+   mkl_random.RandomState(77777, brng='SFMT19937')
+```
+
+For generator families, such that `MT2203` and Wichmann-Hill, a particular member of the family can be chosen by specifying ``brng=('WH', 3)``, etc.
+
+The list of supported by `mkl_random.RandomState` constructor `brng` keywords is as follows:
+
+  * 'MT19937'
+  * 'SFMT19937'
+  * 'WH' or ('WH', id)
+  * 'MT2203' or ('MT2203', id)
+  * 'MCG31'
+  * 'R250'
+  * 'MRG32K3A'
+  * 'MCG59'
+  * 'PHILOX4X32X10'
+  * 'NONDETERM'
+  * 'ARS5'

@@ -1,0 +1,366 @@
+[
+  {
+    "tags": ["documentation"],
+    "title": "Anaconda on AWS Graviton",
+    "uri": "https://www.anaconda.com/blog/implementing-a-full-ml-lifecycle-with-anaconda-distribution-on-aws-graviton?_thumbnail_id=11184",
+    "summary": "Learn how to run Anaconda on AWS Graviton-based processors for 40% better price performance",
+    "image_file": "aws.svg"
+  },
+  {
+    "tags": ["documentation"],
+    "title": "Python Tutorial",
+    "uri": "https://docs.python.org/3/tutorial/index.html",
+    "summary": "Official Python beginners' guide for first-time users.",
+    "image_file": "0a57779f_03b7a565.png"
+  },
+  {
+    "tags": ["documentation"],
+    "title": "Python Reference",
+    "uri": "https://docs.python.org/3/library/index.html",
+    "summary": "Official, detailed, documentation to the whole of the standard python library.",
+    "image_file": "0a57779f_03b7a565.png"
+  },
+  {
+    "tags": ["documentation"],
+    "title": "Anaconda Package List",
+    "uri": "https://docs.anaconda.com/free/anaconda/reference/packages/pkg-docs/",
+    "summary": "Links to documentation for all of the packages installed with or available in Anaconda.",
+    "image_file": "6b7a5e40_f3b50d25.jpg"
+  },
+  {
+    "tags": ["documentation"],
+    "title": "Pandas Documentation",
+    "uri": "http://pandas.pydata.org/",
+    "summary": "Structured data manipulation, particularly tabular. Allows SQL-style operations and a wide range of visualisations.",
+    "image_file": "8851ff2d_e5f2483e.png"
+  },
+  {
+    "tags": ["documentation"],
+    "title": "Numpy Documentation",
+    "uri": "http://www.numpy.org/",
+    "summary": "NumPy is the fundamental package for scientific computing with Python. It contains among other things: a powerful N-dimensional array object; sophisticated (broadcasting) functions; tools for integrating C/C++ and Fortran code; useful linear algebra, Fourier transform, and random number capabilities",
+    "image_file": "79dd9aa8_c7566d12.png"
+  },
+  {
+    "tags": ["documentation"],
+    "title": "Scipy Documentation",
+    "uri": "https://docs.scipy.org/doc/",
+    "summary": "Scientific routines for python. Many user-friendly and efficient numerical routines such as routines for numerical integration and optimization.",
+    "image_file": "554e8340_865d15a5.png"
+  },
+  {
+    "tags": ["documentation"],
+    "title": "Matplotlib Documentation",
+    "uri": "https://matplotlib.org",
+    "summary": "The most popular data vidualisation library for python, producing publication-quality 2D and 3D output for a variety of backends.",
+    "image_file": "cdd67dfc_67536dfc.jpg"
+  },
+  {
+    "tags": ["documentation"],
+    "title": "Bokeh User Guide",
+    "uri": "http://bokeh.pydata.org/en/latest/docs/user_guide.html",
+    "summary": "Bokeh is a Python interactive visualization library that targets modern web browsers for presentation. Bokeh provides elegant, concise construction of novel graphics with high-performance interactivity over very large or streaming datasets in a quick and easy way.",
+    "image_file": "621fde34_b8d7e831.png"
+  },
+  {
+    "tags": ["documentation"],
+    "title": "Anaconda Cloud Documentation",
+    "uri": "https://docs.anaconda.com/starter/",
+    "summary": "Anaconda Cloud is the ultimate online platform for data scientists. Code online for free in Anaconda Notebooks with support from the Anaconda AI Assistant for streamlined coding. Access tutorials to accelerate your learning, start data science projects in your browser with essential packages and computing power, and connect with experts on Anaconda's forums.",
+    "image_file": "6b7a5e40_f3b50d25.jpg"
+  },
+  {
+    "tags": ["documentation"],
+    "title": "Anaconda Documentation",
+    "uri": "https://docs.anaconda.com/free/anaconda/",
+    "summary": "Anaconda is an easy-to-install free package manager, environment manager, Python distribution, and collection of over 720 open source packages offering free community support.",
+    "image_file": "6b7a5e40_f3b50d25.jpg"
+  },
+  {
+    "tags": ["documentation"],
+    "title": "Anaconda Navigator Documentation",
+    "uri": "https://docs.anaconda.com/free/navigator/",
+    "summary": "Desktop graphical user interface included in Anaconda that allows you to launch applications and easily manage conda packages, environments and channels.",
+    "image_file": "6b7a5e40_f3b50d25.jpg"
+  },
+  {
+    "tags": ["documentation"],
+    "title": "Using MRO or R with Conda",
+    "uri": "https://conda.io/docs/user-guide/tasks/use-r-with-conda.html",
+    "summary": "With a single conda command you can easily install the R programming language and over 80 of the most used R packages for data science. Conda helps you keep your packages and dependencies up to date.",
+    "image_file": "6b7a5e40_f3b50d25.jpg"
+  },
+  {
+    "tags": ["documentation"],
+    "title": "The Comprehensive R Archive Network (CRAN)",
+    "uri": "https://cran.r-project.org/",
+    "summary": "CRAN is a network of ftp and web servers around the world that store identical, up-to-date, versions of code and documentation for R.",
+    "image_file": "1314819f_7b16fabd.svg"
+  },
+  {
+    "tags": ["documentation"],
+    "title": "The Python Package Index (PyPI)",
+    "uri": "https://pypi.org/",
+    "summary": "The Python Package Index is a repository of software for the Python programming language.",
+    "image_file": "0a57779f_03b7a565.png"
+  },
+  {
+    "tags": ["documentation"],
+    "title": "Dask documentation",
+    "uri": "https://dask.pydata.org/en/latest/",
+    "summary": "Dask is a flexible parallel computing library for analytic computing.",
+    "image_file": "216f1a53_395274d1.png"
+  },
+  {
+    "tags": ["documentation"],
+    "title": "Conda & Conda-Build",
+    "uri": "https://conda.io",
+    "summary": "Package, dependency and environment management for any language; Python, R, Ruby, Lua, Scala, Java, JavaScript, C/ C++, FORTRAN",
+    "image_file": "89ee4ac0_ae1d2b79.png"
+  },
+  {
+    "tags": ["documentation"],
+    "title": "Jupyter documentation",
+    "uri": "http://jupyter.org/documentation.html",
+    "summary": "Project Jupyter exists to develop open-source software, open-standards, and services for interactive computing across dozens of programming languages.",
+    "image_file": "3af95462_c37e8f75.png"
+  },
+  {
+    "tags": ["documentation"],
+    "title": "Spyder documentation",
+    "uri": "https://docs.spyder-ide.org/",
+    "summary": "A powerful interactive development environment for the Python language with advanced editing, interactive testing, debugging and introspection features",
+    "image_file": "48a5abce_4de5ad0f.png"
+  },
+  {
+    "tags": ["documentation"],
+    "title": "VSCode (python)",
+    "uri": "https://code.visualstudio.com/docs/languages/python",
+    "summary": "Working with Python in Visual Studio Code, using the Microsoft Python extension, is simple, fun, and productive. The extension leverages all of VS Code's power to provide auto complete and IntelliSense, linting, debugging, and unit testing, along with control over your Python environments.",
+    "image_file": "c7ada7d9_cefd7240.png"
+  },
+  {
+    "tags": ["documentation"],
+    "title": "Orange documentation",
+    "uri": "https://orange.biolab.si/docs/",
+    "summary": "Open source machine learning and data visualization for novice and expert. Interactive data analysis workflows with a large toolbox.",
+    "image_file": "046819d4_e73cb560.jpg"
+  },
+  {
+    "tags": ["forum"],
+    "title": "Anaconda Community",
+    "uri": "https://community.anaconda.cloud/",
+    "summary": "For questions relating to the Anaconda Platform in general",
+    "image_file": "6b7a5e40_f3b50d25.jpg"
+  },
+  {
+    "tags": ["forum"],
+    "title": "Stack Overflow: Python",
+    "uri": "https://stackoverflow.com/questions/tagged/python",
+    "summary": "Post questions and mine the knowledge of the best of the open-source community.",
+    "image_file": "c5194714_9a2f894e.png"
+  },
+  {
+    "tags": ["forum"],
+    "title": "Bokeh Forum",
+    "uri": "https://discourse.bokeh.org/",
+    "summary": "This mailing list is for users (and developers) to ask and answer questions regarding usage of Bokeh, including related projects such as rbokeh, bokeh.jl, and bokeh-scala.",
+    "image_file": "4c90e10e_4824e185.png"
+  },
+  {
+    "tags": ["forum"],
+    "title": "Blaze Dev Forum",
+    "uri": "https://groups.google.com/a/continuum.io/forum/#!forum/blaze-dev",
+    "summary": "Questions and answers for people interested in developing Blaze, the multi-backend computation expression engine.",
+    "image_file": "a52962b4_f192ffb5.png"
+  },
+  {
+    "tags": ["forum"],
+    "title": "Numba Forum",
+    "uri": "https://numba.discourse.group/",
+    "summary": "Questions and answers for people interested in developing Numba, the high-performance just-in-time compiler for python.",
+    "image_file": "25eb009e_8402f08e.png"
+  },
+  {
+    "tags": ["forum"],
+    "title": "Matplotlib Forum",
+    "uri": "https://sourceforge.net/p/matplotlib/mailman/",
+    "summary": "Discussion, announcements, and development related to using matplotlib",
+    "image_file": "cdd67dfc_67536dfc.jpg"
+  },
+  {
+    "tags": ["forum"],
+    "title": "NumPy Project Mailing List",
+    "uri": "https://mail.python.org/mailman3/lists/numpy-discussion.python.org",
+    "summary": null,
+    "image_file": "04c9f628_411f2afd.png"
+  },
+  {
+    "tags": ["forum"],
+    "title": "SciPy Project Mailing List",
+    "uri": "https://mail.python.org/mailman3/lists/scipy-dev.python.org",
+    "summary": "The mailing lists are our primary community forum. This is where we organize projects, announce new releases, plan future directions, and give and receive user support.",
+    "image_file": "50938e2c_c780cf3d.png"
+  },
+  {
+    "tags": ["social"],
+    "title": "Anaconda on Twitter",
+    "uri": "https://twitter.com/AnacondaInc",
+    "summary": "Collected tweets across a wide range of python and data-science.",
+    "image_file": "6b7a5e40_f3b50d25.jpg"
+  },
+  {
+    "tags": ["social"],
+    "title": "Planet Scipy",
+    "uri": "https://planet.scipy.org/",
+    "summary": "Blogs relating to science and data analysis in the python ecosystem.",
+    "image_file": "45f5eba5_a6843230.png"
+  },
+  {
+    "tags": ["forum"],
+    "title": "Holoviz Forum",
+    "uri": "https://discourse.holoviz.org/",
+    "summary": null,
+    "image_file": "9fce36a8_fb1b8187.png"
+  },
+  {
+    "tags": ["social"],
+    "title": "Anaconda Company Blog",
+    "uri": "https://www.anaconda.com/blog",
+    "summary": "The official blog of Anaconda, Inc.",
+    "image_file": "6b7a5e40_f3b50d25.jpg"
+  },
+  {
+    "tags": ["social"],
+    "title": "Numfocus",
+    "uri": "https://www.numfocus.org/",
+    "summary": "NumFOCUS is a 501(c)(3) nonprofit that supports and promotes world-class, innovative, open source scientific software.  The mission of NumFOCUS is to promote sustainable high-level programming languages, open code development, and reproducible scientific research. We accomplish this mission through our educational programs and events as well as through fiscal sponsorship of open source data science projects. We aim to increase collaboration and communication within the scientific computing community.",
+    "image_file": "27912797_933ead29.png"
+  },
+  {
+    "tags": ["social"],
+    "title": "Anaconda Engineering Blog",
+    "uri": "https://engineering.anaconda.com/",
+    "summary": "Keep in touch with the latest technologies and tools coming out of Continuum Analytics.  The nitty gritty about the status and development challenged of your favorite open source Python tools",
+    "image_file": "6b7a5e40_f3b50d25.jpg"
+  },
+  {
+    "tags": ["documentation"],
+    "title": "PyCharm Documentation",
+    "uri": "https://www.jetbrains.com/pycharm/documentation/",
+    "summary": "PyCharm is an integrated development environment (IDE) used in computer programming, specifically for the Python language",
+    "image_file": "871423a6_066d4fc1.png"
+  },
+  {
+    "tags": ["documentation"],
+    "title": "PyTorch Documentation",
+    "uri": "https://pytorch.org/docs/stable/index.html",
+    "summary": "PyTorch is a Python package that provides two high-level features: Tensor computation (like NumPy) with strong GPU acceleration; Deep neural networks built on a tape-based autograd system.",
+    "image_file": "3c5f02a6_75b2d7c2.png"
+  },
+  {
+    "tags": ["documentation"],
+    "title": "PyViz Documentation",
+    "uri": "https://pyviz.org/",
+    "summary": "The PyViz.org website is an open platform for helping users decide on the best open-source (OSS) Python data visualization tools for their purposes, with links, overviews, comparisons, and examples.",
+    "image_file": "9ab7b47c_0f49edcd.png"
+  },
+  {
+    "tags": ["documentation"],
+    "title": "Scikit-Learn Documentation",
+    "uri": "https://scikit-learn.org/stable/",
+    "summary": "Python module for machine learning built on top of SciPy and is distributed under the 3-Clause BSD license.",
+    "image_file": "87dbef8a_3725b0fa.png"
+  },
+  {
+    "tags": ["documentation"],
+    "title": "Tensorflow Documentation",
+    "uri": "https://www.tensorflow.org/guide",
+    "summary": "TensorFlow is an end-to-end open source platform for machine learning.",
+    "image_file": "9a4a7ad8_623186c3.jpg"
+  },
+  {
+    "tags": ["documentation"],
+    "title": "Conda-Forge",
+    "uri": "https://conda-forge.org/",
+    "summary": "A community led collection of recipes, build infrastructure and distributions for the conda package manager.",
+    "image_file": "5979c34a_9115bf31.png"
+  },
+  {
+    "tags": ["forum"],
+    "title": "Dask Community",
+    "uri": "https://dask.discourse.group/",
+    "summary": "This is a place for the Dask community to get to know one another, ask questions, swap stories, and generally be helpful.",
+    "image_file": "15121724_27b3a2f3.png"
+  },
+  {
+    "tags": ["social"],
+    "title": "Conda GItter",
+    "uri": "https://gitter.im/conda/conda",
+    "summary": "Gitter channel for the Conda cross-platform, language-agnostic binary package manager",
+    "image_file": "009e20ed_b268de6b.png"
+  },
+  {
+    "tags": ["social"],
+    "title": "Anaconda Blog",
+    "uri": "https://www.anaconda.com/blog",
+    "summary": "The Blog for The World's Most Popular Data Science Platform",
+    "image_file": "5d45c2c5_fae6bf04.jpg"
+  },
+  {
+    "tags": ["documentation"],
+    "title": "Jupyterlab Documentation",
+    "uri": "https://jupyterlab.readthedocs.io/en/stable/index.html",
+    "summary": "JupyterLab is the next-generation web-based user interface for Project Jupyter",
+    "image_file": "5a339c7d_82b01757.svg"
+  },
+  {
+    "tags": ["documentation"],
+    "title": "Numba Documentation",
+    "uri": "https://numba.readthedocs.io/en/stable/",
+    "summary": "Numba is a just-in-time compiler for Python that works best on code that uses NumPy arrays and functions, and loops",
+    "image_file": "df1d2e95_f0f6c304.png"
+  },
+  {
+    "tags": ["social"],
+    "title": "Numpy Project Mailing List",
+    "uri": "https://mail.python.org/archives/list/numpy-discussion@python.org/",
+    "summary": "NumPy-Discussion  Discussion of Numerical Python",
+    "image_file": "cd749802_5116eab4.png"
+  },
+  {
+    "tags": ["training"],
+    "title": "Anaconda Notebooks",
+    "uri": "https://anaconda.cloud/anaconda-tools",
+    "summary": "Cloud-hosted notebook service from Anaconda preconfigured with sample project notebooks and hundreds of packages.",
+    "image_file": "ff6811f0_6fffd6a2.png"
+  },
+  {
+    "tags": ["training"],
+    "title": "Get Started with Anaconda",
+    "uri": "https://learning.anaconda.cloud/get-started-with-anaconda",
+    "summary": "Take your first steps using Anaconda Distribution, working with conda, and writing your first Python program. Preview for free.",
+    "image_file": "0b9372c3_bcd949a6.svg"
+  },
+  {
+    "tags": ["training"],
+    "title": "Introduction to Python Programming",
+    "uri": "https://learning.anaconda.cloud/introduction-to-python-programming",
+    "summary": "Learn to read, write, and solve real-life problems with Python in 3 hours. Preview for free.",
+    "image_file": "0b9372c3_bcd949a6.svg"
+  },
+  {
+    "tags": ["training"],
+    "title": "Introduction to Data Visualization",
+    "uri": "https://learning.anaconda.cloud/introduction-to-data-visualization-with-python",
+    "summary": "Derive insights from data using Pandas, Seaborn, and Matplotlib. Preview for free.",
+    "image_file": "0b9372c3_bcd949a6.svg"
+  },
+  {
+    "tags": ["training"],
+    "title": "Introduction to Machine Learning",
+    "uri": "https://learning.anaconda.cloud/getting-started-with-ai-ml",
+    "summary": "Get started with fundamental machine learning algorithms using scikit-learn. Preview for free.",
+    "image_file": "0b9372c3_bcd949a6.svg"
+  }
+]

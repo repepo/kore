@@ -1,0 +1,50 @@
+{% set data = load_setup_py_data()%}
+{% block body -%}
+{% block package -%}
+package:
+  name: {{data.get('name').lower().replace(' ', '_')}}
+  version: {{data.get('version')}}
+{%- endblock %}
+{% block build -%}
+build:
+  number: {% block build_number -%}1{%- endblock %}
+  script:
+    - cd $RECIPE_DIR
+    - pip install --no-deps .
+
+  {% block entry_points -%}
+  entry_points: {{data.get('entry_points', {}).get('console_scripts', [])}}
+  {%- endblock %}
+
+{%- endblock %}
+
+{% block requirements -%}
+requirements:
+  build:
+    - python
+    - setuptools
+  run:
+    - python
+    {% for req in data.get('install_requires', []) -%}
+    - {{req}}
+    {% endfor %}
+
+{%- endblock %}
+{% block about -%}
+about:
+  home: {{data.get('url')}}
+  license: {{data.get('license')}}
+{%- endblock %}
+{% block test -%}
+test:
+  requires:
+    {% for req in data.get('tests_require', []) -%}
+    - {{req}}
+    {% endfor %}
+  imports: {{data.get('packages')}}
+{%- endblock -%}
+{%- endblock %}
+
+# See
+# https://docs.conda.io/projects/conda-build for
+# more information about meta.yaml

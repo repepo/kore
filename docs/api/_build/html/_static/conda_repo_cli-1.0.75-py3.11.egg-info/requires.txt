@@ -1,0 +1,10 @@
+clyent==1.2.1
+nbformat==5.9.2
+pathlib
+python-dateutil==2.8.2
+pytz
+PyYAML==6.0.1
+requests==2.31.0
+setuptools
+six
+requests_mock
