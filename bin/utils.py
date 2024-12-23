@@ -1006,11 +1006,9 @@ def Mlam(coefficients: np.ndarray,
     and only those have been computed, skipping all the rest.
 
     :param basis_index: The index of the Gegenbauer family, :math:`\\lambda`.
-    :param coefficients: The :math:`\\lambda`-th Gegenabuer coefficients of the factor represented in
-    :math:`\\mathbf{\\mathcal{M}[a]}, :math:`a_k`.
+    :param coefficients: The :math:`\\lambda`-th Gegenabuer coefficients of the factor represented in :math:`\\mathbf{\\mathcal{M}[a]}`, :math:`a_k`.
     :param vector_parity: The parity of the eigenvector.
-    :param truncation_order: The truncation order, setting the size of the operator. If ``None``, it infers the order
-    from the size of ``coefficients``. Defaults to None.
+    :param truncation_order: The truncation order, setting the size of the operator. If ``None``, it infers the order from the size of ``coefficients``. Defaults to None.
 
     '''
 
@@ -1158,7 +1156,7 @@ def product_in_chebyshev_basis(factors_coefficients: list[np.ndarray],
         # And now we multiply
         to_return = Mlam(factors_coefficients[idx],0,0)*to_return
 
-    to_return[np.absolute(to_return) <= tolerance] = 0.0
+    to_return[abs(to_return) <= tolerance] = 0.0
 
     return to_return
 
@@ -1523,3 +1521,17 @@ def gamma_magnetic():
 
     return out
 
+coeffs_f = np.array([1.0, 0.5, -2.7, -1.4, 4.8])
+coeffs_g = np.array([0.2, -5.3, 1.3, 4.2, -1.1])
+coeffs_h = np.array([-3.8, 0.9, -1.2, -0.04, 2.3])
+
+print('ANDRÉS')
+print('Test fgh-fgh:', np.linalg.norm(cheb3Product(coeffs_f,coeffs_g, coeffs_h,1e-7)-cheb3Product(coeffs_f, coeffs_g, coeffs_h,1e-7)))
+print('Test fhg-fhg:', np.linalg.norm(cheb3Product(coeffs_f,coeffs_h, coeffs_g,1e-7)-cheb3Product(coeffs_f, coeffs_h, coeffs_g,1e-7)))
+print('Test fhg-hfg:', np.linalg.norm(cheb3Product(coeffs_f,coeffs_h, coeffs_g,1e-7)-cheb3Product(coeffs_h, coeffs_f, coeffs_g,1e-7)))
+print('\n--------------------\n')
+print('MINE')
+print('Test fgh-fgh:', np.linalg.norm(product_in_chebyshev_basis([coeffs_f,coeffs_g,coeffs_h],1e-7)-product_in_chebyshev_basis([coeffs_f,coeffs_g,coeffs_h], 1e-7)))
+print('Test fhg-fhg:', np.linalg.norm(product_in_chebyshev_basis([coeffs_f,coeffs_h,coeffs_g],1e-7)-product_in_chebyshev_basis([coeffs_f,coeffs_h,coeffs_g], 1e-7)))
+print('Test fhg-hfg:', np.linalg.norm(product_in_chebyshev_basis([coeffs_f,coeffs_h,coeffs_g],1e-7)-product_in_chebyshev_basis([coeffs_h,coeffs_f,coeffs_g], 1e-7)))
+print('Test ghf-gfh:', np.linalg.norm(product_in_chebyshev_basis([coeffs_g,coeffs_h,coeffs_f],1e-7)-product_in_chebyshev_basis([coeffs_g,coeffs_f,coeffs_h], 1e-7)))
