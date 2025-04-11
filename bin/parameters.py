@@ -1,5 +1,6 @@
 import numpy as np
 import sys
+import os
 #import targets as tg
 
 
@@ -18,7 +19,10 @@ def Ncheb(Ek):
 
 aux = 1.0  # Auxiliary variable, useful e.g. for ramps
 
-
+target_subdir = ''
+if not os.path.isdir(target_subdir):
+    os.mkdir(target_subdir)
+target_subdir = target_subdir + '/'
 
 # ----------------------------------------------------------------------------------------------------------------------
 # ---------------------------------------------------------------------------------------------- Hydrodynamic parameters
@@ -33,7 +37,7 @@ symm = -1
 
 # Inner core radius, CMB radius is unity.
 
-ricb = 0.35
+ricb = 0.0
 
 # Inner core spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow. Ignored if ricb = 0
@@ -49,7 +53,7 @@ bco = 1
 # Ek_gap = 2e-4
 # Ek = Ek_gap*(1-ricb)**2
 
-Ek = 1e-3
+Ek = 1e-8
 
 anelastic = 0
 variable_viscosity = 0

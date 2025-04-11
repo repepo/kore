@@ -29,12 +29,6 @@ import operators as op
 import radial_profiles as rap
 
 
-
-
-
-
-
-
 def main():
 
     warnings.simplefilter('ignore', ss.SparseEfficiencyWarning)
@@ -588,7 +582,7 @@ def main():
             print(' Matrix B assembled in', '{: 4.3f}'.format(toc-tic), 'seconds')
             tic = timer()
 
-            np.savez('B.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
+            np.savez(par.target_subdir + 'B.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
             toc = timer()
             print(' Matrix B written to disk in', '{: 4.3f}'.format(toc-tic), 'seconds')
             print('--------------------------------------------')
@@ -1170,7 +1164,7 @@ def main():
         print(' Matrix A assembled in', '{: 4.3f}'.format(toc-tic), 'seconds')
         tic = timer()
 
-        np.savez('A.npz', data=A.data, indices=A.indices, indptr=A.indptr, shape=A.shape)
+        np.savez(par.target_subdir + 'A.npz', data=A.data, indices=A.indices, indptr=A.indptr, shape=A.shape)
         toc = timer()
         print(' Matrix A written to disk in', '{: 4.3f}'.format(toc-tic), 'seconds')
         print('--------------------------------------------')

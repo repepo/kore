@@ -204,8 +204,7 @@ if sys.argv[7] == 'raw':
     im1=ax1.tricontourf( triang, np.real(ur[id_in]), 70, cmap=cmap)
 elif sys.argv[7] == 'abs':
     im1=ax1.tricontourf( triang, np.absolute(ur[id_in]), 70, cmap=cmap)
-for c in im1.collections:
-              c.set_edgecolor('face')   
+im1.set_edgecolor('face')
 ax1.set_aspect('equal')
 plt.colorbar(im1,aspect=70)
 
@@ -217,8 +216,7 @@ if sys.argv[7] == 'raw':
     im2=ax2.tricontourf( triang, np.real(utheta[id_in]), 70, cmap=cmap)
 elif sys.argv[7] == 'abs':
     im2=ax2.tricontourf( triang, np.absolute(utheta[id_in]), 70, cmap=cmap)
-for c in im2.collections:
-              c.set_edgecolor('face')
+im2.set_edgecolor('face')
 ax2.set_aspect('equal')
 plt.colorbar(im2,aspect=70)
 
@@ -230,8 +228,7 @@ if sys.argv[7] == 'raw':
     im3=ax3.tricontourf( triang, np.real(uphi[id_in]), 70, cmap=cmap)
 elif sys.argv[7] == 'abs':
     im3=ax3.tricontourf( triang, np.absolute(uphi[id_in]), 70, cmap=cmap)
-for c in im3.collections:
-              c.set_edgecolor('face')
+im3.set_edgecolor('face')
 ax3.set_aspect('equal')
 plt.colorbar(im3,aspect=70)
 

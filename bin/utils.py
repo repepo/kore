@@ -8,7 +8,10 @@ import numpy as np
 import parameters as par
 from typing import Union, Callable, Any
 from warnings import warn
-
+from matplotlib import use, interactive
+interactive(True)
+use('TkAgg')
+import matplotlib.pyplot as plt
 '''
 A library of various function definitions and utilities
 '''
@@ -985,7 +988,7 @@ def multiplication_coefficients(basis_index: int,
 def Mlam(coefficients: np.ndarray,
          basis_index: int,
          vector_parity: int,
-         truncation_order: Union[int|None] = None) \
+         truncation_order: int = -1) \
         -> Union[np.ndarray|ss.csr_array]:
     '''
     This function computes the :math:`\\mathcal{\\mathbf{M}}_\\lambda` operator, as described by Olver and Townsend (
@@ -1008,7 +1011,7 @@ def Mlam(coefficients: np.ndarray,
     :param basis_index: The index of the Gegenbauer family, :math:`\\lambda`.
     :param coefficients: The :math:`\\lambda`-th Gegenabuer coefficients of the factor represented in :math:`\\mathbf{\\mathcal{M}[a]}`, :math:`a_k`.
     :param vector_parity: The parity of the eigenvector.
-    :param truncation_order: The truncation order, setting the size of the operator. If ``None``, it infers the order from the size of ``coefficients``. Defaults to None.
+    :param truncation_order: The truncation order, setting the size of the operator. If -1, it infers the order from the size of ``coefficients``. Defaults to -1.
 
     '''
 
@@ -1019,7 +1022,7 @@ def Mlam(coefficients: np.ndarray,
         raise ValueError('(multiplication_operator): Invalid vector parity. Only allowed is 0, 1 or -1. Got '
                          + str(vector_parity) + '.')
 
-    if truncation_order is None:
+    if truncation_order == -1:
         truncation_order = len(coefficients)-1 # There are no issues with "truncation order vs. N" here because it is all
         # handled internally and there is no interfacing with the outside.
 
@@ -1039,7 +1042,7 @@ def Mlam(coefficients: np.ndarray,
         if basis_index == 0:
 
             # Auxiliary padding. Always good to have enough zeros in case they are needed.
-            coefficients = np.pad(coefficients,(0, int(2 * truncation_order + 1) - len(coefficients)))
+            coefficients = np.pad(coefficients,(0, int(2*truncation_order + 1) - len(coefficients)))
 
             # Toeplitz matrix
             rowcol = coefficients[:truncation_order + 1]
@@ -1136,8 +1139,6 @@ def product_in_chebyshev_basis(factors_coefficients: list[np.ndarray],
 
     Each factor doesn't need to be expanded to the same degree. The function keeps padding with zeros where necessary to ensure that all required products can be performed.
 
-    TODO: NEEDS TO BE TESTED.
-
     Note to us: This function unifies the ChebProduct (and its duplicate Cheb2Product) and the Cheb3Product functions.
 
     :param factors_coefficients: List of coefficients of the factors, passed as a list of arrays.
@@ -1145,21 +1146,59 @@ def product_in_chebyshev_basis(factors_coefficients: list[np.ndarray],
     Defaults to the value provided in the ``parameters`` file.
 
     '''
-    
-    to_return = factors_coefficients[0]
-    for idx in range(1,len(factors_coefficients)):
-        # We begin by padding if necessary
-        if len(factors_coefficients[idx]) > len(to_return):
-            to_return = np.concatenate((to_return, np.zeros(len(factors_coefficients[idx])-len(to_return))))
-        elif len(factors_coefficients[idx]) < len(to_return):
-            factors_coefficients[idx] = np.concatenate((factors_coefficients[idx], np.zeros(len(to_return)-len(factors_coefficients[idx]))))
-        # And now we multiply
-        to_return = Mlam(factors_coefficients[idx],0,0)*to_return
+
+    order = max([len(factor) for factor in factors_coefficients])
+
+    to_return = np.concatenate((factors_coefficients[0], np.zeros(2*order-len(factors_coefficients[0]))))
+    if len(factors_coefficients) > 1:
+        for idx in range(1,len(factors_coefficients)):
+            if np.linalg.norm(factors_coefficients[idx]) == 0.0:
+                # If the factor is exactly zero, set return value to zero and exit the for loop
+                to_return = np.array([0.0])
+                break
+            # We begin by padding if necessary
+            if len(factors_coefficients[idx]) > len(to_return):
+                to_return = np.concatenate((to_return, np.zeros(len(factors_coefficients[idx])-len(to_return))))
+            elif len(factors_coefficients[idx]) < len(to_return):
+                factors_coefficients[idx] = np.concatenate((factors_coefficients[idx], np.zeros(len(to_return)-len(factors_coefficients[idx]))))
+
+            # And now we multiply
+            to_return = Mlam(factors_coefficients[idx],0,0)*to_return
 
     to_return[abs(to_return) <= tolerance] = 0.0
 
     return to_return
 
+def product_series(factors_coefficients: list[np.ndarray],
+                   tolerance: float = par.tol_tc) \
+        -> np.ndarray:
+
+    if len(factors_coefficients) > 3:
+        raise ValueError('(product_series): Too many factors. Operation not supported yet.')
+
+    order = max([len(factor) for factor in factors_coefficients])
+    for idx in range(len(factors_coefficients)):
+        factors_coefficients[idx] = np.concatenate((factors_coefficients[idx], np.zeros(3*order - len(factors_coefficients[idx]))))
+
+    to_return = np.zeros(3*order)
+    for l in range(order):
+        for m in range(order):
+            s = l+m
+            r = abs(l-m)
+
+            to_add = (factors_coefficients[2][abs(np.array(range(order)) - s)] +
+                      factors_coefficients[2][abs(np.array(range(order)) - r)] +
+                      factors_coefficients[2][np.array(range(order)) + s] +
+                      factors_coefficients[2][np.array(range(order)) + r])
+            to_add = np.concatenate((to_add, np.zeros(2*order)))
+            to_add[0] -= (factors_coefficients[2][r] + factors_coefficients[2][s])
+            to_add[r] += factors_coefficients[2][0]
+            to_add[s] += factors_coefficients[2][0]
+
+            to_return += factors_coefficients[0][l] * factors_coefficients[1][m] * to_add / 4.0
+
+    to_return[abs(to_return) <= tolerance] = 0.0
+    return to_return
 
 def chebProduct(ck,dk,tol):
     '''
@@ -1525,13 +1564,111 @@ coeffs_f = np.array([1.0, 0.5, -2.7, -1.4, 4.8])
 coeffs_g = np.array([0.2, -5.3, 1.3, 4.2, -1.1])
 coeffs_h = np.array([-3.8, 0.9, -1.2, -0.04, 2.3])
 
-print('ANDRÉS')
-print('Test fgh-fgh:', np.linalg.norm(cheb3Product(coeffs_f,coeffs_g, coeffs_h,1e-7)-cheb3Product(coeffs_f, coeffs_g, coeffs_h,1e-7)))
-print('Test fhg-fhg:', np.linalg.norm(cheb3Product(coeffs_f,coeffs_h, coeffs_g,1e-7)-cheb3Product(coeffs_f, coeffs_h, coeffs_g,1e-7)))
-print('Test fhg-hfg:', np.linalg.norm(cheb3Product(coeffs_f,coeffs_h, coeffs_g,1e-7)-cheb3Product(coeffs_h, coeffs_f, coeffs_g,1e-7)))
-print('\n--------------------\n')
-print('MINE')
-print('Test fgh-fgh:', np.linalg.norm(product_in_chebyshev_basis([coeffs_f,coeffs_g,coeffs_h],1e-7)-product_in_chebyshev_basis([coeffs_f,coeffs_g,coeffs_h], 1e-7)))
-print('Test fhg-fhg:', np.linalg.norm(product_in_chebyshev_basis([coeffs_f,coeffs_h,coeffs_g],1e-7)-product_in_chebyshev_basis([coeffs_f,coeffs_h,coeffs_g], 1e-7)))
-print('Test fhg-hfg:', np.linalg.norm(product_in_chebyshev_basis([coeffs_f,coeffs_h,coeffs_g],1e-7)-product_in_chebyshev_basis([coeffs_h,coeffs_f,coeffs_g], 1e-7)))
-print('Test ghf-gfh:', np.linalg.norm(product_in_chebyshev_basis([coeffs_g,coeffs_h,coeffs_f],1e-7)-product_in_chebyshev_basis([coeffs_g,coeffs_f,coeffs_h], 1e-7)))
+# print('ANDRÉS')
+# print('Test fgh-fgh:', np.linalg.norm(cheb3Product(coeffs_f,coeffs_g, coeffs_h,1e-7)-cheb3Product(coeffs_f, coeffs_g, coeffs_h,1e-7)))
+# print('Test fhg-fhg:', np.linalg.norm(cheb3Product(coeffs_f,coeffs_h, coeffs_g,1e-7)-cheb3Product(coeffs_f, coeffs_h, coeffs_g,1e-7)))
+# print('Test fhg-hfg:', np.linalg.norm(cheb3Product(coeffs_f,coeffs_h, coeffs_g,1e-7)-cheb3Product(coeffs_h, coeffs_f, coeffs_g,1e-7)))
+# print('\n--------------------\n')
+# print('MINE')
+# print('Test fgh-fgh:', np.linalg.norm(product_in_chebyshev_basis([coeffs_f,coeffs_g,coeffs_h],1e-7)-product_in_chebyshev_basis([coeffs_f,coeffs_g,coeffs_h], 1e-7)))
+# print('Test fhg-fhg:', np.linalg.norm(product_in_chebyshev_basis([coeffs_f,coeffs_h,coeffs_g],1e-7)-product_in_chebyshev_basis([coeffs_f,coeffs_h,coeffs_g], 1e-7)))
+# print('Test fhg-hfg:', np.linalg.norm(product_in_chebyshev_basis([coeffs_f,coeffs_h,coeffs_g],1e-7)-product_in_chebyshev_basis([coeffs_h,coeffs_f,coeffs_g], 1e-7)))
+# print('Test ghf-gfh:', np.linalg.norm(product_in_chebyshev_basis([coeffs_g,coeffs_h,coeffs_f],1e-7)-product_in_chebyshev_basis([coeffs_g,coeffs_f,coeffs_h], 1e-7)))
+# cosa1 = product_in_chebyshev_basis([coeffs_g,coeffs_h,coeffs_f],1e-7)
+# cosa2 = product_in_chebyshev_basis([coeffs_g,coeffs_f,coeffs_h],1e-7)
+
+products = [product_in_chebyshev_basis([coeffs_f,coeffs_g,coeffs_h]),   # fgh
+            product_in_chebyshev_basis([coeffs_f,coeffs_h,coeffs_g]),   # fhg
+            product_in_chebyshev_basis([coeffs_g,coeffs_f,coeffs_h]),   # gfh
+            product_in_chebyshev_basis([coeffs_g,coeffs_h,coeffs_f]),   # ghf
+            product_in_chebyshev_basis([coeffs_h,coeffs_f,coeffs_g]),   # hfg
+            product_in_chebyshev_basis([coeffs_h,coeffs_g,coeffs_f])]   # hgf
+
+diffs = np.zeros([6,6])
+for row in range(6):
+    for column in range(6):
+        diffs[row,column] = np.linalg.norm(products[row] - products[column])
+
+productsAND = [cheb3Product(coeffs_f,coeffs_g,coeffs_h, tol=par.tol_tc),   # fgh
+            cheb3Product(coeffs_f,coeffs_h,coeffs_g, tol=par.tol_tc),   # fhg
+            cheb3Product(coeffs_g,coeffs_f,coeffs_h, tol=par.tol_tc),   # gfh
+            cheb3Product(coeffs_g,coeffs_h,coeffs_f, tol=par.tol_tc),   # ghf
+            cheb3Product(coeffs_h,coeffs_f,coeffs_g, tol=par.tol_tc),   # hfg
+            cheb3Product(coeffs_h,coeffs_g,coeffs_f, tol=par.tol_tc)]   # hgf
+
+diffsAND = np.zeros([6,6])
+for row in range(6):
+    for column in range(6):
+        diffsAND[row,column] = np.linalg.norm(productsAND[row] - productsAND[column])
+
+x = np.arange(0.0, 1.01, 0.01)
+f = np.zeros_like(x)
+g = np.zeros_like(x)
+h = np.zeros_like(x)
+fgh = [np.zeros_like(x), np.zeros_like(x), np.zeros_like(x)]
+for order in range(len(coeffs_f)):
+    f += coeffs_f[order]*np.cos(order*np.arccos(x))
+    g += coeffs_g[order]*np.cos(order * np.arccos(x))
+    h += coeffs_h[order]*np.cos(order * np.arccos(x))
+    # fgh += productsSER[1][order] * np.cos(order * np.arccos(x))
+for order, coeff in enumerate(productsAND[0]):
+    fgh[0] += coeff*np.cos(order * np.arccos(x))
+for order, coeff in enumerate(productsAND[2]):
+    fgh[1] += coeff*np.cos(order * np.arccos(x))
+for order, coeff in enumerate(productsAND[4]):
+    fgh[2] += coeff*np.cos(order * np.arccos(x))
+
+# plt.figure()
+# # plt.plot(x,f, label = r'$f(x)$')
+# # plt.plot(x,g, label = r'$g(x)$')
+# # plt.plot(x,h, label = r'$h(x)$')
+# plt.plot(x,f*g*h, label = r'$f(x)g(x)h(x)$')
+# plt.plot(x,fgh[0], label = r'$f(x)g(x)h(x)$ Cheb1')
+# plt.plot(x,fgh[1], label = r'$f(x)g(x)h(x)$ Cheb2', ls='--')
+# plt.plot(x,fgh[2], label = r'$f(x)g(x)h(x)$ Cheb3', ls='-.')
+# plt.xlabel(r'$x$')
+# plt.legend()
+# plt.grid()
+# plt.title('Andrés\' implementations')
+
+productsSER = [product_series([coeffs_f,coeffs_g,coeffs_h]),   # fgh
+            product_series([coeffs_f,coeffs_h,coeffs_g]),   # fhg
+            product_series([coeffs_g,coeffs_f,coeffs_h]),   # gfh
+            product_series([coeffs_g,coeffs_h,coeffs_f]),   # ghf
+            product_series([coeffs_h,coeffs_f,coeffs_g]),   # hfg
+            product_series([coeffs_h,coeffs_g,coeffs_f])]   # hgf
+
+diffsSER = np.zeros([6,6])
+for row in range(6):
+    for column in range(6):
+        diffsSER[row,column] = np.linalg.norm(productsSER[row] - productsSER[column])
+
+x = np.arange(0.0, 1.01, 0.01)
+f = np.zeros_like(x)
+g = np.zeros_like(x)
+h = np.zeros_like(x)
+fgh = [np.zeros_like(x), np.zeros_like(x), np.zeros_like(x)]
+for order in range(len(coeffs_f)):
+    f += coeffs_f[order]*np.cos(order*np.arccos(x))
+    g += coeffs_g[order]*np.cos(order * np.arccos(x))
+    h += coeffs_h[order]*np.cos(order * np.arccos(x))
+    # fgh += productsSER[1][order] * np.cos(order * np.arccos(x))
+for order, coeff in enumerate(productsSER[0]):
+    fgh[0] += coeff*np.cos(order * np.arccos(x))
+for order, coeff in enumerate(productsSER[1]):
+    fgh[1] += coeff*np.cos(order * np.arccos(x))
+for order, coeff in enumerate(productsSER[3]):
+    fgh[2] += coeff*np.cos(order * np.arccos(x))
+
+# plt.figure()
+# # plt.plot(x,f, label = r'$f(x)$')
+# # plt.plot(x,g, label = r'$g(x)$')
+# # plt.plot(x,h, label = r'$h(x)$')
+# plt.plot(x,f*g*h, label = r'$f(x)g(x)h(x)$')
+# plt.plot(x,fgh[0], label = r'$f(x)g(x)h(x)$ Cheb1')
+# plt.plot(x,fgh[1], label = r'$f(x)g(x)h(x)$ Cheb2', ls='--')
+# plt.plot(x,fgh[2], label = r'$f(x)g(x)h(x)$ Cheb3', ls='-.')
+# plt.xlabel(r'$x$')
+# plt.legend()
+# plt.grid()
+# plt.title('My implementations')

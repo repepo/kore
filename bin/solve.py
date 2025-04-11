@@ -37,7 +37,7 @@ def main():
         tic = timer()
 
     # ------------------------------------------------------------------ reads matrix A
-    A = ut.load_csr('A.npz')
+    A = ut.load_csr(par.target_subdir + 'A.npz')
     nb_l,nb_c = A.shape
 
     MA = PETSc.Mat()
@@ -277,37 +277,37 @@ def main():
         if success > 0:
 
             if par.forcing == 0:
-                with open('eigenvalues0.dat','wb') as deig:
+                with open(par.target_subdir + 'eigenvalues0.dat','wb') as deig:
                     np.savetxt(deig, eigval)
 
             # one solution per column
             if par.hydro == 1:
-                with open('real_flow.field','wb') as dflo1:
+                with open(par.target_subdir + 'real_flow.field','wb') as dflo1:
                     np.savetxt(dflo1, ru)
-                with open('imag_flow.field','wb') as dflo2:
+                with open(par.target_subdir + 'imag_flow.field','wb') as dflo2:
                     np.savetxt(dflo2, iu)
 
             if par.magnetic == 1:
-                with open('real_magnetic.field','wb') as dmag1:
+                with open(par.target_subdir + 'real_magnetic.field','wb') as dmag1:
                     np.savetxt(dmag1, rb)
-                with open('imag_magnetic.field','wb') as dmag2:
+                with open(par.target_subdir + 'imag_magnetic.field','wb') as dmag2:
                     np.savetxt(dmag2, ib)
 
             if par.thermal == 1:
-                with open('real_temperature.field','wb') as dtemp1:
+                with open(par.target_subdir + 'real_temperature.field','wb') as dtemp1:
                     np.savetxt(dtemp1, rtemp)
-                with open('imag_temperature.field','wb') as dtemp2:
+                with open(par.target_subdir + 'imag_temperature.field','wb') as dtemp2:
                     np.savetxt(dtemp2, itemp)
 
             if par.compositional == 1:
-                with open('real_composition.field','wb') as dcomp1:
+                with open(par.target_subdir + 'real_composition.field','wb') as dcomp1:
                     np.savetxt(dcomp1, rcomp)
-                with open('imag_composition.field','wb') as dcomp2:
+                with open(par.target_subdir + 'imag_composition.field','wb') as dcomp2:
                     np.savetxt(dcomp2, icomp)
 
         toc2 = timer()
         print('Solve done in',toc2-tic,'seconds')
-        with open('timing.dat','ab') as dtim:
+        with open(par.target_subdir + 'timing.dat','ab') as dtim:
                     np.savetxt(dtim, np.array([toc2-tic]))
 
     # ------------------------------------------------------------------ done

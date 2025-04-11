@@ -24,8 +24,8 @@ def main(ncpus):
     # ------------------------------------------------------------------ Postprocessing: compute energy, dissipation, etc.
     tic = timer()
 
-    fname_ev = 'eigenvalues0.dat'
-    fname_tm = 'timing.dat'
+    fname_ev = par.target_subdir + 'eigenvalues0.dat'
+    fname_tm = par.target_subdir + 'timing.dat'
 
     if os.path.isfile(fname_ev):
         eigval = np.loadtxt(fname_ev).reshape((-1,2))
@@ -35,17 +35,17 @@ def main(ncpus):
         if np.size(timing)>1:
             timing = timing[-1]
 
-    fname_ru = 'real_flow.field'
-    fname_iu = 'imag_flow.field'
+    fname_ru = par.target_subdir + 'real_flow.field'
+    fname_iu = par.target_subdir + 'imag_flow.field'
 
-    fname_rb = 'real_magnetic.field'
-    fname_ib = 'imag_magnetic.field'
+    fname_rb = par.target_subdir + 'real_magnetic.field'
+    fname_ib = par.target_subdir + 'imag_magnetic.field'
 
-    fname_rt = 'real_temperature.field'
-    fname_it = 'imag_temperature.field'
+    fname_rt = par.target_subdir + 'real_temperature.field'
+    fname_it = par.target_subdir + 'imag_temperature.field'
 
-    fname_rc = 'real_composition.field'
-    fname_ic = 'imag_composition.field'
+    fname_rc = par.target_subdir + 'real_composition.field'
+    fname_ic = par.target_subdir + 'imag_composition.field'
 
     if os.path.isfile(fname_ru) and os.path.isfile(fname_iu):
         ru = np.loadtxt(fname_ru).reshape((2*ut.n,-1))
@@ -348,7 +348,7 @@ def main(ncpus):
 
     # ---------------------------------------------------------- write post-processed data and parameters to disk
 
-    with open('params.dat','ab') as dpar:
+    with open(par.target_subdir + 'params.dat','ab') as dpar:
         np.savetxt(dpar, params,
         fmt=[
             '%d',   '%d',   '%d',   '%d',
@@ -378,7 +378,7 @@ def main(ncpus):
             '%.2f'])
 
     if par.hydro:   
-        with open('flow.dat','ab') as dflo:
+        with open(par.target_subdir + 'flow.dat','ab') as dflo:
             np.savetxt(dflo, np.c_[ KE,   KP,   KT,   Dkin,
                                     Dint, Wlor, Wthm, Wcmp,
                                     resid0, resid1,
@@ -386,20 +386,20 @@ def main(ncpus):
                                     np.real(vtorq_icb), np.imag(vtorq_icb)])
 
     if par.magnetic:
-        with open('magnetic.dat','ab') as dmag:
+        with open(par.target_subdir + 'magnetic.dat','ab') as dmag:
             np.savetxt(dmag, np.c_[ ME, Mdfs, Indu, resid2,
                                     np.real(mtorq), np.imag(mtorq)])
 
     if par.thermal:
-        with open('thermal.dat','ab') as dtmp:
+        with open(par.target_subdir + 'thermal.dat','ab') as dtmp:
             np.savetxt(dtmp, np.c_[ TE, Wadv_thm, Dthm, resid3 ])
 
     if par.compositional:
-        with open('compositional.dat','ab') as dcmp:
+        with open(par.target_subdir + 'compositional.dat','ab') as dcmp:
             np.savetxt(dcmp, np.c_[ CE, Wadv_cmp, Dcmp ])
 
     if par.forcing == 0:
-        with open('eigenvalues.dat','ab') as deig:
+        with open(par.target_subdir + 'eigenvalues.dat','ab') as deig:
             np.savetxt(deig, eigval)
 
     # ------------------------------------------------------------------ done
