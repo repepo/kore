@@ -292,17 +292,17 @@ def main(ncpus):
                                 par.rc,
                                 
                                 par.h,
-                                par.rsy,
+                                par.sym,
                                 par.bci_thermal,
                                 par.bco_thermal,
                                 
                                 par.Ecomp,
                                 ut.compositional_background,
                                 par.BV2_comp,
-                                par.rcc,
+                                par.rc,
                                 
-                                par.hc,
-                                par.rsyc,
+                                par.h,
+                                par.sym,
                                 par.bci_compositional,
                                 par.bco_compositional,
                                 

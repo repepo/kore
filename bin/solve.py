@@ -62,7 +62,7 @@ def main():
 
     if par.forcing == 0: # --------------------------------------------- if eigenvalue problem, reads matrix B
 
-        B = ut.load_csr('B.npz')
+        B = ut.load_csr(par.target_subdir + 'B.npz')
         nb_l,nb_c = B.shape
         nbl = opts.getInt('nbl',nb_l)
 

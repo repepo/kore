@@ -22,9 +22,12 @@ import parameters as par
 import utils as ut
 import radial_profiles as rap
 import autocompute as ac
+import shutil
 
 
 def main(ncpus):
+
+    shutil.copy('bin/parameters.py', par.target_subdir + 'parameters.log')
 
     warnings.simplefilter('ignore', ss.SparseEfficiencyWarning)
 

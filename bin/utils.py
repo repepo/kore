@@ -878,7 +878,7 @@ def Dlam(derivative_order: int,
 
     else:
         diagonal = np.array(range(derivative_order, truncation_order + 1))
-        to_return = ss.diags(diagonal, offsets=derivative_order).A
+        to_return = ss.diags_array(diagonal, offsets=derivative_order)
         to_return = 2.0 ** (derivative_order - 1) * scsp.factorial(derivative_order - 1) * to_return
 
     if par.ricb == 0:
