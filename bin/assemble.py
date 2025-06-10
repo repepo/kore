@@ -302,7 +302,8 @@ def main():
         # libration in longitude as a boundary flow forcing
         if rank == 0:
 
-            if par.m == 0 and par.symm == 1 and par.bci == 1 and par.bco == 1:
+            # if par.m == 0 and par.symm == 1 and par.bci == 1 and par.bco == 1:
+            if par.m == 0 and par.symm == 1 and par.bco == 1:    
 
                 print('--------------------------------------------')
                 print('Longitudinal libration - axial forcing (m = 0)')
@@ -948,6 +949,8 @@ def main():
                     bc_b_list_inner = bc_b_thinlayer(l, 'nocurl', 1/par.mu, par.c_icb, par.c1_icb, 'icb')
                 elif par.innercore == 'insulator':
                     bc_b_list_inner = bc_b_icb( l, 'nocurl', par.innercore, rank, bpp, k)  # The perfectly conducting inner core needs fixing here (or removed)
+                elif par.innercore == 'conducting, Bessel':
+                    bc_b_list_inner = bc_b_icb( l, 'nocurl', par.innercore, rank, bpp, k)  # bc on mag. poloidal field has no coupling to velocity field
                 elif par.innercore == 'conducting, Chebys':
                     bc_b_list_inner = bc_b_cic( l, 'section_f')
 
@@ -1041,6 +1044,8 @@ def main():
                     bc_b_list_inner = bc_b_thinlayer(l, '1curl', 1/par.mu, par.c_icb, par.c1_icb, 'icb')
                 elif par.innercore == 'insulator':
                     bc_b_list_inner = bc_b_icb( l, '1curl', par.innercore, rank, bpp, k)  # The perfectly conducting inner core needs fixing here (or removed)
+                elif par.innercore == 'conducting, Bessel':
+                    bc_b_list_inner = bc_b_icb( l, '1curl', par.innercore, rank, bpp, k)  # bc on mag. toroidal field has coupling to the velocity field (spatial bc)
                 elif par.innercore == 'conducting, Chebys':
                     bc_b_list_inner = bc_b_cic( l, 'section_g')
 
@@ -1720,7 +1725,7 @@ def bc_b_icb(l,loc, innercore, rank, bpp, k):
         out = icb_diag.tocoo()
         out2 = [out.data, out.row + row0, out.col + col0]
 
-    elif (innercore == 'conducting') and (par.forcing == 1): #---------------------------------------------- inner core with conductivity equal to the outer core's
+    elif (innercore == 'conducting, Bessel') and (par.forcing != 0): #---------------------------------------------- inner core with conductivity equal to the outer core's
         # assumes a Bessel function solution for the mag field in the IC 
         # only one row needed for the bc in the conductor case
         icb_diag = ss.dok_matrix((1, ut.N1),dtype=complex)
@@ -1732,7 +1737,7 @@ def bc_b_icb(l,loc, innercore, rank, bpp, k):
             # the line just below works for lmax~150.
             #icb_diag[0,:] = ut.jl(l,bessel_wavenumber*par.ricb,0) * bv.P0_icb - bessel_wavenumber * ut.jl(l,bessel_wavenumber*par.ricb,1) * bv.P1_icb
             # the line below should work for all lmax
-            icb_diag[0,:] = bv.P0_icb - bessel_wavenumber * ut.dlogjl(l,bessel_wavenumber*par.ricb) * bv.P1_icb
+            icb_diag[0,:] = bv.P0_icb - bessel_wavenumber/par.mu_i2o * ut.dlogjl(l,bessel_wavenumber*par.ricb) * bv.P1_icb + (1/par.mu_i2o-1)/par.ricb * bv.T1_icb
             # --------------------------------------------------
 
             if ut.symmB0 == -1:
@@ -1745,10 +1750,11 @@ def bc_b_icb(l,loc, innercore, rank, bpp, k):
 
             # Physics ---------------
             bessel_wavenumber = (1-1j)*np.sqrt(par.forcing_frequency/2/par.Em)
+            eta_i2o = (1/par.mu_i2o/par.sigma_i2o)
             # the line just below works for lmax~150.
             #icb_diag[0,:] = ut.jl(l,bessel_wavenumber*par.ricb,0) * bv.T0_icb - bessel_wavenumber * ut.jl(l,bessel_wavenumber*par.ricb,1) * bv.T1_icb
             # the line below should work for all lmax
-            icb_diag[0,:] = bv.T0_icb - bessel_wavenumber * ut.dlogjl(l,bessel_wavenumber*par.ricb) * bv.T1_icb
+            icb_diag[0,:] = par.Em*(bv.T0_icb - eta_i2o * bessel_wavenumber * ut.dlogjl(l,bessel_wavenumber*par.ricb) * bv.T1_icb + (eta_i2o-1)/par.ricb * bv.T1_icb)
             # -----------------------
 
             if ut.symmB0 == -1:
@@ -1759,6 +1765,77 @@ def bc_b_icb(l,loc, innercore, rank, bpp, k):
 
         out = icb_diag.tocoo()
         out2 = [out.data, out.row + row0, out.col + col0]
+
+        # and now the velocity coupling terms
+        if par.hydro == 1:
+            if loc == '1curl': # ----------------------------------------------------------------------- 1curl
+
+                # first row (only one row needed here), goes with the -G'-(G/r) term
+
+                L = l*(l+1)
+
+                row11 = int( ut.N1*(l - ut.m_top)/2 )
+                row1 = 3*ut.n + row11   # starting row (first row of bc's)
+                col1 = row11
+
+                # l-1 terms ------------------------------------------------------------------------ l-1
+                if ((l-1 >= ut.m_top) and (ut.symm1==1)) or (ut.symm1==-1) :
+
+                    if ut.symm1 == 1 :
+                        col1a = nb*ut.N1 + ( rank*bpp + k - 1 )* ut.N1 # left of diag if symm
+                    elif ut.symm1 == -1 :
+                        col1a = nb*ut.N1 + ( rank*bpp + k )* ut.N1 # on the diag if antisymm
+
+                    icb_minus = ss.dok_matrix((1, ut.N1),dtype=complex)
+
+                    C = -(l-1)*np.sqrt(l**2-par.m**2)/(l*(2*l-1))
+                    C*=ut.B0_norm() # normalization factor
+
+                    # Physics -------------------
+                    icb_minus[0,:] = C*bv.T0_icb
+                    # ---------------------------
+                    out = icb_minus.tocoo()
+
+                    out2[0] = np.concatenate([out2[0],out.data])
+                    out2[1] = np.concatenate([out2[1],out.row+row1])
+                    out2[2] = np.concatenate([out2[2],out.col+col1a])
+
+                # l terms -------------------------------------------------------------------------- l
+                icb_0 = ss.dok_matrix((1, ut.N1),dtype=complex)
+
+                C = 1j*par.m/L
+                C*=ut.B0_norm() # normalization factor
+
+                # Physics ---------------------------------------------------
+                icb_0[0,:] = C*( bv.P1_icb + (l**2+l+1)*bv.P0_icb/par.ricb )
+                # -----------------------------------------------------------
+                out = icb_0.tocoo()
+
+                out2[0] = np.concatenate([out2[0],out.data])
+                out2[1] = np.concatenate([out2[1],out.row+row1])
+                out2[2] = np.concatenate([out2[2],out.col+col1])
+
+                # l+1 terms ------------------------------------------------------------------------ l+1
+                if ((l+1 <= ut.lmax_top-1) and (ut.symm1==-1)) or (ut.symm1==1) :
+
+                    if ut.symm1 == -1 :
+                        col1b = nb*ut.N1 + ( rank*bpp + k + 1 )* ut.N1 # right of diag if antisymm
+                    elif ut.symm1 == 1 :
+                        col1b = nb*ut.N1 + ( rank*bpp + k )* ut.N1 # on diag if symm
+
+                    icb_plus = ss.dok_matrix((1, ut.N1),dtype=complex)
+
+                    C = -(l+2)*np.sqrt((l+par.m+1)*(l-par.m+1))/((2*l+3)*(l+1))
+                    C*=ut.B0_norm() # normalization factor
+
+                    # Physics ------------------
+                    icb_plus[0,:] = C*bv.T0_icb
+                    # --------------------------
+                    out = icb_plus.tocoo()
+
+                    out2[0] = np.concatenate([out2[0],out.data])
+                    out2[1] = np.concatenate([out2[1],out.row+row1])
+                    out2[2] = np.concatenate([out2[2],out.col+col1b])
 
     elif (innercore == 'perfect conductor, spatial') or (innercore == 'perfect conductor, material'):   #----- perfectly conducting inner core
 

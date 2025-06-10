@@ -41,13 +41,13 @@ aux2 = 0.0
 hydro = 1  # set to 1 to include the Navier-Stokes equation for the flow velocity, set to 0 otherwise
 
 # Azimuthal wave number m (>=0)
-m = 11
+m = 0
 
 # Equatorial symmetry of the flow field. Use 1 for symmetric, -1 for antisymmetric.
 symm = 1
 
 # Inner core radius, CMB radius is unity.
-ricb = 0
+ricb = 0.35
 
 # Inner core spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow. Ignored if ricb = 0
@@ -61,7 +61,7 @@ bco = 1
 # CoriolisNumber = 1.2e3
 # Ek_gap = 2/CoriolisNumber
 # Ek = Ek_gap*(1-ricb)**2
-Ek = 3e-7
+Ek = 10**-6
 
 forcing = 0  # Uncomment this line for eigenvalue problems
 # forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
@@ -75,10 +75,10 @@ forcing = 0  # Uncomment this line for eigenvalue problems
 # forcing = 9  # Radial, symmetric, m=2 boundary flow forcing.
 
 # Forcing frequency (ignored if forcing == 0)
-forcing_frequency = 1.0  # negative is prograde
+forcing_frequency = 0.0  # negative is prograde
 
 # Forcing amplitude. Body forcing amplitude will use the cmb value
-forcing_amplitude_cmb = 1.0
+forcing_amplitude_cmb = 0.0
 forcing_amplitude_icb = 0.0
 
 # if solving an eigenvalue problem, compute projection of eigenmode
@@ -90,7 +90,7 @@ projection = 1
 # ----------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------- Magnetic field parameters
 # ----------------------------------------------------------------------------------------------------------------------
-magnetic = 1  # set to 1 if including the induction equation and the Lorentz force
+magnetic = 0  # set to 1 if including the induction equation and the Lorentz force
 
 # Imposed background magnetic field
 B0 = 'axial'          # Axial, uniform field along the spin axis
@@ -126,8 +126,8 @@ sigma_i2o = 1.0  # electrical conductivity ratio solid inner core / fluid outer 
 
 # Magnetic field strength and magnetic diffusivity:
 # Either use the Elsasser number and the magnetic Prandtl number (i.e. Lambda and Pm: uncomment and set the following three lines):
-Lambda = 0.01  #ssak(0.1,1e-3,Ek)
-Pm = 1  #pmak(1,1e-3,Ek)
+Lambda = 0.1  #ssak(0.1,1e-3,Ek)
+Pm = 0.01  #pmak(1,1e-3,Ek)
 Em = Ek/Pm; Le2 = Lambda*Em; Le = np.sqrt(Le2)
 # Or use the Lehnert number and the magnetic Ekman number (i.e. Le and Em: uncomment and set the following three lines):
 #Le = 10**-2.5  #; Lu=2e3
@@ -170,10 +170,10 @@ OmgtauIC = 2.3e3  # For Earth use 2.3e3 if tauIC = 1 year
 # ----------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------- Thermal parameters
 # ----------------------------------------------------------------------------------------------------------------------
-thermal = 1  # Use 1 or 0 to include or not the temperature equation and the buoyancy force (Boussinesq)
+thermal = 0  # Use 1 or 0 to include or not the temperature equation and the buoyancy force (Boussinesq)
 
 # Prandtl number: ratio of viscous to thermal diffusivity
-Prandtl = 0.003
+Prandtl = 1.0
 # "Thermal" Ekman number
 Etherm = Ek/Prandtl
 
@@ -264,11 +264,12 @@ OmgTau = 1     # Rotation time scale
 # ----------------------------------------------------------------------------------------------------------------------
 
 # Number of cpus
-ncpus = 24
+ncpus = 4
 
 # Chebyshev polynomial truncation level. Use function def at top or set manually. N must be even if ricb = 0.
-N     = 240  #Ncheb(Ek)  # for the fluid core
-N_cic = 36         # for the field inside the ic (innercore = 'conducting, Chebys') 
+N     = Ncheb(Ek)  # for the fluid core
+# N = 8
+N_cic = 16         # for the field inside the ic (innercore = 'conducting, Chebys') 
 
 # Spherical harmonic truncation lmax and approx lmax/N ratio:
 g = 1.0
@@ -295,8 +296,8 @@ if track_target == 1 :  # read target from file and sets target accordingly
     rtau = tt[0]
     itau = tt[1]
 else:                   # set target manually
-    rtau = 0
-    itau = -0.04
+    rtau = 0.0
+    itau = 1.0
 
 # tau is the actual target for the solver
 # real part is damping
