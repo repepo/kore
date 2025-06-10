@@ -177,21 +177,25 @@ def main():
                     rb = rEigv[ offset : offset + 2*ut.n, : ]
                     ib = iEigv[ offset : offset + 2*ut.n, : ]
 
+                if par.rotdyn:
+                    offset = par.hydro * 2*ut.n + par.magnetic * 2*ut.n
+                    sol_rotdyn = rEigv[ offset : offset + 3, : ] + 1j*iEigv[ offset : offset + 3, : ]
+
                 # each solution for b_ic has 2*ut.nic coeffs
                 if ut.icflag:
-                    offset = 2*ut.n + par.magnetic * 2*ut.n
+                    offset = 2*ut.n + par.magnetic * 2*ut.n + 3*par.rotdyn
                     rb_ic = rEigv[ offset : offset + 2*ut.nic, : ]
                     ib_ic = iEigv[ offset : offset + 2*ut.nic, : ]
 
                 # each solution for the temperature has ut.n coeffs
                 if par.thermal == 1:
-                    offset = 2*ut.n + par.magnetic * 2*ut.n + ut.icflag * 2*ut.nic
+                    offset = 2*ut.n + par.magnetic * 2*ut.n + ut.icflag * 2*ut.nic + 3*par.rotdyn
                     rtemp = rEigv[ offset : offset + ut.n, : ]
                     itemp = iEigv[ offset : offset + ut.n, : ]
 
                 # each solution for the composition has ut.n coeffs
                 if par.compositional == 1:
-                    offset = 2*ut.n + par.magnetic * 2*ut.n + ut.icflag * 2*ut.nic + par.thermal * ut.n
+                    offset = 2*ut.n + par.magnetic * 2*ut.n + ut.icflag * 2*ut.nic + par.thermal * ut.n + 3*par.rotdyn
                     rcomp = rEigv[ offset : offset + ut.n, : ]
                     icomp = iEigv[ offset : offset + ut.n, : ]
 
@@ -256,18 +260,22 @@ def main():
                 rb = np.reshape(np.real(VR[ offset : offset + 2*ut.n ]),(-1,1))
                 ib = np.reshape(np.imag(VR[ offset : offset + 2*ut.n ]),(-1,1))
 
-                if ut.icflag:
+                if par.rotdyn:
                     offset = par.hydro * 2*ut.n + par.magnetic * 2*ut.n
+                    sol_rotdyn = np.reshape( VR[ offset : offset + 3 ],(-1,1))
+
+                if ut.icflag:
+                    offset = par.hydro * 2*ut.n + par.magnetic * 2*ut.n + 3*par.rotdyn
                     rb_ic = np.reshape(np.real(VR[ offset : offset + 2*ut.nic ]),(-1,1))
                     ib_ic = np.reshape(np.imag(VR[ offset : offset + 2*ut.nic ]),(-1,1))
 
             if par.thermal == 1:
-                offset = par.hydro * 2*ut.n + par.magnetic * 2*ut.n + ut.icflag * 2*ut.nic 
+                offset = par.hydro * 2*ut.n + par.magnetic * 2*ut.n + ut.icflag * 2*ut.nic + 3*par.rotdyn
                 rtemp = np.reshape(np.real(VR[ offset : offset + ut.n ]),(-1,1))
                 itemp = np.reshape(np.imag(VR[ offset : offset + ut.n ]),(-1,1))
 
             if par.compositional == 1:
-                offset = par.hydro * 2*ut.n + par.magnetic * 2*ut.n + ut.icflag * 2*ut.nic + par.thermal * ut.n
+                offset = par.hydro * 2*ut.n + par.magnetic * 2*ut.n + ut.icflag * 2*ut.nic + par.thermal * ut.n + 3*par.rotdyn
                 rcomp = np.reshape(np.real(VR[ offset : offset + ut.n ]),(-1,1))
                 icomp = np.reshape(np.imag(VR[ offset : offset + ut.n ]),(-1,1))
 
@@ -303,6 +311,10 @@ def main():
                     np.savetxt(dmag1, rb)
                 with open('imag_magnetic.field','wb') as dmag2:
                     np.savetxt(dmag2, ib)
+
+            if par.rotdyn:
+                with open('rotdyn.field','wb') as drotdyn:
+                    np.savetxt(drotdyn, sol_rotdyn)
 
             if ut.icflag:
                 with open('real_magnetic_ic.field','wb') as dmag1_ic:

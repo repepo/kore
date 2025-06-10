@@ -45,7 +45,7 @@ else:
 symm1 = (2*np.sign(par.m) - 1) * par.symm  # symm1=par.symm if m>0, symm1 = -par.symm if m=0
 
 # this gives the size (rows or columns) of the main matrices
-sizmat = 2*n*par.hydro + 2*n*par.magnetic + 2*nic*cic + n*par.thermal + n*par.compositional
+sizmat = 2*n*par.hydro + 2*n*par.magnetic + 3*par.rotdyn + 2*nic*cic + n*par.thermal + n*par.compositional
 
 s = int( (vsymm+1)/2 ) # s=0 if antisymm, s=1 if symm
 m_top = m + 1-s
@@ -1289,18 +1289,18 @@ def gamma_visc(a1,a2,a3):
         elif l==7 and par.m==1:
             out[0,colT:colT+par.N] = tol7
 
-    # axial torque for a spherical cmb, take 2*real after multiplying by the solution vector
+    # axial viscous torque on the mantle for a spherical cmb, add cc after multiplying by the solution vector
     if par.m == 0 and par.symm == 1:
         R = 1  #rcmb
         # axial torque depends on the l=1, m=0 toroidal component only
-        out[0,n0:n0+par.N] = (8*np.pi/3)*(R**2)*( R*T1 - T0 )
+        out[0,n0:n0+par.N] = -(4*np.pi/3)*(R**2)*( R*T1 - T0 )  # note the minus in front as needed for the mantle 
 
     return out
 
 
 def gamma_visc_icb(ricb):
     '''
-    Axial viscous torque on the inner core, spherical. Take 2*real after multiplying by the solution vector
+    Axial viscous torque on the inner core, spherical. Add cc after multiplying by the solution vector
     '''
 
     out = np.zeros((1,n0+n0),dtype=complex)
@@ -1311,8 +1311,8 @@ def gamma_visc_icb(ricb):
         T0 = T[:,0]
         T1 = T[:,1]
         R = ricb
-        # axial torque depends on the l=1, m=0 toroidal component only
-        out[0,n0:n0+par.N] = (8*np.pi/3)*(R**2)*( R*T1 - T0 )
+        # axial viscous torque on the IC depends on the l=1, m=0 toroidal component only
+        out[0,n0:n0+par.N] = (4*np.pi/3)*(R**2)*( R*T1 - T0 )  # no minus in front for the IC
 
     return out
 

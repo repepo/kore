@@ -1,6 +1,21 @@
 import numpy as np
 #import targets as tg
 
+def pmak(Pm0, E0, E):
+   Pm1 = 1e-6
+   E1 = 1e-15
+   alpha = np.log(Pm0/Pm1) / np.log(E0/E1)
+   k = Pm1/(E1**alpha)
+   return k*(E**alpha)
+
+def ssak(ss0, E0, E):
+   ss1 = 10
+   E1 = 1e-15
+   alpha = np.log(ss0/ss1) / np.log(E0/E1)
+   k = ss1/(E1**alpha)
+   return k*(E**alpha)
+
+
 
 def Ncheb(Ek):
     '''
@@ -26,13 +41,13 @@ aux2 = 0.0
 hydro = 1  # set to 1 to include the Navier-Stokes equation for the flow velocity, set to 0 otherwise
 
 # Azimuthal wave number m (>=0)
-m = 1
+m = 11
 
 # Equatorial symmetry of the flow field. Use 1 for symmetric, -1 for antisymmetric.
-symm = -1
+symm = 1
 
 # Inner core radius, CMB radius is unity.
-ricb = 0.35
+ricb = 0
 
 # Inner core spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow. Ignored if ricb = 0
@@ -46,7 +61,7 @@ bco = 1
 # CoriolisNumber = 1.2e3
 # Ek_gap = 2/CoriolisNumber
 # Ek = Ek_gap*(1-ricb)**2
-Ek = 10**-4
+Ek = 3e-7
 
 forcing = 0  # Uncomment this line for eigenvalue problems
 # forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
@@ -75,7 +90,7 @@ projection = 1
 # ----------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------- Magnetic field parameters
 # ----------------------------------------------------------------------------------------------------------------------
-magnetic = 0  # set to 1 if including the induction equation and the Lorentz force
+magnetic = 1  # set to 1 if including the induction equation and the Lorentz force
 
 # Imposed background magnetic field
 B0 = 'axial'          # Axial, uniform field along the spin axis
@@ -101,8 +116,8 @@ c1_icb    = 0  # Thin wall to fluid conductance ratio (if innercore='TWA')
 # Magnetic boundary conditions at the CMB
 mantle   = 'insulator'
 # mantle = 'TWA'  # Thin conductive wall layer (Roberts, Glatzmaier & Clune, 2010)
-c_cmb  = 0  # Ratio (h*mu_wall)/(rcmb*mu_fluid)  (if mantle='TWA')
-c1_cmb = 0  # Thin wall to fluid conductance ratio (if mantle='TWA')
+c_cmb  = 1e-5  # Ratio (h*mu_wall)/(rcmb*mu_fluid)  (if mantle='TWA')
+c1_cmb = 1e-5  # Thin wall to fluid conductance ratio (if mantle='TWA')
 
 # Electrical conductivity and permeability
 mu        = 1.0  # magnetic permeability ratio fluid outer core / vacuum
@@ -111,16 +126,16 @@ sigma_i2o = 1.0  # electrical conductivity ratio solid inner core / fluid outer 
 
 # Magnetic field strength and magnetic diffusivity:
 # Either use the Elsasser number and the magnetic Prandtl number (i.e. Lambda and Pm: uncomment and set the following three lines):
-# Lambda = 0.1
-# Pm = 0.001
-# Em = Ek/Pm; Le2 = Lambda*Em; Le = np.sqrt(Le2)
+Lambda = 0.01  #ssak(0.1,1e-3,Ek)
+Pm = 1  #pmak(1,1e-3,Ek)
+Em = Ek/Pm; Le2 = Lambda*Em; Le = np.sqrt(Le2)
 # Or use the Lehnert number and the magnetic Ekman number (i.e. Le and Em: uncomment and set the following three lines):
-Le = 10**-3; Lu=2e3
-Em = Le/Lu
-Le2 = Le**2
+#Le = 10**-2.5  #; Lu=2e3
+#Em = Ek/Pm  #Le/Lu
+#Le2 = Le**2
 
 # Normalization of the background magnetic field
-cnorm = 'rms_cmb'                     # Sets the radial rms field at the CMB as unity
+# cnorm = 'rms_cmb'                     # Sets the radial rms field at the CMB as unity
 # cnorm = 'mag_energy'                  # Unit magnetic energy as in Luo & Jackson 2022 (I. Torsional oscillations)
 # cnorm = 'Schmitt2012'                 # as above but times 2
 # cnorm = 3.86375                       # G101 of Schmitt 2012, ricb = 0.35
@@ -132,16 +147,33 @@ cnorm = 'rms_cmb'                     # Sets the radial rms field at the CMB as 
 # cnorm = 0.6972166887783963            # Luo_S1 ricb = 0, rms_Bs=1
 # cnorm = 0.005061566801979833          # Luo_S2 ricb = 0, unit mag_energy
 # cnorm = 0.0158567582314039            # Luo_S2 ricb = 0, rms_Bs=1
+cnorm = 1
 
+# ----------------------------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------- Rotational dynamics parameters
+# ----------------------------------------------------------------------------------------------------------------------
+rotdyn = 0  # Set to 1 to let the mantle and the solid inner core respond to axial torques
 
+# Mantle and inner core axial moments of inertia, dimensionless (i.e. in units of rho*L**5 = density*unit_of_length**5)
+MoIZ_M  = 11.16
+MoIZ_IC = 9.2e-3
+
+# Gravitational torque constant (divided by rho*L**5*Omega**2)
+gTorque = 5e-8
+
+# Solid inner core relaxation time tauIC times the angular rotation rate Omega (Omega*tauIC, a dimensionless number)
+OmgtauIC = 2.3e3  # For Earth use 2.3e3 if tauIC = 1 year
+
+#torque switchboard
+[vtrq, mtrq] = [1,1] 
 
 # ----------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------- Thermal parameters
 # ----------------------------------------------------------------------------------------------------------------------
-thermal = 0  # Use 1 or 0 to include or not the temperature equation and the buoyancy force (Boussinesq)
+thermal = 1  # Use 1 or 0 to include or not the temperature equation and the buoyancy force (Boussinesq)
 
 # Prandtl number: ratio of viscous to thermal diffusivity
-Prandtl = 1.0
+Prandtl = 0.003
 # "Thermal" Ekman number
 Etherm = Ek/Prandtl
 
@@ -153,15 +185,15 @@ heating = 'internal'      # dT/dr = -beta * r         temp_scale = beta * ro**2
 
 # Rayleigh number as Ra = alpha * g0 * ro^3 * temp_scale / (nu*kappa), alpha is the thermal expansion coeff,
 # g0 the gravity accel at ro, ro is the cmb radius (the length scale), nu is viscosity, kappa is thermal diffusivity.
-Ra = 0.0
+Ra = 2*1.2584e8
 # Ra_Silva = 0.0; Ra = Ra_Silva * (1/(1-ricb))**6
 # Ra_Monville = 0.0; Ra = 2*Ra_Monville
 
 # Alternatively, you can specify directly the squared ratio of a reference Brunt-Väisälä freq. and the rotation rate.
 # The reference Brunt-Väisälä freq. squared is defined as -alpha*g0*temp_scale/ro. See the non-dimensionalization notes
 # in the documentation.
-# BV2 = -Ra * Ek**2 / Prandtl
-BV2 = 0.0
+BV2 = -Ra * Ek**2 / Prandtl
+# BV2 = 0.0
 
 # Additional arguments for 'Two zone' or 'User defined' case (modify if needed).
 rc  = 0.7  # transition radius
@@ -232,19 +264,20 @@ OmgTau = 1     # Rotation time scale
 # ----------------------------------------------------------------------------------------------------------------------
 
 # Number of cpus
-ncpus = 4
+ncpus = 24
 
 # Chebyshev polynomial truncation level. Use function def at top or set manually. N must be even if ricb = 0.
-N     = Ncheb(Ek)  # for the fluid core
-N_cic = 16         # for the field inside the ic (innercore = 'conducting, Chebys') 
+N     = 240  #Ncheb(Ek)  # for the fluid core
+N_cic = 36         # for the field inside the ic (innercore = 'conducting, Chebys') 
 
 # Spherical harmonic truncation lmax and approx lmax/N ratio:
 g = 1.0
 lmax     = int( 2*ncpus*( np.floor_divide( g*N    , 2*ncpus ) ) + m - 1 )
-lmax_cic = int( 2*ncpus*( np.floor_divide( g*N_cic, 2*ncpus ) ) + m - 1 )
+# lmax_cic = int( 2*ncpus*( np.floor_divide( g*N_cic, 2*ncpus ) ) + m - 1 )
 # If manually setting the max angular degree lmax, then it must be even if m is odd,
 # and lmax-m+1 should be divisible by 2*ncpus
-# lmax = 8
+# lmax = 7
+lmax_cic = lmax
 
 
 
@@ -262,8 +295,8 @@ if track_target == 1 :  # read target from file and sets target accordingly
     rtau = tt[0]
     itau = tt[1]
 else:                   # set target manually
-    rtau = 0.0
-    itau = 1.0
+    rtau = 0
+    itau = -0.04
 
 # tau is the actual target for the solver
 # real part is damping
@@ -285,7 +318,7 @@ nev = 3
 maxit = 50
 
 # Tolerance for solver
-tol = 1e-15
+tol = 1e-16
 # Tolerance for the thermal/compositional matrix
 tol_tc = 1e-6
 

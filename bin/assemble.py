@@ -422,7 +422,8 @@ def main():
         '''
         if rank == 0:
             tic = timer()
-
+        #print('sizmat=',ut.sizmat)
+        
         if par.hydro == 1:
 
             # ----------------------------------------------------------------------- B matrix, 2curl (hydro), section u
@@ -492,7 +493,6 @@ def main():
 
 
 
-
             # ----------------------------------------------------------------------------------------------------------
             # -------------------------------------------------------------------------- B matrix, conductive inner core
             # ----------------------------------------------------------------------------------------------------------
@@ -501,7 +501,7 @@ def main():
                 # ------------------------------------------------------------------------------------------ section fic
                 for k,l in enumerate(loc_mag_fic):
 
-                    row = 2*(par.hydro + par.magnetic)*nb*ut.N1 + ( rank*bpp_cic + k )*ut.Nic
+                    row = 2*(par.hydro + par.magnetic)*nb*ut.N1 + 3*par.rotdyn + ( rank*bpp_cic + k )*ut.Nic
                     col = row
                     mtx = op.b(l, 'fic', 'bpol_ic', 0)
                     #mtx = l*(l+1)*r2_D0f_ic
@@ -512,13 +512,26 @@ def main():
                 # ------------------------------------------------------------------------------------------ section gic
                 for k,l in enumerate(loc_mag_gic):
 
-                    row = 2*(par.hydro + par.magnetic)*nb*ut.N1 + nb_cic*ut.Nic + ( rank*bpp_cic + k )*ut.Nic
+                    row = 2*(par.hydro + par.magnetic)*nb*ut.N1 + 3*par.rotdyn + nb_cic*ut.Nic + ( rank*bpp_cic + k )*ut.Nic
                     col = row
                     mtx = op.b(l, 'gic', 'btor_ic', 0)
                     #mtx = l(l+1)*r2_D0g_ic
 
                     loc_list = ut.packit(loc_list, mtx, row, col)
 
+
+
+        if par.rotdyn:
+            # --------------------------------------------- Includes the B side of the mantle and IC rotational dynamics
+
+            if rank == 0:
+
+                data = np.array([ par.MoIZ_M, par.MoIZ_IC, 1])
+                row0 = 4*nb*ut.N1
+                row = np.array([ row0, row0+1, row0+2])
+                col = row
+                rotdyn_list = [data, row, col]
+                for q in [0,1,2]: loc_list[q] = np.concatenate( ( loc_list[q], rotdyn_list[q] ) )
 
 
 
@@ -819,7 +832,20 @@ def main():
             else:
                 for q in [0,1,2]:
                     loc_list[q]= np.concatenate( ( loc_list[q], bc_u_list[q] ) )
+
             # ----------------------------------------------------------------------------------------------------------
+            # -------- if mantle or inner core are free to rotate (par.rotdyn=1) adjust toroidal l=1 boundary conditions
+            # ----------------------------------------------------------------------------------------------------------
+            if ((par.rotdyn == 1) and (par.m == 0) and (par.symm == 1) and (l == 1)):
+                col = 4*nb*ut.N1
+                mantle_list = [ np.array([-ut.rcmb]) ,np.array([row])  ,np.array([col]) ]  # T10 - rcmb*omega_m = 0
+                incore_list = [ np.array([-par.ricb]) ,np.array([row+1]), np.array([col+1]) ]  # T10 - ricb*omega_ic = 0
+                for q in [0,1,2]:
+                    loc_list[q]= np.concatenate( ( loc_list[q], mantle_list[q] ) )
+                for q in [0,1,2]:
+                    loc_list[q]= np.concatenate( ( loc_list[q], incore_list[q] ) )           
+
+
 
 
     
@@ -1032,6 +1058,85 @@ def main():
 
             #print('g',l,max(loc_list[1]),max(loc_list[2]))
 
+
+        if par.rotdyn:
+            # ----------------------------------------------------------------------------------------------------------------------------------------------------
+            # --------------------------------------------------------------------------------------------- A matrix, rotational dynamics of mantle and inner core
+            # ---------------------------------------------------------------------------------------------------------------------------------------------------- 
+            # Just three rows here with the total (viscous, magnetic, gravitational) torque on the mantle, ic,
+            # and the equation including viscous relaxation of the inner core. 
+            if rank == 0:
+
+                # ------------------------------------------------------------------------------------- Viscous torques
+
+                row0 = np.ones(ut.N1)*(     2*(par.hydro + par.magnetic)*ut.n )
+                row1 = np.ones(ut.N1)*( 1 + 2*(par.hydro + par.magnetic)*ut.n )
+                col = np.arange(ut.n, ut.n+ut.N1)  # corresponds to toroidal l=1 velocity (T10)
+                #print('utn = ',ut.n)
+
+
+                vtorq_mantle = par.vtrq * par.Ek * par.OmgTau * ut.gamma_visc(0,0,0)[0,ut.n:ut.n+ut.N1]  #T10
+                visctorq_list_mantle = [ vtorq_mantle, row0, col ]
+                for q in [0,1,2]: loc_list[q] = np.concatenate( ( loc_list[q], visctorq_list_mantle[q] ) )
+
+                vtorq_incore = par.vtrq * par.Ek * par.OmgTau * ut.gamma_visc_icb(par.ricb)[0,ut.n:ut.n+ut.N1]  #T10
+                visctorq_list_incore = [ vtorq_incore, row1, col ]
+                for q in [0,1,2]: loc_list[q] = np.concatenate( ( loc_list[q], visctorq_list_incore[q] ) )
+
+
+                # ------------------------------------------------------------------------------------ Magnetic torques
+
+                if ut.B0_l == 1:  # dipolar background
+
+                    col = np.arange( 3*ut.n, 3*ut.n + ut.N1 )
+                    
+                    mtorq_mantle = par.mtrq * par.Le2 * (par.OmgTau**2) * ut.gamma_magnetic()[0,ut.n:ut.n+ut.N1]  #G20
+                    magtorq_list_mantle = [ mtorq_mantle, row0, col ]
+                    for q in [0,1,2]: loc_list[q] = np.concatenate( ( loc_list[q], magtorq_list_mantle[q] ) )
+
+                    mtorq_incore = par.mtrq * par.Le2 * (par.OmgTau**2) * ut.gamma_magnetic_ic()[0,ut.n:ut.n+ut.N1]  #G20
+                    magtorq_list_incore = [ mtorq_incore, row1, col ]
+                    for q in [0,1,2]: loc_list[q] = np.concatenate( ( loc_list[q], magtorq_list_incore[q] ) )                   
+
+                elif ut.B0_l == 2:  #quadrupolar background
+                    
+                    row00 = np.ones( 2*ut.N1 )*( 2*(par.hydro + par.magnetic)*ut.n )
+                    row11 = np.ones( 2*ut.N1 )*( 1 + 2*(par.hydro + par.magnetic)*ut.n )
+                    col = np.arange( 3*ut.n, 3*ut.n + 2*ut.N1 )
+                       
+                    mtorq_mantle = par.mtrq * par.Le2 * (par.OmgTau**2) * ut.gamma_magnetic()[0,ut.n:ut.n+2*ut.N1]  #G10 and G30
+                    magtorq_list_mantle = [ mtorq_mantle, row00, col ]
+                    for q in [0,1,2]: loc_list[q] = np.concatenate( ( loc_list[q], magtorq_list_mantle[q] ) )      
+
+                    mtorq_incore = par.mtrq * par.Le2 * (par.OmgTau**2) * ut.gamma_magnetic_ic()[0,ut.n:ut.n+2*ut.N1]  #G10 and G30  
+                    magtorq_list_incore = [ mtorq_incore, row11, col ]
+                    for q in [0,1,2]: loc_list[q] = np.concatenate( ( loc_list[q], magtorq_list_incore[q] ) )             
+
+
+                # ------------------------------------------------------------------------------- Gravitational torques
+
+                Kgrav = par.gTorque * (par.OmgTau**2)
+                row = 4*ut.n
+                col = row
+
+                gtorq_mantle = Kgrav  # proportional to the longitudinal misalignment between inner core and mantle
+                gtorq_list_mantle = [ np.array([gtorq_mantle]), np.array([row]), np.array([col+2]) ]
+                for q in [0,1,2]: loc_list[q] = np.concatenate( ( loc_list[q], gtorq_list_mantle[q] ) )
+
+                gtorq_incore = -Kgrav  # proportional to the longitudinal misalignment between inner core and mantle
+                gtorq_list_incore = [ np.array([gtorq_incore]), np.array([row+1]), np.array([col+2]) ]
+                for q in [0,1,2]: loc_list[q] = np.concatenate( ( loc_list[q], gtorq_list_incore[q] ) )
+
+
+                # ------------------------  Now the dynamics of the ic and mantle misalignment, including IC relaxation
+
+                row = np.ones(3)*(4*ut.n + 2)
+                col = np.arange( 4*ut.n, 4*ut.n + 3 )
+                ictau = par.OmgTau/par.OmgtauIC 
+                misalig = np.array([ -1, 1, -ictau])  # - Omega_mantle + Omega_ic - misalignent/tau
+                misalig_list = [misalig, row, col]
+                for q in [0,1,2]: loc_list[q] = np.concatenate( ( loc_list[q], misalig_list[q] ) )
+
     
         if ut.cic:
             # ----------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1040,7 +1145,7 @@ def main():
             for k,l in enumerate(loc_mag_fic): # same as loc_top if B0 is symm
 
                 L = l*(l+1)
-                row = 2*(par.hydro + par.magnetic)*nb*ut.N1 + ( rank*bpp_cic + k )*ut.Nic
+                row = 2*(par.hydro + par.magnetic)*nb*ut.N1 + 3*par.rotdyn + ( rank*bpp_cic + k )*ut.Nic
                 col = row
                 #print('l=',l,'rank=',rank, bpp_cic, k, ut.Nic, ( rank*bpp_cic + k )*ut.Nic, row, col)
 
@@ -1062,7 +1167,7 @@ def main():
             for k,l in enumerate(loc_mag_gic): # same as loc_bot if B0 is symm
 
                 L = l*(l+1)
-                row = 2*(par.hydro + par.magnetic)*nb*ut.N1 + nb_cic*ut.Nic + ( rank*bpp_cic + k )*ut.Nic
+                row = 2*(par.hydro + par.magnetic)*nb*ut.N1 + 3*par.rotdyn + nb_cic*ut.Nic + ( rank*bpp_cic + k )*ut.Nic
                 col = row
 
                 mtx = op.magnetic_diffusion(l, 'gic', 'btor_ic', 0)
@@ -1214,7 +1319,7 @@ def main():
         #print(max(frow[ix]), ut.sizmat)
         #print(max(fcol[ix]), ut.sizmat)
 
-        #tmpr, tmpc = frow[ix], fcol[ix]
+        tmpr, tmpc = frow[ix], fcol[ix]
         
         #print(tmpr[tmpr>ut.sizmat],tmpc[tmpr>ut.sizmat] )
 
@@ -1325,8 +1430,8 @@ def bc_u_spherical(l,loc):
                 out[ 0,:] = Tbv[:,1] - Tbv[:,0]/ut.rcmb  # T'-(T/r)=0
 
             elif par.bco == 1: # no-slip cmb
-                out[ 0,:] = Tbv[:,0]  # T=0
-
+                    out[ 0,:] = Tbv[:,0]  # T=0
+                
             if par.ricb > 0 :
 
                 if   par.bci == 0: # stress-free icb
@@ -1854,7 +1959,7 @@ def bc_b_cic(l,loc):
 
         baserow0 = 2*par.hydro*ut.n
         basecol0 = 2*par.hydro*ut.n
-        basecol1 = 2*par.hydro*ut.n + 2*ut.n
+        basecol1 = 2*par.hydro*ut.n + 2*ut.n + 3*par.rotdyn
 
         col00 = int( ut.N1  * (l - mf)/2 )
         col11 = int( ut.Nic * (l - mf)/2 )
@@ -1863,9 +1968,12 @@ def bc_b_cic(l,loc):
         col0 = basecol0 + col00  
         col1 = basecol1 + col11
 
+		# [n.b]
         # --------------------------------------------------------------------------------------
         outoc[0,:] =  bv.Ta[:,0]
         outic[0,:] = -bv.Tbfic[:,0]
+        
+        # [nxE], consoidal projection
         # --------------------------------------------------------------------------------------
         outoc[1,:] =  L*bv.Ta[:,0] - 2*ric*bv.Ta[:,1] - ric**2*bv.Ta[:,2]
         outic[1,:] = -eta_i2o * ( L*bv.Tbfic[:,0] - 2*ric*bv.Tbfic[:,1] - ric**2*bv.Tbfic[:,2] )
@@ -1875,7 +1983,7 @@ def bc_b_cic(l,loc):
 
         baserow0 = 2*par.hydro*ut.n + ut.n
         basecol0 = 2*par.hydro*ut.n + ut.n
-        basecol1 = 2*par.hydro*ut.n + 2*ut.n + ut.nic
+        basecol1 = 2*par.hydro*ut.n + 2*ut.n + ut.nic + 3*par.rotdyn
 
         col00 = int( ut.N1  * (l - mg)/2 )
         col11 = int( ut.Nic * (l - mg)/2 )
@@ -1884,6 +1992,7 @@ def bc_b_cic(l,loc):
         col0 = basecol0 + col00  
         col1 = basecol1 + col11
 
+		# [nxE], toroidal projection
         # --------------------------------------------------------------------------------------
         outoc[0,:] =  bv.Ta[:,0] + ric*bv.Ta[:,1]
         outic[0,:] = -eta_i2o * ( bv.Tbgic[:,0] + ric*bv.Tbgic[:,1] )
@@ -1891,9 +2000,9 @@ def bc_b_cic(l,loc):
 
     elif loc == 'section_fic':  # 1 row
 
-        baserow0 = 2*par.hydro*ut.n + 2*ut.n
-        basecol0 = 2*par.hydro*ut.n
-        basecol1 = 2*par.hydro*ut.n + 2*ut.n
+        baserow0 = 2*par.hydro*ut.n + 2*ut.n + 3*par.rotdyn
+        basecol0 = 2*par.hydro*ut.n 
+        basecol1 = 2*par.hydro*ut.n + 2*ut.n + 3*par.rotdyn
 
         col00 = int( ut.N1  * (l - mf)/2 )
         col11 = int( ut.Nic * (l - mf)/2 )
@@ -1902,6 +2011,7 @@ def bc_b_cic(l,loc):
         col0 = basecol0 + col00  
         col1 = basecol1 + col11
         
+        # [nx(b/mu)], toroidal projection
         # --------------------------------------------------------------------------------------
         outoc[0,:] = par.mu_i2o * ( bv.Ta[:,0] + ric*bv.Ta[:,1] )
         outic[0,:] = -( bv.Tbfic[:,0] + ric*bv.Tbfic[:,1] )
@@ -1909,9 +2019,9 @@ def bc_b_cic(l,loc):
 
     elif loc == 'section_gic':  # 1 row
  
-        baserow0 = 2*par.hydro*ut.n + 2*ut.n + ut.nic
-        basecol0 = 2*par.hydro*ut.n + ut.n
-        basecol1 = 2*par.hydro*ut.n + 2*ut.n + ut.nic
+        baserow0 = 2*par.hydro*ut.n + 2*ut.n + ut.nic + 3*par.rotdyn
+        basecol0 = 2*par.hydro*ut.n + ut.n 
+        basecol1 = 2*par.hydro*ut.n + 2*ut.n + ut.nic + 3*par.rotdyn
 
         col00 = int( ut.N1  * (l - mg)/2 )
         col11 = int( ut.Nic * (l - mg)/2 )
@@ -1920,6 +2030,7 @@ def bc_b_cic(l,loc):
         col0 = basecol0 + col00  
         col1 = basecol1 + col11
 
+		# [nx(b/mu)], consoidal projection
         # --------------------------------------------------------------------------------------
         outoc[0,:] = par.mu_i2o * bv.Ta[:,0]
         outic[0,:] = -bv.Tbgic[:,0]

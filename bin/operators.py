@@ -9,71 +9,75 @@ import utils as ut
 # and create corresponding operator names as global variables
 
 fname = [f for f in glob.glob('*.mtx')]
+#print(fname)
 
 for label in fname :
 
     label = label[:-4]  # to get rid of the ".mtx"
+    
     section = label[0]
-    prof_id = ''
-    proflabel = ''
-    hlabel = ''
-    if len(label) == 7 :
-        prof_id = label[1:4]
-        rx      = label[4]
-    else:
-        rx = label[1]
-    dx = label[-1]
+    if section in ['u','v','f','g','h']: 
 
-
-    if len(label) == 3 :
-        if rx == '0' :
-            rlabel = ''
-        elif rx == '7' :
-            rlabel = 'Nr'
-        else :
-            rlabel = 'r' + rx
-
-    if len(label) == 4 :
-
-        hx = label[2]
-
-        if rx == '0' :
-            rlabel = ''
-        elif rx == '1' :
-            rlabel = 'r'
-        elif rx == '6' :
-            rlabel = 'q'
-        else :
-            rlabel = 'r' + rx
-
-        if hx == '0' :
-            hlabel = 'h'
-        else :
-            hlabel = 'h' + hx
-
-    if len(label) == 7 :
-
-        if rx == '0' :
-            rlabel = ''
-        elif rx == '1' :
-            rlabel = 'r'
-        else :
-            rlabel = 'r' + rx
-
-        if label[5] == '0' :
-            proflabel = prof_id
+        prof_id = ''
+        proflabel = ''
+        hlabel = ''
+        if len(label) == 7 :
+            prof_id = label[1:4]
+            rx      = label[4]
         else:
-            proflabel = prof_id + label[5]
+            rx = label[1]
+        dx = label[-1]
 
 
-    if dx == '0' :
-        dlabel = 'I'
-    else :
-        dlabel = 'D' + dx
+        if len(label) == 3 :
+            if rx == '0' :
+                rlabel = ''
+            elif rx == '7' :
+                rlabel = 'Nr'
+            else :
+                rlabel = 'r' + rx
 
-    varlabel = rlabel + hlabel + proflabel + dlabel + section
+        if len(label) == 4 :
 
-    globals()[varlabel] = ss.csr_matrix(sio.mmread(label+'.mtx'))
+            hx = label[2]
+
+            if rx == '0' :
+                rlabel = ''
+            elif rx == '1' :
+                rlabel = 'r'
+            elif rx == '6' :
+                rlabel = 'q'
+            else :
+                rlabel = 'r' + rx
+
+            if hx == '0' :
+                hlabel = 'h'
+            else :
+                hlabel = 'h' + hx
+
+        if len(label) == 7 :
+
+            if rx == '0' :
+                rlabel = ''
+            elif rx == '1' :
+                rlabel = 'r'
+            else :
+                rlabel = 'r' + rx
+
+            if label[5] == '0' :
+                proflabel = prof_id
+            else:
+                proflabel = prof_id + label[5]
+
+
+        if dx == '0' :
+            dlabel = 'I'
+        else :
+            dlabel = 'D' + dx
+
+        varlabel = rlabel + hlabel + proflabel + dlabel + section
+
+        globals()[varlabel] = ss.csr_matrix(sio.mmread(label+'.mtx'))
 
 if ut.cic:  # for a conductive inner core
 
