@@ -1,6 +1,9 @@
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import numpy as np
+import matplotlib
+
+mplMaj, mplMin, _ = matplotlib.__version__.split('.')
 
 
 def add_colorbar(im, aspect=40, pad_fraction=0.5, **kwargs):
@@ -94,8 +97,13 @@ def radContour(theta,phi,dat,levels=30,cmap='RdBu_r',clim=[0,0]):
     divnorm = colors.TwoSlopeNorm(vmin=datMin, vcenter=datCenter, vmax=datMax)
     cont = plt.contourf(xx,yy,dat,levels,cmap=cmap,norm=divnorm)
 
-    for c in cont.collections:
-        c.set_edgecolor("face")
+    if mplMaj == '3' and int(mplMin) < 8:
+        # matplotlib > 3.8 : cont is one collection
+        # matplotlib < 3.8 : cont is a list of collections
+        for c in cont.collections:
+            c.set_edgecolor("face")
+    else:
+        cont.set_edgecolor("face")
 
     thB = np.linspace(np.pi/2, -np.pi/2, len(theta))
     xxout, yyout  = hammer2cart(thB, -np.pi-1e-3)
@@ -123,8 +131,13 @@ def merContour(r,theta,dat,levels=30,cmap='RdBu_r',clim=[0,0]):
     plt.plot([0,0], [ r.min(),r.max() ], 'k', lw=0.6)
     plt.plot([0,0], [ -r.max(),-r.min() ], 'k', lw=0.6)
 
-    for c in cont.collections:
-        c.set_edgecolor("face")
+    if mplMaj == '3' and int(mplMin) < 8:
+        # matplotlib > 3.8 : cont is one collection
+        # matplotlib < 3.8 : cont is a list of collections
+        for c in cont.collections:
+            c.set_edgecolor("face")
+    else:
+        cont.set_edgecolor("face")
 
     return cont
 
@@ -143,7 +156,12 @@ def eqContour(r,phi,dat,levels=30,cmap='RdBu_r',clim=[0,0]):
     plt.plot(r[0]*np.cos(phi), r[0]*np.sin(phi),'k',lw=0.6)
     plt.plot(r[-1]*np.cos(phi), r[-1]*np.sin(phi),'k',lw=0.6)
 
-    for c in cont.collections:
-        c.set_edgecolor("face")
+    if mplMaj == '3' and int(mplMin) < 8:
+        # matplotlib > 3.8 : cont is one collection
+        # matplotlib < 3.8 : cont is a list of collections
+        for c in cont.collections:
+            c.set_edgecolor("face")
+    else:
+        cont.set_edgecolor("face")
 
     return cont
