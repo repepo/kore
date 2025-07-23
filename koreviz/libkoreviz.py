@@ -3,30 +3,10 @@ import scipy.sparse as ss
 import shtns
 
 
-def spec2spat_vec(M,ut,par,chx,a,b,vsymm,nthreads,
+def spec2spat_vec(M,ut,chx,Plj,Tlj,vsymm,nthreads,
                   vort=False,transform=True):
 
-    # Rearrange and separate poloidal and toroidal parts
-
-    Plj0 = a[:M.n] + 1j*b[:M.n]         #  N elements on each l block
-    Tlj0 = a[M.n:2*M.n] + 1j*b[M.n:2*M.n]   #  N elements on each l block
-
     lm1  = M.lmax-M.m+1
-    Plj0  = np.reshape(Plj0,(int(lm1/2),ut.N1))
-    Tlj0  = np.reshape(Tlj0,(int(lm1/2),ut.N1))
-
-    Plj = np.zeros((int(lm1/2),par.N),dtype=complex)
-    Tlj = np.zeros((int(lm1/2),par.N),dtype=complex)
-
-    if M.ricb == 0 :
-        iP = (M.m + 1 - ut.s)%2
-        iT = (M.m + ut.s)%2
-        for k in np.arange(int(lm1/2)) :
-            Plj[k,iP::2] = Plj0[k,:]
-            Tlj[k,iT::2] = Tlj0[k,:]
-    else :
-        Plj = Plj0
-        Tlj = Tlj0
 
     # init arrays
     Plr  = np.zeros( (lm1, M.nr), dtype=complex )
@@ -148,23 +128,9 @@ def spec2spat_vec(M,ut,par,chx,a,b,vsymm,nthreads,
         return Q,S,P,T
 
 
-def spec2spat_scal(M,ut,par,chx,a,b,vsymm,nthreads,transform=True):
+def spec2spat_scal(M,chx,Plj,vsymm,nthreads,transform=True):
 
-    # Rearrange and separate poloidal and toroidal parts
-
-    Plj0 = a + 1j*b
     lm1  = M.lmax-M.m+1
-    Plj0  = np.reshape(Plj0,(int(lm1/2),ut.N1))
-
-    Plj = np.zeros((int(lm1/2),par.N),dtype=complex)
-
-    if M.ricb == 0 :
-        iP = (M.m + 1 - ut.s)%2
-        iT = (M.m + ut.s)%2
-        for k in np.arange(int(lm1/2)) :
-            Plj[k,iP::2] = Plj0[k,:]
-    else :
-        Plj = Plj0
 
     # init arrays
     Plr  = np.zeros( (lm1, M.nr), dtype=complex )

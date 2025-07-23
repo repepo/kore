@@ -5,19 +5,26 @@ from glob import glob
 from .plotlib import add_colorbar,default_cmap,radContour,merContour,eqContour
 from .libkoreviz import spec2spat_vec,spec2spat_scal
 import sys
+import os
 
 
 class kmode:
 
     def __init__(self, vort=False,datadir='.',field='u', solnum=0,
-                 nr=None, nphi=None, nthreads=4, phase=0, transform=True):
+                 nr=None, nphi=None, nthreads=4, transform=True):
 
         sys.path.insert(0,datadir+'/bin')
 
         import parameters as par
         import utils as ut
         import utils4pp as upp
-        import radial_profiles as rap
+        if ( os.path.exists('radial_profiles.py')
+            or os.path.exists('./bin/radial_profiles.py') ):
+            import radial_profiles as rap
+            l_prof = True
+        else:
+            l_prof = False
+            print("No radial_profiles.py found, assuming not on main branch.")
 
         self.solnum   = solnum
         self.lmax     = par.lmax
@@ -26,8 +33,6 @@ class kmode:
         self.N        = par.N
         self.ricb     = par.ricb
         self.rcmb     = ut.rcmb
-        self.n        = ut.n
-        self.n0       = int(self.N*(self.lmax-self.m+1)/2)
         self.field    = field
         gap           = self.rcmb - self.ricb
         self.ut       = ut
@@ -100,14 +105,11 @@ class kmode:
             vsymm = par.symm
             vec = False
 
-        # expand solution in case ricb=0, multiply by complex phase factor
-        aib = upp.expand_sol(a+1j*b,vsymm)*(np.cos(phase)+1j*np.sin(phase))
-        a = np.real(aib)
-        b = np.imag(aib)
-
         if vec:
 
-            sol = spec2spat_vec(self,ut,par,chx,a,b,vsymm,nthreads,
+            [Plj, Tlj] = upp.expand_reshape_sol(a+1j*b,vsymm)
+
+            sol = spec2spat_vec(self,ut,chx,Plj,Tlj,vsymm,nthreads,
                                vort=vort,transform=transform)
 
             self.Qlm,self.Slm,self.Plm,self.Tlm = sol[:4]
@@ -116,12 +118,13 @@ class kmode:
                 if not vort:
                     if field == 'u':
                         self.ur, self.utheta, self.uphi = sol[4:]
-                        if par.anelastic: #Comment the block out if you want momentum/mass flux
-                            self.rho = rap.density(self.r)
-                            for irho in range(self.nr):
-                                self.ur[irho,...]     /= self.rho[irho]
-                                self.utheta[irho,...] /= self.rho[irho]
-                                self.uphi[irho,...]   /= self.rho[irho]
+                        if hasattr(par,'anelastic'):
+                            if par.anelastic and l_prof: #Comment the block out if you want momentum/mass flux
+                                self.rho = rap.density(self.r)
+                                for irho in range(self.nr):
+                                    self.ur[irho,...]     /= self.rho[irho]
+                                    self.utheta[irho,...] /= self.rho[irho]
+                                    self.uphi[irho,...]   /= self.rho[irho]
                     elif field == 'b':
                         self.br, self.btheta, self.bphi = sol[4:]
                 else:
@@ -133,7 +136,9 @@ class kmode:
             del sol
 
         else:
-            sol = spec2spat_scal(self,ut,par,chx,a,b,vsymm,nthreads,transform=transform)
+            Plj = upp.expand_reshape_sol(a+1j*b,vsymm)
+            sol = spec2spat_scal(self,chx,Plj,vsymm,
+                                 nthreads,transform=transform)
             self.Qlm = sol[0]
             if transform:
                 scal = sol[1]
@@ -143,6 +148,11 @@ class kmode:
 
 
     def get_data(self,field):
+
+        if self.field in ['t','temp','temperature']:
+            field = 'temperature'
+        elif self.field in ['c','comp','composition']:
+            field = 'composition'
 
         field = field.lower()
 
@@ -190,7 +200,7 @@ class kmode:
             data = self.vort_r * np.cos(th3D) - self.vort_t * np.sin(th3D)
             titl = r'$\omega_z$'
 
-        return data, titl
+        return data, titl, field
 
 
     def surf(self, field='ur', r=0.5, levels=48, cmap=None,
@@ -200,13 +210,13 @@ class kmode:
         if self.m == 0:
             data = np.zeros([ self.ntheta, self.nphi + 1])
             ir = np.argmin(abs(self.r-r))
-            dat_tmp,titl = self.get_data(field=field)
+            dat_tmp,titl,field = self.get_data(field=field)
             data[:,:-1] = dat_tmp[ir,...]
             data[:, -1] = data[:,0]
         else:
             data = np.zeros([ self.ntheta, self.nphi*self.m + 1])
             ir = np.argmin(abs(self.r-r))
-            dat_tmp,titl = self.get_data(field=field)
+            dat_tmp,titl,field = self.get_data(field=field)
             data[:,:-1] = np.tile( dat_tmp[ir,...], self.m )
             data[:, -1] = data[:,0]
 
@@ -235,7 +245,7 @@ class kmode:
         # Meridional cross section
 
         iphi = np.argmin(abs( self.phi - (azim*np.pi/180) )) % self.nphi
-        dat_tmp,titl = self.get_data(field)
+        dat_tmp,titl,field = self.get_data(field)
         data = dat_tmp[:,:,iphi]
 
         if field in ['energy','ener','e','ke']:
@@ -268,13 +278,13 @@ class kmode:
         if self.m == 0:
             data = np.zeros([ self.nr, self.nphi + 1])
             itheta = np.argmin( abs( self.theta - np.pi/2 ) )
-            dat_tmp,titl = self.get_data(field)
+            dat_tmp,titl,field = self.get_data(field)
             data[:,:-1] = dat_tmp[:,itheta,:]
             data[:, -1] = data[:,0]
         else:
             data = np.zeros([ self.nr, self.nphi*self.m + 1])
             itheta = np.argmin( abs( self.theta - np.pi/2 ) )
-            dat_tmp,titl = self.get_data(field)
+            dat_tmp,titl,field = self.get_data(field)
             print(np.shape(data),np.shape(dat_tmp))
             data[:,:-1] = np.tile( dat_tmp[:,itheta,:], self.m )
             data[:, -1] = data[:,0]
