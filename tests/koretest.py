@@ -8,7 +8,7 @@ from glob import glob
 class KoreTest:
 
     precision  = 1e-8
-    ncpus      = 4
+    ncpus      = 2
     solve_opts = "-st_type sinvert -eps_error_relative ::ascii_info_detail"
     startDir   = os.getcwd()
     kore_dir   = os.path.join(os.path.dirname(
