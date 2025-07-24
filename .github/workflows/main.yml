@@ -23,7 +23,7 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       # Runs a single command using the runners shell
       - name: Test shell
@@ -33,13 +33,13 @@ jobs:
       - name: Install pre-requisites
         run: |
           sudo apt-get update
-          sudo apt-get -y install python3-scipy python3-mpi4py python3-slepc4py-complex3.15
-          
-        
+          sudo apt-get -y install python3-scipy python3-mpi4py python3-slepc4py-complex
+          sudo apt-get -y install python3-pytest
+
       - name: Run test
         run: |
           ulimit -s unlimited
-          cd ${{github.workspace}}/examples
-          export PETSC_DIR=/usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-complex
-          export SLEPC_DIR=/usr/lib/slepcdir/slepc3.15/x86_64-linux-gnu-complex
-          python3 kore_test.py --nranks 2
+          cd ${{github.workspace}}/tests
+          export PETSC_DIR=/usr/lib/petscdir/petsc3.19/x86_64-linux-gnu-complex
+          export SLEPC_DIR=/usr/lib/slepcdir/slepc3.19/x86_64-linux-gnu-complex
+          pytest . -v -s
