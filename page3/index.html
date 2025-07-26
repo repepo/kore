@@ -1,0 +1,658 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../page2/">
+      
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.16">
+    
+    
+      
+        <title>Non-dimensionalization - User Manual</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.7e37652d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#non-dimensionalization" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="User Manual" class="md-header__button md-logo" aria-label="User Manual" data-md-component="logo">
+      
+  <img src="../assets/test1.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            User Manual
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Non-dimensionalization
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Introduction
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../page2/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Installation Notes
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Non-dimensionalization
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="User Manual" class="md-nav__button md-logo" aria-label="User Manual" data-md-component="logo">
+      
+  <img src="../assets/test1.png" alt="logo">
+
+    </a>
+    User Manual
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Introduction
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../page2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Installation Notes
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Non-dimensionalization
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Non-dimensionalization
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-momentum-equation" class="md-nav__link">
+    <span class="md-ellipsis">
+      The momentum equation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-induction-equation" class="md-nav__link">
+    <span class="md-ellipsis">
+      The induction equation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-heat-equation" class="md-nav__link">
+    <span class="md-ellipsis">
+      The heat equation
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-momentum-equation" class="md-nav__link">
+    <span class="md-ellipsis">
+      The momentum equation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-induction-equation" class="md-nav__link">
+    <span class="md-ellipsis">
+      The induction equation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-heat-equation" class="md-nav__link">
+    <span class="md-ellipsis">
+      The heat equation
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="non-dimensionalization">Non-dimensionalization</h1>
+<p>For numerical convenience we use <em>dimensionless</em> variables when solving the Navier Stokes equation, the induction equation, and the heat equation. A non-dimensionalization procedure is always possible thanks to the Buckingham-<span class="arithmatex">\(\pi\)</span> theorem.</p>
+<h2 id="the-momentum-equation">The momentum equation</h2>
+<p>In a reference frame rotating with angular speed <span class="arithmatex">\(\Omega\)</span>, the dimensional form of the <em>linear</em> momentum equation (i.e. the Navier-Stokes equation) describing the acceleration <span class="arithmatex">\(\partial_t \mathbf{u}\)</span> of a small fluid parcel with density <span class="arithmatex">\(\rho\)</span>, including buoyancy and the Lorentz force, is:  </p>
+<div class="arithmatex">\[
+\rho\partial_t \mathbf{u} +2\rho\,\mathbf{\Omega}\times\mathbf{u}=-\nabla p +\frac{1}{\mu_0}(\nabla \times \mathbf{B})\times \mathbf{B} + \rho\mathbf{g}+\rho\nu\nabla^2{\mathbf{u}},
+\]</div>
+<p>where <span class="arithmatex">\(p\)</span> is the reduced pressure, <span class="arithmatex">\(\mathbf{B}\)</span> the magnetic field, and <span class="arithmatex">\(\nu\)</span> is the kinematic viscosity of the fluid. Assume small density perturbations <span class="arithmatex">\(\rho'\)</span> following</p>
+<div class="arithmatex">\[
+\rho=\rho_0+\rho'=\rho_0-\rho_0\alpha\theta,
+\]</div>
+<p>where <span class="arithmatex">\(\alpha\)</span> is the fluid's thermal expansion coefficient and <span class="arithmatex">\(\theta\)</span> is the temperature variation from the isentropic temperature profile <span class="arithmatex">\(T(r)\)</span>.
+Assume also a gravitational acceleration following</p>
+<div class="arithmatex">\[
+\mathbf{g}=-g_0\frac{r}{R}\mathbf{\hat r}.
+\]</div>
+<p>Within the <em>Boussinesq approximation</em> the density variations enter only through the buoyancy force, so</p>
+<div class="arithmatex">\[
+\rho\mathbf{g} \longrightarrow \rho' \mathbf{g} = \rho_0 \alpha g_0 \frac{r}{R} \theta \mathbf{\hat r}.
+\]</div>
+<p>Now we make the dimensional units explicit. With <span class="arithmatex">\(L\)</span> being the unit of length, <span class="arithmatex">\(\tau\)</span> the unit of time,  <span class="arithmatex">\(\theta^*\)</span> the unit of temperature, <span class="arithmatex">\(P^*\)</span> the unit of pressure, and <span class="arithmatex">\(\mathbf{\hat z}\)</span> the unit vector along <span class="arithmatex">\(\mathbf{\Omega}\)</span>, then the momentum equation, after dividing by <span class="arithmatex">\(\rho_0\)</span>, is</p>
+<div class="arithmatex">\[
+\frac{L}{\tau^2}\,\partial_t \mathbf{u} +L\frac{\Omega}{\tau}\, 2\mathbf{\hat z}\times\mathbf{u}=-\frac{P^*}{\rho_0 L} \nabla p +  \frac{B_0^2}{L\rho_0 \mu_0}(\nabla \times \mathbf{B})\times \mathbf{B}          +  \frac{\alpha g_0 \theta^*}{R} L r \theta\mathbf{\hat r}+\frac{\nu }{\tau L}\nabla^2 \mathbf{u},
+\]</div>
+<p>where it is understood that the variables <span class="arithmatex">\(r, t, \mathbf{u}, p, \theta, \mathbf{B}\)</span> are now <em>dimensionless</em>. Multiply the equation by <span class="arithmatex">\(\tau^2/L\)</span> and get</p>
+<div class="arithmatex">\[
+\partial_t \mathbf{u} + 2\,\Omega\tau\,\mathbf{\hat z}\times\mathbf{u}=- \nabla p + \frac{\tau^2 B_0^2}{L^2\rho_0 \mu_0}(\nabla \times \mathbf{B})\times \mathbf{B} + \tau^2 \frac{\alpha g_0 \theta^*}{R} r \theta \mathbf{\hat r}+\tau\frac{\nu}{L^2}\nabla^2 \mathbf{u}.
+\]</div>
+<p>Above we have chosen the pressure scale as <span class="arithmatex">\(P^*=\rho_0 L^2/\tau^2\)</span>. For the time being we leave the temperature scale <span class="arithmatex">\(\theta^*\)</span> unspecified, and define the <em>Ekman number</em> <span class="arithmatex">\(E\)</span> as</p>
+<div class="arithmatex">\[
+E \equiv \frac{\nu}{\Omega L^2},
+\]</div>
+<p>The <em>Lehnert number</em> <span class="arithmatex">\(Le\)</span> as</p>
+<div class="arithmatex">\[
+Le \equiv \frac{B_0}{\Omega L \sqrt{\rho_0\mu_0}},
+\]</div>
+<p>the <em>Rayleigh number</em> <span class="arithmatex">\(Ra\)</span> as</p>
+<div class="arithmatex">\[
+Ra \equiv \frac{\alpha g_0 \theta^* L^4}{\nu\kappa R},
+\]</div>
+<p>and the <em>Prandtl number</em> <span class="arithmatex">\(Pr\)</span> as</p>
+<div class="arithmatex">\[
+Pr \equiv \frac{\nu}{\kappa},
+\]</div>
+<p>where <span class="arithmatex">\(\kappa\)</span> is the thermal diffusivity of the fluid So, the momentum equation becomes</p>
+<div class="arithmatex">\[
+\partial_t \mathbf{u} + 2\,(\Omega\tau)\,\mathbf{\hat z}\times\mathbf{u}=-\nabla p + (\Omega\tau)^2 Le^2(\nabla \times \mathbf{B})\times \mathbf{B}  + (\Omega\tau)^2 E^2\frac{Ra}{Pr}\,\theta\, r\, \mathbf{\hat r}+(\Omega\tau)\,E\,\nabla^2 \mathbf{u}.
+\]</div>
+<p>Alternatively, if we deal with problems without viscosity or thermal diffusion where the Rayleigh number diverges, it is better to define a <em>reference Brunt-Väisälä frequency</em> <span class="arithmatex">\(N_0\)</span> such that</p>
+<div class="arithmatex">\[
+N_0^2 \equiv -\frac{\alpha g_0 \theta^*}{R}.
+\]</div>
+<p>If the Rayleigh number is finite then we can write</p>
+<div class="arithmatex">\[
+E^2\frac{Ra}{Pr} = -\frac{N_0^2}{\Omega^2}.
+\]</div>
+<p>The momentum equation, using the reference Brunt-Väisälä frequency reads</p>
+<div class="arithmatex">\[
+\partial_t \mathbf{u} + 2\,(\Omega\tau)\,\mathbf{\hat z}\times\mathbf{u}=-\nabla p + (\Omega\tau)^2 Le^2(\nabla \times \mathbf{B})\times \mathbf{B}  - (\Omega\tau)^2 \frac{N_0^2}{\Omega^2}\,\theta\, r\, \mathbf{\hat r}+(\Omega\tau)\,E\,\nabla^2 \mathbf{u}.
+\]</div>
+<p>A common choice for the time scale is the rotation time scale, so <span class="arithmatex">\(\tau=1/\Omega\)</span> and the <span class="arithmatex">\((\Omega\tau)\)</span> factors go away. Another choice is the viscous diffusion time scale, with <span class="arithmatex">\(\tau=L^2/\nu\)</span>, in which case <span class="arithmatex">\(\Omega\tau=1/E\)</span>. Yet another choice is the Alfvén wave time scale, with <span class="arithmatex">\(\tau=L \sqrt{\mu_0\rho_0}/B_0\)</span> so that <span class="arithmatex">\(\Omega\tau=1/Le\)</span>.</p>
+<h2 id="the-induction-equation">The induction equation</h2>
+<p>The induction equation in dimensional form is</p>
+<div class="arithmatex">\[
+\partial_t \mathbf{B} = \nabla \times (\mathbf{u} \times \mathbf{B}) + \eta \nabla^2 \mathbf{B},
+\]</div>
+<p>where <span class="arithmatex">\(\eta\)</span> is the magnetic diffusivity. Making the dimensional scale factors explicit we get</p>
+<div class="arithmatex">\[
+\frac{B_0}{\tau} \partial_t \mathbf{B} = \frac{B_0}{\tau} \nabla \times (\mathbf{u} \times \mathbf{B}) + \eta \frac{B_0}{L^2}  \nabla^2\mathbf{B},
+\]</div>
+<p>where <span class="arithmatex">\(\mathbf{u}, \mathbf{B}, t\)</span> are now dimensionless. Multiply now by <span class="arithmatex">\(\tau/B_0\)</span> and obtain</p>
+<div class="arithmatex">\[
+\partial_t \mathbf{B} = \nabla \times (\mathbf{u} \times \mathbf{B}) + (\Omega\tau)E_\eta \nabla^2 \mathbf{B},
+\]</div>
+<p>where <span class="arithmatex">\(E_\eta\)</span> is the <em>magnetic Ekman number</em> defined as</p>
+<div class="arithmatex">\[
+E_\eta \equiv \frac{\eta}{\Omega L^2}.
+\]</div>
+<h2 id="the-heat-equation">The heat equation</h2>
+<p>The heat equation in its dimensional form is</p>
+<div class="arithmatex">\[
+\partial_t \theta=-\mathbf{u}\cdot\nabla T+\kappa \nabla^2 \theta.
+\]</div>
+<p>We assume that an isentropic temperature background <span class="arithmatex">\(T(r)\)</span> exists, which is only a function of radius. Its gradient is then <span class="arithmatex">\(\nabla T=\mathbf{\hat r}\,\mathrm{d}T/\mathrm{d}r\)</span>. Now we write <span class="arithmatex">\(\mathrm{d}T/\mathrm{d}r=C\,f(r)\)</span>, where <span class="arithmatex">\(C\)</span> is a scale factor for the gradient (can be negative) and <span class="arithmatex">\(f(r)\)</span> is a dimensionless function of <span class="arithmatex">\(r\)</span> (with <span class="arithmatex">\(r\)</span> also dimensionless). Then we can write the heat equation, using this time dimensionless variables exclusively as</p>
+<div class="arithmatex">\[
+\partial_t \theta=-\frac{LC}{\theta^*}\,u_r\,f(r)+(\Omega\tau)\frac{E}{Pr} \nabla^2 \theta.
+\]</div>
+<p>In <strong><code>kore</code></strong> we choose always the temperature scale as <span class="arithmatex">\(\theta^*=-LC\)</span> so that the heat equation reads simply</p>
+<div class="arithmatex">\[
+\partial_t \theta=u_r\,f(r)+(\Omega\tau)\frac{E}{Pr} \nabla^2 \theta.
+\]</div>
+<p>A temperature profile with a linear gradient is common in the literature. In that case <span class="arithmatex">\(\partial_r T=-\beta r\)</span> (dimensional). In dimensionless variables this is <span class="arithmatex">\(-\beta L r\)</span> (<span class="arithmatex">\(r\)</span> now dimensionless), so that the temperature scale is <span class="arithmatex">\(\theta^*=\beta L^2\)</span>. And if the length scale is the CMB radius, i.e. <span class="arithmatex">\(L=R\)</span>, then the Rayleigh number becomes</p>
+<div class="arithmatex">\[
+Ra = \frac{\alpha g_0 \beta R^5}{\nu\kappa}.
+\]</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "content.code.copy"], "search": "../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.50899def.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
