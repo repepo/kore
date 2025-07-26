@@ -15,10 +15,9 @@ class KoreTest:
                         os.path.abspath(__file__)),'..'
                         )
 
+    print('\n')
     print('  Running test suite using %d MPI ranks  ' % ncpus)
     print('-----------------------------------------')
-    print('\n')
-    print("Kore test suite")
     print("\n")
     print(" _   __               ")
     print("| | / /               ")
