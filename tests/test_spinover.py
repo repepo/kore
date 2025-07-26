@@ -14,12 +14,12 @@ class TestSpinover(KoreTest):
         os.system('cp -r %s/bin %s/' % (self.kore_dir,self.dir))
 
         os.chdir(self.dir)
-        os.system('cp -r parameters.py ./bin/')
+        os.system('cp -r params.spinover ./bin/parameters.py')
         os.system("./bin/submatrices.py %d > /dev/null" % self.ncpus)
         os.system("mpiexec -n %d ./bin/assemble.py > /dev/null" % self.ncpus)
-        os.system("mpiexec -n %d ./bin/solve.py %s > /dev/null" % (self.ncpus, self.solve_opts))
-        datRef = np.loadtxt('%s/reference.eig' % self.dir)
-        datTmp = np.loadtxt('%s/eigenvalues0.dat' % self.dir)
+        os.system("mpiexec -n %d ./bin/solve.py %s" % (self.ncpus, self.solve_opts))
+        datRef = np.loadtxt('reference.eig')
+        datTmp = np.loadtxt('eigenvalues0.dat')
         idx = np.argmax(datTmp[:,0])
         datTmp = datTmp[idx,:]
         os.chdir(self.startDir)
