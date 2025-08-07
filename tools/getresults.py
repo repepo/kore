@@ -29,8 +29,8 @@ if len(u.shape)==1:
     u = u.reshape((-1,len(u)))
     p = p.reshape((-1,len(p)))
     
-KP = u[:,0]                         # Poloidal kinetic energy
-KT = u[:,1]                         # Toroidal kinetic energy
+KP = u[:,1]                         # Poloidal kinetic energy
+KT = u[:,2]                         # Toroidal kinetic energy
 K  = KP + KT
 t2p = KT/KP
 p2t = KP/KT
@@ -114,7 +114,7 @@ if np.shape(p)[1]>=21:
     #Prandtl = p[:,19]
     #thermal = p[:,20]  
 
-   
+'''   
 magnetic = p[:,10]
 if np.shape(p)[1]>=30:
     time_scale = p[:,29]
@@ -204,7 +204,7 @@ resid1 = abs( Dint + Dkin - pss ) / np.amax( [ abs(Dint), abs(Dkin), abs(pss) ],
 resid2 = abs( 2*sigma*(K + M) - Dkin - Dtemp + Dohm - pvf ) / \
  np.amax( [ abs(2*sigma*(K+M)), abs(Dkin), abs(Dohm), abs(Dtemp), abs(pvf) ], 0 )
 
-        
+'''     
 
     
 

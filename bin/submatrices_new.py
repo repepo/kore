@@ -71,7 +71,7 @@ def main(ncpus):
             cd_ent = ut.chebco_rf( rap.BVprof, rpower=1, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=par.args).reshape([par.N,1])
 
     elif anelastic:  ##
-		
+        
         #rd_rho = ut.get_radial_derivatives(rap.log_density,4,4,tol) # Density : Requires derivatives and radial powers up to fourth order
         # rd_tem = ut.get_radial_derivatives(ut.temperature,2,2,tol) # Temperature : Requires derivatives and radial powers up to second order
         # rd_buo = ut.get_radial_derivatives(ut.buoFac,)
@@ -79,7 +79,7 @@ def main(ncpus):
         #rd_lnT = ut.get_radial_derivatives(rap.log_temperature,2,1,tol) # Log(Temperature)
 
         cd_rho = ut.chebify( rap.density, 2, tol)
-        cd_lho = ut.chebify( rap.log_density, 4, tol)
+        #cd_lho = ut.chebify( rap.log_density, 4, tol)
         cd_vsc = ut.chebify( rap.viscosity, 2, tol)
         
         cd_rog = ut.chebify( rap.rog, 0, tol)
@@ -96,7 +96,7 @@ def main(ncpus):
             cd_lnT = ut.chebify( rap.log_temperature, 1, tol)
             cd_kho = ut.chebify( rap.kappa_rho, 1, tol)
 
-		
+        
             if par.entropyGrad == 'auto':
                 cd_ent = (ac.get_equilibrium_entropy()).reshape([par.N,1])
             else:
@@ -107,7 +107,7 @@ def main(ncpus):
                 cd_buo = ut.cheb2Product(cd_buo,ac.gravCoeff(),tol).reshape([par.N,1])
             else:
                 cd_buo = ut.chebco_rf(rap.buoFac,0,par.N,par.ricb,ut.rcmb,tol).reshape([par.N,1])
-		'''
+        '''
 
     if par.magnetic:
 
@@ -214,7 +214,7 @@ def main(ncpus):
 
         
         # More viscous diffusion, anelastic terms
-        if par.anelastic:
+        if par.anelastic and not inviscid:
             arg2   += [       vP   ,        vP    ,       vP    ,       vP    ,       vP    ,
                               vP   ,        vP    ,       vP    ,       vP     ]
             labl_u += [ 'r1_lho1_D0', 'r2_lho2_D0', 'r3_lho3_D0', 'r2_lho1_D1', 'r3_lho2_D1',
@@ -275,13 +275,12 @@ def main(ncpus):
         labl_v += [ 'r0_D0', 'r1_D1', 'r2_D2' ]
 
         # More viscous diffusion, anelastic terms
-        if par.anelastic:
+        if par.anelastic and not inviscid:
             arg2   += [       vT    ,       vT    ,       vT     ]
             labl_v += [ 'r1_lho1_D0', 'r2_lho2_D0', 'r2_lho1_D1' ]
 
-            if par.variable_viscosity:				
-				labl_v += ['r0_vsc0_D0'     , 'r1_vsc0_D1', 'r1_vsc0_lho1_D0', 'r2_vsc0_D2'     ,
-                           'r2_vsc0_lho1_D1', 'r2_vsc1_D1', 'r2_vsc1_lho1_D0', 'r2_vsc0_lho2_D0', 'r1_vsc1_D0']
+            if par.variable_viscosity:              
+                labl_v += ['r0_vsc0_D0', 'r1_vsc0_D1', 'r1_vsc0_lho1_D0', 'r2_vsc0_D2', 'r2_vsc0_lho1_D1', 'r2_vsc1_D1', 'r2_vsc1_lho1_D0', 'r2_vsc0_lho2_D0', 'r1_vsc1_D0']
 
         if par.magnetic == 1 :
             # Lorentz force
@@ -358,7 +357,7 @@ def main(ncpus):
         # Matrices needed for the heat equation ------------------------------------------------------------------------------------ Heat - section h
         # -------------------------------------------------------------------------------------------------------------------------------------------
         if par.anelastic:
-			
+            
             """
             #Advection
             labl_h = ['r0_drS0_D0','r1_drS0_D0']
@@ -367,19 +366,19 @@ def main(ncpus):
             labl_h += [ 'r0_kho0_D0', 'r1_kho0_D1', 'r2_kho0_D2', 'r2_kho0_lnT1_D1', 'r2_kho1_D1' ]
             labl_h += ['r2_rho0_D0'] #ds/dt
             labl_h += ['r0_D1','r1_lnT1_D1','r1_lho1_D1','r1_lnk1_D1','r1_D2'] #To solve for equilibrium S
-			"""
-			
-			# entropy perturbation
+            """
+            
+            # entropy perturbation
             labl_h = [ 'r2_roT0_D0' ]
             #labl_h = [ 'r1_D0' ]
             arg2  += [         vS   ]  # this matrix acts on the entropy perturbation vector
- 			
-			# thermal advection
+            
+            # thermal advection
             labl_h += [ 'r1_tds0_D0' ]
             #labl_h += [ 'r0_D0' ]
             arg2   += [          vP  ]  # this matrix acts on the poloidals
-			
-			# thermal diffusion
+            
+            # thermal diffusion
             if par.ThermaD > 0:
                 labl_h += [ 'r0_krT0_D0', 'r1_krT0_D1', 'r2_krT1_D1', 'r2_krT0_D2' ]  # acts on the entropy perturbation
                 arg2   += [          vS ,          vS ,          vS ,          vS  ]

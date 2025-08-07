@@ -48,6 +48,7 @@ bco = 0
 # Ek_gap = 2e-4
 # Ek = Ek_gap*(1-ricb)**2
 Ek = 0
+variable_viscosity = 0
 
 
 '''
