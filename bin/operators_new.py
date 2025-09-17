@@ -19,29 +19,24 @@ for label in fname :
 
 
 
-def u(l, section, component, offdiag):  # ------------------------------------------------------------------- velocity u
+
+def inertia(l, section, component, offdiag):  # ---------------------------------------------------------------- inertia
 
     out = 0
 
+    L = l*(l+1)
+
     if offdiag == 0:
 
-        L = l*(l+1)
+        if section == 'u' and component == 'upol':  # double curl section multiplied by rᵃρ²
 
-        if section == 'u' and component == 'upol':
+            out =  L*u2rho2_D0_u - u1lho1_D0_u - u0lho2_D0_u - 2* u1rho2_D1_u - u0lho1_D1_u - u0rho2_D2_u
 
-            if (par.magnetic == 1 and par.B0 == 'dipole'):
-                out = L*( L*r4_D0_u - 2*r5_D1_u - r6_D2_u )  # r6* r.2curl(u)   r⁷ r̂⋅∇×∇×𝐮
-            else:
-                out = L*( L*r2_D0_u - 2*r3_D1_u - r4_D2_u )  # r4* r.2curl(u)   r⁵ r̂⋅∇×∇×𝐮
+        elif section == 'v' and component == 'utor':  # single curl section multiplied by rᵇρ
 
-        elif section == 'v' and component == 'utor':
+            out = v0rho1_D0_v
 
-            if (par.magnetic == 1 and par.B0 == 'dipole'):
-                out = L*r5_D0_v                          # r5* r.1curl(u)    r⁶ r̂⋅∇×𝐮
-            else:
-                out = L*r2_D0_v                          # r2* r.1curl(u)    r³ r̂⋅∇×𝐮
-
-    return out
+    return L*out
 
 
 
@@ -49,6 +44,7 @@ def coriolis(l, section, component, offdiag):  # -------------------------------
 
     out  = 0
     offd = 0
+    m = par.m
     L = l*(l+1)
 
     if section == 'u':  # ------------------------------------------------------- 2curl
@@ -56,32 +52,28 @@ def coriolis(l, section, component, offdiag):  # -------------------------------
         if component == 'upol':
 
             if offdiag == 0:
-
-                if (par.magnetic == 1 and par.B0 == 'dipole'):
-                    out = 2j*par.m*( -L*r4_D0_u + 2*r5_D1_u + r6_D2_u )  # r6* r.2curl(2z x u)
-                else:
-                    out = 2j*par.m*( -L*r2_D0_u + 2*r3_D1_u + r4_D2_u )  # r4* r.2curl(2z x u)
+                
+                #out = 2j*par.m*( -L*r2_D0_u + 2*r3_D1_u + r4_D2_u )
+                out = 1j*m*( -L*u2rho2_D0_u - (L-1)*u1lho1_D0_u + u0lho2_D0_u + 2*u1rho2_D1_u + u0lho1_D1_u + u0rho2_D2_u )
 
         elif component == 'utor':
 
             if offdiag == -1:
 
-                C = (l**2-1)*np.sqrt(l**2-par.m**2) / (2*l-1.)
-                if (par.magnetic == 1 and par.B0 == 'dipole'):
-                    out = 2*C*( (l-1)*r5_D0_u - r6_D1_u )              # r6* r.2curl(2z x u)
-                else:
-                    out = 2*C*( (l-1)*r3_D0_u - r4_D1_u )              # r4* r.2curl(2z x u)
+                C = (l**2-1)*np.sqrt(l**2-m**2) / (2*l-1.)
+                
+                #out = 2*C*( (l-1)*r3_D0_u - r4_D1_u )
+                out = C*( (l-1)*u1rho2_D0_u - u0rho2_D1_u )
 
                 if ut.symm1 == 1:
                     offd = -1
 
             elif offdiag == 1:
 
-                C = l*(l+2.)*np.sqrt((l+par.m+1.)*(l-par.m+1)) / (2.*l+3.)
-                if (par.magnetic == 1 and par.B0 == 'dipole'):
-                    out = 2*C*( -(l+2)*r5_D0_u - r6_D1_u )             # r6* r.2curl(2z x u)
-                else:
-                    out = 2*C*( -(l+2)*r3_D0_u - r4_D1_u )             # r4* r.2curl(2z x u)
+                C = l*(l+2.)*np.sqrt((l+m+1.)*(l-m+1)) / (2.*l+3.)
+                
+                #out = 2*C*( -(l+2)*r3_D0_u - r4_D1_u )
+                out = C*( -(l+2)*u1rho2_D0_u - u0rho2_D1_u )             
 
                 if ut.symm1 == -1:
                     offd = 1
@@ -92,22 +84,20 @@ def coriolis(l, section, component, offdiag):  # -------------------------------
 
             if offdiag == -1:
 
-                C = (l**2-1)*np.sqrt(l**2-par.m**2) / (2*l-1.)
-                if (par.magnetic == 1 and par.B0 == 'dipole'):
-                    out = 2*C*( (l-1)*r4_D0_v - r5_D1_v )              # r5* r.1curl(2z x u)
-                else:
-                    out = 2*C*( (l-1)*r1_D0_v - r2_D1_v )              # r2* r.1curl(2z x u)
+                C = (l**2-1)*np.sqrt(l**2-m**2) / (2*l-1.)
+                
+                #out = 2*C*( (l-1)*r1_D0_v - r2_D1_v )
+                out = C*( (l-1)*v1rho1_D0_v - v0dho1_D0_v - v0rho1_D1_v )              
 
                 if ut.symm1 == -1:
                     offd = -1
 
             elif offdiag == 1:
 
-                C = l*(l+2)*np.sqrt((l+par.m+1.)*(l-par.m+1)) / (2*l+3)
-                if (par.magnetic == 1 and par.B0 == 'dipole'):
-                    out = 2*C*( -(l+2)*r4_D0_v - r5_D1_v )             # r5* r.1curl(2z x u)
-                else:
-                    out = 2*C*( -(l+2)*r1_D0_v - r2_D1_v )             # r2* r.1curl(2z x u)
+                C = l*(l+2)*np.sqrt((l+m+1.)*(l-m+1)) / (2*l+3)
+                
+                #out = 2*C*( -(l+2)*r1_D0_v - r2_D1_v )
+                out = C*( -(l+2)*v1rho1_D0_v - v0dho1_D0_v - v0rho1_D1_v )            
 
                 if ut.symm1 == 1:
                     offd = 1
@@ -116,12 +106,9 @@ def coriolis(l, section, component, offdiag):  # -------------------------------
 
             if offdiag == 0:
 
-                if (par.magnetic == 1 and par.B0 == 'dipole'):
-                    out = -2j*par.m*r5_D0_v                          # r5* r.1curl(2z x u)
-                else:
-                    out = -2j*par.m*r2_D0_v                          # r2* r.1curl(2z x u)
+                out = -1j * m * v0rho1_D0_v                          
 
-    return [ par.Gaspard * out, offd ]
+    return [ 2*par.Gaspard * out, offd ]
 
 
 

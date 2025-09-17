@@ -26,10 +26,10 @@ aux2 = 0
 hydro = 1  # set to 1 to include the Navier-Stokes equation for the flow velocity, set to 0 otherwise
 
 # Azimuthal wave number m (>=0)
-m = 0
+m = 2
 
 # Equatorial symmetry of the flow field. Use 1 for symmetric, -1 for antisymmetric.
-symm = -1
+symm = 1
 
 # Inner core radius, surface/CMB radius is unity.
 ricb = 0
@@ -48,26 +48,16 @@ bco = 0
 # Ek_gap = 2e-4
 # Ek = Ek_gap*(1-ricb)**2
 Ek = 0
+
+# -------------------------------
 variable_viscosity = 0
+anelastic = 1  # variable density
+density_beta = 1.0
 
+ru0 = 2
+rv0 = 1
+# -------------------------------
 
-'''
-#---------------------------------------------------------------------------------------
-# Options for setting interior profiles and options for a polytropic gas, Nrho and polind
-# are ignored when an interior model other than polytrope is used
-#--------------------------------------------------------------------------------------
-
-interior_model = 'polytrope' # Interior model, available options are: polytrope, jupiter, pns
-r_cutoff = 0.99 #Cut-off radius for interior model fit while using jupiter or pns models
-
-Nrho = 2.0 # ln(\rho_i/\rho_o), number of density scale heights
-polind = 2.0 # Polytropic index : p = \rho^(1 + 1/n) , p = \rho T for ideal gas, R = 1
-autograv = 0 # Automatic computation of gravity
-g_icb = 0.0 # Value of g at icb, is set to zero when ricb = 0
-g0 = 0; g1 = 0; g2=1 # Easy way to control gravity, g(r) = g0 + g1 r/rcmb + g2 rcmb^2/r^2
-
-#--------------------------------------------------------------------------------------
-'''
 
 forcing = 0  # Uncomment this line for eigenvalue problems
 # forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
@@ -155,10 +145,10 @@ cnorm = 'rms_cmb'                     # Sets the radial rms field at the CMB as 
 # ----------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------- Thermal parameters
 # ----------------------------------------------------------------------------------------------------------------------
-thermal = 1  # Use 1 or 0 to include or not the internal energy equation and the buoyancy force
+thermal = 0  # Use 1 or 0 to include or not the internal energy equation and the buoyancy force
 
 # To use the Boussinesq approximation, set anelastic = 0 
-anelastic = 1
+#anelastic = 1
 
 # "Thermal" Ekman number
 # Prandtl = 1
@@ -190,39 +180,18 @@ model = 'theprofile.data'  # Uses a structure model from MESA
 gamma = 5./3.  # adiabatic index
 r_cutoff = 0.837  # Will zero out the BV freq above this radius
 
-'''
-entropyGrad = 'auto' # Automatically compute equilibrium entropy gradient
 
-if entropyGrad == 'ssl':
-
-    ampStrat  = 0
-    rStrat    = 0.6
-    thickStrat= 0.1
-    slopeStrat= 75
-
-    dent_args = [ampStrat,rStrat,thickStrat,slopeStrat]
-'''
 # Additional arguments for 'Two zone' or 'User defined' case (modify if needed).
 rc   = 0.7  # transition radius
 h    = 0.1  # transition width
 rsy  = -1    # radial symmetry
 args = [rc, h, rsy]
 
-
-
 # Thermal boundary conditions
 # 0 for isothermal, theta=0
 # 1 for constant heat flux, (d/dr)theta=0
 bci_thermal = 0   # ICB
 bco_thermal = 0   # CMB
-
-'''
-#Set boundary conditions to solve for equilibrium entropy gradient
-if entropyGrad == 'auto':
-
-    bci_thermal_val = 1
-    bco_thermal_val = 0
-'''
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -273,11 +242,11 @@ bco_compositional = 1   # CMB
 # OmgTau = 1/Le  # Alfvén time scale
 # OmgTau = 1/Em  # Magnetic diffusion time scale
 
-Gaspard = 0.15  # Omega*Tau                   Coriolis force factor. Set to 1 for unit time Tau = 1/Omega
+Gaspard = 1.0  # Omega*Tau                   Coriolis force factor. Set to 1 for unit time Tau = 1/Omega
 Beyonce = 1  # (N0*Tau)**2                 Buoyancy force factor. Set to 1 for unit time Tau = 1/N0 = sqrt(r0/g0)
 Hendrik = 0  # (Tau*B0/r0)**2/(rho0*mu0)   Lorentz force factor. Set to 1 for Alfven time scale
 ViscosD = 0  # nu0 * Tau / r0**2           Viscous force factor. Set to 1 for viscous diffusion time scale
-ThermaD = 1e-7  # kappa0 * Tau / r0**2        Thermal diffusion factor. Set to 1 for thermal diffusion time scale
+ThermaD = 0  # kappa0 * Tau / r0**2        Thermal diffusion factor. Set to 1 for thermal diffusion time scale
 MagnetD = 0  # eta0 * Tau / r0**2          Magnetic diffusion factor. Set to 1 for magnetic diffusion time scale
 
 
@@ -290,14 +259,14 @@ ncpus = 24
 
 # Chebyshev polynomial truncation level. Use function def at top or set manually. N must be even if ricb = 0.
 # N = Ncheb(Ek)
-N = 320
+N = 96
 
 # Spherical harmonic truncation lmax and approx lmax/N ratio:
 g = 1.0
-#lmax = int( 2*ncpus*( np.floor_divide( g*N, 2*ncpus ) ) + m - 1 )
+lmax = int( 2*ncpus*( np.floor_divide( g*N, 2*ncpus ) ) + m - 1 )
 # If manually setting the max angular degree lmax, then it must be even if m is odd,
 # and lmax-m+1 should be divisible by 2*ncpus
-lmax = (2*ncpus*2 + m - 1)
+# lmax = (2*ncpus*2 + m - 1)
 
 
 
@@ -315,21 +284,21 @@ if track_target == 1 :  # read target from file and sets target accordingly
     rtau = tt[0]
     itau = tt[1]
 else:                   # set target manually
-    rtau = -1e-5
-    itau = 0.9
+    rtau = 0
+    itau = -0.49
 
 # tau is the actual target for the solver
 # real part is damping
 # imaginary part is frequency (positive is retrograde)
 tau = rtau + itau*1j
 
-which_eigenpairs = 'TR'  # Use 'TM' for shift-and-invert
+which_eigenpairs = 'TM'  # Use 'TM' for shift-and-invert
 # L/S/T & M/R/I
 # L largest, S smallest, T target
 # M magnitude, R real, I imaginary
 
 # Number of desired eigenvalues
-nev = 13
+nev = 10
 
 # Number of vectors in Krylov space for solver
 # ncv = 100

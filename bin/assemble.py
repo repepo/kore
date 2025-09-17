@@ -442,7 +442,7 @@ def main():
                 row = ( rank*bpp + k )* ut.N1
                 col = row
 
-                mtx = -op.u(l,'u','upol',0)
+                mtx = -op.inertia(l,'u','upol',0)
 
                 if l == loc_top[0]:  # create loc_list if first iteration
                     mtx.eliminate_zeros()
@@ -458,7 +458,7 @@ def main():
                 row = nb*ut.N1 + ( rank*bpp + k )* ut.N1
                 col = row
 
-                mtx = -op.u(l,'v','utor',0)
+                mtx = -op.inertia(l,'v','utor',0)
 
                 loc_list = ut.packit(loc_list, mtx, row, col)
 
@@ -620,7 +620,7 @@ def main():
             basecol = 0
 
             # Physics ----------------------------------------------
-            iwu  = op.u(l,'u','upol',0)*1j*ut.wf
+            iwu  = op.inertia(l,'u','upol',0)*1j*ut.wf
             cori = op.coriolis(l,'u','upol',0)[0]
             visc = op.viscous_diffusion(l,'u','upol',0)
             mtx = iwu + cori - visc
@@ -753,7 +753,7 @@ def main():
             basecol = nb*ut.N1
 
             # Physics ------------------------------------
-            iwu  = op.u(l,'v','utor',0)*1j*ut.wf
+            iwu  = op.inertia(l,'v','utor',0)*1j*ut.wf
             cori = op.coriolis(l,'v','utor',0)[0]
             visc = op.viscous_diffusion(l,'v','utor',0)
             mtx = iwu + cori - visc

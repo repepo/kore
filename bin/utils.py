@@ -91,15 +91,20 @@ def decode_label( labl ):
 
     [ lablx, rx, hx, dx, section, profid1, dp1, profid2, dp2 ] = [ None ]*9
 
-    lablx = labl[:-2]  # label without the section
+    lablx   = labl[:-2]      # label without the section, e.g. without '_u' or '_v'
+    section = labl[-1]       # section
+    dx      = int(labl[-3])  # operator's derivative order
+    
+    if len(labl) == 11:  # variable density, anelastic
+        rx = int(labl[1])
+        profid1 = labl[2:6]
+
 
     if labl[:2] == 'q1':
         rx = 6  # this is an index, not a power, it corresponds to r**-1
     elif labl[0] == 'r':
         rx = int(labl[1])  # index of the power of r
 
-    dx = int(labl[-3])  # operator's derivative order
-    section = labl[-1]    # section
 
     if   len(labl) in [10, 15, 20]:  # h is there
 
@@ -375,7 +380,7 @@ def funcheb(ck0, r, ricb, rcmb, n):
     out[:,0] = ch.chebval(x00, ck0)  # the function itself
     
     if n>0:
-        dk = ut.Dn_cheb(ck0, ricb, rcmb, n)  # coeffs for the derivatives, n cols
+        dk = Dn_cheb(ck0, ricb, rcmb, n)  # coeffs for the derivatives, n cols
         for j in range(1,n+1):
             out[:,j] = ch.chebval(x00, dk[:,j-1])  # and the derivatives
 

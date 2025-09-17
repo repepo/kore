@@ -21,7 +21,7 @@ import sys
 import parameters as par
 import utils as ut
 import radial_profiles as rap
-import autocompute as ac
+
 
 
 def main(ncpus):
@@ -33,12 +33,16 @@ def main(ncpus):
     cdipole    = ((par.magnetic == 1) and (par.B0 == 'dipole') and (par.ricb > 0))  # boolean
     inviscid   = (((par.Ek == 0) or (par.ViscosD == 0)) and (par.ricb == 0))        # boolean
     quadrupole = ((par.B0 == 'Luo_S2') or ((par.B0 == 'FDM') and (par.B0_l == 2)))  # boolean
-    anelastic  = ((par.thermal == 1) and (par.anelastic==1))
+    #anelastic  = ((par.thermal == 1) and (par.anelastic==1))
+    anelastic = par.anelastic
     boussinesq = ((par.thermal == 1) and (par.anelastic==0))
 
 
     tic = timer()
     print('N =', par.N,', lmax =', par.lmax)
+
+    ru0 = par.ru0  # power of r multiplying the DOUBLE curl equations
+    rv0 = par.rv0  # power of r multiplying the SINGLE curl equations
 
     # vector parity for poloidal and toroidals. If ricb>0 we don't use parities, not needed.
     # if vP = 1 then we need only even parity Cheb polynomials
@@ -51,7 +55,7 @@ def main(ncpus):
 
     vS = vP  # this is the vector parity of the entropy perturbation
 
-    tol = 1e-9
+    tol = 1e-6
     # Chebyshev coefficients of powers of r
     r0  = ut.chebco(0, par.N, tol, par.ricb, ut.rcmb)
     r1  = ut.chebco(1, par.N, tol, par.ricb, ut.rcmb)
@@ -72,42 +76,20 @@ def main(ncpus):
 
     elif anelastic:  ##
         
-        #rd_rho = ut.get_radial_derivatives(rap.log_density,4,4,tol) # Density : Requires derivatives and radial powers up to fourth order
-        # rd_tem = ut.get_radial_derivatives(ut.temperature,2,2,tol) # Temperature : Requires derivatives and radial powers up to second order
-        # rd_buo = ut.get_radial_derivatives(ut.buoFac,)
-        #rd_kho = ut.get_radial_derivatives(rap.kappa_rho,2,1,tol) # thermaldiffusivity * density
-        #rd_lnT = ut.get_radial_derivatives(rap.log_temperature,2,1,tol) # Log(Temperature)
-
-        cd_rho = ut.chebify( rap.density, 2, tol)
+        pass
+        #cd_rho1 = ut.chebify( rap.density, 0, tol)
+        #cd_rho2 = ut.chebify( rap.density2, 0, tol)
+        #cd_rho = ut.chebify( rap.density, 2, tol)
         #cd_lho = ut.chebify( rap.log_density, 4, tol)
-        cd_vsc = ut.chebify( rap.viscosity, 2, tol)
+        #cd_vsc = ut.chebify( rap.viscosity, 2, tol)
         
-        cd_rog = ut.chebify( rap.rog, 0, tol)
-        cd_krT = ut.chebify( rap.krT, 1, tol)
-        cd_roT = ut.chebify( rap.roT, 0, tol)
+        #cd_rog = ut.chebify( rap.rog, 0, tol)
+        #cd_krT = ut.chebify( rap.krT, 1, tol)
+        #cd_roT = ut.chebify( rap.roT, 0, tol)
         #cd_TdS = ut.chebify( rap.TdS, 0, tol)
-        cd_tds = ut.chebify( rap.tds, 0, tol)
+        #cd_tds = ut.chebify( rap.tds, 0, tol)
         #cd_bvs = ut.chebify( rap.BruVa2, 0, tol)
         
-
-        '''
-        if par.thermal == 1:
-
-            cd_lnT = ut.chebify( rap.log_temperature, 1, tol)
-            cd_kho = ut.chebify( rap.kappa_rho, 1, tol)
-
-        
-            if par.entropyGrad == 'auto':
-                cd_ent = (ac.get_equilibrium_entropy()).reshape([par.N,1])
-            else:
-                cd_ent = ut.chebco_rf( rap.entropy_gradient, rpower=0, N=par.N, ricb=par.ricb, rcmb=ut.rcmb, tol=tol, args=par.dent_args).reshape([par.N,1])
-
-            if par.autograv:
-                cd_buo = ut.chebco_rf(rap.buoFac,0,par.N,par.ricb,ut.rcmb,tol)
-                cd_buo = ut.cheb2Product(cd_buo,ac.gravCoeff(),tol).reshape([par.N,1])
-            else:
-                cd_buo = ut.chebco_rf(rap.buoFac,0,par.N,par.ricb,ut.rcmb,tol).reshape([par.N,1])
-        '''
 
     if par.magnetic:
 
@@ -124,7 +106,6 @@ def main(ncpus):
         # in the last row (row 6) the power of r is -1
         # columns are derivative order, first column (col 0) is for the function h itself
 
-        #rd_eta = ut.get_radial_derivatives(rap.magnetic_diffusivity,2,1,tol)  # Magnetic diffusivity profile
         cd_eta = ut.chebify( rap.magnetic_diffusivity, 1, tol)
         cd_eho = ut.chebify( rap.eta_rho, 1, tol)
 
@@ -199,17 +180,20 @@ def main(ncpus):
         # Matrices needed for the Navier-Stokes equation, double curl equations ------------------------------------------- NavStok 2curl - section u
         # -------------------------------------------------------------------------------------------------------------------------------------------
 
-        # u
-        arg2  += [     vP ,     vP ,     vP  ]
-        labl_u = [ 'r2_D0', 'r3_D1', 'r4_D2' ]
+        # inertia and Coriolis diag terms
+        #arg2  += [     vP ,     vP ,     vP  ]
+        #labl_u = [ 'r2_D0', 'r3_D1', 'r4_D2' ]
+        labl_u = [ 'u2rho2_D0', 'u1rho2_D1', 'u0rho2_D2', 'u1lho1_D0', 'u0lho2_D0', 'u0lho1_D1' ]
+        arg2  += [      vP    ,      vP    ,      vP    ,      vP    ,      vP    ,      vP     ]
 
-        # Coriolis
-        arg2   += [     vT ,     vT  ]
-        labl_u += [ 'r3_D0', 'r4_D1' ]
+        # Coriolis off diag terms
+        arg2   += [      vT    ,      vT     ]
+        #labl_u += [ 'r3_D0', 'r4_D1' ]
+        labl_u += [ 'u1rho2_D0', 'u0rho2_D1' ]
 
         
         # Viscous diffusion
-        arg2   += [     vP ,     vP ,     vP ,     vP  ]
+        """ arg2   += [     vP ,     vP ,     vP ,     vP  ]
         labl_u += [ 'r0_D0', 'r2_D2', 'r3_D3', 'r4_D4' ]
 
         
@@ -252,7 +236,7 @@ def main(ncpus):
                 #labl_u += [ 'r3_bvs0_D0' ]
             else:
                 arg2   += [     vP  ]
-                labl_u += [ 'r4_D0' ]
+                labl_u += [ 'r4_D0' ] """
 
         labl += ut.labelit( labl_u, section='u', rplus=2*cdipole)
 
@@ -261,17 +245,19 @@ def main(ncpus):
         # Matrices needed for the Navier-Stokes equation, single curl equations ------------------------------------------- NavStok 1curl - section v
         # -------------------------------------------------------------------------------------------------------------------------------------------
 
-        # u
-        arg2  += [     vT  ]
-        labl_v = [ 'r2_D0' ]
+        # inertia
+        arg2  += [      vT     ]
+        #labl_v = [ 'r2_D0' ]
+        labl_v = [ 'v0rho1_D0' ]
 
-        # Coriolis
-        arg2   += [     vP ,     vP  ]
-        labl_v += [ 'r1_D0', 'r2_D1' ]
+        # Coriolis off diag
+        arg2   += [      vP    ,     vP     ,      vP    ]
+        #labl_v += [ 'r1_D0', 'r2_D1' ]
+        labl_v += [ 'v1rho1_D0', 'v0dho1_D0', 'v0rho1_D1']
 
         
         # Viscous diffusion
-        arg2   += [     vT ,     vT ,     vT  ]
+        """ arg2   += [     vT ,     vT ,     vT  ]
         labl_v += [ 'r0_D0', 'r1_D1', 'r2_D2' ]
 
         # More viscous diffusion, anelastic terms
@@ -285,7 +271,7 @@ def main(ncpus):
         if par.magnetic == 1 :
             # Lorentz force
             labl_v += [ 'r0_h0_D1', 'r0_h1_D0', 'r1_h2_D0', 'r1_h0_D2', 'r0_h0_D0', 'r1_h1_D0', 'r1_h0_D1' ]
-            arg2   += [     vF    ,     vF    ,     vF    ,     vF    ,     vG    ,     vG    ,     vG     ]
+            arg2   += [     vF    ,     vF    ,     vF    ,     vF    ,     vG    ,     vG    ,     vG     ] """
 
         labl += ut.labelit( labl_v, section='v', rplus=3*cdipole)
 
@@ -439,10 +425,13 @@ def main(ncpus):
     if cdipole or (par.ricb > 0) :  # set vector_parity = 0, i.e. is not needed
         arg2 = np.size(labl)*[0]
 
+
+    #print('labl =', labl)
+
     for k,labl1 in enumerate(labl) :
 
         [ lablx, rx, hx, dx, secx, profid1, dp1, profid2, dp2 ] = ut.decode_label(labl1)
-        #print(labl1)
+        print(labl1)
 
         idx = [ j for j,x in enumerate(plabl) if x == lablx ]  # find indices of same labels as lablx in plabl
         vpx = [ parg2[i] for i in idx ]  # find the vector_parities of those
@@ -451,15 +440,36 @@ def main(ncpus):
 
             plabl += [ lablx]
 
-            if len(lablx) == 5 :  # rX_DX
+            """ if len(lablx) == 5 :  # rX_DX
 
                 c0arg = rp[rx]  # power of r in the C^(0) basis
 
             elif len(lablx) == 8 :  # rX_hX_DX
 
-                c0arg = rdh[rx][hx]  # note that rpw[rx=6] = -1
+                c0arg = rdh[rx][hx]  # note that rpw[rx=6] = -1 """
 
-            elif len(lablx) == 10 :  # rX_proX_DX
+            # -------------------------------------------------------------------------------------------------
+            if len(lablx) == 9 :  # rxproX_DX anelastic
+                print('lablx = ',lablx, 'secx =', secx, 'profid1 =', profid1)
+                if secx == 'u':
+
+                    if   profid1 == 'rho2':
+                        c0arg = ut.chebco_rf( rap.density2, ru0-rx, par.N, par.ricb, ut.rcmb, tol, args=0       )
+                        print('c0arg =', c0arg)
+                    elif profid1 == 'lho1':
+                        c0arg = ut.chebco_rf( rap.logrho1 , ru0-rx, par.N, par.ricb, ut.rcmb, tol, args=[0,tol] )
+                    elif profid1 == 'lho2':
+                        c0arg = ut.chebco_rf( rap.logrho2 , ru0-rx, par.N, par.ricb, ut.rcmb, tol, args=[0,tol] )
+
+                elif secx == 'v':
+
+                    if   profid1 == 'rho1':
+                        c0arg = ut.chebco_rf( rap.density , rv0-rx, par.N, par.ricb, ut.rcmb, tol, args=0 )
+                    elif profid1 == 'dho1':
+                        c0arg = ut.chebco_rf( rap.d1_density, rv0-rx, par.N, par.ricb, ut.rcmb, tol, args=[1,0,tol] )
+            # -------------------------------------------------------------------------------------------------
+
+            """ elif len(lablx) == 10 :  # rX_proX_DX
 
                 if   profid1 == 'eta':  ck1 = cd_eta
                 elif profid1 == 'rho':  ck1 = cd_rho
@@ -500,7 +510,7 @@ def main(ncpus):
                     ck1 = cd_eta
                     ck2 = cd_rho
 
-                c0arg = ut.cheb3Product( rp[rx], ck1[:,dp1], ck2[:,dp2], tol)
+                c0arg = ut.cheb3Product( rp[rx], ck1[:,dp1], ck2[:,dp2], tol) """
 
             parg0 += [ S[dx]*c0arg ]    # Gegenbauer basis change from C^(0) to C^(dx)
             parg1 += [ dx ]             # dx is derivative order
@@ -568,6 +578,20 @@ def main(ncpus):
             ####
             # TO DO: assign operator_parity to operators with longer labels, i.e. involving 'eta' or 'rho'
             ####
+
+            # ---------------------------------------------------------------------------------------------
+            elif len(lablx) == 9:  # variable density, anelastic
+            
+                if   profid1 in [ 'rho1', 'rho2', 'lho2' ]:  # these profiles should be even functions of r
+                    dp1 = 0
+                elif profid1 in [ 'dho1', 'lho1']:  # these profiles should be odd functions of r
+                    dp1 = 1
+                
+                if   secx == 'u':
+                    operator_parity = 1-(( (ru0-rx) + dp1 + dx )%2)*2
+                elif secx == 'v':
+                    operator_parity = 1-(( (rv0-rx) + dp1 + dx )%2)*2
+            # ---------------------------------------------------------------------------------------------
 
             vector_parity   = arg2[k]
             overall_parity  = vector_parity * operator_parity
