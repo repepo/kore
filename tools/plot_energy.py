@@ -27,14 +27,15 @@ plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 
 '''
-Script to plot meridional cuts of the flows energy density
+Script to plot cuts of the flows energy density
 Use as:
 python3 path/to/plot_energy.py solnum theta0 theta1 field
 
 solnum : solution number
-theta0 : starting colatitude
-theta1 : final colatitude
+angle0 : starting angle (theta or phi depending on the type of cut)
+angle1 : final angle (theta or phi depending on the type of cut)
 field  : whether to plot flow velocity or magnetic field ('u' or 'b')
+cut    : whether to plot, 'merid', a meridonial cut (fixed phi) or, 'equat', an equatorial cut (theta = pi/2)
 
 Requires the PYTHONPATH to include the ../bin folder:
 
@@ -44,9 +45,10 @@ export PYTHONPATH=$PYTHONPATH:/path/to/bin
 # --- INITIALIZATION ---
 # load input arguments
 solnum = int(sys.argv[1])
-theta0 = float(sys.argv[2])
-theta1 = float(sys.argv[3])
+angle0 = float(sys.argv[2])
+angle1 = float(sys.argv[3])
 field  = sys.argv[4]
+cut    = sys.argv[5]
 
 # load parameter data from solve.py generated files
 p = np.loadtxt('params.dat')
@@ -63,8 +65,8 @@ lmax  = int(p[47])
 N     = int(p[46])
 n0    = int(N*(lmax-m+1)/2)
 
-nr    = N-1
-ntta  = lmax-1
+#nr    = N-1
+nr = 50
 
 # set up the evenly spaced radial grid
 r = np.linspace(ricb,rcmb,nr)
@@ -74,15 +76,25 @@ if ricb == 0:
     nr = nr - 1
 x = xcheb(r,ricb,rcmb)
 
-# select meridional cut
-phi = 0.
-
 # matrix with Chebyshev polynomials at every x point for all degrees:
 chx = ch.chebvander(x, N-1) # this matrix has nr rows and N-1 cols
 
-# set up evenly spaced latitudinal grid
-theta = np.linspace(theta0*np.pi/180, theta1*np.pi/180, ntta+2)
-theta = theta[1:-1]
+if cut == 'merid':
+    # select meridional cut
+    nphi = 1
+    phi = np.array([0.])
+    # set up evenly spaced latitudinal grid
+    ntta = lmax - 1
+    theta = np.linspace(angle0*np.pi/180, angle1*np.pi/180, ntta+2)
+    theta = theta[1:-1]
+if cut == 'equat':
+    # select equator
+    ntta = 1
+    theta = np.array([np.pi/2])
+    # set up evenly spaced azimuthal grid
+    nphi = lmax - 1
+    phi = np.linspace(angle0*np.pi/180, angle1*np.pi/180, nphi+2)
+    phi = phi[1:-1]
 
 if field == 'u':
     # read field from disk
@@ -142,7 +154,7 @@ np.matmul(Tlj, chx.T, Tlr)
 
 # compute derivative Plj
 for k in range(np.size(llpol)):
-	dPlj[k,:] = Dcheb(Plj[k,:], ricb, rcmb)
+    dPlj[k,:] = Dcheb(Plj[k,:], ricb, rcmb)
 np.matmul(dPlj, chx.T, dP)
 
 # compute multiplications
@@ -154,17 +166,17 @@ Qlr = lI * rP
 Slr = rP + dP
 
 # initialize solution arrays
-s = np.zeros(nr * ntta)
-z = np.zeros(nr * ntta)
+x = np.zeros(nr * max(ntta,nphi))
+y = np.zeros(nr * max(ntta,nphi))
 
-ur2 = np.zeros((nr) * ntta)
-ut2 = np.zeros((nr) * ntta)
-up2 = np.zeros((nr) * ntta)
+ur2 = np.zeros((nr) * max(ntta,nphi))
+ut2 = np.zeros((nr) * max(ntta,nphi))
+up2 = np.zeros((nr) * max(ntta,nphi))
 
 # initialize spherical harmonics coefficients.
 clm = np.zeros((lm1+1,1))
 for i,l in enumerate(ll):
-	clm[i] = np.sqrt((l-m)*(l+m))
+    clm[i] = np.sqrt((l-m)*(l+m))
 
 # start index for l. Do not confuse with indices for the Cheb expansion!
 sy = int( vsymm*0.5 + 0.5 ) # sy=0 if antisymm, sy=1 if symm
@@ -175,36 +187,42 @@ tlx = idT+lmax-m+1
 
 # compute ur, utheta, uphi squared
 k = 0
-for kt in range(ntta):
-    ylm = np.r_[Ylm_full(lmax, m, theta[kt], phi),0]
-    for kr in range(0, nr):
-        s[k] = r[kr] * np.sin(theta[kt])
-        z[k] = r[kr] * np.cos(theta[kt])
 
-        ur2[k] = np.abs(np.dot(Qlr[:, kr], ylm[idP:plx:2])) ** 2
+for kp in range(nphi):
+    for kt in range(ntta):
+        ylm = np.r_[Ylm_full(lmax, m, theta[kt], phi[kp]),0]
+        for kr in range(0, nr):
+            if cut == 'merid':
+                x[k] = r[kr] * np.sin(theta[kt])
+                y[k] = r[kr] * np.cos(theta[kt])
+            elif cut == 'equat':
+                x[k] = r[kr] * np.sin(theta[kt]) * np.cos(phi[kp])
+                y[k] = r[kr] * np.sin(theta[kt]) * np.sin(phi[kp])
 
-        tmp1 = np.dot(-(llpol + 1) * Slr[:, kr] / np.tan(theta[kt]), ylm[idP:plx:2])
-        tmp2 = np.dot(clm[idP + 1:plx + 1:2, 0] * Slr[:, kr] / np.sin(theta[kt]), ylm[idP + 1:plx + 1:2])
-        tmp3 = np.dot(1j * m * Tlr[:, kr] / np.sin(theta[kt]), ylm[idT:tlx:2])
-        ut2[k] = np.abs(tmp1 + tmp2 + tmp3) ** 2
+            ur2[k] = np.abs(np.dot(Qlr[:, kr], ylm[idP:plx:2])) ** 2
 
-        tmp1 = np.dot(             (lltor+1) * Tlr[:,kr]/np.tan(theta[kt]), ylm[idT:tlx:2]     )
-        tmp2 = np.dot( -clm[idT+1:tlx+1:2,0] * Tlr[:,kr]/np.sin(theta[kt]), ylm[idT+1:tlx+1:2] )
-        tmp3 = np.dot(                  1j*m * Slr[:,kr]/np.sin(theta[kt]), ylm[idP:plx:2]     )
-        up2[k] = np.abs(tmp1 + tmp2 + tmp3) ** 2
+            tmp1 = np.dot(-(llpol + 1) * Slr[:, kr] / np.tan(theta[kt]), ylm[idP:plx:2])
+            tmp2 = np.dot(clm[idP + 1:plx + 1:2, 0] * Slr[:, kr] / np.sin(theta[kt]), ylm[idP + 1:plx + 1:2])
+            tmp3 = np.dot(1j * m * Tlr[:, kr] / np.sin(theta[kt]), ylm[idT:tlx:2])
+            ut2[k] = np.abs(tmp1 + tmp2 + tmp3) ** 2
 
-        k = k + 1
+            tmp1 = np.dot(             (lltor+1) * Tlr[:,kr]/np.tan(theta[kt]), ylm[idT:tlx:2]     )
+            tmp2 = np.dot( -clm[idT+1:tlx+1:2,0] * Tlr[:,kr]/np.sin(theta[kt]), ylm[idT+1:tlx+1:2] )
+            tmp3 = np.dot(                  1j*m * Slr[:,kr]/np.sin(theta[kt]), ylm[idP:plx:2]     )
+            up2[k] = np.abs(tmp1 + tmp2 + tmp3) ** 2
+
+            k = k + 1
 
 # only compute indices inside the core mantle boundary (|r| < rcmb)
-id_in = np.where(s**2 + z**2 < rcmb)
-S = s[id_in]
-Z = z[id_in]
+id_in = np.where(x**2 + y**2 < rcmb)
+X = x[id_in]
+Y = y[id_in]
 
-triang = tri.Triangulation(S, Z)
+triang = tri.Triangulation(X, Y)
 
 # mask off unwanted triangles inside the inner core (|r| < ricb)
-xmid = S[triang.triangles].mean(axis=1)
-ymid = Z[triang.triangles].mean(axis=1)
+xmid = X[triang.triangles].mean(axis=1)
+ymid = Y[triang.triangles].mean(axis=1)
 mask = np.where((xmid**2 + ymid**2 <= ricb ** 2), 1, 0)
 triang.set_mask(mask)
 
@@ -219,7 +237,7 @@ ax.axis('off')
 
 # set zero-values to very small
 res = ur2[id_in]+ut2[id_in]+up2[id_in]
-res[res == 0] = 1e-17
+res[res == 0] = 1e-12
 im = ax.tricontourf(triang, np.log10(res), 70, cmap=cmap)
 
 ax.plot(r[0]*np.sin(theta), r[0]*np.cos(theta),'k',lw=0.4)
@@ -236,6 +254,7 @@ cbar.set_label(titlelabel, fontsize=14)
 
 
 # show/save figure
+plt.savefig('energy.png'.format(ricb), dpi=300)
+
 plt.tight_layout()
 plt.show()
-#plt.savefig('energy.png'.format(ricb), dpi=300)

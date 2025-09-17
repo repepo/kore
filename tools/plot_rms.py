@@ -54,7 +54,7 @@ lmax = int(p[47])
 N = int(p[46])
 n0 = int(N * (lmax - m + 1) / 2)
 
-nr = N - 1
+nr = 500#N - 1
 
 # set up the evenly spaced radial grid
 r = np.linspace(ricb, rcmb, nr)
@@ -62,6 +62,7 @@ r = np.linspace(ricb, rcmb, nr)
 if ricb == 0:
     r = r[1:]
     nr = nr - 1
+
 r_inv = 1/r
 x = xcheb(r, ricb, rcmb)
 
@@ -125,8 +126,6 @@ rms = np.zeros((int((lmax - m + 1) / 2), nr))
 
 # compute poloidal components
 for k, l in enumerate(llpol):
-    L = l * (l + 1)
-
     q0 = Q0[k, :]
 
     f0 = 1 / (2 * l + 1)
@@ -145,10 +144,14 @@ ax1.plot(r, sum(rms, 0))
 
 ax1.set_yscale('log')
 ax1.set_xlabel(r'$r$', size=12)
-ax1.set_ylabel(r'${}_\mathrm{}$'.format(field, '{r.m.s.}'), size=12)
+#ax1.set_ylabel(r'${}_\mathrm{}$'.format(field, '{r.m.s.}'), size=12)
 
 # add custom plotting arguments
-
+import pandas as pd
+save = pd.DataFrame()
+save['r'] = r
+save['rms'] = sum(rms, 0)
+save.to_csv('rms.csv')
 
 # show/save figure
 plt.tight_layout()

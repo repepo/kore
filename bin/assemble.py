@@ -336,7 +336,7 @@ def main():
 
                 # amplitude for the l=2 components
                 C_cmb = -par.forcing_frequency / L * par.forcing_amplitude_cmb
-                C_icb = -par.forcing_frequency / L * par.forcing_amplitude_icb * (par.ricb ** 2)
+                C_icb = -par.forcing_frequency / L * par.forcing_amplitude_icb * par.ricb
 
                 bdat = np.array([C_cmb, C_icb])
 
@@ -345,7 +345,7 @@ def main():
 
             else:
 
-                print(' ** Longitudinal libration requires m = 0, symm = 1 and no-slip boundaries **')
+                print(' ** Longitudinal libration requires m = 0 or m = 2, symm = 1 and no-slip boundaries **')
 
 
     elif par.forcing == 8: # ------------------------------------------------------------ longitudinal libration forcing

@@ -81,6 +81,7 @@ def main(ncpus):
                 # and the derivative
                 rd_eta[i][1] = ( ut.Dcheb( rd_eta[i][0], par.ricb, ut.rcmb )
                                 - i*ut.chebco_f( ut.mag_diffus,i-1,par.N, par.ricb, ut.rcmb, par.tol_tc) )
+
         else:
             rd_eta = [ [ [] for j in range(2) ] for i in range(4) ]
             for i,rpw1 in enumerate( rpw[:4] ):
@@ -279,6 +280,7 @@ def main(ncpus):
             # induction
             labl += [ 'g301', 'g411',  'g200', 'g310', 'g420', 'g402', 'g300', 'g401', 'g410' ]  # e.g. 'g200' is for (r**2)*h(r)
             # magnetic diffusion
+            #labl += [ 'g30', 'g41',  'g52' ]
             labl += ['geta300', 'geta410', 'geta401', 'geta511', 'geta502']
         else:
             # b
@@ -391,6 +393,7 @@ def main(ncpus):
 
                 profx = int(lablx[4])
                 plabl += [ lablx ]
+
                 parg0 += [ S[dx] * rprof[rx][profx] ]
                 parg1 += [ dx ]
                 parg2 += [ arg2[k] ]

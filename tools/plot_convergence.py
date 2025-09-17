@@ -118,12 +118,13 @@ else:
 # plot only the coefficients that are nonzero
 kp = abs(Pld) > 0
 kt = abs(Tld) > 0
+#kp = np.where(llpol[kp] < 11)
+#kt = np.where(llpol[kt] < 11)
 
 # --- VISUALIZATION ---
 # set-up figure
 plt.figure(figsize=(5, 3.5))
 plt.yscale('log')
-plt.xlim(0, lm1)
 
 # plot ell spectrum
 plt.plot(llpol[kp], abs(Pld[kp]), 'o-', ms=5, lw=1, label=r'Poloidal')

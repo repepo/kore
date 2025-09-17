@@ -1356,18 +1356,19 @@ def gamma_magnetic():
         h0_cmb = B0_norm() * h0(R, par.B0, [par.beta, par.B0_l, par.ricb, 0])
         h1_cmb = B0_norm() * h1(R, par.B0, [par.beta, par.B0_l, par.ricb, 0])
 
+        if par.forcing == 0:
+            parity = np.sign(par.itau)
+        else:
+            parity = np.sign(par.forcing_frequency)
+
         if B0_l == 1: # Either uniform axial or dipole background field, induced magnetic field b is thus antisymmetric
             R = 1
             # the torque is prop. to the l=2 toroidal component and l=1 poloidal component of b
             out[0,n0:n0+par.N]  = (8*np.sqrt(3)*np.pi/5) * (R**2) * G0 * h0_cmb #l=2 toroidal
-            out[0,0:par.N]      = np.sign(par.itau) * (8j*np.pi/3) * (R**2) * (F0 * h1_cmb -  F1 * h0_cmb) #l=1 poloidal
+            out[0,0:par.N]      = parity * (8j*np.pi/3) * (R**2) * (F0 * h1_cmb -  F1 * h0_cmb) #l=1 poloidal
 
         elif B0_l == 2:  # Quadrupole background field, induced magnetic field b is thus symmetric
             R = 1
-            if par.forcing == 0:
-                parity = np.sign(par.itau)
-            else:
-                parity = np.sign(par.forcing_frequency)
             # the torque is prop. to the l=1, l=3 toroidal component and l=2 poloidal component of b
             out[0,n0:n0+par.N]          = (8*np.pi/5) * (R**2) * G0 * h0_cmb #l=1 toroidal
             out[0,n0+par.N:n0+2*par.N]  = (96*np.sqrt(6)*np.pi/35) * (R**2) * G0 * h0_cmb #l=3 toroidal

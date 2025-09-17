@@ -32,7 +32,7 @@ class kmode:
 
         self.lmax   = par.lmax
         self.N      = par.N
-        self.n0     = ut.n0
+        self.n0     = int(self.N*(self.lmax-self.m+1)/2)
 
         self.ut     = ut
         self.par    = par
@@ -48,7 +48,7 @@ class kmode:
                 self.nphi = par.lmax * 3 # Orszag's 1/3 rule
             else:
                 self.nphi = nphi
-            self.ntheta = self.nphi // 2
+            self.ntheta = max(self.nphi // 2, par.lmax * 2 + 1)
 
         else:
 
@@ -56,7 +56,7 @@ class kmode:
                 self.nphi = par.lmax * 3 // self.m  # Orszag's 1/3 rule
             else:
                 self.nphi = nphi // self.m
-            self.ntheta = (self.nphi * self.m) // 2
+            self.ntheta = max((self.nphi * self.m) // 2, par.lmax * 2 + 1)
 
         # set up the evenly spaced radial grid
         r = np.linspace(self.ricb, self.rcmb, self.nr)

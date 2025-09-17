@@ -30,7 +30,7 @@ plt.rc('font', family='serif')
 Script to plot meridional cuts of a solution field
 Use as:
 
-python3 path/to/plot_field.py nsol theta0 theta1 coord field opt
+python3 path/to/plot_merid_field.py nsol theta0 theta1 coord field opt
 
 nsol   : solution number
 theta0 : starting colatitude
@@ -81,8 +81,11 @@ N     = int(p[46])
 N1    = int(N/2) * int(1 + np.sign(ricb)) + int((N%2)*np.sign(ricb))
 n0    = int(N*(lmax-m+1)/2)
 
-nr    = N-1
-ntta  = lmax-1
+#nr    = N-1
+#ntta  = lmax-1
+
+nr = 100
+ntta = 100
 
 # set up the evenly spaced radial grid
 r = np.linspace(ricb, rcmb, nr)
@@ -308,7 +311,7 @@ plt.colorbar(im1, cax=cax1)
 ax2 = fig.add_subplot(132)
 ax2.set_aspect('equal')
 ax2.get_xaxis().set_visible(True)
-ax2.get_yaxis().set_visible(True)
+ax2.get_yaxis().set_visible(False)
 ax2.set_title(titlelabels[1],size=14)
 
 if opt == "raw":
@@ -333,7 +336,7 @@ plt.colorbar(im2, cax=cax2)
 ax3 = fig.add_subplot(133)
 ax3.set_aspect('equal')
 ax3.get_xaxis().set_visible(True)
-ax3.get_yaxis().set_visible(True)
+ax3.get_yaxis().set_visible(False)
 ax3.set_title(titlelabels[2],size=14)
 
 if opt == "raw":
@@ -351,6 +354,7 @@ plt.colorbar(im3, cax=cax3)
 # add custom plotting arguments
 
 # show/save figure
+plt.savefig('merid_field.png')
+
 plt.tight_layout()
 plt.show()
-#plt.savefig('field.png'.format(ricb))

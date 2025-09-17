@@ -34,7 +34,8 @@ def load_results(filename):
         df = df.join(flo)
     if exists(filename + '.mag'):
         mag = pd.read_csv(filename + '.mag', sep=' ', names=["ME", "Dmag", "Wind", "resid2", "real_mtorq_cmb",
-                                                             "imag_mtorq_cmb", "real_mtorq_icb", "imag_mtorq_icb"])
+                                                             "imag_mtorq_cmb", "real_mtorq_icb", "imag_mtorq_icb",
+                                                             "brms_cmb"])
         df = df.join(mag)
     if exists(filename + '.tmp'):
         tmp = pd.read_csv(filename + '.tmp', sep=' ', names=["TE", "Wadv_thm", "Dthm", "resid3"])
@@ -43,8 +44,11 @@ def load_results(filename):
         cmp = pd.read_csv(filename + '.cmp', sep=' ', names=["CE", "Wadv_cmp", "Dcmp"])
         df = df.join(cmp)
     if exists(filename + '.eig'):
-        eig = pd.read_csv(filename + '.eig', sep=' ', names=["rtau", "itau", "norm"])
+        eig = pd.read_csv(filename + '.eig', sep=' ', names=["rtau", "itau"])
         df = df.join(eig)
+    if exists(filename + '.add'):
+        add = pd.read_csv(filename + '.add', sep=' ', names=['transmission', 'maclike'])
+        df = df.join(add)
     return df
 
 
@@ -55,7 +59,7 @@ def load_result():
                                                         "Ek", "m",  "symm", "ricb", "bc_icb", "bc_cmb", "forcing",
                                                         "forcing_freq", "forcing_amp_cmb", "forcing_amp_icb",
                                                         "projection", "B0_type", "FDM_beta", "FDM_l", "mag_bc_icb",
-                                                        "c_icb", "c1_icb", "mag_bc_cmb", "c_cmb", "c1_cmb", "mu", "Em",
+                                                        "c_icb", "c1_icb", "mag_bc_cmb", "c_cmb", "c1_cmb", "mu_cmb", "Em",
                                                         "Le2", "B0_norm", "Et", "T0_type", "thm_BV2", "thm_rc", "thm_h",
                                                         "thm_rsymm", "thm_bc_icb", "thm_bc_cmb", "Ec", "C0_type",
                                                         "cmp_BV2", "cmp_rc", "cmp_h", "cmp_rsymm", "cmp_bc_icb",
@@ -70,7 +74,7 @@ def load_result():
     if exists('magnetic.dat'):
         mag = pd.read_csv('magnetic.dat', sep=' ', names=["ME", "Dmag", "Wind", "resid2",
                                                           "real_mtorq_cmb", "imag_mtorq_cmb", "real_mtorq_icb",
-                                                          "imag_mtorq_icb"])
+                                                          "imag_mtorq_icb", "brms_cmb"])
         df = pd.concat([df, mag], axis=1)
     if exists('thermal.dat'):
         tmp = pd.read_csv('thermal.dat', sep=' ', names=["TE", "Wadv_thm", "Dthm", "resid3"])
@@ -79,8 +83,11 @@ def load_result():
         cmp = pd.read_csv('compositional.dat', sep=' ', names=["CE", "Wadv_cmp", "Dcmp"])
         df = pd.concat([df, cmp], axis=1)
     if exists('eigenvalues.dat'):
-        eig = pd.read_csv('eigenvalues.dat', sep=' ', names=["rtau", "itau", "norm"])
+        eig = pd.read_csv('eigenvalues.dat', sep=' ', names=["rtau", "itau"])
         df = pd.concat([df, eig], axis=1)
+    if exists('max.dat'):
+        add = pd.read_csv('max.dat', sep=' ', names=['transmission', 'maclike'])
+        df = pd.concat([df, add], axis=1)
     return df
 
 # --- INITIALIZATION ---
@@ -118,7 +125,7 @@ if (df['magnetic'] == 0).all():
     del df["mag_bc_cmb"]
     del df["c_cmb"]
     del df["c1_cmb"]
-    del df["mu"]
+    del df["mu_cmb"]
     del df["Em"]
     del df["Le2"]
     del df["B0_norm"]
@@ -133,7 +140,7 @@ else:
         del df["c_cmb"]
         del df["c1_cmb"]
         if (df["mag_bc_icb"] == 0).all():
-            del df["mu"]
+            del df["mu_cmb"]
     df["Le"] = np.sqrt(df["Le2"])
     if (df["Em"] != 0).all():
         df["Pm"] = df["Ek"]/df["Em"]
@@ -179,6 +186,6 @@ else:
 
 # save results to comma-separated-value file
 if len(sys.argv) == 2:
-    df.to_csv(filename + '.csv')
+    df.to_csv(filename + '.csv', index=False)
 else:
-    df.to_csv('results.csv')
+    df.to_csv('results.csv', index=False)
