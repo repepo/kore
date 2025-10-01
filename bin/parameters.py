@@ -6,7 +6,7 @@ import sys
 def Ncheb(Ek):
     '''
     Returns the truncation level N for the Chebyshev expansion according to the Ekman number
-    Please experiment and adapt to your particular problem. N must be even.
+    Please *experiment and adapt* to your particular problem. N must be even.
     '''
     if Ek !=0 :
         out = int(17*Ek**-0.2)
@@ -18,6 +18,19 @@ def Ncheb(Ek):
 
 aux1 = 1.0  # Auxiliary variable, useful e.g. for ramps
 aux2 = 0
+
+# ---------------
+magnetic      = 0
+thermal       = 0
+compositional = 0
+# ---------------
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------- Structure parameters
+# ----------------------------------------------------------------------------------------------------------------------
+variable_density = 1
+density_beta = 0.
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -40,23 +53,7 @@ bci = 0
 
 # CMB spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow
-bco = 0
-
-# Ekman number (use 2* to match Dintrans 1999). Ek can be set to 0 if ricb=0
-# CoriolisNumber = 1.2e3
-# Ek = 2/CoriolisNumber
-# Ek_gap = 2e-4
-# Ek = Ek_gap*(1-ricb)**2
-Ek = 0
-
-# -------------------------------
-variable_viscosity = 0
-anelastic = 1  # variable density
-density_beta = 1.0
-
-ru0 = 2
-rv0 = 1
-# -------------------------------
+bco = 1
 
 
 forcing = 0  # Uncomment this line for eigenvalue problems
@@ -82,156 +79,6 @@ forcing_amplitude_icb = 0.0
 projection = 1
 
 
-
-# ----------------------------------------------------------------------------------------------------------------------
-# -------------------------------------------------------------------------------------------- Magnetic field parameters
-# ----------------------------------------------------------------------------------------------------------------------
-magnetic = 0  # set to 1 if including the induction equation and the Lorentz force
-
-# Imposed background magnetic field
-B0 = 'axial'          # Axial, uniform field along the spin axis
-# B0 = 'dipole'         # classic dipole, singular at origin, needs ricb>0
-# B0 = 'G21 dipole'     # Felix's dipole (Gerick GJI 2021)
-# B0 = 'Luo_S1'         # Same as above, actually (Luo & Jackson PRSA 2022)
-# B0 = 'Luo_S2'         # Quadrupole
-# B0 = 'FDM'            # Free Poloidal Decay Mode (Zhang & Fearn 1994,1995; Schmitt 2012)
-beta = 3.0              # guess for FDM's beta
-B0_l = 1                # l number for the FDM mode
-
-# Magnetic boundary conditions at the ICB:
-innercore = 'insulator'
-# innercore = 'TWA'  # Thin conductive wall layer (Roberts, Glatzmaier & Clune, 2010)
-c_icb     = 0  # Ratio (h*mu_wall)/(ricb*mu_fluid) (if innercore='TWA')
-c1_icb    = 0  # Thin wall to fluid conductance ratio (if innercore='TWA')
-# innercore = 'perfect conductor, material'  # tangential *material* electric field jump [nxE']=0 across the ICB
-# innercore = 'perfect conductor, spatial'   # tangential *spatial* electric field jump [nxE]=0 across the ICB
-# Note: 'perfect conductor, material' or 'perfect conductor, spatial' are identical if ICB is no-slip (bci = 1 above)
-
-# Magnetic boundary conditions at the CMB
-mantle   = 'insulator'
-# mantle = 'TWA'  # Thin conductive wall layer (Roberts, Glatzmaier & Clune, 2010)
-c_cmb  = 0  # Ratio (h*mu_wall)/(rcmb*mu_fluid)  (if mantle='TWA')
-c1_cmb = 0  # Thin wall to fluid conductance ratio (if mantle='TWA')
-
-# Relative permeability (fluid/vacuum)
-mu = 1.0
-
-# Magnetic field strength and magnetic diffusivity:
-# Either use the Elsasser number and the magnetic Prandtl number (i.e. Lambda and Pm: uncomment and set the following three lines):
-# Lambda = 0.1
-# Pm = 0.001
-# Em = Ek/Pm; Le2 = Lambda*Em; Le = np.sqrt(Le2)
-# Or use the Lehnert number and the magnetic Ekman number (i.e. Le and Em: uncomment and set the following three lines):
-Le = 10**-3; Lu=2e3
-Em = Le/Lu
-Le2 = Le**2
-
-# Normalization of the background magnetic field
-cnorm = 'rms_cmb'                     # Sets the radial rms field at the CMB as unity
-# cnorm = 'mag_energy'                  # Unit magnetic energy as in Luo & Jackson 2022 (I. Torsional oscillations)
-# cnorm = 'Schmitt2012'                 # as above but times 2
-# cnorm = 3.86375                       # G101 of Schmitt 2012, ricb = 0.35
-# cnorm = 4.067144                      # Zhang & Fearn 1994,   ricb = 0.35
-# cnorm = 15*np.sqrt(21/(46*np.pi))     # G21 dipole,           ricb = 0
-# cnorm = 1.09436                       # simplest FDM, l=1,    ricb = 0
-# cnorm = 3.43802                       # simplest FDM, l=1,    ricb = 0.001
-# cnorm = 0.09530048175738767           # Luo_S1 ricb = 0, unit mag_energy
-# cnorm = 0.6972166887783963            # Luo_S1 ricb = 0, rms_Bs=1
-# cnorm = 0.005061566801979833          # Luo_S2 ricb = 0, unit mag_energy
-# cnorm = 0.0158567582314039            # Luo_S2 ricb = 0, rms_Bs=1
-
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-# --------------------------------------------------------------------------------------------------- Thermal parameters
-# ----------------------------------------------------------------------------------------------------------------------
-thermal = 0  # Use 1 or 0 to include or not the internal energy equation and the buoyancy force
-
-# To use the Boussinesq approximation, set anelastic = 0 
-#anelastic = 1
-
-# "Thermal" Ekman number
-# Prandtl = 1
-# Etherm = Ek/Prandtl
-Etherm = 0
-
-# Background isentropic temperature gradient dT/dr choices, uncomment the appropriate line below:
-heating = 'internal'      # dT/dr = -beta * r         temp_scale = beta * ro**2
-# heating = 'differential'  # dT/dr = -beta * r**-2     temp_scale = Ti-To      beta = (Ti-To)*ri*ro/(ro-ri)
-# heating = 'two zone'      # dT/dr = K * ut.twozone()  temp_scale = -ro * K
-# heating = 'user defined'  # dT/dr = K * ut.BVprof()   temp_scale = -ro * K
-
-# Rayleigh number as Ra = alpha * g0 * ro^3 * temp_scale / (nu*kappa), alpha is the thermal expansion coeff,
-# g0 the gravity accel at ro, ro is the cmb radius (the length scale), nu is viscosity, kappa is thermal diffusivity.
-# Ra_gap = 0.0
-# Ra = Ra_gap / (1-ricb)**3
-# Ra_Silva = 0.0; Ra = Ra_Silva * (1/(1-ricb))**6
-# Ra_Monville = 0.0; Ra = 2*Ra_Monville
-
-# Alternatively, you can specify directly the squared ratio of a reference Brunt-Väisälä freq. and the rotation rate.
-# The reference Brunt-Väisälä freq. squared is defined as -alpha*g0*temp_scale/ro. See the non-dimensionalization notes
-# in the documentation.
-
-# BV2 = -Ra * Ek**2 / Prandtl
-BV2 = 0.0
-
-#model = 'poly.simple.h5'  # Uses a polytropic structure model from GYRE
-model = 'theprofile.data'  # Uses a structure model from MESA
-gamma = 5./3.  # adiabatic index
-r_cutoff = 0.837  # Will zero out the BV freq above this radius
-
-
-# Additional arguments for 'Two zone' or 'User defined' case (modify if needed).
-rc   = 0.7  # transition radius
-h    = 0.1  # transition width
-rsy  = -1    # radial symmetry
-args = [rc, h, rsy]
-
-# Thermal boundary conditions
-# 0 for isothermal, theta=0
-# 1 for constant heat flux, (d/dr)theta=0
-bci_thermal = 0   # ICB
-bco_thermal = 0   # CMB
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-# --------------------------------------------------------------------------------------------- Compositional parameters
-# ----------------------------------------------------------------------------------------------------------------------
-compositional = 0  # Use 1 or 0 to include compositional transport or not (Boussinesq)
-
-# Schmidt number: ratio of viscous to compositional diffusivity
-Schmidt = 1.0
-# "Compositional" Ekman number
-Ecomp = Ek/Schmidt
-
-# Background isentropic composition gradient dC/dr choices, uncomment the appropriate line below:
-comp_background = 'internal'      # dC/dr = -beta * r         comp_scale = beta * ro**2
-# comp_background = 'differential'  # dC/dr = -beta * r**-2     comp_scale = Ci-Co
-
-# Compositional Rayleigh number
-Ra_comp = 0.0
-# Ra_comp_Silva = 0.0; Ra_comp = Ra_comp_Silva * (1/(1-ricb))**6
-# Ra_comp_Monville = 0.0; Ra_comp = 2*Ra_comp_Monville
-
-# Alternatively, specify directly the squared ratio of a reference compositional Brunt-Väisälä frequency
-# and the rotation rate.
-# BV2_comp = -Ra_comp * Ek**2 / Schmidt
-BV2_comp = 0.0
-
-# Additional arguments for 'Two zone' or 'User defined' case (modify if needed).
-rcc  = 0.7  # transition radius
-hc   = 0.1  # transition width
-rsyc = -1    # radial symmetry
-args_comp = [rcc, hc, rsyc]
-
-# Compositional boundary conditions
-# 0 for constant composition, xi=0
-# 1 for constant flux, (d/dr)xi=0
-bci_compositional = 1   # ICB
-bco_compositional = 1   # CMB
-
-
-
 # ----------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------- Unit of time and force switches
 # ----------------------------------------------------------------------------------------------------------------------
@@ -243,9 +90,9 @@ bco_compositional = 1   # CMB
 # OmgTau = 1/Em  # Magnetic diffusion time scale
 
 Gaspard = 1.0  # Omega*Tau                   Coriolis force factor. Set to 1 for unit time Tau = 1/Omega
-Beyonce = 1  # (N0*Tau)**2                 Buoyancy force factor. Set to 1 for unit time Tau = 1/N0 = sqrt(r0/g0)
+Beyonce = 0  # (N0*Tau)**2                 Buoyancy force factor. Set to 1 for unit time Tau = 1/N0 = sqrt(r0/g0)
 Hendrik = 0  # (Tau*B0/r0)**2/(rho0*mu0)   Lorentz force factor. Set to 1 for Alfven time scale
-ViscosD = 0  # nu0 * Tau / r0**2           Viscous force factor. Set to 1 for viscous diffusion time scale
+ViscosD = 1e-4  # nu0 * Tau / r0**2           Viscous force factor. Set to 1 for viscous diffusion time scale. This is the Ekman number if Tau = 1/Omega
 ThermaD = 0  # kappa0 * Tau / r0**2        Thermal diffusion factor. Set to 1 for thermal diffusion time scale
 MagnetD = 0  # eta0 * Tau / r0**2          Magnetic diffusion factor. Set to 1 for magnetic diffusion time scale
 
@@ -269,7 +116,6 @@ lmax = int( 2*ncpus*( np.floor_divide( g*N, 2*ncpus ) ) + m - 1 )
 # lmax = (2*ncpus*2 + m - 1)
 
 
-
 # ----------------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------- SLEPc solver options
 # ----------------------------------------------------------------------------------------------------------------------
@@ -285,7 +131,7 @@ if track_target == 1 :  # read target from file and sets target accordingly
     itau = tt[1]
 else:                   # set target manually
     rtau = 0
-    itau = -0.49
+    itau = -0.23
 
 # tau is the actual target for the solver
 # real part is damping
@@ -308,19 +154,8 @@ maxit = 50
 
 # Tolerance for solver
 tol = 1e-15
-# Tolerance for the thermal/compositional matrix
-tol_tc = 1e-6
 
-'''
-# Check if anything is broken
 
-def runChecks():
-    if ricb == 0 and g2 == 1:
-        print("Cannot have 1/r^2 gravity when ricb = 0")
-        sys.exit()
-
-runChecks()
-'''
 # ----------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------

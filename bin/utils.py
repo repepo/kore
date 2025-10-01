@@ -7,6 +7,7 @@ import scipy.fftpack as sft
 import numpy.polynomial.chebyshev as ch
 import numpy as np
 import parameters as par
+import radial_profiles as rap
 
 '''
 A library of various function definitions and utilities
@@ -43,121 +44,68 @@ if m_bot == 0: m_bot = 2
 lmax_top = lmax + 1 + (1-2*np.sign(m))*s
 lmax_bot = lmax + 1 + (1-2*np.sign(m))*(1-s)
 
-beta_actual = 0
-if par.B0 in ['axial','dipole','G21 dipole','Luo_S1']:
-    symmB0 = -1
-    B0_l   =  1
-elif par.B0 == 'Luo_S2':
-    symmB0 = 1
-    B0_l   = 2
-elif par.B0 == 'FDM':
-    symmB0 = int((-1)**par.B0_l)
-    B0_l   = par.B0_l
 
-bsymm = par.symm * symmB0  # induced magnetic field (b) symmetry follows from u and B0
-
-B0list = ['axial', 'dipole', 'G21 dipole', 'Luo_S1', 'Luo_S2', 'FDM']
-B0type = B0list.index(par.B0)
-
-if par.innercore == 'insulator':
-    innercore_mag_bc = 0
-elif par.innercore == 'TWA':
-    innercore_mag_bc = 1
-
-if par.mantle == 'insulator':
-    mantle_mag_bc = 0
-elif par.mantle == 'TWA':
-    mantle_mag_bc = 1
-
-if par.thermal:
-    thermal_heating_list = ['internal', 'differential', 'two zone', 'user defined']
-    heating = thermal_heating_list.index(par.heating)
-
-compositional_background_list = ['internal', 'differential']
-compositional_background = compositional_background_list.index(par.comp_background)
 
 # ----------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
 
+def decode_label(labl):
+
+    howlong = len(labl)  
+    section = labl[0]        # this is 'u' or 'v'
+    rx      = int(labl[1])   # related to rpower
+    dx      = int(labl[-1])  # operators' derivative order
+
+    if par.ViscosD == 0:      # Inviscid
+        if section == 'u':    # we multiply the r̂⋅∇×∇× equations by r³ ρ²
+            rpower = 3 - rx
+            rhopower = 2
+        elif section == 'v':  # we multiply the r̂⋅∇× equations by r² ρ
+            rpower = 2 - rx
+            rhopower = 1 
+    else:                     # Viscous
+        if section == 'u':    # we multiply the r̂⋅∇×∇× equations by r⁵ ρ⁴
+            rpower = 5 - rx
+            rhopower = 4
+        elif section == 'v':  # we multiply the r̂⋅∇× equations by r³ ρ
+            rpower = 3 - rx
+            rhopower = 1        
+
+    if   howlong == 5 :  # sX_DX
+        muorder  = None
+        lhoorder = None
+    elif howlong == 8:   # sXmuX_DX
+        muorder  = int(labl[4])
+        lhoorder = None
+    elif howlong == 9:   # sXlhoX_DX
+        muorder  = None
+        lhoorder = int(labl[5])
+    elif howlong == 12:  # sXmuXlhoX_DX
+        muorder  = int(labl[4])
+        lhoorder = int(labl[8])
+
+    return (section, rpower, rhopower, muorder, lhoorder, dx)  
 
 
-def decode_label( labl ):
+
+def gimmedachebs( labl ):
     '''
-    Returns the stripped label, the indices rx, hx, dx, the section,
-    and up to two profile identifiers with their corresponding derivative order
-    [ lablx, rx, hx, dx, section, profid1, dp1, profid2, dp2 ]
-    '''
-
-    [ lablx, rx, hx, dx, section, profid1, dp1, profid2, dp2 ] = [ None ]*9
-
-    lablx   = labl[:-2]      # label without the section, e.g. without '_u' or '_v'
-    section = labl[-1]       # section
-    dx      = int(labl[-3])  # operator's derivative order
-    
-    if len(labl) == 11:  # variable density, anelastic
-        rx = int(labl[1])
-        profid1 = labl[2:6]
-
-
-    if labl[:2] == 'q1':
-        rx = 6  # this is an index, not a power, it corresponds to r**-1
-    elif labl[0] == 'r':
-        rx = int(labl[1])  # index of the power of r
-
-
-    if   len(labl) in [10, 15, 20]:  # h is there
-
-        hx = int(labl[4])
-
-        if len(labl) in [ 15, 20]:   # h and at least 1 profile
-            profid1 = labl[6:9]
-            dp1 = int(labl[9])
-
-            if len(labl) == 20:      # h and 2 profiles, e.g. 'r1_h0_rho2_eta1_D0_f'
-                profid1 = labl[11:14]
-                dp1 = int(labl[14])
-
-    elif len(labl) in [12, 17]:  # no h and at least 1 profile
-
-        profid1 = labl[3:6]
-        dp1 = int(labl[6])
-
-        if len(labl) == 17:  # no h and 2 profiles, e.g. 'r0_rho1_eta3_D2_u'
-
-            profid2 = labl[8:11]
-            dp2 = int(labl[11])
-
-    return [ lablx, rx, hx, dx, section, profid1, dp1, profid2, dp2 ]
-
-
-
-def labelit( labl, section, rplus=0):
-    '''
-    Appends a section string to each label in the list labl.
-    Optionally, it increases the r power in each label by rplus.
+    Returns the Chebyshev coefficients of the operator identified by labl with the form
+    sX_DX
+    sXmuX_DX
+    sXlhoX_DX
+    sXmuXlhoX_DX
+    s can be 'u' or 'v' and X is a digit integer
     '''
 
-    out = []
+    tol = 1e-9
+    args = decode_label(labl)  # (section, rpower, rhopower, muorder, lhoorder)
 
-    for labl1 in labl:
+    print('labl=',labl,'args=',args)
+    c0arg = chebco_f( rap.burrito, par.N, par.ricb, rcmb, tol, *args)
 
-        if rplus>0:  # increase the power of r in the label by rplus:
-
-            old_rpow = labl1[:2]
-            r_or_q = old_rpow[0]
-            if old_rpow == 'q1':
-                orpw = -1
-            else:
-                orpw = int(old_rpow[1])
-
-            new_rpow = r_or_q + str( orpw + rplus )
-            labl1 = labl1.replace(old_rpow, new_rpow, 1)
-
-        # append the appropriate section string
-        out += [ labl1 + '_' + section ]
-
-    return out
+    return c0arg
 
 
 
@@ -201,7 +149,7 @@ def remroco(matrix, overall_parity, vector_parity):
 
 
 
-def chebco_f(func,N,ricb,rcmb,tol,args=None):
+def chebco_f( func, N, ricb, rcmb, tol, *args):
     '''
     Returns the first N Chebyshev coefficients
     from 0 to N-1, of func(r)
@@ -214,10 +162,7 @@ def chebco_f(func,N,ricb,rcmb,tol,args=None):
     elif ricb == 0 :
         ri = rcmb * xi
 
-    if args is None:
-        tmp = sft.dct(func(ri))
-    else:
-        tmp = sft.dct(func(ri,args))
+    tmp = sft.dct( func(ri,*args) )
 
     out = tmp / N
     out[0] = out[0] / 2.
@@ -226,7 +171,7 @@ def chebco_f(func,N,ricb,rcmb,tol,args=None):
 
 
 
-def chebco_rf(func,rpower,N,ricb,rcmb,tol,args=None):
+def chebco_rf(func,rpower,N,ricb,rcmb,tol, *args):
     '''
     Returns the first N Chebyshev coefficients
     from 0 to N-1, of the function
@@ -240,10 +185,7 @@ def chebco_rf(func,rpower,N,ricb,rcmb,tol,args=None):
     elif ricb == 0 :
         ri = rcmb * xi
 
-    if args is None:
-        tmp = sft.dct(ri**rpower * func(ri))
-    else:
-        tmp = sft.dct(ri**rpower * func(ri,args))
+    tmp = sft.dct(ri**rpower * func(ri, args))
 
     out = tmp / N
     out[0] = out[0] / 2.
@@ -352,6 +294,7 @@ def cheb2Product(ck1, ck2, tol):
     return out
 
 
+
 def xcheb(r, ricb, rcmb):
     # returns points in the appropriate domain of the Cheb polynomial solutions
     # Domain [-1,1] corresponds to [ ricb,rcmb] if ricb>0
@@ -385,6 +328,17 @@ def funcheb(ck0, r, ricb, rcmb, n):
             out[:,j] = ch.chebval(x00, dk[:,j-1])  # and the derivatives
 
     return out
+
+
+
+def fundit( func, r, N, ricb, rcmb, Dorder, tol, *args):
+    
+    out = np.zeros_like(r)
+    ck  = chebco_f( func, N, ricb, rcmb, tol, args)
+    out = funcheb(ck, r, ricb, rcmb, Dorder)
+    
+    return out
+
 
 
 
@@ -551,8 +505,9 @@ def findbeta(args):
     beta1 = sol.x[0]
 
     return beta1
-if par.B0 == 'FDM':
-    beta_actual = findbeta([par.beta, B0_l, par.ricb])
+
+#if par.B0 == 'FDM':
+#    beta_actual = findbeta([par.beta, B0_l, par.ricb])
 
 
 
@@ -1117,81 +1072,6 @@ def marc_tide(omega, l, m, loc, N, ricb, rcmb):
                 out = -(8/np.sqrt(5))*C2*r4
 
     return out
-
-
-
-def eccen_tide(m, eta, boundary):
-    '''
-    Eccentricity tide as boundary forcing.
-    Computed by Jeremy
-    eta = ricb
-    '''
-
-    if boundary == 'cmb':
-
-        if m == -2:
-
-            P = (3.00927601455473e-7 + 9.923006738722803e-7*(-0.8809523809523809 + eta) + 2.0022902696912132e-6*(-0.8809523809523809 + eta)**2 \
-            + 2.078150971132207e-6*(-0.8809523809523809 + eta)**3)/(0.9796806966104893 + 10.138063592395676*(-0.8809523809523809 + eta) \
-            + 22.793605369253733*(-0.8809523809523809 + eta)**2 + 49.52238501116611*(-0.8809523809523809 + eta)**3)
-
-            dP = (3.6923409583928235e-8 + 5.525597059314317e-7*(-0.8809523809523809 + eta) + 1.491072486300637e-6*(-0.8809523809523809 + eta)**2 \
-            + 1.7131360325476716e-6*(-0.8809523809523809 + eta)**3)/(0.990016066975477 + 10.903688391808103*(-0.8809523809523809 + eta) \
-            + 28.973467794986213*(-0.8809523809523809 + eta)**2 + 54.35051022571307*(-0.8809523809523809 + eta)**3)
-
-        elif m == 0:
-
-            P = (-1.0530272472650882e-7 - 3.4723290320109935e-7*(-0.8809523809523809 + eta) - 7.006556396692487e-7*(-0.8809523809523809 + eta)**2 \
-            - 7.272013553918712e-7*(-0.8809523809523809 + eta)**3)/(0.9796806966105374 + 10.138063592396957*(-0.8809523809523809 + eta) \
-            + 22.793605369262107*(-0.8809523809523809 + eta)**2 + 49.52238501117491*(-0.8809523809523809 + eta)**3)
-
-            dP = (-1.2920501863486681e-8 - 1.933556188506115e-7*(-0.8809523809523809 + eta) - 5.217666801343201e-7*(-0.8809523809523809 + eta)**2 \
-            - 5.994727342457128e-7*(-0.8809523809523809 + eta)**3)/(0.990016066975396 + 10.903688391807878*(-0.8809523809523809 + eta) \
-            + 28.973467794991336*(-0.8809523809523809 + eta)**2 + 54.35051022572941*(-0.8809523809523809 + eta)**3)
-
-        elif m == 2:
-
-            P = (-4.2989657350784934e-8 - 1.4175723912463045e-7*(-0.8809523809523809 + eta) - 2.860414670987557e-7*(-0.8809523809523809 + eta)**2 \
-            - 2.9687871016172726e-7*(-0.8809523809523809 + eta)**3)/(0.9796806966105591 + 10.1380635923966*(-0.8809523809523809 + eta) \
-            + 22.793605369256564*(-0.8809523809523809 + eta)**2 + 49.522385011165795*(-0.8809523809523809 + eta)**3)
-
-            dP = (-5.274772797703058e-9 - 7.893710084733917e-8*(-0.8809523809523809 + eta) - 2.1301035518586083e-7*(-0.8809523809523809 + eta)**2 \
-            - 2.4473371893559314e-7*(-0.8809523809523809 + eta)**3)/(0.990016066975294 + 10.903688391807277*(-0.8809523809523809 + eta) \
-            + 28.973467794994058*(-0.8809523809523809 + eta)**2 + 54.35051022573984*(-0.8809523809523809 + eta)**3)
-
-    elif boundary == 'icb':
-
-        if m == -2:
-
-            P = (1.450645275222846e-9 + 1.6226580438374377e-8*(-0.8809523809523809 + eta) + 3.8162533600883e-8*(-0.8809523809523809 + eta)**2 \
-            + 2.1621482543044536e-8*(-0.8809523809523809 + eta)**3)/(1.0040474189168584 + 9.816014125318514*(-0.8809523809523809 + eta) \
-            + 12.467747302017761*(-0.8809523809523809 + eta)**2 - 0.13326826070343542*(-0.8809523809523809 + eta)**3)
-
-            dP = (5.690951704457902e-11 + 6.365766130462465e-10*(-0.8809523809523809 + eta) + 1.4971346844873185e-9*(-0.8809523809523809 + eta)**2 \
-            + 8.482212366654875e-10*(-0.8809523809523809 + eta)**3)/(1.0040474189168667 + 9.816014125318599*(-0.8809523809523809 + eta) \
-            + 12.467747302017914*(-0.8809523809523809 + eta)**2 - 0.13326826070340814*(-0.8809523809523809 + eta)**3)
-
-        elif m == 0:
-
-            P = (-5.076201031536069e-10 - 5.678120334892032e-9*(-0.8809523809523809 + eta) - 1.3354104944854432e-8*(-0.8809523809523809 + eta)**2 \
-            - 7.565942816136093e-9*(-0.8809523809523809 + eta)**3)/(1.0040474189168602 + 9.81601412531852*(-0.8809523809523809 + eta) \
-            + 12.467747302017683*(-0.8809523809523809 + eta)**2 - 0.13326826070345546*(-0.8809523809523809 + eta)**3)
-
-            dP = (-1.991418260963427e-11 - 2.22755412021775e-10*(-0.8809523809523809 + eta) - 5.238880076023669e-10*(-0.8809523809523809 + eta)**2 \
-            - 2.96815602688989e-10*(-0.8809523809523809 + eta)**3)/(1.0040474189168587 + 9.816014125318501*(-0.8809523809523809 + eta) \
-            + 12.46774730201766*(-0.8809523809523809 + eta)**2 - 0.13326826070345907*(-0.8809523809523809 + eta)**3)
-
-        elif m == 2:
-
-            P = (-2.072350393175482e-10 - 2.3180829197677505e-9*(-0.8809523809523809 + eta) - 5.451790514411792e-9*(-0.8809523809523809 + eta)**2 \
-            - 3.0887832204348696e-9*(-0.8809523809523809 + eta)**3)/(1.0040474189168525 + 9.816014125318436*(-0.8809523809523809 + eta) \
-            + 12.46774730201756*(-0.8809523809523809 + eta)**2 - 0.13326826070347508*(-0.8809523809523809 + eta)**3)
-
-            dP = (-8.129931006368303e-12 - 9.093951614946213e-11*(-0.8809523809523809 + eta) - 2.138763834981828e-10*(-0.8809523809523809 + eta)**2 \
-            - 1.2117446238077878e-10*(-0.8809523809523809 + eta)**3)/(1.0040474189168571 + 9.816014125318477*(-0.8809523809523809 + eta) \
-            + 12.467747302017562*(-0.8809523809523809 + eta)**2 - 0.13326826070347858*(-0.8809523809523809 + eta)**3)
-
-    return np.array([P,dP])
 
 
 

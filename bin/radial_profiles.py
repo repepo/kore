@@ -7,334 +7,117 @@ import parameters as par
 
 
 
-def density(r, args):  # rᵃ ρ
+def density(r, rpower):  # rᵃ ρ
 
-    rpower = args
     out = np.zeros_like(r)
     out = (1-r**2)**par.density_beta
+
+    return (r**rpower)*out
+    
+    
+    
+def viscosity(r, rpower):  # rᵃ ν
+
+    out = np.ones_like(r)
 
     return (r**rpower)*out
 
 
 
-def ddensity(r, args):  # rᵃ ρ'
+def dynamic_viscosity(r, rpower):  # μ = ρ ν
 
-    [Dorder, rpower, tol] = args 
-    dck = ut.chebco_rf( density, 0, par.N, par.ricb, ut.rcmb, tol, 0)
-    out = ut.funcheb( dck, r, par.ricb, ut.rcmb, Dorder)
-
-    return (out.T*(r**rpower)).T
-
-
-
-def d1_density(r, args):
-    
-    [Dorder, rpower, tol] = args 
-    out = ddensity(r, [1,0,tol])[:,1]
-
-    return out
-
-
-def d2_density(r, args):
-    
-    [Dorder, rpower, tol] = args 
-    out = ddensity(r, [2,0,tol])[:,2]
-
-    return out
-
-
-def density2(r, args): # rᵃ ρ²
-
-    rpower = args
     out = np.zeros_like(r)
-    out = density(r, 0) * density(r, rpower)
+    out = density(r,rpower) * viscosity(r,0)
 
     return out
 
 
 
-def logrho1(r, args):  # rᵃ ρ ρ'
-
-    [rpower, tol] = args 
-    out = np.zeros_like(r)
-    out = density(r, rpower) * ddensity(r, [1, 0, tol])[:,1]
+def densityX(r, Dorder):  # derivatives of ρ(r)
+    
+    tol = 1e-12
+    out = ut.fundit( density, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)
 
     return out
 
 
 
-def logrho2(r, args):  # rᵃ (ρ ρ'' - ρ'ρ')
+def rhoX(r, *args): # rᵃ ρᵇ
 
-    [rpower, tol] = args
+    (rpower, rhopower) = args
     out = np.zeros_like(r)
-    out = density(r, 0) * ddensity(r, [2, 0, tol])[:,2] - ( ddensity(r, [1, 0, tol])[:,1] )**2
+    out = density(r, 0)**rhopower
 
-    return (out.T*(r**rpower)).T
-
-
-
-# def twozone(r,args):
-#     '''
-#     Symmetrized dT/dr (dimensionless), extended to negative r
-#     rc is the transition radius, h the transition width, sym is 1 or -1
-#     depending on the radial parity desired
-#     ** Neutrally buoyant inner zone, stratified outer zone ** (Vidal2015)
-#     '''
-#     rc  = args[0]
-#     h   = args[1]
-#     sym = args[2]
-
-#     out = np.zeros_like(r)
-#     for i,x in enumerate(r):
-#         if x >= 0 :
-#             out[i] = (1 + np.tanh( 2*(x-rc)/h  ))/2
-#         elif x < 0 :
-#             out[i] = sym*(1 + np.tanh( 2*(abs(x)-rc)/h  ))/2
-#     return out
+    return (r**rpower)*out
 
 
 
-# def BVprof(r,args=None):
-#     '''
-#     Symmetrized dT/dr (dimensionless), extended to negative r.
-#     Define this function so that it is an odd function of r
-#     '''
-#     out = np.zeros_like(r)
-#     for i,x in enumerate(r):
-#         out[i] = x         # dT/dr propto r like in Dintrans1999
-#         #out[i] = x*abs(x)  # dT/dr propto r^2
-#         #out[i] = x**3      # dT/dr propto r^3
-#         #rc = args[0]
-#         #h  = args[1]
-#         #if abs(x) < rc/2 :
-#         #    out[i] = np.tanh( 4*x/h )
-#         #elif x >= rc/2 :
-#         #    out[i] = 0.5*(1 - np.tanh( 4*(x-rc)/h  ))
-#         #elif x <= -rc/2 :
-#         #    out[i] = -0.5*(1 - np.tanh( 4*(abs(x)-rc)/h  ))
-#     return out
+def lhoX(r, lhoorder):  # ρⁿ (ln ρ)⁽ⁿ⁾
+    '''
+    Returns the lhoorder derivative of (ln ρ)
+    multiplied by the lhoorder power of ρ
+    in order to cancel any ρ in the denominator.
+    '''
+
+    out = np.zeros_like(r)
+    dd = densityX(r, lhoorder)
+    d0 = dd[:,0]
+
+    if lhoorder == 1:
+        d1 = dd[:,1]
+        out = d1
+    elif lhoorder == 2:
+        d1 = dd[:,1]; d2 = dd[:,2]
+        out = d0 * d2 - d1**2
+    elif lhoorder == 3:
+        d1 = dd[:,1]; d2 = dd[:,2]; d3 = dd[:,3]
+        out = 2*d1**3 -3*d0*d1*d2 +(d0**2)*d3
+    elif lhoorder == 4:
+        d1 = dd[:,1]; d2 = dd[:,2]; d3 = dd[:,3]; d4 = dd[:,4]
+        out = -6*d1**4 +12*d0*(d1**2)*d2 -4*(d0**2)*d1*d3 - 3*(d0**2)*(d2**2) +(d0**3)*d4
+
+    return out
 
 
 
-# #-------------------------------------------------------------------------------------------------------------
-# # -------------------------------------------------------------------------- User-provided background profiles
-# #-------------------------------------------------------------------------------------------------------------
+def rhoXlhoX(r, *args):  # ρᵃ (ln ρ)⁽ᵇ⁾
 
-# def density(r):
-#     '''
-#     Density, normalized by its value at the star's center.
-#     '''
-#     #m = gy.read_model(par.model)
-#     #xm = m['x']
-#     #ym = m['rho/rho_0']
-#     prf = mr.MesaData(par.model)
-#     xm = np.flip(prf.data('radius_cm')) 
-#     ym = np.flip(prf.data('density'))
-#     interp = si.Akima1DInterpolator(xm/xm[-1], ym/ym[0])
-#     out = np.zeros_like(r)
-#     for i,x in enumerate(r):
-#         if x>=0:
-#             out[i] = interp(x)
-#         else:
-#             out[i] = interp(-x)  # even function of r
-#     return out  #even
+    out = np.zeros_like(r)
+    (rhopower, lhoorder) = args
+    delta = rhopower - lhoorder
+    if delta == 0:
+        out = lhoX(r,lhoorder)
+    elif delta>0:
+        out = rhoX(r, 0, delta) * lhoX(r, lhoorder)
+
+    return out
 
 
-# def gravity(r):
-#     '''
-#     Magnitude of the gravitational acceleration, normalized by its value at the star's surface. 
-#     '''
-#     #m = gy.read_model(par.model)
-#     #xm = m['x']
-#     #ym = m['dtheta']
-#     prf = mr.MesaData(par.model)
-#     xm = np.flip(prf.data('radius_cm'))
-#     ym = np.flip(prf.data('grav'))
-#     interp = si.Akima1DInterpolator(xm/xm[-1], ym/ym[-1])
-#     out = np.zeros_like(r)
-#     for i,x in enumerate(r):
-#         if x>=0:
-#             out[i] = interp(x)
-#         else:
-#             out[i] = -interp(-x)  # odd function of r
-#     return out  # odd
 
+def muX(r, Dorder):
+
+    tol = 1e-12
+    out = ut.fundit( dynamic_viscosity, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
+
+    return out
+
+
+
+def burrito(r, *args):
+
+    #print('burrito args=',args)
+    (secx, rpower, rhopower, muorder, lhoorder, dx) = args
+
+    if (lhoorder == None) and (muorder == None):
+        out = rhoX(r, rpower, rhopower)
     
-# def temperature(r):
-#     '''
-#     Temperature, normalized by its value at the star's center.
-#     '''
-#     #m = gy.read_model(par.model)
-#     #xm = m['x']
-#     #ym = m['theta']
-#     prf = mr.MesaData(par.model)
-#     xm = np.flip(prf.data('radius_cm'))
-#     ym = np.flip(prf.data('temperature'))
-#     interp = si.Akima1DInterpolator(xm/xm[-1], ym/ym[0])
-#     out = np.zeros_like(r)
-#     for i,x in enumerate(r):
-#         if x>=0:
-#             out[i] = interp(x)
-#         else:
-#             out[i] = interp(-x)  # even function of r
-#     return out
+    elif (lhoorder == None) and (muorder >= 0):
+        out = rhoX(r, rpower, rhopower) * muX(r, muorder)
 
+    elif (lhoorder in [1,2,3,4]) and (muorder == None):
+        out = (r**rpower) * rhoXlhoX(r, rhopower, lhoorder)
 
-# def BruVa2(r):
-#     '''
-#     The squared, dimensionless Brunt-Vaisala frequency, in units of GM/R^3. 
-#     '''
-#     #m = gy.read_model(par.model)
-#     #xm = m['x']
-#     #ym = m['dtheta']
+    elif (lhoorder in [1,2,3,4]) and (muorder >=0):
+        out = (r**rpower) * muX(r, muorder) * rhoXlhoX(r, rhopower, lhoorder)
 
-#     prf = mr.MesaData(par.model)
-#     xm = np.flip(prf.data('radius_cm'))
-#     ym = 3 * np.flip(prf.data('brunt_N2_dimensionless'))  # MESA uses 3*GM/R^3 instead of GM/R^3
-#     ym[xm/xm[-1]>par.r_cutoff] = 0  # zero out the atmosphere, stinkin atmosphere
-#     ym[ym<0]=0  # zero out convective zones
-
-#     interp = si.Akima1DInterpolator(xm/xm[-1], ym)  
-#     out = np.zeros_like(r)
-#     for i,x in enumerate(r):
-#         if x>=0:
-#             out[i] = interp(x)
-#         else:
-#             out[i] = interp(-x)  # even function of r
-#     #out = r**2-r**4  # even
-#     return out  # even
-
-
-# def viscosity(r):
-#     '''
-#     Kinematic viscosity (aka momentum diffusivity)
-#     '''
-#     out = np.zeros_like(r)
-#     return out  # even function of r
-
-        
-# def kappa(r):
-#     '''
-#     Thermal diffusivity
-#     '''
-#     out = np.ones_like(r)  # even function of r
-#     return out
-
-
-# # ---------------------------------------------------------------------------------------
-# # The functions below are directly linked to the ones above, no user intervention needed.
-# # ---------------------------------------------------------------------------------------
-
-# def rog(r):
-#     '''
-#     density * gravitational acceleration
-#     '''
-#     out = density(r) * gravity(r)  # even * odd = odd
-#     return out # odd function of r
-
-    
-# def krT(r):
-#     '''
-#     Thermal diffusivity * density * temperature
-#     '''
-#     out = kappa(r) * density(r) * temperature(r)
-#     return out  # even*even*even = even function of r
-
-    
-# def roT(r):
-#     '''
-#     density * temperature
-#     '''
-#     out = density(r) * temperature(r)
-#     return out  # even*even = even function of r
-
-
-# # def dTdr(r):
-# #     '''
-# #     Gradient of temperature.
-# #     '''
-# #     #dck = ut.chebify(tempe,1,par.tol)[:,1]
-# #     #out = ut.funcheb( dck, r, par.ricb, ut.rcmb, 0)
-# #     m = gy.read_model(par.model)
-# #     xm = m['x']
-# #     ym = m['dtheta'] * m['z'][-1] 
-# #     interp = si.make_interp_spline(xc, ym, k=3)
-# #     out = np.zeros_like(r)
-# #     for i,x in enumerate(r):
-# #         if x>=0:
-# #             out[i] = interp(x)
-# #         else:
-# #             out[i] = -interp(-x)  # odd
-# #     return out  # odd function of r
-
-
-# def TdS(r):
-#     '''
-#     r * temperature * entropy gradient (Glatzmaier2014, eq. 12.9),
-#     par.gamma is the adiabatic index (e.g. use par.gamma=5/3 for a monoatomic perfect gas)
-#     '''
-#     # m = gy.read_model(par.model)
-#     # z0 = m['z'][-1]
-#     # dtheta0 = m['dtheta'][-1]
-#     # n = m['n_poly'][-1]  # we assume there's just one single polytrope
-#     # gamma0 = (n+1) * z0 * (-dtheta0) * (1-1/par.gamma)
-#     # out = dTdr(r) + gamma0 * gravity(r)  # odd+odd = odd
-    
-#     prf = mr.MesaData(par.model)
-    
-#     xm = np.flip(prf.data('radius_cm'))
-#     r0 = xm[-1]  # star radius
-    
-#     g = np.flip(prf.data('grav'))
-#     g0 = g[-1]  # gravity at the surface
-    
-#     T = np.flip(prf.data('temperature'))
-#     T0 = T[0]  # temperature at the center
-    
-#     N2 = np.flip(prf.data('brunt_N2'))/(g0/r0)  # dimensionless BV freq squared (i.e. in units of GM/R^3)
-#     N2[xm/r0>par.r_cutoff] = 0  # zero out the atmosphere, stinkin atmosphere
-    
-#     ym = N2 * (T/T0) / (g/g0)  # if all variables dimensionless then T*(ds/dr) = N2*T/g
-#     ym[ym<0]=0  # zero out convective zones
-    
-#     interp = si.Akima1DInterpolator(xm/r0, ym)
-#     out = np.zeros_like(r)
-#     for i,x in enumerate(r):
-#         if x>=0:
-#             out[i] = interp(x)
-#         else:
-#             out[i] = -interp(-x)  # N2*T/g is an odd function of r
-    
-#     return out  # odd function of r
-
-
-# def tds(r):
-#     out = BruVa2(r) * temperature(r) / gravity(r)
-#     return out  # even * even / odd = odd
-
-# # --------------------------------------------------------------------------------
-# # --------------------------------------------------------------------------------
-
-
-
-
-# #------------------------------------------
-# # Magnetic : Variable conductivity
-# #------------------------------------------
-
-# def conductivity(r):
-#     '''
-#     This function needs to be an even function of r when ricb=0
-#     '''
-#     out = np.ones_like(r)
-#     return out
-
-
-# def magnetic_diffusivity(r):
-#     out = 1./conductivity(r)
-#     return out
-
-
-# def eta_rho(r):
-#     out = magnetic_diffusivity(r)*density(r)
-#     return out
+    return out

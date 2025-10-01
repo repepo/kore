@@ -25,7 +25,7 @@ import bc_variables as bv
 import parameters as par
 import utils as ut
 #import operators as op
-import operators_new as op
+import operators as op
 import radial_profiles as rap
 
 
@@ -48,7 +48,7 @@ def main():
     rank  = comm.Get_rank()
 
     ll_flo = ut.ell( par.m, par.lmax, par.symm)[:2]  # the ell indices for the flow u
-    ll_mag = ut.ell( par.m, par.lmax, par.symm*ut.symmB0)[:2]  # if B0 is antisymm then u has the opposite symm of b
+    #ll_mag = ut.ell( par.m, par.lmax, par.symm*ut.symmB0)[:2]  # if B0 is antisymm then u has the opposite symm of b
 
     if rank == 0:
         alltop, allbot = ll_flo
@@ -66,12 +66,12 @@ def main():
     comm.Scatter(alltop, loc_top, root=0)
     comm.Scatter(allbot, loc_bot, root=0)
 
-    if ut.symmB0 == 1:  # symmetric B0
-        loc_mag_f = loc_top
-        loc_mag_g = loc_bot
-    elif ut.symmB0 == -1:  # antisymmetric B0
-        loc_mag_f = loc_bot
-        loc_mag_g = loc_top
+    # if ut.symmB0 == 1:  # symmetric B0
+    #     loc_mag_f = loc_top
+    #     loc_mag_g = loc_bot
+    # elif ut.symmB0 == -1:  # antisymmetric B0
+    #     loc_mag_f = loc_bot
+    #     loc_mag_g = loc_top
 
 
     if par.forcing == 1: # -------------------------------------------------------------------------- Yufeng's forcing
@@ -1189,19 +1189,24 @@ def bc_u_spherical(l,loc):
     Spherical boundary conditions for the velocity field,
     either no-penetration (for the inviscid case), stress-free or no-slip.
     '''
-    inviscid = (par.Ek == 0) #boolean
+    inviscid = (par.ViscosD == 0) #boolean
+    
+    R  = ut.rcmb
+    Ri = par.ricb
 
-    '''
-    if par.anelastic == 1:
-        lho = ut.chebco_f( rap.log_density, par.N, par.ricb, ut.rcmb, 1e-9)
-        lho1_a = np.dot(lho, bv.Ta[:,1])  # icb
-        lho1_b = np.dot(lho, bv.Tb[:,1])  # cmb
-    else:
-        lho1_a = 0.
-        lho1_b = 0.
-    '''
+    # Density and up to 2nd derivative at the surface
+    rhbd = rap.densityX(1,2)
+    rhb0 = rhbd[:,0]  
+    rhb1 = rhbd[:,1]
+    rhb2 = rhbd[:,2]
 
-    L = l*(l+1)
+    # Density and up to 2nd derivative at the ICB
+    rhad = rap.densityX(Ri,2)
+    rha0 = rhad[:,0]  
+    rha1 = rhad[:,1]
+    rha2 = rhad[:,2]
+
+    L = l*(l+1) 
 
     if inviscid:
         num_rows_u = 1
@@ -1225,39 +1230,35 @@ def bc_u_spherical(l,loc):
 
         if inviscid:
 
-            out[ 0,:] = Tbu[:,0]  # u_r=0
+            out[ 0,:] = Tbu[:,0]  # P=0, no penetration
 
         else:
 
-            if par.bco == 0: # stress-free cmb
+            if par.bco == 0: # stress-free cmb, do not use this if density is zero at the surface
 
-                if par.forcing == 9:  # m=2 radial forcing
-                    out[ 0,:] = Tbu[:,0]  # P  = whatever we set on the B matrix
-                    out[ 1,:] = Tbu[:,2] - (2-L)*Tbu[:,0]/ut.rcmb**2  # Nat Schaeffer's bc notes, eq. 49: P''=(2-L)*P/rcmb^2
-                    #out[ 1,:] = Tbu[:,2]  # P''=0
-                else:
-                    out[ 0,:] = Tbu[:,0]  # P  =0
-                    out[ 1,:] = ut.rcmb*Tbu[:,2] - lho1_b*Tbu[:,1]  # rcmb*P'' - log rho'*P' =0
+                out[ 0,:] =   Tbu[:,0]  # P=0
+                out[ 1,:] =   Tbu[:,0] * ( (L-2)*(rhb0**2) - R*rhb0*rhb1 - (R**2)*(rhb1**2) + (R**2)*rhb0*rhb2 )   \
+                            + Tbu[:,1] * (R**2)*rhb0*rhb1                                                          \
+                            + Tbu[:,2] * (R**2)*(rhb0**2)
 
             elif par.bco == 1: # no-slip cmb
 
-                if par.forcing == 9:  # m=2 radial forcing
-                    out[ 0,:] = Tbu[:,0]             # P  = whatever we set on the B matrix
-                    out[ 1,:] = Tbu[:,1] + Tbu[:,0]  # P' + P/r = 0
-                    #out[ 1,:] = Tbu[:,1]             # P' = 0
-                else:
-                    out[ 0,:] = Tbu[:,0]  # P  =0
-                    out[ 1,:] = Tbu[:,1]  # P' =0
+                out[ 0,:] =   Tbu[:,0]  # P=0
+                out[ 1,:] =   Tbu[:,0] * ( rhb0 + R*rhb1 )   \
+                            + Tbu[:,1] * R*rhb0
 
             if par.ricb > 0:
 
-                if par.bci == 0: # stress-free icb
-                    out[ 2,:] = bv.Ta[:,0]  # P  =0
-                    out[ 3,:] = par.ricb * bv.Ta[:,2] - lho1_a * bv.Ta[:,1]   # ricb*P'' - log rho'*P' = 0
+                if par.bci == 0:  # stress-free icb
+                    out[ 2,:] =   bv.Ta[:,0]  # P=0
+                    out[ 3,:] =   bv.Ta[:,0] * ( (L-2)*(rha0**2) - Ri*rha0*rha1 - (Ri**2)*(rha1**2) + (Ri**2)*rha0*rha2 )   \
+                                + bv.Ta[:,1] * (Ri**2)*rha0*rha1                                                            \
+                                + bv.Ta[:,2] * (Ri**2)*(rha0**2)
 
                 elif par.bci == 1: # no-slip icb
-                    out[ 2,:] = bv.Ta[:,0]  # P  =0
-                    out[ 3,:] = bv.Ta[:,1]  # P' =0
+                    out[ 2,:] =   bv.Ta[:,0]  # P =0
+                    out[ 3,:] =   bv.Ta[:,0] * ( rha0 + Ri*rha1 )   \
+                                + bv.Ta[:,1] * Ri*rha0
 
         row0 = int(ut.N1*(l-ut.m_top)/2)
         col0 = int(ut.N1*(l-ut.m_top)/2)
@@ -1273,7 +1274,7 @@ def bc_u_spherical(l,loc):
             out = ss.dok_matrix((num_rows_v, ut.N1),dtype=complex)
 
             if   par.bco == 0: # stress-free cmb
-                out[ 0,:] = -ut.rcmb * Tbv[:,1] + (1+ut.rcmb*lho1_b)*Tbv[:,0]  # -rcmb*T'+(1+rcmb*log rho')*T=0
+                out[ 0,:] = R * Tbv[:,1] - Tbv[:,0]  # R*T'-T=0
 
             elif par.bco == 1: # no-slip cmb
                 out[ 0,:] = Tbv[:,0]  # T=0
@@ -1281,8 +1282,7 @@ def bc_u_spherical(l,loc):
             if par.ricb > 0 :
 
                 if   par.bci == 0: # stress-free icb
-                    out[ 1,:] = -par.ricb * bv.Ta[:,1] + (1+par.ricb*lho1_a)*bv.Ta[:,0]  # -ricb*T'+(1+ricb*log rho')*T=0
-                    #bv.Ta[:,1]-bv.Ta[:,0]/par.ricb  # T'-(T/r)=0
+                    out[ 1,:] = Ri * bv.Ta[:,1] - bv.Ta[:,0]
 
                 elif par.bci == 1: # no-slip icb
                     out[ 1,:] = bv.Ta[:,0]  # T=0
