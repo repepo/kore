@@ -96,13 +96,13 @@ def gimmedachebs( labl ):
     sXmuX_DX
     sXlhoX_DX
     sXmuXlhoX_DX
-    s can be 'u' or 'v' and X is a digit integer
+    s can be 'u' or 'v' and the X's are single digit integers (can be all different)
     '''
 
     tol = 1e-9
     args = decode_label(labl)  # (section, rpower, rhopower, muorder, lhoorder)
 
-    print('labl=',labl,'args=',args)
+    #print('labl=',labl,'args=',args)
     c0arg = chebco_f( rap.burrito, par.N, par.ricb, rcmb, tol, *args)
 
     return c0arg
