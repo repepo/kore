@@ -5,12 +5,15 @@ import numpy as np
 import parameters as par
 import utils as ut
 
+
+
 # In the following loop we read all the submatrices needed (as per submatrices.py),
 # and create corresponding operator names as global variables
 fname = [f for f in glob.glob('*.mtx')]
 for label in fname :
     varlabel = label[:-4]
     globals()[varlabel] = ss.csr_matrix(sio.mmread(label))
+
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -140,3 +143,54 @@ def viscous_diffusion(l, section, component, offdiag):  # ----------------------
                         + v1mu0_D2 )
 
     return par.ViscosD * out
+
+
+
+def buoyancy(l, section, component, offdiag): 
+
+    out = 0
+    L = l*(l+1)
+
+    if (section == 'u') and (offdiag == 0) :
+
+        out = L * u2rog0_D0
+
+    return par.Beyonce * out
+
+
+
+def entropy(l, section, component, offdiag):  # rʰ ρT s
+
+    out = 0
+    
+    if (section == 'h') and (offdiag == 0) :
+
+        out = h0roT0_D0
+
+    return out
+
+
+
+def thermal_advection(l, section, component, offdiag):  # −rʰ ρT(v⋅∇) S = −rʰ ρT vᵣ dS/dr
+
+    out = 0
+
+    if (section == 'h') and (component == 'upol') and (offdiag == 0) :
+
+        out = -L * h1roT0dSr0_D0
+    
+    return out
+
+
+
+def thermal_diffusion(l, section, component, offdiag):  # rʰ  ∇⋅(κρT ∇s)
+
+    out = 0
+
+    if (section == 'h') and (offdiag == 0) :
+
+        out = - L * h2krT0_D0                   \
+              + 2 * h1krT0_D1 + 2 * h0krT1_D1   \
+              +     h0krT0_D2 
+
+    return par.ThermaD * out  

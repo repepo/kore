@@ -30,7 +30,7 @@ compositional = 0
 # ------------------------------------------------------------------------------------------------- Structure parameters
 # ----------------------------------------------------------------------------------------------------------------------
 variable_density = 1
-density_beta = 0.
+density_beta = 2.0
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -92,7 +92,7 @@ projection = 1
 Gaspard = 1.0  # Omega*Tau                   Coriolis force factor. Set to 1 for unit time Tau = 1/Omega
 Beyonce = 0  # (N0*Tau)**2                 Buoyancy force factor. Set to 1 for unit time Tau = 1/N0 = sqrt(r0/g0)
 Hendrik = 0  # (Tau*B0/r0)**2/(rho0*mu0)   Lorentz force factor. Set to 1 for Alfven time scale
-ViscosD = 1e-4  # nu0 * Tau / r0**2           Viscous force factor. Set to 1 for viscous diffusion time scale. This is the Ekman number if Tau = 1/Omega
+ViscosD = 0  # nu0 * Tau / r0**2           Viscous force factor. Set to 1 for viscous diffusion time scale. This is the Ekman number if Tau = 1/Omega
 ThermaD = 0  # kappa0 * Tau / r0**2        Thermal diffusion factor. Set to 1 for thermal diffusion time scale
 MagnetD = 0  # eta0 * Tau / r0**2          Magnetic diffusion factor. Set to 1 for magnetic diffusion time scale
 
@@ -131,7 +131,7 @@ if track_target == 1 :  # read target from file and sets target accordingly
     itau = tt[1]
 else:                   # set target manually
     rtau = 0
-    itau = -0.23
+    itau = -0.32
 
 # tau is the actual target for the solver
 # real part is damping

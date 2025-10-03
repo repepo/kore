@@ -139,21 +139,21 @@ def main(ncpus):
         # Viscous diffusion
         if par.ViscosD > 0:
             arg2 += [ vP ]*29
-            labl += [ 'u1mu0lho4_D0', 'u1mu1lho3_D0', 'u1mu2lho2_D0', 
-                      'u2mu0lho3_D0', 'u2mu1lho2_D0', 'u2mu2lho1_D0',     
-                      'u3mu0lho2_D0', 'u3mu1lho1_D0', 'u3mu2_D0', 
-                      'u4mu0lho1_D0', 'u4mu1_D0'    , 'u5mu0_D0',
+            labl += [ 'u1moe0lho4_D0', 'u1moe1lho3_D0', 'u1moe2lho2_D0', 
+                      'u2moe0lho3_D0', 'u2moe1lho2_D0', 'u2moe2lho1_D0',     
+                      'u3moe0lho2_D0', 'u3moe1lho1_D0', 'u3moe2_D0', 
+                      'u4moe0lho1_D0', 'u4moe1_D0'    , 'u5moe0_D0',
 
-                      'u1mu0lho3_D1', 'u1mu1lho2_D1', 'u1mu2lho1_D1',
-                      'u2mu0lho2_D1', 'u2mu1lho1_D1', 'u3mu0lho1_D1', 
-                      'u3mu1_D1',
+                      'u1moe0lho3_D1', 'u1moe1lho2_D1', 'u1moe2lho1_D1',
+                      'u2moe0lho2_D1', 'u2moe1lho1_D1', 'u3moe0lho1_D1', 
+                      'u3moe1_D1',
 
-                      'u1mu0lho2_D2', 'u1mu1lho1_D2', 'u1mu2_D2',
-                      'u2mu0lho1_D2', 'u2mu1_D2'    , 'u3mu0_D2',
+                      'u1moe0lho2_D2', 'u1moe1lho1_D2', 'u1moe2_D2',
+                      'u2moe0lho1_D2', 'u2moe1_D2'    , 'u3moe0_D2',
                             
-                      'u1mu0lho1_D3', 'u1mu1_D3'    , 'u2mu0_D3',
+                      'u1moe0lho1_D3', 'u1moe1_D3'    , 'u2moe0_D3',
                         
-                      'u1mu0_D4' ] 
+                      'u1moe0_D4' ] 
 
         # -------------------------------------------------------------------------------------------------------------------------------------------
         # Matrices needed for the Navier-Stokes equation, single curl equations ------------------------------------------- NavStok 1curl - section v
@@ -170,9 +170,9 @@ def main(ncpus):
         # Viscous diffusion
         if par.ViscosD >0:
             arg2 += [ vT ]*5 
-            labl += [ 'v2mu1_D0', 'v3mu0_D0',
-                      'v1mu1_D1', 'v2mu0_D1',
-                      'v1mu0_D2' ]
+            labl += [ 'v2moe1_D0', 'v3moe0_D0',
+                      'v1moe1_D1', 'v2moe0_D1',
+                      'v1moe0_D2' ]
 
     # -------------------------------------------------------------------------------------------------------------------------------------------
     # Pre-process the list with multiplication matrices labels to avoid duplicates --------------------------------------------------------------
@@ -188,9 +188,10 @@ def main(ncpus):
 
     for k,labl1 in enumerate(labl) :
 
-        (secx, rpower, rhopower, muorder, lhoorder, dx) = ut.decode_label(labl1)
-        key1 = (rpower, rhopower, muorder, lhoorder, dx, arg2[k])  # reduced operator identifier
+        (secx, rpower, rhopower, func1, dorder1, func2, dorder2, dx) = ut.decode_label(labl1)
+        key1 = (rpower, rhopower, func1, dorder1, func2, dorder2, dx, arg2[k])  # reduced operator identifier
         opkey += [ key1 ]
+        #print(key1)
 
         if not(key1 in pkey):  # if identifier not in the pkey list then we compute the matrix
 
@@ -221,8 +222,10 @@ def main(ncpus):
     # and change basis accordingly:
     for k,labl1 in enumerate(labl) :
 
+        print(labl1)
         secx = labl1[0]
-        (rpower, rhopower, muorder, lhoorder, dx, vector_parity) = opkey[k]
+        #(rpower, rhopower, muorder, lhoorder, dx, vector_parity) = opkey[k]
+        (rpower, rhopower, func1, dorder1, func2, dorder2, dx, vector_parity) = opkey[k]
         gbx = gebasis[section.index(secx)]  # order of the Gegenbauer basis according to the section
 
         # Multiply by appropriate derivative matrix on the right and change to C^(4), C^(3) or C^(2) basis depending on section
@@ -234,7 +237,8 @@ def main(ncpus):
         # If no solid inner core then remove unneeded rows and cols
         if par.ricb == 0 :
 
-            operator_parity = 1-(( rpower + (muorder or 0) + (lhoorder or 0) + dx )%2)*2  # we use 'or 0' to give 0 when muorder or lhoorder are None
+            #operator_parity = 1-(( rpower + (muorder or 0) + (lhoorder or 0) + dx )%2)*2  # we use 'or 0' to give 0 when muorder or lhoorder are None
+            operator_parity = 1-(( rpower + (dorder1 or 0) + (dorder2 or 0) + dx )%2)*2  # we use 'or 0' to give 0 when dorder is None
             overall_parity  = vector_parity * operator_parity
             matrix = ut.remroco( matrix, overall_parity, vector_parity)
 

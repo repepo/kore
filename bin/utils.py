@@ -51,41 +51,41 @@ lmax_bot = lmax + 1 + (1-2*np.sign(m))*(1-s)
 # ----------------------------------------------------------------------------------------------------------------------
 
 def decode_label(labl):
+    
+    (section, rpower, rhopower, func1, dorder1, func2, dorder2, dx) = (None, None, None, None, None, None, None, None)
 
     howlong = len(labl)  
-    section = labl[0]        # this is 'u' or 'v'
+    section = labl[0]        # this is 'u' or 'v' or 'h'
     rx      = int(labl[1])   # related to rpower
-    dx      = int(labl[-1])  # operators' derivative order
+    dx      = int(labl[-1])  # operators' derivative order       
 
-    if par.ViscosD == 0:      # Inviscid
-        if section == 'u':    # we multiply the r̂⋅∇×∇× equations by r³ ρ²
-            rpower = 3 - rx
-            rhopower = 2
-        elif section == 'v':  # we multiply the r̂⋅∇× equations by r² ρ
-            rpower = 2 - rx
-            rhopower = 1 
-    else:                     # Viscous
-        if section == 'u':    # we multiply the r̂⋅∇×∇× equations by r⁵ ρ⁴
-            rpower = 5 - rx
-            rhopower = 4
-        elif section == 'v':  # we multiply the r̂⋅∇× equations by r³ ρ
-            rpower = 3 - rx
-            rhopower = 1        
+    if section == 'u':
+        if par.ViscosD == 0:
+            rpower = 3 - rx ; rhopower = 2   # Inviscid, we multiply the r̂⋅∇×∇× equations by r³ ρ²
+        else:
+            rpower = 5 - rx ; rhopower = 4   # Viscous, we multiply the r̂⋅∇×∇× equations by r⁵ ρ⁴
+    
+    elif section == 'v':
+        if par.ViscosD == 0:
+            rpower = 2 - rx ; rhopower = 1   # Inviscid, we multiply the r̂⋅∇× equations by r² ρ
+        else:
+            rpower = 3 - rx ; rhopower = 1   # Viscous, we multiply the r̂⋅∇× equations by r³ ρ
+    
+    elif section == 'h':
+        if par.ThermaD == 0:
+            rpower = 1 - rx ; rhopower = 0   # Adiabatic motion, we multiply the thermal equation by r
+        else:
+            rpower = 2 - rx ; rhopower = 0   # Non-adiabatic motion, we multiply the thermal equation by r²
 
-    if   howlong == 5 :  # sX_DX
-        muorder  = None
-        lhoorder = None
-    elif howlong == 8:   # sXmuX_DX
-        muorder  = int(labl[4])
-        lhoorder = None
-    elif howlong == 9:   # sXlhoX_DX
-        muorder  = None
-        lhoorder = int(labl[5])
-    elif howlong == 12:  # sXmuXlhoX_DX
-        muorder  = int(labl[4])
-        lhoorder = int(labl[8])
+    if howlong in [9,13]:   # sXfu1X_DX or sXfu1Xfu2X_DX
+        func1   = labl[2:5]
+        dorder1 = int(labl[5])       
+        
+        if howlong == 13:
+            func2   = labl[6:9]
+            dorder2 = int(labl[9])
 
-    return (section, rpower, rhopower, muorder, lhoorder, dx)  
+    return (section, rpower, rhopower, func1, dorder1, func2, dorder2, dx)
 
 
 
@@ -93,14 +93,13 @@ def gimmedachebs( labl ):
     '''
     Returns the Chebyshev coefficients of the operator identified by labl with the form
     sX_DX
-    sXmuX_DX
-    sXlhoX_DX
-    sXmuXlhoX_DX
-    s can be 'u' or 'v' and the X's are single digit integers (can be all different)
+    sXfu1X_DX
+    sXfu1Xfu2X_DX
+    s can be 'u' or 'v' or 'h' and the X's are single digit integers (can be all different)
     '''
 
     tol = 1e-9
-    args = decode_label(labl)  # (section, rpower, rhopower, muorder, lhoorder)
+    args = decode_label(labl)  # (section, rpower, rhopower, func1, dorder1, func2, dorder2, dx)
 
     #print('labl=',labl,'args=',args)
     c0arg = chebco_f( rap.burrito, par.N, par.ricb, rcmb, tol, *args)
