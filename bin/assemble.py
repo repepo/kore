@@ -510,7 +510,7 @@ def main():
                 row = 2*(par.hydro + par.magnetic)*nb*ut.N1 + ( rank*bpp + k )* ut.N1
                 col = row
 
-                mtx = op.theta(l,'h','', 0)
+                mtx = op.entropy(l,'h','', 0)
 
                 if par.hydro == 0:
                     if l == loc_top[0]:  # create loc_list if first iteration

@@ -118,29 +118,29 @@ def viscous_diffusion(l, section, component, offdiag):  # ----------------------
 
         if section == 'u' and component == 'upol':
 
-            out = L * ( -   u1mu0lho4_D0 - 2*      u1mu1lho3_D0 -         u1mu2lho2_D0 
-                        - 3*u2mu0lho3_D0 - 2*      u2mu1lho2_D0 +         u2mu2lho1_D0 
-                        + L*u3mu0lho2_D0 + 2*L*    u3mu1lho1_D0 + (2-L)*  u3mu2_D0 
-                        + L*u4mu0lho1_D0 - 2*(1+L)*u4mu1_D0     + L*(2-L)*u5mu0_D0
+            out = L * ( -   u1moe0lho4_D0 - 2*      u1moe1lho3_D0 -         u1moe2lho2_D0 
+                        - 3*u2moe0lho3_D0 - 2*      u2moe1lho2_D0 +         u2moe2lho1_D0 
+                        + L*u3moe0lho2_D0 + 2*L*    u3moe1lho1_D0 + (2-L)*  u3moe2_D0 
+                        + L*u4moe0lho1_D0 - 2*(1+L)*u4moe1_D0     + L*(2-L)*u5moe0_D0
 
-                        - 3*u1mu0lho3_D1 - 4*u1mu1lho2_D1 - u1mu2lho1_D1
-                        - 6*u2mu0lho2_D1 - 2*u2mu1lho1_D1 + L*u3mu0lho1_D1
-                        + 2*(L+1)*u3mu1_D1
+                        - 3*u1moe0lho3_D1 - 4*u1moe1lho2_D1 - u1moe2lho1_D1
+                        - 6*u2moe0lho2_D1 - 2*u2moe1lho1_D1 + L*u3moe0lho1_D1
+                        + 2*(L+1)*u3moe1_D1
 
-                        - 3*u1mu0lho2_D2 - 2*u1mu1lho1_D2 - u1mu2_D2
-                        - 3*u2mu0lho1_D2 - 4*u2mu1_D2 + 2*L*u3mu0_D2
+                        - 3*u1moe0lho2_D2 - 2*u1moe1lho1_D2 - u1moe2_D2
+                        - 3*u2moe0lho1_D2 - 4*u2moe1_D2 + 2*L*u3moe0_D2
                         
-                        - u1mu0lho1_D3 - 2*u1mu1_D3 - 4*u2mu0_D3
+                        - u1moe0lho1_D3 - 2*u1moe1_D3 - 4*u2moe0_D3
                     
-                        - u1mu0_D4 )
+                        - u1moe0_D4 )
 					
         elif section == 'v' and component == 'utor':
 
-            out = L * ( - v2mu1_D0 - L*v3mu0_D0
+            out = L * ( - v2moe1_D0 - L*v3moe0_D0
             
-                        + v1mu1_D1 + 2*v2mu0_D1
+                        + v1moe1_D1 + 2*v2moe0_D1
             
-                        + v1mu0_D2 )
+                        + v1moe0_D2 )
 
     return par.ViscosD * out
 
@@ -174,6 +174,7 @@ def entropy(l, section, component, offdiag):  # rʰ ρT s
 def thermal_advection(l, section, component, offdiag):  # −rʰ ρT(v⋅∇) S = −rʰ ρT vᵣ dS/dr
 
     out = 0
+    L = l*(l+1)
 
     if (section == 'h') and (component == 'upol') and (offdiag == 0) :
 
@@ -186,7 +187,8 @@ def thermal_advection(l, section, component, offdiag):  # −rʰ ρT(v⋅∇) S 
 def thermal_diffusion(l, section, component, offdiag):  # rʰ  ∇⋅(κρT ∇s)
 
     out = 0
-
+    L = l*(l+1)
+    
     if (section == 'h') and (offdiag == 0) :
 
         out = - L * h2krT0_D0                   \

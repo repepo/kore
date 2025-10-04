@@ -21,7 +21,7 @@ aux2 = 0
 
 # ---------------
 magnetic      = 0
-thermal       = 0
+thermal       = 1
 compositional = 0
 # ---------------
 
@@ -79,22 +79,33 @@ forcing_amplitude_icb = 0.0
 projection = 1
 
 
+
+# ----------------------------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------------------- Thermal parameters
+# ----------------------------------------------------------------------------------------------------------------------
+# Thermal boundary conditions
+# 0 for isothermal, theta=0
+# 1 for constant heat flux, (d/dr)theta=0
+bci_thermal = 0   # ICB
+bco_thermal = 0   # CMB
+
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------- Unit of time and force switches
 # ----------------------------------------------------------------------------------------------------------------------
-# Choose the time scale by specifying the dimensionless angular velocity using the desired time scale. Please see
-# the non-dimensionalization notes in the documentation. Uncomment your choice:
 # OmgTau = 1     # Rotation time scale
 # OmgTau = 1/Ek  # Viscous diffusion time scale
 # OmgTau = 1/Le  # Alfvén time scale
 # OmgTau = 1/Em  # Magnetic diffusion time scale
+# When choosing Gaspard = 1 then Beyonce = (N/Omega)**2, Hendrik = Le**2, ViscosD = Ek, ThermaD = Ek/Prandtl, MagnetD = Em
 
-Gaspard = 1.0  # Omega*Tau                   Coriolis force factor. Set to 1 for unit time Tau = 1/Omega
-Beyonce = 0  # (N0*Tau)**2                 Buoyancy force factor. Set to 1 for unit time Tau = 1/N0 = sqrt(r0/g0)
-Hendrik = 0  # (Tau*B0/r0)**2/(rho0*mu0)   Lorentz force factor. Set to 1 for Alfven time scale
-ViscosD = 0  # nu0 * Tau / r0**2           Viscous force factor. Set to 1 for viscous diffusion time scale. This is the Ekman number if Tau = 1/Omega
-ThermaD = 0  # kappa0 * Tau / r0**2        Thermal diffusion factor. Set to 1 for thermal diffusion time scale
-MagnetD = 0  # eta0 * Tau / r0**2          Magnetic diffusion factor. Set to 1 for magnetic diffusion time scale
+Gaspard = 1.0       # Omega*Tau                   Coriolis force factor. Set to 1 for unit time Tau = 1/Omega
+Beyonce = 10        # (N0*Tau)**2                 Buoyancy force factor. Set to 1 for unit time Tau = 1/N0 = sqrt(r0/g0)
+Hendrik = 0         # (Tau*B0/r0)**2/(rho0*mu0)   Lorentz force factor. Set to 1 for Alfven time scale
+ViscosD = 1e-3      # nu0 * Tau / r0**2           Viscous force factor. Set to 1 for viscous diffusion time scale
+ThermaD = 1e-3      # kappa0 * Tau / r0**2        Thermal diffusion factor. Set to 1 for thermal diffusion time scale
+MagnetD = 0         # eta0 * Tau / r0**2          Magnetic diffusion factor. Set to 1 for magnetic diffusion time scale
 
 
 # ----------------------------------------------------------------------------------------------------------------------

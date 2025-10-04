@@ -45,16 +45,16 @@ def main(ncpus):
     vS = vP  # this is the vector parity of the entropy perturbation
 
     tol = 1e-6
-    # Chebyshev coefficients of powers of r
-    r0  = ut.chebco(0, par.N, tol, par.ricb, ut.rcmb)
-    r1  = ut.chebco(1, par.N, tol, par.ricb, ut.rcmb)
-    r2  = ut.chebco(2, par.N, tol, par.ricb, ut.rcmb)
-    r3  = ut.chebco(3, par.N, tol, par.ricb, ut.rcmb)
-    r4  = ut.chebco(4, par.N, tol, par.ricb, ut.rcmb)
-    r5  = ut.chebco(5, par.N, tol, par.ricb, ut.rcmb)
-    r6  = ut.chebco(6, par.N, tol, par.ricb, ut.rcmb)
+    # # Chebyshev coefficients of powers of r
+    # r0  = ut.chebco(0, par.N, tol, par.ricb, ut.rcmb)
+    # r1  = ut.chebco(1, par.N, tol, par.ricb, ut.rcmb)
+    # r2  = ut.chebco(2, par.N, tol, par.ricb, ut.rcmb)
+    # r3  = ut.chebco(3, par.N, tol, par.ricb, ut.rcmb)
+    # r4  = ut.chebco(4, par.N, tol, par.ricb, ut.rcmb)
+    # r5  = ut.chebco(5, par.N, tol, par.ricb, ut.rcmb)
+    # r6  = ut.chebco(6, par.N, tol, par.ricb, ut.rcmb)
 
-    rp = [r0, r1, r2, r3, r4, r5, r6]
+    #rp = [r0, r1, r2, r3, r4, r5, r6]
  
     # Gegenbauer basis transformations
     S0 = ut.Slam(0, par.N) # From the Chebyshev basis ( C^(0) basis ) to C^(1) basis
@@ -153,7 +153,12 @@ def main(ncpus):
                             
                       'u1moe0lho1_D3', 'u1moe1_D3'    , 'u2moe0_D3',
                         
-                      'u1moe0_D4' ] 
+                      'u1moe0_D4' ]
+
+        # Buoyancy force
+        if par.thermal == 1:
+            arg2 += [ vP ]  # poloidal parity here because the entropy perturbation follows the same parity as the radial velocity
+            labl += [ 'u2rog0_D0' ]
 
         # -------------------------------------------------------------------------------------------------------------------------------------------
         # Matrices needed for the Navier-Stokes equation, single curl equations ------------------------------------------- NavStok 1curl - section v
@@ -168,11 +173,31 @@ def main(ncpus):
         labl += [ 'v2_D0', 'v1lho1_D0', 'v1_D1' ]
 
         # Viscous diffusion
-        if par.ViscosD >0:
+        if par.ViscosD > 0:
             arg2 += [ vT ]*5 
             labl += [ 'v2moe1_D0', 'v3moe0_D0',
                       'v1moe1_D1', 'v2moe0_D1',
                       'v1moe0_D2' ]
+
+    if par.thermal == 1:                  
+        # -------------------------------------------------------------------------------------------------------------------------------------------
+        # Matrices needed for the thermal equation --------------------------------------------------------------------------------- Heat - section h
+        # -------------------------------------------------------------------------------------------------------------------------------------------
+
+        # entropy perturbation
+        arg2 += [ vP ]
+        labl += [ 'h0roT0_D0' ]
+
+        # thermal advection
+        arg2 += [ vP ]
+        labl += [ 'h1roT0dSr0_D0' ]
+
+        # thermal diffusion
+        if par.ThermaD > 0:
+            arg2 += [ vP ]*4
+            labl += [ 'h2krT0_D0', 'h1krT0_D1', 'h0krT1_D1', 'h0krT0_D2' ]
+
+
 
     # -------------------------------------------------------------------------------------------------------------------------------------------
     # Pre-process the list with multiplication matrices labels to avoid duplicates --------------------------------------------------------------

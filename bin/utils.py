@@ -52,6 +52,7 @@ lmax_bot = lmax + 1 + (1-2*np.sign(m))*(1-s)
 
 def decode_label(labl):
     
+    #print(labl)
     (section, rpower, rhopower, func1, dorder1, func2, dorder2, dx) = (None, None, None, None, None, None, None, None)
 
     howlong = len(labl)  
