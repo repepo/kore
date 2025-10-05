@@ -45,17 +45,7 @@ def main(ncpus):
     vS = vP  # this is the vector parity of the entropy perturbation
 
     tol = 1e-6
-    # # Chebyshev coefficients of powers of r
-    # r0  = ut.chebco(0, par.N, tol, par.ricb, ut.rcmb)
-    # r1  = ut.chebco(1, par.N, tol, par.ricb, ut.rcmb)
-    # r2  = ut.chebco(2, par.N, tol, par.ricb, ut.rcmb)
-    # r3  = ut.chebco(3, par.N, tol, par.ricb, ut.rcmb)
-    # r4  = ut.chebco(4, par.N, tol, par.ricb, ut.rcmb)
-    # r5  = ut.chebco(5, par.N, tol, par.ricb, ut.rcmb)
-    # r6  = ut.chebco(6, par.N, tol, par.ricb, ut.rcmb)
-
-    #rp = [r0, r1, r2, r3, r4, r5, r6]
- 
+    
     # Gegenbauer basis transformations
     S0 = ut.Slam(0, par.N) # From the Chebyshev basis ( C^(0) basis ) to C^(1) basis
     S1 = ut.Slam(1, par.N) # From C^(1) basis to C^(2) basis
@@ -158,7 +148,7 @@ def main(ncpus):
         # Buoyancy force
         if par.thermal == 1:
             arg2 += [ vP ]  # poloidal parity here because the entropy perturbation follows the same parity as the radial velocity
-            labl += [ 'u2rog0_D0' ]
+            labl += [ 'u2gra0_D0' ]
 
         # -------------------------------------------------------------------------------------------------------------------------------------------
         # Matrices needed for the Navier-Stokes equation, single curl equations ------------------------------------------- NavStok 1curl - section v
@@ -190,7 +180,7 @@ def main(ncpus):
 
         # thermal advection
         arg2 += [ vP ]
-        labl += [ 'h1roT0dSr0_D0' ]
+        labl += [ 'h1rTS0_D0' ]
 
         # thermal diffusion
         if par.ThermaD > 0:

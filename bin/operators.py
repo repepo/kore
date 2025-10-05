@@ -153,7 +153,7 @@ def buoyancy(l, section, component, offdiag):
 
     if (section == 'u') and (offdiag == 0) :
 
-        out = L * u2rog0_D0
+        out = L * u2gra0_D0
 
     return par.Beyonce * out
 
@@ -178,7 +178,7 @@ def thermal_advection(l, section, component, offdiag):  # −rʰ ρT(v⋅∇) S 
 
     if (section == 'h') and (component == 'upol') and (offdiag == 0) :
 
-        out = -L * h1roT0dSr0_D0
+        out = -L * h1rTS0_D0
     
     return out
 

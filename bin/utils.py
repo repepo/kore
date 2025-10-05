@@ -82,7 +82,7 @@ def decode_label(labl):
         func1   = labl[2:5]
         dorder1 = int(labl[5])       
         
-        if howlong == 13:
+        if howlong == 13:   # sXfu1Xfu2X_DX
             func2   = labl[6:9]
             dorder2 = int(labl[9])
 

@@ -30,7 +30,7 @@ def gravity(r, rpower):  # rᵃ g(r)
 
 
 
-def bg_entropy_gradient(r, rpower):   # rᵃ dS/dr, although we probably want instead the N²(r) squared Brunt-Väisälä profile
+def bg_entropy_gradient(r, rpower):   # rᵃ dS/dr, Note that N²(r) = g(r) dS/dr in dimensionless units
 
     out = np.ones_like(r)
 
@@ -76,6 +76,14 @@ def rho_T(r, rpower):   # ρT
 
 
 
+def rho_T_dSdr(r, rpower):   # ρTdS/dr
+
+    out = rho_T(r, 0) * bg_entropy_gradient(r, 0)
+
+    return (r**rpower)*out
+
+
+
 def kappa_rho_T(r, rpower):   # κρT
 
     out = thermal_diffusivity(r, 0) * rho_T(r, 0)
@@ -93,15 +101,7 @@ def dynamic_viscosity(r, rpower):  # μ = ρν
 
 
 
-def rho_grav(r, rpower):   # ρg
-
-    out = density(r, 0) * gravity(r, 0)
-
-    return (r**rpower)*out
-
-
-
-def densityX(r, Dorder):  # derivatives of ρ(r)
+def densityX(r, Dorder):  # ρ⁽ⁿ⁾, radial derivatives of ρ(r)
     
     tol = 1e-12
     out = ut.fundit( density, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)
@@ -144,7 +144,7 @@ def lhoX(r, lhoorder):  # ρⁿ (ln ρ)⁽ⁿ⁾
 
 
 
-def rhoX(r, *args): # rᵃ ρᵇ  powers of ρ
+def rhoX(r, *args):   # rᵃ ρᵇ  powers of ρ
 
     (rpower, rhopower) = args
     out = np.zeros_like(r)
@@ -154,7 +154,7 @@ def rhoX(r, *args): # rᵃ ρᵇ  powers of ρ
 
 
 
-def rhoXlhoX(r, *args):  # ρᵃ (ln ρ)⁽ᵇ⁾
+def rhoXlhoX(r, *args):   # ρᵃ (ln ρ)⁽ᵇ⁾  derivatives of ρ
 
     out = np.zeros_like(r)
     (rhopower, lhoorder) = args
@@ -168,7 +168,7 @@ def rhoXlhoX(r, *args):  # ρᵃ (ln ρ)⁽ᵇ⁾
 
 
 
-def muX(r, Dorder):
+def muX(r, Dorder):   # Dynamic viscosity μ(r) = ρ(r)ν(r)
 
     tol = 1e-12
     out = ut.fundit( dynamic_viscosity, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
@@ -177,7 +177,7 @@ def muX(r, Dorder):
 
 
 
-def krTX(r, Dorder):
+def krTX(r, Dorder):   # κ(r)ρ(r)T(r)
 
     tol = 1e-12
     out = ut.fundit( kappa_rho_T, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
@@ -186,25 +186,25 @@ def krTX(r, Dorder):
 
 
 
-def dSrX(r, Dorder):
+def rTSX(r, Dorder):   # ρ(r)T(r)dS/dr
 
     tol = 1e-12
-    out = ut.fundit( bg_entropy_gradient, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
+    out = ut.fundit( rho_T_dSdr, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
 
     return out
 
 
 
-def rogX(r, Dorder):
+def graX(r, Dorder):   # g(r)
 
     tol = 1e-12
-    out = ut.fundit( rho_grav, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
+    out = ut.fundit( gravity, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
 
     return out
 
 
 
-def roTX(r, Dorder):
+def roTX(r, Dorder):   # ρ(r)T(r)
 
     tol = 1e-12
     out = ut.fundit( rho_T, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
@@ -216,7 +216,7 @@ def roTX(r, Dorder):
 # -----------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------------------------------
 
-proffdir = { 'lho':rhoXlhoX, 'moe':muX, 'rho':rhoX, 'rog':rogX, 'roT':roTX  , 'dSr':dSrX  ,'krT':krTX }
+proffdir = { 'lho':rhoXlhoX, 'moe':muX, 'rho':rhoX, 'gra':graX, 'roT':roTX  , 'rTS':rTSX  ,'krT':krTX }
 
 # -----------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------------------------------
