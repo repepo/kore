@@ -21,17 +21,28 @@ aux2 = 0
 
 # ---------------
 magnetic      = 0
-thermal       = 1
+thermal       = 0
 compositional = 0
 # ---------------
 
-
 # ----------------------------------------------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------------------------- Structure parameters
+# ------------------------------------------------------------------------------------------- Reference state parameters
 # ----------------------------------------------------------------------------------------------------------------------
-variable_density = 1
-density_beta = 2.0
 
+#background = 0 # For MESA file format profiles (load MESA or GYRE type model below)
+background = 1 # For implicitly defined profiles (adjust ρ and when required g, (T or p), (N^2 or dS), v and κ in radial_profiles.py)
+#background = 2 # For explicitly defined profiles (supply r, ρ and when required g, (T or p), (N^2 or dS), v and κ in array format)
+
+def_pressure = 0 # set to 1 if the background pressure is provided, set to 0 if background temperature is provided
+def_entropy = 0 # set to 1 if the background entropy gradient is provided, set to 0 if the squared Brunt-Väisälä frequency is provided
+def_viscosity = 0 # set to 1 if using a MESA profile and defining viscosity implicitly, set to 2 if using a MESA profile and defining viscosity explicitly
+def_thermal_diffusivity = 0 # set to 1 if using a MESA profile and defining thermal diffusivity implicitly, set to 2 if using a MESA profile and defining thermal diffusivity explicitly
+
+model = 'planet_profile.mesa' # MESA or GYRE file
+
+#model_type = 'poly'
+model_type = 'mesa'
+#model_type = 'gsm'
 
 # ----------------------------------------------------------------------------------------------------------------------
 # ---------------------------------------------------------------------------------------------- Hydrodynamic parameters
@@ -54,7 +65,6 @@ bci = 0
 # CMB spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow
 bco = 1
-
 
 forcing = 0  # Uncomment this line for eigenvalue problems
 # forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
@@ -79,33 +89,22 @@ forcing_amplitude_icb = 0.0
 projection = 1
 
 
-
-# ----------------------------------------------------------------------------------------------------------------------
-# --------------------------------------------------------------------------------------------------- Thermal parameters
-# ----------------------------------------------------------------------------------------------------------------------
-# Thermal boundary conditions
-# 0 for isothermal, theta=0
-# 1 for constant heat flux, (d/dr)theta=0
-bci_thermal = 0   # ICB
-bco_thermal = 0   # CMB
-
-
-
 # ----------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------- Unit of time and force switches
 # ----------------------------------------------------------------------------------------------------------------------
+# Choose the time scale by specifying the dimensionless angular velocity using the desired time scale. Please see
+# the non-dimensionalization notes in the documentation. Uncomment your choice:
 # OmgTau = 1     # Rotation time scale
 # OmgTau = 1/Ek  # Viscous diffusion time scale
 # OmgTau = 1/Le  # Alfvén time scale
 # OmgTau = 1/Em  # Magnetic diffusion time scale
-# When choosing Gaspard = 1 then Beyonce = (N/Omega)**2, Hendrik = Le**2, ViscosD = Ek, ThermaD = Ek/Prandtl, MagnetD = Em
 
-Gaspard = 1.0       # Omega*Tau                   Coriolis force factor. Set to 1 for unit time Tau = 1/Omega
-Beyonce = 10        # (N0*Tau)**2                 Buoyancy force factor. Set to 1 for unit time Tau = 1/N0 = sqrt(r0/g0)
-Hendrik = 0         # (Tau*B0/r0)**2/(rho0*mu0)   Lorentz force factor. Set to 1 for Alfven time scale
-ViscosD = 1e-3      # nu0 * Tau / r0**2           Viscous force factor. Set to 1 for viscous diffusion time scale
-ThermaD = 1e-3      # kappa0 * Tau / r0**2        Thermal diffusion factor. Set to 1 for thermal diffusion time scale
-MagnetD = 0         # eta0 * Tau / r0**2          Magnetic diffusion factor. Set to 1 for magnetic diffusion time scale
+Gaspard = 1  # Omega*Tau                   Coriolis force factor. Set to 1 for unit time Tau = 1/Omega
+Beyonce = 0  # (N0*Tau)**2                 Buoyancy force factor. Set to 1 for unit time Tau = 1/N0 = sqrt(r0/g0)
+Hendrik = 0  # (Tau*B0/r0)**2/(rho0*mu0)   Lorentz force factor. Set to 1 for Alfven time scale
+ViscosD = 0  # nu0 * Tau / r0**2           Viscous force factor. Set to 1 for viscous diffusion time scale. This is the Ekman number if Tau = 1/Omega
+ThermaD = 0  # kappa0 * Tau / r0**2        Thermal diffusion factor. Set to 1 for thermal diffusion time scale
+MagnetD = 0  # eta0 * Tau / r0**2          Magnetic diffusion factor. Set to 1 for magnetic diffusion time scale
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -113,7 +112,7 @@ MagnetD = 0         # eta0 * Tau / r0**2          Magnetic diffusion factor. Set
 # ----------------------------------------------------------------------------------------------------------------------
 
 # Number of cpus
-ncpus = 24
+ncpus = 4
 
 # Chebyshev polynomial truncation level. Use function def at top or set manually. N must be even if ricb = 0.
 # N = Ncheb(Ek)
@@ -142,7 +141,7 @@ if track_target == 1 :  # read target from file and sets target accordingly
     itau = tt[1]
 else:                   # set target manually
     rtau = 0
-    itau = -0.32
+    itau = -0.4860
 
 # tau is the actual target for the solver
 # real part is damping
@@ -165,7 +164,6 @@ maxit = 50
 
 # Tolerance for solver
 tol = 1e-15
-
 
 # ----------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------

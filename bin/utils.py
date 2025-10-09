@@ -4,10 +4,13 @@ import scipy.optimize as so
 import scipy.sparse as ss
 import scipy.special as scsp
 import scipy.fftpack as sft
+import scipy.interpolate as si
+import scipy.constants as sc
 import numpy.polynomial.chebyshev as ch
 import numpy as np
 import parameters as par
 import radial_profiles as rap
+import pygyre as gy
 
 '''
 A library of various function definitions and utilities
@@ -124,8 +127,10 @@ def packit( lista_local, mtx, row, col):
 
 
 def ell( m, lmax, vsymm) :
-    # Returns the l values for the poloidal flow (section u) and l values for toroidal flow (section v)
-    # ll are *all* the l values and (idp,idt) are the indices for poloidals and toroidals respectively
+    '''
+    Returns the l values for the poloidal flow (section u) and l values for toroidal flow (section v)
+    ll are *all* the l values and (idp,idt) are the indices for poloidals and toroidals respectively
+    '''
     lm1 = lmax - m + 1
     s   = int( vsymm*0.5 + 0.5 ) # s=0 if antisymm, s=1 if symm
     idp = np.arange( (np.sign(m)+s  )%2, lm1, 2, dtype=int)
@@ -296,9 +301,11 @@ def cheb2Product(ck1, ck2, tol):
 
 
 def xcheb(r, ricb, rcmb):
-    # returns points in the appropriate domain of the Cheb polynomial solutions
-    # Domain [-1,1] corresponds to [ ricb,rcmb] if ricb>0
-    # Domain [-1,1] corresponds to [-rcmb,rcmb] if ricb==0
+    '''
+    returns points in the appropriate domain of the Cheb polynomial solutions
+    Domain [-1,1] corresponds to [ ricb,rcmb] if ricb>0
+    Domain [-1,1] corresponds to [-rcmb,rcmb] if ricb==0
+    '''
 
     r1 = rcmb
     r0 = ricb + (np.sign(ricb)-1)*rcmb  # r0=-rcmb if ricb==0; r0=ricb if ricmb>0 
@@ -330,7 +337,6 @@ def funcheb(ck0, r, ricb, rcmb, n):
     return out
 
 
-
 def fundit( func, r, N, ricb, rcmb, Dorder, tol, *args):
     
     out = np.zeros_like(r)
@@ -338,8 +344,6 @@ def fundit( func, r, N, ricb, rcmb, Dorder, tol, *args):
     out = funcheb(ck, r, ricb, rcmb, Dorder)
     
     return out
-
-
 
 
 def get_radial_derivatives( func, rorder, Dorder, tol):
@@ -386,6 +390,87 @@ def get_radial_derivatives( func, rorder, Dorder, tol):
 
     return rd_prof
 
+
+def interp(rad, rad_user, profile, even=True):
+
+    interp = si.Akima1DInterpolator(rad_user, profile, extrapolate=True)
+    out = np.zeros_like(rad)
+
+    if np.min(rad_user) == par.ricb:
+
+        for i, x in enumerate(rad):
+            if x>= 0:
+                out[i] = interp(x)
+            else:
+                if even:
+                    out[i] = interp(-x) # even function of r
+                else:
+                    out[i] = -interp(-x) # odd function of r
+
+    elif np.min(rad_user) == -1:
+
+        out = interp(rad)
+
+    return out
+
+
+def load_mesa(r, var):
+
+    profile = gy.read_model(par.model)
+    out = np.zeros_like(r)
+
+    if par.model_type == 'poly':
+        if var == 'density':
+            out = interp(r, profile['x'], profile['rho/rho_0'])
+
+        if var == 'pressure':
+            out = interp(r, profile['x'], profile['P/P_0'])
+
+        if var == 'gravity':
+            gravity = np.zeros(profile.meta['n_z'])
+            gravity[1:] = profile['M_r/M'][1:]/profile['x'][1:]**2
+            out = interp(r, profile['x'], gravity, even=False)
+
+        if var == 'entropy_gradient':
+            entropy = np.zeros(profile.meta['n_z'])
+            entropy[1:] = profile['As'][1:]/profile['x'][1:]
+            out = interp(r, profile['x'][:-1], entropy[:-1], even=False)
+            out[-1] = -np.inf
+            out[0] = np.inf
+
+    elif par.model_type == 'mesa' or par.model_type == 'gsm':
+        G_star = 6.67430e-8                 # gravitational constant in cm^3 g^-1 s^-2
+        M_star = profile.meta['M_star']     # stellar mass in g
+        R_star = profile.meta['R_star']     # stellar radius in cm
+        rad = profile['r'] / R_star
+
+        if var == 'density':
+            density = profile['rho'] * R_star**3 / M_star   # dimensionless density
+            out = interp(r, rad, density)
+
+        if var == 'pressure':
+            pressure = profile['P'] * R_star**4 / M_star**2 / G_star # dimensionless pressure
+            out = interp(r, rad, pressure)
+
+        if (var == 'gravity') or (var == 'entropy_gradient'):
+            if profile.meta['version'] > 20:
+                mass = profile['M_r'] / M_star  # dimensionless mass for newest MESA file formats
+            else:
+                mass = 1 / (1 + 1/profile['w'])  # dimensionless mass for older MESA file formats
+
+            gravity = np.zeros(profile.meta['n'])
+            gravity[1:] = ( mass[1:] / rad[1:]**2 )  # dimensionless gravity
+
+            if var == 'gravity':
+                out = interp(r, rad, gravity, even=False)
+
+            if var == 'entropy_gradient':
+                BV2 = profile['N^2'] * R_star**3 / M_star / G_star  # dimensionless Brunt-Väisälä frequency
+                entropy = np.zeros(profile.meta['n'])
+                entropy[1:] = BV2[1:] / gravity[1:]
+                out = interp(r, rad, entropy, even=False)
+
+    return out
 
 
 def jl_smx(l,x,d):
@@ -1140,8 +1225,6 @@ def load_csr(filename):
     return ss.csr_matrix((loader['data'], loader['indices'], loader['indptr']), shape=loader['shape'])
 
 
-
-
 def Tk(x, N, lamb_max):
     '''
     Chebyshev polynomial from order 0 to N (as rows)
@@ -1166,7 +1249,6 @@ def Tk(x, N, lamb_max):
             out[k,i+1] = x**(k+i+1.) * tmp * (2./(rcmb-ric))**(i+1)
 
     return out
-
 
 
 def gamma_visc(a1,a2,a3):
