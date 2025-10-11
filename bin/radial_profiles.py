@@ -2,6 +2,8 @@ import numpy as np
 import utils as ut
 import parameters as par
 
+
+
 # -----------------------------------------------------------------------------------------------------
 # ---------------------------------------------------------------------------------- Structure profiles
 # -----------------------------------------------------------------------------------------------------
@@ -55,56 +57,56 @@ def gravity(r, rpower):  # rᵃ g(r)
 
 
 
-def bg_entropy_gradient(r, rpower):   # rᵃ dS/dr, Note that N²(r) = g(r) dS/dr in dimensionless units
+# def bg_entropy_gradient(r, rpower):   # rᵃ dS/dr, Note that N²(r) = g(r) dS/dr in dimensionless units
 
-    out = np.zeros_like(r)
+#     out = np.zeros_like(r)
 
-    if par.background == 0:
+#     if par.background == 0:
 
-        out = ut.load_mesa(r,'entropy_gradient')
+#         out = ut.load_mesa(r,'entropy_gradient')
 
-    else:
+#     else:
 
-        if par.def_entropy == 0:
+#         if par.def_entropy == 0:
 
-            if not gravity(r, 0).any(0):
+#             if not gravity(r, 0).any(0):
 
-                BV2 = np.zeros_like(r)
+#                 BV2 = np.zeros_like(r)
 
-                if par.background == 1:
-                    ### DEFINE BACKGROUND PROFILE OF BRUNT-VÄISÄLÄ FREQUENCY ###
+#                 if par.background == 1:
+#                     ### DEFINE BACKGROUND PROFILE OF BRUNT-VÄISÄLÄ FREQUENCY ###
 
-                    BV2 = np.ones_like(r)
+#                     BV2 = np.ones_like(r)
 
-                    ############################################################
-                elif par.background == 2:
+#                     ############################################################
+#                 elif par.background == 2:
 
-                    rad = np.loadtxt('radius.dat')
-                    BV2 = ut.interp(r, rad, np.loadtxt('BV_frequency.dat'))
+#                     rad = np.loadtxt('radius.dat')
+#                     BV2 = ut.interp(r, rad, np.loadtxt('BV_frequency.dat'))
 
-                out = BV2 / gravity(r, 0)
+#                 out = BV2 / gravity(r, 0)
 
-            else:
-                print('Error! gravity profile cannot be zero anywhere')
+#             else:
+#                 print('Error! gravity profile cannot be zero anywhere')
 
-        elif par.def_entropy == 1:
+#         elif par.def_entropy == 1:
 
-            if par.background == 1:
-                ### DEFINE BACKGROUND GRADIENT OF ENTROPY ###
+#             if par.background == 1:
+#                 ### DEFINE BACKGROUND GRADIENT OF ENTROPY ###
 
-                out = np.ones_like(r)
+#                 out = np.ones_like(r)
 
-                #############################################
-            elif par.background == 2:
+#                 #############################################
+#             elif par.background == 2:
 
-                rad = np.loadtxt('radius.dat')
-                out = ut.interp(r, rad, np.loadtxt('entropy_gradient.dat'), even=False)
+#                 rad = np.loadtxt('radius.dat')
+#                 out = ut.interp(r, rad, np.loadtxt('entropy_gradient.dat'), even=False)
 
-    return (r**rpower)*out
+#     return (r**rpower)*out
 
 
 
-def bg_pressure(r, rpower):   # rᵃ p(r), Note that T(r) = p(r) / rho(r) in dimensionless units
+def pressure(r, rpower):   # rᵃ p(r)
 
     out = np.zeros_like(r)
 
@@ -146,6 +148,30 @@ def bg_pressure(r, rpower):   # rᵃ p(r), Note that T(r) = p(r) / rho(r) in dim
     return (r**rpower)*out
 
 
+
+def pdSdr(r, rpower):
+
+    out = np.zeros_like(r)
+
+    if par.background == 0:
+
+        out = ut.load_mesa(r,'pdSdr')
+
+    elif par.background == 1:
+        ### DEFINE BACKGROUND PROFILE OF DENSITY ###
+
+        out = np.zeros_like(r)
+
+        ############################################
+    elif par.background == 2:
+
+        rad = np.loadtxt('radius.dat')
+        out = ut.interp(r, rad, np.loadtxt('pdSdr.dat'), even=False)
+
+    return (r**rpower)*out
+
+
+
 def viscosity(r, rpower):  # rᵃ v(r)
 
     out = np.zeros_like(r)
@@ -153,7 +179,7 @@ def viscosity(r, rpower):  # rᵃ v(r)
     if par.background == 1 or (par.background == 0 and par.def_viscosity == 1):
         ### DEFINE BACKGROUND PROFILE OF KINEMATIC VISCOSITY ###
 
-        out = np.ones_like(r)
+        out = np.zeros_like(r)
 
         ########################################################
     elif par.background == 2 or (par.background == 0 and par.def_viscosity == 2):
@@ -172,7 +198,7 @@ def thermal_diffusivity(r, rpower):   # rᵃ κ(r)
     if par.background == 1 or (par.background == 0 and par.def_thermal_diffusivity == 1):
         ### DEFINE BACKGROUND PROFILE OF THERMAL DIFFUSIVITY ###
 
-        out = np.ones_like(r)
+        out = np.zeros_like(r)
 
         ########################################################
     elif par.background == 2 or (par.background == 0 and par.def_thermal_diffusivity == 2):
@@ -190,25 +216,10 @@ def thermal_diffusivity(r, rpower):   # rᵃ κ(r)
 
 
 
-def rho_T(r, rpower):   # ρT
+def kappress(r, rpower):   # κ p
 
-    out = bg_pressure(r, 0)
-
-    return (r**rpower)*out
-
-
-
-def rho_T_dSdr(r, rpower):   # ρTdS/dr
-
-    out = rho_T(r, 0) * bg_entropy_gradient(r, 0)
-
-    return (r**rpower)*out
-
-
-
-def kappa_rho_T(r, rpower):   # κρT
-
-    out = thermal_diffusivity(r, 0) * rho_T(r, 0)
+    out = np.zeros_like(r)
+    out = thermal_diffusivity(r, 0) * pressure(r, 0)
 
     return (r**rpower)*out
 
@@ -226,7 +237,7 @@ def dynamic_viscosity(r, rpower):  # μ = ρν
 def densityX(r, Dorder):  # ρ⁽ⁿ⁾, radial derivatives of ρ(r)
     
     tol = 1e-12
-    out = ut.fundit( density, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)
+    out = ut.fonzie( density, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)
 
     return out
 
@@ -293,56 +304,56 @@ def rhoXlhoX(r, *args):   # ρᵃ (ln ρ)⁽ᵇ⁾  derivatives of ρ
 def muX(r, Dorder):   # Dynamic viscosity μ(r) = ρ(r)ν(r)
 
     tol = 1e-12
-    out = ut.fundit( dynamic_viscosity, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
+    out = ut.fonzie( dynamic_viscosity, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
 
     return out
 
 
 
-def krTX(r, Dorder):   # κ(r)ρ(r)T(r)
+def kappressX(r, Dorder):   # κ(r)ρ(r)T(r)
 
     tol = 1e-12
-    out = ut.fundit( kappa_rho_T, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
+    out = ut.fonzie( kappress, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
 
     return out
 
 
 
-def rTSX(r, Dorder):   # ρ(r)T(r)dS/dr
+def pdSdrX(r, Dorder):   # ρ(r)T(r)dS/dr
 
     tol = 1e-12
-    out = ut.fundit( rho_T_dSdr, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
+    out = ut.fonzie( pdSdr, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
 
     return out
 
 
 
-def graX(r, Dorder):   # g(r)
+def graviX(r, Dorder):   # g(r)
 
     tol = 1e-12
-    out = ut.fundit( gravity, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
+    out = ut.fonzie( gravity, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
 
     return out
 
 
 
-def roTX(r, Dorder):   # ρ(r)T(r)
+def pressX(r, Dorder):   # ρ(r)T(r)
 
     tol = 1e-12
-    out = ut.fundit( rho_T, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
+    out = ut.fonzie( pressure, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
 
     return out
 
 
-# -----------------------------------------------------------------------------------------------------
-# -----------------------------------------------------------------------------------------------------
-# -----------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------
 
-proffdir = { 'lho':rhoXlhoX, 'moe':muX, 'rho':rhoX, 'gra':graX, 'roT':roTX  , 'rTS':rTSX  ,'krT':krTX }
+proffdir = { 'lho':rhoXlhoX, 'moe':muX, 'rho':rhoX, 'gra':graviX, 'pss':pressX  , 'pdS':pdSdrX  ,'kps':kappressX }
 
-# -----------------------------------------------------------------------------------------------------
-# -----------------------------------------------------------------------------------------------------
-# -----------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------
 
 
 

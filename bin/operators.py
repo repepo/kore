@@ -32,7 +32,7 @@ def inertia(l, section, component, offdiag):  # --------------------------------
 
         if section == 'u' and component == 'upol':
 
-            out =  L * ( L*u3_D0 - u2lho1_D0 - u1lho2_D0
+            out =  L * (   L*u3_D0 - u2lho1_D0 - u1lho2_D0
                          - 2*u2_D1 - u1lho1_D1
                          - u1_D2 )
 
@@ -57,7 +57,7 @@ def coriolis(l, section, component, offdiag):  # -------------------------------
 
             if offdiag == 0:
                 
-                out = 1j*m*( -L*u3_D0 + (1-L)*u2lho1_D0 + u1lho2_D0 
+                out = 1j*m*( - L*u3_D0 + (1-L)*u2lho1_D0 + u1lho2_D0 
                              + 2*u2_D1 + u1lho1_D1
                              + u1_D2 )
 
@@ -159,40 +159,40 @@ def buoyancy(l, section, component, offdiag):
 
 
 
-def entropy(l, section, component, offdiag):  # rʰ ρT s
+def entropy(l, section, component, offdiag):  # rʰ p s
 
     out = 0
     
     if (section == 'h') and (offdiag == 0) :
 
-        out = h0roT0_D0
+        out = h0pss0_D0
 
     return out
 
 
 
-def thermal_advection(l, section, component, offdiag):  # −rʰ ρT(v⋅∇) S = −rʰ ρT vᵣ dS/dr
+def thermal_advection(l, section, component, offdiag):  # −rʰ p(v⋅∇) S = −rʰ p vᵣ dS/dr
 
     out = 0
     L = l*(l+1)
 
     if (section == 'h') and (component == 'upol') and (offdiag == 0) :
 
-        out = -L * h1rTS0_D0
+        out = -L * h1pdS0_D0
     
     return out
 
 
 
-def thermal_diffusion(l, section, component, offdiag):  # rʰ  ∇⋅(κρT ∇s)
+def thermal_diffusion(l, section, component, offdiag):  # rʰ  ∇⋅(κ p ∇s)
 
     out = 0
     L = l*(l+1)
     
     if (section == 'h') and (offdiag == 0) :
 
-        out = - L * h2krT0_D0                   \
-              + 2 * h1krT0_D1 + 2 * h0krT1_D1   \
-              +     h0krT0_D2 
+        out = - L * h2kps0_D0                   \
+              + 2 * h1kps0_D1 + 2 * h0kps1_D1   \
+              +     h0kps0_D2 
 
     return par.ThermaD * out  

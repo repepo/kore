@@ -90,7 +90,6 @@ def main(ncpus):
     if par.ThermaD == 0:
         gebasis[4] = 0  # No thermal diffusion, C^(0) basis is enough, no need for thermal bc's
 
-
     # Zero matrices, used when making room for bc's
     N1 = int((1 + np.sign(par.ricb)) * int(par.N/2))
     z4 = ss.csr_matrix((4,N1))
@@ -176,16 +175,16 @@ def main(ncpus):
 
         # entropy perturbation
         arg2 += [ vP ]
-        labl += [ 'h0roT0_D0' ]
+        labl += [ 'h0pss0_D0' ]
 
         # thermal advection
         arg2 += [ vP ]
-        labl += [ 'h1rTS0_D0' ]
+        labl += [ 'h1pdS0_D0' ]
 
         # thermal diffusion
         if par.ThermaD > 0:
             arg2 += [ vP ]*4
-            labl += [ 'h2krT0_D0', 'h1krT0_D1', 'h0krT1_D1', 'h0krT0_D2' ]
+            labl += [ 'h2kps0_D0', 'h1kps0_D1', 'h0kps1_D1', 'h0kps0_D2' ]
 
 
 
@@ -237,14 +236,13 @@ def main(ncpus):
     # and change basis accordingly:
     for k,labl1 in enumerate(labl) :
 
-        print(labl1)
         secx = labl1[0]
-        #(rpower, rhopower, muorder, lhoorder, dx, vector_parity) = opkey[k]
         (rpower, rhopower, func1, dorder1, func2, dorder2, dx, vector_parity) = opkey[k]
         gbx = gebasis[section.index(secx)]  # order of the Gegenbauer basis according to the section
 
         # Multiply by appropriate derivative matrix on the right and change to C^(4), C^(3) or C^(2) basis depending on section
         idx = [ j for j,x in enumerate(pkey) if (x == opkey[k]) ]  # find matrix index in pkey
+        
         matrix = G[gbx][gbx-dx] * matlist[idx[0]] * D[dx]
         # ---------------------------------------------------------------------------------------------------------------------------------------
 
@@ -252,8 +250,8 @@ def main(ncpus):
         # If no solid inner core then remove unneeded rows and cols
         if par.ricb == 0 :
 
-            #operator_parity = 1-(( rpower + (muorder or 0) + (lhoorder or 0) + dx )%2)*2  # we use 'or 0' to give 0 when muorder or lhoorder are None
-            operator_parity = 1-(( rpower + (dorder1 or 0) + (dorder2 or 0) + dx )%2)*2  # we use 'or 0' to give 0 when dorder is None
+            adj = func1 in ['gra', 'pdS']   # adjusts operator parity for these profiles 
+            operator_parity = 1-(( rpower + (dorder1 or 0) + (dorder2 or 0) + dx + adj )%2)*2  # we use 'or 0' to give 0 when dorder is None
             overall_parity  = vector_parity * operator_parity
             matrix = ut.remroco( matrix, overall_parity, vector_parity)
 

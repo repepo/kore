@@ -337,13 +337,15 @@ def funcheb(ck0, r, ricb, rcmb, n):
     return out
 
 
-def fundit( func, r, N, ricb, rcmb, Dorder, tol, *args):
+
+def fonzie( func, r, N, ricb, rcmb, Dorder, tol, *args):
     
     out = np.zeros_like(r)
     ck  = chebco_f( func, N, ricb, rcmb, tol, args)
     out = funcheb(ck, r, ricb, rcmb, Dorder)
     
     return out
+
 
 
 def get_radial_derivatives( func, rorder, Dorder, tol):
@@ -391,9 +393,10 @@ def get_radial_derivatives( func, rorder, Dorder, tol):
     return rd_prof
 
 
+
 def interp(rad, rad_user, profile, even=True):
 
-    interp = si.Akima1DInterpolator(rad_user, profile, extrapolate=True)
+    interp = si.Akima1DInterpolator(rad_user, profile)
     out = np.zeros_like(rad)
 
     if np.min(rad_user) == par.ricb:
@@ -414,29 +417,34 @@ def interp(rad, rad_user, profile, even=True):
     return out
 
 
+
 def load_mesa(r, var):
 
     profile = gy.read_model(par.model)
     out = np.zeros_like(r)
 
     if par.model_type == 'poly':
-        if var == 'density':
-            out = interp(r, profile['x'], profile['rho/rho_0'])
 
-        if var == 'pressure':
-            out = interp(r, profile['x'], profile['P/P_0'])
+        x = profile['x']
+        y = np.zeros_like(x)
+        
+        if   var == 'density':
+            y = profile['rho/rho_0']
+            z = True 
+            
+        elif var == 'pressure':
+            y = profile['P/P_0']
+            z = True
 
-        if var == 'gravity':
-            gravity = np.zeros(profile.meta['n_z'])
-            gravity[1:] = profile['M_r/M'][1:]/profile['x'][1:]**2
-            out = interp(r, profile['x'], gravity, even=False)
+        elif var == 'gravity':
+            y = x / profile['c_1']   # c_1 is finite at r=0
+            z = False
 
-        if var == 'entropy_gradient':
-            entropy = np.zeros(profile.meta['n_z'])
-            entropy[1:] = profile['As'][1:]/profile['x'][1:]
-            out = interp(r, profile['x'][:-1], entropy[:-1], even=False)
-            out[-1] = -np.inf
-            out[0] = np.inf
+        elif var == 'pdSdr':
+            y[1:-1] = profile['P/P_0'][1:-1] * profile['As'][1:-1] / x[1:-1]
+            z = False
+
+        out = interp(r, x, y, even=z)
 
     elif par.model_type == 'mesa' or par.model_type == 'gsm':
         G_star = 6.67430e-8                 # gravitational constant in cm^3 g^-1 s^-2

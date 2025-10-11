@@ -21,7 +21,7 @@ aux2 = 0
 
 # ---------------
 magnetic      = 0
-thermal       = 0
+thermal       = 1
 compositional = 0
 # ---------------
 
@@ -29,8 +29,8 @@ compositional = 0
 # ------------------------------------------------------------------------------------------- Reference state parameters
 # ----------------------------------------------------------------------------------------------------------------------
 
-#background = 0 # For MESA file format profiles (load MESA or GYRE type model below)
-background = 1 # For implicitly defined profiles (adjust ρ and when required g, (T or p), (N^2 or dS), v and κ in radial_profiles.py)
+background = 0 # For MESA file format profiles (load MESA or GYRE type model below)
+#background = 1 # For implicitly defined profiles (adjust ρ and when required g, (T or p), (N^2 or dS), v and κ in radial_profiles.py)
 #background = 2 # For explicitly defined profiles (supply r, ρ and when required g, (T or p), (N^2 or dS), v and κ in array format)
 
 def_pressure = 0 # set to 1 if the background pressure is provided, set to 0 if background temperature is provided
@@ -38,10 +38,10 @@ def_entropy = 0 # set to 1 if the background entropy gradient is provided, set t
 def_viscosity = 0 # set to 1 if using a MESA profile and defining viscosity implicitly, set to 2 if using a MESA profile and defining viscosity explicitly
 def_thermal_diffusivity = 0 # set to 1 if using a MESA profile and defining thermal diffusivity implicitly, set to 2 if using a MESA profile and defining thermal diffusivity explicitly
 
-model = 'planet_profile.mesa' # MESA or GYRE file
+model = 'poly.n1_gamma3.h5' # MESA or GYRE file
 
-#model_type = 'poly'
-model_type = 'mesa'
+model_type = 'poly'
+#model_type = 'mesa'
 #model_type = 'gsm'
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -50,7 +50,7 @@ model_type = 'mesa'
 hydro = 1  # set to 1 to include the Navier-Stokes equation for the flow velocity, set to 0 otherwise
 
 # Azimuthal wave number m (>=0)
-m = 2
+m = 0
 
 # Equatorial symmetry of the flow field. Use 1 for symmetric, -1 for antisymmetric.
 symm = 1
@@ -99,8 +99,8 @@ projection = 1
 # OmgTau = 1/Le  # Alfvén time scale
 # OmgTau = 1/Em  # Magnetic diffusion time scale
 
-Gaspard = 1  # Omega*Tau                   Coriolis force factor. Set to 1 for unit time Tau = 1/Omega
-Beyonce = 0  # (N0*Tau)**2                 Buoyancy force factor. Set to 1 for unit time Tau = 1/N0 = sqrt(r0/g0)
+Gaspard = 0  # Omega*Tau                   Coriolis force factor. Set to 1 for unit time Tau = 1/Omega
+Beyonce = 1  # (N0*Tau)**2                 Buoyancy force factor. Set to 1 for unit time Tau = 1/N0 = sqrt(r0/g0)
 Hendrik = 0  # (Tau*B0/r0)**2/(rho0*mu0)   Lorentz force factor. Set to 1 for Alfven time scale
 ViscosD = 0  # nu0 * Tau / r0**2           Viscous force factor. Set to 1 for viscous diffusion time scale. This is the Ekman number if Tau = 1/Omega
 ThermaD = 0  # kappa0 * Tau / r0**2        Thermal diffusion factor. Set to 1 for thermal diffusion time scale
@@ -120,10 +120,10 @@ N = 96
 
 # Spherical harmonic truncation lmax and approx lmax/N ratio:
 g = 1.0
-lmax = int( 2*ncpus*( np.floor_divide( g*N, 2*ncpus ) ) + m - 1 )
+#lmax = int( 2*ncpus*( np.floor_divide( g*N, 2*ncpus ) ) + m - 1 )
 # If manually setting the max angular degree lmax, then it must be even if m is odd,
 # and lmax-m+1 should be divisible by 2*ncpus
-# lmax = (2*ncpus*2 + m - 1)
+lmax = (2*ncpus*1 + m - 1)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
