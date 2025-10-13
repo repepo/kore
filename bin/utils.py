@@ -347,7 +347,6 @@ def fonzie( func, r, N, ricb, rcmb, Dorder, tol, *args):
     return out
 
 
-
 def get_radial_derivatives( func, rorder, Dorder, tol):
     '''
     This function computes terms of the form r^n d^m/dr^m of a
@@ -393,7 +392,6 @@ def get_radial_derivatives( func, rorder, Dorder, tol):
     return rd_prof
 
 
-
 def interp(rad, rad_user, profile, even=True):
 
     interp = si.Akima1DInterpolator(rad_user, profile)
@@ -417,66 +415,60 @@ def interp(rad, rad_user, profile, even=True):
     return out
 
 
-
 def load_mesa(r, var):
 
     profile = gy.read_model(par.model)
     out = np.zeros_like(r)
+    z = True
 
     if par.model_type == 'poly':
 
         x = profile['x']
         y = np.zeros_like(x)
-        
-        if   var == 'density':
+
+        if var == 'density':
             y = profile['rho/rho_0']
-            z = True 
-            
+
         elif var == 'pressure':
             y = profile['P/P_0']
-            z = True
 
         elif var == 'gravity':
-            y = x / profile['c_1']   # c_1 is finite at r=0
+            y = x/profile['c_1']
             z = False
 
-        elif var == 'pdSdr':
+        elif var == 'buoyancy':
             y[1:-1] = profile['P/P_0'][1:-1] * profile['As'][1:-1] / x[1:-1]
             z = False
-
-        out = interp(r, x, y, even=z)
 
     elif par.model_type == 'mesa' or par.model_type == 'gsm':
         G_star = 6.67430e-8                 # gravitational constant in cm^3 g^-1 s^-2
         M_star = profile.meta['M_star']     # stellar mass in g
         R_star = profile.meta['R_star']     # stellar radius in cm
-        rad = profile['r'] / R_star
+        x = profile['r'] / R_star
+        y = np.zeros_like(x)
 
         if var == 'density':
-            density = profile['rho'] * R_star**3 / M_star   # dimensionless density
-            out = interp(r, rad, density)
+            y = profile['rho'] * R_star**3 / M_star   # dimensionless density
 
         if var == 'pressure':
-            pressure = profile['P'] * R_star**4 / M_star**2 / G_star # dimensionless pressure
-            out = interp(r, rad, pressure)
+            y = profile['P'] * R_star**4 / M_star**2 / G_star # dimensionless pressure
 
-        if (var == 'gravity') or (var == 'entropy_gradient'):
+        if (var == 'gravity') or (var == 'buoyancy'):
             if profile.meta['version'] > 20:
                 mass = profile['M_r'] / M_star  # dimensionless mass for newest MESA file formats
             else:
                 mass = 1 / (1 + 1/profile['w'])  # dimensionless mass for older MESA file formats
 
-            gravity = np.zeros(profile.meta['n'])
-            gravity[1:] = ( mass[1:] / rad[1:]**2 )  # dimensionless gravity
+            y[1:] = ( mass[1:] / x[1:]**2 )  # dimensionless gravity
 
-            if var == 'gravity':
-                out = interp(r, rad, gravity, even=False)
-
-            if var == 'entropy_gradient':
+            if var == 'buoyancy':
                 BV2 = profile['N^2'] * R_star**3 / M_star / G_star  # dimensionless Brunt-Väisälä frequency
-                entropy = np.zeros(profile.meta['n'])
-                entropy[1:] = BV2[1:] / gravity[1:]
-                out = interp(r, rad, entropy, even=False)
+                pressure = profile['P'] * R_star**4 / M_star**2 / G_star # dimensionless pressure
+                y[1:] = BV2[1:] * pressure[1:] / y[1:]
+
+            z = False
+
+    out = interp(r, x, y, even=z)
 
     return out
 

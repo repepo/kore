@@ -2,8 +2,6 @@ import numpy as np
 import utils as ut
 import parameters as par
 
-
-
 # -----------------------------------------------------------------------------------------------------
 # ---------------------------------------------------------------------------------- Structure profiles
 # -----------------------------------------------------------------------------------------------------
@@ -56,56 +54,6 @@ def gravity(r, rpower):  # rᵃ g(r)
     return (r**rpower)*out
 
 
-
-# def bg_entropy_gradient(r, rpower):   # rᵃ dS/dr, Note that N²(r) = g(r) dS/dr in dimensionless units
-
-#     out = np.zeros_like(r)
-
-#     if par.background == 0:
-
-#         out = ut.load_mesa(r,'entropy_gradient')
-
-#     else:
-
-#         if par.def_entropy == 0:
-
-#             if not gravity(r, 0).any(0):
-
-#                 BV2 = np.zeros_like(r)
-
-#                 if par.background == 1:
-#                     ### DEFINE BACKGROUND PROFILE OF BRUNT-VÄISÄLÄ FREQUENCY ###
-
-#                     BV2 = np.ones_like(r)
-
-#                     ############################################################
-#                 elif par.background == 2:
-
-#                     rad = np.loadtxt('radius.dat')
-#                     BV2 = ut.interp(r, rad, np.loadtxt('BV_frequency.dat'))
-
-#                 out = BV2 / gravity(r, 0)
-
-#             else:
-#                 print('Error! gravity profile cannot be zero anywhere')
-
-#         elif par.def_entropy == 1:
-
-#             if par.background == 1:
-#                 ### DEFINE BACKGROUND GRADIENT OF ENTROPY ###
-
-#                 out = np.ones_like(r)
-
-#                 #############################################
-#             elif par.background == 2:
-
-#                 rad = np.loadtxt('radius.dat')
-#                 out = ut.interp(r, rad, np.loadtxt('entropy_gradient.dat'), even=False)
-
-#     return (r**rpower)*out
-
-
-
 def pressure(r, rpower):   # rᵃ p(r)
 
     out = np.zeros_like(r)
@@ -148,27 +96,58 @@ def pressure(r, rpower):   # rᵃ p(r)
     return (r**rpower)*out
 
 
-
-def pdSdr(r, rpower):
+def pdSdr(r, rpower):   # rᵃ p(r) dS/dr, Note that N²(r) = g(r) dS/dr in dimensionless units
 
     out = np.zeros_like(r)
 
     if par.background == 0:
 
-        out = ut.load_mesa(r,'pdSdr')
+        out = ut.load_mesa(r,'buoyancy')
 
-    elif par.background == 1:
-        ### DEFINE BACKGROUND PROFILE OF DENSITY ###
+    else:
 
-        out = np.zeros_like(r)
+        if par.def_entropy == 0:
 
-        ############################################
-    elif par.background == 2:
+            if not gravity(r, 0).any(0):
 
-        rad = np.loadtxt('radius.dat')
-        out = ut.interp(r, rad, np.loadtxt('pdSdr.dat'), even=False)
+                BV2 = np.zeros_like(r)
+
+                if par.background == 1:
+                    ### DEFINE BACKGROUND PROFILE OF BRUNT-VÄISÄLÄ FREQUENCY ###
+
+                    BV2 = np.ones_like(r)
+
+                    ############################################################
+                elif par.background == 2:
+
+                    rad = np.loadtxt('radius.dat')
+                    BV2 = ut.interp(r, rad, np.loadtxt('BV_frequency.dat'))
+
+                out = pressure(r, 0) * BV2 / gravity(r, 0)
+
+            else:
+                print('Error! gravity profile cannot be zero anywhere')
+
+        elif par.def_entropy == 1:
+
+            if par.background == 1:
+                ### DEFINE BACKGROUND GRADIENT OF ENTROPY ###
+
+                out = np.ones_like(r)
+
+                #############################################
+                out = pressure(r, 0) * out
+            elif par.background == 2:
+
+                rad = np.loadtxt('radius.dat')
+                press = np.loadtxt('pressure.dat')
+                entropy = np.loadtxt('entropy.dat')
+                out = ut.interp(r, rad, press*entropy, even=False)
 
     return (r**rpower)*out
+
+
+
 
 
 
@@ -179,7 +158,7 @@ def viscosity(r, rpower):  # rᵃ v(r)
     if par.background == 1 or (par.background == 0 and par.def_viscosity == 1):
         ### DEFINE BACKGROUND PROFILE OF KINEMATIC VISCOSITY ###
 
-        out = np.zeros_like(r)
+        out = np.ones_like(r)
 
         ########################################################
     elif par.background == 2 or (par.background == 0 and par.def_viscosity == 2):
@@ -198,7 +177,7 @@ def thermal_diffusivity(r, rpower):   # rᵃ κ(r)
     if par.background == 1 or (par.background == 0 and par.def_thermal_diffusivity == 1):
         ### DEFINE BACKGROUND PROFILE OF THERMAL DIFFUSIVITY ###
 
-        out = np.zeros_like(r)
+        out = np.ones_like(r)
 
         ########################################################
     elif par.background == 2 or (par.background == 0 and par.def_thermal_diffusivity == 2):
@@ -213,7 +192,6 @@ def thermal_diffusivity(r, rpower):   # rᵃ κ(r)
 # -----------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------ Derived profiles
 # -----------------------------------------------------------------------------------------------------
-
 
 
 def kappress(r, rpower):   # κ p
