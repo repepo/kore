@@ -294,9 +294,9 @@ def main():
                     np.savetxt(dmag2, ib)
 
             if par.thermal == 1:
-                with open('real_temperature.field','wb') as dtemp1:
+                with open('real_thermal.field','wb') as dtemp1:
                     np.savetxt(dtemp1, rtemp)
-                with open('imag_temperature.field','wb') as dtemp2:
+                with open('imag_thermal.field','wb') as dtemp2:
                     np.savetxt(dtemp2, itemp)
 
             if par.compositional == 1:

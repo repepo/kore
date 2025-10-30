@@ -14,7 +14,7 @@ def density(r, rpower):  # rᵃ ρ(r)
 
     if par.background == 0:
 
-        out = ut.load_mesa(r,'density')
+        out = ut.load_model(r,'density')
 
     elif par.background == 1:
         ### DEFINE BACKGROUND PROFILE OF DENSITY ###
@@ -38,7 +38,7 @@ def gravity(r, rpower):  # rᵃ g(r)
 
     if par.background == 0:
 
-        out = ut.load_mesa(r,'gravity')
+        out = ut.load_model(r,'gravity')
 
     elif par.background == 1:
         ### DEFINE BACKGROUND PROFILE OF GRAVITY ###
@@ -59,7 +59,7 @@ def pressure(r, rpower):   # rᵃ p(r)
     out = np.zeros_like(r)
 
     if par.background == 0:
-        out = ut.load_mesa(r, 'pressure')
+        out = ut.load_model(r, 'pressure')
 
     else:
 
@@ -102,7 +102,7 @@ def pdSdr(r, rpower):   # rᵃ p(r) dS/dr, Note that N²(r) = g(r) dS/dr in dime
 
     if par.background == 0:
 
-        out = ut.load_mesa(r,'buoyancy')
+        out = ut.load_model(r,'pdSdr')
 
     else:
 
@@ -145,9 +145,6 @@ def pdSdr(r, rpower):   # rᵃ p(r) dS/dr, Note that N²(r) = g(r) dS/dr in dime
                 out = ut.interp(r, rad, press*entropy, even=False)
 
     return (r**rpower)*out
-
-
-
 
 
 

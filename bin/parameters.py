@@ -36,13 +36,14 @@ background = 0 # For MESA file format profiles (load MESA or GYRE type model bel
 def_pressure = 0 # set to 1 if the background pressure is provided, set to 0 if background temperature is provided
 def_entropy = 0 # set to 1 if the background entropy gradient is provided, set to 0 if the squared Brunt-Väisälä frequency is provided
 def_viscosity = 0 # set to 1 if using a MESA profile and defining viscosity implicitly, set to 2 if using a MESA profile and defining viscosity explicitly
-def_thermal_diffusivity = 0 # set to 1 if using a MESA profile and defining thermal diffusivity implicitly, set to 2 if using a MESA profile and defining thermal diffusivity explicitly
+def_thermal_diffusivity = 1 # set to 1 if using a MESA profile and defining thermal diffusivity implicitly, set to 2 if using a MESA profile and defining thermal diffusivity explicitly
 
-model = 'poly.n1_gamma3.h5' # MESA or GYRE file
+model = 'planet_profile.mesa' # MESA, GYRE, or astropy table model file
 
-model_type = 'poly'
-#model_type = 'mesa'
-#model_type = 'gsm'
+# model_type = 'poly'
+model_type = 'mesa'
+# model_type = 'gsm'
+# model_type = 'astropy table'
 
 # ----------------------------------------------------------------------------------------------------------------------
 # ---------------------------------------------------------------------------------------------- Hydrodynamic parameters
@@ -64,7 +65,11 @@ bci = 0
 
 # CMB spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow
-bco = 1
+bco = 0
+
+#-----------------
+bco_thermal = 1
+#-----------------
 
 forcing = 0  # Uncomment this line for eigenvalue problems
 # forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
@@ -99,7 +104,7 @@ projection = 1
 # OmgTau = 1/Le  # Alfvén time scale
 # OmgTau = 1/Em  # Magnetic diffusion time scale
 
-Gaspard = 0  # Omega*Tau                   Coriolis force factor. Set to 1 for unit time Tau = 1/Omega
+Gaspard = 1e-6  # Omega*Tau                   Coriolis force factor. Set to 1 for unit time Tau = 1/Omega
 Beyonce = 1  # (N0*Tau)**2                 Buoyancy force factor. Set to 1 for unit time Tau = 1/N0 = sqrt(r0/g0)
 Hendrik = 0  # (Tau*B0/r0)**2/(rho0*mu0)   Lorentz force factor. Set to 1 for Alfven time scale
 ViscosD = 0  # nu0 * Tau / r0**2           Viscous force factor. Set to 1 for viscous diffusion time scale. This is the Ekman number if Tau = 1/Omega
@@ -112,18 +117,18 @@ MagnetD = 0  # eta0 * Tau / r0**2          Magnetic diffusion factor. Set to 1 f
 # ----------------------------------------------------------------------------------------------------------------------
 
 # Number of cpus
-ncpus = 4
+ncpus = 24
 
 # Chebyshev polynomial truncation level. Use function def at top or set manually. N must be even if ricb = 0.
 # N = Ncheb(Ek)
-N = 96
+N = 48*14
 
 # Spherical harmonic truncation lmax and approx lmax/N ratio:
 g = 1.0
-#lmax = int( 2*ncpus*( np.floor_divide( g*N, 2*ncpus ) ) + m - 1 )
+lmax = int( 2*ncpus*( np.floor_divide( g*N, 2*ncpus ) ) + m - 1 )
 # If manually setting the max angular degree lmax, then it must be even if m is odd,
 # and lmax-m+1 should be divisible by 2*ncpus
-lmax = (2*ncpus*1 + m - 1)
+# lmax = (2*ncpus*1 + m - 1)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -141,7 +146,7 @@ if track_target == 1 :  # read target from file and sets target accordingly
     itau = tt[1]
 else:                   # set target manually
     rtau = 0
-    itau = -0.4860
+    itau = 0.36505
 
 # tau is the actual target for the solver
 # real part is damping
@@ -154,7 +159,7 @@ which_eigenpairs = 'TM'  # Use 'TM' for shift-and-invert
 # M magnitude, R real, I imaginary
 
 # Number of desired eigenvalues
-nev = 10
+nev = 16
 
 # Number of vectors in Krylov space for solver
 # ncv = 100

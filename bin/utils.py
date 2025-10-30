@@ -11,6 +11,7 @@ import numpy as np
 import parameters as par
 import radial_profiles as rap
 import pygyre as gy
+from astropy.table import Table
 
 '''
 A library of various function definitions and utilities
@@ -347,6 +348,7 @@ def fonzie( func, r, N, ricb, rcmb, Dorder, tol, *args):
     return out
 
 
+
 def get_radial_derivatives( func, rorder, Dorder, tol):
     '''
     This function computes terms of the form r^n d^m/dr^m of a
@@ -392,6 +394,7 @@ def get_radial_derivatives( func, rorder, Dorder, tol):
     return rd_prof
 
 
+
 def interp(rad, rad_user, profile, even=True):
 
     interp = si.Akima1DInterpolator(rad_user, profile)
@@ -415,13 +418,18 @@ def interp(rad, rad_user, profile, even=True):
     return out
 
 
-def load_mesa(r, var):
 
-    profile = gy.read_model(par.model)
+def load_model(r, var):
+
+    if par.model_type == 'astropy table':
+        profile = Table.read(par.model, format='ascii')
+    elif par.model_type in ['poly', 'mesa', 'gsm']: 
+        profile = gy.read_model(par.model)
+    
     out = np.zeros_like(r)
     z = True
 
-    if par.model_type == 'poly':
+    if par.model_type in ['astropy table', 'poly']:
 
         x = profile['x']
         y = np.zeros_like(x)
@@ -436,11 +444,12 @@ def load_mesa(r, var):
             y = x/profile['c_1']
             z = False
 
-        elif var == 'buoyancy':
+        elif var == 'pdSdr':
             y[1:-1] = profile['P/P_0'][1:-1] * profile['As'][1:-1] / x[1:-1]
             z = False
 
     elif par.model_type == 'mesa' or par.model_type == 'gsm':
+
         G_star = 6.67430e-8                 # gravitational constant in cm^3 g^-1 s^-2
         M_star = profile.meta['M_star']     # stellar mass in g
         R_star = profile.meta['R_star']     # stellar radius in cm
@@ -453,7 +462,7 @@ def load_mesa(r, var):
         if var == 'pressure':
             y = profile['P'] * R_star**4 / M_star**2 / G_star # dimensionless pressure
 
-        if (var == 'gravity') or (var == 'buoyancy'):
+        if (var == 'gravity') or (var == 'pdSdr'):
             if profile.meta['version'] > 20:
                 mass = profile['M_r'] / M_star  # dimensionless mass for newest MESA file formats
             else:
@@ -461,7 +470,7 @@ def load_mesa(r, var):
 
             y[1:] = ( mass[1:] / x[1:]**2 )  # dimensionless gravity
 
-            if var == 'buoyancy':
+            if var == 'pdSdr':
                 BV2 = profile['N^2'] * R_star**3 / M_star / G_star  # dimensionless Brunt-Väisälä frequency
                 pressure = profile['P'] * R_star**4 / M_star**2 / G_star # dimensionless pressure
                 y[1:] = BV2[1:] * pressure[1:] / y[1:]
@@ -471,6 +480,7 @@ def load_mesa(r, var):
     out = interp(r, x, y, even=z)
 
     return out
+
 
 
 def jl_smx(l,x,d):
