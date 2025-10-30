@@ -17,6 +17,7 @@ import parameters as par
 import utils as ut
 import utils4pp as upp
 
+import radial_profiles as rad
 
 
 def main(ncpus):
@@ -41,8 +42,8 @@ def main(ncpus):
     fname_rb = 'real_magnetic.field'
     fname_ib = 'imag_magnetic.field'
 
-    fname_rt = 'real_temperature.field'
-    fname_it = 'imag_temperature.field'
+    fname_rt = 'real_thermal.field'
+    fname_it = 'imag_thermal.field'
 
     fname_rc = 'real_composition.field'
     fname_ic = 'imag_composition.field'
@@ -65,7 +66,8 @@ def main(ncpus):
     elif par.magnetic == 1:
         success = np.shape(rb)[1]
 
-    # ------------------------------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+    # hydrodynamical variables to be processed
     KE          = np.zeros(success)
     KP          = np.zeros(success)
     KT          = np.zeros(success)
@@ -76,32 +78,43 @@ def main(ncpus):
     Wcmp        = np.zeros(success)
     vtorq       = np.zeros(success,dtype=complex)  # viscous torque on the mantle
     vtorq_icb   = np.zeros(success,dtype=complex)  # viscous torque on the inner core
+
+    # magnetic variables to be processed
     ME          = np.zeros(success)
     Mdfs        = np.zeros(success)
     Indu        = np.zeros(success)
-    mtorq       = np.zeros(success,dtype=complex)  # electromagnetic torque on the mantle   
+    mtorq       = np.zeros(success,dtype=complex)  # electromagnetic torque on the mantle
+
+    # thermal variables to be processed
     TE          = np.zeros(success)
     Wadv_thm    = np.zeros(success)
     Dthm        = np.zeros(success)
+
+    # compositional variables to be processed
     CE          = np.zeros(success)
     Wadv_cmp    = np.zeros(success)
     Dcmp        = np.zeros(success)
+
+    # residual errors to be processed
     resid0      = np.zeros(success)
     resid1      = np.zeros(success)
     resid2      = np.zeros(success)
     resid3      = np.zeros(success)
+
+    # tracking variables to be processed
     y           = np.zeros(success)                # for eigenmode tracking
-    params      = np.zeros((success,49))
+
+    # parameter values to be saved
+    params      = np.zeros((success,26))
     # ------------------------------------------------------------------------------------------------------------------------
 
-    print('\n  ★     Damping σ     Frequency ω    resid0     resid𝐮     resid𝐛     residθ     Tor/Pol    Mag/Kin     𝚪 mag  ')
-    print(  ' ‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾')
+    print('\n  ★     Damping σ     Frequency ω    peak ℓ     width ℓ   ℓ convergence  ')
+    print(  ' ‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ')
 
 
     if par.track_target == 1:  # eigenvalue tracking enabled
         #read target data
         x = np.loadtxt('track_target')
-
 
     # Begin processing all solutions
     for i in range(success):
@@ -144,40 +157,42 @@ def main(ncpus):
             # Expand solution
             c_sol2  = upp.expand_reshape_sol( rcmp + 1j*icmp, par.symm)		   			
 
-    
+        # identify solutions
+        [ id_1, id_2, id_3 ] = upp.identify( u_sol2 )
+
+        '''
         # diagnose solutions, in parallel
         [ udgn, bdgn, tdgn, cdgn ] = upp.diagnose( u_sol2, b_sol2, t_sol2, c_sol2, par.ricb, ut.rcmb, int(ncpus) )
-
 
         if par.hydro:
             
             KP[i] = np.sum( udgn[lpi,0])  # Poloidal kinetic energy
             KT[i] = np.sum( udgn[lti,0])  # Toroidal kinetic energy
-            
+
             [ KE[i], Dkin0, Dint0, Wlor0, Wthm0, Wcmp0 ] = np.sum( udgn, 0)
-            Dkin[i] = par.OmgTau * par.Ek * Dkin0
-            Dint[i] = par.OmgTau * par.Ek * Dint0
-            Wlor[i] = par.OmgTau**2 * par.Le2 * Wlor0
-            Wthm[i] = par.OmgTau**2 * par.BV2 * Wthm0
-            Wcmp[i] = par.OmgTau**2 * par.BV2_comp * Wcmp0
-            
+            Dkin[i] = par.ViscosD * Dkin0
+            Dint[i] = par.ViscosD * Dint0
+            Wlor[i] = 0#par.OmgTau**2 * par.Le2 * Wlor0
+            Wthm[i] = par.Beyonce * Wthm0
+            Wcmp[i] = 0#par.OmgTau**2 * par.BV2_comp * Wcmp0
+
             # Viscous torques
-            vtorq[i] = par.Ek * np.dot( ut.gamma_visc(0,0,0), u_sol)  # need to double check the constants here
-            vtorq_icb[i] = par.Ek * np.dot( ut.gamma_visc_icb(par.ricb), u_sol)
+            vtorq[i] = 0#par.Ek * np.dot( ut.gamma_visc(0,0,0), u_sol)  # need to double check the constants here
+            vtorq_icb[i] = 0#par.Ek * np.dot( ut.gamma_visc_icb(par.ricb), u_sol)
 
 
         if par.magnetic:
 
-            [ ME0, Mdfs0, Indu[i] ] = np.sum( bdgn, 0)
-            ME[i]   = ME0   * par.OmgTau**2 * par.Le2
+            [ ME0, Dohm0, Indu0 ] = np.sum( bdgn, 0)
+            ME[i]   = 0#ME0   * par.OmgTau**2 * par.Le2
             #Dohm = Dohm0 * par.OmgTau**3 * par.Le2 * par.Em
-            Mdfs[i] = par.OmgTau * par.Em * Mdfs0
+            Indu[i] = 0#par.OmgTau * par.Em * Indu0
 
             if ((par.mantle == 'TWA') and (par.m==0) and (par.symm==1)):
                 mtorq[i] = par.Le2 * np.dot( ut.gamma_magnetic(), b_sol )  # need to double check the constants here
 
 
-        if par.thermal:
+        if par.compositional:
 
             [ TE[i], Dthm0, Wadv_thm[i] ] = np.sum( tdgn, 0) 
             Dthm[i] = Dthm0 * par.Etherm
@@ -186,136 +201,85 @@ def main(ncpus):
         if par.compositional:
             
             [ CE[i], Dcmp0, Wadv_cmp[i] ] = np.sum( cdgn, 0)
-            Dcmp[i] = Dcmp0 * par.Ecomp
-
+            Dcmp[i] = Dcmp0 * par.Ecomp  
 
         # --------------------------------------------------------- Computing residuals to check the power balance:
-        # pss is the rate of working of stresses at the boundary
-        # pvf is the rate of working of external volume force
-        # Dint is the rate of change of internal energy
-        # Dkin is the kinetic energy dissipation (viscous dissipation) via ∫𝐮⋅∇²𝐮 dV
-        # Wthm is the rate of working of the buoyancy force (thermal)
-        # Dohm is the Ohmic dissipation or Joule heating via ∫|∇×𝐛|² dV
-        # Mdfs is the magnetic diffusion via ∫𝐛⋅∇²𝐛 dV
-        # Dthm is the thermal "dissipation" via ∫ θ ∇²θ dV
-        # Wthm_adv is the thermal advection "power" via ∫ (-𝐮⋅∇T) θ dV
         # KE is kinetic energy
         # ME is magnetic energy
-        # TE is the thermal "energy" (1/2) ∫ θ² dV
-        # resid0 is the relative residual of Dkin + Dint - pss = 0
-        # resid1 is the relative residual of 2*sigma*KE - Dkin - Wlor -Wthm - pvf = 0
-        # resid2 is the relative residual of 2*sigma*ME - Indu - Mdfs = 0
-        # resid3 is the relative residual of 2*sigma*TE - Dthm - Wadv_thm = 0
+        # TE is the thermal "energy" (p/2) ∫ S'² dV
+
+        # Dint is the rate of change of internal energy
+        # Dkin is the kinetic energy dissipation (viscous dissipation) via ∫𝐮⋅∇²𝐮 dV
+        # Dohm is the Ohmic dissipation or Joule heating via ∫|∇×𝐛|² dV
+        # Dthm is the thermal "dissipation" via ∫ S' ∇⋅κp∇S' dV
+
+        # Wthm is the rate of working of the Lorentz force
+        # Wthm is the rate of working of the buoyancy force (thermal)
+        # Wcmp is the rate of working of the buoyancy force (compositional)
+
+        # Indu is the magnetic induction "power"
+        # Wadv is the thermal advection "power" via ∫ (-𝐮⋅r p dS'/dr ) dV
+
+        # resid0 is the relative residual of Dkin + Dint = 0
+        # resid1 is the relative residual of 2*sigma*KE - Dkin - Wlor -Wthm = 0
+        # resid2 is the relative residual of 2*sigma*ME - Dohm - Indu  = 0
+        # resid3 is the relative residual of 2*sigma*TE - Dthm - Wadv = 0
         # ---------------------------------------------------------------------------------------------------------
 
-        if par.forcing == 0:
-            pss = 0
-            pvf = 0
-        elif par.forcing == 1:
-            pss = 0
-            pvf = repow
-        elif par.forcing == 7: # Libration as boundary flow forcing
-            pvf = 0      # power of volume forces (Poincare)
-            pss = repow  # power of stresses
-        elif par.forcing == 8:  # Libration as a volume force
-            pss = 0      # power of stresses
-            pvf = repow  # power of volume forces (Poincare)
-        elif par.forcing == 9: # Radial boundary flow forcing
-            pvf = 0      # power of volume forces (Poincare)
-            pss = repow  # power of stresses
-
-        if par.Ek != 0 and par.hydro == 1:
-            resid0[i] = abs( Dint0 + Dkin0 - pss ) / max( abs(Dint0), abs(Dkin0), abs(pss) )
+        if par.ViscosD != 0 and par.hydro == 1:
+            resid0[i] = abs( Dint0 + Dkin0 ) / max( abs(Dint0), abs(Dkin0) )
         else:
             resid0[i] = np.nan
 
         if par.hydro:
-            resid1[i] = abs( 2*sigma*KE[i] - Dkin[i] - Wlor[i] + Wthm[i] )/ \
-                             max(abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wlor[i]), abs(Wthm[i]))
-        
-        if par.magnetic:
-            resid2[i] = abs( 2*sigma*ME0 - Indu[i] - Mdfs[i] ) / \
-                             max( abs(2*sigma*ME0), abs(Indu[i]), abs(Mdfs[i]))
-            
-        if par.thermal:
-            resid3[i] = abs( 2*sigma*TE[i] - Dthm[i] - Wadv_thm[i] ) / \
-                             max( abs(2*sigma*TE[i]), abs(Dthm[i]), abs(Wadv_thm[i]))
-        
-    
-        # ------------------------------------------------------------------------------------------------------------------
-        print(' {:2d}   {: 12.9f}   {: 12.9f}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}'.format( \
-               i, sigma, w, resid0[i], resid1[i], resid2[i], resid3[i], KT[i]/KP[i], ME[i]/KE[i], 2*np.abs(mtorq[i])/np.sqrt(KE[i]) ))
-        # ------------------------------------------------------------------------------------------------------------------
+            resid1[i] = (abs( 2*sigma*KE[i] - Dkin[i] - Wlor[i] + Wthm[i] )
+                         /max(abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wlor[i]), abs(Wthm[i])))     
+                         
+        '''
 
+        # ------------------------------------------------------------------------------------------------------------------
+        print(' {:2d}   {: 12.9f}   {: 12.9f}     {:2d}          {:2d}       {:12.6e}'.format(i, sigma, w, id_1, id_2, id_3))
+        # ------------------------------------------------------------------------------------------------------------------
 
         toc = timer()
         
-        params[i,:] = np.array([                          
-                                par.hydro,
-                                par.magnetic,
-                                par.thermal,
-                                par.compositional,
-                                
-                                par.Ek,
-                                par.m,
-                                par.symm,
-                                par.ricb,
+        params[i,:] = np.array([
+                                par.hydro,                      #0
+                                par.magnetic,                   #1
+                                par.thermal,                    #2
+                                par.compositional,              #3
 
-                                par.bci,
-                                par.bco,
-                                par.forcing,
-                                par.forcing_frequency,
-                                
-                                par.forcing_amplitude_cmb,
-                                par.forcing_amplitude_icb,
-                                par.projection,
-                                ut.B0type,
-                                
-                                ut.beta_actual,
-                                ut.B0_l,
-                                ut.innercore_mag_bc,
-                                par.c_icb,
-                                
-                                par.c1_icb,
-                                ut.mantle_mag_bc,
-                                par.c_cmb,
-                                par.c1_cmb,
-                                
-                                par.mu,
-                                par.Em,
-                                par.Le2,
-                                ut.B0_norm(),
-                                
-                                par.Etherm,
-                                ut.heating,
-                                par.BV2,
-                                par.rc,
-                                
-                                par.h,
-                                par.rsy,
-                                par.bci_thermal,
-                                par.bco_thermal,
-                                
-                                par.Ecomp,
-                                ut.compositional_background,
-                                par.BV2_comp,
-                                par.rcc,
-                                
-                                par.hc,
-                                par.rsyc,
-                                par.bci_compositional,
-                                par.bco_compositional,
-                                
-                                par.OmgTau,
-                                par.ncpus,
-                                par.N,
-                                par.lmax,
-                                
-                                timing+toc-tic
-                                ])  # 49 total 
+                                par.m,                          #4
+                                par.symm,                       #5
+                                par.ricb,                       #6
+                                par.bci,                        #7
+                                par.bco,                        #8
+
+                                par.forcing,                    #9
+                                par.forcing_frequency,          #10
+                                par.forcing_amplitude_cmb,      #11
+                                par.forcing_amplitude_icb,      #12
+                                par.projection,                 #13
+
+                                par.Gaspard,                    #14
+                                par.Beyonce,                    #15
+                                par.Hendrik,                    #16
+                                par.ViscosD,                    #17
+                                par.ThermaD,                    #18
+                                par.MagnetD,                    #19
+
+                                par.ncpus,                      #20
+                                par.N,                          #21
+                                par.lmax,                       #22
+
+                                timing+toc-tic,                 #23
+
+                                par.aux1,                       #24
+                                par.aux2                        #25
+                                ])  # 26 total
 
     # ------------------------------------------------------------------------------------------------------------------------
-    print(' ‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾\n')
+    print(  ' ‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ')
 
 
     '''
@@ -353,29 +317,17 @@ def main(ncpus):
         fmt=[
             '%d',   '%d',   '%d',   '%d',
             
-            '%.9e', '%d',   '%d',   '%.9e',
+            '%d',   '%d',   '%.9e', '%d',
             
-            '%d',   '%d',   '%d',   '%.9e',
-            
-            '%.9e', '%.9e', '%d',   '%d' ,
-
-            '%.9e', '%d',   '%d',   '%.9e',
+            '%d',   '%d',   '%.9e', '%.9e',
 
             '%.9e', '%d',   '%.9e', '%.9e',
              
             '%.9e', '%.9e', '%.9e', '%.9e',
 
-            '%.9e', '%d',   '%.9e', '%.9e',
-           
-            '%.9e', '%.9e', '%d',   '%d',
-
-            '%.9e', '%d',   '%.9e', '%.9e',
-
-            '%.9e', '%d',   '%d',   '%d',
-
-            '%.9e', '%d',   '%d',   '%d',
+            '%d',   '%d',   '%d',   '%.9e',
              
-            '%.2f'])
+            '%.9e', '%.9e'])
 
     if par.hydro:   
         with open('flow.dat','ab') as dflo:
@@ -404,8 +356,6 @@ def main(ncpus):
 
     # ------------------------------------------------------------------ done
     return 0
-
-
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1]))

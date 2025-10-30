@@ -856,3 +856,20 @@ def diagnose( usol2, bsol2, tsol2, csol2, Ra, Rb, ncpus):
     pool.join()
 
     return [ out_u, out_b, out_t, out_c ]
+    
+
+def identify(sol2):
+    P = np.abs(sol2[0])
+    T = np.abs(sol2[1])
+
+    [ lp_u, lt_u, _ ] = ut.ell(par.m, par.lmax, par.symm) # the l-indices of the flow field
+
+    ell_amps = np.zeros(par.lmax+2)
+    ell_amps[lp_u] = np.sum(P, axis=1)
+    ell_amps[lt_u] = np.sum(T, axis=1)
+
+    max_ell = np.argmax(ell_amps)
+    spread_ell = len(np.where(ell_amps > 0.9*ell_amps[max_ell]))
+    convergence_ell = ell_amps[-1] / ell_amps[max_ell]
+
+    return max_ell, spread_ell, convergence_ell
