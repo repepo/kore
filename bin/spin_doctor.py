@@ -13,7 +13,7 @@ import scipy.sparse as ss
 from timeit import default_timer as timer
 import os.path
 import numpy as np
-import parameters as par
+from parameters import par
 import utils as ut
 import utils4pp as upp
 

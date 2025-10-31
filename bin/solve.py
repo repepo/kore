@@ -21,7 +21,7 @@ import scipy.sparse as ss
 from timeit import default_timer as timer
 import numpy as np
 
-import parameters as par
+from parameters import par
 import utils as ut
 
 
@@ -116,7 +116,8 @@ def main():
         elif wep == 'TI':
             E.setWhichEigenpairs(SLEPc.EPS.Which.TARGET_IMAGINARY)
 
-        E.setTarget(par.tau)
+        tau = par.rtau + par.itau * 1j
+        E.setTarget(tau)
         E.setFromOptions()
         # done setting up solver
 

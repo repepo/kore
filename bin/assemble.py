@@ -15,16 +15,13 @@ import scipy.sparse.linalg as ssl
 import scipy.sparse as ss
 #import pywigxjpf as wig
 from mpi4py import MPI
-import scipy.io as sio
 import numpy as np
 import warnings
 import sys
-import glob
 
 import bc_variables as bv
-import parameters as par
+from parameters import par
 import utils as ut
-#import operators as op
 import operators as op
 import radial_profiles as rap
 
@@ -390,7 +387,7 @@ def main():
             else:
 
                 print('This boundary flow forcing needs symm = 1 and m = 2 and bci = 1')
- 
+
     elif par.forcing == 10: # --------------------------------------------------------------- m=2 radial velocity forcing
 
         # Order m radial velocity forcing at the icb or cmb, l=m poloidal scalar only, equatorially symmetric.
@@ -1190,23 +1187,23 @@ def bc_u_spherical(l,loc):
     either no-penetration (for the inviscid case), stress-free or no-slip.
     '''
     inviscid = (par.ViscosD == 0) #boolean
-    
+
     R  = ut.rcmb
     Ri = par.ricb
 
     # Density and up to 2nd derivative at the surface
     rhbd = rap.densityX(1,2)
-    rhb0 = rhbd[:,0]  
+    rhb0 = rhbd[:,0]
     rhb1 = rhbd[:,1]
     rhb2 = rhbd[:,2]
 
     # Density and up to 2nd derivative at the ICB
     rhad = rap.densityX(Ri,2)
-    rha0 = rhad[:,0]  
+    rha0 = rhad[:,0]
     rha1 = rhad[:,1]
     rha2 = rhad[:,2]
 
-    L = l*(l+1) 
+    L = l*(l+1)
 
     if inviscid:
         num_rows_u = 1

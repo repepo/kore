@@ -8,10 +8,9 @@ import scipy.interpolate as si
 import scipy.constants as sc
 import numpy.polynomial.chebyshev as ch
 import numpy as np
-import parameters as par
+from parameters import par
 import radial_profiles as rap
-import pygyre as gy
-from astropy.table import Table
+import sys
 
 '''
 A library of various function definitions and utilities
@@ -55,27 +54,27 @@ lmax_bot = lmax + 1 + (1-2*np.sign(m))*(1-s)
 # ----------------------------------------------------------------------------------------------------------------------
 
 def decode_label(labl):
-    
+
     #print(labl)
     (section, rpower, rhopower, func1, dorder1, func2, dorder2, dx) = (None, None, None, None, None, None, None, None)
 
-    howlong = len(labl)  
+    howlong = len(labl)
     section = labl[0]        # this is 'u' or 'v' or 'h'
     rx      = int(labl[1])   # related to rpower
-    dx      = int(labl[-1])  # operators' derivative order       
+    dx      = int(labl[-1])  # operators' derivative order
 
     if section == 'u':
         if par.ViscosD == 0:
             rpower = 3 - rx ; rhopower = 2   # Inviscid, we multiply the r̂⋅∇×∇× equations by r³ ρ²
         else:
             rpower = 5 - rx ; rhopower = 4   # Viscous, we multiply the r̂⋅∇×∇× equations by r⁵ ρ⁴
-    
+
     elif section == 'v':
         if par.ViscosD == 0:
             rpower = 2 - rx ; rhopower = 1   # Inviscid, we multiply the r̂⋅∇× equations by r² ρ
         else:
             rpower = 3 - rx ; rhopower = 1   # Viscous, we multiply the r̂⋅∇× equations by r³ ρ
-    
+
     elif section == 'h':
         if par.ThermaD == 0:
             rpower = 1 - rx ; rhopower = 0   # Adiabatic motion, we multiply the thermal equation by r
@@ -84,8 +83,8 @@ def decode_label(labl):
 
     if howlong in [9,13]:   # sXfu1X_DX or sXfu1Xfu2X_DX
         func1   = labl[2:5]
-        dorder1 = int(labl[5])       
-        
+        dorder1 = int(labl[5])
+
         if howlong == 13:   # sXfu1Xfu2X_DX
             func2   = labl[6:9]
             dorder2 = int(labl[9])
@@ -309,7 +308,7 @@ def xcheb(r, ricb, rcmb):
     '''
 
     r1 = rcmb
-    r0 = ricb + (np.sign(ricb)-1)*rcmb  # r0=-rcmb if ricb==0; r0=ricb if ricmb>0 
+    r0 = ricb + (np.sign(ricb)-1)*rcmb  # r0=-rcmb if ricb==0; r0=ricb if ricmb>0
     out = 2*(r-r0)/(r1-r0) - 1
 
     return out
@@ -326,10 +325,10 @@ def funcheb(ck0, r, ricb, rcmb, n):
     '''
 
     x00 = xcheb(r, ricb, rcmb)  # use the explicit radial points given as argument
-    
+
     out = np.zeros((np.size(x00), n+1), ck0.dtype)  # n+1 cols
     out[:,0] = ch.chebval(x00, ck0)  # the function itself
-    
+
     if n>0:
         dk = Dn_cheb(ck0, ricb, rcmb, n)  # coeffs for the derivatives, n cols
         for j in range(1,n+1):
@@ -340,11 +339,11 @@ def funcheb(ck0, r, ricb, rcmb, n):
 
 
 def fonzie( func, r, N, ricb, rcmb, Dorder, tol, *args):
-    
+
     out = np.zeros_like(r)
     ck  = chebco_f( func, N, ricb, rcmb, tol, args)
     out = funcheb(ck, r, ricb, rcmb, Dorder)
-    
+
     return out
 
 
@@ -422,10 +421,20 @@ def interp(rad, rad_user, profile, even=True):
 def load_model(r, var):
 
     if par.model_type == 'astropy table':
+        try:
+            from astropy.table import Table
+        except ImportError:
+            print('Astropy is not installed. Please install it or choose another model_type.')
+            sys.exit()
         profile = Table.read(par.model, format='ascii')
-    elif par.model_type in ['poly', 'mesa', 'gsm']: 
+    elif par.model_type in ['poly', 'mesa', 'gsm']:
+        try:
+            import pygyre as gy
+        except ImportError:
+            print('PyGYRE is not installed. Please install it or choose another model_type.')
+            sys.exit()
         profile = gy.read_model(par.model)
-    
+
     out = np.zeros_like(r)
     z = True
 

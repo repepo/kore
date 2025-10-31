@@ -1,6 +1,6 @@
 import numpy as np
 import utils as ut
-import parameters as par
+from parameters import par
 
 # -----------------------------------------------------------------------------------------------------
 # ---------------------------------------------------------------------------------- Structure profiles
@@ -12,41 +12,49 @@ def density(r, rpower):  # rᵃ ρ(r)
 
     out = np.zeros_like(r)
 
-    if par.background == 0:
+    if par.background == 'bouss':
+
+        out = np.ones_like(r)
+
+    elif par.background == 'model':
 
         out = ut.load_model(r,'density')
 
-    elif par.background == 1:
+    elif par.background == 'userdef':
         ### DEFINE BACKGROUND PROFILE OF DENSITY ###
 
         density_beta = 1
         out = (1 - r ** 2) ** density_beta
 
         ############################################
-    elif par.background == 2:
+    elif par.background == 'array':
 
         rad = np.loadtxt('radius.dat')
         out = ut.interp(r, rad, np.loadtxt('density.dat'))
 
     return (r**rpower)*out
-    
+
 
 
 def gravity(r, rpower):  # rᵃ g(r)
 
     out = np.zeros_like(r)
 
-    if par.background == 0:
+    if par.background == 'bouss':
+
+        out = r
+
+    elif par.background == 'model':
 
         out = ut.load_model(r,'gravity')
 
-    elif par.background == 1:
+    elif par.background == 'userdef':
         ### DEFINE BACKGROUND PROFILE OF GRAVITY ###
 
         out = np.ones_like(r)
 
         ############################################
-    elif par.background == 2:
+    elif par.background == 'array':
 
         rad = np.loadtxt('radius.dat')
         out = ut.interp(r, rad, np.loadtxt('gravity.dat'), even=False)
@@ -58,7 +66,10 @@ def pressure(r, rpower):   # rᵃ p(r)
 
     out = np.zeros_like(r)
 
-    if par.background == 0:
+    if par.background == 'bouss':
+        out = np.ones_like(r)
+
+    elif par.background == 'model':
         out = ut.load_model(r, 'pressure')
 
     else:
@@ -67,13 +78,13 @@ def pressure(r, rpower):   # rᵃ p(r)
 
             temp = np.zeros_like(r)
 
-            if par.background == 1:
+            if par.background == 'userdef':
                 ### DEFINE BACKGROUND PROFILE OF TEMPERATURE ###
 
                 temp = np.ones_like(r)
 
                 ############################################################
-            elif par.background == 2:
+            elif par.background == 'array':
 
                 rad = np.loadtxt('radius.dat')
                 temp = ut.interp(r, rad, np.loadtxt('temperature.dat'))
@@ -82,13 +93,13 @@ def pressure(r, rpower):   # rᵃ p(r)
 
         elif par.def_pressure == 1:
 
-            if par.background == 1:
+            if par.background == 'userdef':
                 ### DEFINE BACKGROUND GRADIENT OF PRESSURE ###
 
                 out = np.ones_like(r)
 
                 ##############################################
-            elif par.background == 2:
+            elif par.background == 'array':
 
                 rad = np.loadtxt('radius.dat')
                 out = ut.interp(r, rad, np.loadtxt('pressure.dat'))
@@ -100,7 +111,13 @@ def pdSdr(r, rpower):   # rᵃ p(r) dS/dr, Note that N²(r) = g(r) dS/dr in dime
 
     out = np.zeros_like(r)
 
-    if par.background == 0:
+    if par.background == 'bouss':
+        if par.heating == 'internal':
+            out = r
+        elif par.heating == 'differential':
+            out = 1/r**2
+
+    elif par.background == 'model':
 
         out = ut.load_model(r,'pdSdr')
 
@@ -112,13 +129,13 @@ def pdSdr(r, rpower):   # rᵃ p(r) dS/dr, Note that N²(r) = g(r) dS/dr in dime
 
                 BV2 = np.zeros_like(r)
 
-                if par.background == 1:
+                if par.background == 'userdef':
                     ### DEFINE BACKGROUND PROFILE OF BRUNT-VÄISÄLÄ FREQUENCY ###
 
                     BV2 = np.ones_like(r)
 
                     ############################################################
-                elif par.background == 2:
+                elif par.background == 'array':
 
                     rad = np.loadtxt('radius.dat')
                     BV2 = ut.interp(r, rad, np.loadtxt('BV_frequency.dat'))
@@ -130,14 +147,14 @@ def pdSdr(r, rpower):   # rᵃ p(r) dS/dr, Note that N²(r) = g(r) dS/dr in dime
 
         elif par.def_entropy == 1:
 
-            if par.background == 1:
+            if par.background == 'userdef':
                 ### DEFINE BACKGROUND GRADIENT OF ENTROPY ###
 
                 out = np.ones_like(r)
 
                 #############################################
                 out = pressure(r, 0) * out
-            elif par.background == 2:
+            elif par.background == 'array':
 
                 rad = np.loadtxt('radius.dat')
                 press = np.loadtxt('pressure.dat')
@@ -152,13 +169,13 @@ def viscosity(r, rpower):  # rᵃ v(r)
 
     out = np.zeros_like(r)
 
-    if par.background == 1 or (par.background == 0 and par.def_viscosity == 1):
+    if par.def_viscosity == 1:
         ### DEFINE BACKGROUND PROFILE OF KINEMATIC VISCOSITY ###
 
         out = np.ones_like(r)
 
         ########################################################
-    elif par.background == 2 or (par.background == 0 and par.def_viscosity == 2):
+    elif par.def_viscosity == 2:
 
         rad = np.loadtxt('radius.dat')
         out = ut.interp(r, rad, np.loadtxt('viscosity.dat'))
@@ -171,13 +188,13 @@ def thermal_diffusivity(r, rpower):   # rᵃ κ(r)
 
     out = np.zeros_like(r)
 
-    if par.background == 1 or (par.background == 0 and par.def_thermal_diffusivity == 1):
+    if par.def_thermal_diffusivity == 1:
         ### DEFINE BACKGROUND PROFILE OF THERMAL DIFFUSIVITY ###
 
         out = np.ones_like(r)
 
         ########################################################
-    elif par.background == 2 or (par.background == 0 and par.def_thermal_diffusivity == 2):
+    elif par.def_thermal_diffusivity == 2:
 
         rad = np.loadtxt('radius.dat')
         out = ut.interp(r, rad, np.loadtxt('thermal_diffusivity.dat'))
@@ -210,7 +227,7 @@ def dynamic_viscosity(r, rpower):  # μ = ρν
 
 
 def densityX(r, Dorder):  # ρ⁽ⁿ⁾, radial derivatives of ρ(r)
-    
+
     tol = 1e-12
     out = ut.fonzie( density, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)
 
@@ -364,7 +381,7 @@ def burrito(r, *args):
         out2 = rhoXlhoX(r, rhopower, dorder2)
 
     return out0*out1*out2
-    
+
 
 
 # -----------------------------------------------------------------------------------------------------

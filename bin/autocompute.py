@@ -6,7 +6,7 @@ import scipy.sparse as ss
 from scipy.sparse.linalg import spsolve
 import numpy.polynomial.chebyshev as ch
 import bc_variables as bv
-import parameters as par
+from parameters import par
 import utils as ut
 import radial_profiles as rap
 
