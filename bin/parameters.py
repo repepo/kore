@@ -19,3 +19,10 @@ pars_dict = vars(par)
 
 with open('params.json', 'w') as f:
     json.dump(pars_dict, f, indent=4)
+
+# To load from a file
+
+# with open('params.json', 'r') as f:
+#     pars_dict = json.load(f)
+#     for key, value in pars_dict.items():
+#         setattr(par, key, value)
