@@ -53,6 +53,7 @@ class default_params():
         self.Ek     = 0
         self.Em     = 0
         self.Etherm = 0
+        self.Le     = 0 
 
         self.aux1   = 0
         self.aux2   = 0
