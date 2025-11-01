@@ -858,18 +858,28 @@ def diagnose( usol2, bsol2, tsol2, csol2, Ra, Rb, ncpus):
     return [ out_u, out_b, out_t, out_c ]
     
 
+
 def identify(sol2):
+
+    threshold = 0.1
+
     P = np.abs(sol2[0])
     T = np.abs(sol2[1])
 
-    [ lp_u, lt_u, _ ] = ut.ell(par.m, par.lmax, par.symm) # the l-indices of the flow field
+    lm1 = par.lmax - par.m + 1
+    s   = int( par.symm*0.5 + 0.5 ) # s=0 if antisymm, s=1 if symm
+    idp = np.arange( (np.sign(par.m)+s  )%2, lm1, 2, dtype=int)
+    idt = np.arange( (np.sign(par.m)+s+1)%2, lm1, 2, dtype=int)
+    ll  = np.arange( par.m+1-np.sign(par.m), par.lmax+2-np.sign(par.m), dtype=int)
 
-    ell_amps = np.zeros(par.lmax+2)
-    ell_amps[lp_u] = np.sum(P, axis=1)
-    ell_amps[lt_u] = np.sum(T, axis=1)
+    amps      = np.zeros_like(ll,dtype=float)
+    amps[idp] = np.sum(P, axis=1)
+    amps[idt] = np.sum(T, axis=1)
 
-    max_ell = np.argmax(ell_amps)
-    spread_ell = len(np.where(ell_amps > 0.9*ell_amps[max_ell]))
-    convergence_ell = ell_amps[-1] / ell_amps[max_ell]
+    maxid1      = np.argmax( amps )
+    max_ell     = ll[ maxid1 ]
+    maxids      = amps > threshold * amps[ maxid1 ]
+    spread      = ll[maxids][-1] - ll[maxids][0]
+    convergence = amps[-1] / amps[ maxid1 ]
 
-    return max_ell, spread_ell, convergence_ell
+    return max_ell, spread, convergence
