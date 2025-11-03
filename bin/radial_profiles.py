@@ -62,6 +62,7 @@ def gravity(r, rpower):  # rᵃ g(r)
     return (r**rpower)*out
 
 
+
 def pressure(r, rpower):   # rᵃ p(r)
 
     out = np.zeros_like(r)
@@ -105,6 +106,7 @@ def pressure(r, rpower):   # rᵃ p(r)
                 out = ut.interp(r, rad, np.loadtxt('pressure.dat'))
 
     return (r**rpower)*out
+
 
 
 def pdSdr(r, rpower):   # rᵃ p(r) dS/dr, Note that N²(r) = g(r) dS/dr in dimensionless units

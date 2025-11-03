@@ -20,11 +20,12 @@ par.thermal = 1
 par.model   = 'poly.n1_gamma3.h5'
 par.Gaspard = 1
 par.Beyonce = (1/0.3)**2
-par.ncpus   = 4
+par.ncpus   = 2
 par.N       = 96
 par.lmax    = 2*par.ncpus*12 + par.m - 1
 par.rtau    = 0
 par.itau    = 0.7955/0.3
+par.smopo   = 0
 # ---------------------------------------
 
 

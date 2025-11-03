@@ -1192,16 +1192,15 @@ def bc_u_spherical(l,loc):
     Ri = par.ricb
 
     # Density and up to 2nd derivative at the surface
-    rhbd = rap.densityX(1,2)
-    rhb0 = rhbd[:,0]
-    rhb1 = rhbd[:,1]
-    rhb2 = rhbd[:,2]
+    rhb0 = bv.rhb0
+    rhb1 = bv.rhb1
+    rhb2 = bv.rhb2
 
-    # Density and up to 2nd derivative at the ICB
-    rhad = rap.densityX(Ri,2)
-    rha0 = rhad[:,0]
-    rha1 = rhad[:,1]
-    rha2 = rhad[:,2]
+    if par.ricb > 0:
+        # Density and up to 2nd derivative at the ICB
+        rha0 = bv.rha0
+        rha1 = bv.rha1
+        rha2 = bv.rha2
 
     L = l*(l+1)
 

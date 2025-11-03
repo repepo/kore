@@ -342,8 +342,22 @@ def fonzie( func, r, N, ricb, rcmb, Dorder, tol, *args):
 
     out = np.zeros_like(r)
     ck  = chebco_f( func, N, ricb, rcmb, tol, args)
-    out = funcheb(ck, r, ricb, rcmb, Dorder)
+    if id(func) in [ id(rap.density), id(rap.pdSdr), id(rap.pressure), id(rap.gravity) ]:
+        #print(func)
+        cks = ironit(ck, par.smopo)
+    out = funcheb(cks, r, ricb, rcmb, Dorder)
 
+    return out
+
+
+
+def ironit(coeffs, strength):
+
+    x = np.linspace(0,1,np.size(coeffs))
+    y = (scsp.erfc(5*x-3.5)/2)
+    y = (y/y[0])**strength
+    out = coeffs * y
+    
     return out
 
 

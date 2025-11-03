@@ -3,6 +3,7 @@
 import numpy as np
 import utils as ut
 from parameters import par
+import radial_profiles as rap
 
 
 
@@ -45,8 +46,24 @@ def Tcenter(N) :
     out[abs(out)<0.1] = 0
     
     return out
-        
-        
+
+
+
+R  = ut.rcmb
+Ri = par.ricb       
+
+# Density and up to 2nd derivative at the surface
+rhbd = rap.densityX(1,2)
+rhb0 = rhbd[:,0]
+rhb1 = rhbd[:,1]
+rhb2 = rhbd[:,2]
+
+if par.ricb > 0:
+    # Density and up to 2nd derivative at the ICB
+    rhad = rap.densityX(Ri,2)
+    rha0 = rhad[:,0]
+    rha1 = rhad[:,1]
+    rha2 = rhad[:,2]
 
 
 
