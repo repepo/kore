@@ -2,239 +2,191 @@ import numpy as np
 import utils as ut
 from parameters import par
 
-# -----------------------------------------------------------------------------------------------------
-# ---------------------------------------------------------------------------------- Structure profiles
-# -----------------------------------------------------------------------------------------------------
+
+
+# -------------------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------ Structure profiles
+# -------------------------------------------------------------------------------------------------------------
+
+class user_defined_profiles():  # --------------------------------------------------- As user-defined functions
+    '''
+    Background profiles defined directly as functions. Modify as needed.
+    '''
+
+    def density(self, r, rpower):
+        # ------------------------------ ρ(r)
+        out = np.zeros_like(r)
+        # -----------------------------------
+        return (r**rpower)*out
+
+
+    def gravity(self, r, rpower):
+        # ------------------------------ g(r)
+        out = np.zeros_like(r)
+        # -----------------------------------
+        return (r**rpower)*out
+
+
+    def pressure(self, r, rpower):
+        # ------------------------------ p(r)
+        out = np.zeros_like(r)
+        # -----------------------------------
+        return (r**rpower)*out
+
+
+    def pdSdr(self, r, rpower):
+        # ------------------------ p(r) dS/dr
+        out = np.zeros_like(r)
+        # -----------------------------------
+        return (r**rpower)*out
+
+
+    def viscosity(self, r, rpower):
+        # ------------------------------ v(r)
+        out = np.zeros_like(r)
+        # -----------------------------------
+        return (r**rpower)*out
+
+
+    def thermal_diffusivity(self, r, rpower):
+        # ------------------------------ κ(r)
+        out = np.zeros_like(r)
+        # -----------------------------------
+        return (r**rpower)*out
 
 
 
-def density(r, rpower):  # rᵃ ρ(r)
+class profiles_from_file():  # -------------------------------------------------------- As read from model file
+    '''
+    Background profiles as read from a model file, types can be mesa, gyre or astropy table
+    '''
 
-    out = np.zeros_like(r)
-
-    if par.background == 'bouss':
-
-        out = np.ones_like(r)
-
-    elif par.background == 'model':
-
+    def density(self, r, rpower):
+        # ------------------------------ ρ(r)
         out = ut.load_model(r,'density')
-
-    elif par.background == 'userdef':
-        ### DEFINE BACKGROUND PROFILE OF DENSITY ###
-
-        density_beta = 1
-        out = (1 - r ** 2) ** density_beta
-
-        ############################################
-    elif par.background == 'array':
-
-        rad = np.loadtxt('radius.dat')
-        out = ut.interp(r, rad, np.loadtxt('density.dat'))
-
-    return (r**rpower)*out
+        # -----------------------------------
+        return (r**rpower)*out
 
 
-
-def gravity(r, rpower):  # rᵃ g(r)
-
-    out = np.zeros_like(r)
-
-    if par.background == 'bouss':
-
-        out = r
-
-    elif par.background == 'model':
-
+    def gravity(self, r, rpower):
+        # ------------------------------ g(r)
         out = ut.load_model(r,'gravity')
-
-    elif par.background == 'userdef':
-        ### DEFINE BACKGROUND PROFILE OF GRAVITY ###
-
-        out = np.ones_like(r)
-
-        ############################################
-    elif par.background == 'array':
-
-        rad = np.loadtxt('radius.dat')
-        out = ut.interp(r, rad, np.loadtxt('gravity.dat'), even=False)
-
-    return (r**rpower)*out
+        # -----------------------------------
+        return (r**rpower)*out
 
 
-
-def pressure(r, rpower):   # rᵃ p(r)
-
-    out = np.zeros_like(r)
-
-    if par.background == 'bouss':
-        out = np.ones_like(r)
-
-    elif par.background == 'model':
+    def pressure(self, r, rpower):
+        # ------------------------------ p(r)
         out = ut.load_model(r, 'pressure')
+        # -----------------------------------
+        return (r**rpower)*out
 
-    else:
 
-        if par.def_pressure == 0:
+    def pdSdr(self, r, rpower):
+        # ------------------------ p(r) dS/dr
+        out = ut.load_model(r,'pdSdr')
+        # -----------------------------------
+        return (r**rpower)*out
 
-            temp = np.zeros_like(r)
 
-            if par.background == 'userdef':
-                ### DEFINE BACKGROUND PROFILE OF TEMPERATURE ###
+    def viscosity(self, r, rpower):  # def here only
+        # ------------------------------ v(r)
+        out = np.ones_like(r)
+        # -----------------------------------
+        return (r**rpower)*out
 
-                temp = np.ones_like(r)
 
-                ############################################################
-            elif par.background == 'array':
-
-                rad = np.loadtxt('radius.dat')
-                temp = ut.interp(r, rad, np.loadtxt('temperature.dat'))
-
-            out = density(r, 0)*temp
-
-        elif par.def_pressure == 1:
-
-            if par.background == 'userdef':
-                ### DEFINE BACKGROUND GRADIENT OF PRESSURE ###
-
-                out = np.ones_like(r)
-
-                ##############################################
-            elif par.background == 'array':
-
-                rad = np.loadtxt('radius.dat')
-                out = ut.interp(r, rad, np.loadtxt('pressure.dat'))
-
-    return (r**rpower)*out
+    def thermal_diffusivity(self, r, rpower):  # def here only
+        # ------------------------------ κ(r)
+        out = np.ones_like(r)
+        # -----------------------------------
+        return (r**rpower)*out
 
 
 
-def pdSdr(r, rpower):   # rᵃ p(r) dS/dr, Note that N²(r) = g(r) dS/dr in dimensionless units
+class Boussinesq_profiles():  # -------------------------------------------------------- As Boussinesq profiles 
+    '''
+    Background profiles as required by the Boussinesq aprroximation
+    '''
 
-    out = np.zeros_like(r)
+    def density(self, r, rpower):
+        # ------------------------------ ρ(r)
+        out = np.ones_like(r)
+        # -----------------------------------
+        return (r**rpower)*out
 
-    if par.background == 'bouss':
+
+    def gravity(self, r, rpower):
+        # ------------------------------ g(r)
+        out = r
+        # -----------------------------------
+        return (r**rpower)*out
+
+
+    def pressure(self, r, rpower):
+        # ------------------------------ p(r)
+        out = np.ones_like(r)
+        # -----------------------------------
+        return (r**rpower)*out
+
+
+    def pdSdr(r, rpower): 
+        out = np.zeros_like(r)
         if par.heating == 'internal':
             out = r
         elif par.heating == 'differential':
             out = 1/r**2
-
-    elif par.background == 'model':
-
-        out = ut.load_model(r,'pdSdr')
-
-    else:
-
-        if par.def_entropy == 0:
-
-            if not gravity(r, 0).any(0):
-
-                BV2 = np.zeros_like(r)
-
-                if par.background == 'userdef':
-                    ### DEFINE BACKGROUND PROFILE OF BRUNT-VÄISÄLÄ FREQUENCY ###
-
-                    BV2 = np.ones_like(r)
-
-                    ############################################################
-                elif par.background == 'array':
-
-                    rad = np.loadtxt('radius.dat')
-                    BV2 = ut.interp(r, rad, np.loadtxt('BV_frequency.dat'))
-
-                out = pressure(r, 0) * BV2 / gravity(r, 0)
-
-            else:
-                print('Error! gravity profile cannot be zero anywhere')
-
-        elif par.def_entropy == 1:
-
-            if par.background == 'userdef':
-                ### DEFINE BACKGROUND GRADIENT OF ENTROPY ###
-
-                out = np.ones_like(r)
-
-                #############################################
-                out = pressure(r, 0) * out
-            elif par.background == 'array':
-
-                rad = np.loadtxt('radius.dat')
-                press = np.loadtxt('pressure.dat')
-                entropy = np.loadtxt('entropy.dat')
-                out = ut.interp(r, rad, press*entropy, even=False)
-
-    return (r**rpower)*out
+        return (r**power)*out
 
 
-
-def viscosity(r, rpower):  # rᵃ v(r)
-
-    out = np.zeros_like(r)
-
-    if par.def_viscosity == 1:
-        ### DEFINE BACKGROUND PROFILE OF KINEMATIC VISCOSITY ###
-
+    def viscosity(self, r, rpower):
+        # ------------------------------ v(r)
         out = np.ones_like(r)
-
-        ########################################################
-    elif par.def_viscosity == 2:
-
-        rad = np.loadtxt('radius.dat')
-        out = ut.interp(r, rad, np.loadtxt('viscosity.dat'))
-
-    return (r**rpower)*out
+        # -----------------------------------
+        return (r**rpower)*out
 
 
-
-def thermal_diffusivity(r, rpower):   # rᵃ κ(r)
-
-    out = np.zeros_like(r)
-
-    if par.def_thermal_diffusivity == 1:
-        ### DEFINE BACKGROUND PROFILE OF THERMAL DIFFUSIVITY ###
-
+    def thermal_diffusivity(self, r, rpower):
+        # ------------------------------ κ(r)
         out = np.ones_like(r)
-
-        ########################################################
-    elif par.def_thermal_diffusivity == 2:
-
-        rad = np.loadtxt('radius.dat')
-        out = ut.interp(r, rad, np.loadtxt('thermal_diffusivity.dat'))
-
-    return (r**rpower)*out
+        # -----------------------------------
+        return (r**rpower)*out
 
 
 
-# -----------------------------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------------ Derived profiles
-# -----------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------- Instantiate the appropriate profile class
+# -------------------------------------------------------------------------------------------------------------
+if par.model_type == 'user def':
+    prf = user_defined_profiles()
+elif par.model_type in ['mesa', 'gsm', 'poly', 'astropy table']:
+    prf = profiles_from_file()
+elif par.model_type == 'Boussinesq':
+    prf = Boussinesq_profiles()
 
+
+
+# -------------------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------- Derived profiles
+# -------------------------------------------------------------------------------------------------------------
 
 def kappress(r, rpower):   # κ p
 
-    out = np.zeros_like(r)
-    out = thermal_diffusivity(r, 0) * pressure(r, 0)
-
+    out = prf.thermal_diffusivity(r, 0) * prf.pressure(r, 0)
     return (r**rpower)*out
-
 
 
 def dynamic_viscosity(r, rpower):  # μ = ρν
 
-    out = np.zeros_like(r)
-    out = density(r,rpower) * viscosity(r,0)
-
+    out = prf.density(r,rpower) * prf.viscosity(r,0)
     return out
-
 
 
 def densityX(r, Dorder):  # ρ⁽ⁿ⁾, radial derivatives of ρ(r)
 
     tol = 1e-12
-    out = ut.fonzie( density, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)
-
+    out = ut.fonzie( prf.density, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)
     return out
-
 
 
 def lhoX(r, lhoorder):  # ρⁿ (ln ρ)⁽ⁿ⁾
@@ -265,20 +217,17 @@ def lhoX(r, lhoorder):  # ρⁿ (ln ρ)⁽ⁿ⁾
 
 
 
-# -----------------------------------------------------------------------------------------------------
-# ----------------------------------------------------------------------- Profile functions for burrito
-# -----------------------------------------------------------------------------------------------------
-
-
+# -------------------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------- Profile functions for burrito
+# -------------------------------------------------------------------------------------------------------------
 
 def rhoX(r, *args):   # rᵃ ρᵇ  powers of ρ
 
     (rpower, rhopower) = args
     out = np.zeros_like(r)
-    out = density(r, 0)**rhopower
+    out = prf.density(r, 0)**rhopower
 
     return (r**rpower)*out
-
 
 
 def rhoXlhoX(r, *args):   # ρᵃ (ln ρ)⁽ᵇ⁾  derivatives of ρ
@@ -294,14 +243,12 @@ def rhoXlhoX(r, *args):   # ρᵃ (ln ρ)⁽ᵇ⁾  derivatives of ρ
     return out
 
 
-
 def muX(r, Dorder):   # Dynamic viscosity μ(r) = ρ(r)ν(r)
 
     tol = 1e-12
     out = ut.fonzie( dynamic_viscosity, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
 
     return out
-
 
 
 def kappressX(r, Dorder):   # κ(r)ρ(r)T(r)
@@ -312,43 +259,38 @@ def kappressX(r, Dorder):   # κ(r)ρ(r)T(r)
     return out
 
 
-
 def pdSdrX(r, Dorder):   # ρ(r)T(r)dS/dr
 
     tol = 1e-12
-    out = ut.fonzie( pdSdr, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
+    out = ut.fonzie( prf.pdSdr, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
 
     return out
-
 
 
 def graviX(r, Dorder):   # g(r)
 
     tol = 1e-12
-    out = ut.fonzie( gravity, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
+    out = ut.fonzie( prf.gravity, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
 
     return out
-
 
 
 def pressX(r, Dorder):   # ρ(r)T(r)
 
     tol = 1e-12
-    out = ut.fonzie( pressure, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
+    out = ut.fonzie( prf.pressure, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
 
     return out
 
 
-# ----------------------------------------------------------------------------------------------------------------
-# ----------------------------------------------------------------------------------------------------------------
-# ----------------------------------------------------------------------------------------------------------------
 
-proffdir = { 'lho':rhoXlhoX, 'moe':muX, 'rho':rhoX, 'gra':graviX, 'pss':pressX  , 'pdS':pdSdrX  ,'kps':kappressX }
-
-# ----------------------------------------------------------------------------------------------------------------
-# ----------------------------------------------------------------------------------------------------------------
-# ----------------------------------------------------------------------------------------------------------------
-
+# -------------------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------------
+proffdir = { 'lho':rhoXlhoX, 'moe':muX, 'rho':rhoX, 'gra':graviX, 'pss':pressX, 'pdS':pdSdrX, 'kps':kappressX }
+# -------------------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------------
 
 
 def burrito(r, *args):
@@ -385,7 +327,6 @@ def burrito(r, *args):
     return out0*out1*out2
 
 
-
-# -----------------------------------------------------------------------------------------------------
-# -----------------------------------------------------------------------------------------------------
-# -----------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------------

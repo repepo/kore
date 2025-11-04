@@ -50,6 +50,27 @@ lmax_bot = lmax + 1 + (1-2*np.sign(m))*(1-s)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
+# Loads a model from file: ---------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
+
+if par.model_type == 'astropy table':
+    try:
+        from astropy.table import Table
+    except ImportError:
+        print('Astropy is not installed. Please install it or choose another model_type.')
+        sys.exit()
+    profile = Table.read(par.model, format='ascii')
+elif par.model_type in ['poly', 'mesa', 'gsm']:
+    try:
+        import pygyre as gy
+    except ImportError:
+        print('PyGYRE is not installed. Please install it or choose another model_type.')
+        sys.exit()
+    profile = gy.read_model(par.model)
+
+
+
+# ----------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -357,7 +378,7 @@ def fonzie( func, r, N, ricb, rcmb, Dorder, tol, *args):
 
     out = np.zeros_like(r)
     ck  = chebco_f( func, N, ricb, rcmb, tol, args)
-    if id(func) in [ id(rap.density), id(rap.pdSdr), id(rap.pressure), id(rap.gravity) ]:
+    if id(func) in [ id(rap.prf.density), id(rap.prf.pdSdr), id(rap.prf.pressure), id(rap.prf.gravity) ]:
         #print(func)
         ck = ironit(ck, par.smopo)
     out = funcheb(ck, r, ricb, rcmb, Dorder)
@@ -449,21 +470,6 @@ def interp(rad, rad_user, profile, even=True):
 
 
 def load_model(r, var):
-
-    if par.model_type == 'astropy table':
-        try:
-            from astropy.table import Table
-        except ImportError:
-            print('Astropy is not installed. Please install it or choose another model_type.')
-            sys.exit()
-        profile = Table.read(par.model, format='ascii')
-    elif par.model_type in ['poly', 'mesa', 'gsm']:
-        try:
-            import pygyre as gy
-        except ImportError:
-            print('PyGYRE is not installed. Please install it or choose another model_type.')
-            sys.exit()
-        profile = gy.read_model(par.model)
 
     out = np.zeros_like(r)
     z = True

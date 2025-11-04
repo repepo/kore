@@ -20,7 +20,6 @@ import warnings
 import sys
 from parameters import par
 import utils as ut
-import radial_profiles as rap
 
 
 
