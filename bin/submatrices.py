@@ -110,7 +110,6 @@ def main(ncpus):
 
     labl  = []
     arg2  = []
-    opkey = []
 
     if par.hydro == 1:
         # -------------------------------------------------------------------------------------------------------------------------------------------
@@ -189,10 +188,10 @@ def main(ncpus):
 
 
     # -------------------------------------------------------------------------------------------------------------------------------------------
-    # Pre-process the list with multiplication matrices labels to avoid duplicates --------------------------------------------------------------
-    # Also generate the list of arguments parg0 and parg1 ---------------------------------------------------------------------------------------
-
-    pkey  = []
+    # ----------------------------------------------------------------------------------------------------- Generates the argument lists for Mlam
+    # -------------------------------------------------------------------------------------------------------------------------------------------
+    opkey = []  # all 'reduced' operator id list, might have duplicates
+    pkey  = []  # unique 'reduced' operator id list
     parg0 = []
     parg1 = []
     parg2 = []
@@ -200,37 +199,44 @@ def main(ncpus):
     if par.ricb > 0:  # set vector_parity = 0, i.e. is not needed
         arg2 = np.size(labl)*[0]
 
+    # This loop populates the lists pkey, parg1, parg2
     for k,labl1 in enumerate(labl) :
-
         (secx, rpower, rhopower, func1, dorder1, func2, dorder2, dx) = ut.decode_label(labl1)
-        key1 = (rpower, rhopower, func1, dorder1, func2, dorder2, dx, arg2[k])  # reduced operator identifier
+        key1 = (rpower, rhopower, func1, dorder1, func2, dorder2, dx, arg2[k])  # 'reduced' operator identifier
         opkey += [ key1 ]
-        #print(key1)
-
         if not(key1 in pkey):  # if identifier not in the pkey list then we compute the matrix
-
-            # Get the Chebishev coefficients c0arg for this operator
-            c0arg = ut.gimmedachebs( labl1 )
-
             pkey  += [ key1 ]
-            parg0 += [ S[dx]*c0arg ]    # Gegenbauer basis change from C^(0) to C^(dx)
             parg1 += [ dx ]             # dx is derivative order
             parg2 += [ arg2[k] ]        # vector_parity
 
-            del c0arg # To prevent re-use of c0arg in next iteration
+    # For each of the unique operator id's we generate in parallel the Chebyshev
+    # coefficients, and change the Gegenbauer basis from C^(0) to C^(dx).
+    # This populates the parg0 list. 
+    pool1 = mp.Pool( processes = int(ncpus) )
+    tmp = [ pool1.apply_async( ut.chegevara, args = ( pkey1, opkey, labl, S ) ) for pkey1 in pkey ]
+    parg0 = [tmp1.get() for tmp1 in tmp]
+    pool1.close()
+    pool1.join()
+    # -------------------------------------------------------------------------------------------------------------------------------------------
+    # -------------------------------------------------------------------------------------------------------------------------------------------
+    # -------------------------------------------------------------------------------------------------------------------------------------------
+
+
 
     # -------------------------------------------------------------------------------------------------------------------------------------------
-    # Generate the Mlam matrices in parallel ----------------------------------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------------------------------- Generate the Mlam matrices in parallel
     # -------------------------------------------------------------------------------------------------------------------------------------------
-    pool = mp.Pool( processes = int(ncpus) )
-    tmp = [ pool.apply_async( ut.Mlam, args = ( parg0[k], parg1[k], parg2[k]) ) for k in range(np.size(parg0,0)) ]
+    pool2 = mp.Pool( processes = int(ncpus) )
+    tmp = [ pool2.apply_async( ut.Mlam, args = ( parg0[k], parg1[k], parg2[k]) ) for k in range(np.size(parg0,0)) ]
     # recover resulting list of matrices
     matlist = [tmp1.get() for tmp1 in tmp]
-    pool.close()
-    pool.join()
+    pool2.close()
+    pool2.join()
     # -------------------------------------------------------------------------------------------------------------------------------------------
     # -------------------------------------------------------------------------------------------------------------------------------------------
     # -------------------------------------------------------------------------------------------------------------------------------------------
+
+
 
     # Now we need to multiply the matrices on the right by the appropriate derivative matrix,
     # and change basis accordingly:
@@ -269,7 +275,7 @@ def main(ncpus):
     # -------------------------------------------------------------------------------------------------------------------------------------------
 
     toc = timer()
-    print('Submatrices generated and written to disk in', toc-tic, 'seconds')
+    print('Generated and written', np.size(labl), 'operator submatrices in', toc-tic, 'seconds')
 
     return 0
 

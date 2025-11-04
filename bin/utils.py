@@ -104,11 +104,26 @@ def gimmedachebs( labl ):
 
     tol = 1e-9
     args = decode_label(labl)  # (section, rpower, rhopower, func1, dorder1, func2, dorder2, dx)
-
-    #print('labl=',labl,'args=',args)
     c0arg = chebco_f( rap.burrito, par.N, par.ricb, rcmb, tol, *args)
 
     return c0arg
+
+
+
+def chegevara( pkey1 , opkey, labl, S):
+    '''
+    Generates Chebyshev coeffs for a given operator label
+    and changes the Gegenbauer basis as needed by the operator
+    '''
+
+    k = opkey.index(pkey1)
+    labl1 = labl[k]
+
+    c0arg = gimmedachebs(labl1)
+    dx    = pkey1[6]
+    out   = S[dx]*c0arg
+
+    return out
 
 
 
@@ -344,8 +359,8 @@ def fonzie( func, r, N, ricb, rcmb, Dorder, tol, *args):
     ck  = chebco_f( func, N, ricb, rcmb, tol, args)
     if id(func) in [ id(rap.density), id(rap.pdSdr), id(rap.pressure), id(rap.gravity) ]:
         #print(func)
-        cks = ironit(ck, par.smopo)
-    out = funcheb(cks, r, ricb, rcmb, Dorder)
+        ck = ironit(ck, par.smopo)
+    out = funcheb(ck, r, ricb, rcmb, Dorder)
 
     return out
 
@@ -354,7 +369,8 @@ def fonzie( func, r, N, ricb, rcmb, Dorder, tol, *args):
 def ironit(coeffs, strength):
 
     x = np.linspace(0,1,np.size(coeffs))
-    y = (scsp.erfc(5*x-3.5)/2)
+    #y = (scsp.erfc(5*x-3.5)/2)
+    y = 1-x
     y = (y/y[0])**strength
     out = coeffs * y
     
