@@ -130,13 +130,13 @@ class Boussinesq_profiles():  # ------------------------------------------------
         return (r**rpower)*out
 
 
-    def pdSdr(r, rpower): 
+    def pdSdr(self, r, rpower):
         out = np.zeros_like(r)
         if par.heating == 'internal':
             out = r
         elif par.heating == 'differential':
             out = 1/r**2
-        return (r**power)*out
+        return (r**rpower)*out
 
 
     def viscosity(self, r, rpower):
