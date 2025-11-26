@@ -472,7 +472,7 @@ def interp(rad, rad_user, profile, even=True):
 def load_model(r, var):
 
     out = np.zeros_like(r)
-    z = True
+    z = True  # True for even functions of r
 
     if par.model_type in ['astropy table', 'poly']:
 
@@ -487,11 +487,11 @@ def load_model(r, var):
 
         elif var == 'gravity':
             y = x/profile['c_1']
-            z = False
+            z = False  # odd function of r
 
         elif var == 'pdSdr':
             y[1:-1] = profile['P/P_0'][1:-1] * profile['As'][1:-1] / x[1:-1]
-            z = False
+            z = False  # odd function of r
 
     elif par.model_type == 'mesa' or par.model_type == 'gsm':
 

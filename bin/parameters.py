@@ -1,6 +1,6 @@
 from params_default import default_params
-import json
-
+#import json
+import numpy as np
 
 # ---------------------------------------
 # --------------- Sets default parameters
@@ -14,28 +14,42 @@ par.set_scales()
 # ---------------------------------------
 # --------------- Manual parameter adjust
 # ---------------------------------------
-par.m       = 0
+par.m       = 2
 par.symm    = 1
 par.thermal = 1
-par.model   = 'poly.n1_gamma3.h5'
-par.Gaspard = 1
-par.Beyonce = (1/0.3)**2
-par.ncpus   = 2
-par.N       = 96
-par.lmax    = 2*par.ncpus*12 + par.m - 1
-par.rtau    = 0
-par.itau    = 0.7955/0.3
+par.model_type = 'user def'
+par.aux0 = 0.996  # r cutoff
+[par.aux1, par.aux2] = [-0.7,0.7]
+par.aux3 = 1.65
+par.aux4 = 1.0 # hard edge = 0,  soft edge = 1
+par.aux5 = 1.0  #2.00
+par.Gaspard = 1.0
+par.Beyonce = (1.0/0.3)**2  #par.aux5**2
+par.ViscosD = 1e-6
+par.ThermaD = 0
+par.bco     = 1
+par.bco_thermal = 1
+par.ncpus   = 24
+par.N       = 720
+g = 0.5
+par.lmax = int( 2*par.ncpus*( np.floor_divide( g*par.N, 2*par.ncpus ) ) + par.m - 1 )
+#par.lmax    = 2*par.ncpus*16 + par.m - 1
+rnd1 =0.879056
+rnd2 =-0.857908
+par.rtau    = -1e-4 + rnd1*1e-4
+par.itau    = 1.429  #1.5 + rnd2*0.5 
 par.smopo   = 0
+par.nev     = 7
 # ---------------------------------------
 
 
 # ---------------------------------------
 # -------------- Write parameters to file
 # ---------------------------------------
-pars_dict = vars(par)
-with open('params.json', 'w') as f:
-    json.dump(pars_dict, f, indent=4)
-
+#pars_dict = vars(par)
+#with open('params.json', 'w') as f:
+#    json.dump(pars_dict, f, indent=4)
+#
 # To load from a file
 # with open('params.json', 'r') as f:
 #     pars_dict = json.load(f)

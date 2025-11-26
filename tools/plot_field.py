@@ -10,8 +10,9 @@ import numpy.polynomial.chebyshev as ch
 sys.path.insert(1,'bin/')
 
 import utils as ut
-import parameters as par
+from parameters import par
 import utils4pp as upp
+import radial_profiles as rap
 
 '''
 Script to plot meridional cuts of a solution field
@@ -32,18 +33,28 @@ plt.rc('text', usetex=True)
 
 solnum = int(sys.argv[1])
 
-if sys.argv[6] == 'u':
+if sys.argv[6] in ['u', 'mf']:
     a0 = np.loadtxt('real_flow.field',usecols=solnum)
     b0 = np.loadtxt('imag_flow.field',usecols=solnum)
     vsymm = par.symm
-    if sys.argv[7] == 'raw':
-        titlelabels = [r'$\mathbf{\hat r}\cdot\mathrm{Re}\left(\mathbf{u_0}\right)$', \
-                       r'$\mathbf{\hat \theta}\cdot\mathrm{Re}\left(\mathbf{u_0}\right)$', \
-                       r'$\mathbf{\hat \phi}\cdot\mathrm{Re}\left(\mathbf{u_0}\right)$']
-    elif sys.argv[7] == 'abs':
-        titlelabels = [r'$\mathbf{\hat r}\cdot\left|\mathbf{u_0}\right|$', \
-                       r'$\mathbf{\hat \theta}\cdot\left|\mathbf{u_0}\right|$', \
-                       r'$\mathbf{\hat \phi}\cdot\left|\mathbf{u_0}\right|$'] 
+    if sys.argv[6] == 'u':
+        if sys.argv[7] == 'raw':
+            titlelabels = [r'$\mathbf{\hat r}\cdot\mathrm{Re}\left(\mathbf{u_0}\right)$', \
+                        r'$\mathbf{\hat \theta}\cdot\mathrm{Re}\left(\mathbf{u_0}\right)$', \
+                        r'$\mathbf{\hat \phi}\cdot\mathrm{Re}\left(\mathbf{u_0}\right)$']
+        elif sys.argv[7] == 'abs':
+            titlelabels = [r'$\mathbf{\hat r}\cdot\left|\mathbf{u_0}\right|$', \
+                        r'$\mathbf{\hat \theta}\cdot\left|\mathbf{u_0}\right|$', \
+                        r'$\mathbf{\hat \phi}\cdot\left|\mathbf{u_0}\right|$']
+    elif sys.argv[6] == 'mf':
+        if sys.argv[7] == 'raw':
+            titlelabels = [r'$\mathbf{\hat r}\cdot\mathrm{Re}\left(\rho \mathbf{u_0}\right)$', \
+                        r'$\mathbf{\hat \theta}\cdot\mathrm{Re}\left(\rho \mathbf{u_0}\right)$', \
+                        r'$\mathbf{\hat \phi}\cdot\mathrm{Re}\left(\rho \mathbf{u_0}\right)$']
+        elif sys.argv[7] == 'abs':
+            titlelabels = [r'$\mathbf{\hat r}\cdot\left|\rho \mathbf{u_0}\right|$', \
+                        r'$\mathbf{\hat \theta}\cdot\left|\rho \mathbf{u_0}\right|$', \
+                        r'$\mathbf{\hat \phi}\cdot\left|\rho \mathbf{u_0}\right|$']
     cmap = 'rainbow'
 elif sys.argv[6] == 'b':
     a0 = np.loadtxt('real_magnetic.field',usecols=solnum)
@@ -102,15 +113,13 @@ dPlj = np.zeros(np.shape(Plj),dtype=complex)
 
 Plr = np.zeros((int((lmax-m+1)/2), nR),dtype=complex)
 dP  = np.zeros((int((lmax-m+1)/2), nR),dtype=complex)
-rP  = np.zeros((int((lmax-m+1)/2), nR),dtype=complex)
 Qlr = np.zeros((int((lmax-m+1)/2), nR),dtype=complex)
 Slr = np.zeros((int((lmax-m+1)/2), nR),dtype=complex)
 Tlr = np.zeros((int((lmax-m+1)/2), nR),dtype=complex)
+P_inv_r  = np.zeros((int((lmax-m+1)/2), nR),dtype=complex)
 
 np.matmul( Plj, chx.T, Plr )
 np.matmul( Tlj, chx.T, Tlr )
-
-rI = ss.diags(r**-1,0)
 
 ll0 = ut.ell(m,lmax,vsymm)
 llpol = ll0[0]
@@ -122,9 +131,29 @@ for k in range(np.size(llpol)):
 
 np.matmul(dPlj, chx.T, dP)
 
-rP  = Plr * ss.diags(r**-1,0)
-Qlr = ss.diags(llpol*(llpol+1),0) * rP
-Slr = rP + dP
+inv_r = ss.diags(r**-1,0)
+L = ss.diags(llpol*(llpol+1),0)
+
+P_inv_r  = Plr * inv_r
+
+rho0 = rap.prf.density(r,0)
+rho = ss.diags(rho0, 0)
+rho1 = np.gradient(rho0, r)
+
+if sys.argv[6] == 'u':  # the velocity u
+
+    dlho = ss.diags(rho1/rho0, 0)
+    Qlr = L * P_inv_r
+    Slr = P_inv_r + dP + Plr * dlho
+    # No change in Tlr
+
+elif sys.argv[6] == 'mf':  # the mass flux ρu
+
+    drho = ss.diags(rho1, 0)
+    Qlr = L * P_inv_r * rho
+    Slr = (P_inv_r + dP) * rho + Plr * drho
+    Tlr = Tlr * rho
+
 
 # setup the latitudinal grid
 theta = np.linspace(float(sys.argv[4])*np.pi/180,float(sys.argv[5])*np.pi/180,Ntheta+2)

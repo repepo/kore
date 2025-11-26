@@ -6,9 +6,9 @@ To use, first export desired solver options:
 > export opts='...'
 
 and then execute:
-> mpiexec -n ncpus ./bin/solve_nopp.py $opts
+> mpiexec -n ncpus ./bin/solve.py $opts
 
-You can use the postprocess.py script after the solutions are written to disk.
+You can use the spin_doctor.py script after the solutions are written to disk.
 '''
 
 import sys

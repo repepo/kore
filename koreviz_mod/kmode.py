@@ -8,7 +8,7 @@ import sys
 
 sys.path.insert(1,'bin/')
 import utils as ut
-import parameters as par
+from parameters import par
 import utils4pp as upp
 
 
@@ -58,8 +58,8 @@ class kmode:
             b0 = np.loadtxt('imag_magnetic.field',usecols=solnum)
             vsymm = ut.bsymm
         elif field == 't':
-            a0 = np.loadtxt('real_temperature.field',usecols=solnum)
-            b0 = np.loadtxt('imag_temperature.field',usecols=solnum)
+            a0 = np.loadtxt('real_thermal.field',usecols=solnum)
+            b0 = np.loadtxt('imag_thermal.field',usecols=solnum)
             vsymm = par.symm
         
         # expand solution in case ricb=0, multiply by complex phase factor 

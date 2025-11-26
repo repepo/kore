@@ -13,44 +13,94 @@ class user_defined_profiles():  # ----------------------------------------------
     Background profiles defined directly as functions. Modify as needed.
     '''
 
-    def density(self, r, rpower):
-        # ------------------------------ ρ(r)
-        out = np.zeros_like(r)
-        # -----------------------------------
+    def density(self, r, rpower):  # ---------------- ρ(r)
+        r1 = r*par.aux0;
+        # out = (1-r1**2)**2               # Wu2005    β=2
+        out = np.sin(np.pi*r1)/(np.pi*r1)  # Polytrope n=1
+        # ------------------------------------------------
         return (r**rpower)*out
 
 
-    def gravity(self, r, rpower):
-        # ------------------------------ g(r)
-        out = np.zeros_like(r)
-        # -----------------------------------
+    def gravity(self, r, rpower):  # ---------------------------------------------------- g(r)
+        r1 = r*par.aux0
+        # out = (r1*(35 - 42*r1**2 + 15*r1**4))/8.                             # Wu2005    β=2
+        out = (-(np.pi*r1*np.cos(np.pi*r1)) + np.sin(np.pi*r1))/(np.pi*r1**2)  # Polytrope n=1 
+        # ------------------------------------------------------------------------------------
         return (r**rpower)*out
 
 
-    def pressure(self, r, rpower):
-        # ------------------------------ p(r)
-        out = np.zeros_like(r)
-        # -----------------------------------
+    def pressure(self, r, rpower):  # Normalized to 1 at r=0 --------------- p(r)
+        r1 = r*par.aux0
+        # out = -((-1 + r1**2)**3*(26 - 27*r1**2 + 9*r1**4))/26.  # Wu2005    β=2
+        out = np.sin(np.pi*r1)**2/(np.pi**2*r1**2)                # Polytrope n=1  
+        # -----------------------------------------------------------------------
         return (r**rpower)*out
+
+
+    def dlog_p(self,r):  # --------------------------------------------------------------------- d(ln p)/dr
+        r1 = r*par.aux0
+        # out = (6*r1*(35 - 42*r1**2 + 15*r1**4))/((-1 + r1**2)*(26 - 27*r1**2 + 9*r1**4))  # Wu2005    β=2
+        out = (-2/r1) + (2*np.pi/np.tan(np.pi*r1))                                          # Polytrope n=1
+        # ------------------------------------------------------------------------------------------------- 
+        return out
+        
+        
+    def dlog_rho(self,r):  # ------------------------- d(ln ρ)/dr
+        r1 = r*par.aux0
+        # out = (4*r1)/(-1 + r1**2)               # Wu2005    β=2
+        out = (-1/r1) + (np.pi/np.tan(np.pi*r1))  # Polytrope n=1
+        # -------------------------------------------------------
+        return out
+        
+        
+    def Gamma1_isentropic(self,r):  # This is the isentropic Γ₁  
+        out = self.dlog_p(r)/self.dlog_rho(r)
+        return out
+    def faux1(self,r,a,b,c):  # inverted parabola (hard edges)
+        out = np.zeros_like(r)
+        x = (r>a)&(r<b)
+        out[x] = -c*(4/b**2)*(r[x]-a)*(r[x]-b)
+        out[r<0] = np.flipud(out[r>0])  # make it even
+        return out
+    def faux2(self,r,a,b,c):  # cosine function (soft edges)
+        out = np.zeros_like(r)
+        x = (r>a)&(r<b)
+        out[x] = (c/2)*(1-np.cos(2*np.pi*(r[x]-a)/(b-a)))
+        out[r<0] = np.flipud(out[r>0])  # make it even
+        return out
+    def faux(self,r,a,b,c):  # mixed parabola + cosine. par.aux4=1 is cosine, par.aux4=0 is parabola.
+        out = self.faux1(r,a,b,c) * (1-par.aux4) + self.faux2(r,a,b,c) * par.aux4
+        return out
+    def Gamma1(self,r):  # The resulting first adiabatic coefficient Γ₁
+        out = self.Gamma1_isentropic(r) + self.faux(r,par.aux1,par.aux2,par.aux3)
+        return out
+    def gradS(self,r):  # The background entropy gradient
+        out = np.zeros_like(r)
+        x = abs(r)<1
+        out[x] = ( self.dlog_p(r[x])/self.Gamma1(r[x]) ) - self.dlog_rho(r[x])
+        return out
 
 
     def pdSdr(self, r, rpower):
         # ------------------------ p(r) dS/dr
         out = np.zeros_like(r)
+        x = abs(r)<1
+        out[x] = self.pressure(r[x],0)*self.gradS(r[x])
         # -----------------------------------
         return (r**rpower)*out
 
 
     def viscosity(self, r, rpower):
         # ------------------------------ v(r)
-        out = np.zeros_like(r)
+        #out = np.ones_like(r)
+        out = 1/self.density(r,0)
         # -----------------------------------
         return (r**rpower)*out
 
 
     def thermal_diffusivity(self, r, rpower):
         # ------------------------------ κ(r)
-        out = np.zeros_like(r)
+        out = np.ones_like(r)
         # -----------------------------------
         return (r**rpower)*out
 
@@ -178,8 +228,9 @@ def kappress(r, rpower):   # κ p
 
 def dynamic_viscosity(r, rpower):  # μ = ρν
 
-    out = prf.density(r,rpower) * prf.viscosity(r,0)
-    return out
+    #out = prf.density(r,0) * prf.viscosity(r,0)
+    out = np.ones_like(r) 
+    return (r**rpower)*out
 
 
 def densityX(r, Dorder):  # ρ⁽ⁿ⁾, radial derivatives of ρ(r)

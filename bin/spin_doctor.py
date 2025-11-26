@@ -3,7 +3,7 @@
 kore postprocessing script
 
 Usage:
-> python3 ./bin/solution_doctor.py ncpus
+> python3 ./bin/spin_doctor.py ncpus
 '''
 
 import sys
@@ -78,6 +78,9 @@ def main(ncpus):
     Wcmp        = np.zeros(success)
     vtorq       = np.zeros(success,dtype=complex)  # viscous torque on the mantle
     vtorq_icb   = np.zeros(success,dtype=complex)  # viscous torque on the inner core
+    ldom        = np.zeros(success,dtype=int)
+    lwidth      = np.zeros(success,dtype=int)
+    lconv       = np.zeros(success)
 
     # magnetic variables to be processed
     ME          = np.zeros(success)
@@ -105,7 +108,7 @@ def main(ncpus):
     y           = np.zeros(success)                # for eigenmode tracking
 
     # parameter values to be saved
-    params      = np.zeros((success,26))
+    params      = np.zeros((success,30))
     # ------------------------------------------------------------------------------------------------------------------------
 
     print('\n  ★     Damping σ     Frequency ω   Peak ℓ   ℓ-Width  ℓ-Convergence ')
@@ -158,7 +161,7 @@ def main(ncpus):
             c_sol2  = upp.expand_reshape_sol( rcmp + 1j*icmp, par.symm)		   			
 
         # identify solutions
-        [ id_1, id_2, id_3 ] = upp.identify( u_sol2 )
+        [ ldom[i], lwidth[i], lconv[i] ] = upp.identify( u_sol2 )
 
         '''
         # diagnose solutions, in parallel
@@ -238,7 +241,7 @@ def main(ncpus):
         '''
 
         # ------------------------------------------------------------------------------------------------------------------
-        print(' {:2d}   {: 12.9f}   {: 12.9f}    {:4d}      {:4d}      {:8.2e}'.format(i, sigma, w, id_1, id_2, id_3))
+        print(' {:2d}   {: 12.9f}   {: 12.9f}    {:4d}      {:4d}      {:8.2e}'.format(i, sigma, w, ldom[i], lwidth[i], lconv[i]))
         # ------------------------------------------------------------------------------------------------------------------
 
         toc = timer()
@@ -274,9 +277,13 @@ def main(ncpus):
 
                                 timing+toc-tic,                 #23
 
-                                par.aux1,                       #24
-                                par.aux2                        #25
-                                ])  # 26 total
+                                par.aux0,                       #24
+                                par.aux1,                       #25
+                                par.aux2,                       #26
+                                par.aux3,                       #27
+                                par.aux4,                       #28
+                                par.aux5                        #29
+                                ])  # 30 total
 
     # ------------------------------------------------------------------------------------------------------------------------
     print(  ' ‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾ ')
@@ -320,22 +327,26 @@ def main(ncpus):
             '%d',   '%d',   '%.9e', '%d',
             
             '%d',   '%d',   '%.9e', '%.9e',
-
+        
             '%.9e', '%d',   '%.9e', '%.9e',
              
             '%.9e', '%.9e', '%.9e', '%.9e',
-
+        
             '%d',   '%d',   '%d',   '%.9e',
              
-            '%.9e', '%.9e'])
+            '%.9e', '%.9e', '%.9e', '%.9e',
+            
+            '%.9e', '%.9e'
+            ])
 
     if par.hydro:   
         with open('flow.dat','ab') as dflo:
-            np.savetxt(dflo, np.c_[ KE,   KP,   KT,   Dkin,
-                                    Dint, Wlor, Wthm, Wcmp,
-                                    resid0, resid1,
-                                    np.real(vtorq), np.imag(vtorq),
-                                    np.real(vtorq_icb), np.imag(vtorq_icb)])
+           # np.savetxt(dflo, np.c_[ KE,   KP,   KT,   Dkin,
+           #                         Dint, Wlor, Wthm, Wcmp,
+           #                         resid0, resid1,
+           #                         np.real(vtorq), np.imag(vtorq),
+           #                         np.real(vtorq_icb), np.imag(vtorq_icb)])
+           np.savetxt(dflo, np.c_[ ldom, lwidth, lconv ], fmt=['%d','%d','%.3e'])
 
     if par.magnetic:
         with open('magnetic.dat','ab') as dmag:

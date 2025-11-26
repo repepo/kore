@@ -1,19 +1,19 @@
 #!/bin/bash
 ###PBS -l nodes=1:ppn=24
 ###PBS -l mem=245g
-###PBS -l select=1:ncpus=24:mem=54gb
-#PBS -l select=1:ncpus=24:mem=248gb
-#PBS -N somename
-#PBS -l walltime=03:00:00
+#PBS -l select=1:ncpus=24:mem=58gb
+###PBS -l select=1:ncpus=24:mem=248gb
+#PBS -N Dew13_A2.00
+#PBS -l walltime=04:00:00
 
 
 
 source $HOME/venv00/bin/activate
 
 
-ncpus=24
+ncpus=12
 
-dir=somedir
+dir=Dew13_A2.00
 
 cd $HOME/data/$dir
 
@@ -47,7 +47,7 @@ fi
 #export opts='-st_type sinvert -eps_error_relative ::ascii_info_detail'
 #export opts='-st_type sinvert -eps_error_relative ::ascii_info_detail -eps_balance oneside -pc_factor_mat_solver_type mumps -mat_mumps_icntl_14 1000'
 #export opts='-st_type sinvert -eps_error_relative ::ascii_info_detail -pc_factor_mat_solver_type mumps -mat_mumps_icntl_14 1000 -mat_mumps_icntl_23 8000'
-export opts='-st_type sinvert -eps_error_relative ::ascii_info_detail -pc_factor_mat_solver_type mumps -mat_mumps_icntl_14 10000 -eps_balance twoside'
+export opts='-st_type sinvert -eps_error_relative ::ascii_info_detail -pc_factor_mat_solver_type mumps -mat_mumps_icntl_14 3000 -mat_mumps_icntl_23 14000 -eps_balance twoside'
 #export opts='-st_type sinvert -st_ksp_type preonly -st_pc_type lu -st_pc_factor_mat_solver_type superlu_dist'
 #export opts='-st_type sinvert -st_ksp_type preonly -st_pc_type lu -st_pc_factor_mat_solver_type superlu_dist'
 #export opts='-st_type sinvert -st_ksp_type preonly -st_pc_type lu -eps_error_relative ::ascii_info_detail -st_pc_factor_mat_solver_type superlu_dist -mat_superlu_dist_iterrefine 1 -mat_superlu_dist_colperm PARMETIS -mat_superlu_dist_parsymbfact 1'
@@ -57,32 +57,32 @@ export opts='-st_type sinvert -eps_error_relative ::ascii_info_detail -pc_factor
 
 #for j in $(seq 4 1 15)
 for j in $(seq 1 1 1)
-#for j in $(seq 0.67 0.003 0.99)
+#for j in $(seq 0.997 0.0003 1.00)
 do
 
-	#sed -i 's,^\(ricb[ ]*=\).*,\1'$j',g' bin/parameters.py
+	#sed -i 's,^\(par.aux0[ ]*=\).*,\1'$j',g' bin/parameters.py
 
-	#./bin/submatrices.py $ncpus >> out00
-	#mpiexec -n $ncpus ./bin/assemble.py >> out0
+	./bin/submatrices.py $ncpus >> out00
+	mpiexec -n $ncpus ./bin/assemble.py >> out0
 
 
-	#for i in $(seq 0.05 0.05 1.0)
+	#for i in $(seq 0.3 0.15 3)
 	for i in $(seq 1 1 1)
 	do
 		#sed -i 's,^\(itau[ ]*=\).*,\1'$i',g' bin/parameters.py
 		#sed -i 's,^\(Ek[ ]*=\).*,\1'10**$i',g' bin/parameters.py
 		#sed -i 's,^\(m[ ]*=\).*,\1'$i',g' bin/parameters.py
-		#sed -i 's,^\(delta[ ]*=\).*,\1'$i',g' bin/parameters.py
+		#sed -i 's,^\(aux1[ ]*=\).*,\1'$i',g' bin/parameters.py
 		#sed -i 's,^\(ricb[ ]*=\).*,\1'$i',g' bin/parameters.py
 	
 		#echo $i
 
-		./bin/submatrices.py $ncpus >> out00
-		mpiexec -n $ncpus ./bin/assemble.py >> out0
+		#./bin/submatrices.py $ncpus >> out00
+		#mpiexec -n $ncpus ./bin/assemble.py >> out0
 		#mpiexec -n $ncpus ./bin/solve.py $opts >> out1
 	
 		#for k in $(seq 1 1 1)
-		for k in $(seq 1 1 3 )
+		for k in $(seq 1 1 42)
 		do
 	
 			#if [ -f no_conv_solution ] && [ -f track_target ]; then
@@ -120,7 +120,9 @@ do
 			#mpiexec -n $ncpus ./bin/solve_ind.py $opts >> out2
 			
 			mpiexec -n $ncpus ./bin/solve.py $opts >> out1
+			./bin/spin_doctor.py $ncpus >> out2
 	
+			rm *.field
 			#cp tools/underflow.py .
 			#deactivate
 			#source $HOME/venv_shtns2/bin/activate
@@ -140,5 +142,5 @@ do
 
 done
 
-rm *.npz *.mtx
+rm *.npz *.mtx *.field
 

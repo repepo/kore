@@ -43,7 +43,7 @@ def main(ncpus):
 
     vS = vP  # this is the vector parity of the entropy perturbation
 
-    tol = 1e-6
+    tol = 1e-9
     
     # Gegenbauer basis transformations
     S0 = ut.Slam(0, par.N) # From the Chebyshev basis ( C^(0) basis ) to C^(1) basis
@@ -112,7 +112,7 @@ def main(ncpus):
 
     if par.hydro == 1:
         # -------------------------------------------------------------------------------------------------------------------------------------------
-        # Matrices needed for the Navier-Stokes equation, double curl equations ------------------------------------------- NavStok 2curl - section u
+        # Matrix labels needed for the Navier-Stokes equation, double curl equations -------------------------------------- NavStok 2curl - section u
         # -------------------------------------------------------------------------------------------------------------------------------------------
 
         # inertia and Coriolis diag terms
@@ -148,7 +148,7 @@ def main(ncpus):
             labl += [ 'u2gra0_D0' ]
 
         # -------------------------------------------------------------------------------------------------------------------------------------------
-        # Matrices needed for the Navier-Stokes equation, single curl equations ------------------------------------------- NavStok 1curl - section v
+        # Matrix labels needed for the Navier-Stokes equation, single curl equations -------------------------------------- NavStok 1curl - section v
         # -------------------------------------------------------------------------------------------------------------------------------------------
 
         # inertia and Coriolis diag terms
@@ -168,7 +168,7 @@ def main(ncpus):
 
     if par.thermal == 1:                  
         # -------------------------------------------------------------------------------------------------------------------------------------------
-        # Matrices needed for the thermal equation --------------------------------------------------------------------------------- Heat - section h
+        # Matrix labels needed for the thermal equation ---------------------------------------------------------------------------- Heat - section h
         # -------------------------------------------------------------------------------------------------------------------------------------------
 
         # entropy perturbation
@@ -191,9 +191,9 @@ def main(ncpus):
     # -------------------------------------------------------------------------------------------------------------------------------------------
     opkey = []  # all 'reduced' operator id list, might have duplicates
     pkey  = []  # unique 'reduced' operator id list
-    parg0 = []
-    parg1 = []
-    parg2 = []
+    parg0 = []  # derivative order
+    parg1 = []  # Cheb coeeffs go here
+    parg2 = []  # vector_parity
 
     if par.ricb > 0:  # set vector_parity = 0, i.e. is not needed
         arg2 = np.size(labl)*[0]
@@ -240,7 +240,7 @@ def main(ncpus):
     # Now we need to multiply the matrices on the right by the appropriate derivative matrix,
     # and change basis accordingly:
     for k,labl1 in enumerate(labl) :
-
+        #print(labl1)
         secx = labl1[0]
         (rpower, rhopower, func1, dorder1, func2, dorder2, dx, vector_parity) = opkey[k]
         gbx = gebasis[section.index(secx)]  # order of the Gegenbauer basis according to the section
@@ -249,29 +249,27 @@ def main(ncpus):
         idx = [ j for j,x in enumerate(pkey) if (x == opkey[k]) ]  # find matrix index in pkey
         
         matrix = G[gbx][gbx-dx] * matlist[idx[0]] * D[dx]
-        # ---------------------------------------------------------------------------------------------------------------------------------------
 
-
-        # If no solid inner core then remove unneeded rows and cols
-        if par.ricb == 0 :
+        if par.ricb == 0 :  # --------------------------------------------------------- If no solid inner core then remove unneeded rows and cols
 
             adj = func1 in ['gra', 'pdS']   # adjusts operator parity for these profiles 
             operator_parity = 1-(( rpower + (dorder1 or 0) + (dorder2 or 0) + dx + adj )%2)*2  # we use 'or 0' to give 0 when dorder is None
             overall_parity  = vector_parity * operator_parity
             matrix = ut.remroco( matrix, overall_parity, vector_parity)
-
-        # Make room for boundary conditions and write to disk
-        if par.ricb == 0 :
             chop = int(gbx/2)
-        else :
+
+        else:
+            
             chop = gbx
+        # ---------------------------------------------------------------------------------------------------------------------------------------
 
-        if chop > 0:
+
+        if chop > 0:  # ------------------------------------------------------------------- Makes room for boundary conditions and writes to disk
             matrix = ss.vstack( [ Z[chop-1], matrix[:-chop,:] ], format='csr' )
-
         sio.mmwrite( labl1+'.mtx', matrix )
+        # ---------------------------------------------------------------------------------------------------------------------------------------
 
-    # -------------------------------------------------------------------------------------------------------------------------------------------
+
 
     toc = timer()
     print('Generated and written', np.size(labl), 'operator submatrices in', toc-tic, 'seconds')
