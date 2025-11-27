@@ -71,13 +71,13 @@ class user_defined_profiles():  # ----------------------------------------------
     def faux(self,r,a,b,c):  # mixed parabola + cosine. par.aux4=1 is cosine, par.aux4=0 is parabola.
         out = self.faux1(r,a,b,c) * (1-par.aux4) + self.faux2(r,a,b,c) * par.aux4
         return out
-    def Gamma1(self,r):  # The resulting first adiabatic coefficient Γ₁
-        out = self.Gamma1_isentropic(r) + self.faux(r,par.aux1,par.aux2,par.aux3)
+    def Gamma1(self,r,a,b,c):  # The resulting first adiabatic coefficient Γ₁
+        out = self.Gamma1_isentropic(r) + self.faux(r,a,b,c)
         return out
-    def gradS(self,r):  # The background entropy gradient
+    def gradS(self,r,a,b,c):  # The background entropy gradient
         out = np.zeros_like(r)
         x = abs(r)<1
-        out[x] = ( self.dlog_p(r[x])/self.Gamma1(r[x]) ) - self.dlog_rho(r[x])
+        out[x] = ( self.dlog_p(r[x])/self.Gamma1(r[x],a,b,c) ) - self.dlog_rho(r[x])
         return out
 
 
@@ -85,7 +85,7 @@ class user_defined_profiles():  # ----------------------------------------------
         # ------------------------ p(r) dS/dr
         out = np.zeros_like(r)
         x = abs(r)<1
-        out[x] = self.pressure(r[x],0)*self.gradS(r[x])
+        out[x] = self.pressure(r[x],0)*self.gradS(r[x], par.aux1, par.aux2, par.aux3)
         # -----------------------------------
         return (r**rpower)*out
 
