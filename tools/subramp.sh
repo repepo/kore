@@ -3,7 +3,7 @@
 ###PBS -l mem=245g
 #PBS -l select=1:ncpus=24:mem=58gb
 ###PBS -l select=1:ncpus=24:mem=248gb
-#PBS -N Dew13_A2.00
+#PBS -N somename
 #PBS -l walltime=04:00:00
 
 
@@ -13,7 +13,7 @@ source $HOME/venv00/bin/activate
 
 ncpus=12
 
-dir=Dew13_A2.00
+dir=somename
 
 cd $HOME/data/$dir
 
@@ -81,8 +81,8 @@ do
 		#mpiexec -n $ncpus ./bin/assemble.py >> out0
 		#mpiexec -n $ncpus ./bin/solve.py $opts >> out1
 	
-		#for k in $(seq 1 1 1)
-		for k in $(seq 1 1 42)
+		for k in $(seq 1 1 1)
+		#for k in $(seq 1 1 42)
 		do
 	
 			#if [ -f no_conv_solution ] && [ -f track_target ]; then
@@ -142,5 +142,5 @@ do
 
 done
 
-rm *.npz *.mtx *.field
+rm *.npz *.mtx
 

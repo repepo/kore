@@ -29,22 +29,14 @@ class default_params():
         # ----------------------------------------------------------------------------------------------------------------------
         # ----------------------------------------------------------------------------------------- Star/planet model parameters
         # ----------------------------------------------------------------------------------------------------------------------
-        # self.background = 'Boussinesq' # 'bouss' for Boussinesq, else anelastic reference state
-        self.background = 'model' # For MESA file format profiles (load MESA or GYRE type model below)
-        # self.background = 'userdef' # For implicitly defined profiles (adjust ρ and when required g, (T or p), (N^2 or dS), in radial_profiles.py)
-        # self.background = 'array' # For explicitly defined profiles (supply r, ρ and when required g, (T or p), (N^2 or dS), in array format)
-
-        self.def_pressure = 0 # set to 1 if the background pressure is provided, set to 0 if background temperature is provided
-        self.def_entropy = 0 # set to 1 if the background entropy gradient is provided, set to 0 if the squared Brunt-Väisälä frequency is provided
-        self.def_viscosity = 0 # set to 1 if defining viscosity implicitly, set to 2 if defining viscosity explicitly
-        self.def_thermal_diffusivity = 0 # set to 1 if using a MESA profile and defining thermal diffusivity implicitly, set to 2 if using a MESA profile and defining thermal diffusivity explicitly
-
         self.model = 'poly.n1_gamma3.h5' # MESA, GYRE, or astropy table model file
 
-        self.model_type = 'poly'
-        # self.model_type = 'mesa'
-        # self.model_type = 'gsm'
-        # self.model_type = 'astropy table'
+        self.model_type = 'poly'              # For polytropic profiles supplied by Gyre
+        # self.model_type = 'mesa'              # For MESA file format profiles
+        # self.model_type = 'gsm'               # For Gyre file format profiles
+        # self.model_type = 'astropy table'     # For explicitly defined profiles (supply r, ρ and when required g, (T or p), (N^2 or dS), in array format)
+        # self.model_type = 'Boussinesq'        #  for Boussinesq reference state, else anelastic reference state
+        # self.model_type = 'user def'          # For implicitly defined profiles (adjust ρ and when required g, p, pdS in radial_profiles.py)
 
         # profile smoothing power
         self.smopo = 0
@@ -61,6 +53,8 @@ class default_params():
         self.aux1   = 0
         self.aux2   = 0
         self.aux3   = 0
+        self.aux4   = 0
+        self.aux5   = 0
 
 
 
@@ -80,7 +74,7 @@ class default_params():
         # ----------------------------------------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------------------------------- Thermal parameters
         # ----------------------------------------------------------------------------------------------------------------------
-        if self.background == 'Boussinesq':
+        if self.model_type == 'Boussinesq':
             self.heating = 'differential'  # 'internal' or 'differential' heating
 
         # Thermal boundary conditions: 0 for Dirichlet, 1 for Neumann
@@ -241,3 +235,15 @@ class default_params():
             out = 48  #
 
         return max(48, out + out%2)
+
+
+
+    def ellmax(self, ncpus, g, m, N):
+        '''
+        Returns the lmax given a radial truncation level N,
+        ncpus, azimuthal wave number m, and an approx. N/lmax ratio g.
+        '''
+        #out = int(2*ncpus + m - 1)
+        out = int( 2*ncpus*( np.floor_divide( g*N, 2*ncpus ) ) + m - 1 )
+
+        return out
