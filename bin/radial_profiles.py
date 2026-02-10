@@ -103,7 +103,17 @@ class user_defined_profiles():  # ----------------------------------------------
         out = np.ones_like(r)
         # -----------------------------------
         return (r**rpower)*out
+    
+    def aub(self, r, rpower): 
+        """
+        Differential rotation radial profile
+        """
+        if par.diff_rot_type=="Y20":
+            out = (1-r)*(r-par.ricb)
+        # elif par.diff_rot_type=="solar":
 
+        return (r**rpower)*out
+         
 
 
 class profiles_from_file():  # -------------------------------------------------------- As read from model file
@@ -267,6 +277,16 @@ def lhoX(r, lhoorder):  # ρⁿ (ln ρ)⁽ⁿ⁾
     return out
 
 
+def aubX(r, Dorder):
+    tol = 1e-12
+    out = ut.fonzie( prf.aub, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
+    return out
+    
+def svp(r, rpower):
+    return (r**rpower)*r*aubX(r, 1)
+
+def pls(r, rpower):
+    return (r**rpower)*(r**2)*aubX(r, 2)
 
 # -------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------- Profile functions for burrito
@@ -333,12 +353,23 @@ def pressX(r, Dorder):   # ρ(r)T(r)
 
     return out
 
+def svpX(r, Dorder):
+    tol = 1e-12
+    out = ut.fonzie( svp, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
+
+    return out
+
+def plsX(r, Dorder):
+    tol = 1e-12
+    out = ut.fonzie( pls, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
+
+    return out
 
 
 # -------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------
-proffdir = { 'lho':rhoXlhoX, 'moe':muX, 'rho':rhoX, 'gra':graviX, 'pss':pressX, 'pdS':pdSdrX, 'kps':kappressX }
+proffdir = { 'lho':rhoXlhoX, 'moe':muX, 'rho':rhoX, 'gra':graviX, 'pss':pressX, 'pdS':pdSdrX, 'kps':kappressX, 'aub':aubX, 'svp':svpX, 'pls':plsX}
 # -------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------

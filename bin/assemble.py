@@ -621,6 +621,7 @@ def main():
             cori = op.coriolis(l,'u','upol',0)[0]
             visc = op.viscous_diffusion(l,'u','upol',0)
             mtx = iwu + cori - visc
+
             # ------------------------------------------------------
             col = basecol + col0
             if l == loc_top[0]:  # create loc_list if first iteration
@@ -629,6 +630,15 @@ def main():
                 loc_list = [mtx.data, mtx.row + row , mtx.col + col]
             else:  # append to loc_list if it already exists
                 loc_list = ut.packit(loc_list, mtx, row, col)
+
+            if par.diff_rot : 
+                for i in [-2, 0, 2] : 
+                    if l+i in ll_flo[1] :
+                        # Physics ---------------------------------------
+                        mtx = op.differential_rotation(l,'u','upol',i)
+                        # -----------------------------------------------
+                        col = basecol + col0 + mtx[1] * ut.N1
+                        loc_list = ut.packit( loc_list, mtx[0], row, col)
 
 
             # Toroidal velocity terms (utor) ---------------------------------------------------------------------------
@@ -646,6 +656,14 @@ def main():
                     col = basecol + col0 + mtx[1] * ut.N1
                     loc_list = ut.packit( loc_list, mtx[0], row, col)
 
+            if par.diff_rot : 
+                for i in [-3, -1, 1, 3] : 
+                    if l+i in ll_flo[1] :
+                        # Physics ---------------------------------------
+                        mtx = op.differential_rotation(l,'u','utor',i)
+                        # -----------------------------------------------
+                        col = basecol + col0 + mtx[1] * ut.N1
+                        loc_list = ut.packit( loc_list, mtx[0], row, col)
 
             if par.magnetic == 1: # include Lorentz force
 
@@ -742,6 +760,15 @@ def main():
                     # -----------------------------------------------
                     col = basecol + col0 + mtx[1]*ut.N1
                     loc_list = ut.packit( loc_list, mtx[0], row, col)
+            
+            if par.diff_rot : 
+                for i in [-3, -1, 1, 3] : 
+                    if l+i in ll_flo[1] :
+                        # Physics ---------------------------------------
+                        mtx = op.differential_rotation(l,'v','upol',i)
+                        # -----------------------------------------------
+                        col = basecol + col0 + mtx[1] * ut.N1
+                        loc_list = ut.packit( loc_list, mtx[0], row, col)
 
 
             # Toroidal velocity terms ----------------------------------------------------------------------------------
@@ -757,6 +784,16 @@ def main():
             # --------------------------------------------
             col = basecol + col0
             loc_list = ut.packit( loc_list, mtx, row, col)
+
+
+            if par.diff_rot : 
+                for i in [-2, 0, 2] : 
+                    if l+i in ll_flo[1] :
+                        # Physics ---------------------------------------
+                        mtx = op.differential_rotation(l,'v','utor',i)
+                        # -----------------------------------------------
+                        col = basecol + col0 + mtx[1] * ut.N1
+                        loc_list = ut.packit( loc_list, mtx[0], row, col)
 
 
             if par.magnetic == 1: # includes the Lorentz force

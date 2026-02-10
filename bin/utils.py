@@ -375,13 +375,16 @@ def funcheb(ck0, r, ricb, rcmb, n):
 
 
 def fonzie( func, r, N, ricb, rcmb, Dorder, tol, *args):
+    out = np.zeros((np.size(r), 1))
+    if Dorder>0 :  
+        ck  = chebco_f( func, N, ricb, rcmb, tol, args)
+        if id(func) in [ id(rap.prf.density), id(rap.prf.pdSdr), id(rap.prf.pressure), id(rap.prf.gravity) ]:
+            #print(func)
+            ck = ironit(ck, par.smopo)
+        out = funcheb(ck, r, ricb, rcmb, Dorder)
 
-    out = np.zeros_like(r)
-    ck  = chebco_f( func, N, ricb, rcmb, tol, args)
-    if id(func) in [ id(rap.prf.density), id(rap.prf.pdSdr), id(rap.prf.pressure), id(rap.prf.gravity) ]:
-        #print(func)
-        ck = ironit(ck, par.smopo)
-    out = funcheb(ck, r, ricb, rcmb, Dorder)
+    else : 
+        out[:,0] = func(r, *args)
 
     return out
 

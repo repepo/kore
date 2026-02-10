@@ -147,6 +147,30 @@ def main(ncpus):
             arg2 += [ vP ]  # poloidal parity here because the entropy perturbation follows the same parity as the radial velocity
             labl += [ 'u2gra0_D0' ]
 
+        if par.diff_rot == 1:
+            """
+            Differential rotation background velocity field
+            On the form ΔΩ(r, θ) = ΔΩ*f(r)*g(θ), with : 
+                ΔΩ : Differential rotation amplitude (par.diff_rot_amplitude)
+                g(θ) : Differential rotation latitudinal profile. For the moment g(θ)=Y20(θ).
+                f(r) : Differential rotation radial profile, from which we define : 
+                    aub = f
+                    svp = r*f'
+                    pls = r^2*f''
+            """
+
+            # Poloidal terms : Δl = ±2, 0
+            arg2 += [ vP ]*10
+            labl += [ 'u2aub0_D0','u1aub0_D1','u1aub0lho1_D0',
+                      'u2svp0_D0','u1svp0_D1','u1svp0lho1_D0',
+                      'u0aub0lho2_D0','u0aub0lho1_D1','u0aub0_D2',
+                      'u2pls0_D0' ]
+
+            # Toroidal terms : Δl = ±3, ±1
+            arg2 += [ vT ]*3
+            labl += [ 'u1aub0_D0','u0aub0_D1','u1svp0_D0' ]
+
+
         # -------------------------------------------------------------------------------------------------------------------------------------------
         # Matrix labels needed for the Navier-Stokes equation, single curl equations -------------------------------------- NavStok 1curl - section v
         # -------------------------------------------------------------------------------------------------------------------------------------------
@@ -165,6 +189,26 @@ def main(ncpus):
             labl += [ 'v2moe1_D0', 'v3moe0_D0',
                       'v1moe1_D1', 'v2moe0_D1',
                       'v1moe0_D2' ]
+        
+        if par.diff_rot == 1:
+            """
+            Differential rotation background velocity field
+            On the form ΔΩ(r, θ) = ΔΩ*f(r)*g(θ), with : 
+                ΔΩ : Differential rotation amplitude (par.diff_rot_amplitude)
+                g(θ) : Differential rotation latitudinal profile. For the moment g(θ)=Y20(θ).
+                f(r) : Differential rotation radial profile, from which we define : 
+                    aub = f
+                    svp = r*f'
+                    pls = r^2*f''
+            """
+
+            # Poloidal terms : Δl = ±3, ±1
+            arg2 += [ vP ]*4
+            labl += [ 'v1aub0_D0', 'v0aub0lho1_D0', 'v0aub0_D1', 'v1svp0_D0' ]
+
+            # Toroidal terms : Δl = ±2, 0
+            arg2 += [ vT ]
+            labl += [ 'v0aub0_D0' ]
 
     if par.thermal == 1:                  
         # -------------------------------------------------------------------------------------------------------------------------------------------
