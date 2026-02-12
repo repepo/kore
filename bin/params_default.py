@@ -22,7 +22,7 @@ class default_params():
         # ----------------------------------------------------------------------------------------------------------------------
         self.m    = 0  # Azimuthal wave number
         self.symm = 1  # Equatorial symmetry, 1 for symmetric, -1 for antisymmetric
-        self.ricb = 0.5 # Solid inner core radius 
+        self.ricb = 0 # Solid inner core radius 
 
 
 
@@ -73,8 +73,9 @@ class default_params():
         # If nonzero, the code will solve for a perturbation to a background state with differential rotation. 
         self.diff_rot = 1  # Set to 1 to include a differential rotation background state
         #self.diff_rot_type = 'solar'  # Not implemented yet ! 'solar' for solar-like differential rotation, 'Y20' for a simple Y20 latitudinal dependence, 'Y20r' for a Y20 dependence with an additional radial dependence that goes to zero at the inner and outer boundaries.
-        self.diff_rot_type = 'Y20'  # Not implemented yet ! 'solar' for solar-like differential rotation, 'Y20' for a simple Y20 latitudinal dependence, 'Y20r' for a Y20 dependence with an additional radial dependence that goes to zero at the inner and outer boundaries.
-        self.diff_rot_amplitude = 1.0  # Amplitude of the differential rotation. Set to 1.0 for prescribed types (ex : solar-like)
+        self.diff_rot_type = 'user_defined'  # Not implemented yet ! 'solar' for solar-like differential rotation, 'Y20' for a simple Y20 latitudinal dependence, 'Y20r' for a Y20 dependence with an additional radial dependence that goes to zero at the inner and outer boundaries.
+        self.diff_rot_amplitude_00 = 1.0  # Amplitude of the Y00 differential rotation. Not used if type is not "user_defined"
+        self.diff_rot_amplitude_20 = 1.0  # Amplitude of the Y20 differential rotation. Not used if type is not "user_defined"
 
         # ----------------------------------------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------------------------------- Thermal parameters

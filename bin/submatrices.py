@@ -160,15 +160,28 @@ def main(ncpus):
             """
 
             # Poloidal terms : Δl = ±2, 0
+            # For f2(r)*Y20 
             arg2 += [ vP ]*10
             labl += [ 'u2aub0_D0','u1aub0_D1','u1aub0lho1_D0',
                       'u2svp0_D0','u1svp0_D1','u1svp0lho1_D0',
                       'u0aub0lho2_D0','u0aub0lho1_D1','u0aub0_D2',
                       'u2pls0_D0' ]
+            
+            # For f0(r)*Y00 
+            arg2 += [ vP ]*10
+            labl += [ 'u2abu0_D0','u1abu0_D1','u1abu0lho1_D0',
+                      'u2spv0_D0','u1spv0_D1','u1spv0lho1_D0',
+                      'u0abu0lho2_D0','u0abu0lho1_D1','u0abu0_D2',
+                      'u2psl0_D0' ]
 
             # Toroidal terms : Δl = ±3, ±1
+            # For f2(r)*Y20 
             arg2 += [ vT ]*3
             labl += [ 'u1aub0_D0','u0aub0_D1','u1svp0_D0' ]
+
+            # For f0(r)*Y00 
+            arg2 += [ vT ]*3
+            labl += [ 'u1abu0_D0','u0abu0_D1','u1spv0_D0' ]
 
 
         # -------------------------------------------------------------------------------------------------------------------------------------------
@@ -203,12 +216,22 @@ def main(ncpus):
             """
 
             # Poloidal terms : Δl = ±3, ±1
+            # For f2(r)*Y20 
             arg2 += [ vP ]*4
             labl += [ 'v1aub0_D0', 'v0aub0lho1_D0', 'v0aub0_D1', 'v1svp0_D0' ]
 
+            # For f0(r)Y00
+            arg2 += [ vP ]*4
+            labl += [ 'v1abu0_D0', 'v0abu0lho1_D0', 'v0abu0_D1', 'v1spv0_D0' ]
+
             # Toroidal terms : Δl = ±2, 0
+            # For f2(r)*Y20 
             arg2 += [ vT ]
             labl += [ 'v0aub0_D0' ]
+
+            # For f0(r)Y00
+            arg2 += [ vT ]
+            labl += [ 'v0abu0_D0' ]
 
     if par.thermal == 1:                  
         # -------------------------------------------------------------------------------------------------------------------------------------------

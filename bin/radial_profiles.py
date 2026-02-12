@@ -1,5 +1,6 @@
 import numpy as np
 import utils as ut
+import scipy.special as ss
 from parameters import par
 
 
@@ -15,41 +16,46 @@ class user_defined_profiles():  # ----------------------------------------------
 
     def density(self, r, rpower):  # ---------------- ρ(r)
         r1 = r*par.aux0;
-        # out = (1-r1**2)**2               # Wu2005    β=2
-        out = np.sin(np.pi*r1)/(np.pi*r1)  # Polytrope n=1
-        # ------------------------------------------------
+        # out = 1-r1**2                      # Wu2005    β=1
+        out = (1-r1**2)**2                 # Wu2005    β=2
+        # out = np.sin(np.pi*r1)/(np.pi*r1)  # Polytrope n=1
+        # --------------------------------------------------
         return (r**rpower)*out
 
 
     def gravity(self, r, rpower):  # ---------------------------------------------------- g(r)
         r1 = r*par.aux0
-        # out = (r1*(35 - 42*r1**2 + 15*r1**4))/8.                             # Wu2005    β=2
-        out = (-(np.pi*r1*np.cos(np.pi*r1)) + np.sin(np.pi*r1))/(np.pi*r1**2)  # Polytrope n=1 
-        # ------------------------------------------------------------------------------------
+        # out = (5*r1 - 3*r1**3)/2.                                              # Wu2005    β=1
+        out = (r1*(35 - 42*r1**2 + 15*r1**4))/8.                               # Wu2005    β=2
+        # out = (-(np.pi*r1*np.cos(np.pi*r1)) + np.sin(np.pi*r1))/(np.pi*r1**2)  # Polytrope n=1 
+        # --------------------------------------------------------------------------------------
         return (r**rpower)*out
 
 
     def pressure(self, r, rpower):  # Normalized to 1 at r=0 --------------- p(r)
         r1 = r*par.aux0
-        # out = -((-1 + r1**2)**3*(26 - 27*r1**2 + 9*r1**4))/26.  # Wu2005    β=2
-        out = np.sin(np.pi*r1)**2/(np.pi**2*r1**2)                # Polytrope n=1  
-        # -----------------------------------------------------------------------
+        # out = -0.5*((-2 + r1**2)*(-1 + r1**2)**2)                 # Wu2005    β=1
+        out = -((-1 + r1**2)**3*(26 - 27*r1**2 + 9*r1**4))/26.    # Wu2005    β=2
+        # out = np.sin(np.pi*r1)**2/(np.pi**2*r1**2)                # Polytrope n=1  
+        # -------------------------------------------------------------------------
         return (r**rpower)*out
 
 
     def dlog_p(self,r):  # --------------------------------------------------------------------- d(ln p)/dr
         r1 = r*par.aux0
-        # out = (6*r1*(35 - 42*r1**2 + 15*r1**4))/((-1 + r1**2)*(26 - 27*r1**2 + 9*r1**4))  # Wu2005    β=2
-        out = (-2/r1) + (2*np.pi/np.tan(np.pi*r1))                                          # Polytrope n=1
-        # ------------------------------------------------------------------------------------------------- 
+         # out = (2*r1*(-5 + 3*r1**2))/(2 - 3*r1**2 + r1**4)                                   # Wu2005    β=1
+        out = (6*r1*(35 - 42*r1**2 + 15*r1**4))/((-1 + r1**2)*(26 - 27*r1**2 + 9*r1**4))    # Wu2005    β=2
+        # out = (-2/r1) + (2*np.pi/np.tan(np.pi*r1))                                          # Polytrope n=1
+        # --------------------------------------------------------------------------------------------------- 
         return out
         
         
     def dlog_rho(self,r):  # ------------------------- d(ln ρ)/dr
         r1 = r*par.aux0
-        # out = (4*r1)/(-1 + r1**2)               # Wu2005    β=2
-        out = (-1/r1) + (np.pi/np.tan(np.pi*r1))  # Polytrope n=1
-        # -------------------------------------------------------
+        # out = (2*r1)/(-1 + r1**2)                 # Wu2005    β=1
+        out = (4*r1)/(-1 + r1**2)                 # Wu2005    β=2
+        # out = (-1/r1) + (np.pi/np.tan(np.pi*r1))  # Polytrope n=1
+        # ---------------------------------------------------------
         return out
         
         
@@ -60,13 +66,15 @@ class user_defined_profiles():  # ----------------------------------------------
         out = np.zeros_like(r)
         x = (r>a)&(r<b)
         out[x] = -c*(4/b**2)*(r[x]-a)*(r[x]-b)
-        out[r<0] = np.flipud(out[r>0])  # make it even
+        if par.ricb == 0:
+            out[r<0] = np.flipud(out[r>0])  # make it even
         return out
     def faux2(self,r,a,b,c):  # cosine function (soft edges)
         out = np.zeros_like(r)
         x = (r>a)&(r<b)
         out[x] = (c/2)*(1-np.cos(2*np.pi*(r[x]-a)/(b-a)))
-        out[r<0] = np.flipud(out[r>0])  # make it even
+        if par.ricb == 0:
+            out[r<0] = np.flipud(out[r>0])  # make it even
         return out
     def faux(self,r,a,b,c):  # mixed parabola + cosine. par.aux4=1 is cosine, par.aux4=0 is parabola.
         out = self.faux1(r,a,b,c) * (1-par.aux4) + self.faux2(r,a,b,c) * par.aux4
@@ -92,9 +100,9 @@ class user_defined_profiles():  # ----------------------------------------------
 
     def viscosity(self, r, rpower):
         # ------------------------------ v(r)
-        #out = np.ones_like(r)
-        out = 1/self.density(r,0)
-        # -----------------------------------
+        #out = 1/self.density(r,0)
+        out = par.visc0 + 0.5*(1-par.visc0)*( 1 + ss.erf((r-par.rvisc)/par.hvisc) )
+        # -------------------------------------------------------------------------
         return (r**rpower)*out
 
 
@@ -106,14 +114,23 @@ class user_defined_profiles():  # ----------------------------------------------
     
     def aub(self, r, rpower): 
         """
-        Differential rotation radial profile
+        Differential rotation radial profile for Y20
         """
-        if par.diff_rot_type=="Y20":
+        if par.diff_rot_type=="user_defined":
             out = (1-r)*(r-par.ricb)
         # elif par.diff_rot_type=="solar":
 
         return (r**rpower)*out
-         
+    
+    def abu(self, r, rpower): 
+        """
+        Differential rotation radial profile for Y00
+        """
+        if par.diff_rot_type=="user_defined":
+            out = (1-r)*(r-par.ricb)
+        # elif par.diff_rot_type=="solar":
+
+        return (r**rpower)*out
 
 
 class profiles_from_file():  # -------------------------------------------------------- As read from model file
@@ -141,17 +158,49 @@ class profiles_from_file():  # -------------------------------------------------
         # -----------------------------------
         return (r**rpower)*out
 
+    def dlog_p(self,r):
+        tol = 1e-12; Dorder = 1
+        dp = ut.fonzie(prf.pressure, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)
+        out = dp[:,1]/dp[:,0]
+        return out
+    def dlog_rho(self,r):
+        tol = 1e-12; Dorder = 1
+        drho = ut.fonzie(prf.density, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)
+        out = drho[:,1]/drho[:,0]
+        return out   
+    def Gamma1_isentropic(self,r):  # This is the isentropic Γ₁  
+        out = self.dlog_p(r)/self.dlog_rho(r)
+        #out = (4/3)*np.ones_like(r)
+        return out
+    def faux(self,r,a,b,c):  # cosine function (soft edges)
+        out = np.zeros_like(r)
+        x = (r>a)&(r<b)
+        out[x] = (c/2)*(1-np.cos(2*np.pi*(r[x]-a)/(b-a)))
+        out[r<0] = np.flipud(out[r>0])  # make it even
+        return out
+    def Gamma1(self,r,a,b,c):  # The resulting first adiabatic coefficient Γ₁
+        out = self.Gamma1_isentropic(r) + self.faux(r,a,b,c)
+        return out
+    def gradS(self,r,a,b,c):  # The background entropy gradient
+        out = np.zeros_like(r)
+        x = abs(r)<1
+        out[x] = ( self.dlog_p(r[x])/self.Gamma1(r[x],a,b,c) ) - self.dlog_rho(r[x])
+        return out
 
     def pdSdr(self, r, rpower):
         # ------------------------ p(r) dS/dr
-        out = ut.load_model(r,'pdSdr')
+        #out = ut.load_model(r,'pdSdr')
+        out = np.zeros_like(r)
+        x = abs(r)<1
+        out[x] = self.pressure(r[x],0)*self.gradS(r[x], par.aux1, par.aux2, par.aux3)
         # -----------------------------------
         return (r**rpower)*out
 
 
     def viscosity(self, r, rpower):  # def here only
         # ------------------------------ v(r)
-        out = np.ones_like(r)
+        #out = np.ones_like(r)
+        out = 1/self.density(r,0)
         # -----------------------------------
         return (r**rpower)*out
 
@@ -238,8 +287,8 @@ def kappress(r, rpower):   # κ p
 
 def dynamic_viscosity(r, rpower):  # μ = ρν
 
-    #out = prf.density(r,0) * prf.viscosity(r,0)
-    out = np.ones_like(r) 
+    out = prf.density(r,0) * prf.viscosity(r,0)
+    #out = np.ones_like(r) 
     return (r**rpower)*out
 
 
@@ -278,7 +327,7 @@ def lhoX(r, lhoorder):  # ρⁿ (ln ρ)⁽ⁿ⁾
 
 
 def aubX(r, Dorder):
-    tol = 1e-12
+    tol = 1e-14
     out = ut.fonzie( prf.aub, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
     return out
     
@@ -287,6 +336,17 @@ def svp(r, rpower):
 
 def pls(r, rpower):
     return (r**rpower)*(r**2)*aubX(r, 2)
+
+def abuX(r, Dorder):
+    tol = 1e-14
+    out = ut.fonzie( prf.abu, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
+    return out
+    
+def spv(r, rpower):
+    return (r**rpower)*r*abuX(r, 1)
+
+def psl(r, rpower):
+    return (r**rpower)*(r**2)*abuX(r, 2)
 
 # -------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------- Profile functions for burrito
@@ -316,7 +376,7 @@ def rhoXlhoX(r, *args):   # ρᵃ (ln ρ)⁽ᵇ⁾  derivatives of ρ
 
 def muX(r, Dorder):   # Dynamic viscosity μ(r) = ρ(r)ν(r)
 
-    tol = 1e-12
+    tol = 1e-14
     out = ut.fonzie( dynamic_viscosity, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
 
     return out
@@ -324,7 +384,7 @@ def muX(r, Dorder):   # Dynamic viscosity μ(r) = ρ(r)ν(r)
 
 def kappressX(r, Dorder):   # κ(r)ρ(r)T(r)
 
-    tol = 1e-12
+    tol = 1e-14
     out = ut.fonzie( kappress, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
 
     return out
@@ -332,7 +392,7 @@ def kappressX(r, Dorder):   # κ(r)ρ(r)T(r)
 
 def pdSdrX(r, Dorder):   # ρ(r)T(r)dS/dr
 
-    tol = 1e-12
+    tol = 1e-14
     out = ut.fonzie( prf.pdSdr, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
 
     return out
@@ -340,7 +400,7 @@ def pdSdrX(r, Dorder):   # ρ(r)T(r)dS/dr
 
 def graviX(r, Dorder):   # g(r)
 
-    tol = 1e-12
+    tol = 1e-14
     out = ut.fonzie( prf.gravity, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
 
     return out
@@ -348,31 +408,41 @@ def graviX(r, Dorder):   # g(r)
 
 def pressX(r, Dorder):   # ρ(r)T(r)
 
-    tol = 1e-12
+    tol = 1e-14
     out = ut.fonzie( prf.pressure, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
 
     return out
 
 def svpX(r, Dorder):
-    tol = 1e-12
+    tol = 1e-14
     out = ut.fonzie( svp, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
 
     return out
 
 def plsX(r, Dorder):
-    tol = 1e-12
+    tol = 1e-14
     out = ut.fonzie( pls, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
 
     return out
 
+def spvX(r, Dorder):
+    tol = 1e-14
+    out = ut.fonzie( spv, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
 
-# -------------------------------------------------------------------------------------------------------------
-# -------------------------------------------------------------------------------------------------------------
-# -------------------------------------------------------------------------------------------------------------
-proffdir = { 'lho':rhoXlhoX, 'moe':muX, 'rho':rhoX, 'gra':graviX, 'pss':pressX, 'pdS':pdSdrX, 'kps':kappressX, 'aub':aubX, 'svp':svpX, 'pls':plsX}
-# -------------------------------------------------------------------------------------------------------------
-# -------------------------------------------------------------------------------------------------------------
-# -------------------------------------------------------------------------------------------------------------
+    return out
+
+def pslX(r, Dorder):
+    tol = 1e-14
+    out = ut.fonzie( psl, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
+
+    return out
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+proffdir = { 'lho':rhoXlhoX, 'moe':muX, 'rho':rhoX, 'gra':graviX, 'pss':pressX, 'pdS':pdSdrX, 'kps':kappressX, 'aub':aubX, 'svp':svpX, 'pls':plsX, 'abu':abuX, 'spv':spvX, 'psl':pslX}
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 def burrito(r, *args):
