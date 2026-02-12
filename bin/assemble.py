@@ -1232,7 +1232,7 @@ def bc_u_spherical(l,loc):
 
             if par.bco == 0: # stress-free cmb, do not use this if density is zero at the surface
 
-                out[ 0,:] =   Tbu[:,0]  # P=0
+                out[ 0,:] =   Tbu[:,0]*(R*rhb1-3*rhb0) + Tbu[:,1]*3*R*rhb0
                 out[ 1,:] =   Tbu[:,0] * ( (L-2)*(rhb0**2) - R*rhb0*rhb1 - (R**2)*(rhb1**2) + (R**2)*rhb0*rhb2 )   \
                             + Tbu[:,1] * (R**2)*rhb0*rhb1                                                          \
                             + Tbu[:,2] * (R**2)*(rhb0**2)

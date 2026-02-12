@@ -445,25 +445,19 @@ def get_radial_derivatives( func, rorder, Dorder, tol):
 
 
 
-def interp(rad, rad_user, profile, even=True):
+def interp(x0, x, y, even=True):
 
-    interp = si.Akima1DInterpolator(rad_user, profile)
-    out = np.zeros_like(rad)
+    akima = si.Akima1DInterpolator(x, y)
+    out = np.zeros_like(x0)
 
-    if np.min(rad_user) == par.ricb:
-
-        for i, x in enumerate(rad):
-            if x>= 0:
-                out[i] = interp(x)
-            else:
-                if even:
-                    out[i] = interp(-x) # even function of r
-                else:
-                    out[i] = -interp(-x) # odd function of r
-
-    elif np.min(rad_user) == -1:
-
-        out = interp(rad)
+    if np.min(x)<0:
+        out = akima(x0)
+    else:
+        out[x0>=0] = akima(x0[x0>=0])
+        if even:
+            out[x0<0] = akima(-x0[x0<0])
+        else:
+            out[x0<0] = -akima(-x0[x0<0])
 
     return out
 
@@ -476,21 +470,23 @@ def load_model(r, var):
 
     if par.model_type in ['astropy table', 'poly']:
 
-        x = profile['x']
+        x0 = profile['x']
+        x = x0[x0<=par.aux0]; x=x/x[-1]
         y = np.zeros_like(x)
+        y0 = np.zeros_like(x0)
 
         if var == 'density':
-            y = profile['rho/rho_0']
+            y0 = profile['rho/rho_0']; y=y0[x0<=par.aux0]
 
         elif var == 'pressure':
-            y = profile['P/P_0']
+            y0 = profile['P/P_0']; y=y0[x0<=par.aux0]
 
         elif var == 'gravity':
-            y = x/profile['c_1']
+            y0 = x0/profile['c_1']; y=y0[x0<=par.aux0]
             z = False  # odd function of r
 
         elif var == 'pdSdr':
-            y[1:-1] = profile['P/P_0'][1:-1] * profile['As'][1:-1] / x[1:-1]
+            y0[1:-1] = profile['P/P_0'][1:-1] * profile['As'][1:-1] / x0[1:-1]; y=y0[x0<=par.aux0]
             z = False  # odd function of r
 
     elif par.model_type == 'mesa' or par.model_type == 'gsm':
@@ -1000,7 +996,7 @@ def Dlam(lamb,N):
     const2 = scsp.factorial(lamb-1.)*2**(lamb-1.)
     tmp = lamb + np.arange(0,N-lamb)
 
-    return const1*const2*ss.diags(tmp,lamb, format='csr')
+    return const1*const2*ss.diags(tmp,lamb, format='csr', dtype='float64')
 
 
 
@@ -1241,7 +1237,8 @@ def ftest1(ricb):
 
 def Ylm(l, m, theta, phi):
     # The Spherical Harmonics, seminormalized
-    out = scsp.sph_harm(m, l, phi, theta)
+    #out = scsp.sph_harm(m, l, phi, theta)   ### for scipy older than 1.15.3
+    out = scsp.sph_harm_y(l,m,theta,phi)    ### for scipy 1.15.3 or newer  
     return out*np.sqrt(4*np.pi/(2*l+1))
 
 
