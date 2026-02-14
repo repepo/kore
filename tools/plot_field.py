@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 import matplotlib.tri as tri
 import numpy.polynomial.chebyshev as ch
+import multiprocessing as mp
 
 sys.path.insert(1,'bin/')
 
@@ -84,6 +85,10 @@ n0   = ut.n0
 nR = int(sys.argv[2]) # number of radial points
 Ntheta = int(sys.argv[3]) # number of points in the theta direction
 
+ncpus   = mp.cpu_count()
+ntht_pp = int(np.round(Ntheta/ncpus))  # number of theta points per cpu
+totheta = ntht_pp * ncpus     # the actual number of total theta points  
+
 # setup radial grid
 gap = rcmb-ricb
 r = np.linspace(ricb,rcmb,nR)
@@ -129,10 +134,18 @@ ll    = ll0[2]
 for k in range(np.size(llpol)):
 	dPlj[k,:] = ut.Dcheb(Plj[k,:], ricb, rcmb)
 
+#@njit(parallel=True)
+# def deriv(Plj):
+#     #dPlj = np.zeros(np.shape(Plj),dtype=complex)
+#     for k in range(np.size(llpol)):
+# 	    dPlj[k,:] = ut.Dcheb(Plj[k,:], ricb, rcmb)
+#     return dPlj
+# dPlj = deriv(Plj)
+
 np.matmul(dPlj, chx.T, dP)
 
 inv_r = ss.diags(r**-1,0)
-L = ss.diags(llpol*(llpol+1),0)
+L = ss.diags(llpol*(llpol+1),0, dtype='float64')
 
 P_inv_r  = Plr * inv_r
 
@@ -142,33 +155,34 @@ rho1 = np.gradient(rho0, r)
 
 if sys.argv[6] == 'u':  # the velocity u
 
-    dlho = ss.diags(rho1/rho0, 0)
+    dlho = ss.diags(rho1/rho0, 0, dtype='float64')
     Qlr = L * P_inv_r
     Slr = P_inv_r + dP + Plr * dlho
     # No change in Tlr
 
 elif sys.argv[6] == 'mf':  # the mass flux ρu
 
-    drho = ss.diags(rho1, 0)
+    drho = ss.diags(rho1, 0, dtype='float64')
     Qlr = L * P_inv_r * rho
     Slr = (P_inv_r + dP) * rho + Plr * drho
     Tlr = Tlr * rho
 
 
 # setup the latitudinal grid
-theta = np.linspace(float(sys.argv[4])*np.pi/180,float(sys.argv[5])*np.pi/180,Ntheta+2)
+theta = np.linspace(float(sys.argv[4])*np.pi/180, float(sys.argv[5])*np.pi/180, totheta+2)
 theta = theta[1:-1]
+theta2 = np.reshape(theta,(-1,ncpus),copy=True)
 
-s = np.zeros( nR*Ntheta )
-z = np.zeros( nR*Ntheta )
+#s = np.zeros( nR*Ntheta )
+#z = np.zeros( nR*Ntheta )
 
 #ur2 = np.zeros( (nR)*Ntheta )
 #ut2 = np.zeros( (nR)*Ntheta )
 #up2 = np.zeros( (nR)*Ntheta )
 
-ur     = np.zeros( (nR)*Ntheta, dtype=complex)
-utheta = np.zeros( (nR)*Ntheta, dtype=complex)
-uphi   = np.zeros( (nR)*Ntheta, dtype=complex)
+# ur     = np.zeros( (nR)*totheta, dtype=complex)
+# utheta = np.zeros( (nR)*totheta, dtype=complex)
+# uphi   = np.zeros( (nR)*totheta, dtype=complex)
 
 clm = np.zeros((lmax-m+2,1))
 for i,l in enumerate(ll):
@@ -182,32 +196,80 @@ plx = idP+lmax-m+1
 tlx = idT+lmax-m+1
 
 
-k=0
-for kt in range(Ntheta):
+# k=0
+# for kt in range(Ntheta):
 
-	ylm = np.r_[ut.Ylm_full(lmax, m, theta[kt], phi),0]	
-	for kr in range(0,nR):
+# 	ylm = np.r_[ut.Ylm_full(lmax, m, theta[kt], phi),0]	
+# 	for kr in range(0,nR):
 		
-		s[k]   = r[kr]*np.sin(theta[kt])
-		z[k]   = r[kr]*np.cos(theta[kt])
+# 		s[k]   = r[kr]*np.sin(theta[kt])
+# 		z[k]   = r[kr]*np.cos(theta[kt])
 		
-		ur[k] = np.dot( Qlr[:,kr], ylm[idP:plx:2] )
-		#ur2[k] = absolute(dot( Qlm[:,kr], ylm[idP:plx:2] ))**2		
+# 		ur[k] = np.dot( Qlr[:,kr], ylm[idP:plx:2] )
+# 		#ur2[k] = absolute(dot( Qlm[:,kr], ylm[idP:plx:2] ))**2		
 
-		tmp1 = np.dot(           -(llpol+1) * Slr[:,kr]/np.tan(theta[kt]), ylm[idP:plx:2]     )
-		tmp2 = np.dot( clm[idP+1:plx+1:2,0] * Slr[:,kr]/np.sin(theta[kt]), ylm[idP+1:plx+1:2] )
-		tmp3 = np.dot(                 1j*m * Tlr[:,kr]/np.sin(theta[kt]), ylm[idT:tlx:2]     )
-		utheta[k] = tmp1+tmp2+tmp3
-		#ut2[k] = absolute(tmp1+tmp2+tmp3)**2
+# 		tmp1 = np.dot(           -(llpol+1) * Slr[:,kr]/np.tan(theta[kt]), ylm[idP:plx:2]     )
+# 		tmp2 = np.dot( clm[idP+1:plx+1:2,0] * Slr[:,kr]/np.sin(theta[kt]), ylm[idP+1:plx+1:2] )
+# 		tmp3 = np.dot(                 1j*m * Tlr[:,kr]/np.sin(theta[kt]), ylm[idT:tlx:2]     )
+# 		utheta[k] = tmp1+tmp2+tmp3
+# 		#ut2[k] = absolute(tmp1+tmp2+tmp3)**2
 		
-		tmp1 = np.dot(             (lltor+1) * Tlr[:,kr]/np.tan(theta[kt]), ylm[idT:tlx:2]     )
-		tmp2 = np.dot( -clm[idT+1:tlx+1:2,0] * Tlr[:,kr]/np.sin(theta[kt]), ylm[idT+1:tlx+1:2] )
-		tmp3 = np.dot(                  1j*m * Slr[:,kr]/np.sin(theta[kt]), ylm[idP:plx:2]     )
-		uphi[k] = tmp1+tmp2+tmp3
-		#up2[k] = absolute(tmp1+tmp2+tmp3)**2
+# 		tmp1 = np.dot(             (lltor+1) * Tlr[:,kr]/np.tan(theta[kt]), ylm[idT:tlx:2]     )
+# 		tmp2 = np.dot( -clm[idT+1:tlx+1:2,0] * Tlr[:,kr]/np.sin(theta[kt]), ylm[idT+1:tlx+1:2] )
+# 		tmp3 = np.dot(                  1j*m * Slr[:,kr]/np.sin(theta[kt]), ylm[idP:plx:2]     )
+# 		uphi[k] = tmp1+tmp2+tmp3
+# 		#up2[k] = absolute(tmp1+tmp2+tmp3)**2
 			
-		#uz[k] = ur[k]*cos(theta[kt]) - ut[k]*sin(theta[kt])		
-		k=k+1
+# 		#uz[k] = ur[k]*cos(theta[kt]) - ut[k]*sin(theta[kt])		
+# 		k=k+1
+
+
+def pieceofcake( theta_pp ):
+
+    ntht_pp = len(theta_pp)
+    out = np.zeros( (nR*ntht_pp,5), dtype=complex ) 
+
+    k=0
+    for kt in range(ntht_pp):
+
+        tht = theta_pp[kt]
+        ylm = np.r_[ut.Ylm_full(lmax, m, tht, phi),0]	
+        for kr,rr in enumerate(r):
+            
+            out[k,0]   = rr*np.sin(tht)  #s
+            out[k,1]   = rr*np.cos(tht)  #z
+            
+            out[k,2] = np.dot( Qlr[:,kr], ylm[idP:plx:2] )  #ur
+            #ur2[k] = absolute(dot( Qlm[:,kr], ylm[idP:plx:2] ))**2		
+
+            tmp1 = np.dot(           -(llpol+1) * Slr[:,kr]/np.tan(tht), ylm[idP:plx:2]     )
+            tmp2 = np.dot( clm[idP+1:plx+1:2,0] * Slr[:,kr]/np.sin(tht), ylm[idP+1:plx+1:2] )
+            tmp3 = np.dot(                 1j*m * Tlr[:,kr]/np.sin(tht), ylm[idT:tlx:2]     )
+            out[k,3] = tmp1+tmp2+tmp3  #utheta
+            #ut2[k] = absolute(tmp1+tmp2+tmp3)**2
+            
+            tmp1 = np.dot(             (lltor+1) * Tlr[:,kr]/np.tan(tht), ylm[idT:tlx:2]     )
+            tmp2 = np.dot( -clm[idT+1:tlx+1:2,0] * Tlr[:,kr]/np.sin(tht), ylm[idT+1:tlx+1:2] )
+            tmp3 = np.dot(                  1j*m * Slr[:,kr]/np.sin(tht), ylm[idP:plx:2]     )
+            out[k,4] = tmp1+tmp2+tmp3  #uphi
+            #up2[k] = absolute(tmp1+tmp2+tmp3)**2
+                
+            #uz[k] = ur[k]*cos(theta[kt]) - ut[k]*sin(theta[kt])		
+            k=k+1
+
+    return out
+
+
+pool  = mp.Pool(processes=ncpus)
+popov = [ pool.apply_async( pieceofcake, [theta2[:,i]]) for i in range(ncpus) ]
+out0 = [ pp.get() for pp in popov ]
+pool.close()
+pool.join()
+
+out1 = np.vstack(out0)
+(s0,z0,ur,uphi,utheta) = np.unstack(out1, axis=1)
+s = np.real(s0)
+z = np.real(z0)
 
 # Mask the inner core
 a = 1.
@@ -233,8 +295,9 @@ if sys.argv[7] == 'raw':
     im1=ax1.tricontourf( triang, np.real(ur[id_in]), 70, cmap=cmap)
 elif sys.argv[7] == 'abs':
     im1=ax1.tricontourf( triang, np.absolute(ur[id_in]), 70, cmap=cmap)
-for c in im1.collections:
-              c.set_edgecolor('face')   
+#for c in im1.collections:
+#              c.set_edgecolor('face')
+im1.set_edgecolor('face')
 ax1.set_aspect('equal')
 plt.colorbar(im1,aspect=70)
 
@@ -246,8 +309,9 @@ if sys.argv[7] == 'raw':
     im2=ax2.tricontourf( triang, np.real(utheta[id_in]), 70, cmap=cmap)
 elif sys.argv[7] == 'abs':
     im2=ax2.tricontourf( triang, np.absolute(utheta[id_in]), 70, cmap=cmap)
-for c in im2.collections:
-              c.set_edgecolor('face')
+#for c in im2.collections:
+#              c.set_edgecolor('face')
+im2.set_edgecolor('face')
 ax2.set_aspect('equal')
 plt.colorbar(im2,aspect=70)
 
@@ -259,8 +323,9 @@ if sys.argv[7] == 'raw':
     im3=ax3.tricontourf( triang, np.real(uphi[id_in]), 70, cmap=cmap)
 elif sys.argv[7] == 'abs':
     im3=ax3.tricontourf( triang, np.absolute(uphi[id_in]), 70, cmap=cmap)
-for c in im3.collections:
-              c.set_edgecolor('face')
+#for c in im3.collections:
+#              c.set_edgecolor('face')
+im2.set_edgecolor('face')
 ax3.set_aspect('equal')
 plt.colorbar(im3,aspect=70)
 

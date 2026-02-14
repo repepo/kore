@@ -7,6 +7,7 @@ import numpy.polynomial.chebyshev as ch
 import numpy as np
 from parameters import par
 import utils as ut
+import radial_profiles as rap
 
 mp.set_start_method('fork')
 
@@ -179,7 +180,7 @@ def cheb2space_pol(L, lp, P, ns):
     qlm0  = L1*plm[0]/rk
     qlm.append(qlm0)
 
-    slm0 = plm[1] + (plm[0]/rk)
+    slm0 = plm[1] + (plm[0]/rk) + plm[0]*dlrho1
     slm.append(slm0)
 
     if ns>0:
@@ -187,7 +188,7 @@ def cheb2space_pol(L, lp, P, ns):
         qlm1 = (L1*plm[1] - qlm0)/rk
         qlm.append(qlm1)
 
-        slm1 = plm[2] + (qlm1/L1)
+        slm1 = plm[2] + (qlm1/L1) + plm[1]*dlrho1 + plm[0]*dlrho2
         slm.append(slm1)
 
     if ns>1:
@@ -195,7 +196,7 @@ def cheb2space_pol(L, lp, P, ns):
         qlm2 = (L1*plm[2]-2*qlm1)/rk
         qlm.append(qlm2)
 
-        slm2 = plm[3] + (qlm2/L1)
+        slm2 = plm[3] + (qlm2/L1) + plm[2]*dlrho1 + 2*plm[1]*dlrho2 + plm[0]*dlrho3
         slm.append(slm2)
 
     return [qlm, slm]
@@ -221,9 +222,9 @@ def cheb2space_tor(L, lt, T, ns):
 def energy_pol(l, qlm0, slm0):
     '''
     Returns the integrand to compute the poloidal energy, kinetic or magnetic, l-component
-    (1/2) ∫ 𝐮⋅𝐮 dV or (1/2) ∫ 𝐛⋅𝐛 dV
+    (1/2) ∫ ρ 𝐮⋅𝐮 dV or (1/2) ∫ 𝐛⋅𝐛 dV
     '''
-    f0 = 4*np.pi/(2*l+1)
+    f0 = 4*np.pi*dlrho0/(2*l+1)
     f1 = r2 * np.absolute( qlm0 )**2
     f2 = r2 * l*(l+1) * np.absolute( slm0 )**2  # r2 is rk**2, a global variable
     return f0*(f1+f2)
@@ -233,9 +234,9 @@ def energy_pol(l, qlm0, slm0):
 def energy_tor(l, tlm0):
     '''
     Returns the integrand to compute the toroidal energy, kinetic or magnetic, l-component
-    (1/2) ∫ 𝐮⋅𝐮 dV or (1/2) ∫ 𝐛⋅𝐛 dV
+    (1/2) ∫ ρ 𝐮⋅𝐮 dV or (1/2) ∫ 𝐛⋅𝐛 dV
     '''
-    f0 = 4*np.pi/(2*l+1)
+    f0 = 4*np.pi*dlrho0/(2*l+1)
     f1 = r2 * l*(l+1) * np.absolute(tlm0)**2  # r2 is rk**2, a global variable
     return f0*f1
 
@@ -442,14 +443,14 @@ def flow_worker( l, lp, lt, u_sol2, b_sol2, t_sol2, c_sol2, Ra, Rb, N, sqx ):
     
     L = l*(l+1)
 
-    if par.magnetic:
-        [ qlmb, slmb, tlmb ] = lorentz4pp(l, b_sol2)  # the l-component of the Lorentz force
+    # if par.magnetic:
+    #     [ qlmb, slmb, tlmb ] = lorentz4pp(l, b_sol2)  # the l-component of the Lorentz force
         
-    if par.thermal:
-        hlm0 = buoyancy4pp(l, lp, t_sol2)  # the l-component of the thermal buoyancy force
+    # if par.thermal:
+    #     hlm0 = buoyancy4pp(l, lp, t_sol2)  # the l-component of the thermal buoyancy force
         
-    if par.compositional:
-        clm0 = buoyancy4pp(l, lp, c_sol2)  # the l-component of the compositional buoyancy force
+    # if par.compositional:
+    #     clm0 = buoyancy4pp(l, lp, c_sol2)  # the l-component of the compositional buoyancy force
         
 
     if l in lp:
@@ -457,34 +458,35 @@ def flow_worker( l, lp, lt, u_sol2, b_sol2, t_sol2, c_sol2, Ra, Rb, N, sqx ):
         [ [ qlm0, qlm1, qlm2 ], [ slm0, slm1, slm2 ] ] = cheb2space_pol(l, lp, P, 2)
         
         kinep = energy_pol(l, qlm0, slm0 )
-        kindp = diffus_pol(l, qlm0, qlm1, qlm2, slm0, slm1, slm2 )
-        intdp = internl_dissip_pol(l, qlm0, qlm1, slm0, slm1 )
-        if par.magnetic:
-            wlorp = lorentz_power_pol(l, qlm0, slm0, qlmb, slmb )
-        if par.thermal:
-            wther = buoyancy_power(l, qlm0*rk/(l*(l+1)), hlm0 )
-        if par.compositional:
-            wcomp = buoyancy_power(l, qlm0*rk/(l*(l+1)), clm0 ) 
+        # kindp = diffus_pol(l, qlm0, qlm1, qlm2, slm0, slm1, slm2 )
+        # intdp = internl_dissip_pol(l, qlm0, qlm1, slm0, slm1 )
+        # if par.magnetic:
+        #     wlorp = lorentz_power_pol(l, qlm0, slm0, qlmb, slmb )
+        # if par.thermal:
+        #     wther = buoyancy_power(l, qlm0*rk/(l*(l+1)), hlm0 )
+        # if par.compositional:
+        #     wcomp = buoyancy_power(l, qlm0*rk/(l*(l+1)), clm0 ) 
 
     elif l in lt:
 
         [ tlm0, tlm1, tlm2 ] = cheb2space_tor(l, lt, T, 2)
 
         kinet = energy_tor(l, tlm0)
-        kindt = diffus_tor(l, tlm0, tlm1, tlm2)
-        intdt = internl_dissip_tor(l, tlm0, tlm1)
-        if par.magnetic:
-            wlort = lorentz_power_tor(l, tlm0, tlmb)
+        # kindt = diffus_tor(l, tlm0, tlm1, tlm2)
+        # intdt = internl_dissip_tor(l, tlm0, tlm1)
+        # if par.magnetic:
+        #     wlort = lorentz_power_tor(l, tlm0, tlmb)
 
     # Integrals
     Kene_l = cg_quad( kinep + kinet, Ra, Rb, N, sqx)
-    Dkin_l = cg_quad( kindp + kindt, Ra, Rb, N, sqx)
-    Dint_l = cg_quad( intdp + intdt, Ra, Rb, N, sqx)
-    Wlor_l = cg_quad( wlorp + wlort, Ra, Rb, N, sqx)
-    Wthm_l = cg_quad( wther, Ra, Rb, N, sqx )
-    Wcmp_l = cg_quad( wcomp, Ra, Rb, N, sqx )   
+    # Dkin_l = cg_quad( kindp + kindt, Ra, Rb, N, sqx)
+    # Dint_l = cg_quad( intdp + intdt, Ra, Rb, N, sqx)
+    # Wlor_l = cg_quad( wlorp + wlort, Ra, Rb, N, sqx)
+    # Wthm_l = cg_quad( wther, Ra, Rb, N, sqx )
+    # Wcmp_l = cg_quad( wcomp, Ra, Rb, N, sqx )   
 
-    return [ Kene_l, Dkin_l, Dint_l, Wlor_l, Wthm_l, Wcmp_l ]
+    # return [ Kene_l, Dkin_l, Dint_l, Wlor_l, Wthm_l, Wcmp_l ]
+    return [ Kene_l, 0, 0, 0, 0, 0 ]
 
 
 
@@ -823,8 +825,18 @@ def diagnose( usol2, bsol2, tsol2, csol2, Ra, Rb, ncpus):
     global r4
     r4 = rk**4
 
+    dd = rap.densityX(rk,3)
+    global dlrho0
+    dlrho0 = dd[:,0]
+    global dlrho1
+    dlrho1 = dd[:,1]/dlrho0
+    global dlrho2
+    dlrho2 = dd[:,2]/dlrho0 - dlrho1**2
+    global dlrho3
+    dlrho3 = dd[:,3]/dlrho0 - 3*dd[:,2]*(dlrho1/dlrho0) + 2*dlrho1**3
+
     [ lp_u, lt_u, ll ] = ut.ell(par.m, par.lmax, par.symm)  # the l-indices of the flow field
-    [ lp_b, lt_b, _  ] = ut.ell(par.m, par.lmax, ut.bsymm)  # the l-indices of the magnetic field
+    #[ lp_b, lt_b, _  ] = ut.ell(par.m, par.lmax, ut.bsymm)  # the l-indices of the magnetic field
     
     # process each l-component in parallel
     pool = mp.Pool(processes=ncpus)
@@ -836,21 +848,21 @@ def diagnose( usol2, bsol2, tsol2, csol2, Ra, Rb, ncpus):
                 args=( l, lp_u, lt_u, usol2, bsol2, tsol2, csol2, Ra, Rb, par.N, sqx)) for l in ll ]
         out_u = np.array([pp0.get() for pp0 in ppu])
     
-    if par.magnetic:
-        ppb = [ pool.apply_async( magnetic_worker,
-                args=( l, lp_b, lt_b, bsol2, usol2, Ra, Rb, par.N, sqx)) for l in ll ]   
-        out_b = np.array([pp0.get() for pp0 in ppb])
+    # if par.magnetic:
+    #     ppb = [ pool.apply_async( magnetic_worker,
+    #             args=( l, lp_b, lt_b, bsol2, usol2, Ra, Rb, par.N, sqx)) for l in ll ]   
+    #     out_b = np.array([pp0.get() for pp0 in ppb])
 
-    if par.thermal:
-        ppt = [ pool.apply_async( thermal_worker,
-                args=( l, lp_u, tsol2, usol2, Ra, Rb, par.N, sqx, 'thermal' )) for l in lp_u ]   
-        out_t = np.array([pp0.get() for pp0 in ppt])
+    # if par.thermal:
+    #     ppt = [ pool.apply_async( thermal_worker,
+    #             args=( l, lp_u, tsol2, usol2, Ra, Rb, par.N, sqx, 'thermal' )) for l in lp_u ]   
+    #     out_t = np.array([pp0.get() for pp0 in ppt])
 
-    if par.compositional:
-        # we use again the thermal_worker but with the compositional solution as argument
-        ppc = [ pool.apply_async( thermal_worker,
-                args=( l, lp_u, csol2, usol2, Ra, Rb, par.N, sqx, 'compositional' )) for l in lp_u ]   
-        out_c = np.array([pp0.get() for pp0 in ppc])
+    # if par.compositional:
+    #     # we use again the thermal_worker but with the compositional solution as argument
+    #     ppc = [ pool.apply_async( thermal_worker,
+    #             args=( l, lp_u, csol2, usol2, Ra, Rb, par.N, sqx, 'compositional' )) for l in lp_u ]   
+    #     out_c = np.array([pp0.get() for pp0 in ppc])
 
     pool.close()
     pool.join()

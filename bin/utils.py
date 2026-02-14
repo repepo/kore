@@ -376,7 +376,7 @@ def funcheb(ck0, r, ricb, rcmb, n):
 
 def fonzie( func, r, N, ricb, rcmb, Dorder, tol, *args):
 
-    out = np.zeros_like(r)
+    #out = np.zeros_like(r)
     ck  = chebco_f( func, N, ricb, rcmb, tol, args)
     if id(func) in [ id(rap.prf.density), id(rap.prf.pdSdr), id(rap.prf.pressure), id(rap.prf.gravity) ]:
         #print(func)
