@@ -19,52 +19,52 @@ import radial_profiles as rap
 Script to plot meridional cuts of a solution field
 Use as:
 
-python3 plot_field.py nsol nR ntheta theta0 theta1 field opt
+python3 plot_field.py nR ntheta theta0 theta1 field opt nsol
 
-nsol   : solution number
 nR     : number of points in radius
 ntheta : number of points in the theta direction
 theta0 : starting colatitude
 theta1 : final colatitude
 field  : whether to plot flow velocity or magnetic field ('u' or 'b')
 opt    : 'raw' for real part (phase and phi dependent!), or 'abs' for the magnitude
+nsol   : solution index
 '''
 
 plt.rc('text', usetex=True)
 
-solnum = int(sys.argv[1])
+solnum = int(sys.argv[7])
 
-if sys.argv[6] in ['u', 'mf']:
+if sys.argv[5] in ['u', 'mf']:
     a0 = np.loadtxt('real_flow.field',usecols=solnum)
     b0 = np.loadtxt('imag_flow.field',usecols=solnum)
     vsymm = par.symm
-    if sys.argv[6] == 'u':
-        if sys.argv[7] == 'raw':
+    if sys.argv[5] == 'u':
+        if sys.argv[6] == 'raw':
             titlelabels = [r'$\mathbf{\hat r}\cdot\mathrm{Re}\left(\mathbf{u_0}\right)$', \
                         r'$\mathbf{\hat \theta}\cdot\mathrm{Re}\left(\mathbf{u_0}\right)$', \
                         r'$\mathbf{\hat \phi}\cdot\mathrm{Re}\left(\mathbf{u_0}\right)$']
-        elif sys.argv[7] == 'abs':
+        elif sys.argv[6] == 'abs':
             titlelabels = [r'$\mathbf{\hat r}\cdot\left|\mathbf{u_0}\right|$', \
                         r'$\mathbf{\hat \theta}\cdot\left|\mathbf{u_0}\right|$', \
                         r'$\mathbf{\hat \phi}\cdot\left|\mathbf{u_0}\right|$']
-    elif sys.argv[6] == 'mf':
-        if sys.argv[7] == 'raw':
+    elif sys.argv[5] == 'mf':
+        if sys.argv[6] == 'raw':
             titlelabels = [r'$\mathbf{\hat r}\cdot\mathrm{Re}\left(\rho \mathbf{u_0}\right)$', \
                         r'$\mathbf{\hat \theta}\cdot\mathrm{Re}\left(\rho \mathbf{u_0}\right)$', \
                         r'$\mathbf{\hat \phi}\cdot\mathrm{Re}\left(\rho \mathbf{u_0}\right)$']
-        elif sys.argv[7] == 'abs':
+        elif sys.argv[6] == 'abs':
             titlelabels = [r'$\mathbf{\hat r}\cdot\left|\rho \mathbf{u_0}\right|$', \
                         r'$\mathbf{\hat \theta}\cdot\left|\rho \mathbf{u_0}\right|$', \
                         r'$\mathbf{\hat \phi}\cdot\left|\rho \mathbf{u_0}\right|$']
     cmap = 'rainbow'
-elif sys.argv[6] == 'b':
+elif sys.argv[5] == 'b':
     a0 = np.loadtxt('real_magnetic.field',usecols=solnum)
     b0 = np.loadtxt('imag_magnetic.field',usecols=solnum)
-    if sys.argv[7] == 'raw':
+    if sys.argv[6] == 'raw':
         titlelabels = [r'$\mathbf{\hat r}\cdot\mathrm{Re}\left(\mathbf{b_0}\right)$', \
                        r'$\mathbf{\hat \theta}\cdot\mathrm{Re}\left(\mathbf{b_0}\right)$', \
                        r'$\mathbf{\hat \phi}\cdot\mathrm{Re}\left(\mathbf{b_0}\right)$']
-    elif sys.argv[7] == 'abs':
+    elif sys.argv[6] == 'abs':
         titlelabels = [r'$\mathbf{\hat r}\cdot\left|\mathbf{b_0}\right|$', \
                        r'$\mathbf{\hat \theta}\cdot\left|\mathbf{b_0}\right|$', \
                        r'$\mathbf{\hat \phi}\cdot\left|\mathbf{b_0}\right|$'] 
@@ -82,8 +82,8 @@ rcmb = 1
 n    = ut.n
 n0   = ut.n0
 
-nR = int(sys.argv[2]) # number of radial points
-Ntheta = int(sys.argv[3]) # number of points in the theta direction
+nR = int(sys.argv[1]) # number of radial points
+Ntheta = int(sys.argv[2]) # number of points in the theta direction
 
 ncpus   = mp.cpu_count()
 ntht_pp = int(np.round(Ntheta/ncpus))  # number of theta points per cpu
@@ -153,14 +153,14 @@ rho0 = rap.prf.density(r,0)
 rho = ss.diags(rho0, 0)
 rho1 = np.gradient(rho0, r)
 
-if sys.argv[6] == 'u':  # the velocity u
+if sys.argv[5] == 'u':  # the velocity u
 
     dlho = ss.diags(rho1/rho0, 0, dtype='float64')
     Qlr = L * P_inv_r
     Slr = P_inv_r + dP + Plr * dlho
     # No change in Tlr
 
-elif sys.argv[6] == 'mf':  # the mass flux ρu
+elif sys.argv[5] == 'mf':  # the mass flux ρu
 
     drho = ss.diags(rho1, 0, dtype='float64')
     Qlr = L * P_inv_r * rho
@@ -169,7 +169,7 @@ elif sys.argv[6] == 'mf':  # the mass flux ρu
 
 
 # setup the latitudinal grid
-theta = np.linspace(float(sys.argv[4])*np.pi/180, float(sys.argv[5])*np.pi/180, totheta+2)
+theta = np.linspace(float(sys.argv[3])*np.pi/180, float(sys.argv[4])*np.pi/180, totheta+2)
 theta = theta[1:-1]
 theta2 = np.reshape(theta,(-1,ncpus),copy=True)
 
@@ -291,9 +291,9 @@ fig=plt.figure(figsize=(14,7))
 ax1=fig.add_subplot(131)
 ax1.set_title(titlelabels[0],size=20)
 #ax1.text(0.1,0,titlelabels[0],size=20)
-if sys.argv[7] == 'raw':
+if sys.argv[6] == 'raw':
     im1=ax1.tricontourf( triang, np.real(ur[id_in]), 70, cmap=cmap)
-elif sys.argv[7] == 'abs':
+elif sys.argv[6] == 'abs':
     im1=ax1.tricontourf( triang, np.absolute(ur[id_in]), 70, cmap=cmap)
 #for c in im1.collections:
 #              c.set_edgecolor('face')
@@ -305,9 +305,9 @@ plt.colorbar(im1,aspect=70)
 ax2=fig.add_subplot(132)
 ax2.set_title(titlelabels[1],size=20)
 #ax2.text(0.1,0,titlelabels[1],size=20)
-if sys.argv[7] == 'raw':
+if sys.argv[6] == 'raw':
     im2=ax2.tricontourf( triang, np.real(utheta[id_in]), 70, cmap=cmap)
-elif sys.argv[7] == 'abs':
+elif sys.argv[6] == 'abs':
     im2=ax2.tricontourf( triang, np.absolute(utheta[id_in]), 70, cmap=cmap)
 #for c in im2.collections:
 #              c.set_edgecolor('face')
@@ -319,9 +319,9 @@ plt.colorbar(im2,aspect=70)
 ax3=fig.add_subplot(133)
 ax3.set_title(titlelabels[2],size=20)
 #ax3.text(0.1,0,titlelabels[2],size=20)
-if sys.argv[7] == 'raw':
+if sys.argv[6] == 'raw':
     im3=ax3.tricontourf( triang, np.real(uphi[id_in]), 70, cmap=cmap)
-elif sys.argv[7] == 'abs':
+elif sys.argv[6] == 'abs':
     im3=ax3.tricontourf( triang, np.absolute(uphi[id_in]), 70, cmap=cmap)
 #for c in im3.collections:
 #              c.set_edgecolor('face')
