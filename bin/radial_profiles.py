@@ -16,6 +16,7 @@ class user_defined_profiles():  # ----------------------------------------------
 
     def density(self, r, rpower):  # ------------------ ρ(r)
         r1 = r*par.aux0;
+        # out = np.ones_like(r)
         # out = 1-r1**2                      # Wu2005    β=1
         out = (1-r1**2)**2                 # Wu2005    β=2
         # out = np.sin(np.pi*r1)/(np.pi*r1)  # Polytrope n=1
@@ -102,7 +103,7 @@ class user_defined_profiles():  # ----------------------------------------------
         # -------------------------------------------------------------------- v(r)
         #out = np.ones_like(r)
         #out = 1/self.density(r,0)
-        out = par.visc0 + 0.5*(1-par.visc0)*( 1 + ss.erf((r-par.rvisc)/par.hvisc) )
+        out = ( par.visc0 + 0.5*(1-par.visc0)*(1 + ss.erf((r-par.rvisc)/par.hvisc)) )/self.density(r,0)
         # -------------------------------------------------------------------------
         return (r**rpower)*out
 
@@ -273,7 +274,8 @@ def kappress(r, rpower):   # κ p
 def dynamic_viscosity(r, rpower):  # μ = ρν
 
     out = prf.density(r,0) * prf.viscosity(r,0)
-    #out = np.ones_like(r) 
+    #out = np.ones_like(r)
+    #out = par.visc0 + 0.5*(1-par.visc0)*( 1 + ss.erf((r-par.rvisc)/par.hvisc) ) 
     return (r**rpower)*out
 
 
