@@ -69,13 +69,17 @@ class default_params():
         # Use 0 for stress-free, 1 for no-slip or forced boundary flow
         self.bco = 0
 
-        # Differential rotation parameters. Set to 0 for solid body rotation. 
-        # If nonzero, the code will solve for a perturbation to a background state with differential rotation. 
-        self.diff_rot = 1  # Set to 1 to include a differential rotation background state
-        #self.diff_rot_type = 'solar'  # Not implemented yet ! 'solar' for solar-like differential rotation, 'Y20' for a simple Y20 latitudinal dependence, 'Y20r' for a Y20 dependence with an additional radial dependence that goes to zero at the inner and outer boundaries.
-        self.diff_rot_type = 'user_defined'  # Not implemented yet ! 'solar' for solar-like differential rotation, 'Y20' for a simple Y20 latitudinal dependence, 'Y20r' for a Y20 dependence with an additional radial dependence that goes to zero at the inner and outer boundaries.
-        self.diff_rot_amplitude_00 = 1.0  # Amplitude of the Y00 differential rotation. Not used if type is not "user_defined"
-        self.diff_rot_amplitude_20 = 1.0  # Amplitude of the Y20 differential rotation. Not used if type is not "user_defined"
+        # Differential rotation parameters. Set to 0 for solid body rotation. (Implemented for timescale="rotation") -----------
+        # ----------------------------------------------------------------------------------------------------------------------
+        self.diff_rot = 0 # If 1, the code will solve for a perturbation to a background state with differential rotation. 
+        # Differential rotation type 
+        # self.diff_rot_type = 'Y20' # Ω(θ) = Ω_ref * [1 + ΔΩ Y20(θ)], ΔΩ = par.diff_rot_amplitude
+        # self.diff_rot_type = 'Y20-wall-bounded' # Ω(θ) = Ω_ref * [1 + ΔΩ * (1 - r) * (r - ricb) * Y20(θ)], ΔΩ = par.diff_rot_amplitude
+        # self.diff_rot_type = 'shellular' # [Baruteau, Rieutord 2012] : Ω(r) = Ω_ref * (r / R)**σ, σ = par.diff_rot_amplitude
+        self.diff_rot_type = 'cylindrical' # [Baruteau, Rieutord 2012] : Ω(r, θ) = Ω_ref * [1 + (ε * (r / R)**2 * sin(θ)**2)], ε = par.diff_rot_amplitude
+        # self.diff_rot_type = 'solar' # Not implemented yet
+
+        self.diff_rot_amplitude = 1.0  # Amplitude of the differential rotation, corresponds to different parameter depending on the DR type
 
         # ----------------------------------------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------------------------------- Thermal parameters
@@ -253,3 +257,11 @@ class default_params():
         out = int( 2*ncpus*( np.floor_divide( g*N, 2*ncpus ) ) + m - 1 )
 
         return out
+    
+    def set_eigv_frame(self, frame):
+        if frame=="inertial":
+            self.rtau = self.rtau
+            self.itau = self.itau + self.m
+        elif frame=="rotating":
+            self.rtau = self.rtau
+            self.itau = self.itau

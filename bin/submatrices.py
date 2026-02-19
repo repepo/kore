@@ -149,39 +149,42 @@ def main(ncpus):
 
         if par.diff_rot == 1:
             """
-            Differential rotation background velocity field
-            On the form ΔΩ(r, θ) = ΔΩ*f(r)*g(θ), with : 
-                ΔΩ : Differential rotation amplitude (par.diff_rot_amplitude)
-                g(θ) : Differential rotation latitudinal profile. For the moment g(θ)=Y20(θ).
-                f(r) : Differential rotation radial profile, from which we define : 
-                    aub = f
-                    svp = r*f'
-                    pls = r^2*f''
+            Differential rotation background velocity field forcing terms
+            On the form Ω(r, θ) = Ω0 * [ 1 + ΔΩ * (f0(r) * Y00(θ) + f2(r) * Y20(θ)) ], with : 
+                ΔΩ : Differential rotation amplitude (depend on the differential rotation type [par.diff_rot_type])
+                f0(r) : Differential rotation radial profile for the Y00 part, from which we define : 
+                    abu = f0
+                    spv = r*f0'
+                    psl = r^2*f0''
+                f2(r) : Differential rotation radial profile for the Y20 part, from which we define : 
+                    aub = f2
+                    svp = r*f2'
+                    pls = r^2*f2''
             """
 
             # Poloidal terms : Δl = ±2, 0
             # For f2(r)*Y20 
             arg2 += [ vP ]*10
-            labl += [ 'u2aub0_D0','u1aub0_D1','u1aub0lho1_D0',
-                      'u2svp0_D0','u1svp0_D1','u1svp0lho1_D0',
-                      'u0aub0lho2_D0','u0aub0lho1_D1','u0aub0_D2',
-                      'u2pls0_D0' ]
+            labl += [ 'u3aub0_D0','u2aub0_D1','u2aub0lho1_D0',
+                      'u3svp0_D0','u2svp0_D1','u2svp0lho1_D0',
+                      'u1aub0lho2_D0','u1aub0lho1_D1','u1aub0_D2',
+                      'u3pls0_D0' ]
             
             # For f0(r)*Y00 
             arg2 += [ vP ]*10
-            labl += [ 'u2abu0_D0','u1abu0_D1','u1abu0lho1_D0',
-                      'u2spv0_D0','u1spv0_D1','u1spv0lho1_D0',
-                      'u0abu0lho2_D0','u0abu0lho1_D1','u0abu0_D2',
-                      'u2psl0_D0' ]
+            labl += [ 'u3abu0_D0','u2abu0_D1','u2abu0lho1_D0',
+                      'u3spv0_D0','u2spv0_D1','u2spv0lho1_D0',
+                      'u1abu0lho2_D0','u1abu0lho1_D1','u1abu0_D2',
+                      'u3psl0_D0' ]
 
             # Toroidal terms : Δl = ±3, ±1
             # For f2(r)*Y20 
             arg2 += [ vT ]*3
-            labl += [ 'u1aub0_D0','u0aub0_D1','u1svp0_D0' ]
+            labl += [ 'u2aub0_D0','u1aub0_D1','u2svp0_D0' ]
 
             # For f0(r)*Y00 
             arg2 += [ vT ]*3
-            labl += [ 'u1abu0_D0','u0abu0_D1','u1spv0_D0' ]
+            labl += [ 'u2abu0_D0','u1abu0_D1','u2spv0_D0' ]
 
 
         # -------------------------------------------------------------------------------------------------------------------------------------------
@@ -205,33 +208,36 @@ def main(ncpus):
         
         if par.diff_rot == 1:
             """
-            Differential rotation background velocity field
-            On the form ΔΩ(r, θ) = ΔΩ*f(r)*g(θ), with : 
-                ΔΩ : Differential rotation amplitude (par.diff_rot_amplitude)
-                g(θ) : Differential rotation latitudinal profile. For the moment g(θ)=Y20(θ).
-                f(r) : Differential rotation radial profile, from which we define : 
-                    aub = f
-                    svp = r*f'
-                    pls = r^2*f''
+            Differential rotation background velocity field forcing terms
+            On the form Ω(r, θ) = Ω0 * [ 1 + ΔΩ * (f0(r) * Y00(θ) + f2(r) * Y20(θ)) ], with : 
+                ΔΩ : Differential rotation amplitude (depend on the differential rotation type [par.diff_rot_type])
+                f0(r) : Differential rotation radial profile for the Y00 part, from which we define : 
+                    abu = f0
+                    spv = r*f0'
+                    psl = r^2*f0''
+                f2(r) : Differential rotation radial profile for the Y20 part, from which we define : 
+                    aub = f2
+                    svp = r*f2'
+                    pls = r^2*f2''
             """
 
             # Poloidal terms : Δl = ±3, ±1
             # For f2(r)*Y20 
             arg2 += [ vP ]*4
-            labl += [ 'v1aub0_D0', 'v0aub0lho1_D0', 'v0aub0_D1', 'v1svp0_D0' ]
+            labl += [ 'v2aub0_D0', 'v1aub0lho1_D0', 'v1aub0_D1', 'v2svp0_D0' ]
 
             # For f0(r)Y00
             arg2 += [ vP ]*4
-            labl += [ 'v1abu0_D0', 'v0abu0lho1_D0', 'v0abu0_D1', 'v1spv0_D0' ]
+            labl += [ 'v2abu0_D0', 'v1abu0lho1_D0', 'v1abu0_D1', 'v2spv0_D0' ]
 
             # Toroidal terms : Δl = ±2, 0
             # For f2(r)*Y20 
             arg2 += [ vT ]
-            labl += [ 'v0aub0_D0' ]
+            labl += [ 'v1aub0_D0' ]
 
             # For f0(r)Y00
             arg2 += [ vT ]
-            labl += [ 'v0abu0_D0' ]
+            labl += [ 'v1abu0_D0' ]
 
     if par.thermal == 1:                  
         # -------------------------------------------------------------------------------------------------------------------------------------------
@@ -340,7 +346,6 @@ def main(ncpus):
 
     toc = timer()
     print('Generated and written', np.size(labl), 'operator submatrices in', toc-tic, 'seconds')
-
     return 0
 
 if __name__ == '__main__':

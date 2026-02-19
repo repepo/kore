@@ -3,8 +3,6 @@ import utils as ut
 import scipy.special as ss
 from parameters import par
 
-
-
 # -------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------ Structure profiles
 # -------------------------------------------------------------------------------------------------------------
@@ -15,9 +13,10 @@ class user_defined_profiles():  # ----------------------------------------------
     '''
 
     def density(self, r, rpower):  # ---------------- ρ(r)
-        r1 = r*par.aux0;
+        r1 = r*par.aux0
+        out = np.ones_like(r)              # Incompressible / Homogeneous
         # out = 1-r1**2                      # Wu2005    β=1
-        out = (1-r1**2)**2                 # Wu2005    β=2
+        # out = (1-r1**2)**2                 # Wu2005    β=2
         # out = np.sin(np.pi*r1)/(np.pi*r1)  # Polytrope n=1
         # --------------------------------------------------
         return (r**rpower)*out
@@ -100,8 +99,9 @@ class user_defined_profiles():  # ----------------------------------------------
 
     def viscosity(self, r, rpower):
         # ------------------------------ v(r)
+        out = np.ones_like(r)              # Incompressible / Homogeneous
         #out = 1/self.density(r,0)
-        out = par.visc0 + 0.5*(1-par.visc0)*( 1 + ss.erf((r-par.rvisc)/par.hvisc) )
+        #out = par.visc0 + 0.5*(1-par.visc0)*( 1 + ss.erf((r-par.rvisc)/par.hvisc) )
         # -------------------------------------------------------------------------
         return (r**rpower)*out
 
@@ -116,9 +116,28 @@ class user_defined_profiles():  # ----------------------------------------------
         """
         Differential rotation radial profile for Y20
         """
-        if par.diff_rot_type=="user_defined":
-            out = (1-r)*(r-par.ricb)
-        # elif par.diff_rot_type=="solar":
+        dr_type = par.diff_rot_type
+        if dr_type=="Y20":
+            out = par.diff_rot_amplitude*np.ones_like(r)
+        
+        elif dr_type=="Y20-wall-bounded":
+            out = par.diff_rot_amplitude*(1-r)*(r-par.ricb)
+
+        elif dr_type=="shellular": #[Baruteau, Rieutord 2012] : Ω(r) = Ω_ref * (r / R)**σ 
+            # Ω_ref = 1 (= Ω_0) -> Set par.timescale = "rotation
+            # σ parameter
+            out = np.zeros_like(r)
+
+        elif dr_type=="cylindrical": #[Baruteau, Rieutord 2012] : Ω(r, θ) = Ω_ref * [1 + (ε * (r / R)**2 * sin(θ)**2)]
+            epsilon = par.diff_rot_amplitude
+            out = -((2/3)*epsilon)*r**2
+
+        elif dr_type=="solar":
+            rtc = 0.71
+            h = 0.1
+            W0 = 435 #[nHz]
+            b = -86.04/W0 # Fitted on data
+            out = b * (0.5 * (1 + np.tanh((2 * (r - rtc))/h)))
 
         return (r**rpower)*out
     
@@ -126,9 +145,31 @@ class user_defined_profiles():  # ----------------------------------------------
         """
         Differential rotation radial profile for Y00
         """
-        if par.diff_rot_type=="user_defined":
-            out = (1-r)*(r-par.ricb)
-        # elif par.diff_rot_type=="solar":
+        dr_type = par.diff_rot_type
+
+        if dr_type=="Y20":
+            out = np.zeros_like(r)
+        
+        elif dr_type=="Y20-wall-bounded":
+            out = np.zeros_like(r)
+
+        elif dr_type=="shellular": #[Baruteau, Rieutord 2012] : Ω(r) = Ω_ref * (r / R)**σ 
+            # Ω_ref = 1 (= Ω_0) -> Set par.timescale = "rotation
+            # σ parameter
+            sigma = par.diff_rot_amplitude
+            out = (r**sigma) - 1
+
+        elif dr_type=="cylindrical": #[Baruteau, Rieutord 2012] : Ω(r, θ) = Ω_ref * [1 + (ε * (r / R)**2 * sin(θ)**2)]
+            # Ω_ref = 1 (= Ω_0) -> Set par.timescale = "rotation
+            epsilon = par.diff_rot_amplitude
+            out = ((2/3)*epsilon)*r**2
+        
+        elif dr_type=="solar":
+            rtc = 0.71
+            h = 0.1
+            W0 = 435 #[nHz]
+            a = -7.695/W0 # Fitted on data
+            out = a * (0.5 * (1 + np.tanh((2 * (r - rtc))/h)))
 
         return (r**rpower)*out
 
