@@ -11,7 +11,7 @@
 #
 # Where --array can be specified in the sbatch or change in the file
 #
-# Also possible to make a simple run : sbatch ./srunKore.sh, with the current parameter file
+# Also possible to make a simple run : sbatch ./srunKore.sh run_name, with the current parameter file
 
 #---------- Ressource allocation ----------------------------------------------------------------------
 export time_run=00:10:00
@@ -84,18 +84,4 @@ fi
 
 ID0=$(sbatch --parsable --time=$time_run --ntasks=1 --cpus-per-task=$openmp_threads --mem-per-cpu=$mem_per_cpu_run ./tools/submit1.sh)
 ID1=$(sbatch --parsable --time=$time_run --ntasks=$mpi_processes --mem-per-cpu=$mem_per_cpu_run --dependency=afterok:${ID0} ./tools/submit2.sh $opts)
-#ID2=$(sbatch --parsable --time=$time_run --ntasks=1 --cpus-per-task=$openmp_threads --mem-per-cpu=$mem_per_cpu_run --dependency=afterok:${ID1} ./tools/submit3.sh)
-
-# copy results back to global scratch
-result_folder=$GLOBALSCRATCH/results/kore/$1/$folder
-mkdir -p $result_folder/
-
-cp -r bin/parameters.py $result_folder/
-cp -r *out* $result_folder/
-cp -r *.dat $result_folder/
-
-rm *.field
-rm *.npz
-rm *.mtx
-rm *.dat
-rm *out*
+ID2=$(sbatch --parsable --time=$time_run --ntasks=1 --cpus-per-task=$openmp_threads --mem-per-cpu=$mem_per_cpu_run --dependency=afterok:${ID1} ./tools/submit3.sh)
