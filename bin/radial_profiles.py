@@ -124,13 +124,23 @@ class user_defined_profiles():  # ----------------------------------------------
             out = par.diff_rot_amplitude*(1-r)*(r-par.ricb)
 
         elif dr_type=="shellular": #[Baruteau, Rieutord 2012] : Ω(r) = Ω_ref * (r / R)**σ 
-            # Ω_ref = 1 (= Ω_0) -> Set par.timescale = "rotation
+            # Ω_ref = 1 (= Ω_0) -> Set par.timescale = "rotation"
             # σ parameter
             out = np.zeros_like(r)
 
+        elif dr_type=="shellular_boussinesq": #[Mirouh et al. 2016] : Ω(r) = Ω_ref * (1 + (1/2) * (N**2) * (1 - (r / R)**2))
+            # Ω_ref = 1 (= Ω_0) -> Set par.timescale = "rotation"
+            out = np.zeros_like(r)
+
         elif dr_type=="cylindrical": #[Baruteau, Rieutord 2012] : Ω(r, θ) = Ω_ref * [1 + (ε * (r / R)**2 * sin(θ)**2)]
+            # Ω_ref = 1 (= Ω_0) -> Set par.timescale = "rotation"
             epsilon = par.diff_rot_amplitude
             out = -((2/3)*epsilon)*r**2
+
+        elif dr_type=="conical": #[Guenel et al., 2016] : Ω(r, θ) = Ω_ref * [1 + (ε * sin(θ)**2)]
+            # Ω_ref = 1 (= Ω_0) -> Set par.timescale = "rotation"
+            epsilon = par.diff_rot_amplitude
+            out = -((2/3)*epsilon)
 
         elif dr_type=="solar":
             rtc = 0.71
@@ -154,15 +164,25 @@ class user_defined_profiles():  # ----------------------------------------------
             out = np.zeros_like(r)
 
         elif dr_type=="shellular": #[Baruteau, Rieutord 2012] : Ω(r) = Ω_ref * (r / R)**σ 
-            # Ω_ref = 1 (= Ω_0) -> Set par.timescale = "rotation
+            # Ω_ref = 1 (= Ω_0) -> Set par.timescale = "rotation"
             # σ parameter
             sigma = par.diff_rot_amplitude
             out = (r**sigma) - 1
 
+        elif dr_type=="shellular_boussinesq": #[Mirouh et al. 2016] : Ω(r) = Ω_ref * (1 + (1/2) * (N**2) * (1 - (r / R)**2))
+            # Ω_ref = 1 (= Ω_0) -> Set par.timescale = "rotation"
+            N02 = par.diff_rot_amplitude # Brunt-Väisälä frequency squared
+            out = (N02/2)*(1 - r**2)
+
         elif dr_type=="cylindrical": #[Baruteau, Rieutord 2012] : Ω(r, θ) = Ω_ref * [1 + (ε * (r / R)**2 * sin(θ)**2)]
-            # Ω_ref = 1 (= Ω_0) -> Set par.timescale = "rotation
+            # Ω_ref = 1 (= Ω_0) -> Set par.timescale = "rotation"
             epsilon = par.diff_rot_amplitude
             out = ((2/3)*epsilon)*r**2
+        
+        elif dr_type=="conical": #[Guenel et al., 2016] : Ω(r, θ) = Ω_ref * [1 + (ε * sin(θ)**2)]
+            # Ω_ref = 1 (= Ω_0) -> Set par.timescale = "rotation"
+            epsilon = par.diff_rot_amplitude
+            out = ((2/3)*epsilon)
         
         elif dr_type=="solar":
             rtc = 0.71

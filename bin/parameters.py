@@ -15,7 +15,7 @@ par.set_scales()
 # ---------------------------------------
 par.m           = 0
 par.symm        = 1
-par.ricb        = 0.2
+par.ricb        = 0.71
 par.Ek          = 1e-8
 par.thermal     = 0
 par.model_type  = 'user def'
@@ -37,23 +37,23 @@ par.ViscosD     = par.Ek
 # par.hvisc       = 0.04   # transition width
 
 par.diff_rot    = 1
-par.diff_rot_type = "solar" # Possible types : Y20, Y20-wall-bounded, shellular, cylindrical and solar
-par.diff_rot_amplitude = 0
+par.diff_rot_type = "conical" # Possible types : Y20, Y20-wall-bounded, shellular, cylindrical and solar
+par.diff_rot_amplitude = -0.25
 
 par.bci         = 0
 par.bco         = 0
 par.bci_thermal = 0
 par.bco_thermal = 0
 par.ncpus       = 10
-g               = 1.0
-#par.N           = 10*45
-par.N           = par.Ncheb(par.Ek)
+g               = 3.3
+par.N           = 10*30
+#par.N           = par.Ncheb(par.Ek)
 par.lmax        = par.ellmax(par.ncpus, g, par.m, par.N)
 # rnd1            =-0.555094
 # rnd2            =-0.270064
 frame           = "inertial" # set in which frame ("inertial" or "rotating") the eigenvalues are given. ! Solutions are always computed in the rotating frame
-par.rtau        = -2.26e-3  # σ : damping factor (negative is damped)
-par.itau        = 2.0  # ⍵ : frequency (negative is prograde) 
+par.rtau        = -1.75e-3  # σ : damping factor (negative is damped)
+par.itau        = 1.3552# ⍵ : frequency (negative is prograde) 
 par.smopo       = 0
 par.nev         = 3
 par.set_eigv_frame(frame)
