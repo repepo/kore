@@ -6,4 +6,4 @@
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 ncpus=$SLURM_NTASKS
 
-srun ../bin/submatrices.py $ncpus >> out00
+srun ./bin/submatrices.py $ncpus >> out00

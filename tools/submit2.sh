@@ -6,7 +6,5 @@
 
 ncpus=$SLURM_NTASKS
 
-opts=$1
-
-mpiexec -n $ncpus ../bin/assemble.py >> out0
-mpiexec -n $ncpus ../bin/solve.py $opts >> out1
+mpiexec -n $ncpus ./bin/assemble.py >> out0
+mpiexec -n $ncpus ./bin/solve.py "$@" >> out1

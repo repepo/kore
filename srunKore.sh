@@ -15,11 +15,11 @@
 
 #---------- Ressource allocation ----------------------------------------------------------------------
 export time_run=00:10:00
-export mem_per_cpu_run=1000
+export mem_per_cpu_run=4000
 # MPI processes for assemble and solve
-export mpi_processes=8
+export mpi_processes=10
 # OpenMP threads for submatrices and postprocess
-export openmp_threads=8
+export openmp_threads=10
 #------------------------------------------------------------------------------------------------------  
 
 #---------- Solve Options -----------------------------------------------------------------------------
@@ -61,8 +61,6 @@ elif [ $# -eq 5 ]; then
     else
         value=$k # linear
     fi
-    #------------------------------------------------------------------------------------------------------  
-    #------------------------------------------------------------------------------------------------------  
 
     # Create the run directories
     folder=${var}_${value}
@@ -73,15 +71,24 @@ elif [ $# -eq 5 ]; then
 
     # modify variables
     sed -i 's,^\('$var'[ ]*=\).*,\1'$value',' bin/parameters.py	
-    sed -i 's,^\('ncpus'[ ]*=\).*,\1'$mpi_processes',' bin/parameters.py
+    sed -i 's,^\('ncpus'[ ]*=\).*,\1'$mpi_processes',' bin/parameters.py   
 
     srun sleep 0.2
 else
     echo "Wrong number of arguments. Either one or five arguments are required."
     exit 1
 fi
+#------------------------------------------------------------------------------------------------------  
+#---------- Run Kore ---------------------------------------------------------------------------------- 
 
-
+# Submatrices
 ID0=$(sbatch --parsable --time=$time_run --ntasks=1 --cpus-per-task=$openmp_threads --mem-per-cpu=$mem_per_cpu_run ./tools/submit1.sh)
+# Assemble and Solve
 ID1=$(sbatch --parsable --time=$time_run --ntasks=$mpi_processes --mem-per-cpu=$mem_per_cpu_run --dependency=afterok:${ID0} ./tools/submit2.sh $opts)
-ID2=$(sbatch --parsable --time=$time_run --ntasks=1 --cpus-per-task=$openmp_threads --mem-per-cpu=$mem_per_cpu_run --dependency=afterok:${ID1} ./tools/submit3.sh)
+# Results and Postprocessing
+result_folder=$GLOBALSCRATCH/results/kore/$1/$folder
+mkdir -p $result_folder/ 
+ID2=$(sbatch --parsable --time=$time_run --ntasks=1 --cpus-per-task=$openmp_threads --mem-per-cpu=$mem_per_cpu_run --dependency=afterok:${ID1} ./tools/submit3.sh $result_folder)
+
+#------------------------------------------------------------------------------------------------------ 
+#------------------------------------------------------------------------------------------------------ 
