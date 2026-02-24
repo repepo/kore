@@ -12,6 +12,10 @@
 # Where --array can be specified in the sbatch or change in the file
 #
 # Also possible to make a simple run : sbatch ./srunKore.sh run_name, with the current parameter file
+#SBATCH --job-name=kore
+#SBATCH --time=10:00:00
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
 
 #---------- Ressource allocation ----------------------------------------------------------------------
 export time_run=00:10:00
