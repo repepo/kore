@@ -6,5 +6,4 @@
 
 ncpus=$SLURM_NTASKS
 
-mpiexec -n $ncpus ./bin/assemble.py >> out0
-mpiexec -n $ncpus ./bin/solve.py "$@" >> out1
+mpiexec -n $ncpus ./bin/assemble.py >> out2
