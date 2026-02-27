@@ -23,6 +23,10 @@ export time_run=00:10:00
 export mem_per_cpu_run=4000
 # Number of OpenMP threads for submatrices and postprocess and MPI processes for assemble and solve
 export ncpus=10
+# Solve mode (Single mode (0) or map of modes (1))
+export solve_mode=1
+# For maps of modes
+export nModes=100
 #------------------------------------------------------------------------------------------------------  
 
 #---------- Solve Options -----------------------------------------------------------------------------
@@ -50,9 +54,9 @@ source ./tools/load_env.sh
 # Check number of arguments
 if [ $# -eq 1 ]; then
     folder='.'
-    # mkdir $LOCALSCRATCH/$folder
-    # cd $LOCALSCRATCH/$folder
-    # cp -r $KORE_HOME/* . # copies the source files
+    mkdir $LOCALSCRATCH/$folder
+    cd $LOCALSCRATCH/$folder
+    cp -r $KORE_HOME/* . # copies the source files
     sed -i 's,^\('ncpus'[ ]*=\).*,\1'$ncpus',' bin/parameters.py	
 
 elif [ $# -eq 5 ]; then
@@ -75,6 +79,10 @@ elif [ $# -eq 5 ]; then
     cd $LOCALSCRATCH/$folder
     cp -r $KORE_HOME/* . # copies the source files
 
+    # Create the directories to store the results
+    result_folder=$GLOBALSCRATCH/results/kore/$1/$folder
+    mkdir -p $result_folder/ 
+
     # modify variables
     sed -i 's,^\('$var'[ ]*=\).*,\1'$value',' bin/parameters.py	
     sed -i 's,^\('ncpus'[ ]*=\).*,\1'$ncpus',' bin/parameters.py   
@@ -92,26 +100,21 @@ fi
 ID1=$(sbatch --parsable --time=$time_run --ntasks=1 --cpus-per-task=$ncpus --mem-per-cpu=$mem_per_cpu_run ./tools/submit1.sh)
 # Assemble 
 ID2=$(sbatch --parsable --time=$time_run --ntasks=$ncpus --cpus-per-task=1 --mem-per-cpu=$mem_per_cpu_run --dependency=afterok:${ID1} ./tools/submit2.sh)
-# Solve 
-ID3=$(sbatch --parsable --time=$time_run --ntasks=$ncpus --cpus-per-task=1 --mem-per-cpu=$mem_per_cpu_run --dependency=afterok:${ID2} ./tools/submit3.sh $opts)
-# Results and Postprocessing
-ID4=$(sbatch --parsable --time=$time_run --ntasks=1 --cpus-per-task=$ncpus --mem-per-cpu=$mem_per_cpu_run --dependency=afterok:${ID3} ./tools/submit4.sh)
 
-#------------------------------------------------------------------------------------------------------  
-#---------- Copy results back to global scratch -------------------------------------------------------
+# Single mode
+if [ "$solve_mode" -eq 0 ]; then
+    # Solve 
+    ID3=$(sbatch --parsable --time=$time_run --ntasks=$ncpus --cpus-per-task=1 --mem-per-cpu=$mem_per_cpu_run --dependency=afterok:${ID2} ./tools/submit3.sh $opts)
+    # Results and Postprocessing
+    ID4=$(sbatch --parsable --time=$time_run --ntasks=1 --cpus-per-task=$ncpus --mem-per-cpu=$mem_per_cpu_run --dependency=afterok:${ID3} ./tools/submit4.sh $result_folder)
 
-result_folder=$GLOBALSCRATCH/results/kore/$1/$folder
-mkdir -p $result_folder/ 
+elif [ "$solve_mode" -eq 1 ]; then
+    # Map of modes
+    ID3=$(sbatch --parsable --dependency=afterok:${ID2} --array=0-$nModes ./tools/submit_modes.sh $ncpus $time_run $mem_per_cpu_run $opts $folder $result_folder)
 
-cp -r bin/parameters.py $result_folder/
-cp -r *out* $result_folder/
-cp -r *.dat $result_folder/
-
-rm *.field
-rm *.npz
-rm *.mtx
-rm *.dat
-rm *out*
-
+else
+    echo "Wrong solve mode (Should be 0 or 1)."
+    exit 1
+fi
 #------------------------------------------------------------------------------------------------------ 
 #------------------------------------------------------------------------------------------------------ 

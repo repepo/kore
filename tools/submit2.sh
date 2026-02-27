@@ -7,3 +7,5 @@
 ncpus=$SLURM_NTASKS
 
 mpiexec -n $ncpus ./bin/assemble.py >> out2
+
+rm *.mtx

@@ -822,9 +822,10 @@ def diagnose( usol2, bsol2, tsol2, csol2, Ra, Rb, ncpus):
     r3 = rk**3
     global r4
     r4 = rk**4
-
+    
     [ lp_u, lt_u, ll ] = ut.ell(par.m, par.lmax, par.symm)  # the l-indices of the flow field
-    [ lp_b, lt_b, _  ] = ut.ell(par.m, par.lmax, ut.bsymm)  # the l-indices of the magnetic field
+    if par.magnetic : 
+        [ lp_b, lt_b, _  ] = ut.ell(par.m, par.lmax, ut.bsymm)  # the l-indices of the magnetic field
     
     # process each l-component in parallel
     pool = mp.Pool(processes=ncpus)

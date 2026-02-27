@@ -13,7 +13,7 @@ import scipy.sparse as ss
 from timeit import default_timer as timer
 import os.path
 import numpy as np
-import parameters as par
+from parameters import par
 import utils as ut
 import utils4pp as upp
 
@@ -85,9 +85,9 @@ def main(ncpus):
     # print('\n  ★    m    symm    ω      Ek     Pm    η       K         KP/K       KT/K        Ro       |p_2m|    Br_rms_out[nT]')
     # print(  ' ‾‾‾ ‾‾‾‾‾ ‾‾‾‾‾‾ ‾‾‾‾‾‾ ‾‾‾‾‾‾ ‾‾‾‾‾ ‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾  ‾‾‾‾‾‾‾‾‾‾‾‾‾‾')
     
-    if par.diff_rot==0:
-        print('\n  ★    m    symm     ω       σ      Ek     η     K      KP/K       KT/K        Ro        DR Type      DR Amp  ')
-        print(  ' ‾‾‾ ‾‾‾‾‾ ‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾ ‾‾‾‾‾ ‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾')
+    
+    print('\n  ★    m    symm     ω       σ      Ek     η     K      KP/K       KT/K        Ro        DR Type      DR Amp  ')
+    print(  ' ‾‾‾ ‾‾‾‾‾ ‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾ ‾‾‾‾‾ ‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾')
 
 
     # Begin processing all solutions
@@ -120,7 +120,7 @@ def main(ncpus):
 
     
         # diagnose solutions, in parallel
-        [ udgn, _, _, _ ] = upp.diagnose( u_sol2, b_sol2, t_sol2, c_sol2, par.ricb, ut.rcmb, int(ncpus), sigma+1j*w)
+        [ udgn, _, _, _ ] = upp.diagnose( u_sol2, b_sol2, t_sol2, c_sol2, par.ricb, ut.rcmb, int(ncpus))
 
 
         if par.hydro:
@@ -161,8 +161,6 @@ def main(ncpus):
         #     brmsCMB[i] = par.B0_scale * np.sqrt(brmsCMB[i])
         #     brmsOut[i] = par.B0_scale * np.sqrt(brmsOut[i])
         
-        print('\n  ★    m    symm     ω       σ      Ek     η     K      KP/K       KT/K        Ro        DR Type      DR Amp  ')
-
         # ------------------------------------------------------------------------------------------------------------------
         print('  {:2d}    {:8.2e}    {:8.2e}    {:8.2e}      {:8.2e}      {:8.2e}     {:8.2e}       {:8.2e}         {:8.2e}       {:8.2e}      {:8.2e}      {}       {:8.2e}'.format( \
                i, par.m, par.symm, w, sigma, par.Ek, par.ricb, KE[i], KP[i]/KE[i], KT[i]/KE[i], Ro[i], par.diff_rot_type, par.diff_rot_amplitude) )
