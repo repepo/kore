@@ -1234,7 +1234,7 @@ def bc_u_spherical(l,loc):
 
                 if par.bco == 0:  # impenetrable cmb
                     out[ 0,:] = Tbu[:,0]
-                elif bco == 2:    # zero radial stress at the cmb
+                elif par.bco == 2:    # zero radial stress at the cmb
                     out[ 0,:] = Tbu[:,0]*(R*rhb1-3*rhb0) + Tbu[:,1]*3*R*rhb0
 
                 # zero consoidal stress at the cmb
