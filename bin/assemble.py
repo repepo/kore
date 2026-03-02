@@ -1230,9 +1230,14 @@ def bc_u_spherical(l,loc):
 
         else:
 
-            if par.bco == 0: # stress-free cmb, do not use this if density is zero at the surface
+            if par.bco in [0, 2]: # stress-free cmb, do not use this if density is zero at the surface
 
-                out[ 0,:] =   Tbu[:,0]  #Tbu[:,0]*(R*rhb1-3*rhb0) + Tbu[:,1]*3*R*rhb0  # Use the longer expression if radial *stress* should vanish
+                if par.bco == 0:  # impenetrable cmb
+                    out[ 0,:] = Tbu[:,0]
+                elif bco == 2:    # zero radial stress at the cmb
+                    out[ 0,:] = Tbu[:,0]*(R*rhb1-3*rhb0) + Tbu[:,1]*3*R*rhb0
+
+                # zero consoidal stress at the cmb
                 out[ 1,:] =   Tbu[:,0] * ( (L-2)*(rhb0**2) - R*rhb0*rhb1 - (R**2)*(rhb1**2) + (R**2)*rhb0*rhb2 )   \
                             + Tbu[:,1] * (R**2)*rhb0*rhb1                                                          \
                             + Tbu[:,2] * (R**2)*(rhb0**2)
@@ -1245,8 +1250,14 @@ def bc_u_spherical(l,loc):
 
             if par.ricb > 0:
 
-                if par.bci == 0:  # stress-free icb
-                    out[ 2,:] =   bv.Ta[:,0]  # P=0
+                if par.bci in [0, 2]:  # stress-free icb
+
+                    if par.bci == 0:    # impenetrable icb
+                        out[ 2,:] =   bv.Ta[:,0]  # P=0
+                    elif par.bci == 2:  # zero radial stress at the icb
+                        out[ 2,:] = bv.Ta[:,0]*(Ri*rha1-3*rha0) + bv.Ta[:,1]*3*Ri*rha0
+
+                    # zero consoidal stress at the icb
                     out[ 3,:] =   bv.Ta[:,0] * ( (L-2)*(rha0**2) - Ri*rha0*rha1 - (Ri**2)*(rha1**2) + (Ri**2)*rha0*rha2 )   \
                                 + bv.Ta[:,1] * (Ri**2)*rha0*rha1                                                            \
                                 + bv.Ta[:,2] * (Ri**2)*(rha0**2)
@@ -1269,7 +1280,7 @@ def bc_u_spherical(l,loc):
 
             out = ss.dok_matrix((num_rows_v, ut.N1),dtype=complex)
 
-            if   par.bco == 0: # stress-free cmb
+            if   par.bco in [0, 2]: # zero toroidal stress at the cmb
                 out[ 0,:] = R * Tbv[:,1] - Tbv[:,0]  # R*T'-T=0
 
             elif par.bco == 1: # no-slip cmb
@@ -1277,7 +1288,7 @@ def bc_u_spherical(l,loc):
 
             if par.ricb > 0 :
 
-                if   par.bci == 0: # stress-free icb
+                if   par.bci in [0, 2]: # zero toroidal stress at the icb
                     out[ 1,:] = Ri * bv.Ta[:,1] - bv.Ta[:,0]
 
                 elif par.bci == 1: # no-slip icb

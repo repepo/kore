@@ -43,10 +43,10 @@ par.ncpus       = 10
 par.N           = 10*28
 g               = 1.0
 par.lmax        = par.ellmax(par.ncpus, g, par.m, par.N)
-rnd1            =-0.555094
-rnd2            =-0.270064
-par.rtau        = -0.001 #+ rnd1*1e-2
-par.itau        = 0.4995   #+ rnd2*0.001 
+rnd1            = 0
+rnd2            = 0
+par.rtau        = -0.001  #+ rnd1*1e-2
+par.itau        = 0.4995  #+ rnd2*0.001 
 par.smopo       = 0
 par.nev         = 7
 # ---------------------------------------

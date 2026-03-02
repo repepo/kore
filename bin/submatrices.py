@@ -18,6 +18,7 @@ import scipy.io as sio
 import numpy as np
 import warnings
 import sys
+import os
 from parameters import par
 import utils as ut
 
@@ -30,6 +31,13 @@ def main(ncpus):
     inviscid   = ((par.ViscosD == 0) and (par.ricb == 0))        # boolean
 
     tic = timer()
+    
+    if int(ncpus) == 0:
+        #cpuc = len(os.sched_getaffinity(0))
+        cpuc = mp.cpu_count()
+        print('cpu count =', cpuc)
+        ncpus = cpuc
+
     print('N =', par.N,', lmax =', par.lmax)
 
     # vector parity for poloidal and toroidals. If ricb>0 we don't use parities, not needed.
