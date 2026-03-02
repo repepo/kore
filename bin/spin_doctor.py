@@ -368,9 +368,9 @@ def main(ncpus):
     #     with open('compositional.dat','ab') as dcmp:
     #         np.savetxt(dcmp, np.c_[ CE, Wadv_cmp, Dcmp ])
 
-    # if par.forcing == 0:
-    #     with open('eigenvalues.dat','ab') as deig:
-    #         np.savetxt(deig, eigval)
+    if par.forcing == 0:
+        with open('eigenvalues.dat','ab') as deig:
+            np.savetxt(deig, eigval)
 
     # ------------------------------------------------------------------ done
     return 0
