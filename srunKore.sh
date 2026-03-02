@@ -20,13 +20,13 @@
 
 #---------- Ressource allocation ----------------------------------------------------------------------
 export time_run=00:10:00
-export mem_per_cpu_run=4000
+export mem_per_cpu_run=2000
 # Number of OpenMP threads for submatrices and postprocess and MPI processes for assemble and solve
-export ncpus=10
+export ncpus=4
 # Solve mode (Single mode (0) or map of modes (1))
-export solve_mode=1
+export solve_mode=0
 # For maps of modes
-export nModes=100
+export nModes=2
 #------------------------------------------------------------------------------------------------------  
 
 #---------- Solve Options -----------------------------------------------------------------------------
@@ -54,10 +54,19 @@ source ./tools/load_env.sh
 # Check number of arguments
 if [ $# -eq 1 ]; then
     folder='.'
-    mkdir $LOCALSCRATCH/$folder
-    cd $LOCALSCRATCH/$folder
+    # Create the run directory
+    # run_folder=$folder
+    # run_folder=$LOCALSCRATCH/$folder
+    run_folder=$GLOBALSCRATCH/runs/kore/$1/$folder
+    mkdir -p $run_folder
+    cd $run_folder
     cp -r $KORE_HOME/* . # copies the source files
-    sed -i 's,^\('ncpus'[ ]*=\).*,\1'$ncpus',' bin/parameters.py	
+    # Create the directory to store the results
+    result_folder=$GLOBALSCRATCH/results/kore/$1/$folder
+    mkdir -p $result_folder/
+    # Change parameters
+    sed -i 's,^\([A-Za-z0-9_.]*'ncpus'[ ]*=\).*,\1'$ncpus',' bin/parameters.py
+    srun sleep 0.2	
 
 elif [ $# -eq 5 ]; then
     var=$2
@@ -75,17 +84,19 @@ elif [ $# -eq 5 ]; then
     # Create the run directories
     folder=${var}_${value}
     echo $folder $var=$value
-    mkdir $LOCALSCRATCH/$folder
-    cd $LOCALSCRATCH/$folder
+    #run_folder=$LOCALSCRATCH/$folder
+    run_folder=$GLOBALSCRATCH/runs/kore/$1/$folder
+    mkdir -p $run_folder
+    cd $run_folder
     cp -r $KORE_HOME/* . # copies the source files
 
     # Create the directories to store the results
     result_folder=$GLOBALSCRATCH/results/kore/$1/$folder
     mkdir -p $result_folder/ 
 
-    # modify variables
-    sed -i 's,^\('$var'[ ]*=\).*,\1'$value',' bin/parameters.py	
-    sed -i 's,^\('ncpus'[ ]*=\).*,\1'$ncpus',' bin/parameters.py   
+    # Change parameters
+    sed -i 's,^\([A-Za-z0-9_.]*'$var'[ ]*=\).*,\1'$value',' bin/parameters.py
+    sed -i 's,^\([A-Za-z0-9_.]*'ncpus'[ ]*=\).*,\1'$ncpus',' bin/parameters.py   
 
     srun sleep 0.2
 else
@@ -110,7 +121,7 @@ if [ "$solve_mode" -eq 0 ]; then
 
 elif [ "$solve_mode" -eq 1 ]; then
     # Map of modes
-    ID3=$(sbatch --parsable --dependency=afterok:${ID2} --array=0-$nModes ./tools/submit_modes.sh $ncpus $time_run $mem_per_cpu_run $opts $folder $result_folder)
+    ID3=$(sbatch --parsable --dependency=afterok:${ID2} --array=1-$nModes ./tools/submit_modes.sh $ncpus $time_run $mem_per_cpu_run $run_folder $result_folder)
 
 else
     echo "Wrong solve mode (Should be 0 or 1)."
