@@ -123,7 +123,7 @@ def gimmedachebs( labl ):
     s can be 'u' or 'v' or 'h' and the X's are single digit integers (can be all different)
     '''
 
-    tol = 1e-9
+    tol = 1e-12
     args = decode_label(labl)  # (section, rpower, rhopower, func1, dorder1, func2, dorder2, dx)
     c0arg = chebco_f( rap.burrito, par.N, par.ricb, rcmb, tol, *args)
 
@@ -1061,9 +1061,10 @@ def Mlam(a0,lamb,vector_parity):
     one from the highest derivative order appearing in the equation)
     '''
 
+    N = np.size(a0)
+
     if np.sum(abs(a0)) > 0 :
 
-        N = np.size(a0)
         bw = max(np.nonzero(a0)[0])
 
         a1 = np.zeros(2*N)
@@ -1152,7 +1153,7 @@ def Mlam(a0,lamb,vector_parity):
 
     else:
 
-        out = 0
+        out = ss.csr_matrix((N,N))
 
     return out
 
