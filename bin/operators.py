@@ -26,21 +26,21 @@ def inertia(l, section, component, offdiag):  # --------------------------------
 
     out = 0
 
-    L = l*(l+1)
+    L = l*(l+1.)
 
     if offdiag == 0:
 
         if section == 'u' and component == 'upol':
 
-            out =  L * (   L*u3_D0 - u2lho1_D0 - u1lho2_D0
+            out =  1.0 * (   L*u3_D0 - u2lho1_D0 - u1lho2_D0
                          - 2*u2_D1 - u1lho1_D1
                          - u1_D2 )
 
         elif section == 'v' and component == 'utor':
 
-            out = L * v1_D0
+            out = 1.0 * v1_D0
 
-    return out
+    return out/L**2
 
 
 
@@ -49,7 +49,7 @@ def coriolis(l, section, component, offdiag):  # -------------------------------
     out  = 0
     offd = 0
     m = par.m
-    L = l*(l+1)
+    L = l*(l+1.)
 
     if section == 'u':  # ------------------------------------------------------- 2curl
 
@@ -105,20 +105,20 @@ def coriolis(l, section, component, offdiag):  # -------------------------------
 
                 out = -1j * m * v1_D0       
 
-    return [ 2*par.Gaspard * out, offd ]
+    return [ 2*par.Gaspard * out/L**3, offd ]
 
 
 
 def viscous_diffusion(l, section, component, offdiag):  # ------------------------------------------------ viscous force
 
     out = 0
-    L= l*(l+1)
+    L= l*(l+1.)
 
     if (offdiag == 0)&(par.ViscosD>0):
 
         if section == 'u' and component == 'upol':
 
-            out = L * ( -   u1moe0lho4_D0 - 2*      u1moe1lho3_D0 -         u1moe2lho2_D0 
+            out = 1.0 * ( -   u1moe0lho4_D0 - 2*      u1moe1lho3_D0 -         u1moe2lho2_D0 
                         - 3*u2moe0lho3_D0 - 2*      u2moe1lho2_D0 +         u2moe2lho1_D0 
                         + L*u3moe0lho2_D0 + 2*L*    u3moe1lho1_D0 + (2-L)*  u3moe2_D0 
                         + L*u4moe0lho1_D0 - 2*(1+L)*u4moe1_D0     + L*(2-L)*u5moe0_D0
@@ -136,58 +136,59 @@ def viscous_diffusion(l, section, component, offdiag):  # ----------------------
 					
         elif section == 'v' and component == 'utor':
 
-            out = L * ( - v2moe1_D0 - L*v3moe0_D0
+            out = 1.0 * ( - v2moe1_D0 - L*v3moe0_D0
             
                         + v1moe1_D1 + 2*v2moe0_D1
             
                         + v1moe0_D2 )
 
-    return par.ViscosD * out
+    return par.ViscosD * out/L**2
 
 
 
 def buoyancy(l, section, component, offdiag): 
 
     out = 0
-    L = l*(l+1)
+    L = l*(l+1.)
 
     if (section == 'u') and (offdiag == 0) :
 
-        out = L * u2gra0_D0
+        out = 1.0 * u2gra0_D0
 
-    return par.Beyonce * out
+    return par.Beyonce * out/L**3
 
 
 
 def entropy(l, section, component, offdiag):  # rʰ p s
 
     out = 0
+    L = l*(l+1.)
     
     if (section == 'h') and (offdiag == 0) :
 
         out = h0pss0_D0
 
-    return out
+    return out/L**3
 
 
 
 def thermal_advection(l, section, component, offdiag):  # −rʰ p(v⋅∇) S = −rʰ p vᵣ dS/dr
 
     out = 0
-    L = l*(l+1)
+    L = l*(l+1.)
 
     if (section == 'h') and (component == 'upol') and (offdiag == 0) :
 
-        out = -L * h1pdS0_D0
+        out = -1.0 * h1pdS0_D0
     
-    return out
+    return out/L**2
 
 
 
 def thermal_diffusion(l, section, component, offdiag):  # rʰ  ∇⋅(κ p ∇s)
 
     out = 0
-    L = l*(l+1)
+    L = l*(l+1.)
     
     if (section == 'h') and (offdiag == 0) :
 
@@ -195,4 +196,4 @@ def thermal_diffusion(l, section, component, offdiag):  # rʰ  ∇⋅(κ p ∇s)
               + 2 * h1kps0_D1 + 2 * h0kps1_D1   \
               +     h0kps0_D2 
 
-    return par.ThermaD * out  
+    return par.ThermaD * out/L**3
