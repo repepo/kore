@@ -111,8 +111,8 @@ def main(ncpus):
     params      = np.zeros((success,33))
     # ------------------------------------------------------------------------------------------------------------------------
 
-    print('\n  ★     Damping σ     Frequency ω     𝒯/𝒫     Peak ℓ ℓ-Width ℓ-Convergence ')
-    print(  ' ‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾ ')
+    print('\n  ★     Damping σ     Frequency ω     𝒯/𝒫       resid𝐮    Peak ℓ ℓ-Width ℓ-Convergence ')
+    print(  ' ‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾ ')
 
 
     if par.track_target == 1:  # eigenvalue tracking enabled
@@ -173,7 +173,7 @@ def main(ncpus):
             KT[i] = np.sum( udgn[lti,0])  # Toroidal kinetic energy
 
             [ KE[i], Dkin0, Dint0, Wlor0, Wthm0, Wcmp0 ] = np.sum( udgn, 0)
-            # Dkin[i] = par.ViscosD * Dkin0
+            Dkin[i] = par.ViscosD * Dkin0
             # Dint[i] = par.ViscosD * Dint0
             # Wlor[i] = 0#par.OmgTau**2 * par.Le2 * Wlor0
             # Wthm[i] = par.Beyonce * Wthm0
@@ -235,14 +235,13 @@ def main(ncpus):
         # else:
         #     resid0[i] = np.nan
 
-        # if par.hydro:
-        #     resid1[i] = (abs( 2*sigma*KE[i] - Dkin[i] - Wlor[i] + Wthm[i] )
-        #                  /max(abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wlor[i]), abs(Wthm[i])))     
+        if par.hydro:
+            resid1[i] = ( abs( 2*sigma*KE[i] - Dkin[i] ) / max( abs(2*sigma*KE[i]), abs(Dkin[i])) )     
                          
         
 
         # ------------------------------------------------------------------------------------------------------------------
-        print(' {:2d}   {: 12.9f}   {: 12.9f}   {:8.2e}   {:4d}    {:4d}     {:8.2e}'.format(i, sigma, w, KT[i]/KP[i], ldom[i], lwidth[i], lconv[i]))
+        print(' {:2d}   {: 12.9f}   {: 12.9f}   {:8.2e}   {:8.2e}    {:4d}    {:4d}     {:8.2e}'.format(i, sigma, w, KT[i]/KP[i], resid1[i], ldom[i], lwidth[i], lconv[i]))
         # ------------------------------------------------------------------------------------------------------------------
 
         toc = timer()
@@ -291,8 +290,7 @@ def main(ncpus):
                                 ])  # 33 total
 
     # ------------------------------------------------------------------------------------------------------------------------
-    print(  ' ‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾ ')
-
+    print(  ' ‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾ ')
 
     '''
     # find closest eigenvalue to tracking target and write to target file
@@ -353,7 +351,7 @@ def main(ncpus):
            #                         resid0, resid1,
            #                         np.real(vtorq), np.imag(vtorq),
            #                         np.real(vtorq_icb), np.imag(vtorq_icb)])
-           np.savetxt(dflo, np.c_[ KE, KP, KT, ldom, lwidth, lconv ], fmt=['%.9e', '%.9e', '%.9e', '%d', '%d', '%.3e'])
+           np.savetxt(dflo, np.c_[ KE, KP, KT, Dkin, ldom, lwidth, lconv ], fmt=['%.9e', '%.9e', '%.9e', '%.9e', '%d', '%d', '%.3e'])
 
     # if par.magnetic:
     #     with open('magnetic.dat','ab') as dmag:
