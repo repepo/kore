@@ -7,6 +7,9 @@ import numpy.polynomial.chebyshev as ch
 import numpy as np
 from parameters import par
 import utils as ut
+import radial_profiles as rap
+
+if par.diff_rot : import diff_rot_coefficients as dr
 
 mp.set_start_method('fork')
 
@@ -422,6 +425,106 @@ def thermal_advect(l, hlm0, plm0, flag):
     return f0*fr*f1
 
 
+def diff_rot_power(l, lp, lt, P, T):
+    '''
+    Returns the integrand to compute the volume integral of ∫ ( F ⋅ 𝐮 ) dV, l-component
+    with F = (𝐮 ⋅ ∇Ω) r sin(θ) eϕ;  the differential rotation interaction between the perturbation and the base flow. 
+    
+    [Inefficient implementation]
+    '''
+    
+    wdr = 0j
+
+    m = par.m
+    L = l*(l+1)
+    f0 = (4*np.pi/(2*l+1))*(np.sqrt(L/2))*r2
+    f1 = 0
+    f2 = 0
+    f4 = 0
+    f5 = 0
+    f6 = 0
+
+    aub = rap.aubX(rk, 0)
+    svp = rap.svpX(rk, 0)
+    spv = rap.spvX(rk, 0)
+
+    slm0 = 0
+    tlm0 = 0
+    qlm0_dl = 0
+    slm0_dl = 0
+    tlm0_dl = 0
+
+    if l in lp : 
+        [ [ _ ], [ slm0 ] ] = cheb2space_pol(l, lp, P, 0)
+    elif l in lt : 
+        [ tlm0 ] = cheb2space_tor(l, lt, T, 0)
+
+    for offdiag in [-3, -2, -1, 0, 1, 2, 3]: 
+        if l+offdiag in lp : 
+            [ [ qlm0_dl ], [ slm0_dl ] ] = cheb2space_pol(l+offdiag, lp, P, 0)
+        elif l+offdiag in lt : 
+            [ tlm0_dl ] = cheb2space_tor(l+offdiag, lt, T, 0)
+
+        c1 = (svp * dr.w_SQ_20(l, m, offdiag)) + (spv * dr.w_SQ_00(l, m, offdiag))
+        c2 = aub * dr.w_SS_20(l, m, offdiag)
+        c3 = aub * dr.w_ST_20(l, m, offdiag)
+        c4 = (svp * dr.w_TQ_20(l, m, offdiag)) + (spv * dr.w_TQ_00(l, m, offdiag))
+        c5 = aub * dr.w_TS_20(l, m, offdiag)
+        c6 = aub * dr.w_TT_20(l, m, offdiag)
+
+        f1 = c1 * (np.conj(slm0) * qlm0_dl) # conj(S_l)*Q_dl
+        f2 = c2 * (np.conj(slm0) * slm0_dl) # conj(S_l)*S_dl
+        f3 = c3 * (np.conj(slm0) * tlm0_dl) # conj(S_l)*T_dl
+        f4 = c4 * (np.conj(tlm0) * qlm0_dl) # conj(T_l)*Q_dl
+        f5 = c5 * (np.conj(tlm0) * slm0_dl) # conj(T_l)*S_dl
+        f6 = c6 * (np.conj(tlm0) * tlm0_dl) # conj(T_l)*T_dl
+
+        wdr += f0 * (f1 + f2 + f3 + f4 + f5 + f6)   
+
+    # for offdiag in [-3, -2, -1, 0, 1, 2, 3]:
+    #     if l in lp : 
+    #         # S_l, Q_l != 0, T_l = 0
+    #         [ [ _ ], [ slm0 ] ] = cheb2space_pol(l, lp, P, 0)
+    #         if l + offdiag in lp : 
+    #             # S_dl, Q_dl != 0, T_dl = 0 -> Non-zero terms : conj(S_l)*Q_dl, conj(S_l)*S_dl
+    #             [ [ qlm0_dl ], [ slm0_dl ] ] = cheb2space_pol(l+offdiag, lp, P, 0)
+
+    #             c1 = (svp * dr.w_SQ_20(l, m, offdiag)) + (spv * dr.w_SQ_00(l, m, offdiag))
+    #             c2 = aub * dr.w_SS_20(l, m, offdiag)
+
+    #             f1 = c1 * (np.conj(slm0) * qlm0_dl) # conj(S_l)*Q_dl
+    #             f2 = c2 * (np.conj(slm0) * slm0_dl) # conj(S_l)*S_dl
+    #         elif l + offdiag in lt :
+    #             # S_dl, Q_dl = 0, T_dl != 0 -> Non-zero terms : conj(S_l)*T_dl
+    #             [ tlm0_dl ] = cheb2space_tor(l+offdiag, lt, T, 0)
+
+    #             c1 = aub * dr.w_ST_20(l, m, offdiag)
+
+    #             f1 = c1 * (np.conj(slm0) * tlm0_dl) # conj(S_l)*T_dl
+
+    #     elif l in lt : 
+    #         # S_l, Q_l = 0, T_l != 0
+    #         [ tlm0 ] = cheb2space_tor(l, lt, T, 0)
+    #         if l + offdiag in lp : 
+    #             # S_dl, Q_dl != 0, T_dl = 0 -> Non-zero terms : conj(T_l)*Q_dl, conj(T_l)*S_dl
+    #             [ [ qlm0_dl ], [ slm0_dl ] ] = cheb2space_pol(l+offdiag, lp, P, 0)
+
+    #             c1 = (svp * dr.w_TQ_20(l, m, offdiag)) + (spv * dr.w_TQ_00(l, m, offdiag))
+    #             c2 = aub * dr.w_TS_20(l, m, offdiag)
+
+    #             f1 = c1 * (np.conj(tlm0) * qlm0_dl) # conj(T_l)*Q_dl
+    #             f2 = c2 * (np.conj(tlm0) * slm0_dl) # conj(T_l)*S_dl
+    #         elif l + offdiag in lt :
+    #             # S_dl, Q_dl = 0, T_dl != 0 -> Non-zero terms : conj(T_l)*T_dl
+    #             [ tlm0_dl ] = cheb2space_tor(l+offdiag, lt, T, 0)
+
+    #             c1 = aub * dr.w_TT_20(l, m, offdiag)
+
+    #             f1 = c1 * (np.conj(tlm0) * tlm0_dl) # conj(T_l)*T_dl
+
+    #     wdr += f0 * (f1 + f2)
+
+    return 2*np.real(wdr)
 
 def flow_worker( l, lp, lt, u_sol2, b_sol2, t_sol2, c_sol2, Ra, Rb, N, sqx ):
     '''
@@ -430,7 +533,7 @@ def flow_worker( l, lp, lt, u_sol2, b_sol2, t_sol2, c_sol2, Ra, Rb, N, sqx ):
     rate of working (power) of the Lorentz forces and buyancy forces (thermal and compositional).
     l-component
     '''
-    
+
     P = u_sol2[0]
     T = u_sol2[1]
   
@@ -439,6 +542,7 @@ def flow_worker( l, lp, lt, u_sol2, b_sol2, t_sol2, c_sol2, Ra, Rb, N, sqx ):
     [ intdp, intdt ] = [0, 0]
     [ wlorp, wlort ] = [0, 0]
     [ wther, wcomp ] = [0, 0]
+    wdr = 0
     
     L = l*(l+1)
 
@@ -475,6 +579,9 @@ def flow_worker( l, lp, lt, u_sol2, b_sol2, t_sol2, c_sol2, Ra, Rb, N, sqx ):
         intdt = internl_dissip_tor(l, tlm0, tlm1)
         if par.magnetic:
             wlort = lorentz_power_tor(l, tlm0, tlmb)
+    
+    if par.diff_rot:
+        wdr = diff_rot_power(l, lp, lt, P, T)
 
     # Integrals
     Kene_l = cg_quad( kinep + kinet, Ra, Rb, N, sqx)
@@ -482,9 +589,10 @@ def flow_worker( l, lp, lt, u_sol2, b_sol2, t_sol2, c_sol2, Ra, Rb, N, sqx ):
     Dint_l = cg_quad( intdp + intdt, Ra, Rb, N, sqx)
     Wlor_l = cg_quad( wlorp + wlort, Ra, Rb, N, sqx)
     Wthm_l = cg_quad( wther, Ra, Rb, N, sqx )
-    Wcmp_l = cg_quad( wcomp, Ra, Rb, N, sqx )   
+    Wcmp_l = cg_quad( wcomp, Ra, Rb, N, sqx )
+    Wdr_l  = cg_quad( wdr, Ra, Rb, N, sqx )   
 
-    return [ Kene_l, Dkin_l, Dint_l, Wlor_l, Wthm_l, Wcmp_l ]
+    return [ Kene_l, Dkin_l, Dint_l, Wlor_l, Wthm_l, Wcmp_l, Wdr_l]
 
 
 

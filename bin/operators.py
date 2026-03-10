@@ -135,7 +135,6 @@ def differential_rotation(l, section, component, offdiag):  # ------------------
     out  = 0
     offd = 0
     m = par.m
-    w = 1.0
 
     if section == 'u':  # ------------------------------------------------------- 2curl
 
@@ -143,53 +142,52 @@ def differential_rotation(l, section, component, offdiag):  # ------------------
             
             if offdiag == -2 : 
 
-                out = dr.f_2C_D0P(l, m, w, offdiag)*u3aub0_D0 \
-                    + dr.f_2C_D1P(l, m, w, offdiag)*u2aub0_D1 \
-                    + dr.f_2C_lho1_D0P(l, m, w, offdiag)*u2aub0lho1_D0 \
-                    + dr.f_2C_lho2_D0P(l, m, w, offdiag)*u1aub0lho2_D0 \
-                    + dr.f_2C_lho1_D1P(l, m, w, offdiag)*u1aub0lho1_D1 \
-                    + dr.f_2C_D2P(l, m, w, offdiag)*u1aub0_D2 \
-                    + dr.df_2C_D0P(l, m, w, offdiag)*u3svp0_D0 \
-                    + dr.df_2C_D1P(l, m, w, offdiag)*u2svp0_D1 \
-                    + dr.df_2C_lho1_D0P(l, m, w, offdiag)*u2svp0lho1_D0 \
-                    + dr.d2f_2C_D0P(l, m, w, offdiag)*u3pls0_D0
+                out = dr.f_2C_D0P(l, m, offdiag)*u3aub0_D0 \
+                    + dr.f_2C_D1P(l, m, offdiag)*u2aub0_D1 \
+                    + dr.f_2C_lho1_D0P(l, m, offdiag)*u2aub0lho1_D0 \
+                    + dr.f_2C_lho2_D0P(l, m, offdiag)*u1aub0lho2_D0 \
+                    + dr.f_2C_lho1_D1P(l, m, offdiag)*u1aub0lho1_D1 \
+                    + dr.f_2C_D2P(l, m, offdiag)*u1aub0_D2 \
+                    + dr.df_2C_D0P(l, m, offdiag)*u3svp0_D0 \
+                    + dr.df_2C_D1P(l, m, offdiag)*u2svp0_D1 \
+                    + dr.df_2C_lho1_D0P(l, m, offdiag)*u2svp0lho1_D0 \
+                    + dr.d2f_2C_D0P(l, m, offdiag)*u3pls0_D0
 
                 offd = -1
 
             elif offdiag == 0:
-                out = dr.f_2C_D0P(l, m, w, offdiag)*u3aub0_D0 \
-                    + dr.f_2C_D1P(l, m, w, offdiag)*u2aub0_D1 \
-                    + dr.f_2C_lho1_D0P(l, m, w, offdiag)*u2aub0lho1_D0 \
-                    + dr.f_2C_lho2_D0P(l, m, w, offdiag)*u1aub0lho2_D0 \
-                    + dr.f_2C_lho1_D1P(l, m, w, offdiag)*u1aub0lho1_D1 \
-                    + dr.f_2C_D2P(l, m, w, offdiag)*u1aub0_D2 \
-                    + dr.df_2C_D0P(l, m, w, offdiag)*u3svp0_D0 \
-                    + dr.df_2C_D1P(l, m, w, offdiag)*u2svp0_D1 \
-                    + dr.df_2C_lho1_D0P(l, m, w, offdiag)*u2svp0lho1_D0 \
-                    + dr.d2f_2C_D0P(l, m, w, offdiag)*u3pls0_D0 \
-                    + dr.f0_2C_D0P(l, m, w, offdiag)*u3abu0_D0 \
-                    + dr.f0_2C_D1P(l, m, w, offdiag)*u2abu0_D1 \
-                    + dr.f0_2C_lho1_D0P(l, m, w, offdiag)*u2abu0lho1_D0 \
-                    + dr.f0_2C_lho2_D0P(l, m, w, offdiag)*u1abu0lho2_D0 \
-                    + dr.f0_2C_lho1_D1P(l, m, w, offdiag)*u1abu0lho1_D1 \
-                    + dr.f0_2C_D2P(l, m, w, offdiag)*u1abu0_D2 \
-                    + dr.df0_2C_D0P(l, m, w, offdiag)*u3spv0_D0 \
-                    + dr.df0_2C_D1P(l, m, w, offdiag)*u2spv0_D1 \
-                    + dr.df0_2C_lho1_D0P(l, m, w, offdiag)*u2spv0lho1_D0 \
-                    + dr.d2f0_2C_D0P(l, m, w, offdiag)*u3psl0_D0
-            
+                out = dr.f_2C_D0P(l, m, offdiag)*u3aub0_D0 \
+                    + dr.f_2C_D1P(l, m, offdiag)*u2aub0_D1 \
+                    + dr.f_2C_lho1_D0P(l, m, offdiag)*u2aub0lho1_D0 \
+                    + dr.f_2C_lho2_D0P(l, m, offdiag)*u1aub0lho2_D0 \
+                    + dr.f_2C_lho1_D1P(l, m, offdiag)*u1aub0lho1_D1 \
+                    + dr.f_2C_D2P(l, m, offdiag)*u1aub0_D2 \
+                    + dr.df_2C_D0P(l, m, offdiag)*u3svp0_D0 \
+                    + dr.df_2C_D1P(l, m, offdiag)*u2svp0_D1 \
+                    + dr.df_2C_lho1_D0P(l, m, offdiag)*u2svp0lho1_D0 \
+                    + dr.d2f_2C_D0P(l, m, offdiag)*u3pls0_D0 \
+                    + dr.f0_2C_D0P(l, m, offdiag)*u3abu0_D0 \
+                    + dr.f0_2C_D1P(l, m, offdiag)*u2abu0_D1 \
+                    + dr.f0_2C_lho1_D0P(l, m, offdiag)*u2abu0lho1_D0 \
+                    + dr.f0_2C_lho2_D0P(l, m, offdiag)*u1abu0lho2_D0 \
+                    + dr.f0_2C_lho1_D1P(l, m, offdiag)*u1abu0lho1_D1 \
+                    + dr.f0_2C_D2P(l, m, offdiag)*u1abu0_D2 \
+                    + dr.df0_2C_D0P(l, m, offdiag)*u3spv0_D0 \
+                    + dr.df0_2C_D1P(l, m, offdiag)*u2spv0_D1 \
+                    + dr.df0_2C_lho1_D0P(l, m, offdiag)*u2spv0lho1_D0 \
+                    + dr.d2f0_2C_D0P(l, m, offdiag)*u3psl0_D0
             elif offdiag == 2 : 
 
-                out = dr.f_2C_D0P(l, m, w, offdiag)*u3aub0_D0 \
-                    + dr.f_2C_D1P(l, m, w, offdiag)*u2aub0_D1 \
-                    + dr.f_2C_lho1_D0P(l, m, w, offdiag)*u2aub0lho1_D0 \
-                    + dr.f_2C_lho2_D0P(l, m, w, offdiag)*u1aub0lho2_D0 \
-                    + dr.f_2C_lho1_D1P(l, m, w, offdiag)*u1aub0lho1_D1 \
-                    + dr.f_2C_D2P(l, m, w, offdiag)*u1aub0_D2 \
-                    + dr.df_2C_D0P(l, m, w, offdiag)*u3svp0_D0 \
-                    + dr.df_2C_D1P(l, m, w, offdiag)*u2svp0_D1 \
-                    + dr.df_2C_lho1_D0P(l, m, w, offdiag)*u2svp0lho1_D0 \
-                    + dr.d2f_2C_D0P(l, m, w, offdiag)*u3pls0_D0
+                out = dr.f_2C_D0P(l, m, offdiag)*u3aub0_D0 \
+                    + dr.f_2C_D1P(l, m, offdiag)*u2aub0_D1 \
+                    + dr.f_2C_lho1_D0P(l, m, offdiag)*u2aub0lho1_D0 \
+                    + dr.f_2C_lho2_D0P(l, m, offdiag)*u1aub0lho2_D0 \
+                    + dr.f_2C_lho1_D1P(l, m, offdiag)*u1aub0lho1_D1 \
+                    + dr.f_2C_D2P(l, m, offdiag)*u1aub0_D2 \
+                    + dr.df_2C_D0P(l, m, offdiag)*u3svp0_D0 \
+                    + dr.df_2C_D1P(l, m, offdiag)*u2svp0_D1 \
+                    + dr.df_2C_lho1_D0P(l, m, offdiag)*u2svp0lho1_D0 \
+                    + dr.d2f_2C_D0P(l, m, offdiag)*u3pls0_D0
 
                 offd = 1
 
@@ -197,9 +195,9 @@ def differential_rotation(l, section, component, offdiag):  # ------------------
 
             if offdiag == -3:
 
-                out = dr.f_2C_D0T(l, m, w, offdiag)*u2aub0_D0 \
-                    + dr.f_2C_D1T(l, m, w, offdiag)*u1aub0_D1 \
-                    + dr.df_2C_D0T(l, m, w, offdiag)*u2svp0_D0
+                out = dr.f_2C_D0T(l, m, offdiag)*u2aub0_D0 \
+                    + dr.f_2C_D1T(l, m, offdiag)*u1aub0_D1 \
+                    + dr.df_2C_D0T(l, m, offdiag)*u2svp0_D0
                 
                 if ut.symm1 == -1 :
                     offd = -1
@@ -208,24 +206,24 @@ def differential_rotation(l, section, component, offdiag):  # ------------------
 
             elif offdiag == -1:
 
-                out = dr.f_2C_D0T(l, m, w, offdiag)*u2aub0_D0 \
-                    + dr.f_2C_D1T(l, m, w, offdiag)*u1aub0_D1 \
-                    + dr.df_2C_D0T(l, m, w, offdiag)*u2svp0_D0 \
-                    + dr.f0_2C_D0T(l, m, w, offdiag)*u2abu0_D0 \
-                    + dr.f0_2C_D1T(l, m, w, offdiag)*u1abu0_D1 \
-                    + dr.df0_2C_D0T(l, m, w, offdiag)*u2spv0_D0
+                out = dr.f_2C_D0T(l, m, offdiag)*u2aub0_D0 \
+                    + dr.f_2C_D1T(l, m, offdiag)*u1aub0_D1 \
+                    + dr.df_2C_D0T(l, m, offdiag)*u2svp0_D0 \
+                    + dr.f0_2C_D0T(l, m, offdiag)*u2abu0_D0 \
+                    + dr.f0_2C_D1T(l, m, offdiag)*u1abu0_D1 \
+                    + dr.df0_2C_D0T(l, m, offdiag)*u2spv0_D0
 
                 if ut.symm1 == 1 :
                     offd = -1
 
             elif offdiag == 1:
                 
-                out = dr.f_2C_D0T(l, m, w, offdiag)*u2aub0_D0 \
-                    + dr.f_2C_D1T(l, m, w, offdiag)*u1aub0_D1 \
-                    + dr.df_2C_D0T(l, m, w, offdiag)*u2svp0_D0 \
-                    + dr.f0_2C_D0T(l, m, w, offdiag)*u2abu0_D0 \
-                    + dr.f0_2C_D1T(l, m, w, offdiag)*u1abu0_D1 \
-                    + dr.df0_2C_D0T(l, m, w, offdiag)*u2spv0_D0
+                out = dr.f_2C_D0T(l, m, offdiag)*u2aub0_D0 \
+                    + dr.f_2C_D1T(l, m, offdiag)*u1aub0_D1 \
+                    + dr.df_2C_D0T(l, m, offdiag)*u2svp0_D0 \
+                    + dr.f0_2C_D0T(l, m, offdiag)*u2abu0_D0 \
+                    + dr.f0_2C_D1T(l, m, offdiag)*u1abu0_D1 \
+                    + dr.df0_2C_D0T(l, m, offdiag)*u2spv0_D0
                 
                 
                 if ut.symm1 == -1:
@@ -233,9 +231,9 @@ def differential_rotation(l, section, component, offdiag):  # ------------------
 
             elif offdiag == 3:
 
-                out = dr.f_2C_D0T(l, m, w, offdiag)*u2aub0_D0 \
-                    + dr.f_2C_D1T(l, m, w, offdiag)*u1aub0_D1 \
-                    + dr.df_2C_D0T(l, m, w, offdiag)*u2svp0_D0
+                out = dr.f_2C_D0T(l, m, offdiag)*u2aub0_D0 \
+                    + dr.f_2C_D1T(l, m, offdiag)*u1aub0_D1 \
+                    + dr.df_2C_D0T(l, m, offdiag)*u2svp0_D0
                 
                 if ut.symm1 == -1:
                     offd = 2
@@ -248,10 +246,10 @@ def differential_rotation(l, section, component, offdiag):  # ------------------
 
             if offdiag == -3:
 
-                out = dr.f_1C_D0P(l, m, w, offdiag) * v2aub0_D0 \
-                    + dr.f_1C_lho1_D0P(l, m, w, offdiag) * v1aub0lho1_D0 \
-                    + dr.f_1C_D1P(l, m, w, offdiag) * v1aub0_D1 \
-                    + dr.df_1C_D0P(l, m, w, offdiag) * v2svp0_D0
+                out = dr.f_1C_D0P(l, m, offdiag) * v2aub0_D0 \
+                    + dr.f_1C_lho1_D0P(l, m, offdiag) * v1aub0lho1_D0 \
+                    + dr.f_1C_D1P(l, m, offdiag) * v1aub0_D1 \
+                    + dr.df_1C_D0P(l, m, offdiag) * v2svp0_D0
                 
                 if ut.symm1 == -1:
                     offd = -2
@@ -260,14 +258,14 @@ def differential_rotation(l, section, component, offdiag):  # ------------------
 
             elif offdiag == -1:
 
-                out = dr.f_1C_D0P(l, m, w, offdiag) * v2aub0_D0 \
-                    + dr.f_1C_lho1_D0P(l, m, w, offdiag) * v1aub0lho1_D0 \
-                    + dr.f_1C_D1P(l, m, w, offdiag) * v1aub0_D1 \
-                    + dr.df_1C_D0P(l, m, w, offdiag) * v2svp0_D0 \
-                    + dr.f0_1C_D0P(l, m, w, offdiag) * v2abu0_D0 \
-                    + dr.f0_1C_lho1_D0P(l, m, w, offdiag) * v1abu0lho1_D0 \
-                    + dr.f0_1C_D1P(l, m, w, offdiag) * v1abu0_D1 \
-                    + dr.df0_1C_D0P(l, m, w, offdiag) * v2spv0_D0
+                out = dr.f_1C_D0P(l, m, offdiag) * v2aub0_D0 \
+                    + dr.f_1C_lho1_D0P(l, m, offdiag) * v1aub0lho1_D0 \
+                    + dr.f_1C_D1P(l, m, offdiag) * v1aub0_D1 \
+                    + dr.df_1C_D0P(l, m, offdiag) * v2svp0_D0 \
+                    + dr.f0_1C_D0P(l, m, offdiag) * v2abu0_D0 \
+                    + dr.f0_1C_lho1_D0P(l, m, offdiag) * v1abu0lho1_D0 \
+                    + dr.f0_1C_D1P(l, m, offdiag) * v1abu0_D1 \
+                    + dr.df0_1C_D0P(l, m, offdiag) * v2spv0_D0
 
                 
                 if ut.symm1 == -1:
@@ -275,24 +273,24 @@ def differential_rotation(l, section, component, offdiag):  # ------------------
 
             elif offdiag == 1:
 
-                out = dr.f_1C_D0P(l, m, w, offdiag) * v2aub0_D0 \
-                    + dr.f_1C_lho1_D0P(l, m, w, offdiag) * v1aub0lho1_D0 \
-                    + dr.f_1C_D1P(l, m, w, offdiag) * v1aub0_D1 \
-                    + dr.df_1C_D0P(l, m, w, offdiag) * v2svp0_D0 \
-                    + dr.f0_1C_D0P(l, m, w, offdiag) * v2abu0_D0 \
-                    + dr.f0_1C_lho1_D0P(l, m, w, offdiag) * v1abu0lho1_D0 \
-                    + dr.f0_1C_D1P(l, m, w, offdiag) * v1abu0_D1 \
-                    + dr.df0_1C_D0P(l, m, w, offdiag) * v2spv0_D0
+                out = dr.f_1C_D0P(l, m, offdiag) * v2aub0_D0 \
+                    + dr.f_1C_lho1_D0P(l, m, offdiag) * v1aub0lho1_D0 \
+                    + dr.f_1C_D1P(l, m, offdiag) * v1aub0_D1 \
+                    + dr.df_1C_D0P(l, m, offdiag) * v2svp0_D0 \
+                    + dr.f0_1C_D0P(l, m, offdiag) * v2abu0_D0 \
+                    + dr.f0_1C_lho1_D0P(l, m, offdiag) * v1abu0lho1_D0 \
+                    + dr.f0_1C_D1P(l, m, offdiag) * v1abu0_D1 \
+                    + dr.df0_1C_D0P(l, m, offdiag) * v2spv0_D0
 
                 if ut.symm1 == 1:
                     offd = 1
 
             elif offdiag == 3:
 
-                out = dr.f_1C_D0P(l, m, w, offdiag) * v2aub0_D0 \
-                    + dr.f_1C_lho1_D0P(l, m, w, offdiag) * v1aub0lho1_D0 \
-                    + dr.f_1C_D1P(l, m, w, offdiag) * v1aub0_D1 \
-                    + dr.df_1C_D0P(l, m, w, offdiag) * v2svp0_D0
+                out = dr.f_1C_D0P(l, m, offdiag) * v2aub0_D0 \
+                    + dr.f_1C_lho1_D0P(l, m, offdiag) * v1aub0lho1_D0 \
+                    + dr.f_1C_D1P(l, m, offdiag) * v1aub0_D1 \
+                    + dr.df_1C_D0P(l, m, offdiag) * v2svp0_D0
 
                 if ut.symm1 == -1:
                     offd = 1
@@ -303,18 +301,18 @@ def differential_rotation(l, section, component, offdiag):  # ------------------
 
             if offdiag == -2 : 
 
-                out = dr.f_1C_D0T(l, m, w, offdiag) * v1aub0_D0
+                out = dr.f_1C_D0T(l, m, offdiag) * v1aub0_D0
 
                 offd = -1
 
             elif offdiag == 0:
 
-                out = dr.f_1C_D0T(l, m, w, offdiag) * v1aub0_D0 \
-                    + dr.f0_1C_D0T(l, m, w, offdiag) * v1abu0_D0
+                out = dr.f_1C_D0T(l, m, offdiag) * v1aub0_D0 \
+                    + dr.f0_1C_D0T(l, m, offdiag) * v1abu0_D0
             
             elif offdiag == 2 : 
                 
-                out = dr.f_1C_D0T(l, m, w, offdiag) * v1aub0_D0
+                out = dr.f_1C_D0T(l, m, offdiag) * v1aub0_D0
 
                 offd = 1
 

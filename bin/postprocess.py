@@ -66,7 +66,7 @@ def main(ncpus):
     # KE is kinetic energy
     # ME is magnetic energy
     # TE is the thermal "energy" (1/2) ∫ θ² dV
-    # resid0 is the relative residual of Dkin + Dint - pss = 0
+    # resid0 is the relative residual of Dkin + Dint - pss = 0 
     # resid1 is the relative residual of 2*sigma*KE - Dkin - Wlor -Wthm - pvf = 0
     # resid2 is the relative residual of 2*sigma*ME - Indu - Mdfs = 0
     # resid3 is the relative residual of 2*sigma*TE - Dthm - Wadv_thm = 0
@@ -76,9 +76,10 @@ def main(ncpus):
     KP          = np.zeros(success)
     KT          = np.zeros(success)
     Ro          = np.zeros(success)
-    resid0      = np.zeros(success)
-    Dkin       = np.zeros(success)
-    Dint       = np.zeros(success)
+    resid1      = np.zeros(success)
+    Dkin        = np.zeros(success)
+    Dint        = np.zeros(success)
+    Wdr         = np.zeros(success)
     # brmsCMB     = np.zeros(success)
     # brmsOut     = np.zeros(success)
     # press0      = np.zeros(success)
@@ -89,8 +90,8 @@ def main(ncpus):
     # print(  ' ‾‾‾ ‾‾‾‾‾ ‾‾‾‾‾‾ ‾‾‾‾‾‾ ‾‾‾‾‾‾ ‾‾‾‾‾ ‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾  ‾‾‾‾‾‾‾‾‾‾‾‾‾‾')
     
     
-    print('\n  ★    m    symm     ω       σ      Ek     η     K     KT/KP      resid0       Ro       DR Type     DR Amp  ')
-    print(  ' ‾‾‾ ‾‾‾‾‾ ‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾ ‾‾‾‾‾ ‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾ ')
+    print('\n  ★    m    symm     ω       σ      Ek     η     K     KT/KP      resid1    Wdr/Dkin      Ro        DR Type      DR Amp  ')
+    print(  ' ‾‾‾ ‾‾‾‾‾ ‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾ ‾‾‾‾‾ ‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾')
 
 
     # Begin processing all solutions
@@ -131,51 +132,53 @@ def main(ncpus):
             KP[i] = np.sum( udgn[lpi,0])  # Poloidal kinetic energy
             KT[i] = np.sum( udgn[lti,0])  # Toroidal kinetic energy
             
-            [KE[i], Dkin0, Dint0, Wlor0, Wthm0, Wcmp0] = np.sum( udgn, 0)
-            Dkin[i] = par.OmgTau * par.Ek * Dkin0
-            Dint[i] = par.OmgTau * par.Ek * Dint0
-            # Wlor[i] = par.OmgTau**2 * par.Le2 * Wlor0
-            # Wthm[i] = par.OmgTau**2 * par.BV2 * Wthm0
-            # Wcmp[i] = par.OmgTau**2 * par.BV2_comp * Wcmp0
+            [KE[i], Dkin0, Dint0, Wlor0, Wthm0, Wcmp0, Wdr0] = np.sum( udgn, 0)
+            Dkin[i] = par.Gaspard * par.Ek * Dkin0
+            Dint[i] = par.Gaspard * par.Ek * Dint0
+            Wdr[i] = par.Gaspard * Wdr0 # Differential rotation interaction power
+            # Wlor[i] = par.Gaspard**2 * par.Le2 * Wlor0
+            # Wthm[i] = par.Gaspard**2 * par.BV2 * Wthm0
+            # Wcmp[i] = par.Gaspard**2 * par.BV2_comp * Wcmp0
             #press0[i] = np.abs(upp.pressure4pp(2, sigma+1j*w, u_sol2)[0])  # get the pressure coefficient |p_2m| at CMB
 
             Ro[i]= np.sqrt((3/(2*np.pi)) * KE[i] / (1 - par.ricb**3))
             
             # Viscous torques
-            # vtorq[i] = par.OmgTau * par.Ek * np.dot( ut.gamma_visc(0,0,0), u_sol)[0]  # need to double check the constants here
-            # vtorq_ic[i] = par.OmgTau * par.Ek * np.dot( ut.gamma_visc_icb(par.ricb), u_sol)[0]
+            # vtorq[i] = par.Gaspard * par.Ek * np.dot( ut.gamma_visc(0,0,0), u_sol)[0]  # need to double check the constants here
+            # vtorq_ic[i] = par.Gaspard * par.Ek * np.dot( ut.gamma_visc_icb(par.ricb), u_sol)[0]
 
             # press0[i] = udgn[6][0]
 
             #[repow, pss, pvf] = [0, 0, 0]  # power from the forcing needs to be computed, not coded yet.
 
-            if par.forcing == 0:
-                pss = 0
-                #pvf = 0
+            # if par.forcing == 0:
+            #     pss = 0
+            #     #pvf = 0
             
-            if par.Ek!=0 : 
-                resid0[i] = abs( Dint0 + Dkin0 - pss )/abs(Dint0) #/ max( abs(Dint0), abs(Dkin0), abs(pss) )
-            else:
-                resid0[i] = np.nan
+            # if par.Ek!=0 : 
+            #     resid0[i] = abs( Dint0 + Dkin0 - pss )/abs(Dint0) #/ max( abs(Dint0), abs(Dkin0), abs(pss) )
+            # else:
+            #     resid0[i] = np.nan
 
+            resid1[i] = abs( 2*sigma*KE[i] - Dkin[i] + Wdr[i]) / abs( 2*sigma*KE[i] ) #/ max(abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wdr[i]))
 
         # if par.magnetic:
 
         #     [ ME0, Mdfs0, Indu0, brmsCMB[i], brmsOut[i]] = np.sum( bdgn, 0)
-        #     # ME[i]   = ME0   * par.OmgTau**2 * par.Le2
-        #     # Indu[i] = Indu0 * par.OmgTau**2 * par.Le2
-        #     # Mdfs[i] = par.OmgTau**3 * par.Le2 * par.Em * Mdfs0
+        #     # ME[i]   = ME0   * par.Gaspard**2 * par.Le2
+        #     # Indu[i] = Indu0 * par.Gaspard**2 * par.Le2
+        #     # Mdfs[i] = par.Gaspard**3 * par.Le2 * par.Em * Mdfs0
 
         #     # # Magnetic torques
-        #     # mtorq[i] = par.OmgTau**2 * par.Le2 * np.dot( ut.gamma_magnetic(), b_sol )[0]  # need to double check the constants here
-        #     # mtorq_ic[i] = par.OmgTau**2 * par.Le2 * np.dot( ut.gamma_magnetic_ic(), b_sol )[0]
+        #     # mtorq[i] = par.Gaspard**2 * par.Le2 * np.dot( ut.gamma_magnetic(), b_sol )[0]  # need to double check the constants here
+        #     # mtorq_ic[i] = par.Gaspard**2 * par.Le2 * np.dot( ut.gamma_magnetic_ic(), b_sol )[0]
 
         #     brmsCMB[i] = par.B0_scale * np.sqrt(brmsCMB[i])
         #     brmsOut[i] = par.B0_scale * np.sqrt(brmsOut[i])
         
         # ------------------------------------------------------------------------------------------------------------------
-        print('  {:2d}    {:8.2e}    {:8.2e}    {:8.2e}      {:8.2e}      {:8.2e}     {:8.2e}         {:8.2e}       {:8.2e}      {:8.2e}      {:8.2e}      {}       {:8.2e}'.format( \
-               i, par.m, par.symm, w, sigma, par.Ek, par.ricb, KE[i], KT[i]/KP[i], resid0[i], Ro[i], par.diff_rot_type, par.diff_rot_amplitude) )
+        print('  {:2d}    {:8.2e}    {:8.2e}    {:8.2e}      {:8.2e}      {:8.2e}     {:8.2e}     {:8.2e}      {:8.2e}       {:8.2e}      {:8.2e}      {:8.2e}      {}       {:8.2e}'.format( \
+               i, par.m, par.symm, w, sigma, par.Ek, par.ricb, KE[i], KT[i]/KP[i], resid1[i], Wdr[i]/Dkin[i], Ro[i], par.diff_rot_type, par.diff_rot_amplitude) )
         # ------------------------------------------------------------------------------------------------------------------
 
         #toc = timer()
