@@ -170,33 +170,36 @@ def cheb2space_pol(L, lp, P, ns):
     idx   = list(lp).index(L) 
     f_pol = funcheb(P[idx,:], r=None, ricb=par.ricb, rcmb=ut.rcmb, n=ns+1)
     
-    plm = []
+    plm0 = f_pol[:,0]
+    plm1 = f_pol[:,1]
+    
     qlm = []
     slm = []
-
-    for i in range(ns+2):
-        plm.append(f_pol[:,i])
     
-    qlm0  = L1*plm[0]/rk
+    qlm0  = (L1*plm0)/rk
     qlm.append(qlm0)
 
-    slm0 = plm[1] + (plm[0]/rk) + plm[0]*dlrho1
+    slm0 = plm1 + plm0*(lho1 + 1/rk)
     slm.append(slm0)
 
     if ns>0:
 
-        qlm1 = (L1*plm[1] - qlm0)/rk
+        plm2 = f_pol[:,2]
+
+        qlm1 = (L1*(-plm0 + plm1*rk))/r2
         qlm.append(qlm1)
 
-        slm1 = plm[2] + (qlm1/L1) + plm[1]*dlrho1 + plm[0]*dlrho2
+        slm1 = plm2 + plm0*(lho2 - (1/r2)) + plm1*(lho1 + 1/rk)
         slm.append(slm1)
 
     if ns>1:
 
-        qlm2 = (L1*plm[2]-2*qlm1)/rk
+        plm3 = f_pol[:,3]
+
+        qlm2 = (L1*(2*plm0 + rk*(-2*plm1 + plm2*rk)))/r3
         qlm.append(qlm2)
 
-        slm2 = plm[3] + (qlm2/L1) + plm[2]*dlrho1 + 2*plm[1]*dlrho2 + plm[0]*dlrho3
+        slm2 = plm3 + plm0*(lho3 + 2/r3) + 2*plm1*(lho2 - (1/r2)) + plm2*(lho1 + 1/rk)
         slm.append(slm2)
 
     return [qlm, slm]
@@ -224,7 +227,7 @@ def energy_pol(l, qlm0, slm0):
     Returns the integrand to compute the poloidal energy, kinetic or magnetic, l-component
     (1/2) ∫ ρ 𝐮⋅𝐮 dV or (1/2) ∫ 𝐛⋅𝐛 dV
     '''
-    f0 = 4*np.pi*dlrho0/(2*l+1)
+    f0 = 4*np.pi*rho0/(2*l+1)
     f1 = r2 * np.absolute( qlm0 )**2
     f2 = r2 * l*(l+1) * np.absolute( slm0 )**2  # r2 is rk**2, a global variable
     return f0*(f1+f2)
@@ -236,7 +239,7 @@ def energy_tor(l, tlm0):
     Returns the integrand to compute the toroidal energy, kinetic or magnetic, l-component
     (1/2) ∫ ρ 𝐮⋅𝐮 dV or (1/2) ∫ 𝐛⋅𝐛 dV
     '''
-    f0 = 4*np.pi*dlrho0/(2*l+1)
+    f0 = 4*np.pi*rho0/(2*l+1)
     f1 = r2 * l*(l+1) * np.absolute(tlm0)**2  # r2 is rk**2, a global variable
     return f0*f1
 
@@ -432,16 +435,32 @@ def flow_worker( l, lp, lt, u_sol2, b_sol2, t_sol2, c_sol2, Ra, Rb, N, sqx ):
     l-component
     '''
     
-    P = u_sol2[0]
-    T = u_sol2[1]
+    #P = u_sol2[0]
+    #T = u_sol2[1]
+
+    nada = np.zeros_like( rk, dtype='complex64')
   
-    [ kinep, kinet ] = [0, 0]
-    [ kindp, kindt ] = [0, 0]
-    [ intdp, intdt ] = [0, 0]
-    [ wlorp, wlort ] = [0, 0]
-    [ wther, wcomp ] = [0, 0]
+    [ kinep, kinet ] = 2* [nada]
+    [ kindp, kindt ] = 2* [nada]
+    #[ intdp, intdt ] = [0, 0]
+    #[ wlorp, wlort ] = [0, 0]
+    #[ wther, wcomp ] = [0, 0]
     
-    L = l*(l+1)
+    #L = l*(l+1)
+
+    [  uq,  us,  ut ] = velocity4pp(l, u_sol2)  # velocity 𝐮
+    #[ mfq, mfs, mft ] = massflux4pp(l, u_sol2)  # mass flux ρ𝐮
+    [ vfq, vfs, vft ] = visforce4pp(l, u_sol2)  # viscous force ∇⋅𝛔 
+
+    # Kinetic energy ½ρ𝐮⋅𝐮
+    #kinep = energy_pol(l, uq, us)
+    #kinet = energy_tor(l, ut)
+    kinep = 0.5*dotprod_pol(l, uq, us, uq, us )*rho0 
+    kinet = 0.5*dotprod_tor(l, ut, ut)
+
+    # kinetic energy dissipation 𝐮⋅(∇⋅𝛔) aka power of viscous force
+    kindp = dotprod_pol(l, uq, us, vfq, vfs)
+    kindt = dotprod_tor(l, ut, vft)
 
     # if par.magnetic:
     #     [ qlmb, slmb, tlmb ] = lorentz4pp(l, b_sol2)  # the l-component of the Lorentz force
@@ -453,11 +472,11 @@ def flow_worker( l, lp, lt, u_sol2, b_sol2, t_sol2, c_sol2, Ra, Rb, N, sqx ):
     #     clm0 = buoyancy4pp(l, lp, c_sol2)  # the l-component of the compositional buoyancy force
         
 
-    if l in lp:
+    # if l in lp:
 
-        [ [ qlm0, qlm1, qlm2 ], [ slm0, slm1, slm2 ] ] = cheb2space_pol(l, lp, P, 2)
+        # [ [ qlm0, qlm1, qlm2 ], [ slm0, slm1, slm2 ] ] = cheb2space_pol(l, lp, P, 2)
         
-        kinep = energy_pol(l, qlm0, slm0 )
+        # kinep = energy_pol(l, qlm0, slm0 )
         # kindp = diffus_pol(l, qlm0, qlm1, qlm2, slm0, slm1, slm2 )
         # intdp = internl_dissip_pol(l, qlm0, qlm1, slm0, slm1 )
         # if par.magnetic:
@@ -467,26 +486,26 @@ def flow_worker( l, lp, lt, u_sol2, b_sol2, t_sol2, c_sol2, Ra, Rb, N, sqx ):
         # if par.compositional:
         #     wcomp = buoyancy_power(l, qlm0*rk/(l*(l+1)), clm0 ) 
 
-    elif l in lt:
+    # elif l in lt:
 
-        [ tlm0, tlm1, tlm2 ] = cheb2space_tor(l, lt, T, 2)
+        # [ tlm0, tlm1, tlm2 ] = cheb2space_tor(l, lt, T, 2)
 
-        kinet = energy_tor(l, tlm0)
+        # kinet = energy_tor(l, tlm0)
         # kindt = diffus_tor(l, tlm0, tlm1, tlm2)
         # intdt = internl_dissip_tor(l, tlm0, tlm1)
         # if par.magnetic:
         #     wlort = lorentz_power_tor(l, tlm0, tlmb)
 
     # Integrals
-    Kene_l = cg_quad( kinep + kinet, Ra, Rb, N, sqx)
-    # Dkin_l = cg_quad( kindp + kindt, Ra, Rb, N, sqx)
+    Kene_l = cg_quad( kinep + kinet, Ra, Rb, N, sqx)  # ∫ ½ ρ 𝐮⋅𝐮 dV 
+    Dkin_l = cg_quad( kindp + kindt, Ra, Rb, N, sqx)  # ∫ 𝐮⋅(∇⋅𝛔) dV
     # Dint_l = cg_quad( intdp + intdt, Ra, Rb, N, sqx)
     # Wlor_l = cg_quad( wlorp + wlort, Ra, Rb, N, sqx)
     # Wthm_l = cg_quad( wther, Ra, Rb, N, sqx )
     # Wcmp_l = cg_quad( wcomp, Ra, Rb, N, sqx )   
 
     # return [ Kene_l, Dkin_l, Dint_l, Wlor_l, Wthm_l, Wcmp_l ]
-    return [ Kene_l, 0, 0, 0, 0, 0 ]
+    return [ Kene_l, Dkin_l, 0, 0, 0, 0 ]
 
 
 
@@ -561,6 +580,72 @@ def thermal_worker(l, lp, t_sol2, u_sol2, Ra, Rb, N, sqx, flag):
     Wadv_l = cg_quad( thadv, Ra, Rb, N, sqx )
 
     return [ Tene_l, Dthm_l, Wadv_l ]
+
+
+
+def velocity4pp( l, u_sol2):
+    '''
+    Returns the rad, con, tor components of the l-component of the flow velocity
+    sampled at the radii rk defined globally 
+    '''
+        
+    ll0 = ut.ell( par.m, par.lmax, par.symm)
+    lp  = ll0[0]  # l's for poloidals
+    lt  = ll0[1]  # l's for toroidals
+
+    nada = np.zeros_like(rk, dtype='complex128')
+    [ qlm0, slm0, tlm0 ] = 3*[ nada ]
+
+    if l in lp:
+        [ [qlm0], [slm0] ] = cheb2space_pol(l, lp, u_sol2[0], 0)
+    elif l in lt:
+        [ tlm0 ] = cheb2space_tor(l, lt, u_sol2[1], 0)
+
+    return [ qlm0, slm0, tlm0 ]
+
+
+
+def massflux4pp( l, u_sol2):
+    '''
+    Returns the rad, con, tor components of the l-component of the mass flux ρu
+    sampled at the radii rk defined globally
+    '''
+
+    [qlm0 , slm0, tlm0 ] = velocity4pp( l, u_sol2)
+
+    return [ qlm0*rho0, slm0*rho0, tlm0*rho0 ]
+
+
+
+def visforce4pp( l, u_sol2):
+    '''
+    Returns the three (rad,con,tor) components of the l-component of the viscous force ∇⋅σ
+    sampled at the radii rk defined globally
+    '''
+
+    ll0 = ut.ell( par.m, par.lmax, par.symm)
+    lp  = ll0[0]  # l's for poloidals
+    lt  = ll0[1]  # l's for toroidals
+
+    nada = np.zeros_like(rk, dtype='complex128')
+    [qlm0, qlm1, qlm2] = 3* [ nada ]
+    [slm0, slm1, slm2] = 3* [ nada ]
+    [tlm0, tlm1, tlm2] = 3* [ nada ]
+
+    # Dynamic viscosity μ=ρν and its first derivative
+    mu0 = rap.muX( rk, 0)
+    mu1 = rap.muX( rk, 1)
+
+    if l in lp:
+        [ [qlm0, qlm1, qlm2], [slm0, slm1, slm2] ] = cheb2space_pol(l, lp, u_sol2[0], 2)
+    elif l in lt:
+        [ tlm0, tlm1, tlm2 ] = cheb2space_tor(l, lt, u_sol2[1], 2)
+
+    out_rad = ( 2*mu1*rk*(-2*qlm0 + 2*qlm1*rk + l*(1 + l)*slm0) - mu0*((8 + 3*l + 3*l**2)*qlm0 - 7*l*(1 + l)*slm0 + rk*(-8*qlm1 - 4*qlm2*rk + l*(1 + l)*slm1)) )/(3.*r2)
+    out_con = ( 3*mu1*rk*(qlm0 - slm0 + rk*slm1) + mu0*(8*qlm0 - 4*l*(1 + l)*slm0 + rk*(qlm1 + 6*slm1 + 3*rk*slm2)) )/(3.*r2)
+    out_tor = ( mu1*rk*(-tlm0 + rk*tlm1) + mu0*(-(l*(1 + l)*tlm0) + rk*(2*tlm1 + rk*tlm2)) )/r2
+
+    return [ out_rad, out_con, out_tor ]
 
 
 
@@ -822,18 +907,15 @@ def diagnose( usol2, bsol2, tsol2, csol2, Ra, Rb, ncpus):
     r2 = rk**2
     global r3
     r3 = rk**3
-    global r4
-    r4 = rk**4
 
-    dd = rap.densityX(rk,3)
-    global dlrho0
-    dlrho0 = dd[:,0]
-    global dlrho1
-    dlrho1 = dd[:,1]/dlrho0
-    global dlrho2
-    dlrho2 = dd[:,2]/dlrho0 - dlrho1**2
-    global dlrho3
-    dlrho3 = dd[:,3]/dlrho0 - 3*dd[:,2]*(dlrho1/dlrho0) + 2*dlrho1**3
+    global rho0
+    rho0 = rap.prf.density(rk, 0)
+    global lho1
+    lho1 = rap.lhoX(rk,1)/rho0
+    global lho2
+    lho2 = rap.lhoX(rk,2)/(rho0**2)
+    global lho3
+    lho3 = rap.lhoX(rk,3)/(rho0**3)
 
     [ lp_u, lt_u, ll ] = ut.ell(par.m, par.lmax, par.symm)  # the l-indices of the flow field
     #[ lp_b, lt_b, _  ] = ut.ell(par.m, par.lmax, ut.bsymm)  # the l-indices of the magnetic field
