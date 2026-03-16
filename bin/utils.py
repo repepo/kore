@@ -102,13 +102,22 @@ def decode_label(labl):
         else:
             rpower = 2 - rx ; rhopower = 0   # Non-adiabatic motion, we multiply the thermal equation by r²
 
-    if howlong in [9,13]:   # sXfu1X_DX or sXfu1Xfu2X_DX
+    if howlong in [9,13,17]:   # sXfu1X_DX or sXfu1Xfu2X_DX
         func1   = labl[2:5]
         dorder1 = int(labl[5])
 
         if howlong == 13:   # sXfu1Xfu2X_DX
             func2   = labl[6:9]
             dorder2 = int(labl[9])
+            if (func2 == 'ohr') and (dorder2==1):
+                rhopower = rhopower - 1
+                (func2, dorder2) = (None, None)
+
+        elif howlong == 17:   # sXfu1Xfu2XohrX_DX
+            func2   = labl[6:9]
+            dorder2 = int(labl[9])
+            if labl[10:14] == 'ohr1':
+                rhopower = rhopower - 1
 
     return (section, rpower, rhopower, func1, dorder1, func2, dorder2, dx)
 

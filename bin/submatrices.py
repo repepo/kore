@@ -133,22 +133,22 @@ def main(ncpus):
 
         # Viscous diffusion
         if par.ViscosD > 0:
-            arg2 += [ vP ]*29
-            labl += [ 'u1moe0lho4_D0', 'u1moe1lho3_D0', 'u1moe2lho2_D0', 
-                      'u2moe0lho3_D0', 'u2moe1lho2_D0', 'u2moe2lho1_D0',     
-                      'u3moe0lho2_D0', 'u3moe1lho1_D0', 'u3moe2_D0', 
-                      'u4moe0lho1_D0', 'u4moe1_D0'    , 'u5moe0_D0',
-
-                      'u1moe0lho3_D1', 'u1moe1lho2_D1', 'u1moe2lho1_D1',
-                      'u2moe0lho2_D1', 'u2moe1lho1_D1', 'u3moe0lho1_D1', 
-                      'u3moe1_D1',
-
-                      'u1moe0lho2_D2', 'u1moe1lho1_D2', 'u1moe2_D2',
-                      'u2moe0lho1_D2', 'u2moe1_D2'    , 'u3moe0_D2',
-                            
-                      'u1moe0lho1_D3', 'u1moe1_D3'    , 'u2moe0_D3',
+            arg2 += [ vP ]*35
+            labl += [ 'u1lh13moe0ohr1_D0', 'u1lho4moe0ohr1_D0', 'u1lh12moe1ohr1_D0', 
+                      'u1lho3moe1ohr1_D0', 'u1lho2moe2ohr1_D0', 'u2lh12moe0ohr1_D0', 
+                      'u2lho3moe0ohr1_D0', 'u2lh11moe1ohr1_D0', 'u2lho2moe1ohr1_D0', 
+                      'u2lho1moe2ohr1_D0', 'u3lh11moe0ohr1_D0', 'u3lho2moe0ohr1_D0',
+                      'u3lho1moe1ohr1_D0', 'u3moe2ohr1_D0'    , 'u4lho1moe0ohr1_D0',
+                      'u4moe1ohr1_D0'    , 'u5moe0ohr1_D0'    ,
                         
-                      'u1moe0_D4' ]
+                      'u1lh12moe0ohr1_D1', 'u1lho3moe0ohr1_D1', 'u1lh11moe1ohr1_D1', 
+                      'u1lho2moe1ohr1_D1', 'u1lho1moe2ohr1_D1', 'u2lh11moe0ohr1_D1', 
+                      'u2lho2moe0ohr1_D1', 'u2lho1moe1ohr1_D1', 'u3moe1ohr1_D1'    ,
+    
+                      'u1lh11moe0ohr1_D2', 'u1lho2moe0ohr1_D2', 'u1lho1moe1ohr1_D2',
+                      'u1moe2ohr1_D2'    , 'u2moe1ohr1_D2'    , 'u3moe0ohr1_D2'    ,
+                                            
+                      'u1moe1ohr1_D3'    , 'u2moe0ohr1_D3'    , 'u1moe0ohr1_D4'    ]
 
         # Buoyancy force
         if par.thermal == 1:
@@ -170,9 +170,9 @@ def main(ncpus):
         # Viscous diffusion
         if par.ViscosD > 0:
             arg2 += [ vT ]*5 
-            labl += [ 'v2moe1_D0', 'v3moe0_D0',
-                      'v1moe1_D1', 'v2moe0_D1',
-                      'v1moe0_D2' ]
+            labl += [ 'v2moe1ohr1_D0', 'v3moe0ohr1_D0',
+                      'v1moe1ohr1_D1', 'v2moe0ohr1_D1',            
+                      'v1moe0ohr1_D2' ]
 
     if par.thermal == 1:                  
         # -------------------------------------------------------------------------------------------------------------------------------------------

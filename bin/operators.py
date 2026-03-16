@@ -118,29 +118,32 @@ def viscous_diffusion(l, section, component, offdiag):  # ----------------------
 
         if section == 'u' and component == 'upol':
 
-            out = 1.0 * ( -   u1moe0lho4_D0 - 2*      u1moe1lho3_D0 -         u1moe2lho2_D0 
-                        - 3*u2moe0lho3_D0 - 2*      u2moe1lho2_D0 +         u2moe2lho1_D0 
-                        + L*u3moe0lho2_D0 + 2*L*    u3moe1lho1_D0 + (2-L)*  u3moe2_D0 
-                        + L*u4moe0lho1_D0 - 2*(1+L)*u4moe1_D0     + L*(2-L)*u5moe0_D0
-
-                        - 3*u1moe0lho3_D1 - 4*u1moe1lho2_D1 - u1moe2lho1_D1
-                        - 6*u2moe0lho2_D1 - 2*u2moe1lho1_D1 + L*u3moe0lho1_D1
-                        + 2*(L+1)*u3moe1_D1
-
-                        - 3*u1moe0lho2_D2 - 2*u1moe1lho1_D2 - u1moe2_D2
-                        - 3*u2moe0lho1_D2 - 4*u2moe1_D2 + 2*L*u3moe0_D2
+            out = 1.0 * ( u1lh13moe0ohr1_D0 - u1lho4moe0ohr1_D0 + u1lh12moe1ohr1_D0 
+                          -2*u1lho3moe1ohr1_D0 - u1lho2moe2ohr1_D0 + 2*u2lh12moe0ohr1_D0 
+                          -3*u2lho3moe0ohr1_D0 - u2lh11moe1ohr1_D0 - 2*u2lho2moe1ohr1_D0 
+                          +u2lho1moe2ohr1_D0 - (4/3)*L*u3lh11moe0ohr1_D0
+                          +L*u3lho2moe0ohr1_D0 + (3*L-2)*u3lho1moe1ohr1_D0
+                          +(2-L)*u3moe2ohr1_D0 + 2*L*u4lho1moe0ohr1_D0
+                          -2*(1+L)*u4moe1ohr1_D0 + L*(2-L)*u5moe0ohr1_D0
                         
-                        - u1moe0lho1_D3 - 2*u1moe1_D3 - 4*u2moe0_D3
-                    
-                        - u1moe0_D4 )
+                          +2*u1lh12moe0ohr1_D1 - 3*u1lho3moe0ohr1_D1 + u1lh11moe1ohr1_D1 
+                          -4*u1lho2moe1ohr1_D1 - u1lho1moe2ohr1_D1 + 2*u2lh11moe0ohr1_D1 
+                          -6*u2lho2moe0ohr1_D1 - 2*u2lho1moe1ohr1_D1 + 2*(L+1)*u3moe1ohr1_D1
+    
+                          +u1lh11moe0ohr1_D2 - 3*u1lho2moe0ohr1_D2 - u1lho1moe1ohr1_D2
+                          -u1moe2ohr1_D2 - 4*u2moe1ohr1_D2 + 2*L*u3moe0ohr1_D2
+                                            
+                          -2*u1moe1ohr1_D3 - 4*u2moe0ohr1_D3
+
+                          -u1moe0ohr1_D4 )
+
+                        
 					
         elif section == 'v' and component == 'utor':
 
-            out = 1.0 * ( - v2moe1_D0 - L*v3moe0_D0
-            
-                        + v1moe1_D1 + 2*v2moe0_D1
-            
-                        + v1moe0_D2 )
+            out = 1.0 * ( -v2moe1ohr1_D0 - L*v3moe0ohr1_D0
+                          +v1moe1ohr1_D1 + 2*v2moe0ohr1_D1            
+                          +v1moe0ohr1_D2 )
 
     return par.ViscosD * out/L**2
 

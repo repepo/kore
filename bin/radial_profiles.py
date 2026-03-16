@@ -384,7 +384,8 @@ def pressX(r, Dorder):   # ρ(r)T(r)
 # -------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------
-proffdir = { 'lho':rhoXlhoX, 'moe':muX, 'rho':rhoX, 'gra':graviX, 'pss':pressX, 'pdS':pdSdrX, 'kps':kappressX }
+#proffdir = { 'lho':rhoXlhoX, 'moe':muX, 'rho':rhoX, 'gra':graviX, 'pss':pressX, 'pdS':pdSdrX, 'kps':kappressX }
+proffdir = { 'moe':muX, 'gra':graviX, 'pss':pressX, 'pdS':pdSdrX, 'kps':kappressX }
 # -------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------
@@ -398,28 +399,31 @@ def burrito(r, *args):
     out1 = np.ones_like(r)
     out2 = np.ones_like(r)
 
-    if 'lho' not in (func1, func2):
+    if func1 not in ('lho', 'lh1'):
 
         out0 = rhoX(r, rpower, rhopower)
-
         if func1 is not None:
-
             out1 = proffdir[func1](r, dorder1)
 
-        if func2 is not None:
-
-            out2 = proffdir[func2](r, dorder2)
-
-    elif (func1 == 'lho') and (func2 == None):
+    elif (func1 == 'lho'):
 
         out0 = r**rpower
         out1 = rhoXlhoX(r, rhopower, dorder1)
 
-    elif (func1 is not None) and (func2 == 'lho'):
+    elif (func1 == 'lh1'):  # lh11 = lho1*lho1, lh12 = lho1*lho2, lh13 = lho1*lho3
 
-        out0 = r**rpower
-        out1 = proffdir[func1](r, dorder1)
-        out2 = rhoXlhoX(r, rhopower, dorder2)
+        out0  = r**rpower
+        out1 = rhoXlhoX(r, 1, 1) * rhoXlhoX(r, rhopower-1, dorder1)
+
+    if func2 is not None:
+
+        out2 = proffdir[func2](r, dorder2)
+
+    # elif (func1 is not None) and (func2 == 'lho'):  # func2 is never lho or lh1, so commented out.
+
+    #     out0 = r**rpower
+    #     out1 = proffdir[func1](r, dorder1)
+    #     out2 = rhoXlhoX(r, rhopower, dorder2)
 
     return out0*out1*out2
 
