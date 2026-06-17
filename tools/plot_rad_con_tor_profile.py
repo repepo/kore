@@ -46,7 +46,7 @@ x1 = ( (R2-R1)*xk + (R1+R2) - (ricb+rcmb) )/(rcmb-ricb)
 r = 0.5*(rcmb-ricb)*( x1 + 1 ) + ricb
 r2 = r**2
 
-Inv_r = ss.diags(1/r,0)
+Inv_r = ss.diags(1/r,0,dtype=float)
 
 
 
@@ -87,10 +87,10 @@ elif m==0:
     lut = np.arange( 2-s, 2-s +lmm, 2) # u tor
 
 
-Lup = ss.diags(lup*(lup+1),0)
-Lut = ss.diags(lut*(lut+1),0)
-Inv_Lup = ss.diags(1/(lup*(lup+1)),0)
-Inv_Lut = ss.diags(1/(lut*(lut+1)),0)
+Lup = ss.diags(lup*(lup+1),0,dtype=float)
+Lut = ss.diags(lut*(lut+1),0,dtype=float)
+Inv_Lup = ss.diags(1/(lup*(lup+1)),0,dtype=float)
+Inv_Lut = ss.diags(1/(lut*(lut+1)),0,dtype=float)
 
 
 d1Plj = np.zeros(np.shape(Plj),dtype=complex)

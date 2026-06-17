@@ -44,8 +44,36 @@ else:
 
 symm1 = (2*np.sign(par.m) - 1) * par.symm  # symm1=par.symm if m>0, symm1 = -par.symm if m=0
 
+resolved_mantle = (par.magnetic == 1 and par.mantle == 'resolved')
+Nman = par.N_mantle if resolved_mantle else 0
+nman = int(Nman*(par.lmax-par.m+1)/2) if resolved_mantle else 0
+
+size_u = n * par.hydro
+size_v = n * par.hydro
+size_f = n * par.magnetic
+size_g = n * par.magnetic
+size_rotdyn = 3 * par.rotdyn
+size_fic = nic * cic
+size_gic = nic * cic
+size_p = nman
+size_q = nman
+size_h = n * par.thermal
+size_i = n * par.compositional
+
+offset_u = 0
+offset_v = offset_u + size_u
+offset_f = offset_v + size_v
+offset_g = offset_f + size_f
+offset_rotdyn = offset_g + size_g
+offset_fic = offset_rotdyn + size_rotdyn
+offset_gic = offset_fic + size_fic
+offset_p = offset_gic + size_gic
+offset_q = offset_p + size_p
+offset_h = offset_q + size_q
+offset_i = offset_h + size_h
+
 # this gives the size (rows or columns) of the main matrices
-sizmat = 2*n*par.hydro + 2*n*par.magnetic + 3*par.rotdyn + 2*nic*cic + n*par.thermal + n*par.compositional
+sizmat = offset_i + size_i
 
 s = int( (vsymm+1)/2 ) # s=0 if antisymm, s=1 if symm
 m_top = m + 1-s
@@ -74,7 +102,7 @@ B0type = B0list.index(par.B0)
 ic_bc_list = ['insulator', 'TWA', 'conducting, Chebys', 'conducting, Bessel']
 innercore_mag_bc = ic_bc_list.index(par.innercore)
 
-mantle_bc_list = ['insulator', 'TWA']
+mantle_bc_list = ['insulator', 'TWA', 'resolved']
 mantle_mag_bc = mantle_bc_list.index(par.mantle)
 
 thermal_heating_list = ['internal', 'differential', 'two zone', 'user defined']
@@ -181,6 +209,25 @@ def conductivity(r):
 
 def mag_diffus(r):
     return 1./conductivity(r)
+
+
+
+def conductivity_mantle(r):
+    '''
+    Electrical conductivity in the resolved mantle shell.
+    The profile is nondimensionalized relative to the core conductivity.
+    '''
+    return par.sigma_mantle_0 * np.exp(-par.sigma_mantle_alpha * (r - rcmb))
+
+
+
+def mag_diffus_mantle(r):
+    return 1/conductivity_mantle(r)
+
+
+
+def dmag_diffus_mantle(r):
+    return par.sigma_mantle_alpha * mag_diffus_mantle(r)
 
 
 
@@ -788,7 +835,7 @@ def Dlam(lamb,N,R1,R2):
     const2 = scsp.factorial(lamb-1.)*2**(lamb-1.)
     tmp = lamb + np.arange(0,N-lamb)
 
-    return const1*const2*ss.diags(tmp,lamb, format='csr')
+    return const1*const2*ss.diags(tmp, lamb, format='csr', dtype=float)
 
 
 
@@ -805,7 +852,7 @@ def Slam(lamb,N):
         diag0 = lamb/(lamb+tmp)
         diag1 = -lamb/(lamb+tmp[2:])
 
-    return ss.diags([diag0,diag1],[0,2], format='csr')
+    return ss.diags([diag0,diag1],[0,2], format='csr', dtype=float)
 
 
 
@@ -1135,7 +1182,10 @@ def ftest1(ricb):
 
 def Ylm(l, m, theta, phi):
     # The Spherical Harmonics, seminormalized
-    out = scsp.sph_harm(m, l, phi, theta)
+    if hasattr(scsp, 'sph_harm_y'):
+        out = scsp.sph_harm_y(l, m, theta, phi)
+    else:
+        out = scsp.sph_harm(m, l, phi, theta)
     return out*np.sqrt(4*np.pi/(2*l+1))
 
 
@@ -1319,12 +1369,17 @@ def gamma_visc_icb(ricb):
 
 def gamma_magnetic():
     '''
-    Axial magnetic torque on the mantle (spherical) when there is a thin conductive layer at bottom. Needs m=0 and symm=1.
+    Axial magnetic torque on the mantle (spherical). Needs m=0 and symm=1.
+
+    For mantle = 'TWA' or mantle = 'resolved', the torque is evaluated from
+    the toroidal magnetic field at the CMB. For mantle = 'insulator', the
+    toroidal magnetic field vanishes at the CMB and the torque is zero.
     '''
 
-    if (par.magnetic==1 and par.m == 0 and par.symm==1 and par.mantle=='TWA'):
+    out = np.zeros((1,n0+n0),dtype=complex)
 
-        out = np.zeros((1,n0+n0),dtype=complex)
+    if (par.magnetic==1 and par.m == 0 and par.symm==1 and par.mantle in ['TWA', 'resolved']):
+
         G = Tk( 1, par.N-1, 0)[:,0]
         R = np.array([1.0])
         h_cmb = B0_norm() * h0(R, par.B0, [par.beta, par.B0_l, par.ricb, 0])
@@ -1340,10 +1395,6 @@ def gamma_magnetic():
             out[0,n0:n0+par.N]          =  (16*np.pi/5)     * G * h_cmb # l=1
             out[0,n0+par.N: n0+2*par.N] = -(16*18*np.pi/35) * G * h_cmb # l=3
 
-    else:
-
-        out = 0
-
     # Take the product between the output of this function and the solution for b to obtain the dimensionless torque
     # Then multiply by Elsasser*R_cmb^3*rho*eta to make the torque dimensional
     # (rho is the density and eta is the magnetic diffusivity, both of the fluid core).
@@ -1357,9 +1408,10 @@ def gamma_magnetic_ic():
     Axial magnetic torque on the inner core (spherical). Needs m=0 and symm=1. 
     '''
 
+    out = np.zeros((1,n0+n0),dtype=complex)
+
     if (par.magnetic==1 and par.m == 0 and par.symm==1 and ( ('conducting' in par.innercore) or ('TWA' in par.innercore) ) ):
 
-        out = np.zeros((1,n0+n0),dtype=complex)
         G = Tk( -1, par.N-1, 0)[:,0]
         ric = np.array([par.ricb])
         h_icb = B0_norm() * h0(ric, par.B0, [par.beta, par.B0_l, par.ricb, 0])
@@ -1374,10 +1426,5 @@ def gamma_magnetic_ic():
             # torque prop. to l=1 and l=3 toroidal component of b
             out[0,n0:n0+par.N]          = -(16*np.pi/5)     * G * h_icb # l=1
             out[0,n0+par.N: n0+2*par.N] =  (16*18*np.pi/35) * G * h_icb # l=3
-
-    else:
-
-        out = 0
-
 
     return out

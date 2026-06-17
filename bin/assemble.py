@@ -460,7 +460,7 @@ def main():
             # ---------------------------------------------------------------------- B matrix (induction eq.), section f
             for k,l in enumerate(loc_mag_f):  # same as loc_bot if B0 is antisymm
 
-                row = par.hydro*(2*nb*ut.N1) + ( rank*bpp + k )* ut.N1
+                row = ut.offset_f + ( rank*bpp + k )* ut.N1
                 col = row
 
                 if par.ricb == 0 or (par.innercore in ['insulator', 'TWA', 'conducting, Chebys']) :
@@ -482,7 +482,7 @@ def main():
             # --------------------------------------------------------------- B matrix, 1curl (induction eq.), section g
             for k,l in enumerate(loc_mag_g):  # same as loc_top if B0 is antisymm
 
-                row = par.hydro*(2*nb*ut.N1) + nb*ut.N1 + ( rank*bpp + k )* ut.N1
+                row = ut.offset_g + ( rank*bpp + k )* ut.N1
                 col = row
 
                 if par.ricb == 0 or (par.innercore in ['insulator', 'TWA', 'conducting, Chebys']) :
@@ -502,7 +502,7 @@ def main():
                 # ------------------------------------------------------------------------------------------ section fic
                 for k,l in enumerate(loc_mag_fic):
 
-                    row = 2*(par.hydro + par.magnetic)*nb*ut.N1 + 3*par.rotdyn + ( rank*bpp_cic + k )*ut.Nic
+                    row = ut.offset_fic + ( rank*bpp_cic + k )*ut.Nic
                     col = row
                     mtx = op.b(l, 'fic', 'bpol_ic', 0)
                     #mtx = l*(l+1)*r2_D0f_ic
@@ -513,10 +513,36 @@ def main():
                 # ------------------------------------------------------------------------------------------ section gic
                 for k,l in enumerate(loc_mag_gic):
 
-                    row = 2*(par.hydro + par.magnetic)*nb*ut.N1 + 3*par.rotdyn + nb_cic*ut.Nic + ( rank*bpp_cic + k )*ut.Nic
+                    row = ut.offset_gic + ( rank*bpp_cic + k )*ut.Nic
                     col = row
                     mtx = op.b(l, 'gic', 'btor_ic', 0)
                     #mtx = l(l+1)*r2_D0g_ic
+
+                    loc_list = ut.packit(loc_list, mtx, row, col)
+
+
+
+            # ----------------------------------------------------------------------------------------------------------
+            # ------------------------------------------------------------------------------ B matrix, resolved mantle
+            # ----------------------------------------------------------------------------------------------------------
+            if ut.resolved_mantle:
+
+                # -------------------------------------------------------------------------------------------- section p
+                for k,l in enumerate(loc_mag_f):
+
+                    row = ut.offset_p + ( rank*bpp + k )*par.N_mantle
+                    col = row
+                    mtx = op.b_mantle(l, 'p', 'bpol_mantle', 0)
+
+                    loc_list = ut.packit(loc_list, mtx, row, col)
+
+
+                # -------------------------------------------------------------------------------------------- section q
+                for k,l in enumerate(loc_mag_g):
+
+                    row = ut.offset_q + ( rank*bpp + k )*par.N_mantle
+                    col = row
+                    mtx = op.b_mantle(l, 'q', 'btor_mantle', 0)
 
                     loc_list = ut.packit(loc_list, mtx, row, col)
 
@@ -528,7 +554,7 @@ def main():
             if rank == 0:
 
                 data = np.array([ par.MoIZ_M, par.MoIZ_IC, 1])
-                row0 = 4*nb*ut.N1
+                row0 = ut.offset_rotdyn
                 row = np.array([ row0, row0+1, row0+2])
                 col = row
                 rotdyn_list = [data, row, col]
@@ -541,7 +567,7 @@ def main():
             # ------------------------------------------------------------------- B, theta_pol, nocurl (heat), section h
             for k,l in enumerate(loc_top):  # loc_top here because theta
                                             # follows the same symmetry as u
-                row = 2*(par.hydro + par.magnetic)*nb*ut.N1 + ( rank*bpp + k )* ut.N1
+                row = ut.offset_h + ( rank*bpp + k )* ut.N1
                 col = row
 
                 mtx = op.theta(l,'h','', 0)
@@ -554,7 +580,7 @@ def main():
             # ------------------------------------------------------------------- B, theta_pol, nocurl (heat), section i
             for k,l in enumerate(loc_top):  # loc_top here because xi
                                             # follows the same symmetry as u
-                row = (2*par.hydro + 2*par.magnetic + par.thermal)*nb*ut.N1 + ( rank*bpp + k )* ut.N1
+                row = ut.offset_i + ( rank*bpp + k )* ut.N1
                 col = row
 
                 mtx = op.composition(l,'i','', 0)
@@ -678,7 +704,7 @@ def main():
                 # Lorentz force, poloidal magnetic field terms (bpol) --------------------------------------------------
                 # --------------------------------------------------------------------------- A, 2curl (section u), bpol
                 # ------------------------------------------------------------------------------------------------------
-                basecol = 2*nb*ut.N1  # bpol
+                basecol = ut.offset_f  # bpol
 
                 for i in [ -2, -1, 0, 1, 2 ]:
 
@@ -694,7 +720,7 @@ def main():
                 # Lorentz force, toroidal magnetic field terms (btor) --------------------------------------------------
                 # --------------------------------------------------------------------------- A, 2curl (section u), btor
                 # ------------------------------------------------------------------------------------------------------
-                basecol = 3*nb*ut.N1  # btor
+                basecol = ut.offset_g  # btor
 
                 for i in [ -1, 0, 1 ]:
 
@@ -712,7 +738,7 @@ def main():
                 # Buoyancy force, theta (temperature) terms ------------------------------------------------------------
                 # --------------------------------------------------------------------------- A, 2curl (section u), temp
                 # ------------------------------------------------------------------------------------------------------
-                basecol = ( 2 + 2*par.magnetic )*nb*ut.N1
+                basecol = ut.offset_h
 
                 # Physics ------------------------------------
                 mtx = op.buoyancy(l,'u','',0)
@@ -726,7 +752,7 @@ def main():
                 # Compositional buoyancy force, xi (composition) terms -------------------------------------------------
                 # --------------------------------------------------------------------------- A, 2curl (section u), comp
                 # ------------------------------------------------------------------------------------------------------
-                basecol = ( 2 + 2*par.magnetic + par.thermal )*nb*ut.N1
+                basecol = ut.offset_i
 
                 # Physics ------------------------------------
                 mtx = op.comp_buoyancy(l,'u','',0)
@@ -790,7 +816,7 @@ def main():
                 # Lorentz force, poloidal magnetic field terms (bpol) --------------------------------------------------
                 # --------------------------------------------------------------------------- A, 1curl (section v), bpol
                 # ------------------------------------------------------------------------------------------------------
-                basecol = 2*nb*ut.N1  #bpol
+                basecol = ut.offset_f  #bpol
 
                 for i in [ -1, 0, 1 ]:
 
@@ -806,7 +832,7 @@ def main():
                 # Lorentz force, toroidal magnetic field terms (btor) --------------------------------------------------
                 # --------------------------------------------------------------------------- A, 1curl (section v), btor
                 # ------------------------------------------------------------------------------------------------------
-                basecol = 3*nb*ut.N1  # btor
+                basecol = ut.offset_g  # btor
 
                 for i in [ -2, -1, 0, 1, 2 ]:
 
@@ -838,7 +864,7 @@ def main():
             # -------- if mantle or inner core are free to rotate (par.rotdyn=1) adjust toroidal l=1 boundary conditions
             # ----------------------------------------------------------------------------------------------------------
             if ((par.rotdyn == 1) and (par.m == 0) and (par.symm == 1) and (l == 1)):
-                col = 4*nb*ut.N1
+                col = ut.offset_rotdyn
                 mantle_list = [ np.array([-ut.rcmb]) ,np.array([row])  ,np.array([col]) ]  # T10 - rcmb*omega_m = 0
                 incore_list = [ np.array([-par.ricb]) ,np.array([row+1]), np.array([col+1]) ]  # T10 - ricb*omega_ic = 0
                 for q in [0,1,2]:
@@ -860,7 +886,7 @@ def main():
         for k,l in enumerate(loc_mag_f): # same as loc_bot if B0 is antisymm, or as loc_top if B0 is symm
 
             col0 = (rank*bpp + k )* ut.N1
-            row  = par.hydro*(2*nb*ut.N1) + col0
+            row  = ut.offset_f + col0
 
 
             if par.hydro == 1:
@@ -906,7 +932,7 @@ def main():
             # Poloidal magnetic field terms (diffusion + iwb term) -----------------------------------------------------
             # --------------------------------------------------------------------------- A, induction (section f), bpol
             # ----------------------------------------------------------------------------------------------------------
-            basecol = par.hydro*(2*nb*ut.N1)
+            basecol = ut.offset_f
 
             # Physics ------------------------------------
             difus = op.magnetic_diffusion(l,'f','bpol',0)
@@ -956,6 +982,8 @@ def main():
 
             if par.mantle == 'TWA':
                 bc_b_list_outer = bc_b_thinlayer(l, 'nocurl', 1/par.mu, par.c_cmb, par.c1_cmb, 'cmb')
+            elif ut.resolved_mantle:
+                bc_b_list_outer = bc_b_mantle_cmb(l, 'section_f')
             else:
                 bc_b_list_outer = bc_b_cmb( l, 'section_f', par.innercore )
 
@@ -973,7 +1001,7 @@ def main():
         for k,l in enumerate(loc_mag_g): # same as loc_top if B0 is antisymm
 
             col0 = ( rank*bpp + k )* ut.N1
-            row  = nb*ut.N1*(1+2*par.hydro) + col0
+            row  = ut.offset_g + col0
 
 
             if par.hydro == 1:
@@ -1020,7 +1048,7 @@ def main():
             # Toroidal magnetic terms (diffusion + iwb term) -----------------------------------------------------------
             # --------------------------------------------------------------------- A, 1curl induction (section g), btor
             # ----------------------------------------------------------------------------------------------------------
-            basecol = nb*ut.N1*(1+2*par.hydro)
+            basecol = ut.offset_g
 
             # Physics ------------------------------------
             difus = op.magnetic_diffusion(l,'g','btor',0)
@@ -1051,6 +1079,8 @@ def main():
 
             if par.mantle == 'TWA':
                 bc_b_list_outer = bc_b_thinlayer(l, '1curl', 1/par.mu, par.c_cmb, par.c1_cmb, 'cmb')
+            elif ut.resolved_mantle:
+                bc_b_list_outer = bc_b_mantle_cmb(l, 'section_g')
             else:
                 bc_b_list_outer = bc_b_cmb( l, 'section_g', par.innercore )
 
@@ -1064,6 +1094,43 @@ def main():
             #print('g',l,max(loc_list[1]),max(loc_list[2]))
 
 
+        if ut.resolved_mantle:
+            # ----------------------------------------------------------------------------------------------------------------------------------------------------
+            # ------------------------------------------------------------------------------------------------ A matrix, mantle induction (section p)
+            # ----------------------------------------------------------------------------------------------------------------------------------------------------
+            for k,l in enumerate(loc_mag_f):
+
+                col0 = (rank*bpp + k )*par.N_mantle
+                row  = ut.offset_p + col0
+                col  = row
+
+                mtx = op.magnetic_diffusion_mantle(l, 'p', 'bpol_mantle', 0)
+                loc_list = ut.packit(loc_list, mtx, row, col)
+
+                bc_b_list_cmb = bc_b_mantle_cmb(l, 'section_p')
+                bc_b_list_surf = bc_b_mantle_surface(l, 'section_p')
+                for q in [0,1,2]:
+                    loc_list[q]= np.concatenate( ( loc_list[q], bc_b_list_cmb[q], bc_b_list_surf[q] ) )
+
+
+            # ----------------------------------------------------------------------------------------------------------------------------------------------------
+            # ------------------------------------------------------------------------------------------------ A matrix, mantle induction (section q)
+            # ----------------------------------------------------------------------------------------------------------------------------------------------------
+            for k,l in enumerate(loc_mag_g):
+
+                col0 = (rank*bpp + k )*par.N_mantle
+                row  = ut.offset_q + col0
+                col  = row
+
+                mtx = op.magnetic_diffusion_mantle(l, 'q', 'btor_mantle', 0)
+                loc_list = ut.packit(loc_list, mtx, row, col)
+
+                bc_b_list_cmb = bc_b_mantle_cmb(l, 'section_q')
+                bc_b_list_surf = bc_b_mantle_surface(l, 'section_q')
+                for q in [0,1,2]:
+                    loc_list[q]= np.concatenate( ( loc_list[q], bc_b_list_cmb[q], bc_b_list_surf[q] ) )
+
+
         if par.rotdyn:
             # ----------------------------------------------------------------------------------------------------------------------------------------------------
             # --------------------------------------------------------------------------------------------- A matrix, rotational dynamics of mantle and inner core
@@ -1074,8 +1141,8 @@ def main():
 
                 # ------------------------------------------------------------------------------------- Viscous torques
 
-                row0 = np.ones(ut.N1)*(     2*(par.hydro + par.magnetic)*ut.n )
-                row1 = np.ones(ut.N1)*( 1 + 2*(par.hydro + par.magnetic)*ut.n )
+                row0 = np.ones(ut.N1)*ut.offset_rotdyn
+                row1 = np.ones(ut.N1)*(ut.offset_rotdyn + 1)
                 col = np.arange(ut.n, ut.n+ut.N1)  # corresponds to toroidal l=1 velocity (T10)
                 #print('utn = ',ut.n)
 
@@ -1093,7 +1160,7 @@ def main():
 
                 if ut.B0_l == 1:  # dipolar background
 
-                    col = np.arange( 3*ut.n, 3*ut.n + ut.N1 )
+                    col = np.arange( ut.offset_g, ut.offset_g + ut.N1 )
                     
                     mtorq_mantle = par.mtrq * par.Le2 * (par.OmgTau**2) * ut.gamma_magnetic()[0,ut.n:ut.n+ut.N1]  #G20
                     magtorq_list_mantle = [ mtorq_mantle, row0, col ]
@@ -1105,9 +1172,9 @@ def main():
 
                 elif ut.B0_l == 2:  #quadrupolar background
                     
-                    row00 = np.ones( 2*ut.N1 )*( 2*(par.hydro + par.magnetic)*ut.n )
-                    row11 = np.ones( 2*ut.N1 )*( 1 + 2*(par.hydro + par.magnetic)*ut.n )
-                    col = np.arange( 3*ut.n, 3*ut.n + 2*ut.N1 )
+                    row00 = np.ones( 2*ut.N1 )*ut.offset_rotdyn
+                    row11 = np.ones( 2*ut.N1 )*(ut.offset_rotdyn + 1)
+                    col = np.arange( ut.offset_g, ut.offset_g + 2*ut.N1 )
                        
                     mtorq_mantle = par.mtrq * par.Le2 * (par.OmgTau**2) * ut.gamma_magnetic()[0,ut.n:ut.n+2*ut.N1]  #G10 and G30
                     magtorq_list_mantle = [ mtorq_mantle, row00, col ]
@@ -1121,7 +1188,7 @@ def main():
                 # ------------------------------------------------------------------------------- Gravitational torques
 
                 Kgrav = par.gTorque * (par.OmgTau**2)
-                row = 4*ut.n
+                row = ut.offset_rotdyn
                 col = row
 
                 gtorq_mantle = Kgrav  # proportional to the longitudinal misalignment between inner core and mantle
@@ -1135,8 +1202,8 @@ def main():
 
                 # ------------------------  Now the dynamics of the ic and mantle misalignment, including IC relaxation
 
-                row = np.ones(3)*(4*ut.n + 2)
-                col = np.arange( 4*ut.n, 4*ut.n + 3 )
+                row = np.ones(3)*(ut.offset_rotdyn + 2)
+                col = np.arange( ut.offset_rotdyn, ut.offset_rotdyn + 3 )
                 ictau = par.OmgTau/par.OmgtauIC 
                 misalig = np.array([ -1, 1, -ictau])  # - Omega_mantle + Omega_ic - misalignent/tau
                 misalig_list = [misalig, row, col]
@@ -1150,7 +1217,7 @@ def main():
             for k,l in enumerate(loc_mag_fic): # same as loc_top if B0 is symm
 
                 L = l*(l+1)
-                row = 2*(par.hydro + par.magnetic)*nb*ut.N1 + 3*par.rotdyn + ( rank*bpp_cic + k )*ut.Nic
+                row = ut.offset_fic + ( rank*bpp_cic + k )*ut.Nic
                 col = row
                 #print('l=',l,'rank=',rank, bpp_cic, k, ut.Nic, ( rank*bpp_cic + k )*ut.Nic, row, col)
 
@@ -1172,7 +1239,7 @@ def main():
             for k,l in enumerate(loc_mag_gic): # same as loc_bot if B0 is symm
 
                 L = l*(l+1)
-                row = 2*(par.hydro + par.magnetic)*nb*ut.N1 + 3*par.rotdyn + nb_cic*ut.Nic + ( rank*bpp_cic + k )*ut.Nic
+                row = ut.offset_gic + ( rank*bpp_cic + k )*ut.Nic
                 col = row
 
                 mtx = op.magnetic_diffusion(l, 'gic', 'btor_ic', 0)
@@ -1197,7 +1264,7 @@ def main():
         for k,l in enumerate(loc_top): # here use the l's from loc_top
 
             col0 = (rank*bpp + k )* ut.N1
-            row = (2+2*par.magnetic)*nb*ut.N1 + col0
+            row = ut.offset_h + col0
 
             # Poloidal velocity terms: -u_r * (d/dr)T ------------------------------------------------------------------
             # ----------------------------------------------------------------------- A, heat equation (section h), upol
@@ -1214,7 +1281,7 @@ def main():
             # temperature (theta) terms: (Ek/Pr)*nabla**2(theta) -------------------------------------------------------
             # ----------------------------------------------------------------------- A, heat equation (section h), temp
             # ----------------------------------------------------------------------------------------------------------
-            basecol = (2+2*par.magnetic)*nb*ut.N1
+            basecol = ut.offset_h
 
             # Physics ----------------------------
             mtx = op.thermal_diffusion(l,'h','',0)
@@ -1244,7 +1311,7 @@ def main():
         for k,l in enumerate(loc_top): # here use the l's from loc_top
 
             col0 = (rank*bpp + k )* ut.N1
-            row = ( 2 + 2*par.magnetic + par.thermal )*nb*ut.N1 + col0
+            row = ut.offset_i + col0
 
             # Poloidal velocity terms: -u_r * (d/dr)xi -----------------------------------------------------------------
             # ---------------------------------------------------------------- A, composition equation (section i), upol
@@ -1261,7 +1328,7 @@ def main():
             # Compositional (xi) terms: (Ek/Sc)*nabla**2(xi) -----------------------------------------------------------
             # ---------------------------------------------------------------- A, composition equation (section i), comp
             # ----------------------------------------------------------------------------------------------------------
-            basecol = ( 2 + 2*par.magnetic + par.thermal )*nb*ut.N1
+            basecol = ut.offset_i
 
             # Physics ----------------------------------
             mtx = op.compositional_diffusion(l,'i','',0)
@@ -1598,9 +1665,9 @@ def bc_b_thinlayer(l, loc, mu_vf, c, c1, boundary):
         out[0,:] = mu_vf*F1 + (kj/rj)*F + epsj*kj*c*F1 + epsj*c1*rj*(mu_vf+0.5*epsj*kj*c)*nabF
 
         if ut.symmB0 == -1:
-            row0 = 2*par.hydro*ut.n + int( ut.N1 * ( l - ut.m_bot)/2 )    # starting row
+            row0 = ut.offset_f + int( ut.N1 * ( l - ut.m_bot)/2 )    # starting row
         elif ut.symmB0 == 1:
-            row0 = 2*par.hydro*ut.n + int( ut.N1 * ( l - ut.m_top)/2 )
+            row0 = ut.offset_f + int( ut.N1 * ( l - ut.m_top)/2 )
         col0 = row0
 
     elif loc == '1curl':  # section g
@@ -1608,9 +1675,9 @@ def bc_b_thinlayer(l, loc, mu_vf, c, c1, boundary):
         out[0,:] = G + epsj*rj*c1*G1
 
         if ut.symmB0 == -1:
-            row0 = (2*par.hydro+1)*ut.n + int( ut.N1*(l - ut.m_top)/2 )   # starting row
+            row0 = ut.offset_g + int( ut.N1*(l - ut.m_top)/2 )   # starting row
         elif ut.symmB0 == 1:
-            row0 = (2*par.hydro+1)*ut.n + int( ut.N1*(l - ut.m_bot)/2 )
+            row0 = ut.offset_g + int( ut.N1*(l - ut.m_bot)/2 )
         col0 = row0
 
     row1 = row0 + delta_row
@@ -1652,9 +1719,9 @@ def bc_b_cmb(l,loc, innercore):
         out[0,:] = (l+1) * Tbf[:,0] + ut.rcmb * Tbf[:,1]   # cmb
 
         if ut.symmB0 == -1:
-            row0 = 2*par.hydro*ut.n + int( ut.N1 * ( l - ut.m_bot)/2 )    # starting row
+            row0 = ut.offset_f + int( ut.N1 * ( l - ut.m_bot)/2 )    # starting row
         elif ut.symmB0 == 1:
-            row0 = 2*par.hydro*ut.n + int( ut.N1 * ( l - ut.m_top)/2 )    # starting row
+            row0 = ut.offset_f + int( ut.N1 * ( l - ut.m_top)/2 )    # starting row
         col0 = row0
 
         if ut.cic:
@@ -1669,9 +1736,9 @@ def bc_b_cmb(l,loc, innercore):
         out[0,:] = Tbg[:,0]
 
         if ut.symmB0 == -1:
-            row0 = (2*par.hydro+1)*ut.n + int( ut.N1*(l - ut.m_top)/2 )   # starting row
+            row0 = ut.offset_g + int( ut.N1*(l - ut.m_top)/2 )   # starting row
         elif ut.symmB0 == 1:
-            row0 = (2*par.hydro+1)*ut.n + int( ut.N1*(l - ut.m_bot)/2 )   # starting row
+            row0 = ut.offset_g + int( ut.N1*(l - ut.m_bot)/2 )   # starting row
         col0 = row0
 
     # cmb bc goes on the first row if ricb = 0,
@@ -1681,6 +1748,105 @@ def bc_b_cmb(l,loc, innercore):
 
     out = out.tocoo()
     out2 = [out.data, out.row + row1, out.col + col0]
+
+    return out2
+
+
+
+def bc_b_mantle_cmb(l, loc):
+    '''
+    Coupled CMB boundary conditions for the resolved conducting mantle.
+
+    section f: F_core - F_m = 0
+    section p: mu_m2o*(F_core + r*F_core') - (F_m + r*F_m') = 0
+    section g: mu_m2o*G_core - G_m = 0
+    section q: G_core + r*G_core' - eta_m2o*(G_m + r*G_m') = 0
+    '''
+    rj = ut.rcmb
+    mu_m2o = par.mu_mantle
+    eta_m2o = ut.mag_diffus_mantle(rj) / par.mu_mantle
+    # CMB rows live after the ICB rows already reserved in the core f/g blocks.
+    delta_row_g = 1 if par.ricb > 0 else 0
+    delta_row_f = delta_row_g + (1 if ut.cic else 0)
+
+    if ut.symmB0 == 1:
+        mf, mg = ut.m_top, ut.m_bot
+    elif ut.symmB0 == -1:
+        mf, mg = ut.m_bot, ut.m_top
+
+    if loc in ['section_f', 'section_p']:
+        row_core = ut.offset_f + int( ut.N1 * (l - mf)/2 )
+        col_core = row_core
+        col_mantle = ut.offset_p + int( par.N_mantle * (l - mf)/2 )
+
+        outoc = ss.dok_matrix((1, ut.N1), dtype=complex)
+        outm = ss.dok_matrix((1, par.N_mantle), dtype=complex)
+
+        if loc == 'section_f':
+            row0 = row_core + delta_row_f
+            outoc[0,:] =  bv.Tb[:,0]
+            outm[0,:]  = -bv.Fm0_cmb
+        elif loc == 'section_p':
+            row0 = col_mantle
+            outoc[0,:] =  mu_m2o * ( bv.Tb[:,0] + rj*bv.Tb[:,1] )
+            outm[0,:]  = -( bv.Fm0_cmb + rj*bv.Fm1_cmb )
+
+    elif loc in ['section_g', 'section_q']:
+        row_core = ut.offset_g + int( ut.N1 * (l - mg)/2 )
+        col_core = row_core
+        col_mantle = ut.offset_q + int( par.N_mantle * (l - mg)/2 )
+
+        outoc = ss.dok_matrix((1, ut.N1), dtype=complex)
+        outm = ss.dok_matrix((1, par.N_mantle), dtype=complex)
+
+        if loc == 'section_g':
+            row0 = row_core + delta_row_g
+            outoc[0,:] =  mu_m2o * bv.Tb[:,0]
+            outm[0,:]  = -bv.Gm0_cmb
+        elif loc == 'section_q':
+            row0 = col_mantle
+            outoc[0,:] =  bv.Tb[:,0] + rj*bv.Tb[:,1]
+            outm[0,:]  = -eta_m2o * ( bv.Gm0_cmb + rj*bv.Gm1_cmb )
+
+    outoc = outoc.tocoo()
+    outm = outm.tocoo()
+
+    outdata = np.concatenate([outoc.data, outm.data])
+    outrow  = np.concatenate([outoc.row + row0, outm.row + row0])
+    outcol  = np.concatenate([outoc.col + col_core, outm.col + col_mantle])
+
+    return [outdata, outrow, outcol]
+
+
+
+def bc_b_mantle_surface(l, loc):
+    '''
+    Insulating magnetic boundary conditions at the resolved mantle surface.
+
+    section p: r_surface*F_m' + (l+1)*F_m = 0
+    section q: G_m = 0
+    '''
+    if ut.symmB0 == 1:
+        mf, mg = ut.m_top, ut.m_bot
+    elif ut.symmB0 == -1:
+        mf, mg = ut.m_bot, ut.m_top
+
+    if loc == 'section_p':
+        out = ss.dok_matrix((1, par.N_mantle), dtype=complex)
+        out[0,:] = par.r_surface*bv.Fm1_surf + (l+1)*bv.Fm0_surf
+
+        row0 = ut.offset_p + int( par.N_mantle * (l - mf)/2 ) + 1
+        col0 = ut.offset_p + int( par.N_mantle * (l - mf)/2 )
+
+    elif loc == 'section_q':
+        out = ss.dok_matrix((1, par.N_mantle), dtype=complex)
+        out[0,:] = bv.Gm0_surf
+
+        row0 = ut.offset_q + int( par.N_mantle * (l - mg)/2 ) + 1
+        col0 = ut.offset_q + int( par.N_mantle * (l - mg)/2 )
+
+    out = out.tocoo()
+    out2 = [out.data, out.row + row0, out.col + col0]
 
     return out2
 
@@ -1705,9 +1871,9 @@ def bc_b_icb(l,loc, innercore, rank, bpp, k):
             # --------------------------------------------------
 
             if ut.symmB0 == -1:
-                row0 = 2*par.hydro*ut.n + int( ut.N1 * ( l - ut.m_bot)/2 )  # starting row
+                row0 = ut.offset_f + int( ut.N1 * ( l - ut.m_bot)/2 )  # starting row
             elif ut.symmB0 == 1:
-                row0 = 2*par.hydro*ut.n + int( ut.N1 * ( l - ut.m_top)/2 )  # starting row
+                row0 = ut.offset_f + int( ut.N1 * ( l - ut.m_top)/2 )  # starting row
             col0 = row0
 
         elif loc == '1curl': # use loc_top l's here (if external magnetic field is antisymm) -------
@@ -1717,9 +1883,9 @@ def bc_b_icb(l,loc, innercore, rank, bpp, k):
             # -----------------------
 
             if ut.symmB0 == -1:
-                row0 = (2*par.hydro+1)*ut.n + int( ut.N1*(l - ut.m_top)/2 )  # starting row
+                row0 = ut.offset_g + int( ut.N1*(l - ut.m_top)/2 )  # starting row
             elif ut.symmB0 == 1:
-                row0 = (2*par.hydro+1)*ut.n + int( ut.N1*(l - ut.m_bot)/2 )  # starting row
+                row0 = ut.offset_g + int( ut.N1*(l - ut.m_bot)/2 )  # starting row
             col0 = row0
 
         out = icb_diag.tocoo()
@@ -1741,9 +1907,9 @@ def bc_b_icb(l,loc, innercore, rank, bpp, k):
             # --------------------------------------------------
 
             if ut.symmB0 == -1:
-                row0 = 2*par.hydro*ut.n + int( ut.N1 * ( l - ut.m_bot)/2 )  # starting row
+                row0 = ut.offset_f + int( ut.N1 * ( l - ut.m_bot)/2 )  # starting row
             elif ut.symmB0 == 1:
-                row0 = 2*par.hydro*ut.n + int( ut.N1 * ( l - ut.m_top)/2 )  # starting row
+                row0 = ut.offset_f + int( ut.N1 * ( l - ut.m_top)/2 )  # starting row
             col0 = row0
 
         elif loc == '1curl': # use loc_top l's here (if external magnetic field is antisymm) -------
@@ -1758,9 +1924,9 @@ def bc_b_icb(l,loc, innercore, rank, bpp, k):
             # -----------------------
 
             if ut.symmB0 == -1:
-                row0 = (2*par.hydro+1)*ut.n + int( ut.N1*(l - ut.m_top)/2 )  # starting row
+                row0 = ut.offset_g + int( ut.N1*(l - ut.m_top)/2 )  # starting row
             elif ut.symmB0 == 1:
-                row0 = (2*par.hydro+1)*ut.n + int( ut.N1*(l - ut.m_bot)/2 )  # starting row
+                row0 = ut.offset_g + int( ut.N1*(l - ut.m_bot)/2 )  # starting row
             col0 = row0
 
         out = icb_diag.tocoo()
@@ -1775,7 +1941,7 @@ def bc_b_icb(l,loc, innercore, rank, bpp, k):
                 L = l*(l+1)
 
                 row11 = int( ut.N1*(l - ut.m_top)/2 )
-                row1 = 3*ut.n + row11   # starting row (first row of bc's)
+                row1 = ut.offset_g + row11   # starting row (first row of bc's)
                 col1 = row11
 
                 # l-1 terms ------------------------------------------------------------------------ l-1
@@ -1851,7 +2017,7 @@ def bc_b_icb(l,loc, innercore, rank, bpp, k):
             icb_diag[1,:] = par.Em*( -bv.P2_icb - (2/par.ricb)*bv.P1_icb + (L/(par.ricb**2))*bv.P0_icb )  # second row
             # ----------------------------------------------------------------------------------------
 
-            row0 = 2*par.hydro*ut.n + int( ut.N1 * ( l - ut.m_bot)/2 )    # starting row
+            row0 = ut.offset_f + int( ut.N1 * ( l - ut.m_bot)/2 )    # starting row
             col0 = row0
 
         elif loc == '1curl': # use loc_top l's here (if external magnetic field is antisymm) ----------- 1curl, b pol
@@ -1863,7 +2029,7 @@ def bc_b_icb(l,loc, innercore, rank, bpp, k):
             icb_diag[0,:] = par.Em*( -bv.T1_icb - (1/par.ricb)*bv.T0_icb )
             # ------------------------------------------------------------
 
-            row0 = (2*par.hydro+1)*ut.n + int( ut.N1*(l - ut.m_top)/2 )   # starting row
+            row0 = ut.offset_g + int( ut.N1*(l - ut.m_top)/2 )   # starting row
             col0 = row0
 
         if innercore == 'perfect conductor, material': # tangent *material* electric field is continuous across icb ------------------- material
@@ -1884,7 +2050,7 @@ def bc_b_icb(l,loc, innercore, rank, bpp, k):
                 if loc == 'nocurl': # ---------------------------------------------------------------------- nocurl
 
                     row00 = int( ut.N1 * ( l - ut.m_bot)/2 )
-                    row0 = 2*ut.n + row00 + 1   # starting row (second row of bc's)
+                    row0 = ut.offset_f + row00 + 1   # starting row (second row of bc's)
                     col0 = ut.n + row00
 
                     # l-1 terms ------------------------------------------------------------------------ l-1
@@ -1949,7 +2115,7 @@ def bc_b_icb(l,loc, innercore, rank, bpp, k):
                     # first row (only one row needed here), goes with the -G'-(G/r) term
 
                     row11 = int( ut.N1*(l - ut.m_top)/2 )
-                    row1 = 3*ut.n + row11   # starting row (first row of bc's)
+                    row1 = ut.offset_g + row11   # starting row (first row of bc's)
                     col1 = row11
 
                     # l-1 terms ------------------------------------------------------------------------ l-1
@@ -2034,9 +2200,9 @@ def bc_b_cic(l,loc):
 
     if loc == 'section_f':    # 2 rows
 
-        baserow0 = 2*par.hydro*ut.n
-        basecol0 = 2*par.hydro*ut.n
-        basecol1 = 2*par.hydro*ut.n + 2*ut.n + 3*par.rotdyn
+        baserow0 = ut.offset_f
+        basecol0 = ut.offset_f
+        basecol1 = ut.offset_fic
 
         col00 = int( ut.N1  * (l - mf)/2 )
         col11 = int( ut.Nic * (l - mf)/2 )
@@ -2058,9 +2224,9 @@ def bc_b_cic(l,loc):
 
     elif loc == 'section_g':    # 1 row
 
-        baserow0 = 2*par.hydro*ut.n + ut.n
-        basecol0 = 2*par.hydro*ut.n + ut.n
-        basecol1 = 2*par.hydro*ut.n + 2*ut.n + ut.nic + 3*par.rotdyn
+        baserow0 = ut.offset_g
+        basecol0 = ut.offset_g
+        basecol1 = ut.offset_gic
 
         col00 = int( ut.N1  * (l - mg)/2 )
         col11 = int( ut.Nic * (l - mg)/2 )
@@ -2077,9 +2243,9 @@ def bc_b_cic(l,loc):
 
     elif loc == 'section_fic':  # 1 row
 
-        baserow0 = 2*par.hydro*ut.n + 2*ut.n + 3*par.rotdyn
-        basecol0 = 2*par.hydro*ut.n 
-        basecol1 = 2*par.hydro*ut.n + 2*ut.n + 3*par.rotdyn
+        baserow0 = ut.offset_fic
+        basecol0 = ut.offset_f 
+        basecol1 = ut.offset_fic
 
         col00 = int( ut.N1  * (l - mf)/2 )
         col11 = int( ut.Nic * (l - mf)/2 )
@@ -2096,9 +2262,9 @@ def bc_b_cic(l,loc):
 
     elif loc == 'section_gic':  # 1 row
  
-        baserow0 = 2*par.hydro*ut.n + 2*ut.n + ut.nic + 3*par.rotdyn
-        basecol0 = 2*par.hydro*ut.n + ut.n 
-        basecol1 = 2*par.hydro*ut.n + 2*ut.n + ut.nic + 3*par.rotdyn
+        baserow0 = ut.offset_gic
+        basecol0 = ut.offset_g 
+        basecol1 = ut.offset_gic
 
         col00 = int( ut.N1  * (l - mg)/2 )
         col11 = int( ut.Nic * (l - mg)/2 )

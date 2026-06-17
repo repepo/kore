@@ -70,11 +70,11 @@ def spec2spat_vec(M,ut,par,chx,a,b,vsymm,nthreads,
             ddP[idp,:] = np.matmul(ddPlj, chx.T)
 
     # populate Qlr and Slr
-    rI = ss.diags(M.r**-1,0)
-    L  = ss.diags(ll*(ll+1),0)
+    rI = ss.diags(M.r**-1,0,dtype=float)
+    L  = ss.diags(ll*(ll+1),0,dtype=float)
 
     if vort:
-        r2I = ss.diags(M.r**-2,0)
+        r2I = ss.diags(M.r**-2,0,dtype=float)
         r2P = Plr * r2I
 
         Qlr = L * Tlr  # l(l+1) * T

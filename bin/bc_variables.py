@@ -51,6 +51,22 @@ def Tk(x, N, lamb_max, R1, R2) :
 Ta     = Tk(-1, par.N-1, 4, par.ricb, ut.rcmb)
 Tb     = Tk( 1, par.N-1, 5, par.ricb, ut.rcmb)
 
+if ut.resolved_mantle:
+    Tm_cmb  = Tk(-1, par.N_mantle-1, 4, ut.rcmb, par.r_surface)
+    Tm_surf = Tk( 1, par.N_mantle-1, 4, ut.rcmb, par.r_surface)
+
+    Fm0_cmb = Tm_cmb[:,0]
+    Fm1_cmb = Tm_cmb[:,1]
+    Fm2_cmb = Tm_cmb[:,2]
+
+    Gm0_cmb = Tm_cmb[:,0]
+    Gm1_cmb = Tm_cmb[:,1]
+
+    Fm0_surf = Tm_surf[:,0]
+    Fm1_surf = Tm_surf[:,1]
+
+    Gm0_surf = Tm_surf[:,0]
+
 if ut.cic:
     Tb_cic = Tk( 1, par.N_cic-1, 2, 0, par.ricb)
 
@@ -172,7 +188,6 @@ u1T_cmb[:,0] =  T0_cmb
 u1T_cmb[:,1] =  T1_cmb 
 u1T_cmb[:,2] =  T2_cmb 
 u1T_cmb[:,3] =  T3_cmb
-
 
 
 

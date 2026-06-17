@@ -22,6 +22,10 @@ import utils as ut
 import utils_pp as upp
 
 
+def dot_scalar(a, b):
+    return np.asarray(np.dot(a, b)).reshape(-1)[0]
+
+
 
 def main():
 
@@ -189,8 +193,8 @@ def main():
 
             ME = (ohm[i,0]+ohm[i,1]) # Magnetic energy
 
-            if par.mantle == 'TWA':
-                mtorq[i] = par.Le2 * np.dot( ut.gamma_magnetic(), upp.expand_sol(rmag+1j*imag, par.symm*ut.symmB0) )
+            if par.mantle in ['TWA', 'resolved']:
+                mtorq[i] = par.Le2 * dot_scalar( ut.gamma_magnetic(), upp.expand_sol(rmag+1j*imag, par.symm*ut.symmB0) )
 
             if par.track_target == 1:
                 y3 = abs( (x[3]-o2v[i])/o2v[i] )
@@ -309,6 +313,8 @@ def main():
             mantle_mag_bc = 0
         elif par.mantle == 'TWA':
             mantle_mag_bc = 1
+        elif par.mantle == 'resolved':
+            mantle_mag_bc = 2
 
         toc = timer()
 
@@ -383,5 +389,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-
-

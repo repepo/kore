@@ -15,8 +15,6 @@ def ssak(ss0, E0, E):
    k = ss1/(E1**alpha)
    return k*(E**alpha)
 
-
-
 def Ncheb(Ek):
     '''
     Returns the truncation level N for the Chebyshev expansion according to the Ekman number
@@ -38,10 +36,10 @@ aux2 = 0.0
 # ----------------------------------------------------------------------------------------------------------------------
 # ---------------------------------------------------------------------------------------------- Hydrodynamic parameters
 # ----------------------------------------------------------------------------------------------------------------------
-hydro = 1  # set to 1 to include the Navier-Stokes equation for the flow velocity, set to 0 otherwise
+hydro = 1# set to 1 to include the Navier-Stokes equation for the flow velocity, set to 0 otherwise
 
 # Azimuthal wave number m (>=0)
-m = 0
+m = 3
 
 # Equatorial symmetry of the flow field. Use 1 for symmetric, -1 for antisymmetric.
 symm = 1
@@ -61,9 +59,9 @@ bco = 1
 # CoriolisNumber = 1.2e3
 # Ek_gap = 2/CoriolisNumber
 # Ek = Ek_gap*(1-ricb)**2
-Ek = 10**-6
+Ek = 10**-4
 
-forcing = 0  # Uncomment this line for eigenvalue problems
+forcing = 0# Uncomment this line for eigenvalue problems
 # forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
 # forcing = 2  # For boundary flow forcing, use with bci=1 and bco=1.
 # forcing = 3  # For Rovira-Navarro 2018 tidal body forcing, m=0,2 must be symm, m=1 antisymm. Leaks power!
@@ -90,12 +88,12 @@ projection = 1
 # ----------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------- Magnetic field parameters
 # ----------------------------------------------------------------------------------------------------------------------
-magnetic = 0  # set to 1 if including the induction equation and the Lorentz force
+magnetic = 1 # set to 1 if including the induction equation and the Lorentz force
 
 # Imposed background magnetic field
-B0 = 'axial'          # Axial, uniform field along the spin axis
+# B0 = 'axial'          # Axial, uniform field along the spin axis
 # B0 = 'dipole'         # classic dipole, singular at origin, needs ricb>0
-# B0 = 'G21 dipole'     # Felix's dipole (Gerick GJI 2021)
+B0 = 'G21 dipole'     # Felix's dipole (Gerick GJI 2021)
 # B0 = 'Luo_S1'         # Same as above, actually (Luo & Jackson PRSA 2022)
 # B0 = 'Luo_S2'         # Quadrupole
 # B0 = 'FDM'            # Free Poloidal Decay Mode (Zhang & Fearn 1994,1995; Schmitt 2012)
@@ -104,7 +102,7 @@ B0_l = 1                # l number for the FDM mode
 
 # Magnetic boundary conditions at the ICB:
 innercore = 'insulator'
-# innercore = 'conducting, Chebys'  # For eigenvalue problems
+# innercore = 'conducting, Chebys'# For eigenvalue problems
 # innercore = 'conducting, Bessel'  # For forced problems 
 # innercore = 'TWA'  # Thin conductive wall layer (Roberts, Glatzmaier & Clune, 2010)
 # innercore = 'perfect conductor, material'  # tangential *material* electric field jump [nxE']=0 across the ICB
@@ -114,10 +112,18 @@ c1_icb    = 0  # Thin wall to fluid conductance ratio (if innercore='TWA')
 # Note: 'perfect conductor, material' or 'perfect conductor, spatial' are identical if ICB is no-slip (bci = 1 above)
 
 # Magnetic boundary conditions at the CMB
-mantle   = 'insulator'
-# mantle = 'TWA'  # Thin conductive wall layer (Roberts, Glatzmaier & Clune, 2010)
+# mantle   = 'insulator'
+mantle = 'TWA'  # Thin conductive wall layer (Roberts, Glatzmaier & Clune, 2010)
+# mantle = 'resolved'# Resolved conducting mantle shell
 c_cmb  = 1e-5  # Ratio (h*mu_wall)/(rcmb*mu_fluid)  (if mantle='TWA')
 c1_cmb = 1e-5  # Thin wall to fluid conductance ratio (if mantle='TWA')
+
+# Resolved conducting mantle parameters, used only if mantle = 'resolved'
+r_surface = 1.8
+N_mantle = 16
+mu_mantle = 1.0
+sigma_mantle_0 = 1e-2
+sigma_mantle_alpha = 0.1
 
 # Electrical conductivity and permeability
 mu        = 1.0  # magnetic permeability ratio fluid outer core / vacuum
@@ -152,7 +158,7 @@ cnorm = 1
 # ----------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------- Rotational dynamics parameters
 # ----------------------------------------------------------------------------------------------------------------------
-rotdyn = 0  # Set to 1 to let the mantle and the solid inner core respond to axial torques
+rotdyn = 0 # Set to 1 to let the mantle and the solid inner core respond to axial torques
 
 # Mantle and inner core axial moments of inertia, dimensionless (i.e. in units of rho*L**5 = density*unit_of_length**5)
 MoIZ_M  = 11.16
@@ -170,7 +176,7 @@ OmgtauIC = 2.3e3  # For Earth use 2.3e3 if tauIC = 1 year
 # ----------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------- Thermal parameters
 # ----------------------------------------------------------------------------------------------------------------------
-thermal = 0  # Use 1 or 0 to include or not the temperature equation and the buoyancy force (Boussinesq)
+thermal = 0# Use 1 or 0 to include or not the temperature equation and the buoyancy force (Boussinesq)
 
 # Prandtl number: ratio of viscous to thermal diffusivity
 Prandtl = 1.0
@@ -212,7 +218,7 @@ bco_thermal = 1   # CMB
 # ----------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------- Compositional parameters
 # ----------------------------------------------------------------------------------------------------------------------
-compositional = 0  # Use 1 or 0 to include compositional transport or not (Boussinesq)
+compositional = 0# Use 1 or 0 to include compositional transport or not (Boussinesq)
 
 # Schmidt number: ratio of viscous to compositional diffusivity
 Schmidt = 1.0
@@ -267,9 +273,9 @@ OmgTau = 1     # Rotation time scale
 ncpus = 4
 
 # Chebyshev polynomial truncation level. Use function def at top or set manually. N must be even if ricb = 0.
-N     = Ncheb(Ek)  # for the fluid core
+N = 48 # for the fluid core
 # N = 8
-N_cic = 16         # for the field inside the ic (innercore = 'conducting, Chebys') 
+N_cic = 16 # for the field inside the ic (innercore = 'conducting, Chebys') 
 
 # Spherical harmonic truncation lmax and approx lmax/N ratio:
 g = 1.0
@@ -319,7 +325,8 @@ nev = 3
 maxit = 50
 
 # Tolerance for solver
-tol = 1e-16
+tol = 1e-15
+
 # Tolerance for the thermal/compositional matrix
 tol_tc = 1e-6
 

@@ -5,6 +5,8 @@ import numpy as np
 import parameters as par
 import utils as ut
 
+float_ext = getattr(np, 'float128', np.longdouble)
+
 # In the following loop we read all submatrices needed,
 # and create corresponding operator names as global variables
 
@@ -16,7 +18,7 @@ for label in fname :
     label = label[:-4]  # to get rid of the ".mtx"
     
     section = label[0]
-    if section in ['u','v','f','g','h']: 
+    if section in ['u','v','f','g','h','i','p','q']: 
 
         prof_id = ''
         proflabel = ''
@@ -81,14 +83,14 @@ for label in fname :
 
 if ut.cic:  # for a conductive inner core
 
-    r2_D0f_ic = ss.csr_matrix(sio.mmread('r2_D0f_ic'))
-    r2_D0g_ic = ss.csr_matrix(sio.mmread('r2_D0g_ic'))
-    r0_D0f_ic = ss.csr_matrix(sio.mmread('r0_D0f_ic'))
-    r0_D0g_ic = ss.csr_matrix(sio.mmread('r0_D0g_ic'))
-    r1_D1f_ic = ss.csr_matrix(sio.mmread('r1_D1f_ic'))
-    r1_D1g_ic = ss.csr_matrix(sio.mmread('r1_D1g_ic'))
-    r2_D2f_ic = ss.csr_matrix(sio.mmread('r2_D2f_ic'))
-    r2_D2g_ic = ss.csr_matrix(sio.mmread('r2_D2g_ic'))
+    r2_D0f_ic = ss.csr_matrix(sio.mmread('r2_D0f_ic.mtx'))
+    r2_D0g_ic = ss.csr_matrix(sio.mmread('r2_D0g_ic.mtx'))
+    r0_D0f_ic = ss.csr_matrix(sio.mmread('r0_D0f_ic.mtx'))
+    r0_D0g_ic = ss.csr_matrix(sio.mmread('r0_D0g_ic.mtx'))
+    r1_D1f_ic = ss.csr_matrix(sio.mmread('r1_D1f_ic.mtx'))
+    r1_D1g_ic = ss.csr_matrix(sio.mmread('r1_D1g_ic.mtx'))
+    r2_D2f_ic = ss.csr_matrix(sio.mmread('r2_D2f_ic.mtx'))
+    r2_D2g_ic = ss.csr_matrix(sio.mmread('r2_D2g_ic.mtx'))
     
 
 
@@ -507,6 +509,28 @@ def b(l, section, component, offdiag):
 
 
 
+def b_mantle(l, section, component, offdiag):
+    '''
+    The resolved mantle magnetic field.
+
+    section p = mantle poloidal scalar fm
+    section q = mantle toroidal scalar gm
+    '''
+    out = 0
+    L = l*(l+1)
+
+    if offdiag == 0:
+
+        if section == 'p' and component == 'bpol_mantle':
+            out = L * r2Ip
+
+        elif section == 'q' and component == 'btor_mantle':
+            out = L * r2Iq
+
+    return out
+
+
+
 def induction(l, section, component, offdiag):
     '''
     The induction term ∇×(𝐁₀×𝐮), radial projection (section f) or radial projection of the curl (section g)
@@ -515,7 +539,7 @@ def induction(l, section, component, offdiag):
     out = 0
     offd = 0
     m = par.m
-    l = np.float128(l)  # to avoid overflow errors at high N
+    l = float_ext(l)  # use the widest real scalar available on this NumPy build
     L = l*(l+1)
     cdipole = ((par.B0 == 'dipole') and (par.ricb > 0))  # boolean
 
@@ -689,7 +713,7 @@ def induction_consoidal(l, component, offdiag):
     out = 0
     offd = 0
     m = par.m
-    l = np.float128(l)  # to avoid overflow errors at high N
+    l = float_ext(l)  # use the widest real scalar available on this NumPy build
     L = l*(l+1)
 
 
@@ -812,6 +836,25 @@ def magnetic_diffusion(l, section, component, offdiag):
         out2 = out * par.Em /( par.mu_i2o * par.sigma_i2o )
 
     return par.OmgTau * out2
+
+
+
+def magnetic_diffusion_mantle(l, section, component, offdiag):
+    '''
+    The resolved mantle magnetic diffusion term.
+    '''
+    out = 0
+    L= l*(l+1)
+
+    if offdiag == 0:
+
+        if section == 'p' and component == 'bpol_mantle':
+            out = L*( -L*etaIp + 2*retaD1p + r2etaD2p )
+
+        elif section == 'q' and component == 'btor_mantle':
+            out = L*( -L*etaIq + 2*retaD1q + r2etaD2q + reta1Iq + r2eta1D1q )
+
+    return par.OmgTau * par.Em * out
 
 
 

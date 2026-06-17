@@ -23,6 +23,67 @@ import parameters as par
 import utils as ut
 
 
+def _shift_mantle_bc_rows(matrix, Nm):
+    '''
+    Reserve two dense boundary rows for a second-order mantle operator.
+    '''
+    if np.isscalar(matrix):
+        matrix = ss.csr_matrix((Nm,Nm))
+    else:
+        matrix = ss.csr_matrix(matrix)
+    z2m = ss.csr_matrix((2,Nm))
+    return ss.vstack([z2m, matrix[:-2,:]], format='csr')
+
+
+
+def write_mantle_magnetic_submatrices():
+    '''
+    Generate magnetic diffusion and mass matrices for the resolved mantle.
+
+    Sections:
+    p = mantle poloidal scalar fm
+    q = mantle toroidal scalar gm
+    '''
+    Nm = par.N_mantle
+    R1 = ut.rcmb
+    R2 = par.r_surface
+    tol = par.tol_tc
+
+    S0m = ut.Slam(0, Nm)
+    S1m = ut.Slam(1, Nm)
+    S10m = S1m * S0m
+
+    D1m = ut.Dlam(1, Nm, R1, R2)
+    D2m = ut.Dlam(2, Nm, R1, R2)
+
+    r2m = ut.chebco(2, Nm, tol, R1, R2)
+
+    eta0m = ut.chebco_f(ut.mag_diffus_mantle, 0, Nm, R1, R2, tol)
+    reta0m = ut.chebco_f(ut.mag_diffus_mantle, 1, Nm, R1, R2, tol)
+    r2eta0m = ut.chebco_f(ut.mag_diffus_mantle, 2, Nm, R1, R2, tol)
+    reta1m = ut.chebco_f(ut.dmag_diffus_mantle, 1, Nm, R1, R2, tol)
+    r2eta1m = ut.chebco_f(ut.dmag_diffus_mantle, 2, Nm, R1, R2, tol)
+
+    matrices = {
+        '20': S10m * ut.Mlam(r2m, 0, 0),
+        'eta000': S10m * ut.Mlam(eta0m, 0, 0),
+        'eta101': S1m * ut.Mlam(S0m * reta0m, 1, 0) * D1m,
+        'eta202': ut.Mlam(S10m * r2eta0m, 2, 0) * D2m,
+        'eta110': S10m * ut.Mlam(reta1m, 0, 0),
+        'eta211': S1m * ut.Mlam(S0m * r2eta1m, 1, 0) * D1m,
+    }
+
+    for section in ['p', 'q']:
+        sio.mmwrite(section+'20.mtx', _shift_mantle_bc_rows(matrices['20'], Nm))
+        sio.mmwrite(section+'eta000.mtx', _shift_mantle_bc_rows(matrices['eta000'], Nm))
+        sio.mmwrite(section+'eta101.mtx', _shift_mantle_bc_rows(matrices['eta101'], Nm))
+        sio.mmwrite(section+'eta202.mtx', _shift_mantle_bc_rows(matrices['eta202'], Nm))
+
+    sio.mmwrite('qeta110.mtx', _shift_mantle_bc_rows(matrices['eta110'], Nm))
+    sio.mmwrite('qeta211.mtx', _shift_mantle_bc_rows(matrices['eta211'], Nm))
+
+
+
 def main(ncpus):
 
     warnings.simplefilter('ignore', ss.SparseEfficiencyWarning)
@@ -455,6 +516,10 @@ def main(ncpus):
             matrix = ss.vstack( [ Z[chop-1], matrix[:-chop,:] ], format='csr' )
 
         sio.mmwrite( labl1+'.mtx', matrix )
+
+
+    if ut.resolved_mantle:
+        write_mantle_magnetic_submatrices()
 
 
     # -------------------------------------------------------------------------------------------------------------------------------------------

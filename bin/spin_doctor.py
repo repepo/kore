@@ -18,6 +18,10 @@ import utils as ut
 import utils4pp as upp
 
 
+def dot_scalar(a, b):
+    return np.asarray(np.dot(a, b)).reshape(-1)[0]
+
+
 
 def main(ncpus):
 
@@ -187,11 +191,11 @@ def main(ncpus):
             #Dohm = Dohm0 * par.OmgTau**3 * par.Le2 * par.Em
             Mdfs[i] = par.OmgTau * par.Em * Mdfs0
 
-            if ((par.mantle == 'TWA') and (par.m==0) and (par.symm==1)):
-                mtorq[i] = par.Le2 * (par.OmgTau**2) * np.dot( ut.gamma_magnetic(), b_sol )
+            if ((par.mantle in ['TWA', 'resolved']) and (par.m==0) and (par.symm==1)):
+                mtorq[i] = par.Le2 * (par.OmgTau**2) * dot_scalar( ut.gamma_magnetic(), b_sol )
 
             if (par.innercore in ['conducting, Chebys', 'TWA']) and ((par.m==0) and (par.symm==1)):
-                mtorq_ic[i] = par.Le2 * (par.OmgTau**2) * np.dot( ut.gamma_magnetic_ic(), b_sol )
+                mtorq_ic[i] = par.Le2 * (par.OmgTau**2) * dot_scalar( ut.gamma_magnetic_ic(), b_sol )
 
         if par.rotdyn:
 

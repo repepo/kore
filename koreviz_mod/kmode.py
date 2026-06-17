@@ -113,8 +113,8 @@ class kmode:
         dP[idp,:] = np.matmul(dPlj, chx.T)
         
         # populate Qlr and Slr
-        rI = ss.diags(r**-1,0)
-        L  = ss.diags(ll*(ll+1),0)
+        rI = ss.diags(r**-1,0,dtype=float)
+        L  = ss.diags(ll*(ll+1),0,dtype=float)
         rP  = Plr * rI  # P/r
         Qlr = L * rP    # l(l+1)*P/r
         Slr = rP + dP   # P' + P/r

@@ -131,18 +131,18 @@ Tlr = np.zeros((int((lmax-m+1)/2), nR),dtype=complex)
 np.matmul( Plj, chx.T, Plr )
 np.matmul( Tlj, chx.T, Tlr )
 
-rI = ss.diags(r**-1,0)
+rI = ss.diags(r**-1,0,dtype=float)
 
 ll = np.arange(m_top,lmax_top,2)
-L = ss.diags(ll*(ll+1),0)
+L = ss.diags(ll*(ll+1),0,dtype=float)
 
 for k in range(np.size(ll)):
 	dPlj[k,:] = ut.Dcheb(Plj[k,:], ricb, rcmb)
 
 np.matmul(dPlj, chx.T, dP)
 
-rP  = Plr * ss.diags(r**-1,0)
-Qlr = ss.diags(ll*(ll+1),0) * rP
+rP  = Plr * ss.diags(r**-1,0,dtype=float)
+Qlr = ss.diags(ll*(ll+1),0,dtype=float) * rP
 Slr = rP + dP
 
 
