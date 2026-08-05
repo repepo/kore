@@ -132,9 +132,10 @@ def gimmedachebs( labl ):
     s can be 'u' or 'v' or 'h' and the X's are single digit integers (can be all different)
     '''
 
-    tol = 1e-12
+    tol = 1e-9
     args = decode_label(labl)  # (section, rpower, rhopower, func1, dorder1, func2, dorder2, dx)
     c0arg = chebco_f( rap.burrito, par.N, par.ricb, rcmb, tol, *args)
+    print('burrito', labl, args)
 
     return c0arg
 
@@ -396,6 +397,22 @@ def fonzie( func, r, N, ricb, rcmb, Dorder, tol, *args):
 
 
 
+def angine( func, r, N, ricb, rcmb, Dorder, tol, *args):
+    '''
+    Returns func(r) or its Dorder derivative.
+    '''
+
+    out = np.zeros_like(r)
+    if Dorder == 0:
+        out = func(r, *args)
+    elif Dorder>0:
+        ck  = chebco_f( func, N, ricb, rcmb, tol, args)  # get Cheb coeffs
+        out = funcheb(ck, r, ricb, rcmb, Dorder)[:,-1]   # compute derivative
+
+    return out
+
+
+
 def ironit(coeffs, strength):
 
     x = np.linspace(0,1,np.size(coeffs))
@@ -430,54 +447,60 @@ def erf_transition(r, r0, scaling_factor, amplitude):
     the higher the factor the sharper the transition.
     '''
     out = np.zeros_like(r)
-    out = scsp.erfc((r-r0)*scaling_factor) * amplitude/2
+    k = r>0
+    out[k] = scsp.erfc((r[k]-r0)*scaling_factor) * amplitude/2
+    if min(r)<0:
+        out[~k] = np.flipud(out[k])
     return out
-    
 
-    
-def get_radial_derivatives( func, rorder, Dorder, tol):
-    '''
-    This function computes terms of the form r^n d^m/dr^m of a
-    radial profile in Chebyshev space.
 
-    Parameters
-    ----------
-    func   : function
-        Radial profile in the form of a function (can be found in utils)
-    rorder : integer
-        Highest order of radial power
-    Dorder : integer
-        Highest order of radial derivative
-    tol    : real
-        Tolerance for Chebyshev transforms for radial powers
+def erf_top_hat(x, x1, w1, x2, w2, A):
+    return A * 0.5 * (scsp.erf((x - x1) / w1) - scsp.erf((x - x2) / w2))
 
-    Returns
-    -------
-    rd_prof : 2D list
-        List such that rd_prof[i][j] defines the Chebyshev coefficients of
-        r^i d^j/dr^j of the radial profile
-    '''
 
-    # Make sure these are integers
-    rorder = int(rorder)
-    Dorder = int(Dorder)
+# def get_radial_derivatives( func, rorder, Dorder, tol):
+#     '''
+#     This function computes terms of the form r^n d^m/dr^m of a
+#     radial profile in Chebyshev space.
 
-    rd_prof = [ [ [] for j in range(Dorder+1) ] for i in range(rorder+1) ] #List for Cheb coeffs to r^n D^m profile
-    dnprof = [ [] for i in range(Dorder+1) ] #List for Cheb coeffs of nth derivative of profile
-    # Cheb coeffs of profile
-    dnprof[0] = chebco_f( func, par.N, par.ricb, rcmb, par.tol_tc )
+#     Parameters
+#     ----------
+#     func   : function
+#         Radial profile in the form of a function (can be found in utils)
+#     rorder : integer
+#         Highest order of radial power
+#     Dorder : integer
+#         Highest order of radial derivative
+#     tol    : real
+#         Tolerance for Chebyshev transforms for radial powers
 
-    for i in range(rorder+1):
-        rn  = chebco(i, par.N, tol, par.ricb, rcmb) #Cheb coeffs of r^i
-        rd_prof[i][0] =  chebProduct(dnprof[0],rn,par.N,par.tol_tc) #Cheb coeffs of r^i profile
-        for j in range(1,Dorder+1):
-        # Cheb coeffs of r^i D^j profile
-            if i==0:
-                # These only need to be computed once
-                dnprof[j] = Dcheb(dnprof[j-1],par.ricb,rcmb)
-            rd_prof[i][j] = chebProduct(dnprof[j],rn,par.N,par.tol_tc)
+#     Returns
+#     -------
+#     rd_prof : 2D list
+#         List such that rd_prof[i][j] defines the Chebyshev coefficients of
+#         r^i d^j/dr^j of the radial profile
+#     '''
 
-    return rd_prof
+#     # Make sure these are integers
+#     rorder = int(rorder)
+#     Dorder = int(Dorder)
+
+#     rd_prof = [ [ [] for j in range(Dorder+1) ] for i in range(rorder+1) ] #List for Cheb coeffs to r^n D^m profile
+#     dnprof = [ [] for i in range(Dorder+1) ] #List for Cheb coeffs of nth derivative of profile
+#     # Cheb coeffs of profile
+#     dnprof[0] = chebco_f( func, par.N, par.ricb, rcmb, par.tol_tc )
+
+#     for i in range(rorder+1):
+#         rn  = chebco(i, par.N, tol, par.ricb, rcmb) #Cheb coeffs of r^i
+#         rd_prof[i][0] =  chebProduct(dnprof[0],rn,par.N,par.tol_tc) #Cheb coeffs of r^i profile
+#         for j in range(1,Dorder+1):
+#         # Cheb coeffs of r^i D^j profile
+#             if i==0:
+#                 # These only need to be computed once
+#                 dnprof[j] = Dcheb(dnprof[j-1],par.ricb,rcmb)
+#             rd_prof[i][j] = chebProduct(dnprof[j],rn,par.N,par.tol_tc)
+
+#     return rd_prof
 
 
 
@@ -1114,11 +1137,12 @@ def Mlam(a0,lamb,vector_parity):
             # Overall operator parity given by a0 parity * lambda parity
             # check a0 parity like this: first nonzero a0 coefficient
             # a0 is the full vector of coefficients, including even and odd, size N
-            tmp = np.nonzero(a0)[0]
-            ix = tmp[-1] # index of *last* non zero coefficient
-            rpower_parity = 1 - 2*(ix%2)
+            #tmp = np.nonzero(a0)[0]
+            #ix = tmp[-1] # index of *last* non zero coefficient
+            ix = np.argmax(abs(a0))  # index of largest a0 coeff     #2*((argmax(abs(c0)))%2)-1
+            a0_parity = 1 - 2*(ix%2)
             lamb_parity = 1 - 2*(lamb%2)
-            operator_parity = rpower_parity * lamb_parity
+            operator_parity = a0_parity * lamb_parity
             overall_parity = vector_parity * operator_parity
             # rows to be deleted determined by overall_parity (after multiplying with DX and the eigenvector)
             # j even when overall_parity = 1 and vice versa

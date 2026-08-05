@@ -285,36 +285,36 @@ def cheb2space_pol(l, lp, P, ns, radii):
 
 
 
-def cheb4pp_pol(l, lp, P):
-    '''
-    Returns qlm's (radial) and slm's (consoidal) L-components and first derivative.
-    *** Each component times (rk**4)*(rho0**4) ***
-    '''
+# def cheb4pp_pol(l, lp, P):
+#     '''
+#     Returns qlm's (radial) and slm's (consoidal) L-components and first derivative.
+#     *** Each component times (rk**4)*(rho0**4) ***
+#     '''
 
-    L    = l*(l+1)
-    idx   = list(lp).index(l) 
-    f_pol = funcheb(P[idx,:], r=None, ricb=par.ricb, rcmb=ut.rcmb, n=4)
+#     L    = l*(l+1)
+#     idx   = list(lp).index(l) 
+#     f_pol = funcheb(P[idx,:], r=None, ricb=par.ricb, rcmb=ut.rcmb, n=4)
     
-    plm0 = f_pol[:,0]
-    plm1 = f_pol[:,1]
-    plm2 = f_pol[:,2]
-    plm3 = f_pol[:,3]
-    plm4 = f_pol[:,4]
-    rho04 = rho0**4
+#     plm0 = f_pol[:,0]
+#     plm1 = f_pol[:,1]
+#     plm2 = f_pol[:,2]
+#     plm3 = f_pol[:,3]
+#     plm4 = f_pol[:,4]
+#     rho04 = rho0**4
         
-    qlm0 = (L*plm0)*r3*rho04
-    slm0 = plm1*r4*rho04 + plm0*(r4*lho14 + r3*rho04)
+#     qlm0 = (L*plm0)*r3*rho04
+#     slm0 = plm1*r4*rho04 + plm0*(r4*lho14 + r3*rho04)
     
-    qlm1 = L*(-plm0 + plm1*rk)*r2*rho04
-    slm1 = plm2*r4*rho04 + plm0*(r4*lho24 - r2*rho04) + plm1*(r4*lho14 + r3*rho04)
+#     qlm1 = L*(-plm0 + plm1*rk)*r2*rho04
+#     slm1 = plm2*r4*rho04 + plm0*(r4*lho24 - r2*rho04) + plm1*(r4*lho14 + r3*rho04)
 
-    qlm2 = (L*(2*plm0 + rk*(-2*plm1 + plm2*rk)))*rk*rho04
-    slm2 = plm3*r4*rho04 + plm0*(r4*lho34 + 2*rk*rho04) + 2*plm1*(r4*lho24 - (r2*rho04)) + plm2*(r4*lho14 + r3*rho04)
+#     qlm2 = (L*(2*plm0 + rk*(-2*plm1 + plm2*rk)))*rk*rho04
+#     slm2 = plm3*r4*rho04 + plm0*(r4*lho34 + 2*rk*rho04) + 2*plm1*(r4*lho24 - (r2*rho04)) + plm2*(r4*lho14 + r3*rho04)
 
-    qlm3 = (L*(-6*plm0 + rk*(6*plm1 + rk*(-3*plm2 + plm3*rk))))*rho04
-    slm3 = plm4*r4*rho04 + plm0*(r4*lho44 - 6*rho04) + 3*plm1*(r4*lho34 + 2*rk*rho04) + 3*plm2*(r4*lho24 - r2*rho04) + plm3*(r4*lho14 + r3*rho04)
+#     qlm3 = (L*(-6*plm0 + rk*(6*plm1 + rk*(-3*plm2 + plm3*rk))))*rho04
+#     slm3 = plm4*r4*rho04 + plm0*(r4*lho44 - 6*rho04) + 3*plm1*(r4*lho34 + 2*rk*rho04) + 3*plm2*(r4*lho24 - r2*rho04) + plm3*(r4*lho14 + r3*rho04)
 
-    return [ [qlm0, qlm1, qlm2, qlm3], [slm0, slm1, slm2, slm3] ]
+#     return [ [qlm0, qlm1, qlm2, qlm3], [slm0, slm1, slm2, slm3] ]
 
 
 
@@ -334,16 +334,16 @@ def cheb2space_tor(L, lt, T, ns, radii):
 
 
 
-def cheb4pp_tor(L, lt, T):
-    '''
-    Returns tlm's (toroidal) L-components up to derivatives of order ns (<=3)
-    *** Each component times (rk**4)*(rho0**4) ***
-    '''
+# def cheb4pp_tor(L, lt, T):
+#     '''
+#     Returns tlm's (toroidal) L-components up to derivatives of order ns (<=3)
+#     *** Each component times (rk**4)*(rho0**4) ***
+#     '''
     
-    const = r4*rho0**4
-    [tlm0, tlm1, tlm2, tlm3] = cheb2space_tor(L, lt, T, 3, rk)
+#     const = r4*rho0**4
+#     [tlm0, tlm1, tlm2, tlm3] = cheb2space_tor(L, lt, T, 3, rk)
 
-    return [tlm0*const, tlm1*const, tlm2*const, tlm3*const]
+#     return [tlm0*const, tlm1*const, tlm2*const, tlm3*const]
 
 
 
@@ -454,34 +454,19 @@ def curl(l, qlm, slm, tlm):
     '''
     L = l*(l+1.)
 
-    if len(qlm) == 2:
-        [qlm0, qlm1] = qlm
-        [slm0, slm1] = slm
-        [tlm0, tlm1] = tlm
-
-    elif len(qlm) == 3:
-        [qlm0, qlm1, qlm2] = qlm
-        [slm0, slm1, slm2] = slm
-        [tlm0, tlm1, tlm2] = tlm
+    [qlm0, qlm1, qlm2] = qlm
+    [slm0, slm1, slm2] = slm
+    [tlm0, tlm1, tlm2] = tlm
 
     out_rad0 = L*tlm0/rk
     out_con0 = tlm1 + tlm0/rk
     out_tor0 = (qlm0-slm0)/rk - slm1
 
-    if len(qlm) == 2:
-        out_rad = [out_rad0]
-        out_con = [out_con0]
-        out_tor = [out_tor0]
+    out_rad1 = L*tlm1/rk - L*tlm0/r2
+    out_con1 = tlm2 + tlm1/rk - tlm0/r2
+    out_tor1 = (qlm1-slm1)/rk - (qlm0-slm0)/r2 - slm2
 
-    elif len(qlm) == 3:
-        out_rad1 = L*tlm1/rk - L*tlm0/r2
-        out_con1 = tlm2 + tlm1/rk - tlm0/r2
-        out_tor1 = (qlm1-slm1)/rk - (qlm0-slm0)/r2 - slm2
-        out_rad = [out_rad0, out_rad1]
-        out_con = [out_con0, out_con1]
-        out_tor = [out_tor0, out_tor1]
-
-    return [ out_rad, out_con, out_tor ]
+    return [ [out_rad0, out_rad1], [out_con0, out_con1], [out_tor0, out_tor1] ]
 
 
 
@@ -660,31 +645,39 @@ def flow_worker( l ):
     
     #L = l*(l+1)
 
-    [   velq,   vels,   velt ] = velocity4pp(l)     # velocity 𝐮
+    [   velq,   vels,   velt ] = velocity(l)     # velocity 𝐮
     [ cuvelq, cuvels, cuvelt ] = curl(l, velq, vels, velt)  # its curl ∇×𝐮
 
-    [   corq,   cors,   cort ] = coriolis4pp(l)     # Coriolis force 𝐳×𝐮
+    [   corq,   cors,   cort ] = coriolis(l)     # Coriolis force 𝐳×𝐮
     [ cucorq, cucors, cucort ] = curl(l, corq, cors, cort)  # its curl ∇×(𝐳×𝐮)
 
-    [   vifq,   vifs,   vift ] = visforce4pp(l)     # viscous force divided by the density (∇⋅𝛔)/ρ
-    [ cuvifq, cuvifs, cuvift ] = curl(l, vifq, vifs, vift)  # its curl ∇×((∇⋅𝛔)/ρ)
+    if par.ViscosD>0:
+        [   vifq,   vifs,   vift ] = visforce(l)     # viscous force divided by the density (∇⋅𝛔)/ρ
+        [ cuvifq, cuvifs, cuvift ] = curl(l, vifq, vifs, vift)  # its curl ∇×((∇⋅𝛔)/ρ)
+    else:
+        [   vifq,   vifs,   vift ] = [0,0,0]
+        [ cuvifq, cuvifs, cuvift ] = [0,0,0]
+
 
     if par.thermal:
-        [   buoq,   buos,   buot ] = buoyancy4pp(l)     # buoyancy force
+        [   buoq,   buos,   buot ] = buoyancy(l)     # buoyancy force
         [ cubuoq, cubuos, cubuot ] = curl(l, buoq, buos, buot)  # its curl
 
 
     # (∇×𝐮)⋅(∇×𝐮)
-    enstro_vel_p = dotprod_pol(l, cuvelq, cuvels, cuvelq, cuvels ) * const2
-    enstro_vel_t = dotprod_tor(l, cuvelt, cuvelt ) * const2
+    enstro_vel_p = dotprod_pol(l, cuvelq, cuvels, cuvelq, cuvels ) * const0**2
+    enstro_vel_t = dotprod_tor(l, cuvelt, cuvelt ) * const0**2
 
     # (∇×𝐮)⋅(∇×(𝐳×𝐮))
-    enstro_cor_p = dotprod_pol(l, cuvelq, cuvels, cucorq, cucors ) * const2
-    enstro_cor_t = dotprod_tor(l, cuvelt, cucort ) * const2
+    enstro_cor_p = dotprod_pol(l, cuvelq, cuvels, cucorq, cucors ) * const0**2
+    enstro_cor_t = dotprod_tor(l, cuvelt, cucort ) * const0**2
 
     # (∇×𝐮)⋅(∇×((∇⋅𝛔)/ρ))
-    enstro_vif_p = dotprod_pol(l, cuvelq, cuvels, cuvifq, cuvifs ) * const2
-    enstro_vif_t = dotprod_tor(l, cuvelt, cuvift ) * const2
+    if par.ViscosD>0:
+        enstro_vif_p = dotprod_pol(l, cuvelq, cuvels, cuvifq, cuvifs ) * const0**2
+        enstro_vif_t = dotprod_tor(l, cuvelt, cuvift ) * const0**2
+    else:
+        [ enstro_vif_p, enstro_vif_t ] = [0,0]
 
     if par.thermal:
         enstro_buo_p = dotprod_pol(l, cuvelq, cuvels, cubuoq, cubuos ) * const1*const0
@@ -698,8 +691,12 @@ def flow_worker( l ):
     kinet = 0.5*dotprod_tor(l, velt[0], velt[0])*rho0
 
     # kinetic energy dissipation 𝐮⋅((∇⋅𝛔)/ρ) aka power of viscous force
-    kindp = dotprod_pol(l, velq[0], vels[0], vifq[0], vifs[0])
-    kindt = dotprod_tor(l, velt[0], vift[0])
+    if par.ViscosD>0:
+        kindp = dotprod_pol(l, velq[0], vels[0], vifq[0], vifs[0])
+        kindt = dotprod_tor(l, velt[0], vift[0])
+    else:
+        kindp = 0
+        kindt = 0
 
     # if par.magnetic:
     #     [ qlmb, slmb, tlmb ] = lorentz4pp(l, b_sol2)  # the l-component of the Lorentz force
@@ -908,70 +905,72 @@ def massflux( l ):
 
 
 
-def velocity4pp( l ):
-    '''
-    Returns the rad, con, tor components of the l-component of the flow velocity,
-    and their first radial derivatives. Sampled at given radii (global rk if radii is None).
-    !! Each component times (r**4)*(rho**4)*(rho**2)*(r**3) !!
-    '''
-        
-    ll = ut.ell( par.m, par.lmax, par.symm)
-    lp  = ll[0]  # l's for poloidals
-    lt  = ll[1]  # l's for toroidals
-
-    P = np.copy(usol2[0])
-    T = np.copy(usol2[1])
-
-    qlm0 = np.zeros_like(rk, dtype='complex128')
-    slm0 = np.zeros_like(rk, dtype='complex128')
-    tlm0 = np.zeros_like(rk, dtype='complex128')
-
-    qlm1 = np.zeros_like(rk, dtype='complex128')
-    slm1 = np.zeros_like(rk, dtype='complex128')
-    tlm1 = np.zeros_like(rk, dtype='complex128')
-
-    if l in lp:
-
-        [ [qlm0, qlm1, _, _ ], [slm0, slm1, _, _ ] ] = cheb4pp_pol(l, lp, P)
-
-    elif l in lt:
-
-        [ tlm0, tlm1, _, _ ] = cheb4pp_tor(l, lt, T)
+# def velocity4pp( l ):
+#     '''
+#     Returns the rad, con, tor components of the l-component of the flow velocity,
+#     and their first radial derivatives. Sampled at given radii (global rk if radii is None).
     
-    return [ [qlm0, qlm1], [slm0, slm1], [tlm0, tlm1] ]
-
-
-
-def velocity_curl( l ):
-    '''
-
-    '''
+#     '''
         
-    ll = ut.ell( par.m, par.lmax, par.symm)
-    lp  = ll[0]  # l's for poloidals
-    lt  = ll[1]  # l's for toroidals
+#     ll = ut.ell( par.m, par.lmax, par.symm)
+#     lp  = ll[0]  # l's for poloidals
+#     lt  = ll[1]  # l's for toroidals
 
-    L = l*(l+1.)
+#     P = np.copy(usol2[0])
+#     T = np.copy(usol2[1])
 
-    P = np.copy(usol2[0])
-    T = np.copy(usol2[1])
+#     qlm0 = np.zeros_like(rk, dtype='complex128')
+#     slm0 = np.zeros_like(rk, dtype='complex128')
+#     tlm0 = np.zeros_like(rk, dtype='complex128')
 
-    rad0 = np.zeros_like(rk, dtype='complex128')
-    con0 = np.zeros_like(rk, dtype='complex128')
-    tor0 = np.zeros_like(rk, dtype='complex128')
+#     qlm1 = np.zeros_like(rk, dtype='complex128')
+#     slm1 = np.zeros_like(rk, dtype='complex128')
+#     tlm1 = np.zeros_like(rk, dtype='complex128')
 
-    if l in lp:
+#     if l in lp:
 
-        [ [qlm0, qlm1], [slm0, slm1] ] = cheb2space_pol(l, lp, P, 1, rk)
-        tor0 += (qlm0 - slm0 - rk*slm1)/rk
+#         #[ [qlm0, qlm1, _, _ ], [slm0, slm1, _, _ ] ] = cheb4pp_pol(l, lp, P)
+#         [ [qlm0, qlm1], [slm0, slm1 ] ] = cheb2space_pol(l, lp, P, 1, rk)
 
-    elif l in lt:
+#     elif l in lt:
 
-        [ tlm0, tlm1 ] = cheb2space_tor(l, lt, T, 1, rk)
-        rad0 += (L*tlm0)/rk
-        con0 += tlm0/rk + tlm1
+#         #[ tlm0, tlm1, _, _ ] = cheb4pp_tor(l, lt, T)
+#         [ tlm0, tlm1 ] = cheb2space_tor(l, lt, T, 1, rk)
     
-    return [ rad0, con0, tor0 ]
+#     return [ [qlm0, qlm1], [slm0, slm1], [tlm0, tlm1] ]
+
+
+
+# def velocity_curl( l ):
+#     '''
+
+#     '''
+        
+#     ll = ut.ell( par.m, par.lmax, par.symm)
+#     lp  = ll[0]  # l's for poloidals
+#     lt  = ll[1]  # l's for toroidals
+
+#     L = l*(l+1.)
+
+#     P = np.copy(usol2[0])
+#     T = np.copy(usol2[1])
+
+#     rad0 = np.zeros_like(rk, dtype='complex128')
+#     con0 = np.zeros_like(rk, dtype='complex128')
+#     tor0 = np.zeros_like(rk, dtype='complex128')
+
+#     if l in lp:
+
+#         [ [qlm0, qlm1], [slm0, slm1] ] = cheb2space_pol(l, lp, P, 1, rk)
+#         tor0 += (qlm0 - slm0 - rk*slm1)/rk
+
+#     elif l in lt:
+
+#         [ tlm0, tlm1 ] = cheb2space_tor(l, lt, T, 1, rk)
+#         rad0 += (L*tlm0)/rk
+#         con0 += tlm0/rk + tlm1
+    
+#     return [ rad0, con0, tor0 ]
 
 
 
@@ -1085,138 +1084,138 @@ def coriolis( l ):
 
 
 
-def coriolis4pp( l ):
-    '''
-    Returns the rad,con,tor components of the l-component of the Coriolis force.
-    Returns also the first radial derivative. Sampled at the radii rk defined globally.
-    '''
+# def coriolis4pp( l ):
+#     '''
+#     Returns the rad,con,tor components of the l-component of the Coriolis force.
+#     Returns also the first radial derivative. Sampled at the radii rk defined globally.
+#     '''
 
-    #const = (rho0**2)*(r3)  # this factor to match visforce4pp
-    const = 1.
-    L = l*(l+1.)
-    m = par.m
+#     #const = (rho0**2)*(r3)  # this factor to match visforce4pp
+#     const = 1.
+#     L = l*(l+1.)
+#     m = par.m
 
-    ll = ut.ell( par.m, par.lmax, par.symm)
-    lp  = ll[0]  # l's for poloidals
-    lt  = ll[1]  # l's for toroidals
+#     ll = ut.ell( par.m, par.lmax, par.symm)
+#     lp  = ll[0]  # l's for poloidals
+#     lt  = ll[1]  # l's for toroidals
 
-    P = np.copy(usol2[0])
-    T = np.copy(usol2[1])
+#     P = np.copy(usol2[0])
+#     T = np.copy(usol2[1])
 
-    rad0 = np.zeros_like(rk, dtype='complex128') 
-    con0 = np.zeros_like(rk, dtype='complex128')
-    tor0 = np.zeros_like(rk, dtype='complex128')
+#     rad0 = np.zeros_like(rk, dtype='complex128') 
+#     con0 = np.zeros_like(rk, dtype='complex128')
+#     tor0 = np.zeros_like(rk, dtype='complex128')
 
-    rad1 = np.zeros_like(rk, dtype='complex128') 
-    con1 = np.zeros_like(rk, dtype='complex128')
-    tor1 = np.zeros_like(rk, dtype='complex128')
+#     rad1 = np.zeros_like(rk, dtype='complex128') 
+#     con1 = np.zeros_like(rk, dtype='complex128')
+#     tor1 = np.zeros_like(rk, dtype='complex128')
 
-    if l-1 in lt:
-        [tlm0, tlm1, _, _ ] = cheb4pp_tor(l-1, lt, T)
+#     if l-1 in lt:
+#         [tlm0, tlm1, _, _ ] = cheb4pp_tor(l-1, lt, T)
 
-        rad0 += ((-1 + l)*np.sqrt(l**2 - m**2)*tlm0)/(-1 + 2*l)
-        rad1 += ((-1 + l)*np.sqrt(l**2 - m**2)*tlm1)/(-1 + 2*l)
+#         rad0 += ((-1 + l)*np.sqrt(l**2 - m**2)*tlm0)/(-1 + 2*l)
+#         rad1 += ((-1 + l)*np.sqrt(l**2 - m**2)*tlm1)/(-1 + 2*l)
 
-        con0 += ((-1 + l)*np.sqrt(l**2 - m**2)*tlm0)/(l*(-1 + 2*l))
-        con1 += ((-1 + l)*np.sqrt(l**2 - m**2)*tlm1)/(l*(-1 + 2*l))
+#         con0 += ((-1 + l)*np.sqrt(l**2 - m**2)*tlm0)/(l*(-1 + 2*l))
+#         con1 += ((-1 + l)*np.sqrt(l**2 - m**2)*tlm1)/(l*(-1 + 2*l))
 
-    elif l-1 in lp:
-        [ [qlm0, qlm1, _, _ ], [slm0, slm1, _, _ ] ] = cheb4pp_pol(l-1, lp, P)
+#     elif l-1 in lp:
+#         [ [qlm0, qlm1, _, _ ], [slm0, slm1, _, _ ] ] = cheb4pp_pol(l-1, lp, P)
 
-        tor0 += (np.sqrt(l**2 - m**2)*(qlm0 + slm0 - l*slm0))/(l*(-1 + 2*l))
-        tor1 += (np.sqrt(l**2 - m**2)*(qlm1 + slm1 - l*slm1))/(l*(-1 + 2*l))
+#         tor0 += (np.sqrt(l**2 - m**2)*(qlm0 + slm0 - l*slm0))/(l*(-1 + 2*l))
+#         tor1 += (np.sqrt(l**2 - m**2)*(qlm1 + slm1 - l*slm1))/(l*(-1 + 2*l))
         
 
-    if l in lp:
-        [ [qlm0, qlm1, _, _ ], [slm0, slm1, _, _ ] ] = cheb4pp_pol(l, lp, P)
+#     if l in lp:
+#         [ [qlm0, qlm1, _, _ ], [slm0, slm1, _, _ ] ] = cheb4pp_pol(l, lp, P)
 
-        rad0 += -1j*m*slm0
-        rad1 += -1j*m*slm1
+#         rad0 += -1j*m*slm0
+#         rad1 += -1j*m*slm1
 
-        con0 += (-1j*m*(qlm0 + slm0))/(l*(1 + l))
-        con1 += (-1j*m*(qlm1 + slm1))/(l*(1 + l))
+#         con0 += (-1j*m*(qlm0 + slm0))/(l*(1 + l))
+#         con1 += (-1j*m*(qlm1 + slm1))/(l*(1 + l))
 
-    elif l in lt:
-        [tlm0, tlm1, _, _ ] = cheb4pp_tor(l, lt, T)
+#     elif l in lt:
+#         [tlm0, tlm1, _, _ ] = cheb4pp_tor(l, lt, T)
 
-        tor0 += (-1j*m*tlm0)/(l + l**2)
-        tor1 += (-1j*m*tlm1)/(l + l**2)
-
-
-    if l+1 in lt:
-        [tlm0, tlm1, _, _ ] = cheb4pp_tor(l+1, lt, T)
-
-        rad0 += -(((2 + l)*np.sqrt((1 + l - m)*(1 + l + m))*tlm0)/(3 + 2*l))
-        rad1 += -(((2 + l)*np.sqrt((1 + l - m)*(1 + l + m))*tlm1)/(3 + 2*l))
-
-        con0 += ((2 + l)*np.sqrt((1 + l - m)*(1 + l + m))*tlm0)/((1 + l)*(3 + 2*l))
-        con1 += ((2 + l)*np.sqrt((1 + l - m)*(1 + l + m))*tlm1)/((1 + l)*(3 + 2*l))
-
-    elif l+1 in lp:
-        [ [qlm0, qlm1, _, _ ], [ slm0, slm1, _, _ ] ] = cheb4pp_pol(l+1, lp, P)
-
-        tor0 += -((np.sqrt((1 + l - m)*(1 + l + m))*(qlm0 + (2 + l)*slm0))/((1 + l)*(3 + 2*l)))
-        tor1 += -((np.sqrt((1 + l - m)*(1 + l + m))*(qlm1 + (2 + l)*slm1))/((1 + l)*(3 + 2*l)))
+#         tor0 += (-1j*m*tlm0)/(l + l**2)
+#         tor1 += (-1j*m*tlm1)/(l + l**2)
 
 
-    return [ [rad0*2*par.Gaspard*const, rad1*2*par.Gaspard*const],
-             [con0*2*par.Gaspard*const, con1*2*par.Gaspard*const],
-             [tor0*2*par.Gaspard*const, tor1*2*par.Gaspard*const] ]
+#     if l+1 in lt:
+#         [tlm0, tlm1, _, _ ] = cheb4pp_tor(l+1, lt, T)
+
+#         rad0 += -(((2 + l)*np.sqrt((1 + l - m)*(1 + l + m))*tlm0)/(3 + 2*l))
+#         rad1 += -(((2 + l)*np.sqrt((1 + l - m)*(1 + l + m))*tlm1)/(3 + 2*l))
+
+#         con0 += ((2 + l)*np.sqrt((1 + l - m)*(1 + l + m))*tlm0)/((1 + l)*(3 + 2*l))
+#         con1 += ((2 + l)*np.sqrt((1 + l - m)*(1 + l + m))*tlm1)/((1 + l)*(3 + 2*l))
+
+#     elif l+1 in lp:
+#         [ [qlm0, qlm1, _, _ ], [ slm0, slm1, _, _ ] ] = cheb4pp_pol(l+1, lp, P)
+
+#         tor0 += -((np.sqrt((1 + l - m)*(1 + l + m))*(qlm0 + (2 + l)*slm0))/((1 + l)*(3 + 2*l)))
+#         tor1 += -((np.sqrt((1 + l - m)*(1 + l + m))*(qlm1 + (2 + l)*slm1))/((1 + l)*(3 + 2*l)))
+
+
+#     return [ [rad0*2*par.Gaspard*const, rad1*2*par.Gaspard*const],
+#              [con0*2*par.Gaspard*const, con1*2*par.Gaspard*const],
+#              [tor0*2*par.Gaspard*const, tor1*2*par.Gaspard*const] ]
 
 
 
-def coriolis_curl( l ):
+# def coriolis_curl( l ):
 
-    m = par.m
+#     m = par.m
 
-    ll = ut.ell( par.m, par.lmax, par.symm)
-    lp  = ll[0]  # l's for poloidals
-    lt  = ll[1]  # l's for toroidals
+#     ll = ut.ell( par.m, par.lmax, par.symm)
+#     lp  = ll[0]  # l's for poloidals
+#     lt  = ll[1]  # l's for toroidals
 
-    P = np.copy(usol2[0])
-    T = np.copy(usol2[1])
+#     P = np.copy(usol2[0])
+#     T = np.copy(usol2[1])
 
-    rad0 = np.zeros_like(rk, dtype='complex128') 
-    con0 = np.zeros_like(rk, dtype='complex128')
-    tor0 = np.zeros_like(rk, dtype='complex128')
+#     rad0 = np.zeros_like(rk, dtype='complex128') 
+#     con0 = np.zeros_like(rk, dtype='complex128')
+#     tor0 = np.zeros_like(rk, dtype='complex128')
 
-    if l-1 in lt:
-        [tlm0, tlm1] = cheb2space_tor(l-1, lt, T, 1, rk)
-        tor0 += ((-1 + l)*np.sqrt(l**2 - m**2)*((-1 + l)*tlm0 - rk*tlm1))/(l*(-1 + 2*l)*rk)
-        #tor0 += -(((1 + 2*l)*((-np.sqrt((l*(-1 + l**2))/(-1 + 4*l**2)) + np.sqrt((1 - l**2)/(l - 4*l**3)))*tlm0 + np.sqrt((1 - l**2)/(l - 4*l**3))*rk*tlm1))/(np.sqrt((l*(1 + l)*(-1 + 4*l**2))/((-1 + l)*(l**2 - m**2)))*rk))
+#     if l-1 in lt:
+#         [tlm0, tlm1] = cheb2space_tor(l-1, lt, T, 1, rk)
+#         tor0 += ((-1 + l)*np.sqrt(l**2 - m**2)*((-1 + l)*tlm0 - rk*tlm1))/(l*(-1 + 2*l)*rk)
+#         #tor0 += -(((1 + 2*l)*((-np.sqrt((l*(-1 + l**2))/(-1 + 4*l**2)) + np.sqrt((1 - l**2)/(l - 4*l**3)))*tlm0 + np.sqrt((1 - l**2)/(l - 4*l**3))*rk*tlm1))/(np.sqrt((l*(1 + l)*(-1 + 4*l**2))/((-1 + l)*(l**2 - m**2)))*rk))
         
-    elif l-1 in lp:
-        [[qlm0, qlm1], [slm0, slm1]] = cheb2space_pol(l-1, lp, P, 1, rk)
-        rad0 += ((1 + l)*np.sqrt(l**2 - m**2)*(qlm0 + slm0 - l*slm0))/((-1 + 2*l)*rk)
-        con0 += (np.sqrt(l**2 - m**2)*(qlm0 + qlm1*rk - (-1 + l)*(slm0 + rk*slm1)))/(l*(-1 + 2*l)*rk)
+#     elif l-1 in lp:
+#         [[qlm0, qlm1], [slm0, slm1]] = cheb2space_pol(l-1, lp, P, 1, rk)
+#         rad0 += ((1 + l)*np.sqrt(l**2 - m**2)*(qlm0 + slm0 - l*slm0))/((-1 + 2*l)*rk)
+#         con0 += (np.sqrt(l**2 - m**2)*(qlm0 + qlm1*rk - (-1 + l)*(slm0 + rk*slm1)))/(l*(-1 + 2*l)*rk)
         
-    if l in lp:
-        [[qlm0, qlm1], [slm0, slm1]] = cheb2space_pol(l, lp, P, 1, rk)
-        tor0 += (1j*m*(qlm0 - (-1 + l + l**2)*slm0 + rk*(qlm1 + slm1)))/(l*(1 + l)*rk)
+#     if l in lp:
+#         [[qlm0, qlm1], [slm0, slm1]] = cheb2space_pol(l, lp, P, 1, rk)
+#         tor0 += (1j*m*(qlm0 - (-1 + l + l**2)*slm0 + rk*(qlm1 + slm1)))/(l*(1 + l)*rk)
         
-    elif l in lt:
-        [tlm0, tlm1] = cheb2space_tor(l, lt, T, 1, rk)
-        rad0 += -1j*m*tlm0/rk
-        con0 += (-1j*m*(tlm0 + rk*tlm1))/(l*(1 + l)*rk)
+#     elif l in lt:
+#         [tlm0, tlm1] = cheb2space_tor(l, lt, T, 1, rk)
+#         rad0 += -1j*m*tlm0/rk
+#         con0 += (-1j*m*(tlm0 + rk*tlm1))/(l*(1 + l)*rk)
         
-    if l+1 in lt:
-        [tlm0, tlm1] = cheb2space_tor(l+1, lt, T, 1, rk)
-        tor0 += -(((2 + l)*np.sqrt((1 + l - m)*(1 + l + m))*((2 + l)*tlm0 + rk*tlm1))/((1 + l)*(3 + 2*l)*rk))
-        #tor0 += -(((1 + 2*l)*np.sqrt(((2 + l)*(1 + l - m)*(1 + l + m))/(3 + 4*l*(2 + l)))*((np.sqrt((l*(2 + l))/(3 + 11*l + 12*l**2 + 4*l**3)) + np.sqrt((l*(1 + l)*(2 + l))/(3 + 4*l*(2 + l))))*tlm0 + np.sqrt((l*(2 + l))/(3 + 11*l + 12*l**2 + 4*l**3))*rk*tlm1))/(np.sqrt(l*(1 + l))*rk))
+#     if l+1 in lt:
+#         [tlm0, tlm1] = cheb2space_tor(l+1, lt, T, 1, rk)
+#         tor0 += -(((2 + l)*np.sqrt((1 + l - m)*(1 + l + m))*((2 + l)*tlm0 + rk*tlm1))/((1 + l)*(3 + 2*l)*rk))
+#         #tor0 += -(((1 + 2*l)*np.sqrt(((2 + l)*(1 + l - m)*(1 + l + m))/(3 + 4*l*(2 + l)))*((np.sqrt((l*(2 + l))/(3 + 11*l + 12*l**2 + 4*l**3)) + np.sqrt((l*(1 + l)*(2 + l))/(3 + 4*l*(2 + l))))*tlm0 + np.sqrt((l*(2 + l))/(3 + 11*l + 12*l**2 + 4*l**3))*rk*tlm1))/(np.sqrt(l*(1 + l))*rk))
         
-    elif l+1 in lp:
-        [[qlm0, qlm1], [slm0, slm1]] = cheb2space_pol(l+1, lp, P, 1, rk)
-        rad0 += -((l*np.sqrt((1 + l - m)*(1 + l + m))*(qlm0 + (2 + l)*slm0))/((3 + 2*l)*rk))
-        con0 += -((np.sqrt((1 + l - m)*(1 + l + m))*(qlm0 + qlm1*rk + (2 + l)*(slm0 + rk*slm1)))/((1 + l)*(3 + 2*l)*rk))
+#     elif l+1 in lp:
+#         [[qlm0, qlm1], [slm0, slm1]] = cheb2space_pol(l+1, lp, P, 1, rk)
+#         rad0 += -((l*np.sqrt((1 + l - m)*(1 + l + m))*(qlm0 + (2 + l)*slm0))/((3 + 2*l)*rk))
+#         con0 += -((np.sqrt((1 + l - m)*(1 + l + m))*(qlm0 + qlm1*rk + (2 + l)*(slm0 + rk*slm1)))/((1 + l)*(3 + 2*l)*rk))
 
-    return [rad0*2*par.Gaspard, con0*2*par.Gaspard, tor0*2*par.Gaspard]
+#     return [rad0*2*par.Gaspard, con0*2*par.Gaspard, tor0*2*par.Gaspard]
         
 
 
 def visforce( l ):
     '''
     Returns the three (rad,con,tor) components of the l-component of the viscous force divided by the density,
-    (∇⋅σ)/ρ, and their first radial derivatives. Sampled at the radii rk defined globally.
+    (∇⋅σ)/ρ, and their first and second radial derivatives. Sampled at the radii rk defined globally.
     '''
 
     ll = ut.ell( par.m, par.lmax, par.symm)
@@ -1232,29 +1231,46 @@ def visforce( l ):
 
         [ [qlm0, qlm1, qlm2, qlm3, qlm4], [slm0, slm1, slm2, slm3, slm4] ] = cheb2space_pol(l, lp, P, 4, rk)
 
-        rad0 = ( 2*mu1*rk*(-2*qlm0 + 2*qlm1*rk + L*slm0) - mu0*((8 + 3*L)*qlm0 - 7*L*slm0 + rk*(-8*qlm1 - 4*qlm2*rk + L*slm1)) )/(3.*rho0*r2)
-        con0 = ( 3*mu1*rk*(qlm0 - slm0 + rk*slm1) + mu0*(8*qlm0 - 4*L*slm0 + rk*(qlm1 + 6*slm1 + 3*rk*slm2)) )/(3.*rho0*r2)
+        rad0 = ( 4*qlm2*r2*vsc0 + 7*L*slm0*vsc0 + 2*L*lho1*rk*slm0*vsc0 - L*rk*slm1*vsc0 + 2*L*rk*slm0*vsc1 
+                 + 4*qlm1*rk*(2*vsc0 + lho1*rk*vsc0 + rk*vsc1) - qlm0*((8 + 3*L + 4*lho1*rk)*vsc0 + 4*rk*vsc1))/(3.*r2)
+
+        con0 = (3*lho1*rk*(qlm0 - slm0 + rk*slm1)*vsc0 + (8*qlm0 - 4*L*slm0 + rk*(qlm1 + 6*slm1 + 3*rk*slm2))*vsc0 + 3*rk*(qlm0 - slm0 + rk*slm1)*vsc1)/(3.*r2)
+
         tor0 = np.zeros_like(rk, dtype='complex128')
 
-        rad1 = ( -2*mu1*rho1*r2*(-2*qlm0 + 2*qlm1*rk + L*slm0) + mu0*rho1*rk*((8 + 3*L)*qlm0 - 7*L*slm0 + rk*(-8*qlm1 - 4*qlm2*rk + L*slm1)) 
-                 + rho0*rk*(2*mu2*rk*(-2*qlm0 + 2*qlm1*rk + L*slm0) + mu1*(-((4 + 3*L)*qlm0) + 4*qlm1*rk + 8*qlm2*r2 + 5*L*slm0 + L*rk*slm1)) 
-                 + mu0*rho0*(2*(8 + 3*L)*qlm0 - 14*L*slm0 + rk*(-((16 + 3*L)*qlm1) + 8*L*slm1 + rk*(8*qlm2 + 4*qlm3*rk - L*slm2))) )/(3.*rho0**2*r3)
-        con1 = ( -3*mu1*rho1*r2*(qlm0 - slm0 + rk*slm1) - mu0*rho1*rk*(8*qlm0 - 4*L*slm0 + rk*(qlm1 + 6*slm1 + 3*rk*slm2)) 
-                 + rho0*rk*(3*mu2*rk*(qlm0 - slm0 + rk*slm1) + mu1*(5*qlm0 + 4*qlm1*rk + 3*slm0 - 4*L*slm0 + 3*rk*slm1 + 6*r2*slm2)) 
-                 + mu0*rho0*(-16*qlm0 + 8*L*slm0 + rk*(7*qlm1 - 2*(3 + 2*L)*slm1 + rk*(qlm2 + 6*slm2 + 3*rk*slm3))) )/(3.*rho0**2*r3)
-        tor1 = np.zeros_like(rk, dtype='complex128')
+
+        rad1 = ( ( 2*qlm0*(8 + 3*L - 2*lho2*r2 + 2*lho1*rk) + 2*L*(-7 + lho2*r2 - lho1*rk)*slm0 
+                   + rk*( -(qlm1*(16 + 3*L - 4*lho2*r2 + 4*lho1*rk)) + 2*L*(4 + lho1*rk)*slm1 + rk*(4*qlm3*rk + 4*qlm2*(2 + lho1*rk) - L*slm2) ) )*vsc0 
+                 + rk*( -(qlm0*(4 + 3*L + 4*lho1*rk)*vsc1) + L*(5 + 2*lho1*rk)*slm0*vsc1 + rk*(8*qlm2*rk + L*slm1)*vsc1 
+                        - 4*qlm0*rk*vsc2 + 2*L*rk*slm0*vsc2 + 4*qlm1*rk*(vsc1 + lho1*rk*vsc1 + rk*vsc2) ) ) / (3.*r3)
+
+        con1 = ( ( qlm0*(-16 + 3*lho2*r2 - 3*lho1*rk) + (8*L - 3*lho2*r2 + 3*lho1*rk)*slm0 
+                   + rk*( qlm1*(7 + 3*lho1*rk) - (6 + 4*L - 3*lho2*r2 + 3*lho1*rk)*slm1 + rk*(qlm2 + 3*(2 + lho1*rk)*slm2 + 3*rk*slm3)) )*vsc0 
+                 + rk*( qlm0*((5 + 3*lho1*rk)*vsc1 + 3*rk*vsc2) - slm0*((-3 + 4*L + 3*lho1*rk)*vsc1 + 3*rk*vsc2) 
+                        + rk*((4*qlm1 + 3*(1 + lho1*rk)*slm1 + 6*rk*slm2)*vsc1 + 3*rk*slm1*vsc2) ) ) / (3.*r3)
         
-        rad2 = (rk*(4*mu1*r2*rho1**2*(-2*qlm0 + 2*qlm1*rk + L*slm0) - 2*rho0*rk*(-(qlm0*((4 + 3*L)*mu1*rho1 + 4*mu2*rho1*rk + 2*mu1*rho2*rk)) + L*(5*mu1*rho1 + 2*mu2*rho1*rk + mu1*rho2*rk)*slm0 + rk*(4*mu2*qlm1*rho1*rk + 2*mu1*qlm1*rho2*rk + mu1*rho1*(4*qlm1 + 8*qlm2*rk + L*slm1))) + rho0**2*(rk*(4*rk*(-(mu3*qlm0) + mu3*qlm1*rk + 3*mu2*qlm2*rk) + 2*L*mu3*rk*slm0 + 3*L*mu2*(-qlm0 + slm0 + rk*slm1)) + 6*mu1*(2*(2 + L)*qlm0 - (4 + L)*qlm1*rk + 2*(qlm2*rk**2 + qlm3*rk**3 - 2*L*slm0 + L*rk*slm1)))) + mu0*(2*r2*rho1**2*(-((8 + 3*L)*qlm0) + 7*L*slm0 + rk*(8*qlm1 + 4*qlm2*rk - L*slm1)) + rho0*rk*(-((8 + 3*L)*qlm0*(4*rho1 - rho2*rk)) + 7*L*(4*rho1 - rho2*rk)*slm0 + rk*(rho2*rk*(-8*qlm1 - 4*qlm2*rk + L*slm1) + 2*rho1*((16 + 3*L)*qlm1 - 8*L*slm1 + rk*(-8*qlm2 - 4*qlm3*rk + L*slm2)))) - rho0**2*(6*(8 + 3*L)*qlm0 - 42*L*slm0 + rk*(-12*(4 + L)*qlm1 + 30*L*slm1 + rk*(3*(8 + L)*qlm2 - 9*L*slm2 + rk*(-8*qlm3 - 4*qlm4*rk + L*slm3))))))/(3.*rho0**3*rk**4)
-        con2 = ( rk*(6*mu1*r2*rho1**2*(qlm0 - slm0 + rk*slm1) - rho0*rk*(6*mu2*rho1*rk*(qlm0 - slm0 + rk*slm1) 
-                 + mu1*(10*qlm0*rho1 + 8*qlm1*rho1*rk + 3*qlm0*rho2*rk + 6*rho1*slm0 - 8*l*rho1*slm0 - 8*l**2*rho1*slm0 
-                 - 3*rho2*rk*slm0 + 6*rho1*rk*slm1 + 3*rho2*rk**2*slm1 + 12*rho1*rk**2*slm2)) + rho0**2*(-26*mu1*qlm0 
-                 + qlm0*rk*(2*mu2 + 3*mu3*rk) + 2*(-3 + 8*l + 8*l**2)*mu1*slm0 - rk*((-6 + 4*l + 4*l**2)*mu2 + 3*mu3*rk)*slm0 
-                 + rk**2*(7*mu2*qlm1 + 3*mu3*rk*slm1 + 9*mu2*rk*slm2) + mu1*rk*(8*qlm1 + 5*qlm2*rk - 2*(3 + 4*l + 4*l**2)*slm1 
-                 + 9*rk*(slm2 + rk*slm3)))) + mu0*(2*r2*rho1**2*(8*qlm0 - 4*L*slm0 + rk*(qlm1 + 6*slm1 + 3*rk*slm2)) 
-                 - rho0*rk*(8*qlm0*(-4*rho1 + rho2*rk) + 4*L*(4*rho1 - rho2*rk)*slm0 + rk*(rho2*rk*(qlm1 + 6*slm1 + 3*rk*slm2) 
-                 + 2*rho1*(7*qlm1 - 2*(3 + 2*L)*slm1 + rk*(qlm2 + 6*slm2 + 3*rk*slm3)))) + rho0**2*(48*qlm0 - 24*L*slm0 
-                 + rk*(-30*qlm1 + 4*(3 + 4*l + 4*l**2)*slm1 + rk*(6*qlm2 - 4*(3 + L)*slm2 + rk*(qlm3 + 6*slm3 + 3*rk*slm4))))) )/(3.*rho0**3*rk**4)
-        tor2 = np.zeros_like(rk, dtype='complex128')
+        tor1 = np.zeros_like(rk, dtype='complex128')
+
+
+        rad2 = ( ( -2*qlm0*(24 + 9*L - 4*lho2*r2 + 6*lh12*r3 - 6*lho1*lho2*r3 + 2*lho3*r3 + 4*lho1*rk) 
+                   - 2*L*(-21 + 2*lho2*r2 - 3*lh12*r3 + 3*lho1*lho2*r3 - lho3*r3 - 2*lho1*rk)*slm0 
+                   + rk*( 4*qlm1*(12 + 3*L - 2*lho2*r2 + 3*lh12*r3 - 3*lho1*lho2*r3 + lho3*r3 + 2*lho1*rk) 
+                          + 2*L*(-15 + 2*lho2*r2 - 2*lho1*rk)*slm1 + rk*(-(qlm2*(24 + 3*L - 8*lho2*r2 + 4*lho1*rk)) 
+                   + L*(9 + 2*lho1*rk)*slm2 + rk*(4*qlm4*rk + 4*qlm3*(2 + lho1*rk) - L*slm3))) )*vsc0 
+                 + rk*( 4*qlm0*(6 + 3*L - 2*lho2*r2 + 2*lho1*rk)*vsc1 + 4*L*(-6 + lho2*r2 - lho1*rk)*slm0*vsc1 
+                        + 2*rk*( -(qlm1*(12 + 3*L - 4*lho2*r2 + 4*lho1*rk)) + 2*rk*(3*qlm3*rk + qlm2*(3 + 2*lho1*rk)) + 2*L*(3 + lho1*rk)*slm1)*vsc1 
+                        + L*rk*slm0*((3 + 2*lho1*rk)*vsc2 + 2*rk*vsc3) - qlm0*rk*(3*L*vsc2 + 4*rk*(lho1*vsc2 + vsc3)) 
+                        + r2*(3*(4*qlm2*rk + L*slm1)*vsc2 + 4*qlm1*rk*(lho1*vsc2 + vsc3) ) ) ) / (3.*r4)
+
+        con2 = ( ( -3*qlm0*(-16 + 2*lho2*r2 - 3*lh12*r3 + 3*lho1*lho2*r3 - lho3*r3 - 2*lho1*rk) - 3*(8*L - 2*lho2*r2 + 3*lh12*r3 - 3*lho1*lho2*r3 + lho3*r3 + 2*lho1*rk)*slm0 
+                   + rk*( 6*qlm1*(-5 + lho2*r2 - lho1*rk) + (12 + 16*L - 6*lho2*r2 + 9*lh12*r3 - 9*lho1*lho2*r3 + 3*lho3*r3 + 6*lho1*rk)*slm1 
+                          + rk*( 3*qlm2*(2 + lho1*rk) - (12 + 4*L - 6*lho2*r2 + 3*lho1*rk)*slm2 + rk*(qlm3 + 6*slm3 + 3*lho1*rk*slm3 + 3*rk*slm4) )))*vsc0 
+                 + rk*( qlm0*(-26 + 6*lho2*r2 - 6*lho1*rk)*vsc1 + 2*(-3 + 8*L - 3*lho2*r2 + 3*lho1*rk)*slm0*vsc1 
+                        + rk*( qlm1*(8 + 6*lho1*rk) - 2*(3 + 4*L - 3*lho2*r2 + 3*lho1*rk)*slm1 + rk*(5*qlm2 + (9 + 6*lho1*rk)*slm2 + 9*rk*slm3) )*vsc1 
+                        + qlm0*rk*((2 + 3*lho1*rk)*vsc2 + 3*rk*vsc3) - rk*slm0*((-6 + 4*L + 3*lho1*rk)*vsc2 + 3*rk*vsc3) 
+                        + r2*(7*qlm1*vsc2 + 9*rk*slm2*vsc2 + 3*rk*slm1*(lho1*vsc2 + vsc3)) ) ) / (3.*r4)
+
+        tor2 = np.zeros_like(rk, dtype='complex128') 
 
 
     elif l in lt:
@@ -1263,21 +1279,23 @@ def visforce( l ):
 
         rad0 = np.zeros_like(rk, dtype='complex128')
         con0 = np.zeros_like(rk, dtype='complex128')
-        tor0 = ( -(L*mu0*tlm0) + rk*(-(mu1*tlm0) + 2*mu0*tlm1 + mu1*rk*tlm1 + mu0*rk*tlm2) )/(rho0*r2)
+        
+        tor0 = ( -(L*tlm0*vsc0) + rk*(-(lho1*tlm0*vsc0) + 2*tlm1*vsc0 + lho1*rk*tlm1*vsc0 + rk*tlm2*vsc0 - tlm0*vsc1 + rk*tlm1*vsc1) ) / r2
 
         rad1 = np.zeros_like(rk, dtype='complex128')
         con1 = np.zeros_like(rk, dtype='complex128')
-        tor1 = ( mu1*rho1*r2*(tlm0 - rk*tlm1) + mu0*rho1*rk*(L*tlm0 - rk*(2*tlm1 + rk*tlm2)) 
-                 + rho0*rk*(mu2*rk*(-tlm0 + rk*tlm1) + mu1*(tlm0 - L*tlm0 + rk*(tlm1 + 2*rk*tlm2))) 
-                 + mu0*rho0*(2*L*tlm0 + rk*(-((2 + L)*tlm1) + rk*(2*tlm2 + rk*tlm3))))/(rho0**2*r3)
         
+        tor1 = ( ((2*L - lho2*r2 + lho1*rk)*tlm0 + rk*(-((2 + L - lho2*r2 + lho1*rk)*tlm1) + rk*((2 + lho1*rk)*tlm2 + rk*tlm3)))*vsc0 
+                 + rk*(-(tlm0*((-1 + L + lho1*rk)*vsc1 + rk*vsc2)) + rk*(((1 + lho1*rk)*tlm1 + 2*rk*tlm2)*vsc1 + rk*tlm1*vsc2) ) ) / r3
+
         rad2 = np.zeros_like(rk, dtype='complex128')
         con2 = np.zeros_like(rk, dtype='complex128')
-        tor2 = ( rk*(-2*mu1*r2*rho1**2*(tlm0 - rk*tlm1) + rho0*rk*(2*mu2*rho1*rk*(tlm0 - rk*tlm1) + mu1*(2*(-1 + L)*rho1*tlm0 + rho2*rk*(tlm0 - rk*tlm1) 
-                 - 2*rho1*rk*(tlm1 + 2*rk*tlm2))) + rho0**2*(((-2 + 4*l + 4*l**2)*mu1 - rk*((-2 + L)*mu2 + mu3*rk))*tlm0 + r3*(mu3*tlm1 + 3*mu2*tlm2) 
-                 + mu1*rk*(-2*(1 + L)*tlm1 + 3*rk*(tlm2 + rk*tlm3)))) + mu0*(2*r2*rho1**2*(-(L*tlm0) + rk*(2*tlm1 + rk*tlm2)) + rho0*rk*(L*(-4*rho1 
-                 + rho2*rk)*tlm0 - r2*rho2*(2*tlm1 + rk*tlm2) + 2*rho1*rk*((2 + L)*tlm1 - rk*(2*tlm2 + rk*tlm3))) + rho0**2*(-6*L*tlm0 + rk*(4*(1 + L)*tlm1 
-                 + rk*(-((4 + L)*tlm2) + rk*(2*tlm3 + rk*tlm4))))) )/(rho0**3*rk**4)       
+
+        tor2 = ( ( -((6*L - 2*lho2*r2 + 3*lh12*r3 - 3*lho1*lho2*r3 + lho3*r3 + 2*lho1*rk)*tlm0) 
+                   + rk*( (4 + 4*L - 2*lho2*r2 + 3*lh12*r3 - 3*lho1*lho2*r3 + lho3*r3 + 2*lho1*rk)*tlm1 
+                          + rk*( -((4 + L - 2*lho2*r2 + lho1*rk)*tlm2) + rk*(2*tlm3 + lho1*rk*tlm3 + rk*tlm4) ) ) )*vsc0 
+                 + rk*( 2*(-1 + 2*L - lho2*r2 + lho1*rk)*tlm0*vsc1 - 2*rk*(1 + L - lho2*r2 + lho1*rk)*tlm1*vsc1 + r2*((3 + 2*lho1*rk)*tlm2 + 3*rk*tlm3)*vsc1 
+                        + 3*r3*tlm2*vsc2 + r3*tlm1*(lho1*vsc2 + vsc3) - rk*tlm0*((-2 + L + lho1*rk)*vsc2 + rk*vsc3) ) ) / r4
 
     return [ [rad0*par.ViscosD,rad1*par.ViscosD,rad2*par.ViscosD],
              [con0*par.ViscosD,con1*par.ViscosD,con2*par.ViscosD],
@@ -1286,54 +1304,54 @@ def visforce( l ):
 
 
 
-def visforce4pp( l ):
-    '''
-    Returns the three (rad,con,tor) components of the l-component of the viscous force divided by the density,
-    (∇⋅σ)/ρ, and their first radial derivatives. Sampled at the radii rk defined globally.
-    '''
+# def visforce4pp( l ):
+#     '''
+#     Returns the three (rad,con,tor) components of the l-component of the viscous force divided by the density,
+#     (∇⋅σ)/ρ, and their first radial derivatives. Sampled at the radii rk defined globally.
+#     '''
 
-    ll = ut.ell( par.m, par.lmax, par.symm)
-    lp  = ll[0]  # l's for poloidals
-    lt  = ll[1]  # l's for toroidals
+#     ll = ut.ell( par.m, par.lmax, par.symm)
+#     lp  = ll[0]  # l's for poloidals
+#     lt  = ll[1]  # l's for toroidals
 
-    P = np.copy(usol2[0])
-    T = np.copy(usol2[1])
+#     P = np.copy(usol2[0])
+#     T = np.copy(usol2[1])
 
-    L = l*(l+1.)
+#     L = l*(l+1.)
 
-    if l in lp:
+#     if l in lp:
 
-        [ [qlm0, qlm1, qlm2, qlm3], [slm0, slm1, slm2, slm3] ] = cheb4pp_pol(l, lp, P)
+#         [ [qlm0, qlm1, qlm2, qlm3], [slm0, slm1, slm2, slm3] ] = cheb4pp_pol(l, lp, P)
 
-        rad0 = ( 2*mu1*rk*(-2*qlm0 + 2*qlm1*rk + L*slm0) - mu0*((8 + 3*L)*qlm0 - 7*L*slm0 + rk*(-8*qlm1 - 4*qlm2*rk + L*slm1)) ) / (3.*rho0*r2)
-        con0 = ( 3*mu1*rk*(qlm0 - slm0 + rk*slm1) + mu0*(8*qlm0 - 4*L*slm0 + rk*(qlm1 + 6*slm1 + 3*rk*slm2)) ) / (3.*rho0*r2)
-        tor0 = np.zeros_like(rk, dtype='complex128')
+#         rad0 = ( 2*mu1*rk*(-2*qlm0 + 2*qlm1*rk + L*slm0) - mu0*((8 + 3*L)*qlm0 - 7*L*slm0 + rk*(-8*qlm1 - 4*qlm2*rk + L*slm1)) ) / (3.*rho0*r2)
+#         con0 = ( 3*mu1*rk*(qlm0 - slm0 + rk*slm1) + mu0*(8*qlm0 - 4*L*slm0 + rk*(qlm1 + 6*slm1 + 3*rk*slm2)) ) / (3.*rho0*r2)
+#         tor0 = np.zeros_like(rk, dtype='complex128')
 
-        rad1 = ( -2*mu1*rho1*r2*(-2*qlm0 + 2*qlm1*rk + L*slm0) + mu0*rho1*rk*((8 + 3*L)*qlm0 - 7*L*slm0 + rk*(-8*qlm1 - 4*qlm2*rk + L*slm1)) 
-                 + rho0*rk*(2*mu2*rk*(-2*qlm0 + 2*qlm1*rk + L*slm0) + mu1*(-((4 + 3*L)*qlm0) + 4*qlm1*rk + 8*qlm2*r2 + 5*L*slm0 + L*rk*slm1)) 
-                 + mu0*rho0*(2*(8 + 3*L)*qlm0 - 14*L*slm0 + rk*(-((16 + 3*L)*qlm1) + 8*L*slm1 + rk*(8*qlm2 + 4*qlm3*rk - L*slm2))) ) / (3.*rho0**2*r3)
-        con1 = ( -3*mu1*rho1*r2*(qlm0 - slm0 + rk*slm1) - mu0*rho1*rk*(8*qlm0 - 4*L*slm0 + rk*(qlm1 + 6*slm1 + 3*rk*slm2)) 
-                 + rho0*rk*(3*mu2*rk*(qlm0 - slm0 + rk*slm1) + mu1*(5*qlm0 + 4*qlm1*rk + 3*slm0 - 4*L*slm0 + 3*rk*slm1 + 6*r2*slm2)) 
-                 + mu0*rho0*(-16*qlm0 + 8*L*slm0 + rk*(7*qlm1 - 2*(3 + 2*L)*slm1 + rk*(qlm2 + 6*slm2 + 3*rk*slm3))) ) / (3.*rho0**2*r3)
-        tor1 = np.zeros_like(rk, dtype='complex128')
+#         rad1 = ( -2*mu1*rho1*r2*(-2*qlm0 + 2*qlm1*rk + L*slm0) + mu0*rho1*rk*((8 + 3*L)*qlm0 - 7*L*slm0 + rk*(-8*qlm1 - 4*qlm2*rk + L*slm1)) 
+#                  + rho0*rk*(2*mu2*rk*(-2*qlm0 + 2*qlm1*rk + L*slm0) + mu1*(-((4 + 3*L)*qlm0) + 4*qlm1*rk + 8*qlm2*r2 + 5*L*slm0 + L*rk*slm1)) 
+#                  + mu0*rho0*(2*(8 + 3*L)*qlm0 - 14*L*slm0 + rk*(-((16 + 3*L)*qlm1) + 8*L*slm1 + rk*(8*qlm2 + 4*qlm3*rk - L*slm2))) ) / (3.*rho0**2*r3)
+#         con1 = ( -3*mu1*rho1*r2*(qlm0 - slm0 + rk*slm1) - mu0*rho1*rk*(8*qlm0 - 4*L*slm0 + rk*(qlm1 + 6*slm1 + 3*rk*slm2)) 
+#                  + rho0*rk*(3*mu2*rk*(qlm0 - slm0 + rk*slm1) + mu1*(5*qlm0 + 4*qlm1*rk + 3*slm0 - 4*L*slm0 + 3*rk*slm1 + 6*r2*slm2)) 
+#                  + mu0*rho0*(-16*qlm0 + 8*L*slm0 + rk*(7*qlm1 - 2*(3 + 2*L)*slm1 + rk*(qlm2 + 6*slm2 + 3*rk*slm3))) ) / (3.*rho0**2*r3)
+#         tor1 = np.zeros_like(rk, dtype='complex128')
         
-    elif l in lt:
+#     elif l in lt:
         
-        [ tlm0, tlm1, tlm2, tlm3 ] = cheb4pp_tor(l, lt, T)
+#         [ tlm0, tlm1, tlm2, tlm3 ] = cheb4pp_tor(l, lt, T)
 
-        rad0 = np.zeros_like(rk, dtype='complex128')
-        con0 = np.zeros_like(rk, dtype='complex128')
-        tor0 = ( -(L*mu0*tlm0) + rk*(-(mu1*tlm0) + 2*mu0*tlm1 + mu1*rk*tlm1 + mu0*rk*tlm2) ) / (rho0*r2)
+#         rad0 = np.zeros_like(rk, dtype='complex128')
+#         con0 = np.zeros_like(rk, dtype='complex128')
+#         tor0 = ( -(L*mu0*tlm0) + rk*(-(mu1*tlm0) + 2*mu0*tlm1 + mu1*rk*tlm1 + mu0*rk*tlm2) ) / (rho0*r2)
 
-        rad1 = np.zeros_like(rk, dtype='complex128')
-        con1 = np.zeros_like(rk, dtype='complex128')
-        tor1 = ( mu1*rho1*r2*(tlm0 - rk*tlm1) + mu0*rho1*rk*(L*tlm0 - rk*(2*tlm1 + rk*tlm2)) 
-                 + rho0*rk*(mu2*rk*(-tlm0 + rk*tlm1) + mu1*(tlm0 - L*tlm0 + rk*(tlm1 + 2*rk*tlm2))) 
-                 + mu0*rho0*(2*L*tlm0 + rk*(-((2 + L)*tlm1) + rk*(2*tlm2 + rk*tlm3)))) / (rho0**2*r3)
+#         rad1 = np.zeros_like(rk, dtype='complex128')
+#         con1 = np.zeros_like(rk, dtype='complex128')
+#         tor1 = ( mu1*rho1*r2*(tlm0 - rk*tlm1) + mu0*rho1*rk*(L*tlm0 - rk*(2*tlm1 + rk*tlm2)) 
+#                  + rho0*rk*(mu2*rk*(-tlm0 + rk*tlm1) + mu1*(tlm0 - L*tlm0 + rk*(tlm1 + 2*rk*tlm2))) 
+#                  + mu0*rho0*(2*L*tlm0 + rk*(-((2 + L)*tlm1) + rk*(2*tlm2 + rk*tlm3)))) / (rho0**2*r3)
 
-    return [ [rad0*par.ViscosD,rad1*par.ViscosD],
-             [con0*par.ViscosD,con1*par.ViscosD],
-             [tor0*par.ViscosD,tor1*par.ViscosD] ]
+#     return [ [rad0*par.ViscosD,rad1*par.ViscosD],
+#              [con0*par.ViscosD,con1*par.ViscosD],
+#              [tor0*par.ViscosD,tor1*par.ViscosD] ]
 
 
 
@@ -1391,36 +1409,36 @@ def visforce4pp( l ):
 
 
 
-def visforce_curl( l ):
+# def visforce_curl( l ):
 
-    ll = ut.ell( par.m, par.lmax, par.symm)
-    lp  = ll[0]  # l's for poloidals
-    lt  = ll[1]  # l's for toroidals
+#     ll = ut.ell( par.m, par.lmax, par.symm)
+#     lp  = ll[0]  # l's for poloidals
+#     lt  = ll[1]  # l's for toroidals
 
-    P = np.copy(usol2[0])
-    T = np.copy(usol2[1])
+#     P = np.copy(usol2[0])
+#     T = np.copy(usol2[1])
 
-    rad0 = np.zeros_like(rk, dtype='complex128') 
-    con0 = np.zeros_like(rk, dtype='complex128')
-    tor0 = np.zeros_like(rk, dtype='complex128')
+#     rad0 = np.zeros_like(rk, dtype='complex128') 
+#     con0 = np.zeros_like(rk, dtype='complex128')
+#     tor0 = np.zeros_like(rk, dtype='complex128')
 
-    L = l*(l+1.)
+#     L = l*(l+1.)
 
-    if l in lp:
+#     if l in lp:
 
-        [ [qlm0, qlm1, qlm2, qlm3], [slm0, slm1, slm2, slm3] ] = cheb2space_pol(l, lp, P, 3, rk)
-        tor0 += (3*mu1*r2*rho1*(qlm0 - slm0 + rk*slm1) + mu0*rho1*rk*(8*qlm0 - 4*L*slm0 + rk*(qlm1 + 6*slm1 + 3*rk*slm2)) 
-                 - 3*rho0*rk*(mu2*rk*(qlm0 - slm0 + rk*slm1) + 2*mu1*(2*qlm0 - L*slm0 + rk*(slm1 + rk*slm2))) 
-                 - 3*mu0*rho0*(L*(qlm0 - slm0 - rk*slm1) + rk**2*(-qlm2 + 3*slm2 + rk*slm3)))/(3.*rho0**2*rk**3)
+#         [ [qlm0, qlm1, qlm2, qlm3], [slm0, slm1, slm2, slm3] ] = cheb2space_pol(l, lp, P, 3, rk)
+#         tor0 += (3*mu1*r2*rho1*(qlm0 - slm0 + rk*slm1) + mu0*rho1*rk*(8*qlm0 - 4*L*slm0 + rk*(qlm1 + 6*slm1 + 3*rk*slm2)) 
+#                  - 3*rho0*rk*(mu2*rk*(qlm0 - slm0 + rk*slm1) + 2*mu1*(2*qlm0 - L*slm0 + rk*(slm1 + rk*slm2))) 
+#                  - 3*mu0*rho0*(L*(qlm0 - slm0 - rk*slm1) + rk**2*(-qlm2 + 3*slm2 + rk*slm3)))/(3.*rho0**2*rk**3)
      
-    elif l in lt:
+#     elif l in lt:
         
-        [ tlm0, tlm1, tlm2, tlm3 ] = cheb2space_tor(l, lt, T, 3, rk)
-        rad0 += (L*(mu1*rk*(-tlm0 + rk*tlm1) + mu0*(-(L*tlm0) + rk*(2*tlm1 + rk*tlm2))))/(rho0*rk**3)
-        con0 += (rk*(mu1*rho1*rk*(tlm0 - rk*tlm1) + rho0*(-((L*mu1 + mu2*rk)*tlm0) + rk*(mu2*rk*tlm1 + 2*mu1*(tlm1 + rk*tlm2)))) 
-                 + mu0*(rho1*rk*(L*tlm0 - rk*(2*tlm1 + rk*tlm2)) + rho0*(L*tlm0 + rk*(-(L*tlm1) + rk*(3*tlm2 + rk*tlm3)))))/(rho0**2*rk**3)
+#         [ tlm0, tlm1, tlm2, tlm3 ] = cheb2space_tor(l, lt, T, 3, rk)
+#         rad0 += (L*(mu1*rk*(-tlm0 + rk*tlm1) + mu0*(-(L*tlm0) + rk*(2*tlm1 + rk*tlm2))))/(rho0*rk**3)
+#         con0 += (rk*(mu1*rho1*rk*(tlm0 - rk*tlm1) + rho0*(-((L*mu1 + mu2*rk)*tlm0) + rk*(mu2*rk*tlm1 + 2*mu1*(tlm1 + rk*tlm2)))) 
+#                  + mu0*(rho1*rk*(L*tlm0 - rk*(2*tlm1 + rk*tlm2)) + rho0*(L*tlm0 + rk*(-(L*tlm1) + rk*(3*tlm2 + rk*tlm3)))))/(rho0**2*rk**3)
 
-    return [ rad0*par.ViscosD, con0*par.ViscosD, tor0*par.ViscosD ]
+#     return [ rad0*par.ViscosD, con0*par.ViscosD, tor0*par.ViscosD ]
 
 
 
@@ -1666,37 +1684,37 @@ def buoyancy(l):
 
 
 
-def buoyancy4pp(l):
-    '''
-    Returns the l-degree (rad,con,tor) components of the buoyancy force, and its radial derivatives.
-    Use it to compute the rate of working (power) of buoyancy, either thermal or compositional
-    '''
+# def buoyancy4pp(l):
+#     '''
+#     Returns the l-degree (rad,con,tor) components of the buoyancy force, and its radial derivatives.
+#     Use it to compute the rate of working (power) of buoyancy, either thermal or compositional
+#     '''
 
-    #const0 = (rho0**4)*(r4)  # to match cheb4pp_pol
-    #const1 = (rho0**2)*(r3)  # to match visforce4pp
-    #const1 = 1.
-    #const = const0*const1
+#     #const0 = (rho0**4)*(r4)  # to match cheb4pp_pol
+#     #const1 = (rho0**2)*(r3)  # to match visforce4pp
+#     #const1 = 1.
+#     #const = const0*const1
 
-    ll = ut.ell( par.m, par.lmax, par.symm)
-    lp  = ll[0]  # l's for poloidals
-    lt  = ll[1]  # l's for toroidals
+#     ll = ut.ell( par.m, par.lmax, par.symm)
+#     lp  = ll[0]  # l's for poloidals
+#     lt  = ll[1]  # l's for toroidals
 
-    out_rad0 = np.zeros_like(rk, dtype='complex128')
-    out_con0 = np.zeros_like(rk, dtype='complex128')
-    out_tor0 = np.zeros_like(rk, dtype='complex128')
-    out_rad1 = np.zeros_like(rk, dtype='complex128')
-    out_con1 = np.zeros_like(rk, dtype='complex128')
-    out_tor1 = np.zeros_like(rk, dtype='complex128')
+#     out_rad0 = np.zeros_like(rk, dtype='complex128')
+#     out_con0 = np.zeros_like(rk, dtype='complex128')
+#     out_tor0 = np.zeros_like(rk, dtype='complex128')
+#     out_rad1 = np.zeros_like(rk, dtype='complex128')
+#     out_con1 = np.zeros_like(rk, dtype='complex128')
+#     out_tor1 = np.zeros_like(rk, dtype='complex128')
     
-    if l in lp:
-        idx   = list(lp).index(l)
-        f_pol = funcheb( tsol2[idx,:], r=rk, ricb=par.ricb, rcmb=ut.rcmb, n=1 )
-        out_rad0  = f_pol[:,0] * rap.graviX( rk, 0)
-        out_rad1  = f_pol[:,1] * rap.graviX( rk, 0) + f_pol[:,0] * rap.graviX( rk, 1)
+#     if l in lp:
+#         idx   = list(lp).index(l)
+#         f_pol = funcheb( tsol2[idx,:], r=rk, ricb=par.ricb, rcmb=ut.rcmb, n=1 )
+#         out_rad0  = f_pol[:,0] * rap.graviX( rk, 0)
+#         out_rad1  = f_pol[:,1] * rap.graviX( rk, 0) + f_pol[:,0] * rap.graviX( rk, 1)
         
-    return [ [out_rad0*par.Beyonce, out_rad1*par.Beyonce],
-             [out_con0*par.Beyonce, out_con1*par.Beyonce],
-             [out_tor0*par.Beyonce, out_tor1*par.Beyonce] ]
+#     return [ [out_rad0*par.Beyonce, out_rad1*par.Beyonce],
+#              [out_con0*par.Beyonce, out_con1*par.Beyonce],
+#              [out_tor0*par.Beyonce, out_tor1*par.Beyonce] ]
 
 
 
@@ -1738,37 +1756,42 @@ def diagnose( usol, bsol2, tsol, csol2, Ra, Rb, ncpus):
     global r4
     r4 = rk**4
 
-    rho = rap.densityX(rk, 1)
     global rho0
-    rho0 = rho[:,0]
-    global rho1
-    rho1 = rho[:,1]
+    rho0 = np.exp(rap.logrhoX(rk, 0))
+    # global rho1
+    # rho1 = np.exp(rap.logrhoX(rk, 1))
 
     global lho1
-    lho1 = rap.lhoX(rk,1)/rho0
+    lho1 = rap.logrhoX(rk,1)
     global lho2
-    lho2 = rap.lhoX(rk,2)/rho0**2
+    lho2 = rap.logrhoX(rk,2)
     global lho3
-    lho3 = rap.lhoX(rk,3)/rho0**3
+    lho3 = rap.logrhoX(rk,3)
     global lho4
-    lho4 = rap.lhoX(rk,4)/rho0**4
+    lho4 = rap.logrhoX(rk,4)
+    global lho5
+    lho5 = rap.logrhoX(rk,5)
 
-    global lho14
-    lho14 = rap.lhoX(rk,1)*rho0**3
-    global lho24
-    lho24 = rap.lhoX(rk,2)*rho0**2
-    global lho34
-    lho34 = rap.lhoX(rk,3)*rho0
-    global lho44
-    lho44 = rap.lhoX(rk,4)
+
+    global lh12
+    lh12 = lho1*lho2
+
+    # global lho14
+    # lho14 = rap.lhoX(rk,1)*rho0**3
+    # global lho24
+    # lho24 = rap.lhoX(rk,2)*rho0**2
+    # global lho34
+    # lho34 = rap.lhoX(rk,3)*rho0
+    # global lho44
+    # lho44 = rap.lhoX(rk,4)
 
     [ rpower, rhopower ] = [ par.rpower_pp, par.rhopower_pp ]
     global const0
     const0 = (rk**rpower)*(rho0**rhopower)
-    global const1
-    const1 = const0/(r4*rho0**4)
-    global const2
-    const2 = ( const1 )**2
+    # global const1
+    # const1 = const0/(r4*rho0**4)
+    # global const2
+    # const2 = ( const1 )**2
 
     # global lho12
     # lho12 = rap.lhoX(rk,1)*rho0
@@ -1779,13 +1802,15 @@ def diagnose( usol, bsol2, tsol, csol2, Ra, Rb, ncpus):
     # global lho42
     # lho42 = rap.lhoX(rk,4)/rho0**2   
 
-    # Dynamic viscosity μ=ρν and its first derivative
-    global mu0
-    mu0 = rap.muX( rk, 0)
-    global mu1
-    mu1 = rap.muX( rk, 1)
-    global mu2
-    mu2 = rap.muX( rk, 2)
+    # Kinematic viscosity and its derivatives
+    global vsc0
+    vsc0 = rap.viscoX( rk, 0)
+    global vsc1
+    vsc1 = rap.viscoX( rk, 1)
+    global vsc2
+    vsc2 = rap.viscoX( rk, 2)
+    global vsc3
+    vsc3 = rap.viscoX( rk, 3)
 
     [ lp_u, lt_u, ll ] = ut.ell(par.m, par.lmax, par.symm)  # the l-indices of the flow field
     #[ lp_b, lt_b, _  ] = ut.ell(par.m, par.lmax, ut.bsymm)  # the l-indices of the magnetic field
@@ -1845,33 +1870,33 @@ def diagnose_4plot( ncpus, usol, tsol, radii, field0):
     global r4
     r4 = rk**4
 
-    rho = rap.densityX( rk, 2)
     global rho0
-    rho0 = rho[:,0]
-    global rho1
-    rho1 = rho[:,1]
-    global rho2
-    rho2 = rho[:,2]
-    global lho1
-    lho1 = rap.lhoX(rk,1)/rho0
-    global lho2
-    lho2 = rap.lhoX(rk,2)/(rho0**2)
-    global lho3
-    lho3 = rap.lhoX(rk,3)/(rho0**3)
-    global lho4
-    lho4 = rap.lhoX(rk,4)/(rho0**4)
-    global lho5
-    lho5 = rap.lhoX(rk,5)/(rho0**5)
+    rho0 = np.exp(rap.logrhoX(rk, 0))
+    # global rho1
+    # rho1 = np.exp(rap.logrhoX(rk, 1))
 
-    # Dynamic viscosity μ=ρν and its derivatives
-    global mu0
-    mu0 = rap.muX( rk, 0)
-    global mu1
-    mu1 = rap.muX( rk, 1)
-    global mu2
-    mu2 = rap.muX( rk, 2)
-    global mu3
-    mu3 = rap.muX( rk, 3)
+    global lho1
+    lho1 = rap.logrhoX(rk,1)
+    global lho2
+    lho2 = rap.logrhoX(rk,2)
+    global lho3
+    lho3 = rap.logrhoX(rk,3)
+    global lho4
+    lho4 = rap.logrhoX(rk,4)
+    global lho5
+    lho5 = rap.logrhoX(rk,5)
+    global lh12
+    lh12 = lho1*lho2
+
+    # Kinematic viscosity and its derivatives
+    global vsc0
+    vsc0 = rap.viscoX( rk, 0)
+    global vsc1
+    vsc1 = rap.viscoX( rk, 1)
+    global vsc2
+    vsc2 = rap.viscoX( rk, 2)
+    global vsc3
+    vsc3 = rap.viscoX( rk, 3)
 
     [ lp_u, lt_u, ll ] = ut.ell(par.m, par.lmax, par.symm)  # the l-indices of the flow field
     

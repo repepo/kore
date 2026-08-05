@@ -171,7 +171,7 @@ class default_params():
         self.maxit = 50
 
         # Tolerance for solver
-        self.tol = 1e-15
+        self.tol = 1e-16
 
 
 

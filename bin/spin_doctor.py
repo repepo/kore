@@ -174,18 +174,19 @@ def main(ncpus):
         # diagnose solutions, in parallel
         [ udgn, bdgn, tdgn, cdgn ] = upp.diagnose( u_sol2, b_sol2, t_sol2, c_sol2, par.ricb, ut.rcmb, int(ncpus) )
 
-        Ra = par.ricb
-        Rb = ut.rcmb
-        ii = np.arange(0,par.N)
-        xk = np.cos( (ii+0.5)*np.pi/par.N )
-        rk = np.flipud(0.5*(Rb-Ra)*( xk + 1 ) + Ra)
-        cuvis = upp.diagnose_4plot(int(ncpus), u_sol2, t_sol2, rk, 'curl_vis')
-        idmax = np.unravel_index(np.argmax(abs(cuvis[:,2,0,:])), cuvis[:,2,0,:].shape)
-        # the max value of the toroidal component of the curl of the viscous force is
-        cuvismax[i] = abs(cuvis[idmax[0],2,0,idmax[1]])
-        cuvismax_l[i] = idmax[0]
-        cuvismax_r[i] = rk[idmax[1]]
-        #print(idmax[0], cuvismax_r )
+        if par.ViscosD>0:
+            Ra = par.ricb
+            Rb = ut.rcmb
+            ii = np.arange(0,par.N)
+            xk = np.cos( (ii+0.5)*np.pi/par.N )
+            rk = np.flipud(0.5*(Rb-Ra)*( xk + 1 ) + Ra)
+            cuvis = upp.diagnose_4plot(int(ncpus), u_sol2, t_sol2, rk, 'curl_vis')
+            idmax = np.unravel_index(np.argmax(abs(cuvis[:,2,0,:])), cuvis[:,2,0,:].shape)
+            # the max value of the toroidal component of the curl of the viscous force is
+            cuvismax[i] = abs(cuvis[idmax[0],2,0,idmax[1]])
+            cuvismax_l[i] = idmax[0]
+            cuvismax_r[i] = rk[idmax[1]]
+            #print(idmax[0], cuvismax_r )
 
 
 

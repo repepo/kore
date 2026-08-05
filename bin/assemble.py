@@ -1194,16 +1194,16 @@ def bc_u_spherical(l,loc):
     R  = ut.rcmb
     Ri = par.ricb
 
-    # Density and up to 2nd derivative at the surface
-    rhb0 = bv.rhb0
-    rhb1 = bv.rhb1
-    rhb2 = bv.rhb2
+    # Log density and up to 2nd derivative at the surface
+    lhb0 = bv.lhb0
+    lhb1 = bv.lhb1
+    lhb2 = bv.lhb2
 
     if par.ricb > 0:
-        # Density and up to 2nd derivative at the ICB
-        rha0 = bv.rha0
-        rha1 = bv.rha1
-        rha2 = bv.rha2
+        # Log density and up to 2nd derivative at the ICB
+        lha0 = bv.lha0
+        lha1 = bv.lha1
+        lha2 = bv.lha2
 
     L = l*(l+1.)
 
@@ -1238,18 +1238,15 @@ def bc_u_spherical(l,loc):
                 if par.bco == 0:  # impenetrable cmb
                     out[ 0,:] = Tbu[:,0]
                 elif par.bco == 2:    # zero radial stress at the cmb
-                    out[ 0,:] = Tbu[:,0]*(R*rhb1-3*rhb0) + Tbu[:,1]*3*R*rhb0
+                    out[ 0,:] = Tbu[:,0]*(lhb1*R-3) + Tbu[:,1]*3*R
 
                 # zero consoidal stress at the cmb
-                out[ 1,:] =   Tbu[:,0] * ( (L-2)*(rhb0**2) - R*rhb0*rhb1 - (R**2)*(rhb1**2) + (R**2)*rhb0*rhb2 )   \
-                            + Tbu[:,1] * (R**2)*rhb0*rhb1                                                          \
-                            + Tbu[:,2] * (R**2)*(rhb0**2)
+                out[ 1,:] = Tbu[:,2]*(R**2) + Tbu[:,1]*(R**2)*lhb1 + Tbu[:,0]*( (R**2)*lhb2 + (L-2) - R*lhb1 )
 
             elif par.bco == 1: # no-slip cmb
 
-                out[ 0,:] =   Tbu[:,0]  # P=0
-                out[ 1,:] =   Tbu[:,0] * ( rhb0 + R*rhb1 )   \
-                            + Tbu[:,1] * R*rhb0
+                out[ 0,:] = Tbu[:,0]  # P=0
+                out[ 1,:] = Tbu[:,1] + Tbu[:,0]*( lhb1 + (1/R) )
 
             if par.ricb > 0:
 
@@ -1258,17 +1255,14 @@ def bc_u_spherical(l,loc):
                     if par.bci == 0:    # impenetrable icb
                         out[ 2,:] =   bv.Ta[:,0]  # P=0
                     elif par.bci == 2:  # zero radial stress at the icb
-                        out[ 2,:] = bv.Ta[:,0]*(Ri*rha1-3*rha0) + bv.Ta[:,1]*3*Ri*rha0
+                        out[ 2,:] = bv.Ta[:,0]*(lha1*Ri-3) + bv.Ta[:,1]*3*Ri
 
                     # zero consoidal stress at the icb
-                    out[ 3,:] =   bv.Ta[:,0] * ( (L-2)*(rha0**2) - Ri*rha0*rha1 - (Ri**2)*(rha1**2) + (Ri**2)*rha0*rha2 )   \
-                                + bv.Ta[:,1] * (Ri**2)*rha0*rha1                                                            \
-                                + bv.Ta[:,2] * (Ri**2)*(rha0**2)
+                    out[ 3,:] = bv.Ta[:,2]*(Ri**2) + bv.Ta[:,1]*(Ri**2)*lha1 + bv.Ta[:,0]*( (Ri**2)*lha2 + (L-2) - Ri*lha1 )
 
                 elif par.bci == 1: # no-slip icb
-                    out[ 2,:] =   bv.Ta[:,0]  # P =0
-                    out[ 3,:] =   bv.Ta[:,0] * ( rha0 + Ri*rha1 )   \
-                                + bv.Ta[:,1] * Ri*rha0
+                    out[ 2,:] = bv.Ta[:,0]  # P =0
+                    out[ 3,:] = bv.Ta[:,1] + bv.Ta[:,0]*( lha1 + (1/Ri) )
 
         row0 = int(ut.N1*(l-ut.m_top)/2)
         col0 = int(ut.N1*(l-ut.m_top)/2)

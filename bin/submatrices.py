@@ -133,22 +133,19 @@ def main(ncpus):
 
         # Viscous diffusion
         if par.ViscosD > 0:
-            arg2 += [ vP ]*35
-            labl += [ 'u1lh13moe0ohr1_D0', 'u1lho4moe0ohr1_D0', 'u1lh12moe1ohr1_D0', 
-                      'u1lho3moe1ohr1_D0', 'u1lho2moe2ohr1_D0', 'u2lh12moe0ohr1_D0', 
-                      'u2lho3moe0ohr1_D0', 'u2lh11moe1ohr1_D0', 'u2lho2moe1ohr1_D0', 
-                      'u2lho1moe2ohr1_D0', 'u3lh11moe0ohr1_D0', 'u3lho2moe0ohr1_D0',
-                      'u3lho1moe1ohr1_D0', 'u3moe2ohr1_D0'    , 'u4lho1moe0ohr1_D0',
-                      'u4moe1ohr1_D0'    , 'u5moe0ohr1_D0'    ,
-                        
-                      'u1lh12moe0ohr1_D1', 'u1lho3moe0ohr1_D1', 'u1lh11moe1ohr1_D1', 
-                      'u1lho2moe1ohr1_D1', 'u1lho1moe2ohr1_D1', 'u2lh11moe0ohr1_D1', 
-                      'u2lho2moe0ohr1_D1', 'u2lho1moe1ohr1_D1', 'u3moe1ohr1_D1'    ,
-    
-                      'u1lh11moe0ohr1_D2', 'u1lho2moe0ohr1_D2', 'u1lho1moe1ohr1_D2',
-                      'u1moe2ohr1_D2'    , 'u2moe1ohr1_D2'    , 'u3moe0ohr1_D2'    ,
-                                            
-                      'u1moe1ohr1_D3'    , 'u2moe0ohr1_D3'    , 'u1moe0ohr1_D4'    ]
+            arg2 += [ vP ]*44
+            labl += [ 'u1lh13vsc0_D0', 'u1lh22vsc0_D0', 'u1lho4vsc0_D0', 'u2lh12vsc0_D0',
+                      'u2lho3vsc0_D0', 'u3lh11vsc0_D0', 'u3lho2vsc0_D0', 'u4lho1vsc0_D0',
+                          'u5vsc0_D0',     'u5vsc0_D0', 'u1lh12vsc1_D0', 'u1lho3vsc1_D0',
+                      'u2lh11vsc1_D0', 'u2lho2vsc1_D0', 'u3lho1vsc1_D0', 'u3lho1vsc1_D0',
+                          'u4vsc1_D0',     'u4vsc1_D0', 'u1lho2vsc2_D0', 'u2lho1vsc2_D0',
+                          'u3vsc2_D0',     'u3vsc2_D0',
+                      'u1lh12vsc0_D1', 'u1lho3vsc0_D1', 'u2lho2vsc0_D1', 'u3lho1vsc0_D1',
+                      'u3lho1vsc0_D1', 'u1lh11vsc1_D1', 'u1lho2vsc1_D1', 'u2lho1vsc1_D1',
+                          'u3vsc1_D1',     'u3vsc1_D1', 'u1lho1vsc2_D1',
+                      'u1lh11vsc0_D2', 'u1lho2vsc0_D2', 'u2lho1vsc0_D2',     'u3vsc0_D2', 
+                      'u1lho1vsc1_D2',     'u2vsc1_D2',     'u1vsc2_D2',
+                      'u1lho1vsc0_D3',     'u2vsc0_D3',     'u1vsc1_D3',     'u1vsc0_D4'    ]
 
         # Buoyancy force
         if par.thermal == 1:
@@ -169,10 +166,10 @@ def main(ncpus):
 
         # Viscous diffusion
         if par.ViscosD > 0:
-            arg2 += [ vT ]*5 
-            labl += [ 'v2moe1ohr1_D0', 'v3moe0ohr1_D0',
-                      'v1moe1ohr1_D1', 'v2moe0ohr1_D1',            
-                      'v1moe0ohr1_D2' ]
+            arg2 += [ vT ]*7
+            labl += [ 'v2lho1vsc0_D0', 'v3vsc0_D0', 'v2vsc1_D0',
+                      'v1lho1vsc0_D1', 'v2vsc0_D1', 'v1vsc1_D1',
+                          'v1vsc0_D2' ]
 
     if par.thermal == 1:                  
         # -------------------------------------------------------------------------------------------------------------------------------------------
@@ -200,7 +197,7 @@ def main(ncpus):
     opkey = []  # all 'reduced' operator id list, might have duplicates
     pkey  = []  # unique 'reduced' operator id list
     parg0 = []  # derivative order
-    parg1 = []  # Cheb coeeffs go here
+    parg1 = []  # Cheb coeffs go here
     parg2 = []  # vector_parity
 
     if par.ricb > 0:  # set vector_parity = 0, i.e. is not needed
@@ -262,7 +259,7 @@ def main(ncpus):
 
             adj = int(func1 in ['gra', 'pdS', 'lh1'])   # adjusts operator parity for these profiles 
             operator_parity = 1-(( rpower + (dorder1 or 0) + (dorder2 or 0) + dx + adj )%2)*2  # we use 'or 0' to give 0 when dorder is None
-            #print(labl1, operator_parity, adj)
+            #print(labl1, operator_parity, adj, rpower, vector_parity)
             overall_parity  = vector_parity * operator_parity
             matrix = ut.remroco( matrix, overall_parity, vector_parity)
             chop = int(gbx/2)
@@ -274,8 +271,8 @@ def main(ncpus):
 
 
         if chop > 0:  # ------------------------------------------------------------------- Makes room for boundary conditions and writes to disk
-            #matrix = ss.vstack( [ Z[chop-1], matrix[:-chop,:] ], format='csr' )
-            pass
+            matrix = ss.vstack( [ Z[chop-1], matrix[:-chop,:] ], format='csr' )
+            #pass
         sio.mmwrite( labl1+'.mtx', matrix )
         # ---------------------------------------------------------------------------------------------------------------------------------------
 
