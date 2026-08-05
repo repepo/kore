@@ -260,8 +260,9 @@ def main(ncpus):
 
         if par.ricb == 0 :  # --------------------------------------------------------- If no solid inner core then remove unneeded rows and cols
 
-            adj = func1 in ['gra', 'pdS']   # adjusts operator parity for these profiles 
+            adj = int(func1 in ['gra', 'pdS', 'lh1'])   # adjusts operator parity for these profiles 
             operator_parity = 1-(( rpower + (dorder1 or 0) + (dorder2 or 0) + dx + adj )%2)*2  # we use 'or 0' to give 0 when dorder is None
+            #print(labl1, operator_parity, adj)
             overall_parity  = vector_parity * operator_parity
             matrix = ut.remroco( matrix, overall_parity, vector_parity)
             chop = int(gbx/2)
@@ -273,7 +274,8 @@ def main(ncpus):
 
 
         if chop > 0:  # ------------------------------------------------------------------- Makes room for boundary conditions and writes to disk
-            matrix = ss.vstack( [ Z[chop-1], matrix[:-chop,:] ], format='csr' )
+            #matrix = ss.vstack( [ Z[chop-1], matrix[:-chop,:] ], format='csr' )
+            pass
         sio.mmwrite( labl1+'.mtx', matrix )
         # ---------------------------------------------------------------------------------------------------------------------------------------
 

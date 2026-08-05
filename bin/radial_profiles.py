@@ -63,25 +63,8 @@ class user_defined_profiles():  # ----------------------------------------------
     def Gamma1_isentropic(self,r):  # This is the isentropic Γ₁  
         out = self.dlog_p(r)/self.dlog_rho(r)
         return out
-    def faux1(self,r,a,b,c):  # inverted parabola (hard edges)
-        out = np.zeros_like(r)
-        x = (r>a)&(r<b)
-        out[x] = -c*(4/b**2)*(r[x]-a)*(r[x]-b)
-        if par.ricb == 0:
-            out[r<0] = np.flipud(out[r>0])  # make it even
-        return out
-    def faux2(self,r,a,b,c):  # cosine function (soft edges)
-        out = np.zeros_like(r)
-        x = (r>a)&(r<b)
-        out[x] = (c/2)*(1-np.cos(2*np.pi*(r[x]-a)/(b-a)))
-        if par.ricb == 0:
-            out[r<0] = np.flipud(out[r>0])  # make it even
-        return out
-    def faux(self,r,a,b,c):  # mixed parabola + cosine. par.aux4=1 is cosine, par.aux4=0 is parabola.
-        out = self.faux1(r,a,b,c) * (1-par.aux4) + self.faux2(r,a,b,c) * par.aux4
-        return out
     def Gamma1(self,r,a,b,c):  # The resulting first adiabatic coefficient Γ₁
-        out = self.Gamma1_isentropic(r) + self.faux(r,a,b,c)
+        out = self.Gamma1_isentropic(r) + ut.erf_transition(r,a,b,c)
         return out
     def gradS(self,r,a,b,c):  # The background entropy gradient
         out = np.zeros_like(r)
@@ -101,9 +84,9 @@ class user_defined_profiles():  # ----------------------------------------------
 
     def viscosity(self, r, rpower):
         # -------------------------------------------------------------------- v(r)
-        #out = np.ones_like(r)
+        out = np.ones_like(r)
         #out = 1/self.density(r,0)
-        out = ( par.visc0 + 0.5*(1-par.visc0)*(1 + ss.erf((r-par.rvisc)/par.hvisc)) )/self.density(r,0)
+        #out = ( par.visc0 + 0.5*(1-par.visc0)*(1 + ss.erf((r-par.rvisc)/par.hvisc)) )/self.density(r,0)
         # -------------------------------------------------------------------------
         return (r**rpower)*out
 
@@ -297,7 +280,9 @@ def lhoX(r, lhoorder):  # ρⁿ (ln ρ)⁽ⁿ⁾
     dd = densityX(r, lhoorder)
     d0 = dd[:,0]
 
-    if lhoorder == 1:
+    if lhoorder == 0:
+        out = d0
+    elif lhoorder == 1:
         d1 = dd[:,1]
         out = d1
     elif lhoorder == 2:
@@ -334,7 +319,7 @@ def rhoXlhoX(r, *args):   # ρᵃ (ln ρ)⁽ᵇ⁾  derivatives of ρ
     delta = rhopower - lhoorder
     if delta == 0:
         out = lhoX(r,lhoorder)
-    elif delta>0:
+    else:
         out = rhoX(r, 0, delta) * lhoX(r, lhoorder)
 
     return out
@@ -425,7 +410,14 @@ def burrito(r, *args):
     #     out1 = proffdir[func1](r, dorder1)
     #     out2 = rhoXlhoX(r, rhopower, dorder2)
 
-    return out0*out1*out2
+    out = out0*out1*out2
+    # simple test for singular behavior at r=rcmb
+    # slope = abs( ( out[r==r[1]] - out[r==r[0]] ) / ( r[1] - r[0] ) )
+    # #print(args, out[r==r[0]], slope)
+    # if slope>1200:
+    #     print('Possible divergence at r=1', args, slope) 
+
+    return out
 
 
 # -------------------------------------------------------------------------------------------------------------

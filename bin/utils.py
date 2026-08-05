@@ -86,15 +86,15 @@ def decode_label(labl):
 
     if section == 'u':
         if par.ViscosD == 0:
-            rpower = 3 - rx ; rhopower = 2   # Inviscid, we multiply the r̂⋅∇×∇× equations by r³ ρ²
+            rpower = 3 - rx ; rhopower = 2   # Inviscid, we multiply the r̂⋅∇×∇× equations by r³ ρ**rhopower
         else:
-            rpower = 5 - rx ; rhopower = 4   # Viscous, we multiply the r̂⋅∇×∇× equations by r⁵ ρ⁴
+            rpower = par.rpower_u - rx ; rhopower = par.rhopower_u   # Viscous, we multiply the r̂⋅∇×∇× equations by (r**rpower_u)*(ρ**rhopower)
 
     elif section == 'v':
         if par.ViscosD == 0:
             rpower = 2 - rx ; rhopower = 1   # Inviscid, we multiply the r̂⋅∇× equations by r² ρ
         else:
-            rpower = 3 - rx ; rhopower = 1   # Viscous, we multiply the r̂⋅∇× equations by r³ ρ
+            rpower = par.rpower_v - rx ; rhopower = par.rhopower_v   # Viscous, we multiply the r̂⋅∇× equations by r³ ρ
 
     elif section == 'h':
         if par.ThermaD == 0:
@@ -408,6 +408,33 @@ def ironit(coeffs, strength):
 
 
 
+def bump(r, r0, delta_r, amplitude):
+    '''
+    The bump function from r=a to r=b, amplitude c
+    A nice smooth bump, zero for r<a and r>b
+    '''
+    a = r0-delta_r/2
+    b = r0+delta_r/2
+    out = np.zeros_like(r)
+    idx = (r>a)&(r<b)
+    r0 = (a+b)/2
+    out[idx] = amplitude * np.exp( 1/((r[idx]-a)*(r[idx]-b)) ) / np.exp( 1/((r0-a)*(r0-b)) )
+    return out
+
+
+
+def erf_transition(r, r0, scaling_factor, amplitude):
+    '''
+    A nice smooth erf-based transition function at r=r0
+    the scaling factor controls how sharp the transition is,
+    the higher the factor the sharper the transition.
+    '''
+    out = np.zeros_like(r)
+    out = scsp.erfc((r-r0)*scaling_factor) * amplitude/2
+    return out
+    
+
+    
 def get_radial_derivatives( func, rorder, Dorder, tol):
     '''
     This function computes terms of the form r^n d^m/dr^m of a

@@ -158,7 +158,7 @@ def buoyancy(l, section, component, offdiag):
 
         out = 1.0 * u2gra0_D0
 
-    return par.Beyonce * out/L**3
+    return par.Beyonce * out/L**2
 
 
 
