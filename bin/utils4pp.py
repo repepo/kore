@@ -454,19 +454,34 @@ def curl(l, qlm, slm, tlm):
     '''
     L = l*(l+1.)
 
-    [qlm0, qlm1, qlm2] = qlm
-    [slm0, slm1, slm2] = slm
-    [tlm0, tlm1, tlm2] = tlm
+    if len(qlm) == 2:
+        [qlm0, qlm1] = qlm
+        [slm0, slm1] = slm
+        [tlm0, tlm1] = tlm
+
+    elif len(qlm) == 3:
+        [qlm0, qlm1, qlm2] = qlm
+        [slm0, slm1, slm2] = slm
+        [tlm0, tlm1, tlm2] = tlm
 
     out_rad0 = L*tlm0/rk
     out_con0 = tlm1 + tlm0/rk
     out_tor0 = (qlm0-slm0)/rk - slm1
 
-    out_rad1 = L*tlm1/rk - L*tlm0/r2
-    out_con1 = tlm2 + tlm1/rk - tlm0/r2
-    out_tor1 = (qlm1-slm1)/rk - (qlm0-slm0)/r2 - slm2
+    if len(qlm) == 2:
+        out_rad = [out_rad0]
+        out_con = [out_con0]
+        out_tor = [out_tor0]
 
-    return [ [out_rad0, out_rad1], [out_con0, out_con1], [out_tor0, out_tor1] ]
+    elif len(qlm) == 3:
+        out_rad1 = L*tlm1/rk - L*tlm0/r2
+        out_con1 = tlm2 + tlm1/rk - tlm0/r2
+        out_tor1 = (qlm1-slm1)/rk - (qlm0-slm0)/r2 - slm2
+        out_rad = [out_rad0, out_rad1]
+        out_con = [out_con0, out_con1]
+        out_tor = [out_tor0, out_tor1]
+
+    return [ out_rad, out_con, out_tor ]
 
 
 
@@ -665,23 +680,23 @@ def flow_worker( l ):
 
 
     # (∇×𝐮)⋅(∇×𝐮)
-    enstro_vel_p = dotprod_pol(l, cuvelq, cuvels, cuvelq, cuvels ) * const0**2
-    enstro_vel_t = dotprod_tor(l, cuvelt, cuvelt ) * const0**2
+    enstro_vel_p = dotprod_pol(l, cuvelq[0], cuvels[0], cuvelq[0], cuvels[0] ) * const0**2
+    enstro_vel_t = dotprod_tor(l, cuvelt[0], cuvelt[0] ) * const0**2
 
     # (∇×𝐮)⋅(∇×(𝐳×𝐮))
-    enstro_cor_p = dotprod_pol(l, cuvelq, cuvels, cucorq, cucors ) * const0**2
-    enstro_cor_t = dotprod_tor(l, cuvelt, cucort ) * const0**2
+    enstro_cor_p = dotprod_pol(l, cuvelq[0], cuvels[0], cucorq[0], cucors[0] ) * const0**2
+    enstro_cor_t = dotprod_tor(l, cuvelt[0], cucort[0] ) * const0**2
 
     # (∇×𝐮)⋅(∇×((∇⋅𝛔)/ρ))
     if par.ViscosD>0:
-        enstro_vif_p = dotprod_pol(l, cuvelq, cuvels, cuvifq, cuvifs ) * const0**2
-        enstro_vif_t = dotprod_tor(l, cuvelt, cuvift ) * const0**2
+        enstro_vif_p = dotprod_pol(l, cuvelq[0], cuvels[0], cuvifq[0], cuvifs[0] ) * const0**2
+        enstro_vif_t = dotprod_tor(l, cuvelt[0], cuvift[0] ) * const0**2
     else:
         [ enstro_vif_p, enstro_vif_t ] = [0,0]
 
     if par.thermal:
-        enstro_buo_p = dotprod_pol(l, cuvelq, cuvels, cubuoq, cubuos ) * const1*const0
-        enstro_buo_t = dotprod_tor(l, cuvelt, cubuot ) * const1*const0
+        enstro_buo_p = dotprod_pol(l, cuvelq[0], cuvels[0], cubuoq[0], cubuos[0] ) * const0**2
+        enstro_buo_t = dotprod_tor(l, cuvelt[0], cubuot[0] ) * const0**2
 
 
     # Kinetic energy ½ρ𝐮⋅𝐮
@@ -773,7 +788,7 @@ def worker_4plot( l ):
         [ [rad0, rad1, rad2], [con0, con1, con2], [tor0, tor1, tor2] ] = coriolis(l)
 
     elif field in ['buo', 'curl_buo','2curl_buo']:
-        [ [rad0, rad1], [con0, con1], [tor0, tor1] ] = buoyancy(l)
+        [ [rad0, rad1, rad2], [con0, con1, con2], [tor0, tor1, tor2] ] = buoyancy(l)
  
     if field[:5]=='curl_':
         [out_rad, out_con, out_tor] = curl(l, [rad0, rad1, rad2], [con0, con1, con2], [tor0, tor1, tor2])
@@ -1671,16 +1686,20 @@ def buoyancy(l):
     out_rad1 = np.zeros_like(rk, dtype='complex128')
     out_con1 = np.zeros_like(rk, dtype='complex128')
     out_tor1 = np.zeros_like(rk, dtype='complex128')
-    
+    out_rad2 = np.zeros_like(rk, dtype='complex128')
+    out_con2 = np.zeros_like(rk, dtype='complex128')
+    out_tor2 = np.zeros_like(rk, dtype='complex128')
+
     if l in lp:
         idx   = list(lp).index(l)
-        f_pol = funcheb( tsol2[idx,:], r=rk, ricb=par.ricb, rcmb=ut.rcmb, n=1 )
-        out_rad0  = f_pol[:,0] * rap.graviX( rk, 0)
-        out_rad1  = f_pol[:,1] * rap.graviX( rk, 0) + f_pol[:,0] * rap.graviX( rk, 1)
+        f_pol = funcheb( tsol2[idx,:], r=rk, ricb=par.ricb, rcmb=ut.rcmb, n=2 )
+        out_rad0 = f_pol[:,0] * rap.graviX( rk, 0)
+        out_rad1 = f_pol[:,1] * rap.graviX( rk, 0) + f_pol[:,0] * rap.graviX( rk, 1)
+        out_rad2 = f_pol[:,2] * rap.graviX( rk, 0) + f_pol[:,1] * rap.graviX( rk, 1) + f_pol[:,1] * rap.graviX( rk, 1) + f_pol[:,0] * rap.graviX( rk, 2)
         
-    return [ [out_rad0*par.Beyonce, out_rad1*par.Beyonce],
-             [out_con0*par.Beyonce, out_con1*par.Beyonce],
-             [out_tor0*par.Beyonce, out_tor1*par.Beyonce] ]
+    return [ [out_rad0*par.Beyonce, out_rad1*par.Beyonce, out_rad2*par.Beyonce],
+             [out_con0*par.Beyonce, out_con1*par.Beyonce, out_con2*par.Beyonce],
+             [out_tor0*par.Beyonce, out_tor1*par.Beyonce, out_tor2*par.Beyonce] ]
 
 
 
