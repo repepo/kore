@@ -274,8 +274,8 @@ def main(ncpus):
 
 
         if chop > 0:  # ------------------------------------------------------------------- Makes room for boundary conditions and writes to disk
-            #matrix = ss.vstack( [ Z[chop-1], matrix[:-chop,:] ], format='csr' )
-            pass
+            matrix = ss.vstack( [ Z[chop-1], matrix[:-chop,:] ], format='csr' )
+            #pass
         sio.mmwrite( labl1+'.mtx', matrix )
         # ---------------------------------------------------------------------------------------------------------------------------------------
 
