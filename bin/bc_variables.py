@@ -52,18 +52,16 @@ def Tcenter(N) :
 R  = ut.rcmb
 Ri = par.ricb       
 
-# Density and up to 2nd derivative at the surface
-rhbd = rap.densityX(1,2)
-rhb0 = rhbd[:,0]
-rhb1 = rhbd[:,1]
-rhb2 = rhbd[:,2]
+# Log density and up to 2nd derivative at the surface
+lhb0 = rap.logrhoX(R,0)
+lhb1 = rap.logrhoX(R,1)
+lhb2 = rap.logrhoX(R,2)
 
 if par.ricb > 0:
     # Density and up to 2nd derivative at the ICB
-    rhad = rap.densityX(Ri,2)
-    rha0 = rhad[:,0]
-    rha1 = rhad[:,1]
-    rha2 = rhad[:,2]
+    lha0 = rap.logrhoX(Ri,0)
+    lha1 = rap.logrhoX(Ri,1)
+    lha2 = rap.logrhoX(Ri,2)
 
 
 

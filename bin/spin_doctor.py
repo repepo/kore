@@ -73,6 +73,13 @@ def main(ncpus):
     KT          = np.zeros(success)
     Dkin        = np.zeros(success)
     Dint        = np.zeros(success)
+    Ensvel      = np.zeros(success)
+    Enscor      = np.zeros(success)
+    Ensvif      = np.zeros(success)
+    Ensbuo      = np.zeros(success)    
+    cuvismax    = np.zeros(success)
+    cuvismax_r  = np.zeros(success)
+    cuvismax_l  = np.zeros(success, dtype=int)
     Wlor        = np.zeros(success)
     Wthm        = np.zeros(success)
     Wcmp        = np.zeros(success)
@@ -103,16 +110,17 @@ def main(ncpus):
     resid1      = np.zeros(success)
     resid2      = np.zeros(success)
     resid3      = np.zeros(success)
+    resens      = np.zeros(success)
 
     # tracking variables to be processed
     y           = np.zeros(success)                # for eigenmode tracking
 
     # parameter values to be saved
-    params      = np.zeros((success,30))
+    params      = np.zeros((success,39))
     # ------------------------------------------------------------------------------------------------------------------------
 
-    print('\n  ★     Damping σ     Frequency ω   Peak ℓ   ℓ-Width  ℓ-Convergence ')
-    print(  ' ‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾ ')
+    print('\n  ★     Damping σ     Frequency ω     𝒯/𝒫       resid𝐮    Peak ℓ ℓ-Width ℓ-Convergence   cvf_r   cvf_l    cvfmax     residual')
+    print(  ' ‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾ ')
 
 
     if par.track_target == 1:  # eigenvalue tracking enabled
@@ -141,12 +149,12 @@ def main(ncpus):
             lpi = np.searchsorted(ll,lp);  # Poloidal indices
             lti = np.searchsorted(ll,lt);  # Toroidal indices
 
-        if par.magnetic:
-            rmag = np.copy(rb[:,i])
-            imag = np.copy(ib[:,i])
-            # Expand solution
-            b_sol2 = upp.expand_reshape_sol( rmag + 1j*imag, ut.bsymm)
-            b_sol  = upp.expand_sol( rmag + 1j*imag, ut.bsymm)  # this one for the torque
+        # if par.magnetic:
+        #     rmag = np.copy(rb[:,i])
+        #     imag = np.copy(ib[:,i])
+        #     # Expand solution
+        #     b_sol2 = upp.expand_reshape_sol( rmag + 1j*imag, ut.bsymm)
+        #     b_sol  = upp.expand_sol( rmag + 1j*imag, ut.bsymm)  # this one for the torque
                         
         if par.thermal:
             rthm = np.copy(rt[:,i])
@@ -154,57 +162,75 @@ def main(ncpus):
             # Expand solution
             t_sol2  = upp.expand_reshape_sol( rthm + 1j*ithm, par.symm)
             
-        if par.compositional:
-            rcmp = np.copy(rc[:,i])
-            icmp = np.copy(ic[:,i])
-            # Expand solution
-            c_sol2  = upp.expand_reshape_sol( rcmp + 1j*icmp, par.symm)		   			
+        # if par.compositional:
+        #     rcmp = np.copy(rc[:,i])
+        #     icmp = np.copy(ic[:,i])
+        #     # Expand solution
+        #     c_sol2  = upp.expand_reshape_sol( rcmp + 1j*icmp, par.symm)		   			
 
         # identify solutions
         [ ldom[i], lwidth[i], lconv[i] ] = upp.identify( u_sol2 )
 
-        '''
         # diagnose solutions, in parallel
         [ udgn, bdgn, tdgn, cdgn ] = upp.diagnose( u_sol2, b_sol2, t_sol2, c_sol2, par.ricb, ut.rcmb, int(ncpus) )
+
+        if par.ViscosD>0:
+            Ra = par.ricb
+            Rb = ut.rcmb
+            ii = np.arange(0,par.N)
+            xk = np.cos( (ii+0.5)*np.pi/par.N )
+            rk = np.flipud(0.5*(Rb-Ra)*( xk + 1 ) + Ra)
+            cuvis = upp.diagnose_4plot(int(ncpus), u_sol2, t_sol2, rk, 'curl_vis')
+            idmax = np.unravel_index(np.argmax(abs(cuvis[:,2,0,:])), cuvis[:,2,0,:].shape)
+            # the max value of the toroidal component of the curl of the viscous force is
+            cuvismax[i] = abs(cuvis[idmax[0],2,0,idmax[1]])
+            cuvismax_l[i] = idmax[0]
+            cuvismax_r[i] = rk[idmax[1]]
+            #print(idmax[0], cuvismax_r )
+
+
+
 
         if par.hydro:
             
             KP[i] = np.sum( udgn[lpi,0])  # Poloidal kinetic energy
             KT[i] = np.sum( udgn[lti,0])  # Toroidal kinetic energy
 
-            [ KE[i], Dkin0, Dint0, Wlor0, Wthm0, Wcmp0 ] = np.sum( udgn, 0)
-            Dkin[i] = par.ViscosD * Dkin0
-            Dint[i] = par.ViscosD * Dint0
-            Wlor[i] = 0#par.OmgTau**2 * par.Le2 * Wlor0
-            Wthm[i] = par.Beyonce * Wthm0
-            Wcmp[i] = 0#par.OmgTau**2 * par.BV2_comp * Wcmp0
+            [ KE[i], Dkin0, Ensvel[i], Enscor[i], Ensvif[i], Ensbuo[i], Wlor0, Wthm0, Wcmp0 ] = np.sum( udgn, 0)
+            Dkin[i] = Dkin0
+            resens[i] = abs(Ensvel[i]*sigma+Enscor[i]-Ensbuo[i]-Ensvif[i]) / max((abs(Ensvel[i]*sigma),abs(Enscor[i]),abs(Ensbuo[i]),abs(Ensvif[i])))
+            # Dint[i] = par.ViscosD * Dint0
+            # Wlor[i] = 0#par.OmgTau**2 * par.Le2 * Wlor0
+            # Wthm[i] = par.Beyonce * Wthm0
+            # Wcmp[i] = 0#par.OmgTau**2 * par.BV2_comp * Wcmp0
 
-            # Viscous torques
-            vtorq[i] = 0#par.Ek * np.dot( ut.gamma_visc(0,0,0), u_sol)  # need to double check the constants here
-            vtorq_icb[i] = 0#par.Ek * np.dot( ut.gamma_visc_icb(par.ricb), u_sol)
-
-
-        if par.magnetic:
-
-            [ ME0, Dohm0, Indu0 ] = np.sum( bdgn, 0)
-            ME[i]   = 0#ME0   * par.OmgTau**2 * par.Le2
-            #Dohm = Dohm0 * par.OmgTau**3 * par.Le2 * par.Em
-            Indu[i] = 0#par.OmgTau * par.Em * Indu0
-
-            if ((par.mantle == 'TWA') and (par.m==0) and (par.symm==1)):
-                mtorq[i] = par.Le2 * np.dot( ut.gamma_magnetic(), b_sol )  # need to double check the constants here
+            # # Viscous torques
+            # vtorq[i] = 0#par.Ek * np.dot( ut.gamma_visc(0,0,0), u_sol)  # need to double check the constants here
+            # vtorq_icb[i] = 0#par.Ek * np.dot( ut.gamma_visc_icb(par.ricb), u_sol)
 
 
-        if par.compositional:
+        # if par.magnetic:
 
-            [ TE[i], Dthm0, Wadv_thm[i] ] = np.sum( tdgn, 0) 
-            Dthm[i] = Dthm0 * par.Etherm
+        #     [ ME0, Dohm0, Indu0 ] = np.sum( bdgn, 0)
+        #     ME[i]   = 0#ME0   * par.OmgTau**2 * par.Le2
+        #     #Dohm = Dohm0 * par.OmgTau**3 * par.Le2 * par.Em
+        #     Indu[i] = 0#par.OmgTau * par.Em * Indu0
+
+        #     if ((par.mantle == 'TWA') and (par.m==0) and (par.symm==1)):
+        #         mtorq[i] = par.Le2 * np.dot( ut.gamma_magnetic(), b_sol )  # need to double check the constants here
 
 
-        if par.compositional:
+        # if par.compositional:
+
+        #     [ TE[i], Dthm0, Wadv_thm[i] ] = np.sum( tdgn, 0) 
+        #     Dthm[i] = Dthm0 * par.Etherm
+
+
+        # if par.compositional:
             
-            [ CE[i], Dcmp0, Wadv_cmp[i] ] = np.sum( cdgn, 0)
-            Dcmp[i] = Dcmp0 * par.Ecomp  
+        #     [ CE[i], Dcmp0, Wadv_cmp[i] ] = np.sum( cdgn, 0)
+        #     Dcmp[i] = Dcmp0 * par.Ecomp 
+
 
         # --------------------------------------------------------- Computing residuals to check the power balance:
         # KE is kinetic energy
@@ -229,20 +255,19 @@ def main(ncpus):
         # resid3 is the relative residual of 2*sigma*TE - Dthm - Wadv = 0
         # ---------------------------------------------------------------------------------------------------------
 
-        if par.ViscosD != 0 and par.hydro == 1:
-            resid0[i] = abs( Dint0 + Dkin0 ) / max( abs(Dint0), abs(Dkin0) )
-        else:
-            resid0[i] = np.nan
+        # if par.ViscosD != 0 and par.hydro == 1:
+        #     resid0[i] = abs( Dint0 + Dkin0 ) / max( abs(Dint0), abs(Dkin0) )
+        # else:
+        #     resid0[i] = np.nan
 
         if par.hydro:
-            resid1[i] = (abs( 2*sigma*KE[i] - Dkin[i] - Wlor[i] + Wthm[i] )
-                         /max(abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wlor[i]), abs(Wthm[i])))     
+            resid1[i] = ( abs( 2*sigma*KE[i] - Dkin[i] ) / max( abs(2*sigma*KE[i]), abs(Dkin[i])) )     
                          
-        '''
+        
 
-        # ------------------------------------------------------------------------------------------------------------------
-        print(' {:2d}   {: 12.9f}   {: 12.9f}    {:4d}      {:4d}      {:8.2e}'.format(i, sigma, w, ldom[i], lwidth[i], lconv[i]))
-        # ------------------------------------------------------------------------------------------------------------------
+        # -------i-------sigma-------w-----------KT/KP----resid1-----ldom-----lwidth-----lconv-------cuv_r-----cuv_l-----cuvm------resens------------------------------------------------------------------------------------------------------------------------------------
+        print(' {:2d}   {: 12.9f}   {: 12.9f}   {:8.2e}   {:8.2e}    {:4d}    {:4d}     {:8.2e}     {:5.3f}   {:4d}    {:8.2e}    {:8.2e}'.format(i, sigma, w, KT[i]/KP[i], resid1[i], ldom[i], lwidth[i], lconv[i], cuvismax_r[i], cuvismax_l[i], cuvismax[i], resens[i]  ))
+        # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
         toc = timer()
         
@@ -282,12 +307,23 @@ def main(ncpus):
                                 par.aux2,                       #26
                                 par.aux3,                       #27
                                 par.aux4,                       #28
-                                par.aux5                        #29
-                                ])  # 30 total
+                                par.aux5,                       #29
+
+				                par.visc0,			            #30
+			                    par.hvisc,			            #31
+				                par.rvisc,			            #32
+
+                                par.rpower_u,                   #33
+                                par.rhopower_u,                 #34
+                                par.rpower_v,                   #35
+                                par.rhopower_v,                 #36
+
+                                par.rpower_pp,                  #37
+                                par.rhopower_pp                 #38
+                                ])  # 39 total
 
     # ------------------------------------------------------------------------------------------------------------------------
-    print(  ' ‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾ ')
-
+    print(  ' ‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾ ')
 
     '''
     # find closest eigenvalue to tracking target and write to target file
@@ -336,7 +372,11 @@ def main(ncpus):
              
             '%.9e', '%.9e', '%.9e', '%.9e',
             
-            '%.9e', '%.9e'
+            '%.9e', '%.9e', '%.9e', '%.9e',
+
+            '%.9e', '%.9f', '%.9f', '%.9f',
+
+            '%.9f', '%.9f', '%.9f'
             ])
 
     if par.hydro:   
@@ -346,20 +386,20 @@ def main(ncpus):
            #                         resid0, resid1,
            #                         np.real(vtorq), np.imag(vtorq),
            #                         np.real(vtorq_icb), np.imag(vtorq_icb)])
-           np.savetxt(dflo, np.c_[ ldom, lwidth, lconv ], fmt=['%d','%d','%.3e'])
+           np.savetxt(dflo, np.c_[ KE, KP, KT, Dkin, ldom, lwidth, lconv, Ensvel, Enscor, Ensvif, Ensbuo, cuvismax_r, cuvismax_l, cuvismax, resens ], fmt=['%.9e', '%.9e', '%.9e', '%.9e', '%d', '%d', '%.3e', '%.9e', '%.9e', '%.9e', '%.9e', '%.3e', '%d', '%.3e', '%.9e' ])
 
-    if par.magnetic:
-        with open('magnetic.dat','ab') as dmag:
-            np.savetxt(dmag, np.c_[ ME, Mdfs, Indu, resid2,
-                                    np.real(mtorq), np.imag(mtorq)])
+    # if par.magnetic:
+    #     with open('magnetic.dat','ab') as dmag:
+    #         np.savetxt(dmag, np.c_[ ME, Mdfs, Indu, resid2,
+    #                                 np.real(mtorq), np.imag(mtorq)])
 
-    if par.thermal:
-        with open('thermal.dat','ab') as dtmp:
-            np.savetxt(dtmp, np.c_[ TE, Wadv_thm, Dthm, resid3 ])
+    # if par.thermal:
+    #     with open('thermal.dat','ab') as dtmp:
+    #         np.savetxt(dtmp, np.c_[ TE, Wadv_thm, Dthm, resid3 ])
 
-    if par.compositional:
-        with open('compositional.dat','ab') as dcmp:
-            np.savetxt(dcmp, np.c_[ CE, Wadv_cmp, Dcmp ])
+    # if par.compositional:
+    #     with open('compositional.dat','ab') as dcmp:
+    #         np.savetxt(dcmp, np.c_[ CE, Wadv_cmp, Dcmp ])
 
     if par.forcing == 0:
         with open('eigenvalues.dat','ab') as deig:

@@ -13,7 +13,8 @@ par.set_scales()
 # ---------------------------------------
 # --------------- Manual parameter adjust
 # ---------------------------------------
-par.m           = 0
+par.ricb        = 0.02
+par.m           = 2
 par.symm        = 1
 par.ricb        = 0.71
 par.Ek          = 1e-8
@@ -39,6 +40,23 @@ par.ViscosD     = par.Ek
 par.diff_rot    = 1
 par.diff_rot_type = "conical" # Possible types : Y20, Y20-wall-bounded, shellular, cylindrical, conical, shellular_boussinesq and solar
 par.diff_rot_amplitude = -0.25
+#par.model_type  = 'astropy table'
+#par.model       = 'poly.n3_isentropic.h5'
+#par.model       = 'model_s.at'
+par.aux0        = 0.996  # r peel cutoff
+par.aux1        = 0.03  #x1  
+par.aux2        = 0.03  #w1
+par.aux3        = 0.69  #x2
+par.aux4        = 0.03  #w2
+par.aux5        = 2.5   #A
+par.Gaspard     = 1.
+par.Beyonce     = 4.80127e4  #(1.0/0.3)**2
+par.ViscosD     = 1e-4
+par.ThermaD     = 0.
+
+par.visc0       = 1.0   # core/envelope viscosity ratio
+par.rvisc       = 0.60   # transition radius
+par.hvisc       = 0.04   # transition width
 
 par.bci         = 0
 par.bco         = 0
@@ -59,6 +77,26 @@ par.itau        = 1.3552    # ⍵ : frequency (negative is prograde)
 par.smopo       = 0
 par.nev         = 3
 par.set_eigv_frame(frame)
+par.N           = 310
+g               = 1.0
+par.lmax        = par.ellmax(par.ncpus, g, par.m, par.N)
+rnd1            = 0
+rnd2            = 0
+par.rtau        = 0  #+ rnd1*1e-2
+par.itau        = 1.1  #1.59875  #+ rnd2*0.001 
+par.smopo       = 0
+par.nev         = 10
+par.which_eigenpairs = 'TM'
+
+par.rpower_u    = 5
+par.rhopower_u  = 0
+
+par.rpower_v    = 3
+par.rhopower_v  = 0  
+
+par.rpower_pp   = 4
+par.rhopower_pp = 4
+
 # ---------------------------------------
 
 # ---------------------------------------

@@ -18,6 +18,7 @@ import scipy.io as sio
 import numpy as np
 import warnings
 import sys
+import os
 from parameters import par
 import utils as ut
 
@@ -30,6 +31,13 @@ def main(ncpus):
     inviscid   = ((par.ViscosD == 0) and (par.ricb == 0))        # boolean
 
     tic = timer()
+    
+    if int(ncpus) == 0:
+        #cpuc = len(os.sched_getaffinity(0))
+        cpuc = mp.cpu_count()
+        print('cpu count =', cpuc)
+        ncpus = cpuc
+
     print('N =', par.N,', lmax =', par.lmax)
 
     # vector parity for poloidal and toroidals. If ricb>0 we don't use parities, not needed.
@@ -125,22 +133,19 @@ def main(ncpus):
 
         # Viscous diffusion
         if par.ViscosD > 0:
-            arg2 += [ vP ]*29
-            labl += [ 'u1moe0lho4_D0', 'u1moe1lho3_D0', 'u1moe2lho2_D0', 
-                      'u2moe0lho3_D0', 'u2moe1lho2_D0', 'u2moe2lho1_D0',     
-                      'u3moe0lho2_D0', 'u3moe1lho1_D0', 'u3moe2_D0', 
-                      'u4moe0lho1_D0', 'u4moe1_D0'    , 'u5moe0_D0',
-
-                      'u1moe0lho3_D1', 'u1moe1lho2_D1', 'u1moe2lho1_D1',
-                      'u2moe0lho2_D1', 'u2moe1lho1_D1', 'u3moe0lho1_D1', 
-                      'u3moe1_D1',
-
-                      'u1moe0lho2_D2', 'u1moe1lho1_D2', 'u1moe2_D2',
-                      'u2moe0lho1_D2', 'u2moe1_D2'    , 'u3moe0_D2',
-                            
-                      'u1moe0lho1_D3', 'u1moe1_D3'    , 'u2moe0_D3',
-                        
-                      'u1moe0_D4' ]
+            arg2 += [ vP ]*44
+            labl += [ 'u1lh13vsc0_D0', 'u1lh22vsc0_D0', 'u1lho4vsc0_D0', 'u2lh12vsc0_D0',
+                      'u2lho3vsc0_D0', 'u3lh11vsc0_D0', 'u3lho2vsc0_D0', 'u4lho1vsc0_D0',
+                          'u5vsc0_D0',     'u5vsc0_D0', 'u1lh12vsc1_D0', 'u1lho3vsc1_D0',
+                      'u2lh11vsc1_D0', 'u2lho2vsc1_D0', 'u3lho1vsc1_D0', 'u3lho1vsc1_D0',
+                          'u4vsc1_D0',     'u4vsc1_D0', 'u1lho2vsc2_D0', 'u2lho1vsc2_D0',
+                          'u3vsc2_D0',     'u3vsc2_D0',
+                      'u1lh12vsc0_D1', 'u1lho3vsc0_D1', 'u2lho2vsc0_D1', 'u3lho1vsc0_D1',
+                      'u3lho1vsc0_D1', 'u1lh11vsc1_D1', 'u1lho2vsc1_D1', 'u2lho1vsc1_D1',
+                          'u3vsc1_D1',     'u3vsc1_D1', 'u1lho1vsc2_D1',
+                      'u1lh11vsc0_D2', 'u1lho2vsc0_D2', 'u2lho1vsc0_D2',     'u3vsc0_D2', 
+                      'u1lho1vsc1_D2',     'u2vsc1_D2',     'u1vsc2_D2',
+                      'u1lho1vsc0_D3',     'u2vsc0_D3',     'u1vsc1_D3',     'u1vsc0_D4'    ]
 
         # Buoyancy force
         if par.thermal == 1:
@@ -201,10 +206,11 @@ def main(ncpus):
 
         # Viscous diffusion
         if par.ViscosD > 0:
-            arg2 += [ vT ]*5 
-            labl += [ 'v2moe1_D0', 'v3moe0_D0',
-                      'v1moe1_D1', 'v2moe0_D1',
-                      'v1moe0_D2' ]
+            arg2 += [ vT ]*7
+            labl += [ 'v2lho1vsc0_D0', 'v3vsc0_D0', 'v2vsc1_D0',
+                      'v1lho1vsc0_D1', 'v2vsc0_D1', 'v1vsc1_D1',
+                          'v1vsc0_D2' ]
+           
         
         if par.diff_rot == 1:
             """
@@ -238,6 +244,7 @@ def main(ncpus):
             # For f0(r)Y00
             arg2 += [ vT ]
             labl += [ 'v1abu0_D0' ]
+            
 
     if par.thermal == 1:                  
         # -------------------------------------------------------------------------------------------------------------------------------------------
@@ -265,7 +272,7 @@ def main(ncpus):
     opkey = []  # all 'reduced' operator id list, might have duplicates
     pkey  = []  # unique 'reduced' operator id list
     parg0 = []  # derivative order
-    parg1 = []  # Cheb coeeffs go here
+    parg1 = []  # Cheb coeffs go here
     parg2 = []  # vector_parity
 
     if par.ricb > 0:  # set vector_parity = 0, i.e. is not needed
@@ -325,8 +332,9 @@ def main(ncpus):
 
         if par.ricb == 0 :  # --------------------------------------------------------- If no solid inner core then remove unneeded rows and cols
 
-            adj = func1 in ['gra', 'pdS']   # adjusts operator parity for these profiles 
+            adj = int(func1 in ['gra', 'pdS', 'lh1'])   # adjusts operator parity for these profiles 
             operator_parity = 1-(( rpower + (dorder1 or 0) + (dorder2 or 0) + dx + adj )%2)*2  # we use 'or 0' to give 0 when dorder is None
+            #print(labl1, operator_parity, adj, rpower, vector_parity)
             overall_parity  = vector_parity * operator_parity
             matrix = ut.remroco( matrix, overall_parity, vector_parity)
             chop = int(gbx/2)
@@ -339,6 +347,7 @@ def main(ncpus):
 
         if chop > 0:  # ------------------------------------------------------------------- Makes room for boundary conditions and writes to disk
             matrix = ss.vstack( [ Z[chop-1], matrix[:-chop,:] ], format='csr' )
+            #pass
         sio.mmwrite( labl1+'.mtx', matrix )
         # ---------------------------------------------------------------------------------------------------------------------------------------
 

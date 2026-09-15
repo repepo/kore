@@ -86,15 +86,15 @@ def decode_label(labl):
 
     if section == 'u':
         if par.ViscosD == 0:
-            rpower = 3 - rx ; rhopower = 2   # Inviscid, we multiply the r̂⋅∇×∇× equations by r³ ρ²
+            rpower = 3 - rx ; rhopower = 2   # Inviscid, we multiply the r̂⋅∇×∇× equations by r³ ρ**rhopower
         else:
-            rpower = 5 - rx ; rhopower = 4   # Viscous, we multiply the r̂⋅∇×∇× equations by r⁵ ρ⁴
+            rpower = par.rpower_u - rx ; rhopower = par.rhopower_u   # Viscous, we multiply the r̂⋅∇×∇× equations by (r**rpower_u)*(ρ**rhopower)
 
     elif section == 'v':
         if par.ViscosD == 0:
             rpower = 2 - rx ; rhopower = 1   # Inviscid, we multiply the r̂⋅∇× equations by r² ρ
         else:
-            rpower = 3 - rx ; rhopower = 1   # Viscous, we multiply the r̂⋅∇× equations by r³ ρ
+            rpower = par.rpower_v - rx ; rhopower = par.rhopower_v   # Viscous, we multiply the r̂⋅∇× equations by r³ ρ
 
     elif section == 'h':
         if par.ThermaD == 0:
@@ -102,13 +102,22 @@ def decode_label(labl):
         else:
             rpower = 2 - rx ; rhopower = 0   # Non-adiabatic motion, we multiply the thermal equation by r²
 
-    if howlong in [9,13]:   # sXfu1X_DX or sXfu1Xfu2X_DX
+    if howlong in [9,13,17]:   # sXfu1X_DX or sXfu1Xfu2X_DX
         func1   = labl[2:5]
         dorder1 = int(labl[5])
 
         if howlong == 13:   # sXfu1Xfu2X_DX
             func2   = labl[6:9]
             dorder2 = int(labl[9])
+            if (func2 == 'ohr') and (dorder2==1):
+                rhopower = rhopower - 1
+                (func2, dorder2) = (None, None)
+
+        elif howlong == 17:   # sXfu1Xfu2XohrX_DX
+            func2   = labl[6:9]
+            dorder2 = int(labl[9])
+            if labl[10:14] == 'ohr1':
+                rhopower = rhopower - 1
 
     return (section, rpower, rhopower, func1, dorder1, func2, dorder2, dx)
 
@@ -126,6 +135,7 @@ def gimmedachebs( labl ):
     tol = 1e-9
     args = decode_label(labl)  # (section, rpower, rhopower, func1, dorder1, func2, dorder2, dx)
     c0arg = chebco_f( rap.burrito, par.N, par.ricb, rcmb, tol, *args)
+    print('burrito', labl, args)
 
     return c0arg
 
@@ -383,8 +393,28 @@ def fonzie( func, r, N, ricb, rcmb, Dorder, tol, *args):
             ck = ironit(ck, par.smopo)
         out = funcheb(ck, r, ricb, rcmb, Dorder)
 
-    else : 
-        out[:,0] = func(r, *args)
+    #out = np.zeros_like(r)
+    ck  = chebco_f( func, N, ricb, rcmb, tol, args)
+    if id(func) in [ id(rap.prf.density), id(rap.prf.pdSdr), id(rap.prf.pressure), id(rap.prf.gravity) ]:
+        #print(func)
+        ck = ironit(ck, par.smopo)
+    out = funcheb(ck, r, ricb, rcmb, Dorder)
+
+    return out
+
+
+
+def angine( func, r, N, ricb, rcmb, Dorder, tol, *args):
+    '''
+    Returns func(r) or its Dorder derivative.
+    '''
+
+    out = np.zeros_like(r)
+    if Dorder == 0:
+        out = func(r, *args)
+    elif Dorder>0:
+        ck  = chebco_f( func, N, ricb, rcmb, tol, args)  # get Cheb coeffs
+        out = funcheb(ck, r, ricb, rcmb, Dorder)[:,-1]   # compute derivative
 
     return out
 
@@ -402,49 +432,82 @@ def ironit(coeffs, strength):
 
 
 
-def get_radial_derivatives( func, rorder, Dorder, tol):
+def bump(r, r0, delta_r, amplitude):
     '''
-    This function computes terms of the form r^n d^m/dr^m of a
-    radial profile in Chebyshev space.
-
-    Parameters
-    ----------
-    func   : function
-        Radial profile in the form of a function (can be found in utils)
-    rorder : integer
-        Highest order of radial power
-    Dorder : integer
-        Highest order of radial derivative
-    tol    : real
-        Tolerance for Chebyshev transforms for radial powers
-
-    Returns
-    -------
-    rd_prof : 2D list
-        List such that rd_prof[i][j] defines the Chebyshev coefficients of
-        r^i d^j/dr^j of the radial profile
+    The bump function from r=a to r=b, amplitude c
+    A nice smooth bump, zero for r<a and r>b
     '''
+    a = r0-delta_r/2
+    b = r0+delta_r/2
+    out = np.zeros_like(r)
+    idx = (r>a)&(r<b)
+    r0 = (a+b)/2
+    out[idx] = amplitude * np.exp( 1/((r[idx]-a)*(r[idx]-b)) ) / np.exp( 1/((r0-a)*(r0-b)) )
+    return out
 
-    # Make sure these are integers
-    rorder = int(rorder)
-    Dorder = int(Dorder)
 
-    rd_prof = [ [ [] for j in range(Dorder+1) ] for i in range(rorder+1) ] #List for Cheb coeffs to r^n D^m profile
-    dnprof = [ [] for i in range(Dorder+1) ] #List for Cheb coeffs of nth derivative of profile
-    # Cheb coeffs of profile
-    dnprof[0] = chebco_f( func, par.N, par.ricb, rcmb, par.tol_tc )
 
-    for i in range(rorder+1):
-        rn  = chebco(i, par.N, tol, par.ricb, rcmb) #Cheb coeffs of r^i
-        rd_prof[i][0] =  chebProduct(dnprof[0],rn,par.N,par.tol_tc) #Cheb coeffs of r^i profile
-        for j in range(1,Dorder+1):
-        # Cheb coeffs of r^i D^j profile
-            if i==0:
-                # These only need to be computed once
-                dnprof[j] = Dcheb(dnprof[j-1],par.ricb,rcmb)
-            rd_prof[i][j] = chebProduct(dnprof[j],rn,par.N,par.tol_tc)
+def erf_transition(r, r0, scaling_factor, amplitude):
+    '''
+    A nice smooth erf-based transition function at r=r0
+    the scaling factor controls how sharp the transition is,
+    the higher the factor the sharper the transition.
+    '''
+    out = np.zeros_like(r)
+    k = r>0
+    out[k] = scsp.erfc((r[k]-r0)*scaling_factor) * amplitude/2
+    if min(r)<0:
+        out[~k] = np.flipud(out[k])
+    return out
 
-    return rd_prof
+
+def erf_top_hat(x, x1, w1, x2, w2, A):
+    return A * 0.5 * (scsp.erf((x - x1) / w1) - scsp.erf((x - x2) / w2))
+
+
+# def get_radial_derivatives( func, rorder, Dorder, tol):
+#     '''
+#     This function computes terms of the form r^n d^m/dr^m of a
+#     radial profile in Chebyshev space.
+
+#     Parameters
+#     ----------
+#     func   : function
+#         Radial profile in the form of a function (can be found in utils)
+#     rorder : integer
+#         Highest order of radial power
+#     Dorder : integer
+#         Highest order of radial derivative
+#     tol    : real
+#         Tolerance for Chebyshev transforms for radial powers
+
+#     Returns
+#     -------
+#     rd_prof : 2D list
+#         List such that rd_prof[i][j] defines the Chebyshev coefficients of
+#         r^i d^j/dr^j of the radial profile
+#     '''
+
+#     # Make sure these are integers
+#     rorder = int(rorder)
+#     Dorder = int(Dorder)
+
+#     rd_prof = [ [ [] for j in range(Dorder+1) ] for i in range(rorder+1) ] #List for Cheb coeffs to r^n D^m profile
+#     dnprof = [ [] for i in range(Dorder+1) ] #List for Cheb coeffs of nth derivative of profile
+#     # Cheb coeffs of profile
+#     dnprof[0] = chebco_f( func, par.N, par.ricb, rcmb, par.tol_tc )
+
+#     for i in range(rorder+1):
+#         rn  = chebco(i, par.N, tol, par.ricb, rcmb) #Cheb coeffs of r^i
+#         rd_prof[i][0] =  chebProduct(dnprof[0],rn,par.N,par.tol_tc) #Cheb coeffs of r^i profile
+#         for j in range(1,Dorder+1):
+#         # Cheb coeffs of r^i D^j profile
+#             if i==0:
+#                 # These only need to be computed once
+#                 dnprof[j] = Dcheb(dnprof[j-1],par.ricb,rcmb)
+#             rd_prof[i][j] = chebProduct(dnprof[j],rn,par.N,par.tol_tc)
+
+#     return rd_prof
 
 
 
@@ -475,6 +538,7 @@ def load_model(r, var):
 
         x0 = profile['x']
         x = x0[x0<=par.aux0]; x=x/x[-1]
+        y = np.zeros_like(x)
         y0 = np.zeros_like(x0)
 
         if var == 'density':
@@ -1063,9 +1127,10 @@ def Mlam(a0,lamb,vector_parity):
     one from the highest derivative order appearing in the equation)
     '''
 
+    N = np.size(a0)
+
     if np.sum(abs(a0)) > 0 :
 
-        N = np.size(a0)
         bw = max(np.nonzero(a0)[0])
 
         a1 = np.zeros(2*N)
@@ -1079,11 +1144,12 @@ def Mlam(a0,lamb,vector_parity):
             # Overall operator parity given by a0 parity * lambda parity
             # check a0 parity like this: first nonzero a0 coefficient
             # a0 is the full vector of coefficients, including even and odd, size N
-            tmp = np.nonzero(a0)[0]
-            ix = tmp[-1] # index of *last* non zero coefficient
-            rpower_parity = 1 - 2*(ix%2)
+            #tmp = np.nonzero(a0)[0]
+            #ix = tmp[-1] # index of *last* non zero coefficient
+            ix = np.argmax(abs(a0))  # index of largest a0 coeff     #2*((argmax(abs(c0)))%2)-1
+            a0_parity = 1 - 2*(ix%2)
             lamb_parity = 1 - 2*(lamb%2)
-            operator_parity = rpower_parity * lamb_parity
+            operator_parity = a0_parity * lamb_parity
             overall_parity = vector_parity * operator_parity
             # rows to be deleted determined by overall_parity (after multiplying with DX and the eigenvector)
             # j even when overall_parity = 1 and vice versa
@@ -1154,7 +1220,7 @@ def Mlam(a0,lamb,vector_parity):
 
     else:
 
-        out = 0
+        out = ss.csr_matrix((N,N))
 
     return out
 
@@ -1240,7 +1306,7 @@ def ftest1(ricb):
 def Ylm(l, m, theta, phi):
     # The Spherical Harmonics, seminormalized
     #out = scsp.sph_harm(m, l, phi, theta)   ### for scipy older than 1.15.3
-    out = scsp.sph_harm_y(l,m,theta,phi)    ### for scipy 1.15.3 or newer
+    out = scsp.sph_harm_y(l,m,theta,phi)    ### for scipy 1.15.3 or newer  
     return out*np.sqrt(4*np.pi/(2*l+1))
 
 

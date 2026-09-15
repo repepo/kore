@@ -423,178 +423,6 @@ def main():
                 print('This boundary flow forcing needs symm = 1')
 
 
-    elif par.forcing == 0: # ----------------------------------------------------------------------------------------------------- B matrix, no forcing (eigenvalue problem)
-        '''
-        Builds the right hand side B matrix to solve
-        the generalized eigenvalue problem A.x = lambda.B.x
-        '''
-        if rank == 0:
-            tic = timer()
-
-        if par.hydro == 1:
-
-            # ----------------------------------------------------------------------- B matrix, 2curl (hydro), section u
-            for k,l in enumerate(loc_top):
-
-                row = ( rank*bpp + k )* ut.N1
-                col = row
-
-                mtx = -op.inertia(l,'u','upol',0)
-
-                if l == loc_top[0]:  # create loc_list if first iteration
-                    mtx.eliminate_zeros()
-                    mtx = mtx.tocoo()
-                    loc_list = [mtx.data, mtx.row + row , mtx.col + col]
-                else:  # append to loc_list if it already exists
-                    loc_list = ut.packit(loc_list, mtx, row, col)
-
-
-            # ----------------------------------------------------------------------- B matrix, 1curl (hydro), section v
-            for k,l in enumerate(loc_bot):
-
-                row = nb*ut.N1 + ( rank*bpp + k )* ut.N1
-                col = row
-
-                mtx = -op.inertia(l,'v','utor',0)
-
-                loc_list = ut.packit(loc_list, mtx, row, col)
-
-
-
-        if par.magnetic == 1: # adds -(d/dt)*b in the induction equation to matrix B
-
-            # ---------------------------------------------------------------------- B matrix (induction eq.), section f
-            for k,l in enumerate(loc_mag_f):  # same as loc_bot if B0 is antisymm
-
-                row = par.hydro*(2*nb*ut.N1) + ( rank*bpp + k )* ut.N1
-                col = row
-
-                if par.ricb == 0 or (par.innercore in ['insulator', 'TWA', 'conducting']) :
-                    mtx = -op.b(l,'f','bpol',0)
-                else :
-                    print('These magnetic parameters are not coded yet')
-
-                if par.hydro == 0:
-                    if l == loc_mag_f[0]:  # create loc_list if first iteration
-                        mtx.eliminate_zeros()
-                        mtx = mtx.tocoo()
-                        loc_list = [mtx.data, mtx.row + row , mtx.col + col]
-                    else:  # append to loc_list if it already exists
-                        loc_list = ut.packit(loc_list, mtx, row, col)
-                else:
-                    loc_list = ut.packit(loc_list, mtx, row, col)
-
-
-            # --------------------------------------------------------------- B matrix, 1curl (induction eq.), section g
-            for k,l in enumerate(loc_mag_g):  # same as loc_top if B0 is antisymm
-
-                row = par.hydro*(2*nb*ut.N1) + nb*ut.N1 + ( rank*bpp + k )* ut.N1
-                col = row
-
-                if par.ricb == 0 or (par.innercore in ['insulator', 'TWA', 'conducting']) :
-                    mtx = -op.b(l,'g','btor',0)
-                else :
-                    print('These magnetic parameters are not coded yet')
-
-                loc_list = ut.packit(loc_list, mtx, row, col)
-
-
-        if par.thermal == 1: # adds (d/dt)*theta in the heat equation to matrix B
-
-            # ------------------------------------------------------------------- B, theta_pol, nocurl (heat), section h
-            for k,l in enumerate(loc_top):  # loc_top here because theta
-                                            # follows the same symmetry as u
-                row = 2*(par.hydro + par.magnetic)*nb*ut.N1 + ( rank*bpp + k )* ut.N1
-                col = row
-
-                mtx = op.entropy(l,'h','', 0)
-
-                if par.hydro == 0:
-                    if l == loc_top[0]:  # create loc_list if first iteration
-                        mtx.eliminate_zeros()
-                        mtx = mtx.tocoo()
-                        loc_list = [mtx.data, mtx.row + row , mtx.col + col]
-                    else:  # append to loc_list if it already exists
-                        loc_list = ut.packit(loc_list, mtx, row, col)
-                else:
-                    loc_list = ut.packit(loc_list, mtx, row, col)
-
-
-                # loc_list = ut.packit(loc_list, mtx, row, col)
-
-
-        if par.compositional == 1: # adds (d/dt)*xi in the compositional equation to matrix B
-
-            # ------------------------------------------------------------------- B, theta_pol, nocurl (heat), section i
-            for k,l in enumerate(loc_top):  # loc_top here because xi
-                                            # follows the same symmetry as u
-                row = (2*(par.hydro + par.magnetic) + par.thermal)*nb*ut.N1 + ( rank*bpp + k )* ut.N1
-                col = row
-
-                mtx = op.composition(l,'i','', 0)
-
-                loc_list = ut.packit(loc_list, mtx, row, col)
-
-
-        # ---------------------------------------------------------------------- B matrix assembly
-        # We use comm.Allgather here to figure out the right size
-        # for the local variables bdat, brow and bcol.
-        # They all need to be the same size for comm.Gather to work with them.
-
-        s = np.shape(loc_list[0])[0]
-        alls = comm.allgather(s)
-        length = max(alls)
-
-        bdat = np.zeros(length)
-        brow = -np.ones(length)
-        bcol = -np.ones(length)
-
-        bdat[:s] = loc_list[0]
-        brow[:s] = loc_list[1]
-        bcol[:s] = loc_list[2]
-
-        # fdat, frow and fcol are variables that will store the full B matrix
-        # a Gather command will send all local data from each rank (bdat, brow, bcol)
-        # to the rank 0 process.
-
-        fdat = None
-        frow = None
-        fcol = None
-
-        # We need to initialize explicitely the variables in rank 0:
-        if rank == 0:
-            fdat = np.zeros(length*sizas)
-            frow = np.zeros(length*sizas)
-            fcol = np.zeros(length*sizas)
-
-        # and finally gather all local data to (fdat,frow,fcol)
-        comm.Gather(bdat,fdat,root=0)
-        comm.Gather(brow,frow,root=0)
-        comm.Gather(bcol,fcol,root=0)
-
-        if rank == 0:
-            #print(ut.sizmat)
-            ix = np.where(frow >= 0)
-            B = ss.csr_matrix( ( fdat[ix], (frow[ix], fcol[ix]) ) , shape=(ut.sizmat,ut.sizmat) )
-            Bnorm = ssl.norm(B)
-            #Bnorm=1
-            B = B/Bnorm
-
-            toc = timer()
-            print('--------------------------------------------')
-            print(' Matrix B assembled in', '{: 4.3f}'.format(toc-tic), 'seconds')
-            tic = timer()
-
-            np.savez('B.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
-            toc = timer()
-            print(' Matrix B written to disk in', '{: 4.3f}'.format(toc-tic), 'seconds')
-            print('--------------------------------------------')
-
-        comm.Barrier()
-
-
-
-
 
     if rank == 0:
         tic = timer()
@@ -1195,18 +1023,193 @@ def main():
         ix = np.where(frow >= 0)
         A = ss.csr_matrix((fdat[ix], (frow[ix], fcol[ix])), shape=(ut.sizmat,ut.sizmat), dtype=complex)
         if par.forcing == 0:
-            A = A/Bnorm
+            Anorm = ssl.norm(A)
+            A = A/Anorm
 
         toc = timer()
+        print('--------------------------------------------')
         print(' Matrix A assembled in', '{: 4.3f}'.format(toc-tic), 'seconds')
         tic = timer()
-
         np.savez('A.npz', data=A.data, indices=A.indices, indptr=A.indptr, shape=A.shape)
         toc = timer()
         print(' Matrix A written to disk in', '{: 4.3f}'.format(toc-tic), 'seconds')
         print('--------------------------------------------')
 
     comm.Barrier()
+
+
+    if par.forcing == 0: 
+        # ---------------------------------------------------------------------------------------------------------------------------------------------------------
+        # --------------------------------------------------------------------------------------------------------------- B matrix, no forcing (eigenvalue problem)
+        # ---------------------------------------------------------------------------------------------------------------------------------------------------------
+        '''
+        Builds the right hand side B matrix to solve
+        the generalized eigenvalue problem A.x = lambda.B.x
+        '''
+
+        if rank == 0:
+            tic = timer()
+
+        if par.hydro == 1:
+
+            # ----------------------------------------------------------------------- B matrix, 2curl (hydro), section u
+            for k,l in enumerate(loc_top):
+
+                row = ( rank*bpp + k )* ut.N1
+                col = row
+
+                mtx = -op.inertia(l,'u','upol',0)
+
+                if l == loc_top[0]:  # create loc_list if first iteration
+                    mtx.eliminate_zeros()
+                    mtx = mtx.tocoo()
+                    loc_list = [mtx.data, mtx.row + row , mtx.col + col]
+                else:  # append to loc_list if it already exists
+                    loc_list = ut.packit(loc_list, mtx, row, col)
+
+
+            # ----------------------------------------------------------------------- B matrix, 1curl (hydro), section v
+            for k,l in enumerate(loc_bot):
+
+                row = nb*ut.N1 + ( rank*bpp + k )* ut.N1
+                col = row
+
+                mtx = -op.inertia(l,'v','utor',0)
+
+                loc_list = ut.packit(loc_list, mtx, row, col)
+
+
+
+        if par.magnetic == 1: # adds -(d/dt)*b in the induction equation to matrix B
+
+            # ---------------------------------------------------------------------- B matrix (induction eq.), section f
+            for k,l in enumerate(loc_mag_f):  # same as loc_bot if B0 is antisymm
+
+                row = par.hydro*(2*nb*ut.N1) + ( rank*bpp + k )* ut.N1
+                col = row
+
+                if par.ricb == 0 or (par.innercore in ['insulator', 'TWA', 'conducting']) :
+                    mtx = -op.b(l,'f','bpol',0)
+                else :
+                    print('These magnetic parameters are not coded yet')
+
+                if par.hydro == 0:
+                    if l == loc_mag_f[0]:  # create loc_list if first iteration
+                        mtx.eliminate_zeros()
+                        mtx = mtx.tocoo()
+                        loc_list = [mtx.data, mtx.row + row , mtx.col + col]
+                    else:  # append to loc_list if it already exists
+                        loc_list = ut.packit(loc_list, mtx, row, col)
+                else:
+                    loc_list = ut.packit(loc_list, mtx, row, col)
+
+
+            # --------------------------------------------------------------- B matrix, 1curl (induction eq.), section g
+            for k,l in enumerate(loc_mag_g):  # same as loc_top if B0 is antisymm
+
+                row = par.hydro*(2*nb*ut.N1) + nb*ut.N1 + ( rank*bpp + k )* ut.N1
+                col = row
+
+                if par.ricb == 0 or (par.innercore in ['insulator', 'TWA', 'conducting']) :
+                    mtx = -op.b(l,'g','btor',0)
+                else :
+                    print('These magnetic parameters are not coded yet')
+
+                loc_list = ut.packit(loc_list, mtx, row, col)
+
+
+        if par.thermal == 1: # adds (d/dt)*theta in the heat equation to matrix B
+
+            # ------------------------------------------------------------------- B, theta_pol, nocurl (heat), section h
+            for k,l in enumerate(loc_top):  # loc_top here because theta
+                                            # follows the same symmetry as u
+                row = 2*(par.hydro + par.magnetic)*nb*ut.N1 + ( rank*bpp + k )* ut.N1
+                col = row
+
+                mtx = op.entropy(l,'h','', 0)
+
+                if par.hydro == 0:
+                    if l == loc_top[0]:  # create loc_list if first iteration
+                        mtx.eliminate_zeros()
+                        mtx = mtx.tocoo()
+                        loc_list = [mtx.data, mtx.row + row , mtx.col + col]
+                    else:  # append to loc_list if it already exists
+                        loc_list = ut.packit(loc_list, mtx, row, col)
+                else:
+                    loc_list = ut.packit(loc_list, mtx, row, col)
+
+
+                # loc_list = ut.packit(loc_list, mtx, row, col)
+
+
+        if par.compositional == 1: # adds (d/dt)*xi in the compositional equation to matrix B
+
+            # ------------------------------------------------------------------- B, theta_pol, nocurl (heat), section i
+            for k,l in enumerate(loc_top):  # loc_top here because xi
+                                            # follows the same symmetry as u
+                row = (2*(par.hydro + par.magnetic) + par.thermal)*nb*ut.N1 + ( rank*bpp + k )* ut.N1
+                col = row
+
+                mtx = op.composition(l,'i','', 0)
+
+                loc_list = ut.packit(loc_list, mtx, row, col)
+
+
+        # ---------------------------------------------------------------------- B matrix assembly
+        # We use comm.Allgather here to figure out the right size
+        # for the local variables bdat, brow and bcol.
+        # They all need to be the same size for comm.Gather to work with them.
+
+        s = np.shape(loc_list[0])[0]
+        alls = comm.allgather(s)
+        length = max(alls)
+
+        bdat = np.zeros(length)
+        brow = -np.ones(length)
+        bcol = -np.ones(length)
+
+        bdat[:s] = loc_list[0]
+        brow[:s] = loc_list[1]
+        bcol[:s] = loc_list[2]
+
+        # fdat, frow and fcol are variables that will store the full B matrix
+        # a Gather command will send all local data from each rank (bdat, brow, bcol)
+        # to the rank 0 process.
+
+        fdat = None
+        frow = None
+        fcol = None
+
+        # We need to initialize explicitely the variables in rank 0:
+        if rank == 0:
+            fdat = np.zeros(length*sizas)
+            frow = np.zeros(length*sizas)
+            fcol = np.zeros(length*sizas)
+
+        # and finally gather all local data to (fdat,frow,fcol)
+        comm.Gather(bdat,fdat,root=0)
+        comm.Gather(brow,frow,root=0)
+        comm.Gather(bcol,fcol,root=0)
+
+        if rank == 0:
+            #print(ut.sizmat)
+            ix = np.where(frow >= 0)
+            B = ss.csr_matrix( ( fdat[ix], (frow[ix], fcol[ix]) ) , shape=(ut.sizmat,ut.sizmat) )
+            #Bnorm = ssl.norm(B)
+            #Bnorm=1
+            B = B/Anorm
+
+            toc = timer()
+            print(' Matrix B assembled in', '{: 4.3f}'.format(toc-tic), 'seconds')
+            tic = timer()
+
+            np.savez('B.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
+            toc = timer()
+            print(' Matrix B written to disk in', '{: 4.3f}'.format(toc-tic), 'seconds')
+            print('--------------------------------------------')
+
+        comm.Barrier()
+
 
 
     # Free memory space
@@ -1228,18 +1231,18 @@ def bc_u_spherical(l,loc):
     R  = ut.rcmb
     Ri = par.ricb
 
-    # Density and up to 2nd derivative at the surface
-    rhb0 = bv.rhb0
-    rhb1 = bv.rhb1
-    rhb2 = bv.rhb2
+    # Log density and up to 2nd derivative at the surface
+    lhb0 = bv.lhb0
+    lhb1 = bv.lhb1
+    lhb2 = bv.lhb2
 
     if par.ricb > 0:
-        # Density and up to 2nd derivative at the ICB
-        rha0 = bv.rha0
-        rha1 = bv.rha1
-        rha2 = bv.rha2
+        # Log density and up to 2nd derivative at the ICB
+        lha0 = bv.lha0
+        lha1 = bv.lha1
+        lha2 = bv.lha2
 
-    L = l*(l+1)
+    L = l*(l+1.)
 
     if inviscid:
         num_rows_u = 1
@@ -1267,31 +1270,36 @@ def bc_u_spherical(l,loc):
 
         else:
 
-            if par.bco == 0: # stress-free cmb, do not use this if density is zero at the surface
+            if par.bco in [0, 2]: # stress-free cmb, do not use this if density is zero at the surface
 
-                out[ 0,:] =   Tbu[:,0]  #Tbu[:,0]*(R*rhb1-3*rhb0) + Tbu[:,1]*3*R*rhb0  # Use the longer expression if radial *stress* should vanish
-                out[ 1,:] =   Tbu[:,0] * ( (L-2)*(rhb0**2) - R*rhb0*rhb1 - (R**2)*(rhb1**2) + (R**2)*rhb0*rhb2 )   \
-                            + Tbu[:,1] * (R**2)*rhb0*rhb1                                                          \
-                            + Tbu[:,2] * (R**2)*(rhb0**2)
+                if par.bco == 0:  # impenetrable cmb
+                    out[ 0,:] = Tbu[:,0]
+                elif par.bco == 2:    # zero radial stress at the cmb
+                    out[ 0,:] = Tbu[:,0]*(lhb1*R-3) + Tbu[:,1]*3*R
+
+                # zero consoidal stress at the cmb
+                out[ 1,:] = Tbu[:,2]*(R**2) + Tbu[:,1]*(R**2)*lhb1 + Tbu[:,0]*( (R**2)*lhb2 + (L-2) - R*lhb1 )
 
             elif par.bco == 1: # no-slip cmb
 
-                out[ 0,:] =   Tbu[:,0]  # P=0
-                out[ 1,:] =   Tbu[:,0] * ( rhb0 + R*rhb1 )   \
-                            + Tbu[:,1] * R*rhb0
+                out[ 0,:] = Tbu[:,0]  # P=0
+                out[ 1,:] = Tbu[:,1] + Tbu[:,0]*( lhb1 + (1/R) )
 
             if par.ricb > 0:
 
-                if par.bci == 0:  # stress-free icb
-                    out[ 2,:] =   bv.Ta[:,0]  # P=0
-                    out[ 3,:] =   bv.Ta[:,0] * ( (L-2)*(rha0**2) - Ri*rha0*rha1 - (Ri**2)*(rha1**2) + (Ri**2)*rha0*rha2 )   \
-                                + bv.Ta[:,1] * (Ri**2)*rha0*rha1                                                            \
-                                + bv.Ta[:,2] * (Ri**2)*(rha0**2)
+                if par.bci in [0, 2]:  # stress-free icb
+
+                    if par.bci == 0:    # impenetrable icb
+                        out[ 2,:] =   bv.Ta[:,0]  # P=0
+                    elif par.bci == 2:  # zero radial stress at the icb
+                        out[ 2,:] = bv.Ta[:,0]*(lha1*Ri-3) + bv.Ta[:,1]*3*Ri
+
+                    # zero consoidal stress at the icb
+                    out[ 3,:] = bv.Ta[:,2]*(Ri**2) + bv.Ta[:,1]*(Ri**2)*lha1 + bv.Ta[:,0]*( (Ri**2)*lha2 + (L-2) - Ri*lha1 )
 
                 elif par.bci == 1: # no-slip icb
-                    out[ 2,:] =   bv.Ta[:,0]  # P =0
-                    out[ 3,:] =   bv.Ta[:,0] * ( rha0 + Ri*rha1 )   \
-                                + bv.Ta[:,1] * Ri*rha0
+                    out[ 2,:] = bv.Ta[:,0]  # P =0
+                    out[ 3,:] = bv.Ta[:,1] + bv.Ta[:,0]*( lha1 + (1/Ri) )
 
         row0 = int(ut.N1*(l-ut.m_top)/2)
         col0 = int(ut.N1*(l-ut.m_top)/2)
@@ -1306,7 +1314,7 @@ def bc_u_spherical(l,loc):
 
             out = ss.dok_matrix((num_rows_v, ut.N1),dtype=complex)
 
-            if   par.bco == 0: # stress-free cmb
+            if   par.bco in [0, 2]: # zero toroidal stress at the cmb
                 out[ 0,:] = R * Tbv[:,1] - Tbv[:,0]  # R*T'-T=0
 
             elif par.bco == 1: # no-slip cmb
@@ -1314,7 +1322,7 @@ def bc_u_spherical(l,loc):
 
             if par.ricb > 0 :
 
-                if   par.bci == 0: # stress-free icb
+                if   par.bci in [0, 2]: # zero toroidal stress at the icb
                     out[ 1,:] = Ri * bv.Ta[:,1] - bv.Ta[:,0]
 
                 elif par.bci == 1: # no-slip icb
