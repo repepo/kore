@@ -218,6 +218,26 @@ def cheb2space_tor(L, lt, T, ns):
 
 
 
+def angrymom_z(u_sol2):
+    '''
+    Returns the angular momentum in the z direction
+    '''
+    out = 0
+    [ lp, lt, _ ] = ut.ell( par.m, par.lmax, par.symm)
+
+    if par.m == 0 and par.symm == 1:
+        T = u_sol2[1]  # gets the toroidal component
+        idx = list(lt).index(1)  # this index should always be zero
+        if idx != 0:
+            print('Hello, I am a bug')
+        else:
+            t10 = funcheb( T[idx,:], r=None, ricb=par.ricb, rcmb=ut.rcmb, n=0 )[:,0]
+            out = cg_quad( (8*np.pi/3)*r3*t10, par.ricb, ut.rcmb, par.N, sqx )
+    
+    return out
+
+
+
 def energy_pol(l, qlm0, slm0):
     '''
     Returns the integrand to compute the poloidal energy, kinetic or magnetic, l-component
@@ -1003,14 +1023,16 @@ def pressure4pp(l, eigval, u_sol2):
 
 
 
-def diagnose( usol2, bsol2, tsol2, csol2, Ra, Rb, ncpus, eigval):
+_grid = None  # (Ra, Rb, N) of the quadrature grid currently in the module globals
+
+
+def setup_grid(Ra, Rb):
     '''
-    Computes kinetic energy, internal and kinetic energy dissipation,
-    and input power from body forces. Integrated From r=Ra to r=Rb, and
-    angularly over the whole sphere. Processed in parallel using ncpus.
+    Sets the module-level quadrature grid (rk, x0, sqx, r2, r3, r4) used by the workers.
+    When reusing a pool across diagnose calls, call this *before* creating the pool:
+    with the 'fork' start method the workers only see the globals as they were at fork time.
     '''
-    [out_u, out_b] = [0,0]
-    [out_t, out_c] = [0,0]
+    global rk, x0, sqx, r2, r3, r4, _grid
 
     # xk are the grid points for the integration using Gauss-Chebyshev quadratures.
     # Always go from -1 to 1
@@ -1018,28 +1040,44 @@ def diagnose( usol2, bsol2, tsol2, csol2, Ra, Rb, ncpus, eigval):
     xk = np.cos( (i+0.5)*np.pi/par.N )
 
     # rk are the corresponding radial points in the desired integration interval: from Ra to Rb
-    global rk
     rk = 0.5*(Rb-Ra)*( xk + 1 ) + Ra
 
     # x0 are the points in the appropriate domain of the Chebyshev polynomial solutions
-    global x0
     x0 = xcheb(rk, par.ricb, 1)
 
     # the following are needed to compute the integrals (i.e. the quadratures)
-    global sqx
     sqx = np.sqrt(1-xk**2)
-    global r2
     r2 = rk**2
-    global r3
     r3 = rk**3
-    global r4
     r4 = rk**4
+
+    _grid = (Ra, Rb, par.N)
+
+
+
+def diagnose( usol2, bsol2, tsol2, csol2, Ra, Rb, ncpus, eigval, pool=None):
+    '''
+    Computes kinetic energy, internal and kinetic energy dissipation,
+    and input power from body forces. Integrated From r=Ra to r=Rb, and
+    angularly over the whole sphere. Processed in parallel using ncpus.
+    If pool is given it is used (and left open) instead of creating a new one;
+    setup_grid(Ra, Rb) must have been called before that pool was created.
+    '''
+    [out_u, out_b] = [0,0]
+    [out_t, out_c] = [0,0]
+
+    if pool is None:
+        setup_grid(Ra, Rb)
+    elif _grid != (Ra, Rb, par.N):
+        raise ValueError('diagnose: call setup_grid(Ra, Rb) before creating the pool')
 
     [ lp_u, lt_u, ll ] = ut.ell(par.m, par.lmax, par.symm)  # the l-indices of the flow field
     [ lp_b, lt_b, _  ] = ut.ell(par.m, par.lmax, ut.bsymm)  # the l-indices of the magnetic field
     
     # process each l-component in parallel
-    pool = mp.Pool(processes=ncpus)
+    own_pool = pool is None
+    if own_pool:
+        pool = mp.Pool(processes=ncpus)
 
     #print(np.shape(usol2), np.shape(tsol2))
 
@@ -1064,7 +1102,8 @@ def diagnose( usol2, bsol2, tsol2, csol2, Ra, Rb, ncpus, eigval):
                 args=( l, lp_u, csol2, usol2, Ra, Rb, par.N, sqx, 'compositional' )) for l in lp_u ]   
         out_c = np.array([pp0.get() for pp0 in ppc])
 
-    pool.close()
-    pool.join()
+    if own_pool:
+        pool.close()
+        pool.join()
 
     return [ out_u, out_b, out_t, out_c ]

@@ -145,7 +145,6 @@ def main(ncpus):
 
     '''
     We want the product matrices MXY (power X of r times something in the C^(Y) basis)
-    these are the most time consuming to compute
     The derivative operator DY will be included later.
     These matrices are computed with the ut.Mlam function
     its arguments are r^(X) in the C^(Y) basis, Y, and vector parity

@@ -12,10 +12,117 @@ import scipy.io as sio
 import scipy.sparse as ss
 from timeit import default_timer as timer
 import os.path
+import multiprocessing as mp
 import numpy as np
 import parameters as par
 import utils as ut
 import utils4pp as upp
+
+
+
+def param_table(elapsed):
+    '''
+    Run parameters written as one row of params.dat, as (name, value, format) tuples.
+    The order here is the column order in params.dat. To add a parameter, append a
+    tuple at the end so existing columns keep their positions.
+    '''
+    return [
+        ( 'hydro',                    par.hydro,                   '%d' ),
+        ( 'magnetic',                 par.magnetic,                '%d' ),
+        ( 'thermal',                  par.thermal,                 '%d' ),
+        ( 'compositional',            par.compositional,           '%d' ),
+        ( 'Ek',                       par.Ek,                      '%.9e' ),
+        ( 'm',                        par.m,                       '%d' ),
+        ( 'symm',                     par.symm,                    '%d' ),
+        ( 'ricb',                     par.ricb,                    '%.9e' ),
+        ( 'bci',                      par.bci,                     '%d' ),
+        ( 'bco',                      par.bco,                     '%d' ),
+        ( 'forcing',                  par.forcing,                 '%d' ),
+        ( 'forcing_frequency',        par.forcing_frequency,       '%.9e' ),
+        ( 'forcing_amplitude_cmb',    par.forcing_amplitude_cmb,   '%.9e' ),
+        ( 'forcing_amplitude_icb',    par.forcing_amplitude_icb,   '%.9e' ),
+        ( 'projection',               par.projection,              '%d' ),
+        ( 'B0type',                   ut.B0type,                   '%d' ),
+        ( 'beta_actual',              ut.beta_actual,              '%.9e' ),
+        ( 'B0_l',                     ut.B0_l,                     '%d' ),
+        ( 'innercore_mag_bc',         ut.innercore_mag_bc,         '%d' ),
+        ( 'c_icb',                    par.c_icb,                   '%.9e' ),
+        ( 'c1_icb',                   par.c1_icb,                  '%.9e' ),
+        ( 'mantle_mag_bc',            ut.mantle_mag_bc,            '%d' ),
+        ( 'c_cmb',                    par.c_cmb,                   '%.9e' ),
+        ( 'c1_cmb',                   par.c1_cmb,                  '%.9e' ),
+        ( 'mu',                       par.mu,                      '%.9e' ),
+        ( 'Em',                       par.Em,                      '%.9e' ),
+        ( 'Le2',                      par.Le2,                     '%.9e' ),
+        ( 'B0_norm',                  ut.B0_norm(),                '%.9e' ),
+        ( 'Etherm',                   par.Etherm,                  '%.9e' ),
+        ( 'heating',                  ut.heating,                  '%d' ),
+        ( 'BV2',                      par.BV2,                     '%.9e' ),
+        ( 'rc',                       par.rc,                      '%.9e' ),
+        ( 'h',                        par.h,                       '%.9e' ),
+        ( 'rsy',                      par.rsy,                     '%d' ),
+        ( 'bci_thermal',              par.bci_thermal,             '%d' ),
+        ( 'bco_thermal',              par.bco_thermal,             '%d' ),
+        ( 'Ecomp',                    par.Ecomp,                   '%.9e' ),
+        ( 'compositional_background', ut.compositional_background, '%d' ),
+        ( 'BV2_comp',                 par.BV2_comp,                '%.9e' ),
+        ( 'rcc',                      par.rcc,                     '%.9e' ),
+        ( 'hc',                       par.hc,                      '%.9e' ),
+        ( 'rsyc',                     par.rsyc,                    '%d' ),
+        ( 'bci_compositional',        par.bci_compositional,       '%d' ),
+        ( 'bco_compositional',        par.bco_compositional,       '%d' ),
+        ( 'OmgTau',                   par.OmgTau,                  '%.9e' ),
+        ( 'ncpus',                    par.ncpus,                   '%d' ),
+        ( 'N',                        par.N,                       '%d' ),
+        ( 'lmax',                     par.lmax,                    '%d' ),
+        ( 'runtime',                  elapsed,                     '%.2f' ),
+        ( 'mu_i2o',                   par.mu_i2o,                  '%.9e' ),
+        ( 'sigma_i2o',                par.sigma_i2o,               '%.9e' ),
+        ( 'aux1',                     par.aux1,                    '%.9e' ),
+        ( 'aux2',                     par.aux2,                    '%.9e' ),
+        ( 'rotdyn',                   par.rotdyn,                  '%d' ),
+        ( 'MoIZ_M',                   par.MoIZ_M,                  '%.9e' ),
+        ( 'MoIZ_IC',                  par.MoIZ_IC,                 '%.9e' ),
+        ( 'OmgtauIC',                 par.OmgtauIC,                '%.9e' ),
+        ( 'gTorque',                  par.gTorque,                 '%.9e' ),
+    ]
+
+
+
+def ratio(a, b):
+    '''
+    a/b, or nan when b is zero (e.g. Tor/Pol when there is no flow)
+    '''
+    return a/b if b != 0 else np.nan
+
+
+
+def table_widths(cols):
+    '''
+    Width of each column of the summary table: the wider of its header and a formatted
+    sample value, plus some padding. Fixed up front so rows can be printed as they come.
+    '''
+    # sample values sized for the widest numbers expected: up to 99 solutions, |σ|,|ω| < 10000
+    sample = lambda fmt: 99 if fmt.endswith('d}') else (-9999.0 if fmt.endswith('f}') else 1.0)
+    return [ max(len(head), len(fmt.format(sample(fmt)))) + 2 for head, fmt, _ in cols ]
+
+
+
+def table_header(cols, widths):
+    '''
+    Header line and the ‾‾‾ underline of the summary table
+    '''
+    head = ' ' + ' '.join( h.center(wd) for (h, _, _), wd in zip(cols, widths) )
+    line = ' ' + ' '.join( '‾'*wd for wd in widths )
+    return head, line
+
+
+
+def table_row(cols, widths, i):
+    '''
+    Row of the summary table for solution i
+    '''
+    return ' ' + ' '.join( fmt.format(get(i)).center(wd) for (_, fmt, get), wd in zip(cols, widths) )
 
 
 
@@ -102,16 +209,59 @@ def main(ncpus):
     omg_incore  = np.zeros(success,dtype=complex)
     misalignmt  = np.zeros(success,dtype=complex)
     gravtorq    = np.zeros(success,dtype=complex)
-    params      = np.zeros((success,58))
+    angmomz     = np.zeros(success,dtype=complex)
+    params      = []                               # one row of param_table() per solution
     # ------------------------------------------------------------------------------------------------------------------------
 
-    print('\n  ★     Damping σ     Frequency ω    resid0     resid𝐮     resid𝐛     residθ     Tor/Pol    Mag/Kin    |𝚪|mag    |𝚪|magIC ')
-    print(  ' ‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾')
+    sigmas      = np.zeros(success)                # damping of each solution
+    freqs       = np.zeros(success)                # frequency of each solution
+
+    # Summary table printed while processing: (header, format, value of solution i).
+    # To print a new quantity, add a line here.
+    table_cols = [
+        ( '★',           '{:d}',      lambda i: i ),
+        ( 'Damping σ',   '{: .8f}',   lambda i: sigmas[i] ),
+        ( 'Frequency ω', '{: .8f}',   lambda i: freqs[i] ),
+        ( 'resid0',      '{:8.2e}',   lambda i: resid0[i] ),
+        ( 'resid𝐮',      '{:8.2e}',   lambda i: resid1[i] ),
+        ( 'resid𝐛',      '{:8.2e}',   lambda i: resid2[i] ),
+        ( 'residθ',      '{:8.2e}',   lambda i: resid3[i] ),
+        ( 'Tor/Pol',     '{:8.2e}',   lambda i: ratio(KT[i], KP[i]) ),
+        ( 'Mag/Kin',     '{:8.2e}',   lambda i: ratio(ME[i], KE[i]) ),
+        ( '|𝚪|mag',      '{:8.2e}',   lambda i: np.abs(mtorq[i]) ),
+        ( '|𝚪|magIC',    '{:8.2e}',   lambda i: np.abs(mtorq_ic[i]) ),
+    ]
+    table_w = table_widths(table_cols)
+    table_head, table_line = table_header(table_cols, table_w)
+
+    print('\n' + table_head)
+    print(table_line)
 
 
     if par.track_target == 1:  # eigenvalue tracking enabled
         #read target data
         x = np.loadtxt('track_target')
+
+
+    # Loop invariants: these don't depend on the solution, so build them once
+    if par.hydro:
+        [ lp, lt, ll] = ut.ell(par.m, par.lmax, par.symm)
+        lpi = np.searchsorted(ll,lp);  # Poloidal indices
+        lti = np.searchsorted(ll,lt);  # Toroidal indices
+        gvisc     = ut.gamma_visc(0,0,0)[0,:]            # viscous torque on the mantle
+        gvisc_icb = ut.gamma_visc_icb(par.ricb)[0,:]    # viscous torque on the IC
+
+    do_mtorq    = par.magnetic and (par.mantle == 'TWA') and (par.m==0) and (par.symm==1)
+    do_mtorq_ic = par.magnetic and (par.innercore in ['conducting, Chebys', 'TWA']) and ((par.m==0) and (par.symm==1))
+    if do_mtorq:
+        gmag    = ut.gamma_magnetic()
+    if do_mtorq_ic:
+        gmag_ic = ut.gamma_magnetic_ic()
+
+    # One pool for all solutions. The quadrature grid must be set before the pool is created,
+    # since the workers are forked and only see the module globals as they were at that time.
+    upp.setup_grid(par.ricb, ut.rcmb)
+    pool = mp.Pool(processes=int(ncpus))
 
 
     # Begin processing all solutions
@@ -123,6 +273,7 @@ def main(ncpus):
         else:
             w = ut.wf
             sigma = 0
+        sigmas[i], freqs[i] = sigma, w
 
         [ u_sol2, b_sol2, t_sol2, c_sol2 ] = [0,0,0,0]
 
@@ -132,9 +283,6 @@ def main(ncpus):
             # Expand solution
             u_sol2 = upp.expand_reshape_sol( rflow + 1j*iflow, par.symm)
             u_sol  = upp.expand_sol( rflow + 1j*iflow, par.symm)  # this one for the torque
-            [ lp, lt, ll] = ut.ell(par.m, par.lmax, par.symm)
-            lpi = np.searchsorted(ll,lp);  # Poloidal indices
-            lti = np.searchsorted(ll,lt);  # Toroidal indices
 
         if par.magnetic:
             rmag = np.copy(rb[:,i])
@@ -157,7 +305,7 @@ def main(ncpus):
 
 
         # diagnose solutions, in parallel
-        [ udgn, bdgn, tdgn, cdgn ] = upp.diagnose( u_sol2, b_sol2, t_sol2, c_sol2, par.ricb, ut.rcmb, int(ncpus), sigma+1j*w )
+        [ udgn, bdgn, tdgn, cdgn ] = upp.diagnose( u_sol2, b_sol2, t_sol2, c_sol2, par.ricb, ut.rcmb, int(ncpus), sigma+1j*w, pool=pool )
 
 
         if par.hydro:
@@ -165,7 +313,7 @@ def main(ncpus):
             KP[i] = np.sum( udgn[lpi,0])  # Poloidal kinetic energy
             KT[i] = np.sum( udgn[lti,0])  # Toroidal kinetic energy
             
-            [ KE[i], Dkin0, Dint0, Wlor0, Wthm0, Wcmp0, _ ] = np.sum( udgn, 0)
+            [ KE[i], Dkin0, Dint0, Wlor0, Wthm0, Wcmp0, press0[i] ] = np.sum( udgn, 0)
             Dkin[i] = par.OmgTau * par.Ek * Dkin0
             Dint[i] = par.OmgTau * par.Ek * Dint0
             Wlor[i] = par.OmgTau**2 * par.Le2 * Wlor0
@@ -174,10 +322,13 @@ def main(ncpus):
             #print('Wlor=',Wlor[i])
             
             # Viscous torques
-            vtorq[i] = par.Ek * par.OmgTau * np.dot( ut.gamma_visc(0,0,0)[0,:], u_sol)  # need to double check the constants here
-            vtorq_ic[i] = par.Ek * par.OmgTau * np.dot( ut.gamma_visc_icb(par.ricb)[0,:], u_sol)
+            vtorq[i] = par.Ek * par.OmgTau * np.dot( gvisc, u_sol)  # need to double check the constants here
+            vtorq_ic[i] = par.Ek * par.OmgTau * np.dot( gvisc_icb, u_sol)
 
-            press0[i] = udgn[6][0] 
+            # Angular momentum in the z direction
+            angmomz[i] = upp.angrymom_z(u_sol2)
+
+            #press0[i] = udgn[6][0], not sure why this was here? 
 
 
         if par.magnetic:
@@ -187,11 +338,11 @@ def main(ncpus):
             #Dohm = Dohm0 * par.OmgTau**3 * par.Le2 * par.Em
             Mdfs[i] = par.OmgTau * par.Em * Mdfs0
 
-            if ((par.mantle == 'TWA') and (par.m==0) and (par.symm==1)):
-                mtorq[i] = par.Le2 * (par.OmgTau**2) * np.dot( ut.gamma_magnetic(), b_sol )
+            if do_mtorq:
+                mtorq[i] = par.Le2 * (par.OmgTau**2) * np.dot( gmag, b_sol )
 
-            if (par.innercore in ['conducting, Chebys', 'TWA']) and ((par.m==0) and (par.symm==1)):
-                mtorq_ic[i] = par.Le2 * (par.OmgTau**2) * np.dot( ut.gamma_magnetic_ic(), b_sol )
+            if do_mtorq_ic:
+                mtorq_ic[i] = par.Le2 * (par.OmgTau**2) * np.dot( gmag_ic, b_sol )
 
         if par.rotdyn:
 
@@ -270,90 +421,19 @@ def main(ncpus):
         
     
         # ------------------------------------------------------------------------------------------------------------------
-        print(' {:2d}   {: 12.7f}   {: 12.7f}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}'.format( \
-               i, sigma, w, resid0[i], resid1[i], resid2[i], resid3[i], KT[i]/KP[i], ME[i]/KE[i], np.abs(mtorq[i]), np.abs(mtorq_ic[i]) ))
+        print(table_row(table_cols, table_w, i))
         # ------------------------------------------------------------------------------------------------------------------
         #print(' ')
 
         toc = timer()
         
-        params[i,:] = np.array([                          
-                                par.hydro,
-                                par.magnetic,
-                                par.thermal,
-                                par.compositional,
-                                
-                                par.Ek,
-                                par.m,
-                                par.symm,
-                                par.ricb,
+        params.append( [ v for _, v, _ in param_table(timing+toc-tic) ] )
 
-                                par.bci,
-                                par.bco,
-                                par.forcing,
-                                par.forcing_frequency,
-                                
-                                par.forcing_amplitude_cmb,
-                                par.forcing_amplitude_icb,
-                                par.projection,
-                                ut.B0type,
-                                
-                                ut.beta_actual,
-                                ut.B0_l,
-                                ut.innercore_mag_bc,
-                                par.c_icb,
-                                
-                                par.c1_icb,
-                                ut.mantle_mag_bc,
-                                par.c_cmb,
-                                par.c1_cmb,
-                                
-                                par.mu,
-                                par.Em,
-                                par.Le2,
-                                ut.B0_norm(),
-                                
-                                par.Etherm,
-                                ut.heating,
-                                par.BV2,
-                                par.rc,
-                                
-                                par.h,
-                                par.rsy,
-                                par.bci_thermal,
-                                par.bco_thermal,
-                                
-                                par.Ecomp,
-                                ut.compositional_background,
-                                par.BV2_comp,
-                                par.rcc,
-                                
-                                par.hc,
-                                par.rsyc,
-                                par.bci_compositional,
-                                par.bco_compositional,
-                                
-                                par.OmgTau,
-                                par.ncpus,
-                                par.N,
-                                par.lmax,
-                                
-                                timing+toc-tic,
-                                par.mu_i2o,
-                                par.sigma_i2o,
-                                par.aux1,
-
-                                par.aux2,
-                                par.rotdyn,
-                                par.MoIZ_M,
-                                par.MoIZ_IC,
-
-                                par.OmgtauIC,
-                                par.gTorque
-                                ])  # 58 total 
+    pool.close()
+    pool.join()
 
     # ------------------------------------------------------------------------------------------------------------------------
-    print(' ‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾\n')
+    print(table_line + '\n')
 
 
     '''
@@ -387,37 +467,8 @@ def main(ncpus):
     # ---------------------------------------------------------- write post-processed data and parameters to disk
 
     with open('params.dat','ab') as dpar:
-        np.savetxt(dpar, params,
-        fmt=[
-            '%d',   '%d',   '%d',   '%d',
-            
-            '%.9e', '%d',   '%d',   '%.9e',
-            
-            '%d',   '%d',   '%d',   '%.9e',
-            
-            '%.9e', '%.9e', '%d',   '%d' ,
-
-            '%.9e', '%d',   '%d',   '%.9e',
-
-            '%.9e', '%d',   '%.9e', '%.9e',
-             
-            '%.9e', '%.9e', '%.9e', '%.9e',
-
-            '%.9e', '%d',   '%.9e', '%.9e',
-           
-            '%.9e', '%.9e', '%d',   '%d',
-
-            '%.9e', '%d',   '%.9e', '%.9e',
-
-            '%.9e', '%d',   '%d',   '%d',
-
-            '%.9e', '%d',   '%d',   '%d',
-             
-            '%.2f', '%.9e', '%.9e' , '%.9e',
-             
-            '%.9e', '%d',   '%.9e', '%.9e',
-            
-            '%.9e', '%.9e' ])
+        np.savetxt(dpar, np.array(params),
+        fmt=[ f for _, _, f in param_table(0) ])
 
     if par.hydro:   
         with open('flow.dat','ab') as dflo:
@@ -426,7 +477,7 @@ def main(ncpus):
                                     resid0, resid1,
                                     np.real(vtorq), np.imag(vtorq),
                                     np.real(vtorq_ic), np.imag(vtorq_ic),
-                                    press0, elldom ])
+                                    press0, elldom, np.real(angmomz), np.imag(angmomz) ])
 
     if par.magnetic:
         with open('magnetic.dat','ab') as dmag:

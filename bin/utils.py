@@ -90,15 +90,25 @@ compositional_background = compositional_background_list.index(par.comp_backgrou
 
 def packit( lista_local, mtx, row, col):
     '''
-    Appends sparse matrix data, row, and col info to lista_local
+    Appends sparse matrix data, row, and col info to lista_local.
+    lista_local is [data, row, col], each a list of arrays, joined only once at the end with unpackit
+    (concatenating at every call copies everything accumulated so far, O(n^2) overall)
     '''
     mtx.eliminate_zeros()
     mtx = mtx.tocoo()
     blk = [mtx.data, mtx.row + row, mtx.col + col]
     for q in [0,1,2]:
-        lista_local[q]= np.concatenate( ( lista_local[q], blk[q] ) )
+        lista_local[q].append( blk[q] )
 
     return lista_local
+
+
+
+def unpackit( lista_local ):
+    '''
+    Joins the lists of arrays built with packit into three arrays: data, row, col
+    '''
+    return [ np.concatenate( lista_local[q] ) for q in [0,1,2] ]
 
 
 
@@ -788,7 +798,7 @@ def Dlam(lamb,N,R1,R2):
     const2 = scsp.factorial(lamb-1.)*2**(lamb-1.)
     tmp = lamb + np.arange(0,N-lamb)
 
-    return const1*const2*ss.diags(tmp,lamb, format='csr')
+    return const1*const2*ss.diags(tmp,lamb, format='csr', dtype=float)
 
 
 
@@ -806,43 +816,6 @@ def Slam(lamb,N):
         diag1 = -lamb/(lamb+tmp[2:])
 
     return ss.diags([diag0,diag1],[0,2], format='csr')
-
-
-
-def csl0( s, lamb, j, k):
-    '''
-    Computes the c_s^lambda(j,k) needed for the Mlam (multiplication) matrix
-    '''
-
-    p1=1; p3=1
-    for t in range(0,s):
-        p1 = p1*(lamb+t)/float(1+t)
-        p3 = p3*(2*lamb+j+k-2*s+t)/float(lamb+j+k-2*s+t)
-
-    p2=1; p4=1
-    for t in range(0,j-s):
-        p2 = p2*(lamb+t)/float(1+t)
-        p4 = p4*(k-s+1+t)/float(k-s+lamb+t)
-
-    return p1*p2*p3*p4*(j+k+lamb-2.*s)/float(j+k+lamb-s)
-
-
-
-def csl(svec,lamb,j,k):
-    '''
-    recursion for c_s^lambda, starting from c_svec[0]^lambda(j,k)
-    svec must be a vector of s values
-    **do not confuse with the (j,k) entry of the Mlam matrix**
-    '''
-    out = np.zeros(np.shape(svec))
-    out[0] = csl0(svec[0], lamb, j, k)
-    for i,s in enumerate(svec[0:-1],1) :
-        tmp1 = (j+k+lamb-s)*(lamb+s)*(j-s)*(2*lamb+j+k-s)*(k-s+lamb)
-        tmp2 = (j+k+lamb-s+1)*(s+1)*(lamb+j-s-1)*(lamb+j+k-s)*(k-s+1)
-        out[i] = out[i-1]*tmp1/float(tmp2)
-        k=k+2
-
-    return out
 
 
 
@@ -869,11 +842,14 @@ def Mlam(a0,lamb,vector_parity):
             # Overall operator parity given by a0 parity * lambda parity
             # check a0 parity like this: first nonzero a0 coefficient
             # a0 is the full vector of coefficients, including even and odd, size N
-            tmp = np.nonzero(a0)[0]
-            ix = tmp[-1] # index of *last* non zero coefficient
-            rpower_parity = 1 - 2*(ix%2)
+            #tmp = np.nonzero(a0)[0]
+            #ix = tmp[-1] # index of *last* non zero coefficient
+            ix = np.argmax(abs(a0))  # index of largest a0 coeff     #2*((argmax(abs(c0)))%2)-1
+            a0_parity = 1 - 2*(ix%2)
+            #rpower_parity = 1 - 2*(ix%2)
             lamb_parity = 1 - 2*(lamb%2)
-            operator_parity = rpower_parity * lamb_parity
+            #operator_parity = rpower_parity * lamb_parity
+            operator_parity = a0_parity * lamb_parity
             overall_parity = vector_parity * operator_parity
             # rows to be deleted determined by overall_parity (after multiplying with DX and the eigenvector)
             # j even when overall_parity = 1 and vice versa
@@ -890,33 +866,53 @@ def Mlam(a0,lamb,vector_parity):
 
         if lamb > 0:
 
-            out = ss.dok_matrix((N,N))
-            for j in jrange:
+            # Vectorised over all entries (j,k) with |j-k| <= bw, the others are zero.
+            # Only the s terms with 2*s+j-k <= bw contribute (a1 is zero beyond bw), at most bw//2+1 of them.
+            # Assumes integer lamb, as for all the C^(lamb) bases used in Kore.
+            jj  = np.array(jrange)
+            off = np.arange(-bw, bw+1)
+            J = np.repeat(jj, off.size)
+            K = (jj[:,None] + off[None,:]).ravel()
+            keep = (K >= 0) & (K < N)
+            if vector_parity != 0:
+                keep &= (K%2 == idk)
+            J = J[keep]
+            K = K[keep]
 
-                k1 = max( 0, j-bw-1 )
-                k2 = min( N, j+bw+2 )
-                ka = range(k1,k2)
+            d     = np.abs(J-K)
+            s0    = np.maximum(0, K-J)
+            nterm = np.minimum(K, s0 + (bw-d)//2) - s0  # number of terms after the first one
 
-                if vector_parity != 0:
-                    krange = ka[ka[idk]%2::2]
-                else:
-                    krange = ka
+            # c_{s0}^lamb(K,d), each product telescoped to lamb or lamb-1 factors
+            jf = K.astype(float)
+            kf = d.astype(float)
+            s  = s0.astype(float)
+            n  = jf - s
+            a  = lamb + jf + kf - 2*s
+            p  = np.ones_like(s)
+            for i in range(1,lamb): p *= (s+i)/i                    # (lamb)_s / s!
+            for i in range(1,lamb): p *= (n+i)/i                    # (lamb)_n / n!
+            for i in range(lamb):   p *= (a+s+i)/(a+i)              # (a+lamb)_s / (a)_s
+            for i in range(lamb-1): p *= (kf-s+1+i)/(kf-s+1+n+i)    # (kf-s+1)_n / (kf-s+lamb)_n
+            c = p*(jf+kf+lamb-2*s)/(jf+kf+lamb-s)
 
-                for k in krange:
+            val = a1[2*s0+J-K]*c
 
-                    s0 = max(0,k-j)
-                    s = np.arange(s0,k+1)
-                    idx = 2*s+j-k
-                    a = a1[idx]
+            # forward recursion in s, only for the entries that still have nonzero terms
+            for q in range(1, bw//2+1):
+                act = nterm >= q
+                if not act.any():
+                    break
+                sa = s[act]; ja = jf[act]; ka = kf[act]
+                tmp1 = (ja+ka+lamb-sa)*(lamb+sa)*(ja-sa)*(2*lamb+ja+ka-sa)*(ka-sa+lamb)
+                tmp2 = (ja+ka+lamb-sa+1)*(sa+1)*(lamb+ja-sa-1)*(lamb+ja+ka-sa)*(ka-sa+1)
+                c[act]    = c[act]*tmp1/tmp2
+                s[act]   += 1
+                kf[act]  += 2
+                val[act] += a1[(2*s[act]+J[act]-K[act]).astype(int)]*c[act]
 
-                    if s0 == 0:
-                        cvec = csl(s,lamb,k,j-k)
-                    elif s0 == k-j:
-                        cvec = csl(s,lamb,k,k-j)
-
-                    out[j,k] = np.dot(a,cvec)
-
-            out = out.tocsr()
+            out = ss.csr_matrix((val, (J, K)), shape=(N,N))
+            out.eliminate_zeros()
 
         else:
 
@@ -1133,38 +1129,41 @@ def ftest1(ricb):
 
 
 
-def Ylm(l, m, theta, phi):
-    # The Spherical Harmonics, seminormalized
-    out = scsp.sph_harm(m, l, phi, theta)
-    return out*np.sqrt(4*np.pi/(2*l+1))
-
-
-
 def Ylm_full(lmax, m, theta, phi):
-    # array of Spherical Harmonics with a range of l's
-    m1 = max(m,1)
-    if m == 0 :
-        lmax1 = lmax+1
-    else:
-        lmax1 = lmax
-    out = np.zeros(lmax-m+1,dtype=np.complex128)
-    for l in np.arange(m1,lmax1+1):
-        out[l-m1]=Ylm(l,m,theta,phi)
-    return out
+    # array of Spherical Harmonics with a range of l's, for a single theta (see Ylm_full_vec)
+    return Ylm_full_vec(lmax, m, theta, phi)[0]
 
 
 
-def Ylm_symm(lmax, m, theta, phi, symm, scalar):
-    out = np.zeros((lmax-m+1)/2,dtype=np.complex128)
-    if (symm == 1 and scalar == 'pol') or (symm == -1 and scalar == 'tor'):
-        m_sym = m
-        lmax_sym = lmax
-    else :
-        m_sym = m+1
-        lmax_sym = lmax+1
-    for l in np.arange(m_sym,lmax_sym,2.):
-        out[(l-m_sym)/2]=Ylm(l,m,theta,phi)
-    return out
+def Ylm_full_vec(lmax, m, theta, phi):
+    '''
+    Seminormalized spherical harmonics, i.e. scipy's sph_harm times sqrt(4*pi/(2*l+1)), for many theta
+    at once: rows are theta, columns are l = max(m,1) .. lmax+1 if m == 0, or l = m .. lmax otherwise
+    (the same l range as Ylm_full).
+    Uses the stable three-term recurrence in l for the orthonormal associated Legendre functions
+    (with the Condon-Shortley phase, as scipy), so it also works at high degree: scipy 1.15
+    sph_harm returns nan for l >= 646.
+    '''
+    theta = np.atleast_1d(theta)
+    m1    = max(m,1)
+    lmax1 = lmax+1 if m == 0 else lmax
+    x  = np.cos(theta)
+    sx = np.sin(theta)
+
+    P = np.zeros((lmax1+1, np.size(theta)))  # rows are l
+    pmm = np.full(np.size(theta), 1/np.sqrt(4*np.pi))
+    for k in range(1, m+1):
+        pmm = -pmm*np.sqrt((2*k+1)/(2*k))*sx
+    P[m] = pmm
+    if lmax1 > m:
+        P[m+1] = np.sqrt(2*m+3)*x*pmm
+    for l in range(m+2, lmax1+1):
+        a = np.sqrt((4*l*l-1)/(l*l-m*m))
+        b = np.sqrt(((l-1)**2-m*m)/(4*(l-1)**2-1))
+        P[l] = a*(x*P[l-1] - b*P[l-2])
+
+    l = np.arange(m1, lmax1+1)
+    return (P[m1:]*np.sqrt(4*np.pi/(2*l+1))[:,None]).T*np.exp(1j*m*phi)
 
 
 
@@ -1172,7 +1171,6 @@ def load_csr(filename):
     # utility to load sparse matrices efficiently
     loader = np.load(filename)
     return ss.csr_matrix((loader['data'], loader['indices'], loader['indptr']), shape=loader['shape'])
-
 
 
 

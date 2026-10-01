@@ -323,6 +323,22 @@ tol = 1e-16
 # Tolerance for the thermal/compositional matrix
 tol_tc = 1e-6
 
+# PETSc/SLEPc/MUMPS runtime options, loaded by solve_nopp.py into the PETSc options database
+# (option name without the leading '-'; use '' for flags without a value).
+# Anything given on the command line (e.g. via $opts in runKore.sh) takes precedence.
+petsc_opts = {
+    'st_type'                      : 'sinvert',             # shift-and-invert around tau (use with 'TM')
+    'st_pc_factor_mat_solver_type' : 'mumps',               # direct LU solve with MUMPS
+    'st_mat_mumps_cntl_1'          : 1e-6,                  # pivot threshold; avoids INFOG(1)=-9 on large problems
+    'eps_error_relative'           : '::ascii_info_detail', # print relative errors after the solve
+    # 'eps_balance'                : 'twoside',             # cleaner eigenvalues for final runs, ~+50% time
+    # 'st_mat_mumps_icntl_14'      : 50,                    # extra MUMPS workspace (%), only if -9 still appears
+    # 'st_mat_mumps_icntl_22'      : 1,                     # out-of-core factors, cuts memory ~half
+    # 'mat_mumps_ooc_tmpdir'       : '/nvm/scratch',        # put OOC files on a real disk, not tmpfs /tmp
+    # 'st_mat_mumps_icntl_28'      : 2,                     # parallel ordering ...
+    # 'st_mat_mumps_icntl_29'      : 2,                     # ... with ParMETIS
+}
+
 # ----------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------

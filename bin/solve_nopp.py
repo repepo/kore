@@ -33,6 +33,11 @@ def main():
     size = PETSc.COMM_WORLD.getSize()
     opts = PETSc.Options()
 
+    # solver options from parameters.py, unless already given on the command line
+    for key, val in getattr(par, 'petsc_opts', {}).items():
+        if not opts.hasName(key):
+            opts.setValue(key, val)
+
     if rank == 0:
         tic = timer()
 

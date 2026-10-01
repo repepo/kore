@@ -515,7 +515,7 @@ def induction(l, section, component, offdiag):
     out = 0
     offd = 0
     m = par.m
-    l = np.float128(l)  # to avoid overflow errors at high N
+    l = np.longdouble(l)  # to avoid overflow errors at high N (float128 on x86, float64 on arm64)
     L = l*(l+1)
     cdipole = ((par.B0 == 'dipole') and (par.ricb > 0))  # boolean
 
@@ -689,7 +689,7 @@ def induction_consoidal(l, component, offdiag):
     out = 0
     offd = 0
     m = par.m
-    l = np.float128(l)  # to avoid overflow errors at high N
+    l = np.longdouble(l)  # to avoid overflow errors at high N (float128 on x86, float64 on arm64)
     L = l*(l+1)
 
 

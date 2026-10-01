@@ -438,7 +438,7 @@ def main():
                 if l == loc_top[0]:  # create loc_list if first iteration
                     mtx.eliminate_zeros()
                     mtx = mtx.tocoo()
-                    loc_list = [mtx.data, mtx.row + row , mtx.col + col]
+                    loc_list = [[mtx.data], [mtx.row + row], [mtx.col + col]]
                 else:  # append to loc_list if it already exists
                     loc_list = ut.packit(loc_list, mtx, row, col)
 
@@ -472,7 +472,7 @@ def main():
                     if l == loc_mag_f[0]:  # create loc_list if first iteration
                         mtx.eliminate_zeros()
                         mtx = mtx.tocoo()
-                        loc_list = [mtx.data, mtx.row + row , mtx.col + col]
+                        loc_list = [[mtx.data], [mtx.row + row], [mtx.col + col]]
                     else:  # append to loc_list if it already exists
                         loc_list = ut.packit(loc_list, mtx, row, col)
                 else:
@@ -532,7 +532,7 @@ def main():
                 row = np.array([ row0, row0+1, row0+2])
                 col = row
                 rotdyn_list = [data, row, col]
-                for q in [0,1,2]: loc_list[q] = np.concatenate( ( loc_list[q], rotdyn_list[q] ) )
+                for q in [0,1,2]: loc_list[q].append( rotdyn_list[q] )
 
 
 
@@ -567,6 +567,7 @@ def main():
         # for the local variables bdat, brow and bcol.
         # They all need to be the same size for comm.Gather to work with them.
 
+        loc_list = ut.unpackit(loc_list)  # join the per-block arrays once
         s = np.shape(loc_list[0])[0]
         alls = comm.allgather(s)
         length = max(alls)
@@ -652,7 +653,7 @@ def main():
             if l == loc_top[0]:  # create loc_list if first iteration
                 mtx.eliminate_zeros()
                 mtx = mtx.tocoo()
-                loc_list = [mtx.data, mtx.row + row , mtx.col + col]
+                loc_list = [[mtx.data], [mtx.row + row], [mtx.col + col]]
             else:  # append to loc_list if it already exists
                 loc_list = ut.packit(loc_list, mtx, row, col)
 
@@ -740,7 +741,7 @@ def main():
             # ----------------------------------------------------------------------------------------------------------
             bc_u_list = bc_u_spherical( l, 'section_u' )
             for q in [0,1,2]:
-                loc_list[q]= np.concatenate( ( loc_list[q], bc_u_list[q] ) )
+                loc_list[q].append( bc_u_list[q] )
             # ----------------------------------------------------------------------------------------------------------
 
 
@@ -832,7 +833,7 @@ def main():
                 pass
             else:
                 for q in [0,1,2]:
-                    loc_list[q]= np.concatenate( ( loc_list[q], bc_u_list[q] ) )
+                    loc_list[q].append( bc_u_list[q] )
 
             # ----------------------------------------------------------------------------------------------------------
             # -------- if mantle or inner core are free to rotate (par.rotdyn=1) adjust toroidal l=1 boundary conditions
@@ -842,9 +843,9 @@ def main():
                 mantle_list = [ np.array([-ut.rcmb]) ,np.array([row])  ,np.array([col]) ]  # T10 - rcmb*omega_m = 0
                 incore_list = [ np.array([-par.ricb]) ,np.array([row+1]), np.array([col+1]) ]  # T10 - ricb*omega_ic = 0
                 for q in [0,1,2]:
-                    loc_list[q]= np.concatenate( ( loc_list[q], mantle_list[q] ) )
+                    loc_list[q].append( mantle_list[q] )
                 for q in [0,1,2]:
-                    loc_list[q]= np.concatenate( ( loc_list[q], incore_list[q] ) )           
+                    loc_list[q].append( incore_list[q] )           
 
 
 
@@ -919,7 +920,7 @@ def main():
                 if l == loc_mag_f[0]:  # create loc_list if first iteration
                     mtx.eliminate_zeros()
                     mtx = mtx.tocoo()
-                    loc_list = [mtx.data, mtx.row + row , mtx.col + col]
+                    loc_list = [[mtx.data], [mtx.row + row], [mtx.col + col]]
                 else:  # append to loc_list if it already exists
                     loc_list = ut.packit(loc_list, mtx, row, col)
             else:
@@ -961,9 +962,9 @@ def main():
 
             for q in [0,1,2]:
                 if par.ricb > 0:
-                    loc_list[q]= np.concatenate( ( loc_list[q], bc_b_list_inner[q], bc_b_list_outer[q] ) )
+                    loc_list[q].extend( [ bc_b_list_inner[q], bc_b_list_outer[q] ] )
                 else:
-                    loc_list[q]= np.concatenate( ( loc_list[q], bc_b_list_outer[q] ) )
+                    loc_list[q].append( bc_b_list_outer[q] )
             # ----------------------------------------------------------------------------------------------------------
             #print('f',l,max(loc_list[1]),max(loc_list[2]))
     
@@ -1056,9 +1057,9 @@ def main():
 
             for q in [0,1,2]:
                 if par.ricb > 0:
-                    loc_list[q]= np.concatenate( ( loc_list[q], bc_b_list_inner[q], bc_b_list_outer[q] ) )
+                    loc_list[q].extend( [ bc_b_list_inner[q], bc_b_list_outer[q] ] )
                 else:
-                    loc_list[q]= np.concatenate( ( loc_list[q], bc_b_list_outer[q] ) )
+                    loc_list[q].append( bc_b_list_outer[q] )
             # ----------------------------------------------------------------------------------------------------------
 
             #print('g',l,max(loc_list[1]),max(loc_list[2]))
@@ -1082,11 +1083,11 @@ def main():
 
                 vtorq_mantle = par.vtrq * par.Ek * par.OmgTau * ut.gamma_visc(0,0,0)[0,ut.n:ut.n+ut.N1]  #T10
                 visctorq_list_mantle = [ vtorq_mantle, row0, col ]
-                for q in [0,1,2]: loc_list[q] = np.concatenate( ( loc_list[q], visctorq_list_mantle[q] ) )
+                for q in [0,1,2]: loc_list[q].append( visctorq_list_mantle[q] )
 
                 vtorq_incore = par.vtrq * par.Ek * par.OmgTau * ut.gamma_visc_icb(par.ricb)[0,ut.n:ut.n+ut.N1]  #T10
                 visctorq_list_incore = [ vtorq_incore, row1, col ]
-                for q in [0,1,2]: loc_list[q] = np.concatenate( ( loc_list[q], visctorq_list_incore[q] ) )
+                for q in [0,1,2]: loc_list[q].append( visctorq_list_incore[q] )
 
 
                 # ------------------------------------------------------------------------------------ Magnetic torques
@@ -1097,11 +1098,11 @@ def main():
                     
                     mtorq_mantle = par.mtrq * par.Le2 * (par.OmgTau**2) * ut.gamma_magnetic()[0,ut.n:ut.n+ut.N1]  #G20
                     magtorq_list_mantle = [ mtorq_mantle, row0, col ]
-                    for q in [0,1,2]: loc_list[q] = np.concatenate( ( loc_list[q], magtorq_list_mantle[q] ) )
+                    for q in [0,1,2]: loc_list[q].append( magtorq_list_mantle[q] )
 
                     mtorq_incore = par.mtrq * par.Le2 * (par.OmgTau**2) * ut.gamma_magnetic_ic()[0,ut.n:ut.n+ut.N1]  #G20
                     magtorq_list_incore = [ mtorq_incore, row1, col ]
-                    for q in [0,1,2]: loc_list[q] = np.concatenate( ( loc_list[q], magtorq_list_incore[q] ) )                   
+                    for q in [0,1,2]: loc_list[q].append( magtorq_list_incore[q] )                   
 
                 elif ut.B0_l == 2:  #quadrupolar background
                     
@@ -1111,11 +1112,11 @@ def main():
                        
                     mtorq_mantle = par.mtrq * par.Le2 * (par.OmgTau**2) * ut.gamma_magnetic()[0,ut.n:ut.n+2*ut.N1]  #G10 and G30
                     magtorq_list_mantle = [ mtorq_mantle, row00, col ]
-                    for q in [0,1,2]: loc_list[q] = np.concatenate( ( loc_list[q], magtorq_list_mantle[q] ) )      
+                    for q in [0,1,2]: loc_list[q].append( magtorq_list_mantle[q] )      
 
                     mtorq_incore = par.mtrq * par.Le2 * (par.OmgTau**2) * ut.gamma_magnetic_ic()[0,ut.n:ut.n+2*ut.N1]  #G10 and G30  
                     magtorq_list_incore = [ mtorq_incore, row11, col ]
-                    for q in [0,1,2]: loc_list[q] = np.concatenate( ( loc_list[q], magtorq_list_incore[q] ) )             
+                    for q in [0,1,2]: loc_list[q].append( magtorq_list_incore[q] )             
 
 
                 # ------------------------------------------------------------------------------- Gravitational torques
@@ -1126,11 +1127,11 @@ def main():
 
                 gtorq_mantle = Kgrav  # proportional to the longitudinal misalignment between inner core and mantle
                 gtorq_list_mantle = [ np.array([gtorq_mantle]), np.array([row]), np.array([col+2]) ]
-                for q in [0,1,2]: loc_list[q] = np.concatenate( ( loc_list[q], gtorq_list_mantle[q] ) )
+                for q in [0,1,2]: loc_list[q].append( gtorq_list_mantle[q] )
 
                 gtorq_incore = -Kgrav  # proportional to the longitudinal misalignment between inner core and mantle
                 gtorq_list_incore = [ np.array([gtorq_incore]), np.array([row+1]), np.array([col+2]) ]
-                for q in [0,1,2]: loc_list[q] = np.concatenate( ( loc_list[q], gtorq_list_incore[q] ) )
+                for q in [0,1,2]: loc_list[q].append( gtorq_list_incore[q] )
 
 
                 # ------------------------  Now the dynamics of the ic and mantle misalignment, including IC relaxation
@@ -1140,7 +1141,7 @@ def main():
                 ictau = par.OmgTau/par.OmgtauIC 
                 misalig = np.array([ -1, 1, -ictau])  # - Omega_mantle + Omega_ic - misalignent/tau
                 misalig_list = [misalig, row, col]
-                for q in [0,1,2]: loc_list[q] = np.concatenate( ( loc_list[q], misalig_list[q] ) )
+                for q in [0,1,2]: loc_list[q].append( misalig_list[q] )
 
     
         if ut.cic:
@@ -1160,7 +1161,7 @@ def main():
 
                 bc_b_list_inner = bc_b_cic( l, 'section_fic' )
                 for q in [0,1,2]:
-                    loc_list[q]= np.concatenate( ( loc_list[q], bc_b_list_inner[q] ) )
+                    loc_list[q].append( bc_b_list_inner[q] )
 
 
                 #print('fic',l,max(loc_list[1]),max(loc_list[2]))
@@ -1181,7 +1182,7 @@ def main():
 
                 bc_b_list_inner = bc_b_cic( l, 'section_gic' )
                 for q in [0,1,2]:
-                    loc_list[q]= np.concatenate( ( loc_list[q], bc_b_list_inner[q] ) )
+                    loc_list[q].append( bc_b_list_inner[q] )
 
                 #print('gic',l,max(loc_list[1]),max(loc_list[2]))
 
@@ -1228,7 +1229,7 @@ def main():
             # ----------------------------------------------------------------------------------------------------------
             bc_theta_list = bc_theta_spherical( l )
             for q in [0,1,2]:
-                loc_list[q]= np.concatenate( ( loc_list[q], bc_theta_list[q] ) )
+                loc_list[q].append( bc_theta_list[q] )
             # ----------------------------------------------------------------------------------------------------------
 
 
@@ -1275,7 +1276,7 @@ def main():
             # ----------------------------------------------------------------------------------------------------------
             bc_xi_list = bc_xi_spherical( l )
             for q in [0,1,2]:
-                loc_list[q]= np.concatenate( ( loc_list[q], bc_xi_list[q] ) )
+                loc_list[q].append( bc_xi_list[q] )
             # ----------------------------------------------------------------------------------------------------------
 
     
@@ -1285,6 +1286,7 @@ def main():
     # for the local variables bdat, brow and bcol.
     # They all need to be the same size for comm.Gather to work with them.
 
+    loc_list = ut.unpackit(loc_list)  # join the per-block arrays once
     s = np.shape(loc_list[0])[0]
     alls = comm.allgather(s)
     length = max(alls)
