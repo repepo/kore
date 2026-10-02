@@ -1174,6 +1174,33 @@ def load_csr(filename):
 
 
 
+def load_npz_mmap(filename):
+    '''
+    Memory-maps the arrays stored in an uncompressed .npz file (as written by np.savez),
+    so that slicing them reads only the requested part from disk.
+    Returns a dict {array name: read-only np.memmap}.
+    '''
+    import zipfile, struct
+    out = {}
+    with zipfile.ZipFile(filename) as z, open(filename, 'rb') as f:
+        for info in z.infolist():
+            if info.compress_type != zipfile.ZIP_STORED:
+                raise ValueError(filename + ' is compressed, cannot memory-map it')
+            # skip the zip local file header to reach the .npy data
+            f.seek(info.header_offset)
+            nlen, xlen = struct.unpack('<HH', f.read(30)[26:30])
+            f.seek(info.header_offset + 30 + nlen + xlen)
+            version = np.lib.format.read_magic(f)
+            if version == (1, 0):
+                shape, fortran, dtype = np.lib.format.read_array_header_1_0(f)
+            else:
+                shape, fortran, dtype = np.lib.format.read_array_header_2_0(f)
+            out[info.filename[:-4]] = np.memmap(filename, dtype=dtype, mode='r', shape=shape,
+                                                offset=f.tell(), order='F' if fortran else 'C')
+    return out
+
+
+
 def Tk(x, N, lamb_max):
     '''
     Chebyshev polynomial from order 0 to N (as rows)
@@ -1287,18 +1314,25 @@ def gamma_visc(a1,a2,a3):
         elif l==7 and par.m==1:
             out[0,colT:colT+par.N] = tol7
 
-    # axial viscous torque on the mantle for a spherical cmb, add cc after multiplying by the solution vector
+    # axial viscous torque on the mantle for a spherical cmb (the caller multiplies by Ek*OmgTau)
     if par.m == 0 and par.symm == 1:
         R = 1  #rcmb
         # axial torque depends on the l=1, m=0 toroidal component only
-        out[0,n0:n0+par.N] = -(4*np.pi/3)*(R**2)*( R*T1 - T0 )  # note the minus in front as needed for the mantle 
+        # FIX (2026-10-02): the coefficient was 4*pi/3, which gave half the torque. With u_phi = t(r)*sin(theta)
+        # (Kore's Y10 = cos(theta)), the torque on the mantle is -oint s*sigma_rphi dS = -2*pi*R^2*(R*t' - t)*int_0^pi sin^3
+        # = -(8*pi/3)*R^2*(R*t' - t). This is the same complex-amplitude convention as angrymom_z, as needed for the
+        # rotdyn equations, which mix the torque linearly with the rotation rates (no "add cc" there).
+        # Checked: with 4*pi/3, fluid + mantle + IC angular momentum in rotdyn eigenmodes was off by exactly a factor 2;
+        # with 8*pi/3 it is conserved to discretization error.
+        out[0,n0:n0+par.N] = -(8*np.pi/3)*(R**2)*( R*T1 - T0 )  # note the minus in front as needed for the mantle
 
     return out
 
 
 def gamma_visc_icb(ricb):
     '''
-    Axial viscous torque on the inner core, spherical. Add cc after multiplying by the solution vector
+    Axial viscous torque on the inner core, spherical (the caller multiplies by Ek*OmgTau).
+    Same complex-amplitude convention as angrymom_z, no "add cc".
     '''
 
     out = np.zeros((1,n0+n0),dtype=complex)
@@ -1310,7 +1344,9 @@ def gamma_visc_icb(ricb):
         T1 = T[:,1]
         R = ricb
         # axial viscous torque on the IC depends on the l=1, m=0 toroidal component only
-        out[0,n0:n0+par.N] = (4*np.pi/3)*(R**2)*( R*T1 - T0 )  # no minus in front for the IC
+        # FIX (2026-10-02): coefficient was 4*pi/3 (half the torque). The torque on the IC is +oint s*sigma_rphi dS
+        # = +(8*pi/3)*R^2*(R*t' - t), see the mantle version in gamma_visc. Checked with angular momentum conservation.
+        out[0,n0:n0+par.N] = (8*np.pi/3)*(R**2)*( R*T1 - T0 )  # no minus in front for the IC
 
     return out
 
@@ -1362,16 +1398,22 @@ def gamma_magnetic_ic():
         ric = np.array([par.ricb])
         h_icb = B0_norm() * h0(ric, par.B0, [par.beta, par.B0_l, par.ricb, 0])
 
+        # FIX (2026-10-02): the factor R2 = ricb**2 was missing. The torque on a sphere of radius R is
+        # oint s*B0_r*b_phi dS, with s = R*sin(theta), B0_r = l(l+1)*h(R)*Y/R and dS = R^2*dOmega, so it scales as
+        # h(R)*g(R)*R^2. In gamma_magnetic (mantle) R = 1, which is why it only showed up here. Checked with angular
+        # momentum conservation in rotdyn runs with a conducting IC (the imbalance implied a factor 0.12 = ricb^2).
+        R2 = par.ricb**2
+
         if B0_l == 1:  # Either uniform axial or dipole background field, induced magnetic field b is thus antisymmetric
 
             # the torque is prop. to the l=2 toroidal component of b
-            out[0,n0:n0+par.N] = (16*np.pi/5) * G * h_icb
+            out[0,n0:n0+par.N] = (16*np.pi/5) * G * h_icb * R2
 
         elif B0_l == 2:  # Quadrupole background field, induced magnetic field b is thus symmetric
 
             # torque prop. to l=1 and l=3 toroidal component of b
-            out[0,n0:n0+par.N]          = -(16*np.pi/5)     * G * h_icb # l=1
-            out[0,n0+par.N: n0+2*par.N] =  (16*18*np.pi/35) * G * h_icb # l=3
+            out[0,n0:n0+par.N]          = -(16*np.pi/5)     * G * h_icb * R2 # l=1
+            out[0,n0+par.N: n0+2*par.N] =  (16*18*np.pi/35) * G * h_icb * R2 # l=3
 
     else:
 

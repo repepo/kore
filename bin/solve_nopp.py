@@ -2,15 +2,17 @@
 '''
 kore solver script. Writes solutions to disk.
 
-To use, first export desired solver options:
+To use, first export desired runtime solver options:
 > export opts='...'
 
 and then execute:
 > mpiexec -n ncpus ./bin/solve_nopp.py $opts
 
-You can use the postprocess.py script after the solutions are written to disk.
+You can use the spin_doctor.py script after the solutions are written to disk.
 '''
 
+from timeit import default_timer as timer
+t_start = timer()  # wall clock from here, before scipy/petsc/utils are imported
 import sys
 import slepc4py
 slepc4py.init(sys.argv)
@@ -18,12 +20,51 @@ from petsc4py import PETSc
 from slepc4py import SLEPc
 import scipy.io as sio
 import scipy.sparse as ss
-from timeit import default_timer as timer
 import numpy as np
 
 import parameters as par
 import utils as ut
 
+
+
+def load_mat(fname):
+    '''
+    Reads a CSR matrix from an .npz file written by assemble.py and returns it as a
+    distributed PETSc matrix. The file is memory-mapped, so each rank reads only its own rows.
+    '''
+    M = ut.load_npz_mmap(fname)
+    n = int(M['shape'][0])
+    # rows owned by this rank, same default distribution as PETSc vectors
+    Istart, Iend = PETSc.Vec().createMPI(n, comm=PETSc.COMM_WORLD).getOwnershipRange()
+    indptr = np.array(M['indptr'][Istart:Iend+1])
+    lo, hi = indptr[0], indptr[-1]
+    indices = np.array(M['indices'][lo:hi])
+    data = np.array(M['data'][lo:hi])
+    del M
+    return PETSc.Mat().createAIJ(size=((Iend-Istart, n), (Iend-Istart, n)),
+                                 csr=(indptr-lo, indices, data),
+                                 comm=PETSc.COMM_WORLD)
+
+
+def split_fields(vec):
+    '''
+    Splits solution vector(s) vec (one solution per column) into the individual fields,
+    in the order the unknowns are stacked in A and B (see ut.sizmat).
+    Returns a dict {field name: block of rows}, only for the fields present.
+    '''
+    blocks = [ ('flow',        2*ut.n   * par.hydro),
+               ('magnetic',    2*ut.n   * par.magnetic),
+               ('rotdyn',      3        * par.rotdyn),
+               ('magnetic_ic', 2*ut.nic * ut.icflag),
+               ('temperature', ut.n     * par.thermal),
+               ('composition', ut.n     * par.compositional) ]
+    fields = {}
+    offset = 0
+    for name, size in blocks:
+        if size > 0:
+            fields[name] = vec[ offset : offset + size ]
+        offset += size
+    return fields
 
 
 def main():
@@ -33,63 +74,23 @@ def main():
     size = PETSc.COMM_WORLD.getSize()
     opts = PETSc.Options()
 
-    # solver options from parameters.py, unless already given on the command line
+    # solver options from parameters.py, unless already given on the command line.
+    # eps_/st_ options are for eigenvalue problems, ksp_/pc_/mat_ ones for forced problems
+    skip = ('ksp_', 'pc_', 'mat_') if par.forcing == 0 else ('eps_', 'st_')
     for key, val in getattr(par, 'petsc_opts', {}).items():
-        if not opts.hasName(key):
+        if not key.startswith(skip) and not opts.hasName(key):
             opts.setValue(key, val)
 
     if rank == 0:
         tic = timer()
 
     # ------------------------------------------------------------------ reads matrix A
-    A = ut.load_csr('A.npz')
-    nb_l,nb_c = A.shape
-
-    MA = PETSc.Mat()
-    MA.create(PETSc.COMM_WORLD)
-    MA.setSizes([nb_l,nb_l])
-    MA.setType('mpiaij')
-    MA.setFromOptions()
-    MA.setUp()
-
-    Istart,Iend = MA.getOwnershipRange()
-    indptrA = A[Istart:Iend,:].indptr
-    indicesA = A[Istart:Iend,:].indices
-    dataA = A[Istart:Iend,:].data
-    del A
-
-    MA.setPreallocationCSR(csr=(indptrA,indicesA))
-    MA.setValuesCSR(indptrA,indicesA,dataA)
-    MA.assemblyBegin()
-    MA.assemblyEnd()
-    del indptrA,indicesA,dataA
-    # done reading and preparing A
+    MA = load_mat('A.npz')
+    nb_l = MA.getSize()[0]
 
     if par.forcing == 0: # --------------------------------------------- if eigenvalue problem, reads matrix B
 
-        B = ut.load_csr('B.npz')
-        nb_l,nb_c = B.shape
-        nbl = opts.getInt('nbl',nb_l)
-
-        MB = PETSc.Mat()
-        MB.create(PETSc.COMM_WORLD)
-        MB.setSizes([nbl,nbl])
-        MB.setType('mpiaij')
-        MB.setFromOptions()
-        MB.setUp()
-
-        Istart,Iend = MB.getOwnershipRange()
-        indptrB = B[Istart:Iend,:].indptr
-        indicesB = B[Istart:Iend,:].indices
-        dataB = B[Istart:Iend,:].data
-        del B
-
-        MB.setPreallocationCSR(csr=(indptrB,indicesB))
-        MB.setValuesCSR(indptrB,indicesB,dataB)
-        MB.assemblyBegin()
-        MB.assemblyEnd()
-        del indptrB,indicesB,dataB
-        # done reading and preparing B
+        MB = load_mat('B.npz')
 
 
         # -------------------------------------------------------------- setup eigenvalue solver
@@ -101,25 +102,10 @@ def main():
         E.setDimensions(par.nev)
         E.setTolerances(par.tol,par.maxit)
 
-        wep = par.which_eigenpairs
-        if wep == 'LM':
-            E.setWhichEigenpairs(SLEPc.EPS.Which.LARGEST_MAGNITUDE)
-        elif wep == 'SM':
-            E.setWhichEigenpairs(SLEPc.EPS.Which.SMALLEST_MAGNITUDE)
-        elif wep == 'LR':
-            E.setWhichEigenpairs(SLEPc.EPS.Which.LARGEST_REAL)
-        elif wep == 'SR':
-            E.setWhichEigenpairs(SLEPc.EPS.Which.SMALLEST_REAL)
-        elif wep == 'LI':
-            E.setWhichEigenpairs(SLEPc.EPS.Which.LARGEST_IMAGINARY)
-        elif wep == 'SI':
-            E.setWhichEigenpairs(SLEPc.EPS.Which.SMALLEST_IMAGINARY)
-        elif wep == 'TM':
-            E.setWhichEigenpairs(SLEPc.EPS.Which.TARGET_MAGNITUDE)
-        elif wep == 'TR':
-            E.setWhichEigenpairs(SLEPc.EPS.Which.TARGET_REAL)
-        elif wep == 'TI':
-            E.setWhichEigenpairs(SLEPc.EPS.Which.TARGET_IMAGINARY)
+        # 'TM' -> TARGET_MAGNITUDE, 'LR' -> LARGEST_REAL, etc.
+        which = { 'L':'LARGEST', 'S':'SMALLEST', 'T':'TARGET' }[par.which_eigenpairs[0]] + '_' + \
+                { 'M':'MAGNITUDE', 'R':'REAL', 'I':'IMAGINARY' }[par.which_eigenpairs[1]]
+        E.setWhichEigenpairs(getattr(SLEPc.EPS.Which, which))
 
         E.setTarget(par.tau)
         E.setFromOptions()
@@ -127,84 +113,27 @@ def main():
 
         E.solve() # ---------------------------------------------------- solve and collect solution
 
-        class solution:
-            pass  # class intentionally empty, this is just to have sol.*stuff*
+        nconv = E.getConverged()
 
-        sol = solution()
+        if nconv > 0:
 
-        # recover results
-        sol.its                   = E.getIterationNumber()
-        sol.neps_type             = E.getType()
-        sol.tol, sol.maxit        = E.getTolerances()
-        sol.nev, sol.ncv, sol.mpd = E.getDimensions()
-        sol.nconv                 = E.getConverged()
-        sol.k                     = np.zeros((1,sol.nconv),dtype=complex)
-        sol.vec                   = np.zeros((nb_l,sol.nconv),dtype=complex)
-        sol.tau                   = E.getTarget()
-
-        if sol.nconv > 0:
-
-            # initialize eigenvector placeholder
             v = MA.createVecLeft()
+            tozero, V = PETSc.Scatter.toZero(v)  # created once, reused for every eigenvector
+            eigval = np.zeros((nconv, 2))        # column 0 real part, column 1 imaginary part
+            vecs = np.zeros((nb_l, nconv), dtype=complex) if rank == 0 else None
 
-            for i in range(0,sol.nconv):
-                # gets eigenvalue and eigenvector for each solution found
-                # note that petsc uses complex scalars, so k and v are generally complex
-                # no need for separate real and imag (hence the None below)
-                k = E.getEigenpair(i, v, None)
-                # collects and assembles the vector in the zeroth processor
-                tozero,V = PETSc.Scatter.toZero(v)
-                tozero.begin(v,V)
-                tozero.end(v,V)
-                tozero.destroy()
-
-                sol.k[0,i] = k
+            for i in range(nconv):
+                k = E.getEigenpair(i, v)   # complex scalars, so no separate imaginary vector
+                tozero.scatter(v, V)       # gather the eigenvector on rank 0
+                eigval[i] = k.real, k.imag
                 if rank == 0:
-                    sol.vec[0:,i] = V[0:]
+                    vecs[:, i] = V.getArray()
+
+            tozero.destroy(); V.destroy(); v.destroy()
 
             if rank == 0:
-
-                # Eigenvalues, 1 row per solution found, column 0 is the real part, column 1 is the imaginary part
-                eigval = np.hstack([np.real(sol.k).transpose(),np.imag(sol.k).transpose()])
-
-                # Eigenvectors, each column is a solution
-                rEigv = np.copy(np.real(sol.vec))
-                iEigv = np.copy(np.imag(sol.vec))
-
-                if par.hydro == 1:
-                    # each solution for u has 2*ut.n coeffs
-                    ru = rEigv[ :2*ut.n, : ]
-                    iu = iEigv[ :2*ut.n, : ]
-
-                # each solution for b has 2*ut.n coeffs
-                if par.magnetic == 1:
-                    offset = 2*ut.n*par.hydro
-                    rb = rEigv[ offset : offset + 2*ut.n, : ]
-                    ib = iEigv[ offset : offset + 2*ut.n, : ]
-
-                if par.rotdyn:
-                    offset = par.hydro * 2*ut.n + par.magnetic * 2*ut.n
-                    sol_rotdyn = rEigv[ offset : offset + 3, : ] + 1j*iEigv[ offset : offset + 3, : ]
-
-                # each solution for b_ic has 2*ut.nic coeffs
-                if ut.icflag:
-                    offset = 2*ut.n + par.magnetic * 2*ut.n + 3*par.rotdyn
-                    rb_ic = rEigv[ offset : offset + 2*ut.nic, : ]
-                    ib_ic = iEigv[ offset : offset + 2*ut.nic, : ]
-
-                # each solution for the temperature has ut.n coeffs
-                if par.thermal == 1:
-                    offset = 2*ut.n + par.magnetic * 2*ut.n + ut.icflag * 2*ut.nic + 3*par.rotdyn
-                    rtemp = rEigv[ offset : offset + ut.n, : ]
-                    itemp = iEigv[ offset : offset + ut.n, : ]
-
-                # each solution for the composition has ut.n coeffs
-                if par.compositional == 1:
-                    offset = 2*ut.n + par.magnetic * 2*ut.n + ut.icflag * 2*ut.nic + par.thermal * ut.n + 3*par.rotdyn
-                    rcomp = rEigv[ offset : offset + ut.n, : ]
-                    icomp = iEigv[ offset : offset + ut.n, : ]
-
-                success = sol.nconv
+                fields = split_fields(vecs)  # each column is a solution
+                success = nconv
 
         else:
 
@@ -255,41 +184,14 @@ def main():
 
         if rank == 0:
 
-            if par.hydro == 1:
-                offset = 0
-                ru = np.reshape(np.real(VR[ offset : offset + 2*ut.n ]),(-1,1))
-                iu = np.reshape(np.imag(VR[ offset : offset + 2*ut.n ]),(-1,1))
-
-            if par.magnetic == 1:
-                offset = par.hydro * 2*ut.n
-                rb = np.reshape(np.real(VR[ offset : offset + 2*ut.n ]),(-1,1))
-                ib = np.reshape(np.imag(VR[ offset : offset + 2*ut.n ]),(-1,1))
-
-                if par.rotdyn:
-                    offset = par.hydro * 2*ut.n + par.magnetic * 2*ut.n
-                    sol_rotdyn = np.reshape( VR[ offset : offset + 3 ],(-1,1))
-
-                if ut.icflag:
-                    offset = par.hydro * 2*ut.n + par.magnetic * 2*ut.n + 3*par.rotdyn
-                    rb_ic = np.reshape(np.real(VR[ offset : offset + 2*ut.nic ]),(-1,1))
-                    ib_ic = np.reshape(np.imag(VR[ offset : offset + 2*ut.nic ]),(-1,1))
-
-            if par.thermal == 1:
-                offset = par.hydro * 2*ut.n + par.magnetic * 2*ut.n + ut.icflag * 2*ut.nic + 3*par.rotdyn
-                rtemp = np.reshape(np.real(VR[ offset : offset + ut.n ]),(-1,1))
-                itemp = np.reshape(np.imag(VR[ offset : offset + ut.n ]),(-1,1))
-
-            if par.compositional == 1:
-                offset = par.hydro * 2*ut.n + par.magnetic * 2*ut.n + ut.icflag * 2*ut.nic + par.thermal * ut.n + 3*par.rotdyn
-                rcomp = np.reshape(np.real(VR[ offset : offset + ut.n ]),(-1,1))
-                icomp = np.reshape(np.imag(VR[ offset : offset + ut.n ]),(-1,1))
-
-            if np.sum([np.isnan(ru), np.isnan(iu), np.isinf(ru), np.isinf(iu)]) > 0:
+            VR = np.reshape(VR[:], (-1,1))
+            if np.all(np.isfinite(VR)):
+                success = 1 # got actual numbers ... but it could still be a bad solution ;)
+                fields = split_fields(VR)
+                print('Solution(s) computed')
+            else:
                 success = 0
                 print('Solver crashed, got nan\'s!')
-            else:
-                success = 1 # got actual numbers ... but it could still be a bad solution ;)
-                print('Solution(s) computed')
 
     #PETSc.COMM_WORLD.Barrier()
 
@@ -305,44 +207,17 @@ def main():
                     np.savetxt(deig, eigval)
 
             # one solution per column
-            if par.hydro:
-                with open('real_flow.field','wb') as dflo1:
-                    np.savetxt(dflo1, ru)
-                with open('imag_flow.field','wb') as dflo2:
-                    np.savetxt(dflo2, iu)
-
-            if par.magnetic:
-                with open('real_magnetic.field','wb') as dmag1:
-                    np.savetxt(dmag1, rb)
-                with open('imag_magnetic.field','wb') as dmag2:
-                    np.savetxt(dmag2, ib)
-
-            if par.rotdyn:
-                with open('rotdyn.field','wb') as drotdyn:
-                    np.savetxt(drotdyn, sol_rotdyn)
-
-            if ut.icflag:
-                with open('real_magnetic_ic.field','wb') as dmag1_ic:
-                    np.savetxt(dmag1_ic, rb_ic)
-                with open('imag_magnetic_ic.field','wb') as dmag2_ic:
-                    np.savetxt(dmag2_ic, ib_ic)
-
-            if par.thermal:
-                with open('real_temperature.field','wb') as dtemp1:
-                    np.savetxt(dtemp1, rtemp)
-                with open('imag_temperature.field','wb') as dtemp2:
-                    np.savetxt(dtemp2, itemp)
-
-            if par.compositional:
-                with open('real_composition.field','wb') as dcomp1:
-                    np.savetxt(dcomp1, rcomp)
-                with open('imag_composition.field','wb') as dcomp2:
-                    np.savetxt(dcomp2, icomp)
+            for name, blk in fields.items():
+                if name == 'rotdyn':  # written as complex numbers
+                    np.savetxt('rotdyn.field', blk)
+                else:
+                    np.savetxt('real_'+name+'.field', np.real(blk))
+                    np.savetxt('imag_'+name+'.field', np.imag(blk))
 
         toc2 = timer()
-        print('Solve done in',toc2-tic,'seconds')
+        print('Solve done in',toc2-t_start,'seconds')
         with open('timing.dat','ab') as dtim:
-                    np.savetxt(dtim, np.array([toc2-tic]))
+                    np.savetxt(dtim, np.array([toc2-t_start]))  # total solve_nopp time, incl. imports
 
     # ------------------------------------------------------------------ done
     return 0

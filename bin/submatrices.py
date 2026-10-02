@@ -12,6 +12,7 @@ of the main matrices A and B.
 '''
 
 from timeit import default_timer as timer
+t_start = timer()  # wall clock from here, before scipy/petsc/utils are imported
 import multiprocessing as mp
 import scipy.sparse as ss
 import scipy.io as sio
@@ -519,7 +520,7 @@ def main(ncpus):
     # ------------------------------------------------------------------------------------------------------------------------------------------- 
 
     toc = timer()
-    print('Blocks generated and written to disk in', toc-tic, 'seconds')
+    print('Blocks generated and written to disk in', toc-t_start, 'seconds')
 
     return 0
 

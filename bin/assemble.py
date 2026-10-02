@@ -11,9 +11,9 @@ and assembles the matrix A, the matrix B, or the forcing vector.
 '''
 
 from timeit import default_timer as timer
+t_start = timer()  # wall clock from here, before scipy/petsc/utils are imported
 import scipy.sparse.linalg as ssl
 import scipy.sparse as ss
-#import pywigxjpf as wig
 from mpi4py import MPI
 import scipy.io as sio
 import numpy as np
@@ -26,15 +26,20 @@ import parameters as par
 import utils as ut
 import operators as op
 
+# first row/column of the unknowns that come after the flow and magnetic field, in the same order as ut.sizmat:
+# the 3 rotational dynamics unknowns (mantle and inner core rotation rates, misalignment angle),
+# then the inner core magnetic field, then temperature and composition
+off_rotdyn = 2*(par.hydro + par.magnetic)*ut.n
+off_temp   = off_rotdyn + 3*par.rotdyn + 2*ut.nic*ut.cic
+off_comp   = off_temp + par.thermal*ut.n
+# first column of the toroidal magnetic field (section g)
+off_btor   = (2*par.hydro + 1)*ut.n
+
 
 
 def main():
 
     warnings.simplefilter('ignore', ss.SparseEfficiencyWarning)
-
-    # initialize Wigner-3j symbols table
-    #wig.wig_table_init(2*( par.lmax + 5), 3)
-    #wig.wig_temp_init(2*( par.lmax + 5))
 
     comm  = MPI.COMM_WORLD
     sizas = comm.Get_size()
@@ -423,7 +428,7 @@ def main():
         '''
         if rank == 0:
             tic = timer()
-        #print('sizmat=',ut.sizmat)
+        loc_list = [[], [], []]  # this rank's B entries, as lists of (data, row, col) arrays
         
         if par.hydro == 1:
 
@@ -435,12 +440,7 @@ def main():
 
                 mtx = -op.u(l,'u','upol',0)
 
-                if l == loc_top[0]:  # create loc_list if first iteration
-                    mtx.eliminate_zeros()
-                    mtx = mtx.tocoo()
-                    loc_list = [[mtx.data], [mtx.row + row], [mtx.col + col]]
-                else:  # append to loc_list if it already exists
-                    loc_list = ut.packit(loc_list, mtx, row, col)
+                loc_list = ut.packit(loc_list, mtx, row, col)
 
 
             # ----------------------------------------------------------------------- B matrix, 1curl (hydro), section v
@@ -468,15 +468,7 @@ def main():
                 else :
                     print('These magnetic parameters are not coded yet')
 
-                if par.hydro == 0:
-                    if l == loc_mag_f[0]:  # create loc_list if first iteration
-                        mtx.eliminate_zeros()
-                        mtx = mtx.tocoo()
-                        loc_list = [[mtx.data], [mtx.row + row], [mtx.col + col]]
-                    else:  # append to loc_list if it already exists
-                        loc_list = ut.packit(loc_list, mtx, row, col)
-                else:
-                    loc_list = ut.packit(loc_list, mtx, row, col)
+                loc_list = ut.packit(loc_list, mtx, row, col)
 
 
             # --------------------------------------------------------------- B matrix, 1curl (induction eq.), section g
@@ -528,7 +520,7 @@ def main():
             if rank == 0:
 
                 data = np.array([ par.MoIZ_M, par.MoIZ_IC, 1])
-                row0 = 4*nb*ut.N1
+                row0 = off_rotdyn
                 row = np.array([ row0, row0+1, row0+2])
                 col = row
                 rotdyn_list = [data, row, col]
@@ -541,7 +533,7 @@ def main():
             # ------------------------------------------------------------------- B, theta_pol, nocurl (heat), section h
             for k,l in enumerate(loc_top):  # loc_top here because theta
                                             # follows the same symmetry as u
-                row = 2*(par.hydro + par.magnetic)*nb*ut.N1 + ( rank*bpp + k )* ut.N1
+                row = off_temp + ( rank*bpp + k )* ut.N1
                 col = row
 
                 mtx = op.theta(l,'h','', 0)
@@ -554,7 +546,7 @@ def main():
             # ------------------------------------------------------------------- B, theta_pol, nocurl (heat), section i
             for k,l in enumerate(loc_top):  # loc_top here because xi
                                             # follows the same symmetry as u
-                row = (2*par.hydro + 2*par.magnetic + par.thermal)*nb*ut.N1 + ( rank*bpp + k )* ut.N1
+                row = off_comp + ( rank*bpp + k )* ut.N1
                 col = row
 
                 mtx = op.composition(l,'i','', 0)
@@ -563,49 +555,12 @@ def main():
 
 
         # ---------------------------------------------------------------------- B matrix assembly
-        # We use comm.Allgather here to figure out the right size
-        # for the local variables bdat, brow and bcol.
-        # They all need to be the same size for comm.Gather to work with them.
-
-        loc_list = ut.unpackit(loc_list)  # join the per-block arrays once
-        s = np.shape(loc_list[0])[0]
-        alls = comm.allgather(s)
-        length = max(alls)
-
-        bdat = np.zeros(length)
-        brow = -np.ones(length)
-        bcol = -np.ones(length)
-
-        bdat[:s] = loc_list[0]
-        brow[:s] = loc_list[1]
-        bcol[:s] = loc_list[2]
-
-        # fdat, frow and fcol are variables that will store the full B matrix
-        # a Gather command will send all local data from each rank (bdat, brow, bcol)
-        # to the rank 0 process.
-
-        fdat = None
-        frow = None
-        fcol = None
-
-        # We need to initialize explicitely the variables in rank 0:
-        if rank == 0:
-            fdat = np.zeros(length*sizas)
-            frow = np.zeros(length*sizas)
-            fcol = np.zeros(length*sizas)
-
-        # and finally gather all local data to (fdat,frow,fcol)
-        comm.Gather(bdat,fdat,root=0)
-        comm.Gather(brow,frow,root=0)
-        comm.Gather(bcol,fcol,root=0)
+        B = gather_csr(comm, loc_list, float)  # full B on rank 0, None elsewhere
+        del loc_list
 
         if rank == 0:
-            #print(ut.sizmat)
-            ix = np.where(frow >= 0)
-            B = ss.csr_matrix( ( fdat[ix], (frow[ix], fcol[ix]) ) , shape=(ut.sizmat,ut.sizmat) )
             Bnorm = ssl.norm(B)
-            #Bnorm=1
-            B = B/Bnorm
+            B.data *= 1/Bnorm  # in place, no copy of B (same arithmetic as scipy's B/Bnorm)
 
             toc = timer()
             print('--------------------------------------------')
@@ -613,6 +568,7 @@ def main():
             tic = timer()
 
             np.savez('B.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
+            del B  # free it before A is gathered
             toc = timer()
             print(' Matrix B written to disk in', '{: 4.3f}'.format(toc-tic), 'seconds')
             print('--------------------------------------------')
@@ -625,8 +581,8 @@ def main():
 
     if rank == 0:
         tic = timer()
+    loc_list = [[], [], []]  # this rank's A entries, as lists of (data, row, col) arrays
 
-    
     if par.hydro == 1:
 
         # ------------------------------------------------------------------------------------------------------------------------------------------------
@@ -650,12 +606,7 @@ def main():
             mtx = iwu + cori - visc
             # ------------------------------------------------------
             col = basecol + col0
-            if l == loc_top[0]:  # create loc_list if first iteration
-                mtx.eliminate_zeros()
-                mtx = mtx.tocoo()
-                loc_list = [[mtx.data], [mtx.row + row], [mtx.col + col]]
-            else:  # append to loc_list if it already exists
-                loc_list = ut.packit(loc_list, mtx, row, col)
+            loc_list = ut.packit(loc_list, mtx, row, col)
 
 
             # Toroidal velocity terms (utor) ---------------------------------------------------------------------------
@@ -713,7 +664,7 @@ def main():
                 # Buoyancy force, theta (temperature) terms ------------------------------------------------------------
                 # --------------------------------------------------------------------------- A, 2curl (section u), temp
                 # ------------------------------------------------------------------------------------------------------
-                basecol = ( 2 + 2*par.magnetic )*nb*ut.N1
+                basecol = off_temp
 
                 # Physics ------------------------------------
                 mtx = op.buoyancy(l,'u','',0)
@@ -727,7 +678,7 @@ def main():
                 # Compositional buoyancy force, xi (composition) terms -------------------------------------------------
                 # --------------------------------------------------------------------------- A, 2curl (section u), comp
                 # ------------------------------------------------------------------------------------------------------
-                basecol = ( 2 + 2*par.magnetic + par.thermal )*nb*ut.N1
+                basecol = off_comp
 
                 # Physics ------------------------------------
                 mtx = op.comp_buoyancy(l,'u','',0)
@@ -839,7 +790,7 @@ def main():
             # -------- if mantle or inner core are free to rotate (par.rotdyn=1) adjust toroidal l=1 boundary conditions
             # ----------------------------------------------------------------------------------------------------------
             if ((par.rotdyn == 1) and (par.m == 0) and (par.symm == 1) and (l == 1)):
-                col = 4*nb*ut.N1
+                col = off_rotdyn
                 mantle_list = [ np.array([-ut.rcmb]) ,np.array([row])  ,np.array([col]) ]  # T10 - rcmb*omega_m = 0
                 incore_list = [ np.array([-par.ricb]) ,np.array([row+1]), np.array([col+1]) ]  # T10 - ricb*omega_ic = 0
                 for q in [0,1,2]:
@@ -916,15 +867,7 @@ def main():
             # --------------------------------------------
             col  =  basecol + col0
 
-            if par.hydro == 0:
-                if l == loc_mag_f[0]:  # create loc_list if first iteration
-                    mtx.eliminate_zeros()
-                    mtx = mtx.tocoo()
-                    loc_list = [[mtx.data], [mtx.row + row], [mtx.col + col]]
-                else:  # append to loc_list if it already exists
-                    loc_list = ut.packit(loc_list, mtx, row, col)
-            else:
-                loc_list = ut.packit(loc_list, mtx, row, col)
+            loc_list = ut.packit(loc_list, mtx, row, col)
 
 
 
@@ -1065,84 +1008,6 @@ def main():
             #print('g',l,max(loc_list[1]),max(loc_list[2]))
 
 
-        if par.rotdyn:
-            # ----------------------------------------------------------------------------------------------------------------------------------------------------
-            # --------------------------------------------------------------------------------------------- A matrix, rotational dynamics of mantle and inner core
-            # ---------------------------------------------------------------------------------------------------------------------------------------------------- 
-            # Just three rows here with the total (viscous, magnetic, gravitational) torque on the mantle, ic,
-            # and the equation including viscous relaxation of the inner core. 
-            if rank == 0:
-
-                # ------------------------------------------------------------------------------------- Viscous torques
-
-                row0 = np.ones(ut.N1)*(     2*(par.hydro + par.magnetic)*ut.n )
-                row1 = np.ones(ut.N1)*( 1 + 2*(par.hydro + par.magnetic)*ut.n )
-                col = np.arange(ut.n, ut.n+ut.N1)  # corresponds to toroidal l=1 velocity (T10)
-                #print('utn = ',ut.n)
-
-
-                vtorq_mantle = par.vtrq * par.Ek * par.OmgTau * ut.gamma_visc(0,0,0)[0,ut.n:ut.n+ut.N1]  #T10
-                visctorq_list_mantle = [ vtorq_mantle, row0, col ]
-                for q in [0,1,2]: loc_list[q].append( visctorq_list_mantle[q] )
-
-                vtorq_incore = par.vtrq * par.Ek * par.OmgTau * ut.gamma_visc_icb(par.ricb)[0,ut.n:ut.n+ut.N1]  #T10
-                visctorq_list_incore = [ vtorq_incore, row1, col ]
-                for q in [0,1,2]: loc_list[q].append( visctorq_list_incore[q] )
-
-
-                # ------------------------------------------------------------------------------------ Magnetic torques
-
-                if ut.B0_l == 1:  # dipolar background
-
-                    col = np.arange( 3*ut.n, 3*ut.n + ut.N1 )
-                    
-                    mtorq_mantle = par.mtrq * par.Le2 * (par.OmgTau**2) * ut.gamma_magnetic()[0,ut.n:ut.n+ut.N1]  #G20
-                    magtorq_list_mantle = [ mtorq_mantle, row0, col ]
-                    for q in [0,1,2]: loc_list[q].append( magtorq_list_mantle[q] )
-
-                    mtorq_incore = par.mtrq * par.Le2 * (par.OmgTau**2) * ut.gamma_magnetic_ic()[0,ut.n:ut.n+ut.N1]  #G20
-                    magtorq_list_incore = [ mtorq_incore, row1, col ]
-                    for q in [0,1,2]: loc_list[q].append( magtorq_list_incore[q] )                   
-
-                elif ut.B0_l == 2:  #quadrupolar background
-                    
-                    row00 = np.ones( 2*ut.N1 )*( 2*(par.hydro + par.magnetic)*ut.n )
-                    row11 = np.ones( 2*ut.N1 )*( 1 + 2*(par.hydro + par.magnetic)*ut.n )
-                    col = np.arange( 3*ut.n, 3*ut.n + 2*ut.N1 )
-                       
-                    mtorq_mantle = par.mtrq * par.Le2 * (par.OmgTau**2) * ut.gamma_magnetic()[0,ut.n:ut.n+2*ut.N1]  #G10 and G30
-                    magtorq_list_mantle = [ mtorq_mantle, row00, col ]
-                    for q in [0,1,2]: loc_list[q].append( magtorq_list_mantle[q] )      
-
-                    mtorq_incore = par.mtrq * par.Le2 * (par.OmgTau**2) * ut.gamma_magnetic_ic()[0,ut.n:ut.n+2*ut.N1]  #G10 and G30  
-                    magtorq_list_incore = [ mtorq_incore, row11, col ]
-                    for q in [0,1,2]: loc_list[q].append( magtorq_list_incore[q] )             
-
-
-                # ------------------------------------------------------------------------------- Gravitational torques
-
-                Kgrav = par.gTorque * (par.OmgTau**2)
-                row = 4*ut.n
-                col = row
-
-                gtorq_mantle = Kgrav  # proportional to the longitudinal misalignment between inner core and mantle
-                gtorq_list_mantle = [ np.array([gtorq_mantle]), np.array([row]), np.array([col+2]) ]
-                for q in [0,1,2]: loc_list[q].append( gtorq_list_mantle[q] )
-
-                gtorq_incore = -Kgrav  # proportional to the longitudinal misalignment between inner core and mantle
-                gtorq_list_incore = [ np.array([gtorq_incore]), np.array([row+1]), np.array([col+2]) ]
-                for q in [0,1,2]: loc_list[q].append( gtorq_list_incore[q] )
-
-
-                # ------------------------  Now the dynamics of the ic and mantle misalignment, including IC relaxation
-
-                row = np.ones(3)*(4*ut.n + 2)
-                col = np.arange( 4*ut.n, 4*ut.n + 3 )
-                ictau = par.OmgTau/par.OmgtauIC 
-                misalig = np.array([ -1, 1, -ictau])  # - Omega_mantle + Omega_ic - misalignent/tau
-                misalig_list = [misalig, row, col]
-                for q in [0,1,2]: loc_list[q].append( misalig_list[q] )
-
     
         if ut.cic:
             # ----------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1186,6 +1051,92 @@ def main():
 
                 #print('gic',l,max(loc_list[1]),max(loc_list[2]))
 
+    if par.rotdyn:
+        # ----------------------------------------------------------------------------------------------------------------------------------------------------
+        # --------------------------------------------------------------------------------------------- A matrix, rotational dynamics of mantle and inner core
+        # ---------------------------------------------------------------------------------------------------------------------------------------------------- 
+        # Just three rows here with the total (viscous, magnetic, gravitational) torque on the mantle, ic,
+        # and the equation including viscous relaxation of the inner core. 
+        if rank == 0:
+
+            # ------------------------------------------------------------------------------------- Viscous torques
+
+            row0 = np.ones(ut.N1)*(     off_rotdyn )
+            row1 = np.ones(ut.N1)*( 1 + off_rotdyn )
+            col = np.arange(ut.n, ut.n+ut.N1)  # corresponds to toroidal l=1 velocity (T10)
+            #print('utn = ',ut.n)
+
+
+            vtorq_mantle = par.vtrq * par.Ek * par.OmgTau * ut.gamma_visc(0,0,0)[0,ut.n:ut.n+ut.N1]  #T10
+            visctorq_list_mantle = [ vtorq_mantle, row0, col ]
+            for q in [0,1,2]: loc_list[q].append( visctorq_list_mantle[q] )
+
+            vtorq_incore = par.vtrq * par.Ek * par.OmgTau * ut.gamma_visc_icb(par.ricb)[0,ut.n:ut.n+ut.N1]  #T10
+            visctorq_list_incore = [ vtorq_incore, row1, col ]
+            for q in [0,1,2]: loc_list[q].append( visctorq_list_incore[q] )
+
+
+            # ------------------------------------------------------------------------------------ Magnetic torques
+            # gamma_magnetic() is 0 (no torque) unless the mantle has a conducting layer (mantle = 'TWA'),
+            # gamma_magnetic_ic() is 0 unless the inner core is conducting or 'TWA'. Zero torques are skipped.
+            gmag_mantle = ut.gamma_magnetic()
+            gmag_incore = ut.gamma_magnetic_ic()
+
+            if ut.B0_l == 1:  # dipolar background
+
+                col = np.arange( off_btor, off_btor + ut.N1 )
+
+                if np.ndim(gmag_mantle) > 0:
+                    mtorq_mantle = par.mtrq * par.Le2 * (par.OmgTau**2) * gmag_mantle[0,ut.n:ut.n+ut.N1]  #G20
+                    magtorq_list_mantle = [ mtorq_mantle, row0, col ]
+                    for q in [0,1,2]: loc_list[q].append( magtorq_list_mantle[q] )
+
+                if np.ndim(gmag_incore) > 0:
+                    mtorq_incore = par.mtrq * par.Le2 * (par.OmgTau**2) * gmag_incore[0,ut.n:ut.n+ut.N1]  #G20
+                    magtorq_list_incore = [ mtorq_incore, row1, col ]
+                    for q in [0,1,2]: loc_list[q].append( magtorq_list_incore[q] )
+
+            elif ut.B0_l == 2:  #quadrupolar background
+
+                row00 = np.ones( 2*ut.N1 )*( off_rotdyn )
+                row11 = np.ones( 2*ut.N1 )*( 1 + off_rotdyn )
+                col = np.arange( off_btor, off_btor + 2*ut.N1 )
+
+                if np.ndim(gmag_mantle) > 0:
+                    mtorq_mantle = par.mtrq * par.Le2 * (par.OmgTau**2) * gmag_mantle[0,ut.n:ut.n+2*ut.N1]  #G10 and G30
+                    magtorq_list_mantle = [ mtorq_mantle, row00, col ]
+                    for q in [0,1,2]: loc_list[q].append( magtorq_list_mantle[q] )
+
+                if np.ndim(gmag_incore) > 0:
+                    mtorq_incore = par.mtrq * par.Le2 * (par.OmgTau**2) * gmag_incore[0,ut.n:ut.n+2*ut.N1]  #G10 and G30
+                    magtorq_list_incore = [ mtorq_incore, row11, col ]
+                    for q in [0,1,2]: loc_list[q].append( magtorq_list_incore[q] )
+
+
+            # ------------------------------------------------------------------------------- Gravitational torques
+
+            Kgrav = par.gTorque * (par.OmgTau**2)
+            row = off_rotdyn
+            col = row
+
+            gtorq_mantle = Kgrav  # proportional to the longitudinal misalignment between inner core and mantle
+            gtorq_list_mantle = [ np.array([gtorq_mantle]), np.array([row]), np.array([col+2]) ]
+            for q in [0,1,2]: loc_list[q].append( gtorq_list_mantle[q] )
+
+            gtorq_incore = -Kgrav  # proportional to the longitudinal misalignment between inner core and mantle
+            gtorq_list_incore = [ np.array([gtorq_incore]), np.array([row+1]), np.array([col+2]) ]
+            for q in [0,1,2]: loc_list[q].append( gtorq_list_incore[q] )
+
+
+            # ------------------------  Now the dynamics of the ic and mantle misalignment, including IC relaxation
+
+            row = np.ones(3)*(off_rotdyn + 2)
+            col = np.arange( off_rotdyn, off_rotdyn + 3 )
+            ictau = par.OmgTau/par.OmgtauIC 
+            misalig = np.array([ -1, 1, -ictau])  # - Omega_mantle + Omega_ic - misalignent/tau
+            misalig_list = [misalig, row, col]
+            for q in [0,1,2]: loc_list[q].append( misalig_list[q] )
+
     
     if par.thermal == 1: # includes the heat equation
 
@@ -1198,7 +1149,7 @@ def main():
         for k,l in enumerate(loc_top): # here use the l's from loc_top
 
             col0 = (rank*bpp + k )* ut.N1
-            row = (2+2*par.magnetic)*nb*ut.N1 + col0
+            row = off_temp + col0
 
             # Poloidal velocity terms: -u_r * (d/dr)T ------------------------------------------------------------------
             # ----------------------------------------------------------------------- A, heat equation (section h), upol
@@ -1215,7 +1166,7 @@ def main():
             # temperature (theta) terms: (Ek/Pr)*nabla**2(theta) -------------------------------------------------------
             # ----------------------------------------------------------------------- A, heat equation (section h), temp
             # ----------------------------------------------------------------------------------------------------------
-            basecol = (2+2*par.magnetic)*nb*ut.N1
+            basecol = off_temp
 
             # Physics ----------------------------
             mtx = op.thermal_diffusion(l,'h','',0)
@@ -1245,7 +1196,7 @@ def main():
         for k,l in enumerate(loc_top): # here use the l's from loc_top
 
             col0 = (rank*bpp + k )* ut.N1
-            row = ( 2 + 2*par.magnetic + par.thermal )*nb*ut.N1 + col0
+            row = off_comp + col0
 
             # Poloidal velocity terms: -u_r * (d/dr)xi -----------------------------------------------------------------
             # ---------------------------------------------------------------- A, composition equation (section i), upol
@@ -1262,7 +1213,7 @@ def main():
             # Compositional (xi) terms: (Ek/Sc)*nabla**2(xi) -----------------------------------------------------------
             # ---------------------------------------------------------------- A, composition equation (section i), comp
             # ----------------------------------------------------------------------------------------------------------
-            basecol = ( 2 + 2*par.magnetic + par.thermal )*nb*ut.N1
+            basecol = off_comp
 
             # Physics ----------------------------------
             mtx = op.compositional_diffusion(l,'i','',0)
@@ -1282,57 +1233,13 @@ def main():
     
 
     # ------------------------------------------------------------------------------------------------------------------ A matrix assembly
-    # We use comm.allgather here to figure out the right size
-    # for the local variables bdat, brow and bcol.
-    # They all need to be the same size for comm.Gather to work with them.
-
-    loc_list = ut.unpackit(loc_list)  # join the per-block arrays once
-    s = np.shape(loc_list[0])[0]
-    alls = comm.allgather(s)
-    length = max(alls)
-
-    bdat = np.zeros(length,dtype=complex)
-    brow = -np.ones(length,dtype=np.int64)
-    bcol = -np.ones(length,dtype=np.int64)
-
-    bdat[:s] = loc_list[0]
-    brow[:s] = loc_list[1]
-    bcol[:s] = loc_list[2]
-
-    # fdat, frow and fcol are variables that will store the full A matrix
-    # a Gather command will send all local data (bdat, brow, bcol)
-    # from each rank to the rank 0 process.
-
-    fdat = None
-    frow = None
-    fcol = None
-
-    # We need to initialize explicitely the variables in rank 0:
-    if rank == 0:
-        fdat = np.zeros(length*sizas,dtype=complex)
-        frow = np.zeros(length*sizas,dtype=np.int64)
-        fcol = np.zeros(length*sizas,dtype=np.int64)
-
-
-    # and finally gather all local data to (fdat,frow,fcol)
-
-    comm.Gather([bdat,MPI.DOUBLE_COMPLEX],[fdat,MPI.DOUBLE_COMPLEX],root=0)
-    comm.Gather(brow,frow,root=0)
-    comm.Gather(bcol,fcol,root=0)
+    A = gather_csr(comm, loc_list, complex)  # full A on rank 0, None elsewhere
+    del loc_list
 
     if rank == 0:
 
-        ix = np.where(frow >= 0)
-        #print(max(frow[ix]), ut.sizmat)
-        #print(max(fcol[ix]), ut.sizmat)
-
-        tmpr, tmpc = frow[ix], fcol[ix]
-        
-        #print(tmpr[tmpr>ut.sizmat],tmpc[tmpr>ut.sizmat] )
-
-        A = ss.csr_matrix((fdat[ix], (frow[ix], fcol[ix])), shape=(ut.sizmat,ut.sizmat), dtype=complex)
         if par.forcing == 0:
-            A = A/Bnorm
+            A.data /= Bnorm  # in place, no copy of A
 
         toc = timer()
         print(' Matrix A assembled in', '{: 4.3f}'.format(toc-tic), 'seconds')
@@ -1344,14 +1251,51 @@ def main():
         print('--------------------------------------------')
 
     comm.Barrier()
+    if rank == 0:
+        print(' Total time (incl. imports):', '{: 4.3f}'.format(timer()-t_start), 'seconds')
     
-
-    # Free memory space
-    #wig.wig_temp_free()
-    #wig.wig_table_free()
 
     # ------------------------------------------------------------------------------------------------------------------ done!
     return 0
+
+
+
+def gather_csr(comm, loc_list, dtype):
+    '''
+    Gathers the matrix entries of all ranks on rank 0 and returns the full
+    ut.sizmat x ut.sizmat CSR matrix there (None on the other ranks).
+    loc_list is this rank's [data, row, col] as built with ut.packit.
+    Uses Gatherv with the exact count per rank, so nothing is padded or filtered afterwards.
+    '''
+    rank = comm.Get_rank()
+    data, row, col = ut.unpackit(loc_list)  # join the per-block arrays once
+    data = np.ascontiguousarray(data, dtype=dtype)
+    row  = np.ascontiguousarray(row,  dtype=np.int32)  # ut.sizmat is far below 2**31
+    col  = np.ascontiguousarray(col,  dtype=np.int32)
+
+    counts = comm.gather(data.size, root=0)
+    fdat = frow = fcol = None
+    if rank == 0:
+        counts = np.array(counts, dtype=np.int64)
+        displs = np.concatenate([[0], np.cumsum(counts)[:-1]])
+        fdat = np.empty(counts.sum(), dtype=dtype)
+        frow = np.empty(counts.sum(), dtype=np.int32)
+        fcol = np.empty(counts.sum(), dtype=np.int32)
+        recv = lambda buf, mpitype: [buf, counts, displs, mpitype]
+    else:
+        recv = lambda buf, mpitype: None
+
+    mpitype = MPI.DOUBLE_COMPLEX if np.dtype(dtype) == np.complex128 else MPI.DOUBLE
+    comm.Gatherv([data, mpitype], recv(fdat, mpitype), root=0)
+    comm.Gatherv([row, MPI.INT],  recv(frow, MPI.INT),  root=0)
+    comm.Gatherv([col, MPI.INT],  recv(fcol, MPI.INT),  root=0)
+    del data, row, col
+
+    if rank == 0:
+        if frow.size and (frow.min() < 0 or fcol.min() < 0 or frow.max() >= ut.sizmat or fcol.max() >= ut.sizmat):
+            raise ValueError('matrix entry outside 0..sizmat-1')
+        return ss.csr_matrix((fdat, (frow, fcol)), shape=(ut.sizmat, ut.sizmat), dtype=dtype)
+    return None
 
 
 
@@ -1486,7 +1430,7 @@ def bc_theta_spherical(l):
         elif par.bci_thermal == 1: # constant heat flux at icb
             out[ 1,:] = bv.Ta[:,1] # theta'=0
 
-    row0 = 2*(par.hydro+par.magnetic)*ut.n + int(ut.N1*(l-ut.m_top)/2)
+    row0 = off_temp + int(ut.N1*(l-ut.m_top)/2)
     col0 = row0
 
     out = out.tocoo()
@@ -1524,8 +1468,7 @@ def bc_xi_spherical(l):
         elif par.bci_compositional == 1: # constant flux at icb
             out[ 1,:] = bv.Ta[:,1] # xi'=0
 
-    row0 = ( (2*par.hydro+2*par.magnetic+par.thermal)*ut.n
-               + int(ut.N1*(l-ut.m_top)/2) )
+    row0 = off_comp + int(ut.N1*(l-ut.m_top)/2)
     col0 = row0
 
     out = out.tocoo()
@@ -2131,15 +2074,6 @@ def bc_b_cic(l,loc):
 
 
 
-'''
-def Clam(L,l,m,n, lamb0):
-    #
-    tmp1 = wig.wig3jj( 2* l , 2* lamb0 , 2* L , 2* m, 0 , 2*(-m) )
-    tmp2 = wig.wig3jj( 2* l , 2* lamb0 , 2* L , 2* n, 0 , 2*(-n) )
-    out = (-1)**(m+n)*(2*L+1.)*tmp1*tmp2
-
-    return out
-'''
 
 
 

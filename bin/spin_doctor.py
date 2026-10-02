@@ -6,11 +6,12 @@ Usage:
 > python3 ./bin/solution_doctor.py ncpus
 '''
 
+from timeit import default_timer as timer
+t_start = timer()  # wall clock from here, before scipy/utils are imported
 import sys
 sys.path.insert(1,'bin/')
 import scipy.io as sio
 import scipy.sparse as ss
-from timeit import default_timer as timer
 import os.path
 import multiprocessing as mp
 import numpy as np
@@ -129,7 +130,6 @@ def table_row(cols, widths, i):
 def main(ncpus):
 
     # ------------------------------------------------------------------ Postprocessing: compute energy, dissipation, etc.
-    tic = timer()
 
     fname_ev = 'eigenvalues0.dat'
     fname_tm = 'timing.dat'
@@ -137,6 +137,7 @@ def main(ncpus):
     if os.path.isfile(fname_ev):
         eigval = np.loadtxt(fname_ev).reshape((-1,2))
 
+    timing = 0.0  # solve_nopp time, read from timing.dat if present
     if os.path.isfile(fname_tm):
         timing = np.loadtxt(fname_tm)
         if np.size(timing)>1:
@@ -202,6 +203,7 @@ def main(ncpus):
     resid1      = np.zeros(success)
     resid2      = np.zeros(success)
     resid3      = np.zeros(success)
+    residL      = np.full(success, np.nan)    # axial angular momentum balance of the fluid (m=0, symm=1 only)
     y           = np.zeros(success)                # for eigenmode tracking
     press0      = np.zeros(success)
     elldom      = np.zeros(success)
@@ -226,6 +228,7 @@ def main(ncpus):
         ( 'resid𝐮',      '{:8.2e}',   lambda i: resid1[i] ),
         ( 'resid𝐛',      '{:8.2e}',   lambda i: resid2[i] ),
         ( 'residθ',      '{:8.2e}',   lambda i: resid3[i] ),
+        ( 'resid𝐋',      '{:8.2e}',   lambda i: residL[i] ),
         ( 'Tor/Pol',     '{:8.2e}',   lambda i: ratio(KT[i], KP[i]) ),
         ( 'Mag/Kin',     '{:8.2e}',   lambda i: ratio(ME[i], KE[i]) ),
         ( '|𝚪|mag',      '{:8.2e}',   lambda i: np.abs(mtorq[i]) ),
@@ -254,9 +257,9 @@ def main(ncpus):
     do_mtorq    = par.magnetic and (par.mantle == 'TWA') and (par.m==0) and (par.symm==1)
     do_mtorq_ic = par.magnetic and (par.innercore in ['conducting, Chebys', 'TWA']) and ((par.m==0) and (par.symm==1))
     if do_mtorq:
-        gmag    = ut.gamma_magnetic()
+        gmag    = ut.gamma_magnetic()[0,:]     # row vector, like gvisc (avoids a numpy deprecation when storing the torque)
     if do_mtorq_ic:
-        gmag_ic = ut.gamma_magnetic_ic()
+        gmag_ic = ut.gamma_magnetic_ic()[0,:]
 
     # One pool for all solutions. The quadrature grid must be set before the pool is created,
     # since the workers are forked and only see the module globals as they were at that time.
@@ -322,7 +325,7 @@ def main(ncpus):
             #print('Wlor=',Wlor[i])
             
             # Viscous torques
-            vtorq[i] = par.Ek * par.OmgTau * np.dot( gvisc, u_sol)  # need to double check the constants here
+            vtorq[i] = par.Ek * par.OmgTau * np.dot( gvisc, u_sol)  # constants checked 2026-10-02 against angrymom_z (angular momentum conservation)
             vtorq_ic[i] = par.Ek * par.OmgTau * np.dot( gvisc_icb, u_sol)
 
             # Angular momentum in the z direction
@@ -418,6 +421,17 @@ def main(ncpus):
         if par.thermal:
             resid3[i] = abs( 2*sigma*TE[i] - Dthm[i] - Wadv_thm[i] ) / \
                              max( abs(2*sigma*TE[i]), abs(Dthm[i]), abs(Wadv_thm[i]))
+
+        # Axial angular momentum balance of the fluid: dL/dt = lambda*L must equal the torque on the fluid,
+        # which is minus the viscous and magnetic torques it exerts on the mantle and the inner core
+        # (gravitational torques act only between mantle and inner core). Only for eigenvalue problems with
+        # m=0, symm=1, where angrymom_z and the torques are defined; body forcing would add a torque not included here.
+        if par.hydro and par.forcing == 0 and par.m == 0 and par.symm == 1:
+            dLdt    = (sigma + 1j*w) * angmomz[i]
+            torques = [ vtorq[i], vtorq_ic[i], mtorq[i], mtorq_ic[i] ]
+            scale   = max( [abs(dLdt)] + [abs(t) for t in torques] )
+            if scale > 0:
+                residL[i] = abs( dLdt + sum(torques) ) / scale
         
     
         # ------------------------------------------------------------------------------------------------------------------
@@ -425,9 +439,8 @@ def main(ncpus):
         # ------------------------------------------------------------------------------------------------------------------
         #print(' ')
 
-        toc = timer()
         
-        params.append( [ v for _, v, _ in param_table(timing+toc-tic) ] )
+        params.append( [ v for _, v, _ in param_table(0) ] )  # runtime filled in before writing params.dat
 
     pool.close()
     pool.join()
@@ -466,6 +479,12 @@ def main(ncpus):
 
     # ---------------------------------------------------------- write post-processed data and parameters to disk
 
+    # runtime = full solve_nopp time + full spin_doctor time (both incl. imports), same for every solution
+    irt = [ name for name, _, _ in param_table(0) ].index('runtime')
+    runtime = timing + timer() - t_start
+    for row in params:
+        row[irt] = runtime
+
     with open('params.dat','ab') as dpar:
         np.savetxt(dpar, np.array(params),
         fmt=[ f for _, _, f in param_table(0) ])
@@ -500,6 +519,8 @@ def main(ncpus):
     if par.forcing == 0:
         with open('eigenvalues.dat','ab') as deig:
             np.savetxt(deig, eigval)
+
+    print('Total time postprocessing:', timer()-t_start, 'seconds')
 
     # ------------------------------------------------------------------ done
     return 0

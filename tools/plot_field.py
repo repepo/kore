@@ -1,22 +1,20 @@
 import numpy as np
 import scipy.sparse as ss
-import scipy.sparse.linalg as ssl
 import sys
 import matplotlib.pyplot as plt
-import matplotlib
 import numpy.polynomial.chebyshev as ch
 
 sys.path.insert(1,'bin/')
 
 import utils as ut
 import parameters as par
-import utils_pp as upp
+import utils4pp as upp  # xcheb and expand_sol now live in bin/utils4pp.py (utils_pp.py was removed)
 
 '''
 Script to plot meridional cuts of a solution field
 Use as:
 
-python3 plot_field.py nsol nR ntheta theta0 theta1 field opt
+python3 plot_field.py nsol nR ntheta theta0 theta1 field opt [tex]
 
 nsol   : solution number
 nR     : number of points in radius
@@ -25,9 +23,11 @@ theta0 : starting colatitude
 theta1 : final colatitude
 field  : whether to plot flow velocity or magnetic field ('u' or 'b')
 opt    : 'raw' for real part (phase and phi dependent!), or 'abs' for the magnitude
+tex    : optional, 'tex' to render labels with LaTeX (default), 'notex' to use matplotlib's mathtext
 '''
 
-plt.rc('text', usetex=True)
+use_tex = (sys.argv[8] if len(sys.argv) > 8 else 'tex') != 'notex'
+plt.rc('text', usetex=use_tex)
 
 solnum = int(sys.argv[1])
 

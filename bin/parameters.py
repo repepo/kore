@@ -61,7 +61,7 @@ bco = 1
 # CoriolisNumber = 1.2e3
 # Ek_gap = 2/CoriolisNumber
 # Ek = Ek_gap*(1-ricb)**2
-Ek = 10**-6
+Ek = 10**-7  # torsional-mode setup (was 10**-6)
 
 forcing = 0  # Uncomment this line for eigenvalue problems
 # forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
@@ -90,15 +90,15 @@ projection = 1
 # ----------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------- Magnetic field parameters
 # ----------------------------------------------------------------------------------------------------------------------
-magnetic = 0  # set to 1 if including the induction equation and the Lorentz force
+magnetic = 1  # set to 1 if including the induction equation and the Lorentz force  # torsional-mode setup
 
 # Imposed background magnetic field
-B0 = 'axial'          # Axial, uniform field along the spin axis
+# B0 = 'axial'          # Axial, uniform field along the spin axis
 # B0 = 'dipole'         # classic dipole, singular at origin, needs ricb>0
 # B0 = 'G21 dipole'     # Felix's dipole (Gerick GJI 2021)
 # B0 = 'Luo_S1'         # Same as above, actually (Luo & Jackson PRSA 2022)
 # B0 = 'Luo_S2'         # Quadrupole
-# B0 = 'FDM'            # Free Poloidal Decay Mode (Zhang & Fearn 1994,1995; Schmitt 2012)
+B0 = 'FDM'            # Free Poloidal Decay Mode (Zhang & Fearn 1994,1995; Schmitt 2012)  # torsional-mode setup: torsional waves need B_s != 0, the axial field has none
 beta = 3.0              # guess for FDM's beta
 B0_l = 1                # l number for the FDM mode
 
@@ -114,10 +114,10 @@ c1_icb    = 0  # Thin wall to fluid conductance ratio (if innercore='TWA')
 # Note: 'perfect conductor, material' or 'perfect conductor, spatial' are identical if ICB is no-slip (bci = 1 above)
 
 # Magnetic boundary conditions at the CMB
-mantle   = 'insulator'
-# mantle = 'TWA'  # Thin conductive wall layer (Roberts, Glatzmaier & Clune, 2010)
-c_cmb  = 1e-5  # Ratio (h*mu_wall)/(rcmb*mu_fluid)  (if mantle='TWA')
-c1_cmb = 1e-5  # Thin wall to fluid conductance ratio (if mantle='TWA')
+# mantle   = 'insulator'
+mantle = 'TWA'  # Thin conductive wall layer (Roberts, Glatzmaier & Clune, 2010)  # torsional-mode setup
+c_cmb  = 1e-2  # Ratio (h*mu_wall)/(rcmb*mu_fluid)  (if mantle='TWA')  # torsional-mode setup (was 1e-5)
+c1_cmb = 1.5e-2  # Thin wall to fluid conductance ratio (if mantle='TWA')  # torsional-mode setup (was 1e-5): magnetic torque ~ viscous torque
 
 # Electrical conductivity and permeability
 mu        = 1.0  # magnetic permeability ratio fluid outer core / vacuum
@@ -126,8 +126,8 @@ sigma_i2o = 1.0  # electrical conductivity ratio solid inner core / fluid outer 
 
 # Magnetic field strength and magnetic diffusivity:
 # Either use the Elsasser number and the magnetic Prandtl number (i.e. Lambda and Pm: uncomment and set the following three lines):
-Lambda = 0.1  #ssak(0.1,1e-3,Ek)
-Pm = 0.01  #pmak(1,1e-3,Ek)
+Lambda = 10  #ssak(0.1,1e-3,Ek)  # torsional-mode setup (was 0.1): Le = sqrt(Lambda*Ek/Pm) = 3.2e-3
+Pm = 0.1  #pmak(1,1e-3,Ek)  # torsional-mode setup (was 0.01): Lundquist number Le/Em = 3.2e3
 Em = Ek/Pm; Le2 = Lambda*Em; Le = np.sqrt(Le2)
 # Or use the Lehnert number and the magnetic Ekman number (i.e. Le and Em: uncomment and set the following three lines):
 #Le = 10**-2.5  #; Lu=2e3
@@ -296,8 +296,8 @@ if track_target == 1 :  # read target from file and sets target accordingly
     rtau = tt[0]
     itau = tt[1]
 else:                   # set target manually
-    rtau = 0.0
-    itau = 1.0
+    rtau = -0.0046  # torsional-mode setup (was 0.0): aims at the mode lambda = -0.00463 + 0.0115i
+    itau = 0.0115  # torsional-mode setup (was 1.0)
 
 # tau is the actual target for the solver
 # real part is damping
@@ -325,8 +325,11 @@ tol_tc = 1e-6
 
 # PETSc/SLEPc/MUMPS runtime options, loaded by solve_nopp.py into the PETSc options database
 # (option name without the leading '-'; use '' for flags without a value).
+# solve_nopp.py passes only the group matching the problem type (forcing == 0 or not).
 # Anything given on the command line (e.g. via $opts in runKore.sh) takes precedence.
 petsc_opts = {
+
+    # ---------------------------------------- eigenvalue problems (forcing == 0): eps_*, st_*
     'st_type'                      : 'sinvert',             # shift-and-invert around tau (use with 'TM')
     'st_pc_factor_mat_solver_type' : 'mumps',               # direct LU solve with MUMPS
     'st_mat_mumps_cntl_1'          : 1e-6,                  # pivot threshold; avoids INFOG(1)=-9 on large problems
@@ -334,9 +337,17 @@ petsc_opts = {
     # 'eps_balance'                : 'twoside',             # cleaner eigenvalues for final runs, ~+50% time
     # 'st_mat_mumps_icntl_14'      : 50,                    # extra MUMPS workspace (%), only if -9 still appears
     # 'st_mat_mumps_icntl_22'      : 1,                     # out-of-core factors, cuts memory ~half
-    # 'mat_mumps_ooc_tmpdir'       : '/nvm/scratch',        # put OOC files on a real disk, not tmpfs /tmp
+    # 'st_mat_mumps_ooc_tmpdir'    : '/nvm/scratch',        # put OOC files on a real disk, not tmpfs /tmp
     # 'st_mat_mumps_icntl_28'      : 2,                     # parallel ordering ...
     # 'st_mat_mumps_icntl_29'      : 2,                     # ... with ParMETIS
+
+    # ---------------------------------------- forced problems (forcing > 0): ksp_*, pc_*, mat_*
+    'ksp_type'                     : 'preonly',             # direct solve, no Krylov iterations
+    'pc_type'                      : 'lu',                  # (default GMRES/ILU does not converge)
+    'pc_factor_mat_solver_type'    : 'mumps',               # LU with MUMPS
+    # 'mat_mumps_cntl_1'           : 1e-6,                  # pivot threshold, if MUMPS reports INFOG(1)=-9
+    # 'mat_mumps_icntl_22'         : 1,                     # out-of-core factors, cuts memory ~half
+    # 'mat_mumps_ooc_tmpdir'       : '/nvm/scratch',        # put OOC files on a real disk, not tmpfs /tmp
 }
 
 # ----------------------------------------------------------------------------------------------------------------------

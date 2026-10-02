@@ -3,6 +3,15 @@ import matplotlib.colors as colors
 import numpy as np
 
 
+def edgecolor_face(cont):
+    """Draw contour fills without gaps between levels (edge colour = face colour)."""
+    try:
+        cont.set_edgecolor("face")        # matplotlib >= 3.8: a ContourSet is itself a Collection
+    except AttributeError:
+        for c in cont.collections:        # older matplotlib (ContourSet.collections was removed in 3.10)
+            c.set_edgecolor("face")
+
+
 def add_colorbar(im, aspect=40, pad_fraction=0.5, **kwargs):
     """Add a vertical color bar to an image plot."""
     from mpl_toolkits import axes_grid1
@@ -94,8 +103,7 @@ def radContour(theta,phi,dat,levels=30,cmap='RdBu_r',clim=[0,0]):
     divnorm = colors.TwoSlopeNorm(vmin=datMin, vcenter=datCenter, vmax=datMax)
     cont = plt.contourf(xx,yy,dat,levels,cmap=cmap,norm=divnorm)
 
-    for c in cont.collections:
-        c.set_edgecolor("face")
+    edgecolor_face(cont)
 
     thB = np.linspace(np.pi/2, -np.pi/2, len(theta))
     xxout, yyout  = hammer2cart(thB, -np.pi-1e-3)
@@ -123,8 +131,7 @@ def merContour(r,theta,dat,levels=30,cmap='RdBu_r',clim=[0,0]):
     plt.plot([0,0], [ r.min(),r.max() ], 'k', lw=0.6)
     plt.plot([0,0], [ -r.max(),-r.min() ], 'k', lw=0.6)
 
-    for c in cont.collections:
-        c.set_edgecolor("face")
+    edgecolor_face(cont)
 
     return cont
 
@@ -143,7 +150,6 @@ def eqContour(r,phi,dat,levels=30,cmap='RdBu_r',clim=[0,0]):
     plt.plot(r[0]*np.cos(phi), r[0]*np.sin(phi),'k',lw=0.6)
     plt.plot(r[-1]*np.cos(phi), r[-1]*np.sin(phi),'k',lw=0.6)
 
-    for c in cont.collections:
-        c.set_edgecolor("face")
+    edgecolor_face(cont)
 
     return cont

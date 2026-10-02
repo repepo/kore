@@ -81,14 +81,14 @@ for label in fname :
 
 if ut.cic:  # for a conductive inner core
 
-    r2_D0f_ic = ss.csr_matrix(sio.mmread('r2_D0f_ic'))
-    r2_D0g_ic = ss.csr_matrix(sio.mmread('r2_D0g_ic'))
-    r0_D0f_ic = ss.csr_matrix(sio.mmread('r0_D0f_ic'))
-    r0_D0g_ic = ss.csr_matrix(sio.mmread('r0_D0g_ic'))
-    r1_D1f_ic = ss.csr_matrix(sio.mmread('r1_D1f_ic'))
-    r1_D1g_ic = ss.csr_matrix(sio.mmread('r1_D1g_ic'))
-    r2_D2f_ic = ss.csr_matrix(sio.mmread('r2_D2f_ic'))
-    r2_D2g_ic = ss.csr_matrix(sio.mmread('r2_D2g_ic'))
+    r2_D0f_ic = ss.csr_matrix(sio.mmread('r2_D0f_ic.mtx'))
+    r2_D0g_ic = ss.csr_matrix(sio.mmread('r2_D0g_ic.mtx'))
+    r0_D0f_ic = ss.csr_matrix(sio.mmread('r0_D0f_ic.mtx'))
+    r0_D0g_ic = ss.csr_matrix(sio.mmread('r0_D0g_ic.mtx'))
+    r1_D1f_ic = ss.csr_matrix(sio.mmread('r1_D1f_ic.mtx'))
+    r1_D1g_ic = ss.csr_matrix(sio.mmread('r1_D1g_ic.mtx'))
+    r2_D2f_ic = ss.csr_matrix(sio.mmread('r2_D2f_ic.mtx'))
+    r2_D2g_ic = ss.csr_matrix(sio.mmread('r2_D2g_ic.mtx'))
     
 
 

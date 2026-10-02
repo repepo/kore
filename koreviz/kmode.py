@@ -20,7 +20,7 @@ class kmode:
 
         import parameters as par
         import utils as ut
-        import utils_pp as upp
+        import utils4pp as upp  # xcheb and expand_sol now live in bin/utils4pp.py (utils_pp.py was removed)
 
         self.solnum = solnum
         self.lmax   = par.lmax
