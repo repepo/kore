@@ -15,129 +15,27 @@ If this code is useful for your research, we invite you to cite the relevant pap
 
 ### Prerequisites
 
-* python3
-* [PETSc](https://www.mcs.anl.gov/petsc/) with complex scalars, mumps and superlu_dist.
-* [SLEPc](http://slepc.upv.es/)
-* [petsc4py](https://bitbucket.org/petsc/petsc4py/src/master/)
-* [slepc4py](https://bitbucket.org/slepc/slepc4py/src/master/)
-* [mpi4py](https://bitbucket.org/mpi4py/mpi4py/src/master/)
-* [wigxjpf](http://fy.chalmers.se/subatom/wigxjpf/)
+* python3 with numpy and scipy
+* [PETSc](https://petsc.org/) with complex scalars, MUMPS and SuperLU_DIST, plus petsc4py and mpi4py
+* [SLEPc](https://slepc.upv.es/) and slepc4py
 
-#### Installing PETSc
-
-Download PETSc release 3.12.5. This release supports SuperLU_DIST version 5.4.0, which has much lower memory footprint than the newest version. We need to download SuperLU_DIST (no need to unpack it) and then download and unpack PETSc:
-```
-wget https://portal.nersc.gov/project/sparse/superlu/superlu_dist_5.4.0.tar.gz
-wget http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-lite-3.12.5.tar.gz
-tar xvf petsc-lite-3.12.5.tar.gz
-cd petsc-3.12.5
-```
-We need PETSc built with support for complex scalars. We need also the external packages `superlu_dist` (which we just downloaded) and `mumps`.
-Therefore the configure command should include the options:
-```
---with-scalar-type=complex --download-mumps=1 --download-superlu_dist=../superlu_dist_5.4.0.tar.gz
-```
-Additional options might be needed according to your specific system, please consult the PETSc installation documentation [here](https://www.mcs.anl.gov/petsc/documentation/installation.html). PETSc requires a working MPI installation, either `mpich` or `openmpi`. In our own experience, it saves a lot of headache if we include `mpich` as an external package to be installed along with PETSc. Therefore we include the option `--download-mpich=1`
-Just to provide an example, the configure command needed in our own computing cluster is (get yourself some coffee, this step takes several minutes to complete):
-```
-./configure --download-mpich --with-scalar-type=complex --download-mumps=1 --download-parmetis --download-metis --download-scalapack=1 --download-fblaslapack=1 --with-debugging=0 --download-superlu_dist=../superlu_dist_5.4.0.tar.gz --download-ptscotch=1 CXXOPTFLAGS='-O3 -march=native' FOPTFLAGS='-O3 -march=native' COPTFLAGS='-O3 -march=native' --with-cxx-dialect=C++11
-```
-If everything goes well then you can build the libraries (modify `/path/to` as needed):
-```
-make PETSC_DIR=/path/to/petsc-3.12.5 PETSC_ARCH=slu540
-```
-then test the libraries:
-```
-make PETSC_DIR=/path/to/petsc-3.12.5 PETSC_ARCH=slu540 check
-```
-The MPI executables are now installed under `/path/to/petsc-3.12.5/slu540/bin/` so we need to prepend that directory to the `$PATH` variable. A  good place to do that could be in your `.profile`. Include the following lines:
-```
-export PETSC_DIR=/path/to/petsc-3.12.5
-export PETSC_ARCH=slu540
-export PATH=$PETSC_DIR/$PETSC_ARCH/bin:$PATH
-```
-PETSc and MPI are now ready!
-
-#### Installing SLEPc
-Download release 3.12.2. Unpack and cd to the installation directory:
-```
-cd
-wget http://slepc.upv.es/download/distrib/slepc-3.12.2.tar.gz
-tar xvf slepc-3.12.2.tar.gz
-cd slepc-3.12.2
-```
-Make sure the environment variables `PETSC_DIR` and `PETSC_ARCH` are exported already: if you modified your `.profile` as suggested above then simply do
-```
-source ~/.profile
-``` 
-Then configure, build and test SLEPc (modify `/path/to` as needed):
-```
-./configure
-make SLEPC_DIR=/path/to/slepc-3.12.2 PETSC_DIR=/path/to/petsc-3.12.5 PETSC_ARCH=slu540
-make SLEPC_DIR=/path/to/slepc-3.12.2 PETSC_DIR=/path/to/petsc-3.12.5 check
-```
-Finally, export the variable `SLEPC_DIR`. (Adding this line to your `.profile` is a good idea)
-```
-export SLEPC_DIR=/path/to/slepc-3.12.2
-```
-SLEPc is now ready.
-
-#### Installing petsc4py, slepc4py and mpi4py
-Get the petsc4py tarball and unpack:
-```
-cd
-wget https://bitbucket.org/petsc/petsc4py/downloads/petsc4py-3.12.0.tar.gz
-tar xvf petsc4py-3.12.0.tar.gz
-```
-Then build and install to python3:
-```
-cd petsc4py-3.12.0
-python3 setup.py build
-python3 setup.py install --user
-```
-Follow a completely analogous procedure for slepc4py and mpi4py. Download the tarballs with:
-```
-cd
-wget https://bitbucket.org/slepc/slepc4py/downloads/slepc4py-3.12.0.tar.gz
-wget https://bitbucket.org/mpi4py/mpi4py/downloads/mpi4py-3.0.3.tar.gz
-```
-
-#### Installing wigxjpf
-This is a library to compute Wigner-3j and 6j symbols, useful to compute the products of spherical harmonics. Download and unpack:
-```
-cd
-wget http://fy.chalmers.se/subatom/wigxjpf/wigxjpf-1.11.tar.gz
-tar xvf wigxjpf-1.11.tar.gz
-```
-Then build and install:
-```
-cd wigxjpf-1.11
-make
-python3 setup.py install --user
-```
+Step-by-step installation instructions for MacOS and Linux are in [docs/page2.md](docs/page2.md).
 
 
 ### Installing and running `Kore`
 Clone the repository with
-```
-git clone https://bitbucket.org/repepo/kore.git
-```
-Or download and unzip the tar file under the downloads section.
 ```sh
-cd
-wget https://bitbucket.org/repepo/Kore/downloads/kore-0.2.tar.gz
-tar xvf kore-0.2.tar.gz
+git clone https://github.com/repepo/kore.git
 ```
 For regular work, make a copy of the source directory, keeping the original source clean. For example:
-
 ```sh
-cp -r kore-0.2 kwork1
+cp -r kore kwork1
 cd kwork1
 ```
 
-Modify the `parameters.py` under `kwork1/bin/` file as desired.
+Modify `bin/parameters.py` as desired. All commands below are run from the top folder (`kwork1` here), where the matrices and results are written.
 
-Then generate the submatrices:
+First generate the submatrices:
 ```sh
 ./bin/submatrices.py ncpus
 ```
@@ -148,24 +46,17 @@ To assemble the main matrices do:
 mpiexec -n ncpus ./bin/assemble.py
 ```
 
-If you are solving an *eigenvalue* problem, do the following export:
+To solve the problem do:
 ```sh
-export opts="-st_type sinvert -eps_error_relative ::ascii_info_detail"
+mpiexec -n ncpus ./bin/solve_nopp.py
 ```
+The PETSc/SLEPc/MUMPS solver options are set in the `petsc_opts` dictionary at the end of `bin/parameters.py`, which has separate groups for eigenvalue and forced problems. Options given on the command line, e.g. `mpiexec -n ncpus ./bin/solve_nopp.py -st_mat_mumps_icntl_14 50`, take precedence over the ones in `parameters.py`.
 
-If you are solving a *forced* problem then do:
+The solutions are written to disk (`real_*.field` and `imag_*.field` files and, for eigenvalue problems, `eigenvalues0.dat`). To postprocess them do:
 ```sh
-export opts='-ksp_type preonly -pc_type lu'
+./bin/spin_doctor.py ncpus
 ```
-Others options might be required depending on the size of the matrices.
-
-
-To solve the problem do
-```sh
-mpiexec -n ncpus ./bin/solve.py $opts
-```
-
-The result is written/appended to the file `flow.dat`, and the parameters used are written/appended to the file `params.dat`, one line for each solution. If solving an eigenvalue problem, the eigenvalues are written/appended to the file `eigenvalues.dat`. If solving with magnetic fields, an additional file `magnetic.dat` is created/appended. 
+This prints a summary table with energy-balance residuals for each solution, and writes/appends the results to the file `flow.dat`, and the parameters used to the file `params.dat`, one line for each solution. If solving an eigenvalue problem, the eigenvalues are written/appended to the file `eigenvalues.dat`. If solving with magnetic fields, an additional file `magnetic.dat` is created/appended, and similarly `thermal.dat`, `compositional.dat` and `rotdyn.dat` when those are included.
 
 We include a set of scripts in the `tools` folder:
 ```
