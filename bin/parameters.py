@@ -333,6 +333,8 @@ petsc_opts = {
     'st_type'                      : 'sinvert',             # shift-and-invert around tau (use with 'TM')
     'st_pc_factor_mat_solver_type' : 'mumps',               # direct LU solve with MUMPS
     'st_mat_mumps_cntl_1'          : 1e-6,                  # pivot threshold; avoids INFOG(1)=-9 on large problems
+    'st_mat_mumps_icntl_35'        : 2,                     # block low-rank (BLR) factorization: ~13% less memory, ~2x faster
+    'st_mat_mumps_cntl_7'          : 1e-14,                 # BLR tolerance; 1e-12 gave lambda errors up to 1e-5 at N>=640
     'eps_error_relative'           : '::ascii_info_detail', # print relative errors after the solve
     # 'eps_balance'                : 'twoside',             # cleaner eigenvalues for final runs, ~+50% time
     # 'st_mat_mumps_icntl_14'      : 50,                    # extra MUMPS workspace (%), only if -9 still appears
