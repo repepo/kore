@@ -29,8 +29,10 @@ git clone -b release https://gitlab.com/slepc/slepc slepc
 We go now into the newly created `petsc` folder and configure PETSc:
 ```Shell
 cd petsc
-./configure --with-petsc4py --download-mpi4py --download-mpich --with-scalar-type=complex --download-mumps --download-parmetis --download-metis --download-scalapack --download-fblaslapack --with-debugging=0 --download-superlu_dist --download-ptscotch CXXOPTFLAGS='-O3 -march=native' FOPTFLAGS='-O3 -march=native' COPTFLAGS='-O3 -march=native' --download-bison
+./configure --with-petsc4py --download-mpi4py --download-mpich --with-scalar-type=complex --download-mumps --download-parmetis --download-metis --download-scalapack --download-openblas --download-openblas-make-options='USE_THREAD=0 USE_OPENMP=0 USE_LOCKING=1' --with-debugging=0 --download-superlu_dist --download-ptscotch CXXOPTFLAGS='-O3 -march=native' FOPTFLAGS='-O3 -march=native' COPTFLAGS='-O3 -march=native' --download-bison
 ```
+We recommend OpenBLAS (`--download-openblas`) rather than the reference BLAS/LAPACK (`--download-fblaslapack`). MUMPS spends most of its factorization time in dense BLAS kernels, and with OpenBLAS the LU factorization was 5 to 8 times faster in our tests (Linux, 24-core Threadripper, MUMPS 5.8.2). For example, a torsional-mode run at N = 976 took 4.4 minutes instead of 20. The make options build a single-threaded OpenBLAS, so that it doesn't compete with the MPI processes for cores.
+
 Then we build PETSc:
 ```Shell
 make PETSC_DIR=/path/to/petsc PETSC_ARCH=arch-darwin-c-opt all
@@ -85,8 +87,74 @@ source $HOME/kore_env.sh
 ```
 
 
-## Installing on Linux
-Coming soon
+## Installing PETSc/SLEPc on Linux
+
+The steps are the same as for MacOS, except for the name of the PETSc architecture (`arch-linux-c-opt`) and the way slepc4py is built. These instructions were tested on Debian 13 with gcc/gfortran 14 and PETSc/SLEPc 3.25.
+
+First we need compilers and a few build tools. On Debian or Ubuntu they can be installed with:
+```Shell
+sudo apt install build-essential gfortran git cmake python3-dev python3-venv
+```
+
+Then we create and activate a dedicated python environment for **`kore`**, and install scipy and cython in it:
+```Shell
+python3 -m venv kore_env
+source kore_env/bin/activate
+pip3 install scipy cython
+```
+
+Now we download the latest PETSc/SLEPc releases using `git`
+```Shell
+git clone -b release https://gitlab.com/petsc/petsc.git petsc
+git clone -b release https://gitlab.com/slepc/slepc slepc
+```
+
+We go now into the newly created `petsc` folder and configure PETSc, using OpenBLAS as explained in the MacOS section:
+```Shell
+cd petsc
+./configure --with-petsc4py --download-mpi4py --download-mpich --with-scalar-type=complex --download-mumps --download-parmetis --download-metis --download-scalapack --download-openblas --download-openblas-make-options='USE_THREAD=0 USE_OPENMP=0 USE_LOCKING=1' --with-debugging=0 --download-superlu_dist --download-ptscotch CXXOPTFLAGS='-O3 -march=native' FOPTFLAGS='-O3 -march=native' COPTFLAGS='-O3 -march=native' --download-bison
+```
+Then we build PETSc:
+```Shell
+make PETSC_DIR=/path/to/petsc PETSC_ARCH=arch-linux-c-opt all
+```
+where you must replace `/path/to/petsc` with the actual path for your case. Before checking that everything works we must tell python where to find `petsc4py` and `mpi4py`, which were compiled along in the step above:
+```Shell
+export PYTHONPATH=/path/to/petsc/arch-linux-c-opt/lib
+```
+Now we test the installation:
+```Shell
+make PETSC_DIR=/path/to/petsc PETSC_ARCH=arch-linux-c-opt check
+```
+
+We need to setup some environment variables before installing SLEPc:
+```Shell
+export PETSC_DIR=/path/to/petsc
+export PETSC_ARCH=arch-linux-c-opt
+export SLEPC_DIR=/path/to/slepc
+export PATH=$PETSC_DIR/$PETSC_ARCH/bin:$PATH
+```
+
+Now go to the slepc folder, configure and build SLEPc. The `--with-slepc4py` option builds slepc4py along with SLEPc, inside `$SLEPC_DIR/$PETSC_ARCH/lib`:
+```Shell
+cd $SLEPC_DIR
+./configure --with-slepc4py
+make
+make check
+```
+
+As for MacOS, it is a good idea to keep the necessary commands for initialization in a separate file. Note that `PYTHONPATH` must now include the SLEPc folder too, so that python finds slepc4py:
+```Shell
+source /path/to/kore_env/bin/activate
+export PETSC_DIR=/path/to/petsc
+export PETSC_ARCH=arch-linux-c-opt
+export SLEPC_DIR=/path/to/slepc
+export PYTHONPATH=$PETSC_DIR/$PETSC_ARCH/lib:$SLEPC_DIR/$PETSC_ARCH/lib
+export PATH=$PETSC_DIR/$PETSC_ARCH/bin:$PATH
+```
+We can write that to e.g. `$HOME/kore_env.sh` and do `source $HOME/kore_env.sh` before running **`kore`**.
+
+Several PETSc builds can live side by side in the same `petsc` and `slepc` folders, each under its own `PETSC_ARCH` name (passed as `PETSC_ARCH=...` to PETSc's `./configure`). Switching between them only requires changing `PETSC_ARCH`.
 
 
 ## SHTns
