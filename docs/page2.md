@@ -4,8 +4,6 @@ To run **`kore`** we need the PETSc/SLEPc packages and their python bindings pet
 
 If you are interested in problems that involve very large matrices, for instance when considering extremely small viscosities, we recommend doing so with a machine with at least 128 GB of memory. The number of processing cores is not critical, eight are fine, 24 are plenty. Small to moderate size matrices can be solved using a laptop, depending on available memory. 
 
-From our experience the PETSc version that has allowed us to solve the largest problems is version 3.9.4. That version requires python 3.7, however. Newer PETSc versions seem to have much larger memory footprint, although they can still handle medium size problems without issues. So, our advice is to install PETSc version 3.9.3 if the problem involves very large matrices, otherwise it is better to stick to the most recent PETSc release.
-
 ## Installing PETSc/SLEPc on MacOS
 
 It is convenient to have a dedicated python environment to use with **`kore`**. It is quite simple to create and activate it:

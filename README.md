@@ -19,7 +19,7 @@ If this code is useful for your research, we invite you to cite the relevant pap
 * [PETSc](https://petsc.org/) with complex scalars, MUMPS and SuperLU_DIST, plus petsc4py and mpi4py
 * [SLEPc](https://slepc.upv.es/) and slepc4py
 
-Step-by-step installation instructions for MacOS and Linux are in [docs/page2.md](docs/page2.md).
+Step-by-step installation instructions for MacOS and Linux are in [the online documentation](https://repepo.github.io/kore/page2/).
 
 
 ### Installing and running `Kore`
