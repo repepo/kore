@@ -1,128 +1,284 @@
 CHANGELOG - Kore, conductive_IC branch
 ======================================
 
-Changes from the 2026 speed-up and cleanup work, grouped by file.
-Each item is tagged with its date:
+Changes from the 2026 speed-up and cleanup work, grouped by file. Each entry says what was wrong or
+slow, what changed, and how it was checked. Tags give the date:
   [10-01] = commit a6a89bcc (2026-10-01)
   [10-02] = commit 515d4e54 (2026-10-02)
-  [10-03] = not yet committed (2026-10-03)
+  [10-03] = commit 7646daaa (2026-10-03)
+Timings and memory figures come from the Linux server (24-core Threadripper, 128 GB), except those
+marked "Mac" (48 GB Apple-silicon laptop).
 
 
 bin/parameters.py
 -----------------
-- [10-01] New petsc_opts dict holding the tuned PETSc/SLEPc/MUMPS options (shift-and-invert,
-          MUMPS, cntl_1 = 1e-6, relative error printout). solve_nopp.py loads them.
-- [10-02] petsc_opts is split into an eigenvalue group (eps_/st_) and a forced-problem group
-          (ksp_/pc_/mat_).
-- [10-02] Forced problems use a direct MUMPS solve (ksp_type preonly, pc_type lu). The default
-          GMRES/ILU did not converge, and the result depended on the number of ranks.
-- [10-02] The out-of-core tmpdir option now has the st_ prefix it needs for eigenvalue runs.
-- [10-02] Parameters set for a torsional-mode test case: Ek = 1e-7, Pm = 0.1, Lambda = 10,
-          FDM field, insulating IC, TWA mantle (c1_cmb = 0.015), rotdyn = 0,
-          target -0.0046 + 0.0115i. Each changed line is marked "# torsional-mode setup (was ...)".
-- [10-03] MUMPS block low-rank factorization enabled for eigenvalue runs: st_mat_mumps_icntl_35 = 2,
+- [10-01] New petsc_opts dictionary with the solver options that used to be typed on the command
+          line:
+            - st_type sinvert;
+            - st_pc_factor_mat_solver_type mumps;
+            - st_mat_mumps_cntl_1 1e-6;
+            - eps_error_relative ::ascii_info_detail.
+          Commented-out extras are ready to switch on:
+            - eps_balance twoside (cleaner eigenvalues for final runs, about +50% time);
+            - icntl_14 (extra MUMPS workspace);
+            - icntl_22 (out-of-core factors);
+            - icntl_28/29 (parallel ordering).
+          Why cntl_1 = 1e-6: with MUMPS's default pivot threshold (0.01), conducting-IC runs at
+          Ek <= 1e-7 failed with INFOG(1) = -9 (workspace too small). At Ek = 3e-8 they failed even
+          with icntl_14 = 200. A threshold of 1e-5 or lower fixed this and was faster: at Ek = 1e-7,
+          LU time went from 62 s to 42 s and memory from 20 GB to 17 GB. 1e-6 gave slightly cleaner
+          residuals than 1e-5 at the same cost. 0 (no pivoting) was avoided because it can break
+          down on an exactly zero pivot.
+- [10-02] petsc_opts is split into two labelled groups: eigenvalue problems (eps_*, st_*) and forced
+          problems (ksp_*, pc_*, mat_*). solve_nopp.py passes only the group that matches the run.
+- [10-02] Forced problems now use a direct solve: ksp_type preonly, pc_type lu and MUMPS. PETSc's
+          default GMRES/ILU stopped at maxit without converging, and the answer depended on the rank
+          count (|u| = 0.070 on 1 rank, 0.035 on 3). With direct MUMPS, 1 and 3 ranks agree to about
+          1e-11.
+- [10-02] The out-of-core directory option for eigenvalue runs is now st_mat_mumps_ooc_tmpdir. The
+          name without the st_ prefix was silently ignored. The directory must be on a real disk
+          (e.g. /nvm), not the tmpfs /tmp, otherwise the factors stay in memory.
+- [10-02] Parameters are set for a torsional-mode test case:
+            - Ek = 1e-7 (N = 428, lmax = 423);
+            - FDM dipole field, Lambda = 10, Pm = 0.1 (Le = 3.2e-3, Lundquist number 3.2e3);
+            - insulating IC; TWA mantle with c_cmb = 1e-2 and c1_cmb = 0.015;
+            - rotdyn = 0;
+            - target -0.0046 + 0.0115i.
+          Each changed line is marked "# torsional-mode setup (was ...)", so the old values are easy
+          to restore.
+          The mode found is lambda = -0.004632 + 0.011500i. It has Mag/Kin = 1.01, Tor/Pol = 156,
+          u_phi constant along cylinders and residL = 7.8e-8.
+- [10-03] Eigenvalue runs use MUMPS block low-rank (BLR) factorization: st_mat_mumps_icntl_35 = 2 and
           st_mat_mumps_cntl_7 = 1e-14 (cntl_1 stays at 1e-6).
-          Tested on a 48 GB Mac at N = 428-720:
-            - eigenvalues match plain MUMPS to about 3e-8 (relative);
-            - about 13% less memory and about 2x faster.
-          cntl_7 = 1e-12 was not reliable at N >= 640.
+          This was tested on the Mac with the torsional case at N = 428-720: 30 runs compared with
+          plain MUMPS, checking both solve_nopp's and spin_doctor's residuals.
+            - Eigenvalues agree with plain MUMPS to about 3e-8 (relative), and spin_doctor's
+              residuals are at plain MUMPS's level.
+            - At N = 640: 32.6 GB and 58 s, against 37.2 GB and 111 s for plain MUMPS.
+            - The largest size that fits on the Mac goes from N ~ 640 to N = 720 (41 GB, no swap).
+          cntl_7 = 1e-12 was not reliable at N >= 640:
+            - eigenvalue errors reached 1e-5, and one run had a broken energy balance in modes 1-2;
+            - in both cases the PETSc residuals stayed at about 1e-11, so they did not show it.
+          Pivot thresholds of 0.01 or above break BLR: INFOG(1) = -9, or memory use grows until the
+          machine swaps. Full results are in blr_stress_report.md.
 
 bin/solve_nopp.py
 -----------------
-- [10-01] Loads petsc_opts from parameters.py. Options given on the command line still win.
-- [10-02] Loads only the option group that matches the problem type (eigenvalue or forced),
-          so PETSc no longer warns about unused options.
-- [10-02] New load_mat helper for A and B: each rank memory-maps and reads only its own rows.
-          On 24 ranks, loading A takes 4.3 GB instead of 23.9 GB.
-- [10-02] New split_fields helper and a single loop to write the solution files. This replaces
-          two inconsistent copies of the field offsets and adds the par.hydro factor.
-- [10-02] which_eigenpairs is now a short lookup, so a typo raises an error instead of silently
-          falling back to the SLEPc default.
-- [10-02] Eigenvectors are gathered on rank 0 only, and the unused "solution" class was removed.
-- [10-02] The total time, counted from before the imports, is printed and written to timing.dat.
-- [10-02] The file is about 100 lines shorter, with the same outputs.
+- [10-01] Loads petsc_opts from parameters.py into PETSc's option database. An option given on the
+          command line (e.g. via $opts in runKore.sh) still takes precedence.
+- [10-02] Loads only the petsc_opts group that matches the problem type. Before this, every run ended
+          with PETSc "Option left" warnings about the other group's options.
+- [10-02] New load_mat(fname) helper replaces two copies of the A/B loading code (about 45 lines).
+          It builds each rank's part with createAIJ and reads only that rank's rows from disk,
+          through ut.load_npz_mmap. Before, every rank first loaded the whole file.
+          Measured on a 42M-nonzero A:
+            - 24 ranks: 23.9 GB -> 4.3 GB in total, 1.9 s -> 0.23 s;
+            - 4 ranks: 5.2 GB -> 2.1 GB.
+          The file format is unchanged.
+- [10-02] New split_fields(vec) helper. It splits a solution into flow, magnetic field, rotdyn, IC
+          field, temperature and composition, in the order of ut.sizmat, and returns only the fields
+          that are present.
+          It replaces two copies of the offsets that disagreed: the eigenvalue copy left out the
+          par.hydro factor (wrong with hydro = 0), and the forced copy put rotdyn and the IC field
+          under the magnetic case.
+          One loop now writes all solution files, with the same names as before. The output files are
+          byte-identical, checked for conducting IC, hydro + thermal and a forced libration case.
+- [10-02] The forced-problem NaN check covers the whole solution vector. It used to check only the
+          flow part and crashed with hydro = 0.
+- [10-02] which_eigenpairs is mapped to the SLEPc name by a short lookup ('TM' -> TARGET_MAGNITUDE,
+          and so on), replacing a 19-line if/elif chain. A typo now stops with a KeyError instead of
+          silently falling back to SLEPc's default.
+- [10-02] Eigenvectors are gathered on rank 0 only, with one scatter context reused for all of them.
+          Before, every rank allocated space for all the eigenvectors: about 1 GB in total on
+          24 ranks at Ek = 1e-8. The unused "solution" class and other dead code were removed.
+- [10-02] The total wall time, counted from before the imports, is printed and written to timing.dat.
+          Before, timing.dat held only the solve time. spin_doctor adds this time to its own.
+- [10-02] The file went from about 350 to 230 lines with the same results: eigenvalues agree to
+          within MPI run-to-run noise (1e-11 or better).
 
 bin/assemble.py
 ---------------
-- [10-01] Blocks are collected in lists and joined once (ut.unpackit) instead of being
-          concatenated at every step, which made the cost grow quadratically.
-- [10-02] Temperature and composition are placed after the rotdyn and IC-field unknowns
-          (off_temp, off_comp). Thermal runs with a conducting IC used to give a singular matrix.
-- [10-02] rotdyn rows and columns use offsets (off_rotdyn, off_btor) instead of hard-coded
-          4*n and 3*n.
-- [10-02] The torque equations moved out of the magnetic section, and zero magnetic torques are
-          skipped. rotdyn now works with magnetic = 0 and with an insulating mantle or IC.
-- [10-02] New gather_csr helper (MPI Gatherv with exact counts and int32 indices) and in-place
-          scaling. Rank 0's peak memory at Ek = 1e-8 on 24 ranks dropped from 9.5 GB to 3.6 GB.
-          A and B are byte-identical to before.
-- [10-02] Dead pywigxjpf code removed. Prints the total time, including imports.
+- [10-01] Matrix blocks are collected in Python lists and joined once with ut.unpackit, instead of
+          calling np.concatenate on every append (28 places). Each concatenate copied everything
+          accumulated so far, so the cost grew quadratically with the number of blocks per rank.
+          At N = 270 on 1 rank:
+            - conducting IC: 142 s -> 4.1 s;
+            - hydro: 7.1 s -> 1.3 s;
+            - thermal: 23 s -> 2.1 s.
+          A and B are bit-identical to before.
+- [10-02] Temperature and composition rows and columns are placed with two offsets that follow
+          ut.sizmat: off_temp after the flow, magnetic, rotdyn and IC-field unknowns, and off_comp
+          after the temperature. All 10 places use them.
+          Before, thermal runs with a conducting IC wrote the temperature on top of the IC field.
+          That left 320 empty rows and columns, and MUMPS failed with INFOG(1) = -10. Thermal-only
+          matrices are unchanged, byte for byte.
+- [10-02] rotdyn rows and columns use offsets: off_rotdyn = 2*(hydro + magnetic)*n, and off_btor for
+          the toroidal field. They replace 8 hard-coded 4*n and 3*n positions, which assumed that
+          both the flow and the magnetic field were present.
+- [10-02] The rotdyn torque equations were indented inside "if par.magnetic == 1". With
+          magnetic = 0 their 3 rows stayed empty, so the solve was meaningless. The block is now at
+          the top level.
+- [10-02] ut.gamma_magnetic() and gamma_magnetic_ic() return 0 (not an array) when there is no
+          magnetic torque, i.e. with an insulating mantle or IC. assemble.py indexed the result
+          anyway and raised a TypeError; those torques are now skipped.
+          rotdyn now works for every mantle/IC combination. In 5 configurations, lambda*I*Omega
+          balances the torques to about 1e-11 for the mantle and 1e-13 for the IC.
+- [10-02] New gather_csr(comm, loc_list, dtype) helper, used for both A and B.
+          Before, every rank was padded to the longest rank's length, sent int64 indices, and rank 0
+          filtered out the padding. Now it uses MPI Gatherv with each rank's exact count and int32
+          indices, and it raises an error if any entry falls outside the matrix.
+          A and B are also scaled in place (B.data *= 1/Bnorm, A.data /= Bnorm), B is freed before A
+          is gathered, and two unused index copies were removed.
+          At Ek = 1e-8 on 24 ranks (80M nonzeros), rank 0 peaks at 3.6 GB instead of 9.5 GB, and the
+          other ranks at 0.35 GB instead of 0.77 GB. A, B and B_forced are byte-identical in
+          9 configurations on 1, 2 and 4 ranks, and in the 80M-nonzero case.
+- [10-02] loc_list starts empty once per matrix, the commented-out pywigxjpf code was deleted, and
+          the script prints its total time including imports.
 
 bin/utils.py
 ------------
-- [10-01] packit appends to lists, and the new unpackit joins them (used by assemble.py).
-- [10-01] Mlam is vectorised over all (j,k) entries; csl0 and csl were removed. The parity is now
-          taken from the largest a0 coefficient.
-- [10-01] New Ylm_full_vec: spherical harmonics for all theta at once, using a stable recurrence.
-          It also works for l >= 646, where scipy 1.15 sph_harm returns nan.
-          Ylm and Ylm_symm were removed.
-- [10-01] Dlam builds its matrix with dtype=float.
-- [10-02] FIX: gamma_visc (m = 0) and gamma_visc_icb used 4*pi/3; the correct coefficient is 8*pi/3.
-- [10-02] FIX: gamma_magnetic_ic was missing a factor ricb**2.
-          Both fixes are marked "# FIX (2026-10-02)". They affect rotdyn runs and the m = 0
-          torques that spin_doctor reports. Total angular momentum is now conserved.
-- [10-02] New load_npz_mmap, which memory-maps the arrays in an .npz file (used by solve_nopp.py).
+- [10-01] packit appends each block to lists, and the new unpackit joins them once. assemble.py uses
+          both (see above).
+- [10-01] Mlam (the Chebyshev multiplication matrix for lambda > 0) is vectorised:
+            - it computes all entries with |j-k| <= bandwidth at once;
+            - it keeps only the terms where the profile a0 is nonzero;
+            - it starts the recursion from a closed-form value that costs O(lambda);
+            - it builds the CSR matrix directly, instead of filling a dok_matrix entry by entry.
+          csl0 and csl were no longer needed and were removed. The sparsity is unchanged and entries
+          agree to 1.6e-15, slightly closer to exact rational arithmetic than before.
+          submatrices.py at N = 270: hydro 1.7 s -> 0.5 s, conducting IC 7.2 s -> 0.9 s, thermal
+          1.3 s -> 0.6 s.
+- [10-01] Mlam takes the parity of the profile a0 from its largest coefficient instead of its last
+          nonzero one. This gives the same result when a0 has a definite parity, and is more robust
+          when a tiny wrong-parity coefficient survives at the tail.
+- [10-01] New Ylm_full_vec(lmax, m, theta, phi) computes Kore's seminormalized spherical harmonics
+          for many theta at once, from the stable three-term recurrence in l (with the
+          Condon-Shortley phase, as in scipy).
+          It was needed because scipy 1.15's sph_harm returns NaN for every l >= 646, so the plotting
+          tools crashed at Ek <= 1e-8. The recurrence works to at least l = 1500 and matches scipy
+          to about 4e-14 where scipy works.
+          Ylm_full now calls it, so plot_field.py, plot_poltor.py and shear_layer_profile.py all work
+          at high lmax (plot_poltor also went from 12.3 s to 2.6 s).
+          Ylm and Ylm_symm were removed: nothing used them, Ylm_symm could not run on Python 3, and
+          sph_harm disappears in scipy 1.17.
+- [10-01] Dlam builds its sparse matrix with dtype=float.
+- [10-02] FIX: gamma_visc (the m = 0 part, for the mantle) and gamma_visc_icb used the coefficient
+          4*pi/3. The viscous torque, the boundary integral of s*sigma_rphi, is
+          (8*pi/3)*Ek*R^2*(R*t' - t). This was found with angrymom_z: at Ek = 1e-3 the fluid's
+          lambda*L came out exactly 2.000 times the viscous torques, for every mode and every N.
+- [10-02] FIX: gamma_magnetic_ic was missing a factor ricb^2, in the dipole line and both quadrupole
+          lines. After the viscous fix, the remaining imbalance implied a factor of 0.12, against
+          ricb^2 = 0.1225.
+          Both fixes carry "# FIX (2026-10-02)" comments with the derivation and the check.
+          They only enter the rotdyn rows, so matrices without rotdyn are byte-identical. The torques
+          spin_doctor reports for m = 0 do change: viscous by x2, IC magnetic by x8 at ricb = 0.35.
+          With the fixes, total angular momentum (fluid + mantle + IC) is conserved to 1e-4 at N = 48
+          and 6e-5 at N = 72, improving with resolution. Before, it was off by 50%.
+- [10-02] New load_npz_mmap(filename) memory-maps the arrays inside an .npz file, so solve_nopp.py
+          can read each rank's rows without loading the whole matrix.
 
 bin/utils4pp.py
 ---------------
-- [10-01] New angrymom_z: the axial angular momentum of the fluid.
-- [10-01] New setup_grid, and diagnose(..., pool=) so spin_doctor can reuse one process pool.
+- [10-01] New angrymom_z(u_sol2) returns the fluid's axial angular momentum,
+          L_z = (8*pi/3) * integral of r^3 t_10 dr (with Kore's Y_1^0 = cos(theta)).
+          It applies to m = 0, symm = 1 and returns 0 otherwise. Checked against an analytic profile:
+          1.3944 against an exact 1.3937 at N = 40.
+- [10-01] New setup_grid(Ra, Rb), and diagnose(..., pool=None) now accepts an existing process pool.
+          This lets spin_doctor create one pool for all solutions instead of one per solution.
 
 bin/operators.py
 ----------------
-- [10-01] np.float128 replaced by np.longdouble, because float128 does not exist on Apple silicon.
-- [10-02] The 8 inner-core mmread calls now include ".mtx", which scipy 1.15 requires.
+- [10-01] np.float128 is replaced by np.longdouble in induction and induction_consoidal. These use
+          extended precision to avoid overflow at high N. float128 does not exist on Apple silicon,
+          where the code crashed. longdouble is float128 on x86 and float64 on arm64.
+- [10-02] The 8 inner-core mmread calls (operators.py:84-91) now include the ".mtx" extension.
+          scipy >= 1.12 no longer adds it, so every conducting-IC run crashed in assemble.py with
+          "Not a Matrix Market file".
 
 bin/spin_doctor.py
 ------------------
-- [10-01] Reworked:
-            - loop invariants moved out of the loop;
-            - one shared process pool;
-            - param_table for params.dat;
-            - a column-driven printed table with sigma and omega to 8 decimals;
-            - writes angrymom_z to flow.dat.
-- [10-02] New residL column: the fluid's axial angular-momentum balance (lambda * L_fluid against
-          the torques on the mantle and IC). It is computed for m = 0, symm = 1 eigenvalue
-          problems and prints nan otherwise.
-- [10-02] The runtime column in params.dat is now the full solve_nopp time plus the full
-          spin_doctor time. Prints its total time.
-- [10-02] The magnetic torque vectors are taken as [0,:], which removes a numpy deprecation warning
-          (values unchanged). The torque comment was updated.
+- [10-01] Loop invariants (ut.ell, gamma_visc, gamma_visc_icb, gamma_magnetic, gamma_magnetic_ic)
+          are computed once, before the loop over solutions. One process pool is shared by all
+          solutions (utils4pp.setup_grid + diagnose(pool=)).
+- [10-01] params.dat is written from a single param_table list of (name, value, format) entries, so
+          the 58 values and their 58 formats can no longer get out of step.
+- [10-01] The printed summary table is built from a list of columns (header, format, value) and
+          centred, with sigma and omega to 8 decimals. Tor/Pol and Mag/Kin print nan instead of
+          dividing by zero when there is no flow.
+- [10-01] press0 is now the pressure summed over all l (column 6 of the diagnostics). It used to read
+          udgn[6][0], which is the kinetic energy of the 7th l-mode, and crashed with fewer than
+          7 modes.
+- [10-01] angrymom_z is written to flow.dat as two extra columns (real and imaginary parts).
+- [10-02] New residL column (printed as resid𝐋) in the summary table: the fluid's axial
+          angular-momentum balance,
+            |lambda*L_fluid + viscous and magnetic torques on mantle and IC| / largest term,
+          with L_fluid from angrymom_z.
+          It is computed for eigenvalue problems with m = 0 and symm = 1, and prints nan otherwise.
+          Forced problems are skipped because body forcing adds a torque that this balance does not
+          include.
+          It reproduces separate checks: 2.7e-6 for hydro at Ek = 1e-4, 1-2e-6 with a TWA mantle, and
+          7.8e-8 for the torsional case. It is printed only, not added to flow.dat, so old and new
+          flow.dat files can still be loaded together.
+- [10-02] Timing changes:
+            - the timer starts before the imports, and "Total time postprocessing" is printed at the
+              end;
+            - the runtime column of params.dat is the full solve_nopp time plus the full spin_doctor
+              time, the same for every solution (before, it grew from row to row);
+            - if timing.dat is missing, the solve time counts as 0 instead of crashing.
+- [10-02] The magnetic torque vectors are taken as [0,:], like the viscous ones. This removes a numpy
+          deprecation warning; the values are unchanged. The "need to double check the constants"
+          comment now records that the constants were checked against angrymom_z.
 
 bin/submatrices.py
 ------------------
-- [10-02] The printed time now counts from before the imports.
+- [10-01] Removed an outdated "these are the most time consuming" comment; Mlam is now fast.
+- [10-02] The timer starts before the imports, so the printed time includes them (about 0.4 s of the
+          roughly 1 s total).
 
 tools/plot_field.py
 -------------------
-- [10-01] Vectorised over theta using ut.Ylm_full_vec.
-- [10-02] New optional 8th argument, "tex" (default) or "notex", to choose LaTeX or mathtext labels.
-- [10-02] Imports utils4pp instead of the removed utils_pp. Two unused imports removed.
+- [10-01] The per-point loop over (theta, r) is replaced by matrix products using ut.Ylm_full_vec,
+          for example ur = YP @ Qlr.
+          The field is drawn with contourf on the regular (theta, r) grid. This replaces a Delaunay
+          triangulation, an inner-core mask and tricontourf.
+          Results:
+            - a 200 x 400 grid takes about 1 s instead of about 7 s;
+            - fields agree with the old script to 5.5e-13;
+            - it works at lmax = 671 (Ek = 1e-8), where it used to crash;
+            - some r = 1 points are no longer dropped, which had left a ragged outer edge.
+          The .collections edge-colour loop, which matplotlib 3.10 removed, is replaced by
+          set_edgecolor('face').
+- [10-02] Optional 8th argument: "tex" (the default, LaTeX labels as before) or "notex" (matplotlib's
+          mathtext, with no LaTeX run and DejaVu fonts). Example:
+            python3 tools/plot_field.py 0 40 80 0 180 u raw notex
+- [10-02] Imports utils4pp instead of the removed utils_pp; xcheb and expand_sol are now there. Two
+          unused imports were removed (scipy.sparse.linalg and the bare matplotlib).
 
 koreviz/kmode.py, koreviz_mod/kmode.py
 --------------------------------------
-- [10-02] Import utils4pp instead of the removed utils_pp.
+- [10-02] Import utils4pp instead of the removed utils_pp. They only use xcheb and expand_sol.
 
 koreviz/plotlib.py, koreviz_mod/plotlib.py
 ------------------------------------------
-- [10-02] Work with matplotlib 3.10, which removed ContourSet.collections (new edgecolor_face helper).
+- [10-02] A new edgecolor_face(cont) helper replaces the loops over cont.collections, which
+          matplotlib 3.10 removed; every merid, surf and equat call used to crash. It works with
+          both old and new matplotlib.
+          Checked with merid, surf and equat on three solutions: the torsional mode (u and b, m = 0),
+          an m = 2 hydro mode and a thermal case. All 36 koreviz calls pass. Temperature in
+          koreviz_mod still fails, as it did before, because its kmode treats every field as a
+          vector.
 
 Removed files
 -------------
-- [10-02] bin/postprocess.py, bin/postprocess_new.py, bin/utils_pp.py and bin/utils_pp_new.py
-          (superseded by spin_doctor.py and utils4pp.py).
+- [10-02] bin/postprocess.py, bin/postprocess_new.py, bin/utils_pp.py and bin/utils_pp_new.py.
+          Post-processing is done by spin_doctor.py and utils4pp.py. Note that the last line of
+          bin/runKore.sh still calls ./postprocess.py.
 
 Other
 -----
-- [10-03] The code runs unchanged on macOS (Apple silicon) after "source ~/z2/bin/activate".
-          The torsional test case reproduces the Linux result
-          (lambda = -0.004632 + 0.011500i, residL = 7.8e-8).
+- [10-03] The code runs unchanged on macOS (Apple silicon) after "source ~/z2/bin/activate". That
+          script sets PETSC_DIR, PETSC_ARCH, SLEPC_DIR and PYTHONPATH, and puts PETSc's mpiexec on
+          the PATH.
+          The torsional case reproduces the Linux result (lambda = -0.004632 + 0.011500i,
+          residL = 7.8e-8) in about 52 s on the Mac, using 4 ranks for submatrices and assemble and
+          8 for the solve.
