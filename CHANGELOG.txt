@@ -6,6 +6,7 @@ slow, what changed, and how it was checked. Tags give the date:
   [10-01] = commit a6a89bcc (2026-10-01)
   [10-02] = commit 515d4e54 (2026-10-02)
   [10-03] = commit 7646daaa (2026-10-03)
+  [10-03L] = Linux server tests (2026-10-03), after commit 6e504af9
 Timings and memory figures come from the Linux server (24-core Threadripper, 128 GB), except those
 marked "Mac" (48 GB Apple-silicon laptop).
 
@@ -60,7 +61,12 @@ bin/parameters.py
             - eigenvalue errors reached 1e-5, and one run had a broken energy balance in modes 1-2;
             - in both cases the PETSc residuals stayed at about 1e-11, so they did not show it.
           Pivot thresholds of 0.01 or above break BLR: INFOG(1) = -9, or memory use grows until the
-          machine swaps. Full results are in blr_stress_report.md.
+          machine swaps. Below that, cntl_1 (0 to 1e-3) made no difference to accuracy; higher values
+          only cost time and memory. SuperLU_DIST failed on these matrices.
+- [10-03L] st_mat_mumps_cntl_1 goes from 1e-6 to 1e-8 (BLR stays on, cntl_7 = 1e-14). On the Linux
+          server, at N = 840-976, cntl_1 = 1e-6 with BLR gave broken eigenvectors (spin_doctor resid u
+          ~1, wrong Tor/Pol for modes 1-2) while PETSc's residuals stayed at 1e-13. With 1e-8 all runs
+          matched plain MUMPS to ~1e-8, and were also faster.
 
 bin/solve_nopp.py
 -----------------
