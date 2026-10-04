@@ -1,8 +1,9 @@
-name: docs
+name: ci 
 on:
   push:
     branches:
-      - main
+      - conductive_IC  # the default branch; the docs are published from here
+  workflow_dispatch:  # allows a manual rebuild from the Actions tab
 permissions:
   contents: write
 jobs:
@@ -17,5 +18,6 @@ jobs:
         with:
           key: ${{ github.ref }}
           path: .cache
-      - run: pip install mkdocs-material
+      - run: pip install mkdocs-material 
       - run: mkdocs gh-deploy --force
+
