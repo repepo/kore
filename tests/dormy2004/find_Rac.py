@@ -46,6 +46,7 @@ def get_sigma(Ra,ncpus, opts):
         os.system('mpiexec -n %d ./bin/solve.py %s > /dev/null' %(ncpus,opts))
         eig0 = np.loadtxt('eigenvalues0.dat')
         eig = np.reshape(eig0, (-1, 2))
+        print(eig, flush=True)   # all eigenvalues at this Ra
         Idx = np.argmax(eig[:,0])
         sigma_c = eig[Idx,0]
         ra_cache[Ra] = sigma_c
