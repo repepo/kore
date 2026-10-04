@@ -1,0 +1,38 @@
+name: build
+
+on:
+  push:
+    branches: [conductive_IC]
+    paths-ignore: ['**.md', 'docs/**', 'mkdocs.yml']
+  pull_request:
+    branches: [conductive_IC]
+    paths-ignore: ['**.md', 'docs/**', 'mkdocs.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PETSC_DIR: /usr/lib/petscdir/petsc-complex
+      SLEPC_DIR: /usr/lib/slepcdir/slepc-complex
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            python3-scipy python3-mpi4py python3-pytest \
+            libpetsc-complex-dev libslepc-complex-dev \
+            python3-petsc4py-complex python3-slepc4py-complex
+
+      - name: Run tests
+        working-directory: tests
+        run: |
+          ulimit -s unlimited
+          pytest . -v -s
