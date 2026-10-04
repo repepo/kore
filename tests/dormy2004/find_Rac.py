@@ -2,6 +2,7 @@
 
 import numpy as np
 import os
+import shutil
 import sys
 from scipy.optimize import brentq
 from timeit import default_timer as timer
@@ -29,6 +30,7 @@ def runKoreRes(Rac,opts): # Print residuals once Rac is found
     Ra = 10**Rac
 
     os.system('sed -i "0,/Ra_gap.*/s//Ra_gap=%f/" ./bin/parameters.py' %Ra)
+    shutil.rmtree('./bin/__pycache__', ignore_errors=True)  # force re-reading parameters.py
     os.system('mpiexec -n %d ./bin/assemble.py' %par.ncpus)
     os.system('mpiexec -n %d ./bin/solve.py %s' %(par.ncpus,opts))
     # os.system('./bin/postprocess.py')
@@ -42,6 +44,7 @@ def get_sigma(Ra,ncpus, opts):
         return ra_cache[Ra]
     else:
         os.system('sed -i "0,/Ra_gap.*/s//Ra_gap=%f/" ./bin/parameters.py' %Ra)
+        shutil.rmtree('./bin/__pycache__', ignore_errors=True)  # force re-reading parameters.py
         os.system('mpiexec -n %d ./bin/assemble.py > /dev/null' %ncpus)
         os.system('mpiexec -n %d ./bin/solve.py %s > /dev/null' %(ncpus,opts))
         eig0 = np.loadtxt('eigenvalues0.dat')
@@ -98,6 +101,7 @@ for m in marr:
     ra_cache = {}
 
     os.system('sed -i "0,/m =.*/s//m = %d/" ./bin/parameters.py' %m)
+    shutil.rmtree('./bin/__pycache__', ignore_errors=True)  # force re-reading parameters.py
     os.system('./bin/submatrices.py %d > /dev/null' %par.ncpus)
     Rac = bracket_brentq(get_sigma,np.log10(Ramin),args=(par.ncpus,opts))
     runKoreRes(Rac,optsRes)
