@@ -71,6 +71,12 @@ bsymm = par.symm * symmB0  # induced magnetic field (b) symmetry follows from u 
 B0list = ['axial', 'dipole', 'G21 dipole', 'Luo_S1', 'Luo_S2', 'FDM']
 B0type = B0list.index(par.B0)
 
+# NEW (2026-10-07): with an inner core, B0_ic = 'potential' (the default, also if parameters.py does not set B0_ic)
+# makes B0 a potential field inside the IC, continuous at the ICB (see B0_beta_ic, and the explanation next to B0_ic
+# in parameters.py). 'full sphere' keeps h unchanged.
+B0_ic = getattr(par, 'B0_ic', 'potential')
+B0_ic_list = ['G21 dipole', 'Luo_S1', 'Luo_S2']  # full-sphere fields; 'axial' and the FDM already match, 'dipole' is a point source
+
 ic_bc_list = ['insulator', 'TWA', 'conducting, Chebys', 'conducting, Bessel']
 innercore_mag_bc = ic_bc_list.index(par.innercore)
 
@@ -319,7 +325,27 @@ if par.B0 == 'FDM':
 
 
 
-def h0(rr, kind, args):
+def B0_beta_ic(kind, l, ricb):
+    '''
+    NEW (2026-10-07): coefficient beta of the potential field beta*r**-(l+1) that h0..h3 add to h when
+    B0_ic = 'potential' and ricb > 0. With it r*h' - l*h = 0 at the ICB, so B0 continues into the IC as the
+    potential field h(ricb)*(r/ricb)**l: no B0 currents in the IC and no current sheet on the ICB. The added term
+    carries no current and keeps r*h' + (l+1)*h = 0 at the CMB, so the result is the field of the currents of h
+    that lie in the fluid shell. A steady B0 must have this form for any finite IC conductivity: without an EMF
+    in the IC, curl(eta*J0) = 0 there, and an axisymmetric azimuthal J0 has to vanish.
+    '''
+    if (ricb > 0) and (B0_ic == 'potential') and (kind in B0_ic_list):
+        r  = np.array([ricb])
+        a  = [par.beta, l, ricb, 0]
+        h  = h0(r, kind, a, ic_pot=False)[0]
+        dh = h1(r, kind, a, ic_pot=False)[0]
+        return ricb**(l+1) * ( ricb*dh - l*h ) / (2*l+1)
+    else:
+        return 0
+
+
+
+def h0(rr, kind, args, ic_pot=True):
     '''
     Radial poloidal function for the background magnetic field times
     a power of r
@@ -368,6 +394,11 @@ def h0(rr, kind, args):
             # Zhang & Fearn, GAFD (1995), page 196, eq. 2.7
             out = ( jl(l,x,0)*nl(-1 + l,b,0) - jl(-1 + l,b,0)*nl(l,x,0) )*r**rp
 
+    if ic_pot:  # NEW (2026-10-07): potential field for B0_ic = 'potential', see B0_beta_ic
+        bic = B0_beta_ic(kind, l, ricb)
+        if bic != 0:
+            out = out + bic * r**(rp-l-1)
+
     out2 = np.zeros_like(rr)
     out2[rr>0] = out
     if (ricb == 0) and (np.size(rr[rr>0]) == np.size(rr[rr<0])):
@@ -377,7 +408,7 @@ def h0(rr, kind, args):
 
 
 
-def h1(rr, kind, args):
+def h1(rr, kind, args, ic_pot=True):
     '''
     First radial derivative of the function h0, times a power of r
     '''
@@ -416,6 +447,11 @@ def h1(rr, kind, args):
         else:
             out = ( b*(jl(l,x,1)*nl(-1 + l,b,0) - jl(-1 + l,b,0)*nl(l,x,1)) )*r**rp
 
+    if ic_pot:  # NEW (2026-10-07): potential field for B0_ic = 'potential', see B0_beta_ic
+        bic = B0_beta_ic(kind, l, ricb)
+        if bic != 0:
+            out = out + bic * (-(l+1)) * r**(rp-l-2)
+
     out2 = np.zeros_like(rr)
     out2[rr>0] = out
     if (ricb == 0) and (np.size(rr[rr>0]) == np.size(rr[rr<0])):
@@ -425,7 +461,7 @@ def h1(rr, kind, args):
 
 
 
-def h2(rr, kind, args):
+def h2(rr, kind, args, ic_pot=True):
     '''
     Second radial derivative of the function h0, times a power of r
     '''
@@ -468,6 +504,11 @@ def h2(rr, kind, args):
             out= ((x**2*jl(-1 + l,x,1) + (1 + l)*(jl(l,x,0) - x*jl(l,x,1)))*nl(-1 + l,b,0) \
              - jl(-1 + l,b,0)*(x**2*nl(-1 + l,x,1) + (1 + l)*(nl(l,x,0) - b*r*nl(l,x,1))))*r**(-2+rp)
 
+    if ic_pot:  # NEW (2026-10-07): potential field for B0_ic = 'potential', see B0_beta_ic
+        bic = B0_beta_ic(kind, l, ricb)
+        if bic != 0:
+            out = out + bic * (l+1)*(l+2) * r**(rp-l-3)
+
     out2 = np.zeros_like(rr)
     out2[rr>0] = out
     if (ricb == 0) and (np.size(rr[rr>0]) == np.size(rr[rr<0])):
@@ -477,7 +518,7 @@ def h2(rr, kind, args):
 
 
 
-def h3(rr, kind, args):
+def h3(rr, kind, args, ic_pot=True):
     '''
     Third radial derivative of the function h0, times a power of r
     '''
@@ -554,6 +595,11 @@ def h3(rr, kind, args):
                 out = (-2*b**2*r**2*jl(0,b*r,1)*nl(0,b,0) - 8*jl(1,b*r,0)*nl(0,b,0) + 8*b*r*jl(1,b*r,1)*nl(0,b,0) \
                  - b**3*r**3*jl(1,b*r,1)*nl(0,b,0) + 2*b**2*r**2*jl(0,b,0)*nl(0,b*r,1) + 8*jl(0,b,0)*nl(1,b*r,0) \
                  - 8*b*r*jl(0,b,0)*nl(1,b*r,1) + b**3*r**3*jl(0,b,0)*nl(1,b*r,1))*r**(-3+rp)
+
+    if ic_pot:  # NEW (2026-10-07): potential field for B0_ic = 'potential', see B0_beta_ic
+        bic = B0_beta_ic(kind, l, ricb)
+        if bic != 0:
+            out = out + bic * (-(l+1)*(l+2)*(l+3)) * r**(rp-l-4)
 
     out2 = np.zeros_like(rr)
     out2[rr>0] = out

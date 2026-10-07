@@ -88,6 +88,22 @@ bin/parameters.py
           A - tau*B (Ruiz scaling, see bin/solve_nopp.py) before the shift-invert solve. Eigenvalues
           are unchanged. Set prescale = 0 to switch it off. It applies to eigenvalue problems only and
           is ignored (with a note) for forced problems.
+- [10-07] New switch B0_ic for the background field inside the inner core (see bin/utils.py):
+            - 'potential' (the default, also when parameters.py does not set B0_ic): B0 is a potential
+              field in the IC and continuous at the ICB;
+            - 'full sphere': B0 as before, with its currents extending into the IC.
+          It only matters for ricb > 0 with B0 = 'G21 dipole', 'Luo_S1' or 'Luo_S2'. A comment block
+          above B0_ic explains what each setting does and why 'potential' is the default. The comments on
+          the full-sphere cnorm values of Luo_S1 and Luo_S2 now say that with an inner core they keep
+          the same currents in the fluid (no longer the same field).
+- [10-07] N_cic (Chebyshev resolution of the field in a conducting IC) goes from 16 to 64. Tested
+          with the S2 torsional mode of bin/utils.py's B0_ic entry, with innercore = 'conducting, Chebys':
+            - sigma_i2o = 1: N_cic = 16 was off by 1.6e-3 (relative); 48, 64 and 96 agree to 1e-8;
+            - sigma_i2o = 1e-2 with N_cic = 48: the target mode was right, but the other modes had
+              broken eigenvectors (spin_doctor resid b ~ 1, PETSc residuals 1e-6 - 5e-5). This happened
+              with and without BLR and prescale. N_cic = 32 and 64 were clean;
+            - at N_cic = 64 every sigma_i2o from 1e-4 to 1 gives spin_doctor residuals < 1.4e-5 for all
+              four modes found.
 
 bin/solve_nopp.py
 -----------------
@@ -214,6 +230,36 @@ bin/assemble.py
 
 bin/utils.py
 ------------
+- [10-07] New B0_beta_ic. With B0_ic = 'potential' and ricb > 0, h0..h3 add beta*r**-(l+1) to h,
+          where beta = ricb**(l+1)*(ricb*h' - l*h)/(2l+1) is evaluated at the ICB.
+          Why: the full-sphere fields (G21 dipole, Luo_S1, Luo_S2) do not match a potential field at
+          the ICB. With an inner core, part of their current then has to flow in the IC, or in a
+          current sheet on the ICB. A steady B0 cannot keep such currents in an IC of finite
+          conductivity, whatever its value: with no EMF in the IC, curl(eta*J0) = 0 there, and an
+          axisymmetric azimuthal J0 has to vanish.
+          What the added term does:
+            - it carries no current, so the currents in the fluid are unchanged;
+            - it keeps the CMB matching;
+            - B0 continues into the IC as the potential field h(ricb)*(r/ricb)**l.
+          The result is the field of the fluid part of the original currents. 'axial' and the FDMs
+          already satisfy the ICB condition (to 1e-14). 'dipole' is a point source at the centre. Both
+          are left alone.
+          Checked for Luo_S2 at ricb = 0.35:
+            - beta = -0.06716; r*h' - 2h = 0 at the ICB; h' + 3h = 2e-15 at the CMB;
+            - h0..h3 match finite differences of each other;
+            - the current (h'' + 2h'/r - 6h/r^2) is unchanged to 3e-16.
+          Size of the change: 10% of B0 at the ICB, 1.7% at the CMB, 2.7% rms. cnorm = 'mag_energy'
+          gives 1.0568x the full-sphere value (1.050x with 'full sphere').
+          A full sphere (ricb = 0) is unaffected: both CI tests pass.
+          Effect on a torsional mode (Luo_S2, ricb = 0.35, Ek = 1e-7, Lambda = 10, Pm = 0.1, no-slip,
+          insulating mantle, cnorm = 0.005061567359972097, Alfven time units, N = 232, N_cic = 48 and 64):
+            - insulating IC: -0.45521 + 1.00258i with 'full sphere', -0.45657 + 0.99090i with
+              'potential' (frequency 1.2% lower);
+            - conducting IC, sigma_i2o = 1: -0.47390 + 1.08496i and -0.47616 + 1.06118i (2.2% lower);
+            - conducting IC with 'potential', sigma_i2o = 1e-4 and 1e-3: the eigenvalue differs from
+              the insulating one by 1.8e-4 and 1.8e-3 (relative), so it converges linearly to the
+              insulating limit.
+          All these runs have every spin_doctor residual < 2e-5.
 - [10-07] B0_norm and B0_norm2 (cnorm = 'mag_energy' or 'Schmitt2012') integrate B0**2 with Gauss-Legendre
           quadrature instead of Chebyshev-Gauss times sqrt(1-x^2). The old rule was only second order:
           for Luo & Jackson's S2 field cnorm was off by 1.1e-7 (0.005061566802 instead of the exact

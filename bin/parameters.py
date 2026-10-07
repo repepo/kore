@@ -113,6 +113,25 @@ B0 = 'FDM'            # Free Poloidal Decay Mode (Zhang & Fearn 1994,1995; Schmi
 beta = 3.0              # guess for FDM's beta
 B0_l = 1                # l number for the FDM mode
 
+# NEW (2026-10-07): B0_ic sets what the background field does inside the inner core.
+# 'G21 dipole', 'Luo_S1' and 'Luo_S2' are defined for a full sphere. With an inner core (ricb > 0) they do not match
+# a potential field at the ICB, so part of the electric current that makes them would have to flow inside the IC
+# (or in a current sheet on the ICB). Nothing keeps such a current steady in a solid IC of finite conductivity: there
+# is no flow there, hence no EMF, and an axisymmetric azimuthal current decays on the IC's magnetic diffusion time.
+#   'potential'   (default, also if B0_ic is not set): removes that part of the current. utils.B0_beta_ic adds
+#                 beta*r**-(l+1) to the poloidal scalar h, with beta = ricb**(l+1)*(ricb*h' - l*h)/(2l+1) at the ICB.
+#                 The added term carries no current and keeps the CMB matching, so the currents in the fluid stay the
+#                 same, and B0 continues into the IC as the potential field h(ricb)*(r/ricb)**l (no current sheet on
+#                 the ICB). This is the self-consistent steady B0 for an insulating IC and for any finite IC
+#                 conductivity. To keep exactly the fluid currents of the full-sphere field, use its numeric cnorm
+#                 below (e.g. 0.005061567359972097 for Luo_S2) rather than 'mag_energy'.
+#   'full sphere' : h unchanged, its currents extend into the IC. Self-consistent only for a perfectly conducting
+#                 IC, or as a snapshot of currents frozen in the IC.
+# No effect if ricb = 0, nor for 'axial' and 'FDM' (they already match a potential field at the ICB) and 'dipole'
+# (a point source at the centre).
+B0_ic = 'potential'
+# B0_ic = 'full sphere'
+
 # Magnetic boundary conditions at the ICB:
 innercore = 'insulator'
 # innercore = 'conducting, Chebys'  # For eigenvalue problems
@@ -154,9 +173,9 @@ Em = Ek/Pm; Le2 = Lambda*Em; Le = np.sqrt(Le2)
 # cnorm = 15*np.sqrt(21/(46*np.pi))     # G21 dipole,           ricb = 0 (same as 'Schmitt2012')
 # cnorm = 1.094357234                   # simplest FDM, l=1,    ricb = 0 (same as 'Schmitt2012')
 # cnorm = 3.438024656                   # simplest FDM, l=1,    ricb = 0.001 (same as 'Schmitt2012')
-# cnorm = 0.09530063707257978           # Luo_S1 ricb = 0, unit mag_energy (full sphere; keeps the same field with an inner core)
+# cnorm = 0.09530063707257978           # Luo_S1 ricb = 0, unit mag_energy (full sphere; with an inner core keeps the same currents in the fluid)
 # cnorm = 0.6972166887783963            # Luo_S1 ricb = 0, rms_Bs=1 (volume rms of B_s)
-# cnorm = 0.005061567359972097          # Luo_S2 ricb = 0, unit mag_energy (full sphere; keeps the same field with an inner core)
+# cnorm = 0.005061567359972097          # Luo_S2 ricb = 0, unit mag_energy (full sphere; with an inner core keeps the same currents in the fluid)
 # cnorm = 0.0158567582314039            # Luo_S2 ricb = 0, rms_Bs=1 (volume rms of B_s)
 cnorm = 1
 
@@ -280,7 +299,7 @@ ncpus = 4
 # Chebyshev polynomial truncation level. Use function def at top or set manually. N must be even if ricb = 0.
 N     = Ncheb(Ek)  # for the fluid core
 # N = 8
-N_cic = 16         # for the field inside the ic (innercore = 'conducting, Chebys') 
+N_cic = 64         # for the field inside the ic (innercore = 'conducting, Chebys')  # NEW (2026-10-07): was 16; 48 gave broken eigenvectors at sigma_i2o = 1e-2
 
 # Spherical harmonic truncation lmax and approx lmax/N ratio:
 g = 1.0
