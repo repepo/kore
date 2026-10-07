@@ -214,6 +214,10 @@ bin/assemble.py
 
 bin/utils.py
 ------------
+- [10-07] B0_norm and B0_norm2 (cnorm = 'mag_energy' or 'Schmitt2012') integrate B0**2 with Gauss-Legendre
+          quadrature instead of Chebyshev-Gauss times sqrt(1-x^2). The old rule was only second order:
+          for Luo & Jackson's S2 field cnorm was off by 1.1e-7 (0.005061566802 instead of the exact
+          0.005061567360). Gauss-Legendre on the same 240 points is exact for these polynomial fields.
 - [10-01] packit appends each block to lists, and the new unpackit joins them once. assemble.py uses
           both (see above).
 - [10-01] Mlam (the Chebyshev multiplication matrix for lambda > 0) is vectorised:
@@ -368,6 +372,21 @@ docs/page4.md
           default solver options in parameters.py (petsc_opts, prescale), the eigenvector
           normalisation, the optional MUMPS/SLEPc settings, forced problems, the resolution
           (Ncheb, lmax) and how to check results with spin_doctor.
+
+tests/test_torsional_s2.py, tests/torsional_s2/
+------------------------------------------------
+- [10-07] New CI test: torsional modes 1 and 2 of the quadrupolar field S2 of Luo & Jackson (2022,
+          Proc. R. Soc. A 478, 20210982, table 1). Inviscid full sphere (Ek = 0, ricb = 0), insulating
+          boundary, Le = 1e-4, Lu = 2e4 (Elsasser number 1), Alfven time scale, m = 0, rotdyn = 0,
+          cnorm = 'mag_energy', N = 128 and lmax = 127 on 2 ranks (a few seconds).
+          The matrices are built once and solved twice: with the target in params.torsional_s2 (mode 2)
+          and with -eps_target -0.0066+1.0336i (mode 1), since a mode far from the target is less
+          accurate (mode 1 was off by 2e-4 when solved around mode 2).
+          Each eigenvalue must match tests/torsional_s2/reference.eig (one row per mode, computed with
+          kore at this resolution) to 1e-7 in |dlambda|/|lambda|, and Luo & Jackson's converged values
+          to 2e-6 (mode 1, -0.0065952461 + 1.0335959942i; kore is 7.3e-7 from it) and 1e-5 (mode 2,
+          -0.0141833345 + 1.9095123626i; kore is 4.7e-6 from it, 2.2e-6 at N = 176).
+          Run by the existing workflow (pytest in tests/).
 
 Removed files
 -------------

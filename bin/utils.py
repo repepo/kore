@@ -720,10 +720,11 @@ def B0_norm():
 
         elif par.cnorm in ['mag_energy', 'Schmitt2012']:  # total magnetic energy is set to 1 or 2
 
+            # NEW (2026-10-07): Gauss-Legendre quadrature (exact for polynomial B0 profiles) instead of
+            # Chebyshev-Gauss times sqrt(1-x^2), which is only second order (relative error 1e-7 in cnorm at N = 240).
             N = 240
-            i = np.arange(0,N)
-            xk = np.cos( (i+0.5)*np.pi/N )  # colocation points, from -1 to 1
-            sqx = np.sqrt(1-xk**2)
+            xk, wk = np.polynomial.legendre.leggauss(N)  # nodes and weights, from -1 to 1
+            sqx = wk*N/np.pi  # weights scaled so that the sum below is unchanged
             rk = 0.5*(1-ricb)*( xk + 1 ) + ricb
             r2 = rk**2
 
@@ -770,9 +771,8 @@ def B0_norm2(ricb,cnorm):
 
     # Integral of B0**2 over the fluid volume
     N = 240
-    i = np.arange(0,N)
-    xk = np.cos( (i+0.5)*np.pi/N )  # colocation points, from -1 to 1
-    sqx = np.sqrt(1-xk**2)
+    xk, wk = np.polynomial.legendre.leggauss(N)  # NEW (2026-10-07): Gauss-Legendre, as in B0_norm
+    sqx = wk*N/np.pi
     rk = 0.5*(1-ricb)*( xk + 1 ) + ricb
     r2 = rk**2
     y0 = h0(rk, kind, args) * cnorm
