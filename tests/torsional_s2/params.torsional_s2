@@ -150,16 +150,16 @@ Em = Le/Lu; Le2 = Le**2
 # Normalization of the background magnetic field
 # cnorm = 'rms_cmb'                     # Sets the radial rms field at the CMB as unity
 # cnorm = 'mag_energy'                  # Unit magnetic energy as in Luo & Jackson 2022 (I. Torsional oscillations)
-# cnorm = 'Schmitt2012'                 # as above but times 2
-# cnorm = 3.86375                       # G101 of Schmitt 2012, ricb = 0.35
-# cnorm = 4.067144                      # Zhang & Fearn 1994,   ricb = 0.35
-# cnorm = 15*np.sqrt(21/(46*np.pi))     # G21 dipole,           ricb = 0
-# cnorm = 1.09436                       # simplest FDM, l=1,    ricb = 0
-# cnorm = 3.43802                       # simplest FDM, l=1,    ricb = 0.001
-# cnorm = 0.09530048175738767           # Luo_S1 ricb = 0, unit mag_energy
-# cnorm = 0.6972166887783963            # Luo_S1 ricb = 0, rms_Bs=1
-# cnorm = 0.005061566801979833          # Luo_S2 ricb = 0, unit mag_energy
-# cnorm = 0.0158567582314039            # Luo_S2 ricb = 0, rms_Bs=1
+# cnorm = 'Schmitt2012'                 # as above but times 2 (integral of B0**2 = 4)
+# cnorm = 3.863752890                   # G101 of Schmitt 2012, ricb = 0.35 (FDM l=1, same as 'Schmitt2012')
+# cnorm = 4.067144                      # Zhang & Fearn 1994,   ricb = 0.35 (not checked against the other normalisations)
+# cnorm = 15*np.sqrt(21/(46*np.pi))     # G21 dipole,           ricb = 0 (same as 'Schmitt2012')
+# cnorm = 1.094357234                   # simplest FDM, l=1,    ricb = 0 (same as 'Schmitt2012')
+# cnorm = 3.438024656                   # simplest FDM, l=1,    ricb = 0.001 (same as 'Schmitt2012')
+# cnorm = 0.09530063707257978           # Luo_S1 ricb = 0, unit mag_energy (full sphere; keeps the same field with an inner core)
+# cnorm = 0.6972166887783963            # Luo_S1 ricb = 0, rms_Bs=1 (volume rms of B_s)
+# cnorm = 0.005061567359972097          # Luo_S2 ricb = 0, unit mag_energy (full sphere; keeps the same field with an inner core)
+# cnorm = 0.0158567582314039            # Luo_S2 ricb = 0, rms_Bs=1 (volume rms of B_s)
 cnorm = 'mag_energy'  # S2 test: integral of B0**2 over the sphere is 1
 
 # ----------------------------------------------------------------------------------------------------------------------
