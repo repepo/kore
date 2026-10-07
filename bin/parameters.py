@@ -22,8 +22,19 @@ def Ncheb(Ek):
     Returns the truncation level N for the Chebyshev expansion according to the Ekman number
     Please experiment and adapt to your particular problem. N must be even.
     '''
+    # NEW (2026-10-06): fitted to resolution tests (Linux server, torsional-mode case of this file:
+    # Pm = 0.1, Lambda = 10, FDM field, TWA mantle, insulating IC, lmax ~ N). N_min, the smallest N
+    # with every spin_doctor residual < 1e-4, follows N_min = 3.96*Ek**-0.242 within 7% for
+    # 1e-9 <= Ek <= 1e-5 (e.g. 112 at 1e-6, 192 at 1e-7, 368 at 1e-8, 592 at 1e-9). The formula
+    # below adds a 15% margin and rounds up to a multiple of 8 (so that lmax from the formula below
+    # equals N - 1). With the margin, eigenvalues are converged to ~1e-6 - 1e-5 (relative).
+    # Gives 80, 136, 232, 400, 688 at Ek = 1e-5 ... 1e-9 (688: 34 GB with BLR on 8 ranks); 1200 at
+    # 1e-10 (extrapolated, ~115-120 GB with BLR, above a 128 GB machine's safe limit).
+    # Other setups (stronger fields, other boundary conditions, thermal/compositional) may need more;
+    # check spin_doctor's residuals. The old formula, 17*Ek**-0.2, gave about twice N_min.
     if Ek !=0 :
-        out = int(17*Ek**-0.2)
+        out = 8*int(np.ceil(4.55*Ek**-0.242/8))
+        # out = int(17*Ek**-0.2)  # before 2026-10-06
     else:
         out = 48  #
 
@@ -351,6 +362,16 @@ petsc_opts = {
     # 'mat_mumps_icntl_22'         : 1,                     # out-of-core factors, cuts memory ~half
     # 'mat_mumps_ooc_tmpdir'       : '/nvm/scratch',        # put OOC files on a real disk, not tmpfs /tmp
 }
+
+# NEW (2026-10-06): pre-scaling of the eigenvalue problem (forcing == 0 only; ignored for forced problems).
+# Default on (set prescale = 0 to switch it off). With prescale = 1, solve_nopp.py applies Ruiz row+column equilibration to A - tau*B (10 iterations)
+# and solves Dr*A*Dc y = lambda Dr*B*Dc y instead. Eigenvalues are unchanged; eigenvectors are mapped
+# back (x = Dc*y) before they are written, so spin_doctor and postprocessing see unscaled vectors.
+# Lowers the condition number of A - tau*B by 6-8 orders of magnitude and gave cleaner eigenvectors
+# (spin_doctor resid u ~1e-7 instead of ~1e-4 for modes 1-2 at N = 976, with and without BLR).
+# Costs 7-8 s at N = 976 on 8 ranks, before the factorization; no change in peak memory.
+# solve_nopp's ||Ax-kBx||/||kx|| is then printed for the scaled problem; judge accuracy with spin_doctor.
+prescale = 1
 
 # ----------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------

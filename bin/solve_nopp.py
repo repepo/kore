@@ -32,6 +32,16 @@ def load_mat(fname):
     Reads a CSR matrix from an .npz file written by assemble.py and returns it as a
     distributed PETSc matrix. The file is memory-mapped, so each rank reads only its own rows.
     '''
+    return to_mat(*load_rows(fname))
+
+
+# NEW (2026-10-06): load_mat split into load_rows + to_mat, so that the local rows can be
+# rescaled (prescale = 1) before the PETSc matrix is built.
+def load_rows(fname):
+    '''
+    Reads this rank's rows of the CSR matrix in fname (memory-mapped .npz from assemble.py).
+    Returns (n, Istart, Iend, indptr, indices, data), with indptr starting at 0.
+    '''
     M = ut.load_npz_mmap(fname)
     n = int(M['shape'][0])
     # rows owned by this rank, same default distribution as PETSc vectors
@@ -41,9 +51,91 @@ def load_mat(fname):
     indices = np.array(M['indices'][lo:hi])
     data = np.array(M['data'][lo:hi])
     del M
+    return n, Istart, Iend, indptr-lo, indices, data
+
+
+def to_mat(n, Istart, Iend, indptr, indices, data):
+    '''
+    Builds a distributed PETSc matrix from this rank's rows, as returned by load_rows.
+    '''
     return PETSc.Mat().createAIJ(size=((Iend-Istart, n), (Iend-Istart, n)),
-                                 csr=(indptr-lo, indices, data),
+                                 csr=(indptr, indices, data),
                                  comm=PETSc.COMM_WORLD)
+
+
+# NEW (2026-10-06): Ruiz pre-scaling of the eigenvalue problem, used when par.prescale = 1.
+def ruiz_scaling(Arows, Brows, tau, iters=10):
+    '''
+    Ruiz row+column equilibration of M = A - tau*B (infinity norm). Each iteration takes
+    r_i = sqrt(max_j |M_ij|), c_j = sqrt(max_i |M_ij|) of the current scaled matrix and sets
+    M <- diag(1/r) M diag(1/c). Arows and Brows are this rank's rows (from load_rows).
+    Returns Dr (this rank's rows) and Dc (all columns, on every rank) such that diag(Dr) M diag(Dc)
+    is the scaled matrix. Works on the local rows only; the column maxima are combined with one
+    MPI Allreduce per iteration, so memory stays distributed.
+    '''
+    from mpi4py import MPI
+    comm = PETSc.COMM_WORLD.tompi4py()
+    n, Istart, Iend = Arows[:3]
+    nloc = Iend - Istart
+    csr = lambda X: ss.csr_matrix((X[5], X[4], X[3]), shape=(nloc, n))
+    M = (csr(Arows) - tau*csr(Brows)).tocsr()
+    a0 = np.abs(M.data)
+    ptr, cols = M.indptr, M.indices
+    rows = np.repeat(np.arange(nloc), np.diff(ptr))
+    del M
+    nonempty = ptr[1:] > ptr[:-1]
+    dr = np.ones(nloc)
+    dc = np.ones(n)
+    for k in range(iters):
+        a = a0*dr[rows]
+        a *= dc[cols]
+        r = np.zeros(nloc)
+        r[nonempty] = np.maximum.reduceat(a, ptr[:-1][nonempty])
+        c = np.zeros(n)
+        np.maximum.at(c, cols, a)
+        comm.Allreduce(MPI.IN_PLACE, c, op=MPI.MAX)
+        del a
+        r[r == 0] = 1.0  # empty rows/columns are left alone
+        c[c == 0] = 1.0
+        dr /= np.sqrt(r)
+        dc /= np.sqrt(c)
+    return dr, dc
+
+
+def scale_rows(X, dr, dc):
+    '''
+    In place: this rank's rows X (from load_rows) become diag(dr) X diag(dc).
+    '''
+    n, Istart, Iend, indptr, indices, data = X
+    rows = np.repeat(np.arange(Iend-Istart), np.diff(indptr))
+    X[5] = data * (dr[rows] * dc[indices])  # data may be real (B) or complex (A)
+
+
+# NEW (2026-10-06): energy normalisation of the eigenvectors, before they are written.
+def normalise_energy(vecs):
+    '''
+    In place: scales each eigenvector (one per column) so that its kinetic + magnetic energy is 1,
+    with KE and ME as spin_doctor computes them (outer core only, from ricb to rcmb; the IC field
+    and the rotdyn rotation rates are scaled along but their energies are not counted).
+    The complex phase is left as SLEPc returns it. Vectors with zero KE + ME are left unchanged.
+    Called on all ranks with the full vecs on each; the l-components are shared among the ranks
+    and their energies summed with an MPI Allreduce.
+    '''
+    import utils4pp as upp
+    from mpi4py import MPI
+    comm = PETSc.COMM_WORLD.tompi4py()
+    rank, size = comm.Get_rank(), comm.Get_size()
+    ll = ut.ell(par.m, par.lmax, par.symm)[2]
+    t0 = timer()
+    for i in range(vecs.shape[1]):
+        f = split_fields(vecs[:, i])
+        usol2 = upp.expand_reshape_sol(f['flow'], par.symm) if 'flow' in f else 0
+        bsol2 = upp.expand_reshape_sol(f['magnetic'], ut.bsymm) if 'magnetic' in f else 0
+        KE, ME = upp.kin_mag_energy(usol2, bsol2, par.ricb, ut.rcmb, ll[rank::size])
+        energy = comm.allreduce(KE + ME, op=MPI.SUM)
+        if energy > 0:
+            vecs[:, i] /= np.sqrt(energy)
+    PETSc.Sys.Print('Eigenvectors normalised to KE + ME = 1 in', round(timer()-t0, 2), 'seconds')
 
 
 def split_fields(vec):
@@ -84,13 +176,33 @@ def main():
     if rank == 0:
         tic = timer()
 
+    # NEW (2026-10-06): optional Ruiz pre-scaling (par.prescale), eigenvalue problems only
+    prescale = getattr(par, 'prescale', 0)
+    if prescale and par.forcing != 0:
+        Print('Note: prescale applies to eigenvalue problems only; not used for this forced problem.')
+        prescale = 0
+
     # ------------------------------------------------------------------ reads matrix A
-    MA = load_mat('A.npz')
+    if prescale:  # NEW (2026-10-06): A and B are read as local rows, rescaled, then built
+        t_ps = timer()
+        Arows = list(load_rows('A.npz'))
+        Brows = list(load_rows('B.npz'))
+        dr, dc = ruiz_scaling(Arows, Brows, par.tau)
+        scale_rows(Arows, dr, dc)
+        scale_rows(Brows, dr, dc)
+        MA = to_mat(*Arows)
+        MB = to_mat(*Brows)
+        del Arows, Brows, dr
+        Print('Ruiz pre-scaling of A - tau*B done in', round(timer()-t_ps, 2), 'seconds '
+              '(the residuals printed below are for the scaled problem)')
+    else:
+        MA = load_mat('A.npz')
     nb_l = MA.getSize()[0]
 
     if par.forcing == 0: # --------------------------------------------- if eigenvalue problem, reads matrix B
 
-        MB = load_mat('B.npz')
+        if not prescale:
+            MB = load_mat('B.npz')
 
 
         # -------------------------------------------------------------- setup eigenvalue solver
@@ -130,6 +242,14 @@ def main():
                     vecs[:, i] = V.getArray()
 
             tozero.destroy(); V.destroy(); v.destroy()
+
+            # NEW (2026-10-06): every rank gets a copy of the eigenvectors for the energy normalisation
+            if rank != 0:
+                vecs = np.empty((nb_l, nconv), dtype=complex)
+            PETSc.COMM_WORLD.tompi4py().Bcast(vecs, root=0)
+            if prescale:  # NEW (2026-10-06): eigenvectors of the scaled problem -> x = Dc*y
+                vecs *= dc[:, None]
+            normalise_energy(vecs)  # NEW (2026-10-06): KE + ME = 1 for every eigenvector
 
             if rank == 0:
                 fields = split_fields(vecs)  # each column is a solution

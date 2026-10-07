@@ -53,9 +53,10 @@ def funcheb(ck0, r, ricb, rcmb, n):
 
 def cg_quad(f, Ra, Rb, N, sqx):
     '''
-    Computes the radial integral of f as a Chebyshev-Gauss quadrature.
-    Assumes f is sampled over [Ra,Rb], with sqx=np.sqrt(1-xk**2),
-    where xk are the radial grid points for the Chebyshev-Guauss quadrature. 
+    Computes the radial integral of f over [Ra,Rb], with f sampled at the grid points of setup_grid.
+    NEW (2026-10-06): the grid is now Gauss-Legendre, and sqx holds the weights times N/pi (see
+    setup_grid), so this formula gives sum(w_k*f_k)*(Rb-Ra)/2. Before, the grid was Chebyshev-Gauss
+    with sqx = sqrt(1-xk**2). 
     '''
 
     out = (np.pi/N) * np.sum( sqx * f ) * (Rb-Ra)/2
@@ -1034,10 +1035,13 @@ def setup_grid(Ra, Rb):
     '''
     global rk, x0, sqx, r2, r3, r4, _grid
 
-    # xk are the grid points for the integration using Gauss-Chebyshev quadratures.
-    # Always go from -1 to 1
-    i = np.arange(0,par.N)
-    xk = np.cos( (i+0.5)*np.pi/par.N )
+    # NEW (2026-10-06): Gauss-Legendre nodes xk and weights wk (from -1 to 1) replace the
+    # Chebyshev-Gauss nodes. cg_quad used Chebyshev-Gauss with the integrand times sqrt(1-xk**2) to
+    # cancel the Chebyshev weight; that product is not smooth at the ends, so the quadrature was only
+    # second order and spin_doctor's resid0 (and part of resid u) measured the quadrature error
+    # (resid0 ~ 1/N**2, e.g. 1.5e-2 at N = 200). Gauss-Legendre on the same N points is exact for
+    # polynomials up to degree 2N-1: resid0 drops to ~1e-11 at the same cost.
+    xk, wk = np.polynomial.legendre.leggauss(par.N)
 
     # rk are the corresponding radial points in the desired integration interval: from Ra to Rb
     rk = 0.5*(Rb-Ra)*( xk + 1 ) + Ra
@@ -1046,7 +1050,7 @@ def setup_grid(Ra, Rb):
     x0 = xcheb(rk, par.ricb, 1)
 
     # the following are needed to compute the integrals (i.e. the quadratures)
-    sqx = np.sqrt(1-xk**2)
+    sqx = wk*par.N/np.pi  # NEW (2026-10-06): quadrature weights, scaled so that cg_quad's formula is unchanged
     r2 = rk**2
     r3 = rk**3
     r4 = rk**4
@@ -1107,3 +1111,36 @@ def diagnose( usol2, bsol2, tsol2, csol2, Ra, Rb, ncpus, eigval, pool=None):
         pool.join()
 
     return [ out_u, out_b, out_t, out_c ]
+
+
+
+# NEW (2026-10-06): kinetic + magnetic energy of one solution, used by solve_nopp.py to normalise eigenvectors.
+def kin_mag_energy(usol2, bsol2, Ra, Rb, ls=None):
+    '''
+    Returns [KE, ME] of one solution, integrated from r=Ra to r=Rb, with the same definitions
+    and routines as diagnose/spin_doctor: KE = (1/2) ∫ 𝐮⋅𝐮 dV (flow_worker), and
+    ME = Le2*OmgTau**2 * (1/2) ∫ 𝐛⋅𝐛 dV (magnetic_worker, scaled as in spin_doctor).
+    usol2, bsol2 come from expand_reshape_sol (0 if the field is absent). Serial; computes only
+    the energies, not the dissipation or power terms, so it is much cheaper than diagnose.
+    ls: the l values to include (default all), so that callers can split the sum among processes.
+    '''
+    setup_grid(Ra, Rb)
+    [ lp_u, lt_u, ll ] = ut.ell(par.m, par.lmax, par.symm)
+    [ lp_b, lt_b, _  ] = ut.ell(par.m, par.lmax, ut.bsymm)
+    KE, ME0 = 0.0, 0.0
+    for l in (ll if ls is None else ls):
+        if par.hydro:
+            if l in lp_u:
+                [ [qlm0], [slm0] ] = cheb2space_pol(l, lp_u, usol2[0], 0)
+                KE += cg_quad( energy_pol(l, qlm0, slm0), Ra, Rb, par.N, sqx)
+            elif l in lt_u:
+                [tlm0] = cheb2space_tor(l, lt_u, usol2[1], 0)
+                KE += cg_quad( energy_tor(l, tlm0), Ra, Rb, par.N, sqx)
+        if par.magnetic:
+            if l in lp_b:
+                [ [qlm0], [slm0] ] = cheb2space_pol(l, lp_b, bsol2[0], 0)
+                ME0 += cg_quad( energy_pol(l, qlm0, slm0), Ra, Rb, par.N, sqx)
+            elif l in lt_b:
+                [tlm0] = cheb2space_tor(l, lt_b, bsol2[1], 0)
+                ME0 += cg_quad( energy_tor(l, tlm0), Ra, Rb, par.N, sqx)
+    return [ KE, ME0 * par.OmgTau**2 * par.Le2 if par.magnetic else 0.0 ]

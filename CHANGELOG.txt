@@ -7,6 +7,7 @@ slow, what changed, and how it was checked. Tags give the date:
   [10-02] = commit 515d4e54 (2026-10-02)
   [10-03] = commit 7646daaa (2026-10-03)
   [10-03L] = Linux server tests (2026-10-03), after commit 6e504af9
+  [10-06] = Linux server tests (2026-10-06), after commit 0bd6faa0
 Timings and memory figures come from the Linux server (24-core Threadripper, 128 GB), except those
 marked "Mac" (48 GB Apple-silicon laptop).
 
@@ -67,6 +68,26 @@ bin/parameters.py
           server, at N = 840-976, cntl_1 = 1e-6 with BLR gave broken eigenvectors (spin_doctor resid u
           ~1, wrong Tor/Pol for modes 1-2) while PETSc's residuals stayed at 1e-13. With 1e-8 all runs
           matched plain MUMPS to ~1e-8, and were also faster.
+- [10-06] New Ncheb(Ek): N = 4.55*Ek**-0.242, rounded up to a multiple of 8 (minimum 48), instead of
+          17*Ek**-0.2. It is fitted to resolution tests of the torsional-mode case (Pm = 0.1,
+          Lambda = 10, lmax ~ N; prescale = 1, BLR, 8 ranks), tracking the same mode from Ek = 1e-5
+          to 1e-9. The smallest N with every spin_doctor residual < 1e-4 (with Gauss-Legendre
+          quadrature) was 64, 112, 192, 368 and 592 at Ek = 1e-5, 1e-6, 1e-7, 1e-8 and 1e-9, which fits
+          3.96*Ek**-0.242 within 7% (half decades included). The new formula adds a 15% margin:
+          80, 136, 232, 400 and 688. At these N the eigenvalues agree with much higher-N runs to
+          about 1e-6 - 1e-5 (relative).
+          The old formula gave about twice these N (428 at Ek = 1e-7, 1072 at 1e-9), i.e. 4-5 times
+          the memory. The default run (Ek = 1e-7) now uses N = 232 instead of 428: same eigenvalues,
+          all residuals <= 2e-6, 25 s instead of 82 s on 4 ranks.
+          Caveats: spin_doctor's residuals do not detect a too small lmax (at N = 192, lmax = 143
+          shifted lambda by 3e-3 with unchanged residuals), so keep lmax ~ N. At N_min itself the
+          eigenvalue can still be off by 1e-5 - 5e-5 (1.8e-3 at Ek = 1e-5). Other setups may need more
+          resolution.
+          Extrapolated to Ek = 1e-10: N = 1200, ~115-120 GB with BLR.
+- [10-06] New switch prescale, on by default (prescale = 1). solve_nopp.py then equilibrates
+          A - tau*B (Ruiz scaling, see bin/solve_nopp.py) before the shift-invert solve. Eigenvalues
+          are unchanged. Set prescale = 0 to switch it off. It applies to eigenvalue problems only and
+          is ignored (with a note) for forced problems.
 
 bin/solve_nopp.py
 -----------------
@@ -101,6 +122,56 @@ bin/solve_nopp.py
           Before, timing.dat held only the solve time. spin_doctor adds this time to its own.
 - [10-02] The file went from about 350 to 230 lines with the same results: eigenvalues agree to
           within MPI run-to-run noise (1e-11 or better).
+- [10-06] Optional Ruiz pre-scaling of the eigenvalue problem (par.prescale = 1). The raw matrix is
+          very badly scaled: the row and column factors span 4 to 6e9 at N = 976. The 1-norm
+          condition number of A - tau*B was 6e19 at N = 200 (5e11 after row-max equilibration,
+          3e11 after Ruiz; dividing block rows by l(l+1) made it worse, 2e21).
+          Each rank equilibrates its own rows of A - tau*B (10 iterations, column maxima combined
+          with MPI Allreduce), then solves Dr*A*Dc y = lambda Dr*B*Dc y. The eigenvectors are mapped
+          back (x = Dc*y) before the energy normalisation below, so spin_doctor and the
+          postprocessing see the same vectors as without prescale. The printed ||Ax-kBx||/||kx|| is
+          then for the scaled problem.
+          Forced problems ignore prescale (a note is printed).
+          load_mat is split into load_rows and to_mat, so the rows can be rescaled before the PETSc
+          matrix is built.
+          Cost at N = 976 on 8 ranks: 7-8 s, no change in peak memory (64-65 GB with BLR).
+          Checked on the torsional case at N = 976, 8 ranks, BLR (cntl_7 = 1e-14):
+            - cntl_1 = 1e-8: with prescale, resid u for modes 1-2 is 1.2e-7 / 1.0e-7 in all 5 runs,
+              against 2e-5 to 6e-4 without (3 runs). Lambda, residL, Tor/Pol and Mag/Kin are
+              unchanged. Wall time is 173-181 s, against 168-172 s.
+            - cntl_1 = 1e-6 (which broke eigenvectors in 6/7 earlier runs, and in 2/3 on this day):
+              0/6 broken with prescale, though 2 runs only reached resid u 0.06 and 1.5e-3.
+            - Plain MUMPS (no BLR) with prescale also gives 1.2e-7 / 1.0e-7, against 1.5e-4 / 3.4e-4
+              without, so the gain is not specific to BLR.
+          Second case, conducting IC (Chebys, N_cic = 16) + rotdyn = 1, N = 976, BLR, cntl_1 = 1e-8:
+            - without prescale, 2 of 3 runs were broken (resid u ~1 on all 3 modes, Tor/Pol 1-7
+              instead of 474/356/623; one run converged to eigenvalues 4-10% off), with PETSc
+              residuals still small;
+            - with prescale, 3 of 3 runs were clean (resid u 3e-8 to 1.3e-6, lambda within 5e-9 of
+              plain MUMPS), and so was plain MUMPS with prescale (resid u 1e-7, against 4e-5 without).
+          prescale = 0 and 1 give identical eigenvalues and spin_doctor output (torques included) at
+          N = 200 for the torsional case, the conducting-IC + rotdyn case and m = 1.
+          MUMPS's own scaling (icntl_8, default) is still needed: with icntl_8 = 0 the unscaled
+          problem gave wrong eigenvalues at N = 200 and INFOG(1) = -20 at N = 976.
+          runKore.sh runs end to end with prescale = 1.
+- [10-06] Eigenvectors are normalised so that their kinetic + magnetic energy is 1 (KE + ME = 1, as
+          spin_doctor computes them), instead of SLEPc's unit 2-norm of the coefficient vector,
+          which is not a physical normalisation. This applies to every eigenvalue run (prescale 0
+          or 1); forced solutions keep their physical amplitude. The complex phase is unchanged.
+          KE and ME are integrated over the fluid outer core (ricb to rcmb), with the same
+          utils4pp routines and Le2*OmgTau**2 factor as spin_doctor. The IC field and the rotdyn
+          rotation rates are scaled along with the rest but their energies are not counted.
+          All ranks get a copy of the eigenvectors (MPI Bcast) and share the l-components of the
+          energy sum: 6.9 s for 3 eigenvectors at N = 976 on 8 ranks (52 s on rank 0 alone), with
+          no change in peak memory.
+          Absolute outputs change accordingly. For example, spin_doctor's |Gamma|mag for the
+          torsional mode goes from 6.7e-7 to 3.1e-5. Eigenvalues, residuals and ratios
+          (Tor/Pol, Mag/Kin) are unchanged.
+          Checked at N = 200 and 428 (torsional; conducting IC + rotdyn = 1) and at N = 200 for
+          m = 1, with prescale 0 and 1: flow.dat KE + magnetic.dat ME = 1 to 12 digits, and the
+          torques agree between prescale settings and between N = 200 and 428. Also checked:
+          runKore.sh end to end, the spin-over test (hydrodynamic only, ME = 0), tools/ell_spectrum.py
+          and koreviz (meridional plot of u_phi) on the new output.
 
 bin/assemble.py
 ---------------
@@ -185,6 +256,23 @@ bin/utils.py
 
 bin/utils4pp.py
 ---------------
+- [10-06] The radial quadrature (setup_grid / cg_quad) uses Gauss-Legendre nodes and weights instead
+          of Chebyshev-Gauss nodes with the integrand multiplied by sqrt(1-x^2). That product is not
+          smooth at the ends, so the old quadrature was only second order. spin_doctor's resid0 (the
+          Dkin + Dint = 0 identity) measured the quadrature, not the solution: in the torsional case
+          at Ek = 1e-7 it fell as 1/N^2 (1.5e-2 at N = 200, 6.1e-4 at N = 976), and at fixed N = 200
+          it fell the same way when only the number of quadrature points was raised. Part of resid u
+          was quadrature error too.
+          With Gauss-Legendre on the same N points (same cost) at N = 200: resid0 ~ 1e-11 and resid u
+          2e-6 instead of 7e-5. resid b, residL, Tor/Pol, Mag/Kin and the torques are unchanged to
+          the printed digits. Also checked for m = 1 and for a conducting IC.
+          With rotdyn = 1, resid0 stays at ~5e-4. This is not a quadrature effect: the rotating
+          mantle and IC do work through the boundary stresses, and spin_doctor sets that term (pss)
+          to 0 for eigenvalue problems. With rotdyn = 0 the same case gives resid0 ~ 1e-10.
+- [10-06] New kin_mag_energy(usol2, bsol2, Ra, Rb, ls=None) returns [KE, ME] of one solution
+          with diagnose's definitions, but computes only the energies (no dissipation or power
+          terms). solve_nopp.py uses it to normalise the eigenvectors. ls restricts the sum to some
+          l values, so that the work can be split among MPI ranks.
 - [10-01] New angrymom_z(u_sol2) returns the fluid's axial angular momentum,
           L_z = (8*pi/3) * integral of r^3 t_10 dr (with Kore's Y_1^0 = cos(theta)).
           It applies to m = 0, symm = 1 and returns 0 otherwise. Checked against an analytic profile:
@@ -273,6 +361,13 @@ koreviz/plotlib.py, koreviz_mod/plotlib.py
           an m = 2 hydro mode and a thermal case. All 36 koreviz calls pass. Temperature in
           koreviz_mod still fails, as it did before, because its kmode treats every field as a
           vector.
+
+docs/page4.md
+-------------
+- [10-06] New documentation page "Using Kore", with a section "Solver Settings" that explains the
+          default solver options in parameters.py (petsc_opts, prescale), the eigenvector
+          normalisation, the optional MUMPS/SLEPc settings, forced problems, the resolution
+          (Ncheb, lmax) and how to check results with spin_doctor.
 
 Removed files
 -------------
