@@ -104,6 +104,12 @@ bin/parameters.py
               with and without BLR and prescale. N_cic = 32 and 64 were clean;
             - at N_cic = 64 every sigma_i2o from 1e-4 to 1 gives spin_doctor residuals < 1.4e-5 for all
               four modes found.
+- [10-07] New switch B0_cmb for how the background field meets a thin conducting wall at the CMB
+          (mantle = 'TWA'; see bin/utils.py):
+            - 'wall' (the default, also when parameters.py does not set B0_cmb): B0 satisfies the wall's
+              steady matching condition for any c_cmb;
+            - 'plain': B0 as before, which satisfies it only for c_cmb = 0 (and mu = 1).
+          A comment block above B0_cmb explains why c1_cmb does not act on B0 but c_cmb does.
 
 bin/solve_nopp.py
 -----------------
@@ -191,6 +197,30 @@ bin/solve_nopp.py
 
 bin/assemble.py
 ---------------
+- [10-07] bc_b_thinlayer (thin conducting wall, mantle = 'TWA' or innercore = 'TWA') checked against
+          Guervilly, Wood & Brummell (2013, arXiv:1307.3873), appendix A, eqs. (44)-(48). The toroidal
+          conditions and the c and c1 definitions matched. Two fixes in the poloidal condition:
+            - the c1 term had the coefficient (1/mu + 0.5*kj*c) instead of 1/mu. The extra 0.5*kj*c*c1
+              term is Roberts et al.'s (2010) O(h^2/delta^2) term, which the paper calls spurious (below
+              its eq. 45). Dropped, at both boundaries;
+            - nabF used l(l+1)*F/r instead of l(l+1)*F/r**2. Same at the CMB (r = 1); at the ICB the
+              l(l+1) part of the wall's eddy-current term was off by a factor 1/ricb.
+          The docstring now gives both conditions at each boundary, and assemble.py prints a warning
+          when a wall with c1 != 0 is used with a stress-free boundary or Ek = 0: the conditions take the
+          wall's dB/dt from the fluid's eta*lap(b), which needs the wall to move with the fluid next to it.
+          Checked with free magnetic decay (hydro = 0, N = 40), against the exact decay rates of a sphere
+          or shell bounded by thin walls (spherical Bessel functions, roots of the wall conditions):
+            - ricb = 0.35, walls at both boundaries (c_cmb = 0.1, c1_cmb = 0.05, c_icb = 0.2,
+              c1_icb = 0.1): all 32 eigenvalues match exact rates to 7e-15, and the 32 exact rates
+              nearest the target are all found. Before the fixes the poloidal rates were off by up to
+              2.8e-2 (the toroidal ones already matched);
+            - the same with mu = 1.5: 2.5e-14. Full sphere with a CMB wall: 2.4e-12.
+          Effect on the S2 torsional mode (Luo_S2, ricb = 0.35, Ek = 1e-7, Lambda = 10, Pm = 0.1,
+          no-slip, cnorm = 0.005061567359972097, Alfven time units, N = 232, c1 = 0.015):
+            - c_cmb = 0: unchanged;
+            - c_cmb = 1e-2: 1.7e-6 (relative);
+            - ICB wall with c_icb = 1e-2: 3.0e-5.
+          All spin_doctor residuals < 6e-6. Both CI tests pass.
 - [10-01] Matrix blocks are collected in Python lists and joined once with ut.unpackit, instead of
           calling np.concatenate on every append (28 places). Each concatenate copied everything
           accumulated so far, so the cost grew quadratically with the number of blocks per rank.
@@ -230,6 +260,40 @@ bin/assemble.py
 
 bin/utils.py
 ------------
+- [10-07] New B0_alpha_cmb. With mantle = 'TWA', B0_cmb = 'wall' and c_cmb != 0 (or mu != 1), h0..h3
+          add alpha*r**l to h, with alpha set by the wall's steady matching condition at the CMB,
+          (1/mu + l*c_cmb)*(r*h)' + l*h = 0.
+          Why: the wall condition is linear in B, so B0 has to satisfy it too. For a steady field the
+          wall's eddy currents vanish (Guervilly et al. 2013, eq. 44 with d/dt = 0), so c1_cmb drops out
+          but c_cmb stays. The full-sphere fields, the FDMs and 'dipole' were built for a vacuum outside,
+          i.e. for c_cmb = 0 and mu = 1.
+          What the added term does:
+            - it carries no current, so the currents in the fluid are unchanged;
+            - r**l satisfies r*h' - l*h = 0, so the ICB matching of B0_ic is kept;
+            - for l = 1 it is a uniform axial field.
+          'axial' (imposed from outside the core) is left alone. h0..h3 take a new argument cmb_pot (like
+          ic_pot) so that beta and alpha can be computed without recursion.
+          Checked:
+            - every B0, ricb = 0 and 0.35, c_cmb = 0.01 and 0.3, mu = 1 and 2: the wall condition holds
+              to 7e-16, the current (h'' + 2h'/r - l(l+1)h/r^2) is unchanged to 8e-16 (relative; 'dipole'
+              stays current-free), the ICB matching holds ('dipole' never had it), and h1..h3 match finite
+              differences of h0;
+            - the change alpha makes to the matrix A (Luo_S1, c_cmb = 0.3) equals 2*alpha times the
+              matrix of B0 = 'axial' to 4e-15, so the operators treat the added term like a supported field;
+            - S2 torsional mode (setup of the bin/assemble.py entry, c1_cmb = 0.015): alpha moves it by
+              2.6e-3 at c_cmb = 1e-2 (frequency +0.27%) and 5.6e-2 at c_cmb = 0.3 (+5.8%). FDM (l = 1)
+              torsional mode at c_cmb = 1e-2: 8e-4. All spin_doctor residuals < 6e-6;
+            - rotdyn = 1, c_cmb = 0.3: resid L = 5.8e-6, so the mantle torque (gamma_magnetic, which uses
+              h0 at the CMB) is consistent with the new B0.
+- [10-07] Fixed the sign of h2 and h3 for B0 = 'G21 dipole'. With h = r/6 - r**3/10 they returned
+          +(6/10)*r and +6/10 instead of h'' = -(6/10)*r and h''' = -6/10 (wrong since the 2022
+          revamp). h2 and h3 enter the B0 current terms of the operators and spin_doctor's diagnostics,
+          so G21 runs had a wrong J0. G21 is Luo_S1 divided by 30, so with cnorm = 'mag_energy' the two
+          must give the same eigenvalues.
+          Checked (ricb = 0.35, insulating IC and mantle, Ek = 1e-7, Lambda = 10, Pm = 0.1, N = 232):
+            - h1, h2, h3 now match finite differences of h0 for every B0, ricb = 0 and 0.35;
+            - before the fix, the 9 eigenvalues near 1.0i differed from Luo_S1's by up to 1.1e-3
+              (relative); after it they agree to 1e-8.
 - [10-07] New B0_beta_ic. With B0_ic = 'potential' and ricb > 0, h0..h3 add beta*r**-(l+1) to h,
           where beta = ricb**(l+1)*(ricb*h' - l*h)/(2l+1) is evaluated at the ICB.
           Why: the full-sphere fields (G21 dipole, Luo_S1, Luo_S2) do not match a potential field at

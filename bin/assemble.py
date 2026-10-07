@@ -49,7 +49,15 @@ def main():
     ll_mag     = ut.ell( par.m, par.lmax, par.symm*ut.symmB0)[:2]  # if B0 is antisymm then u has the opposite symm of b
 
     #print('rank',rank,ll_flo)
- 
+
+    # NEW (2026-10-07): the thin-wall conditions (bc_b_thinlayer) take the wall's dB/dt from the fluid's eta*lap(b),
+    # which holds only if the fluid next to the wall moves with it (no-slip, Ek > 0)
+    if rank == 0 and par.magnetic:
+        if par.mantle == 'TWA' and (par.bco == 0 or par.Ek == 0) and (par.c1_cmb != 0):
+            print('Warning: mantle = \'TWA\' needs a no-slip CMB (bco = 1, Ek > 0); the wall conditions are not valid here')
+        if par.innercore == 'TWA' and par.ricb > 0 and (par.bci == 0 or par.Ek == 0) and (par.c1_icb != 0):
+            print('Warning: innercore = \'TWA\' needs a no-slip ICB (bci = 1, Ek > 0); the wall conditions are not valid here')
+
     if rank == 0:
         alltop, allbot = ll_flo
     else:
@@ -1482,6 +1490,12 @@ def bc_b_thinlayer(l, loc, mu_vf, c, c1, boundary):
     '''
     Thin wall approximation boundary condition, following Roberts, Glatzmaier & Clune, GAFD 2010
     Assumes a thin electrically conducting layer at the top of the IC or at the bottom of the mantle.
+    NEW (2026-10-07): checked against Guervilly, Wood & Brummell (2013, arXiv:1307.3873), appendix A, eqs. (44)-(48),
+    with F = r*f (prop. to r^2 B_r), G = r*g (prop. to r^2 J_r), c = h*mu_w/(rj*mu_f), c1 = h*sigma_w/(rj*sigma_f):
+        CMB:  (1/mu + l*c)*F' + (l/r)*F + (1/mu)*c1*r*lapF = 0,              G + c1*r*G' = 0
+        ICB:  (1/mu + (l+1)*c)*F' - ((l+1)/r)*F - (1/mu)*c1*r*lapF = 0,      G - c1*r*G' = 0
+    where lapF = F'' - l(l+1)*F/r**2 stands for dF/dt/eta (the wall's eddy currents). That substitution needs the wall to
+    move with the fluid next to it, i.e. a no-slip boundary (bco = 1 or bci = 1, Ek > 0).
     '''
 
     out = ss.dok_matrix((1, ut.N1),dtype=complex)
@@ -1536,11 +1550,14 @@ def bc_b_thinlayer(l, loc, mu_vf, c, c1, boundary):
     G1 = rj*g1 + g
 
     kj = (l+0.5)*epsj-0.5
-    nabF = F2 - l*(l+1)*F/rj
+    nabF = F2 - l*(l+1)*F/rj**2  # FIX (2026-10-07): was F/rj, i.e. l(l+1)*f instead of l(l+1)*f/r (wrong at the ICB only)
 
     if loc == 'nocurl':  # section f
 
-        out[0,:] = mu_vf*F1 + (kj/rj)*F + epsj*kj*c*F1 + epsj*c1*rj*(mu_vf+0.5*epsj*kj*c)*nabF
+        # FIX (2026-10-07): the c1 term had the coefficient (mu_vf + 0.5*epsj*kj*c). The extra 0.5*kj*c*c1 term is
+        # Roberts et al.'s O(h^2/delta^2) term, kept in one Taylor series but not the other; Guervilly et al. (2013),
+        # below eq. (45), call it spurious. It is dropped here.
+        out[0,:] = mu_vf*F1 + (kj/rj)*F + epsj*kj*c*F1 + epsj*c1*rj*mu_vf*nabF
 
         if ut.symmB0 == -1:
             row0 = 2*par.hydro*ut.n + int( ut.N1 * ( l - ut.m_bot)/2 )    # starting row

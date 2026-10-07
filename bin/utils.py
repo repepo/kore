@@ -77,6 +77,12 @@ B0type = B0list.index(par.B0)
 B0_ic = getattr(par, 'B0_ic', 'potential')
 B0_ic_list = ['G21 dipole', 'Luo_S1', 'Luo_S2']  # full-sphere fields; 'axial' and the FDM already match, 'dipole' is a point source
 
+# NEW (2026-10-07): with a thin conducting wall at the CMB (mantle = 'TWA'), B0_cmb = 'wall' (the default, also if
+# parameters.py does not set B0_cmb) adds alpha*r**l to h, so that B0 meets the wall's steady matching condition for
+# any c_cmb (see B0_alpha_cmb, and the explanation next to B0_cmb in parameters.py). 'plain' keeps h unchanged.
+B0_cmb = getattr(par, 'B0_cmb', 'wall')
+B0_cmb_list = ['dipole', 'G21 dipole', 'Luo_S1', 'Luo_S2', 'FDM']  # fields from internal currents; 'axial' is imposed from outside
+
 ic_bc_list = ['insulator', 'TWA', 'conducting, Chebys', 'conducting, Bessel']
 innercore_mag_bc = ic_bc_list.index(par.innercore)
 
@@ -337,15 +343,38 @@ def B0_beta_ic(kind, l, ricb):
     if (ricb > 0) and (B0_ic == 'potential') and (kind in B0_ic_list):
         r  = np.array([ricb])
         a  = [par.beta, l, ricb, 0]
-        h  = h0(r, kind, a, ic_pot=False)[0]
-        dh = h1(r, kind, a, ic_pot=False)[0]
+        h  = h0(r, kind, a, ic_pot=False, cmb_pot=False)[0]
+        dh = h1(r, kind, a, ic_pot=False, cmb_pot=False)[0]
         return ricb**(l+1) * ( ricb*dh - l*h ) / (2*l+1)
     else:
         return 0
 
 
 
-def h0(rr, kind, args, ic_pot=True):
+def B0_alpha_cmb(kind, l, ricb):
+    '''
+    NEW (2026-10-07): coefficient alpha of the potential field alpha*r**l that h0..h3 add to h when mantle = 'TWA',
+    B0_cmb = 'wall' and c_cmb != 0 (or mu != 1). A steady B0 drives no current in the wall: its currents are
+    azimuthal, and the azimuthal E on the CMB is set by dB_r/dt = 0 (Faraday on a polar cap). So the c1_cmb term of
+    the thin-wall condition (the wall's eddy current) drops, and B0 has to satisfy
+        (1/mu + l*c_cmb)*(r*h)' + l*h = 0   at the CMB,
+    i.e. the condition bc_b_thinlayer imposes on b, with c1_cmb = 0. The full-sphere fields, the FDMs and 'dipole'
+    satisfy it only for c_cmb = 0 and mu = 1. The added term carries no current, and r**l keeps r*h' - l*h = 0 at
+    the ICB, so the currents in the fluid and the B0_ic matching are unchanged.
+    '''
+    if (par.mantle == 'TWA') and (B0_cmb == 'wall') and (kind in B0_cmb_list) and ((par.c_cmb != 0) or (par.mu != 1)):
+        r  = np.array([float(rcmb)])
+        a  = [par.beta, l, ricb, 0]
+        h  = h0(r, kind, a, cmb_pot=False)[0]
+        dh = h1(r, kind, a, cmb_pot=False)[0]
+        k  = 1/par.mu + l*par.c_cmb
+        return -( k*(h + rcmb*dh) + l*h ) / ( rcmb**l * ( k*(l+1) + l ) )
+    else:
+        return 0
+
+
+
+def h0(rr, kind, args, ic_pot=True, cmb_pot=True):
     '''
     Radial poloidal function for the background magnetic field times
     a power of r
@@ -399,6 +428,11 @@ def h0(rr, kind, args, ic_pot=True):
         if bic != 0:
             out = out + bic * r**(rp-l-1)
 
+    if cmb_pot:  # NEW (2026-10-07): CMB matching for a thin conducting wall, see B0_alpha_cmb
+        acmb = B0_alpha_cmb(kind, l, ricb)
+        if acmb != 0:
+            out = out + acmb * r**(rp+l)
+
     out2 = np.zeros_like(rr)
     out2[rr>0] = out
     if (ricb == 0) and (np.size(rr[rr>0]) == np.size(rr[rr<0])):
@@ -408,7 +442,7 @@ def h0(rr, kind, args, ic_pot=True):
 
 
 
-def h1(rr, kind, args, ic_pot=True):
+def h1(rr, kind, args, ic_pot=True, cmb_pot=True):
     '''
     First radial derivative of the function h0, times a power of r
     '''
@@ -452,6 +486,11 @@ def h1(rr, kind, args, ic_pot=True):
         if bic != 0:
             out = out + bic * (-(l+1)) * r**(rp-l-2)
 
+    if cmb_pot:  # NEW (2026-10-07): CMB matching for a thin conducting wall, see B0_alpha_cmb
+        acmb = B0_alpha_cmb(kind, l, ricb)
+        if acmb != 0:
+            out = out + acmb * l * r**(rp+l-1)
+
     out2 = np.zeros_like(rr)
     out2[rr>0] = out
     if (ricb == 0) and (np.size(rr[rr>0]) == np.size(rr[rr<0])):
@@ -461,7 +500,7 @@ def h1(rr, kind, args, ic_pot=True):
 
 
 
-def h2(rr, kind, args, ic_pot=True):
+def h2(rr, kind, args, ic_pot=True, cmb_pot=True):
     '''
     Second radial derivative of the function h0, times a power of r
     '''
@@ -482,7 +521,7 @@ def h2(rr, kind, args, ic_pot=True):
 
     elif kind == 'G21 dipole':  # Felix's dipole (Gerick 2021)
         l = 1
-        out = (6/10)*r**(1+rp)
+        out = -(6/10)*r**(1+rp)  # FIX (2026-10-07): sign, was +(6/10); h = r/6 - r**3/10 has h'' = -(6/10)*r
 
     elif kind == 'Luo_S1':
         l = 1
@@ -509,6 +548,11 @@ def h2(rr, kind, args, ic_pot=True):
         if bic != 0:
             out = out + bic * (l+1)*(l+2) * r**(rp-l-3)
 
+    if cmb_pot:  # NEW (2026-10-07): CMB matching for a thin conducting wall, see B0_alpha_cmb
+        acmb = B0_alpha_cmb(kind, l, ricb)
+        if acmb != 0:
+            out = out + acmb * l*(l-1) * r**(rp+l-2)
+
     out2 = np.zeros_like(rr)
     out2[rr>0] = out
     if (ricb == 0) and (np.size(rr[rr>0]) == np.size(rr[rr<0])):
@@ -518,7 +562,7 @@ def h2(rr, kind, args, ic_pot=True):
 
 
 
-def h3(rr, kind, args, ic_pot=True):
+def h3(rr, kind, args, ic_pot=True, cmb_pot=True):
     '''
     Third radial derivative of the function h0, times a power of r
     '''
@@ -539,7 +583,7 @@ def h3(rr, kind, args, ic_pot=True):
 
     elif kind == 'G21 dipole':  # Felix's dipole (Gerick 2021)
         l = 1
-        out = (6/10)*r**rp
+        out = -(6/10)*r**rp  # FIX (2026-10-07): sign, was +(6/10); h''' = -6/10
 
     elif kind == 'Luo_S1':
         l = 1
@@ -600,6 +644,11 @@ def h3(rr, kind, args, ic_pot=True):
         bic = B0_beta_ic(kind, l, ricb)
         if bic != 0:
             out = out + bic * (-(l+1)*(l+2)*(l+3)) * r**(rp-l-4)
+
+    if cmb_pot:  # NEW (2026-10-07): CMB matching for a thin conducting wall, see B0_alpha_cmb
+        acmb = B0_alpha_cmb(kind, l, ricb)
+        if acmb != 0:
+            out = out + acmb * l*(l-1)*(l-2) * r**(rp+l-3)
 
     out2 = np.zeros_like(rr)
     out2[rr>0] = out

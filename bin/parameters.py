@@ -149,6 +149,18 @@ mantle = 'TWA'  # Thin conductive wall layer (Roberts, Glatzmaier & Clune, 2010)
 c_cmb  = 1e-2  # Ratio (h*mu_wall)/(rcmb*mu_fluid)  (if mantle='TWA')  # torsional-mode setup (was 1e-5)
 c1_cmb = 1.5e-2  # Thin wall to fluid conductance ratio (if mantle='TWA')  # torsional-mode setup (was 1e-5): magnetic torque ~ viscous torque
 
+# NEW (2026-10-07): B0_cmb sets how the background field meets a thin conducting wall at the CMB (mantle = 'TWA').
+# A steady B0 drives no current in the wall: its currents are azimuthal, and the azimuthal electric field on the CMB
+# is set by dB_r/dt, which is zero. So c1_cmb (the wall's eddy currents) does not act on B0, but c_cmb does: B0 has
+# to satisfy (1/mu + l*c_cmb)*(r*h)' + l*h = 0 at the CMB, the thin-wall condition on b with c1_cmb = 0.
+#   'wall'  (default, also if B0_cmb is not set): utils.B0_alpha_cmb adds alpha*r**l to the poloidal scalar h,
+#           with alpha set by that condition. The added term carries no current and keeps the ICB matching of
+#           B0_ic, so the currents in the fluid stay the same. No effect if c_cmb = 0 and mu = 1, where every field
+#           already matches, nor for an insulating mantle or 'axial' (imposed from outside the core).
+#   'plain' : h unchanged. B0 then meets the wall condition only for c_cmb = 0 (and mu = 1).
+B0_cmb = 'wall'
+# B0_cmb = 'plain'
+
 # Electrical conductivity and permeability
 mu        = 1.0  # magnetic permeability ratio fluid outer core / vacuum
 mu_i2o    = 1.0  # magnetic permeability ratio solid inner core / fluid outer core
