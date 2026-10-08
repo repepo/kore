@@ -196,7 +196,7 @@ def main(ncpus):
             KP[i] = np.sum( udgn[lpi,0])  # Poloidal kinetic energy
             KT[i] = np.sum( udgn[lti,0])  # Toroidal kinetic energy
 
-            [ KE[i], Dkin0, Ensvel[i], Enscor[i], Ensvif[i], Ensbuo[i], Wlor0, Wthm0, Wcmp0 ] = np.sum( udgn, 0)
+            [ KE[i], Dkin0, Ensvel[i], Enscor[i], Ensvif[i], Ensbuo[i], Wlor0, Wthm0, Wcmp0, Wdr0 ] = np.sum( udgn, 0)
             Dkin[i] = Dkin0
             resens[i] = abs(Ensvel[i]*sigma+Enscor[i]-Ensbuo[i]-Ensvif[i]) / max((abs(Ensvel[i]*sigma),abs(Enscor[i]),abs(Ensbuo[i]),abs(Ensvif[i])))
             # Dint[i] = par.ViscosD * Dint0

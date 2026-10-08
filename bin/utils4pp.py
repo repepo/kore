@@ -109,6 +109,21 @@ def cg_quad(f, Ra, Rb, N, sqx):
 
 
 
+def rad_quad(f, Ra, Rb, wk):
+    '''
+    Computes the radial integral of f over [Ra,Rb] as sum(wk*f)*(Rb-Ra)/2.
+    Assumes f is sampled at the nodes xk in [-1,1] (mapped to [Ra,Rb]) whose quadrature weights are wk.
+    diagnose() uses Gauss-Legendre nodes and weights (exact for polynomials of degree < 2*Nq).
+    Note: cg_quad above (Gauss-Chebyshev applied to f*sqrt(1-x**2)) is only O(1/N**2) accurate
+    when f does not vanish at Ra and Rb.
+    '''
+
+    out = np.sum( wk * f ) * (Rb-Ra)/2
+
+    return out
+
+
+
 def expand_sol(sol,vsymm):
     '''
     Expands the ricb=0 solution with ut.N1 coeffs to have full N coeffs,
@@ -741,7 +756,6 @@ def flow_worker( l ):
 
     Ra = par.ricb
     Rb = ut.rcmb
-    N = par.N
 
     kinep = np.zeros_like( rk, dtype='complex64')
     kinet = np.zeros_like( rk, dtype='complex64')
@@ -809,10 +823,10 @@ def flow_worker( l ):
     kinep = 0.5*dotprod_pol(l, velq[0], vels[0], velq[0], vels[0] )*rho0
     kinet = 0.5*dotprod_tor(l, velt[0], velt[0])*rho0
 
-    # kinetic energy dissipation 𝐮⋅((∇⋅𝛔)/ρ) aka power of viscous force
+    # kinetic energy dissipation ρ𝐮⋅((∇⋅𝛔)/ρ) = 𝐮⋅(∇⋅𝛔) aka power of viscous force
     if par.ViscosD>0:
-        kindp = dotprod_pol(l, velq[0], vels[0], vifq[0], vifs[0])
-        kindt = dotprod_tor(l, velt[0], vift[0])
+        kindp = dotprod_pol(l, velq[0], vels[0], vifq[0], vifs[0])*rho0
+        kindt = dotprod_tor(l, velt[0], vift[0])*rho0
     else:
         kindp = 0
         kindt = 0
@@ -852,27 +866,27 @@ def flow_worker( l ):
         #     wlort = lorentz_power_tor(l, tlm0, tlmb)
 
     # Integrals
-    Kene_l = cg_quad( kinep + kinet, Ra, Rb, N, sqx)  # ∫ ½ ρ 𝐮⋅𝐮 dV 
-    Dkin_l = cg_quad( kindp + kindt, Ra, Rb, N, sqx)  # ∫ 𝐮⋅(∇⋅𝛔) dV
-    # Dint_l = cg_quad( intdp + intdt, Ra, Rb, N, sqx)
-    # Wlor_l = cg_quad( wlorp + wlort, Ra, Rb, N, sqx)
-    # Wthm_l = cg_quad( wther, Ra, Rb, N, sqx )
-    # Wcmp_l = cg_quad( wcomp, Ra, Rb, N, sqx )
+    Kene_l = rad_quad( kinep + kinet, Ra, Rb, wk)  # ∫ ½ ρ 𝐮⋅𝐮 dV 
+    Dkin_l = rad_quad( kindp + kindt, Ra, Rb, wk)  # ∫ 𝐮⋅(∇⋅𝛔) dV
+    # Dint_l = rad_quad( intdp + intdt, Ra, Rb, wk)
+    # Wlor_l = rad_quad( wlorp + wlort, Ra, Rb, wk)
+    # Wthm_l = rad_quad( wther, Ra, Rb, wk )
+    # Wcmp_l = rad_quad( wcomp, Ra, Rb, wk )
 
-    Enstro_vel_l = cg_quad( enstro_vel_p + enstro_vel_t, Ra, Rb, N, sqx)
-    Enstro_cor_l = cg_quad( enstro_cor_p + enstro_cor_t, Ra, Rb, N, sqx)
-    Enstro_vif_l = cg_quad( enstro_vif_p + enstro_vif_t, Ra, Rb, N, sqx)
+    Enstro_vel_l = rad_quad( enstro_vel_p + enstro_vel_t, Ra, Rb, wk)
+    Enstro_cor_l = rad_quad( enstro_cor_p + enstro_cor_t, Ra, Rb, wk)
+    Enstro_vif_l = rad_quad( enstro_vif_p + enstro_vif_t, Ra, Rb, wk)
     if par.thermal:
-        Enstro_buo_l = cg_quad( enstro_buo_p + enstro_buo_t, Ra, Rb, N, sqx)
+        Enstro_buo_l = rad_quad( enstro_buo_p + enstro_buo_t, Ra, Rb, wk)
     else:
         Enstro_buo_l = 0
 
-    #test_l = -2*cg_quad( test_p + test_t, Ra, Rb, N, sqx)
+    #test_l = -2*rad_quad( test_p + test_t, Ra, Rb, wk)
 
     Wdr_l = 0
     if par.diff_rot:
         wdr = diff_rot_power(l, lp, lt, P, T)
-        Wdr_l = cg_quad( wdr, Ra, Rb, N, sqx )
+        Wdr_l = rad_quad( wdr, Ra, Rb, wk )
     
     # return [ Kene_l, Dkin_l, Dint_l, Wlor_l, Wthm_l, Wcmp_l ]
     return [ Kene_l, Dkin_l, Enstro_vel_l, Enstro_cor_l, Enstro_vif_l, Enstro_buo_l, 0, 0, 0, Wdr_l ]
@@ -910,7 +924,7 @@ def worker_4plot( l ):
 
 
 
-def magnetic_worker(l, lp, lt, b_sol2, u_sol2, Ra, Rb, N, sqx):
+def magnetic_worker(l, lp, lt, b_sol2, u_sol2, Ra, Rb, wk):
     '''
     Returns the l-component of the magnetic energy (1/2) ∫ 𝐛⋅𝐛 dV,
     the magnetic diffusion via ∫ 𝐛⋅∇²𝐛 dV, and the l-component
@@ -947,15 +961,15 @@ def magnetic_worker(l, lp, lt, b_sol2, u_sol2, Ra, Rb, N, sqx):
         indut = dotprod_tor(l, tlm0, tlmi)
 
    # Integrals
-    Mene_l = cg_quad( menep + menet, Ra, Rb, N, sqx)
-    Mdfs_l = cg_quad( mdfsp + mdfst, Ra, Rb, N, sqx)
-    Indu_l = cg_quad( indup + indut, Ra, Rb, N, sqx)
+    Mene_l = rad_quad( menep + menet, Ra, Rb, wk)
+    Mdfs_l = rad_quad( mdfsp + mdfst, Ra, Rb, wk)
+    Indu_l = rad_quad( indup + indut, Ra, Rb, wk)
 
     return [ Mene_l, Mdfs_l, Indu_l ]
 
 
 
-def thermal_worker(l, lp, t_sol2, u_sol2, Ra, Rb, N, sqx, flag):
+def thermal_worker(l, lp, t_sol2, u_sol2, Ra, Rb, wk, flag):
     '''
     Returns the l-component of the thermal "energy" i.e. (1/2) ∫ θ² dV,
     the thermal "dissipation" i.e. ∫ θ ∇²θ dV,
@@ -976,9 +990,9 @@ def thermal_worker(l, lp, t_sol2, u_sol2, Ra, Rb, N, sqx, flag):
             thadv = thermal_advect(l, hlm0, qlm0*rk/(l*(l+1)), flag)
         
     # Integrals
-    Tene_l = cg_quad( thene, Ra, Rb, N, sqx )
-    Dthm_l = cg_quad( thdis, Ra, Rb, N, sqx )
-    Wadv_l = cg_quad( thadv, Ra, Rb, N, sqx )
+    Tene_l = rad_quad( thene, Ra, Rb, wk )
+    Dthm_l = rad_quad( thdis, Ra, Rb, wk )
+    Wadv_l = rad_quad( thadv, Ra, Rb, wk )
 
     return [ Tene_l, Dthm_l, Wadv_l ]
 
@@ -1861,10 +1875,13 @@ def diagnose( usol, bsol2, tsol, csol2, Ra, Rb, ncpus):
     tsol2 = tsol
 
 
-    # xk are the grid points for the integration using Gauss-Chebyshev quadratures.
-    # Always go from -1 to 1
-    i = np.arange(0,par.N)
-    xk = np.cos( (i+0.5)*np.pi/par.N )
+    # xk, wk are the nodes and weights for the radial integrals, Gauss-Legendre quadrature.
+    # Always go from -1 to 1. The number of nodes Nq is decoupled from par.N: the integrands are
+    # products of Chebyshev series of degree < N and smooth background profiles, sampled exactly at
+    # any radius by funcheb. Nq = 3N/2 integrates exactly polynomials of degree < 3N.
+    global wk
+    Nq = (3*par.N + 1)//2
+    xk, wk = np.polynomial.legendre.leggauss(Nq)
 
     # rk are the corresponding radial points in the desired integration interval: from Ra to Rb
     global rk
@@ -1875,8 +1892,6 @@ def diagnose( usol, bsol2, tsol, csol2, Ra, Rb, ncpus):
     x0 = xcheb(rk, par.ricb, 1)
 
     # the following are needed to compute the integrals (i.e. the quadratures)
-    global sqx
-    sqx = np.sqrt(1-xk**2)
     global r2
     r2 = rk**2
     global r3
@@ -1955,18 +1970,18 @@ def diagnose( usol, bsol2, tsol, csol2, Ra, Rb, ncpus):
     
     # if par.magnetic:
     #     ppb = [ pool.apply_async( magnetic_worker,
-    #             args=( l, lp_b, lt_b, bsol2, usol2, Ra, Rb, par.N, sqx)) for l in ll ]   
+    #             args=( l, lp_b, lt_b, bsol2, usol2, Ra, Rb, wk)) for l in ll ]   
     #     out_b = np.array([pp0.get() for pp0 in ppb])
 
     # if par.thermal:
     #     ppt = [ pool.apply_async( thermal_worker,
-    #             args=( l, lp_u, tsol2, usol2, Ra, Rb, par.N, sqx, 'thermal' )) for l in lp_u ]   
+    #             args=( l, lp_u, tsol2, usol2, Ra, Rb, wk, 'thermal' )) for l in lp_u ]   
     #     out_t = np.array([pp0.get() for pp0 in ppt])
 
     # if par.compositional:
     #     # we use again the thermal_worker but with the compositional solution as argument
     #     ppc = [ pool.apply_async( thermal_worker,
-    #             args=( l, lp_u, csol2, usol2, Ra, Rb, par.N, sqx, 'compositional' )) for l in lp_u ]   
+    #             args=( l, lp_u, csol2, usol2, Ra, Rb, wk, 'compositional' )) for l in lp_u ]   
     #     out_c = np.array([pp0.get() for pp0 in ppc])
 
     pool.close()

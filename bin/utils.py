@@ -1018,9 +1018,7 @@ def B0_norm():
         elif par.cnorm in ['mag_energy', 'Schmitt2012']:  # total magnetic energy is set to 1 or 2
 
             N = 240
-            i = np.arange(0,N)
-            xk = np.cos( (i+0.5)*np.pi/N )  # colocation points, from -1 to 1
-            sqx = np.sqrt(1-xk**2)
+            xk, wk = np.polynomial.legendre.leggauss(N)  # Gauss-Legendre nodes and weights, from -1 to 1
             rk = 0.5*(1-ricb)*( xk + 1 ) + ricb
             r2 = rk**2
 
@@ -1032,7 +1030,7 @@ def B0_norm():
             f2 = 2*rk*y0*y1
             f3 = r2*y1**2
 
-            integ = (np.pi/N) * ( (1-ricb)/2 ) * np.sum( sqx*f0*( f1+f2+f3 ) )
+            integ = ( (1-ricb)/2 ) * np.sum( wk*f0*( f1+f2+f3 ) )
 
             if par.cnorm == 'mag_energy':
                 out = 1/np.sqrt(integ)
