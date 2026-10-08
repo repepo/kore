@@ -185,6 +185,45 @@ class default_params():
         # Tolerance for solver
         self.tol = 1e-16
 
+        # PETSc/SLEPc/MUMPS runtime options, loaded by solve.py into the PETSc options database
+        # (option name without the leading '-'; use '' for flags without a value).
+        # solve.py passes only the group matching the problem type (forcing == 0 or not).
+        # Anything given on the command line (e.g. mpiexec -n 4 ./bin/solve.py -eps_balance twoside) takes precedence.
+        self.petsc_opts = {
+
+            # ---------------------------------------- eigenvalue problems (forcing == 0): eps_*, st_*
+            'st_type'                      : 'sinvert',             # shift-and-invert around tau (use with 'TM')
+            'st_pc_factor_mat_solver_type' : 'mumps',               # direct LU solve with MUMPS
+            'st_mat_mumps_cntl_1'          : 1e-8,                  # pivot threshold; avoids INFOG(1)=-9; 1e-6 with BLR broke eigenvectors at N>=840
+            'st_mat_mumps_icntl_35'        : 2,                     # block low-rank (BLR) factorization: ~13% less memory, ~2x faster
+            'st_mat_mumps_cntl_7'          : 1e-14,                 # BLR tolerance; 1e-12 broke eigenvectors at N>=640-840
+            'eps_error_relative'           : '::ascii_info_detail', # print relative errors after the solve
+            # 'eps_balance'                : 'twoside',             # cleaner eigenvalues for final runs, ~+50% time
+            # 'st_mat_mumps_icntl_14'      : 50,                    # extra MUMPS workspace (%), only if -9 still appears
+            # 'st_mat_mumps_icntl_22'      : 1,                     # out-of-core factors, cuts memory ~half
+            # 'st_mat_mumps_ooc_tmpdir'    : '/nvm/scratch',        # put OOC files on a real disk, not tmpfs /tmp
+            # 'st_mat_mumps_icntl_28'      : 2,                     # parallel ordering ...
+            # 'st_mat_mumps_icntl_29'      : 2,                     # ... with ParMETIS
+
+            # ---------------------------------------- forced problems (forcing > 0): ksp_*, pc_*, mat_*
+            'ksp_type'                     : 'preonly',             # direct solve, no Krylov iterations
+            'pc_type'                      : 'lu',                  # (default GMRES/ILU does not converge)
+            'pc_factor_mat_solver_type'    : 'mumps',               # LU with MUMPS
+            # 'mat_mumps_cntl_1'           : 1e-6,                  # pivot threshold, if MUMPS reports INFOG(1)=-9
+            # 'mat_mumps_icntl_22'         : 1,                     # out-of-core factors, cuts memory ~half
+            # 'mat_mumps_ooc_tmpdir'       : '/nvm/scratch',        # put OOC files on a real disk, not tmpfs /tmp
+        }
+
+        # Pre-scaling of the eigenvalue problem (forcing == 0 only; ignored for forced problems).
+        # Default on (set prescale = 0 to switch it off). With prescale = 1, solve.py applies Ruiz row+column equilibration to A - tau*B (10 iterations)
+        # and solves Dr*A*Dc y = lambda Dr*B*Dc y instead. Eigenvalues are unchanged; eigenvectors are mapped
+        # back (x = Dc*y) before they are written, so spin_doctor and postprocessing see unscaled vectors.
+        # Lowers the condition number of A - tau*B by 6-8 orders of magnitude and gave cleaner eigenvectors
+        # (conductive_IC torsional-mode tests: spin_doctor resid u ~1e-7 instead of ~1e-4 for modes 1-2 at N = 976).
+        # Costs 7-8 s at N = 976 on 8 ranks, before the factorization; no change in peak memory.
+        # solve.py's ||Ax-kBx||/||kx|| is then printed for the scaled problem; judge accuracy with spin_doctor.
+        self.prescale = 1
+
 
 
         # ----------------------------------------------------------------------------------------------------------------------

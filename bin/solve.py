@@ -2,15 +2,20 @@
 '''
 kore solver script. Writes solutions to disk.
 
-To use, first export desired solver options:
+To use, optionally export extra runtime solver options:
 > export opts='...'
 
 and then execute:
 > mpiexec -n ncpus ./bin/solve.py $opts
 
+Solver options are taken from par.petsc_opts (see params_default.py); options given on the
+command line take precedence.
+
 You can use the spin_doctor.py script after the solutions are written to disk.
 '''
 
+from timeit import default_timer as timer
+t_start = timer()  # wall clock from here, before scipy/petsc/utils are imported
 import sys
 import slepc4py
 slepc4py.init(sys.argv)
@@ -18,12 +23,138 @@ from petsc4py import PETSc
 from slepc4py import SLEPc
 import scipy.io as sio
 import scipy.sparse as ss
-from timeit import default_timer as timer
 import numpy as np
 
 from parameters import par
 import utils as ut
 
+
+
+def load_mat(fname):
+    '''
+    Reads a CSR matrix from an .npz file written by assemble.py and returns it as a
+    distributed PETSc matrix. The file is memory-mapped, so each rank reads only its own rows.
+    '''
+    return to_mat(*load_rows(fname))
+
+
+def load_rows(fname):
+    '''
+    Reads this rank's rows of the CSR matrix in fname (memory-mapped .npz from assemble.py).
+    Returns (n, Istart, Iend, indptr, indices, data), with indptr starting at 0.
+    '''
+    M = ut.load_npz_mmap(fname)
+    n = int(M['shape'][0])
+    # rows owned by this rank, same default distribution as PETSc vectors
+    Istart, Iend = PETSc.Vec().createMPI(n, comm=PETSc.COMM_WORLD).getOwnershipRange()
+    indptr = np.array(M['indptr'][Istart:Iend+1])
+    lo, hi = indptr[0], indptr[-1]
+    indices = np.array(M['indices'][lo:hi])
+    data = np.array(M['data'][lo:hi])
+    del M
+    return n, Istart, Iend, indptr-lo, indices, data
+
+
+def to_mat(n, Istart, Iend, indptr, indices, data):
+    '''
+    Builds a distributed PETSc matrix from this rank's rows, as returned by load_rows.
+    '''
+    return PETSc.Mat().createAIJ(size=((Iend-Istart, n), (Iend-Istart, n)),
+                                 csr=(indptr, indices, data),
+                                 comm=PETSc.COMM_WORLD)
+
+
+# Ruiz pre-scaling of the eigenvalue problem, used when par.prescale = 1.
+def ruiz_scaling(Arows, Brows, tau, iters=10):
+    '''
+    Ruiz row+column equilibration of M = A - tau*B (infinity norm). Each iteration takes
+    r_i = sqrt(max_j |M_ij|), c_j = sqrt(max_i |M_ij|) of the current scaled matrix and sets
+    M <- diag(1/r) M diag(1/c). Arows and Brows are this rank's rows (from load_rows).
+    Returns Dr (this rank's rows) and Dc (all columns, on every rank) such that diag(Dr) M diag(Dc)
+    is the scaled matrix. Works on the local rows only; the column maxima are combined with one
+    MPI Allreduce per iteration, so memory stays distributed.
+    '''
+    from mpi4py import MPI
+    comm = PETSc.COMM_WORLD.tompi4py()
+    n, Istart, Iend = Arows[:3]
+    nloc = Iend - Istart
+    csr = lambda X: ss.csr_matrix((X[5], X[4], X[3]), shape=(nloc, n))
+    M = (csr(Arows) - tau*csr(Brows)).tocsr()
+    a0 = np.abs(M.data)
+    ptr, cols = M.indptr, M.indices
+    rows = np.repeat(np.arange(nloc), np.diff(ptr))
+    del M
+    nonempty = ptr[1:] > ptr[:-1]
+    dr = np.ones(nloc)
+    dc = np.ones(n)
+    for k in range(iters):
+        a = a0*dr[rows]
+        a *= dc[cols]
+        r = np.zeros(nloc)
+        r[nonempty] = np.maximum.reduceat(a, ptr[:-1][nonempty])
+        c = np.zeros(n)
+        np.maximum.at(c, cols, a)
+        comm.Allreduce(MPI.IN_PLACE, c, op=MPI.MAX)
+        del a
+        r[r == 0] = 1.0  # empty rows/columns are left alone
+        c[c == 0] = 1.0
+        dr /= np.sqrt(r)
+        dc /= np.sqrt(c)
+    return dr, dc
+
+
+def scale_rows(X, dr, dc):
+    '''
+    In place: this rank's rows X (from load_rows) become diag(dr) X diag(dc).
+    '''
+    n, Istart, Iend, indptr, indices, data = X
+    rows = np.repeat(np.arange(Iend-Istart), np.diff(indptr))
+    X[5] = data * (dr[rows] * dc[indices])  # data may be real (B) or complex (A)
+
+
+def normalise_energy(vecs):
+    '''
+    In place: scales each eigenvector (one per column) so that its kinetic energy ∫ ½ ρ 𝐮⋅𝐮 dV is 1,
+    with KE as spin_doctor computes it (from ricb to rcmb, Gauss-Legendre quadrature, rho0 weight).
+    The other fields (thermal, ...) are scaled along. The complex phase is left as SLEPc returns it.
+    Vectors with zero KE (or runs without flow) are left unchanged.
+    Called on all ranks with the full vecs on each; the l-components are shared among the ranks
+    and their energies summed with an MPI Allreduce.
+    '''
+    if not par.hydro:
+        return
+    import utils4pp as upp
+    from mpi4py import MPI
+    comm = PETSc.COMM_WORLD.tompi4py()
+    rank, size = comm.Get_rank(), comm.Get_size()
+    ll = ut.ell(par.m, par.lmax, par.symm)[2]
+    t0 = timer()
+    for i in range(vecs.shape[1]):
+        usol2 = upp.expand_reshape_sol(split_fields(vecs[:, i])['flow'], par.symm)
+        KE = upp.kinetic_energy(usol2, par.ricb, ut.rcmb, ll[rank::size])
+        KE = comm.allreduce(KE, op=MPI.SUM)
+        if KE > 0:
+            vecs[:, i] /= np.sqrt(KE)
+    PETSc.Sys.Print('Eigenvectors normalised to kinetic energy = 1 in', round(timer()-t0, 2), 'seconds')
+
+
+def split_fields(vec):
+    '''
+    Splits solution vector(s) vec (one solution per column) into the individual fields,
+    in the order the unknowns are stacked in A and B (see ut.sizmat).
+    Returns a dict {field name: block of rows}, only for the fields present.
+    '''
+    blocks = [ ('flow',        2*ut.n   * par.hydro),
+               ('magnetic',    2*ut.n   * par.magnetic),
+               ('thermal',     ut.n     * par.thermal),
+               ('composition', ut.n     * par.compositional) ]
+    fields = {}
+    offset = 0
+    for name, size in blocks:
+        if size > 0:
+            fields[name] = vec[ offset : offset + size ]
+        offset += size
+    return fields
 
 
 def main():
@@ -33,58 +164,44 @@ def main():
     size = PETSc.COMM_WORLD.getSize()
     opts = PETSc.Options()
 
+    # solver options from parameters.py, unless already given on the command line.
+    # eps_/st_ options are for eigenvalue problems, ksp_/pc_/mat_ ones for forced problems
+    skip = ('ksp_', 'pc_', 'mat_') if par.forcing == 0 else ('eps_', 'st_')
+    for key, val in getattr(par, 'petsc_opts', {}).items():
+        if not key.startswith(skip) and not opts.hasName(key):
+            opts.setValue(key, val)
+
     if rank == 0:
         tic = timer()
 
+    # optional Ruiz pre-scaling (par.prescale), eigenvalue problems only
+    prescale = getattr(par, 'prescale', 0)
+    tau = par.rtau + par.itau*1j
+    if prescale and par.forcing != 0:
+        Print('Note: prescale applies to eigenvalue problems only; not used for this forced problem.')
+        prescale = 0
+
     # ------------------------------------------------------------------ reads matrix A
-    A = ut.load_csr('A.npz')
-    nb_l,nb_c = A.shape
-
-    MA = PETSc.Mat()
-    MA.create(PETSc.COMM_WORLD)
-    MA.setSizes([nb_l,nb_l])
-    MA.setType('mpiaij')
-    MA.setFromOptions()
-    MA.setUp()
-
-    Istart,Iend = MA.getOwnershipRange()
-    indptrA = A[Istart:Iend,:].indptr
-    indicesA = A[Istart:Iend,:].indices
-    dataA = A[Istart:Iend,:].data
-    del A
-
-    MA.setPreallocationCSR(csr=(indptrA,indicesA))
-    MA.setValuesCSR(indptrA,indicesA,dataA)
-    MA.assemblyBegin()
-    MA.assemblyEnd()
-    del indptrA,indicesA,dataA
-    # done reading and preparing A
+    if prescale:  # A and B are read as local rows, rescaled, then built
+        t_ps = timer()
+        Arows = list(load_rows('A.npz'))
+        Brows = list(load_rows('B.npz'))
+        dr, dc = ruiz_scaling(Arows, Brows, tau)
+        scale_rows(Arows, dr, dc)
+        scale_rows(Brows, dr, dc)
+        MA = to_mat(*Arows)
+        MB = to_mat(*Brows)
+        del Arows, Brows, dr
+        Print('Ruiz pre-scaling of A - tau*B done in', round(timer()-t_ps, 2), 'seconds '
+              '(the residuals printed below are for the scaled problem)')
+    else:
+        MA = load_mat('A.npz')
+    nb_l = MA.getSize()[0]
 
     if par.forcing == 0: # --------------------------------------------- if eigenvalue problem, reads matrix B
 
-        B = ut.load_csr('B.npz')
-        nb_l,nb_c = B.shape
-        nbl = opts.getInt('nbl',nb_l)
-
-        MB = PETSc.Mat()
-        MB.create(PETSc.COMM_WORLD)
-        MB.setSizes([nbl,nbl])
-        MB.setType('mpiaij')
-        MB.setFromOptions()
-        MB.setUp()
-
-        Istart,Iend = MB.getOwnershipRange()
-        indptrB = B[Istart:Iend,:].indptr
-        indicesB = B[Istart:Iend,:].indices
-        dataB = B[Istart:Iend,:].data
-        del B
-
-        MB.setPreallocationCSR(csr=(indptrB,indicesB))
-        MB.setValuesCSR(indptrB,indicesB,dataB)
-        MB.assemblyBegin()
-        MB.assemblyEnd()
-        del indptrB,indicesB,dataB
-        # done reading and preparing B
+        if not prescale:
+            MB = load_mat('B.npz')
 
 
         # -------------------------------------------------------------- setup eigenvalue solver
@@ -96,101 +213,46 @@ def main():
         E.setDimensions(par.nev)
         E.setTolerances(par.tol,par.maxit)
 
-        wep = par.which_eigenpairs
-        if wep == 'LM':
-            E.setWhichEigenpairs(SLEPc.EPS.Which.LARGEST_MAGNITUDE)
-        elif wep == 'SM':
-            E.setWhichEigenpairs(SLEPc.EPS.Which.SMALLEST_MAGNITUDE)
-        elif wep == 'LR':
-            E.setWhichEigenpairs(SLEPc.EPS.Which.LARGEST_REAL)
-        elif wep == 'SR':
-            E.setWhichEigenpairs(SLEPc.EPS.Which.SMALLEST_REAL)
-        elif wep == 'LI':
-            E.setWhichEigenpairs(SLEPc.EPS.Which.LARGEST_IMAGINARY)
-        elif wep == 'SI':
-            E.setWhichEigenpairs(SLEPc.EPS.Which.SMALLEST_IMAGINARY)
-        elif wep == 'TM':
-            E.setWhichEigenpairs(SLEPc.EPS.Which.TARGET_MAGNITUDE)
-        elif wep == 'TR':
-            E.setWhichEigenpairs(SLEPc.EPS.Which.TARGET_REAL)
-        elif wep == 'TI':
-            E.setWhichEigenpairs(SLEPc.EPS.Which.TARGET_IMAGINARY)
+        # 'TM' -> TARGET_MAGNITUDE, 'LR' -> LARGEST_REAL, etc.
+        which = { 'L':'LARGEST', 'S':'SMALLEST', 'T':'TARGET' }[par.which_eigenpairs[0]] + '_' + \
+                { 'M':'MAGNITUDE', 'R':'REAL', 'I':'IMAGINARY' }[par.which_eigenpairs[1]]
+        E.setWhichEigenpairs(getattr(SLEPc.EPS.Which, which))
 
-        tau = par.rtau + par.itau * 1j
         E.setTarget(tau)
         E.setFromOptions()
         # done setting up solver
 
         E.solve() # ---------------------------------------------------- solve and collect solution
 
-        class solution:
-            pass  # class intentionally empty, this is just to have sol.*stuff*
+        nconv = E.getConverged()
 
-        sol = solution()
+        if nconv > 0:
 
-        # recover results
-        sol.its                   = E.getIterationNumber()
-        sol.neps_type             = E.getType()
-        sol.tol, sol.maxit        = E.getTolerances()
-        sol.nev, sol.ncv, sol.mpd = E.getDimensions()
-        sol.nconv                 = E.getConverged()
-        sol.k                     = np.zeros((1,sol.nconv),dtype=complex)
-        sol.vec                   = np.zeros((nb_l,sol.nconv),dtype=complex)
-        sol.tau                   = E.getTarget()
-
-        if sol.nconv > 0:
-
-            # initialize eigenvector placeholder
             v = MA.createVecLeft()
+            tozero, V = PETSc.Scatter.toZero(v)  # created once, reused for every eigenvector
+            eigval = np.zeros((nconv, 2))        # column 0 real part, column 1 imaginary part
+            vecs = np.zeros((nb_l, nconv), dtype=complex) if rank == 0 else None
 
-            for i in range(0,sol.nconv):
-                # gets eigenvalue and eigenvector for each solution found
-                # note that petsc uses complex scalars, so k and v are generally complex
-                # no need for separate real and imag (hence the None below)
-                k = E.getEigenpair(i, v, None)
-                # collects and assembles the vector in the zeroth processor
-                tozero,V = PETSc.Scatter.toZero(v)
-                tozero.begin(v,V)
-                tozero.end(v,V)
-                tozero.destroy()
-
-                sol.k[0,i] = k
+            for i in range(nconv):
+                k = E.getEigenpair(i, v)   # complex scalars, so no separate imaginary vector
+                tozero.scatter(v, V)       # gather the eigenvector on rank 0
+                eigval[i] = k.real, k.imag
                 if rank == 0:
-                    sol.vec[0:,i] = V[0:]
+                    vecs[:, i] = V.getArray()
+
+            tozero.destroy(); V.destroy(); v.destroy()
+
+            # every rank gets a copy of the eigenvectors for the energy normalisation
+            if rank != 0:
+                vecs = np.empty((nb_l, nconv), dtype=complex)
+            PETSc.COMM_WORLD.tompi4py().Bcast(vecs, root=0)
+            if prescale:  # eigenvectors of the scaled problem -> x = Dc*y
+                vecs *= dc[:, None]
+            normalise_energy(vecs)  # kinetic energy = 1 for every eigenvector
 
             if rank == 0:
-
-                # Eigenvalues, 1 row per solution found, column 0 is the real part, column 1 is the imaginary part
-                eigval = np.hstack([np.real(sol.k).transpose(),np.imag(sol.k).transpose()])
-
-                # Eigenvectors, each column is a solution
-                rEigv = np.copy(np.real(sol.vec))
-                iEigv = np.copy(np.imag(sol.vec))
-
-                if par.hydro == 1:
-                    # each solution for u has 2*ut.n coeffs
-                    ru = rEigv[ :2*ut.n, : ]
-                    iu = iEigv[ :2*ut.n, : ]
-
-                # each solution for b has 2*ut.n coefs
-                if par.magnetic == 1:
-                    offset = 2*ut.n*par.hydro
-                    rb = rEigv[ offset : offset + 2*ut.n, : ]
-                    ib = iEigv[ offset : offset + 2*ut.n, : ]
-
-                # each solution for the temperature has ut.n coeffs
-                if par.thermal == 1:
-                    offset = 2*ut.n + par.magnetic * 2*ut.n
-                    rtemp = rEigv[ offset : offset + ut.n, : ]
-                    itemp = iEigv[ offset : offset + ut.n, : ]
-
-                # each solution for the composition has ut.n coeffs
-                if par.compositional == 1:
-                    offset = 2*ut.n + par.magnetic * 2*ut.n + par.thermal * ut.n
-                    rcomp = rEigv[ offset : offset + ut.n, : ]
-                    icomp = iEigv[ offset : offset + ut.n, : ]
-
-                success = sol.nconv
+                fields = split_fields(vecs)  # each column is a solution
+                success = nconv
 
         else:
 
@@ -241,32 +303,14 @@ def main():
 
         if rank == 0:
 
-            if par.hydro == 1:
-                offset = 0
-                ru = np.reshape(np.real(VR[ offset : offset + 2*ut.n ]),(-1,1))
-                iu = np.reshape(np.imag(VR[ offset : offset + 2*ut.n ]),(-1,1))
-
-            if par.magnetic == 1:
-                offset = par.hydro * 2*ut.n
-                rb = np.reshape(np.real(VR[ offset : offset + 2*ut.n ]),(-1,1))
-                ib = np.reshape(np.imag(VR[ offset : offset + 2*ut.n ]),(-1,1))
-
-            if par.thermal == 1:
-                offset = par.hydro * 2*ut.n + par.magnetic * 2*ut.n
-                rtemp = np.reshape(np.real(VR[ offset : offset + ut.n ]),(-1,1))
-                itemp = np.reshape(np.imag(VR[ offset : offset + ut.n ]),(-1,1))
-
-            if par.compositional == 1:
-                offset = par.hydro * 2*ut.n + par.magnetic * 2*ut.n + par.thermal * ut.n
-                rcomp = np.reshape(np.real(VR[ offset : offset + ut.n ]),(-1,1))
-                icomp = np.reshape(np.imag(VR[ offset : offset + ut.n ]),(-1,1))
-
-            if np.sum([np.isnan(ru), np.isnan(iu), np.isinf(ru), np.isinf(iu)]) > 0:
+            VR = np.reshape(VR[:], (-1,1))
+            if np.all(np.isfinite(VR)):
+                success = 1 # got actual numbers ... but it could still be a bad solution ;)
+                fields = split_fields(VR)
+                print('Solution(s) computed')
+            else:
                 success = 0
                 print('Solver crashed, got nan\'s!')
-            else:
-                success = 1 # got actual numbers ... but it could still be a bad solution ;)
-                print('Solution(s) computed')
 
     #PETSc.COMM_WORLD.Barrier()
 
@@ -282,34 +326,14 @@ def main():
                     np.savetxt(deig, eigval)
 
             # one solution per column
-            if par.hydro == 1:
-                with open('real_flow.field','wb') as dflo1:
-                    np.savetxt(dflo1, ru)
-                with open('imag_flow.field','wb') as dflo2:
-                    np.savetxt(dflo2, iu)
-
-            if par.magnetic == 1:
-                with open('real_magnetic.field','wb') as dmag1:
-                    np.savetxt(dmag1, rb)
-                with open('imag_magnetic.field','wb') as dmag2:
-                    np.savetxt(dmag2, ib)
-
-            if par.thermal == 1:
-                with open('real_thermal.field','wb') as dtemp1:
-                    np.savetxt(dtemp1, rtemp)
-                with open('imag_thermal.field','wb') as dtemp2:
-                    np.savetxt(dtemp2, itemp)
-
-            if par.compositional == 1:
-                with open('real_composition.field','wb') as dcomp1:
-                    np.savetxt(dcomp1, rcomp)
-                with open('imag_composition.field','wb') as dcomp2:
-                    np.savetxt(dcomp2, icomp)
+            for name, blk in fields.items():
+                np.savetxt('real_'+name+'.field', np.real(blk))
+                np.savetxt('imag_'+name+'.field', np.imag(blk))
 
         toc2 = timer()
-        print('Solve done in',toc2-tic,'seconds')
+        print('Solve done in',toc2-t_start,'seconds')
         with open('timing.dat','ab') as dtim:
-                    np.savetxt(dtim, np.array([toc2-tic]))
+                    np.savetxt(dtim, np.array([toc2-t_start]))  # total solve time, incl. imports
 
     # ------------------------------------------------------------------ done
     return 0

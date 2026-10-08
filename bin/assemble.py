@@ -11,6 +11,7 @@ and assembles the matrix A, the matrix B, or the forcing vector.
 '''
 
 from timeit import default_timer as timer
+t_start = timer()  # wall clock from here, before scipy/utils are imported
 import scipy.sparse.linalg as ssl
 import scipy.sparse as ss
 #import pywigxjpf as wig
@@ -426,6 +427,7 @@ def main():
 
     if rank == 0:
         tic = timer()
+    loc_list = [[], [], []]  # this rank's A entries, as lists of (data, row, col) arrays
 
 
     if par.hydro == 1:
@@ -452,12 +454,7 @@ def main():
 
             # ------------------------------------------------------
             col = basecol + col0
-            if l == loc_top[0]:  # create loc_list if first iteration
-                mtx.eliminate_zeros()
-                mtx = mtx.tocoo()
-                loc_list = [mtx.data, mtx.row + row , mtx.col + col]
-            else:  # append to loc_list if it already exists
-                loc_list = ut.packit(loc_list, mtx, row, col)
+            loc_list = ut.packit(loc_list, mtx, row, col)
 
             if par.diff_rot : 
                 for i in [-2, 0, 2] : 
@@ -560,7 +557,7 @@ def main():
             # ----------------------------------------------------------------------------------------------------------
             bc_u_list = bc_u_spherical( l, 'section_u' )
             for q in [0,1,2]:
-                loc_list[q]= np.concatenate( ( loc_list[q], bc_u_list[q] ) )
+                loc_list[q].append( bc_u_list[q] )
             # ----------------------------------------------------------------------------------------------------------
 
 
@@ -671,7 +668,7 @@ def main():
                 pass
             else:
                 for q in [0,1,2]:
-                    loc_list[q]= np.concatenate( ( loc_list[q], bc_u_list[q] ) )
+                    loc_list[q].append( bc_u_list[q] )
             # ----------------------------------------------------------------------------------------------------------
 
 
@@ -735,15 +732,7 @@ def main():
             # --------------------------------------------
             col  =  basecol + col0
 
-            if par.hydro == 0:
-                if l == loc_mag_f[0]:  # create loc_list if first iteration
-                    mtx.eliminate_zeros()
-                    mtx = mtx.tocoo()
-                    loc_list = [mtx.data, mtx.row + row , mtx.col + col]
-                else:  # append to loc_list if it already exists
-                    loc_list = ut.packit(loc_list, mtx, row, col)
-            else:
-                loc_list = ut.packit(loc_list, mtx, row, col)
+            loc_list = ut.packit(loc_list, mtx, row, col)
 
 
             # Toroidal magnetic terms (diffusion term + iwb term) ------------------------------------------------------
@@ -773,9 +762,9 @@ def main():
 
             for q in [0,1,2]:
                 if par.ricb > 0:
-                    loc_list[q]= np.concatenate( ( loc_list[q], bc_b_list_inner[q], bc_b_list_outer[q] ) )
+                    loc_list[q] += [ bc_b_list_inner[q], bc_b_list_outer[q] ]
                 else:
-                    loc_list[q]= np.concatenate( ( loc_list[q], bc_b_list_outer[q] ) )
+                    loc_list[q].append( bc_b_list_outer[q] )
             # ----------------------------------------------------------------------------------------------------------
 
 
@@ -864,9 +853,9 @@ def main():
 
             for q in [0,1,2]:
                 if par.ricb > 0:
-                    loc_list[q]= np.concatenate( ( loc_list[q], bc_b_list_inner[q], bc_b_list_outer[q] ) )
+                    loc_list[q] += [ bc_b_list_inner[q], bc_b_list_outer[q] ]
                 else:
-                    loc_list[q]= np.concatenate( ( loc_list[q], bc_b_list_outer[q] ) )
+                    loc_list[q].append( bc_b_list_outer[q] )
             # ----------------------------------------------------------------------------------------------------------
 
 
@@ -909,15 +898,7 @@ def main():
                 # ------------------------------------
                 col = basecol + col0
 
-                if par.hydro == 0:
-                    if l == loc_top[0]:  # create loc_list if first iteration
-                        mtx.eliminate_zeros()
-                        mtx = mtx.tocoo()
-                        loc_list = [mtx.data, mtx.row + row , mtx.col + col]
-                    else:  # append to loc_list if it already exists
-                        loc_list = ut.packit(loc_list, mtx, row, col)
-                else:
-                    loc_list = ut.packit(loc_list, mtx, row, col)
+                loc_list = ut.packit(loc_list, mtx, row, col)
 
             # loc_list = ut.packit( loc_list, mtx, row, col)
 
@@ -928,7 +909,7 @@ def main():
             bc_theta_list = bc_theta_spherical( l )
             if bc_theta_list is not None:
                 for q in [0,1,2]:
-                    loc_list[q]= np.concatenate( ( loc_list[q], bc_theta_list[q] ) )
+                    loc_list[q].append( bc_theta_list[q] )
             # ----------------------------------------------------------------------------------------------------------
 
 
@@ -975,56 +956,20 @@ def main():
             # ----------------------------------------------------------------------------------------------------------
             bc_xi_list = bc_xi_spherical( l )
             for q in [0,1,2]:
-                loc_list[q]= np.concatenate( ( loc_list[q], bc_xi_list[q] ) )
+                loc_list[q].append( bc_xi_list[q] )
             # ----------------------------------------------------------------------------------------------------------
 
 
 
     # ------------------------------------------------------------------------------------------------------------------ A matrix assembly
-    # We use comm.allgather here to figure out the right size
-    # for the local variables bdat, brow and bcol.
-    # They all need to be the same size for comm.Gather to work with them.
-
-    s = np.shape(loc_list[0])[0]
-    alls = comm.allgather(s)
-    length = max(alls)
-
-    bdat = np.zeros(length,dtype=complex)
-    brow = -np.ones(length,dtype=np.int64)
-    bcol = -np.ones(length,dtype=np.int64)
-
-    bdat[:s] = loc_list[0]
-    brow[:s] = loc_list[1]
-    bcol[:s] = loc_list[2]
-
-    # fdat, frow and fcol are variables that will store the full A matrix
-    # a Gather command will send all local data (bdat, brow, bcol)
-    # from each rank to the rank 0 process.
-
-    fdat = None
-    frow = None
-    fcol = None
-
-    # We need to initialize explicitely the variables in rank 0:
-    if rank == 0:
-        fdat = np.zeros(length*sizas,dtype=complex)
-        frow = np.zeros(length*sizas,dtype=np.int64)
-        fcol = np.zeros(length*sizas,dtype=np.int64)
-
-
-    # and finally gather all local data to (fdat,frow,fcol)
-
-    comm.Gather([bdat,MPI.DOUBLE_COMPLEX],[fdat,MPI.DOUBLE_COMPLEX],root=0)
-    comm.Gather(brow,frow,root=0)
-    comm.Gather(bcol,fcol,root=0)
+    A = gather_csr(comm, loc_list, complex)  # full A on rank 0, None elsewhere
+    del loc_list
 
     if rank == 0:
 
-        ix = np.where(frow >= 0)
-        A = ss.csr_matrix((fdat[ix], (frow[ix], fcol[ix])), shape=(ut.sizmat,ut.sizmat), dtype=complex)
         if par.forcing == 0:
             Anorm = ssl.norm(A)
-            A = A/Anorm
+            A.data *= 1/Anorm  # in place, no copy of A (same arithmetic as scipy's A/Anorm)
 
         toc = timer()
         print('--------------------------------------------')
@@ -1034,6 +979,7 @@ def main():
         toc = timer()
         print(' Matrix A written to disk in', '{: 4.3f}'.format(toc-tic), 'seconds')
         print('--------------------------------------------')
+        del A
 
     comm.Barrier()
 
@@ -1049,6 +995,7 @@ def main():
 
         if rank == 0:
             tic = timer()
+        loc_list = [[], [], []]  # this rank's B entries, as lists of (data, row, col) arrays
 
         if par.hydro == 1:
 
@@ -1060,12 +1007,7 @@ def main():
 
                 mtx = -op.inertia(l,'u','upol',0)
 
-                if l == loc_top[0]:  # create loc_list if first iteration
-                    mtx.eliminate_zeros()
-                    mtx = mtx.tocoo()
-                    loc_list = [mtx.data, mtx.row + row , mtx.col + col]
-                else:  # append to loc_list if it already exists
-                    loc_list = ut.packit(loc_list, mtx, row, col)
+                loc_list = ut.packit(loc_list, mtx, row, col)
 
 
             # ----------------------------------------------------------------------- B matrix, 1curl (hydro), section v
@@ -1093,15 +1035,7 @@ def main():
                 else :
                     print('These magnetic parameters are not coded yet')
 
-                if par.hydro == 0:
-                    if l == loc_mag_f[0]:  # create loc_list if first iteration
-                        mtx.eliminate_zeros()
-                        mtx = mtx.tocoo()
-                        loc_list = [mtx.data, mtx.row + row , mtx.col + col]
-                    else:  # append to loc_list if it already exists
-                        loc_list = ut.packit(loc_list, mtx, row, col)
-                else:
-                    loc_list = ut.packit(loc_list, mtx, row, col)
+                loc_list = ut.packit(loc_list, mtx, row, col)
 
 
             # --------------------------------------------------------------- B matrix, 1curl (induction eq.), section g
@@ -1128,15 +1062,7 @@ def main():
 
                 mtx = op.entropy(l,'h','', 0)
 
-                if par.hydro == 0:
-                    if l == loc_top[0]:  # create loc_list if first iteration
-                        mtx.eliminate_zeros()
-                        mtx = mtx.tocoo()
-                        loc_list = [mtx.data, mtx.row + row , mtx.col + col]
-                    else:  # append to loc_list if it already exists
-                        loc_list = ut.packit(loc_list, mtx, row, col)
-                else:
-                    loc_list = ut.packit(loc_list, mtx, row, col)
+                loc_list = ut.packit(loc_list, mtx, row, col)
 
 
                 # loc_list = ut.packit(loc_list, mtx, row, col)
@@ -1156,48 +1082,13 @@ def main():
 
 
         # ---------------------------------------------------------------------- B matrix assembly
-        # We use comm.Allgather here to figure out the right size
-        # for the local variables bdat, brow and bcol.
-        # They all need to be the same size for comm.Gather to work with them.
-
-        s = np.shape(loc_list[0])[0]
-        alls = comm.allgather(s)
-        length = max(alls)
-
-        bdat = np.zeros(length)
-        brow = -np.ones(length)
-        bcol = -np.ones(length)
-
-        bdat[:s] = loc_list[0]
-        brow[:s] = loc_list[1]
-        bcol[:s] = loc_list[2]
-
-        # fdat, frow and fcol are variables that will store the full B matrix
-        # a Gather command will send all local data from each rank (bdat, brow, bcol)
-        # to the rank 0 process.
-
-        fdat = None
-        frow = None
-        fcol = None
-
-        # We need to initialize explicitely the variables in rank 0:
-        if rank == 0:
-            fdat = np.zeros(length*sizas)
-            frow = np.zeros(length*sizas)
-            fcol = np.zeros(length*sizas)
-
-        # and finally gather all local data to (fdat,frow,fcol)
-        comm.Gather(bdat,fdat,root=0)
-        comm.Gather(brow,frow,root=0)
-        comm.Gather(bcol,fcol,root=0)
+        B = gather_csr(comm, loc_list, float)  # full B on rank 0, None elsewhere
+        del loc_list
 
         if rank == 0:
-            #print(ut.sizmat)
-            ix = np.where(frow >= 0)
-            B = ss.csr_matrix( ( fdat[ix], (frow[ix], fcol[ix]) ) , shape=(ut.sizmat,ut.sizmat) )
             #Bnorm = ssl.norm(B)
             #Bnorm=1
-            B = B/Anorm
+            B.data *= 1/Anorm  # in place, no copy of B (same arithmetic as scipy's B/Anorm)
 
             toc = timer()
             print(' Matrix B assembled in', '{: 4.3f}'.format(toc-tic), 'seconds')
@@ -1212,12 +1103,54 @@ def main():
 
 
 
+    if rank == 0:
+        print(' Total time (incl. imports):', '{: 4.3f}'.format(timer()-t_start), 'seconds')
+
     # Free memory space
     #wig.wig_temp_free()
     #wig.wig_table_free()
 
     # ------------------------------------------------------------------------------------------------------------------ done!
     return 0
+
+
+
+def gather_csr(comm, loc_list, dtype):
+    '''
+    Gathers the matrix entries of all ranks on rank 0 and returns the full
+    ut.sizmat x ut.sizmat CSR matrix there (None on the other ranks).
+    loc_list is this rank's [data, row, col] as built with ut.packit.
+    Uses Gatherv with the exact count per rank, so nothing is padded or filtered afterwards.
+    '''
+    rank = comm.Get_rank()
+    data, row, col = ut.unpackit(loc_list)  # join the per-block arrays once
+    data = np.ascontiguousarray(data, dtype=dtype)
+    row  = np.ascontiguousarray(row,  dtype=np.int32)  # ut.sizmat is far below 2**31
+    col  = np.ascontiguousarray(col,  dtype=np.int32)
+
+    counts = comm.gather(data.size, root=0)
+    fdat = frow = fcol = None
+    if rank == 0:
+        counts = np.array(counts, dtype=np.int64)
+        displs = np.concatenate([[0], np.cumsum(counts)[:-1]])
+        fdat = np.empty(counts.sum(), dtype=dtype)
+        frow = np.empty(counts.sum(), dtype=np.int32)
+        fcol = np.empty(counts.sum(), dtype=np.int32)
+        recv = lambda buf, mpitype: [buf, counts, displs, mpitype]
+    else:
+        recv = lambda buf, mpitype: None
+
+    mpitype = MPI.DOUBLE_COMPLEX if np.dtype(dtype) == np.complex128 else MPI.DOUBLE
+    comm.Gatherv([data, mpitype], recv(fdat, mpitype), root=0)
+    comm.Gatherv([row, MPI.INT],  recv(frow, MPI.INT),  root=0)
+    comm.Gatherv([col, MPI.INT],  recv(fcol, MPI.INT),  root=0)
+    del data, row, col
+
+    if rank == 0:
+        if frow.size and (frow.min() < 0 or fcol.min() < 0 or frow.max() >= ut.sizmat or fcol.max() >= ut.sizmat):
+            raise ValueError('matrix entry outside 0..sizmat-1')
+        return ss.csr_matrix((fdat, (frow, fcol)), shape=(ut.sizmat, ut.sizmat), dtype=dtype)
+    return None
 
 
 

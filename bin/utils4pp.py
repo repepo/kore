@@ -1860,21 +1860,12 @@ def buoyancy(l):
 
 
 
-def diagnose( usol, bsol2, tsol, csol2, Ra, Rb, ncpus):
+def setup_grid(Ra, Rb):
     '''
-    Computes kinetic energy, internal and kinetic energy dissipation,
-    and input power from body forces. Integrated From r=Ra to r=Rb, and
-    angularly over the whole sphere. Processed in parallel using ncpus.
+    Sets, as module globals, the Gauss-Legendre radial grid (rk, wk, ...) over [Ra,Rb] and the background
+    profiles sampled on it (rho0, lho1..lho5, vsc0..vsc3, const0, ...), as needed by the workers below.
+    Called by diagnose() and kinetic_energy().
     '''
-    [out_u, out_b] = [0,0]
-    [out_t, out_c] = [0,0]
-
-    global usol2
-    usol2 = usol
-    global tsol2
-    tsol2 = tsol
-
-
     # xk, wk are the nodes and weights for the radial integrals, Gauss-Legendre quadrature.
     # Always go from -1 to 1. The number of nodes Nq is decoupled from par.N: the integrands are
     # products of Chebyshev series of degree < N and smooth background profiles, sampled exactly at
@@ -1954,6 +1945,46 @@ def diagnose( usol, bsol2, tsol, csol2, Ra, Rb, ncpus):
     vsc2 = rap.viscoX( rk, 2)
     global vsc3
     vsc3 = rap.viscoX( rk, 3)
+
+
+
+def kinetic_energy(usol, Ra, Rb, ls=None):
+    '''
+    Returns the kinetic energy ∫ ½ ρ 𝐮⋅𝐮 dV of the flow solution usol (as given by expand_reshape_sol),
+    integrated from Ra to Rb, with the same integrand and quadrature as flow_worker (i.e. spin_doctor's KE).
+    ls restricts the sum to some l values (default: all), so that the work can be split among MPI ranks.
+    '''
+    global usol2
+    usol2 = usol
+    setup_grid(Ra, Rb)
+    if ls is None:
+        ls = ut.ell(par.m, par.lmax, par.symm)[2]
+    out = 0.0
+    for l in ls:
+        [ velq, vels, velt ] = velocity(l)
+        kinep = 0.5*dotprod_pol(l, velq[0], vels[0], velq[0], vels[0] )*rho0
+        kinet = 0.5*dotprod_tor(l, velt[0], velt[0])*rho0
+        out += rad_quad( kinep + kinet, Ra, Rb, wk)
+    return out
+
+
+
+def diagnose( usol, bsol2, tsol, csol2, Ra, Rb, ncpus):
+    '''
+    Computes kinetic energy, internal and kinetic energy dissipation,
+    and input power from body forces. Integrated From r=Ra to r=Rb, and
+    angularly over the whole sphere. Processed in parallel using ncpus.
+    '''
+    [out_u, out_b] = [0,0]
+    [out_t, out_c] = [0,0]
+
+    global usol2
+    usol2 = usol
+    global tsol2
+    tsol2 = tsol
+
+
+    setup_grid(Ra, Rb)  # quadrature grid and background profiles, as module globals
 
     [ lp_u, lt_u, ll ] = ut.ell(par.m, par.lmax, par.symm)  # the l-indices of the flow field
     #[ lp_b, lt_b, _  ] = ut.ell(par.m, par.lmax, ut.bsymm)  # the l-indices of the magnetic field

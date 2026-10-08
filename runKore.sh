@@ -1,17 +1,16 @@
 #!/bin/bash
 
-source $HOME/.kore_env.sh
-
 ncpus=10
 
-opts='-st_type sinvert -eps_error_relative ::ascii_info_detail'
-#opts='-st_type sinvert -eps_error_relative -st_mat_mumps_icntl_14 1000 ::ascii_info_detail'
-
-#opts='-ksp_type preonly -pc_type lu'
+# Solver options are taken from petsc_opts in bin/params_default.py (override them in bin/parameters.py).
+# Anything put in opts is added on the command line and takes precedence, e.g.:
+#opts='-eps_balance twoside'
+opts=''
 
 ./bin/submatrices.py $ncpus
 mpiexec -n $ncpus ./bin/assemble.py
 mpiexec -n $ncpus ./bin/solve.py $opts
+./bin/spin_doctor.py $ncpus | tee out2
 #./postprocess.py
 
 RUN_FOLDER=../run

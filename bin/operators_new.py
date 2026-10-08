@@ -477,7 +477,7 @@ def induction(l, section, component, offdiag):
     out = 0
     offd = 0
     m = par.m
-    l = np.float128(l)  # to avoid overflow errors at high N
+    l = np.longdouble(l)  # to avoid overflow errors at high N (np.float128 does not exist on Apple silicon)
     L = l*(l+1)
     cdipole = ((par.magnetic == 1) and (par.B0 == 'dipole') and (par.ricb > 0))  # boolean
 

@@ -160,15 +160,27 @@ def chegevara( pkey1 , opkey, labl, S):
 
 def packit( lista_local, mtx, row, col):
     '''
-    Appends sparse matrix data, row, and col info to lista_local
+    Appends sparse matrix data, row, and col info to lista_local.
+    lista_local is [data, row, col], each a list of arrays, joined only once at the end with unpackit
+    (concatenating at every call copies everything accumulated so far, O(n^2) overall)
     '''
     mtx.eliminate_zeros()
     mtx = mtx.tocoo()
     blk = [mtx.data, mtx.row + row, mtx.col + col]
     for q in [0,1,2]:
-        lista_local[q]= np.concatenate( ( lista_local[q], blk[q] ) )
+        lista_local[q].append( blk[q] )
 
     return lista_local
+
+
+
+def unpackit( lista_local ):
+    '''
+    Joins the lists of arrays built with packit into three arrays: data, row, col
+    '''
+    if len(lista_local[0]) == 0:  # no entries on this rank
+        return [ np.zeros(0), np.zeros(0, dtype=int), np.zeros(0, dtype=int) ]
+    return [ np.concatenate( lista_local[q] ) for q in [0,1,2] ]
 
 
 
@@ -1081,43 +1093,6 @@ def Slam(lamb,N):
 
 
 
-def csl0( s, lamb, j, k):
-    '''
-    Computes the c_s^lambda(j,k) needed for the Mlam (multiplication) matrix
-    '''
-
-    p1=1; p3=1
-    for t in range(0,s):
-        p1 = p1*(lamb+t)/float(1+t)
-        p3 = p3*(2*lamb+j+k-2*s+t)/float(lamb+j+k-2*s+t)
-
-    p2=1; p4=1
-    for t in range(0,j-s):
-        p2 = p2*(lamb+t)/float(1+t)
-        p4 = p4*(k-s+1+t)/float(k-s+lamb+t)
-
-    return p1*p2*p3*p4*(j+k+lamb-2.*s)/float(j+k+lamb-s)
-
-
-
-def csl(svec,lamb,j,k):
-    '''
-    recursion for c_s^lambda, starting from c_svec[0]^lambda(j,k)
-    svec must be a vector of s values
-    **do not confuse with the (j,k) entry of the Mlam matrix**
-    '''
-    out = np.zeros(np.shape(svec))
-    out[0] = csl0(svec[0], lamb, j, k)
-    for i,s in enumerate(svec[0:-1],1) :
-        tmp1 = (j+k+lamb-s)*(lamb+s)*(j-s)*(2*lamb+j+k-s)*(k-s+lamb)
-        tmp2 = (j+k+lamb-s+1)*(s+1)*(lamb+j-s-1)*(lamb+j+k-s)*(k-s+1)
-        out[i] = out[i-1]*tmp1/float(tmp2)
-        k=k+2
-
-    return out
-
-
-
 def Mlam(a0,lamb,vector_parity):
     '''
     Multiplication matrix. a0 are the cofficients in the C^(lamb) basis and lamb
@@ -1164,33 +1139,53 @@ def Mlam(a0,lamb,vector_parity):
 
         if lamb > 0:
 
-            out = ss.dok_matrix((N,N))
-            for j in jrange:
+            # Vectorised over all entries (j,k) with |j-k| <= bw, the others are zero.
+            # Only the s terms with 2*s+j-k <= bw contribute (a1 is zero beyond bw), at most bw//2+1 of them.
+            # Assumes integer lamb, as for all the C^(lamb) bases used in Kore.
+            jj  = np.array(jrange)
+            off = np.arange(-bw, bw+1)
+            J = np.repeat(jj, off.size)
+            K = (jj[:,None] + off[None,:]).ravel()
+            keep = (K >= 0) & (K < N)
+            if vector_parity != 0:
+                keep &= (K%2 == idk)
+            J = J[keep]
+            K = K[keep]
 
-                k1 = max( 0, j-bw-1 )
-                k2 = min( N, j+bw+2 )
-                ka = range(k1,k2)
+            d     = np.abs(J-K)
+            s0    = np.maximum(0, K-J)
+            nterm = np.minimum(K, s0 + (bw-d)//2) - s0  # number of terms after the first one
 
-                if vector_parity != 0:
-                    krange = ka[ka[idk]%2::2]
-                else:
-                    krange = ka
+            # c_{s0}^lamb(K,d), each product telescoped to lamb or lamb-1 factors
+            jf = K.astype(float)
+            kf = d.astype(float)
+            s  = s0.astype(float)
+            n  = jf - s
+            a  = lamb + jf + kf - 2*s
+            p  = np.ones_like(s)
+            for i in range(1,lamb): p *= (s+i)/i                    # (lamb)_s / s!
+            for i in range(1,lamb): p *= (n+i)/i                    # (lamb)_n / n!
+            for i in range(lamb):   p *= (a+s+i)/(a+i)              # (a+lamb)_s / (a)_s
+            for i in range(lamb-1): p *= (kf-s+1+i)/(kf-s+1+n+i)    # (kf-s+1)_n / (kf-s+lamb)_n
+            c = p*(jf+kf+lamb-2*s)/(jf+kf+lamb-s)
 
-                for k in krange:
+            val = a1[2*s0+J-K]*c
 
-                    s0 = max(0,k-j)
-                    s = np.arange(s0,k+1)
-                    idx = 2*s+j-k
-                    a = a1[idx]
+            # forward recursion in s, only for the entries that still have nonzero terms
+            for q in range(1, bw//2+1):
+                act = nterm >= q
+                if not act.any():
+                    break
+                sa = s[act]; ja = jf[act]; ka = kf[act]
+                tmp1 = (ja+ka+lamb-sa)*(lamb+sa)*(ja-sa)*(2*lamb+ja+ka-sa)*(ka-sa+lamb)
+                tmp2 = (ja+ka+lamb-sa+1)*(sa+1)*(lamb+ja-sa-1)*(lamb+ja+ka-sa)*(ka-sa+1)
+                c[act]    = c[act]*tmp1/tmp2
+                s[act]   += 1
+                kf[act]  += 2
+                val[act] += a1[(2*s[act]+J[act]-K[act]).astype(int)]*c[act]
 
-                    if s0 == 0:
-                        cvec = csl(s,lamb,k,j-k)
-                    elif s0 == k-j:
-                        cvec = csl(s,lamb,k,k-j)
-
-                    out[j,k] = np.dot(a,cvec)
-
-            out = out.tocsr()
+            out = ss.csr_matrix((val, (J, K)), shape=(N,N))
+            out.eliminate_zeros()
 
         else:
 
@@ -1341,6 +1336,33 @@ def load_csr(filename):
     # utility to load sparse matrices efficiently
     loader = np.load(filename)
     return ss.csr_matrix((loader['data'], loader['indices'], loader['indptr']), shape=loader['shape'])
+
+
+def load_npz_mmap(filename):
+    '''
+    Memory-maps the arrays stored in an uncompressed .npz file (as written by np.savez),
+    so that slicing them reads only the requested part from disk.
+    Returns a dict {array name: read-only np.memmap}.
+    '''
+    import zipfile, struct
+    out = {}
+    with zipfile.ZipFile(filename) as z, open(filename, 'rb') as f:
+        for info in z.infolist():
+            if info.compress_type != zipfile.ZIP_STORED:
+                raise ValueError(filename + ' is compressed, cannot memory-map it')
+            # skip the zip local file header to reach the .npy data
+            f.seek(info.header_offset)
+            nlen, xlen = struct.unpack('<HH', f.read(30)[26:30])
+            f.seek(info.header_offset + 30 + nlen + xlen)
+            version = np.lib.format.read_magic(f)
+            if version == (1, 0):
+                shape, fortran, dtype = np.lib.format.read_array_header_1_0(f)
+            else:
+                shape, fortran, dtype = np.lib.format.read_array_header_2_0(f)
+            out[info.filename[:-4]] = np.memmap(filename, dtype=dtype, mode='r', shape=shape,
+                                                offset=f.tell(), order='F' if fortran else 'C')
+    return out
+
 
 
 def Tk(x, N, lamb_max):
