@@ -126,7 +126,7 @@ def gimmedachebs( labl ):
     s can be 'u' or 'v' or 'h' and the X's are single digit integers (can be all different)
     '''
 
-    tol = 1e-9
+    tol = 1e-15  # relative to the largest coefficient, see chebco_f
     args = decode_label(labl)  # (section, rpower, rhopower, func1, dorder1, func2, dorder2, dx)
     c0arg = chebco_f( rap.burrito, par.N, par.ricb, rcmb, tol, *args)
     print('burrito', labl, args)
@@ -203,7 +203,8 @@ def remroco(matrix, overall_parity, vector_parity):
 def chebco_f( func, N, ricb, rcmb, tol, *args):
     '''
     Returns the first N Chebyshev coefficients
-    from 0 to N-1, of func(r)
+    from 0 to N-1, of func(r). Coefficients smaller than
+    tol times the largest one (in absolute value) are set to zero.
     '''
     i = np.arange(0, N)
     xi = np.cos(np.pi * (i + 0.5) / N)
@@ -217,7 +218,7 @@ def chebco_f( func, N, ricb, rcmb, tol, *args):
 
     out = tmp / N
     out[0] = out[0] / 2.
-    out[np.absolute(out) <= tol] = 0.
+    out[np.absolute(out) <= tol * np.max(np.absolute(out))] = 0.
     return out
 
 
