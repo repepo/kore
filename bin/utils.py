@@ -1,11 +1,9 @@
 from scipy.linalg import toeplitz
 from scipy.linalg import hankel
-import scipy.optimize as so
 import scipy.sparse as ss
 import scipy.special as scsp
 import scipy.fftpack as sft
 import scipy.interpolate as si
-import scipy.constants as sc
 import numpy.polynomial.chebyshev as ch
 import numpy as np
 from parameters import par
@@ -37,7 +35,7 @@ vsymm  = par.symm
 symm1 = (2*np.sign(par.m) - 1) * par.symm  # symm1=par.symm if m>0, symm1 = -par.symm if m=0
 
 # this gives the size (rows or columns) of the main matrices
-sizmat = 2*n*par.hydro + 2*n*par.magnetic + n*par.thermal + n*par.compositional
+sizmat = 2*n + n*par.thermal
 
 s = int( (vsymm+1)/2 ) # s=0 if antisymm, s=1 if symm
 m_top = m + 1-s
@@ -46,7 +44,6 @@ if m_top == 0: m_top = 2
 if m_bot == 0: m_bot = 2
 lmax_top = lmax + 1 + (1-2*np.sign(m))*s
 lmax_bot = lmax + 1 + (1-2*np.sign(m))*(1-s)
-
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -69,14 +66,12 @@ elif par.model_type in ['poly', 'mesa', 'gsm']:
     profile = gy.read_model(par.model)
 
 
-
 # ----------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
 
 def decode_label(labl):
 
-    #print(labl)
     (section, rpower, rhopower, func1, dorder1, func2, dorder2, dx) = (None, None, None, None, None, None, None, None)
 
     howlong = len(labl)
@@ -122,7 +117,6 @@ def decode_label(labl):
     return (section, rpower, rhopower, func1, dorder1, func2, dorder2, dx)
 
 
-
 def gimmedachebs( labl ):
     '''
     Returns the Chebyshev coefficients of the operator identified by labl with the form
@@ -138,7 +132,6 @@ def gimmedachebs( labl ):
     print('burrito', labl, args)
 
     return c0arg
-
 
 
 def chegevara( pkey1 , opkey, labl, S):
@@ -157,7 +150,6 @@ def chegevara( pkey1 , opkey, labl, S):
     return out
 
 
-
 def packit( lista_local, mtx, row, col):
     '''
     Appends sparse matrix data, row, and col info to lista_local.
@@ -173,7 +165,6 @@ def packit( lista_local, mtx, row, col):
     return lista_local
 
 
-
 def unpackit( lista_local ):
     '''
     Joins the lists of arrays built with packit into three arrays: data, row, col
@@ -181,7 +172,6 @@ def unpackit( lista_local ):
     if len(lista_local[0]) == 0:  # no entries on this rank
         return [ np.zeros(0), np.zeros(0, dtype=int), np.zeros(0, dtype=int) ]
     return [ np.concatenate( lista_local[q] ) for q in [0,1,2] ]
-
 
 
 def ell( m, lmax, vsymm) :
@@ -198,7 +188,6 @@ def ell( m, lmax, vsymm) :
     return [ ll[idp], ll[idt], ll ]
 
 
-
 def remroco(matrix, overall_parity, vector_parity):
     '''
     Removes rows and cols from matrix according to parity
@@ -209,7 +198,6 @@ def remroco(matrix, overall_parity, vector_parity):
     idk = int((1-vector_parity)/2)  # vector_parity = 1 removes odd col indices
 
     return matrix[ idj::2, idk::2 ]
-
 
 
 def chebco_f( func, N, ricb, rcmb, tol, *args):
@@ -233,30 +221,6 @@ def chebco_f( func, N, ricb, rcmb, tol, *args):
     return out
 
 
-
-def chebco_rf(func,rpower,N,ricb,rcmb,tol, *args):
-    '''
-    Returns the first N Chebyshev coefficients
-    from 0 to N-1, of the function
-    r**rpower * func(r)
-    '''
-    i = np.arange(0, N)
-    xi = np.cos(np.pi * (i + 0.5) / N)
-
-    if ricb > 0:
-        ri = (ricb + (rcmb - ricb) * (xi + 1) / 2.)
-    elif ricb == 0 :
-        ri = rcmb * xi
-
-    tmp = sft.dct(ri**rpower * func(ri, args))
-
-    out = tmp / N
-    out[0] = out[0] / 2.
-    out[np.absolute(out) <= tol] = 0.
-    return out
-
-
-
 def chebco(powr, N, tol, ricb, rcmb):
     '''
     Returns the first N Chebyshev coefficients
@@ -276,7 +240,6 @@ def chebco(powr, N, tol, ricb, rcmb):
     out[np.absolute(out)<=tol]=0.
 
     return out
-
 
 
 def Dcheb(ck, ricb, rcmb):
@@ -303,7 +266,6 @@ def Dcheb(ck, ricb, rcmb):
     return out1
 
 
-
 def Dn_cheb(ck, ricb, rcmb, Dorder):
     '''
     Returns the Chebyshev coefficients of the derivatives (up to order n)
@@ -322,42 +284,6 @@ def Dn_cheb(ck, ricb, rcmb, Dorder):
     return out
 
 
-
-def chebify(func, Dorder, tol):
-    '''
-    Returns the Chebyshev coeffs of function func,
-    and its derivatives (as columns) up to order Dorder.
-    '''
-    c0 = chebco_rf( func, 0, par.N, par.ricb, rcmb, tol)
-    if Dorder > 0:
-        out = np.c_[ c0, Dn_cheb(c0, par.ricb, rcmb, Dorder) ]
-    else:
-        out = np.reshape(c0,(-1,1))
-
-    return out
-
-
-
-def cheb3Product(ck1, ck2, ck3, tol):
-    '''
-    Computes the product of three Chebyshev series
-    '''
-    out = Mlam(ck1,0,0) * ( Mlam(ck2,0,0) * ck3 )
-    out[ np.absolute(out) <= tol ] = 0.0
-    return out
-
-
-
-def cheb2Product(ck1, ck2, tol):
-    '''
-    Computes the product of two Chebyshev series
-    '''
-    out = Mlam(ck1,0,0) * ck2
-    out[ np.absolute(out) <= tol ] = 0.0
-    return out
-
-
-
 def xcheb(r, ricb, rcmb):
     '''
     returns points in the appropriate domain of the Cheb polynomial solutions
@@ -370,7 +296,6 @@ def xcheb(r, ricb, rcmb):
     out = 2*(r-r0)/(r1-r0) - 1
 
     return out
-
 
 
 def funcheb(ck0, r, ricb, rcmb, n):
@@ -395,25 +320,15 @@ def funcheb(ck0, r, ricb, rcmb, n):
     return out
 
 
-
 def fonzie( func, r, N, ricb, rcmb, Dorder, tol, *args):
     out = np.zeros((np.size(r), 1))
-    if Dorder>0 :  
-        ck  = chebco_f( func, N, ricb, rcmb, tol, args)
-        if id(func) in [ id(rap.prf.density), id(rap.prf.pdSdr), id(rap.prf.pressure), id(rap.prf.gravity) ]:
-            #print(func)
-            ck = ironit(ck, par.smopo)
-        out = funcheb(ck, r, ricb, rcmb, Dorder)
 
-    #out = np.zeros_like(r)
     ck  = chebco_f( func, N, ricb, rcmb, tol, args)
     if id(func) in [ id(rap.prf.density), id(rap.prf.pdSdr), id(rap.prf.pressure), id(rap.prf.gravity) ]:
-        #print(func)
         ck = ironit(ck, par.smopo)
     out = funcheb(ck, r, ricb, rcmb, Dorder)
 
     return out
-
 
 
 def angine( func, r, N, ricb, rcmb, Dorder, tol, *args):
@@ -431,32 +346,14 @@ def angine( func, r, N, ricb, rcmb, Dorder, tol, *args):
     return out
 
 
-
 def ironit(coeffs, strength):
 
     x = np.linspace(0,1,np.size(coeffs))
-    #y = (scsp.erfc(5*x-3.5)/2)
     y = 1-x
     y = (y/y[0])**strength
     out = coeffs * y
     
     return out
-
-
-
-def bump(r, r0, delta_r, amplitude):
-    '''
-    The bump function from r=a to r=b, amplitude c
-    A nice smooth bump, zero for r<a and r>b
-    '''
-    a = r0-delta_r/2
-    b = r0+delta_r/2
-    out = np.zeros_like(r)
-    idx = (r>a)&(r<b)
-    r0 = (a+b)/2
-    out[idx] = amplitude * np.exp( 1/((r[idx]-a)*(r[idx]-b)) ) / np.exp( 1/((r0-a)*(r0-b)) )
-    return out
-
 
 
 def erf_transition(r, r0, scaling_factor, amplitude):
@@ -477,52 +374,6 @@ def erf_top_hat(x, x1, w1, x2, w2, A):
     return A * 0.5 * (scsp.erf((x - x1) / w1) - scsp.erf((x - x2) / w2))
 
 
-# def get_radial_derivatives( func, rorder, Dorder, tol):
-#     '''
-#     This function computes terms of the form r^n d^m/dr^m of a
-#     radial profile in Chebyshev space.
-
-#     Parameters
-#     ----------
-#     func   : function
-#         Radial profile in the form of a function (can be found in utils)
-#     rorder : integer
-#         Highest order of radial power
-#     Dorder : integer
-#         Highest order of radial derivative
-#     tol    : real
-#         Tolerance for Chebyshev transforms for radial powers
-
-#     Returns
-#     -------
-#     rd_prof : 2D list
-#         List such that rd_prof[i][j] defines the Chebyshev coefficients of
-#         r^i d^j/dr^j of the radial profile
-#     '''
-
-#     # Make sure these are integers
-#     rorder = int(rorder)
-#     Dorder = int(Dorder)
-
-#     rd_prof = [ [ [] for j in range(Dorder+1) ] for i in range(rorder+1) ] #List for Cheb coeffs to r^n D^m profile
-#     dnprof = [ [] for i in range(Dorder+1) ] #List for Cheb coeffs of nth derivative of profile
-#     # Cheb coeffs of profile
-#     dnprof[0] = chebco_f( func, par.N, par.ricb, rcmb, par.tol_tc )
-
-#     for i in range(rorder+1):
-#         rn  = chebco(i, par.N, tol, par.ricb, rcmb) #Cheb coeffs of r^i
-#         rd_prof[i][0] =  chebProduct(dnprof[0],rn,par.N,par.tol_tc) #Cheb coeffs of r^i profile
-#         for j in range(1,Dorder+1):
-#         # Cheb coeffs of r^i D^j profile
-#             if i==0:
-#                 # These only need to be computed once
-#                 dnprof[j] = Dcheb(dnprof[j-1],par.ricb,rcmb)
-#             rd_prof[i][j] = chebProduct(dnprof[j],rn,par.N,par.tol_tc)
-
-#     return rd_prof
-
-
-
 def interp(x0, x, y, even=True):
 
     akima = si.Akima1DInterpolator(x, y)
@@ -538,7 +389,6 @@ def interp(x0, x, y, even=True):
             out[x0<0] = -akima(-x0[x0<0])
 
     return out
-
 
 
 def load_model(r, var):
@@ -601,464 +451,8 @@ def load_model(r, var):
     return out
 
 
-
-def jl_smx(l,x,d):
-    '''
-    Spherical Bessel function of the first kind and derivatives,
-    small argument (x<<1) only, 0 <= d <= 3
-    '''
-    c1 =  (2**l)*scsp.factorial(l)/scsp.factorial(2*l+1)
-    c2 = -(2**l)*scsp.factorial(l+1)/scsp.factorial(2*l+3)
-    c3 =  (2**l)*scsp.factorial(l+2)/(2*scsp.factorial(2*l+5))
-
-    if d == 0:
-        out = c1*x**l + c2*x**(l+2) + c3*x**(l+4)
-
-    elif d == 1:
-        out = c1*l*x**(l-1) + c2*(l+2)*x**(l+1) + c3*(l+4)*x**(l+3)
-
-    elif d == 2:
-        if l>=2:
-            out = c1*l*(l-1)*x**(l-2) + c2*(l+2)*(l+1)*x**l + c3*(l+4)*(l+3)*x**(l+2)
-        elif l==1:
-            out = c2*(l+2)*(l+1)*x**l + c3*(l+4)*(l+3)*x**(l+2)
-
-    elif d == 3:
-        if l>=3:
-            out = c1*l*(l-1)*(l-2)*x**(l-3) + c2*(l+2)*(l+1)*l*x**(l-1) + c3*(l+4)*(l+3)*(l+2)*x**(l+1)
-        else:
-            out = c2*(l+2)*(l+1)*l*x**(l-1) + c3*(l+4)*(l+3)*(l+2)*x**(l+1)
-
-    return out
-
-
-
-def jl(l,x,d):
-    '''
-    Spherical Bessel function of the first kind
-    d is zero or 1
-    '''
-    out = np.zeros_like(x)
-
-    k = x<1e-3
-    out[k]  = jl_smx(l,x[k],d)
-    out[~k] = scsp.spherical_jn(l,x[~k],derivative=d)
-
-    return out
-
-
-
-def nl(l,x,d):
-    '''
-    Spherical Bessel function of the second kind
-    '''
-    return scsp.spherical_yn(l,x,derivative=d)
-
-
-
-def dlogjl(l,x):
-    '''
-    Log derivative of spherical Bessel function of the first kind
-    '''
-    # functional form of the numerator and denominator in the continued fraction
-    def num(k,x):
-        return -1
-    def denom(k,x):
-        return (1 + 2*k) / x
-
-    # Lentz-Thompson algorithm
-    def lentz_thompson(a, b, b0, eps=1e-15, acc=1e-12):
-        if b0 == 0:
-            f0 = eps
-        else:
-            f0 = b0
-        c0 = f0;d0 = 0
-        c = c0;d = d0;f = f0
-        for i in range(len(a)):
-            c = b[i] + a[i] / c
-            if c == 0:
-                c = eps
-            d = b[i] + a[i] * d
-            if d == 0:
-                d = eps
-            d = 1 / d
-            Delta = c * d
-            f = f * Delta
-            if abs(Delta - 1) < acc:
-                break
-        return f
-
-    # first 100 numerators and denominators in continued fraction
-    a = [num(k,x) for k in range(l+1, l+101)]
-    b = [denom(k,x) for k in range(l+1, l+101)]
-
-    # first term in the sum (in front of first quotient)
-    b0 = l / x
-
-    return lentz_thompson(a, b, b0, eps=1e-30, acc=1e-14)
-
-
-
-def findbeta(args):
-    '''
-    root finding for beta, needed for the Free Decay Modes
-    '''
-    beta0 = args[0]
-    ell   = args[1]
-    ricb  = args[2]
-
-    def f0(x, ric, l):
-        if ric>0:
-            # Zhang & Fearn, GAFD (1995), page 196.
-            return jl(l+1,x*ric,0) * nl(l-1,x,0) - jl(l-1,x,0) * nl(l+1,x*ric,0)
-        elif ric==0:
-            # Gubbins & Roberts (1987), page 49.
-            return jl(l-1,x,0)
-
-    sol = so.root( f0, beta0, args=(ricb, ell) )
-    beta1 = sol.x[0]
-
-    return beta1
-
 #if par.B0 == 'FDM':
 #    beta_actual = findbeta([par.beta, B0_l, par.ricb])
-
-
-
-def h0(rr, kind, args):
-    '''
-    Radial poloidal function for the background magnetic field times
-    a power of r
-    args[0] = guess for beta (FDM, radial complexity)
-    args[1] = order l (FDM, l=1 is dipole)
-    args[2] = ricb
-    args[3] = power of r
-
-    If extending to r<0 then this function has parity (-1)**(l+rp)
-    '''
-    b    = args[0]
-    l    = args[1]
-    ricb = args[2]
-    rp   = args[3]
-
-    r = rr[rr>0]
-
-    if   kind == 'axial':       # axial uniform field in the z direction
-        l = 1
-        out = (1/2)*r**(1+rp)
-
-    elif kind == 'dipole' and ricb > 0 :      # dipole, singular at r=0
-        l = 1
-        out = (1/2)*r**(-2+rp)
-
-    elif kind == 'G21 dipole':  # Felix's dipole (Gerick 2021)
-        l = 1
-        out = (1/6)*r**(1+rp) - (1/10)*r**(3+rp)
-
-    elif kind == 'Luo_S1':
-        l = 1
-        out = (5 - 3*r**2)*r**(1+rp)
-
-    elif kind == 'Luo_S2':
-        l = 2
-        out = (157-296*r**2+143*r**4)*r**(2+rp)
-
-    elif kind == 'FDM':         # poloidal Free Decay Mode
-        b = findbeta(args)
-        x = b*r
-
-        if ricb==0:
-            # Gubbins & Roberts (1987), page 49, eq. 3.67
-            out = jl(l,x,0)*r**rp
-        else:
-            # Zhang & Fearn, GAFD (1995), page 196, eq. 2.7
-            out = ( jl(l,x,0)*nl(-1 + l,b,0) - jl(-1 + l,b,0)*nl(l,x,0) )*r**rp
-
-    out2 = np.zeros_like(rr)
-    out2[rr>0] = out
-    if (ricb == 0) and (np.size(rr[rr>0]) == np.size(rr[rr<0])):
-        out2[rr<0] = np.flipud(out)*(-1)**(l+rp)
-
-    return out2
-
-
-
-def h1(rr, kind, args):
-    '''
-    First radial derivative of the function h0, times a power of r
-    '''
-    b    = args[0]
-    l    = args[1]
-    ricb = args[2]
-    rp   = args[3]
-
-    r = rr[rr>0]
-
-    if kind == 'axial':         # axial uniform field in the z direction
-        l = 1
-        out = (1/2)*r**rp
-
-    elif kind == 'dipole' and ricb > 0 :      # dipole, singular at r=0
-        l = 1
-        out = -r**(-3+rp)
-
-    elif kind == 'G21 dipole':  # Felix's dipole (Gerick 2021)
-        l = 1
-        out = (1/6)*r**rp - (3/10)*r**(2+rp)
-
-    elif kind == 'Luo_S1':
-        l = 1
-        out = (5 - 9*r**2)*r**rp
-
-    elif kind == 'Luo_S2':
-        l = 2
-        out = 2*r**(1 + rp)*(157 - 592*r**2 + 429*r**4)
-
-    elif kind == 'FDM':
-        b = findbeta(args)
-        x = b*r
-        if ricb==0:
-            out = b*jl(l,x,1)*r**rp
-        else:
-            out = ( b*(jl(l,x,1)*nl(-1 + l,b,0) - jl(-1 + l,b,0)*nl(l,x,1)) )*r**rp
-
-    out2 = np.zeros_like(rr)
-    out2[rr>0] = out
-    if (ricb == 0) and (np.size(rr[rr>0]) == np.size(rr[rr<0])):
-        out2[rr<0] = np.flipud(out)*(-1)**(l-1+rp)
-
-    return out2
-
-
-
-def h2(rr, kind, args):
-    '''
-    Second radial derivative of the function h0, times a power of r
-    '''
-    b    = args[0]
-    l    = args[1]
-    ricb = args[2]
-    rp   = args[3]
-
-    r = rr[rr>0]
-
-    if kind == 'axial':         # axial uniform field in the z direction
-        l = 1
-        out = np.zeros_like(r)
-
-    elif kind == 'dipole' and ricb > 0 :      # dipole, singular at r=0
-        l = 1
-        out = 3*r**(-4+rp)
-
-    elif kind == 'G21 dipole':  # Felix's dipole (Gerick 2021)
-        l = 1
-        out = (6/10)*r**(1+rp)
-
-    elif kind == 'Luo_S1':
-        l = 1
-        out = -18*r**(1+rp)
-
-    elif kind == 'Luo_S2':
-        l = 2
-        out = 2*r**rp*(157 - 1776*r**2 + 2145*r**4)
-
-    elif kind == 'FDM':
-        b = findbeta(args)
-        x = b*r
-        if ricb==0:
-            k = x<1e-3
-            out = np.zeros_like(r)
-            out[ k] = b**2*jl_smx(l,x[k],2)*r[k]**rp
-            out[~k] = b**2*jl(-1 + l,x[~k],1)*r[~k]**rp + ((1 + l)*(jl(l,x[~k],0) - x[~k]*jl(l,x[~k],1)))*r[~k]**(-2+rp)
-        else:
-            out= ((x**2*jl(-1 + l,x,1) + (1 + l)*(jl(l,x,0) - x*jl(l,x,1)))*nl(-1 + l,b,0) \
-             - jl(-1 + l,b,0)*(x**2*nl(-1 + l,x,1) + (1 + l)*(nl(l,x,0) - b*r*nl(l,x,1))))*r**(-2+rp)
-
-    out2 = np.zeros_like(rr)
-    out2[rr>0] = out
-    if (ricb == 0) and (np.size(rr[rr>0]) == np.size(rr[rr<0])):
-        out2[rr<0] = np.flipud(out)*(-1)**(l+rp)
-
-    return out2
-
-
-
-def h3(rr, kind, args):
-    '''
-    Third radial derivative of the function h0, times a power of r
-    '''
-    b    = args[0]
-    l    = args[1]
-    ricb = args[2]
-    rp   = args[3]
-
-    r = rr[rr>0]
-
-    if kind == 'axial':         # axial uniform field in the z direction
-        l = 1
-        out = np.zeros_like(r)
-
-    elif kind == 'dipole' and ricb > 0 :      # dipole, singular at r=0
-        l = 1
-        out = -12*r**(-5+rp)
-
-    elif kind == 'G21 dipole':  # Felix's dipole (Gerick 2021)
-        l = 1
-        out = (6/10)*r**rp
-
-    elif kind == 'Luo_S1':
-        l = 1
-        out = -18*r**rp
-
-    elif kind == 'Luo_S2':
-        l = 2
-        out = 24*r**(1 + rp)*(-296 + 715*r**2)
-
-    elif kind == 'FDM':
-
-        b = findbeta(args)
-        x = b*r
-
-        if l>=2:
-
-            if ricb==0:
-
-                k = x<1e-3
-                x0 = x[ k]  # small x
-                x1 = x[~k]  # the rest
-
-                out = np.zeros_like(r)
-                out[ k] = b**3*jl_smx(l,x0,3)*r[k]**rp
-
-                out[~k] = (x1**3*jl(-2 + l,x1,1) + l*x1*jl(-1 + l,x1,0) - x1**2*jl(-1 + l,x1,1) \
-                 - 2*l*x1**2*jl(-1 + l,x1,1) - 3*jl(l,x1,0) - 4*l*jl(l,x1,0) - l**2*jl(l,x1,0) \
-                 + 3*x1*jl(l,x1,1) + 4*l*x1*jl(l,x1,1) + l**2*x1*jl(l,x1,1))*r[~k]**(-3+rp)
-
-            else:
-
-                out = ((b**3*r**3*jl(-2 + l,b*r,1) + b*l*r*jl(-1 + l,b*r,0) - b**2*r**2*jl(-1 + l,b*r,1) \
-                 - 2*b**2*l*r**2*jl(-1 + l,b*r,1) - 3*jl(l,b*r,0) - 4*l*jl(l,b*r,0) - l**2*jl(l,b*r,0) + 3*b*r*jl(l,b*r,1) \
-                 + 4*b*l*r*jl(l,b*r,1) + b*l**2*r*jl(l,b*r,1))*nl(-1 + l,b,0) + jl(-1 + l,b,0)*(-(b**3*r**3*nl(-2 + l,b*r,1)) \
-                 - b*l*r*nl(-1 + l,b*r,0) + b**2*r**2*nl(-1 + l,b*r,1) + 2*b**2*l*r**2*nl(-1 + l,b*r,1) + 3*nl(l,b*r,0) \
-                 + 4*l*nl(l,b*r,0) + l**2*nl(l,b*r,0) - 3*b*r*nl(l,b*r,1) - 4*b*l*r*nl(l,b*r,1) - b*l**2*r*nl(l,b*r,1)))*r**(-3+rp)
-
-        elif l==1:
-
-            if ricb==0:
-
-                k = x<1e-3
-                x0 = x[ k]  # small x
-                x1 = x[~k]  # the rest
-
-                out = np.zeros_like(r)
-                out[ k] = b**3*jl_smx(l,x0,3)*r[k]**rp
-
-                out[~k] = (-2*x1**2*jl(0,x1,1) - 8*jl(1,x1,0) + x1*(8 - x1**2)*jl(1,x1,1))*r[~k]**(-3+rp)
-
-            else:
-
-                out = (-2*b**2*r**2*jl(0,b*r,1)*nl(0,b,0) - 8*jl(1,b*r,0)*nl(0,b,0) + 8*b*r*jl(1,b*r,1)*nl(0,b,0) \
-                 - b**3*r**3*jl(1,b*r,1)*nl(0,b,0) + 2*b**2*r**2*jl(0,b,0)*nl(0,b*r,1) + 8*jl(0,b,0)*nl(1,b*r,0) \
-                 - 8*b*r*jl(0,b,0)*nl(1,b*r,1) + b**3*r**3*jl(0,b,0)*nl(1,b*r,1))*r**(-3+rp)
-
-    out2 = np.zeros_like(rr)
-    out2[rr>0] = out
-    if (ricb == 0) and (np.size(rr[rr>0]) == np.size(rr[rr<0])):
-        out2[rr<0] = np.flipud(out)*(-1)**(l-1+rp)
-
-    return out2
-
-
-
-def chebco_h(args, kind, N, rcmb, tol):
-    '''
-    Computes the Chebyshev coeffs of the h0 function used to build B0,
-    and derivatives, times a power of r.
-    '''
-
-    #beta = args[0]  # beta
-    #l    = args[1]  # l
-    ricb = args[2]  # ricb
-    #rx   = args[3]  # power of r
-
-    dx   = args[4]  # derivative order
-
-    i = np.arange(0, N)
-    xi = np.cos(np.pi * (i + 0.5) / N)
-
-    if ricb > 0:
-        ri = (ricb + (rcmb - ricb) * (xi + 1) / 2.)
-    elif ricb == 0 :
-        ri = rcmb * xi
-
-    if   dx == 0 :
-        fi = h0(ri, kind, args[:4])
-    elif dx == 1 :
-        fi = h1(ri, kind, args[:4])
-    elif dx == 2 :
-        fi = h2(ri, kind, args[:4])
-    elif dx == 3 :
-        fi = h3(ri, kind, args[:4])
-
-    out = sft.dct(fi) / N
-    out[0] = out[0] / 2.
-    out[np.absolute(out) <= tol] = 0.
-    return out
-
-
-
-def B0_norm():
-    '''
-    Returns the normalization constant of the applied magnetic field
-    '''
-
-    if par.magnetic == 1:
-
-        ricb = par.ricb
-        args = [ par.beta, par.B0_l, ricb, 0 ]
-        kind = par.B0
-
-        l = B0_l
-        L = l*(l+1)
-
-        if par.cnorm == 'rms_cmb':  # rms of radial magnetic field at the cmb is set to 1
-
-            rk = np.array([1.0])
-            out = np.sqrt(2*l+1) / ( l*(l+1) * h0(rk, kind, args) )
-            out = out[0]
-
-        elif par.cnorm in ['mag_energy', 'Schmitt2012']:  # total magnetic energy is set to 1 or 2
-
-            N = 240
-            xk, wk = np.polynomial.legendre.leggauss(N)  # Gauss-Legendre nodes and weights, from -1 to 1
-            rk = 0.5*(1-ricb)*( xk + 1 ) + ricb
-            r2 = rk**2
-
-            y0 = h0(rk, kind, args)
-            y1 = h1(rk, kind, args)
-
-            f0 = 4*np.pi*L/(2*l+1)
-            f1 = (L+1)*y0**2
-            f2 = 2*rk*y0*y1
-            f3 = r2*y1**2
-
-            integ = ( (1-ricb)/2 ) * np.sum( wk*f0*( f1+f2+f3 ) )
-
-            if par.cnorm == 'mag_energy':
-                out = 1/np.sqrt(integ)
-            elif par.cnorm == 'Schmitt2012':
-                out = 2/np.sqrt(integ)
-
-        else:
-
-            out = par.cnorm
-
-    else:
-
-        out = 0
-
-    return out
-
 
 
 def Dlam(lamb,N):
@@ -1073,7 +467,6 @@ def Dlam(lamb,N):
     tmp = lamb + np.arange(0,N-lamb)
 
     return const1*const2*ss.diags(tmp,lamb, format='csr', dtype='float64')
-
 
 
 def Slam(lamb,N):
@@ -1092,7 +485,6 @@ def Slam(lamb,N):
     return ss.diags([diag0,diag1],[0,2], format='csr')
 
 
-
 def Mlam(a0,lamb,vector_parity,a0_parity=None):
     '''
     Multiplication matrix. a0 are the cofficients in the C^(lamb) basis and lamb
@@ -1109,8 +501,6 @@ def Mlam(a0,lamb,vector_parity,a0_parity=None):
         a1 = np.zeros(2*N)
         a1[:N] = a0
 
-        #if a0.dtype == np.complex128:
-        #    print(a0)
 
         if vector_parity != 0: # no inner core case
 
@@ -1219,20 +609,6 @@ def Mlam(a0,lamb,vector_parity,a0_parity=None):
     return out
 
 
-
-def chebProduct(ck,dk,tol):
-    '''
-    Computes the Chebyshev expansion of a product of
-    two Chebyshev series defined by ck and dk
-    '''
-    out = np.zeros_like(ck)
-    out = Mlam(ck,0,0)*dk
-    out[np.absolute(out) <= tol] = 0.
-
-    return out
-
-
-
 def marc_tide(omega, l, m, loc, N, ricb, rcmb):
     '''
     Tidal body force as used by Rovira-Navarro et al, 2018
@@ -1272,37 +648,11 @@ def marc_tide(omega, l, m, loc, N, ricb, rcmb):
     return out
 
 
-
-def ftest1(ricb):
-    '''
-    Tidal body force constants for Enceladus
-    Computed by Jeremy
-    '''
-
-    A = (2.776146590187793e-8 - 1.1936189474389837e-7*ricb + 1.7976942241610017e-7*ricb**2 - 1.0431683766634872e-7*ricb**3 \
-    + 1.0203567472726217e-8*ricb**4 + 5.944217795551174e-9*ricb**5)/(2.039370654683117 - 12.426922103588517*ricb \
-    + 29.534185532382605*ricb**2 - 33.58608820683908*ricb**3 + 17.080450537622824*ricb**4 - 1.6409964140402016*ricb**5 - 1.*ricb**6)
-
-    B = (7.525664633338715e-9 - 5.8895735957722854e-8*ricb + 1.8268212761498169e-7*ricb**2 - 2.798206106175817e-7*ricb**3 \
-    + 2.1103777701038198e-7*ricb**4 - 6.252914009737955e-8*ricb**5)/(2.039370654683117 - 12.426922103588517*ricb \
-    + 29.534185532382605*ricb**2 - 33.58608820683908*ricb**3 + 17.080450537622824*ricb**4 - 1.6409964140402016*ricb**5 - 1.*ricb**6)
-
-    C = 1e6
-
-    #A = 1.0
-    #B = ricb**5
-    #C = 1/(1-ricb**5)
-
-    return np.array([A,B,C])
-
-
-
 def Ylm(l, m, theta, phi):
     # The Spherical Harmonics, seminormalized
     #out = scsp.sph_harm(m, l, phi, theta)   ### for scipy older than 1.15.3
     out = scsp.sph_harm_y(l,m,theta,phi)    ### for scipy 1.15.3 or newer  
     return out*np.sqrt(4*np.pi/(2*l+1))
-
 
 
 def Ylm_full(lmax, m, theta, phi):
@@ -1316,21 +666,6 @@ def Ylm_full(lmax, m, theta, phi):
     for l in np.arange(m1,lmax1+1):
         out[l-m1]=Ylm(l,m,theta,phi)
     return out
-
-
-
-def Ylm_symm(lmax, m, theta, phi, symm, scalar):
-    out = np.zeros((lmax-m+1)/2,dtype=np.complex128)
-    if (symm == 1 and scalar == 'pol') or (symm == -1 and scalar == 'tor'):
-        m_sym = m
-        lmax_sym = lmax
-    else :
-        m_sym = m+1
-        lmax_sym = lmax+1
-    for l in np.arange(m_sym,lmax_sym,2.):
-        out[(l-m_sym)/2]=Ylm(l,m,theta,phi)
-    return out
-
 
 
 def load_csr(filename):
@@ -1363,180 +698,3 @@ def load_npz_mmap(filename):
             out[info.filename[:-4]] = np.memmap(filename, dtype=dtype, mode='r', shape=shape,
                                                 offset=f.tell(), order='F' if fortran else 'C')
     return out
-
-
-
-def Tk(x, N, lamb_max):
-    '''
-    Chebyshev polynomial from order 0 to N (as rows)
-    and its derivatives ** with respect to r **, up to lamb_max (as columns),
-    evaluated at x=-1 (r=ricb) or x=1 (r=rcmb).
-    '''
-
-    if par.ricb == 0 :
-        ric = -rcmb
-    else :
-        ric = par.ricb
-
-    out = np.zeros((N+1,lamb_max+1))
-
-    for k in range(0,N+1):
-
-        out[k,0] = x**k
-
-        tmp = 1.
-        for i in range(0, lamb_max):
-            tmp = tmp * ( k**2 - i**2 )/( 2.*i + 1. )
-            out[k,i+1] = x**(k+i+1.) * tmp * (2./(rcmb-ric))**(i+1)
-
-    return out
-
-
-def gamma_visc(a1,a2,a3):
-
-    out = np.zeros((1,n0+n0),dtype=complex)
-
-
-    #Tb3 = copy(Tb2)
-    #Tb3[nc:,:] = 0
-    #Tb3 = np.copy(bv.Tb)
-    Tb3 = Tk( 1, par.N-1, 5)
-
-
-    P0 = Tb3[:,0]
-    P1 = Tb3[:,1]
-    P2 = Tb3[:,2]
-    P3 = Tb3[:,3]
-    P4 = Tb3[:,4]
-    P5 = Tb3[:,5]
-
-    T0 = Tb3[:,0]
-    T1 = Tb3[:,1]
-    T2 = Tb3[:,2]
-    T3 = Tb3[:,3]
-    T4 = Tb3[:,4]
-
-
-    # this is for a spheroid with long semiaxis a=1
-
-    I = 1j
-
-    pol2 = (  a1*((0. + 24.624956739107787*I)*P0 - (0. + 24.624956739107787*I)*P1 + (0. + 12.312478369553894 *I)*P2
-                + (0. + 4.104159456517965 *I)*P3)
-            + a2*((0. + 5.2767764440945255*I)*P0 - (0. + 5.2767764440945255*I)*P1 + (0. + 2.6383882220472628 *I)*P2
-                - (0. + 9.67409014750663  *I)*P3 - (0. + 1.758925481364842 *I)*P4)
-            + a3*((0. - 1.758925481364842 *I)*P0 + (0. + 1.758925481364842 *I)*P1 - (0. + 0.879462740682421  *I)*P2
-                + (0. + 0.2931542468941404*I)*P3 + (0. + 3.517850962729684 *I)*P4 + (0. + 0.4885904114902339 *I)*P5) )
-
-    pol4 = (  a2*((0. - 42.817918360629186*I)*P0 + (0. + 42.817918360629186*I)*P1 + (0. + 3.5681598633857656 *I)*P2
-                - (0. + 6.422687754094378 *I)*P3 - (0. + 0.7136319726771531*I)*P4)
-            + a3*((0. - 31.140304262275777*I)*P0 + (0. + 31.140304262275777*I)*P1 - (0. + 20.111446502719772 *I)*P2
-                + (0. + 2.465274087430165 *I)*P3 + (0. + 3.6979111311452484*I)*P4 + (0. + 0.324378169398706  *I)*P5))
-
-    pol6 = (  a3*((0. + 45.56049760657571*I)*P0 - (0. + 45.56049760657571  *I)*P1 - (0. + 22.780248803287854 *I)*P2
-                + (0. + 3.254321257612551*I)*P3 + (0. + 1.30172850304502   *I)*P4 + (0. + 0.07231825016916779*I)*P5))
-
-    tol1 = ( -11.847687835088976     *T0 + 11.847687835088976*T1
-            + a1*(9.47815026807118   *T0 - 9.47815026807118  *T1 - 4.73907513403559  *T2)
-            + a2*(2.031032200300967  *T0 - 2.031032200300967 *T1 + 5.077580500752418 *T2 + 1.5232741502257257 *T3)
-            + a3*(0.4513404889557705 *T0 - 0.4513404889557705*T1 - 1.8241678095295728*T3 - 0.37611707412980877*T4))
-
-    tol3 = (  a1*(39.799940335196546 *T0 - 6.633323389199425 *T1 - 3.3166616945997127*T2)
-            + a2*(-19.899970167598273*T0 - 13.26664677839885 *T1 + 8.291654236499282 *T2 + 1.6583308472998564 *T3)
-            + a3*(-14.472705576435107*T0 + 7.93988708707204  *T1 + 2.010097996727099 *T2 - 3.5679239441906003 *T3 - 0.5025244991817748  *T4))
-
-    tol5 = (  a2*(-57.208391908193846*T0 - 9.534731984698974 *T1 + 3.8138927938795897*T2 + 0.4767365992349487 *T3)
-            + a3*(4.400645531399526  *T0 + 34.960683943896235*T1 + 0.6845448604399262*T2 - 2.725955426394706  *T3 - 0.24448030729997366 *T4))
-
-    tol7 = (  a3*(59.85704517989213  *T0 + 24.316924604331177*T1 - 0.8016568550878411*T2 - 0.7571203631385165 *T3 - 0.044536491949324505*T4))
-
-
-    # assemble the torque (row vector)
-
-    for l in np.arange(m_top,lmax_top,2.):
-
-        colP = int( (par.N)*(l-m_top)/2 )
-
-        if l==2 and par.m==1:
-            out[0,colP:colP+par.N] = pol2
-        elif l==4 and par.m==1:
-            out[0,colP:colP+par.N] = pol4
-        elif l==6 and par.m==1:
-            out[0,colP:colP+par.N] = pol6
-
-    for l in np.arange(m_bot,lmax_bot,2.):
-
-        colT = n0 + int( (par.N)*(l-m_bot)/2 )
-
-        if l==1 and par.m==1:
-            out[0,colT:colT+par.N] = tol1
-        elif l==3 and par.m==1:
-            out[0,colT:colT+par.N] = tol3
-        elif l==5 and par.m==1:
-            out[0,colT:colT+par.N] = tol5
-        elif l==7 and par.m==1:
-            out[0,colT:colT+par.N] = tol7
-
-    # axial torque for a spherical cmb, take 2*real after multiplying by the solution vector
-    if par.m == 0 and par.symm == 1:
-        R = 1  #rcmb
-        # axial torque depends on the l=1, m=0 toroidal component only
-        out[0,n0:n0+par.N] = (8*np.pi/3)*(R**2)*( R*T1 - T0 )
-
-    return out
-
-
-
-def gamma_visc_icb(ricb):
-    '''
-    Axial viscous torque on the inner core, spherical. Take 2*real after multiplying by the solution vector
-    '''
-
-    out = np.zeros((1,n0+n0),dtype=complex)
-
-    if par.m == 0 and par.symm == 1 and par.ricb > 0:
-
-        T = Tk( -1, par.N-1, 1)
-        T0 = T[:,0]
-        T1 = T[:,1]
-        R = ricb
-        # axial torque depends on the l=1, m=0 toroidal component only
-        out[0,n0:n0+par.N] = (8*np.pi/3)*(R**2)*( R*T1 - T0 )
-
-    return out
-
-
-
-def gamma_magnetic():
-    '''
-    Axial magnetic torque on the mantle (spherical) when there is a thin conductive layer at bottom. Needs m=0 and symm=1.
-    '''
-
-    if (par.magnetic==1 and par.m == 0 and par.symm==1 and par.mantle=='TWA'):
-
-        out = np.zeros((1,n0+n0),dtype=complex)
-        G = Tk( 1, par.N-1, 0)[:,0]
-        R = np.array([1.0])
-        h_cmb = B0_norm() * h0(R, par.B0, [par.beta, par.B0_l, par.ricb, 0])
-
-        if B0_l == 1:  # Either uniform axial or dipole background field, induced magnetic field b is thus antisymmetric
-
-            # the torque is prop. to the l=2 toroidal component of b
-            out[0,n0:n0+par.N] = (16*np.pi/5) * G * h_cmb
-
-        elif B0_l == 2:  # Quadrupole background field, induced magnetic field b is thus symmetric
-
-            # torque prop. to l=1 and l=3 toroidal component of b
-            out[0,n0:n0+par.N]          = -(16*np.pi/5)     * G * h_cmb # l=1
-            out[0,n0+par.N: n0+2*par.N] =  (16*18*np.pi/35) * G * h_cmb # l=3
-
-    else:
-
-        out = 0
-
-    # Take the product between the output of this function and the solution for b to obtain the dimensionless torque
-    # Then multiply by Elsasser*R_cmb^3*rho*eta to make the torque dimensional
-    # (rho is the density and eta is the magnetic diffusivity, both of the fluid core).
-
-    return out
-

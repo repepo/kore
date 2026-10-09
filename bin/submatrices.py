@@ -45,9 +45,6 @@ def main(ncpus):
     # if vP = -1 we need only odd parity Chebs
     vP = int( (1 - 2*(par.m%2)) * par.symm )
     vT = -vP
-    # for the magnetic field the parities are opposite to that of the flow if B0 is equatorially antisymmetric.
-    #vF = ut.symmB0*vP
-    #vG = -vF
 
     vS = vP  # this is the vector parity of the entropy perturbation
 
@@ -84,18 +81,15 @@ def main(ncpus):
     G     = [ G0, G1, G2, G3, G4 ]  # fixed this for the inviscid and no thermal diffusion cases
 
     # Sets the Gegenbauer basis order for each section
-    if ((par.magnetic == 1) and ('conductor' in par.innercore)) :
-        gebasis = [  4,   2,   3,   2,   2,   2  ]
-    else:
-        gebasis = [  4,   2,   2,   2,   2,   2  ]
-    section     = [ 'u', 'v', 'f', 'g', 'h', 'i' ]
+    gebasis = [  4,   2,   2  ]
+    section = [ 'u', 'v', 'h' ]
 
     if inviscid:
         gebasis[0] = 2  # only up to second derivatives in section u
         gebasis[1] = 1  # up to first derivatives in section v
 
     if par.ThermaD == 0:
-        gebasis[4] = 0  # No thermal diffusion, C^(0) basis is enough, no need for thermal bc's
+        gebasis[2] = 0  # No thermal diffusion, C^(0) basis is enough, no need for thermal bc's
 
     # Zero matrices, used when making room for bc's
     N1 = int((1 + np.sign(par.ricb)) * int(par.N/2))
@@ -118,132 +112,131 @@ def main(ncpus):
     labl  = []
     arg2  = []
 
-    if par.hydro == 1:
-        # -------------------------------------------------------------------------------------------------------------------------------------------
-        # Matrix labels needed for the Navier-Stokes equation, double curl equations -------------------------------------- NavStok 2curl - section u
-        # -------------------------------------------------------------------------------------------------------------------------------------------
+    # -------------------------------------------------------------------------------------------------------------------------------------------
+    # Matrix labels needed for the Navier-Stokes equation, double curl equations -------------------------------------- NavStok 2curl - section u
+    # -------------------------------------------------------------------------------------------------------------------------------------------
 
-        # inertia and Coriolis diag terms
-        arg2 += [ vP ]*6
-        labl  = [ 'u3_D0', 'u2_D1', 'u1_D2', 'u2lho1_D0', 'u1lho2_D0', 'u1lho1_D1' ]
+    # inertia and Coriolis diag terms
+    arg2 += [ vP ]*6
+    labl  = [ 'u3_D0', 'u2_D1', 'u1_D2', 'u2lho1_D0', 'u1lho2_D0', 'u1lho1_D1' ]
         
-        # Coriolis off diag terms
-        arg2 += [   vT   ,   vT    ]
-        labl += [ 'u2_D0', 'u1_D1' ]
+    # Coriolis off diag terms
+    arg2 += [   vT   ,   vT    ]
+    labl += [ 'u2_D0', 'u1_D1' ]
 
-        # Viscous diffusion
-        if par.ViscosD > 0:
-            arg2 += [ vP ]*44
-            labl += [ 'u1lh13vsc0_D0', 'u1lh22vsc0_D0', 'u1lho4vsc0_D0', 'u2lh12vsc0_D0',
-                      'u2lho3vsc0_D0', 'u3lh11vsc0_D0', 'u3lho2vsc0_D0', 'u4lho1vsc0_D0',
-                          'u5vsc0_D0',     'u5vsc0_D0', 'u1lh12vsc1_D0', 'u1lho3vsc1_D0',
-                      'u2lh11vsc1_D0', 'u2lho2vsc1_D0', 'u3lho1vsc1_D0', 'u3lho1vsc1_D0',
-                          'u4vsc1_D0',     'u4vsc1_D0', 'u1lho2vsc2_D0', 'u2lho1vsc2_D0',
-                          'u3vsc2_D0',     'u3vsc2_D0',
-                      'u1lh12vsc0_D1', 'u1lho3vsc0_D1', 'u2lho2vsc0_D1', 'u3lho1vsc0_D1',
-                      'u3lho1vsc0_D1', 'u1lh11vsc1_D1', 'u1lho2vsc1_D1', 'u2lho1vsc1_D1',
-                          'u3vsc1_D1',     'u3vsc1_D1', 'u1lho1vsc2_D1',
-                      'u1lh11vsc0_D2', 'u1lho2vsc0_D2', 'u2lho1vsc0_D2',     'u3vsc0_D2', 
-                      'u1lho1vsc1_D2',     'u2vsc1_D2',     'u1vsc2_D2',
-                      'u1lho1vsc0_D3',     'u2vsc0_D3',     'u1vsc1_D3',     'u1vsc0_D4'    ]
+    # Viscous diffusion
+    if par.ViscosD > 0:
+        arg2 += [ vP ]*44
+        labl += [ 'u1lh13vsc0_D0', 'u1lh22vsc0_D0', 'u1lho4vsc0_D0', 'u2lh12vsc0_D0',
+                  'u2lho3vsc0_D0', 'u3lh11vsc0_D0', 'u3lho2vsc0_D0', 'u4lho1vsc0_D0',
+                      'u5vsc0_D0',     'u5vsc0_D0', 'u1lh12vsc1_D0', 'u1lho3vsc1_D0',
+                  'u2lh11vsc1_D0', 'u2lho2vsc1_D0', 'u3lho1vsc1_D0', 'u3lho1vsc1_D0',
+                      'u4vsc1_D0',     'u4vsc1_D0', 'u1lho2vsc2_D0', 'u2lho1vsc2_D0',
+                      'u3vsc2_D0',     'u3vsc2_D0',
+                  'u1lh12vsc0_D1', 'u1lho3vsc0_D1', 'u2lho2vsc0_D1', 'u3lho1vsc0_D1',
+                  'u3lho1vsc0_D1', 'u1lh11vsc1_D1', 'u1lho2vsc1_D1', 'u2lho1vsc1_D1',
+                      'u3vsc1_D1',     'u3vsc1_D1', 'u1lho1vsc2_D1',
+                  'u1lh11vsc0_D2', 'u1lho2vsc0_D2', 'u2lho1vsc0_D2',     'u3vsc0_D2', 
+                  'u1lho1vsc1_D2',     'u2vsc1_D2',     'u1vsc2_D2',
+                  'u1lho1vsc0_D3',     'u2vsc0_D3',     'u1vsc1_D3',     'u1vsc0_D4'    ]
 
-        # Buoyancy force
-        if par.thermal == 1:
-            arg2 += [ vP ]  # poloidal parity here because the entropy perturbation follows the same parity as the radial velocity
-            labl += [ 'u2gra0_D0' ]
+    # Buoyancy force
+    if par.thermal == 1:
+        arg2 += [ vP ]  # poloidal parity here because the entropy perturbation follows the same parity as the radial velocity
+        labl += [ 'u2gra0_D0' ]
 
-        if par.diff_rot == 1:
-            """
-            Differential rotation background velocity field forcing terms
-            On the form Ω(r, θ) = Ω0 * [ 1 + ΔΩ * (f0(r) * Y00(θ) + f2(r) * Y20(θ)) ], with : 
-                ΔΩ : Differential rotation amplitude (depend on the differential rotation type [par.diff_rot_type])
-                f0(r) : Differential rotation radial profile for the Y00 part, from which we define : 
-                    abu = f0
-                    spv = r*f0'
-                    psl = r^2*f0''
-                f2(r) : Differential rotation radial profile for the Y20 part, from which we define : 
-                    aub = f2
-                    svp = r*f2'
-                    pls = r^2*f2''
-            """
+    if par.diff_rot == 1:
+        """
+        Differential rotation background velocity field forcing terms
+        On the form Ω(r, θ) = Ω0 * [ 1 + ΔΩ * (f0(r) * Y00(θ) + f2(r) * Y20(θ)) ], with : 
+            ΔΩ : Differential rotation amplitude (depend on the differential rotation type [par.diff_rot_type])
+            f0(r) : Differential rotation radial profile for the Y00 part, from which we define : 
+                abu = f0
+                spv = r*f0'
+                psl = r^2*f0''
+            f2(r) : Differential rotation radial profile for the Y20 part, from which we define : 
+                aub = f2
+                svp = r*f2'
+                pls = r^2*f2''
+        """
 
-            # Poloidal terms : Δl = ±2, 0
-            # For f2(r)*Y20 
-            arg2 += [ vP ]*10
-            labl += [ 'u3aub0_D0','u2aub0_D1','u2aub0lho1_D0',
-                      'u3svp0_D0','u2svp0_D1','u2svp0lho1_D0',
-                      'u1aub0lho2_D0','u1aub0lho1_D1','u1aub0_D2',
-                      'u3pls0_D0' ]
+        # Poloidal terms : Δl = ±2, 0
+        # For f2(r)*Y20 
+        arg2 += [ vP ]*10
+        labl += [ 'u3aub0_D0','u2aub0_D1','u2aub0lho1_D0',
+                  'u3svp0_D0','u2svp0_D1','u2svp0lho1_D0',
+                  'u1aub0lho2_D0','u1aub0lho1_D1','u1aub0_D2',
+                  'u3pls0_D0' ]
             
-            # For f0(r)*Y00 
-            arg2 += [ vP ]*10
-            labl += [ 'u3abu0_D0','u2abu0_D1','u2abu0lho1_D0',
-                      'u3spv0_D0','u2spv0_D1','u2spv0lho1_D0',
-                      'u1abu0lho2_D0','u1abu0lho1_D1','u1abu0_D2',
-                      'u3psl0_D0' ]
+        # For f0(r)*Y00 
+        arg2 += [ vP ]*10
+        labl += [ 'u3abu0_D0','u2abu0_D1','u2abu0lho1_D0',
+                  'u3spv0_D0','u2spv0_D1','u2spv0lho1_D0',
+                  'u1abu0lho2_D0','u1abu0lho1_D1','u1abu0_D2',
+                  'u3psl0_D0' ]
 
-            # Toroidal terms : Δl = ±3, ±1
-            # For f2(r)*Y20 
-            arg2 += [ vT ]*3
-            labl += [ 'u2aub0_D0','u1aub0_D1','u2svp0_D0' ]
+        # Toroidal terms : Δl = ±3, ±1
+        # For f2(r)*Y20 
+        arg2 += [ vT ]*3
+        labl += [ 'u2aub0_D0','u1aub0_D1','u2svp0_D0' ]
 
-            # For f0(r)*Y00 
-            arg2 += [ vT ]*3
-            labl += [ 'u2abu0_D0','u1abu0_D1','u2spv0_D0' ]
+        # For f0(r)*Y00 
+        arg2 += [ vT ]*3
+        labl += [ 'u2abu0_D0','u1abu0_D1','u2spv0_D0' ]
 
 
-        # -------------------------------------------------------------------------------------------------------------------------------------------
-        # Matrix labels needed for the Navier-Stokes equation, single curl equations -------------------------------------- NavStok 1curl - section v
-        # -------------------------------------------------------------------------------------------------------------------------------------------
+    # -------------------------------------------------------------------------------------------------------------------------------------------
+    # Matrix labels needed for the Navier-Stokes equation, single curl equations -------------------------------------- NavStok 1curl - section v
+    # -------------------------------------------------------------------------------------------------------------------------------------------
 
-        # inertia and Coriolis diag terms
-        arg2 += [   vT    ]
-        labl += [ 'v1_D0' ]
+    # inertia and Coriolis diag terms
+    arg2 += [   vT    ]
+    labl += [ 'v1_D0' ]
 
-        # Coriolis off diag
-        arg2 += [   vP   ,     vP     ,   vP    ]
-        labl += [ 'v2_D0', 'v1lho1_D0', 'v1_D1' ]
+    # Coriolis off diag
+    arg2 += [   vP   ,     vP     ,   vP    ]
+    labl += [ 'v2_D0', 'v1lho1_D0', 'v1_D1' ]
 
-        # Viscous diffusion
-        if par.ViscosD > 0:
-            arg2 += [ vT ]*7
-            labl += [ 'v2lho1vsc0_D0', 'v3vsc0_D0', 'v2vsc1_D0',
-                      'v1lho1vsc0_D1', 'v2vsc0_D1', 'v1vsc1_D1',
-                          'v1vsc0_D2' ]
+    # Viscous diffusion
+    if par.ViscosD > 0:
+        arg2 += [ vT ]*7
+        labl += [ 'v2lho1vsc0_D0', 'v3vsc0_D0', 'v2vsc1_D0',
+                  'v1lho1vsc0_D1', 'v2vsc0_D1', 'v1vsc1_D1',
+                      'v1vsc0_D2' ]
            
         
-        if par.diff_rot == 1:
-            """
-            Differential rotation background velocity field forcing terms
-            On the form Ω(r, θ) = Ω0 * [ 1 + ΔΩ * (f0(r) * Y00(θ) + f2(r) * Y20(θ)) ], with : 
-                ΔΩ : Differential rotation amplitude (depend on the differential rotation type [par.diff_rot_type])
-                f0(r) : Differential rotation radial profile for the Y00 part, from which we define : 
-                    abu = f0
-                    spv = r*f0'
-                    psl = r^2*f0''
-                f2(r) : Differential rotation radial profile for the Y20 part, from which we define : 
-                    aub = f2
-                    svp = r*f2'
-                    pls = r^2*f2''
-            """
+    if par.diff_rot == 1:
+        """
+        Differential rotation background velocity field forcing terms
+        On the form Ω(r, θ) = Ω0 * [ 1 + ΔΩ * (f0(r) * Y00(θ) + f2(r) * Y20(θ)) ], with : 
+            ΔΩ : Differential rotation amplitude (depend on the differential rotation type [par.diff_rot_type])
+            f0(r) : Differential rotation radial profile for the Y00 part, from which we define : 
+                abu = f0
+                spv = r*f0'
+                psl = r^2*f0''
+            f2(r) : Differential rotation radial profile for the Y20 part, from which we define : 
+                aub = f2
+                svp = r*f2'
+                pls = r^2*f2''
+        """
 
-            # Poloidal terms : Δl = ±3, ±1
-            # For f2(r)*Y20 
-            arg2 += [ vP ]*4
-            labl += [ 'v2aub0_D0', 'v1aub0lho1_D0', 'v1aub0_D1', 'v2svp0_D0' ]
+        # Poloidal terms : Δl = ±3, ±1
+        # For f2(r)*Y20 
+        arg2 += [ vP ]*4
+        labl += [ 'v2aub0_D0', 'v1aub0lho1_D0', 'v1aub0_D1', 'v2svp0_D0' ]
 
-            # For f0(r)Y00
-            arg2 += [ vP ]*4
-            labl += [ 'v2abu0_D0', 'v1abu0lho1_D0', 'v1abu0_D1', 'v2spv0_D0' ]
+        # For f0(r)Y00
+        arg2 += [ vP ]*4
+        labl += [ 'v2abu0_D0', 'v1abu0lho1_D0', 'v1abu0_D1', 'v2spv0_D0' ]
 
-            # Toroidal terms : Δl = ±2, 0
-            # For f2(r)*Y20 
-            arg2 += [ vT ]
-            labl += [ 'v1aub0_D0' ]
+        # Toroidal terms : Δl = ±2, 0
+        # For f2(r)*Y20 
+        arg2 += [ vT ]
+        labl += [ 'v1aub0_D0' ]
 
-            # For f0(r)Y00
-            arg2 += [ vT ]
-            labl += [ 'v1abu0_D0' ]
+        # For f0(r)Y00
+        arg2 += [ vT ]
+        labl += [ 'v1abu0_D0' ]
             
 
     if par.thermal == 1:                  

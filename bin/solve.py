@@ -121,8 +121,6 @@ def normalise_energy(vecs):
     Called on all ranks with the full vecs on each; the l-components are shared among the ranks
     and their energies summed with an MPI Allreduce.
     '''
-    if not par.hydro:
-        return
     import utils4pp as upp
     from mpi4py import MPI
     comm = PETSc.COMM_WORLD.tompi4py()
@@ -144,10 +142,8 @@ def split_fields(vec):
     in the order the unknowns are stacked in A and B (see ut.sizmat).
     Returns a dict {field name: block of rows}, only for the fields present.
     '''
-    blocks = [ ('flow',        2*ut.n   * par.hydro),
-               ('magnetic',    2*ut.n   * par.magnetic),
-               ('thermal',     ut.n     * par.thermal),
-               ('composition', ut.n     * par.compositional) ]
+    blocks = [ ('flow',    2*ut.n),
+               ('thermal', ut.n * par.thermal) ]
     fields = {}
     offset = 0
     for name, size in blocks:
