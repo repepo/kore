@@ -130,6 +130,18 @@ class default_params():
         # and lmax-m+1 should be divisible by 2*ncpus
         # self.lmax = (2*self.ncpus*1 + self.m - 1)
 
+        # Powers of r multiplying the r̂⋅∇×∇× (u) and r̂⋅∇× (v) momentum equations (viscous case). The operator
+        # labels use rx up to 5 (u) and 3 (v), so these are the smallest values keeping every operator a polynomial
+        # in r, as required when ricb = 0. Larger values do not change the eigenvalues but degrade the residuals.
+        self.rpower_u = 5
+        self.rpower_v = 3
+        # Powers of the density ρ₀ multiplying the same equations
+        self.rhopower_u = 1
+        self.rhopower_v = 1
+        # Powers of r and ρ₀ for the pressure equation (not read by the current pipeline)
+        self.rpower_pp   = 4
+        self.rhopower_pp = 4
+
 
         # ----------------------------------------------------------------------------------------------------------------------
         # ------------------------------------------------------------------------------------------------- SLEPc solver options

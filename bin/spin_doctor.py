@@ -238,7 +238,12 @@ def main(ncpus):
             xk = np.cos( (ii+0.5)*np.pi/par.N )
             rk = np.flipud(0.5*(Rb-Ra)*( xk + 1 ) + Ra)
             cuvis = upp.diagnose_4plot(int(ncpus), u_sol2, t_sol2, rk, 'curl_vis')
-            idmax = np.unravel_index(np.argmax(abs(cuvis[:,2,0,:])), cuvis[:,2,0,:].shape)
+            cvt = abs(cuvis[:,2,0,:])
+            if par.ricb == 0:
+                # a degree-l component is ∝ r^l, so near r = 0 the evaluated series is round-off which the
+                # derivatives and 1/r factors of the curl amplify (1e8 and more at the innermost node): skip r < 0.01
+                cvt[:, rk < 0.01] = 0
+            idmax = np.unravel_index(np.argmax(cvt), cvt.shape)
             # the max value of the toroidal component of the curl of the viscous force is
             cuvismax[i] = abs(cuvis[idmax[0],2,0,idmax[1]])
             cuvismax_l[i] = idmax[0]
