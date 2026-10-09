@@ -37,7 +37,7 @@ par.ViscosD     = par.Ek
 # par.rvisc       = 0.60   # transition radius
 # par.hvisc       = 0.04   # transition width
 
-par.diff_rot    = 1
+par.diff_rot    = 0
 par.diff_rot_type = "conical" # Possible types : Y20, Y20-wall-bounded, shellular, cylindrical, conical, shellular_boussinesq and solar
 par.diff_rot_amplitude = -0.25
 #par.model_type  = 'astropy table'

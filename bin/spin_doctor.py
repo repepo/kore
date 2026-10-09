@@ -16,6 +16,88 @@ import utils as ut
 import utils4pp as upp
 
 
+
+def param_table(elapsed):
+    '''
+    Run parameters written as one row of params.dat, as (name, value, format) tuples.
+    The order here is the column order in params.dat. To add a parameter, append a
+    tuple at the end so existing columns keep their positions.
+    '''
+    return [
+        ( 'thermal',                  par.thermal,                 '%d' ),
+        ( 'm',                        par.m,                       '%d' ),
+        ( 'symm',                     par.symm,                    '%d' ),
+        ( 'ricb',                     par.ricb,                    '%.9e' ),
+        ( 'bci',                      par.bci,                     '%d' ),
+        ( 'bco',                      par.bco,                     '%d' ),
+        ( 'forcing',                  par.forcing,                 '%d' ),
+        ( 'forcing_frequency',        par.forcing_frequency,       '%.9e' ),
+        ( 'forcing_amplitude_cmb',    par.forcing_amplitude_cmb,   '%.9e' ),
+        ( 'forcing_amplitude_icb',    par.forcing_amplitude_icb,   '%.9e' ),
+        ( 'Gaspard',                  par.Gaspard,                 '%.9e' ),
+        ( 'Beyonce',                  par.Beyonce,                 '%.9e' ),
+        ( 'ViscosD',                  par.ViscosD,                 '%.9e' ),
+        ( 'ThermaD',                  par.ThermaD,                 '%.9e' ),
+        ( 'ncpus',                    par.ncpus,                   '%d' ),
+        ( 'N',                        par.N,                       '%d' ),
+        ( 'lmax',                     par.lmax,                    '%d' ),
+        ( 'runtime',                  elapsed,                     '%.9e' ),
+        ( 'aux0',                     par.aux0,                    '%.9e' ),
+        ( 'aux1',                     par.aux1,                    '%.9e' ),
+        ( 'aux2',                     par.aux2,                    '%.9e' ),
+        ( 'aux3',                     par.aux3,                    '%.9e' ),
+        ( 'aux4',                     par.aux4,                    '%.9e' ),
+        ( 'aux5',                     par.aux5,                    '%.9e' ),
+        ( 'visc0',                    par.visc0,                   '%.9e' ),
+        ( 'hvisc',                    par.hvisc,                   '%.9e' ),
+        ( 'rvisc',                    par.rvisc,                   '%.9e' ),
+        ( 'rpower_u',                 par.rpower_u,                '%.9f' ),
+        ( 'rhopower_u',               par.rhopower_u,              '%.9f' ),
+        ( 'rpower_v',                 par.rpower_v,                '%.9f' ),
+        ( 'rhopower_v',               par.rhopower_v,              '%.9f' ),
+        ( 'rpower_pp',                par.rpower_pp,               '%.9f' ),
+        ( 'rhopower_pp',              par.rhopower_pp,             '%.9f' ),
+    ]
+
+
+
+def ratio(a, b):
+    '''
+    a/b, or nan when b is zero (e.g. Tor/Pol when there is no flow)
+    '''
+    return a/b if b != 0 else np.nan
+
+
+
+def table_widths(cols):
+    '''
+    Width of each column of the summary table: the wider of its header and a formatted
+    sample value, plus some padding. Fixed up front so rows can be printed as they come.
+    '''
+    # sample values sized for the widest numbers expected: up to 99 solutions, |σ|,|ω| < 10000
+    sample = lambda fmt: 99 if fmt.endswith('d}') else (-9999.0 if fmt.endswith('f}') else 1.0)
+    return [ max(len(head), len(fmt.format(sample(fmt)))) + 2 for head, fmt, _ in cols ]
+
+
+
+def table_header(cols, widths):
+    '''
+    Header line and the ‾‾‾ underline of the summary table
+    '''
+    head = ' ' + ' '.join( h.center(wd) for (h, _, _), wd in zip(cols, widths) )
+    line = ' ' + ' '.join( '‾'*wd for wd in widths )
+    return head, line
+
+
+
+def table_row(cols, widths, i):
+    '''
+    Row of the summary table for solution i
+    '''
+    return ' ' + ' '.join( fmt.format(get(i)).center(wd) for (_, fmt, get), wd in zip(cols, widths) )
+
+
+
 def main(ncpus):
 
     # ------------------------------------------------------------------ Postprocessing: compute energy, dissipation, etc.
@@ -27,6 +109,7 @@ def main(ncpus):
     if os.path.isfile(fname_ev):
         eigval = np.loadtxt(fname_ev).reshape((-1,2))
 
+    timing = 0.0  # solve time, read from timing.dat if present
     if os.path.isfile(fname_tm):
         timing = np.loadtxt(fname_tm)
         if np.size(timing)>1:
@@ -56,7 +139,7 @@ def main(ncpus):
     Ensvel      = np.zeros(success)
     Enscor      = np.zeros(success)
     Ensvif      = np.zeros(success)
-    Ensbuo      = np.zeros(success)    
+    Ensbuo      = np.zeros(success)
     cuvismax    = np.zeros(success)
     cuvismax_r  = np.zeros(success)
     cuvismax_l  = np.zeros(success, dtype=int)
@@ -80,13 +163,37 @@ def main(ncpus):
     resens      = np.zeros(success)
 
     # parameter values to be saved
-    params      = np.zeros((success,33))
+    params      = []                 # one row of param_table() per solution
     # ------------------------------------------------------------------------------------------------------------------------
 
-    hdr_s = '    resid𝑠 ' if par.thermal else ''
-    bar_s = ' ‾‾‾‾‾‾‾‾‾‾' if par.thermal else ''
-    print('\n  ★     Damping σ     Frequency ω     𝒯/𝒫       residσ     residω ' + hdr_s + '   Peak ℓ ℓ-Width ℓ-Convergence   cvf_r   cvf_l    cvfmax     residual')
-    print(  ' ‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾' + bar_s + ' ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾ ')
+    sigmas      = np.zeros(success)  # damping of each solution
+    freqs       = np.zeros(success)  # frequency of each solution
+
+    # Summary table printed while processing: (header, format, value of solution i).
+    # To print a new quantity, add a line here.
+    table_cols = [
+        ( '★',             '{:d}',      lambda i: i ),
+        ( 'Damping σ',     '{: .9f}',   lambda i: sigmas[i] ),
+        ( 'Frequency ω',   '{: .9f}',   lambda i: freqs[i] ),
+        ( '𝒯/𝒫',           '{:8.2e}',   lambda i: ratio(KT[i], KP[i]) ),
+        ( 'residσ',        '{:8.2e}',   lambda i: resid1[i] ),
+        ( 'residω',        '{:8.2e}',   lambda i: resid2[i] ),
+    ] + ([
+        ( 'resid𝑠',        '{:8.2e}',   lambda i: resid3[i] ),
+    ] if par.thermal else []) + [
+        ( 'Peak ℓ',        '{:d}',      lambda i: ldom[i] ),
+        ( 'ℓ-Width',       '{:d}',      lambda i: lwidth[i] ),
+        ( 'ℓ-Convergence', '{:8.2e}',   lambda i: lconv[i] ),
+        ( 'cvf_r',         '{:5.3f}',   lambda i: cuvismax_r[i] ),
+        ( 'cvf_l',         '{:d}',      lambda i: cuvismax_l[i] ),
+        ( 'cvfmax',        '{:8.2e}',   lambda i: cuvismax[i] ),
+        ( 'residens',      '{:8.2e}',   lambda i: resens[i] ),
+    ]
+    table_w = table_widths(table_cols)
+    table_head, table_line = table_header(table_cols, table_w)
+
+    print('\n' + table_head)
+    print(table_line)
 
 
     # Begin processing all solutions
@@ -98,6 +205,7 @@ def main(ncpus):
         else:
             w = ut.wf
             sigma = 0
+        sigmas[i], freqs[i] = sigma, w
 
         t_sol2 = 0
 
@@ -109,13 +217,13 @@ def main(ncpus):
         lpi = np.searchsorted(ll,lp);  # Poloidal indices
         lti = np.searchsorted(ll,lt);  # Toroidal indices
 
-                        
+
         if par.thermal:
             rthm = np.copy(rt[:,i])
             ithm = np.copy(it[:,i])
             # Expand solution
             t_sol2  = upp.expand_reshape_sol( rthm + 1j*ithm, par.symm)
-            
+
 
         # identify solutions
         [ ldom[i], lwidth[i], lconv[i] ] = upp.identify( u_sol2 )
@@ -137,7 +245,7 @@ def main(ncpus):
             cuvismax_r[i] = rk[idmax[1]]
 
 
-            
+
         KP[i] = np.sum( udgn[lpi,0])  # Poloidal kinetic energy
         KT[i] = np.sum( udgn[lti,0])  # Toroidal kinetic energy
 
@@ -178,95 +286,72 @@ def main(ncpus):
         if par.thermal:
             resid3[i] = ( abs( 2*sigma*TE[i] - Dthm[i] - Wadv_thm[i] ) / max( abs(2*sigma*TE[i]), abs(Dthm[i]), abs(Wadv_thm[i]) ) )
 
-        col_s = '   {:8.2e}'.format(resid3[i]) if par.thermal else ''
+        # ------------------------------------------------------------------------------------------------------------------
+        print(table_row(table_cols, table_w, i))
+        # ------------------------------------------------------------------------------------------------------------------
 
-        # -------i-------sigma-------w-----------KT/KP----resid1-----ldom-----lwidth-----lconv-------cuv_r-----cuv_l-----cuvm------resens------------------------------------------------------------------------------------------------------------------------------------
-        print(' {:2d}   {: 12.9f}   {: 12.9f}   {:8.2e}   {:8.2e}   {:8.2e}{}    {:4d}    {:4d}     {:8.2e}     {:5.3f}   {:4d}    {:8.2e}    {:8.2e}'.format(i, sigma, w, KT[i]/KP[i], resid1[i], resid2[i], col_s, ldom[i], lwidth[i], lconv[i], cuvismax_r[i], cuvismax_l[i], cuvismax[i], resens[i]  ))
-        # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-        toc = timer()
-        
-        params[i,:] = np.array([
-                                par.thermal,                    #0
-
-                                par.m,                          #1
-                                par.symm,                       #2
-                                par.ricb,                       #3
-                                par.bci,                        #4
-                                par.bco,                        #5
-
-                                par.forcing,                    #6
-                                par.forcing_frequency,          #7
-                                par.forcing_amplitude_cmb,      #8
-                                par.forcing_amplitude_icb,      #9
-
-                                par.Gaspard,                    #10
-                                par.Beyonce,                    #11
-                                par.ViscosD,                    #12
-                                par.ThermaD,                    #13
-
-                                par.ncpus,                      #14
-                                par.N,                          #15
-                                par.lmax,                       #16
-
-                                timing+toc-tic,                 #17
-
-                                par.aux0,                       #18
-                                par.aux1,                       #19
-                                par.aux2,                       #20
-                                par.aux3,                       #21
-                                par.aux4,                       #22
-                                par.aux5,                       #23
-
-                                par.visc0,                      #24
-                                par.hvisc,                      #25
-                                par.rvisc,                      #26
-
-                                par.rpower_u,                   #27
-                                par.rhopower_u,                 #28
-                                par.rpower_v,                   #29
-                                par.rhopower_v,                 #30
-
-                                par.rpower_pp,                  #31
-                                par.rhopower_pp                 #32
-                                ])  # 33 total
+        params.append( [ v for _, v, _ in param_table(timing + timer() - tic) ] )
 
     # ------------------------------------------------------------------------------------------------------------------------
-    print(  ' ‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾' + bar_s + ' ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾ ')
+    print(table_line + '\n')
 
 
     # ---------------------------------------------------------- write post-processed data and parameters to disk
 
     with open('params.dat','ab') as dpar:
-        np.savetxt(dpar, params,
-        fmt=[
-            '%d',   '%d',   '%d',   '%.9e', '%d',   '%d',
-            '%d',   '%.9e', '%.9e', '%.9e',
-            '%.9e', '%.9e', '%.9e', '%.9e',
-            '%d',   '%d',   '%d',   '%.9e',
-            '%.9e', '%.9e', '%.9e', '%.9e', '%.9e', '%.9e',
-            '%.9e', '%.9e', '%.9e',
-            '%.9f', '%.9f', '%.9f', '%.9f', '%.9f', '%.9f'
-            ])
+        np.savetxt(dpar, np.array(params),
+        fmt=[ f for _, _, f in param_table(0) ])
 
-    # columns: KE, KP, KT, Dkin, ldom, lwidth, lconv, Ensvel, Enscor, Ensvif, Ensbuo, cuvismax_r, cuvismax_l, cuvismax,
-    #          resens (enstrophy balance), resid2 (frequency balance, residω)
+    # flow.dat columns, in order: (name, values, format). To add a column, append a tuple at the end.
+    flow_cols = [
+        ( 'KE',         KE,         '%.9e' ),
+        ( 'KP',         KP,         '%.9e' ),
+        ( 'KT',         KT,         '%.9e' ),
+        ( 'Dkin',       Dkin,       '%.9e' ),
+        ( 'ldom',       ldom,       '%d' ),
+        ( 'lwidth',     lwidth,     '%d' ),
+        ( 'lconv',      lconv,      '%.3e' ),
+        ( 'Ensvel',     Ensvel,     '%.9e' ),
+        ( 'Enscor',     Enscor,     '%.9e' ),
+        ( 'Ensvif',     Ensvif,     '%.9e' ),
+        ( 'Ensbuo',     Ensbuo,     '%.9e' ),
+        ( 'cuvismax_r', cuvismax_r, '%.3e' ),
+        ( 'cuvismax_l', cuvismax_l, '%d' ),
+        ( 'cuvismax',   cuvismax,   '%.3e' ),
+        ( 'resens',     resens,     '%.9e' ),  # enstrophy balance
+        ( 'resid2',     resid2,     '%.9e' ),  # frequency balance, residω
+        ( 'resid1',     resid1,     '%.9e' ),  # power balance, residσ
+    ]
     with open('flow.dat','ab') as dflo:
-       np.savetxt(dflo, np.c_[ KE, KP, KT, Dkin, ldom, lwidth, lconv, Ensvel, Enscor, Ensvif, Ensbuo, cuvismax_r, cuvismax_l, cuvismax, resens, resid2 ], fmt=['%.9e', '%.9e', '%.9e', '%.9e', '%d', '%d', '%.3e', '%.9e', '%.9e', '%.9e', '%.9e', '%.3e', '%d', '%.3e', '%.9e', '%.9e' ])
+        np.savetxt(dflo, np.column_stack([ v for _, v, _ in flow_cols ]),
+        fmt=[ f for _, _, f in flow_cols ])
 
 
     if par.thermal:
-        # columns: TE, Wadv, Dthm (times ThermaD), resid3 (entropy budget), Wthm (buoyancy work), resid1 (KE budget)
+        # thermal.dat columns, in order: (name, values, format). To add a column, append a tuple at the end.
+        thermal_cols = [
+            ( 'TE',         TE,         '%.18e' ),
+            ( 'Wadv_thm',   Wadv_thm,   '%.18e' ),
+            ( 'Dthm',       Dthm,       '%.18e' ),  # times ThermaD
+            ( 'resid3',     resid3,     '%.18e' ),  # entropy budget, resid𝑠
+            ( 'Wthm',       Wthm,       '%.18e' ),  # buoyancy work
+            ( 'resid1',     resid1,     '%.18e' ),  # KE budget, residσ
+        ]
         with open('thermal.dat','ab') as dtmp:
-            np.savetxt(dtmp, np.c_[ TE, Wadv_thm, Dthm, resid3, Wthm, resid1 ])
+            np.savetxt(dtmp, np.column_stack([ v for _, v, _ in thermal_cols ]),
+            fmt=[ f for _, _, f in thermal_cols ])
 
 
     if par.forcing == 0:
         with open('eigenvalues.dat','ab') as deig:
             np.savetxt(deig, eigval)
 
+    print('Total time postprocessing:', timer()-tic, 'seconds')
+
     # ------------------------------------------------------------------ done
     return 0
+
+
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1]))
