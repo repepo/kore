@@ -77,7 +77,7 @@ def main():
                 hft = 0.0025 # Inner core hydrostating flattening
                 C   = (1j)*(2/3)*np.sqrt(6)*hft*par.ricb
 
-                P   = ( par.ricb/(l*(l+1)) ) * C * par.forcing_amplitude
+                P   = ( par.ricb/(l*(l+1)) ) * C * par.forcing_amplitude_icb
                 dP  = -P/par.ricb
                 d2P = (2-l*(l+1))*P/(par.ricb**2)
 

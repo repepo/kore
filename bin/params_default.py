@@ -91,10 +91,10 @@ class default_params():
         # --------------------------------------------------------------------------------------------------- Forcing parameters
         # ----------------------------------------------------------------------------------------------------------------------
         self.forcing = 0  # Uncomment this line for eigenvalue problems
-        # self.forcing = 3  # For Rovira-Navarro 2018 tidal body forcing, m=0,2 must be symm, m=1 antisymm. Leaks power!
         # self.forcing = 6  # Buffett2010 ICB radial velocity boundary forcing, m=1,antisymm
         # self.forcing = 7  # Longitudinal libration boundary forcing, m={0, 2}, symm, no-slip
-        # self.forcing = 9  # Radial, symmetric, m=2 boundary flow forcing.
+        # self.forcing = 9  # Radial, symmetric, m=2 boundary flow forcing, bci=1.
+        # self.forcing = 10 # Radial, symmetric, order m boundary flow forcing at the cmb (l=m), unit amplitude.
 
         # Forcing frequency (ignored if forcing == 0)
         self.forcing_frequency = 1.0  # negative is prograde

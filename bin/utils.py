@@ -221,27 +221,6 @@ def chebco_f( func, N, ricb, rcmb, tol, *args):
     return out
 
 
-def chebco(powr, N, tol, ricb, rcmb):
-    '''
-    Returns the first N Chebyshev coefficients
-    from 0 to N-1, of the function
-    ( ricb + (rcmb-ricb)*( x + 1 )/2. )**powr
-    '''
-    i = np.arange(0,N)
-    xi = np.cos(np.pi*(i+0.5)/N)
-
-    if ricb == 0:                                    # No inner core ---> Chebyshev domain [-1,1] mapped to [-rcmb, rcmb]
-        ai = ( rcmb*xi )**powr
-    else:
-        ai = ( ricb + (rcmb-ricb)*(xi+1)/2. )**powr  # With inner core -> Chebyshev domain [-1,1] mapped to [ ricb, rcmb]
-
-    out = sft.dct(ai)/N
-    out[0]=out[0]/2.
-    out[np.absolute(out)<=tol]=0.
-
-    return out
-
-
 def Dcheb(ck, ricb, rcmb):
     '''
     The derivative of a Chebyshev expansion with coefficients ck
@@ -451,10 +430,6 @@ def load_model(r, var):
     return out
 
 
-#if par.B0 == 'FDM':
-#    beta_actual = findbeta([par.beta, B0_l, par.ricb])
-
-
 def Dlam(lamb,N):
     '''
     Order lamb (>=1) derivative matrix, size N*N
@@ -605,45 +580,6 @@ def Mlam(a0,lamb,vector_parity,a0_parity=None):
     else:
 
         out = ss.csr_matrix((N,N))
-
-    return out
-
-
-def marc_tide(omega, l, m, loc, N, ricb, rcmb):
-    '''
-    Tidal body force as used by Rovira-Navarro et al, 2018
-    '''
-
-    C0 = 1j; C1 = 1; C2 = 1j
-
-    if l==2 and loc == 'top':
-        r5 = chebco(5, N-4, 2e-16, ricb, rcmb)
-
-        if m == 0:
-            out = -6j*C0*omega*r5
-        if m == 1:
-            out = -6j*C1*(omega+1)*r5
-        if m == 2:
-            out = -6j*C2*(omega+2)*r5
-
-    elif loc == 'bot':
-        r4 = chebco(4, N-2, 2e-16, ricb, rcmb)
-
-        if m == 0:
-            if l == 1:
-                out = (4/5)*C0*r4
-            elif l == 3:
-                out = (-24/5)*C0*r4
-
-        elif m == 1:
-            if l == 1:
-                out = (2/5)*np.sqrt(3)*C1*r4
-            elif l == 3:
-                out = -(16/5)*np.sqrt(2)*C1*r4
-
-        elif m == 2:
-            if l == 3:
-                out = -(8/np.sqrt(5))*C2*r4
 
     return out
 
