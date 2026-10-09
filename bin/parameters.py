@@ -13,79 +13,44 @@ par.set_scales()
 # ---------------------------------------
 # --------------- Manual parameter adjust
 # ---------------------------------------
-par.ricb        = 0.02
+# Gravito-inertial mode damped by both viscosity and buoyancy work (gi1):
+# lambda = -0.049653 + 2.037155i (shift 2.04i). Of sigma*K, viscous 44 %, buoyancy 56 %.
+# Raising/lowering ThermaD moves the split (Th = 2e-4, 3e-4, 5e-4, 1e-3 -> buoyancy 21, 39, 56, 73 %).
+par.ricb        = 0.35
 par.m           = 2
 par.symm        = 1
-par.ricb        = 0.71
-par.Ek          = 1e-8
-par.thermal     = 0
+par.thermal     = 1
 par.model_type  = 'user def'
-#par.model       = 'poly.n3_isentropic.h5'
-par.aux0        = 1.0   # r peel cutoff
-#par.aux0        = 0.96   # r peel cutoff
-# par.aux1        = -0.71  # r₁
-# par.aux2        = 0.71  # r₂
-# par.aux3        = 2.0   # Amplitude of Γ₁ deviation
-# par.aux4        = 1.0   # hard edge = 0,  soft edge = 1
-# par.aux5        = 0
-par.Gaspard     = 1
-# par.Beyonce     = 0  #(1.0/0.3)**2
-par.ViscosD     = par.Ek
-# par.ThermaD     = 0
-
-# par.visc0       = 1.0   # core/envelope viscosity ratio
-# par.rvisc       = 0.60   # transition radius
-# par.hvisc       = 0.04   # transition width
-
-par.diff_rot    = 0
-par.diff_rot_type = "conical" # Possible types : Y20, Y20-wall-bounded, shellular, cylindrical, conical, shellular_boussinesq and solar
-par.diff_rot_amplitude = -0.25
-#par.model_type  = 'astropy table'
-#par.model       = 'poly.n3_isentropic.h5'
-#par.model       = 'model_s.at'
-par.aux0        = 0.996  # r peel cutoff
-par.aux1        = 0.03  #x1  
+par.aux0        = 0.99  # r peel cutoff
+par.aux1        = 0.5   #x1
 par.aux2        = 0.03  #w1
-par.aux3        = 0.69  #x2
+par.aux3        = 0.85  #x2
 par.aux4        = 0.03  #w2
 par.aux5        = 2.5   #A
 par.Gaspard     = 1.
-par.Beyonce     = 4.80127e4  #(1.0/0.3)**2
+par.Beyonce     = 10.
 par.ViscosD     = 1e-4
-par.ThermaD     = 0.
+par.ThermaD     = 5e-4
 
 par.visc0       = 1.0   # core/envelope viscosity ratio
 par.rvisc       = 0.60   # transition radius
 par.hvisc       = 0.04   # transition width
+
+par.diff_rot    = 0
+par.diff_rot_type = "conical" # Possible types : Y20, Y20-wall-bounded, shellular, cylindrical, conical, shellular_boussinesq and solar
+par.diff_rot_amplitude = -0.25
 
 par.bci         = 0
 par.bco         = 0
 par.bci_thermal = 0
 par.bco_thermal = 0
 par.ncpus       = 10
-g               = 3.3
-par.N           = 10*30
-#par.N           = par.Ncheb(par.Ek)
-par.lmax        = par.ellmax(par.ncpus, g, par.m, par.N)
-rnd1            =-0.555094
-rnd2            =-0.270064
-frame           = "inertial" # set in which frame ("inertial" or "rotating") the eigenvalues are given. ! Solutions are always computed in the rotating frame
-par.rtau        = -1.75e-3  # σ : damping factor (negative is damped)
-par.itau        = 1.3552    # ⍵ : frequency (negative is prograde) 
-# par.rtau        = 10**(2 * (rnd1 - 1))  # σ : damping factor (negative is damped)
-# par.itau        = 4*rnd2    # ⍵ : frequency (negative is prograde) 
+par.N           = 192
+par.lmax        = 121
+par.rtau        = 0     # σ : damping factor (negative is damped)
+par.itau        = 2.04  # ⍵ : frequency (negative is prograde)
 par.smopo       = 0
-par.nev         = 3
-par.set_eigv_frame(frame)
-par.N           = 310
-g               = 1.0
-par.lmax        = par.ellmax(par.ncpus, g, par.m, par.N)
-rnd1            = 0
-rnd2            = 0
-par.rtau        = 0  #+ rnd1*1e-2
-par.itau        = 1.1  #1.59875  #+ rnd2*0.001 
-par.smopo       = 0
-par.nev         = 10
+par.nev         = 4
 par.which_eigenpairs = 'TM'
 
 par.rpower_u    = 5
