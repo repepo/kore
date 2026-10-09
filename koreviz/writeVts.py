@@ -4,37 +4,24 @@
 import numpy as np
 
 try:
-    try: # Version 2 changed naming convention of functions
-        from evtk.hl import structuredToVTK
-        gridToVTK = structuredToVTK
-    except:
-        import evtk
-        gridToVTK = evtk.hl.gridToVTK
-except:
-    print("writeVts requires the use of evtk library!")
-    print("You can get it from https://github.com/paulo-herrera/PyEVTK")
+    from pyevtk.hl import gridToVTK
+except ImportError:
+    print("If you need 3D visualization:")
+    print("writeVts requires the use of pyevtk library.")
+    print("You can install it with pip: pip install pyevtk")
 
-def get_grid(r,theta,phi,nr,ntheta,nphi):
+def get_grid(r,theta,phi):
 
-    r3D  = np.zeros([nr,ntheta,nphi])
-    th3D = np.zeros([nr,ntheta,nphi])
-    p3D  = np.zeros([nr,ntheta,nphi])
-
-    for i in range(nr):
-        r3D[i,...] = r[i]
-    for j in range(ntheta):
-        th3D[:,j,:] = theta[j]
-    for k in range(nphi):
-        p3D[...,k] = phi[k]
+    r3D,th3D,phi3D = np.meshgrid(r,theta,phi,indexing='ij')
 
     s3D = r3D * np.sin(th3D)
-    x3D = s3D * np.cos(p3D)
-    y3D = s3D * np.sin(p3D)
+    x3D = s3D * np.cos(phi3D)
+    y3D = s3D * np.sin(phi3D)
     z3D = r3D * np.cos(th3D)
 
-    return r3D,th3D,p3D, x3D,y3D,z3D, s3D
+    return r3D,th3D,phi3D, x3D,y3D,z3D, s3D
 
-def get_cart(vr,vt,vp,r3D,th3D,p3D):
+def get_cart(vr,vt,vp,th3D,p3D):
 
     vs = vr * np.sin(th3D) + vt *np.cos(th3D)
     vz = vr * np.cos(th3D) - vt *np.sin(th3D)
@@ -44,28 +31,63 @@ def get_cart(vr,vt,vp,r3D,th3D,p3D):
 
     return vx,vy,vz
 
-def tile_and_fix(data,m,nr,ntheta,nphi,step):
+def tile_and_fix(data,m,nr,ntheta,nphi,step,ext=None):
+    '''
+    Puts a field of the mode (radius, theta, one azimuthal period) on the output grid: every step-th radius
+    and colatitude, tiled over the m periods and closed in longitude (last = first). The output grid has the
+    radii of the mode (in its order, i.e. decreasing) at the end; ext, if given, is put in the rows before it
+    (e.g. the field outside the CMB, already at the output colatitudes, also in decreasing radius), otherwise
+    those rows are zero.
+    '''
 
     scal = np.zeros([nr,ntheta,nphi])
-    scal_tile = (np.tile(data,m))[::step,::step,:]
-    scal[...,:-1] = scal_tile
-    scal[...,-1]  = scal_tile[...,0]
-    scal = np.asfortranarray(scal)
+    rows = np.tile(data[::step,::step,:], max(m,1))
+    scal[nr-rows.shape[0]:,:,:-1] = rows
+    if ext is not None:
+        scal[:ext.shape[0],:,:-1] = np.tile(ext, max(m,1))
+    scal[...,-1] = scal[...,0]
 
-    del scal_tile
+    return np.asfortranarray(scal)
 
-    return scal
+def writeVts(mode, scals=[],vecs=[],potextra=False,
+             nrout=32,radratio=2.0,step=5):
+    '''
+    Writes the fields of a kmode to out.vts (pyevtk). With potextra=True and a magnetic field, the potential
+    field outside the CMB is added on nrout radii up to radratio*rcmb (other fields are zero there).
+    '''
 
-def writeVts(mode, scals=[],vecs=[],step=5):
+    # Make everything case insensitive
 
-    r     = mode.r[::step]
+    scals = [elem.lower() for elem in scals]
+    vecs  = [elem.lower() for elem in vecs]
+
+    # Figure out if magnetic field needs plotting
+
+    plotb = ( any(elem in ['br','bphi','bp','bt','btheta'] for elem in scals) or
+              any(elem in ["b"] for elem in vecs) )
+
+    # the extrapolation only applies with a magnetic field
+    potextra = potextra and plotb
+
+    # Radii: those of the mode (decreasing, from rcmb), with step, and with potextra the exterior ones before
+    # them, also decreasing, from radratio*rcmb down to just above rcmb (rcmb itself is the mode's first radius)
+
+    r = mode.r[::step]
+    ext = {}
+    if potextra:
+        rext = np.linspace(radratio*mode.rcmb, mode.rcmb, nrout)[:-1]
+        brout, btout, bpout = mode.potextra(rext)
+        ext = {'br': brout[:,::step,:], 'btheta': btout[:,::step,:], 'bphi': bpout[:,::step,:]}
+        r = np.concatenate((rext, r))
+    nr = len(r)
+
     theta = mode.theta[::step]
-
-    nr     = len(r)
     ntheta = len(theta)
     nphi   = mode.phi.shape[0]
 
-    r3D,th3D,p3D, x3D,y3D,z3D, s3D = get_grid(r,theta,mode.phi,nr,ntheta,nphi)
+    grid = lambda data, name=None: tile_and_fix(data, mode.m, nr, ntheta, nphi, step, ext.get(name))
+
+    r3D,th3D,p3D, x3D,y3D,z3D, s3D = get_grid(r,theta,mode.phi)
 
     keys = []
     values = []
@@ -76,102 +98,60 @@ def writeVts(mode, scals=[],vecs=[],step=5):
     values.append(r3D)
     values.append(s3D)
 
-    # Make everything case insensitive
-
-    for k in range(len(scals)):
-        scals[k] = scals[k].lower()
-
-    for k in range(len(vecs)):
-        vecs[k] = vecs[k].lower()
+    if plotb:
+        br, btheta, bphi = grid(mode.br, 'br'), grid(mode.btheta, 'btheta'), grid(mode.bphi, 'bphi')
 
     if any(elem in ["u","v"] for elem in vecs):
 
-        # Tiling and steps
-
-        ur = tile_and_fix(mode.ur,mode.m,nr,ntheta,nphi,step)
-        ut = tile_and_fix(mode.utheta,mode.m,nr,ntheta,nphi,step)
-        up = tile_and_fix(mode.uphi,mode.m,nr,ntheta,nphi,step)
-
-        ux,uy,uz = get_cart(ur,ut,up,r3D,th3D,p3D)
-
-        ux = np.asfortranarray(ux)
-        uy = np.asfortranarray(uy)
-        uz = np.asfortranarray(uz)
+        ux,uy,uz = get_cart(grid(mode.ur),grid(mode.utheta),grid(mode.uphi),th3D,p3D)
 
         keys.append("vecV")
-        values.append((ux,uy,uz))
+        values.append((np.asfortranarray(ux),np.asfortranarray(uy),np.asfortranarray(uz)))
 
     if any(elem in ["b"] for elem in vecs):
 
-        # Tiling and steps
-
-        br = tile_and_fix(mode.br,mode.m,nr,ntheta,nphi,step)
-        bt = tile_and_fix(mode.btheta,mode.m,nr,ntheta,nphi,step)
-        bp = tile_and_fix(mode.bphi,mode.m,nr,ntheta,nphi,step)
-
-        bx,by,bz = get_cart(br,bt,bp,r3D,th3D,p3D)
-
-        bx = np.asfortranarray(bx)
-        by = np.asfortranarray(by)
-        bz = np.asfortranarray(bz)
+        bx,by,bz = get_cart(br,btheta,bphi,th3D,p3D)
 
         keys.append("vecB")
-        values.append((bx,by,bz))
+        values.append((np.asfortranarray(bx),np.asfortranarray(by),np.asfortranarray(bz)))
 
     if any(elem in ["ur", "vr"] for elem in scals):
-        ur = tile_and_fix(mode.ur,mode.m,nr,ntheta,nphi,step)
         keys.append("Radial vel")
-        values.append(ur)
+        values.append(grid(mode.ur))
 
     if any(elem in ["ut", "utheta", "vt", "vtheta"] for elem in scals):
-        utheta = tile_and_fix(mode.utheta,mode.m,nr,ntheta,nphi,step)
         keys.append("U theta")
-        values.append(utheta)
+        values.append(grid(mode.utheta))
 
     if any(elem in ["up","uphi","vp","vphi"] for elem in scals):
-        uphi = tile_and_fix(mode.uphi,mode.m,nr,ntheta,nphi,step)
         keys.append("Zonal flow")
-        values.append(uphi)
+        values.append(grid(mode.uphi))
 
     if any(elem in ["us","vs"] for elem in scals):
-        us = np.zeros_like(mode.ur)
-        for k,ktheta in enumerate(mode.theta):
-            us[:,k,:] = ( mode.ur[:,k,:]*np.sin(ktheta)
-                         +mode.utheta[:,k,:]*np.cos(ktheta) )
-        us = tile_and_fix(us,mode.m,nr,ntheta,nphi,step)
+        sint = np.sin(mode.theta)[None,:,None]
+        cost = np.cos(mode.theta)[None,:,None]
         keys.append("Cyl rad vel")
-        values.append(us)
+        values.append(grid(mode.ur*sint + mode.utheta*cost))
 
     if any(elem in ["br"] for elem in scals):
-        br = tile_and_fix(mode.br,mode.m,nr,ntheta,nphi,step)
-        br = np.asfortranarray(mode.br)
         keys.append("Radial mag. field")
         values.append(br)
 
     if any(elem in ["bt", "btheta"] for elem in scals):
-        btheta = tile_and_fix(mode.btheta,mode.m,nr,ntheta,nphi,step)
-        btheta = np.asfortranarray(mode.btheta)
         keys.append("B_theta")
         values.append(btheta)
 
     if any(elem in ["bp","bphi"] for elem in scals):
-        bphi = tile_and_fix(mode.bphi,mode.m,nr,ntheta,nphi,step)
-        bphi = np.asfortranarray(mode.bphi)
         keys.append("Zonal mag. field")
         values.append(bphi)
 
     if any(elem in ["t","temp","temperature"] for elem in scals):
-        temperature = tile_and_fix(mode.temperature,mode.m,
-                                    nr,ntheta,nphi,step)
         keys.append("Temperature")
-        values.append(temperature)
+        values.append(grid(mode.temperature))
 
     if any(elem in ["c","xi","comp","compositon","chem"] for elem in scals):
-        composition= tile_and_fix(mode.composition,mode.m,
-                                   nr,ntheta,nphi,step)
-        composition = np.asfortranarray(composition)
         keys.append("Composition")
-        values.append(composition)
+        values.append(grid(mode.composition))
 
     dataDict = dict(zip(keys,values))
 

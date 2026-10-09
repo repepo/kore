@@ -22,7 +22,7 @@ import scipy.io as sio
 import scipy.sparse as ss
 import numpy as np
 
-import parameters as par
+from parameters import par
 import utils as ut
 
 
@@ -169,7 +169,7 @@ def main():
     # solver options from parameters.py, unless already given on the command line.
     # eps_/st_ options are for eigenvalue problems, ksp_/pc_/mat_ ones for forced problems
     skip = ('ksp_', 'pc_', 'mat_') if par.forcing == 0 else ('eps_', 'st_')
-    for key, val in getattr(par, 'petsc_opts', {}).items():
+    for key, val in par.petsc_opts.items():
         if not key.startswith(skip) and not opts.hasName(key):
             opts.setValue(key, val)
 
@@ -177,7 +177,7 @@ def main():
         tic = timer()
 
     # NEW (2026-10-06): optional Ruiz pre-scaling (par.prescale), eigenvalue problems only
-    prescale = getattr(par, 'prescale', 0)
+    prescale = par.prescale
     if prescale and par.forcing != 0:
         Print('Note: prescale applies to eigenvalue problems only; not used for this forced problem.')
         prescale = 0
@@ -207,7 +207,7 @@ def main():
 
         # -------------------------------------------------------------- setup eigenvalue solver
         E = SLEPc.EPS()
-        E.create(SLEPc.COMM_WORLD)
+        E.create(PETSc.COMM_WORLD)
         E.setOperators(MA,MB)
         E.setProblemType(SLEPc.EPS.ProblemType.GNHEP)
         #E.setDimensions(nev,ncv)

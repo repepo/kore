@@ -11,7 +11,7 @@
 # It will generate a series of directories with names
 # beginning with 'somename' and ending with a numerical string
 # corresponding to the value assigned to the variable 'var'
-# in the parameters.py file.
+# (par.var) in the parameters.py file.
 #
 # Example:
 #
@@ -56,7 +56,12 @@ do
 	#cp ~/kore/underflow.py .
 
 	# modify variables
-	sed -i 's,^\('$var'[ ]*=\).*,\1'$value',' bin/parameters.py	
+	# parameters are set as par.<var> = ... before par.set_scales(); add the line if the default is used
+	if grep -q '^par\.'$var'[ ]*=' bin/parameters.py; then
+		sed -i 's,^\(par\.'$var'[ ]*=\).*,\1 '$value',' bin/parameters.py
+	else
+		sed -i 's,^par\.set_scales(),par.'$var' = '$value'\n&,' bin/parameters.py
+	fi
 
 	sed -i 's,^\(#PBS -N \).*,\1'$folder',' tools/subramp.sh
 	

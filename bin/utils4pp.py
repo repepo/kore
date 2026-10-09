@@ -5,7 +5,7 @@
 import multiprocessing as mp
 import numpy.polynomial.chebyshev as ch
 import numpy as np
-import parameters as par
+from parameters import par
 import utils as ut
 
 mp.set_start_method('fork')

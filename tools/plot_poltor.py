@@ -11,7 +11,7 @@ import cmasher as cmr
 sys.path.insert(1,'bin/')
 
 import utils as ut
-import parameters as par
+from parameters import par
 
 from matplotlib import rc
 rc('text', usetex=True) 

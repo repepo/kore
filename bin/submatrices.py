@@ -20,7 +20,7 @@ import numpy as np
 import warnings
 import sys
 
-import parameters as par
+from parameters import par
 import utils as ut
 
 

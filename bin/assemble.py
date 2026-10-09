@@ -22,7 +22,7 @@ import sys
 import glob
 
 import bc_variables as bv
-import parameters as par
+from parameters import par
 import utils as ut
 import operators as op
 
@@ -609,7 +609,7 @@ def main():
 
             # Physics ----------------------------------------------
             iwu  = op.u(l,'u','upol',0)*1j*ut.wf
-            cori = op.coriolis(l,'u','upol',0)[0]
+            cori = op.coriolis(l,'u','upol',0)[0] if par.rotation else 0
             visc = op.viscous_diffusion(l,'u','upol',0)
             mtx = iwu + cori - visc
             # ------------------------------------------------------
@@ -622,15 +622,17 @@ def main():
             # ----------------------------------------------------------------------------------------------------------
             basecol = nb*ut.N1
 
-            for i in [-1,1]:
+            if par.rotation:  # Coriolis only
 
-                if l+i in ll_flo[1] :
+                for i in [-1,1]:
 
-                    # Physics ---------------------------------------
-                    mtx = op.coriolis(l,'u','utor',i)
-                    # -----------------------------------------------
-                    col = basecol + col0 + mtx[1] * ut.N1
-                    loc_list = ut.packit( loc_list, mtx[0], row, col)
+                    if l+i in ll_flo[1] :
+
+                        # Physics ---------------------------------------
+                        mtx = op.coriolis(l,'u','utor',i)
+                        # -----------------------------------------------
+                        col = basecol + col0 + mtx[1] * ut.N1
+                        loc_list = ut.packit( loc_list, mtx[0], row, col)
 
 
             if par.magnetic == 1: # include Lorentz force
@@ -719,15 +721,17 @@ def main():
             # ----------------------------------------------------------------------------------------------------------
             basecol = 0
 
-            for i in [ -1, 1 ]:
+            if par.rotation:  # Coriolis only
 
-                if l+i in ll_flo[0]:  # for upol, so we use ll_flo[0]
+                for i in [ -1, 1 ]:
 
-                    # Physics ---------------------------------------
-                    mtx = op.coriolis(l,'v','upol', i)
-                    # -----------------------------------------------
-                    col = basecol + col0 + mtx[1]*ut.N1
-                    loc_list = ut.packit( loc_list, mtx[0], row, col)
+                    if l+i in ll_flo[0]:  # for upol, so we use ll_flo[0]
+
+                        # Physics ---------------------------------------
+                        mtx = op.coriolis(l,'v','upol', i)
+                        # -----------------------------------------------
+                        col = basecol + col0 + mtx[1]*ut.N1
+                        loc_list = ut.packit( loc_list, mtx[0], row, col)
 
 
             # Toroidal velocity terms ----------------------------------------------------------------------------------
@@ -737,7 +741,7 @@ def main():
 
             # Physics ------------------------------------
             iwu  = op.u(l,'v','utor',0)*1j*ut.wf
-            cori = op.coriolis(l,'v','utor',0)[0]
+            cori = op.coriolis(l,'v','utor',0)[0] if par.rotation else 0
             visc = op.viscous_diffusion(l,'v','utor',0)
             mtx = iwu + cori - visc
             # --------------------------------------------

@@ -9,7 +9,7 @@ from timeit import default_timer as timer
 import datetime
 
 sys.path.insert(1,'bin/')
-import parameters as par
+from parameters import par
 
 '''
 Script to find the critical Rayleigh number for unstable convection.

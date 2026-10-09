@@ -2,7 +2,7 @@
 
 ## Solver Settings
 
-The solver options live in `bin/parameters.py`. Most of them are collected in the `petsc_opts` dictionary, which `solve_nopp.py` loads into PETSc's options database at start-up. Each key is a PETSc/SLEPc/MUMPS option name without the leading `-`. Only the group that matches the problem type is used: `eps_*` and `st_*` options for eigenvalue problems (`forcing = 0`), and `ksp_*`, `pc_*` and `mat_*` options for forced problems. Any option given on the command line takes precedence over `petsc_opts`, for example:
+The solver options are defined, with their defaults, in `bin/params_default.py`, and can be changed in `bin/parameters.py` (e.g. `par.petsc_opts['eps_balance'] = 'twoside'`). Most of them are collected in the `petsc_opts` dictionary, which `solve_nopp.py` loads into PETSc's options database at start-up. Each key is a PETSc/SLEPc/MUMPS option name without the leading `-`. Only the group that matches the problem type is used: `eps_*` and `st_*` options for eigenvalue problems (`forcing = 0`), and `ksp_*`, `pc_*` and `mat_*` options for forced problems. Any option given on the command line takes precedence over `petsc_opts`, for example:
 
 ```Shell
 mpiexec -n 4 ./bin/solve_nopp.py -st_mat_mumps_icntl_35 0
@@ -23,7 +23,7 @@ The defaults described below are the recommended settings for production runs.
 - `'st_mat_mumps_cntl_7': 1e-14` is the BLR compression tolerance. It is set close to machine precision so that BLR does not reduce accuracy. Looser values (e.g. 1e-12 or 1e-10) save a little more memory but degrade the eigenvectors.
 - MUMPS's own row and column scaling of the matrix (`icntl_8`) is left at its default and should stay on.
 
-**Pre-scaling** (`prescale = 1`, in `parameters.py` after `petsc_opts`). The rows and columns of Kore's matrices differ in size by many orders of magnitude. With `prescale = 1`, `solve_nopp.py` equilibrates $A-\tau B$ before the factorization (Ruiz scaling: rows and columns are scaled repeatedly until their largest entries are all of order one). It then solves the scaled problem $(D_r A D_c)\,y = \lambda\,(D_r B D_c)\,y$. The eigenvalues are the same, and the eigenvectors are mapped back, $x = D_c\,y$, before they are written to disk. Pre-scaling reduces the condition number of the matrix by many orders of magnitude and gives more accurate eigenvectors, at the cost of a few seconds. It is used for eigenvalue problems only. Set `prescale = 0` to switch it off.
+**Pre-scaling** (`prescale = 1`, the default). The rows and columns of Kore's matrices differ in size by many orders of magnitude. With `prescale = 1`, `solve_nopp.py` equilibrates $A-\tau B$ before the factorization (Ruiz scaling: rows and columns are scaled repeatedly until their largest entries are all of order one). It then solves the scaled problem $(D_r A D_c)\,y = \lambda\,(D_r B D_c)\,y$. The eigenvalues are the same, and the eigenvectors are mapped back, $x = D_c\,y$, before they are written to disk. Pre-scaling reduces the condition number of the matrix by many orders of magnitude and gives more accurate eigenvectors, at the cost of a few seconds. It is used for eigenvalue problems only. Set `par.prescale = 0` in `parameters.py` to switch it off.
 
 **Eigenvector normalisation.** Eigenvectors are only defined up to a complex factor. Before they are written, each eigenvector is scaled so that its total kinetic plus magnetic energy, integrated over the fluid outer core, equals 1, using the same definitions as `spin_doctor.py`. Energies, dissipations and torques reported by `spin_doctor.py` therefore refer to a mode of unit total energy. The complex phase is left as returned by SLEPc.
 
@@ -42,7 +42,7 @@ For forced problems (`forcing > 0`) Kore solves a single linear system. The defa
 
 ### Resolution
 
-The Chebyshev truncation `N` is set by `Ncheb(Ek)` at the top of `parameters.py`, and the spherical-harmonic truncation `lmax` follows from `N` (with `g = 1`, `lmax = N - 1` for `m = 0`). `Ncheb` grows as $E_k^{-0.242}$; for example it gives `N` = 136, 232, 400 and 688 at $E_k$ = 1e-6, 1e-7, 1e-8 and 1e-9. It was obtained for a torsional-mode problem. Other problems (stronger fields, other boundary conditions, buoyancy) may need a higher resolution. Keep `lmax` close to `N`: a too small `lmax` changes the eigenvalues without showing up in the residuals below.
+Unless `N` is set in `parameters.py`, `par.set_scales()` sets the Chebyshev truncation to `Ncheb(Ek)` (in `params_default.py`), and the spherical-harmonic truncation `lmax` follows from `N` (with `g = 1`, `lmax = N - 1` for `m = 0`). `Ncheb` grows as $E_k^{-0.242}$; for example it gives `N` = 136, 232, 400 and 688 at $E_k$ = 1e-6, 1e-7, 1e-8 and 1e-9. It was obtained for a torsional-mode problem. Other problems (stronger fields, other boundary conditions, buoyancy) may need a higher resolution. Keep `lmax` close to `N`: a too small `lmax` changes the eigenvalues without showing up in the residuals below.
 
 ### Checking the results
 

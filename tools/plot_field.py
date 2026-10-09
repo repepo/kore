@@ -7,7 +7,7 @@ import numpy.polynomial.chebyshev as ch
 sys.path.insert(1,'bin/')
 
 import utils as ut
-import parameters as par
+from parameters import par
 import utils4pp as upp  # xcheb and expand_sol now live in bin/utils4pp.py (utils_pp.py was removed)
 
 '''

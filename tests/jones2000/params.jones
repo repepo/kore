@@ -1,0 +1,25 @@
+from params_default import default_params
+import numpy as np
+
+# Onset of convection in a full sphere (Jones, Soward & Mussa 2000): internal heating, fixed heat flux, no-slip,
+# Ta = 1e9, Pr = 1, m = 9
+par = default_params()
+
+par.m                = 9
+par.ricb             = 0
+Ta = 1e9
+par.Ek               = np.sqrt(4/Ta)
+
+par.thermal          = 1
+Ra_gap = 4.6e6  # Rayleigh number based on the gap width, set by find_Rac.py
+par.Ra               = Ra_gap / (1-par.ricb)**3
+
+par.ncpus            = 2
+par.N                = 118  # as in the reference run: int(17*Ek**-0.2), even
+
+par.itau             = 0.0
+par.which_eigenpairs = 'TR'
+par.nev              = 5
+par.tol              = 1e-15
+
+par.set_scales()

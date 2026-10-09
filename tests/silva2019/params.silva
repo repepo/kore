@@ -1,0 +1,48 @@
+from params_default import default_params
+import numpy as np
+
+# Onset of thermo-compositional convection in a rotating spherical shell (Silva, Mather & Simitev 2019, GAFD 113,
+# doi:10.1080/03091929.2019.1640875). Equations (1a-d) and table 1 (journal pp. 4-5): internal heat and composition
+# sources (dT/dr = -beta_T*r, dC/dr = -beta_C*r), fixed temperature and composition and stress-free walls (3e),
+# eta = 0.35. tau = 1e4 and Pr = Sc as in their section 5.1 (p. 13).
+par = default_params()
+
+# Silva et al.'s parameters, in units of the gap width d and the viscous time d**2/nu
+tau = 1e4    # Coriolis number 2*Omega*d**2/nu
+Rt  = 2e5    # thermal Rayleigh number,       set by the tests
+Rc  = 0.0    # compositional Rayleigh number, set by the tests
+Pr  = 1.0    # Prandtl number,                set by the tests
+Sc  = 1.0    # Schmidt number,                set by the tests
+
+par.m                 = 7   # close to their local estimate (15b), p. 12
+par.ricb              = 0.35
+par.bci               = 0
+par.bco               = 0
+
+# Kore's units are r_o and 1/Omega: Ek = 2*(1-eta)**2/tau and Ra = Rt/(1-eta)**6 (the frequency in Silva's
+# units is then omega*(1-eta)**2/Ek)
+par.Ek                = 2*(1-par.ricb)**2/tau
+
+par.thermal           = 1
+par.Prandtl           = Pr
+par.heating           = 'internal'
+par.Ra                = Rt/(1-par.ricb)**6
+par.bci_thermal       = 0
+par.bco_thermal       = 0
+
+par.compositional     = 1
+par.Schmidt           = Sc
+par.comp_background   = 'internal'
+par.Ra_comp           = Rc/(1-par.ricb)**6
+par.bci_compositional = 0
+par.bco_compositional = 0
+
+par.ncpus             = 2
+par.N                 = 64
+
+par.itau              = 0.0
+par.which_eigenpairs  = 'TR'
+par.nev               = 8
+par.tol               = 1e-15
+
+par.set_scales()

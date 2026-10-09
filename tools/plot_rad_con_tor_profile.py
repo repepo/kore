@@ -8,7 +8,7 @@ import numpy.polynomial.chebyshev as ch
 sys.path.insert(1,'bin/')
 
 import utils as ut
-import parameters as par
+from parameters import par
 
 '''
 Computes the radial profile of kinetic energy, internal energy dissipation,

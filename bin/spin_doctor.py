@@ -15,7 +15,7 @@ import scipy.sparse as ss
 import os.path
 import multiprocessing as mp
 import numpy as np
-import parameters as par
+from parameters import par
 import utils as ut
 import utils4pp as upp
 

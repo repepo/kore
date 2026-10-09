@@ -33,7 +33,7 @@ cp -r kore kwork1
 cd kwork1
 ```
 
-Modify `bin/parameters.py` as desired. All commands below are run from the top folder (`kwork1` here), where the matrices and results are written.
+Modify `bin/parameters.py` as desired. All parameters, with their default values and the available options, are defined in `bin/params_default.py`; `parameters.py` creates `par = default_params()`, sets only what differs from the defaults (e.g. `par.Ek = 1e-7`), and ends with `par.set_scales()`, which computes the derived parameters (`Em`, `Le`, `Etherm`, `BV2`, `OmgTau`, `N`, `lmax`, `tau`, ...) unless they were set explicitly. Set parameters before `par.set_scales()`: a change made after it does not reach the derived ones. All commands below are run from the top folder (`kwork1` here), where the matrices and results are written.
 
 First generate the submatrices:
 ```sh
@@ -50,7 +50,7 @@ To solve the problem do:
 ```sh
 mpiexec -n ncpus ./bin/solve_nopp.py
 ```
-The PETSc/SLEPc/MUMPS solver options are set in the `petsc_opts` dictionary at the end of `bin/parameters.py`, which has separate groups for eigenvalue and forced problems. Options given on the command line, e.g. `mpiexec -n ncpus ./bin/solve_nopp.py -st_mat_mumps_icntl_14 50`, take precedence over the ones in `parameters.py`.
+The PETSc/SLEPc/MUMPS solver options are set in the `petsc_opts` dictionary (defaults in `bin/params_default.py`, to be changed in `parameters.py`, e.g. `par.petsc_opts['eps_balance'] = 'twoside'`), which has separate groups for eigenvalue and forced problems. Options given on the command line, e.g. `mpiexec -n ncpus ./bin/solve_nopp.py -st_mat_mumps_icntl_14 50`, take precedence over `petsc_opts`.
 
 The solutions are written to disk (`real_*.field` and `imag_*.field` files and, for eigenvalue problems, `eigenvalues0.dat`). To postprocess them do:
 ```sh

@@ -2,7 +2,7 @@ import glob
 import scipy.sparse as ss
 import scipy.io as sio
 import numpy as np
-import parameters as par
+from parameters import par
 import utils as ut
 
 # In the following loop we read all submatrices needed,
@@ -14,9 +14,9 @@ fname = [f for f in glob.glob('*.mtx')]
 for label in fname :
 
     label = label[:-4]  # to get rid of the ".mtx"
-    
+
     section = label[0]
-    if section in ['u','v','f','g','h']: 
+    if section in ['u','v','f','g','h','i']:
 
         prof_id = ''
         proflabel = ''
@@ -89,7 +89,7 @@ if ut.cic:  # for a conductive inner core
     r1_D1g_ic = ss.csr_matrix(sio.mmread('r1_D1g_ic.mtx'))
     r2_D2f_ic = ss.csr_matrix(sio.mmread('r2_D2f_ic.mtx'))
     r2_D2g_ic = ss.csr_matrix(sio.mmread('r2_D2g_ic.mtx'))
-    
+
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -484,7 +484,7 @@ def b(l, section, component, offdiag):
                 out = L* r2If
             else:
                 out = L* r4If
-                
+
         if section == 'f' and component == 'bpol' and ut.secf_projection == 'consoidal':
             if not cdipole:
                 out = r2If + r3D1f
@@ -499,9 +499,9 @@ def b(l, section, component, offdiag):
 
         elif section == 'fic' and component == 'bpol_ic':
             out = L * r2_D0f_ic
-        
+
         elif section == 'gic' and component == 'btor_ic':
-            out = L * r2_D0g_ic       
+            out = L * r2_D0g_ic
 
     return out
 
@@ -528,7 +528,7 @@ def induction(l, section, component, offdiag):
 
                 C1 = 3*(-2 + l)*(1 + l)*np.sqrt((l - m)*(-1 + l + m))*np.sqrt((-1 + l - m)*(l + m))
                 C2 = 3 - 8*l + 4*l**2
-                
+
                 out = ( hIf*(-4 + l) - 3*rhD1f + rh1If*(-1 + l) )*C1/C2
 
                 offd = -1
@@ -536,7 +536,7 @@ def induction(l, section, component, offdiag):
             elif offdiag == -1:  # l-1 terms (dipole)
 
                 C = np.sqrt(l**2-par.m**2)*(l**2-1)/(2*l-1)
-                
+
                 if not cdipole:
                     out = C*( (l-2)*hIf + l*rh1If - 2*rhD1f )
                 else:
@@ -548,7 +548,7 @@ def induction(l, section, component, offdiag):
             elif offdiag == 0:  # l terms (quadrupole)
 
                 C = (3*(l + l**2 - 3*m**2))/(-3 + 4*l*(1 + l))
-                
+
                 out = C*( hIf*(6 - l - l**2) + rh1If*l*(1 + l) - 2*rhD1f*(-3 + l + l**2) )
 
             elif offdiag == 1:  # l+1 terms (dipole)
@@ -567,7 +567,7 @@ def induction(l, section, component, offdiag):
 
                 C1 = 3*l*(3 + l)*np.sqrt((2 + l - m)*(1 + l + m))*np.sqrt((1 + l - m)*(2 + l + m))
                 C2 = (3 + 2*l)*(5 + 2*l)
-                
+
                 out = ( hIf*(-5 - l) - 3*rhD1f - rh1If*(2 + l) )*C1/C2
 
                 offd = 1
@@ -603,7 +603,7 @@ def induction(l, section, component, offdiag):
             if offdiag == -1:  # l-1 terms (quadrupole)
 
                 C = (3j * m * np.sqrt(l**2 - m**2))/(-1 + 2*l)
-                
+
                 out = C*( -2*h1Ig*(-3 + l) - 2*hD1g*(-3 + l) - 2*qhIg*(3 + l**2) + 6*rhD2g - 2*rh1D1g*(-3 + l) + rh2Ig*(-1 + l)*l )
 
                 if ut.symm1 == -1:
@@ -619,7 +619,7 @@ def induction(l, section, component, offdiag):
             elif offdiag == 1:  # l+1 terms (quadrupole)
 
                 C = (3j*m*np.sqrt((1 + l - m)*(1 + l + m)))/(3 + 2*l)
-                
+
                 out = C*( 2*(4+l)*( h1Ig + hD1g + rh1D1g ) - 2*qhIg*(4 + 2*l + l**2) + 6*rhD2g + rh2Ig*(2 + 3*l + l**2) )
 
                 if ut.symm1 == 1:
@@ -630,7 +630,7 @@ def induction(l, section, component, offdiag):
             if offdiag == -2:  # l-2 terms (quadrupole)
 
                 C = (3*(-2 + l)*(1 + l)*np.sqrt((l - m)*(-1 + l + m))*np.sqrt((-1 + l - m)*(l + m)))/(3 - 8*l + 4*l**2)
-                
+
                 out = C*( hIg*l - 3*rhD1g + rh1Ig*(-3 + l) )
 
                 offd = -1
@@ -652,7 +652,7 @@ def induction(l, section, component, offdiag):
             elif offdiag == 0:  # l terms (quadrupole)
 
                 C = (3*(l + l**2 - 3*m**2))/(-3 + 4*l*(1 + l))
-                
+
                 out = C*( -hIg*L - 2*rhD1g*(-3 + l + l**2) - 3*rh1Ig*(-2 + l + l**2) )
 
             elif offdiag == 1:  # l+1 terms
@@ -670,7 +670,7 @@ def induction(l, section, component, offdiag):
             elif offdiag == 2:  # l+2 terms (quadrupole)
 
                 C = (3*l*(3 + l)*np.sqrt(2 + 3*l + l**2 - m - m**2)*np.sqrt(2 + 3*l + l**2 + m - m**2))/(15 + 16*l + 4*l**2)
-                
+
                 out = C*( -hIg*(1 + l) - 3*rhD1g - rh1Ig*(4 + l) )
 
                 offd = 1
@@ -697,7 +697,7 @@ def induction_consoidal(l, component, offdiag):
 
 
         if offdiag == -2:  # l-2 terms (quadrupole)
-            
+
             C = (3*(-2 + l)*np.sqrt((l - m)*(-1 + l + m))*np.sqrt((-1 + l - m)*(l + m))) / (l*(3 - 8*l + 4*l**2))
             out = C*( hIf*(4 - l) + rh1If*(-4 + l) + rhD1f*(-4 + l) - 3*r2hD2f + r2h1D1f*(-4 + l) + r2h2If*(-1 + l) )
 
@@ -711,13 +711,13 @@ def induction_consoidal(l, component, offdiag):
             if ut.symm1 == -1:
                 offd = -1
 
-        elif offdiag == 0:  # l terms (quadrupole)            
-            
+        elif offdiag == 0:  # l terms (quadrupole)
+
             C = (3*(l + l**2 - 3*m**2)) / (l*(1 + l)*(-3 + 4*l + 4*l**2))
             out = C*( hIf*(-6 + l + l**2) - rh1If*(-6 + l + l**2) - rhD1f*(-6 + l + l**2) + r2h2If*l*(1 + l) - r2h1D1f*(-6 + l + l**2) - 2*r2hD2f*(-3 + l + l**2) )
 
         elif offdiag == 1:  # l+1 terms (dipole)
-            
+
             C = ((2 + l)*np.sqrt((1 + l - m)*(1 + l + m))) / ((1 + l)*(3 + 2*l))
             out = C * ( hIf*(3 + l) - rh1If*(3 + l) - rhD1f*(3 + l) - 2*r2hD2f - r2h2If*(1 + l) - r2h1D1f*(3 + l) )
 
@@ -725,7 +725,7 @@ def induction_consoidal(l, component, offdiag):
                 offd = 1
 
         elif offdiag == 2:  # l+2 terms (quadrupole)
-            
+
             C = ( 3.*(3 + l)*np.sqrt((2 + l - m)*(1 + l + m))*np.sqrt((1 + l - m)*(2 + l + m)) ) / ((1 + l)*(3 + 2*l)*(5 + 2*l))
             out = C*( hIf*(5 + l) - rh1If*(5 + l) - rhD1f*(5 + l) - 3*r2hD2f - r2h2If*(2 + l) - r2h1D1f*(5 + l) )
 
@@ -744,7 +744,7 @@ def induction_consoidal(l, component, offdiag):
                 offd = -1
 
         elif offdiag == 0:  # l terms (dipole)
-            
+
             out = -2j*m*( r2h1If + r2hD1f )/L
 
         elif offdiag == 1:  # l+1 terms (quadrupole)
@@ -782,7 +782,7 @@ def magnetic_diffusion(l, section, component, offdiag):
                 out = L*( -L*r2etaIf + 2*r3etaD1f + r4etaD2f )
 
         elif (section == 'f' and component == 'bpol' and ut.secf_projection == 'consoidal'):
-            
+
             if not cdipole:
                 out = etaIf*L - retaD1f*L - reta1If*L + 3*r2etaD2f + 2*r2eta1D1f + r3etaD3f + r3eta1D2f
                 #out = r0_eho0_D0*L - r1_eho0_D1*L - r1_eho1_D0*L + 3*r2_eho0_D2 + 2*r2_eho1_D1 + r3_eho0_D3 + r3_eho1_D2
@@ -790,11 +790,11 @@ def magnetic_diffusion(l, section, component, offdiag):
                 print('Consoidal proj + classic dipole not coded yet')
 
         elif section == 'g' and component == 'btor':  # -r²𝐫⋅∇×(∇×(η∇×𝐛))  (×r³ if dipole)
-            
+
             if not cdipole:
                 #out = L*( -L*Ig + 2*r1D1g + r2D2g )
                 out = L*( -L*etaIg + 2*retaD1g + r2etaD2g + reta1Ig + r2eta1D1g)
-                #out = L*( -L*r0_eho0_D0 + 2*r1_eho0_D1 + r1_eho1_D0 + r2_eho0_D2 + r2_eho1_D1 ) 
+                #out = L*( -L*r0_eho0_D0 + 2*r1_eho0_D1 + r1_eho1_D0 + r2_eho0_D2 + r2_eho1_D1 )
             else:
                 out = L*( -L*r3etaIg + 2*r4etaD1g + r5etaD2g + r4eta1Ig + r5eta1D1g )
 

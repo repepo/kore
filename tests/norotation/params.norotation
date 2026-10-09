@@ -1,0 +1,25 @@
+from params_default import default_params
+import numpy as np
+
+# Non-rotating, purely hydrodynamic full sphere in viscous time units (Ek only labels the units without rotation).
+# m, symm, bco and the target are set by the tests.
+par = default_params()
+
+par.rotation      = 0
+par.timescale     = 'viscous'
+par.Ek            = 1.0
+
+par.ricb          = 0
+par.m             = 0
+par.symm          = 1
+par.bco           = 1
+
+par.ncpus         = 2
+par.N             = 24
+par.lmax          = par.m + 3  # l = m ... m+3
+
+par.rtau          = 0.0
+par.itau          = 0.0
+par.nev           = 4
+
+par.set_scales()

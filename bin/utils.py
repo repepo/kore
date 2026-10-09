@@ -6,7 +6,7 @@ import scipy.special as scsp
 import scipy.fftpack as sft
 import numpy.polynomial.chebyshev as ch
 import numpy as np
-import parameters as par
+from parameters import par
 
 '''
 A library of various function definitions and utilities
@@ -71,16 +71,16 @@ bsymm = par.symm * symmB0  # induced magnetic field (b) symmetry follows from u 
 B0list = ['axial', 'dipole', 'G21 dipole', 'Luo_S1', 'Luo_S2', 'FDM']
 B0type = B0list.index(par.B0)
 
-# NEW (2026-10-07): with an inner core, B0_ic = 'potential' (the default, also if parameters.py does not set B0_ic)
-# makes B0 a potential field inside the IC, continuous at the ICB (see B0_beta_ic, and the explanation next to B0_ic
-# in parameters.py). 'full sphere' keeps h unchanged.
-B0_ic = getattr(par, 'B0_ic', 'potential')
+# NEW (2026-10-07): with an inner core, B0_ic = 'potential' (the default) makes B0 a potential field inside the IC,
+# continuous at the ICB (see B0_beta_ic, and the explanation next to B0_ic in params_default.py). 'full sphere' keeps
+# h unchanged.
+B0_ic = par.B0_ic
 B0_ic_list = ['G21 dipole', 'Luo_S1', 'Luo_S2']  # full-sphere fields; 'axial' and the FDM already match, 'dipole' is a point source
 
-# NEW (2026-10-07): with a thin conducting wall at the CMB (mantle = 'TWA'), B0_cmb = 'wall' (the default, also if
-# parameters.py does not set B0_cmb) adds alpha*r**l to h, so that B0 meets the wall's steady matching condition for
-# any c_cmb (see B0_alpha_cmb, and the explanation next to B0_cmb in parameters.py). 'plain' keeps h unchanged.
-B0_cmb = getattr(par, 'B0_cmb', 'wall')
+# NEW (2026-10-07): with a thin conducting wall at the CMB (mantle = 'TWA'), B0_cmb = 'wall' (the default) adds
+# alpha*r**l to h, so that B0 meets the wall's steady matching condition for any c_cmb (see B0_alpha_cmb, and the
+# explanation next to B0_cmb in params_default.py). 'plain' keeps h unchanged.
+B0_cmb = par.B0_cmb
 B0_cmb_list = ['dipole', 'G21 dipole', 'Luo_S1', 'Luo_S2', 'FDM']  # fields from internal currents; 'axial' is imposed from outside
 
 ic_bc_list = ['insulator', 'TWA', 'conducting, Chebys', 'conducting, Bessel']

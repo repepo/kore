@@ -1,0 +1,28 @@
+from params_default import default_params
+import numpy as np
+
+# Onset of convection in a spherical shell (Dormy, Soward, Jones, Jault & Cardin 2004): ricb = 0.35, differential
+# heating, fixed temperatures, no-slip, Ek = 2e-5, Pr = 1, m = 9
+par = default_params()
+
+par.m                = 9
+par.Ek               = 2e-5
+
+par.thermal          = 1
+par.heating          = 'differential'
+Ra_gap = 1654042.168683  # Rayleigh number based on the gap width, set by find_Rac.py
+par.Ra               = Ra_gap / (1-par.ricb)**3
+par.bci_thermal      = 0
+par.bco_thermal      = 0
+
+par.ncpus            = 2
+par.N                = 74   # as in the reference run: 0.5*int(17*Ek**-0.2)
+par.g                = 2.0
+
+par.itau             = 0.0
+par.which_eigenpairs = 'TR'
+par.nev              = 4
+par.maxit            = 100
+par.tol              = 1e-15
+
+par.set_scales()
