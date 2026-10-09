@@ -16,12 +16,12 @@ be retested.
 What is tested
 --------------
 With u = rho0^-1 curl curl (rho0 P r) + curl (T r), kore's rows are, per l and section,
-  row_u(F) = r^rpower_u (r.curl curl F)_l / L^3   (section u, rows for P_l)
-  row_v(F) = r^rpower_v (r.curl F)_l / L^3        (section v, rows for T_l)
+  row_u(F) = r^rpower_u rho0^rhopower_u (r.curl curl F)_l / L^3   (section u, rows for P_l)
+  row_v(F) = r^rpower_v rho0^rhopower_v (r.curl F)_l / L^3        (section v, rows for T_l)
   row_h(.) = r^h (entropy equation)_l / L^3       (section h, rows for s_l)
 and for any force F per unit mass, with P = 0 on the walls,
-  int (rho0 u)*.F dV = sum_l n_l L^3 [ int rho0 P_l* r^(3-rpower_u) row_u(F)_l dr
-                                      + int rho0 T_l* r^(3-rpower_v) row_v(F)_l dr ],
+  int (rho0 u)*.F dV = sum_l n_l L^3 [ int rho0^(1-rhopower_u) P_l* r^(3-rpower_u) row_u(F)_l dr
+                                      + int rho0^(1-rhopower_v) T_l* r^(3-rpower_v) row_v(F)_l dr ],
 n_l = 4 pi/(2l+1), L = l(l+1).  Under this pairing the LBR energy equation requires
   inertia   <x,Iy> =  conj<y,Ix>, <x,Ix> = KE(x) > 0
   Coriolis  <x,Cy> = -conj<y,Cx>              (does no work; its (ln rho0)' terms come from div u != 0)
@@ -121,8 +121,8 @@ if par.thermal:
     dS0  = rap.prf.gradS(np.abs(rk), par.aux1, par.aux2, par.aux3, par.aux4, par.aux5)*np.sign(rk)
 
 # pairing weights (functions of r) for each section
-wgt = {'u': rho0 * rk**(3 - par.rpower_u),
-       'v': rho0 * rk**(3 - par.rpower_v)}
+wgt = {'u': rho0**(1 - par.rhopower_u) * rk**(3 - par.rpower_u),
+       'v': rho0**(1 - par.rhopower_v) * rk**(3 - par.rpower_v)}
 if par.thermal:
     if par.ThermaD > 0:
         wgt['h'] = np.ones_like(rk)            # rows are r^2 (eq)/L^3

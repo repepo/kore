@@ -61,6 +61,9 @@ def main(ncpus):
     cuvismax_r  = np.zeros(success)
     cuvismax_l  = np.zeros(success, dtype=int)
     Wthm        = np.zeros(success)
+    Wcor_im     = np.zeros(success)  # imaginary parts of the Coriolis, viscous and buoyancy powers
+    Dkin_im     = np.zeros(success)
+    Wthm_im     = np.zeros(success)
     ldom        = np.zeros(success,dtype=int)
     lwidth      = np.zeros(success,dtype=int)
     lconv       = np.zeros(success)
@@ -72,6 +75,7 @@ def main(ncpus):
 
     # residual errors to be processed
     resid1      = np.zeros(success)
+    resid2      = np.zeros(success)
     resid3      = np.zeros(success)
     resens      = np.zeros(success)
 
@@ -81,8 +85,8 @@ def main(ncpus):
 
     hdr_s = '    resid𝑠 ' if par.thermal else ''
     bar_s = ' ‾‾‾‾‾‾‾‾‾‾' if par.thermal else ''
-    print('\n  ★     Damping σ     Frequency ω     𝒯/𝒫       resid𝐮 ' + hdr_s + '   Peak ℓ ℓ-Width ℓ-Convergence   cvf_r   cvf_l    cvfmax     residual')
-    print(  ' ‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾' + bar_s + ' ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾ ')
+    print('\n  ★     Damping σ     Frequency ω     𝒯/𝒫       residσ     residω ' + hdr_s + '   Peak ℓ ℓ-Width ℓ-Convergence   cvf_r   cvf_l    cvfmax     residual')
+    print(  ' ‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾' + bar_s + ' ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾ ')
 
 
     # Begin processing all solutions
@@ -137,7 +141,8 @@ def main(ncpus):
         KP[i] = np.sum( udgn[lpi,0])  # Poloidal kinetic energy
         KT[i] = np.sum( udgn[lti,0])  # Toroidal kinetic energy
 
-        [ KE[i], Dkin0, Ensvel[i], Enscor[i], Ensvif[i], Ensbuo[i], Wthm0, Wdr0 ] = np.sum( udgn, 0)
+        [ KE[i], Dkin0, Ensvel[i], Enscor[i], Ensvif[i], Ensbuo[i], Wthm0, Wdr0,
+          Wcor_im[i], Dkin_im[i], Wthm_im[i] ] = np.sum( udgn, 0)
         Dkin[i] = Dkin0
         resens[i] = abs(Ensvel[i]*sigma+Enscor[i]-Ensbuo[i]-Ensvif[i]) / max((abs(Ensvel[i]*sigma),abs(Enscor[i]),abs(Ensbuo[i]),abs(Ensvif[i])))
         Wthm[i] = Wthm0  # rate of working of buoyancy, Beyonce already included (upp.buoyancy)
@@ -160,12 +165,15 @@ def main(ncpus):
 
         # Wadv is the entropy advection "power" via -∫ p (dS/dr) uᵣ s dV
 
-        # resid1 is the relative residual of 2*sigma*KE - Dkin - Wthm = 0
+        # resid1 is the relative residual of 2*sigma*KE - Dkin - Wthm = 0 (residσ, real part of the power balance)
+        # resid2 is the relative residual of 2*w*KE + Wcor_im - Dkin_im - Wthm_im = 0 (residω, its imaginary part;
+        #        Wcor_im = 2 Im ∫ ρ 𝐮*⋅(2𝐳×𝐮) dV, Dkin_im = 2 Im ∫ 𝐮*⋅(∇⋅𝛔) dV, Wthm_im = 2 Im ∫ ρ 𝐮*⋅(Beyonce g s 𝐫̂) dV)
         # resid3 is the relative residual of 2*sigma*TE - Dthm - Wadv = 0
         # ---------------------------------------------------------------------------------------------------------
 
 
         resid1[i] = ( abs( 2*sigma*KE[i] - Dkin[i] - Wthm[i] ) / max( abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wthm[i]) ) )
+        resid2[i] = ( abs( 2*w*KE[i] + Wcor_im[i] - Dkin_im[i] - Wthm_im[i] ) / max( abs(2*w*KE[i]), abs(Wcor_im[i]), abs(Dkin_im[i]), abs(Wthm_im[i]) ) )
 
         if par.thermal:
             resid3[i] = ( abs( 2*sigma*TE[i] - Dthm[i] - Wadv_thm[i] ) / max( abs(2*sigma*TE[i]), abs(Dthm[i]), abs(Wadv_thm[i]) ) )
@@ -173,7 +181,7 @@ def main(ncpus):
         col_s = '   {:8.2e}'.format(resid3[i]) if par.thermal else ''
 
         # -------i-------sigma-------w-----------KT/KP----resid1-----ldom-----lwidth-----lconv-------cuv_r-----cuv_l-----cuvm------resens------------------------------------------------------------------------------------------------------------------------------------
-        print(' {:2d}   {: 12.9f}   {: 12.9f}   {:8.2e}   {:8.2e}{}    {:4d}    {:4d}     {:8.2e}     {:5.3f}   {:4d}    {:8.2e}    {:8.2e}'.format(i, sigma, w, KT[i]/KP[i], resid1[i], col_s, ldom[i], lwidth[i], lconv[i], cuvismax_r[i], cuvismax_l[i], cuvismax[i], resens[i]  ))
+        print(' {:2d}   {: 12.9f}   {: 12.9f}   {:8.2e}   {:8.2e}   {:8.2e}{}    {:4d}    {:4d}     {:8.2e}     {:5.3f}   {:4d}    {:8.2e}    {:8.2e}'.format(i, sigma, w, KT[i]/KP[i], resid1[i], resid2[i], col_s, ldom[i], lwidth[i], lconv[i], cuvismax_r[i], cuvismax_l[i], cuvismax[i], resens[i]  ))
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
         toc = timer()
@@ -241,8 +249,10 @@ def main(ncpus):
             '%.9f', '%.9f', '%.9f', '%.9f', '%.9f', '%.9f'
             ])
 
+    # columns: KE, KP, KT, Dkin, ldom, lwidth, lconv, Ensvel, Enscor, Ensvif, Ensbuo, cuvismax_r, cuvismax_l, cuvismax,
+    #          resens (enstrophy balance), resid2 (frequency balance, residω)
     with open('flow.dat','ab') as dflo:
-       np.savetxt(dflo, np.c_[ KE, KP, KT, Dkin, ldom, lwidth, lconv, Ensvel, Enscor, Ensvif, Ensbuo, cuvismax_r, cuvismax_l, cuvismax, resens ], fmt=['%.9e', '%.9e', '%.9e', '%.9e', '%d', '%d', '%.3e', '%.9e', '%.9e', '%.9e', '%.9e', '%.3e', '%d', '%.3e', '%.9e' ])
+       np.savetxt(dflo, np.c_[ KE, KP, KT, Dkin, ldom, lwidth, lconv, Ensvel, Enscor, Ensvif, Ensbuo, cuvismax_r, cuvismax_l, cuvismax, resens, resid2 ], fmt=['%.9e', '%.9e', '%.9e', '%.9e', '%d', '%d', '%.3e', '%.9e', '%.9e', '%.9e', '%.9e', '%.3e', '%d', '%.3e', '%.9e', '%.9e' ])
 
 
     if par.thermal:

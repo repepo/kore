@@ -378,6 +378,29 @@ def dotprod_tor(l, tlma, tlmb):
 
 
 
+def cdot_pol(l, qlma, slma, qlmb, slmb):
+    '''
+    Complex version of dotprod_pol: integrand of the volume integral of conj(a)⋅b, poloidal l-component.
+    dotprod_pol is 2*Re of this.
+    '''
+    f0 = 4*np.pi/(2*l+1)
+    f1 = r2 * np.conj( qlma ) * qlmb
+    f2 = r2 * l*(l+1) * np.conj( slma ) * slmb
+    return f0*(f1+f2)
+
+
+
+def cdot_tor(l, tlma, tlmb):
+    '''
+    Complex version of dotprod_tor: integrand of the volume integral of conj(a)⋅b, toroidal l-component.
+    dotprod_tor is 2*Re of this.
+    '''
+    f0 = 4*np.pi/(2*l+1)
+    f1 = r2 * l*(l+1) * np.conj( tlma ) * tlmb
+    return f0*f1
+
+
+
 
 
 
@@ -529,7 +552,8 @@ def flow_worker( l ):
     '''
     Computes the power balance from the momentum (the Navier-Stokes) equation, l-component.
     Includes the kinetic energy, the kinetic energy dissipation, the rate of working (power) of the
-    buoyancy force, the enstrophy budget terms and the differential rotation power.
+    buoyancy force, the enstrophy budget terms, the differential rotation power, and the imaginary parts
+    of the Coriolis, viscous and buoyancy powers for the frequency balance.
     '''
 
     Ra = par.ricb
@@ -608,11 +632,28 @@ def flow_worker( l ):
     else:
         wbuop = 0
 
+    # Complex powers 2 ∫ ρ 𝐮*⋅𝐅 dV (their real parts are Dkin and Wthm above) for the frequency balance:
+    # the imaginary part of λ ∫ ρ |𝐮|² dV = ∫ ρ 𝐮*⋅( -2𝐳×𝐮 + (∇⋅𝛔)/ρ + buoyancy ) dV. The Coriolis power is
+    # purely imaginary; the viscous and buoyancy powers are real only when their operators are Hermitian.
+    pcor = 2*( cdot_pol(l, velq[0], vels[0], corq[0], cors[0]) + cdot_tor(l, velt[0], cort[0]) )*rho0
+    if par.ViscosD>0:
+        pvif = 2*( cdot_pol(l, velq[0], vels[0], vifq[0], vifs[0]) + cdot_tor(l, velt[0], vift[0]) )*rho0
+    else:
+        pvif = 0
+    if par.thermal:
+        pbuo = 2*cdot_pol(l, velq[0], vels[0], buoq[0], buos[0])*rho0
+    else:
+        pbuo = 0
+
 
     # Integrals
     Kene_l = rad_quad( kinep + kinet, Ra, Rb, wk)  # ∫ ½ ρ 𝐮⋅𝐮 dV 
     Dkin_l = rad_quad( kindp + kindt, Ra, Rb, wk)  # ∫ 𝐮⋅(∇⋅𝛔) dV
     Wthm_l = rad_quad( wbuop, Ra, Rb, wk )         # ∫ ρ 𝐮⋅(Beyonce g s 𝐫̂) dV
+
+    Wcor_im_l = np.imag( rad_quad( pcor, Ra, Rb, wk) )  # 2 Im ∫ ρ 𝐮*⋅(2𝐳×𝐮) dV
+    Dkin_im_l = np.imag( rad_quad( pvif, Ra, Rb, wk) )  # 2 Im ∫ 𝐮*⋅(∇⋅𝛔) dV
+    Wthm_im_l = np.imag( rad_quad( pbuo, Ra, Rb, wk) )  # 2 Im ∫ ρ 𝐮*⋅(Beyonce g s 𝐫̂) dV
 
     Enstro_vel_l = rad_quad( enstro_vel_p + enstro_vel_t, Ra, Rb, wk)
     Enstro_cor_l = rad_quad( enstro_cor_p + enstro_cor_t, Ra, Rb, wk)
@@ -628,7 +669,8 @@ def flow_worker( l ):
         wdr = diff_rot_power(l, lp, lt, P, T)
         Wdr_l = rad_quad( wdr, Ra, Rb, wk )
     
-    return [ Kene_l, Dkin_l, Enstro_vel_l, Enstro_cor_l, Enstro_vif_l, Enstro_buo_l, Wthm_l, Wdr_l ]
+    return [ Kene_l, Dkin_l, Enstro_vel_l, Enstro_cor_l, Enstro_vif_l, Enstro_buo_l, Wthm_l, Wdr_l,
+             Wcor_im_l, Dkin_im_l, Wthm_im_l ]
 
 
 

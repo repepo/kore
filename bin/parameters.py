@@ -89,10 +89,10 @@ par.nev         = 10
 par.which_eigenpairs = 'TM'
 
 par.rpower_u    = 5
-par.rhopower_u  = 0
+par.rhopower_u  = 1
 
 par.rpower_v    = 3
-par.rhopower_v  = 0  
+par.rhopower_v  = 1  
 
 par.rpower_pp   = 4
 par.rhopower_pp = 4
