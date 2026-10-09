@@ -11,7 +11,6 @@ opts=''
 mpiexec -n $ncpus ./bin/assemble.py
 mpiexec -n $ncpus ./bin/solve.py $opts
 ./bin/spin_doctor.py $ncpus | tee out2
-#./postprocess.py
 
 RUN_FOLDER=../run
 mkdir -p $RUN_FOLDER
