@@ -1,6 +1,49 @@
 CHANGELOG - Kore, conductive_IC branch
 ======================================
 
+
+2026-10-09
+----------
+Parameters
+- New bin/params_default.py: class default_params with every parameter, its default and its options
+  (ported from the differential_rotation branch). bin/parameters.py now only sets what differs from
+  the defaults (par.X = ...) and ends with par.set_scales(), which fills in the derived parameters
+  (Em, Le, Etherm, BV2, OmgTau from par.timescale, N, lmax, tau, ...) unless set explicitly. All
+  scripts use "from parameters import par". The previous torsional-mode setup is unchanged.
+- New par.rotation (default 1). With 0 the Coriolis force is not assembled; use a non-rotational
+  time scale (e.g. timescale = 'viscous').
+- prescale, petsc_opts, B0_ic and B0_cmb are read directly from par (no getattr fallbacks).
+
+Fixes
+- bin/operators.py: the compositional matrices ('i' section) were not loaded, so any run with
+  compositional = 1 crashed in assemble.py.
+- bin/solve_nopp.py: EPS created with PETSc.COMM_WORLD (SLEPc.COMM_WORLD no longer exists in 3.26).
+
+Tests (tests/, pytest)
+- Onset of convection from Dormy et al. (2004) and Jones et al. (2000), ported from main, with a
+  shared tests/find_Rac.py.
+- Co-density identity of Silva, Mather & Simitev (2019, eq. 18): with Pr = Sc, Rac*(cos a + sin a)
+  is the same whether the flow is driven by temperature (a = 0), by composition (a = pi/2) or both.
+- No rotation: viscous decay of toroidal modes against the analytic -k^2 (no-slip and stress-free),
+  for several m.
+
+koreviz
+- Full-sphere fields were wrong (vector fields) or crashed (scalars): the solution was expanded twice.
+- Ported from main: potential field extrapolation, spectral coefficients kept on kmode, torques on a
+  non-spherical CMB, nphi >= 128. Fixed on the way: get_coriolis_torque's toroidal sum, tangential
+  components of the extrapolated field (off by a factor r), writeVts for m = 0.
+- potextra(rout) takes the poloidal scalar directly from the Chebyshev coefficients, works outside
+  the CMB and inside an insulating inner core (any mix of radii outside the fluid), and falls back to
+  scipy without SHTns.
+- Magnetic field inside the inner core: kmode(field='b', ic=True), and ic=True in merid/equat (surf
+  uses it below the ICB). Conducting (Chebyshev), insulating/TWA and perfectly conducting inner cores.
+- writeVts: no more reversal of the radial order, no duplicated CMB layer; uses pyevtk's gridToVTK.
+
+Issues
+- -eps_true_residual does not converge together with prescale = 1.
+- Need to double check conducting IC, bessel
+
+
 Changes from the 2026 speed-up and cleanup work, grouped by file. Each entry says what was wrong or
 slow, what changed, and how it was checked. Tags give the date:
   [10-01] = commit a6a89bcc (2026-10-01)
