@@ -251,13 +251,15 @@ def main(ncpus):
         # Matrix labels needed for the thermal equation ---------------------------------------------------------------------------- Heat - section h
         # -------------------------------------------------------------------------------------------------------------------------------------------
 
-        # entropy perturbation
-        arg2 += [ vP ]
-        labl += [ 'h0pss0_D0' ]
-
-        # thermal advection
-        arg2 += [ vP ]
-        labl += [ 'h1pdS0_D0' ]
+        if par.ThermaD > 0:
+            # entropy perturbation rʰ p s and thermal advection -rʰ p uᵣ dS/dr
+            arg2 += [ vP ]*2
+            labl += [ 'h0pss0_D0', 'h1pdS0_D0' ]
+        else:
+            # no diffusion: p cancels, so the heat equation is used divided by p: r s and -r uᵣ dS/dr
+            # (p ~ 1e-7 near the surface makes the p-weighted rows ill-conditioned there)
+            arg2 += [ vP ]*2
+            labl += [ 'h0_D0', 'h1dSd0_D0' ]
 
         # thermal diffusion
         if par.ThermaD > 0:
@@ -274,6 +276,7 @@ def main(ncpus):
     parg0 = []  # derivative order
     parg1 = []  # Cheb coeffs go here
     parg2 = []  # vector_parity
+    parg3 = []  # parity of the profile coefficients (used only when ricb=0), same rule as for remroco below
 
     if par.ricb > 0:  # set vector_parity = 0, i.e. is not needed
         arg2 = np.size(labl)*[0]
@@ -287,6 +290,8 @@ def main(ncpus):
             pkey  += [ key1 ]
             parg1 += [ dx ]             # dx is derivative order
             parg2 += [ arg2[k] ]        # vector_parity
+            adj = int(func1 in ['gra', 'pdS', 'lh1', 'dSd'])
+            parg3 += [ 1-(( rpower + (dorder1 or 0) + (dorder2 or 0) + adj )%2)*2 ]
 
     # For each of the unique operator id's we generate in parallel the Chebyshev
     # coefficients, and change the Gegenbauer basis from C^(0) to C^(dx).
@@ -306,7 +311,14 @@ def main(ncpus):
     # ---------------------------------------------------------------------------------------------------- Generate the Mlam matrices in parallel
     # -------------------------------------------------------------------------------------------------------------------------------------------
     pool2 = mp.Pool( processes = int(ncpus) )
-    tmp = [ pool2.apply_async( ut.Mlam, args = ( parg0[k], parg1[k], parg2[k]) ) for k in range(np.size(parg0,0)) ]
+    if par.ricb == 0:  # profiles must have the parity assumed above, otherwise only part of them is kept
+        for k,pkey1 in enumerate(pkey):
+            c = np.abs(parg0[k])
+            cwrong = c[int((1+parg3[k])/2)::2]
+            if np.max(c) > 0 and np.max(cwrong) > 1e-8*np.max(c):
+                print('WARNING: profile coefficients of', labl[opkey.index(pkey1)], 'do not have the assumed parity:',
+                      'max wrong-parity/max = {:.2e}. Only the part with the assumed parity is used.'.format(np.max(cwrong)/np.max(c)))
+    tmp = [ pool2.apply_async( ut.Mlam, args = ( parg0[k], parg1[k], parg2[k], parg3[k]) ) for k in range(np.size(parg0,0)) ]
     # recover resulting list of matrices
     matlist = [tmp1.get() for tmp1 in tmp]
     pool2.close()
@@ -332,7 +344,7 @@ def main(ncpus):
 
         if par.ricb == 0 :  # --------------------------------------------------------- If no solid inner core then remove unneeded rows and cols
 
-            adj = int(func1 in ['gra', 'pdS', 'lh1'])   # adjusts operator parity for these profiles 
+            adj = int(func1 in ['gra', 'pdS', 'lh1', 'dSd'])   # adjusts operator parity for these profiles
             operator_parity = 1-(( rpower + (dorder1 or 0) + (dorder2 or 0) + dx + adj )%2)*2  # we use 'or 0' to give 0 when dorder is None
             #print(labl1, operator_parity, adj, rpower, vector_parity)
             overall_parity  = vector_parity * operator_parity

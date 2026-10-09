@@ -1093,7 +1093,7 @@ def Slam(lamb,N):
 
 
 
-def Mlam(a0,lamb,vector_parity):
+def Mlam(a0,lamb,vector_parity,a0_parity=None):
     '''
     Multiplication matrix. a0 are the cofficients in the C^(lamb) basis and lamb
     is the order of the C^(lamb) basis. (This basis should match the
@@ -1119,8 +1119,9 @@ def Mlam(a0,lamb,vector_parity):
             # a0 is the full vector of coefficients, including even and odd, size N
             #tmp = np.nonzero(a0)[0]
             #ix = tmp[-1] # index of *last* non zero coefficient
-            ix = np.argmax(abs(a0))  # index of largest a0 coeff     #2*((argmax(abs(c0)))%2)-1
-            a0_parity = 1 - 2*(ix%2)
+            if a0_parity is None:  # guess it from the largest coefficient (wrong for profiles of mixed parity)
+                ix = np.argmax(abs(a0))  # index of largest a0 coeff     #2*((argmax(abs(c0)))%2)-1
+                a0_parity = 1 - 2*(ix%2)
             lamb_parity = 1 - 2*(lamb%2)
             operator_parity = a0_parity * lamb_parity
             overall_parity = vector_parity * operator_parity

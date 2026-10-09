@@ -583,66 +583,44 @@ def lorentz_power_tor(l, tlm0, tlmb):
 
 
 
-def buoyancy_power(l, plm0, hlm0 ):
+def dotprod_scal(l, hlma, hlmb):
     '''
-    Returns the integrand to compute rate of working of the buoyancy force, l-component, thermal or compositional
+    Returns the integrand to compute the volume integral of the product of two scalar fields, l-component.
+    Same convention as dotprod_pol and dotprod_tor: 2 Re(a b*), with ∫|Yₗᵐ|² dΩ = 4π/(2l+1).
     '''
     f0 = 4*np.pi/(2*l+1)
-    f1 = r2 * l*(l+1) * 2*np.real( np.conj(plm0) * hlm0 )
+    f1 = r2 * 2 * np.real( hlma * np.conj( hlmb ) )
     return f0*f1
 
 
 
-def thermal_energy(l, hlm0):
+def entropy_energy(l, hlm0):
     '''
-    Returns the integrand to compute the volume integral of (1/2) ∫ θ² dV, l-component
+    Returns the integrand to compute the entropy "energy" ½ ∫ p₀ s² dV, l-component
     '''
+    return 0.5 * pss0 * dotprod_scal(l, hlm0, hlm0)
+
+
+
+def entropy_advect(l, hlm0, qlm0):
+    '''
+    Returns the integrand to compute the entropy advection term -∫ p₀ (dS/dr) uᵣ s dV, l-component.
+    qlm0 is the radial velocity uᵣ = L P/r.
+    '''
+    return -pdS0 * dotprod_scal(l, qlm0, hlm0)
+
+
+
+def entropy_dissip(l, hlm0, hlm1):
+    '''
+    Returns the integrand to compute -∫ κ p₀ ∇s⋅∇s dV, l-component.
+    ∫ s ∇⋅(κ p₀ ∇s) dV is this plus the surface term [ r² κ p₀ s ∂s/∂r ] (added in thermal_worker).
+    '''
+    L = l*(l+1)
     f0 = 4*np.pi/(2*l+1)
-    f1 = r2 * np.abs( hlm0 )**2
-    return f0*f1
+    f1 = r2 * np.abs( hlm1 )**2 + L * np.abs( hlm0 )**2
+    return -kps0 * f0 * 2 * f1
 
-
-
-def thermal_dissip(l, hlm0, hlm1, hlm2):
-    '''
-    Returns the integrand to compute ∫ θ ∇²θ dV, l-component
-    '''
-    f0 = 4*np.pi/(2*l+1)
-    f1 = 2 * rk * 2*np.real( hlm0 * np.conj(hlm1) )
-    f2 = r2 * 2*np.real( hlm0 * np.conj(hlm2) )
-    f3 = -2*l*(l+1) * np.abs(hlm0)**2
-    return f0*(f1+f2+f3)
-
-
-
-def thermal_advect(l, hlm0, plm0, flag):
-    '''
-    Returns the integrand to compute the volume integral of ∫ (-𝐮⋅∇T) θ dV, l-component
-    For thermal or compositional depending on the flag argument
-    '''
-
-    f0 = 4*np.pi/(2*l+1)
-    f1 = l*(l+1) * 2*np.real( np.conj(plm0) * hlm0 )
-
-    if flag == 'thermal':
-    
-        if par.heating   == "internal":
-            fr = r2
-        elif par.heating == "differential":
-            fr = 1/rk
-        elif par.heating == "two zone":
-            fr = rk * ut.twozone(rk, par.args)
-        elif par.heating == "user defined":
-            fr = rk * ut.BVprof(rk, par.args)
-
-    elif flag == 'compositional':
-
-        if par.comp_background  == "internal":
-            fr = r2
-        elif par.comp_background == "differential":
-            fr = 1/rk        
-
-    return f0*fr*f1
 
 
 def diff_rot_power(l, lp, lt, P, T):
@@ -831,6 +809,12 @@ def flow_worker( l ):
         kindp = 0
         kindt = 0
 
+    # rate of working of the buoyancy force ρ𝐮⋅(Beyonce g s 𝐫̂), the buoyancy force per unit mass as in operators.buoyancy
+    if par.thermal:
+        wbuop = dotprod_pol(l, velq[0], vels[0], buoq[0], buos[0])*rho0
+    else:
+        wbuop = 0
+
     # if par.magnetic:
     #     [ qlmb, slmb, tlmb ] = lorentz4pp(l, b_sol2)  # the l-component of the Lorentz force
         
@@ -870,7 +854,7 @@ def flow_worker( l ):
     Dkin_l = rad_quad( kindp + kindt, Ra, Rb, wk)  # ∫ 𝐮⋅(∇⋅𝛔) dV
     # Dint_l = rad_quad( intdp + intdt, Ra, Rb, wk)
     # Wlor_l = rad_quad( wlorp + wlort, Ra, Rb, wk)
-    # Wthm_l = rad_quad( wther, Ra, Rb, wk )
+    Wthm_l = rad_quad( wbuop, Ra, Rb, wk )         # ∫ ρ 𝐮⋅(Beyonce g s 𝐫̂) dV
     # Wcmp_l = rad_quad( wcomp, Ra, Rb, wk )
 
     Enstro_vel_l = rad_quad( enstro_vel_p + enstro_vel_t, Ra, Rb, wk)
@@ -889,7 +873,7 @@ def flow_worker( l ):
         Wdr_l = rad_quad( wdr, Ra, Rb, wk )
     
     # return [ Kene_l, Dkin_l, Dint_l, Wlor_l, Wthm_l, Wcmp_l ]
-    return [ Kene_l, Dkin_l, Enstro_vel_l, Enstro_cor_l, Enstro_vif_l, Enstro_buo_l, 0, 0, 0, Wdr_l ]
+    return [ Kene_l, Dkin_l, Enstro_vel_l, Enstro_cor_l, Enstro_vif_l, Enstro_buo_l, 0, Wthm_l, 0, Wdr_l ]
 
 
 
@@ -969,30 +953,49 @@ def magnetic_worker(l, lp, lt, b_sol2, u_sol2, Ra, Rb, wk):
 
 
 
-def thermal_worker(l, lp, t_sol2, u_sol2, Ra, Rb, wk, flag):
+def thermal_worker( l ):
     '''
-    Returns the l-component of the thermal "energy" i.e. (1/2) ∫ θ² dV,
-    the thermal "dissipation" i.e. ∫ θ ∇²θ dV,
-    and the thermal advection "power" i.e. ∫ (-𝐮⋅∇T) θ dV
-    integrated over the fluid volume.
+    Entropy budget, l-component (l a poloidal l). The heat equation solved in section h (its rows are
+    this equation times rʰ, see operators.entropy, thermal_advection, thermal_diffusion) is
+        p₀ ∂s/∂t = -p₀ uᵣ dS/dr + ThermaD ∇⋅(κ p₀ ∇s)
+    Multiplied by s* (weight 1, p₀ is already in the equation) and integrated over the fluid volume it gives,
+    for an eigenmode ∝ exp((σ+iω)t),
+        2σ TE = Wadv + ThermaD Dthm,   with
+        TE   = ½ ∫ p₀ |s|² dV                            the entropy "energy"
+        Wadv = -∫ p₀ (dS/dr) uᵣ s* dV                    the advection of the background entropy
+        Dthm = ∫ s* ∇⋅(κ p₀ ∇s) dV = -∫ κ p₀ |∇s|² dV + [ r² κ p₀ s* ∂s/∂r ]   the entropy diffusion
+    (real parts, same 2Re and Yₗᵐ conventions as flow_worker). The surface term vanishes for fixed-entropy
+    or fixed-flux walls and at r=0. Uses the global solutions usol2, tsol2. Returns [ TE_l, Dthm_l, Wadv_l ],
+    Dthm_l without the ThermaD factor.
+    The profiles are the physical ones (setup_grid), so the budget residual also flags a mismatch between
+    the intended and the assembled heat equation (e.g. a diffusion operator with a wrong coefficient, or,
+    when ricb=0, a profile without the parity that submatrices assumes).
     '''
 
-    [ thene , thdis, thadv ] = [0, 0, 0]
+    Ra = par.ricb
+    Rb = ut.rcmb
 
-    if l in lp:
+    lp  = ut.ell( par.m, par.lmax, par.symm)[0]
+    idx = list(lp).index(l)
 
-        [ hlm0, hlm1, hlm2 ] = cheb2space_tor(l, lp, t_sol2, 2)  # _tor is the one needed here, for the temperature (a scalar)
+    f_s  = funcheb( tsol2[idx,:], r=rk, ricb=par.ricb, rcmb=ut.rcmb, n=1 )
+    hlm0 = f_s[:,0]  # s
+    hlm1 = f_s[:,1]  # ∂s/∂r
 
-        thene = thermal_energy(l, hlm0)
-        thdis = thermal_dissip(l, hlm0, hlm1, hlm2)
-        if par.hydro:
-            [ [qlm0], [_] ] = cheb2space_pol(l, lp, u_sol2[0], 0)  # _pol is the one needed here, for the velocity
-            thadv = thermal_advect(l, hlm0, qlm0*rk/(l*(l+1)), flag)
-        
-    # Integrals
-    Tene_l = rad_quad( thene, Ra, Rb, wk )
-    Dthm_l = rad_quad( thdis, Ra, Rb, wk )
-    Wadv_l = rad_quad( thadv, Ra, Rb, wk )
+    [ velq, _, _ ] = velocity(l)  # velq[0] is uᵣ
+
+    Tene_l = rad_quad( entropy_energy(l, hlm0), Ra, Rb, wk )
+    Wadv_l = rad_quad( entropy_advect(l, hlm0, velq[0]), Ra, Rb, wk )
+
+    Dthm_l = 0
+    if par.ThermaD > 0:
+        Dthm_l = rad_quad( entropy_dissip(l, hlm0, hlm1), Ra, Rb, wk )
+        # surface term [ r² κ p₀ s* ∂s/∂r ] from Ra to Rb
+        rb   = np.array([ Ra, Rb ])
+        f_sb = funcheb( tsol2[idx,:], r=rb, ricb=par.ricb, rcmb=ut.rcmb, n=1 )
+        kpsb = rap.prf.thermal_diffusivity(rb, 0) * rap.pressX(rb, 0)
+        sfc  = (4*np.pi/(2*l+1)) * rb**2 * kpsb * 2*np.real( np.conj(f_sb[:,0]) * f_sb[:,1] )
+        Dthm_l += sfc[1] - sfc[0]
 
     return [ Tene_l, Dthm_l, Wadv_l ]
 
@@ -1946,6 +1949,15 @@ def setup_grid(Ra, Rb):
     global vsc3
     vsc3 = rap.viscoX( rk, 3)
 
+    if par.thermal:
+        # background profiles for the entropy budget (thermal_worker)
+        global pss0
+        pss0 = rap.pressX( rk, 0)                                 # p₀
+        global pdS0
+        pdS0 = rap.pdSdrX( rk, 0)                                 # p₀ dS/dr
+        global kps0
+        kps0 = rap.prf.thermal_diffusivity( rk, 0) * pss0         # κ p₀ (equal to rap.kappressX( rk, 0))
+
 
 
 def kinetic_energy(usol, Ra, Rb, ls=None):
@@ -2004,10 +2016,10 @@ def diagnose( usol, bsol2, tsol, csol2, Ra, Rb, ncpus):
     #             args=( l, lp_b, lt_b, bsol2, usol2, Ra, Rb, wk)) for l in ll ]   
     #     out_b = np.array([pp0.get() for pp0 in ppb])
 
-    # if par.thermal:
-    #     ppt = [ pool.apply_async( thermal_worker,
-    #             args=( l, lp_u, tsol2, usol2, Ra, Rb, wk, 'thermal' )) for l in lp_u ]   
-    #     out_t = np.array([pp0.get() for pp0 in ppt])
+    if par.thermal:
+        ppt = [ pool.apply_async( thermal_worker,
+                args=( l, )) for l in lp_u ]
+        out_t = np.array([pp0.get() for pp0 in ppt])
 
     # if par.compositional:
     #     # we use again the thermal_worker but with the compositional solution as argument

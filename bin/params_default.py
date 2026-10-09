@@ -90,6 +90,7 @@ class default_params():
             self.heating = 'differential'  # 'internal' or 'differential' heating
 
         # Thermal boundary conditions: 0 for Dirichlet, 1 for Neumann
+        # (the unknown is the entropy s = δs/c_p: 0 is fixed entropy s=0, 1 is zero diffusive entropy flux s'=0; used only if ThermaD>0)
         self.bci_thermal = 0
         self.bco_thermal = 0
 
@@ -194,7 +195,7 @@ class default_params():
             # ---------------------------------------- eigenvalue problems (forcing == 0): eps_*, st_*
             'st_type'                      : 'sinvert',             # shift-and-invert around tau (use with 'TM')
             'st_pc_factor_mat_solver_type' : 'mumps',               # direct LU solve with MUMPS
-            'st_mat_mumps_cntl_1'          : 1e-8,                  # pivot threshold; avoids INFOG(1)=-9; 1e-6 with BLR broke eigenvectors at N>=840
+            'st_mat_mumps_cntl_1'          : 0.01,                  # pivot threshold, MUMPS's default; 1e-8 cost accuracy in thermal runs
             'st_mat_mumps_icntl_35'        : 2,                     # block low-rank (BLR) factorization: ~13% less memory, ~2x faster
             'st_mat_mumps_cntl_7'          : 1e-14,                 # BLR tolerance; 1e-12 broke eigenvectors at N>=640-840
             'eps_error_relative'           : '::ascii_info_detail', # print relative errors after the solve

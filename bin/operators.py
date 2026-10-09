@@ -360,27 +360,27 @@ def buoyancy(l, section, component, offdiag):
 
 
 
-def entropy(l, section, component, offdiag):  # rʰ p s
+def entropy(l, section, component, offdiag):  # rʰ p s  (r s if ThermaD=0: divided by p)
 
     out = 0
     L = l*(l+1.)
     
     if (section == 'h') and (offdiag == 0) :
 
-        out = h0pss0_D0
+        out = h0pss0_D0 if par.ThermaD > 0 else h0_D0
 
     return out/L**3
 
 
 
-def thermal_advection(l, section, component, offdiag):  # −rʰ p(v⋅∇) S = −rʰ p vᵣ dS/dr
+def thermal_advection(l, section, component, offdiag):  # −rʰ p(v⋅∇) S = −rʰ p vᵣ dS/dr  (−r vᵣ dS/dr if ThermaD=0)
 
     out = 0
     L = l*(l+1.)
 
     if (section == 'h') and (component == 'upol') and (offdiag == 0) :
 
-        out = -1.0 * h1pdS0_D0
+        out = -1.0 * ( h1pdS0_D0 if par.ThermaD > 0 else h1dSd0_D0 )
     
     return out/L**2
 
@@ -394,7 +394,7 @@ def thermal_diffusion(l, section, component, offdiag):  # rʰ  ∇⋅(κ p ∇s)
     if (section == 'h') and (offdiag == 0) :
 
         out = - L * h2kps0_D0                   \
-              + 2 * h1kps0_D1 + 2 * h0kps1_D1   \
+              + 2 * h1kps0_D1 +     h0kps1_D1   \
               +     h0kps0_D2 
 
     return par.ThermaD * out/L**3

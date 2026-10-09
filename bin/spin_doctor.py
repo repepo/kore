@@ -119,8 +119,10 @@ def main(ncpus):
     params      = np.zeros((success,39))
     # ------------------------------------------------------------------------------------------------------------------------
 
-    print('\n  ★     Damping σ     Frequency ω     𝒯/𝒫       resid𝐮    Peak ℓ ℓ-Width ℓ-Convergence   cvf_r   cvf_l    cvfmax     residual')
-    print(  ' ‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾ ')
+    hdr_s = '    resid𝑠 ' if par.thermal else ''
+    bar_s = ' ‾‾‾‾‾‾‾‾‾‾' if par.thermal else ''
+    print('\n  ★     Damping σ     Frequency ω     𝒯/𝒫       resid𝐮 ' + hdr_s + '   Peak ℓ ℓ-Width ℓ-Convergence   cvf_r   cvf_l    cvfmax     residual')
+    print(  ' ‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾' + bar_s + ' ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾ ')
 
 
     if par.track_target == 1:  # eigenvalue tracking enabled
@@ -201,7 +203,7 @@ def main(ncpus):
             resens[i] = abs(Ensvel[i]*sigma+Enscor[i]-Ensbuo[i]-Ensvif[i]) / max((abs(Ensvel[i]*sigma),abs(Enscor[i]),abs(Ensbuo[i]),abs(Ensvif[i])))
             # Dint[i] = par.ViscosD * Dint0
             # Wlor[i] = 0#par.OmgTau**2 * par.Le2 * Wlor0
-            # Wthm[i] = par.Beyonce * Wthm0
+            Wthm[i] = Wthm0  # rate of working of buoyancy, Beyonce already included (upp.buoyancy)
             # Wcmp[i] = 0#par.OmgTau**2 * par.BV2_comp * Wcmp0
 
             # # Viscous torques
@@ -220,10 +222,10 @@ def main(ncpus):
         #         mtorq[i] = par.Le2 * np.dot( ut.gamma_magnetic(), b_sol )  # need to double check the constants here
 
 
-        # if par.compositional:
+        if par.thermal:
 
-        #     [ TE[i], Dthm0, Wadv_thm[i] ] = np.sum( tdgn, 0) 
-        #     Dthm[i] = Dthm0 * par.Etherm
+            [ TE[i], Dthm0, Wadv_thm[i] ] = np.sum( tdgn, 0)
+            Dthm[i] = Dthm0 * par.ThermaD
 
 
         # if par.compositional:
@@ -235,19 +237,19 @@ def main(ncpus):
         # --------------------------------------------------------- Computing residuals to check the power balance:
         # KE is kinetic energy
         # ME is magnetic energy
-        # TE is the thermal "energy" (p/2) ∫ S'² dV
+        # TE is the entropy "energy" (1/2) ∫ p s² dV
 
         # Dint is the rate of change of internal energy
         # Dkin is the kinetic energy dissipation (viscous dissipation) via ∫𝐮⋅∇²𝐮 dV
         # Dohm is the Ohmic dissipation or Joule heating via ∫|∇×𝐛|² dV
-        # Dthm is the thermal "dissipation" via ∫ S' ∇⋅κp∇S' dV
+        # Dthm is the entropy "dissipation" via ThermaD ∫ s ∇⋅(κp∇s) dV = -ThermaD ∫ κp|∇s|² dV (+ surface term, zero for kore's thermal BCs)
 
-        # Wthm is the rate of working of the Lorentz force
-        # Wthm is the rate of working of the buoyancy force (thermal)
+        # Wlor is the rate of working of the Lorentz force
+        # Wthm is the rate of working of the buoyancy force (thermal) via ∫ ρ 𝐮⋅(Beyonce g s 𝐫̂) dV
         # Wcmp is the rate of working of the buoyancy force (compositional)
 
         # Indu is the magnetic induction "power"
-        # Wadv is the thermal advection "power" via ∫ (-𝐮⋅r p dS'/dr ) dV
+        # Wadv is the entropy advection "power" via -∫ p (dS/dr) uᵣ s dV
 
         # resid0 is the relative residual of Dkin + Dint = 0
         # resid1 is the relative residual of 2*sigma*KE - Dkin - Wlor -Wthm = 0
@@ -261,12 +263,15 @@ def main(ncpus):
         #     resid0[i] = np.nan
 
         if par.hydro:
-            resid1[i] = ( abs( 2*sigma*KE[i] - Dkin[i] ) / max( abs(2*sigma*KE[i]), abs(Dkin[i])) )     
-                         
-        
+            resid1[i] = ( abs( 2*sigma*KE[i] - Dkin[i] - Wthm[i] ) / max( abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wthm[i]) ) )
+
+        if par.thermal:
+            resid3[i] = ( abs( 2*sigma*TE[i] - Dthm[i] - Wadv_thm[i] ) / max( abs(2*sigma*TE[i]), abs(Dthm[i]), abs(Wadv_thm[i]) ) )
+
+        col_s = '   {:8.2e}'.format(resid3[i]) if par.thermal else ''
 
         # -------i-------sigma-------w-----------KT/KP----resid1-----ldom-----lwidth-----lconv-------cuv_r-----cuv_l-----cuvm------resens------------------------------------------------------------------------------------------------------------------------------------
-        print(' {:2d}   {: 12.9f}   {: 12.9f}   {:8.2e}   {:8.2e}    {:4d}    {:4d}     {:8.2e}     {:5.3f}   {:4d}    {:8.2e}    {:8.2e}'.format(i, sigma, w, KT[i]/KP[i], resid1[i], ldom[i], lwidth[i], lconv[i], cuvismax_r[i], cuvismax_l[i], cuvismax[i], resens[i]  ))
+        print(' {:2d}   {: 12.9f}   {: 12.9f}   {:8.2e}   {:8.2e}{}    {:4d}    {:4d}     {:8.2e}     {:5.3f}   {:4d}    {:8.2e}    {:8.2e}'.format(i, sigma, w, KT[i]/KP[i], resid1[i], col_s, ldom[i], lwidth[i], lconv[i], cuvismax_r[i], cuvismax_l[i], cuvismax[i], resens[i]  ))
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
         toc = timer()
@@ -323,7 +328,7 @@ def main(ncpus):
                                 ])  # 39 total
 
     # ------------------------------------------------------------------------------------------------------------------------
-    print(  ' ‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾ ')
+    print(  ' ‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾' + bar_s + ' ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾ ')
 
     '''
     # find closest eigenvalue to tracking target and write to target file
@@ -393,9 +398,10 @@ def main(ncpus):
     #         np.savetxt(dmag, np.c_[ ME, Mdfs, Indu, resid2,
     #                                 np.real(mtorq), np.imag(mtorq)])
 
-    # if par.thermal:
-    #     with open('thermal.dat','ab') as dtmp:
-    #         np.savetxt(dtmp, np.c_[ TE, Wadv_thm, Dthm, resid3 ])
+    if par.thermal:
+        # columns: TE, Wadv, Dthm (times ThermaD), resid3 (entropy budget), Wthm (buoyancy work), resid1 (KE budget)
+        with open('thermal.dat','ab') as dtmp:
+            np.savetxt(dtmp, np.c_[ TE, Wadv_thm, Dthm, resid3, Wthm, resid1 ])
 
     # if par.compositional:
     #     with open('compositional.dat','ab') as dcmp:

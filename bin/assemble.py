@@ -873,7 +873,7 @@ def main():
             col0 = (rank*bpp + k )* ut.N1
             row = (2*par.hydro+2*par.magnetic)*nb*ut.N1 + col0
 
-            # Poloidal velocity terms: -u_r * (d/dr)T ------------------------------------------------------------------
+            # Poloidal velocity terms: -rʰ p uᵣ dS/dr -------------------------------------------------------------------
             # ----------------------------------------------------------------------- A, heat equation (section h), upol
             # ----------------------------------------------------------------------------------------------------------
             basecol = 0
@@ -887,7 +887,7 @@ def main():
                 loc_list = ut.packit( loc_list, mtx, row, col)
 
 
-            # temperature (theta) terms: (Ek/Pr)*nabla**2(theta) -------------------------------------------------------
+            # entropy (s) terms: ThermaD rʰ ∇⋅(κ p ∇s) -----------------------------------------------------------------
             # ----------------------------------------------------------------------- A, heat equation (section h), temp
             # ----------------------------------------------------------------------------------------------------------
             if par.ThermaD > 0:
@@ -898,6 +898,12 @@ def main():
                 # ------------------------------------
                 col = basecol + col0
 
+                loc_list = ut.packit(loc_list, mtx, row, col)
+
+            # time derivative for forced problems: A - i wf B with B = +entropy here (B = -inertia in the momentum rows)
+            if par.forcing != 0:
+                mtx = -1j*ut.wf*op.entropy(l,'h','',0)
+                col = (2*par.hydro+2*par.magnetic)*nb*ut.N1 + col0
                 loc_list = ut.packit(loc_list, mtx, row, col)
 
             # loc_list = ut.packit( loc_list, mtx, row, col)
@@ -1052,7 +1058,7 @@ def main():
                 loc_list = ut.packit(loc_list, mtx, row, col)
 
 
-        if par.thermal == 1: # adds (d/dt)*theta in the heat equation to matrix B
+        if par.thermal == 1: # adds rʰ p (d/dt) s in the heat (entropy) equation to matrix B
 
             # ------------------------------------------------------------------- B, theta_pol, nocurl (heat), section h
             for k,l in enumerate(loc_top):  # loc_top here because theta
@@ -1290,17 +1296,17 @@ def bc_theta_spherical(l):
             Tbh = bv.Tb[ixh::2,:] # for cmb
             #Tch = bv.Tc[ixh::2,0] # for origin
 
-        if par.bco_thermal == 0: # isothermal cmb
-            out[ 0,:] = Tbh[:,0] # theta=0
+        if par.bco_thermal == 0: # fixed entropy at cmb (not isothermal: δT/T also depends on δp)
+            out[ 0,:] = Tbh[:,0] # s=0
 
-        elif par.bco_thermal == 1: # constant heat flux at cmb
-            out[ 0,:] = Tbh[:,1]   # theta'=0
+        elif par.bco_thermal == 1: # zero diffusive entropy flux at cmb
+            out[ 0,:] = Tbh[:,1]   # s'=0
 
         if par.ricb > 0 :
-            if par.bci_thermal == 0:   # isothermal icb
-                out[ 1,:] = bv.Ta[:,0] # theta=0
-            elif par.bci_thermal == 1: # constant heat flux at icb
-                out[ 1,:] = bv.Ta[:,1] # theta'=0
+            if par.bci_thermal == 0:   # fixed entropy at icb
+                out[ 1,:] = bv.Ta[:,0] # s=0
+            elif par.bci_thermal == 1: # zero diffusive entropy flux at icb
+                out[ 1,:] = bv.Ta[:,1] # s'=0
 
         row0 = 2*(par.hydro+par.magnetic)*ut.n + int(ut.N1*(l-ut.m_top)/2)
         col0 = row0

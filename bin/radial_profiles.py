@@ -91,7 +91,8 @@ class user_defined_profiles():  # ----------------------------------------------
         # ------------------------ p(r) dS/dr
         out = np.zeros_like(r)
         x = abs(r)<1
-        out[x] = self.pressure(r[x],0)*self.gradS(r[x], par.aux1, par.aux2, par.aux3, par.aux4, par.aux5)
+        # odd extension to r<0 (only used when ricb=0, where submatrices treats 'pdS' as odd)
+        out[x] = self.pressure(r[x],0)*np.sign(r[x])*self.gradS(np.abs(r[x]), par.aux1, par.aux2, par.aux3, par.aux4, par.aux5)
         # -----------------------------------
         return (r**rpower)*out
 
@@ -305,7 +306,8 @@ class profiles_from_file():  # -------------------------------------------------
         #out = ut.load_model(r,'pdSdr')
         out = np.zeros_like(r)
         x = abs(r)<1
-        out[x] = self.pressure(r[x],0)*self.gradS(r[x], par.aux1, par.aux2, par.aux3, par.aux4, par.aux5)
+        # odd extension to r<0 (only used when ricb=0, where submatrices treats 'pdS' as odd)
+        out[x] = self.pressure(r[x],0)*np.sign(r[x])*self.gradS(np.abs(r[x]), par.aux1, par.aux2, par.aux3, par.aux4, par.aux5)
         #out = self.pressure(r,0)*self.gradS(r) 
         # -----------------------------------
         return (r**rpower)*out
@@ -498,10 +500,11 @@ def viscoX(r, Dorder):   # Kinematic viscosity
     return out
 
 
-def kappressX(r, Dorder):   # κ(r)ρ(r)T(r)
+def kappressX(r, Dorder):   # κ(r)p(r), p stands for ρ(r)T(r)
 
     tol = 1e-14
-    out = ut.angine( prf.thermal_diffusivity(r, 0) * prf.pressure(r, 0), r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)
+    kps = lambda rr, rpower: prf.thermal_diffusivity(rr, rpower) * prf.pressure(rr, 0)  # ut.angine needs a function f(r, rpower)
+    out = ut.angine( kps, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)
 
     return out
 
@@ -510,6 +513,15 @@ def pdSdrX(r, Dorder):   # ρ(r)T(r)dS/dr
 
     tol = 1e-14
     out = ut.angine( prf.pdSdr, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)
+
+    return out
+
+
+def gradSX(r, Dorder):   # dS/dr, odd extension to r<0 (used when ThermaD=0)
+
+    tol = 1e-14
+    dS  = lambda rr, rpower: (rr**rpower)*np.sign(rr)*prf.gradS(np.abs(rr), par.aux1, par.aux2, par.aux3, par.aux4, par.aux5)
+    out = ut.angine( dS, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)
 
     return out
 
@@ -563,7 +575,7 @@ def pslX(r, Dorder):
 # -------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------
 #proffdir = { 'lho':rhoXlhoX, 'moe':muX, 'rho':rhoX, 'gra':graviX, 'pss':pressX, 'pdS':pdSdrX, 'kps':kappressX }
-proffdir = { 'lho':logrhoX, 'vsc':viscoX, 'gra':graviX, 'pss':pressX, 'pdS':pdSdrX, 'kps':kappressX, 'aub':aubX, 'svp':svpX, 'pls':plsX, 'abu':abuX, 'spv':spvX, 'psl':pslX }
+proffdir = { 'lho':logrhoX, 'vsc':viscoX, 'gra':graviX, 'pss':pressX, 'pdS':pdSdrX, 'dSd':gradSX, 'kps':kappressX, 'aub':aubX, 'svp':svpX, 'pls':plsX, 'abu':abuX, 'spv':spvX, 'psl':pslX }
 # -------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------
