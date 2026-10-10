@@ -112,6 +112,15 @@ class default_params():
         self.Beyonce   = 0  # (N0*Tau)**2               Buoyancy force factor. Set to 1 for unit time Tau = 1/N0 = sqrt(r0/g0)
         self.ViscosD   = 0  # nu0 * Tau / r0**2         Viscous force factor. Set to 1 for viscous diffusion time scale. This is the Ekman number if Tau = 1/Omega
         self.ThermaD   = 0  # kappa0 * Tau / r0**2      Thermal diffusion factor. Set to 1 for thermal diffusion time scale
+        # thermal = 1 with ThermaD = 0 (adiabatic entropy) works but admits spurious modes trapped at the inner boundary
+        # whenever dS/dr != 0 there (their eigenvalues move with N, spin_doctor residσ ~1). A tiny diffusivity removes the
+        # trapped modes near the shift: ThermaD = 1e-9 reproduces the ThermaD = 0 eigenvalues to 3-7e-8 (the shift is linear
+        # in ThermaD, about 33-67 x ThermaD depending on the mode, from N = 480 runs of the anel10 thermal case at
+        # ThermaD = 0, 1e-7, 1e-5; N = 640, prescale = 1 only confirmed them). It still leaves
+        # spurious growing modes at the ICB unless dS/dr = 0 at the inner boundary.
+        # Recommended, also for ricb > 0: let dS/dr -> 0 at the inner boundary (for the erf top hat, x1 >= ricb + 3*w1).
+        # That removes both the trapped and the growing spurious modes. If ThermaD = 0 is kept with the ramp at the wall,
+        # raise nev by 1-2, since spurious ICB modes take slots.
 
 
         # ----------------------------------------------------------------------------------------------------------------------
@@ -121,6 +130,11 @@ class default_params():
         self.ncpus = 2
 
         # Chebyshev polynomial truncation level. Use function def at top or set manually. N must be even if ricb = 0.
+        # With ricb = 0 only N/2 polynomials of one parity are used, so use about twice the N of a shell run.
+        # Thermal runs: on the anel10 thermal setup (ricb 0.02, layer edges 0.03 wide), N = 480 under-resolves the more
+        # damped modes at ThermaD 0 and 1e-9 (residσ up to 1e-4); N = 560 gives residσ <= 3.4e-8 and N = 640 <= 3.4e-11.
+        # Judge resolution with spin_doctor's residσ, residens and cvfmax against a higher-N run: the P/T Chebyshev tails
+        # and the ℓ-Convergence can look converged when the entropy is not.
         self.N = 120
 
         # Spherical harmonic truncation lmax and approx lmax/N ratio:
@@ -176,9 +190,18 @@ class default_params():
             # ---------------------------------------- eigenvalue problems (forcing == 0): eps_*, st_*
             'st_type'                      : 'sinvert',             # shift-and-invert around tau (use with 'TM')
             'st_pc_factor_mat_solver_type' : 'mumps',               # direct LU solve with MUMPS
-            'st_mat_mumps_cntl_1'          : 0.01,                  # pivot threshold, MUMPS's default; 1e-8 cost accuracy in thermal runs
-            'st_mat_mumps_icntl_35'        : 2,                     # block low-rank (BLR) factorization: ~13% less memory, ~2x faster
-            'st_mat_mumps_cntl_7'          : 1e-14,                 # BLR tolerance; 1e-12 broke eigenvectors at N>=640-840
+            'st_mat_mumps_cntl_1'          : 0.01,                  # pivot threshold, MUMPS's default; 1e-8 cost accuracy in thermal runs,
+                                                                    # 0.1-0.5 did not help either
+            'st_mat_mumps_icntl_35'        : 0,                     # block low-rank (BLR) factorization off: within ~15% of BLR's time at N <= 480, never
+                                                                    # less accurate; set 2 (BLR on) for large N, ~13% less memory and up to
+                                                                    # ~2x faster, then check spin_doctor residuals (BLR + Ruiz degraded
+                                                                    # thermal ThermaD = 0 eigenvectors 10x more than Ruiz alone)
+            'st_mat_mumps_cntl_7'          : 1e-14,                 # BLR tolerance, used only with icntl_35 = 2; 1e-12 broke eigenvectors at N>=640-840
+            # 'st_mat_mumps_icntl_8'       : 77,                    # MUMPS's own scaling (default 77, automatic); keep it, 0 (off) fails
+                                                                    # (INFOG(1)=-9) or gives useless eigenvectors
+            # 'st_mat_mumps_icntl_10'      : 3,                     # up to 3 steps of iterative refinement (untested); N = 640 thermal
+                                                                    # ThermaD = 1e-9 prescale = 1 eigenvalues were up to 1.1e-6 off a
+                                                                    # solve with an iteratively refined LU, while spin_doctor looked clean
             'eps_error_relative'           : '::ascii_info_detail', # print relative errors after the solve
             # 'eps_balance'                : 'twoside',             # cleaner eigenvalues for final runs, ~+50% time
             # 'st_mat_mumps_icntl_14'      : 50,                    # extra MUMPS workspace (%), only if -9 still appears
@@ -197,14 +220,22 @@ class default_params():
         }
 
         # Pre-scaling of the eigenvalue problem (forcing == 0 only; ignored for forced problems).
-        # Default on (set prescale = 0 to switch it off). With prescale = 1, solve.py applies Ruiz row+column equilibration to A - tau*B (10 iterations)
+        # prescale = None (default): automatic, on (1) except for thermal = 1 with ThermaD = 0, where it is off (0).
+        # Set 0 or 1 explicitly to override.
+        # Measured effect on spin_doctor residuals (anelastic_log, 2026-10):
+        #   - hydro only (thermal = 0): better (anel10: residσ ~1e-11 -> ~1e-12, ℓ-Convergence ~1e-13 -> ~1e-15)
+        #   - thermal, ThermaD > 0: 10-1e6x better (gi1: residσ ~1e-10 -> ~1e-14); for tiny ThermaD (1e-7, 1e-9) without it
+        #     the entropy gets spurious high-ℓ noise at the outer boundary that leaks into the flow
+        #   - thermal, ThermaD = 0: 10-1e4x worse (the column scaling Dc damages the entropy part; row-only scaling was
+        #     still worse than none), hence off in the automatic setting.
+        # With prescale = 1, solve.py applies Ruiz row+column equilibration to A - tau*B (10 iterations)
         # and solves Dr*A*Dc y = lambda Dr*B*Dc y instead. Eigenvalues are unchanged; eigenvectors are mapped
         # back (x = Dc*y) before they are written, so spin_doctor and postprocessing see unscaled vectors.
         # Lowers the condition number of A - tau*B by 6-8 orders of magnitude and gave cleaner eigenvectors
         # (conductive_IC torsional-mode tests: spin_doctor resid u ~1e-7 instead of ~1e-4 for modes 1-2 at N = 976).
         # Costs 7-8 s at N = 976 on 8 ranks, before the factorization; no change in peak memory.
         # solve.py's ||Ax-kBx||/||kx|| is then printed for the scaled problem; judge accuracy with spin_doctor.
-        self.prescale = 1
+        self.prescale = None
 
 
         # ----------------------------------------------------------------------------------------------------------------------

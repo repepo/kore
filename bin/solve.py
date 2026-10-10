@@ -64,7 +64,7 @@ def to_mat(n, Istart, Iend, indptr, indices, data):
                                  comm=PETSc.COMM_WORLD)
 
 
-# Ruiz pre-scaling of the eigenvalue problem, used when par.prescale = 1.
+# Ruiz pre-scaling of the eigenvalue problem, used when par.prescale = 1 (or None, automatic: see params_default.py).
 def ruiz_scaling(Arows, Brows, tau, iters=10):
     '''
     Ruiz row+column equilibration of M = A - tau*B (infinity norm). Each iteration takes
@@ -172,6 +172,8 @@ def main():
 
     # optional Ruiz pre-scaling (par.prescale), eigenvalue problems only
     prescale = getattr(par, 'prescale', 0)
+    if prescale is None:  # automatic: Ruiz helps everywhere except thermal runs without entropy diffusion
+        prescale = 0 if (par.thermal and par.ThermaD == 0) else 1
     tau = par.rtau + par.itau*1j
     if prescale and par.forcing != 0:
         Print('Note: prescale applies to eigenvalue problems only; not used for this forced problem.')

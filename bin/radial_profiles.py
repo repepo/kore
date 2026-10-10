@@ -80,6 +80,11 @@ class user_defined_profiles():  # ----------------------------------------------
     #     out[x] = ( self.dlog_p(r[x])/self.Gamma1(r[x],a,b,c) ) - self.dlog_rho(r[x])
     #     return out
     def gradS(self, r, x1, w1, x2, w2, A):
+        # The background entropy gradient dS/dr, here an erf top hat between x1 and x2.
+        # With ricb = 0 it enters as the odd extension sign(r)*gradS(|r|) (pdSdr, gradSX), which is smooth only if
+        # dS/dr -> 0 at r = 0: keep x1 >= ~6*w1 (e.g. x1 = 0.2, w1 = 0.03) or use a profile odd in r. With x1 = w1 = 0.03
+        # (dS/dr(0) = 0.2) the jump at r = 0 spoiled all ricb = 0 thermal runs (ThermaD = 0: residσ ~1; ThermaD > 0: ~1e-5).
+        # With ricb > 0, dS/dr != 0 at ricb and ThermaD = 0 gives spurious modes trapped at the inner boundary.
         return ut.erf_top_hat(r, x1,w1,x2,w2,A)
 
 
@@ -246,6 +251,11 @@ class profiles_from_file():  # -------------------------------------------------
 
 
     def gradS(self, r, x1, w1, x2, w2, A):
+        # The background entropy gradient dS/dr, here an erf top hat between x1 and x2.
+        # With ricb = 0 it enters as the odd extension sign(r)*gradS(|r|) (pdSdr, gradSX), which is smooth only if
+        # dS/dr -> 0 at r = 0: keep x1 >= ~6*w1 (e.g. x1 = 0.2, w1 = 0.03) or use a profile odd in r. With x1 = w1 = 0.03
+        # (dS/dr(0) = 0.2) the jump at r = 0 spoiled all ricb = 0 thermal runs (ThermaD = 0: residσ ~1; ThermaD > 0: ~1e-5).
+        # With ricb > 0, dS/dr != 0 at ricb and ThermaD = 0 gives spurious modes trapped at the inner boundary.
         return ut.erf_top_hat(r, x1,w1,x2,w2,A)
 
 
