@@ -2,6 +2,32 @@ CHANGELOG - Kore, conductive_IC branch
 ======================================
 
 
+2026-10-11
+----------
+Documentation (docs/, mkdocs.yml)
+- The online manual is reorganised into five tabs with an explicit nav in mkdocs.yml: Home, Getting
+  started (Installation, Quick start), User guide (Setting up a problem, Background magnetic field,
+  Inner core and mantle, Rotational dynamics, Solver settings, Output and postprocessing), Theory
+  (Equations and scaling, Numerical method) and Examples (Examples and tests).
+- New pages cover what the manual did not: running a first case, every parameter of params_default.py,
+  the B0 options with cnorm, B0_ic and B0_cmb, the magnetic boundary conditions (insulating,
+  conducting, perfectly conducting and thin-wall inner core and mantle, with their equations and
+  limits), rotdyn, spin_doctor's table, residuals and output files, the plotting and cluster tools,
+  the numerical method, and the six CI test cases with their reference values.
+- page2.md, page3.md and page4.md are renamed installation.md, equations.md and solver.md (the
+  "Checking the results" part of page4 moves to output.md). Old /page2/ links no longer work; the
+  README link now points to /installation/.
+- equations.md adds the linearisation, the composition equation, induction in a conducting inner
+  core and a summary of the equations with the parameter names.
+- The polyfill.io script is removed from mkdocs.yml: that domain was taken over in 2024 and served
+  malicious code, and the site does not need it.
+
+Issues
+- innercore = 'perfect conductor, material' or 'perfect conductor, spatial' stops every script with
+  "ValueError: ... is not in list": these options are missing from ic_bc_list in bin/utils.py. The
+  manual marks them as not usable at present.
+
+
 2026-10-09
 ----------
 Parameters

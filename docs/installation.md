@@ -1,4 +1,4 @@
-# Installation Notes 
+# Installation
 
 To run **`kore`** we need the PETSc/SLEPc packages and their python bindings petsc4py/slepc4py. PETSc needs to be compiled with support for complex scalars. MUMPS and SuperLU_dist are external packages that need to be installed together with PETSc.
 
@@ -155,5 +155,8 @@ We can write that to e.g. `$HOME/kore_env.sh` and do `source $HOME/kore_env.sh` 
 Several PETSc builds can live side by side in the same `petsc` and `slepc` folders, each under its own `PETSC_ARCH` name (passed as `PETSC_ARCH=...` to PETSc's `./configure`). Switching between them only requires changing `PETSC_ARCH`.
 
 
-## SHTns
-Coming soon
+## Optional: SHTns and pyevtk
+
+Kore itself needs neither. The plotting package `koreviz` (see [Output and postprocessing](output.md#koreviz)) uses [SHTns](https://nschaeff.bitbucket.io/shtns/), a fast spherical-harmonic transform library, to evaluate solutions on a grid in physical space, and `koreviz.writeVts` uses [pyevtk](https://pypi.org/project/pyevtk/) to write files for ParaView.
+
+The script `tools/install-shtns.sh` downloads SHTns 3.5.2, builds it with OpenMP (with MKL if `MKLROOT` is set, otherwise with FFTW, which must then be installed) and installs it under `$HOME/.local`, together with its python module. pyevtk can be installed with `pip3 install pyevtk` in the Kore python environment.

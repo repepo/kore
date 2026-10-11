@@ -1,11 +1,23 @@
-# Non-dimensionalization
+# Equations and scaling
+
+Kore solves the *linearised* equations for small perturbations of a state of rest in the rotating frame: the flow $\mathbf{u}$, the magnetic field $\mathbf{b}$ (on top of the imposed background field $\mathbf{B}_0$, see [Background magnetic field](background-field.md)), the temperature $\theta$ and the composition $\xi$ (on top of background profiles $T(r)$ and $C(r)$). The Lorentz force and the induction term are linearised about $\mathbf{B}_0$:
+
+$$
+(\nabla\times\mathbf{B})\times\mathbf{B} \;\longrightarrow\; (\nabla\times\mathbf{b})\times\mathbf{B}_0 + (\nabla\times\mathbf{B}_0)\times\mathbf{b},
+\qquad
+\nabla\times(\mathbf{u}\times\mathbf{B}) \;\longrightarrow\; \nabla\times(\mathbf{u}\times\mathbf{B}_0).
+$$
+
+Every perturbation varies as $e^{\lambda t + i m \phi}$. In an eigenvalue problem $\lambda = \sigma + i\omega$ is unknown, with damping rate $\sigma$ and frequency $\omega$. In a forced problem $\lambda = i\omega$ is the forcing frequency.
 
 
-For numerical convenience we use *dimensionless* variables when solving the Navier Stokes equation, the induction equation, and the heat equation. A non-dimensionalization procedure is always possible thanks to the Buckingham-$\pi$ theorem.
+## Non-dimensionalization
+
+For numerical convenience we use *dimensionless* variables when solving the Navier Stokes equation, the induction equation, the heat equation and the composition equation. A non-dimensionalization procedure is always possible thanks to the Buckingham-$\pi$ theorem. The unit of length $L$ is the CMB radius.
 
 
 
-## The momentum equation
+### The momentum equation
 
 In a reference frame rotating with angular speed $\Omega$, the dimensional form of the *linear* momentum equation (i.e. the Navier-Stokes equation) describing the acceleration $\partial_t \mathbf{u}$ of a small fluid parcel with density $\rho$, including buoyancy and the Lorentz force, is:  
 
@@ -97,7 +109,7 @@ A common choice for the time scale is the rotation time scale, so $\tau=1/\Omega
 
 
 
-## The induction equation
+### The induction equation
 
 The induction equation in dimensional form is
 
@@ -125,7 +137,7 @@ $$
 
 
 
-## The heat equation
+### The heat equation
 
 The heat equation in its dimensional form is
 
@@ -150,3 +162,59 @@ A temperature profile with a linear gradient is common in the literature. In tha
 $$
 Ra = \frac{\alpha g_0 \beta R^5}{\nu\kappa}.
 $$
+
+
+### The composition equation
+
+The composition $\xi$ is treated like the temperature, with the compositional diffusivity $D$ in place of $\kappa$ and a background gradient $\mathrm{d}C/\mathrm{d}r$ (`comp_background`). With the composition scale chosen in the same way, the dimensionless equation is
+
+$$
+\partial_t \xi = u_r\, f_\xi(r) + (\Omega\tau)\frac{E}{Sc} \nabla^2 \xi,
+$$
+
+where $Sc = \nu/D$ is the Schmidt number. Composition adds a buoyancy term $-(\Omega\tau)^2 \frac{N_\xi^2}{\Omega^2}\,\xi\, r\, \mathbf{\hat r}$ to the momentum equation, with $N_\xi^2/\Omega^2 = -E^2 Ra_\xi/Sc$ (`BV2_comp`) and $Ra_\xi$ the compositional Rayleigh number (`Ra_comp`).
+
+
+### Induction in a conducting inner core
+
+In a solid, conducting inner core there is no flow, and the field there, $\mathbf{b}_i$, only diffuses:
+
+$$
+\partial_t \mathbf{b}_i = (\Omega\tau)\, \frac{E_\eta}{\mu_{i2o}\,\sigma_{i2o}}\, \nabla^2 \mathbf{b}_i,
+$$
+
+where $\sigma_{i2o}$ and $\mu_{i2o}$ are the conductivity and permeability of the inner core relative to the fluid. The conditions that join $\mathbf{b}_i$ to the field in the fluid are on [Inner core and mantle](boundaries.md#conducting-inner-core).
+
+
+## The equations Kore solves
+
+Collecting the above, the dimensionless equations are
+
+$$
+\lambda\,\mathbf{u} = - 2\,(\Omega\tau)\,\mathbf{\hat z}\times\mathbf{u} - \nabla p + (\Omega\tau)^2 Le^2 \left[ (\nabla\times\mathbf{b})\times\mathbf{B}_0 + (\nabla\times\mathbf{B}_0)\times\mathbf{b} \right] - (\Omega\tau)^2 \left( \frac{N_0^2}{\Omega^2}\,\theta + \frac{N_\xi^2}{\Omega^2}\,\xi \right) r\,\mathbf{\hat r} + (\Omega\tau)\,E\,\nabla^2\mathbf{u},
+$$
+
+$$
+\lambda\,\mathbf{b} = \nabla\times(\mathbf{u}\times\mathbf{B}_0) + (\Omega\tau)\,E_\eta\,\nabla^2\mathbf{b},
+$$
+
+$$
+\lambda\,\theta = u_r\, f(r) + (\Omega\tau)\,\frac{E}{Pr}\,\nabla^2\theta,
+\qquad
+\lambda\,\xi = u_r\, f_\xi(r) + (\Omega\tau)\,\frac{E}{Sc}\,\nabla^2\xi,
+$$
+
+with $\nabla\cdot\mathbf{u} = \nabla\cdot\mathbf{b} = 0$, plus forcing terms in forced problems. The Coriolis term is left out with `rotation = 0`. With `rotdyn = 1` three more equations describe the rotation of the mantle and the inner core (see [Rotational dynamics](rotdyn.md)). The parameters map to Kore's names as follows:
+
+| Symbol | Parameter | Definition |
+|---|---|---|
+| $\Omega\tau$ | `OmgTau` | Set by `timescale` (see [Setting up a problem](setup.md#time-scale)) |
+| $E$ | `Ek` | $\nu/\Omega L^2$ |
+| $E_\eta$ | `Em` | $\eta/\Omega L^2$ |
+| $Le$ | `Le` (`Le2` = $Le^2$) | $B_0/\Omega L\sqrt{\rho\mu_0}$ |
+| $\Lambda$, $Pm$ | `Lambda`, `Pm` | $Le^2/E_\eta$ and $E/E_\eta$ |
+| $N_0^2/\Omega^2$ | `BV2` | $-E^2 Ra/Pr$ |
+| $N_\xi^2/\Omega^2$ | `BV2_comp` | $-E^2 Ra_\xi/Sc$ |
+| $Pr$, $Sc$ | `Prandtl`, `Schmidt` | $\nu/\kappa$, $\nu/D$ |
+
+The boundary conditions are described in [Setting up a problem](setup.md#flow-boundary-conditions-and-ekman-number) (flow, temperature, composition) and [Inner core and mantle](boundaries.md) (magnetic field).

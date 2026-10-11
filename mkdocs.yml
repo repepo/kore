@@ -1,4 +1,24 @@
-site_name: User Manual
+site_name: Kore User Manual
+repo_url: https://github.com/repepo/kore
+repo_name: repepo/kore
+
+nav:
+  - Home: index.md
+  - Getting started:
+    - Installation: installation.md
+    - Quick start: quickstart.md
+  - User guide:
+    - Setting up a problem: setup.md
+    - Background magnetic field: background-field.md
+    - Inner core and mantle: boundaries.md
+    - Rotational dynamics: rotdyn.md
+    - Solver settings: solver.md
+    - Output and postprocessing: output.md
+  - Theory:
+    - Equations and scaling: equations.md
+    - Numerical method: method.md
+  - Examples:
+    - Examples and tests: examples.md
 
 theme:
   name: material
@@ -41,5 +61,4 @@ markdown_extensions:
 
 extra_javascript:
   - javascripts/mathjax.js
-  - https://polyfill.io/v3/polyfill.min.js?features=es6
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
