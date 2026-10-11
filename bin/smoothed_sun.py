@@ -57,6 +57,8 @@ __all__ = [
     "gravity",
     "surface_gravity_cgs",
     "gravity_cgs",
+    "dlog_density",
+    "dlog_pressure",
 ]
 
 # --------------------------------------------------------------------------
@@ -136,7 +138,7 @@ def density_cgs(x):
 
 
 # --------------------------------------------------------------------------
-# Pressure from hydrostatic equilibrium
+# Enclosed mass, gravity and pressure from hydrostatic equilibrium
 #
 # Hydrostatic balance:           dP/dr = -rho * G m(r) / r^2 ,
 #   m(r) = \int_0^r 4 pi r'^2 rho dr'.
@@ -151,74 +153,82 @@ def density_cgs(x):
 #       P(x)/P_c = 1 - I(x)/I(1),
 # which depends only on the (dimensionless) density profile.  The implied
 # central pressure is  P_c = 4 pi G R_sun^2 RHO_C^2 * I(1).
+#
+# Everything is done with Chebyshev series on [-1, 1]: x^2 rho_tilde is even and
+# entire, so ``_CHEB_DEG`` terms reach round-off; it is integrated term by term
+# (m_tilde, odd in x), divided by x^2 = (T_0 + T_2)/2 (m_tilde = O(x^3), so the
+# remainder is round-off) for g, multiplied by rho_tilde and integrated again
+# for I.  The profiles and all their derivatives are then smooth to round-off,
+# which kore's Chebyshev expansions need (a fine-grid trapezoid rule with linear
+# interpolation was only accurate to ~1e-5 in g and ~1e-6 in P).
+# Negative x is accepted, as kore uses when ricb = 0: rho, P are even in x and
+# g, m are odd, exactly, because the wrong-parity coefficients the interpolation
+# leaves (~1e-16 of the largest) are zeroed at each step (so g(0) = 0 exactly).
+# P/P_c = 1 - I(x)/I(1) is summed as the single series -J(x)/I(1), J = I - I(1),
+# which vanishes at x = 1 to round-off and keeps ~1e-17 absolute accuracy up to
+# the surface, where P/P_c ~ 1e-8 at x = 0.99.
 # --------------------------------------------------------------------------
-_GRID_N = 20001              # number of points in the internal fine grid
-_MASS_TABLE = None           # cache: (x_grid, m_tilde_grid)
-_PRESSURE_TABLE = None       # cache: (x_grid, P_over_Pc_grid, I_total)
+_CHEB_DEG = 160              # degree of the Chebyshev series (x^2 rho tail ~1e-15 at 150, 5e-16 at 160; 200 changes nothing)
+_CHEB = None                 # cache: dict of coefficient arrays
 
 
-def _cumtrapz(y, x):
-    """Cumulative trapezoidal integral of y(x) with the same length as y (out[0]=0)."""
-    out = np.zeros_like(y, dtype=float)
-    out[1:] = np.cumsum(0.5 * (y[1:] + y[:-1]) * np.diff(x))
-    return out
+def _cheb():
+    """Cached Chebyshev coefficients of rho_tilde, m_tilde, m_tilde/x^2 and I on [-1, 1]."""
+    global _CHEB
+    if _CHEB is None:
+        ch = np.polynomial.chebyshev
+        rho_c = ch.chebinterpolate(density, _CHEB_DEG)                       # rho_tilde(x), even
+        f_c = ch.chebinterpolate(lambda t: t**2 * density(t), _CHEB_DEG)     # x^2 rho_tilde, even
+        rho_c[1::2] = 0.0                                                    # zero the round-off odd parts (~1e-16)
+        f_c[1::2] = 0.0                                                      # so that all parities below are exact
+        m_c = ch.chebint(f_c, lbnd=0.0)                                      # m_tilde(x), odd
+        m_c[0::2] = 0.0
+        q_c, _ = ch.chebdiv(m_c, np.array([0.5, 0.0, 0.5]))                  # m_tilde/x^2, odd
+        q_c[0::2] = 0.0
+        I_c = ch.chebint(ch.chebmul(rho_c, q_c), lbnd=0.0)                   # I(x), even
+        I_c[1::2] = 0.0
+        I1 = ch.chebval(1.0, I_c)
+        J_c = I_c.copy()
+        J_c[0] -= I1                                                         # J(x) = I(x) - I(1): P/P_c = -J/I(1), ~1e-16 at x = 1
+        _CHEB = dict(rho=rho_c, m=m_c, q=q_c, I=I_c, J=J_c,
+                     m1=ch.chebval(1.0, m_c), I1=I1)
+    return _CHEB
 
 
-def _mass_table():
-    """Cached fine-grid table of the dimensionless enclosed mass m_tilde(x)."""
-    global _MASS_TABLE
-    if _MASS_TABLE is None:
-        x = np.linspace(0.0, 1.0, _GRID_N)
-        m_t = _cumtrapz(x**2 * density(x), x)          # m_tilde(x) = int_0^x x'^2 rho_t dx'
-        _MASS_TABLE = (x, m_t)
-    return _MASS_TABLE
-
-
-def _pressure_table():
-    """Cached fine-grid table of P/P_c (from hydrostatic equilibrium)."""
-    global _PRESSURE_TABLE
-    if _PRESSURE_TABLE is None:
-        x, m_t = _mass_table()
-        rho_t = density(x)
-        with np.errstate(divide="ignore", invalid="ignore"):
-            integrand = np.where(x > 0.0, rho_t * m_t / x**2, 0.0)
-        integrand[0] = 0.0                              # limit is 0 at the centre
-        I = _cumtrapz(integrand, x)
-        _PRESSURE_TABLE = (x, 1.0 - I / I[-1], I[-1])
-    return _PRESSURE_TABLE
+def _clip(x):
+    return np.clip(np.asarray(x, dtype=float), -1.0, 1.0)
 
 
 def mass(x):
-    """Dimensionless enclosed mass m_tilde(x) = integral_0^x x'^2 (rho/RHO_C) dx'.
+    """Dimensionless enclosed mass m_tilde(x) = integral_0^x x'^2 (rho/RHO_C) dx' (odd in x).
 
     The physical enclosed mass is ``4*pi*R_SUN**3*RHO_C * mass(x)``;
     ``mass(1.0)`` therefore equals ``M_sun / (4*pi*R_SUN**3*RHO_C)``.
     """
-    gx, m_t = _mass_table()
-    x = np.clip(np.asarray(x, dtype=float), 0.0, 1.0)
-    res = np.interp(x, gx, m_t)
+    res = np.polynomial.chebyshev.chebval(_clip(x), _cheb()['m'])
     return res[()] if res.ndim == 0 else res
 
 
 def pressure(x):
-    """Pressure normalised to the central value, ``P(x)/P_c``, vs fractional radius.
+    """Pressure normalised to the central value, ``P(x)/P_c``, vs fractional radius (even in x).
 
     Obtained by integrating hydrostatic equilibrium for the density expansion,
-    normalised so that ``P(0)/P_c = 1`` and ``P(1)/P_c = 0``.
+    normalised so that ``P(0)/P_c = 1`` and ``P(1)/P_c = 0`` (summed as the single
+    series ``-J(x)/I(1)``, ``J = I - I(1)``, so it stays accurate to ~1e-17 absolute
+    up to the surface, where it vanishes to round-off).
 
     Parameters
     ----------
     x : float or array_like
-        Fractional radius ``r / R_sun`` in [0, 1].
+        Fractional radius ``r / R_sun`` in [-1, 1].
 
     Returns
     -------
     numpy.ndarray (or float for scalar input)
         ``P(x) / P_c`` (dimensionless), monotonically decreasing from 1 to 0.
     """
-    gx, gP, _ = _pressure_table()
-    x = np.clip(np.asarray(x, dtype=float), 0.0, 1.0)
-    res = np.interp(x, gx, gP)
+    c = _cheb()
+    res = -np.polynomial.chebyshev.chebval(_clip(x), c['J']) / c['I1']
     return res[()] if res.ndim == 0 else res
 
 
@@ -227,8 +237,7 @@ def central_pressure_cgs():
 
     P_c = 4*pi*G*R_SUN**2*RHO_C**2 * I(1).  (Model S value is ~2.3e17.)
     """
-    _, _, I_total = _pressure_table()
-    return 4.0 * np.pi * G_CGS * R_SUN**2 * RHO_C**2 * I_total
+    return 4.0 * np.pi * G_CGS * R_SUN**2 * RHO_C**2 * _cheb()['I1']
 
 
 def pressure_cgs(x):
@@ -247,12 +256,12 @@ def pressure_cgs(x):
 # This is 0 at the centre, 1 at the surface, and peaks in the deep interior.
 # --------------------------------------------------------------------------
 def gravity(x):
-    """Gravitational acceleration normalised to the surface value, ``g(x)/g_surf``.
+    """Gravitational acceleration normalised to the surface value, ``g(x)/g_surf`` (odd in x).
 
     Parameters
     ----------
     x : float or array_like
-        Fractional radius ``r / R_sun`` in [0, 1].
+        Fractional radius ``r / R_sun`` in [-1, 1].
 
     Returns
     -------
@@ -260,12 +269,8 @@ def gravity(x):
         ``g(x) / g(R_sun) = m_tilde(x) / (x**2 * m_tilde(1))`` (dimensionless),
         equal to 0 at the centre and 1 at the surface.
     """
-    gx, m_t = _mass_table()
-    with np.errstate(divide="ignore", invalid="ignore"):
-        g_grid = np.where(gx > 0.0, m_t / (gx**2 * m_t[-1]), 0.0)
-    g_grid[0] = 0.0                                     # g -> 0 at the centre
-    x = np.clip(np.asarray(x, dtype=float), 0.0, 1.0)
-    res = np.interp(x, gx, g_grid)
+    c = _cheb()
+    res = np.polynomial.chebyshev.chebval(_clip(x), c['q']) / c['m1']
     return res[()] if res.ndim == 0 else res
 
 
@@ -274,13 +279,35 @@ def surface_gravity_cgs():
 
     g_surf = 4*pi*G*R_SUN*RHO_C * m_tilde(1) = G*M_sun/R_SUN**2  (~2.74e4).
     """
-    _, m_t = _mass_table()
-    return 4.0 * np.pi * G_CGS * R_SUN * RHO_C * m_t[-1]
+    return 4.0 * np.pi * G_CGS * R_SUN * RHO_C * _cheb()['m1']
 
 
 def gravity_cgs(x):
     """Physical gravitational acceleration in cm/s^2: ``surface_gravity_cgs() * gravity(x)``."""
     return surface_gravity_cgs() * gravity(x)
+
+
+# --------------------------------------------------------------------------
+# Logarithmic derivatives with respect to x
+# --------------------------------------------------------------------------
+def dlog_density(x):
+    """``d ln(rho) / dx`` at fractional radius ``x`` (odd in x), from the Chebyshev expansion."""
+    c = np.zeros(2 * B.size - 1)
+    c[::2] = B                                           # T_{2k} coefficients as a full series
+    res = np.polynomial.chebyshev.chebval(_clip(x), np.polynomial.chebyshev.chebder(c))
+    return res[()] if res.ndim == 0 else res
+
+
+def dlog_pressure(x):
+    """``d ln(P) / dx`` (odd in x), from hydrostatic balance: ``-(m_tilde(1)/I(1)) rho_tilde g_tilde / (P/P_c)``.
+
+    It diverges at |x| -> 1, where P -> 0.
+    """
+    c = _cheb()
+    x = _clip(x)
+    with np.errstate(divide='ignore', invalid='ignore'):                  # -inf at |x| = 1 (P = 0 there)
+        res = -(c['m1'] / c['I1']) * density(x) * gravity(x) / pressure(x)
+    return res[()] if res.ndim == 0 else res
 
 
 # --------------------------------------------------------------------------
@@ -296,10 +323,15 @@ if __name__ == "__main__":
     print(f"Implied surface gravity      = {surface_gravity_cgs():.4e} cm/s^2 "
           f"(Model S ~ 2.74e4)\n")
 
-    print(f"{'x':>6} {'rho/rho_c':>13} {'P/P_c':>13} {'g/g_surf':>11}")
+    print(f"{'x':>6} {'rho/rho_c':>13} {'P/P_c':>13} {'g/g_surf':>11} {'dlnrho/dx':>11} {'dlnP/dx':>11}")
     for x0 in (0.0, 0.1, 0.3, 0.5, 0.713, 0.9, 0.99, 1.0):
         print(f"{x0:6.3f} {float(density(x0)):13.4e} {float(pressure(x0)):13.4e} "
-              f"{float(gravity(x0)):11.4f}")
+              f"{float(gravity(x0)):11.4f} {float(dlog_density(x0)):11.4f} {float(dlog_pressure(x0)):11.4e}")
+
+    # hydrostatic balance check: dP/dx + (m1/I1) rho g = 0, with a finite difference of P
+    xs, h = np.linspace(0.05, 0.95, 7), 1e-5
+    dP = (pressure(xs + h) - pressure(xs - h)) / (2 * h)
+    print(f"\nmax |dP/dx - P dlnP/dx| = {np.max(np.abs(dP - pressure(xs) * dlog_pressure(xs))):.1e}")
 
     # vectorised call check
     xs = np.linspace(0.0, 1.0, 5)

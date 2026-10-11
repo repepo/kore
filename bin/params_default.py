@@ -31,6 +31,7 @@ class default_params():
         # self.model_type = 'astropy table'     # For explicitly defined profiles (supply r, ρ and when required g, (T or p), (N^2 or dS), in array format)
         # self.model_type = 'Boussinesq'        #  for Boussinesq reference state, else anelastic reference state
         # self.model_type = 'user def'          # For implicitly defined profiles (adjust ρ and when required g, p, pdS in radial_profiles.py)
+        # self.model_type = 'smoothed sun'      # Smooth fit to solar Model S (smoothed_sun.py) with a simple dS/dr, see radial_profiles.solar_profiles
 
         # profile smoothing power
         self.smopo = 0
@@ -47,6 +48,20 @@ class default_params():
         self.aux3   = 0
         self.aux4   = 0
         self.aux5   = 0
+
+        # Diffusivity profiles of model_type = 'smoothed sun' (radial_profiles.solar_profiles): ν and κ are ViscosD and ThermaD
+        # (the convection-zone values) times ν/ν_cz = visc0 and κ/κ_cz = therm0 in the radiative zone and 1 in the convection
+        # zone, constant in each with the erf step of dS/dr at x2 = aux3, width w2 = aux4 (needed also when thermal = 0 unless
+        # visc0 = therm0 = 1). Solar: visc0 ~ 1e-11, therm0 ~ 1e-6 to 1e-5 (ν ~ 10, κ_rad ~ 1e5 to 1e7 cm²/s against
+        # ν_t ~ κ_t ~ 1e12), so in practice they are numerical floors; see sun/solar-profile.md. visc_pow and therm_pow multiply
+        # ν and κ by (ρ(x2)/ρ(r))**pow: 0 keeps the kinematic diffusivities constant (recommended), 1 the dynamic ones (ρν, ρκ),
+        # ViscosD and ThermaD being then the values at x2. rvisc and hvisc are not used by this model.
+        self.visc0     = 1.0
+        self.therm0    = 1.0
+        self.visc_pow  = 0.0
+        self.therm_pow = 0.0
+        self.rvisc     = 0.0
+        self.hvisc     = 0.0
 
 
         # ----------------------------------------------------------------------------------------------------------------------

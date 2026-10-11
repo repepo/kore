@@ -195,6 +195,78 @@ class user_defined_profiles():  # ----------------------------------------------
         return (r**rpower)*out
 
 
+class solar_profiles(user_defined_profiles):  # ------------------------------------- Smooth fit to solar Model S
+    '''
+    Density, gravity and pressure of the Sun from the smooth Model S fit in smoothed_sun.py, x = r*aux0 being the
+    fractional solar radius (r = 1 is x = aux0, so the unit of length is aux0 R_sun; ρ is normalised to the fit's
+    central value, ρ(0) = 0.95, g to its value at x = 1, g(r = 1) = 1.02, and p to p(0) = 1), with a simple entropy
+    gradient in place of Model S's: the erf top hat made odd in r (utils.erf_top_hat_odd),
+    dS/dr = A/2 [erf((r-x1)/w1) + erf((r+x1)/w1)] erf_box(r, x2, w2),  aux1..aux5 = x1, w1, x2, w2, A.
+    With x1 = 0 it rises as A erf(r/w1) from the centre, is flat through the radiative zone and falls to zero across
+    the tachocline at x2, so it can be used with ricb = 0. Model S (dS/dr = As/x from bin/model_s.at, s = S/cp, r in
+    solar radii) is fitted to 10% rms by x1 = 0, w1 = 0.03, x2 = 0.68, w2 = 0.06, A = 2.6; its convection zone is
+    adiabatic. The central erf(r/w1) needs N of about 11/w1 to be resolved to round-off (N ~ 380 for w1 = 0.03; at
+    N = 256 the dS/dr and p dS/dr expansions are truncated at 3e-9 and 4e-7 of their largest coefficient, the other
+    profiles are at round-off by k ~ 150). With g normalised at x = 1, N^2 = Beyonce g dS/dr requires
+    Beyonce = g_surf/(aux0 R_sun Omega^2) = 4.90e4 for Omega = 2 pi 453.1 nHz, giving N/Omega up to about 1000 in the
+    radiative zone, and ν = 1e12 cm^2/s is ViscosD = ν/(Omega (aux0 R_sun)^2) = 7.4e-5.
+    The diffusivities follow the same division: ν/ν_cz and κ/κ_cz are 1 in the convection zone and visc0, therm0 in
+    the radiative zone, constant in each with the erf step of dS/dr at x2 = aux3 of width w2 = aux4 (which therefore
+    must be set even when thermal = 0, unless visc0 = therm0 = 1), so ViscosD and ThermaD are the convection-zone
+    values. Solar values (see sun/solar-profile.md): visc0 ~ 1e-11, therm0 ~ 1e-6 to 1e-5, far below what can be
+    resolved, so in practice they are numerical floors. visc_pow and therm_pow multiply both by (ρ(x2)/ρ(r))**pow:
+    0 is a constant kinematic diffusivity (recommended), 1 a constant dynamic one (ρν, ρκ constant), normalised at
+    x2 so that ViscosD, ThermaD are then the values at the tachocline; a density power is limited to ~1e-6 in (κp)'
+    by the round-off of p near the surface.
+    pdSdr and the differential rotation profiles are inherited from user_defined_profiles.
+    '''
+
+    def logrho(self, r, rpower):  # ------------------------------- log(ρ(r)), even in r
+        return (r**rpower)*sms.log_density(r*par.aux0)
+
+
+    def gravity(self, r, rpower):  # -------------- g(r)/g_surf, odd in r as needed when ricb = 0
+        return (r**rpower)*sms.gravity(r*par.aux0)
+
+
+    def pressure(self, r, rpower):  # ------------------- p(r), normalised to 1 at r = 0, even in r
+        return (r**rpower)*sms.pressure(r*par.aux0)
+
+
+    def dlog_p(self,r):  # ----------------------------------------------------------- d(ln p)/dr
+        return par.aux0*sms.dlog_pressure(r*par.aux0)
+
+
+    def dlog_rho(self,r):  # --------------------------------------------------------- d(ln ρ)/dr
+        return par.aux0*sms.dlog_density(r*par.aux0)
+
+
+    def gradS(self, r, x1, w1, x2, w2, A):  # ------------ dS/dr, erf top hat made odd in r
+        return ut.erf_top_hat_odd(r, x1,w1,x2,w2,A)
+
+
+    def cz_step(self, r):  # ----- 0 in the radiative zone, 1 in the convection zone: the upper edge of dS/dr, even in r
+        return 1 - ut.erf_box(r, par.aux3, par.aux4)
+
+
+    def rho_pow(self, r, p):  # --------------------------------------------- (ρ(x2)/ρ(r))**p, even in r
+        if p == 0:
+            return 1.0
+        return np.exp( -p*( sms.log_density(r*par.aux0) - sms.log_density(par.aux3*par.aux0) ) )
+
+
+    def viscosity(self, r, rpower):  # --------------- ν(r)/ν_cz: visc0 below the tachocline, 1 above, times (ρ(x2)/ρ)**visc_pow
+        H = 1.0 if par.visc0 == 1 else self.cz_step(r)  # no step (and no aux3, aux4 needed) when there is no contrast
+        out = ( H + (1 - H)*par.visc0 )*self.rho_pow(r, par.visc_pow)
+        return (r**rpower)*out
+
+
+    def thermal_diffusivity(self, r, rpower):  # ----- κ(r)/κ_cz: therm0 below the tachocline, 1 above, times (ρ(x2)/ρ)**therm_pow
+        H = 1.0 if par.therm0 == 1 else self.cz_step(r)
+        out = ( H + (1 - H)*par.therm0 )*self.rho_pow(r, par.therm_pow)
+        return (r**rpower)*out
+
+
 class profiles_from_file():  # -------------------------------------------------------- As read from model file
     '''
     Background profiles as read from a model file, types can be mesa, gyre or astropy table
@@ -340,6 +412,8 @@ class Boussinesq_profiles():  # ------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------
 if par.model_type == 'user def':
     prf = user_defined_profiles()
+elif par.model_type == 'smoothed sun':
+    prf = solar_profiles()
 elif par.model_type in ['mesa', 'gsm', 'poly', 'astropy table']:
     prf = profiles_from_file()
 elif par.model_type == 'Boussinesq':

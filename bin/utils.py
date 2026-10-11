@@ -354,6 +354,27 @@ def erf_top_hat(x, x1, w1, x2, w2, A):
     return A * 0.5 * (scsp.erf((x - x1) / w1) - scsp.erf((x - x2) / w2))
 
 
+def erf_box(x, x2, w2):
+    '''
+    Smooth even box, 1 for |x| < x2 and 0 for |x| > x2, with erf transitions of width w2 at x = ±x2:
+    erfc((x-x2)/w2) erfc(-(x+x2)/w2)/4. On x >= 0 it equals the single step erfc((x-x2)/w2)/2 to within
+    exp(-(x2/w2)^2), and it is even by construction, so it has no kink at x = 0 whatever x2/w2.
+    '''
+    return 0.25 * scsp.erfc((x - x2) / w2) * scsp.erfc(-(x + x2) / w2)
+
+
+def erf_top_hat_odd(x, x1, w1, x2, w2, A):
+    '''
+    The erf top hat between x1 and x2 made odd in x:
+    A/2 [erf((x-x1)/w1) + erf((x+x1)/w1)] erf_box(x, x2, w2),
+    an odd factor times an even one, so it is exactly odd. On x >= 0 it is erf_top_hat when x1 >> w1,
+    but it vanishes smoothly at x = 0 for any x1 (x1 = 0 gives A erf(x/w1) erf_box(x, x2, w2)), so the
+    odd extension sign(x) f(|x|) that kore uses when ricb = 0 is smooth at the centre. The central
+    erf(x/w1) needs about 11/w1 Chebyshev modes on [-1, 1] to reach round-off (N ~ 380 for w1 = 0.03).
+    '''
+    return A * 0.5 * (scsp.erf((x - x1) / w1) + scsp.erf((x + x1) / w1)) * erf_box(x, x2, w2)
+
+
 def interp(x0, x, y, even=True):
 
     akima = si.Akima1DInterpolator(x, y)

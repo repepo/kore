@@ -57,6 +57,9 @@ def param_table(elapsed):
         ( 'rhopower_v',               par.rhopower_v,              '%.9f' ),
         ( 'rpower_pp',                par.rpower_pp,               '%.9f' ),
         ( 'rhopower_pp',              par.rhopower_pp,             '%.9f' ),
+        ( 'therm0',                   par.therm0,                  '%.9e' ),
+        ( 'visc_pow',                 par.visc_pow,                '%.9e' ),
+        ( 'therm_pow',                par.therm_pow,               '%.9e' ),
     ]
 
 
