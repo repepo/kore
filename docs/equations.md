@@ -218,3 +218,77 @@ with $\nabla\cdot\mathbf{u} = \nabla\cdot\mathbf{b} = 0$, plus forcing terms in 
 | $Pr$, $Sc$ | `Prandtl`, `Schmidt` | $\nu/\kappa$, $\nu/D$ |
 
 The boundary conditions are described in [Setting up a problem](setup.md#flow-boundary-conditions-and-ekman-number) (flow, temperature, composition) and [Inner core and mantle](boundaries.md) (magnetic field).
+
+
+## Angular momentum balance
+
+For an axisymmetric, equatorially symmetric problem ($m = 0$, `symm = 1`) the fluid, the mantle and the inner core exchange axial angular momentum through the viscous and electromagnetic stresses on the boundaries. Everything below is dimensionless, with angular momentum in units of $\rho L^5/\tau$ and torques in units of $\rho L^5/\tau^2$, and everything is a complex amplitude of $e^{\lambda t}$: the balances are linear, so no complex conjugates are added.
+
+
+### The fluid
+
+Only the axisymmetric toroidal flow of degree 1, $u_\phi = t_1(r)\sin\theta$, carries axial angular momentum:
+
+$$
+L_z = \int s\, u_\phi\, dV = \frac{8\pi}{3} \int_{r_i}^{1} r^3\, t_1(r)\, dr ,
+$$
+
+with $s = r\sin\theta$ the distance to the axis. Its rate of change is the total axial torque on the fluid. The Coriolis force and the pressure exert no axial torque on the fluid as a whole, and the torque of the Lorentz force reduces to the Maxwell stress on the boundaries, so the fluid only exchanges angular momentum with the mantle and the inner core:
+
+$$
+\lambda\, L_z = - \left( \Gamma^{\nu}_M + \Gamma^{B}_M + \Gamma^{\nu}_{IC} + \Gamma^{B}_{IC} \right),
+$$
+
+where $\Gamma^{\nu}$ and $\Gamma^{B}$ are the viscous and electromagnetic torques that the fluid exerts on the mantle ($M$) and on the inner core ($IC$). This is the balance that `spin_doctor`'s `resid𝐋` checks, and it holds whether or not the boundaries are free to rotate.
+
+
+### The torques
+
+The viscous torque is the surface integral of the azimuthal viscous stress $\sigma_{r\phi} = r\,\partial_r (u_\phi/r)$, which for the degree-1 flow depends on $t_1$ at the boundary only:
+
+$$
+\Gamma^{\nu}_M = -\,E\,(\Omega\tau) \oint_{CMB} s\, \sigma_{r\phi}\, dS = -\frac{8\pi}{3}\, E\,(\Omega\tau)\, \left( r\, t_1' - t_1 \right)_{r = 1},
+$$
+
+$$
+\Gamma^{\nu}_{IC} = +\,E\,(\Omega\tau) \oint_{ICB} s\, \sigma_{r\phi}\, dS = \frac{8\pi}{3}\, E\,(\Omega\tau)\, r_i^2 \left( r\, t_1' - t_1 \right)_{r = r_i} .
+$$
+
+The electromagnetic torque is the surface integral of the Maxwell stress $B_{0r}\, b_\phi$ (the background field is poloidal, so $B_{0\phi} = 0$):
+
+$$
+\Gamma^{B}_M = -\,Le^2 (\Omega\tau)^2 \oint_{CMB} s\, B_{0r}\, b_\phi\, dS, \qquad
+\Gamma^{B}_{IC} = +\,Le^2 (\Omega\tau)^2 \oint_{ICB} s\, B_{0r}\, b_\phi\, dS .
+$$
+
+It is nonzero only on a body in which currents can flow: the mantle with a thin conducting wall, the inner core when it is conducting or has a thin wall. Since $B_{0r} \propto Y_l^0$ and $b_\phi$ comes from the toroidal scalars of $\mathbf{b}$, the integral selects a few toroidal degrees: $g_2$ at the boundary for a degree-1 background field (`'axial'`, the dipoles, FDM with `B0_l = 1`), and $g_1$ and $g_3$ for the quadrupole `'Luo_S2'`. `spin_doctor` writes these four torques, as complex amplitudes, to `flow.dat` and `magnetic.dat`.
+
+
+### The mantle and the inner core
+
+With `rotdyn = 0` the mantle and the inner core rotate with the frame, and the torques above are simply what the fluid exerts on them. With `rotdyn = 1` they respond to those torques, to the gravitational torque between them, and to the viscous relaxation of the inner core (see [Rotational dynamics](rotdyn.md)):
+
+$$
+\lambda\, I_M\, \omega_M = \Gamma^{\nu}_M + \Gamma^{B}_M + K \varphi,
+$$
+
+$$
+\lambda\, I_{IC}\, \omega_{IC} = \Gamma^{\nu}_{IC} + \Gamma^{B}_{IC} - K \varphi,
+$$
+
+$$
+\lambda\, \varphi = \omega_{IC} - \omega_M - \frac{\Omega\tau}{\Omega\tau_{IC}}\, \varphi ,
+$$
+
+with $I_M$ and $I_{IC}$ the axial moments of inertia (`MoIZ_M`, `MoIZ_IC`, in units of $\rho L^5$), $\omega_M$ and $\omega_{IC}$ the rotation rates relative to the frame, $\varphi$ the longitude of the inner core relative to the mantle, $K$ = `gTorque`$\,(\Omega\tau)^2$ the gravitational coupling constant and $\Omega\tau_{IC}$ = `OmgtauIC`. The solid bodies enter the fluid's equations through the no-slip condition on $t_1$: $t_1(1) = \omega_M$ and $t_1(r_i) = r_i\,\omega_{IC}$ instead of zero.
+
+
+### Conservation
+
+Adding the three balances, the gravitational torque cancels (it is internal to the mantle-inner core system) and the boundary torques cancel against the fluid's, so the total axial angular momentum is conserved:
+
+$$
+\lambda \left( L_z + I_M\, \omega_M + I_{IC}\, \omega_{IC} \right) = 0 .
+$$
+
+For a mode with $\lambda \neq 0$ the total must therefore vanish, and Kore's eigenmodes satisfy this to discretisation error (about $10^{-4}$ at $N = 48$, improving with resolution). With `rotdyn = 0` the mantle and the inner core are infinitely heavy, and the fluid's angular momentum alone decays or oscillates at the rate set by the torques.

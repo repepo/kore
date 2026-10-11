@@ -61,4 +61,4 @@ The default moments of inertia and coupling constant are Earth-like values.
 | 7 | viscous torque on the inner core |
 | 8 | electromagnetic torque on the inner core |
 
-The total axial angular momentum (fluid, mantle and inner core) is conserved by these equations. `spin_doctor`'s `resid𝐋` checks the fluid's part of the balance, $\lambda L_z$ against the torques on the boundaries. Its `resid0` stays at $10^{-4}$ to $10^{-3}$ with `rotdyn = 1`, because the work done by the moving boundaries on the fluid is not included in that balance yet (see [Checking the results](output.md#checking-the-results)).
+The total axial angular momentum (fluid, mantle and inner core) is conserved by these equations; the fluid's own balance and the torques are written out in [Angular momentum balance](equations.md#angular-momentum-balance). `spin_doctor`'s `resid𝐋` checks the fluid's part of the balance, $\lambda L_z$ against the torques on the boundaries. Its `resid0` stays at $10^{-4}$ to $10^{-3}$ with `rotdyn = 1`, because the work done by the moving boundaries on the fluid is not included in that balance yet (see [Checking the results](output.md#checking-the-results)).

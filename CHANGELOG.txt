@@ -19,6 +19,10 @@ Documentation (docs/, mkdocs.yml)
   README link now points to /installation/.
 - equations.md adds the linearisation, the composition equation, induction in a conducting inner
   core and a summary of the equations with the parameter names.
+- equations.md also gets an "Angular momentum balance" section: the fluid's axial angular momentum
+  and its balance (the one resid L checks), the viscous and electromagnetic torques on the mantle and
+  the inner core as surface integrals and in terms of t_1 and the toroidal b, the rotdyn equations
+  for the mantle, the inner core and their misalignment, and the conservation of the total.
 - The polyfill.io script is removed from mkdocs.yml: that domain was taken over in 2024 and served
   malicious code, and the site does not need it.
 

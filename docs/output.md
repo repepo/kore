@@ -52,7 +52,7 @@ The residuals compare terms of balances that an exact solution satisfies. They a
 | `resid𝐮` | Kinetic energy: $2\sigma$ times the kinetic energy against the viscous dissipation and the work of the Lorentz and buoyancy forces. |
 | `resid𝐛` | Magnetic energy: $2\sigma$ times the magnetic energy against the induction work and magnetic diffusion. |
 | `residθ` | Thermal "energy": $2\sigma$ times it against thermal diffusion and advection. |
-| `resid𝐋` | Axial angular momentum of the fluid: $\lambda L_z$ against the viscous and electromagnetic torques on the mantle and the inner core. Only for eigenvalue problems with $m = 0$, `symm = 1`; `nan` otherwise. |
+| `resid𝐋` | Axial angular momentum of the fluid: $\lambda L_z$ against the viscous and electromagnetic torques on the mantle and the inner core (see [Angular momentum balance](equations.md#angular-momentum-balance)). Only for eigenvalue problems with $m = 0$, `symm = 1`; `nan` otherwise. |
 
 As a rule of thumb they should all be below about $10^{-4}$. If they are not, increase the resolution. Exceptions and caveats:
 
