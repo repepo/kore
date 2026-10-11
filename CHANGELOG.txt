@@ -4,7 +4,23 @@ CHANGELOG - Kore, conductive_IC branch
 
 2026-10-11
 ----------
+Postprocessing (bin/utils4pp.py, bin/spin_doctor.py)
+- New geostrophic_fraction(u_sol2) in utils4pp.py: the share of the energy of u_phi held by its
+  average along the rotation axis, int |<u_phi>|^2 dV / int |u_phi|^2 dV, with <u_phi>(s) the average
+  over each fluid column (northern half of the fluid, 240 cells in s, 48 Gauss-Legendre points in z).
+  1 - geo is the energy share of the z-dependent part of u_phi. Only for m = 0, symm = 1; nan
+  otherwise. Torsional modes have geo close to 1, other magnetic modes much less.
+- spin_doctor.py prints it in a new Geo column of the summary table and appends it to flow.dat as a
+  19th column. A flow.dat with rows from before this change (18 columns) and after no longer loads
+  with np.loadtxt; start a new folder or file.
+- Checked: the u_phi it builds integrates to spin_doctor's toroidal kinetic energy to 6 digits on a
+  Gauss-Legendre grid in r and theta, and to 1e-4 on its own (s, z) grid (conducting IC and thin wall,
+  Ek = 1e-7 and 1e-9); doubling the (s, z) grid changes geo by less than 1e-4;
+  the inviscid full-sphere S2 torsional mode of tests/torsional_s2 gives 1 - 3e-12; the m = 1 case of
+  tests/spinover gives nan. The six tests pass.
+
 Documentation (docs/, mkdocs.yml)
+- output.md describes the Geo column and flow.dat column 19.
 - The online manual is reorganised into five tabs with an explicit nav in mkdocs.yml: Home, Getting
   started (Installation, Quick start), User guide (Setting up a problem, Background magnetic field,
   Inner core and mantle, Rotational dynamics, Solver settings, Output and postprocessing), Theory

@@ -5,6 +5,7 @@
 import multiprocessing as mp
 import numpy.polynomial.chebyshev as ch
 import numpy as np
+import scipy.special as scsp  # NEW (2026-10-11): associated Legendre functions for geostrophic_fraction
 from parameters import par
 import utils as ut
 
@@ -236,6 +237,53 @@ def angrymom_z(u_sol2):
             out = cg_quad( (8*np.pi/3)*r3*t10, par.ricb, ut.rcmb, par.N, sqx )
     
     return out
+
+
+
+# NEW (2026-10-11): z-invariance of u_phi, written by spin_doctor to flow.dat and its summary table.
+_geo_grid = None  # (key, grid) of the cylindrical grid of geostrophic_fraction, built once per resolution
+
+
+def geostrophic_fraction(u_sol2, ns=240, nz=48):
+    '''
+    Returns the fraction of the energy of u_phi held by its average along the rotation axis:
+        geo = ∫|<u_phi>|² dV / ∫|u_phi|² dV,   <u_phi>(s) = (1/H) ∫ u_phi dz along each fluid column of height H.
+    The column average and the rest are orthogonal, so 1-geo is the energy fraction of the z-dependent part
+    of u_phi; geo = 1 for a z-invariant (geostrophic) u_phi, as in a torsional mode.
+    Only for m=0, symm=1, where u_phi = -sum_l t_l(r) dP_l(cos θ)/dθ comes from the toroidal scalars alone
+    and is equatorially symmetric; returns nan otherwise. Integrated over the northern half of the fluid,
+    on ns midpoint cells in s and nz Gauss-Legendre points in z along each column, from the inner core
+    (or the equator, outside the tangent cylinder) up to the CMB. The z-points do not resolve the Ekman
+    layers, so geo measures the interior; doubling ns and nz changes it by less than 1e-4 (torsional modes,
+    Ek = 1e-7 to 1e-9). u_sol2 comes from expand_reshape_sol.
+    '''
+    global _geo_grid
+
+    if not (par.m == 0 and par.symm == 1):
+        return np.nan
+
+    key = (par.N, par.lmax, par.ricb, ns, nz)
+    if _geo_grid is None or _geo_grid[0] != key:
+        lt = ut.ell( par.m, par.lmax, par.symm)[1]                     # toroidal l's, in the order of u_sol2[1]
+        s  = ut.rcmb*(np.arange(ns) + 0.5)/ns                           # cell centres in s
+        z0 = np.sqrt(np.maximum(par.ricb**2 - s**2, 0))                 # column bottom: ICB inside the TC, else z = 0
+        H  = np.sqrt(ut.rcmb**2 - s**2) - z0                            # column height (northern half)
+        zg, wg = np.polynomial.legendre.leggauss(nz)
+        Z  = z0[:,None] + H[:,None]*(zg[None,:] + 1)/2
+        W  = H[:,None]*wg[None,:]/2                                     # dz weights
+        R  = np.sqrt(s[:,None]**2 + Z**2)
+        chx = ch.chebvander( xcheb(R, par.ricb, ut.rcmb).ravel(), par.N-1 )        # Chebyshev T_k at the points
+        dP  = np.array([ scsp.lpmv(1, l, (Z/R).ravel()) for l in lt ])            # dP_l(cos θ)/dθ = P_l^1(cos θ)
+        _geo_grid = ( key, (s, H, W, chx, dP) )
+    s, H, W, chx, dP = _geo_grid[1]
+
+    T = u_sol2[1]  # toroidal Chebyshev coefficients, one row per l
+    uphi  = -np.sum( (T @ chx.T)*dP, axis=0 ).reshape(W.shape)
+    ubar  = np.sum( uphi*W, axis=1 )/H                                  # z-average along each column
+    e_tot = np.sum( np.abs(uphi)**2 * W * s[:,None] )                   # volume element ∝ s ds dz
+    e_geo = np.sum( np.abs(ubar)**2 * H * s )
+
+    return e_geo/e_tot if e_tot > 0 else np.nan
 
 
 

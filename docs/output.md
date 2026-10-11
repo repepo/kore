@@ -38,9 +38,19 @@ Eigenvectors are only defined up to a complex factor. Kore scales each one so th
 | resid0, resid𝐮, resid𝐛, residθ, resid𝐋 | Residuals of the balances, see below. |
 | Tor/Pol | Toroidal over poloidal kinetic energy. |
 | Mag/Kin | Magnetic over kinetic energy. |
+| Geo | Geostrophic fraction: the share of the energy of $u_\phi$ held by its average along the rotation axis (see below). Only for $m = 0$, `symm = 1`; `nan` otherwise. |
 | \|𝚪\|mag | Modulus of the electromagnetic torque on the mantle. |
 | \|𝚪\|magIC | Modulus of the electromagnetic torque on the inner core. |
 
+
+The geostrophic fraction measures how close the azimuthal flow is to being invariant along the rotation axis:
+
+$$
+\text{Geo} = \frac{\int |\langle u_\phi \rangle|^2\,dV}{\int |u_\phi|^2\,dV}, \qquad
+\langle u_\phi \rangle(s) = \frac{1}{H}\int u_\phi\,dz ,
+$$
+
+where the average is taken along each fluid column of height $H$, from the inner core (or the equator, outside the tangent cylinder) to the core-mantle boundary. Since the column average and the rest of $u_\phi$ are orthogonal, $1 - \text{Geo}$ is the share of the energy of $u_\phi$ in its $z$-dependent part. A torsional mode has Geo close to 1 (with Tor/Pol $\gg 1$ and Mag/Kin $\approx 1$); in the inviscid full sphere it is 1 to round-off. It is computed by `geostrophic_fraction` in `bin/utils4pp.py`, on a grid of 240 cells in $s$ and 48 Gauss-Legendre points in $z$ over the northern half of the fluid ($u_\phi$ is equatorially symmetric for $m = 0$, `symm = 1`). These points do not resolve the Ekman layers, so Geo describes the interior flow.
 
 ### Checking the results
 
@@ -72,7 +82,7 @@ Each run appends one row per solution to the files below, in the same order in e
 
 **`eigenvalues.dat`**: damping $\sigma$ and frequency $\omega$.
 
-**`flow.dat`** (18 columns):
+**`flow.dat`** (19 columns; 18 in files written before 2026-10-11):
 
 | Columns | Quantity |
 |---|---|
@@ -86,6 +96,7 @@ Each run appends one row per solution to the files below, in the same order in e
 | 15 | Pressure term |
 | 16 | Unused (0) |
 | 17-18 | Axial angular momentum of the fluid $L_z$ (real, imaginary) |
+| 19 | Geostrophic fraction of $u_\phi$ (`nan` unless $m = 0$, `symm = 1`) |
 
 **`magnetic.dat`** (8 columns): magnetic energy, magnetic diffusion, induction work, `resid𝐛`, electromagnetic torque on the mantle (real, imaginary), electromagnetic torque on the inner core (real, imaginary).
 

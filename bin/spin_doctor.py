@@ -207,6 +207,7 @@ def main(ncpus):
     y           = np.zeros(success)                # for eigenmode tracking
     press0      = np.zeros(success)
     elldom      = np.zeros(success)
+    geo         = np.full(success, np.nan)    # NEW (2026-10-11): geostrophic fraction of u_phi (m=0, symm=1 only)
     omg_mantle  = np.zeros(success,dtype=complex)
     omg_incore  = np.zeros(success,dtype=complex)
     misalignmt  = np.zeros(success,dtype=complex)
@@ -231,6 +232,7 @@ def main(ncpus):
         ( 'resid𝐋',      '{:8.2e}',   lambda i: residL[i] ),
         ( 'Tor/Pol',     '{:8.2e}',   lambda i: ratio(KT[i], KP[i]) ),
         ( 'Mag/Kin',     '{:8.2e}',   lambda i: ratio(ME[i], KE[i]) ),
+        ( 'Geo',         '{:.4f}',    lambda i: geo[i] ),  # NEW (2026-10-11)
         ( '|𝚪|mag',      '{:8.2e}',   lambda i: np.abs(mtorq[i]) ),
         ( '|𝚪|magIC',    '{:8.2e}',   lambda i: np.abs(mtorq_ic[i]) ),
     ]
@@ -330,6 +332,9 @@ def main(ncpus):
 
             # Angular momentum in the z direction
             angmomz[i] = upp.angrymom_z(u_sol2)
+
+            # NEW (2026-10-11): fraction of the u_phi energy in its z-average (1 for a z-invariant u_phi)
+            geo[i] = upp.geostrophic_fraction(u_sol2)
 
             #press0[i] = udgn[6][0], not sure why this was here? 
 
@@ -496,7 +501,8 @@ def main(ncpus):
                                     resid0, resid1,
                                     np.real(vtorq), np.imag(vtorq),
                                     np.real(vtorq_ic), np.imag(vtorq_ic),
-                                    press0, elldom, np.real(angmomz), np.imag(angmomz) ])
+                                    press0, elldom, np.real(angmomz), np.imag(angmomz),
+                                    geo ])  # NEW (2026-10-11): geostrophic fraction, column 19
 
     if par.magnetic:
         with open('magnetic.dat','ab') as dmag:
