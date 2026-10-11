@@ -314,7 +314,7 @@ def differential_rotation(l, section, component, offdiag):  # ------------------
 
                 offd = 1
 
-    return [ out, offd ]
+    return [ out/(l*(l+1.))**3, offd ]
 
 
 def viscous_diffusion(l, section, component, offdiag):  # ------------------------------------------------ viscous force
