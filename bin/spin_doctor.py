@@ -17,6 +17,14 @@ import utils4pp as upp
 
 
 
+# diff_rot_type as written to params.dat: its index in this tuple, -1 if not listed. Append new types at the end.
+diff_rot_types = ( 'Y20', 'Y20-wall-bounded', 'shellular', 'shellular_boussinesq', 'cylindrical', 'conical', 'solar', 'rigid' )
+
+def diff_rot_code():
+    return diff_rot_types.index(par.diff_rot_type) if par.diff_rot_type in diff_rot_types else -1
+
+
+
 def param_table(elapsed):
     '''
     Run parameters written as one row of params.dat, as (name, value, format) tuples.
@@ -60,6 +68,11 @@ def param_table(elapsed):
         ( 'therm0',                   par.therm0,                  '%.9e' ),
         ( 'visc_pow',                 par.visc_pow,                '%.9e' ),
         ( 'therm_pow',                par.therm_pow,               '%.9e' ),
+        ( 'diff_rot',                 par.diff_rot,                '%d' ),
+        ( 'diff_rot_amplitude',       par.diff_rot_amplitude,      '%.9e' ),
+        ( 'thermal_wind',             par.thermal_wind,            '%d' ),
+        ( 'diff_rot_type',            diff_rot_code(),             '%d' ),  # index into diff_rot_types
+        ( 'dSdtheta',                 par.dSdtheta,                '%.9e' ),  # thermal_wind = 3
     ]
 
 
@@ -150,6 +163,9 @@ def main(ncpus):
     Wcor_im     = np.zeros(success)  # imaginary parts of the Coriolis, viscous and buoyancy powers
     Dkin_im     = np.zeros(success)
     Wthm_im     = np.zeros(success)
+    Wdr         = np.zeros(success)  # power of the differential-rotation force, real and imaginary parts
+    Wdr_im      = np.zeros(success)
+    Ensdr       = np.zeros(success)
     ldom        = np.zeros(success,dtype=int)
     lwidth      = np.zeros(success,dtype=int)
     lconv       = np.zeros(success)
@@ -158,6 +174,7 @@ def main(ncpus):
     TE          = np.zeros(success)
     Wadv_thm    = np.zeros(success)
     Dthm        = np.zeros(success)
+    Wdr_thm     = np.zeros(success)
 
     # residual errors to be processed
     resid1      = np.zeros(success)
@@ -257,16 +274,16 @@ def main(ncpus):
         KP[i] = np.sum( udgn[lpi,0])  # Poloidal kinetic energy
         KT[i] = np.sum( udgn[lti,0])  # Toroidal kinetic energy
 
-        [ KE[i], Dkin0, Ensvel[i], Enscor[i], Ensvif[i], Ensbuo[i], Wthm0, Wdr0,
-          Wcor_im[i], Dkin_im[i], Wthm_im[i] ] = np.sum( udgn, 0)
+        [ KE[i], Dkin0, Ensvel[i], Enscor[i], Ensvif[i], Ensbuo[i], Wthm0, Wdr[i],
+          Wcor_im[i], Dkin_im[i], Wthm_im[i], Wdr_im[i], Ensdr[i] ] = np.sum( udgn, 0)
         Dkin[i] = Dkin0
-        resens[i] = abs(Ensvel[i]*sigma+Enscor[i]-Ensbuo[i]-Ensvif[i]) / max((abs(Ensvel[i]*sigma),abs(Enscor[i]),abs(Ensbuo[i]),abs(Ensvif[i])))
+        resens[i] = abs(Ensvel[i]*sigma+Enscor[i]-Ensbuo[i]-Ensvif[i]-Ensdr[i]) / max((abs(Ensvel[i]*sigma),abs(Enscor[i]),abs(Ensbuo[i]),abs(Ensvif[i]),abs(Ensdr[i])))
         Wthm[i] = Wthm0  # rate of working of buoyancy, Beyonce already included (upp.buoyancy)
 
 
         if par.thermal:
 
-            [ TE[i], Dthm0, Wadv_thm[i] ] = np.sum( tdgn, 0)
+            [ TE[i], Dthm0, Wadv_thm[i], Wdr_thm[i] ] = np.sum( tdgn, 0)
             Dthm[i] = Dthm0 * par.ThermaD
 
 
@@ -281,18 +298,24 @@ def main(ncpus):
 
         # Wadv is the entropy advection "power" via -∫ p (dS/dr) uᵣ s dV
 
-        # resid1 is the relative residual of 2*sigma*KE - Dkin - Wthm = 0 (residσ, real part of the power balance)
-        # resid2 is the relative residual of 2*w*KE + Wcor_im - Dkin_im - Wthm_im = 0 (residω, its imaginary part;
+        # Wdr is the power of the differential-rotation force 𝐅 = -G[(𝐔₀′⋅∇)𝐮 + (𝐮⋅∇)𝐔₀′], 2 Re ∫ ρ 𝐮*⋅𝐅 dV, Wdr_im its 2 Im,
+        #     Ensdr its enstrophy term (zero without diff_rot)
+        # Wdr_thm is -2 Re ∫ p s* [ i m G ΔΩ s + 𝐮⋅∇S_tw ] dV, the differential-rotation terms of the heat equation
+
+        # resid1 is the relative residual of 2*sigma*KE - Dkin - Wthm - Wdr = 0 (residσ, real part of the power balance)
+        # resid2 is the relative residual of 2*w*KE + Wcor_im - Dkin_im - Wthm_im - Wdr_im = 0 (residω, its imaginary part;
         #        Wcor_im = 2 Im ∫ ρ 𝐮*⋅(2𝐳×𝐮) dV, Dkin_im = 2 Im ∫ 𝐮*⋅(∇⋅𝛔) dV, Wthm_im = 2 Im ∫ ρ 𝐮*⋅(Beyonce g s 𝐫̂) dV)
-        # resid3 is the relative residual of 2*sigma*TE - Dthm - Wadv = 0
+        # resid3 is the relative residual of 2*sigma*TE - Dthm - Wadv - Wdr_thm = 0
         # ---------------------------------------------------------------------------------------------------------
 
 
-        resid1[i] = ( abs( 2*sigma*KE[i] - Dkin[i] - Wthm[i] ) / max( abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wthm[i]) ) )
-        resid2[i] = ( abs( 2*w*KE[i] + Wcor_im[i] - Dkin_im[i] - Wthm_im[i] ) / max( abs(2*w*KE[i]), abs(Wcor_im[i]), abs(Dkin_im[i]), abs(Wthm_im[i]) ) )
+        resid1[i] = ( abs( 2*sigma*KE[i] - Dkin[i] - Wthm[i] - Wdr[i] ) / max( abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wthm[i]), abs(Wdr[i]) ) )
+        resid2[i] = ( abs( 2*w*KE[i] + Wcor_im[i] - Dkin_im[i] - Wthm_im[i] - Wdr_im[i] )
+                      / max( abs(2*w*KE[i]), abs(Wcor_im[i]), abs(Dkin_im[i]), abs(Wthm_im[i]), abs(Wdr_im[i]) ) )
 
         if par.thermal:
-            resid3[i] = ( abs( 2*sigma*TE[i] - Dthm[i] - Wadv_thm[i] ) / max( abs(2*sigma*TE[i]), abs(Dthm[i]), abs(Wadv_thm[i]) ) )
+            resid3[i] = ( abs( 2*sigma*TE[i] - Dthm[i] - Wadv_thm[i] - Wdr_thm[i] )
+                          / max( abs(2*sigma*TE[i]), abs(Dthm[i]), abs(Wadv_thm[i]), abs(Wdr_thm[i]) ) )
 
         # ------------------------------------------------------------------------------------------------------------------
         print(table_row(table_cols, table_w, i))
@@ -329,6 +352,9 @@ def main(ncpus):
         ( 'resens',     resens,     '%.9e' ),  # enstrophy balance
         ( 'resid2',     resid2,     '%.9e' ),  # frequency balance, residω
         ( 'resid1',     resid1,     '%.9e' ),  # power balance, residσ
+        ( 'Wdr',        Wdr,        '%.9e' ),  # differential-rotation power
+        ( 'Wdr_im',     Wdr_im,     '%.9e' ),  # and its imaginary part
+        ( 'Ensdr',      Ensdr,      '%.9e' ),  # differential-rotation enstrophy term (in resens)
     ]
     with open('flow.dat','ab') as dflo:
         np.savetxt(dflo, np.column_stack([ v for _, v, _ in flow_cols ]),
@@ -344,6 +370,7 @@ def main(ncpus):
             ( 'resid3',     resid3,     '%.18e' ),  # entropy budget, resid𝑠
             ( 'Wthm',       Wthm,       '%.18e' ),  # buoyancy work
             ( 'resid1',     resid1,     '%.18e' ),  # KE budget, residσ
+            ( 'Wdr_thm',    Wdr_thm,    '%.18e' ),  # differential-rotation terms of the heat equation
         ]
         with open('thermal.dat','ab') as dtmp:
             np.savetxt(dtmp, np.column_stack([ v for _, v, _ in thermal_cols ]),

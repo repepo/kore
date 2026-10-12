@@ -37,6 +37,10 @@ symm1 = (2*np.sign(par.m) - 1) * par.symm  # symm1=par.symm if m>0, symm1 = -par
 # this gives the size (rows or columns) of the main matrices
 sizmat = 2*n + n*par.thermal
 
+# ThermaD = 0 with the thermal-wind advection (docs/heat-equation.md §3): the section-h rows are r² (eq)/p instead of
+# r (eq)/p, in the C^(1) basis (u_θ has P'), still without thermal bc rows; the thermal-wind profiles are then σn, σn'
+adiab_tw = bool(par.thermal == 1 and par.ThermaD == 0 and par.diff_rot == 1 and par.thermal_wind >= 1)
+
 s = int( (vsymm+1)/2 ) # s=0 if antisymm, s=1 if symm
 m_top = m + 1-s
 m_bot = m + s
@@ -92,10 +96,10 @@ def decode_label(labl):
             rpower = par.rpower_v - rx ; rhopower = par.rhopower_v   # Viscous, we multiply the r̂⋅∇× equations by r³ ρ
 
     elif section == 'h':
-        if par.ThermaD == 0:
+        if par.ThermaD == 0 and not adiab_tw:
             rpower = 1 - rx ; rhopower = 0   # Adiabatic motion, we multiply the thermal equation by r
         else:
-            rpower = 2 - rx ; rhopower = 0   # Non-adiabatic motion, we multiply the thermal equation by r²
+            rpower = 2 - rx ; rhopower = 0   # Non-adiabatic motion (or adiabatic with the thermal wind), we multiply the thermal equation by r²
 
     if howlong in [9,13,17]:   # sXfu1X_DX or sXfu1Xfu2X_DX
         func1   = labl[2:5]

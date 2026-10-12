@@ -75,24 +75,34 @@ class default_params():
         # Use 0 for stress-free, 1 for no-slip or forced boundary flow
         self.bco = 0
 
-        # Differential rotation parameters. Set to 0 for solid body rotation. (Implemented for timescale="rotation") -----------
+        # Differential rotation parameters. Set to 0 for solid body rotation. Ω_ref is the frame rotation rate (Gaspard in units of
+        # the time scale) and ΔΩ is relative to it, so any timescale works: U0 = Gaspard ΔΩ r sinθ e_φ ------------------------------
         # ----------------------------------------------------------------------------------------------------------------------
         self.diff_rot = 0 # If 1, the code will solve for a perturbation to a background state with differential rotation. 
         # Differential rotation type 
         self.diff_rot_type = 'Y20' # Ω(θ) = Ω_ref * [1 + ΔΩ Y20(θ)], ΔΩ = par.diff_rot_amplitude
-        # self.diff_rot_type = 'rigid' # Ω = Ω_ref * (1 + ΔΩ), a rigid offset: test profile, λ(ΔΩ) = (1+ΔΩ) λ(0; E/(1+ΔΩ), ThermaD/(1+ΔΩ), Beyonce/(1+ΔΩ)²) - i m ΔΩ exactly
+        # self.diff_rot_type = 'rigid' # Ω = Ω_ref * (1 + ΔΩ), a rigid offset: test profile, λ(ΔΩ, Gaspard) = λ(diff_rot = 0, Gaspard (1+ΔΩ)) - i m Gaspard ΔΩ exactly
         # self.diff_rot_type = 'Y20-wall-bounded' # Ω(θ) = Ω_ref * [1 + ΔΩ * (1 - r) * (r - ricb) * Y20(θ)], ΔΩ = par.diff_rot_amplitude
         # self.diff_rot_type = 'shellular' # [Baruteau, Rieutord 2012] : Ω(r) = Ω_ref * (r / R)**σ, σ = par.diff_rot_amplitude
         # self.diff_rot_type = 'cylindrical' # [Baruteau, Rieutord 2012] : Ω(r, θ) = Ω_ref * [1 + (ε * (r / R)**2 * sin(θ)**2)], ε = par.diff_rot_amplitude
         # self.diff_rot_type = 'conical' #[Guenel et al., 2016] : Ω(r, θ) = Ω_ref * [1 + (ε * sin(θ)**2)], ε = par.diff_rot_amplitude
         # self.diff_rot_type = "shellular_boussinesq" #[Mirouh et al. 2016] : Ω(r) = Ω_ref * (1 + (1/2) * (N**2) * (1 - (r / R)**2))
-        # self.diff_rot_type = 'solar' # Not implemented yet
+        # self.diff_rot_type = 'solar' # Fit to the helioseismic Ω: f0, f2 (Y00 + P2 only) step up across a tachocline at 0.71 R☉ of width 0.1 R☉,
+        # times ΔΩ = par.diff_rot_amplitude (1 for the fit itself). r is in units of aux0 R☉ with model_type = 'smoothed sun', in R☉ otherwise.
+        # f0, f2 are relative to 435 nHz: the frame (Ω_ref) must rotate at 435 nHz (ViscosD, ThermaD, Beyonce for that rate).
+        # The tachocline step needs N ~ 400 with ricb = 0. 'Y20-wall-bounded' and 'shellular' are not smooth at r = 0 (use ricb > 0).
 
         self.diff_rot_amplitude = 1.0  # Amplitude of the differential rotation, corresponds to different parameter depending on the DR type
-        self.thermal_wind = 1  # With thermal = 1 and diff_rot = 1 (needs ThermaD > 0) the heat equation gets the advection i m ΔΩ s and,
-        # if thermal_wind = 1 (needs Beyonce > 0), the advection of the thermal-wind background entropy S_tw(r,θ) that Ω(r,θ) implies
-        # (docs/heat-equation.md). thermal_wind = 0 keeps the advection term only (e.g. Mirouh et al. 2016, Ω(r) imposed).
-        # spin_doctor's thermal residual does not include these terms yet; use tests/heat_dr/terms.py for the entropy balance.
+        self.thermal_wind = 1  # With thermal = 1 and diff_rot = 1 the heat equation gets the advection i m Gaspard ΔΩ s and,
+        # if thermal_wind = 1 (needs Beyonce > 0), the advection of the thermal-wind background entropy S_tw(r,θ)
+        # that Ω(r,θ) implies, to first order in ΔΩ (docs/heat-equation.md, eq. 3); thermal_wind = 2 uses the exact (1+ΔΩ)² balance,
+        # which adds O(ΔΩ²) to σ2, σ4 and a P6 part σ6 (radial_profiles.sigma2/4/6). thermal_wind = 0 keeps the advection term only
+        # (e.g. Mirouh et al. 2016, Ω(r) imposed). With ThermaD = 0 and thermal_wind >= 1 the heat rows are r² (eq)/p in a C^(1) basis.
+        # thermal_wind = 3 prescribes S_tw instead, independent of Ω (Bekki et al. 2024): ∂S_tw/∂θ = dSdtheta sin 2θ, radially
+        # uniform, i.e. S_tw = -(2/3) dSdtheta P2(cos θ); dSdtheta < 0 gives warm poles. For uniform rotation use diff_rot = 1 with
+        # diff_rot_type = 'rigid' and diff_rot_amplitude = 0.
+        # spin_doctor's residuals include these terms (flow.dat: Wdr, Wdr_im; thermal.dat: Wdr_thm); tests/heat_dr/terms.py gives the matrix-level balance.
+        self.dSdtheta = 0.0  # thermal_wind = 3 only: ∂S_tw/∂θ = dSdtheta sin 2θ, S_tw in the units of s (δs/c_p), so dSdtheta = Δθs/c_p
 
         # ----------------------------------------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------------------------------- Thermal parameters
@@ -141,6 +151,9 @@ class default_params():
         # Recommended, also for ricb > 0: let dS/dr -> 0 at the inner boundary (for the erf top hat, x1 >= ricb + 3*w1).
         # That removes both the trapped and the growing spurious modes. If ThermaD = 0 is kept with the ramp at the wall,
         # raise nev by 1-2, since spurious ICB modes take slots.
+        # With diff_rot = 1 and thermal_wind >= 1 (heat rows r² (eq)/p in C^(1), utils.adiab_tw) and fixed-entropy, stress-free
+        # walls the ThermaD -> 0 limit has a thermal boundary layer ~ (ThermaD/|λ|)^½: a tiny ThermaD is not equivalent to 0
+        # below ~1e-7 at N = 128 (docs/thermad0.md §d).
 
 
         # ----------------------------------------------------------------------------------------------------------------------

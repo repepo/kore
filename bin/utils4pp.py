@@ -5,11 +5,11 @@
 import multiprocessing as mp
 import numpy.polynomial.chebyshev as ch
 import numpy as np
+import scipy.special as scsp
 from parameters import par
 import utils as ut
 import radial_profiles as rap
 
-if par.diff_rot : import diff_rot_coefficients as dr
 
 mp.set_start_method('fork')
 
@@ -447,106 +447,125 @@ def entropy_dissip(l, hlm0, hlm1):
 
 
 
-def diff_rot_power(l, lp, lt, P, T):
+def thermal_wind_entropy():
     '''
-    Returns the integrand to compute the volume integral of ∫ ( F ⋅ 𝐮 ) dV, l-component
-    with F = (𝐮 ⋅ ∇Ω) r sin(θ) eϕ;  the differential rotation interaction between the perturbation and the base flow. 
-    
-    [Inefficient implementation]
+    Returns [σ₂, σ₄, σ₆] and their radial derivatives at the radii rk, S_tw = Σₙ σₙ(r) Pₙ(cosθ) the thermal-wind
+    background entropy of docs/heat-equation.md (eq. 2):
+        (1/r) ∂S_tw/∂θ = ( r sinθ/(Beyonce g) ) G² ∂[(1+ΔΩ)² - 1]/∂z,     ΔΩ = f₀(r) + f₂(r) P₂(cosθ),  G = Gaspard,
+    exact for thermal_wind = 2, linearised, (1+ΔΩ)² - 1 → 2ΔΩ, for thermal_wind = 1 (eq. 3, σ₆ = 0).
+    Written out here from f₀, f₂, g and their derivatives (not from radial_profiles.sigma2, sigma4), so that the
+    entropy budget is an independent check of the assembled heat equation.
+    thermal_wind = 3: prescribed ∂S_tw/∂θ = dSdtheta sin 2θ, so σ₂ = -(2/3) dSdtheta, σ₄ = σ₆ = 0.
     '''
-    
-    wdr = 0j
+    if par.thermal_wind == 3:
+        z = np.zeros_like(rk)
+        return [ [ z - (2/3)*par.dSdtheta, z, z ], [ z, z, z ] ]
+    e = int(par.thermal_wind == 2)  # keeps the terms quadratic in ΔΩ
+    [ f0, f01, f02 ] = [ rap.abuX(rk, d) for d in (0,1,2) ]
+    [ f2, f21, f22 ] = [ rap.aubX(rk, d) for d in (0,1,2) ]
+    g0 = rap.graviX(rk, 0)
+    g1 = rap.graviX(rk, 1)
+    a0 = 1 + e*f0
+
+    # σₙ = cₙ r Nₙ/g, and Nₙ′
+    N  = [ a0*(7*rk*f01 + rk*f21 + 12*f2) + e*rk*f2*(f01 + f21),
+           a0*(11*rk*f21 - 22*f2) + e*(11*rk*f2*f01 + 4*rk*f2*f21 + 14*f2**2),
+           e*f2*(rk*f21 - 2*f2) ]
+    N1 = [ e*f01*(7*rk*f01 + rk*f21 + 12*f2) + a0*(7*f01 + 7*rk*f02 + 13*f21 + rk*f22)
+           + e*( (f2 + rk*f21)*(f01 + f21) + rk*f2*(f02 + f22) ),
+           e*f01*(11*rk*f21 - 22*f2) + a0*(11*rk*f22 - 11*f21)
+           + e*( 11*f2*f01 + 11*rk*f21*f01 + 11*rk*f2*f02 + 32*f2*f21 + 4*rk*f21**2 + 4*rk*f2*f22 ),
+           e*( f21*(rk*f21 - 2*f2) + f2*(rk*f22 - f21) ) ]
+    c = np.array([ -2/21, -6/385, -4/77 ]) * par.Gaspard**2/par.Beyonce
+
+    sig  = [ c[n]*rk*N[n]/g0 for n in range(3) ]
+    sig1 = [ c[n]*( (N[n] + rk*N1[n])/g0 - rk*N[n]*g1/g0**2 ) for n in range(3) ]
+
+    return [ sig, sig1 ]
+
+
+
+def diff_rot_setup():
+    '''
+    Differential rotation (diff_rot = 1). Sets, as module globals for flow_worker and thermal_worker:
+    drforce[l] = [ [q, ∂ᵣq], [s, ∂ᵣs], [t, ∂ᵣt] ], the l-components of the force of the background flow on the perturbation
+        𝐅 = -G [ (𝐔₀′⋅∇)𝐮 + (𝐮⋅∇)𝐔₀′ ] = -G [ ΔΩ (i m 𝐮 + 2𝐳×𝐮) + (𝐮⋅∇ΔΩ) r sinθ 𝐞ᵩ ],   𝐔₀′ = ΔΩ r sinθ 𝐞ᵩ,
+    (right-hand side of the momentum equation per unit mass, G = Gaspard, ΔΩ = f₀(r) + f₂(r) P₂(cosθ)) and of ∂ᵣ𝐅;
+    with thermal = 1, drheat[l], the l-components of the left-hand-side terms p₀ [ i m G ΔΩ s + 𝐮⋅∇S_tw ] of the heat
+    equation (S_tw = 0 if thermal_wind = 0).
+    𝐮 is evaluated on the (rk, cosθ) grid from the l-components of velocity(),
+        uᵣ = Σ q Y,   u_θ = Σ s ∂_θY + t i m Y/sinθ,   uᵩ = Σ s i m Y/sinθ - t ∂_θY,     Y = ut.Ylm,
+    and the products are projected back on Y, (∂_θY, i m Y/sinθ), (i m Y/sinθ, -∂_θY) by Gauss-Legendre quadrature in
+    cosθ, exact here (the integrands are polynomials in cosθ of degree < 2 lmax + 10).
+    '''
+    global drforce
+    global drheat
 
     m = par.m
-    L = l*(l+1)
-    f0 = (4*np.pi/(2*l+1))*(np.sqrt(L/2))*r2
-    f1 = 0
-    f2 = 0
-    f4 = 0
-    f5 = 0
-    f6 = 0
+    G = par.Gaspard
+    [ lp, lt, ll ] = ut.ell( par.m, par.lmax, par.symm)
+    ll = np.asarray(ll)
 
-    aub = rap.aubX(rk, 0)
-    svp = rap.svpX(rk, 0)
-    spv = rap.spvX(rk, 0)
+    x, wx = np.polynomial.legendre.leggauss( par.lmax + 10 )
+    sth = np.sqrt(1 - x**2)  # sinθ
+    Y   = np.zeros( (len(ll), len(x)), dtype=complex )
+    dY  = np.zeros( (len(ll), len(x)), dtype=complex )
+    for k,l in enumerate(ll):
+        [ y, dy ] = scsp.sph_harm_y(l, m, np.arccos(x), 0, diff_n=1)  # as ut.Ylm, and its θ and ϕ derivatives
+        Y[k]  = y*np.sqrt(4*np.pi/(2*l+1))
+        dY[k] = dy[:,0]*np.sqrt(4*np.pi/(2*l+1))
+    imY = 1j*m*Y/sth
 
-    slm0 = 0
-    tlm0 = 0
-    qlm0_dl = 0
-    slm0_dl = 0
-    tlm0_dl = 0
+    # 𝐮 and ∂ᵣ𝐮 on the grid: u[d] = [uᵣ, u_θ, uᵩ] (d = 0) or their radial derivatives (d = 1), rows rk, columns cosθ
+    u = np.zeros( (2, 3, len(rk), len(x)), dtype=complex )
+    for k,l in enumerate(ll):
+        [ q, s, t ] = velocity(l)
+        for d in (0,1):
+            u[d,0] += np.outer(q[d], Y[k])
+            u[d,1] += np.outer(s[d], dY[k]) + np.outer(t[d], imY[k])
+            u[d,2] += np.outer(s[d], imY[k]) - np.outer(t[d], dY[k])
 
-    if l in lp : 
-        [ [ _ ], [ slm0 ] ] = cheb2space_pol(l, lp, P, 0)
-    elif l in lt : 
-        [ tlm0 ] = cheb2space_tor(l, lt, T, 0)
+    r   = rk[:,None]
+    P2  = (3*x**2 - 1)/2
+    [ f0, f01, f02 ] = [ rap.abuX(rk, d)[:,None] for d in (0,1,2) ]
+    [ f2, f21, f22 ] = [ rap.aubX(rk, d)[:,None] for d in (0,1,2) ]
+    dO  = [ f0 + f2*P2, f01 + f21*P2, f02 + f22*P2 ]  # ΔΩ, ∂ᵣΔΩ, ∂ᵣ²ΔΩ
+    dOt = [ -3*x*sth*f2, -3*x*sth*f21 ]               # ∂_θΔΩ, ∂ᵣ∂_θΔΩ
 
-    for offdiag in [-3, -2, -1, 0, 1, 2, 3]: 
-        if l+offdiag in lp : 
-            [ [ qlm0_dl ], [ slm0_dl ] ] = cheb2space_pol(l+offdiag, lp, P, 0)
-        elif l+offdiag in lt : 
-            [ tlm0_dl ] = cheb2space_tor(l+offdiag, lt, T, 0)
+    def force(v, dO0, dOr, dOth):
+        # -G [ ΔΩ (i m 𝐯 + 2𝐳×𝐯) + (r vᵣ ∂ᵣΔΩ + v_θ ∂_θΔΩ) sinθ 𝐞ᵩ ],  𝐳×𝐯 = ( -sinθ vᵩ, -cosθ vᵩ, sinθ vᵣ + cosθ v_θ )
+        [ vr, vt, vp ] = v
+        return -G*np.array([ dO0*(1j*m*vr - 2*sth*vp),
+                             dO0*(1j*m*vt - 2*x*vp),
+                             dO0*(1j*m*vp + 2*(sth*vr + x*vt)) + (r*vr*dOr + vt*dOth)*sth ])
 
-        c1 = (svp * dr.w_SQ_20(l, m, offdiag)) + (spv * dr.w_SQ_00(l, m, offdiag))
-        c2 = aub * dr.w_SS_20(l, m, offdiag)
-        c3 = aub * dr.w_ST_20(l, m, offdiag)
-        c4 = (svp * dr.w_TQ_20(l, m, offdiag)) + (spv * dr.w_TQ_00(l, m, offdiag))
-        c5 = aub * dr.w_TS_20(l, m, offdiag)
-        c6 = aub * dr.w_TT_20(l, m, offdiag)
+    F0 = force(u[0], dO[0], dO[1], dOt[0])
+    F1 = force(u[1], dO[0], dO[1], dOt[0]) + force(u[0], dO[1], dO[2], dOt[1])  # ∂ᵣ𝐅, but for
+    F1[2] += -G*u[0,0]*dO[1]*sth                                                 # ∂ᵣ of the factor r in r vᵣ ∂ᵣΔΩ
 
-        f1 = c1 * (np.conj(slm0) * qlm0_dl) # conj(S_l)*Q_dl
-        f2 = c2 * (np.conj(slm0) * slm0_dl) # conj(S_l)*S_dl
-        f3 = c3 * (np.conj(slm0) * tlm0_dl) # conj(S_l)*T_dl
-        f4 = c4 * (np.conj(tlm0) * qlm0_dl) # conj(T_l)*Q_dl
-        f5 = c5 * (np.conj(tlm0) * slm0_dl) # conj(T_l)*S_dl
-        f6 = c6 * (np.conj(tlm0) * tlm0_dl) # conj(T_l)*T_dl
+    nl = 4*np.pi/(2*ll+1)  # ∫ |Y|² dΩ
+    L  = ll*(ll+1)
+    proj = lambda f, Z: 2*np.pi*(f*wx) @ np.conj(Z).T  # ∫ f Z* dΩ, rows rk, columns l
+    q = [ proj(F[0], Y)/nl for F in (F0, F1) ]
+    s = [ ( proj(F[1], dY) + proj(F[2], imY) )/(L*nl) for F in (F0, F1) ]
+    t = [ ( proj(F[1], imY) - proj(F[2], dY) )/(L*nl) for F in (F0, F1) ]
+    drforce = { l: [ [q[0][:,k], q[1][:,k]], [s[0][:,k], s[1][:,k]], [t[0][:,k], t[1][:,k]] ] for k,l in enumerate(ll) }
 
-        wdr += f0 * (f1 + f2 + f3 + f4 + f5 + f6)   
+    if par.thermal:
+        sg = np.zeros( (len(rk), len(x)), dtype=complex )  # s on the grid, tsol2 rows are the l's of lp
+        for k,l in enumerate(lp):
+            sg += np.outer( funcheb( tsol2[k,:], r=rk, ricb=par.ricb, rcmb=ut.rcmb, n=0 )[:,0], Y[list(ll).index(l)] )
+        h = 1j*m*G*dO[0]*sg
+        if par.thermal_wind:
+            # 𝐮⋅∇S_tw = uᵣ Σ σₙ′ Pₙ - (u_θ/r) Σ σₙ sinθ Pₙ′(cosθ)
+            [ sig, sig1 ] = thermal_wind_entropy()
+            for n, sn, sn1 in zip( (2,4,6), sig, sig1 ):
+                Pn = np.polynomial.legendre.Legendre.basis(n)
+                h += u[0,0]*sn1[:,None]*Pn(x) - (u[0,1]/r)*sn[:,None]*sth*Pn.deriv()(x)
+        hl = proj( pss0[:,None]*h, Y )/nl
+        drheat = { l: hl[:,k] for k,l in enumerate(ll) }
 
-    # for offdiag in [-3, -2, -1, 0, 1, 2, 3]:
-    #     if l in lp : 
-    #         # S_l, Q_l != 0, T_l = 0
-    #         [ [ _ ], [ slm0 ] ] = cheb2space_pol(l, lp, P, 0)
-    #         if l + offdiag in lp : 
-    #             # S_dl, Q_dl != 0, T_dl = 0 -> Non-zero terms : conj(S_l)*Q_dl, conj(S_l)*S_dl
-    #             [ [ qlm0_dl ], [ slm0_dl ] ] = cheb2space_pol(l+offdiag, lp, P, 0)
 
-    #             c1 = (svp * dr.w_SQ_20(l, m, offdiag)) + (spv * dr.w_SQ_00(l, m, offdiag))
-    #             c2 = aub * dr.w_SS_20(l, m, offdiag)
-
-    #             f1 = c1 * (np.conj(slm0) * qlm0_dl) # conj(S_l)*Q_dl
-    #             f2 = c2 * (np.conj(slm0) * slm0_dl) # conj(S_l)*S_dl
-    #         elif l + offdiag in lt :
-    #             # S_dl, Q_dl = 0, T_dl != 0 -> Non-zero terms : conj(S_l)*T_dl
-    #             [ tlm0_dl ] = cheb2space_tor(l+offdiag, lt, T, 0)
-
-    #             c1 = aub * dr.w_ST_20(l, m, offdiag)
-
-    #             f1 = c1 * (np.conj(slm0) * tlm0_dl) # conj(S_l)*T_dl
-
-    #     elif l in lt : 
-    #         # S_l, Q_l = 0, T_l != 0
-    #         [ tlm0 ] = cheb2space_tor(l, lt, T, 0)
-    #         if l + offdiag in lp : 
-    #             # S_dl, Q_dl != 0, T_dl = 0 -> Non-zero terms : conj(T_l)*Q_dl, conj(T_l)*S_dl
-    #             [ [ qlm0_dl ], [ slm0_dl ] ] = cheb2space_pol(l+offdiag, lp, P, 0)
-
-    #             c1 = (svp * dr.w_TQ_20(l, m, offdiag)) + (spv * dr.w_TQ_00(l, m, offdiag))
-    #             c2 = aub * dr.w_TS_20(l, m, offdiag)
-
-    #             f1 = c1 * (np.conj(tlm0) * qlm0_dl) # conj(T_l)*Q_dl
-    #             f2 = c2 * (np.conj(tlm0) * slm0_dl) # conj(T_l)*S_dl
-    #         elif l + offdiag in lt :
-    #             # S_dl, Q_dl = 0, T_dl != 0 -> Non-zero terms : conj(T_l)*T_dl
-    #             [ tlm0_dl ] = cheb2space_tor(l+offdiag, lt, T, 0)
-
-    #             c1 = aub * dr.w_TT_20(l, m, offdiag)
-
-    #             f1 = c1 * (np.conj(tlm0) * tlm0_dl) # conj(T_l)*T_dl
-
-    #     wdr += f0 * (f1 + f2)
-
-    return 2*np.real(wdr)
 
 def flow_worker( l ):
     '''
@@ -571,9 +590,6 @@ def flow_worker( l ):
     enstro_vif_t = np.zeros_like( rk, dtype='complex64')
     enstro_buo_p = np.zeros_like( rk, dtype='complex64')
     enstro_buo_t = np.zeros_like( rk, dtype='complex64')
-
-    
-    wdr = 0
 
     [   velq,   vels,   velt ] = velocity(l)     # velocity 𝐮
     [ cuvelq, cuvels, cuvelt ] = curl(l, velq, vels, velt)  # its curl ∇×𝐮
@@ -664,13 +680,20 @@ def flow_worker( l ):
         Enstro_buo_l = 0
 
 
-    Wdr_l = 0
+    # differential rotation: complex power 2 ∫ ρ 𝐮*⋅𝐅 dV of the force 𝐅 = -G[(𝐔₀′⋅∇)𝐮 + (𝐮⋅∇)𝐔₀′] (diff_rot_setup),
+    # and its enstrophy term (∇×𝐮)⋅(∇×𝐅)
+    [ Wdr_l, Wdr_im_l, Enstro_dr_l ] = [0, 0, 0]
     if par.diff_rot:
-        wdr = diff_rot_power(l, lp, lt, P, T)
-        Wdr_l = rad_quad( wdr, Ra, Rb, wk )
-    
+        [   drq,   drs,   drt ] = drforce[l]
+        [ cudrq, cudrs, cudrt ] = curl(l, drq, drs, drt)
+        pdr = 2*( cdot_pol(l, velq[0], vels[0], drq[0], drs[0]) + cdot_tor(l, velt[0], drt[0]) )*rho0
+        Wdr_l    = np.real( rad_quad( pdr, Ra, Rb, wk) )
+        Wdr_im_l = np.imag( rad_quad( pdr, Ra, Rb, wk) )
+        enstro_dr = ( dotprod_pol(l, cuvelq[0], cuvels[0], cudrq[0], cudrs[0]) + dotprod_tor(l, cuvelt[0], cudrt[0]) ) * const0**2
+        Enstro_dr_l = rad_quad( enstro_dr, Ra, Rb, wk)
+
     return [ Kene_l, Dkin_l, Enstro_vel_l, Enstro_cor_l, Enstro_vif_l, Enstro_buo_l, Wthm_l, Wdr_l,
-             Wcor_im_l, Dkin_im_l, Wthm_im_l ]
+             Wcor_im_l, Dkin_im_l, Wthm_im_l, Wdr_im_l, Enstro_dr_l ]
 
 
 
@@ -720,8 +743,9 @@ def thermal_worker( l ):
         Wadv = -∫ p₀ (dS/dr) uᵣ s* dV                    the advection of the background entropy
         Dthm = ∫ s* ∇⋅(κ p₀ ∇s) dV = -∫ κ p₀ |∇s|² dV + [ r² κ p₀ s* ∂s/∂r ]   the entropy diffusion
     (real parts, same 2Re and Yₗᵐ conventions as flow_worker). The surface term vanishes for fixed-entropy
-    or fixed-flux walls and at r=0. Uses the global solutions usol2, tsol2. Returns [ TE_l, Dthm_l, Wadv_l ],
-    Dthm_l without the ThermaD factor.
+    or fixed-flux walls and at r=0. With diff_rot = 1 the left-hand side gains p₀ [ i m G ΔΩ s + 𝐮⋅∇S_tw ] and the
+    budget the term Wdr = -2 Re ∫ p₀ s* [ i m G ΔΩ s + 𝐮⋅∇S_tw ] dV (from diff_rot_setup).
+    Uses the global solutions usol2, tsol2. Returns [ TE_l, Dthm_l, Wadv_l, Wdr_l ], Dthm_l without the ThermaD factor.
     The profiles are the physical ones (setup_grid), so the budget residual also flags a mismatch between
     the intended and the assembled heat equation (e.g. a diffusion operator with a wrong coefficient, or,
     when ricb=0, a profile without the parity that submatrices assumes).
@@ -752,7 +776,12 @@ def thermal_worker( l ):
         sfc  = (4*np.pi/(2*l+1)) * rb**2 * kpsb * 2*np.real( np.conj(f_sb[:,0]) * f_sb[:,1] )
         Dthm_l += sfc[1] - sfc[0]
 
-    return [ Tene_l, Dthm_l, Wadv_l ]
+    # differential rotation: -2 Re ∫ p₀ s* [ i m G ΔΩ s + 𝐮⋅∇S_tw ] dV (diff_rot_setup)
+    Wdr_l = 0
+    if par.diff_rot:
+        Wdr_l = -rad_quad( dotprod_scal(l, drheat[l], hlm0), Ra, Rb, wk )
+
+    return [ Tene_l, Dthm_l, Wadv_l, Wdr_l ]
 
 
 
@@ -1143,6 +1172,8 @@ def diagnose( usol, tsol, Ra, Rb, ncpus):
 
 
     setup_grid(Ra, Rb)  # quadrature grid and background profiles, as module globals
+    if par.diff_rot:
+        diff_rot_setup()  # differential-rotation force and heat-equation terms, as module globals
 
     [ lp_u, lt_u, ll ] = ut.ell(par.m, par.lmax, par.symm)  # the l-indices of the flow field
     

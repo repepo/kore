@@ -32,10 +32,25 @@ block Hermitian negative (divergence form, thermal bc rows).  The buoyancy, adve
 entropy pairings are also compared with direct quadratures of the same fields, which checks
 the r-powers and L-factors of those rows, and KE with utils4pp.kinetic_energy.
 
+With diff_rot = 1 (background U0 = G ΔΩ r sinθ e_φ, ΔΩ = f0 + f2 P2, G = Gaspard) the blocks of
+operators.differential_rotation (R) and operators.thermal_diffrot (heat, thermal = 1), packed as assemble.py packs them,
+are paired with the poloidal (P, s) and toroidal (T) parts of the fields, every part against every part, and compared
+with direct (r, cos θ) quadratures of the 3-D fields (uᵣ = L P Y/r, u_θ = Q ∂θY/r + i m T Y/sinθ,
+u_φ = i m Q Y/(r sinθ) - T ∂θY, Q = (rP)' + r (ln rho0)' P, Y Schmidt as ut.Ylm):
+  inertia, Coriolis, diff-rot  <x,Iy>, <x,Cy>, <x,Ry> against int rho0 x*.y, int rho0 x*.(2G z x y) and
+                               int rho0 x*.G[(U0'.grad)y + (y.grad)U0'], U0' = U0/G (same sign as Coriolis in A);
+                               errors relative to the Cauchy-Schwarz bound sqrt(KE(x)KE(y)) (times 2G, G max|ΔΩ|)
+  heat advection               'temp' blocks against -int p0 x_s* i m G ΔΩ y_s (the heat blocks carry the sign of A),
+                               and anti-Hermitian: <x,Ht y> = -conj<y,Ht x> (relative to m G max|ΔΩ| sqrt(E(x)E(y)))
+  heat thermal wind            'upol', 'utor' blocks against -int p0 x_s* u(y).grad S_tw, S_tw = Σ σn Pn(cos θ) recomputed
+                               from f0, f2, g (thermal_wind = 1: linear in ΔΩ; 2: exact (1+ΔΩ)², with σ6)
+  rigid (diff_rot_type 'rigid', ΔΩ = d): R = d (i m G I + C), Ht = -i m G d E and the thermal-wind blocks vanish.
+
 A sign error, a missing rho0, a diffusion term not in divergence form or an inconsistent bc row
 shows up at 1e-3 to 1 against a floor of 1e-12 (1e-8 for the viscous block at low l).  An error
 that preserves the symmetry (a wrong but symmetric coefficient, a wrong nu profile) is invisible
-here; that is what the comparison of the energy budget with spin_doctor is for.
+here; that is what the comparison of the energy budget with spin_doctor is for.  The diff-rot comparisons are not
+symmetry tests: a 1 % error in one coefficient of one Δl term shows up at 1e-4 to 1.
 
 The random fields have Chebyshev coefficients up to degree kmax (default N1/4) decaying as
 exp(-k/decay) (default kmax/8), with the lowest coefficients adjusted in the least-squares
@@ -80,8 +95,10 @@ if par.ViscosD == 0:
 
 divp0 = hasattr(op, 'h0_D0')   # ThermaD=0 heat rows divided by p0
 
-gb   = {'u': 4, 'v': 2, 'h': 2 if par.ThermaD > 0 else 0}        # Gegenbauer basis of each section
+gb   = {'u': 4, 'v': 2, 'h': 2 if par.ThermaD > 0 else int(ut.adiab_tw)}   # Gegenbauer basis of each section (C^(1) for ThermaD = 0 with the thermal wind)
 chop = {s: (gb[s] if ricb > 0 else gb[s]//2) for s in gb}         # rows reserved for bc's
+if par.ThermaD == 0:
+    chop['h'] = 0                                                 # no thermal bc rows, whatever the basis
 
 vP = int((1 - 2*(par.m % 2))*par.symm)   # Chebyshev parity of P (ricb=0 only)
 vT = -vP
@@ -95,7 +112,7 @@ istart = {'P': iP, 'T': iT, 'S': iS}
 
 def row_parity(label, vpar):
     (sec, rpower, _, f1, d1, f2, d2, dx) = ut.decode_label(label)
-    adj = int(f1 in ['gra', 'pdS', 'lh1', 'dSd', 'tp2', 'tp4'])
+    adj = int(f1 in ['gra', 'pdS', 'lh1', 'dSd', 'tp2', 'tp4', 'tp6'])
     opp = 1 - ((rpower + (d1 or 0) + (d2 or 0) + dx + adj) % 2)*2
     return vpar*opp
 
@@ -127,7 +144,7 @@ if par.thermal:
     if par.ThermaD > 0:
         wgt['h'] = np.ones_like(rk)            # rows are r^2 (eq)/L^3
     elif divp0:
-        wgt['h'] = pss0*rk                     # rows are r (eq/p0)/L^3
+        wgt['h'] = pss0 if ut.adiab_tw else pss0*rk   # rows are r (eq/p0)/L^3, r^2 (eq/p0)/L^3 with the thermal wind
     else:
         wgt['h'] = rk                          # rows are r (eq)/L^3
 
@@ -177,7 +194,31 @@ def pair(sec, l, left_vals, y):
 
 
 # ---------------------------------------------------------------------------- operator applications
-KEYS = ['I', 'C', 'V', 'B', 'E', 'A', 'D']
+KEYS = ['I', 'C', 'V', 'B', 'E', 'A', 'D', 'R', 'Ht', 'Hw']
+
+def dr_blocks(l, sec):
+    '''
+    differential-rotation blocks of row l in section sec (diff_rot = 1), as assemble.py packs them: list of
+    (mtx, offd, kind), kind the unknown ('P', 'T' or 'S') of the column block k + offd. Sections u, v:
+    operators.differential_rotation; section h: operators.thermal_diffrot ('temp' always, 'upol'/'utor' if thermal_wind)
+    '''
+    if not par.diff_rot:
+        return []
+    nw = 6 if par.thermal_wind == 2 else 4      # the exact thermal wind (1+ΔΩ)² has P6: Δl up to ±6
+    comp = {'u': [('upol', [-2, 0, 2], 'P'), ('utor', [-3, -1, 1, 3], 'T')],
+            'v': [('upol', [-3, -1, 1, 3], 'P'), ('utor', [-2, 0, 2], 'T')],
+            'h': [('temp', [-2, 0, 2], 'S')] + ([('upol', range(-nw, nw + 1, 2), 'P'),
+                                                ('utor', range(1 - nw, nw, 2), 'T')] if par.thermal_wind else [])}[sec]
+    fun = op.thermal_diffrot if sec == 'h' else op.differential_rotation
+    out = [tuple(fun(l, sec, name, i)) + (kind,) for name, offs, kind in comp for i in offs if l + i in (lt if kind == 'T' else lp)]
+    return [b for b in out if not np.isscalar(b[0])]   # an operator returns a plain 0 for a Δl it does not have
+
+
+def apply_blocks(blocks, fld, k):
+    '''sum of the blocks (mtx, offd, kind) applied to the column blocks k + offd of the field (P, T, S)'''
+    unk = dict(zip('PTS', fld))
+    return sum((mtx @ unk[kind][k + offd] for mtx, offd, kind in blocks), np.zeros(N1, dtype=complex))
+
 
 def cross_pairings(left, right):
     '''
@@ -185,7 +226,9 @@ def cross_pairings(left, right):
     out[a][b] = dict of pairings <left_a, Op right_b> summed over l:
       I = int (rho0 u)*.u (= KE),  C = int (rho0 u)*.(2 z x u),  V = int (rho0 u)*.F_visc,
       B = int (rho0 u)*.(Beyonce g s r^),  and with the s* weight on the heat rows:
-      E = int p0 |s|^2,  A = -int p0 S' u_r s*,  D = ThermaD int s* div(kappa p0 grad s).
+      E = int p0 |s|^2,  A = -int p0 S' u_r s*,  D = ThermaD int s* div(kappa p0 grad s);
+    with diff_rot = 1 also R = int (rho0 u)*.G[(U0'.grad)u + (u.grad)U0'] (momentum diff-rot blocks) and the heat
+    diff-rot blocks Ht = -int p0 s* i m G dOmega s ('temp') and Hw = -int p0 s* u.grad S_tw ('upol', 'utor').
     '''
     na, nb = len(left), len(right)
     out = [[{k: 0j for k in KEYS} for b in range(nb)] for a in range(na)]
@@ -195,18 +238,20 @@ def cross_pairings(left, right):
         Co = [(op.coriolis(l, 'u', 'utor', i), i) for i in [-1, 1] if l + i in lt]
         V  = op.viscous_diffusion(l, 'u', 'upol', 0)
         Bu = op.buoyancy(l, 'u', '', 0) if par.thermal else None
+        Rb = dr_blocks(l, 'u')
         ys = []
         for (P, T, S) in right:
             yC = Cd @ P[k]
             for (mtx, offd), i in Co:
                 yC = yC + mtx @ T[k + offd]
-            ys.append((I @ P[k], yC, V @ P[k], Bu @ S[k] if par.thermal else None))
+            ys.append((I @ P[k], yC, V @ P[k], Bu @ S[k] if par.thermal else None, apply_blocks(Rb, (P, T, S), k)))
         for a, (P, T, S) in enumerate(left):
             Pv = vals_unknown(P[k], 'P')
             for b in range(nb):
                 out[a][b]['I'] += pair('u', l, Pv, ys[b][0])
                 out[a][b]['C'] += pair('u', l, Pv, ys[b][1])
                 out[a][b]['V'] += pair('u', l, Pv, ys[b][2])
+                out[a][b]['R'] += pair('u', l, Pv, ys[b][4])
                 if par.thermal:
                     out[a][b]['B'] += pair('u', l, Pv, ys[b][3])
     for k, l in enumerate(lt):                                   # section v, rows for T_l
@@ -214,26 +259,31 @@ def cross_pairings(left, right):
         Cd = op.coriolis(l, 'v', 'utor', 0)[0]
         Co = [(op.coriolis(l, 'v', 'upol', i), i) for i in [-1, 1] if l + i in lp]
         V  = op.viscous_diffusion(l, 'v', 'utor', 0)
+        Rb = dr_blocks(l, 'v')
         ys = []
         for (P, T, S) in right:
             yC = Cd @ T[k]
             for (mtx, offd), i in Co:
                 yC = yC + mtx @ P[k + offd]
-            ys.append((I @ T[k], yC, V @ T[k]))
+            ys.append((I @ T[k], yC, V @ T[k], apply_blocks(Rb, (P, T, S), k)))
         for a, (P, T, S) in enumerate(left):
             Tv = vals_unknown(T[k], 'T')
             for b in range(nb):
                 out[a][b]['I'] += pair('v', l, Tv, ys[b][0])
                 out[a][b]['C'] += pair('v', l, Tv, ys[b][1])
                 out[a][b]['V'] += pair('v', l, Tv, ys[b][2])
+                out[a][b]['R'] += pair('v', l, Tv, ys[b][3])
     if par.thermal:                                              # section h, rows for s_l
         for k, l in enumerate(lp):
             E = op.entropy(l, 'h', '', 0)
             A = op.thermal_advection(l, 'h', 'upol', 0)
             D = op.thermal_diffusion(l, 'h', '', 0) if par.ThermaD > 0 else None
+            Hb = dr_blocks(l, 'h')
+            Ht = [b for b in Hb if b[2] == 'S']; Hw = [b for b in Hb if b[2] != 'S']
             ys = []
             for (P, T, S) in right:
-                ys.append((E @ S[k], A @ P[k], D @ S[k] if par.ThermaD > 0 else None))
+                ys.append((E @ S[k], A @ P[k], D @ S[k] if par.ThermaD > 0 else None,
+                           apply_blocks(Ht, (P, T, S), k), apply_blocks(Hw, (P, T, S), k)))
             for a, (P, T, S) in enumerate(left):
                 Sv = vals_unknown(S[k], 'S')
                 for b in range(nb):
@@ -241,6 +291,8 @@ def cross_pairings(left, right):
                     out[a][b]['A'] += pair('h', l, Sv, ys[b][1])
                     if par.ThermaD > 0:
                         out[a][b]['D'] += pair('h', l, Sv, ys[b][2])
+                    out[a][b]['Ht'] += pair('h', l, Sv, ys[b][3])
+                    out[a][b]['Hw'] += pair('h', l, Sv, ys[b][4])
     return out
 
 
@@ -259,6 +311,94 @@ def direct_quadratures(P, T, S):
         wa += -nl_ * jac * np.sum(wk * pss0 * dS0 * ur * np.conj(sv) * rk**2)
         te += nl_ * jac * np.sum(wk * pss0 * np.abs(sv)**2 * rk**2)
     return wb, wa, te
+
+
+# ------------------------------------------------------------- differential rotation: (r, θ) grid quadratures
+if par.diff_rot:
+    m  = par.m
+    G  = par.Gaspard
+    xg, wx = np.polynomial.legendre.leggauss(par.lmax + 12)   # x = cos θ
+    sg = np.sqrt(1 - xg**2)
+    th = np.arccos(xg)
+    def Ysch(l, mm):   # Schmidt harmonic Y_l^mm(θ) at φ = 0, as ut.Ylm
+        return ut.Ylm(l, mm, th, 0.).real if l >= mm else 0*xg
+    def dYsch(l):      # dY_l^m/dθ = m cotθ Y_l^m + √((l-m)(l+m+1)) Y_l^{m+1}
+        return m*xg/sg*Ysch(l, m) + np.sqrt((l - m)*(l + m + 1.))*Ysch(l, m + 1)
+    Yp, dYp = np.array([Ysch(l, m) for l in lp]), np.array([dYsch(l) for l in lp])
+    Yt, dYt = np.array([Ysch(l, m) for l in lt]), np.array([dYsch(l) for l in lt])
+    dxdr = 2/(rcmb - ricb) if ricb > 0 else 1/rcmb
+    h1   = rap.logrhoX(rk, 1)
+    def fX(fun, r, d):   # ricb = 0: the physical, even f0, f2 at |r| (as heat_check.py), not the code's fit at r
+        return fun(np.abs(r), d)*np.sign(r)**d if ricb == 0 else fun(r, d)
+    # ΔΩ = f0 + f2 P2(cos θ) and its derivatives, (Nq, Nx)
+    P2x  = (3*xg**2 - 1)/2
+    dOm  = fX(rap.abuX, rk, 0)[:, None] + fX(rap.aubX, rk, 0)[:, None]*P2x
+    dOmr = fX(rap.abuX, rk, 1)[:, None] + fX(rap.aubX, rk, 1)[:, None]*P2x
+    dOmt = -3*xg*sg*fX(rap.aubX, rk, 0)[:, None]
+    if par.thermal and par.thermal_wind:
+        def tw_sigmas(r):
+            '''
+            σ2, σ4, σ6 of S_tw = Σ σn Pn(cos θ) from (1/r) ∂θS_tw = (r sinθ/(Beyonce g)) G² ∂z[(1+ΔΩ)² - 1]:
+            thermal_wind = 2 exact (checks/check_heat.out of docs/heat-equation.md §1), 1 linear in ΔΩ (its eq. 3, σ6 = 0);
+            3 prescribed, ∂θS_tw = dSdtheta sin 2θ: σ2 = -(2/3) dSdtheta, σ4 = σ6 = 0
+            '''
+            if par.thermal_wind == 3:
+                return np.array([-(2/3)*par.dSdtheta + 0*r, 0*r, 0*r])
+            e = float(par.thermal_wind == 2)
+            f0, f0p, f2, f2p = fX(rap.abuX, r, 0), fX(rap.abuX, r, 1), fX(rap.aubX, r, 0), fX(rap.aubX, r, 1)
+            a = 1 + e*f0
+            q = G**2*r**2/(par.Beyonce*rap.graviX(r, 0))
+            return -q*np.array([(2/21)*(a*(7*f0p + f2p) + e*f2*(f0p + f2p) + 12*a*f2/r),
+                                (6/385)*(11*a*(f2p - 2*f2/r) + e*f2*(11*f0p + 4*f2p + 14*f2/r)),
+                                e*(4/77)*f2*(f2p - 2*f2/r)])
+        r0 = ricb if ricb > 0 else -rcmb           # σn' from a Chebyshev interpolant on 2N nodes (r = 0 is not one)
+        xc = np.cos(np.pi*(np.arange(2*N) + 0.5)/(2*N))
+        cs = ch.chebfit(xc, tw_sigmas(0.5*(rcmb - r0)*(xc + 1) + r0).T, 2*N - 1)
+        sig  = tw_sigmas(rk)
+        dsig = ch.chebval((2*rk - r0 - rcmb)/(rcmb - r0), ch.chebder(cs))*2/(rcmb - r0)
+        Pn   = np.array([P2x, (35*xg**4 - 30*xg**2 + 3)/8, (231*xg**6 - 315*xg**4 + 105*xg**2 - 5)/16])
+        dPn  = np.array([3*xg, (35*xg**3 - 15*xg)/2, (1386*xg**5 - 1260*xg**3 + 210*xg)/16])
+        Stw_r, Stw_t = dsig.T @ Pn, -(sig.T @ dPn)*sg          # ∂ᵣS_tw, ∂θS_tw
+        # size of ∇S_tw before the cancellations, G² r²/(Beyonce g) |∂F| (S_tw = 0 for 'cylindrical': round-off only)
+        aS = abs(G**2*rk**2/(par.Beyonce*rap.graviX(rk, 0)))[:, None]*2*abs(1 + (par.thermal_wind == 2)*dOm)*(abs(dOmr) + abs(dOmt/rk[:, None])) \
+            if par.thermal_wind != 3 else abs(par.dSdtheta)*np.ones_like(dOm)
+    dV = 2*np.pi*jac*(wk*rk**2)[:, None]*wx[None, :]        # r² dr d(cos θ) dφ
+
+
+def grid_fields(fld):
+    '''uᵣ, u_θ, u_φ, s of a field (P, T, S) at the (r, θ) nodes (factor e^{imφ} dropped), with
+    uᵣ = L P Y/r, u_θ = Q dY/dθ/r + i m T Y/sinθ, u_φ = i m Q Y/(r sinθ) - T dY/dθ, Q = (rP)' + r (ln ρ0)' P'''
+    P, T, S = fld
+    Pv = np.array([vals_unknown(p, 'P') for p in P])
+    Pd = np.array([ch.chebval(xk, ch.chebder(full_coeffs(p, iP)))*dxdr for p in P])
+    Q  = (Pv + rk*Pd + rk*h1*Pv)/rk
+    Tv = np.array([vals_unknown(t, 'T') for t in T])
+    ur  = (lp*(lp + 1.))[:, None]*Pv/rk
+    uth = Q.T @ dYp + 1j*m*(Tv.T @ Yt)/sg
+    uph = 1j*m*(Q.T @ Yp)/sg - Tv.T @ dYt
+    s   = np.array([vals_unknown(q, 'S') for q in S]).T @ Yp if par.thermal else None
+    return ur.T @ Yp, uth, uph, s
+
+
+def grid_pairings(gx, gy):
+    '''
+    direct quadratures, from grid_fields of x and y, of  I = int rho0 x*.y,  C = int rho0 x*.(2G z x y),
+    R = int rho0 x*.G[(U0'.grad)y + (y.grad)U0'],  U0' = dOmega r sinθ e_φ, which in components is
+      G { dOmega (i m y + 2 z x y) + sinθ (r ∂ᵣdOmega y_r + ∂θdOmega y_θ) e_φ },  z x y = (-sinθ y_φ, -cosθ y_φ, cosθ y_θ + sinθ y_r),
+    and with thermal = 1  Ht = int p0 x_s* i m G dOmega y_s,  Hw = int p0 x_s* (y_r ∂ᵣS_tw + y_θ ∂θS_tw/r).
+    '''
+    (xr, xt, xp, xs), (yr, yt, yp, ys) = gx, gy
+    zy = (-sg*yp, -xg*yp, xg*yt + sg*yr)
+    def dot(f):
+        return np.sum(dV*rho0[:, None]*(np.conj(xr)*f[0] + np.conj(xt)*f[1] + np.conj(xp)*f[2]))
+    out = {'I': dot((yr, yt, yp)), 'C': 2*G*dot(zy),
+           'R': G*dot([dOm*(1j*m*yy + 2*zz) for yy, zz in zip((yr, yt, yp), zy)]) +
+                G*dot((0, 0, sg*(rk[:, None]*dOmr*yr + dOmt*yt)))}
+    if par.thermal:
+        out['Ht'] = np.sum(dV*pss0[:, None]*np.conj(xs)*1j*m*G*dOm*ys)
+        out['Hw'] = np.sum(dV*pss0[:, None]*np.conj(xs)*(yr*Stw_r + yt*Stw_t/rk[:, None])) if par.thermal_wind else 0j
+        out['Hwa'] = np.sum(dV*pss0[:, None]*abs(xs)*(abs(yr) + abs(yt/rk[:, None]))*aS) if par.thermal_wind else 0.
+    return out
 
 
 # ------------------------------------------------------------------------------------- bc rows
@@ -389,7 +529,44 @@ def main():
             note('buoyancy rows vs quadrature', eB); note('advection rows vs quadrature', eA); note('entropy rows vs quadrature', eE)
             if a == 0:
                 print('rows against direct quadratures (field 0): buoyancy %.2e   advection %.2e   entropy %.2e' % (eB, eA, eE))
-    try:                                                          # KE against the independent physical-space code
+    if par.diff_rot:   # differential rotation: every field split into its (P, s) and T parts, so that each coupling is compared on its own
+        parts = [p for (P, T, S) in fields for p in ((P, 0*T, S), (0*P, T, 0*S))]
+        Xs = cross_pairings(parts, parts)
+        gf = [grid_fields(f) for f in parts]
+        rel = lambda u, v: abs(u - v)/abs(v) if v != 0 else abs(u)
+        rigid = (par.diff_rot_type == 'rigid')
+        d  = par.diff_rot_amplitude
+        Om = np.max(abs(dOm)) or 1.
+        for a in range(2*nvec):
+            for b in range(2*nvec):
+                o, g = Xs[a][b], grid_pairings(gf[a], gf[b])
+                sI = np.sqrt(Xs[a][a]['I'].real*Xs[b][b]['I'].real)   # momentum errors relative to the Cauchy-Schwarz bounds
+                for key, name, sc in [('I', 'inertia', 1), ('C', 'Coriolis', 2*G), ('R', 'diff-rot', G*Om)]:
+                    note(name + ' rows vs grid', abs(o[key] - g[key])/(sc*sI))
+                if rigid:   # Ω = Ω0 (1 + d): the diff-rot force is d (i m G u + 2G z x u) exactly
+                    note('rigid: R = d(i m G I + C)', abs(o['R'] - d*(1j*m*G*o['I'] + o['C']))/(G*Om*sI))
+                if par.thermal:   # the heat blocks carry the A-matrix sign: H = -(grid)
+                    note('heat advection rows vs grid', rel(-o['Ht'], g['Ht']))
+                    note('heat thermal-wind rows vs grid', abs(o['Hw'] + g['Hw'])/max(abs(g['Hw']), g['Hwa']) if g['Hwa'] > 0 else rel(-o['Hw'], g['Hw']))
+                    sE = np.sqrt(Xs[a][a]['E'].real*Xs[b][b]['E'].real)
+                    if sE > 0 and m != 0 and np.max(abs(dOm)) > 0:   # i m G ΔΩ s is anti-Hermitian, |<x,Ht y>| <= m G max|ΔΩ| sqrt(ExEy)
+                        note('heat advection anti-Hermitian', abs(o['Ht'] + np.conj(Xs[b][a]['Ht']))/(m*G*Om*sE))
+                    if rigid:
+                        note('rigid: Ht = -i m G d E', rel(o['Ht'], -1j*m*G*d*o['E']))
+        if rigid and par.thermal and par.thermal_wind != 3:   # S_tw = 0 (unless prescribed): the thermal-wind blocks must vanish (largest entry relative to the entropy blocks)
+            note('rigid: thermal-wind blocks vanish', max([abs(b[0]).max() for l in lp for b in dr_blocks(l, 'h') if b[2] != 'S'], default=0.)
+                                                      / max(abs(op.entropy(l, 'h', '', 0)).max() for l in lp))
+        print('diff_rot (%s, Gaspard %g): rows vs (r, theta) grid quadrature, worst over pairs of P/T parts, /(Cauchy-Schwarz bound): inertia %.2e   Coriolis %.2e   diff-rot %.2e'
+              % (par.diff_rot_type, G, worst['inertia rows vs grid'], worst['Coriolis rows vs grid'], worst['diff-rot rows vs grid']))
+        if par.thermal:
+            print('heat diff-rot (thermal_wind %d): advection i m G dOmega s vs grid %.2e   thermal wind u.grad S_tw vs grid %.2e   advection anti-Herm. %s'
+                  % (par.thermal_wind, worst['heat advection rows vs grid'], worst['heat thermal-wind rows vs grid'],
+                     '%.2e' % worst['heat advection anti-Hermitian'] if 'heat advection anti-Hermitian' in worst else 'n/a (m = 0)'))
+        if rigid:
+            print('rigid (d = %g): R = d(i m G I + C) %.2e' % (d, worst['rigid: R = d(i m G I + C)'])
+                  + ('   Ht = -i m G d E %.2e   max|thermal-wind block|/max|entropy block| %.2e' % (worst['rigid: Ht = -i m G d E'],
+                     worst.get('rigid: thermal-wind blocks vanish', np.nan)) if par.thermal else ''))
+    try:                                                         # KE against the independent physical-space code
         import utils4pp as upp
         P, T, S = fields[0]
         usol = [np.array([full_coeffs(P[k], iP) for k in range(nl)]), np.array([full_coeffs(T[k], iT) for k in range(nl)])]

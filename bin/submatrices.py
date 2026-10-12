@@ -89,7 +89,7 @@ def main(ncpus):
         gebasis[1] = 1  # up to first derivatives in section v
 
     if par.ThermaD == 0:
-        gebasis[2] = 0  # No thermal diffusion, C^(0) basis is enough, no need for thermal bc's
+        gebasis[2] = 1 if ut.adiab_tw else 0  # No thermal diffusion, C^(0) basis is enough (C^(1) for the thermal wind's P'), no need for thermal bc's
 
     # Zero matrices, used when making room for bc's
     N1 = int((1 + np.sign(par.ricb)) * int(par.N/2))
@@ -250,7 +250,7 @@ def main(ncpus):
             labl += [ 'h0pss0_D0', 'h1pdS0_D0' ]
         else:
             # no diffusion: p cancels, so the heat equation is used divided by p: r s and -r uᵣ dS/dr
-            # (p ~ 1e-7 near the surface makes the p-weighted rows ill-conditioned there)
+            # (p ~ 1e-7 near the surface makes the p-weighted rows ill-conditioned there); r² s and -r² uᵣ dS/dr with the thermal wind (ut.adiab_tw)
             arg2 += [ vP ]*2
             labl += [ 'h0_D0', 'h1dSd0_D0' ]
 
@@ -260,24 +260,29 @@ def main(ncpus):
             labl += [ 'h2kps0_D0', 'h1kps0_D1', 'h0kps1_D1', 'h0kps0_D2' ]
 
         if par.diff_rot == 1:
-            # Differential rotation in the heat equation (docs/heat-equation.md). Rows are the equation times r² p, p = ρT.
-            if par.ThermaD == 0:
-                sys.exit('diff_rot = 1 with thermal = 1 needs ThermaD > 0: with ThermaD = 0 the section-h labels decode to other r powers (utils.decode_label)')
-            if par.thermal_wind and par.Beyonce == 0:
-                sys.exit('thermal_wind = 1 needs Beyonce > 0 (S_tw is O(1/Beyonce)): set thermal_wind = 0 or set Beyonce after set_scales()')
+            # Differential rotation in the heat equation (docs/heat-equation.md). Rows are the equation times r² p, p = ρT
+            # (times r, without p, if ThermaD = 0; times r², without p, if ThermaD = 0 and thermal_wind >= 1, ut.adiab_tw).
+            if par.thermal_wind not in (0, 1, 2, 3):
+                sys.exit('thermal_wind must be 0, 1, 2 or 3')
+            if par.thermal_wind in (1, 2) and par.Beyonce == 0:
+                sys.exit('thermal_wind = 1, 2 needs Beyonce > 0 (S_tw is O(1/Beyonce)): set thermal_wind = 0 or set Beyonce after set_scales()')
             # advection of s by the background rotation:  i m (f0 + f2 P2) s,  Δl = 0, ±2  (s column)
             arg2 += [ vP ]*2
-            labl += [ 'h0pss0abu0_D0', 'h0pss0aub0_D0' ]
+            labl += [ 'h0pss0abu0_D0', 'h0pss0aub0_D0' ] if par.ThermaD > 0 else [ 'h0abu0_D0', 'h0aub0_D0' ]
             if par.thermal_wind:
-                # advection of the thermal-wind entropy S_tw = σ2 P2 + σ4 P4 by u:
-                # uᵣ dS_tw/dr -> r p σn' L P (tp2, tp4 = p σn'), Δl = 0, ±2, ±4 (P column)
-                # (u_θ/r) dS_tw/dθ -> p σn [P + r P' + r (ln ρ)' P] (tw2, tw4 = p σn), Δl = 0, ±2, ±4 (P column)
+                # advection of the thermal-wind entropy S_tw = σ2 P2 + σ4 P4 (+ σ6 P6 if thermal_wind = 2; σ4 = 0 if thermal_wind = 3) by u:
+                # uᵣ dS_tw/dr -> r p σn' L P (tp2, tp4, tp6 = p σn'), Δl = 0, ±2, ±4 (±6) (P column)
+                # (u_θ/r) dS_tw/dθ -> p σn [P + r P' + r (ln ρ)' P] (tw2, tw4, tw6 = p σn), Δl = 0, ±2, ±4 (±6) (P column)
+                # (p = 1 in tw, tp if ThermaD = 0)
                 arg2 += [ vP ]*8
                 labl += [ 'h1tp20_D0', 'h2tw20_D0', 'h1tw20_D1', 'h1tw20lho1_D0',
                           'h1tp40_D0', 'h2tw40_D0', 'h1tw40_D1', 'h1tw40lho1_D0' ]
-                # (u_θ/r) dS_tw/dθ toroidal part -> -i m r p σn T, Δl = ±1, ±3 (T column)
+                # (u_θ/r) dS_tw/dθ toroidal part -> -i m r p σn T, Δl = ±1, ±3 (±5) (T column)
                 arg2 += [ vT ]*2
                 labl += [ 'h1tw20_D0', 'h1tw40_D0' ]
+                if par.thermal_wind == 2:
+                    arg2 += [ vP ]*4 + [ vT ]
+                    labl += [ 'h1tp60_D0', 'h2tw60_D0', 'h1tw60_D1', 'h1tw60lho1_D0', 'h1tw60_D0' ]
 
 
 
@@ -303,7 +308,7 @@ def main(ncpus):
             pkey  += [ key1 ]
             parg1 += [ dx ]             # dx is derivative order
             parg2 += [ arg2[k] ]        # vector_parity
-            adj = int(func1 in ['gra', 'pdS', 'lh1', 'dSd', 'tp2', 'tp4'])   # odd profiles
+            adj = int(func1 in ['gra', 'pdS', 'lh1', 'dSd', 'tp2', 'tp4', 'tp6'])   # odd profiles
             parg3 += [ 1-(( rpower + (dorder1 or 0) + (dorder2 or 0) + adj )%2)*2 ]
 
     # For each of the unique operator id's we generate in parallel the Chebyshev
@@ -324,11 +329,16 @@ def main(ncpus):
     # ---------------------------------------------------------------------------------------------------- Generate the Mlam matrices in parallel
     # -------------------------------------------------------------------------------------------------------------------------------------------
     pool2 = mp.Pool( processes = int(ncpus) )
+    if par.ricb == 0 and par.diff_rot == 1 and (par.diff_rot_type == 'Y20-wall-bounded' or
+            (par.diff_rot_type == 'shellular' and not (par.diff_rot_amplitude % 2 == 0 and par.diff_rot_amplitude > 0))):
+        # ΔΩ is used at |r| (radial_profiles.aubX, abuX): (1 - r) r and r**σ - 1 have a kink at r = 0
+        print('WARNING: diff_rot_type', par.diff_rot_type, 'is not smooth at r = 0, the full sphere (ricb = 0) converges slowly in N')
     if par.ricb == 0:  # profiles must have the parity assumed above, otherwise only part of them is kept
         for k,pkey1 in enumerate(pkey):
             c = np.abs(parg0[k])
             cwrong = c[int((1+parg3[k])/2)::2]
-            if np.max(c) > 0 and np.max(cwrong) > 1e-8*np.max(c):
+            # (absolute floor: a profile that vanishes identically, e.g. S_tw of the 'cylindrical' rotation, is all round-off)
+            if np.max(c) > 0 and np.max(cwrong) > max(1e-8*np.max(c), 1e-13):
                 print('WARNING: profile coefficients of', labl[opkey.index(pkey1)], 'do not have the assumed parity:',
                       'max wrong-parity/max = {:.2e}. Only the part with the assumed parity is used.'.format(np.max(cwrong)/np.max(c)))
     tmp = [ pool2.apply_async( ut.Mlam, args = ( parg0[k], parg1[k], parg2[k], parg3[k]) ) for k in range(np.size(parg0,0)) ]
@@ -353,11 +363,13 @@ def main(ncpus):
         # Multiply by appropriate derivative matrix on the right and change to C^(4), C^(3) or C^(2) basis depending on section
         idx = [ j for j,x in enumerate(pkey) if (x == opkey[k]) ]  # find matrix index in pkey
         
+        if dx > gbx:  # G[gbx][gbx-dx] would index from the end of the list: a wrong basis, silently
+            raise ValueError('%s: derivative order %d needs at least the C^(%d) basis, section %s has C^(%d)' % (labl1, dx, dx, secx, gbx))
         matrix = G[gbx][gbx-dx] * matlist[idx[0]] * D[dx]
 
         if par.ricb == 0 :  # --------------------------------------------------------- If no solid inner core then remove unneeded rows and cols
 
-            adj = int(func1 in ['gra', 'pdS', 'lh1', 'dSd', 'tp2', 'tp4'])   # odd profiles   # adjusts operator parity for these profiles
+            adj = int(func1 in ['gra', 'pdS', 'lh1', 'dSd', 'tp2', 'tp4', 'tp6'])   # odd profiles   # adjusts operator parity for these profiles
             operator_parity = 1-(( rpower + (dorder1 or 0) + (dorder2 or 0) + dx + adj )%2)*2  # we use 'or 0' to give 0 when dorder is None
             #print(labl1, operator_parity, adj, rpower, vector_parity)
             overall_parity  = vector_parity * operator_parity
@@ -367,6 +379,9 @@ def main(ncpus):
         else:
             
             chop = gbx
+
+        if secx == 'h' and par.ThermaD == 0:  # no thermal bc rows without diffusion, whatever the basis
+            chop = 0
         # ---------------------------------------------------------------------------------------------------------------------------------------
 
 

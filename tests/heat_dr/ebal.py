@@ -57,8 +57,10 @@ if inviscid:
 
 divp0 = hasattr(op, 'h0_D0')   # ThermaD=0 heat rows divided by p0 (divp0 patch)
 
-gb   = {'u': 4, 'v': 2, 'h': 2 if par.ThermaD > 0 else 0}        # Gegenbauer basis of each section
+gb   = {'u': 4, 'v': 2, 'h': 2 if par.ThermaD > 0 else int(ut.adiab_tw)}   # Gegenbauer basis of each section (C^(1) for ThermaD = 0 with the thermal wind)
 chop = {s: (gb[s] if ricb > 0 else gb[s]//2) for s in gb}         # rows reserved for bc's
+if par.ThermaD == 0:
+    chop['h'] = 0                                                 # no thermal bc rows, whatever the basis
 
 vP = int((1 - 2*(par.m % 2))*par.symm)   # Chebyshev parity of P (ricb=0 only)
 vT = -vP
@@ -72,7 +74,7 @@ istart = {'P': iP, 'T': iT, 'S': iS}
 
 def row_parity(label, vpar):
     (sec, rpower, _, f1, d1, f2, d2, dx) = ut.decode_label(label)
-    adj = int(f1 in ['gra', 'pdS', 'lh1', 'dSd', 'tp2', 'tp4'])
+    adj = int(f1 in ['gra', 'pdS', 'lh1', 'dSd', 'tp2', 'tp4', 'tp6'])
     opp = 1 - ((rpower + (d1 or 0) + (d2 or 0) + dx + adj) % 2)*2
     return vpar*opp
 
@@ -104,7 +106,7 @@ if par.thermal:
     if par.ThermaD > 0:
         wgt['h'] = np.ones_like(rk)            # rows are r^2 (eq)/L^3
     elif divp0:
-        wgt['h'] = pss0*rk                     # rows are r (eq/p0)/L^3
+        wgt['h'] = pss0 if ut.adiab_tw else pss0*rk   # rows are r (eq/p0)/L^3, r^2 (eq/p0)/L^3 with the thermal wind
     else:
         wgt['h'] = rk                          # rows are r (eq)/L^3
 
@@ -190,8 +192,9 @@ def heat_blocks(l):
     if not (par.diff_rot and par.thermal):
         return []
     comp = [('temp', [-2, 0, 2], lp, 'S')]
-    if par.thermal_wind:
-        comp += [('upol', [-4, -2, 0, 2, 4], lp, 'P'), ('utor', [-3, -1, 1, 3], lt, 'T')]
+    if par.thermal_wind:   # S_tw has P2, P4 (thermal_wind = 1, 3) and P6 (thermal_wind = 2)
+        dlmax = 6 if par.thermal_wind == 2 else 4
+        comp += [('upol', range(-dlmax, dlmax + 1, 2), lp, 'P'), ('utor', range(1 - dlmax, dlmax, 2), lt, 'T')]
     out = []
     for name, offs, ls, kind in comp:
         for i in offs:

@@ -33,5 +33,7 @@ lam, vecs = lam[order], vecs[:, order]
 res = np.array([np.linalg.norm(A @ vecs[:, j] - lam[j]*(B @ vecs[:, j]))/np.linalg.norm(A @ vecs[:, j]) for j in range(len(lam))])
 np.savez('eig.npz', lam=lam, vecs=vecs, res=res, shift=s)
 print('n = %d, shift = %s, k = %d, %.1f s' % (n, s, k, time.time() - t0))
+if np.all(abs(lam - s) < 1e-9*max(abs(s), 1)):   # no equilibration here (solve.py has Ruiz scaling)
+    print('WARNING: every eigenvalue equals the shift, A - sB is numerically singular: try another shift or solve.py')
 for j in range(len(lam)):
     print('%3d  sigma = %12.6f  omega = %12.6f   |Ax-lBx|/|Ax| = %.1e' % (j, lam[j].real, lam[j].imag, res[j]))

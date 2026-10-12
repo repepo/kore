@@ -128,6 +128,7 @@ def differential_rotation(l, section, component, offdiag):  # ------------------
         The forcing includes, for both (f(r), g(θ)) = (f0(r), 1) and (f2(r), Y20(θ))
             f(r)*{ΔΩ * [g(θ) * (im * u) + g(θ) * (2*ez x u) + g'(θ) * (sin(θ) * uθ * eϕ)]} 
             + r f'(r)*{ΔΩ * g(θ) * (sin(θ) * ur * eϕ)} 
+        times Gaspard, as the background flow is U0 = Gaspard ΔΩ r sin(θ) eϕ in units of the time scale
     """
 
 
@@ -315,7 +316,7 @@ def differential_rotation(l, section, component, offdiag):  # ------------------
 
                 offd = 1
 
-    return [ out/(l*(l+1.))**3, offd ]
+    return [ par.Gaspard * out/(l*(l+1.))**3, offd ]
 
 
 def viscous_diffusion(l, section, component, offdiag):  # ------------------------------------------------ viscous force
@@ -361,7 +362,7 @@ def buoyancy(l, section, component, offdiag):
 
 
 
-def entropy(l, section, component, offdiag):  # rʰ p s  (r s if ThermaD=0: divided by p)
+def entropy(l, section, component, offdiag):  # rʰ p s  (rʰ s if ThermaD=0: divided by p; h = 1, or 2 with the thermal wind)
 
     out = 0
     L = l*(l+1.)
@@ -374,7 +375,7 @@ def entropy(l, section, component, offdiag):  # rʰ p s  (r s if ThermaD=0: divi
 
 
 
-def thermal_advection(l, section, component, offdiag):  # −rʰ p(v⋅∇) S = −rʰ p vᵣ dS/dr  (−r vᵣ dS/dr if ThermaD=0)
+def thermal_advection(l, section, component, offdiag):  # −rʰ p(v⋅∇) S = −rʰ p vᵣ dS/dr  (−rʰ vᵣ dS/dr if ThermaD=0)
 
     out = 0
     L = l*(l+1.)
@@ -390,10 +391,12 @@ def thermal_advection(l, section, component, offdiag):  # −rʰ p(v⋅∇) S = 
 def thermal_diffrot(l, section, component, offdiag):  # ------------------- Differential rotation terms of the heat equation
     """
         With a background rotation Ω = Ω0 [1 + f0(r) + f2(r) P2(cos θ)] the heat equation gains (docs/heat-equation.md)
-            p [ i m ΔΩ s + uᵣ dS_tw/dr + (u_θ/r) dS_tw/dθ ],    ΔΩ = f0 + f2 P2,
-        where S_tw = σ2(r) P2 + σ4(r) P4 is the thermal-wind background entropy (radial_profiles.sigma2, sigma4; the
-        two advection terms only if par.thermal_wind). Rows are the equation times r², as the other section-h operators.
-        component 'temp': s column, Δl = 0, ±2;  'upol': P column, Δl = 0, ±2, ±4;  'utor': T column, Δl = ±1, ±3.
+            p [ i m Gaspard ΔΩ s + uᵣ dS_tw/dr + (u_θ/r) dS_tw/dθ ],    ΔΩ = f0 + f2 P2,
+        where S_tw = σ2(r) P2 + σ4(r) P4 [+ σ6(r) P6] is the thermal-wind background entropy (radial_profiles.sigma2,
+        sigma4, sigma6; the two advection terms only if par.thermal_wind, P6 only if thermal_wind = 2). Rows are the
+        equation times r², as the other section-h operators (divided by p if ThermaD = 0, and times r instead of r² if
+        ThermaD = 0 without the thermal wind; with ThermaD = 0 the profiles tw, tp are σn, σn' without p, ut.adiab_tw).
+        component 'temp': s column, Δl = 0, ±2;  'upol': P column, Δl = 0, ±2, ±4 (±6);  'utor': T column, Δl = ±1, ±3 (±5).
         The angular coefficients come from heat_dr_coefficients. Returns [matrix, offd]; the matrix already has the
         sign of the A-matrix right-hand side (the heat rows of A hold -(left-hand side terms)), so add it with +.
     """
@@ -404,27 +407,39 @@ def thermal_diffrot(l, section, component, offdiag):  # ------------------- Diff
     L = l*(l+1.)
     lp, lt, _ = ut.ell(par.m, par.lmax, par.symm)
     ls = l + offdiag
+    dlmax = 6 if par.thermal_wind == 2 else 4   # largest |Δl| of the P column
 
     if section == 'h':
 
-        if component == 'temp' and offdiag in [-2, 0, 2]:   # i m (f0 + f2 P2) s
+        if component == 'temp' and offdiag in [-2, 0, 2]:   # i m Gaspard (f0 + f2 P2) s
 
-            out = 1j*m * hdr.coef('P2', l, m, offdiag) * h0pss0aub0_D0
-            if offdiag == 0:
-                out = out + 1j*m * h0pss0abu0_D0
+            if par.ThermaD > 0:
+                out = 1j*m * hdr.coef('P2', l, m, offdiag) * h0pss0aub0_D0
+                if offdiag == 0:
+                    out = out + 1j*m * h0pss0abu0_D0
+            else:   # rows rʰ (eq)/p
+                out = 1j*m * hdr.coef('P2', l, m, offdiag) * h0aub0_D0
+                if offdiag == 0:
+                    out = out + 1j*m * h0abu0_D0
+            out = par.Gaspard * out
             offd = int(np.where(lp == ls)[0][0] - np.where(lp == l)[0][0])
 
-        elif component == 'upol' and par.thermal_wind and offdiag in [-4, -2, 0, 2, 4]:   # u.grad S_tw, poloidal part
+        elif component == 'upol' and par.thermal_wind and abs(offdiag) <= dlmax and offdiag % 2 == 0:   # u.grad S_tw, poloidal part
 
             Ls = ls*(ls+1.)   # L of the source degree, from uᵣ = L P/r
             out = Ls * ( hdr.coef('P2', l, m, offdiag) * h1tp20_D0 + hdr.coef('P4', l, m, offdiag) * h1tp40_D0 ) \
                 + hdr.coef('dP2D', l, m, offdiag) * ( h2tw20_D0 + h1tw20_D1 + h1tw20lho1_D0 ) \
                 + hdr.coef('dP4D', l, m, offdiag) * ( h2tw40_D0 + h1tw40_D1 + h1tw40lho1_D0 )
+            if par.thermal_wind == 2:
+                out = out + Ls * hdr.coef('P6', l, m, offdiag) * h1tp60_D0 \
+                    + hdr.coef('dP6D', l, m, offdiag) * ( h2tw60_D0 + h1tw60_D1 + h1tw60lho1_D0 )
             offd = int(np.where(lp == ls)[0][0] - np.where(lp == l)[0][0])
 
-        elif component == 'utor' and par.thermal_wind and offdiag in [-3, -1, 1, 3]:   # u.grad S_tw, toroidal part
+        elif component == 'utor' and par.thermal_wind and abs(offdiag) < dlmax and offdiag % 2 == 1:   # u.grad S_tw, toroidal part
 
             out = -1j*m * ( hdr.coef('dP2', l, m, offdiag) * h1tw20_D0 + hdr.coef('dP4', l, m, offdiag) * h1tw40_D0 )
+            if par.thermal_wind == 2:
+                out = out - 1j*m * hdr.coef('dP6', l, m, offdiag) * h1tw60_D0
             offd = int(np.where(lt == ls)[0][0] - np.where(lp == l)[0][0])
 
     return [ -out/L**3, offd ]

@@ -52,6 +52,11 @@ def main():
     nb = int((par.lmax - par.m + 1)/2)  # number of block rows per quarter
     bpp = int(nb/sizas)     # block rows per process
 
+    if (par.lmax - par.m + 1) % (2*sizas) != 0:  # otherwise Scatter drops l's (one rank) or fails on rank 0 only and the others hang
+        if rank == 0:
+            print('lmax - m + 1 must be a multiple of 2*ncpus (number of MPI ranks), got', par.lmax - par.m + 1, 'and', sizas)
+        sys.exit(1)
+
     loc_top = np.zeros(bpp, dtype=int)
     loc_bot = np.zeros(bpp, dtype=int)
 
@@ -433,15 +438,17 @@ def main():
 
                 if par.thermal_wind :  # advection of the thermal-wind entropy by u
 
-                    basecol = 0  # poloidal part, Δl = 0, ±2, ±4
-                    for i in [-4, -2, 0, 2, 4] :
+                    dlmax = 6 if par.thermal_wind == 2 else 4  # S_tw has P2, P4 (thermal_wind = 1, 3) and P6 (thermal_wind = 2)
+
+                    basecol = 0  # poloidal part, Δl = 0, ±2, ±4 (±6)
+                    for i in range(-dlmax, dlmax+1, 2) :
                         if l+i in ll_flo[0] :
                             mtx = op.thermal_diffrot(l,'h','upol',i)
                             col = basecol + col0 + mtx[1] * ut.N1
                             loc_list = ut.packit( loc_list, mtx[0], row, col)
 
-                    basecol = nb*ut.N1  # toroidal part, Δl = ±1, ±3
-                    for i in [-3, -1, 1, 3] :
+                    basecol = nb*ut.N1  # toroidal part, Δl = ±1, ±3 (±5)
+                    for i in range(1-dlmax, dlmax, 2) :
                         if l+i in ll_flo[1] :
                             mtx = op.thermal_diffrot(l,'h','utor',i)
                             col = basecol + col0 + mtx[1] * ut.N1

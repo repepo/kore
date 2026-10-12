@@ -5,10 +5,10 @@ With Schmidt harmonics S_l^m (ut.Ylm) and x = cos θ, every coupling comes from 
 fixed m (row = target l', column = source l):
     x S_l = p_l S_{l+1} + q_l S_{l-1},       p_l = sqrt((l+1)² - m²)/(2l+1),  q_l = sqrt(l² - m²)/(2l+1)     -> X
     (1 - x²) dS_l/dx = (l+1) q_l S_{l-1} - l p_l S_{l+1}                                                     -> D
-and the terms need P2(X), P4(X) (advection, u_r dS_tw/dr), P2'(X) D, P4'(X) D (poloidal u_θ dS_tw/dθ) and
-P2'(X), P4'(X) (toroidal u_θ dS_tw/dθ). The matrices are built with 8 degrees more than lmax, because entries
-formed from a truncated X are wrong within a few degrees of the truncation (P4(X) needs 4 raising steps, lp reaches
-lmax + 1 for m = 0).
+and the terms need Pn(X) (advection, u_r dS_tw/dr), Pn'(X) D (poloidal u_θ dS_tw/dθ) and Pn'(X) (toroidal
+u_θ dS_tw/dθ) for n = 2, 4 (and n = 6 with the exact thermal wind, thermal_wind = 2). The matrices are built with
+8 degrees more than lmax, because entries formed from a truncated X are wrong within a few degrees of the truncation
+(P6(X) and P6'(X) D need 6 raising steps, lp reaches lmax + 1 for m = 0).
 '''
 import numpy as np
 from parameters import par
@@ -33,7 +33,11 @@ def _matrices(m):
     P4  = (35*X2 @ X2 - 30*X2 + 3*I)/8
     dP2 = 3*X
     dP4 = (35*X2 @ X - 15*X)/2
-    _cache[m] = {'P2': P2, 'P4': P4, 'dP2': dP2, 'dP4': dP4, 'dP2D': dP2 @ D, 'dP4D': dP4 @ D}
+    X4  = X2 @ X2
+    P6  = (231*X4 @ X2 - 315*X4 + 105*X2 - 5*I)/16
+    dP6 = (693*X4 @ X - 630*X2 @ X + 105*X)/8
+    _cache[m] = {'P2': P2, 'P4': P4, 'P6': P6, 'dP2': dP2, 'dP4': dP4, 'dP6': dP6,
+                 'dP2D': dP2 @ D, 'dP4D': dP4 @ D, 'dP6D': dP6 @ D}
     return _cache[m]
 
 def coef(name, l, m, offdiag):

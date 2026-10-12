@@ -145,12 +145,13 @@ class user_defined_profiles():  # ----------------------------------------------
             epsilon = par.diff_rot_amplitude
             out = -((2/3)*epsilon)
 
-        elif dr_type=="solar":
+        elif dr_type=="solar":  # fit to helioseismic Ω (times diff_rot_amplitude), tachocline at rtc = 0.71 R☉ of width h = 0.1 R☉
+            x = r*par.aux0 if par.model_type == 'smoothed sun' else r  # fractional solar radius ('user def': r is taken as r/R☉)
             rtc = 0.71
             h = 0.1
             W0 = 435 #[nHz]
             b = -86.04/W0 # Fitted on data
-            out = b * (0.5 * (1 + np.tanh((2 * (r - rtc))/h)))
+            out = par.diff_rot_amplitude * b * (0.5 * (1 + np.tanh((2 * (x - rtc))/h)))
 
         return (r**rpower)*out
     
@@ -189,12 +190,13 @@ class user_defined_profiles():  # ----------------------------------------------
             epsilon = par.diff_rot_amplitude
             out = ((2/3)*epsilon)
         
-        elif dr_type=="solar":
+        elif dr_type=="solar":  # as in aub
+            x = r*par.aux0 if par.model_type == 'smoothed sun' else r
             rtc = 0.71
             h = 0.1
             W0 = 435 #[nHz]
             a = -7.695/W0 # Fitted on data
-            out = a * (0.5 * (1 + np.tanh((2 * (r - rtc))/h)))
+            out = par.diff_rot_amplitude * a * (0.5 * (1 + np.tanh((2 * (x - rtc))/h)))
 
         return (r**rpower)*out
 
@@ -429,9 +431,13 @@ elif par.model_type == 'Boussinesq':
 # -------------------------------------------------------------------------------------------------------------
 
 
+# With ricb = 0 the differential rotation profiles are evaluated at |r|: they are even functions of r by construction
+# (like logrho), and submatrices.py keeps only their even part (otherwise e.g. half of the 'solar' tachocline step is lost,
+# and a non-integer 'shellular' σ gives NaN at r < 0).
 def aubX(r, Dorder):
     tol = 1e-14
-    out = ut.fonzie( prf.aub, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
+    f = prf.aub if par.ricb > 0 else lambda rr, rpower: (rr**rpower)*prf.aub(np.abs(rr), 0)
+    out = ut.fonzie( f, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
     return out
     
 def svp(r, rpower):
@@ -442,7 +448,8 @@ def pls(r, rpower):
 
 def abuX(r, Dorder):
     tol = 1e-14
-    out = ut.fonzie( prf.abu, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
+    f = prf.abu if par.ricb > 0 else lambda rr, rpower: (rr**rpower)*prf.abu(np.abs(rr), 0)
+    out = ut.fonzie( f, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
     return out
     
 def spv(r, rpower):
@@ -451,17 +458,37 @@ def spv(r, rpower):
 def psl(r, rpower):
     return (r**rpower)*(r**2)*abuX(r, 2)
 
-# Thermal-wind background entropy S_tw = sigma2(r) P2(cos θ) + sigma4(r) P4(cos θ) implied by Ω = Ω0 [1 + f0(r) + f2(r) P2],
-# to first order in ΔΩ (docs/heat-equation.md, eq. 3): (1/r) dS_tw/dθ = (r sin θ/(Beyonce g)) d(2ΔΩ)/dz.
-# Even in r (f even, f' and g odd); sigma2', sigma4' are odd, hence 'tp2', 'tp4' in the parity lists of submatrices.py.
+# Thermal-wind background entropy S_tw = σ2(r) P2(cos θ) + σ4(r) P4(cos θ) [+ σ6(r) P6(cos θ)] implied by Ω = Ω0 [1 + f0(r) + f2(r) P2],
+# (1/r) dS_tw/dθ = (r sin θ/(Beyonce g)) Gaspard² d[(1+ΔΩ)² - 1]/dz (docs/heat-equation.md, eq. 2): to first order in ΔΩ
+# ((1+ΔΩ)² - 1 -> 2ΔΩ, eq. 3) if thermal_wind = 1, exact if thermal_wind = 2 (tests/heat_dr/tw_sympy.py).
+# Even in r (f even, f' and g odd); σn' are odd, hence 'tp2', 'tp4', 'tp6' in the parity lists of submatrices.py.
+# thermal_wind = 3: S_tw prescribed, ∂S_tw/∂θ = dSdtheta sin 2θ = -(2/3) dSdtheta dP2/dθ, so σ2 = -(2/3) dSdtheta and σ4 = 0.
 def sigma2(r, rpower):
+    if par.thermal_wind == 3:
+        return (r**rpower)*(-2/3)*par.dSdtheta*np.ones_like(r)
     g = prf.gravity(r, 0)
-    out = -(2*r**2/(par.Beyonce*g)) * ( abuX(r, 1)/3 + aubX(r, 1)/21 + (4/7)*aubX(r, 0)/r )
+    f0, f0p, f2, f2p = abuX(r, 0), abuX(r, 1), aubX(r, 0), aubX(r, 1)
+    out = f0p/3 + f2p/21 + (4/7)*f2/r
+    if par.thermal_wind == 2:
+        out = (1 + f0)*out + f2*(f0p + f2p)/21
+    out = -(2*r**2*par.Gaspard**2/(par.Beyonce*g)) * out
     return (r**rpower)*out
 
 def sigma4(r, rpower):
+    if par.thermal_wind == 3:
+        return 0*r
     g = prf.gravity(r, 0)
-    out = -(6*r**2/(35*par.Beyonce*g)) * ( aubX(r, 1) - 2*aubX(r, 0)/r )
+    f0, f0p, f2, f2p = abuX(r, 0), abuX(r, 1), aubX(r, 0), aubX(r, 1)
+    out = f2p - 2*f2/r
+    if par.thermal_wind == 2:
+        out = (1 + f0)*out + f2*f0p + (4/11)*f2*f2p + (14/11)*f2**2/r
+    out = -(6*r**2*par.Gaspard**2/(35*par.Beyonce*g)) * out
+    return (r**rpower)*out
+
+def sigma6(r, rpower):   # thermal_wind = 2 only
+    g = prf.gravity(r, 0)
+    f2, f2p = aubX(r, 0), aubX(r, 1)
+    out = -(4*r**2*par.Gaspard**2/(77*par.Beyonce*g)) * f2*(f2p - 2*f2/r)
     return (r**rpower)*out
 
 def sigma2X(r, Dorder):
@@ -472,17 +499,30 @@ def sigma4X(r, Dorder):
     tol = 1e-14
     return ut.fonzie( sigma4, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
 
+def sigma6X(r, Dorder):
+    tol = 1e-14
+    return ut.fonzie( sigma6, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
+
+def ptw(r):   # the p of tw2..tp6; 1 if ThermaD = 0 (ut.adiab_tw), where the heat rows are divided by p
+    return np.ones_like(r) if ut.adiab_tw else prf.pressure(r, 0)
+
 def tw2(r, rpower):   # p(r) sigma2(r), p = ρT as in 'pss'
-    return (r**rpower)*prf.pressure(r, 0)*sigma2X(r, 0)
+    return (r**rpower)*ptw(r)*sigma2X(r, 0)
 
 def tw4(r, rpower):   # p(r) sigma4(r)
-    return (r**rpower)*prf.pressure(r, 0)*sigma4X(r, 0)
+    return (r**rpower)*ptw(r)*sigma4X(r, 0)
 
 def tp2(r, rpower):   # p(r) sigma2'(r)
-    return (r**rpower)*prf.pressure(r, 0)*sigma2X(r, 1)
+    return (r**rpower)*ptw(r)*sigma2X(r, 1)
 
 def tp4(r, rpower):   # p(r) sigma4'(r)
-    return (r**rpower)*prf.pressure(r, 0)*sigma4X(r, 1)
+    return (r**rpower)*ptw(r)*sigma4X(r, 1)
+
+def tw6(r, rpower):   # p(r) sigma6(r)
+    return (r**rpower)*ptw(r)*sigma6X(r, 0)
+
+def tp6(r, rpower):   # p(r) sigma6'(r)
+    return (r**rpower)*ptw(r)*sigma6X(r, 1)
 
 # -------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------- Profile functions for burrito
@@ -585,11 +625,19 @@ def tp2X(r, Dorder):
 def tp4X(r, Dorder):
     tol = 1e-14
     return ut.fonzie( tp4, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
+
+def tw6X(r, Dorder):
+    tol = 1e-14
+    return ut.fonzie( tw6, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
+
+def tp6X(r, Dorder):
+    tol = 1e-14
+    return ut.fonzie( tp6, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 proffdir = { 'lho':logrhoX, 'vsc':viscoX, 'gra':graviX, 'pss':pressX, 'pdS':pdSdrX, 'dSd':gradSX, 'kps':kappressX, 'aub':aubX, 'svp':svpX, 'pls':plsX, 'abu':abuX, 'spv':spvX, 'psl':pslX,
-             'tw2':tw2X, 'tw4':tw4X, 'tp2':tp2X, 'tp4':tp4X }
+             'tw2':tw2X, 'tw4':tw4X, 'tp2':tp2X, 'tp4':tp4X, 'tw6':tw6X, 'tp6':tp6X }
 # -------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------
