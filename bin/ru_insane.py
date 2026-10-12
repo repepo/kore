@@ -95,7 +95,7 @@ istart = {'P': iP, 'T': iT, 'S': iS}
 
 def row_parity(label, vpar):
     (sec, rpower, _, f1, d1, f2, d2, dx) = ut.decode_label(label)
-    adj = int(f1 in ['gra', 'pdS', 'lh1', 'dSd'])
+    adj = int(f1 in ['gra', 'pdS', 'lh1', 'dSd', 'tp2', 'tp4'])
     opp = 1 - ((rpower + (d1 or 0) + (d2 or 0) + dx + adj) % 2)*2
     return vpar*opp
 

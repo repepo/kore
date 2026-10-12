@@ -118,7 +118,9 @@ class user_defined_profiles():  # ----------------------------------------------
         Differential rotation radial profile for Y20
         """
         dr_type = par.diff_rot_type
-        if dr_type=="Y20":
+        if dr_type=="rigid":   # Ω = Ω0 (1 + ΔΩ): f2 = 0 (test profile, exact Doppler-shift identity)
+            out = np.zeros_like(r)
+        elif dr_type=="Y20":
             out = par.diff_rot_amplitude*np.ones_like(r)
         
         elif dr_type=="Y20-wall-bounded":
@@ -158,7 +160,9 @@ class user_defined_profiles():  # ----------------------------------------------
         """
         dr_type = par.diff_rot_type
 
-        if dr_type=="Y20":
+        if dr_type=="rigid":   # Ω = Ω0 (1 + ΔΩ): f0 = ΔΩ
+            out = par.diff_rot_amplitude*np.ones_like(r)
+        elif dr_type=="Y20":
             out = np.zeros_like(r)
         
         elif dr_type=="Y20-wall-bounded":
@@ -447,6 +451,39 @@ def spv(r, rpower):
 def psl(r, rpower):
     return (r**rpower)*(r**2)*abuX(r, 2)
 
+# Thermal-wind background entropy S_tw = sigma2(r) P2(cos θ) + sigma4(r) P4(cos θ) implied by Ω = Ω0 [1 + f0(r) + f2(r) P2],
+# to first order in ΔΩ (docs/heat-equation.md, eq. 3): (1/r) dS_tw/dθ = (r sin θ/(Beyonce g)) d(2ΔΩ)/dz.
+# Even in r (f even, f' and g odd); sigma2', sigma4' are odd, hence 'tp2', 'tp4' in the parity lists of submatrices.py.
+def sigma2(r, rpower):
+    g = prf.gravity(r, 0)
+    out = -(2*r**2/(par.Beyonce*g)) * ( abuX(r, 1)/3 + aubX(r, 1)/21 + (4/7)*aubX(r, 0)/r )
+    return (r**rpower)*out
+
+def sigma4(r, rpower):
+    g = prf.gravity(r, 0)
+    out = -(6*r**2/(35*par.Beyonce*g)) * ( aubX(r, 1) - 2*aubX(r, 0)/r )
+    return (r**rpower)*out
+
+def sigma2X(r, Dorder):
+    tol = 1e-14
+    return ut.fonzie( sigma2, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
+
+def sigma4X(r, Dorder):
+    tol = 1e-14
+    return ut.fonzie( sigma4, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
+
+def tw2(r, rpower):   # p(r) sigma2(r), p = ρT as in 'pss'
+    return (r**rpower)*prf.pressure(r, 0)*sigma2X(r, 0)
+
+def tw4(r, rpower):   # p(r) sigma4(r)
+    return (r**rpower)*prf.pressure(r, 0)*sigma4X(r, 0)
+
+def tp2(r, rpower):   # p(r) sigma2'(r)
+    return (r**rpower)*prf.pressure(r, 0)*sigma2X(r, 1)
+
+def tp4(r, rpower):   # p(r) sigma4'(r)
+    return (r**rpower)*prf.pressure(r, 0)*sigma4X(r, 1)
+
 # -------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------- Profile functions for burrito
 # -------------------------------------------------------------------------------------------------------------
@@ -532,10 +569,27 @@ def pslX(r, Dorder):
     out = ut.fonzie( psl, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
 
     return out
+
+def tw2X(r, Dorder):
+    tol = 1e-14
+    return ut.fonzie( tw2, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
+
+def tw4X(r, Dorder):
+    tol = 1e-14
+    return ut.fonzie( tw4, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
+
+def tp2X(r, Dorder):
+    tol = 1e-14
+    return ut.fonzie( tp2, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
+
+def tp4X(r, Dorder):
+    tol = 1e-14
+    return ut.fonzie( tp4, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-proffdir = { 'lho':logrhoX, 'vsc':viscoX, 'gra':graviX, 'pss':pressX, 'pdS':pdSdrX, 'dSd':gradSX, 'kps':kappressX, 'aub':aubX, 'svp':svpX, 'pls':plsX, 'abu':abuX, 'spv':spvX, 'psl':pslX }
+proffdir = { 'lho':logrhoX, 'vsc':viscoX, 'gra':graviX, 'pss':pressX, 'pdS':pdSdrX, 'dSd':gradSX, 'kps':kappressX, 'aub':aubX, 'svp':svpX, 'pls':plsX, 'abu':abuX, 'spv':spvX, 'psl':pslX,
+             'tw2':tw2X, 'tw4':tw4X, 'tp2':tp2X, 'tp4':tp4X }
 # -------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------

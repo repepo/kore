@@ -80,6 +80,7 @@ class default_params():
         self.diff_rot = 0 # If 1, the code will solve for a perturbation to a background state with differential rotation. 
         # Differential rotation type 
         self.diff_rot_type = 'Y20' # Ω(θ) = Ω_ref * [1 + ΔΩ Y20(θ)], ΔΩ = par.diff_rot_amplitude
+        # self.diff_rot_type = 'rigid' # Ω = Ω_ref * (1 + ΔΩ), a rigid offset: test profile, λ(ΔΩ) = (1+ΔΩ) λ(0; E/(1+ΔΩ), ThermaD/(1+ΔΩ), Beyonce/(1+ΔΩ)²) - i m ΔΩ exactly
         # self.diff_rot_type = 'Y20-wall-bounded' # Ω(θ) = Ω_ref * [1 + ΔΩ * (1 - r) * (r - ricb) * Y20(θ)], ΔΩ = par.diff_rot_amplitude
         # self.diff_rot_type = 'shellular' # [Baruteau, Rieutord 2012] : Ω(r) = Ω_ref * (r / R)**σ, σ = par.diff_rot_amplitude
         # self.diff_rot_type = 'cylindrical' # [Baruteau, Rieutord 2012] : Ω(r, θ) = Ω_ref * [1 + (ε * (r / R)**2 * sin(θ)**2)], ε = par.diff_rot_amplitude
@@ -88,6 +89,10 @@ class default_params():
         # self.diff_rot_type = 'solar' # Not implemented yet
 
         self.diff_rot_amplitude = 1.0  # Amplitude of the differential rotation, corresponds to different parameter depending on the DR type
+        self.thermal_wind = 1  # With thermal = 1 and diff_rot = 1 (needs ThermaD > 0) the heat equation gets the advection i m ΔΩ s and,
+        # if thermal_wind = 1 (needs Beyonce > 0), the advection of the thermal-wind background entropy S_tw(r,θ) that Ω(r,θ) implies
+        # (docs/heat-equation.md). thermal_wind = 0 keeps the advection term only (e.g. Mirouh et al. 2016, Ω(r) imposed).
+        # spin_doctor's thermal residual does not include these terms yet; use tests/heat_dr/terms.py for the entropy balance.
 
         # ----------------------------------------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------------------------------- Thermal parameters

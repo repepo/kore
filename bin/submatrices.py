@@ -259,6 +259,26 @@ def main(ncpus):
             arg2 += [ vP ]*4
             labl += [ 'h2kps0_D0', 'h1kps0_D1', 'h0kps1_D1', 'h0kps0_D2' ]
 
+        if par.diff_rot == 1:
+            # Differential rotation in the heat equation (docs/heat-equation.md). Rows are the equation times r² p, p = ρT.
+            if par.ThermaD == 0:
+                sys.exit('diff_rot = 1 with thermal = 1 needs ThermaD > 0: with ThermaD = 0 the section-h labels decode to other r powers (utils.decode_label)')
+            if par.thermal_wind and par.Beyonce == 0:
+                sys.exit('thermal_wind = 1 needs Beyonce > 0 (S_tw is O(1/Beyonce)): set thermal_wind = 0 or set Beyonce after set_scales()')
+            # advection of s by the background rotation:  i m (f0 + f2 P2) s,  Δl = 0, ±2  (s column)
+            arg2 += [ vP ]*2
+            labl += [ 'h0pss0abu0_D0', 'h0pss0aub0_D0' ]
+            if par.thermal_wind:
+                # advection of the thermal-wind entropy S_tw = σ2 P2 + σ4 P4 by u:
+                # uᵣ dS_tw/dr -> r p σn' L P (tp2, tp4 = p σn'), Δl = 0, ±2, ±4 (P column)
+                # (u_θ/r) dS_tw/dθ -> p σn [P + r P' + r (ln ρ)' P] (tw2, tw4 = p σn), Δl = 0, ±2, ±4 (P column)
+                arg2 += [ vP ]*8
+                labl += [ 'h1tp20_D0', 'h2tw20_D0', 'h1tw20_D1', 'h1tw20lho1_D0',
+                          'h1tp40_D0', 'h2tw40_D0', 'h1tw40_D1', 'h1tw40lho1_D0' ]
+                # (u_θ/r) dS_tw/dθ toroidal part -> -i m r p σn T, Δl = ±1, ±3 (T column)
+                arg2 += [ vT ]*2
+                labl += [ 'h1tw20_D0', 'h1tw40_D0' ]
+
 
 
     # -------------------------------------------------------------------------------------------------------------------------------------------
@@ -283,7 +303,7 @@ def main(ncpus):
             pkey  += [ key1 ]
             parg1 += [ dx ]             # dx is derivative order
             parg2 += [ arg2[k] ]        # vector_parity
-            adj = int(func1 in ['gra', 'pdS', 'lh1', 'dSd'])
+            adj = int(func1 in ['gra', 'pdS', 'lh1', 'dSd', 'tp2', 'tp4'])   # odd profiles
             parg3 += [ 1-(( rpower + (dorder1 or 0) + (dorder2 or 0) + adj )%2)*2 ]
 
     # For each of the unique operator id's we generate in parallel the Chebyshev
@@ -337,7 +357,7 @@ def main(ncpus):
 
         if par.ricb == 0 :  # --------------------------------------------------------- If no solid inner core then remove unneeded rows and cols
 
-            adj = int(func1 in ['gra', 'pdS', 'lh1', 'dSd'])   # adjusts operator parity for these profiles
+            adj = int(func1 in ['gra', 'pdS', 'lh1', 'dSd', 'tp2', 'tp4'])   # odd profiles   # adjusts operator parity for these profiles
             operator_parity = 1-(( rpower + (dorder1 or 0) + (dorder2 or 0) + dx + adj )%2)*2  # we use 'or 0' to give 0 when dorder is None
             #print(labl1, operator_parity, adj, rpower, vector_parity)
             overall_parity  = vector_parity * operator_parity

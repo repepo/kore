@@ -421,6 +421,32 @@ def main():
 
             loc_list = ut.packit( loc_list, mtx, row, col)
 
+            if par.diff_rot :  # differential rotation terms of the heat equation (docs/heat-equation.md)
+
+                # advection of s by the background rotation, Δl = 0, ±2 ------------------------------------------
+                basecol = 2*nb*ut.N1
+                for i in [-2, 0, 2] :
+                    if l+i in ll_flo[0] :
+                        mtx = op.thermal_diffrot(l,'h','temp',i)
+                        col = basecol + col0 + mtx[1] * ut.N1
+                        loc_list = ut.packit( loc_list, mtx[0], row, col)
+
+                if par.thermal_wind :  # advection of the thermal-wind entropy by u
+
+                    basecol = 0  # poloidal part, Δl = 0, ±2, ±4
+                    for i in [-4, -2, 0, 2, 4] :
+                        if l+i in ll_flo[0] :
+                            mtx = op.thermal_diffrot(l,'h','upol',i)
+                            col = basecol + col0 + mtx[1] * ut.N1
+                            loc_list = ut.packit( loc_list, mtx[0], row, col)
+
+                    basecol = nb*ut.N1  # toroidal part, Δl = ±1, ±3
+                    for i in [-3, -1, 1, 3] :
+                        if l+i in ll_flo[1] :
+                            mtx = op.thermal_diffrot(l,'h','utor',i)
+                            col = basecol + col0 + mtx[1] * ut.N1
+                            loc_list = ut.packit( loc_list, mtx[0], row, col)
+
 
             # entropy (s) terms: ThermaD rʰ ∇⋅(κ p ∇s) -----------------------------------------------------------------
             # ----------------------------------------------------------------------- A, heat equation (section h), temp
