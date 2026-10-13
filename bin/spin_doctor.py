@@ -18,10 +18,27 @@ import utils4pp as upp
 
 
 # diff_rot_type as written to params.dat: its index in this tuple, -1 if not listed. Append new types at the end.
-diff_rot_types = ( 'Y20', 'Y20-wall-bounded', 'shellular', 'shellular_boussinesq', 'cylindrical', 'conical', 'solar', 'rigid' )
+diff_rot_types = ( 'Y20', 'Y20-wall-bounded', 'shellular', 'shellular_boussinesq', 'cylindrical', 'conical', 'solar', 'rigid',
+                   'solar_P4', 'tabulated' )
 
 def diff_rot_code():
     return diff_rot_types.index(par.diff_rot_type) if par.diff_rot_type in diff_rot_types else -1
+
+# solar_density as written to params.dat: its index in this tuple, -1 if not listed
+solar_densities = ( 'fit', 'model S' )
+
+def solar_density_code():
+    return solar_densities.index(par.solar_density) if par.solar_density in solar_densities else -1
+
+def diff_rot_term_amp(k):
+    '''a_n, n = 2k, the factor of the P_n term of ΔΩ (1 for entries missing from par.diff_rot_term_amp, as radial_profiles._amp)'''
+    a = par.diff_rot_term_amp
+    return a[k] if k < len(a) else 1.0
+
+def solar_density_window(k):
+    '''end k (0, 1) of par.solar_density_window, nan if None (the default window)'''
+    w = par.solar_density_window
+    return np.nan if w is None else w[k]
 
 
 
@@ -73,6 +90,22 @@ def param_table(elapsed):
         ( 'thermal_wind',             par.thermal_wind,            '%d' ),
         ( 'diff_rot_type',            diff_rot_code(),             '%d' ),  # index into diff_rot_types
         ( 'dSdtheta',                 par.dSdtheta,                '%.9e' ),  # thermal_wind = 3
+    ] + [
+        ( 'diff_rot_term_amp_%d' % (2*k), diff_rot_term_amp(k),    '%.9e' ) for k in range(9)   # a_0, a_2, ..., a_16
+    ] + [
+        ( 'thermal_wind_amplitude',   par.thermal_wind_amplitude,  '%.9e' ),
+        ( 'thermal_wind_radial',      par.thermal_wind_radial,     '%d' ),
+        ( 'diff_rot_frame',           par.diff_rot_frame,          '%.9e' ),  # 'solar_P4', 'tabulated'
+        ( 'diff_rot_nmax',            par.diff_rot_nmax,           '%d' ),    # 'tabulated'
+        ( 'diff_rot_rdeg',            par.diff_rot_rdeg,           '%d' ),    # 'tabulated'
+        ( 'diff_rot_generic',         par.diff_rot_generic,        '%d' ),
+    ] + [
+        ( 'diff_rot_solar_%d' % k,    par.diff_rot_solar[k],       '%.9e' ) for k in range(6)   # 'solar_P4': c0, c2, c4, Ω_RZ, rtc, dtc
+    ] + [
+        ( 'solar_density',            solar_density_code(),        '%d' ),    # index into solar_densities
+        ( 'solar_density_deg',        par.solar_density_deg,       '%d' ),
+        ( 'solar_density_window_lo',  solar_density_window(0),     '%.9e' ),  # nan: the default window
+        ( 'solar_density_window_hi',  solar_density_window(1),     '%.9e' ),
     ]
 
 
