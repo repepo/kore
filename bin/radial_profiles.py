@@ -231,6 +231,8 @@ class solar_profiles(user_defined_profiles):  # --------------------------------
     0 is a constant kinematic diffusivity (recommended), 1 a constant dynamic one (ρν, ρκ constant), normalised at
     x2 so that ViscosD, ThermaD are then the values at the tachocline; a density power is limited to ~1e-6 in (κp)'
     by the round-off of p near the surface.
+    With solar_rz = 1, dS/dr and the diffusivity step are instead those of the radiative interior of Mukhopadhyay et al.
+    2025, their eqs. (8)-(10) (params_default.py, docs/heat-equation.md §9).
     pdSdr and the differential rotation profiles are inherited from user_defined_profiles.
     '''
 
@@ -255,10 +257,17 @@ class solar_profiles(user_defined_profiles):  # --------------------------------
 
 
     def gradS(self, r, x1, w1, x2, w2, A):  # ------------ dS/dr, erf top hat made odd in r
+        if par.solar_rz:   # Mukhopadhyay et al. 2025 eq. (10), times erf(x/w0) so that it is odd and smooth at r = 0
+            x = r*par.aux0
+            x1, x2, d = par.solar_rz_steps
+            return par.solar_rz_dSdr*0.25*(1 - ss.erf((x - x1)/d))*(1 - ss.erf((x - x2)/d))*ss.erf(x/par.solar_rz_core)
         return ut.erf_top_hat_odd(r, x1,w1,x2,w2,A)
 
 
     def cz_step(self, r):  # ----- 0 in the radiative zone, 1 in the convection zone: the upper edge of dS/dr, even in r
+        if par.solar_rz:   # their eqs. (8), (9)
+            xos, dos = par.solar_rz_os
+            return 0.5*(1 + ss.erf((np.abs(r)*par.aux0 - xos)/dos))
         return 1 - ut.erf_box(r, par.aux3, par.aux4)
 
 
@@ -285,25 +294,42 @@ class modelS_profiles(solar_profiles):  # ----------------------- 'smoothed sun'
     solar_profiles with ln ρ and ln p from Chebyshev fits of bin/model_s.at (columns As, c_1, ρ/ρ_c, p/p_c, x) over the
     window solar_density_window in x = r aux0 (par.solar_density = 'model S'), degree solar_density_deg. Everything else
     (g, dS/dr, ν, κ, the differential rotation) as solar_profiles. ρ and p are normalised to their central values, as the
-    'fit' ones (the overall constants drop out of the equations). Needs ricb > 0: the fits are not even in r.
+    'fit' ones (the overall constants drop out of the equations). The shell fits are not even in r, so ricb = 0 uses
+    solar_density_window = 'sun': Model S mirrored to x < 0 and fitted on [-W, W], W = aux0 + 0.005, with degree
+    solar_density_sun_deg and the odd coefficients dropped, so that ln ρ and ln p are even and smooth at r = 0.
     '''
     def __init__(self):
         import os
-        if par.ricb == 0:
-            sys.exit("solar_density = 'model S' needs ricb > 0")
         w = par.solar_density_window
         if w is None:
-            w = [par.ricb*par.aux0 - 0.01, par.aux0 + 0.005]
+            w = [par.ricb*par.aux0 - 0.01, par.aux0 + 0.005] if par.ricb > 0 else 'sun'
         T = np.loadtxt(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'model_s.at'), skiprows=1)
         x, lrho, lp = T[:, 4], np.log(T[:, 2]), np.log(T[:, 3])
-        k = (x >= w[0]) & (x <= w[1])
-        if k.sum() < 2*par.solar_density_deg:
-            sys.exit('solar_density_window %s has too few Model S points' % str(w))
         C = np.polynomial.chebyshev.Chebyshev
-        self.lrho = C.fit(x[k], lrho[k], par.solar_density_deg, domain=list(w))
-        self.lp   = C.fit(x[k], lp[k], par.solar_density_deg, domain=list(w))
+        if isinstance(w, str):
+            if w != 'sun':
+                sys.exit("solar_density_window must be [x_lo, x_hi], None or 'sun'")
+            W = par.aux0 + 0.005
+            deg = par.solar_density_sun_deg
+            k = x <= W
+            xx = np.concatenate([-x[k], x[k]])
+            def evenfit(y):
+                c = C.fit(xx, np.concatenate([y[k], y[k]]), deg, domain=[-W, W]).coef.copy()
+                c[1::2] = 0
+                return C(c, domain=[-W, W])
+            self.lrho, self.lp = evenfit(lrho), evenfit(lp)
+            w = [-W, W]
+        else:
+            if par.ricb == 0:
+                sys.exit("solar_density = 'model S' with ricb = 0 needs solar_density_window = None or 'sun' (an even fit)")
+            deg = par.solar_density_deg
+            k = (x >= w[0]) & (x <= w[1])
+            if k.sum() < 2*deg:
+                sys.exit('solar_density_window %s has too few Model S points' % str(w))
+            self.lrho = C.fit(x[k], lrho[k], deg, domain=list(w))
+            self.lp   = C.fit(x[k], lp[k], deg, domain=list(w))
         self.window = w
-        print('model S density: window', w, 'max fit error ln rho %.1e, ln p %.1e' %
+        print('model S density: window', w, 'degree', deg, 'max fit error ln rho %.1e, ln p %.1e' %
               (np.abs(self.lrho(x[k]) - lrho[k]).max(), np.abs(self.lp(x[k]) - lp[k]).max()))
 
     def logrho(self, r, rpower):
@@ -499,7 +525,8 @@ def _tabulated_fits():
     '''
     'tabulated': f_n (n = 0, 2, ..., diff_rot_nmax) of ΔΩ = ome/diff_rot_frame - 1 at each table radius by Gauss-Legendre
     quadrature (64 nodes) of a cubic spline in cos θ, then a least-squares Chebyshev fit in x of degree diff_rot_rdeg
-    (at most half the number of table radii used) over the table radii within 0.01 of the shell. Returns {n: Chebyshev}.
+    (at most half the number of table radii used) over the table radii within 0.01 of the shell, or with
+    diff_rot_window = 'sun' (the default when ricb = 0) one even fit over the whole Sun. Returns {n: Chebyshev}.
     '''
     if _tab:
         return _tab
@@ -514,6 +541,33 @@ def _tabulated_fits():
     dO = CubicSpline(xc, ome[o, :]/par.diff_rot_frame - 1, axis=0)(xg)     # (64, nr)
     fn = (((2*np.array(ns) + 1)/2)[:, None]*P*wg) @ dO                       # (len(ns), nr)
     xa, xb = _dr_x(np.array([par.ricb, 1.0]))
+    win = par.diff_rot_window
+    if win is None and par.ricb == 0:
+        win = 'sun'
+    if win is not None:   # one fit over the whole Sun, even in r, the same for any ricb
+        if win != 'sun':
+            sys.exit("diff_rot_window must be None or 'sun'")
+        L = xb + 0.01
+        k = rt <= L
+        r1, f1 = rt[k], fn[:, k]
+        if par.diff_rot_hold is not None:   # hold f_n at its value at x_h below x_h
+            j = np.argmin(np.abs(r1 - par.diff_rot_hold))
+            S = 0.5*(1 + ss.erf((r1 - par.diff_rot_hold + 0.01)/0.01))
+            f1 = S*f1 + (1 - S)*f1[:, j:j+1]
+        dx = r1[1] - r1[0]
+        rp = np.arange(r1[0] - dx, 0, -dx)[::-1]                 # below the first table radius: its value
+        r1 = np.concatenate([rp, r1]); f1 = np.concatenate([np.repeat(f1[:, :1], rp.size, axis=1), f1], axis=1)
+        xx = np.concatenate([-r1[::-1], r1])
+        C = np.polynomial.chebyshev.Chebyshev
+        for i, n in enumerate(ns):
+            c = C.fit(xx, np.concatenate([f1[i, ::-1], f1[i]]), par.diff_rot_sun_deg, domain=[-L, L]).coef.copy()
+            c[1::2] = 0
+            _tab[n] = C(c, domain=[-L, L])
+        res = [np.abs(_tab[n](r1) - f1[i]).max()*par.diff_rot_frame for i, n in enumerate(ns)]
+        print("diff_rot_type 'tabulated': %s, whole-Sun even fit of degree %d on [0, %.3f]%s; max |fit - f_n| (nHz):" %
+              (par.diff_rot_file, par.diff_rot_sun_deg, L, '' if par.diff_rot_hold is None else
+               ', f_n held below %.3f' % par.diff_rot_hold), ' '.join('%.2e' % v for v in res))
+        return _tab
     k = (rt >= xa - 0.01) & (rt <= xb + 0.01)
     deg = min(par.diff_rot_rdeg, int(k.sum())//2)
     C = np.polynomial.chebyshev.Chebyshev

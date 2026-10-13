@@ -35,11 +35,15 @@ class default_params():
 
         # 'smoothed sun' density and pressure: 'fit' (smoothed_sun.py, the default) or 'model S' (Chebyshev fits of ln ρ, ln p of
         # bin/model_s.at of degree solar_density_deg over solar_density_window = [x_lo, x_hi] in x = r aux0; None: the shell
-        # [ricb aux0, aux0] widened by 0.01 below and 0.005 above; needs ricb > 0). The 'fit' density is up to 48 % off near the
+        # [ricb aux0, aux0] widened by 0.01 below and 0.005 above if ricb > 0, 'sun' if ricb = 0; 'sun': one fit over the whole
+        # Sun, even in r (Model S mirrored to x < 0, odd coefficients dropped), of degree solar_density_sun_deg, on
+        # [-(aux0 + 0.005), aux0 + 0.005], the same for any ricb; ln rho to 1.7e-3, mostly at the base of the convection zone,
+        # where the shell fit reaches 2e-4). The 'fit' density is up to 48 % off near the
         # surface, which moves n = 1 Rossby, HFR and columnar modes by 1.5-8 nHz (docs/heat-equation.md §6). g is unchanged.
         self.solar_density = 'fit'
         self.solar_density_deg = 30
         self.solar_density_window = None
+        self.solar_density_sun_deg = 60
 
         # profile smoothing power
         self.smopo = 0
@@ -70,6 +74,19 @@ class default_params():
         self.therm_pow = 0.0
         self.rvisc     = 0.0
         self.hvisc     = 0.0
+
+        # Radiative interior of Mukhopadhyay, Bekki, Zhu & Gizon 2025 (arXiv 2512.12691, their eqs. 8-10) for 'smoothed sun',
+        # used when solar_rz = 1 in place of the aux1..aux5 top hat and of the aux3/aux4 diffusivity step (docs/heat-equation.md §9):
+        #   dS/dr = solar_rz_dSdr/4 [1 - erf((x - x1)/d)] [1 - erf((x - x2)/d)] erf(x/w0),  [x1, x2, d] = solar_rz_steps,
+        #   w0 = solar_rz_core, x = r aux0 in R☉; erf(x/w0) makes it odd and smooth at r = 0 (no effect above x ~ 3 w0).
+        #   solar_rz_dSdr = (∂s0/∂r)_RZ aux0 R☉/c_p: 2.615 for their 1.32e-2 erg/g/K/cm with c_p = 3.46e8 and aux0 = 0.985.
+        #   ν/ν_cz and κ/κ_cz go from visc0, therm0 below to 1 above as (1 + erf((x - x_OS)/d_OS))/2, [x_OS, d_OS] = solar_rz_os
+        #   (their ν_RZ/ν_CZ = 0.01, κ_RZ/κ_CZ = 0.04).
+        self.solar_rz       = 0
+        self.solar_rz_dSdr  = 2.615
+        self.solar_rz_steps = [0.61, 0.68, 0.04]
+        self.solar_rz_core  = 0.05
+        self.solar_rz_os    = [0.70, 0.04]
 
 
         # ----------------------------------------------------------------------------------------------------------------------
@@ -132,6 +149,13 @@ class default_params():
         self.diff_rot_nmax = 8  # 'tabulated': highest even degree n kept in Ω (4 ... 16); the heat rows couple Δl up to 2 nmax + 2
         # with thermal_wind = 2. For the HMI profile nmax = 8 leaves up to 7 nHz at 75° latitude near the surface, 12 about 2.6
         self.diff_rot_rdeg = 24  # 'tabulated': degree of the least-squares Chebyshev fit of each f_n in r over the shell
+        self.diff_rot_window = None  # 'tabulated': None is the shell fit above if ricb > 0 and 'sun' if ricb = 0; 'sun' is one fit
+        # over the whole Sun, [-L, L] with L = aux0 + 0.01 for 'smoothed sun', even in r (table mirrored, odd coefficients dropped),
+        # of degree diff_rot_sun_deg, the same for any ricb; below the first table radius (0.1 R☉ in the Mukhopadhyay et al. file)
+        # each f_n is held at its value there
+        self.diff_rot_sun_deg = 60  # 'tabulated' with diff_rot_window = 'sun': degree (60: ~0.01 nHz on the Edmond file)
+        self.diff_rot_hold = None  # 'tabulated' with diff_rot_window = 'sun': x_h (R☉) to hold f_n at f_n(x_h) for x < x_h, blended
+        # by (1 + erf((x - x_h + 0.01)/0.01))/2; None: the table as it is (held only below its first radius)
         self.diff_rot_generic = 0  # 1: build the P0 and P2 couplings with the generic quadrature builder too (self-check of
         # diff_rot_generic.py against the closed forms of diff_rot_coefficients.py; the results agree to ~1e-12)
 

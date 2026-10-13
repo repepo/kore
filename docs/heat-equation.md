@@ -23,6 +23,8 @@ How the page is organised:
 - §7 lists what is still open.
 - §8 generalises the rotation profile to any Legendre degree ('solar_P4', 'tabulated') and repeats the solar benchmark
   like for like.
+- §9 adds the radiative interior of Mukhopadhyay et al. 2025b, fits of Model S and of a tabulated $\Omega$ over the
+  whole Sun, and follows the solar inertial modes as the inner boundary moves from 0.71 R☉ to the centre.
 
 History. The terms were derived on 2026-10-11 and committed in three steps on `anelastic_log`:
 
@@ -30,6 +32,7 @@ History. The terms were derived on 2026-10-11 and committed in three steps on `a
 2. the `Gaspard` factors, the exact and prescribed thermal wind, `ThermaD = 0` (with [thermad0.md](thermad0.md)) and
    the `spin_doctor` diagnostics (`18641206`);
 3. any $P_n$, 'solar_P4', 'tabulated' and the amplitude controls (`92a0d020`, §8).
+4. the radiative interior, the whole-Sun Model S and $\Omega$ fits, and ricb = 0 for 'model S' (§9).
 
 The checks are in `tests/heat_dr/` and `tests/diff_rot/`.
 
@@ -780,6 +783,14 @@ These apply to every profile type:
 The fit has degree `solar_density_deg` (30) on `solar_density_window`, by default the shell widened by 0.01 below and
 0.005 above. It reproduces the run-local Model S fit of the §6 benchmark runs: $A$ and $B$ are bitwise equal.
 
+The shell fit is not even in $r$, so it cannot be used with ricb = 0. `solar_density_window = 'sun'` (the default when
+ricb = 0) fits Model S once over the whole Sun instead: the table is mirrored to $x < 0$, fitted on
+$[-W, W]$, $W$ = aux0 + 0.005, with degree `solar_density_sun_deg` (60), and the odd coefficients are dropped, so
+$\ln\rho$ and $\ln p$ are even and smooth at $r = 0$. The fit is the same for every ricb. Its error is $1.7\times10^{-3}$
+in $\ln\rho$ and $2.6\times10^{-4}$ in $\ln p$, mostly at 0.70–0.72 R☉, where Model S has a sharp feature at the base
+of the convection zone (the shell fit reaches $2\times10^{-4}$ there). On the §8 shell it moves the m 3 Rossby n0 and n1
+modes by ≤ 0.001 nHz.
+
 ### Other files
 
 - `utils.py`: `dr_high`, `dr_nmax`, `tw_nmax`, `tw_degrees`, `dr_code`, `tw_code`, `odd_profiles`, `dr_offd`.
@@ -864,3 +875,118 @@ Growth rate (nHz) against $\lvert\Delta_\theta s\rvert$ (erg/g/K):
 
 So the gap of §6 was the radial shear of $\Omega$ in the lower convection zone, as step 1 of the comparison had
 concluded with kore's 'solar' step (onset 509).
+
+
+## 9. Radiative interior and the inner boundary (2026-10-13)
+
+Mukhopadhyay, Bekki, Zhu & Gizon 2025b, "Effects of the radiative interior on solar inertial modes" (arXiv 2512.12691,
+A&A 708, A253), extend the convection-zone model of §6–§8 down to 0.5 R☉ with a stably stratified, rigidly rotating
+radiative zone (RZ). kore now has their background, and Model S and tabulated $\Omega$ fits that work for any inner
+radius, including the full sphere.
+
+### Radiative interior (`solar_rz = 1`)
+
+For `model_type = 'smoothed sun'`, `solar_rz = 1` replaces the `aux1`…`aux5` top hat of $dS/dr$ and the `aux3`/`aux4`
+diffusivity step by their eqs. (8)–(10), with $x = r\cdot$aux0 in R☉:
+
+$$
+\frac{dS}{dr} = \frac{A}{4}\left[1 - \mathrm{erf}\frac{x - x_1}{d}\right]\left[1 - \mathrm{erf}\frac{x - x_2}{d}\right]\mathrm{erf}\frac{x}{w_0},
+\qquad
+\frac{\nu}{\nu_{CZ}} = \mathrm{visc0} + (1 - \mathrm{visc0})\,\frac{1 + \mathrm{erf}((x - x_{OS})/d_{OS})}{2}
+$$
+
+and the same for $\kappa$ with `therm0`.
+
+| parameter | default | meaning |
+| --- | --- | --- |
+| `solar_rz` | 0 | 1: the radiative interior above |
+| `solar_rz_dSdr` | 2.615 | $A = (\partial s_0/\partial r)_{RZ}\,\mathrm{aux0}\,R_\odot/c_p$; their $1.32\times10^{-2}$ erg g⁻¹ K⁻¹ cm⁻¹ with $c_p = 3.46\times10^{8}$, aux0 = 0.985 |
+| `solar_rz_steps` | [0.61, 0.68, 0.04] | $[x_1, x_2, d]$ in R☉ |
+| `solar_rz_core` | 0.05 | $w_0$: makes $dS/dr$ odd and smooth at $r = 0$ for ricb = 0; no effect above $x \approx 3w_0$ |
+| `solar_rz_os` | [0.70, 0.04] | $[x_{OS}, d_{OS}]$ of the diffusivity step |
+| `visc0`, `therm0` | 1.0 | $\nu_{RZ}/\nu_{CZ}$, $\kappa_{RZ}/\kappa_{CZ}$: theirs are 0.01 and 0.04 ($10^{10}$, $4\times10^{10}$ against $10^{12}$ cm²/s) |
+
+$N/\Omega$ is about 500 in the RZ. Their remaining choices are set by `tests/diff_rot/mk_rz.py`: stress-free walls, zero
+entropy flux at the bottom (`bci_thermal = 1`), $s = 0$ at the top (`bco_thermal = 0`), outer radius 0.985 R☉, their
+rotation ($\Omega_{RZ}$ = 433.5 nHz, tachocline at 0.71 R☉ of width 0.045, which is `diff_rot_type = 'solar_P4'`), thermal-wind
+balance (`thermal_wind = 2`, `thermal_wind_radial = 0`). Two differences remain: kore is anelastic (they solve the fully
+compressible equations), and its walls are impenetrable (they use a free surface, which they find nearly impenetrable
+for these modes).
+
+### Fits over the whole Sun
+
+The shell fits of §8 are not even in $r$, so they cannot be used with ricb = 0, and they change with ricb. Two options fit
+once over the whole Sun instead, with the table mirrored to negative $r$ and the odd Chebyshev coefficients dropped:
+
+- `solar_density_window = 'sun'` for the Model S $\ln\rho$, $\ln p$ (degree `solar_density_sun_deg` = 60; see
+  "Model S density" in §8). It is the default when ricb = 0, which used to stop with an error.
+- `diff_rot_window = 'sun'` for a 'tabulated' $\Omega$ (degree `diff_rot_sun_deg` = 60: ~0.01 nHz on the Edmond file,
+  0.19 nHz for $f_0$ near 0.1 R☉). It is also the default when ricb = 0. Before, a ricb = 0 'tabulated' run fitted
+  $[0, x_b]$ and used $|r|$, which has a kink at the centre and extrapolates below the first table radius; this is the
+  only change to existing runs, and `regress.sh` has no 'tabulated' ricb = 0 case. Below the first table radius
+  (0.1 R☉ in the Edmond file, rigid at 433.5 nHz there) each $f_n$ is held at its value there. `diff_rot_hold` = $x_h$
+  instead holds $f_n$ at $f_n(x_h)$ for $x < x_h$, blended over 0.01 R☉, to test how much the profile below the
+  tachocline matters.
+
+`spin_doctor` writes the new settings to the end of `params.dat` (see differential-rotation.md, Output).
+
+### Inner-boundary scan
+
+`tests/diff_rot/mk_rz.py NAME rin=… m=… symm=… N=…` builds this set-up for any inner radius `rin` (R☉). Eight modes were
+followed by continuation from rin = 0.71 R☉ (the convection zone only) to the full sphere, in steps of 0.01 R☉ (0.005
+for m 3 n1 and the columnar mode) down to 0.60, then coarser. At each step the mode is the eigenvector whose $P_l(r)$,
+$T_l(r)$ on 0.72–0.98 R☉ overlap most with the previous one, weighted by the distance of the eigenvalues. Frequency and
+growth rate in nHz, 456 nHz frame:
+
+| mode (symm) | rin 0.71 | rin ≤ 0.62, down to 0 | KE below 0.71 R☉ |
+| --- | --- | --- | --- |
+| m 3 Rossby n0 (−1) | −258.78, +0.33 | −261.47, −4.22 | 0.24 |
+| m 3 Rossby n1 (−1) | −184.61, −8.78 | −191.91, −15.66 | 0.09 |
+| m 3 columnar (+1) | 197.35, −10.40 | 210.10, −23.90 | 0.09 |
+| m 5 Rossby (−1) | −129.59, −9.46 | −131.31, −11.94 | 0.09 |
+| m 7 HFR (+1) | −258.54, −10.45 | −258.95, −21.32 | 0.02 |
+| m 10 HFR (+1) | −209.78, −14.57 | −204.67, −24.97 | 0.03 |
+| m 2 Rossby (−1) | −329.83, −0.22 | −331.03, −0.73 | 0.39 |
+| m 1 high-latitude (−1) | −95.01, −4.86 | mixed with the RZ ℓ = 3 Rossby modes at −94.75 | — |
+
+- Below about 0.63 R☉ the inner boundary does not matter: every mode is the same to ≤ 0.01 nHz down to $r = 0$.
+  All the change happens while the boundary is in the overshoot layer, 0.64–0.71 R☉. There the modes cross the RZ
+  Rossby sequences $\omega = -2m\Omega_{RZ}/(\ell(\ell+1)) + m(\Omega_{RZ} - \Omega_0)$, their eq. (14), and the
+  frequencies are not monotonic in rin.
+- The RZ shifts the modes by 0.4–13 nHz and damps them more, as they report. m 2 lies 3 nHz from the ℓ = 2 sequence
+  (−334.0 nHz). m 1 high-latitude lies on the ℓ = 3 sequence and is shared among several modes from −91 to −95 nHz.
+- With $\delta = 0$ continued inward instead (no RZ, as §8), the modes do not settle: m 3 n0 already has 27 % of its
+  energy below 0.71 R☉ at rin 0.67. The stratification, not the boundary, confines them.
+- Their Table 1 values for the convection zone only differ from kore's by 1–10 nHz (m 5: −137.9 against −129.59; m 7:
+  −248.5 against −258.54), already at rin 0.71, so not because of the boundary. Candidates are the anelastic
+  approximation, their thermal-wind estimate and the free surface (dropping the thermal wind moves m 5 by −4.9 nHz).
+  Their "mixed" m 7 value, −240.1 nHz, matches the RZ-dominated modes kore finds at −241.3 to −241.8 nHz.
+
+### Resolution
+
+The RZ modes have short radial wavelengths. The eigenvalues converge before the energy balances do:
+
+| case | N | spin_doctor residσ, residω, resid𝑠 | eigenvalue |
+| --- | --- | --- | --- |
+| m 3 n0, ricb 0 | 384 / 768 | 1.5e-3, 9e-6, 3e-6 / 1.3e-7, 6.6e-8, 1.8e-10 | same to 0.003 nHz |
+| m 7 HFR, ricb 0 | 384 / 768 | 2.6e-2, 7e-4, 4e-5 / 1.0e-5, 8e-7, 1e-7 | 0.4 nHz apart |
+| m 3 columnar, ricb 0 | 768 / 896 / 1024 | 2.1e-4 / 4.0e-6 / 2.9e-8 (residσ) | same to 0.006 nHz |
+
+With ricb = 0, N counts both parities, so N = 1024 is 512 Chebyshev polynomials on $[0, 1]$. Raising lmax from m + 63 to
+m + 95 changes nothing. The columnar mode at N = 1024 needs about 90 GB with MUMPS on 8 ranks, out of core
+(`st_mat_mumps_icntl_22 = 1`, `icntl_14 = 50`). The full-sphere runs from N = 384 up needed a larger MUMPS workspace
+(`st_mat_mumps_icntl_14` = 50–200) anyway (INFOG(1) = −9 otherwise). With the 'fit' density instead of Model S the columnar mode moves to 217.63, −26.89
+nHz, because 'fit' is up to 48 % off Model S near the surface.
+
+### Checks
+
+- `tests/diff_rot/regress.sh` against the previous commit: the 13 configurations are bitwise equal.
+- The §8 benchmark (Model S shell fit, 'tabulated') and a 'smoothed sun' run with the `aux` top hat and `visc0`,
+  `therm0` ≠ 1: $A$ and $B$ bitwise equal to the previous commit.
+- `mk_rz.py` at rin 0.5 and at ricb 0 with the Edmond table rebuilds the scan's matrices exactly, and `solve_bekki.py`
+  gives m 3 n0 at −261.4694, −4.2153 nHz as above.
+- `ru_insane.py` (m 3, symm −1): the radiative interior at rin 0.5 (N 96) and at ricb 0 (N 384) PASS, worst 1.3e-10 and
+  1.2e-12; ricb 0 with the whole-Sun Edmond $\Omega$ (δ = 0) PASS 4e-8 at N 192 and 9e-13 at N 384. At N 96 the
+  ricb 0 run fails at ~1e-3 (inertia, buoyancy, KE): the even Model S profiles need about 100 Chebyshev polynomials per
+  parity.
+

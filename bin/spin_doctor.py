@@ -36,9 +36,22 @@ def diff_rot_term_amp(k):
     return a[k] if k < len(a) else 1.0
 
 def solar_density_window(k):
-    '''end k (0, 1) of par.solar_density_window, nan if None (the default window)'''
+    '''end k (0, 1) of par.solar_density_window, nan if None (the default window), -/+(aux0 + 0.005) if 'sun' (even fit)'''
     w = par.solar_density_window
+    if isinstance(w, str):
+        return (2*k - 1)*(par.aux0 + 0.005)
     return np.nan if w is None else w[k]
+
+def diff_rot_window_code():
+    '''the 'tabulated' fit used: 0 over the shell, 1 over the whole Sun (diff_rot_window = 'sun', the default when ricb = 0)'''
+    if not (par.diff_rot and par.diff_rot_type == 'tabulated'):
+        return 0
+    return int(par.diff_rot_window == 'sun' or (par.diff_rot_window is None and par.ricb == 0))
+
+def solar_density_degree():
+    '''degree of the 'model S' fits actually used: solar_density_sun_deg for the even whole-Sun fit ('sun', or None with ricb = 0)'''
+    w = par.solar_density_window
+    return par.solar_density_sun_deg if (isinstance(w, str) or (w is None and par.ricb == 0)) else par.solar_density_deg
 
 
 
@@ -97,15 +110,25 @@ def param_table(elapsed):
         ( 'thermal_wind_radial',      par.thermal_wind_radial,     '%d' ),
         ( 'diff_rot_frame',           par.diff_rot_frame,          '%.9e' ),  # 'solar_P4', 'tabulated'
         ( 'diff_rot_nmax',            par.diff_rot_nmax,           '%d' ),    # 'tabulated'
-        ( 'diff_rot_rdeg',            par.diff_rot_rdeg,           '%d' ),    # 'tabulated'
+        ( 'diff_rot_rdeg',            par.diff_rot_sun_deg if diff_rot_window_code() else par.diff_rot_rdeg, '%d' ),  # 'tabulated': the degree used
         ( 'diff_rot_generic',         par.diff_rot_generic,        '%d' ),
     ] + [
         ( 'diff_rot_solar_%d' % k,    par.diff_rot_solar[k],       '%.9e' ) for k in range(6)   # 'solar_P4': c0, c2, c4, Ω_RZ, rtc, dtc
     ] + [
         ( 'solar_density',            solar_density_code(),        '%d' ),    # index into solar_densities
-        ( 'solar_density_deg',        par.solar_density_deg,       '%d' ),
+        ( 'solar_density_deg',        solar_density_degree(),      '%d' ),    # the degree used ('sun': solar_density_sun_deg)
         ( 'solar_density_window_lo',  solar_density_window(0),     '%.9e' ),  # nan: the default window
         ( 'solar_density_window_hi',  solar_density_window(1),     '%.9e' ),
+        ( 'solar_rz',                 par.solar_rz,                '%d' ),    # radiative interior (Mukhopadhyay et al. 2025)
+        ( 'solar_rz_dSdr',            par.solar_rz_dSdr,           '%.9e' ),
+        ( 'solar_rz_x1',              par.solar_rz_steps[0],       '%.9e' ),
+        ( 'solar_rz_x2',              par.solar_rz_steps[1],       '%.9e' ),
+        ( 'solar_rz_d',               par.solar_rz_steps[2],       '%.9e' ),
+        ( 'solar_rz_core',            par.solar_rz_core,           '%.9e' ),
+        ( 'solar_rz_xos',             par.solar_rz_os[0],          '%.9e' ),
+        ( 'solar_rz_dos',             par.solar_rz_os[1],          '%.9e' ),
+        ( 'diff_rot_window',          diff_rot_window_code(),      '%d' ),    # 'tabulated': 0 shell fit, 1 whole Sun ('sun')
+        ( 'diff_rot_hold',            np.nan if par.diff_rot_hold is None else par.diff_rot_hold, '%.9e' ),  # nan: None
     ]
 
 

@@ -106,13 +106,18 @@ of `2*ncpus` (`assemble.py` stops otherwise).
 | `diff_rot_file` | `''` | `'tabulated'`: the .npz file, absolute or relative to the run directory |
 | `diff_rot_nmax` | 8 | `'tabulated'`: highest degree kept, even, 4 to 16 |
 | `diff_rot_rdeg` | 24 | `'tabulated'`: degree of the Chebyshev fit of each $f_n$ in $r$ |
+| `diff_rot_window` | None | `'tabulated'`: None fits over the shell if ricb > 0 and is `'sun'` if ricb = 0; `'sun'`: one fit over the whole Sun, even in $r$, the same for any ricb ([heat-equation.md](heat-equation.md) §9) |
+| `diff_rot_sun_deg`, `diff_rot_hold` | 60, None | `'sun'`: degree of that fit, and $x_h$ (R☉) to hold each $f_n$ at $f_n(x_h)$ below $x_h$ (None: the table, held only below its first radius) |
 | `diff_rot_generic` | 0 | 1 builds the $P_0$, $P_2$ couplings by quadrature too (self-check, agrees to ~1e-12) |
 | `thermal_wind` | 1 | heat-equation terms, see below |
 | `thermal_wind_radial` | 1 | 0 drops $u_r\thinspace \partial_r S_{tw}$ |
 | `thermal_wind_amplitude` | 1.0 | factor on $S_{tw}$ (`thermal_wind` 1, 2) |
 | `dSdtheta` | 0.0 | `thermal_wind = 3`: $\partial_\theta S_{tw}$ = `dSdtheta` $\sin 2\theta$ |
-| `solar_density` | `'fit'` | `'smoothed sun'` only: `'model S'` uses Chebyshev fits of `bin/model_s.at` for $\ln\rho$, $\ln p$ (needs ricb > 0) |
-| `solar_density_deg`, `solar_density_window` | 30, None | degree and $x$-interval of those fits (None: the shell, widened by 0.01 below, 0.005 above) |
+| `solar_density` | `'fit'` | `'smoothed sun'` only: `'model S'` uses Chebyshev fits of `bin/model_s.at` for $\ln\rho$, $\ln p$ |
+| `solar_density_deg`, `solar_density_window` | 30, None | degree and $x$-interval of those fits (None: the shell, widened by 0.01 below, 0.005 above, if ricb > 0; `'sun'` if ricb = 0) |
+| `solar_density_sun_deg` | 60 | `solar_density_window = 'sun'`: degree of one fit over the whole Sun, even in $r$ (needed for ricb = 0) |
+| `solar_rz` | 0 | `'smoothed sun'`: 1 for the radiative interior of Mukhopadhyay et al. 2025b, their eqs. (8)–(10), in place of the `aux1`…`aux5` top hat and the `aux3`/`aux4` diffusivity step ([heat-equation.md](heat-equation.md) §9) |
+| `solar_rz_dSdr`, `solar_rz_steps`, `solar_rz_core`, `solar_rz_os` | 2.615, [0.61, 0.68, 0.04], 0.05, [0.70, 0.04] | its $dS/dr$ amplitude $(\partial s_0/\partial r)_{RZ}\,\mathrm{aux0}\,R_\odot/c_p$, steps $[x_1, x_2, d]$ (R☉), central width $w_0$, and diffusivity step $[x_{OS}, d_{OS}]$; `visc0`, `therm0` are $\nu_{RZ}/\nu_{CZ}$, $\kappa_{RZ}/\kappa_{CZ}$ |
 
 ## Profiles
 
@@ -201,11 +206,16 @@ writes the options to `params.dat`, after the general columns (the order is that
     diff_rot, diff_rot_amplitude, thermal_wind, diff_rot_type, dSdtheta,
     diff_rot_term_amp_0, _2, ..., _16, thermal_wind_amplitude, thermal_wind_radial,
     diff_rot_frame, diff_rot_nmax, diff_rot_rdeg, diff_rot_generic, diff_rot_solar_0 ... _5,
-    solar_density, solar_density_deg, solar_density_window_lo, solar_density_window_hi
+    solar_density, solar_density_deg, solar_density_window_lo, solar_density_window_hi,
+    solar_rz, solar_rz_dSdr, solar_rz_x1, solar_rz_x2, solar_rz_d, solar_rz_core, solar_rz_xos, solar_rz_dos,
+    diff_rot_window, diff_rot_hold
 
 `diff_rot_type` and `solar_density` are written as their index in `spin_doctor.diff_rot_types` ('Y20' 0, …, 'rigid' 7,
 'solar_P4' 8, 'tabulated' 9) and `spin_doctor.solar_densities` ('fit' 0, 'model S' 1); a default
-`solar_density_window` (None) is written as nan. `diff_rot_file` is not recorded. A `params.dat` written by an older
+`solar_density_window` (None) is written as nan, `'sun'` as ∓(aux0 + 0.005), and `solar_density_deg` is the degree
+actually used (`solar_density_sun_deg` for the whole-Sun fit). `diff_rot_window` is 0 for the shell fit and 1 for the
+whole-Sun fit (with `diff_rot_rdeg` then the degree used, `diff_rot_sun_deg`), and `diff_rot_hold` None is nan.
+`diff_rot_file` is not recorded. A `params.dat` written by an older
 version has fewer columns; start a new file rather than appending to it.
 
 ## Examples
