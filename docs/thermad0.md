@@ -53,7 +53,7 @@ latitudinal part $S_{tw}$ (the thermal-wind entropy) fixed by thermal-wind balan
 polynomials, with coefficients $\sigma_n$:
 
 $$
-S_{tw}(r,\theta) = \sum_{n = 2, 4, 6} \sigma_n(r)\,P_n(\cos\theta).
+S_{tw}(r,\theta) = \sum_{n = 2, 4, 6} \sigma_n(r)\thinspace P_n(\cos\theta).
 $$
 
 The parameter `thermal_wind` selects it: 0 none, 1 the linear thermal wind, 2 the exact one (adds $\sigma_6$),
@@ -61,7 +61,7 @@ The parameter `thermal_wind` selects it: 0 none, 1 the linear thermal wind, 2 th
 differential rotation adds three kinds of terms to the heat equation ([heat-equation.md](heat-equation.md) §0–2):
 
 $$
-p_0\left[\, i\,m\,G\,\Delta\Omega\, s \;+\; u_r\,\frac{\partial S_{tw}}{\partial r} \;+\; \frac{u_\theta}{r}\,\frac{\partial S_{tw}}{\partial\theta} \right].
+p_0\left[\thinspace i\thinspace m\thinspace G\thinspace \Delta\Omega\thinspace s \mkern5mu +\mkern5mu u_r\thinspace \frac{\partial S_{tw}}{\partial r} \mkern5mu +\mkern5mu \frac{u_\theta}{r}\thinspace \frac{\partial S_{tw}}{\partial\theta} \right].
 $$
 
 - (a) is the advection of $s$ by the differential rotation. It is present whenever `diff_rot = 1`.
@@ -84,7 +84,7 @@ Term (c) of [heat-equation.md](heat-equation.md) §2, the advection of the therm
 before the row weight,
 
 $$
-p_0\,\sigma_n\,\frac{P + r P' + r\,(\ln\rho)'\,P}{r^2}\;P_n'(X)\,D ,
+p_0\thinspace \sigma_n\thinspace \frac{P + r P' + r\thinspace (\ln\rho)'\thinspace P}{r^2}\mkern5mu P_n'(X)\thinspace D ,
 $$
 
 where $X$ and $D$ are the angular coupling matrices of heat-equation.md §2. Two things break:
@@ -113,7 +113,7 @@ The new mode is decided in one place, `bin/utils.py`:
 adiab_tw = thermal == 1 and ThermaD == 0 and diff_rot == 1 and thermal_wind >= 1
 ```
 
-In this mode the section-h rows are $r^2\,(\mathrm{eq})/p_0$ in $C^{(1)}$, still without bc rows, and they reuse the
+In this mode the section-h rows are $r^2\thinspace (\mathrm{eq})/p_0$ in $C^{(1)}$, still without bc rows, and they reuse the
 labels of both paths.
 
 - `bin/utils.py`: `adiab_tw` (the only place that decides the mode). `decode_label` gives section h `rpower = 2 - rx`
@@ -138,11 +138,11 @@ labels of both paths.
 - `bin/assemble.py`: unchanged. `bc_theta_spherical` returns nothing for ThermaD = 0, and section h is packed from the
   operators.
 - `bin/ru_insane.py`, `tests/heat_dr/ebal.py`: `gb['h'] = 1` in the new mode; `chop['h'] = 0` for every ThermaD = 0
-  run; entropy pairing weight `wgt['h'] = p₀` (rows $r^2\,(\mathrm{eq})/p_0$) instead of $p_0 r$. The pairing weight
-  is what the checks multiply the rows by when they pair them with $s^*$ to form the entropy budget. `heat_check.py`,
+  run; entropy pairing weight `wgt['h'] = p₀` (rows $r^2\thinspace (\mathrm{eq})/p_0$) instead of $p_0 r$. The pairing weight
+  is what the checks multiply the rows by when they pair them with $s^\ast$ to form the entropy budget. `heat_check.py`,
   `asm_check.py`, `terms.py` and `sd_check.py` take these from `ebal.py`.
 - `tests/heat_dr/asm_check.py`: docstring. In the new mode the reference run is the same run with
-  `diff_rot_amplitude = 0`, because `diff_rot = 0` or `thermal_wind = 0` gives the old $r\,(\mathrm{eq})/p_0$ rows in
+  `diff_rot_amplitude = 0`, because `diff_rot = 0` or `thermal_wind = 0` gives the old $r\thinspace (\mathrm{eq})/p_0$ rows in
   $C^{(0)}$. A wrong reference trips the existing assertion, which now hints at that.
 - `tests/heat_dr/run_all.sh`:
     - new-mode runs `k1 km0 km2b ky20wb kshell kg3 ksun ksun_a` with `thermal_wind` 1 and 2, and their `z_*`
@@ -197,14 +197,14 @@ These compare the code's matrices with an independent computation of the same ph
 All 32 are ok, and run_all.sh reproduces them.
 
 **Limitation: these checks do not see the rows near the wall.** The numbers above are $p_0$-weighted: the rows
-$r^2\,(\mathrm{eq})/p_0$ are paired with $p_0 s^*$, and $p_0 \approx 2.5\times10^{-6}$ at $r = 1$ for the test
+$r^2\thinspace (\mathrm{eq})/p_0$ are paired with $p_0 s^\ast$, and $p_0 \approx 2.5\times10^{-6}$ at $r = 1$ for the test
 profiles. Near the wall the new rows are less accurate than the ThermaD > 0 ones. Term (c) carries $\sigma_n (\ln\rho)'$
 without $p_0$. For the 'user def' density,
 
 $$
 \rho \propto \left(1 - \mathrm{aux0}^2 r^2\right)^2,
 \qquad
-(\ln\rho)' = -\frac{4\,\mathrm{aux0}^2\, r}{1 - \mathrm{aux0}^2 r^2},
+(\ln\rho)' = -\frac{4\thinspace \mathrm{aux0}^2\thinspace r}{1 - \mathrm{aux0}^2 r^2},
 $$
 
 which is nearly singular at $r = 1/\mathrm{aux0}$. Checked unweighted (`tests/heat_dr/row_check.py`, $P = 0$ at the
@@ -268,12 +268,12 @@ A rigid offset of the rotation rate must be equivalent to a rigid rotation at a 
 exact identity for the eigenvalues ([heat-equation.md](heat-equation.md) §5):
 
 $$
-\lambda(\Delta\Omega, G) = \lambda_0\big(G\,(1+\Delta\Omega)\big) - i\,m G\,\Delta\Omega .
+\lambda(\Delta\Omega, G) = \lambda_0\big(G\thinspace (1+\Delta\Omega)\big) - i\thinspace m G\thinspace \Delta\Omega .
 $$
 
 The table gives the error of this identity for two choices of the baseline $\lambda_0$. The first baseline is a rigid
 run with amplitude 0 and frame rate Gaspard $G(1 + 0.1)$: it has the same heat rows as the tested run. The second is
-`diff_rot = 0`, which uses the old $r\,(\mathrm{eq})/p_0$ rows in $C^{(0)}$: a different discretization of the same
+`diff_rot = 0`, which uses the old $r\thinspace (\mathrm{eq})/p_0$ rows in $C^{(0)}$: a different discretization of the same
 problem.
 
 | baseline | $G = 1$ | $G = 3$ |
@@ -380,14 +380,14 @@ Controls at N 96, fixed entropy, distances at ThermaD 1e-6, 1e-8, 1e-10:
 with the same slope for both bcs:
 
 $$
-\lambda(\mathrm{ThermaD}) - \lambda(0) \approx c\,\mathrm{ThermaD}, \qquad c = 5 \text{ to } 40 .
+\lambda(\mathrm{ThermaD}) - \lambda(0) \approx c\thinspace \mathrm{ThermaD}, \qquad c = 5 \text{ to } 40 .
 $$
 
 That holds at every ThermaD with zero-flux or no-slip walls, and down to 1e-7 (N 128) and 1e-8 (N 256) with fixed
 entropy and stress-free walls.
 
 The exception is the fixed-entropy, stress-free case at small ThermaD. There the ThermaD = 0 entropy is not zero at
-the wall: $u_\theta \neq 0$ there, and so is the source $u_\theta\,\partial_\theta S_{tw}/r$. A ThermaD > 0 run
+the wall: $u_\theta \neq 0$ there, and so is the source $u_\theta\thinspace \partial_\theta S_{tw}/r$. A ThermaD > 0 run
 must bring $s$ to zero at the wall, so it has a boundary layer of width
 
 $$
@@ -455,12 +455,12 @@ Results:
 - k1 (tw1, N 96, 8 modes near −0.05 + 1.2i):
     - sd_check `worst dWdr, dWdr_thm 1.9e-10 -> ok`;
     - resid3 with the new terms 3e-13 to 7e-15 (without them 7e-1 to 5e-3), resid1 ≤ 5.8e-7, resid2 ≤ 3.4e-8;
-    - eig2kore + spin_doctor: $\mathrm{resid}_s$ ≤ 2.9e-13, $\mathrm{resid}_\sigma$ ≤ 5.8e-7;
+    - eig2kore + spin_doctor: $\mathrm{resid}_ s$ ≤ 2.9e-13, $\mathrm{resid}_ \sigma$ ≤ 5.8e-7;
     - terms.py entropy balance: res ≤ 3.6e-14.
 - k1_tw2 (the same, and the run_all line): sd_check 1.9e-10 ok; terms.py res ≤ 1.0e-13; resid3 ≤ 2.8e-12.
 - ksun_tw2 (ricb 0, N 120, 12 modes near −0.05 + 0.8i): terms.py res ≤ 1.7e-12, but sd_check FAIL (5.2).
     - Modes 0–4 and 7 ($\omega \approx 0.2494$–$0.2520$) sit at the edge of the advection continuum
-      ($-i\,m G\,\Delta\Omega$, $\omega \in [0, 0.25]$) and are not resolved at any N.
+      ($-i\thinspace m G\thinspace \Delta\Omega$, $\omega \in [0, 0.25]$) and are not resolved at any N.
     - The discrete modes near 0.51i are under-resolved at N 120: resid3 3–6e-2, dWdr_thm 2.7e-4 to 1.4e-3. At the
       same N the ThermaD = 1e-10 run gives dWdr_thm 4e-4 to 2e-3 and `thermal_wind` 0 gives 2e-5 to 3.5e-4.
     - At N 200 the new mode gives resid3 1.6e-8 to 2.7e-7 and dWdr_thm 1.9e-10 to 3.4e-8 for those modes
@@ -520,7 +520,7 @@ ThermaD = 0, is not equivalent below ThermaD ~ 1e-7 at N 128.
 **Continuous spectrum and small-scale growing modes.** Term (a) without diffusion has a continuous spectrum,
 
 $$
-\lambda = -i\,m G\,\Delta\Omega(r, \theta).
+\lambda = -i\thinspace m G\thinspace \Delta\Omega(r, \theta).
 $$
 
 ThermaD = 0 with `thermal_wind = 0` has it too. The discretization shows it as hundreds of eigenvalues near
@@ -542,7 +542,7 @@ ThermaD 0 and at 1e-10, and some shift-inverts at T2 took tens of minutes. Use s
 for the smoothed sun).
 
 **Ruiz prescaling.** `solve.py` turns Ruiz prescaling off automatically for ThermaD = 0. That was tuned on the
-$r\,(\mathrm{eq})/p_0$ rows and is not tested here for the $r^2$ rows (no PETSc/SLEPc in this container).
+$r\thinspace (\mathrm{eq})/p_0$ rows and is not tested here for the $r^2$ rows (no PETSc/SLEPc in this container).
 
 **Behaviour change.** A run with `thermal = 1`, `diff_rot = 1`, `ThermaD = 0` and the default `thermal_wind = 1` used
 to stop and now runs. The old behaviour (advection of $s$ only) needs `thermal_wind = 0`, as before.

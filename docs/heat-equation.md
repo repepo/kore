@@ -43,7 +43,7 @@ $1/\Omega_0$ unless stated otherwise (see `Gaspard` below).
 | $r$, $\theta$, $\phi$ | spherical coordinates; $x = \cos\theta$ | |
 | $\Omega_0$, $\Omega_{\rm ref}$ | rotation rate of the frame in which kore solves | `diff_rot_frame` (in nHz, solar profiles) |
 | $G$ | $\Omega_{\rm ref}\tau$, the frame's rotation rate in kore's time unit $\tau$ (the Coriolis factor); 1 with `timescale = 'rotation'` | `Gaspard` |
-| $\Delta\Omega(r, \theta)$ | relative differential rotation: $\Omega = \Omega_0\,(1 + \Delta\Omega)$ | chosen by `diff_rot_type` |
+| $\Delta\Omega(r, \theta)$ | relative differential rotation: $\Omega = \Omega_0\thinspace (1 + \Delta\Omega)$ | chosen by `diff_rot_type` |
 | $f_n(r)$ | Legendre coefficients of $\Delta\Omega$ in $\cos\theta$ | `abu` ($f_0$), `aub` ($f_2$), `ab4`, … |
 | $\mathbf U_0$ | the azimuthal mean flow of $\Delta\Omega$, seen in the rotating frame | |
 | $s$ | entropy perturbation, $\delta s/c_p$ | the unknown of section h |
@@ -53,11 +53,11 @@ $1/\Omega_0$ unless stated otherwise (see `Gaspard` below).
 | $\rho_0$, $T_0$, $p_0$ | background density, temperature, and $p_0 = \rho_0 T_0$ | `pss` is $p_0$ |
 | $h$ | $\ln\rho_0$ | `lho` |
 | $g(r)$ | gravity profile | `gra` |
-| Beyonce | buoyancy scale: the buoyancy force is $\mathrm{Beyonce}\,g\,s\,\hat{\mathbf e}_r$ | `Beyonce` |
+| Beyonce | buoyancy scale: the buoyancy force is $\mathrm{Beyonce}\thinspace g\thinspace s\thinspace \hat{\mathbf e}_ r$ | `Beyonce` |
 | ThermaD, $\kappa$ | thermal diffusion number and diffusivity profile | `ThermaD`; `kps` is $\kappa p_0$ |
 | $P$, $T$ | poloidal and toroidal scalars of the velocity $\mathbf u$ | sections u and v |
 | $l$, $m$, $L$ | harmonic degree, azimuthal order, $L = l(l+1)$ | `l`, `m` |
-| $i\,m$ | the imaginary unit times $m$: fields go as $e^{i m\phi}$, so $\partial_\phi \to i\,m$ | |
+| $i\thinspace m$ | the imaginary unit times $m$: fields go as $e^{i m\phi}$, so $\partial_\phi \to i\thinspace m$ | |
 | $l'$, $\Delta l$ | target degree (matrix row) and $\Delta l = l' - l$ | `offd` |
 | $S_l^m$ | Schmidt-normalised spherical harmonics | `ut.Ylm` |
 
@@ -76,7 +76,7 @@ Code concepts used on this page:
 - **Operator labels.** Each radial operator is named by a short string, read by `utils.decode_label`. For example
   `h1tw20_D0` means: section `h`; `1` lowers the row's power of $r$ by one; the profile `tw2` with derivative order
   `0`; and `_D0`, no radial derivative of the unknown. A second profile can follow the first (`h1tw20lho1_D0` is
-  $r\,p_0\sigma_2\,h'$ acting on $P$).
+  $r\thinspace p_0\sigma_2\thinspace h'$ acting on $P$).
 - **Parity in a full sphere.** With no inner core (`ricb = 0`) kore expands each radial function in Chebyshev
   polynomials of one parity in $r$. Every profile must then be even or odd in $r$, and the odd ones are listed in the
   `adj` lists of `submatrices.py`.
@@ -91,7 +91,7 @@ kore's heat equation is the set of rows of section h, built by `operators.entrop
 `thermal_diffusion`:
 
 $$
-p_0\,\frac{\partial s}{\partial t} = -p_0\,u_r S_0' + \mathrm{ThermaD}\,\nabla\cdot(\kappa\,p_0\nabla s), \qquad p_0 = \rho_0 T_0.
+p_0\thinspace \frac{\partial s}{\partial t} = -p_0\thinspace u_r S_0' + \mathrm{ThermaD}\thinspace \nabla\cdot(\kappa\thinspace p_0\nabla s), \qquad p_0 = \rho_0 T_0.
 $$
 
 In words: the entropy perturbation changes because the radial flow carries fluid across the background entropy
@@ -103,7 +103,7 @@ weight is $r$ instead of $r^2$ unless the thermal wind is on (§3 and [thermad0.
 Now let the background rotate differentially,
 
 $$
-\Omega = \Omega_0\,[1 + \Delta\Omega(r, \theta)], \qquad \Delta\Omega = f_0(r) + f_2(r)\,P_2(\cos\theta).
+\Omega = \Omega_0\thinspace [1 + \Delta\Omega(r, \theta)], \qquad \Delta\Omega = f_0(r) + f_2(r)\thinspace P_2(\cos\theta).
 $$
 
 (§0 to §7 use this $P_0 + P_2$ form; §8 extends it to any even degree.) Two things change.
@@ -111,7 +111,7 @@ $$
 - The perturbation is advected by the mean flow of the differential rotation,
 
 $$
-\mathbf U_0 = \Delta\Omega\,r\sin\theta\,\hat{\mathbf e}_\phi .
+\mathbf U_0 = \Delta\Omega\thinspace r\sin\theta\thinspace \hat{\mathbf e}_ \phi .
 $$
 
 - The background entropy acquires a latitudinal part $S_{tw}(r, \theta)$, fixed by thermal-wind balance (§1).
@@ -125,7 +125,7 @@ $$
 adds three terms to the left-hand side of the heat equation:
 
 $$
-p_0\left[\, i\,m\,\Delta\Omega\, s + u_r\,\frac{\partial S_{tw}}{\partial r} + \frac{u_\theta}{r}\,\frac{\partial S_{tw}}{\partial\theta} \right]. \tag{1}
+p_0\left[\thinspace i\thinspace m\thinspace \Delta\Omega\thinspace s + u_r\thinspace \frac{\partial S_{tw}}{\partial r} + \frac{u_\theta}{r}\thinspace \frac{\partial S_{tw}}{\partial\theta} \right]. \tag{1}
 $$
 
 They are, in order:
@@ -144,7 +144,7 @@ Boussinesq benchmark of Mirouh et al. 2016 imposes $\Omega(r)$ with a purely rad
 Nothing else changes:
 
 - The momentum equation keeps its present diff-rot term. The background pressure is a gradient and drops out of the
-  curled equations, and the buoyancy stays $\mathrm{Beyonce}\,g\,s\,\hat{\mathbf e}_r$.
+  curled equations, and the buoyancy stays $\mathrm{Beyonce}\thinspace g\thinspace s\thinspace \hat{\mathbf e}_ r$.
 - The diffusion acts on $s$ only: $S_{tw}$ is assumed to be maintained, like $S_0$.
 - The mean flow does not advect $S_{tw}$, because $S_{tw}$ does not depend on $\phi$: $\mathbf U_0\cdot\nabla S_{tw} = 0$.
 - There is no viscous heating in kore.
@@ -161,36 +161,36 @@ kore's background must therefore have, and estimates its size.
 ### The balance
 
 Consider the steady background in the rotating frame, in kore units: time $1/\Omega_0$, length $R$, and buoyancy
-$\mathrm{Beyonce}\,g(r)\,s\,\hat{\mathbf e}_r$, so that
+$\mathrm{Beyonce}\thinspace g(r)\thinspace s\thinspace \hat{\mathbf e}_ r$, so that
 
 $$
-N^2 = \mathrm{Beyonce}\,g\,\frac{dS}{dr}.
+N^2 = \mathrm{Beyonce}\thinspace g\thinspace \frac{dS}{dr}.
 $$
 
 The momentum balance of the mean flow is
 
 $$
-\mathbf U_0\cdot\nabla\mathbf U_0 + 2\hat{\mathbf z}\times\mathbf U_0 = -\nabla p_b + \mathrm{Beyonce}\,g\,S_{tw}\,\hat{\mathbf e}_r .
+\mathbf U_0\cdot\nabla\mathbf U_0 + 2\hat{\mathbf z}\times\mathbf U_0 = -\nabla p_b + \mathrm{Beyonce}\thinspace g\thinspace S_{tw}\thinspace \hat{\mathbf e}_ r .
 $$
 
 Its left side, the centrifugal and Coriolis forces of the differential rotation, is
 
 $$
--\left[(1+\Delta\Omega)^2 - 1\right] r\sin\theta\,\hat{\mathbf e}_s ,
+-\left[(1+\Delta\Omega)^2 - 1\right] r\sin\theta\thinspace \hat{\mathbf e}_ s ,
 $$
 
-where $\hat{\mathbf e}_s$ is the cylindrical radial unit vector. Taking the curl removes the pressure, and its
+where $\hat{\mathbf e}_ s$ is the cylindrical radial unit vector. Taking the curl removes the pressure, and its
 $\phi$-component gives
 
 $$
-\frac{1}{r}\frac{\partial S_{tw}}{\partial\theta} = \frac{r\sin\theta}{\mathrm{Beyonce}\,g(r)}\,\frac{\partial (1+\Delta\Omega)^2}{\partial z},
-\qquad \frac{\partial}{\partial z} = \cos\theta\,\frac{\partial}{\partial r} - \frac{\sin\theta}{r}\frac{\partial}{\partial\theta}. \tag{2}
+\frac{1}{r}\frac{\partial S_{tw}}{\partial\theta} = \frac{r\sin\theta}{\mathrm{Beyonce}\thinspace g(r)}\thinspace \frac{\partial (1+\Delta\Omega)^2}{\partial z},
+\qquad \frac{\partial}{\partial z} = \cos\theta\thinspace \frac{\partial}{\partial r} - \frac{\sin\theta}{r}\frac{\partial}{\partial\theta}. \tag{2}
 $$
 
 This is the thermal-wind equation in kore's variables. In dimensional form it reads
 
 $$
-r\sin\theta\,\frac{\partial\Omega^2}{\partial z} = \frac{g}{c_p\,r}\,\frac{\partial S}{\partial\theta},
+r\sin\theta\thinspace \frac{\partial\Omega^2}{\partial z} = \frac{g}{c_p\thinspace r}\thinspace \frac{\partial S}{\partial\theta},
 $$
 
 which is eq. (27) of Bekki, Cameron & Gizon 2022 (A&A 662, A16). The $l = 0$ part of $S_{tw}$ is absorbed in $S_0(r)$.
@@ -201,9 +201,9 @@ To first order in $\Delta\Omega$, replace $(1+\Delta\Omega)^2$ by $1 + 2\Delta\O
 
 $$
 \begin{aligned}
-S_{tw} &= \sigma_2(r)\,P_2(\cos\theta) + \sigma_4(r)\,P_4(\cos\theta),\\
-\sigma_2 &= -\frac{2r^2}{\mathrm{Beyonce}\,g}\left[\frac{f_0'}{3} + \frac{f_2'}{21} + \frac{4}{7}\frac{f_2}{r}\right],\\
-\sigma_4 &= -\frac{6r^2}{35\,\mathrm{Beyonce}\,g}\left[f_2' - \frac{2f_2}{r}\right].
+S_{tw} &= \sigma_2(r)\thinspace P_2(\cos\theta) + \sigma_4(r)\thinspace P_4(\cos\theta),\cr
+\sigma_2 &= -\frac{2r^2}{\mathrm{Beyonce}\thinspace g}\left[\frac{f_0'}{3} + \frac{f_2'}{21} + \frac{4}{7}\frac{f_2}{r}\right],\cr
+\sigma_4 &= -\frac{6r^2}{35\thinspace \mathrm{Beyonce}\thinspace g}\left[f_2' - \frac{2f_2}{r}\right].
 \end{aligned} \tag{3}
 $$
 
@@ -216,9 +216,9 @@ $G$ = `Gaspard` = $\Omega_{\rm ref}\tau \neq 1$, the right side of (2) gets a fa
 
 $$
 \begin{aligned}
-\sigma_2 &= -\frac{2r^2G^2}{\mathrm{Beyonce}\,g}\left[(1+e f_0)\left(\frac{f_0'}{3} + \frac{f_2'}{21} + \frac{4}{7}\frac{f_2}{r}\right) + \frac{e\,f_2\,(f_0' + f_2')}{21}\right],\\
-\sigma_4 &= -\frac{6r^2G^2}{35\,\mathrm{Beyonce}\,g}\left[(1+e f_0)\left(f_2' - \frac{2f_2}{r}\right) + e\left(f_2 f_0' + \frac{4}{11} f_2 f_2' + \frac{14}{11}\frac{f_2^2}{r}\right)\right],\\
-\sigma_6 &= -e\,\frac{4r^2G^2}{77\,\mathrm{Beyonce}\,g}\,f_2\left(f_2' - \frac{2f_2}{r}\right).
+\sigma_2 &= -\frac{2r^2G^2}{\mathrm{Beyonce}\thinspace g}\left[(1+e f_0)\left(\frac{f_0'}{3} + \frac{f_2'}{21} + \frac{4}{7}\frac{f_2}{r}\right) + \frac{e\thinspace f_2\thinspace (f_0' + f_2')}{21}\right],\cr
+\sigma_4 &= -\frac{6r^2G^2}{35\thinspace \mathrm{Beyonce}\thinspace g}\left[(1+e f_0)\left(f_2' - \frac{2f_2}{r}\right) + e\left(f_2 f_0' + \frac{4}{11} f_2 f_2' + \frac{14}{11}\frac{f_2^2}{r}\right)\right],\cr
+\sigma_6 &= -e\thinspace \frac{4r^2G^2}{77\thinspace \mathrm{Beyonce}\thinspace g}\thinspace f_2\left(f_2' - \frac{2f_2}{r}\right).
 \end{aligned} \tag{3'}
 $$
 
@@ -237,21 +237,21 @@ moves the modes slightly (§6).
 
 ### Checks on simple profiles
 
-- **Cylindrical rotation**, constant on cylinders: $\Delta\Omega = \varepsilon\,r^2\sin^2\theta$, that is
-  $f_0 = (2/3)\,\varepsilon r^2$ and $f_2 = -(2/3)\,\varepsilon r^2$. It gives $\sigma_2 = \sigma_4 = 0$ in both
+- **Cylindrical rotation**, constant on cylinders: $\Delta\Omega = \varepsilon\thinspace r^2\sin^2\theta$, that is
+  $f_0 = (2/3)\thinspace \varepsilon r^2$ and $f_2 = -(2/3)\thinspace \varepsilon r^2$. It gives $\sigma_2 = \sigma_4 = 0$ in both
   versions, as it must: a barotropic rotation needs no thermal wind.
 - **Conical rotation**, constant on radial lines: $\Delta\Omega = \varepsilon\sin^2\theta$. It gives the values below.
   For $\varepsilon > 0$ (equator faster, as in the Sun's convection zone) the poles are warmer than the equator, the
   known solar sense.
 
 $$
-\sigma_2 = \frac{16\,\varepsilon r}{21\,\mathrm{Beyonce}\,g}, \qquad
-\sigma_4 = -\frac{8\,\varepsilon r}{35\,\mathrm{Beyonce}\,g}, \qquad
-S_{tw}(\text{pole}) - S_{tw}(\text{equator}) = \frac{\varepsilon r}{\mathrm{Beyonce}\,g} > 0 .
+\sigma_2 = \frac{16\thinspace \varepsilon r}{21\thinspace \mathrm{Beyonce}\thinspace g}, \qquad
+\sigma_4 = -\frac{8\thinspace \varepsilon r}{35\thinspace \mathrm{Beyonce}\thinspace g}, \qquad
+S_{tw}(\text{pole}) - S_{tw}(\text{equator}) = \frac{\varepsilon r}{\mathrm{Beyonce}\thinspace g} > 0 .
 $$
 
 - **The 'solar' fit**, a tanh step at the tachocline radius `rtc`. Here $f_0'$ and $f_2'$ are localised at the
-  tachocline. The $(4/7)\,f_2/r$ and $-(12/35)\,f_2/r$ parts of (3) fill the convection zone, where kore's $S_0'$ is
+  tachocline. The $(4/7)\thinspace f_2/r$ and $-(12/35)\thinspace f_2/r$ parts of (3) fill the convection zone, where kore's $S_0'$ is
   zero, so there $S_{tw}$ is the only background entropy gradient.
 
 ### How large is the thermal wind
@@ -261,8 +261,8 @@ and $\sigma_4 \approx -10^{-6}$. The pole-minus-equator contrast of $S_{tw}$ is 
 (kore's $s$ is $\delta s/c_p$). With $c_p \approx 3.5\times10^{8}$ that is $\approx 1.9\times10^{3}$ erg g⁻¹ K⁻¹, the
 thermal-wind value at the top of the range Bekki et al. scan.
 
-The small number is misleading. $S_{tw}$ scales as $1/(\mathrm{Beyonce}\,g)$, while the buoyancy it produces is
-$\mathrm{Beyonce}\,g\,s$. So in the convection zone, where $S_0' = 0$, the entropy perturbation driven by term (c) feeds
+The small number is misleading. $S_{tw}$ scales as $1/(\mathrm{Beyonce}\thinspace g)$, while the buoyancy it produces is
+$\mathrm{Beyonce}\thinspace g\thinspace s$. So in the convection zone, where $S_0' = 0$, the entropy perturbation driven by term (c) feeds
 back on the momentum equation at order $\Delta\Omega$ relative to the Coriolis force, independently of Beyonce. That is
 the same order as the momentum diff-rot term. The thermal-wind terms are therefore leading order for convection-zone
 modes, not a correction: this is the baroclinic coupling that destabilises the high-latitude modes in Bekki et al.
@@ -273,13 +273,13 @@ Bekki et al. 2024 (and Bekki et al. 2022, eq. 26) impose a latitudinal entropy g
 $\Omega$ and uniform in $r$:
 
 $$
-\frac{\partial s}{\partial\theta} = \Delta_\theta s\,\sin 2\theta .
+\frac{\partial s}{\partial\theta} = \Delta_\theta s\thinspace \sin 2\theta .
 $$
 
-Since $\sin 2\theta = -(2/3)\,dP_2/d\theta$, this is $S_{tw} = \sigma_2 P_2$ with a constant $\sigma_2$ and nothing else:
+Since $\sin 2\theta = -(2/3)\thinspace dP_2/d\theta$, this is $S_{tw} = \sigma_2 P_2$ with a constant $\sigma_2$ and nothing else:
 
 $$
-\sigma_2 = -\tfrac{2}{3}\,\mathtt{dSdtheta}, \qquad \sigma_4 = \sigma_6 = 0, \qquad \mathtt{dSdtheta} = \Delta_\theta s/c_p .
+\sigma_2 = -\tfrac{2}{3}\thinspace \mathtt{dSdtheta}, \qquad \sigma_4 = \sigma_6 = 0, \qquad \mathtt{dSdtheta} = \Delta_\theta s/c_p .
 $$
 
 kore's $s$ is $\delta s/c_p$, and $\Delta_\theta s < 0$ gives warm poles. Because $\sigma_2$ is constant in $r$, term (b)
@@ -291,14 +291,14 @@ use `diff_rot_type = 'rigid'` with `diff_rot_amplitude = 0`.
 $S_{tw}$ is the thermal wind consistent with LBR. The full anelastic balance would add
 
 $$
-\frac{S_0'}{\rho_0\,g}\,p_b
+\frac{S_0'}{\rho_0\thinspace g}\thinspace p_b
 $$
 
 to $S_{tw}$. This is the same $p_1 S_0'$ term that kore drops for the perturbations, so it matters only where
 $S_0' \neq 0$ (the radiative zone).
 
 Also neglected, consistently with kore's spherical background, are three effects of relative size
-$\Delta\Omega/(\mathrm{Beyonce}\,g)$ in the anelastic case, negligible for the Sun (Beyonce ≈ 5e4):
+$\Delta\Omega/(\mathrm{Beyonce}\thinspace g)$ in the anelastic case, negligible for the Sun (Beyonce ≈ 5e4):
 
 - the perturbation density in the background centrifugal acceleration;
 - the $\theta$-dependence of $\rho_0 T_0$ and $g$ induced by the thermal wind;
@@ -315,16 +315,16 @@ writes the three terms as such couplings. All of them are built from two small m
 The entropy and the velocity are
 
 $$
-s = \sum_l s_l(r)\,S_l^m, \qquad
-\mathbf u = \rho_0^{-1}\nabla\times\nabla\times(\rho_0 P\,\mathbf r) + \nabla\times(T\,\mathbf r),
+s = \sum_l s_l(r)\thinspace S_l^m, \qquad
+\mathbf u = \rho_0^{-1}\nabla\times\nabla\times(\rho_0 P\thinspace \mathbf r) + \nabla\times(T\thinspace \mathbf r),
 $$
 
 with $S_l^m$ the Schmidt harmonics of `ut.Ylm`, $L = l(l+1)$ and $h = \ln\rho_0$. The terms need two velocity
 components, for one degree:
 
 $$
-u_r = \frac{L P}{r}\,S_l, \qquad
-u_\theta = \frac{1}{r}\left[\partial_r(rP) + r h' P\right]\partial_\theta S_l + \frac{i\,m T}{\sin\theta}\,S_l .
+u_r = \frac{L P}{r}\thinspace S_l, \qquad
+u_\theta = \frac{1}{r}\left[\partial_r(rP) + r h' P\right]\partial_\theta S_l + \frac{i\thinspace m T}{\sin\theta}\thinspace S_l .
 $$
 
 ### Angular coupling matrices
@@ -334,8 +334,8 @@ column: source degree $l$):
 
 $$
 \begin{aligned}
-x\,S_l &= p_l\,S_{l+1} + q_l\,S_{l-1} &&\to X,\\
-(1 - x^2)\,\frac{dS_l}{dx} &= (l+1)\,q_l\,S_{l-1} - l\,p_l\,S_{l+1} &&\to D,\\
+x\thinspace S_l &= p_l\thinspace S_{l+1} + q_l\thinspace S_{l-1} &&\to X,\cr
+(1 - x^2)\thinspace \frac{dS_l}{dx} &= (l+1)\thinspace q_l\thinspace S_{l-1} - l\thinspace p_l\thinspace S_{l+1} &&\to D,\cr
 p_l &= \frac{\sqrt{(l+1)^2 - m^2}}{2l+1}, \qquad q_l = \frac{\sqrt{l^2 - m^2}}{2l+1}.
 \end{aligned}
 $$
@@ -350,15 +350,15 @@ $$
 For instance, the non-zero entries of $P_2(X)$ in column $l$ are
 
 $$
-P_2(X)_{l,l} = \tfrac12\left[3(p_l\,q_{l+1} + q_l\,p_{l-1}) - 1\right], \qquad
-P_2(X)_{l+2,l} = \tfrac32\,p_{l+1}\,p_l, \qquad
-P_2(X)_{l-2,l} = \tfrac32\,q_{l-1}\,q_l .
+P_2(X)_ {l,l} = \tfrac12\left[3(p_l\thinspace q_{l+1} + q_l\thinspace p_{l-1}) - 1\right], \qquad
+P_2(X)_ {l+2,l} = \tfrac32\thinspace p_{l+1}\thinspace p_l, \qquad
+P_2(X)_ {l-2,l} = \tfrac32\thinspace q_{l-1}\thinspace q_l .
 $$
 
 In general they are Gaunt coefficients,
 
 $$
-X_{l'l} = \sqrt{\frac{2l'+1}{2l+1}}\,\sqrt{\frac{4\pi}{3}}\,(-1)^m\,\mathrm{gaunt}(l',1,l,-m,0,m),
+X_{l'l} = \sqrt{\frac{2l'+1}{2l+1}}\thinspace \sqrt{\frac{4\pi}{3}}\thinspace (-1)^m\thinspace \mathrm{gaunt}(l',1,l,-m,0,m),
 $$
 
 and the same with $n = 2, 4$ in place of 1 for $P_n(X)$.
@@ -370,10 +370,10 @@ degree $l$.
 
 $$
 \begin{aligned}
-\text{(a) advection:}\quad & i\,m G\,\left[f_0\,\delta_{l'l} + f_2\,P_2(X)_{l'l}\right] s_l ,\\[4pt]
-\text{(b) radial:}\quad & \frac{L_l P_l}{r}\left[\sigma_2'\,P_2(X)_{l'l} + \sigma_4'\,P_4(X)_{l'l}\right],\\[4pt]
-\text{(c) latitudinal, from } P:\quad & \frac{P_l + r P_l' + r h' P_l}{r^2}\left[\sigma_2\,(3XD)_{l'l} + \sigma_4\left(\tfrac12(35X^3 - 15X)D\right)_{l'l}\right],\\[4pt]
-\text{(c′) latitudinal, from } T:\quad & -\frac{i\,m T_l}{r}\left[\sigma_2\,(3X)_{l'l} + \sigma_4\left(\tfrac12(35X^3 - 15X)\right)_{l'l}\right].
+\text{(a) advection:}\quad & i\thinspace m G\thinspace \left[f_0\thinspace \delta_{l'l} + f_2\thinspace P_2(X)_ {l'l}\right] s_l ,\cr
+\text{(b) radial:}\quad & \frac{L_l P_l}{r}\left[\sigma_2'\thinspace P_2(X)_ {l'l} + \sigma_4'\thinspace P_4(X)_ {l'l}\right],\cr
+\text{(c) latitudinal, from } P\text{:}\quad & \frac{P_l + r P_l' + r h' P_l}{r^2}\left[\sigma_2\thinspace (3XD)_ {l'l} + \sigma_4\left(\tfrac12(35X^3 - 15X)D\right)_ {l'l}\right],\cr
+\text{(c}'\text{) latitudinal, from } T\text{:}\quad & -\frac{i\thinspace m T_l}{r}\left[\sigma_2\thinspace (3X)_ {l'l} + \sigma_4\left(\tfrac12(35X^3 - 15X)\right)_ {l'l}\right].
 \end{aligned}
 $$
 
@@ -396,7 +396,7 @@ Remarks:
 - Build $P_2(X)$, $P_4(X)$ and $P_n'(X)D$ from $X$ and $D$ with about five degrees more than lmax, and cut afterwards.
   Formed at lmax they are wrong in the top degrees (errors of order one in the entries).
 - Term (a) is anti-Hermitian. In the entropy budget it only shifts the frequency, by an amount set by
-  $\int p_0\,\Delta\Omega\,\lvert s\rvert^2\,dV$, while (b) and (c) exchange entropy "energy" with the flow.
+  $\int p_0\thinspace \Delta\Omega\thinspace \lvert s\rvert^2\thinspace dV$, while (b) and (c) exchange entropy "energy" with the flow.
 
 The polynomial needed for $\sigma_6$ is
 
@@ -429,9 +429,9 @@ grid), operator labels, and the assembly loops.
 - $f_0$ and $f_2$ exist already (`abu`, `aub`).
 - New are $\sigma_2$ and $\sigma_4$ from (3). They need $g$, $g'$, $f'$ and $f''$: `gra`, and `spv`/`svp` and
   `psl`/`pls`, which give $r f'$ and $r^2 f''$.
-- Following `pdS` = $p_0\,dS/dr$ and `kps` = $\kappa p_0$, the code uses the products `tw2` = $p_0\sigma_2$, `tw4` =
+- Following `pdS` = $p_0\thinspace dS/dr$ and `kps` = $\kappa p_0$, the code uses the products `tw2` = $p_0\sigma_2$, `tw4` =
   $p_0\sigma_4$, `tp2` = $p_0\sigma_2'$ and `tp4` = $p_0\sigma_4'$. Separate `tp` profiles are needed because a label
-  such as `h1tw21_D0` would mean $r\,(p_0\sigma_2)'\,P$, the derivative of the product, which is not (b).
+  such as `h1tw21_D0` would mean $r\thinspace (p_0\sigma_2)'\thinspace P$, the derivative of the product, which is not (b).
 
 ### Parity in a full sphere
 
@@ -447,10 +447,10 @@ Like the other section-h operators, the rows are multiplied by $r^2 p_0$ and div
 
 | term | operator | labels | column, $\Delta l$ |
 | --- | --- | --- | --- |
-| (a) | $i\,m\,r^2 p_0 f_0\,s$ and $i\,m\,r^2 p_0 f_2\,P_2(X)\,s$ | `h0pss0abu0_D0`, `h0pss0aub0_D0` | $s$; $0, \pm 2$ |
-| (b) | $L_l\,r\,p_0\,\sigma_n'\,P_n(X)\,P$ | `h1tp20_D0`, `h1tp40_D0` | $P$; $0, \pm 2, \pm 4$ |
-| (c) | $p_0\,\sigma_n\left[P + r P' + r h' P\right] P_n'(X)\,D$ | `h2tw20_D0`, `h1tw20_D1`, `h1tw20lho1_D0` (and tw4) | $P$ |
-| (c′) | $-i\,m\,r\,p_0\,\sigma_n\,P_n'(X)\,T$ | `h1tw20_D0`, `h1tw40_D0` | $T$; $\pm 1, \pm 3$ |
+| (a) | $i\thinspace m\thinspace r^2 p_0 f_0\thinspace s$ and $i\thinspace m\thinspace r^2 p_0 f_2\thinspace P_2(X)\thinspace s$ | `h0pss0abu0_D0`, `h0pss0aub0_D0` | $s$; $0, \pm 2$ |
+| (b) | $L_l\thinspace r\thinspace p_0\thinspace \sigma_n'\thinspace P_n(X)\thinspace P$ | `h1tp20_D0`, `h1tp40_D0` | $P$; $0, \pm 2, \pm 4$ |
+| (c) | $p_0\thinspace \sigma_n\left[P + r P' + r h' P\right] P_n'(X)\thinspace D$ | `h2tw20_D0`, `h1tw20_D1`, `h1tw20lho1_D0` (and tw4) | $P$ |
+| (c′) | $-i\thinspace m\thinspace r\thinspace p_0\thinspace \sigma_n\thinspace P_n'(X)\thinspace T$ | `h1tw20_D0`, `h1tw40_D0` | $T$; $\pm 1, \pm 3$ |
 
 All twelve labels parse with `utils.decode_label` (the 13-character two-function form for the first and last of (c)).
 
@@ -469,8 +469,8 @@ opposite to the momentum rows, where $B$ = −`inertia` and the diff-rot block i
 
 - In `submatrices.py` the $T$-column labels are registered with vector parity `vT`, the others with `vP`.
 - `assemble.py` section h used to call only diagonal operators. It needs an $s$-column loop over
-  $\Delta l \in \{-2, 0, 2\}$, a $P$-column loop over $\{-4, \ldots, 4\}$ and a $T$-column loop over
-  $\{-3, -1, 1, 3\}$. These use the `offd` of `operators.differential_rotation`: for $P$ and $s$, offd = $\Delta l/2$;
+  $\Delta l \in \lbrace -2, 0, 2\rbrace$, a $P$-column loop over $\lbrace -4, \ldots, 4\rbrace$ and a $T$-column loop over
+  $\lbrace -3, -1, 1, 3\rbrace$. These use the `offd` of `operators.differential_rotation`: for $P$ and $s$, offd = $\Delta l/2$;
   for $T$, the symm-dependent offsets of its 'utor' branches.
 - The thermal boundary rows and forced runs need no change: every 'h' label carries the bc rows, and `−i wf entropy`
   is already added.
@@ -507,17 +507,17 @@ $$
 Rieutord 2006's baroclinic flow and a radial $T_0$ only:
 
 $$
-\Omega(r) = 1 + \frac{N^2}{2}\,(1 - r^2).
+\Omega(r) = 1 + \frac{N^2}{2}\thinspace (1 - r^2).
 $$
 
 Their heat equation (2.9) is
 
 $$
-(\lambda + i\,m\Omega)\,T + r v_r = \frac{E}{P}\,\Delta T .
+(\lambda + i\thinspace m\Omega)\thinspace T + r v_r = \frac{E}{P}\thinspace \Delta T .
 $$
 
 It needs (a) only, with $S_{tw} = 0$: their background is balanced by centrifugal buoyancy, which kore does not carry.
-With (3) switched on, $\sigma_2 = 2N^2r^2/(3\,\mathrm{Beyonce})$ would be as large as $S_0'$, and the comparison would
+With (3) switched on, $\sigma_2 = 2N^2r^2/(3\thinspace \mathrm{Beyonce})$ would be as large as $S_0'$, and the comparison would
 test the wrong model. It also needs `aub`, `abu` and `logrho` in `Boussinesq_profiles`.
 
 **Bekki et al. 2022.** Fully compressible, solar $\rho_0$, helioseismic $\Omega$, and $S_{tw}$ from (2) with the full
@@ -525,7 +525,7 @@ $\Omega^2$, with $s_0$ uniform in $r$. It needs (a), (c) and (c′). kore's $S_{
 construction. The momentum terms of their eq. (1),
 
 $$
--(\Omega-\Omega_0)\,\partial_\phi\mathbf v - 2\Omega\,\hat{\mathbf z}\times\mathbf v - r\sin\theta\,(\mathbf v\cdot\nabla\Omega),
+-(\Omega-\Omega_0)\thinspace \partial_\phi\mathbf v - 2\Omega\thinspace \hat{\mathbf z}\times\mathbf v - r\sin\theta\thinspace (\mathbf v\cdot\nabla\Omega),
 $$
 
 are kore's existing diff-rot operator.
@@ -544,7 +544,7 @@ plus `tests/heat_dr/` and this document under `docs/`.
 | `submatrices.py` | the labels of §3 (with $\sigma_6$ for `thermal_wind = 2`); `tp2/4/6` in both `adj` lists; ThermaD = 0 labels `h0abu0_D0`, `h0aub0_D0`. Exits if `Beyonce = 0` with `thermal_wind = 1, 2`. ThermaD = 0 with `thermal_wind ≥ 1`: `gebasis[2] = 1` and `chop = 0` for section h (§3, `docs/thermad0.md`). Raises if a label's derivative order exceeds its section's basis. Warns for 'Y20-wall-bounded' and 'shellular' at ricb = 0. Parity-warning floor, so an identically zero $S_{tw}$ ('cylindrical') stays quiet |
 | `operators.py` | `thermal_diffrot(l, 'h', component, Δl)`: 'temp' (a), 'upol' (b) + (c), 'utor' (c′), with $\sigma_6$. `Gaspard` on (a) and on `differential_rotation` |
 | `heat_dr_coefficients.py` (new) | $X$, $D$, $P_n(X)$, $P_n'(X)$, $P_n'(X)D$ for $n = 2, 4, 6$, built well above lmax and cut (products of the truncated $X$ are wrong near the top) |
-| `assemble.py` | section h: $s$ column $\Delta l \in \{-2, 0, 2\}$, $P$ column $-6\ldots 6$, $T$ column $-5\ldots 5$. Stops with a message unless `lmax − m + 1` is a multiple of $2\cdot\mathrm{ncpus}$ (otherwise `Scatter` dropped degrees or hung) |
+| `assemble.py` | section h: $s$ column $\Delta l \in \lbrace -2, 0, 2\rbrace$, $P$ column $-6\ldots 6$, $T$ column $-5\ldots 5$. Stops with a message unless `lmax − m + 1` is a multiple of $2\cdot\mathrm{ncpus}$ (otherwise `Scatter` dropped degrees or hung) |
 | `utils4pp.py`, `spin_doctor.py` | the broken `diff_rot_power` is replaced by `diff_rot_setup()`, which evaluates the diff-rot force and heat terms below on an $(r, \cos\theta)$ grid, projected back per $l$, with $\rho_0$. New powers `Wdr`, `Wdr_im` (flow), `Ensdr` (enstrophy) and `Wdr_thm` (entropy) enter `resid1`, `resid2`, `resens`, `resid3` |
 | `utils.py` | `adiab_tw` (ThermaD = 0, `diff_rot = 1`, `thermal_wind ≥ 1`): `decode_label` gives section h the $r^2$ row weight |
 | `ru_insane.py` | diff-rot tests (below) and `tp2/4/6` in `row_parity` |
@@ -555,7 +555,7 @@ $\Delta\Omega$:
 $$
 -G\left[(\mathbf U_0'\cdot\nabla)\mathbf u + (\mathbf u\cdot\nabla)\mathbf U_0'\right]
 \qquad\text{and}\qquad
-p_0\left[i\,m G\,\Delta\Omega\,s + \mathbf u\cdot\nabla S_{tw}\right].
+p_0\left[i\thinspace m G\thinspace \Delta\Omega\thinspace s + \mathbf u\cdot\nabla S_{tw}\right].
 $$
 
 Output columns appended (old columns unchanged, so files written before the change cannot be appended to):
@@ -586,14 +586,14 @@ Two formulas used in the table. The quadrature $Q$ is an $(r, \theta)$ integral 
 random field,
 
 $$
-Q = \int p_0\,s^*\left[i\,m G\,\Delta\Omega\,s + \mathbf u\cdot\nabla S_{tw}\right] dV ,
+Q = \int p_0\thinspace s^\ast \left[i\thinspace m G\thinspace \Delta\Omega\thinspace s + \mathbf u\cdot\nabla S_{tw}\right] dV ,
 $$
 
 and the rigid offset is the exact relation obeyed by a uniform $\Delta\Omega$, with $\lambda_0$ computed with
 `diff_rot = 0`:
 
 $$
-\lambda(\Delta\Omega, G) = \lambda_0\big(G(1+\Delta\Omega)\big) - i\,m G\,\Delta\Omega .
+\lambda(\Delta\Omega, G) = \lambda_0\big(G(1+\Delta\Omega)\big) - i\thinspace m G\thinspace \Delta\Omega .
 $$
 
 | check | configurations | worst |
@@ -604,11 +604,11 @@ $$
 | section-h rows of $A$, $B$ unweighted vs $(r, \theta)$ physics, claimed basis/row/weight only (`row_check.py`) | ThermaD = 0: thermal_wind 0, 1, 2, 3; m 0, 1, 2; G 3; smoothed sun (9 runs) | all ok at 1e-8 |
 | rigid offset (`rigid_thermal.py`) | m 2, 16 modes; $G = 1, 3, 10^3$ (viscous units); ThermaD = 0 (G 3), and ThermaD = 0 with thermal_wind 1 (G 1, 3) | 4e-12, 2e-12, 7e-10, 2e-11; 9e-10, 9e-12 |
 | `thermal_wind = 2` → 1 as the amplitude → 0 (`tw_limit.py`) | conical, Y20-wall-bounded | difference $\propto \text{amplitude}^2$ |
-| `spin_doctor` powers vs the matrix pairings: $\lvert\mathrm{Wdr} + i\,\mathrm{Wdr}_{\rm im} + 2R\rvert$, $\lvert\mathrm{Wdr}_{\rm thm} - 2\,\mathrm{Re}\,H\rvert$ (`sd_check.py`) | sun, rfix1, g3_tw2 (G 3, thermal_wind 2), s96, tw0, y20wb, shell, k1_tw2 (ThermaD = 0), s96_tw3 | 1e-8 (sun), 6e-7 (rfix1, N 64), 1e-9 (g3_tw2), ≤ 7e-10 (the others) |
+| `spin_doctor` powers vs the matrix pairings: $\lvert\mathrm{Wdr} + i\thinspace \mathrm{Wdr}_ {\rm im} + 2R\rvert$, $\lvert\mathrm{Wdr}_ {\rm thm} - 2\thinspace \mathrm{Re}\thinspace H\rvert$ (`sd_check.py`) | sun, rfix1, g3_tw2 (G 3, thermal_wind 2), s96, tw0, y20wb, shell, k1_tw2 (ThermaD = 0), s96_tw3 | 1e-8 (sun), 6e-7 (rfix1, N 64), 1e-9 (g3_tw2), ≤ 7e-10 (the others) |
 | `spin_doctor` residuals with the new terms (`sd_check.py`) | same | resid1 ≤ 1.5e-6, resid2 ≤ 1.5e-7, resens ≤ 4e-4, resid3 ≤ 2e-8 at N ≥ 96, the diff_rot = 0 level of the same N; without the new terms they are $10^2$–$10^9$ times larger (rfix1 at N 64 is truncation-limited) |
 | `ncpus` 1…4 (`mpi_check.sh`) | m 0, 1, 2 (symm −1), smoothed sun m 0, 1, thermal bc 1, forcing 10, thermal_wind 2 with G 3, diff_rot 0 | $A$, $B$, $B_{\rm forced}$ bitwise equal; 5 ranks stops with the message |
-| forced run: $A_{\rm forced} = c\,(A - i\,\omega_f B)$ (`forced_check.py`) | forcing 6, 7, 9, 10 | 1e-15 (0.04–0.5 with a block missing) |
-| `ru_insane.py`: momentum and heat diff-rot blocks vs a grid ($I$, $C$, $R$, $\mathrm{Ht}$, $\mathrm{Hw}$), (a) anti-Hermitian, rigid $R = \Delta\Omega\,(i\,m G I + C)$ | 27 runs: the runs above (22) plus cylindrical with thermal_wind 1 and 2, rigid m 2, conical m 0 symm −1, conical m 1; third round: 16 ThermaD = 0 runs (`docs/thermad0.md`) and 14 on the final code (5 with thermal_wind 3) | grid 2e-10, advection 1e-11, thermal wind 2e-13, anti-Hermitian 2e-12, rigid 2e-15; all PASS |
+| forced run: $A_{\rm forced} = c\thinspace (A - i\thinspace \omega_f B)$ (`forced_check.py`) | forcing 6, 7, 9, 10 | 1e-15 (0.04–0.5 with a block missing) |
+| `ru_insane.py`: momentum and heat diff-rot blocks vs a grid ($I$, $C$, $R$, $\mathrm{Ht}$, $\mathrm{Hw}$), (a) anti-Hermitian, rigid $R = \Delta\Omega\thinspace (i\thinspace m G I + C)$ | 27 runs: the runs above (22) plus cylindrical with thermal_wind 1 and 2, rigid m 2, conical m 0 symm −1, conical m 1; third round: 16 ThermaD = 0 runs (`docs/thermad0.md`) and 14 on the final code (5 with thermal_wind 3) | grid 2e-10, advection 1e-11, thermal wind 2e-13, anti-Hermitian 2e-12, rigid 2e-15; all PASS |
 
 Notes on the results:
 
@@ -643,7 +643,7 @@ $1/\Omega_{\rm Carrington}$ ($G \neq 1$), in the same frame, agrees to 2e-6 nHz.
 **Frame.** Changing the frame itself (426.86 vs 456 nHz, with $\Delta\Omega$ redefined relative to it) does not matter
 with `thermal_wind = 2` (2e-6 nHz); with `thermal_wind = 1` it moves modes by 0.1–0.9 nHz.
 
-**Differential rotation** (their Tables C.5–C.9, `thermal_wind = 2` without $u_r\,\partial_r S_{tw}$, as in the papers).
+**Differential rotation** (their Tables C.5–C.9, `thermal_wind = 2` without $u_r\thinspace \partial_r S_{tw}$, as in the papers).
 kore minus target, in nHz:
 
 - $n = 0$ Rossby: within 0.8;
@@ -655,7 +655,7 @@ kore minus target, in nHz:
 The remaining difference is the rotation profile. kore's $\Omega$ here has $P_0 + P_2$ only (4.5 nHz too fast at the
 equator, 12 at the pole); theirs has $P_4$ and radial shear.
 
-**Term (b).** Keeping $u_r\,\partial_r S_{tw}$ (kore always did before §8 added the switch) moves columnar modes by 5–15
+**Term (b).** Keeping $u_r\thinspace \partial_r S_{tw}$ (kore always did before §8 added the switch) moves columnar modes by 5–15
 nHz and HFR modes by 8–10 nHz. At $\delta = 0$ it also makes the low latitudes superadiabatic: $m = 1$ symm +1 then has
 a weakly growing mode (12.4 nHz, growth 1.8 nHz).
 
@@ -674,13 +674,13 @@ growth +7.30 nHz).
 
 ## 7. Still open
 
-- Done in §8: the switch `thermal_wind_radial` for $u_r\,\partial_r S_{tw}$ (term (b)), $P_4$ ('solar_P4') and
+- Done in §8: the switch `thermal_wind_radial` for $u_r\thinspace \partial_r S_{tw}$ (term (b)), $P_4$ ('solar_P4') and
   tabulated $\Omega(r, \theta)$, the Model S density (`solar_density`), and the amplitude controls.
 - ThermaD = 0 with `thermal_wind ≥ 1` is implemented ($r^2$ rows in $C^{(1)}$, §3) and tested
   ([thermad0.md](thermad0.md)). Open there:
     - the ThermaD → 0 limit with fixed-entropy walls has an unresolved boundary layer;
     - without diffusion the thermal wind has small-scale growing modes that are not converged in lmax;
-    - its rows carry $\sigma_n\,(\ln\rho)'$ (term (c)) without $p_0$, which converges slowly in N when $\rho$ nearly
+    - its rows carry $\sigma_n\thinspace (\ln\rho)'$ (term (c)) without $p_0$, which converges slowly in N when $\rho$ nearly
       vanishes at the surface ('user def' with aux0 → 1, ricb = 0). The $p_0$-weighted checks do not see it;
       `tests/heat_dr/row_check.py` does.
 - The 'smoothed sun' density near the surface (§6): `solar_density = 'model S'` (§8) avoids it; the default is
@@ -698,7 +698,7 @@ Commit `92a0d020`. The rotation profile is no longer limited to $P_0 + P_2$. It 
 polynomials, each with an amplitude factor $a_n$:
 
 $$
-\Delta\Omega = \sum_{n\ \text{even}} a_n\,f_n(r)\,P_n(\cos\theta).
+\Delta\Omega = \sum_{n\ \text{even}} a_n\thinspace f_n(r)\thinspace P_n(\cos\theta).
 $$
 
 This makes the observed solar rotation usable, either as a fit ('solar_P4') or as a helioseismic table ('tabulated').
@@ -709,8 +709,8 @@ $n = 0$ and 2 keep the closed forms of `diff_rot_coefficients.py`. For $n \ge 4$
 projects the diff-rot force of each source degree on the target degrees:
 
 $$
-\mathbf W = G\left[\Delta\Omega\,(i\,m\,\mathbf u + 2\hat{\mathbf z}\times\mathbf u)
-+ \sin\theta\,\left(r\,\partial_r\Delta\Omega\,u_r + \partial_\theta\Delta\Omega\,u_\theta\right)\hat{\mathbf e}_\phi\right].
+\mathbf W = G\left[\Delta\Omega\thinspace (i\thinspace m\thinspace \mathbf u + 2\hat{\mathbf z}\times\mathbf u) +
+\sin\theta\thinspace \left(r\thinspace \partial_r\Delta\Omega\thinspace u_r + \partial_\theta\Delta\Omega\thinspace u_\theta\right)\hat{\mathbf e}_ \phi\right].
 $$
 
 - The projection uses Gauss–Legendre quadrature in $\cos\theta$, exact for these polynomial integrands.
@@ -727,13 +727,13 @@ $$
 For `thermal_wind` = 1 or 2 with degrees above 2, `radial_profiles.sigma_all` computes the Legendre coefficients of
 
 $$
-\frac{\partial S}{\partial x} = -\frac{r^2G^2}{\mathrm{Beyonce}\,g}\left[x\,\partial_r F + \frac{(1 - x^2)\,\partial_x F}{r}\right],
+\frac{\partial S}{\partial x} = -\frac{r^2G^2}{\mathrm{Beyonce}\thinspace g}\left[x\thinspace \partial_r F + \frac{(1 - x^2)\thinspace \partial_x F}{r}\right],
 \qquad F = 2\Delta\Omega \ \ \text{or}\ \ (1 + \Delta\Omega)^2 - 1,
 $$
 
 by quadrature on the Chebyshev nodes, and integrates in $x$. $\sigma_n'$ comes from Chebyshev differentiation.
 
-- $S_{tw}$ has degrees $2\ldots\mathrm{nmax} + 2$ (thermal_wind 1) or $2\ldots 2\,\mathrm{nmax} + 2$ (thermal_wind 2).
+- $S_{tw}$ has degrees $2\ldots\mathrm{nmax} + 2$ (thermal_wind 1) or $2\ldots 2\thinspace \mathrm{nmax} + 2$ (thermal_wind 2).
 - Profiles: `tw2`…`tw8`, `twa`, `twc`, …, `twy` ($n = 34$) for $\sigma_n$, and `tp*` for $\sigma_n'$.
 - `heat_dr_coefficients.py` builds $P_n(X)$, $P_n'(X)$ and $P_n'(X)D$ for any $n$ by the Legendre recurrence.
 - `thermal_wind = 3` is unchanged ($\sigma_2$ only).
@@ -767,7 +767,7 @@ These apply to every profile type:
 - `diff_rot_term_amp` = $[a_0, a_2, \ldots, a_{16}]$ multiplies each $P_n$ term of $\Delta\Omega$ (missing entries are 1).
 - `diff_rot_amplitude` multiplies the whole of 'solar_P4' and 'tabulated' (the other types keep its old meaning).
 - `thermal_wind_amplitude` multiplies $S_{tw}$, which is otherwise the thermal wind of the scaled $\Delta\Omega$.
-- `thermal_wind_radial` = 0 drops $u_r\,\partial_r S_{tw}$ (term (b)), as the papers do; 1 (default) keeps it.
+- `thermal_wind_radial` = 0 drops $u_r\thinspace \partial_r S_{tw}$ (term (b)), as the papers do; 1 (default) keeps it.
 
 ### Model S density
 
@@ -805,7 +805,7 @@ See `tests/diff_rot/README.md`.
 
 This repeats §6 with the Mukhopadhyay et al. 2025 set-up in full: Model S density, shell 0.71–0.985 R☉,
 $\nu = \kappa = 10^{12}$, $\delta = 0$, stress-free, $\partial_r s = 0$, `thermal_wind = 2` without
-$u_r\,\partial_r S_{tw}$, their $\Omega$ from the Edmond file, N 64, lmax $m + 63$.
+$u_r\thinspace \partial_r S_{tw}$, their $\Omega$ from the Edmond file, N 64, lmax $m + 63$.
 `tests/diff_rot/run_bekki.py` rebuilds and solves these five modes. Frequencies are in nHz in the 456 nHz frame,
 negative is retrograde; the second number is the growth rate.
 
