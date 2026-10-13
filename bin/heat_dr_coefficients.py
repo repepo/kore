@@ -12,13 +12,15 @@ u_θ dS_tw/dθ) for n = 2, 4 (and n = 6 with the exact thermal wind, thermal_win
 '''
 import numpy as np
 from parameters import par
+import utils as ut
 
 _cache = {}
 
 def _matrices(m):
     if m in _cache:
         return _cache[m]
-    lw = par.lmax + 8
+    nhi = max(ut.tw_nmax, ut.dr_nmax)   # degrees above 6 only with ut.dr_high (docs/heat-equation.md §8)
+    lw = par.lmax + max(8, nhi + 4)
     X = np.zeros((lw + 1, lw + 1)); D = np.zeros((lw + 1, lw + 1))
     for l in range(m, lw + 1):
         if l + 1 <= lw:
@@ -38,6 +40,13 @@ def _matrices(m):
     dP6 = (693*X4 @ X - 630*X2 @ X + 105*X)/8
     _cache[m] = {'P2': P2, 'P4': P4, 'P6': P6, 'dP2': dP2, 'dP4': dP4, 'dP6': dP6,
                  'dP2D': dP2 @ D, 'dP4D': dP4 @ D, 'dP6D': dP6 @ D}
+    if nhi > 6:   # P_n(X), P_n'(X) by the recurrences (k+1) P_{k+1} = (2k+1) X P_k - k P_{k-1},  P_{k+1}' = (k+1) P_k + X P_k'
+        Pk, Pkm, dPk = X.copy(), I.copy(), I.copy()   # P1, P0, P1'
+        for k in range(1, nhi):
+            Pk, Pkm, dPk = ((2*k + 1)*X @ Pk - k*Pkm)/(k + 1), Pk, (k + 1)*Pk + X @ dPk
+            n = k + 1
+            if n > 6 and n % 2 == 0:
+                _cache[m].update({'P%d' % n: Pk, 'dP%d' % n: dPk, 'dP%dD' % n: dPk @ D})
     return _cache[m]
 
 def coef(name, l, m, offdiag):

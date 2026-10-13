@@ -74,7 +74,7 @@ istart = {'P': iP, 'T': iT, 'S': iS}
 
 def row_parity(label, vpar):
     (sec, rpower, _, f1, d1, f2, d2, dx) = ut.decode_label(label)
-    adj = int(f1 in ['gra', 'pdS', 'lh1', 'dSd', 'tp2', 'tp4', 'tp6'])
+    adj = int(f1 in ut.odd_profiles)
     opp = 1 - ((rpower + (d1 or 0) + (d2 or 0) + dx + adj) % 2)*2
     return vpar*opp
 
@@ -172,8 +172,10 @@ def dr_blocks(l, sec):
     '''
     if not par.diff_rot:
         return []
-    comp = {'u': [('upol', [-2, 0, 2], lp, 'P'), ('utor', [-3, -1, 1, 3], lt, 'T')],
-            'v': [('upol', [-3, -1, 1, 3], lp, 'P'), ('utor', [-2, 0, 2], lt, 'T')]}[sec]
+    nd = ut.dr_nmax   # degree of ΔΩ: 2 unless ut.dr_high
+    ev, od = range(-nd, nd + 1, 2), range(-nd - 1, nd + 2, 2)
+    comp = {'u': [('upol', ev, lp, 'P'), ('utor', od, lt, 'T')],
+            'v': [('upol', od, lp, 'P'), ('utor', ev, lt, 'T')]}[sec]
     out = []
     for name, offs, ls, kind in comp:
         for i in offs:
@@ -191,9 +193,9 @@ def heat_blocks(l):
     '''
     if not (par.diff_rot and par.thermal):
         return []
-    comp = [('temp', [-2, 0, 2], lp, 'S')]
-    if par.thermal_wind:   # S_tw has P2, P4 (thermal_wind = 1, 3) and P6 (thermal_wind = 2)
-        dlmax = 6 if par.thermal_wind == 2 else 4
+    comp = [('temp', range(-ut.dr_nmax, ut.dr_nmax + 1, 2), lp, 'S')]
+    if par.thermal_wind:   # S_tw has P2, P4 (thermal_wind = 1, 3) and P6 (thermal_wind = 2), more with ut.dr_high
+        dlmax = ut.tw_nmax
         comp += [('upol', range(-dlmax, dlmax + 1, 2), lp, 'P'), ('utor', range(1 - dlmax, dlmax, 2), lt, 'T')]
     out = []
     for name, offs, ls, kind in comp:

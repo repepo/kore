@@ -41,6 +41,45 @@ sizmat = 2*n + n*par.thermal
 # r (eq)/p, in the C^(1) basis (u_θ has P'), still without thermal bc rows; the thermal-wind profiles are then σn, σn'
 adiab_tw = bool(par.thermal == 1 and par.ThermaD == 0 and par.diff_rot == 1 and par.thermal_wind >= 1)
 
+# Differential rotation ΔΩ = Σ_n a_n f_n(r) P_n(cos θ) and thermal-wind entropy S_tw = Σ_n σ_n(r) P_n(cos θ) (docs/heat-equation.md §8):
+# dr_high are the degrees n >= 4 of ΔΩ (couplings from diff_rot_generic.py; none for the types with f0, f2 only), dr_nmax the highest
+# degree of ΔΩ, tw_degrees the degrees of S_tw (2, 4 and 6 if thermal_wind = 2, as before, when dr_high is empty).
+dr_high = []
+if par.diff_rot == 1 and par.diff_rot_type == 'solar_P4':
+    dr_high = [4]
+elif par.diff_rot == 1 and par.diff_rot_type == 'tabulated':
+    if par.diff_rot_nmax not in range(4, 17, 2):
+        sys.exit('diff_rot_nmax must be even, 4 to 16')
+    dr_high = list(range(4, par.diff_rot_nmax + 1, 2))
+dr_nmax = max([2] + dr_high)
+if dr_high and par.thermal_wind in (1, 2):
+    tw_nmax = dr_nmax + 2 if par.thermal_wind == 1 else 2*dr_nmax + 2   # dS/dx ~ x ∂F/∂r + (1-x²) ∂F/∂x / r, F of degree n or 2n
+else:
+    tw_nmax = 6 if par.thermal_wind == 2 else 4
+tw_degrees = list(range(2, tw_nmax + 1, 2))
+_dr_digit = '0123456789abcdefghijklmnopqrstuvwxyz'
+
+def dr_code(n):
+    '''3-character profile codes (decode_label) of f_n, r f_n', r² f_n'': abu/spv/psl (n = 0), aub/svp/pls (n = 2), ab4/sv4/pl4, ...'''
+    return {0: ('abu', 'spv', 'psl'), 2: ('aub', 'svp', 'pls')}.get(n, ('ab' + _dr_digit[n], 'sv' + _dr_digit[n], 'pl' + _dr_digit[n]))
+
+def tw_code(n):
+    '''profile codes of p σn and p σn' (p = 1 if adiab_tw): tw2/tp2 ... tw8/tp8, twa/tpa (n = 10), twc/tpc (12), ..., twy/tpy (34)'''
+    return ('tw' + _dr_digit[n], 'tp' + _dr_digit[n])
+
+# profiles that are odd in r (parity of the operators with ricb = 0): g, p dS/dr, (ln ρ)'^2-type products, dS/dr and the σn'
+odd_profiles = ['gra', 'pdS', 'lh1', 'dSd'] + [tw_code(n)[1] for n in range(2, 36, 2)]
+
+def dr_offd(l, ls, row, col):
+    '''
+    block offset, in units of N1 as assemble.py uses it, of the column block of the unknown col ('P', 'S' or 'T') of degree ls
+    for the row of degree l of section row ('u', 'h': rows in the poloidal l set; 'v': toroidal)
+    '''
+    lp, lt, _ = ell(par.m, par.lmax, par.symm)
+    rows = lt if row == 'v' else lp
+    cols = lt if col == 'T' else lp
+    return int(np.where(cols == ls)[0][0] - np.where(rows == l)[0][0])
+
 s = int( (vsymm+1)/2 ) # s=0 if antisymm, s=1 if symm
 m_top = m + 1-s
 m_bot = m + s

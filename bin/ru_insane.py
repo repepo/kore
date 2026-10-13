@@ -112,7 +112,7 @@ istart = {'P': iP, 'T': iT, 'S': iS}
 
 def row_parity(label, vpar):
     (sec, rpower, _, f1, d1, f2, d2, dx) = ut.decode_label(label)
-    adj = int(f1 in ['gra', 'pdS', 'lh1', 'dSd', 'tp2', 'tp4', 'tp6'])
+    adj = int(f1 in ut.odd_profiles)
     opp = 1 - ((rpower + (d1 or 0) + (d2 or 0) + dx + adj) % 2)*2
     return vpar*opp
 
@@ -204,10 +204,12 @@ def dr_blocks(l, sec):
     '''
     if not par.diff_rot:
         return []
-    nw = 6 if par.thermal_wind == 2 else 4      # the exact thermal wind (1+ΔΩ)² has P6: Δl up to ±6
-    comp = {'u': [('upol', [-2, 0, 2], 'P'), ('utor', [-3, -1, 1, 3], 'T')],
-            'v': [('upol', [-3, -1, 1, 3], 'P'), ('utor', [-2, 0, 2], 'T')],
-            'h': [('temp', [-2, 0, 2], 'S')] + ([('upol', range(-nw, nw + 1, 2), 'P'),
+    nw = ut.tw_nmax      # the exact thermal wind (1+ΔΩ)² has P6: Δl up to ±6 (more with ut.dr_high)
+    nd = ut.dr_nmax      # degree of ΔΩ: 2 unless ut.dr_high
+    ev, od = range(-nd, nd + 1, 2), range(-nd - 1, nd + 2, 2)
+    comp = {'u': [('upol', ev, 'P'), ('utor', od, 'T')],
+            'v': [('upol', od, 'P'), ('utor', ev, 'T')],
+            'h': [('temp', ev, 'S')] + ([('upol', range(-nw, nw + 1, 2), 'P'),
                                                 ('utor', range(1 - nw, nw, 2), 'T')] if par.thermal_wind else [])}[sec]
     fun = op.thermal_diffrot if sec == 'h' else op.differential_rotation
     out = [tuple(fun(l, sec, name, i)) + (kind,) for name, offs, kind in comp for i in offs if l + i in (lt if kind == 'T' else lp)]
@@ -317,7 +319,7 @@ def direct_quadratures(P, T, S):
 if par.diff_rot:
     m  = par.m
     G  = par.Gaspard
-    xg, wx = np.polynomial.legendre.leggauss(par.lmax + 12)   # x = cos θ
+    xg, wx = np.polynomial.legendre.leggauss(par.lmax + 12 + (ut.tw_nmax if ut.dr_high else 0))   # x = cos θ
     sg = np.sqrt(1 - xg**2)
     th = np.arccos(xg)
     def Ysch(l, mm):   # Schmidt harmonic Y_l^mm(θ) at φ = 0, as ut.Ylm
@@ -335,6 +337,12 @@ if par.diff_rot:
     dOm  = fX(rap.abuX, rk, 0)[:, None] + fX(rap.aubX, rk, 0)[:, None]*P2x
     dOmr = fX(rap.abuX, rk, 1)[:, None] + fX(rap.aubX, rk, 1)[:, None]*P2x
     dOmt = -3*xg*sg*fX(rap.aubX, rk, 0)[:, None]
+    for n in ut.dr_high:   # degrees above 2 of ΔΩ ('solar_P4', 'tabulated')
+        Pn = np.polynomial.legendre.Legendre.basis(n)
+        fn = lambda r, d, n=n: rap.fX(n, r, d)
+        dOm  = dOm + fX(fn, rk, 0)[:, None]*Pn(xg)
+        dOmr = dOmr + fX(fn, rk, 1)[:, None]*Pn(xg)
+        dOmt = dOmt - sg*Pn.deriv()(xg)*fX(fn, rk, 0)[:, None]
     if par.thermal and par.thermal_wind:
         def tw_sigmas(r):
             '''
@@ -348,7 +356,7 @@ if par.diff_rot:
             f0, f0p, f2, f2p = fX(rap.abuX, r, 0), fX(rap.abuX, r, 1), fX(rap.aubX, r, 0), fX(rap.aubX, r, 1)
             a = 1 + e*f0
             q = G**2*r**2/(par.Beyonce*rap.graviX(r, 0))
-            return -q*np.array([(2/21)*(a*(7*f0p + f2p) + e*f2*(f0p + f2p) + 12*a*f2/r),
+            return -q*par.thermal_wind_amplitude*np.array([(2/21)*(a*(7*f0p + f2p) + e*f2*(f0p + f2p) + 12*a*f2/r),
                                 (6/385)*(11*a*(f2p - 2*f2/r) + e*f2*(11*f0p + 4*f2p + 14*f2/r)),
                                 e*(4/77)*f2*(f2p - 2*f2/r)])
         r0 = ricb if ricb > 0 else -rcmb           # σn' from a Chebyshev interpolant on 2N nodes (r = 0 is not one)
@@ -359,6 +367,32 @@ if par.diff_rot:
         Pn   = np.array([P2x, (35*xg**4 - 30*xg**2 + 3)/8, (231*xg**6 - 315*xg**4 + 105*xg**2 - 5)/16])
         dPn  = np.array([3*xg, (35*xg**3 - 15*xg)/2, (1386*xg**5 - 1260*xg**3 + 210*xg)/16])
         Stw_r, Stw_t = dsig.T @ Pn, -(sig.T @ dPn)*sg          # ∂ᵣS_tw, ∂θS_tw
+        if ut.dr_high and par.thermal_wind in (1, 2):
+            # S_tw of ΔΩ with degrees above 2: ∂θS_tw = -sinθ ∂S/∂x directly from the balance at the grid nodes, and ∂ᵣS_tw from
+            # S(r, x) = ∫_{-1}^{x} ∂S/∂x dx' (Gauss-Legendre on each [-1, x], exact) minus its mean over x, Chebyshev-differentiated in r
+            Lg = np.polynomial.legendre.Legendre
+            nd = [0, 2] + ut.dr_high
+            def dSdx(r, x):   # r (nr,), x (nr, nx) or (nx,): -(r² G²/(Beyonce g)) [x F_r + (1 - x²) F_x/r]
+                x = np.broadcast_to(x, (len(r), np.shape(x)[-1]))
+                f = {n: [fX(lambda rr, d, n=n: rap.fX(n, rr, d), r, d)[:, None] for d in (0, 1)] for n in nd}
+                O  = sum(f[n][0]*Lg.basis(n)(x) for n in nd)
+                Or = sum(f[n][1]*Lg.basis(n)(x) for n in nd)
+                Ox = sum(f[n][0]*Lg.basis(n).deriv()(x) for n in nd)
+                a = (1 + O) if par.thermal_wind == 2 else 1
+                q = (r**2*G**2/(par.Beyonce*rap.graviX(r, 0)))[:, None]
+                return -q*(x*2*a*Or + (1 - x**2)*2*a*Ox/r[:, None])*par.thermal_wind_amplitude
+            u_, w_ = np.polynomial.legendre.leggauss(ut.tw_nmax + 4)
+            def S_of(r):   # S(r, xg) without its P0 part
+                out = np.zeros((len(r), len(xg)))
+                for j, xj in enumerate(xg):
+                    t = -1 + (xj + 1)*(u_ + 1)/2
+                    out[:, j] = (dSdx(r, t) @ w_)*(xj + 1)/2
+                return out - (out @ wx)[:, None]/2
+            Stw_t = -sg*dSdx(rk, xg)
+            Sc = ch.chebfit(xc, S_of(0.5*(rcmb - r0)*(xc + 1) + r0), 2*N - 1)
+            Stw_r = ch.chebval((2*rk - r0 - rcmb)/(rcmb - r0), ch.chebder(Sc)).T*2/(rcmb - r0)
+        if not par.thermal_wind_radial:   # the heat equation without uᵣ ∂S_tw/∂r
+            Stw_r = 0*Stw_r
         # size of ∇S_tw before the cancellations, G² r²/(Beyonce g) |∂F| (S_tw = 0 for 'cylindrical': round-off only)
         aS = abs(G**2*rk**2/(par.Beyonce*rap.graviX(rk, 0)))[:, None]*2*abs(1 + (par.thermal_wind == 2)*dOm)*(abs(dOmr) + abs(dOmt/rk[:, None])) \
             if par.thermal_wind != 3 else abs(par.dSdtheta)*np.ones_like(dOm)

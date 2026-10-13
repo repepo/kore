@@ -480,8 +480,47 @@ def thermal_wind_entropy():
 
     sig  = [ c[n]*rk*N[n]/g0 for n in range(3) ]
     sig1 = [ c[n]*( (N[n] + rk*N1[n])/g0 - rk*N[n]*g1/g0**2 ) for n in range(3) ]
+    if par.thermal_wind_amplitude != 1:
+        sig  = [ par.thermal_wind_amplitude*x for x in sig ]
+        sig1 = [ par.thermal_wind_amplitude*x for x in sig1 ]
 
     return [ sig, sig1 ]
+
+
+def thermal_wind_entropy_generic():
+    '''
+    As thermal_wind_entropy, for ΔΩ = Σ_n a_n f_n P_n with degrees above 2 (ut.dr_high): σₙ and σₙ′ for n in ut.tw_degrees,
+    by Legendre-series algebra at each radius (numpy Legendre objects; radial_profiles.sigma_all uses Gauss quadrature instead),
+    with ∂S/∂x = -c q [x F_r + (1-x²) F_x/r] and its r derivative written out, c = G²/Beyonce, q = r²/g,
+    F = (1+ΔΩ)² - 1 (thermal_wind = 2) or 2ΔΩ (1). Times thermal_wind_amplitude.
+    '''
+    Lg = np.polynomial.legendre.Legendre
+    nd = [0, 2] + ut.dr_high
+    f = { n: [ rap.fX(n, rk, d) for d in (0,1,2) ] for n in nd }
+    g0, g1 = rap.graviX(rk, 0), rap.graviX(rk, 1)
+    c = par.Gaspard**2/par.Beyonce
+    e = int(par.thermal_wind == 2)
+    X, W = Lg([0, 1]), Lg([2/3, 0, -2/3])   # x, 1 - x²
+    sig  = np.zeros((len(ut.tw_degrees), len(rk)))
+    sig1 = np.zeros_like(sig)
+    for k, r in enumerate(rk):
+        O   = sum( Lg.basis(n)*f[n][0][k] for n in nd )   # ΔΩ, ∂ᵣΔΩ, ∂ᵣ²ΔΩ as series in x
+        Or  = sum( Lg.basis(n)*f[n][1][k] for n in nd )
+        Orr = sum( Lg.basis(n)*f[n][2][k] for n in nd )
+        Ox, Oxr = O.deriv(), Or.deriv()
+        a = 1 + e*O
+        Fr, Fx = 2*a*Or, 2*a*Ox
+        Frr = 2*a*Orr + 2*e*Or*Or
+        Fxr = 2*a*Oxr + 2*e*Or*Ox
+        q, q1 = r**2/g0[k], 2*r/g0[k] - r**2*g1[k]/g0[k]**2
+        B  = X*Fr + W*Fx/r
+        B1 = X*Frr + W*(Fxr/r - Fx/r**2)
+        S  = (-c*q*B).integ(lbnd=-1)
+        S1 = (-c*(q1*B + q*B1)).integ(lbnd=-1)
+        for j, n in enumerate(ut.tw_degrees):
+            sig[j, k]  = S.coef[n] if n < len(S.coef) else 0
+            sig1[j, k] = S1.coef[n] if n < len(S1.coef) else 0
+    return [ list(par.thermal_wind_amplitude*sig), list(par.thermal_wind_amplitude*sig1) ]
 
 
 
@@ -506,7 +545,7 @@ def diff_rot_setup():
     [ lp, lt, ll ] = ut.ell( par.m, par.lmax, par.symm)
     ll = np.asarray(ll)
 
-    x, wx = np.polynomial.legendre.leggauss( par.lmax + 10 )
+    x, wx = np.polynomial.legendre.leggauss( par.lmax + 10 + (max(ut.tw_nmax, ut.dr_nmax) if ut.dr_high else 0) )
     sth = np.sqrt(1 - x**2)  # sinθ
     Y   = np.zeros( (len(ll), len(x)), dtype=complex )
     dY  = np.zeros( (len(ll), len(x)), dtype=complex )
@@ -531,6 +570,11 @@ def diff_rot_setup():
     [ f2, f21, f22 ] = [ rap.aubX(rk, d)[:,None] for d in (0,1,2) ]
     dO  = [ f0 + f2*P2, f01 + f21*P2, f02 + f22*P2 ]  # ΔΩ, ∂ᵣΔΩ, ∂ᵣ²ΔΩ
     dOt = [ -3*x*sth*f2, -3*x*sth*f21 ]               # ∂_θΔΩ, ∂ᵣ∂_θΔΩ
+    for n in ut.dr_high:                              # degrees above 2 of ΔΩ
+        Pn = np.polynomial.legendre.Legendre.basis(n)
+        fn = [ rap.fX(n, rk, d)[:,None] for d in (0,1,2) ]
+        dO  = [ dO[d] + fn[d]*Pn(x) for d in (0,1,2) ]
+        dOt = [ dOt[d] - sth*Pn.deriv()(x)*fn[d] for d in (0,1) ]
 
     def force(v, dO0, dOr, dOth):
         # -G [ ΔΩ (i m 𝐯 + 2𝐳×𝐯) + (r vᵣ ∂ᵣΔΩ + v_θ ∂_θΔΩ) sinθ 𝐞ᵩ ],  𝐳×𝐯 = ( -sinθ vᵩ, -cosθ vᵩ, sinθ vᵣ + cosθ v_θ )
@@ -558,10 +602,18 @@ def diff_rot_setup():
         h = 1j*m*G*dO[0]*sg
         if par.thermal_wind:
             # 𝐮⋅∇S_tw = uᵣ Σ σₙ′ Pₙ - (u_θ/r) Σ σₙ sinθ Pₙ′(cosθ)
-            [ sig, sig1 ] = thermal_wind_entropy()
-            for n, sn, sn1 in zip( (2,4,6), sig, sig1 ):
+            if ut.dr_high and par.thermal_wind in (1, 2):
+                [ sig, sig1 ] = thermal_wind_entropy_generic()
+                degs = ut.tw_degrees
+            else:
+                [ sig, sig1 ] = thermal_wind_entropy()
+                degs = (2,4,6)
+            for n, sn, sn1 in zip( degs, sig, sig1 ):
                 Pn = np.polynomial.legendre.Legendre.basis(n)
-                h += u[0,0]*sn1[:,None]*Pn(x) - (u[0,1]/r)*sn[:,None]*sth*Pn.deriv()(x)
+                if par.thermal_wind_radial:
+                    h += u[0,0]*sn1[:,None]*Pn(x) - (u[0,1]/r)*sn[:,None]*sth*Pn.deriv()(x)
+                else:   # no uᵣ ∂S_tw/∂r
+                    h += - (u[0,1]/r)*sn[:,None]*sth*Pn.deriv()(x)
         hl = proj( pss0[:,None]*h, Y )/nl
         drheat = { l: hl[:,k] for k,l in enumerate(ll) }
 

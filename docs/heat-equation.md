@@ -249,21 +249,99 @@ Runs, scripts and notes in `checks/bekki/` (N 64, lmax m + 63, ν = κ = 10¹² 
   low latitudes superadiabatic: m = 1 symm +1 then has a weakly growing mode (12.4 nHz, growth 1.8 nHz).
 - Not reproduced: the growing m = 1 high-latitude mode of Bekki et al. 2022 (−90.9 nHz, growth 14.1 nHz; kore's
   nearest are damped by 3 nHz), and the baroclinic onset of Bekki et al. 2024 (kore needs a 4–8 times larger Δθs).
-  Both are likely the P₂-only rotation profile; not proven. The Δθs runs used a run-local edit of σ₂, σ₄; with
+  Both were the P₂-only rotation profile: with the observed Ω(r, θ) kore has the growing high-latitude mode (+11.3 nHz, Mukhopadhyay et al. 2025: +11.7) and the onset near 500 (§8). The Δθs runs used a run-local edit of σ₂, σ₄; with
   `thermal_wind = 3`, `dSdtheta` = Δθs/c_p the warm-poles 4000 erg g⁻¹ K⁻¹ case gives A and B bitwise equal to that
   run (−101.42 nHz, growth +7.30 nHz).
 
 ## 7. Still open
 
-- A switch to drop u_r ∂ᵣS_tw (term (b)) and a P₄ (or tabulated) Ω(r, θ): both are needed for a like-for-like
-  comparison with §6. Not added, to keep the code as it is until wanted.
+- Done in §8: the switch `thermal_wind_radial` for u_r ∂ᵣS_tw (term (b)), P₄ ('solar_P4') and tabulated Ω(r, θ), the
+  Model S density (`solar_density`), and amplitude controls.
 - ThermaD = 0 with `thermal_wind ≥ 1`: implemented (r² rows in C¹, §3) and tested (`docs/thermad0.md`); the
   ThermaD → 0 limit with fixed-entropy walls has an unresolved boundary layer, and without diffusion the thermal wind
   has small-scale growing modes that are not converged in lmax, see there. Its rows carry σₙ (ln ρ)′ (term (c)) without
   p₀, which converges slowly in N when ρ nearly vanishes at the surface ('user def' with aux0 → 1, ricb = 0); the
   p₀-weighted checks do not see it, `tests/heat_dr/row_check.py` does.
-- The 'smoothed sun' density near the surface (§6).
+- The 'smoothed sun' density near the surface (§6): `solar_density = 'model S'` (§8) avoids it; the default is unchanged.
 - 'Y20-wall-bounded' and 'shellular' (except even σ > 0) at ricb = 0: not smooth at r = 0, now a WARNING.
 - Boussinesq profiles (no `abu`, `aub`, `logrho`): left untouched.
 - `tests/heat_dr/csolve.py` has no equilibration (kore's `solve.py` has Ruiz scaling); it now warns when every
   eigenvalue comes back equal to the shift.
+
+## 8. Generic differential rotation: any Pₙ, 'solar_P4', 'tabulated' (2026-10-13)
+
+Uncommitted on top of 18641206 in `~/Dropbox/kore_github/anelastic_log`. ΔΩ = Σₙ aₙ fₙ(r) Pₙ(cos θ), n even, any n.
+
+**Couplings.** n = 0, 2 keep the closed forms of `diff_rot_coefficients.py`. For n ≥ 4 the new
+`bin/diff_rot_generic.py` projects the force W = G[ΔΩ(i m u + 2ẑ×u) + sinθ(r∂ᵣΔΩ u_r + ∂θΔΩ u_θ)e_φ] of each source
+degree on the target degrees by Gauss–Legendre quadrature in cos θ (exact for these polynomial integrands) and turns the
+12 primitive projections into the 18 coefficients of the existing labels, in the naming and normalisation of
+`diff_rot_coefficients.py` (cached per (n, m), built to lmax + n + 6). Radial profiles fₙ, r fₙ′, r² fₙ″ have the codes
+`abN`, `svN`, `plN` (N = 4, 6, 8, then a, c, e, g for 10–16). Couplings: P→P and T→T |Δl| ≤ n, P↔T |Δl| ≤ n + 1, so
+`assemble.py` loops over Δl up to `utils.dr_nmax` (+1). `diff_rot_generic = 1` builds n = 0, 2 with the quadrature
+too, as a self-check (agrees to ~1e-12).
+
+**Thermal-wind entropy.** For thermal_wind = 1, 2 with degrees above 2, `radial_profiles.sigma_all` takes the Legendre
+coefficients of ∂S/∂x = −(r²G²/(Beyonce g))[x ∂ᵣF + (1 − x²)∂ₓF/r] (F = 2ΔΩ or (1 + ΔΩ)² − 1) by quadrature on the
+Chebyshev nodes and integrates in x; σₙ′ by Chebyshev differentiation. S_tw has degrees 2…nmax + 2 (thermal_wind 1) or
+2…2 nmax + 2 (thermal_wind 2): profiles `tw2`…`tw8`, `twa`, `twc`, …, `twy` (n = 34) and `tp*` for σₙ′.
+`heat_dr_coefficients.py` builds Pₙ(X), Pₙ′(X), Pₙ′(X)D for any n by the Legendre recurrence. thermal_wind = 3 is
+unchanged (σ₂ only).
+
+**Profiles.**
+
+| `diff_rot_type` | Ω(r, θ) |
+| --- | --- |
+| `'solar_P4'` | Ω_RZ + [Ω_CZ(θ) − Ω_RZ](1 + erf((x − rtc)/dtc))/2, Ω_CZ = c₀ + c₂cos²θ + c₄cos⁴θ, `diff_rot_solar` = [464, −76, −50, 433.5, 0.71, 0.045] (Mukhopadhyay et al. 2026); P₀, P₂, P₄ |
+| `'tabulated'` | `diff_rot_file`: .npz with `ome[θ, r]` (nHz), `r` (R☉), `theta` (rad), the layout of the Mukhopadhyay et al. 2025 Edmond file `data/diff_rot.npz`; `tests/diff_rot/ls_to_edmond_layout.py` converts the Larson & Schou 2018 table. Projected on P₀…P_nmax (`diff_rot_nmax`, 4–16) at each table radius, then a Chebyshev fit of degree `diff_rot_rdeg` (24) over the shell; the fit and truncation errors are printed |
+
+Both use ΔΩ = Ω/Ω_ref − 1 with Ω_ref/2π = `diff_rot_frame` (456 nHz) and x = r·aux0 for 'smoothed sun'. For the Edmond
+profile the truncation error at nmax 8 is up to 17 nHz near the poles at the surface; nmax 12 is the working choice.
+
+**Amplitude controls**, for every type: `diff_rot_term_amp` = [a₀, a₂, …, a₁₆] multiplies each Pₙ term of ΔΩ (missing
+entries 1); `diff_rot_amplitude` multiplies the whole of 'solar_P4' and 'tabulated' (the other types keep its old
+meaning); `thermal_wind_amplitude` multiplies S_tw, which is otherwise the thermal wind of the scaled ΔΩ.
+`thermal_wind_radial` = 0 drops u_r ∂ᵣS_tw (term (b)), as the papers do; 1 (default) keeps it.
+
+**Model S density.** `solar_density = 'model S'` replaces the 'smoothed sun' ln ρ and ln p by Chebyshev fits of
+`bin/model_s.at` (degree `solar_density_deg` = 30 on `solar_density_window`, default the shell widened by 0.01 below and
+0.005 above). It reproduces the run-local fit of the benchmark runs (`checks/bekki/mkb.py`): A and B bitwise equal.
+
+**Other files.** `utils.py`: `dr_high`, `dr_nmax`, `tw_nmax`, `tw_degrees`, `dr_code`, `tw_code`, `odd_profiles`,
+`dr_offd`. `operators.py`: `differential_rotation` sums the closed forms and the generic terms; `thermal_diffrot` loops
+over `tw_degrees` and Δl up to `tw_nmax`. `submatrices.py`: the labels per n. `utils4pp.py` (spin_doctor),
+`ru_insane.py`, `tests/heat_dr/ebal.py`: generic Δl ranges, ΔΩ and S_tw summed over n, the switches and amplitudes.
+
+**Changes visible to existing runs:** none. A and B are bitwise equal to 18641206 for 13 configurations
+(`tests/diff_rot/regress.sh`) and for the benchmark runs of §6.
+
+**Tests** (`tests/diff_rot/README.md`): generic vs closed-form coefficients 4e-11, no coupling outside the assembled Δl
+ranges for n 4–16 (6e-12); `ru_insane` grid checks ~1e-14 on 'tabulated' (thermal_wind 1 and 2, radial 0 and 1, term
+and thermal-wind amplitudes) and 'solar_P4', and it catches a 1e-4 change of one generic coefficient or of σₙ;
+spin_doctor powers against the matrix pairings ≤ 1e-8, with the energy balances closing to 1e-7 (1e-2 to 1 without the
+new terms); kore's ∂θS_tw against the Edmond `dsdt` 3 % rms (pole-to-equator contrast within 0.1–2 %).
+
+**Like-for-like benchmark** (Mukhopadhyay et al. 2025 set-up: Model S density, shell 0.71–0.985 R☉, ν = κ = 1e12,
+δ = 0, stress-free, ∂ᵣs = 0, thermal_wind = 2 without u_r ∂ᵣS_tw, their Ω from the Edmond file, N 64, lmax m + 63):
+
+| mode (symm) | kore, nmax 12 (nHz) | Mukhopadhyay compressible (nHz) | kore − theirs | kore, P₀ + P₂ only (§6) |
+| --- | --- | --- | --- | --- |
+| m 1 high-latitude (−1) | −95.759, growth +11.301 | −95.70, +11.69 | −0.06, −0.39 | −95.67, −15.8 |
+| m 3 Rossby n0 (−1) | −262.052, −0.877 | −262.07, −0.88 | +0.02, 0.00 | within 0.8 |
+| m 3 Rossby n1 (−1) | −181.934, −9.700 | −182.05, −9.67 | +0.12, −0.03 | 1.1–2.7 off |
+| m 3 columnar (+1) | 210.908, −11.090 | 210.84, −11.09 | +0.07, 0.00 | 3.4–9.2 off |
+| m 10 HFR (+1) | −211.088, −19.963 | −211.28, −20.00 | +0.19, +0.04 | 2.7–6.2 off |
+
+The m 1 mode is converged: nmax 8 / 12 / 16 give −95.805 / −95.759 / −95.749 (growth +11.48 / +11.30 / +11.29), and
+N, lmax 96 reproduces N 64 to 1e-6 nHz. Their targets are their compressible values; the anelastic ones of the
+same paper differ from them by amounts of this order, and their published eigenfunctions use 24 radial points. The m 3
+symm −1 window around n0 also holds two growing modes (−260.59 nHz, growth +17.98; −250.45, +5.04) with residuals
+3e-5 to 4e-5 (1e-7 for n0); not examined, and not reported in the paper's tables.
+
+**Bekki et al. 2024 onset with the observed Ω** (thermal_wind = 3, Δθs prescribed, otherwise as above, m 1 symm −1;
+`checks/bekki/` and `~/lab/kore_step2_runs` on the Mac): the m 1 high-latitude mode becomes unstable at
+|Δθs| = 425 erg/g/K with the Edmond Ω and 546 with the Larson & Schou 2018 table (c_p = 3.46e8; 513 and 658 in the
+papers' c_p = 4.17e8), against ~500 published and 2199 (2650) for the radially uniform P₀ + P₂ profile of §6. Growth
+at |Δθs| = 0, 250, 500, 1000, 2000: −3.70, −1.60, +0.68, +5.02, +12.53 nHz (Edmond, mode at −91.1…−94.6 nHz);
+−3.83, −2.30, −0.36, +3.56, +10.42 (Larson & Schou, −96.1…−98.9 nHz). So the gap of §6 was the radial shear of Ω in
+the lower convection zone, as step 1 of the comparison concluded with kore's 'solar' step (onset 509).

@@ -33,6 +33,14 @@ class default_params():
         # self.model_type = 'user def'          # For implicitly defined profiles (adjust ρ and when required g, p, pdS in radial_profiles.py)
         # self.model_type = 'smoothed sun'      # Smooth fit to solar Model S (smoothed_sun.py) with a simple dS/dr, see radial_profiles.solar_profiles
 
+        # 'smoothed sun' density and pressure: 'fit' (smoothed_sun.py, the default) or 'model S' (Chebyshev fits of ln ρ, ln p of
+        # bin/model_s.at of degree solar_density_deg over solar_density_window = [x_lo, x_hi] in x = r aux0; None: the shell
+        # [ricb aux0, aux0] widened by 0.01 below and 0.005 above; needs ricb > 0). The 'fit' density is up to 48 % off near the
+        # surface, which moves n = 1 Rossby, HFR and columnar modes by 1.5-8 nHz (docs/heat-equation.md §6). g is unchanged.
+        self.solar_density = 'fit'
+        self.solar_density_deg = 30
+        self.solar_density_window = None
+
         # profile smoothing power
         self.smopo = 0
 
@@ -91,6 +99,15 @@ class default_params():
         # times ΔΩ = par.diff_rot_amplitude (1 for the fit itself). r is in units of aux0 R☉ with model_type = 'smoothed sun', in R☉ otherwise.
         # f0, f2 are relative to 435 nHz: the frame (Ω_ref) must rotate at 435 nHz (ViscosD, ThermaD, Beyonce for that rate).
         # The tachocline step needs N ~ 400 with ricb = 0. 'Y20-wall-bounded' and 'shellular' are not smooth at r = 0 (use ricb > 0).
+        # self.diff_rot_type = 'solar_P4' # Ω/2π = Ω_RZ + [Ω_CZ(θ) - Ω_RZ] (1 + erf((x - rtc)/dtc))/2, Ω_CZ(θ) = c0 + c2 cos²θ + c4 cos⁴θ
+        # (Mukhopadhyay et al. 2026: 464, -76, -50 nHz, Ω_RZ = 433.5 nHz, rtc = 0.71, dtc = 0.045; diff_rot_solar below), x = r aux0
+        # with 'smoothed sun', r otherwise; ΔΩ = Ω/Ω_ref - 1 with Ω_ref/2π = diff_rot_frame nHz. Terms P0, P2, P4 (generic coupling for P4).
+        # self.diff_rot_type = 'tabulated' # Ω(r, θ) from diff_rot_file (.npz with ome[θ, r] in nHz, r in R☉, theta in rad, as the
+        # Mukhopadhyay et al. 2025 Edmond file data/diff_rot.npz; tests/diff_rot/ls_to_edmond_layout.py converts the Larson & Schou 2018 table),
+        # projected on P0, P2, ..., P_diff_rot_nmax at each table radius and fitted in r (diff_rot_rdeg); ΔΩ = Ω/Ω_ref - 1 as 'solar_P4'.
+        # Amplitudes, for every type: ΔΩ = Σ_n a_n f_n(r) P_n(cos θ), a_n = diff_rot_term_amp[n/2] (n = 0, 2, ..., 16), times
+        # diff_rot_amplitude for 'solar_P4' and 'tabulated' (for the other types diff_rot_amplitude keeps its type-specific meaning).
+        # The thermal-wind entropy (thermal_wind = 1, 2) is that of the scaled ΔΩ, times thermal_wind_amplitude.
 
         self.diff_rot_amplitude = 1.0  # Amplitude of the differential rotation, corresponds to different parameter depending on the DR type
         self.thermal_wind = 1  # With thermal = 1 and diff_rot = 1 the heat equation gets the advection i m Gaspard ΔΩ s and,
@@ -103,6 +120,19 @@ class default_params():
         # diff_rot_type = 'rigid' and diff_rot_amplitude = 0.
         # spin_doctor's residuals include these terms (flow.dat: Wdr, Wdr_im; thermal.dat: Wdr_thm); tests/heat_dr/terms.py gives the matrix-level balance.
         self.dSdtheta = 0.0  # thermal_wind = 3 only: ∂S_tw/∂θ = dSdtheta sin 2θ, S_tw in the units of s (δs/c_p), so dSdtheta = Δθs/c_p
+        # (Bekki et al. 2022, 2024 quote Δθs in erg/g/K with c_p = 4.17e8 erg/g/K, fully ionised hydrogen; Model S has ~3.46e8)
+        self.diff_rot_term_amp = [1.0]*9  # a_0, a_2, ..., a_16: factors of the P0, P2, ..., P16 terms of ΔΩ (missing entries: 1)
+        self.thermal_wind_amplitude = 1.0  # thermal_wind = 1, 2: factor of the thermal-wind entropy S_tw (1: the balanced value)
+        self.thermal_wind_radial = 1  # 1: keep u_r ∂S_tw/∂r in the heat equation (consistent); 0: drop it, as Bekki et al. 2022 and
+        # Mukhopadhyay et al. 2025 (their background has ∂s0/∂r = 0 only; with S_tw(r, θ) the term is O(S_tw/r), not small)
+        self.diff_rot_frame = 456.0  # 'solar_P4', 'tabulated': Ω_ref/2π in nHz, the rotation rate of the frame (time unit 1/Ω_ref)
+        self.diff_rot_solar = [464.0, -76.0, -50.0, 433.5, 0.71, 0.045]  # 'solar_P4': c0, c2, c4, Ω_RZ (nHz), rtc, dtc
+        self.diff_rot_file = ''  # 'tabulated': path of the .npz (ome, r, theta), absolute or relative to the run directory
+        self.diff_rot_nmax = 8  # 'tabulated': highest even degree n kept in Ω (4 ... 16); the heat rows couple Δl up to 2 nmax + 2
+        # with thermal_wind = 2. For the HMI profile nmax = 8 leaves up to 7 nHz at 75° latitude near the surface, 12 about 2.6
+        self.diff_rot_rdeg = 24  # 'tabulated': degree of the least-squares Chebyshev fit of each f_n in r over the shell
+        self.diff_rot_generic = 0  # 1: build the P0 and P2 couplings with the generic quadrature builder too (self-check of
+        # diff_rot_generic.py against the closed forms of diff_rot_coefficients.py; the results agree to ~1e-12)
 
         # ----------------------------------------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------------------------------- Thermal parameters

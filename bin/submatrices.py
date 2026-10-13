@@ -21,6 +21,7 @@ import sys
 import os
 from parameters import par
 import utils as ut
+import diff_rot_generic as drg
 
 
 
@@ -184,6 +185,13 @@ def main(ncpus):
         arg2 += [ vT ]*3
         labl += [ 'u2abu0_D0','u1abu0_D1','u2spv0_D0' ]
 
+        # For the degrees n >= 4 of ΔΩ (utils.dr_high; couplings from diff_rot_generic): the same radial operators with f_n
+        for n in ut.dr_high:
+            for comp, vpar in (('upol', vP), ('utor', vT)):
+                lab = [ x for c, x in drg.labels(n, 'u', comp) ]
+                arg2 += [ vpar ]*len(lab)
+                labl += lab
+
 
     # -------------------------------------------------------------------------------------------------------------------------------------------
     # Matrix labels needed for the Navier-Stokes equation, single curl equations -------------------------------------- NavStok 1curl - section v
@@ -237,6 +245,12 @@ def main(ncpus):
         # For f0(r)Y00
         arg2 += [ vT ]
         labl += [ 'v1abu0_D0' ]
+
+        for n in ut.dr_high:   # degrees n >= 4 of ΔΩ
+            for comp, vpar in (('upol', vP), ('utor', vT)):
+                lab = [ x for c, x in drg.labels(n, 'v', comp) ]
+                arg2 += [ vpar ]*len(lab)
+                labl += lab
             
 
     if par.thermal == 1:                  
@@ -269,7 +283,19 @@ def main(ncpus):
             # advection of s by the background rotation:  i m (f0 + f2 P2) s,  Δl = 0, ±2  (s column)
             arg2 += [ vP ]*2
             labl += [ 'h0pss0abu0_D0', 'h0pss0aub0_D0' ] if par.ThermaD > 0 else [ 'h0abu0_D0', 'h0aub0_D0' ]
-            if par.thermal_wind:
+            for n in ut.dr_high:   # i m a_n f_n P_n s, Δl up to ±n
+                arg2 += [ vP ]
+                labl += [ ('h0pss0%s0_D0' if par.ThermaD > 0 else 'h0%s0_D0') % ut.dr_code(n)[0] ]
+            if par.thermal_wind and ut.dr_high:
+                # S_tw = Σ σn Pn, n in utils.tw_degrees: the labels below for every n (tw, tp = utils.tw_code(n));
+                # without the 'tp' ones if thermal_wind_radial = 0
+                for n in ut.tw_degrees:
+                    tw, tp = ut.tw_code(n)
+                    lab = ([ 'h1%s0_D0' % tp ] if par.thermal_wind_radial else []) + \
+                          [ 'h2%s0_D0' % tw, 'h1%s0_D1' % tw, 'h1%s0lho1_D0' % tw ]
+                    arg2 += [ vP ]*len(lab) + [ vT ]
+                    labl += lab + [ 'h1%s0_D0' % tw ]
+            elif par.thermal_wind:
                 # advection of the thermal-wind entropy S_tw = σ2 P2 + σ4 P4 (+ σ6 P6 if thermal_wind = 2; σ4 = 0 if thermal_wind = 3) by u:
                 # uᵣ dS_tw/dr -> r p σn' L P (tp2, tp4, tp6 = p σn'), Δl = 0, ±2, ±4 (±6) (P column)
                 # (u_θ/r) dS_tw/dθ -> p σn [P + r P' + r (ln ρ)' P] (tw2, tw4, tw6 = p σn), Δl = 0, ±2, ±4 (±6) (P column)
@@ -277,12 +303,18 @@ def main(ncpus):
                 arg2 += [ vP ]*8
                 labl += [ 'h1tp20_D0', 'h2tw20_D0', 'h1tw20_D1', 'h1tw20lho1_D0',
                           'h1tp40_D0', 'h2tw40_D0', 'h1tw40_D1', 'h1tw40lho1_D0' ]
+                if not par.thermal_wind_radial:   # drop uᵣ ∂S_tw/∂r (term (b)): no 'tp' labels
+                    k = [ i for i, x in enumerate(labl) if x[2:4] == 'tp' and x[0] == 'h' ]
+                    for i in reversed(k):
+                        del labl[i]; del arg2[i]
                 # (u_θ/r) dS_tw/dθ toroidal part -> -i m r p σn T, Δl = ±1, ±3 (±5) (T column)
                 arg2 += [ vT ]*2
                 labl += [ 'h1tw20_D0', 'h1tw40_D0' ]
                 if par.thermal_wind == 2:
                     arg2 += [ vP ]*4 + [ vT ]
                     labl += [ 'h1tp60_D0', 'h2tw60_D0', 'h1tw60_D1', 'h1tw60lho1_D0', 'h1tw60_D0' ]
+                    if not par.thermal_wind_radial:
+                        i = labl.index('h1tp60_D0'); del labl[i]; del arg2[i]
 
 
 
@@ -308,7 +340,7 @@ def main(ncpus):
             pkey  += [ key1 ]
             parg1 += [ dx ]             # dx is derivative order
             parg2 += [ arg2[k] ]        # vector_parity
-            adj = int(func1 in ['gra', 'pdS', 'lh1', 'dSd', 'tp2', 'tp4', 'tp6'])   # odd profiles
+            adj = int(func1 in ut.odd_profiles)   # odd profiles (g, p dS/dr, ..., the σn')
             parg3 += [ 1-(( rpower + (dorder1 or 0) + (dorder2 or 0) + adj )%2)*2 ]
 
     # For each of the unique operator id's we generate in parallel the Chebyshev
@@ -369,7 +401,7 @@ def main(ncpus):
 
         if par.ricb == 0 :  # --------------------------------------------------------- If no solid inner core then remove unneeded rows and cols
 
-            adj = int(func1 in ['gra', 'pdS', 'lh1', 'dSd', 'tp2', 'tp4', 'tp6'])   # odd profiles   # adjusts operator parity for these profiles
+            adj = int(func1 in ut.odd_profiles)   # odd profiles   # adjusts operator parity for these profiles
             operator_parity = 1-(( rpower + (dorder1 or 0) + (dorder2 or 0) + dx + adj )%2)*2  # we use 'or 0' to give 0 when dorder is None
             #print(labl1, operator_parity, adj, rpower, vector_parity)
             overall_parity  = vector_parity * operator_parity

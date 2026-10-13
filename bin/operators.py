@@ -6,6 +6,7 @@ from parameters import par
 import utils as ut
 
 if par.diff_rot : import diff_rot_coefficients as dr
+if par.diff_rot : import diff_rot_generic as drg
 if par.diff_rot and par.thermal : import heat_dr_coefficients as hdr
 
 
@@ -112,6 +113,28 @@ def coriolis(l, section, component, offdiag):  # -------------------------------
 
 
 def differential_rotation(l, section, component, offdiag):  # ------------------------ Differential rotation forcing terms
+    """
+        The force of the background flow U0 = Gaspard ΔΩ r sinθ e_φ, ΔΩ = Σ_n a_n f_n(r) P_n(cos θ): the P0 and P2 terms from the
+        closed forms of diff_rot_coefficients (_differential_rotation_closed below), the terms n >= 4 (utils.dr_high; and n = 0, 2
+        too if diff_rot_generic = 1) from diff_rot_generic. Returns [matrix, offd] (offd in units of N1, as assemble.py uses it).
+    """
+    m = par.m
+    out, offd = (0, 0) if par.diff_rot_generic else _differential_rotation_closed(l, section, component, offdiag)
+    ns = ut.dr_high + ([0, 2] if par.diff_rot_generic else [])
+    gen = 0
+    for n in ns:
+        if abs(offdiag) <= drg.max_dl(n, section, component) and (offdiag + n) % 2 == int((section == 'u') != (component == 'upol')):
+            for c, lab in drg.labels(n, section, component):
+                gen = gen + drg.coef(c, n, l, m, offdiag)*globals()[lab]
+    if not isinstance(gen, int):
+        o = ut.dr_offd(l, l + offdiag, section, 'P' if component == 'upol' else 'T')
+        if not isinstance(out, int) and o != offd:
+            raise ValueError('differential_rotation: offd %d (closed form) != %d' % (offd, o))
+        out, offd = out + gen, o
+    return [ par.Gaspard * out/(l*(l+1.))**3, offd ]
+
+
+def _differential_rotation_closed(l, section, component, offdiag):  # ------------------- P0, P2 terms, closed forms
     """
         Differential rotation background velocity field forcing terms
         On the form Ω(r, θ) = Ω0 * [ 1 + ΔΩ * (f0(r) * Y00(θ) + f2(r) * Y20(θ)) ], with : 
@@ -316,7 +339,7 @@ def differential_rotation(l, section, component, offdiag):  # ------------------
 
                 offd = 1
 
-    return [ par.Gaspard * out/(l*(l+1.))**3, offd ]
+    return [ out, offd ]
 
 
 def viscous_diffusion(l, section, component, offdiag):  # ------------------------------------------------ viscous force
@@ -407,39 +430,59 @@ def thermal_diffrot(l, section, component, offdiag):  # ------------------- Diff
     L = l*(l+1.)
     lp, lt, _ = ut.ell(par.m, par.lmax, par.symm)
     ls = l + offdiag
-    dlmax = 6 if par.thermal_wind == 2 else 4   # largest |Δl| of the P column
+    dlmax = ut.tw_nmax   # largest |Δl| of the P column (6 if thermal_wind = 2, else 4, unless ut.dr_high)
+    G = globals()
 
     if section == 'h':
 
-        if component == 'temp' and offdiag in [-2, 0, 2]:   # i m Gaspard (f0 + f2 P2) s
+        if component == 'temp' and offdiag % 2 == 0 and abs(offdiag) <= ut.dr_nmax:   # i m Gaspard Σ_n a_n f_n P_n s
 
             if par.ThermaD > 0:
                 out = 1j*m * hdr.coef('P2', l, m, offdiag) * h0pss0aub0_D0
                 if offdiag == 0:
                     out = out + 1j*m * h0pss0abu0_D0
+                for n in ut.dr_high:
+                    out = out + 1j*m * hdr.coef('P%d' % n, l, m, offdiag) * G['h0pss0%s0_D0' % ut.dr_code(n)[0]]
             else:   # rows rʰ (eq)/p
                 out = 1j*m * hdr.coef('P2', l, m, offdiag) * h0aub0_D0
                 if offdiag == 0:
                     out = out + 1j*m * h0abu0_D0
+                for n in ut.dr_high:
+                    out = out + 1j*m * hdr.coef('P%d' % n, l, m, offdiag) * G['h0%s0_D0' % ut.dr_code(n)[0]]
             out = par.Gaspard * out
             offd = int(np.where(lp == ls)[0][0] - np.where(lp == l)[0][0])
 
         elif component == 'upol' and par.thermal_wind and abs(offdiag) <= dlmax and offdiag % 2 == 0:   # u.grad S_tw, poloidal part
 
             Ls = ls*(ls+1.)   # L of the source degree, from uᵣ = L P/r
-            out = Ls * ( hdr.coef('P2', l, m, offdiag) * h1tp20_D0 + hdr.coef('P4', l, m, offdiag) * h1tp40_D0 ) \
-                + hdr.coef('dP2D', l, m, offdiag) * ( h2tw20_D0 + h1tw20_D1 + h1tw20lho1_D0 ) \
-                + hdr.coef('dP4D', l, m, offdiag) * ( h2tw40_D0 + h1tw40_D1 + h1tw40lho1_D0 )
-            if par.thermal_wind == 2:
-                out = out + Ls * hdr.coef('P6', l, m, offdiag) * h1tp60_D0 \
-                    + hdr.coef('dP6D', l, m, offdiag) * ( h2tw60_D0 + h1tw60_D1 + h1tw60lho1_D0 )
+            rad = par.thermal_wind_radial   # 0: no uᵣ ∂S_tw/∂r (term (b)), its 'tp' labels are not built
+            if not ut.dr_high:
+                out = Ls * ( hdr.coef('P2', l, m, offdiag) * h1tp20_D0 + hdr.coef('P4', l, m, offdiag) * h1tp40_D0 ) if rad else 0
+                out = out + hdr.coef('dP2D', l, m, offdiag) * ( h2tw20_D0 + h1tw20_D1 + h1tw20lho1_D0 ) \
+                    + hdr.coef('dP4D', l, m, offdiag) * ( h2tw40_D0 + h1tw40_D1 + h1tw40lho1_D0 )
+                if par.thermal_wind == 2:
+                    if rad:
+                        out = out + Ls * hdr.coef('P6', l, m, offdiag) * h1tp60_D0
+                    out = out + hdr.coef('dP6D', l, m, offdiag) * ( h2tw60_D0 + h1tw60_D1 + h1tw60lho1_D0 )
+            else:   # S_tw = Σ σn Pn, n in ut.tw_degrees
+                out = 0
+                for n in ut.tw_degrees:
+                    tw, tp = ut.tw_code(n)
+                    if rad:
+                        out = out + Ls * hdr.coef('P%d' % n, l, m, offdiag) * G['h1%s0_D0' % tp]
+                    out = out + hdr.coef('dP%dD' % n, l, m, offdiag) * ( G['h2%s0_D0' % tw] + G['h1%s0_D1' % tw] + G['h1%s0lho1_D0' % tw] )
             offd = int(np.where(lp == ls)[0][0] - np.where(lp == l)[0][0])
 
         elif component == 'utor' and par.thermal_wind and abs(offdiag) < dlmax and offdiag % 2 == 1:   # u.grad S_tw, toroidal part
 
-            out = -1j*m * ( hdr.coef('dP2', l, m, offdiag) * h1tw20_D0 + hdr.coef('dP4', l, m, offdiag) * h1tw40_D0 )
-            if par.thermal_wind == 2:
-                out = out - 1j*m * hdr.coef('dP6', l, m, offdiag) * h1tw60_D0
+            if not ut.dr_high:
+                out = -1j*m * ( hdr.coef('dP2', l, m, offdiag) * h1tw20_D0 + hdr.coef('dP4', l, m, offdiag) * h1tw40_D0 )
+                if par.thermal_wind == 2:
+                    out = out - 1j*m * hdr.coef('dP6', l, m, offdiag) * h1tw60_D0
+            else:
+                out = 0
+                for n in ut.tw_degrees:
+                    out = out - 1j*m * hdr.coef('dP%d' % n, l, m, offdiag) * G['h1%s0_D0' % ut.tw_code(n)[0]]
             offd = int(np.where(lt == ls)[0][0] - np.where(lp == l)[0][0])
 
     return [ -out/L**3, offd ]
