@@ -125,7 +125,7 @@ $$
 adds three terms to the left-hand side of the heat equation:
 
 $$
-p_0\left[\thinspace i\thinspace m\thinspace \Delta\Omega\thinspace s + u_r\thinspace \frac{\partial S_{tw}}{\partial r} + \frac{u_\theta}{r}\thinspace \frac{\partial S_{tw}}{\partial\theta} \right]. \tag{1}
+p_0\left[\thinspace i\thinspace m\thinspace \Delta\Omega\thinspace s + u_r\thinspace \frac{\partial S_{tw}}{\partial r} + \frac{u_\theta}{r}\thinspace \frac{\partial S_{tw}}{\partial\theta} \right]. \qquad (1)
 $$
 
 They are, in order:
@@ -183,11 +183,16 @@ where $\hat{\mathbf e}_ s$ is the cylindrical radial unit vector. Taking the cur
 $\phi$-component gives
 
 $$
-\frac{1}{r}\frac{\partial S_{tw}}{\partial\theta} = \frac{r\sin\theta}{\mathrm{Beyonce}\thinspace g(r)}\thinspace \frac{\partial (1+\Delta\Omega)^2}{\partial z},
-\qquad \frac{\partial}{\partial z} = \cos\theta\thinspace \frac{\partial}{\partial r} - \frac{\sin\theta}{r}\frac{\partial}{\partial\theta}. \tag{2}
+\frac{1}{r}\frac{\partial S_{tw}}{\partial\theta} = \frac{r\sin\theta}{\mathrm{Beyonce}\thinspace g(r)}\thinspace \frac{\partial (1+\Delta\Omega)^2}{\partial z} \qquad (2)
 $$
 
-This is the thermal-wind equation in kore's variables. In dimensional form it reads
+where $z$ is the coordinate along the rotation axis:
+
+$$
+\frac{\partial}{\partial z} = \cos\theta\thinspace \frac{\partial}{\partial r} - \frac{\sin\theta}{r}\frac{\partial}{\partial\theta}.
+$$
+
+Equation (2) is the thermal-wind equation in kore's variables. In dimensional form it reads
 
 $$
 r\sin\theta\thinspace \frac{\partial\Omega^2}{\partial z} = \frac{g}{c_p\thinspace r}\thinspace \frac{\partial S}{\partial\theta},
@@ -204,7 +209,7 @@ $$
 S_{tw} &= \sigma_2(r)\thinspace P_2(\cos\theta) + \sigma_4(r)\thinspace P_4(\cos\theta),\cr
 \sigma_2 &= -\frac{2r^2}{\mathrm{Beyonce}\thinspace g}\left[\frac{f_0'}{3} + \frac{f_2'}{21} + \frac{4}{7}\frac{f_2}{r}\right],\cr
 \sigma_4 &= -\frac{6r^2}{35\thinspace \mathrm{Beyonce}\thinspace g}\left[f_2' - \frac{2f_2}{r}\right].
-\end{aligned} \tag{3}
+\end{aligned} \qquad (3)
 $$
 
 This linear form is `thermal_wind = 1`.
@@ -219,7 +224,7 @@ $$
 \sigma_2 &= -\frac{2r^2G^2}{\mathrm{Beyonce}\thinspace g}\left[(1+e f_0)\left(\frac{f_0'}{3} + \frac{f_2'}{21} + \frac{4}{7}\frac{f_2}{r}\right) + \frac{e\thinspace f_2\thinspace (f_0' + f_2')}{21}\right],\cr
 \sigma_4 &= -\frac{6r^2G^2}{35\thinspace \mathrm{Beyonce}\thinspace g}\left[(1+e f_0)\left(f_2' - \frac{2f_2}{r}\right) + e\left(f_2 f_0' + \frac{4}{11} f_2 f_2' + \frac{14}{11}\frac{f_2^2}{r}\right)\right],\cr
 \sigma_6 &= -e\thinspace \frac{4r^2G^2}{77\thinspace \mathrm{Beyonce}\thinspace g}\thinspace f_2\left(f_2' - \frac{2f_2}{r}\right).
-\end{aligned} \tag{3'}
+\end{aligned} \qquad (3')
 $$
 
 How much the exact form matters. For the conical profile below, it multiplies $\sigma_2$ by $1 + 2\varepsilon/3$ and
