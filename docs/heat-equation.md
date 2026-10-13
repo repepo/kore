@@ -1,12 +1,11 @@
-# Heat equation with differential rotation: the missing terms
+# Differential rotation in the heat equation: derivation, implementation, benchmarks
 
-Derived 2026-10-11 for kore `anelastic_log` (HEAD `652e1490`). Verified with sympy in `checks/check_heat.py`
-(output `checks/check_heat.out`), by four independent re-derivations (thermal wind, linearisation, harmonic couplings,
-code mapping) and against Bekki, Cameron & Gizon 2022. Implemented and tested on 2026-10-12 in the work copy
-`~/lab/aneldiro` (§5), committed there by Andres as `09285a5e`. A second round, uncommitted on top of it, the same day added the `Gaspard` factors, the exact (1+ΔΩ)² thermal
-wind (`thermal_wind = 2`), `ThermaD = 0`, the `spin_doctor` diagnostics and the `ru_insane` tests (§5), and ran the
-solar benchmark (§6). A third round, also uncommitted, added ThermaD = 0 with the thermal wind (§3, `docs/thermad0.md`)
-and a prescribed S_tw, `thermal_wind = 3` (§1). §7 lists what is still open.
+The user guide (parameters, profiles, examples) is [differential-rotation.md](differential-rotation.md). This page
+holds the derivation (§0–3), the implementation and its tests (§5, §8) and the benchmarks (§4, §6, §8). It was derived
+on 2026-10-11 and committed in three steps on `anelastic_log`: the heat-equation terms (`be2a4db5`); the `Gaspard`
+factors, the exact and prescribed thermal wind, `ThermaD = 0` (with [thermad0.md](thermad0.md)) and the `spin_doctor`
+diagnostics (`18641206`); any Pₙ, 'solar_P4', 'tabulated' and the amplitude controls (`92a0d020`, §8). The checks
+are in `tests/heat_dr/` and `tests/diff_rot/`. §7 lists what is still open.
 
 ## 0. Result in one paragraph
 
@@ -46,7 +45,7 @@ Cameron & Gizon 2022 (A&A 662, A16). The l = 0 part of S_tw is absorbed in S₀(
 
 This linear form is `thermal_wind = 1`. Keeping the ΔΩ² term (`thermal_wind = 2`) changes σ₂, σ₄ by products of the
 profiles and adds a P₆ component; with the frame rate `Gaspard` = G (time unit 1/Ω_ref) the right side of (2) gets a
-factor G². With e = 0 for `thermal_wind = 1` and e = 1 for `thermal_wind = 2` (closed forms of `checks/check_heat.out`):
+factor G². With e = 0 for `thermal_wind = 1` and e = 1 for `thermal_wind = 2` (closed forms, checked by `tests/heat_dr/tw_sympy.py`):
 
     σ₂ = −( 2r²G² / (Beyonce g) ) [ (1 + e f₀)(f₀′/3 + f₂′/21 + (4/7) f₂/r) + e f₂ (f₀′ + f₂′)/21 ],
     σ₄ = −( 6r²G² / (35 Beyonce g) ) [ (1 + e f₀)(f₂′ − 2f₂/r) + e (f₂f₀′ + (4/11) f₂f₂′ + (14/11) f₂²/r) ],          (3′)
@@ -113,7 +112,7 @@ and cut afterwards: formed at lmax they are wrong in the top degrees (errors of 
 is anti-Hermitian: in the entropy budget it only shifts the frequency (∫ p₀ ΔΩ |s|² dV), while (b) and (c) exchange
 entropy "energy" with the flow.
 
-Verification (`checks/check_heat.py`, 0 failures): (3) against direct integration of (2); the curl of the background
+Verification (sympy, 0 failures; `tests/heat_dr/tw_sympy.py` and `heat_check.py` repeat the main checks): (3) against direct integration of (2); the curl of the background
 balance vanishes with S_tw in place (linear and exact); barotropic check; the matrices X, D, P₂(X), P₄(X), P′(X)D
 against quadrature projections for m = 0…3; and (b), (c), (c′) against the full 3-D u·∇S_tw built from P, T, ln ρ₀
 with sympy and projected on S_{l′}, for m = 0, 1, 2 and every Δl. Independent readers redid the thermal wind with
@@ -127,8 +126,8 @@ Profiles: f₀, f₂ exist (`abu`, `aub`); new are σ₂, σ₄ from (3), which 
 `tw4` = p₀ σ₄ and `tp2` = p₀ σ₂′, `tp4` = p₀ σ₄′ (a label `h1tw21_D0` would mean r (p₀σ₂)′ P, which is not (b)).
 Parity for `ricb = 0`: σ₂, σ₄ are even in r (f even, f′ and g odd), so `tw2`, `tw4` are even like all other profiles,
 but `tp2`, `tp4` are odd and must be added to the `adj` lists of `submatrices.py` (lines 286, 340; also
-`kore/balance/ebal.py` and `ru_insane.row_parity`) next to `gra, pdS, dSd`, otherwise term (b) is silently dropped
-in full-sphere runs. (The 'solar' profile's r-parity defect, README §5.6, is fixed by evaluating the profiles at |r|, §5.)
+`tests/heat_dr/ebal.py` and `ru_insane.row_parity`) next to `gra, pdS, dSd`, otherwise term (b) is silently dropped
+in full-sphere runs. (The 'solar' profile's r-parity defect is fixed by evaluating the profiles at |r|, §5.)
 Rows × r² p₀ and ÷ L_{l′}³ like the other section-h operators:
 
     (a)  i m r² p₀ f₀ s,  i m r² p₀ f₂ P₂(X) s          labels  h0pss0abu0_D0,  h0pss0aub0_D0        (s column, Δl 0, ±2)
@@ -168,22 +167,21 @@ them with its own l (§5). The matrix-level budget (`heat_blocks()` in `tests/he
   from Rieutord 2006's baroclinic flow, radial T₀ only; their heat equation (2.9) is (λ + imΩ)T + r v_r = (E/P)ΔT.
   Needs (a) only, with S_tw = 0 (their background is balanced by centrifugal buoyancy, which kore does not carry).
   With (3) switched on, σ₂ = 2N²r²/(3 Beyonce) would be as large as S₀′ and the comparison would test the wrong
-  model. Also needs `aub/abu/logrho` in `Boussinesq_profiles` (README §3D).
+  model. Also needs `aub/abu/logrho` in `Boussinesq_profiles`.
 - Bekki et al. 2022: fully compressible, solar ρ₀, helioseismic Ω, S_tw from (2) with the full Ω² and s₀ taken
   uniform in r. Needs (a) + (c), (c′); kore's S_tw also has (b), which they drop by construction. Their eq. (1)
   momentum terms −(Ω−Ω₀)∂_φv − 2Ω ẑ×v − r sinθ (v·∇Ω) are kore's existing diff-rot operator.
 - Baruteau & Rieutord 2013, Guenel et al. 2016, Astoul et al. 2021: thermal = 0, unaffected.
 
-## 5. Implementation (2026-10-12, work copy `~/lab/aneldiro`)
+## 5. Implementation (2026-10-12, commits `be2a4db5`, `18641206`)
 
-Implemented in the clone `/Users/triana/lab/aneldiro` (branch `anelastic_log`, origin = the Dropbox checkout) in two
-rounds: the first is commit `09285a5e` on `652e1490`, the second and third are uncommitted on top of it. Files in `bin/`, plus
+Implemented in two rounds, committed as `be2a4db5` and `18641206`. Files in `bin/`, plus
 `tests/heat_dr/` and this document under `docs/`:
 
 | file | change |
 | --- | --- |
 | `params_default.py` | `thermal_wind = 0/1/2/3` (none / linear (3) / exact (3′) thermal wind / prescribed ∂θS_tw = `dSdtheta` sin 2θ, §1; (a) is always on with `diff_rot = 1`, `thermal = 1`); test profile `diff_rot_type = 'rigid'`; 'solar' comments (amplitude, 435 nHz frame, N at ricb 0) |
-| `radial_profiles.py` | `sigma2`, `sigma4`, `sigma6` from (3′) with G²; profiles `tw2`, `tw4`, `tw6` = p₀σₙ and `tp2`, `tp4`, `tp6` = p₀σₙ′; `'rigid'` branch of `abu`/`aub`; at ricb = 0 `abuX`/`aubX` evaluate the profiles at \|r\| (even by construction, README §5.6); 'solar' times `diff_rot_amplitude`, tachocline at x = r·aux0 for 'smoothed sun' (README §5.7); `ptw`: σₙ, σₙ′ without p₀ when `utils.adiab_tw`; σ₂ = −(2/3) `dSdtheta`, σ₄ = 0 for `thermal_wind = 3` |
+| `radial_profiles.py` | `sigma2`, `sigma4`, `sigma6` from (3′) with G²; profiles `tw2`, `tw4`, `tw6` = p₀σₙ and `tp2`, `tp4`, `tp6` = p₀σₙ′; `'rigid'` branch of `abu`/`aub`; at ricb = 0 `abuX`/`aubX` evaluate the profiles at \|r\| (even by construction); 'solar' times `diff_rot_amplitude`, tachocline at x = r·aux0 for 'smoothed sun'; `ptw`: σₙ, σₙ′ without p₀ when `utils.adiab_tw`; σ₂ = −(2/3) `dSdtheta`, σ₄ = 0 for `thermal_wind = 3` |
 | `submatrices.py` | the labels of §3 (with σ₆ for `thermal_wind = 2`), `tp2/4/6` in both `adj` lists; ThermaD = 0 labels `h0abu0_D0`, `h0aub0_D0`; exits if `Beyonce = 0` with `thermal_wind = 1, 2`; ThermaD = 0 with `thermal_wind ≥ 1`: `gebasis[2] = 1` and `chop = 0` for section h (§3, `docs/thermad0.md`); raises if a label's derivative order exceeds its section's basis; warns for 'Y20-wall-bounded' and 'shellular' at ricb = 0; parity-warning floor so an identically zero S_tw ('cylindrical') stays quiet |
 | `operators.py` | `thermal_diffrot(l, 'h', component, Δl)`: 'temp' (a), 'upol' (b) + (c), 'utor' (c′), with σ₆; `Gaspard` on (a) and on `differential_rotation` |
 | `heat_dr_coefficients.py` (new) | X, D, Pₙ(X), Pₙ′(X), Pₙ′(X)D for n = 2, 4, 6, built well above lmax and cut (products of the truncated X are wrong near the top) |
@@ -195,7 +193,8 @@ rounds: the first is commit `09285a5e` on `652e1490`, the second and third are u
 Output columns appended (old columns unchanged, so files written before the change cannot be appended to):
 `flow.dat` gets `Wdr`, `Wdr_im`, `Ensdr`; `thermal.dat` gets `Wdr_thm`; `params.dat` gets `diff_rot`,
 `diff_rot_amplitude`, `thermal_wind`, the index of `diff_rot_type` in ('Y20', 'Y20-wall-bounded', 'shellular',
-'shellular_boussinesq', 'cylindrical', 'conical', 'solar', 'rigid'), −1 if not listed, and `dSdtheta`. `spin_doctor` is about
+'shellular_boussinesq', 'cylindrical', 'conical', 'solar', 'rigid', 'solar_P4', 'tabulated'), −1 if not listed, and
+`dSdtheta`; the §8 options follow them. `spin_doctor` is about
 1.5 times slower with `diff_rot = 1`.
 
 Changes visible to existing runs: at `Gaspard = 1` and ricb > 0 the matrices are bitwise unchanged. A run with
@@ -234,7 +233,7 @@ factors; the defects found in the tests and comments are fixed above.
 
 Best target: Mukhopadhyay, Bekki, Zhu & Gizon 2025 (A&A, arXiv 2501.16797), the setup of Bekki, Cameron & Gizon 2022
 with Model S and tables to 1e-4 nHz for compressible, anelastic and Boussinesq models. Their anelastic model is kore's.
-Runs, scripts and notes in `checks/bekki/` (N 64, lmax m + 63, ν = κ = 10¹² cm² s⁻¹, δ = 0).
+Set-up as in `tests/diff_rot/mk_bekki.py` with `drtype=Y20` (N 64, lmax m + 63, ν = κ = 10¹² cm² s⁻¹, δ = 0).
 
 - Uniform rotation: kore matches their anelastic Tables C.1–C.4 to 0.006 nHz or better for 27 modes (n = 0 and 1
   Rossby, high-frequency retrograde, columnar; m = 1…16). This needs the Model S density: the stock 'smoothed sun'
@@ -264,13 +263,14 @@ Runs, scripts and notes in `checks/bekki/` (N 64, lmax m + 63, ν = κ = 10¹² 
   p₀-weighted checks do not see it, `tests/heat_dr/row_check.py` does.
 - The 'smoothed sun' density near the surface (§6): `solar_density = 'model S'` (§8) avoids it; the default is unchanged.
 - 'Y20-wall-bounded' and 'shellular' (except even σ > 0) at ricb = 0: not smooth at r = 0, now a WARNING.
-- Boussinesq profiles (no `abu`, `aub`, `logrho`): left untouched.
+- Boussinesq profiles (no `abu`, `aub`, `logrho`): left untouched. The same holds for the profiles read from a file (`'poly'`, `'mesa'`,
+  `'gsm'`, `'astropy table'`): only `'user def'` and `'smoothed sun'` define a rotation profile.
 - `tests/heat_dr/csolve.py` has no equilibration (kore's `solve.py` has Ruiz scaling); it now warns when every
   eigenvalue comes back equal to the shift.
 
 ## 8. Generic differential rotation: any Pₙ, 'solar_P4', 'tabulated' (2026-10-13)
 
-Uncommitted on top of 18641206 in `~/Dropbox/kore_github/anelastic_log`. ΔΩ = Σₙ aₙ fₙ(r) Pₙ(cos θ), n even, any n.
+Commit `92a0d020`. ΔΩ = Σₙ aₙ fₙ(r) Pₙ(cos θ), n even, any n.
 
 **Couplings.** n = 0, 2 keep the closed forms of `diff_rot_coefficients.py`. For n ≥ 4 the new
 `bin/diff_rot_generic.py` projects the force W = G[ΔΩ(i m u + 2ẑ×u) + sinθ(r∂ᵣΔΩ u_r + ∂θΔΩ u_θ)e_φ] of each source
@@ -305,12 +305,14 @@ meaning); `thermal_wind_amplitude` multiplies S_tw, which is otherwise the therm
 
 **Model S density.** `solar_density = 'model S'` replaces the 'smoothed sun' ln ρ and ln p by Chebyshev fits of
 `bin/model_s.at` (degree `solar_density_deg` = 30 on `solar_density_window`, default the shell widened by 0.01 below and
-0.005 above). It reproduces the run-local fit of the benchmark runs (`checks/bekki/mkb.py`): A and B bitwise equal.
+0.005 above). It reproduces the run-local Model S fit of the §6 benchmark runs: A and B bitwise equal.
 
 **Other files.** `utils.py`: `dr_high`, `dr_nmax`, `tw_nmax`, `tw_degrees`, `dr_code`, `tw_code`, `odd_profiles`,
 `dr_offd`. `operators.py`: `differential_rotation` sums the closed forms and the generic terms; `thermal_diffrot` loops
 over `tw_degrees` and Δl up to `tw_nmax`. `submatrices.py`: the labels per n. `utils4pp.py` (spin_doctor),
 `ru_insane.py`, `tests/heat_dr/ebal.py`: generic Δl ranges, ΔΩ and S_tw summed over n, the switches and amplitudes.
+`spin_doctor.py`: 'solar_P4' and 'tabulated' get the type indices 8 and 9, and `params.dat` gets 25 more columns after
+`dSdtheta` (listed in `docs/differential-rotation.md`, Output), so files written before cannot be appended to.
 
 **Changes visible to existing runs:** none. A and B are bitwise equal to 18641206 for 13 configurations
 (`tests/diff_rot/regress.sh`) and for the benchmark runs of §6.
@@ -322,7 +324,8 @@ spin_doctor powers against the matrix pairings ≤ 1e-8, with the energy balance
 new terms); kore's ∂θS_tw against the Edmond `dsdt` 3 % rms (pole-to-equator contrast within 0.1–2 %).
 
 **Like-for-like benchmark** (Mukhopadhyay et al. 2025 set-up: Model S density, shell 0.71–0.985 R☉, ν = κ = 1e12,
-δ = 0, stress-free, ∂ᵣs = 0, thermal_wind = 2 without u_r ∂ᵣS_tw, their Ω from the Edmond file, N 64, lmax m + 63):
+δ = 0, stress-free, ∂ᵣs = 0, thermal_wind = 2 without u_r ∂ᵣS_tw, their Ω from the Edmond file, N 64, lmax m + 63;
+`tests/diff_rot/run_bekki.py` rebuilds and solves these five modes):
 
 | mode (symm) | kore, nmax 12 (nHz) | Mukhopadhyay compressible (nHz) | kore − theirs | kore, P₀ + P₂ only (§6) |
 | --- | --- | --- | --- | --- |
@@ -339,7 +342,8 @@ symm −1 window around n0 also holds two growing modes (−260.59 nHz, growth +
 3e-5 to 4e-5 (1e-7 for n0); not examined, and not reported in the paper's tables.
 
 **Bekki et al. 2024 onset with the observed Ω** (thermal_wind = 3, Δθs prescribed, otherwise as above, m 1 symm −1;
-`checks/bekki/` and `~/lab/kore_step2_runs` on the Mac): the m 1 high-latitude mode becomes unstable at
+`tests/diff_rot/mk_bekki.py tw=3 ds=-1000 file=...`, then `solve_bekki.py RUN -93 5`):
+the m 1 high-latitude mode becomes unstable at
 |Δθs| = 425 erg/g/K with the Edmond Ω and 546 with the Larson & Schou 2018 table (c_p = 3.46e8; 513 and 658 in the
 papers' c_p = 4.17e8), against ~500 published and 2199 (2650) for the radially uniform P₀ + P₂ profile of §6. Growth
 at |Δθs| = 0, 250, 500, 1000, 2000: −3.70, −1.60, +0.68, +5.02, +12.53 nHz (Edmond, mode at −91.1…−94.6 nHz);

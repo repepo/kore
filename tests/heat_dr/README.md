@@ -24,7 +24,7 @@ the anti-Hermitian heat advection and the rigid-offset identity; it runs on any 
 tolerance; at N = 48 the pre-existing viscous and inertia Hermitian tests fail on truncation).
 
 Every check prints a verdict line ending in `ok` or `FAIL`; `run_all.sh` stops at the first crash (`set -e -o pipefail`).
-Results of the last full run (cloud container, 2026-10-12): see section 5 of `docs/heat-equation.md`.
+Results of the last full run (2026-10-12): see section 5 of `docs/heat-equation.md`.
 
 At ricb = 0 the diff-rot profiles are taken at |r| (the physical, even profiles), in the code and in `heat_check.py`.
 'Y20-wall-bounded' and 'shellular' (unless sigma is even and > 0) have a kink at r = 0 there, and `submatrices.py`

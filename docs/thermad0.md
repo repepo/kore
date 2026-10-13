@@ -1,7 +1,7 @@
 # ThermaD = 0 with the thermal wind (thermal_wind = 1, 2)
 
-Results of the change, cloud container, 2026-10-12. The analysis scripts named below (`track.py`, `coupling.py`,
-`dense.py`) are in the project folder, `kore/diffrot/checks/thermad0/`; the checks themselves are in `tests/heat_dr/`.
+Results of the change, 2026-10-12. The checks are in `tests/heat_dr/`; the analysis scripts named below (`track.py`,
+`coupling.py`, `dense.py`) are not part of the repository.
 
 ## The issue, precisely
 

@@ -347,7 +347,7 @@ if par.diff_rot:
         def tw_sigmas(r):
             '''
             σ2, σ4, σ6 of S_tw = Σ σn Pn(cos θ) from (1/r) ∂θS_tw = (r sinθ/(Beyonce g)) G² ∂z[(1+ΔΩ)² - 1]:
-            thermal_wind = 2 exact (checks/check_heat.out of docs/heat-equation.md §1), 1 linear in ΔΩ (its eq. 3, σ6 = 0);
+            thermal_wind = 2 exact (docs/heat-equation.md §1, eq. 3′), 1 linear in ΔΩ (its eq. 3, σ6 = 0);
             3 prescribed, ∂θS_tw = dSdtheta sin 2θ: σ2 = -(2/3) dSdtheta, σ4 = σ6 = 0
             '''
             if par.thermal_wind == 3:

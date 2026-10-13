@@ -1,5 +1,14 @@
 site_name: User Manual
 
+nav:
+  - Introduction: index.md
+  - Installation: page2.md
+  - Non-dimensionalization: page3.md
+  - Differential rotation:
+      - User guide: differential-rotation.md
+      - Heat equation and benchmarks: heat-equation.md
+      - ThermaD = 0: thermad0.md
+
 theme:
   name: material
   logo: assets/test1.png

@@ -84,17 +84,18 @@ class default_params():
         self.bco = 0
 
         # Differential rotation parameters. Set to 0 for solid body rotation. Ω_ref is the frame rotation rate (Gaspard in units of
-        # the time scale) and ΔΩ is relative to it, so any timescale works: U0 = Gaspard ΔΩ r sinθ e_φ ------------------------------
+        # the time scale) and ΔΩ is relative to it, so any timescale works: U0 = Gaspard ΔΩ r sinθ e_φ. User guide: docs/differential-rotation.md.
+        # Only model_type = 'user def' and 'smoothed sun' define a rotation profile. ---------------------------------------------
         # ----------------------------------------------------------------------------------------------------------------------
         self.diff_rot = 0 # If 1, the code will solve for a perturbation to a background state with differential rotation. 
         # Differential rotation type 
-        self.diff_rot_type = 'Y20' # Ω(θ) = Ω_ref * [1 + ΔΩ Y20(θ)], ΔΩ = par.diff_rot_amplitude
+        self.diff_rot_type = 'Y20' # Ω(θ) = Ω_ref * [1 + a P2(cos θ)], a = par.diff_rot_amplitude (P2 unnormalised, despite the name)
         # self.diff_rot_type = 'rigid' # Ω = Ω_ref * (1 + ΔΩ), a rigid offset: test profile, λ(ΔΩ, Gaspard) = λ(diff_rot = 0, Gaspard (1+ΔΩ)) - i m Gaspard ΔΩ exactly
-        # self.diff_rot_type = 'Y20-wall-bounded' # Ω(θ) = Ω_ref * [1 + ΔΩ * (1 - r) * (r - ricb) * Y20(θ)], ΔΩ = par.diff_rot_amplitude
-        # self.diff_rot_type = 'shellular' # [Baruteau, Rieutord 2012] : Ω(r) = Ω_ref * (r / R)**σ, σ = par.diff_rot_amplitude
-        # self.diff_rot_type = 'cylindrical' # [Baruteau, Rieutord 2012] : Ω(r, θ) = Ω_ref * [1 + (ε * (r / R)**2 * sin(θ)**2)], ε = par.diff_rot_amplitude
+        # self.diff_rot_type = 'Y20-wall-bounded' # Ω(r, θ) = Ω_ref * [1 + a * (1 - r) * (r - ricb) * P2(cos θ)], a = par.diff_rot_amplitude
+        # self.diff_rot_type = 'shellular' # [Baruteau, Rieutord 2013] : Ω(r) = Ω_ref * (r / R)**σ, σ = par.diff_rot_amplitude
+        # self.diff_rot_type = 'cylindrical' # [Baruteau, Rieutord 2013] : Ω(r, θ) = Ω_ref * [1 + (ε * (r / R)**2 * sin(θ)**2)], ε = par.diff_rot_amplitude
         # self.diff_rot_type = 'conical' #[Guenel et al., 2016] : Ω(r, θ) = Ω_ref * [1 + (ε * sin(θ)**2)], ε = par.diff_rot_amplitude
-        # self.diff_rot_type = "shellular_boussinesq" #[Mirouh et al. 2016] : Ω(r) = Ω_ref * (1 + (1/2) * (N**2) * (1 - (r / R)**2))
+        # self.diff_rot_type = "shellular_boussinesq" #[Mirouh et al. 2016] : Ω(r) = Ω_ref * (1 + (1/2) * (N**2) * (1 - (r / R)**2)), N**2 = par.diff_rot_amplitude
         # self.diff_rot_type = 'solar' # Fit to the helioseismic Ω: f0, f2 (Y00 + P2 only) step up across a tachocline at 0.71 R☉ of width 0.1 R☉,
         # times ΔΩ = par.diff_rot_amplitude (1 for the fit itself). r is in units of aux0 R☉ with model_type = 'smoothed sun', in R☉ otherwise.
         # f0, f2 are relative to 435 nHz: the frame (Ω_ref) must rotate at 435 nHz (ViscosD, ThermaD, Beyonce for that rate).
