@@ -9,7 +9,6 @@ import utils as ut
 # and create corresponding operator names as global variables
 
 fname = [f for f in glob.glob('*.mtx')]
-#print(fname)
 
 for label in fname :
 
@@ -763,7 +762,7 @@ def induction_consoidal(l, component, offdiag):
 
 def magnetic_diffusion(l, section, component, offdiag):
     '''
-    The magnetic difussion term −Eₘ ∇×(η∇×𝐛)
+    The magnetic diffusion term −Eₘ ∇×(η∇×𝐛)
     '''
     cdipole = (par.B0 == 'dipole') and (par.ricb > 0)
 

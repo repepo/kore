@@ -22,8 +22,11 @@ par.c1_cmb   = 1.5e-2    # magnetic torque ~ viscous torque
 par.Lambda   = 10        # Le = sqrt(Lambda*Ek/Pm) = 3.2e-3
 par.Pm       = 0.1       # Lundquist number Le/Em = 3.2e3
 
-par.rtau     = -0.0046   # aims at the mode lambda = -0.00463 + 0.0115i
-par.itau     = 0.0115
+# Spin over mode (no inner core)
+par.ricb     = 0
+par.m        = 1
+par.symm     = -1
+
 # ---------------------------------------
 
 # ---------------------------------------

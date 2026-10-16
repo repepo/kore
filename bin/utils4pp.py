@@ -218,11 +218,21 @@ def cheb2space_tor(L, lt, T, ns):
 
     return tlm
 
+def rms(l, qlm0):
+    '''
+    Returns the r.m.s. value of the radial velocity or magnetic field, l-component
+    √ 1/(4πr²)  ∫ (𝐮ᵣ)² dV or √ 1/(4πr²)  ∫ (𝐛ᵣ)² dV
+    '''
+    f0 = 1/(2*l+1)
+    f1 = np.absolute( qlm0 )**2
+    return np.sqrt(f0*f1)/rk
 
 
-def angrymom_z(u_sol2):
+def angrymom(u_sol2):
     '''
     Returns the angular momentum in the z direction
+    (m=0) in the z direction
+    (m=1) in the equatorial direction
     '''
     out = 0
     [ lp, lt, _ ] = ut.ell( par.m, par.lmax, par.symm)
@@ -236,6 +246,15 @@ def angrymom_z(u_sol2):
             t10 = funcheb( T[idx,:], r=None, ricb=par.ricb, rcmb=ut.rcmb, n=0 )[:,0]
             out = cg_quad( (8*np.pi/3)*r3*t10, par.ricb, ut.rcmb, par.N, sqx )
     
+    elif par.m == 1 and par.symm == -1:
+        T = u_sol2[1]
+        idx = list(lt).index(1)  # this index should always be zero
+        if idx != 0:
+            print('Hello, I am a bug')
+        else:
+            t11 = funcheb(T[idx, :], r=None, ricb=par.ricb, rcmb=ut.rcmb, n=0)[:, 0]
+            out = cg_quad((16 * np.pi / 3) * r3 * t11, par.ricb, ut.rcmb, par.N, sqx)
+
     return out
 
 
@@ -572,7 +591,8 @@ def magnetic_worker(l, lp, lt, b_sol2, u_sol2, Ra, Rb, N, sqx):
     [ menep, menet] = [0, 0]
     [ mdfsp, mdfst] = [0, 0]
     [ indup, indut] = [0, 0]
-    
+    [ brrms, cmb  ] = [0, 0]
+
     L = l*(l+1)
 
     if par.hydro:
@@ -586,6 +606,7 @@ def magnetic_worker(l, lp, lt, b_sol2, u_sol2, Ra, Rb, N, sqx):
         menep = energy_pol(l, qlm0, slm0)
         mdfsp = diffus_pol(l, qlm0, qlm1, qlm2, slm0, slm1, slm2 )
         indup = dotprod_pol(l, qlm0, slm0, qlmi, slmi)
+        brrms = rms(l, qlm0)
 
     elif l in lt:
 
@@ -600,7 +621,12 @@ def magnetic_worker(l, lp, lt, b_sol2, u_sol2, Ra, Rb, N, sqx):
     Mdfs_l = cg_quad( mdfsp + mdfst, Ra, Rb, N, sqx)
     Indu_l = cg_quad( indup + indut, Ra, Rb, N, sqx)
 
-    return [ Mene_l, Mdfs_l, Indu_l ]
+   # Pick root-mean-square value at CMB radius
+    cmb    = np.zeros(N)
+    cmb[0] = 1
+    Brms_l = sum(brrms*cmb)
+
+    return [ Mene_l, Mdfs_l, Indu_l , Brms_l ]
 
 
 

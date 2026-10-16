@@ -1,0 +1,27 @@
+from params_default import default_params
+import numpy as np
+
+# E1 Gravito-inertial mode in a spherical shell (Dintrans, Rieutord & Valdetarro): ricb = 0.35, internal
+# heating, fixed temperatures, stress-free, Ek = 2e-7, Pr = 1, BV2 = 25
+par = default_params()
+
+par.bci              = 0
+par.bco              = 0
+
+par.Ek               = 2*10**-7
+
+par.thermal          = 1
+par.BV2              = None
+
+par.bci_thermal      = 0
+par.bco_thermal      = 0
+
+par.ncpus            = 4
+par.N                = 150
+par.lmax		     = 311
+
+par.rtau             = None
+par.itau             = None
+
+
+par.set_scales()

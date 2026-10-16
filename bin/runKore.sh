@@ -4,7 +4,19 @@
 
 ncpus=4
 
-./bin/submatrices.py $ncpus
-mpiexec -n $ncpus ./bin/assemble.py
-mpiexec -n $ncpus ./bin/solve_nopp.py
-./bin/spin_doctor.py $ncpus
+set -e
+
+python3 ../bin/submatrices.py $ncpus
+mpiexec -n $ncpus ../bin/assemble.py
+mpiexec -n $ncpus ../bin/solve_nopp.py
+python3 ../bin/spin_doctor.py $ncpus
+
+# python3 ../bin/submatrices.py $ncpus
+# mpiexec -n $ncpus ../bin/assemble.py
+# mpiexec -n $ncpus ../bin/solve_nopp.py
+# sed -i '' -E 's/^([[:space:]]*par\.magnetic[[:space:]]*=[[:space:]]*)[01]/\11/' bin/parameters.py
+# python3 ../bin/submatrices.py $ncpus
+# mpiexec -n $ncpus ../bin/assemble.py
+# python3 ../bin/just_induction.py $ncpus
+# mpiexec -n $ncpus ../bin/solve_ind.py
+# python3 ../bin/spin_doctor.py $ncpus

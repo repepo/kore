@@ -1,0 +1,54 @@
+DIFFERENCES - Kore, between conductive_IC branch [15-10-2026] and mac_waves
+==============================================================
+
+bin/assemble.py
+--------------------
+[151-152] changed sign to np.sign
+
+
+bin/spin_doctor.py
+--------------------
+- changed angmomz to angmom 
+- added computation of mtorq for m=1, symm=-1
+- removed computation of pressure (press0) (as it is obsolete)
+- added computation of brms
+- added computation of residL for m=1, symm=-1
+- added flags do_vtorq and do_vtorqic to prevent viscous torque computation for stress-free boundaries, and residL computation when there are insulating and stress free boundaries
+
+
+bin/utils.py
+--------------------
+- [1424-1427] add computation equatorial viscous torque on the mantle
+- [1452-1455] add computation equatorial viscous torque on the inner core
+- [1483-1506] add computation equatorial magnetic torque on the mantle
+
+
+bin/utils4pp.py
+--------------------
+- added subroutine to compute root-mean-square value of the radial velocity or the radial magnetic field
+- added computation of angular momentum for m=1, symm=-1
+- added computation of brms
+
+
+bin/just_induction.py
+--------------------
+script to assemble matrices after a hydrodynamic run with solve_nopp.py, if one wants to solve just the induction equation given this flow field (possible in the weak field regime for planetary dynamos )
+
+bin/solve_ind.py
+--------------------
+script to solve just the induction equation after a hydrodynamic run given matrices assembled by just_induction.py (possible in the weak field regime for planetary dynamos )
+
+tests/dintrans1999/
+tests/test_gravitoinertial.py
+--------------------
+added a test to solve for three types of gravito inertial-modes (H1, H2, E1) as identified by Dintrans, Rieutord & Valdetarro 1999
+
+
+tools/get_data.py
+--------------------
+updated to reflect new data collection in flow.dat, magnetic.dat, rotdyn.dat, thermal.dat, compositional.dat, eigenvalues.dat, parameters.dat
+
+
+tools/reap.sh
+--------------------
+updated to reflect new data collection in flow.dat, magnetic.dat, rotdyn.dat, thermal.dat, compositional.dat, eigenvalues.dat, params.dat

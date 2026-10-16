@@ -1421,6 +1421,11 @@ def gamma_visc(a1,a2,a3):
         # with 8*pi/3 it is conserved to discretization error.
         out[0,n0:n0+par.N] = -(8*np.pi/3)*(R**2)*( R*T1 - T0 )  # note the minus in front as needed for the mantle
 
+    # equatorial viscous torque on the mantle for a spherical cmb (the caller multiplies by Ek*OmgTau)
+    elif par.m == 1 and par.symm == -1 :
+        R = 1
+        out[0, n0:n0 + par.N] = -(16 * np.pi / 3) * (R ** 2) * (R * T1 - T0)
+
     return out
 
 
@@ -1432,16 +1437,22 @@ def gamma_visc_icb(ricb):
 
     out = np.zeros((1,n0+n0),dtype=complex)
 
-    if par.m == 0 and par.symm == 1 and par.ricb > 0:
+    T = Tk( -1, par.N-1, 1)
+    T0 = T[:,0]
+    T1 = T[:,1]
 
-        T = Tk( -1, par.N-1, 1)
-        T0 = T[:,0]
-        T1 = T[:,1]
+    # axial viscous torque on the inner core for a spherical icb (the caller multiplies by Ek*OmgTau)
+    if par.m == 0 and par.symm == 1 and par.ricb > 0:
         R = ricb
         # axial viscous torque on the IC depends on the l=1, m=0 toroidal component only
         # FIX (2026-10-02): coefficient was 4*pi/3 (half the torque). The torque on the IC is +oint s*sigma_rphi dS
         # = +(8*pi/3)*R^2*(R*t' - t), see the mantle version in gamma_visc. Checked with angular momentum conservation.
         out[0,n0:n0+par.N] = (8*np.pi/3)*(R**2)*( R*T1 - T0 )  # no minus in front for the IC
+
+    # equatorial viscous torque on the inner core for a spherical icb (the caller multiplies by Ek*OmgTau)
+    elif (par.m == 1 and par.symm == -1) :
+        R = ricb
+        out[0, n0:n0 + par.N] = (16 * np.pi / 3) * (R ** 2) * (R * T1 - T0) # no minus in front for the IC
 
     return out
 
@@ -1468,6 +1479,31 @@ def gamma_magnetic():
             # torque prop. to l=1 and l=3 toroidal component of b
             out[0,n0:n0+par.N]          =  (16*np.pi/5)     * G * h_cmb # l=1
             out[0,n0+par.N: n0+2*par.N] = -(16*18*np.pi/35) * G * h_cmb # l=3
+
+    elif (par.magnetic==1 and par.m == 1 and par.symm==-1 and par.mantle=='TWA'):
+
+        out = np.zeros((1,n0+n0),dtype=complex)
+        F = Tk( 1, par.N-1, 1)
+        G = Tk( 1, par.N-1, 0)
+        F0 = F[:,0]
+        F1 = F[:,1]
+        G0 = G[:,0]
+        R = np.array([1.0])
+        h0_cmb = B0_norm() * h0(R, par.B0, [par.beta, par.B0_l, par.ricb, 0])
+        h1_cmb = B0_norm() * h1(R, par.B0, [par.beta, par.B0_l, par.ricb, 0])
+
+        if B0_l == 1: # Either uniform axial or dipole background field, induced magnetic field b is thus antisymmetric
+
+            # torque prop. to l=2 toroidal and l=1 poloidal component of b
+            out[0, n0:n0 + par.N] = -(16 * np.sqrt(3) * np.pi / 5) * (R ** 2) * G0 * h0_cmb  # l=2 toroidal
+            out[0, 0:par.N] = -(16j*np.pi/3) * (R**2) * (F0 * h1_cmb -  F1 * h0_cmb) # l=1 poloidal
+
+        if B0_l == 2: # Quadrupole background field, induced magnetic field b is thus symmetric
+
+            # the torque is prop. to the l=1, l=3 toroidal component and l=2 poloidal component of b
+            out[0, n0:n0 + par.N] = -(16 * np.pi / 5) * (R ** 2) * G0 * h0_cmb  # l=1 toroidal
+            out[0, n0 + par.N:n0 + 2 * par.N] = -(192 * np.sqrt(6) * np.pi / 35) * (R ** 2) * G0 * h0_cmb  # l=3 toroidal
+            out[0, 0:par.N] = -(48j * np.sqrt(3) * np.pi / 5) * (R ** 2) * (F0 * h1_cmb - F1 * h0_cmb)  # l=2 poloidal
 
     else:
 
@@ -1510,7 +1546,7 @@ def gamma_magnetic_ic():
             out[0,n0:n0+par.N]          = -(16*np.pi/5)     * G * h_icb * R2 # l=1
             out[0,n0+par.N: n0+2*par.N] =  (16*18*np.pi/35) * G * h_icb * R2 # l=3
 
-    else:
+    else: # TO DO test inner core magnetic torques
 
         out = 0
 

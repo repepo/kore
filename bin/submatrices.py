@@ -383,7 +383,7 @@ def main(ncpus):
 
                 profx = int(lablx[4])
                 plabl += [ lablx ]
-                #print('dx=',dx,'rx=',rx,'profx=',profx, np.shape(rprof))
+
                 parg0 += [ S[dx] * rprof[rx][profx] ]
                 parg1 += [ dx ]
                 parg2 += [ arg2[k] ]

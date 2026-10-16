@@ -148,8 +148,8 @@ def main():
                 row = np.arange(pos,pos+4)  # forcing goes as a boundary condition
                 col = np.zeros(4)
 
-                fcmb = 1j*par.forcing_amplitude * ut.eccen_tide(par.m*sign(par.forcing_frequency),par.ricb,'cmb')
-                ficb = 1j*par.forcing_amplitude * ut.eccen_tide(par.m*sign(par.forcing_frequency),par.ricb,'icb')
+                fcmb = 1j*par.forcing_amplitude * ut.eccen_tide(par.m*np.sign(par.forcing_frequency),par.ricb,'cmb')
+                ficb = 1j*par.forcing_amplitude * ut.eccen_tide(par.m*np.sign(par.forcing_frequency),par.ricb,'icb')
 
                 bdat = np.array([ficb[0], ficb[1], fcmb[0], fcmb[1]])
                 B = ss.csr_matrix( ( bdat, (row,col) ), shape=(ut.sizmat,1) )
@@ -315,7 +315,6 @@ def main():
         # libration in longitude as a boundary flow forcing
         if rank == 0:
 
-            # if par.m == 0 and par.symm == 1 and par.bci == 1 and par.bco == 1:
             if par.m == 0 and par.symm == 1 and par.bco == 1:    
 
                 print('--------------------------------------------')
@@ -361,7 +360,7 @@ def main():
 
             else:
 
-                print(' ** Longitudinal libration requires m = 0, symm = 1 and no-slip boundaries **')
+                print(' ** Longitudinal libration requires m = 0 or m = 2, symm = 1 and no-slip boundaries **')
 
 
     elif par.forcing == 8: # ------------------------------------------------------------ longitudinal libration forcing
@@ -882,10 +881,6 @@ def main():
             loc_list = ut.packit(loc_list, mtx, row, col)
 
 
-
-            #print(l,max(loc_list[1]))
-
-
             # Toroidal magnetic terms (diffusion term + iwb term) ------------------------------------------------------
             # --------------------------------------------------------------------------- A, induction (section f), btor
             # ----------------------------------------------------------------------------------------------------------
@@ -921,7 +916,7 @@ def main():
                 else:
                     loc_list[q].append( bc_b_list_outer[q] )
             # ----------------------------------------------------------------------------------------------------------
-            #print('f',l,max(loc_list[1]),max(loc_list[2]))
+
     
         # ----------------------------------------------------------------------------------------------------------------------------------------------------
         # -------------------------------------------------------------------------------------------------------------- A matrix, 1curl induction (section g)
@@ -1016,9 +1011,6 @@ def main():
                 else:
                     loc_list[q].append( bc_b_list_outer[q] )
             # ----------------------------------------------------------------------------------------------------------
-
-            #print('g',l,max(loc_list[1]),max(loc_list[2]))
-
 
     
         if ut.cic:

@@ -3,7 +3,7 @@
 kore postprocessing script
 
 Usage:
-> python3 ./bin/solution_doctor.py ncpus
+> ./bin/spin_doctor.py ncpus
 '''
 
 from timeit import default_timer as timer
@@ -205,14 +205,14 @@ def main(ncpus):
     resid3      = np.zeros(success)
     residL      = np.full(success, np.nan)    # axial angular momentum balance of the fluid (m=0, symm=1 only)
     y           = np.zeros(success)                # for eigenmode tracking
-    press0      = np.zeros(success)
+    brms        = np.zeros(success)
     elldom      = np.zeros(success)
     geo         = np.full(success, np.nan)    # NEW (2026-10-11): geostrophic fraction of u_phi (m=0, symm=1 only)
     omg_mantle  = np.zeros(success,dtype=complex)
     omg_incore  = np.zeros(success,dtype=complex)
     misalignmt  = np.zeros(success,dtype=complex)
     gravtorq    = np.zeros(success,dtype=complex)
-    angmomz     = np.zeros(success,dtype=complex)
+    angmom     = np.zeros(success,dtype=complex)
     params      = []                               # one row of param_table() per solution
     # ------------------------------------------------------------------------------------------------------------------------
 
@@ -253,10 +253,15 @@ def main(ncpus):
         [ lp, lt, ll] = ut.ell(par.m, par.lmax, par.symm)
         lpi = np.searchsorted(ll,lp);  # Poloidal indices
         lti = np.searchsorted(ll,lt);  # Toroidal indices
-        gvisc     = ut.gamma_visc(0,0,0)[0,:]            # viscous torque on the mantle
+
+    do_vtorq = par.hydro and (par.bco == 1) and ((par.m==0) and (par.symm==1)) or ((par.m==1) and (par.symm==-1))
+    do_vtorq_ic = par.hydro and (par.bci == 1) and ((par.m==0) and (par.symm==1)) or ((par.m==1) and (par.symm==-1))
+    if do_vtorq:
+        gvisc     = ut.gamma_visc(0,0,0)[0,:]    # viscous torque on the mantle
+    elif do_vtorq_ic:
         gvisc_icb = ut.gamma_visc_icb(par.ricb)[0,:]    # viscous torque on the IC
 
-    do_mtorq    = par.magnetic and (par.mantle == 'TWA') and (par.m==0) and (par.symm==1)
+    do_mtorq    = par.magnetic and (par.mantle == 'TWA') and ((par.m==0) and (par.symm==1)) or ((par.m==1) and (par.symm==-1))
     do_mtorq_ic = par.magnetic and (par.innercore in ['conducting, Chebys', 'TWA']) and ((par.m==0) and (par.symm==1))
     if do_mtorq:
         gmag    = ut.gamma_magnetic()[0,:]     # row vector, like gvisc (avoids a numpy deprecation when storing the torque)
@@ -318,20 +323,21 @@ def main(ncpus):
             KP[i] = np.sum( udgn[lpi,0])  # Poloidal kinetic energy
             KT[i] = np.sum( udgn[lti,0])  # Toroidal kinetic energy
             
-            [ KE[i], Dkin0, Dint0, Wlor0, Wthm0, Wcmp0, press0[i] ] = np.sum( udgn, 0)
+            [ KE[i], Dkin0, Dint0, Wlor0, Wthm0, Wcmp0, _ ] = np.sum( udgn, 0)
             Dkin[i] = par.OmgTau * par.Ek * Dkin0
             Dint[i] = par.OmgTau * par.Ek * Dint0
             Wlor[i] = par.OmgTau**2 * par.Le2 * Wlor0
             Wthm[i] = par.OmgTau**2 * par.BV2 * Wthm0
             Wcmp[i] = par.OmgTau**2 * par.BV2_comp * Wcmp0
-            #print('Wlor=',Wlor[i])
             
             # Viscous torques
-            vtorq[i] = par.Ek * par.OmgTau * np.dot( gvisc, u_sol)  # constants checked 2026-10-02 against angrymom_z (angular momentum conservation)
-            vtorq_ic[i] = par.Ek * par.OmgTau * np.dot( gvisc_icb, u_sol)
+            if do_vtorq:
+                vtorq[i] = par.Ek * par.OmgTau * np.dot( gvisc, u_sol)  # constants checked 2026-10-02 against angrymom_z (angular momentum conservation)
+            if do_vtorq_ic:
+                vtorq_ic[i] = par.Ek * par.OmgTau * np.dot( gvisc_icb, u_sol)
 
             # Angular momentum in the z direction
-            angmomz[i] = upp.angrymom_z(u_sol2)
+            angmom[i] = upp.angrymom(u_sol2)
 
             # NEW (2026-10-11): fraction of the u_phi energy in its z-average (1 for a z-invariant u_phi)
             geo[i] = upp.geostrophic_fraction(u_sol2)
@@ -341,10 +347,9 @@ def main(ncpus):
 
         if par.magnetic:
 
-            [ ME0, Mdfs0, Indu[i] ] = np.sum( bdgn, 0)
-            ME[i]   = ME0   * par.OmgTau**2 * par.Le2
-            #Dohm = Dohm0 * par.OmgTau**3 * par.Le2 * par.Em
-            Mdfs[i] = par.OmgTau * par.Em * Mdfs0
+            [ ME[i], Mdfs0, Indu[i], brms[i] ] = np.sum( bdgn, 0)
+            # [ME[i], Mdfs0, Indu[i]] = np.sum(bdgn, 0)
+            Mdfs[i] = Mdfs0 * par.OmgTau * par.Em
 
             if do_mtorq:
                 mtorq[i] = par.Le2 * (par.OmgTau**2) * np.dot( gmag, b_sol )
@@ -416,12 +421,10 @@ def main(ncpus):
         if par.hydro:
             resid1[i] = abs( 2*sigma*KE[i] - Dkin[i] - Wlor[i] + Wthm[i] )/ \
                              max(abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wlor[i]), abs(Wthm[i]))
-            #print('2σK = ',2*sigma*KE[i], '-Dkin = ', -Dkin[i], '-Wlor = ', -Wlor[i])
         
         if par.magnetic:
-            resid2[i] = abs( 2*sigma*ME0 - Indu[i] - Mdfs[i] ) / \
-                             max( abs(2*sigma*ME0), abs(Indu[i]), abs(Mdfs[i]))
-            #print('2σM = ',2*sigma*ME0, '-Indu = ',-Indu[i], '-Mdfs = ', -Mdfs[i])
+            resid2[i] = abs( 2*sigma*ME[i] - Indu[i] - Mdfs[i] ) / \
+                             max( abs(2*sigma*ME[i]), abs(Indu[i]), abs(Mdfs[i]))
             
         if par.thermal:
             resid3[i] = abs( 2*sigma*TE[i] - Dthm[i] - Wadv_thm[i] ) / \
@@ -430,15 +433,32 @@ def main(ncpus):
         # Axial angular momentum balance of the fluid: dL/dt = lambda*L must equal the torque on the fluid,
         # which is minus the viscous and magnetic torques it exerts on the mantle and the inner core
         # (gravitational torques act only between mantle and inner core). Only for eigenvalue problems with
-        # m=0, symm=1, where angrymom_z and the torques are defined; body forcing would add a torque not included here.
-        if par.hydro and par.forcing == 0 and par.m == 0 and par.symm == 1:
-            dLdt    = (sigma + 1j*w) * angmomz[i]
+        # m=0, symm=1, where angrymom and the torques are defined; body forcing would add a torque not included here.
+        if not (do_vtorq or do_mtorq or do_vtorq_ic or do_mtorq_ic):
+            residL[i] = 0
+
+        elif par.hydro and par.forcing == 0 and (par.m == 0 and par.symm == 1):
+            dLdt    = (sigma + 1j*w) * angmom[i]
             torques = [ vtorq[i], vtorq_ic[i], mtorq[i], mtorq_ic[i] ]
             scale   = max( [abs(dLdt)] + [abs(t) for t in torques] )
             if scale > 0:
                 residL[i] = abs( dLdt + sum(torques) ) / scale
         
-    
+        elif par.hydro and par.forcing == 0 and (par.m == 1 and par.symm == -1):
+            dLdt    = (sigma + 1j*w) * angmom[i]
+            ctorq   = -par.OmgTau * 1j * angmom[i]
+            torques = [ vtorq[i], vtorq_ic[i], mtorq[i], mtorq_ic[i] , ctorq]
+            scale   = max( [abs(dLdt)] + [abs(t) for t in torques] )
+            if scale > 0:
+                residL[i] = abs( dLdt + sum(torques) ) / scale
+
+            '''
+            reals = [np.real(dLdt)] + [np.real(t) for t in torques]
+            imags = [np.imag(dLdt)] + [np.imag(t) for t in torques]
+            print('{:1.2e}   {:1.2e}   {:1.2e}   {:1.2e}   {:1.2e}   {:1.2e}   {:1.2e}'.format(reals[0], reals[1], reals[2], reals[3], reals[4], reals[5], sum(reals)))
+            print('{:1.2e}   {:1.2e}   {:1.2e}   {:1.2e}   {:1.2e}   {:1.2e}   {:1.2e}'.format(imags[0], imags[1], imags[2], imags[3], imags[4], imags[5], sum(imags)))
+            '''
+
         # ------------------------------------------------------------------------------------------------------------------
         print(table_row(table_cols, table_w, i))
         # ------------------------------------------------------------------------------------------------------------------
@@ -501,14 +521,13 @@ def main(ncpus):
                                     resid0, resid1,
                                     np.real(vtorq), np.imag(vtorq),
                                     np.real(vtorq_ic), np.imag(vtorq_ic),
-                                    press0, elldom, np.real(angmomz), np.imag(angmomz),
-                                    geo ])  # NEW (2026-10-11): geostrophic fraction, column 19
+                                    elldom, np.real(angmom), np.imag(angmom), residL, geo ]) # NEW (2026-10-11): geostrophic fraction, column 19
 
     if par.magnetic:
         with open('magnetic.dat','ab') as dmag:
             np.savetxt(dmag, np.c_[ ME, Mdfs, Indu, resid2,
                                     np.real(mtorq), np.imag(mtorq),
-                                    np.real(mtorq_ic), np.imag(mtorq_ic)])
+                                    np.real(mtorq_ic), np.imag(mtorq_ic), brms])
 
     if par.rotdyn:
         with open('rotdyn.dat','ab') as drd:
@@ -522,7 +541,7 @@ def main(ncpus):
         with open('compositional.dat','ab') as dcmp:
             np.savetxt(dcmp, np.c_[ CE, Wadv_cmp, Dcmp ])
 
-    if par.forcing == 0:
+    if not par.forcing:
         with open('eigenvalues.dat','ab') as deig:
             np.savetxt(deig, eigval)
 

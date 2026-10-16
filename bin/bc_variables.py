@@ -31,22 +31,7 @@ def Tk(x, N, lamb_max, R1, R2) :
         
     return out
     
-    
-# def Tcenter(N) :
-#     '''
-#     Chebyshev polynomial evaluated at x=0, from order 0 to N
-#     Useful to set boundary condition at the center if no inner core present
-#     i.e. when the Chebyshev domain is [-1,1]
-#     '''
-    
-#     out = np.zeros((N+1,1))
-#     for k in range (0,N+1):
-#         out[k] = np.cos( k * np.pi/2 )
-#     out[abs(out)<0.1] = 0
-    
-#     return out
-        
-        
+
 # to use in the b.c. and the torque calculation
 Ta     = Tk(-1, par.N-1, 4, par.ricb, ut.rcmb)
 Tb     = Tk( 1, par.N-1, 5, par.ricb, ut.rcmb)
