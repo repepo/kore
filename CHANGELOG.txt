@@ -2,6 +2,43 @@ CHANGELOG - Kore, conductive_IC branch
 ======================================
 
 
+2026-10-16
+----------
+Postprocessing speed (bin/utils4pp.py, bin/spin_doctor.py, bin/utils.py)
+- spin_doctor.py was as slow as the solve at high resolution: 1126 s for 10 solutions at N = 1008,
+  lmax = 1007 on 8 processes. diagnose sent each l to the pool as a separate task together with the
+  full Chebyshev coefficients of u and b (32 MB per task, 2016 tasks per solution), so the workers
+  waited on the transfers (143 s per solution, of which ~19 s was arithmetic), and each worker
+  re-evaluated every radial function about five times (lorentz4pp, induction4pp and pressure4pp also
+  use the neighbouring l's), with chebval, a Python loop over N.
+- New cheb2space_table in utils4pp.py: the radial functions of all l and their r-derivatives at the
+  quadrature points, with one matrix product per derivative (chebvander) instead of one chebval per
+  row. diagnose builds these tables once per solution and runs the workers serially on them
+  (cheb2space_pol, cheb2space_tor and buoyancy4pp read from a table through the new radial(), and
+  still take Chebyshev coefficients as before). ncpus and pool are no longer used by diagnose; the
+  worker functions and their arguments are unchanged.
+- New b0_profiles in utils4pp.py: h0, h1, h2 and B0_norm() at the grid points, computed once per grid
+  instead of in lorentz4pp and induction4pp for every l (B0_norm alone takes 10 ms with
+  cnorm = 'mag_energy').
+- geostrophic_fraction builds P_l^1(cos theta) by the upward recurrence in l instead of calling
+  scipy.special.lpmv for each l (17 s at lmax = 1007, now 0.03 s; same values to 2e-12), and splits
+  the complex product into two real ones.
+- spin_doctor.py reads the solution files with up to ncpus processes (2.5 s per 250 MB file) and no
+  longer creates a pool for diagnose. ut.Dcheb uses len() instead of np.size(), so it also works on
+  2D arrays, one expansion per column; unchanged for 1D input.
+- Result: 27 s instead of 1126 s at N = 1008 (10 solutions), peak memory 0.9 GB instead of 4.3 GB.
+- Checked: on that run and on eight small cases (spin-over, S2 torsional full sphere, Jones 2000
+  thermal, Silva 2019 thermocompositional, no rotation, a G21 dipole with conducting IC and thin-wall
+  mantle, an m = 2 G21 dipole, an m = 1 full-sphere S2), old and new spin_doctor run on the same
+  solutions give the same eigenvalues and the same summary table, apart from the last printed digit
+  of some residuals below 1e-12. In the .dat files, energies, dissipation and work terms agree to
+  1e-11 relative or better, torques, angular momentum and geo to 4e-16, and the residuals change by
+  at most 4e-13 in absolute value. press0 in full-sphere cases (evaluated at the innermost quadrature
+  point, close to r = 0) is dominated by rounding in both versions and changes by up to 1e-11.
+  Against an 80-bit long double evaluation, the new radial values are 1.5 to 3 times more accurate
+  than chebval's.
+
+
 2026-10-11
 ----------
 Postprocessing (bin/utils4pp.py, bin/spin_doctor.py)

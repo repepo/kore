@@ -157,18 +157,25 @@ def main(ncpus):
 
     fname_dy = 'rotdyn.field'
 
-    if os.path.isfile(fname_ru) and os.path.isfile(fname_iu):
-        ru = np.loadtxt(fname_ru).reshape((2*ut.n,-1))
-        iu = np.loadtxt(fname_iu).reshape((2*ut.n,-1))
-    if os.path.isfile(fname_rb) and os.path.isfile(fname_ib):
-        rb = np.loadtxt(fname_rb).reshape((2*ut.n,-1))
-        ib = np.loadtxt(fname_ib).reshape((2*ut.n,-1))
-    if os.path.isfile(fname_rt) and os.path.isfile(fname_it):
-        rt = np.loadtxt(fname_rt).reshape((ut.n,-1))
-        it = np.loadtxt(fname_it).reshape((ut.n,-1))
-    if os.path.isfile(fname_rc) and os.path.isfile(fname_ic):
-        rc = np.loadtxt(fname_rc).reshape((ut.n,-1))
-        ic = np.loadtxt(fname_ic).reshape((ut.n,-1))
+    # NEW (2026-10-16): the solution files are read in parallel, by up to ncpus processes
+    # (np.loadtxt takes 2.5 s for each 250 MB file at N = 1008, nev = 10)
+    pairs  = [ (fname_ru, fname_iu), (fname_rb, fname_ib), (fname_rt, fname_it), (fname_rc, fname_ic) ]
+    toread = [ f for pair in pairs if all(os.path.isfile(f) for f in pair) for f in pair ]
+    with mp.Pool(processes=max(1, min(int(ncpus), len(toread)))) as pool:
+        fields = dict(zip(toread, pool.map(np.loadtxt, toread)))
+
+    if fname_ru in fields:
+        ru = fields[fname_ru].reshape((2*ut.n,-1))
+        iu = fields[fname_iu].reshape((2*ut.n,-1))
+    if fname_rb in fields:
+        rb = fields[fname_rb].reshape((2*ut.n,-1))
+        ib = fields[fname_ib].reshape((2*ut.n,-1))
+    if fname_rt in fields:
+        rt = fields[fname_rt].reshape((ut.n,-1))
+        it = fields[fname_it].reshape((ut.n,-1))
+    if fname_rc in fields:
+        rc = fields[fname_rc].reshape((ut.n,-1))
+        ic = fields[fname_ic].reshape((ut.n,-1))
     if os.path.isfile(fname_dy):
         sol_rotdyn = np.loadtxt(fname_dy, dtype=complex).reshape((3,-1))
 
@@ -263,10 +270,8 @@ def main(ncpus):
     if do_mtorq_ic:
         gmag_ic = ut.gamma_magnetic_ic()[0,:]
 
-    # One pool for all solutions. The quadrature grid must be set before the pool is created,
-    # since the workers are forked and only see the module globals as they were at that time.
+    # The quadrature grid, once for all solutions. NEW (2026-10-16): no pool, diagnose is serial now (see there)
     upp.setup_grid(par.ricb, ut.rcmb)
-    pool = mp.Pool(processes=int(ncpus))
 
 
     # Begin processing all solutions
@@ -309,8 +314,8 @@ def main(ncpus):
             c_sol2  = upp.expand_reshape_sol( rcmp + 1j*icmp, par.symm)		   			
 
 
-        # diagnose solutions, in parallel
-        [ udgn, bdgn, tdgn, cdgn ] = upp.diagnose( u_sol2, b_sol2, t_sol2, c_sol2, par.ricb, ut.rcmb, int(ncpus), sigma+1j*w, pool=pool )
+        # diagnose solutions
+        [ udgn, bdgn, tdgn, cdgn ] = upp.diagnose( u_sol2, b_sol2, t_sol2, c_sol2, par.ricb, ut.rcmb, int(ncpus), sigma+1j*w )
 
 
         if par.hydro:
@@ -446,9 +451,6 @@ def main(ncpus):
 
         
         params.append( [ v for _, v, _ in param_table(0) ] )  # runtime filled in before writing params.dat
-
-    pool.close()
-    pool.join()
 
     # ------------------------------------------------------------------------------------------------------------------------
     print(table_line + '\n')

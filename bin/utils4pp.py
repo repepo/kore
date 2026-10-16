@@ -1,11 +1,10 @@
-# The diagnose function in this module invokes in parallel the functions
-# flow_worker, magnetic_worker, and thermal_worker.
+# The diagnose function in this module invokes the functions
+# flow_worker, magnetic_worker, and thermal_worker for each l (serially since 2026-10-16).
 # It provides energy, dissipation, power, etc for a given solution.
 
 import multiprocessing as mp
 import numpy.polynomial.chebyshev as ch
 import numpy as np
-import scipy.special as scsp  # NEW (2026-10-11): associated Legendre functions for geostrophic_fraction
 from parameters import par
 import utils as ut
 
@@ -49,6 +48,45 @@ def funcheb(ck0, r, ricb, rcmb, n):
             out[:,j] = ch.chebval(x00, dk[:,j-1])  # and the derivatives
 
     return out
+
+
+
+# NEW (2026-10-16): all radial functions of a solution at once, for diagnose.
+def cheb2space_table(C, nd):
+    '''
+    Returns the radial functions with Chebyshev coefficients C (one row per l, as from expand_reshape_sol)
+    and their r-derivatives up to order nd, at the quadrature points of setup_grid, as an array of
+    shape (nd+1, rows of C, points): out[j,i,:] is the j-th derivative of row i.
+    Same as funcheb row by row, to rounding: the derivative coefficients come from the same ut.Dcheb
+    recurrence, but the Chebyshev sums are one matrix product per derivative (chebvander at x0) instead
+    of one chebval (a Python loop over N) per row. The workers of diagnose need each row several times
+    (lorentz4pp, induction4pp and pressure4pp also use the neighbouring l's), so they take these tables
+    in place of the coefficients (see radial).
+    '''
+    V   = ch.chebvander(x0, np.shape(C)[1]-1)  # (points, N): T_k at the points
+    dk  = np.ascontiguousarray(np.transpose(C))  # (N, rows): one expansion per column, as ut.Dcheb takes them
+    out = np.zeros((nd+1, np.shape(C)[0], np.size(x0)), dtype=complex)
+    for j in range(nd+1):
+        if j > 0:
+            dk = ut.Dcheb(dk, par.ricb, ut.rcmb)  # coefficients of the next derivative
+        # two real products, half the work of one complex product; contiguous copies so that BLAS is used
+        out[j].real = ( V @ np.ascontiguousarray(np.real(dk)) ).T
+        out[j].imag = ( V @ np.ascontiguousarray(np.imag(dk)) ).T
+    return out
+
+
+
+def radial(F, idx, n):
+    '''
+    NEW (2026-10-16): radial function idx of F and its first n r-derivatives at the points rk, as rows 0..n.
+    F holds Chebyshev coefficients (one row per l, evaluated here with funcheb) or is a table
+    from cheb2space_table (looked up).
+    '''
+    if np.ndim(F) == 3:
+        if n >= np.shape(F)[0]:
+            raise ValueError('radial: the table has only %d derivatives' % (np.shape(F)[0]-1))
+        return F[:n+1, idx, :]
+    return funcheb(F[idx,:], r=None, ricb=par.ricb, rcmb=ut.rcmb, n=n).T
 
 
 
@@ -169,14 +207,14 @@ def cheb2space_pol(L, lp, P, ns):
 
     L1    = L*(L+1)
     idx   = list(lp).index(L) 
-    f_pol = funcheb(P[idx,:], r=None, ricb=par.ricb, rcmb=ut.rcmb, n=ns+1)
+    f_pol = radial(P, idx, ns+1)  # NEW (2026-10-16): P can be a table from cheb2space_table
     
     plm = []
     qlm = []
     slm = []
 
     for i in range(ns+2):
-        plm.append(f_pol[:,i])
+        plm.append(f_pol[i])
     
     qlm0  = L1*plm[0]/rk
     qlm.append(qlm0)
@@ -210,11 +248,11 @@ def cheb2space_tor(L, lt, T, ns):
     '''
 
     idx   = list(lt).index(L) 
-    f_tor = funcheb(T[idx,:], r=None, ricb=par.ricb, rcmb=ut.rcmb, n=ns)
+    f_tor = radial(T, idx, ns)  # NEW (2026-10-16): T can be a table from cheb2space_table
 
     tlm = []
     for i in range(ns+1):
-        tlm.append(f_tor[:,i])
+        tlm.append(f_tor[i])
 
     return tlm
 
@@ -273,12 +311,21 @@ def geostrophic_fraction(u_sol2, ns=240, nz=48):
         W  = H[:,None]*wg[None,:]/2                                     # dz weights
         R  = np.sqrt(s[:,None]**2 + Z**2)
         chx = ch.chebvander( xcheb(R, par.ricb, ut.rcmb).ravel(), par.N-1 )        # Chebyshev T_k at the points
-        dP  = np.array([ scsp.lpmv(1, l, (Z/R).ravel()) for l in lt ])            # dP_l(cos θ)/dθ = P_l^1(cos θ)
+        # dP_l(cos θ)/dθ = P_l^1(cos θ). NEW (2026-10-16): by the upward recurrence in l, for all l at once,
+        # instead of scipy.special.lpmv(1, l, cos θ) l by l (17 s at lmax = 1007); same values to 2e-12 relative.
+        x   = (Z/R).ravel()                                                       # cos θ
+        P1  = np.zeros((max(par.lmax, 1)+1, x.size))
+        P1[1] = -np.sqrt(1 - x**2)                                                # P_1^1, Condon-Shortley phase as lpmv
+        for l in range(1, par.lmax):
+            P1[l+1] = ( (2*l+1)*x*P1[l] - (l+1)*P1[l-1] )/l                       # l P_{l+1}^1 = (2l+1) x P_l^1 - (l+1) P_{l-1}^1
+        dP  = P1[lt]
         _geo_grid = ( key, (s, H, W, chx, dP) )
     s, H, W, chx, dP = _geo_grid[1]
 
     T = u_sol2[1]  # toroidal Chebyshev coefficients, one row per l
-    uphi  = -np.sum( (T @ chx.T)*dP, axis=0 ).reshape(W.shape)
+    # NEW (2026-10-16): real and imaginary parts as two real products (T @ chx.T made a complex copy of chx)
+    Tx    = np.ascontiguousarray(np.real(T)) @ chx.T + 1j*( np.ascontiguousarray(np.imag(T)) @ chx.T )
+    uphi  = -np.sum( Tx*dP, axis=0 ).reshape(W.shape)
     ubar  = np.sum( uphi*W, axis=1 )/H                                  # z-average along each column
     e_tot = np.sum( np.abs(uphi)**2 * W * s[:,None] )                   # volume element ∝ s ds dz
     e_geo = np.sum( np.abs(ubar)**2 * H * s )
@@ -658,11 +705,7 @@ def lorentz4pp_dipo( l, b_sol2 ):
     P = b_sol2[0]
     T = b_sol2[1]
 
-    h0 = ut.h0(rk, par.B0, [par.beta, par.B0_l, par.ricb, 0])
-    h1 = ut.h1(rk, par.B0, [par.beta, par.B0_l, par.ricb, 0])
-    h2 = ut.h2(rk, par.B0, [par.beta, par.B0_l, par.ricb, 0])
-
-    cnorm = ut.B0_norm()
+    [ h0, h1, h2, cnorm ] = b0_profiles()  # NEW (2026-10-16): computed once per grid, not for every l
 
     out_rad = np.zeros_like(rk, dtype='complex128')
     out_con = np.zeros_like(rk, dtype='complex128')
@@ -734,11 +777,7 @@ def lorentz4pp_quad( l, b_sol2 ):
     P = b_sol2[0]
     T = b_sol2[1]
 
-    h0 = ut.h0(rk, par.B0, [par.beta, par.B0_l, par.ricb, 0])
-    h1 = ut.h1(rk, par.B0, [par.beta, par.B0_l, par.ricb, 0])
-    h2 = ut.h2(rk, par.B0, [par.beta, par.B0_l, par.ricb, 0])
-
-    cnorm = ut.B0_norm()
+    [ h0, h1, h2, cnorm ] = b0_profiles()  # NEW (2026-10-16): computed once per grid, not for every l
 
     out_rad = np.zeros_like(rk, dtype='complex128')
     out_con = np.zeros_like(rk, dtype='complex128')
@@ -859,11 +898,7 @@ def induction4pp_dipo( l, u_sol2 ):
     P = u_sol2[0]
     T = u_sol2[1]
 
-    h0 = ut.h0(rk, par.B0, [par.beta, par.B0_l, ricb, 0])
-    h1 = ut.h1(rk, par.B0, [par.beta, par.B0_l, ricb, 0])
-    h2 = ut.h2(rk, par.B0, [par.beta, par.B0_l, ricb, 0])
-
-    cnorm = ut.B0_norm()
+    [ h0, h1, h2, cnorm ] = b0_profiles()  # NEW (2026-10-16): computed once per grid, not for every l
 
     out_rad = np.zeros_like(rk, dtype='complex128')
     out_con = np.zeros_like(rk, dtype='complex128')
@@ -930,11 +965,7 @@ def induction4pp_quad( l, u_sol2 ):
     P = u_sol2[0]
     T = u_sol2[1]
 
-    h0 = ut.h0(rk, par.B0, [par.beta, par.B0_l, ricb, 0])
-    h1 = ut.h1(rk, par.B0, [par.beta, par.B0_l, ricb, 0])
-    h2 = ut.h2(rk, par.B0, [par.beta, par.B0_l, ricb, 0])
-
-    cnorm = ut.B0_norm()
+    [ h0, h1, h2, cnorm ] = b0_profiles()  # NEW (2026-10-16): computed once per grid, not for every l
 
     out_rad = np.zeros_like(rk, dtype='complex128')
     out_con = np.zeros_like(rk, dtype='complex128')
@@ -1023,9 +1054,8 @@ def buoyancy4pp(l, lp, tsol2):
     hlm0 = 0
     
     if l in lp:
-        idx   = list(lp).index(l) 
-        f_pol = funcheb( tsol2[idx,:], r=None, ricb=par.ricb, rcmb=ut.rcmb, n=0 )
-        hlm0  = f_pol[:,0]
+        idx   = list(lp).index(l)
+        hlm0  = radial(tsol2, idx, 0)[0]  # NEW (2026-10-16): tsol2 can be a table from cheb2space_table
         
     return hlm0
 
@@ -1073,15 +1103,14 @@ def pressure4pp(l, eigval, u_sol2):
 
 
 _grid = None  # (Ra, Rb, N) of the quadrature grid currently in the module globals
+_b0   = None  # NEW (2026-10-16): [h0, h1, h2, cnorm] of B0 on that grid, see b0_profiles
 
 
 def setup_grid(Ra, Rb):
     '''
     Sets the module-level quadrature grid (rk, x0, sqx, r2, r3, r4) used by the workers.
-    When reusing a pool across diagnose calls, call this *before* creating the pool:
-    with the 'fork' start method the workers only see the globals as they were at fork time.
     '''
-    global rk, x0, sqx, r2, r3, r4, _grid
+    global rk, x0, sqx, r2, r3, r4, _grid, _b0
 
     # NEW (2026-10-06): Gauss-Legendre nodes xk and weights wk (from -1 to 1) replace the
     # Chebyshev-Gauss nodes. cg_quad used Chebyshev-Gauss with the integrand times sqrt(1-xk**2) to
@@ -1104,6 +1133,21 @@ def setup_grid(Ra, Rb):
     r4 = rk**4
 
     _grid = (Ra, Rb, par.N)
+    _b0   = None  # NEW (2026-10-16): B0 profiles are recomputed on the new grid
+
+
+
+def b0_profiles():
+    '''
+    NEW (2026-10-16): returns [h0, h1, h2, cnorm], the radial functions of B0 at the points rk and ut.B0_norm().
+    Computed once per grid: lorentz4pp and induction4pp need them for every l, and ut.B0_norm() alone
+    takes 10 ms with cnorm = 'mag_energy' (it builds a Gauss-Legendre rule each time).
+    '''
+    global _b0
+    if _b0 is None:
+        args = [ par.beta, par.B0_l, par.ricb, 0 ]
+        _b0  = [ ut.h0(rk, par.B0, args), ut.h1(rk, par.B0, args), ut.h2(rk, par.B0, args), ut.B0_norm() ]
+    return _b0
 
 
 
@@ -1111,52 +1155,41 @@ def diagnose( usol2, bsol2, tsol2, csol2, Ra, Rb, ncpus, eigval, pool=None):
     '''
     Computes kinetic energy, internal and kinetic energy dissipation,
     and input power from body forces. Integrated From r=Ra to r=Rb, and
-    angularly over the whole sphere. Processed in parallel using ncpus.
-    If pool is given it is used (and left open) instead of creating a new one;
-    setup_grid(Ra, Rb) must have been called before that pool was created.
+    angularly over the whole sphere. Returns one row per l for each field.
+    NEW (2026-10-16): serial. The radial functions of every l and their derivatives are evaluated once
+    (cheb2space_table) and the workers, run one l after another, read them from these tables. Before,
+    each l was a task for a pool of ncpus processes that received the full Chebyshev coefficients
+    (32 MB at N = 1008) and evaluated each radial function about five times (the neighbouring l's in
+    lorentz4pp, induction4pp, pressure4pp): 143 s per solution at N = 1008 on 8 processes, now 2 s.
+    Results agree with the old ones to rounding (~1e-14 relative). ncpus and pool are no longer used.
     '''
     [out_u, out_b] = [0,0]
     [out_t, out_c] = [0,0]
 
-    if pool is None:
+    if _grid != (Ra, Rb, par.N):
         setup_grid(Ra, Rb)
-    elif _grid != (Ra, Rb, par.N):
-        raise ValueError('diagnose: call setup_grid(Ra, Rb) before creating the pool')
 
     [ lp_u, lt_u, ll ] = ut.ell(par.m, par.lmax, par.symm)  # the l-indices of the flow field
     [ lp_b, lt_b, _  ] = ut.ell(par.m, par.lmax, ut.bsymm)  # the l-indices of the magnetic field
-    
-    # process each l-component in parallel
-    own_pool = pool is None
-    if own_pool:
-        pool = mp.Pool(processes=ncpus)
 
-    #print(np.shape(usol2), np.shape(tsol2))
+    # radial functions at the points rk: poloidal ones up to the 3rd derivative, toroidal and scalar ones up to the 2nd
+    utab = [ cheb2space_table(usol2[0], 3), cheb2space_table(usol2[1], 2) ] if par.hydro else 0
+    btab = [ cheb2space_table(bsol2[0], 3), cheb2space_table(bsol2[1], 2) ] if par.magnetic else 0
+    ttab = cheb2space_table(tsol2, 2) if par.thermal else 0
+    ctab = cheb2space_table(csol2, 2) if par.compositional else 0
 
     if par.hydro:
-        ppu = [ pool.apply_async( flow_worker,
-                args=( l, lp_u, lt_u, usol2, bsol2, tsol2, csol2, Ra, Rb, par.N, sqx, eigval)) for l in ll ]
-        out_u = np.array([pp0.get() for pp0 in ppu])
-    
+        out_u = np.array([ flow_worker( l, lp_u, lt_u, utab, btab, ttab, ctab, Ra, Rb, par.N, sqx, eigval) for l in ll ])
+
     if par.magnetic:
-        ppb = [ pool.apply_async( magnetic_worker,
-                args=( l, lp_b, lt_b, bsol2, usol2, Ra, Rb, par.N, sqx)) for l in ll ]   
-        out_b = np.array([pp0.get() for pp0 in ppb])
+        out_b = np.array([ magnetic_worker( l, lp_b, lt_b, btab, utab, Ra, Rb, par.N, sqx) for l in ll ])
 
     if par.thermal:
-        ppt = [ pool.apply_async( thermal_worker,
-                args=( l, lp_u, tsol2, usol2, Ra, Rb, par.N, sqx, 'thermal' )) for l in lp_u ]   
-        out_t = np.array([pp0.get() for pp0 in ppt])
+        out_t = np.array([ thermal_worker( l, lp_u, ttab, utab, Ra, Rb, par.N, sqx, 'thermal' ) for l in lp_u ])
 
     if par.compositional:
         # we use again the thermal_worker but with the compositional solution as argument
-        ppc = [ pool.apply_async( thermal_worker,
-                args=( l, lp_u, csol2, usol2, Ra, Rb, par.N, sqx, 'compositional' )) for l in lp_u ]   
-        out_c = np.array([pp0.get() for pp0 in ppc])
-
-    if own_pool:
-        pool.close()
-        pool.join()
+        out_c = np.array([ thermal_worker( l, lp_u, ctab, utab, Ra, Rb, par.N, sqx, 'compositional' ) for l in lp_u ])
 
     return [ out_u, out_b, out_t, out_c ]
 
