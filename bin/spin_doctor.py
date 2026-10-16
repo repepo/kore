@@ -263,9 +263,10 @@ def main(ncpus):
 
     do_vtorq = par.hydro and (par.bco == 1) and ((par.m==0) and (par.symm==1)) or ((par.m==1) and (par.symm==-1))
     do_vtorq_ic = par.hydro and (par.bci == 1) and ((par.m==0) and (par.symm==1)) or ((par.m==1) and (par.symm==-1))
+
     if do_vtorq:
         gvisc     = ut.gamma_visc(0,0,0)[0,:]    # viscous torque on the mantle
-    elif do_vtorq_ic:
+    if do_vtorq_ic:
         gvisc_icb = ut.gamma_visc_icb(par.ricb)[0,:]    # viscous torque on the IC
 
     do_mtorq    = par.magnetic and (par.mantle == 'TWA') and ((par.m==0) and (par.symm==1)) or ((par.m==1) and (par.symm==-1))
