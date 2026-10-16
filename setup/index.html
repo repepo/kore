@@ -1,0 +1,1752 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../quickstart/">
+      
+      
+        <link rel="next" href="../background-field/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Setting up a problem - Kore User Manual</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#setting-up-a-problem" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Kore User Manual" class="md-header__button md-logo" aria-label="Kore User Manual" data-md-component="logo">
+      
+  <img src="../assets/test1.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Kore User Manual
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Setting up a problem
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/repepo/kore" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    repepo/kore
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../installation/" class="md-tabs__link">
+          
+  
+  
+  Getting started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
+          
+  
+  
+  User guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../equations/" class="md-tabs__link">
+          
+  
+  
+  Theory
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../examples/" class="md-tabs__link">
+          
+  
+  
+  Examples
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Kore User Manual" class="md-nav__button md-logo" aria-label="Kore User Manual" data-md-component="logo">
+      
+  <img src="../assets/test1.png" alt="logo">
+
+    </a>
+    Kore User Manual
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/repepo/kore" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    repepo/kore
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setting up a problem
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setting up a problem
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#how-parameters-are-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How parameters are set
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#physics-switches" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Physics switches
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#geometry-and-symmetry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Geometry and symmetry
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#flow-boundary-conditions-and-ekman-number" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flow boundary conditions and Ekman number
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#eigenvalue-or-forced-problem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Eigenvalue or forced problem
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#time-scale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Time scale
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#magnetic-field-strength-and-diffusivity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Magnetic field strength and diffusivity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#thermal-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Thermal parameters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#compositional-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compositional parameters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resolution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#target-and-eigensolver" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Target and eigensolver
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../background-field/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background magnetic field
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../boundaries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Inner core and mantle
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rotdyn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rotational dynamics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../solver/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Solver settings
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Output and postprocessing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Theory
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Theory
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Equations and scaling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../method/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical method
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples and tests
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#how-parameters-are-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How parameters are set
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#physics-switches" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Physics switches
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#geometry-and-symmetry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Geometry and symmetry
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#flow-boundary-conditions-and-ekman-number" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flow boundary conditions and Ekman number
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#eigenvalue-or-forced-problem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Eigenvalue or forced problem
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#time-scale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Time scale
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#magnetic-field-strength-and-diffusivity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Magnetic field strength and diffusivity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#thermal-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Thermal parameters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#compositional-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compositional parameters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resolution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#target-and-eigensolver" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Target and eigensolver
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="setting-up-a-problem">Setting up a problem</h1>
+<h2 id="how-parameters-are-set">How parameters are set</h2>
+<p>All parameters are attributes of one object, <code>par</code>. Their defaults, with comments listing the available options, are in <code>bin/params_default.py</code>. <code>bin/parameters.py</code> is where a problem is set up:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">params_default</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_params</span><span class="p">,</span> <span class="n">pmak</span><span class="p">,</span> <span class="n">ssak</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">par</span> <span class="o">=</span> <span class="n">default_params</span><span class="p">()</span>      <span class="c1"># every parameter at its default value</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">par</span><span class="o">.</span><span class="n">Ek</span>       <span class="o">=</span> <span class="mf">1e-6</span>         <span class="c1"># change only what differs from the defaults</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">par</span><span class="o">.</span><span class="n">magnetic</span> <span class="o">=</span> <span class="mi">1</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="o">...</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">par</span><span class="o">.</span><span class="n">set_scales</span><span class="p">()</span>            <span class="c1"># computes the derived parameters; call it last</span>
+</span></code></pre></div>
+<p><code>par.set_scales()</code> fills in the parameters that depend on others, unless they were set explicitly: the magnetic numbers <code>Em</code>, <code>Le</code> and <code>Le2</code>, the diffusion numbers <code>Etherm</code> and <code>Ecomp</code>, the buoyancy factors <code>BV2</code> and <code>BV2_comp</code>, the time scale factor <code>OmgTau</code>, the resolution <code>N</code> and <code>lmax</code>, and the solver target <code>tau</code>. Set every parameter before this call: a change made after it does not reach the derived parameters.</p>
+<p>All the scripts in <code>bin/</code> read the parameters with <code>from parameters import par</code>, so the same <code>parameters.py</code> must be in place for every step of a run. Parameter studies set one parameter per run folder (see <a href="../output/#many-runs">Many runs</a>); the spare parameters <code>aux1</code> and <code>aux2</code> are recorded in <code>params.dat</code> and can be used, for example, to define a ramp.</p>
+<p>The sections below follow the order of <code>params_default.py</code>. The magnetic boundary conditions, the background field, the rotational dynamics and the solver options have pages of their own.</p>
+<h2 id="physics-switches">Physics switches</h2>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hydro</code></td>
+<td>1</td>
+<td>Include the momentum (Navier-Stokes) equation for the flow <span class="arithmatex">\(\mathbf{u}\)</span>.</td>
+</tr>
+<tr>
+<td><code>magnetic</code></td>
+<td>0</td>
+<td>Include the induction equation for the magnetic field perturbation <span class="arithmatex">\(\mathbf{b}\)</span> and the Lorentz force. Needs a background field, see <a href="../background-field/">Background magnetic field</a>.</td>
+</tr>
+<tr>
+<td><code>thermal</code></td>
+<td>0</td>
+<td>Include the heat equation and thermal buoyancy (Boussinesq).</td>
+</tr>
+<tr>
+<td><code>compositional</code></td>
+<td>0</td>
+<td>Include the composition equation and compositional buoyancy (Boussinesq).</td>
+</tr>
+<tr>
+<td><code>rotdyn</code></td>
+<td>0</td>
+<td>Let the mantle and the inner core rotate in response to axial torques, see <a href="../rotdyn/">Rotational dynamics</a>.</td>
+</tr>
+<tr>
+<td><code>rotation</code></td>
+<td>1</td>
+<td>Rotating frame. With 0 the Coriolis force is left out; then use a time scale other than the rotation one (e.g. <code>timescale = 'viscous'</code>) and set <code>N</code> explicitly.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="geometry-and-symmetry">Geometry and symmetry</h2>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ricb</code></td>
+<td>0.35</td>
+<td>Inner core radius. The CMB radius is 1 and is the unit of length. <code>ricb = 0</code> is a full sphere.</td>
+</tr>
+<tr>
+<td><code>m</code></td>
+<td>0</td>
+<td>Azimuthal wave number (<span class="arithmatex">\(m \geq 0\)</span>). All fields vary as <span class="arithmatex">\(e^{im\phi}\)</span>.</td>
+</tr>
+<tr>
+<td><code>symm</code></td>
+<td>1</td>
+<td>Equatorial symmetry of the flow: 1 symmetric, -1 antisymmetric. The magnetic field perturbation has symmetry <code>symm</code> times that of the background field, and temperature and composition follow the flow.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="flow-boundary-conditions-and-ekman-number">Flow boundary conditions and Ekman number</h2>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bci</code></td>
+<td>1</td>
+<td>Flow condition at the inner core boundary (ICB): 0 stress-free, 1 no-slip (or boundary forcing). Ignored if <code>ricb = 0</code>.</td>
+</tr>
+<tr>
+<td><code>bco</code></td>
+<td>1</td>
+<td>Flow condition at the core-mantle boundary (CMB): 0 stress-free, 1 no-slip (or boundary forcing).</td>
+</tr>
+<tr>
+<td><code>Ek</code></td>
+<td><span class="arithmatex">\(10^{-6}\)</span></td>
+<td>Ekman number <span class="arithmatex">\(E = \nu/\Omega L^2\)</span>.</td>
+</tr>
+</tbody>
+</table>
+<p><code>Ek = 0</code> gives an inviscid problem, with only the no-penetration condition <span class="arithmatex">\(u_r = 0\)</span> at the boundary. It works only for a full sphere (<code>ricb = 0</code>), and <code>N</code> must then be set by hand. A conducting inner core, a thin conducting wall with <code>c1</code> <span class="arithmatex">\(\neq 0\)</span>, and <code>rotdyn</code> all need a viscous fluid and no-slip boundaries.</p>
+<h2 id="eigenvalue-or-forced-problem">Eigenvalue or forced problem</h2>
+<p>With <code>forcing = 0</code> (the default) Kore solves the eigenvalue problem <span class="arithmatex">\(A\,x = \lambda B\,x\)</span> for the free modes. Any other value selects a forced problem, solved as one linear system at the frequency <code>forcing_frequency</code>:</p>
+<table>
+<thead>
+<tr>
+<th><code>forcing</code></th>
+<th>Forcing</th>
+<th>Requirements</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Tidal body force of Lin &amp; Ogilvie (2018)</td>
+<td><span class="arithmatex">\(m = 2\)</span>, symmetric</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Boundary flow forcing</td>
+<td><code>bci = 1</code>, <code>bco = 1</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Tidal body force of Rovira-Navarro et al. (2018)</td>
+<td><span class="arithmatex">\(m\)</span> = 0 and 2 symmetric, <span class="arithmatex">\(m = 1\)</span> antisymmetric. Leaks power.</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Test case: Lin body force with <span class="arithmatex">\(X(r) = (A r^2 + B/r^3)\,C\)</span></td>
+<td><span class="arithmatex">\(m = 2\)</span>, symmetric</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Test case: Lin body force with <span class="arithmatex">\(X(r) = 1/r\)</span></td>
+<td><span class="arithmatex">\(m = 0\)</span>, symmetric</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Radial velocity forcing at the ICB (Buffett 2010)</td>
+<td><span class="arithmatex">\(m = 1\)</span>, antisymmetric</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Longitudinal libration as boundary flow forcing</td>
+<td><span class="arithmatex">\(m\)</span> = 0 or 2, symmetric, no-slip</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Longitudinal libration as a Poincaré body force, in the mantle frame</td>
+<td><span class="arithmatex">\(m = 0\)</span>, symmetric, no-slip</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Radial boundary flow forcing</td>
+<td><span class="arithmatex">\(m = 2\)</span>, symmetric</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>forcing_frequency</code></td>
+<td>0</td>
+<td>Frequency of the forcing, in the units set by <code>timescale</code>. Negative is prograde.</td>
+</tr>
+<tr>
+<td><code>forcing_amplitude_cmb</code></td>
+<td>0</td>
+<td>Forcing amplitude at the CMB. Body forces use this value.</td>
+</tr>
+<tr>
+<td><code>forcing_amplitude_icb</code></td>
+<td>0</td>
+<td>Forcing amplitude at the ICB.</td>
+</tr>
+<tr>
+<td><code>projection</code></td>
+<td>1</td>
+<td>Recorded in <code>params.dat</code>; not used by the current solver.</td>
+</tr>
+</tbody>
+</table>
+<p>Forced problems use a direct solver and keep the amplitude set by the forcing (see <a href="../solver/#forced-problems">Solver settings</a>).</p>
+<h2 id="time-scale">Time scale</h2>
+<p>The equations can be written with different units of time (see <a href="../equations/">Equations and scaling</a>). The choice enters through the dimensionless rotation rate <span class="arithmatex">\(\Omega\tau\)</span>, <code>OmgTau</code>, which <code>set_scales()</code> sets from <code>timescale</code> unless <code>OmgTau</code> is given directly:</p>
+<table>
+<thead>
+<tr>
+<th><code>timescale</code></th>
+<th>Unit of time <span class="arithmatex">\(\tau\)</span></th>
+<th><code>OmgTau</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>'rotation'</code> (default)</td>
+<td><span class="arithmatex">\(1/\Omega\)</span></td>
+<td>1</td>
+</tr>
+<tr>
+<td><code>'viscous'</code></td>
+<td><span class="arithmatex">\(L^2/\nu\)</span></td>
+<td><span class="arithmatex">\(1/E\)</span></td>
+</tr>
+<tr>
+<td><code>'Alfven'</code></td>
+<td><span class="arithmatex">\(L\sqrt{\mu_0\rho}/B_0\)</span></td>
+<td><span class="arithmatex">\(1/Le\)</span></td>
+</tr>
+<tr>
+<td><code>'magnetic'</code></td>
+<td><span class="arithmatex">\(L^2/\eta\)</span></td>
+<td><span class="arithmatex">\(1/E_\eta\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>Eigenvalues, frequencies and forcing frequencies are all in these units.</p>
+<h2 id="magnetic-field-strength-and-diffusivity">Magnetic field strength and diffusivity</h2>
+<p>The field strength and the magnetic diffusivity can be given in either of two ways:</p>
+<ul>
+<li>the Elsasser number <code>Lambda</code> (<span class="arithmatex">\(\Lambda\)</span>, default 0.1) and the magnetic Prandtl number <code>Pm</code> (default 0.01). Then <code>set_scales()</code> computes the magnetic Ekman number <span class="arithmatex">\(E_\eta\)</span> = <code>Em</code> = <code>Ek/Pm</code>, <code>Le2</code> <span class="arithmatex">\(= \Lambda E_\eta\)</span> and the Lehnert number <code>Le</code> <span class="arithmatex">\(= \sqrt{\Lambda E_\eta}\)</span>;</li>
+<li>or the Lehnert number <code>Le</code> and the magnetic Ekman number <code>Em</code> directly, in which case <code>Lambda</code> and <code>Pm</code> are not used.</li>
+</ul>
+<p>The Lundquist number is <code>Le/Em</code>. The helper functions <code>pmak(Pm0, E0, Ek)</code> and <code>ssak(Lambda0, E0, Ek)</code> in <code>params_default.py</code> return <code>Pm</code> and <code>Lambda</code> as power laws of <code>Ek</code> through the point (<code>E0</code>, <code>Pm0</code>) or (<code>E0</code>, <code>Lambda0</code>), useful to keep a path towards Earth-like values when lowering <code>Ek</code>.</p>
+<p>The background field itself is chosen with <code>B0</code>, <code>cnorm</code> and related parameters (<a href="../background-field/">Background magnetic field</a>), and the magnetic boundary conditions with <code>innercore</code> and <code>mantle</code> (<a href="../boundaries/">Inner core and mantle</a>).</p>
+<h2 id="thermal-parameters">Thermal parameters</h2>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Prandtl</code></td>
+<td>1</td>
+<td>Prandtl number <span class="arithmatex">\(Pr = \nu/\kappa\)</span>.</td>
+</tr>
+<tr>
+<td><code>Etherm</code></td>
+<td><code>Ek/Prandtl</code></td>
+<td>Thermal Ekman number.</td>
+</tr>
+<tr>
+<td><code>heating</code></td>
+<td><code>'internal'</code></td>
+<td>Background temperature gradient, see below.</td>
+</tr>
+<tr>
+<td><code>Ra</code></td>
+<td><span class="arithmatex">\(2.5168 \times 10^8\)</span></td>
+<td>Rayleigh number <span class="arithmatex">\(Ra = \alpha g_0 L^3 \Delta T/\nu\kappa\)</span>, with <span class="arithmatex">\(L\)</span> the CMB radius and <span class="arithmatex">\(\Delta T\)</span> the temperature scale below.</td>
+</tr>
+<tr>
+<td><code>BV2</code></td>
+<td><code>-Ra*Ek**2/Prandtl</code></td>
+<td>Squared ratio of a reference Brunt-Väisälä frequency to the rotation rate, <span class="arithmatex">\(N_0^2/\Omega^2\)</span>. Set it directly for problems without diffusion, where <code>Ra</code> is undefined. Negative values are unstably stratified.</td>
+</tr>
+<tr>
+<td><code>rc</code>, <code>h</code>, <code>rsy</code></td>
+<td>0.7, 0.1, -1</td>
+<td>Transition radius, width and radial parity for <code>'two zone'</code> and <code>'user defined'</code>.</td>
+</tr>
+<tr>
+<td><code>bci_thermal</code>, <code>bco_thermal</code></td>
+<td>1, 1</td>
+<td>At the ICB and the CMB: 0 isothermal (<span class="arithmatex">\(\theta = 0\)</span>), 1 fixed heat flux (<span class="arithmatex">\(\partial_r\theta = 0\)</span>).</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th><code>heating</code></th>
+<th>Background gradient <span class="arithmatex">\(dT/dr\)</span></th>
+<th>Temperature scale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>'internal'</code></td>
+<td><span class="arithmatex">\(-\beta r\)</span> (uniform internal heating)</td>
+<td><span class="arithmatex">\(\beta r_o^2\)</span></td>
+</tr>
+<tr>
+<td><code>'differential'</code></td>
+<td><span class="arithmatex">\(-\beta r^{-2}\)</span>, with <span class="arithmatex">\(\beta = (T_i - T_o)\, r_i r_o / (r_o - r_i)\)</span></td>
+<td><span class="arithmatex">\(T_i - T_o\)</span></td>
+</tr>
+<tr>
+<td><code>'two zone'</code></td>
+<td><span class="arithmatex">\(K\,\)</span><code>ut.twozone(r)</code>: a neutral inner zone and a stratified outer zone joined by a tanh step at <code>rc</code> (Vidal et al. 2015)</td>
+<td><span class="arithmatex">\(-r_o K\)</span></td>
+</tr>
+<tr>
+<td><code>'user defined'</code></td>
+<td><span class="arithmatex">\(K\,\)</span><code>ut.BVprof(r)</code>, a function you edit in <code>bin/utils.py</code> (by default <span class="arithmatex">\(\propto r\)</span>)</td>
+<td><span class="arithmatex">\(-r_o K\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>The profiles are expanded in Chebyshev polynomials to the tolerance <code>tol_tc</code> (default <span class="arithmatex">\(10^{-6}\)</span>).</p>
+<h2 id="compositional-parameters">Compositional parameters</h2>
+<p>These mirror the thermal ones: <code>Schmidt</code> (Schmidt number <span class="arithmatex">\(Sc = \nu/D\)</span>, default 1), <code>Ecomp</code> (default <code>Ek/Schmidt</code>), <code>comp_background</code> (<code>'internal'</code> or <code>'differential'</code>), <code>Ra_comp</code> (compositional Rayleigh number, default 0), <code>BV2_comp</code> (default <code>-Ra_comp*Ek**2/Schmidt</code>), <code>rcc</code>, <code>hc</code>, <code>rsyc</code>, and <code>bci_compositional</code>, <code>bco_compositional</code> (0 fixed composition, 1 fixed flux).</p>
+<h2 id="resolution">Resolution</h2>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ncpus</code></td>
+<td>4</td>
+<td>Number of MPI processes for <code>submatrices.py</code> and <code>assemble.py</code>.</td>
+</tr>
+<tr>
+<td><code>N</code></td>
+<td><code>Ncheb(Ek)</code></td>
+<td>Number of Chebyshev polynomials in radius, in the fluid. Must be even for a full sphere.</td>
+</tr>
+<tr>
+<td><code>g</code></td>
+<td>1</td>
+<td>Approximate ratio <span class="arithmatex">\(l_{max}/N\)</span>.</td>
+</tr>
+<tr>
+<td><code>lmax</code></td>
+<td>from <code>N</code>, <code>g</code>, <code>ncpus</code>, <code>m</code></td>
+<td>Largest spherical-harmonic degree, <span class="arithmatex">\(2\,n_{cpu} \lfloor gN/2n_{cpu} \rfloor + m - 1\)</span>. Set by hand, it must be even if <span class="arithmatex">\(m\)</span> is odd, and <span class="arithmatex">\(l_{max} - m + 1\)</span> must be divisible by <span class="arithmatex">\(2\,n_{cpu}\)</span>.</td>
+</tr>
+<tr>
+<td><code>N_cic</code></td>
+<td>64</td>
+<td>Chebyshev polynomials for the field inside a conducting inner core.</td>
+</tr>
+<tr>
+<td><code>lmax_cic</code></td>
+<td><code>lmax</code></td>
+<td>Largest degree inside a conducting inner core.</td>
+</tr>
+</tbody>
+</table>
+<p>How to choose <code>N</code> and <code>lmax</code>, and how to check that they are large enough, is explained in <a href="../solver/#resolution">Solver settings</a> and <a href="../output/#checking-the-results">Output and postprocessing</a>.</p>
+<h2 id="target-and-eigensolver">Target and eigensolver</h2>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rtau</code>, <code>itau</code></td>
+<td>0, 1</td>
+<td>Real (damping) and imaginary (frequency) parts of the target <span class="arithmatex">\(\tau\)</span> = <code>rtau + 1j*itau</code>. The eigensolver returns the modes closest to it. A positive frequency is retrograde.</td>
+</tr>
+<tr>
+<td><code>which_eigenpairs</code></td>
+<td><code>'TM'</code></td>
+<td>Which eigenvalues SLEPc returns. First letter: <code>L</code> largest, <code>S</code> smallest, <code>T</code> closest to the target. Second letter: <code>M</code> magnitude, <code>R</code> real part, <code>I</code> imaginary part. Use <code>'TM'</code> with shift-and-invert.</td>
+</tr>
+<tr>
+<td><code>nev</code></td>
+<td>3</td>
+<td>Number of eigenvalues to compute.</td>
+</tr>
+<tr>
+<td><code>maxit</code></td>
+<td>50</td>
+<td>Maximum number of restarts of the eigensolver (iterations for forced problems).</td>
+</tr>
+<tr>
+<td><code>tol</code></td>
+<td><span class="arithmatex">\(10^{-16}\)</span></td>
+<td>Convergence tolerance of the solver.</td>
+</tr>
+<tr>
+<td><code>track_target</code></td>
+<td>0</td>
+<td>With 1, <code>set_scales()</code> reads <code>rtau</code> and <code>itau</code> from the first two numbers in a file <code>track_target</code>, e.g. to follow a mode along a parameter path.</td>
+</tr>
+</tbody>
+</table>
+<p>The PETSc, SLEPc and MUMPS options (<code>petsc_opts</code>) and the pre-scaling switch (<code>prescale</code>) are described in <a href="../solver/">Solver settings</a>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

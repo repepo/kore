@@ -1,0 +1,1616 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../solver/">
+      
+      
+        <link rel="next" href="../equations/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Output and postprocessing - Kore User Manual</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#output-and-postprocessing" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Kore User Manual" class="md-header__button md-logo" aria-label="Kore User Manual" data-md-component="logo">
+      
+  <img src="../assets/test1.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Kore User Manual
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Output and postprocessing
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/repepo/kore" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    repepo/kore
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../installation/" class="md-tabs__link">
+          
+  
+  
+  Getting started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../setup/" class="md-tabs__link">
+          
+  
+  
+  User guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../equations/" class="md-tabs__link">
+          
+  
+  
+  Theory
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../examples/" class="md-tabs__link">
+          
+  
+  
+  Examples
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Kore User Manual" class="md-nav__button md-logo" aria-label="Kore User Manual" data-md-component="logo">
+      
+  <img src="../assets/test1.png" alt="logo">
+
+    </a>
+    Kore User Manual
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/repepo/kore" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    repepo/kore
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setting up a problem
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../background-field/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background magnetic field
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../boundaries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Inner core and mantle
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rotdyn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rotational dynamics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../solver/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Solver settings
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Output and postprocessing
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Output and postprocessing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#spin_doctor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        spin_doctor
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="spin_doctor">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-summary-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The summary table
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#checking-the-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checking the results
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#result-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Result files
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#plotting-and-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plotting and analysis
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Plotting and analysis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scripts-in-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scripts in tools/
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#koreviz" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        koreviz
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#many-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Many runs
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Theory
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Theory
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Equations and scaling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../method/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical method
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples and tests
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#solutions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solutions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#spin_doctor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        spin_doctor
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="spin_doctor">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-summary-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The summary table
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#checking-the-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checking the results
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#result-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Result files
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#plotting-and-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plotting and analysis
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Plotting and analysis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scripts-in-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scripts in tools/
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#koreviz" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        koreviz
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#many-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Many runs
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="output-and-postprocessing">Output and postprocessing</h1>
+<h2 id="solutions">Solutions</h2>
+<p><code>solve_nopp.py</code> writes the solutions to the run folder:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>eigenvalues0.dat</code></td>
+<td>Eigenvalue problems: one row per solution, damping <span class="arithmatex">\(\sigma\)</span> and frequency <span class="arithmatex">\(\omega\)</span> (<span class="arithmatex">\(\lambda = \sigma + i\omega\)</span>).</td>
+</tr>
+<tr>
+<td><code>real_flow.field</code>, <code>imag_flow.field</code></td>
+<td>Real and imaginary parts of the flow's spectral coefficients, one column per solution.</td>
+</tr>
+<tr>
+<td><code>real_magnetic.field</code>, <code>imag_magnetic.field</code></td>
+<td>The magnetic field perturbation, with <code>magnetic = 1</code>.</td>
+</tr>
+<tr>
+<td><code>real_magnetic_ic.field</code>, <code>imag_magnetic_ic.field</code></td>
+<td>The field inside a conducting inner core (<code>'conducting, Chebys'</code>).</td>
+</tr>
+<tr>
+<td><code>real_temperature.field</code>, <code>real_composition.field</code> (and <code>imag_</code>)</td>
+<td>Temperature and composition, when included.</td>
+</tr>
+<tr>
+<td><code>rotdyn.field</code></td>
+<td>Mantle and inner-core rotation rates and their angle, as complex numbers, with <code>rotdyn = 1</code>.</td>
+</tr>
+<tr>
+<td><code>timing.dat</code></td>
+<td>Total run time of <code>solve_nopp.py</code>, in seconds.</td>
+</tr>
+<tr>
+<td><code>no_conv_solution</code></td>
+<td>Written instead when no eigenvalue converged.</td>
+</tr>
+</tbody>
+</table>
+<p>The coefficients are ordered by spherical-harmonic degree, poloidal part first and then toroidal, with the Chebyshev coefficients of each degree together (see <a href="../method/#unknowns">Numerical method</a>). <code>tools/load_solution.py</code> loads a solution into an interactive python session.</p>
+<p>Eigenvectors are only defined up to a complex factor. Kore scales each one so that its kinetic plus magnetic energy in the fluid equals 1 (see <a href="../solver/#eigenvalue-problems">Solver settings</a>); its phase is arbitrary. Forced solutions keep the amplitude set by the forcing.</p>
+<h2 id="spin_doctor">spin_doctor</h2>
+<div class="language-Shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>./bin/spin_doctor.py<span class="w"> </span>ncpus
+</span></code></pre></div>
+<p><code>spin_doctor.py</code> computes, for every solution in the folder, the energies, dissipation rates, work of the forces and torques, and residuals of the energy and angular-momentum balances that show how accurate the solution is. It prints a summary table and appends the results to the <code>.dat</code> files below. It needs the flow (<code>hydro = 1</code>).</p>
+<h3 id="the-summary-table">The summary table</h3>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>★</td>
+<td>Solution number.</td>
+</tr>
+<tr>
+<td>Damping σ, Frequency ω</td>
+<td>Real and imaginary parts of the eigenvalue (the forcing frequency for forced problems).</td>
+</tr>
+<tr>
+<td>resid0, resid𝐮, resid𝐛, residθ, resid𝐋</td>
+<td>Residuals of the balances, see below.</td>
+</tr>
+<tr>
+<td>Tor/Pol</td>
+<td>Toroidal over poloidal kinetic energy.</td>
+</tr>
+<tr>
+<td>Mag/Kin</td>
+<td>Magnetic over kinetic energy.</td>
+</tr>
+<tr>
+<td>Geo</td>
+<td>Geostrophic fraction: the share of the energy of <span class="arithmatex">\(u_\phi\)</span> held by its average along the rotation axis (see below). Only for <span class="arithmatex">\(m = 0\)</span>, <code>symm = 1</code>; <code>nan</code> otherwise.</td>
+</tr>
+<tr>
+<td>|𝚪|mag</td>
+<td>Modulus of the electromagnetic torque on the mantle.</td>
+</tr>
+<tr>
+<td>|𝚪|magIC</td>
+<td>Modulus of the electromagnetic torque on the inner core.</td>
+</tr>
+</tbody>
+</table>
+<p>The geostrophic fraction measures how close the azimuthal flow is to being invariant along the rotation axis:</p>
+<div class="arithmatex">\[
+\text{Geo} = \frac{\int |\langle u_\phi \rangle|^2\,dV}{\int |u_\phi|^2\,dV}, \qquad
+\langle u_\phi \rangle(s) = \frac{1}{H}\int u_\phi\,dz ,
+\]</div>
+<p>where the average is taken along each fluid column of height <span class="arithmatex">\(H\)</span>, from the inner core (or the equator, outside the tangent cylinder) to the core-mantle boundary. Since the column average and the rest of <span class="arithmatex">\(u_\phi\)</span> are orthogonal, <span class="arithmatex">\(1 - \text{Geo}\)</span> is the share of the energy of <span class="arithmatex">\(u_\phi\)</span> in its <span class="arithmatex">\(z\)</span>-dependent part. A torsional mode has Geo close to 1 (with Tor/Pol <span class="arithmatex">\(\gg 1\)</span> and Mag/Kin <span class="arithmatex">\(\approx 1\)</span>); in the inviscid full sphere it is 1 to round-off. It is computed by <code>geostrophic_fraction</code> in <code>bin/utils4pp.py</code>, on a grid of 240 cells in <span class="arithmatex">\(s\)</span> and 48 Gauss-Legendre points in <span class="arithmatex">\(z\)</span> over the northern half of the fluid (<span class="arithmatex">\(u_\phi\)</span> is equatorially symmetric for <span class="arithmatex">\(m = 0\)</span>, <code>symm = 1</code>). These points do not resolve the Ekman layers, so Geo describes the interior flow.</p>
+<h3 id="checking-the-results">Checking the results</h3>
+<p>The residuals compare terms of balances that an exact solution satisfies. They are computed from the solution alone, independently of the solver, and are the best test of a solution's accuracy. Each is the size of the imbalance divided by the largest term:</p>
+<table>
+<thead>
+<tr>
+<th>Residual</th>
+<th>Balance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>resid0</code></td>
+<td>The viscous dissipation computed in two ways, from <span class="arithmatex">\(\int \mathbf{u}\cdot\nabla^2\mathbf{u}\,dV\)</span> and from the rate of strain. <code>nan</code> if <code>Ek = 0</code>.</td>
+</tr>
+<tr>
+<td><code>resid𝐮</code></td>
+<td>Kinetic energy: <span class="arithmatex">\(2\sigma\)</span> times the kinetic energy against the viscous dissipation and the work of the Lorentz and buoyancy forces.</td>
+</tr>
+<tr>
+<td><code>resid𝐛</code></td>
+<td>Magnetic energy: <span class="arithmatex">\(2\sigma\)</span> times the magnetic energy against the induction work and magnetic diffusion.</td>
+</tr>
+<tr>
+<td><code>residθ</code></td>
+<td>Thermal "energy": <span class="arithmatex">\(2\sigma\)</span> times it against thermal diffusion and advection.</td>
+</tr>
+<tr>
+<td><code>resid𝐋</code></td>
+<td>Axial angular momentum of the fluid: <span class="arithmatex">\(\lambda L_z\)</span> against the viscous and electromagnetic torques on the mantle and the inner core (see <a href="../equations/#angular-momentum-balance">Angular momentum balance</a>). Only for eigenvalue problems with <span class="arithmatex">\(m = 0\)</span>, <code>symm = 1</code>; <code>nan</code> otherwise.</td>
+</tr>
+</tbody>
+</table>
+<p>As a rule of thumb they should all be below about <span class="arithmatex">\(10^{-4}\)</span>. If they are not, increase the resolution. Exceptions and caveats:</p>
+<ul>
+<li>With <code>rotdyn = 1</code>, <code>resid0</code> stays at about <span class="arithmatex">\(10^{-4}\)</span> to <span class="arithmatex">\(10^{-3}\)</span>, because the work done by the rotating mantle and inner core on the fluid is not included in that balance yet.</li>
+<li>The eigenvectors of the modes found away from the target are usually less accurate than the one closest to <span class="arithmatex">\(\tau\)</span>. To get a particular mode as accurately as possible, place the target on it.</li>
+<li>The residuals do not detect a too small <code>lmax</code>. Keep <code>lmax</code> close to <code>N</code> (see <a href="../solver/#resolution">Solver settings</a>).</li>
+<li>The energy balances cover the fluid only. Ohmic losses in a conducting inner core or a thin wall enter only through the flux of magnetic energy across the boundary, which <span class="arithmatex">\(\int \mathbf{b}\cdot\nabla^2\mathbf{b}\,dV\)</span> contains implicitly.</li>
+<li>With <code>Ek = 0</code> and an insulating mantle there are no torques, and <code>resid𝐋</code> is 1 by construction.</li>
+<li><code>solve_nopp.py</code> also prints a residual for each eigenvalue, <span class="arithmatex">\(\|Ax-\lambda Bx\|/\|\lambda x\|\)</span>. It only shows that SLEPc converged, and stays small even for inaccurate eigenvectors. Judge accuracy by <code>spin_doctor</code>'s residuals.</li>
+</ul>
+<h3 id="result-files">Result files</h3>
+<p>Each run appends one row per solution to the files below, in the same order in every file. Several runs in the same folder therefore build up a table of results, which <code>tools/getresults.py</code> can load.</p>
+<p><strong><code>params.dat</code></strong>, the parameters of the run (58 columns): hydro, magnetic, thermal, compositional, Ek, m, symm, ricb, bci, bco, forcing, forcing_frequency, forcing_amplitude_cmb, forcing_amplitude_icb, projection, B0type, beta_actual, B0_l, innercore_mag_bc, c_icb, c1_icb, mantle_mag_bc, c_cmb, c1_cmb, mu, Em, Le2, B0_norm, Etherm, heating, BV2, rc, h, rsy, bci_thermal, bco_thermal, Ecomp, compositional_background, BV2_comp, rcc, hc, rsyc, bci_compositional, bco_compositional, OmgTau, ncpus, N, lmax, runtime, mu_i2o, sigma_i2o, aux1, aux2, rotdyn, MoIZ_M, MoIZ_IC, OmgtauIC, gTorque. Text options are stored as their position in the list of options: <code>B0type</code> in <code>['axial', 'dipole', 'G21 dipole', 'Luo_S1', 'Luo_S2', 'FDM']</code>, <code>innercore_mag_bc</code> in <code>['insulator', 'TWA', 'conducting, Chebys', 'conducting, Bessel']</code>, <code>mantle_mag_bc</code> in <code>['insulator', 'TWA']</code>, <code>heating</code> in <code>['internal', 'differential', 'two zone', 'user defined']</code>. <code>runtime</code> is the total time of <code>solve_nopp.py</code> plus <code>spin_doctor.py</code>.</p>
+<p><strong><code>eigenvalues.dat</code></strong>: damping <span class="arithmatex">\(\sigma\)</span> and frequency <span class="arithmatex">\(\omega\)</span>.</p>
+<p><strong><code>flow.dat</code></strong> (19 columns; 18 in files written before 2026-10-11):</p>
+<table>
+<thead>
+<tr>
+<th>Columns</th>
+<th>Quantity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1-3</td>
+<td>Kinetic energy: total, poloidal, toroidal</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Viscous dissipation from <span class="arithmatex">\(\int \mathbf{u}\cdot\nabla^2\mathbf{u}\,dV\)</span></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Viscous (internal) dissipation from the rate of strain</td>
+</tr>
+<tr>
+<td>6-8</td>
+<td>Work of the Lorentz force, the thermal and the compositional buoyancy</td>
+</tr>
+<tr>
+<td>9-10</td>
+<td><code>resid0</code>, <code>resid𝐮</code></td>
+</tr>
+<tr>
+<td>11-12</td>
+<td>Viscous torque on the mantle (real, imaginary)</td>
+</tr>
+<tr>
+<td>13-14</td>
+<td>Viscous torque on the inner core (real, imaginary)</td>
+</tr>
+<tr>
+<td>15</td>
+<td>Pressure term</td>
+</tr>
+<tr>
+<td>16</td>
+<td>Unused (0)</td>
+</tr>
+<tr>
+<td>17-18</td>
+<td>Axial angular momentum of the fluid <span class="arithmatex">\(L_z\)</span> (real, imaginary)</td>
+</tr>
+<tr>
+<td>19</td>
+<td>Geostrophic fraction of <span class="arithmatex">\(u_\phi\)</span> (<code>nan</code> unless <span class="arithmatex">\(m = 0\)</span>, <code>symm = 1</code>)</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>magnetic.dat</code></strong> (8 columns): magnetic energy, magnetic diffusion, induction work, <code>resid𝐛</code>, electromagnetic torque on the mantle (real, imaginary), electromagnetic torque on the inner core (real, imaginary).</p>
+<p><strong><code>thermal.dat</code></strong> (4 columns): thermal "energy", thermal advection, thermal diffusion, <code>residθ</code>.</p>
+<p><strong><code>compositional.dat</code></strong> (3 columns): compositional "energy", advection, diffusion.</p>
+<p><strong><code>rotdyn.dat</code></strong> (8 complex columns): see <a href="../rotdyn/#output">Rotational dynamics</a>.</p>
+<p>Energies, dissipation rates and work are in the units set by <code>timescale</code>, with the magnetic energy scaled so that kinetic and magnetic energies are comparable (an eigenvector has kinetic plus magnetic energy 1). Torques are the axial torques the fluid exerts on the mantle and the inner core, as complex amplitudes.</p>
+<h2 id="plotting-and-analysis">Plotting and analysis</h2>
+<h3 id="scripts-in-tools">Scripts in <code>tools/</code></h3>
+<p>Run them from the run folder (they read <code>bin/parameters.py</code> and the <code>.field</code> files there):</p>
+<table>
+<thead>
+<tr>
+<th>Script</th>
+<th>Usage</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>plot_field.py</code></td>
+<td><code>python3 tools/plot_field.py nsol nR ntheta theta0 theta1 field opt [tex]</code></td>
+<td>Meridional sections of the three components of the flow (<code>field = u</code>) or magnetic field (<code>b</code>) of solution <code>nsol</code>, on <code>nR</code> × <code>ntheta</code> points between colatitudes <code>theta0</code> and <code>theta1</code>. <code>opt</code> is <code>raw</code> (real part) or <code>abs</code> (modulus). The optional last argument is <code>tex</code> (the default, LaTeX labels) or <code>notex</code> (matplotlib's mathtext, no LaTeX needed). Example: <code>python3 tools/plot_field.py 0 40 80 0 180 u raw notex</code>.</td>
+</tr>
+<tr>
+<td><code>plot_poltor.py</code></td>
+<td><code>python3 tools/plot_poltor.py nsol nR ntheta theta0 theta1</code></td>
+<td>Meridional sections of the poloidal and toroidal flow. Needs LaTeX and the <code>cmasher</code> package.</td>
+</tr>
+<tr>
+<td><code>ell_spectrum.py</code></td>
+<td><code>python3 tools/ell_spectrum.py nsol radius field</code></td>
+<td>Spectrum in spherical-harmonic degree <span class="arithmatex">\(l\)</span> at a given radius.</td>
+</tr>
+<tr>
+<td><code>shear_layer_profile.py</code></td>
+<td><code>python3 tools/shear_layer_profile.py nsol z0 nl</code></td>
+<td>Flow profile across a shear layer, through the point <code>z0</code> on the axis, over <span class="arithmatex">\(\pm 5E^{1/3}\)</span>.</td>
+</tr>
+<tr>
+<td><code>plot_rad_con_tor_profile.py</code></td>
+<td><code>%run -i tools/plot_rad_con_tor_profile.py nsol nR R1 R2</code> (IPython)</td>
+<td>Radial profiles of kinetic energy and dissipation between radii <code>R1</code> and <code>R2</code>.</td>
+</tr>
+<tr>
+<td><code>load_solution.py</code></td>
+<td><code>%run -i tools/load_solution.py nsol field</code> (IPython)</td>
+<td>Loads solution <code>nsol</code> (<code>u</code> or <code>b</code>) into the session, including the field inside the inner core.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="koreviz">koreviz</h3>
+<p><code>koreviz</code> is a python package for plots and 3D output of a solution. It needs SHTns (see <a href="../installation/#optional-shtns-and-pyevtk">Installation</a>). In python, from the run folder (which contains <code>koreviz/</code> and <code>bin/</code>):</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">koreviz</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">kv</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">u</span> <span class="o">=</span> <span class="n">kv</span><span class="o">.</span><span class="n">kmode</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s1">'u'</span><span class="p">,</span> <span class="n">solnum</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>      <span class="c1"># flow of solution 0 on a grid</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">u</span><span class="o">.</span><span class="n">merid</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s1">'uphi'</span><span class="p">)</span>                  <span class="c1"># meridional section of u_phi</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">u</span><span class="o">.</span><span class="n">surf</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s1">'ur'</span><span class="p">,</span> <span class="n">r</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>              <span class="c1"># u_r on the sphere r = 0.9</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">u</span><span class="o">.</span><span class="n">equat</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s1">'ur'</span><span class="p">)</span>                    <span class="c1"># equatorial section</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">b</span> <span class="o">=</span> <span class="n">kv</span><span class="o">.</span><span class="n">kmode</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s1">'b'</span><span class="p">,</span> <span class="n">solnum</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ic</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>   <span class="c1"># magnetic field, also inside the inner core</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">b</span><span class="o">.</span><span class="n">merid</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s1">'bphi'</span><span class="p">,</span> <span class="n">ic</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>               <span class="c1"># the section continues into the inner core</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</span></code></pre></div>
+<p>The field names are <code>ur</code>, <code>utheta</code>, <code>uphi</code>, <code>br</code>, <code>btheta</code>, <code>bphi</code>, <code>temperature</code>, <code>composition</code>, <code>energy</code> (kinetic energy density) and <code>vortz</code> (axial vorticity, with <code>vort=True</code>). With <code>ic=True</code> the field inside the inner core is the computed one for <code>'conducting, Chebys'</code>, and the matching potential field for <code>'insulator'</code> and <code>'TWA'</code>. <code>potextra(rout)</code> returns the potential field outside the CMB (or inside an insulating inner core) at the radii <code>rout</code>. <code>kv.writeVts(mode, scals=[...], vecs=[...])</code> writes <code>out.vts</code> for ParaView (needs pyevtk), optionally with the potential field outside the core (<code>potextra=True</code>).</p>
+<h2 id="many-runs">Many runs</h2>
+<p>The scripts in <code>tools/</code> help with parameter studies on a PBS-managed cluster. Edit the paths in them first (they assume the code in <code>~/kore</code> and runs in <code>~/data</code>).</p>
+<table>
+<thead>
+<tr>
+<th>Script</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dodirs.sh prefix var mode start step end</code></td>
+<td>Creates one run folder per value of <code>par.var</code>, named <code>prefix&lt;value&gt;</code>, each with its own copy of the code. With <code>mode</code> = <code>e</code> the values are powers of ten (<span class="arithmatex">\(10^{start}\)</span>, ...), with <code>d</code> they are linear. Example: <code>./dodirs.sh run_Ek_ Ek e -5 -0.1 -6</code>.</td>
+</tr>
+<tr>
+<td><code>dosubs.sh</code> (same arguments)</td>
+<td>Submits the runs, using <code>subramp.sh</code> as the job script.</td>
+</tr>
+<tr>
+<td><code>reap.sh prefix</code></td>
+<td>Collects the results of all the folders into <code>prefix.par</code>, <code>.flo</code>, <code>.eig</code>, <code>.mag</code> and <code>.thm</code>.</td>
+</tr>
+<tr>
+<td><code>getresults.py</code></td>
+<td><code>%run -i tools/getresults.py prefix</code> loads the collected results (or the <code>.dat</code> files of the current folder) in IPython.</td>
+</tr>
+<tr>
+<td><code>join.sh label1 label2 out</code></td>
+<td>Concatenates two collected data sets.</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
