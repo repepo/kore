@@ -127,11 +127,9 @@ class default_params():
         # self.innercore = 'conducting, Chebys'  # For eigenvalue problems
         # self.innercore = 'conducting, Bessel'  # For forced problems
         # self.innercore = 'TWA'  # Thin conductive wall layer (Roberts, Glatzmaier & Clune, 2010)
-        # self.innercore = 'perfect conductor, material'  # tangential *material* electric field jump [nxE']=0 across the ICB
-        # self.innercore = 'perfect conductor, spatial'   # tangential *spatial* electric field jump [nxE]=0 across the ICB
+        # A perfectly conducting inner core is not available (its code was removed 2026-10-18, pending a rewrite).
         self.c_icb  = 0  # Ratio (h*mu_wall)/(ricb*mu_fluid) (if innercore='TWA')
         self.c1_icb = 0  # Thin wall to fluid conductance ratio (if innercore='TWA')
-        # Note: 'perfect conductor, material' or 'perfect conductor, spatial' are identical if ICB is no-slip (bci = 1 above)
 
         # Magnetic boundary conditions at the CMB
         self.mantle = 'insulator'
@@ -346,6 +344,13 @@ class default_params():
         self.tol = 1e-16
         # Tolerance for the thermal/compositional matrix
         self.tol_tc = 1e-6
+        # NEW (2026-10-17): relative cut of the Chebyshev series of the background-field profiles r**p * h^(j) that
+        # submatrices.py builds (coefficients below tol_B0 times the largest one of each series are dropped; before, an
+        # absolute cut of 1e-9). With B0_ic = 'potential' the beta*r**-(l+1) term makes these series long (up to 31 terms
+        # at ricb = 0.35), and their length sets the band width of the magnetic coupling blocks and so the fill-in of the
+        # LU factors. 1e-8 gave the same eigenvalue (to 1e-9) and spin_doctor residuals in 9% less memory (torsional mode,
+        # Luo_S2, ricb = 0.35, Ek = 10**-8.5, N = 768).
+        self.tol_B0 = 1e-8
 
         # PETSc/SLEPc/MUMPS runtime options, loaded by solve_nopp.py into the PETSc options database
         # (option name without the leading '-'; use '' for flags without a value).

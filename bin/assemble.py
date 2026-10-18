@@ -816,7 +816,7 @@ def main():
     if par.magnetic == 1: # includes the induction equation
 
         # Submatrices here for no curl/1curl eqs have only 2 rows empty at the top
-        # instead of 4 to make room for the magnetic boundary conditions. Or 3 if consoidal.
+        # instead of 4 to make room for the magnetic boundary conditions.
         # -----------------------------------------------------------------------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------------------------------------------------- A matrix, induction (section f)
         # -----------------------------------------------------------------------------------------------------------------------------------------------------
@@ -838,10 +838,7 @@ def main():
                     if l+i in ll_flo[0]:
 
                         # Physics ---------------------------------------
-                        if ut.cic:
-                            mtx = op.induction_consoidal(l, 'upol', i)
-                        else:
-                            mtx = op.induction(l, 'f', 'upol', i)
+                        mtx = op.induction(l, 'f', 'upol', i)
                         # -----------------------------------------------
                         col = basecol + col0 + mtx[1] * ut.N1
                         loc_list = ut.packit( loc_list, mtx[0], row, col)
@@ -857,10 +854,7 @@ def main():
                     if l+i in ll_flo[1]:
 
                         # Physics ---------------------------------------
-                        if ut.cic:
-                            mtx = op.induction_consoidal(l,'utor', i)
-                        else:
-                            mtx = op.induction(l,'f','utor', i)
+                        mtx = op.induction(l,'f','utor', i)
                         # -----------------------------------------------
                         col = basecol + col0 + mtx[1] * ut.N1
                         loc_list = ut.packit( loc_list, mtx[0], row, col)
@@ -899,7 +893,7 @@ def main():
                 if par.innercore == 'TWA' :
                     bc_b_list_inner = bc_b_thinlayer(l, 'nocurl', 1/par.mu, par.c_icb, par.c1_icb, 'icb')
                 elif par.innercore == 'insulator':
-                    bc_b_list_inner = bc_b_icb( l, 'nocurl', par.innercore, rank, bpp, k)  # The perfectly conducting inner core needs fixing here (or removed)
+                    bc_b_list_inner = bc_b_icb( l, 'nocurl', par.innercore, rank, bpp, k)
                 elif par.innercore == 'conducting, Bessel':
                     bc_b_list_inner = bc_b_icb( l, 'nocurl', par.innercore, rank, bpp, k)  # bc on mag. poloidal field has no coupling to velocity field
                 elif par.innercore == 'conducting, Chebys':
@@ -994,7 +988,7 @@ def main():
                 if par.innercore == 'TWA' :
                     bc_b_list_inner = bc_b_thinlayer(l, '1curl', 1/par.mu, par.c_icb, par.c1_icb, 'icb')
                 elif par.innercore == 'insulator':
-                    bc_b_list_inner = bc_b_icb( l, '1curl', par.innercore, rank, bpp, k)  # The perfectly conducting inner core needs fixing here (or removed)
+                    bc_b_list_inner = bc_b_icb( l, '1curl', par.innercore, rank, bpp, k)
                 elif par.innercore == 'conducting, Bessel':
                     bc_b_list_inner = bc_b_icb( l, '1curl', par.innercore, rank, bpp, k)  # bc on mag. toroidal field has coupling to the velocity field (spatial bc)
                 elif par.innercore == 'conducting, Chebys':
@@ -1520,10 +1514,7 @@ def bc_b_thinlayer(l, loc, mu_vf, c, c1, boundary):
         g1   = Tbg[:,1]  #bv.T1_cmb
 
         if par.ricb > 0:
-            if ut.cic and loc == 'nocurl':
-                delta_row = 2  # first two rows needed for the icb bc
-            else :
-                delta_row = 1  # first row for the icb bc
+            delta_row = 1  # first row for the icb bc
         else:
             delta_row = 0  # no ic, just cmb bc
 
@@ -1615,10 +1606,6 @@ def bc_b_cmb(l,loc, innercore):
             row0 = 2*par.hydro*ut.n + int( ut.N1 * ( l - ut.m_top)/2 )    # starting row
         col0 = row0
 
-        if ut.cic:
-            # one row extra to make room for the two rows of bc's needed for the icb if conducting 
-            delta_row += 1
-
     elif loc == 'section_g': # use loc_top l's here (if external magnetic field is antisymm)
 
         out = ss.dok_matrix((1, ut.N1),dtype=complex)
@@ -1633,8 +1620,7 @@ def bc_b_cmb(l,loc, innercore):
         col0 = row0
 
     # cmb bc goes on the first row if ricb = 0,
-    # or on the second row if ricb>0,
-    # or on the third row if the inner core is perfectly conducting (section_f only).
+    # or on the second row if ricb>0.
     row1 = row0 + delta_row
 
     out = out.tocoo()
@@ -1646,8 +1632,7 @@ def bc_b_cmb(l,loc, innercore):
 
 def bc_b_icb(l,loc, innercore, rank, bpp, k):
     '''
-    'material', uses "correct" b.c. in the electric field ( [nxE']=0, e.g. Satapathy 2013)
-    'spatial', uses "incorrect" b.c. that everyone seems to use ( [nxE]=0 )
+    Magnetic boundary conditions at the ICB for an insulating inner core, and for 'conducting, Bessel' (forced problems).
     '''
     nb = int((par.lmax-par.m+1)/2.)
 
@@ -1795,177 +1780,6 @@ def bc_b_icb(l,loc, innercore, rank, bpp, k):
                     out2[1] = np.concatenate([out2[1],out.row+row1])
                     out2[2] = np.concatenate([out2[2],out.col+col1b])
 
-    elif (innercore == 'perfect conductor, spatial') or (innercore == 'perfect conductor, material'):   #----- perfectly conducting inner core
-
-        L = l*(l+1)
-
-        if loc == 'nocurl': # use loc_bot l's here (if external magnetic field is antisymm) ------------ nocurl, b tor
-
-            # two rows of bc's for the inner core
-            icb_diag = ss.dok_matrix((2, ut.N1),dtype=complex)
-
-            # Physics --------------------------------------------------------------------------------
-            icb_diag[0,:] = bv.P0_icb  # first row, F = 0
-            icb_diag[1,:] = par.Em*( -bv.P2_icb - (2/par.ricb)*bv.P1_icb + (L/(par.ricb**2))*bv.P0_icb )  # second row
-            # ----------------------------------------------------------------------------------------
-
-            row0 = 2*par.hydro*ut.n + int( ut.N1 * ( l - ut.m_bot)/2 )    # starting row
-            col0 = row0
-
-        elif loc == '1curl': # use loc_top l's here (if external magnetic field is antisymm) ----------- 1curl, b pol
-
-            # only one row needed
-            icb_diag = ss.dok_matrix((1, ut.N1),dtype=complex)
-
-            # Physics ----------------------------------------------------
-            icb_diag[0,:] = par.Em*( -bv.T1_icb - (1/par.ricb)*bv.T0_icb )
-            # ------------------------------------------------------------
-
-            row0 = (2*par.hydro+1)*ut.n + int( ut.N1*(l - ut.m_top)/2 )   # starting row
-            col0 = row0
-
-        if innercore == 'perfect conductor, material': # tangent *material* electric field is continuous across icb ------------------- material
-
-            # no coupling with flow velocity so nothing else besides the on-diagonal terms computed above
-            out = icb_diag.tocoo()
-            out2 = [out.data, out.row + row0, out.col + col0]
-
-        elif innercore == 'perfect conductor, spatial': # tangent *spatial* electric field continuous across icb ---------------------- spatial
-
-            # include the on-diagonal terms as above
-            out = icb_diag.tocoo()
-            out2 = [out.data, out.row + row0, out.col + col0]
-
-            # and now the velocity coupling terms
-            if par.hydro == 1:
-
-                if loc == 'nocurl': # ---------------------------------------------------------------------- nocurl
-
-                    row00 = int( ut.N1 * ( l - ut.m_bot)/2 )
-                    row0 = 2*ut.n + row00 + 1   # starting row (second row of bc's)
-                    col0 = ut.n + row00
-
-                    # l-1 terms ------------------------------------------------------------------------ l-1
-                    if ((l-1 >= ut.m_bot) and (ut.symm1==-1)) or (ut.symm1==1) :
-
-                        if ut.symm1 == -1 :
-                            col0a = ( rank*bpp + k - 1 )* ut.N1 # left of diag if antisymm
-                        elif ut.symm1 == 1 :
-                            col0a = ( rank*bpp + k )* ut.N1     # on the diag if symm
-
-                        icb_minus = ss.dok_matrix((1, ut.N1),dtype=complex)
-
-                        C = np.sqrt(l**2-par.m**2)*(l-1)/(l*(2*l-1))
-
-                        # Physics ----------------------------------------------------
-                        icb_minus[0,:] = C*( -bv.P1_icb + (l-1)*bv.P0_icb/par.ricb  )
-                        # ------------------------------------------------------------
-                        out = icb_minus.tocoo()
-
-                        out2[0] = np.concatenate([out2[0],out.data])
-                        out2[1] = np.concatenate([out2[1],out.row+row0])  # second row
-                        out2[2] = np.concatenate([out2[2],out.col+col0a])
-
-                    # l terms -------------------------------------------------------------------------- l
-                    icb_0 = ss.dok_matrix((1, ut.N1),dtype=complex)
-
-                    C = -1j*par.m/L
-
-                    # Physics ----------------
-                    icb_0[0,:] =  C*bv.T0_icb
-                    # ------------------------
-                    out = icb_0.tocoo()
-
-                    out2[0] = np.concatenate([out2[0],out.data])
-                    out2[1] = np.concatenate([out2[1],out.row+row0])  # second row
-                    out2[2] = np.concatenate([out2[2],out.col+col0])
-
-                    # l+1 terms ------------------------------------------------------------------------ l+1
-                    if ((l+1 <= ut.lmax_bot-1) and (ut.symm1==1)) or (ut.symm1==-1) :
-
-                        if ut.symm1 == 1 :
-                            col0b = ( rank*bpp + k + 1 )* ut.N1 # right of diag if symm
-                        elif ut.symm1 == -1 :
-                            col0b = ( rank*bpp + k )* ut.N1     # on diag if antisymm
-
-                        icb_plus = ss.dok_matrix((1, ut.N1),dtype=complex)
-
-                        C = -(l+2)*np.sqrt((l+par.m+1)*(l-par.m+1))/((2*l+3)*(l+1))
-
-                        # Physics -------------------------------------------------
-                        icb_plus[0,:] = C*( bv.P1_icb + (l+2)*bv.P0_icb/par.ricb )
-                        # ---------------------------------------------------------
-                        out = icb_plus.tocoo()
-
-                        out2[0] = np.concatenate([out2[0],out.data])
-                        out2[1] = np.concatenate([out2[1],out.row+row0])  # second row
-                        out2[2] = np.concatenate([out2[2],out.col+col0b])
-
-
-                if loc == '1curl': # ----------------------------------------------------------------------- 1curl
-
-                    # first row (only one row needed here), goes with the -G'-(G/r) term
-
-                    row11 = int( ut.N1*(l - ut.m_top)/2 )
-                    row1 = 3*ut.n + row11   # starting row (first row of bc's)
-                    col1 = row11
-
-                    # l-1 terms ------------------------------------------------------------------------ l-1
-                    if ((l-1 >= ut.m_top) and (ut.symm1==1)) or (ut.symm1==-1) :
-
-                        if ut.symm1 == 1 :
-                            col1a = nb*ut.N1 + ( rank*bpp + k - 1 )* ut.N1 # left of diag if symm
-                        elif ut.symm1 == -1 :
-                            col1a = nb*ut.N1 + ( rank*bpp + k )* ut.N1 # on the diag if antisymm
-
-                        icb_minus = ss.dok_matrix((1, ut.N1),dtype=complex)
-
-                        C = -(l-1)*np.sqrt(l**2-par.m**2)/(l*(2*l-1))
-
-                        # Physics -------------------
-                        icb_minus[0,:] = C*bv.T0_icb
-                        # ---------------------------
-                        out = icb_minus.tocoo()
-
-                        out2[0] = np.concatenate([out2[0],out.data])
-                        out2[1] = np.concatenate([out2[1],out.row+row1])
-                        out2[2] = np.concatenate([out2[2],out.col+col1a])
-
-                    # l terms -------------------------------------------------------------------------- l
-                    icb_0 = ss.dok_matrix((1, ut.N1),dtype=complex)
-
-                    C = 1j*par.m/L
-
-                    # Physics ---------------------------------------------------
-                    icb_0[0,:] = C*( bv.P1_icb + (l**2+l+1)*bv.P0_icb/par.ricb )
-                    # -----------------------------------------------------------
-                    out = icb_0.tocoo()
-
-                    out2[0] = np.concatenate([out2[0],out.data])
-                    out2[1] = np.concatenate([out2[1],out.row+row1])
-                    out2[2] = np.concatenate([out2[2],out.col+col1])
-
-                    # l+1 terms ------------------------------------------------------------------------ l+1
-                    if ((l+1 <= ut.lmax_top-1) and (ut.symm1==-1)) or (ut.symm1==1) :
-
-                        if ut.symm1 == -1 :
-                            col1b = nb*ut.N1 + ( rank*bpp + k + 1 )* ut.N1 # right of diag if antisymm
-                        elif ut.symm1 == 1 :
-                            col1b = nb*ut.N1 + ( rank*bpp + k )* ut.N1 # on diag if symm
-
-                        icb_plus = ss.dok_matrix((1, ut.N1),dtype=complex)
-
-                        C = -(l+2)*np.sqrt((l+par.m+1)*(l-par.m+1))/((2*l+3)*(l+1))
-
-                        # Physics ------------------
-                        icb_plus[0,:] = C*bv.T0_icb
-                        # --------------------------
-                        out = icb_plus.tocoo()
-
-                        out2[0] = np.concatenate([out2[0],out.data])
-                        out2[1] = np.concatenate([out2[1],out.row+row1])
-                        out2[2] = np.concatenate([out2[2],out.col+col1b])
-
     return out2
 
 
@@ -1983,14 +1797,10 @@ def bc_b_cic(l,loc):
     elif ut.symmB0 == -1:
         mf, mg = ut.m_bot, ut.m_top
 
-    if loc == 'section_f':
-        outoc = ss.dok_matrix((2, ut.N1 ), dtype=complex)
-        outic = ss.dok_matrix((2, ut.Nic), dtype=complex)      
-    else:
-        outoc = ss.dok_matrix((1, ut.N1 ), dtype=complex)
-        outic = ss.dok_matrix((1, ut.Nic), dtype=complex)         
+    outoc = ss.dok_matrix((1, ut.N1 ), dtype=complex)
+    outic = ss.dok_matrix((1, ut.Nic), dtype=complex)
 
-    if loc == 'section_f':    # 2 rows
+    if loc == 'section_f':    # 1 row
 
         baserow0 = 2*par.hydro*ut.n
         basecol0 = 2*par.hydro*ut.n
@@ -2008,11 +1818,10 @@ def bc_b_cic(l,loc):
         outoc[0,:] =  bv.Ta[:,0]
         outic[0,:] = -bv.Tbfic[:,0]
         
-        # [nxE], consoidal projection
-        # --------------------------------------------------------------------------------------
-        outoc[1,:] =  L*bv.Ta[:,0] - 2*ric*bv.Ta[:,1] - ric**2*bv.Ta[:,2]
-        outic[1,:] = -eta_i2o * ( L*bv.Tbfic[:,0] - 2*ric*bv.Tbfic[:,1] - ric**2*bv.Tbfic[:,2] )
-        # --------------------------------------------------------------------------------------
+        # NEW (2026-10-18): [n.b] here and [nx(b/mu)] (section fic) are the icb conditions of the poloidal field. The
+        # continuity of eta*lap_l(f), the surface-curl part of [nxE], is not imposed: with b_r continuous, the radial
+        # induction equation on both sides (u = 0 at a no-slip icb) makes it hold. The former consoidal projection
+        # imposed it as a second row and integrated the tau error into a spurious c/r term (see CHANGELOG).
 
     elif loc == 'section_g':    # 1 row
 

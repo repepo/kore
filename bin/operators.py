@@ -478,17 +478,11 @@ def b(l, section, component, offdiag):
 
     if offdiag == 0:
 
-        if section == 'f' and component == 'bpol' and ut.secf_projection == 'radial':  #  r² 𝐫⋅𝐛   (×r² if dipole)
+        if section == 'f' and component == 'bpol':  #  r² 𝐫⋅𝐛   (×r² if dipole)
             if not cdipole:
                 out = L* r2If
             else:
                 out = L* r4If
-
-        if section == 'f' and component == 'bpol' and ut.secf_projection == 'consoidal':
-            if not cdipole:
-                out = r2If + r3D1f
-            else:
-                print('Classic dipole + consoidal projection not coded yet')
 
         elif section == 'g' and component == 'btor':  # r² 𝐫⋅∇×𝐛   (×r³ if dipole)
             if not cdipole:
@@ -678,88 +672,6 @@ def induction(l, section, component, offdiag):
 
 
 
-def induction_consoidal(l, component, offdiag):
-    '''
-    The induction term ∇×(𝐁₀×𝐮), consoidal projection.
-    Useful in section f if three rows of boundary conditions are needed in each submatrix. This because
-    the consoidal projection of the difussion term involves 3rd order derivatives, so we use the C^(3) basis.
-    '''
-
-    out = 0
-    offd = 0
-    m = par.m
-    l = np.longdouble(l)  # to avoid overflow errors at high N (float128 on x86, float64 on arm64)
-    L = l*(l+1)
-
-
-    if component == 'upol':
-
-
-        if offdiag == -2:  # l-2 terms (quadrupole)
-
-            C = (3*(-2 + l)*np.sqrt((l - m)*(-1 + l + m))*np.sqrt((-1 + l - m)*(l + m))) / (l*(3 - 8*l + 4*l**2))
-            out = C*( hIf*(4 - l) + rh1If*(-4 + l) + rhD1f*(-4 + l) - 3*r2hD2f + r2h1D1f*(-4 + l) + r2h2If*(-1 + l) )
-
-            offd = -1
-
-        elif offdiag == -1:  # l-1 terms (dipole)
-
-            C = ((-1 + l)*np.sqrt(l**2 - m**2)) / (l*(-1 + 2*l))
-            out = C * ( hIf*(2 - l) + rh1If*(-2 + l) + rhD1f*(-2 + l) - 2*r2hD2f + r2h1D1f*(-2 + l) + r2h2If*l )
-
-            if ut.symm1 == -1:
-                offd = -1
-
-        elif offdiag == 0:  # l terms (quadrupole)
-
-            C = (3*(l + l**2 - 3*m**2)) / (l*(1 + l)*(-3 + 4*l + 4*l**2))
-            out = C*( hIf*(-6 + l + l**2) - rh1If*(-6 + l + l**2) - rhD1f*(-6 + l + l**2) + r2h2If*l*(1 + l) - r2h1D1f*(-6 + l + l**2) - 2*r2hD2f*(-3 + l + l**2) )
-
-        elif offdiag == 1:  # l+1 terms (dipole)
-
-            C = ((2 + l)*np.sqrt((1 + l - m)*(1 + l + m))) / ((1 + l)*(3 + 2*l))
-            out = C * ( hIf*(3 + l) - rh1If*(3 + l) - rhD1f*(3 + l) - 2*r2hD2f - r2h2If*(1 + l) - r2h1D1f*(3 + l) )
-
-            if ut.symm1 == 1:
-                offd = 1
-
-        elif offdiag == 2:  # l+2 terms (quadrupole)
-
-            C = ( 3.*(3 + l)*np.sqrt((2 + l - m)*(1 + l + m))*np.sqrt((1 + l - m)*(2 + l + m)) ) / ((1 + l)*(3 + 2*l)*(5 + 2*l))
-            out = C*( hIf*(5 + l) - rh1If*(5 + l) - rhD1f*(5 + l) - 3*r2hD2f - r2h2If*(2 + l) - r2h1D1f*(5 + l) )
-
-            offd = 1
-
-
-    elif component == 'utor':
-
-
-        if offdiag == -1:  # l-1 terms (quadrupole)
-
-            C = (18j*m*np.sqrt(l**2 - m**2))/(l*(-1 + l + 2*l**2))
-            out = C * ( -r2h1If - r2hD1f )
-
-            if ut.symm1 == 1:
-                offd = -1
-
-        elif offdiag == 0:  # l terms (dipole)
-
-            out = -2j*m*( r2h1If + r2hD1f )/L
-
-        elif offdiag == 1:  # l+1 terms (quadrupole)
-
-            C = (18j*m*np.sqrt(1 + 2*l + l**2 - m**2))/(3*l + 5*l**2 + 2*l**3)
-            out = C * ( -r2h1If - r2hD1f )
-
-            if ut.symm1 == -1:
-                offd = 1
-
-
-    return [ out, offd ]
-
-
-
-
 def magnetic_diffusion(l, section, component, offdiag):
     '''
     The magnetic diffusion term −Eₘ ∇×(η∇×𝐛)
@@ -771,7 +683,7 @@ def magnetic_diffusion(l, section, component, offdiag):
 
     if offdiag == 0:
 
-        if section == 'f' and component == 'bpol' and ut.secf_projection == 'radial':  #  -r²𝐫⋅∇×(η∇×𝐛)   (×r² if dipole)
+        if section == 'f' and component == 'bpol':  #  -r²𝐫⋅∇×(η∇×𝐛)   (×r² if dipole)
 
             if not cdipole:
                 #out = L*( -L*If + 2*r1D1f + r2D2f )
@@ -779,14 +691,6 @@ def magnetic_diffusion(l, section, component, offdiag):
                 #out = L*( -L*r0_eho0_D0 + 2*r1_eho0_D1 + r2_eho0_D2 )
             else:
                 out = L*( -L*r2etaIf + 2*r3etaD1f + r4etaD2f )
-
-        elif (section == 'f' and component == 'bpol' and ut.secf_projection == 'consoidal'):
-
-            if not cdipole:
-                out = etaIf*L - retaD1f*L - reta1If*L + 3*r2etaD2f + 2*r2eta1D1f + r3etaD3f + r3eta1D2f
-                #out = r0_eho0_D0*L - r1_eho0_D1*L - r1_eho1_D0*L + 3*r2_eho0_D2 + 2*r2_eho1_D1 + r3_eho0_D3 + r3_eho1_D2
-            else:
-                print('Consoidal proj + classic dipole not coded yet')
 
         elif section == 'g' and component == 'btor':  # -r²𝐫⋅∇×(∇×(η∇×𝐛))  (×r³ if dipole)
 

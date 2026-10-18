@@ -18,8 +18,6 @@ with poloidal scalar $f$ and toroidal scalar $g$, and $F = r f$, $G = r g$. Prim
 | ICB | `innercore = 'insulator'` | Electrically insulating inner core (default). | none |
 | ICB | `innercore = 'conducting, Chebys'` | Solid inner core with its own conductivity and permeability; the induction equation is solved inside it. For eigenvalue problems. | `sigma_i2o`, `mu_i2o`, `N_cic`, `lmax_cic` |
 | ICB | `innercore = 'conducting, Bessel'` | The same, with an analytical solution inside the inner core. For forced problems only. | `sigma_i2o`, `mu_i2o` |
-| ICB | `innercore = 'perfect conductor, material'` | Infinitely conducting inner core; tangential electric field continuous in the frame of the inner core. Not usable at present, see below. | none |
-| ICB | `innercore = 'perfect conductor, spatial'` | The same, with the tangential electric field continuous in the frame of the fluid. Not usable at present, see below. | none |
 | ICB | `innercore = 'TWA'` | Thin conducting layer on top of an insulating inner core. | `c_icb`, `c1_icb` |
 | CMB | `mantle = 'insulator'` | Electrically insulating mantle (default). | none |
 | CMB | `mantle = 'TWA'` | Thin conducting layer at the base of an insulating mantle. | `c_cmb`, `c1_cmb`, `B0_cmb` |
@@ -66,6 +64,10 @@ $$
 
 The electric field condition has no $\mathbf{u}\times\mathbf{B}_0$ term, so it assumes the fluid at the ICB moves with the inner core: use a no-slip ICB (`bci = 1`) and `Ek > 0`.
 
+The poloidal field is solved with the radial component of the induction equation, as with an insulating inner core, and only the first two conditions are imposed on $f$. With the radial induction equation satisfied on both sides of the ICB, continuity of $f$ makes the radial component of $\nabla\times\mathbf{E}$ continuous, and that is the condition on $\nabla_l^2 f$. Before October 2026 Kore used the consoidal component instead, which is third order in $f$, and imposed the $\nabla_l^2 f$ condition as an extra row. Its tau error was integrated across the shell into a spurious term $c/r$ of the radial equation. For a torsional mode at Ek = $10^{-9}$ and `sigma_i2o` = $10^{-6}$ with $N = 688$, this gave resid b = $10^{-3}$ and a low-$l$ poloidal field wrong by factors of up to 30. The radial component gives $10^{-5}$ and the insulating-core field to four digits at the same $N$.
+
+`spin_doctor.py`'s residuals cover the fluid volume only. They do not test the inner-core field or the ICB conditions, so check `N_cic` by the change of the eigenvalue.
+
 **Resolution.** `N_cic = 64` (the default) is safe for conductivity ratios from $10^{-4}$ to 1. In the tests behind this default, 16 polynomials put the eigenvalue off by $1.6\times10^{-3}$ at `sigma_i2o = 1`, and 48 gave broken eigenvectors for the modes away from the target at `sigma_i2o` = $10^{-2}$. The inner core adds $2\,n_{ic}$ unknowns, which is cheap: at $N = 232$ a torsional-mode run took 40 s and 7.8 GB with a conducting inner core, against 22 s and 7.3 GB with a thin wall.
 
 **Limits.** As `sigma_i2o` goes to zero the solution converges to the insulating one (linearly in `sigma_i2o`).
@@ -75,9 +77,7 @@ The electric field condition has no $\mathbf{u}\times\mathbf{B}_0$ term, so it a
 
 ## Perfectly conducting inner core
 
-Inside a perfect conductor the field perturbation vanishes. The conditions are $f = 0$ and a zero tangential electric field at the ICB. With `'perfect conductor, material'` the electric field is taken in the frame of the inner core, which gives $\nabla_l^2 f = 0$ and $(r g)' = 0$. With `'perfect conductor, spatial'` it is taken in the rotating frame, which adds the $\mathbf{u}\times\mathbf{B}_0$ terms. The two are identical with a no-slip ICB.
-
-These two options are not usable at present: they are missing from the list of inner-core conditions in `bin/utils.py` (`ic_bc_list`), so every script stops with `ValueError: 'perfect conductor, material' is not in list`. The boundary conditions themselves are still in `bin/assemble.py`, with comments saying they need fixing.
+Not available at present. The former options `'perfect conductor, material'` and `'perfect conductor, spatial'` were unreachable (missing from `ic_bc_list` in `bin/utils.py`) and were removed in October 2026, together with the consoidal projection they relied on. A rewrite is pending. With the radial projection, $f = 0$ at the ICB is enough for the poloidal field: with $\mathbf{u} = 0$ there, the radial induction equation then gives $\nabla_l^2 f = 0$, the zero tangential electric field.
 
 
 ## Thin conducting wall

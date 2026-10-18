@@ -90,7 +90,10 @@ def main(ncpus):
             for j in range(4):
 
                 args = [ par.beta, par.B0_l, par.ricb, rpw1, j ]
-                rdh[i][j] = cnorm * ut.chebco_h( args, par.B0, par.N, 1, tol)
+                # NEW (2026-10-17): relative cut par.tol_B0 instead of the absolute tol (shorter series, less fill-in)
+                c = ut.chebco_h( args, par.B0, par.N, 1, 0.0)
+                c[np.abs(c) <= par.tol_B0*np.abs(c).max()] = 0.
+                rdh[i][j] = cnorm * c
 
         # rdh is a 2D list where each element is the set of Chebyshev coeffs
         # of the function (r**rpw)*(d/dr)**j*(h_l(r))
@@ -126,10 +129,7 @@ def main(ncpus):
     G     = [ G1, G2, G3, G4 ]  # fixed this for the inviscid case
 
     # Sets the Gegenbauer basis order for each section
-    if ((par.magnetic == 1) and (ut.secf_projection == 'consoidal')) :
-        gebasis = [  4,   2,   3,   2,   2,   2  ]  # C^(3) basis in section f (consoidal projection)
-    else:
-        gebasis = [  4,   2,   2,   2,   2,   2  ]  # C^(2) basis in section f (radial projection)
+    gebasis = [  4,   2,   2,   2,   2,   2  ]  # C^(2) basis in section f (radial projection; the C^(3) consoidal option was removed 2026-10-18)
     section     = [ 'u', 'v', 'f', 'g', 'h', 'i' ]
 
     if inviscid:
@@ -222,7 +222,7 @@ def main(ncpus):
 
     if par.magnetic == 1 :
     # -------------------------------------------------------------------------------------------------------------------------------------------
-    # Matrices needed for the Induction equation, no-curl or consoidal equations -------------------------------------- Induct nocurl - section f
+    # Matrices needed for the Induction equation, no-curl equations ---------------------------------------------------- Induct nocurl - section f
     # -------------------------------------------------------------------------------------------------------------------------------------------
 
         if cdipole :  # as below but times r^2
@@ -234,31 +234,17 @@ def main(ncpus):
             labl += [ 'f20', 'f31', 'f42' ]
 
         else:
-
-            if ut.secf_projection == 'consoidal':  # conducting inner core, consoidal component
-                #labl += [ 'f21',  'f32', 'f31',  'f20',   'f33',  'f22', 'f11', 'f00' ]
-                # b
-                labl += [ 'f20', 'f31' ]
-                arg2 += [   vF ,   vF  ]
-                # induction
-                labl += [ 'f000', 'f110', 'f101', 'f202', 'f211', 'f220', 'f210', 'f201' ]
-                arg2 += [    vP ,    vP ,    vP ,    vP ,    vP ,    vP ,    vT ,    vT  ]
-                # magnetic diffusion
-                labl += [ 'feta000', 'feta101', 'feta110', 'feta202', 'feta211', 'feta303', 'feta312' ]
-                arg2 += [       vF ,       vF ,       vF ,       vF ,       vF ,       vF ,       vF  ]
-
-            else :
-                #  b
-                labl += [ 'f20' ]
-                arg2 += [   vF  ]
-                # induction
-                labl += [ 'f000', 'f110', 'f101', 'f100' ]
-                arg2 += [   vP  ,   vP  ,   vP  ,   vT   ]
-                # magnetic diffusion
-                #labl += [ 'f00', 'f11', 'f22' ]
-                #arg2 += [   vF ,   vF ,   vF  ]
-                labl += [ 'feta000', 'feta101', 'feta202' ]
-                arg2 += [   vF ,   vF ,   vF  ]
+            #  b
+            labl += [ 'f20' ]
+            arg2 += [   vF  ]
+            # induction
+            labl += [ 'f000', 'f110', 'f101', 'f100' ]
+            arg2 += [   vP  ,   vP  ,   vP  ,   vT   ]
+            # magnetic diffusion
+            #labl += [ 'f00', 'f11', 'f22' ]
+            #arg2 += [   vF ,   vF ,   vF  ]
+            labl += [ 'feta000', 'feta101', 'feta202' ]
+            arg2 += [   vF ,   vF ,   vF  ]
 
 
     # -------------------------------------------------------------------------------------------------------------------------------------------

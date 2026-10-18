@@ -32,13 +32,12 @@ m      = par.m
 lmax   = par.lmax
 vsymm  = par.symm
 
-if ((par.innercore == 'conducting, Chebys') or ('perfect' in par.innercore)) and par.magnetic and par.ricb>0:
-    secf_projection = 'consoidal'  # Consoidal projection in section f, basis C^(3)
-    cic = 1
-    if par.innercore == 'conducting, Chebys':
-        icflag = 1
+# NEW (2026-10-18): section f always uses the radial projection (C^(2) basis). The consoidal one, used before with a
+# conducting or perfectly conducting inner core, is removed: its tau error became a spurious c/r term (see CHANGELOG).
+if (par.innercore == 'conducting, Chebys') and par.magnetic and par.ricb>0:
+    cic = 1  # the field inside the inner core is part of the unknowns
+    icflag = 1
 else:
-    secf_projection = 'radial'     # Radial projection in section f, basis C^(2)
     cic = 0
     icflag = 0
 

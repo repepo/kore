@@ -2,6 +2,49 @@ CHANGELOG - Kore, conductive_IC branch
 ======================================
 
 
+2026-10-18
+----------
+Conducting inner core: radial projection; consoidal projection and perfect conductors removed (bin/utils.py,
+bin/submatrices.py, bin/operators.py, bin/assemble.py, bin/params_default.py)
+- With innercore = 'conducting, Chebys' the poloidal induction equation in the fluid used its consoidal
+  component (C^(3) basis), with the continuity of eta*lap_l f as an extra ICB row. The consoidal component
+  is the radial derivative of the radial one, so its tau error was integrated across the shell into a
+  spurious c/r term of the radial equation (r*e constant to 3 digits from the ICB to the CMB). A torsional
+  mode at Ek = 1e-9, sigma_i2o = 1e-6, N = 688 had spin_doctor resid b = 1e-3 (1e-5 with an insulating
+  inner core) and a low-l poloidal field wrong by factors up to 30; the error decays with N, but needed
+  about 20% more N.
+- Section f now always uses the radial component (C^(2) basis), as for an insulating inner core, with [n.b]
+  (section f) and [n x b/mu] (section fic) as the ICB conditions of the poloidal field. The radial induction
+  equation on both sides then makes (curl E)_r, i.e. the poloidal part of [n x E], continuous. Removed:
+  induction_consoidal, the consoidal branches of b and magnetic_diffusion, the C^(3) basis of section f, the
+  [n x E] row of bc_b_cic and the extra CMB row offsets of bc_b_cmb and bc_b_thinlayer.
+- Removed the 'perfect conductor, material' and 'perfect conductor, spatial' inner cores (bc_b_icb), the only
+  other users of the consoidal projection, already unreachable (not in ic_bc_list). A perfectly conducting
+  inner core is pending a rewrite: with the radial projection f = 0 at the ICB is enough for the poloidal field.
+- Checked at Ek = 1e-5 (sigma_i2o = 1e-6, 1e-2, 1; N = 96, 128): same eigenvalues as the consoidal version to
+  1e-9. At Ek = 1e-9, sigma_i2o = 1e-6, the torsional modes T1-T5 have resid b = 1.0-1.2e-5 at the N an
+  insulating inner core needs (688-1024), against 1e-4 to 1e-3 before, and the poloidal field equals the
+  insulating-core one to 4 digits. At sigma_i2o = 1 (N = 1024) the torsional modes have all residuals below
+  1e-8. A and B are unchanged for insulating and thin-wall inner cores.
+- spin_doctor's residuals cover the fluid volume only: they do not test the inner-core field or the ICB
+  conditions. Check N_cic by the change of the eigenvalue.
+
+
+2026-10-17
+----------
+Background-field series (bin/submatrices.py, bin/params_default.py)
+- The Chebyshev series of the profiles r**p * h^(j) (p = -1..5, j = 0..3) that build the magnetic coupling
+  blocks were cut where a coefficient fell below an absolute 1e-9. With B0_ic = 'potential' the
+  beta*r**-(l+1) term is not a polynomial, so these series ran to 31 terms (Luo_S2, ricb = 0.35), against
+  at most 12 for the polynomial full-sphere field; the series length sets the band width of those blocks
+  and with it the fill-in of the LU factors.
+- New parameter tol_B0 (default 1e-8): each series is now cut relative to its largest coefficient.
+- Checked on a torsional mode (Luo_S2, ricb = 0.35, insulating, Ek = 10**-8.5, N = 768, lmax = 767),
+  against a relative cut of 1e-12 (same memory as the old absolute cut): 1e-8 used 9% less memory in the
+  solve, with the same eigenvalue to 1e-9 and the same spin_doctor residuals; 1e-10 saved 4%; 1e-6 saved
+  13% but moved the eigenvalue by 4e-8 and raised resid L to 2e-5.
+
+
 2026-10-16
 ----------
 Postprocessing speed (bin/utils4pp.py, bin/spin_doctor.py, bin/utils.py)
