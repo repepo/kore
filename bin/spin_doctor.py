@@ -178,6 +178,10 @@ def main(ncpus):
         ic = fields[fname_ic].reshape((ut.n,-1))
     if os.path.isfile(fname_dy):
         sol_rotdyn = np.loadtxt(fname_dy, dtype=complex).reshape((3,-1))
+    # NEW (2026-10-18): the field inside a conducting inner core, for the full energy budget (resid E)
+    bic = None
+    if par.magnetic and ut.icflag and os.path.isfile('real_magnetic_ic.field'):
+        bic = ( np.loadtxt('real_magnetic_ic.field') + 1j*np.loadtxt('imag_magnetic_ic.field') ).reshape((2*ut.nic,-1))
 
     if par.hydro == 1:
         success = np.shape(ru)[1]
@@ -211,6 +215,8 @@ def main(ncpus):
     resid2      = np.zeros(success)
     resid3      = np.zeros(success)
     residL      = np.full(success, np.nan)    # axial angular momentum balance of the fluid (m=0, symm=1 only)
+    residE      = np.full(success, np.nan)    # NEW (2026-10-18): full energy budget (fluid, inner core, walls, outside)
+    budget      = np.full((success, 7), np.nan)  # NEW (2026-10-18): ME_ic, E_w, ME_ext, Ohm_f, Ohm_ic, Ohm_w, W_ex
     y           = np.zeros(success)                # for eigenmode tracking
     brms        = np.zeros(success)
     elldom      = np.zeros(success)
@@ -237,6 +243,7 @@ def main(ncpus):
         ( 'resid𝐛',      '{:8.2e}',   lambda i: resid2[i] ),
         ( 'residθ',      '{:8.2e}',   lambda i: resid3[i] ),
         ( 'resid𝐋',      '{:8.2e}',   lambda i: residL[i] ),
+        ( 'resid𝐄',      '{:8.2e}',   lambda i: residE[i] ),  # NEW (2026-10-18)
         ( 'Tor/Pol',     '{:8.2e}',   lambda i: ratio(KT[i], KP[i]) ),
         ( 'Mag/Kin',     '{:8.2e}',   lambda i: ratio(ME[i], KE[i]) ),
         ( 'Geo',         '{:.4f}',    lambda i: geo[i] ),  # NEW (2026-10-11)
@@ -406,6 +413,10 @@ def main(ncpus):
         if par.forcing == 0:
             pss = 0
             pvf = 0
+            if par.rotdyn and par.hydro and par.Ek != 0:
+                # NEW (2026-10-18): power of the moving mantle and inner core on the fluid, minus the viscous torques times
+                # their rotation rates (factor 2 as for the energies, int |u|^2), in the units of Dint0 and Dkin0
+                pss = -2*np.real( vtorq[i]*np.conj(omg_mantle[i]) + vtorq_ic[i]*np.conj(omg_incore[i]) ) / (par.OmgTau*par.Ek)
         elif par.forcing == 1:
             pss = 0
             pvf = repow
@@ -464,6 +475,40 @@ def main(ncpus):
             print('{:1.2e}   {:1.2e}   {:1.2e}   {:1.2e}   {:1.2e}   {:1.2e}   {:1.2e}'.format(reals[0], reals[1], reals[2], reals[3], reals[4], reals[5], sum(reals)))
             print('{:1.2e}   {:1.2e}   {:1.2e}   {:1.2e}   {:1.2e}   {:1.2e}   {:1.2e}'.format(imags[0], imags[1], imags[2], imags[3], imags[4], imags[5], sum(imags)))
             '''
+
+        # NEW (2026-10-18): full energy budget, 2 sigma (KE + ME + ME_ic + E_w + ME_ext) = Dkin + Wlor - Wthm + Indu
+        # - Ohm_f - Ohm_ic - Ohm_w, with the magnetic terms in kinetic-energy units (times OmgTau**2*Le2). It adds
+        # what resid b cannot see: the field and Ohmic loss of a conducting inner core and of thin walls, the
+        # potential fields beyond insulating boundaries, and so the matching conditions at the ICB and CMB.
+        # Here Ohmic losses are integrals of |curl b|^2, while resid b uses b.lap(b) in the fluid only. The Lorentz
+        # work and the induction term cancel in the sum except for the work of the background currents (J0 x b).
+        # Needs no-slip boundaries (with stress-free ones the u x B0 part of the Poynting flux through the boundary is
+        # not computed). Not for forced problems, 'conducting, Bessel', or mu != 1 with thin walls.
+        # With rotdyn = 1 the rotation energies of the mantle and the inner core and the gravitational energy join the
+        # budget; the torques only move energy between fluid and solids, so the viscous term is the strain-rate
+        # dissipation (Dint, without the work of the moving walls), the work of the moving walls through u x B0 is the
+        # magnetic torque times the rotation rate, and the inner core's viscous relaxation dissipates K*|phi|^2/tau_IC.
+        noslip = (par.bco == 1) and (par.ricb == 0 or par.bci == 1) and par.Ek > 0
+        rotok  = (not par.rotdyn) or (par.vtrq == 1 and par.mtrq == 1)  # switched-off torques do not conserve energy
+        if par.magnetic and par.forcing == 0 and rotok and par.innercore != 'conducting, Bessel' and \
+           (noslip or not par.hydro) and not (par.mu != 1 and 'TWA' in (par.innercore, par.mantle)):
+            s2 = par.OmgTau**2 * par.Le2
+            eta = par.OmgTau * par.Em
+            Ohm_f0, MEic0, Ohm_ic0, Ew0, Ohm_w0, MEext0 = upp.em_budget(b_sol2, None if bic is None else bic[:,i])
+            Wex  = (Wlor[i] if par.hydro else 0) + s2*Indu[i]
+            Etot = (KE[i] if par.hydro else 0) + s2*( ME[i] + MEic0 + Ew0 + MEext0 )
+            Ohm  = s2*eta*( Ohm_f0 + Ohm_ic0 + Ohm_w0 )
+            Dk   = (Dkin[i] - Wthm[i]) if par.hydro else 0
+            if par.rotdyn:
+                # spin_doctor's energies are int |u|^2 (twice the kinetic energy of the complex amplitude), so the solids
+                # enter as I*|omega|^2 and K*|phi|^2, and the powers as 2*Re(torque*conj(omega))
+                Kg    = par.gTorque * par.OmgTau**2
+                Etot += par.MoIZ_M*abs(omg_mantle[i])**2 + par.MoIZ_IC*abs(omg_incore[i])**2 + Kg*abs(misalignmt[i])**2
+                Dk    = -Dint[i] - Wthm[i] - 2*Kg*(par.OmgTau/par.OmgtauIC)*abs(misalignmt[i])**2
+                Wex  += 2*np.real( mtorq[i]*np.conj(omg_mantle[i]) + mtorq_ic[i]*np.conj(omg_incore[i]) )
+            scale = max( abs(2*sigma*Etot), abs(Dk), Ohm, abs(Wex) )
+            residE[i] = abs( 2*sigma*Etot - Dk - Wex + Ohm ) / scale
+            budget[i] = [ s2*MEic0, s2*Ew0, s2*MEext0, s2*eta*Ohm_f0, s2*eta*Ohm_ic0, s2*eta*Ohm_w0, Wex ]
 
         # ------------------------------------------------------------------------------------------------------------------
         print(table_row(table_cols, table_w, i))
@@ -531,6 +576,10 @@ def main(ncpus):
             np.savetxt(dmag, np.c_[ ME, Mdfs, Indu, resid2,
                                     np.real(mtorq), np.imag(mtorq),
                                     np.real(mtorq_ic), np.imag(mtorq_ic), brms])
+
+    if par.magnetic:  # NEW (2026-10-18): terms of the full energy budget, in kinetic-energy units, and resid E
+        with open('budget.dat','ab') as dbud:
+            np.savetxt(dbud, np.c_[ budget, residE ])
 
     if par.rotdyn:
         with open('rotdyn.dat','ab') as drd:

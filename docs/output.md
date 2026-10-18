@@ -35,7 +35,7 @@ Eigenvectors are only defined up to a complex factor. Kore scales each one so th
 |---|---|
 | ★ | Solution number. |
 | Damping σ, Frequency ω | Real and imaginary parts of the eigenvalue (the forcing frequency for forced problems). |
-| resid0, resid𝐮, resid𝐛, residθ, resid𝐋 | Residuals of the balances, see below. |
+| resid0, resid𝐮, resid𝐛, residθ, resid𝐋, resid𝐄 | Residuals of the balances, see below. |
 | Tor/Pol | Toroidal over poloidal kinetic energy. |
 | Mag/Kin | Magnetic over kinetic energy. |
 | Geo | Geostrophic fraction: the share of the energy of $u_\phi$ held by its average along the rotation axis (see below). Only for $m = 0$, `symm = 1`; `nan` otherwise. |
@@ -58,18 +58,19 @@ The residuals compare terms of balances that an exact solution satisfies. They a
 
 | Residual | Balance |
 |---|---|
-| `resid0` | The viscous dissipation computed in two ways, from $\int \mathbf{u}\cdot\nabla^2\mathbf{u}\,dV$ and from the rate of strain. `nan` if `Ek = 0`. |
+| `resid0` | The viscous dissipation computed in two ways, from $\int \mathbf{u}\cdot\nabla^2\mathbf{u}\,dV$ and from the rate of strain, plus the work of a rotating mantle and inner core on the fluid with `rotdyn = 1`. `nan` if `Ek = 0`. |
 | `resid𝐮` | Kinetic energy: $2\sigma$ times the kinetic energy against the viscous dissipation and the work of the Lorentz and buoyancy forces. |
 | `resid𝐛` | Magnetic energy: $2\sigma$ times the magnetic energy against the induction work and magnetic diffusion. |
 | `residθ` | Thermal "energy": $2\sigma$ times it against thermal diffusion and advection. |
 | `resid𝐋` | Axial angular momentum of the fluid: $\lambda L_z$ against the viscous and electromagnetic torques on the mantle and the inner core (see [Angular momentum balance](equations.md#angular-momentum-balance)). Only for eigenvalue problems with $m = 0$, `symm = 1`; `nan` otherwise. |
+| `resid𝐄` | Total energy of fluid, inner core, thin walls and the potential field outside: $2\sigma$ times kinetic plus all magnetic energy against the viscous dissipation, the work of the background currents ($\mathbf{J}_0\times\mathbf{b}$, plus buoyancy) and the Ohmic losses in the fluid, a conducting inner core and thin walls, written as $\eta\int|\nabla\times\mathbf{b}|^2\,dV$. Unlike `resid𝐛` it tests the matching conditions at the ICB and CMB. With `rotdyn = 1` it includes the rotational energy of the mantle and the inner core, the gravitational energy and the inner core's viscous relaxation, so it also tests their equations. Needs no-slip boundaries; `nan` for forced problems, `'conducting, Bessel'`, thin walls with `mu` $\neq 1$, or `rotdyn = 1` with `vtrq` or `mtrq` set to 0. |
 
 As a rule of thumb they should all be below about $10^{-4}$. If they are not, increase the resolution. Exceptions and caveats:
 
-- With `rotdyn = 1`, `resid0` stays at about $10^{-4}$ to $10^{-3}$, because the work done by the rotating mantle and inner core on the fluid is not included in that balance yet.
 - The eigenvectors of the modes found away from the target are usually less accurate than the one closest to $\tau$. To get a particular mode as accurately as possible, place the target on it.
 - The residuals do not detect a too small `lmax`. Keep `lmax` close to `N` (see [Solver settings](solver.md#resolution)).
-- The energy balances cover the fluid only. Ohmic losses in a conducting inner core or a thin wall enter only through the flux of magnetic energy across the boundary, which $\int \mathbf{b}\cdot\nabla^2\mathbf{b}\,dV$ contains implicitly.
+- `resid𝐮` and `resid𝐛` cover the fluid only and test its two equations separately. The magnetic diffusion in `magnetic.dat`, $\int \mathbf{b}\cdot\nabla^2\mathbf{b}\,dV$, is not the Ohmic loss: it also contains the flux of magnetic energy through the ICB and CMB, which goes to a conducting inner core, a thin wall or the field outside. `resid𝐄` and `budget.dat` give the separate terms. In `resid𝐄` the Lorentz work and the induction term cancel, so it is usually much smaller than `resid𝐛`. It is weaker on each equation separately, so judge a solution by all of the residuals.
+- With a thin wall that has both $c \neq 0$ and $c_1 \neq 0$, `resid𝐄` closes only to about $c\,c_1$ times the wall's share of the energy budget, because the thin-wall conditions are first order in the wall thickness.
 - With `Ek = 0` and an insulating mantle there are no torques, and `resid𝐋` is 1 by construction.
 - `solve_nopp.py` also prints a residual for each eigenvalue, $\|Ax-\lambda Bx\|/\|\lambda x\|$. It only shows that SLEPc converged, and stays small even for inaccurate eigenvectors. Judge accuracy by `spin_doctor`'s residuals.
 
@@ -98,7 +99,9 @@ Each run appends one row per solution to the files below, in the same order in e
 | 17-18 | Axial angular momentum of the fluid $L_z$ (real, imaginary) |
 | 19 | Geostrophic fraction of $u_\phi$ (`nan` unless $m = 0$, `symm = 1`) |
 
-**`magnetic.dat`** (8 columns): magnetic energy, magnetic diffusion, induction work, `resid𝐛`, electromagnetic torque on the mantle (real, imaginary), electromagnetic torque on the inner core (real, imaginary).
+**`magnetic.dat`** (9 columns): magnetic energy, magnetic diffusion, induction work, `resid𝐛`, electromagnetic torque on the mantle (real, imaginary), electromagnetic torque on the inner core (real, imaginary), rms of $b_r$ at the CMB.
+
+**`budget.dat`** (8 columns, in kinetic-energy units): magnetic energy inside the inner core (its field if conducting, the potential field below an insulating inner core or thin wall), magnetic energy stored in thin walls, energy of the potential field outside the CMB, Ohmic loss in the fluid, in a conducting inner core and in thin walls, Lorentz work plus induction work (the work of the background currents), `resid𝐄`.
 
 **`thermal.dat`** (4 columns): thermal "energy", thermal advection, thermal diffusion, `residθ`.
 

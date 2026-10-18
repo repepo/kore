@@ -29,6 +29,29 @@ bin/submatrices.py, bin/operators.py, bin/assemble.py, bin/params_default.py)
 - spin_doctor's residuals cover the fluid volume only: they do not test the inner-core field or the ICB
   conditions. Check N_cic by the change of the eigenvalue.
 
+Full energy budget, resid E (bin/spin_doctor.py, bin/utils4pp.py)
+- New residual resid E: 2 sigma (KE + ME of the fluid, of the inner core, of thin walls and of the potential
+  field outside) against the viscous dissipation, the work of the background currents (J0 x b) and buoyancy,
+  and the Ohmic losses in the fluid, a conducting inner core and thin walls, as eta*int |curl b|^2. It tests
+  the ICB and CMB matching conditions, which resid b (fluid only, with b.lap(b)) cannot see. New function
+  utils4pp.em_budget; the inner-core field is read from the magnetic_ic files. The terms are written to the
+  new file budget.dat (8 columns). Needs no-slip boundaries; nan for forced problems, 'conducting, Bessel',
+  thin walls with mu != 1, or rotdyn with vtrq or mtrq = 0.
+- With rotdyn = 1 the budget adds the rotational energies I|omega|^2 of the mantle and inner core and the
+  gravitational energy K|phi|^2 (spin_doctor's energies are int |u|^2, twice the energy of the complex
+  amplitude), the inner core's viscous relaxation 2K(OmgTau/OmgtauIC)|phi|^2, and the work of the magnetic
+  torques 2 Re(Gamma conj(omega)); the viscous term is then Dint. resid0 now includes the work of the moving
+  walls, -2 Re(Gamma_visc conj(omega)): it was 1e-4 to 1e-1 with rotdyn and is now 1e-13.
+- Thin walls: Ohmic loss int |K|^2 dS/(c1 r) from the wall current K (|g|^2/c1 toroidal, c1 |r lap_l f|^2
+  poloidal), the field beyond the wall from the wall condition, and the energy c r/2 int |b_t|^2 dS of the
+  poloidal b_t that goes with the c term.
+- Checked on torsional modes (Luo_S2, Ek = 1e-4, N = 64): resid E = 1e-10 for insulating, conducting
+  (sigma_i2o = 1e-2, 1) and thin-wall inner cores with insulating or thin-wall mantles, and 1e-13 for a full
+  sphere. With c and c1 both nonzero it closes to about c*c1 times the wall's share (7e-6 for c = c1 = 1e-2),
+  the order of the thin-wall model. With rotdyn (I_M = 0.5, gTorque = 1e-3, OmgtauIC = 1e3; insulating,
+  conducting and thin-wall boundaries) resid E = 1e-10. At Ek = 1e-9, sigma_i2o = 1 (N = 832) resid E = 8e-9
+  where resid b = 6e-7.
+
 
 2026-10-17
 ----------

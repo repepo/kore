@@ -1251,3 +1251,115 @@ def kin_mag_energy(usol2, bsol2, Ra, Rb, ls=None):
                 [tlm0] = cheb2space_tor(l, lt_b, bsol2[1], 0)
                 ME0 += cg_quad( energy_tor(l, tlm0), Ra, Rb, par.N, sqx)
     return [ KE, ME0 * par.OmgTau**2 * par.Le2 if par.magnetic else 0.0 ]
+
+
+
+# NEW (2026-10-18): the magnetic terms of the full energy budget (spin_doctor's resid E).
+def em_budget(bsol2, bic=None):
+    '''
+    Returns [Ohm_f, ME_ic, Ohm_ic, E_w, Ohm_w, ME_ext] for one solution, the terms of the magnetic energy budget
+    that spin_doctor's fluid-only balance (resid b) leaves out, in the units of magnetic_worker's energy and of
+    its integral of b.lap(b) (spin_doctor multiplies the dissipations by OmgTau*Em, and everything by
+    OmgTau**2*Le2 to compare with the kinetic energy):
+      Ohm_f  : int |curl b|^2 over the fluid (its Ohmic loss is eta times this, eta = 1 in the fluid)
+      ME_ic  : (1/2) int |b|^2 inside the inner core: the field of a conducting inner core ('conducting, Chebys',
+               bic = its part of the solution vector), or the potential field below an insulating inner core or a
+               thin wall ('insulator', 'TWA')
+      Ohm_ic : eta_i * int |curl b|^2 over a conducting inner core, eta_i = 1/(mu_i2o*sigma_i2o)
+      E_w    : magnetic energy stored in thin walls (innercore and/or mantle = 'TWA'): (c*r/2) int |b_t|^2 dS over
+               the poloidal field's b_t, the energy that goes with the c term of the wall condition (the toroidal
+               condition has no c term, so the model stores no toroidal energy in the wall)
+      Ohm_w  : Ohmic loss of the thin-wall currents, int |K|^2 dS/(c1*r), K the jump of b_t across the wall:
+               |g|^2/c1 (toroidal) and c1*|r lap_l f|^2 (poloidal, from the wall conditions)
+      ME_ext : energy of the potential field outside the CMB (insulating mantle, or outside a thin wall)
+    The wall's b_r jump (c term) and current (c1 term) follow from the thin-wall conditions of bc_b_thinlayer,
+    so the boundary terms need no derivatives beyond the second. Assumes mu = 1 (fluid permeability) with walls.
+    For ricb = 0 the inner-core terms are zero.
+    '''
+    r_i, r_o = par.ricb, ut.rcmb
+    [ lp, lt, _ ] = ut.ell(par.m, par.lmax, ut.bsymm)
+    f0p = 4*np.pi/(2*lp+1); f0t = 4*np.pi/(2*lt+1)
+    Lp = lp*(lp+1.); Lt = lt*(lt+1.)
+
+    # Ohmic loss in the fluid, from the tables of the radial functions on the quadrature grid
+    Fp = cheb2space_table(bsol2[0], 2); Gt = cheb2space_table(bsol2[1], 1)
+    Ohm_f = 0.0
+    for k, l in enumerate(lp):
+        f, f1, f2 = Fp[0, k], Fp[1, k], Fp[2, k]
+        Ohm_f += cg_quad( ohmic_dissip_pol(l, Lp[k]*f/rk, f1 + f/rk, f2 + f1/rk - f/r2), r_i, r_o, par.N, sqx)
+    for k, l in enumerate(lt):
+        Ohm_f += cg_quad( ohmic_dissip_tor(l, Gt[0, k], Gt[1, k]), r_i, r_o, par.N, sqx)
+
+    # values and r-derivatives of f and g at the boundaries (x = -1 at the ICB, x = 1 at the CMB)
+    def bvals(C, nd, x):
+        dk = np.ascontiguousarray(np.transpose(C)); out = []
+        for j in range(nd+1):
+            if j > 0: dk = ut.Dcheb(dk, r_i, r_o)
+            out.append(ch.chebval(x, dk))
+        return out
+
+    ME_ic = Ohm_ic = E_w = Ohm_w = ME_ext = 0.0
+
+    # ------------------------------------------------------------------------------------------------ CMB side
+    f, f1, f2 = bvals(bsol2[0], 2, 1.0); g = bvals(bsol2[1], 0, 1.0)[0]
+    r = r_o
+    F, F1 = r*f, f + r*f1
+    DF = 2*f1 + r*f2 - Lp*f/r            # r*lap_l(f) = F'' - L F/r^2
+    if par.mantle == 'TWA':
+        c, c1 = par.c_cmb, par.c1_cmb
+        Fout = -(r*F1 + c1*r**2*DF)/lp     # field beyond the wall, from the wall condition
+        s = F1/r                           # tangential poloidal field on the fluid side
+        E_w += np.sum( c*r**3*f0p*Lp*np.abs(s)**2 )
+        if c1 > 0:
+            Ohm_w += np.sum( 2*f0p*r*Lp*c1*np.abs(DF)**2 ) + np.sum( 2*f0t*r*Lt*np.abs(g)**2/c1 )
+    else:
+        Fout = F
+    ME_ext = np.sum( f0p*Lp*lp*np.abs(Fout/r)**2 )   # potential field r^-(l+1) outside r = rcmb = 1
+
+    # ------------------------------------------------------------------------------------------------ ICB side
+    if r_i > 0:
+        r = r_i
+        if par.innercore in ['insulator', 'TWA']:
+            f, f1, f2 = bvals(bsol2[0], 2, -1.0); g = bvals(bsol2[1], 0, -1.0)[0]
+            F, F1 = r*f, f + r*f1
+            DF = 2*f1 + r*f2 - Lp*f/r
+            if par.innercore == 'TWA':
+                c, c1 = par.c_icb, par.c1_icb
+                Fin = (r*F1 - c1*r**2*DF)/(lp+1)  # field below the wall, from the wall condition
+                s = F1/r
+                E_w += np.sum( c*r**3*f0p*Lp*np.abs(s)**2 )
+                if c1 > 0:
+                    Ohm_w += np.sum( 2*f0p*r*Lp*c1*np.abs(DF)**2 ) + np.sum( 2*f0t*r*Lt*np.abs(g)**2/c1 )
+            else:
+                Fin = F
+            ME_ic = np.sum( f0p*Lp*(lp+1)*r*np.abs(Fin/r)**2 )   # potential field r^l inside r = ricb
+
+        elif par.innercore == 'conducting, Chebys' and bic is not None:
+            # the inner-core field: Chebyshev series in x = r/ricb on [-1, 1], one parity per l
+            Nic = ut.Nic; nb = int((par.lmax_cic - par.m + 1)/2)
+            lpc, ltc = ut.ell(par.m, par.lmax_cic, ut.bsymm)[:2]
+            if ut.symmB0 == -1: ixf, ixg = (par.m + ut.s)%2, (par.m + 1 - ut.s)%2
+            else:               ixf, ixg = (par.m + 1 - ut.s)%2, (par.m + ut.s)%2
+            xg, wg = np.polynomial.legendre.leggauss(max(2*par.N_cic, 64))
+            ri = 0.5*r*(xg + 1); wi = 0.5*r*wg
+            def icfun(a, ix, nd):
+                cc = np.zeros(par.N_cic, complex); cc[ix::2] = a; out = []
+                for j in range(nd+1):
+                    out.append(ch.chebval(ri/r, cc)); cc = ch.chebder(cc)/r
+                return out
+            eta_i = 1/(par.mu_i2o*par.sigma_i2o)
+            for k, l in enumerate(lpc):
+                L = l*(l+1.); a0 = 4*np.pi/(2*l+1)
+                f, f1, f2 = icfun(bic[k*Nic:(k+1)*Nic], ixf, 2)
+                q0, s0 = L*f/ri, f1 + f/ri
+                ME_ic  += np.sum( wi*a0*ri**2*( np.abs(q0)**2 + L*np.abs(s0)**2 ) )
+                Ohm_ic += eta_i*np.sum( wi*2*a0*L*ri**2*np.abs(f2 + 2*f1/ri - L*f/ri**2)**2 )
+            for k, l in enumerate(ltc):
+                L = l*(l+1.); a0 = 4*np.pi/(2*l+1)
+                g, g1 = icfun(bic[nb*Nic + k*Nic: nb*Nic + (k+1)*Nic], ixg, 1)
+                ME_ic  += np.sum( wi*a0*ri**2*L*np.abs(g)**2 )
+                Ohm_ic += eta_i*np.sum( wi*2*a0*L*( L*np.abs(g)**2 + np.abs(ri*g1 + g)**2 ) )
+        else:
+            ME_ic = np.nan  # 'conducting, Bessel' (forced problems): not coded
+
+    return [ Ohm_f, ME_ic, Ohm_ic, E_w, Ohm_w, ME_ext ]
