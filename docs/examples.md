@@ -79,6 +79,21 @@ The test requires Kore's values to $10^{-7}$ and the published ones to $2\times1
 `tests/silva2019`, run by `test_thermocompositional.py`. With equal Prandtl and Schmidt numbers, temperature and composition combine into a single co-density, and the onset of convection depends only on the sum of the thermal and compositional Rayleigh numbers (Silva, Mather & Simitev 2019, GAFD, eq. 18): with $R_t = Ra\cos\alpha$ and $R_c = Ra\sin\alpha$, $Ra_c(\alpha)\,(\cos\alpha + \sin\alpha)$ is the same for every $\alpha$. The test finds $Ra_c$ for $\alpha$ = 0 (temperature only), $\pi/2$ (composition only) and $\pi/4$ (both), with $Pr = Sc = 1$, Coriolis number $10^4$, `ricb = 0.35`, $m = 7$, stress-free boundaries and fixed temperature and composition, and checks that this sum and the drift frequency agree to $5\times10^{-5}$.
 
 
+## Gravito-inertial waves
+
+`tests/dintrans1999`, run by `test_gravitoinertial.py`. The H1, H2 and E1 gravito-inertial modes of Dintrans, Rieutord & Valdettaro (1999, figure 4): a stratified spherical shell with `ricb = 0.35`, $Pr = 1$, $E = 2\times10^{-7}$, stress-free boundaries, fixed temperature, $N = 150$ and $l_{max} = 311$. The parameter file `params.dintrans99` leaves `par.BV2`, `par.rtau` and `par.itau` unset; the test sets them for each mode and rebuilds the matrices.
+
+Kore uses a different characteristic time from the paper, so the published frequencies and eigenvalues are multiplied by 2, and `par.BV2` = $(2 N)^2$ with $N$ the published Brunt-Väisälä frequency.
+
+| Mode | `par.BV2` | Target $\lambda$ | Tolerance vs. published |
+|---|---|---|---|
+| H1 | $0.16$ | $-0.012176 + 1.1\,i$ | $3\times10^{-3}$ |
+| H2 | $4$ | $-0.007708 + 1.51\,i$ | $3\times10^{-3}$ |
+| E1 | $25$ | $-0.01038 + 2.26\,i$ | $6\times10^{-4}$ |
+
+The eigenvalue closest to the Kore reference (`reference.dintrans99`) must match it to $10^{-6}$ and the published value to the tolerance above, both relative to $|\lambda|$.
+
+
 ## No rotation
 
 `tests/norotation`, run by `test_norotation.py`. With `rotation = 0` and the viscous time scale, the toroidal flow in a full sphere decays freely, with eigenvalues $\lambda = -k^2$, where $k$ is the smallest root of $j_l(k) = 0$ for a no-slip boundary or of $k\,j_l'(k) = j_l(k)$ for a stress-free one. The test checks $l$ = 2 and 3, both boundary conditions and $m$ = 0, 1 and 2, to $10^{-10}$; the decay rate must not depend on $m$.

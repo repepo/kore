@@ -105,6 +105,25 @@ Postprocessing speed (bin/utils4pp.py, bin/spin_doctor.py, bin/utils.py)
   than chebval's.
 
 
+2026-10-16
+----------
+Angular momentum balance, brms, solver files induction equation (bin/utils.py, bin/utils4pp.py, bin/spin_doctor.py,
+bin/assemble.py, bin/parameters.py, tools/)
+- m = 1, symm = -1 (equatorial component): equatorial viscous torques on the mantle and inner core
+  (gamma_visc, gamma_visc_icb) and magnetic torque on the mantle (gamma_magnetic, B0_l = 1 or 2); angrymom_z is
+  renamed angrymom and returns the equatorial angular momentum; residL includes the Coriolis term -i*OmgTau*L.
+  parameters.py is set up for the spin-over mode (ricb = 0).
+- spin_doctor: new flags do_vtorq and do_vtorq_ic skip the viscous torques for stress-free boundaries; residL is 0
+  when there are no torques.
+- New utils4pp.rms and brms (r.m.s. radial b at the CMB), written as a 9th column of magnetic.dat. In flow.dat
+  press0 (obsolete) is replaced by residL (still 19 columns). Old and new files cannot be loaded together.
+- tools/get_data.py and tools/reap.sh follow the current .dat files (adds rotdyn and compositional). 
+- New bin/just_induction.py and bin/solve_ind.py: solve only the induction equation for the flow of a
+  hydrodynamic run (weak field regime); 
+- New test tests/test_gravitoinertial.py: gravito-inertial modes H1, H2, E1 of Dintrans, Rieutord & Valdettaro
+  (1999), Ek = 2e-7; matches the kore reference to 1e-6 and the published values to 3e-3, 3e-3, 6e-4.
+
+
 2026-10-11
 ----------
 Postprocessing (bin/utils4pp.py, bin/spin_doctor.py)

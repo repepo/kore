@@ -57,9 +57,7 @@ class TestGravitoInertial(KoreTest):
         for lam, r, (rtau, itau, _, tol) in zip(found, ref, self.dintrans):
             r = complex(*r)
             z = lam[np.argmin(np.abs(lam - r))]  # the eigenvalue closest to the reference
-            # relative to |lambda|: the damping is ~1/130 of the frequency, so it is not compared on its own
-            print(abs(z - r) / abs(r))
+            # relative to |lambda|
             din = rtau + 1j*itau
-            print(abs(z - din) / abs(din))
             assert abs(z - r)/abs(r) < self.precision, (z, r)
             assert abs(z - din)/abs(din) < tol, (z, din)

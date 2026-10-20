@@ -85,19 +85,19 @@ Each run appends one row per solution to the files below, in the same order in e
 
 **`flow.dat`** (19 columns; 18 in files written before 2026-10-11):
 
-| Columns | Quantity |
-|---|---|
-| 1-3 | Kinetic energy: total, poloidal, toroidal |
-| 4 | Viscous dissipation from $\int \mathbf{u}\cdot\nabla^2\mathbf{u}\,dV$ |
-| 5 | Viscous (internal) dissipation from the rate of strain |
-| 6-8 | Work of the Lorentz force, the thermal and the compositional buoyancy |
-| 9-10 | `resid0`, `resid𝐮` |
-| 11-12 | Viscous torque on the mantle (real, imaginary) |
-| 13-14 | Viscous torque on the inner core (real, imaginary) |
-| 15 | Pressure term |
-| 16 | Unused (0) |
-| 17-18 | Axial angular momentum of the fluid $L_z$ (real, imaginary) |
-| 19 | Geostrophic fraction of $u_\phi$ (`nan` unless $m = 0$, `symm = 1`) |
+| Columns | Quantity                                                              |
+|---------|-----------------------------------------------------------------------|
+| 1-3     | Kinetic energy: total, poloidal, toroidal                             |
+| 4       | Viscous dissipation from $\int \mathbf{u}\cdot\nabla^2\mathbf{u}\,dV$ |
+| 5       | Viscous (internal) dissipation from the rate of strain                |
+| 6-8     | Work of the Lorentz force, the thermal and the compositional buoyancy |
+| 9-10    | `resid0`, `resid𝐮`                                                   |
+| 11-12   | Viscous torque on the mantle (real, imaginary)                        |
+| 13-14   | Viscous torque on the inner core (real, imaginary)                    |
+| 15      | Unused (0)                                                            |
+| 16-17   | Angular momentum of the fluid $L$ (real, imaginary)                   |
+| 18      | `residL`                                                              |
+| 19      | Geostrophic fraction of $u_\phi$ (`nan` unless $m = 0$, `symm = 1`)   |
 
 **`magnetic.dat`** (9 columns): magnetic energy, magnetic diffusion, induction work, `resid𝐛`, electromagnetic torque on the mantle (real, imaginary), electromagnetic torque on the inner core (real, imaginary), rms of $b_r$ at the CMB.
 
@@ -154,10 +154,11 @@ The field names are `ur`, `utheta`, `uphi`, `br`, `btheta`, `bphi`, `temperature
 
 The scripts in `tools/` help with parameter studies on a PBS-managed cluster. Edit the paths in them first (they assume the code in `~/kore` and runs in `~/data`).
 
-| Script | What it does |
-|---|---|
+| Script                                     | What it does                                                                                                                                                                                                                                            |
+|--------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `dodirs.sh prefix var mode start step end` | Creates one run folder per value of `par.var`, named `prefix<value>`, each with its own copy of the code. With `mode` = `e` the values are powers of ten ($10^{start}$, ...), with `d` they are linear. Example: `./dodirs.sh run_Ek_ Ek e -5 -0.1 -6`. |
-| `dosubs.sh` (same arguments) | Submits the runs, using `subramp.sh` as the job script. |
-| `reap.sh prefix` | Collects the results of all the folders into `prefix.par`, `.flo`, `.eig`, `.mag` and `.thm`. |
-| `getresults.py` | `%run -i tools/getresults.py prefix` loads the collected results (or the `.dat` files of the current folder) in IPython. |
-| `join.sh label1 label2 out` | Concatenates two collected data sets. |
+| `dosubs.sh` (same arguments)               | Submits the runs, using `subramp.sh` as the job script.                                                                                                                                                                                                 |
+| `reap.sh prefix`                           | Collects the results of all the folders into `prefix.par`, `.flo`, `.eig`, `.mag` and `.thm`.                                                                                                                                                           |
+| `getresults.py`                            | `%run -i tools/getresults.py prefix` loads the collected results (or the `.dat` files of the current folder) in IPython.                                                                                                                                |
+| `get_data.py`                              | Loads the collected results (or the `.dat` files of the current folder) in a pandas DataFrame.                                                                                                                                                          |
+| `join.sh label1 label2 out`                | Concatenates two collected data sets.                                                                                                                                                                                                                   |
