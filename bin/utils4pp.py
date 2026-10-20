@@ -1,5 +1,5 @@
-# The diagnose function in this module invokes in parallel the functions
-# flow_worker and thermal_worker.
+# The diagnose function in this module invokes the functions
+# flow_worker and thermal_worker for each l (serially since 2026-10-20).
 # It provides energy, dissipation, power, etc for a given solution.
 
 import multiprocessing as mp
@@ -59,6 +59,44 @@ def funcheb(ck0, r, ricb, rcmb, n):
 
 
 
+
+
+
+# NEW (2026-10-20): all radial functions of a solution at once, ported from the conductive_IC branch (2026-10-16).
+def cheb2space_table(C, nd, r):
+    '''
+    Returns the radial functions with Chebyshev coefficients C (one row per l, as from expand_reshape_sol)
+    and their r-derivatives up to order nd, at the radii r, as an array of shape (nd+1, rows of C, radii):
+    out[j,i,:] is the j-th derivative of row i.
+    Same as funcheb row by row, to rounding: the derivative coefficients come from the same ut.Dcheb
+    recurrence, but the Chebyshev sums are one matrix product per derivative (chebvander at r) instead
+    of one chebval (a Python loop over N) per row. The workers need each row several times (coriolis
+    also uses the neighbouring l's), so they take these tables in place of the coefficients (see radial).
+    '''
+    V   = ch.chebvander(xcheb(r, par.ricb, ut.rcmb), np.shape(C)[1]-1)  # (radii, N): T_k at the radii
+    dk  = np.ascontiguousarray(np.transpose(C))  # (N, rows): one expansion per column, as ut.Dcheb takes them
+    out = np.zeros((nd+1, np.shape(C)[0], np.size(r)), dtype=complex)
+    for j in range(nd+1):
+        if j > 0:
+            dk = ut.Dcheb(dk, par.ricb, ut.rcmb)  # coefficients of the next derivative
+        # two real products, half the work of one complex product; contiguous copies so that BLAS is used
+        out[j].real = ( V @ np.ascontiguousarray(np.real(dk)) ).T
+        out[j].imag = ( V @ np.ascontiguousarray(np.imag(dk)) ).T
+    return out
+
+
+
+def radial(F, idx, n, radii):
+    '''
+    NEW (2026-10-20): radial function idx of F and its first n r-derivatives, as rows 0..n.
+    F holds Chebyshev coefficients (one row per l, evaluated here with funcheb at radii) or is a table
+    from cheb2space_table (looked up; set_solution builds the tables at the current rk).
+    '''
+    if np.ndim(F) == 3:
+        if n >= np.shape(F)[0]:
+            raise ValueError('radial: the table has only %d derivatives' % (np.shape(F)[0]-1))
+        return F[:n+1, idx, :]
+    return funcheb(F[idx,:], r=radii, ricb=par.ricb, rcmb=ut.rcmb, n=n).T
 
 
 
@@ -195,10 +233,10 @@ def cheb2space_pol(l, lp, P, ns, radii):
 
     L     = l*(l+1)
     idx   = list(lp).index(l) 
-    f_pol = funcheb(P[idx,:], r=radii, ricb=par.ricb, rcmb=ut.rcmb, n=ns+1)
+    f_pol = radial(P, idx, ns+1, radii)  # NEW (2026-10-20): P can be a table from cheb2space_table
     
-    plm0 = f_pol[:,0]
-    plm1 = f_pol[:,1]
+    plm0 = f_pol[0]
+    plm1 = f_pol[1]
     
     qlm = []
     slm = []
@@ -211,7 +249,7 @@ def cheb2space_pol(l, lp, P, ns, radii):
 
     if ns>0:
 
-        plm2 = f_pol[:,2]
+        plm2 = f_pol[2]
 
         qlm1 = (L*(-plm0 + plm1*rr))/rr2
         qlm.append(qlm1)
@@ -221,7 +259,7 @@ def cheb2space_pol(l, lp, P, ns, radii):
 
     if ns>1:
 
-        plm3 = f_pol[:,3]
+        plm3 = f_pol[3]
 
         qlm2 = (L*(2*plm0 + rr*(-2*plm1 + plm2*rr)))/rr3
         qlm.append(qlm2)
@@ -231,7 +269,7 @@ def cheb2space_pol(l, lp, P, ns, radii):
 
     if ns>2:
 
-        plm4 = f_pol[:,4]
+        plm4 = f_pol[4]
     
         qlm3 = (L*(-6*plm0 + rr*(6*plm1 + rr*(-3*plm2 + plm3*rr))))/rr4
         qlm.append(qlm3)
@@ -241,7 +279,7 @@ def cheb2space_pol(l, lp, P, ns, radii):
 
     if ns>3:
 
-        plm5 = f_pol[:,5]
+        plm5 = f_pol[5]
 
         qlm4 = (24*L*plm0)/rr5 - (24*L*plm1)/rr4 + (12*L*plm2)/rr3 - (4*L*plm3)/rr2 + (L*plm4)/rr
         qlm.append(qlm4)
@@ -262,11 +300,11 @@ def cheb2space_tor(L, lt, T, ns, radii):
     '''
 
     idx   = list(lt).index(L) 
-    f_tor = funcheb(T[idx,:], r=radii, ricb=par.ricb, rcmb=ut.rcmb, n=ns)
+    f_tor = radial(T, idx, ns, radii)  # NEW (2026-10-20): T can be a table from cheb2space_table
 
     tlm = []
     for i in range(ns+1):
-        tlm.append(f_tor[:,i])
+        tlm.append(f_tor[i])
 
     return tlm
 
@@ -524,6 +562,52 @@ def thermal_wind_entropy_generic():
 
 
 
+_dr_bg = None  # NEW (2026-10-20): (key, diff_rot_background()) for the current radial grid, see diff_rot_setup
+
+
+def diff_rot_background(ll):
+    '''
+    NEW (2026-10-20): the parts of diff_rot_setup that do not depend on the solution, at the current radii rk:
+    the Gauss-Legendre grid x = cosθ and weights wx, sinθ, Y, ∂_θY and i m Y/sinθ for the l's ll, ΔΩ and its
+    derivatives on the (rk, cosθ) grid, and, with thermal = 1 and thermal_wind, the (n, σₙ, σₙ′) of S_tw.
+    Moved here unchanged from diff_rot_setup, so that diagnose computes them once per grid, not per solution.
+    '''
+    m = par.m
+    x, wx = np.polynomial.legendre.leggauss( par.lmax + 10 + (max(ut.tw_nmax, ut.dr_nmax) if ut.dr_high else 0) )
+    sth = np.sqrt(1 - x**2)  # sinθ
+    Y   = np.zeros( (len(ll), len(x)), dtype=complex )
+    dY  = np.zeros( (len(ll), len(x)), dtype=complex )
+    for k,l in enumerate(ll):
+        [ y, dy ] = scsp.sph_harm_y(l, m, np.arccos(x), 0, diff_n=1)  # as ut.Ylm, and its θ and ϕ derivatives
+        Y[k]  = y*np.sqrt(4*np.pi/(2*l+1))
+        dY[k] = dy[:,0]*np.sqrt(4*np.pi/(2*l+1))
+    imY = 1j*m*Y/sth
+
+    P2  = (3*x**2 - 1)/2
+    [ f0, f01, f02 ] = [ rap.abuX(rk, d)[:,None] for d in (0,1,2) ]
+    [ f2, f21, f22 ] = [ rap.aubX(rk, d)[:,None] for d in (0,1,2) ]
+    dO  = [ f0 + f2*P2, f01 + f21*P2, f02 + f22*P2 ]  # ΔΩ, ∂ᵣΔΩ, ∂ᵣ²ΔΩ
+    dOt = [ -3*x*sth*f2, -3*x*sth*f21 ]               # ∂_θΔΩ, ∂ᵣ∂_θΔΩ
+    for n in ut.dr_high:                              # degrees above 2 of ΔΩ
+        Pn = np.polynomial.legendre.Legendre.basis(n)
+        fn = [ rap.fX(n, rk, d)[:,None] for d in (0,1,2) ]
+        dO  = [ dO[d] + fn[d]*Pn(x) for d in (0,1,2) ]
+        dOt = [ dOt[d] - sth*Pn.deriv()(x)*fn[d] for d in (0,1) ]
+
+    tw = []
+    if par.thermal and par.thermal_wind:
+        if ut.dr_high and par.thermal_wind in (1, 2):
+            [ sig, sig1 ] = thermal_wind_entropy_generic()
+            degs = ut.tw_degrees
+        else:
+            [ sig, sig1 ] = thermal_wind_entropy()
+            degs = (2,4,6)
+        tw = list( zip( degs, sig, sig1 ) )
+
+    return [ x, wx, sth, Y, dY, imY, dO, dOt, tw ]
+
+
+
 def diff_rot_setup():
     '''
     Differential rotation (diff_rot = 1). Sets, as module globals for flow_worker and thermal_worker:
@@ -545,36 +629,25 @@ def diff_rot_setup():
     [ lp, lt, ll ] = ut.ell( par.m, par.lmax, par.symm)
     ll = np.asarray(ll)
 
-    x, wx = np.polynomial.legendre.leggauss( par.lmax + 10 + (max(ut.tw_nmax, ut.dr_nmax) if ut.dr_high else 0) )
-    sth = np.sqrt(1 - x**2)  # sinθ
-    Y   = np.zeros( (len(ll), len(x)), dtype=complex )
-    dY  = np.zeros( (len(ll), len(x)), dtype=complex )
-    for k,l in enumerate(ll):
-        [ y, dy ] = scsp.sph_harm_y(l, m, np.arccos(x), 0, diff_n=1)  # as ut.Ylm, and its θ and ϕ derivatives
-        Y[k]  = y*np.sqrt(4*np.pi/(2*l+1))
-        dY[k] = dy[:,0]*np.sqrt(4*np.pi/(2*l+1))
-    imY = 1j*m*Y/sth
+    # NEW (2026-10-20): what does not depend on the solution (angular grid, Y, ΔΩ and S_tw on the grid) is computed
+    # once per radial grid and kept in _dr_bg (2.5 s per solution before, at N = 192, lmax = 64, thermal_wind = 2)
+    global _dr_bg
+    key = ( rk.tobytes(), repr(sorted(vars(par).items())) )  # the grid and every parameter
+    if _dr_bg is None or _dr_bg[0] != key:
+        _dr_bg = ( key, diff_rot_background(ll) )
+    [ x, wx, sth, Y, dY, imY, dO, dOt, tw ] = _dr_bg[1]
 
     # 𝐮 and ∂ᵣ𝐮 on the grid: u[d] = [uᵣ, u_θ, uᵩ] (d = 0) or their radial derivatives (d = 1), rows rk, columns cosθ
-    u = np.zeros( (2, 3, len(rk), len(x)), dtype=complex )
-    for k,l in enumerate(ll):
-        [ q, s, t ] = velocity(l)
-        for d in (0,1):
-            u[d,0] += np.outer(q[d], Y[k])
-            u[d,1] += np.outer(s[d], dY[k]) + np.outer(t[d], imY[k])
-            u[d,2] += np.outer(s[d], imY[k]) - np.outer(t[d], dY[k])
+    # NEW (2026-10-20): sums over l as matrix products (rows rk, columns l) @ (rows l, columns cosθ), not np.outer per l
+    u   = np.zeros( (2, 3, len(rk), len(x)), dtype=complex )
+    vel = [ velocity(l) for l in ll ]
+    for d in (0,1):
+        [ q, s, t ] = [ np.array([ v[c][d] for v in vel ]).T for c in (0,1,2) ]
+        u[d,0] = q @ Y
+        u[d,1] = s @ dY + t @ imY
+        u[d,2] = s @ imY - t @ dY
 
     r   = rk[:,None]
-    P2  = (3*x**2 - 1)/2
-    [ f0, f01, f02 ] = [ rap.abuX(rk, d)[:,None] for d in (0,1,2) ]
-    [ f2, f21, f22 ] = [ rap.aubX(rk, d)[:,None] for d in (0,1,2) ]
-    dO  = [ f0 + f2*P2, f01 + f21*P2, f02 + f22*P2 ]  # ΔΩ, ∂ᵣΔΩ, ∂ᵣ²ΔΩ
-    dOt = [ -3*x*sth*f2, -3*x*sth*f21 ]               # ∂_θΔΩ, ∂ᵣ∂_θΔΩ
-    for n in ut.dr_high:                              # degrees above 2 of ΔΩ
-        Pn = np.polynomial.legendre.Legendre.basis(n)
-        fn = [ rap.fX(n, rk, d)[:,None] for d in (0,1,2) ]
-        dO  = [ dO[d] + fn[d]*Pn(x) for d in (0,1,2) ]
-        dOt = [ dOt[d] - sth*Pn.deriv()(x)*fn[d] for d in (0,1) ]
 
     def force(v, dO0, dOr, dOth):
         # -G [ ΔΩ (i m 𝐯 + 2𝐳×𝐯) + (r vᵣ ∂ᵣΔΩ + v_θ ∂_θΔΩ) sinθ 𝐞ᵩ ],  𝐳×𝐯 = ( -sinθ vᵩ, -cosθ vᵩ, sinθ vᵣ + cosθ v_θ )
@@ -596,19 +669,12 @@ def diff_rot_setup():
     drforce = { l: [ [q[0][:,k], q[1][:,k]], [s[0][:,k], s[1][:,k]], [t[0][:,k], t[1][:,k]] ] for k,l in enumerate(ll) }
 
     if par.thermal:
-        sg = np.zeros( (len(rk), len(x)), dtype=complex )  # s on the grid, tsol2 rows are the l's of lp
-        for k,l in enumerate(lp):
-            sg += np.outer( funcheb( tsol2[k,:], r=rk, ricb=par.ricb, rcmb=ut.rcmb, n=0 )[:,0], Y[list(ll).index(l)] )
+        # s on the grid, ttab rows are the l's of lp. NEW (2026-10-20): from the table, one matrix product
+        sg = np.transpose(ttab[0]) @ Y[[ list(ll).index(l) for l in lp ]]
         h = 1j*m*G*dO[0]*sg
         if par.thermal_wind:
-            # 𝐮⋅∇S_tw = uᵣ Σ σₙ′ Pₙ - (u_θ/r) Σ σₙ sinθ Pₙ′(cosθ)
-            if ut.dr_high and par.thermal_wind in (1, 2):
-                [ sig, sig1 ] = thermal_wind_entropy_generic()
-                degs = ut.tw_degrees
-            else:
-                [ sig, sig1 ] = thermal_wind_entropy()
-                degs = (2,4,6)
-            for n, sn, sn1 in zip( degs, sig, sig1 ):
+            # 𝐮⋅∇S_tw = uᵣ Σ σₙ′ Pₙ - (u_θ/r) Σ σₙ sinθ Pₙ′(cosθ), σₙ and σₙ′ from diff_rot_background
+            for n, sn, sn1 in tw:
                 Pn = np.polynomial.legendre.Legendre.basis(n)
                 if par.thermal_wind_radial:
                     h += u[0,0]*sn1[:,None]*Pn(x) - (u[0,1]/r)*sn[:,None]*sth*Pn.deriv()(x)
@@ -809,9 +875,9 @@ def thermal_worker( l ):
     lp  = ut.ell( par.m, par.lmax, par.symm)[0]
     idx = list(lp).index(l)
 
-    f_s  = funcheb( tsol2[idx,:], r=rk, ricb=par.ricb, rcmb=ut.rcmb, n=1 )
-    hlm0 = f_s[:,0]  # s
-    hlm1 = f_s[:,1]  # ∂s/∂r
+    f_s  = radial( ttab, idx, 1, rk )  # NEW (2026-10-20): from the table
+    hlm0 = f_s[0]  # s
+    hlm1 = f_s[1]  # ∂s/∂r
 
     [ velq, _, _ ] = velocity(l)  # velq[0] is uᵣ
 
@@ -822,10 +888,9 @@ def thermal_worker( l ):
     if par.ThermaD > 0:
         Dthm_l = rad_quad( entropy_dissip(l, hlm0, hlm1), Ra, Rb, wk )
         # surface term [ r² κ p₀ s* ∂s/∂r ] from Ra to Rb
-        rb   = np.array([ Ra, Rb ])
-        f_sb = funcheb( tsol2[idx,:], r=rb, ricb=par.ricb, rcmb=ut.rcmb, n=1 )
-        kpsb = rap.prf.thermal_diffusivity(rb, 0) * rap.pressX(rb, 0)
-        sfc  = (4*np.pi/(2*l+1)) * rb**2 * kpsb * 2*np.real( np.conj(f_sb[:,0]) * f_sb[:,1] )
+        [ rb, kpsb, tbnd ] = tsfc  # NEW (2026-10-20): s, ∂s/∂r and κ p₀ at Ra, Rb, from set_solution
+        f_sb = radial( tbnd, idx, 1, rb )
+        sfc  = (4*np.pi/(2*l+1)) * rb**2 * kpsb * 2*np.real( np.conj(f_sb[0]) * f_sb[1] )
         Dthm_l += sfc[1] - sfc[0]
 
     # differential rotation: -2 Re ∫ p₀ s* [ i m G ΔΩ s + 𝐮⋅∇S_tw ] dV (diff_rot_setup)
@@ -847,8 +912,7 @@ def velocity( l ):
     lp  = ll[0]  # l's for poloidals
     lt  = ll[1]  # l's for toroidals
 
-    P = np.copy(usol2[0])
-    T = np.copy(usol2[1])
+    [ P, T ] = utab  # NEW (2026-10-20): tables of the radial functions (set_solution), not copies of usol2
 
     qlm0 = np.zeros_like(rk, dtype='complex128')
     slm0 = np.zeros_like(rk, dtype='complex128')
@@ -897,8 +961,7 @@ def coriolis( l ):
     lp  = ll[0]  # l's for poloidals
     lt  = ll[1]  # l's for toroidals
 
-    P = np.copy(usol2[0])
-    T = np.copy(usol2[1])
+    [ P, T ] = utab  # NEW (2026-10-20): tables of the radial functions (set_solution), not copies of usol2
 
     rad0 = np.zeros_like(rk, dtype='complex128') 
     con0 = np.zeros_like(rk, dtype='complex128')
@@ -988,8 +1051,7 @@ def visforce( l ):
     lp  = ll[0]  # l's for poloidals
     lt  = ll[1]  # l's for toroidals
 
-    P = np.copy(usol2[0])
-    T = np.copy(usol2[1])
+    [ P, T ] = utab  # NEW (2026-10-20): tables of the radial functions (set_solution), not copies of usol2
 
     L = l*(l+1.)
 
@@ -1102,10 +1164,11 @@ def buoyancy(l):
 
     if l in lp:
         idx   = list(lp).index(l)
-        f_pol = funcheb( tsol2[idx,:], r=rk, ricb=par.ricb, rcmb=ut.rcmb, n=2 )
-        out_rad0 = f_pol[:,0] * rap.graviX( rk, 0)
-        out_rad1 = f_pol[:,1] * rap.graviX( rk, 0) + f_pol[:,0] * rap.graviX( rk, 1)
-        out_rad2 = f_pol[:,2] * rap.graviX( rk, 0) + f_pol[:,1] * rap.graviX( rk, 1) + f_pol[:,1] * rap.graviX( rk, 1) + f_pol[:,0] * rap.graviX( rk, 2)
+        f_pol = radial( ttab, idx, 2, rk )  # NEW (2026-10-20): from the table, and g from set_solution
+        [ grv0, grv1, grv2 ] = grv
+        out_rad0 = f_pol[0] * grv0
+        out_rad1 = f_pol[1] * grv0 + f_pol[0] * grv1
+        out_rad2 = f_pol[2] * grv0 + f_pol[1] * grv1 + f_pol[1] * grv1 + f_pol[0] * grv2
         
     return [ [out_rad0*par.Beyonce, out_rad1*par.Beyonce, out_rad2*par.Beyonce],
              [out_con0*par.Beyonce, out_con1*par.Beyonce, out_con2*par.Beyonce],
@@ -1188,15 +1251,35 @@ def setup_grid(Ra, Rb):
 
 
 
+def set_solution(usol, tsol, ndp=5, ndt=4):
+    '''
+    NEW (2026-10-20): sets the solution usol2, tsol2 (as given by expand_reshape_sol) as module globals for the
+    workers, together with the tables of its radial functions at the current radii rk (cheb2space_table):
+    utab = [ poloidal up to the ndp-th r-derivative, toroidal up to the ndt-th ] (visforce needs 5 and 4,
+    velocity alone 3 and 2) and, with thermal = 1 and an entropy solution, ttab (up to the 2nd derivative),
+    g and its derivatives at rk (grv, for buoyancy) and s, ∂s/∂r and κ p₀ at the walls (tsfc, for thermal_worker).
+    Call it after rk is set (setup_grid, diagnose_4plot).
+    '''
+    global usol2, tsol2, utab, ttab, grv, tsfc
+    usol2 = usol
+    tsol2 = tsol
+    utab  = [ cheb2space_table(usol[0], ndp, rk), cheb2space_table(usol[1], ndt, rk) ]
+    if par.thermal and np.ndim(tsol) == 2:
+        ttab = cheb2space_table(tsol, 2, rk)
+        grv  = [ rap.graviX(rk, d) for d in (0,1,2) ]
+        rb   = np.array([ par.ricb, ut.rcmb ])
+        tsfc = [ rb, rap.prf.thermal_diffusivity(rb, 0) * rap.pressX(rb, 0), cheb2space_table(tsol, 1, rb) ]
+
+
+
 def kinetic_energy(usol, Ra, Rb, ls=None):
     '''
     Returns the kinetic energy ∫ ½ ρ 𝐮⋅𝐮 dV of the flow solution usol (as given by expand_reshape_sol),
     integrated from Ra to Rb, with the same integrand and quadrature as flow_worker (i.e. spin_doctor's KE).
     ls restricts the sum to some l values (default: all), so that the work can be split among MPI ranks.
     '''
-    global usol2
-    usol2 = usol
     setup_grid(Ra, Rb)
+    set_solution(usol, 0, 3, 2)  # NEW (2026-10-20): velocity reads the radial functions from tables
     if ls is None:
         ls = ut.ell(par.m, par.lmax, par.symm)[2]
     out = 0.0
@@ -1213,39 +1296,27 @@ def diagnose( usol, tsol, Ra, Rb, ncpus):
     '''
     Computes kinetic energy, internal and kinetic energy dissipation,
     and input power from body forces. Integrated From r=Ra to r=Rb, and
-    angularly over the whole sphere. Processed in parallel using ncpus.
+    angularly over the whole sphere.
+    NEW (2026-10-20): serial, as in the conductive_IC branch (2026-10-16). The radial functions of every l and
+    their derivatives are evaluated once per solution (set_solution, cheb2space_table) and the workers, run
+    one l after another, read them from these tables. Before, each l was a task for a pool of ncpus processes,
+    and each worker evaluated its radial functions with chebval (a Python loop over N) several times over
+    (velocity, coriolis with the neighbouring l's, visforce, buoyancy). ncpus is no longer used.
     '''
 
     out_t = 0
-    global usol2
-    usol2 = usol
-    global tsol2
-    tsol2 = tsol
-
 
     setup_grid(Ra, Rb)  # quadrature grid and background profiles, as module globals
+    set_solution(usol, tsol)  # the solution and the tables of its radial functions at rk, as module globals
     if par.diff_rot:
         diff_rot_setup()  # differential-rotation force and heat-equation terms, as module globals
 
     [ lp_u, lt_u, ll ] = ut.ell(par.m, par.lmax, par.symm)  # the l-indices of the flow field
-    
-    # process each l-component in parallel
-    pool = mp.Pool(processes=ncpus)
 
-
-    ppu = [ pool.apply_async( flow_worker,
-            args=( l, )) for l in ll ]
-    out_u = np.array([pp0.get() for pp0 in ppu])
-    
+    out_u = np.array([ flow_worker(l) for l in ll ])
 
     if par.thermal:
-        ppt = [ pool.apply_async( thermal_worker,
-                args=( l, )) for l in lp_u ]
-        out_t = np.array([pp0.get() for pp0 in ppt])
-
-
-    pool.close()
-    pool.join()
+        out_t = np.array([ thermal_worker(l) for l in lp_u ])
 
     return [ out_u, out_t ]
     
@@ -1253,16 +1324,12 @@ def diagnose( usol, tsol, Ra, Rb, ncpus):
 
 def diagnose_4plot( ncpus, usol, tsol, radii, field0):
     '''
-    
+    Returns the [rad,con,tor] components of the field field0 (see worker_4plot), one row per l, at the radii.
+    NEW (2026-10-20): serial, from tables of the radial functions at the radii (set_solution); ncpus is no longer used.
     '''
 
     global field
     field =  field0
-
-    global usol2
-    usol2 = usol
-    global tsol2
-    tsol2 = tsol
 
     global rk
     rk = radii
@@ -1299,16 +1366,11 @@ def diagnose_4plot( ncpus, usol, tsol, radii, field0):
     global vsc3
     vsc3 = rap.viscoX( rk, 3)
 
-    [ lp_u, lt_u, ll ] = ut.ell(par.m, par.lmax, par.symm)  # the l-indices of the flow field
-    
-    # process each l-component in parallel
-    pool = mp.Pool(processes=ncpus)
+    set_solution(usol, tsol)  # NEW (2026-10-20): the solution and the tables of its radial functions at the radii
 
-    ppu = [ pool.apply_async( worker_4plot, args=( l, )) for l in ll ]
-    out = np.array([pp0.get() for pp0 in ppu])
-    
-    pool.close()
-    pool.join()
+    [ lp_u, lt_u, ll ] = ut.ell(par.m, par.lmax, par.symm)  # the l-indices of the flow field
+
+    out = np.array([ worker_4plot(l) for l in ll ])
 
     return out
 

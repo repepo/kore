@@ -271,10 +271,11 @@ def Dcheb(ck, ricb, rcmb):
     returns the coefficients of the derivative in the Chebyshev basis
     assumes ck computed for r in the domain [ricb,rcmb] (if ricb>0)
     or r in [-rcmb,rcmb] if ricb=0.
+    If ck is 2D, each column is one expansion (used by utils4pp.cheb2space_table).
     '''
     c = np.copy(ck)
     c[0] = 2.*c[0]
-    s =  np.size(c)
+    s =  len(c)  # NEW (2026-10-20): len instead of np.size, so a 2D ck (one expansion per column) works too
     out = np.zeros_like(c)  #,dtype=np.complex128)
     out[-2] = 2.*(s-1.)*c[-1]
     for k in range(s-3,-1,-1):

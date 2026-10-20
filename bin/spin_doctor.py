@@ -304,7 +304,7 @@ def main(ncpus):
         # identify solutions
         [ ldom[i], lwidth[i], lconv[i] ] = upp.identify( u_sol2 )
 
-        # diagnose solutions, in parallel
+        # diagnose solutions (serially since 2026-10-20, see upp.diagnose)
         [ udgn, tdgn ] = upp.diagnose( u_sol2, t_sol2, par.ricb, ut.rcmb, int(ncpus) )
 
         if par.ViscosD>0:
