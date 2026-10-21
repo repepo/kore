@@ -18,9 +18,9 @@ with poloidal scalar $f$ and toroidal scalar $g$, and $F = r f$, $G = r g$. Prim
 | ICB | `innercore = 'insulator'` | Electrically insulating inner core (default). | none |
 | ICB | `innercore = 'conducting, Chebys'` | Solid inner core with its own conductivity and permeability; the induction equation is solved inside it. For eigenvalue problems. | `sigma_i2o`, `mu_i2o`, `N_cic`, `lmax_cic` |
 | ICB | `innercore = 'conducting, Bessel'` | The same, with an analytical solution inside the inner core. For forced problems only. | `sigma_i2o`, `mu_i2o` |
-| ICB | `innercore = 'TWA'` | Thin conducting layer on top of an insulating inner core. | `c_icb`, `c1_icb` |
+| ICB | `innercore = 'TWA'` | Thin conducting layer on top of an insulating inner core. | `c_icb`, `c1_icb`, `muw_icb` |
 | CMB | `mantle = 'insulator'` | Electrically insulating mantle (default). | none |
-| CMB | `mantle = 'TWA'` | Thin conducting layer at the base of an insulating mantle. | `c_cmb`, `c1_cmb`, `B0_cmb` |
+| CMB | `mantle = 'TWA'` | Thin conducting layer at the base of an insulating mantle. | `c_cmb`, `c1_cmb`, `muw_cmb`, `B0_cmb` |
 
 Material properties are given relative to the fluid:
 
@@ -29,6 +29,7 @@ Material properties are given relative to the fluid:
 | `sigma_i2o` | 1 | Electrical conductivity of the inner core / fluid. |
 | `mu_i2o` | 1 | Magnetic permeability of the inner core / fluid. |
 | `mu` | 1 | Magnetic permeability of the fluid / vacuum. It enters the thin-wall conditions. |
+| `muw_cmb`, `muw_icb` | 1 | Magnetic permeability of a thin wall / vacuum (see [Thin conducting wall](#thin-conducting-wall)). |
 
 The background field has to be compatible with the boundaries as well. That is handled by `B0_ic` and `B0_cmb`, see [Background magnetic field](background-field.md#the-field-inside-the-inner-core-b0_ic).
 
@@ -88,17 +89,21 @@ $$
 c = \frac{h\,\mu_w}{r_j\,\mu_f}, \qquad c_1 = \frac{h\,\sigma_w}{r_j\,\sigma_f},
 $$
 
-where $r_j$ is the boundary radius and $\mu_f$, $\sigma_f$ are the fluid's values. $c_1$ is the wall-to-fluid conductance ratio and sets the eddy currents in the wall; $c$ is a magnetic-permeability term. Both are free parameters (`c_cmb`, `c1_cmb` at the CMB and `c_icb`, `c1_icb` at the ICB). The conditions, which follow Guervilly, Wood & Brummell (2013, appendix A), are
+where $r_j$ is the boundary radius and $\mu_f$, $\sigma_f$ are the fluid's values. $c_1$ is the wall-to-fluid conductance ratio and sets the eddy currents in the wall; $c$ is a magnetic-permeability term. Both are free parameters (`c_cmb`, `c1_cmb` at the CMB and `c_icb`, `c1_icb` at the ICB). A third parameter, the wall's permeability relative to vacuum, $p = \mu_w/\mu_0$ (`muw_cmb`, `muw_icb`, default 1), fixes the wall's thickness, $h/r_j = c\,\mu/p$. The conditions are
 
 $$
-\text{CMB:}\quad \left(\frac{1}{\mu} + l\,c\right) F' + \frac{l}{r}\, F + \frac{c_1}{\mu}\, r\, \mathcal{D}_l F = 0, \qquad G + c_1\, r\, G' = 0,
+\text{CMB:}\quad \left(\frac{1}{\mu} + l\,c\right) F' + \frac{l}{r}\, F + \frac{c_1}{\mu}\, r\, \mathcal{D}_l F + \frac{c\,\mu\,l}{p\,r}\left(\frac{l+1}{p} - 1\right) F = 0, \qquad G + c_1\, r\, G' = 0,
 $$
 
 $$
-\text{ICB:}\quad \left(\frac{1}{\mu} + (l+1)\,c\right) F' - \frac{l+1}{r}\, F - \frac{c_1}{\mu}\, r\, \mathcal{D}_l F = 0, \qquad G - c_1\, r\, G' = 0,
+\text{ICB:}\quad \left(\frac{1}{\mu} + (l+1)\,c\right) F' - \frac{l+1}{r}\, F - \frac{c_1}{\mu}\, r\, \mathcal{D}_l F - \frac{c\,\mu\,(l+1)}{p\,r}\left(\frac{l}{p} + 1\right) F = 0, \qquad G - c_1\, r\, G' = 0,
 $$
 
 with $\mathcal{D}_l F = F'' - l(l+1)F/r^2 = r\,\nabla_l^2 f$. With $c = c_1 = 0$ and $\mu = 1$ they reduce to the insulating conditions. They were checked against the exact free-decay rates of a sphere and a shell bounded by thin walls, to $10^{-14}$.
+
+The last term of each poloidal condition is first order in $h$. It comes from the curvature of the wall, from matching the potential field at $r_j \pm h$ instead of $r_j$, and from the $l(l+1)/r^2$ part of $\nabla_l^2$ inside the wall. Guervilly, Wood & Brummell (2013, appendix A) take the limit $h \to 0$ with $h\mu_w$ and $h\sigma_w$ fixed, which needs $\mu_w \gg \mu_0$ for $c$ to stay finite. Their conditions are the ones above without this term, recovered with `muw_cmb = np.inf` (or `muw_icb`); for $p \gg 1$ the term is a correction of relative size about $1/(p\,l)$ to the $c$ term. For a wall with the permeability of vacuum ($p = 1$, the default, as at the Earth's CMB) the term cancels the $c$ term at leading order: a static field crosses such a wall unchanged, and only its conductance $c_1$ acts. With $c_1 = 0$ and $p = \mu = 1$ the wall conditions are then exactly the insulating ones, which the former conditions missed by $O(l\,c)$. Against an exact conducting layer (the layer's induction equation integrated across the wall, CMB and ICB, $p$ = 1 to 100, steady and oscillating fields), the conditions with the term are off by $O(h)$ relative to the wall's own effect; without it the error is $O(1)$ for small $p$ (8% at $l = 5$ at the ICB for $p = 1$).
+
+The thin-wall approximation itself needs the wall to be much thinner than its magnetic skin depth, $h \ll \delta_w = \sqrt{2\eta_w/\omega}$: the error on the wall's contribution to an eigenvalue grows as $(h/\delta_w)^2$.
 
 The term $\mathcal{D}_l F$ stands for the wall's $\partial_t F/\eta$, taken from the fluid next to it. That substitution needs the wall to move with the fluid, so a wall with $c_1 \neq 0$ needs a no-slip boundary and `Ek > 0`; `assemble.py` prints a warning otherwise. With a wall at the CMB, keep `B0_cmb = 'wall'` (the default) so that the background field satisfies the wall condition too (see [Background magnetic field](background-field.md#a-thin-conducting-wall-at-the-cmb-b0_cmb)).
 

@@ -891,7 +891,7 @@ def main():
             # ----------------------------------------------------------------------------------------------------------
             if par.ricb > 0 :
                 if par.innercore == 'TWA' :
-                    bc_b_list_inner = bc_b_thinlayer(l, 'nocurl', 1/par.mu, par.c_icb, par.c1_icb, 'icb')
+                    bc_b_list_inner = bc_b_thinlayer(l, 'nocurl', 1/par.mu, par.c_icb, par.c1_icb, 'icb', par.muw_icb)
                 elif par.innercore == 'insulator':
                     bc_b_list_inner = bc_b_icb( l, 'nocurl', par.innercore, rank, bpp, k)
                 elif par.innercore == 'conducting, Bessel':
@@ -900,7 +900,7 @@ def main():
                     bc_b_list_inner = bc_b_cic( l, 'section_f')
 
             if par.mantle == 'TWA':
-                bc_b_list_outer = bc_b_thinlayer(l, 'nocurl', 1/par.mu, par.c_cmb, par.c1_cmb, 'cmb')
+                bc_b_list_outer = bc_b_thinlayer(l, 'nocurl', 1/par.mu, par.c_cmb, par.c1_cmb, 'cmb', par.muw_cmb)
             else:
                 bc_b_list_outer = bc_b_cmb( l, 'section_f', par.innercore )
 
@@ -986,7 +986,7 @@ def main():
             # ----------------------------------------------------------------------------------------------------------
             if par.ricb > 0 :
                 if par.innercore == 'TWA' :
-                    bc_b_list_inner = bc_b_thinlayer(l, '1curl', 1/par.mu, par.c_icb, par.c1_icb, 'icb')
+                    bc_b_list_inner = bc_b_thinlayer(l, '1curl', 1/par.mu, par.c_icb, par.c1_icb, 'icb', par.muw_icb)
                 elif par.innercore == 'insulator':
                     bc_b_list_inner = bc_b_icb( l, '1curl', par.innercore, rank, bpp, k)
                 elif par.innercore == 'conducting, Bessel':
@@ -995,7 +995,7 @@ def main():
                     bc_b_list_inner = bc_b_cic( l, 'section_g')
 
             if par.mantle == 'TWA':
-                bc_b_list_outer = bc_b_thinlayer(l, '1curl', 1/par.mu, par.c_cmb, par.c1_cmb, 'cmb')
+                bc_b_list_outer = bc_b_thinlayer(l, '1curl', 1/par.mu, par.c_cmb, par.c1_cmb, 'cmb', par.muw_cmb)
             else:
                 bc_b_list_outer = bc_b_cmb( l, 'section_g', par.innercore )
 
@@ -1476,16 +1476,26 @@ def bc_xi_spherical(l):
 
 
 
-def bc_b_thinlayer(l, loc, mu_vf, c, c1, boundary):
+def bc_b_thinlayer(l, loc, mu_vf, c, c1, boundary, p=1.0):
     '''
     Thin wall approximation boundary condition, following Roberts, Glatzmaier & Clune, GAFD 2010
     Assumes a thin electrically conducting layer at the top of the IC or at the bottom of the mantle.
     NEW (2026-10-07): checked against Guervilly, Wood & Brummell (2013, arXiv:1307.3873), appendix A, eqs. (44)-(48),
-    with F = r*f (prop. to r^2 B_r), G = r*g (prop. to r^2 J_r), c = h*mu_w/(rj*mu_f), c1 = h*sigma_w/(rj*sigma_f):
-        CMB:  (1/mu + l*c)*F' + (l/r)*F + (1/mu)*c1*r*lapF = 0,              G + c1*r*G' = 0
-        ICB:  (1/mu + (l+1)*c)*F' - ((l+1)/r)*F - (1/mu)*c1*r*lapF = 0,      G - c1*r*G' = 0
+    with F = r*f (prop. to r^2 B_r), G = r*g (prop. to r^2 J_r), c = h*mu_w/(rj*mu_f), c1 = h*sigma_w/(rj*sigma_f),
+    p = mu_w/mu0 (FIX 2026-10-21, see below):
+        CMB:  (1/mu + l*c)*F' + (l/r)*F + (1/mu)*c1*r*lapF + (c*mu*l/(p*r))*((l+1)/p - 1)*F = 0,        G + c1*r*G' = 0
+        ICB:  (1/mu + (l+1)*c)*F' - ((l+1)/r)*F - (1/mu)*c1*r*lapF - (c*mu*(l+1)/(p*r))*(l/p + 1)*F = 0,  G - c1*r*G' = 0
     where lapF = F'' - l(l+1)*F/r**2 stands for dF/dt/eta (the wall's eddy currents). That substitution needs the wall to
     move with the fluid next to it, i.e. a no-slip boundary (bco = 1 or bci = 1, Ek > 0).
+    FIX (2026-10-21): the last term of the poloidal conditions. Guervilly et al. take h -> 0 with h*mu_w and h*sigma_w
+    fixed, which needs mu_w >> mu0 for c to stay finite, and drop the O(h) terms from the wall's curvature, from matching
+    the potential field at rj + h (rj - h) instead of rj, and from the l(l+1)/r^2 part of lap_l F in the wall. With the
+    wall thickness h/rj = c*mu/p these terms are the ones above: they vanish as p -> inf (their condition, p = np.inf),
+    and for p = 1 they cancel the c*F' term at leading order (a wall with the permeability of the region beyond it has
+    no static effect: the potential field crosses it unchanged). Checked against an exact conducting layer (layer
+    equation integrated across the wall, CMB and ICB, p = 1 to 100, mu = 1 to 3, steady and time-dependent): error O(h)
+    relative to the wall's own effect, against O(1) for small p with the term left out (e.g. 8% at l = 5, ICB, p = 1).
+    The toroidal condition does not depend on p.
     '''
 
     out = ss.dok_matrix((1, ut.N1),dtype=complex)
@@ -1544,7 +1554,14 @@ def bc_b_thinlayer(l, loc, mu_vf, c, c1, boundary):
         # FIX (2026-10-07): the c1 term had the coefficient (mu_vf + 0.5*epsj*kj*c). The extra 0.5*kj*c*c1 term is
         # Roberts et al.'s O(h^2/delta^2) term, kept in one Taylor series but not the other; Guervilly et al. (2013),
         # below eq. (45), call it spurious. It is dropped here.
-        out[0,:] = mu_vf*F1 + (kj/rj)*F + epsj*kj*c*F1 + epsj*c1*rj*mu_vf*nabF
+        row = mu_vf*F1 + (kj/rj)*F + epsj*kj*c*F1 + epsj*c1*rj*mu_vf*nabF
+        # FIX (2026-10-21): O(h) terms of a wall with permeability p = mu_w/mu0 and thickness h/rj = c*mu/p (docstring)
+        if c != 0 and not np.isinf(p):
+            if boundary == 'cmb':
+                row = row + (c/(mu_vf*p*rj))*l*((l+1)/p - 1)*F
+            else:
+                row = row - (c/(mu_vf*p*rj))*(l+1)*(l/p + 1)*F
+        out[0,:] = row
 
         if ut.symmB0 == -1:
             row0 = 2*par.hydro*ut.n + int( ut.N1 * ( l - ut.m_bot)/2 )    # starting row

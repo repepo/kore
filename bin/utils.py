@@ -356,10 +356,12 @@ def B0_alpha_cmb(kind, l, ricb):
     B0_cmb = 'wall' and c_cmb != 0 (or mu != 1). A steady B0 drives no current in the wall: its currents are
     azimuthal, and the azimuthal E on the CMB is set by dB_r/dt = 0 (Faraday on a polar cap). So the c1_cmb term of
     the thin-wall condition (the wall's eddy current) drops, and B0 has to satisfy
-        (1/mu + l*c_cmb)*(r*h)' + l*h = 0   at the CMB,
+        (1/mu + l*c_cmb)*(r*h)' + (l + e)*h = 0   at the CMB,   e = c_cmb*mu*l*((l+1)/p - 1)/p,  p = muw_cmb,
     i.e. the condition bc_b_thinlayer imposes on b, with c1_cmb = 0. The full-sphere fields, the FDMs and 'dipole'
-    satisfy it only for c_cmb = 0 and mu = 1. The added term carries no current, and r**l keeps r*h' - l*h = 0 at
-    the ICB, so the currents in the fluid and the B0_ic matching are unchanged.
+    satisfy it only for mu = 1 and c_cmb = 0 or p = 1. The added term carries no current, and r**l keeps
+    r*h' - l*h = 0 at the ICB, so the currents in the fluid and the B0_ic matching are unchanged.
+    FIX (2026-10-21): the e term, from the wall permeability p (see bc_b_thinlayer); e = 0 for p = np.inf, the earlier
+    condition. For p = 1 and mu = 1 the condition is the insulating one and alpha = 0.
     '''
     if (par.mantle == 'TWA') and (B0_cmb == 'wall') and (kind in B0_cmb_list) and ((par.c_cmb != 0) or (par.mu != 1)):
         r  = np.array([float(rcmb)])
@@ -367,7 +369,9 @@ def B0_alpha_cmb(kind, l, ricb):
         h  = h0(r, kind, a, cmb_pot=False)[0]
         dh = h1(r, kind, a, cmb_pot=False)[0]
         k  = 1/par.mu + l*par.c_cmb
-        return -( k*(h + rcmb*dh) + l*h ) / ( rcmb**l * ( k*(l+1) + l ) )
+        p  = par.muw_cmb
+        e  = 0.0 if np.isinf(p) else par.c_cmb*par.mu*l*((l+1)/p - 1)/p  # FIX (2026-10-21)
+        return -( k*(h + rcmb*dh) + (l + e)*h ) / ( rcmb**l * ( k*(l+1) + l + e ) )
     else:
         return 0
 

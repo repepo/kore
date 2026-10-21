@@ -1268,10 +1268,12 @@ def em_budget(bsol2, bic=None):
       Ohm_ic : eta_i * int |curl b|^2 over a conducting inner core, eta_i = 1/(mu_i2o*sigma_i2o)
       E_w    : magnetic energy stored in thin walls (innercore and/or mantle = 'TWA'): (c*r/2) int |b_t|^2 dS over
                the poloidal field's b_t, the energy that goes with the c term of the wall condition (the toroidal
-               condition has no c term, so the model stores no toroidal energy in the wall)
+               condition has no c term, so the model stores no toroidal energy in the wall), plus (FIX 2026-10-21)
+               (h/(2p)) int |b_r|^2 dS, h = c*r/p the wall thickness, p = mu_w/mu0 (muw_cmb, muw_icb; 0 for np.inf)
       Ohm_w  : Ohmic loss of the thin-wall currents, int |K|^2 dS/(c1*r), K the jump of b_t across the wall:
                |g|^2/c1 (toroidal) and c1*|r lap_l f|^2 (poloidal, from the wall conditions)
-      ME_ext : energy of the potential field outside the CMB (insulating mantle, or outside a thin wall)
+      ME_ext : energy of the potential field outside the CMB (insulating mantle, or outside a thin wall, i.e. beyond
+               r + h, FIX 2026-10-21; likewise ME_ic below r - h for a thin wall on an insulating inner core)
     The wall's b_r jump (c term) and current (c1 term) follow from the thin-wall conditions of bc_b_thinlayer,
     so the boundary terms need no derivatives beyond the second. Assumes mu = 1 (fluid permeability) with walls.
     For ricb = 0 the inner-core terms are zero.
@@ -1305,16 +1307,24 @@ def em_budget(bsol2, bic=None):
     r = r_o
     F, F1 = r*f, f + r*f1
     DF = 2*f1 + r*f2 - Lp*f/r            # r*lap_l(f) = F'' - L F/r^2
+    hw = 0.0                               # wall thickness
     if par.mantle == 'TWA':
         c, c1 = par.c_cmb, par.c1_cmb
-        Fout = -(r*F1 + c1*r**2*DF)/lp     # field beyond the wall, from the wall condition
+        p = par.muw_cmb
+        if np.isinf(p):
+            Fout = -(r*F1 + c1*r**2*DF)/lp     # field beyond the wall, from the wall condition
+        else:
+            # FIX (2026-10-21): the field at r + h, F + h*F'_wall = F + c*r*F' (the substitution above holds only for p = inf)
+            hw = c*r/p
+            Fout = F + c*r*F1
+            E_w += np.sum( (hw/p)*f0p*Lp**2*np.abs(f)**2 )   # radial field in the wall
         s = F1/r                           # tangential poloidal field on the fluid side
         E_w += np.sum( c*r**3*f0p*Lp*np.abs(s)**2 )
         if c1 > 0:
             Ohm_w += np.sum( 2*f0p*r*Lp*c1*np.abs(DF)**2 ) + np.sum( 2*f0t*r*Lt*np.abs(g)**2/c1 )
     else:
         Fout = F
-    ME_ext = np.sum( f0p*Lp*lp*np.abs(Fout/r)**2 )   # potential field r^-(l+1) outside r = rcmb = 1
+    ME_ext = np.sum( f0p*Lp*lp*np.abs(Fout/r)**2 ) * r/(r + hw)   # potential field r^-(l+1) beyond r + h (rcmb = 1)
 
     # ------------------------------------------------------------------------------------------------ ICB side
     if r_i > 0:
@@ -1323,16 +1333,23 @@ def em_budget(bsol2, bic=None):
             f, f1, f2 = bvals(bsol2[0], 2, -1.0); g = bvals(bsol2[1], 0, -1.0)[0]
             F, F1 = r*f, f + r*f1
             DF = 2*f1 + r*f2 - Lp*f/r
+            hw = 0.0
             if par.innercore == 'TWA':
                 c, c1 = par.c_icb, par.c1_icb
-                Fin = (r*F1 - c1*r**2*DF)/(lp+1)  # field below the wall, from the wall condition
+                p = par.muw_icb
+                if np.isinf(p):
+                    Fin = (r*F1 - c1*r**2*DF)/(lp+1)  # field below the wall, from the wall condition
+                else:
+                    hw = c*r/p                        # FIX (2026-10-21), as at the CMB
+                    Fin = F - c*r*F1
+                    E_w += np.sum( (hw/p)*f0p*Lp**2*np.abs(f)**2 )
                 s = F1/r
                 E_w += np.sum( c*r**3*f0p*Lp*np.abs(s)**2 )
                 if c1 > 0:
                     Ohm_w += np.sum( 2*f0p*r*Lp*c1*np.abs(DF)**2 ) + np.sum( 2*f0t*r*Lt*np.abs(g)**2/c1 )
             else:
                 Fin = F
-            ME_ic = np.sum( f0p*Lp*(lp+1)*r*np.abs(Fin/r)**2 )   # potential field r^l inside r = ricb
+            ME_ic = np.sum( f0p*Lp*(lp+1)*r*np.abs(Fin/r)**2 ) * r/(r - hw)   # potential field r^l below r - h
 
         elif par.innercore == 'conducting, Chebys' and bic is not None:
             # the inner-core field: Chebyshev series in x = r/ricb on [-1, 1], one parity per l

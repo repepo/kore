@@ -1,6 +1,27 @@
 CHANGELOG - Kore, conductive_IC branch
 ======================================
 
+2026-10-21
+----------
+Thin walls: wall permeability muw_cmb, muw_icb = mu_w/mu0 (default 1) and the O(h) terms that go with it
+(bin/assemble.py, bin/utils.py, bin/utils4pp.py, bin/params_default.py, docs)
+- The poloidal thin-wall conditions (Guervilly, Wood & Brummell 2013, app. A) are the limit h -> 0 with h*mu_w
+  and h*sigma_w fixed, which needs mu_w >> mu0. At finite h they drop O(h) terms from the wall's curvature, from
+  matching the potential field at r +- h, and from the l(l+1)/r^2 part of lap_l in the wall, terms of the same
+  order as the c term when mu_w ~ mu0. With p = mu_w/mu0 and h/r = c*mu/p, bc_b_thinlayer now adds
+  + (c*mu*l/(p*r))*((l+1)/p - 1)*F (CMB) and - (c*mu*(l+1)/(p*r))*(l/p + 1)*F (ICB). For p = 1 they cancel the
+  c term at leading order (a static field crosses a wall with the permeability of vacuum unchanged), for p = inf
+  they vanish (the former conditions, bitwise identical matrices). The toroidal conditions are unchanged.
+- Checked against an exact conducting layer (layer equation integrated across the wall; CMB and ICB; p = 1 to
+  100, mu = 1 to 3, steady and oscillating fields): error O(h) relative to the wall's own effect, against O(1)
+  for small p without the terms (e.g. 8% at l = 5, ICB, p = 1). With c1 = 0 and p = mu = 1 a wall now gives the
+  insulating eigenvalues to 1e-14 (Ek = 1e-5, c = 1e-2; 1e-3 to 1e-2 off before).
+- B0_cmb = 'wall': the steady condition gets the same term; for p = 1 and mu = 1 it is the insulating condition
+  and B0 is unchanged.
+- em_budget (resid E): wall energy includes the radial field, (h/p) int |b_r|^2, and the potential field is
+  matched at r + h (r - h at the ICB); resid E closes to O(c*c1) as before (4e-6 at c = c1 = 1e-3, Ek = 1e-5).
+- Changes results of existing TWA runs with c != 0 by O(l*c) unless muw_cmb = np.inf is set.
+
 
 2026-10-18
 ----------

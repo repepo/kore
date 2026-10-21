@@ -69,15 +69,17 @@ With an inner core, `'mag_energy'` normalises over the shell, so the field comes
 
 ## A thin conducting wall at the CMB: `B0_cmb`
 
-With a thin conducting layer at the base of the mantle (`mantle = 'TWA'`, see [Inner core and mantle](boundaries.md#thin-conducting-wall)), the background field must satisfy the wall's matching condition too. A steady $\mathbf{B}_0$ drives no current in the wall, so only the wall's permeability term `c_cmb` acts on it, not its conductance `c1_cmb`. The condition at the CMB is
+With a thin conducting layer at the base of the mantle (`mantle = 'TWA'`, see [Inner core and mantle](boundaries.md#thin-conducting-wall)), the background field must satisfy the wall's matching condition too. A steady $\mathbf{B}_0$ drives no current in the wall, so only the wall's permeability terms act on it, not its conductance `c1_cmb`. The condition at the CMB is
 
 $$
-\left(\frac{1}{\mu} + l\,c_{cmb}\right) (r h)' + l\,h = 0 .
+\left(\frac{1}{\mu} + l\,c_{cmb}\right) (r h)' + (l + e)\,h = 0, \qquad e = \frac{c_{cmb}\,\mu\,l}{p}\left(\frac{l+1}{p} - 1\right),
 $$
+
+with $p$ = `muw_cmb`. For $p = 1$ (the default) and $\mu = 1$ it is the insulating condition, so `B0_cmb` changes nothing: a static field crosses a wall with the permeability of vacuum unchanged.
 
 | `B0_cmb` | Effect |
 |---|---|
 | `'wall'` (default) | Adds $\alpha\, r^l$ to $h$, with $\alpha$ chosen to satisfy the condition. The added term carries no current and keeps the ICB matching of `B0_ic`, so the currents in the fluid are unchanged. For $l = 1$ it is a uniform axial field. |
-| `'plain'` | $h$ unchanged. The field then meets the wall condition only for `c_cmb = 0` and `mu = 1`. |
+| `'plain'` | $h$ unchanged. The field then meets the wall condition only for `mu = 1` and `c_cmb = 0` or `muw_cmb = 1`. |
 
-`B0_cmb` has no effect with an insulating mantle, with `c_cmb = 0` and `mu = 1`, or for `'axial'`. For the S2 torsional mode with `c1_cmb = 0.015` it raises the frequency by 0.27% at `c_cmb = 0.01` and by 5.8% at `c_cmb = 0.3`.
+`B0_cmb` has no effect with an insulating mantle, with `mu = 1` and `c_cmb = 0` or `muw_cmb = 1`, or for `'axial'`. With the former condition (`muw_cmb = np.inf`, a highly permeable wall), for the S2 torsional mode with `c1_cmb = 0.015` it raises the frequency by 0.27% at `c_cmb = 0.01` and by 5.8% at `c_cmb = 0.3`.

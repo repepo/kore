@@ -130,22 +130,31 @@ class default_params():
         # A perfectly conducting inner core is not available (its code was removed 2026-10-18, pending a rewrite).
         self.c_icb  = 0  # Ratio (h*mu_wall)/(ricb*mu_fluid) (if innercore='TWA')
         self.c1_icb = 0  # Thin wall to fluid conductance ratio (if innercore='TWA')
+        self.muw_icb = 1.0  # NEW (2026-10-21): wall permeability / vacuum permeability (if innercore='TWA'), see muw_cmb
 
         # Magnetic boundary conditions at the CMB
         self.mantle = 'insulator'
         # self.mantle = 'TWA'  # Thin conductive wall layer (Roberts, Glatzmaier & Clune, 2010)
         self.c_cmb  = 1e-5  # Ratio (h*mu_wall)/(rcmb*mu_fluid)  (if mantle='TWA')
         self.c1_cmb = 1e-5  # Thin wall to fluid conductance ratio (if mantle='TWA')
+        # NEW (2026-10-21): wall permeability / vacuum permeability, p = mu_w/mu0 (if mantle='TWA'). With c it sets the
+        # wall thickness, h/rcmb = c_cmb*mu/p, and the O(h) terms of the poloidal wall condition that come with it
+        # (assemble.bc_b_thinlayer). p = 1 (default): a non-magnetic wall, as at the Earth's CMB, where these terms cancel
+        # the c term to leading order and only the conductance c1 acts. np.inf: the earlier condition (Roberts et al.
+        # 2010, Guervilly et al. 2013: h -> 0 with h*mu_w fixed), right for mu_w >> mu0.
+        self.muw_cmb = 1.0
 
         # B0_cmb sets how the background field meets a thin conducting wall at the CMB (mantle = 'TWA').
         # A steady B0 drives no current in the wall: its currents are azimuthal, and the azimuthal electric field on the CMB
         # is set by dB_r/dt, which is zero. So c1_cmb (the wall's eddy currents) does not act on B0, but c_cmb does: B0 has
-        # to satisfy (1/mu + l*c_cmb)*(r*h)' + l*h = 0 at the CMB, the thin-wall condition on b with c1_cmb = 0.
+        # to satisfy (1/mu + l*c_cmb)*(r*h)' + (l + e)*h = 0 at the CMB, the thin-wall condition on b with c1_cmb = 0
+        # (e = c_cmb*mu*l*((l+1)/p - 1)/p, p = muw_cmb; FIX 2026-10-21). For p = 1 and mu = 1 that is the insulating
+        # condition, so B0 is unchanged.
         #   'wall'  (default): utils.B0_alpha_cmb adds alpha*r**l to the poloidal scalar h,
         #           with alpha set by that condition. The added term carries no current and keeps the ICB matching of
-        #           B0_ic, so the currents in the fluid stay the same. No effect if c_cmb = 0 and mu = 1, where every field
+        #           B0_ic, so the currents in the fluid stay the same. No effect if mu = 1 and c_cmb = 0 or muw_cmb = 1, where every field
         #           already matches, nor for an insulating mantle or 'axial' (imposed from outside the core).
-        #   'plain' : h unchanged. B0 then meets the wall condition only for c_cmb = 0 (and mu = 1).
+        #   'plain' : h unchanged. B0 then meets the wall condition only for mu = 1 and c_cmb = 0 or muw_cmb = 1.
         self.B0_cmb = 'wall'
         # self.B0_cmb = 'plain'
 
