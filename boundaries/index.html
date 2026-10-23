@@ -1,0 +1,1416 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../background-field/">
+      
+      
+        <link rel="next" href="../rotdyn/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Inner core and mantle - Kore User Manual</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#inner-core-and-mantle" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Kore User Manual" class="md-header__button md-logo" aria-label="Kore User Manual" data-md-component="logo">
+      
+  <img src="../assets/test1.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Kore User Manual
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Inner core and mantle
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/repepo/kore" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    repepo/kore
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../installation/" class="md-tabs__link">
+          
+  
+  
+  Getting started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../setup/" class="md-tabs__link">
+          
+  
+  
+  User guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../equations/" class="md-tabs__link">
+          
+  
+  
+  Theory
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../examples/" class="md-tabs__link">
+          
+  
+  
+  Examples
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Kore User Manual" class="md-nav__button md-logo" aria-label="Kore User Manual" data-md-component="logo">
+      
+  <img src="../assets/test1.png" alt="logo">
+
+    </a>
+    Kore User Manual
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/repepo/kore" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    repepo/kore
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setting up a problem
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../background-field/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background magnetic field
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Inner core and mantle
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Inner core and mantle
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The options
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#insulating-boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Insulating boundaries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conducting-inner-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conducting inner core
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#perfectly-conducting-inner-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Perfectly conducting inner core
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#thin-conducting-wall" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Thin conducting wall
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#electromagnetic-torques" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Electromagnetic torques
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#thin-wall-or-conducting-inner-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Thin wall or conducting inner core?
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rotdyn/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rotational dynamics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bgflow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../solver/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Solver settings
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Output and postprocessing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Theory
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Theory
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Equations and scaling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../method/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical method
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples and tests
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The options
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#insulating-boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Insulating boundaries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conducting-inner-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conducting inner core
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#perfectly-conducting-inner-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Perfectly conducting inner core
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#thin-conducting-wall" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Thin conducting wall
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#electromagnetic-torques" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Electromagnetic torques
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#thin-wall-or-conducting-inner-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Thin wall or conducting inner core?
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="inner-core-and-mantle">Inner core and mantle</h1>
+<p>The magnetic boundary conditions describe what lies on the other side of the fluid's boundaries: an electrical insulator, a conductor, or a thin conducting layer. They are set with <code>innercore</code> at the inner core boundary (ICB) and <code>mantle</code> at the core-mantle boundary (CMB). They only matter with <code>magnetic = 1</code>, and <code>innercore</code> only with an inner core (<code>ricb &gt; 0</code>).</p>
+<p>On this page the magnetic field perturbation is written, for each spherical harmonic <span class="arithmatex">\(Y_l^m\)</span>, as</p>
+<div class="arithmatex">\[
+\mathbf{b} = \nabla\times\nabla\times\left( f(r)\, Y_l^m\, \mathbf{r} \right) + \nabla\times\left( g(r)\, Y_l^m\, \mathbf{r} \right),
+\]</div>
+<p>with poloidal scalar <span class="arithmatex">\(f\)</span> and toroidal scalar <span class="arithmatex">\(g\)</span>, and <span class="arithmatex">\(F = r f\)</span>, <span class="arithmatex">\(G = r g\)</span>. Primes are radial derivatives, <span class="arithmatex">\(r_i\)</span> is the ICB radius <code>ricb</code>, and the CMB radius is 1.</p>
+<h2 id="the-options">The options</h2>
+<table>
+<thead>
+<tr>
+<th>Boundary</th>
+<th>Setting</th>
+<th>What it models</th>
+<th>Parameters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ICB</td>
+<td><code>innercore = 'insulator'</code></td>
+<td>Electrically insulating inner core (default).</td>
+<td>none</td>
+</tr>
+<tr>
+<td>ICB</td>
+<td><code>innercore = 'conducting, Chebys'</code></td>
+<td>Solid inner core with its own conductivity and permeability; the induction equation is solved inside it. For eigenvalue problems.</td>
+<td><code>sigma_i2o</code>, <code>mu_i2o</code>, <code>N_cic</code>, <code>lmax_cic</code></td>
+</tr>
+<tr>
+<td>ICB</td>
+<td><code>innercore = 'conducting, Bessel'</code></td>
+<td>The same, with an analytical solution inside the inner core. For forced problems only.</td>
+<td><code>sigma_i2o</code>, <code>mu_i2o</code></td>
+</tr>
+<tr>
+<td>ICB</td>
+<td><code>innercore = 'TWA'</code></td>
+<td>Thin conducting layer on top of an insulating inner core.</td>
+<td><code>c_icb</code>, <code>c1_icb</code>, <code>muw_icb</code></td>
+</tr>
+<tr>
+<td>CMB</td>
+<td><code>mantle = 'insulator'</code></td>
+<td>Electrically insulating mantle (default).</td>
+<td>none</td>
+</tr>
+<tr>
+<td>CMB</td>
+<td><code>mantle = 'TWA'</code></td>
+<td>Thin conducting layer at the base of an insulating mantle.</td>
+<td><code>c_cmb</code>, <code>c1_cmb</code>, <code>muw_cmb</code>, <code>B0_cmb</code></td>
+</tr>
+</tbody>
+</table>
+<p>Material properties are given relative to the fluid:</p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sigma_i2o</code></td>
+<td>1</td>
+<td>Electrical conductivity of the inner core / fluid.</td>
+</tr>
+<tr>
+<td><code>mu_i2o</code></td>
+<td>1</td>
+<td>Magnetic permeability of the inner core / fluid.</td>
+</tr>
+<tr>
+<td><code>mu</code></td>
+<td>1</td>
+<td>Magnetic permeability of the fluid / vacuum. It enters the thin-wall conditions.</td>
+</tr>
+<tr>
+<td><code>muw_cmb</code>, <code>muw_icb</code></td>
+<td>1</td>
+<td>Magnetic permeability of a thin wall / vacuum (see <a href="#thin-conducting-wall">Thin conducting wall</a>).</td>
+</tr>
+</tbody>
+</table>
+<p>The background field has to be compatible with the boundaries as well. That is handled by <code>B0_ic</code> and <code>B0_cmb</code>, see <a href="../background-field/#the-field-inside-the-inner-core-b0_ic">Background magnetic field</a>.</p>
+<h2 id="insulating-boundaries">Insulating boundaries</h2>
+<p>Outside an insulator the field is a potential field, which decays away from the boundary. Matching <span class="arithmatex">\(\mathbf{b}\)</span> to it gives</p>
+<div class="arithmatex">\[
+\text{CMB:}\quad (l+1)\,f + r f' = 0, \quad g = 0; \qquad\qquad \text{ICB:}\quad l\,f - r f' = 0, \quad g = 0 .
+\]</div>
+<p>No electric current crosses an insulating boundary, so there is no electromagnetic torque on it.</p>
+<h2 id="conducting-inner-core">Conducting inner core</h2>
+<p>With <code>innercore = 'conducting, Chebys'</code> Kore adds the magnetic field inside the inner core, <span class="arithmatex">\(\mathbf{b}_i\)</span>, to the unknowns, expanded in <code>N_cic</code> Chebyshev polynomials and spherical harmonics up to <code>lmax_cic</code>. The inner core is solid and at rest in the rotating frame, so its field only diffuses:</p>
+<div class="arithmatex">\[
+\partial_t \mathbf{b}_i = (\Omega\tau)\, E_\eta\, \eta_{i}\, \nabla^2 \mathbf{b}_i, \qquad \eta_i = \frac{1}{\mu_{i2o}\,\sigma_{i2o}},
+\]</div>
+<p>where <span class="arithmatex">\(\eta_i\)</span> is the inner core's magnetic diffusivity relative to the fluid's. At the ICB, the normal field, the tangential <span class="arithmatex">\(\mathbf{H} = \mathbf{b}/\mu\)</span> and the tangential electric field are continuous. With subscripts <span class="arithmatex">\(o\)</span> (fluid) and <span class="arithmatex">\(i\)</span> (inner core), and the permeabilities relative to the fluid's:</p>
+<div class="arithmatex">\[
+f_o = f_i, \qquad (r f_o)' = \frac{(r f_i)'}{\mu_{i2o}}, \qquad g_o = \frac{g_i}{\mu_{i2o}},
+\]</div>
+<div class="arithmatex">\[
+(r g_o)' = \eta_i\,(r g_i)', \qquad r^2 \nabla_l^2 f_o = \eta_i\, r^2 \nabla_l^2 f_i, \qquad \nabla_l^2 = \frac{d^2}{dr^2} + \frac{2}{r}\frac{d}{dr} - \frac{l(l+1)}{r^2} .
+\]</div>
+<p>The electric field condition has no <span class="arithmatex">\(\mathbf{u}\times\mathbf{B}_0\)</span> term, so it assumes the fluid at the ICB moves with the inner core: use a no-slip ICB (<code>bci = 1</code>) and <code>Ek &gt; 0</code>.</p>
+<p>The poloidal field is solved with the radial component of the induction equation, as with an insulating inner core, and only the first two conditions are imposed on <span class="arithmatex">\(f\)</span>. With the radial induction equation satisfied on both sides of the ICB, continuity of <span class="arithmatex">\(f\)</span> makes the radial component of <span class="arithmatex">\(\nabla\times\mathbf{E}\)</span> continuous, and that is the condition on <span class="arithmatex">\(\nabla_l^2 f\)</span>. Before October 2026 Kore used the consoidal component instead, which is third order in <span class="arithmatex">\(f\)</span>, and imposed the <span class="arithmatex">\(\nabla_l^2 f\)</span> condition as an extra row. Its tau error was integrated across the shell into a spurious term <span class="arithmatex">\(c/r\)</span> of the radial equation. For a torsional mode at Ek = <span class="arithmatex">\(10^{-9}\)</span> and <code>sigma_i2o</code> = <span class="arithmatex">\(10^{-6}\)</span> with <span class="arithmatex">\(N = 688\)</span>, this gave resid b = <span class="arithmatex">\(10^{-3}\)</span> and a low-<span class="arithmatex">\(l\)</span> poloidal field wrong by factors of up to 30. The radial component gives <span class="arithmatex">\(10^{-5}\)</span> and the insulating-core field to four digits at the same <span class="arithmatex">\(N\)</span>.</p>
+<p><code>spin_doctor.py</code>'s residuals cover the fluid volume only. They do not test the inner-core field or the ICB conditions, so check <code>N_cic</code> by the change of the eigenvalue.</p>
+<p><strong>Resolution.</strong> <code>N_cic = 64</code> (the default) is safe for conductivity ratios from <span class="arithmatex">\(10^{-4}\)</span> to 1. In the tests behind this default, 16 polynomials put the eigenvalue off by <span class="arithmatex">\(1.6\times10^{-3}\)</span> at <code>sigma_i2o = 1</code>, and 48 gave broken eigenvectors for the modes away from the target at <code>sigma_i2o</code> = <span class="arithmatex">\(10^{-2}\)</span>. The inner core adds <span class="arithmatex">\(2\,n_{ic}\)</span> unknowns, which is cheap: at <span class="arithmatex">\(N = 232\)</span> a torsional-mode run took 40 s and 7.8 GB with a conducting inner core, against 22 s and 7.3 GB with a thin wall.</p>
+<p><strong>Limits.</strong> As <code>sigma_i2o</code> goes to zero the solution converges to the insulating one (linearly in <code>sigma_i2o</code>).</p>
+<p><code>'conducting, Bessel'</code> is the forced-problem version: the inner-core field is taken as <span class="arithmatex">\(j_l(k r)\)</span>, with <span class="arithmatex">\(k = (1-i)\sqrt{\omega/2E_\eta}\)</span> at the forcing frequency <span class="arithmatex">\(\omega\)</span>, and only the matching conditions at the ICB are added to the matrix. Its ICB condition is flagged in the CHANGELOG as still to be checked.</p>
+<h2 id="perfectly-conducting-inner-core">Perfectly conducting inner core</h2>
+<p>Not available at present. The former options <code>'perfect conductor, material'</code> and <code>'perfect conductor, spatial'</code> were unreachable (missing from <code>ic_bc_list</code> in <code>bin/utils.py</code>) and were removed in October 2026, together with the consoidal projection they relied on. A rewrite is pending. With the radial projection, <span class="arithmatex">\(f = 0\)</span> at the ICB is enough for the poloidal field: with <span class="arithmatex">\(\mathbf{u} = 0\)</span> there, the radial induction equation then gives <span class="arithmatex">\(\nabla_l^2 f = 0\)</span>, the zero tangential electric field.</p>
+<h2 id="thin-conducting-wall">Thin conducting wall</h2>
+<p><code>'TWA'</code> (thin-wall approximation) represents a thin layer of thickness <span class="arithmatex">\(h\)</span>, conductivity <span class="arithmatex">\(\sigma_w\)</span> and permeability <span class="arithmatex">\(\mu_w\)</span> between the fluid and an insulator (Roberts, Glatzmaier &amp; Clune 2010). The layer is described by two numbers:</p>
+<div class="arithmatex">\[
+c = \frac{h\,\mu_w}{r_j\,\mu_f}, \qquad c_1 = \frac{h\,\sigma_w}{r_j\,\sigma_f},
+\]</div>
+<p>where <span class="arithmatex">\(r_j\)</span> is the boundary radius and <span class="arithmatex">\(\mu_f\)</span>, <span class="arithmatex">\(\sigma_f\)</span> are the fluid's values. <span class="arithmatex">\(c_1\)</span> is the wall-to-fluid conductance ratio and sets the eddy currents in the wall; <span class="arithmatex">\(c\)</span> is a magnetic-permeability term. Both are free parameters (<code>c_cmb</code>, <code>c1_cmb</code> at the CMB and <code>c_icb</code>, <code>c1_icb</code> at the ICB). A third parameter, the wall's permeability relative to vacuum, <span class="arithmatex">\(p = \mu_w/\mu_0\)</span> (<code>muw_cmb</code>, <code>muw_icb</code>, default 1), fixes the wall's thickness, <span class="arithmatex">\(h/r_j = c\,\mu/p\)</span>. The conditions are</p>
+<div class="arithmatex">\[
+\text{CMB:}\quad \left(\frac{1}{\mu} + l\,c\right) F' + \frac{l}{r}\, F + \frac{c_1}{\mu}\, r\, \mathcal{D}_l F + \frac{c\,\mu\,l}{p\,r}\left(\frac{l+1}{p} - 1\right) F = 0, \qquad G + c_1\, r\, G' = 0,
+\]</div>
+<div class="arithmatex">\[
+\text{ICB:}\quad \left(\frac{1}{\mu} + (l+1)\,c\right) F' - \frac{l+1}{r}\, F - \frac{c_1}{\mu}\, r\, \mathcal{D}_l F - \frac{c\,\mu\,(l+1)}{p\,r}\left(\frac{l}{p} + 1\right) F = 0, \qquad G - c_1\, r\, G' = 0,
+\]</div>
+<p>with <span class="arithmatex">\(\mathcal{D}_l F = F'' - l(l+1)F/r^2 = r\,\nabla_l^2 f\)</span>. With <span class="arithmatex">\(c = c_1 = 0\)</span> and <span class="arithmatex">\(\mu = 1\)</span> they reduce to the insulating conditions. They were checked against the exact free-decay rates of a sphere and a shell bounded by thin walls, to <span class="arithmatex">\(10^{-14}\)</span>.</p>
+<p>The last term of each poloidal condition is first order in <span class="arithmatex">\(h\)</span>. It comes from the curvature of the wall, from matching the potential field at <span class="arithmatex">\(r_j \pm h\)</span> instead of <span class="arithmatex">\(r_j\)</span>, and from the <span class="arithmatex">\(l(l+1)/r^2\)</span> part of <span class="arithmatex">\(\nabla_l^2\)</span> inside the wall. Guervilly, Wood &amp; Brummell (2013, appendix A) take the limit <span class="arithmatex">\(h \to 0\)</span> with <span class="arithmatex">\(h\mu_w\)</span> and <span class="arithmatex">\(h\sigma_w\)</span> fixed, which needs <span class="arithmatex">\(\mu_w \gg \mu_0\)</span> for <span class="arithmatex">\(c\)</span> to stay finite. Their conditions are the ones above without this term, recovered with <code>muw_cmb = np.inf</code> (or <code>muw_icb</code>); for <span class="arithmatex">\(p \gg 1\)</span> the term is a correction of relative size about <span class="arithmatex">\(1/(p\,l)\)</span> to the <span class="arithmatex">\(c\)</span> term. For a wall with the permeability of vacuum (<span class="arithmatex">\(p = 1\)</span>, the default, as at the Earth's CMB) the term cancels the <span class="arithmatex">\(c\)</span> term at leading order: a static field crosses such a wall unchanged, and only its conductance <span class="arithmatex">\(c_1\)</span> acts. With <span class="arithmatex">\(c_1 = 0\)</span> and <span class="arithmatex">\(p = \mu = 1\)</span> the wall conditions are then exactly the insulating ones, which the former conditions missed by <span class="arithmatex">\(O(l\,c)\)</span>. Against an exact conducting layer (the layer's induction equation integrated across the wall, CMB and ICB, <span class="arithmatex">\(p\)</span> = 1 to 100, steady and oscillating fields), the conditions with the term are off by <span class="arithmatex">\(O(h)\)</span> relative to the wall's own effect; without it the error is <span class="arithmatex">\(O(1)\)</span> for small <span class="arithmatex">\(p\)</span> (8% at <span class="arithmatex">\(l = 5\)</span> at the ICB for <span class="arithmatex">\(p = 1\)</span>).</p>
+<p>The thin-wall approximation itself needs the wall to be much thinner than its magnetic skin depth, <span class="arithmatex">\(h \ll \delta_w = \sqrt{2\eta_w/\omega}\)</span>: the error on the wall's contribution to an eigenvalue grows as <span class="arithmatex">\((h/\delta_w)^2\)</span>.</p>
+<p>The term <span class="arithmatex">\(\mathcal{D}_l F\)</span> stands for the wall's <span class="arithmatex">\(\partial_t F/\eta\)</span>, taken from the fluid next to it. That substitution needs the wall to move with the fluid, so a wall with <span class="arithmatex">\(c_1 \neq 0\)</span> needs a no-slip boundary and <code>Ek &gt; 0</code>; <code>assemble.py</code> prints a warning otherwise. With a wall at the CMB, keep <code>B0_cmb = 'wall'</code> (the default) so that the background field satisfies the wall condition too (see <a href="../background-field/#a-thin-conducting-wall-at-the-cmb-b0_cmb">Background magnetic field</a>).</p>
+<h2 id="electromagnetic-torques">Electromagnetic torques</h2>
+<p>A conducting layer or inner core lets currents close outside the fluid, and the Lorentz force then exerts an axial torque on the boundary. <code>spin_doctor.py</code> reports it for <span class="arithmatex">\(m = 0\)</span>, symmetric flows: <span class="arithmatex">\(|\Gamma|_{mag}\)</span> for the mantle (with <code>mantle = 'TWA'</code>) and <span class="arithmatex">\(|\Gamma|_{magIC}\)</span> for the inner core (with <code>'conducting, Chebys'</code> or <code>'TWA'</code>). The complex torques are written to <code>magnetic.dat</code> (see <a href="../output/">Output and postprocessing</a>). With <code>rotdyn = 1</code> the same torques make the mantle and inner core rotate (see <a href="../rotdyn/">Rotational dynamics</a>).</p>
+<h2 id="thin-wall-or-conducting-inner-core">Thin wall or conducting inner core?</h2>
+<p>The thin wall is cheaper to set up, but it is not a substitute for a conducting inner core. When the inner core's field is a skin layer of depth <span class="arithmatex">\(\delta = \sqrt{2\eta_i/\omega}\)</span>, the conducting inner core acts on the fluid exactly like a thin wall, but with a complex, frequency-dependent conductance, <span class="arithmatex">\(c_1 \approx (1-i)\,\delta/2r_i\)</span> for <span class="arithmatex">\(\delta \ll r_i\)</span>. Kore's thin wall takes a real <span class="arithmatex">\(c_1\)</span>. In tests with the torsional modes at <span class="arithmatex">\(E = 10^{-7}\)</span> and <span class="arithmatex">\(10^{-8}\)</span>, the best real <span class="arithmatex">\(c_1\)</span> still left the eigenvalues 1 to 2% off, with errors of 5 to 15 degrees in the phase of the inner-core torque. The mode in which the inner core and the fluid oscillate together was off by about 20%. Use a conducting inner core when the inner core's electromagnetic coupling matters, and the thin wall for a thin conducting layer such as the base of the mantle.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
