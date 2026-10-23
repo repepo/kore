@@ -29,8 +29,10 @@ which `spin_doctor.py` adds to the kinetic energy balance (`resid𝐮`, and colu
 A flow of degree $l$ (and $\mathbf{U}$, with $m = 0$) has, in $(r, \theta, \phi)$ components,
 
 $$
-\mathbf{u} = q\,(L Y, 0, 0) + s\,(0, \partial_\theta Y, i Z) + T\,(0, i Z, -\partial_\theta Y),
-\qquad q = P/r, \quad s = (rP)'/r, \quad Z = \frac{m Y}{\sin\theta}, \quad L = l(l+1).
+\begin{gathered}
+\mathbf{u} = q\,(L Y, 0, 0) + s\,(0, \partial_\theta Y, i Z) + T\,(0, i Z, -\partial_\theta Y), \\
+q = P/r, \quad s = (rP)'/r, \quad Z = \frac{m Y}{\sin\theta}, \quad L = l(l+1).
+\end{gathered}
 $$
 
 With $(\mathbf{a}\cdot\nabla)\mathbf{b}$ written out in spherical components, $r\mathbf{F}$ is a sum of products $b\,\rho$, $b\,(r\rho')$ and $(rb')\,\rho$ of a radial factor $b$ ($q$, $s$ or $T$) of $\mathbf{U}$ and one $\rho$ of $\mathbf{u}$, each times an angular function. With $r\mathbf{F} = \sum_{l'} \left( F^r\,Y_{l'}\,\hat{\mathbf{r}} + F^s\,r\nabla Y_{l'} + F^t\,\hat{\mathbf{r}}\times r\nabla Y_{l'} \right)$, the rows of degree $l'$ of the momentum equation get

@@ -191,7 +191,10 @@ where $\sigma_{i2o}$ and $\mu_{i2o}$ are the conductivity and permeability of th
 Collecting the above, the dimensionless equations are
 
 $$
-\lambda\,\mathbf{u} = - 2\,(\Omega\tau)\,\mathbf{\hat z}\times\mathbf{u} - \nabla p + (\Omega\tau)^2 Le^2 \left[ (\nabla\times\mathbf{b})\times\mathbf{B}_0 + (\nabla\times\mathbf{B}_0)\times\mathbf{b} \right] - (\Omega\tau)^2 \left( \frac{N_0^2}{\Omega^2}\,\theta + \frac{N_\xi^2}{\Omega^2}\,\xi \right) r\,\mathbf{\hat r} + (\Omega\tau)\,E\,\nabla^2\mathbf{u},
+\begin{aligned}
+\lambda\,\mathbf{u} = {}& - 2\,(\Omega\tau)\,\mathbf{\hat z}\times\mathbf{u} - \nabla p + (\Omega\tau)^2 Le^2 \left[ (\nabla\times\mathbf{b})\times\mathbf{B}_0 + (\nabla\times\mathbf{B}_0)\times\mathbf{b} \right] \\
+& - (\Omega\tau)^2 \left( \frac{N_0^2}{\Omega^2}\,\theta + \frac{N_\xi^2}{\Omega^2}\,\xi \right) r\,\mathbf{\hat r} + (\Omega\tau)\,E\,\nabla^2\mathbf{u},
+\end{aligned}
 $$
 
 $$
