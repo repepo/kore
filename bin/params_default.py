@@ -74,6 +74,8 @@ class default_params():
         # self.forcing = 7  # Longitudinal libration boundary forcing, m={0, 2}, symm, no-slip
         # self.forcing = 8  # Longitudinal libration as a Poincaré force (body force) in the mantle frame, m=0, symm, no-slip
         # self.forcing = 9  # Radial, symmetric, m=2 boundary flow forcing.
+        # self.forcing = 12 # Steady differential rotation of the inner core (forcing_amplitude_icb = ΔΩ/Ω) and/or the mantle
+        #                   # (forcing_amplitude_cmb), m=0, symm, no-slip, use forcing_frequency = 0. Hydro only.
 
         # Forcing frequency (ignored if forcing == 0)
         self.forcing_frequency = 0.0  # negative is prograde

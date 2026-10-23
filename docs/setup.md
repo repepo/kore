@@ -71,6 +71,7 @@ With `forcing = 0` (the default) Kore solves the eigenvalue problem $A\,x = \lam
 | 7 | Longitudinal libration as boundary flow forcing | $m$ = 0 or 2, symmetric, no-slip |
 | 8 | Longitudinal libration as a Poincaré body force, in the mantle frame | $m = 0$, symmetric, no-slip |
 | 9 | Radial boundary flow forcing | $m = 2$, symmetric |
+| 12 | Steady differential rotation of the inner core and/or the mantle: rigid rotation at the rates `forcing_amplitude_icb`, `forcing_amplitude_cmb` relative to the frame (units set by `timescale`) | $m = 0$, symmetric, no-slip, `ricb > 0`; `forcing_frequency = 0` for the steady flow. Tested without magnetic field. |
 
 | Parameter | Default | Meaning |
 |---|---|---|

@@ -428,6 +428,37 @@ def main():
 
 
 
+    elif par.forcing == 12: # ------------------------------------------ steady differential rotation of the boundaries
+
+        # rigid rotation of the inner core (and/or the outer wall) at Delta Omega relative to the frame, m = 0
+        if rank == 0:
+
+            if par.m == 0 and par.symm == 1 and par.bci == 1 and par.bco == 1 and par.ricb > 0:
+
+                print('--------------------------------------------')
+                print('Differential rotation of the boundaries (m = 0)')
+                print('--------------------------------------------')
+
+                l = 1   # l=1 toroidal boundary forcing
+
+                pos = ut.n + ut.N1*np.where(allbot==l)[0][0]
+                row = np.arange(pos,pos+2)
+                col = np.zeros(2)
+
+                # T_1 = Delta Omega r / 2: u_phi = 2 Re(T_1) sin(theta) = Delta Omega r sin(theta) (field + c.c.)
+                C_icb = par.forcing_amplitude_icb * par.ricb / 2
+                C_cmb = par.forcing_amplitude_cmb * ut.rcmb / 2
+
+                bdat = np.array([C_cmb, C_icb], dtype=complex)
+
+                B = ss.csr_matrix( ( bdat, (row,col) ), shape=(ut.sizmat,1) )
+                np.savez('B_forced.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
+
+            else:
+
+                print(' ** Boundary differential rotation requires m = 0, symm = 1, no-slip boundaries and ricb > 0 **')
+
+
     elif par.forcing == 0: # ----------------------------------------------------------------------------------------------------- B matrix, no forcing (eigenvalue problem)
         '''
         Builds the right hand side B matrix to solve

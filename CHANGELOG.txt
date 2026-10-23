@@ -1,6 +1,31 @@
 CHANGELOG - Kore, conductive_IC branch
 ======================================
 
+2026-10-23
+----------
+New forcing 12: steady differential rotation of the inner core and/or the mantle (bin/assemble.py,
+bin/params_default.py, bin/spin_doctor.py, docs)
+- Rigid rotation of the ICB and/or the CMB at forcing_amplitude_icb, forcing_amplitude_cmb relative to the frame,
+  m = 0, symm = 1, no-slip, ricb > 0: the l = 1 toroidal boundary rows get T_1(r_b) = DeltaOmega_b r_b / 2 (field
+  + c.c., so u_phi = DeltaOmega_b r_b sin(theta)). Forcing 7 (m = 0 libration) uses the same rows, but its
+  amplitude is i*forcing_frequency*(libration angle) and vanishes at zero frequency. With forcing_frequency = 0
+  the forced matrix is A alone: the linear spherical Couette (Proudman-Stewartson) flow.
+- spin_doctor: resid0 includes the power of the rotating walls, -2 Re(Gamma_cmb DeltaOmega_cmb/2 + Gamma_icb
+  DeltaOmega_icb/2)/(OmgTau Ek); resid u is |int u.lap(u) dV| / viscous dissipation (zero for a steady flow without
+  body force; the eigenvalue-style form is 1 by construction here); resid L is computed (m = 0, symm = 1): the
+  torques on the mantle and the inner core cancel.
+- resid E stays nan for forcing 12, as for all forced problems (em_budget is not set up for a forcing). resid0 and
+  resid u cover its energy balance.
+- Checked (hydro only, Ek = 1e-4 and 1e-5, ricb = 0.35): with rotation = 0 the exact Stokes solution
+  u_phi = DeltaOmega ri^3 (1/r^2 - r) sin(theta) / (1 - ri^3) to 5e-16; boundary values to 1e-14; N = 64,
+  lmax = 127 converged to 1e-12 at Ek = 1e-4; the interior tends to Proudman's (1956) geostrophic rotation as
+  Ek decreases (1e-3 at Ek = 1e-6). resid0, resid u and resid L <= 7e-13 for the inner core, the mantle or both
+  rotating. solve_nopp.py (MUMPS) agrees with a scipy LU solve to 3e-12.
+- Not done: the 'conducting, Bessel' ICB condition uses k = (1-i) sqrt(omega/2 E_eta) and dlogjl(l, k ri), which
+  is 0*inf at omega = 0; the static limit (k j_l'/j_l -> l/r) is not coded, so forcing 12 with a magnetic field
+  needs 'insulator', 'TWA' or 'conducting, Chebys'.
+
+
 2026-10-21
 ----------
 Thin walls: wall permeability muw_cmb, muw_icb = mu_w/mu0 (default 1) and the O(h) terms that go with it

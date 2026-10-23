@@ -429,6 +429,11 @@ def main(ncpus):
         elif par.forcing == 9: # Radial boundary flow forcing
             pvf = 0      # power of volume forces (Poincare)
             pss = repow  # power of stresses
+        elif par.forcing == 12: # Steady differential rotation of the boundaries
+            # power of the walls on the fluid, minus the viscous torques times the wall rotation rates, as for rotdyn above;
+            # the complex amplitude of a wall's rotation rate is forcing_amplitude/2 (field + c.c., see assemble.py)
+            pvf = 0
+            pss = -2*np.real( vtorq[i]*par.forcing_amplitude_cmb/2 + vtorq_ic[i]*par.forcing_amplitude_icb/2 ) / (par.OmgTau*par.Ek)
 
         if par.Ek != 0 and par.hydro == 1:
             resid0[i] = abs( Dint0 + Dkin0 - pss ) / max( abs(Dint0), abs(Dkin0), abs(pss) )
@@ -438,6 +443,8 @@ def main(ncpus):
         if par.hydro:
             resid1[i] = abs( 2*sigma*KE[i] - Dkin[i] - Wlor[i] + Wthm[i] )/ \
                              max(abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wlor[i]), abs(Wthm[i]))
+            if par.forcing == 12:  # steady, no body force: the integral of u.lap(u) vanishes; measured against the dissipation
+                resid1[i] = abs( Dkin[i] ) / abs( Dint[i] )
         
         if par.magnetic:
             resid2[i] = abs( 2*sigma*ME[i] - Indu[i] - Mdfs[i] ) / \
@@ -451,10 +458,11 @@ def main(ncpus):
         # which is minus the viscous and magnetic torques it exerts on the mantle and the inner core
         # (gravitational torques act only between mantle and inner core). Only for eigenvalue problems with
         # m=0, symm=1, where angrymom and the torques are defined; body forcing would add a torque not included here.
+        # Also for the steady forcing 12 (w = sigma = 0): the torques on the mantle and the inner core cancel.
         if not (do_vtorq or do_mtorq or do_vtorq_ic or do_mtorq_ic):
             residL[i] = 0
 
-        elif par.hydro and par.forcing == 0 and (par.m == 0 and par.symm == 1):
+        elif par.hydro and par.forcing in (0, 12) and (par.m == 0 and par.symm == 1):
             dLdt    = (sigma + 1j*w) * angmom[i]
             torques = [ vtorq[i], vtorq_ic[i], mtorq[i], mtorq_ic[i] ]
             scale   = max( [abs(dLdt)] + [abs(t) for t in torques] )
