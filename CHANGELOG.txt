@@ -3,6 +3,31 @@ CHANGELOG - Kore, conductive_IC branch
 
 2026-10-23
 ----------
+Axisymmetric background flow (bin/bgflow.py new, bin/assemble.py, bin/params_default.py, bin/spin_doctor.py,
+docs/bgflow.md new, docs/output.md, mkdocs.yml)
+- bgflow = 1 adds the linearised advection by an axisymmetric flow U(r,theta), F = (U.grad)u + (u.grad)U, to the
+  momentum equation (sections u and v, with the Coriolis terms), for example for the modes on top of the steady
+  flow of forcing = 12. U is bgflow_Ro times the m = 0 flow with the poloidal and toroidal scalars P_n(r), T_n(r)
+  in bgflow_file. Hydro only, ricb > 0.
+- bgflow.py: r F is a sum of products of a radial factor of U and one of u (P/r, (rP)'/r, T, or their r d/dr)
+  times angular functions, which are projected by Gauss-Legendre quadrature in cos(theta); the radial operators
+  use ut.Mlam and ut.Dlam as in submatrices.py. A term of U of degree n couples |l - l'| <= n, so A is much denser
+  than without the background flow.
+- bgflow.py as a script in a forcing = 12 folder writes bgflow.npz with the P_n, T_n (n <= nmax) of its steady
+  flow: python3 bin/bgflow.py nmax for the linear flow (from the solution, per unit forcing_amplitude_icb), or
+  python3 bin/bgflow.py nmax nonlinear for the nonlinear flow at Ro = forcing_amplitude_icb, by Newton's method,
+  (A + B_k) x_k+1 = b + B_k x_k/2 with B_k the bgflow matrix of the current flow 2 x_k, and continuation in Ro.
+  A nonlinear file holds its Ro and can only be used with bgflow_Ro = Ro.
+- spin_doctor: the work of the background flow, -2 Re int u^*.(u.grad)U dV, enters resid u and is column 20 of
+  flow.dat; bgflow and bgflow_Ro are the last two columns of params.dat.
+- Tests: a rigid rotation (T_1 = r) gives lambda0(OmgTau = 1+Ro, Ek/(1+Ro)) - i m Ro to 7e-14 (m = 1, symm = 1
+  and m = 2, symm = -1); with the forcing = 12 flow at Ek = 1e-4, resid u <= 5e-7 at N = 64. Onsets at Ek = 1e-4,
+  ricb = 1/3 (N = 48, lmax = m + 95, nmax = 40) on the nonlinear flow: m = 1 at Ro = -0.647, m = 3 at +0.419 and
+  m = 4 at +0.446 (Hollerbach 2003, JFM 492: -0.651, 0.414, 0.453). On the linear flow: -0.644 and +0.452.
+
+
+2026-10-23
+----------
 New forcing 12: steady differential rotation of the inner core and/or the mantle (bin/assemble.py,
 bin/params_default.py, bin/spin_doctor.py, docs)
 - Rigid rotation of the ICB and/or the CMB at forcing_amplitude_icb, forcing_amplitude_cmb relative to the frame,

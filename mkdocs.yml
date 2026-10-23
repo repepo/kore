@@ -12,6 +12,7 @@ nav:
     - Background magnetic field: background-field.md
     - Inner core and mantle: boundaries.md
     - Rotational dynamics: rotdyn.md
+    - Background flow: bgflow.md
     - Solver settings: solver.md
     - Output and postprocessing: output.md
   - Theory:

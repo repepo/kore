@@ -64,6 +64,14 @@ class default_params():
         # Ek = Ek_gap*(1-ricb)**2
         self.Ek = 10**-6
 
+        # NEW (2026-10-23): axisymmetric background flow U, bgflow_Ro times the flow with the poloidal and toroidal scalars
+        # in bgflow_file (bin/bgflow.py, docs/bgflow.md). Hydro only, ricb > 0. bgflow.py run as a script in the folder
+        # of a forcing = 12 problem writes the file of its steady flow: the linear flow (per unit forcing_amplitude_icb,
+        # for any bgflow_Ro) or the nonlinear one (for bgflow_Ro = forcing_amplitude_icb only).
+        self.bgflow      = 0
+        self.bgflow_file = 'bgflow.npz'
+        self.bgflow_Ro   = 0.0
+
         self.forcing = 0  # Uncomment this line for eigenvalue problems
         # self.forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
         # self.forcing = 2  # For boundary flow forcing, use with bci=1 and bco=1.

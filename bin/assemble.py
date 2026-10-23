@@ -25,6 +25,7 @@ import bc_variables as bv
 from parameters import par
 import utils as ut
 import operators as op
+import bgflow
 
 # first row/column of the unknowns that come after the flow and magnetic field, in the same order as ut.sizmat:
 # the 3 rotational dynamics unknowns (mantle and inner core rotation rates, misalignment angle),
@@ -665,6 +666,12 @@ def main():
                         loc_list = ut.packit( loc_list, mtx[0], row, col)
 
 
+            if par.bgflow:  # background flow, upol and utor terms (bgflow.py)
+
+                for mtx, col in bgflow.terms(l, 'u'):
+                    loc_list = ut.packit( loc_list, mtx, row, col)
+
+
             if par.magnetic == 1: # include Lorentz force
 
                 # Lorentz force, poloidal magnetic field terms (bpol) --------------------------------------------------
@@ -777,6 +784,12 @@ def main():
             # --------------------------------------------
             col = basecol + col0
             loc_list = ut.packit( loc_list, mtx, row, col)
+
+
+            if par.bgflow:  # background flow, upol and utor terms (bgflow.py)
+
+                for mtx, col in bgflow.terms(l, 'v'):
+                    loc_list = ut.packit( loc_list, mtx, row, col)
 
 
             if par.magnetic == 1: # includes the Lorentz force

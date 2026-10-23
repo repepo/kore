@@ -18,6 +18,7 @@ import numpy as np
 from parameters import par
 import utils as ut
 import utils4pp as upp
+import bgflow
 
 
 
@@ -86,6 +87,8 @@ def param_table(elapsed):
         ( 'MoIZ_IC',                  par.MoIZ_IC,                 '%.9e' ),
         ( 'OmgtauIC',                 par.OmgtauIC,                '%.9e' ),
         ( 'gTorque',                  par.gTorque,                 '%.9e' ),
+        ( 'bgflow',                   par.bgflow,                  '%d' ),    # NEW (2026-10-23)
+        ( 'bgflow_Ro',                par.bgflow_Ro,               '%.9e' ),
     ]
 
 
@@ -197,6 +200,7 @@ def main(ncpus):
     Wlor        = np.zeros(success)
     Wthm        = np.zeros(success)
     Wcmp        = np.zeros(success)
+    Wbg         = np.zeros(success)  # NEW (2026-10-23): power of the background flow (bgflow = 1)
     vtorq       = np.zeros(success,dtype=complex)  # viscous torque on the mantle
     vtorq_ic    = np.zeros(success,dtype=complex)  # viscous torque on the IC
     ME          = np.zeros(success)
@@ -342,6 +346,8 @@ def main(ncpus):
             Wlor[i] = par.OmgTau**2 * par.Le2 * Wlor0
             Wthm[i] = par.OmgTau**2 * par.BV2 * Wthm0
             Wcmp[i] = par.OmgTau**2 * par.BV2_comp * Wcmp0
+            if par.bgflow:
+                Wbg[i] = bgflow.power(u_sol2)
             
             # Viscous torques
             if do_vtorq:
@@ -403,7 +409,8 @@ def main(ncpus):
         # ME is magnetic energy
         # TE is the thermal "energy" (1/2) ∫ θ² dV
         # resid0 is the relative residual of Dkin + Dint - pss = 0
-        # resid1 is the relative residual of 2*sigma*KE - Dkin - Wlor -Wthm - pvf = 0
+        # Wbg is the rate of working of the background flow (bgflow = 1), -2 Re ∫ u*·(u·∇)U dV
+        # resid1 is the relative residual of 2*sigma*KE - Dkin - Wlor -Wthm - pvf - Wbg = 0
         # resid2 is the relative residual of 2*sigma*ME - Indu - Mdfs = 0
         # resid3 is the relative residual of 2*sigma*TE - Dthm - Wadv_thm = 0
         # ---------------------------------------------------------------------------------------------------------
@@ -441,8 +448,8 @@ def main(ncpus):
             resid0[i] = np.nan
 
         if par.hydro:
-            resid1[i] = abs( 2*sigma*KE[i] - Dkin[i] - Wlor[i] + Wthm[i] )/ \
-                             max(abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wlor[i]), abs(Wthm[i]))
+            resid1[i] = abs( 2*sigma*KE[i] - Dkin[i] - Wlor[i] + Wthm[i] - Wbg[i] )/ \
+                             max(abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wlor[i]), abs(Wthm[i]), abs(Wbg[i]))
             if par.forcing == 12:  # steady, no body force: the integral of u.lap(u) vanishes; measured against the dissipation
                 resid1[i] = abs( Dkin[i] ) / abs( Dint[i] )
         
@@ -577,7 +584,8 @@ def main(ncpus):
                                     resid0, resid1,
                                     np.real(vtorq), np.imag(vtorq),
                                     np.real(vtorq_ic), np.imag(vtorq_ic),
-                                    elldom, np.real(angmom), np.imag(angmom), residL, geo ]) # NEW (2026-10-11): geostrophic fraction, column 19
+                                    elldom, np.real(angmom), np.imag(angmom), residL, geo, # NEW (2026-10-11): geostrophic fraction, column 19
+                                    Wbg ])  # NEW (2026-10-23): background flow power, column 20
 
     if par.magnetic:
         with open('magnetic.dat','ab') as dmag:
