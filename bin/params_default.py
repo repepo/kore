@@ -198,13 +198,58 @@ class default_params():
         # self.forcing = 7  # Longitudinal libration boundary forcing, m={0, 2}, symm, no-slip
         # self.forcing = 9  # Radial, symmetric, m=2 boundary flow forcing, bci=1.
         # self.forcing = 10 # Radial, symmetric, order m boundary flow forcing at the cmb (l=m), unit amplitude.
+        # self.forcing = 11 # Random Reynolds-stress body force (convective noise), any m, symm; rsf_* below.
 
         # Forcing frequency (ignored if forcing == 0)
         self.forcing_frequency = 1.0  # negative is prograde
 
-        # Forcing amplitude. Body forcing amplitude will use the cmb value
+        # Forcing amplitude (boundary forcings 6, 7, 9, 10; forcing 11 ignores it: its power scales with rsf_scale)
         self.forcing_amplitude_cmb = 1.0
         self.forcing_amplitude_icb = 0.0
+
+        # Random Reynolds-stress body force (forcing = 11, bin/reynolds_stress.py): f = rho0^-1 div(rho0 s), s a random
+        # symmetric traceless stress, white in time, with covariance 4 Theta nu_t/rho0 (Landau-Lifshitz form), the
+        # fluctuation-dissipation partner of kore's viscous force: in the white limit a damped mode gets kinetic energy
+        # Theta_eff f_t, f_t the fraction of its damping due to nu_t (the finite l_c and rsf_angular lower it by O(1)
+        # factors for modes of scale near l_c). Each column of B_forced.npz is one realisation; the mean |y|^2 over
+        # the columns is the two-sided power spectral density of y (int .. dw/2pi = variance), in kore units; for m = 0
+        # (a real flow, even spectrum) the kinetic energy is half the integral over all w. The energy is that of the
+        # solved symm class. Needs ViscosD > 0; the entropy rows are not forced.
+        self.rsf_nsamp    = 1      # realisations, solved with one LU factorisation per frequency (back-substitutions)
+        self.rsf_seed     = 0      # realisation j uses numpy.random.default_rng([rsf_seed, j]), whatever rsf_nsamp
+        self.rsf_theta    = 'nu'   # turbulent temperature Theta, about the energy of one eddy, in kore units (rho0 r0^5 / tau^2):
+                                   #   'nu':  3 rho0 nu_t^2 l_c, eddies of size l_c consistent with nu_t = u_c l_c/3 (u_c = 3 nu_t/l_c)
+                                   #   'mlt': rho0 u_c^2 l_c^3/3 with the mixing-length u_c = (alpha F_c/(10 rho0))^(1/3),
+                                   #          F_c = rsf_lum/(4 pi r^2) nu_t/max(nu_t) (crude convective fraction; needs visc_pow = 0)
+                                   #   a number: constant Theta (tests)
+                                   # 'nu' grows as nu_t^2; 'mlt' does not depend on nu. Observed Rossby-mode amplitudes need
+                                   # Theta_eff ~ (0.6-3)e34 erg, (0.3-1.6)e-11 in kore units (Sun as for rsf_lum): about
+                                   # 10 (1e12 cm^2/s / nu_t)^2 x 'nu' (nu_t = 1e12 cm^2/s is ViscosD ~ 7.4e-5 there) and
+                                   # 1/20 x 'mlt' (project note; a white-noise estimate: with the default l_c and rsf_angular
+                                   # the same modes are forced several times less, so rsf_scale goes up as much).
+                                   # The 1/3 of both laws (Theta = rho0 u_c^2 l_c^3/3) is a convention: Gaussian closure gives
+                                   # 1/6 for a correlation time tau_c, 1/3 for exp(-|t|/tau_c); rsf_scale absorbs such factors.
+        self.rsf_scale    = 1.0    # multiplies Theta (the response power scales with it)
+        self.rsf_alpha    = 2.0    # eddy size l_c = (rsf_lc_max^-4 + (rsf_alpha H_p)^-4)^(-1/4), H_p = -p/p' (kore's pressure
+        self.rsf_lc_max   = 0.25   # profile): a smooth min of rsf_alpha H_p and rsf_lc_max (H_p is infinite at r = 0)
+        self.rsf_lc       = None   # a constant l_c instead (kore length units)
+        self.rsf_nu_floor = None   # nu_t = ViscosD (nu/nu0 - rsf_nu_floor), clipped at 0; None: visc0 for 'smoothed sun'
+                                   # with visc0 < 1 (the radiative-zone floor; approximate if visc_pow != 0), 0 otherwise
+        self.rsf_lum      = None   # luminosity L/(rho_u r0^5 Omega^3) for rsf_theta = 'mlt', rho_u the density unit
+                                   # (rho_c for 'model S'): Sun, rho_c 153.9 g/cm^3, r0 = 0.985 R_sun, Omega = 2 pi 456 nHz: 7.0e-7
+        self.rsf_angular  = 1      # 1: variance times exp(-L l_c^2/(2 r^2)) (eddies of finite horizontal size); 0: white in angle
+        self.rsf_taper    = 0.04   # the stress goes smoothly (erfc) to zero over this width below rcmb (and above ricb > 0); > 0;
+                                   # its erfc width is rsf_taper/8: raise it or N if assemble.py warns of a Chebyshev tail
+        self.rsf_taper_in = 0.2    # ricb = 0: the same above r = 0, > 0 (kept wide: Chebyshev nodes are sparse at r = 0)
+        self.rsf_rcut     = None   # a radius (kore units): no stress below it (1e-8 there), full stress above rsf_rcut +
+        self.rsf_rcut_width = 0.04 # rsf_rcut_width (erfc of width rsf_rcut_width/8). Use it, not a higher rsf_nu_floor, to
+                                   # keep the forcing out of the tail of a viscosity step: clipping nu_t leaves a corner the
+                                   # rows cannot resolve. In a full sphere near r = 0.7 a 0.04 edge needs N ~ 1280, a 0.08
+                                   # edge N ~ 900 (assemble.py warns of a Chebyshev tail when it is under-resolved)
+        self.rsf_frequencies = None  # frequency scan: forcing frequencies (kore units, negative prograde); solve.py factors
+                                     # A - i(w - forcing_frequency) B for each (B.npz, written by assemble.py for forcing 11)
+                                     # and appends to rsf_spectrum.dat and rsf_ke.dat instead of writing the fields
+        self.rsf_split    = None   # a radius: rsf_spectrum.dat also gives the kinetic energy below it (e.g. 0.71/aux0)
 
 
         # ----------------------------------------------------------------------------------------------------------------------

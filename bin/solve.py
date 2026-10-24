@@ -30,6 +30,16 @@ import utils as ut
 
 
 
+def load_rhs(fname):
+    '''
+    This rank's rows of the right-hand sides in fname (B_forced.npz, one per column), as a dense array, and their
+    number: memory-mapped like A, so that a large rsf_nsamp is not read in full by every rank.
+    '''
+    ncol = int(ut.load_npz_mmap(fname)['shape'][1])
+    n, Istart, Iend, indptr, indices, data = load_rows(fname)
+    return ss.csr_matrix((data, indices, indptr), shape=(Iend-Istart, ncol)).toarray(), ncol
+
+
 def load_mat(fname):
     '''
     Reads a CSR matrix from an .npz file written by assemble.py and returns it as a
@@ -153,6 +163,95 @@ def split_fields(vec):
     return fields
 
 
+def forced_scan(t_start):
+    '''
+    Frequency scan of the random Reynolds-stress forcing (forcing = 11 with par.rsf_frequencies). For each frequency w
+    the forced matrix A - i (w - forcing_frequency) B is factorised once (A.npz is assembled at forcing_frequency,
+    B.npz is the mass matrix, not normalised; both from assemble.py) and solved for every column (realisation) of
+    B_forced.npz. Appends one row per frequency, as it goes, to
+      rsf_spectrum.dat  w, mean KE over the realisations and its standard error (then, with rsf_split, the same for the
+                        kinetic energy below r = rsf_split)
+      rsf_ke.dat        w, the KE of each realisation (then, with rsf_split, each KE below rsf_split)
+    after a '#' line with nsamp, seed and rsf_split for each scan (np.loadtxt skips it). KE is spin_doctor's kinetic
+    energy (utils4pp.kinetic_energy). Its mean is the two-sided power spectral density of the kinetic energy, so for
+    m != 0 int (mean KE) dw/2pi is the mean kinetic energy of the randomly forced flow (kore units); for m = 0 (a real
+    flow, even spectrum) it is twice that. Both for the solved symm class only. No fields are written.
+    '''
+    import utils4pp as upp
+    from mpi4py import MPI
+    Print = PETSc.Sys.Print
+    comm = PETSc.COMM_WORLD.tompi4py()
+    rank, size = comm.Get_rank(), comm.Get_size()
+
+    Arows = load_rows('A.npz')
+    Brows = load_rows('B.npz')
+    n, Istart, Iend = Arows[:3]
+    csr = lambda X: ss.csr_matrix((X[5], X[4], X[3]), shape=(Iend-Istart, n))
+    Aloc, Bloc = csr(Arows), csr(Brows)
+    del Arows, Brows
+    b0, nrhs = load_rhs('B_forced.npz')  # this rank's rows, one realisation per column
+    ll = ut.ell(par.m, par.lmax, par.symm)[2]
+    rs = getattr(par, 'rsf_split', None)
+    freqs = np.atleast_1d(np.asarray(par.rsf_frequencies, dtype=float))
+    Print('Frequency scan of the random forcing:', freqs.size, 'frequencies,', nrhs, 'realisations each')
+    if rank == 0:   # a header line for each scan: rows of different scans may differ in columns
+        for fname, head in (('rsf_spectrum.dat', 'w  mean_KE  stderr' + ('  mean_KE_below_split  stderr' if rs is not None else '')),
+                            ('rsf_ke.dat', 'w  KE of each realisation' + ('  then KE below split' if rs is not None else ''))):
+            with open(fname, 'a') as f:
+                f.write('# %s   (forcing = 11, nsamp %d, seed %d, rsf_split %s)\n' % (head, nrhs, par.rsf_seed, rs))
+
+    vec = np.empty(n, dtype=complex)
+    for w in freqs:
+        t_w = timer()
+        M = (Aloc - 1j*(w - ut.wf)*Bloc).tocsr()
+        M.sort_indices()
+        MA = to_mat(n, Istart, Iend, M.indptr, M.indices, M.data)
+        del M
+        x, bvec = MA.createVecs()
+        K = PETSc.KSP()
+        K.create(PETSc.COMM_WORLD)
+        K.setOperators(MA)
+        K.setTolerances(rtol=par.tol,max_it=par.maxit)
+        K.setFromOptions()
+        tozero, V = PETSc.Scatter.toZero(x)
+        ke = np.zeros(nrhs)
+        ke_in = np.zeros(nrhs)
+        for j in range(nrhs):
+            bvec.setValues(range(Istart,Iend), b0[:, j])
+            bvec.assemblyBegin()
+            bvec.assemblyEnd()
+            K.solve(bvec, x)
+            tozero.scatter(x, V)
+            if rank == 0:
+                vec[:] = V.getArray()
+            comm.Bcast(vec, root=0)
+            usol = upp.expand_reshape_sol(split_fields(vec)['flow'], par.symm)
+            ke[j] = comm.allreduce(upp.kinetic_energy(usol, par.ricb, ut.rcmb, ll[rank::size]), op=MPI.SUM)
+            if rs is not None:
+                ke_in[j] = comm.allreduce(upp.kinetic_energy(usol, par.ricb, rs, ll[rank::size]), op=MPI.SUM)
+        tozero.destroy(); V.destroy(); K.destroy(); MA.destroy(); x.destroy(); bvec.destroy()
+
+        se = lambda a: np.std(a, ddof=1)/np.sqrt(a.size) if a.size > 1 else np.nan
+        row = [w, ke.mean(), se(ke)] + ([ke_in.mean(), se(ke_in)] if rs is not None else [])
+        if rank == 0:
+            with open('rsf_spectrum.dat', 'ab') as f:
+                np.savetxt(f, np.array([row]), fmt='%.12e')
+            with open('rsf_ke.dat', 'ab') as f:
+                np.savetxt(f, np.concatenate([[w], ke] + ([ke_in] if rs is not None else []))[None, :], fmt='%.12e')
+        Print('w = %.9e   mean KE %.6e +- %.1e%s   (%.1f s)' % (w, row[1], row[2],
+              '   below %g: %.6e +- %.1e' % (rs, row[3], row[4]) if rs is not None else '', timer()-t_w))
+        if not np.all(np.isfinite(ke)):
+            Print('Solver crashed at w = %g, got nan\'s!' % w)
+
+    if rank == 0:
+        toc2 = timer()
+        print('Solve done in',toc2-t_start,'seconds')
+        with open('timing.dat','ab') as dtim:
+            np.savetxt(dtim, np.array([toc2-t_start]))
+    return 0
+
+
+
 def main():
 
     Print = PETSc.Sys.Print
@@ -178,8 +277,11 @@ def main():
     if prescale and par.forcing != 0:
         Print('Note: prescale applies to eigenvalue problems only; not used for this forced problem.')
         prescale = 0
+    scan = par.forcing == 11 and getattr(par, 'rsf_frequencies', None) is not None
 
     # ------------------------------------------------------------------ reads matrix A
+    if scan:  # frequency scan of the random forcing: A - i (w - wf) B is built for each w in forced_scan
+        return forced_scan(t_start)
     if prescale:  # A and B are read as local rows, rescaled, then built
         t_ps = timer()
         Arows = list(load_rows('A.npz'))
@@ -273,17 +375,13 @@ def main():
 
 
 
-    else: # ------------------------------------------------------------ if forced problem, reads forcing vector
+    else: # ------------------------------------------------------------ if forced problem, reads forcing vector(s)
 
-        b0 = ut.load_csr('B_forced.npz')
+        b0, nrhs = load_rhs('B_forced.npz')  # this rank's rows, one right-hand side per column (forcing = 11: rsf_nsamp)
         x, bvec = MA.createVecs()
 
         #b.set(0)
         Istart,Iend = bvec.getOwnershipRange()
-        bvec.setValues(range(Istart,Iend),b0[Istart:Iend,0].toarray())
-        bvec.assemblyBegin()
-        bvec.assemblyEnd()
-        del b0
 
         # -------------------------------------------------------------- setup, solve & collect
         K = PETSc.KSP()
@@ -292,16 +390,27 @@ def main():
         K.setTolerances(rtol=par.tol,max_it=par.maxit)
         K.setFromOptions()
 
-        # solve
-        K.solve(bvec, x)
-
-        # collect result
-        tozero,VR = PETSc.Scatter.toZero(x)
-        tozero.begin(x,VR)
-        tozero.end(x,VR)
-        tozero.destroy()
+        # solve, one right-hand side after the other: the LU factorisation of the first solve is reused
+        tozero, V = PETSc.Scatter.toZero(x)
+        VR = np.zeros((nb_l, nrhs), dtype=complex) if rank == 0 else None
+        for j in range(nrhs):
+            if j == 1:
+                t_1 = timer()
+            bvec.setValues(range(Istart,Iend), b0[:, j])
+            bvec.assemblyBegin()
+            bvec.assemblyEnd()
+            K.solve(bvec, x)
+            tozero.scatter(x, V)  # collect result on rank 0
+            if rank == 0:
+                VR[:, j] = V.getArray()
+        if nrhs > 1:
+            Print(nrhs, 'right-hand sides; after the first solve (with the LU factorisation)',
+                  round((timer()-t_1)/(nrhs-1), 3), 'seconds per solve')
+        del b0
 
         # cleanup
+        tozero.destroy()
+        V.destroy()
         K.destroy()
         MA.destroy()
         bvec.destroy()
@@ -309,7 +418,6 @@ def main():
 
         if rank == 0:
 
-            VR = np.reshape(VR[:], (-1,1))
             if np.all(np.isfinite(VR)):
                 success = 1 # got actual numbers ... but it could still be a bad solution ;)
                 fields = split_fields(VR)

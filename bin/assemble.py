@@ -225,6 +225,19 @@ def main():
 
                 print('This boundary flow forcing needs symm = 1')
 
+    elif par.forcing == 11: # -------------------------------------------- random Reynolds-stress body force (convection)
+
+        # rsf_nsamp realisations of the random force, one per column (bin/reynolds_stress.py)
+        if rank == 0:
+
+            try:
+                import reynolds_stress as rs
+                B = rs.rhs(par.rsf_nsamp, par.rsf_seed)
+                np.savez('B_forced.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
+            except BaseException as e:  # a parameter error (sys.exit) or any other: stop every rank, not only this one
+                print(e if isinstance(e, SystemExit) else repr(e), flush=True)
+                comm.Abort(1)
+
 
 
     if rank == 0:
@@ -513,13 +526,15 @@ def main():
     comm.Barrier()
 
 
-    if par.forcing == 0: 
+    if par.forcing in (0, 11):
         # ---------------------------------------------------------------------------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------------------------------------------- B matrix, no forcing (eigenvalue problem)
         # ---------------------------------------------------------------------------------------------------------------------------------------------------------
         '''
         Builds the right hand side B matrix to solve
         the generalized eigenvalue problem A.x = lambda.B.x
+        With forcing = 11 B is written too, not normalised, for the frequency scan of solve.py:
+        the forced matrix at frequency w is A - i (w - forcing_frequency) B.
         '''
 
         if rank == 0:
@@ -574,7 +589,8 @@ def main():
         del loc_list
 
         if rank == 0:
-            B.data *= 1/Anorm  # in place, no copy of B (same arithmetic as scipy's B/Anorm)
+            if par.forcing == 0:
+                B.data *= 1/Anorm  # in place, no copy of B (same arithmetic as scipy's B/Anorm)
 
             toc = timer()
             print(' Matrix B assembled in', '{: 4.3f}'.format(toc-tic), 'seconds')
