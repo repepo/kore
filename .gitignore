@@ -1,6 +1,7 @@
 .DS_Store
 *.mtx
 *.npz
+!bin/jsoc_hmi_2010_2026.npz
 *.field
 *.dat
 *__pycache__*

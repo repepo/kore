@@ -187,6 +187,14 @@ def main():
         dr, dc = ruiz_scaling(Arows, Brows, tau)
         scale_rows(Arows, dr, dc)
         scale_rows(Brows, dr, dc)
+        if par.drop_tol > 0:  # drop entries of the scaled A and |tau| B below drop_tol
+            for name, X, fac in (('A', Arows, 1.0), ('B', Brows, max(abs(tau), 1.0))):
+                rows = np.repeat(np.arange(X[2] - X[1]), np.diff(X[3]))
+                keep = np.abs(X[5])*fac >= par.drop_tol
+                X[3] = np.r_[0, np.cumsum(np.bincount(rows[keep], minlength=X[2] - X[1]))].astype(X[3].dtype)
+                X[4], X[5] = X[4][keep], X[5][keep]
+                nnz = PETSc.COMM_WORLD.tompi4py().allreduce(np.array([keep.size, keep.sum()]))
+                Print('drop_tol %g: %s nnz %d -> %d' % (par.drop_tol, name, nnz[0], nnz[1]))
         MA = to_mat(*Arows)
         MB = to_mat(*Brows)
         del Arows, Brows, dr

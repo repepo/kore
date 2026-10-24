@@ -779,7 +779,9 @@ These apply to every profile type:
 
 ### Model S density
 
-`solar_density = 'model S'` replaces the 'smoothed sun' $\ln\rho$ and $\ln p$ by Chebyshev fits of `bin/model_s.at`.
+This is a legacy structure, kept so that older runs reproduce; new runs use the hydrostatic structure below.
+`solar_density = 'model S'` (`structure = 'old model S prototype'`) replaces the 'smoothed sun' $\ln\rho$ and $\ln p$ by
+Chebyshev fits of `bin/model_s.at`; $g$ stays the 8-term one, so the three are not in hydrostatic balance.
 The fit has degree `solar_density_deg` (30) on `solar_density_window`, by default the shell widened by 0.01 below and
 0.005 above. It reproduces the run-local Model S fit of the §6 benchmark runs: $A$ and $B$ are bitwise equal.
 
@@ -790,6 +792,46 @@ $\ln\rho$ and $\ln p$ are even and smooth at $r = 0$. The fit is the same for ev
 in $\ln\rho$ and $2.6\times10^{-4}$ in $\ln p$, mostly at 0.70–0.72 R☉, where Model S has a sharp feature at the base
 of the convection zone (the shell fit reaches $2\times10^{-4}$ there). On the §8 shell it moves the m 3 Rossby n0 and n1
 modes by ≤ 0.001 nHz.
+
+### Hydrostatic structure
+
+`structure = 'model S hydrostatic'` (with `model_type = 'smoothed sun'`) fits only $\ln\rho$ and derives the rest, so the
+background is in hydrostatic balance. $\ln\rho$ is one even polynomial of degree `structure_deg` (30) over the whole Sun,
+fitted to `bin/model_s.at` on $0 \le x \le$ aux0 (iteratively reweighted least squares, close to minimax in $\ln\rho$).
+Then, with $\rho$ in units of $\rho_c$,
+
+$$m(x) = \int_0^x \rho\, x'^2\, dx', \qquad g = \frac{m(x)}{x^2\, m(1)}, \qquad \frac{dp}{dx} = -K \rho\, g,$$
+
+$g$ normalised at the surface as the 8-term fit ($m(1)$ takes Model S above aux0), $K$ the Model S value of
+$-p'/(\rho g)$, and $p$ integrated inward from Model S at aux0. $\rho$ and $p$ are normalised at the centre.
+
+| `structure_deg` | 24 | 30 | 40 | 50 | 60 |
+|---|---|---|---|---|---|
+| largest error in $\rho$, $p$, $g$ (%) | 2.4, 1.4, 1.9 | 1.0, 0.5, 0.75 | 0.33, 0.14, 0.24 | 0.14, 0.06, 0.10 | 0.10, 0.03, 0.08 |
+| full-sphere HFR m 8, $\omega$ $\sigma$ (nHz) | −237.49 −32.49 | −236.75 −33.69 | −236.79 −34.91 | −236.59 −34.61 | −236.60 −34.57 |
+
+The errors are the largest against Model S on $0 \le x \le 0.985$; the HFR m 8 values are for
+`examples/smooth_sun/parameters.py`. The mode stops changing at degree 50 (0.05 nHz to 60), and HL1 at degree 40.
+Degree 30 runs at the resolution of degree 24 (N 640, lmax 79 for HFR m 8); degrees of 40 and above need about 16 more
+lmax for ℓ-convergence below $10^{-4}$. Use 50 to match papers that use Model S itself: at degree 40 already,
+Mukhopadhyay et al. 2025b's HFR m 7 comes out within 0.03 nHz in $\omega$ and 0.12 nHz in $\sigma$ of the old prototype's
+fit, against 1.0 and 0.6 nHz at degree 24. This is the structure for new runs, full sphere or shell. The other two are legacy, kept so that older runs
+reproduce: the old name `solar_density` still selects them (`'fit'` is `structure = '8-term fit'`, `'model S'` is
+`'old model S prototype'`).
+
+With `solar_rz = 1` a convection-zone superadiabaticity $\delta$ (Bekki 2024, eq. 2) can be added to $dS/dr$:
+
+$$\frac{dS}{dr} \mathrel{+}= \delta(x)\,\frac{d\ln p}{dr}\,\frac{1 + \mathrm{erf}((|x| - x_{OS})/d_{OS})}{2}, \qquad
+\delta(x) = \delta_{cz} + (\delta_{sf} - \delta_{cz})\, e^{-((|x| - 0.985)/0.015)^2},$$
+
+with $\delta_{cz}$, $\delta_{sf}$ = `solar_rz_delta_cz`, `solar_rz_delta_sf` (0: no term) and $\delta < 0$ subadiabatic.
+
+Fitted to the HFR frequencies $\omega$ of Hanson et al. (2022) with `structure = 'model S hydrostatic'` (degrees 24, 30
+and 50 give the same), `thermal_wind = 2`, `thermal_wind_radial = 0` and $\delta_{sf} = 0$: the MCA frequencies of
+$m$ = 4, 8, 12, 14 give $\delta_{cz} = -2.1\times10^{-7}$ ($1\sigma$: $-2.6$ to $-1.6\times10^{-7}$, RMS 6.8 nHz); the
+RDA frequencies of $m$ = 8, 9, 12, 13, 14 give $-3.7\times10^{-7}$ (RMS 19 nHz, $m$ = 8 and 9 still 25 to 33 nHz too
+prograde), and both together $-2.9\times10^{-7}$. `examples/smooth_sun` uses $-2.1\times10^{-7}$, which moves its HFR
+$m = 8$ by $-18.05$ nHz in $\omega$ (linear in $\delta_{cz}$ to 0.1 %) and $+0.15$ nHz in $\sigma$.
 
 ### Other files
 

@@ -420,6 +420,11 @@ def main(ncpus):
         if chop > 0:  # ------------------------------------------------------------------- Makes room for boundary conditions and writes to disk
             matrix = ss.vstack( [ Z[chop-1], matrix[:-chop,:] ], format='csr' )
             #pass
+        if par.drop_tol > 0:  # drop entries below drop_tol times the largest of this submatrix
+            matrix = ss.csr_matrix(matrix)
+            if matrix.nnz > 0:
+                matrix.data[np.abs(matrix.data) < par.drop_tol*np.abs(matrix.data).max()] = 0
+                matrix.eliminate_zeros()
         sio.mmwrite( labl1+'.mtx', matrix )
         # ---------------------------------------------------------------------------------------------------------------------------------------
 

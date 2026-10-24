@@ -31,9 +31,22 @@ class default_params():
         # self.model_type = 'astropy table'     # For explicitly defined profiles (supply r, ρ and when required g, (T or p), (N^2 or dS), in array format)
         # self.model_type = 'Boussinesq'        #  for Boussinesq reference state, else anelastic reference state
         # self.model_type = 'user def'          # For implicitly defined profiles (adjust ρ and when required g, p, pdS in radial_profiles.py)
-        # self.model_type = 'smoothed sun'      # Smooth fit to solar Model S (smoothed_sun.py) with a simple dS/dr, see radial_profiles.solar_profiles
+        # self.model_type = 'smoothed sun'      # Smooth fits to solar Model S (structure, below) with a simple dS/dr, see radial_profiles.solar_profiles
 
-        # 'smoothed sun' density and pressure: 'fit' (smoothed_sun.py, the default) or 'model S' (Chebyshev fits of ln ρ, ln p of
+        # 'smoothed sun' structure (ρ, p, g): structure = 'model S hydrostatic' for new runs, full sphere or shell (an even fit
+        # of ln ρ of degree structure_deg over the whole Sun, g from its mass integral, p from dp/dr = -ρ g; radial_profiles.
+        # modelS_hydrostatic_profiles). structure_deg 30 is within 1.0 %, 0.5 %, 0.75 % of Model S in ρ, p, g, and 50 within
+        # 0.14 %, 0.06 %, 0.10 %, where HFR m 8 stops changing (30 is 0.15 nHz off there in ω, 0.9 nHz in σ). Degrees of 40
+        # and above need about 16 more lmax for the HFR ℓ-convergence; use 50 to match papers that use Model S itself.
+        # Legacy, kept so that older parameters.py files reproduce their results: '8-term fit' (smoothed_sun.py, rough but
+        # hydrostatic) and 'old model S prototype' (fits of bin/model_s.at, below; ρ and p fitted separately and g from the
+        # 8-term fit, so not hydrostatic; to be removed, with solar_density below, once 'model S hydrostatic' is validated).
+        # None: from the old name solar_density ('fit', the default, is '8-term fit'; 'model S' is 'old model S prototype').
+        self.structure = None
+        self.structure_deg = 30
+
+        # solar_density (legacy), the old name of structure ('smoothed sun' density and pressure): 'fit' (smoothed_sun.py, the default)
+        # or 'model S' (structure 'old model S prototype': Chebyshev fits of ln ρ, ln p of
         # bin/model_s.at of degree solar_density_deg over solar_density_window = [x_lo, x_hi] in x = r aux0; None: the shell
         # [ricb aux0, aux0] widened by 0.01 below and 0.005 above if ricb > 0, 'sun' if ricb = 0; 'sun': one fit over the whole
         # Sun, even in r (Model S mirrored to x < 0, odd coefficients dropped), of degree solar_density_sun_deg, on
@@ -82,7 +95,12 @@ class default_params():
         #   solar_rz_dSdr = (∂s0/∂r)_RZ aux0 R☉/c_p: 2.615 for their 1.32e-2 erg/g/K/cm with c_p = 3.46e8 and aux0 = 0.985.
         #   ν/ν_cz and κ/κ_cz go from visc0, therm0 below to 1 above as (1 + erf((x - x_OS)/d_OS))/2, [x_OS, d_OS] = solar_rz_os
         #   (their ν_RZ/ν_CZ = 0.01, κ_RZ/κ_CZ = 0.04).
+        #   solar_rz_delta_cz, solar_rz_delta_sf add a convection-zone superadiabaticity δ (Bekki 2024, eq. 2):
+        #   dS/dr += δ(x) d(ln p0)/dr (1 + erf((|x| - x_OS)/d_OS))/2, δ(x) = δ_cz + (δ_sf - δ_cz) exp(-((|x| - 0.985)/0.015)^2),
+        #   δ < 0 being subadiabatic (Bekki's model 3-sub: δ_cz = -5e-7, δ_sf = 1e-3).
         self.solar_rz       = 0
+        self.solar_rz_delta_cz = 0.0
+        self.solar_rz_delta_sf = 0.0
         self.solar_rz_dSdr  = 2.615
         self.solar_rz_steps = [0.61, 0.68, 0.04]
         self.solar_rz_core  = 0.05
@@ -324,6 +342,13 @@ class default_params():
         # Costs 7-8 s at N = 976 on 8 ranks, before the factorization; no change in peak memory.
         # solve.py's ||Ax-kBx||/||kx|| is then printed for the scaled problem; judge accuracy with spin_doctor.
         self.prescale = None
+
+        # Drop of negligible matrix entries, to save memory (0, the default: off). With drop_tol > 0 the Chebyshev coefficients
+        # of the radial profiles are cut at max(1e-15, drop_tol) of the largest (utils.gimmedachebs, 1e-15 otherwise), entries
+        # of each operator submatrix below drop_tol times its largest are removed, and after the pre-scaling entries of A and
+        # max(|tau|, 1) B below drop_tol are removed. drop_tol = 1e-14 gave 35 % less memory at the same eigenvalues (< 1e-3 nHz) in
+        # thermal 'smoothed sun' runs.
+        self.drop_tol = 0
 
 
         # ----------------------------------------------------------------------------------------------------------------------

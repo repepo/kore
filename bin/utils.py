@@ -169,7 +169,7 @@ def gimmedachebs( labl ):
     s can be 'u' or 'v' or 'h' and the X's are single digit integers (can be all different)
     '''
 
-    tol = 1e-15  # relative to the largest coefficient, see chebco_f
+    tol = max(1e-15, par.drop_tol)  # relative to the largest coefficient, see chebco_f
     args = decode_label(labl)  # (section, rpower, rhopower, func1, dorder1, func2, dorder2, dx)
     c0arg = chebco_f( rap.burrito, par.N, par.ricb, rcmb, tol, *args)
     print('burrito', labl, args)

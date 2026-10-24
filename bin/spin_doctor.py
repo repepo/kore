@@ -14,6 +14,7 @@ import numpy as np
 from parameters import par
 import utils as ut
 import utils4pp as upp
+import radial_profiles as rap
 
 
 
@@ -24,11 +25,15 @@ diff_rot_types = ( 'Y20', 'Y20-wall-bounded', 'shellular', 'shellular_boussinesq
 def diff_rot_code():
     return diff_rot_types.index(par.diff_rot_type) if par.diff_rot_type in diff_rot_types else -1
 
-# solar_density as written to params.dat: its index in this tuple, -1 if not listed
-solar_densities = ( 'fit', 'model S' )
+# the 'smoothed sun' structure as written to params.dat (column 'solar_density'): its index in this tuple, the same order as
+# radial_profiles.structures ('fit' is the '8-term fit', 'model S' the 'old model S prototype'). Append new structures
+# at the end.
+solar_densities = ( 'fit', 'model S', 'model S hydrostatic' )
 
 def solar_density_code():
-    return solar_densities.index(par.solar_density) if par.solar_density in solar_densities else -1
+    if par.model_type != 'smoothed sun':
+        return solar_densities.index(par.solar_density) if par.solar_density in solar_densities else -1
+    return list(rap.structures).index(rap.structure_name())
 
 def diff_rot_term_amp(k):
     '''a_n, n = 2k, the factor of the P_n term of ΔΩ (1 for entries missing from par.diff_rot_term_amp, as radial_profiles._amp)'''
@@ -49,7 +54,10 @@ def diff_rot_window_code():
     return int(par.diff_rot_window == 'sun' or (par.diff_rot_window is None and par.ricb == 0))
 
 def solar_density_degree():
-    '''degree of the 'model S' fits actually used: solar_density_sun_deg for the even whole-Sun fit ('sun', or None with ricb = 0)'''
+    '''degree of the Model S fits actually used: solar_density_sun_deg for the even whole-Sun fit ('sun', or None with ricb = 0);
+    structure_deg for structure = 'model S hydrostatic' '''
+    if par.model_type == 'smoothed sun' and rap.structure_name() == 'model S hydrostatic':
+        return par.structure_deg
     w = par.solar_density_window
     return par.solar_density_sun_deg if (isinstance(w, str) or (w is None and par.ricb == 0)) else par.solar_density_deg
 
@@ -129,6 +137,9 @@ def param_table(elapsed):
         ( 'solar_rz_dos',             par.solar_rz_os[1],          '%.9e' ),
         ( 'diff_rot_window',          diff_rot_window_code(),      '%d' ),    # 'tabulated': 0 shell fit, 1 whole Sun ('sun')
         ( 'diff_rot_hold',            np.nan if par.diff_rot_hold is None else par.diff_rot_hold, '%.9e' ),  # nan: None
+        ( 'solar_rz_delta_cz',        par.solar_rz_delta_cz,       '%.9e' ),  # convection-zone superadiabaticity
+        ( 'solar_rz_delta_sf',        par.solar_rz_delta_sf,       '%.9e' ),
+        ( 'drop_tol',                 par.drop_tol,                '%.9e' ),
     ]
 
 

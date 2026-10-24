@@ -208,8 +208,11 @@ class user_defined_profiles():  # ----------------------------------------------
         return (r**rpower)*out
 
 
-class solar_profiles(user_defined_profiles):  # ------------------------------------- Smooth fit to solar Model S
+class solar_profiles(user_defined_profiles):  # ------------------------- Parts shared by the 'smoothed sun' structures
     '''
+    The parts shared by the 'smoothed sun' structures (dS/dr, the diffusivities, the differential rotation); ρ, p and g
+    come from the subclass chosen by structure (see structure_name). The rest of this docstring describes the original
+    'smoothed sun' structure, the 8-term fit (eight_term_profiles).
     Density, gravity and pressure of the Sun from the smooth Model S fit in smoothed_sun.py, x = r*aux0 being the
     fractional solar radius (r = 1 is x = aux0, so the unit of length is aux0 R_sun; ρ is normalised to the fit's
     central value, ρ(0) = 0.95, g to its value at x = 1, g(r = 1) = 1.02, and p to p(0) = 1), with a simple entropy
@@ -236,6 +239,52 @@ class solar_profiles(user_defined_profiles):  # --------------------------------
     pdSdr and the differential rotation profiles are inherited from user_defined_profiles.
     '''
 
+    def gradS(self, r, x1, w1, x2, w2, A):  # ------------ dS/dr, erf top hat made odd in r
+        if par.solar_rz:   # Mukhopadhyay et al. 2025 eq. (10), times erf(x/w0) so that it is odd and smooth at r = 0
+            x = r*par.aux0
+            x1, x2, d = par.solar_rz_steps
+            out = par.solar_rz_dSdr*0.25*(1 - ss.erf((x - x1)/d))*(1 - ss.erf((x - x2)/d))*ss.erf(x/par.solar_rz_core)
+            if par.solar_rz_delta_cz != 0 or par.solar_rz_delta_sf != 0:   # convection-zone superadiabaticity δ (Bekki 2024, eq. 2):
+                # (1/c_p) ds0/dr = δ d(ln p0)/dr above the overshoot step, δ < 0 subadiabatic; odd in r as d(ln p0)/dr is
+                xa = np.abs(x); xos, dos = par.solar_rz_os
+                delta = par.solar_rz_delta_cz + (par.solar_rz_delta_sf - par.solar_rz_delta_cz)*np.exp(-((xa - 0.985)/0.015)**2)
+                out = out + delta*self.dlog_p(r)*0.5*(1 + ss.erf((xa - xos)/dos))
+            return out
+        return ut.erf_top_hat_odd(r, x1,w1,x2,w2,A)
+
+
+    def cz_step(self, r):  # ----- 0 in the radiative zone, 1 in the convection zone: the upper edge of dS/dr, even in r
+        if par.solar_rz:   # their eqs. (8), (9)
+            xos, dos = par.solar_rz_os
+            return 0.5*(1 + ss.erf((np.abs(r)*par.aux0 - xos)/dos))
+        return 1 - ut.erf_box(r, par.aux3, par.aux4)
+
+
+    def rho_pow(self, r, p):  # --------------------------------------------- (ρ(x2)/ρ(r))**p, even in r
+        if p == 0:
+            return 1.0
+        return np.exp( -p*( self.logrho(r, 0) - self.logrho(par.aux3, 0) ) )
+
+
+    def viscosity(self, r, rpower):  # --------------- ν(r)/ν_cz: visc0 below the tachocline, 1 above, times (ρ(x2)/ρ)**visc_pow
+        H = 1.0 if par.visc0 == 1 else self.cz_step(r)  # no step (and no aux3, aux4 needed) when there is no contrast
+        out = ( H + (1 - H)*par.visc0 )*self.rho_pow(r, par.visc_pow)
+        return (r**rpower)*out
+
+
+    def thermal_diffusivity(self, r, rpower):  # ----- κ(r)/κ_cz: therm0 below the tachocline, 1 above, times (ρ(x2)/ρ)**therm_pow
+        H = 1.0 if par.therm0 == 1 else self.cz_step(r)
+        out = ( H + (1 - H)*par.therm0 )*self.rho_pow(r, par.therm_pow)
+        return (r**rpower)*out
+
+
+class eight_term_profiles(solar_profiles):  # -------------------------------- structure = '8-term fit' (legacy)
+    '''
+    ρ, p and g of the smooth Model S fit in smoothed_sun.py: 8 even terms in ln ρ, g and p from hydrostatic balance (x = r aux0;
+    ρ, p normalised at the centre, g at x = 1).
+    Everything else as solar_profiles.
+    '''
+
     def logrho(self, r, rpower):  # ------------------------------- log(ρ(r)), even in r
         return (r**rpower)*sms.log_density(r*par.aux0)
 
@@ -256,45 +305,14 @@ class solar_profiles(user_defined_profiles):  # --------------------------------
         return par.aux0*sms.dlog_density(r*par.aux0)
 
 
-    def gradS(self, r, x1, w1, x2, w2, A):  # ------------ dS/dr, erf top hat made odd in r
-        if par.solar_rz:   # Mukhopadhyay et al. 2025 eq. (10), times erf(x/w0) so that it is odd and smooth at r = 0
-            x = r*par.aux0
-            x1, x2, d = par.solar_rz_steps
-            return par.solar_rz_dSdr*0.25*(1 - ss.erf((x - x1)/d))*(1 - ss.erf((x - x2)/d))*ss.erf(x/par.solar_rz_core)
-        return ut.erf_top_hat_odd(r, x1,w1,x2,w2,A)
-
-
-    def cz_step(self, r):  # ----- 0 in the radiative zone, 1 in the convection zone: the upper edge of dS/dr, even in r
-        if par.solar_rz:   # their eqs. (8), (9)
-            xos, dos = par.solar_rz_os
-            return 0.5*(1 + ss.erf((np.abs(r)*par.aux0 - xos)/dos))
-        return 1 - ut.erf_box(r, par.aux3, par.aux4)
-
-
-    def rho_pow(self, r, p):  # --------------------------------------------- (ρ(x2)/ρ(r))**p, even in r
-        if p == 0:
-            return 1.0
-        return np.exp( -p*( sms.log_density(r*par.aux0) - sms.log_density(par.aux3*par.aux0) ) )
-
-
-    def viscosity(self, r, rpower):  # --------------- ν(r)/ν_cz: visc0 below the tachocline, 1 above, times (ρ(x2)/ρ)**visc_pow
-        H = 1.0 if par.visc0 == 1 else self.cz_step(r)  # no step (and no aux3, aux4 needed) when there is no contrast
-        out = ( H + (1 - H)*par.visc0 )*self.rho_pow(r, par.visc_pow)
-        return (r**rpower)*out
-
-
-    def thermal_diffusivity(self, r, rpower):  # ----- κ(r)/κ_cz: therm0 below the tachocline, 1 above, times (ρ(x2)/ρ)**therm_pow
-        H = 1.0 if par.therm0 == 1 else self.cz_step(r)
-        out = ( H + (1 - H)*par.therm0 )*self.rho_pow(r, par.therm_pow)
-        return (r**rpower)*out
-
-
-class modelS_profiles(solar_profiles):  # ----------------------- 'smoothed sun' with the Model S density and pressure
+class modelS_profiles(solar_profiles):  # ----------------------- structure = 'old model S prototype' (legacy)
     '''
+    ρ and p from Chebyshev fits of ln ρ and ln p of bin/model_s.at, g from smoothed_sun.py (normalised at x = 1), so the
+    three are not in hydrostatic balance (structure = 'old model S prototype', the old solar_density = 'model S').
     solar_profiles with ln ρ and ln p from Chebyshev fits of bin/model_s.at (columns As, c_1, ρ/ρ_c, p/p_c, x) over the
-    window solar_density_window in x = r aux0 (par.solar_density = 'model S'), degree solar_density_deg. Everything else
-    (g, dS/dr, ν, κ, the differential rotation) as solar_profiles. ρ and p are normalised to their central values, as the
-    'fit' ones (the overall constants drop out of the equations). The shell fits are not even in r, so ricb = 0 uses
+    window solar_density_window in x = r aux0, degree solar_density_deg. Everything else
+    (dS/dr, ν, κ, the differential rotation) as solar_profiles. ρ and p are normalised to their central values, as the
+    8-term ones (the overall constants drop out of the equations). The shell fits are not even in r, so ricb = 0 uses
     solar_density_window = 'sun': Model S mirrored to x < 0 and fitted on [-W, W], W = aux0 + 0.005, with degree
     solar_density_sun_deg and the odd coefficients dropped, so that ln ρ and ln p are even and smooth at r = 0.
     '''
@@ -321,7 +339,7 @@ class modelS_profiles(solar_profiles):  # ----------------------- 'smoothed sun'
             w = [-W, W]
         else:
             if par.ricb == 0:
-                sys.exit("solar_density = 'model S' with ricb = 0 needs solar_density_window = None or 'sun' (an even fit)")
+                sys.exit("structure 'old model S prototype' with ricb = 0 needs solar_density_window = None or 'sun' (an even fit)")
             deg = par.solar_density_deg
             k = (x >= w[0]) & (x <= w[1])
             if k.sum() < 2*deg:
@@ -344,10 +362,75 @@ class modelS_profiles(solar_profiles):  # ----------------------- 'smoothed sun'
     def dlog_rho(self, r):
         return par.aux0*self.lrho.deriv()(r*par.aux0)
 
-    def rho_pow(self, r, p):
-        if p == 0:
-            return 1.0
-        return np.exp( -p*( self.lrho(r*par.aux0) - self.lrho(par.aux3*par.aux0) ) )
+    def gravity(self, r, rpower):   # as eight_term_profiles
+        return (r**rpower)*sms.gravity(r*par.aux0)
+
+
+class modelS_hydrostatic_profiles(solar_profiles):  # ------------------------- structure = 'model S hydrostatic'
+    '''
+    ρ from an even fit of ln ρ of bin/model_s.at, g from its mass integral and p from hydrostatic balance dp/dx = -ρ g.
+    Everything else as solar_profiles.
+    ln ρ is one even polynomial of degree structure_deg over the whole Sun (whatever ricb), fitted on 0 ≤ x ≤ aux0
+    (iteratively reweighted least squares, close to minimax in ln ρ). Then g = m(x)/(x² m(1)), m the mass integral of
+    that ρ (Model S above x = aux0 for m(1)), normalised at the surface as smoothed_sun.py, and p from dp/dx = -K ρ g
+    with K the Model S value of -p'/(ρ g), starting from Model S at x = aux0. ρ and p are normalised at the centre.
+    With structure_deg = 30 the largest errors against Model S on 0 ≤ x ≤ 0.985 are 1.0% in ρ, 0.5% in p and 0.75% in g;
+    with 50, 0.14%, 0.06% and 0.10%.
+    '''
+    def __init__(self):
+        import os
+        C = np.polynomial.chebyshev.Chebyshev
+        T = np.loadtxt(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'model_s.at'), skiprows=1)
+        x, rho, p = T[:, 4], T[:, 2], T[:, 3]
+        g = x/T[:, 1]
+        W, k = par.aux0 + 0.001, x <= par.aux0
+        V = np.polynomial.chebyshev.chebvander(x[k]/W, par.structure_deg)[:, 0::2]   # even polynomials T_2j(x/W)
+        wt = np.ones(k.sum())
+        for i in range(200):
+            c = np.linalg.lstsq(V*wt[:, None], np.log(rho[k])*wt, rcond=None)[0]
+            e = np.abs(V @ c - np.log(rho[k]))
+            wt = wt*(1 + e/e.max())
+            wt = wt/wt.max()
+        c2 = np.zeros(par.structure_deg + 1)
+        c2[0::2] = c
+        lrho = C(c2, domain=[-W, W])                                   # ln(ρ/ρ_c of Model S)
+        rc = C.interpolate(lambda y: np.exp(lrho(np.abs(y))), 500, domain=[-W, W])
+        xs, ws = np.polynomial.legendre.leggauss(200)
+        xs, ws = (xs + 1)/2, ws/2
+        mx = lambda y: y**3*((rc(np.outer(y, xs))*xs**2) @ ws)       # m(x) = x³ ∫₀¹ s² ρ(s x) ds (units of ρ_c R³)
+        ks = x >= par.aux0                                         # Model S above aux0, only for m(1)
+        m1 = mx(np.array([par.aux0]))[0] + np.sum(np.diff(x[ks])*(x[ks][1:]**2*rho[ks][1:] + x[ks][:-1]**2*rho[ks][:-1])/2)
+        self.g = C.interpolate(lambda y: y*((rc(np.outer(y, xs))*xs**2) @ ws)/m1, 500, domain=[-W, W])
+        s = (x > 0.05) & (x < 0.95)
+        K = np.median(-np.gradient(p, x)[s]/(rho[s]*g[s]))
+        def P(y):   # p_ModelS(aux0) + K ∫_|y|^aux0 ρ g dx, by quadrature from the surface (keeps the relative accuracy of small p)
+            ya = np.abs(np.atleast_1d(y))[:, None]
+            t = ya + (par.aux0 - ya)*xs
+            return np.interp(par.aux0, x, p) + K*(par.aux0 - ya[:, 0])*((np.exp(lrho(t))*self.g(t)) @ ws)
+        self.lp = C.interpolate(lambda y: np.log(P(y)/P(0.0)), 500, domain=[-W, W])   # p(0) = 1
+        for f, odd in (('g', 1), ('lp', 0)):    # cut each series (g odd, ln p even) where its coefficients first drop below
+            c = getattr(self, f).coef               # 1e-15 of the largest: beyond is round-off
+            kc = np.nonzero(np.abs(c[odd::2]) < 1e-15*np.abs(c).max())[0]
+            setattr(self, f, C(c[:2*kc[0] + odd] if kc.size else c, domain=[-W, W]))
+        self.lrho = lrho - lrho(0)                                     # ρ(0) = 1
+        kk = (x > 0.02) & k
+        print("structure 'model S hydrostatic': degree", par.structure_deg, 'max error rho %.1e, p %.1e, g %.1e' %
+              tuple(np.abs(f(x[kk])/ref[kk] - 1).max() for f, ref in ((lambda y: np.exp(lrho(y)), rho), (P, p), (self.g, g))))
+
+    def logrho(self, r, rpower):
+        return (r**rpower)*self.lrho(r*par.aux0)
+
+    def pressure(self, r, rpower):
+        return (r**rpower)*np.exp(self.lp(r*par.aux0))
+
+    def gravity(self, r, rpower):
+        return (r**rpower)*self.g(r*par.aux0)
+
+    def dlog_p(self, r):
+        return par.aux0*self.lp.deriv()(r*par.aux0)
+
+    def dlog_rho(self, r):
+        return par.aux0*self.lrho.deriv()(r*par.aux0)
 
 
 class profiles_from_file():  # -------------------------------------------------------- As read from model file
@@ -493,15 +576,32 @@ class Boussinesq_profiles():  # ------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------- Instantiate the appropriate profile class
 # -------------------------------------------------------------------------------------------------------------
+# The 'smoothed sun' structures (ρ, p, g): par.structure and its class. The order is that of the index written to params.dat
+# (spin_doctor.solar_densities); append new ones at the end. solar_density_names: the old par.solar_density values.
+structures = { '8-term fit': eight_term_profiles, 'old model S prototype': modelS_profiles,
+               'model S hydrostatic': modelS_hydrostatic_profiles }
+solar_density_names = { 'fit': '8-term fit', 'model S': 'old model S prototype' }
+
+def structure_name():   # ------------------------------ the 'smoothed sun' structure in effect (par.structure or the old solar_density)
+    '''
+    A key of structures. par.structure = None takes it from the old name par.solar_density (solar_density_names); a
+    solar_density other than its default 'fit' must then agree with par.structure.
+    '''
+    if par.solar_density not in solar_density_names:
+        sys.exit('solar_density must be one of %s' % list(solar_density_names))
+    if par.structure is None:
+        return solar_density_names[par.solar_density]
+    if par.structure not in structures:
+        sys.exit('structure must be one of %s' % list(structures))
+    if par.solar_density != 'fit' and solar_density_names[par.solar_density] != par.structure:
+        sys.exit("solar_density = %r conflicts with structure = %r; set only structure" % (par.solar_density, par.structure))
+    return par.structure
+
+
 if par.model_type == 'user def':
     prf = user_defined_profiles()
 elif par.model_type == 'smoothed sun':
-    if par.solar_density == 'model S':
-        prf = modelS_profiles()
-    elif par.solar_density == 'fit':
-        prf = solar_profiles()
-    else:
-        sys.exit("solar_density must be 'fit' or 'model S'")
+    prf = structures[structure_name()]()
 elif par.model_type in ['mesa', 'gsm', 'poly', 'astropy table']:
     prf = profiles_from_file()
 elif par.model_type == 'Boussinesq':
