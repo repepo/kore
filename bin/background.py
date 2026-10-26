@@ -150,8 +150,8 @@ def diffusivity(prf, r, which):
     t = par.diffusivity
     if t == 'uniform':
         out = np.ones_like(r)
-    elif t == 'user':
-        out = _expression(par.diffusivity_profiles[which], par.diffusivity_param, "diffusivity_profiles['%s']" % which)(r)
+    elif t == 'user':           # at |r|, so even in r (ricb = 0) whatever the expression, as the 'user' dS/dr and ΔΩ
+        out = _expression(par.diffusivity_profiles[which], par.diffusivity_param, "diffusivity_profiles['%s']" % which)(np.abs(r))
     else:                       # 'step', 'solar_rz': visc0 (therm0) below the step, 1 above
         H = 1.0 if c == 1 else cz_step(r)   # no step (and no aux3, aux4 needed) when there is no contrast
         out = H + (1 - H)*c

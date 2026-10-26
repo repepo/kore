@@ -86,7 +86,8 @@ class default_params():
         #               when thermal = 0 unless visc0 = therm0 = 1), so ViscosD and ThermaD are the convection-zone values
         #   'solar_rz'  visc0, therm0 below and 1 above as (1 + erf((x - x_OS)/d_OS))/2, [x_OS, d_OS] = solar_rz_os
         #               (Mukhopadhyay et al. 2025 eqs. 8-9; their ν_RZ/ν_CZ = 0.01, κ_RZ/κ_CZ = 0.04)
-        #   'user'      diffusivity_profiles = {'nu': '...', 'kappa': '...'}, numpy expressions of r, x and p = diffusivity_param
+        #   'user'      diffusivity_profiles = {'nu': '...', 'kappa': '...'}, numpy expressions of r, x and p = diffusivity_param,
+        #               evaluated at |r| (even in a full sphere)
         # Solar: visc0 ~ 1e-11, therm0 ~ 1e-6 to 1e-5 (ν ~ 10, κ_rad ~ 1e5 to 1e7 cm²/s against ν_t ~ κ_t ~ 1e12), so in practice
         # they are numerical floors; see sun/solar-profile.md. visc_pow and therm_pow multiply ν and κ of any type by
         # (ρ(x2)/ρ(r))**pow, x2 = aux3: 0 keeps the kinematic diffusivities constant (recommended), 1 the dynamic ones (ρν, ρκ),
