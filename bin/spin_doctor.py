@@ -40,6 +40,18 @@ def solar_density_window(k):
         return (2*k - 1)*(par.aux0 + 0.005)
     return np.nan if w is None else w[k]
 
+def row_note():
+    '''the '#' comment ending each params.dat row: the 'user' rotation profiles (diff_rot.description) and the 'tabulated'
+    file with the first 12 hex digits of its sha256'''
+    notes = []
+    if par.diff_rot and dr.description():
+        notes.append(dr.description())
+    if par.diff_rot and par.diff_rot_type == 'tabulated':
+        import hashlib
+        with open(par.diff_rot_file, 'rb') as f:
+            notes.append('tabulated: %s sha256 %s' % (par.diff_rot_file, hashlib.sha256(f.read()).hexdigest()[:12]))
+    return (' # ' + ' ; '.join(notes)) if notes else ''
+
 def diff_rot_window_code():
     '''the 'tabulated' fit used: 0 over the shell, 1 over the whole Sun (diff_rot_window = 'sun', the default when ricb = 0)'''
     if not (par.diff_rot and par.diff_rot_type == 'tabulated'):
@@ -247,15 +259,15 @@ def main(ncpus):
     params      = []                 # one row of param_table() per solution
     # ------------------------------------------------------------------------------------------------------------------------
 
-    sigmas      = np.zeros(success)  # damping of each solution
-    freqs       = np.zeros(success)  # frequency of each solution
+    sigmas      = np.zeros(success)  # Re λ of each solution (kore units; bin/units.py converts λ to ω, σ in nHz)
+    freqs       = np.zeros(success)  # Im λ of each solution (forced: the forcing frequency)
 
     # Summary table printed while processing: (header, format, value of solution i).
     # To print a new quantity, add a line here.
     table_cols = [
         ( '★',             '{:d}',      lambda i: i ),
-        ( 'Damping σ',     '{: .9f}',   lambda i: sigmas[i] ),
-        ( 'Frequency ω',   '{: .9f}',   lambda i: freqs[i] ),
+        ( 'Re λ',          '{: .9f}',   lambda i: sigmas[i] ),
+        ( 'Im λ',          '{: .9f}',   lambda i: freqs[i] ),
         ( '𝒯/𝒫',           '{:8.2e}',   lambda i: ratio(KT[i], KP[i]) ),
         ( 'residσ',        '{:8.2e}',   lambda i: resid1[i] ),
         ( 'residω',        '{:8.2e}',   lambda i: resid2[i] ),
@@ -390,10 +402,9 @@ def main(ncpus):
 
     # ---------------------------------------------------------- write post-processed data and parameters to disk
 
-    with open('params.dat','ab') as dpar:   # a 'user' differential rotation ends each row with its profiles, after '#'
-        note = (' # ' + dr.description()) if (par.diff_rot and dr.description()) else ''
+    with open('params.dat','ab') as dpar:   # each row ends with row_note(), after '#'
         np.savetxt(dpar, np.array(params),
-        fmt=[ f for _, _, f in param_table(0) ], footer='', comments='', newline=note + '\n')
+        fmt=[ f for _, _, f in param_table(0) ], footer='', comments='', newline=row_note() + '\n')
 
     # flow.dat columns, in order: (name, values, format). To add a column, append a tuple at the end.
     flow_cols = [

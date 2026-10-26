@@ -404,6 +404,16 @@ class default_params():
         # ----------------------------------------------------------------------------------------------------------------------
 
 
+    def check_names(self):
+        '''
+        Warns about the names set in parameters.py that kore does not define here (a misspelt name would otherwise be
+        ignored without notice); run-local names of builders are listed too. Called by submatrices.py.
+        '''
+        unknown = sorted(set(vars(self)) - set(vars(default_params())))
+        if unknown:
+            print('Warning: parameters.py sets names that kore does not read:', ', '.join(unknown))
+
+
     def set_scales(self):
         '''
         Sets some basic dimensionless parameters based on a chosen time scale

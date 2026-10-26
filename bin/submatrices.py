@@ -29,6 +29,8 @@ def main(ncpus):
 
     warnings.simplefilter('ignore', ss.SparseEfficiencyWarning)
 
+    par.check_names()
+
     inviscid   = ((par.ViscosD == 0) and (par.ricb == 0))        # boolean
 
     tic = timer()
