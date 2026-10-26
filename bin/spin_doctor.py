@@ -105,11 +105,14 @@ def param_table(elapsed):
         ( 'diff_rot_type',            diff_rot_code(),             '%d' ),  # index into diff_rot.TYPES ('user': its profiles end the row as a # comment)
         ( 'dSdtheta',                 par.dSdtheta,                '%.9e' ),  # thermal_wind = 3
     ] + [
+        ( 'diff_rot_term_amp_%d' % (2*k), dr.term_amp(2*k),        '%.9e' ) for k in range(9)   # a_0, a_2, ..., a_16
+    ] + [
         ( 'thermal_wind_amplitude',   par.thermal_wind_amplitude,  '%.9e' ),
         ( 'thermal_wind_radial',      par.thermal_wind_radial,     '%d' ),
         ( 'diff_rot_frame',           par.diff_rot_frame,          '%.9e' ),  # 'solar_P4', 'tabulated'
         ( 'diff_rot_nmax',            par.diff_rot_nmax,           '%d' ),    # 'tabulated'
         ( 'diff_rot_rdeg',            par.diff_rot_sun_deg if diff_rot_window_code() else par.diff_rot_rdeg, '%d' ),  # 'tabulated': the degree used
+        ( 'diff_rot_generic',         0,                           '%d' ),    # removed option, always 0 (keeps the columns after it in place)
     ] + [
         ( 'diff_rot_solar_%d' % k,    par.diff_rot_solar[k],       '%.9e' ) for k in range(6)   # 'solar_P4': c0, c2, c4, Ω_RZ, rtc, dtc
     ] + [
@@ -127,10 +130,10 @@ def param_table(elapsed):
         ( 'solar_rz_dos',             par.solar_rz_os[1],          '%.9e' ),
         ( 'diff_rot_window',          diff_rot_window_code(),      '%d' ),    # 'tabulated': 0 shell fit, 1 whole Sun ('sun')
         ( 'diff_rot_hold',            np.nan if par.diff_rot_hold is None else par.diff_rot_hold, '%.9e' ),  # nan: None
-        ( 'diff_rot_param',           par.diff_rot_param,          '%.9e' ),  # 'shellular': σ; 'user': p
         ( 'solar_rz_delta_cz',        par.solar_rz_delta_cz,       '%.9e' ),  # convection-zone superadiabaticity
         ( 'solar_rz_delta_sf',        par.solar_rz_delta_sf,       '%.9e' ),
         ( 'drop_tol',                 par.drop_tol,                '%.9e' ),
+        ( 'diff_rot_param',           par.diff_rot_param,          '%.9e' ),  # 'shellular': σ; 'user': p
     ]
 
 

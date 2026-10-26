@@ -143,6 +143,8 @@ class default_params():
         #   'Y20-wall-bounded' and 'shellular' (unless σ is even and > 0) are not smooth at r = 0: use ricb > 0.
         self.diff_rot_ampl = 1.0  # the factor of ΔΩ, for every type (1 for 'solar', 'solar_P4', 'tabulated': the profile itself)
         self.diff_rot_param = 0.0  # the shape parameter of the types that have one: σ for 'shellular'; p in 'user' expressions
+        self.diff_rot_term_amp = [1.0]*9  # a_0, a_2, ..., a_16: factors of the P0, P2, ..., P16 terms of ΔΩ, any type, after
+        # diff_rot_ampl (missing entries: 1), e.g. [1, 1, 0] drops the P4 part of 'solar_P4'; S_tw follows the scaled ΔΩ
         self.diff_rot_profiles = {}  # 'user': {n: 'expression'}, the shape f_n of each even degree n as a numpy expression of r
         # (kore radius), x (fractional solar radius) and p (diff_rot_param), with sin, cos, tan, arcsin, arccos, arctan, sinh,
         # cosh, tanh, exp, log, log10, sqrt, abs, sign, pi, where, minimum, maximum, erf, erfc; e.g. a cylindrical rotation

@@ -188,6 +188,10 @@ def codes(n):
 
 def check():
     '''stops on settings that cannot work (called by submatrices.py)'''
+    for name, new in (('diff_rot_amplitude', "diff_rot_ampl (and diff_rot_param for the σ of 'shellular')"),
+                      ('diff_rot_generic', 'nothing: there is one coupling builder now (tests/diff_rot/gen_check.py checks it)')):
+        if hasattr(par, name):   # parameter names before bin/diff_rot.py: they would otherwise be ignored without notice
+            sys.exit('par.%s is no longer read: use %s' % (name, new))
     if par.thermal and par.thermal_wind not in (0, 1, 2, 3):
         sys.exit('thermal_wind must be 0, 1, 2 or 3')
     if par.thermal and par.thermal_wind in (1, 2) and par.Beyonce == 0:
@@ -215,15 +219,20 @@ def _eval(c, r, Dorder):
     import utils as ut
     return ut.funcheb(c, r, par.ricb, ut.rcmb, Dorder)[:, -1]
 
+def term_amp(n):
+    '''a_n, the factor of the P_n term of ΔΩ: par.diff_rot_term_amp[n/2] (1 for missing entries)'''
+    a = par.diff_rot_term_amp
+    return a[n//2] if n//2 < len(a) else 1.0
+
 def fX(n, r, Dorder):
-    '''diff_rot_ampl f_n(r) and its radial derivatives, from the Chebyshev fit of the shape (at |r| if ricb = 0)'''
+    '''diff_rot_ampl a_n f_n(r) and its radial derivatives, from the Chebyshev fit of the shape (at |r| if ricb = 0)'''
     f = shapes()[n]
     c = _fit(('f', n), lambda rr, rpower: (rr**rpower)*f(np.abs(rr) if par.ricb == 0 else rr))
-    return _eval(c, r, Dorder)*par.diff_rot_ampl
+    return _eval(c, r, Dorder)*par.diff_rot_ampl*term_amp(n)
 
 def raw(n, r):
-    '''diff_rot_ampl f_n(r) evaluated directly (no fit), at |r| if ricb = 0'''
-    return par.diff_rot_ampl*shapes()[n](np.abs(r) if par.ricb == 0 else r)
+    '''diff_rot_ampl a_n f_n(r) evaluated directly (no fit), at |r| if ricb = 0'''
+    return par.diff_rot_ampl*term_amp(n)*shapes()[n](np.abs(r) if par.ricb == 0 else r)
 
 
 # ======================================================================================================================

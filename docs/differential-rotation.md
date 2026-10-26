@@ -102,6 +102,7 @@ of `2*ncpus` (`assemble.py` stops otherwise).
 | `diff_rot_type` | `'Y20'` | the profile, see below |
 | `diff_rot_ampl` | 1.0 | the factor of $\Delta\Omega$, for every type (table below) |
 | `diff_rot_param` | 0.0 | the shape parameter: $\sigma$ of `'shellular'`, `p` in `'user'` expressions |
+| `diff_rot_term_amp` | `[1.0]*9` | $a_0, a_2, \dots, a_{16}$: factors of the $P_0, P_2, \dots, P_{16}$ terms of $\Delta\Omega$, any type, after `diff_rot_ampl` (missing entries are 1); e.g. `[1, 1, 0]` drops the $P_4$ part of `'solar_P4'` |
 | `diff_rot_profiles` | `{}` | `'user'`: `{n: 'numpy expression'}`, the shape $f_n$ of each even degree (below) |
 | `diff_rot_frame` | 456.0 | `'solar_P4'`, `'tabulated'`: $\Omega_{\rm ref}/2\pi$ in nHz |
 | `diff_rot_solar` | `[464, -76, -50, 433.5, 0.71, 0.045]` | `'solar_P4'`: $c_0$, $c_2$, $c_4$, $\Omega_{RZ}$ (nHz), $r_{tc}$, $d_{tc}$ |
@@ -221,21 +222,23 @@ The advection of $s$ by the differential rotation, the first term, is always inc
 writes the options to `params.dat`, after the general columns (the order is that of `spin_doctor.param_table`):
 
     diff_rot, diff_rot_ampl, thermal_wind, diff_rot_type, dSdtheta,
-    thermal_wind_amplitude, thermal_wind_radial,
-    diff_rot_frame, diff_rot_nmax, diff_rot_rdeg, diff_rot_solar_0 ... _5,
+    diff_rot_term_amp_0, _2, ..., _16, thermal_wind_amplitude, thermal_wind_radial,
+    diff_rot_frame, diff_rot_nmax, diff_rot_rdeg, diff_rot_generic, diff_rot_solar_0 ... _5,
     solar_density, solar_density_deg, solar_density_window_lo, solar_density_window_hi,
     solar_rz, solar_rz_dSdr, solar_rz_x1, solar_rz_x2, solar_rz_d, solar_rz_core, solar_rz_xos, solar_rz_dos,
-    diff_rot_window, diff_rot_hold, diff_rot_param
+    diff_rot_window, diff_rot_hold, solar_rz_delta_cz, solar_rz_delta_sf, drop_tol, diff_rot_param
 
 `diff_rot_type` and `solar_density` are written as their index in `diff_rot.TYPES` ('Y20' 0, …, 'rigid' 7,
-'solar_P4' 8, 'tabulated' 9, 'user' 10) and `spin_doctor.solar_densities` ('fit' 0, 'model S' 1); a `'user'` run ends
+'solar_P4' 8, 'tabulated' 9, 'user' 10) and `spin_doctor.solar_densities` ('fit' 0, which is the '8-term fit', 'model S' 1,
+which is 'old model S prototype', 'model S hydrostatic' 2: the structure in effect); a `'user'` run ends
 each row with its profile definitions after a `#`, which `np.loadtxt` skips; a default
 `solar_density_window` (None) is written as nan, `'sun'` as ∓(aux0 + 0.005), and `solar_density_deg` is the degree
 actually used (`solar_density_sun_deg` for the whole-Sun fit, `structure_deg` for the hydrostatic structure). `diff_rot_window` is 0 for the shell fit and 1 for the
 whole-Sun fit (with `diff_rot_rdeg` then the degree used, `diff_rot_sun_deg`), and `diff_rot_hold` None is nan.
-`diff_rot_file` is not recorded. A `params.dat` written by an older version has other columns (before 2026-10-23:
-`diff_rot_amplitude`, the nine `diff_rot_term_amp_*` and `diff_rot_generic`); start a new file rather than appending
-to it.
+`diff_rot_file` is not recorded. The column `diff_rot_ampl` is the former `diff_rot_amplitude`, and `diff_rot_generic`
+(a removed option) is always 0, so that the columns keep the positions they had before `bin/diff_rot.py`; `diff_rot_param`
+is appended at the end. A `params.dat` written by an older version may have fewer columns; start a new file rather than
+appending to it. The former names `diff_rot_amplitude` and `diff_rot_generic` stop a run (`diff_rot.check`).
 
 ## Examples
 

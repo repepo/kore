@@ -47,7 +47,7 @@ is $\tau$, chosen by `par.timescale` (`'rotation'` gives $\tau = 1/\Omega_{\rm r
 | $\Omega_{\rm ref}$ | rotation rate of the frame in which kore solves | `diff_rot_frame` (nHz) for the solar profiles |
 | $G$ | $\Omega_{\rm ref}\tau$, the frame's rotation rate in time units | `par.Gaspard` |
 | $\Delta\Omega(r,\theta)$ | relative differential rotation, $\Omega = \Omega_{\rm ref}(1 + \Delta\Omega)$ | `par.diff_rot_type` |
-| $f_n(r)$ | Legendre coefficients of $\Delta\Omega$: $\Delta\Omega = \sum_n f_n(r) P_n(x)$, $n$ even (`diff_rot_ampl` times the shape of the type) | `zf0`, `zf2`, `zf4`, …; `zd`, `zs` for $rf_n'$, $r^2f_n''$ |
+| $f_n(r)$ | Legendre coefficients of $\Delta\Omega$: $\Delta\Omega = \sum_n f_n(r) P_n(x)$, $n$ even (`diff_rot_ampl` times $a_n$ (`diff_rot_term_amp`) times the shape of the type) | `zf0`, `zf2`, `zf4`, …; `zd`, `zs` for $rf_n'$, $r^2f_n''$ |
 | $\mathbf U_0$ | the background flow seen in the rotating frame | |
 | $\rho_0, T_0$ | background density and temperature | `prf.density` |
 | $h$ | $\ln\rho_0$ | profile code `lho` |
@@ -473,7 +473,7 @@ and $1/L'$ for the division of each row by its $L'$ (0 for $l' = 0$). The operat
 | $\hat{\mathbf z}\times T_l$ | $-(DY_l)\hat{\mathbf r} + x S_l$ | (2.5) |
 | $\sin\theta\thinspace F_\theta$ (a scalar) | $-D s + i m\thinspace t$ | $\sin\theta\thinspace \partial_\theta Y = -DY$ |
 
-`diff_rot._primitives` (line 318) composes them, per unit $G$ and per unit shape:
+`diff_rot._primitives` (line 327) composes them, per unit $G$ and per unit shape:
 
 $$
 \mathbf W_{\rm sh} = P_n(x)\left[i m\thinspace \mathbf u_{\rm sh} + 2\hat{\mathbf z}\times\mathbf u_{\rm sh}\right] + \hat{\mathbf z}\times\left[-P_n'(x)\sin\theta\thinspace u_{\theta,{\rm sh}}\thinspace \hat{\mathbf r}\right], \qquad
@@ -533,7 +533,7 @@ followed by the degree character (`zf0`, `zd0`, `zs0` for $n = 0$, `zf2`, … ; 
 | v, P | `df_1C_D0P` | $L_l C^t_{dq}$ | $r\rho_0 (rf') P$ | `v2{s}0_D0` |
 | v, T | `f_1C_D0T` | $C^t_T$ | $r^2\rho_0 f T$ | `v1{a}0_D0` |
 
-This table is `diff_rot.momentum_coefficients` (line 342, the dictionary `K`) and `diff_rot.MOMENTUM` (line 404). The
+This table is `diff_rot.momentum_coefficients` (line 351, the dictionary `K`) and `diff_rot.MOMENTUM` (line 413). The
 coefficient names are those of the closed forms, `tests/diff_rot/diff_rot_coefficients.py`: `f`, `df`, `d2f` for the profile factor ($f$, $rf'$,
 $r^2f''$), `1C`/`2C` for the single/double curl rows, the radial factor (`D0`, `D1`, `D2`, `lho1`, `lho2`), and `P`/`T`
 for the column. ($C^q_{dq} = 0$, since the shear term has no radial component, so `df_2C_D0P` keeps
@@ -548,7 +548,7 @@ $L_l C^q_{dq}$ only formally.)
   poloidal and toroidal degrees of one symmetry class alternate, so same-type couplings ($P \to P$, $T \to T$) have
   even $\Delta l$ and mixed ones ($P \leftrightarrow T$) odd $\Delta l$.
 - Together: $\lvert\Delta l\rvert \le n$ for $P \to P$ and $T \to T$, and $\le n + 1$ for $P \leftrightarrow T$
-  (`diff_rot.max_dl`, line 419). For $\Delta\Omega = f_0 + f_2P_2$: $\Delta l \in \lbrace 0, \pm 2\rbrace$ and
+  (`diff_rot.max_dl`, line 428). For $\Delta\Omega = f_0 + f_2P_2$: $\Delta l \in \lbrace 0, \pm 2\rbrace$ and
   $\lbrace\pm 1, \pm 3\rbrace$; the $f_0$ terms alone have $\Delta l = 0$ and $\pm 1$, like the Coriolis force.
 - For $m = 0$ the Doppler term vanishes, but the Coriolis and shear terms do not.
 
@@ -625,7 +625,7 @@ the angular algebra of [`bin/angular.py`](../bin/angular.py). The rest of kore c
 
 | stage | what it does for the differential rotation | where |
 | --- | --- | --- |
-| parameters | switches, profile choice, amplitude, `'user'` profiles | [`params_default.py`](../bin/params_default.py#L107), lines 107–160 |
+| parameters | switches, profile choice, amplitude, `'user'` profiles | [`params_default.py`](../bin/params_default.py#L107), lines 107–162 |
 | angular algebra | $X$, $D$, $P_n(X)$, the vector operations, harmonics on a grid | [`angular.py`](../bin/angular.py) |
 | everything else | profiles, thermal wind, angular couplings, labels, blocks, Δl ranges | [`diff_rot.py`](../bin/diff_rot.py), sections 1–4 of the module |
 | radial matrices | builds the `.mtx` of the labels it is given | [`submatrices.py`](../bin/submatrices.py#L189) (`dr.labels()`), [`radial_profiles.burrito`](../bin/radial_profiles.py) (`dr.profile_functions()`) |
@@ -646,6 +646,7 @@ tested without a run directory.
 | `diff_rot_type` | `'Y20'` | the profile (§5.1) |
 | `diff_rot_ampl` | 1.0 | the factor of $\Delta\Omega$, for every type |
 | `diff_rot_param` | 0.0 | the shape parameter: $\sigma$ of `'shellular'`, `p` in `'user'` expressions |
+| `diff_rot_term_amp` | `[1.0]*9` | $a_0, a_2, \dots, a_{16}$: factors of the $P_0, P_2, \dots, P_{16}$ terms of $\Delta\Omega$, any type, after `diff_rot_ampl` (missing entries are 1) |
 | `diff_rot_profiles` | `{}` | `'user'`: `{n: 'numpy expression'}` for each even degree (§5.1) |
 | `diff_rot_frame` | 456.0 | `'solar_P4'`, `'tabulated'`: $\Omega_{\rm ref}/2\pi$ in nHz |
 | `diff_rot_solar` | `[464, -76, -50, 433.5, 0.71, 0.045]` | `'solar_P4'`: $c_0$, $c_2$, $c_4$, $\Omega_{RZ}$ (nHz), $r_{tc}$, $d_{tc}$ |
@@ -661,8 +662,8 @@ which resets them (with `timescale = 'rotation'` it sets `Beyonce = 0`; `thermal
 `submatrices.py` with an error through `diff_rot.check`, since $S_{tw} \propto 1/\mathrm{Beyonce}$).
 
 Before 2026-10-23 the amplitude was `diff_rot_amplitude`, which was the exponent $\sigma$ for `'shellular'` and $N_0^2$
-for `'shellular_boussinesq'`; per-degree factors `diff_rot_term_amp` and the switch `diff_rot_generic` (closed forms or
-the algebra for $P_0$, $P_2$) no longer exist.
+for `'shellular_boussinesq'`; the switch `diff_rot_generic` (closed forms or the algebra for $P_0$, $P_2$) no longer
+exists. Both former names stop a run (`diff_rot.check`), so that an old parameter file does not run with the defaults.
 
 ### 4.2 The functions of `diff_rot.py`
 
@@ -672,16 +673,16 @@ the algebra for $P_0$, $P_2$) no longer exist.
 | `degrees()`, `n_max()` | the even degrees of $\Delta\Omega$ and the highest one |
 | `tw_degrees()`, `tw_nmax()` | the degrees of $S_{tw}$: 2 to $n_{\max} + 2$ (`thermal_wind` 1), $2n_{\max} + 2$ (2), 2 (3), none (0) |
 | `codes(n)` | the profile codes `zf`, `zd`, `zs`, `tw`, `tp` + the degree character |
-| `fX(n, r, Dorder)` (line 218) | `diff_rot_ampl` $f_n$ and its derivatives, from the Chebyshev fit (§5.2) |
-| `raw(n, r)` | `diff_rot_ampl` $f_n$ evaluated directly |
-| `sigma_coefficients(r)` (line 245) | the Legendre coefficients $\sigma_k(r)$ of $S_{tw}$ (§5.4) |
+| `fX(n, r, Dorder)` (line 227) | $f_n$ (`diff_rot_ampl` × $a_n$ × shape) and its derivatives, from the Chebyshev fit (§5.2) |
+| `raw(n, r)` | $f_n$ evaluated directly |
+| `sigma_coefficients(r)` (line 254) | the Legendre coefficients $\sigma_k(r)$ of $S_{tw}$ (§5.4) |
 | `sigmaX(n, r, Dorder)` | $\sigma_n$ and its derivatives from its Chebyshev fit |
-| `profile_functions()` (line 297) | `{code: f(r, Dorder)}` of every diff-rot profile code, for `burrito` |
+| `profile_functions()` (line 306) | `{code: f(r, Dorder)}` of every diff-rot profile code, for `burrito` |
 | `momentum_coefficients(n, m)`, `momentum_coef(...)` | the coefficients of §3.4, and one of them for a target degree and Δl |
 | `heat_coefficients(m)`, `heat_coef(...)` | $P_n(X)$, $P_n'(X)$, $P_n'(X)D$ by diagonal, and one coefficient |
-| `labels()` (line 437) | every radial operator of the terms, with the parity class of its column |
-| `dl_range(section, component)` (line 451) | the Δl of the blocks of a row section and column |
-| `momentum_block(...)`, `heat_block(...)` (lines 464, 483) | one block of $A$ |
+| `labels()` (line 446) | every radial operator of the terms, with the parity class of its column |
+| `dl_range(section, component)` (line 460) | the Δl of the blocks of a row section and column |
+| `momentum_block(...)`, `heat_block(...)` (lines 473, 492) | one block of $A$ |
 | `check()`, `description()` | stops on settings that cannot work; the `'user'` definitions as text for `params.dat` |
 | `TYPES` | the types, in the order of their code in `params.dat` |
 
@@ -689,7 +690,8 @@ the algebra for $P_0$, $P_2$) no longer exist.
 
 ### 5.1 The profiles $f_n$ of each type
 
-`diff_rot.shapes` (line 116) defines the shape of each degree; $f_n$ = `diff_rot_ampl` × shape. With $a$ =
+`diff_rot.shapes` (line 116) defines the shape of each degree; $f_n$ = `diff_rot_ampl` × $a_n$ × shape, with $a_n$ =
+`diff_rot_term_amp[n/2]` (1 in the table below). With $a$ =
 `diff_rot_ampl`, $p$ = `diff_rot_param`, and $x$ the fractional solar radius (`diff_rot.solar_x`:
 $x = r\cdot$`aux0` with `model_type = 'smoothed sun'`, $x = r$ otherwise):
 
@@ -745,10 +747,10 @@ nHz.
 
 ### 5.2 Derivatives and the full sphere
 
-The operators need $f_n$, $r f_n'$ and $r^2 f_n''$ on the Chebyshev nodes. `diff_rot.fX` (line 218) transforms the
+The operators need $f_n$, $r f_n'$ and $r^2 f_n''$ on the Chebyshev nodes. `diff_rot.fX` (line 227) transforms the
 shape to $N$ Chebyshev coefficients on the radial domain (`utils.chebco_f`, coefficients below $10^{-14}$ of the
 largest dropped; cached per degree), evaluates the series or its derivatives (`utils.funcheb`) and multiplies by
-`diff_rot_ampl`. So $f'$ and $f''$ are always consistent with the resolved $f$, also for tabulated, step-like or
+`diff_rot_ampl` and $a_n$. So $f'$ and $f''$ are always consistent with the resolved $f$, also for tabulated, step-like or
 `'user'` profiles.
 
 With `ricb = 0` the radial coordinate is $r \in [-1, 1]$ and each operator keeps only one parity of Chebyshev
@@ -777,7 +779,7 @@ With `adiab_tw` (`ThermaD = 0` with the thermal wind) the `tw`, `tp` profiles ar
 
 ### 5.4 The thermal-wind coefficients $\sigma_n$
 
-`diff_rot.sigma_coefficients(r)` (line 245) solves (2.9) in Legendre space at all the radii at once, with the $m = 0$
+`diff_rot.sigma_coefficients(r)` (line 254) solves (2.9) in Legendre space at all the radii at once, with the $m = 0$
 matrices of `angular.py` (the Schmidt harmonics of order 0 are the Legendre polynomials):
 
 - the Legendre coefficients of $\Delta\Omega$ and $\partial_r\Delta\Omega$ are the $f_n$ and $f_n'$ (`fX`); a product of two
@@ -817,12 +819,12 @@ several terms share is computed only once.
 
 ### 6.2 The labels
 
-`diff_rot.labels()` (line 437) lists every radial operator of the terms, and `submatrices.py` (line 189) adds them with
+`diff_rot.labels()` (line 446) lists every radial operator of the terms, and `submatrices.py` (line 189) adds them with
 the vector parity of their column (`vP` for $P$ and $s$, `vT` for $T$), after `diff_rot.check()`:
 
 - for each degree $n$ of $\Delta\Omega$, the 18 momentum labels of the table of §3.4 (`diff_rot.MOMENTUM` with the codes
   of $n$);
-- with `thermal = 1` (`_heat_labels`, line 423): (a) `h0pss0zf{n}0_D0` ($r^2 p_0 f_n$; `h0zf{n}0_D0` without `pss` if
+- with `thermal = 1` (`_heat_labels`, line 432): (a) `h0pss0zf{n}0_D0` ($r^2 p_0 f_n$; `h0zf{n}0_D0` without `pss` if
   `ThermaD = 0`) for each degree of $\Delta\Omega$; and for each degree $n$ of $S_{tw}$: (b) `h1tp{n}0_D0`
   ($r p_0\sigma_n'$, only if `thermal_wind_radial = 1`), (c) `h2tw{n}0_D0`, `h1tw{n}0_D1`, `h1tw{n}0lho1_D0`
   ($p_0\sigma_n$ times $P$, $rP'$, $rh'P$), (c′) `h1tw{n}0_D0` ($r p_0\sigma_n$ acting on $T$, parity `vT`).
@@ -846,7 +848,7 @@ profile is dropped.
 ### 7.1 Momentum: `diff_rot.momentum_block`
 
 `operators.differential_rotation(l, section, component, offdiag)` (line 113) calls
-`diff_rot.momentum_block(l, section, component, offdiag, M)` (line 464) with `M` the operators' namespace, where the
+`diff_rot.momentum_block(l, section, component, offdiag, M)` (line 473) with `M` the operators' namespace, where the
 `.mtx` matrices are loaded under their labels. For the row degree `l` (= $l'$), the section (`'u'` or `'v'`), the column
 type (`'upol'` for $P$, `'utor'` for $T$) and `offdiag` = $l - l'$, it sums over the degrees $n$ of $\Delta\Omega$ that
 couple this Δl (§3.5): $\lvert\Delta l\rvert \le$ `max_dl(n, …)` and the parity of Δl; for each, the coefficient
@@ -860,14 +862,14 @@ $$
 The $1/L'^3$ makes these rows consistent with all the other momentum operators (§3.2). It returns `[matrix, offd]`,
 `offd` the column block offset (`utils.dr_offd`, §7.3), or `[0, 0]` if no degree couples this Δl.
 
-`momentum_coefficients(n, m)` (line 342) builds the coefficients once per $(n, m)$, for degrees up to `lmax` + n + 6
+`momentum_coefficients(n, m)` (line 351) builds the coefficients once per $(n, m)$, for degrees up to `lmax` + n + 6
 (building beyond `lmax` keeps the entries near `lmax` free of truncation errors), and stores them both as sparse
 matrices and by diagonal (`angular.band`, $\lvert\Delta l\rvert \le n + 3$), so that `momentum_coef` is an array lookup. The
 whole set takes milliseconds at `lmax` 1025.
 
 ### 7.2 Heat: `diff_rot.heat_block`
 
-`operators.thermal_diffrot` (line 190) calls `diff_rot.heat_block(l, component, offdiag, M)` (line 483), which returns
+`operators.thermal_diffrot` (line 190) calls `diff_rot.heat_block(l, component, offdiag, M)` (line 492), which returns
 the section-`h` blocks of (3.9) times the row weight. With `ThermaD > 0` the rows are $r^2 p_0\times$(eq)$/L'^3$:
 
 | term | component, $\Delta l$ | expression | radial operator |
@@ -878,7 +880,7 @@ the section-`h` blocks of (3.9) times the row weight. With `ThermaD > 0` the row
 | (c′) | `'utor'`, odd, $<$ `tw_nmax` | `-1j*m*heat_coef('dPn')*M['h1tw{n}0_D0']` | $-i m\thinspace r p_0\sigma_n\thinspace T$ |
 
 with the sums over the degrees of $\Delta\Omega$ for (a) and of $S_{tw}$ for (b), (c), (c′). `Ls` is $L_l$ of the source
-degree (from $u_r = L_l P/r$). The angular coefficients come from `heat_coefficients(m)` (line 377): $X$, $D$ from
+degree (from $u_r = L_l P/r$). The angular coefficients come from `heat_coefficients(m)` (line 386): $X$, $D$ from
 `angular.Algebra` up to `lmax` + max(8, $n_{hi}$ + 4), and $P_n(X)$, $P_n'(X)$, $P_n'(X)D$ for every even $n$ up to
 the highest degree of $\Delta\Omega$ and $S_{tw}$, stored by diagonal. The column offset is the index difference in
 `utils.ell`.
@@ -904,7 +906,7 @@ surface of a solar model and spoils the conditioning otherwise.
 
 `assemble.py` loops over the row degrees of each MPI rank. The unknown vector is [$P$ blocks][$T$ blocks][$s$
 blocks], each of `N1` Chebyshev coefficients, with `nb` blocks per type. For row block $l'$ (row `row`, diagonal
-column `col0`) and each Δl of `diff_rot.dl_range(section, component)` (line 451) whose source degree exists, it calls the
+column `col0`) and each Δl of `diff_rot.dl_range(section, component)` (line 460) whose source degree exists, it calls the
 operator and, unless it returned `[0, 0]`, adds the block at column `basecol + col0 + offd*N1`:
 
 | rows | column | Δl (`dl_range`) | lines |
@@ -958,7 +960,7 @@ The per-degree workers then add:
   `Ensdr` the enstrophy term $(\nabla\times\mathbf u)\cdot(\nabla\times\mathbf F)$;
 - `thermal_worker` (lines 788–791): `Wdr_thm` = $-2\thinspace\mathrm{Re}\int p_0 s^\ast[i m G\Delta\Omega s + \mathbf u\cdot\nabla S_{tw}]\thinspace dV$.
 
-`spin_doctor` (lines 357–374) includes them in the residuals:
+`spin_doctor` (lines 360–377) includes them in the residuals:
 
 $$
 \begin{aligned}
@@ -970,7 +972,7 @@ $$
 
 and the enstrophy residual includes `Ensdr`. By §2.3, only the shear part of $\mathbf W$ contributes to `Wdr`; the
 Doppler and local-Coriolis parts appear in `Wdr_im`. The diff-rot options are written to `params.dat`
-(`spin_doctor.param_table`: `diff_rot_ampl`, `diff_rot_param`, and `diff_rot_type` as its index in `diff_rot.TYPES`,
+(`spin_doctor.param_table`: `diff_rot_ampl`, the $a_n$, `diff_rot_param`, and `diff_rot_type` as its index in `diff_rot.TYPES`,
 with a `'user'` run's profile definitions at the end of the row after `#`), and `Wdr`, `Wdr_im`, `Ensdr`, `Wdr_thm` to
 `flow.dat` and `thermal.dat`.
 
