@@ -18,7 +18,8 @@ keys (default):
           'step' with ν, κ constant
   dsrz (1.32e-2): (∂s0/∂r)_RZ in erg/g/K/cm       nurz (1e10), kaprz (4e10): ν_RZ, κ_RZ in cm²/s
   nu (1e12), kappa (= nu): ν_CZ, κ_CZ             cp (3.46e8): c_p for the units of s
-  drtype ('solar_P4'): or 'tabulated' with file= (diff_rot_window 'sun', degree 60, hold= x_h to hold Ω below x_h R☉)
+  drtype ('solar_P4'): or 'tabulated' with file= (diff_rot_window 'sun', degree 60, hold= x_h to hold Ω below x_h R☉;
+                        hold sets diff_rot_hold, which is faulty: do not use it)
   nmax (12), frame (456.0), tw (2), rad (0), bco (0): bco_thermal (their s = 0 at the top)
   structure ('old model S prototype'): par.structure, e.g. '8-term fit' (smoothed_sun.py) or 'model S hydrostatic'
   extra: python statements appended to parameters.py

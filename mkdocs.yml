@@ -4,6 +4,7 @@ nav:
   - Introduction: index.md
   - Installation: page2.md
   - Non-dimensionalization: page3.md
+  - Background model: background.md
   - Differential rotation:
       - User guide: differential-rotation.md
       - Heat equation and benchmarks: heat-equation.md

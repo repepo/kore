@@ -9,7 +9,10 @@ MPI and regression checks pass, and as ThermaD → 0 the eigenvalues of diffusiv
 ThermaD = 0 ones wherever the resolution allows; the remaining limitations are listed under [Caveats](#caveats).
 
 Results of the change, 2026-10-12. The checks are in `tests/heat_dr/`; the analysis scripts named below (`track.py`,
-`coupling.py`, `dense.py`) are not part of the repository.
+`coupling.py`, `dense.py`) are not part of the repository. The parameter names are those of that date: the 'user def'
+profiles are now structure `'Wu 2005'` with stratification `'top hat'`, the smoothed sun is structure `'8-term fit'`
+with stratification `'odd top hat'` and diffusivity `'step'`, `aux0` is `r_out` ([background.md](background.md)), and
+`diff_rot_amplitude` is `diff_rot_ampl`.
 
 ## Background: how kore stores the heat equation
 

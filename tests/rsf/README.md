@@ -11,7 +11,7 @@ built with (the script checks), otherwise 'two ranks' are two independent copies
 The runs: `sh48`, `sh128` (shell, ricb 0.35, m 1), `fs160` (full sphere, m 1, symm −1), `fs192` (m 2, symm −1), `shpow`
 and `fspow` (rpower_u 6, rpower_v 4, rhopower 2, shell N 192 and sphere N 320: the pairing weight ρ₀^(1−rhopower) r^(3−rpower) amplifies the truncation of the rows,
 so B1 needs more N than with the default powers), all hydro, uniform rotation, Θ = 1, ν_t = ν, l_c 0.05,
-taper 0.1; `sun` and `sun_mlt` ('smoothed sun' full sphere, N 192, ν_t from a convection-zone step over a radiative
+taper 0.1; `sun` and `sun_mlt` (full sphere with the '8-term fit' structure, N 192, ν_t from a convection-zone step over a radiative
 floor, l_c from H_p, rsf_theta 'nu' and 'mlt'); `sun_cut` (as `sun_mlt`, with the inner cut-off `rsf_rcut` 0.45,
 width 0.2, across the tail of the viscosity step); `sp` (shell N 48, lmax 24, no-slip, l_c 0.1, 40 realisations) for the
 solves.

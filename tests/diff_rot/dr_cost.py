@@ -2,7 +2,7 @@
 '''
 dr_cost.py WORKDIR N LMAX NCPUS [LIMIT_GB]: the cost of the differential rotation against its highest degree n.
 
-For each case and n, builds a run in WORKDIR (user def, ricb 0.35, m 2, symm 1, diff_rot_type 'user' with
+For each case and n, builds a run in WORKDIR ('Wu 2005' with 'top hat', ricb 0.35, m 2, symm 1, diff_rot_type 'user' with
 ΔΩ = Σ_{k even <= n} 0.02 r² P_k), runs submatrices (NCPUS processes), assemble and solve (mpiexec -n NCPUS, MUMPS
 shift-invert, nev 4), and records the wall time and the peak memory of each step (the RSS summed over every process the
 step started, sampled every 0.1 s), the number and size of the *.mtx files and nnz of A and B. Cases: no differential

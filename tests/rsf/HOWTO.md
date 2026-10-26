@@ -9,7 +9,7 @@ factorisation; each realisation of the random stress is then a cheap back-substi
 - ω and σ are the real and imaginary parts of an eigenfrequency in nHz, in the 456 nHz frame.
 - w is a frequency in kore units, as the code uses it: w = −ω/456, so positive w is retrograde.
 - An eigenvalue λ in `eigenvalues0.dat` has σ = 456 Re λ and ω = −456 Im λ. Its resonance is at w = Im λ.
-- Radii are in kore units. In the solar runs the outer wall is r = 1 = 0.985 R☉ (`aux0`), so 0.70 R☉ is r = 0.7107.
+- Radii are in kore units. In the solar runs the outer wall is r = 1 = 0.985 R☉ (`r_out`), so 0.70 R☉ is r = 0.7107.
 
 ## 1. Files
 
@@ -202,7 +202,7 @@ each with no cut, full above 0.74 R☉ and full above 0.76 R☉, edge width 0.08
 | `rsf_lum` | None | luminosity in kore units, for 'mlt': 7.0e-7 for the Sun (ρ_c, r0 = 0.985 R☉, Ω = 2π × 456 nHz) |
 | `rsf_alpha`, `rsf_lc_max` | 2.0, 0.25 | eddy size l_c, a smooth minimum of `rsf_alpha` H_p and `rsf_lc_max` |
 | `rsf_lc` | None | a constant l_c instead |
-| `rsf_nu_floor` | None | ν_t = ViscosD (ν/ν0 − floor), clipped at 0. None: visc0 for 'smoothed sun' with visc0 < 1, else 0. With the Dey viscosity (mkgs.py `nu=dey`) set 1e-3, or the 1e9 RZ viscosity is forced too; with `nu=mk` the default is right |
+| `rsf_nu_floor` | None | ν_t = ViscosD (ν/ν0 − floor), clipped at 0. None: visc0 for diffusivity 'step' or 'solar_rz' with visc0 < 1, else 0. With the Dey viscosity (mkgs.py `nu=dey`) set 1e-3, or the 1e9 RZ viscosity is forced too; with `nu=mk` the default is right |
 | `rsf_angular` | 1 | 1: the variance at degree l times exp(−L l_c²/(2r²)), L = l(l+1) (eddies of finite horizontal size); 0: white in angle |
 | `rsf_taper` | 0.04 | the stress goes to zero (erfc) over this width below the outer wall, and above ricb > 0 |
 | `rsf_taper_in` | 0.2 | the same above r = 0 in a full sphere |

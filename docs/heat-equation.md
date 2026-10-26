@@ -36,6 +36,17 @@ History. The terms were derived on 2026-10-11 and committed in three steps on `a
 
 The checks are in `tests/heat_dr/` and `tests/diff_rot/`.
 
+§5 to §9 record what was run between 2026-10-11 and 2026-10-24, in the parameter names of that time. Since 2026-10-26
+the background is chosen by `structure`, `stratification` and `diffusivity` instead ([background.md](background.md)
+translates the former names):
+'user def' is structure `'Wu 2005'` with stratification `'top hat'`; 'smoothed sun' is a solar structure (`'8-term fit'`
+for `solar_density = 'fit'`, `'old model S prototype'` for `'model S'`) with stratification `'odd top hat'` and
+diffusivity `'step'`, or both `'solar_rz'` for `solar_rz = 1`; 'Boussinesq' is `'uniform'`; and `aux0` is `r_out`. The
+amplitude `diff_rot_amplitude` is `diff_rot_ampl` since 2026-10-23 ([differential-rotation.md](differential-rotation.md)),
+and the code these sections describe (`diff_rot_generic.py`, `heat_dr_coefficients.py` and the differential-rotation
+parts of `radial_profiles.py` and `utils.py`) is now in `bin/diff_rot.py` and `bin/angular.py`
+([differential_rotation_details.md](differential_rotation_details.md)).
+
 ## Notation and code names
 
 Everything is dimensionless, in kore units: the length unit $R$ is the outer radius of the shell, and the time unit is
@@ -292,7 +303,7 @@ $$
 
 kore's $s$ is $\delta s/c_p$, and $\Delta_\theta s < 0$ gives warm poles. Because $\sigma_2$ is constant in $r$, term (b)
 vanishes and only (c) and (c′) act. $\Omega$ still enters through (a) and the momentum equation. For uniform rotation
-use `diff_rot_type = 'rigid'` with `diff_rot_amplitude = 0`.
+use `diff_rot_type = 'rigid'` with `diff_rot_ampl = 0`.
 
 ### What is neglected
 
@@ -526,7 +537,8 @@ $$
 
 It needs (a) only, with $S_{tw} = 0$: their background is balanced by centrifugal buoyancy, which kore does not carry.
 With (3) switched on, $\sigma_2 = 2N^2r^2/(3\thinspace \mathrm{Beyonce})$ would be as large as $S_0'$, and the comparison would
-test the wrong model. It also needs `aub`, `abu` and `logrho` in `Boussinesq_profiles`.
+test the wrong model. kore runs it with structure `'uniform'`, stratification `'linear'` and `thermal_wind = 0`
+([differential_rotation_details.md](differential_rotation_details.md) §11).
 
 **Bekki et al. 2022.** Fully compressible, solar $\rho_0$, helioseismic $\Omega$, and $S_{tw}$ from (2) with the full
 $\Omega^2$, with $s_0$ uniform in $r$. It needs (a), (c) and (c′). kore's $S_{tw}$ also has (b), which they drop by
@@ -683,20 +695,23 @@ growth +7.30 nHz).
 ## 7. Still open
 
 - Done in §8: the switch `thermal_wind_radial` for $u_r\thinspace \partial_r S_{tw}$ (term (b)), $P_4$ ('solar_P4') and
-  tabulated $\Omega(r, \theta)$, the Model S density (`solar_density`), and the amplitude controls.
+  tabulated $\Omega(r, \theta)$, the Model S density (now structure `'old model S prototype'`), and the amplitude
+  controls.
 - ThermaD = 0 with `thermal_wind ≥ 1` is implemented ($r^2$ rows in $C^{(1)}$, §3) and tested
   ([thermad0.md](thermad0.md)). Open there:
     - the ThermaD → 0 limit with fixed-entropy walls has an unresolved boundary layer;
     - without diffusion the thermal wind has small-scale growing modes that are not converged in lmax;
     - its rows carry $\sigma_n\thinspace (\ln\rho)'$ (term (c)) without $p_0$, which converges slowly in N when $\rho$ nearly
-      vanishes at the surface ('user def' with aux0 → 1, ricb = 0). The $p_0$-weighted checks do not see it;
+      vanishes at the surface (structure `'Wu 2005'` with `r_out` → 1, ricb = 0). The $p_0$-weighted checks do not see it;
       `tests/heat_dr/row_check.py` does.
-- The 'smoothed sun' density near the surface (§6): `solar_density = 'model S'` (§8) avoids it; the default is
-  unchanged.
+- The density of the 8-term fit near the surface (§6): structure `'model S hydrostatic'` (§8) avoids it, and new runs
+  use it.
 - 'Y20-wall-bounded' and 'shellular' (except even $\sigma > 0$) at ricb = 0 are not smooth at $r = 0$; this is now a
   WARNING.
-- Boussinesq profiles (no `abu`, `aub`, `logrho`) are left untouched. The same holds for the profiles read from a file
-  (`'poly'`, `'mesa'`, `'gsm'`, `'astropy table'`): only `'user def'` and `'smoothed sun'` define a rotation profile.
+- The Boussinesq background (now structure `'uniform'`) runs with the differential rotation since 2026-10-23, when the
+  rotation profiles stopped depending on the background model
+  ([differential_rotation_details.md](differential_rotation_details.md) §11). The models read from a file (`'poly'`,
+  `'mesa'`, `'gsm'`, `'astropy table'`) never ran on this branch and were removed on 2026-10-26.
 - `tests/heat_dr/csolve.py` has no equilibration (kore's `solve.py` has Ruiz scaling); it now warns when every
   eigenvalue comes back equal to the shift.
 
@@ -765,7 +780,7 @@ projected on $P_0\ldots P_{\mathrm{nmax}}$ (`diff_rot_nmax`, 4–16), then fitte
 degree `diff_rot_rdeg` (24). The fit and truncation errors are printed.
 
 Both use $\Delta\Omega = \Omega/\Omega_{\rm ref} - 1$, with $\Omega_{\rm ref}/2\pi$ = `diff_rot_frame` (456 nHz), and
-$x = r\cdot\mathrm{aux0}$ for 'smoothed sun'. For the Edmond profile the truncation error at nmax 8 is up to 17 nHz near
+$x = r\cdot$`r_out` for a solar structure. For the Edmond profile the truncation error at nmax 8 is up to 17 nHz near
 the poles at the surface; nmax 12 is the working choice.
 
 ### Amplitude controls
@@ -773,21 +788,22 @@ the poles at the surface; nmax 12 is the working choice.
 These apply to every profile type:
 
 - `diff_rot_term_amp` = $[a_0, a_2, \ldots, a_{16}]$ multiplies each $P_n$ term of $\Delta\Omega$ (missing entries are 1).
-- `diff_rot_amplitude` multiplies the whole of 'solar_P4' and 'tabulated' (the other types keep its old meaning).
+- `diff_rot_ampl` multiplies the whole of $\Delta\Omega$, for every type. (Until 2026-10-23 it was `diff_rot_amplitude`,
+  which was the exponent of 'shellular' and $N_0^2$ of 'shellular_boussinesq'.)
 - `thermal_wind_amplitude` multiplies $S_{tw}$, which is otherwise the thermal wind of the scaled $\Delta\Omega$.
 - `thermal_wind_radial` = 0 drops $u_r\thinspace \partial_r S_{tw}$ (term (b)), as the papers do; 1 (default) keeps it.
 
 ### Model S density
 
 This is a legacy structure, kept so that older runs reproduce; new runs use the hydrostatic structure below.
-`solar_density = 'model S'` (`structure = 'old model S prototype'`) replaces the 'smoothed sun' $\ln\rho$ and $\ln p$ by
-Chebyshev fits of `bin/model_s.at`; $g$ stays the 8-term one, so the three are not in hydrostatic balance.
+`structure = 'old model S prototype'` (formerly `solar_density = 'model S'`) replaces the $\ln\rho$ and $\ln p$ of the
+8-term fit by Chebyshev fits of `bin/model_s.at`; $g$ stays the 8-term one, so the three are not in hydrostatic balance.
 The fit has degree `solar_density_deg` (30) on `solar_density_window`, by default the shell widened by 0.01 below and
 0.005 above. It reproduces the run-local Model S fit of the §6 benchmark runs: $A$ and $B$ are bitwise equal.
 
 The shell fit is not even in $r$, so it cannot be used with ricb = 0. `solar_density_window = 'sun'` (the default when
 ricb = 0) fits Model S once over the whole Sun instead: the table is mirrored to $x < 0$, fitted on
-$[-W, W]$, $W$ = aux0 + 0.005, with degree `solar_density_sun_deg` (60), and the odd coefficients are dropped, so
+$[-W, W]$, $W$ = `r_out` + 0.005, with degree `solar_density_sun_deg` (60), and the odd coefficients are dropped, so
 $\ln\rho$ and $\ln p$ are even and smooth at $r = 0$. The fit is the same for every ricb. Its error is $1.7\times10^{-3}$
 in $\ln\rho$ and $2.6\times10^{-4}$ in $\ln p$, mostly at 0.70–0.72 R☉, where Model S has a sharp feature at the base
 of the convection zone (the shell fit reaches $2\times10^{-4}$ there). On the §8 shell it moves the m 3 Rossby n0 and n1
@@ -795,15 +811,15 @@ modes by ≤ 0.001 nHz.
 
 ### Hydrostatic structure
 
-`structure = 'model S hydrostatic'` (with `model_type = 'smoothed sun'`) fits only $\ln\rho$ and derives the rest, so the
-background is in hydrostatic balance. $\ln\rho$ is one even polynomial of degree `structure_deg` (30) over the whole Sun,
-fitted to `bin/model_s.at` on $0 \le x \le$ aux0 (iteratively reweighted least squares, close to minimax in $\ln\rho$).
+`structure = 'model S hydrostatic'` fits only $\ln\rho$ and derives the rest, so the background is in hydrostatic
+balance. $\ln\rho$ is one even polynomial of degree `structure_deg` (30) over the whole Sun, fitted to `bin/model_s.at`
+on $0 \le x \le$ `r_out` (iteratively reweighted least squares, close to minimax in $\ln\rho$).
 Then, with $\rho$ in units of $\rho_c$,
 
 $$m(x) = \int_0^x \rho\, x'^2\, dx', \qquad g = \frac{m(x)}{x^2\, m(1)}, \qquad \frac{dp}{dx} = -K \rho\, g,$$
 
-$g$ normalised at the surface as the 8-term fit ($m(1)$ takes Model S above aux0), $K$ the Model S value of
-$-p'/(\rho g)$, and $p$ integrated inward from Model S at aux0. $\rho$ and $p$ are normalised at the centre.
+$g$ normalised at the surface as the 8-term fit ($m(1)$ takes Model S above `r_out`), $K$ the Model S value of
+$-p'/(\rho g)$, and $p$ integrated inward from Model S at `r_out`. $\rho$ and $p$ are normalised at the centre.
 
 | `structure_deg` | 24 | 30 | 40 | 50 | 60 |
 |---|---|---|---|---|---|
@@ -811,15 +827,15 @@ $-p'/(\rho g)$, and $p$ integrated inward from Model S at aux0. $\rho$ and $p$ a
 | full-sphere HFR m 8, $\omega$ $\sigma$ (nHz) | −237.49 −32.49 | −236.75 −33.69 | −236.79 −34.91 | −236.59 −34.61 | −236.60 −34.57 |
 
 The errors are the largest against Model S on $0 \le x \le 0.985$; the HFR m 8 values are for
-`examples/smooth_sun/parameters.py`. The mode stops changing at degree 50 (0.05 nHz to 60), and HL1 at degree 40.
+`examples/smooth_sun/parameters.py` as it was on 2026-10-24, with $\delta_{cz} = 0$ and `diff_rot_hold` = 0.6 (without
+the hold, degree 30 gives −236.73 −33.44). The mode stops changing at degree 50 (0.05 nHz to 60), and HL1 at degree 40.
 Degree 30 runs at the resolution of degree 24 (N 640, lmax 79 for HFR m 8); degrees of 40 and above need about 16 more
 lmax for ℓ-convergence below $10^{-4}$. Use 50 to match papers that use Model S itself: at degree 40 already,
 Mukhopadhyay et al. 2025b's HFR m 7 comes out within 0.03 nHz in $\omega$ and 0.12 nHz in $\sigma$ of the old prototype's
-fit, against 1.0 and 0.6 nHz at degree 24. This is the structure for new runs, full sphere or shell. The other two are legacy, kept so that older runs
-reproduce: the old name `solar_density` still selects them (`'fit'` is `structure = '8-term fit'`, `'model S'` is
-`'old model S prototype'`).
+fit, against 1.0 and 0.6 nHz at degree 24. This is the structure for new runs, full sphere or shell. The other two,
+`'8-term fit'` and `'old model S prototype'`, are legacy, kept so that older runs reproduce.
 
-With `solar_rz = 1` a convection-zone superadiabaticity $\delta$ (Bekki 2024, eq. 2) can be added to $dS/dr$:
+With stratification `'solar_rz'` a convection-zone superadiabaticity $\delta$ (Bekki 2024, eq. 2) can be added to $dS/dr$:
 
 $$\frac{dS}{dr} \mathrel{+}= \delta(x)\,\frac{d\ln p}{dr}\,\frac{1 + \mathrm{erf}((|x| - x_{OS})/d_{OS})}{2}, \qquad
 \delta(x) = \delta_{cz} + (\delta_{sf} - \delta_{cz})\, e^{-((|x| - 0.985)/0.015)^2},$$
@@ -830,8 +846,11 @@ Fitted to the HFR frequencies $\omega$ of Hanson et al. (2022) with `structure =
 and 50 give the same), `thermal_wind = 2`, `thermal_wind_radial = 0` and $\delta_{sf} = 0$: the MCA frequencies of
 $m$ = 4, 8, 12, 14 give $\delta_{cz} = -2.1\times10^{-7}$ ($1\sigma$: $-2.6$ to $-1.6\times10^{-7}$, RMS 6.8 nHz); the
 RDA frequencies of $m$ = 8, 9, 12, 13, 14 give $-3.7\times10^{-7}$ (RMS 19 nHz, $m$ = 8 and 9 still 25 to 33 nHz too
-prograde), and both together $-2.9\times10^{-7}$. `examples/smooth_sun` uses $-2.1\times10^{-7}$, which moves its HFR
-$m = 8$ by $-18.05$ nHz in $\omega$ (linear in $\delta_{cz}$ to 0.1 %) and $+0.15$ nHz in $\sigma$.
+prograde), and both together $-2.9\times10^{-7}$. These fits were made with `diff_rot_hold` = 0.6.
+
+`examples/smooth_sun` uses $-4\times10^{-7}$, without `diff_rot_hold`. Its HFR $m = 8$ is then at $\omega = -271.19$,
+$\sigma = -33.18$ nHz, 34.46 nHz more retrograde than at $\delta_{cz} = 0$ ($-236.73$, $-33.44$). At the MCA value,
+$-2.1\times10^{-7}$, the $m = 8$ HFR mode mixes with deep-core r modes ($\ell = 9$, near 0.14 R☉) once the hold is gone.
 
 ### Other files
 
@@ -926,10 +945,11 @@ A&A 708, A253), extend the convection-zone model of §6–§8 down to 0.5 R☉ w
 radiative zone (RZ). kore now has their background, and Model S and tabulated $\Omega$ fits that work for any inner
 radius, including the full sphere.
 
-### Radiative interior (`solar_rz = 1`)
+### Radiative interior (stratification and diffusivity `'solar_rz'`)
 
-For `model_type = 'smoothed sun'`, `solar_rz = 1` replaces the `aux1`…`aux5` top hat of $dS/dr$ and the `aux3`/`aux4`
-diffusivity step by their eqs. (8)–(10), with $x = r\cdot$aux0 in R☉:
+Stratification `'solar_rz'` and diffusivity `'solar_rz'` (formerly `solar_rz = 1` with `model_type = 'smoothed sun'`) are
+their eqs. (10) and (8)–(9), in place of the top hat of $dS/dr$ (`'odd top hat'`) and the `aux3`/`aux4` diffusivity step
+(`'step'`), with $x = r\cdot$`r_out` in R☉:
 
 $$
 \frac{dS}{dr} = \frac{A}{4}\left[1 - \mathrm{erf}\frac{x - x_1}{d}\right]\left[1 - \mathrm{erf}\frac{x - x_2}{d}\right]\mathrm{erf}\frac{x}{w_0},
@@ -941,8 +961,8 @@ and the same for $\kappa$ with `therm0`.
 
 | parameter | default | meaning |
 | --- | --- | --- |
-| `solar_rz` | 0 | 1: the radiative interior above |
-| `solar_rz_dSdr` | 2.615 | $A = (\partial s_0/\partial r)_{RZ}\,\mathrm{aux0}\,R_\odot/c_p$; their $1.32\times10^{-2}$ erg g⁻¹ K⁻¹ cm⁻¹ with $c_p = 3.46\times10^{8}$, aux0 = 0.985 |
+| `stratification`, `diffusivity` | – | `'solar_rz'`: the radiative interior above ([background.md](background.md)) |
+| `solar_rz_dSdr` | 2.615 | $A = (\partial s_0/\partial r)_{RZ}\,$`r_out`$\,R_\odot/c_p$; their $1.32\times10^{-2}$ erg g⁻¹ K⁻¹ cm⁻¹ with $c_p = 3.46\times10^{8}$, `r_out` = 0.985 |
 | `solar_rz_steps` | [0.61, 0.68, 0.04] | $[x_1, x_2, d]$ in R☉ |
 | `solar_rz_core` | 0.05 | $w_0$: makes $dS/dr$ odd and smooth at $r = 0$ for ricb = 0; no effect above $x \approx 3w_0$ |
 | `solar_rz_os` | [0.70, 0.04] | $[x_{OS}, d_{OS}]$ of the diffusivity step |
@@ -960,15 +980,17 @@ for these modes).
 The shell fits of §8 are not even in $r$, so they cannot be used with ricb = 0, and they change with ricb. Two options fit
 once over the whole Sun instead, with the table mirrored to negative $r$ and the odd Chebyshev coefficients dropped:
 
-- `solar_density_window = 'sun'` for the Model S $\ln\rho$, $\ln p$ (degree `solar_density_sun_deg` = 60; see
-  "Model S density" in §8). It is the default when ricb = 0, which used to stop with an error.
+- `solar_density_window = 'sun'` for the Model S $\ln\rho$, $\ln p$ of structure `'old model S prototype'` (degree
+  `solar_density_sun_deg` = 60; see "Model S density" in §8). It is the default when ricb = 0, which used to stop with an
+  error.
 - `diff_rot_window = 'sun'` for a 'tabulated' $\Omega$ (degree `diff_rot_sun_deg` = 60: ~0.01 nHz on the Edmond file,
   0.19 nHz for $f_0$ near 0.1 R☉). It is also the default when ricb = 0. Before, a ricb = 0 'tabulated' run fitted
   $[0, x_b]$ and used $|r|$, which has a kink at the centre and extrapolates below the first table radius; this is the
   only change to existing runs, and `regress.sh` has no 'tabulated' ricb = 0 case. Below the first table radius
   (0.1 R☉ in the Edmond file, rigid at 433.5 nHz there) each $f_n$ is held at its value there. `diff_rot_hold` = $x_h$
   instead holds $f_n$ at $f_n(x_h)$ for $x < x_h$, blended over 0.01 R☉, to test how much the profile below the
-  tachocline matters.
+  tachocline matters. Do not use it: it was found faulty on 2026-10-25
+  ([differential_rotation_details.md](differential_rotation_details.md) §5.1).
 
 `spin_doctor` writes the new settings to the end of `params.dat` (see differential-rotation.md, Output).
 
@@ -1017,8 +1039,9 @@ The RZ modes have short radial wavelengths. The eigenvalues converge before the 
 With ricb = 0, N counts both parities, so N = 1024 is 512 Chebyshev polynomials on $[0, 1]$. Raising lmax from m + 63 to
 m + 95 changes nothing. The columnar mode at N = 1024 needs about 90 GB with MUMPS on 8 ranks, out of core
 (`st_mat_mumps_icntl_22 = 1`, `icntl_14 = 50`). The full-sphere runs from N = 384 up needed a larger MUMPS workspace
-(`st_mat_mumps_icntl_14` = 50–200) anyway (INFOG(1) = −9 otherwise). With the 'fit' density instead of Model S the columnar mode moves to 217.63, −26.89
-nHz, because 'fit' is up to 48 % off Model S near the surface.
+(`st_mat_mumps_icntl_14` = 50–200) anyway (INFOG(1) = −9 otherwise). With the 8-term fit ('fit', now structure
+`'8-term fit'`) instead of Model S the columnar mode moves to 217.63, −26.89 nHz, because the fit is up to 48 % off
+Model S near the surface.
 
 ### Checks
 

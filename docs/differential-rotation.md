@@ -66,8 +66,7 @@ Not modelled:
 **Where it lives.** Everything specific to the differential rotation (profiles, thermal wind, couplings, the terms of
 each row) is in `bin/diff_rot.py`, built on the angular algebra of `bin/angular.py`; the details are in
 [differential_rotation_details.md](differential_rotation_details.md). The rotation profiles do not depend on the
-background model, but the file-based models (`'poly'`, `'mesa'`, `'gsm'`, `'astropy table'`) and `'Boussinesq'` are broken
-on this branch for other reasons.
+background model ([background.md](background.md)).
 
 ## Frame and units
 
@@ -110,24 +109,20 @@ of `2*ncpus` (`assemble.py` stops otherwise).
 | `diff_rot_nmax` | 8 | `'tabulated'`: highest degree kept, even (up to 16 with `thermal_wind = 2`) |
 | `diff_rot_rdeg` | 24 | `'tabulated'`: degree of the Chebyshev fit of each $f_n$ in $r$ |
 | `diff_rot_window` | None | `'tabulated'`: None fits over the shell if ricb > 0 and is `'sun'` if ricb = 0; `'sun'`: one fit over the whole Sun, even in $r$, the same for any ricb ([heat-equation.md](heat-equation.md) §9) |
-| `diff_rot_sun_deg`, `diff_rot_hold` | 60, None | `'sun'`: degree of that fit, and $x_h$ (R☉) to hold each $f_n$ at $f_n(x_h)$ below $x_h$ (None: the table, held only below its first radius) |
+| `diff_rot_sun_deg` | 60 | `'sun'`: degree of that fit |
+| `diff_rot_hold` | None | **do not use** (faulty, see `'tabulated'` below): $x_h$ (R☉) to hold each $f_n$ at $f_n(x_h)$ below $x_h$; None: the table, held only below its first radius |
 | `thermal_wind` | 1 | heat-equation terms, see below |
 | `thermal_wind_radial` | 1 | 0 drops $u_r\thinspace \partial_r S_{tw}$ |
 | `thermal_wind_amplitude` | 1.0 | factor on $S_{tw}$ (`thermal_wind` 1, 2) |
 | `dSdtheta` | 0.0 | `thermal_wind = 3`: $\partial_\theta S_{tw}$ = `dSdtheta` $\sin 2\theta$ |
-| `solar_density` | `'fit'` | legacy, the old name of `structure`; `'smoothed sun'` only: `'model S'` uses Chebyshev fits of `bin/model_s.at` for $\ln\rho$, $\ln p$ |
-| `solar_density_deg`, `solar_density_window` | 30, None | degree and $x$-interval of those fits (None: the shell, widened by 0.01 below, 0.005 above, if ricb > 0; `'sun'` if ricb = 0) |
-| `solar_density_sun_deg` | 60 | `solar_density_window = 'sun'`: degree of one fit over the whole Sun, even in $r$ (needed for ricb = 0) |
-| `structure`, `structure_deg` | None, 30 | `'smoothed sun'` structure ($\rho$, $p$, $g$): `'model S hydrostatic'` for new runs ([heat-equation.md](heat-equation.md), Hydrostatic structure), or the legacy `'8-term fit'` and `'old model S prototype'`, kept for older runs; None takes it from `solar_density`; `structure_deg` is the degree of the hydrostatic fit (50 to match papers that use Model S itself) |
-| `solar_rz` | 0 | `'smoothed sun'`: 1 for the radiative interior of Mukhopadhyay et al. 2025b, their eqs. (8)–(10), in place of the `aux1`…`aux5` top hat and the `aux3`/`aux4` diffusivity step ([heat-equation.md](heat-equation.md) §9) |
-| `solar_rz_dSdr`, `solar_rz_steps`, `solar_rz_core`, `solar_rz_os` | 2.615, [0.61, 0.68, 0.04], 0.05, [0.70, 0.04] | its $dS/dr$ amplitude $(\partial s_0/\partial r)_{RZ}\,\mathrm{aux0}\,R_\odot/c_p$, steps $[x_1, x_2, d]$ (R☉), central width $w_0$, and diffusivity step $[x_{OS}, d_{OS}]$; `visc0`, `therm0` are $\nu_{RZ}/\nu_{CZ}$, $\kappa_{RZ}/\kappa_{CZ}$ |
-| `solar_rz_delta_cz`, `solar_rz_delta_sf` | 0.0, 0.0 | convection-zone and surface superadiabaticity $\delta$ added to $dS/dr$ (0: none, $\delta < 0$ subadiabatic) |
 | `drop_tol` | 0 | numerics: drops matrix entries below `drop_tol` (relative) to save memory; 0 is off ([params_default.py](../bin/params_default.py)) |
+
+The background (`structure`, `stratification`, `diffusivity`, `r_out`) has its own page, [background.md](background.md).
 
 ## Profiles
 
-$a$ = `diff_rot_ampl`, $p$ = `diff_rot_param`. For the solar types $x$ is the fractional solar radius: $x = r\times$`aux0`
-with `model_type = 'smoothed sun'`, $x = r$ otherwise.
+$a$ = `diff_rot_ampl`, $p$ = `diff_rot_param`. For the solar types $x$ is the fractional solar radius: $x = r\times$`r_out`
+with a solar structure ([background.md](background.md)), $x = r$ otherwise.
 
 | `diff_rot_type` | $\Delta\Omega(r,\theta)$ | degrees | notes |
 | --- | --- | --- | --- |
@@ -135,7 +130,7 @@ with `model_type = 'smoothed sun'`, $x = r$ otherwise.
 | `'Y20'` | $a\thinspace P_2(\cos\theta)$ | $P_2$ | $P_2$ unnormalised, despite the name |
 | `'Y20-wall-bounded'` | $a\thinspace (1 - r)(r - r_i)\thinspace P_2(\cos\theta)$, $r_i$ = `ricb` | $P_2$ | not smooth at $r = 0$: use ricb > 0 |
 | `'shellular'` | $a\thinspace (r^\sigma - 1)$, $\sigma = p$ | $P_0$ | Baruteau & Rieutord 2013 ($a = 1$); not smooth at $r = 0$ unless $\sigma$ is even and positive |
-| `'shellular_boussinesq'` | $\tfrac12 N_0^2\thinspace (1 - r^2)$, $N_0^2 = a$ | $P_0$ | Mirouh et al. 2016; use `thermal_wind = 0` (their background has no thermal wind) and `'user def'` profiles |
+| `'shellular_boussinesq'` | $\tfrac12 N_0^2\thinspace (1 - r^2)$, $N_0^2 = a$ | $P_0$ | Mirouh et al. 2016; use `thermal_wind = 0` (their background has no thermal wind), structure `'uniform'` and stratification `'linear'` |
 | `'cylindrical'` | $\varepsilon\thinspace r^2\sin^2\theta$, $\varepsilon = a$ | $P_0$, $P_2$ | Baruteau & Rieutord 2013; barotropic, $S_{tw} = 0$ |
 | `'conical'` | $\varepsilon\sin^2\theta$, $\varepsilon = a$ | $P_0$, $P_2$ | Guenel et al. 2016 |
 | `'solar'` | $a\thinspace \times$ helioseismic fit, $P_0 + P_2$, tanh step at $x = 0.71$ of width 0.1 | $P_0$, $P_2$ | relative to 435 nHz; 4.5 nHz too fast at the equator and 12 nHz at the pole compared with the observations (heat-equation.md §6) |
@@ -181,6 +176,10 @@ within 0.01 of the shell, and prints the fit residuals and the truncation error 
 between the table and its expansion up to $P_{n_{\max}}$); check that line. For the Edmond profile the truncation error near the poles at the surface is up to 17 nHz at
 `diff_rot_nmax = 8`; 12 is the working choice.
 
+**Do not use `diff_rot_hold`** (found faulty on 2026-10-25). It holds every degree, so the latitudinal shear of the
+table at $x_h$ fills the whole core. In `bin/jsoc_hmi_2010_2026.npz` that shear is about 4 nHz at 0.6 R☉, an artefact
+of the inversion; held from there, it gave the core spurious modes that mixed with the HFR modes.
+
 ## Heat equation (`thermal = 1`)
 
 `thermal_wind` chooses which entropy terms are added and where the latitudinal background entropy $S_{tw}$ comes from.
@@ -224,26 +223,25 @@ writes the options to `params.dat`, after the general columns (the order is that
     diff_rot, diff_rot_ampl, thermal_wind, diff_rot_type, dSdtheta,
     diff_rot_term_amp_0, _2, ..., _16, thermal_wind_amplitude, thermal_wind_radial,
     diff_rot_frame, diff_rot_nmax, diff_rot_rdeg, diff_rot_generic, diff_rot_solar_0 ... _5,
-    solar_density, solar_density_deg, solar_density_window_lo, solar_density_window_hi,
+    structure, solar_density_deg, solar_density_window_lo, solar_density_window_hi,
     solar_rz, solar_rz_dSdr, solar_rz_x1, solar_rz_x2, solar_rz_d, solar_rz_core, solar_rz_xos, solar_rz_dos,
-    diff_rot_window, diff_rot_hold, solar_rz_delta_cz, solar_rz_delta_sf, drop_tol, diff_rot_param
+    diff_rot_window, diff_rot_hold, solar_rz_delta_cz, solar_rz_delta_sf, drop_tol, diff_rot_param,
+    stratification, diffusivity
 
-`diff_rot_type` and `solar_density` are written as their index in `diff_rot.TYPES` ('Y20' 0, …, 'rigid' 7,
-'solar_P4' 8, 'tabulated' 9, 'user' 10) and `spin_doctor.solar_densities` ('fit' 0, which is the '8-term fit', 'model S' 1,
-which is 'old model S prototype', 'model S hydrostatic' 2: the structure in effect); a `'user'` run ends
-each row with its profile definitions after a `#`, which `np.loadtxt` skips; a default
-`solar_density_window` (None) is written as nan, `'sun'` as ∓(aux0 + 0.005), and `solar_density_deg` is the degree
-actually used (`solar_density_sun_deg` for the whole-Sun fit, `structure_deg` for the hydrostatic structure). `diff_rot_window` is 0 for the shell fit and 1 for the
-whole-Sun fit (with `diff_rot_rdeg` then the degree used, `diff_rot_sun_deg`), and `diff_rot_hold` None is nan.
-`diff_rot_file` is not recorded. The column `diff_rot_ampl` is the former `diff_rot_amplitude`, and `diff_rot_generic`
-(a removed option) is always 0, so that the columns keep the positions they had before `bin/diff_rot.py`; `diff_rot_param`
-is appended at the end. A `params.dat` written by an older version may have fewer columns; start a new file rather than
-appending to it. The former names `diff_rot_amplitude` and `diff_rot_generic` stop a run (`diff_rot.check`).
+`diff_rot_type` is written as its index in `diff_rot.TYPES` ('Y20' 0, …, 'rigid' 7, 'solar_P4' 8, 'tabulated' 9,
+'user' 10); the background columns are described in [background.md](background.md). A row ends, after a `#` that
+`np.loadtxt` skips, with the `'user'` profile definitions and, for `'tabulated'`, `diff_rot_file` with the first 12 hex
+digits of its sha256 (a row with neither has no `#`). `diff_rot_window` is 0 for the shell fit and 1 for the whole-Sun fit (with `diff_rot_rdeg` then
+the degree used, `diff_rot_sun_deg`), and `diff_rot_hold` None is nan. The column `diff_rot_ampl` is the former
+`diff_rot_amplitude`, and `diff_rot_generic` (a removed option) is always 0, so that the columns keep the positions they
+had before `bin/diff_rot.py`; `diff_rot_param`, `stratification` and `diffusivity` are appended at the end. A
+`params.dat` written by an older version may have fewer columns; start a new file rather than appending to it. The
+former names `diff_rot_amplitude` and `diff_rot_generic` stop a run (`diff_rot.check`).
 
 ## Examples
 
 **Conical rotation, Guenel et al. 2016.** `ricb = 0.71`, `diff_rot_type = 'conical'`, `diff_rot_ampl = -0.25`,
-$E = 10^{-5}$, uniform density (`'user def'`), stress-free, `thermal = 0`, $m = 0$: their DT mode near $\omega \approx 1.82$; kore gives
+$E = 10^{-5}$, uniform density (structure `'uniform'`), stress-free, `thermal = 0`, $m = 0$: their DT mode near $\omega \approx 1.82$; kore gives
 $\omega = 1.8173$, $\sigma = -0.021$.
 
 **Solar inertial modes, Mukhopadhyay et al. 2025.** The like-for-like set-up of heat-equation.md §8.
@@ -252,16 +250,17 @@ $\omega = 1.8173$, $\sigma = -0.021$.
 parameters it sets:
 
 ```python
+import units
 par.timescale = 'rotation'; par.set_scales()
-par.model_type = 'smoothed sun'; par.solar_density = 'model S'
-par.aux0 = 0.985; par.ricb = 0.71/0.985                  # shell 0.71-0.985 R☉
-par.aux1, par.aux2, par.aux3, par.aux4, par.aux5 = 0.0, 0.1, 0.68, 0.06, 0.0   # dS0/dr = 0 (δ = 0)
+par.structure = 'old model S prototype'                  # the Model S density (background.md)
+par.r_out = 0.985; par.ricb = 0.71/0.985                 # shell 0.71-0.985 R☉
+par.stratification = 'odd top hat'                       # with A = aux5 = 0: dS0/dr = 0 (δ = 0)
+par.aux1, par.aux2, par.aux3, par.aux4, par.aux5 = 0.0, 0.1, 0.68, 0.06, 0.0
 par.thermal = 1; par.bci = par.bco = 0; par.bci_thermal = par.bco_thermal = 1
 par.diff_rot = 1; par.diff_rot_type = 'tabulated'; par.diff_rot_file = 'diff_rot.npz'
-par.diff_rot_nmax = 12; par.diff_rot_frame = 456.0
+par.diff_rot_nmax = 12
 par.thermal_wind = 2; par.thermal_wind_radial = 0
-# L = aux0 R☉, Ω = 2π diff_rot_frame nHz, ν = κ = 1e12 cm²/s, g_surf = 2.7361e4 cm/s²:
-par.Gaspard = 1; par.Beyonce = g_surf/(L*Ω**2); par.ViscosD = ν/(Ω*L**2); par.ThermaD = κ/(Ω*L**2)
+units.set_physical(par, frame_nHz=456.0, nu=1e12, kappa=1e12)   # Gaspard, Beyonce, ViscosD, ThermaD, diff_rot_frame
 par.N = 64; par.lmax = par.m + 63
 ```
 
