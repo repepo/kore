@@ -1,4 +1,4 @@
-name: build
+name: conductive_IC tests
 
 on:
   push:
