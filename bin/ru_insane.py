@@ -136,7 +136,7 @@ rho0 = np.exp(rap.logrhoX(rk, 0))
 if par.thermal:
     pss0 = rap.pressX(rk, 0)
     gra0 = rap.graviX(rk, 0)
-    dS0  = rap.prf.gradS(np.abs(rk), par.aux1, par.aux2, par.aux3, par.aux4, par.aux5)*np.sign(rk)
+    dS0  = rap.prf.gradS(np.abs(rk))*np.sign(rk)
 
 # pairing weights (functions of r) for each section
 wgt = {'u': rho0**(1 - par.rhopower_u) * rk**(3 - par.rpower_u),

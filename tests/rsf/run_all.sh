@@ -6,7 +6,7 @@
 # A failed build stops the script; a failed check is reported and the others still run. Exit code 1 if any check failed.
 set -e -o pipefail
 T=$(cd "$(dirname "$0")" && pwd)
-H=$T/../heat_dr   # mk_run.py: run directory from the repo's bin/ with the test defaults (user-def profiles, ricb 0.35, m 1)
+H=$T/../heat_dr   # mk_run.py: run directory from the repo's bin/ with the test defaults ('Wu 2005' structure, ricb 0.35, m 1)
 MPI=${MPIEXEC:-mpiexec}
 W=${1:-$T/runs}; mkdir -p "$W"; cd "$W"
 fail=0
@@ -14,9 +14,9 @@ chk() { if ! eval "$1"; then echo "  ^ FAILED: $1"; fail=1; fi; }
 # hydro, uniform rotation, constant Theta, nu_t = nu, l_c 0.05; taper 0.1 (its erfc width 0.0125 is resolved from N ~ 96)
 RSF="par.forcing=11; par.thermal=0; par.diff_rot=0; par.rsf_theta=1.0; par.rsf_nu_floor=0; par.rsf_lc=0.05; par.rsf_taper=0.1; par.rsf_nsamp=2"
 POW="par.rpower_u=6; par.rpower_v=4; par.rhopower_u=2; par.rhopower_v=2"
-# a solar-like full sphere: 'smoothed sun' profiles, nu_t from a convection-zone step over a radiative floor (visc0), eddy
+# a solar-like full sphere: the '8-term fit' structure, nu_t from a convection-zone step over a radiative floor (visc0), eddy
 # size from H_p (rsf_lc None), finite horizontal size (rsf_angular 1)
-SUN="par.ricb=0; par.model_type='smoothed sun'; par.N=192; par.lmax=20; par.m=1; par.symm=1; par.aux0=0.99; par.aux1=0.0; par.aux2=0.1; par.aux3=0.68; par.aux4=0.06; par.aux5=2.6; par.Beyonce=1e3; par.ViscosD=1e-3; par.ThermaD=1e-3; par.visc0=0.01; par.therm0=1.0; par.visc_pow=0.0; par.therm_pow=0.0; par.bco=1; par.bco_thermal=0; par.thermal=0; par.diff_rot=0; par.forcing=11; par.rsf_nsamp=2; par.rsf_taper=0.1"
+SUN="par.ricb=0; par.structure='8-term fit'; par.stratification='odd top hat'; par.diffusivity='step'; par.N=192; par.lmax=20; par.m=1; par.symm=1; par.r_out=0.99; par.aux1=0.0; par.aux2=0.1; par.aux3=0.68; par.aux4=0.06; par.aux5=2.6; par.Beyonce=1e3; par.ViscosD=1e-3; par.ThermaD=1e-3; par.visc0=0.01; par.therm0=1.0; par.visc_pow=0.0; par.therm_pow=0.0; par.bco=1; par.bco_thermal=0; par.thermal=0; par.diff_rot=0; par.forcing=11; par.rsf_nsamp=2; par.rsf_taper=0.1"
 echo "--- building the runs"
 python3 "$H/mk_run.py" sh48  "par.N=48; $RSF"
 python3 "$H/mk_run.py" sh128 "par.N=128; $RSF"

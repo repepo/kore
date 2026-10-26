@@ -65,30 +65,6 @@ lmax_top = lmax + 1 + (1-2*np.sign(m))*s
 lmax_bot = lmax + 1 + (1-2*np.sign(m))*(1-s)
 
 
-# ----------------------------------------------------------------------------------------------------------------------
-# Loads a model from file: ---------------------------------------------------------------------------------------------
-# ----------------------------------------------------------------------------------------------------------------------
-
-if par.model_type == 'astropy table':
-    try:
-        from astropy.table import Table
-    except ImportError:
-        print('Astropy is not installed. Please install it or choose another model_type.')
-        sys.exit()
-    profile = Table.read(par.model, format='ascii')
-elif par.model_type in ['poly', 'mesa', 'gsm']:
-    try:
-        import pygyre as gy
-    except ImportError:
-        print('PyGYRE is not installed. Please install it or choose another model_type.')
-        sys.exit()
-    profile = gy.read_model(par.model)
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-# ----------------------------------------------------------------------------------------------------------------------
-# ----------------------------------------------------------------------------------------------------------------------
-
 def decode_label(labl):
 
     (section, rpower, rhopower, func1, dorder1, func2, dorder2, dx) = (None, None, None, None, None, None, None, None)
@@ -408,66 +384,6 @@ def interp(x0, x, y, even=True):
             out[x0<0] = akima(-x0[x0<0])
         else:
             out[x0<0] = -akima(-x0[x0<0])
-
-    return out
-
-
-def load_model(r, var):
-
-    out = np.zeros_like(r)
-    z = True  # True for even functions of r
-
-    if par.model_type in ['astropy table', 'poly']:
-
-        x0 = profile['x']
-        x = x0[x0<=par.aux0]; x=x/x[-1]
-        y = np.zeros_like(x)
-        y0 = np.zeros_like(x0)
-
-        if var == 'density':
-            y0 = profile['rho/rho_0']; y=y0[x0<=par.aux0]
-
-        elif var == 'pressure':
-            y0 = profile['P/P_0']; y=y0[x0<=par.aux0]
-
-        elif var == 'gravity':
-            y0 = x0/profile['c_1']; y=y0[x0<=par.aux0]
-            z = False  # odd function of r
-
-        elif var == 'pdSdr':
-            y0[1:-1] = profile['P/P_0'][1:-1] * profile['As'][1:-1] / x0[1:-1]; y=y0[x0<=par.aux0]
-            z = False  # odd function of r
-
-    elif par.model_type == 'mesa' or par.model_type == 'gsm':
-
-        G_star = 6.67430e-8                 # gravitational constant in cm^3 g^-1 s^-2
-        M_star = profile.meta['M_star']     # stellar mass in g
-        R_star = profile.meta['R_star']     # stellar radius in cm
-        x = profile['r'] / R_star
-        y = np.zeros_like(x)
-
-        if var == 'density':
-            y = profile['rho'] * R_star**3 / M_star   # dimensionless density
-
-        if var == 'pressure':
-            y = profile['P'] * R_star**4 / M_star**2 / G_star # dimensionless pressure
-
-        if (var == 'gravity') or (var == 'pdSdr'):
-            if profile.meta['version'] > 20:
-                mass = profile['M_r'] / M_star  # dimensionless mass for newest MESA file formats
-            else:
-                mass = 1 / (1 + 1/profile['w'])  # dimensionless mass for older MESA file formats
-
-            y[1:] = ( mass[1:] / x[1:]**2 )  # dimensionless gravity
-
-            if var == 'pdSdr':
-                BV2 = profile['N^2'] * R_star**3 / M_star / G_star  # dimensionless Brunt-Väisälä frequency
-                pressure = profile['P'] * R_star**4 / M_star**2 / G_star # dimensionless pressure
-                y[1:] = BV2[1:] * pressure[1:] / y[1:]
-
-            z = False
-
-    out = interp(r, x, y, even=z)
 
     return out
 

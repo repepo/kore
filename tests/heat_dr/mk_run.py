@@ -8,11 +8,10 @@ import numpy as np
 par = default_params()
 par.timescale = 'rotation'
 par.set_scales()
-par.ricb=0.35; par.m=1; par.symm=1; par.thermal=1; par.model_type='user def'
+par.ricb=0.35; par.m=1; par.symm=1; par.thermal=1; par.structure='Wu 2005'; par.stratification='top hat'
 par.diff_rot=1; par.diff_rot_type='conical'; par.diff_rot_ampl=-0.25; par.thermal_wind=1
-par.aux0=0.99; par.aux1=0.5; par.aux2=0.03; par.aux3=0.85; par.aux4=0.03; par.aux5=2.5
+par.r_out=0.99; par.aux1=0.5; par.aux2=0.03; par.aux3=0.85; par.aux4=0.03; par.aux5=2.5
 par.Gaspard=1.; par.Beyonce=10.; par.ViscosD=1e-3; par.ThermaD=1e-3
-par.visc0=1.0; par.rvisc=0.6; par.hvisc=0.04
 par.bci=0; par.bco=0; par.bci_thermal=0; par.bco_thermal=0
 par.ncpus=1; par.N=48; par.lmax=20
 par.rtau=0; par.itau=1.0; par.smopo=0; par.nev=20; par.which_eigenpairs='TM'

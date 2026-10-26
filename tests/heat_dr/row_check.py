@@ -77,8 +77,8 @@ f2f = lambda rr: dr.raw(2, ab(rr))*np.ones_like(rr) if 2 in dr.degrees() else 0*
 f0, f01 = fitd(f0f, 0), fitd(f0f, 1)
 f2, f21 = fitd(f2f, 0), fitd(f2f, 1)
 g = rap.prf.gravity(r, 0)
-hp = (-4*par.aux0**2*r/(1 - (par.aux0*r)**2)) if par.model_type == 'user def' else fitd(lambda rr: rap.prf.logrho(rr, 0), 1)   # (ln rho)' of ln((1 - (aux0 r)^2)^2), analytic for 'user def' (prf.dlog_rho lacks the factor aux0)
-dS = np.sign(r)*rap.prf.gradS(np.abs(r), par.aux1, par.aux2, par.aux3, par.aux4, par.aux5)
+hp = (-4*par.r_out**2*r/(1 - (par.r_out*r)**2)) if par.structure == 'Wu 2005' else fitd(lambda rr: rap.prf.logrho(rr, 0), 1)   # (ln rho)' of ln((1 - (r_out r)^2)^2), analytic for 'Wu 2005'
+dS = np.sign(r)*rap.prf.gradS(np.abs(r))
 
 # ---------------------------------------------------------------- S_tw(r, x) by integration in x = cos(theta)
 def stw_sigma(rr):

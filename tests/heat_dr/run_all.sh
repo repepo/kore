@@ -4,12 +4,12 @@
 set -e -o pipefail  # a crash in a 'check | tail' or 'check | sed' pipeline stops the script
 T=$(cd "$(dirname "$0")" && pwd)
 W=${1:-$T/runs}; mkdir -p "$W"; cd "$W"
-SUN="par.ricb=0; par.model_type='smoothed sun'; par.N=120; par.lmax=30; par.m=1; par.symm=1; par.aux0=0.99; par.aux1=0.0; par.aux2=0.1; par.aux3=0.68; par.aux4=0.06; par.aux5=2.6; par.Beyonce=1e3; par.ViscosD=1e-3; par.ThermaD=1e-3; par.visc0=1.0; par.therm0=1.0; par.visc_pow=0.0; par.therm_pow=0.0; par.diff_rot_type='conical'; par.diff_rot_ampl=-0.25; par.bco=1; par.bco_thermal=0"
+SUN="par.ricb=0; par.structure='8-term fit'; par.stratification='odd top hat'; par.diffusivity='step'; par.N=120; par.lmax=30; par.m=1; par.symm=1; par.r_out=0.99; par.aux1=0.0; par.aux2=0.1; par.aux3=0.68; par.aux4=0.06; par.aux5=2.6; par.Beyonce=1e3; par.ViscosD=1e-3; par.ThermaD=1e-3; par.visc0=1.0; par.therm0=1.0; par.visc_pow=0.0; par.therm_pow=0.0; par.diff_rot_type='conical'; par.diff_rot_ampl=-0.25; par.bco=1; par.bco_thermal=0"
 # 'solar' rotation in the full sphere: its tachocline tanh needs N ~ 400 for round-off (1e-2 at N = 120, 2e-8 at N = 240)
 SOL="$SUN; par.N=400; par.lmax=14; par.diff_rot_type='solar'; par.diff_rot_ampl=1"
 echo "--- sympy: closed forms of sigma2, sigma4, sigma6 (thermal_wind = 1 and 2) against the thermal-wind balance"
 python3 "$T/tw_sympy.py" | tail -1
-echo "--- building the runs (conical rotation and user-def profiles unless stated; mk_run.py has the defaults; wall-bounded and shellular exercise f', f'')"
+echo "--- building the runs (conical rotation and the 'Wu 2005' structure unless stated; mk_run.py has the defaults; wall-bounded and shellular exercise f', f'')"
 python3 "$T/mk_run.py" s96      'par.N=96'
 python3 "$T/mk_run.py" nodr96   'par.N=96; par.diff_rot=0'
 python3 "$T/mk_run.py" s160     'par.N=160'
@@ -106,7 +106,7 @@ for c in "1:1:$R" "3:3:$R" "V:1e3:$V" "K:3:$K" "K1:1:$K1" "K13:3:$K1"; do
     (cd rfix$n  && python3 "$T/csolve.py" 0 $s1 16 > csolve.out)
     python3 "$T/rigid_thermal.py" rbase$n rfix$n 0.1 2 $G | tail -1 | sed "s/^/G = $G ($n): /"
 done
-echo "--- smoothed sun, ricb = 0: 12 modes near -0.05 + 0.8i, momentum and entropy balances (terms.py)"
+echo "--- solar structure ('8-term fit'), ricb = 0: 12 modes near -0.05 + 0.8i, momentum and entropy balances (terms.py)"
 (cd sun && python3 "$T/csolve.py" -0.05 0.8 12 > csolve.out && python3 "$T/terms.py" > terms.out && grep -A 13 "^entropy" terms.out)
 (cd sun_tw2 && python3 "$T/csolve.py" -0.05 0.8 12 > csolve.out && python3 "$T/terms.py" > terms.out && echo "thermal_wind = 2:" && grep -A 13 "^entropy" terms.out)
 # ThermaD = 0 with the exact thermal wind, ricb = 0.35 (shift away from the advection continuum -i m dOmega, omega in [0, 0.25])

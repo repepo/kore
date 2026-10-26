@@ -43,7 +43,7 @@ params[i,:] = np.array([
 
                         timing+toc-tic,                 #23
 
-                        par.aux0,                       #24
+                        par.r_out,                      #24
                         par.aux1,                       #25
                         par.aux2,                       #26
                         par.aux3,                       #27

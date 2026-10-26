@@ -4,7 +4,7 @@ mk_bekki.py NAME [key=val ...]: builds the run directory NAME (a copy of the rep
 the solar inertial-mode benchmark of Bekki, Cameron & Gizon 2022 and Mukhopadhyay et al. 2025 (docs/heat-equation.md
 §6 and §8), and runs submatrices.py and assemble.py there on one rank. Solve with solve_bekki.py.
 
-Set-up: 'smoothed sun' with the Model S density (solar_density = 'model S'), shell 0.71-0.985 R☉ (aux0 = 0.985),
+Set-up: structure 'old model S prototype' (the Model S density), shell 0.71-0.985 R☉ (r_out = 0.985),
 dS0/dr = 0 (δ = 0), ν = κ = 1e12 cm²/s, stress-free walls with ∂ᵣs = 0, time unit 1/Ω_ref with Ω_ref/2π = frame nHz.
 
 keys (default):
@@ -53,8 +53,8 @@ if dr and drtype == 'tabulated':
         sys.exit('no such file: ' + fname)
 
 RSUN, GSURF = 6.9599e10, 2.7361e4      # cm, cm/s² (Model S, as smoothed_sun.py)
-aux0 = 0.985
-L = aux0*RSUN                          # unit of length
+r_out = 0.985
+L = r_out*RSUN                         # unit of length
 Om = 2*np.pi*frame*1e-9                # Ω_ref, rad/s
 ViscosD = nu/(Om*L**2); ThermaD = kappa/(Om*L**2); Beyonce = GSURF/(L*Om**2)
 
@@ -64,10 +64,10 @@ import numpy as np
 par = default_params()
 par.timescale = 'rotation'
 par.set_scales()
-par.m = {m}; par.symm = {symm}; par.ricb = 0.71/{aux0!r}; par.thermal = {thermal}
-par.model_type = 'smoothed sun'; par.solar_density = 'model S'
-par.aux0 = {aux0!r}; par.aux1 = 0.0; par.aux2 = 0.1; par.aux3 = 0.68; par.aux4 = 0.06; par.aux5 = 0.0   # dS0/dr = 0
-par.visc0 = 1.0; par.therm0 = 1.0; par.visc_pow = 0.0; par.therm_pow = 0.0
+par.m = {m}; par.symm = {symm}; par.ricb = 0.71/{r_out!r}; par.thermal = {thermal}
+par.structure = 'old model S prototype'; par.r_out = {r_out!r}
+par.stratification = 'odd top hat'; par.aux1 = 0.0; par.aux2 = 0.1; par.aux3 = 0.68; par.aux4 = 0.06; par.aux5 = 0.0   # dS0/dr = 0
+par.diffusivity = 'uniform'
 par.diff_rot = {dr}; par.diff_rot_type = {drtype!r}; par.diff_rot_ampl = {amp!r}
 par.diff_rot_file = {fname!r}; par.diff_rot_nmax = {nmax}; par.diff_rot_frame = {frame!r}
 par.thermal_wind = {tw}; par.thermal_wind_radial = {rad}; par.dSdtheta = {ds/cp!r}

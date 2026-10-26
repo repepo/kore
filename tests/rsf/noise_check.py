@@ -58,7 +58,7 @@ def documented(r):
     rho0 = np.exp(rap.logrhoX(r, 0))
     if par.rsf_nu_floor is not None:
         fl = par.rsf_nu_floor
-    elif par.model_type == 'smoothed sun' and par.visc0 < 1:
+    elif par.diffusivity in ('step', 'solar_rz') and par.visc0 < 1:
         fl = par.visc0
     else:
         fl = 0.

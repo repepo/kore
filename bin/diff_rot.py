@@ -35,8 +35,9 @@ DIGITS = '0123456789abcdefghijklmnopqrstuvwxyz'   # the degree character of the 
 # ======================================================================================================================
 
 def solar_x(r):
-    '''fractional solar radius: r aux0 with model_type 'smoothed sun' (length unit aux0 R☉), r otherwise'''
-    return r*par.aux0 if par.model_type == 'smoothed sun' else r
+    '''fractional solar radius: r r_out with a solar structure (length unit r_out R☉), r otherwise'''
+    import background as bg
+    return r*par.r_out if par.structure in bg.SOLAR else r
 
 _tab = {}
 def _tabulated_fits():

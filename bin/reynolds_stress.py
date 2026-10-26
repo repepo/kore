@@ -98,9 +98,8 @@ def nu_floor():
     '''the part of kore's viscosity (in units of ViscosD) that is not turbulent'''
     if par.rsf_nu_floor is not None:
         return par.rsf_nu_floor
-    if par.model_type == 'smoothed sun' and par.visc0 < 1:
-        return par.visc0   # the radiative-zone value of nu/nu_cz
-    return 0.
+    import background as bg
+    return bg.nu_floor()   # visc0 below the step of 'step' and 'solar_rz' (if < 1), 0 otherwise
 
 
 def nut_max():

@@ -21,66 +21,79 @@ class default_params():
 
 
         # ----------------------------------------------------------------------------------------------------------------------
-        # ----------------------------------------------------------------------------------------- Star/planet model parameters
+        # -------------------------------------------------------------------------------------------------- Background model
         # ----------------------------------------------------------------------------------------------------------------------
-        self.model = 'poly.n1_gamma3.h5' # MESA, GYRE, or astropy table model file
+        # Three parts, each chosen by name (bin/background.py); the rotation is under Hydrodynamic parameters (diff_rot).
+        # r_out is the outer wall (r = 1) in star radii, so x = r r_out is the radius in star radii and the unit of length is
+        # r_out star radii.
+        self.r_out = 1.0
 
-        self.model_type = 'poly'              # For polytropic profiles supplied by Gyre
-        # self.model_type = 'mesa'              # For MESA file format profiles
-        # self.model_type = 'gsm'               # For Gyre file format profiles
-        # self.model_type = 'astropy table'     # For explicitly defined profiles (supply r, ρ and when required g, (T or p), (N^2 or dS), in array format)
-        # self.model_type = 'Boussinesq'        #  for Boussinesq reference state, else anelastic reference state
-        # self.model_type = 'user def'          # For implicitly defined profiles (adjust ρ and when required g, p, pdS in radial_profiles.py)
-        # self.model_type = 'smoothed sun'      # Smooth fits to solar Model S (structure, below) with a simple dS/dr, see radial_profiles.solar_profiles
-
-        # 'smoothed sun' structure (ρ, p, g): structure = 'model S hydrostatic' for new runs, full sphere or shell (an even fit
-        # of ln ρ of degree structure_deg over the whole Sun, g from its mass integral, p from dp/dr = -ρ g; radial_profiles.
-        # modelS_hydrostatic_profiles). structure_deg 30 is within 1.0 %, 0.5 %, 0.75 % of Model S in ρ, p, g, and 50 within
-        # 0.14 %, 0.06 %, 0.10 %, where HFR m 8 stops changing (30 is 0.15 nHz off there in ω, 0.9 nHz in σ). Degrees of 40
-        # and above need about 16 more lmax for the HFR ℓ-convergence; use 50 to match papers that use Model S itself.
-        # Legacy, kept so that older parameters.py files reproduce their results: '8-term fit' (smoothed_sun.py, rough but
-        # hydrostatic) and 'old model S prototype' (fits of bin/model_s.at, below; ρ and p fitted separately and g from the
-        # 8-term fit, so not hydrostatic; to be removed, with solar_density below, once 'model S hydrostatic' is validated).
-        # None: from the old name solar_density ('fit', the default, is '8-term fit'; 'model S' is 'old model S prototype').
+        # structure: ρ0, p0 (p stands for ρ0 T0) and g (radial_profiles.py); no default:
+        #   'model S hydrostatic'    the Sun, for new runs: an even fit of ln ρ of Model S of degree structure_deg over the whole
+        #                            Sun (whatever ricb), g from its mass integral, p from dp/dr = -ρ g. structure_deg 30 is
+        #                            within 1.0 %, 0.5 %, 0.75 % of Model S in ρ, p, g, and 50 within 0.14 %, 0.06 %, 0.10 %,
+        #                            where HFR m 8 stops changing (30 is 0.15 nHz off there in ω, 0.9 nHz in σ). Degrees of 40
+        #                            and above need about 16 more lmax for the HFR ℓ-convergence; use 50 to match papers that
+        #                            use Model S itself.
+        #   'Wu 2005'                ρ = (1 - x²)² (Wu 2005, β = 2) with its g and p; r_out < 1 (e.g. 0.99) keeps ρ > 0 at the wall
+        #   'uniform'                Boussinesq: ρ0 = p0 = 1, g = r
+        #   legacy, kept so that older parameter files reproduce their results:
+        #   '8-term fit'             smoothed_sun.py: rough but hydrostatic; ρ is up to 48 % off near the surface, which moves
+        #                            n = 1 Rossby, HFR and columnar modes by 1.5-8 nHz (docs/heat-equation.md §6)
+        #   'old model S prototype'  Chebyshev fits of ln ρ, ln p of bin/model_s.at of degree solar_density_deg over
+        #                            solar_density_window = [x_lo, x_hi]; None: the shell [ricb r_out, r_out] widened by 0.01
+        #                            below and 0.005 above if ricb > 0, 'sun' if ricb = 0; 'sun': one fit over the whole Sun, even
+        #                            in r (Model S mirrored to x < 0, odd coefficients dropped), of degree solar_density_sun_deg
+        #                            on [-(r_out + 0.005), r_out + 0.005], the same for any ricb (ln rho to 1.7e-3, mostly at the
+        #                            base of the convection zone, where the shell fit reaches 2e-4); g of the 8-term fit, so not
+        #                            hydrostatic. To be removed, with solar_density_*, once 'model S hydrostatic' is validated.
         self.structure = None
         self.structure_deg = 30
-
-        # solar_density (legacy), the old name of structure ('smoothed sun' density and pressure): 'fit' (smoothed_sun.py, the default)
-        # or 'model S' (structure 'old model S prototype': Chebyshev fits of ln ρ, ln p of
-        # bin/model_s.at of degree solar_density_deg over solar_density_window = [x_lo, x_hi] in x = r aux0; None: the shell
-        # [ricb aux0, aux0] widened by 0.01 below and 0.005 above if ricb > 0, 'sun' if ricb = 0; 'sun': one fit over the whole
-        # Sun, even in r (Model S mirrored to x < 0, odd coefficients dropped), of degree solar_density_sun_deg, on
-        # [-(aux0 + 0.005), aux0 + 0.005], the same for any ricb; ln rho to 1.7e-3, mostly at the base of the convection zone,
-        # where the shell fit reaches 2e-4). The 'fit' density is up to 48 % off near the
-        # surface, which moves n = 1 Rossby, HFR and columnar modes by 1.5-8 nHz (docs/heat-equation.md §6). g is unchanged.
-        self.solar_density = 'fit'
         self.solar_density_deg = 30
         self.solar_density_window = None
         self.solar_density_sun_deg = 60
 
-        # profile smoothing power
-        self.smopo = 0
+        # stratification: dS/dr, S = δs/c_p, for r >= 0 (kore makes it odd in r); needed with thermal = 1, no default:
+        #   'top hat'         erf top hat between x1 and x2 (in r), aux1..aux5 = x1, w1, x2, w2, A (utils.erf_top_hat)
+        #   'odd top hat'     the same made odd in r (utils.erf_top_hat_odd): with x1 = 0 it rises as A erf(r/w1) from the
+        #                     centre, for ricb = 0 (Model S's dS/dr to 10 % rms: aux1..aux5 = 0, 0.03, 0.68, 0.06, 2.6)
+        #   'solar_rz'        the radiative interior of Mukhopadhyay, Bekki, Zhu & Gizon 2025 (arXiv 2512.12691, their eq. 10;
+        #                     docs/heat-equation.md §9): dS/dr = solar_rz_dSdr/4 [1 - erf((x - x1)/d)] [1 - erf((x - x2)/d)]
+        #                     erf(x/w0), [x1, x2, d] = solar_rz_steps, w0 = solar_rz_core; erf(x/w0) makes it odd and smooth
+        #                     at r = 0 (no effect above x ~ 3 w0). solar_rz_dSdr = (∂s0/∂r)_RZ r_out R☉/c_p: 2.615 for their
+        #                     1.32e-2 erg/g/K/cm with c_p = 3.46e8 and r_out = 0.985. solar_rz_delta_cz, solar_rz_delta_sf add
+        #                     a convection-zone superadiabaticity δ (Bekki 2024, eq. 2): dS/dr += δ(x) d(ln p0)/dr
+        #                     (1 + erf((|x| - x_OS)/d_OS))/2, δ(x) = δ_cz + (δ_sf - δ_cz) exp(-((|x| - 0.985)/0.015)^2),
+        #                     [x_OS, d_OS] = solar_rz_os, δ < 0 being subadiabatic (Bekki's model 3-sub: δ_cz = -5e-7,
+        #                     δ_sf = 1e-3)
+        #   'linear'          r: with 'uniform', N² = Beyonce r² (uniform heat sources; Rieutord 2006, Mirouh et al. 2016)
+        #   'inverse square'  1/r²: conduction between the walls (needs ricb > 0)
+        #   'user'            stratification_profile, a numpy expression of r, x and p = stratification_param in units of 1/L
+        #                     (the names and the x of diff_rot_profiles), e.g. '2.5*exp(-((r - 0.75)/0.06)**2)'
+        self.stratification = None
+        self.stratification_profile = ''
+        self.stratification_param = 0.0
+        self.solar_rz_dSdr  = 2.615
+        self.solar_rz_steps = [0.61, 0.68, 0.04]
+        self.solar_rz_core  = 0.05
+        self.solar_rz_os    = [0.70, 0.04]
+        self.solar_rz_delta_cz = 0.0
+        self.solar_rz_delta_sf = 0.0
 
-        # ----------------------------------------------------------------------------------------------------------------------
-        # -------------------------------------------------------------------------------------------------- Auxiliary variables        
-        # ----------------------------------------------------------------------------------------------------------------------
-        self.Ek     = 0
-        self.Etherm = 0
-
-        self.aux0   = 0
-        self.aux1   = 0
-        self.aux2   = 0
-        self.aux3   = 0
-        self.aux4   = 0
-        self.aux5   = 0
-
-        # Diffusivity profiles of model_type = 'smoothed sun' (radial_profiles.solar_profiles): ν and κ are ViscosD and ThermaD
-        # (the convection-zone values) times ν/ν_cz = visc0 and κ/κ_cz = therm0 in the radiative zone and 1 in the convection
-        # zone, constant in each with the erf step of dS/dr at x2 = aux3, width w2 = aux4 (needed also when thermal = 0 unless
-        # visc0 = therm0 = 1). Solar: visc0 ~ 1e-11, therm0 ~ 1e-6 to 1e-5 (ν ~ 10, κ_rad ~ 1e5 to 1e7 cm²/s against
-        # ν_t ~ κ_t ~ 1e12), so in practice they are numerical floors; see sun/solar-profile.md. visc_pow and therm_pow multiply
-        # ν and κ by (ρ(x2)/ρ(r))**pow: 0 keeps the kinematic diffusivities constant (recommended), 1 the dynamic ones (ρν, ρκ),
-        # ViscosD and ThermaD being then the values at x2. rvisc and hvisc are not used by this model.
+        # diffusivity: ν/ViscosD and κ/ThermaD:
+        #   'uniform'   1
+        #   'step'      visc0, therm0 below and 1 above the upper edge of the erf box at x2 = aux3 of width aux4 (needed also
+        #               when thermal = 0 unless visc0 = therm0 = 1), so ViscosD and ThermaD are the convection-zone values
+        #   'solar_rz'  visc0, therm0 below and 1 above as (1 + erf((x - x_OS)/d_OS))/2, [x_OS, d_OS] = solar_rz_os
+        #               (Mukhopadhyay et al. 2025 eqs. 8-9; their ν_RZ/ν_CZ = 0.01, κ_RZ/κ_CZ = 0.04)
+        #   'user'      diffusivity_profiles = {'nu': '...', 'kappa': '...'}, numpy expressions of r, x and p = diffusivity_param
+        # Solar: visc0 ~ 1e-11, therm0 ~ 1e-6 to 1e-5 (ν ~ 10, κ_rad ~ 1e5 to 1e7 cm²/s against ν_t ~ κ_t ~ 1e12), so in practice
+        # they are numerical floors; see sun/solar-profile.md. visc_pow and therm_pow multiply ν and κ of any type by
+        # (ρ(x2)/ρ(r))**pow, x2 = aux3: 0 keeps the kinematic diffusivities constant (recommended), 1 the dynamic ones (ρν, ρκ),
+        # ViscosD and ThermaD being then the values at x2. rvisc and hvisc are not used.
+        self.diffusivity = 'uniform'
+        self.diffusivity_profiles = {}
+        self.diffusivity_param = 0.0
         self.visc0     = 1.0
         self.therm0    = 1.0
         self.visc_pow  = 0.0
@@ -88,23 +101,21 @@ class default_params():
         self.rvisc     = 0.0
         self.hvisc     = 0.0
 
-        # Radiative interior of Mukhopadhyay, Bekki, Zhu & Gizon 2025 (arXiv 2512.12691, their eqs. 8-10) for 'smoothed sun',
-        # used when solar_rz = 1 in place of the aux1..aux5 top hat and of the aux3/aux4 diffusivity step (docs/heat-equation.md §9):
-        #   dS/dr = solar_rz_dSdr/4 [1 - erf((x - x1)/d)] [1 - erf((x - x2)/d)] erf(x/w0),  [x1, x2, d] = solar_rz_steps,
-        #   w0 = solar_rz_core, x = r aux0 in R☉; erf(x/w0) makes it odd and smooth at r = 0 (no effect above x ~ 3 w0).
-        #   solar_rz_dSdr = (∂s0/∂r)_RZ aux0 R☉/c_p: 2.615 for their 1.32e-2 erg/g/K/cm with c_p = 3.46e8 and aux0 = 0.985.
-        #   ν/ν_cz and κ/κ_cz go from visc0, therm0 below to 1 above as (1 + erf((x - x_OS)/d_OS))/2, [x_OS, d_OS] = solar_rz_os
-        #   (their ν_RZ/ν_CZ = 0.01, κ_RZ/κ_CZ = 0.04).
-        #   solar_rz_delta_cz, solar_rz_delta_sf add a convection-zone superadiabaticity δ (Bekki 2024, eq. 2):
-        #   dS/dr += δ(x) d(ln p0)/dr (1 + erf((|x| - x_OS)/d_OS))/2, δ(x) = δ_cz + (δ_sf - δ_cz) exp(-((|x| - 0.985)/0.015)^2),
-        #   δ < 0 being subadiabatic (Bekki's model 3-sub: δ_cz = -5e-7, δ_sf = 1e-3).
-        self.solar_rz       = 0
-        self.solar_rz_delta_cz = 0.0
-        self.solar_rz_delta_sf = 0.0
-        self.solar_rz_dSdr  = 2.615
-        self.solar_rz_steps = [0.61, 0.68, 0.04]
-        self.solar_rz_core  = 0.05
-        self.solar_rz_os    = [0.70, 0.04]
+        # the erf top hat and step ('top hat', 'odd top hat', 'step'): aux1..aux5 = x1, w1, x2, w2, A
+        self.aux1   = 0
+        self.aux2   = 0
+        self.aux3   = 0
+        self.aux4   = 0
+        self.aux5   = 0
+
+        # profile smoothing power
+        self.smopo = 0
+
+        # ----------------------------------------------------------------------------------------------------------------------
+        # -------------------------------------------------------------------------------------------------- Auxiliary variables
+        # ----------------------------------------------------------------------------------------------------------------------
+        self.Ek     = 0
+        self.Etherm = 0
 
 
         # ----------------------------------------------------------------------------------------------------------------------
@@ -120,7 +131,6 @@ class default_params():
 
         # Differential rotation parameters. Set to 0 for solid body rotation. Ω_ref is the frame rotation rate (Gaspard in units of
         # the time scale) and ΔΩ is relative to it, so any timescale works: U0 = Gaspard ΔΩ r sinθ e_φ. User guide: docs/differential-rotation.md.
-        # Only model_type = 'user def' and 'smoothed sun' define a rotation profile. ---------------------------------------------
         # ----------------------------------------------------------------------------------------------------------------------
         self.diff_rot = 0 # If 1, the code will solve for a perturbation to a background state with differential rotation. 
         # ΔΩ = diff_rot_ampl Σ_n f_n(r) P_n(cos θ), n even (bin/diff_rot.py); diff_rot_type chooses the shapes f_n:
@@ -133,7 +143,7 @@ class default_params():
         # self.diff_rot_type = 'conical'  # [Guenel et al. 2016] ΔΩ = a sin²θ: f0 = 2/3, f2 = -2/3
         # self.diff_rot_type = 'solar'  # fit to the helioseismic Ω, P0 + P2 stepping up across a tanh tachocline at x = 0.71
         #   of width 0.1, relative to 435 nHz: the frame (Ω_ref) must rotate at 435 nHz (ViscosD, ThermaD, Beyonce for that rate).
-        #   x is the fractional solar radius, r aux0 with model_type = 'smoothed sun' (r otherwise). Needs N ~ 400 with ricb = 0.
+        #   x is the fractional solar radius, r r_out with a solar structure (r otherwise). Needs N ~ 400 with ricb = 0.
         # self.diff_rot_type = 'solar_P4'  # Ω/2π = Ω_RZ + [Ω_CZ(θ) - Ω_RZ] (1 + erf((x - rtc)/dtc))/2, Ω_CZ(θ) = c0 + c2 cos²θ
         #   + c4 cos⁴θ (Mukhopadhyay et al. 2026; diff_rot_solar below); ΔΩ = Ω/Ω_ref - 1, Ω_ref/2π = diff_rot_frame nHz: P0, P2, P4
         # self.diff_rot_type = 'tabulated'  # Ω(r, θ) from diff_rot_file (.npz with ome[θ, r] in nHz, r in R☉, theta in rad, as the
@@ -172,7 +182,7 @@ class default_params():
         # with thermal_wind = 2. For the HMI profile nmax = 8 leaves up to 7 nHz at 75° latitude near the surface, 12 about 2.6
         self.diff_rot_rdeg = 24  # 'tabulated': degree of the least-squares Chebyshev fit of each f_n in r over the shell
         self.diff_rot_window = None  # 'tabulated': None is the shell fit above if ricb > 0 and 'sun' if ricb = 0; 'sun' is one fit
-        # over the whole Sun, [-L, L] with L = aux0 + 0.01 for 'smoothed sun', even in r (table mirrored, odd coefficients dropped),
+        # over the whole Sun, [-L, L] with L = r_out + 0.01 for the solar structures, even in r (table mirrored, odd coefficients dropped),
         # of degree diff_rot_sun_deg, the same for any ricb; below the first table radius (0.1 R☉ in the Mukhopadhyay et al. file)
         # each f_n is held at its value there
         self.diff_rot_sun_deg = 60  # 'tabulated' with diff_rot_window = 'sun': degree (60: ~0.01 nHz on the Edmond file)
@@ -182,10 +192,6 @@ class default_params():
         # ----------------------------------------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------------------------------- Thermal parameters
         # ----------------------------------------------------------------------------------------------------------------------
-
-        # model_type 'Boussinesq': the background dS/dr, 'internal' r (uniform heat sources, N² ∝ r² with g = r), 'differential'
-        # 1/r² (conduction between the walls, ricb > 0) or 'top hat' (the erf top hat of aux1..aux5, as 'user def')
-        self.heating = 'internal'
 
         # Thermal boundary conditions: 0 for Dirichlet, 1 for Neumann
         # (the unknown is the entropy s = δs/c_p: 0 is fixed entropy s=0, 1 is zero diffusive entropy flux s'=0; used only if ThermaD>0)
@@ -236,8 +242,8 @@ class default_params():
         self.rsf_alpha    = 2.0    # eddy size l_c = (rsf_lc_max^-4 + (rsf_alpha H_p)^-4)^(-1/4), H_p = -p/p' (kore's pressure
         self.rsf_lc_max   = 0.25   # profile): a smooth min of rsf_alpha H_p and rsf_lc_max (H_p is infinite at r = 0)
         self.rsf_lc       = None   # a constant l_c instead (kore length units)
-        self.rsf_nu_floor = None   # nu_t = ViscosD (nu/nu0 - rsf_nu_floor), clipped at 0; None: visc0 for 'smoothed sun'
-                                   # with visc0 < 1 (the radiative-zone floor; approximate if visc_pow != 0), 0 otherwise
+        self.rsf_nu_floor = None   # nu_t = ViscosD (nu/nu0 - rsf_nu_floor), clipped at 0; None: visc0 for diffusivity
+                                   # 'step' or 'solar_rz' with visc0 < 1 (the radiative-zone floor; approximate if visc_pow != 0), 0 otherwise
         self.rsf_lum      = None   # luminosity L/(rho_u r0^5 Omega^3) for rsf_theta = 'mlt', rho_u the density unit
                                    # (rho_c for 'model S'): Sun, rho_c 153.9 g/cm^3, r0 = 0.985 R_sun, Omega = 2 pi 456 nHz: 7.0e-7
         self.rsf_angular  = 1      # 1: variance times exp(-L l_c^2/(2 r^2)) (eddies of finite horizontal size); 0: white in angle
@@ -252,7 +258,7 @@ class default_params():
         self.rsf_frequencies = None  # frequency scan: forcing frequencies (kore units, negative prograde); solve.py factors
                                      # A - i(w - forcing_frequency) B for each (B.npz, written by assemble.py for forcing 11)
                                      # and appends to rsf_spectrum.dat and rsf_ke.dat instead of writing the fields
-        self.rsf_split    = None   # a radius: rsf_spectrum.dat also gives the kinetic energy below it (e.g. 0.71/aux0)
+        self.rsf_split    = None   # a radius: rsf_spectrum.dat also gives the kinetic energy below it (e.g. 0.71/r_out)
 
 
         # ----------------------------------------------------------------------------------------------------------------------
@@ -395,7 +401,7 @@ class default_params():
         # of the radial profiles are cut at max(1e-15, drop_tol) of the largest (utils.gimmedachebs, 1e-15 otherwise), entries
         # of each operator submatrix below drop_tol times its largest are removed, and after the pre-scaling entries of A and
         # max(|tau|, 1) B below drop_tol are removed. drop_tol = 1e-14 gave 35 % less memory at the same eigenvalues (< 1e-3 nHz) in
-        # thermal 'smoothed sun' runs.
+        # thermal solar runs.
         self.drop_tol = 0
 
 

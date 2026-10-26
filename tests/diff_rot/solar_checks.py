@@ -27,7 +27,7 @@ lp, lt, _ = ut.ell(par.m, par.lmax, par.symm); N1 = ut.N1; nb = len(lp)
 a, b = par.ricb, 1.0
 r = np.linspace(a, b, 4001)[1:-1]; x = 2*(r - a)/(b - a) - 1
 rho = np.exp(rap.prf.logrho(r, 0)); h1 = rap.logrhoX(r, 1)
-cut = 0.71/par.aux0
+cut = 0.71/par.r_out
 for j in range(V.shape[1]):
     e = np.zeros_like(r)
     for k, l in enumerate(lp):

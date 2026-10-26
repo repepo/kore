@@ -16,6 +16,7 @@ import utils as ut
 import utils4pp as upp
 import diff_rot as dr
 import radial_profiles as rap
+import background as bg
 
 
 
@@ -23,27 +24,28 @@ import radial_profiles as rap
 def diff_rot_code():
     return dr.TYPES.index(par.diff_rot_type) if par.diff_rot_type in dr.TYPES else -1
 
-# the 'smoothed sun' structure as written to params.dat (column 'solar_density'): its index in this tuple, the same order as
-# radial_profiles.structures ('fit' is the '8-term fit', 'model S' the 'old model S prototype'). Append new structures
-# at the end.
-solar_densities = ( 'fit', 'model S', 'model S hydrostatic' )
+# the background as written to params.dat: the index of structure, stratification and diffusivity in the tuples of
+# background.py (-1 for a stratification of None, with thermal = 0)
+def structure_code():
+    return bg.STRUCTURES.index(par.structure)
 
-def solar_density_code():
-    if par.model_type != 'smoothed sun':
-        return solar_densities.index(par.solar_density) if par.solar_density in solar_densities else -1
-    return list(rap.structures).index(rap.structure_name())
+def stratification_code():
+    return bg.STRATIFICATIONS.index(par.stratification) if par.stratification in bg.STRATIFICATIONS else -1
+
+def diffusivity_code():
+    return bg.DIFFUSIVITIES.index(par.diffusivity)
 
 def solar_density_window(k):
-    '''end k (0, 1) of par.solar_density_window, nan if None (the default window), -/+(aux0 + 0.005) if 'sun' (even fit)'''
+    '''end k (0, 1) of par.solar_density_window, nan if None (the default window), -/+(r_out + 0.005) if 'sun' (even fit)'''
     w = par.solar_density_window
     if isinstance(w, str):
-        return (2*k - 1)*(par.aux0 + 0.005)
+        return (2*k - 1)*(par.r_out + 0.005)
     return np.nan if w is None else w[k]
 
 def row_note():
-    '''the '#' comment ending each params.dat row: the 'user' rotation profiles (diff_rot.description) and the 'tabulated'
-    file with the first 12 hex digits of its sha256'''
-    notes = []
+    '''the '#' comment ending each params.dat row: the 'user' expressions of the background and of the rotation
+    (background.description, diff_rot.description) and the 'tabulated' file with the first 12 hex digits of its sha256'''
+    notes = [bg.description()] if bg.description() else []
     if par.diff_rot and dr.description():
         notes.append(dr.description())
     if par.diff_rot and par.diff_rot_type == 'tabulated':
@@ -61,7 +63,7 @@ def diff_rot_window_code():
 def solar_density_degree():
     '''degree of the Model S fits actually used: solar_density_sun_deg for the even whole-Sun fit ('sun', or None with ricb = 0);
     structure_deg for structure = 'model S hydrostatic' '''
-    if par.model_type == 'smoothed sun' and rap.structure_name() == 'model S hydrostatic':
+    if par.structure == 'model S hydrostatic':
         return par.structure_deg
     w = par.solar_density_window
     return par.solar_density_sun_deg if (isinstance(w, str) or (w is None and par.ricb == 0)) else par.solar_density_deg
@@ -93,7 +95,7 @@ def param_table(elapsed):
         ( 'N',                        par.N,                       '%d' ),
         ( 'lmax',                     par.lmax,                    '%d' ),
         ( 'runtime',                  elapsed,                     '%.9e' ),
-        ( 'aux0',                     par.aux0,                    '%.9e' ),
+        ( 'r_out',                    par.r_out,                   '%.9e' ),  # aux0 before background.py
         ( 'aux1',                     par.aux1,                    '%.9e' ),
         ( 'aux2',                     par.aux2,                    '%.9e' ),
         ( 'aux3',                     par.aux3,                    '%.9e' ),
@@ -128,11 +130,11 @@ def param_table(elapsed):
     ] + [
         ( 'diff_rot_solar_%d' % k,    par.diff_rot_solar[k],       '%.9e' ) for k in range(6)   # 'solar_P4': c0, c2, c4, Ω_RZ, rtc, dtc
     ] + [
-        ( 'solar_density',            solar_density_code(),        '%d' ),    # index into solar_densities
+        ( 'structure',                structure_code(),            '%d' ),    # index into background.STRUCTURES
         ( 'solar_density_deg',        solar_density_degree(),      '%d' ),    # the degree used ('sun': solar_density_sun_deg)
         ( 'solar_density_window_lo',  solar_density_window(0),     '%.9e' ),  # nan: the default window
         ( 'solar_density_window_hi',  solar_density_window(1),     '%.9e' ),
-        ( 'solar_rz',                 par.solar_rz,                '%d' ),    # radiative interior (Mukhopadhyay et al. 2025)
+        ( 'solar_rz',                 int(par.stratification == 'solar_rz'), '%d' ),  # 1: stratification 'solar_rz'
         ( 'solar_rz_dSdr',            par.solar_rz_dSdr,           '%.9e' ),
         ( 'solar_rz_x1',              par.solar_rz_steps[0],       '%.9e' ),
         ( 'solar_rz_x2',              par.solar_rz_steps[1],       '%.9e' ),
@@ -146,6 +148,8 @@ def param_table(elapsed):
         ( 'solar_rz_delta_sf',        par.solar_rz_delta_sf,       '%.9e' ),
         ( 'drop_tol',                 par.drop_tol,                '%.9e' ),
         ( 'diff_rot_param',           par.diff_rot_param,          '%.9e' ),  # 'shellular': σ; 'user': p
+        ( 'stratification',           stratification_code(),       '%d' ),    # index into background.STRATIFICATIONS
+        ( 'diffusivity',              diffusivity_code(),          '%d' ),    # index into background.DIFFUSIVITIES
     ]
 
 

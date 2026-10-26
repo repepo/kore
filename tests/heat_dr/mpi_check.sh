@@ -6,7 +6,7 @@
 set -e
 T=$(cd "$(dirname "$0")" && pwd)
 W=${1:-$T/runs}; mkdir -p "$W"; cd "$W"
-SUN="par.ricb=0; par.model_type='smoothed sun'; par.N=64; par.aux0=0.99; par.aux1=0.0; par.aux2=0.1; par.aux3=0.68; par.aux4=0.06; par.aux5=2.6; par.Beyonce=1e3; par.therm0=1.0; par.visc_pow=0.0; par.therm_pow=0.0; par.bco=1"
+SUN="par.ricb=0; par.structure='8-term fit'; par.stratification='odd top hat'; par.diffusivity='step'; par.N=64; par.r_out=0.99; par.aux1=0.0; par.aux2=0.1; par.aux3=0.68; par.aux4=0.06; par.aux5=2.6; par.Beyonce=1e3; par.therm0=1.0; par.visc_pow=0.0; par.therm_pow=0.0; par.bco=1"
 python3 "$T/mk_run.py" mpi_m1   'par.lmax=24; par.ncpus=4'
 python3 "$T/mk_run.py" mpi_nodr 'par.lmax=24; par.ncpus=4; par.diff_rot=0'
 python3 "$T/mk_run.py" mpi_m0   'par.m=0; par.lmax=23; par.ncpus=4'

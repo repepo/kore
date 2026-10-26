@@ -4,7 +4,7 @@ mkrhs.py RUN K [SEED]: in a kore run directory RUN built for forcing = 11 (bin/,
 rsf_theta 'nu', no rsf_rcut), builds the right-hand sides of six forcing configurations with bin/reynolds_stress.py and writes
 them side by side into RUN/B_forced.npz (K columns each, the original kept as B_forced_base.npz), so that one LU per
 frequency serves all six (A and B do not depend on the forcing). Configurations: rsf_theta 'nu' and 'mlt' (rsf_lum 7.0e-7),
-each without a cut, with the edge full above 0.74 R_sun and full above 0.76 R_sun (rsf_rcut_width 0.08, aux0 = r_out/R_sun).
+each without a cut, with the edge full above 0.74 R_sun and full above 0.76 R_sun (rsf_rcut_width 0.08, r_out in R_sun).
 Writes RUN/groups.txt (first column, last column + 1, theta, rcut, width, label) and checks that the 'nu' uncut group equals
 B_forced_base.npz bitwise.
 '''
@@ -17,7 +17,7 @@ from parameters import par
 import reynolds_stress as rs
 assert par.forcing == 11 and par.rsf_nsamp == K and par.rsf_seed == seed and par.rsf_theta == 'nu' and par.rsf_rcut is None
 W = 0.08
-cuts = [(None, 'no cut'), (0.74/par.aux0 - W, 'full above 0.74'), (0.76/par.aux0 - W, 'full above 0.76')]
+cuts = [(None, 'no cut'), (0.74/par.r_out - W, 'full above 0.74'), (0.76/par.r_out - W, 'full above 0.76')]
 cfgs = [(th, rc, lab) for th in ('nu', 'mlt') for rc, lab in cuts]
 cols, lines, j0 = [], [], 0
 for th, rc, lab in cfgs:

@@ -20,8 +20,8 @@ import diff_rot as dr
 
 V = np.load(sys.argv[1]); cp = float(sys.argv[2]) if len(sys.argv) > 2 else 3.46e8
 th_e, r_e, dsdt = V['theta'], V['r'], V['dsdt']
-k = (r_e >= par.ricb*par.aux0 + 0.005) & (r_e <= par.aux0 - 0.005)
-x_e = r_e[k]; r = x_e/par.aux0
+k = (r_e >= par.ricb*par.r_out + 0.005) & (r_e <= par.r_out - 0.005)
+x_e = r_e[k]; r = x_e/par.r_out
 sig = dr.sigma_coefficients(r)            # σ_n(r), n = 0 ... the highest degree of S_tw
 th = np.pi - th_e                         # colatitude of each Edmond θ node
 xx = np.cos(th)

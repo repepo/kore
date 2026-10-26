@@ -60,7 +60,7 @@ for j in $(seq 1 1 1)
 #for j in $(seq 0.997 0.0003 1.00)
 do
 
-	#sed -i 's,^\(par.aux0[ ]*=\).*,\1'$j',g' bin/parameters.py
+	#sed -i 's,^\(par.r_out[ ]*=\).*,\1'$j',g' bin/parameters.py
 
 	./bin/submatrices.py $ncpus >> out00
 	mpiexec -n $ncpus ./bin/assemble.py >> out0

@@ -20,8 +20,9 @@ par.ricb        = 0.35
 par.m           = 2
 par.symm        = 1
 par.thermal     = 1
-par.model_type  = 'user def'
-par.aux0        = 0.99  # r peel cutoff
+par.structure   = 'Wu 2005'   # ρ = (1 - x²)²; structure, stratification, diffusivity: bin/params_default.py
+par.r_out       = 0.99  # outer wall at x = 0.99 (the density vanishes at x = 1)
+par.stratification = 'top hat'   # dS/dr: erf top hat of aux1..aux5
 par.aux1        = 0.5   #x1
 par.aux2        = 0.03  #w1
 par.aux3        = 0.85  #x2
@@ -31,10 +32,6 @@ par.Gaspard     = 1.
 par.Beyonce     = 10.
 par.ViscosD     = 1e-4
 par.ThermaD     = 5e-4
-
-par.visc0       = 1.0   # core/envelope viscosity ratio
-par.rvisc       = 0.60   # transition radius
-par.hvisc       = 0.04   # transition width
 
 par.diff_rot    = 0
 par.diff_rot_type = "conical" # Y20, Y20-wall-bounded, shellular, cylindrical, conical, shellular_boussinesq, solar, solar_P4, tabulated, rigid (docs/differential-rotation.md)

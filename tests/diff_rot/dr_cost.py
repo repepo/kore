@@ -30,8 +30,8 @@ import numpy as np
 par = default_params()
 par.timescale = 'rotation'
 par.set_scales()
-par.ricb=0.35; par.m=2; par.symm=1; par.model_type='user def'
-par.aux0=0.99; par.aux1=0.5; par.aux2=0.03; par.aux3=0.85; par.aux4=0.03; par.aux5=2.5
+par.ricb=0.35; par.m=2; par.symm=1; par.structure='Wu 2005'; par.stratification='top hat'
+par.r_out=0.99; par.aux1=0.5; par.aux2=0.03; par.aux3=0.85; par.aux4=0.03; par.aux5=2.5
 par.Gaspard=1.; par.Beyonce=10.; par.ViscosD=1e-4; par.ThermaD=1e-4
 par.bci=0; par.bco=0; par.bci_thermal=0; par.bco_thermal=0
 par.N={N}; par.lmax={L}; par.ncpus={NC}
