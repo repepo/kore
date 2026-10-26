@@ -69,8 +69,11 @@ def fitd(func, d):
     for _ in range(d): c = C.chebder(c)*(2/(1 - a))
     return C.chebval(2*(r - a)/(1 - a) - 1, c)
 ab = lambda rr: np.abs(rr) if ricb == 0 else rr
-f0f = lambda rr: rap.prf.abu(ab(rr), 0)*np.ones_like(rr)
-f2f = lambda rr: rap.prf.aub(ab(rr), 0)*np.ones_like(rr)
+import diff_rot as dr   # the raw profiles diff_rot_ampl f_n (no Chebyshev fit); this check handles f0 + f2 P2 only
+if not set(dr.degrees()) <= {0, 2}:
+    sys.exit('row_check.py: diff_rot_type %r has degrees %s; this check handles P0 and P2 only' % (par.diff_rot_type, dr.degrees()))
+f0f = lambda rr: dr.raw(0, ab(rr))*np.ones_like(rr) if 0 in dr.degrees() else 0*rr
+f2f = lambda rr: dr.raw(2, ab(rr))*np.ones_like(rr) if 2 in dr.degrees() else 0*rr
 f0, f01 = fitd(f0f, 0), fitd(f0f, 1)
 f2, f21 = fitd(f2f, 0), fitd(f2f, 1)
 g = rap.prf.gravity(r, 0)

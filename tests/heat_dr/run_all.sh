@@ -4,9 +4,9 @@
 set -e -o pipefail  # a crash in a 'check | tail' or 'check | sed' pipeline stops the script
 T=$(cd "$(dirname "$0")" && pwd)
 W=${1:-$T/runs}; mkdir -p "$W"; cd "$W"
-SUN="par.ricb=0; par.model_type='smoothed sun'; par.N=120; par.lmax=30; par.m=1; par.symm=1; par.aux0=0.99; par.aux1=0.0; par.aux2=0.1; par.aux3=0.68; par.aux4=0.06; par.aux5=2.6; par.Beyonce=1e3; par.ViscosD=1e-3; par.ThermaD=1e-3; par.visc0=1.0; par.therm0=1.0; par.visc_pow=0.0; par.therm_pow=0.0; par.diff_rot_type='conical'; par.diff_rot_amplitude=-0.25; par.bco=1; par.bco_thermal=0"
+SUN="par.ricb=0; par.model_type='smoothed sun'; par.N=120; par.lmax=30; par.m=1; par.symm=1; par.aux0=0.99; par.aux1=0.0; par.aux2=0.1; par.aux3=0.68; par.aux4=0.06; par.aux5=2.6; par.Beyonce=1e3; par.ViscosD=1e-3; par.ThermaD=1e-3; par.visc0=1.0; par.therm0=1.0; par.visc_pow=0.0; par.therm_pow=0.0; par.diff_rot_type='conical'; par.diff_rot_ampl=-0.25; par.bco=1; par.bco_thermal=0"
 # 'solar' rotation in the full sphere: its tachocline tanh needs N ~ 400 for round-off (1e-2 at N = 120, 2e-8 at N = 240)
-SOL="$SUN; par.N=400; par.lmax=14; par.diff_rot_type='solar'; par.diff_rot_amplitude=1"
+SOL="$SUN; par.N=400; par.lmax=14; par.diff_rot_type='solar'; par.diff_rot_ampl=1"
 echo "--- sympy: closed forms of sigma2, sigma4, sigma6 (thermal_wind = 1 and 2) against the thermal-wind balance"
 python3 "$T/tw_sympy.py" | tail -1
 echo "--- building the runs (conical rotation and user-def profiles unless stated; mk_run.py has the defaults; wall-bounded and shellular exercise f', f'')"
@@ -20,8 +20,8 @@ python3 "$T/mk_run.py" m2b      'par.N=96; par.m=2; par.symm=-1; par.lmax=21'
 python3 "$T/mk_run.py" nodr_m2b 'par.N=96; par.m=2; par.symm=-1; par.lmax=21; par.diff_rot=0'
 python3 "$T/mk_run.py" y20wb      "par.N=96; par.diff_rot_type='Y20-wall-bounded'"
 python3 "$T/mk_run.py" nodr_y20wb "par.N=96; par.diff_rot_type='Y20-wall-bounded'; par.diff_rot=0"
-python3 "$T/mk_run.py" shell      "par.N=96; par.diff_rot_type='shellular'"
-python3 "$T/mk_run.py" nodr_shell "par.N=96; par.diff_rot_type='shellular'; par.diff_rot=0"
+python3 "$T/mk_run.py" shell      "par.N=96; par.diff_rot_type='shellular'; par.diff_rot_ampl=1; par.diff_rot_param=-0.25"
+python3 "$T/mk_run.py" nodr_shell "par.N=96; par.diff_rot_type='shellular'; par.diff_rot_ampl=1; par.diff_rot_param=-0.25; par.diff_rot=0"
 python3 "$T/mk_run.py" sun      "$SUN; par.diff_rot=1"
 python3 "$T/mk_run.py" nodr_sun "$SUN; par.diff_rot=0"
 python3 "$T/mk_run.py" sun_a      "$SUN; par.symm=-1; par.diff_rot=1"
@@ -31,7 +31,7 @@ python3 "$T/mk_run.py" s96_tw2   'par.N=96; par.thermal_wind=2'
 python3 "$T/mk_run.py" m0_tw2    'par.N=96; par.m=0; par.lmax=21; par.thermal_wind=2'
 python3 "$T/mk_run.py" m2b_tw2   'par.N=96; par.m=2; par.symm=-1; par.lmax=21; par.thermal_wind=2'
 python3 "$T/mk_run.py" y20wb_tw2 "par.N=96; par.diff_rot_type='Y20-wall-bounded'; par.thermal_wind=2"
-python3 "$T/mk_run.py" shell_tw2 "par.N=96; par.diff_rot_type='shellular'; par.thermal_wind=2"
+python3 "$T/mk_run.py" shell_tw2 "par.N=96; par.diff_rot_type='shellular'; par.diff_rot_ampl=1; par.diff_rot_param=-0.25; par.thermal_wind=2"
 python3 "$T/mk_run.py" sun_tw2   "$SUN; par.thermal_wind=2"
 python3 "$T/mk_run.py" sun_a_tw2 "$SUN; par.symm=-1; par.thermal_wind=2"
 python3 "$T/mk_run.py" sun_m0a_tw2      "$SUN; par.m=0; par.symm=-1; par.lmax=31; par.thermal_wind=2"
@@ -46,20 +46,20 @@ python3 "$T/mk_run.py" nodr_g3  'par.N=96; par.Gaspard=3; par.Beyonce=90; par.di
 python3 "$T/mk_run.py" k0       'par.N=96; par.ThermaD=0; par.thermal_wind=0; par.Gaspard=3'
 python3 "$T/mk_run.py" nodr_k0  'par.N=96; par.ThermaD=0; par.diff_rot=0; par.Gaspard=3'
 # ThermaD = 0 with the thermal wind (thermal_wind 1 and 2): heat rows r² (eq)/p in C^(1) (utils.adiab_tw). diff_rot = 0 or
-# thermal_wind = 0 gives the r (eq)/p rows in C^(0), so the reference of asm_check is the same run with diff_rot_amplitude = 0 (z_*)
+# thermal_wind = 0 gives the r (eq)/p rows in C^(0), so the reference of asm_check is the same run with diff_rot_ampl = 0 (z_*)
 KTW="k1 km0 km2b ky20wb kshell kg3 ksun ksun_a"
 for c in "k1:par.N=96" "km0:par.N=96; par.m=0; par.lmax=21" "km2b:par.N=96; par.m=2; par.symm=-1; par.lmax=21" \
-         "ky20wb:par.N=96; par.diff_rot_type='Y20-wall-bounded'" "kshell:par.N=96; par.diff_rot_type='shellular'" \
+         "ky20wb:par.N=96; par.diff_rot_type='Y20-wall-bounded'" "kshell:par.N=96; par.diff_rot_type='shellular'; par.diff_rot_ampl=1; par.diff_rot_param=-0.25" \
          "kg3:par.N=96; par.Gaspard=3; par.Beyonce=90" "ksun:$SUN" "ksun_a:$SUN; par.symm=-1"; do
     d=${c%%:*}; p="${c#*:}; par.ThermaD=0"
-    python3 "$T/mk_run.py" $d "$p"; python3 "$T/mk_run.py" ${d}_tw2 "$p; par.thermal_wind=2"; python3 "$T/mk_run.py" z_$d "$p; par.diff_rot_amplitude=0"
+    python3 "$T/mk_run.py" $d "$p"; python3 "$T/mk_run.py" ${d}_tw2 "$p; par.thermal_wind=2"; python3 "$T/mk_run.py" z_$d "$p; par.diff_rot_ampl=0"
 done
 # thermal_wind = 3: prescribed dS_tw/dtheta = dSdtheta sin 2 theta (Bekki et al. 2024), with conical, uniform ('rigid', amplitude 0)
 # and full-sphere rotation, and with ThermaD = 0
 TW3="par.thermal_wind=3; par.dSdtheta=-0.05"
 python3 "$T/mk_run.py" s96_tw3 "par.N=96; $TW3"
 python3 "$T/mk_run.py" m0_tw3  "par.N=96; par.m=0; par.lmax=21; $TW3"
-python3 "$T/mk_run.py" rig_tw3 "par.N=96; par.diff_rot_type='rigid'; par.diff_rot_amplitude=0; $TW3"
+python3 "$T/mk_run.py" rig_tw3 "par.N=96; par.diff_rot_type='rigid'; par.diff_rot_ampl=0; $TW3"
 python3 "$T/mk_run.py" sun_tw3 "$SUN; $TW3"
 python3 "$T/mk_run.py" k1_tw3  "par.N=96; par.ThermaD=0; $TW3"
 echo "--- heat_check: operator blocks vs the (r, theta) quadrature of p0 s* [i m G dOmega s + u.grad S_tw]"
@@ -83,8 +83,8 @@ echo "--- thermal_wind = 2 -> 1 as the amplitude -> 0: max|H2 - H1|/max|H1| / am
 for ty in conical Y20-wall-bounded; do
     args=""
     for a in 0.1 0.01 0.001; do
-        python3 "$T/mk_run.py" lim_${ty}_${a}_1 "par.N=64; par.diff_rot_type='$ty'; par.diff_rot_amplitude=$a; par.thermal_wind=1" > /dev/null
-        python3 "$T/mk_run.py" lim_${ty}_${a}_2 "par.N=64; par.diff_rot_type='$ty'; par.diff_rot_amplitude=$a; par.thermal_wind=2" > /dev/null
+        python3 "$T/mk_run.py" lim_${ty}_${a}_1 "par.N=64; par.diff_rot_type='$ty'; par.diff_rot_ampl=$a; par.thermal_wind=1" > /dev/null
+        python3 "$T/mk_run.py" lim_${ty}_${a}_2 "par.N=64; par.diff_rot_type='$ty'; par.diff_rot_ampl=$a; par.thermal_wind=2" > /dev/null
         for w in 1 2; do (cd lim_${ty}_${a}_$w && python3 "$T/heat_check.py" 3 > heat_check.out); done
         args="$args $a lim_${ty}_${a}_1 lim_${ty}_${a}_2"
     done
@@ -95,10 +95,10 @@ R='par.N=64; par.lmax=25; par.m=2'
 V="$R; par.ViscosD=1.; par.ThermaD=1.; par.Beyonce=1e7"   # 'viscous'-like units: G = 1/E = 1e3
 K="$R; par.ThermaD=0; par.thermal_wind=0"                  # no thermal diffusion: advection of s only
 K1="$R; par.ThermaD=0; par.thermal_wind=1"                 # no thermal diffusion, heat rows r² (eq)/p in C^(1) (S_tw = 0 here)
-DR="par.diff_rot=1; par.diff_rot_type='rigid'; par.diff_rot_amplitude=0.1"
+DR="par.diff_rot=1; par.diff_rot_type='rigid'; par.diff_rot_ampl=0.1"
 for c in "1:1:$R" "3:3:$R" "V:1e3:$V" "K:3:$K" "K1:1:$K1" "K13:3:$K1"; do
     n=${c%%:*}; r=${c#*:}; G=${r%%:*}; base=${r#*:}
-    nodr="par.diff_rot=0"; [ ${n:0:2} = K1 ] && nodr="$DR; par.diff_rot_amplitude=0"   # K1: the same heat rows in the baseline
+    nodr="par.diff_rot=0"; [ ${n:0:2} = K1 ] && nodr="$DR; par.diff_rot_ampl=0"   # K1: the same heat rows in the baseline
     python3 "$T/mk_run.py" rbase$n "$base; $nodr; par.Gaspard=$G*(1+0.1)" > /dev/null
     python3 "$T/mk_run.py" rfix$n  "$base; $DR; par.Gaspard=$G" > /dev/null
     s0=$(python3 -c "print(1.1*$G)"); s1=$(python3 -c "print(0.9*$G)")

@@ -16,7 +16,7 @@ z = np.load('eig.npz'); lams = z['lam']; vecs = z['vecs']
 res = lambda terms: abs(sum(terms))/max(abs(t) for t in terms)
 worst = 0.   # verdict: Wdr + i Wdr_im vs -2R and Wdr_thm vs 2 Re H (the resid columns are resolution-limited, 1e-4 at N = 64)
 print('N %d lmax %d m %d symm %d ricb %g thermal %d diff_rot %d type %s amplitude %g thermal_wind %d bci %d bco %d'
-      % (N, par.lmax, m, par.symm, ricb, par.thermal, par.diff_rot, par.diff_rot_type, par.diff_rot_amplitude, par.thermal_wind, par.bci, par.bco))
+      % (N, par.lmax, m, par.symm, ricb, par.thermal, par.diff_rot, par.diff_rot_type, par.diff_rot_ampl, par.thermal_wind, par.bci, par.bco))
 print(' mode    sigma      omega    |  resid1 on/off      |  resid2 on/off      |  resens on/off      |  resid3 on/off      |'
       ' dWdr       dWdr_thm       | Wdr/2|w|KE  Wdr_im/2|w|KE  Wdr_thm/2|w|TE | KE/I-1   TE/E-1')
 for i, lam in enumerate(lams):

@@ -9,7 +9,7 @@ par = default_params()
 par.timescale = 'rotation'
 par.set_scales()
 par.ricb=0.35; par.m=1; par.symm=1; par.thermal=1; par.model_type='user def'
-par.diff_rot=1; par.diff_rot_type='conical'; par.diff_rot_amplitude=-0.25; par.thermal_wind=1
+par.diff_rot=1; par.diff_rot_type='conical'; par.diff_rot_ampl=-0.25; par.thermal_wind=1
 par.aux0=0.99; par.aux1=0.5; par.aux2=0.03; par.aux3=0.85; par.aux4=0.03; par.aux5=2.5
 par.Gaspard=1.; par.Beyonce=10.; par.ViscosD=1e-3; par.ThermaD=1e-3
 par.visc0=1.0; par.rvisc=0.6; par.hvisc=0.04

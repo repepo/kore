@@ -42,6 +42,7 @@ import utils as ut
 import radial_profiles as rap
 import operators as op
 import bc_variables as bv
+import diff_rot as dr
 
 N    = par.N
 N1   = ut.N1
@@ -172,16 +173,15 @@ def dr_blocks(l, sec):
     '''
     if not par.diff_rot:
         return []
-    nd = ut.dr_nmax   # degree of ΔΩ: 2 unless ut.dr_high
-    ev, od = range(-nd, nd + 1, 2), range(-nd - 1, nd + 2, 2)
-    comp = {'u': [('upol', ev, lp, 'P'), ('utor', od, lt, 'T')],
-            'v': [('upol', od, lp, 'P'), ('utor', ev, lt, 'T')]}[sec]
+    comp = {'u': [('upol', dr.dl_range('u', 'upol'), lp, 'P'), ('utor', dr.dl_range('u', 'utor'), lt, 'T')],
+            'v': [('upol', dr.dl_range('v', 'upol'), lp, 'P'), ('utor', dr.dl_range('v', 'utor'), lt, 'T')]}[sec]
     out = []
     for name, offs, ls, kind in comp:
         for i in offs:
             if l + i in ls:
                 mtx, offd = op.differential_rotation(l, sec, name, i)
-                out.append((mtx, offd, kind))
+                if not np.isscalar(mtx):
+                    out.append((mtx, offd, kind))
     return out
 
 def heat_blocks(l):
@@ -193,16 +193,15 @@ def heat_blocks(l):
     '''
     if not (par.diff_rot and par.thermal):
         return []
-    comp = [('temp', range(-ut.dr_nmax, ut.dr_nmax + 1, 2), lp, 'S')]
-    if par.thermal_wind:   # S_tw has P2, P4 (thermal_wind = 1, 3) and P6 (thermal_wind = 2), more with ut.dr_high
-        dlmax = ut.tw_nmax
-        comp += [('upol', range(-dlmax, dlmax + 1, 2), lp, 'P'), ('utor', range(1 - dlmax, dlmax, 2), lt, 'T')]
+    comp = [('temp', dr.dl_range('h', 'temp'), lp, 'S'), ('upol', dr.dl_range('h', 'upol'), lp, 'P'),
+            ('utor', dr.dl_range('h', 'utor'), lt, 'T')]   # the last two are empty without the thermal wind
     out = []
     for name, offs, ls, kind in comp:
         for i in offs:
             if l + i in ls:
                 mtx, offd = op.thermal_diffrot(l, 'h', name, i)
-                out.append((mtx, offd, kind))
+                if not np.isscalar(mtx):
+                    out.append((mtx, offd, kind))
     return out
 
 def cross_pairings(left, right):

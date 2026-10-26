@@ -6,7 +6,7 @@ assemble.py packed them; paired with conj(s) they must give -G, G the (r, theta)
 p0 conj(s) [i m Gaspard dOmega s + u_r dS_tw/dr + (u_theta/r) dS_tw/dtheta] from the same random fields.
 Run in the diff_rot = 1 run directory: python3 asm_check.py PATH_TO_A_npz_OF_THE_diff_rot_0_RUN [ntrials]
 With ThermaD = 0 and thermal_wind >= 1 the heat rows are r^2 (eq)/p in C^(1) (utils.adiab_tw), and a diff_rot = 0 (or
-thermal_wind = 0) run has r (eq)/p in C^(0): the reference is then the same run with diff_rot_amplitude = 0.
+thermal_wind = 0) run has r (eq)/p in C^(0): the reference is then the same run with diff_rot_ampl = 0.
 '''
 import sys, os, numpy as np, scipy.sparse as ss, scipy.sparse.linalg
 a0path, ntr_ = sys.argv[1], (int(sys.argv[2]) if len(sys.argv) > 2 else 3)
@@ -36,7 +36,7 @@ A0, n0 = unscale(a0path, os.path.join(os.path.dirname(a0path), 'B.npz'))
 print('A normalisation undone: Anorm = %.6g (diff_rot = 1), %.6g (diff_rot = 0)' % (n1, n0))
 dA = (A1 - A0).tocsr()
 dh = dA[h0:3*nb*N1, :]
-print('m = %d, symm = %d, ricb = %g, lmax = %d, N = %d, diff_rot_type = %s, amplitude = %g, thermal_wind = %d, Gaspard = %g, ThermaD = %g' % (m, par.symm, ricb, par.lmax, N, par.diff_rot_type, par.diff_rot_amplitude, par.thermal_wind, par.Gaspard, par.ThermaD))
+print('m = %d, symm = %d, ricb = %g, lmax = %d, N = %d, diff_rot_type = %s, diff_rot_ampl = %g, thermal_wind = %d, Gaspard = %g, ThermaD = %g' % (m, par.symm, ricb, par.lmax, N, par.diff_rot_type, par.diff_rot_ampl, par.thermal_wind, par.Gaspard, par.ThermaD))
 print('rows of A outside section h that differ: %d (momentum diff-rot blocks)' % np.count_nonzero(np.diff(dA[:h0, :].indptr)))
 bcrows = np.concatenate([k*N1 + np.arange(chop['h']) for k in range(nb)])
 worst = 0
