@@ -143,7 +143,7 @@ def param_table(elapsed):
         ( 'solar_rz_xos',             par.solar_rz_os[0],          '%.9e' ),
         ( 'solar_rz_dos',             par.solar_rz_os[1],          '%.9e' ),
         ( 'diff_rot_window',          diff_rot_window_code(),      '%d' ),    # 'tabulated': 0 shell fit, 1 whole Sun ('sun')
-        ( 'diff_rot_hold',            np.nan if par.diff_rot_hold is None else par.diff_rot_hold, '%.9e' ),  # nan: None
+        ( 'diff_rot_hold',            np.nan,                      '%.9e' ),  # removed option, always nan (keeps the columns after it in place)
         ( 'solar_rz_delta_cz',        par.solar_rz_delta_cz,       '%.9e' ),  # convection-zone superadiabaticity
         ( 'solar_rz_delta_sf',        par.solar_rz_delta_sf,       '%.9e' ),
         ( 'drop_tol',                 par.drop_tol,                '%.9e' ),

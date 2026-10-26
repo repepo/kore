@@ -18,8 +18,7 @@ keys (default):
           'step' with ν, κ constant
   dsrz (1.32e-2): (∂s0/∂r)_RZ in erg/g/K/cm       nurz (1e10), kaprz (4e10): ν_RZ, κ_RZ in cm²/s
   nu (1e12), kappa (= nu): ν_CZ, κ_CZ             cp (3.46e8): c_p for the units of s
-  drtype ('solar_P4'): or 'tabulated' with file= (diff_rot_window 'sun', degree 60, hold= x_h to hold Ω below x_h R☉;
-                        hold sets diff_rot_hold, which is faulty: do not use it)
+  drtype ('solar_P4'): or 'tabulated' with file= (diff_rot_window 'sun', degree 60)
   nmax (12), frame (456.0), tw (2), rad (0), bco (0): bco_thermal (their s = 0 at the top)
   structure ('old model S prototype'): par.structure, e.g. '8-term fit' (smoothed_sun.py) or 'model S hydrostatic'
   extra: python statements appended to parameters.py
@@ -35,7 +34,7 @@ if len(sys.argv) < 2 or sys.argv[1].startswith('-'):
     sys.exit(__doc__)
 d = sys.argv[1]
 kv = dict(a.split('=', 1) for a in sys.argv[2:])
-known = 'm symm N lmax rin rz dsrz nurz kaprz nu kappa cp drtype file hold nmax frame tw rad bco structure extra'.split()
+known = 'm symm N lmax rin rz dsrz nurz kaprz nu kappa cp drtype file nmax frame tw rad bco structure extra'.split()
 bad = [k for k in kv if k not in known]
 if bad:
     sys.exit('unknown keys %s; known: %s' % (bad, ' '.join(known)))
@@ -43,7 +42,7 @@ g = lambda k, v: type(v)(kv[k]) if k in kv else v
 m = g('m', 3); symm = g('symm', -1); N = g('N', 128); lmax = g('lmax', m + 63); rin = g('rin', 0.5)
 rz = g('rz', 1); dsrz = g('dsrz', 1.32e-2); nurz = g('nurz', 1e10); kaprz = g('kaprz', 4e10)
 nu = g('nu', 1e12); kappa = g('kappa', nu); cp = g('cp', 3.46e8)
-drtype = kv.get('drtype', 'solar_P4'); fname = kv.get('file', ''); hold = kv.get('hold', None)
+drtype = kv.get('drtype', 'solar_P4'); fname = kv.get('file', '')
 nmax = g('nmax', 12); frame = g('frame', 456.0); tw = g('tw', 2); rad = g('rad', 0); bco = g('bco', 0)
 structure = kv.get('structure', 'old model S prototype'); extra = kv.get('extra', '')
 if drtype == 'tabulated':
@@ -52,7 +51,6 @@ if drtype == 'tabulated':
     fname = os.path.abspath(fname)
     if not os.path.isfile(fname):
         sys.exit('no such file: ' + fname)
-hold = None if hold is None else float(hold)
 
 RSUN, GSURF = 6.9599e10, 2.7361e4      # cm, cm/s² (Model S, as smoothed_sun.py)
 r_out = 0.985
@@ -73,7 +71,7 @@ par.aux1 = 0.0; par.aux2 = 0.1; par.aux3 = 0.68; par.aux4 = 0.06; par.aux5 = 0.0
 par.solar_rz_dSdr = {dsrz*L/cp!r}
 par.visc0 = {(nurz/nu if rz else 1.0)!r}; par.therm0 = {(kaprz/kappa if rz else 1.0)!r}; par.visc_pow = 0.0; par.therm_pow = 0.0
 par.diff_rot = 1; par.diff_rot_type = {drtype!r}; par.diff_rot_frame = {frame!r}
-par.diff_rot_file = {fname!r}; par.diff_rot_nmax = {nmax}; par.diff_rot_window = 'sun'; par.diff_rot_hold = {hold!r}
+par.diff_rot_file = {fname!r}; par.diff_rot_nmax = {nmax}; par.diff_rot_window = 'sun'
 par.thermal_wind = {tw}; par.thermal_wind_radial = {rad}
 par.Gaspard = 1.0; par.Beyonce = {Beyonce!r}; par.ViscosD = {ViscosD!r}; par.ThermaD = {ThermaD!r}
 par.bci = 0; par.bco = 0; par.bci_thermal = 1; par.bco_thermal = {bco}

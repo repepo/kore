@@ -989,7 +989,7 @@ once over the whole Sun instead, with the table mirrored to negative $r$ and the
   only change to existing runs, and `regress.sh` has no 'tabulated' ricb = 0 case. Below the first table radius
   (0.1 R☉ in the Edmond file, rigid at 433.5 nHz there) each $f_n$ is held at its value there. `diff_rot_hold` = $x_h$
   instead holds $f_n$ at $f_n(x_h)$ for $x < x_h$, blended over 0.01 R☉, to test how much the profile below the
-  tachocline matters. Do not use it: it was found faulty on 2026-10-25
+  tachocline matters. It was found faulty on 2026-10-25 and removed on 2026-10-26
   ([differential_rotation_details.md](differential_rotation_details.md) §5.1).
 
 `spin_doctor` writes the new settings to the end of `params.dat` (see differential-rotation.md, Output).

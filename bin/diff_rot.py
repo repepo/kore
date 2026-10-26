@@ -49,7 +49,6 @@ def _tabulated_fits():
     '''
     if _tab:
         return _tab
-    import scipy.special as ss
     from scipy.interpolate import CubicSpline
     D = np.load(par.diff_rot_file)
     ome, rt, th = D['ome'], D['r'], D['theta']          # ome[θ, r] in nHz, θ in rad, r in R☉
@@ -71,10 +70,6 @@ def _tabulated_fits():
         L = xb + 0.01
         k = rt <= L
         r1, f1 = rt[k], fn[:, k]
-        if par.diff_rot_hold is not None:   # hold f_n at its value at x_h below x_h
-            j = np.argmin(np.abs(r1 - par.diff_rot_hold))
-            S = 0.5*(1 + ss.erf((r1 - par.diff_rot_hold + 0.01)/0.01))
-            f1 = S*f1 + (1 - S)*f1[:, j:j+1]
         dx = r1[1] - r1[0]
         rp = np.arange(r1[0] - dx, 0, -dx)[::-1]                 # below the first table radius: its value
         r1 = np.concatenate([rp, r1]); f1 = np.concatenate([np.repeat(f1[:, :1], rp.size, axis=1), f1], axis=1)
@@ -84,9 +79,8 @@ def _tabulated_fits():
             c[1::2] = 0
             _tab[n] = C(c, domain=[-L, L])
         res = [np.abs(_tab[n](r1) - f1[i]).max()*par.diff_rot_frame for i, n in enumerate(ns)]
-        print("diff_rot_type 'tabulated': %s, whole-Sun even fit of degree %d on [0, %.3f]%s; max |fit - f_n| (nHz):" %
-              (par.diff_rot_file, par.diff_rot_sun_deg, L, '' if par.diff_rot_hold is None else
-               ', f_n held below %.3f' % par.diff_rot_hold), ' '.join('%.2e' % v for v in res))
+        print("diff_rot_type 'tabulated': %s, whole-Sun even fit of degree %d on [0, %.3f]; max |fit - f_n| (nHz):" %
+              (par.diff_rot_file, par.diff_rot_sun_deg, L), ' '.join('%.2e' % v for v in res))
         return _tab
     k = (rt >= xa - 0.01) & (rt <= xb + 0.01)
     deg = min(par.diff_rot_rdeg, int(k.sum())//2)
@@ -190,8 +184,10 @@ def codes(n):
 def check():
     '''stops on settings that cannot work (called by submatrices.py)'''
     for name, new in (('diff_rot_amplitude', "diff_rot_ampl (and diff_rot_param for the σ of 'shellular')"),
-                      ('diff_rot_generic', 'nothing: there is one coupling builder now (tests/diff_rot/gen_check.py checks it)')):
-        if hasattr(par, name):   # parameter names before bin/diff_rot.py: they would otherwise be ignored without notice
+                      ('diff_rot_generic', 'nothing: there is one coupling builder now (tests/diff_rot/gen_check.py checks it)'),
+                      ('diff_rot_hold', "nothing: the table is used as it is (the hold copied the table's latitudinal shear "
+                                        'at x_h into the whole core)')):
+        if hasattr(par, name):   # removed parameters: they would otherwise be ignored without notice
             sys.exit('par.%s is no longer read: use %s' % (name, new))
     if par.thermal and par.thermal_wind not in (0, 1, 2, 3):
         sys.exit('thermal_wind must be 0, 1, 2 or 3')

@@ -224,8 +224,8 @@ flow U₀ = Gaspard ΔΩ r sin θ e_φ in the frame Ω_ref. It works with any ba
   ∂S_tw/∂θ = `dSdtheta` sin 2θ (Bekki et al. 2024); 0 none. `thermal_wind_radial = 0` drops the u_r term (as Bekki et al.
   and Mukhopadhyay et al.); `thermal_wind_amplitude` scales S_tw. S_tw has degrees up to `diff_rot.tw_nmax()` (n_max + 2,
   or 2 n_max + 2 for thermal_wind 2).
-- `diff_rot.check()` (called by `submatrices.py`) stops on the former names `diff_rot_amplitude` and
-  `diff_rot_generic`. Do not use `diff_rot_hold` (§12).
+- `diff_rot.check()` (called by `submatrices.py`) stops on the former names `diff_rot_amplitude`, `diff_rot_generic`
+  and `diff_rot_hold` (removed 2026-10-26, §12).
 - ViscosD, ThermaD, Beyonce must be computed for Ω_ref (`units.set_physical` does). At ricb = 0, 'Y20-wall-bounded' and
   'shellular' (unless σ is even and > 0) have a kink at r = 0 (WARNING); 'solar' needs N ~ 400.
 - Benchmarks: Guenel et al. 2016 conical mode ω = 1.8173; solar inertial modes of Mukhopadhyay et al. 2025
@@ -296,10 +296,10 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
 
 ## 12. Known issues and gotchas
 
-- **`diff_rot_hold`**: the owner considers it buggy (2026-10-25): do not use it in any calculation. It holds every
-  degree, so the latitudinal shear of the table at x_h fills the whole core (with the HMI table at 0.6 R☉, a 4 nHz
-  inversion artefact that gave the core spurious modes). Most smooth-Sun results from before 2026-10-26 used 0.6
-  (`docs/heat-equation.md` §8 says which).
+- **`diff_rot_hold`** (found faulty 2026-10-25, removed 2026-10-26): it held every degree below x_h, so the latitudinal
+  shear of the table at x_h filled the whole core (with the HMI table at 0.6 R☉, a 4 nHz inversion artefact that gave
+  the core spurious modes). Most smooth-Sun results from before 2026-10-26 used 0.6 (`docs/heat-equation.md` §8 says
+  which); their parameter files stop until the line is deleted, and their `params.dat` rows have x_h in its column.
 - **MUMPS on several ranks is not bitwise reproducible** (2026-10-25): nearly parallel eigenvectors, such as the r-mode
   ladders of a radiative interior, amplify the round-off, and about half of repeated runs came out "smeared" (ladder
   members 0.05–0.5 nHz off, not all of them flagged by `spin_doctor`). `par.petsc_opts['st_mat_mumps_cntl_1'] = 0.1`

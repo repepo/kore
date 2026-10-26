@@ -110,7 +110,6 @@ of `2*ncpus` (`assemble.py` stops otherwise).
 | `diff_rot_rdeg` | 24 | `'tabulated'`: degree of the Chebyshev fit of each $f_n$ in $r$ |
 | `diff_rot_window` | None | `'tabulated'`: None fits over the shell if ricb > 0 and is `'sun'` if ricb = 0; `'sun'`: one fit over the whole Sun, even in $r$, the same for any ricb ([heat-equation.md](heat-equation.md) §9) |
 | `diff_rot_sun_deg` | 60 | `'sun'`: degree of that fit |
-| `diff_rot_hold` | None | **do not use** (faulty, see `'tabulated'` below): $x_h$ (R☉) to hold each $f_n$ at $f_n(x_h)$ below $x_h$; None: the table, held only below its first radius |
 | `thermal_wind` | 1 | heat-equation terms, see below |
 | `thermal_wind_radial` | 1 | 0 drops $u_r\thinspace \partial_r S_{tw}$ |
 | `thermal_wind_amplitude` | 1.0 | factor on $S_{tw}$ (`thermal_wind` 1, 2) |
@@ -176,10 +175,6 @@ within 0.01 of the shell, and prints the fit residuals and the truncation error 
 between the table and its expansion up to $P_{n_{\max}}$); check that line. For the Edmond profile the truncation error near the poles at the surface is up to 17 nHz at
 `diff_rot_nmax = 8`; 12 is the working choice.
 
-**Do not use `diff_rot_hold`** (found faulty on 2026-10-25). It holds every degree, so the latitudinal shear of the
-table at $x_h$ fills the whole core. In `bin/jsoc_hmi_2010_2026.npz` that shear is about 4 nHz at 0.6 R☉, an artefact
-of the inversion; held from there, it gave the core spurious modes that mixed with the HFR modes.
-
 ## Heat equation (`thermal = 1`)
 
 `thermal_wind` chooses which entropy terms are added and where the latitudinal background entropy $S_{tw}$ comes from.
@@ -231,12 +226,13 @@ writes the options to `params.dat`, after the general columns (the order is that
 `diff_rot_type` is written as its index in `diff_rot.TYPES` ('Y20' 0, …, 'rigid' 7, 'solar_P4' 8, 'tabulated' 9,
 'user' 10); the background columns are described in [background.md](background.md). A row ends, after a `#` that
 `np.loadtxt` skips, with the `'user'` profile definitions and, for `'tabulated'`, `diff_rot_file` with the first 12 hex
-digits of its sha256 (a row with neither has no `#`). `diff_rot_window` is 0 for the shell fit and 1 for the whole-Sun fit (with `diff_rot_rdeg` then
-the degree used, `diff_rot_sun_deg`), and `diff_rot_hold` None is nan. The column `diff_rot_ampl` is the former
-`diff_rot_amplitude`, and `diff_rot_generic` (a removed option) is always 0, so that the columns keep the positions they
-had before `bin/diff_rot.py`; `diff_rot_param`, `stratification` and `diffusivity` are appended at the end. A
+digits of its sha256 (a row with neither has no `#`). `diff_rot_window` is 0 for the shell fit and 1 for the whole-Sun
+fit (with `diff_rot_rdeg` then the degree used, `diff_rot_sun_deg`). The column `diff_rot_ampl` is the former
+`diff_rot_amplitude`, and the removed options `diff_rot_generic` and `diff_rot_hold` are always 0 and nan, so that the
+other columns keep their positions; `diff_rot_param`, `stratification` and `diffusivity` are appended at the end. A
 `params.dat` written by an older version may have fewer columns; start a new file rather than appending to it. The
-former names `diff_rot_amplitude` and `diff_rot_generic` stop a run (`diff_rot.check`).
+former names `diff_rot_amplitude` and `diff_rot_generic`, and `diff_rot_hold` (removed on 2026-10-26,
+[differential_rotation_details.md](differential_rotation_details.md) §5.1), stop a run (`diff_rot.check`).
 
 ## Examples
 

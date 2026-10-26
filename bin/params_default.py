@@ -187,10 +187,6 @@ class default_params():
         # of degree diff_rot_sun_deg, the same for any ricb; below the first table radius (0.1 R☉ in the Mukhopadhyay et al. file)
         # each f_n is held at its value there
         self.diff_rot_sun_deg = 60  # 'tabulated' with diff_rot_window = 'sun': degree (60: ~0.01 nHz on the Edmond file)
-        self.diff_rot_hold = None  # 'tabulated' with diff_rot_window = 'sun': x_h (R☉) to hold f_n at f_n(x_h) for x < x_h, blended
-        # by (1 + erf((x - x_h + 0.01)/0.01))/2; None: the table as it is (held only below its first radius).
-        # Do not use it (found faulty on 2026-10-25): it holds every degree, so the latitudinal shear of the table at x_h
-        # fills the whole core (docs/differential_rotation_details.md §5.1).
 
         # ----------------------------------------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------------------------------- Thermal parameters
