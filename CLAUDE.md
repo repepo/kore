@@ -82,7 +82,7 @@ Other directories: `tests/diff_rot/`, `tests/heat_dr/` and `tests/rsf/` (§11, e
 branch's notes are `background.md` (the background model), `differential-rotation.md` (user guide),
 `differential_rotation_details.md` (the equations and code of the differential rotation, its checks and benchmarks),
 `heat-equation.md` (derivation, implementation, benchmarks, §9 radiative interior), `thermad0.md` (ThermaD = 0 with the
-thermal wind)); `examples/smooth_sun/` (the solar example: full sphere, m 8 HFR mode); `tools/` (submission, plotting,
+thermal wind), `solver.md` (what to try for bad solutions or when memory runs out)); `examples/smooth_sun/` (the solar example: full sphere, m 8 HFR mode); `tools/` (submission, plotting,
 `kore2sprouts.py`, `m2petsc.py`), `koreviz/`, `koreviz_mod/` (visualisation); `examples/spinover/` (stale, §12);
 `srunKore.sh` (SLURM); `poly.n1_gamma3.h5`, `theprofile.data` (files of the removed file-based models, unused).
 
@@ -239,7 +239,8 @@ flow U₀ = Gaspard ΔΩ r sin θ e_φ in the frame Ω_ref. It works with any ba
 - Options come from `par.petsc_opts` (only the eps_/st_ group for eigenproblems, ksp_/pc_/mat_ for forced); command-line
   options win. Defaults: shift-invert at τ = rtau + i·itau (`units.set_target` sets them from ω, σ in nHz), MUMPS LU,
   `cntl_1` 0.01 (see §12), BLR off (`icntl_35 = 0`; set 2 with `cntl_7 = 1e-14` for large N). For big full-sphere runs:
-  `st_mat_mumps_icntl_14` 50–200 (INFOG(1) = −9 otherwise) and out-of-core `st_mat_mumps_icntl_22 = 1`.
+  `st_mat_mumps_icntl_14` 50–200 (INFOG(1) = −9 otherwise) and out-of-core `st_mat_mumps_icntl_22 = 1`. What to try
+  for bad solutions or when memory runs out: `docs/solver.md`.
 - `par.prescale`: None = Ruiz equilibration of A − τB, on except for thermal with ThermaD = 0 (where it hurts); 0/1
   force it. Eigenvectors are mapped back before writing. The residual SLEPc prints is for the scaled problem; judge
   accuracy with spin_doctor.
@@ -304,7 +305,7 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   ladders of a radiative interior, amplify the round-off, and about half of repeated runs came out "smeared" (ladder
   members 0.05–0.5 nHz off, not all of them flagged by `spin_doctor`). `par.petsc_opts['st_mat_mumps_cntl_1'] = 0.1`
   (default 0.01) cut that to about a quarter at the same cost; cross-check ladder members against a repeat or
-  neighbouring runs.
+  neighbouring runs (`docs/solver.md`).
 - **Inviscid** (`ViscosD = 0`): `submatrices` switches to the inviscid bases only when also ricb = 0, while
   `assemble.bc_u_spherical` uses one BC row whenever ViscosD = 0, so ViscosD = 0 with ricb > 0 looks inconsistent.
   Untested on this branch.

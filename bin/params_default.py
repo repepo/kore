@@ -350,7 +350,8 @@ class default_params():
             'st_type'                      : 'sinvert',             # shift-and-invert around tau (use with 'TM')
             'st_pc_factor_mat_solver_type' : 'mumps',               # direct LU solve with MUMPS
             'st_mat_mumps_cntl_1'          : 0.01,                  # pivot threshold, MUMPS's default; 1e-8 cost accuracy in thermal runs,
-                                                                    # 0.1-0.5 did not help either
+                                                                    # 0.1-0.5 did not help the ThermaD = 0 tests; 0.1 halves the failures of
+                                                                    # nearly parallel modes, such as r-mode ladders (docs/solver.md)
             'st_mat_mumps_icntl_35'        : 0,                     # block low-rank (BLR) factorization off: within ~15% of BLR's time at N <= 480, never
                                                                     # less accurate; set 2 (BLR on) for large N, ~13% less memory and up to
                                                                     # ~2x faster, then check spin_doctor residuals (BLR + Ruiz degraded
@@ -362,7 +363,8 @@ class default_params():
                                                                     # ThermaD = 1e-9 prescale = 1 eigenvalues were up to 1.1e-6 off a
                                                                     # solve with an iteratively refined LU, while spin_doctor looked clean
             'eps_error_relative'           : '::ascii_info_detail', # print relative errors after the solve
-            # 'eps_balance'                : 'twoside',             # cleaner eigenvalues for final runs, ~+50% time
+            # 'eps_balance'                : 'twoside',             # cleaner eigenvalues for final runs, ~+50% time; erratic with r-mode
+                                                                    # ladders (docs/solver.md)
             # 'st_mat_mumps_icntl_14'      : 50,                    # extra MUMPS workspace (%), only if -9 still appears
             # 'st_mat_mumps_icntl_22'      : 1,                     # out-of-core factors, cuts memory ~half
             # 'st_mat_mumps_ooc_tmpdir'    : '/nvm/scratch',        # put OOC files on a real disk, not tmpfs /tmp
@@ -373,6 +375,8 @@ class default_params():
             'ksp_type'                     : 'preonly',             # direct solve, no Krylov iterations
             'pc_type'                      : 'lu',                  # (default GMRES/ILU does not converge)
             'pc_factor_mat_solver_type'    : 'mumps',               # LU with MUMPS
+            # 'mat_mumps_icntl_14'         : 100,                   # extra MUMPS workspace (%): a forced LU that runs short returns Inf
+                                                                    # (NaN results) instead of stopping (docs/solver.md)
             # 'mat_mumps_cntl_1'           : 1e-6,                  # pivot threshold, if MUMPS reports INFOG(1)=-9
             # 'mat_mumps_icntl_22'         : 1,                     # out-of-core factors, cuts memory ~half
             # 'mat_mumps_ooc_tmpdir'       : '/nvm/scratch',        # put OOC files on a real disk, not tmpfs /tmp
