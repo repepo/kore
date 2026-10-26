@@ -26,7 +26,7 @@ class user_defined_profiles():  # ----------------------------------------------
 
 
     def logrho(self, r, rpower):  # ------ log of the density: log(ρ(r))
-        r1 = r*par.aux0;
+        r1 = r*par.aux0
         # out = np.log(np.ones_like(r))
         # out = np.log(1-r1**2)                          # Wu2005    β=1
         out = np.log( (1-r1**2)**2 )                   # Wu2005    β=2
@@ -113,104 +113,11 @@ class user_defined_profiles():  # ----------------------------------------------
         out = np.ones_like(r)
         # -----------------------------------
         return (r**rpower)*out
-    
-    def aub(self, r, rpower): 
-        """
-        Differential rotation radial profile for Y20
-        """
-        dr_type = par.diff_rot_type
-        if dr_type=="rigid":   # Ω = Ω0 (1 + ΔΩ): f2 = 0 (test profile, exact Doppler-shift identity)
-            out = np.zeros_like(r)
-        elif dr_type=="Y20":
-            out = par.diff_rot_amplitude*np.ones_like(r)
-        
-        elif dr_type=="Y20-wall-bounded":
-            out = par.diff_rot_amplitude*(1-r)*(r-par.ricb)
-
-        elif dr_type=="shellular": #[Baruteau, Rieutord 2012] : Ω(r) = Ω_ref * (r / R)**σ 
-            # Ω_ref = 1 (= Ω_0) -> Set par.timescale = "rotation"
-            # σ parameter
-            out = np.zeros_like(r)
-
-        elif dr_type=="shellular_boussinesq": #[Mirouh et al. 2016] : Ω(r) = Ω_ref * (1 + (1/2) * (N**2) * (1 - (r / R)**2))
-            # Ω_ref = 1 (= Ω_0) -> Set par.timescale = "rotation"
-            out = np.zeros_like(r)
-
-        elif dr_type=="cylindrical": #[Baruteau, Rieutord 2012] : Ω(r, θ) = Ω_ref * [1 + (ε * (r / R)**2 * sin(θ)**2)]
-            # Ω_ref = 1 (= Ω_0) -> Set par.timescale = "rotation"
-            epsilon = par.diff_rot_amplitude
-            out = -((2/3)*epsilon)*r**2
-
-        elif dr_type=="conical": #[Guenel et al., 2016] : Ω(r, θ) = Ω_ref * [1 + (ε * sin(θ)**2)]
-            # Ω_ref = 1 (= Ω_0) -> Set par.timescale = "rotation"
-            epsilon = par.diff_rot_amplitude
-            out = -((2/3)*epsilon)
-
-        elif dr_type=="solar":  # fit to helioseismic Ω (times diff_rot_amplitude), tachocline at rtc = 0.71 R☉ of width h = 0.1 R☉
-            x = r*par.aux0 if par.model_type == 'smoothed sun' else r  # fractional solar radius ('user def': r is taken as r/R☉)
-            rtc = 0.71
-            h = 0.1
-            W0 = 435 #[nHz]
-            b = -86.04/W0 # Fitted on data
-            out = par.diff_rot_amplitude * b * (0.5 * (1 + np.tanh((2 * (x - rtc))/h)))
-
-        elif dr_type in ("solar_P4", "tabulated"):
-            out = f_new(2, r)
-
-        return (r**rpower)*out
-    
-    def abu(self, r, rpower): 
-        """
-        Differential rotation radial profile for Y00
-        """
-        dr_type = par.diff_rot_type
-
-        if dr_type=="rigid":   # Ω = Ω0 (1 + ΔΩ): f0 = ΔΩ
-            out = par.diff_rot_amplitude*np.ones_like(r)
-        elif dr_type=="Y20":
-            out = np.zeros_like(r)
-        
-        elif dr_type=="Y20-wall-bounded":
-            out = np.zeros_like(r)
-
-        elif dr_type=="shellular": #[Baruteau, Rieutord 2012] : Ω(r) = Ω_ref * (r / R)**σ 
-            # Ω_ref = 1 (= Ω_0) -> Set par.timescale = "rotation"
-            # σ parameter
-            sigma = par.diff_rot_amplitude
-            out = (r**sigma) - 1
-
-        elif dr_type=="shellular_boussinesq": #[Mirouh et al. 2016] : Ω(r) = Ω_ref * (1 + (1/2) * (N**2) * (1 - (r / R)**2))
-            # Ω_ref = 1 (= Ω_0) -> Set par.timescale = "rotation"
-            N02 = par.diff_rot_amplitude # Brunt-Väisälä frequency squared
-            out = (N02/2)*(1 - r**2)
-
-        elif dr_type=="cylindrical": #[Baruteau, Rieutord 2012] : Ω(r, θ) = Ω_ref * [1 + (ε * (r / R)**2 * sin(θ)**2)]
-            # Ω_ref = 1 (= Ω_0) -> Set par.timescale = "rotation"
-            epsilon = par.diff_rot_amplitude
-            out = ((2/3)*epsilon)*r**2
-        
-        elif dr_type=="conical": #[Guenel et al., 2016] : Ω(r, θ) = Ω_ref * [1 + (ε * sin(θ)**2)]
-            # Ω_ref = 1 (= Ω_0) -> Set par.timescale = "rotation"
-            epsilon = par.diff_rot_amplitude
-            out = ((2/3)*epsilon)
-        
-        elif dr_type=="solar":  # as in aub
-            x = r*par.aux0 if par.model_type == 'smoothed sun' else r
-            rtc = 0.71
-            h = 0.1
-            W0 = 435 #[nHz]
-            a = -7.695/W0 # Fitted on data
-            out = par.diff_rot_amplitude * a * (0.5 * (1 + np.tanh((2 * (x - rtc))/h)))
-
-        elif dr_type in ("solar_P4", "tabulated"):
-            out = f_new(0, r)
-
-        return (r**rpower)*out
 
 
 class solar_profiles(user_defined_profiles):  # ------------------------- Parts shared by the 'smoothed sun' structures
     '''
-    The parts shared by the 'smoothed sun' structures (dS/dr, the diffusivities, the differential rotation); ρ, p and g
+    The parts shared by the 'smoothed sun' structures (dS/dr, the diffusivities); ρ, p and g
     come from the subclass chosen by structure (see structure_name). The rest of this docstring describes the original
     'smoothed sun' structure, the 8-term fit (eight_term_profiles).
     Density, gravity and pressure of the Sun from the smooth Model S fit in smoothed_sun.py, x = r*aux0 being the
@@ -236,7 +143,7 @@ class solar_profiles(user_defined_profiles):  # ------------------------- Parts 
     by the round-off of p near the surface.
     With solar_rz = 1, dS/dr and the diffusivity step are instead those of the radiative interior of Mukhopadhyay et al.
     2025, their eqs. (8)-(10) (params_default.py, docs/heat-equation.md §9).
-    pdSdr and the differential rotation profiles are inherited from user_defined_profiles.
+    pdSdr is inherited from user_defined_profiles; the differential rotation profiles are in diff_rot.py.
     '''
 
     def gradS(self, r, x1, w1, x2, w2, A):  # ------------ dS/dr, erf top hat made odd in r
@@ -311,7 +218,7 @@ class modelS_profiles(solar_profiles):  # ----------------------- structure = 'o
     three are not in hydrostatic balance (structure = 'old model S prototype', the old solar_density = 'model S').
     solar_profiles with ln ρ and ln p from Chebyshev fits of bin/model_s.at (columns As, c_1, ρ/ρ_c, p/p_c, x) over the
     window solar_density_window in x = r aux0, degree solar_density_deg. Everything else
-    (dS/dr, ν, κ, the differential rotation) as solar_profiles. ρ and p are normalised to their central values, as the
+    (dS/dr, ν, κ) as solar_profiles. ρ and p are normalised to their central values, as the
     8-term ones (the overall constants drop out of the equations). The shell fits are not even in r, so ricb = 0 uses
     solar_density_window = 'sun': Model S mirrored to x < 0 and fitted on [-W, W], W = aux0 + 0.005, with degree
     solar_density_sun_deg and the odd coefficients dropped, so that ln ρ and ln p are even and smooth at r = 0.
@@ -524,53 +431,52 @@ class profiles_from_file():  # -------------------------------------------------
         return (r**rpower)*out
 
 
-class Boussinesq_profiles():  # -------------------------------------------------------- As Boussinesq profiles 
+class Boussinesq_profiles(user_defined_profiles):  # ---------------------------------------- As Boussinesq profiles
     '''
-    Background profiles as required by the Boussinesq aprroximation
+    Boussinesq reference state: uniform density and pressure (ln ρ = 0, p = 1, so p0 dS/dr = dS/dr), g = r, ν = κ = 1.
+    dS/dr (the background temperature gradient) is set by par.heating: 'internal' r (uniform heat sources; with g = r,
+    the buoyancy Beyonce g s and the advection r u_r of Rieutord 2006 and Mirouh et al. 2016, Beyonce = N0²), 'differential'
+    1/r² (conduction between two walls; needs ricb > 0), 'top hat' the erf top hat of aux1..aux5 as in 'user def'.
     '''
 
-    def density(self, r, rpower):
-        # ------------------------------ ρ(r)
-        out = np.ones_like(r)
-        # -----------------------------------
-        return (r**rpower)*out
+    def density(self, r, rpower): 
+        return (r**rpower)*np.ones_like(r)
+    
+    
+    def logrho(self, r, rpower):
+        return (r**rpower)*np.zeros_like(r)
 
 
     def gravity(self, r, rpower):
-        # ------------------------------ g(r)
-        out = r
-        # -----------------------------------
-        return (r**rpower)*out
+        return (r**rpower)*r
 
 
     def pressure(self, r, rpower):
-        # ------------------------------ p(r)
-        out = np.ones_like(r)
-        # -----------------------------------
-        return (r**rpower)*out
+        return (r**rpower)*np.ones_like(r)
 
 
-    def pdSdr(self, r, rpower):
-        out = np.zeros_like(r)
+    def dlog_p(self, r):
+        return np.zeros_like(r)
+
+
+    def dlog_rho(self, r):
+        return np.zeros_like(r)
+
+
+    def gradS(self, r, x1, w1, x2, w2, A):
         if par.heating == 'internal':
-            out = r
+            return np.array(r, dtype=float)
         elif par.heating == 'differential':
-            out = 1/r**2
-        return (r**rpower)*out
-
+            return 1/r**2
+        elif par.heating == 'top hat':
+            return ut.erf_top_hat(r, x1, w1, x2, w2, A)
+        sys.exit("heating must be 'internal', 'differential' or 'top hat'")
 
     def viscosity(self, r, rpower):
-        # ------------------------------ v(r)
-        out = np.ones_like(r)
-        # -----------------------------------
-        return (r**rpower)*out
-
+        return (r**rpower)*np.ones_like(r)
 
     def thermal_diffusivity(self, r, rpower):
-        # ------------------------------ κ(r)
-        out = np.ones_like(r)
-        # -----------------------------------
-        return (r**rpower)*out
+        return (r**rpower)*np.ones_like(r)
 
 
 # -------------------------------------------------------------------------------------------------------------
@@ -607,250 +513,6 @@ elif par.model_type in ['mesa', 'gsm', 'poly', 'astropy table']:
 elif par.model_type == 'Boussinesq':
     prf = Boussinesq_profiles()
 
-
-# -------------------------------------------------------------------------------------------------------------
-# -------------------------------------------------------------------------------------------- Derived profiles
-# -------------------------------------------------------------------------------------------------------------
-
-
-# With ricb = 0 the differential rotation profiles are evaluated at |r|: they are even functions of r by construction
-# (like logrho), and submatrices.py keeps only their even part (otherwise e.g. half of the 'solar' tachocline step is lost,
-# and a non-integer 'shellular' σ gives NaN at r < 0).
-# 'solar_P4' and 'tabulated' (docs/heat-equation.md §8): f_n(r), ΔΩ = Ω/Ω_ref - 1 = Σ_n f_n P_n(cos θ), times diff_rot_amplitude
-def _dr_x(r):   # fractional solar radius
-    return r*par.aux0 if par.model_type == 'smoothed sun' else r
-
-_tab = {}
-def _tabulated_fits():
-    '''
-    'tabulated': f_n (n = 0, 2, ..., diff_rot_nmax) of ΔΩ = ome/diff_rot_frame - 1 at each table radius by Gauss-Legendre
-    quadrature (64 nodes) of a cubic spline in cos θ, then a least-squares Chebyshev fit in x of degree diff_rot_rdeg
-    (at most half the number of table radii used) over the table radii within 0.01 of the shell, or with
-    diff_rot_window = 'sun' (the default when ricb = 0) one even fit over the whole Sun. Returns {n: Chebyshev}.
-    '''
-    if _tab:
-        return _tab
-    from scipy.interpolate import CubicSpline
-    D = np.load(par.diff_rot_file)
-    ome, rt, th = D['ome'], D['r'], D['theta']          # ome[θ, r] in nHz, θ in rad, r in R☉
-    o = np.argsort(np.cos(th))
-    xc = np.cos(th)[o]
-    ns = list(range(0, par.diff_rot_nmax + 1, 2))
-    xg, wg = np.polynomial.legendre.leggauss(64)
-    P = np.array([np.polynomial.legendre.Legendre.basis(n)(xg) for n in ns])
-    dO = CubicSpline(xc, ome[o, :]/par.diff_rot_frame - 1, axis=0)(xg)     # (64, nr)
-    fn = (((2*np.array(ns) + 1)/2)[:, None]*P*wg) @ dO                       # (len(ns), nr)
-    xa, xb = _dr_x(np.array([par.ricb, 1.0]))
-    win = par.diff_rot_window
-    if win is None and par.ricb == 0:
-        win = 'sun'
-    if win is not None:   # one fit over the whole Sun, even in r, the same for any ricb
-        if win != 'sun':
-            sys.exit("diff_rot_window must be None or 'sun'")
-        L = xb + 0.01
-        k = rt <= L
-        r1, f1 = rt[k], fn[:, k]
-        if par.diff_rot_hold is not None:   # hold f_n at its value at x_h below x_h
-            j = np.argmin(np.abs(r1 - par.diff_rot_hold))
-            S = 0.5*(1 + ss.erf((r1 - par.diff_rot_hold + 0.01)/0.01))
-            f1 = S*f1 + (1 - S)*f1[:, j:j+1]
-        dx = r1[1] - r1[0]
-        rp = np.arange(r1[0] - dx, 0, -dx)[::-1]                 # below the first table radius: its value
-        r1 = np.concatenate([rp, r1]); f1 = np.concatenate([np.repeat(f1[:, :1], rp.size, axis=1), f1], axis=1)
-        xx = np.concatenate([-r1[::-1], r1])
-        C = np.polynomial.chebyshev.Chebyshev
-        for i, n in enumerate(ns):
-            c = C.fit(xx, np.concatenate([f1[i, ::-1], f1[i]]), par.diff_rot_sun_deg, domain=[-L, L]).coef.copy()
-            c[1::2] = 0
-            _tab[n] = C(c, domain=[-L, L])
-        res = [np.abs(_tab[n](r1) - f1[i]).max()*par.diff_rot_frame for i, n in enumerate(ns)]
-        print("diff_rot_type 'tabulated': %s, whole-Sun even fit of degree %d on [0, %.3f]%s; max |fit - f_n| (nHz):" %
-              (par.diff_rot_file, par.diff_rot_sun_deg, L, '' if par.diff_rot_hold is None else
-               ', f_n held below %.3f' % par.diff_rot_hold), ' '.join('%.2e' % v for v in res))
-        return _tab
-    k = (rt >= xa - 0.01) & (rt <= xb + 0.01)
-    deg = min(par.diff_rot_rdeg, int(k.sum())//2)
-    C = np.polynomial.chebyshev.Chebyshev
-    for i, n in enumerate(ns):
-        _tab[n] = C.fit(rt[k], fn[i, k], deg, domain=[xa, xb])
-    # report: fit residual of each f_n and the truncation error of Ω at the table nodes inside the shell (nHz)
-    res = [np.abs(_tab[n](rt[k]) - fn[i, k]).max()*par.diff_rot_frame for i, n in enumerate(ns)]
-    rec = sum(np.outer(np.polynomial.legendre.Legendre.basis(n)(np.cos(th)), _tab[n](rt[k])) for n in ns)
-    trunc = np.abs(par.diff_rot_frame*(1 + rec) - ome[:, k]).max()
-    print("diff_rot_type 'tabulated': %s, %d radii in [%.3f, %.3f], degree %d; max |fit - f_n| (nHz):" %
-          (par.diff_rot_file, k.sum(), xa, xb, deg), ' '.join('%.2e' % v for v in res),
-          '; max |Ω(P0..P%d) - Ω| = %.2f nHz' % (par.diff_rot_nmax, trunc))
-    return _tab
-
-def f_new(n, r):
-    '''f_n(r) of 'solar_P4' and 'tabulated', times diff_rot_amplitude (the a_n are applied in fX, abuX, aubX)'''
-    x = _dr_x(r)
-    if par.diff_rot_type == 'solar_P4':
-        c0, c2, c4, orz, rtc, dtc = par.diff_rot_solar
-        st = 0.5*(1 + ss.erf((x - rtc)/dtc))
-        On = {0: c0 + c2/3 + c4/5, 2: 2*c2/3 + 4*c4/7, 4: 8*c4/35}   # cos²θ = (1 + 2 P2)/3, cos⁴θ = 1/5 + 4 P2/7 + 8 P4/35
-        if n == 0:
-            out = (orz + (On[0] - orz)*st)/par.diff_rot_frame - 1
-        else:
-            out = On.get(n, 0)*st/par.diff_rot_frame
-    else:
-        fits = _tabulated_fits()
-        out = fits[n](x) if n in fits else 0*x
-    return par.diff_rot_amplitude*out
-
-def _amp(n):   # a_n, the factor of the P_n term of ΔΩ (1 if diff_rot_term_amp is shorter)
-    a = par.diff_rot_term_amp
-    return a[n//2] if n//2 < len(a) else 1.0
-
-def aubX(r, Dorder):
-    tol = 1e-14
-    f = prf.aub if par.ricb > 0 else lambda rr, rpower: (rr**rpower)*prf.aub(np.abs(rr), 0)
-    out = ut.fonzie( f, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
-    return out*_amp(2)
-    
-def svp(r, rpower):
-    return (r**rpower)*r*aubX(r, 1)
-
-def pls(r, rpower):
-    return (r**rpower)*(r**2)*aubX(r, 2)
-
-def abuX(r, Dorder):
-    tol = 1e-14
-    f = prf.abu if par.ricb > 0 else lambda rr, rpower: (rr**rpower)*prf.abu(np.abs(rr), 0)
-    out = ut.fonzie( f, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
-    return out*_amp(0)
-
-def fX(n, r, Dorder):
-    '''a_n f_n(r) and its radial derivatives, any even n (abuX, aubX for n = 0, 2; f_new for n >= 4, at |r| if ricb = 0)'''
-    if n == 0:
-        return abuX(r, Dorder)
-    if n == 2:
-        return aubX(r, Dorder)
-    tol = 1e-14
-    if par.ricb > 0:
-        f = lambda rr, rpower: (rr**rpower)*f_new(n, rr)
-    else:
-        f = lambda rr, rpower: (rr**rpower)*f_new(n, np.abs(rr))
-    return ut.fonzie( f, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]*_amp(n)
-    
-def spv(r, rpower):
-    return (r**rpower)*r*abuX(r, 1)
-
-def psl(r, rpower):
-    return (r**rpower)*(r**2)*abuX(r, 2)
-
-# Thermal-wind background entropy S_tw = σ2(r) P2(cos θ) + σ4(r) P4(cos θ) [+ σ6(r) P6(cos θ)] implied by Ω = Ω0 [1 + f0(r) + f2(r) P2],
-# (1/r) dS_tw/dθ = (r sin θ/(Beyonce g)) Gaspard² d[(1+ΔΩ)² - 1]/dz (docs/heat-equation.md, eq. 2): to first order in ΔΩ
-# ((1+ΔΩ)² - 1 -> 2ΔΩ, eq. 3) if thermal_wind = 1, exact if thermal_wind = 2 (tests/heat_dr/tw_sympy.py).
-# Even in r (f even, f' and g odd); σn' are odd, hence 'tp2', 'tp4', 'tp6' in the parity lists of submatrices.py.
-# thermal_wind = 3: S_tw prescribed, ∂S_tw/∂θ = dSdtheta sin 2θ = -(2/3) dSdtheta dP2/dθ, so σ2 = -(2/3) dSdtheta and σ4 = 0.
-_sig_cache = {}
-def sigma_all(r):
-    '''
-    σ_n(r), n = 0 ... tw_nmax (σ_0 = 0), of the thermal-wind entropy for ΔΩ = Σ_n a_n f_n P_n with degrees above 2 (ut.dr_high),
-    from ∂S/∂x = -(r² G²/(Beyonce g)) [x ∂F/∂r + (1 - x²)(∂F/∂x)/r], x = cos θ, F = 2ΔΩ (thermal_wind = 1) or (1+ΔΩ)² - 1 (2):
-    Legendre coefficients of ∂S/∂x by Gauss quadrature (exact, a polynomial of degree < tw_nmax), integrated in x.
-    Times thermal_wind_amplitude. Rows n, columns r.
-    '''
-    key = (r.tobytes(), r.shape)
-    if key in _sig_cache:
-        return _sig_cache[key]
-    Lg = np.polynomial.legendre
-    ns = ut.tw_nmax
-    xg, wg = Lg.leggauss(ns + 4)
-    nd = [0, 2] + ut.dr_high
-    dO  = sum(np.outer(fX(n, r, 0), Lg.Legendre.basis(n)(xg)) for n in nd)
-    dOr = sum(np.outer(fX(n, r, 1), Lg.Legendre.basis(n)(xg)) for n in nd)
-    dOx = sum(np.outer(fX(n, r, 0), Lg.Legendre.basis(n).deriv()(xg)) for n in nd)
-    a = (1 + dO) if par.thermal_wind == 2 else 1
-    rr = r[:, None]
-    dSdx = -(rr**2*par.Gaspard**2/(par.Beyonce*prf.gravity(r, 0)[:, None]))*(xg*2*a*dOr + (1 - xg**2)*2*a*dOx/rr)
-    d = ((dSdx*wg) @ Lg.legvander(xg, ns - 1))*((2*np.arange(ns) + 1)/2)
-    c = Lg.legint(d, lbnd=-1, axis=1)
-    c[:, 0] = 0
-    out = par.thermal_wind_amplitude*c.T
-    _sig_cache[key] = out
-    return out
-
-def sigma_n(n, r, rpower):
-    '''σ_n of S_tw, any even n (0 above ut.tw_nmax)'''
-    if ut.dr_high and par.thermal_wind in (1, 2):
-        s = sigma_all(r)
-        return (r**rpower)*(s[n] if n < len(s) else 0*r)
-    return {2: sigma2, 4: sigma4, 6: sigma6}[n](r, rpower) if n in (2, 4, 6) else 0*r
-
-def sigma2(r, rpower):
-    if par.thermal_wind == 3:
-        return (r**rpower)*(-2/3)*par.dSdtheta*np.ones_like(r)
-    if ut.dr_high:
-        return sigma_n(2, r, rpower)
-    g = prf.gravity(r, 0)
-    f0, f0p, f2, f2p = abuX(r, 0), abuX(r, 1), aubX(r, 0), aubX(r, 1)
-    out = f0p/3 + f2p/21 + (4/7)*f2/r
-    if par.thermal_wind == 2:
-        out = (1 + f0)*out + f2*(f0p + f2p)/21
-    out = -(2*r**2*par.Gaspard**2/(par.Beyonce*g)) * out
-    if par.thermal_wind_amplitude != 1:
-        out = par.thermal_wind_amplitude*out
-    return (r**rpower)*out
-
-def sigma4(r, rpower):
-    if par.thermal_wind == 3:
-        return 0*r
-    if ut.dr_high:
-        return sigma_n(4, r, rpower)
-    g = prf.gravity(r, 0)
-    f0, f0p, f2, f2p = abuX(r, 0), abuX(r, 1), aubX(r, 0), aubX(r, 1)
-    out = f2p - 2*f2/r
-    if par.thermal_wind == 2:
-        out = (1 + f0)*out + f2*f0p + (4/11)*f2*f2p + (14/11)*f2**2/r
-    out = -(6*r**2*par.Gaspard**2/(35*par.Beyonce*g)) * out
-    if par.thermal_wind_amplitude != 1:
-        out = par.thermal_wind_amplitude*out
-    return (r**rpower)*out
-
-def sigma6(r, rpower):   # thermal_wind = 2 only (or with ut.dr_high)
-    if ut.dr_high:
-        return sigma_n(6, r, rpower)
-    g = prf.gravity(r, 0)
-    f2, f2p = aubX(r, 0), aubX(r, 1)
-    out = -(4*r**2*par.Gaspard**2/(77*par.Beyonce*g)) * f2*(f2p - 2*f2/r)
-    if par.thermal_wind_amplitude != 1:
-        out = par.thermal_wind_amplitude*out
-    return (r**rpower)*out
-
-def sigma2X(r, Dorder):
-    tol = 1e-14
-    return ut.fonzie( sigma2, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
-
-def sigma4X(r, Dorder):
-    tol = 1e-14
-    return ut.fonzie( sigma4, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
-
-def sigma6X(r, Dorder):
-    tol = 1e-14
-    return ut.fonzie( sigma6, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
-
-def ptw(r):   # the p of tw2..tp6; 1 if ThermaD = 0 (ut.adiab_tw), where the heat rows are divided by p
-    return np.ones_like(r) if ut.adiab_tw else prf.pressure(r, 0)
-
-def tw2(r, rpower):   # p(r) sigma2(r), p = ρT as in 'pss'
-    return (r**rpower)*ptw(r)*sigma2X(r, 0)
-
-def tw4(r, rpower):   # p(r) sigma4(r)
-    return (r**rpower)*ptw(r)*sigma4X(r, 0)
-
-def tp2(r, rpower):   # p(r) sigma2'(r)
-    return (r**rpower)*ptw(r)*sigma2X(r, 1)
-
-def tp4(r, rpower):   # p(r) sigma4'(r)
-    return (r**rpower)*ptw(r)*sigma4X(r, 1)
-
-def tw6(r, rpower):   # p(r) sigma6(r)
-    return (r**rpower)*ptw(r)*sigma6X(r, 0)
-
-def tp6(r, rpower):   # p(r) sigma6'(r)
-    return (r**rpower)*ptw(r)*sigma6X(r, 1)
 
 # -------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------- Profile functions for burrito
@@ -914,79 +576,11 @@ def pressX(r, Dorder):   # ρ(r)T(r)
 
     return out
 
-def svpX(r, Dorder):
-    tol = 1e-14
-    out = ut.fonzie( svp, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
-
-    return out
-
-def plsX(r, Dorder):
-    tol = 1e-14
-    out = ut.fonzie( pls, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
-
-    return out
-
-def spvX(r, Dorder):
-    tol = 1e-14
-    out = ut.fonzie( spv, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
-
-    return out
-
-def pslX(r, Dorder):
-    tol = 1e-14
-    out = ut.fonzie( psl, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
-
-    return out
-
-def tw2X(r, Dorder):
-    tol = 1e-14
-    return ut.fonzie( tw2, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
-
-def tw4X(r, Dorder):
-    tol = 1e-14
-    return ut.fonzie( tw4, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
-
-def tp2X(r, Dorder):
-    tol = 1e-14
-    return ut.fonzie( tp2, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
-
-def tp4X(r, Dorder):
-    tol = 1e-14
-    return ut.fonzie( tp4, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
-
-def tw6X(r, Dorder):
-    tol = 1e-14
-    return ut.fonzie( tw6, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
-
-def tp6X(r, Dorder):
-    tol = 1e-14
-    return ut.fonzie( tp6, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-proffdir = { 'lho':logrhoX, 'vsc':viscoX, 'gra':graviX, 'pss':pressX, 'pdS':pdSdrX, 'dSd':gradSX, 'kps':kappressX, 'aub':aubX, 'svp':svpX, 'pls':plsX, 'abu':abuX, 'spv':spvX, 'psl':pslX,
-             'tw2':tw2X, 'tw4':tw4X, 'tp2':tp2X, 'tp4':tp4X, 'tw6':tw6X, 'tp6':tp6X }
-
-def _add_generic_profiles():
-    '''profiles of the degrees above 2 (ut.dr_high): a_n f_n, r a_n f_n', r² a_n f_n'' (codes ut.dr_code(n)), and p σn, p σn'
-    for n >= 8 (ut.tw_code(n)); as aubX, svpX, plsX and tw2X, tp2X'''
-    tol = 1e-14
-    for n in ut.dr_high:
-        a, sv, pl = ut.dr_code(n)
-        svn = lambda r, rpower, n=n: (r**rpower)*r*fX(n, r, 1)
-        pln = lambda r, rpower, n=n: (r**rpower)*(r**2)*fX(n, r, 2)
-        proffdir[a]  = lambda r, Dorder, n=n: fX(n, r, Dorder)
-        proffdir[sv] = lambda r, Dorder, f=svn: ut.fonzie( f, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
-        proffdir[pl] = lambda r, Dorder, f=pln: ut.fonzie( f, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
-    for n in ut.tw_degrees:
-        if n <= 6:
-            continue
-        tw, tp = ut.tw_code(n)
-        sX = lambda r, Dorder, n=n: ut.fonzie( lambda rr, rpower: sigma_n(n, rr, rpower), r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
-        twn = lambda r, rpower, sX=sX: (r**rpower)*ptw(r)*sX(r, 0)
-        tpn = lambda r, rpower, sX=sX: (r**rpower)*ptw(r)*sX(r, 1)
-        proffdir[tw] = lambda r, Dorder, f=twn: ut.fonzie( f, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
-        proffdir[tp] = lambda r, Dorder, f=tpn: ut.fonzie( f, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)[:,-1]
+proffdir = { 'lho':logrhoX, 'vsc':viscoX, 'gra':graviX, 'pss':pressX, 'pdS':pdSdrX, 'dSd':gradSX, 'kps':kappressX }
+# the differential-rotation codes (zf, zd, zs, tw, tp + degree) are added by burrito from diff_rot.profile_functions()
 # -------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------
@@ -1008,14 +602,16 @@ def burrito(r, *args):
         elif func1 == 'lh2':
             out1 = logrhoX(r,2) * logrhoX(r, dorder1)
         else:
-            if func1 not in proffdir:   # degrees above 2 of ΔΩ, S_tw (needs utils, imported after this module)
-                _add_generic_profiles()
+            if func1 not in proffdir:   # differential rotation: zf, zd, zs, tw, tp (diff_rot.py, imported here: it needs utils)
+                import diff_rot
+                proffdir.update(diff_rot.profile_functions())
             out1 = proffdir[func1](r, dorder1)
 
     if func2 is not None:
 
         if func2 not in proffdir:
-            _add_generic_profiles()
+            import diff_rot
+            proffdir.update(diff_rot.profile_functions())
         out2 = proffdir[func2](r, dorder2)   
 
     out = out01*out02*out1*out2

@@ -14,16 +14,14 @@ import numpy as np
 from parameters import par
 import utils as ut
 import utils4pp as upp
+import diff_rot as dr
 import radial_profiles as rap
 
 
 
-# diff_rot_type as written to params.dat: its index in this tuple, -1 if not listed. Append new types at the end.
-diff_rot_types = ( 'Y20', 'Y20-wall-bounded', 'shellular', 'shellular_boussinesq', 'cylindrical', 'conical', 'solar', 'rigid',
-                   'solar_P4', 'tabulated' )
-
+# diff_rot_type as written to params.dat: its index in diff_rot.TYPES, -1 if not listed
 def diff_rot_code():
-    return diff_rot_types.index(par.diff_rot_type) if par.diff_rot_type in diff_rot_types else -1
+    return dr.TYPES.index(par.diff_rot_type) if par.diff_rot_type in dr.TYPES else -1
 
 # the 'smoothed sun' structure as written to params.dat (column 'solar_density'): its index in this tuple, the same order as
 # radial_profiles.structures ('fit' is the '8-term fit', 'model S' the 'old model S prototype'). Append new structures
@@ -34,11 +32,6 @@ def solar_density_code():
     if par.model_type != 'smoothed sun':
         return solar_densities.index(par.solar_density) if par.solar_density in solar_densities else -1
     return list(rap.structures).index(rap.structure_name())
-
-def diff_rot_term_amp(k):
-    '''a_n, n = 2k, the factor of the P_n term of ΔΩ (1 for entries missing from par.diff_rot_term_amp, as radial_profiles._amp)'''
-    a = par.diff_rot_term_amp
-    return a[k] if k < len(a) else 1.0
 
 def solar_density_window(k):
     '''end k (0, 1) of par.solar_density_window, nan if None (the default window), -/+(aux0 + 0.005) if 'sun' (even fit)'''
@@ -107,19 +100,16 @@ def param_table(elapsed):
         ( 'visc_pow',                 par.visc_pow,                '%.9e' ),
         ( 'therm_pow',                par.therm_pow,               '%.9e' ),
         ( 'diff_rot',                 par.diff_rot,                '%d' ),
-        ( 'diff_rot_amplitude',       par.diff_rot_amplitude,      '%.9e' ),
+        ( 'diff_rot_ampl',            par.diff_rot_ampl,           '%.9e' ),
         ( 'thermal_wind',             par.thermal_wind,            '%d' ),
-        ( 'diff_rot_type',            diff_rot_code(),             '%d' ),  # index into diff_rot_types
+        ( 'diff_rot_type',            diff_rot_code(),             '%d' ),  # index into diff_rot.TYPES ('user': its profiles end the row as a # comment)
         ( 'dSdtheta',                 par.dSdtheta,                '%.9e' ),  # thermal_wind = 3
-    ] + [
-        ( 'diff_rot_term_amp_%d' % (2*k), diff_rot_term_amp(k),    '%.9e' ) for k in range(9)   # a_0, a_2, ..., a_16
     ] + [
         ( 'thermal_wind_amplitude',   par.thermal_wind_amplitude,  '%.9e' ),
         ( 'thermal_wind_radial',      par.thermal_wind_radial,     '%d' ),
         ( 'diff_rot_frame',           par.diff_rot_frame,          '%.9e' ),  # 'solar_P4', 'tabulated'
         ( 'diff_rot_nmax',            par.diff_rot_nmax,           '%d' ),    # 'tabulated'
         ( 'diff_rot_rdeg',            par.diff_rot_sun_deg if diff_rot_window_code() else par.diff_rot_rdeg, '%d' ),  # 'tabulated': the degree used
-        ( 'diff_rot_generic',         par.diff_rot_generic,        '%d' ),
     ] + [
         ( 'diff_rot_solar_%d' % k,    par.diff_rot_solar[k],       '%.9e' ) for k in range(6)   # 'solar_P4': c0, c2, c4, Ω_RZ, rtc, dtc
     ] + [
@@ -137,6 +127,7 @@ def param_table(elapsed):
         ( 'solar_rz_dos',             par.solar_rz_os[1],          '%.9e' ),
         ( 'diff_rot_window',          diff_rot_window_code(),      '%d' ),    # 'tabulated': 0 shell fit, 1 whole Sun ('sun')
         ( 'diff_rot_hold',            np.nan if par.diff_rot_hold is None else par.diff_rot_hold, '%.9e' ),  # nan: None
+        ( 'diff_rot_param',           par.diff_rot_param,          '%.9e' ),  # 'shellular': σ; 'user': p
         ( 'solar_rz_delta_cz',        par.solar_rz_delta_cz,       '%.9e' ),  # convection-zone superadiabaticity
         ( 'solar_rz_delta_sf',        par.solar_rz_delta_sf,       '%.9e' ),
         ( 'drop_tol',                 par.drop_tol,                '%.9e' ),
@@ -396,9 +387,10 @@ def main(ncpus):
 
     # ---------------------------------------------------------- write post-processed data and parameters to disk
 
-    with open('params.dat','ab') as dpar:
+    with open('params.dat','ab') as dpar:   # a 'user' differential rotation ends each row with its profiles, after '#'
+        note = (' # ' + dr.description()) if (par.diff_rot and dr.description()) else ''
         np.savetxt(dpar, np.array(params),
-        fmt=[ f for _, _, f in param_table(0) ])
+        fmt=[ f for _, _, f in param_table(0) ], footer='', comments='', newline=note + '\n')
 
     # flow.dat columns, in order: (name, values, format). To add a column, append a tuple at the end.
     flow_cols = [

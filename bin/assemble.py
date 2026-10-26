@@ -23,14 +23,8 @@ import bc_variables as bv
 from parameters import par
 import utils as ut
 import operators as op
+import diff_rot as dr
 import radial_profiles as rap
-
-
-
-
-
-
-
 
 def main():
 
@@ -271,10 +265,11 @@ def main():
         loc_list = ut.packit(loc_list, mtx, row, col)
 
         if par.diff_rot : 
-            for i in range(-ut.dr_nmax, ut.dr_nmax+1, 2) :   # [-2, 0, 2] unless ΔΩ has degrees above 2
+            for i in dr.dl_range('u','upol') :   # Δl = 0, ±2, ..., ±n_max (the highest degree of ΔΩ)
                 if l+i in ll_flo[0] :
                     # Physics ---------------------------------------
                     mtx = op.differential_rotation(l,'u','upol',i)
+                    if np.isscalar(mtx[0]): continue   # no degree of ΔΩ couples this Δl
                     # -----------------------------------------------
                     col = basecol + col0 + mtx[1] * ut.N1
                     loc_list = ut.packit( loc_list, mtx[0], row, col)
@@ -296,10 +291,11 @@ def main():
                 loc_list = ut.packit( loc_list, mtx[0], row, col)
 
         if par.diff_rot : 
-            for i in range(-ut.dr_nmax-1, ut.dr_nmax+2, 2) :   # [-3, -1, 1, 3] unless ΔΩ has degrees above 2
+            for i in dr.dl_range('u','utor') :   # Δl = ±1, ±3, ..., ±(n_max + 1)
                 if l+i in ll_flo[1] :
                     # Physics ---------------------------------------
                     mtx = op.differential_rotation(l,'u','utor',i)
+                    if np.isscalar(mtx[0]): continue
                     # -----------------------------------------------
                     col = basecol + col0 + mtx[1] * ut.N1
                     loc_list = ut.packit( loc_list, mtx[0], row, col)
@@ -357,10 +353,11 @@ def main():
                 loc_list = ut.packit( loc_list, mtx[0], row, col)
             
         if par.diff_rot : 
-            for i in range(-ut.dr_nmax-1, ut.dr_nmax+2, 2) :
+            for i in dr.dl_range('v','upol') :
                 if l+i in ll_flo[0] :
                     # Physics ---------------------------------------
                     mtx = op.differential_rotation(l,'v','upol',i)
+                    if np.isscalar(mtx[0]): continue
                     # -----------------------------------------------
                     col = basecol + col0 + mtx[1] * ut.N1
                     loc_list = ut.packit( loc_list, mtx[0], row, col)
@@ -382,10 +379,11 @@ def main():
 
 
         if par.diff_rot : 
-            for i in range(-ut.dr_nmax, ut.dr_nmax+1, 2) :
+            for i in dr.dl_range('v','utor') :
                 if l+i in ll_flo[1] :
                     # Physics ---------------------------------------
                     mtx = op.differential_rotation(l,'v','utor',i)
+                    if np.isscalar(mtx[0]): continue
                     # -----------------------------------------------
                     col = basecol + col0 + mtx[1] * ut.N1
                     loc_list = ut.packit( loc_list, mtx[0], row, col)
@@ -439,31 +437,32 @@ def main():
 
             loc_list = ut.packit( loc_list, mtx, row, col)
 
-            if par.diff_rot :  # differential rotation terms of the heat equation (docs/heat-equation.md)
+            if par.diff_rot :  # differential rotation terms of the heat equation (diff_rot.heat_block)
 
                 # advection of s by the background rotation, Δl = 0, ±2 ------------------------------------------
                 basecol = 2*nb*ut.N1
-                for i in range(-ut.dr_nmax, ut.dr_nmax+1, 2) :
+                for i in dr.dl_range('h','temp') :
                     if l+i in ll_flo[0] :
                         mtx = op.thermal_diffrot(l,'h','temp',i)
+                        if np.isscalar(mtx[0]): continue
                         col = basecol + col0 + mtx[1] * ut.N1
                         loc_list = ut.packit( loc_list, mtx[0], row, col)
 
                 if par.thermal_wind :  # advection of the thermal-wind entropy by u
 
-                    dlmax = ut.tw_nmax  # S_tw has P2, P4 (thermal_wind = 1, 3) and P6 (thermal_wind = 2), more with ut.dr_high
-
-                    basecol = 0  # poloidal part, Δl = 0, ±2, ±4 (±6)
-                    for i in range(-dlmax, dlmax+1, 2) :
+                    basecol = 0  # poloidal part, Δl = 0, ±2, ..., ±(the highest degree of S_tw)
+                    for i in dr.dl_range('h','upol') :
                         if l+i in ll_flo[0] :
                             mtx = op.thermal_diffrot(l,'h','upol',i)
+                            if np.isscalar(mtx[0]): continue
                             col = basecol + col0 + mtx[1] * ut.N1
                             loc_list = ut.packit( loc_list, mtx[0], row, col)
 
-                    basecol = nb*ut.N1  # toroidal part, Δl = ±1, ±3 (±5)
-                    for i in range(1-dlmax, dlmax, 2) :
+                    basecol = nb*ut.N1  # toroidal part, Δl = ±1, ±3, ..., below the highest degree of S_tw
+                    for i in dr.dl_range('h','utor') :
                         if l+i in ll_flo[1] :
                             mtx = op.thermal_diffrot(l,'h','utor',i)
+                            if np.isscalar(mtx[0]): continue
                             col = basecol + col0 + mtx[1] * ut.N1
                             loc_list = ut.packit( loc_list, mtx[0], row, col)
 

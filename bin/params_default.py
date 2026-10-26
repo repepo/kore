@@ -123,48 +123,50 @@ class default_params():
         # Only model_type = 'user def' and 'smoothed sun' define a rotation profile. ---------------------------------------------
         # ----------------------------------------------------------------------------------------------------------------------
         self.diff_rot = 0 # If 1, the code will solve for a perturbation to a background state with differential rotation. 
-        # Differential rotation type 
-        self.diff_rot_type = 'Y20' # Ω(θ) = Ω_ref * [1 + a P2(cos θ)], a = par.diff_rot_amplitude (P2 unnormalised, despite the name)
-        # self.diff_rot_type = 'rigid' # Ω = Ω_ref * (1 + ΔΩ), a rigid offset: test profile, λ(ΔΩ, Gaspard) = λ(diff_rot = 0, Gaspard (1+ΔΩ)) - i m Gaspard ΔΩ exactly
-        # self.diff_rot_type = 'Y20-wall-bounded' # Ω(r, θ) = Ω_ref * [1 + a * (1 - r) * (r - ricb) * P2(cos θ)], a = par.diff_rot_amplitude
-        # self.diff_rot_type = 'shellular' # [Baruteau, Rieutord 2013] : Ω(r) = Ω_ref * (r / R)**σ, σ = par.diff_rot_amplitude
-        # self.diff_rot_type = 'cylindrical' # [Baruteau, Rieutord 2013] : Ω(r, θ) = Ω_ref * [1 + (ε * (r / R)**2 * sin(θ)**2)], ε = par.diff_rot_amplitude
-        # self.diff_rot_type = 'conical' #[Guenel et al., 2016] : Ω(r, θ) = Ω_ref * [1 + (ε * sin(θ)**2)], ε = par.diff_rot_amplitude
-        # self.diff_rot_type = "shellular_boussinesq" #[Mirouh et al. 2016] : Ω(r) = Ω_ref * (1 + (1/2) * (N**2) * (1 - (r / R)**2)), N**2 = par.diff_rot_amplitude
-        # self.diff_rot_type = 'solar' # Fit to the helioseismic Ω: f0, f2 (Y00 + P2 only) step up across a tachocline at 0.71 R☉ of width 0.1 R☉,
-        # times ΔΩ = par.diff_rot_amplitude (1 for the fit itself). r is in units of aux0 R☉ with model_type = 'smoothed sun', in R☉ otherwise.
-        # f0, f2 are relative to 435 nHz: the frame (Ω_ref) must rotate at 435 nHz (ViscosD, ThermaD, Beyonce for that rate).
-        # The tachocline step needs N ~ 400 with ricb = 0. 'Y20-wall-bounded' and 'shellular' are not smooth at r = 0 (use ricb > 0).
-        # self.diff_rot_type = 'solar_P4' # Ω/2π = Ω_RZ + [Ω_CZ(θ) - Ω_RZ] (1 + erf((x - rtc)/dtc))/2, Ω_CZ(θ) = c0 + c2 cos²θ + c4 cos⁴θ
-        # (Mukhopadhyay et al. 2026: 464, -76, -50 nHz, Ω_RZ = 433.5 nHz, rtc = 0.71, dtc = 0.045; diff_rot_solar below), x = r aux0
-        # with 'smoothed sun', r otherwise; ΔΩ = Ω/Ω_ref - 1 with Ω_ref/2π = diff_rot_frame nHz. Terms P0, P2, P4 (generic coupling for P4).
-        # self.diff_rot_type = 'tabulated' # Ω(r, θ) from diff_rot_file (.npz with ome[θ, r] in nHz, r in R☉, theta in rad, as the
-        # Mukhopadhyay et al. 2025 Edmond file data/diff_rot.npz; tests/diff_rot/ls_to_edmond_layout.py converts the Larson & Schou 2018 table),
-        # projected on P0, P2, ..., P_diff_rot_nmax at each table radius and fitted in r (diff_rot_rdeg); ΔΩ = Ω/Ω_ref - 1 as 'solar_P4'.
-        # Amplitudes, for every type: ΔΩ = Σ_n a_n f_n(r) P_n(cos θ), a_n = diff_rot_term_amp[n/2] (n = 0, 2, ..., 16), times
-        # diff_rot_amplitude for 'solar_P4' and 'tabulated' (for the other types diff_rot_amplitude keeps its type-specific meaning).
-        # The thermal-wind entropy (thermal_wind = 1, 2) is that of the scaled ΔΩ, times thermal_wind_amplitude.
+        # ΔΩ = diff_rot_ampl Σ_n f_n(r) P_n(cos θ), n even (bin/diff_rot.py); diff_rot_type chooses the shapes f_n:
+        self.diff_rot_type = 'Y20'  # f2 = 1: ΔΩ = a P2(cos θ), a = diff_rot_ampl (P2 unnormalised, despite the name)
+        # self.diff_rot_type = 'rigid'  # f0 = 1: a rigid offset, test profile: λ(a, Gaspard) = λ(diff_rot = 0, Gaspard (1 + a)) - i m Gaspard a exactly
+        # self.diff_rot_type = 'Y20-wall-bounded'  # f2 = (1 - r)(r - ricb)
+        # self.diff_rot_type = 'shellular'  # [Baruteau & Rieutord 2013] Ω ∝ (r/R)^σ: f0 = r^σ - 1, σ = diff_rot_param
+        # self.diff_rot_type = 'shellular_boussinesq'  # [Mirouh et al. 2016] f0 = (1 - r²)/2, diff_rot_ampl = N0²
+        # self.diff_rot_type = 'cylindrical'  # [Baruteau & Rieutord 2013] ΔΩ = a r² sin²θ: f0 = (2/3) r², f2 = -(2/3) r²
+        # self.diff_rot_type = 'conical'  # [Guenel et al. 2016] ΔΩ = a sin²θ: f0 = 2/3, f2 = -2/3
+        # self.diff_rot_type = 'solar'  # fit to the helioseismic Ω, P0 + P2 stepping up across a tanh tachocline at x = 0.71
+        #   of width 0.1, relative to 435 nHz: the frame (Ω_ref) must rotate at 435 nHz (ViscosD, ThermaD, Beyonce for that rate).
+        #   x is the fractional solar radius, r aux0 with model_type = 'smoothed sun' (r otherwise). Needs N ~ 400 with ricb = 0.
+        # self.diff_rot_type = 'solar_P4'  # Ω/2π = Ω_RZ + [Ω_CZ(θ) - Ω_RZ] (1 + erf((x - rtc)/dtc))/2, Ω_CZ(θ) = c0 + c2 cos²θ
+        #   + c4 cos⁴θ (Mukhopadhyay et al. 2026; diff_rot_solar below); ΔΩ = Ω/Ω_ref - 1, Ω_ref/2π = diff_rot_frame nHz: P0, P2, P4
+        # self.diff_rot_type = 'tabulated'  # Ω(r, θ) from diff_rot_file (.npz with ome[θ, r] in nHz, r in R☉, theta in rad, as the
+        #   Mukhopadhyay et al. 2025 Edmond file data/diff_rot.npz; tests/diff_rot/ls_to_edmond_layout.py converts the Larson & Schou
+        #   2018 table), projected on P0, P2, ..., P_diff_rot_nmax at each table radius and fitted in r; ΔΩ = Ω/Ω_ref - 1
+        # self.diff_rot_type = 'user'  # f_n given as numpy expressions of r, x and p = diff_rot_param in diff_rot_profiles
+        #   'Y20-wall-bounded' and 'shellular' (unless σ is even and > 0) are not smooth at r = 0: use ricb > 0.
+        self.diff_rot_ampl = 1.0  # the factor of ΔΩ, for every type (1 for 'solar', 'solar_P4', 'tabulated': the profile itself)
+        self.diff_rot_param = 0.0  # the shape parameter of the types that have one: σ for 'shellular'; p in 'user' expressions
+        self.diff_rot_profiles = {}  # 'user': {n: 'expression'}, the shape f_n of each even degree n as a numpy expression of r
+        # (kore radius), x (fractional solar radius) and p (diff_rot_param), with sin, cos, tan, arcsin, arccos, arctan, sinh,
+        # cosh, tanh, exp, log, log10, sqrt, abs, sign, pi, where, minimum, maximum, erf, erfc; e.g. a cylindrical rotation
+        # {0: '(2/3)*r**2', 2: '-(2/3)*r**2'}. No '#' (the expressions are written to params.dat as a comment).
+        # The thermal-wind entropy (thermal_wind = 1, 2) is that of ΔΩ (with its factor diff_rot_ampl), times thermal_wind_amplitude.
 
-        self.diff_rot_amplitude = 1.0  # Amplitude of the differential rotation, corresponds to different parameter depending on the DR type
         self.thermal_wind = 1  # With thermal = 1 and diff_rot = 1 the heat equation gets the advection i m Gaspard ΔΩ s and,
         # if thermal_wind = 1 (needs Beyonce > 0), the advection of the thermal-wind background entropy S_tw(r,θ)
         # that Ω(r,θ) implies, to first order in ΔΩ (docs/heat-equation.md, eq. 3); thermal_wind = 2 uses the exact (1+ΔΩ)² balance,
-        # which adds O(ΔΩ²) to σ2, σ4 and a P6 part σ6 (radial_profiles.sigma2/4/6). thermal_wind = 0 keeps the advection term only
+        # which adds O(ΔΩ²) to the σn and degrees up to 2 n_max + 2 (diff_rot.sigma_coefficients). thermal_wind = 0 keeps the advection term only
         # (e.g. Mirouh et al. 2016, Ω(r) imposed). With ThermaD = 0 and thermal_wind >= 1 the heat rows are r² (eq)/p in a C^(1) basis.
         # thermal_wind = 3 prescribes S_tw instead, independent of Ω (Bekki et al. 2024): ∂S_tw/∂θ = dSdtheta sin 2θ, radially
         # uniform, i.e. S_tw = -(2/3) dSdtheta P2(cos θ); dSdtheta < 0 gives warm poles. For uniform rotation use diff_rot = 1 with
-        # diff_rot_type = 'rigid' and diff_rot_amplitude = 0.
+        # diff_rot_type = 'rigid' and diff_rot_ampl = 0.
         # spin_doctor's residuals include these terms (flow.dat: Wdr, Wdr_im; thermal.dat: Wdr_thm); tests/heat_dr/terms.py gives the matrix-level balance.
         self.dSdtheta = 0.0  # thermal_wind = 3 only: ∂S_tw/∂θ = dSdtheta sin 2θ, S_tw in the units of s (δs/c_p), so dSdtheta = Δθs/c_p
         # (Bekki et al. 2022, 2024 quote Δθs in erg/g/K with c_p = 4.17e8 erg/g/K, fully ionised hydrogen; Model S has ~3.46e8)
-        self.diff_rot_term_amp = [1.0]*9  # a_0, a_2, ..., a_16: factors of the P0, P2, ..., P16 terms of ΔΩ (missing entries: 1)
         self.thermal_wind_amplitude = 1.0  # thermal_wind = 1, 2: factor of the thermal-wind entropy S_tw (1: the balanced value)
         self.thermal_wind_radial = 1  # 1: keep u_r ∂S_tw/∂r in the heat equation (consistent); 0: drop it, as Bekki et al. 2022 and
         # Mukhopadhyay et al. 2025 (their background has ∂s0/∂r = 0 only; with S_tw(r, θ) the term is O(S_tw/r), not small)
         self.diff_rot_frame = 456.0  # 'solar_P4', 'tabulated': Ω_ref/2π in nHz, the rotation rate of the frame (time unit 1/Ω_ref)
         self.diff_rot_solar = [464.0, -76.0, -50.0, 433.5, 0.71, 0.045]  # 'solar_P4': c0, c2, c4, Ω_RZ (nHz), rtc, dtc
         self.diff_rot_file = ''  # 'tabulated': path of the .npz (ome, r, theta), absolute or relative to the run directory
-        self.diff_rot_nmax = 8  # 'tabulated': highest even degree n kept in Ω (4 ... 16); the heat rows couple Δl up to 2 nmax + 2
+        self.diff_rot_nmax = 8  # 'tabulated': highest even degree n kept in Ω (up to 16 with thermal_wind = 2); the heat rows couple Δl up to 2 nmax + 2
         # with thermal_wind = 2. For the HMI profile nmax = 8 leaves up to 7 nHz at 75° latitude near the surface, 12 about 2.6
         self.diff_rot_rdeg = 24  # 'tabulated': degree of the least-squares Chebyshev fit of each f_n in r over the shell
         self.diff_rot_window = None  # 'tabulated': None is the shell fit above if ricb > 0 and 'sun' if ricb = 0; 'sun' is one fit
@@ -174,15 +176,14 @@ class default_params():
         self.diff_rot_sun_deg = 60  # 'tabulated' with diff_rot_window = 'sun': degree (60: ~0.01 nHz on the Edmond file)
         self.diff_rot_hold = None  # 'tabulated' with diff_rot_window = 'sun': x_h (R☉) to hold f_n at f_n(x_h) for x < x_h, blended
         # by (1 + erf((x - x_h + 0.01)/0.01))/2; None: the table as it is (held only below its first radius)
-        self.diff_rot_generic = 0  # 1: build the P0 and P2 couplings with the generic quadrature builder too (self-check of
-        # diff_rot_generic.py against the closed forms of diff_rot_coefficients.py; the results agree to ~1e-12)
 
         # ----------------------------------------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------------------------------- Thermal parameters
         # ----------------------------------------------------------------------------------------------------------------------
 
-        if self.model_type == 'Boussinesq':
-            self.heating = 'differential'  # 'internal' or 'differential' heating
+        # model_type 'Boussinesq': the background dS/dr, 'internal' r (uniform heat sources, N² ∝ r² with g = r), 'differential'
+        # 1/r² (conduction between the walls, ricb > 0) or 'top hat' (the erf top hat of aux1..aux5, as 'user def')
+        self.heating = 'internal'
 
         # Thermal boundary conditions: 0 for Dirichlet, 1 for Neumann
         # (the unknown is the entropy s = δs/c_p: 0 is fixed entropy s=0, 1 is zero diffusive entropy flux s'=0; used only if ThermaD>0)

@@ -15,11 +15,11 @@ keys (default):
   file: the .npz of 'tabulated' (data/diff_rot.npz of the Mukhopadhyay et al. 2025 data set, doi:10.17617/3.NP26AI,
         or the output of ls_to_edmond_layout.py for the Larson & Schou 2018 table); a relative path is taken from the
         current directory
-  nmax (12): diff_rot_nmax      frame (456.0): Ω_ref/2π in nHz, also diff_rot_frame      amp (1.0): diff_rot_amplitude
+  nmax (12): diff_rot_nmax      frame (456.0): Ω_ref/2π in nHz, also diff_rot_frame      amp (1.0): diff_rot_ampl
   thermal (1)    tw (2): thermal_wind    rad (0): thermal_wind_radial (0 drops u_r ∂S_tw/∂r, as the papers do)
   ds (0.0): Δθs in erg/g/K for tw = 3 (dSdtheta = ds/cp, negative: warm poles)    cp (3.46e8, Model S; the papers use 4.17e8)
   nu (1e12), kappa (= nu): cm²/s
-  extra: python statements appended to parameters.py, e.g. "extra=par.diff_rot_term_amp = [1, 1, 0]"
+  extra: python statements appended to parameters.py, e.g. "extra=par.thermal_wind_amplitude = 0.5"
 
 Writes NAME/bekki.txt (m, frame, the scales) for solve_bekki.py. The matrices take ~0.5 GB at the defaults.
 '''
@@ -68,7 +68,7 @@ par.m = {m}; par.symm = {symm}; par.ricb = 0.71/{aux0!r}; par.thermal = {thermal
 par.model_type = 'smoothed sun'; par.solar_density = 'model S'
 par.aux0 = {aux0!r}; par.aux1 = 0.0; par.aux2 = 0.1; par.aux3 = 0.68; par.aux4 = 0.06; par.aux5 = 0.0   # dS0/dr = 0
 par.visc0 = 1.0; par.therm0 = 1.0; par.visc_pow = 0.0; par.therm_pow = 0.0
-par.diff_rot = {dr}; par.diff_rot_type = {drtype!r}; par.diff_rot_amplitude = {amp!r}
+par.diff_rot = {dr}; par.diff_rot_type = {drtype!r}; par.diff_rot_ampl = {amp!r}
 par.diff_rot_file = {fname!r}; par.diff_rot_nmax = {nmax}; par.diff_rot_frame = {frame!r}
 par.thermal_wind = {tw}; par.thermal_wind_radial = {rad}; par.dSdtheta = {ds/cp!r}
 par.Gaspard = 1.0; par.Beyonce = {Beyonce!r}; par.ViscosD = {ViscosD!r}; par.ThermaD = {ThermaD!r}

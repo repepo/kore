@@ -16,13 +16,13 @@ sys.path.insert(0, os.path.abspath('bin'))
 import numpy as np
 from parameters import par
 import radial_profiles as rap
+import diff_rot as dr
 
 V = np.load(sys.argv[1]); cp = float(sys.argv[2]) if len(sys.argv) > 2 else 3.46e8
 th_e, r_e, dsdt = V['theta'], V['r'], V['dsdt']
 k = (r_e >= par.ricb*par.aux0 + 0.005) & (r_e <= par.aux0 - 0.005)
 x_e = r_e[k]; r = x_e/par.aux0
-sig = rap.sigma_all(r) if hasattr(rap, 'sigma_all') and rap.ut.dr_high else \
-      np.array([np.zeros_like(r), np.zeros_like(r), rap.sigma2(r, 0), np.zeros_like(r), rap.sigma4(r, 0), np.zeros_like(r), rap.sigma6(r, 0)])
+sig = dr.sigma_coefficients(r)            # σ_n(r), n = 0 ... the highest degree of S_tw
 th = np.pi - th_e                         # colatitude of each Edmond θ node
 xx = np.cos(th)
 Lg = np.polynomial.legendre
@@ -30,7 +30,7 @@ dPdx = np.array([Lg.Legendre.basis(n).deriv()(xx) for n in range(len(sig))])    
 dS_k = -np.sin(th)[:, None]*(dPdx.T @ sig)                                        # (θ, r): ∂θ S_tw
 dS_e = -dsdt[:, k]
 print('thermal_wind %d, diff_rot_type %s, nmax %d, %d radii in [%.3f, %.3f] R_sun'
-      % (par.thermal_wind, par.diff_rot_type, rap.ut.dr_nmax, len(r), x_e[0], x_e[-1]))
+      % (par.thermal_wind, par.diff_rot_type, dr.n_max(), len(r), x_e[0], x_e[-1]))
 print('  r/R    lat:   ∂θS kore at 20, 45, 70 deg          | Edmond                             | c_p (s_pole - s_eq) kore, Edmond')
 north = th <= np.pi/2
 for rr in (0.72, 0.75, 0.80, 0.85, 0.90, 0.95):

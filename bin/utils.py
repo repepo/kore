@@ -8,6 +8,7 @@ import numpy.polynomial.chebyshev as ch
 import numpy as np
 from parameters import par
 import radial_profiles as rap
+import angular
 import sys
 
 '''
@@ -37,38 +38,13 @@ symm1 = (2*np.sign(par.m) - 1) * par.symm  # symm1=par.symm if m>0, symm1 = -par
 # this gives the size (rows or columns) of the main matrices
 sizmat = 2*n + n*par.thermal
 
-# ThermaD = 0 with the thermal-wind advection (docs/heat-equation.md §3): the section-h rows are r² (eq)/p instead of
+# ThermaD = 0 with the thermal-wind advection (docs/differential_rotation_details.md §7.2): the section-h rows are r² (eq)/p instead of
 # r (eq)/p, in the C^(1) basis (u_θ has P'), still without thermal bc rows; the thermal-wind profiles are then σn, σn'
 adiab_tw = bool(par.thermal == 1 and par.ThermaD == 0 and par.diff_rot == 1 and par.thermal_wind >= 1)
 
-# Differential rotation ΔΩ = Σ_n a_n f_n(r) P_n(cos θ) and thermal-wind entropy S_tw = Σ_n σ_n(r) P_n(cos θ) (docs/heat-equation.md §8):
-# dr_high are the degrees n >= 4 of ΔΩ (couplings from diff_rot_generic.py; none for the types with f0, f2 only), dr_nmax the highest
-# degree of ΔΩ, tw_degrees the degrees of S_tw (2, 4 and 6 if thermal_wind = 2, as before, when dr_high is empty).
-dr_high = []
-if par.diff_rot == 1 and par.diff_rot_type == 'solar_P4':
-    dr_high = [4]
-elif par.diff_rot == 1 and par.diff_rot_type == 'tabulated':
-    if par.diff_rot_nmax not in range(4, 17, 2):
-        sys.exit('diff_rot_nmax must be even, 4 to 16')
-    dr_high = list(range(4, par.diff_rot_nmax + 1, 2))
-dr_nmax = max([2] + dr_high)
-if dr_high and par.thermal_wind in (1, 2):
-    tw_nmax = dr_nmax + 2 if par.thermal_wind == 1 else 2*dr_nmax + 2   # dS/dx ~ x ∂F/∂r + (1-x²) ∂F/∂x / r, F of degree n or 2n
-else:
-    tw_nmax = 6 if par.thermal_wind == 2 else 4
-tw_degrees = list(range(2, tw_nmax + 1, 2))
-_dr_digit = '0123456789abcdefghijklmnopqrstuvwxyz'
-
-def dr_code(n):
-    '''3-character profile codes (decode_label) of f_n, r f_n', r² f_n'': abu/spv/psl (n = 0), aub/svp/pls (n = 2), ab4/sv4/pl4, ...'''
-    return {0: ('abu', 'spv', 'psl'), 2: ('aub', 'svp', 'pls')}.get(n, ('ab' + _dr_digit[n], 'sv' + _dr_digit[n], 'pl' + _dr_digit[n]))
-
-def tw_code(n):
-    '''profile codes of p σn and p σn' (p = 1 if adiab_tw): tw2/tp2 ... tw8/tp8, twa/tpa (n = 10), twc/tpc (12), ..., twy/tpy (34)'''
-    return ('tw' + _dr_digit[n], 'tp' + _dr_digit[n])
-
-# profiles that are odd in r (parity of the operators with ricb = 0): g, p dS/dr, (ln ρ)'^2-type products, dS/dr and the σn'
-odd_profiles = ['gra', 'pdS', 'lh1', 'dSd'] + [tw_code(n)[1] for n in range(2, 36, 2)]
+# profiles that are odd in r (parity of the operators with ricb = 0): g, p dS/dr, (ln ρ)'^2-type products, dS/dr and the
+# derivatives σn' of the thermal-wind entropy (codes tp + degree character, diff_rot.codes)
+odd_profiles = ['gra', 'pdS', 'lh1', 'dSd'] + ['tp' + c for c in '0123456789abcdefghijklmnopqrstuvwxyz']
 
 def dr_offd(l, ls, row, col):
     '''
@@ -172,7 +148,7 @@ def gimmedachebs( labl ):
     tol = max(1e-15, par.drop_tol)  # relative to the largest coefficient, see chebco_f
     args = decode_label(labl)  # (section, rpower, rhopower, func1, dorder1, func2, dorder2, dx)
     c0arg = chebco_f( rap.burrito, par.N, par.ricb, rcmb, tol, *args)
-    print('burrito', labl, args)
+    # print('burrito', labl, args)
 
     return c0arg
 
@@ -651,22 +627,25 @@ def Mlam(a0,lamb,vector_parity,a0_parity=None):
 
 
 def Ylm(l, m, theta, phi):
-    # The Spherical Harmonics, seminormalized
-    #out = scsp.sph_harm(m, l, phi, theta)   ### for scipy older than 1.15.3
-    out = scsp.sph_harm_y(l,m,theta,phi)    ### for scipy 1.15.3 or newer  
-    return out*np.sqrt(4*np.pi/(2*l+1))
+    # The Spherical Harmonics, seminormalized: sqrt(4π/(2l+1)) times scipy's sph_harm_y(l, m, theta, phi), by the
+    # recurrence of angular.ylm_grid (scipy's sph_harm_y returns NaN from l = 646 on)
+    return angular.ylm(l, m, theta, phi)
 
 
 def Ylm_full(lmax, m, theta, phi):
-    # array of Spherical Harmonics with a range of l's
+    # array of Spherical Harmonics with a range of l's (theta, phi scalars)
     m1 = max(m,1)
     if m == 0 :
         lmax1 = lmax+1
     else:
         lmax1 = lmax
     out = np.zeros(lmax-m+1,dtype=np.complex128)
-    for l in np.arange(m1,lmax1+1):
-        out[l-m1]=Ylm(l,m,theta,phi)
+    if m < 0:
+        for l in np.arange(m1,lmax1+1):
+            out[l-m1]=Ylm(l,m,theta,phi)
+        return out
+    Y = angular.ylm_grid(m, lmax1, np.cos(theta))[0][:, 0]*np.exp(1j*m*phi)
+    out[:lmax1-m1+1] = Y[m1:lmax1+1]
     return out
 
 

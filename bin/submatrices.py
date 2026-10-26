@@ -21,7 +21,7 @@ import sys
 import os
 from parameters import par
 import utils as ut
-import diff_rot_generic as drg
+import diff_rot as dr
 
 
 
@@ -146,53 +146,6 @@ def main(ncpus):
         arg2 += [ vP ]  # poloidal parity here because the entropy perturbation follows the same parity as the radial velocity
         labl += [ 'u2gra0_D0' ]
 
-    if par.diff_rot == 1:
-        """
-        Differential rotation background velocity field forcing terms
-        On the form Ω(r, θ) = Ω0 * [ 1 + ΔΩ * (f0(r) * Y00(θ) + f2(r) * Y20(θ)) ], with : 
-            ΔΩ : Differential rotation amplitude (depend on the differential rotation type [par.diff_rot_type])
-            f0(r) : Differential rotation radial profile for the Y00 part, from which we define : 
-                abu = f0
-                spv = r*f0'
-                psl = r^2*f0''
-            f2(r) : Differential rotation radial profile for the Y20 part, from which we define : 
-                aub = f2
-                svp = r*f2'
-                pls = r^2*f2''
-        """
-
-        # Poloidal terms : Δl = ±2, 0
-        # For f2(r)*Y20 
-        arg2 += [ vP ]*10
-        labl += [ 'u3aub0_D0','u2aub0_D1','u2aub0lho1_D0',
-                  'u3svp0_D0','u2svp0_D1','u2svp0lho1_D0',
-                  'u1aub0lho2_D0','u1aub0lho1_D1','u1aub0_D2',
-                  'u3pls0_D0' ]
-            
-        # For f0(r)*Y00 
-        arg2 += [ vP ]*10
-        labl += [ 'u3abu0_D0','u2abu0_D1','u2abu0lho1_D0',
-                  'u3spv0_D0','u2spv0_D1','u2spv0lho1_D0',
-                  'u1abu0lho2_D0','u1abu0lho1_D1','u1abu0_D2',
-                  'u3psl0_D0' ]
-
-        # Toroidal terms : Δl = ±3, ±1
-        # For f2(r)*Y20 
-        arg2 += [ vT ]*3
-        labl += [ 'u2aub0_D0','u1aub0_D1','u2svp0_D0' ]
-
-        # For f0(r)*Y00 
-        arg2 += [ vT ]*3
-        labl += [ 'u2abu0_D0','u1abu0_D1','u2spv0_D0' ]
-
-        # For the degrees n >= 4 of ΔΩ (utils.dr_high; couplings from diff_rot_generic): the same radial operators with f_n
-        for n in ut.dr_high:
-            for comp, vpar in (('upol', vP), ('utor', vT)):
-                lab = [ x for c, x in drg.labels(n, 'u', comp) ]
-                arg2 += [ vpar ]*len(lab)
-                labl += lab
-
-
     # -------------------------------------------------------------------------------------------------------------------------------------------
     # Matrix labels needed for the Navier-Stokes equation, single curl equations -------------------------------------- NavStok 1curl - section v
     # -------------------------------------------------------------------------------------------------------------------------------------------
@@ -213,46 +166,6 @@ def main(ncpus):
                       'v1vsc0_D2' ]
            
         
-    if par.diff_rot == 1:
-        """
-        Differential rotation background velocity field forcing terms
-        On the form Ω(r, θ) = Ω0 * [ 1 + ΔΩ * (f0(r) * Y00(θ) + f2(r) * Y20(θ)) ], with : 
-            ΔΩ : Differential rotation amplitude (depend on the differential rotation type [par.diff_rot_type])
-            f0(r) : Differential rotation radial profile for the Y00 part, from which we define : 
-                abu = f0
-                spv = r*f0'
-                psl = r^2*f0''
-            f2(r) : Differential rotation radial profile for the Y20 part, from which we define : 
-                aub = f2
-                svp = r*f2'
-                pls = r^2*f2''
-        """
-
-        # Poloidal terms : Δl = ±3, ±1
-        # For f2(r)*Y20 
-        arg2 += [ vP ]*4
-        labl += [ 'v2aub0_D0', 'v1aub0lho1_D0', 'v1aub0_D1', 'v2svp0_D0' ]
-
-        # For f0(r)Y00
-        arg2 += [ vP ]*4
-        labl += [ 'v2abu0_D0', 'v1abu0lho1_D0', 'v1abu0_D1', 'v2spv0_D0' ]
-
-        # Toroidal terms : Δl = ±2, 0
-        # For f2(r)*Y20 
-        arg2 += [ vT ]
-        labl += [ 'v1aub0_D0' ]
-
-        # For f0(r)Y00
-        arg2 += [ vT ]
-        labl += [ 'v1abu0_D0' ]
-
-        for n in ut.dr_high:   # degrees n >= 4 of ΔΩ
-            for comp, vpar in (('upol', vP), ('utor', vT)):
-                lab = [ x for c, x in drg.labels(n, 'v', comp) ]
-                arg2 += [ vpar ]*len(lab)
-                labl += lab
-            
-
     if par.thermal == 1:                  
         # -------------------------------------------------------------------------------------------------------------------------------------------
         # Matrix labels needed for the thermal equation ---------------------------------------------------------------------------- Heat - section h
@@ -273,50 +186,13 @@ def main(ncpus):
             arg2 += [ vP ]*4
             labl += [ 'h2kps0_D0', 'h1kps0_D1', 'h0kps1_D1', 'h0kps0_D2' ]
 
-        if par.diff_rot == 1:
-            # Differential rotation in the heat equation (docs/heat-equation.md). Rows are the equation times r² p, p = ρT
-            # (times r, without p, if ThermaD = 0; times r², without p, if ThermaD = 0 and thermal_wind >= 1, ut.adiab_tw).
-            if par.thermal_wind not in (0, 1, 2, 3):
-                sys.exit('thermal_wind must be 0, 1, 2 or 3')
-            if par.thermal_wind in (1, 2) and par.Beyonce == 0:
-                sys.exit('thermal_wind = 1, 2 needs Beyonce > 0 (S_tw is O(1/Beyonce)): set thermal_wind = 0 or set Beyonce after set_scales()')
-            # advection of s by the background rotation:  i m (f0 + f2 P2) s,  Δl = 0, ±2  (s column)
-            arg2 += [ vP ]*2
-            labl += [ 'h0pss0abu0_D0', 'h0pss0aub0_D0' ] if par.ThermaD > 0 else [ 'h0abu0_D0', 'h0aub0_D0' ]
-            for n in ut.dr_high:   # i m a_n f_n P_n s, Δl up to ±n
-                arg2 += [ vP ]
-                labl += [ ('h0pss0%s0_D0' if par.ThermaD > 0 else 'h0%s0_D0') % ut.dr_code(n)[0] ]
-            if par.thermal_wind and ut.dr_high:
-                # S_tw = Σ σn Pn, n in utils.tw_degrees: the labels below for every n (tw, tp = utils.tw_code(n));
-                # without the 'tp' ones if thermal_wind_radial = 0
-                for n in ut.tw_degrees:
-                    tw, tp = ut.tw_code(n)
-                    lab = ([ 'h1%s0_D0' % tp ] if par.thermal_wind_radial else []) + \
-                          [ 'h2%s0_D0' % tw, 'h1%s0_D1' % tw, 'h1%s0lho1_D0' % tw ]
-                    arg2 += [ vP ]*len(lab) + [ vT ]
-                    labl += lab + [ 'h1%s0_D0' % tw ]
-            elif par.thermal_wind:
-                # advection of the thermal-wind entropy S_tw = σ2 P2 + σ4 P4 (+ σ6 P6 if thermal_wind = 2; σ4 = 0 if thermal_wind = 3) by u:
-                # uᵣ dS_tw/dr -> r p σn' L P (tp2, tp4, tp6 = p σn'), Δl = 0, ±2, ±4 (±6) (P column)
-                # (u_θ/r) dS_tw/dθ -> p σn [P + r P' + r (ln ρ)' P] (tw2, tw4, tw6 = p σn), Δl = 0, ±2, ±4 (±6) (P column)
-                # (p = 1 in tw, tp if ThermaD = 0)
-                arg2 += [ vP ]*8
-                labl += [ 'h1tp20_D0', 'h2tw20_D0', 'h1tw20_D1', 'h1tw20lho1_D0',
-                          'h1tp40_D0', 'h2tw40_D0', 'h1tw40_D1', 'h1tw40lho1_D0' ]
-                if not par.thermal_wind_radial:   # drop uᵣ ∂S_tw/∂r (term (b)): no 'tp' labels
-                    k = [ i for i, x in enumerate(labl) if x[2:4] == 'tp' and x[0] == 'h' ]
-                    for i in reversed(k):
-                        del labl[i]; del arg2[i]
-                # (u_θ/r) dS_tw/dθ toroidal part -> -i m r p σn T, Δl = ±1, ±3 (±5) (T column)
-                arg2 += [ vT ]*2
-                labl += [ 'h1tw20_D0', 'h1tw40_D0' ]
-                if par.thermal_wind == 2:
-                    arg2 += [ vP ]*4 + [ vT ]
-                    labl += [ 'h1tp60_D0', 'h2tw60_D0', 'h1tw60_D1', 'h1tw60lho1_D0', 'h1tw60_D0' ]
-                    if not par.thermal_wind_radial:
-                        i = labl.index('h1tp60_D0'); del labl[i]; del arg2[i]
-
-
+    if par.diff_rot == 1:
+        # Differential rotation (diff_rot.py): the radial operators of the force of the background flow (sections u, v) and of
+        # the heat-equation terms (section h, with thermal = 1), each with the vector parity of its column (vP for P and s, vT for T)
+        dr.check()
+        for lab, kind in dr.labels():
+            labl += [ lab ]
+            arg2 += [ vP if kind == 'P' else vT ]
 
     # -------------------------------------------------------------------------------------------------------------------------------------------
     # ----------------------------------------------------------------------------------------------------- Generates the argument lists for Mlam
@@ -362,8 +238,8 @@ def main(ncpus):
     # -------------------------------------------------------------------------------------------------------------------------------------------
     pool2 = mp.Pool( processes = int(ncpus) )
     if par.ricb == 0 and par.diff_rot == 1 and (par.diff_rot_type == 'Y20-wall-bounded' or
-            (par.diff_rot_type == 'shellular' and not (par.diff_rot_amplitude % 2 == 0 and par.diff_rot_amplitude > 0))):
-        # ΔΩ is used at |r| (radial_profiles.aubX, abuX): (1 - r) r and r**σ - 1 have a kink at r = 0
+            (par.diff_rot_type == 'shellular' and not (par.diff_rot_param % 2 == 0 and par.diff_rot_param > 0))):
+        # ΔΩ is used at |r| (diff_rot.fX): (1 - r) r and r**σ - 1 have a kink at r = 0
         print('WARNING: diff_rot_type', par.diff_rot_type, 'is not smooth at r = 0, the full sphere (ricb = 0) converges slowly in N')
     if par.ricb == 0:  # profiles must have the parity assumed above, otherwise only part of them is kept
         for k,pkey1 in enumerate(pkey):

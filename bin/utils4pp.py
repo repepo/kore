@@ -5,10 +5,11 @@
 import multiprocessing as mp
 import numpy.polynomial.chebyshev as ch
 import numpy as np
-import scipy.special as scsp
 from parameters import par
 import utils as ut
 import radial_profiles as rap
+import angular
+import diff_rot as dr
 
 
 mp.set_start_method('fork')
@@ -487,60 +488,26 @@ def entropy_dissip(l, hlm0, hlm1):
 
 def thermal_wind_entropy():
     '''
-    Returns [σ₂, σ₄, σ₆] and their radial derivatives at the radii rk, S_tw = Σₙ σₙ(r) Pₙ(cosθ) the thermal-wind
-    background entropy of docs/heat-equation.md (eq. 2):
-        (1/r) ∂S_tw/∂θ = ( r sinθ/(Beyonce g) ) G² ∂[(1+ΔΩ)² - 1]/∂z,     ΔΩ = f₀(r) + f₂(r) P₂(cosθ),  G = Gaspard,
-    exact for thermal_wind = 2, linearised, (1+ΔΩ)² - 1 → 2ΔΩ, for thermal_wind = 1 (eq. 3, σ₆ = 0).
-    Written out here from f₀, f₂, g and their derivatives (not from radial_profiles.sigma2, sigma4), so that the
-    entropy budget is an independent check of the assembled heat equation.
-    thermal_wind = 3: prescribed ∂S_tw/∂θ = dSdtheta sin 2θ, so σ₂ = -(2/3) dSdtheta, σ₄ = σ₆ = 0.
+    Returns [σₙ, σₙ′] at the radii rk for n in diff_rot.tw_degrees(), S_tw = Σₙ σₙ(r) Pₙ(cosθ) the thermal-wind
+    background entropy (docs/differential_rotation_details.md, eq. 2.9), computed here independently of diff_rot.py's
+    algebra (numpy Legendre series at each radius) so that the entropy budget checks the assembled heat equation:
+        ∂S/∂x = -c q [x F_r + (1-x²) F_x/r],   c = G²/Beyonce, q = r²/g,   F = (1+ΔΩ)² - 1 (thermal_wind = 2) or 2ΔΩ (1),
+    integrated in x, and its r derivative written out; times thermal_wind_amplitude. thermal_wind = 3: prescribed
+    ∂S_tw/∂θ = dSdtheta sin 2θ, so σ₂ = -(2/3) dSdtheta. Only the profiles f_n come from diff_rot.
     '''
+    degs = dr.tw_degrees()
+    sig  = np.zeros((len(degs), len(rk)))
+    sig1 = np.zeros_like(sig)
     if par.thermal_wind == 3:
-        z = np.zeros_like(rk)
-        return [ [ z - (2/3)*par.dSdtheta, z, z ], [ z, z, z ] ]
-    e = int(par.thermal_wind == 2)  # keeps the terms quadratic in ΔΩ
-    [ f0, f01, f02 ] = [ rap.abuX(rk, d) for d in (0,1,2) ]
-    [ f2, f21, f22 ] = [ rap.aubX(rk, d) for d in (0,1,2) ]
-    g0 = rap.graviX(rk, 0)
-    g1 = rap.graviX(rk, 1)
-    a0 = 1 + e*f0
-
-    # σₙ = cₙ r Nₙ/g, and Nₙ′
-    N  = [ a0*(7*rk*f01 + rk*f21 + 12*f2) + e*rk*f2*(f01 + f21),
-           a0*(11*rk*f21 - 22*f2) + e*(11*rk*f2*f01 + 4*rk*f2*f21 + 14*f2**2),
-           e*f2*(rk*f21 - 2*f2) ]
-    N1 = [ e*f01*(7*rk*f01 + rk*f21 + 12*f2) + a0*(7*f01 + 7*rk*f02 + 13*f21 + rk*f22)
-           + e*( (f2 + rk*f21)*(f01 + f21) + rk*f2*(f02 + f22) ),
-           e*f01*(11*rk*f21 - 22*f2) + a0*(11*rk*f22 - 11*f21)
-           + e*( 11*f2*f01 + 11*rk*f21*f01 + 11*rk*f2*f02 + 32*f2*f21 + 4*rk*f21**2 + 4*rk*f2*f22 ),
-           e*( f21*(rk*f21 - 2*f2) + f2*(rk*f22 - f21) ) ]
-    c = np.array([ -2/21, -6/385, -4/77 ]) * par.Gaspard**2/par.Beyonce
-
-    sig  = [ c[n]*rk*N[n]/g0 for n in range(3) ]
-    sig1 = [ c[n]*( (N[n] + rk*N1[n])/g0 - rk*N[n]*g1/g0**2 ) for n in range(3) ]
-    if par.thermal_wind_amplitude != 1:
-        sig  = [ par.thermal_wind_amplitude*x for x in sig ]
-        sig1 = [ par.thermal_wind_amplitude*x for x in sig1 ]
-
-    return [ sig, sig1 ]
-
-
-def thermal_wind_entropy_generic():
-    '''
-    As thermal_wind_entropy, for ΔΩ = Σ_n a_n f_n P_n with degrees above 2 (ut.dr_high): σₙ and σₙ′ for n in ut.tw_degrees,
-    by Legendre-series algebra at each radius (numpy Legendre objects; radial_profiles.sigma_all uses Gauss quadrature instead),
-    with ∂S/∂x = -c q [x F_r + (1-x²) F_x/r] and its r derivative written out, c = G²/Beyonce, q = r²/g,
-    F = (1+ΔΩ)² - 1 (thermal_wind = 2) or 2ΔΩ (1). Times thermal_wind_amplitude.
-    '''
+        sig[degs.index(2)] = -(2/3)*par.dSdtheta
+        return [ list(sig), list(sig1) ]
     Lg = np.polynomial.legendre.Legendre
-    nd = [0, 2] + ut.dr_high
-    f = { n: [ rap.fX(n, rk, d) for d in (0,1,2) ] for n in nd }
+    nd = dr.degrees()
+    f = { n: [ dr.fX(n, rk, d) for d in (0,1,2) ] for n in nd }
     g0, g1 = rap.graviX(rk, 0), rap.graviX(rk, 1)
     c = par.Gaspard**2/par.Beyonce
     e = int(par.thermal_wind == 2)
     X, W = Lg([0, 1]), Lg([2/3, 0, -2/3])   # x, 1 - x²
-    sig  = np.zeros((len(ut.tw_degrees), len(rk)))
-    sig1 = np.zeros_like(sig)
     for k, r in enumerate(rk):
         O   = sum( Lg.basis(n)*f[n][0][k] for n in nd )   # ΔΩ, ∂ᵣΔΩ, ∂ᵣ²ΔΩ as series in x
         Or  = sum( Lg.basis(n)*f[n][1][k] for n in nd )
@@ -555,7 +522,7 @@ def thermal_wind_entropy_generic():
         B1 = X*Frr + W*(Fxr/r - Fx/r**2)
         S  = (-c*q*B).integ(lbnd=-1)
         S1 = (-c*(q1*B + q*B1)).integ(lbnd=-1)
-        for j, n in enumerate(ut.tw_degrees):
+        for j, n in enumerate(degs):
             sig[j, k]  = S.coef[n] if n < len(S.coef) else 0
             sig1[j, k] = S1.coef[n] if n < len(S1.coef) else 0
     return [ list(par.thermal_wind_amplitude*sig), list(par.thermal_wind_amplitude*sig1) ]
@@ -568,41 +535,32 @@ _dr_bg = None  # NEW (2026-10-20): (key, diff_rot_background()) for the current 
 def diff_rot_background(ll):
     '''
     NEW (2026-10-20): the parts of diff_rot_setup that do not depend on the solution, at the current radii rk:
-    the Gauss-Legendre grid x = cosθ and weights wx, sinθ, Y, ∂_θY and i m Y/sinθ for the l's ll, ΔΩ and its
-    derivatives on the (rk, cosθ) grid, and, with thermal = 1 and thermal_wind, the (n, σₙ, σₙ′) of S_tw.
-    Moved here unchanged from diff_rot_setup, so that diagnose computes them once per grid, not per solution.
+    the Gauss-Legendre grid x = cosθ and weights wx, sinθ, Y, ∂_θY and i m Y/sinθ for the l's ll (angular.ylm_grid),
+    ΔΩ = Σₙ fₙ Pₙ and its derivatives on the (rk, cosθ) grid (diff_rot.fX), and, with thermal = 1 and thermal_wind,
+    the (n, σₙ, σₙ′) of S_tw (thermal_wind_entropy). diagnose computes them once per grid, not per solution.
     '''
     m = par.m
-    x, wx = np.polynomial.legendre.leggauss( par.lmax + 10 + (max(ut.tw_nmax, ut.dr_nmax) if ut.dr_high else 0) )
+    x, wx = np.polynomial.legendre.leggauss( par.lmax + 10 + max(dr.tw_nmax(), dr.n_max()) )
     sth = np.sqrt(1 - x**2)  # sinθ
-    Y   = np.zeros( (len(ll), len(x)), dtype=complex )
-    dY  = np.zeros( (len(ll), len(x)), dtype=complex )
-    for k,l in enumerate(ll):
-        [ y, dy ] = scsp.sph_harm_y(l, m, np.arccos(x), 0, diff_n=1)  # as ut.Ylm, and its θ and ϕ derivatives
-        Y[k]  = y*np.sqrt(4*np.pi/(2*l+1))
-        dY[k] = dy[:,0]*np.sqrt(4*np.pi/(2*l+1))
-    imY = 1j*m*Y/sth
+    # as ut.Ylm, its θ derivative and i m Y/sinθ, by the recurrence of angular.ylm_grid (any l; scipy is NaN from l = 646)
+    [ Yg, dYg, Zg ] = angular.ylm_grid(m, int(ll.max()), x)
+    Y   = Yg[ll].astype(complex)
+    dY  = dYg[ll].astype(complex)
+    imY = Zg[ll]
 
-    P2  = (3*x**2 - 1)/2
-    [ f0, f01, f02 ] = [ rap.abuX(rk, d)[:,None] for d in (0,1,2) ]
-    [ f2, f21, f22 ] = [ rap.aubX(rk, d)[:,None] for d in (0,1,2) ]
-    dO  = [ f0 + f2*P2, f01 + f21*P2, f02 + f22*P2 ]  # ΔΩ, ∂ᵣΔΩ, ∂ᵣ²ΔΩ
-    dOt = [ -3*x*sth*f2, -3*x*sth*f21 ]               # ∂_θΔΩ, ∂ᵣ∂_θΔΩ
-    for n in ut.dr_high:                              # degrees above 2 of ΔΩ
+    r   = rk[:,None]
+    dO  = [ 0*r*x for d in (0,1,2) ]                  # ΔΩ, ∂ᵣΔΩ, ∂ᵣ²ΔΩ
+    dOt = [ 0*r*x for d in (0,1) ]                    # ∂_θΔΩ, ∂ᵣ∂_θΔΩ
+    for n in dr.degrees():
         Pn = np.polynomial.legendre.Legendre.basis(n)
-        fn = [ rap.fX(n, rk, d)[:,None] for d in (0,1,2) ]
+        fn = [ dr.fX(n, rk, d)[:,None] for d in (0,1,2) ]
         dO  = [ dO[d] + fn[d]*Pn(x) for d in (0,1,2) ]
         dOt = [ dOt[d] - sth*Pn.deriv()(x)*fn[d] for d in (0,1) ]
 
     tw = []
     if par.thermal and par.thermal_wind:
-        if ut.dr_high and par.thermal_wind in (1, 2):
-            [ sig, sig1 ] = thermal_wind_entropy_generic()
-            degs = ut.tw_degrees
-        else:
-            [ sig, sig1 ] = thermal_wind_entropy()
-            degs = (2,4,6)
-        tw = list( zip( degs, sig, sig1 ) )
+        [ sig, sig1 ] = thermal_wind_entropy()
+        tw = list( zip( dr.tw_degrees(), sig, sig1 ) )
 
     return [ x, wx, sth, Y, dY, imY, dO, dOt, tw ]
 
@@ -613,7 +571,7 @@ def diff_rot_setup():
     Differential rotation (diff_rot = 1). Sets, as module globals for flow_worker and thermal_worker:
     drforce[l] = [ [q, ∂ᵣq], [s, ∂ᵣs], [t, ∂ᵣt] ], the l-components of the force of the background flow on the perturbation
         𝐅 = -G [ (𝐔₀′⋅∇)𝐮 + (𝐮⋅∇)𝐔₀′ ] = -G [ ΔΩ (i m 𝐮 + 2𝐳×𝐮) + (𝐮⋅∇ΔΩ) r sinθ 𝐞ᵩ ],   𝐔₀′ = ΔΩ r sinθ 𝐞ᵩ,
-    (right-hand side of the momentum equation per unit mass, G = Gaspard, ΔΩ = f₀(r) + f₂(r) P₂(cosθ)) and of ∂ᵣ𝐅;
+    (right-hand side of the momentum equation per unit mass, G = Gaspard, ΔΩ = Σₙ fₙ(r) Pₙ(cosθ), diff_rot.fX) and of ∂ᵣ𝐅;
     with thermal = 1, drheat[l], the l-components of the left-hand-side terms p₀ [ i m G ΔΩ s + 𝐮⋅∇S_tw ] of the heat
     equation (S_tw = 0 if thermal_wind = 0).
     𝐮 is evaluated on the (rk, cosθ) grid from the l-components of velocity(),

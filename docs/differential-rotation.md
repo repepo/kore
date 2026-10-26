@@ -63,10 +63,11 @@ Not modelled:
 - $\rho_0$, $T_0$ and $g$ stay spherical (no centrifugal distortion);
 - there is no magnetic field.
 
-**Supported reference models.** Only `model_type = 'user def'` and `'smoothed sun'` define the rotation profiles
-(`radial_profiles.user_defined_profiles.abu/aub`). With `'poly'`, `'mesa'`, `'gsm'`, `'astropy table'` or
-`'Boussinesq'` a `diff_rot = 1` run stops with an `AttributeError` in `submatrices.py` (seen for `'Boussinesq'`; the
-file-based profile classes have no `abu`/`aub` either).
+**Where it lives.** Everything specific to the differential rotation (profiles, thermal wind, couplings, the terms of
+each row) is in `bin/diff_rot.py`, built on the angular algebra of `bin/angular.py`; the details are in
+[differential_rotation_details.md](differential_rotation_details.md). The rotation profiles do not depend on the
+background model, but the file-based models (`'poly'`, `'mesa'`, `'gsm'`, `'astropy table'`) and `'Boussinesq'` are broken
+on this branch for other reasons.
 
 ## Frame and units
 
@@ -86,7 +87,7 @@ Eigenvalues are in the rotating frame of $\Omega_{\rm ref}$, as for uniform rota
 ```python
 par.diff_rot           = 1
 par.diff_rot_type      = 'conical'   # see the table of profiles below
-par.diff_rot_amplitude = -0.25       # ε for 'conical'
+par.diff_rot_ampl = -0.25            # the factor of ΔΩ: ε for 'conical'
 par.thermal_wind       = 1           # only read with thermal = 1; needs Beyonce > 0
 ```
 
@@ -99,16 +100,16 @@ of `2*ncpus` (`assemble.py` stops otherwise).
 | --- | --- | --- |
 | `diff_rot` | 0 | 1 adds the differential-rotation terms |
 | `diff_rot_type` | `'Y20'` | the profile, see below |
-| `diff_rot_amplitude` | 1.0 | amplitude; its meaning depends on the type (table below) |
-| `diff_rot_term_amp` | `[1.0]*9` | $a_0, a_2, \dots, a_{16}$: factors of the $P_0, P_2, \dots, P_{16}$ terms of $\Delta\Omega$, any type (missing entries are 1) |
+| `diff_rot_ampl` | 1.0 | the factor of $\Delta\Omega$, for every type (table below) |
+| `diff_rot_param` | 0.0 | the shape parameter: $\sigma$ of `'shellular'`, `p` in `'user'` expressions |
+| `diff_rot_profiles` | `{}` | `'user'`: `{n: 'numpy expression'}`, the shape $f_n$ of each even degree (below) |
 | `diff_rot_frame` | 456.0 | `'solar_P4'`, `'tabulated'`: $\Omega_{\rm ref}/2\pi$ in nHz |
 | `diff_rot_solar` | `[464, -76, -50, 433.5, 0.71, 0.045]` | `'solar_P4'`: $c_0$, $c_2$, $c_4$, $\Omega_{RZ}$ (nHz), $r_{tc}$, $d_{tc}$ |
 | `diff_rot_file` | `''` | `'tabulated'`: the .npz file, absolute or relative to the run directory |
-| `diff_rot_nmax` | 8 | `'tabulated'`: highest degree kept, even, 4 to 16 |
+| `diff_rot_nmax` | 8 | `'tabulated'`: highest degree kept, even (up to 16 with `thermal_wind = 2`) |
 | `diff_rot_rdeg` | 24 | `'tabulated'`: degree of the Chebyshev fit of each $f_n$ in $r$ |
 | `diff_rot_window` | None | `'tabulated'`: None fits over the shell if ricb > 0 and is `'sun'` if ricb = 0; `'sun'`: one fit over the whole Sun, even in $r$, the same for any ricb ([heat-equation.md](heat-equation.md) §9) |
 | `diff_rot_sun_deg`, `diff_rot_hold` | 60, None | `'sun'`: degree of that fit, and $x_h$ (R☉) to hold each $f_n$ at $f_n(x_h)$ below $x_h$ (None: the table, held only below its first radius) |
-| `diff_rot_generic` | 0 | 1 builds the $P_0$, $P_2$ couplings by quadrature too (self-check, agrees to ~1e-12) |
 | `thermal_wind` | 1 | heat-equation terms, see below |
 | `thermal_wind_radial` | 1 | 0 drops $u_r\thinspace \partial_r S_{tw}$ |
 | `thermal_wind_amplitude` | 1.0 | factor on $S_{tw}$ (`thermal_wind` 1, 2) |
@@ -124,21 +125,22 @@ of `2*ncpus` (`assemble.py` stops otherwise).
 
 ## Profiles
 
-$a$ = `diff_rot_amplitude`. For the solar types $x$ is the fractional solar radius: $x = r\times$`aux0` with
-`model_type = 'smoothed sun'`, $x = r$ otherwise.
+$a$ = `diff_rot_ampl`, $p$ = `diff_rot_param`. For the solar types $x$ is the fractional solar radius: $x = r\times$`aux0`
+with `model_type = 'smoothed sun'`, $x = r$ otherwise.
 
 | `diff_rot_type` | $\Delta\Omega(r,\theta)$ | degrees | notes |
 | --- | --- | --- | --- |
 | `'rigid'` | $a$ | $P_0$ | test profile: a uniform offset of the rotation rate, with an exact answer (below); $a = 0$ gives uniform rotation with the diff-rot machinery on (needed for `thermal_wind = 3`) |
 | `'Y20'` | $a\thinspace P_2(\cos\theta)$ | $P_2$ | $P_2$ unnormalised, despite the name |
 | `'Y20-wall-bounded'` | $a\thinspace (1 - r)(r - r_i)\thinspace P_2(\cos\theta)$, $r_i$ = `ricb` | $P_2$ | not smooth at $r = 0$: use ricb > 0 |
-| `'shellular'` | $r^\sigma - 1$, $\sigma = a$ | $P_0$ | Baruteau & Rieutord 2013; not smooth at $r = 0$ unless $\sigma$ is even and positive |
+| `'shellular'` | $a\thinspace (r^\sigma - 1)$, $\sigma = p$ | $P_0$ | Baruteau & Rieutord 2013 ($a = 1$); not smooth at $r = 0$ unless $\sigma$ is even and positive |
 | `'shellular_boussinesq'` | $\tfrac12 N_0^2\thinspace (1 - r^2)$, $N_0^2 = a$ | $P_0$ | Mirouh et al. 2016; use `thermal_wind = 0` (their background has no thermal wind) and `'user def'` profiles |
 | `'cylindrical'` | $\varepsilon\thinspace r^2\sin^2\theta$, $\varepsilon = a$ | $P_0$, $P_2$ | Baruteau & Rieutord 2013; barotropic, $S_{tw} = 0$ |
 | `'conical'` | $\varepsilon\sin^2\theta$, $\varepsilon = a$ | $P_0$, $P_2$ | Guenel et al. 2016 |
 | `'solar'` | $a\thinspace \times$ helioseismic fit, $P_0 + P_2$, tanh step at $x = 0.71$ of width 0.1 | $P_0$, $P_2$ | relative to 435 nHz; 4.5 nHz too fast at the equator and 12 nHz at the pole compared with the observations (heat-equation.md §6) |
 | `'solar_P4'` | $a\thinspace (\Omega/\Omega_{\rm ref} - 1)$, $\Omega$ the fit below | $P_0$, $P_2$, $P_4$ | `diff_rot_solar`, `diff_rot_frame`; defaults from Mukhopadhyay et al. 2026 |
 | `'tabulated'` | $a\thinspace (\Omega/\Omega_{\rm ref} - 1)$, $\Omega$ from `diff_rot_file` | $P_0 \dots P_{n_{\max}}$ | below |
+| `'user'` | $a\sum_n f_n(r) P_n(\cos\theta)$, $f_n$ from `diff_rot_profiles` | the keys of `diff_rot_profiles` | below |
 
 **`'rigid'`.** The eigenvalues are known exactly: with $\lambda_0$ the `diff_rot = 0` eigenvalue,
 
@@ -156,8 +158,19 @@ $$
 
 with `diff_rot_solar` = [$c_0$, $c_2$, $c_4$, $\Omega_{RZ}$, $r_{tc}$, $d_{tc}$] (nHz, and fractions of R☉).
 
-`diff_rot_term_amp` multiplies each $f_n$ for every type, after the type's own amplitude. To switch off only the $P_4$ part
-of `'solar_P4'`, for example, use `diff_rot_term_amp = [1, 1, 0]`.
+**`'user'`.** `diff_rot_profiles` gives the shape of each even degree as a numpy expression of `r` (kore radius), `x`
+(fractional solar radius) and `p` (`diff_rot_param`), with `sin`, `cos`, `tan`, `arcsin`, `arccos`, `arctan`, `sinh`,
+`cosh`, `tanh`, `exp`, `log`, `log10`, `sqrt`, `abs`, `sign`, `pi`, `where`, `minimum`, `maximum`, `erf`, `erfc`. For
+example, the cylindrical rotation as a `'user'` profile (it gives the same matrices as `'cylindrical'`):
+
+```python
+par.diff_rot_type     = 'user'
+par.diff_rot_profiles = {0: '(2/3)*r**2', 2: '-(2/3)*r**2'}
+par.diff_rot_ampl     = -0.25
+```
+
+The degrees must be even, and the expressions must not contain `#`: `spin_doctor` writes them at the end of each
+`params.dat` row, after a `#`. Any degree up to 16 works with `thermal_wind = 2` (32 with `thermal_wind = 1`).
 
 **`'tabulated'`.** The file holds `ome[θ, r]` (nHz), `r` (R☉) and `theta` (rad), the layout of `data/diff_rot.npz`
 of the Mukhopadhyay et al. 2025 data set (Edmond). `tests/diff_rot/ls_to_edmond_layout.py` converts the Larson &
@@ -207,25 +220,26 @@ The advection of $s$ by the differential rotation, the first term, is always inc
 `spin_doctor` adds the diff-rot powers to `flow.dat` (`Wdr`, `Wdr_im`, `Ensdr`) and `thermal.dat` (`Wdr_thm`), and
 writes the options to `params.dat`, after the general columns (the order is that of `spin_doctor.param_table`):
 
-    diff_rot, diff_rot_amplitude, thermal_wind, diff_rot_type, dSdtheta,
-    diff_rot_term_amp_0, _2, ..., _16, thermal_wind_amplitude, thermal_wind_radial,
-    diff_rot_frame, diff_rot_nmax, diff_rot_rdeg, diff_rot_generic, diff_rot_solar_0 ... _5,
+    diff_rot, diff_rot_ampl, thermal_wind, diff_rot_type, dSdtheta,
+    thermal_wind_amplitude, thermal_wind_radial,
+    diff_rot_frame, diff_rot_nmax, diff_rot_rdeg, diff_rot_solar_0 ... _5,
     solar_density, solar_density_deg, solar_density_window_lo, solar_density_window_hi,
     solar_rz, solar_rz_dSdr, solar_rz_x1, solar_rz_x2, solar_rz_d, solar_rz_core, solar_rz_xos, solar_rz_dos,
-    diff_rot_window, diff_rot_hold, solar_rz_delta_cz, solar_rz_delta_sf, drop_tol
+    diff_rot_window, diff_rot_hold, diff_rot_param
 
-`diff_rot_type` and `solar_density` are written as their index in `spin_doctor.diff_rot_types` ('Y20' 0, …, 'rigid' 7,
-'solar_P4' 8, 'tabulated' 9) and `spin_doctor.solar_densities` ('fit' 0, which is the '8-term fit', 'model S' 1,
-which is 'old model S prototype', 'model S hydrostatic' 2: the structure in effect); a default
+`diff_rot_type` and `solar_density` are written as their index in `diff_rot.TYPES` ('Y20' 0, …, 'rigid' 7,
+'solar_P4' 8, 'tabulated' 9, 'user' 10) and `spin_doctor.solar_densities` ('fit' 0, 'model S' 1); a `'user'` run ends
+each row with its profile definitions after a `#`, which `np.loadtxt` skips; a default
 `solar_density_window` (None) is written as nan, `'sun'` as ∓(aux0 + 0.005), and `solar_density_deg` is the degree
 actually used (`solar_density_sun_deg` for the whole-Sun fit, `structure_deg` for the hydrostatic structure). `diff_rot_window` is 0 for the shell fit and 1 for the
 whole-Sun fit (with `diff_rot_rdeg` then the degree used, `diff_rot_sun_deg`), and `diff_rot_hold` None is nan.
-`diff_rot_file` is not recorded. A `params.dat` written by an older
-version has fewer columns; start a new file rather than appending to it.
+`diff_rot_file` is not recorded. A `params.dat` written by an older version has other columns (before 2026-10-23:
+`diff_rot_amplitude`, the nine `diff_rot_term_amp_*` and `diff_rot_generic`); start a new file rather than appending
+to it.
 
 ## Examples
 
-**Conical rotation, Guenel et al. 2016.** `ricb = 0.71`, `diff_rot_type = 'conical'`, `diff_rot_amplitude = -0.25`,
+**Conical rotation, Guenel et al. 2016.** `ricb = 0.71`, `diff_rot_type = 'conical'`, `diff_rot_ampl = -0.25`,
 $E = 10^{-5}$, uniform density (`'user def'`), stress-free, `thermal = 0`, $m = 0$: their DT mode near $\omega \approx 1.82$; kore gives
 $\omega = 1.8173$, $\sigma = -0.021$.
 
