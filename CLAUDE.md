@@ -78,13 +78,14 @@ eigenvalues as ω, σ in nHz.
 | `angular.py` | the angular algebra at fixed m: the recurrence matrices X (cos θ) and D (−sin θ ∂θ), the vector operations (g(cos θ)·, ẑ×, sin θ F_θ), Schmidt harmonics at any l (`ylm_grid`, `ylm`); numpy and scipy only |
 | `targets.py` | analytic targets (spin-over, Rieutord–Valdettaro attractor) |
 
-Other directories: `tests/diff_rot/`, `tests/heat_dr/` and `tests/rsf/` (§11, each with a README); `docs/` (mkdocs; the
-branch's notes are `background.md` (the background model), `differential-rotation.md` (user guide),
-`differential_rotation_details.md` (the equations and code of the differential rotation, its checks and benchmarks),
-`heat-equation.md` (derivation, implementation, benchmarks, §9 radiative interior), `thermad0.md` (ThermaD = 0 with the
-thermal wind), `solver.md` (what to try for bad solutions or when memory runs out)); `examples/smooth_sun/` (the solar example: full sphere, m 8 HFR mode); `tools/` (submission, plotting,
-`kore2sprouts.py`, `m2petsc.py`), `koreviz/`, `koreviz_mod/` (visualisation); `examples/spinover/` (stale, §12);
-`srunKore.sh` (SLURM); `poly.n1_gamma3.h5`, `theprofile.data` (files of the removed file-based models, unused).
+Other directories: `tests/ci/` (the test GitHub runs on every push, §11); `tests/diff_rot/`, `tests/heat_dr/` and
+`tests/rsf/` (§11, each with a README); `docs/` (mkdocs; the branch's notes are `background.md` (the background model),
+`differential-rotation.md` (user guide), `differential_rotation_details.md` (the equations and code of the differential
+rotation, its checks and benchmarks), `heat-equation.md` (derivation, implementation, benchmarks, §9 radiative
+interior), `thermad0.md` (ThermaD = 0 with the thermal wind), `solver.md` (what to try for bad solutions or when memory
+runs out)); `examples/smooth_sun/` (the solar example: full sphere, m 8 HFR mode); `tools/` (submission, plotting,
+`kore2sprouts.py`, `m2petsc.py`), `koreviz/`, `koreviz_mod/` (visualisation); `srunKore.sh` (SLURM);
+`poly.n1_gamma3.h5`, `theprofile.data` (files of the removed file-based models, unused).
 
 ## 4. Formulation
 
@@ -293,7 +294,12 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   dissipation bound), `spectrum_check.py pick|fields|check` (solve.py's sampled spectrum against the exact E[KE(w)]
   and the single-mode energy Θ f_eff); `run_all.sh` (needs petsc4py for the solves, and an `MPIEXEC` that starts
   mpi4py's MPI); `regress_solve.sh OLD_KORE` (eigen and forcing-10 solves bitwise against an older checkout).
-- `examples/spinover/unitTest.py` is the upstream test and is stale here (§12).
+- `tests/ci/test_spinover.py` (`cd tests/ci; pytest -v`, about 6 s): the test GitHub runs on every push to anelastic_log
+  (`.github/workflows/anelastic_log.yml`: Ubuntu 24.04 with its PETSc/SLEPc 3.19, numpy 1.26 and scipy 1.11 packages, so
+  `bin/` must not need newer ones; pushes that change only docs or `.md` files are skipped). It runs the smooth Sun
+  example with m 1, N 32, lmax 16 on 2 ranks, and a rigid rotation offset ('rigid', 0.1): its spin-over is exact, λ = i
+  (found to 1e-16; a 1 % error in the rotation terms or in the ν′ or (ln ρ₀)′ terms of the toroidal viscous force moves
+  it by 1e-6 to 1e-3). conductive_IC has its own tests and workflow: do not run one branch's tests on the other.
 
 ## 12. Known issues and gotchas
 
@@ -323,9 +329,8 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
 - `params_default` says `rpower_pp`, `rhopower_pp` are unused, but `utils4pp.setup_grid` uses them as the enstrophy
   weight `const0`.
 - `utils4pp` calls `mp.set_start_method('fork')` at import (needed on macOS).
-- Stale upstream leftovers: `tools/submit4.sh` calls the removed `postprocess.py`; `examples/spinover/` uses the old
-  parameter file with magnetic options; `.github/workflows/main.yml` targets the `variable_density` branch, so no CI
-  runs on this branch (`ci.yml` only deploys the mkdocs site from main/master); the top-level `README.md` is upstream's.
+- Stale upstream leftovers: `tools/submit4.sh` calls the removed `postprocess.py`; `ci.yml` only deploys the mkdocs
+  site from main/master; the top-level `README.md` is upstream's, except its test badge.
 - `rvisc`, `hvisc` are not used; they are only echoed to `params.dat`.
 
 ## 13. Recipes

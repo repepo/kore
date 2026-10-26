@@ -5,3 +5,4 @@
 *.field
 *.dat
 *__pycache__*
+.pytest_cache
