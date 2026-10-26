@@ -182,9 +182,10 @@ to aid in submitting/collecting results of a large number of runs to/from a PBS-
 
 * **Santiago Andres Triana** - *This implementation*
 * **Jeremy Rekier** - *Sparse spectral method*
-* **Antony Trinh** - *Tensor calculus*
-* **Ankit Barik** - *Convection branch, visualization*
+* **Ankit Barik** - *Convection, visualization*
 * **Fleur Seuren** - *Buoyancy*
+* **Daoud Laariara** - *Differential rotation*
+* **Antony Trinh** - *Tensor calculus (TenGSHui)*
 
 ## License
 
