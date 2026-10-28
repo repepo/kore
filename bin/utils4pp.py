@@ -1447,7 +1447,9 @@ def magnetic_worker( l ):
     Rb = ut.rcmb
     lp, lt, _ = ut.ell(par.m, par.lmax, ut.bsymm)
 
-    [ qi, si, ti ] = induction4pp(l)
+    spectral = not use_grid()   # NEW (2026-10-28): otherwise the induction and Lorentz terms come from magnetic_powers_grid
+    zero = np.zeros_like(rk, dtype=complex)
+    [ qi, si, ti ] = induction4pp(l) if spectral else [ zero, zero, zero ]
     if l in lp:
         [ [q0, q1, q2], [s0, s1, s2] ] = bfield_pol(l, 2)
         mene = 0.5*dotprod_pol(l, q0, s0, q0, s0)
@@ -1459,7 +1461,7 @@ def magnetic_worker( l ):
         mdfs = diffus_tor(l, t0, t1, t2)
         indu = dotprod_tor(l, t0, ti)
 
-    [ fq, fs, ft ] = lorentz4pp(l)
+    [ fq, fs, ft ] = lorentz4pp(l) if spectral else [ zero, zero, zero ]
     [ [vq, _, _], [vs, _, _], [vt, _, _] ] = velocity(l)
     plor = 2*( cdot_pol(l, vq, vs, fq, fs) + cdot_tor(l, vt, ft) )
 
@@ -1570,7 +1572,110 @@ def diagnose_magnetic( bsol ):
     '''
     set_bsolution(bsol)
     ll = ut.ell(par.m, par.lmax, ut.bsymm)[2]
-    return np.array([ magnetic_worker(l) for l in ll ])
+    out = np.array([ magnetic_worker(l) for l in ll ])
+    if use_grid():   # NEW (2026-10-28): toroidal B0 (or FORCE_GRID): the induction and Lorentz terms from the (r, θ) grid
+        indu, plor = magnetic_powers_grid()
+        out[0, 2] += indu; out[0, 3] += plor.real; out[0, 4] += plor.imag
+    return out
+
+
+
+# NEW (2026-10-28): True (or the environment variable KORE_MAG_GRID=1): magnetic_powers_grid also for a poloidal B0 alone, a
+# cross-check of the spectral formulas lorentz4pp, induction4pp (tests/magnetic)
+import os
+FORCE_GRID = os.environ.get('KORE_MAG_GRID', '0') == '1'
+
+def use_grid():
+    return FORCE_GRID or par.B0_tor is not None
+
+
+def magnetic_powers_grid():
+    '''
+    NEW (2026-10-28): the induction work Indu = 2 Re ∫ 𝐛*⋅∇×(𝐮×𝐁₀) dV and the complex power of the Lorentz force
+    2 ∫ 𝐮*⋅[(∇×𝐛)×𝐁₀ + (∇×𝐁₀)×𝐛] dV (no Hendrik), for any B0 (poloidal and/or toroidal, background_field), computed on an
+    (r, θ) grid from the vector fields: u (with its (ln ρ0)' part), b and ∇×b synthesised from their l-components
+    (velocity, bfield_pol/tor, curl) on Schmidt harmonics (angular.ylm_grid), B0 and ∇×B0 from h, k. Independent of
+    lorentz4pp, induction4pp and of the operators. The induction work uses ∫ 𝐛*⋅∇×𝐄 = ∫ 𝐄⋅(∇×𝐛)* dV + [∮ (𝐄×𝐛*)⋅r̂ dS] at the
+    walls, 𝐄 = 𝐮×𝐁₀, so it holds whatever the walls (𝐄 = 0 there with no-slip). Needs setup_grid, set_solution, set_bsolution.
+    '''
+    m = par.m
+    lmx = par.lmax + 1
+    xg, wx = np.polynomial.legendre.leggauss(lmx + 12)
+    sg = np.sqrt(1 - xg**2)
+    Yg, dYg, Zg = angular.ylm_grid(m, lmx, xg)       # Y_l, ∂θY_l, i m Y_l/sinθ at the nodes, rows l
+    Y0, dY0, _ = angular.ylm_grid(0, 3, xg)          # m = 0, for B0
+    lp_u, lt_u, _ = ut.ell(m, par.lmax, par.symm)
+    lp_b, lt_b, ll = ut.ell(m, par.lmax, ut.bsymm)
+
+    def synth(qs):   # {l: (q, s, t)} at the radii -> (F_r, F_θ, F_φ) on the (r, x) grid: F = q Y r̂ + s r∇Y + t r∇Y×r̂
+        Fr = Ft = Fp = 0
+        for l, (q, s, t) in qs.items():
+            Fr = Fr + np.outer(q, Yg[l]); Ft = Ft + np.outer(s, dYg[l]) + np.outer(t, Zg[l]); Fp = Fp + np.outer(s, Zg[l]) - np.outer(t, dYg[l])
+        return Fr, Ft, Fp
+
+    z = np.zeros_like(rk, dtype=complex)
+    U, B, J = {}, {}, {}
+    for l in ll:
+        if l in lp_u:
+            [ [q], [s] ] = cheb2space_pol(l, lp_u, utab[0], 0, rk); U[l] = (q, s, z)
+        elif l in lt_u:
+            [ t ] = cheb2space_tor(l, lt_u, utab[1], 0, rk); U[l] = (z, z, t)
+        if l in lp_b:
+            [ [q, q1], [s, s1] ] = bfield_pol(l, 1); B[l] = (q, s, z)
+            [ cr, cc, ct ] = curl(l, [q, q1], [s, s1], [z, z]); J[l] = (cr[0], cc[0], ct[0])
+        elif l in lt_b:
+            [ t, t1 ] = bfield_tor(l, 1); B[l] = (z, z, t)
+            [ cr, cc, ct ] = curl(l, [z, z], [z, z], [t, t1]); J[l] = (cr[0], cc[0], ct[0])
+    u, b, j = synth(U), synth(B), synth(J)
+
+    def background(rr):   # B0 and ∇×B0 at the radii rr: lists of (r, θ, φ) components on (rr, x)
+        Bv = [0*np.outer(rr, xg)]*3; Jv = [0*np.outer(rr, xg)]*3
+        if par.B0 is not None:     # cnorm ∇×∇×(h Y_n 𝐫): B_r = L h Y/r, B_θ = (h' + h/r) ∂θY; ∇×B0 = -∇×((D h) Y 𝐫) = (D h) ∂θY φ̂
+            n = bf.B0_l; L0 = n*(n + 1.); hh = [ bf.bpoX(rr, d) for d in (0, 1, 2) ]
+            Dh = hh[2] + 2*hh[1]/rr - L0*hh[0]/rr**2
+            Bv = [ np.outer(L0*hh[0]/rr, Y0[n]), np.outer(hh[1] + hh[0]/rr, dY0[n]), Bv[2] ]
+            Jv = [ Jv[0], Jv[1], np.outer(Dh, dY0[n]) ]
+        if par.B0_tor is not None:  # cnorm_tor ∇×(k Y_n 𝐫): B_φ = -k ∂θY; ∇×B0 = ∇×∇×(k Y 𝐫): r L k Y/r, θ (k' + k/r) ∂θY
+            n = par.B0_tor_l; L0 = n*(n + 1.); kk = [ bf.btoX(rr, d) for d in (0, 1) ]
+            Bv = [ Bv[0], Bv[1], Bv[2] - np.outer(kk[0], dY0[n]) ]
+            Jv = [ Jv[0] + np.outer(L0*kk[0]/rr, Y0[n]), Jv[1] + np.outer(kk[1] + kk[0]/rr, dY0[n]), Jv[2] ]
+        return Bv, Jv
+
+    def cross(a, c):
+        return [ a[1]*c[2] - a[2]*c[1], a[2]*c[0] - a[0]*c[2], a[0]*c[1] - a[1]*c[0] ]
+    def vol(f):   # ∫ f dV, f on (rk, x), the e^{imφ} factors already combined (2π)
+        return 2*np.pi*np.sum((wk*rk**2)[:, None]*wx[None, :]*f)*(ut.rcmb - par.ricb)/2
+
+    B0v, J0v = background(rk)
+    G = [ a + c for a, c in zip(cross(j, B0v), cross(J0v, b)) ]
+    plor = 2*vol(sum(np.conj(uc)*gc for uc, gc in zip(u, G)))
+    E = cross(u, B0v)
+    indu = 2*np.real(vol(sum(ec*np.conj(jc) for ec, jc in zip(E, j))))
+    # wall terms 2 Re ∮ (E x b*).r̂ dS, from u and b at the walls (zero for no-slip walls, where u = 0)
+    rw = np.array([par.ricb, ut.rcmb])
+    lh = rap.logrhoX(rw, 1)
+    Ut = [ cheb2space_table(usol2[0], 1, rw), cheb2space_table(usol2[1], 0, rw) ]
+    Bt = [ cheb2space_table(bsol2[0], 1, rw), cheb2space_table(bsol2[1], 0, rw) ]
+    Uw, Bw = {}, {}
+    zw = np.zeros(2, dtype=complex)
+    for l in ll:
+        L = l*(l + 1.)
+        if l in lp_u:
+            k_ = list(lp_u).index(l); P0, P1 = Ut[0][0, k_], Ut[0][1, k_]
+            Uw[l] = (L*P0/rw, P1 + P0/rw + lh*P0, zw)
+        elif l in lt_u:
+            Uw[l] = (zw, zw, Ut[1][0, list(lt_u).index(l)])
+        if l in lp_b:
+            k_ = list(lp_b).index(l); F0, F1 = Bt[0][0, k_], Bt[0][1, k_]
+            Bw[l] = (L*F0/rw, F1 + F0/rw, zw)
+        elif l in lt_b:
+            Bw[l] = (zw, zw, Bt[1][0, list(lt_b).index(l)])
+    uw, bw = synth(Uw), synth(Bw)
+    Ew = cross(uw, background(rw)[0])
+    flux = (Ew[1]*np.conj(bw[2]) - Ew[2]*np.conj(bw[1]))          # (E x b*).r̂
+    walls = 2*np.pi*np.sum(wx[None, :]*flux*(rw**2)[:, None], axis=1)
+    indu += 2*np.real(walls[1] - walls[0])
+    return indu, plor
 
 
 

@@ -26,8 +26,8 @@ import numpy as np
 import sympy as sy
 
 r, th = sy.symbols('r theta', positive=True)
-FUN = {k: sy.Function(k)(r) for k in ('P', 'T', 'F', 'G', 'h', 'lr')}   # lr = ln ρ0
-P, T, F, G, h, lr = (FUN[k] for k in ('P', 'T', 'F', 'G', 'h', 'lr'))
+FUN = {k: sy.Function(k)(r) for k in ('P', 'T', 'F', 'G', 'h', 'lr', 'k')}   # lr = ln ρ0; k: toroidal B0
+P, T, F, G, h, lr, kt = (FUN[k] for k in ('P', 'T', 'F', 'G', 'h', 'lr', 'k'))
 
 
 def Y(l, m):
@@ -73,8 +73,13 @@ def bfield(l, m, part):
         return curl(curl(radial(F, y), m), m)
     return curl(radial(G, y), m)
 
+B0_KIND = ('pol', 1)   # NEW (2026-10-28): ('pol', n): ∇×∇×(h Y_n⁰ 𝐫); ('tor', n): ∇×(k Y_n⁰ 𝐫); set by rows(..., b0=)
+
 def B0():
-    return curl(curl(radial(h, sy.cos(th)), 0), 0)
+    kind, n = B0_KIND
+    if kind == 'pol':
+        return curl(curl(radial(h, Y(n, 0)), 0), 0)
+    return curl(radial(kt, Y(n, 0)), 0)
 
 
 def lorentz(b, m):
@@ -115,14 +120,18 @@ def project(expr, lrow, m):
             f = sy.lambdify(th, ck, 'numpy')
             vals = np.broadcast_to(np.asarray(f(THQ), dtype=complex), THQ.shape)
             val = 2*np.pi*np.sum(WQ*vals*np.conj(yr)*np.sin(THQ))/norm  # ∫dΩ (φ part: 2π) / ∫|Y|²dΩ
-            if abs(val) > 1e-12:
-                key = (tuple(sorted((NAMES[g], p) for g, p in zip(gens, monom) if p)), k - 12)
-                out[key] = out.get(key, 0) + val
-    return out
+            mag = 2*np.pi*np.sum(WQ*np.abs(vals*yr)*np.sin(THQ))/norm  # the same of the absolute value: the cancellation scale
+            key = (tuple(sorted((NAMES[g], p) for g, p in zip(gens, monom) if p)), k - 12)
+            v0, m0 = out.get(key, (0, 0))
+            out[key] = (v0 + val, m0 + mag)
+    return {key: v for key, (v, mag) in out.items() if abs(v) > max(1e-11*mag, 1e-13)}   # drop what cancels to round-off
 
 
-def rows(kind, part, lcol, lrow, m):
-    '''the projected row (dict) of: kind 'lorentz' rows 'u'/'v' with b part 'F'/'G'; kind 'induction' rows 'f'/'g' with u part'''
+def rows(kind, part, lcol, lrow, m, b0=('pol', 1)):
+    '''the projected row (dict) of: kind 'lorentz' rows 'u'/'v' with b part 'F'/'G'; kind 'induction' rows 'f'/'g' with u part;
+    b0 = ('pol', n) or ('tor', n): the background field (poloidal h or toroidal k, degree n)'''
+    global B0_KIND
+    B0_KIND = b0
     if kind in ('u', 'v'):
         Gv = lorentz(bfield(lcol, m, part), m)
         rho = sy.exp(lr)

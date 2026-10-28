@@ -8,6 +8,12 @@ B0_r = cnorm l(l+1) h Y_l0/r and ∇×B0 = cnorm (D_l h) ∂θY_l0 φ̂, D_l h =
     'FDM'    the poloidal free decay mode of degree l = B0_l of the shell (Zhang & Fearn, GAFD 1995, eq. 2.7):
              h = j_l(βr) y_{l-1}(β) - j_{l-1}(β) y_l(βr), β the root of findbeta near par.beta. It matches a potential
              field at both walls, so it suits insulating walls.
+NEW (2026-10-28): a toroidal field B0_tor = cnorm_tor ∇×(k(r) Y_n0 𝐫), B_φ = -cnorm_tor k ∂θY_n0, n = B0_tor_l, alone (B0 = None)
+or added to the poloidal one (same equatorial symmetry only):
+    'Malkus' k = r (n = 1): B0 = cnorm_tor s φ̂ (Malkus 1967), J0 = ∇×B0 = 2 cnorm_tor ẑ.
+    'wall'   k = r (r - ricb)(1 - r)/(1 - ricb)² (n = 1): zero at both walls.
+    'user'   k = B0_tor_profile, a numpy expression of r and p = B0_tor_param (its derivatives from a Chebyshev interpolant).
+Equatorial symmetry: a poloidal field of degree n has (-1)^n, a toroidal one (-1)^(n+1) (B_φ ∝ sinθ is symmetric for n = 1).
 Only parameters, numpy and scipy are imported: utils.py and radial_profiles.py import this module.
 '''
 import numpy as np
@@ -16,6 +22,7 @@ import scipy.optimize as so
 from parameters import par
 
 B0_TYPES = ('axial', 'FDM')   # as written to params.dat: the index here (append new types at the end)
+B0_TOR_TYPES = ('Malkus', 'wall', 'user')   # NEW (2026-10-28): toroidal B0, as written to params.dat
 
 if par.B0 == 'FDM':
     B0_l   = par.B0_l
@@ -23,6 +30,10 @@ if par.B0 == 'FDM':
 else:  # 'axial' (and any name that background.check() stops on)
     B0_l   = 1
     symmB0 = -1
+symm_pol = symmB0 if par.B0 is not None else None                                       # NEW (2026-10-28)
+symm_tor = int((-1)**(par.B0_tor_l + 1)) if par.B0_tor is not None else None             # of the toroidal B0
+if par.B0 is None and symm_tor is not None:
+    symmB0 = symm_tor   # (with both fields background.check_magnetic() requires symm_pol = symm_tor)
 
 
 
@@ -129,5 +140,56 @@ cnorm = B0_norm() if (par.magnetic and par.B0 in B0_TYPES and par.ricb > 0) else
 
 
 def bpoX(r, Dorder):
-    '''profile code 'bpo' (radial_profiles.proffdir): cnorm h^(Dorder)(r), Dorder = 0..3'''
+    '''profile code 'bpo' (radial_profiles.proffdir): cnorm h^(Dorder)(r), Dorder = 0..3 (zero without a poloidal B0)'''
+    if par.B0 is None:   # NEW (2026-10-28): a toroidal B0 alone
+        return np.zeros_like(np.asarray(r, dtype=float))
     return cnorm*h(r, Dorder)
+
+
+
+# ---------------------------------------------------------------------------- NEW (2026-10-28): toroidal background field
+
+USER_NS = { name: getattr(np, name) for name in ('sin', 'cos', 'tan', 'exp', 'log', 'sqrt', 'abs', 'tanh', 'sinh', 'cosh',
+                                                  'arctan', 'where', 'pi') }
+USER_NS['erf'] = scsp.erf
+_kuser = None
+
+def k_user():
+    '''the Chebyshev interpolant (degree max(64, 2N) on [ricb, 1]) of the 'user' expression B0_tor_profile'''
+    global _kuser
+    if _kuser is None:
+        code = compile(par.B0_tor_profile, '<B0_tor_profile>', 'eval')
+        f = lambda r: np.broadcast_to(np.asarray(eval(code, {'__builtins__': {}}, dict(USER_NS, r=r, p=par.B0_tor_param)), dtype=float), np.shape(r))
+        _kuser = np.polynomial.chebyshev.Chebyshev.interpolate(f, max(64, 2*par.N), domain=[par.ricb, 1.])
+    return _kuser
+
+
+def k(r, d):
+    '''the d-th r-derivative (d = 0..3) of the radial function k(r) of the toroidal B0 (without cnorm_tor)'''
+    r = np.asarray(r, dtype=float)
+    if par.B0_tor == 'user':
+        return k_user().deriv(d)(r) if d > 0 else k_user()(r)
+    if par.B0_tor == 'Malkus':
+        return [ r, np.ones_like(r), np.zeros_like(r), np.zeros_like(r) ][d]
+    # 'wall': r (r - ri)(1 - r)/(1 - ri)² = (-r³ + (1 + ri) r² - ri r)/(1 - ri)²
+    ri = par.ricb; c = 1/(1 - ri)**2
+    return c*[ -r**3 + (1 + ri)*r**2 - ri*r, -3*r**2 + 2*(1 + ri)*r - ri, -6*r + 2*(1 + ri), -6*np.ones_like(r) ][d]
+
+
+def B0_tor_norm():
+    '''cnorm_tor as a number: ∫ B0_tor² dV over the shell = n_l L ∫ k² r² dr, n_l = 4π/(2l+1), L = l(l+1)'''
+    if par.cnorm_tor in ('mag_energy', 'Schmitt2012'):
+        n = par.B0_tor_l
+        xk, wk = np.polynomial.legendre.leggauss(240)
+        rk = 0.5*(1 - par.ricb)*(xk + 1) + par.ricb
+        integ = 4*np.pi/(2*n + 1)*n*(n + 1)*0.5*(1 - par.ricb)*np.sum(wk*k(rk, 0)**2*rk**2)
+        return (1 if par.cnorm_tor == 'mag_energy' else 2)/np.sqrt(integ)
+    return float(par.cnorm_tor)
+
+
+cnorm_tor = B0_tor_norm() if (par.magnetic and par.B0_tor in B0_TOR_TYPES and par.ricb > 0) else 0.0
+
+
+def btoX(r, Dorder):
+    '''profile code 'bto' (radial_profiles.proffdir): cnorm_tor k^(Dorder)(r), Dorder = 0..3'''
+    return cnorm_tor*k(r, Dorder)

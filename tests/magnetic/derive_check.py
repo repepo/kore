@@ -5,8 +5,10 @@ derive_check.py: derive.py's rows against closed forms (needs sympy; about 3 min
      (-1, the A-matrix sign; every row of kore is the conductive_IC row over L³ besides);
   2. the (ln ρ0)' terms: the closed forms implemented in bin/operators.py (rows f: d/dr -> d/dr + λ1 on P; rows g: the
      diagonal term 2im[r h λ1 P' + r h λ2 P + (1 - L/2) r h' λ1 P - (L/2) h λ1 P]; rows u: λ1 r⁴ (∇₁⋅𝐆_H)_l, operators.lorentz_rho);
-  3. no (ln ρ0)' terms in the rows v and in the T columns.
-Degrees l = 3..6, m = 0..3 (about 12 minutes). Exit 1 on a mismatch.
+  3. no (ln ρ0)' terms in the rows v and in the T columns;
+  4. the toroidal B0 of degrees 1 and 2 (NEW 2026-10-28): derive.rows(b0=('tor', n)), any ρ0, against operators.induction_tor,
+     lorentz_tor (n = 1) and induction_tor2, lorentz_tor2 (n = 2) (their rows times -L³/r^p; Hendrik apart), and no couplings beyond those.
+Degrees l = 3..6, m = 0..3 (about 40 minutes on one core). Exit 1 on a mismatch.
 '''
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -122,6 +124,67 @@ for (row, part, p) in [('f','P',3), ('g','P',3), ('u','F',5), ('u','G',5)]:
                 BAD.append('missing lambda terms'); print('%s row l=%d m=%d %s col l%+d: no lambda terms, expected some' % (row, l, m, part, dl)); continue
             compare(sym, d.as_dict(cand/r**p), '%s row l=%d m=%d, %s col l%+d (lambda terms)' % (row, l, m, part, dl))
 
+
+# ------------------------------------------------------------------ 4. NEW (2026-10-28): toroidal B0 of degree 1
+# the closed forms of operators.induction_tor and lorentz_tor (times -L^3/r^p, and without Hendrik), against derive.rows(b0=('tor', 1))
+k0, k1, k2 = sy.symbols('k0 k1 k2')
+def tor_form(row, part, l, m, dl):
+    L = l*(l+1); Cm = sy.sqrt(l**2 - m**2)/(2*l - 1); Cp = sy.sqrt((l+1)**2 - m**2)/(2*l + 3); I = sy.I
+    if (row, part, dl) == ('f', 'P', 0):  return -I*m*L*r*k0*P0
+    if (row, part, dl) == ('g', 'P', -1): return -Cm*l*(l-1)*(l+1)*(k0*P0 + r*k0*lr1*P0 - r*k1*P0)
+    if (row, part, dl) == ('g', 'P', 1):  return Cp*l*(l+1)*(l+2)*(k0*P0 + r*k0*lr1*P0 - r*k1*P0)
+    if (row, part, dl) == ('g', 'T', 0):  return -I*m*L*r*k0*T0
+    if (row, part, dl) == ('u', 'F', 0):
+        return -I*m*((L**2 - 2*L - 2)*r*k0*F0 - (L+2)*r**2*k0*lr1*F0 + 2*r**2*k1*F0 - 2*(L-1)*r**2*k0*F1 - L*r**3*k1*lr1*F0
+                     + L*r**3*k2*F0 - 2*r**3*k0*lr1*F1 + 2*r**3*k1*F1 - (L-2)*r**3*k0*F2)
+    if (row, part, dl) == ('u', 'G', -1):
+        return -Cm*(2*l*(l**2-1)*r**2*k0*G0 + (l**2-1)*(l+2)*r**3*k0*lr1*G0 - 2*(l**2-1)*r**3*k1*G0 - 2*(l**2-1)*r**3*k0*G1)
+    if (row, part, dl) == ('u', 'G', 1):
+        return Cp*(2*l*(l+1)*(l+2)*r**2*k0*G0 + l*(l-1)*(l+2)*r**3*k0*lr1*G0 + 2*l*(l+2)*r**3*k1*G0 + 2*l*(l+2)*r**3*k0*G1)
+    if (row, part, dl) == ('v', 'F', -1): return -Cm*((l-2)*(l**2-1)*k0*F0 + l*(l**2-1)*r*k1*F0 - 2*(l**2-1)*r*k0*F1)
+    if (row, part, dl) == ('v', 'F', 1):  return Cp*(l*(l+2)*(l+3)*k0*F0 + l*(l+1)*(l+2)*r*k1*F0 + 2*l*(l+2)*r*k0*F1)
+    if (row, part, dl) == ('v', 'G', 0):  return -I*m*(L-2)*r*k0*G0
+    return 0
+def quad(l, m, dl):
+    return {0: sy.Rational(1, (2*l - 1)*(2*l + 3)), -1: sy.I*m*sy.sqrt(l**2 - m**2)/(2*l - 1), 1: sy.I*m*sy.sqrt((l+1)**2 - m**2)/(2*l + 3),
+            -2: sy.sqrt((l**2 - m**2)*((l-1)**2 - m**2))/((2*l - 1)*(2*l - 3)), 2: sy.sqrt(((l+1)**2 - m**2)*((l+2)**2 - m**2))/((2*l + 3)*(2*l + 5))}[dl]
+def tor2_form(row, part, l, m, dl):   # operators.induction_tor2, lorentz_tor2 (times -L^3, without Hendrik), labels as r-power monomials
+    L = l*(l+1); A = quad(l, m, dl) if abs(dl) <= 2 else 0; Q = L - 3*m**2
+    g0 = k0*P0 + r*k0*lr1*P0
+    if (row, part) == ('f', 'P') and dl in (-1, 1): return -A*3*(l*(l-1) if dl == -1 else (l+1)*(l+2))*r*k0*P0
+    if (row, part) == ('g', 'P'):
+        if dl == -2: return -A*(3*l*(l-2)*(l+1)*g0 - 3*(l-2)*(l-1)*(l+1)*r*k1*P0 + 3*(l-2)*(l+1)*r*k0*P1)
+        if dl == 0:  return -A*Q*(-3*L*g0 - 3*L*r*k1*P0 - 6*L*r*k0*P1)
+        if dl == 2:  return -A*(-3*l*(l+1)*(l+3)*g0 + 3*l*(l+2)*(l+3)*r*k1*P0 + 3*l*(l+3)*r*k0*P1)
+    if (row, part) == ('g', 'T') and dl in (-1, 1): return -A*3*L*r*k0*T0
+    if (row, part) == ('u', 'F') and dl in (-1, 1):
+        c = ([3*(l**4 - 3*l**2 - 6), -3*(l**2 - l + 6), -6*(l-3), -3*l*(l-1), 3*l*(l-1), -6*(l-1)*(l+3), -18, -6*(l-3), -3*(l-2)*(l+3)] if dl == -1 else
+             [3*(l**4 + 4*l**3 + 3*l**2 - 2*l - 8), -3*(l**2 + 3*l + 8), 6*(l+4), -3*(l+1)*(l+2), 3*(l+1)*(l+2), -6*(l-2)*(l+2), -18, 6*(l+4), -3*(l-2)*(l+3)])
+        mono = [r*k0*F0, r**2*k0*lr1*F0, r**2*k1*F0, r**3*k1*lr1*F0, r**3*k2*F0, r**2*k0*F1, r**3*k0*lr1*F1, r**3*k1*F1, r**3*k0*F2]
+        return -A*sum(ci*mi for ci, mi in zip(c, mono))
+    if (row, part) == ('u', 'G') and dl in (-2, 0, 2):
+        c = {-2: [6*l*(l-2)*(l+1), 3*(l-2)*(l+1)*(l+2), -6*(l-2)*(l+1), -6*(l-2)*(l+1)], 0: [-6*L*Q, 9*(L-2)*Q, -6*(2*L-3)*Q, -6*(2*L-3)*Q],
+             2: [-6*l*(l+1)*(l+3), -3*l*(l-1)*(l+3), -6*l*(l+3), -6*l*(l+3)]}[dl]
+        mono = [r**2*k0*G0, r**3*k0*lr1*G0, r**3*k1*G0, r**3*k0*G1]
+        return -A*sum(ci*mi for ci, mi in zip(c, mono))
+    if (row, part) == ('v', 'F') and dl in (-2, 0, 2):
+        c = {-2: [3*(l-4)*(l-2)*(l+1), 3*(l-2)*(l-1)*(l+1), -9*(l-2)*(l+1)], 0: [-3*(L-6)*Q, 3*L*Q, -6*(L-3)*Q],
+             2: [-3*l*(l+3)*(l+5), -3*l*(l+2)*(l+3), -9*l*(l+3)]}[dl]
+        return -A*(c[0]*k0*F0 + c[1]*r*k1*F0 + c[2]*r*k0*F1)
+    if (row, part) == ('v', 'G') and dl in (-1, 1): return -A*3*((l-3)*(l+2) if dl == -1 else (l-1)*(l+4))*r*k0*G0
+    return 0
+for n, form, dls in ((1, tor_form, (-1, 0, 1)), (2, tor2_form, (-2, -1, 0, 1, 2))):
+  for (row, part, p) in [('f','P',3), ('f','T',3), ('g','P',3), ('g','T',3), ('u','F',5), ('u','G',5), ('v','F',3), ('v','G',3)]:
+    for l, m in [(3,1), (4,2), (5,0), (6,3)]:
+        for dl in dls:
+            lc = l + dl
+            if lc < max(m, 1): continue
+            sym = d.rows(row, part, lc, l, m, b0=('tor', n))
+            cand = sy.expand(form(row, part, l, m, dl))
+            if cand == 0:
+                if sym: BAD.append('toroidal: unexpected terms'); print('toroidal n=%d %s row l=%d m=%d %s col l%+d: terms present, none expected' % (n, row, l, m, part, dl))
+                continue
+            compare(sym, d.as_dict(cand/r**p), 'toroidal B0 n=%d: %s row l=%d m=%d, %s col l%+d' % (n, row, l, m, part, dl))
 
 # ------------------------------------------------------------------ 3. none in the rows v and the T columns
 for row, part in [('v','F'),('v','G'),('f','T'),('g','T')]:

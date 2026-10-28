@@ -2,7 +2,7 @@
 
 Companion of `docs/magnetic.md`, for the magnetic terms with a variable density (step 3 of the port from conductive_IC,
 2026-10-28). `run_all.sh [WORKDIR]` builds the runs it needs under `tests/magnetic/runs/` and prints one verdict per check
-(about 25 minutes on 2 ranks, half of it derive_check.py; the solves need petsc4py and slepc4py, see the note on slepc4py 3.26 below).
+(about 60 minutes, two thirds of it derive_check.py, which `SKIP_DERIVE=1 run_all.sh` skips; the solves need petsc4py and slepc4py, see the note on slepc4py 3.26 below).
 
 | script | what it checks |
 | --- | --- |
@@ -12,6 +12,7 @@ Companion of `docs/magnetic.md`, for the magnetic terms with a variable density 
 | `row_check.py [lmax] [tol]` | every magnetic row block of the run, applied to random fields and read on an r grid in its Gegenbauer basis, against derive.py evaluated with the run's own profiles; unweighted, so it sees the rows near the wall. 'Wu 2005' with r_out 0.99 needs N 192 for 1e-14 (1e-7 at N 96: the series of (ln ρ0)' converge slowly, its pole is at r = 1/r_out) |
 | `bin/ru_insane.py` | with magnetic = 1 also: the b block Hermitian positive and the diffusion Hermitian negative under the radial pairing, and for B0 'axial' with no-slip walls the energy identity ∫ρ0 u*⋅𝐅_L dV = -Hendrik conj(∫b*⋅∇×(u×B0) dV), which ties the (ln ρ0)' terms of the Lorentz rows to those of the induction rows (switching off one of them gives 2e-3 to 0.2) |
 | `budget_check.py [tol]` | after spin_doctor: residσ, residω, resid𝐛, resid𝐄 of every solution below tol (1e-8): the budgets use utils4pp's own formulas for the Lorentz force and the induction |
+| `malkus_check.py [Ek] [N] [lmax]` | the Malkus field B0 = Le s φ̂ against Malkus (1967): the frequency shift of inertial modes is Le² m(m - λ)/λ in the ideal limit; checks that it is quadratic in Le and, for the least damped m = 1 mode near 0.75i, within 10 % at Ek = Em = 1e-5 (0.4-1 % at 1e-6) |
 | `continuity.py [eps ...]` | 'Wu 2005' with r_out = sqrt(eps) (stratification O(eps)) against 'uniform': (λ - λ_uniform)/eps must tend to a constant |
 
 Results of 2026-10-28 are in `docs/magnetic.md` (Checks). `derive.py` was used to derive, not only to check, the anelastic

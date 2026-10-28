@@ -59,7 +59,9 @@ def derivs(c, n=5):
         out.append(ch.chebval(x, d)); d = ch.chebder(d)*dx
     return out
 
-prof = {'h': [bf.bpoX(r, k) for k in range(4)], 'lr': [rap.logrhoX(r, k) for k in range(4)]}
+prof = {'h': [bf.bpoX(r, k) for k in range(4)], 'lr': [rap.logrhoX(r, k) for k in range(4)],
+        'k': [bf.btoX(r, k) for k in range(4)]}   # NEW (2026-10-28): the toroidal B0 (zero without it)
+B0S = ([('pol', 1)] if par.B0 is not None else []) + ([('tor', par.B0_tor_l)] if par.B0_tor is not None else [])
 
 def evaluate(dct, fun):
     tot = np.zeros_like(r, dtype=complex)
@@ -71,10 +73,11 @@ def evaluate(dct, fun):
     return tot
 
 worst = 0.
-for sec, kind_cols in (('f', (('upol', 'P', lp, (-1, 1)), ('utor', 'T', lt, (0,)))),
-                       ('g', (('upol', 'P', lp, (0,)), ('utor', 'T', lt, (-1, 1)))),
-                       ('u', (('bpol', 'F', lf, (-1, 1)), ('btor', 'G', lg, (0,)))),
-                       ('v', (('bpol', 'F', lf, (0,)), ('btor', 'G', lg, (-1, 1))))):
+D3 = (-1, 0, 1)
+for sec, kind_cols in (('f', (('upol', 'P', lp, D3), ('utor', 'T', lt, D3))),
+                       ('g', (('upol', 'P', lp, D3), ('utor', 'T', lt, D3))),
+                       ('u', (('bpol', 'F', lf, D3), ('btor', 'G', lg, D3))),
+                       ('v', (('bpol', 'F', lf, D3), ('btor', 'G', lg, D3)))):
     lrows = {'f': lf, 'g': lg, 'u': lp, 'v': lt}[sec]
     for l in [l for l in lrows if l <= lmc]:
         L = l*(l + 1.)
@@ -85,9 +88,15 @@ for sec, kind_cols in (('f', (('upol', 'P', lp, (-1, 1)), ('utor', 'T', lt, (0,)
                     continue
                 fn = op.lorentz if sec in 'uv' else op.induction
                 mtx, offd = fn(l, sec, comp, i)
+                dct = {}
+                for b0 in B0S:   # the poloidal and the toroidal B0 (their monomials, in h or k, are distinct)
+                    dct.update(derive.rows(sec, part, lc, l, m, b0=b0))
+                if np.isscalar(mtx):   # no coupling in kore: there must be none in the derivation either
+                    if dct:
+                        worst = 1.; print('row %s l=%2d  column %s l=%2d: derived terms but no kore block  <-- FAIL' % (sec, l, part, lc))
+                    continue
                 c = rand_coef()
                 kore = row_vals((mtx @ c[:N1]).astype(complex), sec)
-                dct = derive.rows(sec, part, lc, l, m)
                 scale = -(par.Hendrik if sec in 'uv' else 1.)*r**(5 if sec == 'u' else 3)/L**3
                 ref = scale*evaluate(dct, derivs(c))
                 big = np.max(np.abs(ref))
@@ -97,5 +106,5 @@ for sec, kind_cols in (('f', (('upol', 'P', lp, (-1, 1)), ('utor', 'T', lt, (0,)
                     err = np.max(np.abs(kore - ref))/big
                 worst = max(worst, err)
                 print('row %s l=%2d  column %s l=%2d: %.2e %s' % (sec, l, part, lc, err, '' if err < tol else '  <-- FAIL'))
-print('row_check.py (%s, B0 %s, m %d): worst %.2e -> %s' % (par.structure, par.B0, m, worst, 'ok' if worst < tol else 'FAIL'))
+print('row_check.py (%s, B0 %s, B0_tor %s, m %d): worst %.2e -> %s' % (par.structure, par.B0, par.B0_tor, m, worst, 'ok' if worst < tol else 'FAIL'))
 sys.exit(0 if worst < tol else 1)

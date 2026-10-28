@@ -373,7 +373,7 @@ def pressX(r, Dorder):   # ρ(r)T(r)
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 proffdir = { 'lho':logrhoX, 'vsc':viscoX, 'gra':graviX, 'pss':pressX, 'pdS':pdSdrX, 'dSd':gradSX, 'kps':kappressX }
 # NEW (2026-10-28): magnetic = 1: 'eta' the magnetic diffusivity, 'bpo' cnorm h(r) of the background field (background_field.py)
-proffdir.update({ 'eta':etaX, 'bpo':bf.bpoX })
+proffdir.update({ 'eta':etaX, 'bpo':bf.bpoX, 'bto':bf.btoX })   # bto: cnorm_tor k(r), toroidal B0
 # the differential-rotation codes (zf, zd, zs, tw, tp + degree) are added by burrito from diff_rot.profile_functions()
 # -------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------

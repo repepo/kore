@@ -164,6 +164,9 @@ def param_table(elapsed):
         ( 'N_cic',                    par.N_cic,                   '%d' ),
         ( 'mu_i2o',                   par.mu_i2o,                  '%.9e' ),
         ( 'sigma_i2o',                par.sigma_i2o,               '%.9e' ),
+        ( 'B0_tor',                   bf.B0_TOR_TYPES.index(par.B0_tor) if (par.magnetic and par.B0_tor in bf.B0_TOR_TYPES) else -1, '%d' ),  # NEW (2026-10-28)
+        ( 'B0_tor_l',                 par.B0_tor_l,                '%d' ),
+        ( 'cnorm_tor',                bf.cnorm_tor,                '%.9e' ),  # as a number (0 without a toroidal field)
     ]
 
 

@@ -3,11 +3,13 @@
 With `magnetic = 1` kore adds an imposed background magnetic field $\mathbf{B}_0$, the induction equation for the
 perturbation field $\mathbf{b}$ and the Lorentz force on the flow. The operators, the background fields and the boundary
 conditions are ported from the `conductive_IC` branch (commit `39487bbf`), formula by formula, into this branch's
-conventions (2026-10-28: step 1, insulating walls; step 2, a conducting inner core; step 3, any density profile).
+conventions (2026-10-28: step 1, insulating walls; step 2, a conducting inner core; step 3, any density profile; step 4, a
+toroidal background field).
 
 **What works now:** a spherical shell (`ricb > 0`) with an insulating mantle and an insulating or conducting
 (`'conducting, Chebys'`) inner core, any `structure` (variable density, the anelastic terms below), `ViscosD > 0`,
-eigenvalue problems, $\mathbf{B}_0$ `'axial'` or `'FDM'` of degree 1, uniform magnetic diffusivity. `background.check()`
+eigenvalue problems, a poloidal $\mathbf{B}_0$ (`'axial'` or `'FDM'`, degree 1) and/or a toroidal one (`'Malkus'`, `'wall'` or `'user'`,
+degree 1 or 2), uniform magnetic diffusivity. `background.check()`
 stops on anything else.
 
 ## Equations
@@ -50,8 +52,27 @@ Both match a potential field at the walls. `cnorm` is a number, `'rms_cmb'` (rms
 `tol_B0` (default 1e-8) is the relative cut of the Chebyshev series of $r^p h^{(k)}$: it sets the band width of the
 magnetic blocks.
 
+**Toroidal field** (step 4). $\mathbf{B}_0^{tor} = c_\mathrm{tor}\nabla\times(k(r)\,Y_n^0\,\mathbf{r})$, purely azimuthal,
+$B_\phi = -c_\mathrm{tor}\,k\,\partial_\theta Y_n^0$: $c_\mathrm{tor}\,k\sin\theta$ for $n$ = `B0_tor_l` = 1, $3c_\mathrm{tor}\,k\sin\theta\cos\theta$ for
+$n = 2$; $c_\mathrm{tor}$ = `cnorm_tor` (a number, `'mag_energy'` or `'Schmitt2012'`; $\int B_0^2 dV = n_l L\int k^2 r^2 dr$):
+
+| `B0_tor` | $k(r)$ | |
+| --- | --- | --- |
+| `'Malkus'` | $r$ | $\mathbf{B}_0 = c_\mathrm{tor}\,s\,\hat{\boldsymbol\phi}$ (Malkus 1967), current $\nabla\times\mathbf{B}_0 = 2c_\mathrm{tor}\hat{\mathbf{z}}$ |
+| `'wall'` | $r(r - r_i)(1 - r)/(1 - r_i)^2$ | zero at both walls |
+| `'user'` | `B0_tor_profile`, a numpy expression of $r$ and $p$ = `B0_tor_param` | its derivatives from a Chebyshev interpolant (degree max(64, 2N)); written to `params.dat` after `#` |
+
+`B0 = None` gives a toroidal field alone; with both, they must have the same equatorial symmetry (a poloidal field of
+degree $n$ has $(-1)^n$, a toroidal one $(-1)^{n+1}$): the dipole goes with a degree-2 toroidal field, not with a degree-1 one.
+A toroidal field that does not vanish at a wall (`'Malkus'`) carries a surface current there; the linear problem is
+unaffected (the walls' conditions on $\mathbf{b}$ do not involve $\mathbf{B}_0$, and $\mathbf{u}\times\mathbf{B}_0 = 0$ on a
+no-slip wall). Inside a conducting inner core $\mathbf{B}_0$ does not enter: there is no flow there, and
+$\mathbf{u}\times\mathbf{B}_0 = 0$ at the no-slip inner boundary, so the matching conditions do not involve it either.
+
 With an equatorially antisymmetric $\mathbf{B}_0$ the field $\mathbf{b}$ has the symmetry opposite to $\mathbf{u}$
-(`ut.bsymm = symm * symmB0`): $f$ takes the degrees of the toroidal flow and $g$ those of the poloidal flow.
+(`ut.bsymm = symm * symmB0`): $f$ takes the degrees of the toroidal flow and $g$ those of the poloidal flow. A degree-1
+toroidal field is symmetric ($B_\phi\propto\sin\theta$), so $f$ then has the degrees of the poloidal flow; a degree-2 one is
+antisymmetric, like the dipole.
 
 ## Implementation
 
@@ -87,6 +108,16 @@ With an equatorially antisymmetric $\mathbf{B}_0$ the field $\mathbf{b}$ has the
   whose matrices are those of steps 1 and 2 bitwise. `tol_B0` does not cut these products (they converge slowly near the
   surface). `submatrices.py` now counts odd profiles in both slots of a label for the parity at ricb = 0 (bitwise the same for
   every existing label).
+- **Toroidal field** (step 4, `operators.induction_tor`, `lorentz_tor`; profile code `bto` = $c_\mathrm{tor} k^{(j)}$). The rows were
+  derived with `tests/magnetic/derive.py` (any $\rho_0$) and fitted in $l$: every coefficient is $im$ (same degree) or the
+  Coriolis factors $C_- = \sqrt{l^2-m^2}/(2l-1)$, $C_+ = \sqrt{(l+1)^2-m^2}/(2l+3)$ (columns $l\mp1$) times a polynomial in
+  $l$ (independent of $m$). Couplings: rows f from P at the same degree; rows g from P at $l\pm1$ (with $\lambda_1$ terms) and
+  from T at $l$; rows u from F at $l$ (with $\lambda_1$) and G at $l\pm1$ (with $\lambda_1$); rows v from F at $l\pm1$ and G
+  at $l$. Degree 2 (`induction_tor2`, `lorentz_tor2`): the quadrupole angular factors (`operators.quad_factors`, the same-degree
+  terms with $l(l+1) - 3m^2$) times polynomials in $l$, couplings up to $\Delta l = \pm2$: rows f from P at $l\pm1$; g from P at
+  $l$, $l\pm2$ and T at $l\pm1$; u from F at $l\pm1$ and G at $l$, $l\pm2$; v from F at $l$, $l\pm2$ and G at $l\pm1$.
+  `operators.lorentz` and `induction` add the poloidal and the toroidal parts (`assemble.py` loops over $\Delta l = -2..2$
+  and skips absent couplings). Column offsets: `operators.moff`.
 - **Solver and output.** `solve.py` writes `real_magnetic.field`, `imag_magnetic.field` and normalises the eigenvectors to
   $\mathrm{KE} + \mathrm{Hendrik}\int\tfrac12|\mathbf{b}|^2dV = 1$ (over the shell, as `conductive_IC`).
 
@@ -136,11 +167,15 @@ $2\sigma[\mathrm{KE} + \mathrm{Hendrik}(\mathrm{ME} + \mathrm{MEic} + \mathrm{ME
 The $1/\mu_{i2o}$ of the inner core's energy and Ohmic loss is not in `conductive_IC`'s `em_budget` (there resid𝐄 is
 $10^{-2}$ at `mu_i2o` = 2).
 
-`params.dat` gains ten columns at the end: `magnetic`, `B0` (index in `background_field.B0_TYPES`, −1 without a field),
+`params.dat` gains thirteen columns at the end: `magnetic`, `B0` (index in `background_field.B0_TYPES`, −1 without a field),
 `B0_l`, `cnorm` (as a number), `Hendrik`, `MagnetD`, `innercore` (index in `background.INNER_CORES`), `N_cic`, `mu_i2o`,
-`sigma_i2o`. spin_doctor's Lorentz force (`utils4pp.lorentz4pp`) acts per volume and its power $\int\mathbf{u}^*\cdot\mathbf{G}\,dV$
+`sigma_i2o`, and (step 4) `B0_tor` (index in `background_field.B0_TOR_TYPES`, −1 without), `B0_tor_l`, `cnorm_tor`. spin_doctor's Lorentz force (`utils4pp.lorentz4pp`) acts per volume and its power $\int\mathbf{u}^*\cdot\mathbf{G}\,dV$
 has no $\rho_0$; its induction term (`induction4pp`) takes the components of $\mathbf{u}$ with their $\lambda_1$ part, and holds
-for the non-solenoidal $\mathbf{u}$ of a variable density (resid𝐛 closes to $10^{-10}$ with 'Wu 2005', below).
+for the non-solenoidal $\mathbf{u}$ of a variable density (resid𝐛 closes to $10^{-10}$ with 'Wu 2005', below). With a
+toroidal $\mathbf{B}_0$ (or `KORE_MAG_GRID=1` in the environment) both come instead from `utils4pp.magnetic_powers_grid`,
+computed on an $(r,\theta)$ grid from the vector fields $\mathbf{u}$, $\mathbf{b}$, $\nabla\times\mathbf{b}$, $\mathbf{B}_0$,
+$\nabla\times\mathbf{B}_0$ (with the wall terms of $\int\mathbf{b}^*\cdot\nabla\times(\mathbf{u}\times\mathbf{B}_0)\,dV$); for a poloidal
+field it agrees with the spectral formulas to the 10 printed digits.
 
 ## Checks (2026-10-28)
 
@@ -210,8 +245,35 @@ Everything in `tests/magnetic/` (`run_all.sh`):
   Ek $10^{-3}$, N 96): $(\lambda - \lambda_\mathrm{uniform})/\epsilon$ = 0.05186 − 0.00053i, 0.05188, 0.05215, 0.05498 for
   $\epsilon = 10^{-4}, 10^{-3}, 10^{-2}, 10^{-1}$: the eigenvalue moves linearly with the stratification.
 
+### Toroidal field (2026-10-28)
+
+- **Derivation.** The closed forms equal derive.py's rows ($b_0$ = ('tor', 1) and ('tor', 2), any $\rho_0$) for l 3–6, m 0–3
+  (`derive_check.py`); every coefficient fitted from l 2–9, m 0–3 (n = 1) and l 3–9 (n = 2), exactly.
+- **Earlier cases unchanged.** The 13 cases of steps 1 and 2 and three 'Wu 2005' cases of step 3 give A and B bitwise
+  equal to the code before this step.
+- **Row checks** ('Wu 2005', N 192): 'Malkus' m 1 to $10^{-14}$; 'wall' m 0, 2 to $2\cdot10^{-10}$, in the u-row blocks with
+  $k\lambda_1$ only (they vanish at the wall, where $\lambda_1$ is large, so the relative error of the near-wall $\lambda_1$
+  series shows; it does not decrease with N).
+- **Energy budgets.** 'Malkus' and 'wall', 'uniform' (N 68, 96) and 'Wu 2005' (N 128, 192), insulating and conducting
+  inner core, m 0 and 1, Ek = Em = $10^{-3}$, $\mathrm{Le}^2 = 10^{-3}$, `cnorm_tor = 'mag_energy'`: residσ, resid𝐛, resid𝐄
+  $\le 6\cdot10^{-13}$, eigenvalues the same at both N to the printed digits. Unlike a poloidal field (Variable density,
+  above), the toroidal one has no radial component, hence no Hartmann layer at the walls, and 'Wu 2005' converges fast.
+- **Degree 2 and combined fields.** 'Malkus' and 'wall' with `B0_tor_l = 2`, 'uniform' (N 68, 96) and 'Wu 2005' (N 128, 192),
+  conducting inner core, m 0 and 1: residuals $\le 10^{-11}$, eigenvalues the same at both N to the printed digits. FDM plus
+  a degree-2 'wall' field ('Wu 2005'): residuals $2\cdot10^{-10}$ at N 192 (the poloidal field's Hartmann layer sets the
+  resolution); row check of 'axial' plus a degree-2 'Malkus' field, m 2: $10^{-14}$. A 'user' profile `'r'` gives the
+  'Malkus' eigenvalues to $10^{-12}$.
+- **Malkus (1967).** With $\mathbf{B}_0 = \mathrm{Le}\,s\hat{\boldsymbol\phi}$ the induction is $im\,\mathrm{Le}\,\mathbf{u}$ and the
+  Lorentz force $(im\,\mathrm{Le}^2/\lambda)(im\mathbf{u} + 2\hat{\mathbf{z}}\times\mathbf{u})$ up to a gradient, so the ideal
+  problem reduces to that of the inertial waves in any container: $\omega = (\lambda_\mathrm{in}/2)[1 \pm
+  \sqrt{1 + 4\mathrm{Le}^2 m(m - \lambda_\mathrm{in})/\lambda_\mathrm{in}^2}]$ (kore's Im of the eigenvalue; the spin-over,
+  $\lambda_\mathrm{in} = m = 1$, does not move). For six m = 1 modes near 0.75i ('uniform', ricb 0.35, Pm 1, insulating walls)
+  the frequency shift is exactly quadratic in Le ($\mathrm{Le}^2$ = 1e-6, 4e-6, 1.6e-5 give the same shift/$\mathrm{Le}^2$) and
+  tends to $m(m-\lambda_\mathrm{in})/\lambda_\mathrm{in}$: 2–8 % off at Ek = Em = $10^{-5}$, 0.4–1 % at $10^{-6}$ (e.g. 0.3808
+  against 0.3822 for $\lambda_\mathrm{in}$ = 0.7235). `tests/magnetic/malkus_check.py`.
+
 ## Not yet implemented
 
-In the order planned: a toroidal $\mathbf{B}_0$, a magnetic diffusivity profile; also
+In the order planned: a magnetic diffusivity profile, toroidal fields of degree above 2; also
 thin walls (`'TWA'`), rotdyn, the full sphere (the parity of $h$), the quadrupole couplings (`'Luo_S2'`, `'FDM'` with
 `B0_l = 2`), the point `'dipole'`, inviscid and forced runs, and the induction by a differential rotation.

@@ -212,11 +212,12 @@ class default_params():
         # NEW (2026-10-28): used only with magnetic = 1. Ported by name from the conductive_IC branch; user guide docs/magnetic.md.
         # b = ∇×∇×(f r) + ∇×(g r), with the induction equation ∂b/∂t = ∇×(u×B0) + MagnetD ∇²b and the Lorentz force per unit
         # mass Hendrik ρ0⁻¹[(∇×b)×B0 + (∇×B0)×b] (Hendrik, MagnetD: set_scales from Le, Em).
-        # So far: ricb > 0, an insulating inner core and mantle, structure 'uniform', ViscosD > 0, eigenvalue problems,
-        # B0 'axial' or 'FDM' with B0_l = 1 (background.check() stops on anything else).
+        # So far: ricb > 0, an insulating mantle, ViscosD > 0, eigenvalue problems, a poloidal B0 of degree 1 and/or a toroidal
+        # B0 of degree 1 (background.check() stops on anything else).
 
         # Imposed background field B0 = cnorm ∇×∇×(h(r) Y_l0 r), axisymmetric and poloidal (background_field.py)
         self.B0 = 'axial'          # axial, uniform field along the spin axis (h = r/2, l = 1)
+        # self.B0 = None           # NEW (2026-10-28): no poloidal field (with a toroidal one, B0_tor below)
         # self.B0 = 'FDM'          # free poloidal decay mode of the shell (Zhang & Fearn 1994, 1995; Schmitt 2012), degree B0_l
         self.beta = 3.0            # 'FDM': first guess of its radial wavenumber β (the root of background_field.findbeta)
         self.B0_l = 1              # 'FDM': its degree l
@@ -230,6 +231,20 @@ class default_params():
         # relative cut of the Chebyshev series of r^p h^(k) (coefficients below tol_B0 times the largest of each series are
         # dropped): it sets the band width of the magnetic blocks and the fill-in of the LU factors (as conductive_IC)
         self.tol_B0 = 1e-8
+
+        # NEW (2026-10-28): a toroidal (azimuthal) background field B0_tor = cnorm_tor ∇×(k(r) Y_l0 r), B_φ = -cnorm_tor k ∂θY_l0
+        # (for l = 1: B_φ = cnorm_tor k sinθ). Alone (B0 = None) or added to the poloidal B0 when both have the same equatorial
+        # symmetry (a toroidal field of degree l has (-1)^(l+1), a poloidal one (-1)^l: the dipole and B0_tor_l = 1 cannot be combined)
+        self.B0_tor = None
+        # self.B0_tor = 'Malkus'   # k = r: B0 = cnorm_tor s φ̂ (Malkus 1967), current J0 = 2 cnorm_tor ẑ; nonzero at the walls (surface
+        #                          # currents there; the linear problem is unaffected, see docs/magnetic.md)
+        # self.B0_tor = 'wall'     # k = r (r - ricb)(1 - r)/(1 - ricb)²: vanishes at both walls
+        # self.B0_tor = 'user'     # k = B0_tor_profile, a numpy expression of r and p = B0_tor_param (sin ... tanh, exp, log, sqrt,
+        #                          # where, erf, pi), e.g. 'r*(1 - r)**2' (smooth: its first two derivatives enter the rows)
+        self.B0_tor_profile = ''
+        self.B0_tor_param = 0.0
+        self.B0_tor_l = 1           # its degree
+        self.cnorm_tor = 1          # a number, 'mag_energy' (∫ B0_tor² dV = 1 over the shell) or 'Schmitt2012' (= 4)
 
         # Magnetic boundary conditions at the inner boundary and at the outer boundary
         self.innercore = 'insulator'

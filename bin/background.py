@@ -90,8 +90,27 @@ def check_magnetic():
     NEW (2026-10-28): stops on magnetic settings that are not implemented (yet).
     '''
     import background_field as bf
-    if par.B0 not in bf.B0_TYPES:
-        sys.exit('B0 %r: set one of %s' % (par.B0, _names(bf.B0_TYPES)))
+    if par.B0 is None and par.B0_tor is None:
+        sys.exit('magnetic = 1 needs a background field: B0 (poloidal) and/or B0_tor (toroidal)')
+    if par.B0 is not None and par.B0 not in bf.B0_TYPES:
+        sys.exit('B0 %r: set None or one of %s' % (par.B0, _names(bf.B0_TYPES)))
+    if par.B0_tor is not None:   # NEW (2026-10-28): toroidal B0
+        if par.B0_tor not in bf.B0_TOR_TYPES:
+            sys.exit('B0_tor %r: set None or one of %s' % (par.B0_tor, _names(bf.B0_TOR_TYPES)))
+        if par.B0_tor_l not in (1, 2):
+            sys.exit('B0_tor_l = %r: only 1 and 2 are implemented' % par.B0_tor_l)
+        if par.B0_tor == 'user':
+            if not isinstance(par.B0_tor_profile, str) or not par.B0_tor_profile or '#' in par.B0_tor_profile:
+                sys.exit("B0_tor 'user' needs B0_tor_profile, a numpy expression of r and p (without '#'), got %r" % (par.B0_tor_profile,))
+            try:
+                bf.k(np.linspace(max(par.ricb, 0.1), 1, 4), 0)
+            except Exception as err:
+                sys.exit('B0_tor_profile = %r: %s: %s' % (par.B0_tor_profile, type(err).__name__, err))
+        if not (isinstance(par.cnorm_tor, (int, float)) or par.cnorm_tor in ('mag_energy', 'Schmitt2012')):
+            sys.exit("cnorm_tor %r: a number, 'mag_energy' or 'Schmitt2012'" % (par.cnorm_tor,))
+        if par.B0 is not None and bf.symm_pol != bf.symm_tor:
+            sys.exit('B0 %r and B0_tor %r have opposite equatorial symmetries: they cannot be combined in one eigenproblem'
+                     % (par.B0, par.B0_tor))
     if par.B0 == 'FDM' and par.B0_l != 1:
         sys.exit("B0 'FDM' with B0_l = %r: only B0_l = 1 is implemented (the couplings of a quadrupole are not)" % par.B0_l)
     if not (isinstance(par.cnorm, (int, float)) or par.cnorm in ('rms_cmb', 'mag_energy', 'Schmitt2012')):
@@ -121,6 +140,8 @@ def check_magnetic():
 def description():
     '''the 'user' expressions as text for params.dat (a '#' comment), empty if there are none'''
     out = []
+    if par.magnetic and par.B0_tor == 'user':   # NEW (2026-10-28)
+        out.append('B0_tor: k = %s ; p = %r' % (par.B0_tor_profile, par.B0_tor_param))
     if par.thermal and par.stratification == 'user':
         out.append('stratification: %s ; p = %r' % (par.stratification_profile, par.stratification_param))
     if par.diffusivity == 'user':

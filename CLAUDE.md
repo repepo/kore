@@ -52,7 +52,7 @@ copies `params_default.py` and `parameters.py` to `../run` and moves the outputs
 
 Outputs: `real_flow.field`, `imag_flow.field` (and `*_thermal.field`, `*_magnetic.field`), one column per solution,
 eigenvectors normalised to kinetic energy 1 (KE + Hendrik·ME = 1 with `magnetic = 1`); `eigenvalues0.dat` (this solve:
-Re λ, Im λ); `timing.dat`. `spin_doctor` appends to `eigenvalues.dat`, `params.dat` (92 columns, and a `#` note on rows
+Re λ, Im λ); `timing.dat`. `spin_doctor` appends to `eigenvalues.dat`, `params.dat` (95 columns, and a `#` note on rows
 that need one, §10), `flow.dat` (20), `thermal.dat` (7), `magnetic.dat` (11). A conducting inner core adds
 `*_magnetic_ic.field`. A `params.dat` from an older version has fewer columns: start a new one. `python3 bin/units.py` prints a run's
 eigenvalues as ω, σ in nHz.
@@ -108,7 +108,10 @@ B0 = cnorm ∇×∇×(h Y_l0 **r**) ('axial', 'FDM' with `B0_l` 1; `background_f
 'magnetic'). b has the symmetry `ut.bsymm` = symm·symmB0: with an antisymmetric B0 f takes the l's of T and g those of P.
 A conducting inner core (`innercore = 'conducting, Chebys'`, `N_cic`, `mu_i2o`, `sigma_i2o`; needs bci = 1) adds sections
 `fic`, `gic` (Chebyshev on [−ricb, ricb], one parity, `ut.Nic` = N_cic/2 per l) matched at the ICB by `assemble.bc_b_cic`.
-Any structure (step 3): the (ln ρ₀)′ terms are in the f, g rows (P columns) and the u rows (`operators.lorentz_rho`), labels
+A toroidal B0 (step 4): `B0_tor` 'Malkus' (k = r, B0 = s φ̂), 'wall' or 'user' (`B0_tor_profile`), `B0_tor_l` 1 or 2,
+`cnorm_tor`, profile `bto`, `operators.lorentz_tor`/`induction_tor` (n = 2: `*_tor2`, Δl up to ±2; closed forms fitted from
+`tests/magnetic/derive.py`), alone (`B0 = None`) or with a poloidal B0 of the same symmetry (dipole + n = 2); spin_doctor's Lorentz and induction work then come from the (r, θ) grid
+(`utils4pp.magnetic_powers_grid`). Any structure (step 3): the (ln ρ₀)′ terms are in the f, g rows (P columns) and the u rows (`operators.lorentz_rho`), labels
 `bpo` × `lho` (with `ohr1` in u), derived in `tests/magnetic/derive.py`; they vanish exactly for 'uniform'. For now only
 ricb > 0, an insulating mantle, ViscosD > 0, eigenproblems, B0 of degree 1, uniform η, no diff rot:
 `background.check_magnetic()` stops otherwise. 'Wu 2005' with r_out 0.99 needs N ≈ 192 at Ek 1e-3 for 1e-10 residuals.
@@ -336,10 +339,10 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   `docs/differential_rotation_details.md` §11), `dr_cost.py` (time and memory against the degree of ΔΩ),
   `ls_to_edmond_layout.py` (HMI table converter, input in `profiles/`: the Larson & Schou 2018 HMI average
   `rot2d.hmiv72d.ave` and `rmesh.orig`).
-- `tests/magnetic/` (README, `run_all.sh`, ~25 min): `derive.py` (the magnetic rows from the definitions, sympy),
+- `tests/magnetic/` (README, `run_all.sh`, ~40 min): `derive.py` (the magnetic rows from the definitions, sympy),
   `derive_check.py` (against conductive_IC's operators and the anelastic closed forms), `row_check.py` (each row block of a
   run against derive.py, unweighted), `budget_check.py` (spin_doctor's residσ, residω, resid𝐛, resid𝐄), `continuity.py`
-  ('Wu 2005' with r_out = √ε → 'uniform'), `mk_run.py`.
+  ('Wu 2005' with r_out = √ε → 'uniform'), `malkus_check.py` (the Malkus field against Malkus 1967), `mk_run.py`.
 - `tests/rsf/` (README; `HOWTO.md` is the user guide of forcing 11, with the m = 2 example of `example_m2/`): shared
   pieces in `rsf_common.py`; `builder_check.py` (f = u against the inertia rows), `noise_check.py` (the noise
   amplitude against the documented Θ laws, and the noise against the viscous operator, exactly; no forcing beyond the
@@ -405,7 +408,8 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
 
 ## 14. History (this branch, newest first)
 
-Uncommitted (2026-10-28): the magnetic field with a variable density (step 3, `tests/magnetic/`); `c457a28` the magnetic
+Uncommitted (2026-10-28): the toroidal B0 (step 4); `c55a8d9` the magnetic field with a variable density (step 3,
+`tests/magnetic/`); `c457a28` the magnetic
 field, steps 1 and 2 (insulating walls, conducting inner core; `docs/magnetic.md`); `a2abc05` the spin-over test GitHub runs on every push (`tests/ci/`, `.github/workflows/anelastic_log.yml`; the
 stale `main.yml`, `examples/kore_test.py` and `examples/spinover/` removed); `f810fd9` `docs/solver.md`; `3402fbf`
 `diff_rot_hold` removed; `b0dd868` the docs in the new background names, `docs/background.md`; `61506f8` 'user'

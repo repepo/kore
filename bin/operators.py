@@ -230,7 +230,7 @@ def thermal_diffusion(l, section, component, offdiag):  # rʰ  ∇⋅(κ p ∇s)
 
 
 
-def lorentz(l, section, component, offdiag):  # --------------------------- Lorentz force (∇×b)×B0 + (∇×B0)×b, per unit mass
+def lorentz_pol(l, section, component, offdiag):  # ----------------------- Lorentz force (∇×b)×B0 + (∇×B0)×b, per unit mass, poloidal B0
 
     out  = 0
     offd = 0
@@ -339,7 +339,7 @@ def b(l, section, component, offdiag):  # --------------------------------------
 
 
 
-def induction(l, section, component, offdiag):  # ----------------------------------------------------- induction ∇×(u×B0)
+def induction_pol(l, section, component, offdiag):  # --------------------------------------- induction ∇×(u×B0), poloidal B0
 
     out  = 0
     offd = 0
@@ -431,3 +431,157 @@ def magnetic_diffusion(l, section, component, offdiag):  # ---------------------
             out = L*( -L*r0_D0g_ic + 2*r1_D1g_ic + r2_D2g_ic ) / ( par.mu_i2o * par.sigma_i2o )
 
     return par.MagnetD * out/L**3
+
+
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------- NEW (2026-10-28): toroidal B0, and the totals
+# ----------------------------------------------------------------------------------------------------------------------
+# B0_tor = ∇×(k Y_1⁰ 𝐫), B_φ = k sinθ (bto = cnorm_tor k): the rows derived with tests/magnetic/derive.py (any ρ0) and fitted in l,
+# each a closed form A(l, m) R(l) with A = i m (same degree) or the Coriolis-type factors C₋ = √(l² - m²)/(2l - 1) (column l - 1),
+# C₊ = √((l+1)² - m²)/(2l + 3) (column l + 1); tests/magnetic/derive_check.py checks them against the derivation. Its
+# couplings are disjoint from those of the poloidal dipole: f, g rows from P at l ± 1 and from T at l only through g;
+# u rows from F at l and G at l ± 1; v rows from F at l ± 1 and G at l. The field is equatorially symmetric (symmB0 = 1).
+
+
+def moff(row, col, dl):
+    '''block offset (units of N1) of the column block of degree l + dl for the rows of section row ('u', 'v', 'f', 'g') and the
+    unknown col ('P', 'T', 'F', 'G'): as for the Coriolis force, from whether the two use the l's of P ('top') or of T'''
+    top = {'u': True, 'v': False, 'P': True, 'T': False, 'f': ut.symmB0 == 1, 'g': ut.symmB0 != 1, 'F': ut.symmB0 == 1, 'G': ut.symmB0 != 1}
+    if top[row] == top[col]:
+        return int(np.trunc(dl/2))   # Δl = ±2 is one block (Δl = 0: none)
+    if top[row]:
+        return -1 if (dl == -1 and ut.symm1 == 1) else (1 if (dl == 1 and ut.symm1 == -1) else 0)
+    return -1 if (dl == -1 and ut.symm1 == -1) else (1 if (dl == 1 and ut.symm1 == 1) else 0)
+
+
+def quad_factors(l, m):
+    '''NEW (2026-10-28): the angular factors of a degree-2 background field, by Δl = -2..2 (as in conductive_IC's quadrupole terms)'''
+    return { 0: 1/((2*l - 1)*(2*l + 3)),
+            -1: 1j*m*np.sqrt(l**2 - m**2)/(2*l - 1),
+             1: 1j*m*np.sqrt((l+1)**2 - m**2)/(2*l + 3),
+            -2: np.sqrt((l**2 - m**2)*((l-1)**2 - m**2))/((2*l - 1)*(2*l - 3)),
+             2: np.sqrt(((l+1)**2 - m**2)*((l+2)**2 - m**2))/((2*l + 3)*(2*l + 5)) }
+
+
+def induction_tor2(l, section, component, offdiag):  # ------------------------- induction ∇×(u×B0), toroidal B0 of degree 2
+    '''NEW (2026-10-28): B_φ = -k ∂θY_2⁰ (bto = cnorm_tor k), the rows of derive.py fitted in l and m (quad_factors times
+    polynomials; the same-degree terms carry l(l+1) - 3m²)'''
+    out = 0
+    m = par.m
+    L = l*(l+1.)
+    A = quad_factors(l, m).get(offdiag, 0)
+    col = 'P' if component == 'upol' else 'T'
+    g0 = g2bto0_D0 + g1bto0lho1_D0
+    if section == 'f' and component == 'upol' and offdiag in (-1, 1):
+        out = A*3*(l*(l-1) if offdiag == -1 else (l+1)*(l+2))*f1bto0_D0
+    elif section == 'g' and component == 'upol':
+        if offdiag == -2:
+            out = A*( 3*l*(l-2)*(l+1)*g0 - 3*(l-2)*(l-1)*(l+1)*g1bto1_D0 + 3*(l-2)*(l+1)*g1bto0_D1 )
+        elif offdiag == 0:
+            out = A*(L - 3*m**2)*( -3*L*g0 - 3*L*g1bto1_D0 - 6*L*g1bto0_D1 )
+        elif offdiag == 2:
+            out = A*( -3*l*(l+1)*(l+3)*g0 + 3*l*(l+2)*(l+3)*g1bto1_D0 + 3*l*(l+3)*g1bto0_D1 )
+    elif section == 'g' and component == 'utor' and offdiag in (-1, 1):
+        out = A*3*L*g1bto0_D0
+    return [ -out/L**3, moff(section, col, offdiag) ]
+
+
+def lorentz_tor2(l, section, component, offdiag):  # ------------ Lorentz force (∇×b)×B0 + (∇×B0)×b per unit mass, toroidal B0 of degree 2
+    '''NEW (2026-10-28): as induction_tor2'''
+    out = 0
+    m = par.m
+    L = l*(l+1.)
+    A = quad_factors(l, m).get(offdiag, 0)
+    col = 'F' if component == 'bpol' else 'G'
+    if section == 'u' and component == 'bpol' and offdiag in (-1, 1):
+        if offdiag == -1:
+            c = [ 3*(l**4 - 3*l**2 - 6), -3*(l**2 - l + 6), -6*(l-3), -3*l*(l-1), 3*l*(l-1), -6*(l-1)*(l+3), -18, -6*(l-3), -3*(l-2)*(l+3) ]
+        else:
+            c = [ 3*(l**4 + 4*l**3 + 3*l**2 - 2*l - 8), -3*(l**2 + 3*l + 8), 6*(l+4), -3*(l+1)*(l+2), 3*(l+1)*(l+2), -6*(l-2)*(l+2), -18,
+                  6*(l+4), -3*(l-2)*(l+3) ]
+        out = A*( c[0]*u4bto0ohr1_D0 + c[1]*u3bto0lho1ohr1_D0 + c[2]*u3bto1ohr1_D0 + c[3]*u2bto1lho1ohr1_D0 + c[4]*u2bto2ohr1_D0
+                  + c[5]*u3bto0ohr1_D1 + c[6]*u2bto0lho1ohr1_D1 + c[7]*u2bto1ohr1_D1 + c[8]*u2bto0ohr1_D2 )
+    elif section == 'u' and component == 'btor' and offdiag in (-2, 0, 2):
+        c = { -2: [ 6*l*(l-2)*(l+1), 3*(l-2)*(l+1)*(l+2), -6*(l-2)*(l+1), -6*(l-2)*(l+1) ],
+               0: [ -6*L*(L - 3*m**2), 9*(L-2)*(L - 3*m**2), -6*(2*L-3)*(L - 3*m**2), -6*(2*L-3)*(L - 3*m**2) ],
+               2: [ -6*l*(l+1)*(l+3), -3*l*(l-1)*(l+3), -6*l*(l+3), -6*l*(l+3) ] }[offdiag]
+        out = A*( c[0]*u3bto0ohr1_D0 + c[1]*u2bto0lho1ohr1_D0 + c[2]*u2bto1ohr1_D0 + c[3]*u2bto0ohr1_D1 )
+    elif section == 'v' and component == 'bpol' and offdiag in (-2, 0, 2):
+        c = { -2: [ 3*(l-4)*(l-2)*(l+1), 3*(l-2)*(l-1)*(l+1), -9*(l-2)*(l+1) ],
+               0: [ -3*(L-6)*(L - 3*m**2), 3*L*(L - 3*m**2), -6*(L-3)*(L - 3*m**2) ],
+               2: [ -3*l*(l+3)*(l+5), -3*l*(l+2)*(l+3), -9*l*(l+3) ] }[offdiag]
+        out = A*( c[0]*v3bto0ohr1_D0 + c[1]*v2bto1ohr1_D0 + c[2]*v2bto0ohr1_D1 )
+    elif section == 'v' and component == 'btor' and offdiag in (-1, 1):
+        out = A*3*((l-3)*(l+2) if offdiag == -1 else (l-1)*(l+4))*v2bto0ohr1_D0
+    return [ -par.Hendrik * out/L**3, moff(section, col, offdiag) ]
+
+
+def induction_tor(l, section, component, offdiag):  # --------------------------------------- induction ∇×(u×B0), toroidal B0
+
+    if par.B0_tor_l == 2:   # NEW (2026-10-28)
+        return induction_tor2(l, section, component, offdiag)
+    out = 0
+    m = par.m
+    L = l*(l+1.)
+    Cm = np.sqrt(l**2 - m**2)/(2*l - 1)
+    Cp = np.sqrt((l+1)**2 - m**2)/(2*l + 3)
+    col = 'P' if component == 'upol' else 'T'
+
+    if section == 'f' and component == 'upol' and offdiag == 0:
+        out = -1j*m*L*f1bto0_D0
+    elif section == 'g' and component == 'upol' and offdiag == -1:
+        out = -Cm*l*(l-1)*(l+1)*( g2bto0_D0 + g1bto0lho1_D0 - g1bto1_D0 )
+    elif section == 'g' and component == 'upol' and offdiag == 1:
+        out = Cp*l*(l+1)*(l+2)*( g2bto0_D0 + g1bto0lho1_D0 - g1bto1_D0 )
+    elif section == 'g' and component == 'utor' and offdiag == 0:
+        out = -1j*m*L*g1bto0_D0
+
+    return [ out/L**3, moff(section, col, offdiag) ]
+
+
+def lorentz_tor(l, section, component, offdiag):  # ------------------- Lorentz force (∇×b)×B0 + (∇×B0)×b per unit mass, toroidal B0
+
+    if par.B0_tor_l == 2:   # NEW (2026-10-28)
+        return lorentz_tor2(l, section, component, offdiag)
+    out = 0
+    m = par.m
+    L = l*(l+1.)
+    Cm = np.sqrt(l**2 - m**2)/(2*l - 1)
+    Cp = np.sqrt((l+1)**2 - m**2)/(2*l + 3)
+    col = 'F' if component == 'bpol' else 'G'
+
+    if section == 'u' and component == 'bpol' and offdiag == 0:
+        out = -1j*m*( (L**2 - 2*L - 2)*u4bto0ohr1_D0 - (L+2)*u3bto0lho1ohr1_D0 + 2*u3bto1ohr1_D0 - 2*(L-1)*u3bto0ohr1_D1
+                      - L*u2bto1lho1ohr1_D0 + L*u2bto2ohr1_D0 - 2*u2bto0lho1ohr1_D1 + 2*u2bto1ohr1_D1 - (L-2)*u2bto0ohr1_D2 )
+    elif section == 'u' and component == 'btor' and offdiag == -1:
+        out = -Cm*( 2*l*(l**2-1)*u3bto0ohr1_D0 + (l**2-1)*(l+2)*u2bto0lho1ohr1_D0 - 2*(l**2-1)*u2bto1ohr1_D0 - 2*(l**2-1)*u2bto0ohr1_D1 )
+    elif section == 'u' and component == 'btor' and offdiag == 1:
+        out = Cp*( 2*l*(l+1)*(l+2)*u3bto0ohr1_D0 + l*(l-1)*(l+2)*u2bto0lho1ohr1_D0 + 2*l*(l+2)*u2bto1ohr1_D0 + 2*l*(l+2)*u2bto0ohr1_D1 )
+    elif section == 'v' and component == 'bpol' and offdiag == -1:
+        out = -Cm*( (l-2)*(l**2-1)*v3bto0ohr1_D0 + l*(l**2-1)*v2bto1ohr1_D0 - 2*(l**2-1)*v2bto0ohr1_D1 )
+    elif section == 'v' and component == 'bpol' and offdiag == 1:
+        out = Cp*( l*(l+2)*(l+3)*v3bto0ohr1_D0 + l*(l+1)*(l+2)*v2bto1ohr1_D0 + 2*l*(l+2)*v2bto0ohr1_D1 )
+    elif section == 'v' and component == 'btor' and offdiag == 0:
+        out = -1j*m*(L-2)*v2bto0ohr1_D0
+
+    return [ par.Hendrik * out/L**3, moff(section, col, offdiag) ]
+
+
+def _total(pol, tor, l, section, component, offdiag):
+    '''the poloidal and the toroidal B0 parts of a coupling (they never share one): [matrix, offd], matrix 0 if absent'''
+    out = pol(l, section, component, offdiag) if par.B0 is not None else [0, 0]
+    if par.B0_tor is not None:
+        t = tor(l, section, component, offdiag)
+        if not np.isscalar(t[0]):
+            out = t if np.isscalar(out[0]) else [out[0] + t[0], out[1]]
+    return out
+
+
+def lorentz(l, section, component, offdiag):  # NEW (2026-10-28): poloidal + toroidal B0
+    return _total(lorentz_pol, lorentz_tor, l, section, component, offdiag)
+
+
+def induction(l, section, component, offdiag):  # NEW (2026-10-28): poloidal + toroidal B0
+    return _total(induction_pol, induction_tor, l, section, component, offdiag)

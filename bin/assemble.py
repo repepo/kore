@@ -324,10 +324,11 @@ def main():
 
         if par.magnetic == 1:  # NEW (2026-10-28): Lorentz force -------------------------------------------------------
             # ------------------------------------------------------------------------- A, 2curl (section u), bpol, btor
-            for comp, sec, dls in [ ('bpol', 'f', [-1, 1]), ('btor', 'g', [0]) ]:
-                for i in dls:
+            for comp, sec in [ ('bpol', 'f'), ('btor', 'g') ]:
+                for i in [-2, -1, 0, 1, 2]:   # the couplings of a poloidal B0 and of a toroidal one (operators.lorentz returns 0 for the others)
                     if l+i in ll_mag[0 if comp == 'bpol' else 1]:
                         mtx = op.lorentz(l,'u',comp,i)
+                        if np.isscalar(mtx[0]): continue
                         col = ut.offset[sec] + col0 + mtx[1] * ut.N1
                         loc_list = ut.packit( loc_list, mtx[0], row, col)
 
@@ -407,10 +408,11 @@ def main():
 
         if par.magnetic == 1:  # NEW (2026-10-28): Lorentz force -------------------------------------------------------
             # ------------------------------------------------------------------------- A, 1curl (section v), bpol, btor
-            for comp, sec, dls in [ ('bpol', 'f', [0]), ('btor', 'g', [-1, 1]) ]:
-                for i in dls:
+            for comp, sec in [ ('bpol', 'f'), ('btor', 'g') ]:
+                for i in [-2, -1, 0, 1, 2]:
                     if l+i in ll_mag[0 if comp == 'bpol' else 1]:
                         mtx = op.lorentz(l,'v',comp,i)
+                        if np.isscalar(mtx[0]): continue
                         col = ut.offset[sec] + col0 + mtx[1] * ut.N1
                         loc_list = ut.packit( loc_list, mtx[0], row, col)
 
@@ -532,18 +534,18 @@ def main():
         # ----------------------------------------------------------------------------------------------------- A matrix, induction equation (sections f, g)
         # --------------------------------------------------------------------------------------------------------------------------------------------------
         # A holds the right-hand side: induction ∇×(u×B0) and diffusion MagnetD ∇²b (iω_f b would go with forcing, not allowed yet)
-        for sec, comp, loc_mag, upol_dls, utor_dls in [ ('f', 'bpol', loc_mag_f, [-1, 1], [0]),
-                                                        ('g', 'btor', loc_mag_g, [0], [-1, 1]) ]:
+        for sec, comp, loc_mag in [ ('f', 'bpol', loc_mag_f), ('g', 'btor', loc_mag_g) ]:
             for k,l in enumerate(loc_mag):
 
                 col0 = (rank*bpp + k )* ut.N1
                 row  = ut.offset[sec] + col0
 
                 # induction by the flow, poloidal (upol) and toroidal (utor) columns
-                for basecol, ucomp, dls, lls in [ (0, 'upol', upol_dls, ll_flo[0]), (ut.n, 'utor', utor_dls, ll_flo[1]) ]:
-                    for i in dls:
+                for basecol, ucomp, lls in [ (0, 'upol', ll_flo[0]), (ut.n, 'utor', ll_flo[1]) ]:
+                    for i in [-2, -1, 0, 1, 2]:   # poloidal and toroidal B0 couplings (operators.induction returns 0 for the others)
                         if l+i in lls:
                             mtx = op.induction(l, sec, ucomp, i)
+                            if np.isscalar(mtx[0]): continue
                             col = basecol + col0 + mtx[1] * ut.N1
                             loc_list = ut.packit( loc_list, mtx[0], row, col)
 

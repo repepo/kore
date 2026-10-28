@@ -240,6 +240,21 @@ def main(ncpus):
         arg2 += [ vG ]*5
         labl += [ 'g2eta0_D0', 'g1eta0_D1', 'g0eta0_D2', 'g1eta1_D0', 'g0eta1_D1' ]  # geta000 geta101 geta202 geta110 geta211
 
+        if par.B0_tor is not None:
+            # NEW (2026-10-28): toroidal B0 of degree 1, 'bto' = cnorm_tor k^(j) (operators.lorentz_tor, induction_tor; derived in
+            # tests/magnetic/derive.py). Without a poloidal B0 the labels above are zero matrices (cnorm = 0).
+            arg2 += [ vP ]*4 + [ vT ]
+            labl += [ 'f1bto0_D0', 'g2bto0_D0', 'g1bto0lho1_D0', 'g1bto1_D0', 'g1bto0_D0' ]
+            arg2 += [ vP ]
+            labl += [ 'g1bto0_D1' ]   # degree 2 only
+            arg2 += [ vF ]*9
+            labl += [ 'u4bto0ohr1_D0', 'u3bto0lho1ohr1_D0', 'u3bto1ohr1_D0', 'u2bto1lho1ohr1_D0', 'u2bto2ohr1_D0',
+                      'u3bto0ohr1_D1', 'u2bto0lho1ohr1_D1', 'u2bto1ohr1_D1', 'u2bto0ohr1_D2' ]
+            arg2 += [ vG ]*4
+            labl += [ 'u3bto0ohr1_D0', 'u2bto0lho1ohr1_D0', 'u2bto1ohr1_D0', 'u2bto0ohr1_D1' ]
+            arg2 += [ vF ]*3 + [ vG ]
+            labl += [ 'v3bto0ohr1_D0', 'v2bto1ohr1_D0', 'v2bto0ohr1_D1', 'v2bto0ohr1_D0' ]
+
     if par.diff_rot == 1:
         # Differential rotation (diff_rot.py): the radial operators of the force of the background flow (sections u, v) and of
         # the heat-equation terms (section h, with thermal = 1), each with the vector parity of its column (vP for P and s, vT for T)
