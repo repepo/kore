@@ -9,7 +9,7 @@
       
       
       
-        <link rel="prev" href="../page3/">
+        <link rel="prev" href="../anelastic/">
       
       
         <link rel="next" href="../solver/">
@@ -257,6 +257,25 @@
   
   
   
+  
+    <li class="md-tabs__item">
+      <a href="../anelastic/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Anelastic equations
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
     
   
   
@@ -420,6 +439,33 @@
     
   
     Non-dimensionalization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../anelastic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Anelastic equations
   
 
     
@@ -641,10 +687,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
             
   
   
@@ -662,8 +708,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -981,8 +1027,8 @@ a run directory, <code>python3 bin/units.py</code> prints the eigenvalues as <sp
 <td><code>r_out</code> &lt; 1, so that <span class="arithmatex">\(\rho_0 &gt; 0\)</span> at the wall</td>
 </tr>
 <tr>
-<td><code>'uniform'</code></td>
-<td><span class="arithmatex">\(\rho_0 = p_0 = 1\)</span>, <span class="arithmatex">\(g = r\)</span> (Boussinesq)</td>
+<td><code>'Boussinesq'</code></td>
+<td><span class="arithmatex">\(\rho_0 = p_0 = 1\)</span>, <span class="arithmatex">\(g = r\)</span>: the Boussinesq equations</td>
 <td>–</td>
 </tr>
 <tr>
@@ -1040,7 +1086,7 @@ sphere (<code>ricb = 0</code>) kore uses it as an odd function of <span class="a
 </tr>
 <tr>
 <td><code>'linear'</code></td>
-<td><span class="arithmatex">\(r\)</span>; with <code>'uniform'</code>, <span class="arithmatex">\(N^2\)</span> = <code>Beyonce</code> <span class="arithmatex">\(r^2\)</span> (Rieutord 2006, Mirouh et al. 2016)</td>
+<td><span class="arithmatex">\(r\)</span>; with <code>'Boussinesq'</code>, <span class="arithmatex">\(N^2\)</span> = <code>Beyonce</code> <span class="arithmatex">\(r^2\)</span> (Rieutord 2006, Mirouh et al. 2016)</td>
 <td>–</td>
 </tr>
 <tr>
@@ -1142,7 +1188,7 @@ does not define, so a misspelt name is not ignored without notice.</p>
 <ul>
 <li>19 <code>r_out</code>, 20–24 <code>aux1</code>…<code>aux5</code>, 25 <code>visc0</code>, 34 <code>therm0</code>, 35 <code>visc_pow</code>, 36 <code>therm_pow</code>;</li>
 <li>63 <code>structure</code>, as its index in <code>background.STRUCTURES</code>: <code>'8-term fit'</code> 0, <code>'old model S prototype'</code> 1,
-  <code>'model S hydrostatic'</code> 2, <code>'Wu 2005'</code> 3, <code>'uniform'</code> 4;</li>
+  <code>'model S hydrostatic'</code> 2, <code>'Wu 2005'</code> 3, <code>'Boussinesq'</code> 4;</li>
 <li>64 the degree of the Model S fit (<code>structure_deg</code> for <code>'model S hydrostatic'</code>), 65–66 the window of the
   <code>'old model S prototype'</code> fits (nan: the default; <code>'sun'</code>: ∓(<code>r_out</code> + 0.005)), 67 <code>solar_rz</code> (1 when the
   stratification is <code>'solar_rz'</code>), 68–74 its parameters, 77–78 <span class="arithmatex">\(\delta_{cz}\)</span>, <span class="arithmatex">\(\delta_{sf}\)</span>;</li>
@@ -1186,13 +1232,14 @@ These names now stop kore with the replacement; the matrices are bitwise the sam
 </tr>
 <tr>
 <td><code>model_type = 'Boussinesq'</code></td>
-<td><code>'uniform'</code></td>
+<td><code>'Boussinesq'</code></td>
 <td><code>heating</code> <code>'internal'</code>: <code>'linear'</code>; <code>'differential'</code>: <code>'inverse square'</code>; <code>'top hat'</code>: <code>'top hat'</code></td>
 <td><code>'uniform'</code></td>
 </tr>
 </tbody>
 </table>
-<p><code>aux0</code> is <code>r_out</code>. The file-based models (<code>'poly'</code>, <code>'mesa'</code>, <code>'gsm'</code>, <code>'astropy table'</code>) were removed; they had not
+<p><code>aux0</code> is <code>r_out</code>. Structure <code>'Boussinesq'</code> was called <code>'uniform'</code> from 2026-10-26 to 2026-10-28, and that
+name stops kore too. The file-based models (<code>'poly'</code>, <code>'mesa'</code>, <code>'gsm'</code>, <code>'astropy table'</code>) were removed; they had not
 worked on this branch.</p>
 
 

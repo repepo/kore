@@ -1,0 +1,1276 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../page3/">
+      
+      
+        <link rel="next" href="../background/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Anelastic equations - User Manual</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#anelastic-equations" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="User Manual" class="md-header__button md-logo" aria-label="User Manual" data-md-component="logo">
+      
+  <img src="../assets/test1.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            User Manual
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Anelastic equations
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Introduction
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../page2/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Installation
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../page3/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Non-dimensionalization
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Anelastic equations
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../background/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Background model
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../solver/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Solver
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../differential-rotation/" class="md-tabs__link">
+          
+  
+  
+  Differential rotation
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="User Manual" class="md-nav__button md-logo" aria-label="User Manual" data-md-component="logo">
+      
+  <img src="../assets/test1.png" alt="logo">
+
+    </a>
+    User Manual
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../page2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../page3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Non-dimensionalization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Anelastic equations
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Anelastic equations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#background" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Background
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-equations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The equations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-dimensionless-form-kore-solves" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The dimensionless form kore solves
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-the-code-builds-them" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How the code builds them
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-the-approximation-holds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where the approximation holds
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../background/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../solver/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Solver
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Differential rotation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Differential rotation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../differential-rotation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../heat-equation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Heat equation and benchmarks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../thermad0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ThermaD = 0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#background" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Background
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-equations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The equations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-dimensionless-form-kore-solves" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The dimensionless form kore solves
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-the-code-builds-them" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How the code builds them
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-the-approximation-holds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where the approximation holds
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="anelastic-equations">Anelastic equations</h1>
+<p>The page <a href="../page3/">Non-dimensionalization</a> gives the Boussinesq equations. This branch solves the linear anelastic
+equations in the form of Lantz (1992) and Braginsky &amp; Roberts (1995), "LBR", about a background whose density varies
+with radius. This page gives those equations, says what the approximation drops, and shows how the code builds them.
+The Boussinesq equations are the special case <code>structure = 'Boussinesq'</code>.</p>
+<h2 id="background">Background</h2>
+<p>The background is at rest in the frame rotating at <span class="arithmatex">\(\Omega\)</span>, spherically symmetric and hydrostatic: density
+<span class="arithmatex">\(\rho_0(r)\)</span>, pressure <span class="arithmatex">\(p_0(r)\)</span>, temperature <span class="arithmatex">\(T_0(r)\)</span>, gravity <span class="arithmatex">\(-g(r)\thinspace\hat{\mathbf r}\)</span> with
+<span class="arithmatex">\(dp_0/dr = -\rho_0 g\)</span>, and specific entropy <span class="arithmatex">\(s_0(r)\)</span>. Its entropy gradient sets the buoyancy frequency,</p>
+<div class="arithmatex">\[
+N^2 = \frac{g\thinspace \alpha T_0}{c_p}\frac{ds_0}{dr},
+\]</div>
+<p>with <span class="arithmatex">\(\alpha\)</span> the thermal expansion coefficient and <span class="arithmatex">\(c_p\)</span> the specific heat at constant pressure. The kinematic viscosity
+<span class="arithmatex">\(\nu(r)\)</span> and the thermal diffusivity <span class="arithmatex">\(\kappa(r)\)</span> are radial profiles. <a href="../background/">Background model</a> explains how
+to choose all of these.</p>
+<h2 id="the-equations">The equations</h2>
+<p>For a perturbation with velocity <span class="arithmatex">\(\mathbf u\)</span> and specific entropy <span class="arithmatex">\(s'\)</span>, the linear LBR equations are</p>
+<div class="arithmatex">\[
+\nabla\cdot(\rho_0\mathbf u) = 0,
+\]</div>
+<div class="arithmatex">\[
+\partial_t\mathbf u + 2\thinspace\boldsymbol\Omega\times\mathbf u = -\nabla\Pi + g\thinspace\frac{\alpha T_0 s'}{c_p}\thinspace\hat{\mathbf r} + \frac{1}{\rho_0}\nabla\cdot\left(\rho_0\nu\thinspace\mathsf S\right),
+\]</div>
+<div class="arithmatex">\[
+\rho_0 T_0\left(\partial_t s' + u_r\frac{ds_0}{dr}\right) = \nabla\cdot\left(\kappa\thinspace\rho_0 T_0\nabla s'\right),
+\]</div>
+<p>with the reduced pressure <span class="arithmatex">\(\Pi = p'/\rho_0 + \Phi'\)</span> (<span class="arithmatex">\(\Phi'\)</span> the perturbation of the gravitational potential) and the
+rate-of-strain tensor without its trace,</p>
+<div class="arithmatex">\[
+\mathsf S = \nabla\mathbf u + (\nabla\mathbf u)^{\mathsf T} - \tfrac{2}{3}(\nabla\cdot\mathbf u)\thinspace\mathsf I .
+\]</div>
+<p>The momentum equation is per unit mass. The flow is not solenoidal: <span class="arithmatex">\(\nabla\cdot\mathbf u = -u_r\thinspace d\ln\rho_0/dr\)</span>.
+The viscous force is the divergence of the full stress <span class="arithmatex">\(\rho_0\nu\thinspace\mathsf S\)</span>, with the terms that come from
+<span class="arithmatex">\(d\ln\rho_0/dr\)</span>, from <span class="arithmatex">\(d\nu/dr\)</span> and from <span class="arithmatex">\(\nabla\cdot\mathbf u\)</span>. Any <span class="arithmatex">\(\nu(r)\)</span> is allowed. The bulk viscosity is zero.
+The heat flux is a diffusion of entropy.</p>
+<p><strong>What is dropped.</strong> Starting from the linearised compressible equations about the same background, LBR drops two
+things (Brown et al. 2012; Vasil et al. 2013):</p>
+<ol>
+<li>The acoustic part of <span class="arithmatex">\(\partial_t\rho'\)</span> in the mass equation. This removes sound.</li>
+<li>The entropy part of <span class="arithmatex">\(\partial_t\rho'\)</span> in the mass equation, together with the force <span class="arithmatex">\((N^2/g)(p'/\rho_0)\thinspace\hat{\mathbf r}\)</span>
+   in the momentum equation. That force is the buoyancy of the density <span class="arithmatex">\(p'/c^2\)</span> that the pressure perturbation induces,
+   in the part of the stratification that is not adiabatic. These two terms must be dropped together.</li>
+</ol>
+<p>The second step treats the background as adiabatic wherever the entropy gradient only corrects a term that is already
+there. The entropy gradient is kept in the heat equation, where it is the source of <span class="arithmatex">\(s'\)</span> and gives gravity waves their
+restoring force. The Coriolis force, the self-gravity (absorbed into <span class="arithmatex">\(\Pi\)</span>) and the viscous force are not
+approximated.</p>
+<p><strong>Energy.</strong> Multiply the momentum equation by <span class="arithmatex">\(\rho_0\mathbf u^*\)</span> and integrate. The pressure does no work, although
+<span class="arithmatex">\(\nabla\cdot\mathbf u\neq 0\)</span>, because <span class="arithmatex">\(\nabla\Pi\)</span> is a gradient acting on the solenoidal <span class="arithmatex">\(\rho_0\mathbf u\)</span> and
+<span class="arithmatex">\(u_r = 0\)</span> on the walls. The Coriolis force does no work, and the viscous force only dissipates,
+<span class="arithmatex">\(-\tfrac12\int\rho_0\nu\thinspace\lvert\mathsf S\rvert^2\thinspace dV \le 0\)</span>, for any <span class="arithmatex">\(\nu(r)\)</span>. Keeping only one of the two
+terms of item 2 (the "ANS" set) would make the pressure do work.</p>
+<h2 id="the-dimensionless-form-kore-solves">The dimensionless form kore solves</h2>
+<p>kore uses the radius of the outer wall as the unit of length (<span class="arithmatex">\(r = 1\)</span>; it is <code>r_out</code> star radii) and <span class="arithmatex">\(\tau\)</span> as the
+unit of time, and writes <span class="arithmatex">\(s = s'/c_p\)</span>. It assumes <span class="arithmatex">\(\alpha T_0 = 1\)</span> and uses <span class="arithmatex">\(p_0\)</span> in place of <span class="arithmatex">\(\rho_0 T_0\)</span>, both exact
+for an ideal gas of uniform composition. The equations are then</p>
+<div class="arithmatex">\[
+\nabla\cdot(\rho_0\mathbf u) = 0,
+\]</div>
+<div class="arithmatex">\[
+\partial_t\mathbf u + 2\thinspace\mathrm{Gaspard}\thinspace\hat{\mathbf z}\times\mathbf u = -\nabla\Pi + \mathrm{Beyonce}\thinspace g\thinspace s\thinspace\hat{\mathbf r} + \mathrm{ViscosD}\thinspace\frac{1}{\rho_0}\nabla\cdot\left(\rho_0\nu\thinspace\mathsf S\right),
+\]</div>
+<div class="arithmatex">\[
+p_0\left(\partial_t s + u_r\frac{dS}{dr}\right) = \mathrm{ThermaD}\thinspace\nabla\cdot\left(\kappa\thinspace p_0\nabla s\right),
+\]</div>
+<p>where <span class="arithmatex">\(dS/dr\)</span> is the background entropy gradient over <span class="arithmatex">\(c_p\)</span>, and <span class="arithmatex">\(g\)</span>, <span class="arithmatex">\(\nu\)</span> and <span class="arithmatex">\(\kappa\)</span> are now dimensionless profiles
+(their scales are in the parameters). The buoyancy frequency is</p>
+<div class="arithmatex">\[
+N^2 = \mathrm{Beyonce}\thinspace g\thinspace\frac{dS}{dr}
+\]</div>
+<p>in units of <span class="arithmatex">\(1/\tau^2\)</span>. Only <span class="arithmatex">\(d\ln\rho_0/dr\)</span> and its derivatives enter the momentum equation, and only the shape of
+<span class="arithmatex">\(p_0\)</span> enters the heat equation, so the normalisation of <span class="arithmatex">\(\rho_0\)</span> and <span class="arithmatex">\(p_0\)</span> does not matter. With the differential
+rotation on, the background flow adds three terms to these equations (<a href="../differential_rotation_details/">Differential rotation</a>,
+§2.1).</p>
+<table>
+<thead>
+<tr>
+<th>parameter</th>
+<th>symbol</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Gaspard</code></td>
+<td><span class="arithmatex">\(\Omega\tau\)</span></td>
+<td>rotation rate of the frame</td>
+</tr>
+<tr>
+<td><code>Beyonce</code></td>
+<td><span class="arithmatex">\(g_{\mathrm{ref}}\thinspace\tau^2/L\)</span></td>
+<td>gravity, with <span class="arithmatex">\(g\)</span> the dimensionless profile of the structure (<span class="arithmatex">\(g = 1\)</span> at the surface for the solar structures)</td>
+</tr>
+<tr>
+<td><code>ViscosD</code></td>
+<td><span class="arithmatex">\(\nu_{\mathrm{ref}}\thinspace\tau/L^2\)</span></td>
+<td>viscosity; the Ekman number when <span class="arithmatex">\(\tau = 1/\Omega\)</span></td>
+</tr>
+<tr>
+<td><code>ThermaD</code></td>
+<td><span class="arithmatex">\(\kappa_{\mathrm{ref}}\thinspace\tau/L^2\)</span></td>
+<td>thermal diffusivity</td>
+</tr>
+<tr>
+<td><code>structure</code></td>
+<td><span class="arithmatex">\(\rho_0\)</span>, <span class="arithmatex">\(p_0\)</span>, <span class="arithmatex">\(g\)</span></td>
+<td><code>bin/radial_profiles.py</code></td>
+</tr>
+<tr>
+<td><code>stratification</code></td>
+<td><span class="arithmatex">\(dS/dr\)</span></td>
+<td><code>bin/background.py</code> (<code>gradS</code>); only with <code>thermal = 1</code></td>
+</tr>
+<tr>
+<td><code>diffusivity</code></td>
+<td><span class="arithmatex">\(\nu(r)\)</span>, <span class="arithmatex">\(\kappa(r)\)</span></td>
+<td><code>bin/background.py</code> (<code>diffusivity</code>), the profiles <span class="arithmatex">\(\nu/\)</span><code>ViscosD</code> and <span class="arithmatex">\(\kappa/\)</span><code>ThermaD</code></td>
+</tr>
+</tbody>
+</table>
+<p>Here <span class="arithmatex">\(L\)</span> is <code>r_out</code> star radii, and <span class="arithmatex">\(g_{\mathrm{ref}}\)</span>, <span class="arithmatex">\(\nu_{\mathrm{ref}}\)</span>, <span class="arithmatex">\(\kappa_{\mathrm{ref}}\)</span> are the values where the profiles
+are 1. <code>units.set_physical</code> computes <code>Gaspard</code>, <code>Beyonce</code>, <code>ViscosD</code> and <code>ThermaD</code> from physical values with
+<span class="arithmatex">\(\tau = 1/\Omega\)</span> (<a href="../background/#units">Background model</a>). With <code>structure = 'Boussinesq'</code> (<span class="arithmatex">\(\rho_0 = p_0 = 1\)</span>, <span class="arithmatex">\(g = r\)</span>)
+and uniform diffusivities, the equations are the Boussinesq equations of <a href="../page3/">Non-dimensionalization</a>, with <span class="arithmatex">\(s\)</span>
+in place of the temperature perturbation <span class="arithmatex">\(\theta\)</span>.</p>
+<p><strong>Eigenvalues.</strong> Fields go as <span class="arithmatex">\(e^{im\phi + \lambda t}\)</span>, with <span class="arithmatex">\(\lambda = \sigma - i\omega\)</span>: <span class="arithmatex">\(\sigma\)</span> is the growth rate and
+<span class="arithmatex">\(\omega\)</span> the frequency, in units of <span class="arithmatex">\(1/\tau\)</span> in the rotating frame; <span class="arithmatex">\(\omega &gt; 0\)</span> is prograde. <code>units.nHz</code> and
+<code>python3 bin/units.py</code> give <span class="arithmatex">\(\omega\)</span> and <span class="arithmatex">\(\sigma\)</span> in nHz. Forced runs (<code>forcing &gt; 0</code>) solve at
+<span class="arithmatex">\(\lambda = i\thinspace\)</span><code>forcing_frequency</code>.</p>
+<h2 id="how-the-code-builds-them">How the code builds them</h2>
+<p><strong>Unknowns.</strong> At fixed <span class="arithmatex">\(m\)</span> and equatorial symmetry, the velocity is written with a poloidal scalar <span class="arithmatex">\(P\)</span> and a toroidal
+scalar <span class="arithmatex">\(T\)</span>,</p>
+<div class="arithmatex">\[
+\mathbf u = \frac{1}{\rho_0}\nabla\times\nabla\times\left(\rho_0 P\thinspace\mathbf r\right) + \nabla\times\left(T\thinspace\mathbf r\right),
+\]</div>
+<p>so that <span class="arithmatex">\(\nabla\cdot(\rho_0\mathbf u) = 0\)</span> holds exactly and the mass equation is never solved. For one harmonic
+<span class="arithmatex">\(Y = Y_l^m(\theta,\phi)\)</span>, with <span class="arithmatex">\(P = P_l(r)\thinspace Y\)</span>, <span class="arithmatex">\(T = T_l(r)\thinspace Y\)</span> and <span class="arithmatex">\(\mathcal L = l(l+1)\)</span>,</p>
+<div class="arithmatex">\[
+u_r = \frac{\mathcal L\thinspace P_l}{r}\thinspace Y, \qquad
+\mathbf u_h = \left(P_l' + \frac{P_l}{r} + \frac{d\ln\rho_0}{dr}P_l\right) r\nabla Y + T_l\thinspace\nabla Y\times\mathbf r ,
+\]</div>
+<p>with a prime for <span class="arithmatex">\(d/dr\)</span> (<code>utils4pp.cheb2space_pol</code>, <code>cheb2space_tor</code>). With <code>thermal = 1</code> the third unknown is
+<span class="arithmatex">\(s = s_l(r)\thinspace Y\)</span>.</p>
+<p><strong>Rows.</strong> The pressure is removed by taking the radial components of the curl and of the double curl of the momentum
+equation; <span class="arithmatex">\(\nabla\Pi\)</span> drops out of both because it is a gradient. Each term becomes a radial operator acting on <span class="arithmatex">\(P_l\)</span>,
+<span class="arithmatex">\(T_l\)</span> or <span class="arithmatex">\(s_l\)</span>:</p>
+<table>
+<thead>
+<tr>
+<th>section</th>
+<th>rows</th>
+<th>equation used</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>u</code></td>
+<td>of <span class="arithmatex">\(P_l\)</span></td>
+<td><span class="arithmatex">\(r^5\rho_0\thinspace\hat{\mathbf r}\cdot\nabla\times\nabla\times(\text{momentum})/\mathcal L^3\)</span></td>
+</tr>
+<tr>
+<td><code>v</code></td>
+<td>of <span class="arithmatex">\(T_l\)</span></td>
+<td><span class="arithmatex">\(r^3\rho_0\thinspace\hat{\mathbf r}\cdot\nabla\times(\text{momentum})/\mathcal L^3\)</span></td>
+</tr>
+<tr>
+<td><code>h</code></td>
+<td>of <span class="arithmatex">\(s_l\)</span></td>
+<td><span class="arithmatex">\(r^2\thinspace(\text{heat equation})/\mathcal L^3\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>All rows are projected on <span class="arithmatex">\(Y_l^m\)</span> and divided by <span class="arithmatex">\(\mathcal L^3\)</span>, with <span class="arithmatex">\(l\)</span> the degree of the row. The powers of <span class="arithmatex">\(r\)</span> are
+<code>rpower_u</code> (5) and <code>rpower_v</code> (3), the smallest that keep every operator a polynomial in <span class="arithmatex">\(r\)</span>. The
+factor <span class="arithmatex">\(\rho_0\)</span> (<code>rhopower_u = rhopower_v = 1</code>) improves the accuracy of the viscous rows near a surface where
+<span class="arithmatex">\(\rho_0\)</span> is small. Without viscosity (<code>ViscosD = 0</code>) the momentum rows are <span class="arithmatex">\(r^3\rho_0^2\)</span> and <span class="arithmatex">\(r^2\rho_0\)</span> times the
+equations. With <code>ThermaD = 0</code> the heat rows are divided by <span class="arithmatex">\(p_0\)</span>, <span class="arithmatex">\(r\thinspace(\partial_t s + u_r\thinspace dS/dr)/\mathcal L^3\)</span>,
+which is better conditioned where <span class="arithmatex">\(p_0\)</span> is small (and <span class="arithmatex">\(r^2/p_0\)</span> times the equation with the thermal wind). The Coriolis
+force couples <span class="arithmatex">\(l\)</span> to <span class="arithmatex">\(l\pm1\)</span>; the other terms keep <span class="arithmatex">\(l\)</span>.</p>
+<table>
+<thead>
+<tr>
+<th>term</th>
+<th>function in <code>bin/operators.py</code></th>
+<th>profiles</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(\partial_t\mathbf u\)</span></td>
+<td><code>inertia</code></td>
+<td><span class="arithmatex">\(\ln\rho_0\)</span></td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(2\thinspace\mathrm{Gaspard}\thinspace\hat{\mathbf z}\times\mathbf u\)</span></td>
+<td><code>coriolis</code></td>
+<td><span class="arithmatex">\(\ln\rho_0\)</span></td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\mathrm{ViscosD}\thinspace\rho_0^{-1}\nabla\cdot(\rho_0\nu\mathsf S)\)</span></td>
+<td><code>viscous_diffusion</code></td>
+<td><span class="arithmatex">\(\ln\rho_0\)</span> (up to its 4th derivative), <span class="arithmatex">\(\nu\)</span> (up to its 2nd)</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\mathrm{Beyonce}\thinspace g\thinspace s\thinspace\hat{\mathbf r}\)</span></td>
+<td><code>buoyancy</code></td>
+<td><span class="arithmatex">\(g\)</span></td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(p_0\thinspace\partial_t s\)</span></td>
+<td><code>entropy</code></td>
+<td><span class="arithmatex">\(p_0\)</span></td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(p_0\thinspace u_r\thinspace dS/dr\)</span></td>
+<td><code>thermal_advection</code></td>
+<td><span class="arithmatex">\(p_0\thinspace dS/dr\)</span> (<span class="arithmatex">\(dS/dr\)</span> if <code>ThermaD = 0</code>)</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\mathrm{ThermaD}\thinspace\nabla\cdot(\kappa p_0\nabla s)\)</span></td>
+<td><code>thermal_diffusion</code></td>
+<td><span class="arithmatex">\(\kappa p_0\)</span></td>
+</tr>
+</tbody>
+</table>
+<p><code>submatrices.py</code> writes one sparse matrix per radial operator, for example <code>u1lho2_D0</code> for <span class="arithmatex">\(r^4\rho_0\thinspace(\ln\rho_0)''\)</span>
+times the unknown (the label grammar and the profile codes are in <code>utils.decode_label</code> and <code>radial_profiles.proffdir</code>).
+For the section <code>h</code> row with <code>ThermaD &gt; 0</code>, for example, the diffusion term is</p>
+<div class="arithmatex">\[
+r^2\nabla\cdot(\kappa p_0\nabla s) = \left[r^2\kappa p_0\thinspace s_l'' + \left(2r\kappa p_0 + r^2(\kappa p_0)'\right)s_l' - \mathcal L\thinspace\kappa p_0\thinspace s_l\right] Y.
+\]</div>
+<p><strong>Eigenproblem.</strong> <code>assemble.py</code> puts the blocks into <span class="arithmatex">\(A\mathbf x = \lambda B\mathbf x\)</span>. <span class="arithmatex">\(B\)</span> holds <span class="arithmatex">\(-\)</span><code>inertia</code> in the
+momentum rows and <code>entropy</code> in the heat rows. <span class="arithmatex">\(A\)</span> holds <code>coriolis</code> <span class="arithmatex">\(-\)</span> <code>viscous_diffusion</code> <span class="arithmatex">\(-\)</span> <code>buoyancy</code> in the
+momentum rows and <span class="arithmatex">\(-\)</span><code>thermal_advection</code> <span class="arithmatex">\(+\)</span> <code>thermal_diffusion</code> in the heat rows, so each row reads</p>
+<div class="arithmatex">\[
+\lambda\thinspace\mathbf u + 2\thinspace\mathrm{Gaspard}\thinspace\hat{\mathbf z}\times\mathbf u = \mathrm{ViscosD}\thinspace\rho_0^{-1}\nabla\cdot(\rho_0\nu\mathsf S) + \mathrm{Beyonce}\thinspace g\thinspace s\thinspace\hat{\mathbf r}, \qquad
+\lambda\thinspace p_0 s = -p_0 u_r\frac{dS}{dr} + \mathrm{ThermaD}\thinspace\nabla\cdot(\kappa p_0\nabla s),
+\]</div>
+<p>projected as in the table above. Forced runs solve <span class="arithmatex">\((A - i\thinspace\mathrm{wf}\thinspace B)\mathbf x = \mathbf b\)</span>, with wf the
+forcing frequency.</p>
+<p><strong>Boundary conditions</strong> (<code>assemble.bc_u_spherical</code>, <code>bc_theta_spherical</code>), at the outer wall (<code>bco</code>) and at the inner
+one (<code>bci</code>, when <code>ricb &gt; 0</code>); the full sphere has no condition at the centre:</p>
+<table>
+<thead>
+<tr>
+<th>setting</th>
+<th>condition</th>
+<th>rows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bco = 0</code> stress-free</td>
+<td><span class="arithmatex">\(u_r = 0\)</span>, and zero tangential stress <span class="arithmatex">\(\partial_r(u_\theta/r) = \partial_r(u_\phi/r) = 0\)</span></td>
+<td><span class="arithmatex">\(P_l = 0\)</span>, <span class="arithmatex">\(\thinspace r^2P_l'' + r^2(\ln\rho_0)'P_l' + \left[r^2(\ln\rho_0)'' + \mathcal L - 2 - r(\ln\rho_0)'\right]P_l = 0\)</span>, <span class="arithmatex">\(\thinspace rT_l' - T_l = 0\)</span></td>
+</tr>
+<tr>
+<td><code>bco = 1</code> no-slip</td>
+<td><span class="arithmatex">\(\mathbf u = 0\)</span></td>
+<td><span class="arithmatex">\(P_l = 0\)</span>, <span class="arithmatex">\(\thinspace P_l' + \left[(\ln\rho_0)' + 1/r\right]P_l = 0\)</span>, <span class="arithmatex">\(\thinspace T_l = 0\)</span></td>
+</tr>
+<tr>
+<td><code>bco_thermal = 0</code></td>
+<td>fixed entropy</td>
+<td><span class="arithmatex">\(s_l = 0\)</span></td>
+</tr>
+<tr>
+<td><code>bco_thermal = 1</code></td>
+<td>zero diffusive entropy flux</td>
+<td><span class="arithmatex">\(s_l' = 0\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>The density enters the stress-free and no-slip rows through <span class="arithmatex">\(u_\theta\)</span> and <span class="arithmatex">\(u_\phi\)</span>. The thermal conditions are used
+only when <code>ThermaD &gt; 0</code>. Without viscosity only <span class="arithmatex">\(P_l = 0\)</span> is imposed. <code>bco = 2</code> (and <code>bci = 2</code>) replaces <span class="arithmatex">\(u_r = 0\)</span> by a
+zero viscous radial stress, <span class="arithmatex">\(\left[r(\ln\rho_0)' - 3\right]P_l + 3rP_l' = 0\)</span>, which does not contain the pressure.</p>
+<p><strong>Checks.</strong> <code>spin_doctor.py</code> evaluates the energy balance of each solution, built from the fields independently of the
+matrices: with <span class="arithmatex">\(K = \int\rho_0\lvert\mathbf u\rvert^2\thinspace dV\)</span>,</p>
+<div class="arithmatex">\[
+\sigma K = -\frac{\mathrm{ViscosD}}{2}\int\rho_0\nu\thinspace\lvert\mathsf S\rvert^2\thinspace dV + \mathrm{Beyonce}\thinspace\mathrm{Re}\int\rho_0\thinspace g\thinspace u_r^* s\thinspace dV ,
+\]</div>
+<p>and the entropy balance, the heat equation times <span class="arithmatex">\(s^*\)</span> integrated:</p>
+<div class="arithmatex">\[
+\sigma\int p_0\lvert s\rvert^2\thinspace dV = -\mathrm{Re}\int p_0\frac{dS}{dr}u_r s^*\thinspace dV - \mathrm{ThermaD}\int\kappa p_0\lvert\nabla s\rvert^2\thinspace dV .
+\]</div>
+<p>Their relative residuals are residσ and resid<span class="arithmatex">\(s\)</span> (<a href="../solver/">Solver</a> gives the thresholds). <code>ru_insane.py</code> checks the
+same pairings on the operators themselves: inertia Hermitian and positive, Coriolis anti-Hermitian, viscous Hermitian and
+negative.</p>
+<h2 id="where-the-approximation-holds">Where the approximation holds</h2>
+<ul>
+<li><strong>Sound-proof</strong>: <span class="arithmatex">\(\max(\lvert\lambda\rvert^2, 4\Omega^2) \ll c^2k^2\)</span> for a mode of wavenumber <span class="arithmatex">\(k\)</span>, with <span class="arithmatex">\(c\)</span> the sound speed.
+  It fails for p modes and near a surface where <span class="arithmatex">\(c\to 0\)</span>.</li>
+<li><strong>Nearly adiabatic over the scale <span class="arithmatex">\(\ell\)</span> of the motion</strong>: <span class="arithmatex">\(N^2\ell/g \ll 1\)</span>, the relative size of the dropped terms
+  of item 2. In kore's units this is <span class="arithmatex">\(\lvert dS/dr\rvert\thinspace\ell \ll 1\)</span>. Their effect on frequencies is smaller,
+  and for <span class="arithmatex">\(N \gg \omega\)</span> it does not grow with <span class="arithmatex">\(N\)</span>, so a strongly stratified radiative zone is not a problem in itself.
+  The case where it fails is that of low-order g modes with frequencies near <span class="arithmatex">\(N\)</span>.</li>
+<li><strong>A possible background</strong>: hydrostatic, and with <span class="arithmatex">\(N^2 &lt; g/H_\rho\)</span> (<span class="arithmatex">\(H_\rho\)</span> the density scale height), since
+  <span class="arithmatex">\(g/c^2 = -d\ln\rho_0/dr - N^2/g\)</span> must be positive. In kore's units this is <span class="arithmatex">\(dS/dr &lt; -d\ln\rho_0/dr\)</span>. kore never uses
+  <span class="arithmatex">\(c\)</span>, so it cannot detect a background that breaks this: check it when choosing <code>structure</code> and <code>stratification</code>
+  separately.</li>
+</ul>
+<h2 id="references">References</h2>
+<ul>
+<li>Braginsky, S. I. &amp; Roberts, P. H. 1995, Geophys. Astrophys. Fluid Dyn. 79, 1.</li>
+<li>Brown, B. P., Vasil, G. M. &amp; Zweibel, E. G. 2012, ApJ 756, 109.</li>
+<li>Jones, C. A. et al. 2011, Icarus 216, 120.</li>
+<li>Lantz, S. R. 1992, PhD thesis, Cornell University.</li>
+<li>Lantz, S. R. &amp; Fan, Y. 1999, ApJS 121, 247.</li>
+<li>Vasil, G. M., Lecoanet, D., Brown, B. P., Wood, T. S. &amp; Zweibel, E. G. 2013, ApJ 773, 169.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "content.code.copy"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

@@ -12,7 +12,7 @@
         <link rel="prev" href="../page2/">
       
       
-        <link rel="next" href="../background/">
+        <link rel="next" href="../anelastic/">
       
       
         
@@ -249,6 +249,25 @@
     
   
   Non-dimensionalization
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../anelastic/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Anelastic equations
 
       </a>
     </li>
@@ -519,6 +538,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../anelastic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Anelastic equations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../background/" class="md-nav__link">
         
   
@@ -586,10 +632,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
             
   
   
@@ -607,8 +653,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -787,6 +833,7 @@
 
 <h1 id="non-dimensionalization">Non-dimensionalization</h1>
 <p>For numerical convenience we use <em>dimensionless</em> variables when solving the Navier Stokes equation, the induction equation, and the heat equation. A non-dimensionalization procedure is always possible thanks to the Buckingham-<span class="arithmatex">\(\pi\)</span> theorem.</p>
+<p>This page treats the Boussinesq case, with a uniform density. On the <code>anelastic_log</code> branch kore solves the anelastic equations, with a density that varies with radius; they are on the page <a href="../anelastic/">Anelastic equations</a>, and the Boussinesq equations below, without the magnetic field (which this branch does not include), are their case <code>structure = 'Boussinesq'</code>.</p>
 <h2 id="the-momentum-equation">The momentum equation</h2>
 <p>In a reference frame rotating with angular speed <span class="arithmatex">\(\Omega\)</span>, the dimensional form of the <em>linear</em> momentum equation (i.e. the Navier-Stokes equation) describing the acceleration <span class="arithmatex">\(\partial_t \mathbf{u}\)</span> of a small fluid parcel with density <span class="arithmatex">\(\rho\)</span>, including buoyancy and the Lorentz force, is:  </p>
 <div class="arithmatex">\[

@@ -259,6 +259,25 @@
   
   
     <li class="md-tabs__item">
+      <a href="../anelastic/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Anelastic equations
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
       <a href="../background/" class="md-tabs__link">
         
   
@@ -439,6 +458,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../anelastic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Anelastic equations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../background/" class="md-nav__link">
         
   
@@ -511,10 +557,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
             
   
   
@@ -532,8 +578,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1803,7 +1849,7 @@ the background is chosen by <code>structure</code>, <code>stratification</code> 
 translates the former names):
 'user def' is structure <code>'Wu 2005'</code> with stratification <code>'top hat'</code>; 'smoothed sun' is a solar structure (<code>'8-term fit'</code>
 for <code>solar_density = 'fit'</code>, <code>'old model S prototype'</code> for <code>'model S'</code>) with stratification <code>'odd top hat'</code> and
-diffusivity <code>'step'</code>, or both <code>'solar_rz'</code> for <code>solar_rz = 1</code>; 'Boussinesq' is <code>'uniform'</code>; and <code>aux0</code> is <code>r_out</code>. The
+diffusivity <code>'step'</code>, or both <code>'solar_rz'</code> for <code>solar_rz = 1</code>; 'Boussinesq' is structure <code>'Boussinesq'</code>; and <code>aux0</code> is <code>r_out</code>. The
 amplitude <code>diff_rot_amplitude</code> is <code>diff_rot_ampl</code> since 2026-10-23 (<a href="../differential-rotation/">differential-rotation.md</a>),
 and the code these sections describe (<code>diff_rot_generic.py</code>, <code>heat_dr_coefficients.py</code> and the differential-rotation
 parts of <code>radial_profiles.py</code> and <code>utils.py</code>) is now in <code>bin/diff_rot.py</code> and <code>bin/angular.py</code>
@@ -2341,7 +2387,7 @@ Rieutord 2006's baroclinic flow and a radial <span class="arithmatex">\(T_0\)</s
 \]</div>
 <p>It needs (a) only, with <span class="arithmatex">\(S_{tw} = 0\)</span>: their background is balanced by centrifugal buoyancy, which kore does not carry.
 With (3) switched on, <span class="arithmatex">\(\sigma_2 = 2N^2r^2/(3\thinspace \mathrm{Beyonce})\)</span> would be as large as <span class="arithmatex">\(S_0'\)</span>, and the comparison would
-test the wrong model. kore runs it with structure <code>'uniform'</code>, stratification <code>'linear'</code> and <code>thermal_wind = 0</code>
+test the wrong model. kore runs it with structure <code>'Boussinesq'</code>, stratification <code>'linear'</code> and <code>thermal_wind = 0</code>
 (<a href="../differential_rotation_details/">differential_rotation_details.md</a> §11).</p>
 <p><strong>Bekki et al. 2022.</strong> Fully compressible, solar <span class="arithmatex">\(\rho_0\)</span>, helioseismic <span class="arithmatex">\(\Omega\)</span>, and <span class="arithmatex">\(S_{tw}\)</span> from (2) with the full
 <span class="arithmatex">\(\Omega^2\)</span>, with <span class="arithmatex">\(s_0\)</span> uniform in <span class="arithmatex">\(r\)</span>. It needs (a), (c) and (c′). kore's <span class="arithmatex">\(S_{tw}\)</span> also has (b), which they drop by
@@ -2573,7 +2619,7 @@ growth +7.30 nHz).</p>
   use it.</li>
 <li>'Y20-wall-bounded' and 'shellular' (except even <span class="arithmatex">\(\sigma &gt; 0\)</span>) at ricb = 0 are not smooth at <span class="arithmatex">\(r = 0\)</span>; this is now a
   WARNING.</li>
-<li>The Boussinesq background (now structure <code>'uniform'</code>) runs with the differential rotation since 2026-10-23, when the
+<li>The Boussinesq background (now structure <code>'Boussinesq'</code>) runs with the differential rotation since 2026-10-23, when the
   rotation profiles stopped depending on the background model
   (<a href="../differential_rotation_details/">differential_rotation_details.md</a> §11). The models read from a file (<code>'poly'</code>,
   <code>'mesa'</code>, <code>'gsm'</code>, <code>'astropy table'</code>) never ran on this branch and were removed on 2026-10-26.</li>

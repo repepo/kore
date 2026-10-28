@@ -259,6 +259,25 @@
   
   
     <li class="md-tabs__item">
+      <a href="../anelastic/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Anelastic equations
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
       <a href="../background/" class="md-tabs__link">
         
   
@@ -439,6 +458,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../anelastic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Anelastic equations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../background/" class="md-nav__link">
         
   
@@ -511,10 +557,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
             
   
   
@@ -532,8 +578,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1160,7 +1206,7 @@ with a solar structure (<a href="../background/">background.md</a>), <span class
 <td><code>'shellular_boussinesq'</code></td>
 <td><span class="arithmatex">\(\tfrac12 N_0^2\thinspace (1 - r^2)\)</span>, <span class="arithmatex">\(N_0^2 = a\)</span></td>
 <td><span class="arithmatex">\(P_0\)</span></td>
-<td>Mirouh et al. 2016; use <code>thermal_wind = 0</code> (their background has no thermal wind), structure <code>'uniform'</code> and stratification <code>'linear'</code></td>
+<td>Mirouh et al. 2016; use <code>thermal_wind = 0</code> (their background has no thermal wind), structure <code>'Boussinesq'</code> and stratification <code>'linear'</code></td>
 </tr>
 <tr>
 <td><code>'cylindrical'</code></td>
@@ -1309,7 +1355,7 @@ former names <code>diff_rot_amplitude</code> and <code>diff_rot_generic</code>, 
 <a href="../differential_rotation_details/">differential_rotation_details.md</a> §5.1), stop a run (<code>diff_rot.check</code>).</p>
 <h2 id="examples">Examples</h2>
 <p><strong>Conical rotation, Guenel et al. 2016.</strong> <code>ricb = 0.71</code>, <code>diff_rot_type = 'conical'</code>, <code>diff_rot_ampl = -0.25</code>,
-<span class="arithmatex">\(E = 10^{-5}\)</span>, uniform density (structure <code>'uniform'</code>), stress-free, <code>thermal = 0</code>, <span class="arithmatex">\(m = 0\)</span>: their DT mode near <span class="arithmatex">\(\omega \approx 1.82\)</span>; kore gives
+<span class="arithmatex">\(E = 10^{-5}\)</span>, uniform density (structure <code>'Boussinesq'</code>), stress-free, <code>thermal = 0</code>, <span class="arithmatex">\(m = 0\)</span>: their DT mode near <span class="arithmatex">\(\omega \approx 1.82\)</span>; kore gives
 <span class="arithmatex">\(\omega = 1.8173\)</span>, <span class="arithmatex">\(\sigma = -0.021\)</span>.</p>
 <p><strong>Solar inertial modes, Mukhopadhyay et al. 2025.</strong> The like-for-like set-up of heat-equation.md §8.
 <code>tests/diff_rot/mk_bekki.py</code> builds it (with keys for <span class="arithmatex">\(m\)</span>, the profile, the thermal-wind options and <span class="arithmatex">\(\Delta_\theta s\)</span>),
