@@ -221,32 +221,13 @@
   
   
     <li class="md-tabs__item">
-      <a href="../page2/" class="md-tabs__link">
+      <a href="../installation/" class="md-tabs__link">
         
   
   
     
   
   Installation
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="../page3/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Non-dimensionalization
 
       </a>
     </li>
@@ -266,6 +247,25 @@
     
   
   Anelastic equations
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../nondimensionalization/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Non-dimensionalization
 
       </a>
     </li>
@@ -404,7 +404,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../page2/" class="md-nav__link">
+      <a href="../installation/" class="md-nav__link">
         
   
   
@@ -412,33 +412,6 @@
     
   
     Installation
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../page3/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Non-dimensionalization
   
 
     
@@ -466,6 +439,33 @@
     
   
     Anelastic equations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../nondimensionalization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Non-dimensionalization
   
 
     
@@ -2672,12 +2672,12 @@ projects the diff-rot force of each source degree on the target degrees:</p>
 <p><code>diff_rot_solar</code> = [<span class="arithmatex">\(c_0\)</span>, <span class="arithmatex">\(c_2\)</span>, <span class="arithmatex">\(c_4\)</span>, <span class="arithmatex">\(\Omega_{\rm RZ}\)</span>, rtc, dtc] = [464, −76, −50, 433.5, 0.71, 0.045] (nHz and
 <span class="arithmatex">\(R_\odot\)</span>; Mukhopadhyay et al. 2026).</p>
 <p>'tabulated' reads <span class="arithmatex">\(\Omega(r, \theta)\)</span> from <code>diff_rot_file</code>, an .npz with <code>ome[θ, r]</code> (nHz), <code>r</code> (R☉) and <code>theta</code>
-(rad). This is the layout of the Mukhopadhyay et al. 2025 Edmond file <code>data/diff_rot.npz</code>;
-<code>tests/diff_rot/ls_to_edmond_layout.py</code> converts the Larson &amp; Schou 2018 table. At each table radius the profile is
+(rad). This is the layout of the file <code>data/diff_rot.npz</code> of Mukhopadhyay et al. 2025;
+<code>tests/diff_rot/ls_to_tabulated.py</code> converts the Larson &amp; Schou 2018 table. At each table radius the profile is
 projected on <span class="arithmatex">\(P_0\ldots P_{\mathrm{nmax}}\)</span> (<code>diff_rot_nmax</code>, 4–16), then fitted over the shell by a Chebyshev series of
 degree <code>diff_rot_rdeg</code> (24). The fit and truncation errors are printed.</p>
 <p>Both use <span class="arithmatex">\(\Delta\Omega = \Omega/\Omega_{\rm ref} - 1\)</span>, with <span class="arithmatex">\(\Omega_{\rm ref}/2\pi\)</span> = <code>diff_rot_frame</code> (456 nHz), and
-<span class="arithmatex">\(x = r\cdot\)</span><code>r_out</code> for a solar structure. For the Edmond profile the truncation error at nmax 8 is up to 17 nHz near
+<span class="arithmatex">\(x = r\cdot\)</span><code>r_out</code> for a solar structure. For the Mukhopadhyay et al. 2025 profile the truncation error at nmax 8 is up to 17 nHz near
 the poles at the surface; nmax 12 is the working choice.</p>
 <h3 id="amplitude-controls">Amplitude controls</h3>
 <p>These apply to every profile type:</p>
@@ -2781,12 +2781,12 @@ prograde), and both together <span class="arithmatex">\(-2.9\times10^{-7}\)</spa
   amplitudes) and on 'solar_P4'. It catches a 1e-4 change of one generic coefficient or of <span class="arithmatex">\(\sigma_n\)</span>.</li>
 <li>spin_doctor powers against the matrix pairings: ≤ 1e-8, with the energy balances closing to 1e-7 (1e-2 to 1
   without the new terms).</li>
-<li>kore's <span class="arithmatex">\(\partial_\theta S_{tw}\)</span> against the Edmond <code>dsdt</code>: 3 % rms (pole-to-equator contrast within 0.1–2 %).</li>
+<li>kore's <span class="arithmatex">\(\partial_\theta S_{tw}\)</span> against the Mukhopadhyay et al. 2025 <code>dsdt</code>: 3 % rms (pole-to-equator contrast within 0.1–2 %).</li>
 </ul>
 <h3 id="like-for-like-solar-benchmark">Like-for-like solar benchmark</h3>
 <p>This repeats §6 with the Mukhopadhyay et al. 2025 set-up in full: Model S density, shell 0.71–0.985 R☉,
 <span class="arithmatex">\(\nu = \kappa = 10^{12}\)</span>, <span class="arithmatex">\(\delta = 0\)</span>, stress-free, <span class="arithmatex">\(\partial_r s = 0\)</span>, <code>thermal_wind = 2</code> without
-<span class="arithmatex">\(u_r\thinspace \partial_r S_{tw}\)</span>, their <span class="arithmatex">\(\Omega\)</span> from the Edmond file, N 64, lmax <span class="arithmatex">\(m + 63\)</span>.
+<span class="arithmatex">\(u_r\thinspace \partial_r S_{tw}\)</span>, their <span class="arithmatex">\(\Omega\)</span> from their file <code>data/diff_rot.npz</code>, N 64, lmax <span class="arithmatex">\(m + 63\)</span>.
 <code>tests/diff_rot/run_bekki.py</code> rebuilds and solves these five modes. Frequencies are in nHz in the 456 nHz frame,
 negative is retrograde; the second number is the growth rate.</p>
 <table>
@@ -2903,7 +2903,7 @@ mode.</p>
 <h3 id="bekki-et-al-2024-onset-with-the-observed-rotation">Bekki et al. 2024 onset with the observed rotation</h3>
 <p>Set-up: <code>thermal_wind = 3</code> with <span class="arithmatex">\(\Delta_\theta s\)</span> prescribed, otherwise as above, m 1 symm −1. Run
 <code>tests/diff_rot/mk_bekki.py tw=3 ds=-1000 file=...</code>, then <code>solve_bekki.py RUN -93 5</code>.</p>
-<p>The m 1 high-latitude mode becomes unstable at <span class="arithmatex">\(\lvert\Delta_\theta s\rvert\)</span> = 425 erg/g/K with the Edmond <span class="arithmatex">\(\Omega\)</span>, and
+<p>The m 1 high-latitude mode becomes unstable at <span class="arithmatex">\(\lvert\Delta_\theta s\rvert\)</span> = 425 erg/g/K with the Mukhopadhyay et al. 2025 <span class="arithmatex">\(\Omega\)</span>, and
 at 546 with the Larson &amp; Schou 2018 table (<span class="arithmatex">\(c_p = 3.46\times10^{8}\)</span>; 513 and 658 with the papers' <span class="arithmatex">\(c_p = 4.17\times10^{8}\)</span>).
 The published value is ~500; the radially uniform <span class="arithmatex">\(P_0 + P_2\)</span> profile of §6 needs 2199 (2650).</p>
 <p>Growth rate (nHz) against <span class="arithmatex">\(\lvert\Delta_\theta s\rvert\)</span> (erg/g/K):</p>
@@ -2920,7 +2920,7 @@ The published value is ~500; the radially uniform <span class="arithmatex">\(P_0
 </thead>
 <tbody>
 <tr>
-<td>Edmond (mode at −91.1…−94.6 nHz)</td>
+<td>Mukhopadhyay et al. 2025 (mode at −91.1…−94.6 nHz)</td>
 <td>−3.70</td>
 <td>−1.60</td>
 <td>+0.68</td>
@@ -3008,11 +3008,11 @@ once over the whole Sun instead, with the table mirrored to negative <span class
 <li><code>solar_density_window = 'sun'</code> for the Model S <span class="arithmatex">\(\ln\rho\)</span>, <span class="arithmatex">\(\ln p\)</span> of structure <code>'old model S prototype'</code> (degree
   <code>solar_density_sun_deg</code> = 60; see "Model S density" in §8). It is the default when ricb = 0, which used to stop with an
   error.</li>
-<li><code>diff_rot_window = 'sun'</code> for a 'tabulated' <span class="arithmatex">\(\Omega\)</span> (degree <code>diff_rot_sun_deg</code> = 60: ~0.01 nHz on the Edmond file,
+<li><code>diff_rot_window = 'sun'</code> for a 'tabulated' <span class="arithmatex">\(\Omega\)</span> (degree <code>diff_rot_sun_deg</code> = 60: ~0.01 nHz on the Mukhopadhyay et al. 2025 profile,
   0.19 nHz for <span class="arithmatex">\(f_0\)</span> near 0.1 R☉). It is also the default when ricb = 0. Before, a ricb = 0 'tabulated' run fitted
   <span class="arithmatex">\([0, x_b]\)</span> and used <span class="arithmatex">\(|r|\)</span>, which has a kink at the centre and extrapolates below the first table radius; this is the
   only change to existing runs, and <code>regress.sh</code> has no 'tabulated' ricb = 0 case. Below the first table radius
-  (0.1 R☉ in the Edmond file, rigid at 433.5 nHz there) each <span class="arithmatex">\(f_n\)</span> is held at its value there. <code>diff_rot_hold</code> = <span class="arithmatex">\(x_h\)</span>
+  (0.1 R☉ in the Mukhopadhyay et al. 2025 file, rigid at 433.5 nHz there) each <span class="arithmatex">\(f_n\)</span> is held at its value there. <code>diff_rot_hold</code> = <span class="arithmatex">\(x_h\)</span>
   instead holds <span class="arithmatex">\(f_n\)</span> at <span class="arithmatex">\(f_n(x_h)\)</span> for <span class="arithmatex">\(x &lt; x_h\)</span>, blended over 0.01 R☉, to test how much the profile below the
   tachocline matters. It was found faulty on 2026-10-25 and removed on 2026-10-26
   (<a href="../differential_rotation_details/">differential_rotation_details.md</a> §5.1).</li>
@@ -3141,10 +3141,10 @@ Model S near the surface.</p>
 <li><code>tests/diff_rot/regress.sh</code> against the previous commit: the 13 configurations are bitwise equal.</li>
 <li>The §8 benchmark (Model S shell fit, 'tabulated') and a 'smoothed sun' run with the <code>aux</code> top hat and <code>visc0</code>,
   <code>therm0</code> ≠ 1: <span class="arithmatex">\(A\)</span> and <span class="arithmatex">\(B\)</span> bitwise equal to the previous commit.</li>
-<li><code>mk_rz.py</code> at rin 0.5 and at ricb 0 with the Edmond table rebuilds the scan's matrices exactly, and <code>solve_bekki.py</code>
+<li><code>mk_rz.py</code> at rin 0.5 and at ricb 0 with the Mukhopadhyay et al. 2025 table rebuilds the scan's matrices exactly, and <code>solve_bekki.py</code>
   gives m 3 n0 at −261.4694, −4.2153 nHz as above.</li>
 <li><code>ru_insane.py</code> (m 3, symm −1): the radiative interior at rin 0.5 (N 96) and at ricb 0 (N 384) PASS, worst 1.3e-10 and
-  1.2e-12; ricb 0 with the whole-Sun Edmond <span class="arithmatex">\(\Omega\)</span> (δ = 0) PASS 4e-8 at N 192 and 9e-13 at N 384. At N 96 the
+  1.2e-12; ricb 0 with the whole-Sun Mukhopadhyay et al. 2025 <span class="arithmatex">\(\Omega\)</span> (δ = 0) PASS 4e-8 at N 192 and 9e-13 at N 384. At N 96 the
   ricb 0 run fails at ~1e-3 (inertia, buoyancy, KE): the even Model S profiles need about 100 Chebyshev polynomials per
   parity.</li>
 </ul>

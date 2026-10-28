@@ -217,32 +217,13 @@
   
   
     <li class="md-tabs__item">
-      <a href="../page2/" class="md-tabs__link">
+      <a href="../installation/" class="md-tabs__link">
         
   
   
     
   
   Installation
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="../page3/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Non-dimensionalization
 
       </a>
     </li>
@@ -262,6 +243,25 @@
     
   
   Anelastic equations
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../nondimensionalization/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Non-dimensionalization
 
       </a>
     </li>
@@ -398,7 +398,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../page2/" class="md-nav__link">
+      <a href="../installation/" class="md-nav__link">
         
   
   
@@ -406,33 +406,6 @@
     
   
     Installation
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../page3/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Non-dimensionalization
   
 
     
@@ -460,6 +433,33 @@
     
   
     Anelastic equations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../nondimensionalization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Non-dimensionalization
   
 
     
@@ -1246,10 +1246,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#mukhopadhyay-et-al-2025a-convection-zone-edmond-their-compressible-values" class="md-nav__link">
+  <a href="#mukhopadhyay-et-al-2025a-convection-zone-their-their-compressible-values" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Mukhopadhyay et al. 2025a (convection zone, Edmond Ω): their compressible values
+        Mukhopadhyay et al. 2025a (convection zone, their Ω): their compressible values
       
     </span>
   </a>
@@ -1605,16 +1605,16 @@ rotation adds exactly three terms: <span class="arithmatex">\(\mathbf W\)</span>
 <div class="arithmatex">\[
 \mathbf U_0\cdot\nabla = \Omega_d\thinspace \partial_\phi, \qquad (\mathbf v\cdot\nabla)(\hat{\mathbf z}\times\mathbf r) = \hat{\mathbf z}\times\mathbf v ,
 \]</div>
-<p>for any vector <span class="arithmatex">\(\mathbf v\)</span>. In components, with <span class="arithmatex">\(\hat{\mathbf z} = \cos\theta\thinspace \hat{\mathbf r} - \sin\theta\thinspace \hat{\boldsymbol\theta}\)</span>,</p>
+<p>for any vector <span class="arithmatex">\(\mathbf v\)</span>. In components, with <span class="arithmatex">\(\hat{\mathbf z} = \cos\theta\thinspace \hat{\mathbf r} - \sin\theta\thinspace \hat{\mathbf e}_\theta\)</span>,</p>
 <div class="arithmatex">\[
 \hat{\mathbf z}\times\mathbf u = \left(-\sin\theta\thinspace u_\phi,\ -\cos\theta\thinspace u_\phi,\ \sin\theta\thinspace u_r + \cos\theta\thinspace u_\theta\right) \qquad (2.5)
 \]</div>
-<p>in the <span class="arithmatex">\((\hat{\mathbf r}, \hat{\boldsymbol\theta}, \hat{\mathbf e}_ \phi)\)</span> basis.</p>
+<p>in the <span class="arithmatex">\((\hat{\mathbf r}, \hat{\mathbf e}_\theta, \hat{\mathbf e}_ \phi)\)</span> basis.</p>
 <h3 id="23-derivation-of-the-momentum-term">2.3 Derivation of the momentum term</h3>
 <p><strong>Advection of the perturbation by <span class="arithmatex">\(\mathbf U_0\)</span>.</strong> <span class="arithmatex">\((\mathbf U_0\cdot\nabla)\mathbf u = \Omega_d\thinspace \partial_\phi\mathbf u\)</span>, where
 <span class="arithmatex">\(\partial_\phi\)</span> also acts on the unit vectors: <span class="arithmatex">\(\partial_\phi\hat{\mathbf r} = \sin\theta\thinspace \hat{\mathbf e}_ \phi\)</span>,
-<span class="arithmatex">\(\partial_\phi\hat{\boldsymbol\theta} = \cos\theta\thinspace \hat{\mathbf e}_ \phi\)</span>,
-<span class="arithmatex">\(\partial_\phi\hat{\mathbf e}_ \phi = -\sin\theta\thinspace \hat{\mathbf r} - \cos\theta\thinspace \hat{\boldsymbol\theta}\)</span>. With (2.5) this is</p>
+<span class="arithmatex">\(\partial_\phi\hat{\mathbf e}_\theta = \cos\theta\thinspace \hat{\mathbf e}_ \phi\)</span>,
+<span class="arithmatex">\(\partial_\phi\hat{\mathbf e}_ \phi = -\sin\theta\thinspace \hat{\mathbf r} - \cos\theta\thinspace \hat{\mathbf e}_\theta\)</span>. With (2.5) this is</p>
 <div class="arithmatex">\[
 (\mathbf U_0\cdot\nabla)\mathbf u = \Omega_d\left[i m\thinspace \mathbf u + \hat{\mathbf z}\times\mathbf u\right],
 \]</div>
@@ -1742,7 +1742,7 @@ u_r = \frac{L P_l}{r} Y_l, \qquad u_\theta = a_l\thinspace \partial_\theta Y_l +
 <p>Any vector field <span class="arithmatex">\(\mathbf F\)</span> is projected on vector spherical harmonics as</p>
 <div class="arithmatex">\[
 \mathbf F = \sum_l\left[F^q_l\thinspace Y_l\thinspace \hat{\mathbf r} + F^s_l\thinspace r\nabla Y_l + F^t_l\thinspace r\nabla Y_l\times\hat{\mathbf r}\right], \qquad
-r\nabla Y = \partial_\theta Y\thinspace \hat{\boldsymbol\theta} + Z\thinspace \hat{\mathbf e}_ \phi, \quad r\nabla Y\times\hat{\mathbf r} = Z\thinspace \hat{\boldsymbol\theta} - \partial_\theta Y\thinspace \hat{\mathbf e}_ \phi , \qquad (3.3)
+r\nabla Y = \partial_\theta Y\thinspace \hat{\mathbf e}_\theta + Z\thinspace \hat{\mathbf e}_ \phi, \quad r\nabla Y\times\hat{\mathbf r} = Z\thinspace \hat{\mathbf e}_\theta - \partial_\theta Y\thinspace \hat{\mathbf e}_ \phi , \qquad (3.3)
 \]</div>
 <p>with, since <span class="arithmatex">\(\int(\lvert\partial_\theta Y_l\rvert^2 + \lvert Z_l\rvert^2)\thinspace d\Omega = L n_l\)</span>,</p>
 <div class="arithmatex">\[
@@ -2860,7 +2860,7 @@ convection zone with a radiative interior. Computed on a Mac (48 GB) on 2026-10-
 <tr>
 <td>Mukhopadhyay, Bekki, Zhu &amp; Gizon 2025a, A&amp;A (arXiv 2501.16797)</td>
 <td>fully compressible, solar convection zone</td>
-<td>their Edmond file</td>
+<td>their file <code>data/diff_rot.npz</code></td>
 <td>structure <code>'old model S prototype'</code> (Model S density), 'tabulated'</td>
 </tr>
 <tr>
@@ -3306,7 +3306,7 @@ resolution, rounded up to kore's lmax. The labels of Figs. 5 and 10 drop the sig
   unaffected (lmax 815 → 1007: Δω 8e-6, Δτ 0.3 %, residual 2e-12). Plots of these modes need 11–12 decades to show
   the bulk structure.
 - <strong>E = 1e-10, Table 1</strong> is beyond the resolution that fits in memory with three fields.</p>
-<h4 id="mukhopadhyay-et-al-2025a-convection-zone-edmond-their-compressible-values">Mukhopadhyay et al. 2025a (convection zone, Edmond Ω): their compressible values</h4>
+<h4 id="mukhopadhyay-et-al-2025a-convection-zone-their-their-compressible-values">Mukhopadhyay et al. 2025a (convection zone, their Ω): their compressible values</h4>
 <table>
 <thead>
 <tr>
@@ -3520,7 +3520,7 @@ rates to choose between them.</p>
 <ul>
 <li>Baruteau, Guenel and Mirouh: <code>tests/diff_rot/lit_bench.py WORKDIR CASE [N=.. lmax=.. ncpus=8 nev=..]</code>. <code>list</code> prints the
   cases. The largest run here (Fig. 6 at 640 × 1215) took 26 GB and 5.5 minutes on 8 ranks.</li>
-<li>Solar: <code>tests/diff_rot/solar_checks.py EDMOND_NPZ [WORKDIR]</code>, about 40 minutes on one core.</li>
+<li>Solar: <code>tests/diff_rot/solar_checks.py DIFF_ROT_NPZ [WORKDIR]</code>, about 40 minutes on one core.</li>
 <li>Structure <code>'Boussinesq'</code> is the uniform-density model these runs need (<span class="arithmatex">\(\ln\rho_0 = 0\)</span>, <span class="arithmatex">\(p_0 = 1\)</span>, <span class="arithmatex">\(g = r\)</span>); Mirouh et
   al. add stratification <code>'linear'</code>, <span class="arithmatex">\(dS/dr = r\)</span> (<a href="../background/">background.md</a>).</li>
 </ul>

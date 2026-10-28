@@ -221,32 +221,13 @@
   
   
     <li class="md-tabs__item">
-      <a href="../page2/" class="md-tabs__link">
+      <a href="../installation/" class="md-tabs__link">
         
   
   
     
   
   Installation
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="../page3/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Non-dimensionalization
 
       </a>
     </li>
@@ -266,6 +247,25 @@
     
   
   Anelastic equations
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../nondimensionalization/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Non-dimensionalization
 
       </a>
     </li>
@@ -404,7 +404,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../page2/" class="md-nav__link">
+      <a href="../installation/" class="md-nav__link">
         
   
   
@@ -412,33 +412,6 @@
     
   
     Installation
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../page3/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Non-dimensionalization
   
 
     
@@ -466,6 +439,33 @@
     
   
     Anelastic equations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../nondimensionalization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Non-dimensionalization
   
 
     
@@ -1268,11 +1268,11 @@ example, the cylindrical rotation as a <code>'user'</code> profile (it gives the
 <p>The degrees must be even, and the expressions must not contain <code>#</code>: <code>spin_doctor</code> writes them at the end of each
 <code>params.dat</code> row, after a <code>#</code>. Any degree up to 16 works with <code>thermal_wind = 2</code> (32 with <code>thermal_wind = 1</code>).</p>
 <p><strong><code>'tabulated'</code>.</strong> The file holds <code>ome[θ, r]</code> (nHz), <code>r</code> (R☉) and <code>theta</code> (rad), the layout of <code>data/diff_rot.npz</code>
-of the Mukhopadhyay et al. 2025 data set (Edmond). <code>tests/diff_rot/ls_to_edmond_layout.py</code> converts the Larson &amp;
+of the Mukhopadhyay et al. 2025 data set. <code>tests/diff_rot/ls_to_tabulated.py</code> converts the Larson &amp;
 Schou 2018 table to it; <code>bin/jsoc_hmi_2010_2026.npz</code> is the mean of the 83 JSOC HMI 72-day inversions
 (<code>hmi.V_sht_2drls</code>, NACOEFF 36) from 2010-04-30 to 2026-06-29 in this layout, on the 151 table radii. kore projects <span class="arithmatex">\(\Omega\)</span> on <span class="arithmatex">\(P_0 \dots P_{n_{\max}}\)</span> at each table radius, fits each <span class="arithmatex">\(f_n\)</span> in <span class="arithmatex">\(r\)</span> over the table radii
 within 0.01 of the shell, and prints the fit residuals and the truncation error in nHz (the largest difference
-between the table and its expansion up to <span class="arithmatex">\(P_{n_{\max}}\)</span>); check that line. For the Edmond profile the truncation error near the poles at the surface is up to 17 nHz at
+between the table and its expansion up to <span class="arithmatex">\(P_{n_{\max}}\)</span>); check that line. For the Mukhopadhyay et al. 2025 profile the truncation error near the poles at the surface is up to 17 nHz at
 <code>diff_rot_nmax = 8</code>; 12 is the working choice.</p>
 <h2 id="heat-equation-thermal-1">Heat equation (<code>thermal = 1</code>)</h2>
 <p><code>thermal_wind</code> chooses which entropy terms are added and where the latitudinal background entropy <span class="arithmatex">\(S_{tw}\)</span> comes from.
@@ -1376,7 +1376,7 @@ parameters it sets:</p>
 </span></code></pre></div>
 <p>The <span class="arithmatex">\(m = 1\)</span> high-latitude mode comes out at −95.76 nHz with growth rate +11.30 nHz (theirs: −95.70, +11.69); the
 table in heat-equation.md §8 has more modes. With <code>thermal_wind = 3</code> and <code>dSdtheta</code> <span class="arithmatex">\(= \Delta_\theta s/c_p\)</span> the same set-up gives the
-baroclinic onset of Bekki et al. 2024 (<span class="arithmatex">\(\lvert\Delta_\theta s\rvert \approx 425\)</span> erg g⁻¹ K⁻¹ with the Edmond <span class="arithmatex">\(\Omega\)</span>).</p>
+baroclinic onset of Bekki et al. 2024 (<span class="arithmatex">\(\lvert\Delta_\theta s\rvert \approx 425\)</span> erg g⁻¹ K⁻¹ with the Mukhopadhyay et al. 2025 <span class="arithmatex">\(\Omega\)</span>).</p>
 <h2 id="references">References</h2>
 <ul>
 <li>Baruteau &amp; Rieutord 2013, JFM 719, 47 (shellular and cylindrical profiles)</li>
@@ -1384,7 +1384,7 @@ baroclinic onset of Bekki et al. 2024 (<span class="arithmatex">\(\lvert\Delta_\
 <li>Mirouh, Baruteau, Rieutord &amp; Ballot 2016, JFM 800, 213 (shellular, Boussinesq)</li>
 <li>Bekki, Cameron &amp; Gizon 2022, A&amp;A 662, A16 (solar inertial modes, thermal wind)</li>
 <li>Bekki et al. 2024 (baroclinic instability of the high-latitude mode, prescribed <span class="arithmatex">\(\Delta_\theta s\)</span>)</li>
-<li>Mukhopadhyay, Bekki, Zhu &amp; Gizon 2025, A&amp;A, arXiv 2501.16797 (benchmark tables, Edmond <span class="arithmatex">\(\Omega\)</span> data)</li>
+<li>Mukhopadhyay, Bekki, Zhu &amp; Gizon 2025, A&amp;A, arXiv 2501.16797 (benchmark tables, their <span class="arithmatex">\(\Omega\)</span> data)</li>
 <li>Larson &amp; Schou 2018 (HMI rotation table)</li>
 </ul>
 

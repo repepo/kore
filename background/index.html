@@ -9,7 +9,7 @@
       
       
       
-        <link rel="prev" href="../anelastic/">
+        <link rel="prev" href="../nondimensionalization/">
       
       
         <link rel="next" href="../solver/">
@@ -221,32 +221,13 @@
   
   
     <li class="md-tabs__item">
-      <a href="../page2/" class="md-tabs__link">
+      <a href="../installation/" class="md-tabs__link">
         
   
   
     
   
   Installation
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="../page3/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Non-dimensionalization
 
       </a>
     </li>
@@ -266,6 +247,25 @@
     
   
   Anelastic equations
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../nondimensionalization/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Non-dimensionalization
 
       </a>
     </li>
@@ -404,7 +404,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../page2/" class="md-nav__link">
+      <a href="../installation/" class="md-nav__link">
         
   
   
@@ -412,33 +412,6 @@
     
   
     Installation
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../page3/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Non-dimensionalization
   
 
     
@@ -466,6 +439,33 @@
     
   
     Anelastic equations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../nondimensionalization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Non-dimensionalization
   
 
     
@@ -976,7 +976,8 @@ The code is in <code>bin/background.py</code> (the choice, the checks, the strat
 <code>bin/radial_profiles.py</code> (one class per structure). These names replaced <code>model_type</code>, <code>heating</code>, <code>solar_rz</code>,
 <code>solar_density</code> and <code>aux0</code> on 2026-10-26; the <a href="#the-former-names">last section</a> translates old parameter files.</p>
 <h2 id="units">Units</h2>
-<p>kore is dimensionless. The unit of length is the radius of the outer wall, <span class="arithmatex">\(r = 1\)</span>. <code>r_out</code> is that radius in star
+<p>kore is dimensionless (<a href="../nondimensionalization/">Non-dimensionalization</a> gives the scales). The unit of length is the
+radius of the outer wall, <span class="arithmatex">\(r = 1\)</span>. <code>r_out</code> is that radius in star
 radii (1 by default), so <span class="arithmatex">\(x = r\cdot\)</span><code>r_out</code> is the radius in star radii. With <code>Gaspard = 1</code> the unit of time is
 <span class="arithmatex">\(1/\Omega\)</span>; then <code>ViscosD</code> <span class="arithmatex">\(= \nu/(\Omega L^2)\)</span>, <code>ThermaD</code> <span class="arithmatex">\(= \kappa/(\Omega L^2)\)</span> with <span class="arithmatex">\(L\)</span> = <code>r_out</code> star radii, and the
 buoyancy frequency is</p>
