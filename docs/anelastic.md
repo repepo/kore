@@ -95,8 +95,7 @@ $$
 
 in units of $1/\tau^2$. Only $d\ln\rho_0/dr$ and its derivatives enter the momentum equation, and only the shape of
 $p_0$ enters the heat equation, so the normalisation of $\rho_0$ and $p_0$ does not matter. With the differential
-rotation on, the background flow adds three terms to these equations ([Differential rotation](differential_rotation_details.md),
-§2.1).
+rotation on, the background flow adds three terms to these equations ([Differential rotation](differential_rotation_details.md#21-the-linear-anelastic-lbr-equations)).
 
 | parameter | symbol | meaning |
 | --- | --- | --- |

@@ -16,7 +16,7 @@ par.set_scales()
 # A smooth Sun in the full sphere (ricb = 0): Model S density with g and p in hydrostatic balance, the radiative interior of
 # Mukhopadhyay et al. 2025b (dS/dr, ν_RZ = 1e10 and κ_RZ = 4e10 cm²/s), and the observed differential rotation (HMI
 # 2010-2026 mean, Legendre degrees up to 4) with its exact thermal wind, and a slightly subadiabatic convection zone
-# (δ_cz close to the fit to the RDA HFR frequencies of Hanson et al. 2022, docs/heat-equation.md; at the MCA fit,
+# (δ_cz close to the fit to the RDA HFR frequencies of Hanson et al. 2022; at the MCA fit,
 # -2.1e-7, the m = 8 HFR mixes with deep-core r modes). Copy to bin/parameters.py.
 # The m = 8 high-frequency retrograde (HFR) mode near the target: σ = -33.18, ω = -271.19 nHz in the 456 nHz frame
 # (λ = -0.07275 + 0.59471i), with 0.55 % of its kinetic energy below 0.70 R☉; residσ 8.7e-5, resid𝑠 3.3e-5 and

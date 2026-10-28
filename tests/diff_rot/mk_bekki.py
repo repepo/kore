@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 '''
 mk_bekki.py NAME [key=val ...]: builds the run directory NAME (a copy of the repo's bin/ with its own parameters.py) for
-the solar inertial-mode benchmark of Bekki, Cameron & Gizon 2022 and Mukhopadhyay et al. 2025 (docs/heat-equation.md
-§6 and §8), and runs submatrices.py and assemble.py there on one rank. Solve with solve_bekki.py.
+the solar inertial-mode benchmark of Bekki, Cameron & Gizon 2022 and Mukhopadhyay et al. 2025 (docs/benchmarks.md),
+and runs submatrices.py and assemble.py there on one rank. Solve with solve_bekki.py.
 
 Set-up: structure 'old model S prototype' (the Model S density), shell 0.71-0.985 R☉ (r_out = 0.985),
 dS0/dr = 0 (δ = 0), ν = κ = 1e12 cm²/s, stress-free walls with ∂ᵣs = 0, time unit 1/Ω_ref with Ω_ref/2π = frame nHz.
@@ -11,7 +11,7 @@ keys (default):
   m (1), symm (-1), N (64), lmax (m + 63)
   dr (1): diff_rot; dr=0 for uniform rotation
   drtype ('tabulated'): diff_rot_type; 'tabulated' needs file=, 'Y20' with amp = P2/P0 is the radially uniform
-                        Snodgrass profile of §6 (amp = -79.03/426.86 with frame = 426.86)
+                        Snodgrass profile (amp = -79.03/426.86 with frame = 426.86)
   file: the .npz of 'tabulated' (data/diff_rot.npz of the Mukhopadhyay et al. 2025 data set, doi:10.17617/3.NP26AI,
         or the output of ls_to_tabulated.py for the Larson & Schou 2018 table); a relative path is taken from the
         current directory

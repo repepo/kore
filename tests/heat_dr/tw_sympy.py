@@ -15,7 +15,7 @@ def sigmas(F):
     S = sp.integrate(sp.expand(dSdx), (x, -1, x))
     return [sp.simplify(sp.Rational(2*n + 1, 2)*sp.integrate(sp.expand(S*P[n]), (x, -1, 1))) for n in range(9)]
 fp0, fp2 = sp.diff(f0, r), sp.diff(f2, r)
-# closed forms as coded in radial_profiles.sigma2/4/6 (G^2 times eq. 3' of docs/heat-equation.md)
+# closed forms as coded in radial_profiles.sigma2/4/6 (eq. 2.10 of docs/differential_rotation_details.md)
 lin = {2: -(2*r**2*G**2/(B*g))*(fp0/3 + fp2/21 + sp.Rational(4, 7)*f2/r),
        4: -(6*r**2*G**2/(35*B*g))*(fp2 - 2*f2/r), 6: 0}
 ex = {2: -(2*r**2*G**2/(B*g))*((1 + f0)*(fp0/3 + fp2/21 + sp.Rational(4, 7)*f2/r) + f2*(fp0 + fp2)/21),

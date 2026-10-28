@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 '''
-solar_checks.py DIFF_ROT_NPZ [WORKDIR]: the solar rows of docs/differential_rotation_details.md §11. Mukhopadhyay et al.
+solar_checks.py DIFF_ROT_NPZ [WORKDIR]: the solar benchmarks of docs/benchmarks.md. Mukhopadhyay et al.
 2025a (their Ω, mk_bekki.py) and 2025b (radiative interior, rin 0.5 R☉, mk_rz.py), each with the thermal wind (thermal_wind 2 without
 u_r ∂S_tw/∂r) and without it (thermal_wind 0). Prints, per mode, the eigenvalues nearest the published one (nHz, frame
 456 nHz, negative retrograde; growth rate second) with the solver residual and, for 2025b, the fraction of the kinetic

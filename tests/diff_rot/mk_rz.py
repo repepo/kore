@@ -2,7 +2,7 @@
 '''
 mk_rz.py NAME [key=val ...]: builds the run directory NAME (a copy of the repo's bin/ with its own parameters.py) for the
 radiative-interior set-up of Mukhopadhyay, Bekki, Zhu & Gizon 2025, "Effects of the radiative interior on solar inertial
-modes" (arXiv 2512.12691; docs/heat-equation.md §9), with any inner radius down to 0, and runs submatrices.py and
+modes" (arXiv 2512.12691; docs/benchmarks.md), with any inner radius down to 0, and runs submatrices.py and
 assemble.py there on one rank. Solve with solve_bekki.py (scipy, small N) or bin/solve.py (SLEPc + MUMPS).
 
 Set-up: structure 'old model S prototype', Model S fitted over the whole Sun (solar_density_window = 'sun'), their rotation

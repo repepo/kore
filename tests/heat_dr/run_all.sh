@@ -1,5 +1,5 @@
 #!/bin/bash
-# Rebuilds the test runs of the differential-rotation heat-equation terms and runs every check (docs/heat-equation.md).
+# Rebuilds the test runs of the differential-rotation heat-equation terms and runs every check (docs/differential_rotation_details.md §9).
 # usage: tests/heat_dr/run_all.sh [WORKDIR]   (default: tests/heat_dr/runs; needs numpy, scipy, sympy, mpi4py; ~10 minutes)
 set -e -o pipefail  # a crash in a 'check | tail' or 'check | sed' pipeline stops the script
 T=$(cd "$(dirname "$0")" && pwd)

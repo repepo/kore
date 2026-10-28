@@ -12,10 +12,9 @@ departure from it, written as a sum of Legendre polynomials in $\cos\theta$ with
 $n$ appear, so the rotation is symmetric about the equator.
 
 This page is the user guide: what is modelled, the parameters, the built-in profiles and their limits, and two worked
-examples. The derivation and the implementation notes are in [heat-equation.md](heat-equation.md) (thermal terms,
-generic $P_n$ couplings, benchmarks, and a [table of notation and code names](heat-equation.md#notation-and-code-names))
-and in [thermad0.md](thermad0.md) (runs without thermal diffusion, `ThermaD = 0`). The checks are described in
-`tests/diff_rot/README.md` and `tests/heat_dr/README.md`.
+examples. The equations and how the code builds them are on the page
+[Equations and implementation](differential_rotation_details.md), the comparisons with published results on
+[Benchmarks](benchmarks.md), and runs without thermal diffusion on [ThermaD = 0](thermad0.md).
 
 ## What is modelled
 
@@ -55,7 +54,7 @@ The first is the advection of the entropy perturbation $s$ by $\mathbf U_0$. The
 latitudinal background entropy $S_{tw}(r,\theta)$ by the perturbation. $S_{tw}$ is either the thermal wind that balances
 $\Omega(r,\theta)$ (the latitudinal entropy a differentially rotating star needs to be in equilibrium; Bekki, Cameron &
 Gizon 2022, eq. 27) or prescribed. These thermal-wind terms are not small corrections: in a convection zone they act at
-the same order as the momentum terms (heat-equation.md §1).
+the same order as the momentum terms ([thermal-wind balance](differential_rotation_details.md#13-thermal-wind-balance)).
 
 Not modelled:
 
@@ -77,7 +76,7 @@ follow:
   435 nHz; for `'solar_P4'` and `'tabulated'` at `diff_rot_frame` (456 nHz by default). The other types are
   dimensionless.
 - With `thermal_wind = 2` the eigenvalues do not depend on the choice of frame. With `thermal_wind = 1` (linear in
-  $\Delta\Omega$) they do, at second order in $\Delta\Omega$: 0.1–0.9 nHz for the solar modes of heat-equation.md §6.
+  $\Delta\Omega$) they do, at second order in $\Delta\Omega$: by 0.1–0.9 nHz for solar inertial modes.
 
 Eigenvalues are in the rotating frame of $\Omega_{\rm ref}$, as for uniform rotation.
 
@@ -108,13 +107,12 @@ of `2*ncpus` (`assemble.py` stops otherwise).
 | `diff_rot_file` | `''` | `'tabulated'`: the .npz file, absolute or relative to the run directory |
 | `diff_rot_nmax` | 8 | `'tabulated'`: highest degree kept, even (up to 16 with `thermal_wind = 2`) |
 | `diff_rot_rdeg` | 24 | `'tabulated'`: degree of the Chebyshev fit of each $f_n$ in $r$ |
-| `diff_rot_window` | None | `'tabulated'`: None fits over the shell if ricb > 0 and is `'sun'` if ricb = 0; `'sun'`: one fit over the whole Sun, even in $r$, the same for any ricb ([heat-equation.md](heat-equation.md) §9) |
+| `diff_rot_window` | None | `'tabulated'`: None fits over the shell if ricb > 0 and is `'sun'` if ricb = 0; `'sun'`: one fit over the whole Sun, even in $r$, the same for any ricb |
 | `diff_rot_sun_deg` | 60 | `'sun'`: degree of that fit |
 | `thermal_wind` | 1 | heat-equation terms, see below |
 | `thermal_wind_radial` | 1 | 0 drops $u_r\thinspace \partial_r S_{tw}$ |
 | `thermal_wind_amplitude` | 1.0 | factor on $S_{tw}$ (`thermal_wind` 1, 2) |
 | `dSdtheta` | 0.0 | `thermal_wind = 3`: $\partial_\theta S_{tw}$ = `dSdtheta` $\sin 2\theta$ |
-| `drop_tol` | 0 | numerics: drops matrix entries below `drop_tol` (relative) to save memory; 0 is off ([params_default.py](../bin/params_default.py)) |
 
 The background (`structure`, `stratification`, `diffusivity`, `r_out`) has its own page, [background.md](background.md).
 
@@ -132,7 +130,7 @@ with a solar structure ([background.md](background.md)), $x = r$ otherwise.
 | `'shellular_boussinesq'` | $\tfrac12 N_0^2\thinspace (1 - r^2)$, $N_0^2 = a$ | $P_0$ | Mirouh et al. 2016; use `thermal_wind = 0` (their background has no thermal wind), structure `'Boussinesq'` and stratification `'linear'` |
 | `'cylindrical'` | $\varepsilon\thinspace r^2\sin^2\theta$, $\varepsilon = a$ | $P_0$, $P_2$ | Baruteau & Rieutord 2013; barotropic, $S_{tw} = 0$ |
 | `'conical'` | $\varepsilon\sin^2\theta$, $\varepsilon = a$ | $P_0$, $P_2$ | Guenel et al. 2016 |
-| `'solar'` | $a\thinspace \times$ helioseismic fit, $P_0 + P_2$, tanh step at $x = 0.71$ of width 0.1 | $P_0$, $P_2$ | relative to 435 nHz; 4.5 nHz too fast at the equator and 12 nHz at the pole compared with the observations (heat-equation.md §6) |
+| `'solar'` | $a\thinspace \times$ helioseismic fit, $P_0 + P_2$, tanh step at $x = 0.71$ of width 0.1 | $P_0$, $P_2$ | relative to 435 nHz; 4.5 nHz too fast at the equator and 12 nHz at the pole compared with the observations |
 | `'solar_P4'` | $a\thinspace (\Omega/\Omega_{\rm ref} - 1)$, $\Omega$ the fit below | $P_0$, $P_2$, $P_4$ | `diff_rot_solar`, `diff_rot_frame`; defaults from Mukhopadhyay et al. 2026 |
 | `'tabulated'` | $a\thinspace (\Omega/\Omega_{\rm ref} - 1)$, $\Omega$ from `diff_rot_file` | $P_0 \dots P_{n_{\max}}$ | below |
 | `'user'` | $a\sum_n f_n(r) P_n(\cos\theta)$, $f_n$ from `diff_rot_profiles` | the keys of `diff_rot_profiles` | below |
@@ -148,7 +146,10 @@ convection zone whose rotation depends on latitude only:
 
 $$
 \frac{\Omega}{2\pi} = \Omega_{RZ} + \tfrac12\left[\Omega_{CZ}(\theta) - \Omega_{RZ}\right]\left[1 + \mathrm{erf}\thinspace \frac{x - r_{tc}}{d_{tc}}\right],
-\qquad \Omega_{CZ} = c_0 + c_2\cos^2\theta + c_4\cos^4\theta ,
+$$
+
+$$
+\Omega_{CZ} = c_0 + c_2\cos^2\theta + c_4\cos^4\theta ,
 $$
 
 with `diff_rot_solar` = [$c_0$, $c_2$, $c_4$, $\Omega_{RZ}$, $r_{tc}$, $d_{tc}$] (nHz, and fractions of R☉).
@@ -195,9 +196,7 @@ The advection of $s$ by the differential rotation, the first term, is always inc
   the consistent choice, but it moves the solar columnar and high-frequency retrograde modes by 5–15 nHz.
 - With the thermal wind $S_{tw}$ is the only latitudinal entropy gradient; in a convection zone with $dS_0/dr = 0$ it is
   also the only background entropy gradient, and its effect on the modes is of the same order as the momentum terms.
-- `ThermaD = 0` works with every option. With `thermal_wind ≥ 1` the heat rows are written as $r^2\thinspace (\mathrm{eq})/p_0$ in a $C^{(1)}$
-  basis; see [thermad0.md](thermad0.md) for the caveats (unresolved boundary layer as `ThermaD` $\to 0$, small-scale
-  growing modes without diffusion).
+- `ThermaD = 0` works with every option; [ThermaD = 0](thermad0.md) lists what to watch for.
 
 ## Resolution and cost
 
@@ -208,6 +207,9 @@ The advection of $s$ by the differential rotation, the first term, is always inc
   couple degrees that far apart. Matrices are therefore widest with `'tabulated'` and a large `diff_rot_nmax`.
 - With `ricb = 0` (a full sphere) the profiles are evaluated at $\lvert r\rvert$, to keep them smooth at the centre. `'Y20-wall-bounded'` and `'shellular'` (except even $\sigma > 0$) have a
   kink at $r = 0$ and `submatrices.py` prints a WARNING. The `'solar'` tachocline step needs N ≈ 400 at `ricb = 0`.
+- Modes that reach into a radiative interior have short radial wavelengths. In a full sphere with the radiative
+  interior of stratification `'solar_rz'`, solar inertial modes needed N = 768 to 1024 for the `spin_doctor`
+  residuals, although their eigenvalues converge at a lower N. [Solver](solver.md) has the memory this takes.
 - Check convergence with `spin_doctor` as for any run; its residuals include the diff-rot terms.
 
 ## Output
@@ -224,45 +226,19 @@ writes the options to `params.dat`, after the general columns (the order is that
     stratification, diffusivity
 
 `diff_rot_type` is written as its index in `diff_rot.TYPES` ('Y20' 0, …, 'rigid' 7, 'solar_P4' 8, 'tabulated' 9,
-'user' 10); the background columns are described in [background.md](background.md). A row ends, after a `#` that
+'user' 10); the background columns are described in [Background model](background.md). A row ends, after a `#` that
 `np.loadtxt` skips, with the `'user'` profile definitions and, for `'tabulated'`, `diff_rot_file` with the first 12 hex
 digits of its sha256 (a row with neither has no `#`). `diff_rot_window` is 0 for the shell fit and 1 for the whole-Sun
-fit (with `diff_rot_rdeg` then the degree used, `diff_rot_sun_deg`). The column `diff_rot_ampl` is the former
-`diff_rot_amplitude`, and the removed options `diff_rot_generic` and `diff_rot_hold` are always 0 and nan, so that the
-other columns keep their positions; `diff_rot_param`, `stratification` and `diffusivity` are appended at the end. A
-`params.dat` written by an older version may have fewer columns; start a new file rather than appending to it. The
-former names `diff_rot_amplitude` and `diff_rot_generic`, and `diff_rot_hold` (removed on 2026-10-26,
-[differential_rotation_details.md](differential_rotation_details.md) §5.1), stop a run (`diff_rot.check`).
+fit (with `diff_rot_rdeg` then the degree used, `diff_rot_sun_deg`). The columns `diff_rot_generic` and
+`diff_rot_hold` are not used (always 0 and nan); they keep the positions of the columns after them. Start a new
+`params.dat` rather than append to one written by another version of kore, which may have other columns.
 
 ## Examples
 
-**Conical rotation, Guenel et al. 2016.** `ricb = 0.71`, `diff_rot_type = 'conical'`, `diff_rot_ampl = -0.25`,
-$E = 10^{-5}$, uniform density (structure `'Boussinesq'`), stress-free, `thermal = 0`, $m = 0$: their DT mode near $\omega \approx 1.82$; kore gives
-$\omega = 1.8173$, $\sigma = -0.021$.
-
-**Solar inertial modes, Mukhopadhyay et al. 2025.** The like-for-like set-up of heat-equation.md §8.
-`tests/diff_rot/mk_bekki.py` builds it (with keys for $m$, the profile, the thermal-wind options and $\Delta_\theta s$),
-`solve_bekki.py` solves it near a target frequency in nHz, and `run_bekki.py` reproduces the five modes of §8. The
-parameters it sets:
-
-```python
-import units
-par.timescale = 'rotation'; par.set_scales()
-par.structure = 'old model S prototype'                  # the Model S density (background.md)
-par.r_out = 0.985; par.ricb = 0.71/0.985                 # shell 0.71-0.985 R☉
-par.stratification = 'odd top hat'                       # with A = aux5 = 0: dS0/dr = 0 (δ = 0)
-par.aux1, par.aux2, par.aux3, par.aux4, par.aux5 = 0.0, 0.1, 0.68, 0.06, 0.0
-par.thermal = 1; par.bci = par.bco = 0; par.bci_thermal = par.bco_thermal = 1
-par.diff_rot = 1; par.diff_rot_type = 'tabulated'; par.diff_rot_file = 'diff_rot.npz'
-par.diff_rot_nmax = 12
-par.thermal_wind = 2; par.thermal_wind_radial = 0
-units.set_physical(par, frame_nHz=456.0, nu=1e12, kappa=1e12)   # Gaspard, Beyonce, ViscosD, ThermaD, diff_rot_frame
-par.N = 64; par.lmax = par.m + 63
-```
-
-The $m = 1$ high-latitude mode comes out at −95.76 nHz with growth rate +11.30 nHz (theirs: −95.70, +11.69); the
-table in heat-equation.md §8 has more modes. With `thermal_wind = 3` and `dSdtheta` $= \Delta_\theta s/c_p$ the same set-up gives the
-baroclinic onset of Bekki et al. 2024 ($\lvert\Delta_\theta s\rvert \approx 425$ erg g⁻¹ K⁻¹ with the Mukhopadhyay et al. 2025 $\Omega$).
+The set-ups on the page [Benchmarks](benchmarks.md) are complete examples: conical and cylindrical rotation in an
+incompressible fluid, shellular rotation in a stratified Boussinesq fluid, and the solar convection zone with the
+observed rotation and its thermal wind, with and without a radiative interior. `examples/smooth_sun/parameters.py` is a
+full-sphere solar model with a radiative interior and the rotation of `bin/jsoc_hmi_2010_2026.npz`.
 
 ## References
 

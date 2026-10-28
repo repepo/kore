@@ -10,36 +10,17 @@ diffusivity $\kappa$ are radial profiles. The background has three parts, each c
 | stratification | `stratification` | $dS/dr$, with $S = \delta s/c_p$ (only with `thermal = 1`) |
 | diffusivity | `diffusivity` | the radial profiles of $\nu$ and $\kappa$ |
 
-The rotation of the background, uniform or differential, is chosen separately ([differential-rotation.md](differential-rotation.md)).
+The rotation of the background, uniform or differential, is chosen separately ([Differential rotation](differential-rotation.md)).
 The code is in `bin/background.py` (the choice, the checks, the stratification and diffusivity types) and
-`bin/radial_profiles.py` (one class per structure). These names replaced `model_type`, `heating`, `solar_rz`,
-`solar_density` and `aux0` on 2026-10-26; the [last section](#the-former-names) translates old parameter files.
+`bin/radial_profiles.py` (one class per structure).
 
 ## Units
 
-kore is dimensionless ([Non-dimensionalization](nondimensionalization.md) gives the scales). The unit of length is the
-radius of the outer wall, $r = 1$. `r_out` is that radius in star
-radii (1 by default), so $x = r\cdot$`r_out` is the radius in star radii. With `Gaspard = 1` the unit of time is
-$1/\Omega$; then `ViscosD` $= \nu/(\Omega L^2)$, `ThermaD` $= \kappa/(\Omega L^2)$ with $L$ = `r_out` star radii, and the
-buoyancy frequency is
-
-$$
-N^2 = \mathrm{Beyonce}\thinspace g\thinspace \frac{dS}{dr}
-$$
-
-in units of $\Omega^2$. The only physical unit kore reads is that of the solar rotation data, in nHz.
-
-`bin/units.py` converts physical values; kore itself never imports it. In a parameter file, after `r_out` is set:
-
-```python
-import units
-units.set_physical(par, frame_nHz=456.0, nu=1e12, kappa=1e12)   # Gaspard, Beyonce, ViscosD, ThermaD, diff_rot_frame
-units.set_target(par, omega=-271.2, sigma=-33.2)                 # itau, rtau from ω, σ in nHz
-```
-
-`set_physical` takes $\nu$ and $\kappa$ in cm²/s, and the solar radius and surface gravity unless `radius` and `gsurf`
-(cgs) are given; `Beyonce` $= g_{\rm surf}/(L\Omega^2)$ assumes $g = 1$ at the surface, as in the solar structures. In
-a run directory, `python3 bin/units.py` prints the eigenvalues as $\omega$ and $\sigma$ in nHz in the rotating frame.
+kore is dimensionless; [Non-dimensionalization](nondimensionalization.md) gives the scales and the parameters that carry
+them. The unit of length is the radius of the outer wall, $r = 1$. `r_out` is that radius in star radii (1 by
+default), so $x = r\cdot$`r_out` is the radius in star radii, the coordinate of the solar profiles below. The only
+physical unit kore reads is that of the solar rotation data, in nHz. `bin/units.py` sets the parameters from physical
+values ([Physical values](nondimensionalization.md#physical-values)).
 
 ## Quick start
 
@@ -68,7 +49,7 @@ The checked-in `bin/parameters.py`, a gravito-inertial mode, uses `structure = '
 | `'model S hydrostatic'` | the Sun, for new runs: an even polynomial fit of $\ln\rho$ of Model S (`bin/model_s.at`) over the whole Sun, $g$ from its mass, $p_0$ from hydrostatic balance | `structure_deg` (30) |
 | `'Wu 2005'` | $\rho_0 = (1 - x^2)^2$ (Wu 2005, $\beta = 2$) with its $g$ and $p_0$ | `r_out` < 1, so that $\rho_0 > 0$ at the wall |
 | `'Boussinesq'` | $\rho_0 = p_0 = 1$, $g = r$: the Boussinesq equations | – |
-| `'8-term fit'` (legacy) | the smooth fit of `bin/smoothed_sun.py`, up to 48 % off Model S in $\rho$ near the surface | – |
+| `'8-term fit'` (legacy) | the smooth fit of `bin/smoothed_sun.py`, up to 48 % off Model S in $\rho$ near the surface, which moves solar inertial modes by 1.5–8 nHz | – |
 | `'old model S prototype'` (legacy) | Chebyshev fits of $\ln\rho$ and $\ln p$ of Model S, with the $g$ of the 8-term fit (not hydrostatic) | `solar_density_deg`, `solar_density_window`, `solar_density_sun_deg` |
 
 - Only ratios of $\rho_0$ and of $p_0$ enter the equations, so their scale does not matter. $g$ is 1 at the surface
@@ -77,12 +58,11 @@ The checked-in `bin/parameters.py`, a gravito-inertial mode, uses `structure = '
   rotation profiles (`diff_rot.solar_x`).
 - `'model S hydrostatic'` is within 1.0 %, 0.5 % and 0.75 % of Model S in $\rho$, $p$ and $g$ at degree 30, and within
   0.14 %, 0.06 % and 0.10 % at degree 50. Use 50 to compare with papers that use Model S itself; degrees of 40 and above
-  need about 16 more `lmax` for the same $\ell$-convergence of the HFR modes ([heat-equation.md](heat-equation.md) §8,
-  "Hydrostatic structure").
+  need about 16 more `lmax` for the same $\ell$-convergence of the HFR modes.
 - The two legacy structures are kept so that runs made before `'model S hydrostatic'` give the same results. For
   `'old model S prototype'`, `solar_density_window` None fits the shell $[$`ricb`$\cdot$`r_out` $- 0.01$,
   `r_out` $+ 0.005]$ when `ricb` > 0, and is `'sun'` when `ricb` = 0: one even fit over the whole Sun of degree
-  `solar_density_sun_deg` (60) (heat-equation.md §8, "Model S density").
+  `solar_density_sun_deg` (60).
 
 ## Stratification
 
@@ -107,8 +87,10 @@ sphere (`ricb = 0`) kore uses it as an odd function of $r$, so it should go to z
 2024, eq. 2):
 
 $$
-\frac{dS}{dr} = \frac{A}{4}\left[1 - \mathrm{erf}\frac{x - x_1}{d}\right]\left[1 - \mathrm{erf}\frac{x - x_2}{d}\right]\mathrm{erf}\frac{x}{w_0}
-+ \delta(x)\thinspace \frac{d\ln p_0}{dr}\thinspace \frac{1}{2}\left[1 + \mathrm{erf}\frac{x - x_{OS}}{d_{OS}}\right],
+\begin{aligned}
+\frac{dS}{dr} &= \frac{A}{4}\left[1 - \mathrm{erf}\frac{x - x_1}{d}\right]\left[1 - \mathrm{erf}\frac{x - x_2}{d}\right]\mathrm{erf}\frac{x}{w_0}\cr
+&\quad + \delta(x)\thinspace \frac{d\ln p_0}{dr}\thinspace \frac{1}{2}\left[1 + \mathrm{erf}\frac{x - x_{OS}}{d_{OS}}\right],
+\end{aligned}
 $$
 
 $$
@@ -119,8 +101,9 @@ with $A$ = `solar_rz_dSdr` (2.615), $[x_1, x_2, d]$ = `solar_rz_steps` ([0.61, 0
 (0.05: makes $dS/dr$ odd and smooth at $r = 0$, no effect above $x \approx 3w_0$), $[x_{OS}, d_{OS}]$ = `solar_rz_os`
 ([0.70, 0.04]) and $\delta_{cz}$, $\delta_{sf}$ = `solar_rz_delta_cz`, `solar_rz_delta_sf` (0). $A$ is their
 $(\partial s_0/\partial r)_{RZ}$ = 1.32e-2 erg g⁻¹ K⁻¹ cm⁻¹ times $L/c_p$, with $c_p$ = 3.46e8 and `r_out` = 0.985, so
-it scales with `r_out`. $\delta < 0$ is subadiabatic; kore stops if $\delta$ is set with another stratification. The fits
-of $\delta_{cz}$ to the observed HFR frequencies are in heat-equation.md §8.
+it scales with `r_out`. $\delta < 0$ is subadiabatic; kore stops if $\delta$ is set with another stratification. In the
+smooth Sun example, $\delta_{cz} = -4\times10^{-7}$ makes the HFR $m = 8$ mode 34 nHz more retrograde than
+$\delta_{cz} = 0$.
 
 ## Diffusivity
 
@@ -162,13 +145,13 @@ must not contain `#`: `spin_doctor` writes them at the end of each `params.dat` 
 
 ## Checks and output
 
-Before anything is built, kore stops on a background that cannot work: an unknown type, one of the former names below,
-`'Wu 2005'` without $0 <$ `r_out` $< 1$, `'inverse square'` with `ricb = 0`, $\delta$ without `'solar_rz'`, or a
-`'user'` expression that does not evaluate. `submatrices.py` also warns about any name in the parameter file that kore
+Before anything is built, kore stops on a background that cannot work: an unknown type, a parameter name of an older
+version of kore (the message gives the replacement), `'Wu 2005'` without $0 <$ `r_out` $< 1$, `'inverse square'` with
+`ricb = 0`, $\delta$ without `'solar_rz'`, or a `'user'` expression that does not evaluate. `submatrices.py` also warns about any name in the parameter file that kore
 does not define, so a misspelt name is not ignored without notice.
 
 `spin_doctor` writes the background to `params.dat` (the full list of columns is in
-[differential-rotation.md](differential-rotation.md), Output). The columns, counted from 1:
+[Differential rotation, Output](differential-rotation.md#output)). The columns, counted from 1:
 
 - 19 `r_out`, 20–24 `aux1`…`aux5`, 25 `visc0`, 34 `therm0`, 35 `visc_pow`, 36 `therm_pow`;
 - 63 `structure`, as its index in `background.STRUCTURES`: `'8-term fit'` 0, `'old model S prototype'` 1,
@@ -181,21 +164,3 @@ does not define, so a misspelt name is not ignored without notice.
   and `background.DIFFUSIVITIES` (`'uniform'` 0, `'step'` 1, `'solar_rz'` 2, `'user'` 3);
 - the `'user'` expressions, at the end of the row after a `#` that `np.loadtxt` skips (a row with nothing to note has no
   `#`).
-
-Columns 1–80 have the positions they had before these names, so scripts that read `params.dat` by column keep working.
-
-## The former names
-
-Until 2026-10-26 the background was chosen by `model_type`, with `heating`, `solar_rz`, `solar_density` and `aux0`.
-These names now stop kore with the replacement; the matrices are bitwise the same in either spelling.
-
-| former setting | `structure` | `stratification` | `diffusivity` |
-| --- | --- | --- | --- |
-| `model_type = 'user def'` | `'Wu 2005'` | `'top hat'` | `'uniform'` |
-| `model_type = 'smoothed sun'`, `solar_rz = 0` | `'8-term fit'` (`solar_density = 'fit'`) or `'old model S prototype'` (`'model S'`), or the `structure` it set | `'odd top hat'` | `'step'` |
-| `model_type = 'smoothed sun'`, `solar_rz = 1` | as above | `'solar_rz'` | `'solar_rz'` |
-| `model_type = 'Boussinesq'` | `'Boussinesq'` | `heating` `'internal'`: `'linear'`; `'differential'`: `'inverse square'`; `'top hat'`: `'top hat'` | `'uniform'` |
-
-`aux0` is `r_out`. Structure `'Boussinesq'` was called `'uniform'` from 2026-10-26 to 2026-10-28, and that
-name stops kore too. The file-based models (`'poly'`, `'mesa'`, `'gsm'`, `'astropy table'`) were removed; they had not
-worked on this branch.

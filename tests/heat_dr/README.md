@@ -1,6 +1,6 @@
 # Checks of the differential-rotation terms of the heat equation
 
-Companion of `docs/heat-equation.md`. Everything here runs on one core with numpy, scipy and mpi4py, from a kore
+Companion of `docs/differential_rotation_details.md` (§2.4, §2.5, §3.7, §7.2). Everything here runs on one core with numpy, scipy and mpi4py, from a kore
 run directory (a `bin/` copy, `parameters.py`, the `*.mtx` files of `submatrices.py`, and `A.npz`, `B.npz` of
 `assemble.py`). `run_all.sh` builds the runs it needs under `tests/heat_dr/runs/` and prints one line per check.
 
@@ -24,7 +24,8 @@ the anti-Hermitian heat advection and the rigid-offset identity; it runs on any 
 tolerance; at N = 48 the pre-existing viscous and inertia Hermitian tests fail on truncation).
 
 Every check prints a verdict line ending in `ok` or `FAIL`; `run_all.sh` stops at the first crash (`set -e -o pipefail`).
-Results of the last full run (2026-10-12): see section 5 of `docs/heat-equation.md`.
+Results of the last full run (2026-10-12): section 5 of `docs/heat-equation.md` in commit 1fbe5f08
+(`git show 1fbe5f08:docs/heat-equation.md`).
 
 At ricb = 0 the diff-rot profiles are taken at |r| (the physical, even profiles), in the code and in `heat_check.py`.
 'Y20-wall-bounded' and 'shellular' (unless sigma is even and > 0) have a kink at r = 0 there, and `submatrices.py`

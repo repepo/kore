@@ -61,7 +61,10 @@ $$
 with
 
 $$
-\mathrm{Gaspard} = \Omega\tau, \qquad \mathrm{Beyonce} = \frac{g_{\mathrm{ref}}\thinspace\tau^2}{L}, \qquad
+\mathrm{Gaspard} = \Omega\tau, \qquad \mathrm{Beyonce} = \frac{g_{\mathrm{ref}}\thinspace\tau^2}{L},
+$$
+
+$$
 \mathrm{ViscosD} = \frac{\nu_{\mathrm{ref}}\thinspace\tau}{L^2}, \qquad \mathrm{ThermaD} = \frac{\kappa_{\mathrm{ref}}\thinspace\tau}{L^2}.
 $$
 

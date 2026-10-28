@@ -39,7 +39,7 @@ class default_params():
         #   'Boussinesq'             ρ0 = p0 = 1, g = r: the Boussinesq equations ('uniform' until 2026-10-28)
         #   legacy, kept so that older parameter files reproduce their results:
         #   '8-term fit'             smoothed_sun.py: rough but hydrostatic; ρ is up to 48 % off near the surface, which moves
-        #                            n = 1 Rossby, HFR and columnar modes by 1.5-8 nHz (docs/heat-equation.md §6)
+        #                            n = 1 Rossby, HFR and columnar modes by 1.5-8 nHz (docs/background.md)
         #   'old model S prototype'  Chebyshev fits of ln ρ, ln p of bin/model_s.at of degree solar_density_deg over
         #                            solar_density_window = [x_lo, x_hi]; None: the shell [ricb r_out, r_out] widened by 0.01
         #                            below and 0.005 above if ricb > 0, 'sun' if ricb = 0; 'sun': one fit over the whole Sun, even
@@ -58,7 +58,7 @@ class default_params():
         #   'odd top hat'     the same made odd in r (utils.erf_top_hat_odd): with x1 = 0 it rises as A erf(r/w1) from the
         #                     centre, for ricb = 0 (Model S's dS/dr to 10 % rms: aux1..aux5 = 0, 0.03, 0.68, 0.06, 2.6)
         #   'solar_rz'        the radiative interior of Mukhopadhyay, Bekki, Zhu & Gizon 2025 (arXiv 2512.12691, their eq. 10;
-        #                     docs/heat-equation.md §9): dS/dr = solar_rz_dSdr/4 [1 - erf((x - x1)/d)] [1 - erf((x - x2)/d)]
+        #                     docs/background.md): dS/dr = solar_rz_dSdr/4 [1 - erf((x - x1)/d)] [1 - erf((x - x2)/d)]
         #                     erf(x/w0), [x1, x2, d] = solar_rz_steps, w0 = solar_rz_core; erf(x/w0) makes it odd and smooth
         #                     at r = 0 (no effect above x ~ 3 w0). solar_rz_dSdr = (∂s0/∂r)_RZ r_out R☉/c_p: 2.615 for their
         #                     1.32e-2 erg/g/K/cm with c_p = 3.46e8 and r_out = 0.985. solar_rz_delta_cz, solar_rz_delta_sf add
@@ -164,7 +164,7 @@ class default_params():
 
         self.thermal_wind = 1  # With thermal = 1 and diff_rot = 1 the heat equation gets the advection i m Gaspard ΔΩ s and,
         # if thermal_wind = 1 (needs Beyonce > 0), the advection of the thermal-wind background entropy S_tw(r,θ)
-        # that Ω(r,θ) implies, to first order in ΔΩ (docs/heat-equation.md, eq. 3); thermal_wind = 2 uses the exact (1+ΔΩ)² balance,
+        # that Ω(r,θ) implies, to first order in ΔΩ (docs/differential_rotation_details.md §2.4); thermal_wind = 2 uses the exact (1+ΔΩ)² balance,
         # which adds O(ΔΩ²) to the σn and degrees up to 2 n_max + 2 (diff_rot.sigma_coefficients). thermal_wind = 0 keeps the advection term only
         # (e.g. Mirouh et al. 2016, Ω(r) imposed). With ThermaD = 0 and thermal_wind >= 1 the heat rows are r² (eq)/p in a C^(1) basis.
         # thermal_wind = 3 prescribes S_tw instead, independent of Ω (Bekki et al. 2024): ∂S_tw/∂θ = dSdtheta sin 2θ, radially
@@ -279,7 +279,7 @@ class default_params():
         # raise nev by 1-2, since spurious ICB modes take slots.
         # With diff_rot = 1 and thermal_wind >= 1 (heat rows r² (eq)/p in C^(1), utils.adiab_tw) and fixed-entropy, stress-free
         # walls the ThermaD -> 0 limit has a thermal boundary layer ~ (ThermaD/|λ|)^½: a tiny ThermaD is not equivalent to 0
-        # below ~1e-7 at N = 128 (docs/thermad0.md §d).
+        # below ~1e-7 at N = 128 (docs/thermad0.md).
 
 
         # ----------------------------------------------------------------------------------------------------------------------

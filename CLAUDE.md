@@ -89,9 +89,8 @@ Other directories: `tests/ci/` (the test GitHub runs on every push, §11); `test
 kore builds them: rows, operators, boundary rows, energy balance, validity), `nondimensionalization.md` (the scales and
 Gaspard, Beyonce, ViscosD, ThermaD), `installation.md` (from conductive_IC), `background.md` (the background model),
 `differential-rotation.md` (user guide), `differential_rotation_details.md` (the equations and code of the differential
-rotation, its checks and benchmarks), `heat-equation.md` (derivation, implementation, benchmarks, §9 radiative
-interior), `thermad0.md` (ThermaD = 0 with the thermal wind), `solver.md` (what to try for bad solutions or when memory
-runs out)); `examples/smooth_sun/` (the solar example: full sphere, m 8 HFR mode); `tools/` (submission, plotting,
+rotation, with its heat-equation terms), `thermad0.md` (runs with ThermaD = 0), `solver.md` (what to try for bad
+solutions or when memory runs out), `benchmarks.md` (the published benchmarks: set-up and result)); `examples/smooth_sun/` (the solar example: full sphere, m 8 HFR mode); `tools/` (submission, plotting,
 `kore2sprouts.py`, `m2petsc.py`), `koreviz/`, `koreviz_mod/` (visualisation); `srunKore.sh` (SLURM);
 `poly.n1_gamma3.h5`, `theprofile.data` (files of the removed file-based models, unused).
 
@@ -245,9 +244,10 @@ flow U₀ = Gaspard ΔΩ r sin θ e_φ in the frame Ω_ref. It works with any ba
   'shellular' (unless σ is even and > 0) have a kink at r = 0 (WARNING); 'solar' needs N ~ 400.
 - Benchmarks: Guenel et al. 2016 conical mode ω = 1.8173; solar inertial modes of Mukhopadhyay et al. 2025
   (`tests/diff_rot/run_bekki.py`, needs their `data/diff_rot.npz`, not in the repo): five modes within 0.2 nHz in
-  frequency and 0.4 nHz in growth rate of their compressible values; tables in `docs/heat-equation.md` §6, §8, §9 and
-  `docs/differential_rotation_details.md` §11 (`tests/diff_rot/lit_bench.py`, `solar_checks.py`). Its §12 (cost
-  against the highest degree, measured by `tests/diff_rot/dr_cost.py`) is not written yet.
+  frequency and 0.4 nHz in growth rate of their compressible values; set-up and results in `docs/benchmarks.md`
+  (`tests/diff_rot/lit_bench.py`, `solar_checks.py`). The full tables are in `docs/heat-equation.md` §6, §8, §9 and
+  `docs/differential_rotation_details.md` §11 of commit 1fbe5f08 (`git show 1fbe5f08:docs/heat-equation.md`). The cost
+  against the highest degree (`tests/diff_rot/dr_cost.py`) is not documented yet.
 
 ## 9. Solver (`solve.py`)
 
@@ -311,7 +311,7 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   `regress.sh OLD_KORE` (15 configurations, each written in the parameter names of three generations of checkouts;
   A and B bitwise equal), `tw_mukhopadhyay.py`, `mk_bekki.py` / `solve_bekki.py` / `run_bekki.py` (solar benchmark),
   `mk_rz.py` (radiative interior, any inner radius), `lit_bench.py` and `solar_checks.py` (the benchmarks of
-  `docs/differential_rotation_details.md` §11), `dr_cost.py` (time and memory against the degree of ΔΩ),
+  `docs/benchmarks.md`), `dr_cost.py` (time and memory against the degree of ΔΩ),
   `ls_to_tabulated.py` (HMI table converter, input in `profiles/`: the Larson & Schou 2018 HMI average
   `rot2d.hmiv72d.ave` and `rmesh.orig`).
 - `tests/rsf/` (README; `HOWTO.md` is the user guide of forcing 11, with the m = 2 example of `example_m2/`): shared
@@ -331,8 +331,8 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
 
 - **`diff_rot_hold`** (found faulty 2026-10-25, removed 2026-10-26): it held every degree below x_h, so the latitudinal
   shear of the table at x_h filled the whole core (with the HMI table at 0.6 R☉, a 4 nHz inversion artefact that gave
-  the core spurious modes). Most smooth-Sun results from before 2026-10-26 used 0.6 (`docs/heat-equation.md` §8 says
-  which); their parameter files stop until the line is deleted, and their `params.dat` rows have x_h in its column.
+  the core spurious modes). Most smooth-Sun results from before 2026-10-26 used 0.6 (`docs/heat-equation.md` §8 of
+  commit 1fbe5f08 says which); their parameter files stop until the line is deleted, and their `params.dat` rows have x_h in its column.
 - **MUMPS on several ranks is not bitwise reproducible** (2026-10-25): nearly parallel eigenvectors, such as the r-mode
   ladders of a radiative interior, amplify the round-off, and about half of repeated runs came out "smeared" (ladder
   members 0.05–0.5 nHz off, not all of them flagged by `spin_doctor`). `par.petsc_opts['st_mat_mumps_cntl_1'] = 0.1`
@@ -481,7 +481,7 @@ inside a project session, not in this repo); run folders are on the Mac (`~/lab/
     al. 2025 data) the five Mukhopadhyay et al. 2025 modes agree within 0.2 nHz in frequency (P₂ only: off by 0.8–9 nHz,
     and the high-latitude mode damped instead of growing); the convective onset is |Δθ_s| 513 (Mukhopadhyay et al. 2025
     Ω) and 658 (Larson & Schou) in the papers' c_p, against Bekki's ~500. Runs in `~/lab/kore_step2_runs`; tables in
-    `docs/heat-equation.md` §8.
+    `docs/heat-equation.md` §8 (commit 1fbe5f08).
 14. **Differential rotation docs review** (Oct 13). `16be479f` (user guide `docs/differential-rotation.md`,
     repo-relative references, solar benchmark scripts); `e42b55df`, `bc6c7eed`, `dc2790d3` (math that renders on GitHub:
     no `\tag`, plain-text equation numbers).

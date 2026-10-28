@@ -2,7 +2,7 @@
 '''
 lit_bench.py WORKDIR CASE [CASE ...] [N=.. lmax=.. ncpus=.. nev=.. key=value ...]
 
-The incompressible and Boussinesq literature benchmarks of docs/differential_rotation_details.md §11: Baruteau & Rieutord 2013
+The incompressible and Boussinesq literature benchmarks of docs/benchmarks.md: Baruteau & Rieutord 2013
 (JFM 719, 47; cases 'br*'), Guenel, Baruteau, Mathis & Rieutord 2016 (A&A 589, A22; cases 'gu*') and Mirouh, Baruteau,
 Rieutord & Ballot 2016 (JFM 800, 213; cases 'mi*'). Each case builds
 WORKDIR/CASE_N<N>_L<lmax> (a copy of the repo's bin and a parameters.py), runs submatrices, assemble and solve (MUMPS,

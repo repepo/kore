@@ -8,7 +8,7 @@ all combinations), evaluated on an r grid. It compares with the physics evaluate
     B row l' :  c r^w s_l'(r) / L'^3
     A row l' :  c r^w [ -u_r S0' - i m G dOmega s - u . grad S_tw ]_l' / L'^3          (ThermaD = 0, rows (eq)/p0)
 with w = 2 (claimed for the new mode) or 1 (old mode), c fitted once from B (the 1/Anorm of assemble.py).
-S_tw is integrated here in cos(theta) from the thermal-wind balance, eq. (2) of docs/heat-equation.md, with
+S_tw is integrated here in cos(theta) from the thermal-wind balance, eq. (2.8) of docs/differential_rotation_details.md, with
 F = 2 G^2 dOmega (thermal_wind 1) or G^2 [(1 + dOmega)^2 - 1] (thermal_wind 2), its l = 0 part removed (thermal_wind 3:
 dS_tw/dtheta = dSdtheta sin 2 theta); it does not use
 radial_profiles.sigma2/4/6, tw*, tp*, or any kore operator. Only the raw profile functions of radial_profiles.prf
