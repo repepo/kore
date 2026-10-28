@@ -1,0 +1,45 @@
+# FIX (2026-10-28): keep this same file on every branch that may become the default (now anelastic_log).
+# GitHub lists workflows, and serves their badges, from the default branch: when the default moved to
+# anelastic_log, which had no conductive_IC.yml, this workflow was marked deleted (hidden in the Actions
+# tab, README badge 404). On a push GitHub runs the copy in the pushed commit, and the branch filters
+# below keep it to conductive_IC.
+name: conductive_IC tests
+
+on:
+  push:
+    branches: [conductive_IC]
+    paths-ignore: ['**.md', 'docs/**', 'mkdocs.yml']
+  pull_request:
+    branches: [conductive_IC]
+    paths-ignore: ['**.md', 'docs/**', 'mkdocs.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    # "Run workflow" defaults to the default branch: only test conductive_IC
+    if: github.event_name != 'workflow_dispatch' || github.ref_name == 'conductive_IC'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PETSC_DIR: /usr/lib/petscdir/petsc-complex
+      SLEPC_DIR: /usr/lib/slepcdir/slepc-complex
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            python3-scipy python3-mpi4py python3-pytest \
+            libpetsc-complex-dev libslepc-complex-dev \
+            python3-petsc4py-complex python3-slepc4py-complex
+
+      - name: Run tests
+        working-directory: tests
+        run: |
+          ulimit -s unlimited
+          pytest . -v -s
