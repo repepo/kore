@@ -1,0 +1,62 @@
+# Publishes the MkDocs site (docs/ + mkdocs.yml) to GitHub Pages via the gh-pages branch,
+# always from the repository's default branch, whichever branch that currently is.
+#
+# Keep this same file, .github/workflows/docs.yml, on every branch that may become the default:
+#  - A push runs the copy of this file in the pushed commit, and the job below only goes ahead
+#    when the pushed branch is the current default branch. Pushes to other branches do nothing.
+#  - Changing the default branch is not an event Actions can react to. The nightly run (always
+#    on the default branch) catches the site up within a day, or use "Run workflow" right away.
+#  - The nightly run skips the deploy when the published site already has the same docs.
+name: docs
+
+on:
+  push:
+    paths: ['docs/**', 'mkdocs.yml', '.github/workflows/docs.yml']
+  schedule:
+    - cron: '23 3 * * *'  # nightly catch-up after a default-branch switch
+  workflow_dispatch:      # "Run workflow" in the Actions tab: always rebuilds
+
+permissions:
+  contents: write
+
+concurrency:
+  group: docs-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event_name == 'schedule' || github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0  # full history, to compare with the commit the site was built from
+
+      - name: Check whether the published site is already up to date
+        id: check
+        if: github.event_name == 'schedule'
+        run: |
+          # mkdocs gh-deploy writes "Deployed <sha> with MkDocs version: ..." on gh-pages
+          deployed=$(git log -1 --format=%s origin/gh-pages 2>/dev/null \
+                     | sed -n 's/^Deployed \([0-9a-f]\{7,40\}\) with MkDocs.*/\1/p')
+          if [ -n "$deployed" ] && git diff --quiet "$deployed" HEAD -- docs mkdocs.yml 2>/dev/null; then
+            echo "The site (built from $deployed) already has the docs of $(git rev-parse --short HEAD). Nothing to do."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.check.outputs.skip != 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+
+      - if: steps.check.outputs.skip != 'true'
+        uses: actions/cache@v4
+        with:
+          key: ${{ github.ref }}
+          path: .cache
+
+      - if: steps.check.outputs.skip != 'true'
+        run: pip install mkdocs-material
+
+      - if: steps.check.outputs.skip != 'true'
+        run: mkdocs gh-deploy --force
