@@ -365,6 +365,24 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="." class="md-nav__link md-nav__link--active">
         
   
@@ -381,6 +399,36 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#authors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authors
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -657,6 +705,25 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#authors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authors
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -678,6 +745,15 @@
 <p>Kore's distinctive feature is the use of a very efficient spectral method employing Gegenbauer (also known as ultraspherical) polynomials as a basis in the radial direction. This approach leads to sparse matrices representing the differential equations, as opposed to dense matrices, as in traditional Chebyshev colocation methods. Sparse matrices have smaller memory-footprint and are more suitable for systematic core flow studies at extremely low viscosities (or small Ekman numbers).</p>
 <p>Kore is free for everyone to use, with no restrictions. Too often in the scientific literature the numerical methods used are presented with enough detail to guarantee reproducibility, but only in principle. Without access to the actual implementation of those methods, which would require a significant amount of work and time to develop, readers are left effectively without the possibility to reproduce or verify the results presented. This leads to very slow scientific progress. We share our code to avoid this.</p>
 <p>If this code is useful for your research, we invite you to cite the relevant papers (coming soon) and hope that you can also contribute to the project.</p>
+<h2 id="authors">Authors</h2>
+<ul>
+<li><strong>Santiago Andres Triana</strong>, <em>this implementation</em></li>
+<li><strong>Jeremy Rekier</strong>, <em>sparse spectral method</em></li>
+<li><strong>Ankit Barik</strong>, <em>convection, visualization</em></li>
+<li><strong>Fleur Seuren</strong>, <em>buoyancy</em></li>
+<li><strong>Daoud Laariara</strong>, <em>differential rotation</em></li>
+<li><strong>Antony Trinh</strong>, <em>tensor calculus (TenGSHui)</em></li>
+</ul>
 
 
 
