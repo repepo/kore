@@ -1,9 +1,10 @@
 # Anelastic equations
 
-This branch solves the linear anelastic equations in the form of Lantz (1992) and Braginsky & Roberts (1995), "LBR",
-about a background whose density varies with radius. This page gives those equations, says what the approximation
-drops, and shows how the code builds them. The Boussinesq equations are the special case `structure = 'Boussinesq'`.
-The scales and parameters are on the page [Non-dimensionalization](nondimensionalization.md).
+kore solves the linear anelastic equations in the form of Lantz (1992) and Braginsky & Roberts (1995), "LBR", for small
+perturbations of a background whose density varies with radius. This page gives those equations, what the
+approximation drops, how kore makes them dimensionless, and where they hold. The Boussinesq equations are a special
+case. How the code discretizes the equations is on [Numerical method](numerical-method.md), and the terms that a
+differential rotation adds are derived on [Differential rotation](differential_rotation_details.md).
 
 ## Background
 
@@ -67,12 +68,28 @@ $-\tfrac12\int\rho_0\nu\thinspace\lvert\mathsf S\rvert^2\thinspace dV \le 0$, fo
 terms of item 2 are dropped together: an anelastic set that keeps the force but drops the mass term makes the pressure
 do work (Brown et al. 2012).
 
-## The dimensionless form kore solves
+## Non-dimensionalization
 
-kore uses the radius of the outer wall as the unit of length ($r = 1$; it is `r_out` star radii) and $\tau$ as the
-unit of time, and writes $s = s'/c_p$ ([Non-dimensionalization](nondimensionalization.md) gives all the scales). It
-assumes $\alpha T_0 = 1$ and uses $p_0$ in place of $\rho_0 T_0$, both exact
-for an ideal gas of uniform composition. The equations are then
+kore assumes $\alpha T_0 = 1$ and uses $p_0$ in place of $\rho_0 T_0$, both exact for an ideal gas of uniform
+composition. Each quantity is then a scale times a dimensionless variable:
+
+| quantity | scale | dimensionless variable |
+| --- | --- | --- |
+| length | $L$, the radius of the outer wall (`r_out` star radii) | $r$, with $r = 1$ at the outer wall |
+| time | $\tau$ | $t$ |
+| velocity | $L/\tau$ | $\mathbf u$ |
+| reduced pressure | $L^2/\tau^2$ | $\Pi$ |
+| entropy perturbation and background entropy | $c_p$ | $s$, $S$ |
+| gravity | $g_{\mathrm{ref}}$ | the profile $g(r)$ of the structure |
+| viscosity and thermal diffusivity | $\nu_{\mathrm{ref}}$, $\kappa_{\mathrm{ref}}$ | the profiles $\nu(r)$, $\kappa(r)$ of `diffusivity` |
+| density and pressure | any | $\rho_0$, $p_0$ |
+
+The equations are linear in $\mathbf u$ and $s$, and contain $\rho_0$ only through $d\ln\rho_0/dr$ and $p_0$ only through
+its shape, so the scales of the velocity, of $\rho_0$ and of $p_0$ do not matter. The solar structures have $g = 1$ at
+the surface, so that $g_{\mathrm{ref}}$ is the surface gravity; $\nu_{\mathrm{ref}}$ and $\kappa_{\mathrm{ref}}$ are the
+values where the diffusivity profiles are 1 (the convection zone for `'solar_rz'` and `'step'`).
+
+Insert these in the equations, multiply the momentum equation by $\tau^2/L$ and the heat equation by $\tau/c_p$:
 
 $$
 \nabla\cdot(\rho_0\mathbf u) = 0,
@@ -83,140 +100,106 @@ $$
 $$
 
 $$
-p_0\left(\partial_t s + u_r\frac{dS}{dr}\right) = \mathrm{ThermaD}\thinspace\nabla\cdot\left(\kappa\thinspace p_0\nabla s\right),
+p_0\left(\partial_t s + u_r\frac{dS}{dr}\right) = \mathrm{ThermaD}\thinspace\nabla\cdot\left(\kappa\thinspace p_0\nabla s\right).
 $$
 
-where $dS/dr$ is the background entropy gradient over $c_p$, and $g$, $\nu$ and $\kappa$ are now dimensionless profiles
-(their scales are in the parameters). The buoyancy frequency is
+These are the equations kore solves. $dS/dr$ is the background entropy gradient over $c_p$, and $g$, $\nu$ and $\kappa$
+are dimensionless profiles, set by the parameters `structure`, `stratification` and `diffusivity`
+([Background model](background.md)). Four numbers carry the scales:
+
+| parameter | definition | meaning |
+| --- | --- | --- |
+| `Gaspard` | $\Omega\tau$ | rotation rate of the frame |
+| `Beyonce` | $g_{\mathrm{ref}}\thinspace\tau^2/L$ | gravity |
+| `ViscosD` | $\nu_{\mathrm{ref}}\thinspace\tau/L^2$ | viscosity; the Ekman number when $\tau = 1/\Omega$ |
+| `ThermaD` | $\kappa_{\mathrm{ref}}\thinspace\tau/L^2$ | thermal diffusivity |
+
+The buoyancy frequency is
 
 $$
 N^2 = \mathrm{Beyonce}\thinspace g\thinspace\frac{dS}{dr}
 $$
 
-in units of $1/\tau^2$. Only $d\ln\rho_0/dr$ and its derivatives enter the momentum equation, and only the shape of
-$p_0$ enters the heat equation, so the normalisation of $\rho_0$ and $p_0$ does not matter. With the differential
-rotation on, the background flow adds three terms to these equations ([Differential rotation](differential_rotation_details.md#21-the-linear-anelastic-lbr-equations)).
-
-| parameter | symbol | meaning |
-| --- | --- | --- |
-| `Gaspard` | $\Omega\tau$ | rotation rate of the frame |
-| `Beyonce` | $g_{\mathrm{ref}}\thinspace\tau^2/L$ | gravity, with $g$ the dimensionless profile of the structure ($g = 1$ at the surface for the solar structures) |
-| `ViscosD` | $\nu_{\mathrm{ref}}\thinspace\tau/L^2$ | viscosity; the Ekman number when $\tau = 1/\Omega$ |
-| `ThermaD` | $\kappa_{\mathrm{ref}}\thinspace\tau/L^2$ | thermal diffusivity |
-| `structure` | $\rho_0$, $p_0$, $g$ | `bin/radial_profiles.py` |
-| `stratification` | $dS/dr$ | `bin/background.py` (`gradS`); only with `thermal = 1` |
-| `diffusivity` | $\nu(r)$, $\kappa(r)$ | `bin/background.py` (`diffusivity`), the profiles $\nu/$`ViscosD` and $\kappa/$`ThermaD` |
-
-Here $L$ is `r_out` star radii, and $g_{\mathrm{ref}}$, $\nu_{\mathrm{ref}}$, $\kappa_{\mathrm{ref}}$ are the values where the profiles
-are 1. With `structure = 'Boussinesq'` ($\rho_0 = p_0 = 1$, $g = r$) and uniform diffusivities, the equations are the
-Boussinesq equations, with $s$ in place of the temperature perturbation.
+in units of $1/\tau^2$.
 
 **Eigenvalues.** Fields go as $e^{im\phi + \lambda t}$, with $\lambda = \sigma - i\omega$: $\sigma$ is the growth rate and
-$\omega$ the frequency, in units of $1/\tau$ in the rotating frame; $\omega > 0$ is prograde. `units.nHz` and
-`python3 bin/units.py` give $\omega$ and $\sigma$ in nHz. Forced runs (`forcing > 0`) solve at
-$\lambda = i\thinspace$`forcing_frequency`.
+$\omega$ the frequency, in units of $1/\tau$ in the rotating frame; $\omega > 0$ is prograde. Forced runs
+(`forcing > 0`) solve at $\lambda = i\thinspace$`forcing_frequency`.
 
-## How the code builds them
+### The time scale
 
-**Unknowns.** At fixed $m$ and equatorial symmetry, the velocity is written with a poloidal scalar $P$ and a toroidal
-scalar $T$,
+`par.timescale` and `par.set_scales()` set the four parameters from the Ekman number `Ek` $= \nu_{\mathrm{ref}}/(\Omega L^2)$
+and `Etherm` $= \kappa_{\mathrm{ref}}/(\Omega L^2)$:
 
-$$
-\mathbf u = \frac{1}{\rho_0}\nabla\times\nabla\times\left(\rho_0 P\thinspace\mathbf r\right) + \nabla\times\left(T\thinspace\mathbf r\right),
-$$
+| `timescale` | $\tau$ | `Gaspard` | `ViscosD` | `ThermaD` | `Beyonce` |
+| --- | --- | --- | --- | --- | --- |
+| `'rotation'` | $1/\Omega$ | 1 | `Ek` | `Etherm` | 0 |
+| `'viscous'` | $L^2/\nu_{\mathrm{ref}}$ | 1/`Ek` | 1 | `Etherm`/`Ek` | 0 |
+| `'free fall'` | $\sqrt{L/g_{\mathrm{ref}}}$ | 0 | 0 | 0 | 1 |
 
-so that $\nabla\cdot(\rho_0\mathbf u) = 0$ holds exactly and the mass equation is never solved. For one harmonic
-$Y = Y_l^m(\theta,\phi)$, with $P = P_l(r)\thinspace Y$, $T = T_l(r)\thinspace Y$ and $\mathcal L = l(l+1)$,
+`set_scales()` resets all four, so set the ones it leaves at 0 after calling it (`Beyonce` with `'rotation'`). The
+parameter files of this branch use `'rotation'`, and `bin/units.py` sets the parameters from physical values for that
+choice ([Background model](background.md#units)).
 
-$$
-u_r = \frac{\mathcal L\thinspace P_l}{r}\thinspace Y, \qquad
-\mathbf u_h = \left(P_l' + \frac{P_l}{r} + \frac{d\ln\rho_0}{dr}P_l\right) r\nabla Y + T_l\thinspace\nabla Y\times\mathbf r ,
-$$
+Ratios of the parameters do not depend on $\tau$:
 
-with a prime for $d/dr$ (`utils4pp.cheb2space_pol`, `cheb2space_tor`). With `thermal = 1` the third unknown is
-$s = s_l(r)\thinspace Y$.
+- the Ekman number $E = \mathrm{ViscosD}/\mathrm{Gaspard} = \nu_{\mathrm{ref}}/(\Omega L^2)$;
+- the Prandtl number $Pr = \mathrm{ViscosD}/\mathrm{ThermaD} = \nu_{\mathrm{ref}}/\kappa_{\mathrm{ref}}$;
+- the buoyancy frequency over the rotation rate, $N/\Omega = \sqrt{\mathrm{Beyonce}\thinspace g\thinspace dS/dr}\thinspace/\mathrm{Gaspard}$;
+- for convection, the Rayleigh number of an entropy drop $\Delta S$ across the shell (inner minus outer wall),
+  $Ra = \mathrm{Beyonce}\thinspace\Delta S/(\mathrm{ViscosD}\thinspace\mathrm{ThermaD}) = g_{\mathrm{ref}}L^3\Delta S/(\nu_{\mathrm{ref}}\kappa_{\mathrm{ref}})$;
+- the frequency over the rotation rate, $\omega/\Omega = -\mathrm{Im}\thinspace\lambda/\mathrm{Gaspard}$.
 
-**Rows.** The pressure is removed by taking the radial components of the curl and of the double curl of the momentum
-equation; $\nabla\Pi$ drops out of both because it is a gradient. Each term becomes a radial operator acting on $P_l$,
-$T_l$ or $s_l$:
+### The Boussinesq case
 
-| section | rows | equation used |
-| --- | --- | --- |
-| `u` | of $P_l$ | $r^5\rho_0\thinspace\hat{\mathbf r}\cdot\nabla\times\nabla\times(\text{momentum})/\mathcal L^3$ |
-| `v` | of $T_l$ | $r^3\rho_0\thinspace\hat{\mathbf r}\cdot\nabla\times(\text{momentum})/\mathcal L^3$ |
-| `h` | of $s_l$ | $r^2\thinspace(\text{heat equation})/\mathcal L^3$ |
+With `structure = 'Boussinesq'` ($\rho_0 = p_0 = 1$, $g = r$) and `diffusivity = 'uniform'`, the equations are the
+Boussinesq equations: $\nabla\cdot\mathbf u = 0$, the viscous force is $\mathrm{ViscosD}\thinspace\nabla^2\mathbf u$, the
+diffusion is $\mathrm{ThermaD}\thinspace\nabla^2 s$, and the buoyancy is $\mathrm{Beyonce}\thinspace r\thinspace s\thinspace\hat{\mathbf r}$,
+with $s$ in place of the temperature perturbation. With stratification `'linear'` ($dS/dr = r$), $N^2 = \mathrm{Beyonce}\thinspace r^2$.
 
-All rows are projected on $Y_l^m$ and divided by $\mathcal L^3$, with $l$ the degree of the row. The powers of $r$ are
-`rpower_u` (5) and `rpower_v` (3), the smallest that keep every operator a polynomial in $r$. The
-factor $\rho_0$ (`rhopower_u = rhopower_v = 1`) improves the accuracy of the viscous rows near a surface where
-$\rho_0$ is small. Without viscosity (`ViscosD = 0`) the momentum rows are $r^3\rho_0^2$ and $r^2\rho_0$ times the
-equations. With `ThermaD = 0` the heat rows are divided by $p_0$, $r\thinspace(\partial_t s + u_r\thinspace dS/dr)/\mathcal L^3$,
-which is better conditioned where $p_0$ is small (and $r^2/p_0$ times the equation with the thermal wind). The Coriolis
-force couples $l$ to $l\pm1$; the other terms keep $l$.
+## Without thermal diffusion
 
-| term | function in `bin/operators.py` | profiles |
-| --- | --- | --- |
-| $\partial_t\mathbf u$ | `inertia` | $\ln\rho_0$ |
-| $2\thinspace\mathrm{Gaspard}\thinspace\hat{\mathbf z}\times\mathbf u$ | `coriolis` | $\ln\rho_0$ |
-| $\mathrm{ViscosD}\thinspace\rho_0^{-1}\nabla\cdot(\rho_0\nu\mathsf S)$ | `viscous_diffusion` | $\ln\rho_0$ (up to its 4th derivative), $\nu$ (up to its 2nd) |
-| $\mathrm{Beyonce}\thinspace g\thinspace s\thinspace\hat{\mathbf r}$ | `buoyancy` | $g$ |
-| $p_0\thinspace\partial_t s$ | `entropy` | $p_0$ |
-| $p_0\thinspace u_r\thinspace dS/dr$ | `thermal_advection` | $p_0\thinspace dS/dr$ ($dS/dr$ if `ThermaD = 0`) |
-| $\mathrm{ThermaD}\thinspace\nabla\cdot(\kappa p_0\nabla s)$ | `thermal_diffusion` | $\kappa p_0$ |
-
-`submatrices.py` writes one sparse matrix per radial operator, for example `u1lho2_D0` for $r^4\rho_0\thinspace(\ln\rho_0)''$
-times the unknown (the label grammar and the profile codes are in `utils.decode_label` and `radial_profiles.proffdir`).
-For the section `h` row with `ThermaD > 0`, for example, the diffusion term is
+With `ThermaD = 0` the heat equation loses its diffusion term,
 
 $$
-r^2\nabla\cdot(\kappa p_0\nabla s) = \left[r^2\kappa p_0\thinspace s_l'' + \left(2r\kappa p_0 + r^2(\kappa p_0)'\right)s_l' - \mathcal L\thinspace\kappa p_0\thinspace s_l\right] Y.
+p_0\left(\partial_t s + u_r\frac{dS}{dr}\right) = 0 :
 $$
 
-**Eigenproblem.** `assemble.py` puts the blocks into $A\mathbf x = \lambda B\mathbf x$. $B$ holds $-$`inertia` in the
-momentum rows and `entropy` in the heat rows. $A$ holds `coriolis` $-$ `viscous_diffusion` $-$ `buoyancy` in the
-momentum rows and $-$`thermal_advection` $+$ `thermal_diffusion` in the heat rows, so each row reads
+the entropy perturbation is only carried by the flow, and the motion is adiabatic. This is the limit for modes whose
+periods are short compared with the time of thermal diffusion. The equation is then first order in $r$, so it takes no
+thermal boundary conditions: `bci_thermal` and `bco_thermal` are not used. The rows kore builds in that case are on
+[Numerical method](numerical-method.md), and what to watch for in such runs is in
+[Background model](background.md#thermad-0).
+
+## Differential rotation
+
+With a differential rotation $\Omega(r,\theta) = \Omega_{\rm ref}\left[1 + \Delta\Omega(r,\theta)\right]$, kore solves in
+the frame rotating at $\Omega_{\rm ref}$, where the background is a steady azimuthal flow,
 
 $$
-\lambda\thinspace\mathbf u + 2\thinspace\mathrm{Gaspard}\thinspace\hat{\mathbf z}\times\mathbf u = \mathrm{ViscosD}\thinspace\rho_0^{-1}\nabla\cdot(\rho_0\nu\mathsf S) + \mathrm{Beyonce}\thinspace g\thinspace s\thinspace\hat{\mathbf r},
+\mathbf{U}_0 = \mathrm{Gaspard}\thinspace\Delta\Omega\thinspace r\sin\theta\thinspace\hat{\mathbf{e}}_\phi .
 $$
 
-$$
-\lambda\thinspace p_0 s = -p_0 u_r\frac{dS}{dr} + \mathrm{ThermaD}\thinspace\nabla\cdot(\kappa p_0\nabla s),
-$$
-
-projected as in the table above. Forced runs solve $(A - i\thinspace\mathrm{wf}\thinspace B)\mathbf x = \mathbf b$, with wf the
-forcing frequency.
-
-**Boundary conditions** (`assemble.bc_u_spherical`, `bc_theta_spherical`), at the outer wall (`bco`) and at the inner
-one (`bci`, when `ricb > 0`); the full sphere has no condition at the centre:
-
-| setting | condition | rows |
-| --- | --- | --- |
-| `bco = 0` stress-free | $u_r = 0$, and zero tangential stress $\partial_r(u_\theta/r) = \partial_r(u_\phi/r) = 0$ | $P_l = 0$, $\thinspace r^2P_l'' + r^2(\ln\rho_0)'P_l' + \left[r^2(\ln\rho_0)'' + \mathcal L - 2 - r(\ln\rho_0)'\right]P_l = 0$, $\thinspace rT_l' - T_l = 0$ |
-| `bco = 1` no-slip | $\mathbf u = 0$ | $P_l = 0$, $\thinspace P_l' + \left[(\ln\rho_0)' + 1/r\right]P_l = 0$, $\thinspace T_l = 0$ |
-| `bco_thermal = 0` | fixed entropy | $s_l = 0$ |
-| `bco_thermal = 1` | zero diffusive entropy flux | $s_l' = 0$ |
-
-The density enters the stress-free and no-slip rows through $u_\theta$ and $u_\phi$. The thermal conditions are used
-only when `ThermaD > 0`. Without viscosity only $P_l = 0$ is imposed. `bco = 2` (and `bci = 2`) replaces $u_r = 0$ by a
-zero viscous radial stress, $\left[r(\ln\rho_0)' - 3\right]P_l + 3rP_l' = 0$, which does not contain the pressure.
-
-**Checks.** `spin_doctor.py` evaluates the energy balance of each solution, built from the fields independently of the
-matrices: with $K = \int\rho_0\lvert\mathbf u\rvert^2\thinspace dV$,
+The perturbation is advected and sheared by this flow. In the momentum equation this adds
 
 $$
-\sigma K = -\frac{\mathrm{ViscosD}}{2}\int\rho_0\nu\thinspace\lvert\mathsf S\rvert^2\thinspace dV + \mathrm{Beyonce}\thinspace\mathrm{Re}\int\rho_0\thinspace g\thinspace u_r^* s\thinspace dV ,
+\mathrm{Gaspard}\left[\Delta\Omega\thinspace (i\thinspace m\thinspace \mathbf{u} + 2\hat{\mathbf{z}}\times\mathbf{u}) + r\sin\theta\thinspace (\mathbf{u}\cdot\nabla\Delta\Omega)\thinspace \hat{\mathbf{e}}_\phi\right]
 $$
 
-and the entropy balance, the heat equation times $s^*$ integrated:
+to the left side: the advection by the local rotation and its Coriolis force, and the transport of angular momentum by
+the perturbation across the shear. The heat equation gains, inside the bracket multiplied by $p_0$,
 
 $$
-\sigma\int p_0\lvert s\rvert^2\thinspace dV = -\mathrm{Re}\int p_0\frac{dS}{dr}u_r s^*\thinspace dV - \mathrm{ThermaD}\int\kappa p_0\lvert\nabla s\rvert^2\thinspace dV .
+i\thinspace m\thinspace\mathrm{Gaspard}\thinspace\Delta\Omega\thinspace s + u_r\thinspace \frac{\partial S_{tw}}{\partial r} + \frac{u_\theta}{r}\thinspace \frac{\partial S_{tw}}{\partial\theta}.
 $$
 
-Their relative residuals are residσ and resid$s$ ([Solver](solver.md) gives the thresholds). `ru_insane.py` checks the
-same pairings on the operators themselves: inertia Hermitian and positive, Coriolis anti-Hermitian, viscous Hermitian and
-negative.
+The first term is the advection of $s$ by $\mathbf U_0$. The other two are the advection, by the perturbation, of a
+latitudinal background entropy $S_{tw}(r,\theta)$: either the thermal wind that balances $\Omega(r,\theta)$ (the
+latitudinal entropy a differentially rotating star needs to be in equilibrium; Bekki, Cameron & Gizon 2022) or
+prescribed. In a convection zone these terms act at the same order as the momentum terms. The background is fixed:
+nothing maintains or evolves $\Omega$ and $S_{tw}$ against diffusion, and $\rho_0$, $T_0$ and $g$ stay spherical (no
+centrifugal distortion). [Differential rotation](differential_rotation_details.md) derives these terms and their
+spectral form.
 
 ## Where the approximation holds
 

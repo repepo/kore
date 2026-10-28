@@ -15,6 +15,7 @@ the result.
 
 The scripts are in `tests/diff_rot/`. Each one builds a run directory with a copy of `bin/` and its own
 `parameters.py`, runs `submatrices.py` and `assemble.py`, and solves near the published eigenvalue.
+[Getting started](getting-started.md) runs one of these benchmarks, fig. 10 of Baruteau & Rieutord, step by step.
 
 **Conventions.** kore's eigenvalue is $\lambda = \sigma - i\omega$ for fields $\propto e^{\lambda t + im\phi}$ in the
 frame rotating at $\Omega_{\rm ref}$ ([Anelastic equations](anelastic.md)). The three fluid-dynamics papers work in the

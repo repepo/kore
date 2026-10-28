@@ -34,7 +34,7 @@ par.ViscosD     = 1e-4
 par.ThermaD     = 5e-4
 
 par.diff_rot    = 0
-par.diff_rot_type = "conical" # Y20, Y20-wall-bounded, shellular, cylindrical, conical, shellular_boussinesq, solar, solar_P4, tabulated, rigid (docs/differential-rotation.md)
+par.diff_rot_type = "conical" # Y20, Y20-wall-bounded, shellular, cylindrical, conical, shellular_boussinesq, solar, solar_P4, tabulated, rigid (docs/background.md)
 par.diff_rot_ampl = -0.25
 
 par.bci         = 0

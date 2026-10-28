@@ -131,7 +131,7 @@ class default_params():
         self.bco = 0
 
         # Differential rotation parameters. Set to 0 for solid body rotation. Ω_ref is the frame rotation rate (Gaspard in units of
-        # the time scale) and ΔΩ is relative to it, so any timescale works: U0 = Gaspard ΔΩ r sinθ e_φ. User guide: docs/differential-rotation.md.
+        # the time scale) and ΔΩ is relative to it, so any timescale works: U0 = Gaspard ΔΩ r sinθ e_φ. User guide: docs/background.md (Rotation).
         # ----------------------------------------------------------------------------------------------------------------------
         self.diff_rot = 0 # If 1, the code will solve for a perturbation to a background state with differential rotation. 
         # ΔΩ = diff_rot_ampl Σ_n f_n(r) P_n(cos θ), n even (bin/diff_rot.py); diff_rot_type chooses the shapes f_n:
@@ -279,7 +279,7 @@ class default_params():
         # raise nev by 1-2, since spurious ICB modes take slots.
         # With diff_rot = 1 and thermal_wind >= 1 (heat rows r² (eq)/p in C^(1), utils.adiab_tw) and fixed-entropy, stress-free
         # walls the ThermaD -> 0 limit has a thermal boundary layer ~ (ThermaD/|λ|)^½: a tiny ThermaD is not equivalent to 0
-        # below ~1e-7 at N = 128 (docs/thermad0.md).
+        # below ~1e-7 at N = 128 (docs/background.md, ThermaD = 0).
 
 
         # ----------------------------------------------------------------------------------------------------------------------

@@ -85,12 +85,13 @@ eigenvalues as ω, σ in nHz.
 | `targets.py` | analytic targets (spin-over, Rieutord–Valdettaro attractor) |
 
 Other directories: `tests/ci/` (the test GitHub runs on every push, §11); `tests/diff_rot/`, `tests/heat_dr/` and
-`tests/rsf/` (§11, each with a README); `docs/` (mkdocs; the branch's notes are `anelastic.md` (the LBR equations as
-kore builds them: rows, operators, boundary rows, energy balance, validity), `nondimensionalization.md` (the scales and
-Gaspard, Beyonce, ViscosD, ThermaD), `installation.md` (from conductive_IC), `background.md` (the background model),
-`differential-rotation.md` (user guide), `differential_rotation_details.md` (the equations and code of the differential
-rotation, with its heat-equation terms), `thermad0.md` (runs with ThermaD = 0), `solver.md` (what to try for bad
-solutions or when memory runs out), `benchmarks.md` (the published benchmarks: set-up and result)); `examples/smooth_sun/` (the solar example: full sphere, m 8 HFR mode); `tools/` (submission, plotting,
+`tests/rsf/` (§11, each with a README); `docs/` (mkdocs, public user documentation: `installation.md` (from conductive_IC), `getting-started.md` (a
+step-by-step run of Baruteau & Rieutord 2013 fig. 10), the user guide `background.md` (structure, stratification,
+diffusivity with ThermaD = 0, rotation and thermal wind), `solver.md` (bad solutions, memory) and `output.md` (the files
+and their columns), `benchmarks.md` (set-up and result of each published benchmark), and the mathematical framework
+`anelastic.md` (the LBR equations, non-dimensionalization, ThermaD = 0, the terms of a differential rotation, validity),
+`numerical-method.md` (unknowns, radial basis, rows, boundary conditions, checks) and `differential_rotation_details.md`
+(the equations and code of the differential rotation)); `examples/smooth_sun/` (the solar example: full sphere, m 8 HFR mode); `tools/` (submission, plotting,
 `kore2sprouts.py`, `m2petsc.py`), `koreviz/`, `koreviz_mod/` (visualisation); `srunKore.sh` (SLURM);
 `poly.n1_gamma3.h5`, `theprofile.data` (files of the removed file-based models, unused).
 
@@ -213,7 +214,7 @@ To add a type, see §13.
 
 ## 8. Differential rotation (`diff_rot = 1`, `bin/diff_rot.py`)
 
-User guide: `docs/differential-rotation.md`; equations, code and checks: `docs/differential_rotation_details.md`.
+User guide: `docs/background.md` (Rotation); equations, code and checks: `docs/differential_rotation_details.md`.
 Background Ω = Ω_ref [1 + ΔΩ], ΔΩ = `diff_rot_ampl` Σₙ aₙ fₙ(r) Pₙ(cos θ), n even, aₙ = `diff_rot_term_amp` (default 1);
 flow U₀ = Gaspard ΔΩ r sin θ e_φ in the frame Ω_ref. It works with any background.
 
@@ -343,7 +344,7 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   Untested on this branch.
 - **ThermaD = 0**: spurious modes trapped at the inner boundary unless dS/dr → 0 there (with 'top hat', keep
   x1 ≥ ricb + 3 w1); a tiny ThermaD (1e-9) reproduces ThermaD = 0 eigenvalues except with the thermal wind and
-  fixed-entropy walls (boundary layer, `docs/thermad0.md`). Raise `nev` by 1–2 if spurious modes take slots.
+  fixed-entropy walls (boundary layer, `docs/background.md`, ThermaD = 0). Raise `nev` by 1–2 if spurious modes take slots.
 - **ricb = 0**: profiles must be smooth and of the right parity at r = 0 (stratification 'top hat' needs x1 ≥ ~6 w1;
   'odd top hat' and 'solar_rz' are smooth there). Model S profiles need ~100 Chebyshev polynomials per parity;
   ru_insane fails at N 96 there.
@@ -363,13 +364,13 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
 
 - **New parameter**: default and comment in `params_default.py` (a name without a default there gets the warning of
   `check_names`); if it should be recorded, append a tuple at the end of `spin_doctor.param_table()` and update the
-  list in `docs/differential-rotation.md` (Output) or `docs/background.md` (Checks and output).
+  table in `docs/output.md`.
 - **New radial profile in an operator**: a function `f(r, rpower)` and its `fX(r, Dorder)` in `radial_profiles.py`, a
   3-letter code in `proffdir` (and in `ut.odd_profiles` if odd), labels in `submatrices.py` with the vector parity of the
   unknown's column (vP for P and s, vT for T, as the neighbouring labels), the term in `operators.py` with the L²/L³
   division, the block in `assemble.py`. Check with `ru_insane.py` and a balance in `spin_doctor`.
 - **New diff-rot type**: its shapes {n: fₙ} in `diff_rot.shapes()`, its name appended to `diff_rot.TYPES` (the index is
-  written to `params.dat`), the table in `docs/differential-rotation.md`; run `regress.sh` and `gen_check.py`.
+  written to `params.dat`), the table in `docs/background.md` (Profiles); run `regress.sh` and `gen_check.py`.
 - **New background type**: a structure is a subclass of `radial_profiles.structure` with `logrho`, `gravity`,
   `pressure` (each `f(r, rpower)` returning `r**rpower * value`) and `dlog_p`, `dlog_rho` (`f(r)`), valid on [−1, 1]
   with the right parity if ricb = 0, plus its entry in `structures`; a stratification or diffusivity is a branch in

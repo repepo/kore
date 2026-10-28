@@ -3,15 +3,16 @@ site_name: User Manual
 nav:
   - Introduction: index.md
   - Installation: installation.md
-  - Anelastic equations: anelastic.md
-  - Non-dimensionalization: nondimensionalization.md
-  - Background model: background.md
-  - Differential rotation:
-      - User guide: differential-rotation.md
-      - Equations and implementation: differential_rotation_details.md
-  - ThermaD = 0: thermad0.md
-  - Solver: solver.md
+  - Getting started: getting-started.md
+  - User guide:
+      - Background model: background.md
+      - Solver: solver.md
+      - Output files: output.md
   - Benchmarks: benchmarks.md
+  - Mathematical framework:
+      - Anelastic equations: anelastic.md
+      - Numerical method: numerical-method.md
+      - Differential rotation: differential_rotation_details.md
 
 theme:
   name: material

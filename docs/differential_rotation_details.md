@@ -1,7 +1,7 @@
 # Differential rotation: equations and implementation
 
 This page is the reference for the differential rotation: the physics, the equations, and how the code builds them.
-The parameters and examples are in the [user guide](differential-rotation.md), and the comparisons with published
+The parameters are on the page [Background model](background.md#rotation), and the comparisons with published
 results on the page [Benchmarks](benchmarks.md). It covers:
 
 - the physics: what a differentially rotating background does to a linear perturbation (§1);
@@ -651,7 +651,7 @@ tested without a run directory.
 
 ### 4.1 Parameters
 
-The parameters are listed in the [user guide](differential-rotation.md#parameters). `Gaspard`, `Beyonce`, `ViscosD` and
+The parameters are listed in [Background model](background.md#parameters). `Gaspard`, `Beyonce`, `ViscosD` and
 `ThermaD` must be computed for $\Omega_{\rm ref}$, and set after `par.set_scales()`, which resets them. With
 `timescale = 'rotation'` it sets `Beyonce = 0`, and `thermal_wind` 1 and 2 then stop `submatrices.py` with an error
 through `diff_rot.check`, since $S_{tw} \propto 1/\mathrm{Beyonce}$.
@@ -1003,7 +1003,7 @@ calculations are on the page [Benchmarks](benchmarks.md).
 - The $p_b S_0'$ term of the thermal wind is omitted (§1.4); it matters where $S_0' \neq 0$, e.g. in a radiative interior
   (stratification `'solar_rz'`).
 - With `ThermaD = 0` and the thermal wind, small-scale growing modes peaking at $l \approx$ `lmax` can appear that do
-  not converge in `lmax` ([ThermaD = 0](thermad0.md)).
+  not converge in `lmax` ([ThermaD = 0](background.md#thermad-0)).
 - The matrices widen with the highest degree: the momentum rows couple $n_{\max} + 1$ degrees on each side, the heat
   rows $n_{tw}$ = $2n_{\max} + 2$ with `thermal_wind = 2`. `'tabulated'` with a large `diff_rot_nmax` is the most
   expensive case. Sharp profiles (the `'solar'` tachocline at `ricb = 0`) need large N (about 400).
