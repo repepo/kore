@@ -207,11 +207,12 @@ class default_params():
         # self.forcing = 9  # Radial, symmetric, m=2 boundary flow forcing, bci=1.
         # self.forcing = 10 # Radial, symmetric, order m boundary flow forcing at the cmb (l=m), unit amplitude.
         # self.forcing = 11 # Random Reynolds-stress body force (convective noise), any m, symm; rsf_* below.
+        # self.forcing = 13 # Entropy forcing_amplitude_icb P2(cos θ) at the inner wall (its gradient with bci_thermal = 1), m=0, symm.
 
         # Forcing frequency (ignored if forcing == 0)
         self.forcing_frequency = 1.0  # negative is prograde
 
-        # Forcing amplitude (boundary forcings 6, 7, 9, 10; forcing 11 ignores it: its power scales with rsf_scale)
+        # Forcing amplitude (boundary forcings 6, 7, 9, 10, 13; forcing 11 ignores it: its power scales with rsf_scale)
         self.forcing_amplitude_cmb = 1.0
         self.forcing_amplitude_icb = 0.0
 

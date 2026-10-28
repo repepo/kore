@@ -232,6 +232,24 @@ def main():
                 print(e if isinstance(e, SystemExit) else repr(e), flush=True)
                 comm.Abort(1)
 
+    elif par.forcing == 13: # ------------------------------------------ latitudinal entropy at the inner wall (m = 0)
+
+        # s = forcing_amplitude_icb P2(cos θ) at r = ricb (bci_thermal = 0), or ds/dr = forcing_amplitude_icb P2(cos θ)
+        # (bci_thermal = 1): the right-hand side of the inner-wall entropy row of l = 2. The field is (coefficient) Y + c.c.,
+        # so the coefficient is half the amplitude.
+        if rank == 0:
+
+            if par.m != 0 or par.symm != 1 or par.ricb == 0 or par.thermal == 0 or par.ThermaD == 0 or par.forcing_amplitude_icb == 0:
+                print('forcing 13 needs m = 0, symm = 1, ricb > 0, thermal = 1, ThermaD > 0 and forcing_amplitude_icb != 0', flush=True)
+                comm.Abort(1)
+            if par.forcing_frequency == 0 and par.bci == 0 and par.bco == 0:  # a rigid rotation would solve A x = 0
+                print('forcing 13 with forcing_frequency = 0 needs a no-slip wall (bci = 1 or bco = 1)', flush=True)
+                comm.Abort(1)
+
+            row = 2*ut.n + int(ut.N1*(2 - ut.m_top)/2) + 1  # entropy block, l = 2, inner-wall row (bc_theta_spherical)
+            B = ss.csr_matrix( ( [par.forcing_amplitude_icb/2], ([row], [0]) ), shape=(ut.sizmat,1) )
+            np.savez('B_forced.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
+
 
 
     if rank == 0:
