@@ -143,7 +143,7 @@ $\nu$ = `ViscosD` $\hat\nu(r)$ and $\kappa$ = `ThermaD` $\hat\kappa(r)$; `diffus
 - Any type is multiplied by $(\rho_0(x_2)/\rho_0)^p$, $x_2$ = `aux3`, with $p$ = `visc_pow` for $\hat\nu$ and `therm_pow`
   for $\hat\kappa$: 0 (the default) keeps the kinematic diffusivities as set, 1 makes $\rho_0\nu$ and $\rho_0\kappa$
   follow the profile instead.
-- Forcing 11 (random Reynolds stresses) uses the turbulent part of the viscosity, `ViscosD` $(\hat\nu - \nu_f)$: the
+- [Forcing 11](forcing.md) (random Reynolds stresses) uses the turbulent part of the viscosity, `ViscosD` $(\hat\nu - \nu_f)$: the
   floor $\nu_f$ is `visc0` with `'step'` and `'solar_rz'` when `visc0` < 1 and 0 otherwise, unless `rsf_nu_floor` is
   set.
 

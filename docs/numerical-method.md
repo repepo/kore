@@ -87,7 +87,8 @@ $$
 
 projected as in the table above. `solve.py` finds the eigenvalues nearest a target $\tau$ by shift-and-invert with SLEPc,
 factoring $A - \tau B$ once with MUMPS ([Solver](solver.md)). Forced runs solve
-$(A - i\thinspace\mathrm{wf}\thinspace B)\mathbf x = \mathbf b$, with wf the forcing frequency.
+$(A - i\thinspace\mathrm{wf}\thinspace B)\mathbf x = \mathbf b$, with wf the forcing frequency; for the random
+force of forcing 11, $\mathbf b$ is derived on [Reynolds-stress forcing](reynolds-stress.md).
 
 ## Boundary conditions
 

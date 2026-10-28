@@ -6,6 +6,7 @@ nav:
   - Getting started: getting-started.md
   - User guide:
       - Background model: background.md
+      - Convective forcing: forcing.md
       - Solver: solver.md
       - Output files: output.md
   - Benchmarks: benchmarks.md
@@ -13,6 +14,7 @@ nav:
       - Anelastic equations: anelastic.md
       - Numerical method: numerical-method.md
       - Differential rotation: differential_rotation_details.md
+      - Reynolds-stress forcing: reynolds-stress.md
 
 theme:
   name: material

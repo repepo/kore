@@ -8,8 +8,10 @@ table.
 | --- | --- | --- |
 | `*.mtx` | `submatrices.py` | one sparse matrix per radial operator |
 | `A.npz`, `B.npz` | `assemble.py` | the matrices of the eigenproblem $A\mathbf x = \lambda B\mathbf x$ |
+| `B_forced.npz` | `assemble.py`, with `forcing` > 0 | the right-hand sides of a forced run, one per column |
 | `eigenvalues0.dat` | `solve.py` | the eigenvalues of the last solve, one per row: $\mathrm{Re}\thinspace\lambda$, $\mathrm{Im}\thinspace\lambda$ |
-| `real_flow.field`, `imag_flow.field` | `solve.py` | the eigenvectors of the flow, real and imaginary parts of their spectral coefficients, one column per solution; with `thermal = 1` also `real_thermal.field`, `imag_thermal.field` for $s$ |
+| `real_flow.field`, `imag_flow.field` | `solve.py` | the eigenvectors of the flow (or the forced flows), real and imaginary parts of their spectral coefficients, one column per solution; with `thermal = 1` also `real_thermal.field`, `imag_thermal.field` for $s$ |
+| `rsf_spectrum.dat`, `rsf_ke.dat` | `solve.py`, with `forcing = 11` and `rsf_frequencies` | the power spectrum of the kinetic energy of the forced flow, appended, one row per frequency ([Convective forcing](forcing.md#reading-the-output)) |
 | `timing.dat` | `solve.py` | the run time of the solve, appended |
 | `eigenvalues.dat` | `spin_doctor.py` | the eigenvalues, appended |
 | `params.dat` | `spin_doctor.py` | the parameters of each solution (below) |

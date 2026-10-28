@@ -87,11 +87,12 @@ eigenvalues as ω, σ in nHz.
 Other directories: `tests/ci/` (the test GitHub runs on every push, §11); `tests/diff_rot/`, `tests/heat_dr/` and
 `tests/rsf/` (§11, each with a README); `docs/` (mkdocs, public user documentation: `installation.md` (from conductive_IC), `getting-started.md` (a
 step-by-step run of Baruteau & Rieutord 2013 fig. 10), the user guide `background.md` (structure, stratification,
-diffusivity with ThermaD = 0, rotation and thermal wind), `solver.md` (bad solutions, memory) and `output.md` (the files
-and their columns), `benchmarks.md` (set-up and result of each published benchmark), and the mathematical framework
+diffusivity with ThermaD = 0, rotation and thermal wind), `forcing.md` (forcing 11: a worked m = 2 Rossby-mode scan, set-up,
+output), `solver.md` (bad solutions, memory) and `output.md` (the files and their columns), `benchmarks.md` (set-up and result of each published benchmark), and the mathematical framework
 `anelastic.md` (the LBR equations, non-dimensionalization, ThermaD = 0, the terms of a differential rotation, validity),
-`numerical-method.md` (unknowns, radial basis, rows, boundary conditions, checks) and `differential_rotation_details.md`
-(the equations and code of the differential rotation)); `examples/smooth_sun/` (the solar example: full sphere, m 8 HFR mode); `tools/` (submission, plotting,
+`numerical-method.md` (unknowns, radial basis, rows, boundary conditions, checks), `differential_rotation_details.md`
+(the equations and code of the differential rotation) and `reynolds-stress.md` (forcing 11: origin of the force,
+Landau-Lifshitz stress, mode energy, rows, spectrum)); `examples/smooth_sun/` (the solar example: full sphere, m 8 HFR mode); `tools/` (submission, plotting,
 `kore2sprouts.py`, `m2petsc.py`), `koreviz/`, `koreviz_mod/` (visualisation); `srunKore.sh` (SLURM);
 `poly.n1_gamma3.h5`, `theprofile.data` (files of the removed file-based models, unused).
 
@@ -315,7 +316,8 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   `docs/benchmarks.md`), `dr_cost.py` (time and memory against the degree of ΔΩ),
   `ls_to_tabulated.py` (HMI table converter, input in `profiles/`: the Larson & Schou 2018 HMI average
   `rot2d.hmiv72d.ave` and `rmesh.orig`).
-- `tests/rsf/` (README; `HOWTO.md` is the user guide of forcing 11, with the m = 2 example of `example_m2/`): shared
+- `tests/rsf/` (README; `HOWTO.md` points to `docs/forcing.md` and `docs/reynolds-stress.md`; `example_m2/`, the
+  chandler m = 2 scan, has its own README): shared
   pieces in `rsf_common.py`; `builder_check.py` (f = u against the inertia rows), `noise_check.py` (the noise
   amplitude against the documented Θ laws, and the noise against the viscous operator, exactly; no forcing beyond the
   dissipation bound), `spectrum_check.py pick|fields|check` (solve.py's sampled spectrum against the exact E[KE(w)]

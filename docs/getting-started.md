@@ -173,5 +173,6 @@ cp ../kore/runKore.sh .
 
 - Change the problem: [Background model](background.md) explains the density, stratification, diffusivity and rotation
   options, and [Benchmarks](benchmarks.md) gives the parameters of the other published cases, including the Sun.
+- Drive the modes with the random stress of convection and compute their spectrum: [Convective forcing](forcing.md).
 - A solution that fails the checks, or a run that runs out of memory: [Solver](solver.md).
 - The equations kore solves and how it discretizes them: the pages under Mathematical framework.
