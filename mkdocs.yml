@@ -6,6 +6,7 @@ nav:
   - Non-dimensionalization: page3.md
   - Background model: background.md
   - Solver: solver.md
+  - Magnetic field: magnetic.md
   - Differential rotation:
       - User guide: differential-rotation.md
       - Heat equation and benchmarks: heat-equation.md

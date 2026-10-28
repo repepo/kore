@@ -58,6 +58,10 @@ def main():
     comm.Scatter(alltop, loc_top, root=0)
     comm.Scatter(allbot, loc_bot, root=0)
 
+    if par.magnetic:  # NEW (2026-10-28): the l's of the magnetic field, f with the l's of P if B0 is symmetric, of T if antisymmetric
+        ll_mag = ut.ell( par.m, par.lmax, ut.bsymm)[:2]
+        loc_mag_f, loc_mag_g = (loc_top, loc_bot) if ut.symmB0 == 1 else (loc_bot, loc_top)
+
 
 
     if par.forcing == 6: # -------------------------------------------------- Buffett 2010 ICB radial velocity forcing
@@ -318,6 +322,16 @@ def main():
 
 
 
+        if par.magnetic == 1:  # NEW (2026-10-28): Lorentz force -------------------------------------------------------
+            # ------------------------------------------------------------------------- A, 2curl (section u), bpol, btor
+            for comp, sec, dls in [ ('bpol', 'f', [-1, 1]), ('btor', 'g', [0]) ]:
+                for i in dls:
+                    if l+i in ll_mag[0 if comp == 'bpol' else 1]:
+                        mtx = op.lorentz(l,'u',comp,i)
+                        col = ut.offset[sec] + col0 + mtx[1] * ut.N1
+                        loc_list = ut.packit( loc_list, mtx[0], row, col)
+
+
         # ----------------------------------------------------------------------------------------------------------
         # ---------------------------- include poloidal velocity boundary conditions and update loc_list (section u)
         # ----------------------------------------------------------------------------------------------------------
@@ -389,6 +403,16 @@ def main():
                     loc_list = ut.packit( loc_list, mtx[0], row, col)
 
 
+
+
+        if par.magnetic == 1:  # NEW (2026-10-28): Lorentz force -------------------------------------------------------
+            # ------------------------------------------------------------------------- A, 1curl (section v), bpol, btor
+            for comp, sec, dls in [ ('bpol', 'f', [0]), ('btor', 'g', [-1, 1]) ]:
+                for i in dls:
+                    if l+i in ll_mag[0 if comp == 'bpol' else 1]:
+                        mtx = op.lorentz(l,'v',comp,i)
+                        col = ut.offset[sec] + col0 + mtx[1] * ut.N1
+                        loc_list = ut.packit( loc_list, mtx[0], row, col)
 
 
         # ----------------------------------------------------------------------------------------------------------
@@ -502,6 +526,51 @@ def main():
 
 
 
+    if par.magnetic == 1:  # NEW (2026-10-28): the induction equation, sections f (r² r̂⋅) and g (r² r̂⋅∇×), after h
+
+        # --------------------------------------------------------------------------------------------------------------------------------------------------
+        # ----------------------------------------------------------------------------------------------------- A matrix, induction equation (sections f, g)
+        # --------------------------------------------------------------------------------------------------------------------------------------------------
+        # A holds the right-hand side: induction ∇×(u×B0) and diffusion MagnetD ∇²b (iω_f b would go with forcing, not allowed yet)
+        for sec, comp, loc_mag, upol_dls, utor_dls in [ ('f', 'bpol', loc_mag_f, [-1, 1], [0]),
+                                                        ('g', 'btor', loc_mag_g, [0], [-1, 1]) ]:
+            for k,l in enumerate(loc_mag):
+
+                col0 = (rank*bpp + k )* ut.N1
+                row  = ut.offset[sec] + col0
+
+                # induction by the flow, poloidal (upol) and toroidal (utor) columns
+                for basecol, ucomp, dls, lls in [ (0, 'upol', upol_dls, ll_flo[0]), (ut.n, 'utor', utor_dls, ll_flo[1]) ]:
+                    for i in dls:
+                        if l+i in lls:
+                            mtx = op.induction(l, sec, ucomp, i)
+                            col = basecol + col0 + mtx[1] * ut.N1
+                            loc_list = ut.packit( loc_list, mtx[0], row, col)
+
+                # magnetic diffusion
+                mtx = -1 * op.magnetic_diffusion(l, sec, comp, 0)
+                loc_list = ut.packit( loc_list, mtx, row, row)
+
+                # boundary-condition rows: insulating walls, or the matching with a conducting inner core at the ICB
+                bc_b_list = bc_b_spherical(l, sec)
+                for q in [0,1,2]:
+                    loc_list[q].append( bc_b_list[q] )
+                if ut.cic:
+                    bc_b_list = bc_b_cic(l, sec)
+                    for q in [0,1,2]:
+                        loc_list[q].append( bc_b_list[q] )
+
+        if ut.cic:  # NEW (2026-10-28): conducting inner core, sections fic, gic: A = -(diffusion), its bc row is the ICB matching
+            for sec, comp, loc_mag in [ ('fic', 'bpol_ic', loc_mag_f), ('gic', 'btor_ic', loc_mag_g) ]:
+                for k,l in enumerate(loc_mag):
+                    row = ut.offset[sec] + ( rank*bpp + k )* ut.Nic
+                    mtx = -1 * op.magnetic_diffusion(l, sec, comp, 0)
+                    loc_list = ut.packit( loc_list, mtx, row, row)
+                    bc_b_list = bc_b_cic(l, sec)
+                    for q in [0,1,2]:
+                        loc_list[q].append( bc_b_list[q] )
+
+
     # ------------------------------------------------------------------------------------------------------------------ A matrix assembly
     A = gather_csr(comm, loc_list, complex)  # full A on rank 0, None elsewhere
     del loc_list
@@ -581,6 +650,22 @@ def main():
 
 
 
+
+
+        if par.magnetic == 1:  # NEW (2026-10-28): -(d/dt) b in the induction equation, B = -b (as -inertia in the momentum rows)
+
+            for sec, comp, loc_mag in [ ('f', 'bpol', loc_mag_f), ('g', 'btor', loc_mag_g) ]:
+                for k,l in enumerate(loc_mag):
+                    row = ut.offset[sec] + ( rank*bpp + k )* ut.N1
+                    mtx = -op.b(l, sec, comp, 0)
+                    loc_list = ut.packit(loc_list, mtx, row, row)
+
+            if ut.cic:  # NEW (2026-10-28): the inner-core field, B = -b as in f, g (conductive_IC has B = +b, A = +diffusion there)
+                for sec, comp, loc_mag in [ ('fic', 'bpol_ic', loc_mag_f), ('gic', 'btor_ic', loc_mag_g) ]:
+                    for k,l in enumerate(loc_mag):
+                        row = ut.offset[sec] + ( rank*bpp + k )* ut.Nic
+                        mtx = -op.b(l, sec, comp, 0)
+                        loc_list = ut.packit(loc_list, mtx, row, row)
 
 
         # ---------------------------------------------------------------------- B matrix assembly
@@ -767,6 +852,77 @@ def bc_u_spherical(l,loc):
     out2 = [out.data, out.row + row0, out.col + col0]
 
     return out2
+
+
+
+def bc_b_spherical(l, sec):
+    '''
+    NEW (2026-10-28): boundary conditions for the magnetic field at insulating walls (conductive_IC's bc_b_cmb, bc_b_icb), on
+    the two bc rows of each block: row 0 at the outer boundary (l+1) f + r f' = 0 and g = 0, row 1 at the inner boundary
+    l f - r f' = 0 and g = 0 (b matches a potential field outside the shell, and inside it with ricb > 0).
+    '''
+    out = ss.dok_matrix((2 - ut.cic, ut.N1), dtype=complex)  # NEW (2026-10-28): row 1 is bc_b_cic's with a conducting inner core
+
+    if sec == 'f':
+        out[ 0,:] = (l+1) * bv.Tb[:,0] + ut.rcmb * bv.Tb[:,1]
+        if not ut.cic:
+            out[ 1,:] = l * bv.Ta[:,0] - par.ricb * bv.Ta[:,1]
+    elif sec == 'g':
+        out[ 0,:] = bv.Tb[:,0]
+        if not ut.cic:
+            out[ 1,:] = bv.Ta[:,0]
+
+    # the first l of each section's block list: f has the l's of T (symmB0 = -1) or of P (symmB0 = 1), g the others
+    lfirst = ut.m_bot if (sec == 'f') == (ut.symmB0 == -1) else ut.m_top
+    row0 = ut.offset[sec] + int( ut.N1*(l - lfirst)/2 )
+
+    out = out.tocoo()
+    return [out.data, out.row + row0, out.col + row0]
+
+
+
+def bc_b_cic(l, sec):
+    '''
+    NEW (2026-10-28): the matching of the fluid's field with a conducting inner core at the ICB (conductive_IC's bc_b_cic), one
+    row in each of the four sections: in f (its row 1) [n⋅b] f_o - f_i = 0; in g (its row 1) the toroidal [n×E]
+    (g + r g')_o - η_i (g + r g')_i = 0 with η_i = 1/(mu_i2o sigma_i2o); in fic (its row 0) the toroidal [n×b/μ]
+    mu_i2o (f + r f')_o - (f + r f')_i = 0; in gic (its row 0) the consoidal [n×b/μ] mu_i2o g_o - g_i = 0. As in
+    conductive_IC the continuity of η∇²_l f is not imposed: with b_r continuous it follows from the radial induction equation
+    on both sides, since u = 0 at the no-slip ICB.
+    '''
+    ric     = par.ricb
+    eta_i2o = 1/( par.mu_i2o * par.sigma_i2o )
+    lfirst  = ut.m_bot if ((sec in ['f', 'fic']) == (ut.symmB0 == -1)) else ut.m_top   # as in bc_b_spherical
+    k       = int( (l - lfirst)/2 )   # block index of l in its section
+
+    outoc = ss.dok_matrix((1, ut.N1 ), dtype=complex)
+    outic = ss.dok_matrix((1, ut.Nic), dtype=complex)
+
+    if sec == 'f':
+        row0 = ut.offset['f'] + k*ut.N1 + 1
+        colo, coli = ut.offset['f'] + k*ut.N1, ut.offset['fic'] + k*ut.Nic
+        outoc[0,:] =  bv.Ta[:,0]
+        outic[0,:] = -bv.Tbfic[:,0]
+    elif sec == 'g':
+        row0 = ut.offset['g'] + k*ut.N1 + 1
+        colo, coli = ut.offset['g'] + k*ut.N1, ut.offset['gic'] + k*ut.Nic
+        outoc[0,:] =  bv.Ta[:,0] + ric*bv.Ta[:,1]
+        outic[0,:] = -eta_i2o * ( bv.Tbgic[:,0] + ric*bv.Tbgic[:,1] )
+    elif sec == 'fic':
+        row0 = ut.offset['fic'] + k*ut.Nic
+        colo, coli = ut.offset['f'] + k*ut.N1, ut.offset['fic'] + k*ut.Nic
+        outoc[0,:] = par.mu_i2o * ( bv.Ta[:,0] + ric*bv.Ta[:,1] )
+        outic[0,:] = -( bv.Tbfic[:,0] + ric*bv.Tbfic[:,1] )
+    elif sec == 'gic':
+        row0 = ut.offset['gic'] + k*ut.Nic
+        colo, coli = ut.offset['g'] + k*ut.N1, ut.offset['gic'] + k*ut.Nic
+        outoc[0,:] = par.mu_i2o * bv.Ta[:,0]
+        outic[0,:] = -bv.Tbgic[:,0]
+
+    outoc = outoc.tocoo()
+    outic = outic.tocoo()
+    return [ np.concatenate([outoc.data, outic.data]), np.concatenate([outoc.row + row0, outic.row + row0]),
+             np.concatenate([outoc.col + colo, outic.col + coli]) ]
 
 
 

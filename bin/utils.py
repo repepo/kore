@@ -9,6 +9,7 @@ import numpy as np
 from parameters import par
 import radial_profiles as rap
 import angular
+import background_field as bf
 import sys
 
 '''
@@ -35,8 +36,25 @@ vsymm  = par.symm
 
 symm1 = (2*np.sign(par.m) - 1) * par.symm  # symm1=par.symm if m>0, symm1 = -par.symm if m=0
 
+# NEW (2026-10-28): equatorial symmetry of the background field B0 and of the induced field b (magnetic = 1). With an
+# antisymmetric B0 (symmB0 = -1, 'axial' or a dipole) b has the symmetry opposite to u, so the poloidal field f has the l's
+# of the toroidal flow and g those of the poloidal flow.
+symmB0 = bf.symmB0
+bsymm  = par.symm * symmB0
+
+# NEW (2026-10-28): a conducting inner core whose field is part of the unknowns (sections fic, gic): Nic Chebyshev
+# coefficients of one parity per l on [-ricb, ricb] (N_cic/2), nic per section, the same l's as f, g
+cic    = int(bool(par.magnetic and par.innercore == 'conducting, Chebys' and par.ricb > 0))
+Nic    = int(par.N_cic/2)
+nic    = int(Nic*(par.lmax-par.m+1)/2) * cic
+
 # this gives the size (rows or columns) of the main matrices
-sizmat = 2*n + n*par.thermal
+sizmat = 2*n + n*par.thermal + 2*n*par.magnetic + 2*nic  # NEW (2026-10-28): + the magnetic field (+ inner core)
+
+# NEW (2026-10-28): first row (and column) of each section in A and B: P, T, s, then f, g after s, then fic, gic, so that
+# the flow and the entropy keep their places and non-magnetic matrices are unchanged
+offset = { 'u': 0, 'v': n, 'h': 2*n, 'f': (2 + par.thermal)*n, 'g': (3 + par.thermal)*n,
+           'fic': (4 + par.thermal)*n, 'gic': (4 + par.thermal)*n + nic }
 
 # ThermaD = 0 with the thermal-wind advection (docs/differential_rotation_details.md §7.2): the section-h rows are r² (eq)/p instead of
 # r (eq)/p, in the C^(1) basis (u_θ has P'), still without thermal bc rows; the thermal-wind profiles are then σn, σn'
@@ -70,7 +88,7 @@ def decode_label(labl):
     (section, rpower, rhopower, func1, dorder1, func2, dorder2, dx) = (None, None, None, None, None, None, None, None)
 
     howlong = len(labl)
-    section = labl[0]        # this is 'u' or 'v' or 'h'
+    section = labl[0]        # this is 'u' or 'v' or 'h' (or 'f', 'g' with magnetic = 1)
     rx      = int(labl[1])   # related to rpower
     dx      = int(labl[-1])  # operators' derivative order
 
@@ -91,6 +109,9 @@ def decode_label(labl):
             rpower = 1 - rx ; rhopower = 0   # Adiabatic motion, we multiply the thermal equation by r
         else:
             rpower = 2 - rx ; rhopower = 0   # Non-adiabatic motion (or adiabatic with the thermal wind), we multiply the thermal equation by r²
+
+    elif section in ['f', 'g']:   # NEW (2026-10-28): the induction equation, r² r̂⋅ (f) and r² r̂⋅∇× (g), not multiplied by ρ
+        rpower = 2 - rx ; rhopower = 0
 
     if howlong in [9,13,17]:   # sXfu1X_DX or sXfu1Xfu2X_DX
         func1   = labl[2:5]
@@ -122,6 +143,8 @@ def gimmedachebs( labl ):
     '''
 
     tol = max(1e-15, par.drop_tol)  # relative to the largest coefficient, see chebco_f
+    if 'bpo' in labl:  # NEW (2026-10-28): the background field's own cut (par.tol_B0, as conductive_IC)
+        tol = max(tol, par.tol_B0)
     args = decode_label(labl)  # (section, rpower, rhopower, func1, dorder1, func2, dorder2, dx)
     c0arg = chebco_f( rap.burrito, par.N, par.ricb, rcmb, tol, *args)
     # print('burrito', labl, args)
@@ -388,14 +411,17 @@ def interp(x0, x, y, even=True):
     return out
 
 
-def Dlam(lamb,N):
+def Dlam(lamb,N,R1=None,R2=None):
     '''
     Order lamb (>=1) derivative matrix, size N*N
+    NEW (2026-10-28): for the Chebyshev domain [R1, R2], or [-R2, R2] if R1 = 0 (default: [ricb, rcmb], as before)
     '''
-    if par.ricb == 0:
-        const1 = (1/rcmb)**lamb  # ok when rcmb is not 1
+    if R1 is None:
+        R1, R2 = par.ricb, rcmb
+    if R1 == 0:
+        const1 = (1/R2)**lamb  # ok when R2 is not 1
     else:
-        const1 = (2./(rcmb-par.ricb))**lamb
+        const1 = (2./(R2-R1))**lamb
     const2 = scsp.factorial(lamb-1.)*2**(lamb-1.)
     tmp = lamb + np.arange(0,N-lamb)
 

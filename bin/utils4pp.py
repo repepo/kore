@@ -10,6 +10,7 @@ import utils as ut
 import radial_profiles as rap
 import angular
 import diff_rot as dr
+import background_field as bf
 
 
 mp.set_start_method('fork')
@@ -1247,6 +1248,329 @@ def kinetic_energy(usol, Ra, Rb, ls=None):
         kinet = 0.5*dotprod_tor(l, velt[0], velt[0])*rho0
         out += rad_quad( kinep + kinet, Ra, Rb, wk)
     return out
+
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------- NEW (2026-10-28): magnetic field (magnetic = 1)
+# ----------------------------------------------------------------------------------------------------------------------
+# Ported from conductive_IC (utils4pp.py at 39487bbf: energy_pol/tor, diffus_pol/tor, magnetic_worker, lorentz4pp_dipo,
+# induction4pp_dipo), dipolar B0. b = ∇×∇×(f r) + ∇×(g r) carries no ρ: its components are q = L f/r, s = f' + f/r, t = g.
+# The Lorentz force and the induction term are the Boussinesq ones (structure 'uniform', as background.check() requires):
+# induction4pp takes the consoidal part of u from velocity tables that have the (ln ρ0)' term, but the formulas assume ρ0 = 1.
+
+
+
+def set_bsolution(bsol, nd=3):
+    '''
+    Sets the magnetic solution bsol2 (expand_reshape_sol(..., ut.bsymm)) and the tables btab of f and g and their
+    r-derivatives up to order nd at the current radii rk, as module globals. Call it after setup_grid.
+    '''
+    global bsol2, btab
+    bsol2 = bsol
+    btab  = [ cheb2space_table(bsol[0], nd, rk), cheb2space_table(bsol[1], nd, rk) ]
+
+
+
+def bfield_pol(l, ns):
+    '''
+    [ [q, q', ...], [s, s', ...] ] up to the ns-th r-derivative (ns <= 2) of the poloidal l-component of b (from btab)
+    '''
+    lp = ut.ell(par.m, par.lmax, ut.bsymm)[0]
+    f  = btab[0][:, list(lp).index(l), :]
+    L  = l*(l+1)
+    q  = [ L*f[0]/rk ]
+    s  = [ f[1] + f[0]/rk ]
+    if ns > 0:
+        q.append( L*(f[1]/rk - f[0]/r2) )
+        s.append( f[2] + f[1]/rk - f[0]/r2 )
+    if ns > 1:
+        q.append( L*(f[2]/rk - 2*f[1]/r2 + 2*f[0]/r3) )
+        s.append( f[3] + f[2]/rk - 2*f[1]/r2 + 2*f[0]/r3 )
+    return [ q, s ]
+
+
+
+def bfield_tor(l, ns):
+    '''
+    [ t, t', ... ] up to the ns-th r-derivative of the toroidal l-component of b (from btab)
+    '''
+    lt = ut.ell(par.m, par.lmax, ut.bsymm)[1]
+    return [ btab[1][j, list(lt).index(l), :] for j in range(ns+1) ]
+
+
+
+def magnetic_energy(bsol, Ra, Rb, ls=None):
+    '''
+    Returns ∫ ½ 𝐛⋅𝐛 dV of the magnetic solution bsol (expand_reshape_sol with ut.bsymm), from Ra to Rb (no Hendrik
+    factor), with the quadrature of kinetic_energy. ls restricts the sum to some l values (default: all).
+    '''
+    setup_grid(Ra, Rb)
+    set_bsolution(bsol, 1)
+    lp, lt, ll = ut.ell(par.m, par.lmax, ut.bsymm)
+    out = 0.0
+    for l in (ll if ls is None else ls):
+        if l in lp:
+            [ [q0], [s0] ] = bfield_pol(l, 0)
+            out += rad_quad( 0.5*dotprod_pol(l, q0, s0, q0, s0), Ra, Rb, wk)
+        elif l in lt:
+            t0 = bfield_tor(l, 0)[0]
+            out += rad_quad( 0.5*dotprod_tor(l, t0, t0), Ra, Rb, wk)
+    return out
+
+
+
+def diffus_pol(l, qlm0, qlm1, qlm2, slm0, slm1, slm2):
+    '''
+    Integrand of ∫ 𝐛⋅∇²𝐛 dV (2 Re of it), poloidal l-component, for a solenoidal field (conductive_IC)
+    '''
+    L = l*(l+1)
+    f0 = 4*np.pi/(2*l+1)
+    f1 = L * r2 * np.conj(slm0) * slm2
+    f2 = 2 * rk * L * np.conj(slm0) * slm1
+    f3 = -(L**2)*( np.conj(slm0)*slm0 ) - (l**2+l+2) * ( np.conj(qlm0)*qlm0 )
+    f4 = 2 * rk * np.conj(qlm0)*qlm1 + r2 * np.conj(qlm0) * qlm2
+    f5 = 2 * L *( np.conj(qlm0)*slm0 + qlm0*np.conj(slm0) )
+    return 2*np.real( f0*( f1+f2+f3+f4+f5 ) )
+
+
+
+def diffus_tor(l, tlm0, tlm1, tlm2):
+    '''
+    Integrand of ∫ 𝐛⋅∇²𝐛 dV (2 Re of it), toroidal l-component (conductive_IC)
+    '''
+    L = l*(l+1)
+    f0 = 4*np.pi/(2*l+1)
+    f1 = L * r2 * np.conj(tlm0) * tlm2
+    f2 = 2 * rk * L * np.conj(tlm0) * tlm1
+    f3 = -(L**2)*( np.conj(tlm0)*tlm0 )
+    return 2*np.real( f0*(f1+f2+f3) )
+
+
+
+def lorentz4pp( l ):
+    '''
+    The l-component [rad, con, tor] of the Lorentz force (∇×b)×B0 + (∇×B0)×b at rk (without Hendrik), dipolar B0
+    (conductive_IC's lorentz4pp_dipo), from btab
+    '''
+    m   = par.m
+    lp, lt, _ = ut.ell( m, par.lmax, ut.bsymm)
+    h0, h1, h2 = [ bf.h(rk, k) for k in (0, 1, 2) ]
+
+    out_rad = np.zeros_like(rk, dtype='complex128')
+    out_con = np.zeros_like(rk, dtype='complex128')
+    out_tor = np.zeros_like(rk, dtype='complex128')
+
+    if l-1 in lp:
+        [ [ qlm0, _ ], [ slm0, slm1 ] ] = bfield_pol(l-1, 1)
+        C_rad    = (-1 + l)*np.sqrt(l**2 - m**2)/(-1 + 2*l)
+        out_rad += C_rad*( -(h0*(qlm0/r2 + slm0/r2 - slm1/rk)) + (h2*slm0 + h1*(-qlm0/rk + 3*slm0/rk + slm1)) )
+        C_con    = np.sqrt(l**2 - m**2)/(l*(-1 + 2*l))
+        out_con += C_con*( (-2*h0*l*qlm0/r2 + qlm0*(2*h1/rk + h2) + 2*h0*(-1 + l)*(slm0/r2 + slm1/rk)) )
+    elif l-1 in lt:
+        [ tlm0, tlm1 ] = bfield_tor(l-1, 1)
+        C_tor =  -(-1 + l)*np.sqrt(l**2 - m**2)/(l*(-1 + 2*l))
+        out_tor += C_tor*( h0*(-2 + l)*tlm0/r2 + h1*l*tlm0/rk - 2*h0*tlm1/rk )
+
+    if l in lt:
+        [ tlm0, tlm1 ] = bfield_tor(l, 1)
+        out_rad += 1j*m*( h0*(-tlm0/r2 + tlm1/rk) + 3*h1*tlm0/rk + h2*tlm0 + h1*tlm1 )
+        out_con += 1j*m*( h0*(2 + l + l**2)*tlm0/r2 + h1*l*(1 + l)*tlm0/rk + 2*h0*tlm1/rk ) / (l*(1 + l))
+    elif l in lp:
+        [ [ qlm0, _ ], [ slm0, slm1 ] ] = bfield_pol(l, 1)
+        out_tor += 1j*m*( qlm0*(2*h1/rk + h2) - 2*h0*(slm0/r2 + slm1/rk) ) / (l*(1 + l))
+
+    if l+1 in lp:
+        [ [ qlm0, _ ], [ slm0, slm1 ] ] = bfield_pol(l+1, 1)
+        C_rad = (2 + l)*np.sqrt((1 + l - m)*(1 + l + m)) / (3 + 2*l)
+        out_rad += C_rad*( h0*(qlm0/r2 + slm0/r2 - slm1/rk) - (h2*slm0 + h1*(-qlm0/rk + 3*slm0/rk + slm1)) )
+        C_con = np.sqrt((1 + l - m)*(1 + l + m)) / ((1 + l)*(3 + 2*l))
+        out_con += C_con*( -2*h0*(1 + l)*qlm0/r2 - qlm0*(2*h1/rk + h2) + 2*h0*(2 + l)*(slm0/r2 + slm1/rk) )
+    elif l+1 in lt:
+        [ tlm0, tlm1 ] = bfield_tor(l+1, 1)
+        C_tor = (2 + l)*np.sqrt((1 + l - m)*(1 + l + m)) / ((1 + l)*(3 + 2*l))
+        out_tor += C_tor*( (h0*(3 + l)*tlm0/r2 + h1*(1 + l)*tlm0/rk + 2*h0*tlm1/rk) )
+
+    return [ out_rad*bf.cnorm, out_con*bf.cnorm, out_tor*bf.cnorm ]
+
+
+
+def induction4pp( l ):
+    '''
+    The l-component [rad, con, tor] of the induction term ∇×(u×B0) at rk, dipolar B0 (conductive_IC's
+    induction4pp_dipo), from the velocity tables utab (set_solution); ρ0 = 1 assumed
+    '''
+    m   = par.m
+    lp, lt, _ = ut.ell( m, par.lmax, par.symm)
+    [ P, T ] = utab
+    h0, h1, h2 = [ bf.h(rk, k) for k in (0, 1, 2) ]
+
+    out_rad = np.zeros_like(rk, dtype='complex128')
+    out_con = np.zeros_like(rk, dtype='complex128')
+    out_tor = np.zeros_like(rk, dtype='complex128')
+
+    if l-1 in lp:
+        [ [ qlm0, qlm1], [slm0, slm1] ] =  cheb2space_pol(l-1, lp, P, 1, rk)
+        out_rad += -(((1 + l)*np.sqrt(l**2 - m**2)*(h1*qlm0*rk + h0*(qlm0 - 2*(-1 + l)*slm0)))/((-1 + 2*l)*r2))
+        out_con += (np.sqrt(l**2 - m**2)*(-(qlm1*(h0 + h1*rk)) - qlm0*(2*h1 + h2*rk) + 2*h1*(-1 + l)*slm0 + 2*h0*(-1 + l)*slm1))/(l*(-1 + 2*l)*rk)
+    elif l-1 in lt:
+        [ tlm0, tlm1]  =  cheb2space_tor(l-1, lt, T, 1, rk)
+        out_tor += -(((1 + 2*l)*(h1*(np.sqrt((l*(-1 + l**2))/(-1 + 4*l**2)) - 2*np.sqrt((1 - l**2)/(l - 4*l**3)))*rk*tlm0 + h0*(np.sqrt((l*(-1 + l**2))/(-1 + 4*l**2))*tlm0 - 2*np.sqrt((1 - l**2)/(l - 4*l**3))*rk*tlm1)))/(np.sqrt((l*(1 + l)*(-1 + 4*l**2))/((-1 + l)*(l**2 - m**2)))*r2))
+
+    if l in lt:
+        [ tlm0, tlm1]  =  cheb2space_tor(l, lt, T, 1, rk)
+        out_rad += (2j*h0*m*tlm0)/r2
+        out_con += ((2j)*m*(h1*tlm0 + h0*tlm1))/(l*(1 + l)*rk)
+    elif l in lp:
+        [ [ qlm0, qlm1], [slm0, slm1] ] =  cheb2space_pol(l, lp, P, 1, rk)
+        out_tor += ((-1j)*m*(h2*qlm0*r2 - h0*l*(1 + l)*slm0 + h1*rk*(2*qlm0 + qlm1*rk - (-2 + l + l**2)*slm0) + h0*rk*(qlm1 + 2*slm1)))/(l*(1 + l)*r2)
+
+    if l+1 in lp:
+        [ [ qlm0, qlm1], [slm0, slm1] ] =  cheb2space_pol(l+1, lp, P, 1, rk)
+        out_rad += (l*np.sqrt((1 + l - m)*(1 + l + m))*(h1*qlm0*rk + h0*(qlm0 + 2*(2 + l)*slm0)))/((3 + 2*l)*r2)
+        out_con += (np.sqrt((1 + l - m)*(1 + l + m))*(h2*qlm0*rk + h1*(2*qlm0 + qlm1*rk + 2*(2 + l)*slm0) + h0*(qlm1 + 2*(2 + l)*slm1)))/((1 + l)*(3 + 2*l)*rk)
+    elif l+1 in lt:
+        [ tlm0, tlm1]  =  cheb2space_tor(l+1, lt, T, 1, rk)
+        out_tor +=  ((1 + 2*l)*np.sqrt(((2 + l)*(1 + l - m)*(1 + l + m))/(3 + 4*l*(2 + l)))*(h1*(2*np.sqrt((l*(2 + l))/(3 + 11*l + 12*l**2 + 4*l**3)) + np.sqrt((l*(1 + l)*(2 + l))/(3 + 4*l*(2 + l))))*rk*tlm0 + h0*(np.sqrt((l*(1 + l)*(2 + l))/(3 + 4*l*(2 + l)))*tlm0 + 2*np.sqrt((l*(2 + l))/(3 + 11*l + 12*l**2 + 4*l**3))*rk*tlm1)))/(np.sqrt(l*(1 + l))*r2)
+
+    return [ out_rad*bf.cnorm, out_con*bf.cnorm, out_tor*bf.cnorm ]
+
+
+
+def magnetic_worker( l ):
+    '''
+    l-component of the magnetic budget terms: [ ME = ∫ ½ 𝐛⋅𝐛 dV, ∫ 𝐛⋅∇²𝐛 dV, ∫ 𝐛⋅∇×(𝐮×𝐁₀) dV (both 2 Re), and the complex
+    power of the Lorentz force 2 ∫ 𝐮*⋅𝐅 dV as its real and imaginary parts ] (no Hendrik or MagnetD factors; the Lorentz
+    force per unit mass is ρ0⁻¹ Hendrik 𝐅, so its power has no ρ0 weight). Needs set_solution and set_bsolution.
+    '''
+    Ra = par.ricb
+    Rb = ut.rcmb
+    lp, lt, _ = ut.ell(par.m, par.lmax, ut.bsymm)
+
+    [ qi, si, ti ] = induction4pp(l)
+    if l in lp:
+        [ [q0, q1, q2], [s0, s1, s2] ] = bfield_pol(l, 2)
+        mene = 0.5*dotprod_pol(l, q0, s0, q0, s0)
+        mdfs = diffus_pol(l, q0, q1, q2, s0, s1, s2)
+        indu = dotprod_pol(l, q0, s0, qi, si)
+    else:
+        [ t0, t1, t2 ] = bfield_tor(l, 2)
+        mene = 0.5*dotprod_tor(l, t0, t0)
+        mdfs = diffus_tor(l, t0, t1, t2)
+        indu = dotprod_tor(l, t0, ti)
+
+    [ fq, fs, ft ] = lorentz4pp(l)
+    [ [vq, _, _], [vs, _, _], [vt, _, _] ] = velocity(l)
+    plor = 2*( cdot_pol(l, vq, vs, fq, fs) + cdot_tor(l, vt, ft) )
+
+    return [ rad_quad(mene, Ra, Rb, wk), rad_quad(mdfs, Ra, Rb, wk), rad_quad(indu, Ra, Rb, wk),
+             np.real(rad_quad(plor, Ra, Rb, wk)), np.imag(rad_quad(plor, Ra, Rb, wk)) ]
+
+
+
+def ohmic_dissip_pol(l, qlm0, slm0, slm1):
+    '''
+    Integrand of ∫ |∇×𝐛|² dV, poloidal l-component (conductive_IC)
+    '''
+    f0 = 8*np.pi* l*(l+1)/(2*l+1)
+    f1 = np.absolute( qlm0 - slm0 - rk*slm1 )**2
+    return f0*f1
+
+
+
+def ohmic_dissip_tor(l, tlm0, tlm1):
+    '''
+    Integrand of ∫ |∇×𝐛|² dV, toroidal l-component (conductive_IC)
+    '''
+    L = l*(l+1)
+    f0 = 8*np.pi*L/(2*l+1)
+    f1 = np.absolute( rk*tlm1 + tlm0 )**2
+    f2 = L*np.absolute( tlm0 )**2
+    return f0*(f1+f2)
+
+
+
+def em_budget(bsol, bic=None):
+    '''
+    NEW (2026-10-28): the terms of the magnetic energy budget that the fluid-only resid𝐛 leaves out, ported from conductive_IC's
+    em_budget for an insulating mantle and an insulating or conducting ('conducting, Chebys') inner core (no thin walls):
+    [ Ohm_f, ME_ic, Ohm_ic, ME_ext ], without Hendrik or MagnetD:
+      Ohm_f  : ∫ |∇×𝐛|² over the fluid
+      ME_ic  : ½ ∫ |𝐛|²/mu_i2o inside the inner core: the field of a conducting inner core (bic: its part of the solution
+               vector), or the potential field below an insulating one
+      Ohm_ic : η_i ∫ |∇×𝐛|²/mu_i2o over a conducting inner core, η_i = 1/(mu_i2o sigma_i2o)
+      ME_ext : ½ ∫ |𝐛|² of the potential field outside the outer wall
+    Needs setup_grid (the fluid's quadrature grid).
+    '''
+    r_i, r_o = par.ricb, ut.rcmb
+    [ lp, lt, _ ] = ut.ell(par.m, par.lmax, ut.bsymm)
+    f0p = 4*np.pi/(2*lp+1)
+    Lp = lp*(lp+1.)
+
+    Fp = cheb2space_table(bsol[0], 2, rk); Gt = cheb2space_table(bsol[1], 1, rk)
+    Ohm_f = 0.0
+    for k, l in enumerate(lp):
+        f, f1, f2 = Fp[0, k], Fp[1, k], Fp[2, k]
+        Ohm_f += rad_quad( ohmic_dissip_pol(l, Lp[k]*f/rk, f1 + f/rk, f2 + f1/rk - f/r2), r_i, r_o, wk)
+    for k, l in enumerate(lt):
+        Ohm_f += rad_quad( ohmic_dissip_tor(l, Gt[0, k], Gt[1, k]), r_i, r_o, wk)
+
+    def bvals(C, nd, x):  # values and r-derivatives of the rows of C at x = -1 (inner wall) or 1 (outer wall)
+        dk = np.ascontiguousarray(np.transpose(C)); out = []
+        for j in range(nd+1):
+            if j > 0: dk = ut.Dcheb(dk, r_i, r_o)
+            out.append(ch.chebval(x, dk))
+        return out
+
+    ME_ic = Ohm_ic = 0.0
+    f = bvals(bsol[0], 0, 1.0)[0]
+    ME_ext = np.sum( f0p*Lp*lp*np.abs(f)**2 ) * r_o   # potential field r^-(l+1) beyond r_o (F = r f there, r_o = 1)
+
+    if par.innercore == 'insulator':
+        f = bvals(bsol[0], 0, -1.0)[0]
+        ME_ic = np.sum( f0p*Lp*(lp+1)*r_i*np.abs(f)**2 )   # potential field r^l below r_i
+    elif bic is not None:
+        # the inner-core field: Chebyshev series in x = r/ricb on [-1, 1], one parity per l
+        Nic = ut.Nic; nb = int((par.lmax - par.m + 1)/2)
+        if ut.symmB0 == -1: ixf, ixg = (par.m + ut.s)%2, (par.m + 1 - ut.s)%2
+        else:               ixf, ixg = (par.m + 1 - ut.s)%2, (par.m + ut.s)%2
+        xg, wg = np.polynomial.legendre.leggauss(max(2*par.N_cic, 64))
+        ri = 0.5*r_i*(xg + 1); wi = 0.5*r_i*wg
+        def icfun(a, ix, nd):
+            cc = np.zeros(par.N_cic, complex); cc[ix::2] = a; out = []
+            for j in range(nd+1):
+                out.append(ch.chebval(ri/r_i, cc)); cc = ch.chebder(cc)/r_i
+            return out
+        eta_i = 1/(par.mu_i2o*par.sigma_i2o)
+        for k, l in enumerate(lp):
+            L = l*(l+1.); a0 = 4*np.pi/(2*l+1)
+            f, f1, f2 = icfun(bic[k*Nic:(k+1)*Nic], ixf, 2)
+            q0, s0 = L*f/ri, f1 + f/ri
+            ME_ic  += np.sum( wi*a0*ri**2*( np.abs(q0)**2 + L*np.abs(s0)**2 ) )
+            Ohm_ic += eta_i*np.sum( wi*2*a0*L*ri**2*np.abs(f2 + 2*f1/ri - L*f/ri**2)**2 )
+        for k, l in enumerate(lt):
+            L = l*(l+1.); a0 = 4*np.pi/(2*l+1)
+            g, g1 = icfun(bic[nb*Nic + k*Nic: nb*Nic + (k+1)*Nic], ixg, 1)
+            ME_ic  += np.sum( wi*a0*ri**2*L*np.abs(g)**2 )
+            Ohm_ic += eta_i*np.sum( wi*2*a0*L*( L*np.abs(g)**2 + np.abs(ri*g1 + g)**2 ) )
+        # FIX (2026-10-28): with mu_i2o != 1 the inner core stores ½ ∫ 𝐛⋅𝐇 = ½ ∫ |𝐛|²/mu_i2o and loses ∫ 𝐄⋅𝐉 = η_i ∫ |∇×𝐛|²/mu_i2o
+        # (𝐇 = 𝐛/mu_i2o, 𝐉 = ∇×𝐇): conductive_IC's em_budget omits the 1/mu_i2o, and its resid𝐄 is then 1e-2 at mu_i2o = 2
+        ME_ic, Ohm_ic = ME_ic/par.mu_i2o, Ohm_ic/par.mu_i2o
+    else:
+        ME_ic = Ohm_ic = np.nan
+
+    return [ Ohm_f, ME_ic, Ohm_ic, ME_ext ]
+
+
+
+def diagnose_magnetic( bsol ):
+    '''
+    NEW (2026-10-28): magnetic_worker for every l, as an array (one row per l). Call it right after diagnose (same grid
+    and flow solution).
+    '''
+    set_bsolution(bsol)
+    ll = ut.ell(par.m, par.lmax, ut.bsymm)[2]
+    return np.array([ magnetic_worker(l) for l in ll ])
 
 
 

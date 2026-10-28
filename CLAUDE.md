@@ -50,10 +50,11 @@ copies `params_default.py` and `parameters.py` to `../run` and moves the outputs
 `assemble.py`: `lmax - m + 1` must be a multiple of `2*ncpus` (number of MPI ranks); the default `lmax` formula in
 `params_default.py` satisfies it.
 
-Outputs: `real_flow.field`, `imag_flow.field` (and `*_thermal.field`), one column per solution, eigenvectors
-normalised to kinetic energy 1; `eigenvalues0.dat` (this solve: Re λ, Im λ); `timing.dat`. `spin_doctor` appends to
-`eigenvalues.dat`, `params.dat` (82 columns, and a `#` note on rows that need one, §10), `flow.dat` (20), `thermal.dat`
-(7). A `params.dat` from an older version has fewer columns: start a new one. `python3 bin/units.py` prints a run's
+Outputs: `real_flow.field`, `imag_flow.field` (and `*_thermal.field`, `*_magnetic.field`), one column per solution,
+eigenvectors normalised to kinetic energy 1 (KE + Hendrik·ME = 1 with `magnetic = 1`); `eigenvalues0.dat` (this solve:
+Re λ, Im λ); `timing.dat`. `spin_doctor` appends to `eigenvalues.dat`, `params.dat` (92 columns, and a `#` note on rows
+that need one, §10), `flow.dat` (20), `thermal.dat` (7), `magnetic.dat` (11). A conducting inner core adds
+`*_magnetic_ic.field`. A `params.dat` from an older version has fewer columns: start a new one. `python3 bin/units.py` prints a run's
 eigenvalues as ω, σ in nHz.
 
 ## 3. File map
@@ -66,13 +67,14 @@ eigenvalues as ω, σ in nHz.
 | `params_default.py` | every parameter with long comments (the best parameter reference), `set_scales`, `check_names` (warns about names that kore does not define), solver options `petsc_opts`, `prescale`, `drop_tol` |
 | `units.py` | physical units for parameter files and scripts (kore itself never imports it): `set_physical` (Gaspard, Beyonce, ViscosD, ThermaD, `diff_rot_frame` from cgs values), `set_target` (`itau`, `rtau` from ω, σ in nHz), `nHz`; as a script, prints a run's eigenvalues in nHz |
 | `utils.py` | globals (`N1`, `n`, `sizmat`, `symm1`, `adiab_tw`, `odd_profiles`...), `dr_offd`, label decoding, Chebyshev transforms (`chebco_f`, `funcheb`, `fonzie`, `angine`), Gegenbauer matrices `Dlam`, `Slam`, `Mlam`, parity `remroco`, `ell`, erf profiles (`erf_top_hat`, `erf_top_hat_odd`, `erf_box`), `Ylm`, `load_npz_mmap` |
-| `background.py` | the background besides the rotation (§6): the type names `STRUCTURES`, `STRATIFICATIONS`, `DIFFUSIVITIES` (their order is the index written to `params.dat`), `check()` (stops on unknown, removed (`REMOVED`) or impossible settings), dS/dr (`gradS`), ν and κ (`diffusivity`), the 'user' expressions and their `description()` for `params.dat` |
+| `background.py` | the background besides the rotation (§6): the type names `STRUCTURES`, `STRATIFICATIONS`, `DIFFUSIVITIES` (their order is the index written to `params.dat`), `check()` (stops on unknown, removed (`REMOVED`) or impossible settings; `check_magnetic()` for `magnetic = 1`), dS/dr (`gradS`), ν, κ and η (`diffusivity`), the 'user' expressions and their `description()` for `params.dat` |
+| `background_field.py` | the imposed magnetic field B0 (`magnetic = 1`, §4): `B0_TYPES` ('axial', 'FDM'), `symmB0`, `B0_l`, the FDM root `findbeta`, h and its derivatives `h(r, k)`, `cnorm` (`B0_norm`), the profile `bpoX`; numpy and scipy only |
 | `radial_profiles.py` | one class per structure (`wu2005_profiles`, `eight_term_profiles`, `modelS_profiles`, `modelS_hydrostatic_profiles`, `uniform_profiles`, on a base class `structure` that takes dS/dr, ν and κ from `background.py`), the dict `structures` and the instance `prf`; the `*X(r, Dorder)` derivative helpers; `proffdir` (label code → function); `burrito` (the integrand of one operator) |
 | `smoothed_sun.py` | analytic even fit of the Model S ln ρ, with g, p, d ln ρ/dr, d ln p/dr (structure '8-term fit'; its g also serves 'old model S prototype') |
 | `model_s.at` | Model S table (columns As, c₁, ρ/ρ_c, p/p_c, x) for 'model S hydrostatic' and 'old model S prototype' |
 | `jsoc_hmi_2010_2026.npz` | the observed rotation Ω(r, θ), the mean of 83 HMI 72-day inversions (2010–2026), in the layout of `diff_rot_type = 'tabulated'` (`examples/smooth_sun`) |
 | `submatrices.py` | builds the list of labels (with `diff_rot.labels()`), computes each unique operator in parallel, writes `<label>.mtx`; calls `par.check_names()` and `diff_rot.check()` |
-| `operators.py` | loads every `*.mtx` as a global named by its label; physics functions `inertia`, `coriolis`, `viscous_diffusion`, `buoyancy`, `differential_rotation`, `entropy`, `thermal_advection`, `thermal_diffusion`, `thermal_diffrot` (the diff-rot ones return `diff_rot.momentum_block`, `heat_block`) |
+| `operators.py` | loads every `*.mtx` as a global named by its label; physics functions `inertia`, `coriolis`, `viscous_diffusion`, `buoyancy`, `differential_rotation`, `entropy`, `thermal_advection`, `thermal_diffusion`, `thermal_diffrot` (the diff-rot ones return `diff_rot.momentum_block`, `heat_block`), and for `magnetic = 1` `lorentz`, `b`, `induction`, `magnetic_diffusion` |
 | `assemble.py` | MPI over l; places the blocks (the diff-rot Δl from `diff_rot.dl_range`), boundary-condition rows (`bc_u_spherical`, `bc_theta_spherical`), forcings 6, 7, 9, 10, 11; normalises A, B by ‖A‖ (eigen); `gather_csr` |
 | `reynolds_stress.py` | forcing 11: random Reynolds-stress body force f = ρ₀⁻¹∇·(ρ₀ s), the fluctuation-dissipation partner of the viscous force; `rhs(nsamp, seed)` gives one realisation per column of B_forced (docstring: physics, discretisation, normalisation) |
 | `bc_variables.py` | Chebyshev values/derivatives at the walls (`Ta`, `Tb`) and ln ρ₀ and its first two derivatives there (`lha*`, `lhb*`) |
@@ -95,8 +97,20 @@ runs out)); `examples/smooth_sun/` (the solar example: full sphere, m 8 HFR mode
 
 ## 4. Formulation
 
-**Unknowns.** Fixed m and one equatorial symmetry `symm` (±1). Per degree l: poloidal P_l(r), toroidal T_l(r), and with
-`thermal = 1` the entropy perturbation s_l(r), s = δs/c_p. Magnetic and compositional physics were removed.
+**Unknowns.** Fixed m and one equatorial symmetry `symm` (±1). Per degree l: poloidal P_l(r), toroidal T_l(r), with
+`thermal = 1` the entropy perturbation s_l(r), s = δs/c_p, and with `magnetic = 1` (2026-10-28) the field
+b = ∇×∇×(f **r**) + ∇×(g **r**). Compositional physics was removed.
+
+**Magnetic field** (`magnetic = 1`, `docs/magnetic.md`, ported from conductive_IC `39487bbf`): imposed poloidal
+B0 = cnorm ∇×∇×(h Y_l0 **r**) ('axial', 'FDM' with `B0_l` 1; `background_field.py`); ∂b/∂t = ∇×(u×B0) + MagnetD ∇²b
+(rows r² r̂· in section `f`, r² r̂·∇× in `g`) and the Lorentz force Hendrik ρ₀⁻¹[(∇×b)×B0 + (∇×B0)×b] in the momentum rows
+(labels with `ohr1`). Hendrik = (Gaspard Le)², MagnetD = Gaspard Em (`set_scales`, also timescales 'Alfven' and
+'magnetic'). b has the symmetry `ut.bsymm` = symm·symmB0: with an antisymmetric B0 f takes the l's of T and g those of P.
+A conducting inner core (`innercore = 'conducting, Chebys'`, `N_cic`, `mu_i2o`, `sigma_i2o`; needs bci = 1) adds sections
+`fic`, `gic` (Chebyshev on [−ricb, ricb], one parity, `ut.Nic` = N_cic/2 per l) matched at the ICB by `assemble.bc_b_cic`.
+For now only ricb > 0, an insulating mantle, structure 'uniform', ViscosD > 0,
+eigenproblems, no diff rot: `background.check_magnetic()` stops otherwise. The (ln ρ₀)′ terms of the Lorentz force in the u
+rows and of the induction by P are not implemented, hence 'uniform'.
 
 **Velocity** (`utils4pp.cheb2space_pol`): u = ρ₀⁻¹∇×∇×(ρ₀ P **r**) + ∇×(T **r**), so ∇·(ρ₀u) = 0 exactly:
 u_r = L P/r, consoidal part P′ + P(1/r + (ln ρ₀)′), L = l(l+1).
@@ -131,25 +145,30 @@ the only physical unit it reads is the nHz of the solar rotation data.
 
 - **Radial basis.** Chebyshev in x ∈ [−1, 1]: x ↦ r ∈ [ricb, 1] with an inner core (`N1 = N`), x = r ∈ [−1, 1] in a full
   sphere (`ricb = 0`), where parity halves the basis (`N1 = N/2`, N must be even, use about twice a shell's N).
-  Each section is written in a Gegenbauer basis: `u` C^(4), `v` C^(2), `h` C^(2) (C^(0) if ThermaD = 0, C^(1) with
+  Each section is written in a Gegenbauer basis: `u` C^(4), `v` C^(2), `f`, `g` C^(2), `h` C^(2) (C^(0) if ThermaD = 0, C^(1) with
   `adiab_tw`); inviscid full sphere: `u` C^(2), `v` C^(1). Products are `ut.Mlam` (multiplication by a profile's
   coefficients), derivatives `ut.Dlam`, basis changes `ut.Slam`.
-- **Sizes.** `n = N1*(lmax-m+1)/2`, `sizmat = 2n + n*thermal`. Unknown vector: [P blocks for the poloidal l's]
-  [T blocks for the toroidal l's][s blocks, same l's as P], each block `N1` Chebyshev coefficients. `ut.ell(m, lmax, symm)`
+- **Sizes.** `n = N1*(lmax-m+1)/2`, `sizmat = 2n + n*thermal + 2n*magnetic + 2 nic`. Unknown vector: [P blocks for the
+  poloidal l's][T blocks for the toroidal l's][s blocks, same l's as P][f blocks][g blocks][fic][gic], each block `N1`
+  Chebyshev coefficients (`Nic` for fic, gic);
+  `ut.offset` gives each section's first row (f, g after s, so non-magnetic matrices are unchanged; the older code still
+  writes 2n for section h). `ut.ell(m, lmax, symm)`
   gives the poloidal l's, toroidal l's, all l's. Each row block starts with its BC rows (u: 4 with an inner core, 2
-  without; v: 2/1; h: 2/1 when ThermaD > 0), made room for by dropping the last rows of the operator.
+  without; v: 2/1; h: 2/1 when ThermaD > 0; f, g: 2, outer then inner wall), made room for by dropping the last rows of
+  the operator.
 - **Full-sphere parity.** At ricb = 0, `submatrices` keeps one parity of rows and columns (`ut.remroco`) from the
   vector parity (vP = (−1)^m symm for P and s, −vP for T) and each operator's parity (r power, derivative orders,
   odd profiles in `ut.odd_profiles`). It prints a WARNING if a profile has wrong-parity coefficients: those parts are
   silently dropped. Profiles are therefore built even or odd: `pdS`, `dSd` as sign(r)·f(|r|), diff-rot profiles and
   'user' diffusivities at |r|.
 - **Operator labels** (`ut.decode_label`): `sX[fu1D][fu2D]_DY`, e.g. `u2lho1vsc0_D1`. `s` is the section; `X` lowers the r
-  power (u: rpower_u − X, v: rpower_v − X, h: 2 − X, or 1 − X for ThermaD = 0 without `adiab_tw`; inviscid uses 3 − X,
-  2 − X and ρ₀², ρ₀); each `fuD` is a 3-letter profile code and its derivative order; `_DY` is the derivative order on
+  power (u: rpower_u − X, v: rpower_v − X, h: 2 − X, or 1 − X for ThermaD = 0 without `adiab_tw`; f, g: 2 − X without ρ₀;
+  inviscid uses 3 − X, 2 − X and ρ₀², ρ₀; `ohr1` as the second profile lowers the ρ₀ power by one); each `fuD` is a 3-letter profile code and its derivative order; `_DY` is the derivative order on
   the unknown. `lh1`, `lh2` with order k mean (ln ρ₀)′·(ln ρ₀)^(k) and (ln ρ₀)″·(ln ρ₀)^(k). `rap.burrito` evaluates
   r^rpower ρ₀^rhopower f₁ f₂ on the Chebyshev nodes; `ut.chebco_f` transforms it (`ut.gimmedachebs`: coefficients
   below max(1e-15, `drop_tol`) of the largest are zeroed).
-- **Profile codes** (`rap.proffdir`): `lho` ln ρ₀, `vsc` ν, `gra` g, `pss` p₀, `pdS` p₀ dS/dr, `dSd` dS/dr, `kps` κp₀;
+- **Profile codes** (`rap.proffdir`): `lho` ln ρ₀, `vsc` ν, `gra` g, `pss` p₀, `pdS` p₀ dS/dr, `dSd` dS/dr, `kps` κp₀,
+  `eta` η, `bpo` cnorm h (B0; its series are cut at `tol_B0` relative, `ut.gimmedachebs`);
   differential rotation `zf`/`zd`/`zs` + degree = aₙfₙ, r(aₙfₙ)′, r²(aₙfₙ)″ (with `diff_rot_ampl`) and thermal wind
   `tw`/`tp` + degree = p₀σₙ, p₀σₙ′, the degree n as one character of 0–9a–z (`diff_rot.codes`, so n ≤ 35). `burrito`
   adds these to `proffdir` from `diff_rot.profile_functions()` on first use.
@@ -276,8 +295,12 @@ Radial integrals use Gauss–Legendre with 3N/2 nodes (`upp.setup_grid`); energi
 table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-convergence, max of the curl of the viscous force
 (cvf_r, cvf_l, cvfmax; r < 0.01 skipped at ricb = 0) and residens.
 
-- residσ (`resid1`): 2σKE − Dkin − Wthm − Wdr = 0; residω (`resid2`): the imaginary part with Coriolis;
-  resid𝑠 (`resid3`): 2σTE − Dthm − Wadv − Wdr_thm = 0 (TE = ½∫p₀|s|²); residens: enstrophy balance.
+- residσ (`resid1`): 2σKE − Dkin − Wthm − Wdr − Wlor = 0; residω (`resid2`): the imaginary part with Coriolis;
+  resid𝑠 (`resid3`): 2σTE − Dthm − Wadv − Wdr_thm = 0 (TE = ½∫p₀|s|²); residens: enstrophy balance; with `magnetic = 1`
+  resid𝐛: 2σME − Indu − Mdfs = 0 in the fluid, and resid𝐄 the full energy budget with the inner core, the outside
+  potential field and the Ohmic losses (`upp.em_budget`, no-slip walls only) (`upp.diagnose_magnetic`, Boussinesq Lorentz and induction terms ported
+  from conductive_IC; Mag/Kin = ME/KE with ME = ½∫|b|², no Hendrik, as conductive_IC). residω is O(1) for real
+  eigenvalues (m = 0, ω = 0): all its terms are round-off there.
 - These residuals, not the eigenvalue alone, judge resolution: compare with a higher-N run; for thermal runs the
   entropy can be unresolved while P, T look converged. The docs report 1e-7 to 1e-12 for converged runs.
   `docs/solver.md` accepts a mode when residσ and resid𝑠 are below 1e-5 and its ℓ-convergence below 1e-4; spin_doctor
@@ -288,7 +311,7 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   `background.STRUCTURES`, `STRATIFICATIONS`, `DIFFUSIVITIES` (−1 if not listed, or without a stratification); None as
   nan. A row with 'user' expressions or a 'tabulated' rotation ends with ` # ` and a note (`spin_doctor.row_note`: the
   expressions, the table file and the first 12 hex digits of its sha256), which `np.loadtxt` skips. `flow.dat`,
-  `thermal.dat` columns are the `flow_cols`, `thermal_cols` lists.
+  `thermal.dat`, `magnetic.dat` columns are the `flow_cols`, `thermal_cols`, `magnetic_cols` lists.
 - With diff rot, `upp.diff_rot_setup` computes the force and heat terms on an (r, cos θ) grid and projects them back.
 
 ## 11. Tests
@@ -376,7 +399,7 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
 
 ## 14. History (this branch, newest first)
 
-`a2abc05` the spin-over test GitHub runs on every push (`tests/ci/`, `.github/workflows/anelastic_log.yml`; the
+Uncommitted (2026-10-28): the magnetic field, step 1 and step 2 (conducting inner core) (`docs/magnetic.md`); `a2abc05` the spin-over test GitHub runs on every push (`tests/ci/`, `.github/workflows/anelastic_log.yml`; the
 stale `main.yml`, `examples/kore_test.py` and `examples/spinover/` removed); `f810fd9` `docs/solver.md`; `3402fbf`
 `diff_rot_hold` removed; `b0dd868` the docs in the new background names, `docs/background.md`; `61506f8` 'user'
 diffusivity evaluated at |r|;
