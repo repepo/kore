@@ -17,7 +17,8 @@ The code is in `bin/background.py` (the choice, the checks, the stratification a
 
 ## Units
 
-kore is dimensionless. The unit of length is the radius of the outer wall, $r = 1$. `r_out` is that radius in star
+kore is dimensionless ([Non-dimensionalization](nondimensionalization.md) gives the scales). The unit of length is the
+radius of the outer wall, $r = 1$. `r_out` is that radius in star
 radii (1 by default), so $x = r\cdot$`r_out` is the radius in star radii. With `Gaspard = 1` the unit of time is
 $1/\Omega$; then `ViscosD` $= \nu/(\Omega L^2)$, `ThermaD` $= \kappa/(\Omega L^2)$ with $L$ = `r_out` star radii, and the
 buoyancy frequency is

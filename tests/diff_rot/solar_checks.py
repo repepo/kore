@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 '''
-solar_checks.py EDMOND_NPZ [WORKDIR]: the solar rows of docs/differential_rotation_details.md §11. Mukhopadhyay et al.
-2025a (Edmond Ω, mk_bekki.py) and 2025b (radiative interior, rin 0.5 R☉, mk_rz.py), each with the thermal wind (thermal_wind 2 without
+solar_checks.py DIFF_ROT_NPZ [WORKDIR]: the solar rows of docs/differential_rotation_details.md §11. Mukhopadhyay et al.
+2025a (their Ω, mk_bekki.py) and 2025b (radiative interior, rin 0.5 R☉, mk_rz.py), each with the thermal wind (thermal_wind 2 without
 u_r ∂S_tw/∂r) and without it (thermal_wind 0). Prints, per mode, the eigenvalues nearest the published one (nHz, frame
 456 nHz, negative retrograde; growth rate second) with the solver residual and, for 2025b, the fraction of the kinetic
 energy below 0.71 R☉ (CZ modes ~0, mixed modes large). One rank, scipy only (solve_bekki.py), < 1 GB per run.
-EDMOND_NPZ is data/diff_rot.npz of the Mukhopadhyay et al. 2025 data set (doi:10.17617/3.NP26AI).
+DIFF_ROT_NPZ is data/diff_rot.npz of the Mukhopadhyay et al. 2025 data set (doi:10.17617/3.NP26AI).
 '''
 import os, sys, subprocess, re
 import numpy as np
@@ -64,11 +64,11 @@ def build(script, run, args):
             print(run, 'BUILD FAILED', p.stdout[-600:], p.stderr[-600:]); return False
     return True
 
-# Mukhopadhyay et al. 2025a: Edmond Ω
+# Mukhopadhyay et al. 2025a: their Ω
 A = [(1, -1, 'm 1 high-latitude', -95.70, 11.69), (3, -1, 'm 3 Rossby n0', -262.07, -0.88),
      (3, -1, 'm 3 Rossby n1', -182.05, -9.67), (3, 1, 'm 3 columnar', 210.84, -11.09), (10, 1, 'm 10 HFR', -211.28, -20.00)]
 for tw in (2, 0):
-    print('\n== Mukhopadhyay 2025a, Edmond Ω, tw %d' % tw)
+    print('\n== Mukhopadhyay 2025a, their Ω, tw %d' % tw)
     for m, symm, name, tf, tg in A:
         run = '%s/mk25a_m%d%s_tw%d' % (W, m, 'a' if symm < 0 else 's', tw)
         if build('mk_bekki.py', run, ['m=%d' % m, 'symm=%d' % symm, 'file=' + EDM, 'tw=%d' % tw]):

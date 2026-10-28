@@ -13,7 +13,7 @@ keys (default):
   drtype ('tabulated'): diff_rot_type; 'tabulated' needs file=, 'Y20' with amp = P2/P0 is the radially uniform
                         Snodgrass profile of §6 (amp = -79.03/426.86 with frame = 426.86)
   file: the .npz of 'tabulated' (data/diff_rot.npz of the Mukhopadhyay et al. 2025 data set, doi:10.17617/3.NP26AI,
-        or the output of ls_to_edmond_layout.py for the Larson & Schou 2018 table); a relative path is taken from the
+        or the output of ls_to_tabulated.py for the Larson & Schou 2018 table); a relative path is taken from the
         current directory
   nmax (12): diff_rot_nmax      frame (456.0): Ω_ref/2π in nHz, also diff_rot_frame      amp (1.0): diff_rot_ampl
   thermal (1)    tw (2): thermal_wind    rad (0): thermal_wind_radial (0 drops u_r ∂S_tw/∂r, as the papers do)

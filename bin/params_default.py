@@ -148,7 +148,7 @@ class default_params():
         # self.diff_rot_type = 'solar_P4'  # Ω/2π = Ω_RZ + [Ω_CZ(θ) - Ω_RZ] (1 + erf((x - rtc)/dtc))/2, Ω_CZ(θ) = c0 + c2 cos²θ
         #   + c4 cos⁴θ (Mukhopadhyay et al. 2026; diff_rot_solar below); ΔΩ = Ω/Ω_ref - 1, Ω_ref/2π = diff_rot_frame nHz: P0, P2, P4
         # self.diff_rot_type = 'tabulated'  # Ω(r, θ) from diff_rot_file (.npz with ome[θ, r] in nHz, r in R☉, theta in rad, as the
-        #   Mukhopadhyay et al. 2025 Edmond file data/diff_rot.npz; tests/diff_rot/ls_to_edmond_layout.py converts the Larson & Schou
+        #   file data/diff_rot.npz of the Mukhopadhyay et al. 2025 data set; tests/diff_rot/ls_to_tabulated.py converts the Larson & Schou
         #   2018 table), projected on P0, P2, ..., P_diff_rot_nmax at each table radius and fitted in r; ΔΩ = Ω/Ω_ref - 1
         # self.diff_rot_type = 'user'  # f_n given as numpy expressions of r, x and p = diff_rot_param in diff_rot_profiles
         #   'Y20-wall-bounded' and 'shellular' (unless σ is even and > 0) are not smooth at r = 0: use ricb > 0.
@@ -186,7 +186,7 @@ class default_params():
         # over the whole Sun, [-L, L] with L = r_out + 0.01 for the solar structures, even in r (table mirrored, odd coefficients dropped),
         # of degree diff_rot_sun_deg, the same for any ricb; below the first table radius (0.1 R☉ in the Mukhopadhyay et al. file)
         # each f_n is held at its value there
-        self.diff_rot_sun_deg = 60  # 'tabulated' with diff_rot_window = 'sun': degree (60: ~0.01 nHz on the Edmond file)
+        self.diff_rot_sun_deg = 60  # 'tabulated' with diff_rot_window = 'sun': degree (60: ~0.01 nHz on the Mukhopadhyay et al. 2025 profile)
 
         # ----------------------------------------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------------------------------- Thermal parameters

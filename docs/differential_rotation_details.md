@@ -198,20 +198,20 @@ $$
 \mathbf U_0\cdot\nabla = \Omega_d\thinspace \partial_\phi, \qquad (\mathbf v\cdot\nabla)(\hat{\mathbf z}\times\mathbf r) = \hat{\mathbf z}\times\mathbf v ,
 $$
 
-for any vector $\mathbf v$. In components, with $\hat{\mathbf z} = \cos\theta\thinspace \hat{\mathbf r} - \sin\theta\thinspace \hat{\boldsymbol\theta}$,
+for any vector $\mathbf v$. In components, with $\hat{\mathbf z} = \cos\theta\thinspace \hat{\mathbf r} - \sin\theta\thinspace \hat{\mathbf e}_\theta$,
 
 $$
 \hat{\mathbf z}\times\mathbf u = \left(-\sin\theta\thinspace u_\phi,\ -\cos\theta\thinspace u_\phi,\ \sin\theta\thinspace u_r + \cos\theta\thinspace u_\theta\right) \qquad (2.5)
 $$
 
-in the $(\hat{\mathbf r}, \hat{\boldsymbol\theta}, \hat{\mathbf e}_ \phi)$ basis.
+in the $(\hat{\mathbf r}, \hat{\mathbf e}_\theta, \hat{\mathbf e}_ \phi)$ basis.
 
 ### 2.3 Derivation of the momentum term
 
 **Advection of the perturbation by $\mathbf U_0$.** $(\mathbf U_0\cdot\nabla)\mathbf u = \Omega_d\thinspace \partial_\phi\mathbf u$, where
 $\partial_\phi$ also acts on the unit vectors: $\partial_\phi\hat{\mathbf r} = \sin\theta\thinspace \hat{\mathbf e}_ \phi$,
-$\partial_\phi\hat{\boldsymbol\theta} = \cos\theta\thinspace \hat{\mathbf e}_ \phi$,
-$\partial_\phi\hat{\mathbf e}_ \phi = -\sin\theta\thinspace \hat{\mathbf r} - \cos\theta\thinspace \hat{\boldsymbol\theta}$. With (2.5) this is
+$\partial_\phi\hat{\mathbf e}_\theta = \cos\theta\thinspace \hat{\mathbf e}_ \phi$,
+$\partial_\phi\hat{\mathbf e}_ \phi = -\sin\theta\thinspace \hat{\mathbf r} - \cos\theta\thinspace \hat{\mathbf e}_\theta$. With (2.5) this is
 
 $$
 (\mathbf U_0\cdot\nabla)\mathbf u = \Omega_d\left[i m\thinspace \mathbf u + \hat{\mathbf z}\times\mathbf u\right],
@@ -384,7 +384,7 @@ Any vector field $\mathbf F$ is projected on vector spherical harmonics as
 
 $$
 \mathbf F = \sum_l\left[F^q_l\thinspace Y_l\thinspace \hat{\mathbf r} + F^s_l\thinspace r\nabla Y_l + F^t_l\thinspace r\nabla Y_l\times\hat{\mathbf r}\right], \qquad
-r\nabla Y = \partial_\theta Y\thinspace \hat{\boldsymbol\theta} + Z\thinspace \hat{\mathbf e}_ \phi, \quad r\nabla Y\times\hat{\mathbf r} = Z\thinspace \hat{\boldsymbol\theta} - \partial_\theta Y\thinspace \hat{\mathbf e}_ \phi , \qquad (3.3)
+r\nabla Y = \partial_\theta Y\thinspace \hat{\mathbf e}_\theta + Z\thinspace \hat{\mathbf e}_ \phi, \quad r\nabla Y\times\hat{\mathbf r} = Z\thinspace \hat{\mathbf e}_\theta - \partial_\theta Y\thinspace \hat{\mathbf e}_ \phi , \qquad (3.3)
 $$
 
 with, since $\int(\lvert\partial_\theta Y_l\rvert^2 + \lvert Z_l\rvert^2)\thinspace d\Omega = L n_l$,
@@ -1044,7 +1044,7 @@ convection zone with a radiative interior. Computed on a Mac (48 GB) on 2026-10-
 | Baruteau & Rieutord 2013, JFM 719, 47 | incompressible, viscous | shellular $(r/R)^\sigma$, cylindrical $1 + \varepsilon s^2$ | structure `'Boussinesq'`, `thermal = 0` |
 | Guenel, Baruteau, Mathis & Rieutord 2016, A&A 589, A22 | incompressible, viscous | conical $1 + \varepsilon\sin^2\theta$ | structure `'Boussinesq'`, `thermal = 0` |
 | Mirouh, Baruteau, Rieutord & Ballot 2016, JFM 800, 213 | Boussinesq, stably stratified | $1 + \frac{N^2}{2}(1 - r^2)$ | structure `'Boussinesq'`, stratification `'linear'` |
-| Mukhopadhyay, Bekki, Zhu & Gizon 2025a, A&A (arXiv 2501.16797) | fully compressible, solar convection zone | their Edmond file | structure `'old model S prototype'` (Model S density), 'tabulated' |
+| Mukhopadhyay, Bekki, Zhu & Gizon 2025a, A&A (arXiv 2501.16797) | fully compressible, solar convection zone | their file `data/diff_rot.npz` | structure `'old model S prototype'` (Model S density), 'tabulated' |
 | Mukhopadhyay, Bekki, Zhu & Gizon 2025b, A&A 708, A253 | as above, with a radiative interior | 'solar_P4' (their eqs. 5–6) | as above, stratification and diffusivity `'solar_rz'`, rin 0.5 R☉ |
 
 ### 11.1 Set-ups and conventions
@@ -1191,7 +1191,7 @@ Notes:
   the bulk structure.
 - **E = 1e-10, Table 1** is beyond the resolution that fits in memory with three fields.
 
-#### Mukhopadhyay et al. 2025a (convection zone, Edmond Ω): their compressible values
+#### Mukhopadhyay et al. 2025a (convection zone, their Ω): their compressible values
 
 | mode (symm) | published | kore with thermal wind | Δ | kore without thermal wind | Δ |
 | --- | --- | --- | --- | --- | --- |
@@ -1243,7 +1243,7 @@ rates to choose between them.
 
 - Baruteau, Guenel and Mirouh: `tests/diff_rot/lit_bench.py WORKDIR CASE [N=.. lmax=.. ncpus=8 nev=..]`. `list` prints the
   cases. The largest run here (Fig. 6 at 640 × 1215) took 26 GB and 5.5 minutes on 8 ranks.
-- Solar: `tests/diff_rot/solar_checks.py EDMOND_NPZ [WORKDIR]`, about 40 minutes on one core.
+- Solar: `tests/diff_rot/solar_checks.py DIFF_ROT_NPZ [WORKDIR]`, about 40 minutes on one core.
 - Structure `'Boussinesq'` is the uniform-density model these runs need ($\ln\rho_0 = 0$, $p_0 = 1$, $g = r$); Mirouh et
   al. add stratification `'linear'`, $dS/dr = r$ ([background.md](background.md)).
 

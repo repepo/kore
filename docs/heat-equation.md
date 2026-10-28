@@ -774,13 +774,13 @@ $$
 $R_\odot$; Mukhopadhyay et al. 2026).
 
 'tabulated' reads $\Omega(r, \theta)$ from `diff_rot_file`, an .npz with `ome[θ, r]` (nHz), `r` (R☉) and `theta`
-(rad). This is the layout of the Mukhopadhyay et al. 2025 Edmond file `data/diff_rot.npz`;
-`tests/diff_rot/ls_to_edmond_layout.py` converts the Larson & Schou 2018 table. At each table radius the profile is
+(rad). This is the layout of the file `data/diff_rot.npz` of Mukhopadhyay et al. 2025;
+`tests/diff_rot/ls_to_tabulated.py` converts the Larson & Schou 2018 table. At each table radius the profile is
 projected on $P_0\ldots P_{\mathrm{nmax}}$ (`diff_rot_nmax`, 4–16), then fitted over the shell by a Chebyshev series of
 degree `diff_rot_rdeg` (24). The fit and truncation errors are printed.
 
 Both use $\Delta\Omega = \Omega/\Omega_{\rm ref} - 1$, with $\Omega_{\rm ref}/2\pi$ = `diff_rot_frame` (456 nHz), and
-$x = r\cdot$`r_out` for a solar structure. For the Edmond profile the truncation error at nmax 8 is up to 17 nHz near
+$x = r\cdot$`r_out` for a solar structure. For the Mukhopadhyay et al. 2025 profile the truncation error at nmax 8 is up to 17 nHz near
 the poles at the surface; nmax 12 is the working choice.
 
 ### Amplitude controls
@@ -876,13 +876,13 @@ See `tests/diff_rot/README.md`.
   amplitudes) and on 'solar_P4'. It catches a 1e-4 change of one generic coefficient or of $\sigma_n$.
 - spin_doctor powers against the matrix pairings: ≤ 1e-8, with the energy balances closing to 1e-7 (1e-2 to 1
   without the new terms).
-- kore's $\partial_\theta S_{tw}$ against the Edmond `dsdt`: 3 % rms (pole-to-equator contrast within 0.1–2 %).
+- kore's $\partial_\theta S_{tw}$ against the Mukhopadhyay et al. 2025 `dsdt`: 3 % rms (pole-to-equator contrast within 0.1–2 %).
 
 ### Like-for-like solar benchmark
 
 This repeats §6 with the Mukhopadhyay et al. 2025 set-up in full: Model S density, shell 0.71–0.985 R☉,
 $\nu = \kappa = 10^{12}$, $\delta = 0$, stress-free, $\partial_r s = 0$, `thermal_wind = 2` without
-$u_r\thinspace \partial_r S_{tw}$, their $\Omega$ from the Edmond file, N 64, lmax $m + 63$.
+$u_r\thinspace \partial_r S_{tw}$, their $\Omega$ from their file `data/diff_rot.npz`, N 64, lmax $m + 63$.
 `tests/diff_rot/run_bekki.py` rebuilds and solves these five modes. Frequencies are in nHz in the 456 nHz frame,
 negative is retrograde; the second number is the growth rate.
 
@@ -923,7 +923,7 @@ mode.
 Set-up: `thermal_wind = 3` with $\Delta_\theta s$ prescribed, otherwise as above, m 1 symm −1. Run
 `tests/diff_rot/mk_bekki.py tw=3 ds=-1000 file=...`, then `solve_bekki.py RUN -93 5`.
 
-The m 1 high-latitude mode becomes unstable at $\lvert\Delta_\theta s\rvert$ = 425 erg/g/K with the Edmond $\Omega$, and
+The m 1 high-latitude mode becomes unstable at $\lvert\Delta_\theta s\rvert$ = 425 erg/g/K with the Mukhopadhyay et al. 2025 $\Omega$, and
 at 546 with the Larson & Schou 2018 table ($c_p = 3.46\times10^{8}$; 513 and 658 with the papers' $c_p = 4.17\times10^{8}$).
 The published value is ~500; the radially uniform $P_0 + P_2$ profile of §6 needs 2199 (2650).
 
@@ -931,7 +931,7 @@ Growth rate (nHz) against $\lvert\Delta_\theta s\rvert$ (erg/g/K):
 
 | $\lvert\Delta_\theta s\rvert$ | 0 | 250 | 500 | 1000 | 2000 |
 | --- | --- | --- | --- | --- | --- |
-| Edmond (mode at −91.1…−94.6 nHz) | −3.70 | −1.60 | +0.68 | +5.02 | +12.53 |
+| Mukhopadhyay et al. 2025 (mode at −91.1…−94.6 nHz) | −3.70 | −1.60 | +0.68 | +5.02 | +12.53 |
 | Larson & Schou (mode at −96.1…−98.9 nHz) | −3.83 | −2.30 | −0.36 | +3.56 | +10.42 |
 
 So the gap of §6 was the radial shear of $\Omega$ in the lower convection zone, as step 1 of the comparison had
@@ -983,11 +983,11 @@ once over the whole Sun instead, with the table mirrored to negative $r$ and the
 - `solar_density_window = 'sun'` for the Model S $\ln\rho$, $\ln p$ of structure `'old model S prototype'` (degree
   `solar_density_sun_deg` = 60; see "Model S density" in §8). It is the default when ricb = 0, which used to stop with an
   error.
-- `diff_rot_window = 'sun'` for a 'tabulated' $\Omega$ (degree `diff_rot_sun_deg` = 60: ~0.01 nHz on the Edmond file,
+- `diff_rot_window = 'sun'` for a 'tabulated' $\Omega$ (degree `diff_rot_sun_deg` = 60: ~0.01 nHz on the Mukhopadhyay et al. 2025 profile,
   0.19 nHz for $f_0$ near 0.1 R☉). It is also the default when ricb = 0. Before, a ricb = 0 'tabulated' run fitted
   $[0, x_b]$ and used $|r|$, which has a kink at the centre and extrapolates below the first table radius; this is the
   only change to existing runs, and `regress.sh` has no 'tabulated' ricb = 0 case. Below the first table radius
-  (0.1 R☉ in the Edmond file, rigid at 433.5 nHz there) each $f_n$ is held at its value there. `diff_rot_hold` = $x_h$
+  (0.1 R☉ in the Mukhopadhyay et al. 2025 file, rigid at 433.5 nHz there) each $f_n$ is held at its value there. `diff_rot_hold` = $x_h$
   instead holds $f_n$ at $f_n(x_h)$ for $x < x_h$, blended over 0.01 R☉, to test how much the profile below the
   tachocline matters. It was found faulty on 2026-10-25 and removed on 2026-10-26
   ([differential_rotation_details.md](differential_rotation_details.md) §5.1).
@@ -1048,10 +1048,10 @@ Model S near the surface.
 - `tests/diff_rot/regress.sh` against the previous commit: the 13 configurations are bitwise equal.
 - The §8 benchmark (Model S shell fit, 'tabulated') and a 'smoothed sun' run with the `aux` top hat and `visc0`,
   `therm0` ≠ 1: $A$ and $B$ bitwise equal to the previous commit.
-- `mk_rz.py` at rin 0.5 and at ricb 0 with the Edmond table rebuilds the scan's matrices exactly, and `solve_bekki.py`
+- `mk_rz.py` at rin 0.5 and at ricb 0 with the Mukhopadhyay et al. 2025 table rebuilds the scan's matrices exactly, and `solve_bekki.py`
   gives m 3 n0 at −261.4694, −4.2153 nHz as above.
 - `ru_insane.py` (m 3, symm −1): the radiative interior at rin 0.5 (N 96) and at ricb 0 (N 384) PASS, worst 1.3e-10 and
-  1.2e-12; ricb 0 with the whole-Sun Edmond $\Omega$ (δ = 0) PASS 4e-8 at N 192 and 9e-13 at N 384. At N 96 the
+  1.2e-12; ricb 0 with the whole-Sun Mukhopadhyay et al. 2025 $\Omega$ (δ = 0) PASS 4e-8 at N 192 and 9e-13 at N 384. At N 96 the
   ricb 0 run fails at ~1e-3 (inertia, buoyancy, KE): the even Model S profiles need about 100 Chebyshev polynomials per
   parity.
 

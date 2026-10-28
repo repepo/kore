@@ -1,9 +1,9 @@
 # Anelastic equations
 
-The page [Non-dimensionalization](page3.md) gives the Boussinesq equations. This branch solves the linear anelastic
-equations in the form of Lantz (1992) and Braginsky & Roberts (1995), "LBR", about a background whose density varies
-with radius. This page gives those equations, says what the approximation drops, and shows how the code builds them.
-The Boussinesq equations are the special case `structure = 'Boussinesq'`.
+This branch solves the linear anelastic equations in the form of Lantz (1992) and Braginsky & Roberts (1995), "LBR",
+about a background whose density varies with radius. This page gives those equations, says what the approximation
+drops, and shows how the code builds them. The Boussinesq equations are the special case `structure = 'Boussinesq'`.
+The scales and parameters are on the page [Non-dimensionalization](nondimensionalization.md).
 
 ## Background
 
@@ -28,7 +28,7 @@ $$
 $$
 
 $$
-\partial_t\mathbf u + 2\thinspace\boldsymbol\Omega\times\mathbf u = -\nabla\Pi + g\thinspace\frac{\alpha T_0 s'}{c_p}\thinspace\hat{\mathbf r} + \frac{1}{\rho_0}\nabla\cdot\left(\rho_0\nu\thinspace\mathsf S\right),
+\partial_t\mathbf u + 2\thinspace\mathbf\Omega\times\mathbf u = -\nabla\Pi + g\thinspace\frac{\alpha T_0 s'}{c_p}\thinspace\hat{\mathbf r} + \frac{1}{\rho_0}\nabla\cdot\left(\rho_0\nu\thinspace\mathsf S\right),
 $$
 
 $$
@@ -63,13 +63,15 @@ approximated.
 **Energy.** Multiply the momentum equation by $\rho_0\mathbf u^*$ and integrate. The pressure does no work, although
 $\nabla\cdot\mathbf u\neq 0$, because $\nabla\Pi$ is a gradient acting on the solenoidal $\rho_0\mathbf u$ and
 $u_r = 0$ on the walls. The Coriolis force does no work, and the viscous force only dissipates,
-$-\tfrac12\int\rho_0\nu\thinspace\lvert\mathsf S\rvert^2\thinspace dV \le 0$, for any $\nu(r)$. Keeping only one of the two
-terms of item 2 (the "ANS" set) would make the pressure do work.
+$-\tfrac12\int\rho_0\nu\thinspace\lvert\mathsf S\rvert^2\thinspace dV \le 0$, for any $\nu(r)$. This holds only because the two
+terms of item 2 are dropped together: an anelastic set that keeps the force but drops the mass term makes the pressure
+do work (Brown et al. 2012).
 
 ## The dimensionless form kore solves
 
 kore uses the radius of the outer wall as the unit of length ($r = 1$; it is `r_out` star radii) and $\tau$ as the
-unit of time, and writes $s = s'/c_p$. It assumes $\alpha T_0 = 1$ and uses $p_0$ in place of $\rho_0 T_0$, both exact
+unit of time, and writes $s = s'/c_p$ ([Non-dimensionalization](nondimensionalization.md) gives all the scales). It
+assumes $\alpha T_0 = 1$ and uses $p_0$ in place of $\rho_0 T_0$, both exact
 for an ideal gas of uniform composition. The equations are then
 
 $$
@@ -107,10 +109,8 @@ rotation on, the background flow adds three terms to these equations ([Different
 | `diffusivity` | $\nu(r)$, $\kappa(r)$ | `bin/background.py` (`diffusivity`), the profiles $\nu/$`ViscosD` and $\kappa/$`ThermaD` |
 
 Here $L$ is `r_out` star radii, and $g_{\mathrm{ref}}$, $\nu_{\mathrm{ref}}$, $\kappa_{\mathrm{ref}}$ are the values where the profiles
-are 1. `units.set_physical` computes `Gaspard`, `Beyonce`, `ViscosD` and `ThermaD` from physical values with
-$\tau = 1/\Omega$ ([Background model](background.md#units)). With `structure = 'Boussinesq'` ($\rho_0 = p_0 = 1$, $g = r$)
-and uniform diffusivities, the equations are the Boussinesq equations of [Non-dimensionalization](page3.md), with $s$
-in place of the temperature perturbation $\theta$.
+are 1. With `structure = 'Boussinesq'` ($\rho_0 = p_0 = 1$, $g = r$) and uniform diffusivities, the equations are the
+Boussinesq equations, with $s$ in place of the temperature perturbation.
 
 **Eigenvalues.** Fields go as $e^{im\phi + \lambda t}$, with $\lambda = \sigma - i\omega$: $\sigma$ is the growth rate and
 $\omega$ the frequency, in units of $1/\tau$ in the rotating frame; $\omega > 0$ is prograde. `units.nHz` and
@@ -178,7 +178,10 @@ momentum rows and `entropy` in the heat rows. $A$ holds `coriolis` $-$ `viscous_
 momentum rows and $-$`thermal_advection` $+$ `thermal_diffusion` in the heat rows, so each row reads
 
 $$
-\lambda\thinspace\mathbf u + 2\thinspace\mathrm{Gaspard}\thinspace\hat{\mathbf z}\times\mathbf u = \mathrm{ViscosD}\thinspace\rho_0^{-1}\nabla\cdot(\rho_0\nu\mathsf S) + \mathrm{Beyonce}\thinspace g\thinspace s\thinspace\hat{\mathbf r}, \qquad
+\lambda\thinspace\mathbf u + 2\thinspace\mathrm{Gaspard}\thinspace\hat{\mathbf z}\times\mathbf u = \mathrm{ViscosD}\thinspace\rho_0^{-1}\nabla\cdot(\rho_0\nu\mathsf S) + \mathrm{Beyonce}\thinspace g\thinspace s\thinspace\hat{\mathbf r},
+$$
+
+$$
 \lambda\thinspace p_0 s = -p_0 u_r\frac{dS}{dr} + \mathrm{ThermaD}\thinspace\nabla\cdot(\kappa p_0\nabla s),
 $$
 

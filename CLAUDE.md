@@ -85,8 +85,9 @@ eigenvalues as ω, σ in nHz.
 | `targets.py` | analytic targets (spin-over, Rieutord–Valdettaro attractor) |
 
 Other directories: `tests/ci/` (the test GitHub runs on every push, §11); `tests/diff_rot/`, `tests/heat_dr/` and
-`tests/rsf/` (§11, each with a README); `docs/` (mkdocs; the branch's notes are `anelastic.md` (the LBR equations as kore builds them: rows, operators,
-boundary rows, energy balance, validity), `background.md` (the background model),
+`tests/rsf/` (§11, each with a README); `docs/` (mkdocs; the branch's notes are `anelastic.md` (the LBR equations as
+kore builds them: rows, operators, boundary rows, energy balance, validity), `nondimensionalization.md` (the scales and
+Gaspard, Beyonce, ViscosD, ThermaD), `installation.md` (from conductive_IC), `background.md` (the background model),
 `differential-rotation.md` (user guide), `differential_rotation_details.md` (the equations and code of the differential
 rotation, its checks and benchmarks), `heat-equation.md` (derivation, implementation, benchmarks, §9 radiative
 interior), `thermad0.md` (ThermaD = 0 with the thermal wind), `solver.md` (what to try for bad solutions or when memory
@@ -243,7 +244,7 @@ flow U₀ = Gaspard ΔΩ r sin θ e_φ in the frame Ω_ref. It works with any ba
 - ViscosD, ThermaD, Beyonce must be computed for Ω_ref (`units.set_physical` does). At ricb = 0, 'Y20-wall-bounded' and
   'shellular' (unless σ is even and > 0) have a kink at r = 0 (WARNING); 'solar' needs N ~ 400.
 - Benchmarks: Guenel et al. 2016 conical mode ω = 1.8173; solar inertial modes of Mukhopadhyay et al. 2025
-  (`tests/diff_rot/run_bekki.py`, needs their Edmond `diff_rot.npz`, not in the repo): five modes within 0.2 nHz in
+  (`tests/diff_rot/run_bekki.py`, needs their `data/diff_rot.npz`, not in the repo): five modes within 0.2 nHz in
   frequency and 0.4 nHz in growth rate of their compressible values; tables in `docs/heat-equation.md` §6, §8, §9 and
   `docs/differential_rotation_details.md` §11 (`tests/diff_rot/lit_bench.py`, `solar_checks.py`). Its §12 (cost
   against the highest degree, measured by `tests/diff_rot/dr_cost.py`) is not written yet.
@@ -308,10 +309,10 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   `tests/diff_rot/diff_rot_coefficients.py`, and the Δl ranges), `angular_check.py` (`angular.py`, no run directory;
   its reference for the primitives is `quad_reference.py`, the former quadrature builder, valid for l ≤ 645),
   `regress.sh OLD_KORE` (15 configurations, each written in the parameter names of three generations of checkouts;
-  A and B bitwise equal), `tw_edmond.py`, `mk_bekki.py` / `solve_bekki.py` / `run_bekki.py` (solar benchmark),
+  A and B bitwise equal), `tw_mukhopadhyay.py`, `mk_bekki.py` / `solve_bekki.py` / `run_bekki.py` (solar benchmark),
   `mk_rz.py` (radiative interior, any inner radius), `lit_bench.py` and `solar_checks.py` (the benchmarks of
   `docs/differential_rotation_details.md` §11), `dr_cost.py` (time and memory against the degree of ΔΩ),
-  `ls_to_edmond_layout.py` (HMI table converter, input in `profiles/`: the Larson & Schou 2018 HMI average
+  `ls_to_tabulated.py` (HMI table converter, input in `profiles/`: the Larson & Schou 2018 HMI average
   `rot2d.hmiv72d.ave` and `rmesh.orig`).
 - `tests/rsf/` (README; `HOWTO.md` is the user guide of forcing 11, with the m = 2 example of `example_m2/`): shared
   pieces in `rsf_common.py`; `builder_check.py` (f = u against the inertia rows), `noise_check.py` (the noise
@@ -476,11 +477,11 @@ inside a project session, not in this repo); run folders are on the Mac (`~/lab/
     coupling and the units are right except c_p (the papers use 4.17e8, kore runs used 3.46e8), and the gap comes from
     the radial shear of Ω in the lower convection zone, absent from a radially uniform P₀ + P₂ profile. Step 2:
     `92a0d020` (any even Pₙ by quadrature, 'solar_P4', 'tabulated' Ω(r, θ), amplitude controls, `thermal_wind_radial`,
-    `solar_density = 'model S'`) and `f9b733ce` (diff-rot options in params.dat). With the observed Ω (Edmond data) the
-    five Mukhopadhyay et al. 2025 modes agree within 0.2 nHz in frequency (P₂ only: off by 0.8–9 nHz, and the
-    high-latitude mode damped instead of growing); the convective onset is |Δθ_s| 513 (Edmond Ω) and 658 (Larson &
-    Schou) in the papers' c_p, against Bekki's ~500. Runs in `~/lab/kore_step2_runs`; tables in `docs/heat-equation.md`
-    §8.
+    `solar_density = 'model S'`) and `f9b733ce` (diff-rot options in params.dat). With the observed Ω (Mukhopadhyay et
+    al. 2025 data) the five Mukhopadhyay et al. 2025 modes agree within 0.2 nHz in frequency (P₂ only: off by 0.8–9 nHz,
+    and the high-latitude mode damped instead of growing); the convective onset is |Δθ_s| 513 (Mukhopadhyay et al. 2025
+    Ω) and 658 (Larson & Schou) in the papers' c_p, against Bekki's ~500. Runs in `~/lab/kore_step2_runs`; tables in
+    `docs/heat-equation.md` §8.
 14. **Differential rotation docs review** (Oct 13). `16be479f` (user guide `docs/differential-rotation.md`,
     repo-relative references, solar benchmark scripts); `e42b55df`, `bc6c7eed`, `dc2790d3` (math that renders on GitHub:
     no `\tag`, plain-text equation numbers).

@@ -7,7 +7,7 @@ Mukhopadhyay et al. 2025 (their compressible values, frame 456 nHz). The verdict
 in heat-equation.md §8 (tolerance 2e-3 nHz), so it is a regression check; the differences from the paper are the
 physics comparison. One rank, scipy only; about a minute per run and < 1 GB.
 
-DIFF_ROT_NPZ is data/diff_rot.npz of the Mukhopadhyay et al. 2025 data set (Edmond, doi:10.17617/3.NP26AI).
+DIFF_ROT_NPZ is data/diff_rot.npz of the Mukhopadhyay et al. 2025 data set (doi:10.17617/3.NP26AI).
 '''
 import os, sys, subprocess
 import numpy as np

@@ -168,11 +168,11 @@ The degrees must be even, and the expressions must not contain `#`: `spin_doctor
 `params.dat` row, after a `#`. Any degree up to 16 works with `thermal_wind = 2` (32 with `thermal_wind = 1`).
 
 **`'tabulated'`.** The file holds `ome[θ, r]` (nHz), `r` (R☉) and `theta` (rad), the layout of `data/diff_rot.npz`
-of the Mukhopadhyay et al. 2025 data set (Edmond). `tests/diff_rot/ls_to_edmond_layout.py` converts the Larson &
+of the Mukhopadhyay et al. 2025 data set. `tests/diff_rot/ls_to_tabulated.py` converts the Larson &
 Schou 2018 table to it; `bin/jsoc_hmi_2010_2026.npz` is the mean of the 83 JSOC HMI 72-day inversions
 (`hmi.V_sht_2drls`, NACOEFF 36) from 2010-04-30 to 2026-06-29 in this layout, on the 151 table radii. kore projects $\Omega$ on $P_0 \dots P_{n_{\max}}$ at each table radius, fits each $f_n$ in $r$ over the table radii
 within 0.01 of the shell, and prints the fit residuals and the truncation error in nHz (the largest difference
-between the table and its expansion up to $P_{n_{\max}}$); check that line. For the Edmond profile the truncation error near the poles at the surface is up to 17 nHz at
+between the table and its expansion up to $P_{n_{\max}}$); check that line. For the Mukhopadhyay et al. 2025 profile the truncation error near the poles at the surface is up to 17 nHz at
 `diff_rot_nmax = 8`; 12 is the working choice.
 
 ## Heat equation (`thermal = 1`)
@@ -262,7 +262,7 @@ par.N = 64; par.lmax = par.m + 63
 
 The $m = 1$ high-latitude mode comes out at −95.76 nHz with growth rate +11.30 nHz (theirs: −95.70, +11.69); the
 table in heat-equation.md §8 has more modes. With `thermal_wind = 3` and `dSdtheta` $= \Delta_\theta s/c_p$ the same set-up gives the
-baroclinic onset of Bekki et al. 2024 ($\lvert\Delta_\theta s\rvert \approx 425$ erg g⁻¹ K⁻¹ with the Edmond $\Omega$).
+baroclinic onset of Bekki et al. 2024 ($\lvert\Delta_\theta s\rvert \approx 425$ erg g⁻¹ K⁻¹ with the Mukhopadhyay et al. 2025 $\Omega$).
 
 ## References
 
@@ -271,5 +271,5 @@ baroclinic onset of Bekki et al. 2024 ($\lvert\Delta_\theta s\rvert \approx 425$
 - Mirouh, Baruteau, Rieutord & Ballot 2016, JFM 800, 213 (shellular, Boussinesq)
 - Bekki, Cameron & Gizon 2022, A&A 662, A16 (solar inertial modes, thermal wind)
 - Bekki et al. 2024 (baroclinic instability of the high-latitude mode, prescribed $\Delta_\theta s$)
-- Mukhopadhyay, Bekki, Zhu & Gizon 2025, A&A, arXiv 2501.16797 (benchmark tables, Edmond $\Omega$ data)
+- Mukhopadhyay, Bekki, Zhu & Gizon 2025, A&A, arXiv 2501.16797 (benchmark tables, their $\Omega$ data)
 - Larson & Schou 2018 (HMI rotation table)

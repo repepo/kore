@@ -1,5 +1,5 @@
-'''ls_to_edmond_layout.py DIR OUT.npz: Convert the Larson & Schou 2018 rot2d.hmiv72d.ave table (151 radii x 49 latitudes 90..0 deg) to the Edmond
-diff_rot.npz layout: ome[theta, r] in nHz with theta 0..pi (symmetric extension), r ascending.'''
+'''ls_to_tabulated.py DIR OUT.npz: Convert the Larson & Schou 2018 rot2d.hmiv72d.ave table (151 radii x 49 latitudes 90..0 deg) to the
+layout diff_rot_type = 'tabulated' reads (that of data/diff_rot.npz of Mukhopadhyay et al. 2025): ome[theta, r] in nHz with theta 0..pi (symmetric extension), r ascending.'''
 import sys, numpy as np
 LS, out = sys.argv[1], sys.argv[2]
 tab = np.loadtxt(LS + '/rot2d.hmiv72d.ave'); rm = np.loadtxt(LS + '/rmesh.orig')
