@@ -1,3 +1,8 @@
+# FIX (2026-10-28): keep this same file on every branch that may become the default (now anelastic_log).
+# GitHub lists workflows, and serves their badges, from the default branch: when the default moved to
+# anelastic_log, which had no conductive_IC.yml, this workflow was marked deleted (hidden in the Actions
+# tab, README badge 404). On a push GitHub runs the copy in the pushed commit, and the branch filters
+# below keep it to conductive_IC.
 name: conductive_IC tests
 
 on:
@@ -15,6 +20,8 @@ concurrency:
 
 jobs:
   build:
+    # "Run workflow" defaults to the default branch: only test conductive_IC
+    if: github.event_name != 'workflow_dispatch' || github.ref_name == 'conductive_IC'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
