@@ -93,6 +93,9 @@ def main(ncpus):
     if inviscid:
         gebasis[0] = 2  # only up to second derivatives in section u
         gebasis[1] = 1  # up to first derivatives in section v
+        if par.magnetic:   # NEW (2026-10-28): the Lorentz force has third derivatives of f in section u and second ones of g in
+            gebasis[0] = 3  # section v; section v still has no bc rows (chop = 0 below), section u one (P = 0)
+            gebasis[1] = 2
 
     if par.ThermaD == 0:
         gebasis[2] = 1 if ut.adiab_tw else 0  # No thermal diffusion, C^(0) basis is enough (C^(1) for the thermal wind's P'), no need for thermal bc's
@@ -218,6 +221,10 @@ def main(ncpus):
         labl += [ 'v3bpo0ohr1_D1', 'v3bpo1ohr1_D0', 'v2bpo2ohr1_D0', 'v2bpo0ohr1_D2' ]  # v001 v010 v120 v102
         arg2 += [ vG ]*3
         labl += [ 'v3bpo0ohr1_D0', 'v2bpo1ohr1_D0', 'v2bpo0ohr1_D1' ]                   # v000 v110 v101
+        if ut.bf.B0_l == 2:
+            # NEW (2026-10-28): poloidal B0 of degree 2 (operators.lorentz_pol2, induction_pol2), the labels it adds to those above
+            arg2 += [ vF, vG ]
+            labl += [ 'u2bpo2ohr1_D1', 'u2bpo2ohr1_D0' ]
 
         # induction equation, section f (r² r̂⋅): b, induction from P and T, magnetic diffusion
         arg2 += [ vF ]
@@ -358,6 +365,8 @@ def main(ncpus):
             chop = gbx
 
         if secx == 'h' and par.ThermaD == 0:  # no thermal bc rows without diffusion, whatever the basis
+            chop = 0
+        if secx == 'v' and inviscid:  # NEW (2026-10-28): no bc rows in section v without viscosity, whatever the basis (C^(2) when magnetic)
             chop = 0
         # ---------------------------------------------------------------------------------------------------------------------------------------
 

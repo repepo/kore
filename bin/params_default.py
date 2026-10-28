@@ -218,9 +218,17 @@ class default_params():
         # Imposed background field B0 = cnorm ∇×∇×(h(r) Y_l0 r), axisymmetric and poloidal (background_field.py)
         self.B0 = 'axial'          # axial, uniform field along the spin axis (h = r/2, l = 1)
         # self.B0 = None           # NEW (2026-10-28): no poloidal field (with a toroidal one, B0_tor below)
+        # self.B0 = 'G21 dipole'   # NEW (2026-10-28): h = r/6 - r³/10 (Gerick et al. 2021), l = 1
+        # self.B0 = 'Luo_S1'       # NEW (2026-10-28): h = (5 - 3r²) r (Luo & Jackson 2022), l = 1
+        # self.B0 = 'Luo_S2'       # NEW (2026-10-28): h = (157 - 296r² + 143r⁴) r² (Luo & Jackson 2022), l = 2, quadrupole
         # self.B0 = 'FDM'          # free poloidal decay mode of the shell (Zhang & Fearn 1994, 1995; Schmitt 2012), degree B0_l
         self.beta = 3.0            # 'FDM': first guess of its radial wavenumber β (the root of background_field.findbeta)
         self.B0_l = 1              # 'FDM': its degree l
+
+        # NEW (2026-10-28): what the full-sphere fields ('G21 dipole', 'Luo_S1', 'Luo_S2') do with an inner core (ricb > 0), as
+        # conductive_IC: 'potential' (default) adds beta r^-(l+1) to h so that B0 continues as a potential field into the inner core
+        # (background_field.B0_beta_ic); 'full sphere' keeps h. No effect for 'axial', 'FDM' and with ricb = 0.
+        self.B0_ic = 'potential'
 
         # Normalisation of B0 (cnorm):
         self.cnorm = 1             # a number: cnorm itself

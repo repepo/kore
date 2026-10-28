@@ -111,8 +111,8 @@ def check_magnetic():
         if par.B0 is not None and bf.symm_pol != bf.symm_tor:
             sys.exit('B0 %r and B0_tor %r have opposite equatorial symmetries: they cannot be combined in one eigenproblem'
                      % (par.B0, par.B0_tor))
-    if par.B0 == 'FDM' and par.B0_l != 1:
-        sys.exit("B0 'FDM' with B0_l = %r: only B0_l = 1 is implemented (the couplings of a quadrupole are not)" % par.B0_l)
+    if par.B0 == 'FDM' and par.B0_l not in (1, 2):   # FIX (2026-10-28): the quadrupole couplings are implemented (operators.lorentz_pol2)
+        sys.exit("B0 'FDM' with B0_l = %r: only B0_l = 1 or 2 is implemented" % par.B0_l)
     if not (isinstance(par.cnorm, (int, float)) or par.cnorm in ('rms_cmb', 'mag_energy', 'Schmitt2012')):
         sys.exit("cnorm %r: a number, 'rms_cmb', 'mag_energy' or 'Schmitt2012'" % (par.cnorm,))
     if par.mantle not in MAGNETIC_WALLS:
@@ -124,10 +124,13 @@ def check_magnetic():
             sys.exit("innercore 'conducting, Chebys' needs a no-slip inner boundary (bci = 1): the ICB matching assumes u = 0 there")
         if par.N_cic % 2 or par.N_cic < 4:
             sys.exit('N_cic must be even and >= 4, got %r' % par.N_cic)
-    if par.ricb == 0:
-        sys.exit('magnetic = 1 needs ricb > 0 for now (the full-sphere parity of B0 is not implemented)')
-    if par.ViscosD == 0:
-        sys.exit('magnetic = 1 needs ViscosD > 0')
+    if par.ricb == 0:   # NEW (2026-10-28): the full sphere
+        if par.innercore != 'insulator':
+            sys.exit("innercore %r needs ricb > 0" % (par.innercore,))
+        if par.B0_tor is not None and par.B0_tor_l == 2 and par.B0_tor == 'Malkus':
+            sys.exit("B0_tor 'Malkus' with B0_tor_l = 2 is not regular at r = 0 (k = r would need to go as r²): use 'wall' or 'user' with ricb = 0")
+    if par.ViscosD == 0 and par.ricb > 0:   # NEW (2026-10-28): the inviscid path (bases, one bc row) exists for the full sphere only
+        sys.exit('magnetic = 1 with ViscosD = 0 needs ricb = 0 (the inviscid formulation is for the full sphere only)')
     if par.forcing != 0:
         sys.exit('magnetic = 1 is implemented for eigenvalue problems only (forcing = 0)')
     if par.diff_rot:

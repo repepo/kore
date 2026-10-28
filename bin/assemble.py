@@ -863,15 +863,21 @@ def bc_b_spherical(l, sec):
     the two bc rows of each block: row 0 at the outer boundary (l+1) f + r f' = 0 and g = 0, row 1 at the inner boundary
     l f - r f' = 0 and g = 0 (b matches a potential field outside the shell, and inside it with ricb > 0).
     '''
-    out = ss.dok_matrix((2 - ut.cic, ut.N1), dtype=complex)  # NEW (2026-10-28): row 1 is bc_b_cic's with a conducting inner core
+    inner = (par.ricb > 0) and not ut.cic   # NEW (2026-10-28): a full sphere has the outer row only, a conducting core bc_b_cic's
+    out = ss.dok_matrix((1 + int(par.ricb > 0), ut.N1), dtype=complex)
+    if par.ricb > 0:
+        Tb = bv.Tb
+    else:   # one parity of Chebyshev polynomials per section (as conductive_IC's bc_b_cmb): f has the parity of vF = symmB0 vP
+        ixf = ( par.m + ut.s )%2 if ut.symmB0 == -1 else ( par.m + 1 - ut.s )%2
+        Tb = bv.Tb[(ixf if sec == 'f' else 1 - ixf)::2, :]
 
     if sec == 'f':
-        out[ 0,:] = (l+1) * bv.Tb[:,0] + ut.rcmb * bv.Tb[:,1]
-        if not ut.cic:
+        out[ 0,:] = (l+1) * Tb[:,0] + ut.rcmb * Tb[:,1]
+        if inner:
             out[ 1,:] = l * bv.Ta[:,0] - par.ricb * bv.Ta[:,1]
     elif sec == 'g':
-        out[ 0,:] = bv.Tb[:,0]
-        if not ut.cic:
+        out[ 0,:] = Tb[:,0]
+        if inner:
             out[ 1,:] = bv.Ta[:,0]
 
     # the first l of each section's block list: f has the l's of T (symmB0 = -1) or of P (symmB0 = 1), g the others

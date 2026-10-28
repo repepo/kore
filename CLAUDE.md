@@ -68,7 +68,7 @@ eigenvalues as ω, σ in nHz.
 | `units.py` | physical units for parameter files and scripts (kore itself never imports it): `set_physical` (Gaspard, Beyonce, ViscosD, ThermaD, `diff_rot_frame` from cgs values), `set_target` (`itau`, `rtau` from ω, σ in nHz), `nHz`; as a script, prints a run's eigenvalues in nHz |
 | `utils.py` | globals (`N1`, `n`, `sizmat`, `symm1`, `adiab_tw`, `odd_profiles`...), `dr_offd`, label decoding, Chebyshev transforms (`chebco_f`, `funcheb`, `fonzie`, `angine`), Gegenbauer matrices `Dlam`, `Slam`, `Mlam`, parity `remroco`, `ell`, erf profiles (`erf_top_hat`, `erf_top_hat_odd`, `erf_box`), `Ylm`, `load_npz_mmap` |
 | `background.py` | the background besides the rotation (§6): the type names `STRUCTURES`, `STRATIFICATIONS`, `DIFFUSIVITIES` (their order is the index written to `params.dat`), `check()` (stops on unknown, removed (`REMOVED`) or impossible settings; `check_magnetic()` for `magnetic = 1`), dS/dr (`gradS`), ν, κ and η (`diffusivity`), the 'user' expressions and their `description()` for `params.dat` |
-| `background_field.py` | the imposed magnetic field B0 (`magnetic = 1`, §4): `B0_TYPES` ('axial', 'FDM'), `symmB0`, `B0_l`, the FDM root `findbeta`, h and its derivatives `h(r, k)`, `cnorm` (`B0_norm`), the profile `bpoX`; numpy and scipy only |
+| `background_field.py` | the imposed magnetic field B0 (`magnetic = 1`, §4): `B0_TYPES` ('axial', 'FDM', 'G21 dipole', 'Luo_S1', 'Luo_S2'; the polynomial ones in `POLY`, `B0_beta_ic`), `B0_TOR_TYPES`, `symmB0`, `B0_l`, the FDM root `findbeta`, h and its derivatives `h(r, k)` (`jl_k` at ricb = 0), k(r, d), `cnorm` (`B0_norm`), `cnorm_tor`, the profiles `bpoX`, `btoX`; numpy and scipy only |
 | `radial_profiles.py` | one class per structure (`wu2005_profiles`, `eight_term_profiles`, `modelS_profiles`, `modelS_hydrostatic_profiles`, `uniform_profiles`, on a base class `structure` that takes dS/dr, ν and κ from `background.py`), the dict `structures` and the instance `prf`; the `*X(r, Dorder)` derivative helpers; `proffdir` (label code → function); `burrito` (the integrand of one operator) |
 | `smoothed_sun.py` | analytic even fit of the Model S ln ρ, with g, p, d ln ρ/dr, d ln p/dr (structure '8-term fit'; its g also serves 'old model S prototype') |
 | `model_s.at` | Model S table (columns As, c₁, ρ/ρ_c, p/p_c, x) for 'model S hydrostatic' and 'old model S prototype' |
@@ -102,7 +102,8 @@ runs out)); `examples/smooth_sun/` (the solar example: full sphere, m 8 HFR mode
 b = ∇×∇×(f **r**) + ∇×(g **r**). Compositional physics was removed.
 
 **Magnetic field** (`magnetic = 1`, `docs/magnetic.md`, ported from conductive_IC `39487bbf`): imposed poloidal
-B0 = cnorm ∇×∇×(h Y_l0 **r**) ('axial', 'FDM' with `B0_l` 1; `background_field.py`); ∂b/∂t = ∇×(u×B0) + MagnetD ∇²b
+B0 = cnorm ∇×∇×(h Y_l0 **r**) ('axial', 'G21 dipole', 'Luo_S1', 'FDM' with `B0_l` 1 or 2, 'Luo_S2'; `B0_ic` for the
+full-sphere fields with an inner core; `background_field.py`); ∂b/∂t = ∇×(u×B0) + MagnetD ∇²b
 (rows r² r̂· in section `f`, r² r̂·∇× in `g`) and the Lorentz force Hendrik ρ₀⁻¹[(∇×b)×B0 + (∇×B0)×b] in the momentum rows
 (labels with `ohr1`). Hendrik = (Gaspard Le)², MagnetD = Gaspard Em (`set_scales`, also timescales 'Alfven' and
 'magnetic'). b has the symmetry `ut.bsymm` = symm·symmB0: with an antisymmetric B0 f takes the l's of T and g those of P.
@@ -112,9 +113,13 @@ A toroidal B0 (step 4): `B0_tor` 'Malkus' (k = r, B0 = s φ̂), 'wall' or 'user'
 `cnorm_tor`, profile `bto`, `operators.lorentz_tor`/`induction_tor` (n = 2: `*_tor2`, Δl up to ±2; closed forms fitted from
 `tests/magnetic/derive.py`), alone (`B0 = None`) or with a poloidal B0 of the same symmetry (dipole + n = 2); spin_doctor's Lorentz and induction work then come from the (r, θ) grid
 (`utils4pp.magnetic_powers_grid`). Any structure (step 3): the (ln ρ₀)′ terms are in the f, g rows (P columns) and the u rows (`operators.lorentz_rho`), labels
-`bpo` × `lho` (with `ohr1` in u), derived in `tests/magnetic/derive.py`; they vanish exactly for 'uniform'. For now only
-ricb > 0, an insulating mantle, ViscosD > 0, eigenproblems, B0 of degree 1, uniform η, no diff rot:
-`background.check_magnetic()` stops otherwise. 'Wu 2005' with r_out 0.99 needs N ≈ 192 at Ek 1e-3 for 1e-10 residuals.
+`bpo` × `lho` (with `ohr1` in u), derived in `tests/magnetic/derive.py`; they vanish exactly for 'uniform'. Step 5: the
+poloidal B0 of degree 2 (`operators.lorentz_pol2`/`induction_pol2`, tables of label expressions fitted from derive.py; spin_doctor
+uses the grid for it), the full sphere (ricb = 0: parity of h (-1)^l, of k (-1)^n via `ut.odd_profiles`, f of parity
+`vF = symmB0·vP`, one bc row at the CMB; FDM = j_l(βr) with analytic derivatives `bf.jl_k`) and inviscid runs (ViscosD = 0,
+full sphere only: u rows in C^(3), v rows in C^(2) with no bc row, since the Lorentz labels have D3, D2). For now: an
+insulating mantle, eigenproblems, uniform η, no diff rot, no inviscid shell: `background.check_magnetic()` stops otherwise.
+'Wu 2005' with r_out 0.99 needs N ≈ 192 at Ek 1e-3 for 1e-10 residuals (row checks in a full sphere: N 288).
 
 **Velocity** (`utils4pp.cheb2space_pol`): u = ρ₀⁻¹∇×∇×(ρ₀ P **r**) + ∇×(T **r**), so ∇·(ρ₀u) = 0 exactly:
 u_r = L P/r, consoidal part P′ + P(1/r + (ln ρ₀)′), L = l(l+1).

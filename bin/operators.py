@@ -232,6 +232,8 @@ def thermal_diffusion(l, section, component, offdiag):  # rʰ  ∇⋅(κ p ∇s)
 
 def lorentz_pol(l, section, component, offdiag):  # ----------------------- Lorentz force (∇×b)×B0 + (∇×B0)×b, per unit mass, poloidal B0
 
+    if ut.bf.B0_l == 2:   # NEW (2026-10-28)
+        return lorentz_pol2(l, section, component, offdiag)
     out  = 0
     offd = 0
     m = par.m
@@ -341,6 +343,8 @@ def b(l, section, component, offdiag):  # --------------------------------------
 
 def induction_pol(l, section, component, offdiag):  # --------------------------------------- induction ∇×(u×B0), poloidal B0
 
+    if ut.bf.B0_l == 2:   # NEW (2026-10-28)
+        return induction_pol2(l, section, component, offdiag)
     out  = 0
     offd = 0
     m = par.m
@@ -463,6 +467,92 @@ def quad_factors(l, m):
              1: 1j*m*np.sqrt((l+1)**2 - m**2)/(2*l + 3),
             -2: np.sqrt((l**2 - m**2)*((l-1)**2 - m**2))/((2*l - 1)*(2*l - 3)),
              2: np.sqrt(((l+1)**2 - m**2)*((l+2)**2 - m**2))/((2*l + 3)*(2*l + 5)) }
+
+
+def induction_pol2(l, section, component, offdiag):  # ------------------------- induction ∇×(u×B0), poloidal B0 of degree 2
+    '''NEW (2026-10-28): B0 = ∇×∇×(h Y_2⁰ 𝐫) (bpo = cnorm h; 'Luo_S2'), the rows of derive.py fitted in l and m (quad_factors times
+    polynomials in l; the same-degree terms carry l(l+1) - 3m²; tests/magnetic/derive_check.py checks them). The f, g rows couple
+    to P at l, l ± 2 and to T at l ± 1 (f) or l, l ± 2 (g).'''
+    m = par.m
+    L = l*(l+1.)
+    col = 'P' if component == 'upol' else 'T'
+    rows = {
+        ('f', 'P', -2): lambda: (-3*(l - 4)*(l - 2)*(l + 1))*f2bpo0_D0 + (9*(l - 2)*(l + 1))*f1bpo0lho1_D0
+                                + (-3*(l - 2)*(l - 1)*(l + 1))*f1bpo1_D0 + (9*(l - 2)*(l + 1))*f1bpo0_D1,
+        ('f', 'P', 0): lambda: (3*(l - 2)*(l + 3)*(L - 3*m**2))*f2bpo0_D0 + (6*(L - 3)*(L - 3*m**2))*f1bpo0lho1_D0
+                                + (-3*l*(l + 1)*(L - 3*m**2))*f1bpo1_D0 + (6*(L - 3)*(L - 3*m**2))*f1bpo0_D1,
+        ('f', 'P', 2): lambda: (3*l*(l + 3)*(l + 5))*f2bpo0_D0 + (9*l*(l + 3))*f1bpo0lho1_D0 + (3*l*(l + 2)*(l + 3))*f1bpo1_D0
+                                + (9*l*(l + 3))*f1bpo0_D1,
+        ('f', 'T', -1): lambda: (18)*f1bpo0_D0,
+        ('f', 'T', 1): lambda: (18)*f1bpo0_D0,
+        ('g', 'P', -1): lambda: (6*(l**2 + 3))*g3bpo0_D0 + (3*l*(l + 1))*g2bpo0lho1_D0 + (-18)*g1bpo0lho2_D0 + (6*(l - 3))*g2bpo1_D0
+                                + (3*(l - 2)*(l + 3))*g1bpo1lho1_D0 + (-3*l*(l - 1))*g1bpo2_D0 + (6*(l - 3))*g2bpo0_D1
+                                + (-18)*g1bpo0lho1_D1 + (6*(l - 3))*g1bpo1_D1 + (-18)*g1bpo0_D2,
+        ('g', 'P', 1): lambda: (6*(l**2 + 2*l + 4))*g3bpo0_D0 + (3*l*(l + 1))*g2bpo0lho1_D0 + (-18)*g1bpo0lho2_D0
+                                + (-6*(l + 4))*g2bpo1_D0 + (3*(l - 2)*(l + 3))*g1bpo1lho1_D0 + (-3*(l + 1)*(l + 2))*g1bpo2_D0
+                                + (-6*(l + 4))*g2bpo0_D1 + (-18)*g1bpo0lho1_D1 + (-6*(l + 4))*g1bpo1_D1 + (-18)*g1bpo0_D2,
+        ('g', 'T', -2): lambda: (-3*l*(l - 2)*(l + 1))*g2bpo0_D0 + (-3*(l - 3)*(l - 2)*(l + 1))*g1bpo1_D0
+                                + (9*(l - 2)*(l + 1))*g1bpo0_D1,
+        ('g', 'T', 0): lambda: (3*l*(l + 1)*(L - 3*m**2))*g2bpo0_D0 + (9*(l - 1)*(l + 2)*(L - 3*m**2))*g1bpo1_D0
+                                + (6*(L - 3)*(L - 3*m**2))*g1bpo0_D1,
+        ('g', 'T', 2): lambda: (3*l*(l + 1)*(l + 3))*g2bpo0_D0 + (3*l*(l + 3)*(l + 4))*g1bpo1_D0 + (9*l*(l + 3))*g1bpo0_D1,
+    }
+    f = rows.get((section, col, offdiag))
+    if f is None:
+        return [ 0, 0 ]
+    return [ -quad_factors(l, m)[offdiag]*f()/L**3, moff(section, col, offdiag) ]
+
+
+def lorentz_pol2(l, section, component, offdiag):  # ------------ Lorentz force (∇×b)×B0 + (∇×B0)×b per unit mass, poloidal B0 of degree 2
+    '''NEW (2026-10-28): as induction_pol2. The u rows couple to F at l, l ± 2 and to G at l ± 1; the v rows to F at l ± 1 and to G
+    at l, l ± 2.'''
+    m = par.m
+    L = l*(l+1.)
+    col = 'F' if component == 'bpol' else 'G'
+    rows = {
+        ('u', 'F', -2): lambda: (-3*l*(l - 2)*(l + 1)**2*(l + 2))*u5bpo0ohr1_D0 + (-9*l*(l - 2)*(l - 1)*(l + 1))*u4bpo0lho1ohr1_D0
+                                + (-3*(l - 2)*(l + 1)*(l**3 - 6*l**2 + l + 2))*u4bpo1ohr1_D0
+                                + (6*(l - 2)*(l - 1)*(l + 1))*u3bpo1lho1ohr1_D0 + (-3*(l - 2)**2*(l + 1))*u3bpo2ohr1_D0
+                                + (3*(l - 2)*(l - 1)*(l + 1))*u2bpo2lho1ohr1_D0 + (-3*(l - 2)*(l - 1)*(l + 1))*u2bpo3ohr1_D0
+                                + (3*(l - 2)*(l + 1)*(3*l**2 - 7*l + 6))*u4bpo0ohr1_D1 + (18*(l - 2)*(l + 1))*u3bpo0lho1ohr1_D1
+                                + (6*(l - 2)**2*(l + 1))*u3bpo1ohr1_D1 + (3*(l - 2)*(l + 1))*u2bpo2ohr1_D1
+                                + (3*(l - 6)*(l - 2)*(l + 1))*u3bpo0ohr1_D2 + (9*(l - 2)*(l + 1))*u2bpo0lho1ohr1_D2
+                                + (3*(l - 3)*(l - 2)*(l + 1))*u2bpo1ohr1_D2 + (-9*(l - 2)*(l + 1))*u2bpo0ohr1_D3,
+        ('u', 'F', 0): lambda: (-9*l*(l - 1)*(l + 1)*(l + 2)*(L - 3*m**2))*u5bpo0ohr1_D0
+                                + (-6*l**2*(l + 1)**2*(L - 3*m**2))*u4bpo0lho1ohr1_D0 + (9*l**2*(l + 1)**2*(L - 3*m**2))*u4bpo1ohr1_D0
+                                + (6*l*(l + 1)*(L - 3*m**2))*u3bpo1lho1ohr1_D0 + (-9*l*(l + 1)*(L - 3*m**2))*u3bpo2ohr1_D0
+                                + (3*l*(l + 1)*(L - 3*m**2))*u2bpo2lho1ohr1_D0 + (-3*l*(l + 1)*(L - 3*m**2))*u2bpo3ohr1_D0
+                                + (6*(L - 3*m**2)*(l**4 + 2*l**3 + 5*l**2 + 4*l - 6))*u4bpo0ohr1_D1
+                                + (12*(L - 3)*(L - 3*m**2))*u3bpo0lho1ohr1_D1 + (-6*(L - 3*m**2)*(5*l**2 + 5*l - 6))*u3bpo1ohr1_D1
+                                + (-6*l*(l + 1)*(L - 3*m**2))*u2bpo2ohr1_D1 + (-3*(L - 3*m**2)*(5*l**2 + 5*l - 12))*u3bpo0ohr1_D2
+                                + (6*(L - 3)*(L - 3*m**2))*u2bpo0lho1ohr1_D2 + (-9*(l - 1)*(l + 2)*(L - 3*m**2))*u2bpo1ohr1_D2
+                                + (-6*(L - 3)*(L - 3*m**2))*u2bpo0ohr1_D3,
+        ('u', 'F', 2): lambda: (3*l**2*(l - 1)*(l + 1)*(l + 3))*u5bpo0ohr1_D0 + (-9*l*(l + 1)*(l + 2)*(l + 3))*u4bpo0lho1ohr1_D0
+                                + (3*l*(l + 3)*(l**3 + 9*l**2 + 16*l + 6))*u4bpo1ohr1_D0 + (-6*l*(l + 2)*(l + 3))*u3bpo1lho1ohr1_D0
+                                + (3*l*(l + 3)**2)*u3bpo2ohr1_D0 + (-3*l*(l + 2)*(l + 3))*u2bpo2lho1ohr1_D0
+                                + (3*l*(l + 2)*(l + 3))*u2bpo3ohr1_D0 + (3*l*(l + 3)*(3*l**2 + 13*l + 16))*u4bpo0ohr1_D1
+                                + (18*l*(l + 3))*u3bpo0lho1ohr1_D1 + (-6*l*(l + 3)**2)*u3bpo1ohr1_D1 + (3*l*(l + 3))*u2bpo2ohr1_D1
+                                + (-3*l*(l + 3)*(l + 7))*u3bpo0ohr1_D2 + (9*l*(l + 3))*u2bpo0lho1ohr1_D2
+                                + (-3*l*(l + 3)*(l + 4))*u2bpo1ohr1_D2 + (-9*l*(l + 3))*u2bpo0ohr1_D3,
+        ('u', 'G', -1): lambda: (-6*(2*l**2 + 3*l - 3))*u4bpo0ohr1_D0 + (3*(l**2 - l + 6))*u3bpo0lho1ohr1_D0
+                                + (6*(l - 1)*(l + 3))*u3bpo1ohr1_D0 + (3*l*(l - 1))*u2bpo1lho1ohr1_D0 + (6*l)*u2bpo2ohr1_D0
+                                + (6*(l - 3))*u3bpo0ohr1_D1 + (18)*u2bpo0lho1ohr1_D1 + (6*(l - 3))*u2bpo1ohr1_D1 + (-18)*u2bpo0ohr1_D2,
+        ('u', 'G', 1): lambda: (-6*(2*l**2 + l - 4))*u4bpo0ohr1_D0 + (3*(l**2 + 3*l + 8))*u3bpo0lho1ohr1_D0
+                                + (6*(l - 2)*(l + 2))*u3bpo1ohr1_D0 + (3*(l + 1)*(l + 2))*u2bpo1lho1ohr1_D0 + (-6*(l + 1))*u2bpo2ohr1_D0
+                                + (-6*(l + 4))*u3bpo0ohr1_D1 + (18)*u2bpo0lho1ohr1_D1 + (-6*(l + 4))*u2bpo1ohr1_D1 + (-18)*u2bpo0ohr1_D2,
+        ('v', 'F', -1): lambda: (6*l*(l - 1))*v3bpo1ohr1_D0 + (3*l*(l - 1))*v2bpo2ohr1_D0 + (-36)*v3bpo0ohr1_D1 + (-18)*v2bpo0ohr1_D2,
+        ('v', 'F', 1): lambda: (6*(l + 1)*(l + 2))*v3bpo1ohr1_D0 + (3*(l + 1)*(l + 2))*v2bpo2ohr1_D0 + (-36)*v3bpo0ohr1_D1
+                                + (-18)*v2bpo0ohr1_D2,
+        ('v', 'G', -2): lambda: (-3*(l - 4)*(l - 2)*(l + 1))*v3bpo0ohr1_D0 + (-3*(l - 2)*(l - 1)*(l + 1))*v2bpo1ohr1_D0
+                                + (9*(l - 2)*(l + 1))*v2bpo0ohr1_D1,
+        ('v', 'G', 0): lambda: (3*(l - 2)*(l + 3)*(L - 3*m**2))*v3bpo0ohr1_D0 + (-3*l*(l + 1)*(L - 3*m**2))*v2bpo1ohr1_D0
+                                + (6*(L - 3)*(L - 3*m**2))*v2bpo0ohr1_D1,
+        ('v', 'G', 2): lambda: (3*l*(l + 3)*(l + 5))*v3bpo0ohr1_D0 + (3*l*(l + 2)*(l + 3))*v2bpo1ohr1_D0 + (9*l*(l + 3))*v2bpo0ohr1_D1,
+    }
+    f = rows.get((section, col, offdiag))
+    if f is None:
+        return [ 0, 0 ]
+    return [ -par.Hendrik*quad_factors(l, m)[offdiag]*f()/L**3, moff(section, col, offdiag) ]
 
 
 def induction_tor2(l, section, component, offdiag):  # ------------------------- induction ∇×(u×B0), toroidal B0 of degree 2

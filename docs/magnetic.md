@@ -4,13 +4,13 @@ With `magnetic = 1` kore adds an imposed background magnetic field $\mathbf{B}_0
 perturbation field $\mathbf{b}$ and the Lorentz force on the flow. The operators, the background fields and the boundary
 conditions are ported from the `conductive_IC` branch (commit `39487bbf`), formula by formula, into this branch's
 conventions (2026-10-28: step 1, insulating walls; step 2, a conducting inner core; step 3, any density profile; step 4, a
-toroidal background field).
+toroidal background field; step 5, the full sphere, inviscid runs and the poloidal fields of `conductive_IC` of degree 2).
 
 **What works now:** a spherical shell (`ricb > 0`) with an insulating mantle and an insulating or conducting
-(`'conducting, Chebys'`) inner core, any `structure` (variable density, the anelastic terms below), `ViscosD > 0`,
-eigenvalue problems, a poloidal $\mathbf{B}_0$ (`'axial'` or `'FDM'`, degree 1) and/or a toroidal one (`'Malkus'`, `'wall'` or `'user'`,
-degree 1 or 2), uniform magnetic diffusivity. `background.check()`
-stops on anything else.
+(`'conducting, Chebys'`) inner core, or a full sphere (`ricb = 0`, insulating mantle), any `structure` (variable density,
+the anelastic terms below), eigenvalue problems, a poloidal $\mathbf{B}_0$ (`'axial'`, `'G21 dipole'`, `'Luo_S1'`, `'FDM'` of
+degree 1 or 2, `'Luo_S2'`) and/or a toroidal one (`'Malkus'`, `'wall'` or `'user'`, degree 1 or 2), uniform magnetic
+diffusivity; `ViscosD > 0`, or `ViscosD = 0` (Ek = 0) in a full sphere. `background.check()` stops on anything else.
 
 ## Equations
 
@@ -45,9 +45,15 @@ $\mathbf{B}_0 = c_\mathrm{norm}\nabla\times\nabla\times(h(r)\,Y_l^0\,\mathbf{r})
 | `B0` | $h(r)$ | degree, symmetry |
 | --- | --- | --- |
 | `'axial'` | $r/2$: the uniform field $c_\mathrm{norm}\hat{\mathbf{z}}$, no current | $l = 1$, antisymmetric |
-| `'FDM'` | the poloidal free decay mode of the shell, $j_l(\beta r)\,y_{l-1}(\beta) - j_{l-1}(\beta)\,y_l(\beta r)$ (Zhang & Fearn 1995), $\beta$ the root of `findbeta` near `beta` | $l$ = `B0_l` (1 only for now) |
+| `'FDM'` | the poloidal free decay mode of the shell, $j_l(\beta r)\,y_{l-1}(\beta) - j_{l-1}(\beta)\,y_l(\beta r)$ (Zhang & Fearn 1995), $\beta$ the root of `findbeta` near `beta`; with `ricb = 0`, $j_l(\beta r)$ with $j_{l-1}(\beta) = 0$ (Gubbins & Roberts 1987) | $l$ = `B0_l` = 1 (antisymmetric) or 2 (symmetric) |
+| `'G21 dipole'` | $r/6 - r^3/10$ (Gerick et al. 2021) | $l = 1$, antisymmetric |
+| `'Luo_S1'` | $5r - 3r^3$ (Luo & Jackson 2022; the same field as `'G21 dipole'`) | $l = 1$, antisymmetric |
+| `'Luo_S2'` | $157r^2 - 296r^4 + 143r^6$ (Luo & Jackson 2022) | $l = 2$, symmetric |
 
-Both match a potential field at the walls. `cnorm` is a number, `'rms_cmb'` (rms of the radial field over the outer wall
+All match a potential field at the outer wall. `'G21 dipole'`, `'Luo_S1'` and `'Luo_S2'` are full-sphere fields: with an inner
+core, `B0_ic = 'potential'` (default) adds $\beta_i r^{-(l+1)}$ so that $rh' - lh = 0$ at the inner boundary (the field of
+the currents in the fluid, continued as a potential field into the core), and `'full sphere'` keeps $h$ as it is
+(`conductive_IC`'s `B0_beta_ic`). `cnorm` is a number, `'rms_cmb'` (rms of the radial field over the outer wall
 1), `'mag_energy'` ($\int B_0^2\,dV = 1$ over the shell) or `'Schmitt2012'` ($= 4$), computed as in `conductive_IC`.
 `tol_B0` (default 1e-8) is the relative cut of the Chebyshev series of $r^p h^{(k)}$: it sets the band width of the
 magnetic blocks.
@@ -118,6 +124,25 @@ antisymmetric, like the dipole.
   $l$, $l\pm2$ and T at $l\pm1$; u from F at $l\pm1$ and G at $l$, $l\pm2$; v from F at $l$, $l\pm2$ and G at $l\pm1$.
   `operators.lorentz` and `induction` add the poloidal and the toroidal parts (`assemble.py` loops over $\Delta l = -2..2$
   and skips absent couplings). Column offsets: `operators.moff`.
+- **Poloidal field of degree 2** (step 5, `operators.induction_pol2`, `lorentz_pol2`, for `'Luo_S2'` and `'FDM'` with
+  `B0_l = 2`). Derived with `derive.py` ($b_0$ = ('pol', 2), any $\rho_0$) and fitted in $l$, $m$ as for the toroidal field
+  of degree 2: `quad_factors` times polynomials in $l$ (the same-degree terms carry $l(l+1) - 3m^2$), kept in two tables
+  (row, column, $\Delta l$) of the label expressions. Couplings: rows f from P at $l$, $l\pm2$ and T at $l\pm1$; g from P at
+  $l\pm1$ and T at $l$, $l\pm2$; u from F at $l$, $l\pm2$ and G at $l\pm1$; v from F at $l\pm1$ and G at $l$, $l\pm2$. Two labels
+  are added to those of the dipole (`u2bpo2ohr1_D1`, `u2bpo2ohr1_D0`). spin_doctor takes its Lorentz and induction powers
+  from `magnetic_powers_grid` for these fields (`utils4pp.use_grid`).
+- **Full sphere** (step 5, `ricb = 0`). As for the flow, each block holds the Chebyshev polynomials of one parity on
+  $[-1, 1]$ (`ut.remroco`): $f$ has the vector parity `vF = symmB0 * vP`, $g$ the opposite; $h$ has the parity $(-1)^l$ of
+  its degree and $k$ that of $(-1)^n$ (`utils.odd_profiles`, both slots of a label). One boundary-condition row per block,
+  the insulating condition at the outer wall (`assemble.bc_b_spherical`). The fields are regular at the centre: FDM
+  $j_l(\beta r)$ (analytic derivatives, `background_field.jl_k`), the polynomial fields, 'wall' $= r^n(1 - r^2)$, 'Malkus'
+  for $n = 1$ only (`k = r` is not regular for $n = 2$), 'user' as $f(|r|)\,\mathrm{sign}(r)^n$. `cnorm` and `cnorm_tor` are
+  computed as with an inner core; spin_doctor's inner-wall terms are skipped.
+- **Inviscid runs** (step 5, `ViscosD = 0`, full sphere only). The Lorentz labels have $D^3$ (rows u) and $D^2$ (rows v), so
+  the rows are in $C^{(3)}$ (u) and $C^{(2)}$ (v), with one boundary-condition row ($u_r = 0$) in u and none in v; without
+  a field they stay in $C^{(2)}$ and $C^{(1)}$. `decode_label` gives the u and v labels the row powers of the viscous rows.
+  `conductive_IC` keeps $C^{(2)}$ and $C^{(1)}$ and so converts these terms with the wrong matrices; its torsional test is
+  barely affected (below).
 - **Solver and output.** `solve.py` writes `real_magnetic.field`, `imag_magnetic.field` and normalises the eigenvectors to
   $\mathrm{KE} + \mathrm{Hendrik}\int\tfrac12|\mathbf{b}|^2dV = 1$ (over the shell, as `conductive_IC`).
 
@@ -272,8 +297,38 @@ Everything in `tests/magnetic/` (`run_all.sh`):
   tends to $m(m-\lambda_\mathrm{in})/\lambda_\mathrm{in}$: 2–8 % off at Ek = Em = $10^{-5}$, 0.4–1 % at $10^{-6}$ (e.g. 0.3808
   against 0.3822 for $\lambda_\mathrm{in}$ = 0.7235). `tests/magnetic/malkus_check.py`.
 
+### Full sphere, inviscid runs and degree-2 poloidal fields (2026-10-28, step 5)
+
+- **Hydrodynamics.** Inviscid uniform full sphere (Ek = 0, `'uniform'`): the inertial modes of Wu (2005, Table 1, β = 0)
+  to the 10 digits given (e.g. 0.6666666667, 1.4964360838, 1.2319250547 for $|m| = 2$); 'Wu 2005' against its Table 2.
+  No non-magnetic code changed (`regress.sh` bitwise).
+- **Against `conductive_IC`** (`39487bbf`, the geometry of Checks, all eigenvalues of each run): full sphere, 'axial', 'FDM'
+  ($l$ = 1, 2), 'G21 dipole', 'Luo_S1', 'Luo_S2', m 0–2 and both symmetries, $\le 5\cdot10^{-13}$; with an inner core
+  (insulating or conducting, `B0_ic = 'potential'`): 'G21 dipole', 'Luo_S1', 'Luo_S2', 'FDM' $l = 2$ (m 0, 3), $\le 6\cdot10^{-13}$.
+- **Derivation.** `derive_check.py` also checks the tables of `induction_pol2`, `lorentz_pol2`, read from `operators.py`,
+  against derive.py's rows (l 3–6, m 0–3), to round-off.
+- **Row checks** in a full sphere (`row_check.py` now handles the parity-reduced bases and $\Delta l = \pm2$): 'uniform' to
+  $10^{-14}$; 'Wu 2005' needs N 288 (the pole of $(\ln\rho_0)'$ at $r = 1/r_\mathrm{out}$ is nearer to the domain $[-1, 1]$
+  than to a shell's; $3\cdot10^{-7}$ at N 192).
+- **Energy budgets**, 'Wu 2005', Ek = Em = $10^{-3}$: 'Luo_S2' full sphere m 0, 1 to $3\cdot10^{-11}$ and $10^{-9}$ at N 192
+  ($10^{-7}$, $3\cdot10^{-6}$ at N 128); with an insulating or conducting inner core $10^{-10}$; FDM $l = 2$ full sphere
+  (`'Schmitt2012'`) $5\cdot10^{-4}$, $6\cdot10^{-6}$, $3\cdot10^{-8}$ at N 128, 192, 256 (its Hartmann layer); 'uniform' to $10^{-14}$.
+- **Malkus (1967), ideal.** Inviscid uniform full sphere, $\mathbf{B}_0 = \mathrm{Le}\,s\hat{\boldsymbol\phi}$, Em $10^{-9}$,
+  m 2: for ten inertial modes $\lambda_\mathrm{in}$ of both symmetries and Le 0.1, 0.3, both branches of
+  $\omega = (\lambda_\mathrm{in}/2)[1 \pm \sqrt{1 + 4\mathrm{Le}^2 m(m - \lambda_\mathrm{in})/\lambda_\mathrm{in}^2}]$ to
+  $10^{-5}$–$7\cdot10^{-3}$ relative at N 64 (the fast branch to $10^{-4}$ at N 96). The error does not change with Em
+  ($10^{-8}$ to $10^{-10}$) or with Le: it is that of the magnetic boundary layer the insulating wall imposes (Malkus's ideal
+  solution has a tangential $\mathbf{b}$ there), not resolved at these N.
+- **Torsional modes of Luo & Jackson (2022)** (`conductive_IC`'s `tests/torsional_s2`: 'Luo_S2', inviscid, Lu $2\cdot10^4$,
+  m 0, `timescale = 'Alfven'`). Their modes 1 and 2 are $-0.0065952461 + 1.0335959942i$ and $-0.0141833345 + 1.9095123626i$;
+  this code converges to them as $N^{-3}$: mode 1 $1.3\cdot10^{-5}$ off at N 128, $4\cdot10^{-7}$ at N 320; mode 2 $2\cdot10^{-4}$
+  at N 128, $7\cdot10^{-6}$ at N 384. `conductive_IC` is within $10^{-6}$ already at N 128 because it mishandles the $D^3$ and $D^2$
+  Lorentz terms (above), whose effect there is only $10^{-7}$: with its bases set as here it gives this code's eigenvalues to
+  $10^{-9}$. The slow convergence comes from the u rows in $C^{(3)}$, where the unresolved boundary layer of $\mathbf{b}$
+  (Em $5\cdot10^{-9}$) enters through $f'''$.
+
 ## Not yet implemented
 
 In the order planned: a magnetic diffusivity profile, toroidal fields of degree above 2; also
-thin walls (`'TWA'`), rotdyn, the full sphere (the parity of $h$), the quadrupole couplings (`'Luo_S2'`, `'FDM'` with
-`B0_l = 2`), the point `'dipole'`, inviscid and forced runs, and the induction by a differential rotation.
+thin walls (`'TWA'`), rotdyn, a perfectly conducting inner core, the point `'dipole'`, inviscid runs with an inner core, forced
+runs, and the induction by a differential rotation.

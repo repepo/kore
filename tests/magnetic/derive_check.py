@@ -7,7 +7,9 @@ derive_check.py: derive.py's rows against closed forms (needs sympy; about 3 min
      diagonal term 2im[r h λ1 P' + r h λ2 P + (1 - L/2) r h' λ1 P - (L/2) h λ1 P]; rows u: λ1 r⁴ (∇₁⋅𝐆_H)_l, operators.lorentz_rho);
   3. no (ln ρ0)' terms in the rows v and in the T columns;
   4. the toroidal B0 of degrees 1 and 2 (NEW 2026-10-28): derive.rows(b0=('tor', n)), any ρ0, against operators.induction_tor,
-     lorentz_tor (n = 1) and induction_tor2, lorentz_tor2 (n = 2) (their rows times -L³/r^p; Hendrik apart), and no couplings beyond those.
+     lorentz_tor (n = 1) and induction_tor2, lorentz_tor2 (n = 2) (their rows times -L³/r^p; Hendrik apart), and no couplings beyond those;
+  5. the poloidal B0 of degree 2 (NEW 2026-10-28, 'Luo_S2', FDM with B0_l = 2): derive.rows(b0=('pol', 2)) against the tables of
+     operators.induction_pol2, lorentz_pol2, read from bin/operators.py.
 Degrees l = 3..6, m = 0..3 (about 40 minutes on one core). Exit 1 on a mismatch.
 '''
 import sys, os
@@ -185,6 +187,43 @@ for n, form, dls in ((1, tor_form, (-1, 0, 1)), (2, tor2_form, (-2, -1, 0, 1, 2)
                 if sym: BAD.append('toroidal: unexpected terms'); print('toroidal n=%d %s row l=%d m=%d %s col l%+d: terms present, none expected' % (n, row, l, m, part, dl))
                 continue
             compare(sym, d.as_dict(cand/r**p), 'toroidal B0 n=%d: %s row l=%d m=%d, %s col l%+d' % (n, row, l, m, part, dl))
+
+# ------------------------------------------------------------------ 5. NEW (2026-10-28): poloidal B0 of degree 2
+# operators.induction_pol2, lorentz_pol2, read from the source of bin/operators.py (each (row, column, Δl) entry of their tables,
+# labels as r-power monomials: u{X}bpo{j}[lho{k}]ohr1_D{d} -> r^(5-X) h^(j) [λ_k] F^(d), f, g: r^(2-X)), times -L^3/quad_factors and
+# without Hendrik, against derive.rows(b0=('pol', 2)), any ρ0; and no couplings beyond those
+import ast, re
+SRC = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'bin', 'operators.py')).read()
+POL2 = {}
+for fn in ast.parse(SRC).body:
+    if isinstance(fn, ast.FunctionDef) and fn.name in ('induction_pol2', 'lorentz_pol2'):
+        tab = [n for n in ast.walk(fn) if isinstance(n, ast.Dict)][0]
+        for k, v in zip(tab.keys, tab.values):
+            POL2[ast.literal_eval(k)] = ast.unparse(v.body)
+def label_mono(lab):
+    row, X, j, k, dd = re.match(r'([uvfg])(\d)bpo(\d)(?:lho(\d))?(?:ohr1)?_D(\d)$', lab).groups()
+    rp = {'u': 5, 'v': 3, 'f': 2, 'g': 2}[row]
+    col = {'u': 'F', 'v': 'F', 'f': 'P', 'g': 'P'}[row]   # replaced by the actual column below
+    return rp - int(X), int(j), (int(k) if k else 0), int(dd)
+def pol2_form(row, part, l, m, dl):
+    e = POL2.get((row, part, dl))
+    if e is None: return 0
+    loc = {'l': sy.Integer(l), 'm': sy.Integer(m), 'L': sy.Integer(l*(l+1))}
+    for lab in set(re.findall(r'[uvfg]\d\w*_D\d', e)):
+        rp, j, k, dd = label_mono(lab)
+        loc[lab] = r**rp*S['h%d' % j]*(S['lr%d' % k] if k else 1)*S['%s%d' % (part, dd)]
+    return -quad(l, m, dl)*sy.sympify(e, locals=loc)
+for (row, part, p) in [('f','P',3), ('f','T',3), ('g','P',3), ('g','T',3), ('u','F',5), ('u','G',5), ('v','F',3), ('v','G',3)]:
+    for l, m in [(3,1), (4,2), (5,0), (6,3)]:
+        for dl in (-2, -1, 0, 1, 2):
+            lc = l + dl
+            if lc < max(m, 1): continue
+            sym = d.rows(row, part, lc, l, m, b0=('pol', 2))
+            cand = sy.expand(pol2_form(row, part, l, m, dl))
+            if cand == 0:
+                if sym: BAD.append('poloidal n=2: unexpected terms'); print('poloidal n=2 %s row l=%d m=%d %s col l%+d: terms present, none expected' % (row, l, m, part, dl))
+                continue
+            compare(sym, d.as_dict(cand/r**p), 'poloidal B0 n=2: %s row l=%d m=%d, %s col l%+d' % (row, l, m, part, dl))
 
 # ------------------------------------------------------------------ 3. none in the rows v and the T columns
 for row, part in [('v','F'),('v','G'),('f','T'),('g','T')]:

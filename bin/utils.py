@@ -63,6 +63,12 @@ adiab_tw = bool(par.thermal == 1 and par.ThermaD == 0 and par.diff_rot == 1 and 
 # profiles that are odd in r (parity of the operators with ricb = 0): g, p dS/dr, (ln ρ)'^2-type products, dS/dr and the
 # derivatives σn' of the thermal-wind entropy (codes tp + degree character, diff_rot.codes)
 odd_profiles = ['gra', 'pdS', 'lh1', 'dSd'] + ['tp' + c for c in '0123456789abcdefghijklmnopqrstuvwxyz']
+# NEW (2026-10-28): the background field's h (k) of degree n has the parity (-1)^n at ricb = 0
+if par.magnetic:
+    if par.B0 is not None and bf.B0_l % 2:
+        odd_profiles.append('bpo')
+    if par.B0_tor is not None and par.B0_tor_l % 2:
+        odd_profiles.append('bto')
 
 def dr_offd(l, ls, row, col):
     '''
@@ -93,13 +99,17 @@ def decode_label(labl):
     dx      = int(labl[-1])  # operators' derivative order
 
     if section == 'u':
-        if par.ViscosD == 0:
+        if par.ViscosD == 0 and par.magnetic:   # NEW (2026-10-28): inviscid with a magnetic field, r⁵ ρ² (the Lorentz force has h/r²)
+            rpower = par.rpower_u - rx ; rhopower = 2
+        elif par.ViscosD == 0:
             rpower = 3 - rx ; rhopower = 2   # Inviscid, we multiply the r̂⋅∇×∇× equations by r³ ρ**rhopower
         else:
             rpower = par.rpower_u - rx ; rhopower = par.rhopower_u   # Viscous, we multiply the r̂⋅∇×∇× equations by (r**rpower_u)*(ρ**rhopower)
 
     elif section == 'v':
-        if par.ViscosD == 0:
+        if par.ViscosD == 0 and par.magnetic:   # NEW (2026-10-28): inviscid with a magnetic field, r³ ρ
+            rpower = par.rpower_v - rx ; rhopower = 1
+        elif par.ViscosD == 0:
             rpower = 2 - rx ; rhopower = 1   # Inviscid, we multiply the r̂⋅∇× equations by r² ρ
         else:
             rpower = par.rpower_v - rx ; rhopower = par.rhopower_v   # Viscous, we multiply the r̂⋅∇× equations by r³ ρ

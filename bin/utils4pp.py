@@ -1528,7 +1528,9 @@ def em_budget(bsol, bic=None):
     f = bvals(bsol[0], 0, 1.0)[0]
     ME_ext = np.sum( f0p*Lp*lp*np.abs(f)**2 ) * r_o   # potential field r^-(l+1) beyond r_o (F = r f there, r_o = 1)
 
-    if par.innercore == 'insulator':
+    if r_i == 0:   # NEW (2026-10-28): a full sphere, no inner core
+        pass
+    elif par.innercore == 'insulator':
         f = bvals(bsol[0], 0, -1.0)[0]
         ME_ic = np.sum( f0p*Lp*(lp+1)*r_i*np.abs(f)**2 )   # potential field r^l below r_i
     elif bic is not None:
@@ -1586,7 +1588,7 @@ import os
 FORCE_GRID = os.environ.get('KORE_MAG_GRID', '0') == '1'
 
 def use_grid():
-    return FORCE_GRID or par.B0_tor is not None
+    return FORCE_GRID or par.B0_tor is not None or (par.B0 is not None and bf.B0_l != 1)   # lorentz4pp, induction4pp: dipole only
 
 
 def magnetic_powers_grid():
@@ -1652,7 +1654,7 @@ def magnetic_powers_grid():
     E = cross(u, B0v)
     indu = 2*np.real(vol(sum(ec*np.conj(jc) for ec, jc in zip(E, j))))
     # wall terms 2 Re ∮ (E x b*).r̂ dS, from u and b at the walls (zero for no-slip walls, where u = 0)
-    rw = np.array([par.ricb, ut.rcmb])
+    rw = np.array([par.ricb if par.ricb > 0 else 0.5, ut.rcmb])   # (a dummy inner radius in a full sphere, its term is not used)
     lh = rap.logrhoX(rw, 1)
     Ut = [ cheb2space_table(usol2[0], 1, rw), cheb2space_table(usol2[1], 0, rw) ]
     Bt = [ cheb2space_table(bsol2[0], 1, rw), cheb2space_table(bsol2[1], 0, rw) ]
@@ -1674,7 +1676,7 @@ def magnetic_powers_grid():
     Ew = cross(uw, background(rw)[0])
     flux = (Ew[1]*np.conj(bw[2]) - Ew[2]*np.conj(bw[1]))          # (E x b*).r̂
     walls = 2*np.pi*np.sum(wx[None, :]*flux*(rw**2)[:, None], axis=1)
-    indu += 2*np.real(walls[1] - walls[0])
+    indu += 2*np.real(walls[1] - (walls[0] if par.ricb > 0 else 0))   # no inner wall in a full sphere
     return indu, plor
 
 

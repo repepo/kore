@@ -5,13 +5,17 @@ NEW (2026-10-28): the imposed background magnetic field B0 (magnetic = 1), porte
 B0 = cnorm ∇×∇×(h(r) Y_l0 r), axisymmetric and poloidal, with Y_l0 the Schmidt harmonic P_l(cos θ) of kore. So
 B0_r = cnorm l(l+1) h Y_l0/r and ∇×B0 = cnorm (D_l h) ∂θY_l0 φ̂, D_l h = h'' + 2h'/r - l(l+1)h/r².
     'axial'  h = r/2 (l = 1): the uniform field B0 = cnorm ẑ, no current.
+    'G21 dipole'  h = r/6 - r³/10 (Gerick et al. 2021), 'Luo_S1' h = (5 - 3r²) r, 'Luo_S2' h = (157 - 296r² + 143r⁴) r² (degree 2)
+             (Luo & Jackson 2022): fields of a full sphere; with ricb > 0 and B0_ic = 'potential' (default, as conductive_IC)
+             h + β r^-(l+1), β = ricb^(l+1)(ricb h' - l h)/(2l+1) at ricb, so that B0 continues as a potential field into the
+             inner core (NEW 2026-10-28)
     'FDM'    the poloidal free decay mode of degree l = B0_l of the shell (Zhang & Fearn, GAFD 1995, eq. 2.7):
              h = j_l(βr) y_{l-1}(β) - j_{l-1}(β) y_l(βr), β the root of findbeta near par.beta. It matches a potential
              field at both walls, so it suits insulating walls.
 NEW (2026-10-28): a toroidal field B0_tor = cnorm_tor ∇×(k(r) Y_n0 𝐫), B_φ = -cnorm_tor k ∂θY_n0, n = B0_tor_l, alone (B0 = None)
 or added to the poloidal one (same equatorial symmetry only):
     'Malkus' k = r (n = 1): B0 = cnorm_tor s φ̂ (Malkus 1967), J0 = ∇×B0 = 2 cnorm_tor ẑ.
-    'wall'   k = r (r - ricb)(1 - r)/(1 - ricb)² (n = 1): zero at both walls.
+    'wall'   k = r (r - ricb)(1 - r)/(1 - ricb)² (n = 1): zero at both walls; with ricb = 0, k = r^n (1 - r²).
     'user'   k = B0_tor_profile, a numpy expression of r and p = B0_tor_param (its derivatives from a Chebyshev interpolant).
 Equatorial symmetry: a poloidal field of degree n has (-1)^n, a toroidal one (-1)^(n+1) (B_φ ∝ sinθ is symmetric for n = 1).
 Only parameters, numpy and scipy are imported: utils.py and radial_profiles.py import this module.
@@ -21,12 +25,15 @@ import scipy.special as scsp
 import scipy.optimize as so
 from parameters import par
 
-B0_TYPES = ('axial', 'FDM')   # as written to params.dat: the index here (append new types at the end)
+B0_TYPES = ('axial', 'FDM', 'G21 dipole', 'Luo_S1', 'Luo_S2')   # as written to params.dat: the index here (append new types at the end)
 B0_TOR_TYPES = ('Malkus', 'wall', 'user')   # NEW (2026-10-28): toroidal B0, as written to params.dat
 
 if par.B0 == 'FDM':
     B0_l   = par.B0_l
     symmB0 = int((-1)**B0_l)  # equatorial symmetry of B0
+elif par.B0 == 'Luo_S2':      # NEW (2026-10-28): degree 2
+    B0_l   = 2
+    symmB0 = 1
 else:  # 'axial' (and any name that background.check() stops on)
     B0_l   = 1
     symmB0 = -1
@@ -76,24 +83,71 @@ def nl(l, x, d):
     return scsp.spherical_yn(l, x, derivative=d)
 
 
+def jl_k(l, x, k):
+    '''
+    NEW (2026-10-28): the k-th derivative (any k) of the spherical Bessel function j_l at x >= 0, to round-off: the Taylor series
+    Σ_s (-1)^s x^(2s+l) / (2^s s! (2l+2s+1)!!) for x < 1, else the sum of x^-p j_(l+i)(x) that j_n' = (n/x) j_n - j_(n+1) gives
+    '''
+    x = np.atleast_1d(np.asarray(x, dtype=float))
+    out = np.zeros_like(x)
+    sm = x < 1
+    for s in range(20):
+        e = 2*s + l
+        if e >= k:
+            c = (-1)**s/(2.**s*scsp.factorial(s)*scsp.factorial2(2*l + 2*s + 1))*np.prod([e - j for j in range(k)])
+            out[sm] += c*x[sm]**(e - k)
+    terms = {(0, 0): 1.0}   # (i, p): coefficient of x^-p j_(l+i)
+    for _ in range(k):
+        new = {}
+        for (i, p), c in terms.items():
+            new[(i, p + 1)] = new.get((i, p + 1), 0) + c*(l + i - p)
+            new[(i + 1, p)] = new.get((i + 1, p), 0) - c
+        terms = new
+    xb = x[~sm]
+    out[~sm] = sum(c*xb**(-p)*scsp.spherical_jn(l + i, xb) for (i, p), c in terms.items())
+    return out
+
+
 def findbeta(beta0, l, ricb):
     '''radial wavenumber β of the poloidal free decay mode of degree l, the root nearest beta0 (Zhang & Fearn 1995, p. 196)'''
     f0 = lambda x: jl(l+1, x*ricb, 0) * nl(l-1, x, 0) - jl(l-1, x, 0) * nl(l+1, x*ricb, 0)
+    if ricb == 0:   # NEW (2026-10-28): full sphere, h = j_l(βr) with j_{l-1}(β) = 0 (Gubbins & Roberts 1987, p. 49)
+        f0 = lambda x: jl(l-1, x, 0)
     return so.root(f0, beta0).x[0]
 
 
-beta = findbeta(par.beta, B0_l, par.ricb) if (par.magnetic and par.B0 == 'FDM' and par.ricb > 0) else None
+beta = findbeta(par.beta, B0_l, par.ricb) if (par.magnetic and par.B0 == 'FDM') else None
 
 
+
+P_ =np.polynomial.Polynomial
+POLY = { 'G21 dipole': P_([0, 1/6, 0, -1/10]), 'Luo_S1': P_([0, 5, 0, -3]), 'Luo_S2': P_([0, 0, 157, 0, -296, 0, 143]) }   # NEW (2026-10-28)
+
+
+def B0_beta_ic():
+    '''NEW (2026-10-28): conductive_IC's B0_beta_ic: β of the potential field β r^-(l+1) added to h (B0_ic = 'potential', ricb > 0,
+    the full-sphere fields of POLY), so that r h' - l h = 0 at the inner boundary'''
+    if par.magnetic and par.B0 in POLY and par.ricb > 0 and par.B0_ic == 'potential':
+        ri = par.ricb; l = B0_l
+        return ri**(l+1)*(ri*POLY[par.B0].deriv(1)(ri) - l*POLY[par.B0](ri))/(2*l + 1)
+    return 0.0
 
 def h(r, k):
     '''
     The k-th r-derivative (k = 0..3) of the poloidal scalar h(r) of B0, without cnorm, at r > 0 (ricb > 0).
     The FDM expressions are those of conductive_IC's h0..h3 (ricb > 0 branch), which also hold for B0_l > 1.
+    NEW (2026-10-28): with ricb = 0 (r on [-1, 1]) the FDM is h = j_l(βr), of parity (-1)^l (jl_k).
     '''
     r = np.asarray(r, dtype=float)
+    if par.B0 == 'FDM' and par.ricb == 0:   # FIX (2026-10-28): analytic derivatives (a Chebyshev interpolant lost 3e-5 in the third)
+        return beta**k*jl_k(B0_l, beta*np.abs(r), k)*np.where(r < 0, (-1.)**(B0_l + k), 1.)
     if par.B0 == 'axial':
         return [ r/2, 0.5*np.ones_like(r), np.zeros_like(r), np.zeros_like(r) ][k]
+    if par.B0 in POLY:   # NEW (2026-10-28): the polynomial fields, plus the potential part of B0_ic (beta_ic)
+        out = POLY[par.B0].deriv(k)(r) if k > 0 else POLY[par.B0](r)
+        if beta_ic != 0:
+            out = out + beta_ic*np.prod([-(B0_l + 1) - j for j in range(k)])*r**(-(B0_l + 1) - k)   # k-th derivative of β r^-(l+1)
+        return out
     l, b = B0_l, beta
     x = b*r
     if k == 0:
@@ -135,8 +189,9 @@ def B0_norm():
     return float(par.cnorm)
 
 
+beta_ic = B0_beta_ic()   # NEW (2026-10-28)
 # (only for the settings that background.check_magnetic() accepts, which imports this module before it checks them)
-cnorm = B0_norm() if (par.magnetic and par.B0 in B0_TYPES and par.ricb > 0) else 0.0
+cnorm = B0_norm() if (par.magnetic and par.B0 in B0_TYPES) else 0.0   # FIX (2026-10-28): also with ricb = 0
 
 
 def bpoX(r, Dorder):
@@ -160,7 +215,11 @@ def k_user():
     if _kuser is None:
         code = compile(par.B0_tor_profile, '<B0_tor_profile>', 'eval')
         f = lambda r: np.broadcast_to(np.asarray(eval(code, {'__builtins__': {}}, dict(USER_NS, r=r, p=par.B0_tor_param)), dtype=float), np.shape(r))
-        _kuser = np.polynomial.chebyshev.Chebyshev.interpolate(f, max(64, 2*par.N), domain=[par.ricb, 1.])
+        if par.ricb == 0:   # NEW (2026-10-28): full sphere, at |r| with the parity (-1)^n (the expression should go as r^n at r = 0)
+            g = lambda r: f(np.abs(r))*np.sign(r)**par.B0_tor_l
+            _kuser = np.polynomial.chebyshev.Chebyshev.interpolate(g, max(64, 2*par.N), domain=[-1., 1.])
+        else:
+            _kuser = np.polynomial.chebyshev.Chebyshev.interpolate(f, max(64, 2*par.N), domain=[par.ricb, 1.])
     return _kuser
 
 
@@ -171,6 +230,10 @@ def k(r, d):
         return k_user().deriv(d)(r) if d > 0 else k_user()(r)
     if par.B0_tor == 'Malkus':
         return [ r, np.ones_like(r), np.zeros_like(r), np.zeros_like(r) ][d]
+    if par.ricb == 0:   # NEW (2026-10-28): 'wall' in a full sphere, regular at r = 0 with the parity (-1)^n: r^n (1 - r²)
+        n = par.B0_tor_l
+        p_ = np.polynomial.Polynomial([0]*n + [1, 0, -1])
+        return p_.deriv(d)(r) if d > 0 else p_(r)
     # 'wall': r (r - ri)(1 - r)/(1 - ri)² = (-r³ + (1 + ri) r² - ri r)/(1 - ri)²
     ri = par.ricb; c = 1/(1 - ri)**2
     return c*[ -r**3 + (1 + ri)*r**2 - ri*r, -3*r**2 + 2*(1 + ri)*r - ri, -6*r + 2*(1 + ri), -6*np.ones_like(r) ][d]
@@ -187,7 +250,7 @@ def B0_tor_norm():
     return float(par.cnorm_tor)
 
 
-cnorm_tor = B0_tor_norm() if (par.magnetic and par.B0_tor in B0_TOR_TYPES and par.ricb > 0) else 0.0
+cnorm_tor = B0_tor_norm() if (par.magnetic and par.B0_tor in B0_TOR_TYPES) else 0.0   # FIX (2026-10-28): also with ricb = 0
 
 
 def btoX(r, Dorder):
