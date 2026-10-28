@@ -1,0 +1,1263 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../page3/">
+      
+      
+        <link rel="next" href="../solver/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Background model - User Manual</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#background-model" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="User Manual" class="md-header__button md-logo" aria-label="User Manual" data-md-component="logo">
+      
+  <img src="../assets/test1.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            User Manual
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Background model
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Introduction
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../page2/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Installation
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../page3/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Non-dimensionalization
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Background model
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../solver/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Solver
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../differential-rotation/" class="md-tabs__link">
+          
+  
+  
+  Differential rotation
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="User Manual" class="md-nav__button md-logo" aria-label="User Manual" data-md-component="logo">
+      
+  <img src="../assets/test1.png" alt="logo">
+
+    </a>
+    User Manual
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../page2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../page3/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Non-dimensionalization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background model
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#units" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Units
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Structure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stratification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stratification
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#diffusivity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diffusivity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#user-profiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        'user' profiles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checks-and-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checks and output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-former-names" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The former names
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../solver/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Solver
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Differential rotation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Differential rotation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../differential-rotation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../heat-equation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Heat equation and benchmarks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../thermad0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ThermaD = 0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#units" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Units
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Structure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stratification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stratification
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#diffusivity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diffusivity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#user-profiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        'user' profiles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checks-and-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checks and output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-former-names" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The former names
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="background-model">Background model</h1>
+<p>kore solves for small perturbations of a background in which the density <span class="arithmatex">\(\rho_0\)</span>, the pressure (or <span class="arithmatex">\(p_0 = \rho_0 T_0\)</span>)
+and gravity <span class="arithmatex">\(g\)</span> depend on <span class="arithmatex">\(r\)</span> only, the entropy has a radial gradient <span class="arithmatex">\(dS/dr\)</span>, and the viscosity <span class="arithmatex">\(\nu\)</span> and the thermal
+diffusivity <span class="arithmatex">\(\kappa\)</span> are radial profiles. The background has three parts, each chosen by name in the parameter file:</p>
+<table>
+<thead>
+<tr>
+<th>part</th>
+<th>parameter</th>
+<th>what it sets</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>structure</td>
+<td><code>structure</code></td>
+<td><span class="arithmatex">\(\rho_0\)</span>, <span class="arithmatex">\(p_0\)</span> and <span class="arithmatex">\(g\)</span></td>
+</tr>
+<tr>
+<td>stratification</td>
+<td><code>stratification</code></td>
+<td><span class="arithmatex">\(dS/dr\)</span>, with <span class="arithmatex">\(S = \delta s/c_p\)</span> (only with <code>thermal = 1</code>)</td>
+</tr>
+<tr>
+<td>diffusivity</td>
+<td><code>diffusivity</code></td>
+<td>the radial profiles of <span class="arithmatex">\(\nu\)</span> and <span class="arithmatex">\(\kappa\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>The rotation of the background, uniform or differential, is chosen separately (<a href="../differential-rotation/">differential-rotation.md</a>).
+The code is in <code>bin/background.py</code> (the choice, the checks, the stratification and diffusivity types) and
+<code>bin/radial_profiles.py</code> (one class per structure). These names replaced <code>model_type</code>, <code>heating</code>, <code>solar_rz</code>,
+<code>solar_density</code> and <code>aux0</code> on 2026-10-26; the <a href="#the-former-names">last section</a> translates old parameter files.</p>
+<h2 id="units">Units</h2>
+<p>kore is dimensionless. The unit of length is the radius of the outer wall, <span class="arithmatex">\(r = 1\)</span>. <code>r_out</code> is that radius in star
+radii (1 by default), so <span class="arithmatex">\(x = r\cdot\)</span><code>r_out</code> is the radius in star radii. With <code>Gaspard = 1</code> the unit of time is
+<span class="arithmatex">\(1/\Omega\)</span>; then <code>ViscosD</code> <span class="arithmatex">\(= \nu/(\Omega L^2)\)</span>, <code>ThermaD</code> <span class="arithmatex">\(= \kappa/(\Omega L^2)\)</span> with <span class="arithmatex">\(L\)</span> = <code>r_out</code> star radii, and the
+buoyancy frequency is</p>
+<div class="arithmatex">\[
+N^2 = \mathrm{Beyonce}\thinspace g\thinspace \frac{dS}{dr}
+\]</div>
+<p>in units of <span class="arithmatex">\(\Omega^2\)</span>. The only physical unit kore reads is that of the solar rotation data, in nHz.</p>
+<p><code>bin/units.py</code> converts physical values; kore itself never imports it. In a parameter file, after <code>r_out</code> is set:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">units</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">units</span><span class="o">.</span><span class="n">set_physical</span><span class="p">(</span><span class="n">par</span><span class="p">,</span> <span class="n">frame_nHz</span><span class="o">=</span><span class="mf">456.0</span><span class="p">,</span> <span class="n">nu</span><span class="o">=</span><span class="mf">1e12</span><span class="p">,</span> <span class="n">kappa</span><span class="o">=</span><span class="mf">1e12</span><span class="p">)</span>   <span class="c1"># Gaspard, Beyonce, ViscosD, ThermaD, diff_rot_frame</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">units</span><span class="o">.</span><span class="n">set_target</span><span class="p">(</span><span class="n">par</span><span class="p">,</span> <span class="n">omega</span><span class="o">=-</span><span class="mf">271.2</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=-</span><span class="mf">33.2</span><span class="p">)</span>                 <span class="c1"># itau, rtau from ω, σ in nHz</span>
+</span></code></pre></div>
+<p><code>set_physical</code> takes <span class="arithmatex">\(\nu\)</span> and <span class="arithmatex">\(\kappa\)</span> in cm²/s, and the solar radius and surface gravity unless <code>radius</code> and <code>gsurf</code>
+(cgs) are given; <code>Beyonce</code> <span class="arithmatex">\(= g_{\rm surf}/(L\Omega^2)\)</span> assumes <span class="arithmatex">\(g = 1\)</span> at the surface, as in the solar structures. In
+a run directory, <code>python3 bin/units.py</code> prints the eigenvalues as <span class="arithmatex">\(\omega\)</span> and <span class="arithmatex">\(\sigma\)</span> in nHz in the rotating frame.</p>
+<h2 id="quick-start">Quick start</h2>
+<p>The background of the smooth Sun example (<code>examples/smooth_sun/parameters.py</code>):</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">par</span><span class="o">.</span><span class="n">thermal</span>        <span class="o">=</span> <span class="mi">1</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">par</span><span class="o">.</span><span class="n">r_out</span>          <span class="o">=</span> <span class="mf">0.985</span>                 <span class="c1"># outer wall in solar radii</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">par</span><span class="o">.</span><span class="n">structure</span>      <span class="o">=</span> <span class="s1">'model S hydrostatic'</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">par</span><span class="o">.</span><span class="n">stratification</span> <span class="o">=</span> <span class="s1">'solar_rz'</span>            <span class="c1"># a radiative interior below a slightly subadiabatic convection zone</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">par</span><span class="o">.</span><span class="n">solar_rz_delta_cz</span> <span class="o">=</span> <span class="o">-</span><span class="mf">4e-7</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">par</span><span class="o">.</span><span class="n">diffusivity</span>    <span class="o">=</span> <span class="s1">'solar_rz'</span>            <span class="c1"># ν, κ drop to visc0, therm0 below 0.70 R☉</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">par</span><span class="o">.</span><span class="n">visc0</span><span class="p">,</span> <span class="n">par</span><span class="o">.</span><span class="n">therm0</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.04</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">units</span><span class="o">.</span><span class="n">set_physical</span><span class="p">(</span><span class="n">par</span><span class="p">,</span> <span class="n">frame_nHz</span><span class="o">=</span><span class="mf">456.0</span><span class="p">,</span> <span class="n">nu</span><span class="o">=</span><span class="mf">1e12</span><span class="p">,</span> <span class="n">kappa</span><span class="o">=</span><span class="mf">1e12</span><span class="p">)</span>
+</span></code></pre></div>
+<p>The checked-in <code>bin/parameters.py</code>, a gravito-inertial mode, uses <code>structure = 'Wu 2005'</code> with <code>r_out = 0.99</code> and
+<code>stratification = 'top hat'</code>.</p>
+<h2 id="structure">Structure</h2>
+<p><code>structure</code> has no default.</p>
+<table>
+<thead>
+<tr>
+<th><code>structure</code></th>
+<th><span class="arithmatex">\(\rho_0\)</span>, <span class="arithmatex">\(p_0\)</span>, <span class="arithmatex">\(g\)</span></th>
+<th>parameters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>'model S hydrostatic'</code></td>
+<td>the Sun, for new runs: an even polynomial fit of <span class="arithmatex">\(\ln\rho\)</span> of Model S (<code>bin/model_s.at</code>) over the whole Sun, <span class="arithmatex">\(g\)</span> from its mass, <span class="arithmatex">\(p_0\)</span> from hydrostatic balance</td>
+<td><code>structure_deg</code> (30)</td>
+</tr>
+<tr>
+<td><code>'Wu 2005'</code></td>
+<td><span class="arithmatex">\(\rho_0 = (1 - x^2)^2\)</span> (Wu 2005, <span class="arithmatex">\(\beta = 2\)</span>) with its <span class="arithmatex">\(g\)</span> and <span class="arithmatex">\(p_0\)</span></td>
+<td><code>r_out</code> &lt; 1, so that <span class="arithmatex">\(\rho_0 &gt; 0\)</span> at the wall</td>
+</tr>
+<tr>
+<td><code>'uniform'</code></td>
+<td><span class="arithmatex">\(\rho_0 = p_0 = 1\)</span>, <span class="arithmatex">\(g = r\)</span> (Boussinesq)</td>
+<td>–</td>
+</tr>
+<tr>
+<td><code>'8-term fit'</code> (legacy)</td>
+<td>the smooth fit of <code>bin/smoothed_sun.py</code>, up to 48 % off Model S in <span class="arithmatex">\(\rho\)</span> near the surface</td>
+<td>–</td>
+</tr>
+<tr>
+<td><code>'old model S prototype'</code> (legacy)</td>
+<td>Chebyshev fits of <span class="arithmatex">\(\ln\rho\)</span> and <span class="arithmatex">\(\ln p\)</span> of Model S, with the <span class="arithmatex">\(g\)</span> of the 8-term fit (not hydrostatic)</td>
+<td><code>solar_density_deg</code>, <code>solar_density_window</code>, <code>solar_density_sun_deg</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Only ratios of <span class="arithmatex">\(\rho_0\)</span> and of <span class="arithmatex">\(p_0\)</span> enter the equations, so their scale does not matter. <span class="arithmatex">\(g\)</span> is 1 at the surface
+  (<span class="arithmatex">\(x = 1\)</span>) in the solar structures and in <code>'Wu 2005'</code>.</li>
+<li>The three solar structures (the first and the last two rows) also make <span class="arithmatex">\(x = r\cdot\)</span><code>r_out</code> the radius of the solar
+  rotation profiles (<code>diff_rot.solar_x</code>).</li>
+<li><code>'model S hydrostatic'</code> is within 1.0 %, 0.5 % and 0.75 % of Model S in <span class="arithmatex">\(\rho\)</span>, <span class="arithmatex">\(p\)</span> and <span class="arithmatex">\(g\)</span> at degree 30, and within
+  0.14 %, 0.06 % and 0.10 % at degree 50. Use 50 to compare with papers that use Model S itself; degrees of 40 and above
+  need about 16 more <code>lmax</code> for the same <span class="arithmatex">\(\ell\)</span>-convergence of the HFR modes (<a href="../heat-equation/">heat-equation.md</a> §8,
+  "Hydrostatic structure").</li>
+<li>The two legacy structures are kept so that runs made before <code>'model S hydrostatic'</code> give the same results. For
+  <code>'old model S prototype'</code>, <code>solar_density_window</code> None fits the shell <span class="arithmatex">\([\)</span><code>ricb</code><span class="arithmatex">\(\cdot\)</span><code>r_out</code> <span class="arithmatex">\(- 0.01\)</span>,
+  <code>r_out</code> <span class="arithmatex">\(+ 0.005]\)</span> when <code>ricb</code> &gt; 0, and is <code>'sun'</code> when <code>ricb</code> = 0: one even fit over the whole Sun of degree
+  <code>solar_density_sun_deg</code> (60) (heat-equation.md §8, "Model S density").</li>
+</ul>
+<h2 id="stratification">Stratification</h2>
+<p>With <code>thermal = 1</code>, <code>stratification</code> sets <span class="arithmatex">\(dS/dr\)</span> for <span class="arithmatex">\(r \ge 0\)</span>, in units of <span class="arithmatex">\(1/L\)</span>; it has no default then. In a full
+sphere (<code>ricb = 0</code>) kore uses it as an odd function of <span class="arithmatex">\(r\)</span>, so it should go to zero smoothly at the centre.</p>
+<table>
+<thead>
+<tr>
+<th><code>stratification</code></th>
+<th><span class="arithmatex">\(dS/dr\)</span></th>
+<th>parameters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>'top hat'</code></td>
+<td><span class="arithmatex">\(\tfrac{A}{2}\left[\mathrm{erf}\frac{r - x_1}{w_1} - \mathrm{erf}\frac{r - x_2}{w_2}\right]\)</span></td>
+<td><code>aux1</code>…<code>aux5</code> = <span class="arithmatex">\(x_1\)</span>, <span class="arithmatex">\(w_1\)</span>, <span class="arithmatex">\(x_2\)</span>, <span class="arithmatex">\(w_2\)</span>, <span class="arithmatex">\(A\)</span></td>
+</tr>
+<tr>
+<td><code>'odd top hat'</code></td>
+<td>the same made odd in <span class="arithmatex">\(r\)</span>: with <span class="arithmatex">\(x_1 = 0\)</span> it rises as <span class="arithmatex">\(A\thinspace\mathrm{erf}(r/w_1)\)</span> from the centre</td>
+<td><code>aux1</code>…<code>aux5</code></td>
+</tr>
+<tr>
+<td><code>'solar_rz'</code></td>
+<td>the radiative interior of Mukhopadhyay et al. 2025b, below</td>
+<td><code>solar_rz_dSdr</code>, <code>solar_rz_steps</code>, <code>solar_rz_core</code>, <code>solar_rz_delta_cz</code>, <code>solar_rz_delta_sf</code>, <code>solar_rz_os</code></td>
+</tr>
+<tr>
+<td><code>'linear'</code></td>
+<td><span class="arithmatex">\(r\)</span>; with <code>'uniform'</code>, <span class="arithmatex">\(N^2\)</span> = <code>Beyonce</code> <span class="arithmatex">\(r^2\)</span> (Rieutord 2006, Mirouh et al. 2016)</td>
+<td>–</td>
+</tr>
+<tr>
+<td><code>'inverse square'</code></td>
+<td><span class="arithmatex">\(1/r^2\)</span>, conduction between the walls</td>
+<td>needs <code>ricb</code> &gt; 0</td>
+</tr>
+<tr>
+<td><code>'user'</code></td>
+<td><code>stratification_profile</code>, a numpy expression (below)</td>
+<td><code>stratification_param</code> (<span class="arithmatex">\(p\)</span>)</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><code>'top hat'</code> in a full sphere needs <span class="arithmatex">\(x_1 \gtrsim 6 w_1\)</span>, so that <span class="arithmatex">\(dS/dr \to 0\)</span> at the centre; otherwise use
+  <code>'odd top hat'</code>. With <code>ricb</code> &gt; 0 and <code>ThermaD = 0</code>, a <span class="arithmatex">\(dS/dr \neq 0\)</span> at the inner wall gives spurious modes trapped
+  there.</li>
+<li><code>'odd top hat'</code> with <code>aux1</code>…<code>aux5</code> = 0, 0.03, 0.68, 0.06, 2.6 fits the <span class="arithmatex">\(dS/dr\)</span> of Model S to 10 % rms.</li>
+</ul>
+<p><strong><code>'solar_rz'</code>.</strong> With <span class="arithmatex">\(x = r\cdot\)</span><code>r_out</code> in solar radii (their eq. 10, plus the convection zone of Bekki et al.
+2024, eq. 2):</p>
+<div class="arithmatex">\[
+\frac{dS}{dr} = \frac{A}{4}\left[1 - \mathrm{erf}\frac{x - x_1}{d}\right]\left[1 - \mathrm{erf}\frac{x - x_2}{d}\right]\mathrm{erf}\frac{x}{w_0}
++ \delta(x)\thinspace \frac{d\ln p_0}{dr}\thinspace \frac{1}{2}\left[1 + \mathrm{erf}\frac{x - x_{OS}}{d_{OS}}\right],
+\]</div>
+<div class="arithmatex">\[
+\delta(x) = \delta_{cz} + (\delta_{sf} - \delta_{cz})\thinspace e^{-((x - 0.985)/0.015)^2},
+\]</div>
+<p>with <span class="arithmatex">\(A\)</span> = <code>solar_rz_dSdr</code> (2.615), <span class="arithmatex">\([x_1, x_2, d]\)</span> = <code>solar_rz_steps</code> ([0.61, 0.68, 0.04]), <span class="arithmatex">\(w_0\)</span> = <code>solar_rz_core</code>
+(0.05: makes <span class="arithmatex">\(dS/dr\)</span> odd and smooth at <span class="arithmatex">\(r = 0\)</span>, no effect above <span class="arithmatex">\(x \approx 3w_0\)</span>), <span class="arithmatex">\([x_{OS}, d_{OS}]\)</span> = <code>solar_rz_os</code>
+([0.70, 0.04]) and <span class="arithmatex">\(\delta_{cz}\)</span>, <span class="arithmatex">\(\delta_{sf}\)</span> = <code>solar_rz_delta_cz</code>, <code>solar_rz_delta_sf</code> (0). <span class="arithmatex">\(A\)</span> is their
+<span class="arithmatex">\((\partial s_0/\partial r)_{RZ}\)</span> = 1.32e-2 erg g⁻¹ K⁻¹ cm⁻¹ times <span class="arithmatex">\(L/c_p\)</span>, with <span class="arithmatex">\(c_p\)</span> = 3.46e8 and <code>r_out</code> = 0.985, so
+it scales with <code>r_out</code>. <span class="arithmatex">\(\delta &lt; 0\)</span> is subadiabatic; kore stops if <span class="arithmatex">\(\delta\)</span> is set with another stratification. The fits
+of <span class="arithmatex">\(\delta_{cz}\)</span> to the observed HFR frequencies are in heat-equation.md §8.</p>
+<h2 id="diffusivity">Diffusivity</h2>
+<p><span class="arithmatex">\(\nu\)</span> = <code>ViscosD</code> <span class="arithmatex">\(\hat\nu(r)\)</span> and <span class="arithmatex">\(\kappa\)</span> = <code>ThermaD</code> <span class="arithmatex">\(\hat\kappa(r)\)</span>; <code>diffusivity</code> sets <span class="arithmatex">\(\hat\nu\)</span> and <span class="arithmatex">\(\hat\kappa\)</span>.</p>
+<table>
+<thead>
+<tr>
+<th><code>diffusivity</code></th>
+<th><span class="arithmatex">\(\hat\nu\)</span>, <span class="arithmatex">\(\hat\kappa\)</span></th>
+<th>parameters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>'uniform'</code> (default)</td>
+<td>1</td>
+<td>–</td>
+</tr>
+<tr>
+<td><code>'step'</code></td>
+<td><code>visc0</code>, <code>therm0</code> below <span class="arithmatex">\(r\)</span> = <code>aux3</code>, 1 above, joined by an erf of width <code>aux4</code></td>
+<td><code>visc0</code>, <code>therm0</code>, <code>aux3</code>, <code>aux4</code></td>
+</tr>
+<tr>
+<td><code>'solar_rz'</code></td>
+<td><code>visc0</code>, <code>therm0</code> below <span class="arithmatex">\(x_{OS}\)</span>, 1 above, as <span class="arithmatex">\(\tfrac12[1 + \mathrm{erf}((x - x_{OS})/d_{OS})]\)</span> (Mukhopadhyay et al. 2025b, eqs. 8–9)</td>
+<td><code>visc0</code>, <code>therm0</code>, <code>solar_rz_os</code></td>
+</tr>
+<tr>
+<td><code>'user'</code></td>
+<td><code>diffusivity_profiles = {'nu': '...', 'kappa': '...'}</code>, numpy expressions (below)</td>
+<td><code>diffusivity_param</code> (<span class="arithmatex">\(p\)</span>)</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>With <code>'step'</code> and <code>'solar_rz'</code>, <code>ViscosD</code> and <code>ThermaD</code> are the values above the step (the convection zone of the
+  Sun). Mukhopadhyay et al. 2025b use <code>visc0</code> = 0.01 and <code>therm0</code> = 0.04.</li>
+<li>Any type is multiplied by <span class="arithmatex">\((\rho_0(x_2)/\rho_0)^p\)</span>, <span class="arithmatex">\(x_2\)</span> = <code>aux3</code>, with <span class="arithmatex">\(p\)</span> = <code>visc_pow</code> for <span class="arithmatex">\(\hat\nu\)</span> and <code>therm_pow</code>
+  for <span class="arithmatex">\(\hat\kappa\)</span>: 0 (the default) keeps the kinematic diffusivities as set, 1 makes <span class="arithmatex">\(\rho_0\nu\)</span> and <span class="arithmatex">\(\rho_0\kappa\)</span>
+  follow the profile instead.</li>
+<li>Forcing 11 (random Reynolds stresses) uses the turbulent part of the viscosity, <code>ViscosD</code> <span class="arithmatex">\((\hat\nu - \nu_f)\)</span>: the
+  floor <span class="arithmatex">\(\nu_f\)</span> is <code>visc0</code> with <code>'step'</code> and <code>'solar_rz'</code> when <code>visc0</code> &lt; 1 and 0 otherwise, unless <code>rsf_nu_floor</code> is
+  set.</li>
+</ul>
+<h2 id="user-profiles"><code>'user'</code> profiles</h2>
+<p><code>stratification_profile</code> and the two <code>diffusivity_profiles</code> are numpy expressions of <code>r</code> (the kore radius), <code>x</code> (as in
+the rotation profiles: <span class="arithmatex">\(r\cdot\)</span><code>r_out</code> with a solar structure, <span class="arithmatex">\(r\)</span> otherwise) and <code>p</code>, with the functions listed for
+<code>diff_rot_profiles</code> in <a href="../differential-rotation/">differential-rotation.md</a> (<code>exp</code>, <code>tanh</code>, <code>erf</code>, <code>abs</code>, <code>where</code>, …).
+For example:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">par</span><span class="o">.</span><span class="n">stratification</span> <span class="o">=</span> <span class="s1">'user'</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">par</span><span class="o">.</span><span class="n">stratification_profile</span> <span class="o">=</span> <span class="s1">'2.5*exp(-((r - 0.75)/0.06)**2)'</span>      <span class="c1"># dS/dr in 1/L for r &gt;= 0</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">par</span><span class="o">.</span><span class="n">diffusivity</span> <span class="o">=</span> <span class="s1">'user'</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">par</span><span class="o">.</span><span class="n">diffusivity_profiles</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'nu'</span><span class="p">:</span> <span class="s1">'0.01 + 0.99*0.5*(1 + tanh((x - 0.70)/0.015))'</span><span class="p">,</span> <span class="s1">'kappa'</span><span class="p">:</span> <span class="s1">'1'</span><span class="p">}</span>
+</span></code></pre></div>
+<p>kore evaluates them at <span class="arithmatex">\(\lvert r\rvert\)</span>, so in a full sphere <span class="arithmatex">\(dS/dr\)</span> is odd and <span class="arithmatex">\(\hat\nu\)</span>, <span class="arithmatex">\(\hat\kappa\)</span> are even
+whatever the expression; for a profile that is smooth at the centre, <span class="arithmatex">\(dS/dr\)</span> should still vanish there. The expressions
+must not contain <code>#</code>: <code>spin_doctor</code> writes them at the end of each <code>params.dat</code> row, after a <code>#</code>.</p>
+<h2 id="checks-and-output">Checks and output</h2>
+<p>Before anything is built, kore stops on a background that cannot work: an unknown type, one of the former names below,
+<code>'Wu 2005'</code> without <span class="arithmatex">\(0 &lt;\)</span> <code>r_out</code> <span class="arithmatex">\(&lt; 1\)</span>, <code>'inverse square'</code> with <code>ricb = 0</code>, <span class="arithmatex">\(\delta\)</span> without <code>'solar_rz'</code>, or a
+<code>'user'</code> expression that does not evaluate. <code>submatrices.py</code> also warns about any name in the parameter file that kore
+does not define, so a misspelt name is not ignored without notice.</p>
+<p><code>spin_doctor</code> writes the background to <code>params.dat</code> (the full list of columns is in
+<a href="../differential-rotation/">differential-rotation.md</a>, Output). The columns, counted from 1:</p>
+<ul>
+<li>19 <code>r_out</code>, 20–24 <code>aux1</code>…<code>aux5</code>, 25 <code>visc0</code>, 34 <code>therm0</code>, 35 <code>visc_pow</code>, 36 <code>therm_pow</code>;</li>
+<li>63 <code>structure</code>, as its index in <code>background.STRUCTURES</code>: <code>'8-term fit'</code> 0, <code>'old model S prototype'</code> 1,
+  <code>'model S hydrostatic'</code> 2, <code>'Wu 2005'</code> 3, <code>'uniform'</code> 4;</li>
+<li>64 the degree of the Model S fit (<code>structure_deg</code> for <code>'model S hydrostatic'</code>), 65–66 the window of the
+  <code>'old model S prototype'</code> fits (nan: the default; <code>'sun'</code>: ∓(<code>r_out</code> + 0.005)), 67 <code>solar_rz</code> (1 when the
+  stratification is <code>'solar_rz'</code>), 68–74 its parameters, 77–78 <span class="arithmatex">\(\delta_{cz}\)</span>, <span class="arithmatex">\(\delta_{sf}\)</span>;</li>
+<li>81 <code>stratification</code> and 82 <code>diffusivity</code>, as their index in <code>background.STRATIFICATIONS</code> (<code>'top hat'</code> 0,
+  <code>'odd top hat'</code> 1, <code>'solar_rz'</code> 2, <code>'linear'</code> 3, <code>'inverse square'</code> 4, <code>'user'</code> 5; −1 without a stratification)
+  and <code>background.DIFFUSIVITIES</code> (<code>'uniform'</code> 0, <code>'step'</code> 1, <code>'solar_rz'</code> 2, <code>'user'</code> 3);</li>
+<li>the <code>'user'</code> expressions, at the end of the row after a <code>#</code> that <code>np.loadtxt</code> skips (a row with nothing to note has no
+  <code>#</code>).</li>
+</ul>
+<p>Columns 1–80 have the positions they had before these names, so scripts that read <code>params.dat</code> by column keep working.</p>
+<h2 id="the-former-names">The former names</h2>
+<p>Until 2026-10-26 the background was chosen by <code>model_type</code>, with <code>heating</code>, <code>solar_rz</code>, <code>solar_density</code> and <code>aux0</code>.
+These names now stop kore with the replacement; the matrices are bitwise the same in either spelling.</p>
+<table>
+<thead>
+<tr>
+<th>former setting</th>
+<th><code>structure</code></th>
+<th><code>stratification</code></th>
+<th><code>diffusivity</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>model_type = 'user def'</code></td>
+<td><code>'Wu 2005'</code></td>
+<td><code>'top hat'</code></td>
+<td><code>'uniform'</code></td>
+</tr>
+<tr>
+<td><code>model_type = 'smoothed sun'</code>, <code>solar_rz = 0</code></td>
+<td><code>'8-term fit'</code> (<code>solar_density = 'fit'</code>) or <code>'old model S prototype'</code> (<code>'model S'</code>), or the <code>structure</code> it set</td>
+<td><code>'odd top hat'</code></td>
+<td><code>'step'</code></td>
+</tr>
+<tr>
+<td><code>model_type = 'smoothed sun'</code>, <code>solar_rz = 1</code></td>
+<td>as above</td>
+<td><code>'solar_rz'</code></td>
+<td><code>'solar_rz'</code></td>
+</tr>
+<tr>
+<td><code>model_type = 'Boussinesq'</code></td>
+<td><code>'uniform'</code></td>
+<td><code>heating</code> <code>'internal'</code>: <code>'linear'</code>; <code>'differential'</code>: <code>'inverse square'</code>; <code>'top hat'</code>: <code>'top hat'</code></td>
+<td><code>'uniform'</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>aux0</code> is <code>r_out</code>. The file-based models (<code>'poly'</code>, <code>'mesa'</code>, <code>'gsm'</code>, <code>'astropy table'</code>) were removed; they had not
+worked on this branch.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "content.code.copy"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
