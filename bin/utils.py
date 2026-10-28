@@ -143,8 +143,8 @@ def gimmedachebs( labl ):
     '''
 
     tol = max(1e-15, par.drop_tol)  # relative to the largest coefficient, see chebco_f
-    if 'bpo' in labl:  # NEW (2026-10-28): the background field's own cut (par.tol_B0, as conductive_IC)
-        tol = max(tol, par.tol_B0)
+    if 'bpo' in labl and 'lho' not in labl:  # NEW (2026-10-28): the background field's own cut (par.tol_B0, as conductive_IC);
+        tol = max(tol, par.tol_B0)            # not for its products with the density profile (they can be long near the surface)
     args = decode_label(labl)  # (section, rpower, rhopower, func1, dorder1, func2, dorder2, dx)
     c0arg = chebco_f( rap.burrito, par.N, par.ricb, rcmb, tol, *args)
     # print('burrito', labl, args)

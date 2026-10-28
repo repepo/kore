@@ -108,9 +108,10 @@ B0 = cnorm ∇×∇×(h Y_l0 **r**) ('axial', 'FDM' with `B0_l` 1; `background_f
 'magnetic'). b has the symmetry `ut.bsymm` = symm·symmB0: with an antisymmetric B0 f takes the l's of T and g those of P.
 A conducting inner core (`innercore = 'conducting, Chebys'`, `N_cic`, `mu_i2o`, `sigma_i2o`; needs bci = 1) adds sections
 `fic`, `gic` (Chebyshev on [−ricb, ricb], one parity, `ut.Nic` = N_cic/2 per l) matched at the ICB by `assemble.bc_b_cic`.
-For now only ricb > 0, an insulating mantle, structure 'uniform', ViscosD > 0,
-eigenproblems, no diff rot: `background.check_magnetic()` stops otherwise. The (ln ρ₀)′ terms of the Lorentz force in the u
-rows and of the induction by P are not implemented, hence 'uniform'.
+Any structure (step 3): the (ln ρ₀)′ terms are in the f, g rows (P columns) and the u rows (`operators.lorentz_rho`), labels
+`bpo` × `lho` (with `ohr1` in u), derived in `tests/magnetic/derive.py`; they vanish exactly for 'uniform'. For now only
+ricb > 0, an insulating mantle, ViscosD > 0, eigenproblems, B0 of degree 1, uniform η, no diff rot:
+`background.check_magnetic()` stops otherwise. 'Wu 2005' with r_out 0.99 needs N ≈ 192 at Ek 1e-3 for 1e-10 residuals.
 
 **Velocity** (`utils4pp.cheb2space_pol`): u = ρ₀⁻¹∇×∇×(ρ₀ P **r**) + ∇×(T **r**), so ∇·(ρ₀u) = 0 exactly:
 u_r = L P/r, consoidal part P′ + P(1/r + (ln ρ₀)′), L = l(l+1).
@@ -158,7 +159,7 @@ the only physical unit it reads is the nHz of the solar rotation data.
   the operator.
 - **Full-sphere parity.** At ricb = 0, `submatrices` keeps one parity of rows and columns (`ut.remroco`) from the
   vector parity (vP = (−1)^m symm for P and s, −vP for T) and each operator's parity (r power, derivative orders,
-  odd profiles in `ut.odd_profiles`). It prints a WARNING if a profile has wrong-parity coefficients: those parts are
+  odd profiles in `ut.odd_profiles`, counted in both profile slots of a label since 2026-10-28). It prints a WARNING if a profile has wrong-parity coefficients: those parts are
   silently dropped. Profiles are therefore built even or odd: `pdS`, `dSd` as sign(r)·f(|r|), diff-rot profiles and
   'user' diffusivities at |r|.
 - **Operator labels** (`ut.decode_label`): `sX[fu1D][fu2D]_DY`, e.g. `u2lho1vsc0_D1`. `s` is the section; `X` lowers the r
@@ -318,7 +319,8 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
 
 - `bin/ru_insane.py [nvec] [--tol 1e-6]` after `submatrices.py`: inertia Hermitian positive, Coriolis anti-Hermitian,
   viscous Hermitian negative, entropy/diffusion blocks, buoyancy/advection against quadratures, diff-rot blocks against
-  an (r, θ) grid. Needs N ≥ 96 (fails on truncation below); does not cover the inviscid formulation.
+  an (r, θ) grid; with magnetic = 1 the b and diffusion blocks and, for B0 'axial' with no-slip walls, the Lorentz/induction
+  energy identity. Needs N ≥ 96 (fails on truncation below); does not cover the inviscid formulation.
 - `tests/heat_dr/` (README): `mk_run.py NAME 'par.x = ..'` builds a run dir (defaults: structure 'Wu 2005' with
   stratification 'top hat', ricb 0.35, m 1, conical −0.25, ViscosD = ThermaD = 1e-3) and runs submatrices + assemble;
   `heat_check.py`, `asm_check.py`, `row_check.py`, `rigid_thermal.py`, `tw_sympy.py`, `csolve.py` (scipy solve, no
@@ -334,6 +336,10 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   `docs/differential_rotation_details.md` §11), `dr_cost.py` (time and memory against the degree of ΔΩ),
   `ls_to_edmond_layout.py` (HMI table converter, input in `profiles/`: the Larson & Schou 2018 HMI average
   `rot2d.hmiv72d.ave` and `rmesh.orig`).
+- `tests/magnetic/` (README, `run_all.sh`, ~25 min): `derive.py` (the magnetic rows from the definitions, sympy),
+  `derive_check.py` (against conductive_IC's operators and the anelastic closed forms), `row_check.py` (each row block of a
+  run against derive.py, unweighted), `budget_check.py` (spin_doctor's residσ, residω, resid𝐛, resid𝐄), `continuity.py`
+  ('Wu 2005' with r_out = √ε → 'uniform'), `mk_run.py`.
 - `tests/rsf/` (README; `HOWTO.md` is the user guide of forcing 11, with the m = 2 example of `example_m2/`): shared
   pieces in `rsf_common.py`; `builder_check.py` (f = u against the inertia rows), `noise_check.py` (the noise
   amplitude against the documented Θ laws, and the noise against the viscous operator, exactly; no forcing beyond the
@@ -399,7 +405,8 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
 
 ## 14. History (this branch, newest first)
 
-Uncommitted (2026-10-28): the magnetic field, step 1 and step 2 (conducting inner core) (`docs/magnetic.md`); `a2abc05` the spin-over test GitHub runs on every push (`tests/ci/`, `.github/workflows/anelastic_log.yml`; the
+Uncommitted (2026-10-28): the magnetic field with a variable density (step 3, `tests/magnetic/`); `c457a28` the magnetic
+field, steps 1 and 2 (insulating walls, conducting inner core; `docs/magnetic.md`); `a2abc05` the spin-over test GitHub runs on every push (`tests/ci/`, `.github/workflows/anelastic_log.yml`; the
 stale `main.yml`, `examples/kore_test.py` and `examples/spinover/` removed); `f810fd9` `docs/solver.md`; `3402fbf`
 `diff_rot_hold` removed; `b0dd868` the docs in the new background names, `docs/background.md`; `61506f8` 'user'
 diffusivity evaluated at |r|;

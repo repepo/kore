@@ -219,8 +219,12 @@ def thermal_diffusion(l, section, component, offdiag):  # rʰ  ∇⋅(κ p ∇s)
 # divided by L³ of the row, as all the operators above, so each block is the conductive_IC block over L³ with its labels
 # renamed (submatrices.py lists the correspondence). b = ∇×∇×(f r) + ∇×(g r) carries no ρ; rows: r⁵ r̂⋅∇×∇× and
 # r³ r̂⋅∇× of the momentum equation (u, v), r² r̂⋅ and r² r̂⋅∇× of the induction equation (f, g).
-# These are the Boussinesq forms: with a variable ρ0 the Lorentz force in the u rows and the induction by P need
-# (ln ρ0)' terms that are not implemented, and background.check() stops unless structure = 'uniform'.
+# With a variable ρ0 (NEW 2026-10-28, step 3; derived independently in tests/magnetic/derive.py), λ1 = (ln ρ0)', λ2 = (ln ρ0)'':
+#   rows f: u's consoidal part is P' + P/r + λ1 P, so every d/dr on P in the induction rows f becomes d/dr + λ1;
+#   rows g: the extra 2im[ r h λ1 P' + r h λ2 P + (1 - L/2) r h' λ1 P - (L/2) h λ1 P ] (diagonal in l for B0 of degree 1);
+#   rows u: ρ0 r̂⋅∇×∇×(ρ0⁻¹𝐆) = r̂⋅∇×∇×𝐆 - (λ1/r) ∇₁⋅𝐆_H, the extra term λ1 r⁴ (∇₁⋅𝐆_H)_l (conductive_IC scale);
+#   rows v, the T columns, the diffusion, the walls and the inner core have no ρ0 terms.
+# The labels with lho vanish exactly for structure 'uniform', so its matrices are those of the Boussinesq forms.
 # Column blocks: the l's of f are those of the toroidal flow (symmB0 = -1), of g those of the poloidal flow, so offd
 # follows ut.symm1 as for the Coriolis force.
 
@@ -242,7 +246,7 @@ def lorentz(l, section, component, offdiag):  # --------------------------- Lore
                 C = np.sqrt(l**2-m**2)*(l**2-1)/(2*l-1)
                 out1 = -2*(l**2+2)*u4bpo0ohr1_D1 - 2*(l-2)*u3bpo1ohr1_D1 - (l-4)*u3bpo0ohr1_D2 - (l-2)*u2bpo1ohr1_D2
                 out2 = L*(l+2)*u5bpo0ohr1_D0 + L*(l-4)*u4bpo1ohr1_D0 + l*u3bpo2ohr1_D0 + l*u2bpo3ohr1_D0 + 2*u2bpo0ohr1_D3
-                out = C*(out1+out2)
+                out = C*(out1+out2) + lorentz_rho(l, l-1, np.sqrt(l**2-m**2)/(2*l-1))  # NEW (2026-10-28)
 
                 if ut.symm1 == 1:
                     offd = -1
@@ -252,7 +256,7 @@ def lorentz(l, section, component, offdiag):  # --------------------------- Lore
                 C = np.sqrt((1+l+m)*(1+l-m))*l*(l+2)/(2*l+3)
                 out1 = -2*(l**2+2*l+3)*u4bpo0ohr1_D1 + 2*(l+3)*u3bpo1ohr1_D1 + (l+5)*u3bpo0ohr1_D2 + (l+3)*u2bpo1ohr1_D2
                 out2 = -L*(l-1)*u5bpo0ohr1_D0 - L*(l+5)*u4bpo1ohr1_D0 - (l+1)*u3bpo2ohr1_D0 - (l+1)*u2bpo3ohr1_D0 + 2*u2bpo0ohr1_D3
-                out = C*(out1+out2)
+                out = C*(out1+out2) + lorentz_rho(l, l+1, np.sqrt((l+1)**2-m**2)/(2*l+3))  # NEW (2026-10-28)
 
                 if ut.symm1 == -1:
                     offd = 1
@@ -262,6 +266,8 @@ def lorentz(l, section, component, offdiag):  # --------------------------- Lore
             if offdiag == 0:  # l terms
 
                 out = 2j*m*( -u4bpo0ohr1_D0 - (l**2+l-1)*u3bpo1ohr1_D0 + u3bpo0ohr1_D1 + u2bpo1ohr1_D1 + u2bpo0ohr1_D2 )
+                # NEW (2026-10-28): variable ρ0, λ1 r⁴ (∇₁⋅𝐆_H)_l of the toroidal field: -i m λ1 [(L+2) r² h g + L r³ h' g + 2 r³ h g']
+                out += -1j*m*( (L+2)*u3bpo0lho1ohr1_D0 + L*u2bpo1lho1ohr1_D0 + 2*u2bpo0lho1ohr1_D1 )
 
     elif section == 'v':  # ------------------------------------------------------- 1curl
 
@@ -290,6 +296,19 @@ def lorentz(l, section, component, offdiag):  # --------------------------- Lore
                     offd = 1
 
     return [ par.Hendrik * out/L**3, offd ]
+
+
+
+def lorentz_rho(l, lc, y):
+    '''
+    NEW (2026-10-28): the variable-ρ0 part of the Lorentz force of the poloidal field f of degree lc in the rows u of degree l
+    (B0 of degree 1), λ1 r⁴ (∇₁⋅𝐆_H)_l in conductive_IC's scale (rows r⁵ r̂⋅∇×∇×, A sign), y = <Y_l|cos θ Y_lc>:
+    (y/2) λ1 r³ [ 2a h (f'' + 2f'/r - Lc f/r²) + Lc b (h'' + 2h'/r - 2h/r²) f ],  a = 2 - Lc - L,  b = Lc - 2 - L
+    '''
+    L, Lc = l*(l+1.), lc*(lc+1.)
+    a, b = 2 - Lc - L, Lc - 2 - L
+    return (y/2)*( 2*a*u2bpo0lho1ohr1_D2 + 4*a*u3bpo0lho1ohr1_D1 - 2*a*Lc*u4bpo0lho1ohr1_D0
+                   + Lc*b*u2bpo2lho1ohr1_D0 + 2*Lc*b*u3bpo1lho1ohr1_D0 - 2*Lc*b*u4bpo0lho1ohr1_D0 )
 
 
 
@@ -335,7 +354,7 @@ def induction(l, section, component, offdiag):  # ------------------------------
             if offdiag == -1:  # l-1 terms
 
                 C = np.sqrt(l**2-m**2)*(l**2-1)/(2*l-1)
-                out = C*( (l-2)*f2bpo0_D0 + l*f1bpo1_D0 - 2*f1bpo0_D1 )
+                out = C*( (l-2)*f2bpo0_D0 + l*f1bpo1_D0 - 2*f1bpo0_D1 - 2*f1bpo0lho1_D0 )  # NEW (2026-10-28): + λ1 P
 
                 if ut.symm1 == -1:
                     offd = -1
@@ -343,7 +362,7 @@ def induction(l, section, component, offdiag):  # ------------------------------
             elif offdiag == 1:  # l+1 terms
 
                 C = np.sqrt((l+1)**2-m**2)*l*(l+2)/(2*l+3)
-                out = C*( -(l+3)*f2bpo0_D0 - (l+1)*f1bpo1_D0 - 2*f1bpo0_D1 )
+                out = C*( -(l+3)*f2bpo0_D0 - (l+1)*f1bpo1_D0 - 2*f1bpo0_D1 - 2*f1bpo0lho1_D0 )  # NEW (2026-10-28): + λ1 P
 
                 if ut.symm1 == 1:
                     offd = 1
@@ -361,6 +380,8 @@ def induction(l, section, component, offdiag):  # ------------------------------
             if offdiag == 0:  # l terms
 
                 out = 2j*m*( g2bpo0_D1 + g1bpo1_D1 - (l**2+l+1)*g3bpo0_D0 + g2bpo1_D0 + (L/2)*g1bpo2_D0 + g1bpo0_D2 )
+                # NEW (2026-10-28): variable ρ0, from ∇⋅u = -λ1 u_r and the λ1 P in u's consoidal part
+                out += 2j*m*( g1bpo0lho1_D1 + g1bpo0lho2_D0 + (1 - L/2)*g1bpo1lho1_D0 - (L/2)*g2bpo0lho1_D0 )
 
         elif component == 'utor':
 

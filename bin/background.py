@@ -87,14 +87,9 @@ def check():
 
 def check_magnetic():
     '''
-    NEW (2026-10-28): stops on magnetic settings that are not implemented (yet). The Lorentz force in the poloidal (u) rows
-    and the induction by the poloidal flow need (ln ρ0)' and (ln ρ0)'' terms that are not coded: without them any
-    structure but 'uniform' would give wrong physics silently.
+    NEW (2026-10-28): stops on magnetic settings that are not implemented (yet).
     '''
     import background_field as bf
-    if par.structure != 'uniform':
-        sys.exit("magnetic = 1 needs structure 'uniform' for now: the (ln rho0)' terms of the Lorentz force and of the "
-                 "induction are not implemented yet")
     if par.B0 not in bf.B0_TYPES:
         sys.exit('B0 %r: set one of %s' % (par.B0, _names(bf.B0_TYPES)))
     if par.B0 == 'FDM' and par.B0_l != 1:

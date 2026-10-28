@@ -3,13 +3,12 @@
 With `magnetic = 1` kore adds an imposed background magnetic field $\mathbf{B}_0$, the induction equation for the
 perturbation field $\mathbf{b}$ and the Lorentz force on the flow. The operators, the background fields and the boundary
 conditions are ported from the `conductive_IC` branch (commit `39487bbf`), formula by formula, into this branch's
-conventions (2026-10-28: step 1, insulating walls; step 2, a conducting inner core).
+conventions (2026-10-28: step 1, insulating walls; step 2, a conducting inner core; step 3, any density profile).
 
 **What works now:** a spherical shell (`ricb > 0`) with an insulating mantle and an insulating or conducting
-(`'conducting, Chebys'`) inner core, `structure = 'uniform'`
-(Boussinesq), `ViscosD > 0`, eigenvalue problems, $\mathbf{B}_0$ `'axial'` or `'FDM'` of degree 1. `background.check()`
-stops on anything else, in particular on a variable density: the Lorentz force in the poloidal rows and the induction by
-the poloidal flow need $(\ln\rho_0)'$ terms that are not implemented yet.
+(`'conducting, Chebys'`) inner core, any `structure` (variable density, the anelastic terms below), `ViscosD > 0`,
+eigenvalue problems, $\mathbf{B}_0$ `'axial'` or `'FDM'` of degree 1, uniform magnetic diffusivity. `background.check()`
+stops on anything else.
 
 ## Equations
 
@@ -70,6 +69,24 @@ With an equatorially antisymmetric $\mathbf{B}_0$ the field $\mathbf{b}$ has the
   induction rows (as $-$inertia in the momentum rows).
 - **Boundary conditions** (`assemble.bc_b_spherical`): insulating walls, $(l+1)f + rf' = 0$ and $g = 0$ at the outer wall,
   $lf - r f' = 0$ and $g = 0$ at the inner one.
+- **Variable density** (step 3). With $u = \rho_0^{-1}\nabla\times\nabla\times(\rho_0 P\,\mathbf{r}) + \nabla\times(T\,\mathbf{r})$ the
+  consoidal part of the flow is $P' + P/r + \lambda_1 P$, $\lambda_1 = (\ln\rho_0)'$, $\lambda_2 = (\ln\rho_0)''$, and
+  $\nabla\cdot\mathbf{u} = -\lambda_1 u_r$. Derived from the definitions with `tests/magnetic/derive.py` (sympy, exact
+  projection on the harmonics), for $\mathbf{B}_0$ of degree 1:
+    - rows `f`, columns P: every $d/dr$ on $P$ becomes $d/dr + \lambda_1$ (label `f1bpo0lho1_D0`);
+    - rows `g`, columns P, diagonal in $l$ only: $2im[\,r h\lambda_1 P' + r h\lambda_2 P + (1 - L/2)\,r h'\lambda_1 P - (L/2)\,h\lambda_1 P\,]$
+      (in the scale of `conductive_IC`'s rows; zero for m = 0), from $-\mathbf{B}_0\nabla\cdot\mathbf{u}$ and the $\lambda_1 P$ above;
+    - rows `u`: $\rho_0\hat{\mathbf{r}}\cdot\nabla\times\nabla\times(\rho_0^{-1}\mathbf{G}) = \hat{\mathbf{r}}\cdot\nabla\times\nabla\times\mathbf{G}
+      - (\lambda_1/r)\nabla_1\cdot\mathbf{G}_H$, $\mathbf{G}$ the Lorentz force per volume: the extra
+      $\lambda_1 r^4(\nabla_1\cdot\mathbf{G}_H)_l$, i.e. $-im\lambda_1[(L+2)r^2hg + Lr^3h'g + 2r^3hg']$ for the toroidal field of the same
+      degree and $(y/2)\lambda_1 r^3[2a\,h\,D_{l_c}f + L_c b\,(D_1 h) f]$ for the poloidal field of degree $l_c = l\pm1$
+      ($y = \langle Y_l|\cos\theta\,Y_{l_c}\rangle$, $a = 2 - L_c - L$, $b = L_c - 2 - L$, $D_l f = f'' + 2f'/r - l(l+1)f/r^2$;
+      `operators.lorentz_rho`);
+    - rows `v`, the T columns, the diffusion, the walls and the inner core: no $\rho_0$ terms.
+  The new labels pair `bpo` with `lho` (two profiles, plus `ohr1` in the rows `u`); they vanish exactly for `'uniform'`,
+  whose matrices are those of steps 1 and 2 bitwise. `tol_B0` does not cut these products (they converge slowly near the
+  surface). `submatrices.py` now counts odd profiles in both slots of a label for the parity at ricb = 0 (bitwise the same for
+  every existing label).
 - **Solver and output.** `solve.py` writes `real_magnetic.field`, `imag_magnetic.field` and normalises the eigenvectors to
   $\mathrm{KE} + \mathrm{Hendrik}\int\tfrac12|\mathbf{b}|^2dV = 1$ (over the shell, as `conductive_IC`).
 
@@ -121,8 +138,9 @@ $10^{-2}$ at `mu_i2o` = 2).
 
 `params.dat` gains ten columns at the end: `magnetic`, `B0` (index in `background_field.B0_TYPES`, −1 without a field),
 `B0_l`, `cnorm` (as a number), `Hendrik`, `MagnetD`, `innercore` (index in `background.INNER_CORES`), `N_cic`, `mu_i2o`,
-`sigma_i2o`. The Lorentz and induction terms of spin_doctor are the Boussinesq
-ones (`utils4pp.lorentz4pp`, `induction4pp`).
+`sigma_i2o`. spin_doctor's Lorentz force (`utils4pp.lorentz4pp`) acts per volume and its power $\int\mathbf{u}^*\cdot\mathbf{G}\,dV$
+has no $\rho_0$; its induction term (`induction4pp`) takes the components of $\mathbf{u}$ with their $\lambda_1$ part, and holds
+for the non-solenoidal $\mathbf{u}$ of a variable density (resid𝐛 closes to $10^{-10}$ with 'Wu 2005', below).
 
 ## Checks (2026-10-28)
 
@@ -165,9 +183,35 @@ $\mu_{i2o} \ne 1$ apart, see above). N 80 is not enough at Ek $10^{-5}$: residua
 $10^{-6}$ at N 128. `N_cic` 48, 64 and 96 give the same eigenvalues to $2\cdot10^{-14}$. At Ek $10^{-3}$ (the geometry above,
 $\Lambda$ = Pm = 1) 'axial' m 1 and 'FDM' m 0 agree to $3\cdot10^{-13}$, with all residuals below $10^{-10}$.
 
+### Variable density (2026-10-28)
+
+Everything in `tests/magnetic/` (`run_all.sh`):
+
+- **Derivation.** The rows derived from the definitions reproduce `conductive_IC`'s 44 uniform-density blocks exactly
+  (factor −1, the A sign; l 3–6, m 0–3), and the $(\ln\rho_0)'$ terms equal the closed forms above to $\le 2\cdot10^{-14}$;
+  the rows `v` and the T columns have none. The closed forms are those of the planning notes: none had to be corrected.
+- **Uniform density unchanged.** The 4 insulating and 9 conducting-core cases of the checks above give A and B bitwise
+  equal to the code before this step.
+- **Operator identities** (`ru_insane.py`, B0 'axial', no-slip): $\int\rho_0\mathbf{u}^*\cdot\mathbf{F}_L\,dV =
+  -\mathrm{Hendrik}\,\overline{\int\mathbf{b}^*\cdot\nabla\times(\mathbf{u}\times\mathbf{B}_0)\,dV}$ to $5\cdot10^{-15}$ ('uniform') and
+  $1\cdot10^{-10}$ ('Wu 2005', r_out 0.99, N 96; $7\cdot10^{-13}$ at N 160), m 0, 1, 2; switching off the g-row or the u-row
+  terms gives $2\cdot10^{-3}$ and 0.2. b block Hermitian positive and diffusion Hermitian negative to $10^{-14}$.
+- **Row checks** (`row_check.py`, 'Wu 2005', N 192): every magnetic row block against the derivation, unweighted, to
+  $10^{-14}$ ('axial' m 1, 'FDM' m 0 with `tol_B0` = 1e-15; $8\cdot10^{-9}$ with the default `tol_B0` = 1e-8, the cut of the B0
+  series). At N 96 the blocks with $\lambda_1$ are good to $10^{-7}$ only: the series of $(\ln\rho_0)'$ converge slowly, its pole
+  sits at $r = 1/r_\mathrm{out}$.
+- **Energy budgets** ('Wu 2005', r_out 0.99, ricb 0.35, FDM, conducting inner core, no-slip, $\Lambda$ = Pm = 1). At Ek $10^{-3}$, N 192:
+  residσ, residω, resid𝐛, resid𝐄 $\le 6\cdot10^{-10}$ for m 0 and m 1 (N 68: $10^{-3}$, N 128: $10^{-7}$). At Ek $10^{-4}$ the least
+  damped m = 1 mode is λ = −0.005739718 + 1.003574886i (N 256; N 192 differs by $3\cdot10^{-9}$, lmax 96 instead of 64 by
+  $10^{-8}$), the m = 0 mode at 0.0442i is λ = −0.017420795 + 0.044242829i, with all residuals $\le 3\cdot10^{-9}$ at N 256.
+  The budgets use spin_doctor's own Lorentz and induction formulas, so they check the rows independently; the f and g rows
+  need no $\rho_0$ weight, although $\lambda_1 \approx -200$ at the outer wall.
+- **Continuity** ('Wu 2005' with r_out = $\sqrt\epsilon$, so the stratification is $O(\epsilon)$, against 'uniform'; axial, m 1,
+  Ek $10^{-3}$, N 96): $(\lambda - \lambda_\mathrm{uniform})/\epsilon$ = 0.05186 − 0.00053i, 0.05188, 0.05215, 0.05498 for
+  $\epsilon = 10^{-4}, 10^{-3}, 10^{-2}, 10^{-1}$: the eigenvalue moves linearly with the stratification.
+
 ## Not yet implemented
 
-In the order planned: the $(\ln\rho_0)'$ terms for any structure with
-`ru_insane` and quadrature checks and the full energy budget of `conductive_IC` (resid𝐄), a toroidal $\mathbf{B}_0$; also
+In the order planned: a toroidal $\mathbf{B}_0$, a magnetic diffusivity profile; also
 thin walls (`'TWA'`), rotdyn, the full sphere (the parity of $h$), the quadrupole couplings (`'Luo_S2'`, `'FDM'` with
 `B0_l = 2`), the point `'dipole'`, inviscid and forced runs, and the induction by a differential rotation.

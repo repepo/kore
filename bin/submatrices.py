@@ -207,6 +207,12 @@ def main(ncpus):
         arg2 += [ vG ]*5
         labl += [ 'u4bpo0ohr1_D0', 'u3bpo1ohr1_D0', 'u3bpo0ohr1_D1', 'u2bpo1ohr1_D1', 'u2bpo0ohr1_D2' ]  # u100 u210 u201 u311 u302
 
+        # NEW (2026-10-28): variable ρ0, the λ1 (∇₁⋅𝐆_H) term of the u rows (labels with lho1 vanish for structure 'uniform')
+        arg2 += [ vF ]*5
+        labl += [ 'u2bpo0lho1ohr1_D2', 'u3bpo0lho1ohr1_D1', 'u4bpo0lho1ohr1_D0', 'u2bpo2lho1ohr1_D0', 'u3bpo1lho1ohr1_D0' ]
+        arg2 += [ vG ]*3
+        labl += [ 'u3bpo0lho1ohr1_D0', 'u2bpo1lho1ohr1_D0', 'u2bpo0lho1ohr1_D1' ]
+
         # Lorentz force, section v: bpol, btor columns
         arg2 += [ vF ]*4
         labl += [ 'v3bpo0ohr1_D1', 'v3bpo1ohr1_D0', 'v2bpo2ohr1_D0', 'v2bpo0ohr1_D2' ]  # v001 v010 v120 v102
@@ -218,6 +224,8 @@ def main(ncpus):
         labl += [ 'f0_D0' ]                                             # f20
         arg2 += [ vP ]*3 + [ vT ]
         labl += [ 'f2bpo0_D0', 'f1bpo1_D0', 'f1bpo0_D1', 'f1bpo0_D0' ]  # f000 f110 f101 | f100
+        arg2 += [ vP ]
+        labl += [ 'f1bpo0lho1_D0' ]                                     # NEW (2026-10-28): variable ρ0
         arg2 += [ vF ]*3
         labl += [ 'f2eta0_D0', 'f1eta0_D1', 'f0eta0_D2' ]               # feta000 feta101 feta202
 
@@ -227,6 +235,8 @@ def main(ncpus):
         arg2 += [ vP ]*6 + [ vT ]*3
         labl += [ 'g2bpo0_D1', 'g1bpo1_D1', 'g3bpo0_D0', 'g2bpo1_D0', 'g1bpo2_D0', 'g1bpo0_D2',   # g001 g111 g600 g010 g120 g102
                   'g2bpo0_D0', 'g1bpo0_D1', 'g1bpo1_D0' ]                                       # g000 g101 g110
+        arg2 += [ vP ]*4
+        labl += [ 'g1bpo0lho1_D1', 'g1bpo0lho2_D0', 'g1bpo1lho1_D0', 'g2bpo0lho1_D0' ]   # NEW (2026-10-28): variable ρ0
         arg2 += [ vG ]*5
         labl += [ 'g2eta0_D0', 'g1eta0_D1', 'g0eta0_D2', 'g1eta1_D0', 'g0eta1_D1' ]  # geta000 geta101 geta202 geta110 geta211
 
@@ -260,7 +270,7 @@ def main(ncpus):
             pkey  += [ key1 ]
             parg1 += [ dx ]             # dx is derivative order
             parg2 += [ arg2[k] ]        # vector_parity
-            adj = int(func1 in ut.odd_profiles)   # odd profiles (g, p dS/dr, ..., the σn')
+            adj = int(func1 in ut.odd_profiles) + int(func2 in ut.odd_profiles)   # odd profiles (g, p dS/dr, ..., the σn'); FIX (2026-10-28): both slots
             parg3 += [ 1-(( rpower + (dorder1 or 0) + (dorder2 or 0) + adj )%2)*2 ]
 
     # For each of the unique operator id's we generate in parallel the Chebyshev
@@ -321,7 +331,7 @@ def main(ncpus):
 
         if par.ricb == 0 :  # --------------------------------------------------------- If no solid inner core then remove unneeded rows and cols
 
-            adj = int(func1 in ut.odd_profiles)   # odd profiles   # adjusts operator parity for these profiles
+            adj = int(func1 in ut.odd_profiles) + int(func2 in ut.odd_profiles)   # odd profiles, both slots (FIX 2026-10-28)
             operator_parity = 1-(( rpower + (dorder1 or 0) + (dorder2 or 0) + dx + adj )%2)*2  # we use 'or 0' to give 0 when dorder is None
             #print(labl1, operator_parity, adj, rpower, vector_parity)
             overall_parity  = vector_parity * operator_parity
