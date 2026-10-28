@@ -1,0 +1,1428 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../differential_rotation_details/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Reynolds-stress forcing - User Manual</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#reynolds-stress-forcing" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="User Manual" class="md-header__button md-logo" aria-label="User Manual" data-md-component="logo">
+      
+  <img src="../assets/test1.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            User Manual
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Reynolds-stress forcing
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Introduction
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../installation/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Installation
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../getting-started/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../background/" class="md-tabs__link">
+          
+  
+  
+  User guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../benchmarks/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Benchmarks
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../anelastic/" class="md-tabs__link">
+          
+  
+  
+  Mathematical framework
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="User Manual" class="md-nav__button md-logo" aria-label="User Manual" data-md-component="logo">
+      
+  <img src="../assets/test1.png" alt="logo">
+
+    </a>
+    User Manual
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../background/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../forcing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Convective forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../solver/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Solver
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Output files
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../benchmarks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmarks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mathematical framework
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Mathematical framework
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../anelastic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Anelastic equations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../numerical-method/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical method
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../differential_rotation_details/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Differential rotation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reynolds-stress forcing
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reynolds-stress forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#where-the-force-comes-from" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where the force comes from
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-random-stress" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The random stress
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#energy-of-a-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Energy of a mode
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-force-in-kores-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The force in kore's variables
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#finite-eddies-and-walls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Finite eddies and walls
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#eddy-size-and-turbulent-temperature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Eddy size and turbulent temperature
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-spectrum" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The spectrum
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Limits
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#where-the-force-comes-from" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where the force comes from
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-random-stress" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The random stress
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#energy-of-a-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Energy of a mode
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-force-in-kores-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The force in kore's variables
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#finite-eddies-and-walls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Finite eddies and walls
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#eddy-size-and-turbulent-temperature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Eddy size and turbulent temperature
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-spectrum" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The spectrum
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Limits
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="reynolds-stress-forcing">Reynolds-stress forcing</h1>
+<p>This page derives the random force of forcing 11: where it comes from, its statistics, why its strength follows from
+the viscosity, how kore writes it in its variables, and what the resulting spectrum means. How to run it is on
+<a href="../forcing/">Convective forcing</a>. The notation is that of <a href="../anelastic/">Anelastic equations</a>, in kore's units.</p>
+<h2 id="where-the-force-comes-from">Where the force comes from</h2>
+<p>In a convection zone the velocity is the sum of a large-scale flow <span class="arithmatex">\(\mathbf u\)</span>, the modes that kore solves for, and
+the convective eddies <span class="arithmatex">\(\mathbf u'\)</span>, which are much smaller and faster. The eddies act on <span class="arithmatex">\(\mathbf u\)</span> through the
+divergence of their flux of momentum, the Reynolds stress: the momentum equation of <span class="arithmatex">\(\mathbf u\)</span> contains the force</p>
+<div class="arithmatex">\[
+-\frac{1}{\rho_0}\nabla\cdot\left(\rho_0\thinspace\mathbf u'\mathbf u'\right).
+\]</div>
+<p>This force has two parts.</p>
+<ol>
+<li><strong>The response to the large-scale flow.</strong> On average the eddies mix momentum down the gradients of <span class="arithmatex">\(\mathbf u\)</span>, as a
+   viscosity does: the trace-free part of the mean of <span class="arithmatex">\(\mathbf u'\mathbf u'\)</span> changes by <span class="arithmatex">\(-\nu_t\thinspace\mathsf S(\mathbf u)\)</span>,
+   with <span class="arithmatex">\(\nu_t\)</span> the turbulent (eddy) viscosity and <span class="arithmatex">\(\mathsf S\)</span> the trace-free rate of strain. In a convection zone this
+   is kore's viscous force: kore's viscosity <span class="arithmatex">\(\nu\)</span> is the sum of <span class="arithmatex">\(\nu_t\)</span> and a part <span class="arithmatex">\(\nu_f\)</span> that is not turbulent, such
+   as the viscosity of a radiative zone.</li>
+<li><strong>The fluctuation.</strong> What is left, <span class="arithmatex">\(\mathbf u'\mathbf u'\)</span> minus its mean, does not depend on <span class="arithmatex">\(\mathbf u\)</span>. It is a
+   random stress, and its divergence is a random force that drives the modes,</li>
+</ol>
+<div class="arithmatex">\[
+\mathbf f = \frac{1}{\rho_0}\nabla\cdot\left(\rho_0\thinspace\mathsf s\right),
+\]</div>
+<p>with <span class="arithmatex">\(\mathsf s\)</span> a random symmetric tensor per unit mass. Its sign does not matter, since <span class="arithmatex">\(\mathsf s\)</span> and <span class="arithmatex">\(-\mathsf s\)</span>
+have the same statistics.</p>
+<p>The two parts come from the same eddies, so they are not independent. The viscous part alone would damp every mode to
+zero, and the random part alone would let the modes grow without bound. Together they keep each mode at a finite
+energy, in a statistically steady state. Brownian motion is the same: the friction on a particle and the random kicks
+it receives come from the same molecules, and their ratio is set by the temperature (Einstein's relation). For a fluid
+in thermal equilibrium, Landau and Lifshitz add to the viscous stress a random stress whose variance is the temperature
+times the viscosity, so that the fluctuations of the flow have the energy that equipartition requires. Forcing 11
+applies this construction to the eddies: the viscosity is <span class="arithmatex">\(\nu_t\)</span>, and the temperature is a <em>turbulent temperature</em>
+<span class="arithmatex">\(\Theta(r)\)</span>, about the kinetic energy of one eddy.</p>
+<h2 id="the-random-stress">The random stress</h2>
+<p>kore takes <span class="arithmatex">\(\mathsf s\)</span> trace-free and white, with the covariance</p>
+<div class="arithmatex">\[
+\mathbb E\left[s_{ij}(\mathbf x, t)\thinspace s_{kl}^*(\mathbf x', t')\right] = \frac{4\thinspace\Theta\thinspace\nu_t}{\rho_0}\thinspace\Pi_{ijkl}\thinspace\delta(\mathbf x - \mathbf x')\thinspace\delta(t - t'),
+\]</div>
+<div class="arithmatex">\[
+\Pi_{ijkl} = \tfrac12\left(\delta_{ik}\delta_{jl} + \delta_{il}\delta_{jk}\right) - \tfrac13\delta_{ij}\delta_{kl},
+\]</div>
+<p>where <span class="arithmatex">\(\mathbb E\)</span> is the mean over realisations and <span class="arithmatex">\(\Pi\)</span> the projector onto symmetric trace-free tensors. With
+<span class="arithmatex">\(\Theta\)</span> replaced by <span class="arithmatex">\(k_B T\)</span> and <span class="arithmatex">\(\rho_0\nu_t\)</span> by the dynamic viscosity, this is the random stress of Landau and
+Lifshitz (divided by <span class="arithmatex">\(\rho_0^2\)</span>, because <span class="arithmatex">\(\mathsf s\)</span> is per unit mass).</p>
+<ul>
+<li><strong>White.</strong> The eddies are much smaller than the modes, and their turnover time is shorter than the periods of the
+  modes, so that on the scales of the modes their stress is uncorrelated in space and time. kore can give the eddies a
+  finite size (<a href="#finite-eddies-and-walls">below</a>).</li>
+<li><strong>Trace-free.</strong> The trace of <span class="arithmatex">\(\mathbf u'\mathbf u'\)</span> is the turbulent pressure. Its gradient drops out of the curls
+  that kore takes of the momentum equation, and what is left has no dissipative partner, since kore has no bulk
+  viscosity. Leaving it out keeps the relation of the next section exact.</li>
+<li><strong>Strength.</strong> The factor <span class="arithmatex">\(4\Theta\nu_t/\rho_0\)</span> is what the next section requires. A direct estimate gives the same
+  form. For Gaussian eddies with <span class="arithmatex">\(\langle u'_i u'_k\rangle = \tfrac13 u_c^2\delta_{ik}\)</span>, the trace-free part of
+  <span class="arithmatex">\(\mathbf u'\mathbf u'\)</span> has the covariance <span class="arithmatex">\(2(u_c^2/3)^2\thinspace\Pi\)</span>. If it is correlated over a volume <span class="arithmatex">\(\ell_c^3\)</span>
+  and a time <span class="arithmatex">\(\tau_c = \ell_c/u_c\)</span>, it acts on larger scales as a white noise of strength
+  <span class="arithmatex">\(2(u_c^2/3)^2\thinspace\ell_c^3\tau_c\thinspace\Pi\)</span>. Equating this with <span class="arithmatex">\(4\Theta\nu_t\Pi/\rho_0\)</span>, with the
+  mixing-length viscosity <span class="arithmatex">\(\nu_t = u_c\ell_c/3\)</span>, gives <span class="arithmatex">\(\Theta = \rho_0 u_c^2\ell_c^3/6\)</span>; a time correlation
+  <span class="arithmatex">\(e^{-\lvert t\rvert/\tau_c}\)</span>, whose integral over all lags is <span class="arithmatex">\(2\tau_c\)</span>, gives</li>
+</ul>
+<div class="arithmatex">\[
+\Theta = \tfrac13\thinspace\rho_0\thinspace u_c^2\thinspace\ell_c^3 ,
+\]</div>
+<p>the value kore uses. <span class="arithmatex">\(\Theta\)</span> is thus the kinetic energy of one eddy, up to a factor of order 1, which <code>rsf_scale</code>
+absorbs.</p>
+<h2 id="energy-of-a-mode">Energy of a mode</h2>
+<p>With the inner product <span class="arithmatex">\(\langle\mathbf a, \mathbf b\rangle = \int\rho_0\thinspace\mathbf a^*\cdot\mathbf b\thinspace dV\)</span>,
+kore normalizes its eigenvectors to <span class="arithmatex">\(\langle\mathbf a, \mathbf a\rangle = 1\)</span>, a kinetic energy of 1. The random stress
+vanishes at the walls (<a href="#finite-eddies-and-walls">below</a>), so for any velocity field <span class="arithmatex">\(\mathbf a\)</span> an integration by parts
+gives</p>
+<div class="arithmatex">\[
+\langle\mathbf a, \mathbf f\rangle = -\int\rho_0\thinspace\nabla\mathbf a^* : \mathsf s\thinspace dV = -\tfrac12\int\rho_0\thinspace\mathsf S(\mathbf a)^* : \mathsf s\thinspace dV,
+\]</div>
+<p>because only the symmetric trace-free part of <span class="arithmatex">\(\nabla\mathbf a\)</span>, which is <span class="arithmatex">\(\tfrac12\mathsf S(\mathbf a)\)</span>, meets the
+symmetric trace-free <span class="arithmatex">\(\mathsf s\)</span>. With the covariance above,</p>
+<div class="arithmatex">\[
+\mathbb E\left[\langle\mathbf a, \mathbf f\rangle(t)\thinspace\langle\mathbf a, \mathbf f\rangle^*(t')\right] = \int\rho_0\thinspace\Theta\thinspace\nu_t\thinspace\lvert\mathsf S(\mathbf a)\rvert^2\thinspace dV\;\delta(t - t'),
+\]</div>
+<p>with <span class="arithmatex">\(\lvert\mathsf S\rvert^2 = \mathsf S^* : \mathsf S\)</span>. The viscous force does on the same field the work
+<span class="arithmatex">\(-\tfrac12\int\rho_0\nu\lvert\mathsf S(\mathbf a)\rvert^2\thinspace dV\)</span> (<a href="../anelastic/#the-equations">Anelastic equations</a>).
+The force that a field receives and the energy that it dissipates are the same integral: with a uniform <span class="arithmatex">\(\Theta\)</span>, the
+variance of the force is <span class="arithmatex">\(2\Theta\)</span> times the dissipation by <span class="arithmatex">\(\nu_t\)</span>. This is the fluctuation–dissipation relation.</p>
+<p>For a mode <span class="arithmatex">\(\mathbf a\)</span> of eigenvalue <span class="arithmatex">\(\lambda\)</span>, with modes that are orthogonal, the amplitude of the mode obeys
+<span class="arithmatex">\(\dot c = \lambda c + \langle\mathbf a, \mathbf f\rangle\)</span>, with
+<span class="arithmatex">\(-\mathrm{Re}\thinspace\lambda = \tfrac12\int\rho_0\nu\lvert\mathsf S(\mathbf a)\rvert^2\thinspace dV\)</span>. A white force of
+strength <span class="arithmatex">\(Q\)</span> keeps <span class="arithmatex">\(\mathbb E\lvert c\rvert^2 = Q/(2\lvert\mathrm{Re}\thinspace\lambda\rvert)\)</span>, so the kinetic energy of
+the mode is</p>
+<div class="arithmatex">\[
+\mathbb E\lvert c\rvert^2 = \frac{\int\rho_0\Theta\nu_t\lvert\mathsf S\rvert^2\thinspace dV}{\int\rho_0\nu\lvert\mathsf S\rvert^2\thinspace dV} = \Theta_{\rm eff}\thinspace f_t,
+\]</div>
+<div class="arithmatex">\[
+\Theta_{\rm eff} = \frac{\int\rho_0\Theta\nu_t\lvert\mathsf S\rvert^2\thinspace dV}{\int\rho_0\nu_t\lvert\mathsf S\rvert^2\thinspace dV},
+\qquad
+f_t = \frac{\int\rho_0\nu_t\lvert\mathsf S\rvert^2\thinspace dV}{\int\rho_0\nu\lvert\mathsf S\rvert^2\thinspace dV}.
+\]</div>
+<ul>
+<li>A mode holds the energy of one eddy, <span class="arithmatex">\(\Theta_{\rm eff}\)</span>, averaged with the mode's own dissipation as the weight,
+  times the share <span class="arithmatex">\(f_t\)</span> of its damping that the turbulence provides. This is the result of Goldreich &amp; Keeley (1977) for
+  the solar p modes: the energy of a mode is about that of an eddy.</li>
+<li>For a given <span class="arithmatex">\(\Theta\)</span> the energy does not depend on the viscosity: <span class="arithmatex">\(\nu\)</span> sets the width of the resonance, not its
+  area. (With the <code>'nu'</code> law of <code>rsf_theta</code>, <span class="arithmatex">\(\Theta\)</span> itself grows as <span class="arithmatex">\(\nu_t^2\)</span>.)</li>
+<li>A mode that dissipates mostly where the viscosity is not turbulent, in a radiative zone for example, has
+  <span class="arithmatex">\(f_t \ll 1\)</span> and receives little energy.</li>
+<li>The modes are close to orthogonal when they are weakly damped in a uniformly rotating fluid. A differential
+  rotation makes them far from orthogonal: the response to the force then differs from this estimate, and only the
+  forced solve, which kore does, gives it.</li>
+</ul>
+<h2 id="the-force-in-kores-variables">The force in kore's variables</h2>
+<p>At degree <span class="arithmatex">\(l\)</span>, with <span class="arithmatex">\(Y = Y_l^m\)</span>, <span class="arithmatex">\(n_l = \int\lvert Y\rvert^2\thinspace d\Omega = 4\pi/(2l+1)\)</span>, <span class="arithmatex">\(\mathcal L = l(l+1)\)</span>
+and the vector harmonics <span class="arithmatex">\(\mathbf B = r\nabla Y\)</span> and <span class="arithmatex">\(\mathbf C = \hat{\mathbf r}\times\mathbf B\)</span>, the stress is
+<span class="arithmatex">\(\mathsf s = \sum_k c_k(r)\thinspace\mathsf T_k\)</span> with five trace-free tensor harmonics:</p>
+<table>
+<thead>
+<tr>
+<th><span class="arithmatex">\(k\)</span></th>
+<th><span class="arithmatex">\(\mathsf T_k\)</span></th>
+<th><span class="arithmatex">\(\int\lvert\mathsf T_k\rvert^2\thinspace d\Omega/n_l\)</span></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><span class="arithmatex">\(Y\thinspace\hat{\mathbf r}\hat{\mathbf r} - \tfrac12 Y(\mathsf I - \hat{\mathbf r}\hat{\mathbf r})\)</span></td>
+<td><span class="arithmatex">\(3/2\)</span></td>
+</tr>
+<tr>
+<td>2</td>
+<td><span class="arithmatex">\(\hat{\mathbf r}\mathbf B + \mathbf B\hat{\mathbf r}\)</span></td>
+<td><span class="arithmatex">\(2\mathcal L\)</span></td>
+</tr>
+<tr>
+<td>3</td>
+<td><span class="arithmatex">\(\hat{\mathbf r}\mathbf C + \mathbf C\hat{\mathbf r}\)</span></td>
+<td><span class="arithmatex">\(2\mathcal L\)</span></td>
+</tr>
+<tr>
+<td>5</td>
+<td><span class="arithmatex">\(\nabla_1\nabla_1 Y + \tfrac12\mathcal L\thinspace Y(\mathsf I - \hat{\mathbf r}\hat{\mathbf r})\)</span>, the trace-free Hessian of <span class="arithmatex">\(Y\)</span> on the unit sphere</td>
+<td><span class="arithmatex">\(\mathcal L(\mathcal L - 2)/2\)</span></td>
+</tr>
+<tr>
+<td>6</td>
+<td>the tensor of components <span class="arithmatex">\((-b, a, b)\)</span>, where <span class="arithmatex">\(\mathsf T_5\)</span> has <span class="arithmatex">\((a, b, -a)\)</span></td>
+<td><span class="arithmatex">\(\mathcal L(\mathcal L - 2)/2\)</span></td>
+</tr>
+</tbody>
+</table>
+<p><span class="arithmatex">\(\nabla_1\)</span> is the gradient on the unit sphere, and the components are <span class="arithmatex">\((\theta\theta, \theta\phi, \phi\phi)\)</span>.
+<span class="arithmatex">\(\mathsf T_5\)</span> and <span class="arithmatex">\(\mathsf T_6\)</span> exist for <span class="arithmatex">\(l \geq 2\)</span>. The force <span class="arithmatex">\(\mathbf f = f^P\thinspace Y\hat{\mathbf r} + f^B\thinspace\mathbf B + f^C\thinspace\mathbf C\)</span>
+then has, with <span class="arithmatex">\(h = d\ln\rho_0/dr\)</span> and a prime for <span class="arithmatex">\(d/dr\)</span>,</p>
+<div class="arithmatex">\[
+f^P = c_1' + \left(\frac3r + h\right)c_1 - \frac{\mathcal L\thinspace c_2}{r},
+\]</div>
+<div class="arithmatex">\[
+f^B = -\frac{c_1}{2r} + c_2' + \left(\frac3r + h\right)c_2 - \frac{(\mathcal L - 2)\thinspace c_5}{2r},
+\]</div>
+<div class="arithmatex">\[
+f^C = c_3' + \left(\frac3r + h\right)c_3 - \frac{(\mathcal L - 2)\thinspace c_6}{2r}.
+\]</div>
+<p>kore's momentum rows are <span class="arithmatex">\(r^5\rho_0\thinspace\hat{\mathbf r}\cdot\nabla\times\nabla\times(\cdot)/\mathcal L^3\)</span> and
+<span class="arithmatex">\(r^3\rho_0\thinspace\hat{\mathbf r}\cdot\nabla\times(\cdot)/\mathcal L^3\)</span> (<a href="../numerical-method/#rows">Numerical method</a>),
+and the curls of <span class="arithmatex">\(\mathbf f\)</span> at degree <span class="arithmatex">\(l\)</span> are <span class="arithmatex">\((\mathcal L/r^2)[f^P - (rf^B)']\)</span> and <span class="arithmatex">\(-(\mathcal L/r)f^C\)</span>. The
+right-hand side in the rows of <span class="arithmatex">\(P_l\)</span> and <span class="arithmatex">\(T_l\)</span> is therefore</p>
+<div class="arithmatex">\[
+b_u = \frac{r^3\rho_0}{\mathcal L^2}\left[f^P - (r f^B)'\right], \qquad b_v = -\frac{r^2\rho_0}{\mathcal L^2}\thinspace f^C,
+\]</div>
+<p>for the default powers of <span class="arithmatex">\(r\)</span> and <span class="arithmatex">\(\rho_0\)</span> (<code>rpower_u</code>, <code>rhopower_u</code>, <code>rpower_v</code>, <code>rhopower_v</code> in general), and zero in
+the rows of the heat equation.</p>
+<ul>
+<li><strong>Only the shear stresses drive the radial vorticity.</strong> <span class="arithmatex">\(c_3\)</span> is the <span class="arithmatex">\(r\theta\)</span>, <span class="arithmatex">\(r\phi\)</span> part of the stress and <span class="arithmatex">\(c_6\)</span>
+  its horizontal shear: they force the toroidal rows, and with them the Rossby modes and the other vortical modes.
+  <span class="arithmatex">\(c_1\)</span>, <span class="arithmatex">\(c_2\)</span> and <span class="arithmatex">\(c_5\)</span> force the poloidal flow.</li>
+<li><strong>Statistics.</strong> Since <span class="arithmatex">\(\delta(\mathbf x - \mathbf x') = \delta(r - r')\thinspace\delta(\Omega - \Omega')/r^2\)</span>, the
+  <span class="arithmatex">\(c_k\)</span> are independent across <span class="arithmatex">\(k\)</span>, <span class="arithmatex">\(l\)</span>, <span class="arithmatex">\(m\)</span> and frequency, with</li>
+</ul>
+<div class="arithmatex">\[
+\mathbb E\left[c_k(r)\thinspace c_k^*(r')\right] = \frac{4\Theta\nu_t}{\rho_0}\thinspace\frac{\chi_k}{r^2 n_l}\thinspace\delta(r - r'),
+\]</div>
+<div class="arithmatex">\[
+\chi_k = \frac{n_l}{\int\lvert\mathsf T_k\rvert^2\thinspace d\Omega} = \tfrac23,\ \frac{1}{2\mathcal L},\ \frac{1}{2\mathcal L},\ \frac{2}{\mathcal L(\mathcal L - 2)},\ \frac{2}{\mathcal L(\mathcal L - 2)} .
+\]</div>
+<h2 id="finite-eddies-and-walls">Finite eddies and walls</h2>
+<p>A force that is white in radius cannot be resolved, and real eddies have a finite size. kore therefore smooths the
+noise over the eddy size <span class="arithmatex">\(\ell_c(r)\)</span>, and makes it vanish at the walls.</p>
+<p><strong>Radial correlation.</strong> The white <span class="arithmatex">\(\delta(r - r')\)</span> is replaced by a unit-area Gaussian of width <span class="arithmatex">\(\ell_c\)</span>. kore draws
+the noise at centres <span class="arithmatex">\(r_j\)</span> spaced <span class="arithmatex">\(h_j = \sigma_j/2\)</span>, with <span class="arithmatex">\(\sigma_j = \ell_c(r_j)/\sqrt2\)</span>, from below the inner wall
+(or <span class="arithmatex">\(r = 0\)</span>) to above the outer wall, and builds</p>
+<div class="arithmatex">\[
+c_k(r) = \tau(r)\thinspace A_{lk}(r)\thinspace S(r)^{-1/2}\sum_j\sqrt{h_j}\thinspace\xi_j\thinspace g_j(r),
+\]</div>
+<div class="arithmatex">\[
+S(r) = \sum_j h_j\thinspace g_j(r), \qquad A_{lk} = \left(\frac{4\Theta\nu_t}{\rho_0}\thinspace\frac{\chi_k}{r^2 n_l}\right)^{1/2},
+\]</div>
+<p>with <span class="arithmatex">\(g_j\)</span> unit-area Gaussians of width <span class="arithmatex">\(\sigma_j\)</span> centred at <span class="arithmatex">\(r_j\)</span> and <span class="arithmatex">\(\xi_j\)</span> independent complex Gaussian numbers
+of unit variance. For a uniform <span class="arithmatex">\(\ell_c\)</span>, <span class="arithmatex">\(\mathbb E[c_k(r)c_k^*(r')]\)</span> is <span class="arithmatex">\(\tau(r)\tau(r')A_{lk}(r)A_{lk}(r')\)</span> times
+a unit-area Gaussian of width <span class="arithmatex">\(\ell_c\)</span> in <span class="arithmatex">\(r - r'\)</span>. The amplitude <span class="arithmatex">\(A_{lk}\)</span> is taken at <span class="arithmatex">\(r\)</span>, not at the centres, so
+that the stress vanishes wherever <span class="arithmatex">\(\nu_t\)</span> does: none of it leaks into a radiative zone.</p>
+<p><strong>Horizontal size.</strong> With <code>rsf_angular = 1</code> the variance at degree <span class="arithmatex">\(l\)</span> is multiplied by
+<span class="arithmatex">\(e^{-\mathcal L\ell_c^2/(2r^2)}\)</span>: eddies of size <span class="arithmatex">\(\ell_c\)</span> do not force degrees much above <span class="arithmatex">\(r/\ell_c\)</span>.</p>
+<p><strong>Walls.</strong> At a stress-free wall the rows carry no surface traction, so the stress must vanish there. The taper <span class="arithmatex">\(\tau\)</span>
+goes from 1 to 0 over <code>rsf_taper</code> below the outer wall, as <span class="arithmatex">\(\tfrac12\thinspace\mathrm{erfc}\)</span> of width <code>rsf_taper</code>/8
+centred <code>rsf_taper</code>/2 below it. The same holds above an inner core, over <code>rsf_taper_in</code> above <span class="arithmatex">\(r = 0\)</span> in a full
+sphere, and above <code>rsf_rcut</code> over <code>rsf_rcut_width</code> when a cut is set.</p>
+<p>These choices only lower the force: for every field <span class="arithmatex">\(\mathbf a\)</span>,</p>
+<div class="arithmatex">\[
+\mathbb E\lvert\langle\mathbf a, \mathbf f\rangle\rvert^2 \leq \int\rho_0\thinspace\Theta\nu_t\thinspace\tau^2\thinspace e^{-\mathcal L\ell_c^2/(2r^2)}\thinspace\lvert\mathsf S(\mathbf a)\rvert^2\thinspace dV
+\]</div>
+<p>per unit time, with equality in the white limit. A mode receives less energy than <span class="arithmatex">\(\Theta_{\rm eff}f_t\)</span> when its radial
+or horizontal scale approaches <span class="arithmatex">\(\ell_c\)</span>, and when it dissipates near a wall, inside the taper.</p>
+<h2 id="eddy-size-and-turbulent-temperature">Eddy size and turbulent temperature</h2>
+<ul>
+<li><strong>Turbulent viscosity.</strong> <span class="arithmatex">\(\nu_t\)</span> = <code>ViscosD</code> <span class="arithmatex">\((\hat\nu - \nu_f)\)</span>, clipped at 0, with <span class="arithmatex">\(\hat\nu\)</span> the viscosity profile
+  and <span class="arithmatex">\(\nu_f\)</span> = <code>rsf_nu_floor</code> (<a href="../forcing/#where-the-force-acts">Convective forcing</a>).</li>
+<li><strong>Eddy size.</strong> <span class="arithmatex">\(\ell_c = \left(\ell_{\max}^{-4} + (\alpha H_p)^{-4}\right)^{-1/4}\)</span>, a smooth minimum of <span class="arithmatex">\(\alpha H_p\)</span>
+  and <span class="arithmatex">\(\ell_{\max}\)</span>, with <span class="arithmatex">\(H_p = -p_0/p_0'\)</span> the pressure scale height (infinite at <span class="arithmatex">\(r = 0\)</span>), <span class="arithmatex">\(\alpha\)</span> = <code>rsf_alpha</code> and
+  <span class="arithmatex">\(\ell_{\max}\)</span> = <code>rsf_lc_max</code>; or the constant <code>rsf_lc</code>.</li>
+<li><strong>Turbulent temperature</strong>, <code>rsf_theta</code>, times <code>rsf_scale</code>:<ul>
+<li><code>'nu'</code>: eddies of size <span class="arithmatex">\(\ell_c\)</span> whose mixing-length viscosity is <span class="arithmatex">\(\nu_t\)</span>, <span class="arithmatex">\(u_c = 3\nu_t/\ell_c\)</span>, so that
+  <span class="arithmatex">\(\Theta = \tfrac13\rho_0u_c^2\ell_c^3 = 3\rho_0\nu_t^2\ell_c\)</span>;</li>
+<li><code>'mlt'</code>: the mixing-length velocity of the convective flux, <span class="arithmatex">\(u_c^3 = \alpha F_c/(10\rho_0)\)</span>, with
+  <span class="arithmatex">\(F_c = L_\star/(4\pi r^2)\thinspace\nu_t/\max\nu_t\)</span> and the luminosity <span class="arithmatex">\(L_\star\)</span> = <code>rsf_lum</code>, and <span class="arithmatex">\(\Theta = \tfrac13\rho_0u_c^2\ell_c^3\)</span>;</li>
+<li>a number: a uniform <span class="arithmatex">\(\Theta\)</span>.</li>
+</ul>
+</li>
+</ul>
+<p><span class="arithmatex">\(\Theta\)</span> is an energy, in units of <span class="arithmatex">\(\rho_u L^5/\tau^2\)</span>, with <span class="arithmatex">\(\rho_u\)</span> the unit of density and <span class="arithmatex">\(L\)</span> and <span class="arithmatex">\(\tau\)</span> the
+units of length and time.</p>
+<h2 id="the-spectrum">The spectrum</h2>
+<p>Each realisation is the Fourier amplitude of the force at the frequency <span class="arithmatex">\(w\)</span>, normalized so that, for any quantity <span class="arithmatex">\(y\)</span>
+that depends linearly on the flow, <span class="arithmatex">\(\mathbb E\lvert y(w)\rvert^2\)</span> is the two-sided power spectral density of <span class="arithmatex">\(y\)</span>:
+<span class="arithmatex">\(\int\mathbb E\lvert y(w)\rvert^2\thinspace dw/2\pi\)</span> is the variance of <span class="arithmatex">\(y\)</span>. The kinetic energy that kore reports for
+an azimuthal wavenumber <span class="arithmatex">\(m\)</span> is that of the real flow <span class="arithmatex">\(\mathbf u\thinspace e^{im\phi}\)</span> + c.c., so that for <span class="arithmatex">\(m \neq 0\)</span>
+the integral of the mean kinetic energy over <span class="arithmatex">\(dw/2\pi\)</span> is the mean kinetic energy of the forced flow. For <span class="arithmatex">\(m = 0\)</span> the
+flow is real, its spectrum is even in <span class="arithmatex">\(w\)</span>, and the halves <span class="arithmatex">\(w &gt; 0\)</span> and <span class="arithmatex">\(w &lt; 0\)</span> are the same motion: the integral over
+all <span class="arithmatex">\(w\)</span> is twice the energy. A white noise is white in every rotating frame, so the frame of the run does not matter.</p>
+<p>Near a mode, the forced flow is <span class="arithmatex">\(c(w)\thinspace\mathbf a\)</span> with <span class="arithmatex">\(c(w) = \langle\mathbf a, \mathbf f(w)\rangle/(iw - \lambda)\)</span>,
+and its mean kinetic energy is</p>
+<div class="arithmatex">\[
+\mathbb E\lvert c(w)\rvert^2 = \frac{Q}{(\mathrm{Re}\thinspace\lambda)^2 + (w - \mathrm{Im}\thinspace\lambda)^2},
+\]</div>
+<p>a Lorentzian centred at <span class="arithmatex">\(w = \mathrm{Im}\thinspace\lambda\)</span>, of half-width <span class="arithmatex">\(\lvert\mathrm{Re}\thinspace\lambda\rvert\)</span>
+and height <span class="arithmatex">\(H = Q/(\mathrm{Re}\thinspace\lambda)^2\)</span>. Its area,
+<span class="arithmatex">\(\int\mathbb E\lvert c\rvert^2\thinspace dw/2\pi = Q/(2\lvert\mathrm{Re}\thinspace\lambda\rvert)\)</span>, is the energy of the
+mode: <span class="arithmatex">\(H\lvert\mathrm{Re}\thinspace\lambda\rvert/2\)</span>.</p>
+<h2 id="limits">Limits</h2>
+<ul>
+<li>The model is linear: it gives the energy that each mode receives, not the nonlinear saturation or the coupling
+  between modes.</li>
+<li>An unstable mode has no stationary response.</li>
+<li>The time correlation of the eddies is neglected. Deep in the solar convection zone the turnover time approaches the
+  periods of the inertial modes. The fluctuation–dissipation relation still holds for a viscosity that depends on
+  frequency: read <span class="arithmatex">\(\nu_t\)</span> as the eddy viscosity at the frequency of the modes.</li>
+<li>Left out: the turbulent pressure (the trace of <span class="arithmatex">\(\mathbf u'\mathbf u'\)</span>), the fluctuations of the convective heat flux
+  (the heat equation is not forced) and any anisotropy of the eddies.</li>
+</ul>
+<p>Philidet &amp; Gizon (2023) model the same source for the solar Rossby modes on a two-dimensional <span class="arithmatex">\(\beta\)</span> plane, with a
+source taken from the observed surface turbulence and a damping set separately. Here the source and the damping are
+tied by the fluctuation–dissipation relation, and the source has a depth profile.</p>
+<h2 id="references">References</h2>
+<ul>
+<li>Goldreich, P. &amp; Keeley, D. A. 1977, ApJ 212, 243.</li>
+<li>Landau, L. D. &amp; Lifshitz, E. M. 1987, <em>Fluid Mechanics</em>, 2nd ed., Pergamon, chapter XVII (Fluctuations in fluid
+  dynamics).</li>
+<li>Löptien, B., Gizon, L., Birch, A. C. et al. 2018, Nature Astronomy 2, 568.</li>
+<li>Philidet, J. &amp; Gizon, L. 2023, A&amp;A 673, A124.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "content.code.copy"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

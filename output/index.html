@@ -525,6 +525,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../forcing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Convective forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../solver/" class="md-nav__link">
         
   
@@ -824,6 +852,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reynolds-stress/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reynolds-stress forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -931,6 +987,11 @@ table.</p>
 <td>the matrices of the eigenproblem <span class="arithmatex">\(A\mathbf x = \lambda B\mathbf x\)</span></td>
 </tr>
 <tr>
+<td><code>B_forced.npz</code></td>
+<td><code>assemble.py</code>, with <code>forcing</code> &gt; 0</td>
+<td>the right-hand sides of a forced run, one per column</td>
+</tr>
+<tr>
 <td><code>eigenvalues0.dat</code></td>
 <td><code>solve.py</code></td>
 <td>the eigenvalues of the last solve, one per row: <span class="arithmatex">\(\mathrm{Re}\thinspace\lambda\)</span>, <span class="arithmatex">\(\mathrm{Im}\thinspace\lambda\)</span></td>
@@ -938,7 +999,12 @@ table.</p>
 <tr>
 <td><code>real_flow.field</code>, <code>imag_flow.field</code></td>
 <td><code>solve.py</code></td>
-<td>the eigenvectors of the flow, real and imaginary parts of their spectral coefficients, one column per solution; with <code>thermal = 1</code> also <code>real_thermal.field</code>, <code>imag_thermal.field</code> for <span class="arithmatex">\(s\)</span></td>
+<td>the eigenvectors of the flow (or the forced flows), real and imaginary parts of their spectral coefficients, one column per solution; with <code>thermal = 1</code> also <code>real_thermal.field</code>, <code>imag_thermal.field</code> for <span class="arithmatex">\(s\)</span></td>
+</tr>
+<tr>
+<td><code>rsf_spectrum.dat</code>, <code>rsf_ke.dat</code></td>
+<td><code>solve.py</code>, with <code>forcing = 11</code> and <code>rsf_frequencies</code></td>
+<td>the power spectrum of the kinetic energy of the forced flow, appended, one row per frequency (<a href="../forcing/#reading-the-output">Convective forcing</a>)</td>
 </tr>
 <tr>
 <td><code>timing.dat</code></td>

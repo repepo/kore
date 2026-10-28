@@ -12,7 +12,7 @@
         <link rel="prev" href="../getting-started/">
       
       
-        <link rel="next" href="../solver/">
+        <link rel="next" href="../forcing/">
       
       
         
@@ -738,6 +738,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../forcing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Convective forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../solver/" class="md-nav__link">
         
   
@@ -944,6 +972,34 @@
     
   
     Differential rotation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reynolds-stress/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reynolds-stress forcing
   
 
     
@@ -1405,7 +1461,7 @@ smooth Sun example, <span class="arithmatex">\(\delta_{cz} = -4\times10^{-7}\)</
 <li>Any type is multiplied by <span class="arithmatex">\((\rho_0(x_2)/\rho_0)^p\)</span>, <span class="arithmatex">\(x_2\)</span> = <code>aux3</code>, with <span class="arithmatex">\(p\)</span> = <code>visc_pow</code> for <span class="arithmatex">\(\hat\nu\)</span> and <code>therm_pow</code>
   for <span class="arithmatex">\(\hat\kappa\)</span>: 0 (the default) keeps the kinematic diffusivities as set, 1 makes <span class="arithmatex">\(\rho_0\nu\)</span> and <span class="arithmatex">\(\rho_0\kappa\)</span>
   follow the profile instead.</li>
-<li>Forcing 11 (random Reynolds stresses) uses the turbulent part of the viscosity, <code>ViscosD</code> <span class="arithmatex">\((\hat\nu - \nu_f)\)</span>: the
+<li><a href="../forcing/">Forcing 11</a> (random Reynolds stresses) uses the turbulent part of the viscosity, <code>ViscosD</code> <span class="arithmatex">\((\hat\nu - \nu_f)\)</span>: the
   floor <span class="arithmatex">\(\nu_f\)</span> is <code>visc0</code> with <code>'step'</code> and <code>'solar_rz'</code> when <code>visc0</code> &lt; 1 and 0 otherwise, unless <code>rsf_nu_floor</code> is
   set.</li>
 </ul>

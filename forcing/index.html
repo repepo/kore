@@ -1,0 +1,1679 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../background/">
+      
+      
+        <link rel="next" href="../solver/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Convective forcing - User Manual</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#convective-forcing" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="User Manual" class="md-header__button md-logo" aria-label="User Manual" data-md-component="logo">
+      
+  <img src="../assets/test1.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            User Manual
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Convective forcing
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Introduction
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../installation/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Installation
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../getting-started/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../background/" class="md-tabs__link">
+          
+  
+  
+  User guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../benchmarks/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Benchmarks
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../anelastic/" class="md-tabs__link">
+          
+  
+  
+  Mathematical framework
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="User Manual" class="md-nav__button md-logo" aria-label="User Manual" data-md-component="logo">
+      
+  <img src="../assets/test1.png" alt="logo">
+
+    </a>
+    User Manual
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../background/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Convective forcing
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Convective forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-a-run-computes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What a run computes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-a-rossby-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example: a Rossby mode
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Example: a Rossby mode">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-write-the-parameter-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Write the parameter file
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-build-the-matrices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Build the matrices
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-find-the-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Find the mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-scan-the-frequencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Scan the frequencies
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-read-the-spectrum" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Read the spectrum
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#setting-up-a-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setting up a run
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Setting up a run">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Requirements
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#where-the-force-acts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where the force acts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#strength-of-the-force" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Strength of the force
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#frequencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Frequencies
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reading-the-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reading the output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#large-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Large runs
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../solver/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Solver
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Output files
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../benchmarks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmarks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mathematical framework
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Mathematical framework
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../anelastic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Anelastic equations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../numerical-method/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical method
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../differential_rotation_details/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Differential rotation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reynolds-stress/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reynolds-stress forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-a-run-computes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What a run computes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-a-rossby-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example: a Rossby mode
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Example: a Rossby mode">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-write-the-parameter-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Write the parameter file
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-build-the-matrices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Build the matrices
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-find-the-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Find the mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-scan-the-frequencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Scan the frequencies
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-read-the-spectrum" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Read the spectrum
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#setting-up-a-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setting up a run
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Setting up a run">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Requirements
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#where-the-force-acts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where the force acts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#strength-of-the-force" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Strength of the force
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#frequencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Frequencies
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reading-the-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reading the output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#large-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Large runs
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="convective-forcing">Convective forcing</h1>
+<p>The inertial modes of the Sun are observed with finite amplitudes because the convection keeps exciting them while it
+also damps them. Forcing 11 adds this excitation to kore's linear equations as a random body force: the fluctuating
+part of the Reynolds stress of the convective eddies. Its strength is tied to kore's viscosity, which in a convection
+zone stands for the same eddies, so that a mode receives from the eddies the energy that their viscosity takes away.
+kore returns the power spectrum of the kinetic energy of the forced flow at the frequencies you choose, and from it the
+energy that each mode reaches. Where the force comes from and why its strength follows from the viscosity is explained
+on <a href="../reynolds-stress/">Reynolds-stress forcing</a>. This page shows how to run it and how to read the result.</p>
+<h2 id="what-a-run-computes">What a run computes</h2>
+<p>The force is random, so a single solution means nothing: only its statistics do. For each forcing frequency <span class="arithmatex">\(w\)</span>, kore
+solves</p>
+<div class="arithmatex">\[
+(A - i\thinspace w\thinspace B)\thinspace\mathbf x_j = \mathbf b_j, \qquad j = 1, \dots, K,
+\]</div>
+<p>where <span class="arithmatex">\(A\)</span> and <span class="arithmatex">\(B\)</span> are the matrices of the eigenproblem (<a href="../numerical-method/#eigenproblem">Numerical method</a>) and the
+<span class="arithmatex">\(K\)</span> = <code>rsf_nsamp</code> right-hand sides <span class="arithmatex">\(\mathbf b_j\)</span> are independent realisations of the random force. The mean of the
+kinetic energies of the <span class="arithmatex">\(K\)</span> solutions is the power spectral density of the kinetic energy at <span class="arithmatex">\(w\)</span>. It is an estimate,
+whose standard error goes as <span class="arithmatex">\(1/\sqrt K\)</span>. The matrix is factored once per frequency, and each realisation then costs
+only a back-substitution, so the cost of a run is set by the number of frequencies.</p>
+<p>The flow goes as <span class="arithmatex">\(e^{iwt}\)</span>, so that <span class="arithmatex">\(w\)</span> is the frequency <span class="arithmatex">\(-\omega\)</span> of the <a href="../anelastic/#non-dimensionalization">Anelastic equations</a>
+in kore's units: negative <span class="arithmatex">\(w\)</span> is prograde, as for <code>forcing_frequency</code>. A mode of eigenvalue <span class="arithmatex">\(\lambda\)</span> resonates at
+<span class="arithmatex">\(w = \mathrm{Im}\thinspace\lambda\)</span>. Near a damped mode that is well separated from the others, the spectrum is a
+Lorentzian centred there, with a half-width at half maximum of <span class="arithmatex">\(\lvert\mathrm{Re}\thinspace\lambda\rvert\)</span>, and the
+area under it is the kinetic energy of the mode.</p>
+<h2 id="example-a-rossby-mode">Example: a Rossby mode</h2>
+<p>This example forces the sectoral Rossby mode <span class="arithmatex">\(l = m = 2\)</span> of an incompressible fluid in a uniformly rotating spherical
+shell, and recovers its resonance. It takes less than a minute on four cores.</p>
+<h3 id="1-write-the-parameter-file">1. Write the parameter file</h3>
+<p>Make a run directory as in <a href="../getting-started/">Getting started</a>, and write in <code>bin/parameters.py</code></p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">params_default</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_params</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">par</span> <span class="o">=</span> <span class="n">default_params</span><span class="p">()</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">par</span><span class="o">.</span><span class="n">timescale</span> <span class="o">=</span> <span class="s1">'rotation'</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">par</span><span class="o">.</span><span class="n">Ek</span> <span class="o">=</span> <span class="mf">1e-5</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">par</span><span class="o">.</span><span class="n">set_scales</span><span class="p">()</span>                  <span class="c1"># Gaspard = 1, ViscosD = Ek</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="c1"># Incompressible fluid in a uniformly rotating shell, stress-free walls</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">par</span><span class="o">.</span><span class="n">structure</span> <span class="o">=</span> <span class="s1">'Boussinesq'</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">par</span><span class="o">.</span><span class="n">thermal</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="n">par</span><span class="o">.</span><span class="n">ricb</span> <span class="o">=</span> <span class="mf">0.35</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="n">par</span><span class="o">.</span><span class="n">bci</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="n">par</span><span class="o">.</span><span class="n">bco</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="c1"># m = 2; the sectoral Rossby mode is equatorially antisymmetric</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="n">par</span><span class="o">.</span><span class="n">m</span> <span class="o">=</span> <span class="mi">2</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="n">par</span><span class="o">.</span><span class="n">symm</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="n">par</span><span class="o">.</span><span class="n">N</span> <span class="o">=</span> <span class="mi">96</span>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="n">par</span><span class="o">.</span><span class="n">lmax</span> <span class="o">=</span> <span class="mi">49</span>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="n">par</span><span class="o">.</span><span class="n">ncpus</span> <span class="o">=</span> <span class="mi">4</span>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="c1"># Random Reynolds-stress forcing, 16 realisations</span>
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="n">par</span><span class="o">.</span><span class="n">forcing</span> <span class="o">=</span> <span class="mi">11</span>
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="n">par</span><span class="o">.</span><span class="n">forcing_frequency</span> <span class="o">=</span> <span class="mf">0.0</span>
+</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="n">par</span><span class="o">.</span><span class="n">rsf_nsamp</span> <span class="o">=</span> <span class="mi">16</span>
+</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="n">par</span><span class="o">.</span><span class="n">rsf_taper</span> <span class="o">=</span> <span class="mf">0.2</span>               <span class="c1"># the default, 0.04, needs N of about 256 here</span>
+</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="n">par</span><span class="o">.</span><span class="n">petsc_opts</span><span class="p">[</span><span class="s1">'mat_mumps_icntl_14'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">100</span>
+</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>
+</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a><span class="c1"># Target of the eigenvalue solve of step 3</span>
+</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="n">par</span><span class="o">.</span><span class="n">rtau</span> <span class="o">=</span> <span class="mf">0.0</span>
+</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a><span class="n">par</span><span class="o">.</span><span class="n">itau</span> <span class="o">=</span> <span class="mf">0.667</span>
+</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a><span class="n">par</span><span class="o">.</span><span class="n">nev</span> <span class="o">=</span> <span class="mi">4</span>
+</span></code></pre></div>
+<p>The viscosity is uniform, so all of it counts as turbulent: the turbulent viscosity is <span class="arithmatex">\(\nu_t\)</span> = <code>ViscosD</code> =
+<span class="arithmatex">\(10^{-5}\)</span>. The strength of the forcing is a turbulent temperature <span class="arithmatex">\(\Theta\)</span>, the energy of one eddy. With the default
+law, <span class="arithmatex">\(\Theta = 3\rho_0\nu_t^2\ell_c\)</span>, and with the default eddy size <span class="arithmatex">\(\ell_c = 0.25\)</span> it is <span class="arithmatex">\(7.5\times10^{-11}\)</span> here,
+in kore's units of energy. <code>rsf_taper</code> sets the width over which the force goes to zero at the walls. Keep
+<code>forcing_frequency = 0</code>: the scan of step 4 sets the frequencies, and <span class="arithmatex">\(A\)</span> is then the matrix of the eigenproblem,
+which step 3 uses.</p>
+<h3 id="2-build-the-matrices">2. Build the matrices</h3>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>./bin/submatrices.py<span class="w"> </span><span class="m">4</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>mpiexec<span class="w"> </span>-n<span class="w"> </span><span class="m">4</span><span class="w"> </span>./bin/assemble.py<span class="w"> </span>&gt;<span class="w"> </span>log_asm
+</span></code></pre></div>
+<p><code>assemble.py</code> writes <code>A.npz</code> and <code>B.npz</code>, and the <span class="arithmatex">\(K\)</span> right-hand sides as the columns of <code>B_forced.npz</code>. <code>log_asm</code>
+describes the forcing:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a> Random Reynolds-stress forcing (forcing = 11): 16 realisation(s), seed 0
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a> 20 noise centres on r = -0.1803 .. 1.4990, l_c = 0.25 .. 0.25, nu_t floor 0 ViscosD
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a> max Theta nu_t = 7.500e-16 at r = 1.000 (theta = nu, scale 1)
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a> Chebyshev tail of the rows (max over the last 10% / max): 3.5e-07
+</span></code></pre></div>
+<p>The last line checks that <code>N</code> resolves the force. Above <span class="arithmatex">\(10^{-6}\)</span> it ends with "WARNING: under-resolved, raise N or
+l_c": then raise <code>N</code>, or widen the sharpest edge of the force (<code>rsf_taper</code>, or <code>rsf_rcut_width</code> below). With the
+default <code>rsf_taper</code> this line reads 0.13 at N = 96.</p>
+<h3 id="3-find-the-mode">3. Find the mode</h3>
+<p>The eigenvalue problem can reuse the same matrices. In a subdirectory:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>mkdir<span class="w"> </span>eig
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>cp<span class="w"> </span>-r<span class="w"> </span>bin<span class="w"> </span>eig/
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>ln<span class="w"> </span>-s<span class="w"> </span><span class="nv">$PWD</span>/A.npz<span class="w"> </span><span class="nv">$PWD</span>/B.npz<span class="w"> </span>eig/
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">"par.forcing = 0"</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>eig/bin/parameters.py
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="nb">cd</span><span class="w"> </span>eig
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>mpiexec<span class="w"> </span>-n<span class="w"> </span><span class="m">4</span><span class="w"> </span>./bin/solve.py
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>./bin/spin_doctor.py<span class="w"> </span><span class="m">4</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="nb">cd</span><span class="w"> </span>..
+</span></code></pre></div>
+<p>The first eigenvalue is the Rossby mode, <span class="arithmatex">\(\lambda = -6.934\times10^{-5} + 0.66666674\thinspace i\)</span>, with residσ about
+<span class="arithmatex">\(10^{-12}\)</span>. Its frequency is close to the inviscid value <span class="arithmatex">\(\omega = -2/(m+1)\)</span>, retrograde.</p>
+<h3 id="4-scan-the-frequencies">4. Scan the frequencies</h3>
+<p>Add the frequencies to <code>bin/parameters.py</code>, 21 points over five half-widths on each side of the resonance:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">w0</span><span class="p">,</span> <span class="n">s</span> <span class="o">=</span> <span class="mf">0.66666674</span><span class="p">,</span> <span class="mf">6.93e-5</span>       <span class="c1"># Im λ and |Re λ| of the mode</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">par</span><span class="o">.</span><span class="n">rsf_frequencies</span> <span class="o">=</span> <span class="n">w0</span> <span class="o">+</span> <span class="n">s</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">21</span><span class="p">)</span>
+</span></code></pre></div>
+<p>and solve:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>mpiexec<span class="w"> </span>-n<span class="w"> </span><span class="m">4</span><span class="w"> </span>./bin/solve.py
+</span></code></pre></div>
+<p><code>solve.py</code> prints one line per frequency as it goes, for example</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>w = 6.666667400e-01   mean KE 4.442305e-07 +- 1.1e-07   (0.7 s)
+</span></code></pre></div>
+<p>and appends the same numbers to <code>rsf_spectrum.dat</code>, and the kinetic energy of each realisation to <code>rsf_ke.dat</code>. A scan
+writes no fields.</p>
+<h3 id="5-read-the-spectrum">5. Read the spectrum</h3>
+<p><code>rsf_spectrum.dat</code> has one row per frequency: <span class="arithmatex">\(w\)</span>, the mean kinetic energy and its standard error.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a># w  mean_KE  stderr   (forcing = 11, nsamp 16, seed 0, rsf_split None)
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>6.663202400000e-01 1.711741196503e-08 4.052316136428e-09
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>...
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>6.665974400000e-01 2.222626974507e-07 5.266390856613e-08
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>6.666320900000e-01 3.554873668819e-07 8.423321121690e-08
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>6.666667400000e-01 4.442304926635e-07 1.052621556910e-07
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>6.667013900000e-01 3.554458399913e-07 8.422364035422e-08
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>6.667360400000e-01 2.222297651836e-07 5.265642773220e-08
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>...
+</span></code></pre></div>
+<p>The peak is at <span class="arithmatex">\(w = \mathrm{Im}\thinspace\lambda\)</span>, and the spectrum falls to half the peak at
+<span class="arithmatex">\(w = \mathrm{Im}\thinspace\lambda \pm \lvert\mathrm{Re}\thinspace\lambda\rvert\)</span>: the Lorentzian of the mode. The energy
+of the mode is the height of the Lorentzian times <span class="arithmatex">\(\lvert\mathrm{Re}\thinspace\lambda\rvert/2\)</span>, here
+<span class="arithmatex">\(4.44\times10^{-7}\times6.93\times10^{-5}/2 = 1.5\times10^{-11}\)</span>. In the limit of eddies much smaller than the mode
+and of a force that reaches the walls, the mode would reach <span class="arithmatex">\(\Theta\)</span>, since all of its damping is turbulent
+(<a href="../reynolds-stress/#energy-of-a-mode">Reynolds-stress forcing</a>). The finite eddy size and the wide taper lower
+it here to a fifth of <span class="arithmatex">\(\Theta\)</span>.</p>
+<p>The standard error is a quarter of the mean, as expected for 16 realisations. The spectrum is nevertheless smooth,
+because every frequency uses the same realisations: the shape of a spectrum is much better determined than its level.</p>
+<h2 id="setting-up-a-run">Setting up a run</h2>
+<h3 id="requirements">Requirements</h3>
+<ul>
+<li><code>ViscosD</code> &gt; 0: the force is the partner of the viscous force.</li>
+<li>In a full sphere (<code>ricb = 0</code>), <code>N</code> must be even, and <code>rpower_u</code> ≥ 5, <code>rpower_v</code> ≥ 3 (the defaults).</li>
+<li><code>forcing_amplitude_cmb</code> is not used: the power scales with <code>rsf_scale</code> instead.</li>
+<li>The heat equation is not forced: the right-hand side is zero in its rows, also with <code>thermal = 1</code>.</li>
+</ul>
+<p><code>assemble.py</code> stops with a message if one of the first two is not met.</p>
+<h3 id="where-the-force-acts">Where the force acts</h3>
+<p>The force follows the turbulent part of the viscosity,
+<span class="arithmatex">\(\nu_t\)</span> = <code>ViscosD</code> <span class="arithmatex">\((\hat\nu - \nu_f)\)</span>, clipped at 0, with <span class="arithmatex">\(\hat\nu\)</span> the viscosity profile of
+<a href="../background/#diffusivity">Background model</a> and <span class="arithmatex">\(\nu_f\)</span> the part that is not turbulent. By default <span class="arithmatex">\(\nu_f\)</span> is <code>visc0</code>
+for the diffusivities <code>'step'</code> and <code>'solar_rz'</code> when <code>visc0</code> &lt; 1, the viscosity of the radiative zone, and 0 otherwise.
+Where <span class="arithmatex">\(\nu_t = 0\)</span> there is no force at all.</p>
+<ul>
+<li>With a <code>'user'</code> viscosity profile, set <code>rsf_nu_floor</code> to its radiative-zone value, or the radiative zone is forced
+  too.</li>
+<li>To keep the force out of the tail of a viscosity step, cut it below a radius with <code>rsf_rcut</code>. The force is zero below
+  <code>rsf_rcut</code> and full above <code>rsf_rcut</code> + <code>rsf_rcut_width</code>, joined smoothly. Do not raise <code>rsf_nu_floor</code> for this: the
+  clipped <span class="arithmatex">\(\nu_t\)</span> then has a corner that the Chebyshev expansion cannot resolve.</li>
+<li>The edges need radial resolution. In a full sphere, an edge near <span class="arithmatex">\(r = 0.7\)</span> of width 0.04 needs N of about 1280, and
+  one of width 0.08 about 900. The tail line of <code>log_asm</code> tells you when an edge is under-resolved.</li>
+<li>The force goes to zero over <code>rsf_taper</code> below the outer wall and above an inner core, and over <code>rsf_taper_in</code> above
+  <span class="arithmatex">\(r = 0\)</span> in a full sphere, so that it needs no traction at the walls.</li>
+<li><code>rsf_split</code> = a radius adds the kinetic energy below that radius to the output, for example the energy in a radiative
+  zone.</li>
+</ul>
+<h3 id="strength-of-the-force">Strength of the force</h3>
+<p>The variance of the force is proportional to <span class="arithmatex">\(\Theta\nu_t\)</span>. <code>rsf_theta</code> sets the law for <span class="arithmatex">\(\Theta\)</span>:</p>
+<table>
+<thead>
+<tr>
+<th><code>rsf_theta</code></th>
+<th><span class="arithmatex">\(\Theta\)</span></th>
+<th>depends on <span class="arithmatex">\(\nu\)</span></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>'nu'</code> (default)</td>
+<td><span class="arithmatex">\(3\rho_0\nu_t^2\ell_c\)</span>: eddies of size <span class="arithmatex">\(\ell_c\)</span> whose mixing-length viscosity <span class="arithmatex">\(u_c\ell_c/3\)</span> is <span class="arithmatex">\(\nu_t\)</span></td>
+<td>as <span class="arithmatex">\(\nu_t^2\)</span></td>
+</tr>
+<tr>
+<td><code>'mlt'</code></td>
+<td><span class="arithmatex">\(\tfrac13\rho_0u_c^2\ell_c^3\)</span>, with the mixing-length velocity <span class="arithmatex">\(u_c = (\alpha F_c/10\rho_0)^{1/3}\)</span> of the convective flux <span class="arithmatex">\(F_c\)</span>, <span class="arithmatex">\(\alpha\)</span> = <code>rsf_alpha</code></td>
+<td>no</td>
+</tr>
+<tr>
+<td>a number</td>
+<td>that constant</td>
+<td>no</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><code>rsf_scale</code> multiplies <span class="arithmatex">\(\Theta\)</span>, and with it the whole spectrum.</li>
+<li><code>'mlt'</code> needs <code>rsf_lum</code>, the luminosity <span class="arithmatex">\(L_\star\)</span> in kore's units, <span class="arithmatex">\(\rho_u L^5/\tau^3\)</span>, with <span class="arithmatex">\(\rho_u\)</span> the unit of
+  density of the structure (the central density for the Model S structures) and <span class="arithmatex">\(L\)</span>, <span class="arithmatex">\(\tau\)</span> the units of length and
+  time: <span class="arithmatex">\(7.0\times10^{-7}\)</span> for the Sun with a Model S structure, <code>r_out</code> = 0.985 and <span class="arithmatex">\(\tau = 1/\Omega\)</span>,
+  <span class="arithmatex">\(\Omega/2\pi\)</span> = 456 nHz. It takes the convective flux as <span class="arithmatex">\(L_\star/(4\pi r^2)\)</span> times <span class="arithmatex">\(\nu_t/\max\nu_t\)</span>, and needs
+  <code>visc_pow = 0</code>.</li>
+<li>The eddy size <span class="arithmatex">\(\ell_c\)</span> is a smooth minimum of <code>rsf_alpha</code> <span class="arithmatex">\(H_p\)</span> (<span class="arithmatex">\(H_p\)</span> the pressure scale height) and <code>rsf_lc_max</code>,
+  or the constant <code>rsf_lc</code>. With <code>rsf_angular = 1</code> (the default) the eddies also have a finite horizontal size, which
+  weakens the force at degrees <span class="arithmatex">\(l \gtrsim r/\ell_c\)</span>.</li>
+<li><strong>The Sun.</strong> The observed amplitudes of the solar Rossby modes (Löptien et al. 2018) correspond to
+  <span class="arithmatex">\(\Theta_{\rm eff} \approx (0.6\text{–}3)\times10^{34}\)</span> erg, <span class="arithmatex">\((0.3\text{–}1.6)\times10^{-11}\)</span> in kore's units with
+  the solar values above. That is about <span class="arithmatex">\(10\thinspace(10^{12}\thinspace\mathrm{cm^2\thinspace s^{-1}}/\nu_t)^2\)</span> times
+  the <code>'nu'</code> law, or <span class="arithmatex">\(1/20\)</span> of the <code>'mlt'</code> law, for eddies much smaller than the modes. With the default eddy size and
+  angular factor the same modes are forced a few times less, so <code>rsf_scale</code> must be larger by as much. Treat these as
+  starting values for <code>rsf_scale</code>.</li>
+</ul>
+<h3 id="frequencies">Frequencies</h3>
+<ul>
+<li>Around a mode: about 20 points over <span class="arithmatex">\(\mathrm{Im}\thinspace\lambda \pm 5\thinspace\lvert\mathrm{Re}\thinspace\lambda\rvert\)</span>,
+  and one at <span class="arithmatex">\(\mathrm{Im}\thinspace\lambda\)</span>. An eigenvalue solve on the same matrices (step 3) gives the modes.</li>
+<li>Between modes, a uniform grid. A mode whose half-width is smaller than the grid step can fall between two points:
+  add a point at each resonance you care about.</li>
+<li><code>rsf_frequencies</code> takes any list or array, for example <code>np.loadtxt('freqs.txt')</code> for a file with one frequency per
+  line.</li>
+<li>For <span class="arithmatex">\(m = 0\)</span> the spectrum is even in <span class="arithmatex">\(w\)</span>: scan <span class="arithmatex">\(w &gt; 0\)</span> only.</li>
+</ul>
+<h3 id="parameters">Parameters</h3>
+<table>
+<thead>
+<tr>
+<th>parameter</th>
+<th>default</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rsf_nsamp</code></td>
+<td>1</td>
+<td>number of realisations; 16 to 30 is usual</td>
+</tr>
+<tr>
+<td><code>rsf_seed</code></td>
+<td>0</td>
+<td>realisation <span class="arithmatex">\(j\)</span> uses <code>numpy.random.default_rng([rsf_seed, j])</code></td>
+</tr>
+<tr>
+<td><code>rsf_theta</code></td>
+<td><code>'nu'</code></td>
+<td>the law of <span class="arithmatex">\(\Theta\)</span> (above)</td>
+</tr>
+<tr>
+<td><code>rsf_scale</code></td>
+<td>1.0</td>
+<td>multiplies <span class="arithmatex">\(\Theta\)</span></td>
+</tr>
+<tr>
+<td><code>rsf_lum</code></td>
+<td>None</td>
+<td>luminosity in kore's units, for <code>'mlt'</code></td>
+</tr>
+<tr>
+<td><code>rsf_alpha</code>, <code>rsf_lc_max</code></td>
+<td>2.0, 0.25</td>
+<td>the eddy size, a smooth minimum of <code>rsf_alpha</code> <span class="arithmatex">\(H_p\)</span> and <code>rsf_lc_max</code></td>
+</tr>
+<tr>
+<td><code>rsf_lc</code></td>
+<td>None</td>
+<td>a constant eddy size instead</td>
+</tr>
+<tr>
+<td><code>rsf_angular</code></td>
+<td>1</td>
+<td>1: eddies of finite horizontal size; 0: white in angle</td>
+</tr>
+<tr>
+<td><code>rsf_nu_floor</code></td>
+<td>None</td>
+<td>the part <span class="arithmatex">\(\nu_f\)</span> of <span class="arithmatex">\(\hat\nu\)</span> that is not turbulent; None: <code>visc0</code> for <code>'step'</code> and <code>'solar_rz'</code> with <code>visc0</code> &lt; 1, else 0</td>
+</tr>
+<tr>
+<td><code>rsf_taper</code></td>
+<td>0.04</td>
+<td>width over which the force goes to zero at the walls</td>
+</tr>
+<tr>
+<td><code>rsf_taper_in</code></td>
+<td>0.2</td>
+<td>the same above <span class="arithmatex">\(r = 0\)</span> in a full sphere</td>
+</tr>
+<tr>
+<td><code>rsf_rcut</code>, <code>rsf_rcut_width</code></td>
+<td>None, 0.04</td>
+<td>no force below <code>rsf_rcut</code>, full force above <code>rsf_rcut</code> + <code>rsf_rcut_width</code></td>
+</tr>
+<tr>
+<td><code>rsf_frequencies</code></td>
+<td>None</td>
+<td>the frequencies of the scan, in kore's units (negative prograde)</td>
+</tr>
+<tr>
+<td><code>rsf_split</code></td>
+<td>None</td>
+<td>a radius: also report the kinetic energy below it</td>
+</tr>
+</tbody>
+</table>
+<h2 id="reading-the-output">Reading the output</h2>
+<table>
+<thead>
+<tr>
+<th>file</th>
+<th>columns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rsf_spectrum.dat</code></td>
+<td><span class="arithmatex">\(w\)</span>, the mean kinetic energy and its standard error; with <code>rsf_split</code>, then the mean kinetic energy below <code>rsf_split</code> and its standard error</td>
+</tr>
+<tr>
+<td><code>rsf_ke.dat</code></td>
+<td><span class="arithmatex">\(w\)</span>, the kinetic energy of each realisation; with <code>rsf_split</code>, then the kinetic energy below <code>rsf_split</code> of each realisation</td>
+</tr>
+</tbody>
+</table>
+<p>Each scan first writes a line starting with <code>#</code>, which <code>np.loadtxt</code> skips.</p>
+<ul>
+<li><strong>Power spectral density.</strong> The mean kinetic energy at <span class="arithmatex">\(w\)</span> is a two-sided power spectral density, in kore's units:
+  for <span class="arithmatex">\(m \neq 0\)</span>, <span class="arithmatex">\(\int(\text{mean KE})\thinspace dw/2\pi\)</span> is the mean kinetic energy of the forced flow. For <span class="arithmatex">\(m = 0\)</span> the
+  flow is real, the spectrum is even in <span class="arithmatex">\(w\)</span>, and that integral over all <span class="arithmatex">\(w\)</span> is twice the energy: integrate over <span class="arithmatex">\(w &gt; 0\)</span>
+  only.</li>
+<li><strong>One symmetry class.</strong> The force drives the two equatorial symmetries independently, and a run solves one of them
+  (<code>symm</code>). The energy at one <span class="arithmatex">\(m\)</span> is the sum of a <code>symm = 1</code> and a <code>symm = -1</code> run.</li>
+<li><strong>Noise.</strong> The standard error goes as <span class="arithmatex">\(1/\sqrt K\)</span>, <span class="arithmatex">\(K\)</span> = <code>rsf_nsamp</code>: about a quarter of the mean with 16
+  realisations near a mode, 18 % with 30. Realisation <span class="arithmatex">\(j\)</span> is the same at every frequency, in every scan and for any
+  <code>rsf_nsamp</code>, so the shape of a spectrum is less noisy than its level, and scans of the same configuration can be
+  joined.</li>
+<li><strong>Energy of a mode.</strong> Fit a Lorentzian plus a smooth background to the peak: the energy of the mode is the height
+  of the Lorentzian times <span class="arithmatex">\(\lvert\mathrm{Re}\thinspace\lambda\rvert/2\)</span>. Its half-width should be
+  <span class="arithmatex">\(\lvert\mathrm{Re}\thinspace\lambda\rvert\)</span>. Other modes add a background to the raw peak.</li>
+<li><strong>Non-normal operators.</strong> With a differential rotation the modes are not orthogonal, and the forced response can
+  differ from the sum of the modes' Lorentzians, or exceed the energy that the fluctuation–dissipation relation gives a
+  single mode. The forced solve includes this.</li>
+<li><strong>Unstable modes</strong> have no stationary response: the spectrum near a growing mode means nothing. Check the eigenvalues
+  near the frequencies you scan.</li>
+</ul>
+<p>Without <code>rsf_frequencies</code>, <code>solve.py</code> solves at <code>forcing_frequency</code> only and writes the fields of the forced flow,
+one column per realisation, as for the eigenvectors of an eigenvalue run (<a href="../output/">Output files</a>).</p>
+<h2 id="large-runs">Large runs</h2>
+<ul>
+<li><strong>Several scans in parallel.</strong> Each scan needs only <code>bin/</code> and the matrices. Copy <code>bin/</code> into a new directory, link
+  <code>A.npz</code>, <code>B.npz</code> and <code>B_forced.npz</code> into it, append <code>par.rsf_frequencies = ...</code> to its parameter file, and run
+  <code>solve.py</code> there. Split the list of frequencies between such directories and run them at the same time.</li>
+<li><strong>Restarts.</strong> A row is appended as soon as its frequency is solved, so a scan can be read while it runs, and a
+  stopped scan only needs the remaining frequencies. Rerun in the same directory only with the same <code>B_forced.npz</code>:
+  with another number of realisations the rows differ in length and <code>np.loadtxt</code> cannot read the file.</li>
+<li><strong>Failed frequencies.</strong> A frequency whose realisations are all NaN or Inf prints "Solver crashed at w = …, got
+  nan's!", and the scan goes on with the next one. The cause is a MUMPS factorisation that ran out of workspace: set
+  <code>par.petsc_opts['mat_mumps_icntl_14'] = 100</code> from the start, as in the example, and rerun any frequency that still
+  fails with 200 (<a href="../solver/#bad-solutions">Solver</a>). A forced run reads the <code>mat_</code> options, an eigenvalue run the <code>st_</code> options:
+  use <code>st_mat_mumps_icntl_14</code> for the eigenvalue solve of step 3.</li>
+<li><strong>Cost.</strong> Each frequency costs one LU factorisation of a matrix of the size of the eigenproblem's, with the same
+  memory, plus one back-substitution per realisation, which is much cheaper than the factorisation.</li>
+<li><strong>Several forcings at once.</strong> <span class="arithmatex">\(A\)</span> and <span class="arithmatex">\(B\)</span> do not depend on the force, so several configurations of the forcing (other
+  <code>rsf_theta</code>, <code>rsf_rcut</code>, …) can share the factorisations: put their right-hand sides side by side as columns of
+  <code>B_forced.npz</code>. <code>rsf_spectrum.dat</code> then averages over all columns, so read <code>rsf_ke.dat</code> by groups of columns.</li>
+</ul>
+<p>The checks of the implementation are in <code>tests/rsf/</code>, with a README.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "content.code.copy"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

@@ -520,6 +520,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../forcing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Convective forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../solver/" class="md-nav__link">
         
   
@@ -857,6 +885,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reynolds-stress/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reynolds-stress forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1099,7 +1155,8 @@ momentum rows and <span class="arithmatex">\(-\)</span><code>thermal_advection</
 \]</div>
 <p>projected as in the table above. <code>solve.py</code> finds the eigenvalues nearest a target <span class="arithmatex">\(\tau\)</span> by shift-and-invert with SLEPc,
 factoring <span class="arithmatex">\(A - \tau B\)</span> once with MUMPS (<a href="../solver/">Solver</a>). Forced runs solve
-<span class="arithmatex">\((A - i\thinspace\mathrm{wf}\thinspace B)\mathbf x = \mathbf b\)</span>, with wf the forcing frequency.</p>
+<span class="arithmatex">\((A - i\thinspace\mathrm{wf}\thinspace B)\mathbf x = \mathbf b\)</span>, with wf the forcing frequency; for the random
+force of forcing 11, <span class="arithmatex">\(\mathbf b\)</span> is derived on <a href="../reynolds-stress/">Reynolds-stress forcing</a>.</p>
 <h2 id="boundary-conditions">Boundary conditions</h2>
 <p>The conditions (<code>assemble.bc_u_spherical</code>, <code>bc_theta_spherical</code>) are applied at the outer wall (<code>bco</code>) and at the inner
 one (<code>bci</code>, when <code>ricb &gt; 0</code>); the full sphere has no condition at the centre:</p>
