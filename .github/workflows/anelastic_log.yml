@@ -1,5 +1,7 @@
-# The tests of the anelastic_log branch (tests/ci), run on every push to it. They are separate from those of the
-# default branch, conductive_IC: on a push, GitHub runs the workflows of the pushed commit.
+# The tests of the anelastic_log branch (tests/ci), run on every push to it. They are separate from those of
+# conductive_IC: on a push, GitHub runs the workflows of the pushed commit.
+# FIX (2026-10-28): keep this same file on every branch that may become the default (as with docs.yml and
+# conductive_IC.yml); a workflow missing from the default branch is marked deleted and its badge 404s.
 name: anelastic_log tests
 
 on:
