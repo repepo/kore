@@ -9,8 +9,10 @@
       
       
       
-        <link rel="prev" href="../heat-equation/">
+        <link rel="prev" href="../differential_rotation_details/">
       
+      
+        <link rel="next" href="../solver/">
       
       
         
@@ -72,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#thermad-0-with-the-thermal-wind-thermal_wind-1-2" class="md-skip">
+        <a href="#thermad-0-runs-without-thermal-diffusion" class="md-skip">
           Skip to content
         </a>
       
@@ -294,6 +296,47 @@
   
   
   
+    
+    
+      <li class="md-tabs__item">
+        <a href="../differential-rotation/" class="md-tabs__link">
+          
+  
+  
+  Differential rotation
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  ThermaD = 0
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
     <li class="md-tabs__item">
       <a href="../solver/" class="md-tabs__link">
         
@@ -312,21 +355,18 @@
   
   
   
-    
+  
+    <li class="md-tabs__item">
+      <a href="../benchmarks/" class="md-tabs__link">
+        
   
   
     
-    
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../differential-rotation/" class="md-tabs__link">
-          
   
-  
-  Differential rotation
+  Benchmarks
 
-        </a>
-      </li>
-    
+      </a>
+    </li>
   
 
       
@@ -509,56 +549,24 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../solver/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Solver
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-    
-  
-  
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
         
           
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
             
   
   
@@ -576,8 +584,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_7">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -622,14 +630,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../heat-equation/" class="md-nav__link">
+      <a href="../differential_rotation_details/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Heat equation and benchmarks
+    Equations and implementation
   
 
     
@@ -643,8 +651,15 @@
 
               
             
-              
-                
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
   
   
     
@@ -710,10 +725,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#background-how-kore-stores-the-heat-equation" class="md-nav__link">
+  <a href="#what-kore-does-differently" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Background: how kore stores the heat equation
+        What kore does differently
       
     </span>
   </a>
@@ -721,137 +736,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#why-thermad-0-needed-a-separate-treatment" class="md-nav__link">
+  <a href="#recommendations" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why ThermaD = 0 needed a separate treatment
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#what-changed-file-by-file" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What changed, file by file
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#results" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Results
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Results">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#a-operator-and-assembly-checks-heat_checkpy-and-asm_checkpy-pass-1e-8" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        a. Operator and assembly checks: heat_check.py and asm_check.py (pass &lt; 1e-8)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#b-block-by-block-checks-ru_insanepy-n-96-tol-1e-6-all-16-runs-pass" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        b. Block-by-block checks: ru_insane.py (N ≥ 96, tol 1e-6): all 16 runs PASS
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#c-rigid-offset-identity-rigid_thermalpy-m-2-n-64-lmax-25-16-modes-thermad-0-thermal_wind-1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        c. Rigid-offset identity (rigid_thermal.py, m 2, N 64, lmax 25, 16 modes, ThermaD 0, thermal_wind 1)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#d-thermad-0-continuity" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        d. ThermaD → 0 continuity
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#e-balances" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        e. Balances
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#f-bitwise-regression-against-the-code-before-this-change-each-built-with-its-own-mk_runpy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        f. Bitwise regression against the code before this change (each built with its own mk_run.py)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#g-mpi-mpiexec-n-1-2-3-4" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        g. MPI (mpiexec -n 1, 2, 3, 4)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#h-independent-reviews" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        h. Independent reviews
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#caveats" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Caveats
+        Recommendations
       
     </span>
   </a>
@@ -865,11 +753,57 @@
     </li>
   
 
-              
-            
-          </ul>
-        </nav>
+    
       
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../solver/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Solver
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../benchmarks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmarks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -901,10 +835,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#background-how-kore-stores-the-heat-equation" class="md-nav__link">
+  <a href="#what-kore-does-differently" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Background: how kore stores the heat equation
+        What kore does differently
       
     </span>
   </a>
@@ -912,137 +846,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#why-thermad-0-needed-a-separate-treatment" class="md-nav__link">
+  <a href="#recommendations" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why ThermaD = 0 needed a separate treatment
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#what-changed-file-by-file" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What changed, file by file
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#results" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Results
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Results">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#a-operator-and-assembly-checks-heat_checkpy-and-asm_checkpy-pass-1e-8" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        a. Operator and assembly checks: heat_check.py and asm_check.py (pass &lt; 1e-8)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#b-block-by-block-checks-ru_insanepy-n-96-tol-1e-6-all-16-runs-pass" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        b. Block-by-block checks: ru_insane.py (N ≥ 96, tol 1e-6): all 16 runs PASS
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#c-rigid-offset-identity-rigid_thermalpy-m-2-n-64-lmax-25-16-modes-thermad-0-thermal_wind-1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        c. Rigid-offset identity (rigid_thermal.py, m 2, N 64, lmax 25, 16 modes, ThermaD 0, thermal_wind 1)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#d-thermad-0-continuity" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        d. ThermaD → 0 continuity
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#e-balances" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        e. Balances
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#f-bitwise-regression-against-the-code-before-this-change-each-built-with-its-own-mk_runpy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        f. Bitwise regression against the code before this change (each built with its own mk_run.py)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#g-mpi-mpiexec-n-1-2-3-4" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        g. MPI (mpiexec -n 1, 2, 3, 4)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#h-independent-reviews" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        h. Independent reviews
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#caveats" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Caveats
+        Recommendations
       
     </span>
   </a>
@@ -1066,1014 +873,53 @@
 
 
 
-<h1 id="thermad-0-with-the-thermal-wind-thermal_wind-1-2">ThermaD = 0 with the thermal wind (thermal_wind = 1, 2)</h1>
-<p><code>ThermaD</code> is kore's thermal-diffusion coefficient. With <code>ThermaD = 0</code> the heat equation has no diffusion: entropy
-perturbations are only carried by the flow, so the perturbations are adiabatic. kore writes the heat equation in a
-special, lower-order form in that case, and in that form the thermal-wind terms of a differential rotation
-(<code>thermal_wind = 1, 2</code>) could not be represented, so kore used to stop. This change gives exactly this case its own
-radial row weight and basis, and leaves every other configuration bitwise unchanged. All operator, assembly, budget,
-MPI and regression checks pass, and as ThermaD → 0 the eigenvalues of diffusive runs converge linearly to the
-ThermaD = 0 ones wherever the resolution allows; the remaining limitations are listed under <a href="#caveats">Caveats</a>.</p>
-<p>Results of the change, 2026-10-12. The checks are in <code>tests/heat_dr/</code>; the analysis scripts named below (<code>track.py</code>,
-<code>coupling.py</code>, <code>dense.py</code>) are not part of the repository. The parameter names are those of that date: the 'user def'
-profiles are now structure <code>'Wu 2005'</code> with stratification <code>'top hat'</code>, the smoothed sun is structure <code>'8-term fit'</code>
-with stratification <code>'odd top hat'</code> and diffusivity <code>'step'</code>, <code>aux0</code> is <code>r_out</code> (<a href="../background/">background.md</a>), and
-<code>diff_rot_amplitude</code> is <code>diff_rot_ampl</code>.</p>
-<h2 id="background-how-kore-stores-the-heat-equation">Background: how kore stores the heat equation</h2>
-<p>This section introduces the few code concepts the rest of the page relies on. Broader notation is in the
-<a href="../heat-equation/#notation-and-code-names">notation</a> section of the companion page.</p>
-<p>kore solves the generalized eigenproblem <span class="arithmatex">\(A x = \lambda B x\)</span>, with <span class="arithmatex">\(\lambda = \sigma + i\omega\)</span> (<span class="arithmatex">\(\sigma\)</span> the growth
-rate, <span class="arithmatex">\(\omega\)</span> the frequency). The unknowns are the radial Chebyshev coefficients of the poloidal and toroidal flow
-(<span class="arithmatex">\(P\)</span>, <span class="arithmatex">\(T\)</span>) and of the entropy perturbation <span class="arithmatex">\(s\)</span>, for each spherical-harmonic degree <span class="arithmatex">\(l\)</span>. The matrix rows come in
-sections: <code>u</code> and <code>v</code> for the two momentum equations, and <strong>section h</strong> for the heat (entropy) equation.</p>
-<ul>
-<li><strong>Row weight.</strong> Before projection, each equation is multiplied by a power of <span class="arithmatex">\(r\)</span> (and, for the heat equation, by a
-  power of <span class="arithmatex">\(p_0 = \rho_0 T_0\)</span>). This makes every coefficient a polynomial in <span class="arithmatex">\(r\)</span>, so the matrices are banded.</li>
-<li><strong>Gegenbauer basis.</strong> The rows of a section are projected onto a Gegenbauer polynomial family <span class="arithmatex">\(C^{(k)}\)</span>. The <span class="arithmatex">\(k\)</span>-th
-  radial derivative of a Chebyshev series is exactly a <span class="arithmatex">\(C^{(k)}\)</span> series, so a section that contains <span class="arithmatex">\(k\)</span>-th derivatives
-  needs at least a <span class="arithmatex">\(C^{(k)}\)</span> basis. <span class="arithmatex">\(C^{(0)}\)</span> is the Chebyshev basis itself. The order per section is stored in
-  <code>gebasis</code> in <code>bin/submatrices.py</code>; <code>gebasis[2]</code> is section h.</li>
-<li><strong>bc rows and <code>chop</code>.</strong> For each <span class="arithmatex">\(l\)</span>, the top rows of a section's block are replaced by boundary-condition (bc) rows.
-  <code>chop</code> is the number of rows freed for them. Without diffusion the heat equation has no thermal bc, so section h
-  has no bc rows.</li>
-<li><strong>Operator labels.</strong> Each radial operator is named by a short code string, decoded by <code>utils.decode_label</code>. For
-  example <code>h1tw20_D1</code> means: section <code>h</code>; digit <code>1</code>, which lowers the row's power of <span class="arithmatex">\(r\)</span> by one (<code>rpower = base - rx</code>,
-  where the base is the row weight); profile <code>tw2</code> differentiated <code>0</code> times; <code>_D1</code>, the first radial derivative of the
-  unknown. The same label therefore means a different operator when the row weight of its section changes.</li>
-<li><strong><code>remroco</code>.</strong> In the full sphere (<code>ricb = 0</code>, no inner core) the code removes rows and columns of the wrong radial
-  parity. This requires each operator to have a definite parity in <span class="arithmatex">\(r\)</span>.</li>
-</ul>
-<p>The heat-equation rows exist in three variants. Here (eq) is the <span class="arithmatex">\(p_0\)</span>-weighted heat equation of
-<a href="../heat-equation/">heat-equation.md</a> §0, and the weight is applied to it:</p>
-<table>
-<thead>
-<tr>
-<th>case</th>
-<th>row weight on (eq)</th>
-<th>basis of section h</th>
-<th>thermal bc rows</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>ThermaD &gt; 0</td>
-<td><span class="arithmatex">\(r^2\)</span></td>
-<td><span class="arithmatex">\(C^{(2)}\)</span></td>
-<td>yes</td>
-</tr>
-<tr>
-<td>ThermaD = 0, old ("old rows")</td>
-<td><span class="arithmatex">\(r/p_0\)</span></td>
-<td><span class="arithmatex">\(C^{(0)}\)</span></td>
-<td>none</td>
-</tr>
-<tr>
-<td>ThermaD = 0 with the thermal wind ("new rows", this change)</td>
-<td><span class="arithmatex">\(r^2/p_0\)</span></td>
-<td><span class="arithmatex">\(C^{(1)}\)</span></td>
-<td>none</td>
-</tr>
-</tbody>
-</table>
-<p>The old rows are still used with ThermaD = 0 when <code>thermal_wind = 0</code> or <code>diff_rot = 0</code>.</p>
-<p><strong>Thermal wind.</strong> With differential rotation <span class="arithmatex">\(\Omega = \Omega_0(1 + \Delta\Omega)\)</span>, the background entropy gains a
-latitudinal part <span class="arithmatex">\(S_{tw}\)</span> (the thermal-wind entropy) fixed by thermal-wind balance. It is expanded in Legendre
-polynomials, with coefficients <span class="arithmatex">\(\sigma_n\)</span>:</p>
+<h1 id="thermad-0-runs-without-thermal-diffusion">ThermaD = 0: runs without thermal diffusion</h1>
+<p>With <code>ThermaD = 0</code> the heat equation has no diffusion term. The entropy perturbation is only carried by the flow, so
+the motion is adiabatic:</p>
 <div class="arithmatex">\[
-S_{tw}(r,\theta) = \sum_{n = 2, 4, 6} \sigma_n(r)\thinspace P_n(\cos\theta).
+p_0\left(\partial_t s + u_r\frac{dS}{dr}\right) = 0,
 \]</div>
-<p>The parameter <code>thermal_wind</code> selects it: 0 none, 1 the linear thermal wind, 2 the exact one (adds <span class="arithmatex">\(\sigma_6\)</span>),
-3 a prescribed <span class="arithmatex">\(\partial_\theta S_{tw}\)</span>. <code>Gaspard</code> (<span class="arithmatex">\(G\)</span>) is the frame rotation rate in units of the time unit. The
-differential rotation adds three kinds of terms to the heat equation (<a href="../heat-equation/">heat-equation.md</a> §0–2):</p>
+<p>plus, with a differential rotation, the advection terms of
+<a href="../differential-rotation/#heat-equation-thermal-1">Differential rotation</a>. This is the limit to use when thermal
+diffusion is negligible on the time scale of the modes. It works with every background and with every
+differential-rotation option, including the thermal wind.</p>
+<h2 id="what-kore-does-differently">What kore does differently</h2>
+<ul>
+<li><strong>No thermal boundary conditions.</strong> The heat equation is first order in <span class="arithmatex">\(r\)</span> without diffusion, so <code>bci_thermal</code> and
+  <code>bco_thermal</code> are not used.</li>
+<li><strong>Heat rows divided by <span class="arithmatex">\(p_0\)</span>.</strong> <span class="arithmatex">\(p_0\)</span> is about <span class="arithmatex">\(10^{-7}\)</span> near the surface of a solar model, and rows weighted by <span class="arithmatex">\(p_0\)</span>
+  are badly conditioned there. The heat rows are <span class="arithmatex">\(r/p_0\)</span> times the equation, or <span class="arithmatex">\(r^2/p_0\)</span> times it with a differential
+  rotation and <code>thermal_wind</code> ≥ 1 (<a href="../differential_rotation_details/#72-heat-diff_rotheat_block">details</a>).</li>
+<li><strong>No Ruiz prescaling.</strong> With the default <code>prescale = None</code>, <code>solve.py</code> turns the prescaling off for <code>ThermaD = 0</code>,
+  where it degrades the solutions (<a href="../solver/">Solver</a>).</li>
+</ul>
+<h2 id="recommendations">Recommendations</h2>
+<p><strong>Prefer <code>ThermaD = 0</code> to a very small <code>ThermaD</code>.</strong> As <code>ThermaD</code> → 0 the eigenvalues of a diffusive run approach the
+<code>ThermaD = 0</code> ones linearly in <code>ThermaD</code>, as long as the diffusive run is resolved. With the thermal wind and walls that
+are both stress-free and at fixed entropy (<code>bci_thermal = bco_thermal = 0</code>), a small <code>ThermaD</code> forms a thermal boundary
+layer of width about <span class="arithmatex">\((\mathrm{ThermaD}/\lvert\lambda\rvert)^{1/2}\)</span> at the walls, because the adiabatic entropy is not
+zero there. Below <code>ThermaD</code> ≈ <span class="arithmatex">\(10^{-7}\)</span> that layer needs far more radial resolution than the bulk. The
+<code>ThermaD = 0</code> run has no layer. Zero-flux or no-slip walls have no such layer either.</p>
+<p><strong>Let <span class="arithmatex">\(dS/dr\)</span> vanish at the inner wall.</strong> In a shell, a <span class="arithmatex">\(dS/dr \neq 0\)</span> at the inner wall gives spurious modes trapped
+there. Their eigenvalues move with N and <code>spin_doctor</code> flags them (residσ ≈ 1). For an erf top hat, take
+<span class="arithmatex">\(x_1 \ge\)</span> <code>ricb</code> <span class="arithmatex">\(+ 3w_1\)</span>. If the gradient must reach the wall, raise <code>nev</code> by one or two, because the spurious modes take
+some of the slots.</p>
+<p><strong>Expect a band of eigenvalues near σ = 0 with a differential rotation.</strong> Without diffusion, the advection of <span class="arithmatex">\(s\)</span> by the
+differential rotation has a continuous spectrum,</p>
 <div class="arithmatex">\[
-p_0\left[\thinspace i\thinspace m\thinspace G\thinspace \Delta\Omega\thinspace s \mkern5mu +\mkern5mu u_r\thinspace \frac{\partial S_{tw}}{\partial r} \mkern5mu +\mkern5mu \frac{u_\theta}{r}\thinspace \frac{\partial S_{tw}}{\partial\theta} \right].
+\lambda = -i\thinspace m\thinspace\mathrm{Gaspard}\thinspace\Delta\Omega(r,\theta),
 \]</div>
-<ul>
-<li>(a) is the advection of <span class="arithmatex">\(s\)</span> by the differential rotation. It is present whenever <code>diff_rot = 1</code>.</li>
-<li>(b) is the radial advection of <span class="arithmatex">\(S_{tw}\)</span>.</li>
-<li>(c) and (c′) are the latitudinal advection of <span class="arithmatex">\(S_{tw}\)</span> by the poloidal (<span class="arithmatex">\(P\)</span>) and toroidal (<span class="arithmatex">\(T\)</span>) parts of <span class="arithmatex">\(u_\theta\)</span>.</li>
-</ul>
-<p>(b), (c) and (c′) exist only with <code>thermal_wind ≥ 1</code>. In kore's profile names, <code>tw2</code>, <code>tw4</code>, <code>tw6</code> hold <span class="arithmatex">\(\sigma_n\)</span> and
-<code>tp2</code>, <code>tp4</code>, <code>tp6</code> hold <span class="arithmatex">\(\sigma_n'\)</span>, each times <span class="arithmatex">\(p_0\)</span> except in the new ThermaD = 0 mode below.</p>
-<h2 id="why-thermad-0-needed-a-separate-treatment">Why ThermaD = 0 needed a separate treatment</h2>
-<p>This section explains why the old ThermaD = 0 rows cannot hold the thermal-wind terms, and why the fix is to change the
-weight and the basis rather than drop the <span class="arithmatex">\(1/p_0\)</span>.</p>
-<p>With <code>ThermaD = 0</code> kore writes the heat equation divided by <span class="arithmatex">\(p_0\)</span>, because <span class="arithmatex">\(p_0 \approx 10^{-7}\)</span> near the surface made
-the <span class="arithmatex">\(p_0\)</span>-weighted rows ill-conditioned. It also multiplies it by <span class="arithmatex">\(r\)</span>, projects it in a <span class="arithmatex">\(C^{(0)}\)</span> Gegenbauer basis, and
-uses no thermal bc rows: <code>decode_label</code> gives section h <code>rpower = 1 - rx</code>, and <code>submatrices.py</code> sets <code>gebasis[2] = 0</code>.</p>
-<p>Term (c) of <a href="../heat-equation/">heat-equation.md</a> §2, the advection of the thermal-wind entropy by <span class="arithmatex">\(u_\theta\)</span>, is,
-before the row weight,</p>
-<div class="arithmatex">\[
-p_0\thinspace \sigma_n\thinspace \frac{P + r P' + r\thinspace (\ln\rho)'\thinspace P}{r^2}\mkern5mu P_n'(X)\thinspace D ,
-\]</div>
-<p>where <span class="arithmatex">\(X\)</span> and <span class="arithmatex">\(D\)</span> are the angular coupling matrices of heat-equation.md §2. Two things break:</p>
-<ol>
-<li><strong>Basis.</strong> Its <span class="arithmatex">\(P'\)</span> part (<code>h1tw20_D1</code>, <code>h1tw40_D1</code>, <code>h1tw60_D1</code>) is a first derivative, which lands in <span class="arithmatex">\(C^{(1)}\)</span>.
-   In a <span class="arithmatex">\(C^{(0)}\)</span> section, <code>submatrices.py</code> builds <code>G[gbx][gbx-dx] = G[0][-1]</code>. Python's negative index returns
-   <code>G0[-1] = 1</code> (the identity) instead of failing. The D1 output, a <span class="arithmatex">\(C^{(1)}\)</span> series, would then be read as Chebyshev
-   coefficients. Silently wrong.</li>
-<li><strong>Row weight.</strong> With the <span class="arithmatex">\(r\)</span> weight, the <span class="arithmatex">\(P\)</span> part (<code>h2tw20_D0</code>) decodes to <code>rpower = 1 - 2 = -1</code>, a profile
-   <span class="arithmatex">\(\sigma_n/r\)</span>. In the full sphere <span class="arithmatex">\(\sigma_2(0) \neq 0\)</span> for the conical, Y20 and solar profiles (<span class="arithmatex">\(\sigma_2 \propto r f/g\)</span>
-   and <span class="arithmatex">\(g \propto r\)</span>). So <span class="arithmatex">\(\sigma_n/r\)</span> is singular at <span class="arithmatex">\(r = 0\)</span> and has the wrong parity for <code>remroco</code>. At ricb &gt; 0 it
-   would be regular, but item 1 remains.</li>
-</ol>
-<p>The old code stopped in <code>submatrices.py</code> before reaching either problem. Dropping the <span class="arithmatex">\(1/p_0\)</span> would fix item 2 but bring
-back the conditioning problem. The fix therefore keeps the <span class="arithmatex">\(1/p_0\)</span> and, for this case only, changes the row weight from
-<span class="arithmatex">\(r\)</span> to <span class="arithmatex">\(r^2\)</span> and the basis from <span class="arithmatex">\(C^{(0)}\)</span> to <span class="arithmatex">\(C^{(1)}\)</span>.</p>
-<h2 id="what-changed-file-by-file">What changed, file by file</h2>
-<p>This section lists every file touched, so that a reader can find where the new mode is decided and which outputs it
-affects.</p>
-<p>The new mode is decided in one place, <code>bin/utils.py</code>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">adiab_tw</span> <span class="o">=</span> <span class="n">thermal</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">ThermaD</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">diff_rot</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">thermal_wind</span> <span class="o">&gt;=</span> <span class="mi">1</span>
-</span></code></pre></div>
-<p>In this mode the section-h rows are <span class="arithmatex">\(r^2\thinspace (\mathrm{eq})/p_0\)</span> in <span class="arithmatex">\(C^{(1)}\)</span>, still without bc rows, and they reuse the
-labels of both paths.</p>
-<ul>
-<li><code>bin/utils.py</code>: <code>adiab_tw</code> (the only place that decides the mode). <code>decode_label</code> gives section h <code>rpower = 2 - rx</code>
-  when <code>adiab_tw</code>. So:<ul>
-<li><code>h0_D0</code> is <span class="arithmatex">\(r^2 s\)</span>;</li>
-<li><code>h1dSd0_D0</code> is <span class="arithmatex">\(r^2 u_r S'\)</span> (as <span class="arithmatex">\(r L P S'\)</span>);</li>
-<li><code>h0abu0_D0</code>/<code>h0aub0_D0</code> is the <span class="arithmatex">\(s\)</span> advection with the <span class="arithmatex">\(r^2\)</span> weight;</li>
-<li>the thermal-wind labels of the ThermaD &gt; 0 path (<code>h1tp20_D0</code>, <code>h2tw20_D0</code>, <code>h1tw20_D1</code>, <code>h1tw20lho1_D0</code>,
-  <code>h1tw20_D0</code>, and the 4, 6 ones) decode as they do there.</li>
-</ul>
-</li>
-<li><code>bin/submatrices.py</code>:<ul>
-<li><code>gebasis[2] = 1 if ut.adiab_tw else 0</code>;</li>
-<li>the <code>sys.exit</code> for ThermaD = 0 with the thermal wind is removed;</li>
-<li><code>G[gbx][gbx-dx]</code> raises a <code>ValueError</code> (label, dx, basis) when dx &gt; gbx;</li>
-<li><code>chop = 0</code> for section h when ThermaD = 0 (at ricb &gt; 0, <code>chop = gbx = 1</code> would otherwise put one zero row on top
-  of every section-h block);</li>
-<li>comments.</li>
-</ul>
-</li>
-<li><code>bin/radial_profiles.py</code>: <code>ptw(r)</code> returns <span class="arithmatex">\(p_0\)</span>, or 1 when <code>adiab_tw</code>. <code>tw2/4/6</code> and <code>tp2/4/6</code> use it, so in the new
-  mode they are <span class="arithmatex">\(\sigma_n\)</span> and <span class="arithmatex">\(\sigma_n'\)</span> (bitwise the same as before when ThermaD &gt; 0).</li>
-<li><code>bin/operators.py</code>: comments only. <code>thermal_diffrot</code> already used the same (b), (c), (c′) labels for both paths, and
-  (a) uses <code>h0abu0_D0</code>/<code>h0aub0_D0</code> whenever ThermaD = 0.</li>
-<li><code>bin/params_default.py</code>: <code>thermal_wind</code> comment: ThermaD &gt; 0 is no longer required.</li>
-<li><code>bin/assemble.py</code>: unchanged. <code>bc_theta_spherical</code> returns nothing for ThermaD = 0, and section h is packed from the
-  operators.</li>
-<li><code>bin/ru_insane.py</code>, <code>tests/heat_dr/ebal.py</code>: <code>gb['h'] = 1</code> in the new mode; <code>chop['h'] = 0</code> for every ThermaD = 0
-  run; entropy pairing weight <code>wgt['h'] = p₀</code> (rows <span class="arithmatex">\(r^2\thinspace (\mathrm{eq})/p_0\)</span>) instead of <span class="arithmatex">\(p_0 r\)</span>. The pairing weight
-  is what the checks multiply the rows by when they pair them with <span class="arithmatex">\(s^\ast\)</span> to form the entropy budget. <code>heat_check.py</code>,
-  <code>asm_check.py</code>, <code>terms.py</code> and <code>sd_check.py</code> take these from <code>ebal.py</code>.</li>
-<li><code>tests/heat_dr/asm_check.py</code>: docstring. In the new mode the reference run is the same run with
-  <code>diff_rot_amplitude = 0</code>, because <code>diff_rot = 0</code> or <code>thermal_wind = 0</code> gives the old <span class="arithmatex">\(r\thinspace (\mathrm{eq})/p_0\)</span> rows in
-  <span class="arithmatex">\(C^{(0)}\)</span>. A wrong reference trips the existing assertion, which now hints at that.</li>
-<li><code>tests/heat_dr/run_all.sh</code>:<ul>
-<li>new-mode runs <code>k1 km0 km2b ky20wb kshell kg3 ksun ksun_a</code> with <code>thermal_wind</code> 1 and 2, and their <code>z_*</code>
-  references (amplitude 0), in the heat_check and asm_check lists;</li>
-<li>rigid configurations <code>K1</code> (<span class="arithmatex">\(G = 1\)</span>) and <code>K13</code> (<span class="arithmatex">\(G = 3\)</span>), whose baseline is rigid with amplitude 0 (the same
-  heat rows);</li>
-<li><code>terms.py</code> and <code>sd_check.py</code> on <code>k1_tw2</code>.</li>
-</ul>
-</li>
-<li><code>tests/heat_dr/README.md</code>, <code>docs/heat-equation.md</code>: the asm_check reference; §0 row weights, §3 the implementation,
-  §5 the submatrices row, §7 the open item updated.</li>
-</ul>
-<p>Deviations from the proposed design:</p>
-<ul>
-<li><code>chop = 0</code> for section h (one line in <code>submatrices.py</code>). It was needed: at ricb &gt; 0, <span class="arithmatex">\(C^{(1)}\)</span> would otherwise
-  reserve one zero row per <span class="arithmatex">\(l\)</span> for a bc that does not exist. Mutation M4 below shows what that does.</li>
-<li>asm_check and the rigid test need a reference with the same heat rows, so they use the <code>diff_rot_amplitude = 0</code> run
-  instead of the <code>diff_rot = 0</code> one. No code beyond comments and the run_all lines.</li>
-</ul>
-<p>Bitwise constraint: ThermaD &gt; 0 runs, and ThermaD = 0 runs with <code>thermal_wind = 0</code> or <code>diff_rot = 0</code>, never enter the
-new branches (<code>adiab_tw</code> is False; <code>ptw</code> returns <code>prf.pressure(r, 0)</code> as before; <code>chop</code> was already 0 for gbx = 0).
-Confirmed in test f.</p>
-<h2 id="results">Results</h2>
-<p>This section collects the tests: operator-level checks (a, b), eigenvalue identities and limits (c, d), energy
-budgets (e), regression and MPI (f, g), and independent reviews (h).</p>
-<p>Runs are the test defaults of <code>mk_run.py</code> plus <code>par.ThermaD = 0</code>, unless stated. The defaults are: ricb 0.35, m 1,
-conical differential rotation with amplitude −0.25, Beyonce 10 (buoyancy factor), ViscosD 1e-3, stress-free walls,
-'user def' profiles. "tw2" means <code>thermal_wind = 2</code>. <code>SUN</code> is the run_all.sh string (ricb 0, smoothed sun, N 120,
-lmax 30) with ThermaD = 0. N is the number of radial Chebyshev modes, lmax the largest degree.</p>
-<h3 id="a-operator-and-assembly-checks-heat_checkpy-and-asm_checkpy-pass-1e-8">a. Operator and assembly checks: heat_check.py and asm_check.py (pass &lt; 1e-8)</h3>
-<p>These compare the code's matrices with an independent computation of the same physics.</p>
-<ul>
-<li><code>heat_check.py</code> compares the section-h operator blocks with an <span class="arithmatex">\((r, \theta)\)</span> quadrature of the heat terms for random
-  fields.</li>
-<li><code>asm_check.py</code> compares the heat rows of the assembled <span class="arithmatex">\(A\)</span> minus those of a reference run with the same quadrature.
-  Here the reference is <code>z_*</code> (the same run, amplitude 0).</li>
-</ul>
-<table>
-<thead>
-<tr>
-<th>run</th>
-<th>heat_check tw1</th>
-<th>heat_check tw2</th>
-<th>asm_check tw1</th>
-<th>asm_check tw2</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>k1: conical m 1, N 96</td>
-<td>3.0e-15</td>
-<td>2.6e-15</td>
-<td>4.5e-15</td>
-<td>3.0e-15</td>
-</tr>
-<tr>
-<td>km0: m 0, lmax 21</td>
-<td>1.1e-14</td>
-<td>9.6e-15</td>
-<td>9.1e-15</td>
-<td>8.8e-15</td>
-</tr>
-<tr>
-<td>km2b: m 2, symm −1, lmax 21</td>
-<td>3.3e-15</td>
-<td>3.1e-15</td>
-<td>3.4e-15</td>
-<td>3.7e-15</td>
-</tr>
-<tr>
-<td>ky20wb: Y20-wall-bounded</td>
-<td>7.9e-15</td>
-<td>7.9e-15</td>
-<td>1.7e-14</td>
-<td>1.9e-14</td>
-</tr>
-<tr>
-<td>kshell: shellular</td>
-<td>2.8e-15</td>
-<td>2.3e-15</td>
-<td>2.9e-15</td>
-<td>1.9e-15</td>
-</tr>
-<tr>
-<td>kg3: Gaspard 3, Beyonce 90</td>
-<td>2.6e-15</td>
-<td>2.2e-15</td>
-<td>4.0e-15</td>
-<td>2.6e-15</td>
-</tr>
-<tr>
-<td>ksun: SUN, ricb 0, symm 1</td>
-<td>5.5e-15</td>
-<td>6.3e-15</td>
-<td>9.1e-13</td>
-<td>5.7e-13</td>
-</tr>
-<tr>
-<td>ksun_a: SUN, symm −1</td>
-<td>5.9e-15</td>
-<td>7.4e-15</td>
-<td>2.3e-12</td>
-<td>8.7e-13</td>
-</tr>
-</tbody>
-</table>
-<p>All 32 are ok, and run_all.sh reproduces them.</p>
-<p><strong>Limitation: these checks do not see the rows near the wall.</strong> The numbers above are <span class="arithmatex">\(p_0\)</span>-weighted: the rows
-<span class="arithmatex">\(r^2\thinspace (\mathrm{eq})/p_0\)</span> are paired with <span class="arithmatex">\(p_0 s^\ast\)</span>, and <span class="arithmatex">\(p_0 \approx 2.5\times10^{-6}\)</span> at <span class="arithmatex">\(r = 1\)</span> for the test
-profiles. Near the wall the new rows are less accurate than the ThermaD &gt; 0 ones. Term (c) carries <span class="arithmatex">\(\sigma_n (\ln\rho)'\)</span>
-without <span class="arithmatex">\(p_0\)</span>. For the 'user def' density,</p>
-<div class="arithmatex">\[
-\rho \propto \left(1 - \mathrm{aux0}^2 r^2\right)^2,
-\qquad
-(\ln\rho)' = -\frac{4\thinspace \mathrm{aux0}^2\thinspace r}{1 - \mathrm{aux0}^2 r^2},
-\]</div>
-<p>which is nearly singular at <span class="arithmatex">\(r = 1/\mathrm{aux0}\)</span>. Checked unweighted (<code>tests/heat_dr/row_check.py</code>, <span class="arithmatex">\(P = 0\)</span> at the
-walls), the rows are right to:</p>
-<ul>
-<li>4e-11 at ricb 0.35 (N 96), and 6e-11 for the smoothed sun (N 120);</li>
-<li>only 5e-8 – 3e-7 for the 'user def' profiles at ricb 0 (N 96; 3e-11 at N 160);</li>
-<li>3e-3 with aux0 = 0.999 (N 96), where heat_check still reports 5e-15.</li>
-</ul>
-<p>In the eigenvalues it is not the limiting error in the runs tried (full sphere, user def). There the eigenvalue change
-between N 96 and N 240, <span class="arithmatex">\(\lvert\Delta\lambda\rvert\)</span>, is 7e-5 to 5.5e-4 with <code>thermal_wind</code> 1, against 5e-5 to 3.6e-4
-(N 96 vs 128) with <code>thermal_wind</code> 0; at aux0 = 0.999 both are 5e-2 to 1e-1 off at N 96. But the <span class="arithmatex">\(p_0\)</span>-weighted checks
-are blind to it.</p>
-<p>A has no zero row and B no zero section-h row (k1: 0 of 2880, and 60 zero B rows, all momentum bc rows).</p>
-<p>The adapted tools on the unchanged modes: heat_check s96 3.3e-13, k0 1.4e-15, sun 3.4e-11, g3_tw2 2.9e-13; asm_check
-k0 1.4e-15; ru_insane PASS on all four.</p>
-<h3 id="b-block-by-block-checks-ru_insanepy-n-96-tol-1e-6-all-16-runs-pass">b. Block-by-block checks: ru_insane.py (N ≥ 96, tol 1e-6): all 16 runs PASS</h3>
-<p><code>ru_insane.py</code> tests each matrix block against a direct evaluation on an <span class="arithmatex">\((r, \theta)\)</span> grid, and checks that the
-advection term (a) is anti-Hermitian, as it must be (it only shifts frequencies). The "worst" column is the largest
-error over all its tests.</p>
-<table>
-<thead>
-<tr>
-<th>run</th>
-<th>heat advection vs grid</th>
-<th>thermal wind vs grid</th>
-<th>advection anti-Herm.</th>
-<th>worst (all tests)</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>k1, k1_tw2</td>
-<td>2.6e-15</td>
-<td>1.2e-14, 1.1e-14</td>
-<td>2.0e-16</td>
-<td>4.7e-08</td>
-</tr>
-<tr>
-<td>km0, km0_tw2</td>
-<td>0</td>
-<td>1.0e-14, 9.7e-15</td>
-<td>n/a (m 0)</td>
-<td>4.8e-09</td>
-</tr>
-<tr>
-<td>km2b, km2b_tw2</td>
-<td>6.8e-15</td>
-<td>1.1e-14, 1.1e-14</td>
-<td>2.0e-16</td>
-<td>3.7e-08</td>
-</tr>
-<tr>
-<td>ky20wb, ky20wb_tw2</td>
-<td>1.5e-14</td>
-<td>1.2e-14, 1.2e-14</td>
-<td>1.2e-16</td>
-<td>4.7e-08</td>
-</tr>
-<tr>
-<td>kshell, kshell_tw2</td>
-<td>1.4e-14</td>
-<td>6.0e-15, 4.9e-15</td>
-<td>9.0e-17</td>
-<td>4.7e-08</td>
-</tr>
-<tr>
-<td>kg3, kg3_tw2</td>
-<td>2.7e-15</td>
-<td>1.2e-14, 1.1e-14</td>
-<td>2.2e-16</td>
-<td>4.7e-08</td>
-</tr>
-<tr>
-<td>ksun, ksun_tw2</td>
-<td>3.1e-15</td>
-<td>1.7e-14, 1.1e-14</td>
-<td>6.2e-16</td>
-<td>6.9e-08</td>
-</tr>
-<tr>
-<td>ksun_a, ksun_a_tw2</td>
-<td>8.0e-15</td>
-<td>2.3e-14, 2.6e-14</td>
-<td>8.0e-16</td>
-<td>5.8e-08</td>
-</tr>
-</tbody>
-</table>
-<p>The worst column is the viscous Hermitian test, which is the same with ThermaD &gt; 0. The entropy rows match direct
-quadratures:</p>
-<ul>
-<li>entropy block Hermitian ≤ 1.4e-15;</li>
-<li>buoyancy, advection and entropy rows vs quadrature ≤ 4e-15 at ricb 0.35 (buoyancy 2e-8 and 6e-8 for the sun, as
-  with ThermaD &gt; 0).</li>
-</ul>
-<p><strong>Mutations.</strong> To show the checks would catch the relevant mistakes, each mutation was applied to a copy of the code:</p>
-<table>
-<thead>
-<tr>
-<th>mutation</th>
-<th>heat_check</th>
-<th>ru_insane</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>M1: keep <span class="arithmatex">\(p_0\)</span> in tw/tp</td>
-<td>2.8e-2 FAIL</td>
-<td>thermal wind 0.23, FAIL</td>
-</tr>
-<tr>
-<td>M3: <code>gebasis[2] = 0</code> (old basis)</td>
-<td><code>submatrices.py</code> raises <code>ValueError</code> (below)</td>
-<td>n/a</td>
-</tr>
-<tr>
-<td>M4: no <code>chop = 0</code> (zero row per <span class="arithmatex">\(l\)</span> at ricb &gt; 0)</td>
-<td>0.18 FAIL</td>
-<td>entropy Hermitian 1.4, advection 2.4, FAIL</td>
-</tr>
-</tbody>
-</table>
-<p>The M3 message:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>ValueError: h1tw20_D1: derivative order 1 needs at least the C^(1) basis, section h has C^(0)
-</span></code></pre></div>
-<h3 id="c-rigid-offset-identity-rigid_thermalpy-m-2-n-64-lmax-25-16-modes-thermad-0-thermal_wind-1">c. Rigid-offset identity (rigid_thermal.py, m 2, N 64, lmax 25, 16 modes, ThermaD 0, thermal_wind 1)</h3>
-<p>A rigid offset of the rotation rate must be equivalent to a rigid rotation at a different frame rate. This gives an
-exact identity for the eigenvalues (<a href="../heat-equation/">heat-equation.md</a> §5):</p>
-<div class="arithmatex">\[
-\lambda(\Delta\Omega, G) = \lambda_0\big(G\thinspace (1+\Delta\Omega)\big) - i\thinspace m G\thinspace \Delta\Omega .
-\]</div>
-<p>The table gives the error of this identity for two choices of the baseline <span class="arithmatex">\(\lambda_0\)</span>. The first baseline is a rigid
-run with amplitude 0 and frame rate Gaspard <span class="arithmatex">\(G(1 + 0.1)\)</span>: it has the same heat rows as the tested run. The second is
-<code>diff_rot = 0</code>, which uses the old <span class="arithmatex">\(r\thinspace (\mathrm{eq})/p_0\)</span> rows in <span class="arithmatex">\(C^{(0)}\)</span>: a different discretization of the same
-problem.</p>
-<table>
-<thead>
-<tr>
-<th>baseline</th>
-<th><span class="arithmatex">\(G = 1\)</span></th>
-<th><span class="arithmatex">\(G = 3\)</span></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>rigid, amplitude 0, Gaspard <span class="arithmatex">\(G(1 + 0.1)\)</span> (run_all <code>K1</code>, <code>K13</code>)</td>
-<td>1.4e-9 (1.3e-9 in the run_all pieces)</td>
-<td>8.4e-12 (8.2e-12)</td>
-</tr>
-<tr>
-<td><code>diff_rot = 0</code> (old rows)</td>
-<td>8.0e-7 (N 64), 6.6e-9 (N 96), 7.8e-9 (N 128)</td>
-<td>2.5e-7 (N 64)</td>
-</tr>
-</tbody>
-</table>
-<ul>
-<li>For a rigid offset <span class="arithmatex">\(S_{tw} = 0\)</span>, so this tests the new rows and basis with term (a), not the thermal wind.</li>
-<li>The 1.4e-9 at <span class="arithmatex">\(G = 1\)</span> is set by the most damped modes (<span class="arithmatex">\(\sigma \approx -0.97\)</span>), where csolve's residuals are ~7e-9
-  (<code>csolve.py</code> is the test eigensolver).</li>
-<li>The second row is the old and new discretizations converging to each other with N.</li>
-</ul>
-<h3 id="d-thermad-0-continuity">d. ThermaD → 0 continuity</h3>
-<p>This test asks whether the ThermaD = 0 eigenvalues are the limit of the diffusive ones. Diffusive runs use the
-ThermaD &gt; 0 path (with thermal bc rows), so the comparison is between two independent discretizations.</p>
-<p><strong>The modes.</strong> Five lightly damped, thermally coupled modes T1–T5 are taken from k1 at N 128 (tw1). <code>coupling.py</code>
-measures how strongly each mode feels the thermal physics: its share of buoyancy in the momentum balance, and of the
-diff-rot heat terms in the entropy balance,</p>
-<div class="arithmatex">\[
-\text{buoyancy share} = \frac{\lvert B\rvert}{\lvert\lambda\rvert K},
-\qquad
-\text{diff-rot heat share} = \frac{\lvert H\rvert}{\lvert\lambda\rvert E},
-\]</div>
-<p>with <span class="arithmatex">\(B\)</span> the buoyancy term and <span class="arithmatex">\(K\)</span> the kinetic energy of the momentum balance, and <span class="arithmatex">\(H\)</span> the diff-rot heat terms and
-<span class="arithmatex">\(E\)</span> the entropy "energy" of the entropy balance. The last column is the part of <span class="arithmatex">\(H\)</span> due to the thermal wind.</p>
-<table>
-<thead>
-<tr>
-<th>mode</th>
-<th><span class="arithmatex">\(\lambda\)</span> (ThermaD = 0, N 128)</th>
-<th>buoyancy share</th>
-<th>diff-rot heat share</th>
-<th>of which <span class="arithmatex">\(u\cdot\nabla S_{tw}\)</span></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>T1</td>
-<td>−0.01684560+0.49088938i</td>
-<td>0.045</td>
-<td>0.49</td>
-<td>0.10</td>
-</tr>
-<tr>
-<td>T2</td>
-<td>−0.07611871+0.44729603i</td>
-<td>0.11</td>
-<td>0.37</td>
-<td>0.066</td>
-</tr>
-<tr>
-<td>T3</td>
-<td>−0.12446846+0.39326248i</td>
-<td>0.22</td>
-<td>0.37</td>
-<td>0.051</td>
-</tr>
-<tr>
-<td>T4</td>
-<td>−0.11370717+1.76151161i</td>
-<td>0.29</td>
-<td>0.12</td>
-<td>0.0062</td>
-</tr>
-<tr>
-<td>T5</td>
-<td>−0.04118984+2.54022727i</td>
-<td>0.55</td>
-<td>0.075</td>
-<td>0.0041</td>
-</tr>
-</tbody>
-</table>
-<p><span class="arithmatex">\(\lambda(\mathrm{ThermaD} = 0)\)</span> changes by 6e-9 to 4e-8 between N 96 and 128 (tw1 and tw2), so it is converged in N.</p>
-<p><strong>The distances.</strong> Each entry in the three tables below is the distance</p>
-<div class="arithmatex">\[
-\big\lvert\lambda(\mathrm{ThermaD}) - \lambda(\mathrm{ThermaD} = 0)\big\rvert ,
-\]</div>
-<p>computed by shift-invert (an iterative eigensolver targeted at each mode) with <code>track.py</code>; residuals ≤ 3e-11. The
-column headings 1e-4 … 1e-10 are the values of ThermaD.</p>
-<p>Fixed entropy at the walls (<code>bco_thermal = bci_thermal = 0</code>, as mk_run sets them), stress-free, <code>thermal_wind</code> 1:</p>
-<table>
-<thead>
-<tr>
-<th>mode</th>
-<th>N</th>
-<th>1e-4</th>
-<th>1e-5</th>
-<th>1e-6</th>
-<th>1e-7</th>
-<th>1e-8</th>
-<th>1e-10</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>T1</td>
-<td>96</td>
-<td>4.9e-04</td>
-<td>5.4e-05</td>
-<td>5.4e-06</td>
-<td>2.6e-07</td>
-<td>8.8e-06</td>
-<td>9.9e-06</td>
-</tr>
-<tr>
-<td>T1</td>
-<td>128</td>
-<td>4.9e-04</td>
-<td>5.4e-05</td>
-<td>5.4e-06</td>
-<td>5.5e-07</td>
-<td>2.4e-06</td>
-<td>6.0e-06</td>
-</tr>
-<tr>
-<td>T1</td>
-<td>192</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>5.7e-08</td>
-<td></td>
-</tr>
-<tr>
-<td>T1</td>
-<td>256</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>5.4e-08</td>
-<td>1.7e-06</td>
-</tr>
-<tr>
-<td>T2</td>
-<td>96</td>
-<td>1.3e-03</td>
-<td>1.5e-04</td>
-<td>1.5e-05</td>
-<td>7.0e-06</td>
-<td>3.2e-05</td>
-<td>4.6e-05</td>
-</tr>
-<tr>
-<td>T2</td>
-<td>128</td>
-<td>1.3e-03</td>
-<td>1.5e-04</td>
-<td>1.5e-05</td>
-<td>1.4e-06</td>
-<td>1.1e-05</td>
-<td>2.8e-05</td>
-</tr>
-<tr>
-<td>T3</td>
-<td>96</td>
-<td>3.4e-03</td>
-<td>3.7e-04</td>
-<td>3.6e-05</td>
-<td>1.1e-05</td>
-<td>1.1e-04</td>
-<td>9.9e-05</td>
-</tr>
-<tr>
-<td>T3</td>
-<td>128</td>
-<td>3.4e-03</td>
-<td>3.7e-04</td>
-<td>3.6e-05</td>
-<td>3.9e-06</td>
-<td>2.1e-05</td>
-<td>6.1e-05</td>
-</tr>
-<tr>
-<td>T4</td>
-<td>96</td>
-<td>4.2e-03</td>
-<td>4.2e-04</td>
-<td>4.2e-05</td>
-<td>1.3e-05</td>
-<td>1.2e-05</td>
-<td>1.2e-05</td>
-</tr>
-<tr>
-<td>T4</td>
-<td>128</td>
-<td>4.2e-03</td>
-<td>4.2e-04</td>
-<td>4.2e-05</td>
-<td>3.3e-06</td>
-<td>7.5e-06</td>
-<td>7.3e-06</td>
-</tr>
-<tr>
-<td>T5</td>
-<td>96</td>
-<td>1.9e-03</td>
-<td>1.9e-04</td>
-<td>1.9e-05</td>
-<td>1.0e-05</td>
-<td>1.0e-05</td>
-<td>1.0e-05</td>
-</tr>
-<tr>
-<td>T5</td>
-<td>128</td>
-<td>1.9e-03</td>
-<td>1.9e-04</td>
-<td>1.9e-05</td>
-<td>1.9e-06</td>
-<td>6.2e-06</td>
-<td>6.1e-06</td>
-</tr>
-<tr>
-<td>T5</td>
-<td>192</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>2.2e-06</td>
-<td></td>
-</tr>
-<tr>
-<td>T5</td>
-<td>256</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td>1.6e-07</td>
-<td>1.7e-06</td>
-</tr>
-</tbody>
-</table>
-<p>The same with <code>thermal_wind</code> 2. Its ThermaD = 0 eigenvalues <span class="arithmatex">\(\lambda(0)\)</span> are:</p>
-<ul>
-<li>T1 −0.01701638+0.49013119i</li>
-<li>T2 −0.07696123+0.44671144i</li>
-<li>T3 −0.12435151+0.39357407i</li>
-<li>T4 −0.11360552+1.76197107i</li>
-<li>T5 −0.04089672+2.54083851i</li>
-</ul>
-<table>
-<thead>
-<tr>
-<th>mode</th>
-<th>N</th>
-<th>1e-4</th>
-<th>1e-5</th>
-<th>1e-6</th>
-<th>1e-7</th>
-<th>1e-8</th>
-<th>1e-10</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>T1</td>
-<td>96 / 128</td>
-<td>4.9e-04 / 4.9e-04</td>
-<td>5.4e-05 / 5.4e-05</td>
-<td>5.5e-06 / 5.5e-06</td>
-<td>2.4e-07 / 5.5e-07</td>
-<td>6.6e-06 / 1.8e-06</td>
-<td>7.6e-06 / 4.6e-06</td>
-</tr>
-<tr>
-<td>T2</td>
-<td>96 / 128</td>
-<td>1.3e-03 / 1.3e-03</td>
-<td>1.5e-04 / 1.5e-04</td>
-<td>1.5e-05 / 1.5e-05</td>
-<td>6.4e-06 / 1.4e-06</td>
-<td>2.1e-05 / 9.0e-06</td>
-<td>3.9e-05 / 2.3e-05</td>
-</tr>
-<tr>
-<td>T3</td>
-<td>96 / 128</td>
-<td>3.5e-03 / 3.5e-03</td>
-<td>3.7e-04 / 3.7e-04</td>
-<td>3.7e-05 / 3.7e-05</td>
-<td>1.0e-05 / 3.9e-06</td>
-<td>9.4e-05 / 2.0e-05</td>
-<td>8.8e-05 / 5.4e-05</td>
-</tr>
-<tr>
-<td>T4</td>
-<td>96 / 128</td>
-<td>4.1e-03 / 4.1e-03</td>
-<td>4.2e-04 / 4.2e-04</td>
-<td>4.2e-05 / 4.2e-05</td>
-<td>1.2e-05 / 3.3e-06</td>
-<td>1.0e-05 / 6.3e-06</td>
-<td>9.8e-06 / 6.0e-06</td>
-</tr>
-<tr>
-<td>T5</td>
-<td>96 / 128</td>
-<td>1.9e-03 / 1.9e-03</td>
-<td>1.9e-04 / 1.9e-04</td>
-<td>1.9e-05 / 1.9e-05</td>
-<td>8.7e-06 / 1.7e-06</td>
-<td>8.4e-06 / 5.1e-06</td>
-<td>8.3e-06 / 5.0e-06</td>
-</tr>
-</tbody>
-</table>
-<p>Zero entropy flux at the walls (<code>bci_thermal = bco_thermal = 1</code>), stress-free, <code>thermal_wind</code> 1. At ThermaD = 0 the
-thermal bc parameters do not enter: A is byte-identical to the fixed-entropy run.</p>
-<table>
-<thead>
-<tr>
-<th>mode</th>
-<th>N</th>
-<th>1e-4</th>
-<th>1e-5</th>
-<th>1e-6</th>
-<th>1e-7</th>
-<th>1e-8</th>
-<th>1e-10</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>T1</td>
-<td>96 / 128</td>
-<td>5.6e-04 / 5.6e-04</td>
-<td>6.0e-05 / 6.0e-05</td>
-<td>6.0e-06 / 6.0e-06</td>
-<td>6.0e-07 / 6.0e-07</td>
-<td>6.3e-08 / 6.1e-08</td>
-<td>4.2e-09 / 1.7e-09</td>
-</tr>
-<tr>
-<td>T2</td>
-<td>96 / 128</td>
-<td>1.6e-03 / 1.6e-03</td>
-<td>1.9e-04 / 1.9e-04</td>
-<td>1.8e-05 / 1.8e-05</td>
-<td>1.8e-06 / 1.8e-06</td>
-<td>2.1e-07 / 1.9e-07</td>
-<td>2.5e-08 / 9.1e-09</td>
-</tr>
-<tr>
-<td>T3</td>
-<td>96 / 128</td>
-<td>3.3e-03 / 3.3e-03</td>
-<td>3.7e-04 / 3.7e-04</td>
-<td>3.6e-05 / 3.6e-05</td>
-<td>3.6e-06 / 3.6e-06</td>
-<td>3.6e-07 / 3.8e-07</td>
-<td>1.8e-08 / 5.1e-09</td>
-</tr>
-<tr>
-<td>T4</td>
-<td>96 / 128</td>
-<td>4.1e-03 / 4.1e-03</td>
-<td>4.2e-04 / 4.2e-04</td>
-<td>4.2e-05 / 4.2e-05</td>
-<td>4.2e-06 / 4.2e-06</td>
-<td>4.2e-07 / 4.2e-07</td>
-<td>5.9e-09 / 4.8e-09</td>
-</tr>
-<tr>
-<td>T5</td>
-<td>96 / 128</td>
-<td>1.9e-03 / 1.9e-03</td>
-<td>1.9e-04 / 1.9e-04</td>
-<td>1.9e-05 / 1.9e-05</td>
-<td>1.9e-06 / 1.9e-06</td>
-<td>1.9e-07 / 1.9e-07</td>
-<td>2.7e-09 / 1.9e-09</td>
-</tr>
-</tbody>
-</table>
-<p>Controls at N 96, fixed entropy, distances at ThermaD 1e-6, 1e-8, 1e-10:</p>
-<ul>
-<li>no-slip walls (bci = bco = 1, <code>thermal_wind</code> 1): T1 3.7e-6, 3.7e-8, 4.1e-10; T4 4.2e-5, 4.2e-7, 4.2e-9;
-  T5 2.1e-5, 2.1e-7, 2.1e-9;</li>
-<li><code>thermal_wind</code> 0 (old rows, unchanged code): T1 5.5e-6, 5.5e-8, 5.8e-10; T4 4.1e-5, 4.1e-7, 4.1e-9;
-  T5 1.8e-5, 1.8e-7, 1.8e-9.</li>
-</ul>
-<p><strong>Reading.</strong> When N resolves the ThermaD &gt; 0 run, the eigenvalues converge to the ThermaD = 0 ones linearly in ThermaD,
-with the same slope for both bcs:</p>
-<div class="arithmatex">\[
-\lambda(\mathrm{ThermaD}) - \lambda(0) \approx c\thinspace \mathrm{ThermaD}, \qquad c = 5 \text{ to } 40 .
-\]</div>
-<p>That holds at every ThermaD with zero-flux or no-slip walls, and down to 1e-7 (N 128) and 1e-8 (N 256) with fixed
-entropy and stress-free walls.</p>
-<p>The exception is the fixed-entropy, stress-free case at small ThermaD. There the ThermaD = 0 entropy is not zero at
-the wall: <span class="arithmatex">\(u_\theta \neq 0\)</span> there, and so is the source <span class="arithmatex">\(u_\theta\thinspace \partial_\theta S_{tw}/r\)</span>. A ThermaD &gt; 0 run
-must bring <span class="arithmatex">\(s\)</span> to zero at the wall, so it has a boundary layer of width</p>
-<div class="arithmatex">\[
-\delta \sim \left(\frac{\mathrm{ThermaD}}{\lvert\lambda\rvert}\right)^{1/2},
-\]</div>
-<p>about 1e-4 at 1e-8 and 1e-5 at 1e-10.</p>
-<ul>
-<li>Below the resolved range its eigenvalue stalls 1e-6 to 1e-4 away, and the gap falls with N (T1 at 1e-10: 9.9e-6,
-  6.0e-6, 1.7e-6 at N 96, 128, 256; T5 at 1e-8: 1.0e-5, 6.2e-6, 2.2e-6, 1.6e-7 at N 96, 128, 192, 256).</li>
-<li>The ThermaD = 0 runs have no layer and are converged at N 96.</li>
-<li><code>thermal_wind = 0</code> has no such layer: <span class="arithmatex">\(u_r = 0\)</span> and <span class="arithmatex">\(S' = 0\)</span> at the walls make <span class="arithmatex">\(s = 0\)</span> there anyway.</li>
-</ul>
-<p><strong>Box counts.</strong> These check that no spurious eigenvalues appear near the tracked modes. Complete spectra at N 96 were
-computed by dense QZ (the direct generalized eigensolver) after Ruiz equilibration (a row/column rescaling of <span class="arithmatex">\(A\)</span> and
-<span class="arithmatex">\(B\)</span>). They are accurate to ~5e-7 against shift-invert; the unequilibrated QZ was off by up to 1e-1 and gave fake
-eigenvalues with <span class="arithmatex">\(\sigma\)</span> up to 49. The numbers are eigenvalues within ±0.05, ±0.1 and ±0.2 in <span class="arithmatex">\(\sigma\)</span> and <span class="arithmatex">\(\omega\)</span> of
-each mode, written ThermaD 0 / ThermaD 1e-10:</p>
-<table>
-<thead>
-<tr>
-<th>mode</th>
-<th>tw1</th>
-<th>tw2</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>T1</td>
-<td>1/1, 2/2, 4/4</td>
-<td>1/1, 2/2, 4/4</td>
-</tr>
-<tr>
-<td>T2</td>
-<td>1/1, 3/3, 74/72</td>
-<td>1/1, 3/3, 76/75</td>
-</tr>
-<tr>
-<td>T3</td>
-<td>1/1, 3/3, 266/259</td>
-<td>1/1, 3/3, 264/258</td>
-</tr>
-<tr>
-<td>T4</td>
-<td>1/1, 1/1, 1/1</td>
-<td>1/1, 1/1, 1/1</td>
-</tr>
-<tr>
-<td>T5</td>
-<td>1/1, 2/2, 2/2</td>
-<td>1/1, 2/2, 2/2</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Whole spectrum</strong>, N 96 tw1 (tw2). "The band" is a box around <span class="arithmatex">\(\sigma = 0\)</span> that holds the discretized continuous
-spectrum of term (a) (see <a href="#caveats">Caveats</a>):</p>
-<div class="arithmatex">\[
-\text{band:}\quad \lvert\sigma\rvert &lt; 0.03, \qquad \omega \in (-0.01,\ 0.26).
-\]</div>
-<table>
-<thead>
-<tr>
-<th></th>
-<th>ThermaD 0</th>
-<th>ThermaD 1e-10</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>finite eigenvalues</td>
-<td>2820 (2820)</td>
-<td>2800 (2800)</td>
-</tr>
-<tr>
-<td>in the band</td>
-<td>790 (791)</td>
-<td>770 (771)</td>
-</tr>
-<tr>
-<td>outside the band with <span class="arithmatex">\(\sigma &gt; -0.3\)</span></td>
-<td>130 (129)</td>
-<td>130 (129)</td>
-</tr>
-<tr>
-<td>growing (<span class="arithmatex">\(\sigma &gt; 10^{-3}\)</span>, all inside the band)</td>
-<td>22 (19)</td>
-<td>22 (19)</td>
-</tr>
-</tbody>
-</table>
-<ul>
-<li>The 20 extra ThermaD = 0 eigenvalues are the 20 <span class="arithmatex">\(s\)</span> coefficients that the ThermaD &gt; 0 run spends on bc rows, and
-  they all fall in the band.</li>
-<li>Outside the band the 130 (129) modes pair one to one: median distance 4.7e-6 (3.8e-6), maximum 1.2e-4 (1.0e-4), the
-  latter for modes close to the band.</li>
-<li>Only the ±0.2 boxes of T2 and T3 reach the band, which is where their counts differ.</li>
-<li>No spurious mode outside the band.</li>
-</ul>
-<h3 id="e-balances">e. Balances</h3>
-<p>These check that the eigenvectors satisfy the energy and entropy budgets, with the new terms included.</p>
-<ul>
-<li><code>sd_check.py</code> compares the powers computed by <code>spin_doctor</code> (kore's post-processing diagnostics) with the matrix
-  pairings: dWdr for the flow, dWdr_thm for the entropy.</li>
-<li>resid1, resid2 (flow) and resid3 (entropy) are <code>spin_doctor</code>'s budget residuals.</li>
-<li><code>terms.py</code> checks the entropy balance built from the matrix rows, whose residual is</li>
-</ul>
-<div class="arithmatex">\[
-\mathrm{res} = \lambda E - A - D - H .
-\]</div>
-<p>Results:</p>
-<ul>
-<li>k1 (tw1, N 96, 8 modes near −0.05 + 1.2i):<ul>
-<li>sd_check <code>worst dWdr, dWdr_thm 1.9e-10 -&gt; ok</code>;</li>
-<li>resid3 with the new terms 3e-13 to 7e-15 (without them 7e-1 to 5e-3), resid1 ≤ 5.8e-7, resid2 ≤ 3.4e-8;</li>
-<li>eig2kore + spin_doctor: <span class="arithmatex">\(\mathrm{resid}_ s\)</span> ≤ 2.9e-13, <span class="arithmatex">\(\mathrm{resid}_ \sigma\)</span> ≤ 5.8e-7;</li>
-<li>terms.py entropy balance: res ≤ 3.6e-14.</li>
-</ul>
-</li>
-<li>k1_tw2 (the same, and the run_all line): sd_check 1.9e-10 ok; terms.py res ≤ 1.0e-13; resid3 ≤ 2.8e-12.</li>
-<li>ksun_tw2 (ricb 0, N 120, 12 modes near −0.05 + 0.8i): terms.py res ≤ 1.7e-12, but sd_check FAIL (5.2).<ul>
-<li>Modes 0–4 and 7 (<span class="arithmatex">\(\omega \approx 0.2494\)</span>–<span class="arithmatex">\(0.2520\)</span>) sit at the edge of the advection continuum
-  (<span class="arithmatex">\(-i\thinspace m G\thinspace \Delta\Omega\)</span>, <span class="arithmatex">\(\omega \in [0, 0.25]\)</span>) and are not resolved at any N.</li>
-<li>The discrete modes near 0.51i are under-resolved at N 120: resid3 3–6e-2, dWdr_thm 2.7e-4 to 1.4e-3. At the
-  same N the ThermaD = 1e-10 run gives dWdr_thm 4e-4 to 2e-3 and <code>thermal_wind</code> 0 gives 2e-5 to 3.5e-4.</li>
-<li>At N 200 the new mode gives resid3 1.6e-8 to 2.7e-7 and dWdr_thm 1.9e-10 to 3.4e-8 for those modes
-  (λ = −0.023069 + 0.515537i; ThermaD = 1e-10 at N 120: −0.023070 + 0.515536i).</li>
-<li>So run_all's sd_check line uses k1_tw2.</li>
-</ul>
-</li>
-</ul>
-<h3 id="f-bitwise-regression-against-the-code-before-this-change-each-built-with-its-own-mk_runpy">f. Bitwise regression against the code before this change (each built with its own mk_run.py)</h3>
-<p>This confirms that configurations outside the new mode produce exactly the same matrices as before.</p>
-<p>A.npz and B.npz are byte-identical (<code>cmp</code>) for:</p>
-<ul>
-<li>s96, k0, sun, sun_a_tw2, g3_tw2, m0_tw2;</li>
-<li>sunk0_tw0 (SUN, ThermaD 0, <code>thermal_wind</code> 0);</li>
-<li>nodr_k0, nodr_sunk0 (SUN, ThermaD 0, <code>diff_rot</code> 0);</li>
-<li>bc1 (thermal bc 1);</li>
-<li>f10 and f10k (forcing 10, ThermaD 1e-3 and 0, <code>thermal_wind</code> 0; A and B_forced).</li>
-</ul>
-<h3 id="g-mpi-mpiexec-n-1-2-3-4">g. MPI (mpiexec -n 1, 2, 3, 4)</h3>
-<p>This confirms that the parallel assembly gives the same matrices as a single rank.</p>
-<p>A.npz and B.npz are byte-identical to the single-rank files, with the same pattern and 0 difference, for:</p>
-<ul>
-<li>mpi_k1 (lmax 24, tw1);</li>
-<li>mpi_ksun (smoothed sun, ricb 0, N 64, lmax 24, tw2);</li>
-<li>mpi_km0 (m 0, lmax 23, tw2).</li>
-</ul>
-<h3 id="h-independent-reviews">h. Independent reviews</h3>
-<p>The reviews covered the discretisation and the numerics.</p>
-<p><strong>Discretisation: no defect.</strong></p>
-<ul>
-<li>B matches only the claimed combination (<span class="arithmatex">\(C^{(1)}\)</span>, <span class="arithmatex">\(r^2\)</span>, first row) to 1e-15; every other basis, row or weight is
-  off by ≥ 0.19.</li>
-<li>19 other configurations are byte-identical to the old code (every .mtx), MPI with 2 ranks too.</li>
-<li>Its one finding, that the <span class="arithmatex">\(p_0\)</span>-weighted checks cannot see the rows near the wall, gave <code>row_check.py</code> (a).</li>
-</ul>
-<p><strong>Numerics.</strong></p>
-<ul>
-<li>With <span class="arithmatex">\(S_{tw} = 0\)</span> the new rows reproduce the old-row spectrum (conical N 96: ≤ 4e-8; Y20-wall-bounded: 69
-  eigenvalues, median 1e-9, max 5e-7).</li>
-<li>The smoothed sun with <code>thermal_wind</code> 2 converges in N: for the discrete modes, <span class="arithmatex">\(\lambda\)</span> changes by about <span class="arithmatex">\(10^{-8}\)</span>
-  to <span class="arithmatex">\(2\times10^{-8}\)</span> between N 160 and N 200.</li>
-<li>ThermaD = 1e-10 at N 200 is within 8e-9 of ThermaD = 0 there.</li>
-<li>The growing modes of the caveats (see <a href="#caveats">Caveats</a>).</li>
-</ul>
-<h2 id="caveats">Caveats</h2>
-<p>These are the limitations a user of ThermaD = 0 with the thermal wind should know about.</p>
-<p><strong>Singular limit.</strong> With fixed-entropy, stress-free walls, ThermaD → 0 at fixed N is a singular limit (d). The
-ThermaD = 0 run is the well-resolved one. A "tiny ThermaD instead of 0" run, as the params comment suggests for the old
-ThermaD = 0, is not equivalent below ThermaD ~ 1e-7 at N 128.</p>
-<p><strong>Continuous spectrum and small-scale growing modes.</strong> Term (a) without diffusion has a continuous spectrum,</p>
-<div class="arithmatex">\[
-\lambda = -i\thinspace m G\thinspace \Delta\Omega(r, \theta).
-\]</div>
-<p>ThermaD = 0 with <code>thermal_wind = 0</code> has it too. The discretization shows it as hundreds of eigenvalues near
-<span class="arithmatex">\(\sigma = 0\)</span>. With the thermal wind some of them grow:</p>
-<ul>
-<li>22 (19 with <code>thermal_wind</code> 2) with <span class="arithmatex">\(\sigma \leq 0.011\)</span> for k1 (N 96, lmax 20);</li>
-<li>6 with <span class="arithmatex">\(\sigma \leq 0.013\)</span> for Y20-wall-bounded;</li>
-<li>26 up to <span class="arithmatex">\(\sigma = 0.10\)</span> for the smoothed sun (ricb 0, N 160, lmax 30).</li>
-</ul>
-<p>They are converged in N but not in lmax: their eigenfunctions peak at <span class="arithmatex">\(l \approx \mathrm{lmax}\)</span>, and the sun has 43
-and 57 of them, <span class="arithmatex">\(\sigma\)</span> up to 0.12, at lmax 40 and 50. The ThermaD = 1e-10 runs have the same ones. They are absent
-with <code>thermal_wind = 0</code>, with <span class="arithmatex">\(S_{tw} = 0\)</span> in the new rows, and with ThermaD = 1e-3. So they are small-scale
-instabilities of the diffusionless thermal wind, unresolved in <span class="arithmatex">\(l\)</span>, not an artefact of the new rows.</p>
-<p><strong>Eigensolver near the band.</strong> ARPACK converges badly near it: csolve at 0 + 0.6i got 11/12 after 5000 iterations at
-ThermaD 0 and at 1e-10, and some shift-inverts at T2 took tens of minutes. Use shifts away from that band.</p>
-<p><strong>Resolution.</strong> In the full sphere, ThermaD = 0 eigenfunctions need more N than ThermaD = 1e-3 ones (e: N 120 → 200
-for the smoothed sun).</p>
-<p><strong>Ruiz prescaling.</strong> <code>solve.py</code> turns Ruiz prescaling off automatically for ThermaD = 0. That was tuned on the
-<span class="arithmatex">\(r\thinspace (\mathrm{eq})/p_0\)</span> rows and is not tested here for the <span class="arithmatex">\(r^2\)</span> rows (no PETSc/SLEPc in this container).</p>
-<p><strong>Behaviour change.</strong> A run with <code>thermal = 1</code>, <code>diff_rot = 1</code>, <code>ThermaD = 0</code> and the default <code>thermal_wind = 1</code> used
-to stop and now runs. The old behaviour (advection of <span class="arithmatex">\(s\)</span> only) needs <code>thermal_wind = 0</code>, as before.</p>
-<p><strong>Coverage.</strong> The rigid test (c) does not exercise the thermal wind, since <span class="arithmatex">\(S_{tw} = 0\)</span> for a rigid offset. The
-thermal-wind blocks are covered by a, b and d.</p>
+<p>which the discretization shows as many eigenvalues near <span class="arithmatex">\(\sigma = 0\)</span> whose frequencies lie in the range of
+<span class="arithmatex">\(m\thinspace\mathrm{Gaspard}\thinspace\Delta\Omega\)</span>. With the thermal wind some of them grow slowly. They peak at
+<span class="arithmatex">\(l \approx\)</span> <code>lmax</code> and change with <code>lmax</code>: they are small-scale instabilities of the diffusionless thermal wind, not
+modes at the resolved scales. Discard any mode that fails the ℓ-convergence check of <code>spin_doctor</code>. They disappear
+with <code>thermal_wind = 0</code> or with a moderate diffusivity (<code>ThermaD</code> ≈ <span class="arithmatex">\(10^{-3}\)</span>).</p>
+<p><strong>Put the target away from that band.</strong> The eigensolver converges slowly near it.</p>
+<p><strong>Check the convergence in N.</strong> In a full sphere, eigenfunctions with <code>ThermaD = 0</code> need more radial resolution than
+diffusive ones (N = 200 instead of 120 for a smooth solar model). Where <span class="arithmatex">\(\rho_0\)</span> nearly vanishes at the outer wall
+(structure <code>'Wu 2005'</code> with <code>r_out</code> close to 1), the thermal-wind rows converge slowly in N.</p>
+<p><strong>Choose the thermal-wind option on purpose.</strong> With <code>diff_rot = 1</code> the default <code>thermal_wind = 1</code> includes the
+thermal-wind terms. For the advection of <span class="arithmatex">\(s\)</span> by the differential rotation alone, set <code>thermal_wind = 0</code>.</p>
 
 
 

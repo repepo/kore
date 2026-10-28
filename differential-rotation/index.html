@@ -9,10 +9,10 @@
       
       
       
-        <link rel="prev" href="../solver/">
+        <link rel="prev" href="../background/">
       
       
-        <link rel="next" href="../heat-equation/">
+        <link rel="next" href="../differential_rotation_details/">
       
       
         
@@ -295,6 +295,47 @@
   
   
   
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
+          
+  
+  
+  Differential rotation
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../thermad0/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  ThermaD = 0
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
   
     <li class="md-tabs__item">
       <a href="../solver/" class="md-tabs__link">
@@ -314,21 +355,18 @@
   
   
   
-    
+  
+    <li class="md-tabs__item">
+      <a href="../benchmarks/" class="md-tabs__link">
+        
   
   
     
-    
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
-          
   
-  
-  Differential rotation
+  Benchmarks
 
-        </a>
-      </li>
-    
+      </a>
+    </li>
   
 
       
@@ -509,33 +547,6 @@
       
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../solver/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Solver
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
     
   
   
@@ -557,10 +568,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
         
           
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
             
   
   
@@ -578,8 +589,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_7">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -781,14 +792,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../heat-equation/" class="md-nav__link">
+      <a href="../differential_rotation_details/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Heat equation and benchmarks
+    Equations and implementation
   
 
     
@@ -802,8 +813,15 @@
 
               
             
-              
-                
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
   
   
   
@@ -828,11 +846,57 @@
     </li>
   
 
-              
-            
-          </ul>
-        </nav>
+    
       
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../solver/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Solver
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../benchmarks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmarks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1000,10 +1064,9 @@ not only of a rigidly rotating one. The background rotation is</p>
 departure from it, written as a sum of Legendre polynomials in <span class="arithmatex">\(\cos\theta\)</span> with radial coefficients <span class="arithmatex">\(f_n(r)\)</span>. Only even
 <span class="arithmatex">\(n\)</span> appear, so the rotation is symmetric about the equator.</p>
 <p>This page is the user guide: what is modelled, the parameters, the built-in profiles and their limits, and two worked
-examples. The derivation and the implementation notes are in <a href="../heat-equation/">heat-equation.md</a> (thermal terms,
-generic <span class="arithmatex">\(P_n\)</span> couplings, benchmarks, and a <a href="../heat-equation/#notation-and-code-names">table of notation and code names</a>)
-and in <a href="../thermad0/">thermad0.md</a> (runs without thermal diffusion, <code>ThermaD = 0</code>). The checks are described in
-<code>tests/diff_rot/README.md</code> and <code>tests/heat_dr/README.md</code>.</p>
+examples. The equations and how the code builds them are on the page
+<a href="../differential_rotation_details/">Equations and implementation</a>, the comparisons with published results on
+<a href="../benchmarks/">Benchmarks</a>, and runs without thermal diffusion on <a href="../thermad0/">ThermaD = 0</a>.</p>
 <h2 id="what-is-modelled">What is modelled</h2>
 <p>kore solves in a frame rotating at <span class="arithmatex">\(\Omega_{\rm ref}\)</span>. In that frame the differential rotation is a steady azimuthal
 flow,</p>
@@ -1032,7 +1095,7 @@ i\thinspace m G\thinspace \Delta\Omega\thinspace s + u_r\thinspace \frac{\partia
 latitudinal background entropy <span class="arithmatex">\(S_{tw}(r,\theta)\)</span> by the perturbation. <span class="arithmatex">\(S_{tw}\)</span> is either the thermal wind that balances
 <span class="arithmatex">\(\Omega(r,\theta)\)</span> (the latitudinal entropy a differentially rotating star needs to be in equilibrium; Bekki, Cameron &amp;
 Gizon 2022, eq. 27) or prescribed. These thermal-wind terms are not small corrections: in a convection zone they act at
-the same order as the momentum terms (heat-equation.md §1).</p>
+the same order as the momentum terms (<a href="../differential_rotation_details/#13-thermal-wind-balance">thermal-wind balance</a>).</p>
 <p>Not modelled:</p>
 <ul>
 <li>the background is fixed: nothing maintains or evolves <span class="arithmatex">\(\Omega\)</span> and <span class="arithmatex">\(S_{tw}\)</span> against diffusion;</li>
@@ -1051,7 +1114,7 @@ follow:</p>
   435 nHz; for <code>'solar_P4'</code> and <code>'tabulated'</code> at <code>diff_rot_frame</code> (456 nHz by default). The other types are
   dimensionless.</li>
 <li>With <code>thermal_wind = 2</code> the eigenvalues do not depend on the choice of frame. With <code>thermal_wind = 1</code> (linear in
-  <span class="arithmatex">\(\Delta\Omega\)</span>) they do, at second order in <span class="arithmatex">\(\Delta\Omega\)</span>: 0.1–0.9 nHz for the solar modes of heat-equation.md §6.</li>
+  <span class="arithmatex">\(\Delta\Omega\)</span>) they do, at second order in <span class="arithmatex">\(\Delta\Omega\)</span>: by 0.1–0.9 nHz for solar inertial modes.</li>
 </ul>
 <p>Eigenvalues are in the rotating frame of <span class="arithmatex">\(\Omega_{\rm ref}\)</span>, as for uniform rotation.</p>
 <h2 id="quick-start">Quick start</h2>
@@ -1130,7 +1193,7 @@ of <code>2*ncpus</code> (<code>assemble.py</code> stops otherwise).</p>
 <tr>
 <td><code>diff_rot_window</code></td>
 <td>None</td>
-<td><code>'tabulated'</code>: None fits over the shell if ricb &gt; 0 and is <code>'sun'</code> if ricb = 0; <code>'sun'</code>: one fit over the whole Sun, even in <span class="arithmatex">\(r\)</span>, the same for any ricb (<a href="../heat-equation/">heat-equation.md</a> §9)</td>
+<td><code>'tabulated'</code>: None fits over the shell if ricb &gt; 0 and is <code>'sun'</code> if ricb = 0; <code>'sun'</code>: one fit over the whole Sun, even in <span class="arithmatex">\(r\)</span>, the same for any ricb</td>
 </tr>
 <tr>
 <td><code>diff_rot_sun_deg</code></td>
@@ -1156,11 +1219,6 @@ of <code>2*ncpus</code> (<code>assemble.py</code> stops otherwise).</p>
 <td><code>dSdtheta</code></td>
 <td>0.0</td>
 <td><code>thermal_wind = 3</code>: <span class="arithmatex">\(\partial_\theta S_{tw}\)</span> = <code>dSdtheta</code> <span class="arithmatex">\(\sin 2\theta\)</span></td>
-</tr>
-<tr>
-<td><code>drop_tol</code></td>
-<td>0</td>
-<td>numerics: drops matrix entries below <code>drop_tol</code> (relative) to save memory; 0 is off (<a href="../bin/params_default.py">params_default.py</a>)</td>
 </tr>
 </tbody>
 </table>
@@ -1224,7 +1282,7 @@ with a solar structure (<a href="../background/">background.md</a>), <span class
 <td><code>'solar'</code></td>
 <td><span class="arithmatex">\(a\thinspace \times\)</span> helioseismic fit, <span class="arithmatex">\(P_0 + P_2\)</span>, tanh step at <span class="arithmatex">\(x = 0.71\)</span> of width 0.1</td>
 <td><span class="arithmatex">\(P_0\)</span>, <span class="arithmatex">\(P_2\)</span></td>
-<td>relative to 435 nHz; 4.5 nHz too fast at the equator and 12 nHz at the pole compared with the observations (heat-equation.md §6)</td>
+<td>relative to 435 nHz; 4.5 nHz too fast at the equator and 12 nHz at the pole compared with the observations</td>
 </tr>
 <tr>
 <td><code>'solar_P4'</code></td>
@@ -1254,7 +1312,9 @@ with a solar structure (<a href="../background/">background.md</a>), <span class
 convection zone whose rotation depends on latitude only:</p>
 <div class="arithmatex">\[
 \frac{\Omega}{2\pi} = \Omega_{RZ} + \tfrac12\left[\Omega_{CZ}(\theta) - \Omega_{RZ}\right]\left[1 + \mathrm{erf}\thinspace \frac{x - r_{tc}}{d_{tc}}\right],
-\qquad \Omega_{CZ} = c_0 + c_2\cos^2\theta + c_4\cos^4\theta ,
+\]</div>
+<div class="arithmatex">\[
+\Omega_{CZ} = c_0 + c_2\cos^2\theta + c_4\cos^4\theta ,
 \]</div>
 <p>with <code>diff_rot_solar</code> = [<span class="arithmatex">\(c_0\)</span>, <span class="arithmatex">\(c_2\)</span>, <span class="arithmatex">\(c_4\)</span>, <span class="arithmatex">\(\Omega_{RZ}\)</span>, <span class="arithmatex">\(r_{tc}\)</span>, <span class="arithmatex">\(d_{tc}\)</span>] (nHz, and fractions of R☉).</p>
 <p><strong><code>'user'</code>.</strong> <code>diff_rot_profiles</code> gives the shape of each even degree as a numpy expression of <code>r</code> (kore radius), <code>x</code>
@@ -1317,9 +1377,7 @@ The advection of <span class="arithmatex">\(s\)</span> by the differential rotat
   the consistent choice, but it moves the solar columnar and high-frequency retrograde modes by 5–15 nHz.</li>
 <li>With the thermal wind <span class="arithmatex">\(S_{tw}\)</span> is the only latitudinal entropy gradient; in a convection zone with <span class="arithmatex">\(dS_0/dr = 0\)</span> it is
   also the only background entropy gradient, and its effect on the modes is of the same order as the momentum terms.</li>
-<li><code>ThermaD = 0</code> works with every option. With <code>thermal_wind ≥ 1</code> the heat rows are written as <span class="arithmatex">\(r^2\thinspace (\mathrm{eq})/p_0\)</span> in a <span class="arithmatex">\(C^{(1)}\)</span>
-  basis; see <a href="../thermad0/">thermad0.md</a> for the caveats (unresolved boundary layer as <code>ThermaD</code> <span class="arithmatex">\(\to 0\)</span>, small-scale
-  growing modes without diffusion).</li>
+<li><code>ThermaD = 0</code> works with every option; <a href="../thermad0/">ThermaD = 0</a> lists what to watch for.</li>
 </ul>
 <h2 id="resolution-and-cost">Resolution and cost</h2>
 <ul>
@@ -1330,6 +1388,9 @@ The advection of <span class="arithmatex">\(s\)</span> by the differential rotat
   couple degrees that far apart. Matrices are therefore widest with <code>'tabulated'</code> and a large <code>diff_rot_nmax</code>.</li>
 <li>With <code>ricb = 0</code> (a full sphere) the profiles are evaluated at <span class="arithmatex">\(\lvert r\rvert\)</span>, to keep them smooth at the centre. <code>'Y20-wall-bounded'</code> and <code>'shellular'</code> (except even <span class="arithmatex">\(\sigma &gt; 0\)</span>) have a
   kink at <span class="arithmatex">\(r = 0\)</span> and <code>submatrices.py</code> prints a WARNING. The <code>'solar'</code> tachocline step needs N ≈ 400 at <code>ricb = 0</code>.</li>
+<li>Modes that reach into a radiative interior have short radial wavelengths. In a full sphere with the radiative
+  interior of stratification <code>'solar_rz'</code>, solar inertial modes needed N = 768 to 1024 for the <code>spin_doctor</code>
+  residuals, although their eigenvalues converge at a lower N. <a href="../solver/">Solver</a> has the memory this takes.</li>
 <li>Check convergence with <code>spin_doctor</code> as for any run; its residuals include the diff-rot terms.</li>
 </ul>
 <h2 id="output">Output</h2>
@@ -1344,39 +1405,17 @@ diff_rot_window, diff_rot_hold, solar_rz_delta_cz, solar_rz_delta_sf, drop_tol, 
 stratification, diffusivity
 </code></pre></div>
 <p><code>diff_rot_type</code> is written as its index in <code>diff_rot.TYPES</code> ('Y20' 0, …, 'rigid' 7, 'solar_P4' 8, 'tabulated' 9,
-'user' 10); the background columns are described in <a href="../background/">background.md</a>. A row ends, after a <code>#</code> that
+'user' 10); the background columns are described in <a href="../background/">Background model</a>. A row ends, after a <code>#</code> that
 <code>np.loadtxt</code> skips, with the <code>'user'</code> profile definitions and, for <code>'tabulated'</code>, <code>diff_rot_file</code> with the first 12 hex
 digits of its sha256 (a row with neither has no <code>#</code>). <code>diff_rot_window</code> is 0 for the shell fit and 1 for the whole-Sun
-fit (with <code>diff_rot_rdeg</code> then the degree used, <code>diff_rot_sun_deg</code>). The column <code>diff_rot_ampl</code> is the former
-<code>diff_rot_amplitude</code>, and the removed options <code>diff_rot_generic</code> and <code>diff_rot_hold</code> are always 0 and nan, so that the
-other columns keep their positions; <code>diff_rot_param</code>, <code>stratification</code> and <code>diffusivity</code> are appended at the end. A
-<code>params.dat</code> written by an older version may have fewer columns; start a new file rather than appending to it. The
-former names <code>diff_rot_amplitude</code> and <code>diff_rot_generic</code>, and <code>diff_rot_hold</code> (removed on 2026-10-26,
-<a href="../differential_rotation_details/">differential_rotation_details.md</a> §5.1), stop a run (<code>diff_rot.check</code>).</p>
+fit (with <code>diff_rot_rdeg</code> then the degree used, <code>diff_rot_sun_deg</code>). The columns <code>diff_rot_generic</code> and
+<code>diff_rot_hold</code> are not used (always 0 and nan); they keep the positions of the columns after them. Start a new
+<code>params.dat</code> rather than append to one written by another version of kore, which may have other columns.</p>
 <h2 id="examples">Examples</h2>
-<p><strong>Conical rotation, Guenel et al. 2016.</strong> <code>ricb = 0.71</code>, <code>diff_rot_type = 'conical'</code>, <code>diff_rot_ampl = -0.25</code>,
-<span class="arithmatex">\(E = 10^{-5}\)</span>, uniform density (structure <code>'Boussinesq'</code>), stress-free, <code>thermal = 0</code>, <span class="arithmatex">\(m = 0\)</span>: their DT mode near <span class="arithmatex">\(\omega \approx 1.82\)</span>; kore gives
-<span class="arithmatex">\(\omega = 1.8173\)</span>, <span class="arithmatex">\(\sigma = -0.021\)</span>.</p>
-<p><strong>Solar inertial modes, Mukhopadhyay et al. 2025.</strong> The like-for-like set-up of heat-equation.md §8.
-<code>tests/diff_rot/mk_bekki.py</code> builds it (with keys for <span class="arithmatex">\(m\)</span>, the profile, the thermal-wind options and <span class="arithmatex">\(\Delta_\theta s\)</span>),
-<code>solve_bekki.py</code> solves it near a target frequency in nHz, and <code>run_bekki.py</code> reproduces the five modes of §8. The
-parameters it sets:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">units</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">par</span><span class="o">.</span><span class="n">timescale</span> <span class="o">=</span> <span class="s1">'rotation'</span><span class="p">;</span> <span class="n">par</span><span class="o">.</span><span class="n">set_scales</span><span class="p">()</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">par</span><span class="o">.</span><span class="n">structure</span> <span class="o">=</span> <span class="s1">'old model S prototype'</span>                  <span class="c1"># the Model S density (background.md)</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">par</span><span class="o">.</span><span class="n">r_out</span> <span class="o">=</span> <span class="mf">0.985</span><span class="p">;</span> <span class="n">par</span><span class="o">.</span><span class="n">ricb</span> <span class="o">=</span> <span class="mf">0.71</span><span class="o">/</span><span class="mf">0.985</span>                 <span class="c1"># shell 0.71-0.985 R☉</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">par</span><span class="o">.</span><span class="n">stratification</span> <span class="o">=</span> <span class="s1">'odd top hat'</span>                       <span class="c1"># with A = aux5 = 0: dS0/dr = 0 (δ = 0)</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">par</span><span class="o">.</span><span class="n">aux1</span><span class="p">,</span> <span class="n">par</span><span class="o">.</span><span class="n">aux2</span><span class="p">,</span> <span class="n">par</span><span class="o">.</span><span class="n">aux3</span><span class="p">,</span> <span class="n">par</span><span class="o">.</span><span class="n">aux4</span><span class="p">,</span> <span class="n">par</span><span class="o">.</span><span class="n">aux5</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.68</span><span class="p">,</span> <span class="mf">0.06</span><span class="p">,</span> <span class="mf">0.0</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">par</span><span class="o">.</span><span class="n">thermal</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">par</span><span class="o">.</span><span class="n">bci</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">bco</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">par</span><span class="o">.</span><span class="n">bci_thermal</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">bco_thermal</span> <span class="o">=</span> <span class="mi">1</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">par</span><span class="o">.</span><span class="n">diff_rot</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">par</span><span class="o">.</span><span class="n">diff_rot_type</span> <span class="o">=</span> <span class="s1">'tabulated'</span><span class="p">;</span> <span class="n">par</span><span class="o">.</span><span class="n">diff_rot_file</span> <span class="o">=</span> <span class="s1">'diff_rot.npz'</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">par</span><span class="o">.</span><span class="n">diff_rot_nmax</span> <span class="o">=</span> <span class="mi">12</span>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">par</span><span class="o">.</span><span class="n">thermal_wind</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span> <span class="n">par</span><span class="o">.</span><span class="n">thermal_wind_radial</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="n">units</span><span class="o">.</span><span class="n">set_physical</span><span class="p">(</span><span class="n">par</span><span class="p">,</span> <span class="n">frame_nHz</span><span class="o">=</span><span class="mf">456.0</span><span class="p">,</span> <span class="n">nu</span><span class="o">=</span><span class="mf">1e12</span><span class="p">,</span> <span class="n">kappa</span><span class="o">=</span><span class="mf">1e12</span><span class="p">)</span>   <span class="c1"># Gaspard, Beyonce, ViscosD, ThermaD, diff_rot_frame</span>
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="n">par</span><span class="o">.</span><span class="n">N</span> <span class="o">=</span> <span class="mi">64</span><span class="p">;</span> <span class="n">par</span><span class="o">.</span><span class="n">lmax</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">m</span> <span class="o">+</span> <span class="mi">63</span>
-</span></code></pre></div>
-<p>The <span class="arithmatex">\(m = 1\)</span> high-latitude mode comes out at −95.76 nHz with growth rate +11.30 nHz (theirs: −95.70, +11.69); the
-table in heat-equation.md §8 has more modes. With <code>thermal_wind = 3</code> and <code>dSdtheta</code> <span class="arithmatex">\(= \Delta_\theta s/c_p\)</span> the same set-up gives the
-baroclinic onset of Bekki et al. 2024 (<span class="arithmatex">\(\lvert\Delta_\theta s\rvert \approx 425\)</span> erg g⁻¹ K⁻¹ with the Mukhopadhyay et al. 2025 <span class="arithmatex">\(\Omega\)</span>).</p>
+<p>The set-ups on the page <a href="../benchmarks/">Benchmarks</a> are complete examples: conical and cylindrical rotation in an
+incompressible fluid, shellular rotation in a stratified Boussinesq fluid, and the solar convection zone with the
+observed rotation and its thermal wind, with and without a radiative interior. <code>examples/smooth_sun/parameters.py</code> is a
+full-sphere solar model with a radiative interior and the rotation of <code>bin/jsoc_hmi_2010_2026.npz</code>.</p>
 <h2 id="references">References</h2>
 <ul>
 <li>Baruteau &amp; Rieutord 2013, JFM 719, 47 (shellular and cylindrical profiles)</li>

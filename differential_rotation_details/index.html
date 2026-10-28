@@ -9,6 +9,10 @@
       
       
       
+        <link rel="prev" href="../differential-rotation/">
+      
+      
+        <link rel="next" href="../thermad0/">
       
       
         
@@ -19,7 +23,7 @@
     
     
       
-        <title>Differential rotation in kore: physics, equations and implementation - User Manual</title>
+        <title>Equations and implementation - User Manual</title>
       
     
     
@@ -70,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#differential-rotation-in-kore-physics-equations-and-implementation" class="md-skip">
+        <a href="#differential-rotation-equations-and-implementation" class="md-skip">
           Skip to content
         </a>
       
@@ -105,7 +109,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Differential rotation in kore: physics, equations and implementation
+              Equations and implementation
             
           </span>
         </div>
@@ -291,6 +295,47 @@
   
   
   
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../differential-rotation/" class="md-tabs__link">
+          
+  
+  
+  Differential rotation
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../thermad0/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  ThermaD = 0
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
   
     <li class="md-tabs__item">
       <a href="../solver/" class="md-tabs__link">
@@ -311,18 +356,17 @@
   
   
   
-    
-    
-      <li class="md-tabs__item">
-        <a href="../differential-rotation/" class="md-tabs__link">
-          
+    <li class="md-tabs__item">
+      <a href="../benchmarks/" class="md-tabs__link">
+        
   
   
-  Differential rotation
+    
+  
+  Benchmarks
 
-        </a>
-      </li>
-    
+      </a>
+    </li>
   
 
       
@@ -503,53 +547,31 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../solver/" class="md-nav__link">
+  
+    
+    
+    
+    
+      
         
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Solver
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    
-    
-    
-    
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
         
           
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
             
   
   
@@ -567,8 +589,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -610,17 +632,44 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../heat-equation/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Equations and implementation
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
   <span class="md-ellipsis">
     
   
-    Heat equation and benchmarks
+    Equations and implementation
   
 
     
@@ -629,13 +678,522 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#0-notation-and-code-names" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0. Notation and code names
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-physics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Physics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Physics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-the-background" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 The background
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-what-the-differential-rotation-does-to-a-perturbation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 What the differential rotation does to a perturbation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-thermal-wind-balance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Thermal-wind balance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#14-what-is-not-modelled" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.4 What is not modelled
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-equations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Equations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Equations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-the-linear-anelastic-lbr-equations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 The linear anelastic (LBR) equations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-the-background-flow-as-a-local-rotation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 The background flow as a local rotation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-derivation-of-the-momentum-term" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Derivation of the momentum term
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-thermal-wind-entropy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 Thermal-wind entropy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25-the-heat-equation-terms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5 The heat-equation terms
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#26-an-exact-result-the-rigid-offset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.6 An exact result: the rigid offset
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-spectral-form" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Spectral form
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Spectral form">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-projection-of-a-vector-field-and-kores-rows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Projection of a vector field, and kore's rows
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-angular-primitives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Angular primitives
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-from-the-primitives-to-the-radial-operators" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 From the primitives to the radial operators
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#35-selection-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.5 Selection rules
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#36-closed-forms-for-p_0-and-p_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.6 Closed forms for \(P_0\) and \(P_2\)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#37-the-heat-equation-terms-in-harmonic-form" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.7 The heat-equation terms in harmonic form
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-implementation-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Implementation overview
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Implementation overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-the-functions-of-diff_rotpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 The functions of diff_rot.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-radial-profiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Radial profiles
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Radial profiles">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-the-profiles-f_n-of-each-type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 The profiles \(f_n\) of each type
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-derivatives-and-the-full-sphere" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Derivatives and the full sphere
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-profile-codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Profile codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#54-the-thermal-wind-coefficients-sigma_n" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4 The thermal-wind coefficients \(\sigma_n\)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-radial-operators-and-labels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Radial operators and labels
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Radial operators and labels">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-label-grammar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Label grammar
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-the-labels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 The labels
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-parity-in-a-full-sphere" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 Parity in a full sphere
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-the-operators-and-the-assembly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. The operators and the assembly
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. The operators and the assembly">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-momentum-diff_rotmomentum_block" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Momentum: diff_rot.momentum_block
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-heat-diff_rotheat_block" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Heat: diff_rot.heat_block
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73-assembly-assemblepy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 Assembly: assemble.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-diagnostics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Diagnostics
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Tests
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Limitations
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
               
             
-              
-                
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
   
   
   
@@ -660,11 +1218,57 @@
     </li>
   
 
-              
-            
-          </ul>
-        </nav>
+    
       
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../solver/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Solver
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../benchmarks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmarks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1156,10 +1760,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#9-internal-consistency-checks" class="md-nav__link">
+  <a href="#9-tests" class="md-nav__link">
     <span class="md-ellipsis">
       
-        9. Internal consistency checks
+        9. Tests
       
     </span>
   </a>
@@ -1171,139 +1775,6 @@
     <span class="md-ellipsis">
       
         10. Limitations
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#11-benchmarks-against-published-results" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        11. Benchmarks against published results
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="11. Benchmarks against published results">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#111-set-ups-and-conventions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        11.1 Set-ups and conventions
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#112-results" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        11.2 Results
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="11.2 Results">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#baruteau-rieutord-2013-incompressible" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Baruteau &amp; Rieutord 2013 (incompressible)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#guenel-et-al-2016-incompressible-conical-rotation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Guenel et al. 2016 (incompressible, conical rotation)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#mirouh-et-al-2016-boussinesq-stress-free-walls" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Mirouh et al. 2016 (Boussinesq, stress-free walls)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#mukhopadhyay-et-al-2025a-convection-zone-their-their-compressible-values" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Mukhopadhyay et al. 2025a (convection zone, their Ω): their compressible values
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#mukhopadhyay-et-al-2025b-radiative-interior-rin-05-r" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Mukhopadhyay et al. 2025b (radiative interior, rin 0.5 R☉)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#113-summary" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        11.3 Summary
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#114-reproducing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        11.4 Reproducing
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#12-cost-against-the-highest-degree" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        12. Cost against the highest degree
       
     </span>
   </a>
@@ -1327,8 +1798,10 @@
 
 
 
-<h1 id="differential-rotation-in-kore-physics-equations-and-implementation">Differential rotation in kore: physics, equations and implementation</h1>
-<p>This page is a self-contained reference for the differential rotation of kore's <code>anelastic_log</code> branch. It covers:</p>
+<h1 id="differential-rotation-equations-and-implementation">Differential rotation: equations and implementation</h1>
+<p>This page is the reference for the differential rotation: the physics, the equations, and how the code builds them.
+The parameters and examples are in the <a href="../differential-rotation/">user guide</a>, and the comparisons with published
+results on the page <a href="../benchmarks/">Benchmarks</a>. It covers:</p>
 <ul>
 <li>the physics: what a differentially rotating background does to a linear perturbation (§1);</li>
 <li>the anelastic (LBR) equations with differential rotation, and the derivation of every term that the differential
@@ -1337,14 +1810,9 @@
   coefficients are obtained (§3);</li>
 <li>the implementation, term by term: radial profiles, operator labels, the operators, the assembly of the matrices and
   the diagnostics (§4 to §8);</li>
-<li>the internal consistency checks built into the code, and the known limitations (§9, §10);</li>
-<li>benchmarks against published eigenvalues: Baruteau &amp; Rieutord 2013, Guenel et al. 2016, Mirouh et al. 2016,
-  Mukhopadhyay et al. 2025a and 2025b (§11);</li>
-<li>the cost in time and memory against the highest degree of <span class="arithmatex">\(\Delta\Omega\)</span> (§12).</li>
+<li>the tests of the implementation, and the known limitations (§9, §10).</li>
 </ul>
-<p>It describes the code after the differential rotation was unified in <code>bin/diff_rot.py</code> on the angular algebra of
-<code>bin/angular.py</code> (2026-10-23, on top of commit <code>b4598010</code>). The code references give a file and a function, and a line
-number in that version (line numbers drift; the function names do not).</p>
+<p>Code references give the file and the function.</p>
 <p>Contents</p>
 <ul>
 <li><a href="#0-notation-and-code-names">0. Notation and code names</a></li>
@@ -1356,10 +1824,8 @@ number in that version (line numbers drift; the function names do not).</p>
 <li><a href="#6-radial-operators-and-labels">6. Radial operators and labels</a></li>
 <li><a href="#7-the-operators-and-the-assembly">7. The operators and the assembly</a></li>
 <li><a href="#8-diagnostics">8. Diagnostics</a></li>
-<li><a href="#9-internal-consistency-checks">9. Internal consistency checks</a></li>
+<li><a href="#9-tests">9. Tests</a></li>
 <li><a href="#10-limitations">10. Limitations</a></li>
-<li><a href="#11-benchmarks-against-published-results">11. Benchmarks against published results</a></li>
-<li><a href="#12-cost-against-the-highest-degree">12. Cost against the highest degree</a></li>
 </ul>
 <h2 id="0-notation-and-code-names">0. Notation and code names</h2>
 <p>Everything is dimensionless. The length unit is the outer radius <span class="arithmatex">\(r_0\)</span> (r = 1 at the outer boundary), and the time unit
@@ -1495,7 +1961,7 @@ is <span class="arithmatex">\(\tau\)</span>, chosen by <code>par.timescale</code
 </tr>
 <tr>
 <td><span class="arithmatex">\(\lambda\)</span></td>
-<td>eigenvalue, fields <span class="arithmatex">\(\propto e^{\lambda t}\)</span>, <span class="arithmatex">\(\lambda = \sigma + i\omega\)</span> (<span class="arithmatex">\(\omega &lt; 0\)</span> is prograde)</td>
+<td>eigenvalue, fields <span class="arithmatex">\(\propto e^{\lambda t}\)</span>, <span class="arithmatex">\(\lambda = \sigma - i\omega\)</span>: growth rate <span class="arithmatex">\(\sigma\)</span>, frequency <span class="arithmatex">\(\omega\)</span> (<span class="arithmatex">\(\omega &gt; 0\)</span> is prograde)</td>
 <td></td>
 </tr>
 </tbody>
@@ -1550,7 +2016,9 @@ the differential rotation then has a curl, and in a stratified fluid only a buoy
 that is a latitudinal entropy gradient, can balance it. This is thermal-wind balance. A differentially rotating star
 in equilibrium therefore has a background entropy <span class="arithmatex">\(S_0(r) + S_{tw}(r,\theta)\)</span>. kore computes <span class="arithmatex">\(S_{tw}\)</span> from <span class="arithmatex">\(\Delta\Omega\)</span>
 (<code>thermal_wind</code> 1 or 2), prescribes it (<code>thermal_wind = 3</code>), or omits it (<code>thermal_wind = 0</code>).</p>
-<p><span class="arithmatex">\(S_{tw}\)</span> is small in amplitude, since it scales as <span class="arithmatex">\(G^2/(\mathrm{Beyonce}\thinspace g)\)</span>. But the buoyancy it produces
+<p><span class="arithmatex">\(S_{tw}\)</span> is small in amplitude, since it scales as <span class="arithmatex">\(G^2/(\mathrm{Beyonce}\thinspace g)\)</span>: for the Sun
+(Beyonce ≈ <span class="arithmatex">\(4.9\times10^4\)</span>) its contrast from pole to equator is about <span class="arithmatex">\(5\times10^{-6}\)</span> in units of <span class="arithmatex">\(c_p\)</span>, or
+<span class="arithmatex">\(2\times10^3\)</span> erg g⁻¹ K⁻¹. But the buoyancy it produces
 through a perturbation scales as <span class="arithmatex">\(\mathrm{Beyonce}\thinspace g\thinspace s\)</span>. The product does not depend on
 Beyonce: the feedback of <span class="arithmatex">\(S_{tw}\)</span> on the motion is of order <span class="arithmatex">\(\Delta\Omega\)</span> relative to the Coriolis force, the same
 order as the momentum terms of §1.2. In a convection zone, where <span class="arithmatex">\(S_0' \approx 0\)</span>, <span class="arithmatex">\(S_{tw}\)</span> is the only background
@@ -1636,7 +2104,8 @@ adds to the frame's <span class="arithmatex">\(2\hat{\mathbf z}\times\mathbf u\)
 \begin{aligned}
 W_r/G &amp;= f P_n\left[i m\thinspace u_r - 2\sin\theta\thinspace u_\phi\right],\cr
 W_\theta/G &amp;= f P_n\left[i m\thinspace u_\theta - 2x\thinspace u_\phi\right],\cr
-W_\phi/G &amp;= f P_n\left[i m\thinspace u_\phi + 2\sin\theta\thinspace u_r + 2x\thinspace u_\theta\right] + \sin\theta\left[(r f')\thinspace P_n\thinspace u_r - f\sin\theta\thinspace P_n'\thinspace u_\theta\right].
+W_\phi/G &amp;= f P_n\left[i m\thinspace u_\phi + 2\sin\theta\thinspace u_r + 2x\thinspace u_\theta\right]\cr
+&amp;\quad + \sin\theta\left[(r f')\thinspace P_n\thinspace u_r - f\sin\theta\thinspace P_n'\thinspace u_\theta\right].
 \end{aligned} \qquad (2.7)
 \]</div>
 <p>The profile enters only as <span class="arithmatex">\(f\)</span> and <span class="arithmatex">\(r f'\)</span>; the second derivative <span class="arithmatex">\(r^2 f''\)</span> appears later, when the double curl
@@ -1663,8 +2132,10 @@ The <span class="arithmatex">\(\phi\)</span>-component of the curl removes <span
 \]</div>
 <p><strong>In the variable <span class="arithmatex">\(x\)</span>.</strong> With <span class="arithmatex">\(\partial_\theta = -\sin\theta\thinspace \partial_x\)</span> and <span class="arithmatex">\(\partial_z = x\partial_r + r^{-1}(1 - x^2)\partial_x\)</span>, (2.8) becomes</p>
 <div class="arithmatex">\[
-\frac{\partial S_{tw}}{\partial x} = -\frac{r^2 G^2}{\mathrm{Beyonce}\thinspace g}\left[x\thinspace \frac{\partial F}{\partial r} + \frac{1 - x^2}{r}\frac{\partial F}{\partial x}\right],
-\qquad F = \begin{cases} 2\Delta\Omega &amp; \text{(linear)} \cr (1 + \Delta\Omega)^2 - 1 &amp; \text{(exact)} \end{cases} \qquad (2.9)
+\begin{gathered}
+\frac{\partial S_{tw}}{\partial x} = -\frac{r^2 G^2}{\mathrm{Beyonce}\thinspace g}\left[x\thinspace \frac{\partial F}{\partial r} + \frac{1 - x^2}{r}\frac{\partial F}{\partial x}\right], \qquad (2.9)\cr
+F = \begin{cases} 2\Delta\Omega &amp; \text{(linear)} \cr (1 + \Delta\Omega)^2 - 1 &amp; \text{(exact)} \end{cases}
+\end{gathered}
 \]</div>
 <p><code>thermal_wind = 1</code> uses the linear form, <code>thermal_wind = 2</code> the exact one. Only the exact form is independent of the
 frame: <span class="arithmatex">\(G^2(1 + \Delta\Omega)^2\)</span> is the square of the physical rotation rate, the same whatever <span class="arithmatex">\(\Omega_{\rm ref}\)</span> the
@@ -1680,8 +2151,10 @@ in <span class="arithmatex">\(\Delta\Omega\)</span>.</p>
 <code>thermal_wind = 2</code>,</p>
 <div class="arithmatex">\[
 \begin{aligned}
-\sigma_2 &amp;= -\frac{2r^2G^2}{\mathrm{Beyonce}\thinspace g}\left[(1 + e f_0)\left(\frac{f_0'}{3} + \frac{f_2'}{21} + \frac{4}{7}\frac{f_2}{r}\right) + \frac{e\thinspace f_2 (f_0' + f_2')}{21}\right],\cr
-\sigma_4 &amp;= -\frac{6r^2G^2}{35\thinspace \mathrm{Beyonce}\thinspace g}\left[(1 + e f_0)\left(f_2' - \frac{2f_2}{r}\right) + e\left(f_2 f_0' + \frac{4}{11}f_2 f_2' + \frac{14}{11}\frac{f_2^2}{r}\right)\right],\cr
+\sigma_2 &amp;= -\frac{2r^2G^2}{\mathrm{Beyonce}\thinspace g}\Bigg[(1 + e f_0)\left(\frac{f_0'}{3} + \frac{f_2'}{21} + \frac{4}{7}\frac{f_2}{r}\right)\cr
+&amp;\qquad + \frac{e\thinspace f_2 (f_0' + f_2')}{21}\Bigg],\cr
+\sigma_4 &amp;= -\frac{6r^2G^2}{35\thinspace \mathrm{Beyonce}\thinspace g}\Bigg[(1 + e f_0)\left(f_2' - \frac{2f_2}{r}\right)\cr
+&amp;\qquad + e\left(f_2 f_0' + \frac{4}{11}f_2 f_2' + \frac{14}{11}\frac{f_2^2}{r}\right)\Bigg],\cr
 \sigma_6 &amp;= -e\thinspace \frac{4r^2G^2}{77\thinspace \mathrm{Beyonce}\thinspace g}\thinspace f_2\left(f_2' - \frac{2f_2}{r}\right).
 \end{aligned} \qquad (2.10)
 \]</div>
@@ -1741,14 +2214,18 @@ u_r = \frac{L P_l}{r} Y_l, \qquad u_\theta = a_l\thinspace \partial_\theta Y_l +
 <h3 id="32-projection-of-a-vector-field-and-kores-rows">3.2 Projection of a vector field, and kore's rows</h3>
 <p>Any vector field <span class="arithmatex">\(\mathbf F\)</span> is projected on vector spherical harmonics as</p>
 <div class="arithmatex">\[
-\mathbf F = \sum_l\left[F^q_l\thinspace Y_l\thinspace \hat{\mathbf r} + F^s_l\thinspace r\nabla Y_l + F^t_l\thinspace r\nabla Y_l\times\hat{\mathbf r}\right], \qquad
-r\nabla Y = \partial_\theta Y\thinspace \hat{\mathbf e}_\theta + Z\thinspace \hat{\mathbf e}_ \phi, \quad r\nabla Y\times\hat{\mathbf r} = Z\thinspace \hat{\mathbf e}_\theta - \partial_\theta Y\thinspace \hat{\mathbf e}_ \phi , \qquad (3.3)
+\begin{gathered}
+\mathbf F = \sum_l\left[F^q_l\thinspace Y_l\thinspace \hat{\mathbf r} + F^s_l\thinspace r\nabla Y_l + F^t_l\thinspace r\nabla Y_l\times\hat{\mathbf r}\right], \qquad (3.3)\cr
+r\nabla Y = \partial_\theta Y\thinspace \hat{\mathbf e}_\theta + Z\thinspace \hat{\mathbf e}_ \phi, \qquad r\nabla Y\times\hat{\mathbf r} = Z\thinspace \hat{\mathbf e}_\theta - \partial_\theta Y\thinspace \hat{\mathbf e}_ \phi ,
+\end{gathered}
 \]</div>
 <p>with, since <span class="arithmatex">\(\int(\lvert\partial_\theta Y_l\rvert^2 + \lvert Z_l\rvert^2)\thinspace d\Omega = L n_l\)</span>,</p>
 <div class="arithmatex">\[
-F^q_l = \frac{1}{n_l}\int F_r Y_l^\ast\thinspace d\Omega, \qquad
-F^s_l = \frac{1}{L n_l}\int\left(F_\theta\thinspace \partial_\theta Y_l^\ast + F_\phi Z_l^\ast\right)d\Omega, \qquad
-F^t_l = \frac{1}{L n_l}\int\left(F_\theta Z_l^\ast - F_\phi\thinspace \partial_\theta Y_l^\ast\right)d\Omega . \qquad (3.4)
+\begin{aligned}
+F^q_l &amp;= \frac{1}{n_l}\int F_r Y_l^\ast\thinspace d\Omega,\cr
+F^s_l &amp;= \frac{1}{L n_l}\int\left(F_\theta\thinspace \partial_\theta Y_l^\ast + F_\phi Z_l^\ast\right)d\Omega,\cr
+F^t_l &amp;= \frac{1}{L n_l}\int\left(F_\theta Z_l^\ast - F_\phi\thinspace \partial_\theta Y_l^\ast\right)d\Omega .
+\end{aligned} \qquad (3.4)
 \]</div>
 <p>By (3.2) the velocity has <span class="arithmatex">\(u^q = L P/r\)</span>, <span class="arithmatex">\(u^s = a\)</span>, <span class="arithmatex">\(u^t = T\)</span>.</p>
 <p>Taking curls removes the pressure:</p>
@@ -1766,7 +2243,7 @@ defaults <code>rpower_u</code> = 5, <code>rpower_v</code> = 3, <code>rhopower_u<
 \]</div>
 <p>For example, <span class="arithmatex">\(\mathbf F = \mathbf u\)</span> gives
 <span class="arithmatex">\(\mathrm{row}_ u = \left[L r^2\rho_0 P - r^3\rho_0(2P' + rP'' + h'P + r h'' P + r h' P')\right]/L^2\)</span> and <span class="arithmatex">\(\mathrm{row}_ v = r^2\rho_0 T/L^2\)</span>,
-which is <code>operators.inertia</code> (line 26). The diff-rot operator is (3.6) applied to <span class="arithmatex">\(\mathbf W\)</span>.</p>
+which is <code>operators.inertia</code>. The diff-rot operator is (3.6) applied to <span class="arithmatex">\(\mathbf W\)</span>.</p>
 <h3 id="33-angular-primitives">3.3 Angular primitives</h3>
 <p>Insert one source degree <span class="arithmatex">\(l\)</span> of (3.2) into (2.7), with <span class="arithmatex">\(\Delta\Omega = f(r)P_n(x)\)</span>. Each component of <span class="arithmatex">\(\mathbf W\)</span> is a
 sum of four radial "shapes" times angular functions:</p>
@@ -1847,8 +2324,10 @@ W^k_{l'} = G\sum_l\left[C^k_q\thinspace f\frac{L_l P_l}{r} + C^k_a\thinspace f a
 of a few matrices on the degree index (<code>bin/angular.py</code>). Multiplying a field by a function of <span class="arithmatex">\(x\)</span> maps degree <span class="arithmatex">\(l\)</span>
 to a few neighbouring degrees, by two exact recurrences of the Schmidt harmonics (<span class="arithmatex">\(p_l\)</span>, <span class="arithmatex">\(q_l\)</span> as in (3.8) below):</p>
 <div class="arithmatex">\[
-x\thinspace Y_l = p_l Y_{l+1} + q_l Y_{l-1} \quad\to X, \qquad
-(1 - x^2)\frac{dY_l}{dx} = -\sin\theta\thinspace \partial_\theta Y_l = (l+1)q_l Y_{l-1} - l p_l Y_{l+1} \quad\to D ,
+\begin{aligned}
+x\thinspace Y_l &amp;= p_l Y_{l+1} + q_l Y_{l-1} &amp;&amp;\to X,\cr
+(1 - x^2)\frac{dY_l}{dx} = -\sin\theta\thinspace \partial_\theta Y_l &amp;= (l+1)q_l Y_{l-1} - l p_l Y_{l+1} &amp;&amp;\to D ,
+\end{aligned}
 \]</div>
 <p>with rows the target degree and columns the source degree. Their adjoints under <span class="arithmatex">\(\int d\Omega\)</span> (with
 <span class="arithmatex">\(N = \mathrm{diag}(n_l)\)</span>) are <span class="arithmatex">\(X^\dagger = N^{-1}X^{\rm T}N = X\)</span> and <span class="arithmatex">\(D^\dagger = N^{-1}D^{\rm T}N = 2X - D\)</span> (integration by
@@ -1902,19 +2381,20 @@ and <span class="arithmatex">\(1/L'\)</span> for the division of each row by its
 </tr>
 </tbody>
 </table>
-<p><code>diff_rot._primitives</code> (line 324) composes them, per unit <span class="arithmatex">\(G\)</span> and per unit shape:</p>
+<p><code>diff_rot._primitives</code> composes them, per unit <span class="arithmatex">\(G\)</span> and per unit shape:</p>
 <div class="arithmatex">\[
-\mathbf W_{\rm sh} = P_n(x)\left[i m\thinspace \mathbf u_{\rm sh} + 2\hat{\mathbf z}\times\mathbf u_{\rm sh}\right] + \hat{\mathbf z}\times\left[-P_n'(x)\sin\theta\thinspace u_{\theta,{\rm sh}}\thinspace \hat{\mathbf r}\right], \qquad
-\mathbf W_{dq} = \hat{\mathbf z}\times\left[P_n(x)\thinspace Y\hat{\mathbf r}\right],
+\begin{aligned}
+\mathbf W_{\rm sh} &amp;= P_n(x)\left[i m\thinspace \mathbf u_{\rm sh} + 2\hat{\mathbf z}\times\mathbf u_{\rm sh}\right] + \hat{\mathbf z}\times\left[-P_n'(x)\sin\theta\thinspace u_{\theta,{\rm sh}}\thinspace \hat{\mathbf r}\right],\cr
+\mathbf W_{dq} &amp;= \hat{\mathbf z}\times\left[P_n(x)\thinspace Y\hat{\mathbf r}\right],
+\end{aligned}
 \]</div>
 <p>with <span class="arithmatex">\(\mathbf u_q = R_l\)</span>, <span class="arithmatex">\(\mathbf u_a = S_l\)</span>, <span class="arithmatex">\(\mathbf u_T = T_l\)</span> (the second term, the <span class="arithmatex">\(u_\theta\)</span> part of the shear term,
 vanishes for the shape <code>q</code>). Every product is a sparse product of banded matrices, so the cost is <span class="arithmatex">\(O(l_{\max})\)</span> and the
 result is exact to round-off at any degree. The matrices are built up to <span class="arithmatex">\(l_w\)</span> = <code>lmax</code> + n + 6, because a product of
 matrices truncated at <span class="arithmatex">\(l_w\)</span> is wrong only in its last few degrees.</p>
-<p>The primitives were first computed by Gauss–Legendre quadrature of the table above; that builder is kept as an
-independent reference in <code>tests/diff_rot/quad_reference.py</code>. It cost <span class="arithmatex">\(O(l_{\max}^3)\)</span> (177 s at <code>lmax</code> 1025) and failed
-silently from <span class="arithmatex">\(l = 646\)</span> on, where <code>scipy.special.sph_harm_y</code> returns NaN; the two agree to <span class="arithmatex">\(\sim 10^{-12}\)</span> below that
-(§9).</p>
+<p><code>tests/diff_rot/quad_reference.py</code> computes the same primitives by Gauss–Legendre quadrature of the table above, as an
+independent check (§9). That costs <span class="arithmatex">\(O(l_{\max}^3)\)</span>, and it fails from <span class="arithmatex">\(l = 646\)</span> on, where <code>scipy.special.sph_harm_y</code>
+returns NaN.</p>
 <h3 id="34-from-the-primitives-to-the-radial-operators">3.4 From the primitives to the radial operators</h3>
 <p>Put (3.7) into (3.6) and expand <span class="arithmatex">\(a_l\)</span> with (3.1). For the <span class="arithmatex">\(v\)</span> rows this is direct:</p>
 <div class="arithmatex">\[
@@ -1923,8 +2403,10 @@ silently from <span class="arithmatex">\(l = 646\)</span> on, where <code>scipy.
 <p>For the <span class="arithmatex">\(u\)</span> rows, <span class="arithmatex">\(\partial_r(r W^s)\)</span> differentiates the profile and the unknowns: with
 <span class="arithmatex">\(r a = P + rP' + r h' P\)</span>,</p>
 <div class="arithmatex">\[
-\partial_r(r f a) = f'(P + rP' + rh'P) + f(2P' + rP'' + h'P + rh''P + rh'P'), \qquad
-\partial_r\left(r\thinspace C_{dq}^s (rf')\frac{L_lP}{r}\right) = L_l C^s_{dq}\left[(f' + r f'')P + (rf')P'\right],
+\begin{aligned}
+\partial_r(r f a) &amp;= f'(P + rP' + rh'P) + f(2P' + rP'' + h'P + rh''P + rh'P'),\cr
+\partial_r\left(r\thinspace C_{dq}^s (rf')\frac{L_lP}{r}\right) &amp;= L_l C^s_{dq}\left[(f' + r f'')P + (rf')P'\right],
+\end{aligned}
 \]</div>
 <p>which is where <span class="arithmatex">\(r^2 f''\)</span> enters. Collecting the coefficient of each radial operator gives the table below. Each
 coefficient is a matrix in <span class="arithmatex">\((l', l)\)</span>, and in the code it is stored multiplied by <span class="arithmatex">\(L'\)</span>; the operator then divides by
@@ -2070,7 +2552,7 @@ followed by the degree character (<code>zf0</code>, <code>zd0</code>, <code>zs0<
 </tr>
 </tbody>
 </table>
-<p>This table is <code>diff_rot.momentum_coefficients</code> (line 348, the dictionary <code>K</code>) and <code>diff_rot.MOMENTUM</code> (line 410). The
+<p>This table is <code>diff_rot.momentum_coefficients</code> (the dictionary <code>K</code>) and <code>diff_rot.MOMENTUM</code>. The
 coefficient names are those of the closed forms, <code>tests/diff_rot/diff_rot_coefficients.py</code>: <code>f</code>, <code>df</code>, <code>d2f</code> for the profile factor (<span class="arithmatex">\(f\)</span>, <span class="arithmatex">\(rf'\)</span>,
 <span class="arithmatex">\(r^2f''\)</span>), <code>1C</code>/<code>2C</code> for the single/double curl rows, the radial factor (<code>D0</code>, <code>D1</code>, <code>D2</code>, <code>lho1</code>, <code>lho2</code>), and <code>P</code>/<code>T</code>
 for the column. (<span class="arithmatex">\(C^q_{dq} = 0\)</span>, since the shear term has no radial component, so <code>df_2C_D0P</code> keeps
@@ -2084,16 +2566,15 @@ for the column. (<span class="arithmatex">\(C^q_{dq} = 0\)</span>, since the she
   poloidal and toroidal degrees of one symmetry class alternate, so same-type couplings (<span class="arithmatex">\(P \to P\)</span>, <span class="arithmatex">\(T \to T\)</span>) have
   even <span class="arithmatex">\(\Delta l\)</span> and mixed ones (<span class="arithmatex">\(P \leftrightarrow T\)</span>) odd <span class="arithmatex">\(\Delta l\)</span>.</li>
 <li>Together: <span class="arithmatex">\(\lvert\Delta l\rvert \le n\)</span> for <span class="arithmatex">\(P \to P\)</span> and <span class="arithmatex">\(T \to T\)</span>, and <span class="arithmatex">\(\le n + 1\)</span> for <span class="arithmatex">\(P \leftrightarrow T\)</span>
-  (<code>diff_rot.max_dl</code>, line 425). For <span class="arithmatex">\(\Delta\Omega = f_0 + f_2P_2\)</span>: <span class="arithmatex">\(\Delta l \in \lbrace 0, \pm 2\rbrace\)</span> and
+  (<code>diff_rot.max_dl</code>). For <span class="arithmatex">\(\Delta\Omega = f_0 + f_2P_2\)</span>: <span class="arithmatex">\(\Delta l \in \lbrace 0, \pm 2\rbrace\)</span> and
   <span class="arithmatex">\(\lbrace\pm 1, \pm 3\rbrace\)</span>; the <span class="arithmatex">\(f_0\)</span> terms alone have <span class="arithmatex">\(\Delta l = 0\)</span> and <span class="arithmatex">\(\pm 1\)</span>, like the Coriolis force.</li>
 <li>For <span class="arithmatex">\(m = 0\)</span> the Doppler term vanishes, but the Coriolis and shear terms do not.</li>
 </ul>
 <p>The coupled problem is therefore wider than with uniform rotation: the row block of degree <span class="arithmatex">\(l'\)</span> has entries in the
 column blocks of up to <span class="arithmatex">\(n_{\max} + 1\)</span> neighbouring degrees of each type.</p>
 <h3 id="36-closed-forms-for-p_0-and-p_2">3.6 Closed forms for <span class="arithmatex">\(P_0\)</span> and <span class="arithmatex">\(P_2\)</span></h3>
-<p>For <span class="arithmatex">\(n = 0\)</span> and <span class="arithmatex">\(n = 2\)</span> the coefficients of the table of §3.4 were first derived in closed form. kore now builds every
-degree with the algebra of §3.3, and the closed forms are kept as its validation in
-<code>tests/diff_rot/diff_rot_coefficients.py</code> (44 functions, <span class="arithmatex">\(\lvert\Delta l\rvert \le 3\)</span>, and the <span class="arithmatex">\(\sigma_n\)</span> of (2.10)): <code>f_*</code> and <code>df_*</code>, <code>d2f_*</code> for <span class="arithmatex">\(f_2\)</span>
+<p>For <span class="arithmatex">\(n = 0\)</span> and <span class="arithmatex">\(n = 2\)</span> the coefficients of the table of §3.4 also have closed forms. kore builds every degree with the
+algebra of §3.3, and the closed forms check it, in <code>tests/diff_rot/diff_rot_coefficients.py</code> (44 functions, <span class="arithmatex">\(\lvert\Delta l\rvert \le 3\)</span>, and the <span class="arithmatex">\(\sigma_n\)</span> of (2.10)): <code>f_*</code> and <code>df_*</code>, <code>d2f_*</code> for <span class="arithmatex">\(f_2\)</span>
 (<span class="arithmatex">\(P_2\)</span>, unnormalised, despite "Y20" in the comments), <code>f0_*</code>, <code>df0_*</code>, <code>d2f0_*</code> for <span class="arithmatex">\(f_0\)</span>. Each function takes the
 target degree <code>l</code>, <code>m</code> and <code>offdiag</code> = <span class="arithmatex">\(l - l'\)</span> (source minus target) and returns the coefficient, already multiplied
 by <span class="arithmatex">\(L'\)</span>, with explicit conditions where a degree would fall below <span class="arithmatex">\(m\)</span> or below 1.</p>
@@ -2107,8 +2588,8 @@ by <span class="arithmatex">\(L'\)</span>, with explicit conditions where a degr
   and <span class="arithmatex">\(-2im\)</span> is the local Coriolis force: compare <code>operators.coriolis</code>, whose <span class="arithmatex">\(T \to T\)</span> row is <span class="arithmatex">\(-2 i m G\thinspace v_1/L^3\)</span>.</li>
 <li><strong><span class="arithmatex">\(P \to T\)</span>, <span class="arithmatex">\(P_0\)</span>, <span class="arithmatex">\(\Delta l = -1\)</span>.</strong> For constant <span class="arithmatex">\(f_0 = a\)</span>, <code>f0_1C_D0P</code> = <span class="arithmatex">\(2(l-1)^2(l+1)\sqrt{l^2 - m^2}/(2l - 1)\)</span> and
   <code>f0_1C_lho1_D0P</code> = <code>f0_1C_D1P</code> = <span class="arithmatex">\(-2(l^2 - 1)\sqrt{l^2 - m^2}/(2l - 1)\)</span> are <span class="arithmatex">\(2L\)</span> times the coefficients
-  <span class="arithmatex">\(C(l - 1)\)</span> and <span class="arithmatex">\(-C\)</span> of the <span class="arithmatex">\(\Delta l = -1\)</span> Coriolis row, <span class="arithmatex">\(C = (l-1)\sqrt{l^2 - m^2}/(l(2l - 1))\)</span> (<code>operators.coriolis</code>,
-  line 90). So a uniform <span class="arithmatex">\(f_0 = a\)</span> gives exactly <span class="arithmatex">\(a\)</span> times the Coriolis operator plus <span class="arithmatex">\(i m G a\)</span> times the inertia
+  <span class="arithmatex">\(C(l - 1)\)</span> and <span class="arithmatex">\(-C\)</span> of the <span class="arithmatex">\(\Delta l = -1\)</span> Coriolis row, <span class="arithmatex">\(C = (l-1)\sqrt{l^2 - m^2}/(l(2l - 1))\)</span> (<code>operators.coriolis</code>).
+  So a uniform <span class="arithmatex">\(f_0 = a\)</span> gives exactly <span class="arithmatex">\(a\)</span> times the Coriolis operator plus <span class="arithmatex">\(i m G a\)</span> times the inertia
   operator, which is (2.12) at the matrix level.</li>
 </ul>
 <p>The algebra (§3.3) and the closed forms agree to round-off, <span class="arithmatex">\(\le 1.3\times 10^{-15}\)</span> of the largest coefficient of the
@@ -2116,14 +2597,15 @@ same row block, up to <code>lmax</code> 1025 (<code>tests/diff_rot/gen_check.py<
 accurate: a few coefficients are small differences of terms of size <span class="arithmatex">\(O(L)\)</span> in the algebra of §3.4 (for example
 <code>df0_2C_D1P</code> = <span class="arithmatex">\(2im\)</span> exactly, <span class="arithmatex">\(-L(C^s_a + L_l C^s_{dq})\)</span> in the algebra), so their own relative error grows like
 <span class="arithmatex">\(L\epsilon\)</span>, about <span class="arithmatex">\(10^{-10}\)</span> at <span class="arithmatex">\(l \approx 1000\)</span>, while staying at round-off on the scale of the row, which is the
-scale at which they enter <span class="arithmatex">\(A\)</span>. Moving the profile <span class="arithmatex">\(f\)</span> through the curls analytically before projecting would remove
-these cancellations; it has not been needed.</p>
+scale at which they enter <span class="arithmatex">\(A\)</span>.</p>
 <h3 id="37-the-heat-equation-terms-in-harmonic-form">3.7 The heat-equation terms in harmonic form</h3>
 <p>Multiplication by a function of <span class="arithmatex">\(x\)</span> is a matrix on the degree index. With Schmidt harmonics and
 <span class="arithmatex">\(p_l = \sqrt{(l+1)^2 - m^2}/(2l+1)\)</span>, <span class="arithmatex">\(q_l = \sqrt{l^2 - m^2}/(2l+1)\)</span>:</p>
 <div class="arithmatex">\[
-x\thinspace Y_l = p_l Y_{l+1} + q_l Y_{l-1} \quad\to X, \qquad
-(1 - x^2)\frac{dY_l}{dx} = (l+1)q_l Y_{l-1} - l p_l Y_{l+1} \quad\to D , \qquad (3.8)
+\begin{aligned}
+x\thinspace Y_l &amp;= p_l Y_{l+1} + q_l Y_{l-1} &amp;&amp;\to X,\cr
+(1 - x^2)\frac{dY_l}{dx} &amp;= (l+1)q_l Y_{l-1} - l p_l Y_{l+1} &amp;&amp;\to D ,
+\end{aligned} \qquad (3.8)
 \]</div>
 <p>with rows the target degree and columns the source degree. Multiplying by <span class="arithmatex">\(P_n(x)\)</span> is then the matrix <span class="arithmatex">\(P_n(X)\)</span>, and
 by <span class="arithmatex">\(P_n'(x)\)</span> the matrix <span class="arithmatex">\(P_n'(X)\)</span>. These are the matrices of the angular algebra of §3.3 (<code>angular.Algebra</code>), shared
@@ -2144,8 +2626,8 @@ by the momentum and heat terms.</p>
 for (b), (c) (<span class="arithmatex">\(P \to s\)</span>) and <span class="arithmatex">\(\lbrace\pm 1, \dots, \pm(n_{tw} - 1)\rbrace\)</span> for (c′) (<span class="arithmatex">\(T \to s\)</span>), with <span class="arithmatex">\(n_{tw}\)</span> the
 highest degree of <span class="arithmatex">\(S_{tw}\)</span> (<code>diff_rot.tw_nmax</code>).</p>
 <h2 id="4-implementation-overview">4. Implementation overview</h2>
-<p>Everything specific to the differential rotation is in one module, <a href="../bin/diff_rot.py"><code>bin/diff_rot.py</code></a>, built on
-the angular algebra of <a href="../bin/angular.py"><code>bin/angular.py</code></a>. The rest of kore calls it:</p>
+<p>Everything specific to the differential rotation is in one module, <code>bin/diff_rot.py</code>, built on the angular algebra of
+<code>bin/angular.py</code>. The rest of kore calls it:</p>
 <table>
 <thead>
 <tr>
@@ -2158,37 +2640,37 @@ the angular algebra of <a href="../bin/angular.py"><code>bin/angular.py</code></
 <tr>
 <td>parameters</td>
 <td>switches, profile choice, amplitude, <code>'user'</code> profiles</td>
-<td><a href="../bin/params_default.py#L133"><code>params_default.py</code></a>, lines 133–189</td>
+<td><code>bin/params_default.py</code></td>
 </tr>
 <tr>
 <td>angular algebra</td>
 <td><span class="arithmatex">\(X\)</span>, <span class="arithmatex">\(D\)</span>, <span class="arithmatex">\(P_n(X)\)</span>, the vector operations, harmonics on a grid</td>
-<td><a href="../bin/angular.py"><code>angular.py</code></a></td>
+<td><code>bin/angular.py</code></td>
 </tr>
 <tr>
 <td>everything else</td>
 <td>profiles, thermal wind, angular couplings, labels, blocks, Δl ranges</td>
-<td><a href="../bin/diff_rot.py"><code>diff_rot.py</code></a>, sections 1–4 of the module</td>
+<td><code>bin/diff_rot.py</code></td>
 </tr>
 <tr>
 <td>radial matrices</td>
 <td>builds the <code>.mtx</code> of the labels it is given</td>
-<td><a href="../bin/submatrices.py#L191"><code>submatrices.py</code></a> (<code>dr.labels()</code>), <a href="../bin/radial_profiles.py"><code>radial_profiles.burrito</code></a> (<code>dr.profile_functions()</code>)</td>
+<td><code>submatrices.py</code> (<code>dr.labels()</code>), <code>radial_profiles.burrito</code> (<code>dr.profile_functions()</code>)</td>
 </tr>
 <tr>
 <td>operators</td>
 <td>thin wrappers</td>
-<td><a href="../bin/operators.py#L113"><code>operators.differential_rotation</code></a>, <a href="../bin/operators.py#L190"><code>thermal_diffrot</code></a></td>
+<td><code>operators.differential_rotation</code>, <code>operators.thermal_diffrot</code></td>
 </tr>
 <tr>
 <td>assembly</td>
 <td>places the blocks, over the Δl of <code>dr.dl_range</code></td>
-<td><a href="../bin/assemble.py#L262"><code>assemble.py</code></a>, lines 262–461</td>
+<td><code>assemble.py</code></td>
 </tr>
 <tr>
 <td>diagnostics</td>
 <td>powers and budgets on an <span class="arithmatex">\((r, \theta)\)</span> grid, independently of the algebra</td>
-<td><a href="../bin/utils4pp.py#L569"><code>utils4pp.diff_rot_setup</code></a>, <a href="../bin/spin_doctor.py"><code>spin_doctor.py</code></a></td>
+<td><code>utils4pp.diff_rot_setup</code>, <code>spin_doctor.py</code></td>
 </tr>
 </tbody>
 </table>
@@ -2197,93 +2679,10 @@ functions that need them. <code>radial_profiles.burrito</code> imports <code>dif
 code, so there is no import cycle, and the angular part (<code>_primitives</code>, <code>momentum_coefficients</code>) can be imported and
 tested without a run directory.</p>
 <h3 id="41-parameters">4.1 Parameters</h3>
-<table>
-<thead>
-<tr>
-<th>parameter</th>
-<th>default</th>
-<th>meaning</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>diff_rot</code></td>
-<td>0</td>
-<td>1 switches the differential rotation on</td>
-</tr>
-<tr>
-<td><code>diff_rot_type</code></td>
-<td><code>'Y20'</code></td>
-<td>the profile (§5.1)</td>
-</tr>
-<tr>
-<td><code>diff_rot_ampl</code></td>
-<td>1.0</td>
-<td>the factor of <span class="arithmatex">\(\Delta\Omega\)</span>, for every type</td>
-</tr>
-<tr>
-<td><code>diff_rot_param</code></td>
-<td>0.0</td>
-<td>the shape parameter: <span class="arithmatex">\(\sigma\)</span> of <code>'shellular'</code>, <code>p</code> in <code>'user'</code> expressions</td>
-</tr>
-<tr>
-<td><code>diff_rot_term_amp</code></td>
-<td><code>[1.0]*9</code></td>
-<td><span class="arithmatex">\(a_0, a_2, \dots, a_{16}\)</span>: factors of the <span class="arithmatex">\(P_0, P_2, \dots, P_{16}\)</span> terms of <span class="arithmatex">\(\Delta\Omega\)</span>, any type, after <code>diff_rot_ampl</code> (missing entries are 1)</td>
-</tr>
-<tr>
-<td><code>diff_rot_profiles</code></td>
-<td><code>{}</code></td>
-<td><code>'user'</code>: <code>{n: 'numpy expression'}</code> for each even degree (§5.1)</td>
-</tr>
-<tr>
-<td><code>diff_rot_frame</code></td>
-<td>456.0</td>
-<td><code>'solar_P4'</code>, <code>'tabulated'</code>: <span class="arithmatex">\(\Omega_{\rm ref}/2\pi\)</span> in nHz</td>
-</tr>
-<tr>
-<td><code>diff_rot_solar</code></td>
-<td><code>[464, -76, -50, 433.5, 0.71, 0.045]</code></td>
-<td><code>'solar_P4'</code>: <span class="arithmatex">\(c_0\)</span>, <span class="arithmatex">\(c_2\)</span>, <span class="arithmatex">\(c_4\)</span>, <span class="arithmatex">\(\Omega_{RZ}\)</span> (nHz), <span class="arithmatex">\(r_{tc}\)</span>, <span class="arithmatex">\(d_{tc}\)</span></td>
-</tr>
-<tr>
-<td><code>diff_rot_file</code>, <code>diff_rot_nmax</code>, <code>diff_rot_rdeg</code></td>
-<td><code>''</code>, 8, 24</td>
-<td><code>'tabulated'</code>: the .npz file, the highest degree (even), the degree of the radial fit</td>
-</tr>
-<tr>
-<td><code>diff_rot_window</code>, <code>diff_rot_sun_deg</code></td>
-<td>None, 60</td>
-<td><code>'tabulated'</code>: shell fit or one even whole-Sun fit, and its degree</td>
-</tr>
-<tr>
-<td><code>thermal_wind</code></td>
-<td>1</td>
-<td>0 none, 1 linear, 2 exact, 3 prescribed (§2.4)</td>
-</tr>
-<tr>
-<td><code>thermal_wind_radial</code></td>
-<td>1</td>
-<td>0 drops term (b)</td>
-</tr>
-<tr>
-<td><code>thermal_wind_amplitude</code></td>
-<td>1.0</td>
-<td>factor on <span class="arithmatex">\(S_{tw}\)</span> (<code>thermal_wind</code> 1, 2)</td>
-</tr>
-<tr>
-<td><code>dSdtheta</code></td>
-<td>0.0</td>
-<td><code>thermal_wind = 3</code>: <span class="arithmatex">\(\partial_\theta S_{tw}\)</span> = <code>dSdtheta</code> <span class="arithmatex">\(\sin 2\theta\)</span></td>
-</tr>
-</tbody>
-</table>
-<p><code>Gaspard</code>, <code>Beyonce</code>, <code>ViscosD</code>, <code>ThermaD</code> must be computed for <span class="arithmatex">\(\Omega_{\rm ref}\)</span>, and set after <code>par.set_scales()</code>,
-which resets them (with <code>timescale = 'rotation'</code> it sets <code>Beyonce = 0</code>; <code>thermal_wind</code> 1 and 2 then stop
-<code>submatrices.py</code> with an error through <code>diff_rot.check</code>, since <span class="arithmatex">\(S_{tw} \propto 1/\mathrm{Beyonce}\)</span>).</p>
-<p>Before 2026-10-23 the amplitude was <code>diff_rot_amplitude</code>, which was the exponent <span class="arithmatex">\(\sigma\)</span> for <code>'shellular'</code> and <span class="arithmatex">\(N_0^2\)</span>
-for <code>'shellular_boussinesq'</code>; the switch <code>diff_rot_generic</code> (closed forms or the algebra for <span class="arithmatex">\(P_0\)</span>, <span class="arithmatex">\(P_2\)</span>) no longer
-exists. Both former names stop a run (<code>diff_rot.check</code>), so that an old parameter file does not run with the defaults.</p>
+<p>The parameters are listed in the <a href="../differential-rotation/#parameters">user guide</a>. <code>Gaspard</code>, <code>Beyonce</code>, <code>ViscosD</code> and
+<code>ThermaD</code> must be computed for <span class="arithmatex">\(\Omega_{\rm ref}\)</span>, and set after <code>par.set_scales()</code>, which resets them. With
+<code>timescale = 'rotation'</code> it sets <code>Beyonce = 0</code>, and <code>thermal_wind</code> 1 and 2 then stop <code>submatrices.py</code> with an error
+through <code>diff_rot.check</code>, since <span class="arithmatex">\(S_{tw} \propto 1/\mathrm{Beyonce}\)</span>.</p>
 <h3 id="42-the-functions-of-diff_rotpy">4.2 The functions of <code>diff_rot.py</code></h3>
 <table>
 <thead>
@@ -2294,7 +2693,7 @@ exists. Both former names stop a run (<code>diff_rot.check</code>), so that an o
 </thead>
 <tbody>
 <tr>
-<td><code>shapes()</code> (line 111)</td>
+<td><code>shapes()</code></td>
 <td><code>{n: f(r)}</code>, the shapes of the degrees of <span class="arithmatex">\(\Delta\Omega\)</span> for <code>diff_rot_type</code>, before <code>diff_rot_ampl</code></td>
 </tr>
 <tr>
@@ -2310,7 +2709,7 @@ exists. Both former names stop a run (<code>diff_rot.check</code>), so that an o
 <td>the profile codes <code>zf</code>, <code>zd</code>, <code>zs</code>, <code>tw</code>, <code>tp</code> + the degree character</td>
 </tr>
 <tr>
-<td><code>fX(n, r, Dorder)</code> (line 224)</td>
+<td><code>fX(n, r, Dorder)</code></td>
 <td><span class="arithmatex">\(f_n\)</span> (<code>diff_rot_ampl</code> × <span class="arithmatex">\(a_n\)</span> × shape) and its derivatives, from the Chebyshev fit (§5.2)</td>
 </tr>
 <tr>
@@ -2318,7 +2717,7 @@ exists. Both former names stop a run (<code>diff_rot.check</code>), so that an o
 <td><span class="arithmatex">\(f_n\)</span> evaluated directly</td>
 </tr>
 <tr>
-<td><code>sigma_coefficients(r)</code> (line 251)</td>
+<td><code>sigma_coefficients(r)</code></td>
 <td>the Legendre coefficients <span class="arithmatex">\(\sigma_k(r)\)</span> of <span class="arithmatex">\(S_{tw}\)</span> (§5.4)</td>
 </tr>
 <tr>
@@ -2326,7 +2725,7 @@ exists. Both former names stop a run (<code>diff_rot.check</code>), so that an o
 <td><span class="arithmatex">\(\sigma_n\)</span> and its derivatives from its Chebyshev fit</td>
 </tr>
 <tr>
-<td><code>profile_functions()</code> (line 303)</td>
+<td><code>profile_functions()</code></td>
 <td><code>{code: f(r, Dorder)}</code> of every diff-rot profile code, for <code>burrito</code></td>
 </tr>
 <tr>
@@ -2338,15 +2737,15 @@ exists. Both former names stop a run (<code>diff_rot.check</code>), so that an o
 <td><span class="arithmatex">\(P_n(X)\)</span>, <span class="arithmatex">\(P_n'(X)\)</span>, <span class="arithmatex">\(P_n'(X)D\)</span> by diagonal, and one coefficient</td>
 </tr>
 <tr>
-<td><code>labels()</code> (line 443)</td>
+<td><code>labels()</code></td>
 <td>every radial operator of the terms, with the parity class of its column</td>
 </tr>
 <tr>
-<td><code>dl_range(section, component)</code> (line 457)</td>
+<td><code>dl_range(section, component)</code></td>
 <td>the Δl of the blocks of a row section and column</td>
 </tr>
 <tr>
-<td><code>momentum_block(...)</code>, <code>heat_block(...)</code> (lines 470, 489)</td>
+<td><code>momentum_block(...)</code>, <code>heat_block(...)</code></td>
 <td>one block of <span class="arithmatex">\(A\)</span></td>
 </tr>
 <tr>
@@ -2361,7 +2760,7 @@ exists. Both former names stop a run (<code>diff_rot.check</code>), so that an o
 </table>
 <h2 id="5-radial-profiles">5. Radial profiles</h2>
 <h3 id="51-the-profiles-f_n-of-each-type">5.1 The profiles <span class="arithmatex">\(f_n\)</span> of each type</h3>
-<p><code>diff_rot.shapes</code> (line 111) defines the shape of each degree; <span class="arithmatex">\(f_n\)</span> = <code>diff_rot_ampl</code> × <span class="arithmatex">\(a_n\)</span> × shape, with <span class="arithmatex">\(a_n\)</span> =
+<p><code>diff_rot.shapes</code> defines the shape of each degree; <span class="arithmatex">\(f_n\)</span> = <code>diff_rot_ampl</code> × <span class="arithmatex">\(a_n\)</span> × shape, with <span class="arithmatex">\(a_n\)</span> =
 <code>diff_rot_term_amp[n/2]</code> (1 in the table below). With <span class="arithmatex">\(a\)</span> =
 <code>diff_rot_ampl</code>, <span class="arithmatex">\(p\)</span> = <code>diff_rot_param</code>, and <span class="arithmatex">\(x\)</span> the fractional solar radius (<code>diff_rot.solar_x</code>:
 <span class="arithmatex">\(x = r\cdot\)</span><code>r_out</code> with a solar structure (<a href="../background/">background.md</a>), <span class="arithmatex">\(x = r\)</span> otherwise):</p>
@@ -2459,7 +2858,7 @@ Legendre polynomials (<span class="arithmatex">\(\cos^2\theta = (1 + 2P_2)/3\)</
 even integers, and the strings must not contain <code>#</code>: <code>spin_doctor.py</code> ends each <code>params.dat</code> row of a <code>'user'</code> run
 with them, after a <code>#</code> (<code>diff_rot.description</code>), so that every row carries its profile and <code>np.loadtxt</code> still reads the
 numeric columns.</p>
-<p><strong><code>'tabulated'</code></strong> (<code>diff_rot._tabulated_fits</code>, line 43). The file holds <code>ome[θ, r]</code> (nHz), <code>r</code> (R☉) and <code>theta</code>
+<p><strong><code>'tabulated'</code></strong> (<code>diff_rot._tabulated_fits</code>). The file holds <code>ome[θ, r]</code> (nHz), <code>r</code> (R☉) and <code>theta</code>
 (rad). At each table radius, <span class="arithmatex">\(\Omega/\Omega_{\rm ref} - 1\)</span> is interpolated in <span class="arithmatex">\(\cos\theta\)</span> by a cubic spline and projected on
 <span class="arithmatex">\(P_n\)</span> with 64 Gauss–Legendre nodes, <span class="arithmatex">\(f_n = \tfrac{2n+1}{2}\int(\Omega/\Omega_{\rm ref} - 1)P_n\thinspace dx\)</span>. Each <span class="arithmatex">\(f_n(r)\)</span> is
 then fitted by least squares with a Chebyshev series:</p>
@@ -2470,14 +2869,10 @@ then fitted by least squares with a Chebyshev series:</p>
   even in <span class="arithmatex">\(r\)</span>: the data are mirrored to <span class="arithmatex">\(-r\)</span>, continued below the first table radius by its value, and the odd
   coefficients are set to zero.</li>
 </ul>
-<p><code>diff_rot_hold</code> = <span class="arithmatex">\(x_h\)</span>, which held each <span class="arithmatex">\(f_n\)</span> at <span class="arithmatex">\(f_n(x_h)\)</span> below <span class="arithmatex">\(x_h\)</span>, was removed on 2026-10-26, and a run that sets
-it stops. It held every degree, so the latitudinal shear of the table at <span class="arithmatex">\(x_h\)</span> filled the whole core. In
-<code>bin/jsoc_hmi_2010_2026.npz</code> that shear is about 4 nHz at 0.6 R☉, an artefact of the inversion; held from there, it gave
-the core spurious modes that mixed with the HFR modes. Its <code>params.dat</code> column stays, always nan.</p>
 <p>The fit residuals and, for the shell fit, the truncation error of the expansion up to <code>diff_rot_nmax</code> are printed in
 nHz.</p>
 <h3 id="52-derivatives-and-the-full-sphere">5.2 Derivatives and the full sphere</h3>
-<p>The operators need <span class="arithmatex">\(f_n\)</span>, <span class="arithmatex">\(r f_n'\)</span> and <span class="arithmatex">\(r^2 f_n''\)</span> on the Chebyshev nodes. <code>diff_rot.fX</code> (line 224) transforms the
+<p>The operators need <span class="arithmatex">\(f_n\)</span>, <span class="arithmatex">\(r f_n'\)</span> and <span class="arithmatex">\(r^2 f_n''\)</span> on the Chebyshev nodes. <code>diff_rot.fX</code> transforms the
 shape to <span class="arithmatex">\(N\)</span> Chebyshev coefficients on the radial domain (<code>utils.chebco_f</code>, coefficients below <span class="arithmatex">\(10^{-14}\)</span> of the
 largest dropped; cached per degree), evaluates the series or its derivatives (<code>utils.funcheb</code>) and multiplies by
 <code>diff_rot_ampl</code> and <span class="arithmatex">\(a_n\)</span>. So <span class="arithmatex">\(f'\)</span> and <span class="arithmatex">\(f''\)</span> are always consistent with the resolved <span class="arithmatex">\(f\)</span>, also for tabulated, step-like or
@@ -2486,7 +2881,7 @@ largest dropped; cached per degree), evaluates the series or its derivatives (<c
 polynomials (§6.3). The shapes are therefore evaluated at <span class="arithmatex">\(\lvert r\rvert\)</span>, which makes <span class="arithmatex">\(f_n\)</span> even, <span class="arithmatex">\(f_n'\)</span> odd, and
 <span class="arithmatex">\(rf_n'\)</span>, <span class="arithmatex">\(r^2f_n''\)</span> even. A shape with a kink at <span class="arithmatex">\(r = 0\)</span> (<code>'Y20-wall-bounded'</code>, <code>'shellular'</code> unless <span class="arithmatex">\(p\)</span> is even and
 positive, or a <code>'user'</code> expression such as <code>r</code>) then converges slowly in <span class="arithmatex">\(N\)</span>; <code>submatrices.py</code> prints a WARNING for the
-predefined ones (line 245).</p>
+predefined ones.</p>
 <h3 id="53-profile-codes">5.3 Profile codes</h3>
 <p>Each profile used in an operator has a three-letter code: two letters and the degree character <code>diff_rot.DIGITS[n]</code>
 (0–9, then a–z for 10–35):</p>
@@ -2531,7 +2926,7 @@ With <code>adiab_tw</code> (<code>ThermaD = 0</code> with the thermal wind) the 
 (<code>diff_rot._ptw</code>), because those heat rows are divided by <span class="arithmatex">\(p_0\)</span> (§7.2). A separate <code>tp</code> code is needed: a label such as
 <code>h1tw21_D0</code> would mean <span class="arithmatex">\(r(p_0\sigma_2)'P\)</span>, the derivative of the product, not <span class="arithmatex">\(r p_0\sigma_2' P\)</span>.</p>
 <h3 id="54-the-thermal-wind-coefficients-sigma_n">5.4 The thermal-wind coefficients <span class="arithmatex">\(\sigma_n\)</span></h3>
-<p><code>diff_rot.sigma_coefficients(r)</code> (line 251) solves (2.9) in Legendre space at all the radii at once, with the <span class="arithmatex">\(m = 0\)</span>
+<p><code>diff_rot.sigma_coefficients(r)</code> solves (2.9) in Legendre space at all the radii at once, with the <span class="arithmatex">\(m = 0\)</span>
 matrices of <code>angular.py</code> (the Schmidt harmonics of order 0 are the Legendre polynomials):</p>
 <ul>
 <li>the Legendre coefficients of <span class="arithmatex">\(\Delta\Omega\)</span> and <span class="arithmatex">\(\partial_r\Delta\Omega\)</span> are the <span class="arithmatex">\(f_n\)</span> and <span class="arithmatex">\(f_n'\)</span> (<code>fX</code>); a product of two
@@ -2549,7 +2944,7 @@ Chebyshev series of <span class="arithmatex">\(\sigma_n(r)\)</span> for <span cl
 <span class="arithmatex">\(\sigma_n'\)</span> odd, hence <code>tp</code> in <code>odd_profiles</code>.</p>
 <h2 id="6-radial-operators-and-labels">6. Radial operators and labels</h2>
 <h3 id="61-label-grammar">6.1 Label grammar</h3>
-<p>A label names one radial operator: <code>sX[fu1D1][fu2D2]_DY</code> (<code>utils.decode_label</code>, line 68).</p>
+<p>A label names one radial operator: <code>sX[fu1D1][fu2D2]_DY</code> (<code>utils.decode_label</code>).</p>
 <ul>
 <li><code>s</code>: the section, <code>u</code>, <code>v</code> or <code>h</code>.</li>
 <li><code>X</code>: lowers the row's power of <span class="arithmatex">\(r\)</span>: the operator carries <span class="arithmatex">\(r^{p - X}\)</span>, with <span class="arithmatex">\(p\)</span> = <code>rpower_u</code> (5) in <code>u</code>,
@@ -2566,12 +2961,12 @@ the basis: <code>u</code> is <span class="arithmatex">\(C^{(4)}\)</span>, <code>
 diff-rot labels need at most <span class="arithmatex">\(P''\)</span> in <code>u</code>, <span class="arithmatex">\(P'\)</span> in <code>v</code> and <span class="arithmatex">\(P'\)</span> in <code>h</code>, so they fit those bases. An operator that
 several terms share is computed only once.</p>
 <h3 id="62-the-labels">6.2 The labels</h3>
-<p><code>diff_rot.labels()</code> (line 443) lists every radial operator of the terms, and <code>submatrices.py</code> (line 191) adds them with
+<p><code>diff_rot.labels()</code> lists every radial operator of the terms, and <code>submatrices.py</code> adds them with
 the vector parity of their column (<code>vP</code> for <span class="arithmatex">\(P\)</span> and <span class="arithmatex">\(s\)</span>, <code>vT</code> for <span class="arithmatex">\(T\)</span>), after <code>diff_rot.check()</code>:</p>
 <ul>
 <li>for each degree <span class="arithmatex">\(n\)</span> of <span class="arithmatex">\(\Delta\Omega\)</span>, the 18 momentum labels of the table of §3.4 (<code>diff_rot.MOMENTUM</code> with the codes
   of <span class="arithmatex">\(n\)</span>);</li>
-<li>with <code>thermal = 1</code> (<code>_heat_labels</code>, line 429): (a) <code>h0pss0zf{n}0_D0</code> (<span class="arithmatex">\(r^2 p_0 f_n\)</span>; <code>h0zf{n}0_D0</code> without <code>pss</code> if
+<li>with <code>thermal = 1</code> (<code>_heat_labels</code>): (a) <code>h0pss0zf{n}0_D0</code> (<span class="arithmatex">\(r^2 p_0 f_n\)</span>; <code>h0zf{n}0_D0</code> without <code>pss</code> if
   <code>ThermaD = 0</code>) for each degree of <span class="arithmatex">\(\Delta\Omega\)</span>; and for each degree <span class="arithmatex">\(n\)</span> of <span class="arithmatex">\(S_{tw}\)</span>: (b) <code>h1tp{n}0_D0</code>
   (<span class="arithmatex">\(r p_0\sigma_n'\)</span>, only if <code>thermal_wind_radial = 1</code>), (c) <code>h2tw{n}0_D0</code>, <code>h1tw{n}0_D1</code>, <code>h1tw{n}0lho1_D0</code>
   (<span class="arithmatex">\(p_0\sigma_n\)</span> times <span class="arithmatex">\(P\)</span>, <span class="arithmatex">\(rP'\)</span>, <span class="arithmatex">\(rh'P\)</span>), (c′) <code>h1tw{n}0_D0</code> (<span class="arithmatex">\(r p_0\sigma_n\)</span> acting on <span class="arithmatex">\(T\)</span>, parity <code>vT</code>).</li>
@@ -2589,8 +2984,8 @@ coefficients of the wrong parity exceed <span class="arithmatex">\(10^{-8}\)</sp
 profile is dropped.</p>
 <h2 id="7-the-operators-and-the-assembly">7. The operators and the assembly</h2>
 <h3 id="71-momentum-diff_rotmomentum_block">7.1 Momentum: <code>diff_rot.momentum_block</code></h3>
-<p><code>operators.differential_rotation(l, section, component, offdiag)</code> (line 113) calls
-<code>diff_rot.momentum_block(l, section, component, offdiag, M)</code> (line 470) with <code>M</code> the operators' namespace, where the
+<p><code>operators.differential_rotation(l, section, component, offdiag)</code> calls
+<code>diff_rot.momentum_block(l, section, component, offdiag, M)</code> with <code>M</code> the operators' namespace, where the
 <code>.mtx</code> matrices are loaded under their labels. For the row degree <code>l</code> (= <span class="arithmatex">\(l'\)</span>), the section (<code>'u'</code> or <code>'v'</code>), the column
 type (<code>'upol'</code> for <span class="arithmatex">\(P\)</span>, <code>'utor'</code> for <span class="arithmatex">\(T\)</span>) and <code>offdiag</code> = <span class="arithmatex">\(l - l'\)</span>, it sums over the degrees <span class="arithmatex">\(n\)</span> of <span class="arithmatex">\(\Delta\Omega\)</span> that
 couple this Δl (§3.5): <span class="arithmatex">\(\lvert\Delta l\rvert \le\)</span> <code>max_dl(n, …)</code> and the parity of Δl; for each, the coefficient
@@ -2601,12 +2996,12 @@ multiplied by <code>Gaspard</code> and divided by <span class="arithmatex">\(L'^
 \]</div>
 <p>The <span class="arithmatex">\(1/L'^3\)</span> makes these rows consistent with all the other momentum operators (§3.2). It returns <code>[matrix, offd]</code>,
 <code>offd</code> the column block offset (<code>utils.dr_offd</code>, §7.3), or <code>[0, 0]</code> if no degree couples this Δl.</p>
-<p><code>momentum_coefficients(n, m)</code> (line 348) builds the coefficients once per <span class="arithmatex">\((n, m)\)</span>, for degrees up to <code>lmax</code> + n + 6
+<p><code>momentum_coefficients(n, m)</code> builds the coefficients once per <span class="arithmatex">\((n, m)\)</span>, for degrees up to <code>lmax</code> + n + 6
 (building beyond <code>lmax</code> keeps the entries near <code>lmax</code> free of truncation errors), and stores them both as sparse
 matrices and by diagonal (<code>angular.band</code>, <span class="arithmatex">\(\lvert\Delta l\rvert \le n + 3\)</span>), so that <code>momentum_coef</code> is an array lookup. The
 whole set takes milliseconds at <code>lmax</code> 1025.</p>
 <h3 id="72-heat-diff_rotheat_block">7.2 Heat: <code>diff_rot.heat_block</code></h3>
-<p><code>operators.thermal_diffrot</code> (line 190) calls <code>diff_rot.heat_block(l, component, offdiag, M)</code> (line 489), which returns
+<p><code>operators.thermal_diffrot</code> calls <code>diff_rot.heat_block(l, component, offdiag, M)</code>, which returns
 the section-<code>h</code> blocks of (3.9) times the row weight. With <code>ThermaD &gt; 0</code> the rows are <span class="arithmatex">\(r^2 p_0\times\)</span>(eq)<span class="arithmatex">\(/L'^3\)</span>:</p>
 <table>
 <thead>
@@ -2645,7 +3040,7 @@ the section-<code>h</code> blocks of (3.9) times the row weight. With <code>Ther
 </tbody>
 </table>
 <p>with the sums over the degrees of <span class="arithmatex">\(\Delta\Omega\)</span> for (a) and of <span class="arithmatex">\(S_{tw}\)</span> for (b), (c), (c′). <code>Ls</code> is <span class="arithmatex">\(L_l\)</span> of the source
-degree (from <span class="arithmatex">\(u_r = L_l P/r\)</span>). The angular coefficients come from <code>heat_coefficients(m)</code> (line 383): <span class="arithmatex">\(X\)</span>, <span class="arithmatex">\(D\)</span> from
+degree (from <span class="arithmatex">\(u_r = L_l P/r\)</span>). The angular coefficients come from <code>heat_coefficients(m)</code>: <span class="arithmatex">\(X\)</span>, <span class="arithmatex">\(D\)</span> from
 <code>angular.Algebra</code> up to <code>lmax</code> + max(8, <span class="arithmatex">\(n_{hi}\)</span> + 4), and <span class="arithmatex">\(P_n(X)\)</span>, <span class="arithmatex">\(P_n'(X)\)</span>, <span class="arithmatex">\(P_n'(X)D\)</span> for every even <span class="arithmatex">\(n\)</span> up to
 the highest degree of <span class="arithmatex">\(\Delta\Omega\)</span> and <span class="arithmatex">\(S_{tw}\)</span>, stored by diagonal. The column offset is the index difference in
 <code>utils.ell</code>.</p>
@@ -2660,14 +3055,14 @@ surface of a solar model and spoils the conditioning otherwise.</p>
 <ul>
 <li>With <code>thermal_wind = 0</code> the rows are <span class="arithmatex">\(r\times\)</span>(eq)<span class="arithmatex">\(/p_0\)</span> in <span class="arithmatex">\(C^{(0)}\)</span>, and (a) is <code>h0zf{n}0_D0</code> (<span class="arithmatex">\(r f_n s\)</span>).</li>
 <li>With <code>thermal_wind ≥ 1</code> (<code>adiab_tw</code>), (b) and (c) do not fit there: the weight <span class="arithmatex">\(r\)</span> leaves <span class="arithmatex">\(P/r\)</span> in (c), and
-  <span class="arithmatex">\(C^{(0)}\)</span> cannot hold <span class="arithmatex">\(P'\)</span>. The rows are then <span class="arithmatex">\(r^2\times\)</span>(eq)<span class="arithmatex">\(/p_0\)</span> in <span class="arithmatex">\(C^{(1)}\)</span> (<code>decode_label</code>, line 90;
-  <code>submatrices.py</code>, line 95), with the same labels, the <code>tw</code>, <code>tp</code> profiles without <span class="arithmatex">\(p_0\)</span> (§5.3), and still no
+  <span class="arithmatex">\(C^{(0)}\)</span> cannot hold <span class="arithmatex">\(P'\)</span>. The rows are then <span class="arithmatex">\(r^2\times\)</span>(eq)<span class="arithmatex">\(/p_0\)</span> in <span class="arithmatex">\(C^{(1)}\)</span> (<code>decode_label</code>,
+  <code>submatrices.py</code>), with the same labels, the <code>tw</code>, <code>tp</code> profiles without <span class="arithmatex">\(p_0\)</span> (§5.3), and still no
   thermal boundary rows.</li>
 </ul>
 <h3 id="73-assembly-assemblepy">7.3 Assembly: <code>assemble.py</code></h3>
 <p><code>assemble.py</code> loops over the row degrees of each MPI rank. The unknown vector is [<span class="arithmatex">\(P\)</span> blocks][<span class="arithmatex">\(T\)</span> blocks][<span class="arithmatex">\(s\)</span>
 blocks], each of <code>N1</code> Chebyshev coefficients, with <code>nb</code> blocks per type. For row block <span class="arithmatex">\(l'\)</span> (row <code>row</code>, diagonal
-column <code>col0</code>) and each Δl of <code>diff_rot.dl_range(section, component)</code> (line 457) whose source degree exists, it calls the
+column <code>col0</code>) and each Δl of <code>diff_rot.dl_range(section, component)</code> whose source degree exists, it calls the
 operator and, unless it returned <code>[0, 0]</code>, adds the block at column <code>basecol + col0 + offd*N1</code>:</p>
 <table>
 <thead>
@@ -2675,7 +3070,6 @@ operator and, unless it returned <code>[0, 0]</code>, adds the block at column <
 <th>rows</th>
 <th>column</th>
 <th>Δl (<code>dl_range</code>)</th>
-<th>lines</th>
 </tr>
 </thead>
 <tbody>
@@ -2683,43 +3077,36 @@ operator and, unless it returned <code>[0, 0]</code>, adds the block at column <
 <td><code>u</code></td>
 <td><span class="arithmatex">\(P\)</span> (<code>basecol = 0</code>)</td>
 <td><span class="arithmatex">\(-n_{\max}\)</span> … <span class="arithmatex">\(n_{\max}\)</span>, step 2</td>
-<td>262–270</td>
 </tr>
 <tr>
 <td><code>u</code></td>
 <td><span class="arithmatex">\(T\)</span> (<code>basecol = nb*N1</code>)</td>
 <td><span class="arithmatex">\(-n_{\max}-1\)</span> … <span class="arithmatex">\(n_{\max}+1\)</span>, step 2</td>
-<td>288–296</td>
 </tr>
 <tr>
 <td><code>v</code></td>
 <td><span class="arithmatex">\(P\)</span></td>
 <td><span class="arithmatex">\(-n_{\max}-1\)</span> … <span class="arithmatex">\(n_{\max}+1\)</span>, step 2</td>
-<td>350–358</td>
 </tr>
 <tr>
 <td><code>v</code></td>
 <td><span class="arithmatex">\(T\)</span></td>
 <td><span class="arithmatex">\(-n_{\max}\)</span> … <span class="arithmatex">\(n_{\max}\)</span>, step 2</td>
-<td>376–384</td>
 </tr>
 <tr>
 <td><code>h</code></td>
 <td><span class="arithmatex">\(s\)</span> (<code>basecol = 2*nb*N1</code>), term (a)</td>
 <td><span class="arithmatex">\(-n_{\max}\)</span> … <span class="arithmatex">\(n_{\max}\)</span>, step 2</td>
-<td>438–443</td>
 </tr>
 <tr>
 <td><code>h</code></td>
 <td><span class="arithmatex">\(P\)</span>, terms (b), (c)</td>
 <td><span class="arithmatex">\(-n_{tw}\)</span> … <span class="arithmatex">\(n_{tw}\)</span>, step 2</td>
-<td>448–453</td>
 </tr>
 <tr>
 <td><code>h</code></td>
 <td><span class="arithmatex">\(T\)</span>, term (c′)</td>
 <td><span class="arithmatex">\(1-n_{tw}\)</span> … <span class="arithmatex">\(n_{tw}-1\)</span>, step 2</td>
-<td>456–461</td>
 </tr>
 </tbody>
 </table>
@@ -2729,11 +3116,11 @@ already (§7.2). <span class="arithmatex">\(B\)</span> is unchanged: the differe
 change either. <span class="arithmatex">\(A\)</span> and <span class="arithmatex">\(B\)</span> are then divided by <span class="arithmatex">\(\lVert A\rVert_F\)</span> as usual.</p>
 <p>The offset <code>offd</code> counts blocks, not degrees: the poloidal degrees of a symmetry class step by 2, so for a <span class="arithmatex">\(P\)</span> (or
 <span class="arithmatex">\(s\)</span>) column <code>offd</code> = <span class="arithmatex">\(\Delta l/2\)</span>; for a <span class="arithmatex">\(T\)</span> column it is the index difference between the toroidal list and the
-poloidal one, which depends on the symmetry (<code>utils.dr_offd</code>, line 49).</p>
+poloidal one, which depends on the symmetry (<code>utils.dr_offd</code>).</p>
 <h2 id="8-diagnostics">8. Diagnostics</h2>
 <p><code>spin_doctor.py</code> checks every solution against the energy, frequency and entropy budgets. With differential
 rotation, the terms couple different degrees, so a per-degree worker cannot evaluate them from its own degree alone.
-<code>utils4pp.diff_rot_setup</code> (line 569), called once per solution by <code>utils4pp.diagnose</code>, therefore:</p>
+<code>utils4pp.diff_rot_setup</code>, called once per solution by <code>utils4pp.diagnose</code>, therefore:</p>
 <ol>
 <li>builds <span class="arithmatex">\(\mathbf u\)</span> and <span class="arithmatex">\(\partial_r\mathbf u\)</span> on the <span class="arithmatex">\((r_k, \cos\theta)\)</span> grid from the per-degree components (<code>velocity</code>), with
    <code>lmax</code> + 10 + max(<span class="arithmatex">\(n_{tw}\)</span>, <span class="arithmatex">\(n_{\max}\)</span>) Gauss–Legendre nodes in <span class="arithmatex">\(\cos\theta\)</span>. The harmonics
@@ -2746,21 +3133,21 @@ rotation, the terms couple different degrees, so a per-degree worker cannot eval
    <span class="arithmatex">\(\sim 10^{-13}\)</span> up to <span class="arithmatex">\(l = 2000\)</span>, and keeps the norms to <span class="arithmatex">\(\sim 10^{-13}\)</span> at <span class="arithmatex">\(m = 1425\)</span>, <span class="arithmatex">\(l = 3000\)</span>), where
    <code>scipy.special.sph_harm_y</code> is NaN from <span class="arithmatex">\(l = 646\)</span> on; <code>utils.Ylm</code> and <code>utils.Ylm_full</code> use it too;</li>
 <li>evaluates <span class="arithmatex">\(\Delta\Omega\)</span>, <span class="arithmatex">\(\partial_r\Delta\Omega\)</span>, <span class="arithmatex">\(\partial_r^2\Delta\Omega\)</span>, <span class="arithmatex">\(\partial_\theta\Delta\Omega\)</span> there, as numpy Legendre series of the <span class="arithmatex">\(f_n\)</span> (<code>diff_rot.fX</code>);</li>
-<li>forms the force <span class="arithmatex">\(\mathbf F = -\mathbf W\)</span> of (2.6) and its radial derivative (the <code>force</code> closure, line 610), and projects
+<li>forms the force <span class="arithmatex">\(\mathbf F = -\mathbf W\)</span> of (2.6) and its radial derivative (the <code>force</code> closure), and projects
    them back on <span class="arithmatex">\((q, s, t)\)</span> with (3.4): <code>drforce[l]</code>;</li>
 <li>with <code>thermal = 1</code>, forms <span class="arithmatex">\(p_0[i m G\Delta\Omega s + \mathbf u\cdot\nabla S_{tw}]\)</span> and projects it on <span class="arithmatex">\(Y_l\)</span>: <code>drheat[l]</code>.</li>
 </ol>
 <p>Only the profiles <span class="arithmatex">\(f_n\)</span> come from <code>diff_rot.py</code>; the angular part here is independent of its algebra. The
-<span class="arithmatex">\(\sigma_n\)</span> used here are computed by <code>utils4pp.thermal_wind_entropy</code> (line 489), which integrates (2.9) in <span class="arithmatex">\(x\)</span> with
+<span class="arithmatex">\(\sigma_n\)</span> used here are computed by <code>utils4pp.thermal_wind_entropy</code>, which integrates (2.9) in <span class="arithmatex">\(x\)</span> with
 numpy Legendre series at each radius and writes out its <span class="arithmatex">\(r\)</span> derivative, not with <code>diff_rot.sigma_coefficients</code>. So
 the budgets test the assembled operators against a second implementation of the same equations.</p>
 <p>The per-degree workers then add:</p>
 <ul>
-<li><code>flow_worker</code> (lines 761–769): <code>Wdr</code> = <span class="arithmatex">\(2\thinspace\mathrm{Re}\int\rho_0\mathbf u^\ast\cdot\mathbf F\thinspace dV\)</span>, <code>Wdr_im</code> its imaginary part, and
+<li><code>flow_worker</code>: <code>Wdr</code> = <span class="arithmatex">\(2\thinspace\mathrm{Re}\int\rho_0\mathbf u^\ast\cdot\mathbf F\thinspace dV\)</span>, <code>Wdr_im</code> its imaginary part, and
   <code>Ensdr</code> the enstrophy term <span class="arithmatex">\((\nabla\times\mathbf u)\cdot(\nabla\times\mathbf F)\)</span>;</li>
-<li><code>thermal_worker</code> (lines 855–857): <code>Wdr_thm</code> = <span class="arithmatex">\(-2\thinspace\mathrm{Re}\int p_0 s^\ast[i m G\Delta\Omega s + \mathbf u\cdot\nabla S_{tw}]\thinspace dV\)</span>.</li>
+<li><code>thermal_worker</code>: <code>Wdr_thm</code> = <span class="arithmatex">\(-2\thinspace\mathrm{Re}\int p_0 s^\ast[i m G\Delta\Omega s + \mathbf u\cdot\nabla S_{tw}]\thinspace dV\)</span>.</li>
 </ul>
-<p><code>spin_doctor</code> (lines 389–395) includes them in the residuals:</p>
+<p><code>spin_doctor</code> includes them in the residuals:</p>
 <div class="arithmatex">\[
 \begin{aligned}
 \text{resid}\sigma &amp;: \quad 2\sigma\thinspace KE - D_{kin} - W_{thm} - W_{dr} = 0,\cr
@@ -2773,38 +3160,26 @@ Doppler and local-Coriolis parts appear in <code>Wdr_im</code>. The diff-rot opt
 (<code>spin_doctor.param_table</code>: <code>diff_rot_ampl</code>, the <span class="arithmatex">\(a_n\)</span>, <code>diff_rot_param</code>, and <code>diff_rot_type</code> as its index in <code>diff_rot.TYPES</code>,
 with a <code>'user'</code> run's profile definitions at the end of the row after <code>#</code>), and <code>Wdr</code>, <code>Wdr_im</code>, <code>Ensdr</code>, <code>Wdr_thm</code> to
 <code>flow.dat</code> and <code>thermal.dat</code>.</p>
-<h2 id="9-internal-consistency-checks">9. Internal consistency checks</h2>
-<p>These checks test the implementation against itself and against exact results, not against published calculations.</p>
+<h2 id="9-tests">9. Tests</h2>
+<p>These scripts test the implementation against itself and against exact results; the comparisons with published
+calculations are on the page <a href="../benchmarks/">Benchmarks</a>.</p>
 <ul>
-<li><strong><code>bin/ru_insane.py</code></strong>, after <code>submatrices.py</code> (no MPI, seconds; needs N ≥ 96). With <code>diff_rot = 1</code>,
-  <code>dr_blocks</code> (line 200) packs the diff-rot blocks as <code>assemble.py</code> does, and the test pairs them with random smooth
-  fields, comparing each <span class="arithmatex">\(P\)</span>/<span class="arithmatex">\(T\)</span> part against a direct <span class="arithmatex">\((r, \cos\theta)\)</span> quadrature of
-  <span class="arithmatex">\(\int\rho_0\mathbf x^\ast\cdot G[(\mathbf U_0'\cdot\nabla)\mathbf y + (\mathbf y\cdot\nabla)\mathbf U_0']\thinspace dV\)</span>; the heat blocks against
-  <span class="arithmatex">\(-\int p_0 x_s^\ast\thinspace i m G\Delta\Omega\thinspace y_s\)</span> (and their anti-Hermitian symmetry) and against
-  <span class="arithmatex">\(-\int p_0 x_s^\ast\thinspace \mathbf u(y)\cdot\nabla S_{tw}\)</span>; and for <code>'rigid'</code>, the block identities of §3.6:
-  <span class="arithmatex">\(R = a(i m G I + C)\)</span>, (a) <span class="arithmatex">\(= -i m G a E\)</span>, thermal-wind blocks zero. A 1 % error in one coefficient of one <span class="arithmatex">\(\Delta l\)</span>
-  shows up at <span class="arithmatex">\(10^{-4}\)</span> to 1. Its grid uses only the profiles of <code>diff_rot.py</code>: <span class="arithmatex">\(\Delta\Omega\)</span> as numpy Legendre series,
-  <span class="arithmatex">\(\partial_\theta S_{tw}\)</span> pointwise from the balance, <span class="arithmatex">\(S_{tw}\)</span> by Gauss integration in <span class="arithmatex">\(x\)</span>, <span class="arithmatex">\(\partial_r S_{tw}\)</span> by Chebyshev
-  differentiation.</li>
-<li><strong><code>tests/diff_rot/angular_check.py</code></strong> (standalone, 30 s; <code>--quick</code> 4 s): the harmonics of <code>angular.ylm_grid</code>
-  against exact rational values of <span class="arithmatex">\(P_l\)</span> (up to <span class="arithmatex">\(l = 2000\)</span>), against scipy (<span class="arithmatex">\(l \le 640\)</span>), and their norms up to
-  <span class="arithmatex">\(l = 3000\)</span>; <span class="arithmatex">\(X\)</span> and <span class="arithmatex">\(D\)</span> applied on a grid, and <span class="arithmatex">\(X^\dagger = X\)</span>, <span class="arithmatex">\(D^\dagger = 2X - D\)</span>; every vector operation of §3.3
-  against grid projections of the same fields, at low degree and around <span class="arithmatex">\(l = 1200\)</span>; the primitives against the former
-  quadrature builder (<code>quad_reference.py</code>, <span class="arithmatex">\(n\)</span> up to 16). References evaluated on a grid have their own floor of about
-  <span class="arithmatex">\(\epsilon l^2\)</span> near the poles, so their tolerance is max(<span class="arithmatex">\(10^{-11}\)</span>, <span class="arithmatex">\(10^{-15}l^2\)</span>).</li>
+<li><strong><code>bin/ru_insane.py</code></strong>, run after <code>submatrices.py</code> (no MPI, seconds; needs N ≥ 96). It packs the diff-rot blocks as
+  <code>assemble.py</code> does and pairs them with random smooth fields, comparing each part against a direct
+  <span class="arithmatex">\((r, \cos\theta)\)</span> quadrature of <span class="arithmatex">\(\int\rho_0\mathbf x^\ast\cdot\mathbf W(\mathbf y)\thinspace dV\)</span> and of the heat
+  terms. It also checks that term (a) is anti-Hermitian and, for <code>'rigid'</code>, the block identities of §3.6. A 1 % error
+  in one coefficient of one <span class="arithmatex">\(\Delta l\)</span> shows up at <span class="arithmatex">\(10^{-4}\)</span> to 1. Its grid uses only the profiles of <code>diff_rot.py</code>.</li>
+<li><strong><code>tests/diff_rot/angular_check.py</code></strong> (standalone; <code>--quick</code> takes seconds): the harmonics of <code>angular.ylm_grid</code>
+  against exact values, <span class="arithmatex">\(X\)</span> and <span class="arithmatex">\(D\)</span> and their adjoints, every vector operation of §3.3 against grid projections, and the
+  primitives against the quadrature builder <code>quad_reference.py</code>.</li>
 <li><strong><code>tests/diff_rot/gen_check.py [mmax [nmax [lmax]]]</code></strong>: the couplings of <code>diff_rot.py</code> against the closed forms of
-  <code>tests/diff_rot/diff_rot_coefficients.py</code>, relative to the largest coefficient of the same row block
-  (<span class="arithmatex">\(\le 1.3\times 10^{-15}\)</span> at <code>lmax</code> 20 and 1025); the selection rules of §3.5 for <span class="arithmatex">\(n\)</span> = 4 to 16 (the coefficients
-  outside them are exactly zero); and for runs with <span class="arithmatex">\(P_0\)</span>, <span class="arithmatex">\(P_2\)</span> only and <code>thermal_wind</code> 1 or 2, the <span class="arithmatex">\(\sigma_n\)</span> of
-  <code>diff_rot.sigma_coefficients</code> against (2.10) (<span class="arithmatex">\(\le 2\times 10^{-16}\)</span> of <span class="arithmatex">\(r^2G^2\lvert\partial\Delta\Omega\rvert/(\mathrm{Beyonce}\thinspace g)\)</span>).</li>
-<li><strong><code>tests/diff_rot/regress.sh OLD_KORE</code></strong>: <span class="arithmatex">\(A\)</span> and <span class="arithmatex">\(B\)</span> against an older checkout, bitwise or at round-off
-  (<span class="arithmatex">\(&lt; 10^{-13}\)</span> of each row's scale), on 15 configurations (including <code>'solar_P4'</code> and a <code>'user'</code> profile with degrees
-  0, 2, 4). Each is written with both parameter namings (§4.1), and the one of the checkout is used.</li>
-<li><strong><code>tests/heat_dr/</code></strong> (<code>run_all.sh</code>): <code>tw_sympy.py</code> (the closed forms (2.10) against (2.9)), <code>heat_check.py</code> (the heat
-  operators against a grid quadrature, and the <span class="arithmatex">\(\sigma_n\)</span> fits against an independent integration of (2.9), any degrees), <code>rigid_thermal.py</code> (the identity (2.12) with the heat equation), <code>asm_check.py</code>,
-  <code>row_check.py</code>, <code>ebal.py</code> (budgets from the matrix rows), <code>mpi_check.sh</code> (bitwise on 1–4 ranks), and others.</li>
-<li><strong><code>spin_doctor</code> residuals</strong> (§8), for every run: they close to round-off for a resolved mode, and are the check of
-  resolution in <span class="arithmatex">\(N\)</span> and <code>lmax</code>. With <code>lmax</code> ≥ 646 they were NaN before <code>angular.ylm_grid</code> replaced scipy's harmonics.</li>
+  §3.6, the selection rules of §3.5, and the <span class="arithmatex">\(\sigma_n\)</span> against (2.10).</li>
+<li><strong><code>tests/diff_rot/regress.sh OLD_KORE</code></strong>: <span class="arithmatex">\(A\)</span> and <span class="arithmatex">\(B\)</span> against another checkout of kore, on 15 configurations.</li>
+<li><strong><code>tests/heat_dr/run_all.sh</code></strong>: the heat-equation terms: the closed forms (2.10) against (2.9), the heat operators
+  against a grid quadrature, the rigid offset (2.12) with the heat equation, budgets built from the matrix rows, and the
+  assembly on 1 to 4 ranks.</li>
+<li><strong><code>spin_doctor</code> residuals</strong> (§8), for every run: they close to round-off for a resolved mode, and they are the check
+  of resolution in N and <code>lmax</code>.</li>
 </ul>
 <h2 id="10-limitations">10. Limitations</h2>
 <ul>
@@ -2814,720 +3189,18 @@ with a <code>'user'</code> run's profile definitions at the end of the row after
   (<span class="arithmatex">\(S_{tw}\)</span> up to <span class="arithmatex">\(2n_{\max} + 2 = 34\)</span>), <span class="arithmatex">\(n_{\max} \le 32\)</span> with <code>thermal_wind = 1</code>; <code>diff_rot.check</code> stops otherwise.</li>
 <li><code>'user'</code> expressions are evaluated with Python's <code>eval</code> in a namespace without builtins: enough to stop accidents,
   not a sandbox for untrusted input.</li>
-<li>The inviscid formulation (<code>ViscosD = 0</code>, rows times <span class="arithmatex">\(\rho_0^2\)</span>) builds the same labels with different weights, but is
-  untested with differential rotation, and <code>ru_insane.py</code> does not cover it.</li>
+<li>The inviscid formulation (<code>ViscosD = 0</code>, rows times <span class="arithmatex">\(\rho_0^2\)</span>) builds the same labels with different weights, but
+  it has not been validated with differential rotation, and <code>ru_insane.py</code> does not cover it.</li>
 <li>With <code>thermal_wind = 1</code> the eigenvalues depend on the choice of frame at second order in <span class="arithmatex">\(\Delta\Omega\)</span>;
   <code>thermal_wind = 2</code> is frame independent.</li>
 <li>The <span class="arithmatex">\(p_b S_0'\)</span> term of the thermal wind is omitted (§1.4); it matters where <span class="arithmatex">\(S_0' \neq 0\)</span>, e.g. in a radiative interior
   (stratification <code>'solar_rz'</code>).</li>
-<li>With <code>ThermaD = 0</code> and the thermal wind, the boundary layer that a small <code>ThermaD</code> would form at fixed-entropy walls
-  is absent, and small-scale growing modes peaking at <span class="arithmatex">\(l \approx\)</span> <code>lmax</code> can appear that do not converge in <code>lmax</code>.</li>
+<li>With <code>ThermaD = 0</code> and the thermal wind, small-scale growing modes peaking at <span class="arithmatex">\(l \approx\)</span> <code>lmax</code> can appear that do
+  not converge in <code>lmax</code> (<a href="../thermad0/">ThermaD = 0</a>).</li>
 <li>The matrices widen with the highest degree: the momentum rows couple <span class="arithmatex">\(n_{\max} + 1\)</span> degrees on each side, the heat
   rows <span class="arithmatex">\(n_{tw}\)</span> = <span class="arithmatex">\(2n_{\max} + 2\)</span> with <code>thermal_wind = 2</code>. <code>'tabulated'</code> with a large <code>diff_rot_nmax</code> is the most
-  expensive case (§12). Sharp profiles (the <code>'solar'</code> tachocline at <code>ricb = 0</code>) need large N (about 400).</li>
+  expensive case. Sharp profiles (the <code>'solar'</code> tachocline at <code>ricb = 0</code>) need large N (about 400).</li>
 </ul>
-<h2 id="11-benchmarks-against-published-results">11. Benchmarks against published results</h2>
-<p>kore's differential rotation against five published sets of eigenvalues, from an incompressible fluid to the solar
-convection zone with a radiative interior. Computed on a Mac (48 GB) on 2026-10-23 (Guenel et al.: 2026-10-25).</p>
-<table>
-<thead>
-<tr>
-<th>paper</th>
-<th>fluid</th>
-<th>rotation profile</th>
-<th>kore model</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Baruteau &amp; Rieutord 2013, JFM 719, 47</td>
-<td>incompressible, viscous</td>
-<td>shellular <span class="arithmatex">\((r/R)^\sigma\)</span>, cylindrical <span class="arithmatex">\(1 + \varepsilon s^2\)</span></td>
-<td>structure <code>'Boussinesq'</code>, <code>thermal = 0</code></td>
-</tr>
-<tr>
-<td>Guenel, Baruteau, Mathis &amp; Rieutord 2016, A&amp;A 589, A22</td>
-<td>incompressible, viscous</td>
-<td>conical <span class="arithmatex">\(1 + \varepsilon\sin^2\theta\)</span></td>
-<td>structure <code>'Boussinesq'</code>, <code>thermal = 0</code></td>
-</tr>
-<tr>
-<td>Mirouh, Baruteau, Rieutord &amp; Ballot 2016, JFM 800, 213</td>
-<td>Boussinesq, stably stratified</td>
-<td><span class="arithmatex">\(1 + \frac{N^2}{2}(1 - r^2)\)</span></td>
-<td>structure <code>'Boussinesq'</code>, stratification <code>'linear'</code></td>
-</tr>
-<tr>
-<td>Mukhopadhyay, Bekki, Zhu &amp; Gizon 2025a, A&amp;A (arXiv 2501.16797)</td>
-<td>fully compressible, solar convection zone</td>
-<td>their file <code>data/diff_rot.npz</code></td>
-<td>structure <code>'old model S prototype'</code> (Model S density), 'tabulated'</td>
-</tr>
-<tr>
-<td>Mukhopadhyay, Bekki, Zhu &amp; Gizon 2025b, A&amp;A 708, A253</td>
-<td>as above, with a radiative interior</td>
-<td>'solar_P4' (their eqs. 5–6)</td>
-<td>as above, stratification and diffusivity <code>'solar_rz'</code>, rin 0.5 R☉</td>
-</tr>
-</tbody>
-</table>
-<h3 id="111-set-ups-and-conventions">11.1 Set-ups and conventions</h3>
-<p><strong>kore.</strong> Fields go as <span class="arithmatex">\(\exp(\lambda t + im\phi)\)</span> in the frame rotating at <span class="arithmatex">\(\Omega_{\rm ref}\)</span>, with
-<span class="arithmatex">\(\lambda = \sigma + i\omega\)</span>, <span class="arithmatex">\(\sigma &lt; 0\)</span> damped and <span class="arithmatex">\(\omega &lt; 0\)</span> prograde.</p>
-<p><strong>Baruteau &amp; Rieutord 2013.</strong> Fields go as <span class="arithmatex">\(\exp(i\Omega_p t + im\phi)\)</span> in the inertial frame. They quote
-<span class="arithmatex">\(\lvert\omega\rvert = \lvert\mathrm{Re}\,\Omega_p\rvert\)</span> and <span class="arithmatex">\(\tau\)</span> (<span class="arithmatex">\(&lt; 0\)</span> damped) in units of <span class="arithmatex">\(\Omega_{\rm ref}\)</span>,
-where <span class="arithmatex">\(\Omega_{\rm ref}\)</span> is <span class="arithmatex">\(\Omega\)</span> at the surface (shellular) or on the axis (cylindrical).
-- Conversion: <span class="arithmatex">\(\Omega_p = \omega - m\)</span> and <span class="arithmatex">\(\tau = \sigma\)</span>. Their <span class="arithmatex">\(m = -6\)</span> mode is kore's <span class="arithmatex">\(m = 6\)</span> with
-  <span class="arithmatex">\(\Omega_p \to -\overline{\Omega_p}\)</span>.
-- <span class="arithmatex">\(E = \nu/(\Omega_{\rm ref}R^2)\)</span> = <code>ViscosD</code>. Stress-free walls, <span class="arithmatex">\(\eta = 0.35\)</span> unless stated, equatorially
-  symmetric modes (<code>symm = 1</code>) unless stated.
-- kore: <code>diff_rot_type = 'shellular'</code> with <code>diff_rot_param</code> <span class="arithmatex">\(= \sigma\)</span> (ΔΩ <span class="arithmatex">\(= r^\sigma - 1\)</span>), or <code>'cylindrical'</code> with
-  <code>diff_rot_ampl</code> <span class="arithmatex">\(= \varepsilon\)</span> (ΔΩ <span class="arithmatex">\(= \varepsilon r^2\sin^2\theta\)</span>). Uniform density (structure <code>'Boussinesq'</code>),
-  <code>thermal = 0</code>.</p>
-<p><strong>Guenel et al. 2016.</strong> The same equations and conventions as Baruteau &amp; Rieutord 2013 (their eqs. 4–6), with
-<span class="arithmatex">\(\Omega = 1 + \varepsilon\sin^2\theta\)</span> in units of the pole rate <span class="arithmatex">\(\Omega_{\rm ref}\)</span>: kore's <code>'conical'</code> with
-<code>diff_rot_ampl</code> <span class="arithmatex">\(= \varepsilon\)</span>, in the frame rotating at the pole. Their figure labels give <span class="arithmatex">\(\lvert\omega\rvert\)</span> only. For
-<span class="arithmatex">\(m = 2\)</span> the sign of <span class="arithmatex">\(\Omega_p\)</span> is the one in their text (Figs. 14, 15) or the only one inside the inertial range
-<span class="arithmatex">\(\lvert\Omega_p + m\Omega(\theta)\rvert &lt; 2\Omega(\theta)\)</span> (Fig. 13).</p>
-<p><strong>Mirouh et al. 2016.</strong> Their equations (2.7)–(2.9) are kore's with:
-- structure <code>'Boussinesq'</code> and stratification <code>'linear'</code>: <span class="arithmatex">\(\rho = p_0 = 1\)</span>, <span class="arithmatex">\(g = r\)</span>, <span class="arithmatex">\(dS/dr = r\)</span>, so the advection term
-  is <span class="arithmatex">\(r v_r\)</span>;
-- <code>Beyonce</code> <span class="arithmatex">\(= N^2\)</span> and <code>ThermaD</code> <span class="arithmatex">\(= E/P\)</span>, with <span class="arithmatex">\(T = 0\)</span> at both walls;
-- <code>'shellular_boussinesq'</code> with <code>diff_rot_ampl</code> <span class="arithmatex">\(= N^2\)</span>, and <code>thermal_wind = 0</code>. Their background is balanced by
-  centrifugal buoyancy, which kore does not carry.</p>
-<p>They also use the inertial frame: <span class="arithmatex">\(\lambda = \tau + i\omega\)</span>, so <span class="arithmatex">\(\omega = \omega_{\rm kore} - m\)</span> and <span class="arithmatex">\(\tau = \sigma\)</span>.</p>
-<p><strong>Solar papers.</strong>
-- Frequencies are in nHz in the frame rotating at 456 nHz, with negative values retrograde, followed by the growth rate.
-- Model S density, <span class="arithmatex">\(\nu = \kappa = 10^{12}\)</span> cm² s⁻¹, adiabatic convection zone, stress-free walls (set-ups in
-  <code>docs/heat-equation.md</code> §8 and §9).
-- "With thermal wind" means <code>thermal_wind = 2</code> (the exact <span class="arithmatex">\(\Omega^2\)</span>) without
-  <span class="arithmatex">\(u_r\,\partial_r S_{tw}\)</span> (<code>thermal_wind_radial = 0</code>).
-- 2025a: shell 0.71–0.985 R☉, N 64, lmax <span class="arithmatex">\(m + 63\)</span>. 2025b: rin 0.5 R☉, N 128.</p>
-<h3 id="112-results">11.2 Results</h3>
-<p>The deviation is kore minus published. For Baruteau and Mirouh it is in units of <span class="arithmatex">\(\Omega_{\rm ref}\)</span> for the frequency
-and relative for <span class="arithmatex">\(\tau\)</span>; for the solar papers it is in nHz. The resolution is kore's (N × lmax), with the paper's in
-brackets where they differ.</p>
-<h4 id="baruteau-rieutord-2013-incompressible">Baruteau &amp; Rieutord 2013 (incompressible)</h4>
-<table>
-<thead>
-<tr>
-<th>fig.</th>
-<th>set-up</th>
-<th>published <span class="arithmatex">\(\lvert\omega\rvert\)</span>, <span class="arithmatex">\(\tau\)</span></th>
-<th>kore</th>
-<th>Δω, Δτ/τ</th>
-<th>N × lmax (paper)</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>9</td>
-<td>shellular σ = 0 (rigid), m 0, E 1e-7</td>
-<td>1.1037, −4.27e-3</td>
-<td>1.10374, −4.2715e-3</td>
-<td>+4e-5, 0.0 %</td>
-<td>250 × 607 (250 × 600)</td>
-</tr>
-<tr>
-<td>9</td>
-<td>shellular σ = −0.5, m 0, E 1e-7</td>
-<td>1.1890, −3.96e-3</td>
-<td>1.18922, −3.9611e-3</td>
-<td>+2e-4, 0.0 %</td>
-<td>250 × 607</td>
-</tr>
-<tr>
-<td>9</td>
-<td>shellular σ = −1.3, m 0, E 1e-7</td>
-<td>1.3101, −1.28e-3</td>
-<td>1.30997, −1.2869e-3</td>
-<td>−1e-4, 0.5 %</td>
-<td>250 × 607</td>
-</tr>
-<tr>
-<td>10</td>
-<td>shellular σ = 0.5, η = 0.2, m 0, E 8e-7</td>
-<td>1.2279, −7.86e-3</td>
-<td>1.22791, −7.8551e-3</td>
-<td>0, 0.1 %</td>
-<td>132 × 271 (132 × 264)</td>
-</tr>
-<tr>
-<td>11</td>
-<td>shellular σ = −1, m 0, E 1e-8</td>
-<td>1.1113, −2.15e-3</td>
-<td>1.11133, −2.1533e-3</td>
-<td>+3e-5, 0.2 %</td>
-<td>500 × 1007 (500 × 1000)</td>
-</tr>
-<tr>
-<td>11</td>
-<td>shellular σ = −0.5, m 0, E 1e-8</td>
-<td>1.8993, −2.00e-3</td>
-<td>1.89928, −1.9991e-3</td>
-<td>0, 0.0 %</td>
-<td>580 × 1007 (580 × 1000)</td>
-</tr>
-<tr>
-<td>12</td>
-<td>shellular σ = 0.5, m 0, E 1e-8</td>
-<td>0.9235, −3.99e-3</td>
-<td>0.92349, −3.9899e-3</td>
-<td>0, 0.0 %</td>
-<td>520 × 1007 (400 × 800)</td>
-</tr>
-<tr>
-<td>12</td>
-<td>shellular σ = −0.05, m 3 antisymmetric, E 1e-8</td>
-<td>Ω_p −2.5132, −3.77e-3</td>
-<td>−2.51322, −3.60e-3</td>
-<td>0, 4.5 %</td>
-<td>200 × 402 (200 × 400); not converged</td>
-</tr>
-<tr>
-<td>15</td>
-<td>shellular σ = −0.2, m −6, E 6e-9</td>
-<td>Ω_p 7.1086, <strong>+1.82e-4</strong></td>
-<td>7.10862, <strong>+1.713e-4</strong></td>
-<td>0, 6 %</td>
-<td>500 × 1413 (500 × 1401)</td>
-</tr>
-<tr>
-<td>6</td>
-<td>cylindrical ε = −0.3, m 0, E 1e-8</td>
-<td>0.9109, −7.45e-3</td>
-<td>0.91090, −7.5128e-3</td>
-<td>0, 0.8 %</td>
-<td>640 × 1215 (450 × 800)</td>
-</tr>
-<tr>
-<td>7</td>
-<td>cylindrical ε = −0.4, m 0, E 1e-8</td>
-<td>1.3291, −6.05e-3</td>
-<td>1.32891, −6.0588e-3</td>
-<td>−2e-4, 0.1 %</td>
-<td>450 × 815 (450 × 800)</td>
-</tr>
-<tr>
-<td>8</td>
-<td>cylindrical ε = −0.4, η = 0.05, m 0, E 1e-8</td>
-<td>1.0995, −2.26e-3</td>
-<td>1.09949, −2.2532e-3</td>
-<td>0, 0.3 %</td>
-<td>560 × 1007 (450 × 800)</td>
-</tr>
-<tr>
-<td>13</td>
-<td>cylindrical ε = 0.4, m 2, E 2e-9</td>
-<td>Ω_p −2.2991, −4.47e-3</td>
-<td>not run</td>
-<td></td>
-<td>(880 × 2400): ~190 GB</td>
-</tr>
-<tr>
-<td>14</td>
-<td>cylindrical ε = 0.4, m 2, E 5e-9</td>
-<td>Ω_p −2.2003, −3.28e-3</td>
-<td>not run</td>
-<td></td>
-<td>(880 × 2400): ~190 GB</td>
-</tr>
-</tbody>
-</table>
-<p>Notes:
-- Every frequency agrees to 2e-4 or better. Every damping rate agrees to 1 % or better once kore is resolved, except
-  Fig. 12 (m 3) and Fig. 15.
-- kore sometimes needs more than the paper's resolution for <span class="arithmatex">\(\tau\)</span>. At the paper's resolution, Fig. 12 (m 0) gives
-  −3.73e-3 (6.5 % off), Fig. 6 −7.06e-3 and Fig. 8 −2.54e-3 (12 % off).
-- <strong>Fig. 6</strong> sits in a dense cluster: at 640 × 1215 there are two modes at ω = 0.91090, with τ = −7.51e-3 and
-  −7.37e-3. The published −7.45e-3 lies between them, and at 360 × 655 and 560 × 1007 the nearest mode is a different
-  one. The figure is matched to about 1 % but not uniquely identified.
-- <strong>Fig. 12, m 3</strong> is the toroidal mode <span class="arithmatex">\(\tilde\Omega_p = 2\Omega/(m+1)\)</span> followed to σ = −0.05. Its frequency is
-  matched to 2e-5, but the cluster around it does not settle: the nearest mode has τ = −3.60, −3.50, −3.80 and
-  −3.95e-3 at N = 200, 280, 360 and 440, and an almost neutral mode appears at ω = 0.48681.
-- <strong>Fig. 15</strong> is the growing mode. Its growth rate is linear in <span class="arithmatex">\(E - E_c\)</span> with <span class="arithmatex">\(E_c \approx 10^{-8}\)</span> (their Fig. 16),
-  so 6 % in τ is a 0.4 % shift in <span class="arithmatex">\(E_c\)</span>. kore reproduces the instability and the frequency to 2e-5.</p>
-<h4 id="guenel-et-al-2016-incompressible-conical-rotation">Guenel et al. 2016 (incompressible, conical rotation)</h4>
-<table>
-<thead>
-<tr>
-<th>fig.</th>
-<th>set-up</th>
-<th>published <span class="arithmatex">\(\lvert\omega\rvert\)</span>, <span class="arithmatex">\(\tau\)</span></th>
-<th>kore</th>
-<th>Δω, Δτ/τ</th>
-<th>N × lmax (paper)</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>6</td>
-<td>ε = 0.3, η = 0.71, m 0, E 5e-8</td>
-<td>1.1447, −3.60e-3</td>
-<td>1.14469, −3.6020e-3</td>
-<td>0, 0.1 %</td>
-<td>200 × 607 (200 × 600)</td>
-</tr>
-<tr>
-<td>7</td>
-<td>ε = −0.25, η = 0.71, m 0, E 1e-8</td>
-<td>1.3552, −1.75e-3</td>
-<td>1.35523, −1.7508e-3</td>
-<td>0, 0.0 %</td>
-<td>300 × 1007 (300 × 1000)</td>
-</tr>
-<tr>
-<td>8</td>
-<td>ε = 0.3, η = 0.10, m 0, E 1e-8</td>
-<td>1.6590, −2.93e-3</td>
-<td>1.65911, −3.104e-3</td>
-<td>+1e-4, 6 %</td>
-<td>460 × 1103 (400 × 1000)</td>
-</tr>
-<tr>
-<td>8</td>
-<td>ε = −0.25, η = 0.71, m 0, E 1e-8, quasi-periodic</td>
-<td>1.2337, −1.02e-4</td>
-<td>1.23372, −1.0200e-4</td>
-<td>0, 0.0 %</td>
-<td>250 × 815 (250 × 800)</td>
-</tr>
-<tr>
-<td>12</td>
-<td>DT mode, ε = −0.25, η = 0.71, m 0, E 2.2e-8</td>
-<td>1.8681, −4.93e-3</td>
-<td>1.86824, −4.9423e-3</td>
-<td>+1e-4, 0.3 %</td>
-<td>296 × 751 (296 × 740)</td>
-</tr>
-<tr>
-<td>13</td>
-<td>DT mode, ε = −0.43, η = 0.35, m 2, E 1e-8</td>
-<td>Ω_p −3.2223, −8.11e-3</td>
-<td>−3.22283, −8.026e-3</td>
-<td>−5e-4, 1 %</td>
-<td>350 × 1009 (350 × 1001)</td>
-</tr>
-<tr>
-<td>15</td>
-<td>ε = −0.5, η = 0.71, m 2, E 1e-8, corotation</td>
-<td>Ω_p −1.0697, <strong>+4.62e-3</strong></td>
-<td>−1.06970, <strong>+4.619e-3</strong></td>
-<td>0, 0.0 %</td>
-<td>302 × 1425 (302 × 1421)</td>
-</tr>
-<tr>
-<td>14</td>
-<td>ε = 0.3, η = 0.71, m 2, E 1e-9, corotation</td>
-<td>Ω_p −2.2951, −1.03e-2</td>
-<td>not run</td>
-<td></td>
-<td>(458 × 2529): ~50 GB</td>
-</tr>
-<tr>
-<td>§4.3.2</td>
-<td>DT mode, ε = −0.25, η = 0.71, m 0, E 1e-5</td>
-<td>"≈ 1.82"</td>
-<td>1.81734, −2.101e-2</td>
-<td></td>
-<td>60 × 159 (60 × 150)</td>
-</tr>
-</tbody>
-</table>
-<p>Notes:
-- Six of the seven quoted modes that were run agree to 1e-4 in frequency and to 1 % or better in τ, among them the
-  growing mode of Fig. 15 and both turning-surface (DT) modes. The m 2 Fig. 13 is 5e-4 off in <span class="arithmatex">\(\Omega_p\)</span>.
-- <strong>Fig. 8, η = 0.10</strong> is 6 % off in τ, the same at 400 × 1007 (−3.08e-3) and 460 × 1103 (−3.10e-3), so kore is
-  converged. The mode sits in a cluster: a neighbour at 1.65931 has τ = −2.98e-3.
-- <strong>Fig. 15</strong> is the unstable mode with a corotation layer. kore returns a cloud of eigenvalues within <span class="arithmatex">\(10^{-5}\)</span> of it
-  (+4.616 to +4.625e-3, all at ω = 0.93030), at every resolution tried (250 × 1201, 302 × 1425, 340 × 1425). The cloud
-  is typical of a strongly non-normal eigenvalue. Its centre, +4.619e-3, does not move with resolution.
-- <strong>Fig. 13</strong>: a second mode lies at <span class="arithmatex">\(\Omega_p\)</span> = −3.22240 with τ = −9.13e-3, closer in frequency and 12 % off in τ.
-- <strong>Fig. 14</strong> needs about 50 GB at the paper's resolution.
-- The E = 1e-5 DT mode is the starting point of their Fig. 12 sequence; they give its frequency only as "about 1.82".</p>
-<h4 id="mirouh-et-al-2016-boussinesq-stress-free-walls">Mirouh et al. 2016 (Boussinesq, stress-free walls)</h4>
-<p>The figure labels give <span class="arithmatex">\(\lvert\omega\rvert\)</span>, τ and the resolution (Nr × L) of each mode; the runs below use that
-resolution, rounded up to kore's lmax. The labels of Figs. 5 and 10 drop the sign of τ.</p>
-<table>
-<thead>
-<tr>
-<th>source</th>
-<th>set-up</th>
-<th>published ω, τ</th>
-<th>kore</th>
-<th>Δω, Δτ/τ</th>
-<th>N × lmax (paper)</th>
-<th>residual</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Table 1</td>
-<td>m 4, N² 1.5, P 1e-2, E 1e-9</td>
-<td>−2.67162, −2.623e-3</td>
-<td>−2.67172, −2.548e-3</td>
-<td>−1e-4, 3 %</td>
-<td>420 × 275 (–)</td>
-<td>3e-12</td>
-</tr>
-<tr>
-<td>Table 1 = fig. 6(a)</td>
-<td>m 0, N² 0.45, P 1e-2, E 1e-9</td>
-<td>1.75431, −1.777e-3</td>
-<td>1.754118, −1.7653e-3</td>
-<td>−2e-4, 0.7 %</td>
-<td>498 × 1007 (498 × 996)</td>
-<td>3e-11</td>
-</tr>
-<tr>
-<td>Table 1 = fig. 6(c)</td>
-<td>m 0, N² 2.6, P 1e-2, E 1e-9</td>
-<td>0.80413, −1.572e-3</td>
-<td>0.804121, −1.5775e-3</td>
-<td>0, 0.3 %</td>
-<td>400 × 815 (400 × 800)</td>
-<td>4e-12</td>
-</tr>
-<tr>
-<td>Table 1</td>
-<td>m 0, N² 2.3, P 1e-2, E 1e-10</td>
-<td>0.30613, −8.884e-4</td>
-<td>0.30592, −1.303e-3</td>
-<td>−2e-4, 47 %</td>
-<td>500 × 1007 (–); not converged</td>
-<td>2e-9</td>
-</tr>
-<tr>
-<td>fig. 5(a)</td>
-<td>m 0, N² 0, P 1e-2, E 1e-7</td>
-<td>1.6739, −6.31e-3</td>
-<td>1.673897, −6.3115e-3</td>
-<td>0, 0.0 %</td>
-<td>300 × 607 (300 × 600)</td>
-<td>5e-13</td>
-</tr>
-<tr>
-<td>fig. 5(b)</td>
-<td>N² 0.45, otherwise as 5(a)</td>
-<td>1.7658, −9.44e-3</td>
-<td>1.765788, −9.4443e-3</td>
-<td>0, 0.0 %</td>
-<td>300 × 607</td>
-<td>3e-12</td>
-</tr>
-<tr>
-<td>fig. 5(c)</td>
-<td>N² 0.75</td>
-<td>1.8220, −1.24e-2</td>
-<td>1.822043, −1.2387e-2</td>
-<td>0, 0.1 %</td>
-<td>300 × 607</td>
-<td>6e-12</td>
-</tr>
-<tr>
-<td>fig. 5(d)</td>
-<td>N² 0.79</td>
-<td>1.8286, −1.36e-2</td>
-<td>1.828603, −1.3579e-2</td>
-<td>0, 0.2 %</td>
-<td>300 × 607</td>
-<td>3e-12</td>
-</tr>
-<tr>
-<td>fig. 6(b)</td>
-<td>m 0, N² 1.1, P 1e-2, E 1e-8, quasi-periodic</td>
-<td>1.4902, −3.82e-3</td>
-<td>1.490236, −3.8266e-3</td>
-<td>0, 0.2 %</td>
-<td>300 × 607 (300 × 600)</td>
-<td>3e-12</td>
-</tr>
-<tr>
-<td>fig. 8</td>
-<td>m 0, N² 3, P 1, E 1e-9, HT mode</td>
-<td>1.3856, −4.81e-4</td>
-<td>1.385579, −4.6354e-4</td>
-<td>0, 3.6 %</td>
-<td>498 × 1007 (498 × 996)</td>
-<td>6e-11</td>
-</tr>
-<tr>
-<td>fig. 9</td>
-<td>m 0, N² 6.7, P 1e-2, E 1e-10, HT mode, <strong>growing</strong></td>
-<td>0.3296, +3.29e-2</td>
-<td>0.329814, +3.2948e-2</td>
-<td>+2e-4, 0.1 %</td>
-<td>496 × 1007 (496 × 992)</td>
-<td>5e-10</td>
-</tr>
-<tr>
-<td>fig. 10</td>
-<td>m 0, N² 1.5, P 1e-2, E 1e-10, HT mode</td>
-<td>0.2515, (−)8.13e-4</td>
-<td>0.251271, −8.2843e-4</td>
-<td>−2e-4, 2 %</td>
-<td>500 × 1007 (500 × 1000)</td>
-<td>2e-10</td>
-</tr>
-<tr>
-<td>fig. 11</td>
-<td>m 3, N² 6, P 1, E 1e-7, corotation, <strong>growing</strong></td>
-<td>−3.8612, +7.35e-3</td>
-<td>not identified</td>
-<td></td>
-<td>200 × 402 (200 × 400)</td>
-<td>~1e-7</td>
-</tr>
-<tr>
-<td>fig. 12</td>
-<td>m 4, N² 1.5, P 1e-2, E 1e-9, regular mode</td>
-<td>−2.6715, −4.42e-5</td>
-<td>−2.67145, −4.4217e-5</td>
-<td>0, 0.0 %</td>
-<td>398 × 803 (398 × 797)</td>
-<td>3e-11</td>
-</tr>
-</tbody>
-</table>
-<p>Notes:
-- Figure 7 shows damping rates against E only, no mode. All other modes of Figs. 5–12 are listed.
-- Thirteen of the fourteen modes are identified. Their frequencies agree to 2e-4 or better, and τ to 1 % or better
-  except Fig. 10 (2 %), Table 1 m 4 (3 %), Fig. 8 (3.6 %) and the unconverged E = 1e-10 row.
-- <strong>Fig. 12 is not the Table 1 m 4 mode</strong>: same parameters, but τ is 60 times smaller. kore finds both.
-- <strong>Table 1 rows 2–3</strong> are Figs. 6(a) and 6(c). At the figures' resolutions they agree to 0.7 % and 0.3 % in τ; coarser
-  runs (420 × 815, 300 × 607) gave 6 % and 0.6 %.
-- <strong>Fig. 10</strong>: kore's mode at 0.251271 is damped. Taking the unsigned label as a damping rate, as in Fig. 5, it matches
-  to 2 %; there is no growing mode near the label. It sits in a cluster of modes within 2e-3 in ω.
-- <strong>Fig. 11</strong> lies in a dense cluster of growing modes (corotation resonance) that changes with resolution: the
-  nearest mode is (−3.86179, +1.108e-2) at 200 × 402 and (−3.86068, +7.247e-3) at 260 × 530.
-- <strong>Eigenvectors of Figs. 6(c), 8</strong> (and weakly 6(a), 10) carry a toroidal component at <span class="arithmatex">\(l \approx\)</span> lmax, concentrated
-  at the walls, where the energy density reaches <span class="arithmatex">\(10^8\)</span> times the bulk. It follows the truncation: for Fig. 6(c) with
-  lmax 1007 the toroidal coefficients drop to 2e-7 near <span class="arithmatex">\(l = 400\)</span> and rise to 1.4e-2 at lmax. The eigenvalue is
-  unaffected (lmax 815 → 1007: Δω 8e-6, Δτ 0.3 %, residual 2e-12). Plots of these modes need 11–12 decades to show
-  the bulk structure.
-- <strong>E = 1e-10, Table 1</strong> is beyond the resolution that fits in memory with three fields.</p>
-<h4 id="mukhopadhyay-et-al-2025a-convection-zone-their-their-compressible-values">Mukhopadhyay et al. 2025a (convection zone, their Ω): their compressible values</h4>
-<table>
-<thead>
-<tr>
-<th>mode (symm)</th>
-<th>published</th>
-<th>kore with thermal wind</th>
-<th>Δ</th>
-<th>kore without thermal wind</th>
-<th>Δ</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>m 1 high-latitude (−1)</td>
-<td>−95.70, +11.69</td>
-<td>−95.759, +11.301</td>
-<td>−0.06, −0.39</td>
-<td>−91.099, −3.697</td>
-<td>+4.6, −15.4</td>
-</tr>
-<tr>
-<td>m 3 Rossby n0 (−1)</td>
-<td>−262.07, −0.88</td>
-<td>−262.052, −0.877</td>
-<td>+0.02, 0.00</td>
-<td>−263.037, −0.580</td>
-<td>−1.0, +0.3</td>
-</tr>
-<tr>
-<td>m 3 Rossby n1 (−1)</td>
-<td>−182.05, −9.67</td>
-<td>−181.934, −9.700</td>
-<td>+0.12, −0.03</td>
-<td>−182.439, −9.838</td>
-<td>−0.4, −0.2</td>
-</tr>
-<tr>
-<td>m 3 columnar (+1)</td>
-<td>210.84, −11.09</td>
-<td>210.908, −11.090</td>
-<td>+0.07, 0.00</td>
-<td>213.585, −12.248</td>
-<td>+2.7, −1.2</td>
-</tr>
-<tr>
-<td>m 10 high-frequency retrograde (+1)</td>
-<td>−211.28, −20.00</td>
-<td>−211.088, −19.963</td>
-<td>+0.19, +0.04</td>
-<td>−200.414, −19.267</td>
-<td>+10.9, +0.7</td>
-</tr>
-</tbody>
-</table>
-<p>The thermal wind is part of their model, and kore matches only with it (to 0.2 nHz). Without it the high-latitude mode
-is no longer unstable.</p>
-<h4 id="mukhopadhyay-et-al-2025b-radiative-interior-rin-05-r">Mukhopadhyay et al. 2025b (radiative interior, rin 0.5 R☉)</h4>
-<p>They publish growth rates only for the two modes of their Table 2. "KE" is the fraction of kore's kinetic energy below
-0.71 R☉.</p>
-<table>
-<thead>
-<tr>
-<th>their mode</th>
-<th>published</th>
-<th>kore without thermal wind (KE)</th>
-<th>Δ</th>
-<th>kore with thermal wind</th>
-<th>Δ</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>4(b) mixed, m 5</td>
-<td>−136.740, −11.067</td>
-<td>−136.740, −11.073 (0.93)</td>
-<td>0.000, −0.006</td>
-<td>−136.736, −11.091</td>
-<td>+0.004, −0.024</td>
-</tr>
-<tr>
-<td>5(b) mixed, m 7</td>
-<td>−240.068, −25.593</td>
-<td>−240.090, −25.593 (0.99)</td>
-<td>−0.02, 0.000</td>
-<td>−240.252, −25.595</td>
-<td>−0.18, −0.002</td>
-</tr>
-<tr>
-<td>3(b) mixed, m 2</td>
-<td>−333.7</td>
-<td>−333.685, −3.159 (0.98)</td>
-<td>+0.02</td>
-<td>−333.675, −3.160</td>
-<td>+0.03</td>
-</tr>
-<tr>
-<td>3(a) convection-zone Rossby, m 2</td>
-<td>−331.1</td>
-<td>−331.162, −0.584 (0.33)</td>
-<td>−0.06</td>
-<td>−331.031, −0.733</td>
-<td>+0.07</td>
-</tr>
-<tr>
-<td>4(a) convection-zone Rossby, m 5</td>
-<td>−137.9</td>
-<td>−137.923, −13.726 (0.03)</td>
-<td>−0.02</td>
-<td>−131.334, −11.894</td>
-<td>+6.6</td>
-</tr>
-<tr>
-<td>m 3 equatorial Rossby (their §3.2)</td>
-<td>−263.3</td>
-<td>−263.282, −4.467 (0.29)</td>
-<td>+0.02</td>
-<td>−261.469, −4.215</td>
-<td>+1.8</td>
-</tr>
-<tr>
-<td>5(a) convection-zone high-frequency retrograde, m 7</td>
-<td>−248.5</td>
-<td>−248.372, −19.736 (0.01)</td>
-<td>+0.13</td>
-<td>−258.904, −21.332</td>
-<td>−10.4</td>
-</tr>
-<tr>
-<td>1(b) mixed, m 1</td>
-<td>−94.1</td>
-<td>−94.018, −6.488 (0.96) or −94.217, −4.670 (0.98)</td>
-<td>+0.08 / −0.12</td>
-<td>−94.188, −5.812</td>
-<td>−0.09</td>
-</tr>
-<tr>
-<td>1(a) convection-zone high-latitude, m 1</td>
-<td>−92.2</td>
-<td>only strongly damped convection-zone modes, e.g. −91.951, −33.9 (0.02)</td>
-<td>?</td>
-<td>−91.981, −7.932 (0.41)</td>
-<td>+0.22</td>
-</tr>
-<tr>
-<td>2(a) convection-zone high-latitude, m 2</td>
-<td>−177.2</td>
-<td>−173.950, −47.1 (0.00) or −175.074, −63.1</td>
-<td>?</td>
-<td>−181.423, −13.429 (0.06)</td>
-<td>−4.2</td>
-</tr>
-<tr>
-<td>2(b) mixed, m 2</td>
-<td>−187.1</td>
-<td>no mixed mode nearby</td>
-<td></td>
-<td>no mixed mode nearby</td>
-<td></td>
-</tr>
-</tbody>
-</table>
-<p>Without the thermal wind, every convection-zone and mixed mode whose counterpart can be identified agrees to 0.13 nHz
-or better. With it, the convection-zone modes were 2–10 nHz off. So the 2025b runs appear to have no latitudinal entropy
-gradient, unlike 2025a, where kore matches only with it. Their high-latitude modes 1(a) and 2(a) remain unmatched. Without the
-baroclinic term, kore's convection-zone candidates near them are damped by 34–63 nHz, and the paper gives no growth
-rates to choose between them.</p>
-<h3 id="113-summary">11.3 Summary</h3>
-<table>
-<thead>
-<tr>
-<th>paper</th>
-<th>modes compared</th>
-<th>frequencies</th>
-<th>damping or growth rates</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Baruteau &amp; Rieutord 2013</td>
-<td>12 of 14 (2 beyond memory)</td>
-<td>all within 2e-4 Ω_ref</td>
-<td>10 of 12 within 1 % once resolved; Fig. 12 (m 3) not converged; Fig. 15 growing, 6 %</td>
-</tr>
-<tr>
-<td>Guenel et al. 2016</td>
-<td>7 of 8 (1 beyond memory)</td>
-<td>all within 1e-4 Ω_ref (Fig. 13: 5e-4)</td>
-<td>6 within 1 %, including the growing mode; Fig. 8 (η = 0.10) 6 %</td>
-</tr>
-<tr>
-<td>Mirouh et al. 2016</td>
-<td>14 (Table 1 and Figs. 5, 6, 8–12)</td>
-<td>13 identified, within 2e-4</td>
-<td>9 within 1 %, 3 within 2–3.6 %; Table 1 E = 1e-10 not resolved; Fig. 11 not identified</td>
-</tr>
-<tr>
-<td>Mukhopadhyay et al. 2025a</td>
-<td>5</td>
-<td>within 0.2 nHz (with thermal wind)</td>
-<td>within 0.4 nHz</td>
-</tr>
-<tr>
-<td>Mukhopadhyay et al. 2025b</td>
-<td>11</td>
-<td>8 within 0.13 nHz (without thermal wind); 2 high-latitude unmatched; 1 with no counterpart</td>
-<td>the two published, within 0.006 nHz</td>
-</tr>
-</tbody>
-</table>
-<h3 id="114-reproducing">11.4 Reproducing</h3>
-<ul>
-<li>Baruteau, Guenel and Mirouh: <code>tests/diff_rot/lit_bench.py WORKDIR CASE [N=.. lmax=.. ncpus=8 nev=..]</code>. <code>list</code> prints the
-  cases. The largest run here (Fig. 6 at 640 × 1215) took 26 GB and 5.5 minutes on 8 ranks.</li>
-<li>Solar: <code>tests/diff_rot/solar_checks.py DIFF_ROT_NPZ [WORKDIR]</code>, about 40 minutes on one core.</li>
-<li>Structure <code>'Boussinesq'</code> is the uniform-density model these runs need (<span class="arithmatex">\(\ln\rho_0 = 0\)</span>, <span class="arithmatex">\(p_0 = 1\)</span>, <span class="arithmatex">\(g = r\)</span>); Mirouh et
-  al. add stratification <code>'linear'</code>, <span class="arithmatex">\(dS/dr = r\)</span> (<a href="../background/">background.md</a>).</li>
-</ul>
-<h2 id="12-cost-against-the-highest-degree">12. Cost against the highest degree</h2>
-<p>Not written yet. This section was listed when <code>bin/diff_rot.py</code> was committed (6019425), but its text was not included.
-<code>tests/diff_rot/dr_cost.py</code> measures what it is meant to report: the time and peak memory of submatrices, assemble and
-solve, nnz(A) and the number of operators, against the highest degree <span class="arithmatex">\(n\)</span> of <span class="arithmatex">\(\Delta\Omega\)</span>.</p>
 
 
 
