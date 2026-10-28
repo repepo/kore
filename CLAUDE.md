@@ -6,27 +6,31 @@ sparse matrices solved with SLEPc/PETSc (MUMPS). This branch adds variable densi
 an entropy equation, a solar background, and differential rotation with its thermal wind.
 
 Written 2026-10-13 against commit `b4598010` ("Radiative interior (Mukhopadhyay et al. 2025b) ..."), branch
-`anelastic_log` (github.com/repepo/kore), and brought up to date on 2026-10-26 after `49a4575` (the differential
-rotation in `bin/diff_rot.py`, the background chosen by `structure`, `stratification` and `diffusivity`). Line numbers
+`anelastic_log` (github.com/repepo/kore), and checked against the code at `a2abc05` on 2026-10-28 (the differential
+rotation in `bin/diff_rot.py`, the background chosen by `structure`, `stratification` and `diffusivity`, `diff_rot_hold`
+removed, `docs/solver.md`, the GitHub test). Line numbers
 drift; check the code before relying on a detail here. The commit messages are long and accurate: `git log` is the best
 history. §15 lists what the first threads of the claude.ai project behind this branch found and changed.
 
 ## 1. Working here
 
-- **Python**: `source ~/z2/bin/activate` (numpy, scipy ≥ 1.15.3, mpi4py, petsc4py, slepc4py with complex scalars;
-  sympy for `tests/heat_dr/tw_sympy.py`). kore builds its spherical harmonics itself (`angular.py`); some tests compare
-  them with scipy's `sph_harm_y`. `pygyre` and `astropy` are no longer needed (the file-based models were removed).
+- **Python**: `source ~/z2/bin/activate` (numpy, scipy, mpi4py, petsc4py, slepc4py with complex scalars; sympy for
+  `tests/heat_dr/tw_sympy.py`). `bin/` must run on the numpy 1.26 and scipy 1.11 of the GitHub test (§11): kore builds
+  its spherical harmonics itself (`angular.py`), and only the tests that compare with scipy's `sph_harm_y`
+  (`tests/diff_rot/angular_check.py`, `quad_reference.py`, `tests/heat_dr/row_check.py`) need scipy ≥ 1.15. `pygyre`
+  and `astropy` are no longer needed (the file-based models were removed).
 - **Memory**: keep numerical tests under 40 GB on the Mac laptop and 100 GB on the Linux server mongo; on chandler
   (48 cores) keep each run under 240 GB. MUMPS is the big consumer; see §9 for out-of-core options.
 - **Commits**: leave changes uncommitted unless asked; the owner reviews and commits.
 - **Where things run**: every script reads `bin/parameters.py` (imported as `from parameters import par`) and writes
   its output to the current directory; `operators.py` loads every `*.mtx` in the current directory. So run from the
   repo root (as `runKore.sh` does) or from a run directory holding its own `bin/` copy (as the test scripts build).
-  `.gitignore` ignores `*.mtx *.npz *.field *.dat`.
+  `.gitignore` ignores `*.mtx *.npz *.field *.dat` (except `bin/jsoc_hmi_2010_2026.npz`), `__pycache__` and
+  `.pytest_cache`.
 - **Before trusting a change**: run `ru_insane.py` (operator symmetry, seconds), then the pipeline and `spin_doctor`
   residuals; for changes to the background, the differential rotation or the heat equation, `tests/diff_rot/regress.sh`
-  (bitwise A, B against an older checkout) and `tests/heat_dr/run_all.sh`. Existing runs are expected to stay bitwise
-  identical unless a change says otherwise.
+  (bitwise A, B against an older checkout) and `tests/heat_dr/run_all.sh`; before a push, `cd tests/ci; pytest -v`
+  (the GitHub test, §11). Existing runs are expected to stay bitwise identical unless a change says otherwise.
 - The checked-in `bin/parameters.py` is the "gi1" gravito-inertial mode: ricb 0.35, m 2, thermal, structure 'Wu 2005'
   (r_out 0.99) with stratification 'top hat', N 192, lmax 121, ncpus 10, target 2.04i; expected
   λ = −0.049653 + 2.037155i. `examples/smooth_sun/parameters.py` is the solar example (§6).
@@ -35,14 +39,16 @@ history. §15 lists what the first threads of the claude.ai project behind this 
 
 ```
 ./bin/submatrices.py ncpus          # radial operator blocks -> <label>.mtx  (multiprocessing)
-./bin/ru_insane.py                  # optional: operator sanity tests on the *.mtx, no MPI/SLEPc, exit 1 on failure
+./bin/ru_insane.py                  # optional (not in runKore.sh): operator tests on the *.mtx, exit 1 on failure
 mpiexec -n ncpus ./bin/assemble.py  # A.npz, and B.npz (forcing = 0) or B_forced.npz (forcing > 0; both for 11)
 mpiexec -n ncpus ./bin/solve.py [petsc opts]   # SLEPc shift-invert (forcing = 0) or KSP LU (forcing > 0)
 ./bin/spin_doctor.py ncpus | tee out2          # energy/entropy budgets, residuals, tables
 ```
 
-`runKore.sh` then moves the outputs to `../run`. Constraint enforced by `assemble.py`: `lmax - m + 1` must be a
-multiple of `2*ncpus` (number of MPI ranks); the default `lmax` formula in `params_default.py` satisfies it.
+`runKore.sh` sets its own `ncpus` (10), which must match `par.ncpus`, and passes its `opts` to `solve.py`. It then
+copies `params_default.py` and `parameters.py` to `../run` and moves the outputs there. Constraint enforced by
+`assemble.py`: `lmax - m + 1` must be a multiple of `2*ncpus` (number of MPI ranks); the default `lmax` formula in
+`params_default.py` satisfies it.
 
 Outputs: `real_flow.field`, `imag_flow.field` (and `*_thermal.field`), one column per solution, eigenvectors
 normalised to kinetic energy 1; `eigenvalues0.dat` (this solve: Re λ, Im λ); `timing.dat`. `spin_doctor` appends to
@@ -57,7 +63,7 @@ eigenvalues as ω, σ in nHz.
 | file | role |
 | --- | --- |
 | `parameters.py` | the run's parameters: `par = default_params()`, `par.timescale = 'rotation'; par.set_scales()`, then overrides |
-| `params_default.py` | every parameter with long comments (the best parameter reference), `set_scales`, `check_names` (warns about names that kore does not define), solver options `petsc_opts`, `prescale` |
+| `params_default.py` | every parameter with long comments (the best parameter reference), `set_scales`, `check_names` (warns about names that kore does not define), solver options `petsc_opts`, `prescale`, `drop_tol` |
 | `units.py` | physical units for parameter files and scripts (kore itself never imports it): `set_physical` (Gaspard, Beyonce, ViscosD, ThermaD, `diff_rot_frame` from cgs values), `set_target` (`itau`, `rtau` from ω, σ in nHz), `nHz`; as a script, prints a run's eigenvalues in nHz |
 | `utils.py` | globals (`N1`, `n`, `sizmat`, `symm1`, `adiab_tw`, `odd_profiles`...), `dr_offd`, label decoding, Chebyshev transforms (`chebco_f`, `funcheb`, `fonzie`, `angine`), Gegenbauer matrices `Dlam`, `Slam`, `Mlam`, parity `remroco`, `ell`, erf profiles (`erf_top_hat`, `erf_top_hat_odd`, `erf_box`), `Ylm`, `load_npz_mmap` |
 | `background.py` | the background besides the rotation (§6): the type names `STRUCTURES`, `STRATIFICATIONS`, `DIFFUSIVITIES` (their order is the index written to `params.dat`), `check()` (stops on unknown, removed (`REMOVED`) or impossible settings), dS/dr (`gradS`), ν and κ (`diffusivity`), the 'user' expressions and their `description()` for `params.dat` |
@@ -107,10 +113,13 @@ are divided by p₀ (r s and −r u_r dS/dr, profile `dSd`), better conditioned 
 `ThermaD = 0` plus diff rot and `thermal_wind ≥ 1` (`ut.adiab_tw`) they are r² × eq / p₀ in a C^(1) basis. No thermal
 BC rows without diffusion.
 
-**Generalised eigenproblem** A x = λ B x, fields ∝ e^{λt}, λ = σ + iω (negative ω is prograde). B is −inertia
-(momentum) and +entropy (heat); in A the momentum rows are Coriolis − viscous − buoyancy + diff rot, the heat rows
-−advection + diffusion + diff-rot terms (operators return the A sign). Forced runs (`forcing > 0`) use
-A − i wf B as the matrix and a boundary right-hand side (forcing 11: random body forces, `reynolds_stress.py`).
+**Generalised eigenproblem** A x = λ B x, fields ∝ e^{imφ + λt}: Re λ is the growth rate σ, negative Im λ is prograde
+(as `itau` and `forcing_frequency`). In nHz the frequency is ω = −Im λ·F/G and σ = Re λ·F/G (F = `diff_rot_frame`,
+G = Gaspard; `units.nHz`, `units.set_target`), so prograde modes have ω > 0 and the retrograde HFR modes ω < 0.
+B is −inertia (momentum) and +entropy (heat); in A the momentum rows are Coriolis − viscous − buoyancy + diff rot, the
+heat rows −advection + diffusion + diff-rot terms (operators return the A sign). Forced runs (`forcing > 0`) use
+A − i wf B as the matrix (wf = `forcing_frequency`) and a boundary right-hand side (forcing 11: random body forces,
+`reynolds_stress.py`).
 
 **Scales.** `Gaspard` = Ωτ, `Beyonce` = (N₀τ)², `ViscosD` = ν₀τ/r₀² (the Ekman number when τ = 1/Ω),
 `ThermaD` = κ₀τ/r₀²; N² = Beyonce g dS/dr. `set_scales()` resets them by `timescale` ('rotation': Gaspard 1,
@@ -138,8 +147,8 @@ the only physical unit it reads is the nHz of the solar rotation data.
   power (u: rpower_u − X, v: rpower_v − X, h: 2 − X, or 1 − X for ThermaD = 0 without `adiab_tw`; inviscid uses 3 − X,
   2 − X and ρ₀², ρ₀); each `fuD` is a 3-letter profile code and its derivative order; `_DY` is the derivative order on
   the unknown. `lh1`, `lh2` with order k mean (ln ρ₀)′·(ln ρ₀)^(k) and (ln ρ₀)″·(ln ρ₀)^(k). `rap.burrito` evaluates
-  r^rpower ρ₀^rhopower f₁ f₂ on the Chebyshev nodes; `ut.chebco_f` transforms it (coefficients below 1e-15 of the
-  largest are zeroed).
+  r^rpower ρ₀^rhopower f₁ f₂ on the Chebyshev nodes; `ut.chebco_f` transforms it (`ut.gimmedachebs`: coefficients
+  below max(1e-15, `drop_tol`) of the largest are zeroed).
 - **Profile codes** (`rap.proffdir`): `lho` ln ρ₀, `vsc` ν, `gra` g, `pss` p₀, `pdS` p₀ dS/dr, `dSd` dS/dr, `kps` κp₀;
   differential rotation `zf`/`zd`/`zs` + degree = aₙfₙ, r(aₙfₙ)′, r²(aₙfₙ)″ (with `diff_rot_ampl`) and thermal wind
   `tw`/`tp` + degree = p₀σₙ, p₀σₙ′, the degree n as one character of 0–9a–z (`diff_rot.codes`, so n ≤ 35). `burrito`
@@ -186,8 +195,9 @@ before it builds `prf`) stops on an unknown type and on settings that cannot wor
   `'gsm'`, `'astropy table'`) were removed: they had not worked on this branch.
 - **Smooth Sun** (`examples/smooth_sun/parameters.py`, full sphere): 'model S hydrostatic' (`structure_deg` 30),
   r_out 0.985, stratification and diffusivity 'solar_rz' (visc0 0.01, therm0 0.04) with δ_cz = −4e-7, ν = κ = 1e12 cm²/s,
-  the HMI rotation table (P₀–P₄) with its exact thermal wind, N 640, lmax 79; its m 8 HFR mode is at ω = −271.19,
-  σ = −33.18 nHz in the 456 nHz frame (21 GB, about 5 minutes on 4 ranks).
+  the HMI rotation table (P₀–P₄, `diff_rot_window` 'sun') with its exact thermal wind (`thermal_wind` 2,
+  `thermal_wind_radial` 0), stress-free walls with ∂S/∂r = 0, N 640, lmax 79, `drop_tol` 1e-14; its m 8 HFR mode is at
+  ω = −271.19, σ = −33.18 nHz in the 456 nHz frame (21 GB, about 5 minutes on 4 ranks).
 
 To add a type, see §13.
 
@@ -223,10 +233,11 @@ flow U₀ = Gaspard ΔΩ r sin θ e_φ in the frame Ω_ref. It works with any ba
   (linear) / 2 (exact (1+ΔΩ)², frame independent) add u_r ∂S_tw/∂r + (u_θ/r)∂S_tw/∂θ with the thermal-wind entropy
   S_tw = Σ σₙ Pₙ (`diff_rot.sigma_coefficients`, by the Legendre algebra; needs Beyonce > 0); 3 prescribes
   ∂S_tw/∂θ = `dSdtheta` sin 2θ (Bekki et al. 2024); 0 none. `thermal_wind_radial = 0` drops the u_r term (as Bekki et al.
-  and Mukhopadhyay et al.); `thermal_wind_amplitude` scales S_tw. S_tw has degrees up to `diff_rot.tw_nmax()` (n_max + 2,
-  or 2 n_max + 2 for thermal_wind 2).
-- `diff_rot.check()` (called by `submatrices.py`) stops on the former names `diff_rot_amplitude`, `diff_rot_generic`
-  and `diff_rot_hold` (removed 2026-10-26, §12).
+  and Mukhopadhyay et al.); `thermal_wind_amplitude` scales S_tw. S_tw has degrees up to `diff_rot.tw_nmax()` (n_max + 2
+  for thermal_wind 1, 2 n_max + 2 for 2, 2 for 3).
+- `diff_rot.check()` (called by `submatrices.py` when `diff_rot = 1`) stops on the former names `diff_rot_amplitude`,
+  `diff_rot_generic` and `diff_rot_hold` (removed 2026-10-26, §12), on `thermal_wind` outside 0–3 and on
+  `thermal_wind` 1 or 2 with Beyonce = 0. With `diff_rot = 0` these names only get the warning of `check_names`.
 - ViscosD, ThermaD, Beyonce must be computed for Ω_ref (`units.set_physical` does). At ricb = 0, 'Y20-wall-bounded' and
   'shellular' (unless σ is even and > 0) have a kink at r = 0 (WARNING); 'solar' needs N ~ 400.
 - Benchmarks: Guenel et al. 2016 conical mode ω = 1.8173; solar inertial modes of Mukhopadhyay et al. 2025
@@ -245,14 +256,19 @@ flow U₀ = Gaspard ΔΩ r sin θ e_φ in the frame Ω_ref. It works with any ba
 - `par.prescale`: None = Ruiz equilibration of A − τB, on except for thermal with ThermaD = 0 (where it hurts); 0/1
   force it. Eigenvectors are mapped back before writing. The residual SLEPc prints is for the scaled problem; judge
   accuracy with spin_doctor.
-- `which_eigenpairs` 'TM', `nev`, `tol` 1e-16, `maxit` 50.
+- `which_eigenpairs` 'TM', `nev` (default 5), `tol` 1e-16, `maxit` 50.
+- `par.drop_tol` (default 0, off; the smooth Sun example uses 1e-14): cuts the profiles' Chebyshev coefficients at
+  max(1e-15, drop_tol) of the largest, removes entries below drop_tol times the largest of each operator submatrix
+  (`submatrices.py`) and, after the Ruiz prescaling, entries of A and max(|τ|, 1) B below drop_tol (`solve.py`). About
+  30–35 % less memory at eigenvalues unchanged to ~1e-3 nHz in thermal solar runs.
 - Forced runs solve every column of B_forced.npz with one LU (forcing 11: `rsf_nsamp` realisations; the fields files
   get one column each). Forcing 11 with `rsf_frequencies` set: for each frequency w, one LU of A − i(w − wf)B
   (B.npz unnormalised) and back-substitutions for all realisations; appends to `rsf_spectrum.dat` (w, mean KE,
   standard error; mean KE = two-sided PSD, ∫ dw/2π gives the mean KE for m ≠ 0, twice it for m = 0; of the solved symm
-  class) and `rsf_ke.dat`, no fields. The noise amplitude is applied at r, so nothing forces where ν_t = 0. To keep
-  the forcing out of the tail of a viscosity step use `rsf_rcut` (a smooth erfc edge, `rsf_rcut_width`), not a higher
-  `rsf_nu_floor`: clipping ν_t leaves a corner the rows cannot resolve.
+  class; with `rsf_split` = a radius, also the KE below it) and `rsf_ke.dat`, no fields. The noise amplitude is
+  applied at r, so nothing forces where ν_t = 0. To keep the forcing out of the tail of a viscosity step use `rsf_rcut`
+  (a smooth erfc edge, `rsf_rcut_width`), not a higher `rsf_nu_floor`: clipping ν_t leaves a corner the rows cannot
+  resolve.
 
 ## 10. Post-processing (`spin_doctor.py`, `utils4pp.py`)
 
@@ -264,6 +280,9 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   resid𝑠 (`resid3`): 2σTE − Dthm − Wadv − Wdr_thm = 0 (TE = ½∫p₀|s|²); residens: enstrophy balance.
 - These residuals, not the eigenvalue alone, judge resolution: compare with a higher-N run; for thermal runs the
   entropy can be unresolved while P, T look converged. The docs report 1e-7 to 1e-12 for converged runs.
+  `docs/solver.md` accepts a mode when residσ and resid𝑠 are below 1e-5 and its ℓ-convergence below 1e-4; spin_doctor
+  itself only prints the values (no pass/fail flag), and it misses some solver failures in clusters of nearly equal
+  modes (§12).
 - `params.dat` columns are `spin_doctor.param_table()` in order (append new ones at the end); `diff_rot_type`,
   `structure`, `stratification` and `diffusivity` are written as their index in `diff_rot.TYPES`,
   `background.STRUCTURES`, `STRATIFICATIONS`, `DIFFUSIVITIES` (−1 if not listed, or without a stratification); None as
@@ -280,16 +299,20 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
 - `tests/heat_dr/` (README): `mk_run.py NAME 'par.x = ..'` builds a run dir (defaults: structure 'Wu 2005' with
   stratification 'top hat', ricb 0.35, m 1, conical −0.25, ViscosD = ThermaD = 1e-3) and runs submatrices + assemble;
   `heat_check.py`, `asm_check.py`, `row_check.py`, `rigid_thermal.py`, `tw_sympy.py`, `csolve.py` (scipy solve, no
-  equilibration), `sd_check.py`, `ebal.py`, `terms.py`, `mpi_check.sh` (bitwise A, B on 1–4 ranks), `forced_check.py`;
-  `run_all.sh` runs them all (~10 min).
+  equilibration), `eig2kore.py` (writes csolve's eigenpairs as solve.py does, so spin_doctor runs without
+  PETSc/SLEPc), `sd_check.py`, `ebal.py`, `terms.py`, `tw_limit.py` (thermal_wind 2 → 1 as the amplitude → 0),
+  `mpi_check.sh` (bitwise A, B on 1–4 ranks), `forced_check.py`; `run_all.sh` runs them all (~10 min).
 - `tests/diff_rot/` (README): `gen_check.py` (the couplings of `diff_rot.py` against the closed forms of
-  `tests/diff_rot/diff_rot_coefficients.py`, and the Δl ranges), `angular_check.py` (`angular.py`, no run directory),
+  `tests/diff_rot/diff_rot_coefficients.py`, and the Δl ranges), `angular_check.py` (`angular.py`, no run directory;
+  its reference for the primitives is `quad_reference.py`, the former quadrature builder, valid for l ≤ 645),
   `regress.sh OLD_KORE` (15 configurations, each written in the parameter names of three generations of checkouts;
   A and B bitwise equal), `tw_edmond.py`, `mk_bekki.py` / `solve_bekki.py` / `run_bekki.py` (solar benchmark),
   `mk_rz.py` (radiative interior, any inner radius), `lit_bench.py` and `solar_checks.py` (the benchmarks of
   `docs/differential_rotation_details.md` §11), `dr_cost.py` (time and memory against the degree of ΔΩ),
-  `ls_to_edmond_layout.py` (HMI table converter).
-- `tests/rsf/` (README): forcing 11. `builder_check.py` (f = u against the inertia rows), `noise_check.py` (the noise
+  `ls_to_edmond_layout.py` (HMI table converter, input in `profiles/`: the Larson & Schou 2018 HMI average
+  `rot2d.hmiv72d.ave` and `rmesh.orig`).
+- `tests/rsf/` (README; `HOWTO.md` is the user guide of forcing 11, with the m = 2 example of `example_m2/`): shared
+  pieces in `rsf_common.py`; `builder_check.py` (f = u against the inertia rows), `noise_check.py` (the noise
   amplitude against the documented Θ laws, and the noise against the viscous operator, exactly; no forcing beyond the
   dissipation bound), `spectrum_check.py pick|fields|check` (solve.py's sampled spectrum against the exact E[KE(w)]
   and the single-mode energy Θ f_eff); `run_all.sh` (needs petsc4py for the solves, and an `MPIEXEC` that starts
@@ -326,8 +349,8 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   l ≈ lmax that do not converge in lmax (physical or not is open); the σₙ (ln ρ₀)′ heat rows converge slowly in N near
   the surface for 'Wu 2005' with r_out → 1 at ricb = 0 (only `tests/heat_dr/row_check.py` sees it); two growing modes
   in the m = 3 n0 window of the solar benchmark (−260.6 nHz, growth +18.0; −250.5, +5.0) have not been examined.
-- `params_default` says `rpower_pp`, `rhopower_pp` are unused, but `utils4pp.setup_grid` uses them as the enstrophy
-  weight `const0`.
+- `params_default` says `rpower_pp`, `rhopower_pp` are "not read by the current pipeline", but `utils4pp.setup_grid`
+  uses them as the enstrophy weight `const0`.
 - `utils4pp` calls `mp.set_start_method('fork')` at import (needed on macOS).
 - Stale upstream leftovers: `tools/submit4.sh` calls the removed `postprocess.py`; `ci.yml` only deploys the mkdocs
   site from main/master; the top-level `README.md` is upstream's, except its test badge.
@@ -353,6 +376,10 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
 
 ## 14. History (this branch, newest first)
 
+`a2abc05` the spin-over test GitHub runs on every push (`tests/ci/`, `.github/workflows/anelastic_log.yml`; the
+stale `main.yml`, `examples/kore_test.py` and `examples/spinover/` removed); `f810fd9` `docs/solver.md`; `3402fbf`
+`diff_rot_hold` removed; `b0dd868` the docs in the new background names, `docs/background.md`; `61506f8` 'user'
+diffusivity evaluated at |r|;
 `49a4575` the background chosen by `structure`, `stratification`, `diffusivity` (`bin/background.py`), `r_out` for
 `aux0`, the file-based models removed, the smooth Sun example without `diff_rot_hold` at δ_cz −4e-7; `1e808d8`
 `bin/units.py`, the unread-name warning, Re λ / Im λ headers, the rotation file in params.dat; `1aca07b`

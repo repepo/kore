@@ -10,3 +10,12 @@ Kore's distinctive feature is the use of a very efficient spectral method employ
 Kore is free for everyone to use, with no restrictions. Too often in the scientific literature the numerical methods used are presented with enough detail to guarantee reproducibility, but only in principle. Without access to the actual implementation of those methods, which would require a significant amount of work and time to develop, readers are left effectively without the possibility to reproduce or verify the results presented. This leads to very slow scientific progress. We share our code to avoid this.
 
 If this code is useful for your research, we invite you to cite the relevant papers (coming soon) and hope that you can also contribute to the project.
+
+## Authors
+
+* **Santiago Andres Triana**, *this implementation*
+* **Jeremy Rekier**, *sparse spectral method*
+* **Ankit Barik**, *convection, visualization*
+* **Fleur Seuren**, *buoyancy*
+* **Daoud Laariara**, *differential rotation*
+* **Antony Trinh**, *tensor calculus (TenGSHui)*
