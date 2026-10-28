@@ -67,7 +67,7 @@ eigenvalues as ω, σ in nHz.
 | `units.py` | physical units for parameter files and scripts (kore itself never imports it): `set_physical` (Gaspard, Beyonce, ViscosD, ThermaD, `diff_rot_frame` from cgs values), `set_target` (`itau`, `rtau` from ω, σ in nHz), `nHz`; as a script, prints a run's eigenvalues in nHz |
 | `utils.py` | globals (`N1`, `n`, `sizmat`, `symm1`, `adiab_tw`, `odd_profiles`...), `dr_offd`, label decoding, Chebyshev transforms (`chebco_f`, `funcheb`, `fonzie`, `angine`), Gegenbauer matrices `Dlam`, `Slam`, `Mlam`, parity `remroco`, `ell`, erf profiles (`erf_top_hat`, `erf_top_hat_odd`, `erf_box`), `Ylm`, `load_npz_mmap` |
 | `background.py` | the background besides the rotation (§6): the type names `STRUCTURES`, `STRATIFICATIONS`, `DIFFUSIVITIES` (their order is the index written to `params.dat`), `check()` (stops on unknown, removed (`REMOVED`) or impossible settings), dS/dr (`gradS`), ν and κ (`diffusivity`), the 'user' expressions and their `description()` for `params.dat` |
-| `radial_profiles.py` | one class per structure (`wu2005_profiles`, `eight_term_profiles`, `modelS_profiles`, `modelS_hydrostatic_profiles`, `uniform_profiles`, on a base class `structure` that takes dS/dr, ν and κ from `background.py`), the dict `structures` and the instance `prf`; the `*X(r, Dorder)` derivative helpers; `proffdir` (label code → function); `burrito` (the integrand of one operator) |
+| `radial_profiles.py` | one class per structure (`wu2005_profiles`, `eight_term_profiles`, `modelS_profiles`, `modelS_hydrostatic_profiles`, `boussinesq_profiles`, on a base class `structure` that takes dS/dr, ν and κ from `background.py`), the dict `structures` and the instance `prf`; the `*X(r, Dorder)` derivative helpers; `proffdir` (label code → function); `burrito` (the integrand of one operator) |
 | `smoothed_sun.py` | analytic even fit of the Model S ln ρ, with g, p, d ln ρ/dr, d ln p/dr (structure '8-term fit'; its g also serves 'old model S prototype') |
 | `model_s.at` | Model S table (columns As, c₁, ρ/ρ_c, p/p_c, x) for 'model S hydrostatic' and 'old model S prototype' |
 | `jsoc_hmi_2010_2026.npz` | the observed rotation Ω(r, θ), the mean of 83 HMI 72-day inversions (2010–2026), in the layout of `diff_rot_type = 'tabulated'` (`examples/smooth_sun`) |
@@ -85,7 +85,8 @@ eigenvalues as ω, σ in nHz.
 | `targets.py` | analytic targets (spin-over, Rieutord–Valdettaro attractor) |
 
 Other directories: `tests/ci/` (the test GitHub runs on every push, §11); `tests/diff_rot/`, `tests/heat_dr/` and
-`tests/rsf/` (§11, each with a README); `docs/` (mkdocs; the branch's notes are `background.md` (the background model),
+`tests/rsf/` (§11, each with a README); `docs/` (mkdocs; the branch's notes are `anelastic.md` (the LBR equations as kore builds them: rows, operators,
+boundary rows, energy balance, validity), `background.md` (the background model),
 `differential-rotation.md` (user guide), `differential_rotation_details.md` (the equations and code of the differential
 rotation, its checks and benchmarks), `heat-equation.md` (derivation, implementation, benchmarks, §9 radiative
 interior), `thermad0.md` (ThermaD = 0 with the thermal wind), `solver.md` (what to try for bad solutions or when memory
@@ -171,7 +172,7 @@ before it builds `prf`) stops on an unknown type and on settings that cannot wor
   `'model S hydrostatic'` (for new solar runs: an even fit of ln ρ of `model_s.at` of degree `structure_deg` over the
   whole Sun, g from its mass, p from dp/dr = −ρg; degree 30 is within 1 % of Model S, 50 within 0.14 %); `'Wu 2005'`
   (ρ₀ = (1 − x²)², β = 2, analytic g and p; r_out < 1 is the "peel" that keeps ρ₀(1) > 0: keep it ≥ 0.99, never below
-  0.985); `'uniform'` (Boussinesq: ρ₀ = p₀ = 1, g = r). Legacy, kept so that older parameter files give the same
+  0.985); `'Boussinesq'` (ρ₀ = p₀ = 1, g = r: the Boussinesq equations). Legacy, kept so that older parameter files give the same
   results: `'8-term fit'` (`smoothed_sun.py`, ρ up to 48 % off Model S near the surface) and `'old model S prototype'`
   (Chebyshev fits of ln ρ, ln p of `model_s.at` controlled by `solar_density_deg`, `solar_density_window`,
   `solar_density_sun_deg`, with the g of the 8-term fit, so not hydrostatic).
@@ -180,7 +181,7 @@ before it builds `prf`) stops on an unknown type and on settings that cannot wor
   (`ut.erf_top_hat_odd`, x1 = 0 is fine at ricb = 0; 0, 0.03, 0.68, 0.06, 2.6 fits Model S to 10 % rms), `'solar_rz'`
   (the radiative interior of Mukhopadhyay et al. 2025b, their eq. 10: `solar_rz_dSdr`, `solar_rz_steps`, `solar_rz_core`;
   plus the convection-zone superadiabaticity δ(x) d ln p₀/dr above the `solar_rz_os` step, δ from `solar_rz_delta_cz`,
-  `solar_rz_delta_sf`, which kore accepts with this stratification only), `'linear'` (r: with 'uniform',
+  `solar_rz_delta_sf`, which kore accepts with this stratification only), `'linear'` (r: with 'Boussinesq',
   N² = Beyonce r²), `'inverse square'` (1/r², needs ricb > 0), `'user'` (`stratification_profile`,
   `stratification_param`).
 - **`diffusivity`** (ν/ViscosD and κ/ThermaD, default `'uniform'`): `'step'` (`visc0`, `therm0` below r = aux3, 1 above,
@@ -191,8 +192,9 @@ before it builds `prf`) stops on an unknown type and on settings that cannot wor
 - **'user' types**: numpy expressions of r, x and p with the names of `diff_rot._USER_NS` (sin … tanh, exp, log, sqrt,
   abs, where, erf, ...), evaluated at |r|, and without `#` (they are written to `params.dat` after a `#`).
 - **Removed names** (`model_type`, `heating`, `solar_rz`, `solar_density`, `aux0`) stop a run with their replacement
-  (`background.REMOVED`); `docs/background.md` translates old parameter files. The file-based models (`'poly'`, `'mesa'`,
-  `'gsm'`, `'astropy table'`) were removed: they had not worked on this branch.
+  (`background.REMOVED`), and so does structure `'uniform'` (now `'Boussinesq'`, renamed 2026-10-28);
+  `docs/background.md` translates old parameter files. The file-based models (`'poly'`, `'mesa'`, `'gsm'`,
+  `'astropy table'`) were removed: they had not worked on this branch.
 - **Smooth Sun** (`examples/smooth_sun/parameters.py`, full sphere): 'model S hydrostatic' (`structure_deg` 30),
   r_out 0.985, stratification and diffusivity 'solar_rz' (visc0 0.01, therm0 0.04) with δ_cz = −4e-7, ν = κ = 1e12 cm²/s,
   the HMI rotation table (P₀–P₄, `diff_rot_window` 'sun') with its exact thermal wind (`thermal_wind` 2,

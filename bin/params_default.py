@@ -36,7 +36,7 @@ class default_params():
         #                            and above need about 16 more lmax for the HFR ℓ-convergence; use 50 to match papers that
         #                            use Model S itself.
         #   'Wu 2005'                ρ = (1 - x²)² (Wu 2005, β = 2) with its g and p; r_out < 1 (e.g. 0.99) keeps ρ > 0 at the wall
-        #   'uniform'                Boussinesq: ρ0 = p0 = 1, g = r
+        #   'Boussinesq'             ρ0 = p0 = 1, g = r: the Boussinesq equations ('uniform' until 2026-10-28)
         #   legacy, kept so that older parameter files reproduce their results:
         #   '8-term fit'             smoothed_sun.py: rough but hydrostatic; ρ is up to 48 % off near the surface, which moves
         #                            n = 1 Rossby, HFR and columnar modes by 1.5-8 nHz (docs/heat-equation.md §6)
@@ -66,7 +66,7 @@ class default_params():
         #                     (1 + erf((|x| - x_OS)/d_OS))/2, δ(x) = δ_cz + (δ_sf - δ_cz) exp(-((|x| - 0.985)/0.015)^2),
         #                     [x_OS, d_OS] = solar_rz_os, δ < 0 being subadiabatic (Bekki's model 3-sub: δ_cz = -5e-7,
         #                     δ_sf = 1e-3)
-        #   'linear'          r: with 'uniform', N² = Beyonce r² (uniform heat sources; Rieutord 2006, Mirouh et al. 2016)
+        #   'linear'          r: with 'Boussinesq', N² = Beyonce r² (uniform heat sources; Rieutord 2006, Mirouh et al. 2016)
         #   'inverse square'  1/r²: conduction between the walls (needs ricb > 0)
         #   'user'            stratification_profile, a numpy expression of r, x and p = stratification_param in units of 1/L
         #                     (the names and the x of diff_rot_profiles), e.g. '2.5*exp(-((r - 0.75)/0.06)**2)'

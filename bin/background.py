@@ -14,7 +14,7 @@ import scipy.special as ss
 from parameters import par
 
 # As written to params.dat (spin_doctor): the index in each tuple. Append new types at the end.
-STRUCTURES = ('8-term fit', 'old model S prototype', 'model S hydrostatic', 'Wu 2005', 'uniform')
+STRUCTURES = ('8-term fit', 'old model S prototype', 'model S hydrostatic', 'Wu 2005', 'Boussinesq')
 SOLAR = STRUCTURES[:3]   # the solar structures: the rotation also uses x = r r_out (diff_rot.solar_x)
 STRATIFICATIONS = ('top hat', 'odd top hat', 'solar_rz', 'linear', 'inverse square', 'user')
 DIFFUSIVITIES = ('uniform', 'step', 'solar_rz', 'user')
@@ -23,7 +23,7 @@ DIFFUSIVITIES = ('uniform', 'step', 'solar_rz', 'user')
 REMOVED = {
     'model_type': "structure, stratification and diffusivity instead: 'user def' is 'Wu 2005', 'top hat', 'uniform'; "
                   "'smoothed sun' is a solar structure ('8-term fit' if structure was not set) with 'solar_rz', 'solar_rz' "
-                  "(solar_rz = 1) or 'odd top hat', 'step' (solar_rz = 0); 'Boussinesq' is 'uniform', the stratification "
+                  "(solar_rz = 1) or 'odd top hat', 'step' (solar_rz = 0); 'Boussinesq' is 'Boussinesq', the stratification "
                   "that replaces heating, 'uniform'",
     'solar_rz': "stratification = 'solar_rz' and diffusivity = 'solar_rz' instead (solar_rz = 0: 'odd top hat' and 'step')",
     'heating': "stratification instead: 'internal' is 'linear', 'differential' is 'inverse square', 'top hat' is 'top hat'",
@@ -59,6 +59,8 @@ def check():
     for name, new in REMOVED.items():
         if hasattr(par, name):
             sys.exit('par.%s is no longer read: set %s' % (name, new))
+    if par.structure == 'uniform':   # its name from 2026-10-26 to 2026-10-28
+        sys.exit("structure 'uniform' is now called 'Boussinesq' (the same ρ0 = p0 = 1, g = r)")
     if par.structure not in STRUCTURES:
         sys.exit('structure %r: set one of %s' % (par.structure, _names(STRUCTURES)))
     if par.structure == 'Wu 2005' and not 0 < par.r_out < 1:

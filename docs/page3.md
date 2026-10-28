@@ -3,6 +3,8 @@
 
 For numerical convenience we use *dimensionless* variables when solving the Navier Stokes equation, the induction equation, and the heat equation. A non-dimensionalization procedure is always possible thanks to the Buckingham-$\pi$ theorem.
 
+This page treats the Boussinesq case, with a uniform density. On the `anelastic_log` branch kore solves the anelastic equations, with a density that varies with radius; they are on the page [Anelastic equations](anelastic.md), and the Boussinesq equations below, without the magnetic field (which this branch does not include), are their case `structure = 'Boussinesq'`.
+
 
 
 ## The momentum equation

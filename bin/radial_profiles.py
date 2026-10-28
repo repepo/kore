@@ -255,7 +255,7 @@ class modelS_hydrostatic_profiles(structure):  # ------------------------- struc
         return par.r_out*self.lrho.deriv()(r*par.r_out)
 
 
-class uniform_profiles(structure):  # ------------------------------------------------- structure = 'uniform'
+class boussinesq_profiles(structure):  # ------------------------------------------- structure = 'Boussinesq'
     '''
     Boussinesq reference state: uniform density and pressure (ln ρ = 0, p = 1, so p0 dS/dr = dS/dr), g = r. With
     stratification 'linear' (dS/dr = r) the buoyancy Beyonce g s and the advection r u_r are those of Rieutord 2006 and
@@ -287,7 +287,7 @@ class uniform_profiles(structure):  # ------------------------------------------
 # -------------------------------------------------------------------------------------------------------------
 # par.structure and its class (background.STRUCTURES gives the order of the index written to params.dat)
 structures = { '8-term fit': eight_term_profiles, 'old model S prototype': modelS_profiles,
-               'model S hydrostatic': modelS_hydrostatic_profiles, 'Wu 2005': wu2005_profiles, 'uniform': uniform_profiles }
+               'model S hydrostatic': modelS_hydrostatic_profiles, 'Wu 2005': wu2005_profiles, 'Boussinesq': boussinesq_profiles }
 
 bg.check()
 prf = structures[par.structure]()

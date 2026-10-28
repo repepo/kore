@@ -66,7 +66,7 @@ The checked-in `bin/parameters.py`, a gravito-inertial mode, uses `structure = '
 | --- | --- | --- |
 | `'model S hydrostatic'` | the Sun, for new runs: an even polynomial fit of $\ln\rho$ of Model S (`bin/model_s.at`) over the whole Sun, $g$ from its mass, $p_0$ from hydrostatic balance | `structure_deg` (30) |
 | `'Wu 2005'` | $\rho_0 = (1 - x^2)^2$ (Wu 2005, $\beta = 2$) with its $g$ and $p_0$ | `r_out` < 1, so that $\rho_0 > 0$ at the wall |
-| `'uniform'` | $\rho_0 = p_0 = 1$, $g = r$ (Boussinesq) | – |
+| `'Boussinesq'` | $\rho_0 = p_0 = 1$, $g = r$: the Boussinesq equations | – |
 | `'8-term fit'` (legacy) | the smooth fit of `bin/smoothed_sun.py`, up to 48 % off Model S in $\rho$ near the surface | – |
 | `'old model S prototype'` (legacy) | Chebyshev fits of $\ln\rho$ and $\ln p$ of Model S, with the $g$ of the 8-term fit (not hydrostatic) | `solar_density_deg`, `solar_density_window`, `solar_density_sun_deg` |
 
@@ -93,7 +93,7 @@ sphere (`ricb = 0`) kore uses it as an odd function of $r$, so it should go to z
 | `'top hat'` | $\tfrac{A}{2}\left[\mathrm{erf}\frac{r - x_1}{w_1} - \mathrm{erf}\frac{r - x_2}{w_2}\right]$ | `aux1`…`aux5` = $x_1$, $w_1$, $x_2$, $w_2$, $A$ |
 | `'odd top hat'` | the same made odd in $r$: with $x_1 = 0$ it rises as $A\thinspace\mathrm{erf}(r/w_1)$ from the centre | `aux1`…`aux5` |
 | `'solar_rz'` | the radiative interior of Mukhopadhyay et al. 2025b, below | `solar_rz_dSdr`, `solar_rz_steps`, `solar_rz_core`, `solar_rz_delta_cz`, `solar_rz_delta_sf`, `solar_rz_os` |
-| `'linear'` | $r$; with `'uniform'`, $N^2$ = `Beyonce` $r^2$ (Rieutord 2006, Mirouh et al. 2016) | – |
+| `'linear'` | $r$; with `'Boussinesq'`, $N^2$ = `Beyonce` $r^2$ (Rieutord 2006, Mirouh et al. 2016) | – |
 | `'inverse square'` | $1/r^2$, conduction between the walls | needs `ricb` > 0 |
 | `'user'` | `stratification_profile`, a numpy expression (below) | `stratification_param` ($p$) |
 
@@ -171,7 +171,7 @@ does not define, so a misspelt name is not ignored without notice.
 
 - 19 `r_out`, 20–24 `aux1`…`aux5`, 25 `visc0`, 34 `therm0`, 35 `visc_pow`, 36 `therm_pow`;
 - 63 `structure`, as its index in `background.STRUCTURES`: `'8-term fit'` 0, `'old model S prototype'` 1,
-  `'model S hydrostatic'` 2, `'Wu 2005'` 3, `'uniform'` 4;
+  `'model S hydrostatic'` 2, `'Wu 2005'` 3, `'Boussinesq'` 4;
 - 64 the degree of the Model S fit (`structure_deg` for `'model S hydrostatic'`), 65–66 the window of the
   `'old model S prototype'` fits (nan: the default; `'sun'`: ∓(`r_out` + 0.005)), 67 `solar_rz` (1 when the
   stratification is `'solar_rz'`), 68–74 its parameters, 77–78 $\delta_{cz}$, $\delta_{sf}$;
@@ -193,7 +193,8 @@ These names now stop kore with the replacement; the matrices are bitwise the sam
 | `model_type = 'user def'` | `'Wu 2005'` | `'top hat'` | `'uniform'` |
 | `model_type = 'smoothed sun'`, `solar_rz = 0` | `'8-term fit'` (`solar_density = 'fit'`) or `'old model S prototype'` (`'model S'`), or the `structure` it set | `'odd top hat'` | `'step'` |
 | `model_type = 'smoothed sun'`, `solar_rz = 1` | as above | `'solar_rz'` | `'solar_rz'` |
-| `model_type = 'Boussinesq'` | `'uniform'` | `heating` `'internal'`: `'linear'`; `'differential'`: `'inverse square'`; `'top hat'`: `'top hat'` | `'uniform'` |
+| `model_type = 'Boussinesq'` | `'Boussinesq'` | `heating` `'internal'`: `'linear'`; `'differential'`: `'inverse square'`; `'top hat'`: `'top hat'` | `'uniform'` |
 
-`aux0` is `r_out`. The file-based models (`'poly'`, `'mesa'`, `'gsm'`, `'astropy table'`) were removed; they had not
+`aux0` is `r_out`. Structure `'Boussinesq'` was called `'uniform'` from 2026-10-26 to 2026-10-28, and that
+name stops kore too. The file-based models (`'poly'`, `'mesa'`, `'gsm'`, `'astropy table'`) were removed; they had not
 worked on this branch.

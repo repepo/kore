@@ -24,9 +24,9 @@ import numpy as np
 BIN = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'bin'))
 
 # name: (description, published (|ω| or ω inertial, τ), m, symm, settings, N, L) -- N, L the paper's resolution
-BR = "par.structure='uniform'; par.thermal=0; par.diff_rot=1; par.thermal_wind=0; par.diff_rot_ampl=1.0; "
+BR = "par.structure='Boussinesq'; par.thermal=0; par.diff_rot=1; par.thermal_wind=0; par.diff_rot_ampl=1.0; "
 GU = BR + "par.diff_rot_type='conical'; "
-MI = ("par.structure='uniform'; par.stratification='linear'; par.thermal=1; par.diff_rot=1; par.thermal_wind=0; "
+MI = ("par.structure='Boussinesq'; par.stratification='linear'; par.thermal=1; par.diff_rot=1; par.thermal_wind=0; "
       "par.diff_rot_type='shellular_boussinesq'; par.bci_thermal=0; par.bco_thermal=0; ")
 CASES = {
     'br6':   ('BR13 fig. 6, cylindrical eps -0.3, m 0, E 1e-8', (0.9109, -7.45e-3), 0, 1,

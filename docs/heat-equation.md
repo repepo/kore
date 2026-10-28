@@ -41,7 +41,7 @@ the background is chosen by `structure`, `stratification` and `diffusivity` inst
 translates the former names):
 'user def' is structure `'Wu 2005'` with stratification `'top hat'`; 'smoothed sun' is a solar structure (`'8-term fit'`
 for `solar_density = 'fit'`, `'old model S prototype'` for `'model S'`) with stratification `'odd top hat'` and
-diffusivity `'step'`, or both `'solar_rz'` for `solar_rz = 1`; 'Boussinesq' is `'uniform'`; and `aux0` is `r_out`. The
+diffusivity `'step'`, or both `'solar_rz'` for `solar_rz = 1`; 'Boussinesq' is structure `'Boussinesq'`; and `aux0` is `r_out`. The
 amplitude `diff_rot_amplitude` is `diff_rot_ampl` since 2026-10-23 ([differential-rotation.md](differential-rotation.md)),
 and the code these sections describe (`diff_rot_generic.py`, `heat_dr_coefficients.py` and the differential-rotation
 parts of `radial_profiles.py` and `utils.py`) is now in `bin/diff_rot.py` and `bin/angular.py`
@@ -537,7 +537,7 @@ $$
 
 It needs (a) only, with $S_{tw} = 0$: their background is balanced by centrifugal buoyancy, which kore does not carry.
 With (3) switched on, $\sigma_2 = 2N^2r^2/(3\thinspace \mathrm{Beyonce})$ would be as large as $S_0'$, and the comparison would
-test the wrong model. kore runs it with structure `'uniform'`, stratification `'linear'` and `thermal_wind = 0`
+test the wrong model. kore runs it with structure `'Boussinesq'`, stratification `'linear'` and `thermal_wind = 0`
 ([differential_rotation_details.md](differential_rotation_details.md) §11).
 
 **Bekki et al. 2022.** Fully compressible, solar $\rho_0$, helioseismic $\Omega$, and $S_{tw}$ from (2) with the full
@@ -708,7 +708,7 @@ growth +7.30 nHz).
   use it.
 - 'Y20-wall-bounded' and 'shellular' (except even $\sigma > 0$) at ricb = 0 are not smooth at $r = 0$; this is now a
   WARNING.
-- The Boussinesq background (now structure `'uniform'`) runs with the differential rotation since 2026-10-23, when the
+- The Boussinesq background (now structure `'Boussinesq'`) runs with the differential rotation since 2026-10-23, when the
   rotation profiles stopped depending on the background model
   ([differential_rotation_details.md](differential_rotation_details.md) §11). The models read from a file (`'poly'`,
   `'mesa'`, `'gsm'`, `'astropy table'`) never ran on this branch and were removed on 2026-10-26.

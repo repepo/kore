@@ -1041,9 +1041,9 @@ convection zone with a radiative interior. Computed on a Mac (48 GB) on 2026-10-
 
 | paper | fluid | rotation profile | kore model |
 | --- | --- | --- | --- |
-| Baruteau & Rieutord 2013, JFM 719, 47 | incompressible, viscous | shellular $(r/R)^\sigma$, cylindrical $1 + \varepsilon s^2$ | structure `'uniform'`, `thermal = 0` |
-| Guenel, Baruteau, Mathis & Rieutord 2016, A&A 589, A22 | incompressible, viscous | conical $1 + \varepsilon\sin^2\theta$ | structure `'uniform'`, `thermal = 0` |
-| Mirouh, Baruteau, Rieutord & Ballot 2016, JFM 800, 213 | Boussinesq, stably stratified | $1 + \frac{N^2}{2}(1 - r^2)$ | structure `'uniform'`, stratification `'linear'` |
+| Baruteau & Rieutord 2013, JFM 719, 47 | incompressible, viscous | shellular $(r/R)^\sigma$, cylindrical $1 + \varepsilon s^2$ | structure `'Boussinesq'`, `thermal = 0` |
+| Guenel, Baruteau, Mathis & Rieutord 2016, A&A 589, A22 | incompressible, viscous | conical $1 + \varepsilon\sin^2\theta$ | structure `'Boussinesq'`, `thermal = 0` |
+| Mirouh, Baruteau, Rieutord & Ballot 2016, JFM 800, 213 | Boussinesq, stably stratified | $1 + \frac{N^2}{2}(1 - r^2)$ | structure `'Boussinesq'`, stratification `'linear'` |
 | Mukhopadhyay, Bekki, Zhu & Gizon 2025a, A&A (arXiv 2501.16797) | fully compressible, solar convection zone | their Edmond file | structure `'old model S prototype'` (Model S density), 'tabulated' |
 | Mukhopadhyay, Bekki, Zhu & Gizon 2025b, A&A 708, A253 | as above, with a radiative interior | 'solar_P4' (their eqs. 5–6) | as above, stratification and diffusivity `'solar_rz'`, rin 0.5 R☉ |
 
@@ -1060,7 +1060,7 @@ where $\Omega_{\rm ref}$ is $\Omega$ at the surface (shellular) or on the axis (
 - $E = \nu/(\Omega_{\rm ref}R^2)$ = `ViscosD`. Stress-free walls, $\eta = 0.35$ unless stated, equatorially
   symmetric modes (`symm = 1`) unless stated.
 - kore: `diff_rot_type = 'shellular'` with `diff_rot_param` $= \sigma$ (ΔΩ $= r^\sigma - 1$), or `'cylindrical'` with
-  `diff_rot_ampl` $= \varepsilon$ (ΔΩ $= \varepsilon r^2\sin^2\theta$). Uniform density (structure `'uniform'`),
+  `diff_rot_ampl` $= \varepsilon$ (ΔΩ $= \varepsilon r^2\sin^2\theta$). Uniform density (structure `'Boussinesq'`),
   `thermal = 0`.
 
 **Guenel et al. 2016.** The same equations and conventions as Baruteau & Rieutord 2013 (their eqs. 4–6), with
@@ -1070,7 +1070,7 @@ $m = 2$ the sign of $\Omega_p$ is the one in their text (Figs. 14, 15) or the on
 $\lvert\Omega_p + m\Omega(\theta)\rvert < 2\Omega(\theta)$ (Fig. 13).
 
 **Mirouh et al. 2016.** Their equations (2.7)–(2.9) are kore's with:
-- structure `'uniform'` and stratification `'linear'`: $\rho = p_0 = 1$, $g = r$, $dS/dr = r$, so the advection term
+- structure `'Boussinesq'` and stratification `'linear'`: $\rho = p_0 = 1$, $g = r$, $dS/dr = r$, so the advection term
   is $r v_r$;
 - `Beyonce` $= N^2$ and `ThermaD` $= E/P$, with $T = 0$ at both walls;
 - `'shellular_boussinesq'` with `diff_rot_ampl` $= N^2$, and `thermal_wind = 0`. Their background is balanced by
@@ -1244,7 +1244,7 @@ rates to choose between them.
 - Baruteau, Guenel and Mirouh: `tests/diff_rot/lit_bench.py WORKDIR CASE [N=.. lmax=.. ncpus=8 nev=..]`. `list` prints the
   cases. The largest run here (Fig. 6 at 640 × 1215) took 26 GB and 5.5 minutes on 8 ranks.
 - Solar: `tests/diff_rot/solar_checks.py EDMOND_NPZ [WORKDIR]`, about 40 minutes on one core.
-- Structure `'uniform'` is the uniform-density model these runs need ($\ln\rho_0 = 0$, $p_0 = 1$, $g = r$); Mirouh et
+- Structure `'Boussinesq'` is the uniform-density model these runs need ($\ln\rho_0 = 0$, $p_0 = 1$, $g = r$); Mirouh et
   al. add stratification `'linear'`, $dS/dr = r$ ([background.md](background.md)).
 
 ## 12. Cost against the highest degree
