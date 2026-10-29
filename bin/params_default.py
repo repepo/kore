@@ -1,3 +1,4 @@
+import json
 import numpy as np
 
 
@@ -15,6 +16,32 @@ def ssak(ss0, E0, E):
    alpha = np.log(ss0/ss1) / np.log(E0/E1)
    k = ss1/(E1**alpha)
    return k*(E**alpha)
+
+
+
+def on_rank0(func):
+   '''
+   Runs func on MPI rank 0 only and broadcasts its result to all ranks, so that only one rank touches a file.
+   An exception on rank 0 is raised on every rank, so that no rank is left waiting. Without mpi4py, or in a
+   serial run, func is simply called.
+   '''
+   try:
+      from mpi4py import MPI
+   except ImportError:
+      return func()
+   comm = MPI.COMM_WORLD
+   if comm.Get_size() == 1:
+      return func()
+   result, error = None, None
+   if comm.Get_rank() == 0:
+      try:
+         result = func()
+      except Exception as e:
+         error = e
+   result, error = comm.bcast((result, error), root=0)
+   if error is not None:
+      raise error
+   return result
 
 
 
@@ -418,8 +445,11 @@ class default_params():
         Sets the parameters derived from the others, i.e. those that are still None: the magnetic and diffusion
         numbers, the buoyancy factors, the time scale factor OmgTau, the resolution and the solver target.
         Call it after setting the parameters (parameters.py does it at the end). A derived parameter that was set
-        explicitly is kept.
+        explicitly is kept. The names of the parameters filled in here are kept in self._derived, so that
+        export_json can write them as null and set_scales recomputes them after load_json.
         '''
+
+        unset = [k for k, v in vars(self).items() if v is None]
 
         # magnetic field strength and diffusivity
         if self.Em is None:
@@ -472,6 +502,8 @@ class default_params():
         if self.tau is None:
             self.tau = self.rtau + self.itau*1j
 
+        self._derived = set(getattr(self, '_derived', ())) | {k for k in unset if getattr(self, k) is not None}
+
 
 
     def Ncheb(self, Ek):
@@ -504,3 +536,56 @@ class default_params():
         ncpus, azimuthal wave number m, and an approx. N/lmax ratio g.
         '''
         return int( 2*ncpus*( np.floor_divide( g*N, 2*ncpus ) ) + m - 1 )
+
+    def export_json(self, filename="parameters.json"):
+        '''
+        Writes all parameters to a JSON file (rank 0 only when run with MPI). Parameters derived by set_scales are written as null, so a later
+        load_json followed by set_scales recomputes them from the loaded values. Complex numbers are written
+        as {"__complex__": [real, imag]}.
+        '''
+        def encode(v):
+            if isinstance(v, (complex, np.complexfloating)):
+                return {'__complex__': [float(np.real(v)), float(np.imag(v))]}
+            if isinstance(v, np.integer):
+                return int(v)
+            if isinstance(v, np.floating):
+                return float(v)
+            if isinstance(v, np.bool_):
+                return bool(v)
+            if isinstance(v, np.ndarray):
+                return v.tolist()
+            raise TypeError('Parameter of type %s cannot be written to JSON' % type(v).__name__)
+
+        def write():
+            derived = getattr(self, '_derived', set())
+            d = {k: (None if k in derived else v) for k, v in vars(self).items() if not k.startswith('_')}
+            # build the whole text before opening the file, so a failure leaves an existing file intact
+            text = json.dumps(d, indent=4, default=encode) + '\n'
+            with open(filename, 'w') as f:
+                f.write(text)
+
+        on_rank0(write)
+
+
+
+    def load_json(self, filename="parameters.json"):
+        '''
+        Sets the parameters from a JSON file written by export_json. With MPI, rank 0 reads the file and
+        broadcasts its contents to all ranks. Keys that are not parameters raise a KeyError.
+        Call set_scales afterwards (parameters.py does it at the end).
+        '''
+        def decode(obj):
+            if set(obj) == {'__complex__'}:
+                return complex(*obj['__complex__'])
+            return obj
+
+        def read():
+            with open(filename) as f:
+                return json.load(f, object_hook=decode)
+
+        d = on_rank0(read)
+        unknown = set(d) - {k for k in vars(self) if not k.startswith('_')}
+        if unknown:
+            raise KeyError('Unknown parameters in %s: %s' % (filename, ', '.join(sorted(unknown))))
+        for k, v in d.items():
+            setattr(self, k, v)
