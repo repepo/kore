@@ -17,6 +17,7 @@ nav:
       - Numerical method: numerical-method.md
       - Differential rotation: differential_rotation_details.md
       - Reynolds-stress forcing: reynolds-stress.md
+      - Derivation tools: derivations.md
 
 theme:
   name: material

@@ -15,6 +15,10 @@ Companion of `docs/magnetic.md`, for the magnetic terms with a variable density 
 | `malkus_check.py [Ek] [N] [lmax]` | the Malkus field B0 = Le s φ̂ against Malkus (1967): the frequency shift of inertial modes is Le² m(m - λ)/λ in the ideal limit; checks that it is quadratic in Le and, for the least damped m = 1 mode near 0.75i, within 10 % at Ek = Em = 1e-5 (0.4-1 % at 1e-6) |
 | `continuity.py [eps ...]` | 'Wu 2005' with r_out = sqrt(eps) (stratification O(eps)) against 'Boussinesq': (λ - λ_uniform)/eps must tend to a constant |
 
+`derive.py --b0 pol1|pol2|tor1|tor2` (NEW 2026-10-29) picks the background field from the command line. The closed forms were
+fitted from derive.py with `tools/derive/fit_rows.py` and written as code with `tools/derive/gen_table.py`; `docs/derivations.md`
+is the guide to all of these, with worked examples.
+
 Results of 2026-10-28 are in `docs/magnetic.md` (Checks). `derive.py` was used to derive, not only to check, the anelastic
 terms: the derivation, the row checks and the budgets are independent of each other.
 

@@ -353,6 +353,10 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   `derive_check.py` (against conductive_IC's operators and the anelastic closed forms), `row_check.py` (each row block of a
   run against derive.py, unweighted), `budget_check.py` (spin_doctor's residσ, residω, resid𝐛, resid𝐄), `continuity.py`
   ('Wu 2005' with r_out = √ε → 'Boussinesq'), `malkus_check.py` (the Malkus field against Malkus 1967), `mk_run.py`.
+- `tools/derive/` (NEW 2026-10-29, README): `fit_rows.py` (fits the magnetic rows of derive.py in l, m: angular factor ×
+  (a(l) + b(l) m²), exact rational coefficients; reproduces operators.*_tor, *_tor2, *_pol2) and `gen_table.py` (the fit
+  as operator table entries in kore's labels). `docs/derivations.md` is the user guide to these, to derive.py
+  (`--b0 pol1|pol2|tor1|tor2`), to the angular algebra (`bin/angular.py`) and the diff-rot couplings, with verified examples.
 - `tests/rsf/` (README; `HOWTO.md` points to `docs/forcing.md` and `docs/reynolds-stress.md`; `example_m2/`, the
   chandler m = 2 scan, has its own README): shared
   pieces in `rsf_common.py`; `builder_check.py` (f = u against the inertia rows), `noise_check.py` (the noise

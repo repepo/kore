@@ -14,11 +14,13 @@ coefficients: the θ-integrals are done by Gauss-Legendre quadrature in θ (exac
 polynomials). compare() checks a candidate closed form term by term, up to one overall factor (the row weight r^p/L'^3
 and the sign convention of the A matrix), which it fits and returns.
 usage (sympy needed; derive_check.py has the checks against the closed forms):
-    python3 derive.py ROW COL LCOL LROW M [--rho]
+    python3 derive.py ROW COL LCOL LROW M [--rho] [--b0 KIND]
 prints the projection of row ROW (u, v: Lorentz force; f, g: induction) on Y_LROW of the column field COL (u, v rows: F or G,
 the poloidal or toroidal b; f, g rows: P or T, the poloidal or toroidal u) of degree LCOL, at order M, as a sum of terms
 coefficient * r^p * monomial (P1 = P', h2 = h'', lr1 = (ln ρ0)' = λ1, ...); with --rho only the terms with (ln ρ0) derivatives.
 Example: python3 derive.py g P 3 3 1 --rho   (the variable-density terms of the g rows, P column, l = 3, m = 1).
+--b0 (NEW 2026-10-29) picks the background field: pol1 (default, the dipole ∇×∇×(h Y_1⁰ 𝐫)), pol2, tor1, tor2 (∇×(k Y_n⁰ 𝐫)).
+A guide to this and the other derivation tools: docs/derivations.md.
 Kore's operators are these rows times -r⁵/L³ (u), -r³/L³ (v, f, g), and Hendrik for the Lorentz force (the A sign).
 '''
 import itertools
@@ -172,7 +174,10 @@ if __name__ == '__main__':
     if len(sys.argv) < 6:
         sys.exit(__doc__)
     row, col, lc, lr_, mm = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), int(sys.argv[5])
-    out = rows(row, col, lc, lr_, mm)
+    b0 = sys.argv[sys.argv.index('--b0') + 1] if '--b0' in sys.argv else 'pol1'   # NEW (2026-10-29)
+    if b0 not in ('pol1', 'pol2', 'tor1', 'tor2'):
+        sys.exit('--b0 %r: pol1, pol2, tor1 or tor2' % b0)
+    out = rows(row, col, lc, lr_, mm, b0=(b0[:3], int(b0[3])))
     if '--rho' in sys.argv:
         out = {k: v for k, v in out.items() if any(n[0] == 'lr' for n, p in k[0])}
     for (mono, rp), c in sorted(out.items(), key=lambda kv: (kv[0][1], str(kv[0][0]))):
