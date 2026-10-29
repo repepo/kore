@@ -1,0 +1,1651 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../reynolds-stress/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Derivation tools - User Manual</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#derivation-tools" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="User Manual" class="md-header__button md-logo" aria-label="User Manual" data-md-component="logo">
+      
+  <img src="../assets/test1.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            User Manual
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Derivation tools
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Introduction
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../installation/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Installation
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../getting-started/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../background/" class="md-tabs__link">
+          
+  
+  
+  User guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../benchmarks/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Benchmarks
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../anelastic/" class="md-tabs__link">
+          
+  
+  
+  Mathematical framework
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="User Manual" class="md-nav__button md-logo" aria-label="User Manual" data-md-component="logo">
+      
+  <img src="../assets/test1.png" alt="logo">
+
+    </a>
+    User Manual
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../background/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../forcing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Convective forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../thermal-forcing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Thermal forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../magnetic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Magnetic field
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../solver/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Solver
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Output files
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../benchmarks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmarks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mathematical framework
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Mathematical framework
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../anelastic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Anelastic equations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../numerical-method/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical method
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../differential_rotation_details/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Differential rotation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reynolds-stress/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reynolds-stress forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Derivation tools
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Derivation tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-magnetic-field" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Magnetic field
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Magnetic field">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-what-is-derived" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 What is derived
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-derive-one-block" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Derive one block
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-fit-closed-forms-in-l-and-m" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Fit closed forms in l and m
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#14-turn-the-fit-into-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.4 Turn the fit into code
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#15-check-against-kore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.5 Check against kore
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#16-adding-a-new-background-field" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.6 Adding a new background field
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-differential-rotation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Differential rotation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Differential rotation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-the-recurrence-algebra-binangularpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 The recurrence algebra (bin/angular.py)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-the-couplings-bindiff_rotpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 The couplings (bin/diff_rot.py)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Checks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-adding-a-new-rotation-profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 Adding a new rotation profile
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-magnetic-field" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Magnetic field
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Magnetic field">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-what-is-derived" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 What is derived
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-derive-one-block" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Derive one block
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-fit-closed-forms-in-l-and-m" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Fit closed forms in l and m
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#14-turn-the-fit-into-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.4 Turn the fit into code
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#15-check-against-kore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.5 Check against kore
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#16-adding-a-new-background-field" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.6 Adding a new background field
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-differential-rotation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Differential rotation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Differential rotation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-the-recurrence-algebra-binangularpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 The recurrence algebra (bin/angular.py)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-the-couplings-bindiff_rotpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 The couplings (bin/diff_rot.py)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Checks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-adding-a-new-rotation-profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 Adding a new rotation profile
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="derivation-tools">Derivation tools</h1>
+<p>kore builds its matrices from closed forms: every block of a row of degree <span class="arithmatex">\(l\)</span> coupled to a column of degree
+<span class="arithmatex">\(l + \Delta l\)</span> is a sum of radial operators (Chebyshev/Gegenbauer matrices, <code>submatrices.py</code>) times coefficients in <span class="arithmatex">\(l\)</span>
+and <span class="arithmatex">\(m\)</span> (<code>operators.py</code>, <code>diff_rot.py</code>). Two kinds of background break the spherical symmetry and need couplings
+between degrees: an imposed <strong>magnetic field</strong> <span class="arithmatex">\(\mathbf{B}_0\)</span> (<a href="../magnetic/">Magnetic field</a>) and a <strong>differential
+rotation</strong> <span class="arithmatex">\(\Delta\Omega(r, \theta)\)</span> (<a href="../differential_rotation_details/">Differential rotation</a>). This page shows how
+their coefficients were obtained and checked, with commands you can run.</p>
+<table>
+<thead>
+<tr>
+<th>background</th>
+<th>coefficients in kore</th>
+<th>how they were obtained</th>
+<th>how they are checked</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>magnetic field</td>
+<td>closed forms in <code>bin/operators.py</code> (<code>lorentz*</code>, <code>induction*</code>)</td>
+<td>derived from the definitions with sympy (<code>tests/magnetic/derive.py</code>), fitted in <span class="arithmatex">\(l\)</span>, <span class="arithmatex">\(m\)</span> (<code>tools/derive/fit_rows.py</code>), turned into code (<code>tools/derive/gen_table.py</code>)</td>
+<td><code>tests/magnetic/derive_check.py</code>, <code>row_check.py</code>, <code>budget_check.py</code>, <code>ru_insane.py</code></td>
+</tr>
+<tr>
+<td>differential rotation</td>
+<td>computed at run time by an exact recurrence algebra (<code>bin/angular.py</code>, <code>bin/diff_rot.py</code>)</td>
+<td>no fitting: the algebra is exact for any degree of <span class="arithmatex">\(\Delta\Omega\)</span></td>
+<td><code>tests/diff_rot/angular_check.py</code>, <code>gen_check.py</code> (closed forms of <code>diff_rot_coefficients.py</code>), <code>quad_reference.py</code>, <code>tests/heat_dr/tw_sympy.py</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Prerequisites.</strong> Python 3 with numpy and scipy (kore's environment, e.g. <code>source ~/z2/bin/activate</code>), and sympy for the
+magnetic derivations (<code>pip install sympy</code>). The differential-rotation tools need no sympy, except <code>tw_sympy.py</code>.
+Commands are given from the repository root unless a run directory is named. The outputs below are from 2026-10-29.</p>
+<h2 id="1-magnetic-field">1. Magnetic field</h2>
+<h3 id="11-what-is-derived">1.1 What is derived</h3>
+<p>With <span class="arithmatex">\(\mathbf{u} = \rho_0^{-1}\nabla\times\nabla\times(\rho_0 P Y_l\mathbf{r}) + \nabla\times(T Y_l\mathbf{r})\)</span>,
+<span class="arithmatex">\(\mathbf{b} = \nabla\times\nabla\times(F Y_l\mathbf{r}) + \nabla\times(G Y_l\mathbf{r})\)</span> and a background field of degree <span class="arithmatex">\(n\)</span>,
+poloidal <span class="arithmatex">\(\mathbf{B}_0 = \nabla\times\nabla\times(h Y_n^0\mathbf{r})\)</span> or toroidal <span class="arithmatex">\(\mathbf{B}_0 = \nabla\times(k Y_n^0\mathbf{r})\)</span>,
+kore needs four row projections (<span class="arithmatex">\(Y_l\)</span> are kore's Schmidt harmonics):</p>
+<table>
+<thead>
+<tr>
+<th>row</th>
+<th>equation</th>
+<th>projection</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>u</td>
+<td>momentum, poloidal</td>
+<td><span class="arithmatex">\(\rho_0\hat{\mathbf{r}}\cdot\nabla\times\nabla\times(\rho_0^{-1}\mathbf{G})\)</span>, <span class="arithmatex">\(\mathbf{G} = (\nabla\times\mathbf{b})\times\mathbf{B}_0 + (\nabla\times\mathbf{B}_0)\times\mathbf{b}\)</span></td>
+</tr>
+<tr>
+<td>v</td>
+<td>momentum, toroidal</td>
+<td><span class="arithmatex">\(\rho_0\hat{\mathbf{r}}\cdot\nabla\times(\rho_0^{-1}\mathbf{G})\)</span></td>
+</tr>
+<tr>
+<td>f</td>
+<td>induction, poloidal</td>
+<td><span class="arithmatex">\(\hat{\mathbf{r}}\cdot\nabla\times(\mathbf{u}\times\mathbf{B}_0)\)</span></td>
+</tr>
+<tr>
+<td>g</td>
+<td>induction, toroidal</td>
+<td><span class="arithmatex">\(\hat{\mathbf{r}}\cdot\nabla\times\nabla\times(\mathbf{u}\times\mathbf{B}_0)\)</span></td>
+</tr>
+</tbody>
+</table>
+<p><code>tests/magnetic/derive.py</code> builds these vectors with sympy (any <span class="arithmatex">\(\rho_0\)</span>, through <span class="arithmatex">\(\ln\rho_0\)</span>), projects them on <span class="arithmatex">\(Y_{l'}\)</span>
+by Gauss–Legendre quadrature in <span class="arithmatex">\(\theta\)</span> (exact for these polynomials), and returns each projection as a sum of
+monomials: a coefficient times <span class="arithmatex">\(r^p\)</span> times derivatives of the unknown (<code>P0</code>, <code>P1</code> = <span class="arithmatex">\(P'\)</span>, ...), of the background (<code>h0</code>,
+<code>h1</code>, ... or <code>k0</code>, ...) and of <span class="arithmatex">\(\ln\rho_0\)</span> (<code>lr1</code> = <span class="arithmatex">\(\lambda_1 = (\ln\rho_0)'\)</span>, <code>lr2</code>, ...). Kore's operator is that row
+times <span class="arithmatex">\(-r^5/L'^3\)</span> (u) or <span class="arithmatex">\(-r^3/L'^3\)</span> (v, f, g), times Hendrik for the Lorentz force (<span class="arithmatex">\(L' = l'(l'+1)\)</span> of the row).</p>
+<h3 id="12-derive-one-block">1.2 Derive one block</h3>
+<p>Lorentz force of the dipole (<span class="arithmatex">\(n = 1\)</span>, the default <code>--b0 pol1</code>) in the u row of degree 3, column <span class="arithmatex">\(F\)</span> of degree 2, <span class="arithmatex">\(m = 1\)</span>
+(<code>derive.py ROW COL LCOL LROW M</code>; ~20 s):</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$ cd tests/magnetic &amp;&amp; python3 derive.py u F 2 3 1
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>-271.529003975633 +0.000000000000i   r^-5  F0 h0
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>-81.458701192690 +0.000000000000i   r^-4  F0 h0 lr1
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>+54.305800795127 +0.000000000000i   r^-4  F0 h1
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>+99.560634791066 +0.000000000000i   r^-4  F1 h0
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>...
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>-9.050966799188 +0.000000000000i   r^-2  F3 h0
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>(14 terms)
+</span></code></pre></div>
+<p>Read the last line as <span class="arithmatex">\(-9.0510\,r^{-2} h F'''\)</span>. In <code>operators.lorentz_pol</code> (u row, <code>bpol</code>, <span class="arithmatex">\(\Delta l = -1\)</span>) the same term
+is <span class="arithmatex">\(C\cdot 2\,\mathtt{u2bpo0ohr1\_D3}\)</span> with <span class="arithmatex">\(C = \sqrt{l^2 - m^2}(l^2-1)/(2l-1) = 4.5255\)</span> (<span class="arithmatex">\(l = 3\)</span>, <span class="arithmatex">\(m = 1\)</span>): the label
+<code>u2bpo0ohr1_D3</code> is <span class="arithmatex">\(r^{5-2} h F'''\)</span>, and <span class="arithmatex">\(-r^5\times(-9.0510\,r^{-2}) = +2C\,r^3\)</span>. Only the terms with <span class="arithmatex">\(\ln\rho_0\)</span>
+(the anelastic ones, zero for structure <code>'Boussinesq'</code>):</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>$ python3 derive.py u F 2 3 1 --rho
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>-81.458701192690 +0.000000000000i   r^-4  F0 h0 lr1
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>+27.152900397563 +0.000000000000i   r^-3  F0 h1 lr1
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>+18.101933598376 +0.000000000000i   r^-3  F1 h0 lr1
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>+13.576450198782 +0.000000000000i   r^-2  F0 h2 lr1
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>+9.050966799188 +0.000000000000i   r^-2  F2 h0 lr1
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>(5 terms)
+</span></code></pre></div>
+<p><code>--b0</code> chooses another field: <code>pol2</code> (degree-2 poloidal, <code>'Luo_S2'</code>, FDM with <code>B0_l = 2</code>), <code>tor1</code>, <code>tor2</code>. For example the
+induction of the quadrupole in the f row of degree 4 from <span class="arithmatex">\(P\)</span> of degree 2 (~2 s):</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>$ python3 derive.py f P 2 4 1 --b0 pol2
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>+28.168588671694 +0.000000000000i   r^-2  P0 h0 lr1
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>-28.168588671694 +0.000000000000i   r^-2  P0 h1
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>+28.168588671694 +0.000000000000i   r^-2  P1 h0
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>(3 terms)
+</span></code></pre></div>
+<h3 id="13-fit-closed-forms-in-l-and-m">1.3 Fit closed forms in l and m</h3>
+<p>A coefficient of one monomial is, as a function of <span class="arithmatex">\(l\)</span> and <span class="arithmatex">\(m\)</span>, an angular factor <span class="arithmatex">\(A(l, m, \Delta l)\)</span> of the field's
+degree times a polynomial <span class="arithmatex">\(a(l) + b(l)\,m^2\)</span>:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><span class="arithmatex">\(\Delta l = 0\)</span></th>
+<th><span class="arithmatex">\(\Delta l = \mp1\)</span></th>
+<th><span class="arithmatex">\(\Delta l = \mp2\)</span></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(n = 1\)</span></td>
+<td><span class="arithmatex">\(im\)</span></td>
+<td><span class="arithmatex">\(\sqrt{l^2-m^2}/(2l-1)\)</span>, <span class="arithmatex">\(\sqrt{(l+1)^2-m^2}/(2l+3)\)</span></td>
+<td>—</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(n = 2\)</span></td>
+<td><span class="arithmatex">\(1/((2l-1)(2l+3))\)</span></td>
+<td><span class="arithmatex">\(im\sqrt{l^2-m^2}/(2l-1)\)</span>, <span class="arithmatex">\(im\sqrt{(l+1)^2-m^2}/(2l+3)\)</span></td>
+<td><span class="arithmatex">\(\frac{\sqrt{(l^2-m^2)((l-1)^2-m^2)}}{(2l-1)(2l-3)}\)</span>, <span class="arithmatex">\(\frac{\sqrt{((l+1)^2-m^2)((l+2)^2-m^2)}}{(2l+3)(2l+5)}\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>(<code>operators.quad_factors</code> for <span class="arithmatex">\(n = 2\)</span>). <code>tools/derive/fit_rows.py KIND N</code> derives every block for a range of <span class="arithmatex">\(l\)</span>, <span class="arithmatex">\(m\)</span> in
+parallel, divides by <span class="arithmatex">\(A\)</span> and fits the polynomial of lowest degree that reproduces all points exactly (rational
+coefficients, verified on every point). The toroidal <span class="arithmatex">\(n = 1\)</span> field, rows f and g only (25 s on 30 cores; the rows are
+cached in <code>fit_tor1.pkl</code>, so a second run is instant):</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>$ python3 tools/derive/fit_rows.py tor 1 --rows f,g --l 2:8 --jobs 30 | tee tor1_fg.log
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>f P dl+0  P0*k0 r^-2             [a + b m^2] = l*(l + 1)
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>g P dl-1  P0*k0 r^-3             [a + b m^2] = l*(l - 1)*(l + 1)
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>g P dl-1  P0*k0*lr1 r^-2         [a + b m^2] = l*(l - 1)*(l + 1)
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>g P dl-1  P0*k1 r^-2             [a + b m^2] = -l*(l - 1)*(l + 1)
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>g P dl+1  P0*k0 r^-3             [a + b m^2] = -l*(l + 1)*(l + 2)
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>g P dl+1  P0*k0*lr1 r^-2         [a + b m^2] = -l*(l + 1)*(l + 2)
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>g P dl+1  P0*k1 r^-2             [a + b m^2] = l*(l + 1)*(l + 2)
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>g T dl+0  T0*k0 r^-2             [a + b m^2] = l*(l + 1)
+</span></code></pre></div>
+<p>A line ending in <code>None</code> means the polynomial needs more points than the <span class="arithmatex">\(l\)</span> range gives: widen it. For the degree-2
+poloidal field, <code>python3 tools/derive/fit_rows.py pol 2 --jobs 30</code> (l 3–9, ~15 min) gives all blocks except four of the
+u row at <span class="arithmatex">\(\Delta l = 0\)</span>, whose <span class="arithmatex">\(a(l)\)</span> has degree 6; <code>--rows u --l 3:14</code> gives those too. These two runs reproduce every
+coefficient of <code>operators.induction_pol2</code> and <code>lorentz_pol2</code> (step 5 of the port).</p>
+<h3 id="14-turn-the-fit-into-code">1.4 Turn the fit into code</h3>
+<p><code>tools/derive/gen_table.py</code> writes the table entries in kore's labels and lists the labels <code>submatrices.py</code> must
+build, with the vector parity of their column:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>$ python3 tools/derive/gen_table.py tor1_fg.log
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a># induction (rows f, g)
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>        ('f', 'P', 0): lambda: (l*(l + 1))*f1bto0_D0,
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>        ('g', 'P', -1): lambda: (l*(l - 1)*(l + 1))*g2bto0_D0 + (l*(l - 1)*(l + 1))*g1bto0lho1_D0 + (-l*(l - 1)*(l + 1))*g1bto1_D0,
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>        ('g', 'P', 1): lambda: (-l*(l + 1)*(l + 2))*g2bto0_D0 + (-l*(l + 1)*(l + 2))*g1bto0lho1_D0 + (l*(l + 1)*(l + 2))*g1bto1_D0,
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>        ('g', 'T', 0): lambda: (l*(l + 1))*g1bto0_D0,
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a># Lorentz force (rows u, v)
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a># labels (submatrices.py: labl += [...], arg2 += [the parity] for each)
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>#  vP: ['f1bto0_D0', 'g2bto0_D0', 'g1bto0lho1_D0', 'g1bto1_D0']
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>#  vT: ['g1bto0_D0']
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>#  vF: []
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>#  vG: []
+</span></code></pre></div>
+<p>The operator returns <code>-A(l, m, Δl) * entry / L**3</code> (times <code>par.Hendrik</code> for rows u, v) with the column offset of
+<code>operators.moff</code>; compare <code>operators.induction_tor</code>, where the f row is <code>-1j*m*L*f1bto0_D0</code> (<span class="arithmatex">\(A = im\)</span>, entry <span class="arithmatex">\(L\)</span>) and the
+g row at <span class="arithmatex">\(\Delta l = -1\)</span> is <code>-Cm*l*(l-1)*(l+1)*(g2bto0_D0 + g1bto0lho1_D0 - g1bto1_D0)</code>. The label rule: a monomial
+<span class="arithmatex">\(X^{(d)} B^{(j)} \lambda_k\, r^p\)</span> is <code>{row}{-p}{code}{j}[lho{k}]ohr1_D{d}</code> in rows u, v and <code>{row}{-(p+1)}{code}{j}[lho{k}]_D{d}</code>
+in rows f, g, with <code>code</code> = <code>bpo</code> (<span class="arithmatex">\(c_\mathrm{norm} h\)</span>) or <code>bto</code> (<span class="arithmatex">\(c_\mathrm{tor} k\)</span>).</p>
+<h3 id="15-check-against-kore">1.5 Check against kore</h3>
+<ul>
+<li><strong><code>tests/magnetic/derive_check.py</code></strong> (~40 min, no run directory): derive.py against conductive_IC's uniform-density
+  operators, the <span class="arithmatex">\(\lambda\)</span> terms, and the closed forms of the toroidal fields and of <code>induction_pol2</code>, <code>lorentz_pol2</code> (read
+  from the source of <code>bin/operators.py</code>), <span class="arithmatex">\(l\)</span> 3–6, <span class="arithmatex">\(m\)</span> 0–3. Its last lines:
+  <div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>rows v and T columns: no (ln rho0) terms
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>derive_check.py: ok
+</span></code></pre></div></li>
+<li><strong><code>tests/magnetic/row_check.py [lmax] [tol]</code></strong> (in a run directory, after <code>submatrices.py</code>): applies kore's operators
+  to random fields, reads each row block in its Gegenbauer basis on an <span class="arithmatex">\(r\)</span> grid and compares it with derive.py evaluated
+  with the run's own profiles. <code>tests/magnetic/mk_run.py NAME 'par.x = ..'</code> builds such a directory:
+  <div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>$ python3 tests/magnetic/mk_run.py rc_s2 "par.structure = 'Boussinesq'; par.B0 = 'Luo_S2'; par.tol_B0 = 1e-15"
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>rc_s2 ok
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>$ cd rc_s2 &amp;&amp; python3 ../tests/magnetic/row_check.py 7
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>row f l= 2  column P l= 2: 1.17e-14
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>row f l= 2  column P l= 4: 4.25e-15
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>row f l= 2  column T l= 1: 3.34e-15
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>...
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>row_check.py (Boussinesq, B0 Luo_S2, B0_tor None, m 1): worst 1.24e-14 -&gt; ok
+</span></code></pre></div>
+  (12 minutes: each block calls derive.py; the argument 7 limits the row degrees checked to 7).
+  (use the absolute path of <code>row_check.py</code> if the run directory is elsewhere; with 'Wu 2005' use N 192 in a shell, N 288
+  in a full sphere, for round-off).</li>
+<li><strong>Energy budgets</strong> (<code>budget_check.py</code>, after a solve) and the identity
+  <span class="arithmatex">\(\int\rho_0\mathbf{u}^*\cdot\mathbf{F}_L\,dV = -\mathrm{Hendrik}\,\overline{\int\mathbf{b}^*\cdot\nabla\times(\mathbf{u}\times\mathbf{B}_0)dV}\)</span>
+  (<code>bin/ru_insane.py</code>) check the rows through spin_doctor's independent formulas. <code>tests/magnetic/run_all.sh</code> runs everything.</li>
+</ul>
+<h3 id="16-adding-a-new-background-field">1.6 Adding a new background field</h3>
+<ol>
+<li><strong>Its shape.</strong> In <code>bin/background_field.py</code>: add the name to <code>B0_TYPES</code> (at the end: its index goes to <code>params.dat</code>),
+   its <span class="arithmatex">\(h(r)\)</span> and derivatives to <code>h(r, k)</code> (a polynomial goes in <code>POLY</code>; mind the parity <span class="arithmatex">\((-1)^n\)</span> in a full sphere), its
+   degree and equatorial symmetry (<code>B0_l</code>, <code>symmB0</code>), and its normalisation in <code>B0_norm</code> if <code>cnorm</code> is not a number.</li>
+<li><strong>Its couplings.</strong> If its degree is 1 or 2, the existing operators apply unchanged (they depend on the degree, not on
+   <span class="arithmatex">\(h\)</span>). For another degree <span class="arithmatex">\(n\)</span>: derive (§1.2 with <code>rows(..., b0=('pol', n))</code>), add <span class="arithmatex">\(n\)</span>'s angular factors to
+   <code>fit_rows.A</code>, fit (§1.3), generate the code (§1.4) and add a <code>lorentz_poln</code>/<code>induction_poln</code> pair with the new labels
+   in <code>submatrices.py</code>; <code>assemble.py</code> loops over <span class="arithmatex">\(\Delta l = -2..2\)</span>, so widen that loop for <span class="arithmatex">\(n &gt; 2\)</span>.</li>
+<li><strong>Check.</strong> Extend <code>derive_check.py</code> with the new tables (§5 of that file reads them from <code>operators.py</code>), run
+   <code>row_check.py</code> and the budgets on a run with the new field, and compare with an independent code or an analytic
+   result where you have one (<a href="../magnetic/">Magnetic field</a>, Checks).</li>
+</ol>
+<h2 id="2-differential-rotation">2. Differential rotation</h2>
+<h3 id="21-the-recurrence-algebra-binangularpy">2.1 The recurrence algebra (<code>bin/angular.py</code>)</h3>
+<p>At fixed <span class="arithmatex">\(m\)</span>, functions of <span class="arithmatex">\(\theta\)</span> are expanded on kore's Schmidt harmonics <span class="arithmatex">\(Y_l\)</span> (Condon–Shortley phase,
+<span class="arithmatex">\(\int|Y_l|^2d\Omega = 4\pi/(2l+1)\)</span>). Multiplying by a function of <span class="arithmatex">\(x = \cos\theta\)</span> is a matrix on the degree index (row
+= target <span class="arithmatex">\(l'\)</span>, column = source <span class="arithmatex">\(l\)</span>), built from two exact recurrences:</p>
+<div class="arithmatex">\[
+x Y_l = p_l Y_{l+1} + q_l Y_{l-1}\ \to\ X,\qquad (1 - x^2)\frac{dY_l}{dx} = (l+1)q_l Y_{l-1} - l p_l Y_{l+1}\ \to\ D = -\sin\theta\,\partial_\theta,
+\]</div>
+<p><span class="arithmatex">\(p_l = \sqrt{(l+1)^2-m^2}/(2l+1)\)</span>, <span class="arithmatex">\(q_l = \sqrt{l^2-m^2}/(2l+1)\)</span> (<code>angular.coefficients</code>). <code>angular.Algebra.get(m, lw)</code> holds,
+on the degrees 0..lw: <code>X</code>, <code>D</code>, <code>Dd</code> <span class="arithmatex">\(= D^\dagger = 2X - D\)</span>, <code>I</code>, <code>L</code> <span class="arithmatex">\(= \mathrm{diag}(l(l+1))\)</span>, <code>Li</code> <span class="arithmatex">\(= L^{-1}\)</span> (0 at <span class="arithmatex">\(l = 0\)</span>),
+<code>N</code> <span class="arithmatex">\(= \mathrm{diag}(4\pi/(2l+1))\)</span>, and <code>legendre(n)</code> gives <span class="arithmatex">\(P_n(X)\)</span> and <span class="arithmatex">\(P_n'(X)\)</span> by the Legendre recurrence. Vector
+fields are <code>Field</code>s <span class="arithmatex">\((q, s, t)\)</span> on <span class="arithmatex">\(\mathbf{R}_l = Y_l\hat{\mathbf{r}}\)</span>, <span class="arithmatex">\(\mathbf{S}_l = r\nabla Y_l\)</span>, <span class="arithmatex">\(\mathbf{T}_l = r\nabla Y_l\times\hat{\mathbf{r}}\)</span>, with
+<code>mult(F, g(X), g'(X))</code> (multiplication by <span class="arithmatex">\(g(x)\)</span>), <code>zcross(F)</code> (<span class="arithmatex">\(\hat{\mathbf{z}}\times\)</span>), <code>zcross_r(c)</code>
+(<span class="arithmatex">\(\hat{\mathbf{z}}\times(c\,\hat{\mathbf{r}})\)</span>) and <code>sin_theta(F)</code> (<span class="arithmatex">\(\sin\theta F_\theta\)</span>). Products of truncated
+matrices are wrong in their last few degrees: build with lw a few degrees above what you use (kore uses lmax + n + 6).</p>
+<p>Try it against the harmonics on a grid (<code>angular.ylm_grid(m, lmax, x)</code> returns <span class="arithmatex">\(Y_l\)</span>, <span class="arithmatex">\(\partial_\theta Y_l\)</span>,
+<span class="arithmatex">\(im Y_l/\sin\theta\)</span>):</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="err">$</span> <span class="n">python3</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span><span class="p">;</span> <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">'bin'</span><span class="p">)</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span><span class="o">,</span><span class="w"> </span><span class="nn">angular</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">A</span> <span class="o">=</span> <span class="n">angular</span><span class="o">.</span><span class="n">Algebra</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>                      <span class="c1"># m = 2, degrees 0..30</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.55</span><span class="p">])</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">Y</span><span class="p">,</span> <span class="n">dY</span><span class="p">,</span> <span class="n">Z</span> <span class="o">=</span> <span class="n">angular</span><span class="o">.</span><span class="n">ylm_grid</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">x</span><span class="o">*</span><span class="n">Y</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="n">A</span><span class="o">.</span><span class="n">X</span><span class="o">.</span><span class="n">toarray</span><span class="p">()[:,</span> <span class="mi">5</span><span class="p">]</span> <span class="o">@</span> <span class="n">Y</span>                     <span class="c1"># x Y_5 = Σ_k X[k, 5] Y_k</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="p">(</span><span class="n">array</span><span class="p">([</span> <span class="mf">0.21275696</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.01739509</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.03535338</span><span class="p">]),</span> <span class="n">array</span><span class="p">([</span> <span class="mf">0.21275696</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.01739509</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.03535338</span><span class="p">]))</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">P4</span><span class="p">,</span> <span class="n">dP4</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">legendre</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">polynomial</span><span class="o">.</span><span class="n">legendre</span><span class="o">.</span><span class="n">Legendre</span><span class="o">.</span><span class="n">basis</span><span class="p">(</span><span class="mi">4</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="n">Y</span><span class="p">[</span><span class="mi">7</span><span class="p">],</span> <span class="n">P4</span><span class="o">.</span><span class="n">toarray</span><span class="p">()[:,</span> <span class="mi">7</span><span class="p">]</span> <span class="o">@</span> <span class="n">Y</span>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="p">(</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mf">0.09618301</span><span class="p">,</span>  <span class="mf">0.06666419</span><span class="p">,</span>  <span class="mf">0.10236181</span><span class="p">]),</span> <span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mf">0.09618301</span><span class="p">,</span>  <span class="mf">0.06666419</span><span class="p">,</span>  <span class="mf">0.10236181</span><span class="p">]))</span>
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">P4</span><span class="o">.</span><span class="n">toarray</span><span class="p">()[:,</span> <span class="mi">7</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>                   <span class="c1"># P_4 couples l = 7 to l' = 3..11, every other degree</span>
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="n">array</span><span class="p">([</span> <span class="mi">3</span><span class="p">,</span>  <span class="mi">5</span><span class="p">,</span>  <span class="mi">7</span><span class="p">,</span>  <span class="mi">9</span><span class="p">,</span> <span class="mi">11</span><span class="p">])</span>
+</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="o">&gt;&gt;&gt;</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">dY</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="n">A</span><span class="o">.</span><span class="n">D</span><span class="o">.</span><span class="n">toarray</span><span class="p">()[:,</span> <span class="mi">5</span><span class="p">]</span> <span class="o">@</span> <span class="n">Y</span>   <span class="c1"># D = -sinθ ∂θ</span>
+</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="p">(</span><span class="n">array</span><span class="p">([</span> <span class="mf">1.1811106</span> <span class="p">,</span> <span class="o">-</span><span class="mf">1.58080089</span><span class="p">,</span>  <span class="mf">1.58869119</span><span class="p">]),</span> <span class="n">array</span><span class="p">([</span> <span class="mf">1.1811106</span> <span class="p">,</span> <span class="o">-</span><span class="mf">1.58080089</span><span class="p">,</span>  <span class="mf">1.58869119</span><span class="p">]))</span>
+</span></code></pre></div>
+<h3 id="22-the-couplings-bindiff_rotpy">2.2 The couplings (<code>bin/diff_rot.py</code>)</h3>
+<p><span class="arithmatex">\(\Delta\Omega = \mathtt{diff\_rot\_ampl}\sum_n f_n(r)P_n(\cos\theta)\)</span> (<span class="arithmatex">\(n\)</span> even, <code>shapes()</code>) acts on the flow through
+<span class="arithmatex">\(\mathbf{W} = G[\Delta\Omega(im\mathbf{u} + 2\hat{\mathbf{z}}\times\mathbf{u}) + \sin\theta(r\partial_r\Delta\Omega\,u_r + \partial_\theta\Delta\Omega\,u_\theta)\hat{\boldsymbol\phi}]\)</span>
+and on the heat equation through <span class="arithmatex">\(i m G\Delta\Omega s\)</span> and <span class="arithmatex">\(\mathbf{u}\cdot\nabla S_{tw}\)</span>. For each <span class="arithmatex">\(n\)</span>:</p>
+<ol>
+<li><code>_primitives(n, m, lw)</code>: the 12 matrices <span class="arithmatex">\(C[k][\mathrm{shape}]\)</span>, the projection <span class="arithmatex">\(k\)</span> = q, s, t of <span class="arithmatex">\(\mathbf{W}\)</span> for the radial
+   shapes <span class="arithmatex">\(f L P/r\)</span>, <span class="arithmatex">\(f a\)</span>, <span class="arithmatex">\(f T\)</span> (<span class="arithmatex">\(a = (rP)'/r + \lambda_1 P\)</span>) and <span class="arithmatex">\((r f')LP/r\)</span>, built with the algebra above;</li>
+<li><code>momentum_coefficients(n, m)</code>: their combinations into the coefficients of each radial operator of the 2-curl (u) and
+   1-curl (v) rows, times <span class="arithmatex">\(L'\)</span> of the target — e.g. <code>f_2C_D0P</code> multiplies <span class="arithmatex">\(f P\)</span> in the u row — as matrices
+   [target, source], stored by diagonal; <code>momentum_coef(name, n, l, m, Δl)</code> reads one;</li>
+<li><code>heat_coefficients(m)</code>, <code>heat_coef</code>: <span class="arithmatex">\(P_n(X)\)</span>, <span class="arithmatex">\(P_n'(X)\)</span>, <span class="arithmatex">\(P_n'(X)D\)</span> for the heat rows; <code>sigma_coefficients(r)</code>: the
+   thermal-wind <span class="arithmatex">\(\sigma_n\)</span> by solving <span class="arithmatex">\(D\sigma = (1-x^2)\partial_x S_{tw}\)</span> in Legendre space;</li>
+<li><code>labels()</code> gives <code>submatrices.py</code> the radial operators (profile codes <code>zf</code>, <code>zd</code>, <code>zs</code> + degree for <span class="arithmatex">\(f_n\)</span>, <span class="arithmatex">\(rf_n'\)</span>,
+   <span class="arithmatex">\(r^2f_n''\)</span>; <code>tw</code>, <code>tp</code> for <span class="arithmatex">\(p_0\sigma_n\)</span>, <span class="arithmatex">\(p_0\sigma_n'\)</span>), <code>dl_range()</code> gives <code>assemble.py</code> the <span class="arithmatex">\(\Delta l\)</span> to place
+   (<span class="arithmatex">\(|\Delta l| \le n\)</span>, even, P→P and T→T; <span class="arithmatex">\(\le n+1\)</span>, odd, P↔T), and <code>momentum_block</code>, <code>heat_block</code> give <code>operators.py</code>
+   each block: <span class="arithmatex">\(G\sum_n\sum\)</span> coefficient × radial operator <span class="arithmatex">\(/L'^3\)</span>.</li>
+</ol>
+<p>Compare a few couplings with the closed forms of <code>tests/diff_rot/diff_rot_coefficients.py</code> (names <code>f_*</code> for <span class="arithmatex">\(f_2\)</span>,
+<code>f0_*</code> for <span class="arithmatex">\(f_0\)</span>) and the primitives with the former Gauss–Legendre quadrature (<code>tests/diff_rot/quad_reference.py</code>).
+<code>diff_rot</code> reads <code>parameters</code>; for a session outside a run directory give it a stand-in with <code>lmax</code>:</p>
+<p>(numpy 2 prints the numbers as <code>np.float64(...)</code>.)</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="err">$</span> <span class="n">python3</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span><span class="o">,</span><span class="w"> </span><span class="nn">types</span><span class="p">;</span> <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="p">[:</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'bin'</span><span class="p">,</span> <span class="s1">'tests/diff_rot'</span><span class="p">]</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s1">'parameters'</span><span class="p">]</span> <span class="o">=</span> <span class="n">types</span><span class="o">.</span><span class="n">SimpleNamespace</span><span class="p">(</span><span class="n">par</span><span class="o">=</span><span class="n">types</span><span class="o">.</span><span class="n">SimpleNamespace</span><span class="p">(</span><span class="n">lmax</span><span class="o">=</span><span class="mi">40</span><span class="p">))</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span><span class="o">,</span><span class="w"> </span><span class="nn">diff_rot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dr</span><span class="o">,</span><span class="w"> </span><span class="nn">diff_rot_coefficients</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dc</span><span class="o">,</span><span class="w"> </span><span class="nn">quad_reference</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">qr</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">l</span><span class="p">,</span> <span class="n">m</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="o">&gt;&gt;&gt;</span> <span class="p">[(</span><span class="n">dl</span><span class="p">,</span> <span class="n">dr</span><span class="o">.</span><span class="n">momentum_coef</span><span class="p">(</span><span class="s1">'f_1C_D0P'</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">dl</span><span class="p">)</span><span class="o">.</span><span class="n">real</span><span class="p">,</span> <span class="n">dc</span><span class="o">.</span><span class="n">f_1C_D0P</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">dl</span><span class="p">))</span> <span class="k">for</span> <span class="n">dl</span> <span class="ow">in</span> <span class="p">(</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)]</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="p">[(</span><span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="mf">20.409040291494</span><span class="o">...</span><span class="p">,</span> <span class="mf">20.409040291494</span><span class="o">...</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mf">24.739970002053</span><span class="o">...</span><span class="p">,</span> <span class="o">-</span><span class="mf">24.739970002053</span><span class="o">...</span><span class="p">),</span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">50.935260967822</span><span class="o">...</span><span class="p">,</span> <span class="mf">50.935260967822</span><span class="o">...</span><span class="p">),</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mf">201.005201402848</span><span class="o">...</span><span class="p">,</span> <span class="o">-</span><span class="mf">201.005201402848</span><span class="o">...</span><span class="p">)]</span>
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">dr</span><span class="o">.</span><span class="n">momentum_coef</span><span class="p">(</span><span class="s1">'f_2C_D0P'</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">dc</span><span class="o">.</span><span class="n">f_2C_D0P</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="p">(</span><span class="mf">397.0909090909</span><span class="o">...</span><span class="n">j</span><span class="p">,</span> <span class="mf">397.0909090909</span><span class="o">...</span><span class="n">j</span><span class="p">)</span>
+</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">C</span><span class="p">,</span> <span class="n">A</span> <span class="o">=</span> <span class="n">dr</span><span class="o">.</span><span class="n">_primitives</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">30</span><span class="p">);</span> <span class="n">Q</span> <span class="o">=</span> <span class="n">qr</span><span class="o">.</span><span class="n">primitives</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>
+</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="o">&gt;&gt;&gt;</span> <span class="nb">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">C</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">toarray</span><span class="p">()[:</span><span class="mi">26</span><span class="p">,</span> <span class="p">:</span><span class="mi">26</span><span class="p">]</span> <span class="o">-</span> <span class="n">Q</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="n">s</span><span class="p">][:</span><span class="mi">26</span><span class="p">,</span> <span class="p">:</span><span class="mi">26</span><span class="p">]))</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">C</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">C</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+</span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="mf">6.128431095930864e-14</span>
+</span></code></pre></div>
+<p>(<code>f_1C_D0P</code> is a P column in the v row, a P↔T coupling, so it reaches <span class="arithmatex">\(|\Delta l| = n + 1 = 3\)</span> for <span class="arithmatex">\(P_2\)</span>.)</p>
+<h3 id="23-checks">2.3 Checks</h3>
+<ul>
+<li><code>python3 tests/diff_rot/angular_check.py [--quick]</code> (no run directory; 10 s with <code>--quick</code>): the harmonics, <span class="arithmatex">\(X\)</span>, <span class="arithmatex">\(D\)</span>,
+  the vector operations and the primitives against <code>quad_reference.py</code>. Ends with <code>angular_check: ok</code>.</li>
+<li><code>tests/diff_rot/gen_check.py [mmax [nmax [lmax]]]</code>, in a run directory with <code>diff_rot = 1</code>: every coupling of <span class="arithmatex">\(f_0\)</span>, <span class="arithmatex">\(f_2\)</span>
+  against the closed forms, and that no coupling of <span class="arithmatex">\(n\)</span> = 4..nmax falls outside the <span class="arithmatex">\(\Delta l\)</span> kore assembles;
+  <code>tests/heat_dr/mk_run.py</code> builds a run.</li>
+<li><code>python3 tests/heat_dr/tw_sympy.py</code> (sympy): the thermal-wind <span class="arithmatex">\(\sigma_2\)</span>, <span class="arithmatex">\(\sigma_4\)</span>, <span class="arithmatex">\(\sigma_6\)</span> derived from
+  thermal-wind balance against the closed forms; ends with <code>0 failures</code>.</li>
+<li><code>tests/diff_rot/regress.sh OLD_KORE</code> (A, B against an older checkout), <code>bin/ru_insane.py</code> (the rows against a grid
+  evaluation) and <code>tests/heat_dr/run_all.sh</code> (rows, assembly, budgets).</li>
+</ul>
+<h3 id="24-adding-a-new-rotation-profile">2.4 Adding a new rotation profile</h3>
+<p>Most profiles need no code: <code>diff_rot_type = 'user'</code> with numpy expressions of <span class="arithmatex">\(r\)</span> (and <span class="arithmatex">\(x\)</span> = fractional solar radius,
+<span class="arithmatex">\(p\)</span> = <code>diff_rot_param</code>) for each even degree:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>$ python3 tests/heat_dr/mk_run.py dr_user "par.diff_rot_type = 'user'; par.diff_rot_profiles = {0: '0.1*r**2', 4: '-0.05*(1 - r)'}; par.thermal_wind = 2"
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>dr_user ok
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>$ cd dr_user &amp;&amp; python3 ../tests/diff_rot/gen_check.py 4 8
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>closed forms vs diff_rot.py, lmax 20, m = 0..4 (relative to the largest coefficient of the row block)
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>  n=0 u,P rows: max |diff_rot - closed| / row scale = 3.0e-17  (m, l) = (1, 3)
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>  ...
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>Δl selection rules, n = 4..8
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>  n= 4  largest coefficient outside the assembled Δl range (relative) 0.0e+00
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>  ...
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>worst 8.4e-16  -&gt;  ok
+</span></code></pre></div>
+<p>A degree of any even <span class="arithmatex">\(n\)</span> works: the algebra builds <span class="arithmatex">\(P_n(X)\)</span> and the couplings for it, so no closed form has to be
+derived. To add a named type instead, add it to <code>TYPES</code> (at the end) and its <span class="arithmatex">\(\{n: f_n(r)\}\)</span> to <code>shapes()</code> in
+<code>bin/diff_rot.py</code>, then run <code>gen_check.py</code>, <code>ru_insane.py</code> and <code>regress.sh</code> (an unchanged profile must give bitwise the
+same A, B). A new <em>kind</em> of background flow (not <span class="arithmatex">\(\Delta\Omega\,r\sin\theta\,\hat{\boldsymbol\phi}\)</span>) needs new primitives:
+write its <span class="arithmatex">\(\mathbf{W}\)</span> with the <code>Field</code> operations as <code>_primitives</code> does, and check it against a quadrature reference
+written like <code>quad_reference.py</code>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "content.code.copy"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
