@@ -10,6 +10,9 @@ class default_params():
         # ------------------------------------------------------------------------------------------------------ Physics modules       
         # ----------------------------------------------------------------------------------------------------------------------
         self.thermal = 0  # set to 1 to include the thermal (entropy) equation; the Navier-Stokes equation is always solved
+        # NEW (2026-10-28): set to 1 to include the induction equation and the Lorentz force (Magnetic parameters below,
+        # docs/magnetic.md)
+        self.magnetic = 0
 
 
         # ----------------------------------------------------------------------------------------------------------------------
@@ -117,6 +120,11 @@ class default_params():
         # ----------------------------------------------------------------------------------------------------------------------
         self.Ek     = 0
         self.Etherm = 0
+        # NEW (2026-10-28): magnetic inputs of set_scales, with the rotation rate Ω as Ek: the Lehnert number
+        # Le = B0/(Ω r0 sqrt(ρ0 μ0)) and the magnetic Ekman number Em = η0/(Ω r0²), so Em = Ek/Pm and the Elsasser number
+        # is Λ = Le²/Em
+        self.Le     = 0
+        self.Em     = 0
 
 
         # ----------------------------------------------------------------------------------------------------------------------
@@ -199,6 +207,69 @@ class default_params():
 
 
         # ----------------------------------------------------------------------------------------------------------------------
+        # -------------------------------------------------------------------------------------------------- Magnetic parameters
+        # ----------------------------------------------------------------------------------------------------------------------
+        # NEW (2026-10-28): used only with magnetic = 1. Ported by name from the conductive_IC branch; user guide docs/magnetic.md.
+        # b = ∇×∇×(f r) + ∇×(g r), with the induction equation ∂b/∂t = ∇×(u×B0) + MagnetD ∇²b and the Lorentz force per unit
+        # mass Hendrik ρ0⁻¹[(∇×b)×B0 + (∇×B0)×b] (Hendrik, MagnetD: set_scales from Le, Em).
+        # So far: ricb > 0, an insulating mantle, ViscosD > 0, eigenvalue problems, a poloidal B0 of degree 1 and/or a toroidal
+        # B0 of degree 1 (background.check() stops on anything else).
+
+        # Imposed background field B0 = cnorm ∇×∇×(h(r) Y_l0 r), axisymmetric and poloidal (background_field.py)
+        self.B0 = 'axial'          # axial, uniform field along the spin axis (h = r/2, l = 1)
+        # self.B0 = None           # NEW (2026-10-28): no poloidal field (with a toroidal one, B0_tor below)
+        # self.B0 = 'G21 dipole'   # NEW (2026-10-28): h = r/6 - r³/10 (Gerick et al. 2021), l = 1
+        # self.B0 = 'Luo_S1'       # NEW (2026-10-28): h = (5 - 3r²) r (Luo & Jackson 2022), l = 1
+        # self.B0 = 'Luo_S2'       # NEW (2026-10-28): h = (157 - 296r² + 143r⁴) r² (Luo & Jackson 2022), l = 2, quadrupole
+        # self.B0 = 'FDM'          # free poloidal decay mode of the shell (Zhang & Fearn 1994, 1995; Schmitt 2012), degree B0_l
+        self.beta = 3.0            # 'FDM': first guess of its radial wavenumber β (the root of background_field.findbeta)
+        self.B0_l = 1              # 'FDM': its degree l
+
+        # NEW (2026-10-28): what the full-sphere fields ('G21 dipole', 'Luo_S1', 'Luo_S2') do with an inner core (ricb > 0), as
+        # conductive_IC: 'potential' (default) adds beta r^-(l+1) to h so that B0 continues as a potential field into the inner core
+        # (background_field.B0_beta_ic); 'full sphere' keeps h. No effect for 'axial', 'FDM' and with ricb = 0.
+        self.B0_ic = 'potential'
+
+        # Normalisation of B0 (cnorm):
+        self.cnorm = 1             # a number: cnorm itself
+        # self.cnorm = 'rms_cmb'     # the rms of the radial B0 over the CMB is 1
+        # self.cnorm = 'mag_energy'  # ∫ B0² dV over the fluid shell is 1 (Luo & Jackson 2022)
+        # self.cnorm = 'Schmitt2012' # ∫ B0² dV over the fluid shell is 4
+
+        # relative cut of the Chebyshev series of r^p h^(k) (coefficients below tol_B0 times the largest of each series are
+        # dropped): it sets the band width of the magnetic blocks and the fill-in of the LU factors (as conductive_IC)
+        self.tol_B0 = 1e-8
+
+        # NEW (2026-10-28): a toroidal (azimuthal) background field B0_tor = cnorm_tor ∇×(k(r) Y_l0 r), B_φ = -cnorm_tor k ∂θY_l0
+        # (for l = 1: B_φ = cnorm_tor k sinθ). Alone (B0 = None) or added to the poloidal B0 when both have the same equatorial
+        # symmetry (a toroidal field of degree l has (-1)^(l+1), a poloidal one (-1)^l: the dipole and B0_tor_l = 1 cannot be combined)
+        self.B0_tor = None
+        # self.B0_tor = 'Malkus'   # k = r: B0 = cnorm_tor s φ̂ (Malkus 1967), current J0 = 2 cnorm_tor ẑ; nonzero at the walls (surface
+        #                          # currents there; the linear problem is unaffected, see docs/magnetic.md)
+        # self.B0_tor = 'wall'     # k = r (r - ricb)(1 - r)/(1 - ricb)²: vanishes at both walls
+        # self.B0_tor = 'user'     # k = B0_tor_profile, a numpy expression of r and p = B0_tor_param (sin ... tanh, exp, log, sqrt,
+        #                          # where, erf, pi), e.g. 'r*(1 - r)**2' (smooth: its first two derivatives enter the rows)
+        self.B0_tor_profile = ''
+        self.B0_tor_param = 0.0
+        self.B0_tor_l = 1           # its degree
+        self.cnorm_tor = 1          # a number, 'mag_energy' (∫ B0_tor² dV = 1 over the shell) or 'Schmitt2012' (= 4)
+
+        # Magnetic boundary conditions at the inner boundary and at the outer boundary
+        self.innercore = 'insulator'
+        # self.innercore = 'conducting, Chebys'  # NEW (2026-10-28): a conducting solid inner core; its field is part of the
+        #                                        # unknowns (fic, gic), needs a no-slip inner boundary (bci = 1)
+        self.mantle    = 'insulator'
+
+        # NEW (2026-10-28): innercore = 'conducting, Chebys' only (as conductive_IC)
+        # (the inner-core field has the degrees of the fluid's, up to lmax: conductive_IC's lmax_cic is not ported, its ICB
+        # matching couples the two degree by degree)
+        self.N_cic     = 64    # Chebyshev polynomials of the inner-core field on [-ricb, ricb], N_cic/2 of one parity per l
+                               # (conductive_IC: 48 gave broken eigenvectors at sigma_i2o = 1e-2)
+        self.mu_i2o    = 1.0   # magnetic permeability ratio solid inner core / fluid
+        self.sigma_i2o = 1.0   # electrical conductivity ratio solid inner core / fluid (magnetic diffusivity MagnetD/(mu_i2o sigma_i2o) inside)
+
+
+        # ----------------------------------------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------------------------------- Forcing parameters
         # ----------------------------------------------------------------------------------------------------------------------
         self.forcing = 0  # Uncomment this line for eigenvalue problems
@@ -269,6 +340,9 @@ class default_params():
         self.Beyonce   = 0  # (N0*Tau)**2               Buoyancy force factor. Set to 1 for unit time Tau = 1/N0 = sqrt(r0/g0)
         self.ViscosD   = 0  # nu0 * Tau / r0**2         Viscous force factor. Set to 1 for viscous diffusion time scale. This is the Ekman number if Tau = 1/Omega
         self.ThermaD   = 0  # kappa0 * Tau / r0**2      Thermal diffusion factor. Set to 1 for thermal diffusion time scale
+        # NEW (2026-10-28): magnetic = 1 only; set_scales sets them as (Gaspard Le)² and Gaspard Em
+        self.Hendrik   = 0  # (Tau B0/r0)**2/(rho0 mu0)  Lorentz force factor, (Gaspard*Le)**2. 1 for the Alfvén time scale
+        self.MagnetD   = 0  # eta0 * Tau / r0**2         Magnetic diffusion factor, Gaspard*Em. 1 for the magnetic diffusion time scale
         # thermal = 1 with ThermaD = 0 (adiabatic entropy) works but admits spurious modes trapped at the inner boundary
         # whenever dS/dr != 0 there (their eigenvalues move with N, spin_doctor residσ ~1). A tiny diffusivity removes the
         # trapped modes near the shift: ThermaD = 1e-9 reproduces the ThermaD = 0 eigenvalues to 3-7e-8 (the shift is linear
@@ -450,6 +524,27 @@ class default_params():
             self.Beyonce = 1  # (N0*Tau)**2
             self.ViscosD = 0  # nu0 * Tau / r0**2
             self.ThermaD = 0  # kappa0 * Tau / r0**2
+
+        # NEW (2026-10-28): the magnetic time scales, unit time the Alfvén time r0 sqrt(ρ0 μ0)/B0 = 1/(Ω Le) or the magnetic
+        # diffusion time r0²/η0 = 1/(Ω Em)
+        elif self.timescale == "Alfven":
+
+            self.Gaspard = 1/self.Le            # Omega*Tau
+            self.Beyonce = 0                    # (N0*Tau)**2
+            self.ViscosD = self.Ek/self.Le      # nu0 * Tau / r0**2
+            self.ThermaD = self.Etherm/self.Le  # kappa0 * Tau / r0**2
+
+        elif self.timescale == "magnetic":
+
+            self.Gaspard = 1/self.Em            # Omega*Tau
+            self.Beyonce = 0                    # (N0*Tau)**2
+            self.ViscosD = self.Ek/self.Em      # nu0 * Tau / r0**2
+            self.ThermaD = self.Etherm/self.Em  # kappa0 * Tau / r0**2
+
+        # NEW (2026-10-28): the magnetic factors for any time scale (Le, Em are defined with Ω, as Ek). The removed magnetic
+        # code of this branch (before 8eb16917) had Hendrik = Le for 'rotation': the Lorentz force goes with Le².
+        self.Hendrik = (self.Gaspard*self.Le)**2  # (Tau B0/r0)**2/(rho0 mu0)
+        self.MagnetD = self.Gaspard*self.Em       # eta0 * Tau / r0**2
 
 
     def Ncheb(self, Ek):

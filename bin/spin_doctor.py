@@ -17,6 +17,7 @@ import utils4pp as upp
 import diff_rot as dr
 import radial_profiles as rap
 import background as bg
+import background_field as bf
 
 
 
@@ -34,6 +35,9 @@ def stratification_code():
 
 def diffusivity_code():
     return bg.DIFFUSIVITIES.index(par.diffusivity)
+
+def B0_code():  # NEW (2026-10-28): B0 as its index in background_field.B0_TYPES, -1 without the field
+    return bf.B0_TYPES.index(par.B0) if (par.magnetic and par.B0 in bf.B0_TYPES) else -1
 
 def solar_density_window(k):
     '''end k (0, 1) of par.solar_density_window, nan if None (the default window), -/+(r_out + 0.005) if 'sun' (even fit)'''
@@ -150,6 +154,19 @@ def param_table(elapsed):
         ( 'diff_rot_param',           par.diff_rot_param,          '%.9e' ),  # 'shellular': σ; 'user': p
         ( 'stratification',           stratification_code(),       '%d' ),    # index into background.STRATIFICATIONS
         ( 'diffusivity',              diffusivity_code(),          '%d' ),    # index into background.DIFFUSIVITIES
+        ( 'magnetic',                 par.magnetic,                '%d' ),    # NEW (2026-10-28), and the magnetic parameters:
+        ( 'B0',                       B0_code(),                   '%d' ),    # index into background_field.B0_TYPES
+        ( 'B0_l',                     bf.B0_l,                     '%d' ),
+        ( 'cnorm',                    bf.cnorm,                    '%.9e' ),  # as a number (0 without the field)
+        ( 'Hendrik',                  par.Hendrik,                 '%.9e' ),
+        ( 'MagnetD',                  par.MagnetD,                 '%.9e' ),
+        ( 'innercore',                bg.INNER_CORES.index(par.innercore) if par.innercore in bg.INNER_CORES else -1, '%d' ),  # NEW (2026-10-28)
+        ( 'N_cic',                    par.N_cic,                   '%d' ),
+        ( 'mu_i2o',                   par.mu_i2o,                  '%.9e' ),
+        ( 'sigma_i2o',                par.sigma_i2o,               '%.9e' ),
+        ( 'B0_tor',                   bf.B0_TOR_TYPES.index(par.B0_tor) if (par.magnetic and par.B0_tor in bf.B0_TOR_TYPES) else -1, '%d' ),  # NEW (2026-10-28)
+        ( 'B0_tor_l',                 par.B0_tor_l,                '%d' ),
+        ( 'cnorm_tor',                bf.cnorm_tor,                '%.9e' ),  # as a number (0 without a toroidal field)
     ]
 
 
@@ -220,6 +237,12 @@ def main(ncpus):
     if os.path.isfile(fname_rt) and os.path.isfile(fname_it):
         rt = np.loadtxt(fname_rt).reshape((ut.n,-1))
         it = np.loadtxt(fname_it).reshape((ut.n,-1))
+    if par.magnetic:  # NEW (2026-10-28)
+        rb = np.loadtxt('real_magnetic.field').reshape((2*ut.n,-1))
+        ib = np.loadtxt('imag_magnetic.field').reshape((2*ut.n,-1))
+    bic = None
+    if ut.cic:  # NEW (2026-10-28): the field of a conducting inner core
+        bic = ( np.loadtxt('real_magnetic_ic.field') + 1j*np.loadtxt('imag_magnetic_ic.field') ).reshape((2*ut.nic,-1))
 
     success = np.shape(ru)[1]
 
@@ -253,6 +276,19 @@ def main(ncpus):
     Dthm        = np.zeros(success)
     Wdr_thm     = np.zeros(success)
 
+    # magnetic variables to be processed (NEW 2026-10-28)
+    ME          = np.zeros(success)  # ∫ ½ 𝐛⋅𝐛 dV (as conductive_IC's magnetic.dat: without Hendrik)
+    Mdfs        = np.zeros(success)  # MagnetD ∫ 𝐛⋅∇²𝐛 dV
+    Indu        = np.zeros(success)  # ∫ 𝐛⋅∇×(𝐮×𝐁₀) dV
+    Wlor        = np.zeros(success)  # Hendrik 2 Re ∫ 𝐮*⋅𝐅 dV, the power of the Lorentz force, and its imaginary part
+    Wlor_im     = np.zeros(success)
+    residb      = np.zeros(success)
+    MEic        = np.zeros(success)  # ½ ∫ |𝐛|² inside the inner core (conducting, or the potential field of an insulating one)
+    MEext       = np.zeros(success)  # ½ ∫ |𝐛|² of the potential field outside the outer wall
+    Ohm_f       = np.zeros(success)  # MagnetD ∫ |∇×𝐛|² dV over the fluid
+    Ohm_ic      = np.zeros(success)  # MagnetD η_i ∫ |∇×𝐛|² dV over a conducting inner core
+    residE      = np.full(success, np.nan)  # the full energy budget (no-slip walls only)
+
     # residual errors to be processed
     resid1      = np.zeros(success)
     resid2      = np.zeros(success)
@@ -277,7 +313,11 @@ def main(ncpus):
         ( 'residω',        '{:8.2e}',   lambda i: resid2[i] ),
     ] + ([
         ( 'resid𝑠',        '{:8.2e}',   lambda i: resid3[i] ),
-    ] if par.thermal else []) + [
+    ] if par.thermal else []) + ([
+        ( 'resid𝐛',        '{:8.2e}',   lambda i: residb[i] ),
+        ( 'resid𝐄',        '{:8.2e}',   lambda i: residE[i] ),
+        ( 'Mag/Kin',       '{:8.2e}',   lambda i: ratio(ME[i], KE[i]) ),   # as conductive_IC: ME without Hendrik
+    ] if par.magnetic else []) + [
         ( 'Peak ℓ',        '{:d}',      lambda i: ldom[i] ),
         ( 'ℓ-Width',       '{:d}',      lambda i: lwidth[i] ),
         ( 'ℓ-Convergence', '{:8.2e}',   lambda i: lconv[i] ),
@@ -322,11 +362,25 @@ def main(ncpus):
             t_sol2  = upp.expand_reshape_sol( rthm + 1j*ithm, par.symm)
 
 
+        if par.magnetic:  # NEW (2026-10-28)
+            b_sol2 = upp.expand_reshape_sol( np.copy(rb[:,i]) + 1j*np.copy(ib[:,i]), ut.bsymm)
+
+
         # identify solutions
         [ ldom[i], lwidth[i], lconv[i] ] = upp.identify( u_sol2 )
 
         # diagnose solutions (serially since 2026-10-20, see upp.diagnose)
         [ udgn, tdgn ] = upp.diagnose( u_sol2, t_sol2, par.ricb, ut.rcmb, int(ncpus) )
+
+        if par.magnetic:  # NEW (2026-10-28): on the grid and flow tables that diagnose has just set
+            [ ME[i], Mdfs0, Indu[i], Wlor0, Wlor_im0 ] = np.sum( upp.diagnose_magnetic( b_sol2 ), 0)
+            Mdfs[i]    = par.MagnetD * Mdfs0
+            Wlor[i]    = par.Hendrik * Wlor0
+            Wlor_im[i] = par.Hendrik * Wlor_im0
+            # the parts of the magnetic energy budget outside the fluid, and the Ohmic losses (upp.em_budget, conductive_IC's)
+            Ohm_f0, MEic[i], Ohm_ic0, MEext[i] = upp.em_budget( b_sol2, None if bic is None else bic[:,i] )
+            Ohm_f[i]  = par.MagnetD * Ohm_f0
+            Ohm_ic[i] = par.MagnetD * Ohm_ic0
 
         if par.ViscosD>0:
             Ra = par.ricb
@@ -386,9 +440,26 @@ def main(ncpus):
         # ---------------------------------------------------------------------------------------------------------
 
 
-        resid1[i] = ( abs( 2*sigma*KE[i] - Dkin[i] - Wthm[i] - Wdr[i] ) / max( abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wthm[i]), abs(Wdr[i]) ) )
-        resid2[i] = ( abs( 2*w*KE[i] + Wcor_im[i] - Dkin_im[i] - Wthm_im[i] - Wdr_im[i] )
-                      / max( abs(2*w*KE[i]), abs(Wcor_im[i]), abs(Dkin_im[i]), abs(Wthm_im[i]), abs(Wdr_im[i]) ) )
+        # NEW (2026-10-28): with magnetic = 1, Wlor (Wlor_im) is the power of the Lorentz force in residσ (residω), and
+        # residb (resid𝐛) is the relative residual of 2*sigma*ME - Indu - Mdfs = 0 (the induction equation dotted with 𝐛*, in
+        # the fluid; as conductive_IC's resid𝐛)
+        resid1[i] = ( abs( 2*sigma*KE[i] - Dkin[i] - Wthm[i] - Wdr[i] - Wlor[i] )
+                      / max( abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wthm[i]), abs(Wdr[i]), abs(Wlor[i]) ) )
+        resid2[i] = ( abs( 2*w*KE[i] + Wcor_im[i] - Dkin_im[i] - Wthm_im[i] - Wdr_im[i] - Wlor_im[i] )
+                      / max( abs(2*w*KE[i]), abs(Wcor_im[i]), abs(Dkin_im[i]), abs(Wthm_im[i]), abs(Wdr_im[i]), abs(Wlor_im[i]) ) )
+        if par.magnetic:
+            residb[i] = abs( 2*sigma*ME[i] - Indu[i] - Mdfs[i] ) / max( abs(2*sigma*ME[i]), abs(Indu[i]), abs(Mdfs[i]) )
+            # residE (resid𝐄, as conductive_IC): 2σ(KE + Hendrik (ME + MEic + MEext)) = Dkin + Wthm + Wlor + Hendrik Indu
+            # - Hendrik (Ohm_f + Ohm_ic): the Lorentz work and the induction cancel except for the work of the background
+            # currents, and the Ohmic losses replace ∫ 𝐛⋅∇²𝐛. It tests the wall and ICB conditions, which resid𝐛 cannot see.
+            # Needs no-slip walls (with stress-free ones the u×B0 part of the Poynting flux through the walls is missing).
+            if par.bco == 1 and par.bci == 1:
+                H = par.Hendrik
+                Etot = KE[i] + H*( ME[i] + MEic[i] + MEext[i] )
+                Wex  = Wlor[i] + H*Indu[i]
+                Ohm  = H*( Ohm_f[i] + Ohm_ic[i] )
+                residE[i] = ( abs( 2*sigma*Etot - Dkin[i] - Wthm[i] - Wex + Ohm )
+                              / max( abs(2*sigma*Etot), abs(Dkin[i]), abs(Wthm[i]), abs(Wex), Ohm ) )
 
         if par.thermal:
             resid3[i] = ( abs( 2*sigma*TE[i] - Dthm[i] - Wadv_thm[i] - Wdr_thm[i] )
@@ -452,6 +523,26 @@ def main(ncpus):
         with open('thermal.dat','ab') as dtmp:
             np.savetxt(dtmp, np.column_stack([ v for _, v, _ in thermal_cols ]),
             fmt=[ f for _, _, f in thermal_cols ])
+
+
+    if par.magnetic:
+        # NEW (2026-10-28): magnetic.dat columns, in order: (name, values, format). To add a column, append a tuple at the end.
+        magnetic_cols = [
+            ( 'ME',         ME,         '%.9e' ),  # ∫ ½ 𝐛⋅𝐛 dV, without Hendrik (Hendrik*ME is in the units of KE)
+            ( 'Mdfs',       Mdfs,       '%.9e' ),  # MagnetD ∫ 𝐛⋅∇²𝐛 dV
+            ( 'Indu',       Indu,       '%.9e' ),  # ∫ 𝐛⋅∇×(𝐮×𝐁₀) dV
+            ( 'residb',     residb,     '%.9e' ),  # induction budget, resid𝐛
+            ( 'Wlor',       Wlor,       '%.9e' ),  # power of the Lorentz force (in residσ)
+            ( 'Wlor_im',    Wlor_im,    '%.9e' ),  # and its imaginary part (in residω)
+            ( 'MEic',       MEic,       '%.9e' ),  # ½ ∫ |𝐛|² inside the inner core, without Hendrik
+            ( 'MEext',      MEext,      '%.9e' ),  # ½ ∫ |𝐛|² outside the outer wall, without Hendrik
+            ( 'Ohm_f',      Ohm_f,      '%.9e' ),  # MagnetD ∫ |∇×𝐛|² over the fluid
+            ( 'Ohm_ic',     Ohm_ic,     '%.9e' ),  # MagnetD η_i ∫ |∇×𝐛|² over a conducting inner core
+            ( 'residE',     residE,     '%.9e' ),  # full energy budget, resid𝐄 (nan without no-slip walls)
+        ]
+        with open('magnetic.dat','ab') as dmag:
+            np.savetxt(dmag, np.column_stack([ v for _, v, _ in magnetic_cols ]),
+            fmt=[ f for _, _, f in magnetic_cols ])
 
 
     if par.forcing == 0:

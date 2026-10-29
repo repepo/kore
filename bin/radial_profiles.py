@@ -4,6 +4,7 @@ import utils as ut
 from parameters import par
 import smoothed_sun as sms
 import background as bg
+import background_field as bf
 
 # -------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------ Structure profiles
@@ -40,6 +41,10 @@ class structure():  # ------------------------------------------------ What ever
 
     def thermal_diffusivity(self, r, rpower):  # ------------------ κ(r)/ThermaD
         return (r**rpower)*bg.diffusivity(self, r, 'kappa')
+
+
+    def magnetic_diffusivity(self, r, rpower):  # ------------------ η(r)/MagnetD, NEW (2026-10-28)
+        return (r**rpower)*bg.diffusivity(self, r, 'eta')
 
 
 class wu2005_profiles(structure):  # --------------------------------------------------- structure = 'Wu 2005'
@@ -348,6 +353,14 @@ def graviX(r, Dorder):   # g(r)
     return out
 
 
+def etaX(r, Dorder):   # NEW (2026-10-28): magnetic diffusivity η(r)/MagnetD
+
+    tol = 1e-14
+    out = ut.angine( prf.magnetic_diffusivity, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)
+
+    return out
+
+
 def pressX(r, Dorder):   # ρ(r)T(r)
 
     tol = 1e-14
@@ -359,6 +372,8 @@ def pressX(r, Dorder):   # ρ(r)T(r)
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 proffdir = { 'lho':logrhoX, 'vsc':viscoX, 'gra':graviX, 'pss':pressX, 'pdS':pdSdrX, 'dSd':gradSX, 'kps':kappressX }
+# NEW (2026-10-28): magnetic = 1: 'eta' the magnetic diffusivity, 'bpo' cnorm h(r) of the background field (background_field.py)
+proffdir.update({ 'eta':etaX, 'bpo':bf.bpoX, 'bto':bf.btoX })   # bto: cnorm_tor k(r), toroidal B0
 # the differential-rotation codes (zf, zd, zs, tw, tp + degree) are added by burrito from diff_rot.profile_functions()
 # -------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------

@@ -56,8 +56,21 @@ The random fields have Chebyshev coefficients up to degree kmax (default N1/4) d
 exp(-k/decay) (default kmax/8), with the lowest coefficients adjusted in the least-squares
 sense so that the bc rows hold exactly (a correction at high degree leaves bc residuals of 1e-6
 because the stress-free rows carry (ln rho0)'' and k^4 factors, and that pollutes the test).
-Not handled: the inviscid formulation (ViscosD = 0, rows multiplied by rho0^2), magnetic and
-compositional blocks.
+Not handled: the inviscid formulation (ViscosD = 0, rows multiplied by rho0^2) and compositional blocks.
+
+NEW (2026-10-28): with magnetic = 1 (insulating walls or a conducting inner core), on random fields that satisfy the field's
+wall conditions (insulating walls: (l+1)f + rf' = 0 outside, lf - rf' = 0 inside, g = 0), with b = curl curl(f r) + curl(g r):
+  b time derivative   <x, b y>_r = n_l L^3 int conj(x_f) row_f(b y) dr + (g alike): Hermitian positive
+  magnetic diffusion  under the same pairing: Hermitian negative (with the insulating rows the wall terms are Hermitian and
+                      negative too; not with a conducting inner core, whose matching rows couple to fic, gic: skipped then)
+  Lorentz/induction   for B0 = 'axial' (no background current) and no-slip walls, the energy identity
+                      int rho0 u*.F_L dV = -Hendrik conj(int b*.curl(u x B0) dV), F_L the Lorentz force per unit mass:
+                      <u, Lorentz b> (the u, v pairing above) against Hendrik conj(E_b(b, induction u)), where
+                      E_b(x, X) = n_l L^3 int [ D_l conj(x_f) row_f(X) - conj(x_g) row_g(X) ] dr = int x*.(curl(u x B0)) dV for
+                      the induction rows (A sign, rows r^3 r.(.)/L^3 and r^3 r.curl(.)/L^3), D_l f = f'' + 2f'/r - L f/r^2;
+                      it holds because u = 0 on the walls, so (u x B0) and r.curl(u x B0) vanish there. Relative to the
+                      Cauchy-Schwarz-like scale |<u, Lorentz b>| + Hendrik |E_b|. With variable rho0 this tests the (ln rho0)'
+                      terms of both the induction (P columns) and the Lorentz force (u rows) against each other.
 '''
 
 import sys, os, time, argparse
@@ -96,7 +109,7 @@ if par.ViscosD == 0:
 
 divp0 = hasattr(op, 'h0_D0')   # ThermaD=0 heat rows divided by p0
 
-gb   = {'u': 4, 'v': 2, 'h': 2 if par.ThermaD > 0 else int(ut.adiab_tw)}   # Gegenbauer basis of each section (C^(1) for ThermaD = 0 with the thermal wind)
+gb   = {'u': 4, 'v': 2, 'h': 2 if par.ThermaD > 0 else int(ut.adiab_tw), 'f': 2, 'g': 2}   # Gegenbauer basis of each section (C^(1) for ThermaD = 0 with the thermal wind)
 chop = {s: (gb[s] if ricb > 0 else gb[s]//2) for s in gb}         # rows reserved for bc's
 if par.ThermaD == 0:
     chop['h'] = 0                                                 # no thermal bc rows, whatever the basis
@@ -469,6 +482,94 @@ def enforce_bc(x, Bc):
     return x
 
 
+# ------------------------------------------------------------------------- NEW (2026-10-28): magnetic blocks
+def magnetic_checks(nvec, rng, kmax, decay, note):
+    '''the magnetic tests of the docstring; note(name, value) records each relative error'''
+    if ricb == 0:
+        print('magnetic: SKIPPED (ricb = 0 is not implemented for magnetic = 1)'); return
+    lf, lg = (lt, lp) if ut.symmB0 == -1 else (lp, lt)   # degrees of f (and fic), g
+    win = np.exp(-np.arange(kmax)/decay)
+    Tder = lambda c, d: ch.chebval(xk, ch.chebder(c, d))*(2/(rcmb - ricb))**d
+    def bc_b(l, sec):
+        if sec == 'f':
+            return np.array([(l + 1)*bv.Tb[:, 0] + rcmb*bv.Tb[:, 1], l*bv.Ta[:, 0] - ricb*bv.Ta[:, 1]], dtype=complex)
+        return np.array([bv.Tb[:, 0], bv.Ta[:, 0]], dtype=complex)
+    def rnd(ls, sec):
+        out = np.zeros((len(ls), N1), dtype=complex)
+        for k, l in enumerate(ls):
+            out[k, :kmax] = win*(rng.standard_normal(kmax) + 1j*rng.standard_normal(kmax))
+            out[k] = enforce_bc(out[k], bc_b(l, sec))
+        return out
+    bf = [(rnd(lf, 'f'), rnd(lg, 'g')) for _ in range(nvec)]
+    uf = [random_fields(rng, kmax, decay, 10**6)[:2] for _ in range(nvec)]
+    def pair_r(sec, l, xv, y):   # n_l L^3 int conj(x) y dr, no weight
+        L = l*(l + 1.)
+        return 4*np.pi/(2*l + 1) * L**3 * jac * np.sum(wk * np.conj(xv) * vals_row(y, sec))
+    def bpair(x, y, opname):     # <x, Op y>_r over f and g, Op = 'b' or 'diff'
+        out = 0j
+        for sec, comp, ls, i in (('f', 'bpol', lf, 0), ('g', 'btor', lg, 1)):
+            for k, l in enumerate(ls):
+                M = op.b(l, sec, comp, 0) if opname == 'b' else op.magnetic_diffusion(l, sec, comp, 0)
+                out += pair_r(sec, l, Tmat @ x[i][k], M @ y[i][k])
+        return out
+    for a in range(nvec):
+        for c in range(a, nvec):
+            for name, sign in (('b', 1), ('diff', -1)):
+                if name == 'diff' and ut.cic:
+                    continue
+                xy, yx = bpair(bf[a], bf[c], name), bpair(bf[c], bf[a], name)
+                note('magnetic %s Hermitian' % name, abs(xy - np.conj(yx))/abs(xy))
+                if a == c:
+                    note('magnetic %s %s' % (name, 'positive' if sign > 0 else 'negative'), float(sign*xy.real <= 0))
+    print('magnetic: b block Hermitian %.2e%s' % (worst_of('magnetic b Hermitian'),
+          '' if ut.cic else ', diffusion Hermitian %.2e (negative: %s)' % (worst_of('magnetic diff Hermitian'),
+          'yes' if worst_of('magnetic diff negative') == 0 else 'NO')))
+    if par.B0 != 'axial' or par.bci != 1 or par.bco != 1:
+        print('magnetic: Lorentz/induction identity skipped (needs B0 = \'axial\' and no-slip walls)'); return
+    for a in range(nvec):
+        F, Gf = bf[a]
+        for c in range(nvec):
+            P, T = uf[c]
+            lor = 0j                                   # <u, Lorentz b> with the momentum pairing
+            for k, l in enumerate(lp):
+                y = np.zeros(N1, dtype=complex)
+                for comp, ls, B, dls in (('bpol', lf, F, (-1, 1)), ('btor', lg, Gf, (0,))):
+                    for i in dls:
+                        if l + i in ls:
+                            mtx, offd = op.lorentz(l, 'u', comp, i)
+                            y = y + mtx @ B[k + offd]
+                lor += pair('u', l, vals_unknown(P[k], 'P'), y)
+            for k, l in enumerate(lt):
+                y = np.zeros(N1, dtype=complex)
+                for comp, ls, B, dls in (('bpol', lf, F, (0,)), ('btor', lg, Gf, (-1, 1))):
+                    for i in dls:
+                        if l + i in ls:
+                            mtx, offd = op.lorentz(l, 'v', comp, i)
+                            y = y + mtx @ B[k + offd]
+                lor += pair('v', l, vals_unknown(T[k], 'T'), y)
+            Eb = 0j                                    # E_b(b, induction u)
+            for sec, ls, X, wfun in (('f', lf, F, lambda c_, L: Tder(c_, 2) + 2*Tder(c_, 1)/rk - L*Tmat @ c_/rk**2),
+                                     ('g', lg, Gf, lambda c_, L: -(Tmat @ c_))):
+                for k, l in enumerate(ls):
+                    y = np.zeros(N1, dtype=complex)
+                    for comp, lu, U, dls in (('upol', lp, P, (-1, 0, 1)), ('utor', lt, T, (-1, 0, 1))):
+                        for i in dls:
+                            if l + i in lu:
+                                mtx, offd = op.induction(l, sec, comp, i)
+                                if np.isscalar(mtx):
+                                    continue
+                                y = y + (mtx @ U[k + offd]).astype(complex)
+                    Eb += pair_r(sec, l, wfun(X[k], l*(l + 1.)), y)
+            H = par.Hendrik
+            note('magnetic Lorentz/induction identity', abs(lor - H*np.conj(Eb))/(abs(lor) + H*abs(Eb)))
+    print('magnetic: <u, Lorentz b> = Hendrik conj(int b*.curl(u x B0) dV): worst %.2e (scale |<u,Lb>| + Hendrik |E_b|)'
+          % worst_of('magnetic Lorentz/induction identity'))
+
+
+def worst_of(name):
+    return WORST.get(name, np.nan)
+
+
 def random_fields(rng, kmax, decay, lmax_test):
     '''random smooth Chebyshev coefficient fields satisfying the bc's, coefficients ~ exp(-k/decay)'''
     win = np.exp(-np.arange(kmax)/decay) if decay > 0 else np.ones(kmax)
@@ -489,6 +590,8 @@ def random_fields(rng, kmax, decay, lmax_test):
 
 
 # ---------------------------------------------------------------------------------------- driver
+WORST = {}   # the worst relative error of each test (main, magnetic_checks)
+
 def main():
     nvec  = args.nvec
     kmax  = args.kmax if args.kmax > 0 else N1//4
@@ -501,7 +604,7 @@ def main():
     X = cross_pairings(fields, fields)
     print('%d random smooth bc-satisfying fields (degree < %d, decay %g, Nq %d), pairings in %.1f s' % (nvec, kmax + 6, decay, Nq, time.time() - t0))
     print(' pair   inertia Herm.   Coriolis anti-Herm. /2sqrt(KExKEy)   viscous Herm.      KE(x)       Dkin(x)     ReC/|C|')
-    worst = {}
+    worst = WORST
     def note(name, val):
         worst[name] = max(worst.get(name, 0.), val)
     for a in range(nvec):
@@ -574,6 +677,8 @@ def main():
             print('rigid (d = %g): R = d(i m G I + C) %.2e' % (d, worst['rigid: R = d(i m G I + C)'])
                   + ('   Ht = -i m G d E %.2e   max|thermal-wind block|/max|entropy block| %.2e' % (worst['rigid: Ht = -i m G d E'],
                      worst.get('rigid: thermal-wind blocks vanish', np.nan)) if par.thermal else ''))
+    if par.magnetic:   # NEW (2026-10-28)
+        magnetic_checks(nvec, rng, kmax, decay, note)
     try:                                                         # KE against the independent physical-space code
         import utils4pp as upp
         P, T, S = fields[0]

@@ -126,6 +126,8 @@ def normalise_energy(vecs):
     '''
     In place: scales each eigenvector (one per column) so that its kinetic energy ∫ ½ ρ 𝐮⋅𝐮 dV is 1,
     with KE as spin_doctor computes it (from ricb to rcmb, Gauss-Legendre quadrature, rho0 weight).
+    NEW (2026-10-28): with magnetic = 1, KE + ME = 1 instead, ME = Hendrik ∫ ½ 𝐛⋅𝐛 dV over the shell (as conductive_IC: the
+    field of a conducting inner core is scaled along, its energy not counted).
     The other fields (thermal, ...) are scaled along. The complex phase is left as SLEPc returns it.
     Vectors with zero KE (or runs without flow) are left unchanged.
     Called on all ranks with the full vecs on each; the l-components are shared among the ranks
@@ -138,12 +140,17 @@ def normalise_energy(vecs):
     ll = ut.ell(par.m, par.lmax, par.symm)[2]
     t0 = timer()
     for i in range(vecs.shape[1]):
-        usol2 = upp.expand_reshape_sol(split_fields(vecs[:, i])['flow'], par.symm)
+        f = split_fields(vecs[:, i])
+        usol2 = upp.expand_reshape_sol(f['flow'], par.symm)
         KE = upp.kinetic_energy(usol2, par.ricb, ut.rcmb, ll[rank::size])
+        if par.magnetic:  # NEW (2026-10-28)
+            bsol2 = upp.expand_reshape_sol(f['magnetic'], ut.bsymm)
+            KE += par.Hendrik * upp.magnetic_energy(bsol2, par.ricb, ut.rcmb, ll[rank::size])
         KE = comm.allreduce(KE, op=MPI.SUM)
         if KE > 0:
             vecs[:, i] /= np.sqrt(KE)
-    PETSc.Sys.Print('Eigenvectors normalised to kinetic energy = 1 in', round(timer()-t0, 2), 'seconds')
+    PETSc.Sys.Print('Eigenvectors normalised to', 'KE + ME = 1 in' if par.magnetic else 'kinetic energy = 1 in',
+                    round(timer()-t0, 2), 'seconds')
 
 
 def split_fields(vec):
@@ -152,8 +159,10 @@ def split_fields(vec):
     in the order the unknowns are stacked in A and B (see ut.sizmat).
     Returns a dict {field name: block of rows}, only for the fields present.
     '''
-    blocks = [ ('flow',    2*ut.n),
-               ('thermal', ut.n * par.thermal) ]
+    blocks = [ ('flow',     2*ut.n),
+               ('thermal',  ut.n * par.thermal),
+               ('magnetic', 2*ut.n * par.magnetic),     # NEW (2026-10-28): f, g after s (ut.offset)
+               ('magnetic_ic', 2*ut.nic) ]              # NEW (2026-10-28): fic, gic, a conducting inner core
     fields = {}
     offset = 0
     for name, size in blocks:

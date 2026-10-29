@@ -18,6 +18,8 @@ STRUCTURES = ('8-term fit', 'old model S prototype', 'model S hydrostatic', 'Wu 
 SOLAR = STRUCTURES[:3]   # the solar structures: the rotation also uses x = r r_out (diff_rot.solar_x)
 STRATIFICATIONS = ('top hat', 'odd top hat', 'solar_rz', 'linear', 'inverse square', 'user')
 DIFFUSIVITIES = ('uniform', 'step', 'solar_rz', 'user')
+MAGNETIC_WALLS = ('insulator',)   # NEW (2026-10-28): mantle (magnetic = 1); B0 types: background_field.B0_TYPES
+INNER_CORES = ('insulator', 'conducting, Chebys')   # NEW (2026-10-28): innercore (magnetic = 1)
 
 # names that are no longer read and what to set instead (without this stop they would be ignored without notice)
 REMOVED = {
@@ -74,6 +76,8 @@ def check():
             sys.exit("solar_rz_delta_cz, solar_rz_delta_sf are part of stratification 'solar_rz'")
         if par.stratification == 'user':
             _check_expression(par.stratification_profile, par.stratification_param, 'stratification_profile')
+    if par.magnetic:
+        check_magnetic()
     if par.diffusivity not in DIFFUSIVITIES:
         sys.exit('diffusivity %r: set one of %s' % (par.diffusivity, _names(DIFFUSIVITIES)))
     if par.diffusivity == 'user':
@@ -83,9 +87,66 @@ def check():
             _check_expression(par.diffusivity_profiles[k], par.diffusivity_param, "diffusivity_profiles['%s']" % k)
 
 
+def check_magnetic():
+    '''
+    NEW (2026-10-28): stops on magnetic settings that are not implemented (yet).
+    '''
+    import background_field as bf
+    if par.B0 is None and par.B0_tor is None:
+        sys.exit('magnetic = 1 needs a background field: B0 (poloidal) and/or B0_tor (toroidal)')
+    if par.B0 is not None and par.B0 not in bf.B0_TYPES:
+        sys.exit('B0 %r: set None or one of %s' % (par.B0, _names(bf.B0_TYPES)))
+    if par.B0_tor is not None:   # NEW (2026-10-28): toroidal B0
+        if par.B0_tor not in bf.B0_TOR_TYPES:
+            sys.exit('B0_tor %r: set None or one of %s' % (par.B0_tor, _names(bf.B0_TOR_TYPES)))
+        if par.B0_tor_l not in (1, 2):
+            sys.exit('B0_tor_l = %r: only 1 and 2 are implemented' % par.B0_tor_l)
+        if par.B0_tor == 'user':
+            if not isinstance(par.B0_tor_profile, str) or not par.B0_tor_profile or '#' in par.B0_tor_profile:
+                sys.exit("B0_tor 'user' needs B0_tor_profile, a numpy expression of r and p (without '#'), got %r" % (par.B0_tor_profile,))
+            try:
+                bf.k(np.linspace(max(par.ricb, 0.1), 1, 4), 0)
+            except Exception as err:
+                sys.exit('B0_tor_profile = %r: %s: %s' % (par.B0_tor_profile, type(err).__name__, err))
+        if not (isinstance(par.cnorm_tor, (int, float)) or par.cnorm_tor in ('mag_energy', 'Schmitt2012')):
+            sys.exit("cnorm_tor %r: a number, 'mag_energy' or 'Schmitt2012'" % (par.cnorm_tor,))
+        if par.B0 is not None and bf.symm_pol != bf.symm_tor:
+            sys.exit('B0 %r and B0_tor %r have opposite equatorial symmetries: they cannot be combined in one eigenproblem'
+                     % (par.B0, par.B0_tor))
+    if par.B0 == 'FDM' and par.B0_l not in (1, 2):   # FIX (2026-10-28): the quadrupole couplings are implemented (operators.lorentz_pol2)
+        sys.exit("B0 'FDM' with B0_l = %r: only B0_l = 1 or 2 is implemented" % par.B0_l)
+    if not (isinstance(par.cnorm, (int, float)) or par.cnorm in ('rms_cmb', 'mag_energy', 'Schmitt2012')):
+        sys.exit("cnorm %r: a number, 'rms_cmb', 'mag_energy' or 'Schmitt2012'" % (par.cnorm,))
+    if par.mantle not in MAGNETIC_WALLS:
+        sys.exit('mantle %r: set one of %s' % (par.mantle, _names(MAGNETIC_WALLS)))
+    if par.innercore not in INNER_CORES:
+        sys.exit('innercore %r: set one of %s' % (par.innercore, _names(INNER_CORES)))
+    if par.innercore == 'conducting, Chebys':
+        if par.bci != 1:
+            sys.exit("innercore 'conducting, Chebys' needs a no-slip inner boundary (bci = 1): the ICB matching assumes u = 0 there")
+        if par.N_cic % 2 or par.N_cic < 4:
+            sys.exit('N_cic must be even and >= 4, got %r' % par.N_cic)
+    if par.ricb == 0:   # NEW (2026-10-28): the full sphere
+        if par.innercore != 'insulator':
+            sys.exit("innercore %r needs ricb > 0" % (par.innercore,))
+        if par.B0_tor is not None and par.B0_tor_l == 2 and par.B0_tor == 'Malkus':
+            sys.exit("B0_tor 'Malkus' with B0_tor_l = 2 is not regular at r = 0 (k = r would need to go as r²): use 'wall' or 'user' with ricb = 0")
+    if par.ViscosD == 0 and par.ricb > 0:   # NEW (2026-10-28): the inviscid path (bases, one bc row) exists for the full sphere only
+        sys.exit('magnetic = 1 with ViscosD = 0 needs ricb = 0 (the inviscid formulation is for the full sphere only)')
+    if par.forcing != 0:
+        sys.exit('magnetic = 1 is implemented for eigenvalue problems only (forcing = 0)')
+    if par.diff_rot:
+        sys.exit('magnetic = 1 with diff_rot = 1 is not implemented (the induction by the background flow is missing)')
+    if par.Hendrik <= 0 or par.MagnetD <= 0:
+        sys.exit('magnetic = 1 needs Le > 0 and Em > 0 (Hendrik = %r, MagnetD = %r: call set_scales() after setting them)'
+                 % (par.Hendrik, par.MagnetD))
+
+
 def description():
     '''the 'user' expressions as text for params.dat (a '#' comment), empty if there are none'''
     out = []
+    if par.magnetic and par.B0_tor == 'user':   # NEW (2026-10-28)
+        out.append('B0_tor: k = %s ; p = %r' % (par.B0_tor_profile, par.B0_tor_param))
     if par.thermal and par.stratification == 'user':
         out.append('stratification: %s ; p = %r' % (par.stratification_profile, par.stratification_param))
     if par.diffusivity == 'user':
@@ -147,7 +208,10 @@ def rho_pow(prf, r, p):
     return np.exp( -p*( prf.logrho(r, 0) - prf.logrho(par.aux3, 0) ) )
 
 def diffusivity(prf, r, which):
-    '''ν/ViscosD (which = 'nu') or κ/ThermaD ('kappa') at r, even in r, times (ρ0(aux3)/ρ0)**visc_pow (therm_pow)'''
+    '''ν/ViscosD (which = 'nu') or κ/ThermaD ('kappa') at r, even in r, times (ρ0(aux3)/ρ0)**visc_pow (therm_pow);
+    η/MagnetD ('eta') is 1 for now, whatever the diffusivity type'''
+    if which == 'eta':  # NEW (2026-10-28): the hook for a magnetic diffusivity profile (the operators have η and η')
+        return np.ones_like(r)
     c, pw = (par.visc0, par.visc_pow) if which == 'nu' else (par.therm0, par.therm_pow)
     t = par.diffusivity
     if t == 'uniform':

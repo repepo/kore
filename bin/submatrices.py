@@ -50,6 +50,9 @@ def main(ncpus):
     vT = -vP
 
     vS = vP  # this is the vector parity of the entropy perturbation
+    # NEW (2026-10-28): the magnetic field has the opposite parities when B0 is equatorially antisymmetric
+    vF = ut.symmB0*vP
+    vG = -vF
 
     tol = 1e-9
     
@@ -84,12 +87,15 @@ def main(ncpus):
     G     = [ G0, G1, G2, G3, G4 ]  # fixed this for the inviscid and no thermal diffusion cases
 
     # Sets the Gegenbauer basis order for each section
-    gebasis = [  4,   2,   2  ]
-    section = [ 'u', 'v', 'h' ]
+    gebasis = [  4,   2,   2,   2,   2  ]  # NEW (2026-10-28): f, g (magnetic field) in C^(2), 2 bc rows each, as conductive_IC
+    section = [ 'u', 'v', 'h', 'f', 'g' ]
 
     if inviscid:
         gebasis[0] = 2  # only up to second derivatives in section u
         gebasis[1] = 1  # up to first derivatives in section v
+        if par.magnetic:   # NEW (2026-10-28): the Lorentz force has third derivatives of f in section u and second ones of g in
+            gebasis[0] = 3  # section v; section v still has no bc rows (chop = 0 below), section u one (P = 0)
+            gebasis[1] = 2
 
     if par.ThermaD == 0:
         gebasis[2] = 1 if ut.adiab_tw else 0  # No thermal diffusion, C^(0) basis is enough (C^(1) for the thermal wind's P'), no need for thermal bc's
@@ -188,6 +194,74 @@ def main(ncpus):
             arg2 += [ vP ]*4
             labl += [ 'h2kps0_D0', 'h1kps0_D1', 'h0kps1_D1', 'h0kps0_D2' ]
 
+    if par.magnetic == 1:
+        # -------------------------------------------------------------------------------------------------------------------------------------------
+        # NEW (2026-10-28): magnetic field, B0 of degree 1 ------------------------------------------------- Lorentz force (u, v), induction (f, g)
+        # -------------------------------------------------------------------------------------------------------------------------------------------
+        # 'bpo' with order k is cnorm h^(k) (background_field.py). 'ohr1' lowers the ρ power by one: the Lorentz force per
+        # unit mass has a 1/ρ, so its rows are r^p (not r^p ρ) times the force. The conductive_IC labels are given in the
+        # comments ('u101': r¹ h D1 in its r⁴-weighted u rows, here u(5-1) since rpower_u = 5; v: 3 - p; f, g: 2 - p).
+
+        # Lorentz force, section u: bpol columns ...
+        arg2 += [ vF ]*9
+        labl += [ 'u4bpo0ohr1_D1', 'u3bpo1ohr1_D1', 'u3bpo0ohr1_D2', 'u2bpo1ohr1_D2', 'u5bpo0ohr1_D0',   # u101 u211 u202 u312 u000
+                  'u4bpo1ohr1_D0', 'u3bpo2ohr1_D0', 'u2bpo3ohr1_D0', 'u2bpo0ohr1_D3' ]                   # u110 u220 u330 u303
+        # ... and btor columns
+        arg2 += [ vG ]*5
+        labl += [ 'u4bpo0ohr1_D0', 'u3bpo1ohr1_D0', 'u3bpo0ohr1_D1', 'u2bpo1ohr1_D1', 'u2bpo0ohr1_D2' ]  # u100 u210 u201 u311 u302
+
+        # NEW (2026-10-28): variable ρ0, the λ1 (∇₁⋅𝐆_H) term of the u rows (labels with lho1 vanish for structure 'Boussinesq')
+        arg2 += [ vF ]*5
+        labl += [ 'u2bpo0lho1ohr1_D2', 'u3bpo0lho1ohr1_D1', 'u4bpo0lho1ohr1_D0', 'u2bpo2lho1ohr1_D0', 'u3bpo1lho1ohr1_D0' ]
+        arg2 += [ vG ]*3
+        labl += [ 'u3bpo0lho1ohr1_D0', 'u2bpo1lho1ohr1_D0', 'u2bpo0lho1ohr1_D1' ]
+
+        # Lorentz force, section v: bpol, btor columns
+        arg2 += [ vF ]*4
+        labl += [ 'v3bpo0ohr1_D1', 'v3bpo1ohr1_D0', 'v2bpo2ohr1_D0', 'v2bpo0ohr1_D2' ]  # v001 v010 v120 v102
+        arg2 += [ vG ]*3
+        labl += [ 'v3bpo0ohr1_D0', 'v2bpo1ohr1_D0', 'v2bpo0ohr1_D1' ]                   # v000 v110 v101
+        if ut.bf.B0_l == 2:
+            # NEW (2026-10-28): poloidal B0 of degree 2 (operators.lorentz_pol2, induction_pol2), the labels it adds to those above
+            arg2 += [ vF, vG ]
+            labl += [ 'u2bpo2ohr1_D1', 'u2bpo2ohr1_D0' ]
+
+        # induction equation, section f (r² r̂⋅): b, induction from P and T, magnetic diffusion
+        arg2 += [ vF ]
+        labl += [ 'f0_D0' ]                                             # f20
+        arg2 += [ vP ]*3 + [ vT ]
+        labl += [ 'f2bpo0_D0', 'f1bpo1_D0', 'f1bpo0_D1', 'f1bpo0_D0' ]  # f000 f110 f101 | f100
+        arg2 += [ vP ]
+        labl += [ 'f1bpo0lho1_D0' ]                                     # NEW (2026-10-28): variable ρ0
+        arg2 += [ vF ]*3
+        labl += [ 'f2eta0_D0', 'f1eta0_D1', 'f0eta0_D2' ]               # feta000 feta101 feta202
+
+        # induction equation, section g (r² r̂⋅∇×): b, induction from P and T, magnetic diffusion
+        arg2 += [ vG ]
+        labl += [ 'g0_D0' ]                                             # g20
+        arg2 += [ vP ]*6 + [ vT ]*3
+        labl += [ 'g2bpo0_D1', 'g1bpo1_D1', 'g3bpo0_D0', 'g2bpo1_D0', 'g1bpo2_D0', 'g1bpo0_D2',   # g001 g111 g600 g010 g120 g102
+                  'g2bpo0_D0', 'g1bpo0_D1', 'g1bpo1_D0' ]                                       # g000 g101 g110
+        arg2 += [ vP ]*4
+        labl += [ 'g1bpo0lho1_D1', 'g1bpo0lho2_D0', 'g1bpo1lho1_D0', 'g2bpo0lho1_D0' ]   # NEW (2026-10-28): variable ρ0
+        arg2 += [ vG ]*5
+        labl += [ 'g2eta0_D0', 'g1eta0_D1', 'g0eta0_D2', 'g1eta1_D0', 'g0eta1_D1' ]  # geta000 geta101 geta202 geta110 geta211
+
+        if par.B0_tor is not None:
+            # NEW (2026-10-28): toroidal B0 of degree 1, 'bto' = cnorm_tor k^(j) (operators.lorentz_tor, induction_tor; derived in
+            # tests/magnetic/derive.py). Without a poloidal B0 the labels above are zero matrices (cnorm = 0).
+            arg2 += [ vP ]*4 + [ vT ]
+            labl += [ 'f1bto0_D0', 'g2bto0_D0', 'g1bto0lho1_D0', 'g1bto1_D0', 'g1bto0_D0' ]
+            arg2 += [ vP ]
+            labl += [ 'g1bto0_D1' ]   # degree 2 only
+            arg2 += [ vF ]*9
+            labl += [ 'u4bto0ohr1_D0', 'u3bto0lho1ohr1_D0', 'u3bto1ohr1_D0', 'u2bto1lho1ohr1_D0', 'u2bto2ohr1_D0',
+                      'u3bto0ohr1_D1', 'u2bto0lho1ohr1_D1', 'u2bto1ohr1_D1', 'u2bto0ohr1_D2' ]
+            arg2 += [ vG ]*4
+            labl += [ 'u3bto0ohr1_D0', 'u2bto0lho1ohr1_D0', 'u2bto1ohr1_D0', 'u2bto0ohr1_D1' ]
+            arg2 += [ vF ]*3 + [ vG ]
+            labl += [ 'v3bto0ohr1_D0', 'v2bto1ohr1_D0', 'v2bto0ohr1_D1', 'v2bto0ohr1_D0' ]
+
     if par.diff_rot == 1:
         # Differential rotation (diff_rot.py): the radial operators of the force of the background flow (sections u, v) and of
         # the heat-equation terms (section h, with thermal = 1), each with the vector parity of its column (vP for P and s, vT for T)
@@ -218,7 +292,7 @@ def main(ncpus):
             pkey  += [ key1 ]
             parg1 += [ dx ]             # dx is derivative order
             parg2 += [ arg2[k] ]        # vector_parity
-            adj = int(func1 in ut.odd_profiles)   # odd profiles (g, p dS/dr, ..., the σn')
+            adj = int(func1 in ut.odd_profiles) + int(func2 in ut.odd_profiles)   # odd profiles (g, p dS/dr, ..., the σn'); FIX (2026-10-28): both slots
             parg3 += [ 1-(( rpower + (dorder1 or 0) + (dorder2 or 0) + adj )%2)*2 ]
 
     # For each of the unique operator id's we generate in parallel the Chebyshev
@@ -279,7 +353,7 @@ def main(ncpus):
 
         if par.ricb == 0 :  # --------------------------------------------------------- If no solid inner core then remove unneeded rows and cols
 
-            adj = int(func1 in ut.odd_profiles)   # odd profiles   # adjusts operator parity for these profiles
+            adj = int(func1 in ut.odd_profiles) + int(func2 in ut.odd_profiles)   # odd profiles, both slots (FIX 2026-10-28)
             operator_parity = 1-(( rpower + (dorder1 or 0) + (dorder2 or 0) + dx + adj )%2)*2  # we use 'or 0' to give 0 when dorder is None
             #print(labl1, operator_parity, adj, rpower, vector_parity)
             overall_parity  = vector_parity * operator_parity
@@ -291,6 +365,8 @@ def main(ncpus):
             chop = gbx
 
         if secx == 'h' and par.ThermaD == 0:  # no thermal bc rows without diffusion, whatever the basis
+            chop = 0
+        if secx == 'v' and inviscid:  # NEW (2026-10-28): no bc rows in section v without viscosity, whatever the basis (C^(2) when magnetic)
             chop = 0
         # ---------------------------------------------------------------------------------------------------------------------------------------
 
@@ -307,6 +383,31 @@ def main(ncpus):
         # ---------------------------------------------------------------------------------------------------------------------------------------
 
 
+
+    if ut.cic:
+        # -------------------------------------------------------------------------------------------------------------------------------------------
+        # NEW (2026-10-28): the field inside a conducting inner core (sections fic, gic), ported from conductive_IC's submatrices.py -----------------
+        # -------------------------------------------------------------------------------------------------------------------------------------------
+        # Chebyshev series on [-ricb, ricb], one parity per section (vF for f, vG for g), rows r² r̂⋅ (fic) and r² r̂⋅∇× (gic) of
+        # ∂b/∂t = ∇²b (times the diffusivity) in the C^(2) basis; one bc row per block after the parity reduction. These are
+        # not labels (decode_label and burrito are for the fluid shell): the names below are loaded by operators.py as any .mtx.
+        Nic = par.N_cic
+        R1, R2 = 0, par.ricb
+        r1ic = ut.chebco_f( lambda r: r,    Nic, R1, R2, 1e-15 )  # Chebyshev coefficients of r and r² on [-ricb, ricb]
+        r2ic = ut.chebco_f( lambda r: r**2, Nic, R1, R2, 1e-15 )
+        S0ic = ut.Slam(0, Nic)
+        S1ic = ut.Slam(1, Nic)
+        D1ic = ut.Dlam(1, Nic, R1, R2)
+        D2ic = ut.Dlam(2, Nic, R1, R2)
+        M20 = ut.Mlam(               r2ic, 0, 0)  # ×r² in the C^(0) basis
+        M11 = ut.Mlam(        S0ic * r1ic, 1, 0)  # ×r  in the C^(1) basis
+        M22 = ut.Mlam( S1ic * S0ic * r2ic, 2, 0)  # ×r² in the C^(2) basis
+        ops = { 'r0_D0': S1ic * S0ic, 'r2_D0': S1ic * S0ic * M20, 'r1_D1': S1ic * M11 * D1ic, 'r2_D2': M22 * D2ic }
+        zic2 = ss.csr_matrix((2, Nic))
+        for name, mat in ops.items():
+            mat = ss.vstack( [ zic2, mat[:-2,:] ], format='csr' )  # room for the bc rows at the top
+            sio.mmwrite( name + 'f_ic.mtx', ut.remroco( mat, vF, vF ) )  # operator parity 1: one bc row is left
+            sio.mmwrite( name + 'g_ic.mtx', ut.remroco( mat, vG, vG ) )
 
     toc = timer()
     print('Generated and written', np.size(labl), 'operator submatrices in', toc-tic, 'seconds')
