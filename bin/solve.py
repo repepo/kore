@@ -323,7 +323,7 @@ def main():
 
         # -------------------------------------------------------------- setup eigenvalue solver
         E = SLEPc.EPS()
-        E.create(SLEPc.COMM_WORLD)
+        E.create(PETSc.COMM_WORLD)
         E.setOperators(MA,MB)
         E.setProblemType(SLEPc.EPS.ProblemType.GNHEP)
         #E.setDimensions(nev,ncv)
