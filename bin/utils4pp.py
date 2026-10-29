@@ -1263,9 +1263,9 @@ def em_budget(bsol2, bic=None):
     OmgTau**2*Le2 to compare with the kinetic energy):
       Ohm_f  : int |curl b|^2 over the fluid (its Ohmic loss is eta times this, eta = 1 in the fluid)
       ME_ic  : (1/2) int |b|^2 inside the inner core: the field of a conducting inner core ('conducting, Chebys',
-               bic = its part of the solution vector), or the potential field below an insulating inner core or a
-               thin wall ('insulator', 'TWA')
-      Ohm_ic : eta_i * int |curl b|^2 over a conducting inner core, eta_i = 1/(mu_i2o*sigma_i2o)
+               bic = its part of the solution vector; divided by mu_i2o, FIX 2026-10-29), or the potential field
+               below an insulating inner core or a thin wall ('insulator', 'TWA')
+      Ohm_ic : eta_i * int |curl b|^2/mu_i2o over a conducting inner core, eta_i = 1/(mu_i2o*sigma_i2o)
       E_w    : magnetic energy stored in thin walls (innercore and/or mantle = 'TWA'): (c*r/2) int |b_t|^2 dS over
                the poloidal field's b_t, the energy that goes with the c term of the wall condition (the toroidal
                condition has no c term, so the model stores no toroidal energy in the wall), plus (FIX 2026-10-21)
@@ -1353,8 +1353,8 @@ def em_budget(bsol2, bic=None):
 
         elif par.innercore == 'conducting, Chebys' and bic is not None:
             # the inner-core field: Chebyshev series in x = r/ricb on [-1, 1], one parity per l
-            Nic = ut.Nic; nb = int((par.lmax_cic - par.m + 1)/2)
-            lpc, ltc = ut.ell(par.m, par.lmax_cic, ut.bsymm)[:2]
+            Nic = ut.Nic; nb = int((par.lmax - par.m + 1)/2)   # FIX (2026-10-29): lmax_cic removed, the inner core uses lmax
+            lpc, ltc = ut.ell(par.m, par.lmax, ut.bsymm)[:2]
             if ut.symmB0 == -1: ixf, ixg = (par.m + ut.s)%2, (par.m + 1 - ut.s)%2
             else:               ixf, ixg = (par.m + 1 - ut.s)%2, (par.m + ut.s)%2
             xg, wg = np.polynomial.legendre.leggauss(max(2*par.N_cic, 64))
@@ -1376,6 +1376,9 @@ def em_budget(bsol2, bic=None):
                 g, g1 = icfun(bic[nb*Nic + k*Nic: nb*Nic + (k+1)*Nic], ixg, 1)
                 ME_ic  += np.sum( wi*a0*ri**2*L*np.abs(g)**2 )
                 Ohm_ic += eta_i*np.sum( wi*2*a0*L*( L*np.abs(g)**2 + np.abs(ri*g1 + g)**2 ) )
+            # FIX (2026-10-29): with mu_i2o != 1 the inner core stores (1/2) int b.H = (1/2) int |b|^2/mu_i2o and loses
+            # int E.J = eta_i int |curl b|^2/mu_i2o (H = b/mu_i2o, J = curl H); without the 1/mu_i2o resid E was 1e-2 at mu_i2o = 2
+            ME_ic, Ohm_ic = ME_ic/par.mu_i2o, Ohm_ic/par.mu_i2o
         else:
             ME_ic = np.nan  # 'conducting, Bessel' (forced problems): not coded
 

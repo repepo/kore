@@ -102,7 +102,7 @@ Each run appends one row per solution to the files below, in the same order in e
 
 **`magnetic.dat`** (9 columns): magnetic energy, magnetic diffusion, induction work, `resid𝐛`, electromagnetic torque on the mantle (real, imaginary), electromagnetic torque on the inner core (real, imaginary), rms of $b_r$ at the CMB.
 
-**`budget.dat`** (8 columns, in kinetic-energy units): magnetic energy inside the inner core (its field if conducting, the potential field below an insulating inner core or thin wall), magnetic energy stored in thin walls, energy of the potential field outside the CMB, Ohmic loss in the fluid, in a conducting inner core and in thin walls, Lorentz work plus induction work (the work of the background currents), `resid𝐄`.
+**`budget.dat`** (8 columns, in kinetic-energy units): magnetic energy inside the inner core (its field if conducting, $\frac{1}{2}\int|\mathbf{b}|^2/\mu_{i2o}\,dV$ with $\mu_{i2o}$ = `mu_i2o`; the potential field below an insulating inner core or thin wall), magnetic energy stored in thin walls, energy of the potential field outside the CMB, Ohmic loss in the fluid, in a conducting inner core ($\eta_i\int|\nabla\times\mathbf{b}|^2/\mu_{i2o}\,dV$, $\eta_i = 1/(\mu_{i2o}\sigma_{i2o})$) and in thin walls, Lorentz work plus induction work (the work of the background currents), `resid𝐄`.
 
 **`thermal.dat`** (4 columns): thermal "energy", thermal advection, thermal diffusion, `residθ`.
 

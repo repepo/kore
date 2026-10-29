@@ -114,7 +114,7 @@ if field == 'b' and ut.icflag:  # loads the solution in the inner core.
     Plj0_ic = a_ic[offset    :offset+  nic] + 1j*b_ic[offset    :offset+  nic]   # N elements on each l block
     Tlj0_ic = a_ic[offset+nic:offset+2*nic] + 1j*b_ic[offset+nic:offset+2*nic]   # N elements on each l block
 
-    lm1_ic  = par.lmax_cic-m+1    
+    lm1_ic  = par.lmax-m+1  # FIX (2026-10-29): lmax_cic removed, the inner core uses lmax
     Plj0_ic  = np.reshape(Plj0_ic,(int(lm1_ic/2),ut.Nic))
     Tlj0_ic  = np.reshape(Tlj0_ic,(int(lm1_ic/2),ut.Nic))
 
@@ -133,11 +133,11 @@ if field == 'b' and ut.icflag:  # loads the solution in the inner core.
     if m>0:
         idp_ic = np.arange( 1-s, lm1_ic, 2)
         idt_ic = np.arange( s  , lm1_ic, 2)
-        ll_ic  = np.arange( m, par.lmax_cic+1 )
+        ll_ic  = np.arange( m, par.lmax+1 )
     elif m==0:
         idp_ic = np.arange( s  , lm1_ic, 2)
         idt_ic = np.arange( 1-s, lm1_ic, 2)
-        ll_ic  = np.arange( m+1, par.lmax_cic+2 )
+        ll_ic  = np.arange( m+1, par.lmax+2 )
         
     # init arrays
     Plr_ic  = np.zeros( (lm1_ic, int(nr_ic/2)), dtype=complex )

@@ -11,7 +11,8 @@ class TestTorsionalS2(KoreTest):
     precision = 1e-7  # tolerance on |lambda - reference|/|reference| (run-to-run differences are ~1e-8)
 
     # Luo & Jackson (2022), table 1, L = 350: the first two torsional modes of S2, and how close kore gets
-    # at the resolution of this test (N = 128, lmax = 127; it is 7.3e-7 and 4.7e-6 respectively)
+    # at the resolution of this test (N = 128, lmax = 127; it is 8.4e-7 and 5.2e-6 respectively)
+    # FIX (2026-10-29): reference.eig recomputed after the D3/D2 Lorentz terms were fixed in submatrices.py (it moved by 2e-7, 8e-7)
     luo_jackson = [ (-0.0065952461 + 1.0335959942j, 2e-6),    # mode 1
                     (-0.0141833345 + 1.9095123626j, 1e-5) ]   # mode 2
 

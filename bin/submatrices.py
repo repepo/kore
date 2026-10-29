@@ -16,6 +16,7 @@ t_start = timer()  # wall clock from here, before scipy/petsc/utils are imported
 import multiprocessing as mp
 import scipy.sparse as ss
 import scipy.io as sio
+import scipy.linalg as sla
 import numpy as np
 import warnings
 import sys
@@ -135,6 +136,12 @@ def main(ncpus):
     if inviscid:
         gebasis[0] = 2  # only up to second derivatives in section u
         gebasis[1] = 1  # up to first derivatives in section v
+        # NEW (2026-10-29): inviscid_basis = 'high' puts sections u, v one order higher, so that the f''' (u) and f'' (v) of the
+        # Lorentz force need no conversion back (banded A, slower convergence in N); 'low' converts them back below (dx > gbx)
+        assert par.inviscid_basis in ['low', 'high'], "inviscid_basis must be 'low' or 'high'"
+        if par.magnetic == 1 and par.inviscid_basis == 'high':
+            gebasis[0] = 3
+            gebasis[1] = 2
 
     # Used when making room for bc's
     N1 = int((1 + np.sign(par.ricb)) * int(par.N/2))
@@ -404,7 +411,16 @@ def main(ncpus):
             matrix = G[gbx-1][gbx-dx]
         else :
             idx = [ j for j,x in enumerate(plabl) if ((x == lablx) and (parg2[j] == arg2[k])) ]  # find matrix index in plabl
-            matrix = G[gbx-1][gbx-dx] * matlist[idx[0]] * D[dx]
+            if dx > gbx:
+                # FIX (2026-10-29): inviscid full sphere with inviscid_basis = 'low', D3 Lorentz term in section u (C^(2)) and
+                # D2 in section v (C^(1)): G[gbx-1][gbx-dx] indexed from the end of the list (S10, S0), a wrong basis
+                # (eigenvalues off by 1e-7..1e-6 at any N). Back from C^(dx) to C^(gbx) with the inverse of the conversion
+                # G[dx-1][dx-gbx] (upper triangular, so its inverse is dense: these blocks of A are dense). Viscous terms
+                # of an inviscid run (unused) also come here.
+                Sinv = sla.solve_triangular( G[dx-1][dx-gbx].toarray(), np.identity(par.N) )
+                matrix = ss.csr_matrix(Sinv) * matlist[idx[0]] * D[dx]
+            else:
+                matrix = G[gbx-1][gbx-dx] * matlist[idx[0]] * D[dx]
 
         # If no inner core then remove unneeded rows and cols
         if par.ricb == 0 :
@@ -435,6 +451,8 @@ def main(ncpus):
             chop = int(gbx/2)
         else :
             chop = gbx
+        if secx == 'v' and inviscid:  # NEW (2026-10-29): no bc rows in section v without viscosity, whatever its basis (C^(2) with inviscid_basis = 'high')
+            chop = 0
  
 
         if chop > 0:

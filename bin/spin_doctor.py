@@ -280,7 +280,9 @@ def main(ncpus):
     if do_vtorq_ic:
         gvisc_icb = ut.gamma_visc_icb(par.ricb)[0,:]    # viscous torque on the IC
 
-    do_mtorq    = par.magnetic and (par.mantle == 'TWA') and ((par.m==0) and (par.symm==1)) or ((par.m==1) and (par.symm==-1))
+    # FIX (2026-10-29): parentheses around the (m, symm) cases; without them every m=1, symm=-1 run had do_mtorq True
+    # (hydro or insulating mantle included) and crashed in gamma_magnetic
+    do_mtorq    = par.magnetic and (par.mantle == 'TWA') and (((par.m==0) and (par.symm==1)) or ((par.m==1) and (par.symm==-1)))
     do_mtorq_ic = par.magnetic and (par.innercore in ['conducting, Chebys', 'TWA']) and ((par.m==0) and (par.symm==1))
     if do_mtorq:
         gmag    = ut.gamma_magnetic()[0,:]     # row vector, like gvisc (avoids a numpy deprecation when storing the torque)

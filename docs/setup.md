@@ -145,7 +145,7 @@ These mirror the thermal ones: `Schmidt` (Schmidt number $Sc = \nu/D$, default 1
 | `g` | 1 | Approximate ratio $l_{max}/N$. |
 | `lmax` | from `N`, `g`, `ncpus`, `m` | Largest spherical-harmonic degree, $2\,n_{cpu} \lfloor gN/2n_{cpu} \rfloor + m - 1$. Set by hand, it must be even if $m$ is odd, and $l_{max} - m + 1$ must be divisible by $2\,n_{cpu}$. |
 | `N_cic` | 64 | Chebyshev polynomials for the field inside a conducting inner core. |
-| `lmax_cic` | `lmax` | Largest degree inside a conducting inner core. |
+| `inviscid_basis` | `'low'` | Basis of the flow equations in an inviscid full sphere with a magnetic field: `'low'` (more accurate at a given `N`, denser matrix) or `'high'` (banded, converges more slowly in `N`). See [Solver settings](solver.md#inviscid-runs-with-a-magnetic-field). |
 
 How to choose `N` and `lmax`, and how to check that they are large enough, is explained in [Solver settings](solver.md#resolution) and [Output and postprocessing](output.md#checking-the-results).
 

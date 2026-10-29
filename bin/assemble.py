@@ -84,14 +84,15 @@ def main():
 
     if ut.cic:
 
-        ll_mag_cic = ut.ell( par.m, par.lmax_cic, par.symm*ut.symmB0)[:2]  # for the mag field inside the ic
+        # FIX (2026-10-29): lmax_cic removed (lmax_cic != lmax did not work), the field inside the ic uses lmax
+        ll_mag_cic = ut.ell( par.m, par.lmax, par.symm*ut.symmB0)[:2]  # for the mag field inside the ic
 
         if rank == 0:
             alltop_cic, allbot_cic = ll_mag_cic
         else:
             alltop_cic, allbot_cic = None, None
 
-        nb_cic = int((par.lmax_cic - par.m + 1)/2)
+        nb_cic = int((par.lmax - par.m + 1)/2)
         bpp_cic = int(nb_cic/sizas)
 
         loc_top_cic = np.zeros(bpp_cic, dtype=int)

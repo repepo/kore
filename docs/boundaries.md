@@ -16,7 +16,7 @@ with poloidal scalar $f$ and toroidal scalar $g$, and $F = r f$, $G = r g$. Prim
 | Boundary | Setting | What it models | Parameters |
 |---|---|---|---|
 | ICB | `innercore = 'insulator'` | Electrically insulating inner core (default). | none |
-| ICB | `innercore = 'conducting, Chebys'` | Solid inner core with its own conductivity and permeability; the induction equation is solved inside it. For eigenvalue problems. | `sigma_i2o`, `mu_i2o`, `N_cic`, `lmax_cic` |
+| ICB | `innercore = 'conducting, Chebys'` | Solid inner core with its own conductivity and permeability; the induction equation is solved inside it. For eigenvalue problems. | `sigma_i2o`, `mu_i2o`, `N_cic` |
 | ICB | `innercore = 'conducting, Bessel'` | The same, with an analytical solution inside the inner core. For forced problems only. | `sigma_i2o`, `mu_i2o` |
 | ICB | `innercore = 'TWA'` | Thin conducting layer on top of an insulating inner core. | `c_icb`, `c1_icb`, `muw_icb` |
 | CMB | `mantle = 'insulator'` | Electrically insulating mantle (default). | none |
@@ -47,7 +47,7 @@ No electric current crosses an insulating boundary, so there is no electromagnet
 
 ## Conducting inner core
 
-With `innercore = 'conducting, Chebys'` Kore adds the magnetic field inside the inner core, $\mathbf{b}_i$, to the unknowns, expanded in `N_cic` Chebyshev polynomials and spherical harmonics up to `lmax_cic`. The inner core is solid and at rest in the rotating frame, so its field only diffuses:
+With `innercore = 'conducting, Chebys'` Kore adds the magnetic field inside the inner core, $\mathbf{b}_i$, to the unknowns, expanded in `N_cic` Chebyshev polynomials and spherical harmonics up to `lmax`, as in the fluid. The inner core is solid and at rest in the rotating frame, so its field only diffuses:
 
 $$
 \partial_t \mathbf{b}_i = (\Omega\tau)\, E_\eta\, \eta_{i}\, \nabla^2 \mathbf{b}_i, \qquad \eta_i = \frac{1}{\mu_{i2o}\,\sigma_{i2o}},

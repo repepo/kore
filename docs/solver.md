@@ -46,4 +46,22 @@ Memory is usually the limit. It grows roughly as $N^{2.2}$ and is larger at lowe
 
 A conducting inner core has its own resolution, `N_cic` (see [Inner core and mantle](boundaries.md#conducting-inner-core)).
 
+### Inviscid runs with a magnetic field
+
+In an inviscid full sphere (`Ek = 0`, `ricb = 0`) the Lorentz force has the third radial derivative of $f$ in the equation for $P$ and the second in the equation for $T$. `inviscid_basis` chooses how they are handled (see [Numerical method](method.md#sparse-spectral-method)):
+
+- `'low'` (default): the equations for $P$ and $T$ stay in $C^{(2)}$ and $C^{(1)}$, and those two terms are converted back exactly. Their blocks of $A$ are dense.
+- `'high'`: the equations are in $C^{(3)}$ and $C^{(2)}$, and $A$ stays banded. When the magnetic boundary layer at the wall is not resolved, the eigenvalues converge only as $N^{-3}$.
+
+For `tests/torsional_s2` (Luo & Jackson 2022, Lu = 2·10⁴, `lmax = N - 1`, 8 processes), the relative error of mode 2 against Luo & Jackson's value, the peak memory and the time of one solve are:
+
+| `N` | `'low'` | `'high'` |
+|---|---|---|
+| 256 | 7·10⁻⁷, 3.4 GB, 7 s | 1.7·10⁻⁵, 2.7 GB, 5 s |
+| 512 | 5·10⁻⁸, 16 GB, 60 s | 1.5·10⁻⁶, 8 GB, 21 s |
+| 768 | 9·10⁻⁹, 44 GB, 181 s | 3·10⁻⁷, 20 GB, 61 s |
+| 1024 | 1.5·10⁻⁸, 95 GB, 490 s | 1·10⁻⁷, 37 GB, 120 s |
+
+At the same `N`, `'low'` is 13 to 35 times more accurate (mode 1 and mode 2), so it reaches a given accuracy at a lower `N` and a lower cost. Its overhead grows with `N`, though: at `N` = 1024 it needs 2.6 times the memory and 4 times the time of `'high'`. Use `'high'` when a high `N` is needed anyway, for example to resolve the field, since it is then accurate enough. Below about 10⁻⁸ Luo & Jackson's own values limit the comparison.
+
 To check that a solution is accurate, use `spin_doctor`'s residuals, as described in [Checking the results](output.md#checking-the-results).

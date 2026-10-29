@@ -366,7 +366,7 @@ class kmode:
             a = np.loadtxt('real_magnetic_ic.field', usecols=self.solnum)
             b = np.loadtxt('imag_magnetic_ic.field', usecols=self.solnum)
             sol = (a + 1j*b)*np.exp(1j*phase)
-            nb, Nic = int((par.lmax_cic - self.m + 1)/2), ut.Nic
+            nb, Nic = int((par.lmax - self.m + 1)/2), ut.Nic   # FIX (2026-10-29): lmax_cic removed, the inner core uses lmax
             s  = int( (ut.bsymm + 1)/2 )
             iP = (self.m + 1 - s)%2
             iT = (self.m + s)%2
@@ -375,10 +375,10 @@ class kmode:
             Pic[:, iP::2] = np.reshape(sol[:nb*Nic], (nb, Nic))
             Tic[:, iT::2] = np.reshape(sol[nb*Nic:2*nb*Nic], (nb, Nic))
 
-            if self.ntheta <= par.lmax_cic + 1:
-                raise ValueError('lmax_cic = %d needs more points in theta than %d: increase nphi' % (par.lmax_cic, self.ntheta))
+            if self.ntheta <= par.lmax + 1:
+                raise ValueError('lmax = %d needs more points in theta than %d: increase nphi' % (par.lmax, self.ntheta))
             chx = ch.chebvander(self.r_ic/self.ricb, par.N_cic-1)
-            M = SimpleNamespace(lmax=par.lmax_cic, m=self.m, nr=nr_ic, r=self.r_ic, ricb=0, rcmb=self.ricb,
+            M = SimpleNamespace(lmax=par.lmax, m=self.m, nr=nr_ic, r=self.r_ic, ricb=0, rcmb=self.ricb,
                                 ntheta=self.ntheta, nphi=self.nphi)
             out = spec2spat_vec(M, ut, chx, Pic, Tic, ut.bsymm, self.nthreads)
             assert np.allclose(M.theta, self.theta) and M.nphi == self.nphi

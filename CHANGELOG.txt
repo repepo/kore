@@ -1,6 +1,64 @@
 CHANGELOG - Kore, conductive_IC branch
 ======================================
 
+2026-10-29
+----------
+Fix: magnetic torque flag in spin_doctor (bin/spin_doctor.py)
+- do_mtorq lacked parentheses around its (m, symm) cases, so it was True for every m = 1, symm = -1 run (hydro only
+  or an insulating mantle included) and spin_doctor crashed in gamma_magnetic. Now True only with magnetic = 1,
+  mantle = 'TWA' and (m = 0, symm = 1) or (m = 1, symm = -1).
+- Checked: the m = 1, symm = -1 spin-over case of tests/spinover crashed before and now gives resid L ~ 1e-14.
+
+
+2026-10-29
+----------
+Fix: permeability of a conducting inner core in the energy budget (bin/utils4pp.py, docs/output.md)
+- em_budget left out 1/mu_i2o: the inner core stores (1/2) int b.H = (1/2) int |b|^2/mu_i2o and loses
+  int E.J = eta_i int |curl b|^2/mu_i2o (H = b/mu_i2o, J = curl H), eta_i = 1/(mu_i2o sigma_i2o). ME_ic and Ohm_ic of
+  'conducting, Chebys' are now divided by mu_i2o (columns 1 and 5 of budget.dat). Same fix as in anelastic_log.
+- Checked: ricb = 0.35, Ek = Em = 1e-3, B0 'axial', m = 1, mu_i2o = 2, N = 32, N_cic = 32: resid E went from
+  1.7e-4 - 3.5e-3 to 1.5e-12 - 1.1e-11 for the four modes found; eigenvalues and the other residuals unchanged.
+
+
+2026-10-29
+----------
+Fix: D3 and D2 Lorentz terms in an inviscid full sphere; new parameter inviscid_basis (bin/submatrices.py,
+bin/params_default.py, docs/method.md, docs/setup.md, docs/solver.md, tests/test_torsional_s2.py,
+tests/torsional_s2/reference.eig)
+- With Ek = 0 and ricb = 0 the rows of section u are in C^(2) and those of section v in C^(1), but the Lorentz force
+  has the third derivative of f in section u ('u303') and the second in section v ('v102'). G[gbx-1][gbx-dx] then
+  indexed from the end of the list and applied S10 (S0) to coefficients in C^(3) (C^(2)): a wrong operator, which
+  moved the eigenvalues by 6e-8 (torsional mode, Lu = 1e3) to 8e-7 (tests/torsional_s2, Lu = 2e4) at any N.
+- Now any term with dx > gbx is brought back from C^(dx) to C^(gbx) with the inverse of the conversion
+  G[dx-1][dx-gbx]. It is upper triangular and its inverse dense, so these blocks of A are dense: nnz(A) +53% at
+  N = 128 and +87% at N = 192 for tests/torsional_s2, solve time +15% and +35%. The unused viscous terms of an
+  inviscid run go the same way. Viscous runs are unchanged (no term has dx > gbx there).
+- New parameter inviscid_basis: 'low' (default) is the above; 'high' puts the rows of section u in C^(3) and of
+  section v in C^(2) (no bc rows in v), as anelastic_log does. A then stays banded, but the eigenvalues converge only
+  as N^-3 (the unresolved magnetic boundary layer enters through f'''): tests/torsional_s2 is 1.3e-5 and 1.2e-4 from
+  Luo & Jackson (2022) at N = 128 with 'high', against 8.4e-7 and 5.2e-6 with 'low'.
+- Cost at high N (tests/torsional_s2, lmax = N - 1, 8 ranks; mode-2 error, peak memory, time of one solve):
+  'low' 4.5e-8, 16 GB, 60 s at N = 512 and 1.5e-8, 95 GB, 490 s at N = 1024; 'high' 1.5e-6, 8.2 GB, 21 s at
+  N = 512 and 1.0e-7, 37 GB, 120 s at N = 1024. 'low' is 13-35x more accurate at the same N and cheaper for a given
+  accuracy down to ~1e-8, but its overhead grows with N (memory x1.9 to x2.6, time x2.8 to x4.1 from N = 512 to
+  1024); 'high' suits runs that need N >= ~1000 anyway. Documented in docs/solver.md.
+- Checked: torsional mode 2 of tests/torsional_s2 at Lu = 1e3, N = 64, 128, 192: the new eigenvalues equal those of
+  the C^(3)/C^(2) rows in the limit (difference 1.5e-4, 1.8e-5, 3.4e-6, falling as N^-4), while the old ones stay
+  6e-8 away at every N. A and B are bitwise unchanged for the viscous cases checked (conducting inner core, spin-over).
+  tests/torsional_s2/reference.eig recomputed (modes 1 and 2 moved by 2.1e-7 and 8.1e-7, beyond the test's 1e-7).
+  inviscid_basis = 'high' gives A and B bitwise equal to a copy with the C^(3)/C^(2) rows hard-coded; any other
+  value stops submatrices.py.
+
+
+2026-10-29
+----------
+Removed lmax_cic (bin/params_default.py, bin/assemble.py, bin/utils.py, bin/utils4pp.py, koreviz/kmode.py,
+tools/load_solution.py, docs/setup.md, docs/boundaries.md)
+- lmax_cic != lmax did not work, and anelastic_log has no such parameter. The field in a conducting inner core now
+  always uses lmax. A parameters file that still sets par.lmax_cic runs as before (the attribute is ignored), but
+  load_json refuses a parameters.json that lists it: delete that line.
+- Checked: A and B bitwise unchanged (conducting inner core, m = 1, N = 32, N_cic = 32).
+
 2026-10-23
 ----------
 Axisymmetric background flow (bin/bgflow.py new, bin/assemble.py, bin/params_default.py, bin/spin_doctor.py,

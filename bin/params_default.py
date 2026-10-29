@@ -353,7 +353,14 @@ class default_params():
         # If setting lmax manually, then it must be even if m is odd, and lmax-m+1 should be divisible by 2*ncpus
         self.g        = 1.0
         self.lmax     = None
-        self.lmax_cic = None  # lmax if not set
+        # FIX (2026-10-29): lmax_cic removed (lmax_cic != lmax did not work); a conducting inner core uses lmax
+
+        # NEW (2026-10-29): basis of the flow equations in an inviscid full sphere (Ek = 0, ricb = 0) with a magnetic field.
+        # 'low' : rows of P in C^(2), of T in C^(1); the Lorentz terms with f''' and f'' are converted back exactly, which
+        #         makes their blocks of A dense (tests/torsional_s2 at N = 1024: 2.6x the memory, 4x the solve time of 'high')
+        # 'high': rows in C^(3), C^(2) (as anelastic_log), A stays banded, but the eigenvalues converge only as N^-3 when the
+        #         magnetic boundary layer is not resolved (13-35x the error of 'low' at the same N). Worth it for N >= ~1000.
+        self.inviscid_basis = 'low'
 
 
 
@@ -491,8 +498,6 @@ class default_params():
             self.N = self.Ncheb(self.Ek)
         if self.lmax is None:
             self.lmax = self.ellmax(self.ncpus, self.g, self.m, self.N)
-        if self.lmax_cic is None:
-            self.lmax_cic = self.lmax
 
         # solver target
         if self.track_target == 1:  # read target from file
