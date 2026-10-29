@@ -8,7 +8,9 @@ from koretest import KoreTest
 
 class TestTorsionalS2(KoreTest):
 
-    precision = 1e-7  # tolerance on |lambda - reference|/|reference| (run-to-run differences are ~1e-8)
+    # tolerance on |lambda - reference|/|reference|. FIX (2026-10-30): 1e-7 -> 5e-7. GitHub's apt PETSc 3.19/MUMPS 5.6 gives
+    # mode 1 1.7e-7 from reference.eig (eigenpair residual 3e-11), the Mac and chandler (PETSc 3.24-3.26) 1e-10 (residual 1e-13)
+    precision = 5e-7
 
     # Luo & Jackson (2022), table 1, L = 350: the first two torsional modes of S2, and how close kore gets
     # at the resolution of this test (N = 128, lmax = 127; it is 8.4e-7 and 5.2e-6 respectively)

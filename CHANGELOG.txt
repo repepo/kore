@@ -1,6 +1,19 @@
 CHANGELOG - Kore, conductive_IC branch
 ======================================
 
+2026-10-30
+----------
+Fix: tolerance of tests/torsional_s2 against reference.eig (tests/test_torsional_s2.py)
+- After the 2026-10-29 fix of the D3/D2 Lorentz terms the test failed on GitHub (0f697a03): mode 1 came out
+  1.7e-7 from reference.eig (computed on the Mac), above the 1e-7 tolerance; mode 2 and the other six tests passed.
+  GitHub's apt PETSc 3.19/MUMPS 5.6 reaches an eigenpair residual of 3e-11 there, against 1e-13 on the Mac and on
+  chandler (PETSc 3.24-3.26), which agree with each other to 1e-10.
+- The tolerance is now 5e-7. The comparison with Luo & Jackson (2e-6, 1e-5) is unchanged, and a regression of the
+  size of the D3/D2 bug (8e-7 in mode 2) still fails.
+- Checked locally: mode 1 moves by at most 2e-9 for random relative changes of 1e-11 in A, and by less than 1e-11
+  for other MUMPS orderings, BLR off or tol_B0 from 1e-12 to 1.1e-8, so the GitHub difference is not reproduced here.
+
+
 2026-10-29
 ----------
 Fix: magnetic torque flag in spin_doctor (bin/spin_doctor.py)
