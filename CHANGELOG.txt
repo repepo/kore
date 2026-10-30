@@ -3,6 +3,70 @@ CHANGELOG - Kore, conductive_IC branch
 
 2026-10-30
 ----------
+Fix: rotdyn = 1 stops outside its requirements; bin/parameters.py comments (bin/utils.py, bin/spin_doctor.py,
+bin/parameters.py, docs/rotdyn.md, docs/setup.md)
+- rotdyn = 1 also ran with stress-free or inviscid walls, and gave wrong results without a word. The mantle and the
+  inner core drag the fluid through the no-slip condition T10 = r*omega: assemble.py adds -r*omega to the boundary rows
+  of T10. At a stress-free wall that put the wall's rotation into the stress condition T' - T/r = 0, and with Ek = 0,
+  which has no toroidal boundary rows, into a row of the equation of motion. utils.check_rotdyn now stops unless Ek > 0
+  and bci = bco = 1, and also unless m = 0, symm = 1, ricb > 0 and forcing = 0, the other requirements in
+  docs/rotdyn.md, which nothing checked either (for other m and symm the torques were read from the wrong blocks of the
+  solution). spin_doctor's resid E gate drops its own rotdyn test, as such runs no longer get there.
+- bin/parameters.py: its comments gave Le = 3.2e-3 and Le/Em = 3.2e3, the values for Ek = 1e-7; for its Ek = 1e-3
+  they are 0.32 and 32.
+- Checked on chandler (the small cases of the entry below, old and new): rotdyn = 1 with a stress-free CMB, a
+  stress-free ICB, Ek = 0, m = 1, symm = -1, a full sphere or forcing = 7 now stops when utils is imported (before,
+  submatrices.py ran on all of them). rotdyn = 1 with no-slip walls (conducting inner core, hydro only, thin-wall
+  mantle), and stress-free walls without rotdyn (conducting and thin-wall inner core), give the same A and B, bit for
+  bit, and the same eigenvalues up to the solver's run-to-run scatter (5e-15; 6e-6 in the under-resolved case with
+  both walls stress-free, see the entry below). bin/runKore.sh gives the same modes.
+
+
+2026-10-30
+----------
+Fix: stress-free ICB with a conducting inner core, and resid E with slipping walls (bin/assemble.py,
+bin/spin_doctor.py, bin/utils4pp.py, docs/boundaries.md, docs/output.md, docs/setup.md)
+- The ICB condition of 'conducting, Chebys' on the toroidal field (continuity of the tangential electric field, the row
+  of section g) had no u x B0 term: it assumed that the fluid moves with the inner core, as at a no-slip ICB. With
+  bci = 0 the fluid slides over the inner core, and the fluid's tangential E = OmgTau Em curl(b) - u x B0 has the part
+  B0_r (u x r_hat) (u_r = 0 at the ICB) that the inner core's lacks. assemble.bc_b_cic_slip adds it to that row: g of
+  degree l couples to P_l and T_l+-1 for a degree-1 B0, and to P_l+-1, T_l and T_l+-2 for 'Luo_S2' and FDM with
+  B0_l = 2, with angular factors from the recurrence of the Schmidt harmonics (xY; checked against Gauss-Legendre
+  quadrature to 5e-12 for m = 0..4). A toroidal B0 has no B0_r and adds nothing. The term enters only with a flow, a
+  poloidal B0 and a slipping ICB (bci = 0, or Ek = 0); all other runs give the same A and B, bit for bit.
+- spin_doctor's resid E (the full energy budget) needed no-slip walls and was nan otherwise. Through a slipping wall the
+  induction term carries the power 2 Re oint B0_r u_t.b_t* dS (outward normal of the fluid), which Indu includes but
+  which leaves the fluid as Poynting flux. utils4pp.slip_power computes it (Gauss-Legendre in theta at the wall) and
+  spin_doctor subtracts it, so resid E now covers stress-free walls. A thin wall at a slipping boundary still gives nan,
+  and rotdyn = 1 now stops on a slipping wall (see the rotdyn entry).
+- Checked on chandler (z2, PETSc; N 48, Ek = Em = 1e-3, Le = sqrt(1e-3), ricb = 0.35, 2 ranks, 5 modes near 1i; 17
+  cases, old and new): a no-slip conducting inner core ('axial', 'Luo_S2'), an insulating inner core with stress-free
+  walls, hydro = 0, a toroidal B0 alone and a thin-wall inner core give the same A and B, bit for bit. With a
+  stress-free ICB and a conducting inner core (B0 = 'axial' with m = 0 and 1, FDM B0_l = 1 with sigma_i2o = 0.1 and
+  mu_i2o = 2, 'G21 dipole', 'dipole', 'Luo_S2' with m = 0, 1 and 3 (sigma_i2o = 10), 'Luo_S2' with B0_tor = 'wall',
+  thermal; some with a stress-free CMB too) resid E is 4e-4 to 2e-2 with the old row and 7e-15 to 5e-11 with the new
+  one; resid u and resid b are small for both, as they do not see the ICB. Insulating stress-free walls, which need no
+  new term, close to 2e-13 (degree-1 B0) and 1e-11 ('Luo_S2') in both: a check of slip_power alone. The new eigenvalues
+  agree to 3e-14 between N 48, 64 and 96; the old ones are off by up to 2% (for 'axial', m = 1: -0.109580+1.017608i
+  -> -0.109652+1.017814i, -0.360083+0.819262i -> -0.367440+0.831006i). With both walls stress-free ('Luo_S2', m = 0)
+  N 48 is not enough: resid u and resid E up to 4e-5 (the neighbours with one stress-free wall, or an insulating inner
+  core, close to 1e-11 at N 48); N 64 and 96 agree to 1e-10 with all residuals below 1e-9.
+- docs/boundaries.md: the ICB condition with the u x B0 term. docs/output.md: resid E at stress-free walls.
+  docs/setup.md: a conducting inner core no longer needs a no-slip ICB.
+
+
+2026-10-30
+----------
+Fix: bin/runKore.sh paths, bin/bgflow.py executable
+- runKore.sh says to run it from the top folder of kore (./bin/runKore.sh), as the docs do, but since 2026-10-16 it
+  called ../bin/, which only works from a folder one level down. It uses ./bin/ again, also in its commented-out
+  induction-only block, and the file now ends with a newline.
+- bin/bgflow.py starts with #!/usr/bin/env python3 but was not executable in git (mode 100644), unlike the other
+  scripts in bin/; now 100755.
+
+
+2026-10-30
+----------
 Fix: B0 = 'dipole' with an inner core (bin/submatrices.py, bin/utils.py)
 - It stopped in assemble.py with a NameError (r2etaIf). With ricb > 0 the equations are multiplied by extra powers of
   r (r^2 in section f, r^3 in section g) so that the r^-2 of the dipole drops out. When the magnetic diffusion term

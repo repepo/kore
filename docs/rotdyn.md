@@ -45,6 +45,8 @@ The default moments of inertia and coupling constant are Earth-like values.
 - An inner core (`ricb > 0`) and no-slip boundaries (`bci = bco = 1`, `Ek > 0`), since the solid bodies drag the fluid through the no-slip condition.
 - Eigenvalue problems. The rotation of the boundaries in forced problems (libration) is prescribed through `forcing` instead.
 
+Kore stops with a message when one of these does not hold. Before 2026-10-30 such runs went ahead and gave wrong results: at a stress-free wall, for example, the rotation of the wall entered the stress condition.
+
 
 ## Output
 

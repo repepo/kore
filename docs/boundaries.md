@@ -63,7 +63,14 @@ $$
 (r g_o)' = \eta_i\,(r g_i)', \qquad r^2 \nabla_l^2 f_o = \eta_i\, r^2 \nabla_l^2 f_i, \qquad \nabla_l^2 = \frac{d^2}{dr^2} + \frac{2}{r}\frac{d}{dr} - \frac{l(l+1)}{r^2} .
 $$
 
-The electric field condition has no $\mathbf{u}\times\mathbf{B}_0$ term, so it assumes the fluid at the ICB moves with the inner core: use a no-slip ICB (`bci = 1`) and `Ek > 0`.
+In the fluid the electric field is $\mathbf{E} = (\Omega\tau)E_\eta\nabla\times\mathbf{b} - \mathbf{u}\times\mathbf{B}_0$. At a no-slip ICB the fluid moves with the inner core, $\mathbf{u} = 0$, and the condition on $g$ above holds as it stands. At a stress-free ICB (`bci = 0`) the fluid slides over the inner core, and the tangential part of $\mathbf{u}\times\mathbf{B}_0$, which is $B_{0r}\,(\mathbf{u}\times\hat{\mathbf{r}})$ since $u_r = 0$, enters the condition on $g$:
+
+$$
+(r g_o)' - \eta_i\,(r g_i)' = \frac{r\,S_l}{(\Omega\tau)E_\eta}, \qquad
+S_l = \frac{\beta}{l(l+1)} \sum_{l'} \left[ i m\, D_{ll'}\, \frac{(r P_{l'})'}{r} + \frac{l_0(l_0+1) - l(l+1) - l'(l'+1)}{2}\, G_{ll'}\, T_{l'} \right],
+$$
+
+where $S_l$ is the $\nabla Y_l$ part of $B_{0r}\,(\mathbf{u}\times\hat{\mathbf{r}})$, $B_{0r} = \beta\, Y_{l_0}^0$ is the radial background field at the ICB (only a poloidal $\mathbf{B}_0$ has one), $P$ and $T$ are the poloidal and toroidal scalars of the flow, and $G_{ll'}$ and $D_{ll'}$ are the $Y_l$ components of $Y_{l_0}^0 Y_{l'}$ and of $(\mathrm{d}Y_{l_0}^0/\mathrm{d}\cos\theta)\, Y_{l'}$. A degree-1 field couples $g$ of degree $l$ to $P_l$ and $T_{l\pm1}$, a degree-2 field to $P_{l\pm1}$ and $T_l$, $T_{l\pm2}$. Before 2026-10-30 this term was missing, so a stress-free ICB with a conducting inner core gave wrong modes (eigenvalues off by up to 2% at `Ek` = `Em` = $10^{-3}$ in the tests); `spin_doctor`'s `resid𝐄` catches it.
 
 The poloidal field is solved with the radial component of the induction equation, as with an insulating inner core, and only the first two conditions are imposed on $f$. With the radial induction equation satisfied on both sides of the ICB, continuity of $f$ makes the radial component of $\nabla\times\mathbf{E}$ continuous, and that is the condition on $\nabla_l^2 f$. Before October 2026 Kore used the consoidal component instead, which is third order in $f$, and imposed the $\nabla_l^2 f$ condition as an extra row. Its tau error was integrated across the shell into a spurious term $c/r$ of the radial equation. For a torsional mode at Ek = $10^{-9}$ and `sigma_i2o` = $10^{-6}$ with $N = 688$, this gave resid b = $10^{-3}$ and a low-$l$ poloidal field wrong by factors of up to 30. The radial component gives $10^{-5}$ and the insulating-core field to four digits at the same $N$.
 

@@ -1911,6 +1911,9 @@ def bc_b_cic(l,loc):
         outoc[0,:] =  bv.Ta[:,0] + ric*bv.Ta[:,1]
         outic[0,:] = -eta_i2o * ( bv.Tbgic[:,0] + ric*bv.Tbgic[:,1] )
         # --------------------------------------------------------------------------------------
+        # FIX (2026-10-30): with a stress-free or inviscid ICB the fluid slides over the inner core, and the fluid's
+        # tangential E has the u x B0 part that the inner core's lacks (it vanishes at a no-slip ICB, u = 0 there)
+        slip_icb = par.hydro and (par.B0 is not None) and (par.bci == 0 or par.Ek == 0)
 
     elif loc == 'section_fic':  # 1 row
 
@@ -1960,9 +1963,65 @@ def bc_b_cic(l,loc):
     outrow  = np.concatenate([outoc.row + row0, outic.row + row0])
     outcol  = np.concatenate([outoc.col + col0, outic.col + col1 ])
 
+    if loc == 'section_g' and slip_icb:  # FIX (2026-10-30)
+        slip = bc_b_cic_slip(l, row0)
+        outdata = np.concatenate([outdata, slip[0]])
+        outrow  = np.concatenate([outrow,  slip[1]])
+        outcol  = np.concatenate([outcol,  slip[2]])
+
     #print('l=',l,loc,'startrow=',row0, 'startcol=',col0)
 
     return [outdata, outrow, outcol]
+
+
+
+def xY(l, k):
+    '''
+    NEW (2026-10-30): [cos(theta) Y_k]_l, the l-component of cos(theta) Y_k for Schmidt harmonics of order par.m:
+    cos(theta) Y_k = p_k Y_(k+1) + q_k Y_(k-1), the recurrence of the coupling coefficients in operators.py
+    '''
+    m = par.m
+    if l == k + 1:
+        return np.sqrt(max((k + 1)**2 - m**2, 0))/(2*k + 1)
+    if l == k - 1:
+        return np.sqrt(max(k**2 - m**2, 0))/(2*k + 1)
+    return 0.
+
+
+
+def bc_b_cic_slip(l, row):
+    '''
+    FIX (2026-10-30): the u x B0 term of the [nxE] row of section g (degree l, at row) of a conducting inner core, when
+    the ICB slips (bci = 0 or Ek = 0). There u_r = 0, so (u x B0)_t = B0_r (u_t x r_hat), with B0_r = beta Y_l0 and
+    beta = cnorm l0(l0+1) h/r of the poloidal B0 (a toroidal B0 has no B0_r). With u_t = s grad(Y) + t grad(Y) x r_hat
+    per degree l' (s = (rP)'/r, t = T), the consoidal part of B0_r (u_t x r_hat) at degree l is
+        (beta/L) sum_l' [ i m D s + (L0 - L - L')/2 G t ],   G = [Y_l0 Y_l']_l,   D = [dY_l0/dcos(theta) Y_l']_l,
+    from div(B0_r grad(Y') x r_hat) = dB0_r/dtheta i m Y'/sin(theta) and div(B0_r grad(Y')) = (lap(B0_r Y') + B0_r lap(Y')
+    - Y' lap(B0_r))/2 on the unit sphere. As E = OmgTau*Em curl(b) - u x B0 in the fluid, the row (r/(OmgTau*Em) times
+    the jump of E) gets minus r/(OmgTau*Em) times this, at the columns of P and T of degree l'.
+    '''
+    m, r = par.m, par.ricb
+    L, l0 = l*(l+1), ut.B0_l
+    L0 = l0*(l0+1)
+    h = ut.h0(np.array([r]), par.B0, [par.beta, l0, r, 0])[0]
+    c = -ut.B0_norm()*L0*h/( par.OmgTau*par.Em*L )  # -r/(OmgTau*Em) times beta/L
+    lp_u, lt_u, _ = ut.ell(m, par.lmax, par.symm)
+    data, cols = [], []
+    for k in range(l-2, l+3):
+        if l0 == 1:
+            G, D = xY(l, k), float(l == k)
+        else:  # l0 = 2: Y_20 = (3 cos^2 - 1)/2
+            G, D = (3*(xY(l, k-1)*xY(k-1, k) + xY(l, k+1)*xY(k+1, k)) - (l == k))/2, 3*xY(l, k)
+        if k in lp_u and D != 0:  # s = (P + r P')/r
+            data.append( c*1j*m*D*(bv.Ta[:,0] + r*bv.Ta[:,1])/r )
+            cols.append( int(ut.N1*(k - ut.m_top)/2) + np.arange(ut.N1) )
+        if k in lt_u and G != 0:
+            data.append( c*(L0 - L - k*(k+1))/2*G*bv.Ta[:,0] )
+            cols.append( ut.n + int(ut.N1*(k - ut.m_bot)/2) + np.arange(ut.N1) )
+    if not data:
+        return [np.array([]), np.array([], dtype=int), np.array([], dtype=int)]
+    data = np.concatenate(data)
+    return [data, np.full(data.size, row), np.concatenate(cols)]
 
 
 

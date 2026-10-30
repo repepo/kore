@@ -1284,6 +1284,41 @@ def torque_walls(b_sol2, pol, tor):
 
 
 
+def slip_power(u_sol2, b_sol2):
+    '''
+    NEW (2026-10-30): the power that the poloidal B0's induction term carries through slipping walls (stress-free, or
+    Ek = 0), 2 Re oint ((u x B0) x b*).n dS = 2 Re oint B0_r u_t.b_t* (n.r_hat) dS, n the outward normal of the fluid
+    (u_r = 0 there), in the units of Indu. Indu = 2 Re int b*.curl(u x B0) dV is its volume part,
+    2 Re int (u x B0).curl(b)* dV, plus this. No-slip walls give 0.
+    '''
+    if not (par.hydro and par.B0 is not None):
+        return 0.
+    lpu, ltu, _ = ut.ell(par.m, par.lmax, par.symm)
+    lpb, ltb, _ = ut.ell(par.m, par.lmax, ut.bsymm)
+    x, w = np.polynomial.legendre.leggauss(par.lmax + 9)
+    Y, dY, Z = ylm_grid(par.m, par.lmax + 1, x)
+    Y0, _, _ = ylm_grid(0, 2, x)
+    l0 = ut.B0_l
+    out = 0.
+    walls = ( (par.ricb, -1, par.ricb > 0 and (par.bci == 0 or par.Ek == 0)), (ut.rcmb, 1, par.bco == 0 or par.Ek == 0) )
+    for r, sgn, slips in walls:
+        if not slips:
+            continue
+        rr = np.array([r], dtype=float)
+        xr = xcheb(rr, par.ricb, ut.rcmb)
+        def tangential(sol2, lp, lt):  # theta and phi components: s dY + t Z and s Z - t dY, s = f' + f/r, t = g
+            P, T = sol2[0].T, sol2[1].T
+            s = ch.chebval(xr, ut.Dcheb(P, par.ricb, ut.rcmb))[:,0] + ch.chebval(xr, P)[:,0]/r
+            t = ch.chebval(xr, T)[:,0]
+            return s @ dY[lp] + t @ Z[lt], s @ Z[lp] - t @ dY[lt]
+        ut_, up_ = tangential(u_sol2, lpu, ltu)
+        bt_, bp_ = tangential(b_sol2, lpb, ltb)
+        B0r = ut.B0_norm()*l0*(l0+1)*ut.h0(rr, par.B0, [par.beta, l0, par.ricb, 0])[0]/r*Y0[l0]
+        out += sgn*2*np.real( 2*np.pi*r**2*np.sum( w*B0r*( ut_*np.conj(bt_) + up_*np.conj(bp_) ) ) )
+    return out
+
+
+
 def magnetic_powers_grid(utab, btab):
     '''
     The induction 2 Re int b*.curl(u x B0) dV and the complex power of the Lorentz force

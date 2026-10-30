@@ -53,7 +53,7 @@ The sections below follow the order of `params_default.py`. The magnetic boundar
 | `bco` | 1 | Flow condition at the core-mantle boundary (CMB): 0 stress-free, 1 no-slip (or boundary forcing). |
 | `Ek` | $10^{-6}$ | Ekman number $E = \nu/\Omega L^2$. |
 
-`Ek = 0` gives an inviscid problem, with only the no-penetration condition $u_r = 0$ at the boundary. It works only for a full sphere (`ricb = 0`), and `N` must then be set by hand. A conducting inner core, a thin conducting wall with `c1` $\neq 0$, and `rotdyn` all need a viscous fluid and no-slip boundaries.
+`Ek = 0` gives an inviscid problem, with only the no-penetration condition $u_r = 0$ at the boundary. It works only for a full sphere (`ricb = 0`), and `N` must then be set by hand. A thin conducting wall with `c1` $\neq 0$ needs a viscous fluid and no-slip boundaries, and so does `rotdyn = 1`, which stops otherwise. A conducting inner core also works with a stress-free ICB (since 2026-10-30, see [Inner core and mantle](boundaries.md#conducting-inner-core)).
 
 
 ## Eigenvalue or forced problem

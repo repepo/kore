@@ -19,8 +19,8 @@ par.B0       = 'FDM'     # torsional waves need B_s != 0, the axial field has no
 par.mantle   = 'TWA'
 par.c_cmb    = 1e-2
 par.c1_cmb   = 1.5e-2    # magnetic torque ~ viscous torque
-par.Lambda   = 10        # Le = sqrt(Lambda*Ek/Pm) = 3.2e-3
-par.Pm       = 0.1       # Lundquist number Le/Em = 3.2e3
+par.Lambda   = 10        # Le = sqrt(Lambda*Ek/Pm) = 0.32
+par.Pm       = 0.1       # Lundquist number Le/Em = 32
 
 # Spin over mode (no inner core)
 par.ricb     = 0

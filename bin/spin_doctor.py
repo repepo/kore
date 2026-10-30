@@ -533,20 +533,26 @@ def main(ncpus):
         # potential fields beyond insulating boundaries, and so the matching conditions at the ICB and CMB.
         # Here Ohmic losses are integrals of |curl b|^2, while resid b uses b.lap(b) in the fluid only. The Lorentz
         # work and the induction term cancel in the sum except for the work of the background currents (J0 x b).
-        # Needs no-slip boundaries (with stress-free ones the u x B0 part of the Poynting flux through the boundary is
-        # not computed). Not for forced problems, 'conducting, Bessel', or mu != 1 with thin walls.
+        # FIX (2026-10-30): slipping walls (stress-free, or Ek = 0) carry the u x B0 part of the Poynting flux, which
+        # Indu includes (upp.slip_power, subtracted below); before, resid E needed no-slip walls. A thin wall still
+        # needs a no-slip boundary (rotdyn = 1 stops on slipping walls, utils.check_rotdyn). Not for forced problems,
+        # 'conducting, Bessel', or mu != 1 with thin walls.
         # With rotdyn = 1 the rotation energies of the mantle and the inner core and the gravitational energy join the
         # budget; the torques only move energy between fluid and solids, so the viscous term is the strain-rate
         # dissipation (Dint, without the work of the moving walls), the work of the moving walls through u x B0 is the
         # magnetic torque times the rotation rate, and the inner core's viscous relaxation dissipates K*|phi|^2/tau_IC.
         noslip = (par.bco == 1) and (par.ricb == 0 or par.bci == 1) and par.Ek > 0
+        slipok = not ( (par.ricb > 0 and (par.bci == 0 or par.Ek == 0) and par.innercore == 'TWA') or
+                       ((par.bco == 0 or par.Ek == 0) and par.mantle == 'TWA') )  # FIX (2026-10-30)
         rotok  = (not par.rotdyn) or (par.vtrq == 1 and par.mtrq == 1)  # switched-off torques do not conserve energy
         if par.magnetic and par.forcing == 0 and rotok and par.innercore != 'conducting, Bessel' and \
-           (noslip or not par.hydro) and not (par.mu != 1 and 'TWA' in (par.innercore, par.mantle)):
+           (noslip or slipok or not par.hydro) and not (par.mu != 1 and 'TWA' in (par.innercore, par.mantle)):
             s2 = par.OmgTau**2 * par.Le2
             eta = par.OmgTau * par.Em
             Ohm_f0, MEic0, Ohm_ic0, Ew0, Ohm_w0, MEext0 = upp.em_budget(b_sol2, None if bic is None else bic[:,i])
             Wex  = (Wlor[i] if par.hydro else 0) + s2*Indu[i]
+            if par.hydro and not noslip:  # FIX (2026-10-30)
+                Wex -= s2*upp.slip_power(u_sol2, b_sol2)
             Etot = (KE[i] if par.hydro else 0) + s2*( ME[i] + MEic0 + Ew0 + MEext0 )
             Ohm  = s2*eta*( Ohm_f0 + Ohm_ic0 + Ohm_w0 )
             Dk   = (Dkin[i] - Wthm[i]) if par.hydro else 0

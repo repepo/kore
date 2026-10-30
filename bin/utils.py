@@ -1033,8 +1033,27 @@ def check_B0():
                  '-B0_phi*b_r on the current sheet of B0_tor at that wall is not in its stress condition')
 
 
+
+def check_rotdyn():
+    '''
+    FIX (2026-10-30): stops rotdyn = 1 outside the requirements of docs/rotdyn.md, where it ran without a word and
+    gave wrong results. The mantle and the inner core drag the fluid through the no-slip condition T10 = r*omega
+    (assemble.py adds -r*omega to the boundary rows of T10), and their torques are read from the first blocks of the
+    toroidal flow and field, which hold T10 and G20 (or G10, G30) only for m = 0, symm = 1. At a stress-free wall the
+    -r*omega went into the stress condition T' - T/r = 0, and with Ek = 0, which has no toroidal boundary rows, into a
+    row of the equation of motion.
+    '''
+    if par.m != 0 or par.symm != 1 or par.ricb == 0 or par.forcing != 0:
+        sys.exit('rotdyn = 1 needs m = 0, symm = 1, an inner core (ricb > 0) and an eigenvalue problem (forcing = 0)')
+    if par.Ek <= 0 or par.bci != 1 or par.bco != 1:
+        sys.exit('rotdyn = 1 needs a viscous fluid with no-slip walls (Ek > 0, bci = bco = 1): the mantle and the '
+                 'inner core drag the fluid through the no-slip condition')
+
+
 if par.magnetic:
     check_B0()
+if par.rotdyn:
+    check_rotdyn()
 cnorm_tor = B0_tor_norm() if (par.magnetic and par.B0_tor is not None) else 0.0
 
 
