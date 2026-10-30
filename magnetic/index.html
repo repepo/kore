@@ -1435,8 +1435,28 @@ assumptions, which <code>background.ferraro_report</code> prints at the start of
 constant there for a regular field; for a rotation that varies along the axis, <span class="arithmatex">\(G\)</span> has to vanish on the values
 <span class="arithmatex">\(\Delta\Omega\)</span> takes there), and at the outer wall if the field is to stay inside (otherwise it meets the insulating mantle
 with a surface current, which the linear problem allows); the series is cut at <code>B0_ferraro_nmax</code>, which sets the residual
-<span class="arithmatex">\(\mathbf{B}_0\cdot\nabla\Omega\)</span>. Example: for a cylindrical rotation <span class="arithmatex">\(\Delta\Omega \propto s^2\)</span>, <span class="arithmatex">\(G(w) = w\)</span> gives <span class="arithmatex">\(\psi \propto s^2\)</span>, the
+<span class="arithmatex">\(\mathbf{B}_0\cdot\nabla\Omega\)</span>. A toroidal part (<code>B0_tor</code>, any type) can be added: it is consistent with any axisymmetric rotation, and it
+must have the field's equatorial symmetry (an even degree). Example: for a cylindrical rotation <span class="arithmatex">\(\Delta\Omega \propto s^2\)</span>, <span class="arithmatex">\(G(w) = w\)</span> gives <span class="arithmatex">\(\psi \propto s^2\)</span>, the
 uniform axial field.</p>
+<p><strong>The rotation from the field: <code>diff_rot_type = 'ferraro'</code></strong> (2026-10-30). The reverse choice: the poloidal field is given (any
+type, <code>'general'</code> included) and the rotation is deduced from it, <span class="arithmatex">\(\Delta\Omega = F(\psi)\)</span>, with <span class="arithmatex">\(\psi\)</span> the field's own flux
+function. Use it when the field is the starting point (a model of an observed or a dynamo field) and the rotation only has to
+be compatible with it; use <code>B0 = 'ferraro'</code> when the rotation is. Since <span class="arithmatex">\(\Delta\Omega\)</span> is constant on every field line,
+<span class="arithmatex">\(\mathbf{B}_0\cdot\nabla\Delta\Omega = 0\)</span> and the background is steady. Method: <span class="arithmatex">\(\psi(r, x) = r\sum_n c\,h_n(1 - x^2)P_n'(x)\)</span> from the
+radial profiles of the field (<code>background_field.pol_profiles</code>), <span class="arithmatex">\(F\)</span> evaluated on a Gauss–Legendre grid in <span class="arithmatex">\(x\)</span> and projected on
+the Legendre polynomials,</p>
+<div class="arithmatex">\[
+f_n(r) = \frac{2n+1}{2}\int_{-1}^{1}F\big(\psi(r, x)\big)\,P_n(x)\,dx, \qquad n = 0, 2, \dots, \texttt{diff\_rot\_nmax},
+\]</div>
+<p>and <span class="arithmatex">\(\Delta\Omega\)</span> = <code>diff_rot_ampl</code> <span class="arithmatex">\(\cdot\sum_n f_n P_n\)</span>, as for the other rotation profiles: the force on the flow, the induction
+term and the thermal wind need nothing new. <span class="arithmatex">\(F\)</span> = <code>diff_rot_F</code> (default <code>'psi'</code>), a numpy expression of <code>psi</code> and <code>p</code>
+(<code>diff_rot_param</code>). Rules, checked at the start of a run: a poloidal <code>B0</code> is needed (a toroidal field alone has no <span class="arithmatex">\(\psi\)</span>);
+<code>B0 = 'ferraro'</code> is refused (each would be built from the other); kore's <span class="arithmatex">\(\Delta\Omega\)</span> has only even <span class="arithmatex">\(P_n\)</span>, so <span class="arithmatex">\(F(\psi)\)</span> must be
+symmetric about the equator: any <span class="arithmatex">\(F\)</span> for a dipolar field (<span class="arithmatex">\(\psi\)</span> even in <span class="arithmatex">\(x\)</span>), an even <span class="arithmatex">\(F\)</span> (e.g. of <code>psi**2</code>) for a quadrupolar one
+(<span class="arithmatex">\(\psi\)</span> odd), else the run stops; with a conducting inner core <span class="arithmatex">\(\Delta\Omega(r_i, \theta)\)</span> must be uniform, which in general means
+<span class="arithmatex">\(\psi\)</span> constant on the inner core's surface. A toroidal part of <code>B0</code> is left as it is. The series is cut at <code>diff_rot_nmax</code> (even): <code>ferraro_mismatch</code> then reports only
+the truncation, at round-off for fields of low degree with a polynomial <span class="arithmatex">\(F\)</span>. Example: the uniform axial field <span class="arithmatex">\(\psi = r^2\sin^2\theta/2\)</span> with
+<span class="arithmatex">\(F(\psi) = \psi\)</span> gives <span class="arithmatex">\(\Delta\Omega \propto s^2\)</span>, the cylindrical profile.</p>
 <p><strong>Toroidal field</strong> (step 4). <span class="arithmatex">\(\mathbf{B}_0^{tor} = c_\mathrm{tor}\nabla\times(k(r)\,Y_n^0\,\mathbf{r})\)</span>, purely azimuthal,
 <span class="arithmatex">\(B_\phi = -c_\mathrm{tor}\,k\,\partial_\theta Y_n^0\)</span>: <span class="arithmatex">\(c_\mathrm{tor}\,k\sin\theta\)</span> for <span class="arithmatex">\(n\)</span> = <code>B0_tor_l</code> = 1, <span class="arithmatex">\(3c_\mathrm{tor}\,k\sin\theta\cos\theta\)</span> for
 <span class="arithmatex">\(n = 2\)</span>; <span class="arithmatex">\(c_\mathrm{tor}\)</span> = <code>cnorm_tor</code> (a number, <code>'mag_energy'</code> or <code>'Schmitt2012'</code>; <span class="arithmatex">\(\int B_0^2 dV = n_l L\int k^2 r^2 dr\)</span>):</p>
@@ -1568,7 +1588,8 @@ needs nothing new: it does not involve <span class="arithmatex">\(\mathbf{U}_0\)
   constant along its field lines. The linear problem does not contain this term. <code>background.ferraro_mismatch</code> reports
   <span class="arithmatex">\(\max\lvert \mathbf{B}_0\cdot\nabla\Delta\Omega\rvert \,r/(\max\lvert \mathbf{B}_0\rvert \max\lvert r\nabla\Delta\Omega\rvert )\)</span> at the start of every run; above <span class="arithmatex">\(10^{-7}\)</span>
   <code>background.FERRARO_POLICY</code> decides: <code>'warn'</code> (default: a warning, the background is assumed to be maintained) or
-  <code>'refuse'</code>. Consistent backgrounds: a toroidal field, a <code>'confined'</code> field where <span class="arithmatex">\(\Delta\Omega\)</span> is uniform, or <code>'ferraro'</code>.</li>
+  <code>'refuse'</code>. Consistent backgrounds: a toroidal field, a <code>'confined'</code> field where <span class="arithmatex">\(\Delta\Omega\)</span> is uniform, <code>B0 = 'ferraro'</code>, or
+  <code>diff_rot_type = 'ferraro'</code>.</li>
 <li><strong>Energy budgets.</strong> spin_doctor's induction work includes <span class="arithmatex">\(\mathbf{U}_0\times\mathbf{b}\)</span> (on the <span class="arithmatex">\((r, \theta)\)</span> grid). Because
   <span class="arithmatex">\(\mathbf{U}_0\times\mathbf{b}\)</span> does not vanish at a wall where <span class="arithmatex">\(\Delta\Omega \ne 0\)</span>, it carries magnetic energy through the wall into the
   field outside: resid𝐛 (the fluid) uses the induction work with its wall terms, resid𝐄 (the full budget, which counts the
@@ -1890,6 +1911,13 @@ residσ, resid𝐛 and resid𝐄 equal <code>conductive_IC</code>'s resid𝐮, r
   of 'axial' to 10 digits; with <span class="arithmatex">\(\Delta\Omega \propto s^2(1 - s^2)\)</span> (degrees 0, 2, 4), <span class="arithmatex">\(\psi\)</span> is rebuilt from degrees 1–7 to
   <span class="arithmatex">\(4\cdot10^{-15}\)</span>, <code>ferraro_mismatch</code> is <span class="arithmatex">\(5\cdot10^{-14}\)</span>, and the budgets close to <span class="arithmatex">\(\le 2\cdot10^{-11}\)</span> in a shell, a full sphere and
   'Wu 2005'.</li>
+<li><strong><code>diff_rot_type = 'ferraro'</code></strong>: the uniform axial field with <span class="arithmatex">\(F = \psi\)</span> gives the eigenvalues of the cylindrical profile to 10
+  digits, and so does the round trip through <code>B0 = 'ferraro'</code> (<span class="arithmatex">\(G = 5w\)</span>; budgets <span class="arithmatex">\(4\cdot10^{-14}\)</span>). <code>ferraro_mismatch</code>: <span class="arithmatex">\(3\cdot10^{-12}\)</span>
+  ('FDM'), <span class="arithmatex">\(6\cdot10^{-12}\)</span> ('G21 dipole', 'Luo_S1'), <span class="arithmatex">\(2\cdot10^{-12}\)</span> (full sphere), <span class="arithmatex">\(2\cdot10^{-11}\)</span> ('general' of degrees 1 + 3,
+  <span class="arithmatex">\(F = \psi + \psi^2\)</span>), <span class="arithmatex">\(2\cdot10^{-10}\)</span> ('Luo_S2' with <span class="arithmatex">\(F = \psi^2\)</span>), <span class="arithmatex">\(7\cdot10^{-9}\)</span> ('confined', cut at <code>diff_rot_nmax</code> 4); budgets
+  <span class="arithmatex">\(\le 10^{-10}\)</span>. Refused as they should be: an odd <span class="arithmatex">\(F\)</span> with 'Luo_S2', <code>B0 = 'ferraro'</code>, a toroidal field alone, a conducting
+  inner core with <span class="arithmatex">\(\psi\)</span> not constant on it. With a toroidal part of degree 2: <code>B0 = 'ferraro'</code> + 'Malkus' and 'Luo_S1' + 'wall' with
+  <code>diff_rot_type = 'ferraro'</code> close their budgets to <span class="arithmatex">\(8\cdot10^{-12}\)</span> and <span class="arithmatex">\(10^{-9}\)</span>.</li>
 <li><strong>Unchanged without the new features</strong>: <code>regress.sh</code> bitwise, heat_dr, ru_insane identical, and 26 magnetic cases build A and
   B bitwise equal to the code before.</li>
 </ul>
