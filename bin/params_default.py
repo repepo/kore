@@ -159,8 +159,12 @@ class default_params():
         #   file data/diff_rot.npz of the Mukhopadhyay et al. 2025 data set; tests/diff_rot/ls_to_tabulated.py converts the Larson & Schou
         #   2018 table), projected on P0, P2, ..., P_diff_rot_nmax at each table radius and fitted in r; ΔΩ = Ω/Ω_ref - 1
         # self.diff_rot_type = 'user'  # f_n given as numpy expressions of r, x and p = diff_rot_param in diff_rot_profiles
+        # self.diff_rot_type = 'ferraro'  # NEW (2026-10-30): ΔΩ = F(ψ) from the poloidal background field (magnetic = 1), ψ its flux
+        #   function and F = diff_rot_F: a steady background with B0 (Ferraro); even degrees up to diff_rot_nmax. The reverse
+        #   of B0 = 'ferraro' (the field from a given rotation); the two cannot be combined
         #   'Y20-wall-bounded' and 'shellular' (unless σ is even and > 0) are not smooth at r = 0: use ricb > 0.
         self.diff_rot_ampl = 1.0  # the factor of ΔΩ, for every type (1 for 'solar', 'solar_P4', 'tabulated': the profile itself)
+        self.diff_rot_F = 'psi'  # NEW (2026-10-30): 'ferraro': F, a numpy expression of psi (the flux function of B0) and p
         self.diff_rot_param = 0.0  # the shape parameter of the types that have one: σ for 'shellular'; p in 'user' expressions
         self.diff_rot_term_amp = [1.0]*9  # a_0, a_2, ..., a_16: factors of the P0, P2, ..., P16 terms of ΔΩ, any type, after
         # diff_rot_ampl (missing entries: 1), e.g. [1, 1, 0] drops the P4 part of 'solar_P4'; S_tw follows the scaled ΔΩ

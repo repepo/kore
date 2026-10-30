@@ -120,6 +120,8 @@ def check_magnetic():
     if par.B0 == 'ferraro':   # NEW (2026-10-30)
         if not par.diff_rot:
             sys.exit("B0 'ferraro' needs a differential rotation (diff_rot = 1): its flux function is G(ΔΩ)")
+        if par.diff_rot_type == 'ferraro':
+            sys.exit("diff_rot_type 'ferraro' with B0 'ferraro' is circular (each is built from the other): choose one")
         if par.B0_ferraro_nmax < 1 or par.B0_ferraro_nmax % 2 == 0:
             sys.exit('B0_ferraro_nmax must be odd and >= 1 (the field has only odd degrees)')
         if par.cnorm == 'rms_cmb':

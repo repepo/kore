@@ -126,7 +126,10 @@ insulating mantle, eigenproblems, uniform η, no inviscid shell: `background.che
 a conducting inner core must co-rotate rigidly, `diff_rot.rigid_ricb`; `background.ferraro_mismatch` reports B0⋅∇Ω and
 `FERRARO_POLICY` 'warn'/'refuse'; spin_doctor's resid𝐄 uses the volume induction work, `utils4pp.INDU_WALLS`). New B0 types
 'confined' (h = r^l (r2² - r²)^p or r^l (r - r1)^p (r2 - r)^p, factored evaluation), 'general' (`B0_profiles`, `B0_tor_profiles`,
-any degrees) and 'ferraro' (ψ = G(ΔΩ), `B0_ferraro_G`, odd degrees to `B0_ferraro_nmax`). `bin/mag_algebra.py` builds the
+any degrees) and 'ferraro' (ψ = G(ΔΩ), `B0_ferraro_G`, odd degrees to `B0_ferraro_nmax`; a toroidal part of even degree
+may be added). The reverse, diff_rot_type 'ferraro' (NEW 2026-10-30): ΔΩ = F(ψ) of the given poloidal B0 (`diff_rot_F`, numpy in
+psi and p; even degrees to `diff_rot_nmax`, `diff_rot._ferraro_shapes`); refused with B0 'ferraro' (circular), without a
+poloidal B0, or with an F(ψ) odd in cos θ (quadrupolar field). `bin/mag_algebra.py` builds the
 Lorentz/induction couplings for any degrees from the recurrence algebra (`mag_couplings = 'algebra'`, forced for
 'general'/'ferraro'; `ut.mag_algebra`, `ut.mag_dl`; profile codes `hp`/`kt` + degree); same eigenvalues as the closed forms
 to 1e-13. Checks: tests/magnetic `dr_induction_check.py`, `algebra_check.py`, `rigid_check.py`.
@@ -261,7 +264,7 @@ flow U₀ = Gaspard ΔΩ r sin θ e_φ in the frame Ω_ref. It works with any ba
   (c₀ + c₂cos²θ + c₄cos⁴θ with erf tachocline, `diff_rot_solar`, frame `diff_rot_frame`), `'tabulated'` (Ω(r, θ) from
   `diff_rot_file`, .npz with `ome[θ, r]` nHz, `r` R☉, `theta` rad; projected on P₀..P_`diff_rot_nmax`; shell fit of
   degree `diff_rot_rdeg`, or with `diff_rot_window = 'sun'` (default at ricb = 0) one even fit of degree
-  `diff_rot_sun_deg`), `'user'` (`diff_rot_profiles` = {n: numpy expression of r, x, p}, p = `diff_rot_param`).
+  `diff_rot_sun_deg`), `'user'` (`diff_rot_profiles` = {n: numpy expression of r, x, p}, p = `diff_rot_param`). `'ferraro'` (ΔΩ = F(ψ) of the poloidal B0, see the magnetic paragraph).
   `diff_rot.fX(n, r, Dorder)` is the Chebyshev fit of `diff_rot_ampl` aₙfₙ (at |r| when ricb = 0), `diff_rot.raw(n, r)`
   the same without the fit.
 - **Momentum** (`operators.differential_rotation` → `diff_rot.momentum_block`):

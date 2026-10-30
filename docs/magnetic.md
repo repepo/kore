@@ -89,8 +89,31 @@ assumptions, which `background.ferraro_report` prints at the start of a run: $\p
 constant there for a regular field; for a rotation that varies along the axis, $G$ has to vanish on the values
 $\Delta\Omega$ takes there), and at the outer wall if the field is to stay inside (otherwise it meets the insulating mantle
 with a surface current, which the linear problem allows); the series is cut at `B0_ferraro_nmax`, which sets the residual
-$\mathbf{B}_0\cdot\nabla\Omega$. Example: for a cylindrical rotation $\Delta\Omega \propto s^2$, $G(w) = w$ gives $\psi \propto s^2$, the
+$\mathbf{B}_0\cdot\nabla\Omega$. A toroidal part (`B0_tor`, any type) can be added: it is consistent with any axisymmetric rotation, and it
+must have the field's equatorial symmetry (an even degree). Example: for a cylindrical rotation $\Delta\Omega \propto s^2$, $G(w) = w$ gives $\psi \propto s^2$, the
 uniform axial field.
+
+**The rotation from the field: `diff_rot_type = 'ferraro'`** (2026-10-30). The reverse choice: the poloidal field is given (any
+type, `'general'` included) and the rotation is deduced from it, $\Delta\Omega = F(\psi)$, with $\psi$ the field's own flux
+function. Use it when the field is the starting point (a model of an observed or a dynamo field) and the rotation only has to
+be compatible with it; use `B0 = 'ferraro'` when the rotation is. Since $\Delta\Omega$ is constant on every field line,
+$\mathbf{B}_0\cdot\nabla\Delta\Omega = 0$ and the background is steady. Method: $\psi(r, x) = r\sum_n c\,h_n(1 - x^2)P_n'(x)$ from the
+radial profiles of the field (`background_field.pol_profiles`), $F$ evaluated on a Gauss–Legendre grid in $x$ and projected on
+the Legendre polynomials,
+
+$$
+f_n(r) = \frac{2n+1}{2}\int_{-1}^{1}F\big(\psi(r, x)\big)\,P_n(x)\,dx, \qquad n = 0, 2, \dots, \texttt{diff\_rot\_nmax},
+$$
+
+and $\Delta\Omega$ = `diff_rot_ampl` $\cdot\sum_n f_n P_n$, as for the other rotation profiles: the force on the flow, the induction
+term and the thermal wind need nothing new. $F$ = `diff_rot_F` (default `'psi'`), a numpy expression of `psi` and `p`
+(`diff_rot_param`). Rules, checked at the start of a run: a poloidal `B0` is needed (a toroidal field alone has no $\psi$);
+`B0 = 'ferraro'` is refused (each would be built from the other); kore's $\Delta\Omega$ has only even $P_n$, so $F(\psi)$ must be
+symmetric about the equator: any $F$ for a dipolar field ($\psi$ even in $x$), an even $F$ (e.g. of `psi**2`) for a quadrupolar one
+($\psi$ odd), else the run stops; with a conducting inner core $\Delta\Omega(r_i, \theta)$ must be uniform, which in general means
+$\psi$ constant on the inner core's surface. A toroidal part of `B0` is left as it is. The series is cut at `diff_rot_nmax` (even): `ferraro_mismatch` then reports only
+the truncation, at round-off for fields of low degree with a polynomial $F$. Example: the uniform axial field $\psi = r^2\sin^2\theta/2$ with
+$F(\psi) = \psi$ gives $\Delta\Omega \propto s^2$, the cylindrical profile.
 
 **Toroidal field** (step 4). $\mathbf{B}_0^{tor} = c_\mathrm{tor}\nabla\times(k(r)\,Y_n^0\,\mathbf{r})$, purely azimuthal,
 $B_\phi = -c_\mathrm{tor}\,k\,\partial_\theta Y_n^0$: $c_\mathrm{tor}\,k\sin\theta$ for $n$ = `B0_tor_l` = 1, $3c_\mathrm{tor}\,k\sin\theta\cos\theta$ for
@@ -203,7 +226,8 @@ needs nothing new: it does not involve $\mathbf{U}_0$.
   constant along its field lines. The linear problem does not contain this term. `background.ferraro_mismatch` reports
   $\max\lvert \mathbf{B}_0\cdot\nabla\Delta\Omega\rvert \,r/(\max\lvert \mathbf{B}_0\rvert \max\lvert r\nabla\Delta\Omega\rvert )$ at the start of every run; above $10^{-7}$
   `background.FERRARO_POLICY` decides: `'warn'` (default: a warning, the background is assumed to be maintained) or
-  `'refuse'`. Consistent backgrounds: a toroidal field, a `'confined'` field where $\Delta\Omega$ is uniform, or `'ferraro'`.
+  `'refuse'`. Consistent backgrounds: a toroidal field, a `'confined'` field where $\Delta\Omega$ is uniform, `B0 = 'ferraro'`, or
+  `diff_rot_type = 'ferraro'`.
 - **Energy budgets.** spin_doctor's induction work includes $\mathbf{U}_0\times\mathbf{b}$ (on the $(r, \theta)$ grid). Because
   $\mathbf{U}_0\times\mathbf{b}$ does not vanish at a wall where $\Delta\Omega \ne 0$, it carries magnetic energy through the wall into the
   field outside: resid𝐛 (the fluid) uses the induction work with its wall terms, resid𝐄 (the full budget, which counts the
@@ -427,6 +451,13 @@ Everything in `tests/magnetic/` (`run_all.sh`):
   of 'axial' to 10 digits; with $\Delta\Omega \propto s^2(1 - s^2)$ (degrees 0, 2, 4), $\psi$ is rebuilt from degrees 1–7 to
   $4\cdot10^{-15}$, `ferraro_mismatch` is $5\cdot10^{-14}$, and the budgets close to $\le 2\cdot10^{-11}$ in a shell, a full sphere and
   'Wu 2005'.
+- **`diff_rot_type = 'ferraro'`**: the uniform axial field with $F = \psi$ gives the eigenvalues of the cylindrical profile to 10
+  digits, and so does the round trip through `B0 = 'ferraro'` ($G = 5w$; budgets $4\cdot10^{-14}$). `ferraro_mismatch`: $3\cdot10^{-12}$
+  ('FDM'), $6\cdot10^{-12}$ ('G21 dipole', 'Luo_S1'), $2\cdot10^{-12}$ (full sphere), $2\cdot10^{-11}$ ('general' of degrees 1 + 3,
+  $F = \psi + \psi^2$), $2\cdot10^{-10}$ ('Luo_S2' with $F = \psi^2$), $7\cdot10^{-9}$ ('confined', cut at `diff_rot_nmax` 4); budgets
+  $\le 10^{-10}$. Refused as they should be: an odd $F$ with 'Luo_S2', `B0 = 'ferraro'`, a toroidal field alone, a conducting
+  inner core with $\psi$ not constant on it. With a toroidal part of degree 2: `B0 = 'ferraro'` + 'Malkus' and 'Luo_S1' + 'wall' with
+  `diff_rot_type = 'ferraro'` close their budgets to $8\cdot10^{-12}$ and $10^{-9}$.
 - **Unchanged without the new features**: `regress.sh` bitwise, heat_dr, ru_insane identical, and 26 magnetic cases build A and
   B bitwise equal to the code before.
 

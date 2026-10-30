@@ -35,7 +35,7 @@ import angular
 
 # diff_rot_type as written to params.dat (spin_doctor): its index in this tuple. Append new types at the end.
 TYPES = ('Y20', 'Y20-wall-bounded', 'shellular', 'shellular_boussinesq', 'cylindrical', 'conical', 'solar', 'rigid',
-         'solar_P4', 'tabulated', 'user')
+         'solar_P4', 'tabulated', 'user', 'ferraro')
 DIGITS = '0123456789abcdefghijklmnopqrstuvwxyz'   # the degree character of the profile codes
 
 
@@ -118,6 +118,39 @@ def _user_shape(expr):
         return np.broadcast_to(np.asarray(val, dtype=float), r.shape).copy()
     return f
 
+def _ferraro_shapes():
+    '''
+    NEW (2026-10-30): diff_rot_type 'ferraro', the rotation deduced from the poloidal background field: ΔΩ = F(ψ), ψ the
+    field's flux function. WHY: an axisymmetric poloidal field B0 = ∇ψ × ∇φ and a rotation that is a function of ψ alone
+    satisfy B0⋅∇Ω = 0 (Ferraro's law of isorotation), so they form a steady background; this is the reverse of
+    B0 = 'ferraro' (the field built from a given rotation). HOW: for kore's field Σ_n cnorm ∇×∇×(h_n Y_n⁰ 𝐫) the vector
+    potential is A_φ = cnorm h_n sinθ P_n'(x), so ψ = r sinθ A_φ = r Σ_n cnorm h_n (1 - x²) P_n'(x) (background_field.pol_profiles).
+    F = diff_rot_F, a numpy expression of psi and p (diff_rot_param); each f_n(r) = (2n+1)/2 ∫ F(ψ(r, x)) P_n(x) dx by
+    Gauss-Legendre quadrature, for the even n up to diff_rot_nmax. Kore's ΔΩ has only even degrees: F(ψ) must be even in x,
+    which holds for any F with a dipolar field (ψ even), and needs an even F with a quadrupolar one (check() stops otherwise).
+    The series is cut at diff_rot_nmax: background.ferraro_mismatch reports what that leaves of B0⋅∇Ω.
+    '''
+    import background_field as bf
+    if par.B0 == 'ferraro':   # (before pol_profiles: each would build the other without end)
+        sys.exit("diff_rot_type 'ferraro' with B0 'ferraro' is circular (each is built from the other): choose one")
+    prof = bf.pol_profiles()
+    nmax = par.diff_rot_nmax
+    xg, wg = np.polynomial.legendre.leggauss(4*nmax + 64)
+    P = np.polynomial.legendre.Legendre
+    code = compile(par.diff_rot_F, '<diff_rot_F>', 'eval')
+    def F_on_grid(r, x):
+        r = np.atleast_1d(np.asarray(r, dtype=float))
+        psi = sum(np.outer(r*f(r, 0), (1 - x**2)*P.basis(n).deriv()(x)) for n, f in prof.items())
+        val = eval(code, {'__builtins__': {}}, dict(_USER_NS, psi=psi, p=par.diff_rot_param))
+        return np.broadcast_to(np.asarray(val, dtype=float), psi.shape)
+    def fn(n):
+        def f(r):
+            r = np.asarray(r, dtype=float)
+            out = (2*n + 1)/2*(F_on_grid(r.ravel(), xg) @ (wg*P.basis(n)(xg)))
+            return out.reshape(r.shape)
+        return f
+    return {n: fn(n) for n in range(0, nmax + 1, 2)}, F_on_grid
+
 def shapes():
     '''{n: f_n(r)}: the shape of each Legendre degree of ΔΩ for par.diff_rot_type, before the factor diff_rot_ampl'''
     t, p = par.diff_rot_type, par.diff_rot_param
@@ -152,6 +185,8 @@ def shapes():
             sys.exit('diff_rot_nmax must be even and >= 0')
         fits = _tabulated_fits()
         return {n: (lambda r, n=n: fits[n](solar_x(r))) for n in sorted(fits)}
+    if t == 'ferraro':                 # NEW (2026-10-30): ΔΩ = F(ψ) from the poloidal B0 (_ferraro_shapes)
+        return _ferraro_shapes()[0]
     if t == 'user':                    # numpy expressions of r, x, p for each even degree
         prof = par.diff_rot_profiles
         if not prof:
@@ -203,6 +238,20 @@ def check():
         sys.exit('thermal_wind must be 0, 1, 2 or 3')
     if par.thermal and par.thermal_wind in (1, 2) and par.Beyonce == 0:
         sys.exit('thermal_wind = 1, 2 needs Beyonce > 0 (S_tw is O(1/Beyonce)): set thermal_wind = 0 or set Beyonce after set_scales()')
+    if par.diff_rot_type == 'ferraro':   # NEW (2026-10-30)
+        if not par.magnetic or par.B0 is None:
+            sys.exit("diff_rot_type 'ferraro' deduces ΔΩ from the poloidal background field: it needs magnetic = 1 and a poloidal B0")
+        if par.B0 == 'ferraro':
+            sys.exit("diff_rot_type 'ferraro' with B0 'ferraro' is circular (each is built from the other): choose one")
+        if par.diff_rot_nmax < 0 or par.diff_rot_nmax % 2:
+            sys.exit('diff_rot_nmax must be even and >= 0')
+        r = np.linspace(max(par.ricb, 0.05), 1, 40)
+        x = np.linspace(0.05, 0.95, 19)
+        F = _ferraro_shapes()[1]
+        a, b = F(r, x), F(r, -x)
+        if np.abs(a - b).max() > 1e-10*max(np.abs(a).max(), 1e-300):
+            sys.exit("diff_rot_type 'ferraro': F(ψ) is not symmetric about the equator (ψ of a quadrupolar field is odd in cos θ: "
+                     "use an even F, e.g. a function of psi**2); kore's ΔΩ has only even degrees")
     for n in degrees() + tw_degrees():
         codes(n)
 

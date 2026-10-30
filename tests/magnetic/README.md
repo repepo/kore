@@ -16,6 +16,7 @@ Companion of `docs/magnetic.md`, for the magnetic terms with a variable density 
 | `dr_induction_check.py [--quick]` | NEW (2026-10-30): the induction by a differential rotation, ∇×(U0×b), of `diff_rot.induction_block` against `derive.rows_dr` (sympy), every block for n = 0–6, m up to 5, l up to 25 (sympy's quadrature limits the agreement to ~1e-10 at l 20–25) |
 | `algebra_check.py [--quick]` | NEW (2026-10-30): the couplings of `bin/mag_algebra.py` (any background degree) against derive.py, poloidal and toroidal fields of degree 1–4 |
 | `rigid_check.py [c]` | NEW (2026-10-30): ΔΩ = c is a rigid rotation, so λ(ΔΩ = c) = λ(Gaspard 1 + c) - i m c exactly, for 'axial', 'Luo_S2', 'Malkus', a conducting inner core, a full sphere and a 'general' field (builds and solves runs in the current directory) |
+| `budget_check.py` on `bfdr`, `bfer_tor` (run_all.sh) | NEW (2026-10-30): `diff_rot_type = 'ferraro'`, ΔΩ = F(ψ) from a 'general' field of degrees 1 + 3 with F = psi + psi**2, and `B0 = 'ferraro'` with a toroidal part ('Malkus' degree 2): the budgets close |
 | `continuity.py [eps ...]` | 'Wu 2005' with r_out = sqrt(eps) (stratification O(eps)) against 'Boussinesq': (λ - λ_uniform)/eps must tend to a constant |
 
 `derive.py --b0 pol1|pol2|tor1|tor2` (NEW 2026-10-29) picks the background field from the command line. The closed forms were
