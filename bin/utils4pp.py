@@ -1238,31 +1238,48 @@ def ylm_grid(m, lmax, x):
 
 
 
-def torque_tor_walls(b_sol2):
+def torque_walls(b_sol2, pol, tor):
     '''
-    NEW (2026-10-30): the torque of a toroidal B0 on the fluid, the Maxwell stress b_r*B0_phi on the fluid side of the walls
-    (wherever k != 0 there, insulating or not), in the units of angrymom (no Le2, OmgTau factors): axial for m = 0, symm = 1,
-    equatorial for m = 1, symm = -1 (angrymom = -2 sqrt(2) times pi int r (-u_phi cos(theta) - i u_theta) dV), else 0.
-    b_r = l(l+1) f_l/r Y_l from the Chebyshev coefficients of f at the wall.
+    NEW (2026-10-30): the Lorentz torque on the fluid through its walls, from the Maxwell stress on their fluid side,
+    oint [ b_r (r x B0) + B0_r (r x b) ] dS (the B0.b term has no torque), in the units of angrymom (no Le2, OmgTau
+    factors): axial for m = 0, symm = 1, equatorial for m = 1, symm = -1 (angrymom = -2 sqrt(2) pi times
+    int [cos(theta) (r x u)_theta - i (r x u)_phi] dV), else 0. pol, tor: [ICB, CMB], whether to take the poloidal and the
+    toroidal B0 at that wall. b from the Chebyshev coefficients of f and g at the wall.
     '''
-    if par.B0_tor is None or not ((par.m == 0 and par.symm == 1) or (par.m == 1 and par.symm == -1)):
+    if not ((par.m == 0 and par.symm == 1) or (par.m == 1 and par.symm == -1)):
         return 0
-    n  = par.B0_tor_l
-    lp = ut.ell(par.m, par.lmax, ut.bsymm)[0]
-    x, w = np.polynomial.legendre.leggauss(par.lmax + 8)
-    Y   = ylm_grid(par.m, par.lmax + 1, x)[0]  # b goes up to lmax + 1
-    dY0 = ylm_grid(0, n, x)[1][n]
+    lp, lt, _ = ut.ell(par.m, par.lmax, ut.bsymm)
+    x, w = np.polynomial.legendre.leggauss(par.lmax + 9)
+    Y, dY, Z = ylm_grid(par.m, par.lmax + 1, x)  # b goes up to lmax + 1
+    Y0, dY0, _ = ylm_grid(0, 2, x)                # B0 of degree 1 or 2
     out = 0
-    for r, sgn in ((ut.rcmb, 1), (par.ricb, -1)):  # outward normal of the fluid
-        if r == 0:
+    for r, sgn, p, t in ((par.ricb, -1, pol[0], tor[0]), (ut.rcmb, 1, pol[1], tor[1])):  # outward normal of the fluid
+        if r == 0 or not (p or t):
             continue
-        xr = xcheb(np.array([r]), par.ricb, ut.rcmb)
-        br = sum( l*(l+1)*ch.chebval(xr, b_sol2[0][j,:])[0]/r * Y[l] for j, l in enumerate(lp) )
-        B0phi = -ut.cnorm_tor*ut.ktor(r, 0)*dY0
+        rr = np.array([r], dtype=float)  # rcmb is the integer 1, and h0 fills an array like rr
+        xr = xcheb(rr, par.ricb, ut.rcmb)
+        P, T = b_sol2[0].T, b_sol2[1].T  # one column per l: all l at once (one Clenshaw sum each, not one per l)
+        f  = ch.chebval(xr, P)[:,0]
+        df = ch.chebval(xr, ut.Dcheb(P, par.ricb, ut.rcmb))[:,0]
+        g  = ch.chebval(xr, T)[:,0]
+        s  = df + f/r  # poloidal: b_r = L f/r Y, b_theta = s dY, b_phi = s Z, s = f' + f/r; toroidal: b_theta = g Z, b_phi = -g dY
+        br = (lp*(lp+1)*f/r) @ Y[lp]
+        bt = s @ dY[lp] + g @ Z[lt]
+        bp = s @ Z[lp] - g @ dY[lt]
+        B0r, B0t, B0p = 0, 0, 0
+        if p:  # poloidal B0 = curl curl(h Y_l0 r)
+            l0 = ut.B0_l
+            a  = [par.beta, l0, par.ricb, 0]
+            h, dh = ut.B0_norm()*ut.h0(rr, par.B0, a)[0], ut.B0_norm()*ut.h1(rr, par.B0, a)[0]
+            B0r, B0t = l0*(l0+1)*h/r*Y0[l0], (dh + h/r)*dY0[l0]
+        if t:  # toroidal B0 = curl(k Y_n0 r)
+            B0p = -ut.cnorm_tor*ut.ktor(r, 0)*dY0[par.B0_tor_l]
+        tth = -r*(br*B0p + B0r*bp)  # theta and phi components of r x (b_r B0 + B0_r b)
+        tph =  r*(br*B0t + B0r*bt)
         if par.m == 0:
-            out += sgn*2*np.pi*r**3*np.sum( w*np.sqrt(1 - x**2)*B0phi*br )
+            out += sgn*2*np.pi*r**2*np.sum( w*np.sqrt(1 - x**2)*(-tth) )
         else:
-            out += sgn*2*np.sqrt(2)*np.pi*r**3*np.sum( w*x*B0phi*br )
+            out += sgn*(-2*np.sqrt(2)*np.pi)*r**2*np.sum( w*(x*tth - 1j*tph) )
     return out
 
 

@@ -211,7 +211,7 @@ def main(ncpus):
     Indu        = np.zeros(success)
     mtorq       = np.zeros(success,dtype=complex)  # electromagnetic torque on the mantle
     mtorq_ic    = np.zeros(success,dtype=complex)  # electromagnetic torque on the IC   
-    ttorq       = np.zeros(success,dtype=complex)  # NEW (2026-10-30): torque of a toroidal B0 on the fluid, b_r*B0_phi at the walls
+    wtorq       = np.zeros(success,dtype=complex)  # NEW (2026-10-30): Lorentz torques on the fluid at its walls that mtorq, mtorq_ic leave out
     TE          = np.zeros(success)
     Wadv_thm    = np.zeros(success)
     Dthm        = np.zeros(success)
@@ -222,7 +222,7 @@ def main(ncpus):
     resid1      = np.zeros(success)
     resid2      = np.zeros(success)
     resid3      = np.zeros(success)
-    residL      = np.full(success, np.nan)    # axial angular momentum balance of the fluid (m=0, symm=1 only)
+    residL      = np.full(success, np.nan)    # angular momentum balance of the fluid (m=0, symm=1 axial; m=1, symm=-1 equatorial)
     residE      = np.full(success, np.nan)    # NEW (2026-10-18): full energy budget (fluid, inner core, walls, outside)
     budget      = np.full((success, 7), np.nan)  # NEW (2026-10-18): ME_ic, E_w, ME_ext, Ohm_f, Ohm_ic, Ohm_w, W_ex
     y           = np.zeros(success)                # for eigenmode tracking
@@ -276,8 +276,12 @@ def main(ncpus):
         lpi = np.searchsorted(ll,lp);  # Poloidal indices
         lti = np.searchsorted(ll,lt);  # Toroidal indices
 
-    do_vtorq = par.hydro and (par.bco == 1) and ((par.m==0) and (par.symm==1)) or ((par.m==1) and (par.symm==-1))
-    do_vtorq_ic = par.hydro and (par.bci == 1) and ((par.m==0) and (par.symm==1)) or ((par.m==1) and (par.symm==-1))
+    # FIX (2026-10-30): parentheses around the (m, symm) cases, as for do_mtorq, no inner-core torque in a full sphere, and
+    # none with Ek = 0 (bci, bco are then ignored). Without them every m=1, symm=-1 run took a viscous torque also at
+    # stress-free walls, and a full sphere one at r = 0: with no torque at all L is zero to round-off, and resid L was O(1)
+    # (now 0, as for m=0 with stress-free walls)
+    do_vtorq = par.hydro and (par.Ek != 0) and (par.bco == 1) and (((par.m==0) and (par.symm==1)) or ((par.m==1) and (par.symm==-1)))
+    do_vtorq_ic = par.hydro and (par.Ek != 0) and (par.bci == 1) and (par.ricb > 0) and (((par.m==0) and (par.symm==1)) or ((par.m==1) and (par.symm==-1)))
 
     if do_vtorq:
         gvisc     = ut.gamma_visc(0,0,0)[0,:]    # viscous torque on the mantle
@@ -287,12 +291,23 @@ def main(ncpus):
     # FIX (2026-10-29): parentheses around the (m, symm) cases; without them every m=1, symm=-1 run had do_mtorq True
     # (hydro or insulating mantle included) and crashed in gamma_magnetic
     # NEW (2026-10-30): the magnetic torques on the mantle and the inner core are those of a poloidal B0 (B0_r*b_phi). A toroidal
-    # B0 with k != 0 at a wall (insulating or not) adds the stress b_r*B0_phi on the fluid there: it enters resid L (ttorq), but
+    # B0 with k != 0 at a wall (insulating or not) adds the stress b_r*B0_phi on the fluid there: it enters resid L (wtorq), but
     # not the torques on the mantle and the inner core, which also get the force on its current sheet (rotdyn = 1 stops on it)
     pol_B0      = par.magnetic and (par.B0 is not None)
-    do_ttorq    = par.magnetic and par.hydro and (par.B0_tor is not None) and ut.k_at_walls().any()
     do_mtorq    = pol_B0 and (par.mantle == 'TWA') and (((par.m==0) and (par.symm==1)) or ((par.m==1) and (par.symm==-1)))
     do_mtorq_ic = pol_B0 and (par.innercore in ['conducting, Chebys', 'TWA']) and ((par.m==0) and (par.symm==1))
+    # FIX (2026-10-30): for m=1, symm=-1 a poloidal B0 also exerts torques that gamma_magnetic (TWA mantle only) and
+    # gamma_magnetic_ic (m=0 only) leave out: through an insulating mantle when B0 is imposed from outside ('axial': the
+    # torque m x B0 on the induced dipole m), and through the ICB when the inner core conducts, carries B0's currents
+    # (B0_ic other than 'potential', as in ut.B0_beta_ic) or holds its point source ('dipole': the torque m0 x b(0)).
+    # resid L takes them from the Maxwell stress on the fluid side of that wall (wtorq). For m=0 they vanish
+    # (b_phi = 0 at an insulating wall) or gamma_magnetic_ic has them.
+    eq_B0       = pol_B0 and (par.forcing == 0) and (par.m == 1) and (par.symm == -1)
+    pol_walls   = [ eq_B0 and (par.ricb > 0) and ( par.innercore != 'insulator' or par.B0 == 'dipole' or
+                                               (ut.B0_ic != 'potential' and par.B0 in ut.B0_ic_list) ),
+                    eq_B0 and (par.mantle != 'TWA') and (par.B0 not in ut.B0_cmb_list) ]  # [ICB, CMB]
+    tor_walls   = ut.k_at_walls() if (par.magnetic and par.B0_tor is not None) else [False, False]
+    do_wtorq    = par.magnetic and par.hydro and (any(pol_walls) or any(tor_walls))
     if do_mtorq:
         gmag    = ut.gamma_magnetic()[0,:]     # row vector, like gvisc (avoids a numpy deprecation when storing the torque)
     if do_mtorq_ic:
@@ -387,8 +402,8 @@ def main(ncpus):
             if do_mtorq_ic:
                 mtorq_ic[i] = par.Le2 * (par.OmgTau**2) * np.dot( gmag_ic, b_sol )
 
-            if do_ttorq:
-                ttorq[i] = par.Le2 * (par.OmgTau**2) * upp.torque_tor_walls(b_sol2)  # on the fluid
+            if do_wtorq:
+                wtorq[i] = par.Le2 * (par.OmgTau**2) * upp.torque_walls(b_sol2, pol_walls, tor_walls)  # on the fluid
 
         if par.rotdyn:
 
@@ -475,17 +490,24 @@ def main(ncpus):
             resid3[i] = abs( 2*sigma*TE[i] - Dthm[i] - Wadv_thm[i] ) / \
                              max( abs(2*sigma*TE[i]), abs(Dthm[i]), abs(Wadv_thm[i]))
 
-        # Axial angular momentum balance of the fluid: dL/dt = lambda*L must equal the torque on the fluid,
-        # which is minus the viscous and magnetic torques it exerts on the mantle and the inner core
-        # (gravitational torques act only between mantle and inner core). Only for eigenvalue problems with
-        # m=0, symm=1, where angrymom and the torques are defined; body forcing would add a torque not included here.
+        # Angular momentum balance of the fluid: dL/dt = lambda*L must equal the torque on the fluid,
+        # which is minus the viscous and magnetic torques it exerts on the mantle and the inner core, plus the wall
+        # stresses wtorq (gravitational torques act only between mantle and inner core). Only for eigenvalue problems with
+        # m=0, symm=1 (axial) and m=1, symm=-1 (equatorial, with the Coriolis torque), where angrymom and the torques are
+        # defined; body forcing would add a torque not included here.
         # Also for the steady forcing 12 (w = sigma = 0): the torques on the mantle and the inner core cancel.
-        if not (do_vtorq or do_mtorq or do_vtorq_ic or do_mtorq_ic or do_ttorq):
+        # FIX (2026-10-30): nan outside those cases (it was 0 for other m, symm, and for forced runs without a torque flag),
+        # and 0 when no torque acts at the walls: the balance is then (lambda - i m OmgTau) L = 0, which is not tested
+        L_case = par.hydro and ( (par.forcing in (0, 12) and par.m == 0 and par.symm == 1) or
+                                 (par.forcing == 0 and par.m == 1 and par.symm == -1) )
+        if not L_case:
+            pass  # stays nan
+        elif not (do_vtorq or do_mtorq or do_vtorq_ic or do_mtorq_ic or do_wtorq):
             residL[i] = 0
 
         elif par.hydro and par.forcing in (0, 12) and (par.m == 0 and par.symm == 1):
             dLdt    = (sigma + 1j*w) * angmom[i]
-            torques = [ vtorq[i], vtorq_ic[i], mtorq[i], mtorq_ic[i], -ttorq[i] ]
+            torques = [ vtorq[i], vtorq_ic[i], mtorq[i], mtorq_ic[i], -wtorq[i] ]
             scale   = max( [abs(dLdt)] + [abs(t) for t in torques] )
             if scale > 0:
                 residL[i] = abs( dLdt + sum(torques) ) / scale
@@ -493,7 +515,7 @@ def main(ncpus):
         elif par.hydro and par.forcing == 0 and (par.m == 1 and par.symm == -1):
             dLdt    = (sigma + 1j*w) * angmom[i]
             ctorq   = -par.OmgTau * 1j * angmom[i]
-            torques = [ vtorq[i], vtorq_ic[i], mtorq[i], mtorq_ic[i], -ttorq[i], ctorq ]
+            torques = [ vtorq[i], vtorq_ic[i], mtorq[i], mtorq_ic[i], -wtorq[i], ctorq ]
             scale   = max( [abs(dLdt)] + [abs(t) for t in torques] )
             if scale > 0:
                 residL[i] = abs( dLdt + sum(torques) ) / scale

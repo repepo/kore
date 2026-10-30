@@ -110,7 +110,7 @@ The term $\mathcal{D}_l F$ stands for the wall's $\partial_t F/\eta$, taken from
 
 ## Electromagnetic torques
 
-A conducting layer or inner core lets currents close outside the fluid, and the Lorentz force then exerts an axial torque on the boundary. `spin_doctor.py` reports it for $m = 0$, symmetric flows: $|\Gamma|_{mag}$ for the mantle (with `mantle = 'TWA'`) and $|\Gamma|_{magIC}$ for the inner core (with `'conducting, Chebys'` or `'TWA'`). The complex torques are written to `magnetic.dat` (see [Output and postprocessing](output.md)). With `rotdyn = 1` the same torques make the mantle and inner core rotate (see [Rotational dynamics](rotdyn.md)).
+A conducting layer or inner core lets currents close outside the fluid, and the Lorentz force then exerts a torque on the boundary. `spin_doctor.py` reports $|\Gamma|_{mag}$ for the mantle (with `mantle = 'TWA'`) for $m = 0$, `symm = 1` (axial) and $m = 1$, `symm = -1` (equatorial), and $|\Gamma|_{magIC}$ for the inner core (with `'conducting, Chebys'` or `'TWA'`) for $m = 0$, `symm = 1`. The complex torques are written to `magnetic.dat` (see [Output and postprocessing](output.md)). With `rotdyn = 1` the same torques make the mantle and inner core rotate (see [Rotational dynamics](rotdyn.md)).
 
 
 ## Thin wall or conducting inner core?

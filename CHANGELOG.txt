@@ -3,6 +3,41 @@ CHANGELOG - Kore, conductive_IC branch
 
 2026-10-30
 ----------
+Fix: torques in resid L of spin_doctor (bin/spin_doctor.py, bin/utils4pp.py, docs/output.md, docs/equations.md,
+docs/boundaries.md)
+- do_vtorq and do_vtorq_ic lacked the parentheses around their (m, symm) cases, as do_mtorq did before 2026-10-29, so
+  every m = 1, symm = -1 run took the viscous torque also at stress-free walls, and do_vtorq_ic held in a full sphere.
+  With no torque on the fluid L vanishes to round-off (but for lambda = 0 at m = 0, lambda = i OmgTau at m = 1), and
+  resid L, a ratio of round-off terms, was O(1): 0.1 to 0.8 for m = 1 with stress-free walls (shell or full sphere), 1
+  for m = 0 in a full sphere with a stress-free CMB. Both now give resid L = 0 (nothing to balance), as m = 0 with
+  stress-free walls in a shell did already. So does Ek = 0, which ignores bci and bco but left them at 1.
+- For m = 1, symm = -1 resid L also left out Lorentz torques on the fluid that gamma_magnetic (thin-wall mantle) and
+  gamma_magnetic_ic (m = 0 only) do not give: through an insulating CMB for B0 = 'axial', whose sources lie outside
+  (the torque m x B0 on the induced dipole), and through the ICB of a conducting or thin-wall inner core, or of one
+  that holds currents or sources of B0 (B0_ic = 'full sphere', B0 = 'dipole'). resid L stayed at 6e-6 to 1e-2 (up to
+  0.6 with stress-free or inviscid walls). spin_doctor now takes them from the Maxwell stress on the fluid side of that
+  wall: utils4pp.torque_walls, which replaces torque_tor_walls and also gives the stress of a toroidal B0. It evaluates
+  all degrees at once (about 0.5 s per solution at N = 1008). For m = 0 these torques vanish or are gamma_magnetic_ic's.
+- resid L is nan outside the cases it covers (other m or symm, forced problems other than forcing = 12, hydro = 0); it
+  was 0 there when no torque flag was set.
+- Checked on chandler (z2, PETSc; N 64, Ek = Em = 1e-3 unless said; 43 cases, before and after): eigenvalues unchanged
+  (to 1e-14). m = 1 with a poloidal B0 where a torque was missing (14 cases: 'axial', FDM l = 1 and 2, 'G21 dipole' with
+  B0_ic = 'full sphere', 'Luo_S2'; insulating, conducting, thin-wall and no inner core; insulating and thin-wall
+  mantles; no-slip and stress-free walls): resid L 6e-6 to 0.6 -> 3e-16 to 2e-11. Stress-free walls (shell, or full
+  sphere with a stress-free CMB) without a magnetic torque: O(1) -> 0. m = 0, no-slip hydro, a toroidal B0 alone and a
+  thin-wall mantle with 'axial': unchanged (1e-16 to 6e-11). Ek = 0 with bci = bco = 1 and no magnetic torque: 1 or 0.3
+  -> 0. m = 2, and m = 1 with symm = 1: 0 -> nan. Inviscid full sphere (Ek = 0): resolved modes balance to
+  round-off in absolute terms; resid L stays 1e-3 to 1e-2 for unresolved modes (resid u, b 0.1 to 0.6) and for modes
+  with a tiny L (1e-12). Locally: torque_walls equals -gamma_magnetic at a thin-wall mantle (m = 0 and 1) and
+  -gamma_magnetic_ic (m = 0) to round-off, and the volume integral of the Lorentz torque to 1e-11 (16 cases).
+  B0 = 'dipole' with an inner core stops in assemble.py (r2etaIf undefined: submatrices.py does not build the eta
+  matrices for it, unrelated); with that patched it closes.
+- docs/output.md: resid L for m = 1, symm = -1, the wall stresses it includes, when it is 0 or nan; torques are axial
+  or equatorial. docs/equations.md: the m = 1 balance and the wall stress. docs/boundaries.md: torques for m = 1.
+
+
+2026-10-30
+----------
 New: toroidal background field B0_tor, ported from anelastic_log (bin/params_default.py, bin/utils.py,
 bin/operators.py, bin/submatrices.py, bin/assemble.py, bin/utils4pp.py, bin/spin_doctor.py,
 docs/background-field.md, docs/equations.md, docs/output.md, docs/setup.md)

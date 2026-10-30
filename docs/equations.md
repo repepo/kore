@@ -268,6 +268,20 @@ It is nonzero only on a body in which currents can flow: the mantle with a thin 
 
 A toroidal background field (`B0_tor`, see [Background magnetic field](background-field.md#toroidal-field-b0_tor)) adds the stress $b_r B_{0\phi}$ wherever $k \ne 0$ at a wall, conducting or not (for $m = 0$ it involves $f_2$ at the wall for `B0_tor_l = 1`, $f_1$ and $f_3$ for `B0_tor_l = 2`). Its torque on the fluid enters `resid𝐋`; the torques on the mantle and the inner core above leave it out, which is why `rotdyn = 1` needs $k = 0$ at the walls.
 
+For $m = 1$, `symm = -1`, `resid𝐋` checks the equatorial components of the same balance. The angular momentum is then the complex amplitude $L = \frac{16\pi}{3}\int_{r_i}^{1} r^3\, t_1(r)\, dr$ of the degree-1 toroidal flow, and the Coriolis torque of the rotating frame enters:
+
+$$
+\lambda\, L = i\,(\Omega\tau)\, L - \left( \Gamma^{\nu}_M + \Gamma^{\nu}_{IC} + \Gamma^{B}_M \right) + \Gamma^{B}_{w} .
+$$
+
+$\Gamma^{B}_{w}$ is the Lorentz torque on the fluid that $\Gamma^{B}_M$ leaves out, the Maxwell stress on the fluid side of its walls (outward normal of the fluid):
+
+$$
+\Gamma^{B}_{w} = Le^2 (\Omega\tau)^2 \oint \mathbf{r}\times\left( b_r\, \mathbf{B}_0 + B_{0r}\, \mathbf{b} \right) dS .
+$$
+
+`spin_doctor` evaluates it at an insulating CMB for `B0 = 'axial'`, whose sources lie outside (it is the torque $\mathbf{m}\times\mathbf{B}_0$ on the induced dipole $\mathbf{m}$), and at the ICB of a conducting or thin-wall inner core, or of one that holds currents or sources of $\mathbf{B}_0$ (`B0_ic = 'full sphere'`, `B0 = 'dipole'`). At a thin-wall mantle its CMB part equals $-\Gamma^{B}_M$, already in the balance. For $m = 0$ these terms vanish ($b_\phi = 0$ at an insulating wall) or are $-\Gamma^{B}_{IC}$; the stress of a toroidal field above is part of $\Gamma^{B}_{w}$ for both $m$.
+
 
 ### The mantle and the inner core
 
