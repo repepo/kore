@@ -686,6 +686,7 @@ def main():
 
                         # Physics ---------------------------------------
                         mtx = op.lorentz(l,'u','bpol', i)
+                        if np.isscalar(mtx[0]): continue  # NEW (2026-10-30): no coupling at this dl
                         # -----------------------------------------------
                         col = basecol + col0 + mtx[1] * ut.N1
                         loc_list = ut.packit( loc_list, mtx[0], row, col)
@@ -696,12 +697,13 @@ def main():
                 # ------------------------------------------------------------------------------------------------------
                 basecol = 3*nb*ut.N1  # btor
 
-                for i in [ -1, 0, 1 ]:
+                for i in [ -2, -1, 0, 1, 2 ]:  # NEW (2026-10-30): dl = ±2 for a toroidal B0 of degree 2 (was -1..1)
 
                     if l+i in ll_mag[1]:
 
                         # Physics ---------------------------------------
                         mtx = op.lorentz(l,'u','btor', i)
+                        if np.isscalar(mtx[0]): continue  # NEW (2026-10-30): no coupling at this dl
                         # -----------------------------------------------
                         col = basecol + col0 + mtx[1] * ut.N1
                         loc_list = ut.packit( loc_list, mtx[0], row, col)
@@ -800,12 +802,13 @@ def main():
                 # ------------------------------------------------------------------------------------------------------
                 basecol = 2*nb*ut.N1  #bpol
 
-                for i in [ -1, 0, 1 ]:
+                for i in [ -2, -1, 0, 1, 2 ]:  # NEW (2026-10-30): dl = ±2 for a toroidal B0 of degree 2 (was -1..1)
 
                     if l+i in ll_mag[0]:
 
                         # Physics ---------------------------------------
                         mtx = op.lorentz(l,'v','bpol', i)
+                        if np.isscalar(mtx[0]): continue  # NEW (2026-10-30): no coupling at this dl
                         # -----------------------------------------------
                         col = basecol + col0 + mtx[1] * ut.N1
                         loc_list = ut.packit( loc_list, mtx[0], row, col)
@@ -822,6 +825,7 @@ def main():
 
                         # Physics ---------------------------------------
                         mtx = op.lorentz( l, 'v', 'btor', i)
+                        if np.isscalar(mtx[0]): continue  # NEW (2026-10-30): no coupling at this dl
                         # -----------------------------------------------
                         col = basecol + col0 + mtx[1] * ut.N1
                         loc_list = ut.packit( loc_list, mtx[0], row, col)
@@ -884,6 +888,7 @@ def main():
 
                         # Physics ---------------------------------------
                         mtx = op.induction(l, 'f', 'upol', i)
+                        if np.isscalar(mtx[0]): continue  # NEW (2026-10-30): no coupling at this dl
                         # -----------------------------------------------
                         col = basecol + col0 + mtx[1] * ut.N1
                         loc_list = ut.packit( loc_list, mtx[0], row, col)
@@ -894,12 +899,13 @@ def main():
                 # ------------------------------------------------------------------------------------------------------
                 basecol = nb*ut.N1  # utor
 
-                for i in [ -1, 0, 1 ]:
+                for i in [ -2, -1, 0, 1, 2 ]:  # NEW (2026-10-30): as the other magnetic couplings (was -1..1)
 
                     if l+i in ll_flo[1]:
 
                         # Physics ---------------------------------------
                         mtx = op.induction(l,'f','utor', i)
+                        if np.isscalar(mtx[0]): continue  # NEW (2026-10-30): no coupling at this dl
                         # -----------------------------------------------
                         col = basecol + col0 + mtx[1] * ut.N1
                         loc_list = ut.packit( loc_list, mtx[0], row, col)
@@ -973,12 +979,13 @@ def main():
                 # ------------------------------------------------------------------------------------------------------
                 basecol = 0
 
-                for i in [ -1, 0, 1]:
+                for i in [ -2, -1, 0, 1, 2 ]:  # NEW (2026-10-30): dl = ±2 for a toroidal B0 of degree 2 (was -1..1)
 
                     if l+i in ll_flo[0]:
 
                         # Physics ---------------------------------------
                         mtx = op.induction(l,'g','upol',i)
+                        if np.isscalar(mtx[0]): continue  # NEW (2026-10-30): no coupling at this dl
                         # -----------------------------------------------
                         col = basecol + col0 + mtx[1] * ut.N1
                         loc_list = ut.packit( loc_list, mtx[0], row, col)
@@ -995,6 +1002,7 @@ def main():
 
                         # Physics ---------------------------------------
                         mtx = op.induction(l,'g','utor',i)
+                        if np.isscalar(mtx[0]): continue  # NEW (2026-10-30): no coupling at this dl
                         # -----------------------------------------------
                         col = basecol + col0 + mtx[1] * ut.N1
                         loc_list = ut.packit( loc_list, mtx[0], row, col)

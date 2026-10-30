@@ -577,7 +577,8 @@ def flow_worker( l, lp, lt, u_sol2, b_sol2, t_sol2, c_sol2, Ra, Rb, N, sqx, eigv
     
     L = l*(l+1)
 
-    if par.magnetic:
+    pol_B0 = par.magnetic and (par.B0 is not None)  # NEW (2026-10-30): a toroidal B0's work is added by magnetic_powers_grid
+    if pol_B0:
         [ qlmb, slmb, tlmb ] = lorentz4pp(l, b_sol2)  # the l-component of the Lorentz force
         
     if par.thermal:
@@ -594,7 +595,7 @@ def flow_worker( l, lp, lt, u_sol2, b_sol2, t_sol2, c_sol2, Ra, Rb, N, sqx, eigv
         kinep = energy_pol(l, qlm0, slm0 )
         kindp = diffus_pol(l, qlm0, qlm1, qlm2, slm0, slm1, slm2 )
         intdp = internl_dissip_pol(l, qlm0, qlm1, slm0, slm1 )
-        if par.magnetic:
+        if pol_B0:
             wlorp = lorentz_power_pol(l, qlm0, slm0, qlmb, slmb )
         if par.thermal:
             wther = buoyancy_power(l, qlm0*rk/(l*(l+1)), hlm0 )
@@ -608,7 +609,7 @@ def flow_worker( l, lp, lt, u_sol2, b_sol2, t_sol2, c_sol2, Ra, Rb, N, sqx, eigv
         kinet = energy_tor(l, tlm0)
         kindt = diffus_tor(l, tlm0, tlm1, tlm2)
         intdt = internl_dissip_tor(l, tlm0, tlm1)
-        if par.magnetic:
+        if pol_B0:
             wlort = lorentz_power_tor(l, tlm0, tlmb)
 
     # Integrals
@@ -642,7 +643,10 @@ def magnetic_worker(l, lp, lt, b_sol2, u_sol2, Ra, Rb, N, sqx):
 
     L = l*(l+1)
 
-    if par.hydro:
+    # NEW (2026-10-30): the poloidal B0's induction only (a toroidal B0's is added by magnetic_powers_grid); with
+    # hydro = 0 there is no induction (FIX: indup, indut used qlmi, tlmi without a flow, an UnboundLocalError)
+    pol_B0 = par.hydro and (par.B0 is not None)
+    if pol_B0:
 
         [ qlmi, slmi, tlmi ] = induction4pp(l, u_sol2)  # the l-component of the induction term 
 
@@ -652,7 +656,8 @@ def magnetic_worker(l, lp, lt, b_sol2, u_sol2, Ra, Rb, N, sqx):
 
         menep = energy_pol(l, qlm0, slm0)
         mdfsp = diffus_pol(l, qlm0, qlm1, qlm2, slm0, slm1, slm2 )
-        indup = dotprod_pol(l, qlm0, slm0, qlmi, slmi)
+        if pol_B0:
+            indup = dotprod_pol(l, qlm0, slm0, qlmi, slmi)
         brrms = rms(l, qlm0)
 
     elif l in lt:
@@ -661,7 +666,8 @@ def magnetic_worker(l, lp, lt, b_sol2, u_sol2, Ra, Rb, N, sqx):
         
         menet = energy_tor(l, tlm0)
         mdfst = diffus_tor(l, tlm0, tlm1, tlm2)
-        indut = dotprod_tor(l, tlm0, tlmi)
+        if pol_B0:
+            indut = dotprod_tor(l, tlm0, tlmi)
 
    # Integrals
     Mene_l = cg_quad( menep + menet, Ra, Rb, N, sqx)
@@ -1177,6 +1183,153 @@ def b0_profiles():
 
 
 
+# ----------------------------------------------------------------------------------------------------------------------
+# NEW (2026-10-30): the work of a toroidal B0, on an (r, theta) grid, ported from the anelastic_log branch (its angular.py
+# ylm_grid and utils4pp.magnetic_powers_grid). Fields are u = q Y r_hat + s r grad(Y) + t r grad(Y) x r_hat per l, as in
+# cheb2space_pol and cheb2space_tor, with Schmidt harmonics Y_l (the recurrence cos(theta) Y_l = p_l Y_(l+1) + q_l Y_(l-1)
+# of the operators' coupling coefficients).
+# ----------------------------------------------------------------------------------------------------------------------
+
+def ylm_grid(m, lmax, x):
+    '''
+    Y_l, dY_l/dtheta and Z_l = i m Y_l/sin(theta) at the points x = cos(theta), rows l = 0..lmax (zero for l < m, m >= 0),
+    by the recurrence in l started at Y_m = (-1)**m sqrt(prod_k (2k-1)/(2k)) sin(theta)**m; Y/sin(theta) by the same
+    recurrence started at sin(theta)**(m-1). Mantissas are rescaled by 2**-600 when they pass 2**600, so that
+    sin(theta)**(m-1) cannot underflow at large m near the poles.
+    '''
+    big = 600
+    x = np.atleast_1d(np.asarray(x, dtype=float))
+    sth = np.sqrt(np.maximum(1 - x**2, 0.))
+    l_ = np.arange(lmax + 1, dtype=float)
+    p = np.where(l_ >= m, np.sqrt(np.maximum((l_ + 1)**2 - m**2, 0.))/(2*l_ + 1), 0.)
+    q = np.where(l_ >= m, np.sqrt(np.maximum(l_**2 - m**2, 0.))/(2*l_ + 1), 0.)
+    Y = np.zeros((lmax + 1, x.size)); dY = np.zeros_like(Y); V = np.zeros_like(Y)  # V = Y/sin(theta)
+    if m > lmax:
+        return Y, dY, 0j*Y
+    k = np.zeros(x.shape, dtype=np.int64)
+    if m > 0:
+        c = (-1)**m*np.sqrt(np.prod((2*np.arange(1, m + 1) - 1)/(2*np.arange(1, m + 1))))
+        sm1 = sth**(m - 1)  # sin(theta)**(m-1) = sm1*2**k
+        small = (sm1 < 2.0**-900) & (sth > 0)
+        if small.any():
+            fs, ks = np.frexp(sth[small])
+            g = np.ones_like(fs); kk = np.zeros(fs.shape, dtype=np.int64)
+            for _ in range(m - 1):
+                g, e = np.frexp(g*fs)
+                kk += e + ks
+            sm1[small], k[small] = g, kk
+        a1, b1, v1 = c*sm1*sth, c*m*x*sm1, c*sm1  # Y, dY/dtheta, Y/sin(theta) at l = m (d/dtheta sin**m = m cos sin**(m-1))
+    else:
+        a1, b1, v1 = 1. + 0*x, 0*x, 0*x
+    a0 = b0 = v0 = 0*x
+    Y[m], dY[m], V[m] = np.ldexp(a1, k), np.ldexp(b1, k), np.ldexp(v1, k)
+    for l in range(m, lmax):  # Y_(l+1) = (x Y_l - q_l Y_(l-1))/p_l, and its theta-derivative
+        a2 = (x*a1 - q[l]*a0)/p[l]
+        b2 = (x*b1 - sth*a1 - q[l]*b0)/p[l]
+        v2 = (x*v1 - q[l]*v0)/p[l]
+        grow = (np.abs(a2) > 2.0**big) | (np.abs(b2) > 2.0**big) | (np.abs(v2) > 2.0**big)
+        if grow.any():
+            for arr in (a1, b1, v1, a2, b2, v2):
+                arr[grow] = np.ldexp(arr[grow], -big)
+            k = k + big*grow
+        a0, b0, v0, a1, b1, v1 = a1, b1, v1, a2, b2, v2
+        Y[l + 1], dY[l + 1], V[l + 1] = np.ldexp(a1, k), np.ldexp(b1, k), np.ldexp(v1, k)
+    return Y, dY, 1j*m*V
+
+
+
+def torque_tor_walls(b_sol2):
+    '''
+    NEW (2026-10-30): the torque of a toroidal B0 on the fluid, the Maxwell stress b_r*B0_phi on the fluid side of the walls
+    (wherever k != 0 there, insulating or not), in the units of angrymom (no Le2, OmgTau factors): axial for m = 0, symm = 1,
+    equatorial for m = 1, symm = -1 (angrymom = -2 sqrt(2) times pi int r (-u_phi cos(theta) - i u_theta) dV), else 0.
+    b_r = l(l+1) f_l/r Y_l from the Chebyshev coefficients of f at the wall.
+    '''
+    if par.B0_tor is None or not ((par.m == 0 and par.symm == 1) or (par.m == 1 and par.symm == -1)):
+        return 0
+    n  = par.B0_tor_l
+    lp = ut.ell(par.m, par.lmax, ut.bsymm)[0]
+    x, w = np.polynomial.legendre.leggauss(par.lmax + 8)
+    Y   = ylm_grid(par.m, par.lmax + 1, x)[0]  # b goes up to lmax + 1
+    dY0 = ylm_grid(0, n, x)[1][n]
+    out = 0
+    for r, sgn in ((ut.rcmb, 1), (par.ricb, -1)):  # outward normal of the fluid
+        if r == 0:
+            continue
+        xr = xcheb(np.array([r]), par.ricb, ut.rcmb)
+        br = sum( l*(l+1)*ch.chebval(xr, b_sol2[0][j,:])[0]/r * Y[l] for j, l in enumerate(lp) )
+        B0phi = -ut.cnorm_tor*ut.ktor(r, 0)*dY0
+        if par.m == 0:
+            out += sgn*2*np.pi*r**3*np.sum( w*np.sqrt(1 - x**2)*B0phi*br )
+        else:
+            out += sgn*2*np.sqrt(2)*np.pi*r**3*np.sum( w*x*B0phi*br )
+    return out
+
+
+
+def magnetic_powers_grid(utab, btab):
+    '''
+    The induction 2 Re int b*.curl(u x B0) dV and the complex power of the Lorentz force
+    2 int u*.[ curl(b) x B0 + curl(B0) x b ] dV of the toroidal B0 alone (no Le2, OmgTau factors), on the grid rk times
+    Gauss-Legendre points in cos(theta): u, b, curl(b) synthesised from their l-components, B0 = cnorm_tor curl(k Y_n0 r).
+    The induction uses int b*.curl(E) dV = int E.curl(b)* dV + oint (E x b*).r_hat dS, E = u x B0, and the surface term
+    vanishes: B0 is azimuthal and u_r = 0 on the walls, so E has no tangential part there.
+    utab, btab: the tables of diagnose (cheb2space_table).
+    '''
+    m = par.m
+    lmx = par.lmax + 1
+    xg, wx = np.polynomial.legendre.leggauss(lmx + 12)
+    Yg, dYg, Zg = ylm_grid(m, lmx, xg)  # rows l
+    Y0, dY0, _ = ylm_grid(0, 3, xg)     # m = 0, for B0
+    lp_u, lt_u, _ = ut.ell(m, par.lmax, par.symm)
+    lp_b, lt_b, ll = ut.ell(m, par.lmax, ut.bsymm)
+
+    def synth(comps):  # {l: (q, s, t)} -> (F_r, F_theta, F_phi) on the (rk, xg) grid, by matrix products
+        ls = list(comps)
+        Q, S, T = ( np.array([ comps[l][i] for l in ls ]).T for i in range(3) )  # (radial points, degrees)
+        return Q @ Yg[ls], S @ dYg[ls] + T @ Zg[ls], S @ Zg[ls] - T @ dYg[ls]
+
+    z = np.zeros_like(rk, dtype=complex)
+    U, B, J = {}, {}, {}
+    for l in ll:
+        L = l*(l+1)
+        if l in lp_u:
+            [ [q0], [s0] ] = cheb2space_pol(l, lp_u, utab[0], 0)
+            U[l] = (q0, s0, z)
+        elif l in lt_u:
+            [ t0 ] = cheb2space_tor(l, lt_u, utab[1], 0)
+            U[l] = (z, z, t0)
+        if l in lp_b:  # curl of the poloidal part: toroidal, t = (q - s)/r - s'
+            [ [q0, q1], [s0, s1] ] = cheb2space_pol(l, lp_b, btab[0], 1)
+            B[l] = (q0, s0, z)
+            J[l] = (z, z, (q0 - s0)/rk - s1)
+        elif l in lt_b:  # curl of the toroidal part: poloidal, q = L t/r, s = t' + t/r
+            [ t0, t1 ] = cheb2space_tor(l, lt_b, btab[1], 1)
+            B[l] = (z, z, t0)
+            J[l] = (L*t0/rk, t1 + t0/rk, z)
+    u, b, j = synth(U), synth(B), synth(J)
+
+    n  = par.B0_tor_l
+    L0 = n*(n+1)
+    k0 = ut.cnorm_tor * ut.ktor(rk, 0)
+    k1 = ut.cnorm_tor * ut.ktor(rk, 1)
+    zg = np.zeros((rk.size, xg.size))
+    B0v = [ zg, zg, -np.outer(k0, dY0[n]) ]                                # B_phi = -cnorm_tor k dY/dtheta
+    J0v = [ np.outer(L0*k0/rk, Y0[n]), np.outer(k1 + k0/rk, dY0[n]), zg ]  # its curl, poloidal
+
+    def cross(a, c):
+        return [ a[1]*c[2] - a[2]*c[1], a[2]*c[0] - a[0]*c[2], a[0]*c[1] - a[1]*c[0] ]
+    def vol(f):  # int f dV over the fluid (the e^(i m phi) factors combined: 2 pi)
+        return 2*np.pi*np.sum( (sqx*np.pi/par.N*r2)[:, None] * wx[None, :] * f ) * (ut.rcmb - par.ricb)/2
+
+    G = [ a + c for a, c in zip(cross(j, B0v), cross(J0v, b)) ]
+    plor = 2*vol( sum( np.conj(uc)*gc for uc, gc in zip(u, G) ) )
+    E = cross(u, B0v)
+    indu = 2*np.real( vol( sum( ec*np.conj(jc) for ec, jc in zip(E, j) ) ) )
+    return indu, plor
+
+
+
 def diagnose( usol2, bsol2, tsol2, csol2, Ra, Rb, ncpus, eigval, pool=None):
     '''
     Computes kinetic energy, internal and kinetic energy dissipation,
@@ -1209,6 +1362,11 @@ def diagnose( usol2, bsol2, tsol2, csol2, Ra, Rb, ncpus, eigval, pool=None):
 
     if par.magnetic:
         out_b = np.array([ magnetic_worker( l, lp_b, lt_b, btab, utab, Ra, Rb, par.N, sqx) for l in ll ])
+
+    if par.magnetic and par.hydro and par.B0_tor is not None:  # NEW (2026-10-30): the toroidal B0's Lorentz work and induction
+        indu, plor = magnetic_powers_grid(utab, btab)
+        out_u[0,3] += np.real(plor)
+        out_b[0,2] += indu
 
     if par.thermal:
         out_t = np.array([ thermal_worker( l, lp_u, ttab, utab, Ra, Rb, par.N, sqx, 'thermal' ) for l in lp_u ])

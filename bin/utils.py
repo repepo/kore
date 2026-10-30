@@ -6,6 +6,7 @@ import scipy.special as scsp
 import scipy.fftpack as sft
 import numpy.polynomial.chebyshev as ch
 import numpy as np
+import sys
 from parameters import par
 
 '''
@@ -64,11 +65,21 @@ elif par.B0 == 'Luo_S2':
 elif par.B0 == 'FDM':
     symmB0 = int((-1)**par.B0_l)
     B0_l   = par.B0_l
-    
+elif par.B0 is None:  # NEW (2026-10-30): no poloidal field, only a toroidal one (B0_tor)
+    symmB0 = 0
+    B0_l   = 0
+
+# NEW (2026-10-30): a toroidal background field of degree B0_tor_l has the equatorial symmetry (-1)**(B0_tor_l+1)
+symm_tor = (1 if par.B0_tor_l % 2 else -1) if par.B0_tor is not None else 0  # (check_B0 stops a B0_tor_l other than 1, 2)
+if par.B0 is None:
+    symmB0 = symm_tor
+
 bsymm = par.symm * symmB0  # induced magnetic field (b) symmetry follows from u and B0
 
 B0list = ['axial', 'dipole', 'G21 dipole', 'Luo_S1', 'Luo_S2', 'FDM']
-B0type = B0list.index(par.B0)
+B0type = B0list.index(par.B0) if par.B0 is not None else -1  # NEW (2026-10-30): -1 without a poloidal field
+B0_tor_list = ['Malkus', 'wall', 'user']  # NEW (2026-10-30): toroidal fields
+B0_tor_type = B0_tor_list.index(par.B0_tor) if par.B0_tor in B0_tor_list else -1
 
 # NEW (2026-10-07): with an inner core, B0_ic = 'potential' (the default) makes B0 a potential field inside the IC,
 # continuous at the ICB (see B0_beta_ic, and the explanation next to B0_ic in params_default.py). 'full sphere' keeps
@@ -801,7 +812,7 @@ def B0_norm():
     Returns the normalization constant of the applied magnetic field
     '''
 
-    if par.magnetic == 1:
+    if par.magnetic == 1 and par.B0 is not None:  # NEW (2026-10-30): 0 without a poloidal field
 
         ricb = par.ricb
         args = [ par.beta, par.B0_l, ricb, 0 ]
@@ -882,6 +893,146 @@ def B0_norm2(ricb,cnorm):
     out2 = (np.pi/N) * ( (1-ricb)/2 ) * np.sum( sqx*f0*( f1+f2+f3 ) )
 
     return [out1, out2]    
+
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# NEW (2026-10-30): toroidal background field, ported from the anelastic_log branch (its background_field.py):
+# B0_tor = cnorm_tor curl(k(r) Y_n0 r), purely azimuthal, B_phi = -cnorm_tor k dY_n0/dtheta, n = B0_tor_l (1 or 2).
+# ----------------------------------------------------------------------------------------------------------------------
+
+_kuser = None
+
+def k_user():
+    '''
+    The Chebyshev interpolant (degree max(64, 2N)) of the 'user' expression B0_tor_profile on [ricb, 1], or in a full
+    sphere on [-1, 1] as f(|r|)*sign(r)**n (parity (-1)**n, so the expression must be r**n times a function of r**2 to be
+    smooth at the centre)
+    '''
+    global _kuser
+    if _kuser is None:
+        names = { f: getattr(np, f) for f in ['sin', 'cos', 'tan', 'exp', 'log', 'sqrt', 'abs', 'tanh', 'sinh', 'cosh',
+                                              'arctan', 'where', 'pi'] }
+        names['erf'] = scsp.erf
+        code = compile(par.B0_tor_profile, '<B0_tor_profile>', 'eval')
+        def f(r):
+            with np.errstate(all='ignore'):  # a numpy warning raised without builtins would end in KeyError '__import__'
+                k = eval(code, {'__builtins__': {}}, dict(names, r=r, p=par.B0_tor_param))
+            return np.broadcast_to(np.asarray(k, dtype=float), np.shape(r))
+        if par.ricb == 0:
+            g = lambda r: f(np.abs(r))*np.sign(r)**par.B0_tor_l
+            _kuser = ch.Chebyshev.interpolate(g, max(64, 2*par.N), domain=[-1., 1.])
+        else:
+            _kuser = ch.Chebyshev.interpolate(f, max(64, 2*par.N), domain=[par.ricb, 1.])
+    return _kuser
+
+
+
+def ktor(r, d):
+    '''
+    The d-th derivative (d = 0..3) of the radial function k(r) of the toroidal B0, without cnorm_tor
+    '''
+    r = np.asarray(r, dtype=float)
+    if par.B0_tor == 'user':
+        return k_user().deriv(d)(r) if d > 0 else k_user()(r)
+    if par.B0_tor == 'Malkus':  # k = r
+        return [ r, np.ones_like(r), np.zeros_like(r), np.zeros_like(r) ][d]
+    if par.ricb == 0:  # 'wall' in a full sphere: r**n (1 - r**2), regular at r = 0 with the parity (-1)**n
+        pw = np.polynomial.Polynomial([0]*par.B0_tor_l + [1, 0, -1])
+        return pw.deriv(d)(r) if d > 0 else pw(r)
+    # 'wall': r (r - ricb)(1 - r)/(1 - ricb)**2, zero at both walls
+    ri = par.ricb
+    c  = 1/(1 - ri)**2
+    return c*[ -r**3 + (1 + ri)*r**2 - ri*r, -3*r**2 + 2*(1 + ri)*r - ri, -6*r + 2*(1 + ri), -6*np.ones_like(r) ][d]
+
+
+
+def B0_tor_norm():
+    '''
+    cnorm_tor as a number. 'mag_energy' and 'Schmitt2012' set the integral of B0_tor**2 over the fluid to 1 and 4, with
+    int B0_tor**2 dV = 4 pi n(n+1)/(2n+1) int k**2 r**2 dr (cnorm_tor = 1)
+    '''
+    if par.cnorm_tor in ['mag_energy', 'Schmitt2012']:
+        n = par.B0_tor_l
+        xk, wk = np.polynomial.legendre.leggauss(240)
+        rk = 0.5*(1 - par.ricb)*(xk + 1) + par.ricb
+        integ = 4*np.pi*n*(n + 1)/(2*n + 1) * 0.5*(1 - par.ricb) * np.sum( wk * ktor(rk, 0)**2 * rk**2 )
+        return (1 if par.cnorm_tor == 'mag_energy' else 2)/np.sqrt(integ)
+    return float(par.cnorm_tor)
+
+
+
+def chebco_k(rpw, d, N, ricb, rcmb):
+    '''
+    Chebyshev coefficients of cnorm_tor * r**rpw * k^(d)(r), with the relative cut tol_B0 of the poloidal field's series
+    '''
+    c = chebco_f(lambda r: ktor(r, d), rpw, N, ricb, rcmb, 0.)
+    c[np.abs(c) <= par.tol_B0*np.abs(c).max()] = 0.
+    return cnorm_tor * c
+
+
+
+def k_at_walls():
+    '''
+    NEW (2026-10-30): [ICB, CMB], True where k of the toroidal B0 is not zero (relative to its maximum)
+    '''
+    return np.abs(ktor(np.array([par.ricb, rcmb]), 0)) > 1e-12*np.abs(ktor(np.linspace(par.ricb, rcmb, 101), 0)).max()
+
+
+
+def check_B0():
+    '''
+    NEW (2026-10-30): stops on background-field settings that are not implemented, before any matrix is built
+    '''
+    if par.B0 is None and par.B0_tor is None:
+        sys.exit('magnetic = 1 needs a background field: B0 (poloidal) and/or B0_tor (toroidal)')
+    # FIX (2026-10-30): an FDM with odd B0_l >= 3 ran without complaint with the couplings of B0_l = 1; even B0_l >= 4
+    # stopped in assemble.py with a NameError
+    if par.B0 == 'FDM' and par.B0_l not in [1, 2]:
+        sys.exit("B0 = 'FDM' with B0_l = %r: only B0_l = 1 and 2 are implemented" % par.B0_l)
+    if par.B0_tor is None:
+        return
+    if par.B0_tor not in B0_tor_list:
+        sys.exit('B0_tor = %r: set None or one of %s' % (par.B0_tor, B0_tor_list))
+    if not (isinstance(par.B0_tor_l, (int, np.integer)) and par.B0_tor_l in [1, 2]):
+        sys.exit('B0_tor_l = %r: only 1 and 2 are implemented' % par.B0_tor_l)
+    if par.B0 == 'dipole':
+        sys.exit("B0_tor is not implemented with B0 = 'dipole'")
+    if par.B0 is not None and symmB0 != symm_tor:
+        sys.exit('B0 = %r and B0_tor_l = %d have opposite equatorial symmetries (a poloidal field of degree l has (-1)**l, '
+                 'a toroidal one (-1)**(l+1)), so they cannot be in one eigenproblem' % (par.B0, par.B0_tor_l))
+    if par.forcing != 0:
+        sys.exit('B0_tor is implemented for eigenvalue problems only (forcing = 0)')
+    if par.ricb == 0 and par.B0_tor == 'Malkus' and par.B0_tor_l == 2:
+        sys.exit("B0_tor = 'Malkus' with B0_tor_l = 2 is not regular at r = 0: use 'wall' or 'user' in a full sphere")
+    if par.B0_tor == 'user':
+        if not isinstance(par.B0_tor_profile, str) or not par.B0_tor_profile:
+            sys.exit("B0_tor = 'user' needs B0_tor_profile, a numpy expression of r and p, got %r" % (par.B0_tor_profile,))
+        try:
+            ktor(np.linspace(max(par.ricb, 0.1), 1, 4), 0)
+        except Exception as err:
+            sys.exit('B0_tor_profile = %r: %s: %s' % (par.B0_tor_profile, type(err).__name__, err))
+        if not np.all(np.isfinite(k_user().coef)):
+            sys.exit('B0_tor_profile = %r is not finite on the fluid domain' % (par.B0_tor_profile,))
+    if not (isinstance(par.cnorm_tor, (int, float)) or par.cnorm_tor in ['mag_energy', 'Schmitt2012']):
+        sys.exit("cnorm_tor = %r: a number, 'mag_energy' or 'Schmitt2012'" % (par.cnorm_tor,))
+    # A field with k != 0 at a wall carries a current sheet there, in the fluid (an insulator cannot carry it). The force on
+    # it, -B0_phi*b_r per unit area along phi, is in no equation: a no-slip wall takes it (the flow is unchanged), but the
+    # torque on the mantle and the inner core (rotdyn) misses it, and a stress-free or inviscid wall would need it in its
+    # stress condition.
+    kw = k_at_walls()
+    if par.rotdyn and kw.any():
+        sys.exit('rotdyn = 1 needs a toroidal B0 that vanishes at the walls (e.g. B0_tor = \'wall\'): the magnetic '
+                 'torque of b_r*B0_phi on the mantle and the inner core is not implemented')
+    slip = [ par.ricb > 0 and (par.bci == 0 or par.Ek == 0), par.bco == 0 or par.Ek == 0 ]
+    if (slip[0] and kw[0]) or (slip[1] and kw[1]):
+        sys.exit('A stress-free or inviscid wall needs a toroidal B0 that vanishes there (e.g. B0_tor = \'wall\'): the force '
+                 '-B0_phi*b_r on the current sheet of B0_tor at that wall is not in its stress condition')
+
+
+if par.magnetic:
+    check_B0()
+cnorm_tor = B0_tor_norm() if (par.magnetic and par.B0_tor is not None) else 0.0
 
 
 
@@ -1464,9 +1615,14 @@ def gamma_visc_icb(ricb):
 def gamma_magnetic():
     '''
     Axial magnetic torque on the mantle (spherical) when there is a thin conductive layer at bottom. Needs m=0 and symm=1.
+    NEW (2026-10-30): only the torque of the poloidal B0 (B0_r*b_phi): 0 without one. The b_r*B0_phi torque of a toroidal B0
+    that does not vanish at the CMB is not included (rotdyn = 1 stops on it, utils.check_B0).
     '''
 
-    if (par.magnetic==1 and par.m == 0 and par.symm==1 and par.mantle=='TWA'):
+    if par.B0 is None:
+        out = 0
+
+    elif (par.magnetic==1 and par.m == 0 and par.symm==1 and par.mantle=='TWA'):
 
         out = np.zeros((1,n0+n0),dtype=complex)
         G = Tk( 1, par.N-1, 0)[:,0]
@@ -1524,9 +1680,13 @@ def gamma_magnetic():
 def gamma_magnetic_ic():
     '''
     Axial magnetic torque on the inner core (spherical). Needs m=0 and symm=1. 
+    NEW (2026-10-30): as gamma_magnetic, the poloidal B0's torque only (0 without one).
     '''
 
-    if (par.magnetic==1 and par.m == 0 and par.symm==1 and ( ('conducting' in par.innercore) or ('TWA' in par.innercore) ) ):
+    if par.B0 is None:
+        out = 0
+
+    elif (par.magnetic==1 and par.m == 0 and par.symm==1 and ( ('conducting' in par.innercore) or ('TWA' in par.innercore) ) ):
 
         out = np.zeros((1,n0+n0),dtype=complex)
         G = Tk( -1, par.N-1, 0)[:,0]

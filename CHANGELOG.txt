@@ -3,6 +3,48 @@ CHANGELOG - Kore, conductive_IC branch
 
 2026-10-30
 ----------
+New: toroidal background field B0_tor, ported from anelastic_log (bin/params_default.py, bin/utils.py,
+bin/operators.py, bin/submatrices.py, bin/assemble.py, bin/utils4pp.py, bin/spin_doctor.py,
+docs/background-field.md, docs/equations.md, docs/output.md, docs/setup.md)
+- B0_tor = cnorm_tor curl(k(r) Y_l0 r), azimuthal, of degree B0_tor_l = 1 or 2, with k from 'Malkus' (k = r, s phi_hat),
+  'wall' (zero at both walls) or 'user' (B0_tor_profile, a numpy expression of r and p = B0_tor_param); cnorm_tor a
+  number, 'mag_energy' or 'Schmitt2012'. Alone (B0 = None) or added to a poloidal B0 of the same equatorial symmetry
+  (the dipolar fields with B0_tor_l = 2, 'Luo_S2' with B0_tor_l = 1), with an insulating or conducting inner core and an
+  insulating or thin-wall mantle. Couplings dl = -2..2 in assemble.py, angular factors in closed form in operators.py,
+  radial factors from the Chebyshev coefficients of k in submatrices.py.
+- A field with k != 0 at a wall carries a current sheet there, whose force -B0_phi b_r is in no equation: a no-slip
+  wall absorbs it, but a stress-free or inviscid wall with k != 0 there, and rotdyn = 1 with k != 0 at a wall, now stop
+  (anelastic_log runs them without that force). Also stopped: B0 = 'dipole', forcing, opposite symmetries, 'Malkus' with
+  B0_tor_l = 2 in a full sphere, an empty, invalid or non-finite 'user' profile, B0_tor_l other than 1, 2.
+- spin_doctor: the energy budget includes the work of B0_tor (on an (r, theta) grid); resid L adds the stress
+  b_r B0_phi of B0_tor at the walls (m = 0, symm = 1 and m = 1, symm = -1); params.dat gets B0_tor, B0_tor_l and
+  cnorm_tor (63 columns). A 'user' profile is evaluated with numpy warnings off (in anelastic_log an expression that
+  warns, e.g. sqrt inside np.where, stops with KeyError '__import__').
+- Checked on chandler (z2; N 64, Ek = Em = 1e-3 unless said):
+  poloidal-only runs: A.npz, B.npz bitwise unchanged, eigenvalues within 1e-14, same spin_doctor output (6 cases);
+  17 cases with B0_tor (alone or with a poloidal B0, insulating or conducting inner core, full sphere, m = 0..2, both
+  symmetries) and 3 poloidal ones: eigenvalues equal to anelastic_log's to 2e-14, A and B equal up to row scaling
+  outside the boundary rows; inviscid full sphere with inviscid_basis = 'high': A and B equal to anelastic_log's up to
+  row scaling, eigenvalues to 4e-7 (near-neutral modes); timescale 'Alfven' equal to anelastic_log and to the
+  'rotation' run divided by Le (1e-14); 'user' profiles equal to 'Malkus' and 'wall' give the same eigenvalues (1e-13);
+  Malkus (1967) at Ek = Em = 1e-5, N 96: frequency shifts quadratic in Le to 1e-5 and 1.7-5.2 % from
+  Le^2 m (m - lambda)/lambda; spin_doctor resid u, b, E and L (where computed) of the viscous no-slip B0_tor runs
+  at most 1e-8 (resid E 1e-7 to 1e-5 with a thin wall, against up to 1e-4 for the poloidal thin-wall runs, before and
+  after; resid b is 0/0 for m = 0 with 'Malkus' of degree 1 alone, where b = 0).
+- Not small, as before the patch: resid L of a stress-free m = 1 run (do_vtorq in spin_doctor.py lacks the parentheses
+  that do_mtorq got on 2026-10-29) and of m = 1 runs with B0 = 'axial' and insulating walls (6e-4 to 4e-3).
+
+Fix: FDM with B0_l >= 3 (bin/utils.py, bin/params_default.py, docs/background-field.md)
+- An FDM with odd B0_l >= 3 ran silently with the couplings of B0_l = 1, and an even B0_l >= 4 stopped in assemble.py
+  with a NameError. B0_l must now be 1 or 2 (stops otherwise), as for the other poloidal fields.
+
+Fix: spin_doctor with hydro = 0 (bin/utils4pp.py, docs/output.md)
+- Free-decay runs (hydro = 0) crashed in spin_doctor (UnboundLocalError qlmi in magnetic_worker: the induction terms
+  used the flow). They now run: resid b up to 5e-12, resid E up to 1e-13; A.npz and B.npz unchanged.
+
+
+2026-10-30
+----------
 Fix: tolerance of tests/torsional_s2 against reference.eig (tests/test_torsional_s2.py)
 - After the 2026-10-29 fix of the D3/D2 Lorentz terms the test failed on GitHub (0f697a03): mode 1 came out
   1.7e-7 from reference.eig (computed on the Mac), above the 1e-7 tolerance; mode 2 and the other six tests passed.

@@ -257,7 +257,7 @@ $$
 \Gamma^{\nu}_{IC} = +\,E\,(\Omega\tau) \oint_{ICB} s\, \sigma_{r\phi}\, dS = \frac{8\pi}{3}\, E\,(\Omega\tau)\, r_i^2 \left( r\, t_1' - t_1 \right)_{r = r_i} .
 $$
 
-The electromagnetic torque is the surface integral of the Maxwell stress $B_{0r}\, b_\phi$ (the background field is poloidal, so $B_{0\phi} = 0$):
+The electromagnetic torque is the surface integral of the Maxwell stress $B_{0r}\, b_\phi$ of the poloidal background field:
 
 $$
 \Gamma^{B}_M = -\,Le^2 (\Omega\tau)^2 \oint_{CMB} s\, B_{0r}\, b_\phi\, dS, \qquad
@@ -265,6 +265,8 @@ $$
 $$
 
 It is nonzero only on a body in which currents can flow: the mantle with a thin conducting wall, the inner core when it is conducting or has a thin wall. Since $B_{0r} \propto Y_l^0$ and $b_\phi$ comes from the toroidal scalars of $\mathbf{b}$, the integral selects a few toroidal degrees: $g_2$ at the boundary for a degree-1 background field (`'axial'`, the dipoles, FDM with `B0_l = 1`), and $g_1$ and $g_3$ for the quadrupole `'Luo_S2'`. `spin_doctor` writes these four torques, as complex amplitudes, to `flow.dat` and `magnetic.dat`.
+
+A toroidal background field (`B0_tor`, see [Background magnetic field](background-field.md#toroidal-field-b0_tor)) adds the stress $b_r B_{0\phi}$ wherever $k \ne 0$ at a wall, conducting or not (for $m = 0$ it involves $f_2$ at the wall for `B0_tor_l = 1`, $f_1$ and $f_3$ for `B0_tor_l = 2`). Its torque on the fluid enters `resid𝐋`; the torques on the mantle and the inner core above leave it out, which is why `rotdyn = 1` needs $k = 0$ at the walls.
 
 
 ### The mantle and the inner core

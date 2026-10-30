@@ -137,8 +137,9 @@ class default_params():
         # self.B0 = 'Luo_S1'         # Same as above, actually (Luo & Jackson PRSA 2022)
         # self.B0 = 'Luo_S2'         # Quadrupole
         # self.B0 = 'FDM'            # Free Poloidal Decay Mode (Zhang & Fearn 1994,1995; Schmitt 2012)
+        # self.B0 = None             # NEW (2026-10-30): no poloidal field, with a toroidal one (B0_tor below)
         self.beta = 3.0              # guess for FDM's beta
-        self.B0_l = 1                # l number for the FDM mode
+        self.B0_l = 1                # l number for the FDM mode, 1 or 2 (FIX 2026-10-30: higher l stop, their couplings are not coded)
 
         # B0_ic sets what the background field does inside the inner core.
         # 'G21 dipole', 'Luo_S1' and 'Luo_S2' are defined for a full sphere. With an inner core (ricb > 0) they do not match
@@ -224,6 +225,24 @@ class default_params():
         # self.cnorm = 0.6972166887783963            # Luo_S1 ricb = 0, rms_Bs=1 (volume rms of B_s)
         # self.cnorm = 0.005061567359972097          # Luo_S2 ricb = 0, unit mag_energy (full sphere; with an inner core keeps the same currents in the fluid)
         # self.cnorm = 0.0158567582314039            # Luo_S2 ricb = 0, rms_Bs=1 (volume rms of B_s)
+
+        # NEW (2026-10-30): toroidal (azimuthal) background field B0_tor = cnorm_tor curl(k(r) Y_l0 r), B_phi = -cnorm_tor k dY_l0/dtheta
+        # (cnorm_tor k sin(theta) for l = 1), l = B0_tor_l (1 or 2). Alone (B0 = None) or added to the poloidal B0 when both have the
+        # same equatorial symmetry: a poloidal field of degree l has (-1)**l, a toroidal one (-1)**(l+1), so the dipolar fields go
+        # with B0_tor_l = 2 and 'Luo_S2' with B0_tor_l = 1. Ported from the anelastic_log branch. Eigenvalue problems only
+        # (forcing = 0), not with B0 = 'dipole'. A field with k != 0 at a wall carries a current sheet there (in the fluid). The
+        # conditions on b do not involve B0 (u x B0 has no tangential part on a wall, u_r = 0), but the force -B0_phi*b_r on the
+        # sheet is in no equation: harmless at a no-slip wall (the wall takes it), so rotdyn = 1 needs k = 0 at both walls, and a
+        # stress-free wall or Ek = 0 needs k = 0 at that wall (otherwise the run stops).
+        self.B0_tor = None
+        # self.B0_tor = 'Malkus'   # k = r: B0 = cnorm_tor*s*phi_hat (Malkus 1967), current 2*cnorm_tor*z_hat; l = 1 only in a full sphere
+        # self.B0_tor = 'wall'     # k = r (r - ricb)(1 - r)/(1 - ricb)**2, zero at both walls; r**l (1 - r**2) in a full sphere
+        # self.B0_tor = 'user'     # k = B0_tor_profile, a numpy expression of r and p = B0_tor_param (sin, cos, tan, exp, log,
+        #                          # sqrt, abs, tanh, sinh, cosh, arctan, where, pi, erf); its derivatives from a Chebyshev interpolant
+        self.B0_tor_profile = ''
+        self.B0_tor_param   = 0.0
+        self.B0_tor_l  = 1          # its degree l, 1 or 2
+        self.cnorm_tor = 1          # a number, 'mag_energy' (integral of B0_tor**2 over the fluid = 1) or 'Schmitt2012' (= 4)
 
 
 

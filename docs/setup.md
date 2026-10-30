@@ -106,7 +106,7 @@ The field strength and the magnetic diffusivity can be given in either of two wa
 
 The Lundquist number is `Le/Em`. The helper functions `pmak(Pm0, E0, Ek)` and `ssak(Lambda0, E0, Ek)` in `params_default.py` return `Pm` and `Lambda` as power laws of `Ek` through the point (`E0`, `Pm0`) or (`E0`, `Lambda0`), useful to keep a path towards Earth-like values when lowering `Ek`.
 
-The background field itself is chosen with `B0`, `cnorm` and related parameters ([Background magnetic field](background-field.md)), and the magnetic boundary conditions with `innercore` and `mantle` ([Inner core and mantle](boundaries.md)).
+The background field itself is chosen with `B0`, `B0_tor`, `cnorm`, `cnorm_tor` and related parameters ([Background magnetic field](background-field.md)), and the magnetic boundary conditions with `innercore` and `mantle` ([Inner core and mantle](boundaries.md)).
 
 
 ## Thermal parameters

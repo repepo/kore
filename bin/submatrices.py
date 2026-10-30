@@ -34,6 +34,8 @@ def main(ncpus):
     cdipole    = ((par.magnetic == 1) and (par.B0 == 'dipole') and (par.ricb > 0))  # boolean
     inviscid   = ((par.Ek == 0) and (par.ricb == 0))                                # boolean
     quadrupole = ((par.B0 == 'Luo_S2') or ((par.B0 == 'FDM') and (par.B0_l == 2)))  # boolean
+    pol        = (par.B0 is not None)      # NEW (2026-10-30): poloidal background field
+    tor        = (par.B0_tor is not None)  # NEW (2026-10-30): toroidal background field
     cic        = ((par.innercore == 'conducting, Chebys') and (par.forcing == 0) and par.magnetic and (par.ricb>0) )  # boolean
 
     radial_profiles = ['eta', 'vsc', 'rho']
@@ -90,11 +92,16 @@ def main(ncpus):
         for i,rpw1  in enumerate( rpw ):
             for j in range(4):
 
+                if par.B0 is None:  # NEW (2026-10-30): no poloidal field (its labels are not built, see below)
+                    continue
                 args = [ par.beta, par.B0_l, par.ricb, rpw1, j ]
                 # NEW (2026-10-17): relative cut par.tol_B0 instead of the absolute tol (shorter series, less fill-in)
                 c = ut.chebco_h( args, par.B0, par.N, 1, 0.0)
                 c[np.abs(c) <= par.tol_B0*np.abs(c).max()] = 0.
                 rdh[i][j] = cnorm * c
+
+        # NEW (2026-10-30): toroidal B0, Chebyshev coeffs of cnorm_tor*(r**i)*(d/dr)**j k(r), for the labels with profile 'bto'
+        rd_bto = [ [ ut.chebco_k(i, j, par.N, par.ricb, ut.rcmb) for j in range(3) ] for i in range(4) ] if tor else []
 
         # rdh is a 2D list where each element is the set of Chebyshev coeffs
         # of the function (r**rpw)*(d/dr)**j*(h_l(r))
@@ -190,12 +197,15 @@ def main(ncpus):
         # Lorentz force
         if cdipole :
             labl += [ 'u301', 'u411', 'u402', 'u512', 'u200', 'u310', 'u420', 'u530', 'u503', 'u300', 'u410', 'u401', 'u511', 'u502' ]
-        else:
+        elif pol :
             labl += [ 'u101', 'u211', 'u202', 'u312', 'u000', 'u110', 'u220', 'u330', 'u303', 'u100', 'u210', 'u201', 'u311', 'u302' ]
             arg2 += [   vF  ,   vF  ,   vF  ,   vF  ,   vF  ,   vF  ,   vF  ,   vF  ,   vF  ,   vG  ,   vG  ,   vG  ,   vG  ,   vG   ]  # vF for bpol, vG for btor
             if quadrupole :
                 labl += [ 'u321', 'u320' ]
                 arg2 += [   vF  ,   vG   ]
+        if tor :  # NEW (2026-10-30): toroidal B0 (operators.lorentz_tor), e.g. 'ubto210' is r**2 k' (profile 'bto', r power, k derivative, D order)
+            labl += [ 'ubto100', 'ubto210', 'ubto320', 'ubto201', 'ubto311', 'ubto302', 'ubto200', 'ubto310', 'ubto301' ]
+            arg2 += [    vF    ,    vF    ,    vF    ,    vF    ,    vF    ,    vF    ,    vG    ,    vG    ,    vG     ]
 
     if (par.thermal == 1) or (par.compositional==1) :
         # Buoyancy force
@@ -222,9 +232,12 @@ def main(ncpus):
         # Lorentz force
         if cdipole :
             labl += [ 'v301', 'v310', 'v420', 'v402', 'v300', 'v410', 'v401' ]
-        else:
+        elif pol :
             labl += [ 'v001', 'v010', 'v120', 'v102', 'v000', 'v110', 'v101' ]
             arg2 += [   vF  ,   vF  ,   vF  ,   vF  ,   vG  ,   vG  ,   vG   ]
+        if tor :  # NEW (2026-10-30)
+            labl += [ 'vbto000', 'vbto110', 'vbto101', 'vbto100' ]
+            arg2 += [    vF    ,    vF    ,    vF    ,    vG     ]
 
 
     if par.magnetic == 1 :
@@ -245,8 +258,12 @@ def main(ncpus):
             labl += [ 'f20' ]
             arg2 += [   vF  ]
             # induction
-            labl += [ 'f000', 'f110', 'f101', 'f100' ]
-            arg2 += [   vP  ,   vP  ,   vP  ,   vT   ]
+            if pol :
+                labl += [ 'f000', 'f110', 'f101', 'f100' ]
+                arg2 += [   vP  ,   vP  ,   vP  ,   vT   ]
+            if tor :  # NEW (2026-10-30)
+                labl += [ 'fbto100' ]
+                arg2 += [    vP     ]
             # magnetic diffusion
             #labl += [ 'f00', 'f11', 'f22' ]
             #arg2 += [   vF ,   vF ,   vF  ]
@@ -270,8 +287,12 @@ def main(ncpus):
             labl += [ 'g20' ]
             arg2 += [   vG   ]
             # induction
-            labl += [ 'g001', 'g111',  'g600', 'g010', 'g120', 'g102', 'g000', 'g101', 'g110' ]  # 'g600' is for (1/r)*h(r)
-            arg2 += [   vP  ,   vP  ,    vP  ,   vP  ,   vP  ,   vP  ,   vT  ,   vT  ,   vT   ]
+            if pol :
+                labl += [ 'g001', 'g111',  'g600', 'g010', 'g120', 'g102', 'g000', 'g101', 'g110' ]  # 'g600' is for (1/r)*h(r)
+                arg2 += [   vP  ,   vP  ,    vP  ,   vP  ,   vP  ,   vP  ,   vT  ,   vT  ,   vT   ]
+            if tor :  # NEW (2026-10-30)
+                labl += [ 'gbto000', 'gbto110', 'gbto101', 'gbto100' ]
+                arg2 += [    vP    ,    vP    ,    vP    ,    vT     ]
             # magnetic diffusion
             #labl += [ 'g00', 'g11',  'g22' ]
             #arg2 += [   vG ,   vG ,    vG  ]
@@ -373,6 +394,8 @@ def main(ncpus):
 
                 if prof_id == 'eta':
                     rprof = rd_eta
+                elif prof_id == 'bto':  # NEW (2026-10-30): toroidal B0
+                    rprof = rd_bto
 
                 profx = int(lablx[4])
                 plabl += [ lablx ]
@@ -441,6 +464,10 @@ def main(ncpus):
             elif len(lablx) == 6 and lablx[:3] == 'eta':  # the eta profile must be an even function of r
                 dp1 = int(lablx[-2])
                 operator_parity = 1-(( rx + dp1 + dx )%2)*2
+
+            elif len(lablx) == 6 and lablx[:3] == 'bto':  # NEW (2026-10-30): k(r) of the toroidal B0 has the parity (-1)**B0_tor_l
+                dp1 = int(lablx[-2])
+                operator_parity = 1-(( par.B0_tor_l + rx + dp1 + dx )%2)*2
 
             vector_parity   = arg2[k]
             overall_parity  = vector_parity * operator_parity
