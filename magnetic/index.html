@@ -1486,8 +1486,61 @@ perturbation still diffuses with <code>MagnetD</code>. At the start of a run, in
 <li><strong>the Lorentz force of <span class="arithmatex">\(\mathbf{B}_0\)</span> on the background flow</strong>: <span class="arithmatex">\(\Delta\Omega\)</span> is imposed and not modified by
   <span class="arithmatex">\((\nabla\times\mathbf{B}_0)\times\mathbf{B}_0\)</span>, which is now dominated by the wound <span class="arithmatex">\(B_\phi\)</span> (it grows as <span class="arithmatex">\(G\,\Delta\Omega/\eta\)</span>). For the tachocline
   this is a significant approximation: a wound field that strong would brake the shear that produces it (the
-  Lorentz-force feedback on the rotation that a self-consistent tachocline model includes). The results are meaningful when
-  that force is small compared with what maintains <span class="arithmatex">\(\Delta\Omega\)</span>, i.e. for a moderate Elsasser number of the wound field.</li>
+  Lorentz-force feedback on the rotation that a self-consistent tachocline model includes): see <em>When does the ignored
+  Lorentz force matter?</em> below.</li>
+</ul>
+<p><strong>When does the ignored Lorentz force matter?</strong> (2026-10-31). Orders of magnitude, in kore's units (time <span class="arithmatex">\(1/\Omega\)</span>, length the
+outer radius; <code>timescale = 'rotation'</code>, so <code>Gaspard</code> = 1, <code>Hendrik</code> = <span class="arithmatex">\(Le^2\)</span>, <code>MagnetD</code> = <span class="arithmatex">\(Em\)</span>). <code>cnorm</code> normalises the poloidal
+field, so <span class="arithmatex">\(\max\lvert \mathbf{B}_p\rvert \sim 1\)</span>; the Lorentz force per unit mass is <span class="arithmatex">\(Le^2\rho_0^{-1}(\nabla\times\mathbf{B}_0)\times\mathbf{B}_0\)</span>, with <span class="arithmatex">\(\rho_0\)</span>
+the background density (<span class="arithmatex">\(\rho_0\)</span> = 1 for <code>'Boussinesq'</code>); and the wound field is <span class="arithmatex">\(B_\phi \approx \Delta\Omega\,B_p/(Em\,\eta_w)\)</span>, <span class="arithmatex">\(\eta_w\)</span> =
+<code>B0_wound_eta</code>. The background's own force on <span class="arithmatex">\(\mathbf{U}_0\)</span> has two parts.</p>
+<ol>
+<li><em>The azimuthal torque</em>, <span class="arithmatex">\(\propto \mathbf{B}_p\cdot\nabla(s B_\phi)\)</span>: Ferraro's mechanism. It brakes <span class="arithmatex">\(\Delta\Omega\)</span> along the field lines in a
+   time of about <span class="arithmatex">\(1/(\Lambda_p\Omega)\)</span>, with <span class="arithmatex">\(\Lambda_p = Le^2/(\rho_0\,Em\,\eta_w)\)</span> the Elsasser number of the poloidal field built on the background diffusivity. It matters when <span class="arithmatex">\(\Lambda_p\)</span> is not small
+   compared with the mode frequencies <span class="arithmatex">\(\omega/\Omega\)</span>, their damping rates, or the rate of whatever maintains <span class="arithmatex">\(\Delta\Omega\)</span>. If
+   viscous (or turbulent) stresses hold <span class="arithmatex">\(\Delta\Omega\)</span>, the torque compares with them through the Hartmann number,
+   <span class="arithmatex">\(Ha^2 = Le^2/(Ek\,Em)\)</span> with the background values (<span class="arithmatex">\(Le^2/(\rho_0 Ek\,Em\,\eta_w)\)</span> with <code>B0_wound_eta</code>): the imposed <span class="arithmatex">\(\Delta\Omega\)</span> is
+   tenable only for <span class="arithmatex">\(Ha \lesssim 1\)</span>.</li>
+<li><em>The meridional part</em>, the hoop stress and magnetic pressure of <span class="arithmatex">\(B_\phi\)</span>, <span class="arithmatex">\(\propto B_\phi^2\)</span>: it changes the thermal-wind and
+   entropy balance of the background and drives magnetic buoyancy. It matters when <span class="arithmatex">\(Le_\phi^2 \gtrsim \Delta\Omega\)</span>, with
+   <span class="arithmatex">\(Le_\phi = Le\,\max\lvert B_\phi\rvert/\max\lvert \mathbf{B}_p\rvert\)</span>. It can matter even for a weak <span class="arithmatex">\(\mathbf{B}_p\)</span>, because <span class="arithmatex">\(B_\phi\)</span> is larger by
+   <span class="arithmatex">\(\Delta\Omega/(Em\,\eta_w)\)</span>.</li>
+</ol>
+<p>A <code>B0_wound</code> background is therefore a snapshot: valid for modes that evolve faster than these effects. This is the
+tachocline confinement problem (Gough &amp; McIntyre 1998; MacGregor &amp; Charbonneau 1999): with molecular diffusivities a weak
+poloidal field in the radiative interior has <span class="arithmatex">\(Ha \gg 1\)</span>, and its torque would impose isorotation along the field lines and
+spread the shear of the convection zone inward. Below the tachocline a strong field is better represented by a
+Ferraro-consistent background (<code>B0 = 'ferraro'</code>, <code>diff_rot_type = 'ferraro'</code>) or a <code>'confined'</code> one. The checks of this page
+(Ek = Em = <span class="arithmatex">\(10^{-3}\)</span>, <span class="arithmatex">\(Le\)</span> = 0.03, so <span class="arithmatex">\(Ha \approx 30\)</span> and a braking time of about one rotation) test the mathematics (closed form,
+residuals, budgets), not the physical validity of such a background.</p>
+<p><strong>Application: solar inertial modes</strong> (2026-10-31). Their periods are longer than a rotation and their damping is weak
+(Löptien et al. 2018; Gizon et al. 2021), which makes every criterion above stricter.</p>
+<ul>
+<li><strong>Time scales.</strong> <span class="arithmatex">\(\Lambda_p\)</span> and the ohmic decay rate of <span class="arithmatex">\(\mathbf{B}_p\)</span> (about <span class="arithmatex">\(Em\,\eta_w\)</span>) must be <span class="arithmatex">\(\ll \gamma/\Omega\)</span>, the damping rate of the
+  modes, not only <span class="arithmatex">\(\ll \omega/\Omega\)</span>. The wound field needs a diffusion time <span class="arithmatex">\(L^2/\eta_b\)</span> across its layer to build up (years for a
+  thin tachocline with a turbulent <span class="arithmatex">\(\eta_b\)</span>): on solar-cycle time scales it is a snapshot.</li>
+<li><strong>Sensitivity.</strong> The relative effect of the field grows roughly as <span class="arithmatex">\((\omega_A/\omega)^2\)</span>, <span class="arithmatex">\(\omega_A\)</span> the Alfvén frequency, so
+  low-frequency modes feel it most: scan <code>B0_wound_eta</code> and <span class="arithmatex">\(Le\)</span> rather than trusting one value.</li>
+<li><strong>Critical layers and continua.</strong> Where the mode frequency matches the local advection, <span class="arithmatex">\(\omega + m\,\Delta\Omega = 0\)</span> in kore's
+  convention (the critical latitudes), and at Alfvén resonances, the spectrum has continuous parts and the eigenfunctions thin layers. Check the
+  convergence in N and lmax, and tell the discrete modes from the continuum.</li>
+<li><strong>Thermal wind.</strong> Keep the thermal-wind heat rows on (<code>thermal_wind</code>), and check the meridional criterion <span class="arithmatex">\(Le_\phi^2 \ll \Delta\Omega\)</span>:
+  the background baroclinicity does not include the forces of <span class="arithmatex">\(B_\phi^2\)</span>.</li>
+<li><strong>Consistent diffusivities.</strong> The observed line widths set the turbulent viscosity (<code>ViscosD</code>); take a turbulent
+  <span class="arithmatex">\(Pm \sim 1\)</span> (<code>Em</code> <span class="arithmatex">\(\sim\)</span> <code>Ek</code>) and set <code>B0_wound_eta</code> to match the background's turbulent <span class="arithmatex">\(\eta\)</span>. A wound field built with a
+  molecular <span class="arithmatex">\(\eta\)</span> under modes damped by turbulence is inconsistent.</li>
+<li><strong>Radiative interior.</strong> With molecular values <span class="arithmatex">\(Ha\)</span> is huge: use <code>'confined'</code> or <code>'ferraro'</code> fields below the tachocline, not
+  <code>B0_wound</code>.</li>
+<li><strong>Where the modes live.</strong> Most observed modes are concentrated in the convection zone (many near the surface or the
+  equator), so a tachocline field reaches them only through their tails. Test the high-latitude and the deep modes first.</li>
+<li><strong>Measurability.</strong> A frequency shift matters only above about 1 nHz, a few <span class="arithmatex">\(10^{-3}\)</span> of <span class="arithmatex">\(\Omega\)</span>.</li>
+<li><strong>Symmetry.</strong> A dipolar <span class="arithmatex">\(\mathbf{B}_p\)</span> with kore's equatorially symmetric <span class="arithmatex">\(\Delta\Omega\)</span> gives a <span class="arithmatex">\(B_\phi\)</span> of the same family, so the two
+  mode classes stay separate, as without the field.</li>
+<li><strong>Practical.</strong> With a high-degree <code>'tabulated'</code> <span class="arithmatex">\(\Delta\Omega\)</span> the wound degrees reach (degree of <span class="arithmatex">\(\Delta\Omega\)</span>) + (degree of <span class="arithmatex">\(\mathbf{B}_p\)</span>) + 1:
+  wider couplings, more LU memory, possibly <code>st_mat_mumps_icntl_14</code> in <code>petsc_opts</code> (MUMPS INFOG(1) = -9). In each run read the
+  printed residual of the induction balance and <span class="arithmatex">\(\max\lvert B_\phi\rvert/\max\lvert \mathbf{B}_p\rvert\)</span>.</li>
+<li><strong>Bracketing.</strong> Compute the same modes with <code>B0_wound</code> and with a <code>'ferraro'</code> background (the field the torque would
+  relax to): the spread is a measure of what the steady-background assumption costs.</li>
 </ul>
 <p><strong>Toroidal field</strong> (step 4). <span class="arithmatex">\(\mathbf{B}_0^{tor} = c_\mathrm{tor}\nabla\times(k(r)\,Y_n^0\,\mathbf{r})\)</span>, purely azimuthal,
 <span class="arithmatex">\(B_\phi = -c_\mathrm{tor}\,k\,\partial_\theta Y_n^0\)</span>: <span class="arithmatex">\(c_\mathrm{tor}\,k\sin\theta\)</span> for <span class="arithmatex">\(n\)</span> = <code>B0_tor_l</code> = 1, <span class="arithmatex">\(3c_\mathrm{tor}\,k\sin\theta\cos\theta\)</span> for
