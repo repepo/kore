@@ -1457,6 +1457,38 @@ symmetric about the equator: any <span class="arithmatex">\(F\)</span> for a dip
 <span class="arithmatex">\(\psi\)</span> constant on the inner core's surface. A toroidal part of <code>B0</code> is left as it is. The series is cut at <code>diff_rot_nmax</code> (even): <code>ferraro_mismatch</code> then reports only
 the truncation, at round-off for fields of low degree with a polynomial <span class="arithmatex">\(F\)</span>. Example: the uniform axial field <span class="arithmatex">\(\psi = r^2\sin^2\theta/2\)</span> with
 <span class="arithmatex">\(F(\psi) = \psi\)</span> gives <span class="arithmatex">\(\Delta\Omega \propto s^2\)</span>, the cylindrical profile.</p>
+<p><strong>The wound toroidal field: <code>B0_wound = 1</code></strong> (2026-10-30). Motivation: in the solar tachocline both the rotation and a
+poloidal field are given, and they do not satisfy Ferraro's law: the shear winds the poloidal field into an azimuthal one,
+which grows until magnetic diffusion balances the winding. <code>B0_wound = 1</code> adds that steady azimuthal field to <code>B0</code>, so that
+the background is steady with both imposed. Method: the <span class="arithmatex">\(\phi\)</span>-component of the steady induction equation for axisymmetric
+fields, with <span class="arithmatex">\(\mathbf{U}_0 = G\,\Delta\Omega\,s\,\hat{\boldsymbol\phi}\)</span> (<span class="arithmatex">\(G\)</span> = <code>Gaspard</code>) and a uniform diffusivity
+<span class="arithmatex">\(\eta\)</span> = <code>B0_wound_eta</code> <span class="arithmatex">\(\cdot\)</span> <code>MagnetD</code>,</p>
+<div class="arithmatex">\[
+\eta\left(\nabla^2 - \frac{1}{s^2}\right)B_\phi = -G\,s\,\mathbf{B}_p\cdot\nabla\Delta\Omega ,
+\]</div>
+<p>where <span class="arithmatex">\(\mathbf{B}_p\)</span> is the poloidal <code>B0</code> (any type). Written as kore's toroidal field, <span class="arithmatex">\(B_\phi = \sum_n k_n\sin\theta\,P_n'(\cos\theta)\)</span>, the
+operator acts degree by degree, <span class="arithmatex">\((\nabla^2 - 1/s^2)B_\phi = \sum_n D_n k_n\,\sin\theta\,P_n'\)</span> with
+<span class="arithmatex">\(D_n k = k'' + 2k'/r - n(n+1)k/r^2\)</span>. The source is projected on <span class="arithmatex">\(\sin\theta\,P_n'\)</span> (Gauss–Legendre quadrature in <span class="arithmatex">\(\cos\theta\)</span>),
+which leaves one radial equation per degree, solved by Chebyshev collocation: <span class="arithmatex">\(k_n = 0\)</span> at an insulating wall (<span class="arithmatex">\(B_\phi\)</span> vanishes
+outside), regular at <span class="arithmatex">\(r = 0\)</span> in a full sphere, and with a conducting inner core (which must rotate rigidly) <span class="arithmatex">\(B_\phi/\mu\)</span> and
+<span class="arithmatex">\(E_\theta\)</span> continuous, <span class="arithmatex">\(r k_n' + (1 - (n+1)/\sigma)k_n = 0\)</span> at <span class="arithmatex">\(r_i\)</span> (<span class="arithmatex">\(\sigma\)</span> = <code>sigma_i2o</code>). The degrees run up to (that of
+<span class="arithmatex">\(\mathbf{B}_p\)</span>) + (that of <span class="arithmatex">\(\Delta\Omega\)</span>) + 1, with the field's symmetry (even for a dipolar <span class="arithmatex">\(\mathbf{B}_p\)</span>, odd for a quadrupolar one).
+The <span class="arithmatex">\(k_n\)</span> are added to any <code>B0_tor</code>, and the couplings come from <code>mag_algebra.py</code> as for <code>'general'</code>.</p>
+<p>The size of the wound field is set by the physics, about <span class="arithmatex">\(G\,\Delta\Omega/\eta\)</span> (times the length scale squared) relative to
+<span class="arithmatex">\(\mathbf{B}_p\)</span>; <code>cnorm</code> normalises the poloidal field alone, so the Lehnert or Elsasser number keeps its meaning for the field the
+user gives, and the wound part enters with its physical ratio. <code>B0_wound_eta</code> (default 1) is <span class="arithmatex">\(\eta_\mathrm{background}/\eta\)</span>: the
+diffusivity that balances the winding, in units of <code>MagnetD</code>, e.g. a turbulent one (&gt; 1, a weaker wound field), while the
+perturbation still diffuses with <code>MagnetD</code>. At the start of a run, instead of the Ferraro check,
+<code>background.magnetic_diffrot</code> prints the degrees and the residual of the steady balance on a grid off the collocation nodes.</p>
+<p>What is left out, so that the background is only approximately steady:</p>
+<ul>
+<li><strong>the ohmic decay of <span class="arithmatex">\(\mathbf{B}_p\)</span></strong>: the poloidal field is held fixed, as it is without rotation;</li>
+<li><strong>the Lorentz force of <span class="arithmatex">\(\mathbf{B}_0\)</span> on the background flow</strong>: <span class="arithmatex">\(\Delta\Omega\)</span> is imposed and not modified by
+  <span class="arithmatex">\((\nabla\times\mathbf{B}_0)\times\mathbf{B}_0\)</span>, which is now dominated by the wound <span class="arithmatex">\(B_\phi\)</span> (it grows as <span class="arithmatex">\(G\,\Delta\Omega/\eta\)</span>). For the tachocline
+  this is a significant approximation: a wound field that strong would brake the shear that produces it (the
+  Lorentz-force feedback on the rotation that a self-consistent tachocline model includes). The results are meaningful when
+  that force is small compared with what maintains <span class="arithmatex">\(\Delta\Omega\)</span>, i.e. for a moderate Elsasser number of the wound field.</li>
+</ul>
 <p><strong>Toroidal field</strong> (step 4). <span class="arithmatex">\(\mathbf{B}_0^{tor} = c_\mathrm{tor}\nabla\times(k(r)\,Y_n^0\,\mathbf{r})\)</span>, purely azimuthal,
 <span class="arithmatex">\(B_\phi = -c_\mathrm{tor}\,k\,\partial_\theta Y_n^0\)</span>: <span class="arithmatex">\(c_\mathrm{tor}\,k\sin\theta\)</span> for <span class="arithmatex">\(n\)</span> = <code>B0_tor_l</code> = 1, <span class="arithmatex">\(3c_\mathrm{tor}\,k\sin\theta\cos\theta\)</span> for
 <span class="arithmatex">\(n = 2\)</span>; <span class="arithmatex">\(c_\mathrm{tor}\)</span> = <code>cnorm_tor</code> (a number, <code>'mag_energy'</code> or <code>'Schmitt2012'</code>; <span class="arithmatex">\(\int B_0^2 dV = n_l L\int k^2 r^2 dr\)</span>):</p>
@@ -1588,8 +1620,9 @@ needs nothing new: it does not involve <span class="arithmatex">\(\mathbf{U}_0\)
   constant along its field lines. The linear problem does not contain this term. <code>background.ferraro_mismatch</code> reports
   <span class="arithmatex">\(\max\lvert \mathbf{B}_0\cdot\nabla\Delta\Omega\rvert \,r/(\max\lvert \mathbf{B}_0\rvert \max\lvert r\nabla\Delta\Omega\rvert )\)</span> at the start of every run; above <span class="arithmatex">\(10^{-7}\)</span>
   <code>background.FERRARO_POLICY</code> decides: <code>'warn'</code> (default: a warning, the background is assumed to be maintained) or
-  <code>'refuse'</code>. Consistent backgrounds: a toroidal field, a <code>'confined'</code> field where <span class="arithmatex">\(\Delta\Omega\)</span> is uniform, <code>B0 = 'ferraro'</code>, or
-  <code>diff_rot_type = 'ferraro'</code>.</li>
+  <code>'refuse'</code>. Consistent backgrounds: a toroidal field, a <code>'confined'</code> field where <span class="arithmatex">\(\Delta\Omega\)</span> is uniform, <code>B0 = 'ferraro'</code>,
+  <code>diff_rot_type = 'ferraro'</code>, or any poloidal field with <code>B0_wound = 1</code> (the winding balanced by diffusion; the run then
+  reports that balance instead).</li>
 <li><strong>Energy budgets.</strong> spin_doctor's induction work includes <span class="arithmatex">\(\mathbf{U}_0\times\mathbf{b}\)</span> (on the <span class="arithmatex">\((r, \theta)\)</span> grid). Because
   <span class="arithmatex">\(\mathbf{U}_0\times\mathbf{b}\)</span> does not vanish at a wall where <span class="arithmatex">\(\Delta\Omega \ne 0\)</span>, it carries magnetic energy through the wall into the
   field outside: resid𝐛 (the fluid) uses the induction work with its wall terms, resid𝐄 (the full budget, which counts the
@@ -1918,6 +1951,13 @@ residσ, resid𝐛 and resid𝐄 equal <code>conductive_IC</code>'s resid𝐮, r
   <span class="arithmatex">\(\le 10^{-10}\)</span>. Refused as they should be: an odd <span class="arithmatex">\(F\)</span> with 'Luo_S2', <code>B0 = 'ferraro'</code>, a toroidal field alone, a conducting
   inner core with <span class="arithmatex">\(\psi\)</span> not constant on it. With a toroidal part of degree 2: <code>B0 = 'ferraro'</code> + 'Malkus' and 'Luo_S1' + 'wall' with
   <code>diff_rot_type = 'ferraro'</code> close their budgets to <span class="arithmatex">\(8\cdot10^{-12}\)</span> and <span class="arithmatex">\(10^{-9}\)</span>.</li>
+<li><strong><code>B0_wound = 1</code></strong> (<code>tests/magnetic/wound_check.py</code>): a uniform axial <span class="arithmatex">\(\mathbf{B}_p\)</span> with <span class="arithmatex">\(\Delta\Omega = a r^2\)</span> gives one degree,
+  <span class="arithmatex">\(k_2 = A r^4/14 + C r^2 + D r^{-3}\)</span>: the solution matches it to <span class="arithmatex">\(7\cdot10^{-14}\)</span> (shell), <span class="arithmatex">\(4\cdot10^{-13}\)</span> (conducting inner core) and
+  <span class="arithmatex">\(3\cdot10^{-12}\)</span> (full sphere). The residual of the steady induction equation, by finite differences in <span class="arithmatex">\((r, \theta)\)</span> with <span class="arithmatex">\(\mathbf{B}_p\)</span> from
+  its flux function, is <span class="arithmatex">\(\le 8\cdot10^{-10}\)</span> ('general' 1 + 3, 'Luo_S2' in a full sphere, 'FDM' with a conducting inner core),
+  the floor of the differences; the <span class="arithmatex">\(k_n\)</span> change by <span class="arithmatex">\(\le 2\cdot10^{-11}\)</span> from 97 to 385 nodes. Budgets with <span class="arithmatex">\(\max\lvert B_\phi\rvert/\max\lvert \mathbf{B}_p\rvert\)</span>
+  from 0.5 to 4.4 ('general', 'FDM' with a conducting inner core, 'Luo_S2' in a full sphere, 'axial' plus a 'Malkus' part
+  of degree 2): <span class="arithmatex">\(\le 2.4\cdot10^{-10}\)</span>.</li>
 <li><strong>Unchanged without the new features</strong>: <code>regress.sh</code> bitwise, heat_dr, ru_insane identical, and 26 magnetic cases build A and
   B bitwise equal to the code before.</li>
 </ul>
