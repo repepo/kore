@@ -3,6 +3,29 @@ CHANGELOG - Kore, conductive_IC branch
 
 2026-10-30
 ----------
+Fix: B0 = 'dipole' with an inner core (bin/submatrices.py, bin/utils.py)
+- It stopped in assemble.py with a NameError (r2etaIf). With ricb > 0 the equations are multiplied by extra powers of
+  r (r^2 in section f, r^3 in section g) so that the r^-2 of the dipole drops out. When the magnetic diffusion term
+  became -Em curl(eta curl b), operators.magnetic_diffusion took the eta-profile matrices for this case too (r2etaIf,
+  ..., r5eta1D1g), but submatrices.py still built the plain powers of r ('f20', 'f31', 'f42', 'g30', 'g41', 'g52'),
+  and only up to r^3 of the eta profile. It now builds those matrices ('feta200', ..., 'geta511'), with powers of r
+  up to 5 of the profile. Other fields are unchanged (A, B bit for bit).
+- 'dipole' is kept (not stopped): it is the field of a point source at the centre, current-free in the fluid and in
+  the inner core outside r = 0 (a magnet inside the inner sphere, as in DTS), so it needs no B0_ic treatment and is
+  valid with an insulating, conducting or thin-wall inner core. In a full sphere it is singular: utils.check_B0 now
+  stops 'dipole' with ricb = 0, which failed in utils.h0 (UnboundLocalError).
+- Checked on chandler (z2, PETSc; N 64, Ek = Em = 1e-3, ricb = 0.35, 2 ranks): before the fix the dipole stopped as
+  above; 'axial', FDM and 'Luo_S2' give the same A and B, bit for bit. 14 dipole cases (insulating, conducting with
+  sigma_i2o = 1 and 0.1, and thin-wall inner core; thin-wall mantle; stress-free walls; m = 0, 1, 2; thermal; rotdyn;
+  two radial conductivity profiles): eigenvalues agree to 2e-14 (2e-9 for a nearly undamped stress-free mode) with
+  the same dipole taken through the generic l = 1 path (no extra powers of r, h = r^-2/2 in Chebyshev polynomials),
+  and at uniform conductivity A, B and the eigenvalues equal those of the plain powers of r to round-off.
+  spin_doctor's resid0, resid u, resid b, resid L and resid E are 3e-12 or below (resid E 6e-5 with a thin wall, the
+  order of the thin-wall model).
+
+
+2026-10-30
+----------
 Fix: torques in resid L of spin_doctor (bin/spin_doctor.py, bin/utils4pp.py, docs/output.md, docs/equations.md,
 docs/boundaries.md)
 - do_vtorq and do_vtorq_ic lacked the parentheses around their (m, symm) cases, as do_mtorq did before 2026-10-29, so

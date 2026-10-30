@@ -990,6 +990,9 @@ def check_B0():
     # stopped in assemble.py with a NameError
     if par.B0 == 'FDM' and par.B0_l not in [1, 2]:
         sys.exit("B0 = 'FDM' with B0_l = %r: only B0_l = 1 and 2 are implemented" % par.B0_l)
+    # FIX (2026-10-30): 'dipole' is singular at r = 0; in a full sphere h0 failed with an UnboundLocalError
+    if par.B0 == 'dipole' and par.ricb == 0:
+        sys.exit("B0 = 'dipole' is singular at r = 0: it needs an inner core (ricb > 0)")
     if par.B0_tor is None:
         return
     if par.B0_tor not in B0_tor_list:

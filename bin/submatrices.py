@@ -78,8 +78,9 @@ def main(ncpus):
         rdh = [ [ [] for j in range(4) ] for i in range(7) ]
         rpw = [ 0, 1, 2, 3, 4, 5, -1]  # powers of r needed for the h function
 
-        rd_eta = [ [ [] for j in range(2) ] for i in range(4) ]
-        for i,rpw1 in enumerate( rpw[:4] ):
+        # FIX (2026-10-30): powers of r up to 5 (were up to 3): B0 = 'dipole' with an inner core needs r**2 to r**5 (cdipole)
+        rd_eta = [ [ [] for j in range(2) ] for i in range(6) ]
+        for i,rpw1 in enumerate( rpw[:6] ):
             # Cheb coeffs of the mag. diffusion profile times a power of r
             rd_eta[i][0] = ut.chebco_f( ut.mag_diffus, i, par.N, par.ricb, ut.rcmb, par.tol_tc )
             # and the derivative
@@ -251,7 +252,10 @@ def main(ncpus):
             # induction
             labl += [ 'f200', 'f310', 'f301', 'f300' ]
             # magnetic diffusion
-            labl += [ 'f20', 'f31', 'f42' ]
+            # FIX (2026-10-30): the eta-profile matrices of operators.magnetic_diffusion (r2etaIf, r3etaD1f, r4etaD2f), those
+            # of the 'else' branch times r^2. The plain powers built here before ('f20', 'f31', 'f42') were no longer used,
+            # and assemble.py stopped with a NameError (r2etaIf)
+            labl += [ 'feta200', 'feta301', 'feta402' ]
 
         else:
             #  b
@@ -281,7 +285,8 @@ def main(ncpus):
             # induction
             labl += [ 'g301', 'g411',  'g200', 'g310', 'g420', 'g402', 'g300', 'g401', 'g410' ]  # e.g. 'g200' is for (r**2)*h(r)
             # magnetic diffusion
-            labl += [ 'g30', 'g41',  'g52' ]
+            # FIX (2026-10-30): as in section f, those of the 'else' branch times r^3 (were 'g30', 'g41', 'g52')
+            labl += [ 'geta300', 'geta401', 'geta502', 'geta410', 'geta511' ]
         else:
             # b
             labl += [ 'g20' ]
