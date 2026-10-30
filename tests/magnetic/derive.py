@@ -43,8 +43,8 @@ import sympy as sy
 # The independent variables and the unknown radial functions. Everything radial stays symbolic, so a result holds for any
 # radial profile; θ is explicit, and φ enters only through ∂φ -> i m.
 r, th = sy.symbols('r theta', positive=True)
-FUN = {k: sy.Function(k)(r) for k in ('P', 'T', 'F', 'G', 'h', 'lr', 'k')}   # lr = ln ρ0; k: toroidal B0
-P, T, F, G, h, lr, kt = (FUN[k] for k in ('P', 'T', 'F', 'G', 'h', 'lr', 'k'))
+FUN = {k: sy.Function(k)(r) for k in ('P', 'T', 'F', 'G', 'h', 'lr', 'k', 'w')}   # lr = ln ρ0; k: toroidal B0; w: f_n of ΔΩ
+P, T, F, G, h, lr, kt, w = (FUN[k] for k in ('P', 'T', 'F', 'G', 'h', 'lr', 'k', 'w'))
 
 
 def Y(l, m):
@@ -184,6 +184,19 @@ def rows(kind, part, lcol, lrow, m, b0=('pol', 1)):
     # induction rows: r̂⋅∇×(u×B0) (f) and r̂⋅∇×∇×(u×B0) (g)
     E = cross(velocity(lcol, m, part), B0())
     e = curl(E, m)[0] if kind == 'f' else curl(curl(E, m), m)[0]
+    return project(e, lrow, m)
+
+
+def rows_dr(kind, part, lcol, lrow, m, n):
+    '''
+    NEW (2026-10-30): the projected row of the induction by a differential rotation, ∇×(U0×b) with U0 = w(r) P_n(cos θ) r sinθ e_φ
+    (ΔΩ = w P_n, Gaspard = 1): kind 'f' (r̂⋅) or 'g' (r̂⋅∇×), b of part 'F' or 'G' and degree lcol, row degree lrow. The
+    monomials carry w0, w1 (= w'), ...; kore's rows are these times -r³/L'³ and Gaspard (diff_rot.induction_block).
+    '''
+    x = sy.cos(th)
+    U0 = (0, 0, w*sy.legendre(n, x)*r*sy.sin(th))
+    W = curl(cross(U0, bfield(lcol, m, part)), m)
+    e = W[0] if kind == 'f' else curl(W, m)[0]
     return project(e, lrow, m)
 
 

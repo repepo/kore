@@ -121,7 +121,15 @@ poloidal B0 of degree 2 (`operators.lorentz_pol2`/`induction_pol2`, tables of la
 uses the grid for it), the full sphere (ricb = 0: parity of h (-1)^l, of k (-1)^n via `ut.odd_profiles`, f of parity
 `vF = symmB0·vP`, one bc row at the CMB; FDM = j_l(βr) with analytic derivatives `bf.jl_k`) and inviscid runs (ViscosD = 0,
 full sphere only: u rows in C^(3), v rows in C^(2) with no bc row, since the Lorentz labels have D3, D2). For now: an
-insulating mantle, eigenproblems, uniform η, no diff rot, no inviscid shell: `background.check_magnetic()` stops otherwise.
+insulating mantle, eigenproblems, uniform η, no inviscid shell: `background.check_magnetic()` stops otherwise.
+2026-10-30: with `diff_rot = 1` the induction gains ∇×(U0×b) (`diff_rot.induction_block`, any ΔΩ, same algebra as the force;
+a conducting inner core must co-rotate rigidly, `diff_rot.rigid_ricb`; `background.ferraro_mismatch` reports B0⋅∇Ω and
+`FERRARO_POLICY` 'warn'/'refuse'; spin_doctor's resid𝐄 uses the volume induction work, `utils4pp.INDU_WALLS`). New B0 types
+'confined' (h = r^l (r2² - r²)^p or r^l (r - r1)^p (r2 - r)^p, factored evaluation), 'general' (`B0_profiles`, `B0_tor_profiles`,
+any degrees) and 'ferraro' (ψ = G(ΔΩ), `B0_ferraro_G`, odd degrees to `B0_ferraro_nmax`). `bin/mag_algebra.py` builds the
+Lorentz/induction couplings for any degrees from the recurrence algebra (`mag_couplings = 'algebra'`, forced for
+'general'/'ferraro'; `ut.mag_algebra`, `ut.mag_dl`; profile codes `hp`/`kt` + degree); same eigenvalues as the closed forms
+to 1e-13. Checks: tests/magnetic `dr_induction_check.py`, `algebra_check.py`, `rigid_check.py`.
 'Wu 2005' with r_out 0.99 needs N ≈ 192 at Ek 1e-3 for 1e-10 residuals (row checks in a full sphere: N 288).
 
 **Velocity** (`utils4pp.cheb2space_pol`): u = ρ₀⁻¹∇×∇×(ρ₀ P **r**) + ∇×(T **r**), so ∇·(ρ₀u) = 0 exactly:

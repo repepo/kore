@@ -455,8 +455,8 @@ def _heat_labels():
     return out
 
 def labels():
-    '''[(label, 'P' or 'T')]: every radial operator of the differential-rotation terms and the parity class of its column
-    (P for the P and s columns, T for T), for submatrices.py'''
+    '''[(label, 'P', 'T', 'F' or 'G')]: every radial operator of the differential-rotation terms and the parity class of its
+    column (P for the P and s columns, T for T, F and G for the poloidal and toroidal magnetic field), for submatrices.py'''
     out = []
     for n in degrees():
         for (sec, comp) in MOMENTUM:
@@ -466,6 +466,10 @@ def labels():
         out += [(lab, 'P') for _, lab in h['temp'] + h['tp']]
         out += [(lab, 'P') for _, labs in h['tw'] for lab in labs]
         out += [(lab, 'T') for _, lab in h['tor']]
+    if par.magnetic:   # NEW (2026-10-30): the induction by the background flow, columns F (poloidal b) and G (toroidal b)
+        for n in degrees():
+            for (sec, comp) in INDUCTION:
+                out += [(lab, 'F' if comp == 'bpol' else 'G') for _, lab in induction_labels(n, sec, comp)]
     return out
 
 def dl_range(section, component):
@@ -533,3 +537,134 @@ def heat_block(l, component, offdiag, M):
         return [0, 0]
     offd = int(np.where((lt if kind == 'T' else lp) == ls)[0][0] - np.where(lp == l)[0][0])
     return [-out/L**3, offd]
+
+
+
+# ======================================================================================================================
+# 5. NEW (2026-10-30): the induction by the background flow, ∇×(U0×b), in the induction equation (magnetic = 1)
+# ======================================================================================================================
+# WHY. With a magnetic field, the differential rotation also shears the perturbation b: the induction equation gains
+# ∇×(U0×b), U0 = G ΔΩ r sinθ e_φ (G = Gaspard). It is the Ω-effect (a poloidal b sheared into a toroidal one) and, for a
+# rigid ΔΩ = c, the Doppler shift -i m G c of the field. With ∇⋅U0 = ∇⋅b = 0 and U0 = G ΔΩ ẑ×𝐫,
+#     ∇×(U0×b) = (b⋅∇)U0 - (U0⋅∇)b = G [ -i m ΔΩ b + sinθ (r ∂ᵣΔΩ b_r + ∂θΔΩ b_θ) e_φ ]
+# ((U0⋅∇)b = G ΔΩ (i m b + ẑ×b) and (b⋅∇)U0 = G ΔΩ ẑ×b + G (b⋅∇ΔΩ) ẑ×𝐫: the ẑ×b terms cancel). It has the same angular
+# structure as the force W of section 3 without its 2ẑ×u term, so it is built with the same algebra, for any degree n of
+# ΔΩ (docs/derivations.md, part B; docs/magnetic.md). b = ∇×∇×(F Y 𝐫) + ∇×(G Y 𝐫) has the shapes q = L F/r, s = F' + F/r
+# (no (ln ρ0)': b carries no ρ0), t = G.
+# Rows (as derive.py: kore's induction rows are -r³/L'³ times r̂⋅(.) (f) and r̂⋅∇×(.) (g) of the equation's right-hand side):
+#   r̂⋅ of e_φ terms vanishes and -i m ΔΩ b keeps the type, so the f rows see only -i m ΔΩ b_r: the q-component of the
+#   primitives, from the shape q; r̂⋅∇× of a field with components (q, s, t) is L' t/r, so the g rows see the t-components.
+#   f row, F column:  -Ls(Cq_q) . f r² F                                     label f0{f}0_D0
+#   g row, F column:  -L'(Ls(Ct_q) + Ct_a) . f r F,  -L' Ct_a . f r² F',  -L' Ls(Ct_dq) . (r f') r F
+#                                                                            labels g1{f}0_D0, g0{f}0_D1, g1{d}0_D0
+#   g row, G column:  -L' Ct_T . f r² G                                      label g0{f}0_D0
+# (Ls: times L of the source degree; f = diff_rot_ampl a_n f_n). The f row from G and the components that would need
+# negative powers of r (Cq_a, Cq_T, Cq_dq) are zero: the e_φ terms have no radial component.
+# Selection rules: F→f and G→g keep the type, Δl = 0, ±2, ..., ±n; F→g changes it, Δl = ±1, ±3, ..., ±(n + 1).
+
+def _induction_primitives(n, m, lw):
+    '''
+    The primitive matrices C[k][shape] of ∇×(U0×b) per unit G for ΔΩ = f(r) P_n(x) (k = 'q', 's', 't'; shapes 'q': f L F/r,
+    'a': f (F' + F/r), 'T': f G, 'dq': (r f') L F/r), on the degrees 0..lw, sparse, row = target, column = source:
+        W_sh = -i m P_n b_sh + ẑ×[-P_n'(x) sinθ b_θ,sh r̂],   W_dq = ẑ×[P_n(x) Y r̂]
+    as _primitives, whose force has P_n (i m u + 2ẑ×u) in place of -i m P_n b.
+    '''
+    A = angular.Algebra.get(m, lw)
+    Pn, dPn = A.legendre(n)
+    I = A.I
+    shapes_ = {'q': A.field(q=I), 'a': A.field(s=I), 'T': A.field(t=I)}
+    C = {'q': {}, 's': {}, 't': {}}
+    for sh, b in shapes_.items():
+        W = A.mult(b, Pn, dPn)*(-1j*m)                      # -i m ΔΩ b
+        if sh != 'q':                                       # sinθ ∂θΔΩ b_θ e_φ = ẑ×r̂ (-P_n'(x) sinθ b_θ), f_n factor
+            W = W + A.zcross_r(-(dPn @ A.sin_theta(b)))
+        for k in 'qst':
+            C[k][sh] = W[k].tocsr()
+    W = A.zcross_r(Pn)                                      # sinθ r ∂ᵣΔΩ b_r e_φ: shape 'dq' (r f_n' in place of f_n)
+    for k in 'qst':
+        C[k]['dq'] = W[k].tocsr()
+    return C, A
+
+_ind, _ind_band = {}, {}
+def induction_coefficients(n, m):
+    '''the coefficients of the radial operators of ∇×(U0×b) for f_n (the table above), as sparse matrices [target l',
+    source l] on the degrees up to lmax + n + 6, cached; also stored by diagonal'''
+    key = (n, m)
+    if key in _ind:
+        return _ind[key]
+    lw = par.lmax + n + 6
+    C, A = _induction_primitives(n, m, lw)
+    Ls = lambda M: M @ A.L     # times L of the source degree
+    Lt = lambda M: A.L @ M     # times L' of the target degree
+    Cq, Ct = C['q'], C['t']
+    K = {'fF_D0': -Ls(Cq['q']),
+         'gF_D0': -Lt(Ls(Ct['q']) + Ct['a']), 'gF_D1': -Lt(Ct['a']), 'gFd_D0': -Lt(Ls(Ct['dq'])),
+         'gG_D0': -Lt(Ct['T'])}
+    K = {k: v.tocsr() for k, v in K.items()}
+    _ind[key] = K
+    _ind_band[key] = {k: angular.band(v, n + 3) for k, v in K.items()}
+    return K
+
+def induction_coef(name, n, l, m, offdiag):
+    '''coefficient `name` of ∇×(U0×b) for f_n, target degree l, source degree l + offdiag'''
+    induction_coefficients(n, m)
+    return _lookup(_ind_band[(n, m)][name], l, m, offdiag)
+
+# the radial labels of the induction by f_n per (section, column): (coefficient, label template); {a}, {s} are the codes
+# of f_n and r f_n'. The rows of section f are r^(2 - X), those of g as well (utils.decode_label).
+INDUCTION = {
+    ('f', 'bpol'): [('fF_D0', 'f0{a}0_D0')],
+    ('g', 'bpol'): [('gF_D0', 'g1{a}0_D0'), ('gF_D1', 'g0{a}0_D1'), ('gFd_D0', 'g1{s}0_D0')],
+    ('g', 'btor'): [('gG_D0', 'g0{a}0_D0')],
+}
+
+def induction_labels(n, section, component):
+    '''[(coefficient name, label)] of the f_n induction terms of a row block (section 'f' or 'g', column 'bpol' or 'btor')'''
+    c = codes(n)
+    return [(k, t.format(a=c['f'], s=c['d'])) for k, t in INDUCTION.get((section, component), [])]
+
+def induction_dl_range(section, component):
+    '''the Δl of the induction blocks assemble.py places: F→f and G→g even, |Δl| <= n_max; F→g odd, |Δl| <= n_max + 1;
+    G→f none'''
+    nd = n_max()
+    if (section, component) in (('f', 'bpol'), ('g', 'btor')):
+        return range(-nd, nd + 1, 2)
+    if (section, component) == ('g', 'bpol'):
+        return range(-nd - 1, nd + 2, 2)
+    return range(0)
+
+def induction_block(l, section, component, offdiag, M):
+    '''
+    The block of ∇×(U0×b) for the row degree l (section 'f' or 'g'), the column 'bpol' (F) or 'btor' (G) and the source degree
+    l + offdiag: Gaspard Σ_n Σ coefficient × radial operator / L'^3 (the sign of kore's A: minus the right-hand side), with
+    the column block offset in units of N1 (the l's of F and G are those of utils.ell with the field's symmetry ut.bsymm).
+    Returns [matrix, offd], or [0, 0] if no degree couples this Δl.
+    '''
+    import utils as ut
+    m = par.m
+    out = 0
+    for n in degrees():
+        for c, lab in induction_labels(n, section, component):
+            if abs(offdiag) <= n + 1:
+                out = out + induction_coef(c, n, l, m, offdiag)*M[lab]
+    if np.isscalar(out):
+        return [0, 0]
+    lF, lG = ut.ell(par.m, par.lmax, ut.bsymm)[:2]
+    rows = lF if section == 'f' else lG
+    cols = lF if component == 'bpol' else lG
+    offd = int(np.where(cols == l + offdiag)[0][0] - np.where(rows == l)[0][0])
+    return [par.Gaspard*out/(l*(l + 1.))**3, offd]
+
+def rigid_ricb(tol=1e-10):
+    '''
+    (c, ok): the rotation ΔΩ(ricb, θ) of the inner boundary, c = diff_rot_ampl a_0 f_0(ricb), and whether it is rigid, i.e.
+    f_n(ricb) = 0 for every n > 0 (to tol relative to the largest |f_n|). A conducting inner core co-rotates with c: its field
+    then gains the Doppler term -i m G c b (assemble.py), and nothing else changes (the matching conditions involve only
+    b_r in U0×b, which is continuous).
+    '''
+    ri = np.array([par.ricb])
+    vals = {n: float(raw(n, ri)[0]) for n in degrees()}
+    big = max([1e-300] + [abs(raw(n, np.linspace(max(par.ricb, 1e-3), 1, 50))).max() for n in degrees()])
+    c = vals.get(0, 0.0)
+    ok = all(abs(v) <= tol*big for n, v in vals.items() if n > 0)
+    return c, ok

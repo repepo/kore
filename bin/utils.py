@@ -69,6 +69,15 @@ if par.magnetic:
         odd_profiles.append('bpo')
     if par.B0_tor is not None and par.B0_tor_l % 2:
         odd_profiles.append('bto')
+# NEW (2026-10-30): the magnetic couplings from the recurrence algebra (mag_algebra.py) instead of the closed forms of
+# operators.py: with par.mag_couplings = 'algebra' (any B0 type), and always for the types that need it ('general', 'ferraro')
+mag_algebra = bool(par.magnetic) and (getattr(par, 'mag_couplings', 'closed') == 'algebra' or par.B0 in ('general', 'ferraro')
+                                     or par.B0_tor == 'general')
+if mag_algebra:
+    import mag_algebra as _ma
+    odd_profiles += _ma.odd_codes()
+# the Δl of the magnetic couplings assemble.py loops over
+mag_dl = list(_ma.dl_range()) if mag_algebra else [-2, -1, 0, 1, 2]
 
 def dr_offd(l, ls, row, col):
     '''
@@ -153,7 +162,7 @@ def gimmedachebs( labl ):
     '''
 
     tol = max(1e-15, par.drop_tol)  # relative to the largest coefficient, see chebco_f
-    if ('bpo' in labl or 'bto' in labl) and 'lho' not in labl:  # NEW (2026-10-28): the background field's own cut (tol_B0, as conductive_IC);
+    if ('bpo' in labl or 'bto' in labl or labl[2:4] in ('hp', 'kt')) and 'lho' not in labl:   # (hp, kt: NEW 2026-10-30)  # NEW (2026-10-28): the background field's own cut (tol_B0, as conductive_IC);
         tol = max(tol, par.tol_B0)            # not for its products with the density profile (they can be long near the surface)
     args = decode_label(labl)  # (section, rpower, rhopower, func1, dorder1, func2, dorder2, dx)
     c0arg = chebco_f( rap.burrito, par.N, par.ricb, rcmb, tol, *args)

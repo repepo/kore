@@ -17,6 +17,12 @@ or added to the poloidal one (same equatorial symmetry only):
     'Malkus' k = r (n = 1): B0 = cnorm_tor s φ̂ (Malkus 1967), J0 = ∇×B0 = 2 cnorm_tor ẑ.
     'wall'   k = r (r - ricb)(1 - r)/(1 - ricb)² (n = 1): zero at both walls; with ricb = 0, k = r^n (1 - r²).
     'user'   k = B0_tor_profile, a numpy expression of r and p = B0_tor_param (its derivatives from a Chebyshev interpolant).
+NEW (2026-10-30): 'confined' h = r^l (r2² - r²)^p (r1 = 0) or r^l (r - r1)^p (r2 - r)^p between r1 = B0_conf_r1 and r2 = B0_conf_r2,
+    zero outside, l = B0_l (1 or 2), p = B0_conf_p: h and its first p - 1 derivatives vanish at the edges, so the field is zero
+    outside the region with no surface currents (B_r ∝ h and B_θ ∝ h' + h/r continuous; the current ∝ h'' + ... continuous for
+    p >= 3). The point: a poloidal field inside a region where ΔΩ is uniform is a steady background with the differential
+    rotation (Ferraro's law, background.ferraro_mismatch). The kink at the edges is resolved by the Chebyshev series only
+    algebraically (coefficients ~ k^-(p+1)): use p = 4 and check convergence in N.
 Equatorial symmetry: a poloidal field of degree n has (-1)^n, a toroidal one (-1)^(n+1) (B_φ ∝ sinθ is symmetric for n = 1).
 Only parameters, numpy and scipy are imported: utils.py and radial_profiles.py import this module.
 '''
@@ -25,12 +31,23 @@ import scipy.special as scsp
 import scipy.optimize as so
 from parameters import par
 
-B0_TYPES = ('axial', 'FDM', 'G21 dipole', 'Luo_S1', 'Luo_S2')   # as written to params.dat: the index here (append new types at the end)
-B0_TOR_TYPES = ('Malkus', 'wall', 'user')   # NEW (2026-10-28): toroidal B0, as written to params.dat
+# the names the 'user' and 'general' expressions may use (NEW 2026-10-30: defined here, before cnorm needs them at import)
+USER_NS = { name: getattr(np, name) for name in ('sin', 'cos', 'tan', 'exp', 'log', 'sqrt', 'abs', 'tanh', 'sinh', 'cosh',
+                                                  'arctan', 'where', 'pi') }
+USER_NS['erf'] = scsp.erf
 
-if par.B0 == 'FDM':
+B0_TYPES = ('axial', 'FDM', 'G21 dipole', 'Luo_S1', 'Luo_S2', 'confined', 'general', 'ferraro')   # as written to params.dat: the index here (append new types at the end)
+B0_TOR_TYPES = ('Malkus', 'wall', 'user', 'general')   # NEW (2026-10-28): toroidal B0, as written to params.dat
+
+if par.B0 in ('FDM', 'confined'):   # NEW (2026-10-30): 'confined', of degree B0_l
     B0_l   = par.B0_l
     symmB0 = int((-1)**B0_l)  # equatorial symmetry of B0
+elif par.B0 == 'ferraro':    # NEW (2026-10-30): odd degrees 1, 3, ..., B0_ferraro_nmax (ψ = G(ΔΩ) is even in cos θ)
+    B0_l   = 1
+    symmB0 = -1
+elif par.B0 == 'general':    # NEW (2026-10-30): degrees of one parity, the lowest sets the symmetry (background.check_magnetic)
+    B0_l   = min(par.B0_profiles) if par.B0_profiles else 1
+    symmB0 = int((-1)**B0_l)
 elif par.B0 == 'Luo_S2':      # NEW (2026-10-28): degree 2
     B0_l   = 2
     symmB0 = 1
@@ -38,7 +55,8 @@ else:  # 'axial' (and any name that background.check() stops on)
     B0_l   = 1
     symmB0 = -1
 symm_pol = symmB0 if par.B0 is not None else None                                       # NEW (2026-10-28)
-symm_tor = int((-1)**(par.B0_tor_l + 1)) if par.B0_tor is not None else None             # of the toroidal B0
+B0_tor_l = (min(par.B0_tor_profiles) if par.B0_tor_profiles else 1) if par.B0_tor == 'general' else par.B0_tor_l   # NEW (2026-10-30)
+symm_tor = int((-1)**(B0_tor_l + 1)) if par.B0_tor is not None else None             # of the toroidal B0
 if par.B0 is None and symm_tor is not None:
     symmB0 = symm_tor   # (with both fields background.check_magnetic() requires symm_pol = symm_tor)
 
@@ -132,6 +150,33 @@ def B0_beta_ic():
         return ri**(l+1)*(ri*POLY[par.B0].deriv(1)(ri) - l*POLY[par.B0](ri))/(2*l + 1)
     return 0.0
 
+def _confined():
+    '''
+    NEW (2026-10-30): 'confined' as l and its linear factors [(a, b)] with h = r^l Π (a + b r)^p inside [r1, r2], and (r1, r2).
+    The factors are kept apart and scaled to O(1) (h is evaluated in factored form by h()): expanded into monomials, a
+    polynomial of degree 2p + l with p ~ 10 loses all its digits to cancellation near the edges.
+    '''
+    l, r1, r2 = B0_l, par.B0_conf_r1, par.B0_conf_r2
+    if r1 == 0:   # (r2² - r²)^p = (r2 - r)^p (r2 + r)^p, scaled by r2^-2p
+        return l, [(1., -1/r2), (1., 1/r2)], r1, r2
+    w = (r2 - r1)/2   # (r - r1)^p (r2 - r)^p scaled by w^-2p
+    return l, [(-r1/w, 1/w), (r2/w, -1/w)], r1, r2
+
+def _confined_h(r, k):
+    '''NEW (2026-10-30): the k-th derivative of r^l Π (a + b r)^p (no cut), by the Leibniz rule on the factored form'''
+    from math import comb
+    l, fac, _, _ = _confined()
+    p = par.B0_conf_p
+    def dpow(base, n, j, slope):   # d^j/dr^j (base)^n for base linear in r with the given slope
+        if j > n:
+            return np.zeros_like(r)
+        return np.prod([n - i for i in range(j)])*slope**j*base**(n - j)
+    parts = [ [dpow(r, l, j, 1.) for j in range(k + 1)] ] + [ [dpow(a + b*r, p, j, b) for j in range(k + 1)] for a, b in fac ]
+    out = parts[0]
+    for q in parts[1:]:   # Leibniz: (fg)^(j) = Σ C(j, i) f^(i) g^(j-i)
+        out = [ sum(comb(j, i)*out[i]*q[j - i] for i in range(j + 1)) for j in range(k + 1) ]
+    return out[k]
+
 def h(r, k):
     '''
     The k-th r-derivative (k = 0..3) of the poloidal scalar h(r) of B0, without cnorm, at r > 0 (ricb > 0).
@@ -143,6 +188,10 @@ def h(r, k):
         return beta**k*jl_k(B0_l, beta*np.abs(r), k)*np.where(r < 0, (-1.)**(B0_l + k), 1.)
     if par.B0 == 'axial':
         return [ r/2, 0.5*np.ones_like(r), np.zeros_like(r), np.zeros_like(r) ][k]
+    if par.B0 == 'confined':   # NEW (2026-10-30): the polynomial inside [r1, r2] (|r| in a full sphere, r^l carries the parity)
+        _, _, r1, r2 = _confined()
+        inside = (np.abs(r) >= r1) & (np.abs(r) <= r2)
+        return np.where(inside, _confined_h(r, k), 0.)
     if par.B0 in POLY:   # NEW (2026-10-28): the polynomial fields, plus the potential part of B0_ic (beta_ic)
         out = POLY[par.B0].deriv(k)(r) if k > 0 else POLY[par.B0](r)
         if beta_ic != 0:
@@ -166,11 +215,113 @@ def h(r, k):
              + 2*x**2*jl(0,b,0)*nl(0,x,1) + 8*jl(0,b,0)*nl(1,x,0) - 8*x*jl(0,b,0)*nl(1,x,1) + x**3*jl(0,b,0)*nl(1,x,1) )/r**3
 
 
+_gen = {}
+def _gen_interp(kind, n):
+    '''
+    NEW (2026-10-30): the Chebyshev interpolant of the 'general' radial expression of degree n, kind 'h' (B0_profiles) or 'k'
+    (B0_tor_profiles): degree max(64, 2N) on [ricb, 1], or on [-1, 1] at |r| with the parity (-1)^n in a full sphere (the
+    expression should go as r^n at r = 0); coefficients below 1e-15 of the largest are dropped, so that the derivatives (up
+    to the third) do not amplify round-off.
+    '''
+    key = (kind, n)
+    if key not in _gen:
+        expr = (par.B0_profiles if kind == 'h' else par.B0_tor_profiles)[n]
+        code = compile(expr, '<B0 %s_%d>' % (kind, n), 'eval')
+        f = lambda r: np.broadcast_to(np.asarray(eval(code, {'__builtins__': {}}, dict(USER_NS, r=r, p=par.B0_param)), dtype=float), np.shape(r))
+        deg = max(64, 2*par.N)
+        if par.ricb == 0:
+            c = np.polynomial.chebyshev.Chebyshev.interpolate(lambda r: f(np.abs(r))*np.sign(r)**n, deg, domain=[-1., 1.])
+        else:
+            c = np.polynomial.chebyshev.Chebyshev.interpolate(f, deg, domain=[par.ricb, 1.])
+        c.coef[np.abs(c.coef) < 1e-13*np.abs(c.coef).max()] = 0.   # the round-off of the interpolation, which the derivatives amplify
+        _gen[key] = c
+    return _gen[key]
+
+def gen_profile(kind, n, r, d):
+    '''NEW (2026-10-30): the d-th r-derivative of the 'general' h_n (kind 'h') or k_n (kind 'k'), without cnorm'''
+    c = _gen_interp(kind, n)
+    r = np.asarray(r, dtype=float)
+    return c.deriv(d)(r) if d > 0 else c(r)
+
+# ------------------------------------------------- NEW (2026-10-30): 'ferraro', a poloidal field on the isorotation surfaces
+# A poloidal axisymmetric field B0 = ∇ψ × ∇φ with ψ = G(ΔΩ) has B0⋅∇ΔΩ = 0 wherever ∇ΔΩ ≠ 0 (its field lines lie on the
+# surfaces of constant rotation: Ferraro's law), so U0 and B0 are a steady background together. For kore's form
+# B0 = Σ_n ∇×∇×(h_n Y_n⁰ 𝐫), the vector potential is A_φ = h_n sinθ P_n'(x), so ψ = r sinθ A_φ = r Σ_n h_n (1 - x²) P_n'(x).
+# The functions (1 - x²) P_n' are orthogonal with the weight 1/(1 - x²) (∫ (1 - x²) P_n' P_m' dx = δ_nm 2n(n+1)/(2n+1)), so
+#     h_n(r) = (2n+1)/(2n(n+1)) (1/r) ∫ ψ(r, x) P_n'(x) dx,
+# by Gauss-Legendre quadrature in x. ΔΩ has only even P_n, so ψ is even in x and only odd n appear (an antisymmetric, dipolar
+# field); the series is cut at B0_ferraro_nmax. The user chooses G (B0_ferraro_G, a numpy expression of w = ΔΩ and p =
+# B0_param). Assumptions (background.ferraro_report prints how well they hold): ψ = 0 on the axis (it must be constant
+# there for a regular field, and the functions (1 - x²) P_n' vanish there), and at the centre in a full sphere; at the outer
+# wall ψ = 0 keeps the field inside (no radial field crosses it), otherwise the field meets the insulating mantle with a
+# surface current (allowed: the perturbation's boundary conditions do not involve B0).
+_fer = {}
+def _ferraro_psi(r, x):
+    '''ψ = G(ΔΩ(r, x)) on the grid (r, x), ΔΩ from diff_rot.raw (amplitude included)'''
+    import diff_rot as dr
+    P = np.polynomial.legendre.Legendre
+    w = sum(np.outer(dr.raw(n, np.abs(r)), P.basis(n)(x)) for n in dr.degrees())
+    code = compile(par.B0_ferraro_G, '<B0_ferraro_G>', 'eval')
+    return np.broadcast_to(np.asarray(eval(code, {'__builtins__': {}}, dict(USER_NS, w=w, p=par.B0_param)), dtype=float), w.shape)
+
+def _ferraro_raw(n, r):
+    '''h_n(r) of ψ by the projection above, at the radii r (r > 0)'''
+    xg, wg = np.polynomial.legendre.leggauss(4*par.B0_ferraro_nmax + 64)
+    dPn = np.polynomial.legendre.Legendre.basis(n).deriv()(xg)
+    return (2*n + 1)/(2*n*(n + 1.))*(_ferraro_psi(r, xg) @ (wg*dPn))/r
+
+def ferraro_profile(n, r, d):
+    '''the d-th r-derivative of h_n of 'ferraro' (without cnorm): a Chebyshev interpolant of degree max(64, 2N), on [-1, 1] at |r|
+    with the parity (-1)^n in a full sphere'''
+    if n not in _fer:
+        deg = max(64, 2*par.N)
+        if par.ricb == 0:
+            g = lambda rr: _ferraro_raw(n, np.maximum(np.abs(rr), 1e-12))*np.sign(rr)**n
+            c = np.polynomial.chebyshev.Chebyshev.interpolate(g, deg, domain=[-1., 1.])
+        else:
+            c = np.polynomial.chebyshev.Chebyshev.interpolate(lambda rr: _ferraro_raw(n, rr), deg, domain=[par.ricb, 1.])
+        c.coef[np.abs(c.coef) < 1e-13*np.abs(c.coef).max()] = 0.
+        _fer[n] = c
+    c = _fer[n]
+    r = np.asarray(r, dtype=float)
+    return c.deriv(d)(r) if d > 0 else c(r)
+
+def ferraro_degrees():
+    return list(range(1, par.B0_ferraro_nmax + 1, 2))
+
+_cnf = []
+def ferraro_cnorm():
+    '''cnorm of 'ferraro' (a number, or from ∫ B0² dV summed over the degrees), computed on first use (it needs diff_rot)'''
+    if not _cnf:
+        if par.cnorm not in ['mag_energy', 'Schmitt2012']:
+            _cnf.append(float(par.cnorm))
+        else:
+            xk, wk = np.polynomial.legendre.leggauss(240)
+            rk = 0.5*(1 - par.ricb)*(xk + 1) + max(par.ricb, 0.)
+            integ = 0.
+            for n in ferraro_degrees():
+                L = n*(n + 1.); y0, y1 = ferraro_profile(n, rk, 0), ferraro_profile(n, rk, 1)
+                integ += 0.5*(1 - par.ricb)*np.sum(wk*4*np.pi*L/(2*n + 1)*((L + 1)*y0**2 + 2*rk*y0*y1 + rk**2*y1**2))
+            _cnf.append((1 if par.cnorm == 'mag_energy' else 2)/np.sqrt(integ))
+    return _cnf[0]
+
 def B0_norm():
     '''
     cnorm as a number (par.cnorm: a number, 'rms_cmb', 'mag_energy' or 'Schmitt2012'), as conductive_IC's B0_norm:
     ∫ B0² dV over the shell from Gauss-Legendre quadrature with 240 nodes.
     '''
+    if par.B0 == 'ferraro':   # NEW (2026-10-30): computed on first use (ferraro_cnorm)
+        return 1.0
+    if par.B0 == 'general':   # NEW (2026-10-30): ∫ B0² dV is the sum over the degrees (they are orthogonal)
+        if par.cnorm not in ['mag_energy', 'Schmitt2012']:
+            return float(par.cnorm)
+        xk, wk = np.polynomial.legendre.leggauss(240)
+        rk = 0.5*(1 - par.ricb)*(xk + 1) + par.ricb
+        integ = 0.
+        for n in par.B0_profiles:
+            L = n*(n + 1.); y0, y1 = gen_profile('h', n, rk, 0), gen_profile('h', n, rk, 1)
+            integ += 0.5*(1 - par.ricb)*np.sum(wk*4*np.pi*L/(2*n + 1)*((L + 1)*y0**2 + 2*rk*y0*y1 + rk**2*y1**2))
+        return (1 if par.cnorm == 'mag_energy' else 2)/np.sqrt(integ)
     l = B0_l
     L = l*(l+1)
     if par.cnorm == 'rms_cmb':  # rms of the radial B0 over the CMB is 1
@@ -180,6 +331,13 @@ def B0_norm():
         N = 240
         xk, wk = np.polynomial.legendre.leggauss(N)
         sqx = wk*N/np.pi
+        if par.B0 == 'confined':   # NEW (2026-10-30): integrate over the region only, where h is a polynomial (exact)
+            ricb, rtop = max(par.B0_conf_r1, ricb), par.B0_conf_r2
+            rk = 0.5*(rtop-ricb)*( xk + 1 ) + ricb
+            y0, y1 = h(rk, 0), h(rk, 1)
+            f0 = 4*np.pi*L/(2*l+1)
+            integ = (np.pi/N) * ( (rtop-ricb)/2 ) * np.sum( sqx*f0*( (L+1)*y0**2 + 2*rk*y0*y1 + rk**2*y1**2 ) )
+            return (1 if par.cnorm == 'mag_energy' else 2)/np.sqrt(integ)
         rk = 0.5*(1-ricb)*( xk + 1 ) + ricb
         y0 = h(rk, 0)
         y1 = h(rk, 1)
@@ -204,9 +362,6 @@ def bpoX(r, Dorder):
 
 # ---------------------------------------------------------------------------- NEW (2026-10-28): toroidal background field
 
-USER_NS = { name: getattr(np, name) for name in ('sin', 'cos', 'tan', 'exp', 'log', 'sqrt', 'abs', 'tanh', 'sinh', 'cosh',
-                                                  'arctan', 'where', 'pi') }
-USER_NS['erf'] = scsp.erf
 _kuser = None
 
 def k_user():
@@ -241,6 +396,11 @@ def k(r, d):
 
 def B0_tor_norm():
     '''cnorm_tor as a number: ∫ B0_tor² dV over the shell = n_l L ∫ k² r² dr, n_l = 4π/(2l+1), L = l(l+1)'''
+    if par.B0_tor == 'general' and par.cnorm_tor in ('mag_energy', 'Schmitt2012'):   # NEW (2026-10-30): the sum over the degrees
+        xk, wk = np.polynomial.legendre.leggauss(240)
+        rk = 0.5*(1 - par.ricb)*(xk + 1) + par.ricb
+        integ = sum(4*np.pi/(2*n + 1)*n*(n + 1)*0.5*(1 - par.ricb)*np.sum(wk*gen_profile('k', n, rk, 0)**2*rk**2) for n in par.B0_tor_profiles)
+        return (1 if par.cnorm_tor == 'mag_energy' else 2)/np.sqrt(integ)
     if par.cnorm_tor in ('mag_energy', 'Schmitt2012'):
         n = par.B0_tor_l
         xk, wk = np.polynomial.legendre.leggauss(240)
@@ -256,3 +416,24 @@ cnorm_tor = B0_tor_norm() if (par.magnetic and par.B0_tor in B0_TOR_TYPES) else 
 def btoX(r, Dorder):
     '''profile code 'bto' (radial_profiles.proffdir): cnorm_tor k^(Dorder)(r), Dorder = 0..3'''
     return cnorm_tor*k(r, Dorder)
+
+
+
+# ------------------------------------------------------------- NEW (2026-10-30): the background degree by degree
+def pol_profiles():
+    '''{n: f(r, Dorder)}: the poloidal background degree by degree, cnorm h_n^(Dorder) (mag_algebra.py); {} without one'''
+    if not par.magnetic or par.B0 is None:
+        return {}
+    if par.B0 == 'general':
+        return {n: (lambda r, d, n=n: cnorm*gen_profile('h', n, r, d)) for n in sorted(par.B0_profiles)}
+    if par.B0 == 'ferraro':
+        return {n: (lambda r, d, n=n: ferraro_cnorm()*ferraro_profile(n, r, d)) for n in ferraro_degrees()}
+    return {B0_l: bpoX}
+
+def tor_profiles():
+    '''{n: f(r, Dorder)}: the toroidal background degree by degree, cnorm_tor k_n^(Dorder) (mag_algebra.py)'''
+    if not par.magnetic or par.B0_tor is None:
+        return {}
+    if par.B0_tor == 'general':
+        return {n: (lambda r, d, n=n: cnorm_tor*gen_profile('k', n, r, d)) for n in sorted(par.B0_tor_profiles)}
+    return {par.B0_tor_l: btoX}

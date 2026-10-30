@@ -288,6 +288,7 @@ def main(ncpus):
     Ohm_f       = np.zeros(success)  # MagnetD ∫ |∇×𝐛|² dV over the fluid
     Ohm_ic      = np.zeros(success)  # MagnetD η_i ∫ |∇×𝐛|² dV over a conducting inner core
     residE      = np.full(success, np.nan)  # the full energy budget (no-slip walls only)
+    Iwall       = np.zeros(success)  # NEW (2026-10-30): the wall terms in Indu (utils4pp.INDU_WALLS)
 
     # residual errors to be processed
     resid1      = np.zeros(success)
@@ -374,6 +375,7 @@ def main(ncpus):
 
         if par.magnetic:  # NEW (2026-10-28): on the grid and flow tables that diagnose has just set
             [ ME[i], Mdfs0, Indu[i], Wlor0, Wlor_im0 ] = np.sum( upp.diagnose_magnetic( b_sol2 ), 0)
+            Iwall[i]   = upp.INDU_WALLS   # NEW (2026-10-30)
             Mdfs[i]    = par.MagnetD * Mdfs0
             Wlor[i]    = par.Hendrik * Wlor0
             Wlor_im[i] = par.Hendrik * Wlor_im0
@@ -453,13 +455,16 @@ def main(ncpus):
             # - Hendrik (Ohm_f + Ohm_ic): the Lorentz work and the induction cancel except for the work of the background
             # currents, and the Ohmic losses replace ∫ 𝐛⋅∇²𝐛. It tests the wall and ICB conditions, which resid𝐛 cannot see.
             # Needs no-slip walls (with stress-free ones the u×B0 part of the Poynting flux through the walls is missing).
+            # NEW (2026-10-30): with a differential rotation, the power of its force on the flow (Wdr) enters too, and the
+            # induction work is the volume part ∫ 𝐄⋅(∇×𝐛)* alone (Indu minus its wall terms upp.INDU_WALLS): U0×b at a wall
+            # carries magnetic energy through it, into the field outside, which ME_ext and ME_ic already count.
             if par.bco == 1 and par.bci == 1:
                 H = par.Hendrik
                 Etot = KE[i] + H*( ME[i] + MEic[i] + MEext[i] )
-                Wex  = Wlor[i] + H*Indu[i]
+                Wex  = Wlor[i] + H*(Indu[i] - Iwall[i]) + Wdr[i]
                 Ohm  = H*( Ohm_f[i] + Ohm_ic[i] )
                 residE[i] = ( abs( 2*sigma*Etot - Dkin[i] - Wthm[i] - Wex + Ohm )
-                              / max( abs(2*sigma*Etot), abs(Dkin[i]), abs(Wthm[i]), abs(Wex), Ohm ) )
+                              / max( abs(2*sigma*Etot), abs(Dkin[i]), abs(Wthm[i]), abs(Wex), Ohm, abs(Wdr[i]) ) )
 
         if par.thermal:
             resid3[i] = ( abs( 2*sigma*TE[i] - Dthm[i] - Wadv_thm[i] - Wdr_thm[i] )

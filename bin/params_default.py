@@ -222,8 +222,31 @@ class default_params():
         # self.B0 = 'Luo_S1'       # NEW (2026-10-28): h = (5 - 3r²) r (Luo & Jackson 2022), l = 1
         # self.B0 = 'Luo_S2'       # NEW (2026-10-28): h = (157 - 296r² + 143r⁴) r² (Luo & Jackson 2022), l = 2, quadrupole
         # self.B0 = 'FDM'          # free poloidal decay mode of the shell (Zhang & Fearn 1994, 1995; Schmitt 2012), degree B0_l
+        # self.B0 = 'confined'     # NEW (2026-10-30): a field confined to B0_conf_r1 <= r <= B0_conf_r2, degree B0_l (1 or 2),
+        #                          # h = r^l (r2² - r²)^p (r1 = 0) or r^l (r - r1)^p (r2 - r)^p: zero outside, with h and its first p - 1
+        #                          # derivatives zero at the edges, so no surface currents (p = B0_conf_p >= 2; 4 makes h''' continuous).
+        #                          # Put it where ΔΩ is uniform to have a steady background with a differential rotation (Ferraro)
         self.beta = 3.0            # 'FDM': first guess of its radial wavenumber β (the root of background_field.findbeta)
-        self.B0_l = 1              # 'FDM': its degree l
+        self.B0_l = 1              # 'FDM', 'confined': its degree l
+        self.B0_conf_r1 = 0.0      # NEW (2026-10-30): 'confined': the inner edge (0: down to the centre; >= ricb with an inner core)
+        self.B0_conf_r2 = 0.6      #                   the outer edge (<= 1)
+        # self.B0 = 'general'      # NEW (2026-10-30): any poloidal field Σ_n ∇×∇×(h_n Y_n0 r), B0_profiles = {n: 'numpy expression of r, p'}
+        #                          # (degrees of one parity; h_n ~ r^n at r = 0 in a full sphere; p = B0_param); built by mag_algebra.py
+        self.B0_profiles = {}
+        self.B0_tor_profiles = {}  # NEW (2026-10-30): B0_tor = 'general': {n: 'expression'} for k_n of Σ_n ∇×(k_n Y_n0 r)
+        self.B0_param = 0.0
+        # self.B0 = 'ferraro'      # NEW (2026-10-30): a poloidal field whose flux function is ψ = G(ΔΩ) (needs diff_rot = 1): its field
+        #                          # lines lie on the surfaces of constant rotation (Ferraro), so it is a steady background with U0.
+        #                          # G = B0_ferraro_G, a numpy expression of w = ΔΩ and p = B0_param; odd degrees up to B0_ferraro_nmax.
+        #                          # G should vanish on the values ΔΩ takes on the axis (ψ = 0 there) and, for a field confined
+        #                          # inside, at the outer wall: background.ferraro_report prints how well that holds
+        self.B0_ferraro_G = 'w'
+        self.B0_ferraro_nmax = 15
+        self.B0_conf_p  = 12       #                   the order of the zeros of h at the edges (12: Chebyshev series to 1e-14 by N ~ 192)
+        # NEW (2026-10-30): where the couplings of the Lorentz force and of the induction come from: 'closed' (the closed forms of
+        # operators.py, degree 1 and 2 only) or 'algebra' (mag_algebra.py, built from the recurrence algebra for any degrees; the
+        # types 'general' and 'ferraro' always use it). Both give the same eigenvalues to round-off for the closed-form types.
+        self.mag_couplings = 'closed'
 
         # NEW (2026-10-28): what the full-sphere fields ('G21 dipole', 'Luo_S1', 'Luo_S2') do with an inner core (ricb > 0), as
         # conductive_IC: 'potential' (default) adds beta r^-(l+1) to h so that B0 continues as a potential field into the inner core

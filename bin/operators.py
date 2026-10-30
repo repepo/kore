@@ -6,6 +6,7 @@ from parameters import par
 import utils as ut
 
 import diff_rot as dr
+import mag_algebra as ma   # NEW (2026-10-30)
 
 
 # In the following loop we read all the submatrices needed (as per submatrices.py),
@@ -116,6 +117,14 @@ def differential_rotation(l, section, component, offdiag):  # ------------------
         section 'u' or 'v', column 'upol' or 'utor', source degree l + offdiag. Returns [matrix, offd] (offd in units of N1).
     """
     return dr.momentum_block(l, section, component, offdiag, globals())
+
+
+def differential_rotation_induction(l, section, component, offdiag):  # ------- NEW (2026-10-30): induction by the background flow
+    '''
+    ∇×(U0×b), U0 = Gaspard ΔΩ r sinθ e_φ, in the induction rows (diff_rot.induction_block): rows of section 'f' or 'g', column
+    'bpol' (F) or 'btor' (G), source degree l + offdiag. Returns [matrix, offd] (offd in units of N1).
+    '''
+    return dr.induction_block(l, section, component, offdiag, globals())
 
 
 def viscous_diffusion(l, section, component, offdiag):  # ------------------------------------------------ viscous force
@@ -704,10 +713,16 @@ def _total(pol, tor, l, section, component, offdiag):
 
 
 def lorentz(l, section, component, offdiag):  # NEW (2026-10-28): poloidal + toroidal B0
-    '''the Lorentz force block assemble.py places: the poloidal B0's part plus the toroidal B0's part'''
+    '''the Lorentz force block assemble.py places: the poloidal B0's part plus the toroidal B0's part (NEW 2026-10-30: from
+    the recurrence algebra, mag_algebra.block, if ut.mag_algebra)'''
+    if ut.mag_algebra:
+        return ma.block(l, section, component, offdiag, globals())
     return _total(lorentz_pol, lorentz_tor, l, section, component, offdiag)
 
 
 def induction(l, section, component, offdiag):  # NEW (2026-10-28): poloidal + toroidal B0
-    '''the induction block assemble.py places: the poloidal B0's part plus the toroidal B0's part'''
+    '''the induction block assemble.py places: the poloidal B0's part plus the toroidal B0's part (NEW 2026-10-30: from
+    the recurrence algebra if ut.mag_algebra)'''
+    if ut.mag_algebra:
+        return ma.block(l, section, component, offdiag, globals())
     return _total(induction_pol, induction_tor, l, section, component, offdiag)

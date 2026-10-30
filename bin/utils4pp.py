@@ -1572,6 +1572,8 @@ def diagnose_magnetic( bsol ):
     NEW (2026-10-28): magnetic_worker for every l, as an array (one row per l). Call it right after diagnose (same grid
     and flow solution).
     '''
+    global INDU_WALLS
+    INDU_WALLS = 0.0   # the spectral formulas: no-slip walls, where the wall terms vanish
     set_bsolution(bsol)
     ll = ut.ell(par.m, par.lmax, ut.bsymm)[2]
     out = np.array([ magnetic_worker(l) for l in ll ])
@@ -1582,18 +1584,26 @@ def diagnose_magnetic( bsol ):
 
 
 
+# NEW (2026-10-30): the wall terms 2 Re ∮ (𝐄×𝐛*)⋅r̂ dS included in the last Indu of magnetic_powers_grid. The fluid budget
+# (resid𝐛) needs them; the full budget (resid𝐄) needs the volume work ∫ 𝐄⋅(∇×𝐛)* alone, because the flux through a wall
+# leaves the fluid's magnetic energy for the energy outside (an insulating mantle or core) or inside (spin_doctor.py). They
+# vanish for no-slip walls without a differential rotation; U0×b does not vanish where ΔΩ is not zero at a wall.
+INDU_WALLS = 0.0
+
 # NEW (2026-10-28): True (or the environment variable KORE_MAG_GRID=1): magnetic_powers_grid also for a poloidal B0 alone, a
 # cross-check of the spectral formulas lorentz4pp, induction4pp (tests/magnetic)
 import os
 FORCE_GRID = os.environ.get('KORE_MAG_GRID', '0') == '1'
 
 def use_grid():
-    return FORCE_GRID or par.B0_tor is not None or (par.B0 is not None and bf.B0_l != 1)   # lorentz4pp, induction4pp: dipole only
+    # lorentz4pp, induction4pp: dipole only, and without the induction by a differential rotation (NEW 2026-10-30)
+    return FORCE_GRID or par.B0_tor is not None or (par.B0 is not None and bf.B0_l != 1) or bool(par.diff_rot) or ut.mag_algebra
 
 
 def magnetic_powers_grid():
     '''
-    NEW (2026-10-28): the induction work Indu = 2 Re ∫ 𝐛*⋅∇×(𝐮×𝐁₀) dV and the complex power of the Lorentz force
+    NEW (2026-10-28): the induction work Indu = 2 Re ∫ 𝐛*⋅∇×(𝐮×𝐁₀ + 𝐔₀×𝐛) dV (the 𝐔₀×𝐛 of a differential rotation: NEW
+    2026-10-30) and the complex power of the Lorentz force
     2 ∫ 𝐮*⋅[(∇×𝐛)×𝐁₀ + (∇×𝐁₀)×𝐛] dV (no Hendrik), for any B0 (poloidal and/or toroidal, background_field), computed on an
     (r, θ) grid from the vector fields: u (with its (ln ρ0)' part), b and ∇×b synthesised from their l-components
     (velocity, bfield_pol/tor, curl) on Schmidt harmonics (angular.ylm_grid), B0 and ∇×B0 from h, k. Independent of
@@ -1605,7 +1615,8 @@ def magnetic_powers_grid():
     xg, wx = np.polynomial.legendre.leggauss(lmx + 12)
     sg = np.sqrt(1 - xg**2)
     Yg, dYg, Zg = angular.ylm_grid(m, lmx, xg)       # Y_l, ∂θY_l, i m Y_l/sinθ at the nodes, rows l
-    Y0, dY0, _ = angular.ylm_grid(0, 3, xg)          # m = 0, for B0
+    nB = max([3] + list(bf.pol_profiles()) + list(bf.tor_profiles()))   # NEW (2026-10-30): any background degree
+    Y0, dY0, _ = angular.ylm_grid(0, nB, xg)         # m = 0, for B0
     lp_u, lt_u, _ = ut.ell(m, par.lmax, par.symm)
     lp_b, lt_b, ll = ut.ell(m, par.lmax, ut.bsymm)
 
@@ -1632,13 +1643,14 @@ def magnetic_powers_grid():
 
     def background(rr):   # B0 and ∇×B0 at the radii rr: lists of (r, θ, φ) components on (rr, x)
         Bv = [0*np.outer(rr, xg)]*3; Jv = [0*np.outer(rr, xg)]*3
-        if par.B0 is not None:     # cnorm ∇×∇×(h Y_n 𝐫): B_r = L h Y/r, B_θ = (h' + h/r) ∂θY; ∇×B0 = -∇×((D h) Y 𝐫) = (D h) ∂θY φ̂
-            n = bf.B0_l; L0 = n*(n + 1.); hh = [ bf.bpoX(rr, d) for d in (0, 1, 2) ]
+        # NEW (2026-10-30): every degree n of the background (background_field.pol_profiles, tor_profiles)
+        for n, f in bf.pol_profiles().items():   # cnorm ∇×∇×(h Y_n 𝐫): B_r = L h Y/r, B_θ = (h' + h/r) ∂θY; ∇×B0 = (D h) ∂θY φ̂
+            L0 = n*(n + 1.); hh = [ f(rr, d) for d in (0, 1, 2) ]
             Dh = hh[2] + 2*hh[1]/rr - L0*hh[0]/rr**2
-            Bv = [ np.outer(L0*hh[0]/rr, Y0[n]), np.outer(hh[1] + hh[0]/rr, dY0[n]), Bv[2] ]
-            Jv = [ Jv[0], Jv[1], np.outer(Dh, dY0[n]) ]
-        if par.B0_tor is not None:  # cnorm_tor ∇×(k Y_n 𝐫): B_φ = -k ∂θY; ∇×B0 = ∇×∇×(k Y 𝐫): r L k Y/r, θ (k' + k/r) ∂θY
-            n = par.B0_tor_l; L0 = n*(n + 1.); kk = [ bf.btoX(rr, d) for d in (0, 1) ]
+            Bv = [ Bv[0] + np.outer(L0*hh[0]/rr, Y0[n]), Bv[1] + np.outer(hh[1] + hh[0]/rr, dY0[n]), Bv[2] ]
+            Jv = [ Jv[0], Jv[1], Jv[2] + np.outer(Dh, dY0[n]) ]
+        for n, f in bf.tor_profiles().items():   # cnorm_tor ∇×(k Y_n 𝐫): B_φ = -k ∂θY; ∇×B0: r L k Y/r, θ (k' + k/r) ∂θY
+            L0 = n*(n + 1.); kk = [ f(rr, d) for d in (0, 1) ]
             Bv = [ Bv[0], Bv[1], Bv[2] - np.outer(kk[0], dY0[n]) ]
             Jv = [ Jv[0] + np.outer(L0*kk[0]/rr, Y0[n]), Jv[1] + np.outer(kk[1] + kk[0]/rr, dY0[n]), Jv[2] ]
         return Bv, Jv
@@ -1648,10 +1660,18 @@ def magnetic_powers_grid():
     def vol(f):   # ∫ f dV, f on (rk, x), the e^{imφ} factors already combined (2π)
         return 2*np.pi*np.sum((wk*rk**2)[:, None]*wx[None, :]*f)*(ut.rcmb - par.ricb)/2
 
+    def rotation(rr):   # NEW (2026-10-30): the background flow U0 = Gaspard ΔΩ r sinθ e_φ at the radii rr, (r, θ, φ) on (rr, x)
+        z0 = 0*np.outer(rr, xg)
+        if not par.diff_rot:
+            return [ z0, z0, z0 ]
+        dO = sum(np.outer(dr.fX(n, rr, 0), np.polynomial.legendre.Legendre.basis(n)(xg)) for n in dr.degrees())
+        return [ z0, z0, par.Gaspard*dO*np.outer(rr, sg) ]
+
     B0v, J0v = background(rk)
     G = [ a + c for a, c in zip(cross(j, B0v), cross(J0v, b)) ]
     plor = 2*vol(sum(np.conj(uc)*gc for uc, gc in zip(u, G)))
-    E = cross(u, B0v)
+    # the electric field of the induction: 𝐄 = 𝐮×𝐁₀ + 𝐔₀×𝐛 (NEW 2026-10-30: the second term, with a differential rotation)
+    E = [ a + c for a, c in zip(cross(u, B0v), cross(rotation(rk), b)) ]
     indu = 2*np.real(vol(sum(ec*np.conj(jc) for ec, jc in zip(E, j))))
     # wall terms 2 Re ∮ (E x b*).r̂ dS, from u and b at the walls (zero for no-slip walls, where u = 0)
     rw = np.array([par.ricb if par.ricb > 0 else 0.5, ut.rcmb])   # (a dummy inner radius in a full sphere, its term is not used)
@@ -1673,10 +1693,12 @@ def magnetic_powers_grid():
         elif l in lt_b:
             Bw[l] = (zw, zw, Bt[1][0, list(lt_b).index(l)])
     uw, bw = synth(Uw), synth(Bw)
-    Ew = cross(uw, background(rw)[0])
+    Ew = [ a + c for a, c in zip(cross(uw, background(rw)[0]), cross(rotation(rw), bw)) ]   # U0 is not zero at the walls
     flux = (Ew[1]*np.conj(bw[2]) - Ew[2]*np.conj(bw[1]))          # (E x b*).r̂
     walls = 2*np.pi*np.sum(wx[None, :]*flux*(rw**2)[:, None], axis=1)
-    indu += 2*np.real(walls[1] - (walls[0] if par.ricb > 0 else 0))   # no inner wall in a full sphere
+    global INDU_WALLS
+    INDU_WALLS = 2*np.real(walls[1] - (walls[0] if par.ricb > 0 else 0))   # no inner wall in a full sphere
+    indu += INDU_WALLS
     return indu, plor
 
 

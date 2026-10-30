@@ -380,6 +380,16 @@ proffdir.update({ 'eta':etaX, 'bpo':bf.bpoX, 'bto':bf.btoX })   # bto: cnorm_tor
 # -------------------------------------------------------------------------------------------------------------
 
 
+def _more_codes(c):
+    '''the profile codes added on first use: the differential rotation's (diff_rot.py) and, NEW (2026-10-30), the background
+    field's degree by degree, hp? and kt? (mag_algebra.py); imported here because they need utils'''
+    if c[:2] in ('hp', 'kt'):
+        import mag_algebra
+        proffdir.update(mag_algebra.profile_functions())
+    else:
+        import diff_rot
+        proffdir.update(diff_rot.profile_functions())
+
 def burrito(r, *args):
 
     (secx, rpower0, rpower1, func1, dorder1, func2, dorder2, dx) = args
@@ -397,15 +407,13 @@ def burrito(r, *args):
             out1 = logrhoX(r,2) * logrhoX(r, dorder1)
         else:
             if func1 not in proffdir:   # differential rotation: zf, zd, zs, tw, tp (diff_rot.py, imported here: it needs utils)
-                import diff_rot
-                proffdir.update(diff_rot.profile_functions())
+                _more_codes(func1)
             out1 = proffdir[func1](r, dorder1)
 
     if func2 is not None:
 
         if func2 not in proffdir:
-            import diff_rot
-            proffdir.update(diff_rot.profile_functions())
+            _more_codes(func2)
         out2 = proffdir[func2](r, dorder2)   
 
     out = out01*out02*out1*out2

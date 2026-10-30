@@ -287,7 +287,51 @@ full sphere to reach round-off. `tests/magnetic/run_all.sh` runs all the magneti
    `assemble.py` loops over $\Delta l = -2..2$, so widen that loop for $n > 2$.
 3. *Check.* Extend `derive_check.py` with the new tables (its section 5 reads them from `operators.py`), run `row_check.py`
    and the budgets on a run with the new field, compare at a few large $l$ with derive.py, and compare with an independent
-   code or an analytic result where you have one.
+   code or an analytic result where you have one. Since 2026-10-30 there is a shorter way for any degree: see A.6.
+
+### A.6 Any background field: the couplings from the recurrence algebra (2026-10-30)
+
+**Motivation.** The closed forms of A.2–A.5 exist for one degree at a time (1 and 2). A field made of many degrees — given
+degree by degree (`B0 = 'general'`) or built from a differential rotation (`'ferraro'`) — would need a new fit for each degree.
+`bin/mag_algebra.py` builds the couplings at run time instead, for any degrees, with the exact recurrence algebra of part B:
+nothing is fitted, and the result is exact up to round-off at any $n$ and $l$.
+
+**Method.** The background is a sum over degrees of poloidal and toroidal parts. With $\partial_\theta P_n = -\sin\theta\,P_n'(x)$,
+each part is a few vectors of three kinds, a polynomial $c(x)$ times $\hat{\mathbf{r}}$, $\sin\theta\,\hat{\boldsymbol\theta}$ or $\sin\theta\,\hat{\boldsymbol\phi}$:
+
+| part | $\mathbf{B}_0$ | $\mathbf{J}_0 = \nabla\times\mathbf{B}_0$ |
+| --- | --- | --- |
+| poloidal $h_n$ | $\frac{L_0 h}{r}P_n\,\hat{\mathbf{r}} - (h' + \frac{h}{r})P_n'\sin\theta\,\hat{\boldsymbol\theta}$ | $-(h'' + \frac{2h'}{r} - \frac{L_0 h}{r^2})P_n'\sin\theta\,\hat{\boldsymbol\phi}$ |
+| toroidal $k_n$ | $k\,P_n'\sin\theta\,\hat{\boldsymbol\phi}$ | $\frac{L_0 k}{r}P_n\,\hat{\mathbf{r}} - (k' + \frac{k}{r})P_n'\sin\theta\,\hat{\boldsymbol\theta}$ |
+
+The cross products with a perturbation Field $(q, s, t)$ reduce to the operations of `angular.py`: $\hat{\mathbf{r}}\times(q, s, t) = (0, t, -s)$;
+$\sin\theta\,\hat{\boldsymbol\theta} = x\hat{\mathbf{r}} - \hat{\mathbf{z}}$ (so `zcross`); $\sin\theta\,\hat{\boldsymbol\phi} = \hat{\mathbf{z}}\times\hat{\mathbf{r}}$, and
+$(\hat{\mathbf{z}}\times\hat{\mathbf{r}})\times\mathbf{F} = \hat{\mathbf{r}}(\hat{\mathbf{z}}\cdot\mathbf{F}) - \hat{\mathbf{z}}(\hat{\mathbf{r}}\cdot\mathbf{F})$; and the multiplication by $c(x)$ (`mult` with
+the matrices $c(X)$, $c'(X)$). The perturbation's components are radial monomials ($u_r = LP/r$, $b_\theta$-part $F' + F/r$,
+$(\nabla\times\mathbf{b})_t = -(F'' + 2F'/r - LF/r^2)$, …), so the force $\mathbf{G} = \mathbf{J}_0\times\mathbf{b} - \mathbf{B}_0\times\mathbf{J}$ and the
+induction $\mathbf{E} = \mathbf{u}\times\mathbf{B}_0$ are sums of (radial monomial) × (sparse matrix on the degrees). The rows follow from
+$$
+\hat{\mathbf{r}}\cdot\nabla\times\nabla\times\mathbf{V} = \frac{L'(q - (rs)')}{r^2},\qquad \hat{\mathbf{r}}\cdot\nabla\times\mathbf{V} = \frac{L't}{r},\qquad
+\rho_0\hat{\mathbf{r}}\cdot\nabla\times\nabla\times\frac{\mathbf{V}}{\rho_0} = \frac{L'(q - (rs)' + \lambda_1 rs)}{r^2},
+$$
+which need one radial derivative of the monomials (product rule). Each final monomial becomes a label as in step 5 of A.2,
+with the profile codes `hp` + degree ($c_\mathrm{norm}h_n$) and `kt` + degree ($c_\mathrm{tor}k_n$).
+
+**Implementation.** `mag_algebra.build` (the products and the rows), `coefficients` (cached per $m$, stored by diagonal),
+`labels` (for `submatrices.py`), `dl_range` ($|\Delta l| \le n_\mathrm{max} + 1$, for `assemble.py`), `block` (for
+`operators.lorentz`, `induction` when `ut.mag_algebra`); the profiles degree by degree come from
+`background_field.pol_profiles`, `tor_profiles`.
+
+**Verification.** For degrees 1 and 2 the eigenvalues equal those of the closed forms to $\le 6\cdot10^{-13}$ (14 cases,
+[Magnetic field](magnetic.md)); `tests/magnetic/algebra_check.py` compares every block with derive.py for degrees 1–4;
+the energy budgets close to round-off for fields of several degrees.
+
+**How to use it.** `par.mag_couplings = 'algebra'` for any type, or a type that needs it:
+```
+par.B0 = 'general'; par.B0_profiles = {1: 'r/6 - r**3/10', 3: '0.3*r**3*(1 - r**2)'}
+par.B0_tor = 'general'; par.B0_tor_profiles = {2: 'r**2*(1 - r**2)'}
+```
+`python3 tests/magnetic/algebra_check.py --quick` checks degrees 1 and 3 against derive.py.
 
 ## B. Operators involving background differential rotation
 
@@ -365,6 +409,13 @@ by $L'$ of the target. For example, `f_2C_D0P` multiplies $f\,P$ in the u row.
 thermal-wind entropy $S_{tw} = \sum_n \sigma_n(r)P_n(\cos\theta)$ follows from thermal-wind balance: in Legendre space,
 $D\sigma = (1-x^2)\,\partial_x S_{tw}$ is solved for the $\sigma_n$ by forward substitution, exactly.
 
+**Step 7b: the induction by the rotation (2026-10-30).** With a magnetic field, $\mathbf{U}_0$ also shears the field:
+$\nabla\times(\mathbf{U}_0\times\mathbf{b}) = (\mathbf{b}\cdot\nabla)\mathbf{U}_0 - (\mathbf{U}_0\cdot\nabla)\mathbf{b} = G[-im\Delta\Omega\,\mathbf{b} + \sin\theta(r\partial_r\Delta\Omega\,b_r + \partial_\theta\Delta\Omega\,b_\theta)\hat{\boldsymbol\phi}]$
+(the $\hat{\mathbf{z}}\times\mathbf{b}$ terms of the two cancel). It has the structure of $\mathbf{W}$ without its $2\hat{\mathbf{z}}\times\mathbf{u}$, so it has
+its own primitives (`_induction_primitives`, the shapes $f\,LF/r$, $f(F' + F/r)$, $fG$, $(rf')LF/r$). The induction row f
+($\hat{\mathbf{r}}\cdot$) sees only $-im\Delta\Omega\,b_r$; the row g ($\hat{\mathbf{r}}\cdot\nabla\times = L't/r$) sees the t components, including
+the $\Omega$-effect from F (`induction_coefficients`, `induction_block`, `induction_dl_range`).
+
 **Step 8: into kore.** Each radial operator is a label with the profile codes `zf`, `zd`, `zs` + degree for $f_n$,
 $rf_n'$, $r^2f_n''$ (and `tw`, `tp` for $p_0\sigma_n$, $p_0\sigma_n'$). `submatrices.py` builds its matrix. A block is then
 $G\sum_n\sum(\text{coefficient}\times\text{radial operator})/L'^3$, placed by `assemble.py` at the $\Delta l$ of the
@@ -381,6 +432,7 @@ selection rules.
 | step 5, the 12 primitives | `bin/diff_rot.py` | `_primitives` |
 | step 6, coefficients of the radial operators | `bin/diff_rot.py` | `momentum_coefficients`, `momentum_coef` |
 | step 7, heat terms and thermal wind | `bin/diff_rot.py` | `heat_coefficients`, `heat_coef`, `sigma_coefficients` |
+| step 7b, the induction by the rotation | `bin/diff_rot.py` | `_induction_primitives`, `induction_coefficients`, `induction_block`, `induction_dl_range`, `rigid_ricb` |
 | step 8, labels, $\Delta l$ ranges, blocks | `bin/diff_rot.py` | `labels`, `dl_range`, `momentum_block`, `heat_block` (called by `submatrices.py`, `assemble.py`, `operators.py`) |
 | harmonics on a grid (for checks and post-processing) | `bin/angular.py` | `ylm_grid`, `ylm` |
 
@@ -396,6 +448,10 @@ selection rules.
   forms of `diff_rot_coefficients.py`, for all $l \le$ lmax and $m \le$ mmax (recorded runs: lmax 20 and 1025, agreement
   to $10^{-15}$ of the row scale), and, for $n$ = 4 … nmax, that no coupling falls outside the $\Delta l$ kore assembles (a
   coupling there would be dropped silently).
+- **The induction by the rotation** (2026-10-30): `tests/magnetic/dr_induction_check.py` compares every block of
+  `induction_block` with `derive.rows_dr` (sympy, $\mathbf{U}_0 = w(r)P_n\,r\sin\theta\,\hat{\boldsymbol\phi}$) for $n$ up to 6 and $l$ up to 25;
+  `tests/magnetic/rigid_check.py` uses that a uniform $\Delta\Omega = c$ is a rigid rotation, $\lambda = \lambda(\text{Gaspard } 1 + c) - imc$
+  exactly, for several background fields and a conducting inner core.
 - **`tests/heat_dr/tw_sympy.py`**: the thermal-wind $\sigma_2$, $\sigma_4$, $\sigma_6$ derived symbolically from
   thermal-wind balance, against the closed forms that gen_check compares the run-time $\sigma_n$ with.
 - **Whole-system checks**: `bin/ru_insane.py` (the assembled rows against a grid evaluation of the force),

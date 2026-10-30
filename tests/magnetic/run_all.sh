@@ -45,5 +45,19 @@ python3 "$T/mk_run.py" bf_s2_m1 "par.N = 192; par.lmax = 48; $FS; par.B0 = 'Luo_
 python3 "$T/mk_run.py" bf_ax_m0 "par.N = 96; par.lmax = 47; $FS; par.structure = 'Boussinesq'; par.m = 0; par.symm = 1; par.itau = 0.3" solve   # ('Wu 2005': 6e-7 at N 192, the Hartmann layer of a uniform field)
 python3 "$T/mk_run.py" b_s2_cic "par.N = 192; par.lmax = 48; par.B0 = 'Luo_S2'; par.innercore = 'conducting, Chebys'" solve
 for d in bf_s2_m1 bf_ax_m0 b_s2_cic; do (cd $d && python3 "$T/budget_check.py" | tail -1 | sed "s/^/$d: /"); done
+echo "--- NEW (2026-10-30): the magnetic field with a differential rotation, the confined, general and ferraro fields, the coupling algebra"
+if [ -z "$SKIP_DERIVE" ]; then
+  python3 "$T/dr_induction_check.py" --quick | tail -1   # ∇×(U0×b) of diff_rot.py against derive.py (sympy)
+  python3 "$T/algebra_check.py" --quick | tail -1        # mag_algebra.py against derive.py, degrees 1 and 3
+fi
+python3 "$T/rigid_check.py" | tail -7                    # ΔΩ = c is a rigid rotation: λ = λ(Gaspard 1 + c) - i m c exactly
+DR="par.diff_rot = 1; par.diff_rot_type = 'user'; par.diff_rot_profiles = {0: '0.05*r**2', 2: '-0.1*r**2', 4: '-0.03*r**4'}; par.lmax = 32"
+python3 "$T/mk_run.py" bdr_tor  "par.N = 96; $DR; par.B0 = None; par.B0_tor = 'Malkus'" solve
+python3 "$T/mk_run.py" bdr_pol  "par.N = 192; $DR; par.B0 = 'axial'" solve
+python3 "$T/mk_run.py" bdr_fs   "par.N = 192; $DR; $FS; par.B0 = 'Luo_S2'; par.symm = 1; par.itau = 0.6" solve
+python3 "$T/mk_run.py" bconf    "par.N = 128; par.structure = 'Boussinesq'; par.B0 = 'confined'; par.B0_l = 2; par.B0_conf_r1 = 0.4; par.B0_conf_r2 = 0.8; par.symm = 1; par.itau = 0.6; par.lmax = 32" solve
+python3 "$T/mk_run.py" bgen     "par.N = 192; $DR; par.B0 = 'general'; par.B0_profiles = {1: 'r/6 - r**3/10', 3: '0.3*r**3*(1 - r**2)'}; par.B0_tor = 'general'; par.B0_tor_profiles = {2: 'r**2*(1 - r**2)'}; par.cnorm_tor = 'mag_energy'" solve
+python3 "$T/mk_run.py" bfer     "par.N = 192; par.diff_rot = 1; par.diff_rot_type = 'user'; par.diff_rot_ampl = 0.2; par.diff_rot_profiles = {0: '(2/3)*r**2 - (8/15)*r**4', 2: '-(2/3)*r**2 + (16/21)*r**4', 4: '-(8/35)*r**4'}; par.B0 = 'ferraro'; par.B0_ferraro_G = 'w'; par.B0_ferraro_nmax = 7; par.lmax = 32" solve
+for d in bdr_tor bdr_pol bdr_fs bconf bgen bfer; do (cd $d && python3 "$T/budget_check.py" | tail -1 | sed "s/^/$d: /"); done
 echo "--- continuity.py: 'Wu 2005' with r_out = sqrt(eps) -> 'Boussinesq' as eps -> 0"
 python3 "$T/continuity.py" 1e-4 1e-3 1e-2 1e-1

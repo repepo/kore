@@ -262,13 +262,23 @@ def main(ncpus):
             arg2 += [ vF ]*3 + [ vG ]
             labl += [ 'v3bto0ohr1_D0', 'v2bto1ohr1_D0', 'v2bto0ohr1_D1', 'v2bto0ohr1_D0' ]
 
+        if ut.mag_algebra:
+            # NEW (2026-10-30): the couplings of the Lorentz force and of the induction from the recurrence algebra
+            # (mag_algebra.py, any background degrees) in place of the closed forms: their labels replace those with bpo, bto
+            import mag_algebra as ma
+            keep = [ i for i, lab in enumerate(labl) if 'bpo' not in lab and 'bto' not in lab ]
+            labl, arg2 = [ labl[i] for i in keep ], [ arg2[i] for i in keep ]
+            for lab, X in ma.labels():
+                labl += [ lab ]
+                arg2 += [ {'P': vP, 'T': vT, 'F': vF, 'G': vG}[X] ]
+
     if par.diff_rot == 1:
         # Differential rotation (diff_rot.py): the radial operators of the force of the background flow (sections u, v) and of
         # the heat-equation terms (section h, with thermal = 1), each with the vector parity of its column (vP for P and s, vT for T)
         dr.check()
         for lab, kind in dr.labels():
             labl += [ lab ]
-            arg2 += [ vP if kind == 'P' else vT ]
+            arg2 += [ {'P': vP, 'T': vT, 'F': vF, 'G': vG}[kind] ]   # NEW (2026-10-30): F, G for the induction by the flow
 
     # -------------------------------------------------------------------------------------------------------------------------------------------
     # ----------------------------------------------------------------------------------------------------- Generates the argument lists for Mlam

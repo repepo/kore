@@ -343,7 +343,7 @@ def main():
         if par.magnetic == 1:  # NEW (2026-10-28): Lorentz force -------------------------------------------------------
             # ------------------------------------------------------------------------- A, 2curl (section u), bpol, btor
             for comp, sec in [ ('bpol', 'f'), ('btor', 'g') ]:
-                for i in [-2, -1, 0, 1, 2]:   # the couplings of a poloidal B0 and of a toroidal one (operators.lorentz returns 0 for the others)
+                for i in ut.mag_dl:   # the couplings of a poloidal B0 and of a toroidal one (operators.lorentz returns 0 for the others; NEW 2026-10-30: ut.mag_dl)
                     if l+i in ll_mag[0 if comp == 'bpol' else 1]:
                         mtx = op.lorentz(l,'u',comp,i)
                         if np.isscalar(mtx[0]): continue
@@ -427,7 +427,7 @@ def main():
         if par.magnetic == 1:  # NEW (2026-10-28): Lorentz force -------------------------------------------------------
             # ------------------------------------------------------------------------- A, 1curl (section v), bpol, btor
             for comp, sec in [ ('bpol', 'f'), ('btor', 'g') ]:
-                for i in [-2, -1, 0, 1, 2]:
+                for i in ut.mag_dl:   # (NEW 2026-10-30: ut.mag_dl)
                     if l+i in ll_mag[0 if comp == 'bpol' else 1]:
                         mtx = op.lorentz(l,'v',comp,i)
                         if np.isscalar(mtx[0]): continue
@@ -560,12 +560,23 @@ def main():
 
                 # induction by the flow, poloidal (upol) and toroidal (utor) columns
                 for basecol, ucomp, lls in [ (0, 'upol', ll_flo[0]), (ut.n, 'utor', ll_flo[1]) ]:
-                    for i in [-2, -1, 0, 1, 2]:   # poloidal and toroidal B0 couplings (operators.induction returns 0 for the others)
+                    for i in ut.mag_dl:   # poloidal and toroidal B0 couplings (operators.induction returns 0 for the others; NEW 2026-10-30: ut.mag_dl)
                         if l+i in lls:
                             mtx = op.induction(l, sec, ucomp, i)
                             if np.isscalar(mtx[0]): continue
                             col = basecol + col0 + mtx[1] * ut.N1
                             loc_list = ut.packit( loc_list, mtx[0], row, col)
+
+                # NEW (2026-10-30): induction by the background flow ∇×(U0×b), from the poloidal (F, section f) and toroidal
+                # (G, section g) field: F→f, G→g at even Δl, F→g at odd Δl (diff_rot.induction_dl_range)
+                if par.diff_rot:
+                    for bcomp, bsec, lls in [ ('bpol', 'f', ll_mag[0]), ('btor', 'g', ll_mag[1]) ]:
+                        for i in dr.induction_dl_range(sec, bcomp):
+                            if l+i in lls:
+                                mtx = op.differential_rotation_induction(l, sec, bcomp, i)
+                                if np.isscalar(mtx[0]): continue
+                                col = ut.offset[bsec] + col0 + mtx[1] * ut.N1
+                                loc_list = ut.packit( loc_list, mtx[0], row, col)
 
                 # magnetic diffusion
                 mtx = -1 * op.magnetic_diffusion(l, sec, comp, 0)
@@ -585,6 +596,8 @@ def main():
                 for k,l in enumerate(loc_mag):
                     row = ut.offset[sec] + ( rank*bpp + k )* ut.Nic
                     mtx = -1 * op.magnetic_diffusion(l, sec, comp, 0)
+                    if par.diff_rot:   # NEW (2026-10-30): the core co-rotates with ΔΩ(ricb) = c (rigid: background.magnetic_diffrot)
+                        mtx = mtx + 1j*par.m*par.Gaspard*dr.rigid_ricb()[0]*op.b(l, sec, comp, 0)   # -(-i m G c b), the A sign
                     loc_list = ut.packit( loc_list, mtx, row, row)
                     bc_b_list = bc_b_cic(l, sec)
                     for q in [0,1,2]:
