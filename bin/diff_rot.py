@@ -1,6 +1,15 @@
 '''
 Differential rotation (docs/differential_rotation_details.md): everything it adds to kore, in one place.
 
+WHY THIS WAY (docs/derivations.md, part B). A rotation that varies with latitude couples each degree l of the perturbation
+to l ± 1, l ± 2, ..., up to the degree of ΔΩ (plus one between P and T). Kore builds its matrices block by block, a radial
+operator times a coefficient for each (l, Δl), so it needs those coefficients for every l up to lmax and for every even
+degree n of ΔΩ. They are computed here at run time, with the exact recurrence algebra of angular.py: ΔΩ is a series of
+Legendre polynomials P_n(cos θ), multiplying by P_n(cos θ) is a polynomial in the matrix X of the recurrence for cos θ, and
+every term of the force (ΔΩ i m u, ΔΩ 2ẑ×u, the shear terms) is a short product of such sparse matrices. This works for any
+profile and any n without new algebra, and at any lmax (no quadrature, no overflowing harmonics); closed forms for P0 and P2
+are kept only as a check (tests/diff_rot/diff_rot_coefficients.py, gen_check.py).
+
 The background rotates at Ω = Ω_ref [1 + ΔΩ(r, θ)] with
     ΔΩ = diff_rot_ampl Σ_n f_n(r) P_n(cos θ),   n even,
 seen in the frame of Ω_ref as the flow U0 = Gaspard ΔΩ r sinθ e_φ, together with the latitudinal entropy
@@ -103,6 +112,7 @@ def _user_shape(expr):
     '''f(r) of a 'user' profile: the numpy expression expr in r, x = solar_x(r) and p = diff_rot_param'''
     code = compile(expr, '<diff_rot_profiles>', 'eval')
     def f(r):
+        '''f_n(r): the user's expression evaluated with numpy only (no builtins), r, x and p bound'''
         r = np.asarray(r, dtype=float)
         val = eval(code, {'__builtins__': {}}, dict(_USER_NS, r=r, x=solar_x(r), p=par.diff_rot_param))
         return np.broadcast_to(np.asarray(val, dtype=float), r.shape).copy()
@@ -213,6 +223,7 @@ def _fit(key, func):
     return _fits[key]
 
 def _eval(c, r, Dorder):
+    '''the Chebyshev series c (from _fit) or its Dorder-th r-derivative at the radii r'''
     import utils as ut
     return ut.funcheb(c, r, par.ricb, ut.rcmb, Dorder)[:, -1]
 
@@ -273,6 +284,7 @@ def sigma_coefficients(r):
         for n in nd:
             O[n], Or[n] = fX(n, r, 0), fX(n, r, 1)
         def mult(Ccoef, Bcoef):   # product of two series, B of the degrees of ΔΩ
+            '''the Legendre coefficients of the product of two Legendre series (radius by radius): Σ_n B_n P_n(X) C'''
             return sum((A.legendre(n)[0] @ Ccoef)*Bcoef[n][None, :] for n in nd)
         if par.thermal_wind == 2:   # F = 2ΔΩ + ΔΩ², ∂ᵣF = 2(1 + ΔΩ) ∂ᵣΔΩ
             F, Fr = 2*O + mult(O, O), 2*Or + 2*mult(Or, O)
@@ -368,6 +380,8 @@ def momentum_coefficients(n, m):
     return K
 
 def _lookup(bands, l, m, offdiag):
+    '''one coefficient from the diagonals of a coupling matrix (angular.band): target degree l, source l + offdiag; 0 outside
+    the matrix, below |m| or beyond the band'''
     B = (bands.shape[0] - 1)//2
     ls = l + offdiag
     if ls < m or ls < 0 or ls >= bands.shape[1] or l >= bands.shape[1] or abs(offdiag) > B:

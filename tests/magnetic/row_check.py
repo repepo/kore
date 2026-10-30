@@ -3,6 +3,11 @@
 row_check.py: the magnetic rows of a run against the independent derivation of derive.py (run in a run directory, after
 submatrices.py; ricb > 0, or a full sphere: NEW 2026-10-28; poloidal B0 of degree 1 or 2, toroidal B0).
 
+WHY. derive_check.py compares the closed forms with the derivation on paper (as sympy expressions); this script checks what
+kore actually assembles: the closed forms of operators.py multiplied by the radial matrices that submatrices.py built from
+this run's profiles (B0, ρ0), in their Gegenbauer bases and, in a full sphere, with the parity reduction. A wrong label, a
+wrong power of r, a wrong basis conversion or a wrong profile shows here even when the closed form is right.
+
 For random smooth P, T, f, g of low degree it applies kore's operators (operators.lorentz, operators.induction) block by
 block, reads each row block as a series in its Gegenbauer basis (C^(4) for u, C^(2) for v, f, g) on an r grid, and compares
 it with derive.rows(): the same physics projected on the harmonics by exact θ-quadrature, in monomials of P^(k), h^(k),
@@ -13,6 +18,8 @@ In a full sphere (ricb = 0) the columns hold only the Chebyshev polynomials of t
 ones of the row's parity (after the BC rows, as submatrices.py's remroco and chop leave them; the row parity is taken as the
 one of the two that matches), r in (0, 1]; with Ek = 0 the u rows are in C^(3).
 usage: python3 row_check.py [lmax_check] [tol]     (lmax_check defaults to m + 4; needs sympy; tol defaults to 1e-8)
+Every block calls derive.py (seconds each), so the row degrees are limited to lmax_check: the check reaches the low degrees,
+not the whole run (the energy budgets, budget_check.py, reach every degree).
 '''
 import sys, os
 sys.path.insert(0, os.path.abspath('bin'))
@@ -43,6 +50,7 @@ if FS:   # x = r on [-1, 1]
     r = 0.1 + 0.45*(np.cos(np.pi*(np.arange(200) + 0.5)/200)[::-1] + 1); x = r; dx = 1.   # (away from r = 0, where the r^-p of the monomials cancel)
 
 def gegen(lamb):   # C^(lamb) polynomials at x, (len(x), N)
+    '''the Gegenbauer polynomials C^(lamb)_k(x), k < N, at the grid x by their three-term recurrence: the basis of a row block'''
     E = np.zeros((len(x), N)); E[:, 0] = 1; E[:, 1] = 2*lamb*x
     for k in range(2, N):
         E[:, k] = (2*(k + lamb - 1)*x*E[:, k-1] - (k + 2*lamb - 2)*E[:, k-2])/k
@@ -51,6 +59,8 @@ gu = 3 if (FS and par.ViscosD == 0) else 4   # as submatrices.py
 GB = {'u': (gu, gegen(gu)), 'v': (2, gegen(2)), 'f': (2, gegen(2)), 'g': (2, gegen(2))}
 
 def row_vals(y, sec, q0=0):
+    '''the function of r represented by a row block y (kore's coefficients of section sec, BC rows first) on the grid; in a
+    full sphere the coefficients are those of the Gegenbauer polynomials of one parity, starting at degree q0'''
     gb, E = GB[sec]
     c = np.zeros(N, dtype=complex)
     if FS:   # rows: chop BC rows, then the C^(gb) coefficients q0, q0 + 2, ...
@@ -63,6 +73,8 @@ def row_vals(y, sec, q0=0):
 vP = int((1 - 2*(m % 2))*par.symm); vF = ut.symmB0*vP
 VPAR = {'P': vP, 'T': -vP, 'F': vF, 'G': -vF}
 def rand_coef(part):
+    '''random Chebyshev coefficients of a smooth test function (decaying, so the derivatives stay resolved); in a full
+    sphere only the polynomials of the column's parity'''
     k = N1//6
     c = np.zeros(N, dtype=complex); c[:k] = np.exp(-np.arange(k)/3.)*(rng.standard_normal(k) + 1j*rng.standard_normal(k))
     if FS:   # only the Chebyshev polynomials of the column's parity, k of them
@@ -70,9 +82,11 @@ def rand_coef(part):
     return c
 
 def to_kore(c, part):   # the column vector as kore stores it
+    '''the part of the coefficients kore's block multiplies (N1 of them; one parity in a full sphere)'''
     return c[(0 if VPAR[part] == 1 else 1)::2][:N1] if FS else c[:N1]
 
 def derivs(c, n=5):
+    '''the test function and its first n-1 r-derivatives on the grid, from its Chebyshev series'''
     out, d = [], c.copy()
     for j in range(n):
         out.append(ch.chebval(x, d)); d = ch.chebder(d)*dx
@@ -83,6 +97,8 @@ prof = {'h': [bf.bpoX(r, k) for k in range(4)], 'lr': [rap.logrhoX(r, k) for k i
 B0S = ([('pol', bf.B0_l)] if par.B0 is not None else []) + ([('tor', par.B0_tor_l)] if par.B0_tor is not None else [])
 
 def evaluate(dct, fun):
+    '''a derived row {(monomial, r power): coefficient} evaluated on the grid, with the test function's derivatives fun and
+    this run's profiles (h, k, ln ρ0 and their derivatives)'''
     tot = np.zeros_like(r, dtype=complex)
     for (mono, rp), c in dct.items():
         v = c*r**rp

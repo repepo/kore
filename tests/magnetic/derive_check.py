@@ -1,6 +1,16 @@
 #!/usr/bin/env python3
 '''
-derive_check.py: derive.py's rows against closed forms (needs sympy; about 3 minutes).
+derive_check.py: derive.py's rows against closed forms (needs sympy; about 40 minutes on one core).
+
+WHY. bin/operators.py holds the magnetic couplings as closed forms in l and m, written by hand (ported from conductive_IC) or
+fitted from derive.py (tools/derive/fit_rows.py). This script checks that each closed form equals the row derive.py gets
+from the definitions, term by term, so that a typo, a wrong sign or a missing (ln ρ0)' term in operators.py is caught.
+HOW. For each (row, column, Δl) and a few (l, m), derive.rows() gives the exact projection, a closed form below gives the
+candidate, both as {(monomial, power of r): coefficient}, and derive.compare() requires them to agree to 1e-10 with the
+overall factor -1 (kore's A matrix holds minus the right-hand side). The degrees checked (l 3-6, m 0-3) lie inside the
+range the fitted forms were obtained from: this checks that the code equals the derivation there; the evidence at large l
+is listed in docs/derivations.md (part A, Verification).
+The checks:
   1. uniform density: conductive_IC's operators (39487bbf, operators.py: induction, lorentz, dipolar B0), up to one factor
      (-1, the A-matrix sign; every row of kore is the conductive_IC row over L³ besides);
   2. the (ln ρ0)' terms: the closed forms implemented in bin/operators.py (rows f: d/dr -> d/dr + λ1 on P; rows g: the
@@ -16,8 +26,9 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import derive as d, sympy as sy
 from derive import r
-BAD = []
+BAD = []   # labels of the failed checks
 def compare(a, b, label):
+    '''derive.compare, recording a failure: the factor must be -1 (the A sign) and the mismatch below 1e-10'''
     c, err = d.compare(a, b, label)
     if err > 1e-10 or abs(c + 1) > 1e-10: BAD.append(label)
 
@@ -27,6 +38,7 @@ import sympy as sy
 S = {n: sy.Symbol(n) for n in ['P0','P1','P2','P3','T0','T1','T2','F0','F1','F2','F3','G0','G1','G2','h0','h1','h2','h3','lr1','lr2','lr3']}
 globals().update(S)
 def ind_f(l, m, comp, dl):   # r^3 r.curl(B0 x u) (A sign), column l+dl
+    '''conductive_IC's induction row f (uniform density, dipolar B0) for the column comp ('P' or 'T') of degree l + dl'''
     if comp == 'P':
         if dl == -1:
             lc = l; C = sy.sqrt(l**2-m**2)*(l**2-1)/(2*l-1); return C*((l-2)*h0*P0 + l*r*h1*P0 - 2*r*h0*P1)
@@ -35,6 +47,7 @@ def ind_f(l, m, comp, dl):   # r^3 r.curl(B0 x u) (A sign), column l+dl
     if comp == 'T' and dl == 0:
         return -2*sy.I*m*r*h0*T0
 def ind_g(l, m, comp, dl):
+    '''conductive_IC's induction row g, as ind_f'''
     L = l*(l+1)
     if comp == 'P' and dl == 0:
         return 2*sy.I*m*(h0*P1 + r*h1*P1 - (l**2+l+1)*h0*P0/r + h1*P0 + sy.Rational(L,2)*r*h2*P0 + r*h0*P2)
@@ -47,6 +60,7 @@ def ind_g(l, m, comp, dl):
             C = l*(l+2)*sy.sqrt(1+2*l+l**2-m**2)/(3+2*l)
             return C*(-2*r*h0*T1 - (l+1)*h0*T0 - (l+3)*r*h1*T0)
 def lor_u(l, m, comp, dl):  # r^5 r.curlcurl(G) times -1 (A sign)
+    '''conductive_IC's Lorentz row u (uniform density, dipolar B0) for the column comp ('F' or 'G') of degree l + dl'''
     L = l*(l+1)
     if comp == 'F':
         if dl == -1:
@@ -60,6 +74,7 @@ def lor_u(l, m, comp, dl):  # r^5 r.curlcurl(G) times -1 (A sign)
     if comp == 'G' and dl == 0:
         return 2*sy.I*m*(-r*h0*G0 - (l**2+l-1)*r**2*h1*G0 + r**2*h0*G1 + r**3*h1*G1 + r**3*h0*G2)
 def lor_v(l, m, comp, dl):  # r^3 r.curl(G) times -1
+    '''conductive_IC's Lorentz row v, as lor_u'''
     L = l*(l+1)
     if comp == 'F' and dl == 0:
         return sy.I*m*(4*h0*F1 - L*(2*h1*F0 + r*h2*F0) + 2*r*h0*F2)
@@ -73,6 +88,7 @@ def lor_v(l, m, comp, dl):  # r^3 r.curl(G) times -1
 # ------------------------------------------------------------------ 1. uniform density
 uni = {d.lr: 0}
 def unif(dct):  # drop the lambda terms (rows computed with general rho0)
+    '''the uniform-density part of a derived row: the terms without (ln ρ0) derivatives'''
     return {k: v for k, v in dct.items() if not any(n[0] == 'lr' for n, p in k[0])}
 cases = [('f','P',ind_f,3), ('f','T',ind_f,3), ('g','P',ind_g,3), ('g','T',ind_g,3), ('u','F',lor_u,5), ('u','G',lor_u,5), ('v','F',lor_v,3), ('v','G',lor_v,3)]
 for (row, part, form, p) in cases:
@@ -87,19 +103,24 @@ for (row, part, form, p) in cases:
 
 # ------------------------------------------------------------------ 2. the (ln rho0)' terms
 def split(dct):
+    '''the variable-density part of a derived row: the terms with (ln ρ0) derivatives'''
     lam = {k: v for k, v in dct.items() if any(n[0] == 'lr' for n, p in k[0])}
     return lam
 def yc(lr_, lc, m):   # <Y_lr | cos Y_lc> in kore's normalisation
+    '''the coupling coefficient of cos θ between the degrees lc and lr_ (the angular factor of a dipolar field)'''
     if lc == lr_ + 1: return sy.sqrt((lr_+1)**2 - m**2)/(2*lr_+3)
     if lc == lr_ - 1: return sy.sqrt(lr_**2 - m**2)/(2*lr_-1)
     return 0
 def f_extra(l, m, dl):   # notes: D -> D + lambda1 in the f row
+    '''the (ln ρ0)' terms of the f rows: every d/dr on P becomes d/dr + λ1 (the consoidal part of u is P' + P/r + λ1 P)'''
     return ind_f(l, m, 'P', dl).subs(P1, P1 + lr1*P0) - ind_f(l, m, 'P', dl)
 def g_extra(l, m, dl):   # notes: diagonal only for l0 = 1
+    '''the (ln ρ0)' terms of the g rows (same degree only), from -B0 ∇⋅u = B0 λ1 u_r and the λ1 P of the consoidal part'''
     if dl != 0: return 0
     L = l*(l+1)
     return 2*sy.I*m*(r*h0*lr1*P1 + r*h0*lr2*P0 + (1 - sy.Rational(L,2))*r*h1*lr1*P0 - sy.Rational(L,2)*h0*lr1*P0)
 def u_extra(l, m, part, dl):   # notes: -(lambda1/r) (div_1 G_H)_l', times -r^5 (A sign, cic scale)
+    '''the (ln ρ0)' terms of the u rows: ρ0 r̂⋅∇×∇×(ρ0⁻¹𝐆) = r̂⋅∇×∇×𝐆 - (λ1/r) ∇₁⋅𝐆_H, for the column part 'F' or 'G' '''
     lc = l + dl; L, Lp, L0 = lc*(lc+1), l*(l+1), 2
     j0 = h2 + 2*h1/r - 2*h0/r**2
     if part == 'G':
@@ -131,6 +152,8 @@ for (row, part, p) in [('f','P',3), ('g','P',3), ('u','F',5), ('u','G',5)]:
 # the closed forms of operators.induction_tor and lorentz_tor (times -L^3/r^p, and without Hendrik), against derive.rows(b0=('tor', 1))
 k0, k1, k2 = sy.symbols('k0 k1 k2')
 def tor_form(row, part, l, m, dl):
+    '''the closed form of operators.induction_tor or lorentz_tor (degree-1 toroidal B0) for one block, as a sympy expression
+    in derive.py's symbols (times -L^3, without Hendrik); 0 where kore has no coupling'''
     L = l*(l+1); Cm = sy.sqrt(l**2 - m**2)/(2*l - 1); Cp = sy.sqrt((l+1)**2 - m**2)/(2*l + 3); I = sy.I
     if (row, part, dl) == ('f', 'P', 0):  return -I*m*L*r*k0*P0
     if (row, part, dl) == ('g', 'P', -1): return -Cm*l*(l-1)*(l+1)*(k0*P0 + r*k0*lr1*P0 - r*k1*P0)
@@ -148,9 +171,11 @@ def tor_form(row, part, l, m, dl):
     if (row, part, dl) == ('v', 'G', 0):  return -I*m*(L-2)*r*k0*G0
     return 0
 def quad(l, m, dl):
+    '''the angular factors of a degree-2 background field (operators.quad_factors), exact'''
     return {0: sy.Rational(1, (2*l - 1)*(2*l + 3)), -1: sy.I*m*sy.sqrt(l**2 - m**2)/(2*l - 1), 1: sy.I*m*sy.sqrt((l+1)**2 - m**2)/(2*l + 3),
             -2: sy.sqrt((l**2 - m**2)*((l-1)**2 - m**2))/((2*l - 1)*(2*l - 3)), 2: sy.sqrt(((l+1)**2 - m**2)*((l+2)**2 - m**2))/((2*l + 3)*(2*l + 5))}[dl]
 def tor2_form(row, part, l, m, dl):   # operators.induction_tor2, lorentz_tor2 (times -L^3, without Hendrik), labels as r-power monomials
+    '''the closed form of operators.induction_tor2 or lorentz_tor2 (degree-2 toroidal B0) for one block, as tor_form'''
     L = l*(l+1); A = quad(l, m, dl) if abs(dl) <= 2 else 0; Q = L - 3*m**2
     g0 = k0*P0 + r*k0*lr1*P0
     if (row, part) == ('f', 'P') and dl in (-1, 1): return -A*3*(l*(l-1) if dl == -1 else (l+1)*(l+2))*r*k0*P0
@@ -193,6 +218,7 @@ for n, form, dls in ((1, tor_form, (-1, 0, 1)), (2, tor2_form, (-2, -1, 0, 1, 2)
 # labels as r-power monomials: u{X}bpo{j}[lho{k}]ohr1_D{d} -> r^(5-X) h^(j) [λ_k] F^(d), f, g: r^(2-X)), times -L^3/quad_factors and
 # without Hendrik, against derive.rows(b0=('pol', 2)), any ρ0; and no couplings beyond those
 import ast, re
+# the tables are read from the source of operators.py (not copied here), so the check sees exactly what kore runs
 SRC = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'bin', 'operators.py')).read()
 POL2 = {}
 for fn in ast.parse(SRC).body:
@@ -201,11 +227,14 @@ for fn in ast.parse(SRC).body:
         for k, v in zip(tab.keys, tab.values):
             POL2[ast.literal_eval(k)] = ast.unparse(v.body)
 def label_mono(lab):
+    '''a label u{X}bpo{j}[lho{k}]ohr1_D{d} (or f, g, v) -> (power of r of kore's row, j, k, d): the monomial r^p h^(j) λ_k X^(d)'''
     row, X, j, k, dd = re.match(r'([uvfg])(\d)bpo(\d)(?:lho(\d))?(?:ohr1)?_D(\d)$', lab).groups()
     rp = {'u': 5, 'v': 3, 'f': 2, 'g': 2}[row]
     col = {'u': 'F', 'v': 'F', 'f': 'P', 'g': 'P'}[row]   # replaced by the actual column below
     return rp - int(X), int(j), (int(k) if k else 0), int(dd)
 def pol2_form(row, part, l, m, dl):
+    '''the table entry of induction_pol2 or lorentz_pol2 for one block, as a sympy expression in derive.py's symbols, times
+    the angular factor and -1 (the operator returns -quad_factors * entry / L^3); 0 where the table has no entry'''
     e = POL2.get((row, part, dl))
     if e is None: return 0
     loc = {'l': sy.Integer(l), 'm': sy.Integer(m), 'L': sy.Integer(l*(l+1))}

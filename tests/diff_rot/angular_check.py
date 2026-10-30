@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 '''
 angular_check.py: tests of bin/angular.py (the recurrence algebra of the angular couplings) and of the primitives of
-the differential-rotation force in bin/diff_rot.py built on it. Standalone: needs no run directory (a stub parameters module is used).
+the differential-rotation force in bin/diff_rot.py built on it.
+WHY. Every differential-rotation coupling kore uses is a product of the matrices of angular.py; if those are right at every
+degree, so are the couplings for any profile. Each piece is therefore checked against something computed another way:
+exact rational Legendre values, scipy's harmonics, numerical projections on a Gauss-Legendre grid, and the former
+quadrature builder of the primitives (quad_reference.py), at low degree and at degrees of a few thousand. Standalone: needs no run directory (a stub parameters module is used).
 
     python3 tests/diff_rot/angular_check.py [--quick]
 
@@ -35,16 +39,20 @@ quick = '--quick' in sys.argv
 res = {}   # name: [worst error, tolerance]
 
 def report(name, err, tol):
+    '''record the worst error and the tolerance of a named check (printed at the end)'''
     e, t = res.get(name, [0., tol])
     res[name] = [max(e, err), min(t, tol)] if name in res else [err, tol]
 
 def gtol(l):   # tolerance of a grid-evaluated reference at degree l
+    '''round-off of a grid projection grows like l²: the tolerance of a grid-evaluated reference at degree l'''
     return max(1e-11, 1e-15*l**2)
 
 def dense(M):
+    '''a sparse or dense matrix as a numpy array'''
     return np.asarray(M.todense() if sp.issparse(M) else M)
 
 def rel(a, b, scale=None):
+    '''max |a - b| relative to max |b| (or to scale)'''
     s = np.abs(b).max() if scale is None else scale
     return np.abs(np.asarray(a) - np.asarray(b)).max()/s if s > 0 else np.abs(a).max()
 
@@ -121,6 +129,7 @@ def ops_check(m, lw, sources, gc):
     l = np.arange(lw + 1); L = l*(l + 1.); nl = 4*np.pi/(2*l + 1)
     tgt = np.arange(max(m, 1), lw - 8)
     def proj(Fr, Ft, Fp):   # (q, s, t) on the target degrees, eq. (3.4) of docs/differential_rotation_details.md
+        '''the components (q, s, t) of a vector field given on the grid, by quadrature: the independent reference'''
         return (2*np.pi*(Y[tgt]*wq) @ Fr/nl[tgt],
                 2*np.pi*((dY[tgt]*wq) @ Ft + (np.conj(Z[tgt])*wq) @ Fp)/(L*nl)[tgt],
                 2*np.pi*((np.conj(Z[tgt])*wq) @ Ft - (dY[tgt]*wq) @ Fp)/(L*nl)[tgt])

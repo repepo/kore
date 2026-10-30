@@ -2,7 +2,20 @@
 '''
 fit_rows.py: closed forms in l and m of the magnetic rows, fitted to the exact rows of tests/magnetic/derive.py.
 NEW (2026-10-29): the fitting scripts of steps 4 and 5 of the magnetic port (toroidal B0 of degrees 1, 2; poloidal B0 of
-degree 2), in one script. docs/derivations.md is the guide.
+degree 2), in one script. docs/derivations.md (part A) is the guide.
+
+WHY. derive.py gives the coefficients of a block as numbers, for one (l, m) at a time; kore needs them for every l up to
+lmax and any m, as formulas it can evaluate while it assembles. Calling sympy at run time would cost seconds per block and
+add sympy to kore's requirements, so the formulas are found once, here, and written into bin/operators.py.
+
+WHY THE FORM BELOW. A background field of degree n multiplies a field of degree l by functions of θ of degree n (Y_n⁰ and its
+θ-derivative). Projecting the product back on Y_l' couples l only to l' = l + Δl with |Δl| <= n (+1 for the curl that
+exchanges poloidal and toroidal parts), and the projection coefficients are those of multiplying by cos θ, n times, through
+the recurrence x Y_l = p_l Y_l+1 + q_l Y_l-1 (bin/angular.py). Every square root comes from p_l and q_l; the products of
+p_l, q_l a block needs are the angular factor A below; what is left is a rational function of l whose denominators A
+already holds, i.e. a polynomial in l, and it depends on m only through m² (the field is axisymmetric: changing the sign of
+m changes only the i m factors, which A carries). The fit confirms this form for each block: if it did not hold, no
+polynomial would pass through all the points.
 
 For a background field B0 of kind KIND (pol: ∇×∇×(h Y_n⁰ 𝐫), tor: ∇×(k Y_n⁰ 𝐫)) and degree n, every row block (row u, v, f or
 g; column P, T, F or G; column degree l + Δl) is a sum of monomials (h^(j) or k^(j), (ln ρ0)^(k), the unknown's derivative,
@@ -11,9 +24,13 @@ polynomial a(l) + b(l) m²:
     n = 1:  A = i m (Δl = 0), √(l² - m²)/(2l - 1) (Δl = -1), √((l+1)² - m²)/(2l + 3) (Δl = +1)
     n = 2:  A = 1/((2l - 1)(2l + 3)) (Δl = 0), i m √(l² - m²)/(2l - 1) (Δl = -1), i m √((l+1)² - m²)/(2l + 3) (Δl = +1),
             √((l² - m²)((l-1)² - m²))/((2l - 1)(2l - 3)) (Δl = -2), √(((l+1)² - m²)((l+2)² - m²))/((2l + 3)(2l + 5)) (Δl = +2)
-(operators.quad_factors for n = 2). The script derives the rows for l in LMIN..LMAX, m in MMIN..MMAX on JOBS processes
-(cached in CACHE), divides by A, and fits a(l) + b(l) m² of the lowest total degree that reproduces every point to 1e-9
-relative with rational coefficients (denominators up to 60). It prints one line per (row, column, Δl, monomial):
+(operators.quad_factors for n = 2).
+
+HOW. The script derives the rows for l in LMIN..LMAX, m in MMIN..MMAX on JOBS processes (cached in CACHE), divides by A,
+and fits a(l) + b(l) m² of the lowest total degree that reproduces every point to 1e-9 relative with rational coefficients
+(denominators up to 60): least squares over more points than unknowns, then rounding to rationals, then the test on every
+point. The data are exact to round-off, so this is exact interpolation, not an approximation; a form that does not hold
+gives no polynomial ('None') rather than a slightly wrong one. It prints one line per (row, column, Δl, monomial):
     ROW COL dl±D  MONOMIAL r^P   [a + b m^2] = <sympy expression in l, m>
 'None' means no such polynomial was found: widen the l range (more points) and run again. These lines are the input of
 gen_table.py, which writes the operator code.
@@ -34,7 +51,12 @@ COLS = {'u': 'FG', 'v': 'FG', 'f': 'PT', 'g': 'PT'}
 
 
 def A(n, l, m, dl):
-    '''the angular factor of a coupling Δl for a background field of degree n (0 where there is no coupling)'''
+    '''
+    The angular factor of a coupling Δl for a background field of degree n (0 where there is no coupling): the products of
+    the recurrence coefficients p_l, q_l (and the i m of an azimuthal derivative) that every coefficient of the block
+    shares, so that what remains is a polynomial. n = 1: those of operators.lorentz_tor, induction_tor (as conductive_IC's
+    dipole); n = 2: operators.quad_factors.
+    '''
     if n == 1:
         return {0: 1j*m, -1: np.sqrt(l**2 - m**2)/(2*l - 1), 1: np.sqrt((l+1)**2 - m**2)/(2*l + 3)}.get(dl, 0)
     return {0: 1/((2*l - 1)*(2*l + 3)), -1: 1j*m*np.sqrt(l**2 - m**2)/(2*l - 1), 1: 1j*m*np.sqrt((l+1)**2 - m**2)/(2*l + 3),
@@ -43,12 +65,20 @@ def A(n, l, m, dl):
 
 
 def job(a):
+    '''one derivation (run in a worker process): a = (b0, row, col, dl, l, m) -> (key without b0, derive.rows dict)'''
     b0, row, col, dl, l, m = a
     return a[1:], d.rows(row, col, l + dl, l, m, b0=b0)
 
 
 def fit(pts, y):
-    '''a(l) + b(l) m² of the lowest total degree through the points (l, m) -> y, rational coefficients; None if none'''
+    '''
+    a(l) + b(l) m² of the lowest total degree through the points (l, m) -> y, with rational coefficients, as a factored sympy
+    expression in l, m; None if no polynomial up to total degree 13 passes through every point.
+    For each candidate degree: least squares for the coefficients (more points than unknowns), rounding of each to the
+    nearest fraction with denominator <= 60 (the true coefficients are small rationals), and acceptance only if the rounded
+    polynomial reproduces every point to 1e-9 of the largest value. The lowest degree is tried first, so the answer is the
+    simplest polynomial consistent with all the data.
+    '''
     Ls, Ms = sy.symbols('l m')
     nl = len(set(l for l, m in pts))
     for tot in range(0, 14):
@@ -56,6 +86,7 @@ def fit(pts, y):
             db = tot - da - 1
             if da + 1 > nl - 1 or db + 1 > nl - 1:   # keep a spare l: an exact fit must be over-determined
                 continue
+            # columns: 1, l, ..., l^da (for a) and m², m² l, ..., m² l^db (for b); db = -1: no m² part
             M = np.array([[l**i for i in range(da + 1)] + [m**2*l**i for i in range(db + 1)] for l, m in pts], dtype=float)
             c, *_ = np.linalg.lstsq(M, y, rcond=None)
             cr = [Fraction(ci).limit_denominator(60) for ci in c]
@@ -67,6 +98,7 @@ def fit(pts, y):
 
 
 def main():
+    '''parse the arguments, derive the missing (l, m) points in parallel (cached), fit each monomial and print the forms'''
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('kind', choices=('pol', 'tor')); ap.add_argument('n', type=int, choices=(1, 2))
     ap.add_argument('--rows', default='u,v,f,g'); ap.add_argument('--l', default='3:9'); ap.add_argument('--m', default='0:3')

@@ -227,11 +227,27 @@ def thermal_diffusion(l, section, component, offdiag):  # rʰ  ∇⋅(κ p ∇s)
 # The labels with lho vanish exactly for structure 'Boussinesq', so its matrices are those of the Boussinesq forms.
 # Column blocks: the l's of f are those of the toroidal flow (symmB0 = -1), of g those of the poloidal flow, so offd
 # follows ut.symm1 as for the Coriolis force.
+#
+# How the magnetic operators are organised (docs/derivations.md, part A, gives the motivation and the method):
+#   every function returns, for the row degree l, the row section ('u', 'v': momentum; 'f', 'g': induction), the column
+#   ('bpol', 'btor': the field b; 'upol', 'utor': the flow) and Δl = offdiag, the block as a sum of radial operators (the
+#   labels: matrices built by submatrices.py from the background profiles) times closed-form coefficients in l and m, and
+#   the column block offset. The coefficients come from three sources, each checked against tests/magnetic/derive.py:
+#     - degree-1 poloidal B0 (lorentz_pol, induction_pol): conductive_IC's hand-derived forms, plus the (ln ρ0)' terms
+#       derived for this branch (lorentz_rho and the lho labels);
+#     - degree-1 and degree-2 toroidal B0 (lorentz_tor, induction_tor, *_tor2) and degree-2 poloidal B0 (*_pol2): fitted in
+#       l and m from derive.py's rows (tools/derive/fit_rows.py), the pol2 tables written by tools/derive/gen_table.py;
+#   lorentz() and induction() add the poloidal and the toroidal parts and are what assemble.py calls.
 
 
 
 def lorentz_pol(l, section, component, offdiag):  # ----------------------- Lorentz force (∇×b)×B0 + (∇×B0)×b, per unit mass, poloidal B0
-
+    '''
+    The Lorentz force of a poloidal B0 in the momentum rows ('u': r⁵ ρ0 r̂⋅∇×∇×, 'v': r³ ρ0 r̂⋅∇×, of the force per unit mass)
+    for the column 'bpol' (F) or 'btor' (G) of degree l + offdiag: [Hendrik × block / L³, column block offset].
+    Degree 1: conductive_IC's closed forms (39487bbf, uniform density), the dipole couples F at l ± 1 and G at l in the u
+    rows, F at l and G at l ± 1 in the v rows; plus the (ln ρ0)' terms (lorentz_rho, the lho labels). Degree 2: lorentz_pol2.
+    '''
     if ut.bf.B0_l == 2:   # NEW (2026-10-28)
         return lorentz_pol2(l, section, component, offdiag)
     out  = 0
@@ -315,7 +331,8 @@ def lorentz_rho(l, lc, y):
 
 
 def b(l, section, component, offdiag):  # ------------------------------------------------- the magnetic field, for ∂b/∂t
-
+    '''the field itself in its rows (r² r̂⋅b = L f, r² r̂⋅∇×b = L g, and the same in a conducting inner core), divided by L³:
+    the B matrix of the induction equation (with the sign set in assemble.py)'''
     out = 0
     L = l*(l+1.)
 
@@ -342,7 +359,12 @@ def b(l, section, component, offdiag):  # --------------------------------------
 
 
 def induction_pol(l, section, component, offdiag):  # --------------------------------------- induction ∇×(u×B0), poloidal B0
-
+    '''
+    The induction ∇×(u×B0) of a poloidal B0 in the rows 'f' (r² r̂⋅) and 'g' (r² r̂⋅∇×) for the column 'upol' (P) or 'utor' (T)
+    of degree l + offdiag: [block / L³, column block offset]. Degree 1: conductive_IC's closed forms, with every d/dr on P
+    replaced by d/dr + λ1 in the f rows and the same-degree (ln ρ0)' terms of the g rows (derived in tests/magnetic/derive.py).
+    Degree 2: induction_pol2.
+    '''
     if ut.bf.B0_l == 2:   # NEW (2026-10-28)
         return induction_pol2(l, section, component, offdiag)
     out  = 0
@@ -412,7 +434,8 @@ def induction_pol(l, section, component, offdiag):  # --------------------------
 
 
 def magnetic_diffusion(l, section, component, offdiag):  # -------------------------------------------- −MagnetD ∇×(η∇×b)
-
+    '''the magnetic diffusion in the rows f, g (and in a conducting inner core, with its diffusivity 1/(mu_i2o sigma_i2o)):
+    same degree only, the η' terms included (η = 1 for now)'''
     out = 0
     L = l*(l+1.)
 
@@ -442,7 +465,7 @@ def magnetic_diffusion(l, section, component, offdiag):  # ---------------------
 # ----------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------- NEW (2026-10-28): toroidal B0, and the totals
 # ----------------------------------------------------------------------------------------------------------------------
-# B0_tor = ∇×(k Y_1⁰ 𝐫), B_φ = k sinθ (bto = cnorm_tor k): the rows derived with tests/magnetic/derive.py (any ρ0) and fitted in l,
+# B0_tor = ∇×(k Y_1⁰ 𝐫), B_φ = -k ∂θY_1⁰ ∝ k sinθ (bto = cnorm_tor k): the rows derived with tests/magnetic/derive.py (any ρ0) and fitted in l,
 # each a closed form A(l, m) R(l) with A = i m (same degree) or the Coriolis-type factors C₋ = √(l² - m²)/(2l - 1) (column l - 1),
 # C₊ = √((l+1)² - m²)/(2l + 3) (column l + 1); tests/magnetic/derive_check.py checks them against the derivation. Its
 # couplings are disjoint from those of the poloidal dipole: f, g rows from P at l ± 1 and from T at l only through g;
@@ -461,7 +484,12 @@ def moff(row, col, dl):
 
 
 def quad_factors(l, m):
-    '''NEW (2026-10-28): the angular factors of a degree-2 background field, by Δl = -2..2 (as in conductive_IC's quadrupole terms)'''
+    '''
+    NEW (2026-10-28): the angular factors of a degree-2 background field, by Δl = -2..2 (as in conductive_IC's quadrupole terms).
+    A degree-2 field multiplies Y_l by functions of θ of degree 2, i.e. by cos θ twice, so a coupling Δl carries the product
+    of the recurrence coefficients of cos θ (bin/angular.py: p_l, q_l) that lead from l to l + Δl, and i m where a φ-derivative
+    enters; every coefficient of a block is this factor times a polynomial in l and m (tools/derive/fit_rows.py).
+    '''
     return { 0: 1/((2*l - 1)*(2*l + 3)),
             -1: 1j*m*np.sqrt(l**2 - m**2)/(2*l - 1),
              1: 1j*m*np.sqrt((l+1)**2 - m**2)/(2*l + 3),
@@ -579,7 +607,7 @@ def induction_tor2(l, section, component, offdiag):  # -------------------------
 
 
 def lorentz_tor2(l, section, component, offdiag):  # ------------ Lorentz force (∇×b)×B0 + (∇×B0)×b per unit mass, toroidal B0 of degree 2
-    '''NEW (2026-10-28): as induction_tor2'''
+    '''NEW (2026-10-28): the Lorentz force of a degree-2 toroidal B0, fitted as induction_tor2: [Hendrik × block / L³, offset]'''
     out = 0
     m = par.m
     L = l*(l+1.)
@@ -609,7 +637,11 @@ def lorentz_tor2(l, section, component, offdiag):  # ------------ Lorentz force 
 
 
 def induction_tor(l, section, component, offdiag):  # --------------------------------------- induction ∇×(u×B0), toroidal B0
-
+    '''
+    NEW (2026-10-28): the induction of a toroidal B0 in the rows f, g: [block / L³, column block offset]. Degree 1: closed forms
+    fitted in l from tests/magnetic/derive.py (the angular factors i m, C₋, C₊ times polynomials in l), see the comment above;
+    degree 2: induction_tor2.
+    '''
     if par.B0_tor_l == 2:   # NEW (2026-10-28)
         return induction_tor2(l, section, component, offdiag)
     out = 0
@@ -632,7 +664,8 @@ def induction_tor(l, section, component, offdiag):  # --------------------------
 
 
 def lorentz_tor(l, section, component, offdiag):  # ------------------- Lorentz force (∇×b)×B0 + (∇×B0)×b per unit mass, toroidal B0
-
+    '''NEW (2026-10-28): the Lorentz force of a toroidal B0 in the rows u, v: [Hendrik × block / L³, column block offset];
+    degree 1 fitted as induction_tor, degree 2: lorentz_tor2'''
     if par.B0_tor_l == 2:   # NEW (2026-10-28)
         return lorentz_tor2(l, section, component, offdiag)
     out = 0
@@ -660,7 +693,8 @@ def lorentz_tor(l, section, component, offdiag):  # ------------------- Lorentz 
 
 
 def _total(pol, tor, l, section, component, offdiag):
-    '''the poloidal and the toroidal B0 parts of a coupling (they never share one): [matrix, offd], matrix 0 if absent'''
+    '''the poloidal and the toroidal B0 parts of a coupling, added: [matrix, offd], matrix 0 if neither couples this block
+    (both use moff, so when both couple the same block their offsets agree)'''
     out = pol(l, section, component, offdiag) if par.B0 is not None else [0, 0]
     if par.B0_tor is not None:
         t = tor(l, section, component, offdiag)
@@ -670,8 +704,10 @@ def _total(pol, tor, l, section, component, offdiag):
 
 
 def lorentz(l, section, component, offdiag):  # NEW (2026-10-28): poloidal + toroidal B0
+    '''the Lorentz force block assemble.py places: the poloidal B0's part plus the toroidal B0's part'''
     return _total(lorentz_pol, lorentz_tor, l, section, component, offdiag)
 
 
 def induction(l, section, component, offdiag):  # NEW (2026-10-28): poloidal + toroidal B0
+    '''the induction block assemble.py places: the poloidal B0's part plus the toroidal B0's part'''
     return _total(induction_pol, induction_tor, l, section, component, offdiag)

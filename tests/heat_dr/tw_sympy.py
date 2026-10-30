@@ -3,6 +3,9 @@
 tw_sympy.py: sympy derivation of the thermal-wind entropy S_tw = sum_n sigma_n(r) P_n(cos theta) from
 (1/r) dS_tw/dtheta = (r sin(theta)/(B g)) G^2 d/dz F,  F = (1 + dOmega)^2 - 1 (thermal_wind = 2) or 2 dOmega (thermal_wind = 1),
 dOmega = f0(r) + f2(r) P2(cos theta), and check of the closed forms used in bin/radial_profiles.py (sigma2, sigma4, sigma6).
+WHY. kore obtains the σ_n by solving thermal-wind balance in Legendre space at run time (diff_rot.sigma_coefficients);
+this script derives them symbolically, independently, for the P0 + P2 rotation, and checks the closed forms kept as the
+reference (tests/diff_rot/diff_rot_coefficients.py: sigma_closed) that gen_check.py compares the run-time σ_n with.
 '''
 import sympy as sp
 r, x, B, G = sp.symbols('r x B G', positive=True)
@@ -11,6 +14,7 @@ P = [sp.legendre(n, x) for n in range(9)]
 dO = f0 + f2*P[2]
 # with x = cos(theta): d/dtheta = -sin d/dx, d/dz = x d/dr + (1 - x^2)/r d/dx  =>  dS/dx = -(r^2 G^2/(B g)) [x F_r + (1 - x^2) F_x/r]
 def sigmas(F):
+    '''the Legendre coefficients σ_n(r) of S_tw for the rotation term F, by integrating thermal-wind balance in x = cos θ'''
     dSdx = -(r**2*G**2/(B*g))*(x*sp.diff(F, r) + (1 - x**2)*sp.diff(F, x)/r)
     S = sp.integrate(sp.expand(dSdx), (x, -1, x))
     return [sp.simplify(sp.Rational(2*n + 1, 2)*sp.integrate(sp.expand(S*P[n]), (x, -1, 1))) for n in range(9)]

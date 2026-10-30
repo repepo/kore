@@ -1,3 +1,13 @@
+"""
+diff_rot_coefficients.py: hand-derived closed forms of the differential-rotation couplings for ΔΩ = f0(r) + f2(r) P2(cos θ),
+and of the thermal-wind σ2, σ4, σ6 (sigma_closed). Not used by kore: kore computes every coupling at run time with the
+recurrence algebra (bin/angular.py, bin/diff_rot.py), for any degree of ΔΩ. These formulas were kore's implementation for
+P0 and P2 before that; they are kept as an independent reference, against which tests/diff_rot/gen_check.py checks the
+algebra coefficient by coefficient (docs/derivations.md, part B). The naming: f_ (P2) or f0_ (P0) or df_, d2f_ (the radial
+derivatives of the shape), then 1C or 2C (the 1-curl row v or the 2-curl row u), then the radial operator (D0P: the shape
+times P, D1P: times P', lho1: times (ln ρ0)', ...); each function takes (l, m, Δl) and returns the coefficient times L' of
+the target degree.
+"""
 import numpy as np
 import math
 

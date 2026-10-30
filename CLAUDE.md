@@ -355,8 +355,11 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   ('Wu 2005' with r_out = √ε → 'Boussinesq'), `malkus_check.py` (the Malkus field against Malkus 1967), `mk_run.py`.
 - `tools/derive/` (NEW 2026-10-29, README): `fit_rows.py` (fits the magnetic rows of derive.py in l, m: angular factor ×
   (a(l) + b(l) m²), exact rational coefficients; reproduces operators.*_tor, *_tor2, *_pol2) and `gen_table.py` (the fit
-  as operator table entries in kore's labels). `docs/derivations.md` is the user guide to these, to derive.py
-  (`--b0 pol1|pol2|tor1|tor2`), to the angular algebra (`bin/angular.py`) and the diff-rot couplings, with verified examples.
+  as operator table entries in kore's labels). `docs/derivations.md` explains the couplings of both latitude-dependent
+  backgrounds, each with motivation, method, implementation map, verification (which degrees each check reaches) and
+  worked examples: part A the magnetic field (derive.py `--b0 pol1|pol2|tor1|tor2`, the exact-interpolation fit, the code
+  generation), part B the differential rotation (the recurrence algebra of `bin/angular.py`, the 12 primitives and the
+  couplings of `bin/diff_rot.py`). The scripts' docstrings give the same rationale (2026-10-30).
 - `tests/rsf/` (README; `HOWTO.md` points to `docs/forcing.md` and `docs/reynolds-stress.md`; `example_m2/`, the
   chandler m = 2 scan, has its own README): shared
   pieces in `rsf_common.py`; `builder_check.py` (f = u against the inertia rows), `noise_check.py` (the noise

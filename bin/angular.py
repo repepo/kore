@@ -1,5 +1,16 @@
 '''
-Angular algebra at a fixed azimuthal order m (docs/differential_rotation_details.md, §3).
+Angular algebra at a fixed azimuthal order m (docs/differential_rotation_details.md, §3; docs/derivations.md, part B).
+
+WHY. A background that depends on θ (a differential rotation ΔΩ(r, θ), or the thermal-wind entropy S(r, θ)) couples a
+perturbation of degree l to other degrees l'. Kore needs the coefficients of those couplings for every l up to lmax (which
+can be a few thousand) and every even degree n of the background. Computing them by quadrature on a θ-grid (as kore did
+before) costs O(lmax²) memory and time per n and fails above l ≈ 645, where scipy's harmonics overflow; writing them as
+closed forms (Gaunt-type integrals) works for one n at a time and has to be redone by hand for every new profile. Instead,
+every function of x = cos θ used here is a polynomial in x, and multiplication by x on the harmonics is exactly a
+three-term recurrence; so the couplings are products of a few sparse banded matrices, exact to round-off, at any degree,
+for any n, in O(lmax) time and memory.
+
+HOW (the conventions):
 
 Fields are expanded on the Schmidt harmonics of utils.Ylm, Y_l = sqrt(4π/(2l+1)) Y_l^m (θ-part, Condon–Shortley phase),
 ∫|Y_l|² dΩ = n_l = 4π/(2l+1). A function of x = cos θ multiplying a field is a matrix on the degree index (row: target l',
@@ -42,6 +53,7 @@ class Algebra:
     Use Algebra.get(m, lw) for a cached instance.
     '''
     def __init__(self, m, lw):
+        '''build the matrices on the degrees 0..lw from the recurrence coefficients; rows/columns l < |m| are zero'''
         self.m, self.lw = m, lw
         p, q = coefficients(m, lw)
         l = np.arange(lw + 1, dtype=float)
@@ -58,6 +70,7 @@ class Algebra:
 
     @classmethod
     def get(cls, m, lw):
+        '''the cached algebra for (m, lw): the matrices are built once per run'''
         key = (m, lw)
         if key not in _cache:
             _cache[key] = cls(m, lw)
@@ -74,9 +87,11 @@ class Algebra:
 
     # --- vector fields (q, s, t), see Field -------------------------------------------------------------------------
     def zero(self):
+        '''the zero matrix of the right shape'''
         return 0*self.I
 
     def field(self, q=None, s=None, t=None):
+        '''a Field from its three components (missing ones are zero)'''
         z = self.zero()
         return Field(z if q is None else q, z if s is None else s, z if t is None else t)
 
@@ -108,6 +123,7 @@ class Algebra:
 class Field:
     '''A vector field (q, s, t) on R_l = Y_l r̂, S_l = r∇Y_l, T_l = r∇Y_l × r̂: three matrices, rows = degree'''
     def __init__(self, q, s, t):
+        '''the three matrices of the components on R_l, S_l, T_l (rows: target degree, columns: the source shapes)'''
         self.q, self.s, self.t = q, s, t
 
     def __add__(self, o):
@@ -122,6 +138,7 @@ class Field:
     __rmul__ = __mul__
 
     def __getitem__(self, k):
+        '''F['q'], F['s'], F['t']'''
         return {'q': self.q, 's': self.s, 't': self.t}[k]
 
 

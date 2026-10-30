@@ -12,6 +12,10 @@ thermal-wind σ2, σ4, σ6 of diff_rot.sigma_coefficients against their closed f
 The couplings are compared relative to the largest closed-form coefficient of the same row block (u or v row, P or T
 column, target degree l), the scale at which the coefficients enter a row of A: a few coefficients are small
 differences of O(L) terms in the algebra (e.g. df0_2C_D1P = 2im), so their own relative error grows like L eps.
+WHY. The run-time algebra of diff_rot.py replaced hand-derived closed forms for P0 and P2 (still in
+diff_rot_coefficients.py). Agreement to round-off at every l, m with those independent forms checks the algebra where both
+exist; for higher degrees n, where no closed form exists, the check is that no coupling falls outside the Δl kore assembles
+(a coupling there would be silently dropped), and angular_check.py checks the algebra itself at any n.
 '''
 import sys, os
 sys.path.insert(0, os.path.abspath('bin'))
@@ -29,12 +33,14 @@ lmax = par.lmax
 tol = 1e-12
 
 def closed_name(name, n):
+    '''the name of the closed form in diff_rot_coefficients.py of diff_rot's coefficient `name` for P_n (f0_... for n = 0)'''
     pre = 'f0' if n == 0 else 'f'
     for a in ('d2f_', 'df_', 'f_'):
         if name.startswith(a):
             return a.replace('f', pre, 1) + name[len(a):]
 
 def block(name):   # the row block a coefficient belongs to: u (2C) or v (1C) row, P or T column
+    '''the row block of a coefficient, e.g. 'u,P': the scale its error is measured against'''
     return ('u' if '_2C_' in name else 'v') + ',' + name[-1]
 
 worst = 0.
