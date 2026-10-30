@@ -1667,12 +1667,15 @@ each part is a few vectors of three kinds, a polynomial <span class="arithmatex"
 <span class="arithmatex">\((\hat{\mathbf{z}}\times\hat{\mathbf{r}})\times\mathbf{F} = \hat{\mathbf{r}}(\hat{\mathbf{z}}\cdot\mathbf{F}) - \hat{\mathbf{z}}(\hat{\mathbf{r}}\cdot\mathbf{F})\)</span>; and the multiplication by <span class="arithmatex">\(c(x)\)</span> (<code>mult</code> with
 the matrices <span class="arithmatex">\(c(X)\)</span>, <span class="arithmatex">\(c'(X)\)</span>). The perturbation's components are radial monomials (<span class="arithmatex">\(u_r = LP/r\)</span>, <span class="arithmatex">\(b_\theta\)</span>-part <span class="arithmatex">\(F' + F/r\)</span>,
 <span class="arithmatex">\((\nabla\times\mathbf{b})_t = -(F'' + 2F'/r - LF/r^2)\)</span>, …), so the force <span class="arithmatex">\(\mathbf{G} = \mathbf{J}_0\times\mathbf{b} - \mathbf{B}_0\times\mathbf{J}\)</span> and the
-induction <span class="arithmatex">\(\mathbf{E} = \mathbf{u}\times\mathbf{B}_0\)</span> are sums of (radial monomial) × (sparse matrix on the degrees). The rows follow from
-$$
-\hat{\mathbf{r}}\cdot\nabla\times\nabla\times\mathbf{V} = \frac{L'(q - (rs)')}{r^2},\qquad \hat{\mathbf{r}}\cdot\nabla\times\mathbf{V} = \frac{L't}{r},\qquad
-\rho_0\hat{\mathbf{r}}\cdot\nabla\times\nabla\times\frac{\mathbf{V}}{\rho_0} = \frac{L'(q - (rs)' + \lambda_1 rs)}{r^2},
-$$
-which need one radial derivative of the monomials (product rule). Each final monomial becomes a label as in step 5 of A.2,
+induction <span class="arithmatex">\(\mathbf{E} = \mathbf{u}\times\mathbf{B}_0\)</span> are sums of (radial monomial) × (sparse matrix on the degrees). The rows follow from</p>
+<div class="arithmatex">\[
+\begin{aligned}
+\hat{\mathbf{r}}\cdot\nabla\times\nabla\times\mathbf{V} &amp;= \frac{L'\,(q - (rs)')}{r^2},\\
+\hat{\mathbf{r}}\cdot\nabla\times\mathbf{V} &amp;= \frac{L'\,t}{r},\\
+\rho_0\,\hat{\mathbf{r}}\cdot\nabla\times\nabla\times\frac{\mathbf{V}}{\rho_0} &amp;= \frac{L'\,(q - (rs)' + \lambda_1 rs)}{r^2},
+\end{aligned}
+\]</div>
+<p>which need one radial derivative of the monomials (product rule). Each final monomial becomes a label as in step 5 of A.2,
 with the profile codes <code>hp</code> + degree (<span class="arithmatex">\(c_\mathrm{norm}h_n\)</span>) and <code>kt</code> + degree (<span class="arithmatex">\(c_\mathrm{tor}k_n\)</span>).</p>
 <p><strong>Implementation.</strong> <code>mag_algebra.build</code> (the products and the rows), <code>coefficients</code> (cached per <span class="arithmatex">\(m\)</span>, stored by diagonal),
 <code>labels</code> (for <code>submatrices.py</code>), <code>dl_range</code> (<span class="arithmatex">\(|\Delta l| \le n_\mathrm{max} + 1\)</span>, for <code>assemble.py</code>), <code>block</code> (for

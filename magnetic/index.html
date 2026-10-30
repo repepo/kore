@@ -1422,7 +1422,7 @@ N 96–128 in a shell, but a region that reaches the centre of a full sphere nee
 <span class="arithmatex">\(10^{-9}\)</span>. <span class="arithmatex">\(h\)</span> is evaluated in factored form (expanded into monomials, a polynomial of degree <span class="arithmatex">\(2p + l\)</span> loses all its digits
 to cancellation near the edges).</p>
 <p><strong>Any degrees</strong> (2026-10-30). <code>'general'</code> takes <span class="arithmatex">\(h_n\)</span> degree by degree as expressions; their derivatives come from Chebyshev
-interpolants (degree max(64, 2N), at <span class="arithmatex">\(|r|\)</span> with the parity <span class="arithmatex">\((-1)^n\)</span> in a full sphere, where <span class="arithmatex">\(h_n\)</span> should go as <span class="arithmatex">\(r^n\)</span> at the
+interpolants (degree max(64, 2N), at <span class="arithmatex">\(\lvert r\rvert\)</span> with the parity <span class="arithmatex">\((-1)^n\)</span> in a full sphere, where <span class="arithmatex">\(h_n\)</span> should go as <span class="arithmatex">\(r^n\)</span> at the
 centre). The degrees must have one parity (one equatorial symmetry). <code>cnorm = 'mag_energy'</code> sums <span class="arithmatex">\(\int B_0^2 dV\)</span> over the
 degrees. The couplings come from the recurrence algebra (<code>mag_algebra.py</code>, below).</p>
 <p><strong>Ferraro field</strong> (2026-10-30, needs <code>diff_rot = 1</code>). An axisymmetric poloidal field is <span class="arithmatex">\(\mathbf{B}_0 = \nabla\psi\times\nabla\phi\)</span>;
@@ -1504,11 +1504,11 @@ antisymmetric, like the dipole.</p>
 <li>rows <code>f</code>, columns P: every <span class="arithmatex">\(d/dr\)</span> on <span class="arithmatex">\(P\)</span> becomes <span class="arithmatex">\(d/dr + \lambda_1\)</span> (label <code>f1bpo0lho1_D0</code>);</li>
 <li>rows <code>g</code>, columns P, diagonal in <span class="arithmatex">\(l\)</span> only: <span class="arithmatex">\(2im[\,r h\lambda_1 P' + r h\lambda_2 P + (1 - L/2)\,r h'\lambda_1 P - (L/2)\,h\lambda_1 P\,]\)</span>
   (in the scale of <code>conductive_IC</code>'s rows; zero for m = 0), from <span class="arithmatex">\(-\mathbf{B}_0\nabla\cdot\mathbf{u}\)</span> and the <span class="arithmatex">\(\lambda_1 P\)</span> above;</li>
-<li>rows <code>u</code>: $\rho_0\hat{\mathbf{r}}\cdot\nabla\times\nabla\times(\rho_0^{-1}\mathbf{G}) = \hat{\mathbf{r}}\cdot\nabla\times\nabla\times\mathbf{G}</li>
-<li>(\lambda_1/r)\nabla_1\cdot\mathbf{G}_H$, <span class="arithmatex">\(\mathbf{G}\)</span> the Lorentz force per volume: the extra
+<li>rows <code>u</code>: <span class="arithmatex">\(\rho_0\hat{\mathbf{r}}\cdot\nabla\times\nabla\times(\rho_0^{-1}\mathbf{G}) = \hat{\mathbf{r}}\cdot\nabla\times\nabla\times\mathbf{G} -
+  (\lambda_1/r)\nabla_1\cdot\mathbf{G}_H\)</span>, <span class="arithmatex">\(\mathbf{G}\)</span> the Lorentz force per volume: the extra
   <span class="arithmatex">\(\lambda_1 r^4(\nabla_1\cdot\mathbf{G}_H)_l\)</span>, i.e. <span class="arithmatex">\(-im\lambda_1[(L+2)r^2hg + Lr^3h'g + 2r^3hg']\)</span> for the toroidal field of the same
   degree and <span class="arithmatex">\((y/2)\lambda_1 r^3[2a\,h\,D_{l_c}f + L_c b\,(D_1 h) f]\)</span> for the poloidal field of degree <span class="arithmatex">\(l_c = l\pm1\)</span>
-  (<span class="arithmatex">\(y = \langle Y_l|\cos\theta\,Y_{l_c}\rangle\)</span>, <span class="arithmatex">\(a = 2 - L_c - L\)</span>, <span class="arithmatex">\(b = L_c - 2 - L\)</span>, <span class="arithmatex">\(D_l f = f'' + 2f'/r - l(l+1)f/r^2\)</span>;
+  (<span class="arithmatex">\(y = \langle Y_l\,\vert\,\cos\theta\,Y_{l_c}\rangle\)</span>, <span class="arithmatex">\(a = 2 - L_c - L\)</span>, <span class="arithmatex">\(b = L_c - 2 - L\)</span>, <span class="arithmatex">\(D_l f = f'' + 2f'/r - l(l+1)f/r^2\)</span>;
   <code>operators.lorentz_rho</code>);</li>
 <li>rows <code>v</code>, the T columns, the diffusion, the walls and the inner core: no <span class="arithmatex">\(\rho_0\)</span> terms.
   The new labels pair <code>bpo</code> with <code>lho</code> (two profiles, plus <code>ohr1</code> in the rows <code>u</code>); they vanish exactly for <code>'Boussinesq'</code>,
@@ -1539,7 +1539,7 @@ antisymmetric, like the dipole.</p>
   its degree and <span class="arithmatex">\(k\)</span> that of <span class="arithmatex">\((-1)^n\)</span> (<code>utils.odd_profiles</code>, both slots of a label). One boundary-condition row per block,
   the insulating condition at the outer wall (<code>assemble.bc_b_spherical</code>). The fields are regular at the centre: FDM
   <span class="arithmatex">\(j_l(\beta r)\)</span> (analytic derivatives, <code>background_field.jl_k</code>), the polynomial fields, 'wall' <span class="arithmatex">\(= r^n(1 - r^2)\)</span>, 'Malkus'
-  for <span class="arithmatex">\(n = 1\)</span> only (<code>k = r</code> is not regular for <span class="arithmatex">\(n = 2\)</span>), 'user' as <span class="arithmatex">\(f(|r|)\,\mathrm{sign}(r)^n\)</span>. <code>cnorm</code> and <code>cnorm_tor</code> are
+  for <span class="arithmatex">\(n = 1\)</span> only (<code>k = r</code> is not regular for <span class="arithmatex">\(n = 2\)</span>), 'user' as <span class="arithmatex">\(f(\lvert r\rvert )\,\mathrm{sign}(r)^n\)</span>. <code>cnorm</code> and <code>cnorm_tor</code> are
   computed as with an inner core; spin_doctor's inner-wall terms are skipped.</li>
 <li><strong>Inviscid runs</strong> (step 5, <code>ViscosD = 0</code>, full sphere only). The Lorentz labels have <span class="arithmatex">\(D^3\)</span> (rows u) and <span class="arithmatex">\(D^2\)</span> (rows v), so
   the rows are in <span class="arithmatex">\(C^{(3)}\)</span> (u) and <span class="arithmatex">\(C^{(2)}\)</span> (v), with one boundary-condition row (<span class="arithmatex">\(u_r = 0\)</span>) in u and none in v; without
@@ -1547,15 +1547,15 @@ antisymmetric, like the dipole.</p>
   <code>conductive_IC</code> keeps <span class="arithmatex">\(C^{(2)}\)</span> and <span class="arithmatex">\(C^{(1)}\)</span> and so converts these terms with the wrong matrices; its torsional test is
   barely affected (below).</li>
 <li><strong>Solver and output.</strong> <code>solve.py</code> writes <code>real_magnetic.field</code>, <code>imag_magnetic.field</code> and normalises the eigenvectors to
-  <span class="arithmatex">\(\mathrm{KE} + \mathrm{Hendrik}\int\tfrac12|\mathbf{b}|^2dV = 1\)</span> (over the shell, as <code>conductive_IC</code>).</li>
+  <span class="arithmatex">\(\mathrm{KE} + \mathrm{Hendrik}\int\tfrac12\lvert \mathbf{b}\rvert ^2dV = 1\)</span> (over the shell, as <code>conductive_IC</code>).</li>
 </ul>
 <h2 id="with-a-differential-rotation-2026-10-30">With a differential rotation (2026-10-30)</h2>
 <p>With <code>diff_rot = 1</code> the background flow <span class="arithmatex">\(\mathbf{U}_0 = G\,\Delta\Omega\,r\sin\theta\,\hat{\boldsymbol\phi}\)</span> also shears the field: the induction
-equation gains
-$$
-\nabla\times(\mathbf{U}<em>0\times\mathbf{b}) = G\left[-im\,\Delta\Omega\,\mathbf{b} + \sin\theta\,(r\,\partial_r\Delta\Omega\,b_r + \partial</em>\theta\Delta\Omega\,b_\theta)\,\hat{\boldsymbol\phi}\right]
-$$
-(the <span class="arithmatex">\(\Omega\)</span>-effect, and the Doppler shift of the field). It is built for any <span class="arithmatex">\(\Delta\Omega = \sum_n f_n P_n\)</span> with the recurrence
+equation gains</p>
+<div class="arithmatex">\[
+\nabla\times(\mathbf{U}_0\times\mathbf{b}) = G\left[-im\,\Delta\Omega\,\mathbf{b} + \sin\theta\,(r\,\partial_r\Delta\Omega\,b_r + \partial_\theta\Delta\Omega\,b_\theta)\,\hat{\boldsymbol\phi}\right]
+\]</div>
+<p>(the <span class="arithmatex">\(\Omega\)</span>-effect, and the Doppler shift of the field). It is built for any <span class="arithmatex">\(\Delta\Omega = \sum_n f_n P_n\)</span> with the recurrence
 algebra of the momentum terms (<code>diff_rot.induction_block</code>; <a href="../derivations/">Derivation tools</a>, part B): F→f and G→g couple at
 even <span class="arithmatex">\(\Delta l\)</span> up to <span class="arithmatex">\(n\)</span>, F→g (a poloidal field sheared into a toroidal one) at odd <span class="arithmatex">\(\Delta l\)</span> up to <span class="arithmatex">\(n + 1\)</span>. The Lorentz force
 needs nothing new: it does not involve <span class="arithmatex">\(\mathbf{U}_0\)</span>.</p>
@@ -1566,7 +1566,7 @@ needs nothing new: it does not involve <span class="arithmatex">\(\mathbf{U}_0\)
 <li><strong>Steady background (Ferraro).</strong> <span class="arithmatex">\(\nabla\times(\mathbf{U}_0\times\mathbf{B}_0) = r\sin\theta\,(\mathbf{B}_0\cdot\nabla\Delta\Omega)\,\hat{\boldsymbol\phi}\)</span> must
   vanish for the background to be steady: always for a toroidal <span class="arithmatex">\(\mathbf{B}_0\)</span>, for a poloidal one only if <span class="arithmatex">\(\Delta\Omega\)</span> is
   constant along its field lines. The linear problem does not contain this term. <code>background.ferraro_mismatch</code> reports
-  <span class="arithmatex">\(\max|\mathbf{B}_0\cdot\nabla\Delta\Omega|\,r/(\max|\mathbf{B}_0|\max|r\nabla\Delta\Omega|)\)</span> at the start of every run; above <span class="arithmatex">\(10^{-7}\)</span>
+  <span class="arithmatex">\(\max\lvert \mathbf{B}_0\cdot\nabla\Delta\Omega\rvert \,r/(\max\lvert \mathbf{B}_0\rvert \max\lvert r\nabla\Delta\Omega\rvert )\)</span> at the start of every run; above <span class="arithmatex">\(10^{-7}\)</span>
   <code>background.FERRARO_POLICY</code> decides: <code>'warn'</code> (default: a warning, the background is assumed to be maintained) or
   <code>'refuse'</code>. Consistent backgrounds: a toroidal field, a <code>'confined'</code> field where <span class="arithmatex">\(\Delta\Omega\)</span> is uniform, or <code>'ferraro'</code>.</li>
 <li><strong>Energy budgets.</strong> spin_doctor's induction work includes <span class="arithmatex">\(\mathbf{U}_0\times\mathbf{b}\)</span> (on the <span class="arithmatex">\((r, \theta)\)</span> grid). Because
@@ -1620,7 +1620,7 @@ core to the unknowns, as <code>conductive_IC</code> does:</p>
 <tr>
 <td>1</td>
 <td>ME</td>
-<td>$\int\tfrac12</td>
+<td><span class="arithmatex">\(\int\tfrac12\lvert \mathbf{b}\rvert ^2 dV\)</span> (without Hendrik, as <code>conductive_IC</code>; Mag/Kin is ME/KE)</td>
 </tr>
 <tr>
 <td>2</td>
@@ -1635,7 +1635,7 @@ core to the unknowns, as <code>conductive_IC</code> does:</p>
 <tr>
 <td>4</td>
 <td>residb</td>
-<td>resid𝐛 $=</td>
+<td>resid𝐛 <span class="arithmatex">\(= \lvert 2\sigma\,\mathrm{ME} - \mathrm{Indu} - \mathrm{Mdfs}\rvert /\max\)</span></td>
 </tr>
 <tr>
 <td>5, 6</td>
@@ -1645,22 +1645,22 @@ core to the unknowns, as <code>conductive_IC</code> does:</p>
 <tr>
 <td>7</td>
 <td>MEic</td>
-<td>$\tfrac12\int</td>
+<td><span class="arithmatex">\(\tfrac12\int\lvert \mathbf{b}\rvert ^2/\mu_{i2o}\,dV\)</span> in the inner core (its field, or the potential field below an insulating one)</td>
 </tr>
 <tr>
 <td>8</td>
 <td>MEext</td>
-<td>$\tfrac12\int</td>
+<td><span class="arithmatex">\(\tfrac12\int\lvert \mathbf{b}\rvert ^2dV\)</span> of the potential field outside the outer wall</td>
 </tr>
 <tr>
 <td>9</td>
 <td>Ohm_f</td>
-<td>$\mathrm{MagnetD}\int</td>
+<td><span class="arithmatex">\(\mathrm{MagnetD}\int\lvert \nabla\times\mathbf{b}\rvert ^2dV\)</span> over the fluid</td>
 </tr>
 <tr>
 <td>10</td>
 <td>Ohm_ic</td>
-<td>$\mathrm{MagnetD}\,\eta_i\int</td>
+<td><span class="arithmatex">\(\mathrm{MagnetD}\,\eta_i\int\lvert \nabla\times\mathbf{b}\rvert ^2/\mu_{i2o}\,dV\)</span> over a conducting inner core</td>
 </tr>
 <tr>
 <td>11</td>
@@ -1838,7 +1838,7 @@ residσ, resid𝐛 and resid𝐄 equal <code>conductive_IC</code>'s resid𝐮, r
 <h3 id="full-sphere-inviscid-runs-and-degree-2-poloidal-fields-2026-10-28-step-5">Full sphere, inviscid runs and degree-2 poloidal fields (2026-10-28, step 5)</h3>
 <ul>
 <li><strong>Hydrodynamics.</strong> inviscid Boussinesq full sphere (Ek = 0, <code>'Boussinesq'</code>): the inertial modes of Wu (2005, Table 1, β = 0)
-  to the 10 digits given (e.g. 0.6666666667, 1.4964360838, 1.2319250547 for <span class="arithmatex">\(|m| = 2\)</span>); 'Wu 2005' against its Table 2.
+  to the 10 digits given (e.g. 0.6666666667, 1.4964360838, 1.2319250547 for <span class="arithmatex">\(\lvert m\rvert  = 2\)</span>); 'Wu 2005' against its Table 2.
   No non-magnetic code changed (<code>regress.sh</code> bitwise).</li>
 <li><strong>Against <code>conductive_IC</code></strong> (<code>39487bbf</code>, the geometry of Checks, all eigenvalues of each run): full sphere, 'axial', 'FDM'
   (<span class="arithmatex">\(l\)</span> = 1, 2), 'G21 dipole', 'Luo_S1', 'Luo_S2', m 0–2 and both symmetries, <span class="arithmatex">\(\le 5\cdot10^{-13}\)</span>; with an inner core
