@@ -674,6 +674,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#with-a-differential-rotation-2026-10-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        With a differential rotation (2026-10-30)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#couplings-for-any-background-2026-10-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Couplings for any background (2026-10-30)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#conducting-inner-core" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -745,6 +767,17 @@
     <span class="md-ellipsis">
       
         Full sphere, inviscid runs and degree-2 poloidal fields (2026-10-28, step 5)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#differential-rotation-confined-general-and-ferraro-fields-2026-10-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Differential rotation, confined, general and Ferraro fields (2026-10-30)
       
     </span>
   </a>
@@ -1125,6 +1158,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#with-a-differential-rotation-2026-10-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        With a differential rotation (2026-10-30)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#couplings-for-any-background-2026-10-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Couplings for any background (2026-10-30)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#conducting-inner-core" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1202,6 +1257,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#differential-rotation-confined-general-and-ferraro-fields-2026-10-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Differential rotation, confined, general and Ferraro fields (2026-10-30)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1240,12 +1306,16 @@
 perturbation field <span class="arithmatex">\(\mathbf{b}\)</span> and the Lorentz force on the flow. The operators, the background fields and the boundary
 conditions are ported from the <code>conductive_IC</code> branch (commit <code>39487bbf</code>), formula by formula, into this branch's
 conventions (2026-10-28: step 1, insulating walls; step 2, a conducting inner core; step 3, any density profile; step 4, a
-toroidal background field; step 5, the full sphere, inviscid runs and the poloidal fields of <code>conductive_IC</code> of degree 2).</p>
+toroidal background field; step 5, the full sphere, inviscid runs and the poloidal fields of <code>conductive_IC</code> of degree 2;
+2026-10-30: the induction by a differential rotation, a confined field, fields of any degrees and the Ferraro field, with
+couplings built from the recurrence algebra).</p>
 <p><strong>What works now:</strong> a spherical shell (<code>ricb &gt; 0</code>) with an insulating mantle and an insulating or conducting
 (<code>'conducting, Chebys'</code>) inner core, or a full sphere (<code>ricb = 0</code>, insulating mantle), any <code>structure</code> (variable density,
 the anelastic terms below), eigenvalue problems, a poloidal <span class="arithmatex">\(\mathbf{B}_0\)</span> (<code>'axial'</code>, <code>'G21 dipole'</code>, <code>'Luo_S1'</code>, <code>'FDM'</code> of
-degree 1 or 2, <code>'Luo_S2'</code>) and/or a toroidal one (<code>'Malkus'</code>, <code>'wall'</code> or <code>'user'</code>, degree 1 or 2), uniform magnetic
-diffusivity; <code>ViscosD &gt; 0</code>, or <code>ViscosD = 0</code> (Ek = 0) in a full sphere. <code>background.check()</code> stops on anything else.</p>
+degree 1 or 2, <code>'Luo_S2'</code>, <code>'confined'</code>, <code>'general'</code> of any degrees, <code>'ferraro'</code>) and/or a toroidal one (<code>'Malkus'</code>, <code>'wall'</code>
+or <code>'user'</code> of degree 1 or 2, <code>'general'</code> of any degrees), uniform magnetic diffusivity, with or without a differential
+rotation (<code>diff_rot = 1</code>, any profile); <code>ViscosD &gt; 0</code>, or <code>ViscosD = 0</code> (Ek = 0) in a full sphere. <code>background.check()</code> stops
+on anything else.</p>
 <h2 id="equations">Equations</h2>
 <p>The field is written as <span class="arithmatex">\(\mathbf{b} = \nabla\times\nabla\times(f\,\mathbf{r}) + \nabla\times(g\,\mathbf{r})\)</span>, with no
 <span class="arithmatex">\(\rho_0\)</span> (it is solenoidal by itself). In units of the time scale <span class="arithmatex">\(\tau\)</span> (<code>timescale</code>),</p>
@@ -1319,6 +1389,21 @@ MagnetD <span class="arithmatex">\(= 1\)</span>). Set <code>Le</code> and <code>
 <td><span class="arithmatex">\(157r^2 - 296r^4 + 143r^6\)</span> (Luo &amp; Jackson 2022)</td>
 <td><span class="arithmatex">\(l = 2\)</span>, symmetric</td>
 </tr>
+<tr>
+<td><code>'confined'</code></td>
+<td><span class="arithmatex">\(r^l(r_2^2 - r^2)^p\)</span> (<span class="arithmatex">\(r_1 = 0\)</span>) or <span class="arithmatex">\(r^l(r - r_1)^p(r_2 - r)^p\)</span> in <span class="arithmatex">\(r_1 \le r \le r_2\)</span>, zero outside (<span class="arithmatex">\(r_1\)</span>, <span class="arithmatex">\(r_2\)</span> = <code>B0_conf_r1</code>, <code>B0_conf_r2</code>, <span class="arithmatex">\(p\)</span> = <code>B0_conf_p</code>, default 12)</td>
+<td><span class="arithmatex">\(l\)</span> = <code>B0_l</code> = 1 or 2</td>
+</tr>
+<tr>
+<td><code>'general'</code></td>
+<td><span class="arithmatex">\(\sum_n h_n(r)\,Y_n^0\)</span>, <code>B0_profiles</code> = {n: 'numpy expression of r, p'} (<span class="arithmatex">\(p\)</span> = <code>B0_param</code>)</td>
+<td>any degrees of one parity</td>
+</tr>
+<tr>
+<td><code>'ferraro'</code></td>
+<td>the field whose flux function is <span class="arithmatex">\(\psi = G(\Delta\Omega)\)</span> (below)</td>
+<td>odd degrees up to <code>B0_ferraro_nmax</code>, antisymmetric</td>
+</tr>
 </tbody>
 </table>
 <p>All match a potential field at the outer wall. <code>'G21 dipole'</code>, <code>'Luo_S1'</code> and <code>'Luo_S2'</code> are full-sphere fields: with an inner
@@ -1328,6 +1413,30 @@ the currents in the fluid, continued as a potential field into the core), and <c
 1), <code>'mag_energy'</code> (<span class="arithmatex">\(\int B_0^2\,dV = 1\)</span> over the shell) or <code>'Schmitt2012'</code> (<span class="arithmatex">\(= 4\)</span>), computed as in <code>conductive_IC</code>.
 <code>tol_B0</code> (default 1e-8) is the relative cut of the Chebyshev series of <span class="arithmatex">\(r^p h^{(k)}\)</span>: it sets the band width of the
 magnetic blocks.</p>
+<p><strong>Confined field</strong> (2026-10-30). <code>'confined'</code> is zero outside <span class="arithmatex">\(r_1 \le r \le r_2\)</span>, and <span class="arithmatex">\(h\)</span> and its first <span class="arithmatex">\(p - 1\)</span> derivatives
+vanish at the edges, so there are no surface currents (<span class="arithmatex">\(B_r \propto h\)</span>, <span class="arithmatex">\(B_\theta \propto h' + h/r\)</span> and the current are
+continuous). Its purpose: a poloidal field inside a region where <span class="arithmatex">\(\Delta\Omega\)</span> is uniform is a steady background with the
+differential rotation (Ferraro, below). With an inner core the region must lie in the fluid (<span class="arithmatex">\(r_1 \ge\)</span> <code>ricb</code>). The edges
+are smooth only to order <span class="arithmatex">\(p\)</span>, so the Chebyshev series converge algebraically: with <span class="arithmatex">\(p = 12\)</span> the budgets close to <span class="arithmatex">\(10^{-12}\)</span> at
+N 96–128 in a shell, but a region that reaches the centre of a full sphere needs N 192 (degree 1) to 384 (degree 2) for
+<span class="arithmatex">\(10^{-9}\)</span>. <span class="arithmatex">\(h\)</span> is evaluated in factored form (expanded into monomials, a polynomial of degree <span class="arithmatex">\(2p + l\)</span> loses all its digits
+to cancellation near the edges).</p>
+<p><strong>Any degrees</strong> (2026-10-30). <code>'general'</code> takes <span class="arithmatex">\(h_n\)</span> degree by degree as expressions; their derivatives come from Chebyshev
+interpolants (degree max(64, 2N), at <span class="arithmatex">\(|r|\)</span> with the parity <span class="arithmatex">\((-1)^n\)</span> in a full sphere, where <span class="arithmatex">\(h_n\)</span> should go as <span class="arithmatex">\(r^n\)</span> at the
+centre). The degrees must have one parity (one equatorial symmetry). <code>cnorm = 'mag_energy'</code> sums <span class="arithmatex">\(\int B_0^2 dV\)</span> over the
+degrees. The couplings come from the recurrence algebra (<code>mag_algebra.py</code>, below).</p>
+<p><strong>Ferraro field</strong> (2026-10-30, needs <code>diff_rot = 1</code>). An axisymmetric poloidal field is <span class="arithmatex">\(\mathbf{B}_0 = \nabla\psi\times\nabla\phi\)</span>;
+with <span class="arithmatex">\(\psi = G(\Delta\Omega)\)</span> its field lines lie on the surfaces of constant rotation, so <span class="arithmatex">\(\mathbf{B}_0\cdot\nabla\Omega = 0\)</span>
+(Ferraro's law of isorotation) and the rotation and the field are a steady background together. In kore's form
+<span class="arithmatex">\(\psi = r\sum_n h_n(1 - x^2)P_n'(x)\)</span>, and the functions <span class="arithmatex">\((1 - x^2)P_n'\)</span> are orthogonal with the weight <span class="arithmatex">\(1/(1 - x^2)\)</span>, so
+<span class="arithmatex">\(h_n(r) = \frac{2n+1}{2n(n+1)}\frac{1}{r}\int_{-1}^{1}\psi(r, x)\,P_n'(x)\,dx\)</span>, computed by Gauss–Legendre quadrature. <span class="arithmatex">\(\Delta\Omega\)</span>
+has only even <span class="arithmatex">\(P_n\)</span>, so only odd <span class="arithmatex">\(n\)</span> appear. <span class="arithmatex">\(G\)</span> = <code>B0_ferraro_G</code>, a numpy expression of <code>w</code> = <span class="arithmatex">\(\Delta\Omega\)</span> and <code>p</code>. The
+assumptions, which <code>background.ferraro_report</code> prints at the start of a run: <span class="arithmatex">\(\psi\)</span> must vanish on the axis (it must be
+constant there for a regular field; for a rotation that varies along the axis, <span class="arithmatex">\(G\)</span> has to vanish on the values
+<span class="arithmatex">\(\Delta\Omega\)</span> takes there), and at the outer wall if the field is to stay inside (otherwise it meets the insulating mantle
+with a surface current, which the linear problem allows); the series is cut at <code>B0_ferraro_nmax</code>, which sets the residual
+<span class="arithmatex">\(\mathbf{B}_0\cdot\nabla\Omega\)</span>. Example: for a cylindrical rotation <span class="arithmatex">\(\Delta\Omega \propto s^2\)</span>, <span class="arithmatex">\(G(w) = w\)</span> gives <span class="arithmatex">\(\psi \propto s^2\)</span>, the
+uniform axial field.</p>
 <p><strong>Toroidal field</strong> (step 4). <span class="arithmatex">\(\mathbf{B}_0^{tor} = c_\mathrm{tor}\nabla\times(k(r)\,Y_n^0\,\mathbf{r})\)</span>, purely azimuthal,
 <span class="arithmatex">\(B_\phi = -c_\mathrm{tor}\,k\,\partial_\theta Y_n^0\)</span>: <span class="arithmatex">\(c_\mathrm{tor}\,k\sin\theta\)</span> for <span class="arithmatex">\(n\)</span> = <code>B0_tor_l</code> = 1, <span class="arithmatex">\(3c_\mathrm{tor}\,k\sin\theta\cos\theta\)</span> for
 <span class="arithmatex">\(n = 2\)</span>; <span class="arithmatex">\(c_\mathrm{tor}\)</span> = <code>cnorm_tor</code> (a number, <code>'mag_energy'</code> or <code>'Schmitt2012'</code>; <span class="arithmatex">\(\int B_0^2 dV = n_l L\int k^2 r^2 dr\)</span>):</p>
@@ -1354,6 +1463,11 @@ magnetic blocks.</p>
 <td><code>'user'</code></td>
 <td><code>B0_tor_profile</code>, a numpy expression of <span class="arithmatex">\(r\)</span> and <span class="arithmatex">\(p\)</span> = <code>B0_tor_param</code></td>
 <td>its derivatives from a Chebyshev interpolant (degree max(64, 2N)); written to <code>params.dat</code> after <code>#</code></td>
+</tr>
+<tr>
+<td><code>'general'</code></td>
+<td><span class="arithmatex">\(\sum_n k_n Y_n^0\)</span>, <code>B0_tor_profiles</code> = {n: 'expression'}</td>
+<td>any degrees of one parity (2026-10-30)</td>
 </tr>
 </tbody>
 </table>
@@ -1435,6 +1549,41 @@ antisymmetric, like the dipole.</p>
 <li><strong>Solver and output.</strong> <code>solve.py</code> writes <code>real_magnetic.field</code>, <code>imag_magnetic.field</code> and normalises the eigenvectors to
   <span class="arithmatex">\(\mathrm{KE} + \mathrm{Hendrik}\int\tfrac12|\mathbf{b}|^2dV = 1\)</span> (over the shell, as <code>conductive_IC</code>).</li>
 </ul>
+<h2 id="with-a-differential-rotation-2026-10-30">With a differential rotation (2026-10-30)</h2>
+<p>With <code>diff_rot = 1</code> the background flow <span class="arithmatex">\(\mathbf{U}_0 = G\,\Delta\Omega\,r\sin\theta\,\hat{\boldsymbol\phi}\)</span> also shears the field: the induction
+equation gains
+$$
+\nabla\times(\mathbf{U}<em>0\times\mathbf{b}) = G\left[-im\,\Delta\Omega\,\mathbf{b} + \sin\theta\,(r\,\partial_r\Delta\Omega\,b_r + \partial</em>\theta\Delta\Omega\,b_\theta)\,\hat{\boldsymbol\phi}\right]
+$$
+(the <span class="arithmatex">\(\Omega\)</span>-effect, and the Doppler shift of the field). It is built for any <span class="arithmatex">\(\Delta\Omega = \sum_n f_n P_n\)</span> with the recurrence
+algebra of the momentum terms (<code>diff_rot.induction_block</code>; <a href="../derivations/">Derivation tools</a>, part B): F→f and G→g couple at
+even <span class="arithmatex">\(\Delta l\)</span> up to <span class="arithmatex">\(n\)</span>, F→g (a poloidal field sheared into a toroidal one) at odd <span class="arithmatex">\(\Delta l\)</span> up to <span class="arithmatex">\(n + 1\)</span>. The Lorentz force
+needs nothing new: it does not involve <span class="arithmatex">\(\mathbf{U}_0\)</span>.</p>
+<ul>
+<li><strong>Conducting inner core.</strong> It must co-rotate rigidly, <span class="arithmatex">\(\Delta\Omega(r_i, \theta) = c\)</span> (<span class="arithmatex">\(f_n(r_i) = 0\)</span> for <span class="arithmatex">\(n &gt; 0\)</span>, else the run
+  stops: a latitude-dependent rotation would shear a solid core). Its field then gains <span class="arithmatex">\(-imGc\,\mathbf{b}\)</span>; the matching
+  conditions are unchanged, because only <span class="arithmatex">\(b_r\)</span>, which is continuous, enters the tangential part of <span class="arithmatex">\(\mathbf{U}_0\times\mathbf{b}\)</span>.</li>
+<li><strong>Steady background (Ferraro).</strong> <span class="arithmatex">\(\nabla\times(\mathbf{U}_0\times\mathbf{B}_0) = r\sin\theta\,(\mathbf{B}_0\cdot\nabla\Delta\Omega)\,\hat{\boldsymbol\phi}\)</span> must
+  vanish for the background to be steady: always for a toroidal <span class="arithmatex">\(\mathbf{B}_0\)</span>, for a poloidal one only if <span class="arithmatex">\(\Delta\Omega\)</span> is
+  constant along its field lines. The linear problem does not contain this term. <code>background.ferraro_mismatch</code> reports
+  <span class="arithmatex">\(\max|\mathbf{B}_0\cdot\nabla\Delta\Omega|\,r/(\max|\mathbf{B}_0|\max|r\nabla\Delta\Omega|)\)</span> at the start of every run; above <span class="arithmatex">\(10^{-7}\)</span>
+  <code>background.FERRARO_POLICY</code> decides: <code>'warn'</code> (default: a warning, the background is assumed to be maintained) or
+  <code>'refuse'</code>. Consistent backgrounds: a toroidal field, a <code>'confined'</code> field where <span class="arithmatex">\(\Delta\Omega\)</span> is uniform, or <code>'ferraro'</code>.</li>
+<li><strong>Energy budgets.</strong> spin_doctor's induction work includes <span class="arithmatex">\(\mathbf{U}_0\times\mathbf{b}\)</span> (on the <span class="arithmatex">\((r, \theta)\)</span> grid). Because
+  <span class="arithmatex">\(\mathbf{U}_0\times\mathbf{b}\)</span> does not vanish at a wall where <span class="arithmatex">\(\Delta\Omega \ne 0\)</span>, it carries magnetic energy through the wall into the
+  field outside: resid𝐛 (the fluid) uses the induction work with its wall terms, resid𝐄 (the full budget, which counts the
+  energy outside) the volume work alone (<code>utils4pp.INDU_WALLS</code>), plus the power of the rotation's force on the flow.</li>
+</ul>
+<h2 id="couplings-for-any-background-2026-10-30">Couplings for any background (2026-10-30)</h2>
+<p><code>bin/mag_algebra.py</code> builds the couplings of the Lorentz force and of the induction for
+<span class="arithmatex">\(\mathbf{B}_0 = \sum_n c_\mathrm{norm}\nabla\times\nabla\times(h_n Y_n^0\mathbf{r}) + \sum_n c_\mathrm{tor}\nabla\times(k_n Y_n^0\mathbf{r})\)</span>, any degrees,
+from the recurrence algebra that the differential rotation uses, instead of the closed forms of <code>operators.py</code> (which exist for
+degrees 1 and 2 only). The background vectors are polynomials in <span class="arithmatex">\(x = \cos\theta\)</span> times <span class="arithmatex">\(\hat{\mathbf{r}}\)</span>, <span class="arithmatex">\(\sin\theta\,\hat{\boldsymbol\theta}\)</span> or
+<span class="arithmatex">\(\sin\theta\,\hat{\boldsymbol\phi}\)</span>; the products with the perturbation are sparse matrices on the degrees, times radial monomials; the rows
+take one radial derivative (product rule); each final monomial becomes a label with the profile codes <code>hp</code> + degree
+(<span class="arithmatex">\(c_\mathrm{norm}h_n\)</span>) and <code>kt</code> + degree (<span class="arithmatex">\(c_\mathrm{tor}k_n\)</span>). <a href="../derivations/">Derivation tools</a>, part A, gives the method.
+<code>mag_couplings = 'algebra'</code> uses it for every type; <code>'closed'</code> (default) keeps the closed forms, which <code>'general'</code> and <code>'ferraro'</code>
+cannot use. For the types that have closed forms both give the same eigenvalues to round-off.</p>
 <h2 id="conducting-inner-core">Conducting inner core</h2>
 <p><code>innercore = 'conducting, Chebys'</code> (eigenvalue problems, no-slip inner boundary <code>bci = 1</code>) adds the field inside the inner
 core to the unknowns, as <code>conductive_IC</code> does:</p>
@@ -1716,10 +1865,38 @@ residσ, resid𝐛 and resid𝐄 equal <code>conductive_IC</code>'s resid𝐮, r
   <span class="arithmatex">\(10^{-9}\)</span>. The slow convergence comes from the u rows in <span class="arithmatex">\(C^{(3)}\)</span>, where the unresolved boundary layer of <span class="arithmatex">\(\mathbf{b}\)</span>
   (Em <span class="arithmatex">\(5\cdot10^{-9}\)</span>) enters through <span class="arithmatex">\(f'''\)</span>.</li>
 </ul>
+<h3 id="differential-rotation-confined-general-and-ferraro-fields-2026-10-30">Differential rotation, confined, general and Ferraro fields (2026-10-30)</h3>
+<ul>
+<li><strong>∇×(U0×b) against sympy</strong> (<code>tests/magnetic/dr_induction_check.py</code>): the blocks of <code>diff_rot.induction_block</code> against
+  <code>derive.rows_dr</code> for <span class="arithmatex">\(n\)</span> = 0–6, <span class="arithmatex">\(m\)</span> = 0–5, <span class="arithmatex">\(l\)</span> up to 25, term by term: <span class="arithmatex">\(\le 10^{-13}\)</span> at low <span class="arithmatex">\(l\)</span>; at <span class="arithmatex">\(l\)</span> 20–25 the agreement is
+  limited by derive.py's own quadrature (<span class="arithmatex">\(10^{-10}\)</span>).</li>
+<li><strong>Rigid rotation, exact</strong> (<code>rigid_check.py</code>): <span class="arithmatex">\(\Delta\Omega = c\)</span> must give <span class="arithmatex">\(\lambda = \lambda(\text{Gaspard } 1 + c) - imc\)</span>. All eigenvalues
+  agree to <span class="arithmatex">\(\le 5\cdot10^{-14}\)</span>: hydrodynamics, 'axial', 'FDM', 'Luo_S2', 'Malkus', 'wall' of degree 2, a conducting inner core,
+  a full sphere.</li>
+<li><strong>Budgets with a solar-like <span class="arithmatex">\(\Delta\Omega = f_0 + f_2P_2 + f_4P_4\)</span></strong> (Ek = Em = <span class="arithmatex">\(10^{-3}\)</span>, <span class="arithmatex">\(\Lambda\)</span> = 1): 'Malkus', 'axial' and
+  'Luo_S2', shell and full sphere, 'Boussinesq' and 'Wu 2005': residσ, resid𝐛, resid𝐄 <span class="arithmatex">\(10^{-13}\)</span>–<span class="arithmatex">\(10^{-9}\)</span>.</li>
+<li><strong>The algebra against the closed forms</strong> (<code>mag_couplings</code> 'algebra' against 'closed', same runs): eigenvalues equal to
+  <span class="arithmatex">\(\le 6\cdot10^{-13}\)</span> for 'axial' (m 0, 1), 'FDM' (degree 2), 'Luo_S2' (shell, full sphere, 'Wu 2005'), 'FDM' with 'Wu 2005',
+  'Malkus' (and 'Wu 2005'), 'wall' of degree 2, 'axial' + 'wall', a conducting inner core, 'confined', and with a differential
+  rotation. <strong>Against sympy</strong> (<code>algebra_check.py</code>): every block for poloidal and toroidal fields of degree 1–4 (3 and 4 have no
+  closed forms), several <span class="arithmatex">\(m\)</span>, <span class="arithmatex">\(l\)</span> up to 12.</li>
+<li><strong>'general'</strong>: <span class="arithmatex">\(h_1 = r/2\)</span> gives exactly the 'axial' eigenvalues, <span class="arithmatex">\(k_1 = r\)</span> exactly the 'Malkus' ones; fields of degrees 1 + 3
+  (full sphere), 2 + 4 (shell), toroidal 1 + 3, and a poloidal 1 + 3 with a toroidal 2 and a differential rotation (also
+  'Wu 2005'): budgets <span class="arithmatex">\(\le 5\cdot10^{-12}\)</span>.</li>
+<li><strong>'confined'</strong>: degree 1 and 2, shell region [0.4, 0.8] and full-sphere region [0, 0.6]: budgets <span class="arithmatex">\(10^{-12}\)</span>–<span class="arithmatex">\(10^{-14}\)</span> (shell),
+  <span class="arithmatex">\(4\cdot10^{-10}\)</span> (degree 1, N 192) and <span class="arithmatex">\(2\cdot10^{-9}\)</span> (degree 2, N 384) in the full sphere; with <span class="arithmatex">\(\Delta\Omega\)</span> uniform inside the
+  region, <code>ferraro_mismatch</code> = <span class="arithmatex">\(10^{-29}\)</span> and the budgets close as without rotation.</li>
+<li><strong>'ferraro'</strong>: with a cylindrical rotation and <span class="arithmatex">\(G(w) = w\)</span> the field is the uniform axial one, and the eigenvalues equal those
+  of 'axial' to 10 digits; with <span class="arithmatex">\(\Delta\Omega \propto s^2(1 - s^2)\)</span> (degrees 0, 2, 4), <span class="arithmatex">\(\psi\)</span> is rebuilt from degrees 1–7 to
+  <span class="arithmatex">\(4\cdot10^{-15}\)</span>, <code>ferraro_mismatch</code> is <span class="arithmatex">\(5\cdot10^{-14}\)</span>, and the budgets close to <span class="arithmatex">\(\le 2\cdot10^{-11}\)</span> in a shell, a full sphere and
+  'Wu 2005'.</li>
+<li><strong>Unchanged without the new features</strong>: <code>regress.sh</code> bitwise, heat_dr, ru_insane identical, and 26 magnetic cases build A and
+  B bitwise equal to the code before.</li>
+</ul>
 <h2 id="not-yet-implemented">Not yet implemented</h2>
-<p>In the order planned: a magnetic diffusivity profile, toroidal fields of degree above 2; also
-thin walls (<code>'TWA'</code>), rotdyn, a perfectly conducting inner core, the point <code>'dipole'</code>, inviscid runs with an inner core, forced
-runs, and the induction by a differential rotation.</p>
+<p>In the order planned: a magnetic diffusivity profile; also thin walls (<code>'TWA'</code>), rotdyn, a perfectly conducting inner core,
+the point <code>'dipole'</code>, inviscid runs with an inner core, forced runs, a conducting inner core with a latitude-dependent
+rotation at its surface, and the background term <span class="arithmatex">\(\nabla\times(\mathbf{U}_0\times\mathbf{B}_0)\)</span> as a forcing.</p>
 
 
 
