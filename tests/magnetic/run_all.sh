@@ -61,5 +61,9 @@ python3 "$T/mk_run.py" bfer     "par.N = 192; par.diff_rot = 1; par.diff_rot_typ
 python3 "$T/mk_run.py" bfdr     "par.N = 192; par.diff_rot = 1; par.diff_rot_type = 'ferraro'; par.diff_rot_F = 'psi + psi**2'; par.diff_rot_ampl = 0.05; par.diff_rot_nmax = 8; par.B0 = 'general'; par.B0_profiles = {1: 'r/6 - r**3/10', 3: '0.3*r**3*(1 - r**2)'}; par.lmax = 32" solve   # ΔΩ = F(ψ) from the field
 python3 "$T/mk_run.py" bfer_tor "par.N = 192; par.diff_rot = 1; par.diff_rot_type = 'user'; par.diff_rot_ampl = 0.2; par.diff_rot_profiles = {0: '(2/3)*r**2 - (8/15)*r**4', 2: '-(2/3)*r**2 + (16/21)*r**4', 4: '-(8/35)*r**4'}; par.B0 = 'ferraro'; par.B0_ferraro_G = 'w'; par.B0_ferraro_nmax = 7; par.B0_tor = 'Malkus'; par.B0_tor_l = 2; par.cnorm_tor = 'mag_energy'; par.lmax = 32" solve   # with a toroidal part (degree 2: the same symmetry)
 for d in bdr_tor bdr_pol bdr_fs bconf bgen bfer bfdr bfer_tor; do (cd $d && python3 "$T/budget_check.py" | tail -1 | sed "s/^/$d: /"); done
+echo "--- NEW (2026-10-30): B0_wound, the toroidal field wound by the differential rotation and balanced by diffusion"
+python3 "$T/wound_check.py"
+python3 "$T/mk_run.py" bwnd "par.N = 96; par.structure = 'Boussinesq'; par.diff_rot = 1; par.diff_rot_type = 'user'; par.diff_rot_profiles = {0: '0.05*r**2', 2: '-0.1*r**2', 4: '-0.03*r**4'}; par.B0_wound = 1; par.B0_tor = 'Malkus'; par.B0_tor_l = 2; par.cnorm_tor = 'mag_energy'; par.lmax = 32" solve   # max |B_phi| ~ 0.8 max |B_p|
+(cd bwnd && python3 "$T/budget_check.py" | tail -1 | sed "s/^/bwnd: /")
 echo "--- continuity.py: 'Wu 2005' with r_out = sqrt(eps) -> 'Boussinesq' as eps -> 0"
 python3 "$T/continuity.py" 1e-4 1e-3 1e-2 1e-1

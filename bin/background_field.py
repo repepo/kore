@@ -431,9 +431,137 @@ def pol_profiles():
     return {B0_l: bpoX}
 
 def tor_profiles():
-    '''{n: f(r, Dorder)}: the toroidal background degree by degree, cnorm_tor k_n^(Dorder) (mag_algebra.py)'''
-    if not par.magnetic or par.B0_tor is None:
+    '''{n: f(r, Dorder)}: the toroidal background degree by degree, cnorm_tor k_n^(Dorder) (mag_algebra.py), plus the wound
+    field k_n of B0_wound (wound_profiles) where it is on'''
+    if not par.magnetic:
         return {}
+    out = {}
     if par.B0_tor == 'general':
-        return {n: (lambda r, d, n=n: cnorm_tor*gen_profile('k', n, r, d)) for n in sorted(par.B0_tor_profiles)}
-    return {par.B0_tor_l: btoX}
+        out = {n: (lambda r, d, n=n: cnorm_tor*gen_profile('k', n, r, d)) for n in sorted(par.B0_tor_profiles)}
+    elif par.B0_tor is not None:
+        out = {par.B0_tor_l: btoX}
+    if wound_on():   # NEW (2026-10-30): added degree by degree to the user's toroidal part
+        for n, c in wound_profiles().items():
+            w = lambda r, d, c=c: c.deriv(d)(r) if d > 0 else c(r)
+            out[n] = w if n not in out else (lambda r, d, a=out[n], b=w: a(r, d) + b(r, d))
+    return out
+
+# -------------------------------- NEW (2026-10-30): B0_wound, the toroidal field the differential rotation winds from B0
+# WHY. A poloidal B0 that crosses the surfaces of constant rotation (B0⋅∇ΔΩ ≠ 0, not Ferraro) is wound up by ΔΩ into an
+# azimuthal field, which grows until diffusion balances the winding (e.g. the solar tachocline, where both the rotation and
+# the field are given). B0_wound = 1 adds that steady azimuthal field to B0, so that the background is steady with both
+# imposed (up to what is left out, docs/magnetic.md: the ohmic decay of the poloidal field and the Lorentz force of B0 on U0).
+# HOW. The φ-component of the steady induction equation for axisymmetric fields, with U0 = Gaspard ΔΩ s φ̂ and the diffusivity
+# η = B0_wound_eta MagnetD e(r) (e = η/MagnetD of background.diffusivity, 1 for now):
+#     φ̂⋅∇×(e ∇×B_φ φ̂) MagnetD B0_wound_eta = Gaspard s B_p⋅∇ΔΩ,
+# where B_p = pol_profiles (cnorm included, so the wound field has its physical size relative to B_p: about
+# Gaspard ΔΩ/(B0_wound_eta MagnetD) times B_p). With B_φ = Σ_n k_n sinθ P_n'(x) (kore's ∇×(k_n Y_n⁰ 𝐫)) the source is projected
+# on sinθ P_n' (∫ (1 - x²) P_n' P_m' dx = δ_nm 2n(n+1)/(2n+1), Gauss-Legendre in x), and each degree is one radial equation
+#     e (k'' + 2k'/r - n(n+1)k/r²) + e' (k' + k/r) = -c_n(r),   c_n the projection of Gaspard s B_p⋅∇ΔΩ/(B0_wound_eta MagnetD),
+# solved by Chebyshev collocation (multiplied by r²) with k = 0 at an insulating wall (B_φ = 0 outside), on [-1, 1] with the
+# parity (-1)^n in a full sphere (regular at r = 0), and with a conducting inner core rotating rigidly (the only case
+# allowed, background.magnetic_diffrot): k_ic = A r^n inside, B_φ/μ and E_θ continuous, i.e. r k' + (1 - (n+1)/sigma_i2o) k = 0
+# at ricb. The degrees are those where the source is nonzero, up to (degree of B_p) + (degree of ΔΩ) + 1.
+def wound_on():
+    '''NEW (2026-10-30): whether the wound toroidal field is added (B0_wound = 1 with a poloidal B0 and diff_rot = 1)'''
+    return bool(par.magnetic and getattr(par, 'B0_wound', 0) and par.B0 is not None and par.diff_rot)
+
+def _wound_source(r, x):
+    '''Gaspard s B_p⋅∇ΔΩ/(B0_wound_eta MagnetD) on the grid (r, x), r > 0: [len(r), len(x)]'''
+    import diff_rot as dr
+    P = np.polynomial.legendre.Legendre
+    sin = np.sqrt(1 - x**2)
+    Br = 0; Bt = 0
+    for n, f in pol_profiles().items():   # B_r = L h Y/r, B_θ = (h' + h/r) ∂θY, ∂θP_n = -sinθ P_n'
+        Br = Br + np.outer(n*(n + 1)*f(r, 0)/r, P.basis(n)(x))
+        Bt = Bt - np.outer(f(r, 1) + f(r, 0)/r, sin*P.basis(n).deriv()(x))
+    dW = 0; tW = 0
+    for n in dr.degrees():                 # ∂rΔΩ and (1/r) ∂θΔΩ, from diff_rot.raw (not fX: utils imports this module through
+        w = _wound_rot(n)                  # mag_algebra before fX can be used)
+        dW = dW + np.outer(w.deriv()(r), P.basis(n)(x))
+        if n > 0:
+            tW = tW - np.outer(w(r)/r, sin*P.basis(n).deriv()(x))
+    return par.Gaspard*np.outer(r, sin)*(Br*dW + Bt*tW)/(par.B0_wound_eta*par.MagnetD)
+
+def _wound_rot(n):
+    '''the Chebyshev interpolant of diff_rot.raw(n, r) (degree max(64, 2N), on [-1, 1] at |r| in a full sphere)'''
+    import diff_rot as dr
+    if ('w', n) not in _wnd:
+        a = -1. if par.ricb == 0 else par.ricb
+        _wnd[('w', n)] = np.polynomial.chebyshev.Chebyshev.interpolate(lambda r: dr.raw(n, r), max(64, 2*par.N), domain=[a, 1.])
+    return _wnd[('w', n)]
+
+def _wound_degrees():
+    import diff_rot as dr
+    top = max(pol_profiles()) + dr.n_max() + 1
+    return top, list(range(1, top + 1))
+
+def _wound_project(r):
+    '''{n: c_n(r)}: the source on sinθ P_n'(x), n = 1 .. _wound_degrees()'''
+    top, ns = _wound_degrees()
+    x, w = np.polynomial.legendre.leggauss(2*top + 32)
+    S = _wound_source(r, x)
+    P = np.polynomial.legendre.Legendre
+    sin = np.sqrt(1 - x**2)
+    return {n: (2*n + 1)/(2*n*(n + 1))*(S @ (w*sin*P.basis(n).deriv()(x))) for n in ns}
+
+def _cheb_D(M, a, b):
+    '''Chebyshev-Gauss-Lobatto nodes on [a, b] (descending) and the differentiation matrix (Trefethen, Spectral Methods)'''
+    j = np.arange(M + 1)
+    t = np.cos(np.pi*j/M)
+    c = np.where((j == 0) | (j == M), 2., 1.)*(-1.)**j
+    T = np.tile(t, (M + 1, 1)).T
+    D = np.outer(c, 1/c)/(T - T.T + np.eye(M + 1))
+    D = D - np.diag(D.sum(axis=1))
+    return a + (b - a)*(t + 1)/2, D*2/(b - a)
+
+_wnd = {}
+def wound_profiles():
+    '''NEW (2026-10-30): {n: Chebyshev k_n} of the wound toroidal field (comment above), the degrees with a nonzero source'''
+    if 'k' in _wnd:
+        return _wnd['k']
+    import background as bg
+    fs = par.ricb == 0
+    M = max(96, 2*par.N) + (1 if fs else 0)          # odd in a full sphere: no node at r = 0
+    a = -1. if fs else par.ricb
+    r, D = _cheb_D(M, a, 1.)
+    ra = np.abs(r)
+    C = _wound_project(np.where(fs & (ra < 1e-300), 1e-300, ra))
+    big = max(np.abs(c).max() for c in C.values())
+    e = bg.diffusivity(None, r, 'eta')
+    de = D @ e
+    out = {}
+    for n, c in C.items():
+        if np.abs(c).max() <= 1e-13*big:
+            continue
+        if fs:
+            c = c*np.sign(r)**n                     # parity (-1)^n
+        L = n*(n + 1)
+        A = (e*r**2)[:, None]*(D @ D) + (2*e*r + de*r**2)[:, None]*D + np.diag(-e*L + de*r)
+        rhs = -r**2*c
+        A[0] = 0; A[0, 0] = 1; rhs[0] = 0          # r = 1: k = 0 (insulating mantle)
+        A[-1] = 0; rhs[-1] = 0
+        if fs or par.innercore != 'conducting, Chebys':
+            A[-1, -1] = 1                           # r = -1 (parity) or an insulating inner core: k = 0
+        else:                                       # conducting inner core: r k' + (1 - (n+1)/sigma_i2o) k = 0
+            A[-1] = par.ricb*D[-1]; A[-1, -1] += 1 - (n + 1)/par.sigma_i2o
+        k = np.linalg.solve(A, rhs)
+        ch = np.polynomial.chebyshev.Chebyshev.fit(r, k, M, domain=[a, 1.])
+        ch.coef[np.abs(ch.coef) < 1e-14*np.abs(ch.coef).max()] = 0.
+        out[n] = ch
+    _wnd['k'] = out
+    return out
+
+def wound_residual(nr=57, nx=41):
+    '''NEW (2026-10-30): max |MagnetD B0_wound_eta (∇² - 1/s²)B_φ + Gaspard s B_p⋅∇ΔΩ| / max |Gaspard s B_p⋅∇ΔΩ| on a grid
+    off the collocation nodes (constant η): how well the wound field balances the winding'''
+    r = np.linspace(max(par.ricb, 0.) + 0.013, 0.997, nr)
+    x = np.cos(np.linspace(0.031, np.pi - 0.031, nx))
+    S = _wound_source(r, x)
+    P = np.polynomial.legendre.Legendre
+    sin = np.sqrt(1 - x**2)
+    lap = 0
+    for n, c in wound_profiles().items():
+        Dk = c.deriv(2)(r) + 2*c.deriv(1)(r)/r - n*(n + 1)*c(r)/r**2
+        lap = lap + np.outer(Dk, sin*P.basis(n).deriv()(x))
+    return np.abs(lap + S).max()/max(np.abs(S).max(), 1e-300)

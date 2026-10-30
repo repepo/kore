@@ -126,6 +126,13 @@ def check_magnetic():
             sys.exit('B0_ferraro_nmax must be odd and >= 1 (the field has only odd degrees)')
         if par.cnorm == 'rms_cmb':
             sys.exit("B0 'ferraro': use cnorm 'mag_energy' or a number")
+    if getattr(par, 'B0_wound', 0):   # NEW (2026-10-30): the wound toroidal field (background_field.wound_profiles)
+        if par.B0 is None or not par.diff_rot:
+            sys.exit('B0_wound = 1 winds a toroidal field from the poloidal B0 with the differential rotation: it needs a poloidal B0 and diff_rot = 1')
+        if not par.B0_wound_eta > 0:
+            sys.exit('B0_wound_eta must be > 0 (the diffusivity that balances the winding, in units of MagnetD)')
+        if par.ricb > 0 and par.innercore not in ('insulator', 'conducting, Chebys'):
+            sys.exit('B0_wound = 1: innercore %r is not supported (insulator or conducting, Chebys)' % (par.innercore,))
     if par.B0 == 'confined':   # NEW (2026-10-30)
         r1, r2 = par.B0_conf_r1, par.B0_conf_r2
         if par.B0_l not in (1, 2) or par.B0_conf_p < 2 or not (0 <= r1 < r2 <= 1):
@@ -249,6 +256,13 @@ def magnetic_diffrot():
     mis = ferraro_mismatch()
     if par.B0 == 'ferraro' and not _warned:
         ferraro_report()
+    import background_field as bf
+    if bf.wound_on():   # NEW (2026-10-30): B0⋅∇Ω ≠ 0 is the point here: report how well the wound field balances it instead
+        if not _warned:
+            print('B0_wound: toroidal degrees %s; steady induction residual max |η(∇² - 1/s²)B_φ + G s B_p⋅∇ΔΩ| / max |G s B_p⋅∇ΔΩ| = %.2e'
+                  % (sorted(bf.wound_profiles()), bf.wound_residual()))
+        _warned.append(1)
+        return
     if par.B0 is not None and not _warned:   # the report, once per process
         print('Ferraro check (B0 %r, diff_rot_type %r): max |B0⋅∇ΔΩ| r / (max |B0| max |r∇ΔΩ|) = %.2e' % (par.B0, par.diff_rot_type, mis))
     if mis > 1e-7:

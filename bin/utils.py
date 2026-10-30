@@ -72,7 +72,7 @@ if par.magnetic:
 # NEW (2026-10-30): the magnetic couplings from the recurrence algebra (mag_algebra.py) instead of the closed forms of
 # operators.py: with par.mag_couplings = 'algebra' (any B0 type), and always for the types that need it ('general', 'ferraro')
 mag_algebra = bool(par.magnetic) and (getattr(par, 'mag_couplings', 'closed') == 'algebra' or par.B0 in ('general', 'ferraro')
-                                     or par.B0_tor == 'general')
+                                     or par.B0_tor == 'general' or bf.wound_on())   # NEW (2026-10-30): B0_wound
 if mag_algebra:
     import mag_algebra as _ma
     odd_profiles += _ma.odd_codes()

@@ -129,7 +129,10 @@ a conducting inner core must co-rotate rigidly, `diff_rot.rigid_ricb`; `backgrou
 any degrees) and 'ferraro' (ψ = G(ΔΩ), `B0_ferraro_G`, odd degrees to `B0_ferraro_nmax`; a toroidal part of even degree
 may be added). The reverse, diff_rot_type 'ferraro' (NEW 2026-10-30): ΔΩ = F(ψ) of the given poloidal B0 (`diff_rot_F`, numpy in
 psi and p; even degrees to `diff_rot_nmax`, `diff_rot._ferraro_shapes`); refused with B0 'ferraro' (circular), without a
-poloidal B0, or with an F(ψ) odd in cos θ (quadrupolar field). `bin/mag_algebra.py` builds the
+poloidal B0, or with an F(ψ) odd in cos θ (quadrupolar field). B0_wound = 1 (NEW 2026-10-30): adds the steady toroidal field
+that ΔΩ winds from the poloidal B0, B0_wound_eta MagnetD (∇² - 1/s²)B_φ = -G s B_p⋅∇ΔΩ, one Chebyshev-collocation ODE per degree
+(`background_field.wound_profiles`, added to tor_profiles; forces mag_algebra); `wound_residual` replaces the Ferraro warning;
+`tests/magnetic/wound_check.py`. `bin/mag_algebra.py` builds the
 Lorentz/induction couplings for any degrees from the recurrence algebra (`mag_couplings = 'algebra'`, forced for
 'general'/'ferraro'; `ut.mag_algebra`, `ut.mag_dl`; profile codes `hp`/`kt` + degree); same eigenvalues as the closed forms
 to 1e-13. Checks: tests/magnetic `dr_induction_check.py`, `algebra_check.py`, `rigid_check.py`.

@@ -246,6 +246,14 @@ class default_params():
         #                          # inside, at the outer wall: background.ferraro_report prints how well that holds
         self.B0_ferraro_G = 'w'
         self.B0_ferraro_nmax = 15
+        # NEW (2026-10-30): B0_wound = 1 adds to B0 the steady toroidal field that the differential rotation winds from the poloidal
+        # B0 (needs a poloidal B0 and diff_rot = 1): diffusion balances the winding, B0_wound_eta MagnetD (∇² - 1/s²)B_φ = -Gaspard s B_p⋅∇ΔΩ,
+        # solved degree by degree (background_field.wound_profiles) and added to any B0_tor. Its size is set by the physics, about
+        # Gaspard ΔΩ/(B0_wound_eta MagnetD) times B_p; cnorm still normalises the poloidal field alone. B0_wound_eta = η_background/η:
+        # the diffusivity that balances the winding in units of MagnetD (e.g. a turbulent one, > 1, gives a weaker wound field).
+        # Ignored (docs/magnetic.md): the ohmic decay of B_p and the Lorentz force of B0 on the background flow.
+        self.B0_wound = 0
+        self.B0_wound_eta = 1.0
         self.B0_conf_p  = 12       #                   the order of the zeros of h at the edges (12: Chebyshev series to 1e-14 by N ~ 192)
         # NEW (2026-10-30): where the couplings of the Lorentz force and of the induction come from: 'closed' (the closed forms of
         # operators.py, degree 1 and 2 only) or 'algebra' (mag_algebra.py, built from the recurrence algebra for any degrees; the

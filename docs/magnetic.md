@@ -115,6 +115,42 @@ $\psi$ constant on the inner core's surface. A toroidal part of `B0` is left as 
 the truncation, at round-off for fields of low degree with a polynomial $F$. Example: the uniform axial field $\psi = r^2\sin^2\theta/2$ with
 $F(\psi) = \psi$ gives $\Delta\Omega \propto s^2$, the cylindrical profile.
 
+**The wound toroidal field: `B0_wound = 1`** (2026-10-30). Motivation: in the solar tachocline both the rotation and a
+poloidal field are given, and they do not satisfy Ferraro's law: the shear winds the poloidal field into an azimuthal one,
+which grows until magnetic diffusion balances the winding. `B0_wound = 1` adds that steady azimuthal field to `B0`, so that
+the background is steady with both imposed. Method: the $\phi$-component of the steady induction equation for axisymmetric
+fields, with $\mathbf{U}_0 = G\,\Delta\Omega\,s\,\hat{\boldsymbol\phi}$ ($G$ = `Gaspard`) and a uniform diffusivity
+$\eta$ = `B0_wound_eta` $\cdot$ `MagnetD`,
+
+$$
+\eta\left(\nabla^2 - \frac{1}{s^2}\right)B_\phi = -G\,s\,\mathbf{B}_p\cdot\nabla\Delta\Omega ,
+$$
+
+where $\mathbf{B}_p$ is the poloidal `B0` (any type). Written as kore's toroidal field, $B_\phi = \sum_n k_n\sin\theta\,P_n'(\cos\theta)$, the
+operator acts degree by degree, $(\nabla^2 - 1/s^2)B_\phi = \sum_n D_n k_n\,\sin\theta\,P_n'$ with
+$D_n k = k'' + 2k'/r - n(n+1)k/r^2$. The source is projected on $\sin\theta\,P_n'$ (Gauss–Legendre quadrature in $\cos\theta$),
+which leaves one radial equation per degree, solved by Chebyshev collocation: $k_n = 0$ at an insulating wall ($B_\phi$ vanishes
+outside), regular at $r = 0$ in a full sphere, and with a conducting inner core (which must rotate rigidly) $B_\phi/\mu$ and
+$E_\theta$ continuous, $r k_n' + (1 - (n+1)/\sigma)k_n = 0$ at $r_i$ ($\sigma$ = `sigma_i2o`). The degrees run up to (that of
+$\mathbf{B}_p$) + (that of $\Delta\Omega$) + 1, with the field's symmetry (even for a dipolar $\mathbf{B}_p$, odd for a quadrupolar one).
+The $k_n$ are added to any `B0_tor`, and the couplings come from `mag_algebra.py` as for `'general'`.
+
+The size of the wound field is set by the physics, about $G\,\Delta\Omega/\eta$ (times the length scale squared) relative to
+$\mathbf{B}_p$; `cnorm` normalises the poloidal field alone, so the Lehnert or Elsasser number keeps its meaning for the field the
+user gives, and the wound part enters with its physical ratio. `B0_wound_eta` (default 1) is $\eta_\mathrm{background}/\eta$: the
+diffusivity that balances the winding, in units of `MagnetD`, e.g. a turbulent one (> 1, a weaker wound field), while the
+perturbation still diffuses with `MagnetD`. At the start of a run, instead of the Ferraro check,
+`background.magnetic_diffrot` prints the degrees and the residual of the steady balance on a grid off the collocation nodes.
+
+What is left out, so that the background is only approximately steady:
+
+- **the ohmic decay of $\mathbf{B}_p$**: the poloidal field is held fixed, as it is without rotation;
+- **the Lorentz force of $\mathbf{B}_0$ on the background flow**: $\Delta\Omega$ is imposed and not modified by
+  $(\nabla\times\mathbf{B}_0)\times\mathbf{B}_0$, which is now dominated by the wound $B_\phi$ (it grows as $G\,\Delta\Omega/\eta$). For the tachocline
+  this is a significant approximation: a wound field that strong would brake the shear that produces it (the
+  Lorentz-force feedback on the rotation that a self-consistent tachocline model includes). The results are meaningful when
+  that force is small compared with what maintains $\Delta\Omega$, i.e. for a moderate Elsasser number of the wound field.
+
 **Toroidal field** (step 4). $\mathbf{B}_0^{tor} = c_\mathrm{tor}\nabla\times(k(r)\,Y_n^0\,\mathbf{r})$, purely azimuthal,
 $B_\phi = -c_\mathrm{tor}\,k\,\partial_\theta Y_n^0$: $c_\mathrm{tor}\,k\sin\theta$ for $n$ = `B0_tor_l` = 1, $3c_\mathrm{tor}\,k\sin\theta\cos\theta$ for
 $n = 2$; $c_\mathrm{tor}$ = `cnorm_tor` (a number, `'mag_energy'` or `'Schmitt2012'`; $\int B_0^2 dV = n_l L\int k^2 r^2 dr$):
@@ -226,8 +262,9 @@ needs nothing new: it does not involve $\mathbf{U}_0$.
   constant along its field lines. The linear problem does not contain this term. `background.ferraro_mismatch` reports
   $\max\lvert \mathbf{B}_0\cdot\nabla\Delta\Omega\rvert \,r/(\max\lvert \mathbf{B}_0\rvert \max\lvert r\nabla\Delta\Omega\rvert )$ at the start of every run; above $10^{-7}$
   `background.FERRARO_POLICY` decides: `'warn'` (default: a warning, the background is assumed to be maintained) or
-  `'refuse'`. Consistent backgrounds: a toroidal field, a `'confined'` field where $\Delta\Omega$ is uniform, `B0 = 'ferraro'`, or
-  `diff_rot_type = 'ferraro'`.
+  `'refuse'`. Consistent backgrounds: a toroidal field, a `'confined'` field where $\Delta\Omega$ is uniform, `B0 = 'ferraro'`,
+  `diff_rot_type = 'ferraro'`, or any poloidal field with `B0_wound = 1` (the winding balanced by diffusion; the run then
+  reports that balance instead).
 - **Energy budgets.** spin_doctor's induction work includes $\mathbf{U}_0\times\mathbf{b}$ (on the $(r, \theta)$ grid). Because
   $\mathbf{U}_0\times\mathbf{b}$ does not vanish at a wall where $\Delta\Omega \ne 0$, it carries magnetic energy through the wall into the
   field outside: resid𝐛 (the fluid) uses the induction work with its wall terms, resid𝐄 (the full budget, which counts the
@@ -458,6 +495,13 @@ Everything in `tests/magnetic/` (`run_all.sh`):
   $\le 10^{-10}$. Refused as they should be: an odd $F$ with 'Luo_S2', `B0 = 'ferraro'`, a toroidal field alone, a conducting
   inner core with $\psi$ not constant on it. With a toroidal part of degree 2: `B0 = 'ferraro'` + 'Malkus' and 'Luo_S1' + 'wall' with
   `diff_rot_type = 'ferraro'` close their budgets to $8\cdot10^{-12}$ and $10^{-9}$.
+- **`B0_wound = 1`** (`tests/magnetic/wound_check.py`): a uniform axial $\mathbf{B}_p$ with $\Delta\Omega = a r^2$ gives one degree,
+  $k_2 = A r^4/14 + C r^2 + D r^{-3}$: the solution matches it to $7\cdot10^{-14}$ (shell), $4\cdot10^{-13}$ (conducting inner core) and
+  $3\cdot10^{-12}$ (full sphere). The residual of the steady induction equation, by finite differences in $(r, \theta)$ with $\mathbf{B}_p$ from
+  its flux function, is $\le 8\cdot10^{-10}$ ('general' 1 + 3, 'Luo_S2' in a full sphere, 'FDM' with a conducting inner core),
+  the floor of the differences; the $k_n$ change by $\le 2\cdot10^{-11}$ from 97 to 385 nodes. Budgets with $\max\lvert B_\phi\rvert/\max\lvert \mathbf{B}_p\rvert$
+  from 0.5 to 4.4 ('general', 'FDM' with a conducting inner core, 'Luo_S2' in a full sphere, 'axial' plus a 'Malkus' part
+  of degree 2): $\le 2.4\cdot10^{-10}$.
 - **Unchanged without the new features**: `regress.sh` bitwise, heat_dr, ru_insane identical, and 26 magnetic cases build A and
   B bitwise equal to the code before.
 
