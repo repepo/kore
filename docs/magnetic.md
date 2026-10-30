@@ -148,8 +148,62 @@ What is left out, so that the background is only approximately steady:
 - **the Lorentz force of $\mathbf{B}_0$ on the background flow**: $\Delta\Omega$ is imposed and not modified by
   $(\nabla\times\mathbf{B}_0)\times\mathbf{B}_0$, which is now dominated by the wound $B_\phi$ (it grows as $G\,\Delta\Omega/\eta$). For the tachocline
   this is a significant approximation: a wound field that strong would brake the shear that produces it (the
-  Lorentz-force feedback on the rotation that a self-consistent tachocline model includes). The results are meaningful when
-  that force is small compared with what maintains $\Delta\Omega$, i.e. for a moderate Elsasser number of the wound field.
+  Lorentz-force feedback on the rotation that a self-consistent tachocline model includes): see *When does the ignored
+  Lorentz force matter?* below.
+
+**When does the ignored Lorentz force matter?** (2026-10-31). Orders of magnitude, in kore's units (time $1/\Omega$, length the
+outer radius; `timescale = 'rotation'`, so `Gaspard` = 1, `Hendrik` = $Le^2$, `MagnetD` = $Em$). `cnorm` normalises the poloidal
+field, so $\max\lvert \mathbf{B}_p\rvert \sim 1$; the Lorentz force per unit mass is $Le^2\rho_0^{-1}(\nabla\times\mathbf{B}_0)\times\mathbf{B}_0$, with $\rho_0$
+the background density ($\rho_0$ = 1 for `'Boussinesq'`); and the wound field is $B_\phi \approx \Delta\Omega\,B_p/(Em\,\eta_w)$, $\eta_w$ =
+`B0_wound_eta`. The background's own force on $\mathbf{U}_0$ has two parts.
+
+1. *The azimuthal torque*, $\propto \mathbf{B}_p\cdot\nabla(s B_\phi)$: Ferraro's mechanism. It brakes $\Delta\Omega$ along the field lines in a
+   time of about $1/(\Lambda_p\Omega)$, with $\Lambda_p = Le^2/(\rho_0\,Em\,\eta_w)$ the Elsasser number of the poloidal field built on the background diffusivity. It matters when $\Lambda_p$ is not small
+   compared with the mode frequencies $\omega/\Omega$, their damping rates, or the rate of whatever maintains $\Delta\Omega$. If
+   viscous (or turbulent) stresses hold $\Delta\Omega$, the torque compares with them through the Hartmann number,
+   $Ha^2 = Le^2/(Ek\,Em)$ with the background values ($Le^2/(\rho_0 Ek\,Em\,\eta_w)$ with `B0_wound_eta`): the imposed $\Delta\Omega$ is
+   tenable only for $Ha \lesssim 1$.
+2. *The meridional part*, the hoop stress and magnetic pressure of $B_\phi$, $\propto B_\phi^2$: it changes the thermal-wind and
+   entropy balance of the background and drives magnetic buoyancy. It matters when $Le_\phi^2 \gtrsim \Delta\Omega$, with
+   $Le_\phi = Le\,\max\lvert B_\phi\rvert/\max\lvert \mathbf{B}_p\rvert$. It can matter even for a weak $\mathbf{B}_p$, because $B_\phi$ is larger by
+   $\Delta\Omega/(Em\,\eta_w)$.
+
+A `B0_wound` background is therefore a snapshot: valid for modes that evolve faster than these effects. This is the
+tachocline confinement problem (Gough & McIntyre 1998; MacGregor & Charbonneau 1999): with molecular diffusivities a weak
+poloidal field in the radiative interior has $Ha \gg 1$, and its torque would impose isorotation along the field lines and
+spread the shear of the convection zone inward. Below the tachocline a strong field is better represented by a
+Ferraro-consistent background (`B0 = 'ferraro'`, `diff_rot_type = 'ferraro'`) or a `'confined'` one. The checks of this page
+(Ek = Em = $10^{-3}$, $Le$ = 0.03, so $Ha \approx 30$ and a braking time of about one rotation) test the mathematics (closed form,
+residuals, budgets), not the physical validity of such a background.
+
+**Application: solar inertial modes** (2026-10-31). Their periods are longer than a rotation and their damping is weak
+(Löptien et al. 2018; Gizon et al. 2021), which makes every criterion above stricter.
+
+- **Time scales.** $\Lambda_p$ and the ohmic decay rate of $\mathbf{B}_p$ (about $Em\,\eta_w$) must be $\ll \gamma/\Omega$, the damping rate of the
+  modes, not only $\ll \omega/\Omega$. The wound field needs a diffusion time $L^2/\eta_b$ across its layer to build up (years for a
+  thin tachocline with a turbulent $\eta_b$): on solar-cycle time scales it is a snapshot.
+- **Sensitivity.** The relative effect of the field grows roughly as $(\omega_A/\omega)^2$, $\omega_A$ the Alfvén frequency, so
+  low-frequency modes feel it most: scan `B0_wound_eta` and $Le$ rather than trusting one value.
+- **Critical layers and continua.** Where the mode frequency matches the local advection, $\omega + m\,\Delta\Omega = 0$ in kore's
+  convention (the critical latitudes), and at Alfvén resonances, the spectrum has continuous parts and the eigenfunctions thin layers. Check the
+  convergence in N and lmax, and tell the discrete modes from the continuum.
+- **Thermal wind.** Keep the thermal-wind heat rows on (`thermal_wind`), and check the meridional criterion $Le_\phi^2 \ll \Delta\Omega$:
+  the background baroclinicity does not include the forces of $B_\phi^2$.
+- **Consistent diffusivities.** The observed line widths set the turbulent viscosity (`ViscosD`); take a turbulent
+  $Pm \sim 1$ (`Em` $\sim$ `Ek`) and set `B0_wound_eta` to match the background's turbulent $\eta$. A wound field built with a
+  molecular $\eta$ under modes damped by turbulence is inconsistent.
+- **Radiative interior.** With molecular values $Ha$ is huge: use `'confined'` or `'ferraro'` fields below the tachocline, not
+  `B0_wound`.
+- **Where the modes live.** Most observed modes are concentrated in the convection zone (many near the surface or the
+  equator), so a tachocline field reaches them only through their tails. Test the high-latitude and the deep modes first.
+- **Measurability.** A frequency shift matters only above about 1 nHz, a few $10^{-3}$ of $\Omega$.
+- **Symmetry.** A dipolar $\mathbf{B}_p$ with kore's equatorially symmetric $\Delta\Omega$ gives a $B_\phi$ of the same family, so the two
+  mode classes stay separate, as without the field.
+- **Practical.** With a high-degree `'tabulated'` $\Delta\Omega$ the wound degrees reach (degree of $\Delta\Omega$) + (degree of $\mathbf{B}_p$) + 1:
+  wider couplings, more LU memory, possibly `st_mat_mumps_icntl_14` in `petsc_opts` (MUMPS INFOG(1) = -9). In each run read the
+  printed residual of the induction balance and $\max\lvert B_\phi\rvert/\max\lvert \mathbf{B}_p\rvert$.
+- **Bracketing.** Compute the same modes with `B0_wound` and with a `'ferraro'` background (the field the torque would
+  relax to): the spread is a measure of what the steady-background assumption costs.
 
 **Toroidal field** (step 4). $\mathbf{B}_0^{tor} = c_\mathrm{tor}\nabla\times(k(r)\,Y_n^0\,\mathbf{r})$, purely azimuthal,
 $B_\phi = -c_\mathrm{tor}\,k\,\partial_\theta Y_n^0$: $c_\mathrm{tor}\,k\sin\theta$ for $n$ = `B0_tor_l` = 1, $3c_\mathrm{tor}\,k\sin\theta\cos\theta$ for
