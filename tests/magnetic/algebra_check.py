@@ -32,6 +32,8 @@ def candidate(blocks, row, X, l, dl):
     '''the block (row, column X, row degree l, source l + dl) in derive's monomials'''
     out = 0
     for lab, M in blocks.get((row, X), {}).items():
+        # mag_algebra.build drops round-off coefficients (below 1e-13 of the row's largest, mag_algebra._prune): an exact
+        # zero reached by cancellation is then a zero here too, and a block made of round-off only counts as no block
         c = complex(M[l, l + dl]) if 0 <= l + dl < M.shape[1] else 0
         if c == 0:
             continue

@@ -244,6 +244,32 @@ def build(m, degs, lw):
                 for key, M in _deriv(s_r).items():         # q - (r s)'
                     _add(grow, key, -M)
                 _store(out, 'g', X, _shift(grow, -1., 1), Lt)
+    return _prune(out)
+
+PRUNE = 1e-13
+def _prune(out):
+    '''
+    NEW (2026-10-30): drop the round-off. Some coefficients are exact zeros reached by cancellation (sums of products of
+    the recurrence matrices); in floating point they come out as ~1e-17 of the row's largest coefficient, and a label can
+    be made of such entries only. Entries below PRUNE times the largest coefficient of the same target degree, over all the
+    labels of the same row block (row section, column), are set to zero, and labels left empty are dropped: the result
+    changes at round-off level only, and kore builds no matrices for labels that would only add round-off.
+    '''
+    for key, d in out.items():
+        if not d:
+            continue
+        rowmax = None
+        for M in d.values():
+            mx = abs(M).max(axis=1).toarray().ravel()
+            rowmax = mx if rowmax is None else np.maximum(rowmax, mx)
+        keep = {}
+        for lab, M in d.items():
+            M = M.tocoo()
+            ok = abs(M.data) >= PRUNE*rowmax[M.row]
+            M2 = sp.csr_matrix((M.data[ok], (M.row[ok], M.col[ok])), shape=M.shape)
+            if M2.nnz:
+                keep[lab] = M2
+        out[key] = keep
     return out
 
 def _store(out, row, X, e, Lt):

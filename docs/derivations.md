@@ -310,10 +310,15 @@ $(\hat{\mathbf{z}}\times\hat{\mathbf{r}})\times\mathbf{F} = \hat{\mathbf{r}}(\ha
 the matrices $c(X)$, $c'(X)$). The perturbation's components are radial monomials ($u_r = LP/r$, $b_\theta$-part $F' + F/r$,
 $(\nabla\times\mathbf{b})_t = -(F'' + 2F'/r - LF/r^2)$, …), so the force $\mathbf{G} = \mathbf{J}_0\times\mathbf{b} - \mathbf{B}_0\times\mathbf{J}$ and the
 induction $\mathbf{E} = \mathbf{u}\times\mathbf{B}_0$ are sums of (radial monomial) × (sparse matrix on the degrees). The rows follow from
+
 $$
-\hat{\mathbf{r}}\cdot\nabla\times\nabla\times\mathbf{V} = \frac{L'(q - (rs)')}{r^2},\qquad \hat{\mathbf{r}}\cdot\nabla\times\mathbf{V} = \frac{L't}{r},\qquad
-\rho_0\hat{\mathbf{r}}\cdot\nabla\times\nabla\times\frac{\mathbf{V}}{\rho_0} = \frac{L'(q - (rs)' + \lambda_1 rs)}{r^2},
+\begin{aligned}
+\hat{\mathbf{r}}\cdot\nabla\times\nabla\times\mathbf{V} &= \frac{L'\,(q - (rs)')}{r^2},\\
+\hat{\mathbf{r}}\cdot\nabla\times\mathbf{V} &= \frac{L'\,t}{r},\\
+\rho_0\,\hat{\mathbf{r}}\cdot\nabla\times\nabla\times\frac{\mathbf{V}}{\rho_0} &= \frac{L'\,(q - (rs)' + \lambda_1 rs)}{r^2},
+\end{aligned}
 $$
+
 which need one radial derivative of the monomials (product rule). Each final monomial becomes a label as in step 5 of A.2,
 with the profile codes `hp` + degree ($c_\mathrm{norm}h_n$) and `kt` + degree ($c_\mathrm{tor}k_n$).
 

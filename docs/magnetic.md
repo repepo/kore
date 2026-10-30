@@ -75,7 +75,7 @@ $10^{-9}$. $h$ is evaluated in factored form (expanded into monomials, a polynom
 to cancellation near the edges).
 
 **Any degrees** (2026-10-30). `'general'` takes $h_n$ degree by degree as expressions; their derivatives come from Chebyshev
-interpolants (degree max(64, 2N), at $|r|$ with the parity $(-1)^n$ in a full sphere, where $h_n$ should go as $r^n$ at the
+interpolants (degree max(64, 2N), at $\lvert r\rvert$ with the parity $(-1)^n$ in a full sphere, where $h_n$ should go as $r^n$ at the
 centre). The degrees must have one parity (one equatorial symmetry). `cnorm = 'mag_energy'` sums $\int B_0^2 dV$ over the
 degrees. The couplings come from the recurrence algebra (`mag_algebra.py`, below).
 
@@ -138,11 +138,11 @@ antisymmetric, like the dipole.
     - rows `f`, columns P: every $d/dr$ on $P$ becomes $d/dr + \lambda_1$ (label `f1bpo0lho1_D0`);
     - rows `g`, columns P, diagonal in $l$ only: $2im[\,r h\lambda_1 P' + r h\lambda_2 P + (1 - L/2)\,r h'\lambda_1 P - (L/2)\,h\lambda_1 P\,]$
       (in the scale of `conductive_IC`'s rows; zero for m = 0), from $-\mathbf{B}_0\nabla\cdot\mathbf{u}$ and the $\lambda_1 P$ above;
-    - rows `u`: $\rho_0\hat{\mathbf{r}}\cdot\nabla\times\nabla\times(\rho_0^{-1}\mathbf{G}) = \hat{\mathbf{r}}\cdot\nabla\times\nabla\times\mathbf{G}
-      - (\lambda_1/r)\nabla_1\cdot\mathbf{G}_H$, $\mathbf{G}$ the Lorentz force per volume: the extra
+    - rows `u`: $\rho_0\hat{\mathbf{r}}\cdot\nabla\times\nabla\times(\rho_0^{-1}\mathbf{G}) = \hat{\mathbf{r}}\cdot\nabla\times\nabla\times\mathbf{G} -
+      (\lambda_1/r)\nabla_1\cdot\mathbf{G}_H$, $\mathbf{G}$ the Lorentz force per volume: the extra
       $\lambda_1 r^4(\nabla_1\cdot\mathbf{G}_H)_l$, i.e. $-im\lambda_1[(L+2)r^2hg + Lr^3h'g + 2r^3hg']$ for the toroidal field of the same
       degree and $(y/2)\lambda_1 r^3[2a\,h\,D_{l_c}f + L_c b\,(D_1 h) f]$ for the poloidal field of degree $l_c = l\pm1$
-      ($y = \langle Y_l|\cos\theta\,Y_{l_c}\rangle$, $a = 2 - L_c - L$, $b = L_c - 2 - L$, $D_l f = f'' + 2f'/r - l(l+1)f/r^2$;
+      ($y = \langle Y_l\,\vert\,\cos\theta\,Y_{l_c}\rangle$, $a = 2 - L_c - L$, $b = L_c - 2 - L$, $D_l f = f'' + 2f'/r - l(l+1)f/r^2$;
       `operators.lorentz_rho`);
     - rows `v`, the T columns, the diffusion, the walls and the inner core: no $\rho_0$ terms.
   The new labels pair `bpo` with `lho` (two profiles, plus `ohr1` in the rows `u`); they vanish exactly for `'Boussinesq'`,
@@ -171,7 +171,7 @@ antisymmetric, like the dipole.
   its degree and $k$ that of $(-1)^n$ (`utils.odd_profiles`, both slots of a label). One boundary-condition row per block,
   the insulating condition at the outer wall (`assemble.bc_b_spherical`). The fields are regular at the centre: FDM
   $j_l(\beta r)$ (analytic derivatives, `background_field.jl_k`), the polynomial fields, 'wall' $= r^n(1 - r^2)$, 'Malkus'
-  for $n = 1$ only (`k = r` is not regular for $n = 2$), 'user' as $f(|r|)\,\mathrm{sign}(r)^n$. `cnorm` and `cnorm_tor` are
+  for $n = 1$ only (`k = r` is not regular for $n = 2$), 'user' as $f(\lvert r\rvert )\,\mathrm{sign}(r)^n$. `cnorm` and `cnorm_tor` are
   computed as with an inner core; spin_doctor's inner-wall terms are skipped.
 - **Inviscid runs** (step 5, `ViscosD = 0`, full sphere only). The Lorentz labels have $D^3$ (rows u) and $D^2$ (rows v), so
   the rows are in $C^{(3)}$ (u) and $C^{(2)}$ (v), with one boundary-condition row ($u_r = 0$) in u and none in v; without
@@ -179,15 +179,17 @@ antisymmetric, like the dipole.
   `conductive_IC` keeps $C^{(2)}$ and $C^{(1)}$ and so converts these terms with the wrong matrices; its torsional test is
   barely affected (below).
 - **Solver and output.** `solve.py` writes `real_magnetic.field`, `imag_magnetic.field` and normalises the eigenvectors to
-  $\mathrm{KE} + \mathrm{Hendrik}\int\tfrac12|\mathbf{b}|^2dV = 1$ (over the shell, as `conductive_IC`).
+  $\mathrm{KE} + \mathrm{Hendrik}\int\tfrac12\lvert \mathbf{b}\rvert ^2dV = 1$ (over the shell, as `conductive_IC`).
 
 ## With a differential rotation (2026-10-30)
 
 With `diff_rot = 1` the background flow $\mathbf{U}_0 = G\,\Delta\Omega\,r\sin\theta\,\hat{\boldsymbol\phi}$ also shears the field: the induction
 equation gains
+
 $$
 \nabla\times(\mathbf{U}_0\times\mathbf{b}) = G\left[-im\,\Delta\Omega\,\mathbf{b} + \sin\theta\,(r\,\partial_r\Delta\Omega\,b_r + \partial_\theta\Delta\Omega\,b_\theta)\,\hat{\boldsymbol\phi}\right]
 $$
+
 (the $\Omega$-effect, and the Doppler shift of the field). It is built for any $\Delta\Omega = \sum_n f_n P_n$ with the recurrence
 algebra of the momentum terms (`diff_rot.induction_block`; [Derivation tools](derivations.md), part B): F→f and G→g couple at
 even $\Delta l$ up to $n$, F→g (a poloidal field sheared into a toroidal one) at odd $\Delta l$ up to $n + 1$. The Lorentz force
@@ -199,7 +201,7 @@ needs nothing new: it does not involve $\mathbf{U}_0$.
 - **Steady background (Ferraro).** $\nabla\times(\mathbf{U}_0\times\mathbf{B}_0) = r\sin\theta\,(\mathbf{B}_0\cdot\nabla\Delta\Omega)\,\hat{\boldsymbol\phi}$ must
   vanish for the background to be steady: always for a toroidal $\mathbf{B}_0$, for a poloidal one only if $\Delta\Omega$ is
   constant along its field lines. The linear problem does not contain this term. `background.ferraro_mismatch` reports
-  $\max|\mathbf{B}_0\cdot\nabla\Delta\Omega|\,r/(\max|\mathbf{B}_0|\max|r\nabla\Delta\Omega|)$ at the start of every run; above $10^{-7}$
+  $\max\lvert \mathbf{B}_0\cdot\nabla\Delta\Omega\rvert \,r/(\max\lvert \mathbf{B}_0\rvert \max\lvert r\nabla\Delta\Omega\rvert )$ at the start of every run; above $10^{-7}$
   `background.FERRARO_POLICY` decides: `'warn'` (default: a warning, the background is assumed to be maintained) or
   `'refuse'`. Consistent backgrounds: a toroidal field, a `'confined'` field where $\Delta\Omega$ is uniform, or `'ferraro'`.
 - **Energy budgets.** spin_doctor's induction work includes $\mathbf{U}_0\times\mathbf{b}$ (on the $(r, \theta)$ grid). Because
@@ -248,15 +250,15 @@ core to the unknowns, as `conductive_IC` does:
 
 | column | name | |
 | --- | --- | --- |
-| 1 | ME | $\int\tfrac12|\mathbf{b}|^2 dV$ (without Hendrik, as `conductive_IC`; Mag/Kin is ME/KE) |
+| 1 | ME | $\int\tfrac12\lvert \mathbf{b}\rvert ^2 dV$ (without Hendrik, as `conductive_IC`; Mag/Kin is ME/KE) |
 | 2 | Mdfs | $\mathrm{MagnetD}\int\mathbf{b}\cdot\nabla^2\mathbf{b}\,dV$ |
 | 3 | Indu | $\int\mathbf{b}\cdot\nabla\times(\mathbf{u}\times\mathbf{B}_0)\,dV$ |
-| 4 | residb | resid𝐛 $= |2\sigma\,\mathrm{ME} - \mathrm{Indu} - \mathrm{Mdfs}|/\max$ |
+| 4 | residb | resid𝐛 $= \lvert 2\sigma\,\mathrm{ME} - \mathrm{Indu} - \mathrm{Mdfs}\rvert /\max$ |
 | 5, 6 | Wlor, Wlor_im | $\mathrm{Hendrik}\cdot 2\int\mathbf{u}^*\cdot\mathbf{F}\,dV$, real and imaginary parts (in residσ, residω) |
-| 7 | MEic | $\tfrac12\int|\mathbf{b}|^2/\mu_{i2o}\,dV$ in the inner core (its field, or the potential field below an insulating one) |
-| 8 | MEext | $\tfrac12\int|\mathbf{b}|^2dV$ of the potential field outside the outer wall |
-| 9 | Ohm_f | $\mathrm{MagnetD}\int|\nabla\times\mathbf{b}|^2dV$ over the fluid |
-| 10 | Ohm_ic | $\mathrm{MagnetD}\,\eta_i\int|\nabla\times\mathbf{b}|^2/\mu_{i2o}\,dV$ over a conducting inner core |
+| 7 | MEic | $\tfrac12\int\lvert \mathbf{b}\rvert ^2/\mu_{i2o}\,dV$ in the inner core (its field, or the potential field below an insulating one) |
+| 8 | MEext | $\tfrac12\int\lvert \mathbf{b}\rvert ^2dV$ of the potential field outside the outer wall |
+| 9 | Ohm_f | $\mathrm{MagnetD}\int\lvert \nabla\times\mathbf{b}\rvert ^2dV$ over the fluid |
+| 10 | Ohm_ic | $\mathrm{MagnetD}\,\eta_i\int\lvert \nabla\times\mathbf{b}\rvert ^2/\mu_{i2o}\,dV$ over a conducting inner core |
 | 11 | residE | resid𝐄, the full energy budget (nan without no-slip walls) |
 
 resid𝐄 (`conductive_IC`'s, `utils4pp.em_budget`) closes
@@ -373,7 +375,7 @@ Everything in `tests/magnetic/` (`run_all.sh`):
 ### Full sphere, inviscid runs and degree-2 poloidal fields (2026-10-28, step 5)
 
 - **Hydrodynamics.** inviscid Boussinesq full sphere (Ek = 0, `'Boussinesq'`): the inertial modes of Wu (2005, Table 1, β = 0)
-  to the 10 digits given (e.g. 0.6666666667, 1.4964360838, 1.2319250547 for $|m| = 2$); 'Wu 2005' against its Table 2.
+  to the 10 digits given (e.g. 0.6666666667, 1.4964360838, 1.2319250547 for $\lvert m\rvert  = 2$); 'Wu 2005' against its Table 2.
   No non-magnetic code changed (`regress.sh` bitwise).
 - **Against `conductive_IC`** (`39487bbf`, the geometry of Checks, all eigenvalues of each run): full sphere, 'axial', 'FDM'
   ($l$ = 1, 2), 'G21 dipole', 'Luo_S1', 'Luo_S2', m 0–2 and both symmetries, $\le 5\cdot10^{-13}$; with an inner core
