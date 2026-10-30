@@ -34,7 +34,7 @@ def funcheb(ck0, r, ricb, rcmb, n):
     Use this only when the Cheb coeffs are the full set, i.e. after using expand_sol if ricb=0.
     '''
 
-    if r == None:
+    if r is None:
         x00 = x0  # use the globally defined x0
     else:
         x00 = xcheb(r, ricb, rcmb)  # use the explicit radial points given as argument
@@ -53,9 +53,9 @@ def funcheb(ck0, r, ricb, rcmb, n):
 
 def cg_quad(f, Ra, Rb, N, sqx):
     '''
-    Computes the radial integral of f as a Chebyshev-Gauss quadrature.
-    Assumes f is sampled over [Ra,Rb], with sqx=np.sqrt(1-xk**2),
-    where xk are the radial grid points for the Chebyshev-Guauss quadrature. 
+    Integrate samples over [Ra,Rb] using the supplied scaled weights.
+    Legacy Chebyshev-Gauss callers pass sqrt(1-xk**2). For Gauss-Legendre,
+    pass weights*N/pi instead; this preserves the worker calling convention.
     '''
 
     out = (np.pi/N) * np.sum( sqx * f ) * (Rb-Ra)/2
@@ -1012,10 +1012,12 @@ def diagnose( usol2, bsol2, tsol2, csol2, Ra, Rb, ncpus, eigval):
     [out_u, out_b] = [0,0]
     [out_t, out_c] = [0,0]
 
-    # xk are the grid points for the integration using Gauss-Chebyshev quadratures.
-    # Always go from -1 to 1
-    i = np.arange(0,par.N)
-    xk = np.cos( (i+0.5)*np.pi/par.N )
+    # Energy integrals have unit radial weight, not the Chebyshev weight.
+    # Oversample products of reconstructed fields and imposed profiles.
+    nquad = 2*par.N
+    xk, weights = np.polynomial.legendre.leggauss(nquad)
+    # Preserve the historical outer-to-inner ordering of diagnostic samples.
+    xk, weights = xk[::-1], weights[::-1]
 
     # rk are the corresponding radial points in the desired integration interval: from Ra to Rb
     global rk
@@ -1023,11 +1025,11 @@ def diagnose( usol2, bsol2, tsol2, csol2, Ra, Rb, ncpus, eigval):
 
     # x0 are the points in the appropriate domain of the Chebyshev polynomial solutions
     global x0
-    x0 = xcheb(rk, par.ricb, 1)
+    x0 = xcheb(rk, par.ricb, ut.rcmb)
 
     # the following are needed to compute the integrals (i.e. the quadratures)
     global sqx
-    sqx = np.sqrt(1-xk**2)
+    sqx = weights*nquad/np.pi
     global r2
     r2 = rk**2
     global r3
@@ -1045,23 +1047,23 @@ def diagnose( usol2, bsol2, tsol2, csol2, Ra, Rb, ncpus, eigval):
 
     if par.hydro:
         ppu = [ pool.apply_async( flow_worker,
-                args=( l, lp_u, lt_u, usol2, bsol2, tsol2, csol2, Ra, Rb, par.N, sqx, eigval)) for l in ll ]
+                args=( l, lp_u, lt_u, usol2, bsol2, tsol2, csol2, Ra, Rb, nquad, sqx, eigval)) for l in ll ]
         out_u = np.array([pp0.get() for pp0 in ppu])
     
     if par.magnetic:
         ppb = [ pool.apply_async( magnetic_worker,
-                args=( l, lp_b, lt_b, bsol2, usol2, Ra, Rb, par.N, sqx)) for l in ll ]   
+                args=( l, lp_b, lt_b, bsol2, usol2, Ra, Rb, nquad, sqx)) for l in ll ]
         out_b = np.array([pp0.get() for pp0 in ppb])
 
     if par.thermal:
         ppt = [ pool.apply_async( thermal_worker,
-                args=( l, lp_u, tsol2, usol2, Ra, Rb, par.N, sqx, 'thermal' )) for l in lp_u ]   
+                args=( l, lp_u, tsol2, usol2, Ra, Rb, nquad, sqx, 'thermal' )) for l in lp_u ]
         out_t = np.array([pp0.get() for pp0 in ppt])
 
     if par.compositional:
         # we use again the thermal_worker but with the compositional solution as argument
         ppc = [ pool.apply_async( thermal_worker,
-                args=( l, lp_u, csol2, usol2, Ra, Rb, par.N, sqx, 'compositional' )) for l in lp_u ]   
+                args=( l, lp_u, csol2, usol2, Ra, Rb, nquad, sqx, 'compositional' )) for l in lp_u ]
         out_c = np.array([pp0.get() for pp0 in ppc])
 
     pool.close()

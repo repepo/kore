@@ -4,3 +4,6 @@
 *.dat
 *.field
 *__pycache__*
+mantle_wave_postprocessing/experiments/*/results/
+kore_outputs/*
+!kore_outputs/README.md

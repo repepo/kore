@@ -483,7 +483,7 @@ def h2(rr, kind, args):
 
     elif kind == 'G21 dipole':  # Felix's dipole (Gerick 2021)
         l = 1
-        out = (6/10)*r**(1+rp)
+        out = -(6/10)*r**(1+rp)
 
     elif kind == 'Luo_S1':
         l = 1
@@ -535,7 +535,7 @@ def h3(rr, kind, args):
 
     elif kind == 'G21 dipole':  # Felix's dipole (Gerick 2021)
         l = 1
-        out = (6/10)*r**rp
+        out = -(6/10)*r**rp
 
     elif kind == 'Luo_S1':
         l = 1
@@ -1400,6 +1400,165 @@ def gamma_magnetic():
     # (rho is the density and eta is the magnetic diffusivity, both of the fluid core).
 
     return out
+
+
+def _split_core_magnetic_solution(b_sol):
+    '''
+    Split a full, expanded core magnetic coefficient vector into poloidal and
+    toroidal Chebyshev blocks. This expects the same expanded vector used by
+    gamma_magnetic(), i.e. length 2*n0 for the fluid core.
+    '''
+
+    llpol, lltor, ll = ell(par.m, par.lmax, bsymm)
+    nblocks = len(llpol)
+    b_sol = np.asarray(b_sol)
+    if (len(lltor) != nblocks or b_sol.ndim != 1
+            or b_sol.size != 2*nblocks*par.N):
+        raise ValueError('Expected expanded core magnetic coefficients matching '
+                         'N, lmax, m and symmetry in parameters.py')
+    ncoeff = b_sol.size//2
+    nrad = ncoeff//nblocks
+    pol = b_sol[:ncoeff].reshape((nblocks, nrad))
+    tor = b_sol[ncoeff:ncoeff+ncoeff].reshape((nblocks, nrad))
+    return pol, tor, llpol, lltor, ll, nrad
+
+
+def _core_magnetic_cmb(b_sol, theta, phi):
+    '''
+    Reconstruct all three components at the CMB from expanded core coefficients.
+    '''
+
+    pol, tor, llpol, lltor, ll, nrad = _split_core_magnetic_solution(b_sol)
+
+    # CMB is the outer Chebyshev endpoint of the fluid-core interval.
+    chx = ch.chebvander(np.array([1.0]), nrad - 1)
+    pol_r = (pol @ chx.T)[:, 0]
+    tor_r = (tor @ chx.T)[:, 0]
+
+    dpol = np.zeros_like(pol)
+    for k in range(len(llpol)):
+        dpol[k, :] = Dcheb(pol[k, :], par.ricb, rcmb)
+    dpol_r = (dpol @ chx.T)[:, 0]
+
+    r = float(rcmb)
+    slr = pol_r/r + dpol_r
+
+    clm = np.zeros((par.lmax - par.m + 2, 1))
+    for i, l in enumerate(ll):
+        clm[i] = np.sqrt((l - par.m)*(l + par.m))
+
+    sy = int(bsymm*0.5 + 0.5)
+    idp = (np.sign(par.m) + sy) % 2
+    idt = (np.sign(par.m) + sy + 1) % 2
+    plx = idp + par.lmax - par.m + 1
+    tlx = idt + par.lmax - par.m + 1
+
+    br = np.zeros((theta.size, phi.size), dtype=complex)
+    btheta = np.zeros((theta.size, phi.size), dtype=complex)
+    bphi = np.zeros((theta.size, phi.size), dtype=complex)
+    for it, th in enumerate(theta):
+        sin_th = np.sin(th)
+        tan_th = np.tan(th)
+        ylm = np.r_[Ylm_full(par.lmax, par.m, th, 0.0), 0]
+        br[it, 0] = np.dot(llpol*(llpol+1)*pol_r/r, ylm[idp:plx:2])
+
+        term1 = np.dot(-(llpol+1)*slr/tan_th, ylm[idp:plx:2])
+        term2 = np.dot(clm[idp+1:plx+1:2, 0]*slr/sin_th, ylm[idp+1:plx+1:2])
+        term3 = np.dot(1j*par.m*tor_r/sin_th, ylm[idt:tlx:2])
+        btheta[it, 0] = term1 + term2 + term3
+
+        term1 = np.dot((lltor+1)*tor_r/tan_th, ylm[idt:tlx:2])
+        term2 = np.dot(-clm[idt+1:tlx+1:2, 0]*tor_r/sin_th, ylm[idt+1:tlx+1:2])
+        term3 = np.dot(1j*par.m*slr/sin_th, ylm[idp:plx:2])
+        bphi[it, 0] = term1 + term2 + term3
+
+    phase = np.exp(1j*par.m*phi)[np.newaxis, :]
+    return tuple(field[:, :1]*phase for field in (br, btheta, bphi))
+
+
+def _core_tangential_magnetic_cmb(b_sol, theta, phi):
+    return _core_magnetic_cmb(b_sol, theta, phi)[1:]
+
+
+def _background_br_cmb(theta):
+    '''
+    Axisymmetric imposed radial magnetic field at the CMB.
+    '''
+
+    l = B0_l
+    h_cmb = B0_norm() * h0(
+        np.array([float(rcmb)]),
+        par.B0,
+        [par.beta, B0_l, par.ricb, 0],
+    )[0]
+
+    br = np.zeros(theta.size, dtype=complex)
+    for i, th in enumerate(theta):
+        br[i] = l*(l + 1)*h_cmb*Ylm(l, 0, th, 0.0)/rcmb
+    return br
+
+
+def gamma_magnetic_cmb_distribution(b_sol, ntheta=181, nphi=361,
+                                    theta0=0.0, theta1=np.pi):
+    '''
+    Full linear Maxwell torque on the mantle, evaluated on the core side.
+
+    density_xyz is dGamma/dOmega, profile_xyz is dGamma/dtheta (per radian),
+    and torque_xyz is their signed complex integral. The last axis is x,y,z.
+    The stress includes both B0_r*b_t and b_r*B0_t. The background is the
+    axisymmetric poloidal field used by Kore. The minus sign denotes the
+    torque on the mantle, consistent with gamma_magnetic().
+    This is the core-side traction; interpreting it as the net mantle torque
+    assumes an insulating exterior with zero integrated outer traction.
+
+    Multiply outputs by Le2*OmgTau**2 for dynamic nondimensional units.
+    No mode-amplitude normalization or conversion to N m is applied.
+    theta_weights integrate in dtheta; solid_angle_weights integrate in
+    d(cos(theta)). Gauss-Legendre nodes avoid the coordinate poles.
+    '''
+    if ntheta < 2 or nphi < max(3, 2*abs(par.m)+3):
+        raise ValueError('Insufficient angular quadrature resolution')
+    if not 0 <= theta0 < theta1 <= np.pi:
+        raise ValueError('Require 0 <= theta0 < theta1 <= pi')
+    nodes, weights = np.polynomial.legendre.leggauss(ntheta)
+    lo, hi = np.cos(theta1), np.cos(theta0)
+    theta = np.arccos((lo + (nodes+1)*(hi-lo)/2)[::-1])
+    weights = weights[::-1]*(hi-lo)/2
+    phi = np.linspace(0.0, 2*np.pi, nphi, endpoint=False)
+    sin_th = np.sin(theta)[:, np.newaxis]
+    cos_th = np.cos(theta)[:, np.newaxis]
+    sin_phi = np.sin(phi)[np.newaxis, :]
+    cos_phi = np.cos(phi)[np.newaxis, :]
+    dphi = 2*np.pi/nphi
+    density = np.zeros((ntheta, nphi, 3), dtype=complex)
+    if par.magnetic == 1:
+        br, btheta, bphi = _core_magnetic_cmb(b_sol, theta, phi)
+        br0 = _background_br_cmb(theta)[:, np.newaxis]
+        args = [par.beta, B0_l, par.ricb, 0]
+        radius = np.array([float(rcmb)])
+        slope = B0_norm()*(h0(radius, par.B0, args)[0]/rcmb
+                           + h1(radius, par.B0, args)[0])
+        # dtheta Y_l0 = l*(cos(theta)*P_l - P_(l-1))/sin(theta).
+        derivative = B0_l*(np.cos(theta)*scsp.eval_legendre(B0_l, np.cos(theta))
+                          - scsp.eval_legendre(B0_l-1, np.cos(theta)))/sin_th[:, 0]
+        btheta0 = (slope*derivative)[:, np.newaxis]
+        traction_theta = br0*btheta + br*btheta0
+        traction_phi = br0*bphi
+        density[..., 0] = -traction_theta*sin_phi - traction_phi*cos_th*cos_phi
+        density[..., 1] = traction_theta*cos_phi - traction_phi*cos_th*sin_phi
+        density[..., 2] = traction_phi*sin_th
+        density *= -float(rcmb)**3
+    profile = density.sum(axis=1)*dphi*sin_th
+    theta_weights = weights/sin_th[:, 0]
+    return dict(theta=theta, phi=phi, density_xyz=density,
+                profile_xyz=profile, theta_weights=theta_weights,
+                solid_angle_weights=weights,
+                torque_xyz=np.sum(profile*theta_weights[:, None], axis=0))
+
+
+def gamma_magnetic_cmb_xyz(b_sol, ntheta=181, nphi=361):
+    '''Full raw dimensionless CMB torque on the mantle, in x,y,z order.'''
+    return gamma_magnetic_cmb_distribution(b_sol, ntheta, nphi)['torque_xyz']
 
 
 

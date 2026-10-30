@@ -88,6 +88,8 @@ def main(ncpus):
     Mdfs        = np.zeros(success)
     Indu        = np.zeros(success)
     mtorq       = np.zeros(success,dtype=complex)  # electromagnetic torque on the mantle
+    mtorq_xyz   = np.zeros((success, 3), dtype=complex)
+    show_equatorial_torque = bool(par.magnetic and par.m != 0)
     mtorq_ic    = np.zeros(success,dtype=complex)  # electromagnetic torque on the IC   
     TE          = np.zeros(success)
     Wadv_thm    = np.zeros(success)
@@ -109,7 +111,11 @@ def main(ncpus):
     params      = np.zeros((success,58))
     # ------------------------------------------------------------------------------------------------------------------------
 
-    print('\n  ★     Damping σ     Frequency ω    resid0     resid𝐮     resid𝐛     residθ     Tor/Pol    Mag/Kin    |𝚪|mag    |𝚪|magIC ')
+    header = '\n  ★     Damping σ     Frequency ω    resid0     resid𝐮     resid𝐛     residθ     Tor/Pol    Mag/Kin    |𝚪|mag    |𝚪|magIC '
+    if show_equatorial_torque:
+        print('CMB x/y: full linear Maxwell stress (B0_r*b_t + b_r*B0_t), torque on mantle.')
+        header = header.replace('|𝚪|mag ', '|𝚪z|mag ') + '  |Gamma_x|mag  |Gamma_y|mag'
+    print(header)
     print(  ' ‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾')
 
 
@@ -193,6 +199,10 @@ def main(ncpus):
 
             if ((par.mantle in ['TWA', 'resolved']) and (par.m==0) and (par.symm==1)):
                 mtorq[i] = par.Le2 * (par.OmgTau**2) * dot_scalar( ut.gamma_magnetic(), b_sol )
+            if show_equatorial_torque:
+                mtorq_xyz[i] = (par.Le2 * par.OmgTau**2
+                                * ut.gamma_magnetic_cmb_xyz(b_sol))
+                mtorq[i] = mtorq_xyz[i, 2]
 
             if (par.innercore in ['conducting, Chebys', 'TWA']) and ((par.m==0) and (par.symm==1)):
                 mtorq_ic[i] = par.Le2 * (par.OmgTau**2) * dot_scalar( ut.gamma_magnetic_ic(), b_sol )
@@ -274,8 +284,12 @@ def main(ncpus):
         
     
         # ------------------------------------------------------------------------------------------------------------------
-        print(' {:2d}   {: 12.7f}   {: 12.7f}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}'.format( \
-               i, sigma, w, resid0[i], resid1[i], resid2[i], resid3[i], KT[i]/KP[i], ME[i]/KE[i], np.abs(mtorq[i]), np.abs(mtorq_ic[i]) ))
+        summary_line = ' {:2d}   {: 12.7f}   {: 12.7f}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}   {:8.2e}'.format( \
+               i, sigma, w, resid0[i], resid1[i], resid2[i], resid3[i], KT[i]/KP[i], ME[i]/KE[i], np.abs(mtorq[i]), np.abs(mtorq_ic[i]) )
+        if show_equatorial_torque:
+            summary_line += '   {:12.2e}   {:12.2e}'.format(
+                abs(mtorq_xyz[i, 0]), abs(mtorq_xyz[i, 1]))
+        print(summary_line)
         # ------------------------------------------------------------------------------------------------------------------
         #print(' ')
 
@@ -437,6 +451,16 @@ def main(ncpus):
             np.savetxt(dmag, np.c_[ ME, Mdfs, Indu, resid2,
                                     np.real(mtorq), np.imag(mtorq),
                                     np.real(mtorq_ic), np.imag(mtorq_ic)])
+        if show_equatorial_torque:
+            with open('magnetic_cmb_xyz_full.dat', 'ab') as dxyz:
+                np.savetxt(dxyz, np.c_[eigval[:, 0], eigval[:, 1],
+                           mtorq_xyz[:, 0].real, mtorq_xyz[:, 0].imag,
+                           mtorq_xyz[:, 1].real, mtorq_xyz[:, 1].imag,
+                           mtorq_xyz[:, 2].real, mtorq_xyz[:, 2].imag],
+                           header='sigma omega Gamma_x_real Gamma_x_imag '
+                                  'Gamma_y_real Gamma_y_imag Gamma_z_real Gamma_z_imag; '
+                                  'full linear Maxwell stress, torque on mantle, '
+                                  'dynamic nondimensional units')
 
     if par.rotdyn:
         with open('rotdyn.dat','ab') as drd:

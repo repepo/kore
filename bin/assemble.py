@@ -1105,6 +1105,8 @@ def main():
                 col  = row
 
                 mtx = op.magnetic_diffusion_mantle(l, 'p', 'bpol_mantle', 0)
+                if par.forcing != 0:
+                    mtx = mtx - 1j*ut.wf*op.b_mantle(l, 'p', 'bpol_mantle', 0)
                 loc_list = ut.packit(loc_list, mtx, row, col)
 
                 bc_b_list_cmb = bc_b_mantle_cmb(l, 'section_p')
@@ -1123,6 +1125,8 @@ def main():
                 col  = row
 
                 mtx = op.magnetic_diffusion_mantle(l, 'q', 'btor_mantle', 0)
+                if par.forcing != 0:
+                    mtx = mtx - 1j*ut.wf*op.b_mantle(l, 'q', 'btor_mantle', 0)
                 loc_list = ut.packit(loc_list, mtx, row, col)
 
                 bc_b_list_cmb = bc_b_mantle_cmb(l, 'section_q')
@@ -1658,11 +1662,20 @@ def bc_b_thinlayer(l, loc, mu_vf, c, c1, boundary):
     G1 = rj*g1 + g
 
     kj = (l+0.5)*epsj-0.5
-    nabF = F2 - l*(l+1)*F/rj
+    nabF = F2 - l*(l+1)*F/rj**2
 
     if loc == 'nocurl':  # section f
 
-        out[0,:] = mu_vf*F1 + (kj/rj)*F + epsj*kj*c*F1 + epsj*c1*rj*(mu_vf+0.5*epsj*kj*c)*nabF
+        muw = getattr(par, 'muw_' + boundary, 1.0)
+        if not (muw > 0):
+            raise ValueError('Thin-wall permeability must be positive.')
+        # First-order wall curvature term; mu_vf = mu_vacuum/mu_fluid.
+        if boundary == 'cmb':
+            curvature = c*l/(mu_vf*muw*rj)*((l + 1)/muw - 1)
+        else:
+            curvature = -c*(l + 1)/(mu_vf*muw*rj)*(l/muw + 1)
+        out[0,:] = ((mu_vf + epsj*kj*c)*F1 + (kj/rj)*F
+                    + epsj*c1*rj*mu_vf*nabF + curvature*F)
 
         if ut.symmB0 == -1:
             row0 = ut.offset_f + int( ut.N1 * ( l - ut.m_bot)/2 )    # starting row
@@ -1899,7 +1912,7 @@ def bc_b_icb(l,loc, innercore, rank, bpp, k):
         if loc == 'nocurl': # use loc_bot l's here (if external magnetic field is antisymm) --------
 
             # Physics ------------------------------------------
-            bessel_wavenumber = (1-1j)*np.sqrt(par.forcing_frequency/2/par.Em)
+            bessel_wavenumber = (1-1j)*np.sqrt(par.forcing_frequency/(2*par.Em) + 0j)
             # the line just below works for lmax~150.
             #icb_diag[0,:] = ut.jl(l,bessel_wavenumber*par.ricb,0) * bv.P0_icb - bessel_wavenumber * ut.jl(l,bessel_wavenumber*par.ricb,1) * bv.P1_icb
             # the line below should work for all lmax
@@ -1915,7 +1928,7 @@ def bc_b_icb(l,loc, innercore, rank, bpp, k):
         elif loc == '1curl': # use loc_top l's here (if external magnetic field is antisymm) -------
 
             # Physics ---------------
-            bessel_wavenumber = (1-1j)*np.sqrt(par.forcing_frequency/2/par.Em)
+            bessel_wavenumber = (1-1j)*np.sqrt(par.forcing_frequency/(2*par.Em) + 0j)
             eta_i2o = (1/par.mu_i2o/par.sigma_i2o)
             # the line just below works for lmax~150.
             #icb_diag[0,:] = ut.jl(l,bessel_wavenumber*par.ricb,0) * bv.T0_icb - bessel_wavenumber * ut.jl(l,bessel_wavenumber*par.ricb,1) * bv.T1_icb

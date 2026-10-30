@@ -37,6 +37,7 @@ field  : field to plot:
          'b'  for fluid-core magnetic field in [ricb, rcmb]
          'bm' for resolved-mantle magnetic field in [rcmb, r_surface]
 opt    : 'raw' for real part (phase and phi dependent!), or 'abs' for the magnitude
+         'phase' for the complex phase in radians, masked where the amplitude is tiny
 '''
 
 plt.rc('text', usetex=True)
@@ -59,8 +60,10 @@ if field == 'u':
         titlelabels = [r'$\mathbf{\hat r}\cdot\left|\mathbf{u_0}\right|$', \
                        r'$\mathbf{\hat \theta}\cdot\left|\mathbf{u_0}\right|$', \
                        r'$\mathbf{\hat \phi}\cdot\left|\mathbf{u_0}\right|$'] 
+    elif plot_opt == 'phase':
+        titlelabels = [r'$\arg(u_r)$', r'$\arg(u_\theta)$', r'$\arg(u_\phi)$']
     else:
-        raise ValueError("opt must be 'raw' or 'abs'")
+        raise ValueError("opt must be 'raw', 'abs', or 'phase'")
     cmap = 'rainbow'
 elif field == 'b':
     a0 = np.loadtxt('real_magnetic.field',usecols=solnum)
@@ -75,8 +78,10 @@ elif field == 'b':
         titlelabels = [r'$\mathbf{\hat r}\cdot\left|\mathbf{b_0}\right|$', \
                        r'$\mathbf{\hat \theta}\cdot\left|\mathbf{b_0}\right|$', \
                        r'$\mathbf{\hat \phi}\cdot\left|\mathbf{b_0}\right|$'] 
+    elif plot_opt == 'phase':
+        titlelabels = [r'$\arg(b_r)$', r'$\arg(b_\theta)$', r'$\arg(b_\phi)$']
     else:
-        raise ValueError("opt must be 'raw' or 'abs'")
+        raise ValueError("opt must be 'raw', 'abs', or 'phase'")
     vsymm = ut.bsymm
     cmap = 'plasma'
 elif field == 'bm':
@@ -94,12 +99,17 @@ elif field == 'bm':
         titlelabels = [r'$\mathbf{\hat r}\cdot\left|\mathbf{b_m}\right|$', \
                        r'$\mathbf{\hat \theta}\cdot\left|\mathbf{b_m}\right|$', \
                        r'$\mathbf{\hat \phi}\cdot\left|\mathbf{b_m}\right|$']
+    elif plot_opt == 'phase':
+        titlelabels = [r'$\arg(b_{m,r})$', r'$\arg(b_{m,\theta})$', r'$\arg(b_{m,\phi})$']
     else:
-        raise ValueError("opt must be 'raw' or 'abs'")
+        raise ValueError("opt must be 'raw', 'abs', or 'phase'")
     vsymm = ut.bsymm
     cmap = 'plasma'
 else:
     raise ValueError("field must be 'u', 'b', or 'bm'")
+
+if plot_opt == 'phase':
+    cmap = 'twilight_shifted'
 
 lmax = par.lmax
 m    = par.m
@@ -240,6 +250,13 @@ print(f"{field}: unmasked triangles = {np.count_nonzero(mask == 0)} / {np.size(m
 
 
 fig=plt.figure(figsize=(14,7))
+phase_levels = np.linspace(-np.pi, np.pi, 81)
+
+def phase_value(component):
+    amplitude = np.absolute(component)
+    cutoff = 1e-8*np.nanmax(amplitude)
+    return np.ma.masked_where(amplitude < cutoff, np.angle(component))
+
 # ------------------------------------------------------------------- ur
 ax1=fig.add_subplot(131)
 ax1.set_title(titlelabels[0],size=20)
@@ -248,6 +265,8 @@ if plot_opt == 'raw':
     im1=ax1.tricontourf( triang, np.real(ur[id_in]), 70, cmap=cmap)
 elif plot_opt == 'abs':
     im1=ax1.tricontourf( triang, np.absolute(ur[id_in]), 70, cmap=cmap)
+elif plot_opt == 'phase':
+    im1=ax1.tricontourf( triang, phase_value(ur[id_in]), phase_levels, cmap=cmap, vmin=-np.pi, vmax=np.pi)
 set_contour_edges_to_face(im1)
 ax1.set_aspect('equal')
 plt.colorbar(im1,aspect=70)
@@ -260,6 +279,8 @@ if plot_opt == 'raw':
     im2=ax2.tricontourf( triang, np.real(utheta[id_in]), 70, cmap=cmap)
 elif plot_opt == 'abs':
     im2=ax2.tricontourf( triang, np.absolute(utheta[id_in]), 70, cmap=cmap)
+elif plot_opt == 'phase':
+    im2=ax2.tricontourf( triang, phase_value(utheta[id_in]), phase_levels, cmap=cmap, vmin=-np.pi, vmax=np.pi)
 set_contour_edges_to_face(im2)
 ax2.set_aspect('equal')
 plt.colorbar(im2,aspect=70)
@@ -272,6 +293,8 @@ if plot_opt == 'raw':
     im3=ax3.tricontourf( triang, np.real(uphi[id_in]), 70, cmap=cmap)
 elif plot_opt == 'abs':
     im3=ax3.tricontourf( triang, np.absolute(uphi[id_in]), 70, cmap=cmap)
+elif plot_opt == 'phase':
+    im3=ax3.tricontourf( triang, phase_value(uphi[id_in]), phase_levels, cmap=cmap, vmin=-np.pi, vmax=np.pi)
 set_contour_edges_to_face(im3)
 ax3.set_aspect('equal')
 plt.colorbar(im3,aspect=70)

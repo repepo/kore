@@ -36,20 +36,20 @@ aux2 = 0.0
 # ----------------------------------------------------------------------------------------------------------------------
 # ---------------------------------------------------------------------------------------------- Hydrodynamic parameters
 # ----------------------------------------------------------------------------------------------------------------------
-hydro = 1# set to 1 to include the Navier-Stokes equation for the flow velocity, set to 0 otherwise
+hydro = 1
 
 # Azimuthal wave number m (>=0)
-m = 3
+m = 1
 
 # Equatorial symmetry of the flow field. Use 1 for symmetric, -1 for antisymmetric.
-symm = 1
+symm = -1
 
-# Inner core radius, CMB radius is unity.
+# Inner core radius, CMB radius is unity. (0.25 -> 0.6 for mercury, 0.35 for earth)
 ricb = 0.35
 
 # Inner core spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow. Ignored if ricb = 0
-bci = 1
+bci = 0
 
 # CMB spherical boundary conditions
 # Use 0 for stress-free, 1 for no-slip or forced boundary flow
@@ -61,7 +61,7 @@ bco = 1
 # Ek = Ek_gap*(1-ricb)**2
 Ek = 10**-4
 
-forcing = 0# Uncomment this line for eigenvalue problems
+forcing = 0
 # forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
 # forcing = 2  # For boundary flow forcing, use with bci=1 and bco=1.
 # forcing = 3  # For Rovira-Navarro 2018 tidal body forcing, m=0,2 must be symm, m=1 antisymm. Leaks power!
@@ -73,10 +73,10 @@ forcing = 0# Uncomment this line for eigenvalue problems
 # forcing = 9  # Radial, symmetric, m=2 boundary flow forcing.
 
 # Forcing frequency (ignored if forcing == 0)
-forcing_frequency = 0.0  # negative is prograde
+forcing_frequency = 1  # negative is prograde
 
 # Forcing amplitude. Body forcing amplitude will use the cmb value
-forcing_amplitude_cmb = 0.0
+forcing_amplitude_cmb = 1.87*10**-4
 forcing_amplitude_icb = 0.0
 
 # if solving an eigenvalue problem, compute projection of eigenmode
@@ -88,7 +88,7 @@ projection = 1
 # ----------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------- Magnetic field parameters
 # ----------------------------------------------------------------------------------------------------------------------
-magnetic = 1 # set to 1 if including the induction equation and the Lorentz force
+magnetic = 1
 
 # Imposed background magnetic field
 # B0 = 'axial'          # Axial, uniform field along the spin axis
@@ -102,28 +102,53 @@ B0_l = 1                # l number for the FDM mode
 
 # Magnetic boundary conditions at the ICB:
 innercore = 'insulator'
-# innercore = 'conducting, Chebys'# For eigenvalue problems
+# innercore = 'conducting, Chebys' # For eigenvalue problems
 # innercore = 'conducting, Bessel'  # For forced problems 
 # innercore = 'TWA'  # Thin conductive wall layer (Roberts, Glatzmaier & Clune, 2010)
 # innercore = 'perfect conductor, material'  # tangential *material* electric field jump [nxE']=0 across the ICB
 # innercore = 'perfect conductor, spatial'   # tangential *spatial* electric field jump [nxE]=0 across the ICB
 c_icb     = 0  # Ratio (h*mu_wall)/(ricb*mu_fluid) (if innercore='TWA')
 c1_icb    = 0  # Thin wall to fluid conductance ratio (if innercore='TWA')
+muw_icb = 1.0  # Wall permeability / vacuum permeability (TWA only)
 # Note: 'perfect conductor, material' or 'perfect conductor, spatial' are identical if ICB is no-slip (bci = 1 above)
+ 
+# Magnetic boundary condition at the CMB: select ONE model
+# mantle = 'insulator'
+# mantle = 'TWA'
+mantle = 'resolved'
 
-# Magnetic boundary conditions at the CMB
-# mantle   = 'insulator'
-mantle = 'TWA'  # Thin conductive wall layer (Roberts, Glatzmaier & Clune, 2010)
-# mantle = 'resolved'# Resolved conducting mantle shell
-c_cmb  = 1e-5  # Ratio (h*mu_wall)/(rcmb*mu_fluid)  (if mantle='TWA')
-c1_cmb = 1e-5  # Thin wall to fluid conductance ratio (if mantle='TWA')
+# TWA parameters: used only if mantle == 'TWA'
+# c_cmb  = (h / R_CMB) * (mu_wall / mu_fluid)
+# c1_cmb = G / (sigma_fluid * R_CMB), with G = sigma_wall * h
+# muw_cmb = mu_wall / mu_vacuum
+c_cmb = 0.01
+c1_cmb = 2.87356e-5
+muw_cmb = 1.0
 
-# Resolved conducting mantle parameters, used only if mantle = 'resolved'
-r_surface = 1.8
-N_mantle = 16
+"""
+Match TWA conductance to the resolved conductivity profile
+thickness = r_surface - 1.0
+c1_cmb = (
+    sigma_mantle_0 * thickness
+    if sigma_mantle_alpha == 0
+    else sigma_mantle_0
+    * (-np.expm1(-sigma_mantle_alpha * thickness))
+    / sigma_mantle_alpha
+)
+"""
+
+# Resolved mantle: used only if mantle == 'resolved'
+# Radii are normalized by R_CMB: the CMB is at r = 1
+r_surface = 1.83
+N_mantle = 64
+
+# Magnetic permeability relative to the fluid
 mu_mantle = 1.0
-sigma_mantle_0 = 1e-2
-sigma_mantle_alpha = 0.1
+
+# Conductivity relative to the fluid:
+# sigma_m(r) / sigma_fluid = sigma_mantle_0 * exp[-alpha * (r - 1)]
+sigma_mantle_0 = 1.0
+sigma_mantle_alpha = 0.0
 
 # Electrical conductivity and permeability
 mu        = 1.0  # magnetic permeability ratio fluid outer core / vacuum
@@ -131,17 +156,23 @@ mu_i2o    = 1.0  # magnetic permeability ratio solid inner core / fluid outer co
 sigma_i2o = 1.0  # electrical conductivity ratio solid inner core / fluid outer core
 
 # Magnetic field strength and magnetic diffusivity:
-# Either use the Elsasser number and the magnetic Prandtl number (i.e. Lambda and Pm: uncomment and set the following three lines):
-Lambda = 0.1  #ssak(0.1,1e-3,Ek)
-Pm = 0.01  #pmak(1,1e-3,Ek)
-Em = Ek/Pm; Le2 = Lambda*Em; Le = np.sqrt(Le2)
-# Or use the Lehnert number and the magnetic Ekman number (i.e. Le and Em: uncomment and set the following three lines):
-#Le = 10**-2.5  #; Lu=2e3
-#Em = Ek/Pm  #Le/Lu
-#Le2 = Le**2
+
+# OPTION 1: Elsasser number and magnetic Prandtl number
+Lambda = 0.1
+Pm = 1.0
+Em = Ek / Pm
+Le2 = Lambda * Em
+Le = np.sqrt(Le2)
+
+# OPTION 2: Lehnert number and magnetic Ekman number
+# Le = 1e-2
+# Em = 1e-3
+# Le2 = Le**2
+# Lambda = Le2 / Em
+# Pm = Ek / Em
 
 # Normalization of the background magnetic field
-# cnorm = 'rms_cmb'                     # Sets the radial rms field at the CMB as unity
+cnorm = 'rms_cmb'                     # Sets the radial rms field at the CMB as unity
 # cnorm = 'mag_energy'                  # Unit magnetic energy as in Luo & Jackson 2022 (I. Torsional oscillations)
 # cnorm = 'Schmitt2012'                 # as above but times 2
 # cnorm = 3.86375                       # G101 of Schmitt 2012, ricb = 0.35
@@ -153,12 +184,12 @@ Em = Ek/Pm; Le2 = Lambda*Em; Le = np.sqrt(Le2)
 # cnorm = 0.6972166887783963            # Luo_S1 ricb = 0, rms_Bs=1
 # cnorm = 0.005061566801979833          # Luo_S2 ricb = 0, unit mag_energy
 # cnorm = 0.0158567582314039            # Luo_S2 ricb = 0, rms_Bs=1
-cnorm = 1
+# cnorm = 1
 
 # ----------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------- Rotational dynamics parameters
 # ----------------------------------------------------------------------------------------------------------------------
-rotdyn = 0 # Set to 1 to let the mantle and the solid inner core respond to axial torques
+rotdyn = 0
 
 # Mantle and inner core axial moments of inertia, dimensionless (i.e. in units of rho*L**5 = density*unit_of_length**5)
 MoIZ_M  = 11.16
@@ -176,7 +207,7 @@ OmgtauIC = 2.3e3  # For Earth use 2.3e3 if tauIC = 1 year
 # ----------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------------- Thermal parameters
 # ----------------------------------------------------------------------------------------------------------------------
-thermal = 0# Use 1 or 0 to include or not the temperature equation and the buoyancy force (Boussinesq)
+thermal = 0
 
 # Prandtl number: ratio of viscous to thermal diffusivity
 Prandtl = 1.0
@@ -218,7 +249,7 @@ bco_thermal = 1   # CMB
 # ----------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------------------- Compositional parameters
 # ----------------------------------------------------------------------------------------------------------------------
-compositional = 0# Use 1 or 0 to include compositional transport or not (Boussinesq)
+compositional = 0
 
 # Schmidt number: ratio of viscous to compositional diffusivity
 Schmidt = 1.0
@@ -273,17 +304,18 @@ OmgTau = 1     # Rotation time scale
 ncpus = 4
 
 # Chebyshev polynomial truncation level. Use function def at top or set manually. N must be even if ricb = 0.
-N = 48 # for the fluid core
+N = 64 # for the fluid core
 # N = 8
 N_cic = 16 # for the field inside the ic (innercore = 'conducting, Chebys') 
 
 # Spherical harmonic truncation lmax and approx lmax/N ratio:
 g = 1.0
-lmax     = int( 2*ncpus*( np.floor_divide( g*N    , 2*ncpus ) ) + m - 1 )
+lmax = 64
+# lmax     = int( 2*ncpus*( np.floor_divide( g*N    , 2*ncpus ) ) + m - 1 )
 # lmax_cic = int( 2*ncpus*( np.floor_divide( g*N_cic, 2*ncpus ) ) + m - 1 )
 # If manually setting the max angular degree lmax, then it must be even if m is odd,
 # and lmax-m+1 should be divisible by 2*ncpus
-# lmax = 7
+#lmax = 7
 lmax_cic = lmax
 
 
@@ -302,21 +334,23 @@ if track_target == 1 :  # read target from file and sets target accordingly
     rtau = tt[0]
     itau = tt[1]
 else:                   # set target manually
-    rtau = 0.0
+    rtau = -1e-3
     itau = 1.0
 
 # tau is the actual target for the solver
 # real part is damping
 # imaginary part is frequency (positive is retrograde)
-tau = rtau + itau*1j
+# rtau = -0.0036564974282164943
+# itau = 1.006394764869795
+tau = rtau + 1j*itau
 
-which_eigenpairs = 'TM'  # Use 'TM' for shift-and-invert
+which_eigenpairs = 'TM'
 # L/S/T & M/R/I
 # L largest, S smallest, T target
 # M magnitude, R real, I imaginary
 
 # Number of desired eigenvalues
-nev = 3
+nev = 5
 
 # Number of vectors in Krylov space for solver
 # ncv = 100
@@ -325,7 +359,7 @@ nev = 3
 maxit = 50
 
 # Tolerance for solver
-tol = 1e-15
+tol = 1e-16
 
 # Tolerance for the thermal/compositional matrix
 tol_tc = 1e-6
