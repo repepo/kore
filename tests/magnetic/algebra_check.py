@@ -5,7 +5,7 @@ algebra_check.py: the magnetic couplings of bin/mag_algebra.py against derive.py
 
 WHY. mag_algebra.py builds the Lorentz force and the induction for an axisymmetric B0 of any degrees from the recurrence
 algebra of angular.py, with no closed forms. For degrees 1 and 2 the runs agree with the closed forms of operators.py to
-round-off (eigenvalues, tests in docs/magnetic.md); for higher degrees this script is the reference: every block, term by
+round-off (eigenvalues, tests in docs/magnetic-equations.md); for higher degrees this script is the reference: every block, term by
 term, against the sympy derivation of derive.rows (b0 = ('pol', n) or ('tor', n)), and that blocks exist exactly where the
 derivation has terms. Degrees n = 1..4 (n = 3 and 4 have no closed forms), several m, row degrees up to 12.
 HOW. A block is Σ coefficient × label (in kore's A sign, without Hendrik and 1/L'³). The label r^(rpow - X) B_n^(j)

@@ -458,7 +458,9 @@ def main(ncpus):
             # NEW (2026-10-30): with a differential rotation, the power of its force on the flow (Wdr) enters too, and the
             # induction work is the volume part ∫ 𝐄⋅(∇×𝐛)* alone (Indu minus its wall terms upp.INDU_WALLS): U0×b at a wall
             # carries magnetic energy through it, into the field outside, which ME_ext and ME_ic already count.
-            if par.bco == 1 and par.bci == 1:
+            # FIX (2026-11-01): bci only where there is an inner wall (at ricb = 0 it is ignored, and the default bci = 0 left
+            # resid𝐄 at nan for every full-sphere run)
+            if par.bco == 1 and (par.bci == 1 or par.ricb == 0):
                 H = par.Hendrik
                 Etot = KE[i] + H*( ME[i] + MEic[i] + MEext[i] )
                 Wex  = Wlor[i] + H*(Indu[i] - Iwall[i]) + Wdr[i]

@@ -5,7 +5,7 @@ and it is a sum of radial operators (Chebyshev/Gegenbauer matrices, built by `su
 depend on $l$ and $m$ (in `operators.py` and `diff_rot.py`). A spherically symmetric background couples each degree only
 to itself. Two backgrounds in kore depend on latitude, so they couple different degrees:
 
-- an imposed **magnetic field** $\mathbf{B}_0$ ([Magnetic field](magnetic.md)), part A of this page;
+- an imposed **magnetic field** $\mathbf{B}_0$ ([Magnetic field](magnetic.md); equations: [Magnetic field equations](magnetic-equations.md)), part A of this page;
 - a **differential rotation** $\Delta\Omega(r, \theta)$ ([Differential rotation](differential_rotation_details.md)), part B.
 
 For each, this page explains why the coefficients are computed the way they are (motivation), the mathematics
@@ -159,9 +159,9 @@ formulas hold at large $l$. The evidence at large $l$ is:
 - poloidal fields ('axial', 'FDM' of degree 1 and 2, 'G21 dipole', 'Luo_S1', 'Luo_S2'): the eigenvalues agree with
   `conductive_IC`, whose closed forms were derived independently, to $6\cdot10^{-13}$ or better with lmax 63–66 (full
   sphere and inner core) and 79–128 (conducting inner core), and to $10^{-9}$ for the inviscid torsional modes of 'Luo_S2'
-  with lmax 95–191 (against `conductive_IC` with its inviscid bases corrected, [Magnetic field](magnetic.md));
+  with lmax 95–191 (against `conductive_IC` with its inviscid bases corrected, [Magnetic field equations](magnetic-equations.md#full-sphere-inviscid-runs-and-degree-2-poloidal-fields));
 - toroidal fields (no independent code): the energy budgets, which sum the powers over all degrees of the run
-  (lmax 47–64, residuals $10^{-11}$ to $10^{-13}$), and the Malkus (1967) frequencies ([Magnetic field](magnetic.md),
+  (lmax 47–64, residuals $10^{-11}$ to $10^{-13}$), and the Malkus (1967) frequencies ([Magnetic field equations](magnetic-equations.md#toroidal-field-2026-10-28),
   Checks). Both test the operators through whole eigenvectors, not coefficient by coefficient;
 - a one-off comparison (2026-10-30) of every fitted coefficient of the degree-2 fields with derive.py at $l = 20$, $m = 3$
   and $l = 31$, $m = 7$, outside the fitting range: largest relative difference $4.3\cdot10^{-10}$ (poloidal, 40 blocks)
@@ -328,7 +328,7 @@ with the profile codes `hp` + degree ($c_\mathrm{norm}h_n$) and `kt` + degree ($
 `background_field.pol_profiles`, `tor_profiles`.
 
 **Verification.** For degrees 1 and 2 the eigenvalues equal those of the closed forms to $\le 6\cdot10^{-13}$ (14 cases,
-[Magnetic field](magnetic.md)); `tests/magnetic/algebra_check.py` compares every block with derive.py for degrees 1–4;
+[Magnetic field equations](magnetic-equations.md#differential-rotation-confined-general-and-ferraro-fields-2026-10-30)); `tests/magnetic/algebra_check.py` compares every block with derive.py for degrees 1–4;
 the energy budgets close to round-off for fields of several degrees.
 
 **How to use it.** `par.mag_couplings = 'algebra'` for any type, or a type that needs it:

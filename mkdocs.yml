@@ -16,6 +16,7 @@ nav:
       - Anelastic equations: anelastic.md
       - Numerical method: numerical-method.md
       - Differential rotation: differential_rotation_details.md
+      - Magnetic field: magnetic-equations.md
       - Reynolds-stress forcing: reynolds-stress.md
       - Derivation tools: derivations.md
 

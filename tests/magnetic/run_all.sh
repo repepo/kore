@@ -1,5 +1,5 @@
 #!/bin/bash
-# Checks of the magnetic field with a variable density (docs/magnetic.md). usage: tests/magnetic/run_all.sh [WORKDIR]
+# Checks of the magnetic field with a variable density (docs/magnetic-equations.md, Checks). usage: tests/magnetic/run_all.sh [WORKDIR]
 # (default tests/magnetic/runs; needs numpy, scipy, sympy, mpi4py, petsc4py, slepc4py; ~40 minutes on 2 to 4 ranks)
 set -e -o pipefail
 T=$(cd "$(dirname "$0")" && pwd)

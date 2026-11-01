@@ -1,6 +1,6 @@
 # Checks of the magnetic field
 
-Companion of `docs/magnetic.md`, for the magnetic terms with a variable density (steps 3 to 5 of the port from conductive_IC,
+Companion of `docs/magnetic.md` and `docs/magnetic-equations.md`, for the magnetic terms with a variable density (steps 3 to 5 of the port from conductive_IC,
 2026-10-28: any density, the toroidal B0, the full sphere and the poloidal B0 of degree 2). `run_all.sh [WORKDIR]` builds the runs it needs under `tests/magnetic/runs/` and prints one verdict per check
 (about 60 minutes, two thirds of it derive_check.py, which `SKIP_DERIVE=1 run_all.sh` skips; the solves need petsc4py and slepc4py, see the note on slepc4py 3.26 below).
 
@@ -24,7 +24,7 @@ Companion of `docs/magnetic.md`, for the magnetic terms with a variable density 
 fitted from derive.py with `tools/derive/fit_rows.py` and written as code with `tools/derive/gen_table.py`; `docs/derivations.md`
 is the guide to all of these, with worked examples.
 
-Results of 2026-10-28 are in `docs/magnetic.md` (Checks). `derive.py` was used to derive, not only to check, the anelastic
+Results of 2026-10-28 are in `docs/magnetic-equations.md` (Checks). `derive.py` was used to derive, not only to check, the anelastic
 terms: the derivation, the row checks and the budgets are independent of each other.
 
 On chandler, slepc4py 3.26 has no `SLEPc.COMM_WORLD`, which `bin/solve.py` uses: the solves fail there until that is fixed

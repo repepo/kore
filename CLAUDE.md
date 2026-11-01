@@ -90,10 +90,11 @@ Other directories: `tests/ci/` (the test GitHub runs on every push, §11); `test
 `tests/rsf/` (§11, each with a README); `docs/` (mkdocs, public user documentation: `installation.md` (from conductive_IC), `getting-started.md` (a
 step-by-step run of Baruteau & Rieutord 2013 fig. 10), the user guide `background.md` (structure, stratification,
 diffusivity with ThermaD = 0, rotation and thermal wind), `forcing.md` (forcing 11: a worked m = 2 Rossby-mode scan, set-up,
-output), `solver.md` (bad solutions, memory) and `output.md` (the files and their columns), `benchmarks.md` (set-up and result of each published benchmark), and the mathematical framework
+output), `magnetic.md` (choosing the background field B0, its options and caveats), `solver.md` (bad solutions, memory) and `output.md` (the files and their columns), `benchmarks.md` (set-up and result of each published benchmark), and the mathematical framework
 `anelastic.md` (the LBR equations, non-dimensionalization, ThermaD = 0, the terms of a differential rotation, validity),
 `numerical-method.md` (unknowns, radial basis, rows, boundary conditions, checks), `differential_rotation_details.md`
-(the equations and code of the differential rotation) and `reynolds-stress.md` (forcing 11: origin of the force,
+(the equations and code of the differential rotation), `magnetic-equations.md` (the magnetic equations, every B0
+profile, rows, boundary conditions, Ferraro constructions, wound field, budgets, checks) and `reynolds-stress.md` (forcing 11: origin of the force,
 Landau-Lifshitz stress, mode energy, rows, spectrum)); `examples/smooth_sun/` (the solar example: full sphere, m 8 HFR mode); `tools/` (submission, plotting,
 `kore2sprouts.py`, `m2petsc.py`), `koreviz/`, `koreviz_mod/` (visualisation); `srunKore.sh` (SLURM);
 `poly.n1_gamma3.h5`, `theprofile.data` (files of the removed file-based models, unused).
@@ -104,7 +105,7 @@ Landau-Lifshitz stress, mode energy, rows, spectrum)); `examples/smooth_sun/` (t
 `thermal = 1` the entropy perturbation s_l(r), s = δs/c_p, and with `magnetic = 1` (2026-10-28) the field
 b = ∇×∇×(f **r**) + ∇×(g **r**). Compositional physics was removed.
 
-**Magnetic field** (`magnetic = 1`, `docs/magnetic.md`, ported from conductive_IC `39487bbf`): imposed poloidal
+**Magnetic field** (`magnetic = 1`, `docs/magnetic.md`, `docs/magnetic-equations.md`, ported from conductive_IC `39487bbf`): imposed poloidal
 B0 = cnorm ∇×∇×(h Y_l0 **r**) ('axial', 'G21 dipole', 'Luo_S1', 'FDM' with `B0_l` 1 or 2, 'Luo_S2'; `B0_ic` for the
 full-sphere fields with an inner core; `background_field.py`); ∂b/∂t = ∇×(u×B0) + MagnetD ∇²b
 (rows r² r̂· in section `f`, r² r̂·∇× in `g`) and the Lorentz force Hendrik ρ₀⁻¹[(∇×b)×B0 + (∇×B0)×b] in the momentum rows
