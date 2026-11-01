@@ -1,0 +1,2700 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../differential_rotation_details/">
+      
+      
+        <link rel="next" href="../reynolds-stress/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Magnetic field - User Manual</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#magnetic-field-equations" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="User Manual" class="md-header__button md-logo" aria-label="User Manual" data-md-component="logo">
+      
+  <img src="../assets/test1.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            User Manual
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Magnetic field
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Introduction
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../installation/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Installation
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../getting-started/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../background/" class="md-tabs__link">
+          
+  
+  
+  User guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../benchmarks/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Benchmarks
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../anelastic/" class="md-tabs__link">
+          
+  
+  
+  Mathematical framework
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="User Manual" class="md-nav__button md-logo" aria-label="User Manual" data-md-component="logo">
+      
+  <img src="../assets/test1.png" alt="logo">
+
+    </a>
+    User Manual
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../background/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../forcing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Convective forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../thermal-forcing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Thermal forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../magnetic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Magnetic field
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../solver/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Solver
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Output files
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../benchmarks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmarks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mathematical framework
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Mathematical framework
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../anelastic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Anelastic equations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../numerical-method/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical method
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../differential_rotation_details/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Differential rotation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Magnetic field
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Magnetic field
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#equations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Equations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#background-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Background fields
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Background fields">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#poloidal-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Poloidal fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#toroidal-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Toroidal fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#normalisation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Normalisation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#variable-density" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Variable density
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rows-and-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rows and implementation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rows and implementation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#couplings-for-any-background" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Couplings for any background
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#boundary-conditions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Boundary conditions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#with-a-differential-rotation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        With a differential rotation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="With a differential rotation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-ferraro-condition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Ferraro condition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-field-from-the-rotation-b0-ferraro" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The field from the rotation: B0 = 'ferraro'
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-rotation-from-the-field-diff_rot_type-ferraro" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The rotation from the field: diff_rot_type = 'ferraro'
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-wound-toroidal-field-b0_wound-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The wound toroidal field: B0_wound = 1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-the-ignored-lorentz-force-matters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When the ignored Lorentz force matters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#energy-budgets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Energy budgets
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checks
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Checks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#against-conductive_ic-insulating-walls-2026-10-28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Against conductive_IC, insulating walls (2026-10-28)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#conducting-inner-core-2026-10-28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conducting inner core (2026-10-28)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#variable-density-checks-2026-10-28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Variable density checks (2026-10-28)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#toroidal-field-2026-10-28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Toroidal field (2026-10-28)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#full-sphere-inviscid-runs-and-degree-2-poloidal-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Full sphere, inviscid runs and degree-2 poloidal fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#differential-rotation-confined-general-and-ferraro-fields-2026-10-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Differential rotation, confined, general and Ferraro fields (2026-10-30)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reynolds-stress/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reynolds-stress forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../derivations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Derivation tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#equations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Equations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#background-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Background fields
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Background fields">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#poloidal-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Poloidal fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#toroidal-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Toroidal fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#normalisation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Normalisation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#variable-density" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Variable density
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rows-and-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rows and implementation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rows and implementation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#couplings-for-any-background" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Couplings for any background
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#boundary-conditions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Boundary conditions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#with-a-differential-rotation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        With a differential rotation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="With a differential rotation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-ferraro-condition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Ferraro condition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-field-from-the-rotation-b0-ferraro" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The field from the rotation: B0 = 'ferraro'
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-rotation-from-the-field-diff_rot_type-ferraro" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The rotation from the field: diff_rot_type = 'ferraro'
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-wound-toroidal-field-b0_wound-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The wound toroidal field: B0_wound = 1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-the-ignored-lorentz-force-matters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When the ignored Lorentz force matters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#energy-budgets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Energy budgets
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checks
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Checks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#against-conductive_ic-insulating-walls-2026-10-28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Against conductive_IC, insulating walls (2026-10-28)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#conducting-inner-core-2026-10-28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conducting inner core (2026-10-28)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#variable-density-checks-2026-10-28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Variable density checks (2026-10-28)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#toroidal-field-2026-10-28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Toroidal field (2026-10-28)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#full-sphere-inviscid-runs-and-degree-2-poloidal-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Full sphere, inviscid runs and degree-2 poloidal fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#differential-rotation-confined-general-and-ferraro-fields-2026-10-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Differential rotation, confined, general and Ferraro fields (2026-10-30)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="magnetic-field-equations">Magnetic field equations</h1>
+<p>This page gives the equations kore solves with <code>magnetic = 1</code>: the induction equation and the Lorentz force in the
+anelastic setting, the background fields <span class="arithmatex">\(\mathbf B_0\)</span> and their normalisation, the rows and boundary conditions, the
+coupling with a differential rotation (the Ferraro constructions and the wound field), the energy budgets, and the
+checks. How to set up a run is on <a href="../magnetic/">Magnetic field</a>. How the rows were derived and fitted is on
+<a href="../derivations/">Derivation tools</a>, part A.</p>
+<p>The operators, the background fields and the boundary conditions were ported from the <code>conductive_IC</code> branch (commit
+<code>39487bbf</code>), formula by formula, into this branch's conventions: on 2026-10-28 insulating walls (step 1), a conducting
+inner core (step 2), any density profile (step 3), a toroidal background field (step 4), the full sphere, inviscid runs
+and the poloidal fields of degree 2 (step 5); on 2026-10-30 the induction by a differential rotation, a confined field,
+fields of any degrees and the Ferraro field, with couplings built from the recurrence algebra.</p>
+<h2 id="equations">Equations</h2>
+<p>The perturbation field is written as</p>
+<div class="arithmatex">\[
+\mathbf b = \nabla\times\nabla\times(f\,\mathbf r) + \nabla\times(g\,\mathbf r),
+\]</div>
+<p>with no <span class="arithmatex">\(\rho_0\)</span>: it is solenoidal by itself. In units of the time scale <span class="arithmatex">\(\tau\)</span> (<code>timescale</code>),</p>
+<div class="arithmatex">\[
+\frac{\partial \mathbf b}{\partial t} = \nabla\times(\mathbf u\times\mathbf B_0) + \mathrm{MagnetD}\,\nabla^2\mathbf b,
+\]</div>
+<div class="arithmatex">\[
+\mathbf F_L = \frac{\mathrm{Hendrik}}{\rho_0}\left[(\nabla\times\mathbf b)\times\mathbf B_0 + (\nabla\times\mathbf B_0)\times\mathbf b\right],
+\]</div>
+<p>with <span class="arithmatex">\(\mathbf F_L\)</span> the Lorentz force per unit mass in the momentum equation (<a href="../anelastic/">Anelastic equations</a>). The
+factors are</p>
+<table>
+<thead>
+<tr>
+<th>factor</th>
+<th>definition</th>
+<th><code>set_scales()</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Hendrik</code></td>
+<td><span class="arithmatex">\((\tau B_0/r_0)^2/(\rho_0\mu_0)\)</span></td>
+<td><span class="arithmatex">\((\mathrm{Gaspard}\cdot\mathrm{Le})^2\)</span></td>
+</tr>
+<tr>
+<td><code>MagnetD</code></td>
+<td><span class="arithmatex">\(\eta_0\tau/r_0^2\)</span></td>
+<td><span class="arithmatex">\(\mathrm{Gaspard}\cdot\mathrm{Em}\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>with the Lehnert number and the magnetic Ekman number, both defined with the rotation rate as <code>Ek</code> is,</p>
+<div class="arithmatex">\[
+\mathrm{Le} = \frac{B_0}{\Omega r_0\sqrt{\rho_0\mu_0}}, \qquad \mathrm{Em} = \frac{\eta_0}{\Omega r_0^2} = \frac{\mathrm{Ek}}{Pm},
+\qquad \Lambda = \frac{\mathrm{Le}^2}{\mathrm{Em}}
+\]</div>
+<p>(<span class="arithmatex">\(\Lambda\)</span> the Elsasser number, <span class="arithmatex">\(Pm\)</span> the magnetic Prandtl number). Besides <code>'rotation'</code> and <code>'viscous'</code>, <code>set_scales()</code> knows the time
+scales <code>'Alfven'</code> (Gaspard <span class="arithmatex">\(= 1/\mathrm{Le}\)</span>, so Hendrik <span class="arithmatex">\(= 1\)</span>) and <code>'magnetic'</code> (Gaspard <span class="arithmatex">\(= 1/\mathrm{Em}\)</span>, so MagnetD <span class="arithmatex">\(= 1\)</span>).
+<code>Le</code> and <code>Em</code> must be set before <code>set_scales()</code> is called.</p>
+<p>The magnetic diffusivity <span class="arithmatex">\(\eta\)</span> is uniform (<code>background.diffusivity(..., 'eta')</code> returns 1; the operators already
+have the <span class="arithmatex">\(\eta'\)</span> terms).</p>
+<p><strong>Equatorial symmetry.</strong> With an equatorially antisymmetric <span class="arithmatex">\(\mathbf B_0\)</span> the field <span class="arithmatex">\(\mathbf b\)</span> has the symmetry opposite to
+<span class="arithmatex">\(\mathbf u\)</span> (<code>ut.bsymm = symm * symmB0</code>): <span class="arithmatex">\(f\)</span> takes the degrees of the toroidal flow and <span class="arithmatex">\(g\)</span> those of the poloidal flow. A
+poloidal field of degree <span class="arithmatex">\(n\)</span> has the symmetry <span class="arithmatex">\((-1)^n\)</span>, a toroidal one <span class="arithmatex">\((-1)^{n+1}\)</span>. A degree-1 toroidal field is symmetric
+(<span class="arithmatex">\(B_\phi\propto\sin\theta\)</span>), so <span class="arithmatex">\(f\)</span> then has the degrees of the poloidal flow; a degree-2 one is antisymmetric, like the
+dipole. A poloidal and a toroidal part can be combined only if they have the same symmetry.</p>
+<h2 id="background-fields">Background fields</h2>
+<h3 id="poloidal-fields">Poloidal fields</h3>
+<div class="arithmatex">\[
+\mathbf B_0 = c_\mathrm{norm}\nabla\times\nabla\times(h(r)\,Y_l^0\,\mathbf r),
+\]</div>
+<p>axisymmetric, with <span class="arithmatex">\(Y_l^0\)</span> the Schmidt harmonic <span class="arithmatex">\(P_l(\cos\theta)\)</span> (<code>bin/background_field.py</code>). Then</p>
+<div class="arithmatex">\[
+B_{0r} = c_\mathrm{norm}\,\frac{l(l+1)\,h}{r}\,Y_l^0, \qquad
+\nabla\times\mathbf B_0 = c_\mathrm{norm}(D_l h)\,\partial_\theta Y_l^0\,\hat{\boldsymbol\phi}, \qquad
+D_l h = h'' + \frac{2h'}{r} - \frac{l(l+1)h}{r^2} .
+\]</div>
+<table>
+<thead>
+<tr>
+<th><code>B0</code></th>
+<th><span class="arithmatex">\(h(r)\)</span></th>
+<th>degree, symmetry</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>'axial'</code></td>
+<td><span class="arithmatex">\(r/2\)</span>: the uniform field <span class="arithmatex">\(c_\mathrm{norm}\hat{\mathbf z}\)</span>, no current</td>
+<td><span class="arithmatex">\(l = 1\)</span>, antisymmetric</td>
+</tr>
+<tr>
+<td><code>'FDM'</code></td>
+<td>the poloidal free decay mode (equation below)</td>
+<td><span class="arithmatex">\(l\)</span> = <code>B0_l</code> = 1 (antisymmetric) or 2 (symmetric)</td>
+</tr>
+<tr>
+<td><code>'G21 dipole'</code></td>
+<td><span class="arithmatex">\(r/6 - r^3/10\)</span> (Gerick et al. 2021)</td>
+<td><span class="arithmatex">\(l = 1\)</span>, antisymmetric</td>
+</tr>
+<tr>
+<td><code>'Luo_S1'</code></td>
+<td><span class="arithmatex">\(5r - 3r^3\)</span> (Luo &amp; Jackson 2022): 30 times the <span class="arithmatex">\(h\)</span> of <code>'G21 dipole'</code>, so the same field with <code>cnorm</code> <code>'mag_energy'</code>, <code>'Schmitt2012'</code> or <code>'rms_cmb'</code>, and 30 times stronger with a numerical <code>cnorm</code></td>
+<td><span class="arithmatex">\(l = 1\)</span>, antisymmetric</td>
+</tr>
+<tr>
+<td><code>'Luo_S2'</code></td>
+<td><span class="arithmatex">\(157r^2 - 296r^4 + 143r^6\)</span> (Luo &amp; Jackson 2022)</td>
+<td><span class="arithmatex">\(l = 2\)</span>, symmetric</td>
+</tr>
+<tr>
+<td><code>'confined'</code></td>
+<td><span class="arithmatex">\(r^l(r_2^2 - r^2)^p\)</span> (<span class="arithmatex">\(r_1 = 0\)</span>) or <span class="arithmatex">\(r^l(r - r_1)^p(r_2 - r)^p\)</span> in <span class="arithmatex">\(r_1 \le r \le r_2\)</span>, zero outside (<span class="arithmatex">\(r_1\)</span>, <span class="arithmatex">\(r_2\)</span> = <code>B0_conf_r1</code>, <code>B0_conf_r2</code>, <span class="arithmatex">\(p\)</span> = <code>B0_conf_p</code>, default 12)</td>
+<td><span class="arithmatex">\(l\)</span> = <code>B0_l</code> = 1 or 2</td>
+</tr>
+<tr>
+<td><code>'general'</code></td>
+<td><span class="arithmatex">\(\sum_n h_n(r)\,Y_n^0\)</span>, <code>B0_profiles</code> = {n: 'numpy expression of r, p'} (<span class="arithmatex">\(p\)</span> = <code>B0_param</code>)</td>
+<td>any degrees of one parity</td>
+</tr>
+<tr>
+<td><code>'ferraro'</code></td>
+<td>the field whose flux function is <span class="arithmatex">\(\psi = G(\Delta\Omega)\)</span> (<a href="#the-field-from-the-rotation-b0-ferraro">below</a>)</td>
+<td>odd degrees up to <code>B0_ferraro_nmax</code>, antisymmetric</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Free decay mode.</strong> In a shell (Zhang &amp; Fearn 1995), with <span class="arithmatex">\(\beta\)</span> the root of <code>findbeta</code> near <code>beta</code>, and in a full sphere
+(Gubbins &amp; Roberts 1987),</p>
+<div class="arithmatex">\[
+h = j_l(\beta r)\,y_{l-1}(\beta) - j_{l-1}(\beta)\,y_l(\beta r) \quad (r_i &gt; 0), \qquad
+h = j_l(\beta r) \ \text{with}\ j_{l-1}(\beta) = 0 \quad (r_i = 0).
+\]</div>
+<p>The FDM, <code>'G21 dipole'</code>, <code>'Luo_S1'</code> and <code>'Luo_S2'</code> match a potential field at the outer wall (<span class="arithmatex">\(rh' + (l+1)h = 0\)</span> at <span class="arithmatex">\(r = 1\)</span>);
+the FDM matches one at both walls, so it suits insulating walls. <code>'axial'</code> is the uniform field, potential everywhere.
+<code>'confined'</code> is zero at the wall. <code>'general'</code> and <code>'ferraro'</code> need not match: where they do not, the field meets the
+insulating mantle with a surface current, which the linear problem allows.</p>
+<p><strong>Full-sphere fields with an inner core.</strong> <code>'G21 dipole'</code>, <code>'Luo_S1'</code> and <code>'Luo_S2'</code> are full-sphere fields. With an inner
+core, <code>B0_ic = 'potential'</code> (default) adds <span class="arithmatex">\(\beta_i r^{-(l+1)}\)</span>, <span class="arithmatex">\(\beta_i = r_i^{l+1}(r_i h' - l h)/(2l+1)\)</span> at <span class="arithmatex">\(r_i\)</span>, so that
+<span class="arithmatex">\(rh' - lh = 0\)</span> at the inner boundary: the field of the currents in the fluid, continued as a potential field into the
+core. <code>'full sphere'</code> keeps <span class="arithmatex">\(h\)</span> as it is (<code>conductive_IC</code>'s <code>B0_beta_ic</code>). <code>B0_ic</code> has no effect on the other types or
+with <code>ricb = 0</code>.</p>
+<p><strong>Confined field.</strong> <code>'confined'</code> is zero outside <span class="arithmatex">\(r_1 \le r \le r_2\)</span>, and <span class="arithmatex">\(h\)</span> and its first <span class="arithmatex">\(p - 1\)</span> derivatives vanish at the
+edges, so there are no surface currents (<span class="arithmatex">\(B_r \propto h\)</span> and <span class="arithmatex">\(B_\theta \propto h' + h/r\)</span> are continuous for <span class="arithmatex">\(p \ge 2\)</span>, the
+smallest value accepted; the volume current, which involves <span class="arithmatex">\(h''\)</span>, is continuous for <span class="arithmatex">\(p \ge 3\)</span>; <span class="arithmatex">\(p = 4\)</span> makes <span class="arithmatex">\(h'''\)</span>
+continuous).
+Its purpose: a poloidal field inside a region where <span class="arithmatex">\(\Delta\Omega\)</span> is uniform is a steady background with the differential
+rotation (Ferraro, <a href="#with-a-differential-rotation">below</a>). With an inner core the region must lie in the fluid
+(<span class="arithmatex">\(r_1 \ge\)</span> <code>ricb</code>). The edges are smooth only to order <span class="arithmatex">\(p\)</span>, so the Chebyshev series converge algebraically (coefficients
+<span class="arithmatex">\(\sim k^{-(p+1)}\)</span>): with <span class="arithmatex">\(p = 12\)</span> the budgets close to <span class="arithmatex">\(10^{-12}\)</span> at N 96–128 in a shell, but a region that reaches the
+centre of a full sphere needs N 192 (degree 1) to 384 (degree 2) for <span class="arithmatex">\(10^{-9}\)</span>. <span class="arithmatex">\(h\)</span> is evaluated in factored form: expanded
+into monomials, a polynomial of degree <span class="arithmatex">\(2p + l\)</span> loses all its digits to cancellation near the edges.</p>
+<p><strong>Any degrees.</strong> <code>'general'</code> takes <span class="arithmatex">\(h_n\)</span> degree by degree as expressions. Their derivatives come from Chebyshev
+interpolants (degree max(64, 2N)); in a full sphere they are evaluated at <span class="arithmatex">\(\lvert r\rvert\)</span> with the parity <span class="arithmatex">\((-1)^n\)</span>, and <span class="arithmatex">\(h_n\)</span>
+should go as <span class="arithmatex">\(r^n\)</span> at the centre. The degrees must have one parity (one equatorial symmetry); the lowest sets it.
+<code>cnorm = 'mag_energy'</code> sums <span class="arithmatex">\(\int B_0^2 dV\)</span> over the degrees. The couplings come from the recurrence algebra
+(<a href="#couplings-for-any-background">Couplings for any background</a>).</p>
+<h3 id="toroidal-fields">Toroidal fields</h3>
+<div class="arithmatex">\[
+\mathbf B_0^{tor} = c_\mathrm{tor}\nabla\times(k(r)\,Y_n^0\,\mathbf r),
+\]</div>
+<p>purely azimuthal, with <span class="arithmatex">\(c_\mathrm{tor}\)</span> = <code>cnorm_tor</code> and <span class="arithmatex">\(n\)</span> = <code>B0_tor_l</code>:</p>
+<div class="arithmatex">\[
+B_\phi = -c_\mathrm{tor}\,k\,\partial_\theta Y_n^0 =
+\begin{cases} c_\mathrm{tor}\,k\sin\theta, &amp; n = 1,\\ 3c_\mathrm{tor}\,k\sin\theta\cos\theta, &amp; n = 2. \end{cases}
+\]</div>
+<table>
+<thead>
+<tr>
+<th><code>B0_tor</code></th>
+<th><span class="arithmatex">\(k(r)\)</span></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>'Malkus'</code></td>
+<td><span class="arithmatex">\(r\)</span></td>
+<td>for <span class="arithmatex">\(n = 1\)</span>, <span class="arithmatex">\(B_\phi = c_\mathrm{tor}\,s\)</span> (Malkus 1967), with a uniform axial current <span class="arithmatex">\(2c_\mathrm{tor}\)</span></td>
+</tr>
+<tr>
+<td><code>'wall'</code></td>
+<td><span class="arithmatex">\(r(r - r_i)(1 - r)/(1 - r_i)^2\)</span>; with <code>ricb = 0</code>, <span class="arithmatex">\(r^n(1 - r^2)\)</span></td>
+<td>zero at both walls</td>
+</tr>
+<tr>
+<td><code>'user'</code></td>
+<td><code>B0_tor_profile</code>, a numpy expression of <span class="arithmatex">\(r\)</span> and <span class="arithmatex">\(p\)</span> = <code>B0_tor_param</code></td>
+<td>its derivatives from a Chebyshev interpolant (degree max(64, 2N)); written to <code>params.dat</code> after <code>#</code></td>
+</tr>
+<tr>
+<td><code>'general'</code></td>
+<td><span class="arithmatex">\(\sum_n k_n Y_n^0\)</span>, <code>B0_tor_profiles</code> = {n: 'numpy expression of r, p'}, with <span class="arithmatex">\(p\)</span> = <code>B0_param</code> (not <code>B0_tor_param</code>)</td>
+<td>any degrees of one parity; derivatives as for the poloidal <code>'general'</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>B0 = None</code> gives a toroidal field alone. A toroidal field that does not vanish at a wall (<code>'Malkus'</code>) carries a surface
+current there. The linear problem is unaffected: the walls' conditions on <span class="arithmatex">\(\mathbf b\)</span> do not involve <span class="arithmatex">\(\mathbf B_0\)</span>, and
+<span class="arithmatex">\(\mathbf u\times\mathbf B_0 = 0\)</span> on a no-slip wall. Inside a conducting inner core <span class="arithmatex">\(\mathbf B_0\)</span> does not enter: there is no
+flow there, and <span class="arithmatex">\(\mathbf u\times\mathbf B_0 = 0\)</span> at the no-slip inner boundary, so the matching conditions do not involve it
+either.</p>
+<h3 id="normalisation">Normalisation</h3>
+<p><code>cnorm</code> is a number, or computed as in <code>conductive_IC</code> (<code>background_field.B0_norm</code>, Gauss–Legendre quadrature with 240
+nodes):</p>
+<ul>
+<li><code>'rms_cmb'</code>: the rms of the radial field over the outer wall is 1, <span class="arithmatex">\(c_\mathrm{norm} = \sqrt{2l+1}/(L\,h(1))\)</span>, <span class="arithmatex">\(L = l(l+1)\)</span>.
+  Single-degree types only: <code>'confined'</code> and <code>'ferraro'</code> stop with a message (<code>'confined'</code> is zero at the wall);
+  <code>'general'</code> is not refused but fails (<code>B0_norm</code> raises a ValueError before <code>check_magnetic</code> runs).</li>
+<li><code>'mag_energy'</code>: <span class="arithmatex">\(\int B_0^2\,dV = 1\)</span> over the fluid (Luo &amp; Jackson 2022); <code>'Schmitt2012'</code>: <span class="arithmatex">\(\int B_0^2\,dV = 4\)</span>. For one
+  degree,</li>
+</ul>
+<div class="arithmatex">\[
+\int B_0^2\,dV = \frac{4\pi L}{2l+1}\int\left[(L + 1)h^2 + 2rhh' + r^2h'^2\right]dr ,
+\]</div>
+<p>summed over the degrees for <code>'general'</code> and <code>'ferraro'</code> (they are orthogonal), and taken over the region only for
+  <code>'confined'</code>.</p>
+<p><code>cnorm_tor</code> is a number, <code>'mag_energy'</code> or <code>'Schmitt2012'</code>, with <span class="arithmatex">\(\int B_0^2\,dV = n_l L\int k^2 r^2\,dr\)</span>, <span class="arithmatex">\(n_l = 4\pi/(2n+1)\)</span>,
+<span class="arithmatex">\(L = n(n+1)\)</span> (summed over the degrees for <code>'general'</code>).</p>
+<h2 id="variable-density">Variable density</h2>
+<p>With the flow written as</p>
+<div class="arithmatex">\[
+\mathbf u = \rho_0^{-1}\nabla\times\nabla\times(\rho_0 P\,\mathbf r) + \nabla\times(T\,\mathbf r),
+\]</div>
+<p>its consoidal part is <span class="arithmatex">\(P' + P/r + \lambda_1 P\)</span>, with <span class="arithmatex">\(\lambda_1 = (\ln\rho_0)'\)</span>, <span class="arithmatex">\(\lambda_2 = (\ln\rho_0)''\)</span>, and
+<span class="arithmatex">\(\nabla\cdot\mathbf u = -\lambda_1 u_r\)</span>. The
+rows were derived from the definitions with <code>tests/magnetic/derive.py</code> (sympy, exact projection on the harmonics). For
+<span class="arithmatex">\(\mathbf B_0\)</span> of degree 1:</p>
+<ul>
+<li>rows <code>f</code>, columns P: every <span class="arithmatex">\(d/dr\)</span> on <span class="arithmatex">\(P\)</span> becomes <span class="arithmatex">\(d/dr + \lambda_1\)</span> (label <code>f1bpo0lho1_D0</code>);</li>
+<li>
+<p>rows <code>g</code>, columns P, diagonal in <span class="arithmatex">\(l\)</span> only (in the scale of <code>conductive_IC</code>'s rows; zero for m = 0), from
+  <span class="arithmatex">\(-\mathbf B_0\nabla\cdot\mathbf u\)</span> and the <span class="arithmatex">\(\lambda_1 P\)</span> above:</p>
+<div class="arithmatex">\[
+2im\left[r h\lambda_1 P' + r h\lambda_2 P + \left(1 - \tfrac{L}{2}\right) r h'\lambda_1 P - \tfrac{L}{2}\,h\lambda_1 P\right];
+\]</div>
+</li>
+<li>
+<p>rows <code>u</code>, with <span class="arithmatex">\(\mathbf G\)</span> the Lorentz force per volume:</p>
+<div class="arithmatex">\[
+\rho_0\hat{\mathbf r}\cdot\nabla\times\nabla\times(\rho_0^{-1}\mathbf G) = \hat{\mathbf r}\cdot\nabla\times\nabla\times\mathbf G - \frac{\lambda_1}{r}\nabla_1\cdot\mathbf G_H .
+\]</div>
+<p>The extra term, <span class="arithmatex">\(\lambda_1 r^4\,\nabla_1\cdot\mathbf G_H\)</span> projected on <span class="arithmatex">\(Y_l\)</span>, is, for the toroidal field of the same degree and for the
+poloidal field of degree <span class="arithmatex">\(l_c = l\pm1\)</span> (<code>operators.lorentz_rho</code>),</p>
+<div class="arithmatex">\[
+-im\lambda_1\left[(L+2)r^2hg + Lr^3h'g + 2r^3hg'\right], \qquad
+\frac{y}{2}\lambda_1 r^3\left[2a\,h\,D_{l_c}f + L_c b\,(D_1 h) f\right],
+\]</div>
+<p>with <span class="arithmatex">\(D_l\)</span> as above and</p>
+<div class="arithmatex">\[
+y = \langle Y_l\,\vert\,\cos\theta\,Y_{l_c}\rangle, \qquad a = 2 - L_c - L, \qquad b = L_c - 2 - L ;
+\]</div>
+</li>
+<li>
+<p>rows <code>v</code>, the T columns, the diffusion, the walls and the inner core: no <span class="arithmatex">\(\rho_0\)</span> terms.</p>
+</li>
+</ul>
+<p>The new labels pair <code>bpo</code> with <code>lho</code> (two profiles, plus <code>ohr1</code> in the rows <code>u</code>). They vanish exactly for <code>'Boussinesq'</code>,
+whose matrices are those of steps 1 and 2 bitwise. <code>tol_B0</code> does not cut these products (they converge slowly near the
+surface). <code>submatrices.py</code> counts odd profiles in both slots of a label for the parity at <code>ricb = 0</code> (bitwise the same for
+every earlier label).</p>
+<h2 id="rows-and-implementation">Rows and implementation</h2>
+<ul>
+<li><strong>Sections.</strong> <code>f</code> (rows <span class="arithmatex">\(r^2\,\hat{\mathbf r}\cdot\)</span> of the induction equation) and <code>g</code> (<span class="arithmatex">\(r^2\,\hat{\mathbf r}\cdot\nabla\times\)</span>),
+  both in the <span class="arithmatex">\(C^{(2)}\)</span> basis with two boundary-condition rows per block, are placed after the entropy section:
+  <code>ut.offset = {'u': 0, 'v': n, 'h': 2n, 'f': (2+thermal) n, 'g': (3+thermal) n}</code> and
+  <code>sizmat = 2n + n*thermal + 2n*magnetic + 2*nic</code> (<code>nic</code> for a conducting inner core, below). Non-magnetic matrices are
+  unchanged.</li>
+<li><strong>Labels.</strong> <code>decode_label</code> gives sections <code>f</code> and <code>g</code> the row power <span class="arithmatex">\(2 - X\)</span> and no <span class="arithmatex">\(\rho_0\)</span>. The profile codes are <code>bpo</code>
+  (<span class="arithmatex">\(c_\mathrm{norm} h^{(k)}\)</span>), <code>bto</code> (<span class="arithmatex">\(c_\mathrm{tor} k^{(j)}\)</span>) and <code>eta</code> (<span class="arithmatex">\(\eta\)</span>). The Lorentz labels carry <code>ohr1</code> (one power of
+  <span class="arithmatex">\(\rho_0\)</span> less), so the momentum rows hold <span class="arithmatex">\(r^p\)</span> times the force <span class="arithmatex">\(\rho_0 \mathbf F_L\)</span>. <code>submatrices.py</code> lists each label next
+  to its <code>conductive_IC</code> name. <code>tol_B0</code> (default 1e-8) is the relative cut of the Chebyshev series of <span class="arithmatex">\(r^p h^{(k)}\)</span>: it sets
+  the band width of the magnetic blocks.</li>
+<li><strong>Operators</strong> (<code>operators.lorentz</code>, <code>induction</code>, <code>magnetic_diffusion</code>, <code>b</code>): the <code>conductive_IC</code> operators divided by
+  <span class="arithmatex">\(L^3\)</span> of the row, as every operator of this branch, with Hendrik and MagnetD for <span class="arithmatex">\((\Omega\tau\,\mathrm{Le})^2\)</span> and
+  <span class="arithmatex">\(\Omega\tau\,\mathrm{Em}\)</span>. The sign convention is the branch's: A holds the right-hand side, B is <span class="arithmatex">\(-\mathbf b\)</span> in the
+  induction rows (as <span class="arithmatex">\(-\)</span>inertia in the momentum rows).</li>
+<li><strong>Toroidal field</strong> (step 4, <code>operators.induction_tor</code>, <code>lorentz_tor</code>). The rows were derived with <code>derive.py</code> (any <span class="arithmatex">\(\rho_0\)</span>)
+  and fitted in <span class="arithmatex">\(l\)</span>: every coefficient is <span class="arithmatex">\(im\)</span> (same degree) or the Coriolis factors <span class="arithmatex">\(C_- = \sqrt{l^2-m^2}/(2l-1)\)</span>,
+  <span class="arithmatex">\(C_+ = \sqrt{(l+1)^2-m^2}/(2l+3)\)</span> (columns <span class="arithmatex">\(l\mp1\)</span>) times a polynomial in <span class="arithmatex">\(l\)</span> (independent of <span class="arithmatex">\(m\)</span>). Couplings: rows f from
+  P at the same degree; rows g from P at <span class="arithmatex">\(l\pm1\)</span> (with <span class="arithmatex">\(\lambda_1\)</span> terms) and from T at <span class="arithmatex">\(l\)</span>; rows u from F at <span class="arithmatex">\(l\)</span> (with
+  <span class="arithmatex">\(\lambda_1\)</span>) and G at <span class="arithmatex">\(l\pm1\)</span> (with <span class="arithmatex">\(\lambda_1\)</span>); rows v from F at <span class="arithmatex">\(l\pm1\)</span> and G at <span class="arithmatex">\(l\)</span>. Degree 2 (<code>induction_tor2</code>,
+  <code>lorentz_tor2</code>): the quadrupole angular factors (<code>operators.quad_factors</code>, the same-degree terms with <span class="arithmatex">\(l(l+1) - 3m^2\)</span>)
+  times polynomials in <span class="arithmatex">\(l\)</span>, couplings up to <span class="arithmatex">\(\Delta l = \pm2\)</span>: rows f from P at <span class="arithmatex">\(l\pm1\)</span>; g from P at <span class="arithmatex">\(l\)</span>, <span class="arithmatex">\(l\pm2\)</span> and T at
+  <span class="arithmatex">\(l\pm1\)</span>; u from F at <span class="arithmatex">\(l\pm1\)</span> and G at <span class="arithmatex">\(l\)</span>, <span class="arithmatex">\(l\pm2\)</span>; v from F at <span class="arithmatex">\(l\)</span>, <span class="arithmatex">\(l\pm2\)</span> and G at <span class="arithmatex">\(l\pm1\)</span>. <code>operators.lorentz</code> and
+  <code>induction</code> add the poloidal and the toroidal parts (<code>assemble.py</code> loops over <span class="arithmatex">\(\Delta l = -2..2\)</span> and skips absent
+  couplings). Column offsets: <code>operators.moff</code>.</li>
+<li><strong>Poloidal field of degree 2</strong> (step 5, <code>operators.induction_pol2</code>, <code>lorentz_pol2</code>, for <code>'Luo_S2'</code> and <code>'FDM'</code> with
+  <code>B0_l = 2</code>). Derived with <code>derive.py</code> (<span class="arithmatex">\(b_0\)</span> = ('pol', 2), any <span class="arithmatex">\(\rho_0\)</span>) and fitted in <span class="arithmatex">\(l\)</span>, <span class="arithmatex">\(m\)</span> as for the toroidal field
+  of degree 2: <code>quad_factors</code> times polynomials in <span class="arithmatex">\(l\)</span> (the same-degree terms carry <span class="arithmatex">\(l(l+1) - 3m^2\)</span>), kept in two tables
+  (row, column, <span class="arithmatex">\(\Delta l\)</span>) of the label expressions. Couplings: rows f from P at <span class="arithmatex">\(l\)</span>, <span class="arithmatex">\(l\pm2\)</span> and T at <span class="arithmatex">\(l\pm1\)</span>; g from P at
+  <span class="arithmatex">\(l\pm1\)</span> and T at <span class="arithmatex">\(l\)</span>, <span class="arithmatex">\(l\pm2\)</span>; u from F at <span class="arithmatex">\(l\)</span>, <span class="arithmatex">\(l\pm2\)</span> and G at <span class="arithmatex">\(l\pm1\)</span>; v from F at <span class="arithmatex">\(l\pm1\)</span> and G at <span class="arithmatex">\(l\)</span>, <span class="arithmatex">\(l\pm2\)</span>. Two
+  labels are added to those of the dipole (<code>u2bpo2ohr1_D1</code>, <code>u2bpo2ohr1_D0</code>). spin_doctor takes its Lorentz and induction
+  powers from <code>magnetic_powers_grid</code> for these fields (<code>utils4pp.use_grid</code>).</li>
+<li><strong>Full sphere</strong> (step 5, <code>ricb = 0</code>). As for the flow, each block holds the Chebyshev polynomials of one parity on
+  <span class="arithmatex">\([-1, 1]\)</span> (<code>ut.remroco</code>): <span class="arithmatex">\(f\)</span> has the vector parity <code>vF = symmB0 * vP</code>, <span class="arithmatex">\(g\)</span> the opposite; <span class="arithmatex">\(h\)</span> has the parity <span class="arithmatex">\((-1)^l\)</span> of
+  its degree and <span class="arithmatex">\(k\)</span> that of <span class="arithmatex">\((-1)^n\)</span> (<code>utils.odd_profiles</code>, both slots of a label). One boundary-condition row per block,
+  the insulating condition at the outer wall (<code>assemble.bc_b_spherical</code>). The fields are regular at the centre: FDM
+  <span class="arithmatex">\(j_l(\beta r)\)</span> (analytic derivatives, <code>background_field.jl_k</code>), the polynomial fields, 'wall' <span class="arithmatex">\(= r^n(1 - r^2)\)</span>, 'Malkus'
+  for <span class="arithmatex">\(n = 1\)</span> only (<span class="arithmatex">\(k = r\)</span> is not regular for <span class="arithmatex">\(n = 2\)</span>), 'user' as <span class="arithmatex">\(f(\lvert r\rvert)\,\mathrm{sign}(r)^n\)</span>. <code>cnorm</code> and
+  <code>cnorm_tor</code> are computed as with an inner core; spin_doctor's inner-wall terms are skipped.</li>
+<li><strong>Inviscid runs</strong> (step 5, <code>ViscosD = 0</code>, full sphere only). The Lorentz labels have <span class="arithmatex">\(D^3\)</span> (rows u) and <span class="arithmatex">\(D^2\)</span> (rows v), so
+  the rows are in <span class="arithmatex">\(C^{(3)}\)</span> (u) and <span class="arithmatex">\(C^{(2)}\)</span> (v), with one boundary-condition row (<span class="arithmatex">\(u_r = 0\)</span>) in u and none in v; without
+  a field they stay in <span class="arithmatex">\(C^{(2)}\)</span> and <span class="arithmatex">\(C^{(1)}\)</span>. <code>decode_label</code> gives the u and v labels the row powers of the viscous rows.
+  <code>conductive_IC</code> keeps <span class="arithmatex">\(C^{(2)}\)</span> and <span class="arithmatex">\(C^{(1)}\)</span> and so converts these terms with the wrong matrices; its torsional test is
+  barely affected (<a href="#full-sphere-inviscid-runs-and-degree-2-poloidal-fields">Checks</a>).</li>
+<li>
+<p><strong>Solver.</strong> <code>solve.py</code> writes <code>real_magnetic.field</code>, <code>imag_magnetic.field</code> and normalises the eigenvectors (over the
+  shell, as <code>conductive_IC</code>) to</p>
+<div class="arithmatex">\[
+\mathrm{KE} + \mathrm{Hendrik}\int\tfrac12\lvert\mathbf b\rvert^2dV = 1 .
+\]</div>
+</li>
+</ul>
+<h3 id="couplings-for-any-background">Couplings for any background</h3>
+<p><code>bin/mag_algebra.py</code> builds the couplings of the Lorentz force and of the induction for</p>
+<div class="arithmatex">\[
+\mathbf B_0 = \sum_n c_\mathrm{norm}\nabla\times\nabla\times(h_n Y_n^0\mathbf r) + \sum_n c_\mathrm{tor}\nabla\times(k_n Y_n^0\mathbf r),
+\]</div>
+<p>any degrees, from the recurrence algebra that the differential rotation uses, instead of the closed forms of
+<code>operators.py</code> (which exist for degrees 1 and 2 only). The background vectors are polynomials in <span class="arithmatex">\(x = \cos\theta\)</span> times
+<span class="arithmatex">\(\hat{\mathbf r}\)</span>, <span class="arithmatex">\(\sin\theta\,\hat{\boldsymbol\theta}\)</span> or <span class="arithmatex">\(\sin\theta\,\hat{\boldsymbol\phi}\)</span>; the products with the perturbation are sparse
+matrices on the degrees, times radial monomials; the rows take one radial derivative (product rule); each final monomial
+becomes a label with the profile codes <code>hp</code> + degree (<span class="arithmatex">\(c_\mathrm{norm}h_n\)</span>) and <code>kt</code> + degree (<span class="arithmatex">\(c_\mathrm{tor}k_n\)</span>).
+<a href="../derivations/">Derivation tools</a>, part A.6, gives the method. <code>mag_couplings = 'algebra'</code> uses it for every type;
+<code>'closed'</code> (default) keeps the closed forms, which <code>'general'</code>, <code>'ferraro'</code> and <code>B0_wound = 1</code> cannot use (they switch to the
+algebra by themselves). For the types that have closed forms both give the same eigenvalues to round-off.</p>
+<h2 id="boundary-conditions">Boundary conditions</h2>
+<p><strong>Insulating walls</strong> (<code>assemble.bc_b_spherical</code>): <span class="arithmatex">\((l+1)f + rf' = 0\)</span> and <span class="arithmatex">\(g = 0\)</span> at the outer wall, <span class="arithmatex">\(lf - r f' = 0\)</span> and
+<span class="arithmatex">\(g = 0\)</span> at the inner one.</p>
+<p><strong>Conducting inner core.</strong> <code>innercore = 'conducting, Chebys'</code> (eigenvalue problems, no-slip inner boundary <code>bci = 1</code>) adds
+the field inside the inner core to the unknowns, as <code>conductive_IC</code> does:</p>
+<ul>
+<li><strong>Unknowns.</strong> Sections <code>fic</code>, <code>gic</code> after <code>f</code>, <code>g</code> (<code>ut.offset</code>), with the degrees of <code>f</code>, <code>g</code> (up to <code>lmax</code>;
+  <code>conductive_IC</code>'s <code>lmax_cic</code> is not ported, as its ICB matching couples the degrees one by one). Each block is the
+  Chebyshev series on <span class="arithmatex">\([-r_i, r_i]\)</span> of one parity (that of the field at the centre), <code>N_cic</code>/2 coefficients per degree
+  (<code>ut.Nic</code>, default <code>N_cic</code> = 64; <code>conductive_IC</code> found broken eigenvectors with 48 at <code>sigma_i2o</code> = <span class="arithmatex">\(10^{-2}\)</span>); <code>ut.nic</code>
+  per section.</li>
+<li>
+<p><strong>Equation.</strong> With <span class="arithmatex">\(\mu_{i2o}\)</span>, <span class="arithmatex">\(\sigma_{i2o}\)</span> (<code>mu_i2o</code>, <code>sigma_i2o</code>) the permeability and conductivity relative to the fluid,</p>
+<div class="arithmatex">\[
+\frac{\partial\mathbf b}{\partial t} = \mathrm{MagnetD}\,\eta_i\nabla^2\mathbf b, \qquad \eta_i = \frac{1}{\mu_{i2o}\sigma_{i2o}},
+\]</div>
+<p>with rows <span class="arithmatex">\(r^2\hat{\mathbf r}\cdot\)</span> and
+  <span class="arithmatex">\(r^2\hat{\mathbf r}\cdot\nabla\times\)</span> divided by <span class="arithmatex">\(L^3\)</span> as in the fluid, in the <span class="arithmatex">\(C^{(2)}\)</span> basis. Its matrices are built apart
+  from the labels (<code>submatrices.py</code>: <code>r0_D0f_ic</code>, <code>r2_D0f_ic</code>, <code>r1_D1f_ic</code>, <code>r2_D2f_ic</code> and the same for g), with <code>ut.Dlam</code>
+  and <code>bc_variables.Tk</code> on the inner core's domain (their optional domain arguments).
+- <strong>Matching at the ICB</strong> (<code>assemble.bc_b_cic</code>), one row in each section, the inner one of <code>f</code>, <code>g</code> and the only one of
+  <code>fic</code>, <code>gic</code>: <span class="arithmatex">\(f_o = f_i\)</span> (<span class="arithmatex">\([b_r]\)</span>), <span class="arithmatex">\((g + rg')_o = \eta_i (g + rg')_i\)</span> (tangential <span class="arithmatex">\(\mathbf E\)</span>),
+  <span class="arithmatex">\(\mu_{i2o}(f + rf')_o = (f + rf')_i\)</span> and <span class="arithmatex">\(\mu_{i2o}\,g_o = g_i\)</span> (tangential <span class="arithmatex">\(\mathbf H\)</span>). The continuity of
+  <span class="arithmatex">\(\eta\nabla^2_l f\)</span> is not imposed: with <span class="arithmatex">\(b_r\)</span> continuous it follows from the radial induction equation on both sides,
+  since <span class="arithmatex">\(\mathbf u = 0\)</span> at the no-slip ICB.
+- <strong>Output.</strong> <code>real_magnetic_ic.field</code>, <code>imag_magnetic_ic.field</code>. The eigenvectors are normalised with the fluid's energies
+  only (the inner-core field is scaled along), as in <code>conductive_IC</code>.</p>
+</li>
+</ul>
+<h2 id="with-a-differential-rotation">With a differential rotation</h2>
+<p>With <code>diff_rot = 1</code> the background flow</p>
+<div class="arithmatex">\[
+\mathbf U_0 = G\,\Delta\Omega\,r\sin\theta\,\hat{\boldsymbol\phi}
+\]</div>
+<p>(<span class="arithmatex">\(G\)</span> = <code>Gaspard</code>) also shears the field: the induction equation gains</p>
+<div class="arithmatex">\[
+\nabla\times(\mathbf U_0\times\mathbf b) = G\left[-im\,\Delta\Omega\,\mathbf b + \sin\theta\,(r\,\partial_r\Delta\Omega\,b_r + \partial_\theta\Delta\Omega\,b_\theta)\,\hat{\boldsymbol\phi}\right]
+\]</div>
+<p>(the <span class="arithmatex">\(\Omega\)</span>-effect, and the Doppler shift of the field). It is built for any <span class="arithmatex">\(\Delta\Omega = \sum_n f_n P_n\)</span> with the
+recurrence algebra of the momentum terms (<code>diff_rot.induction_block</code>; <a href="../derivations/">Derivation tools</a>, part B): F→f and
+G→g couple at even <span class="arithmatex">\(\Delta l\)</span> up to <span class="arithmatex">\(n\)</span>, F→g (a poloidal field sheared into a toroidal one) at odd <span class="arithmatex">\(\Delta l\)</span> up to <span class="arithmatex">\(n + 1\)</span>.
+The Lorentz force needs nothing new: it does not involve <span class="arithmatex">\(\mathbf U_0\)</span>.</p>
+<p><strong>Conducting inner core.</strong> It must co-rotate rigidly, <span class="arithmatex">\(\Delta\Omega(r_i, \theta) = c\)</span> (<span class="arithmatex">\(f_n(r_i) = 0\)</span> for <span class="arithmatex">\(n &gt; 0\)</span>,
+<code>diff_rot.rigid_ricb</code>; else the run stops: a latitude-dependent rotation would shear a solid core). Its field then gains
+<span class="arithmatex">\(-imGc\,\mathbf b\)</span>. The matching conditions are unchanged, because only <span class="arithmatex">\(b_r\)</span>, which is continuous, enters the tangential
+part of <span class="arithmatex">\(\mathbf U_0\times\mathbf b\)</span>.</p>
+<h3 id="the-ferraro-condition">The Ferraro condition</h3>
+<p>For the background to be steady,</p>
+<div class="arithmatex">\[
+\nabla\times(\mathbf U_0\times\mathbf B_0) = r\sin\theta\,(\mathbf B_0\cdot\nabla\Delta\Omega)\,\hat{\boldsymbol\phi}
+\]</div>
+<p>must vanish: always for a toroidal <span class="arithmatex">\(\mathbf B_0\)</span> (<span class="arithmatex">\(\mathbf U_0\times\mathbf B_0 = 0\)</span>), for a poloidal one only if <span class="arithmatex">\(\Delta\Omega\)</span> is
+constant along its field lines (Ferraro's law of isorotation). The linear problem does not contain this term: it belongs to
+the background. <code>background.ferraro_mismatch</code> reports</p>
+<div class="arithmatex">\[
+\frac{\max\lvert\mathbf B_0\cdot\nabla\Delta\Omega\rvert\,r}{\max\lvert\mathbf B_0\rvert\,\max\lvert r\nabla\Delta\Omega\rvert}
+\]</div>
+<p>over the fluid at the start of every run with <code>diff_rot = 1</code> and a poloidal <span class="arithmatex">\(\mathbf B_0\)</span>, except with <code>B0_wound = 1</code> (from the shapes <span class="arithmatex">\(f_n\)</span>, with a fourth-order difference in <span class="arithmatex">\(r\)</span>, and the poloidal
+profiles, on a grid). Above <span class="arithmatex">\(10^{-7}\)</span> the constant <code>background.FERRARO_POLICY</code> (set in <code>bin/background.py</code>, not a parameter) decides: <code>'warn'</code> (default: a warning, the
+background is assumed to be maintained) or <code>'refuse'</code>. Consistent backgrounds: a toroidal field, a <code>'confined'</code> field where
+<span class="arithmatex">\(\Delta\Omega\)</span> is uniform, <code>B0 = 'ferraro'</code>, <code>diff_rot_type = 'ferraro'</code>, or any poloidal field with <code>B0_wound = 1</code> (the
+winding balanced by diffusion; the run then reports that balance instead).</p>
+<h3 id="the-field-from-the-rotation-b0-ferraro">The field from the rotation: <code>B0 = 'ferraro'</code></h3>
+<p>An axisymmetric poloidal field is <span class="arithmatex">\(\mathbf B_0 = \nabla\psi\times\nabla\phi\)</span>. With <span class="arithmatex">\(\psi = G(\Delta\Omega)\)</span> its field lines lie on
+the surfaces of constant rotation, so <span class="arithmatex">\(\mathbf B_0\cdot\nabla\Omega = 0\)</span> and the rotation and the field are a steady background
+together. In kore's form <span class="arithmatex">\(\psi = r\sum_n h_n(1 - x^2)P_n'(x)\)</span>, <span class="arithmatex">\(x = \cos\theta\)</span>, and the functions <span class="arithmatex">\((1 - x^2)P_n'\)</span> are
+orthogonal with the weight <span class="arithmatex">\(1/(1 - x^2)\)</span>, so</p>
+<div class="arithmatex">\[
+h_n(r) = \frac{2n+1}{2n(n+1)}\frac{1}{r}\int_{-1}^{1}\psi(r, x)\,P_n'(x)\,dx ,
+\]</div>
+<p>computed by Gauss–Legendre quadrature. <span class="arithmatex">\(\Delta\Omega\)</span> has only even <span class="arithmatex">\(P_n\)</span>, so only odd <span class="arithmatex">\(n\)</span> appear. <span class="arithmatex">\(G\)</span> = <code>B0_ferraro_G</code>, a numpy
+expression of <code>w</code> = <span class="arithmatex">\(\Delta\Omega\)</span> and <code>p</code> (<code>B0_param</code>); the derivatives of <span class="arithmatex">\(h_n\)</span> come from Chebyshev interpolants of degree
+max(64, 2N). The assumptions, which <code>background.ferraro_report</code> prints at the start of a run (max <span class="arithmatex">\(\lvert\psi\rvert\)</span> on the
+axis and at <span class="arithmatex">\(r = 1\)</span>, and the error of <span class="arithmatex">\(\psi\)</span> rebuilt from the degrees):</p>
+<ul>
+<li><span class="arithmatex">\(\psi\)</span> must vanish on the axis (it must be constant there for a regular field; for a rotation that varies along the axis,
+  <span class="arithmatex">\(G\)</span> has to vanish on the values <span class="arithmatex">\(\Delta\Omega\)</span> takes there);</li>
+<li>and at the outer wall if the field is to stay inside (otherwise it meets the insulating mantle with a surface current,
+  which the linear problem allows);</li>
+<li>the series is cut at <code>B0_ferraro_nmax</code> (odd, <span class="arithmatex">\(\ge 1\)</span>), which sets the residual <span class="arithmatex">\(\mathbf B_0\cdot\nabla\Omega\)</span>.</li>
+</ul>
+<p>A toroidal part (<code>B0_tor</code>, any type) can be added: it is consistent with any axisymmetric rotation, and it must have the
+field's equatorial symmetry (an even degree). Example: for a cylindrical rotation <span class="arithmatex">\(\Delta\Omega \propto s^2\)</span>, <span class="arithmatex">\(G(w) = w\)</span> gives
+<span class="arithmatex">\(\psi \propto s^2\)</span>, the uniform axial field.</p>
+<h3 id="the-rotation-from-the-field-diff_rot_type-ferraro">The rotation from the field: <code>diff_rot_type = 'ferraro'</code></h3>
+<p>The reverse choice: the poloidal field is given (any type, <code>'general'</code> included; e.g. a model of an observed or a dynamo
+field) and the rotation is deduced from it,
+<span class="arithmatex">\(\Delta\Omega = F(\psi)\)</span>, with <span class="arithmatex">\(\psi\)</span> the field's own flux function. Since <span class="arithmatex">\(\Delta\Omega\)</span> is constant on every field line,
+<span class="arithmatex">\(\mathbf B_0\cdot\nabla\Delta\Omega = 0\)</span> and the background is steady. Method: the flux function is built from the radial profiles of the field
+(<code>background_field.pol_profiles</code>),</p>
+<div class="arithmatex">\[
+\psi(r, x) = r\sum_n c\,h_n(1 - x^2)P_n'(x),
+\]</div>
+<p><span class="arithmatex">\(F\)</span> evaluated on a Gauss–Legendre grid in <span class="arithmatex">\(x\)</span> and projected on the
+Legendre polynomials,</p>
+<div class="arithmatex">\[
+f_n(r) = \frac{2n+1}{2}\int_{-1}^{1}F\big(\psi(r, x)\big)\,P_n(x)\,dx, \qquad n = 0, 2, \dots, \texttt{diff\_rot\_nmax},
+\]</div>
+<p>and <span class="arithmatex">\(\Delta\Omega\)</span> = <code>diff_rot_ampl</code> <span class="arithmatex">\(\cdot\sum_n f_n P_n\)</span>, as for the other rotation profiles: the force on the flow, the induction
+term and the thermal wind need nothing new (<code>diff_rot._ferraro_shapes</code>). <span class="arithmatex">\(F\)</span> = <code>diff_rot_F</code> (default <code>'psi'</code>), a numpy
+expression of <code>psi</code> and <code>p</code> (<code>diff_rot_param</code>). Rules, checked at the start of a run:</p>
+<ul>
+<li>a poloidal <code>B0</code> is needed (a toroidal field alone has no <span class="arithmatex">\(\psi\)</span>);</li>
+<li><code>B0 = 'ferraro'</code> is refused (each would be built from the other);</li>
+<li>kore's <span class="arithmatex">\(\Delta\Omega\)</span> has only even <span class="arithmatex">\(P_n\)</span>, so <span class="arithmatex">\(F(\psi)\)</span> must be symmetric about the equator: any <span class="arithmatex">\(F\)</span> for a dipolar field (<span class="arithmatex">\(\psi\)</span>
+  even in <span class="arithmatex">\(x\)</span>), an even <span class="arithmatex">\(F\)</span> (e.g. of <code>psi**2</code>) for a quadrupolar one (<span class="arithmatex">\(\psi\)</span> odd), else the run stops;</li>
+<li>with a conducting inner core <span class="arithmatex">\(\Delta\Omega(r_i, \theta)\)</span> must be uniform, which in general means <span class="arithmatex">\(\psi\)</span> constant on the inner
+  core's surface;</li>
+<li><code>diff_rot_nmax</code> must be even.</li>
+</ul>
+<p>A toroidal part of <code>B0</code> is left as it is. The series is cut at <code>diff_rot_nmax</code>: <code>ferraro_mismatch</code> then reports only the
+truncation, at round-off for fields of low degree with a polynomial <span class="arithmatex">\(F\)</span>. Example: the uniform axial field
+<span class="arithmatex">\(\psi = r^2\sin^2\theta/2\)</span> with <span class="arithmatex">\(F(\psi) = \psi\)</span> gives <span class="arithmatex">\(\Delta\Omega \propto s^2\)</span>, the cylindrical profile.</p>
+<h3 id="the-wound-toroidal-field-b0_wound-1">The wound toroidal field: <code>B0_wound = 1</code></h3>
+<p>Motivation: in the solar tachocline both the rotation and a poloidal field are given, and they do not satisfy Ferraro's
+law. The shear winds the poloidal field into an azimuthal one, which grows until magnetic diffusion balances the winding.
+<code>B0_wound = 1</code> adds that steady azimuthal field to <span class="arithmatex">\(\mathbf B_0\)</span>, so that the background is steady with both imposed.</p>
+<p>Method: the <span class="arithmatex">\(\phi\)</span>-component of the steady induction equation for axisymmetric fields, with the background flow
+<span class="arithmatex">\(\mathbf U_0\)</span> above (<span class="arithmatex">\(r\sin\theta = s\)</span>) and a uniform diffusivity <span class="arithmatex">\(\eta\)</span> = <code>B0_wound_eta</code> times <code>MagnetD</code>,</p>
+<div class="arithmatex">\[
+\eta\left(\nabla^2 - \frac{1}{s^2}\right)B_\phi = -G\,s\,\mathbf B_p\cdot\nabla\Delta\Omega ,
+\]</div>
+<p>where <span class="arithmatex">\(\mathbf B_p\)</span> is the poloidal <code>B0</code> (any type, <code>cnorm</code> included). Written as kore's toroidal field, the operator acts
+degree by degree:</p>
+<div class="arithmatex">\[
+B_\phi = \sum_n k_n\sin\theta\,P_n'(\cos\theta), \qquad
+\left(\nabla^2 - \frac{1}{s^2}\right)B_\phi = \sum_n (D_n k_n)\,\sin\theta\,P_n', \qquad
+D_n k = k'' + \frac{2k'}{r} - \frac{n(n+1)k}{r^2} .
+\]</div>
+<p>The source is projected on <span class="arithmatex">\(\sin\theta\,P_n'\)</span> by Gauss–Legendre quadrature in <span class="arithmatex">\(\cos\theta\)</span>, using</p>
+<div class="arithmatex">\[
+\int_{-1}^{1}(1 - x^2)P_n'P_m'\,dx = \delta_{nm}\,\frac{2n(n+1)}{2n+1},
+\]</div>
+<p>which leaves one radial equation per degree, solved by
+Chebyshev collocation (<code>background_field.wound_profiles</code>). Boundary conditions:</p>
+<ul>
+<li><span class="arithmatex">\(k_n = 0\)</span> at an insulating wall (<span class="arithmatex">\(B_\phi\)</span> vanishes outside);</li>
+<li>regular at <span class="arithmatex">\(r = 0\)</span> in a full sphere (parity <span class="arithmatex">\((-1)^n\)</span> on <span class="arithmatex">\([-1, 1]\)</span>);</li>
+<li>
+<p>with a conducting inner core, which must rotate rigidly: <span class="arithmatex">\(k = A r^n\)</span> inside, and <span class="arithmatex">\(B_\phi/\mu\)</span> and <span class="arithmatex">\(E_\theta\)</span> continuous, which
+  gives at <span class="arithmatex">\(r_i\)</span> (<span class="arithmatex">\(\sigma\)</span> = <code>sigma_i2o</code>)</p>
+<div class="arithmatex">\[
+r k_n' + \left(1 - \frac{n+1}{\sigma}\right)k_n = 0 .
+\]</div>
+</li>
+</ul>
+<p>The degrees run up to (that of <span class="arithmatex">\(\mathbf B_p\)</span>) + (that of <span class="arithmatex">\(\Delta\Omega\)</span>) + 1, with the field's symmetry (even for a dipolar
+<span class="arithmatex">\(\mathbf B_p\)</span>, odd for a quadrupolar one). The <span class="arithmatex">\(k_n\)</span> are added to any <code>B0_tor</code>, and the couplings come from <code>mag_algebra.py</code> as
+for <code>'general'</code>.</p>
+<p>The size of the wound field is set by the physics, about <span class="arithmatex">\(G\,\Delta\Omega/\eta\)</span> (times the length scale squared) relative to
+<span class="arithmatex">\(\mathbf B_p\)</span>. <code>cnorm</code> normalises the poloidal field alone, so the Lehnert or Elsasser number keeps its meaning for the field
+the user gives, and the wound part enters with its physical ratio. <code>B0_wound_eta</code> (default 1) is
+<span class="arithmatex">\(\eta_\mathrm{background}/\eta\)</span>: the diffusivity that balances the winding, in units of <code>MagnetD</code>, while the perturbation
+still diffuses with <code>MagnetD</code>. At the start of a run, instead of the Ferraro check, <code>background.magnetic_diffrot</code> prints
+the degrees and the residual of the steady balance on a grid off the collocation nodes,</p>
+<div class="arithmatex">\[
+\frac{\max\lvert\eta(\nabla^2 - 1/s^2)B_\phi + G s\,\mathbf B_p\cdot\nabla\Delta\Omega\rvert}{\max\lvert G s\,\mathbf B_p\cdot\nabla\Delta\Omega\rvert} .
+\]</div>
+<p>What is left out, so that the background is only approximately steady: the Ohmic decay of <span class="arithmatex">\(\mathbf B_p\)</span> (the poloidal field
+is held fixed, as it is without rotation), and the Lorentz force of <span class="arithmatex">\(\mathbf B_0\)</span> on the background flow (<span class="arithmatex">\(\Delta\Omega\)</span> is
+imposed and not modified by the Lorentz force of <span class="arithmatex">\(\mathbf B_0\)</span>, which is then dominated by the wound <span class="arithmatex">\(B_\phi\)</span>, since it grows
+as <span class="arithmatex">\(G\,\Delta\Omega/\eta\)</span>).</p>
+<h3 id="when-the-ignored-lorentz-force-matters">When the ignored Lorentz force matters</h3>
+<p>Orders of magnitude, in kore's units (time <span class="arithmatex">\(1/\Omega\)</span>, length the outer radius; <code>timescale = 'rotation'</code>, so <code>Gaspard</code> = 1,
+<code>Hendrik</code> = <span class="arithmatex">\(\mathrm{Le}^2\)</span>, <code>MagnetD</code> = Em). <code>cnorm</code> normalises the poloidal field, so its maximum is of order 1. With
+<span class="arithmatex">\(\rho_0\)</span> the background density (1 for <code>'Boussinesq'</code>) and <span class="arithmatex">\(\eta_w\)</span> = <code>B0_wound_eta</code>, the Lorentz force per unit mass and
+the wound field are</p>
+<div class="arithmatex">\[
+\mathbf F_0 = \frac{\mathrm{Le}^2}{\rho_0}(\nabla\times\mathbf B_0)\times\mathbf B_0, \qquad
+B_\phi \approx \frac{\Delta\Omega}{\mathrm{Em}\,\eta_w}\,B_p .
+\]</div>
+<p>The background's own force on <span class="arithmatex">\(\mathbf U_0\)</span> has two parts.</p>
+<ol>
+<li>
+<p><em>The azimuthal torque</em>, <span class="arithmatex">\(\propto \mathbf B_p\cdot\nabla(s B_\phi)\)</span>: Ferraro's mechanism. It brakes <span class="arithmatex">\(\Delta\Omega\)</span> along the field
+   lines in a time of about <span class="arithmatex">\(1/(\Lambda_p\Omega)\)</span>, with <span class="arithmatex">\(\Lambda_p\)</span> the Elsasser number of the poloidal field built on the
+   background diffusivity. If viscous (or turbulent) stresses hold <span class="arithmatex">\(\Delta\Omega\)</span>, the torque compares with them through the
+   Hartmann number <span class="arithmatex">\(Ha\)</span> of the background values:</p>
+<div class="arithmatex">\[
+\Lambda_p = \frac{\mathrm{Le}^2}{\rho_0\,\mathrm{Em}\,\eta_w}, \qquad
+Ha^2 = \frac{\mathrm{Le}^2}{\rho_0\,\mathrm{Ek}\,\mathrm{Em}\,\eta_w}
+\quad \left(\frac{\mathrm{Le}^2}{\mathrm{Ek}\,\mathrm{Em}} \text{ for } \rho_0 = \eta_w = 1\right).
+\]</div>
+</li>
+<li>
+<p><em>The meridional part</em>, the hoop stress and magnetic pressure of <span class="arithmatex">\(B_\phi\)</span>, <span class="arithmatex">\(\propto B_\phi^2\)</span>: it changes the thermal-wind and
+   entropy balance of the background and drives magnetic buoyancy. Relative to the background rotation it is
+   <span class="arithmatex">\(\mathrm{Le}_\phi^2/\Delta\Omega\)</span>, with the Lehnert number of the wound field</p>
+<div class="arithmatex">\[
+\mathrm{Le}_\phi = \mathrm{Le}\,\frac{\max\lvert B_\phi\rvert}{\max\lvert\mathbf B_p\rvert} .
+\]</div>
+</li>
+</ol>
+<p>The resulting criteria and the checklist for solar inertial modes are on <a href="../magnetic/#validity-and-caveats">Magnetic field</a>.</p>
+<h2 id="energy-budgets">Energy budgets</h2>
+<p>spin_doctor adds the power of the Lorentz force to residσ and residω, prints resid𝐛 and Mag/Kin, and writes
+<code>magnetic.dat</code>:</p>
+<table>
+<thead>
+<tr>
+<th>column</th>
+<th>name</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>ME</td>
+<td>magnetic energy in the fluid (without Hendrik, as <code>conductive_IC</code>; Mag/Kin is ME/KE)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Mdfs</td>
+<td>magnetic diffusion</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Indu</td>
+<td>induction work</td>
+</tr>
+<tr>
+<td>4</td>
+<td>residb</td>
+<td>resid𝐛, the relative residual of the induction budget</td>
+</tr>
+<tr>
+<td>5, 6</td>
+<td>Wlor, Wlor_im</td>
+<td>power of the Lorentz force, real and imaginary parts (in residσ, residω)</td>
+</tr>
+<tr>
+<td>7</td>
+<td>MEic</td>
+<td>magnetic energy in the inner core (its field, or the potential field below an insulating one)</td>
+</tr>
+<tr>
+<td>8</td>
+<td>MEext</td>
+<td>energy of the potential field outside the outer wall</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Ohm_f</td>
+<td>Ohmic loss in the fluid</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Ohm_ic</td>
+<td>Ohmic loss in a conducting inner core</td>
+</tr>
+<tr>
+<td>11</td>
+<td>residE</td>
+<td>resid𝐄, the full energy budget (nan unless the walls are no-slip: <code>bco = 1</code>, and <code>bci = 1</code> with an inner core)</td>
+</tr>
+</tbody>
+</table>
+<p>with, over the fluid unless stated,</p>
+<div class="arithmatex">\[
+\mathrm{ME} = \int\tfrac12\lvert\mathbf b\rvert^2 dV, \qquad
+\mathrm{Mdfs} = \mathrm{MagnetD}\int\mathbf b\cdot\nabla^2\mathbf b\,dV, \qquad
+\mathrm{Indu} = \int\mathbf b\cdot\nabla\times(\mathbf u\times\mathbf B_0)\,dV,
+\]</div>
+<div class="arithmatex">\[
+\mathrm{resid}\mathbf b = \frac{\lvert 2\sigma\,\mathrm{ME} - \mathrm{Indu} - \mathrm{Mdfs}\rvert}{\max(\lvert 2\sigma\,\mathrm{ME}\rvert, \lvert\mathrm{Indu}\rvert, \lvert\mathrm{Mdfs}\rvert)}, \qquad
+\mathrm{Wlor} + i\,\mathrm{Wlor\_im} = \mathrm{Hendrik}\cdot 2\int\mathbf u^*\cdot\mathbf F\,dV,
+\]</div>
+<div class="arithmatex">\[
+\mathrm{MEic} = \tfrac12\int_{\mathrm{ic}}\frac{\lvert\mathbf b\rvert^2}{\mu_{i2o}}\,dV, \qquad
+\mathrm{MEext} = \tfrac12\int_{r &gt; 1}\lvert\mathbf b\rvert^2dV, \qquad
+\mathrm{Ohm\_f} = \mathrm{MagnetD}\int\lvert\nabla\times\mathbf b\rvert^2dV, \qquad
+\mathrm{Ohm\_ic} = \mathrm{MagnetD}\,\eta_i\int_{\mathrm{ic}}\frac{\lvert\nabla\times\mathbf b\rvert^2}{\mu_{i2o}}\,dV .
+\]</div>
+<p>resid𝐄 (<code>conductive_IC</code>'s, <code>utils4pp.em_budget</code>) closes</p>
+<div class="arithmatex">\[
+2\sigma[\mathrm{KE} + \mathrm{Hendrik}(\mathrm{ME} + \mathrm{MEic} + \mathrm{MEext})] = \mathrm{Dkin} + \mathrm{Wthm} + \mathrm{Wlor} + \mathrm{Hendrik}(\mathrm{Indu} - \mathrm{Ohm\_f} - \mathrm{Ohm\_ic}) :
+\]</div>
+<p>unlike resid𝐛 it sees the wall and ICB conditions. The <span class="arithmatex">\(1/\mu_{i2o}\)</span> of the inner core's energy and Ohmic loss is not in
+<code>conductive_IC</code>'s <code>em_budget</code> (there resid𝐄 is <span class="arithmatex">\(10^{-2}\)</span> at <code>mu_i2o</code> = 2).</p>
+<p>spin_doctor's Lorentz force (<code>utils4pp.lorentz4pp</code>) acts per volume, and its power <span class="arithmatex">\(\int\mathbf u^*\cdot\mathbf G\,dV\)</span> has no
+<span class="arithmatex">\(\rho_0\)</span>. Its induction term (<code>induction4pp</code>) takes the components of <span class="arithmatex">\(\mathbf u\)</span> with their <span class="arithmatex">\(\lambda_1\)</span> part, and holds for the
+non-solenoidal <span class="arithmatex">\(\mathbf u\)</span> of a variable density (resid𝐛 closes to <span class="arithmatex">\(10^{-10}\)</span> with 'Wu 2005', <a href="#variable-density-checks-2026-10-28">Checks</a>).
+These spectral formulas are used for a poloidal field of degree 1 alone, with the closed-form couplings and no
+differential rotation. Otherwise (<code>utils4pp.use_grid</code>: a toroidal part, a
+poloidal field of degree other than 1, a differential rotation, the recurrence-algebra couplings, or <code>KORE_MAG_GRID=1</code> in
+the environment) both come instead from <code>utils4pp.magnetic_powers_grid</code>, computed on an <span class="arithmatex">\((r,\theta)\)</span> grid from the vector fields <span class="arithmatex">\(\mathbf u\)</span>, <span class="arithmatex">\(\mathbf b\)</span>, <span class="arithmatex">\(\nabla\times\mathbf b\)</span>,
+<span class="arithmatex">\(\mathbf B_0\)</span>, <span class="arithmatex">\(\nabla\times\mathbf B_0\)</span> (with the wall terms of the induction work); for a poloidal
+field it agrees with the spectral formulas to the 10 printed digits.</p>
+<p><strong>With a differential rotation.</strong> spin_doctor's induction work includes <span class="arithmatex">\(\mathbf U_0\times\mathbf b\)</span> (on the <span class="arithmatex">\((r, \theta)\)</span> grid).
+Because <span class="arithmatex">\(\mathbf U_0\times\mathbf b\)</span> does not vanish at a wall where <span class="arithmatex">\(\Delta\Omega \ne 0\)</span>, it carries magnetic energy through the wall
+into the field outside: resid𝐛 (the fluid) uses the induction work with its wall terms, resid𝐄 (the full budget, which
+counts the energy outside) the volume work alone (<code>utils4pp.INDU_WALLS</code>), plus the power of the rotation's force on the
+flow.</p>
+<h2 id="checks">Checks</h2>
+<h3 id="against-conductive_ic-insulating-walls-2026-10-28">Against <code>conductive_IC</code>, insulating walls (2026-10-28)</h3>
+<p>Spin-over geometry of the <code>conductive_IC</code> test: ricb 0.35, Ek 1e-3, no-slip walls (<code>bci = bco = 1</code>), N 68, lmax 64
+(63 for m = 0), 2 ranks; <span class="arithmatex">\(\Lambda = 1\)</span>, Pm = 1 (Le <span class="arithmatex">\(= \sqrt{10^{-3}}\)</span>, Em <span class="arithmatex">\(= 10^{-3}\)</span>), <code>cnorm = 'mag_energy'</code>, insulating
+walls; <code>conductive_IC</code> at <code>39487bbf</code> with the same parameters. All five eigenvalues of each run:</p>
+<table>
+<thead>
+<tr>
+<th>case</th>
+<th>target</th>
+<th>largest relative difference</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>'axial'</code>, m 1, symm −1</td>
+<td>1.0i</td>
+<td>8e-15</td>
+</tr>
+<tr>
+<td><code>'FDM'</code>, m 1, symm −1</td>
+<td>1.0i</td>
+<td>7e-15</td>
+</tr>
+<tr>
+<td><code>'axial'</code>, m 0, symm 1</td>
+<td>0.3i</td>
+<td>1e-13</td>
+</tr>
+<tr>
+<td><code>'FDM'</code>, m 0, symm 1</td>
+<td>0.3i</td>
+<td>9e-14</td>
+</tr>
+</tbody>
+</table>
+<p>The least damped m = 1 mode: λ = −0.104550975908 + 1.009269490234i (<code>'axial'</code>), −0.104198820746 + 1.008910499350i
+(<code>'FDM'</code>). residσ and resid𝐛 agree with <code>conductive_IC</code>'s resid𝐮 and resid𝐛 mode by mode (1e-15 to 1e-10). Without the
+field (<code>magnetic = 0</code>, structure <code>'Boussinesq'</code>, no-slip) the hydrodynamic spin-over is λ = −0.1019947097 + 1.0057336901i,
+the <code>conductive_IC</code> reference. Non-magnetic matrices are bitwise unchanged (<code>tests/diff_rot/regress.sh</code>).</p>
+<h3 id="conducting-inner-core-2026-10-28">Conducting inner core (2026-10-28)</h3>
+<p>FDM (<span class="arithmatex">\(l = 1\)</span>), <code>cnorm = 'Schmitt2012'</code>, ricb 0.35, Ek <span class="arithmatex">\(10^{-5}\)</span>, <span class="arithmatex">\(\Lambda = 10\)</span>, Pm 0.1, no-slip walls, insulating mantle,
+conducting inner core, 4 ranks, the same parameters in <code>conductive_IC</code> (<code>39487bbf</code>). The m = 0 target is the most
+torsional of the modes there at this resolution (ω 0.0747, σ −0.0233, 𝒯/𝒫 18, Geo 0.90).</p>
+<table>
+<thead>
+<tr>
+<th>case</th>
+<th>N, lmax</th>
+<th>largest relative difference (5 eigenvalues)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>m 0, <span class="arithmatex">\(\sigma_{i2o} = \mu_{i2o} = 1\)</span>, <code>N_cic</code> 64</td>
+<td>80, 79</td>
+<td>2e-13</td>
+</tr>
+<tr>
+<td>m 1 (target 1.0i)</td>
+<td>80, 80</td>
+<td>4e-14</td>
+</tr>
+<tr>
+<td>m 0</td>
+<td>128, 127</td>
+<td>6e-13</td>
+</tr>
+<tr>
+<td>m 1</td>
+<td>128, 128</td>
+<td>1e-14</td>
+</tr>
+<tr>
+<td>m 0, <span class="arithmatex">\(\sigma_{i2o} = 10^{-2}\)</span></td>
+<td>80, 79</td>
+<td>3e-13</td>
+</tr>
+<tr>
+<td>m 0, <code>N_cic</code> 48 / 96</td>
+<td>80, 79</td>
+<td>3e-13 / 2e-13</td>
+</tr>
+<tr>
+<td>m 0, <span class="arithmatex">\(\mu_{i2o} = 2\)</span></td>
+<td>80, 79</td>
+<td>2e-13</td>
+</tr>
+<tr>
+<td>m 1, <span class="arithmatex">\(\mu_{i2o} = 2\)</span>, <span class="arithmatex">\(\sigma_{i2o} = 0.3\)</span></td>
+<td>80, 80</td>
+<td>7e-14</td>
+</tr>
+</tbody>
+</table>
+<p>The least damped m = 0 mode: λ = −0.023322278633 + 0.074686068661i (N 80), −0.023322202914 + 0.074686566522i (N 128).
+residσ, resid𝐛 and resid𝐄 equal <code>conductive_IC</code>'s resid𝐮, resid𝐛, resid𝐄 to the printed digits (resid𝐄 with
+<span class="arithmatex">\(\mu_{i2o} \ne 1\)</span> apart, see <a href="#energy-budgets">Energy budgets</a>). N 80 is not enough at Ek <span class="arithmatex">\(10^{-5}\)</span>: residuals <span class="arithmatex">\(10^{-6}\)</span> to
+<span class="arithmatex">\(10^{-3}\)</span>, <span class="arithmatex">\(10^{-14}\)</span> to <span class="arithmatex">\(10^{-6}\)</span> at N 128. <code>N_cic</code> 48, 64 and 96 give the same eigenvalues to <span class="arithmatex">\(2\cdot10^{-14}\)</span>. At Ek
+<span class="arithmatex">\(10^{-3}\)</span> (the geometry above, <span class="arithmatex">\(\Lambda\)</span> = Pm = 1) 'axial' m 1 and 'FDM' m 0 agree to <span class="arithmatex">\(3\cdot10^{-13}\)</span>, with all residuals
+below <span class="arithmatex">\(10^{-10}\)</span>.</p>
+<h3 id="variable-density-checks-2026-10-28">Variable density checks (2026-10-28)</h3>
+<p>Everything in <code>tests/magnetic/</code> (<code>run_all.sh</code>):</p>
+<ul>
+<li><strong>Derivation.</strong> The rows derived from the definitions reproduce <code>conductive_IC</code>'s 44 uniform-density blocks exactly
+  (factor −1, the A sign; l 3–6, m 0–3), and the <span class="arithmatex">\((\ln\rho_0)'\)</span> terms equal the closed forms of
+  <a href="#variable-density">Variable density</a> to <span class="arithmatex">\(\le 2\cdot10^{-14}\)</span>; the rows <code>v</code> and the T columns have none. The closed forms
+  are those of the planning notes: none had to be corrected.</li>
+<li><strong>Uniform density unchanged.</strong> The 4 insulating and 9 conducting-core cases above give A and B bitwise equal to the code
+  before this step.</li>
+<li><strong>Operator identities</strong> (<code>ru_insane.py</code>, B0 'axial', no-slip): <span class="arithmatex">\(\int\rho_0\mathbf u^*\cdot\mathbf F_L\,dV =
+  -\mathrm{Hendrik}\,\overline{\int\mathbf b^*\cdot\nabla\times(\mathbf u\times\mathbf B_0)\,dV}\)</span> to <span class="arithmatex">\(5\cdot10^{-15}\)</span> ('Boussinesq') and
+  <span class="arithmatex">\(1\cdot10^{-10}\)</span> ('Wu 2005', r_out 0.99, N 96; <span class="arithmatex">\(7\cdot10^{-13}\)</span> at N 160), m 0, 1, 2; switching off the g-row or the u-row
+  terms gives <span class="arithmatex">\(2\cdot10^{-3}\)</span> and 0.2. b block Hermitian positive and diffusion Hermitian negative to <span class="arithmatex">\(10^{-14}\)</span>.</li>
+<li><strong>Row checks</strong> (<code>row_check.py</code>, 'Wu 2005', N 192): every magnetic row block against the derivation, unweighted, to
+  <span class="arithmatex">\(10^{-14}\)</span> ('axial' m 1, 'FDM' m 0 with <code>tol_B0</code> = 1e-15; <span class="arithmatex">\(8\cdot10^{-9}\)</span> with the default <code>tol_B0</code> = 1e-8, the cut of the
+  B0 series). At N 96 the blocks with <span class="arithmatex">\(\lambda_1\)</span> are good to <span class="arithmatex">\(10^{-7}\)</span> only: the series of <span class="arithmatex">\((\ln\rho_0)'\)</span> converge slowly,
+  its pole sits at <span class="arithmatex">\(r = 1/r_\mathrm{out}\)</span>.</li>
+<li>
+<p><strong>Energy budgets</strong> ('Wu 2005', r_out 0.99, ricb 0.35, FDM, conducting inner core, no-slip, <span class="arithmatex">\(\Lambda\)</span> = Pm = 1). At Ek
+  <span class="arithmatex">\(10^{-3}\)</span>, residσ, residω, resid𝐛 and resid𝐄 for m 0 and m 1 are <span class="arithmatex">\(10^{-3}\)</span> at N 68, <span class="arithmatex">\(10^{-7}\)</span> at N 128 and
+  <span class="arithmatex">\(\le 6\cdot10^{-10}\)</span> at N 192. At Ek <span class="arithmatex">\(10^{-4}\)</span> (all residuals <span class="arithmatex">\(\le 3\cdot10^{-9}\)</span> at N 256):</p>
+<table>
+<thead>
+<tr>
+<th>mode</th>
+<th>λ (N 256)</th>
+<th>change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>least damped, m 1</td>
+<td>−0.005739718 + 1.003574886i</td>
+<td><span class="arithmatex">\(3\cdot10^{-9}\)</span> at N 192, <span class="arithmatex">\(10^{-8}\)</span> with lmax 96 instead of 64</td>
+</tr>
+<tr>
+<td>m 0, near 0.0442i</td>
+<td>−0.017420795 + 0.044242829i</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>The budgets use spin_doctor's own Lorentz and induction formulas, so they check the rows
+independently; the f and g rows need no <span class="arithmatex">\(\rho_0\)</span> weight, although <span class="arithmatex">\(\lambda_1 \approx -200\)</span> at the outer wall.
+- <strong>Continuity</strong> ('Wu 2005' with r_out = <span class="arithmatex">\(\sqrt\epsilon\)</span>, so the stratification is <span class="arithmatex">\(O(\epsilon)\)</span>, against 'Boussinesq'; axial,
+  m 1, Ek <span class="arithmatex">\(10^{-3}\)</span>, N 96): the eigenvalue moves linearly with the stratification.</p>
+<table>
+<thead>
+<tr>
+<th><span class="arithmatex">\(\epsilon\)</span></th>
+<th><span class="arithmatex">\(10^{-4}\)</span></th>
+<th><span class="arithmatex">\(10^{-3}\)</span></th>
+<th><span class="arithmatex">\(10^{-2}\)</span></th>
+<th><span class="arithmatex">\(10^{-1}\)</span></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>(λ − λ of 'Boussinesq')/ε</td>
+<td>0.05186 − 0.00053i</td>
+<td>0.05188</td>
+<td>0.05215</td>
+<td>0.05498</td>
+</tr>
+</tbody>
+</table>
+</li>
+</ul>
+<h3 id="toroidal-field-2026-10-28">Toroidal field (2026-10-28)</h3>
+<ul>
+<li><strong>Derivation.</strong> The closed forms equal derive.py's rows (<span class="arithmatex">\(b_0\)</span> = ('tor', 1) and ('tor', 2), any <span class="arithmatex">\(\rho_0\)</span>) for l 3–6, m 0–3
+  (<code>derive_check.py</code>); every coefficient fitted from l 2–9, m 0–3 (n = 1) and l 3–9 (n = 2), exactly.</li>
+<li><strong>Earlier cases unchanged.</strong> The 13 cases of steps 1 and 2 and three 'Wu 2005' cases of step 3 give A and B bitwise
+  equal to the code before this step.</li>
+<li><strong>Row checks</strong> ('Wu 2005', N 192): 'Malkus' m 1 to <span class="arithmatex">\(10^{-14}\)</span>; 'wall' m 0, 2 to <span class="arithmatex">\(2\cdot10^{-10}\)</span>, in the u-row blocks with
+  <span class="arithmatex">\(k\lambda_1\)</span> only (they vanish at the wall, where <span class="arithmatex">\(\lambda_1\)</span> is large, so the relative error of the near-wall <span class="arithmatex">\(\lambda_1\)</span>
+  series shows; it does not decrease with N).</li>
+<li><strong>Energy budgets.</strong> 'Malkus' and 'wall', 'Boussinesq' (N 68, 96) and 'Wu 2005' (N 128, 192), insulating and conducting
+  inner core, m 0 and 1, Ek = Em = <span class="arithmatex">\(10^{-3}\)</span>, <span class="arithmatex">\(\mathrm{Le}^2 = 10^{-3}\)</span>, <code>cnorm_tor = 'mag_energy'</code>: residσ, resid𝐛, resid𝐄
+  <span class="arithmatex">\(\le 6\cdot10^{-13}\)</span>, eigenvalues the same at both N to the printed digits. Unlike a poloidal field, the toroidal one has
+  no radial component, hence no Hartmann layer at the walls, and 'Wu 2005' converges fast.</li>
+<li><strong>Degree 2 and combined fields.</strong> 'Malkus' and 'wall' with <code>B0_tor_l = 2</code>, 'Boussinesq' (N 68, 96) and 'Wu 2005' (N 128,
+  192), conducting inner core, m 0 and 1: residuals <span class="arithmatex">\(\le 10^{-11}\)</span>, eigenvalues the same at both N to the printed digits.
+  FDM plus a degree-2 'wall' field ('Wu 2005'): residuals <span class="arithmatex">\(2\cdot10^{-10}\)</span> at N 192 (the poloidal field's Hartmann layer sets
+  the resolution); row check of 'axial' plus a degree-2 'Malkus' field, m 2: <span class="arithmatex">\(10^{-14}\)</span>. A 'user' profile <code>'r'</code> gives the
+  'Malkus' eigenvalues to <span class="arithmatex">\(10^{-12}\)</span>.</li>
+<li>
+<p><strong>Malkus (1967).</strong> With <span class="arithmatex">\(B_\phi = \mathrm{Le}\,s\)</span> the induction is <span class="arithmatex">\(im\,\mathrm{Le}\,\mathbf u\)</span> and the Lorentz force, up
+  to a gradient,</p>
+<div class="arithmatex">\[
+\mathbf F_L = \frac{im\,\mathrm{Le}^2}{\lambda}\left(im\,\mathbf u + 2\hat{\mathbf z}\times\mathbf u\right),
+\]</div>
+<p>so the ideal problem reduces to that of the inertial waves (frequency <span class="arithmatex">\(\lambda_\mathrm{in}\)</span>) in any container:</p>
+<div class="arithmatex">\[
+\omega = \frac{\lambda_\mathrm{in}}{2}\left[1 \pm \sqrt{1 + \frac{4\mathrm{Le}^2 m(m - \lambda_\mathrm{in})}{\lambda_\mathrm{in}^2}}\right]
+\]</div>
+<p>(kore's Im of the eigenvalue; the spin-over, <span class="arithmatex">\(\lambda_\mathrm{in} = m = 1\)</span>, does not move). For small Le the shift divided
+by <span class="arithmatex">\(\mathrm{Le}^2\)</span> tends to</p>
+<div class="arithmatex">\[
+\frac{m(m-\lambda_\mathrm{in})}{\lambda_\mathrm{in}} .
+\]</div>
+<p>For six m = 1 modes near 0.75i ('Boussinesq', ricb 0.35, Pm 1, insulating walls) the frequency shift is exactly
+quadratic in Le (the same shift divided by <span class="arithmatex">\(\mathrm{Le}^2\)</span> for <span class="arithmatex">\(\mathrm{Le}^2\)</span> = 1e-6, 4e-6 and 1.6e-5), and its distance to
+this limit falls with the diffusivities: 2–8 % at Ek = Em = <span class="arithmatex">\(10^{-5}\)</span>, 0.4–1 % at <span class="arithmatex">\(10^{-6}\)</span> (e.g. 0.3808 against 0.3822
+for <span class="arithmatex">\(\lambda_\mathrm{in}\)</span> = 0.7235). <code>tests/magnetic/malkus_check.py</code>.</p>
+</li>
+</ul>
+<h3 id="full-sphere-inviscid-runs-and-degree-2-poloidal-fields">Full sphere, inviscid runs and degree-2 poloidal fields</h3>
+<p>(2026-10-28, step 5.)</p>
+<ul>
+<li><strong>Hydrodynamics.</strong> Inviscid Boussinesq full sphere (Ek = 0, <code>'Boussinesq'</code>): the inertial modes of Wu (2005, Table 1,
+  β = 0) to the 10 digits given (e.g. 0.6666666667, 1.4964360838, 1.2319250547 for <span class="arithmatex">\(\lvert m\rvert = 2\)</span>); 'Wu 2005' against its
+  Table 2. No non-magnetic code changed (<code>regress.sh</code> bitwise).</li>
+<li><strong>Against <code>conductive_IC</code></strong> (<code>39487bbf</code>, the geometry of the first check, all eigenvalues of each run): full sphere,
+  'axial', 'FDM' (<span class="arithmatex">\(l\)</span> = 1, 2), 'G21 dipole', 'Luo_S1', 'Luo_S2', m 0–2 and both symmetries, <span class="arithmatex">\(\le 5\cdot10^{-13}\)</span>; with an
+  inner core (insulating or conducting, <code>B0_ic = 'potential'</code>): 'G21 dipole', 'Luo_S1', 'Luo_S2', 'FDM' <span class="arithmatex">\(l = 2\)</span> (m 0, 3),
+  <span class="arithmatex">\(\le 6\cdot10^{-13}\)</span>.</li>
+<li><strong>Derivation.</strong> <code>derive_check.py</code> also checks the tables of <code>induction_pol2</code>, <code>lorentz_pol2</code>, read from <code>operators.py</code>,
+  against derive.py's rows (l 3–6, m 0–3), to round-off.</li>
+<li><strong>Row checks</strong> in a full sphere (<code>row_check.py</code> handles the parity-reduced bases and <span class="arithmatex">\(\Delta l = \pm2\)</span>): 'Boussinesq' to
+  <span class="arithmatex">\(10^{-14}\)</span>; 'Wu 2005' needs N 288 (the pole of <span class="arithmatex">\((\ln\rho_0)'\)</span> at <span class="arithmatex">\(r = 1/r_\mathrm{out}\)</span> is nearer to the domain <span class="arithmatex">\([-1, 1]\)</span>
+  than to a shell's; <span class="arithmatex">\(3\cdot10^{-7}\)</span> at N 192).</li>
+<li>
+<p><strong>Energy budgets</strong>, 'Wu 2005', Ek = Em = <span class="arithmatex">\(10^{-3}\)</span> ('Boussinesq': to <span class="arithmatex">\(10^{-14}\)</span>):</p>
+<table>
+<thead>
+<tr>
+<th>case</th>
+<th>N 128</th>
+<th>N 192</th>
+<th>N 256</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>'Luo_S2', full sphere, m 0</td>
+<td><span class="arithmatex">\(10^{-7}\)</span></td>
+<td><span class="arithmatex">\(3\cdot10^{-11}\)</span></td>
+<td></td>
+</tr>
+<tr>
+<td>'Luo_S2', full sphere, m 1</td>
+<td><span class="arithmatex">\(3\cdot10^{-6}\)</span></td>
+<td><span class="arithmatex">\(10^{-9}\)</span></td>
+<td></td>
+</tr>
+<tr>
+<td>'Luo_S2', insulating or conducting inner core</td>
+<td></td>
+<td><span class="arithmatex">\(10^{-10}\)</span></td>
+<td></td>
+</tr>
+<tr>
+<td>FDM <span class="arithmatex">\(l = 2\)</span>, full sphere, <code>'Schmitt2012'</code> (its Hartmann layer)</td>
+<td><span class="arithmatex">\(5\cdot10^{-4}\)</span></td>
+<td><span class="arithmatex">\(6\cdot10^{-6}\)</span></td>
+<td><span class="arithmatex">\(3\cdot10^{-8}\)</span></td>
+</tr>
+<tr>
+<td>- <strong>Malkus (1967), ideal.</strong> Inviscid Boussinesq full sphere, <span class="arithmatex">\(B_\phi = \mathrm{Le}\,s\)</span>, Em <span class="arithmatex">\(10^{-9}\)</span>, m 2: for ten inertial modes</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\lambda_\mathrm{in}\)</span> of both symmetries and Le 0.1, 0.3, both branches of the Malkus frequency above to</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(10^{-5}\)</span>–<span class="arithmatex">\(7\cdot10^{-3}\)</span> relative at N 64 (the fast branch to <span class="arithmatex">\(10^{-4}\)</span> at N 96). The error does not change with Em</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>(<span class="arithmatex">\(10^{-8}\)</span> to <span class="arithmatex">\(10^{-10}\)</span>) or with Le: it is that of the magnetic boundary layer the insulating wall imposes (Malkus's ideal</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>solution has a tangential <span class="arithmatex">\(\mathbf b\)</span> there), not resolved at these N.</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>- <strong>Torsional modes of Luo &amp; Jackson (2022)</strong> (<code>conductive_IC</code>'s <code>tests/torsional_s2</code>: 'Luo_S2', inviscid, Lu <span class="arithmatex">\(2\cdot10^4\)</span>,</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>m 0, <code>timescale = 'Alfven'</code>). This code converges to their modes as <span class="arithmatex">\(N^{-3}\)</span>:</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>mode</th>
+<th>Luo &amp; Jackson</th>
+<th>relative difference</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>−0.0065952461 + 1.0335959942i</td>
+<td><span class="arithmatex">\(1.3\cdot10^{-5}\)</span> (N 128), <span class="arithmatex">\(4\cdot10^{-7}\)</span> (N 320)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>−0.0141833345 + 1.9095123626i</td>
+<td><span class="arithmatex">\(2\cdot10^{-4}\)</span> (N 128), <span class="arithmatex">\(7\cdot10^{-6}\)</span> (N 384)</td>
+</tr>
+</tbody>
+</table>
+<p><code>conductive_IC</code> is within <span class="arithmatex">\(10^{-6}\)</span> already at N 128 because it mishandles the <span class="arithmatex">\(D^3\)</span> and
+  <span class="arithmatex">\(D^2\)</span> Lorentz terms (<a href="#rows-and-implementation">Rows and implementation</a>, inviscid runs), whose effect there is only
+  <span class="arithmatex">\(10^{-7}\)</span>: with its bases set as here it gives this code's eigenvalues to <span class="arithmatex">\(10^{-9}\)</span>. The slow convergence comes from the
+  u rows in <span class="arithmatex">\(C^{(3)}\)</span>, where the unresolved boundary layer of <span class="arithmatex">\(\mathbf b\)</span> (Em <span class="arithmatex">\(5\cdot10^{-9}\)</span>) enters through <span class="arithmatex">\(f'''\)</span>.</p>
+</li>
+</ul>
+<h3 id="differential-rotation-confined-general-and-ferraro-fields-2026-10-30">Differential rotation, confined, general and Ferraro fields (2026-10-30)</h3>
+<ul>
+<li><strong>∇×(U0×b) against sympy</strong> (<code>tests/magnetic/dr_induction_check.py</code>): the blocks of <code>diff_rot.induction_block</code> against
+  <code>derive.rows_dr</code> for <span class="arithmatex">\(n\)</span> = 0–6, <span class="arithmatex">\(m\)</span> = 0–5, <span class="arithmatex">\(l\)</span> up to 25, term by term: <span class="arithmatex">\(\le 10^{-13}\)</span> at low <span class="arithmatex">\(l\)</span>; at <span class="arithmatex">\(l\)</span> 20–25 the agreement
+  is limited by derive.py's own quadrature (<span class="arithmatex">\(10^{-10}\)</span>).</li>
+<li><strong>Rigid rotation, exact</strong> (<code>rigid_check.py</code>): a uniform <span class="arithmatex">\(\Delta\Omega = c\)</span> must give the eigenvalue of Gaspard <span class="arithmatex">\(1 + c\)</span> without
+  rotation, minus <span class="arithmatex">\(imc\)</span>. All
+  eigenvalues agree to <span class="arithmatex">\(\le 5\cdot10^{-14}\)</span>: hydrodynamics, 'axial', 'FDM', 'Luo_S2', 'Malkus', 'wall' of degree 2, a
+  conducting inner core, a full sphere.</li>
+<li><strong>Budgets with a solar-like <span class="arithmatex">\(\Delta\Omega = f_0 + f_2P_2 + f_4P_4\)</span></strong> (Ek = Em = <span class="arithmatex">\(10^{-3}\)</span>, <span class="arithmatex">\(\Lambda\)</span> = 1): 'Malkus', 'axial' and
+  'Luo_S2', shell and full sphere, 'Boussinesq' and 'Wu 2005': residσ, resid𝐛, resid𝐄 <span class="arithmatex">\(10^{-13}\)</span>–<span class="arithmatex">\(10^{-9}\)</span>.</li>
+<li><strong>The algebra against the closed forms</strong> (<code>mag_couplings</code> 'algebra' against 'closed', same runs): eigenvalues equal to
+  <span class="arithmatex">\(\le 6\cdot10^{-13}\)</span> for 'axial' (m 0, 1), 'FDM' (degree 2), 'Luo_S2' (shell, full sphere, 'Wu 2005'), 'FDM' with 'Wu 2005',
+  'Malkus' (and 'Wu 2005'), 'wall' of degree 2, 'axial' + 'wall', a conducting inner core, 'confined', and with a
+  differential rotation. <strong>Against sympy</strong> (<code>algebra_check.py</code>): every block for poloidal and toroidal fields of degree 1–4
+  (3 and 4 have no closed forms), several <span class="arithmatex">\(m\)</span>, <span class="arithmatex">\(l\)</span> up to 12.</li>
+<li><strong>'general'</strong>: <span class="arithmatex">\(h_1 = r/2\)</span> gives exactly the 'axial' eigenvalues, <span class="arithmatex">\(k_1 = r\)</span> exactly the 'Malkus' ones; fields of degrees
+  1 + 3 (full sphere), 2 + 4 (shell), toroidal 1 + 3, and a poloidal 1 + 3 with a toroidal 2 and a differential rotation
+  (also 'Wu 2005'): budgets <span class="arithmatex">\(\le 5\cdot10^{-12}\)</span>.</li>
+<li><strong>'confined'</strong>: degree 1 and 2, shell region [0.4, 0.8] and full-sphere region [0, 0.6]: budgets <span class="arithmatex">\(10^{-12}\)</span>–<span class="arithmatex">\(10^{-14}\)</span>
+  (shell), <span class="arithmatex">\(4\cdot10^{-10}\)</span> (degree 1, N 192) and <span class="arithmatex">\(2\cdot10^{-9}\)</span> (degree 2, N 384) in the full sphere; with <span class="arithmatex">\(\Delta\Omega\)</span>
+  uniform inside the region, <code>ferraro_mismatch</code> = <span class="arithmatex">\(10^{-29}\)</span> and the budgets close as without rotation.</li>
+<li><strong>'ferraro'</strong>: with a cylindrical rotation and <span class="arithmatex">\(G(w) = w\)</span> the field is the uniform axial one, and the eigenvalues equal
+  those of 'axial' to 10 digits; with <span class="arithmatex">\(\Delta\Omega \propto s^2(1 - s^2)\)</span> (degrees 0, 2, 4), <span class="arithmatex">\(\psi\)</span> is rebuilt from degrees 1–7
+  to <span class="arithmatex">\(4\cdot10^{-15}\)</span>, <code>ferraro_mismatch</code> is <span class="arithmatex">\(5\cdot10^{-14}\)</span>, and the budgets close to <span class="arithmatex">\(\le 2\cdot10^{-11}\)</span> in a shell, a full
+  sphere and 'Wu 2005'.</li>
+<li>
+<p><strong><code>diff_rot_type = 'ferraro'</code></strong>: the uniform axial field with <span class="arithmatex">\(F = \psi\)</span> gives the eigenvalues of the cylindrical profile
+  to 10 digits, and so does the round trip through <code>B0 = 'ferraro'</code> (<span class="arithmatex">\(G = 5w\)</span>; budgets <span class="arithmatex">\(4\cdot10^{-14}\)</span>). Budgets
+  <span class="arithmatex">\(\le 10^{-10}\)</span> for all of the following, with <code>ferraro_mismatch</code>:</p>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th><span class="arithmatex">\(F\)</span></th>
+<th><code>ferraro_mismatch</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>'FDM'</td>
+<td><span class="arithmatex">\(\psi\)</span></td>
+<td><span class="arithmatex">\(3\cdot10^{-12}\)</span></td>
+</tr>
+<tr>
+<td>'G21 dipole', 'Luo_S1'</td>
+<td><span class="arithmatex">\(\psi\)</span></td>
+<td><span class="arithmatex">\(6\cdot10^{-12}\)</span></td>
+</tr>
+<tr>
+<td>full sphere</td>
+<td><span class="arithmatex">\(\psi\)</span></td>
+<td><span class="arithmatex">\(2\cdot10^{-12}\)</span></td>
+</tr>
+<tr>
+<td>'general', degrees 1 + 3</td>
+<td><span class="arithmatex">\(\psi + \psi^2\)</span></td>
+<td><span class="arithmatex">\(2\cdot10^{-11}\)</span></td>
+</tr>
+<tr>
+<td>'Luo_S2'</td>
+<td><span class="arithmatex">\(\psi^2\)</span></td>
+<td><span class="arithmatex">\(2\cdot10^{-10}\)</span></td>
+</tr>
+<tr>
+<td>'confined', cut at <code>diff_rot_nmax</code> 4</td>
+<td><span class="arithmatex">\(\psi\)</span></td>
+<td><span class="arithmatex">\(7\cdot10^{-9}\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>Refused as they should be: an odd <span class="arithmatex">\(F\)</span> with 'Luo_S2',
+  <code>B0 = 'ferraro'</code>, a toroidal field alone, a conducting inner core with <span class="arithmatex">\(\psi\)</span> not constant on it. With a toroidal part of
+  degree 2: <code>B0 = 'ferraro'</code> + 'Malkus' and 'Luo_S1' + 'wall' with <code>diff_rot_type = 'ferraro'</code> close their budgets to
+  <span class="arithmatex">\(8\cdot10^{-12}\)</span> and <span class="arithmatex">\(10^{-9}\)</span>.
+- <strong><code>B0_wound = 1</code></strong> (<code>tests/magnetic/wound_check.py</code>): a uniform axial <span class="arithmatex">\(\mathbf B_p\)</span> with <span class="arithmatex">\(\Delta\Omega = a r^2\)</span> gives one degree,
+  <span class="arithmatex">\(k_2 = A r^4/14 + C r^2 + D r^{-3}\)</span>: the solution matches it to <span class="arithmatex">\(7\cdot10^{-14}\)</span> (shell), <span class="arithmatex">\(4\cdot10^{-13}\)</span> (conducting inner core)
+  and <span class="arithmatex">\(3\cdot10^{-12}\)</span> (full sphere). The residual of the steady induction equation, by finite differences in <span class="arithmatex">\((r, \theta)\)</span> with
+  <span class="arithmatex">\(\mathbf B_p\)</span> from its flux function, is <span class="arithmatex">\(\le 8\cdot10^{-10}\)</span> ('general' 1 + 3, 'Luo_S2' in a full sphere, 'FDM' with a
+  conducting inner core), the floor of the differences; the <span class="arithmatex">\(k_n\)</span> change by <span class="arithmatex">\(\le 2\cdot10^{-11}\)</span> from 97 to 385 nodes. Budgets
+  with the ratio of the maxima of the wound and the poloidal field from 0.5 to 4.4 ('general', 'FDM' with a conducting inner core, 'Luo_S2'
+  in a full sphere, 'axial' plus a 'Malkus' part of degree 2): <span class="arithmatex">\(\le 2.4\cdot10^{-10}\)</span>.
+- <strong>Unchanged without the new features</strong>: <code>regress.sh</code> bitwise, heat_dr, ru_insane identical, and 26 magnetic cases build A
+  and B bitwise equal to the code before.</p>
+</li>
+</ul>
+<h2 id="references">References</h2>
+<ul>
+<li>Ferraro, V. C. A. 1937 (the law of isorotation).</li>
+<li>Gerick, F. et al. 2021 ('G21 dipole').</li>
+<li>Gizon, L. et al. 2021; Löptien, B. et al. 2018 (solar inertial modes).</li>
+<li>Gough, D. O. &amp; McIntyre, M. E. 1998; MacGregor, K. B. &amp; Charbonneau, P. 1999 (tachocline confinement).</li>
+<li>Gubbins, D. &amp; Roberts, P. H. 1987 (free decay modes of a sphere).</li>
+<li>Luo, J. &amp; Jackson, A. 2022 ('Luo_S1', 'Luo_S2', <code>'mag_energy'</code>, torsional modes).</li>
+<li>Malkus, W. V. R. 1967 (the field <span class="arithmatex">\(s\,\hat{\boldsymbol\phi}\)</span>).</li>
+<li>Schmitt, D. 2012 (<code>'Schmitt2012'</code>).</li>
+<li>Wu, Y. 2005 (inertial modes of a full sphere).</li>
+<li>Zhang, K. &amp; Fearn, D. R. 1994, 1995 (free decay modes of a shell).</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "content.code.copy"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

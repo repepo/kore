@@ -833,6 +833,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../magnetic-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Magnetic field
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../reynolds-stress/" class="md-nav__link">
         
   
@@ -1295,7 +1323,7 @@ and it is a sum of radial operators (Chebyshev/Gegenbauer matrices, built by <co
 depend on <span class="arithmatex">\(l\)</span> and <span class="arithmatex">\(m\)</span> (in <code>operators.py</code> and <code>diff_rot.py</code>). A spherically symmetric background couples each degree only
 to itself. Two backgrounds in kore depend on latitude, so they couple different degrees:</p>
 <ul>
-<li>an imposed <strong>magnetic field</strong> <span class="arithmatex">\(\mathbf{B}_0\)</span> (<a href="../magnetic/">Magnetic field</a>), part A of this page;</li>
+<li>an imposed <strong>magnetic field</strong> <span class="arithmatex">\(\mathbf{B}_0\)</span> (<a href="../magnetic/">Magnetic field</a>; equations: <a href="../magnetic-equations/">Magnetic field equations</a>), part A of this page;</li>
 <li>a <strong>differential rotation</strong> <span class="arithmatex">\(\Delta\Omega(r, \theta)\)</span> (<a href="../differential_rotation_details/">Differential rotation</a>), part B.</li>
 </ul>
 <p>For each, this page explains why the coefficients are computed the way they are (motivation), the mathematics
@@ -1529,9 +1557,9 @@ formulas hold at large <span class="arithmatex">\(l\)</span>. The evidence at la
 <li>poloidal fields ('axial', 'FDM' of degree 1 and 2, 'G21 dipole', 'Luo_S1', 'Luo_S2'): the eigenvalues agree with
   <code>conductive_IC</code>, whose closed forms were derived independently, to <span class="arithmatex">\(6\cdot10^{-13}\)</span> or better with lmax 63–66 (full
   sphere and inner core) and 79–128 (conducting inner core), and to <span class="arithmatex">\(10^{-9}\)</span> for the inviscid torsional modes of 'Luo_S2'
-  with lmax 95–191 (against <code>conductive_IC</code> with its inviscid bases corrected, <a href="../magnetic/">Magnetic field</a>);</li>
+  with lmax 95–191 (against <code>conductive_IC</code> with its inviscid bases corrected, <a href="../magnetic-equations/#full-sphere-inviscid-runs-and-degree-2-poloidal-fields">Magnetic field equations</a>);</li>
 <li>toroidal fields (no independent code): the energy budgets, which sum the powers over all degrees of the run
-  (lmax 47–64, residuals <span class="arithmatex">\(10^{-11}\)</span> to <span class="arithmatex">\(10^{-13}\)</span>), and the Malkus (1967) frequencies (<a href="../magnetic/">Magnetic field</a>,
+  (lmax 47–64, residuals <span class="arithmatex">\(10^{-11}\)</span> to <span class="arithmatex">\(10^{-13}\)</span>), and the Malkus (1967) frequencies (<a href="../magnetic-equations/#toroidal-field-2026-10-28">Magnetic field equations</a>,
   Checks). Both test the operators through whole eigenvectors, not coefficient by coefficient;</li>
 <li>a one-off comparison (2026-10-30) of every fitted coefficient of the degree-2 fields with derive.py at <span class="arithmatex">\(l = 20\)</span>, <span class="arithmatex">\(m = 3\)</span>
   and <span class="arithmatex">\(l = 31\)</span>, <span class="arithmatex">\(m = 7\)</span>, outside the fitting range: largest relative difference <span class="arithmatex">\(4.3\cdot10^{-10}\)</span> (poloidal, 40 blocks)
@@ -1682,7 +1710,7 @@ with the profile codes <code>hp</code> + degree (<span class="arithmatex">\(c_\m
 <code>operators.lorentz</code>, <code>induction</code> when <code>ut.mag_algebra</code>); the profiles degree by degree come from
 <code>background_field.pol_profiles</code>, <code>tor_profiles</code>.</p>
 <p><strong>Verification.</strong> For degrees 1 and 2 the eigenvalues equal those of the closed forms to <span class="arithmatex">\(\le 6\cdot10^{-13}\)</span> (14 cases,
-<a href="../magnetic/">Magnetic field</a>); <code>tests/magnetic/algebra_check.py</code> compares every block with derive.py for degrees 1–4;
+<a href="../magnetic-equations/#differential-rotation-confined-general-and-ferraro-fields-2026-10-30">Magnetic field equations</a>); <code>tests/magnetic/algebra_check.py</code> compares every block with derive.py for degrees 1–4;
 the energy budgets close to round-off for fields of several degrees.</p>
 <p><strong>How to use it.</strong> <code>par.mag_couplings = 'algebra'</code> for any type, or a type that needs it:
 <div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>par.B0 = 'general'; par.B0_profiles = {1: 'r/6 - r**3/10', 3: '0.3*r**3*(1 - r**2)'}

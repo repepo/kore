@@ -719,6 +719,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#magneticdat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        magnetic.dat
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#paramsdat" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -915,6 +926,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../magnetic-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Magnetic field
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../reynolds-stress/" class="md-nav__link">
         
   
@@ -1020,6 +1059,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#magneticdat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        magnetic.dat
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#paramsdat" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1083,7 +1133,7 @@ table.</p>
 <tr>
 <td><code>real_flow.field</code>, <code>imag_flow.field</code></td>
 <td><code>solve.py</code></td>
-<td>the eigenvectors of the flow (or the forced flows), real and imaginary parts of their spectral coefficients, one column per solution; with <code>thermal = 1</code> also <code>real_thermal.field</code>, <code>imag_thermal.field</code> for <span class="arithmatex">\(s\)</span></td>
+<td>the eigenvectors of the flow (or the forced flows), real and imaginary parts of their spectral coefficients, one column per solution; with <code>thermal = 1</code> also <code>real_thermal.field</code>, <code>imag_thermal.field</code> for <span class="arithmatex">\(s\)</span>; with <code>magnetic = 1</code> also <code>real_magnetic.field</code>, <code>imag_magnetic.field</code> for <span class="arithmatex">\(\mathbf b\)</span>, and <code>real_magnetic_ic.field</code>, <code>imag_magnetic_ic.field</code> for a conducting inner core</td>
 </tr>
 <tr>
 <td><code>rsf_spectrum.dat</code>, <code>rsf_ke.dat</code></td>
@@ -1115,10 +1165,15 @@ table.</p>
 <td><code>spin_doctor.py</code>, with <code>thermal = 1</code></td>
 <td>the entropy budget of each solution (below)</td>
 </tr>
+<tr>
+<td><code>magnetic.dat</code></td>
+<td><code>spin_doctor.py</code>, with <code>magnetic = 1</code></td>
+<td>the magnetic energies and budgets of each solution (below)</td>
+</tr>
 </tbody>
 </table>
 <p><code>python3 bin/units.py</code> prints the eigenvalues of <code>eigenvalues0.dat</code> as frequency and growth rate in nHz
-(<a href="../background/#units">Background model</a>). Rows of <code>params.dat</code>, <code>flow.dat</code> and <code>thermal.dat</code> with the same index
+(<a href="../background/#units">Background model</a>). Rows of <code>params.dat</code>, <code>flow.dat</code>, <code>thermal.dat</code> and <code>magnetic.dat</code> with the same index
 belong to the same solution. Start a new <code>params.dat</code> rather than append to one written by another version of kore,
 which may have other columns.</p>
 <h2 id="flowdat"><code>flow.dat</code></h2>
@@ -1200,6 +1255,55 @@ which may have other columns.</p>
 </tr>
 </tbody>
 </table>
+<h2 id="magneticdat"><code>magnetic.dat</code></h2>
+<p>With <code>magnetic = 1</code> (<a href="../magnetic/">Magnetic field</a>). The energies are without the factor Hendrik, as in <code>conductive_IC</code>;
+the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic field equations</a>.</p>
+<table>
+<thead>
+<tr>
+<th>column</th>
+<th>content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>ME, the magnetic energy <span class="arithmatex">\(\int\tfrac12\lvert\mathbf b\rvert^2 dV\)</span> in the fluid (the column Mag/Kin of the <code>spin_doctor</code> table is ME/KE)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Mdfs, the magnetic diffusion term</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Indu, the induction work</td>
+</tr>
+<tr>
+<td>4</td>
+<td>the relative residual of the induction budget in the fluid (resid𝐛)</td>
+</tr>
+<tr>
+<td>5, 6</td>
+<td>Wlor, Wlor_im: the power of the Lorentz force, real and imaginary parts (in residσ and residω)</td>
+</tr>
+<tr>
+<td>7</td>
+<td>MEic, the magnetic energy in the inner core</td>
+</tr>
+<tr>
+<td>8</td>
+<td>MEext, the energy of the potential field outside the outer wall</td>
+</tr>
+<tr>
+<td>9, 10</td>
+<td>Ohm_f, Ohm_ic: the Ohmic losses in the fluid and in a conducting inner core</td>
+</tr>
+<tr>
+<td>11</td>
+<td>the relative residual of the full energy budget (resid𝐄; nan unless the walls are no-slip: <code>bco = 1</code>, and <code>bci = 1</code> with an inner core)</td>
+</tr>
+</tbody>
+</table>
 <h2 id="paramsdat"><code>params.dat</code></h2>
 <p>The columns follow the order of <code>spin_doctor.param_table</code>, counted from 1:</p>
 <table>
@@ -1254,6 +1358,10 @@ which may have other columns.</p>
 <td>81–82</td>
 <td><code>stratification</code>, <code>diffusivity</code></td>
 </tr>
+<tr>
+<td>83–95</td>
+<td><code>magnetic</code>, <code>B0</code>, <code>B0_l</code>, <code>cnorm</code>, <code>Hendrik</code>, <code>MagnetD</code>, <code>innercore</code>, <code>N_cic</code>, <code>mu_i2o</code>, <code>sigma_i2o</code>, <code>B0_tor</code>, <code>B0_tor_l</code>, <code>cnorm_tor</code></td>
+</tr>
 </tbody>
 </table>
 <ul>
@@ -1267,6 +1375,14 @@ which may have other columns.</p>
   ∓(<code>r_out</code> + 0.005) for <code>'sun'</code>.</li>
 <li><code>diff_rot_window</code> is 0 for the shell fit and 1 for the whole-Sun fit, with <code>diff_rot_rdeg</code> then the degree used,
   <code>diff_rot_sun_deg</code>.</li>
+<li>The magnetic columns: <code>B0</code> is the index in <code>background_field.B0_TYPES</code> (<code>'axial'</code> 0, <code>'FDM'</code> 1, <code>'G21 dipole'</code> 2,
+  <code>'Luo_S1'</code> 3, <code>'Luo_S2'</code> 4, <code>'confined'</code> 5, <code>'general'</code> 6, <code>'ferraro'</code> 7; −1 without a poloidal field), <code>B0_tor</code> in
+  <code>background_field.B0_TOR_TYPES</code> (<code>'Malkus'</code> 0, <code>'wall'</code> 1, <code>'user'</code> 2, <code>'general'</code> 3; −1 without), <code>innercore</code> in
+  <code>background.INNER_CORES</code> (<code>'insulator'</code> 0, <code>'conducting, Chebys'</code> 1). <code>cnorm</code> and <code>cnorm_tor</code> are the numbers used, except
+  for <code>B0 = 'ferraro'</code>, where <code>cnorm</code> is written as 1 (the value used is computed later and not recorded). <code>B0_l</code> is the
+  lowest degree for <code>'general'</code> and 1 for <code>'ferraro'</code>; <code>B0_tor_l</code> is the parameter, which <code>B0_tor = 'general'</code> ignores. The
+  other magnetic parameters (<code>B0_wound</code>, the <code>'confined'</code>, <code>'general'</code> and <code>'ferraro'</code> settings, <code>mag_couplings</code>, <code>tol_B0</code>,
+  <code>B0_ic</code>) are not recorded.</li>
 <li><code>diff_rot_generic</code> and <code>diff_rot_hold</code> are not used (always 0 and nan); they keep the positions of the columns after
   them.</li>
 <li>A row ends, after a <code>#</code> that <code>np.loadtxt</code> skips, with the <code>'user'</code> expressions and, for <code>'tabulated'</code>,
