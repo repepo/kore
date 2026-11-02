@@ -38,6 +38,15 @@ The defaults described below are the recommended settings for production runs.
 
 For forced problems (`forcing > 0`) Kore solves a single linear system. The defaults are a direct solve: `'ksp_type': 'preonly'`, `'pc_type': 'lu'` and `'pc_factor_mat_solver_type': 'mumps'`. Iterative solvers (PETSc's default GMRES with ILU) do not converge reliably on these matrices. If MUMPS reports `INFOG(1) = -9`, uncomment `'mat_mumps_cntl_1'`. Pre-scaling and the energy normalisation are not applied: the solution keeps the amplitude set by the forcing.
 
+### The induced field of a given flow
+
+`bin/just_induction.py` and `bin/solve_ind.py` solve the induction equation alone, for the flow of a finished run (`hydro = 1`, `magnetic = 1`). Run them in the run folder, after `solve_nopp.py`:
+```Shell
+./bin/just_induction.py
+mpiexec -n 4 ./bin/solve_ind.py
+```
+`just_induction.py` takes the induction rows of `A.npz` and the flow in `real_flow.field` and `imag_flow.field`, and writes the matrix `A_ind.npz` and one right-hand side per solution, `u_ind.npz`. `solve_ind.py` solves for each, with the options for forced problems above, and overwrites `real_magnetic.field` and `imag_magnetic.field` (and the inner-core field of `'conducting, Chebys'`) with the induced field; `spin_doctor.py` then works on it as usual. In a forced run the result is the run's own field, since `A` holds the forcing frequency. In an eigenvalue problem `A` has no $\lambda$, so the result is the steady field ($\lambda = 0$) that the flow induces. Neither script handles `rotdyn = 1` or `mantle = 'resolved'`: they stop.
+
 ## Resolution
 
 Unless `N` is set in `parameters.py`, `par.set_scales()` sets the Chebyshev truncation to `Ncheb(Ek)` (in `params_default.py`), and the spherical-harmonic truncation `lmax` follows from `N` (with `g = 1`, `lmax = N - 1` for `m = 0`). `Ncheb` grows as $E_k^{-0.242}$; for example it gives `N` = 136, 232, 400 and 688 at $E_k$ = 1e-6, 1e-7, 1e-8 and 1e-9. It was obtained for a torsional-mode problem. Other problems (stronger fields, other boundary conditions, buoyancy) may need a higher resolution. Keep `lmax` close to `N`: a too small `lmax` changes the eigenvalues without showing up in `spin_doctor`'s residuals.

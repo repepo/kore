@@ -59,8 +59,8 @@ The residuals compare terms of balances that an exact solution satisfies. They a
 
 | Residual | Balance |
 |---|---|
-| `resid0` | The viscous dissipation computed in two ways, from $\int \mathbf{u}\cdot\nabla^2\mathbf{u}\,dV$ and from the rate of strain, plus the work of a rotating mantle and inner core on the fluid with `rotdyn = 1`, or of the walls set rotating by `forcing = 12` (the rotation rate times the viscous torque on each wall). `nan` if `Ek = 0`. |
-| `resid𝐮` | Kinetic energy: $2\sigma$ times the kinetic energy against the viscous dissipation and the work of the Lorentz and buoyancy forces. With `forcing = 12` (steady, no body force) $\int \mathbf{u}\cdot\nabla^2\mathbf{u}\,dV$ balances the work of the Lorentz and buoyancy forces (it vanishes without them), and `resid𝐮` is measured against the viscous dissipation too. With `bgflow = 1` the balance includes the work of the background flow (see [Background flow](bgflow.md)). |
+| `resid0` | The viscous dissipation computed in two ways, from $\int \mathbf{u}\cdot\nabla^2\mathbf{u}\,dV$ and from the rate of strain, plus the work of the viscous stress of moving walls on the fluid: a rotating mantle and inner core with `rotdyn = 1`, the walls set rotating by `forcing = 12` (the rotation rate times the viscous torque on each wall), and the walls moved by the other forcings (from the flow at the walls). `nan` if `Ek = 0`. |
+| `resid𝐮` | Kinetic energy: $2\sigma$ times the kinetic energy against the viscous term $\int \mathbf{u}\cdot\nabla^2\mathbf{u}\,dV$ (which contains the work of moving walls), the work of the Lorentz and buoyancy forces, and the work of the body force of forcings 1, 4, 5 and 8. It is measured against the dissipation from the rate of strain too: when moving walls drive the flow (`forcing = 7` with $m = 0$, `forcing = 12`), the viscous term balances only the work of the Lorentz and buoyancy forces (it vanishes without them). With `bgflow = 1` the balance includes the work of the background flow (see [Background flow](bgflow.md)). `nan` for forcings 2, 3, 6, 9 and 7 with $m = 2$: walls that move radially also work through the pressure, which is not computed, and forcing 3 has no force field. |
 | `resid𝐛` | Magnetic energy: $2\sigma$ times the magnetic energy against the induction work and magnetic diffusion. |
 | `residθ` | Thermal "energy": $2\sigma$ times it against thermal diffusion and advection. |
 | `residξ` | The same for the composition. |
@@ -112,7 +112,7 @@ Each run appends one row per solution to the files below, in the same order in e
 | 9-10    | `resid0`, `resid𝐮`                                                   |
 | 11-12   | Viscous torque on the mantle (real, imaginary)                        |
 | 13-14   | Viscous torque on the inner core (real, imaginary)                    |
-| 15      | Unused (0)                                                            |
+| 15      | Dominant degree: the $l$ with the most kinetic energy (0 in files written before 2026-11-02) |
 | 16-17   | Angular momentum of the fluid $L$ (real, imaginary)                   |
 | 18      | `residL`                                                              |
 | 19      | Geostrophic fraction of $u_\phi$ (`nan` unless $m = 0$, `symm = 1`)   |

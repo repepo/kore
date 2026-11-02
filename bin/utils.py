@@ -62,6 +62,9 @@ lmax_top = lmax + 1 + (1-2*np.sign(m))*s
 lmax_bot = lmax + 1 + (1-2*np.sign(m))*(1-s)
 
 beta_actual = 0
+B0list = ['axial', 'dipole', 'G21 dipole', 'Luo_S1', 'Luo_S2', 'FDM']
+if par.B0 is not None and par.B0 not in B0list:  # FIX (2026-11-02): a misspelt B0 stopped with "NameError: symmB0"
+    sys.exit('B0 = %r: set None or one of %s' % (par.B0, B0list))
 if par.B0 in ['axial','dipole','G21 dipole','Luo_S1']:
     symmB0 = -1
     B0_l   =  1
@@ -82,7 +85,6 @@ if par.B0 is None:
 
 bsymm = par.symm * symmB0  # induced magnetic field (b) symmetry follows from u and B0
 
-B0list = ['axial', 'dipole', 'G21 dipole', 'Luo_S1', 'Luo_S2', 'FDM']
 B0type = B0list.index(par.B0) if par.B0 is not None else -1  # NEW (2026-10-30): -1 without a poloidal field
 B0_tor_list = ['Malkus', 'wall', 'user']  # NEW (2026-10-30): toroidal fields
 B0_tor_type = B0_tor_list.index(par.B0_tor) if par.B0_tor in B0_tor_list else -1
@@ -99,17 +101,26 @@ B0_ic_list = ['G21 dipole', 'Luo_S1', 'Luo_S2']  # full-sphere fields; 'axial' a
 B0_cmb = par.B0_cmb
 B0_cmb_list = ['dipole', 'G21 dipole', 'Luo_S1', 'Luo_S2', 'FDM']  # fields from internal currents; 'axial' is imposed from outside
 
+def option_index(name, value, options):
+    '''
+    NEW (2026-11-02): the position of value in options; a misspelt option stops with the valid ones
+    (list.index raised "ValueError: 'x' is not in list", which did not name the parameter)
+    '''
+    if value not in options:
+        sys.exit('%s = %r: set one of %s' % (name, value, options))
+    return options.index(value)
+
 ic_bc_list = ['insulator', 'TWA', 'conducting, Chebys', 'conducting, Bessel']
-innercore_mag_bc = ic_bc_list.index(par.innercore)
+innercore_mag_bc = option_index('innercore', par.innercore, ic_bc_list)
 
 mantle_bc_list = ['insulator', 'TWA', 'resolved']  # NEW (2026-10-30): 'resolved'
-mantle_mag_bc = mantle_bc_list.index(par.mantle)
+mantle_mag_bc = option_index('mantle', par.mantle, mantle_bc_list)
 
 thermal_heating_list = ['internal', 'differential', 'two zone', 'user defined']
-heating = thermal_heating_list.index(par.heating)
+heating = option_index('heating', par.heating, thermal_heating_list)
 
 compositional_background_list = ['internal', 'differential']
-compositional_background = compositional_background_list.index(par.comp_background)
+compositional_background = option_index('comp_background', par.comp_background, compositional_background_list)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -1034,7 +1045,8 @@ def check_B0():
             sys.exit('B0_tor_profile = %r: %s: %s' % (par.B0_tor_profile, type(err).__name__, err))
         if not np.all(np.isfinite(k_user().coef)):
             sys.exit('B0_tor_profile = %r is not finite on the fluid domain' % (par.B0_tor_profile,))
-    if not (isinstance(par.cnorm_tor, (int, float)) or par.cnorm_tor in ['mag_energy', 'Schmitt2012']):
+    # FIX (2026-11-02): numpy numbers too (np.int64 is not an int)
+    if not (isinstance(par.cnorm_tor, (int, float, np.integer, np.floating)) or par.cnorm_tor in ['mag_energy', 'Schmitt2012']):
         sys.exit("cnorm_tor = %r: a number, 'mag_energy' or 'Schmitt2012'" % (par.cnorm_tor,))
     # A field with k != 0 at a wall carries a current sheet there, in the fluid (an insulator cannot carry it). The force on
     # it, -B0_phi*b_r per unit area along phi, is in no equation: a no-slip wall takes it (the flow is unchanged), but the

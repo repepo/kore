@@ -3,6 +3,47 @@ CHANGELOG - Kore, conductive_IC branch
 
 2026-11-02
 ----------
+Fix: spin_doctor's resid0 and resid u include the power of the forcing (the viscous stress of moving walls for every
+forced problem, the body force of forcings 1, 4, 5 and 8), and resid u is nan where it cannot be checked; elldom is the
+dominant degree; track_target is written again. just_induction.py and solve_ind.py keep a conducting inner core's field.
+Latent errors in operators.py and utils.py fixed (bin/spin_doctor.py, bin/utils4pp.py, bin/operators.py, bin/utils.py,
+bin/params_default.py, bin/just_induction.py, bin/solve_ind.py, docs/)
+- resid0 compares the two forms of the viscous dissipation, which differ by the work of the viscous stress on the walls.
+  Only rotdyn and forcing 12 added that work, so the boundary-flow forcings (2, 6, 7, 9) gave resid0 ~ 1.
+  utils4pp.wall_power computes it from the flow at both walls (2 Re of the integral of u*.(2e.n)) for every forced
+  problem.
+- resid u left out the body force, so forcings 1, 4, 5 and 8 gave resid u ~ 1. utils4pp.body_force_power takes the
+  force's toroidal scalars from the rows assemble.py writes. Walls that move radially (forcings 2, 6, 9, and 7 with
+  m = 2) also work through the pressure, which spin_doctor does not compute, and forcing 3 puts raw Chebyshev
+  coefficients in its rows: resid u is nan for those. When walls drive the flow without moving radially (forcing 7 with
+  m = 0) every other term vanishes, so resid u was |Dkin|/|Dkin| = 1: it is now measured against the internal
+  dissipation too, as forcing 12's was (its separate formula, the same, is gone).
+- elldom (flow.dat column 15) was always 0. It is now the degree l with the most kinetic energy.
+- track_target: set_scales() read the file, but nothing wrote it since postprocess.py was removed (spin_doctor's copy of
+  that code was commented out). spin_doctor writes the eigenvalue closest to the target (track_target = 1), or the one
+  with the smallest poloidal to toroidal kinetic energy ratio (2). The unused y and read of the file are gone.
+- just_induction.py sliced A to the field in the fluid, which drops the field of a conducting inner core ('conducting,
+  Chebys') and its coupling, and it imported the parameters module where the code needs par. It now keeps the
+  inner-core field (solve_ind.py writes it to real_magnetic_ic.field and imag_magnetic_ic.field), and stops for
+  rotdyn = 1 and without hydro or magnetic. docs/solver.md describes both scripts.
+- operators.py: buoyancy and comp_buoyancy raised a NameError when called for another section; thermal_advection,
+  compositional_advection, thermal_diffusion and compositional_diffusion left their result unbound there (no caller
+  does this). thermal_advection's comment gave dT/dr ~ r**2 for 'differential' heating; it is r**-2.
+- utils.py: a misspelt B0 stopped with "NameError: symmB0", and a misspelt innercore, mantle, heating or
+  comp_background with "ValueError: 'x' is not in list". Each now stops with the parameter's name and its options.
+  cnorm_tor rejected numpy integers.
+- Checked on chandler (z2, PETSc, 2 ranks; N 24, Ek = 1e-3, ricb = 0.35; 18 forced cases, old and new): the solutions
+  are unchanged. resid0 was 0.04 to 1 for forcings 2, 6, 7 and 9 and is now 5e-17 to 5e-15 in every case (8e-13 with
+  B0 = 'dipole', as before). resid u was ~1 and is now 2e-8 to 4e-7 for forcings 1 (no-slip and stress-free), 4, 5,
+  7 (m = 0), 8 and 12, and nan for 2, 3, 6, 7 (m = 2) and 9; forcing 1 with B0 = 'dipole' gives 3e-5, truncation (5e-8
+  at N 48, where resid b falls from 8e-3 to 6e-6). just_induction.py and solve_ind.py on a forced run give back its
+  own field to 7e-16, and to 3e-15 in a conducting inner core (0.2 before). track_target = 2 writes the spin-over
+  mode, and track_target = 1 aimed there finds it first and writes it back. A thermal and compositional eigen run is
+  unchanged bit for bit, the Quick start case to 4e-9 (as between two runs of the same version on 4 ranks). The
+  operators called for another section return 0, misspelt options stop with their message, and the CI tests pass.
+
+2026-11-02
+----------
 Fix: spin_doctor.py's Mag/Kin was the energy of b over the kinetic energy (1e5 too large for the torsional mode).
 Docs: bin/parameters.py holds the Quick start's torsional-mode case again, with a new results table; wrong statements
 fixed, history notes removed from the user pages, long paragraphs split (bin/spin_doctor.py, bin/parameters.py,

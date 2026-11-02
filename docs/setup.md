@@ -160,6 +160,6 @@ How to choose `N` and `lmax`, and how to check that they are large enough, is ex
 | `nev` | 3 | Number of eigenvalues to compute. |
 | `maxit` | 50 | Maximum number of restarts of the eigensolver (iterations for forced problems). |
 | `tol` | $10^{-16}$ | Convergence tolerance of the solver. |
-| `track_target` | 0 | With 1, `set_scales()` reads `rtau` and `itau` from the first two numbers in a file `track_target`, e.g. to follow a mode along a parameter path. |
+| `track_target` | 0 | With 1, `set_scales()` reads `rtau` and `itau` from the first two numbers in a file `track_target`, and `spin_doctor.py` writes the eigenvalue closest to that target back to the file, so that a sequence of runs follows a mode along a parameter path. With 2, `spin_doctor.py` writes the eigenvalue with the smallest poloidal to toroidal kinetic energy ratio, to start such a track. |
 
 The PETSc, SLEPc and MUMPS options (`petsc_opts`) and the pre-scaling switch (`prescale`) are described in [Solver settings](solver.md).

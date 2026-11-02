@@ -19,7 +19,7 @@ import sys
 sys.path.insert(1,'bin/')
 sys.path.insert(1,'koreviz/')
 
-import parameters as par
+from parameters import par  # FIX (2026-11-02): the parameter object (the module has no hydro, magnetic, ...)
 import utils as ut
 
 # NEW (2026-10-30): the CMB rows of the induction equation also hold the layer's field with mantle = 'resolved',
@@ -27,6 +27,13 @@ import utils as ut
 if ut.resolved_mantle:
     sys.exit("just_induction.py does not include the conducting mantle layer (mantle = 'resolved'): solve the full "
              "problem with solve_nopp.py")
+
+# FIX (2026-11-02): A must hold the flow and the induction equation, and the rotation rates of rotdyn = 1, which also
+# enter the induction rows, are left out below
+if not (par.hydro and par.magnetic):
+    sys.exit('just_induction.py needs hydro = 1 and magnetic = 1')
+if par.rotdyn:
+    sys.exit('just_induction.py does not include the rotation rates of rotdyn = 1: solve the full problem with solve_nopp.py')
 
 # read the flow field, one solution per column
 ru = np.loadtxt('real_flow.field').reshape((2*ut.n,-1))
@@ -37,12 +44,14 @@ u = ru + 1j*iu
 # reads A matrix (it must include the induction equation)
 A = ut.load_csr('A.npz')
 
-# slice A to select only the induction equation part
-ind = A[ ut.n*2 : ut.n*4,       :ut.n*2 ]
-iwD = A[ ut.n*2 : ut.n*4, ut.n*2:ut.n*4 ]
+# slice A to select only the induction equation part. FIX (2026-11-02): with a conducting inner core ('conducting,
+# Chebys') the field inside it is part of the unknowns, after the fluid's (rotdyn = 0 here); the slices left it out
+ib  = np.r_[ 2*ut.n : 4*ut.n, 4*ut.n : 4*ut.n + 2*ut.nic*ut.cic ]  # rows and columns of the field
+ind = A[ ib, :2*ut.n ]
+iwD = A[ ib ][ :, ib ]
 
 #indu = spr.csr_matrix(-ind*u).transpose()
-# right hand side for every flow solution at once, shape (2*ut.n, number of solutions)
+# right hand side for every flow solution at once, shape (number of field unknowns, number of solutions)
 indu = -(ind @ u)
 
 indu = spr.csr_matrix(indu)

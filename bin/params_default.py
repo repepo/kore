@@ -397,9 +397,11 @@ class default_params():
         # ----------------------------------------------------------------------------------------------------------------------
         # ------------------------------------------------------------------------------------------------- SLEPc solver options
         # ----------------------------------------------------------------------------------------------------------------------
-        # Set track_target = 1 below to track an eigenvalue, 0 otherwise.
-        # Assumes a preexisting 'track_target' file with target data (read by set_scales() into rtau and itau)
-        # Set track_target = 2 to write initial 'track_target' file, see also postprocess.py
+        # Eigenmode tracking, e.g. along a parameter ramp (FIX 2026-11-02: spin_doctor.py writes the file again):
+        # 1: set_scales() reads rtau and itau from the file 'track_target', and spin_doctor.py writes the eigenvalue
+        #    closest to that target back to it, as the target of the next run.
+        # 2: spin_doctor.py writes the eigenvalue with the smallest poloidal to toroidal kinetic energy ratio to
+        #    'track_target' (to start a track, e.g. of the spin-over mode). 0: no tracking.
         self.track_target = 0
 
         # Target for the solver, tau = rtau + itau*1j if not set

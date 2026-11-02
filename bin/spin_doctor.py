@@ -236,9 +236,8 @@ def main(ncpus):
     residL      = np.full(success, np.nan)    # angular momentum balance of the fluid (m=0, symm=1 axial; m=1, symm=-1 equatorial)
     residE      = np.full(success, np.nan)    # NEW (2026-10-18): full energy budget (fluid, inner core, walls, outside)
     budget      = np.full((success, 7), np.nan)  # NEW (2026-10-18): ME_ic, E_w, ME_ext, Ohm_f, Ohm_ic, Ohm_w, W_ex
-    y           = np.zeros(success)                # for eigenmode tracking
     brms        = np.zeros(success)
-    elldom      = np.zeros(success)
+    elldom      = np.zeros(success)                # NEW (2026-11-02): the degree l with the most kinetic energy (was always 0)
     geo         = np.full(success, np.nan)    # NEW (2026-10-11): geostrophic fraction of u_phi (m=0, symm=1 only)
     omg_mantle  = np.zeros(success,dtype=complex)
     omg_incore  = np.zeros(success,dtype=complex)
@@ -279,11 +278,6 @@ def main(ncpus):
 
     print('\n' + table_head)
     print(table_line)
-
-
-    if par.track_target == 1:  # eigenvalue tracking enabled
-        #read target data
-        x = np.loadtxt('track_target')
 
 
     # Loop invariants: these don't depend on the solution, so build them once
@@ -384,6 +378,7 @@ def main(ncpus):
             
             KP[i] = np.sum( udgn[lpi,0])  # Poloidal kinetic energy
             KT[i] = np.sum( udgn[lti,0])  # Toroidal kinetic energy
+            elldom[i] = ll[ np.argmax( np.real(udgn[:,0]) ) ]  # NEW (2026-11-02): udgn has one row per l in ll
             
             [ KE[i], Dkin0, Dint0, Wlor0, Wthm0, Wcmp0, _ ] = np.sum( udgn, 0)
             Dkin[i] = par.OmgTau * par.Ek * Dkin0
@@ -464,46 +459,43 @@ def main(ncpus):
         # resid4 is the relative residual of 2*sigma*CE - Dcmp - Wadv_cmp = 0 (composition)  # NEW (2026-11-02)
         # ---------------------------------------------------------------------------------------------------------
 
-        [repow, pss, pvf] = [0, 0, 0]  # power from the forcing needs to be computed, not coded yet. 
+        # FIX (2026-11-02): the power of the forcing (it was 0, "not coded yet", for forcings 1, 7, 8 and 9, and 0 for the
+        # others): pss, the power of the viscous stress on the walls, is computed from the flow at the walls for every
+        # forced problem (the boundary-flow forcings 2, 6, 7 and 9 move the walls; it is ~0 for the others), and pvf, the
+        # power of the body force, for forcings 1, 4, 5 and 8. rotdyn and forcing 12 keep their torque formulas.
+        pss, pvf = 0, 0
 
         if par.forcing == 0:
-            pss = 0
-            pvf = 0
             if par.rotdyn and par.hydro and par.Ek != 0:
                 # NEW (2026-10-18): power of the moving mantle and inner core on the fluid, minus the viscous torques times
                 # their rotation rates (factor 2 as for the energies, int |u|^2), in the units of Dint0 and Dkin0
                 pss = -2*np.real( vtorq[i]*np.conj(omg_mantle[i]) + vtorq_ic[i]*np.conj(omg_incore[i]) ) / (par.OmgTau*par.Ek)
-        elif par.forcing == 1:
-            pss = 0
-            pvf = repow
-        elif par.forcing == 7: # Libration as boundary flow forcing
-            pvf = 0      # power of volume forces (Poincare)
-            pss = repow  # power of stresses
-        elif par.forcing == 8:  # Libration as a volume force
-            pss = 0      # power of stresses
-            pvf = repow  # power of volume forces (Poincare)
-        elif par.forcing == 9: # Radial boundary flow forcing
-            pvf = 0      # power of volume forces (Poincare)
-            pss = repow  # power of stresses
         elif par.forcing == 12: # Steady differential rotation of the boundaries
             # power of the walls on the fluid, minus the viscous torques times the wall rotation rates, as for rotdyn above;
             # the complex amplitude of a wall's rotation rate is forcing_amplitude/2 (field + c.c., see assemble.py)
-            pvf = 0
             pss = -2*np.real( vtorq[i]*par.forcing_amplitude_cmb/2 + vtorq_ic[i]*par.forcing_amplitude_icb/2 ) / (par.OmgTau*par.Ek)
+        elif par.hydro:
+            if par.Ek != 0:
+                pss = upp.wall_power(u_sol2)
+            pvf = upp.body_force_power(u_sol2)
 
         if par.Ek != 0 and par.hydro == 1:
             resid0[i] = abs( Dint0 + Dkin0 - pss ) / max( abs(Dint0), abs(Dkin0), abs(pss) )
         else:
             resid0[i] = np.nan
 
-        if par.hydro:  # FIX (2026-11-02): Wcmp, the compositional buoyancy, was left out
-            resid1[i] = abs( 2*sigma*KE[i] - Dkin[i] - Wlor[i] + Wthm[i] + Wcmp[i] - Wbg[i] )/ \
-                             max(abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wlor[i]), abs(Wthm[i]), abs(Wcmp[i]), abs(Wbg[i]))
-            if par.forcing == 12:  # steady, no body force: the integral of u.lap(u) balances the Lorentz and buoyancy work
-                # (it vanishes without them); measured against the dissipation too. FIX (2026-11-02): with the Lorentz and
-                # buoyancy work; resid u was |Dkin|/|Dint|, 0.04 to 0.15 with a magnetic field
-                resid1[i] = abs( Dkin[i] + Wlor[i] - Wthm[i] - Wcmp[i] + Wbg[i] ) / \
-                            max(abs(Dint[i]), abs(Dkin[i]), abs(Wlor[i]), abs(Wthm[i]), abs(Wcmp[i]), abs(Wbg[i]))
+        if par.hydro:  # FIX (2026-11-02): Wcmp, the compositional buoyancy, was left out; pvf, the body force, too
+            # FIX (2026-11-02): measured against the internal dissipation Dint too. Dkin, the integral of u.lap(u), holds
+            # the work of the walls, so when they drive the flow (forcing 7 with m = 0, forcing 12) it balances only the
+            # Lorentz and buoyancy work and vanishes without them: resid u was |Dkin|/|Dkin| = 1 for forcing 7 (forcing 12
+            # had its own formula, the same as this one)
+            resid1[i] = abs( 2*sigma*KE[i] - Dkin[i] - Wlor[i] + Wthm[i] + Wcmp[i] - Wbg[i] - pvf )/ \
+                             max(abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Dint[i]), abs(Wlor[i]), abs(Wthm[i]), abs(Wcmp[i]),
+                                 abs(Wbg[i]), abs(pvf))
+            if par.forcing in [2, 3, 6, 9] or (par.forcing == 7 and par.m != 0):
+                # NEW (2026-11-02): walls that move radially also work through the pressure, which is not computed, and
+                # forcing 3 puts raw Chebyshev coefficients in the rows (no force field): no balance to check
+                resid1[i] = np.nan
         
         if par.magnetic:
             resid2[i] = abs( 2*sigma*ME[i] - Indu[i] - Mdfs[i] ) / \
@@ -607,33 +599,17 @@ def main(ncpus):
     print(table_line + '\n')
 
 
-    '''
-    # find closest eigenvalue to tracking target and write to target file
-    if (par.track_target == 1)&(par.forcing == 0):
-        j = y==min(y)
-        if par.magnetic == 1:
-            with open('track_target','wb') as tg:
-                np.savetxt( tg, np.c_[ eigval[j,0], eigval[j,1], p2t[j], o2v[j] ] )
+    # NEW (2026-11-02): eigenmode tracking, as the old postprocess.py did (this part was commented out). With
+    # track_target = 1, set_scales() reads the target rtau, itau from the file track_target, and the eigenvalue closest
+    # to the target is written back to it, so that the next run of a parameter ramp aims at it. track_target = 2 starts
+    # a track: it writes the solution with the smallest poloidal to toroidal kinetic energy ratio (e.g. the spin-over mode).
+    if par.forcing == 0 and success > 0 and (par.track_target == 1 or (par.track_target == 2 and par.hydro)):
+        if par.track_target == 1:
+            j = int(np.argmin( np.abs( sigmas + 1j*freqs - par.tau ) ))
         else:
-            with open('track_target','wb') as tg:
-                np.savetxt( tg, np.c_[ eigval[j,0], eigval[j,1], p2t[j] ] )
-        print('Closest to target is solution', np.where(j==1)[0][0])
-        #if err2[j]>0.1:
-        #    np.savetxt('big_error', np.c_[err1[j],err2[j]] )
-
-
-    # use this when writing the first target, it finds the solution with smallest p2t (useful to track the spin-over mode)
-    elif (par.track_target == 2)&(par.forcing == 0):
-        # here we select the solution with smallest poloidal to toroidal energy ratio and write the track_target file:
-        j = p2t==min(p2t)
-        if par.magnetic == 1:
-            with open('track_target','wb') as tg:
-                np.savetxt( tg, np.c_[ eigval[j,0], eigval[j,1], p2t[j], o2v[j] ] )
-        else:
-            with open('track_target','wb') as tg:
-                np.savetxt( tg, np.c_[ eigval[j,0], eigval[j,1], p2t[j] ] )
-
-    '''
+            j = int(np.argmin([ KP[k]/KT[k] if KT[k] > 0 else np.inf for k in range(success) ]))
+        np.savetxt('track_target', [[ sigmas[j], freqs[j] ]])
+        print('Solution', j, 'written to track_target as the next target\n')
 
     # ---------------------------------------------------------- write post-processed data and parameters to disk
 

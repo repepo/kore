@@ -1096,6 +1096,72 @@ def buoyancy4pp(l, lp, tsol2):
 
 
 
+# NEW (2026-11-02): the power of a forcing, for spin_doctor's resid0 (moving walls) and resid u (body forces)
+
+def wall_power(u_sol2):
+    '''
+    Returns the power of the viscous stress on the walls, 2 Re ∮ 𝐮*⋅(2𝐞⋅𝐧) dS over the CMB and the ICB (𝐧 out of the
+    fluid), without the factor Ek, as Dkin0 and Dint0: for any divergence-free 𝐮, ∫ 𝐮⋅∇²𝐮 dV plus the internal
+    dissipation equals it. It is zero at fixed no-slip or stress-free walls, and not with a boundary-flow forcing.
+    With 𝐮 = q Y 𝐫̂ + s r∇Y + t r∇Y×𝐫̂ (as cheb2space_pol and cheb2space_tor), the traction on a sphere is
+    2𝐞⋅𝐫̂ = 2q' Y 𝐫̂ + (s' - s/r + q/r) r∇Y + (t' - t/r) r∇Y×𝐫̂. u_sol2 comes from expand_reshape_sol.
+    '''
+    lp, lt, _ = ut.ell(par.m, par.lmax, par.symm)
+    P, T = u_sol2[0], u_sol2[1]
+    walls = [ (ut.rcmb, 1.0, 1) ] + ( [ (par.ricb, -1.0, -1) ] if par.ricb > 0 else [] )  # (r, Chebyshev x, 𝐧⋅𝐫̂)
+    out = 0
+    for R, x, sgn in walls:
+        for k, l in enumerate(lp):
+            L  = l*(l+1)
+            d  = ut.Dn_cheb(P[k,:], par.ricb, ut.rcmb, 2)
+            p0, p1, p2 = ch.chebval(x, P[k,:]), ch.chebval(x, d[:,0]), ch.chebval(x, d[:,1])
+            q0 = L*p0/R
+            q1 = (L*p1 - q0)/R
+            s0 = p1 + p0/R
+            s1 = p2 + q1/L
+            out += sgn * 4*np.pi/(2*l+1) * R**2 * 2*np.real( 2*np.conj(q0)*q1 + L*np.conj(s0)*(s1 - s0/R + q0/R) )
+        for k, l in enumerate(lt):
+            L  = l*(l+1)
+            d  = ut.Dn_cheb(T[k,:], par.ricb, ut.rcmb, 1)
+            t0, t1 = ch.chebval(x, T[k,:]), ch.chebval(x, d[:,0])
+            out += sgn * 4*np.pi/(2*l+1) * R**2 * 2*np.real( L*np.conj(t0)*(t1 - t0/R) )
+    return out
+
+
+def body_force_tor():
+    '''
+    Returns the toroidal scalars t_f of the body force on the points rk, as {l: t_f}, for forcings 1, 4, 5 and 8 ({}
+    otherwise). assemble.py writes r**2 𝐫⋅∇×𝐟 = r**2 l(l+1) t_f (with 𝐟 = ∇×(t_f Y 𝐫), r**5 with B0 = 'dipole') into the
+    toroidal rows only, so the rest of 𝐟 is a gradient, which does no work on the flow.
+    '''
+    A, ri = par.forcing_amplitude_cmb, par.ricb
+    if par.forcing == 1:    # r**2 * 12 t_f = -4 sqrt(5) ri**5/(1-ri**5) A r**-2
+        return { 3: -4*np.sqrt(5)*ri**5/(1 - ri**5) * A / (12*rk**4) }
+    elif par.forcing == 4:  # as forcing 1, with the constants of ut.ftest1
+        X = ut.ftest1(ri)
+        return { 3: -4*np.sqrt(5)*X[1]*X[2] * A / (12*rk**4) }
+    elif par.forcing == 5:  # r**2 l(l+1) t_f = -(4/5) A (l = 1), -(36/5) A (l = 3)
+        return { 1: -(4/5)*A / (2*rk**2), 3: -(36/5)*A / (12*rk**2) }
+    elif par.forcing == 8:  # r**2 * 2 t_f = 2 w**2 A r**3
+        return { 1: par.forcing_frequency**2 * A * rk }
+    return {}
+
+
+def body_force_power(u_sol2):
+    '''
+    Returns the power of the body force, 2 Re ∫ 𝐮*⋅𝐟 dV = 2 Re Σ_l 4π/(2l+1) l(l+1) ∫ t* t_f r² dr, with 𝐟 the forcing as
+    it enters the momentum equation (assemble.py's forcing vector), so in the units of resid u's terms.
+    '''
+    lt = ut.ell(par.m, par.lmax, par.symm)[1]
+    out = 0
+    for l, tf in body_force_tor().items():
+        if l in lt:
+            t0 = cheb2space_tor(l, lt, u_sol2[1], 0)[0]
+            out += 2*np.real( 4*np.pi/(2*l+1) * l*(l+1) * cg_quad( r2*np.conj(t0)*tf, par.ricb, ut.rcmb, par.N, sqx ) )
+    return out
+
+
+
 def pressure4pp(l, eigval, u_sol2):
     '''
     Returns the l-component of the pressure. Does NOT account for magnetic pressure yet

@@ -447,7 +447,7 @@ def buoyancy(l, section, component, offdiag):  # -------------------------------
         else:
             buoy = r4Iu
 
-    out = L * buoy
+        out = L * buoy  # FIX (2026-11-02): was outside the if (NameError for any other section)
 
     return par.OmgTau**2 * par.BV2 * out
 
@@ -465,7 +465,7 @@ def comp_buoyancy(l, section, component, offdiag):  # --------------------------
         else:
             buoy = r4Iu
 
-    out = L * buoy
+        out = L * buoy  # FIX (2026-11-02): was outside the if (NameError for any other section)
 
     return par.OmgTau**2 * par.BV2_comp * out
 
@@ -947,13 +947,14 @@ def thermal_advection(l, section, component, offdiag):  # -u_r * dT/dr
     L = l*(l+1)
     rcmb = 1
     gap = rcmb - par.ricb
+    conv = 0  # FIX (2026-11-02): conv was unbound for any other section or component
 
     if ((section == 'h') and (component == 'upol')) and (offdiag == 0) :
 
         if par.heating == 'internal':
             conv = r2Ih  # dT/dr = -beta*r. Heat equation is times r**2
         elif par.heating == 'differential':
-            conv = Ih * par.ricb/gap  # dT/dr = -beta * r**2. Heat equation is times r**3
+            conv = Ih * par.ricb/gap  # dT/dr = -beta * r**-2. Heat equation is times r**3  # FIX (2026-11-02): r**-2, was r**2
         elif par.heating == 'two zone' or par.heating == 'user defined':
             conv = NrIh  # dT/dr specified in ut.twozone or ut.BVprof. Heat equation is times r**2
 
@@ -964,6 +965,7 @@ def thermal_advection(l, section, component, offdiag):  # -u_r * dT/dr
 def thermal_diffusion(l, section, component, offdiag):
 
     L = l*(l+1)
+    difus = 0  # FIX (2026-11-02): difus was unbound for any other section
 
     if section == 'h' and offdiag == 0 :
 
@@ -1002,6 +1004,8 @@ def compositional_advection(l, section, component, offdiag):
     rcmb = 1
     gap = rcmb - par.ricb
 
+    conv = 0  # FIX (2026-11-02): conv was unbound for any other section or component
+
     if ((section == 'i') and (component == 'upol')) and (offdiag == 0) :
 
         if par.comp_background == 'differential':
@@ -1016,6 +1020,7 @@ def compositional_advection(l, section, component, offdiag):
 def compositional_diffusion(l, section, component, offdiag):
 
     L = l*(l+1)
+    difus = 0  # FIX (2026-11-02): difus was unbound for any other section
 
     if section == 'i' and offdiag == 0 :
 

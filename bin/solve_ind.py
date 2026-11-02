@@ -71,8 +71,9 @@ def main():
     # scatter to rank 0, created once and reused for every solution
     tozero,VR = PETSc.Scatter.toZero(x)
  
+    nf = 2*ut.n + 2*ut.nic*ut.cic  # FIX (2026-11-02): with a conducting inner core, the field inside it too
     if rank == 0:
-        bsol = np.zeros((2*ut.n, nsol), dtype=complex)  # one induced field per column
+        bsol = np.zeros((nf, nsol), dtype=complex)  # one induced field per column
  
     # -------------------------------------------------------------- solve & collect, one per flow solution
     for j in range(nsol):
@@ -88,7 +89,7 @@ def main():
         # collect result on rank 0
         tozero.scatter(x, VR)
         if rank == 0:
-            bsol[:,j] = VR.getArray()[ : 2*ut.n ]
+            bsol[:,j] = VR.getArray()[ : nf ]
  
     del b0
  
@@ -109,8 +110,11 @@ def main():
             success = 1 # got actual numbers ... but it could still be a bad solution ;)
             print(nsol, 'solution(s) computed')
             # one solution per column, same order as the flow solutions
-            np.savetxt('real_magnetic.field',np.real(bsol))
-            np.savetxt('imag_magnetic.field',np.imag(bsol))
+            np.savetxt('real_magnetic.field',np.real(bsol[ :2*ut.n ]))
+            np.savetxt('imag_magnetic.field',np.imag(bsol[ :2*ut.n ]))
+            if ut.cic:  # FIX (2026-11-02): as solve_nopp.py writes it
+                np.savetxt('real_magnetic_ic.field',np.real(bsol[ 2*ut.n: ]))
+                np.savetxt('imag_magnetic_ic.field',np.imag(bsol[ 2*ut.n: ]))
  
         toc2 = timer()
         print('Solve done in',toc2-t_start,'seconds')
