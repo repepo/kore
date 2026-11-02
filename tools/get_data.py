@@ -126,7 +126,8 @@ def load_results(filename):
     if exists(filename + '.cmp'):
         cmp = pd.read_csv(filename + '.cmp', sep=' ', names=["CE",
                                                              "Wadv_cmp",
-                                                             "Dcmp"])
+                                                             "Dcmp",
+                                                             "residc"])  # NEW (2026-11-02): residξ column
         df = pd.concat([df, cmp], axis=1)
     if exists(filename + '.eig'):
         eig = pd.read_csv(filename + '.eig', sep=' ', names=["rtau",
