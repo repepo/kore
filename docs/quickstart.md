@@ -86,7 +86,7 @@ Solution 0 is the mode closest to the target. Its eigenvalue is $\lambda = \sigm
 
 ## Output files
 
-The solutions are written as `real_*.field` and `imag_*.field` (one column per solution) and, for eigenvalue problems, `eigenvalues0.dat`. `spin_doctor.py` appends one line per solution to `params.dat`, `eigenvalues.dat`, `flow.dat`, `magnetic.dat` (with a magnetic field) and, when they are included, `thermal.dat`, `compositional.dat` and `rotdyn.dat`. Because these files are appended to, several runs in the same folder build up a table of results.
+The solutions are written as `flow.npy`, `magnetic.npy`, ... (one column per solution; see [Output](output.md#solutions) for the text format) and, for eigenvalue problems, `eigenvalues0.dat`. `spin_doctor.py` appends one line per solution to `params.dat`, `eigenvalues.dat`, `flow.dat`, `magnetic.dat` (with a magnetic field) and, when they are included, `thermal.dat`, `compositional.dat` and `rotdyn.dat`. Because these files are appended to, several runs in the same folder build up a table of results.
 
 
 ## Next steps

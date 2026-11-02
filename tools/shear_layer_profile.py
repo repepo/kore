@@ -45,8 +45,8 @@ n    = ut.n
 
 gap = rcmb-ricb
 
-a = np.loadtxt('real_flow.field',usecols=solnum)
-b = np.loadtxt('imag_flow.field',usecols=solnum)
+sol = ut.load_field('flow', solnum)  # FIX (2026-11-02): from flow.npy or the text files
+a, b = sol.real, sol.imag
 
 if m > 0 :
 	symm1 = symm

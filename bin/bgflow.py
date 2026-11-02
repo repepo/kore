@@ -317,5 +317,5 @@ if __name__ == '__main__':
     if sys.argv[2:] == ['nonlinear']:
         newton(nmax)
     else:
-        write(np.loadtxt('real_flow.field') + 1j*np.loadtxt('imag_flow.field'), par.forcing_amplitude_icb, nmax)
+        write(ut.load_field('flow')[:, 0], par.forcing_amplitude_icb, nmax)  # FIX (2026-11-02): .npy or text
     print('bgflow.npz written, with the degrees n <=', nmax)

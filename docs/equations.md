@@ -280,7 +280,7 @@ $$
 \Gamma^{B}_{w} = Le^2 (\Omega\tau)^2 \oint \mathbf{r}\times\left( b_r\, \mathbf{B}_0 + B_{0r}\, \mathbf{b} \right) dS .
 $$
 
-`spin_doctor` evaluates it at an insulating CMB for `B0 = 'axial'`, whose sources lie outside (it is the torque $\mathbf{m}\times\mathbf{B}_0$ on the induced dipole $\mathbf{m}$), and at the ICB of a conducting or thin-wall inner core, or of one that holds currents or sources of $\mathbf{B}_0$ (`B0_ic = 'full sphere'`, `B0 = 'dipole'`). At a thin-wall or resolved conducting mantle its CMB part equals $-\Gamma^{B}_M$, already in the balance. For $m = 0$ these terms vanish ($b_\phi = 0$ at an insulating wall) or are $-\Gamma^{B}_{IC}$; the stress of a toroidal field above is part of $\Gamma^{B}_{w}$ for both $m$.
+`spin_doctor` evaluates it at an insulating CMB for `B0 = 'axial'`, whose sources lie outside (it is the torque $\mathbf{m}\times\mathbf{B}_0$ on the induced dipole $\mathbf{m}$), and at the ICB of a conducting or thin-wall inner core, or of one that holds currents or sources of $\mathbf{B}_0$ (`B0_ic = 'frozen currents'`, `B0 = 'dipole'`). At a thin-wall or resolved conducting mantle its CMB part equals $-\Gamma^{B}_M$, already in the balance. For $m = 0$ these terms vanish ($b_\phi = 0$ at an insulating wall) or are $-\Gamma^{B}_{IC}$; the stress of a toroidal field above is part of $\Gamma^{B}_{w}$ for both $m$.
 
 
 ### The mantle and the inner core

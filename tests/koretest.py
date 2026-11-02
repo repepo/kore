@@ -50,7 +50,7 @@ class KoreTest:
         '''
         Removes everything a run leaves behind in the case folder
         '''
-        for pattern in ['*.mtx', '*.npz', '*.field', '*.dat', 'no_conv_solution']:
+        for pattern in ['*.mtx', '*.npz', '*.npy', '*.field', '*.dat', 'no_conv_solution']:
             for f in glob(os.path.join(self.dir, pattern)):
                 os.remove(f)
         shutil.rmtree(os.path.join(self.dir, 'bin'), ignore_errors=True)

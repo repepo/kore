@@ -109,12 +109,10 @@ def main():
         else:
             success = 1 # got actual numbers ... but it could still be a bad solution ;)
             print(nsol, 'solution(s) computed')
-            # one solution per column, same order as the flow solutions
-            np.savetxt('real_magnetic.field',np.real(bsol[ :2*ut.n ]))
-            np.savetxt('imag_magnetic.field',np.imag(bsol[ :2*ut.n ]))
+            # one solution per column, same order as the flow solutions. FIX (2026-11-02): in par.field_format
+            ut.save_field('magnetic', bsol[ :2*ut.n ])
             if ut.cic:  # FIX (2026-11-02): as solve_nopp.py writes it
-                np.savetxt('real_magnetic_ic.field',np.real(bsol[ 2*ut.n: ]))
-                np.savetxt('imag_magnetic_ic.field',np.imag(bsol[ 2*ut.n: ]))
+                ut.save_field('magnetic_ic', bsol[ 2*ut.n: ])
  
         toc2 = timer()
         print('Solve done in',toc2-t_start,'seconds')

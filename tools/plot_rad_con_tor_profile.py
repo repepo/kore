@@ -66,8 +66,8 @@ K  = KP + KT
 #     w = w.reshape((-1,len(w)))
 
 
-reu = np.loadtxt('real_flow.field',usecols=solnum)
-imu = np.loadtxt('imag_flow.field',usecols=solnum)
+sol = ut.load_field('flow', solnum)  # FIX (2026-11-02): from flow.npy or the text files
+reu, imu = sol.real, sol.imag
 
 
 Plj0 = reu[:n]    + 1j*imu[:n]      #  N elements on each l block

@@ -32,11 +32,12 @@ The defaults described below are the recommended settings for production runs.
 - `'eps_balance': 'twoside'` balances the matrices before the solve. It gives cleaner eigenvalues for final runs, at roughly 50% more run time.
 - `'st_mat_mumps_icntl_14'` increases MUMPS's workspace (in percent). It is only needed if `INFOG(1) = -9` still appears.
 - `'st_mat_mumps_icntl_22': 1` stores the factors out of core, on disk, which roughly halves the memory needed. Set `'st_mat_mumps_ooc_tmpdir'` to a directory on a real disk, not on a memory-backed `/tmp`.
-- `'st_mat_mumps_icntl_28': 2` with `'st_mat_mumps_icntl_29': 2` makes MUMPS compute its fill-reducing ordering in parallel, with ParMETIS.
+- `'st_mat_mumps_icntl_28': 2` with `'st_mat_mumps_icntl_29': 2` makes MUMPS compute its fill-reducing ordering in parallel, with ParMETIS. At `N` = 992 ($E_k$ = 1e-9, 16 processes) it shortened the analysis by 48 s, but its ordering needed 7.6% more operations, so the run was no faster and took 6 to 11 GB more memory.
+- `'st_mat_mumps_icntl_36': 1` selects the UCFS variant of BLR, which compresses the blocks earlier. At `N` = 992 it made the run 4 to 9% faster with the same memory, and moved the eigenvalues by about 3e-7.
 
 ## Forced problems
 
-For forced problems (`forcing > 0`) Kore solves a single linear system. The defaults are a direct solve: `'ksp_type': 'preonly'`, `'pc_type': 'lu'` and `'pc_factor_mat_solver_type': 'mumps'`. Iterative solvers (PETSc's default GMRES with ILU) do not converge reliably on these matrices. If MUMPS reports `INFOG(1) = -9`, uncomment `'mat_mumps_cntl_1'`. Pre-scaling and the energy normalisation are not applied: the solution keeps the amplitude set by the forcing.
+For forced problems (`forcing > 0`) Kore solves a single linear system. The defaults are a direct solve: `'ksp_type': 'preonly'`, `'pc_type': 'lu'` and `'pc_factor_mat_solver_type': 'mumps'`. Iterative solvers (PETSc's default GMRES with ILU) do not converge reliably on these matrices. The MUMPS settings are those of eigenvalue problems: `'mat_mumps_cntl_1': 1e-8`, `'mat_mumps_icntl_35': 2` and `'mat_mumps_cntl_7': 1e-14`. Without them a forced run at `N` = 992 ($E_k$ = 1e-9) spent 622 s and 200 GB in the factorization and returned NaN, with no error from MUMPS; with them the whole solve took 316 s and 165 GB. When the solution has NaN, `solve_nopp.py` says so and writes `no_conv_solution`. Pre-scaling and the energy normalisation are not applied: the solution keeps the amplitude set by the forcing.
 
 ### The induced field of a given flow
 
@@ -45,7 +46,7 @@ For forced problems (`forcing > 0`) Kore solves a single linear system. The defa
 ./bin/just_induction.py
 mpiexec -n 4 ./bin/solve_ind.py
 ```
-`just_induction.py` takes the induction rows of `A.npz` and the flow in `real_flow.field` and `imag_flow.field`, and writes the matrix `A_ind.npz` and one right-hand side per solution, `u_ind.npz`. `solve_ind.py` solves for each, with the options for forced problems above, and overwrites `real_magnetic.field` and `imag_magnetic.field` (and the inner-core field of `'conducting, Chebys'`) with the induced field; `spin_doctor.py` then works on it as usual. In a forced run the result is the run's own field, since `A` holds the forcing frequency. In an eigenvalue problem `A` has no $\lambda$, so the result is the steady field ($\lambda = 0$) that the flow induces. Neither script handles `rotdyn = 1` or `mantle = 'resolved'`: they stop.
+`just_induction.py` takes the induction rows of `A.npz` and the flow in `flow.npy` (or the text files), and writes the matrix `A_ind.npz` and one right-hand side per solution, `u_ind.npz`. `solve_ind.py` solves for each, with the options for forced problems above, and overwrites `magnetic.npy` (and the inner-core field of `'conducting, Chebys'`) with the induced field; `spin_doctor.py` then works on it as usual. In a forced run the result is the run's own field, since `A` holds the forcing frequency. In an eigenvalue problem `A` has no $\lambda$, so the result is the steady field ($\lambda = 0$) that the flow induces. Neither script handles `rotdyn = 1` or `mantle = 'resolved'`: they stop.
 
 ## Resolution
 

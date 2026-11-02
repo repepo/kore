@@ -3,4 +3,5 @@
 *.npz
 *.dat
 *.field
+*.npy
 *__pycache__*

@@ -3,6 +3,45 @@ CHANGELOG - Kore, conductive_IC branch
 
 2026-11-02
 ----------
+Fix: B0_ic = 'full sphere' is renamed 'frozen currents', and misspelt B0_ic and B0_cmb values stop (bin/utils.py,
+bin/params_default.py, bin/spin_doctor.py, docs/)
+- The option keeps h as defined for a full sphere, so the part of its currents below ricb stays in the inner core: a
+  snapshot of currents frozen in the inner core (or a perfectly conducting one). 'full sphere' read as the case
+  without an inner core, where B0_ic has no effect. A parameters.py with the old name stops and gives the new one.
+- B0_ic and B0_cmb were never checked: every test is B0_ic == 'potential' or B0_cmb == 'wall', so a misspelt value
+  silently acted as 'frozen currents' or 'plain'. Both now stop with the valid options (utils.option_index).
+- params_default.py and docs/background-field.md say when 'frozen currents' applies: an inner-core decay time much
+  longer than the periods sought (for the Earth ~2900 years for l = 2, so at most ~2% change over a decadal period),
+  and that it does not tend to the insulating case as sigma_i2o decreases. 'potential' stays the default.
+
+2026-11-02
+----------
+New: solution files in binary format (flow.npy, magnetic.npy, ...) by default; tools/ramp.sh and tools/subramp.sh
+rewritten; forced problems use BLR (bin/utils.py, bin/params_default.py, bin/solve_nopp.py, bin/solve_ind.py,
+bin/spin_doctor.py, bin/just_induction.py, bin/bgflow.py, koreviz/kmode.py, tools/, tests/koretest.py, docs/)
+- par.field_format = 'npy', the new default: solve_nopp.py and solve_ind.py write one binary file per field, name.npy
+  (complex, one solution per column), with utils.save_field, which also deletes the files of the other format.
+  'text' writes real_name.field and imag_name.field as before. spin_doctor.py, bgflow.py, just_induction.py and the
+  tools read either (utils.load_field), and so does koreviz. Checked on chandler at N = 992 with nev = 10 (S2 torsional
+  modes, Ek = 1e-9): writing 27.4 s -> 0.25 s, reading 10.4 s -> 0.05 s, files 1.05 GB -> 360 MB, the .dat rows
+  identical.
+- tools/ramp.sh called the removed bin/solve.py, and its sed patterns no longer matched parameters.py. It now runs the
+  case once (no arguments) or once for each value of one parameter (tools/ramp.sh name value1 value2 ...), with
+  track_target, and stops when a step has no solution. Every step runs submatrices.py, assemble.py, solve_nopp.py and
+  spin_doctor.py: submatrices.py takes under a second at N = 992, and its matrices also depend on c_cmb, mu and
+  muw_cmb (B0_cmb = 'wall'). tools/subramp.sh is the PBS job that runs it. Checked on chandler with no arguments and
+  with a ramp in Lambda.
+- Forced problems use the MUMPS settings of eigenvalue problems (cntl_1 = 1e-8, BLR with cntl_7 = 1e-14). Without
+  them a forced run at N = 992 (forcing 12, Ek = 1e-9) spent 622 s and 200 GB in the factorization and returned NaN,
+  with no error from MUMPS; with them the solve took 316 s and 165 GB, with spin_doctor residuals <= 4e-7.
+  solve_nopp.py writes no_conv_solution when a forced solution has NaN.
+- Optional MUMPS settings measured at N = 992 (16 ranks) and left off: ParMETIS (icntl_28 = icntl_29 = 2) shortened
+  the analysis by 48 s but its ordering needed 7.6% more operations, so the run was no faster and took 6 to 11 GB
+  more; icntl_36 = 1 (BLR variant UCFS) was 4 to 9% faster with the same memory and moved the eigenvalues by ~3e-7.
+  See the comments in params_default.py and docs/solver.md.
+
+2026-11-02
+----------
 Fix: spin_doctor's resid0 and resid u include the power of the forcing (the viscous stress of moving walls for every
 forced problem, the body force of forcings 1, 4, 5 and 8), and resid u is nan where it cannot be checked; elldom is the
 dominant degree; track_target is written again. just_induction.py and solve_ind.py keep a conducting inner core's field.

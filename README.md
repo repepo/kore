@@ -52,7 +52,7 @@ mpiexec -n ncpus ./bin/solve_nopp.py
 ```
 The PETSc/SLEPc/MUMPS solver options are set in the `petsc_opts` dictionary (defaults in `bin/params_default.py`, to be changed in `parameters.py`, e.g. `par.petsc_opts['eps_balance'] = 'twoside'`), which has separate groups for eigenvalue and forced problems. Options given on the command line, e.g. `mpiexec -n ncpus ./bin/solve_nopp.py -st_mat_mumps_icntl_14 50`, take precedence over `petsc_opts`.
 
-The solutions are written to disk (`real_*.field` and `imag_*.field` files and, for eigenvalue problems, `eigenvalues0.dat`). To postprocess them do:
+The solutions are written to disk (`flow.npy`, `magnetic.npy`, ... files, or text files with `field_format = 'text'`, and, for eigenvalue problems, `eigenvalues0.dat`). To postprocess them do:
 ```sh
 ./bin/spin_doctor.py ncpus
 ```

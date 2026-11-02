@@ -153,12 +153,18 @@ class default_params():
         #                 the ICB). This is the self-consistent steady B0 for an insulating IC and for any finite IC
         #                 conductivity. To keep exactly the fluid currents of the full-sphere field, use its numeric cnorm
         #                 below (e.g. 0.005061567359972097 for Luo_S2) rather than 'mag_energy'.
-        #   'full sphere' : h unchanged, its currents extend into the IC. Self-consistent only for a perfectly conducting
-        #                 IC, or as a snapshot of currents frozen in the IC.
+        #   'frozen currents': h unchanged, as defined for a full sphere, so the part of its currents below ricb stays in
+        #                 the IC. Self-consistent only for a perfectly conducting IC, or as a snapshot of currents frozen in
+        #                 the IC (its magnetic decay time, ~3000 years for l = 2 and ~6000 years for l = 1 in the Earth, is
+        #                 much longer than the periods of interest). FIX (2026-11-02): renamed, was 'full sphere'; a misspelt
+        #                 B0_ic now stops.
+        #                 NEW (2026-11-02): use it only when the IC's free-decay time, ~0.006*Lu*sigma_i2o Alfven times for
+        #                 l = 2 at ricb = 0.35, is much longer than the periods sought. It does not tend to 'potential' as
+        #                 sigma_i2o decreases: B0 keeps its IC currents whatever the IC conductivity.
         # No effect if ricb = 0, nor for 'axial' and 'FDM' (they already match a potential field at the ICB) and 'dipole'
         # (a point source at the centre).
         self.B0_ic = 'potential'
-        # self.B0_ic = 'full sphere'
+        # self.B0_ic = 'frozen currents'
 
         # Magnetic boundary conditions at the ICB:
         self.innercore = 'insulator'
@@ -455,13 +461,19 @@ class default_params():
             # 'st_mat_mumps_icntl_22'      : 1,                     # out-of-core factors, cuts memory ~half
             # 'st_mat_mumps_ooc_tmpdir'    : '/nvm/scratch',        # put OOC files on a real disk, not tmpfs /tmp
             # 'st_mat_mumps_icntl_28'      : 2,                     # parallel ordering ...
-            # 'st_mat_mumps_icntl_29'      : 2,                     # ... with ParMETIS
+            # 'st_mat_mumps_icntl_29'      : 2,                     # ... with ParMETIS (N = 992: no faster, +6-11 GB)
+            # 'st_mat_mumps_icntl_36'      : 1,                     # NEW (2026-11-02): BLR variant UCFS (earlier compression),
+                                                                    # N = 992: 4-9% faster, same memory, eigenvalues move ~3e-7
 
             # ---------------------------------------- forced problems (forcing > 0): ksp_*, pc_*, mat_*
             'ksp_type'                     : 'preonly',             # direct solve, no Krylov iterations
             'pc_type'                      : 'lu',                  # (default GMRES/ILU does not converge)
             'pc_factor_mat_solver_type'    : 'mumps',               # LU with MUMPS
-            # 'mat_mumps_cntl_1'           : 1e-6,                  # pivot threshold, if MUMPS reports INFOG(1)=-9
+            # FIX (2026-11-02): BLR and the pivot threshold of the eigenvalue problems. Without them a forced run at N = 992
+            # (Ek = 1e-9) took 622 s and 200 GB and returned NaN; with them 316 s, 165 GB and spin_doctor residuals <= 4e-7
+            'mat_mumps_cntl_1'             : 1e-8,                  # pivot threshold; avoids INFOG(1)=-9
+            'mat_mumps_icntl_35'           : 2,                     # block low-rank (BLR) factorization
+            'mat_mumps_cntl_7'             : 1e-14,                 # BLR tolerance
             # 'mat_mumps_icntl_22'         : 1,                     # out-of-core factors, cuts memory ~half
             # 'mat_mumps_ooc_tmpdir'       : '/nvm/scratch',        # put OOC files on a real disk, not tmpfs /tmp
         }
@@ -476,6 +488,13 @@ class default_params():
         # solve_nopp's ||Ax-kBx||/||kx|| is then printed for the scaled problem; judge accuracy with spin_doctor.
         # Note: does not converge together with -eps_true_residual at tol = 1e-15 or below.
         self.prescale = 1
+
+        # NEW (2026-11-02): format of the solution files written by solve_nopp.py and solve_ind.py.
+        # 'npy' : one binary file per field, flow.npy, magnetic.npy, ... (complex, one solution per column)
+        # 'text': real_flow.field and imag_flow.field, ... (as before 2026-11-02; at N = 1008 with nev = 10 the text files
+        #         take ~1 GB and np.savetxt/np.loadtxt take tens of seconds)
+        # spin_doctor.py, bgflow.py, just_induction.py, koreviz and the tools read either (utils.load_field).
+        self.field_format = 'npy'
 
 
 

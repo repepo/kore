@@ -7,14 +7,16 @@
 | File | Content |
 |---|---|
 | `eigenvalues0.dat` | Eigenvalue problems: one row per solution, damping $\sigma$ and frequency $\omega$ ($\lambda = \sigma + i\omega$). |
-| `real_flow.field`, `imag_flow.field` | Real and imaginary parts of the flow's spectral coefficients, one column per solution. |
-| `real_magnetic.field`, `imag_magnetic.field` | The magnetic field perturbation, with `magnetic = 1`. |
-| `real_magnetic_ic.field`, `imag_magnetic_ic.field` | The field inside a conducting inner core (`'conducting, Chebys'`). |
-| `real_magnetic_mantle.field`, `imag_magnetic_mantle.field` | The field in a conducting mantle layer (`mantle = 'resolved'`): `N_mantle` Chebyshev coefficients on $[1, r_s]$ per degree, $f_m$ and then $g_m$. |
-| `real_temperature.field`, `real_composition.field` (and `imag_`) | Temperature and composition, when included. |
-| `rotdyn.field` | Mantle and inner-core rotation rates and their angle, as complex numbers, with `rotdyn = 1`. |
+| `flow.npy` | The flow's spectral coefficients (complex), one column per solution. |
+| `magnetic.npy` | The magnetic field perturbation, with `magnetic = 1`. |
+| `magnetic_ic.npy` | The field inside a conducting inner core (`'conducting, Chebys'`). |
+| `magnetic_mantle.npy` | The field in a conducting mantle layer (`mantle = 'resolved'`): `N_mantle` Chebyshev coefficients on $[1, r_s]$ per degree, $f_m$ and then $g_m$. |
+| `temperature.npy`, `composition.npy` | Temperature and composition, when included. |
+| `rotdyn.npy` | Mantle and inner-core rotation rates and their angle, with `rotdyn = 1`. |
 | `timing.dat` | Total run time of `solve_nopp.py`, in seconds. |
-| `no_conv_solution` | Written instead when no eigenvalue converged. |
+| `no_conv_solution` | Written instead when no eigenvalue converged, or when a forced solve returned NaN. |
+
+With `field_format = 'text'` each field is written instead as two text files, `real_flow.field` and `imag_flow.field` and so on (`rotdyn.field` holds complex numbers). They are about three times larger and much slower to write and read: at $N = 1008$ with `nev = 10` they take about 1 GB. Writing one format deletes the files of the other, and `spin_doctor.py`, koreviz and the tools read either (`utils.load_field`; in python, `ut.load_field('flow')` returns the complex array).
 
 The coefficients are ordered by spherical-harmonic degree, poloidal part first and then toroidal, with the Chebyshev coefficients of each degree together (see [Numerical method](method.md#unknowns)). `tools/load_solution.py` loads a solution into an interactive python session.
 
@@ -67,7 +69,7 @@ The residuals compare terms of balances that an exact solution satisfies. They a
 | `resid𝐋` | Angular momentum of the fluid: $\lambda L$ against the torques on it (see below). Only for $m = 0$, `symm = 1` and $m = 1$, `symm = -1` (eigenvalue problems), and for `forcing = 12`; `nan` otherwise. |
 | `resid𝐄` | Total energy of the fluid, a conducting inner core, thin walls or a mantle layer, and the potential field outside (see below). Unlike `resid𝐛` it tests the matching conditions at the ICB and CMB. |
 
-`resid𝐋` compares $\lambda L$ ($L_z$ for $m = 0$; for $m = 1$ its equatorial components, with the Coriolis torque) with the viscous and electromagnetic torques on the mantle and the inner core (see [Angular momentum balance](equations.md#angular-momentum-balance)). Where those torques leave out the Maxwell stress of the background field on the fluid side of a wall, it is added: for a toroidal field with $k \neq 0$ at the wall, and for $m = 1$ at an insulating CMB with `B0 = 'axial'` and at the ICB of a conducting or thin-wall inner core, or of one that holds currents or sources of $\mathbf{B}_0$ (`B0_ic = 'full sphere'`, `B0 = 'dipole'`). With `forcing = 12` the steady torques on the mantle and the inner core cancel.
+`resid𝐋` compares $\lambda L$ ($L_z$ for $m = 0$; for $m = 1$ its equatorial components, with the Coriolis torque) with the viscous and electromagnetic torques on the mantle and the inner core (see [Angular momentum balance](equations.md#angular-momentum-balance)). Where those torques leave out the Maxwell stress of the background field on the fluid side of a wall, it is added: for a toroidal field with $k \neq 0$ at the wall, and for $m = 1$ at an insulating CMB with `B0 = 'axial'` and at the ICB of a conducting or thin-wall inner core, or of one that holds currents or sources of $\mathbf{B}_0$ (`B0_ic = 'frozen currents'`, `B0 = 'dipole'`). With `forcing = 12` the steady torques on the mantle and the inner core cancel.
 
 `resid𝐋` is 0 when no torque acts at the walls (`Ek = 0` or stress-free walls, or a full sphere with a stress-free CMB, and no magnetic torques): the balance is then not tested, so judge such modes by `resid𝐮` and `resid𝐛`.
 
@@ -135,7 +137,7 @@ Energies, dissipation rates and work are in the units set by `timescale`. The ma
 
 ### Scripts in `tools/`
 
-Run them from the run folder (they read `bin/parameters.py` and the `.field` files there):
+Run them from the run folder (they read `bin/parameters.py` and the solution files there):
 
 | Script | Usage | What it does |
 |---|---|---|
@@ -171,12 +173,13 @@ The field names are `ur`, `utheta`, `uphi`, `br`, `btheta`, `bphi`, `temperature
 
 ## Many runs
 
-The scripts in `tools/` help with parameter studies on a PBS-managed cluster. Edit the paths in them first (they assume the code in `~/kore` and runs in `~/data`).
+The scripts in `tools/` help with parameter studies, in one folder (`ramp.sh`) or in one folder per run on a PBS-managed cluster. Edit the paths in the PBS scripts first (they assume the code in `~/kore` and runs in `~/data`).
 
 | Script                                     | What it does                                                                                                                                                                                                                                            |
 |--------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `dodirs.sh prefix var mode start step end` | Creates one run folder per value of `par.var`, named `prefix<value>`, each with its own copy of the code. With `mode` = `e` the values are powers of ten ($10^{start}$, ...), with `d` they are linear. Example: `./dodirs.sh run_Ek_ Ek e -5 -0.1 -6`. |
 | `dosubs.sh` (same arguments)               | Submits the runs, using `subramp.sh` as the job script.                                                                                                                                                                                                 |
+| `ramp.sh name value1 value2 ...`           | Runs the case in `bin/parameters.py` once per value of `par.name` (any python expression, e.g. `tools/ramp.sh Ek 10**-7 10**-7.25`), in the current folder; without arguments, once as it is. `spin_doctor.py` appends each step's results to the `.dat` files, and with `track_target = 1` each step aims at the eigenvalue found in the step before. The variables `ncpus`, `ranks` and `opts` set the processes, MPI ranks and extra solver options. `subramp.sh` runs it as a PBS job. |
 | `reap.sh prefix`                           | Collects the results of all the folders into `prefix.par`, `.flo`, `.mag`, `.rot`, `.tmp`, `.cmp` and `.eig` (the files that exist).                                                                                                                  |
 | `getresults.py`                            | `%run -i tools/getresults.py prefix` loads the collected results (or the `.dat` files of the current folder) in IPython.                                                                                                                                |
 | `get_data.py`                              | Loads the collected results (or the `.dat` files of the current folder) in a pandas DataFrame.                                                                                                                                                          |

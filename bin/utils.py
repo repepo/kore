@@ -90,8 +90,8 @@ B0_tor_list = ['Malkus', 'wall', 'user']  # NEW (2026-10-30): toroidal fields
 B0_tor_type = B0_tor_list.index(par.B0_tor) if par.B0_tor in B0_tor_list else -1
 
 # NEW (2026-10-07): with an inner core, B0_ic = 'potential' (the default) makes B0 a potential field inside the IC,
-# continuous at the ICB (see B0_beta_ic, and the explanation next to B0_ic in params_default.py). 'full sphere' keeps
-# h unchanged.
+# continuous at the ICB (see B0_beta_ic, and the explanation next to B0_ic in params_default.py). 'frozen currents'
+# (FIX 2026-11-02: was 'full sphere') keeps h unchanged.
 B0_ic = par.B0_ic
 B0_ic_list = ['G21 dipole', 'Luo_S1', 'Luo_S2']  # full-sphere fields; 'axial' and the FDM already match, 'dipole' is a point source
 
@@ -109,6 +109,12 @@ def option_index(name, value, options):
     if value not in options:
         sys.exit('%s = %r: set one of %s' % (name, value, options))
     return options.index(value)
+
+# FIX (2026-11-02): B0_ic and B0_cmb were not checked, so a misspelt value acted as 'frozen currents' or 'plain'
+if B0_ic == 'full sphere':
+    sys.exit("B0_ic = 'full sphere' is now called 'frozen currents' (h unchanged, currents in the inner core)")
+option_index('B0_ic', B0_ic, ['potential', 'frozen currents'])
+option_index('B0_cmb', B0_cmb, ['wall', 'plain'])
 
 ic_bc_list = ['insulator', 'TWA', 'conducting, Chebys', 'conducting, Bessel']
 innercore_mag_bc = option_index('innercore', par.innercore, ic_bc_list)
@@ -1633,6 +1639,56 @@ def load_npz_mmap(filename):
             out[info.filename[:-4]] = np.memmap(filename, dtype=dtype, mode='r', shape=shape,
                                                 offset=f.tell(), order='F' if fortran else 'C')
     return out
+
+
+
+# NEW (2026-11-02): solution files in binary (name.npy, the default) or text (real_name.field, imag_name.field) format
+def field_files(name, fmt):
+    '''The solution files of field name in format fmt ('npy' or 'text'); rotdyn's text file holds complex numbers'''
+    if fmt == 'npy':
+        return [ name + '.npy' ]
+    return [ 'rotdyn.field' ] if name == 'rotdyn' else [ 'real_' + name + '.field', 'imag_' + name + '.field' ]
+
+
+
+def save_field(name, blk):
+    '''
+    Writes the solutions blk (one per column) of field name ('flow', 'magnetic', 'magnetic_ic', 'magnetic_mantle',
+    'rotdyn', 'temperature', 'composition') in the format par.field_format, and deletes the files of the other format,
+    so that load_field never reads a stale one.
+    '''
+    import os
+    fmt = par.field_format
+    if fmt == 'npy':
+        np.save(name + '.npy', blk)
+    elif name == 'rotdyn':
+        np.savetxt('rotdyn.field', blk)
+    else:
+        np.savetxt('real_' + name + '.field', np.real(blk))
+        np.savetxt('imag_' + name + '.field', np.imag(blk))
+    for f in field_files(name, 'text' if fmt == 'npy' else 'npy'):
+        if os.path.isfile(f):
+            os.remove(f)
+
+
+
+def load_field(name, cols=None):
+    '''
+    The solutions of field name (see save_field) as a complex array, one solution per column (only the columns cols,
+    if given), from name.npy or else from the text files. None if neither exists.
+    '''
+    import os
+    npy, txt = field_files(name, 'npy'), field_files(name, 'text')
+    if os.path.isfile(npy[0]):
+        x = np.load(npy[0], mmap_mode='r')
+        return np.array(x if cols is None else x[:, cols])
+    if not all(os.path.isfile(f) for f in txt):
+        return None
+    if name == 'rotdyn':
+        x = np.loadtxt(txt[0], dtype=complex, usecols=cols)
+    else:
+        x = np.loadtxt(txt[0], usecols=cols) + 1j*np.loadtxt(txt[1], usecols=cols)
+    return x if cols is not None and np.ndim(cols) == 0 else x.reshape((x.shape[0], -1))
 
 
 

@@ -155,54 +155,22 @@ def main(ncpus):
         if np.size(timing)>1:
             timing = timing[-1]
 
-    fname_ru = 'real_flow.field'
-    fname_iu = 'imag_flow.field'
-
-    fname_rb = 'real_magnetic.field'
-    fname_ib = 'imag_magnetic.field'
-
-    fname_rt = 'real_temperature.field'
-    fname_it = 'imag_temperature.field'
-
-    fname_rc = 'real_composition.field'
-    fname_ic = 'imag_composition.field'
-
-    fname_dy = 'rotdyn.field'
-
-    # NEW (2026-10-16): the solution files are read in parallel, by up to ncpus processes
-    # (np.loadtxt takes 2.5 s for each 250 MB file at N = 1008, nev = 10)
-    pairs  = [ (fname_ru, fname_iu), (fname_rb, fname_ib), (fname_rt, fname_it), (fname_rc, fname_ic) ]
-    toread = [ f for pair in pairs if all(os.path.isfile(f) for f in pair) for f in pair ]
-    with mp.Pool(processes=max(1, min(int(ncpus), len(toread)))) as pool:
-        fields = dict(zip(toread, pool.map(np.loadtxt, toread)))
-
-    if fname_ru in fields:
-        ru = fields[fname_ru].reshape((2*ut.n,-1))
-        iu = fields[fname_iu].reshape((2*ut.n,-1))
-    if fname_rb in fields:
-        rb = fields[fname_rb].reshape((2*ut.n,-1))
-        ib = fields[fname_ib].reshape((2*ut.n,-1))
-    if fname_rt in fields:
-        rt = fields[fname_rt].reshape((ut.n,-1))
-        it = fields[fname_it].reshape((ut.n,-1))
-    if fname_rc in fields:
-        rc = fields[fname_rc].reshape((ut.n,-1))
-        ic = fields[fname_ic].reshape((ut.n,-1))
-    if os.path.isfile(fname_dy):
-        sol_rotdyn = np.loadtxt(fname_dy, dtype=complex).reshape((3,-1))
+    # FIX (2026-11-02): the solutions are read with ut.load_field, from name.npy (par.field_format = 'npy') or from the
+    # text files (np.loadtxt takes 2.5 s for each 250 MB file at N = 1008, nev = 10), one field per process
+    names = [ 'flow', 'magnetic', 'temperature', 'composition', 'rotdyn', 'magnetic_ic', 'magnetic_mantle' ]
+    with mp.Pool(processes=max(1, min(int(ncpus), len(names)))) as pool:
+        sol = dict(zip(names, pool.map(ut.load_field, names)))
+    usol, bsol, tsol, csol = [ sol[k] for k in ('flow', 'magnetic', 'temperature', 'composition') ]
+    sol_rotdyn = sol['rotdyn']
     # NEW (2026-10-18): the field inside a conducting inner core, for the full energy budget (resid E)
-    bic = None
-    if par.magnetic and ut.icflag and os.path.isfile('real_magnetic_ic.field'):
-        bic = ( np.loadtxt('real_magnetic_ic.field') + 1j*np.loadtxt('imag_magnetic_ic.field') ).reshape((2*ut.nic,-1))
+    bic  = sol['magnetic_ic'] if par.magnetic and ut.icflag else None
     # NEW (2026-10-30): and in a conducting mantle layer (mantle = 'resolved')
-    bman = None
-    if ut.resolved_mantle and os.path.isfile('real_magnetic_mantle.field'):
-        bman = ( np.loadtxt('real_magnetic_mantle.field') + 1j*np.loadtxt('imag_magnetic_mantle.field') ).reshape((2*ut.nman,-1))
+    bman = sol['magnetic_mantle'] if ut.resolved_mantle else None
 
     if par.hydro == 1:
-        success = np.shape(ru)[1]
+        success = np.shape(usol)[1]
     elif par.magnetic == 1:
-        success = np.shape(rb)[1]
+        success = np.shape(bsol)[1]
 
     # ------------------------------------------------------------------------------------------------------------------------
     KE          = np.zeros(success)
@@ -312,7 +280,7 @@ def main(ncpus):
     # FIX (2026-10-30): for m=1, symm=-1 a poloidal B0 also exerts torques that gamma_magnetic (conducting mantle only) and
     # gamma_magnetic_ic (m=0 only) leave out: through an insulating mantle when B0 is imposed from outside ('axial': the
     # torque m x B0 on the induced dipole m), and through the ICB when the inner core conducts, carries B0's currents
-    # (B0_ic other than 'potential', as in ut.B0_beta_ic) or holds its point source ('dipole': the torque m0 x b(0)).
+    # (B0_ic = 'frozen currents', as in ut.B0_beta_ic) or holds its point source ('dipole': the torque m0 x b(0)).
     # resid L takes them from the Maxwell stress on the fluid side of that wall (wtorq). For m=0 they vanish
     # (b_phi = 0 at an insulating wall) or gamma_magnetic_ic has them.
     eq_B0       = pol_B0 and (par.forcing == 0) and (par.m == 1) and (par.symm == -1)
@@ -344,30 +312,22 @@ def main(ncpus):
         [ u_sol2, b_sol2, t_sol2, c_sol2 ] = [0,0,0,0]
 
         if par.hydro:
-            rflow = np.copy(ru[:,i])
-            iflow = np.copy(iu[:,i])
             # Expand solution
-            u_sol2 = upp.expand_reshape_sol( rflow + 1j*iflow, par.symm)
-            u_sol  = upp.expand_sol( rflow + 1j*iflow, par.symm)  # this one for the torque
+            u_sol2 = upp.expand_reshape_sol( usol[:,i], par.symm)
+            u_sol  = upp.expand_sol( usol[:,i], par.symm)  # this one for the torque
 
         if par.magnetic:
-            rmag = np.copy(rb[:,i])
-            imag = np.copy(ib[:,i])
             # Expand solution
-            b_sol2 = upp.expand_reshape_sol( rmag + 1j*imag, ut.bsymm)
-            b_sol  = upp.expand_sol( rmag + 1j*imag, ut.bsymm)  # this one for the torque
+            b_sol2 = upp.expand_reshape_sol( bsol[:,i], ut.bsymm)
+            b_sol  = upp.expand_sol( bsol[:,i], ut.bsymm)  # this one for the torque
                         
         if par.thermal:
-            rthm = np.copy(rt[:,i])
-            ithm = np.copy(it[:,i])
             # Expand solution
-            t_sol2  = upp.expand_reshape_sol( rthm + 1j*ithm, par.symm)
+            t_sol2  = upp.expand_reshape_sol( tsol[:,i], par.symm)
             
         if par.compositional:
-            rcmp = np.copy(rc[:,i])
-            icmp = np.copy(ic[:,i])
             # Expand solution
-            c_sol2  = upp.expand_reshape_sol( rcmp + 1j*icmp, par.symm)		   			
+            c_sol2  = upp.expand_reshape_sol( csol[:,i], par.symm)
 
 
         # diagnose solutions

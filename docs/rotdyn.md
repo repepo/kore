@@ -50,7 +50,7 @@ Kore stops with a message when one of these does not hold.
 
 ## Output
 
-`solve_nopp.py` writes the three unknowns of each solution to `rotdyn.field` (complex numbers). `spin_doctor.py` appends to `rotdyn.dat`, one row per solution, the complex values of
+`solve_nopp.py` writes the three unknowns of each solution to `rotdyn.npy` (`rotdyn.field`, complex numbers, with `field_format = 'text'`). `spin_doctor.py` appends to `rotdyn.dat`, one row per solution, the complex values of
 
 | Column | Quantity |
 |---|---|

@@ -32,8 +32,8 @@ plt.rc('text', usetex=use_tex)
 solnum = int(sys.argv[1])
 
 if sys.argv[6] == 'u':
-    a0 = np.loadtxt('real_flow.field',usecols=solnum)
-    b0 = np.loadtxt('imag_flow.field',usecols=solnum)
+    sol = ut.load_field('flow', solnum)  # FIX (2026-11-02): from flow.npy or the text files
+    a0, b0 = sol.real, sol.imag
     vsymm = par.symm
     if sys.argv[7] == 'raw':
         titlelabels = [r'$\mathbf{\hat r}\cdot\mathrm{Re}\left(\mathbf{u_0}\right)$', \
@@ -45,8 +45,8 @@ if sys.argv[6] == 'u':
                        r'$\mathbf{\hat \phi}\cdot\left|\mathbf{u_0}\right|$'] 
     cmap = 'rainbow'
 elif sys.argv[6] == 'b':
-    a0 = np.loadtxt('real_magnetic.field',usecols=solnum)
-    b0 = np.loadtxt('imag_magnetic.field',usecols=solnum)
+    sol = ut.load_field('magnetic', solnum)  # FIX (2026-11-02): from magnetic.npy or the text files
+    a0, b0 = sol.real, sol.imag
     if sys.argv[7] == 'raw':
         titlelabels = [r'$\mathbf{\hat r}\cdot\mathrm{Re}\left(\mathbf{b_0}\right)$', \
                        r'$\mathbf{\hat \theta}\cdot\mathrm{Re}\left(\mathbf{b_0}\right)$', \

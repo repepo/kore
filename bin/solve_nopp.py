@@ -313,6 +313,7 @@ def main():
             else:
                 success = 0
                 print('Solver crashed, got nan\'s!')
+                np.savetxt('no_conv_solution',[0])  # FIX (2026-11-02): as for eigenvalue problems, so that tools/ramp.sh stops
 
     #PETSc.COMM_WORLD.Barrier()
 
@@ -327,13 +328,9 @@ def main():
                 with open('eigenvalues0.dat','wb') as deig:
                     np.savetxt(deig, eigval)
 
-            # one solution per column
+            # one solution per column. FIX (2026-11-02): as .npy files by default (par.field_format)
             for name, blk in fields.items():
-                if name == 'rotdyn':  # written as complex numbers
-                    np.savetxt('rotdyn.field', blk)
-                else:
-                    np.savetxt('real_'+name+'.field', np.real(blk))
-                    np.savetxt('imag_'+name+'.field', np.imag(blk))
+                ut.save_field(name, blk)
 
         toc2 = timer()
         print('Solve done in',toc2-t_start,'seconds')

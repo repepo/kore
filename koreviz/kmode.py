@@ -8,6 +8,16 @@ import sys
 import os
 
 
+
+# NEW (2026-11-02): solution files as written by kore with field_format = 'npy' (name.npy) or 'text'
+def read_field(name, solnum):
+    '''Real and imaginary parts of solution solnum of field name, from name.npy or real_name.field, imag_name.field'''
+    if os.path.isfile(name + '.npy'):
+        x = np.load(name + '.npy', mmap_mode='r')[:, solnum]
+        return np.array(x.real), np.array(x.imag)
+    return np.loadtxt('real_' + name + '.field', usecols=solnum), np.loadtxt('imag_' + name + '.field', usecols=solnum)
+
+
 class kmode:
 
     def __init__(self, vort=False,datadir='.',field='u', solnum=0,
@@ -78,19 +88,16 @@ class kmode:
 
         # read fields from disk
         if field == 'u':
-            a = np.loadtxt('real_flow.field',usecols=solnum)
-            b = np.loadtxt('imag_flow.field',usecols=solnum)
+            a, b = read_field('flow', solnum)
             vsymm = par.symm
             vec = True
         elif field == 'b':
-            a = np.loadtxt('real_magnetic.field',usecols=solnum)
-            b = np.loadtxt('imag_magnetic.field',usecols=solnum)
+            a, b = read_field('magnetic', solnum)
             vsymm = ut.bsymm
             vec = True
         elif field in ['t','temp','temperature']:
-            if len(glob('*_temperature.field')) > 0:
-                a = np.loadtxt('real_temperature.field',usecols=solnum)
-                b = np.loadtxt('imag_temperature.field',usecols=solnum)
+            if len(glob('*_temperature.field') + glob('temperature.npy')) > 0:
+                a, b = read_field('temperature', solnum)
             elif len(glob('*_temp.field')) > 0:
                 a = np.loadtxt('real_temp.field',usecols=solnum)
                 b = np.loadtxt('imag_temp.field',usecols=solnum)
@@ -98,8 +105,7 @@ class kmode:
             vsymm = par.symm
             vec = False
         elif field in ['comp','composition']:
-            a = np.loadtxt('real_composition.field',usecols=solnum)
-            b = np.loadtxt('imag_composition.field',usecols=solnum)
+            a, b = read_field('composition', solnum)
             field='composition'
             vsymm = par.symm
             vec = False
@@ -363,8 +369,7 @@ class kmode:
 
             # same layout as a full sphere of radius ricb: Chebyshev polynomials of x = r/ricb, of the parity
             # of the induced field b (as in bc_variables), N_cic/2 coefficients per l, poloidal then toroidal
-            a = np.loadtxt('real_magnetic_ic.field', usecols=self.solnum)
-            b = np.loadtxt('imag_magnetic_ic.field', usecols=self.solnum)
+            a, b = read_field('magnetic_ic', self.solnum)
             sol = (a + 1j*b)*np.exp(1j*phase)
             nb, Nic = int((par.lmax - self.m + 1)/2), ut.Nic   # FIX (2026-10-29): lmax_cic removed, the inner core uses lmax
             s  = int( (ut.bsymm + 1)/2 )
