@@ -101,21 +101,21 @@ class default_params():
 
         self.forcing = 0  # Uncomment this line for eigenvalue problems
         # self.forcing = 1  # For Lin & Ogilvie 2018 tidal body force, m=2, symm. OK
-        # self.forcing = 2  # For boundary flow forcing, use with bci=1 and bco=1.
+        # self.forcing = 2  # Enceladus eccentricity tide as boundary flow forcing (Jeremy's fits around ricb=0.88), m=0,2, symm, bci=bco=1
         # self.forcing = 3  # For Rovira-Navarro 2018 tidal body forcing, m=0,2 must be symm, m=1 antisymm. Leaks power!
-        # self.forcing = 4  # first test case, Lin body forcing with X(r)=(A*r^2 + B/r^3)*C, (using Jeremy's calculation), m=2,symm. OK
+        # self.forcing = 4  # first test case, Lin body forcing with X(r)=(A*r^2 + B/r^3)*C, (using Jeremy's calculation for Enceladus, ut.ftest1), m=2,symm. OK
         # self.forcing = 5  # second test case, Lin body forcing with X(r)=1/r, m=0,symm. OK
-        # self.forcing = 6  # Buffett2010 ICB radial velocity boundary forcing, m=1,antisymm
+        # self.forcing = 6  # Buffett2010 ICB radial velocity boundary forcing, m=1,antisymm, ricb>0
         # self.forcing = 7  # Longitudinal libration boundary forcing, m={0, 2}, symm, no-slip
         # self.forcing = 8  # Longitudinal libration as a Poincaré force (body force) in the mantle frame, m=0, symm, no-slip
-        # self.forcing = 9  # Radial, symmetric, m=2 boundary flow forcing.
+        # self.forcing = 9  # Radial, symmetric, m=2 boundary flow forcing at the CMB and/or the ICB (amplitudes = radial velocities), bci=1.
         # self.forcing = 12 # Steady differential rotation of the inner core (forcing_amplitude_icb = ΔΩ/Ω) and/or the mantle
         #                   # (forcing_amplitude_cmb), m=0, symm, no-slip, use forcing_frequency = 0. Hydro only.
 
         # Forcing frequency (ignored if forcing == 0)
         self.forcing_frequency = 0.0  # negative is prograde
 
-        # Forcing amplitude. Body forcing amplitude will use the cmb value
+        # Forcing amplitude. Body forcings (1, 3, 4, 5, 8) and forcing 2 (both walls) use the cmb value, forcing 6 the icb value
         self.forcing_amplitude_cmb = 0.0
         self.forcing_amplitude_icb = 0.0
 

@@ -281,7 +281,7 @@ def main(ncpus):
 
         if cdipole :
             # b
-            labl += [ 'g50', 'g00' ]  # g00 needed in case of Lin2017 forcing
+            labl += [ 'g50' ]  # FIX (2026-11-02): 'g00' dropped, it was for forcing 1, which now uses section v (op.r3Iv)
             # induction
             labl += [ 'g301', 'g411',  'g200', 'g310', 'g420', 'g402', 'g300', 'g401', 'g410' ]  # e.g. 'g200' is for (r**2)*h(r)
             # magnetic diffusion

@@ -62,22 +62,22 @@ With `forcing = 0` (the default) Kore solves the eigenvalue problem $A\,x = \lam
 
 | `forcing` | Forcing | Requirements |
 |---|---|---|
-| 1 | Tidal body force of Lin & Ogilvie (2018) | $m = 2$, symmetric |
-| 2 | Boundary flow forcing | `bci = 1`, `bco = 1` |
+| 1 | Tidal body force of Lin & Ogilvie (2018): the Coriolis force on the potential flow $\nabla X$, $X = -\tfrac{3}{4}\,a\,(r^2 + \tfrac{2}{3} r_i^5 r^{-3})/(1 - r_i^5)\,Y_2^2$, $a$ = `forcing_amplitude_cmb`. The solution is the wave-like flow; the total flow adds $\nabla X$. | $m = 2$, symmetric |
+| 2 | Eccentricity tide of Enceladus as a boundary flow at both walls (fits around `ricb` = 0.88), scaled by `forcing_amplitude_cmb` | $m$ = 0 or 2, symmetric, `bci = 1`, `bco = 1`, `ricb > 0` |
 | 3 | Tidal body force of Rovira-Navarro et al. (2018) | $m$ = 0 and 2 symmetric, $m = 1$ antisymmetric. Leaks power. |
-| 4 | Test case: Lin body force with $X(r) = (A r^2 + B/r^3)\,C$ | $m = 2$, symmetric |
+| 4 | Test case: Lin body force with $X(r) = (A r^2 + B/r^3)\,C$, with the constants for Enceladus (`ut.ftest1`) | $m = 2$, symmetric |
 | 5 | Test case: Lin body force with $X(r) = 1/r$ | $m = 0$, symmetric |
-| 6 | Radial velocity forcing at the ICB (Buffett 2010) | $m = 1$, antisymmetric |
+| 6 | Radial velocity forcing at the ICB (Buffett 2010), scaled by `forcing_amplitude_icb` | $m = 1$, antisymmetric, `ricb > 0` |
 | 7 | Longitudinal libration as boundary flow forcing | $m$ = 0 or 2, symmetric, no-slip |
 | 8 | Longitudinal libration as a Poincaré body force, in the mantle frame | $m = 0$, symmetric, no-slip |
-| 9 | Radial boundary flow forcing | $m = 2$, symmetric |
+| 9 | Radial boundary flow forcing at the CMB and the ICB, of radial velocities `forcing_amplitude_cmb` and `forcing_amplitude_icb`, with no tangential flow at a no-slip wall | $m = 2$, symmetric, `bci = 1` |
 | 12 | Steady differential rotation of the inner core and/or the mantle: rigid rotation at the rates `forcing_amplitude_icb`, `forcing_amplitude_cmb` relative to the frame (units set by `timescale`) | $m = 0$, symmetric, no-slip, `ricb > 0`; `forcing_frequency = 0` for the steady flow. Tested without magnetic field. |
 
 | Parameter | Default | Meaning |
 |---|---|---|
 | `forcing_frequency` | 0 | Frequency of the forcing, in the units set by `timescale`. Negative is prograde. |
-| `forcing_amplitude_cmb` | 0 | Forcing amplitude at the CMB. Body forces use this value. |
-| `forcing_amplitude_icb` | 0 | Forcing amplitude at the ICB. |
+| `forcing_amplitude_cmb` | 0 | Forcing amplitude at the CMB. Body forces and forcing 2 (at both walls) use this value. |
+| `forcing_amplitude_icb` | 0 | Forcing amplitude at the ICB. Forcing 6 uses only this value. |
 | `projection` | 1 | Recorded in `params.dat`; not used by the current solver. |
 
 Forced problems use a direct solver and keep the amplitude set by the forcing (see [Solver settings](solver.md#forced-problems)).

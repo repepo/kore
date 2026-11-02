@@ -3,6 +3,30 @@ CHANGELOG - Kore, conductive_IC branch
 
 2026-11-02
 ----------
+Fix: forcings 1, 2, 4, 5 and 6 stopped with an error; forcings 2, 6, 7 (m = 2) and 9 set wall values on the wrong rows
+(bin/assemble.py, bin/submatrices.py, bin/params_default.py, docs/setup.md)
+- Forcings 2, 4, 5 and 6 still used forcing_amplitude, since split into forcing_amplitude_cmb and _icb; 4 and 5 also the
+  removed matrices Ib and r2Ib, and 1 op.Ig, a matrix of the induction equation written only with B0 = 'dipole'. The
+  body forces 1, 4 and 5 now use op.Iv and op.r2Iv, the rows of the flow's 1curl equation, as forcing 8 does. Forcings 2
+  (at both walls, one tide), 4 and 5 take forcing_amplitude_cmb, forcing 6 forcing_amplitude_icb.
+- With B0 = 'dipole' those rows are r^5 r.curl(f), not r^2 r.curl(f) (op.u), so the body forces 1, 4, 5 and 8 take
+  op.r3Iv and op.r5Iv there; forcing 1 ran with B0 = 'dipole', with the profile r^-2 for r. submatrices.py no longer
+  writes g00.
+- Forcings 2 and 6 still set their wall values in the row order of 2020, ICB first; since 2022 the CMB rows come first,
+  so forcing 6 imposed the ICB's radial flow at the CMB, and forcing 2 swapped the walls. Both now need ricb > 0.
+- Forcings 7 (m = 2) and 9 put the ICB value (forcing_amplitude_icb) on the CMB's second row, P' = 0 or P' + P/r = 0, not
+  on the ICB's P = 0. Forcing 9 now also keeps the flow at a no-slip ICB radial (P' + P/r = 0), as at the CMB; without
+  forcing_amplitude_icb this gives the same solution as before.
+- Checked in the cloud (scipy LU on one rank with an MPI stub, no PETSc; Ek = 1e-3, N = 24, ricb = 0.35, 0.88 for
+  forcing 2): forcings 1 to 9 and 12 all run. The solutions take the wall values each boundary forcing sets, to
+  round-off, evaluated from their Chebyshev series and not from the bc rows (with forcing_amplitude_icb = 0.5 forcings
+  7 and 9 were off by up to 8e-3 and 8e-2, for values up to 0.13 and 0.17). The vectors of forcings 1 and 4 equal minus
+  Kore's own Coriolis operator applied to grad X to 4e-12, also with B0 = 'dipole' (76% off before), and that of
+  forcing 5 the force derived with sympy. Forcings 3, 7 (m = 0), 8 and 12, and 7 (m = 2) without ICB amplitude, give
+  the same A, forcing vector and flow, bit for bit; forcing 9 without ICB amplitude the same flow to 5e-15.
+
+2026-11-02
+----------
 Fix: composition left out of the energy residuals; Etherm and Ecomp ignored by the matrices (bin/spin_doctor.py,
 bin/operators.py, bin/utils4pp.py, tools/get_data.py, docs/output.md, docs/setup.md)
 - spin_doctor's resid u and resid E left out the work of the compositional buoyancy (Wcmp, already computed and

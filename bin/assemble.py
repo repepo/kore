@@ -112,6 +112,10 @@ def main():
         # print('loc_top', loc_top)
         # print('loc_bot', loc_bot)
 
+    # NEW (2026-11-02): body forces (forcings 1, 4, 5, 8) enter the flow's 1curl rows (section v) as r**2 * r.curl(f), or as
+    # r**5 * r.curl(f) with B0 = 'dipole' (see op.u), so they take op.r3Iv for op.Iv and op.r5Iv for op.r2Iv then
+    dipole = (par.magnetic == 1 and par.B0 == 'dipole')
+
     if   par.forcing == 1: # -------------------------------------------------------------------------- Yufeng's forcing
         '''
         Builds the right hand side vector for the forced problem
@@ -127,7 +131,10 @@ def main():
                 row = np.arange(pos,pos+ut.N1) # start at pos+2 because of the 2 rows with bc's
                 col = np.zeros(ut.N1)
 
-                bdat = op.Ig*ut.chebco(-2, ut.N1, 3e-16, par.ricb, ut.rcmb) * ( -4*np.sqrt(5)*(par.ricb**5)/(1-par.ricb**5) ) * par.forcing_amplitude_cmb
+                # FIX (2026-11-02): op.Iv (section v, the flow's 1curl rows), was op.Ig (section g, the induction equation's,
+                # written only with B0 = 'dipole', so the run stopped with an AttributeError otherwise)
+                Iv = op.r3Iv if dipole else op.Iv
+                bdat = Iv*ut.chebco(-2, ut.N1, 3e-16, par.ricb, ut.rcmb) * ( -4*np.sqrt(5)*(par.ricb**5)/(1-par.ricb**5) ) * par.forcing_amplitude_cmb
                 B = ss.csr_matrix( ( bdat, (row,col) ), shape=(ut.sizmat,1) )
 
                 np.savez('B_forced.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
@@ -145,23 +152,25 @@ def main():
         '''
         if rank == 0:
 
-            if par.symm == 1 and (par.m==0 or par.m==2) and (par.bci+par.bco==2):
+            if par.symm == 1 and (par.m==0 or par.m==2) and (par.bci+par.bco==2) and par.ricb > 0:  # FIX (2026-11-02): ricb > 0
 
                 pos = ut.N1*np.where(alltop==2)[0][0]
                 row = np.arange(pos,pos+4)  # forcing goes as a boundary condition
                 col = np.zeros(4)
 
-                fcmb = 1j*par.forcing_amplitude * ut.eccen_tide(par.m*np.sign(par.forcing_frequency),par.ricb,'cmb')
-                ficb = 1j*par.forcing_amplitude * ut.eccen_tide(par.m*np.sign(par.forcing_frequency),par.ricb,'icb')
+                # FIX (2026-11-02): forcing_amplitude_cmb (forcing_amplitude was removed), one tide for both walls
+                fcmb = 1j*par.forcing_amplitude_cmb * ut.eccen_tide(par.m*np.sign(par.forcing_frequency),par.ricb,'cmb')
+                ficb = 1j*par.forcing_amplitude_cmb * ut.eccen_tide(par.m*np.sign(par.forcing_frequency),par.ricb,'icb')
 
-                bdat = np.array([ficb[0], ficb[1], fcmb[0], fcmb[1]])
+                # FIX (2026-11-02): CMB rows first, then ICB rows (bc_u_spherical; the ICB came first until 2022)
+                bdat = np.array([fcmb[0], fcmb[1], ficb[0], ficb[1]])
                 B = ss.csr_matrix( ( bdat, (row,col) ), shape=(ut.sizmat,1) )
 
                 np.savez('B_forced.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
 
             else:
 
-                print('Jeremy\'s forcing needs symm = 1 and m = 0 or 2 and bci=bco=1')
+                print('Jeremy\'s forcing needs symm = 1 and m = 0 or 2 and bci=bco=1 and ricb > 0')
 
 
     elif par.forcing == 3: # ---------------------------------------------------------------------------- Marc's forcing
@@ -222,7 +231,7 @@ def main():
 
                 l = 3 # goes with the toroidals (1curl eqs), Gegenbauer order 2 basis
 
-                F2 = Ib*ut.chebco(-2, ut.N1, 3e-16, par.ricb, ut.rcmb)
+                F2 = (op.r3Iv if dipole else op.Iv)*ut.chebco(-2, ut.N1, 3e-16, par.ricb, ut.rcmb)  # FIX (2026-11-02): was Ib (removed)
 
                 #bdat = Ib*chebco(-2,ut.N1,3e-16) * ( -4*np.sqrt(5)*(par.ricb**5)/(1-par.ricb**5) ) * par.forcing_amplitude
                 #print(F2[:4])
@@ -230,7 +239,7 @@ def main():
                 pos3 = ut.n + ut.N1*np.where(allbot==l)[0][0]
                 row3 = np.arange(pos3, pos3 + ut.N1)
                 col3 = np.zeros(ut.N1)
-                bdat3 = par.forcing_amplitude * (-4*np.sqrt(5))*XB*F2 *XC
+                bdat3 = par.forcing_amplitude_cmb * (-4*np.sqrt(5))*XB*F2 *XC  # FIX (2026-11-02): forcing_amplitude_cmb
                 tmp = [bdat3, row3, col3]
                 blist = tmp
 
@@ -247,14 +256,13 @@ def main():
 
             if par.m == 0:
 
-                F2 = r2Ib*ut.chebco(-2, ut.N1, 3e-16, par.ricb, ut.rcmb)
+                F2 = (op.r5Iv if dipole else op.r2Iv)*ut.chebco(-2, ut.N1, 3e-16, par.ricb, ut.rcmb)  # FIX (2026-11-02): was r2Ib (removed)
 
                 l = 1 # goes with the toroidals (1curl eqs), Gegenbauer order 2 basis
                 pos1 = ut.n+ut.N1*np.where(allbot==l)[0][0]
                 row1 = np.arange(pos1,pos1+ut.N1)
                 col1 = np.zeros(ut.N1)
-                bdat1 = par.forcing_amplitude * (-4/5)*F2
-                print(bdat1[:6])
+                bdat1 = par.forcing_amplitude_cmb * (-4/5)*F2  # FIX (2026-11-02): forcing_amplitude_cmb
                 tmp = [bdat1, row1, col1]
                 blist = tmp
 
@@ -263,8 +271,7 @@ def main():
                 pos3 = ut.n+ut.N1*np.where(allbot==l)[0][0]
                 row3 = np.arange(pos3,pos3+ut.N1)
                 col3 = np.zeros(ut.N1)
-                bdat3 = par.forcing_amplitude * (-36/5)*F2
-                print(bdat3[:6])
+                bdat3 = par.forcing_amplitude_cmb * (-36/5)*F2  # FIX (2026-11-02): forcing_amplitude_cmb
                 tmp = [bdat3, row3, col3]
                 for q in [0,1,2]:
                     blist[q]= np.concatenate((blist[q], tmp[q]))
@@ -282,18 +289,18 @@ def main():
         if rank == 0:
             print('Buffett 2010 ICB radial velocity forcing')
 
-            if par.m == 1 and par.symm == -1:
+            if par.m == 1 and par.symm == -1 and par.ricb > 0:  # FIX (2026-11-02): ricb > 0
 
                 l = 2 # goes with the poloidals (2curl eqs) at the rows for the ICB boundary conditions
 
                 pos = ut.N1*np.where(alltop==l)[0][0]  # pos should be zero
-                row = np.arange(pos,pos+2)
+                row = np.arange(pos+2,pos+4)  # FIX (2026-11-02): the ICB rows (bc_u_spherical), were pos, pos+1 (the CMB's)
                 col = np.zeros(2)
 
                 hft = 0.0025 # Inner core hydrostating flattening
                 C   = (1j)*(2/3)*np.sqrt(6)*hft*par.ricb
 
-                P   = ( par.ricb/(l*(l+1)) ) * C * par.forcing_amplitude
+                P   = ( par.ricb/(l*(l+1)) ) * C * par.forcing_amplitude_icb  # FIX (2026-11-02): forcing_amplitude_icb
                 dP  = -P/par.ricb
                 d2P = (2-l*(l+1))*P/(par.ricb**2)
 
@@ -310,7 +317,7 @@ def main():
 
             else:
 
-                print('Buffet2010 forcing requires m = 1, symm = -1')
+                print('Buffet2010 forcing requires m = 1, symm = -1, ricb > 0')
 
 
     elif par.forcing == 7: # ------------------------------------------------------------ longitudinal libration forcing
@@ -349,7 +356,7 @@ def main():
                 L = l * (l + 1)
 
                 pos = ut.N1 * np.where(alltop == l)[0][0]
-                row = np.arange(pos, pos + 2)
+                row = np.array([pos, pos + 2])  # FIX (2026-11-02): P at the CMB and at the ICB (C_icb went to the CMB's P' row)
                 col = np.zeros(2)
 
                 # amplitude for the l=2 components
@@ -385,7 +392,7 @@ def main():
 
                 # amplitude is max libration angle
                 C = 2*(par.forcing_frequency**2) * par.forcing_amplitude_cmb
-                bdat = C * op.Iv * ut.chebco(3,ut.N1,1e-9,par.ricb,1)
+                bdat = C * (op.r3Iv if dipole else op.Iv) * ut.chebco(3,ut.N1,1e-9,par.ricb,1)  # FIX (2026-11-02): r3Iv with B0 = 'dipole'
 
                 B = ss.csr_matrix( ( bdat, (row,col) ), shape=(ut.sizmat,1) )
                 np.savez('B_forced.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
@@ -410,7 +417,7 @@ def main():
                 L = l*(l+1)
 
                 pos = ut.N1*np.where(alltop==l)[0][0]
-                row = np.arange(pos,pos+2)
+                row = np.array([pos, pos+2])  # FIX (2026-11-02): P at the CMB and at the ICB (C_icb went to the CMB's P' row)
                 col = np.zeros(2)
 
                 #C_icb = L*par.m*par.forcing_frequency*par.forcing_amplitude_icb/par.ricb  # to be checked
@@ -1462,7 +1469,10 @@ def bc_u_spherical(l,loc):
 
                 elif par.bci == 1: # no-slip icb
                     out[ 2,:] = bv.Ta[:,0]  # P  =0
-                    out[ 3,:] = bv.Ta[:,1]  # P' =0
+                    if par.forcing == 9:  # NEW (2026-11-02): radial forcing at the ICB too, as at the CMB
+                        out[ 3,:] = bv.Ta[:,1] + bv.Ta[:,0]/par.ricb  # P' + P/r = 0
+                    else:
+                        out[ 3,:] = bv.Ta[:,1]  # P' =0
 
         row0 = int(ut.N1*(l-ut.m_top)/2)
         col0 = int(ut.N1*(l-ut.m_top)/2)
