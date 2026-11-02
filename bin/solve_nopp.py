@@ -115,8 +115,8 @@ def scale_rows(X, dr, dc):
 def normalise_energy(vecs):
     '''
     In place: scales each eigenvector (one per column) so that its kinetic + magnetic energy is 1,
-    with KE and ME as spin_doctor computes them (outer core only, from ricb to rcmb; the IC field
-    and the rotdyn rotation rates are scaled along but their energies are not counted).
+    with KE and ME as spin_doctor computes them (outer core only, from ricb to rcmb; the IC field, the
+    mantle layer's field and the rotdyn rotation rates are scaled along but their energies are not counted).
     The complex phase is left as SLEPc returns it. Vectors with zero KE + ME are left unchanged.
     Called on all ranks with the full vecs on each; the l-components are shared among the ranks
     and their energies summed with an MPI Allreduce.
@@ -148,6 +148,7 @@ def split_fields(vec):
                ('magnetic',    2*ut.n   * par.magnetic),
                ('rotdyn',      3        * par.rotdyn),
                ('magnetic_ic', 2*ut.nic * ut.icflag),
+               ('magnetic_mantle', 2*ut.nman),  # NEW (2026-10-30): mantle = 'resolved'
                ('temperature', ut.n     * par.thermal),
                ('composition', ut.n     * par.compositional) ]
     fields = {}

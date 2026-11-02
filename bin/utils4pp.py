@@ -1465,7 +1465,7 @@ def kin_mag_energy(usol2, bsol2, Ra, Rb, ls=None):
 
 
 # NEW (2026-10-18): the magnetic terms of the full energy budget (spin_doctor's resid E).
-def em_budget(bsol2, bic=None):
+def em_budget(bsol2, bic=None, bman=None):
     '''
     Returns [Ohm_f, ME_ic, Ohm_ic, E_w, Ohm_w, ME_ext] for one solution, the terms of the magnetic energy budget
     that spin_doctor's fluid-only balance (resid b) leaves out, in the units of magnetic_worker's energy and of
@@ -1484,6 +1484,9 @@ def em_budget(bsol2, bic=None):
                |g|^2/c1 (toroidal) and c1*|r lap_l f|^2 (poloidal, from the wall conditions)
       ME_ext : energy of the potential field outside the CMB (insulating mantle, or outside a thin wall, i.e. beyond
                r + h, FIX 2026-10-21; likewise ME_ic below r - h for a thin wall on an insulating inner core)
+    NEW (2026-10-30): with a conducting mantle layer (mantle = 'resolved', bman = its part of the solution vector) E_w and
+    Ohm_w are the layer's (1/2) int |b|^2 and int |curl b|^2/sigma, and ME_ext the potential field beyond r_surface
+    (nan without bman).
     The wall's b_r jump (c term) and current (c1 term) follow from the thin-wall conditions of bc_b_thinlayer,
     so the boundary terms need no derivatives beyond the second. Assumes mu = 1 (fluid permeability) with walls.
     For ricb = 0 the inner-core terms are zero.
@@ -1535,6 +1538,10 @@ def em_budget(bsol2, bic=None):
     else:
         Fout = F
     ME_ext = np.sum( f0p*Lp*lp*np.abs(Fout/r)**2 ) * r/(r + hw)   # potential field r^-(l+1) beyond r + h (rcmb = 1)
+    if par.mantle == 'resolved':  # NEW (2026-10-30)
+        ME_m, Ohm_m, ME_ext = mantle_budget(bman) if bman is not None else (np.nan, np.nan, np.nan)
+        E_w   += ME_m
+        Ohm_w += Ohm_m
 
     # ------------------------------------------------------------------------------------------------ ICB side
     if r_i > 0:
@@ -1593,3 +1600,38 @@ def em_budget(bsol2, bic=None):
             ME_ic = np.nan  # 'conducting, Bessel' (forced problems): not coded
 
     return [ Ohm_f, ME_ic, Ohm_ic, E_w, Ohm_w, ME_ext ]
+
+
+
+def mantle_budget(bman):
+    '''
+    NEW (2026-10-30): [ME_m, Ohm_m, ME_ext] of a conducting mantle layer (mantle = 'resolved'), from bman, its part of one
+    solution vector (N_mantle Chebyshev coefficients on [1, r_surface] per l, f then g), in the units of em_budget:
+    (1/2) int |b|^2 and int |curl b|^2/sigma over the layer, and the energy of the potential field r^-(l+1) beyond
+    r_surface. The integrands are those of the conducting inner core in em_budget.
+    '''
+    Nm = par.N_mantle; nb = int((par.lmax - par.m + 1)/2)
+    R1, R2 = ut.rcmb, par.r_surface
+    lpm, ltm = ut.ell(par.m, par.lmax, ut.bsymm)[:2]
+    xg, wg = np.polynomial.legendre.leggauss(max(2*Nm, 64))
+    rm = R1 + 0.5*(R2 - R1)*(xg + 1); wm = 0.5*(R2 - R1)*wg
+    eta = 1/ut.sigma_mantle(rm)
+    def mfun(a, nd):  # the radial function and its first nd r-derivatives on rm
+        cc = np.array(a, dtype=complex); out = []
+        for j in range(nd+1):
+            out.append(ch.chebval(xg, cc)); cc = ch.chebder(cc)*2/(R2 - R1)
+        return out
+    ME_m = Ohm_m = ME_ext = 0.0
+    for k, l in enumerate(lpm):
+        L = l*(l+1.); a0 = 4*np.pi/(2*l+1)
+        a = bman[k*Nm:(k+1)*Nm]
+        f, f1, f2 = mfun(a, 2)
+        ME_m   += np.sum( wm*a0*rm**2*( np.abs(L*f/rm)**2 + L*np.abs(f1 + f/rm)**2 ) )
+        Ohm_m  += np.sum( wm*eta*2*a0*L*rm**2*np.abs(f2 + 2*f1/rm - L*f/rm**2)**2 )
+        ME_ext += a0*L*l*R2*np.abs(np.sum(a))**2   # f(r_surface) = sum of the coefficients
+    for k, l in enumerate(ltm):
+        L = l*(l+1.); a0 = 4*np.pi/(2*l+1)
+        g, g1 = mfun(bman[nb*Nm + k*Nm: nb*Nm + (k+1)*Nm], 1)
+        ME_m   += np.sum( wm*a0*rm**2*L*np.abs(g)**2 )
+        Ohm_m  += np.sum( wm*eta*2*a0*L*( L*np.abs(g)**2 + np.abs(rm*g1 + g)**2 ) )
+    return [ ME_m, Ohm_m, ME_ext ]

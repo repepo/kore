@@ -3,6 +3,71 @@ CHANGELOG - Kore, conductive_IC branch
 
 2026-10-30
 ----------
+New: conducting mantle layer of finite thickness, mantle = 'resolved', ported by hand from PR #17 (A. Nuyt)
+(bin/utils.py, bin/params_default.py, bin/bc_variables.py, bin/submatrices.py, bin/operators.py, bin/assemble.py,
+bin/solve_nopp.py, bin/spin_doctor.py, bin/utils4pp.py, bin/just_induction.py, koreviz/kmode.py,
+tests/test_conducting_mantle.py, tests/conducting_mantle/params.conducting_mantle, docs/boundaries.md, docs/output.md,
+docs/method.md, docs/equations.md, docs/rotdyn.md, docs/background-field.md, docs/index.md, docs/setup.md,
+docs/solver.md, docs/examples.md)
+- The field in a conducting layer at the base of the mantle, 1 <= r <= r_surface, insulating beyond, is now solved for:
+  N_mantle Chebyshev polynomials on [1, r_surface] per degree, in sections p (poloidal) and q (toroidal) after the
+  inner-core field and before the temperature. Unlike the thin wall (TWA) it holds for any thickness and frequency,
+  and any smooth conductivity profile that N_mantle resolves. sigma_mantle (layer / fluid) is a number or a numpy
+  expression of r and p = sigma_mantle_param, e.g. '1e-2*exp(-p*(r - 1))', the profile of the PR.
+- The layer's equations are divided by its diffusivity: sigma df/dt = Em lap_l f, and the toroidal one has also
+  -(ln sigma)' (r g)'/r, with (ln sigma)' from a Chebyshev interpolant of ln sigma. The profile then enters only B and
+  that term, and A stays well scaled for small sigma or large contrasts. At the CMB (mu = 1) f, (r f)', g and
+  (r g)'/sigma (the tangential electric field) are continuous; at r_surface the field matches a potential field and
+  g = 0.
+- The torque on the layer is the Maxwell stress on the fluid side of the CMB (gamma_magnetic, as for a thin wall), so
+  rotdyn, |Gamma|mag and resid L work as with 'TWA'. resid E includes the layer's magnetic energy and Ohmic loss and
+  the potential field beyond r_surface (utils4pp.mantle_budget). The layer's solution is written to
+  real/imag_magnetic_mantle.field; params.dat gets r_surface, N_mantle, sigma_mantle_cmb and c1_mantle (the layer's
+  conductance, the c1_cmb of the equivalent thin wall; 0 without the layer), so it has 67 columns for every run and
+  older params.dat files cannot be appended to or joined with new ones. koreviz's potextra stops outside the CMB,
+  and just_induction.py stops (its slices of A leave out the layer, which the CMB rows hold).
+- utils.check_mantle stops on r_surface <= 1, N_mantle not an integer >= 4, sigma_mantle not finite and positive on
+  [1, r_surface] or not resolved by N_mantle (below), mu != 1, a stress-free or inviscid CMB with hydro = 1, and
+  forcing 2, 9, and 7 with m != 0: the CMB condition has no u x B0 term, so the fluid at the CMB must move with the
+  layer (at rest, or rotating about z with rotdyn = 1).
+- N_mantle must resolve the profile: B holds the N_mantle-term Chebyshev series of r^2 sigma, and the toroidal rows
+  that of r^2 (ln sigma)'. Where they do not resolve it, sigma in B dips below 0 (spurious growing modes) and the
+  toroidal modes are wrong; a step (where) lost a toroidal mode and gave growing modes at any N_mantle. check_mantle
+  stops when the Chebyshev coefficients beyond N_mantle (from 4 N_mantle points) exceed 1e-6 of the largest for
+  r^2 sigma, or 1e-6 for ln sigma (the relative error of sigma). A step or a kink never passes.
+- Not taken from the PR: mu_mantle (it entered the CMB rows only, not the layer), its thin-wall and G21 changes, row
+  offsets from before the consoidal projection was removed (the CMB row was misplaced with a conducting inner core),
+  its tools, guide and parameters.py. Its thermal and compositional rows did not move with the layer, and ricb = 0
+  crashed; both work here.
+Fix: 'conducting, Bessel' inner core with a prograde forcing (forcing_frequency < 0) gave nan (bin/assemble.py, from
+PR #17): complex square root (np.lib.scimath.sqrt). A and B for a retrograde forcing are unchanged, bit for bit.
+- Checked in the cloud (scipy dense eigensolver, single rank with an MPI stub, no PETSc):
+  * Without the layer A and B are unchanged, bit for bit, in 8 configurations: thin-wall mantle with FDM in a full
+    sphere and with 'axial', thermal and compositional; 'Luo_S2' with a conducting inner core and rotdyn; B0_tor
+    'wall'; 'dipole' with hydro = 0; hydro only with mantle = 'resolved'; forced libration with a Bessel inner core;
+    a stress-free ICB with a conducting inner core.
+  * Free decay (hydro = 0) against exact values (spherical Bessel functions): uniform layer on a shell 1e-11, on a full
+    sphere ('axial' m = 0, 1; 'Luo_S2' m = 0, 2) 2e-12, on a conducting inner core with sigma_i2o = 1 5e-13. As sigma
+    -> 0 it tends to the insulating mantle (difference of order sigma), and a thin layer (r_surface = 1 + h,
+    sigma_mantle = c1/h) to the thin wall (order h). Exponential profiles with contrasts 63 to 2.6e14 agree with a
+    shooting solution to 5e-13 to 4e-10 at N_mantle = 64. Resolution check against shooting (N = 32): the profiles it
+    passes give decay rates within 6e-7 (0.3 (1 + 0.6 sin 12r) at N_mantle = 64; it stops 48), 4e-7 (a Gaussian at 48),
+    9e-11 (a tanh step of width 0.02 at 128; it stops 112) and 3e-9 (1e-2 exp(-40 (r - 1)) at 24).
+  * spin_doctor (Ek = Em = 1e-3, eigenpairs refined by inverse iteration): with flow (m = 0 'axial' with a conducting
+    inner core, rotdyn and thermal; m = 1 'axial'; uniform and exponential layers) resid L and resid E equal those of a
+    thin wall at the same resolution (resid E 2e-11 to 6e-8 at N = 24); at N = 36 all residuals are at round-off
+    (resid L 4e-13, resid E 3e-14). Free decay: resid E 6e-13 to 2e-11, and 4e-14 with a conducting inner core. The
+    temperature and composition blocks are those of the thin-wall run, shifted.
+  * Forced libration (forcing 7, m = 0): a thin layer tends to the thin wall as h, with an error that grows with the
+    frequency (h = 1e-3, c1 = 0.03: 0.2% at forcing_frequency 0.5, 1% at 5, 3% at 50).
+  * tests/test_conducting_mantle.py (new, uniform and exponential layer against exact and shooting values): the same
+    matrices with the dense solver give them to 2e-11.
+- Checked on chandler (PETSc and SLEPc 3.26, 2 MPI ranks): the new test passes in 4 s (relative errors 1.5e-12 to
+  1.6e-11; spin_doctor's resid E 5e-13 to 2e-11 on its modes), and so does the whole test suite (8 tests, 2 min).
+
+
+2026-10-30
+----------
 Fix: rotdyn = 1 stops outside its requirements; bin/parameters.py comments (bin/utils.py, bin/spin_doctor.py,
 bin/parameters.py, docs/rotdyn.md, docs/setup.md)
 - rotdyn = 1 also ran with stress-free or inviscid walls, and gave wrong results without a word. The mantle and the

@@ -1,6 +1,6 @@
 # Inner core and mantle
 
-The magnetic boundary conditions describe what lies on the other side of the fluid's boundaries: an electrical insulator, a conductor, or a thin conducting layer. They are set with `innercore` at the inner core boundary (ICB) and `mantle` at the core-mantle boundary (CMB). They only matter with `magnetic = 1`, and `innercore` only with an inner core (`ricb > 0`).
+The magnetic boundary conditions describe what lies on the other side of the fluid's boundaries: an electrical insulator, a conductor, or a conducting layer, thin or resolved. They are set with `innercore` at the inner core boundary (ICB) and `mantle` at the core-mantle boundary (CMB). They only matter with `magnetic = 1`, and `innercore` only with an inner core (`ricb > 0`).
 
 On this page the magnetic field perturbation is written, for each spherical harmonic $Y_l^m$, as
 
@@ -21,6 +21,7 @@ with poloidal scalar $f$ and toroidal scalar $g$, and $F = r f$, $G = r g$. Prim
 | ICB | `innercore = 'TWA'` | Thin conducting layer on top of an insulating inner core. | `c_icb`, `c1_icb`, `muw_icb` |
 | CMB | `mantle = 'insulator'` | Electrically insulating mantle (default). | none |
 | CMB | `mantle = 'TWA'` | Thin conducting layer at the base of an insulating mantle. | `c_cmb`, `c1_cmb`, `muw_cmb`, `B0_cmb` |
+| CMB | `mantle = 'resolved'` | Conducting layer of any thickness and smooth conductivity profile at the base of an insulating mantle; the induction equation is solved inside it. | `r_surface`, `N_mantle`, `sigma_mantle`, `sigma_mantle_param` |
 
 Material properties are given relative to the fluid:
 
@@ -115,11 +116,43 @@ The thin-wall approximation itself needs the wall to be much thinner than its ma
 The term $\mathcal{D}_l F$ stands for the wall's $\partial_t F/\eta$, taken from the fluid next to it. That substitution needs the wall to move with the fluid, so a wall with $c_1 \neq 0$ needs a no-slip boundary and `Ek > 0`; `assemble.py` prints a warning otherwise. With a wall at the CMB, keep `B0_cmb = 'wall'` (the default) so that the background field satisfies the wall condition too (see [Background magnetic field](background-field.md#a-thin-conducting-wall-at-the-cmb-b0_cmb)).
 
 
+## Conducting mantle layer
+
+With `mantle = 'resolved'` Kore adds the magnetic field in a conducting layer at the base of the mantle, $1 \le r \le r_s$ (`r_surface`), to the unknowns: `N_mantle` Chebyshev polynomials on $[1, r_s]$ and spherical harmonics up to `lmax`, as in the fluid. Beyond $r_s$ the mantle is insulating. The layer is at rest (or rotates rigidly about $z$ with `rotdyn = 1`), so its field only diffuses, with the conductivity $\sigma_m(r)$ relative to the fluid's. Divided by the layer's diffusivity $1/\sigma_m$, the equations for its scalars $f_m$, $g_m$ are
+
+$$
+\sigma_m\, \partial_t f_m = (\Omega\tau)\, E_\eta\, \nabla_l^2 f_m, \qquad \sigma_m\, \partial_t g_m = (\Omega\tau)\, E_\eta \left[ \nabla_l^2 g_m - (\ln\sigma_m)' \,\frac{(r g_m)'}{r} \right],
+$$
+
+so the profile only enters the time derivative and the last term, and the equations stay well scaled when $\sigma_m$ is small or varies by orders of magnitude. With the permeability of vacuum everywhere, $\mathbf{b}$ and the tangential electric field are continuous at the CMB, and the field matches a potential field at $r_s$:
+
+$$
+f = f_m, \qquad (r f)' = (r f_m)', \qquad g = g_m, \qquad \sigma_m(1)\, (r g)' = (r g_m)' \qquad (r = 1),
+$$
+
+$$
+r f_m' + (l+1)\, f_m = 0, \qquad g_m = 0 \qquad (r = r_s).
+$$
+
+As at a conducting inner core, the continuity of $\nabla_l^2 f/\sigma$ follows from these. The electric field condition has no $\mathbf{u}\times\mathbf{B}_0$ term, so the fluid at the CMB must move with the layer: with flow (`hydro = 1`) the run stops unless the CMB is no-slip (`bco = 1`, `Ek > 0`), and in any case unless `mu = 1` and no forcing moves the CMB other than by a rotation about $z$ (`forcing = 2`, `9`, and `7` with $m \neq 0$ stop). The background field needs no change: it continues into the layer as a potential field.
+
+| Parameter | Default | Meaning |
+|---|---|---|
+| `r_surface` | 1.83 | Outer radius of the layer (1.83: the whole mantle of the Earth). |
+| `N_mantle` | 64 | Chebyshev polynomials in the layer. |
+| `sigma_mantle` | 1 | Conductivity of the layer / fluid: a number (uniform layer), or a numpy expression of `r` and `p`. |
+| `sigma_mantle_param` | 0 | The value of `p` in `sigma_mantle`. |
+
+An expression may use the functions allowed in `B0_tor_profile` (`sin`, `cos`, `tan`, `exp`, `log`, `sqrt`, `abs`, `tanh`, `sinh`, `cosh`, `arctan`, `where`, `pi`, `erf`). For example `'1e-2*exp(-p*(r - 1))'` is the exponential profile of PR #17 (A. Nuyt), and `'1e-2*(1 - tanh((r - 1.05)/0.02))/2 + 1e-8'` a layer about 0.05 thick with a smooth top (it needs `N_mantle = 128`). The profile must be smooth, positive on $[1, r_s]$ and resolved by `N_mantle` polynomials: B holds the `N_mantle`-term Chebyshev series of $r^2\sigma_m$, and the toroidal rows that of $r^2(\ln\sigma_m)'$, with $(\ln\sigma_m)'$ from an interpolant of $\ln\sigma_m$. Where they do not resolve the profile they oscillate: $\sigma_m$ in B can dip below 0, which gives spurious growing modes, and the toroidal modes come out wrong. The run therefore stops when the Chebyshev coefficients beyond `N_mantle` exceed $10^{-6}$ of the largest for $r^2\sigma_m$, or $10^{-6}$ for $\ln\sigma_m$ (the relative error of $\sigma_m$). A step (`where`) or a kink (`abs`) is never resolved: use a smooth transition, e.g. with `tanh` or `erf`. In free-decay tests the profiles that pass give decay rates within $10^{-6}$ of the exact ones. The solution in the layer is written to `real_magnetic_mantle.field` and `imag_magnetic_mantle.field`. `just_induction.py` (the induction equation alone) does not include the layer and stops.
+
+Unlike the thin wall, the layer holds at any frequency, for any thickness and any smooth profile that `N_mantle` resolves. For a thin uniform layer, $r_s = 1 + h$ and `sigma_mantle` $= c_1/h$, it tends to the thin wall with `c1_cmb` $= c_1$ (and `c_cmb = 0`) as $h \to 0$, with a difference of order $h$; as `sigma_mantle` goes to 0 it tends to the insulating mantle. Free-decay rates of a conducting sphere or shell inside a uniform layer agree with the exact ones (spherical Bessel functions) to $10^{-11}$.
+
+
 ## Electromagnetic torques
 
-A conducting layer or inner core lets currents close outside the fluid, and the Lorentz force then exerts a torque on the boundary. `spin_doctor.py` reports $|\Gamma|_{mag}$ for the mantle (with `mantle = 'TWA'`) for $m = 0$, `symm = 1` (axial) and $m = 1$, `symm = -1` (equatorial), and $|\Gamma|_{magIC}$ for the inner core (with `'conducting, Chebys'` or `'TWA'`) for $m = 0$, `symm = 1`. The complex torques are written to `magnetic.dat` (see [Output and postprocessing](output.md)). With `rotdyn = 1` the same torques make the mantle and inner core rotate (see [Rotational dynamics](rotdyn.md)).
+A conducting layer or inner core lets currents close outside the fluid, and the Lorentz force then exerts a torque on the boundary. `spin_doctor.py` reports $|\Gamma|_{mag}$ for the mantle (with `mantle = 'TWA'` or `'resolved'`) for $m = 0$, `symm = 1` (axial) and $m = 1$, `symm = -1` (equatorial), and $|\Gamma|_{magIC}$ for the inner core (with `'conducting, Chebys'` or `'TWA'`) for $m = 0$, `symm = 1`. The complex torques are written to `magnetic.dat` (see [Output and postprocessing](output.md)). With `rotdyn = 1` the same torques make the mantle and inner core rotate (see [Rotational dynamics](rotdyn.md)).
 
 
 ## Thin wall or conducting inner core?
 
-The thin wall is cheaper to set up, but it is not a substitute for a conducting inner core. When the inner core's field is a skin layer of depth $\delta = \sqrt{2\eta_i/\omega}$, the conducting inner core acts on the fluid exactly like a thin wall, but with a complex, frequency-dependent conductance, $c_1 \approx (1-i)\,\delta/2r_i$ for $\delta \ll r_i$. Kore's thin wall takes a real $c_1$. In tests with the torsional modes at $E = 10^{-7}$ and $10^{-8}$, the best real $c_1$ still left the eigenvalues 1 to 2% off, with errors of 5 to 15 degrees in the phase of the inner-core torque. The mode in which the inner core and the fluid oscillate together was off by about 20%. Use a conducting inner core when the inner core's electromagnetic coupling matters, and the thin wall for a thin conducting layer such as the base of the mantle.
+The thin wall is cheaper to set up, but it is not a substitute for a conducting inner core. When the inner core's field is a skin layer of depth $\delta = \sqrt{2\eta_i/\omega}$, the conducting inner core acts on the fluid exactly like a thin wall, but with a complex, frequency-dependent conductance, $c_1 \approx (1-i)\,\delta/2r_i$ for $\delta \ll r_i$. Kore's thin wall takes a real $c_1$. In tests with the torsional modes at $E = 10^{-7}$ and $10^{-8}$, the best real $c_1$ still left the eigenvalues 1 to 2% off, with errors of 5 to 15 degrees in the phase of the inner-core torque. The mode in which the inner core and the fluid oscillate together was off by about 20%. Use a conducting inner core when the inner core's electromagnetic coupling matters, and the thin wall for a thin conducting layer such as the base of the mantle. The same holds at the CMB: use `mantle = 'resolved'` when the layer is not thin compared with its skin depth, or when its conductivity varies across it.

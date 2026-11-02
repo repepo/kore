@@ -48,6 +48,10 @@ if ut.cic:
     Tbfic = Tb_cic[ixf::2,:]
     Tbgic = Tb_cic[ixg::2,:]
 
+if ut.resolved_mantle:  # NEW (2026-10-30): the conducting mantle layer, at the CMB and at r_surface
+    Tm_cmb  = Tk(-1, par.N_mantle-1, 1, ut.rcmb, par.r_surface)
+    Tm_surf = Tk( 1, par.N_mantle-1, 1, ut.rcmb, par.r_surface)
+
 
 
 #Tc = Tcenter(par.N-1)

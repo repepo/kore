@@ -92,6 +92,12 @@ def param_table(elapsed):
         ( 'B0_tor',                   ut.B0_tor_type,              '%d' ),    # NEW (2026-10-30): index in ut.B0_tor_list, -1 without
         ( 'B0_tor_l',                 par.B0_tor_l,                '%d' ),
         ( 'cnorm_tor',                ut.cnorm_tor,                '%.9e' ),  # as a number (0 without a toroidal field)
+        # NEW (2026-10-30): the conducting mantle layer (mantle = 'resolved'; 0 otherwise): its outer radius, N_mantle,
+        # its conductivity at the CMB and its conductance (the integral of sigma, the c1_cmb of the equivalent thin wall)
+        ( 'r_surface',                par.r_surface*ut.resolved_mantle, '%.9e' ),
+        ( 'N_mantle',                 par.N_mantle*ut.resolved_mantle,  '%d' ),
+        ( 'sigma_mantle_cmb',         float(ut.sigma_mantle(ut.rcmb)) if ut.resolved_mantle else 0.0, '%.9e' ),
+        ( 'c1_mantle',                ut.mantle_conductance() if ut.resolved_mantle else 0.0,       '%.9e' ),
     ]
 
 
@@ -188,6 +194,10 @@ def main(ncpus):
     bic = None
     if par.magnetic and ut.icflag and os.path.isfile('real_magnetic_ic.field'):
         bic = ( np.loadtxt('real_magnetic_ic.field') + 1j*np.loadtxt('imag_magnetic_ic.field') ).reshape((2*ut.nic,-1))
+    # NEW (2026-10-30): and in a conducting mantle layer (mantle = 'resolved')
+    bman = None
+    if ut.resolved_mantle and os.path.isfile('real_magnetic_mantle.field'):
+        bman = ( np.loadtxt('real_magnetic_mantle.field') + 1j*np.loadtxt('imag_magnetic_mantle.field') ).reshape((2*ut.nman,-1))
 
     if par.hydro == 1:
         success = np.shape(ru)[1]
@@ -294,9 +304,10 @@ def main(ncpus):
     # B0 with k != 0 at a wall (insulating or not) adds the stress b_r*B0_phi on the fluid there: it enters resid L (wtorq), but
     # not the torques on the mantle and the inner core, which also get the force on its current sheet (rotdyn = 1 stops on it)
     pol_B0      = par.magnetic and (par.B0 is not None)
-    do_mtorq    = pol_B0 and (par.mantle == 'TWA') and (((par.m==0) and (par.symm==1)) or ((par.m==1) and (par.symm==-1)))
+    # NEW (2026-10-30): also for a resolved conducting layer (mantle = 'resolved'), see utils.gamma_magnetic
+    do_mtorq    = pol_B0 and (par.mantle in ['TWA', 'resolved']) and (((par.m==0) and (par.symm==1)) or ((par.m==1) and (par.symm==-1)))
     do_mtorq_ic = pol_B0 and (par.innercore in ['conducting, Chebys', 'TWA']) and ((par.m==0) and (par.symm==1))
-    # FIX (2026-10-30): for m=1, symm=-1 a poloidal B0 also exerts torques that gamma_magnetic (TWA mantle only) and
+    # FIX (2026-10-30): for m=1, symm=-1 a poloidal B0 also exerts torques that gamma_magnetic (conducting mantle only) and
     # gamma_magnetic_ic (m=0 only) leave out: through an insulating mantle when B0 is imposed from outside ('axial': the
     # torque m x B0 on the induced dipole m), and through the ICB when the inner core conducts, carries B0's currents
     # (B0_ic other than 'potential', as in ut.B0_beta_ic) or holds its point source ('dipole': the torque m0 x b(0)).
@@ -305,7 +316,7 @@ def main(ncpus):
     eq_B0       = pol_B0 and (par.forcing == 0) and (par.m == 1) and (par.symm == -1)
     pol_walls   = [ eq_B0 and (par.ricb > 0) and ( par.innercore != 'insulator' or par.B0 == 'dipole' or
                                                (ut.B0_ic != 'potential' and par.B0 in ut.B0_ic_list) ),
-                    eq_B0 and (par.mantle != 'TWA') and (par.B0 not in ut.B0_cmb_list) ]  # [ICB, CMB]
+                    eq_B0 and (par.mantle not in ['TWA', 'resolved']) and (par.B0 not in ut.B0_cmb_list) ]  # [ICB, CMB]
     tor_walls   = ut.k_at_walls() if (par.magnetic and par.B0_tor is not None) else [False, False]
     do_wtorq    = par.magnetic and par.hydro and (any(pol_walls) or any(tor_walls))
     if do_mtorq:
@@ -549,7 +560,8 @@ def main(ncpus):
            (noslip or slipok or not par.hydro) and not (par.mu != 1 and 'TWA' in (par.innercore, par.mantle)):
             s2 = par.OmgTau**2 * par.Le2
             eta = par.OmgTau * par.Em
-            Ohm_f0, MEic0, Ohm_ic0, Ew0, Ohm_w0, MEext0 = upp.em_budget(b_sol2, None if bic is None else bic[:,i])
+            Ohm_f0, MEic0, Ohm_ic0, Ew0, Ohm_w0, MEext0 = upp.em_budget(b_sol2, None if bic is None else bic[:,i],
+                                                                        None if bman is None else bman[:,i])
             Wex  = (Wlor[i] if par.hydro else 0) + s2*Indu[i]
             if par.hydro and not noslip:  # FIX (2026-10-30)
                 Wex -= s2*upp.slip_power(u_sol2, b_sol2)

@@ -89,6 +89,15 @@ if ut.cic:  # for a conductive inner core
     r2_D2f_ic = ss.csr_matrix(sio.mmread('r2_D2f_ic.mtx'))
     r2_D2g_ic = ss.csr_matrix(sio.mmread('r2_D2g_ic.mtx'))
 
+if ut.resolved_mantle:  # NEW (2026-10-30): for a conducting layer at the base of the mantle (see submatrices.py)
+
+    r2s_D0_man = ss.csr_matrix(sio.mmread('r2s_D0_man.mtx'))
+    r0_D0_man  = ss.csr_matrix(sio.mmread('r0_D0_man.mtx'))
+    r1_D1_man  = ss.csr_matrix(sio.mmread('r1_D1_man.mtx'))
+    r2_D2_man  = ss.csr_matrix(sio.mmread('r2_D2_man.mtx'))
+    r1d_D0_man = ss.csr_matrix(sio.mmread('r1d_D0_man.mtx'))
+    r2d_D1_man = ss.csr_matrix(sio.mmread('r2d_D1_man.mtx'))
+
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -496,6 +505,9 @@ def b(l, section, component, offdiag):
         elif section == 'gic' and component == 'btor_ic':
             out = L * r2_D0g_ic
 
+        elif section in ['p', 'q']:  # NEW (2026-10-30): mantle layer, sigma r² 𝐫⋅𝐛 (p) and sigma r² 𝐫⋅∇×𝐛 (q)
+            out = L * r2s_D0_man
+
     return out
 
 
@@ -892,7 +904,16 @@ def magnetic_diffusion(l, section, component, offdiag):
 
             out = L*( -L*r0_D0g_ic + 2*r1_D1g_ic + r2_D2g_ic )
 
-    if section in ['f', 'g']:
+        # NEW (2026-10-30): conducting mantle layer, divided by its eta = 1/sigma (see submatrices.py)
+        elif section == 'p':  # L r² ∇ₗ²f
+
+            out = L*( -L*r0_D0_man + 2*r1_D1_man + r2_D2_man )
+
+        elif section == 'q':  # L ( r² ∇ₗ²g - (ln sigma)'(r² g' + r g) )
+
+            out = L*( -L*r0_D0_man + 2*r1_D1_man + r2_D2_man - r2d_D1_man - r1d_D0_man )
+
+    if section in ['f', 'g', 'p', 'q']:
         out2 = out * par.Em
     elif section in ['fic', 'gic']:
         out2 = out * par.Em /( par.mu_i2o * par.sigma_i2o )

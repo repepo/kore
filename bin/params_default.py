@@ -173,6 +173,7 @@ class default_params():
         # Magnetic boundary conditions at the CMB
         self.mantle = 'insulator'
         # self.mantle = 'TWA'  # Thin conductive wall layer (Roberts, Glatzmaier & Clune, 2010)
+        # self.mantle = 'resolved'  # NEW (2026-10-30): conducting layer from the CMB to r_surface, its field solved for
         self.c_cmb  = 1e-5  # Ratio (h*mu_wall)/(rcmb*mu_fluid)  (if mantle='TWA')
         self.c1_cmb = 1e-5  # Thin wall to fluid conductance ratio (if mantle='TWA')
         # NEW (2026-10-21): wall permeability / vacuum permeability, p = mu_w/mu0 (if mantle='TWA'). With c it sets the
@@ -181,6 +182,16 @@ class default_params():
         # the c term to leading order and only the conductance c1 acts. np.inf: the earlier condition (Roberts et al.
         # 2010, Guervilly et al. 2013: h -> 0 with h*mu_w fixed), right for mu_w >> mu0.
         self.muw_cmb = 1.0
+        # NEW (2026-10-30): a conducting layer at the base of the mantle, 1 <= r <= r_surface, insulating beyond (mantle =
+        # 'resolved', ported from PR #17 by A. Nuyt). Its field is expanded in N_mantle Chebyshev polynomials, so unlike the
+        # thin wall it holds for any thickness and frequency, and any smooth conductivity profile that N_mantle resolves
+        # (the run stops otherwise, utils.check_mantle). Needs mu = 1 and a no-slip CMB.
+        self.r_surface = 1.83   # outer radius of the layer (the CMB is at 1); 1.83 for the whole mantle of the Earth
+        self.N_mantle  = 64     # Chebyshev polynomials in the layer
+        # Conductivity of the layer / conductivity of the fluid: a number (uniform layer), or a numpy expression of r and
+        # p = sigma_mantle_param with the functions of B0_tor_profile, e.g. '1e-2*exp(-p*(r - 1))' (PR #17's profile)
+        self.sigma_mantle = 1.0
+        self.sigma_mantle_param = 0.0
 
         # B0_cmb sets how the background field meets a thin conducting wall at the CMB (mantle = 'TWA').
         # A steady B0 drives no current in the wall: its currents are azimuthal, and the azimuthal electric field on the CMB

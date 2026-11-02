@@ -29,9 +29,10 @@ import bgflow
 
 # first row/column of the unknowns that come after the flow and magnetic field, in the same order as ut.sizmat:
 # the 3 rotational dynamics unknowns (mantle and inner core rotation rates, misalignment angle),
-# then the inner core magnetic field, then temperature and composition
+# then the inner core magnetic field, then the field in a conducting mantle layer, then temperature and composition
 off_rotdyn = 2*(par.hydro + par.magnetic)*ut.n
-off_temp   = off_rotdyn + 3*par.rotdyn + 2*ut.nic*ut.cic
+off_man    = off_rotdyn + 3*par.rotdyn + 2*ut.nic*ut.cic  # NEW (2026-10-30): mantle = 'resolved', sections p and q
+off_temp   = off_man + 2*ut.nman
 off_comp   = off_temp + par.thermal*ut.n
 # first column of the toroidal magnetic field (section g)
 off_btor   = (2*par.hydro + 1)*ut.n
@@ -553,6 +554,24 @@ def main():
                     loc_list = ut.packit(loc_list, mtx, row, col)
 
 
+            # ----------------------------------------------------------------------------------------------------------
+            # ------------------------------------------------------ B matrix, conducting mantle layer (NEW 2026-10-30)
+            # ----------------------------------------------------------------------------------------------------------
+            if ut.resolved_mantle:
+
+                # -------------------------------------------------------------------------------- section p (the l's of f)
+                for k,l in enumerate(loc_mag_f):
+
+                    row = off_man + ( rank*bpp + k )*par.N_mantle
+                    loc_list = ut.packit(loc_list, op.b(l, 'p', 'bpol_man', 0), row, row)
+
+                # -------------------------------------------------------------------------------- section q (the l's of g)
+                for k,l in enumerate(loc_mag_g):
+
+                    row = off_man + ut.nman + ( rank*bpp + k )*par.N_mantle
+                    loc_list = ut.packit(loc_list, op.b(l, 'q', 'btor_man', 0), row, row)
+
+
 
         if par.rotdyn:
             # --------------------------------------------- Includes the B side of the mantle and IC rotational dynamics
@@ -952,6 +971,8 @@ def main():
 
             if par.mantle == 'TWA':
                 bc_b_list_outer = bc_b_thinlayer(l, 'nocurl', 1/par.mu, par.c_cmb, par.c1_cmb, 'cmb', par.muw_cmb)
+            elif par.mantle == 'resolved':  # NEW (2026-10-30)
+                bc_b_list_outer = bc_b_mantle( l, 'section_f' )
             else:
                 bc_b_list_outer = bc_b_cmb( l, 'section_f', par.innercore )
 
@@ -1049,6 +1070,8 @@ def main():
 
             if par.mantle == 'TWA':
                 bc_b_list_outer = bc_b_thinlayer(l, '1curl', 1/par.mu, par.c_cmb, par.c1_cmb, 'cmb', par.muw_cmb)
+            elif par.mantle == 'resolved':  # NEW (2026-10-30)
+                bc_b_list_outer = bc_b_mantle( l, 'section_g' )
             else:
                 bc_b_list_outer = bc_b_cmb( l, 'section_g', par.innercore )
 
@@ -1102,6 +1125,32 @@ def main():
 
                 #print('gic',l,max(loc_list[1]),max(loc_list[2]))
 
+        if ut.resolved_mantle:
+            # ----------------------------------------------------------------------------------------------------------------------------------------------------
+            # ------------------------------------------------------------------------- A matrix, conducting mantle layer, sections p and q (NEW 2026-10-30)
+            # ----------------------------------------------------------------------------------------------------------------------------------------------------
+            # The layer is at rest: its field only diffuses (operators.magnetic_diffusion, divided by eta), with the CMB and
+            # r_surface conditions on the two top rows of each block (bc_b_mantle)
+            for k,l in enumerate(loc_mag_f):  # section p
+
+                row = off_man + ( rank*bpp + k )*par.N_mantle
+                mtx = op.magnetic_diffusion(l, 'p', 'bpol_man', 0) - 1j*ut.wf*op.b(l, 'p', 'bpol_man', 0)
+                loc_list = ut.packit(loc_list, mtx, row, row)
+
+                bc_b_list = bc_b_mantle( l, 'section_p' )
+                for q in [0,1,2]:
+                    loc_list[q].append( bc_b_list[q] )
+
+            for k,l in enumerate(loc_mag_g):  # section q
+
+                row = off_man + ut.nman + ( rank*bpp + k )*par.N_mantle
+                mtx = op.magnetic_diffusion(l, 'q', 'btor_man', 0) - 1j*ut.wf*op.b(l, 'q', 'btor_man', 0)
+                loc_list = ut.packit(loc_list, mtx, row, row)
+
+                bc_b_list = bc_b_mantle( l, 'section_q' )
+                for q in [0,1,2]:
+                    loc_list[q].append( bc_b_list[q] )
+
     if par.rotdyn:
         # ----------------------------------------------------------------------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------------------------- A matrix, rotational dynamics of mantle and inner core
@@ -1128,7 +1177,7 @@ def main():
 
 
             # ------------------------------------------------------------------------------------ Magnetic torques
-            # gamma_magnetic() is 0 (no torque) unless the mantle has a conducting layer (mantle = 'TWA'),
+            # gamma_magnetic() is 0 (no torque) unless the mantle has a conducting layer (mantle = 'TWA' or 'resolved'),
             # gamma_magnetic_ic() is 0 unless the inner core is conducting or 'TWA'. Zero torques are skipped.
             gmag_mantle = ut.gamma_magnetic()
             gmag_incore = ut.gamma_magnetic_ic()
@@ -1746,7 +1795,8 @@ def bc_b_icb(l,loc, innercore, rank, bpp, k):
         if loc == 'nocurl': # use loc_bot l's here (if external magnetic field is antisymm) --------
 
             # Physics ------------------------------------------
-            bessel_wavenumber = (1-1j)*np.sqrt(par.forcing_frequency/2/par.Em)
+            # FIX (2026-10-30, from PR #17): complex square root, a prograde forcing (frequency < 0) gave nan
+            bessel_wavenumber = (1-1j)*np.lib.scimath.sqrt(par.forcing_frequency/2/par.Em)
             # the line just below works for lmax~150.
             #icb_diag[0,:] = ut.jl(l,bessel_wavenumber*par.ricb,0) * bv.P0_icb - bessel_wavenumber * ut.jl(l,bessel_wavenumber*par.ricb,1) * bv.P1_icb
             # the line below should work for all lmax
@@ -1762,7 +1812,7 @@ def bc_b_icb(l,loc, innercore, rank, bpp, k):
         elif loc == '1curl': # use loc_top l's here (if external magnetic field is antisymm) -------
 
             # Physics ---------------
-            bessel_wavenumber = (1-1j)*np.sqrt(par.forcing_frequency/2/par.Em)
+            bessel_wavenumber = (1-1j)*np.lib.scimath.sqrt(par.forcing_frequency/2/par.Em)  # FIX (2026-10-30): as above
             eta_i2o = (1/par.mu_i2o/par.sigma_i2o)
             # the line just below works for lmax~150.
             #icb_diag[0,:] = ut.jl(l,bessel_wavenumber*par.ricb,0) * bv.T0_icb - bessel_wavenumber * ut.jl(l,bessel_wavenumber*par.ricb,1) * bv.T1_icb
@@ -2022,6 +2072,91 @@ def bc_b_cic_slip(l, row):
         return [np.array([]), np.array([], dtype=int), np.array([], dtype=int)]
     data = np.concatenate(data)
     return [data, np.full(data.size, row), np.concatenate(cols)]
+
+
+
+
+def bc_b_mantle(l, loc):
+    '''
+    NEW (2026-10-30): magnetic conditions for a conducting layer at the base of the mantle, 1 <= r <= r_surface (mantle =
+    'resolved', ported from PR #17 by A. Nuyt), with f, g the fluid's scalars and fm, gm the layer's. With mu = 1
+    everywhere, b and the tangential E = J/sigma - u x B0 are continuous at the CMB:
+        section f, CMB row:                 f = fm
+        section p, first row (CMB):         (r f)' = (r fm)'
+        section g, CMB row:                 g = gm
+        section q, first row (CMB):         sigma(1) (r g)' = (r gm)'
+    and the layer meets the potential field outside at r_surface:
+        section p, second row:              r fm' + (l+1) fm = 0
+        section q, second row:              gm = 0
+    The E condition takes u x B0 equal on both sides, i.e. a no-slip CMB (the layer at rest, or rotating with the
+    fluid about z, rotdyn = 1). As at a conducting ICB (bc_b_cic), the continuity of eta lap_l f is implied: with f
+    continuous the radial induction equation holds on both sides.
+    '''
+    Nm = par.N_mantle
+
+    if ut.symmB0 == 1:
+        mf, mg = ut.m_top, ut.m_bot
+    elif ut.symmB0 == -1:
+        mf, mg = ut.m_bot, ut.m_top
+
+    # the fluid's Chebyshev polynomials at the CMB, as in bc_b_cmb (one parity in a full sphere)
+    if par.ricb > 0:
+        Tbf = bv.Tb
+        Tbg = bv.Tb
+        delta_row = 1  # the CMB row is the second one, after the ICB row
+    else:
+        if ut.symmB0 == -1:
+            ixf = ( par.m + ut.s )%2
+            ixg = ( par.m + 1 - ut.s )%2
+        elif ut.symmB0 == 1:
+            ixf = ( par.m + 1 - ut.s )%2
+            ixg = ( par.m + ut.s )%2
+        Tbf = bv.Tb[ixf::2,:]
+        Tbg = bv.Tb[ixg::2,:]
+        delta_row = 0
+
+    rc = ut.rcmb
+    rs = par.r_surface
+    Tc = bv.Tm_cmb   # the layer's polynomials at its bottom (the CMB)
+    Ts = bv.Tm_surf  # and at its top
+
+    if loc in ['section_f', 'section_p']:
+        col_f = 2*par.hydro*ut.n + int( ut.N1*(l - mf)/2 )
+        col_m = off_man + int( Nm*(l - mf)/2 )
+    elif loc in ['section_g', 'section_q']:
+        col_f = (2*par.hydro + 1)*ut.n + int( ut.N1*(l - mg)/2 )
+        col_m = off_man + ut.nman + int( Nm*(l - mg)/2 )
+
+    outf = ss.dok_matrix((2, ut.N1), dtype=complex)  # fluid columns
+    outm = ss.dok_matrix((2, Nm), dtype=complex)     # layer columns
+
+    if loc == 'section_f':
+        row0 = col_f + delta_row
+        outf[0,:] =  Tbf[:,0]
+        outm[0,:] = -Tc[:,0]
+    elif loc == 'section_g':
+        row0 = col_f + delta_row
+        outf[0,:] =  Tbg[:,0]
+        outm[0,:] = -Tc[:,0]
+    elif loc == 'section_p':
+        row0 = col_m
+        outf[0,:] =  Tbf[:,0] + rc*Tbf[:,1]
+        outm[0,:] = -( Tc[:,0] + rc*Tc[:,1] )
+        outm[1,:] =  rs*Ts[:,1] + (l+1)*Ts[:,0]
+    elif loc == 'section_q':
+        row0 = col_m
+        outf[0,:] =  ut.sigma_mantle(rc)*( Tbg[:,0] + rc*Tbg[:,1] )
+        outm[0,:] = -( Tc[:,0] + rc*Tc[:,1] )
+        outm[1,:] =  Ts[:,0]
+
+    outf = outf.tocoo()
+    outm = outm.tocoo()
+
+    outdata = np.concatenate([ outf.data, outm.data ])
+    outrow  = np.concatenate([ outf.row + row0, outm.row + row0 ])
+    outcol  = np.concatenate([ outf.col + col_f, outm.col + col_m ])
+
+    return [outdata, outrow, outcol]
 
 
 

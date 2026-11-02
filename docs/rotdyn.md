@@ -21,7 +21,7 @@ $$
 
 $I_M$ and $I_{IC}$ are the axial moments of inertia, $\Gamma^\nu$ and $\Gamma^B$ the viscous and electromagnetic torques of the fluid on each body, and $K$ the gravitational coupling constant. The last term in the third equation is the viscous relaxation of the inner core, with relaxation time $\tau_{IC}$. The fluid is coupled to the solid bodies through the no-slip condition on the axisymmetric toroidal flow of degree 1: its value at the CMB is $r_{cmb}\,\omega_M$ and at the ICB $r_i\,\omega_{IC}$, instead of zero.
 
-The viscous torques scale with $E\,(\Omega\tau)$, the electromagnetic torques with $Le^2 (\Omega\tau)^2$, and the gravitational one with $(\Omega\tau)^2$, so all are in the units set by `timescale`. An electromagnetic torque exists only on a body that conducts: the mantle with `mantle = 'TWA'`, the inner core with `'conducting, Chebys'` or `'TWA'` (see [Inner core and mantle](boundaries.md#electromagnetic-torques)).
+The viscous torques scale with $E\,(\Omega\tau)$, the electromagnetic torques with $Le^2 (\Omega\tau)^2$, and the gravitational one with $(\Omega\tau)^2$, so all are in the units set by `timescale`. An electromagnetic torque exists only on a body that conducts: the mantle with `mantle = 'TWA'` or `'resolved'`, the inner core with `'conducting, Chebys'` or `'TWA'` (see [Inner core and mantle](boundaries.md#electromagnetic-torques)).
 
 
 ## Parameters

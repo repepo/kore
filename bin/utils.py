@@ -44,8 +44,14 @@ else:
 
 symm1 = (2*np.sign(par.m) - 1) * par.symm  # symm1=par.symm if m>0, symm1 = -par.symm if m=0
 
+# NEW (2026-10-30): with mantle = 'resolved' the field in a conducting layer at the base of the mantle (1 <= r <= r_surface)
+# is part of the unknowns: N_mantle Chebyshev coefficients per l (all of them, the layer is a shell), poloidal (section p)
+# then toroidal (section q), after the inner-core field and before the temperature
+resolved_mantle = int(par.magnetic == 1 and par.mantle == 'resolved')
+nman   = int(par.N_mantle*(par.lmax-par.m+1)/2) * resolved_mantle
+
 # this gives the size (rows or columns) of the main matrices
-sizmat = 2*n*par.hydro + 2*n*par.magnetic + 3*par.rotdyn + 2*nic*cic + n*par.thermal + n*par.compositional
+sizmat = 2*n*par.hydro + 2*n*par.magnetic + 3*par.rotdyn + 2*nic*cic + 2*nman + n*par.thermal + n*par.compositional
 
 s = int( (vsymm+1)/2 ) # s=0 if antisymm, s=1 if symm
 m_top = m + 1-s
@@ -96,7 +102,7 @@ B0_cmb_list = ['dipole', 'G21 dipole', 'Luo_S1', 'Luo_S2', 'FDM']  # fields from
 ic_bc_list = ['insulator', 'TWA', 'conducting, Chebys', 'conducting, Bessel']
 innercore_mag_bc = ic_bc_list.index(par.innercore)
 
-mantle_bc_list = ['insulator', 'TWA']
+mantle_bc_list = ['insulator', 'TWA', 'resolved']  # NEW (2026-10-30): 'resolved'
 mantle_mag_bc = mantle_bc_list.index(par.mantle)
 
 thermal_heating_list = ['internal', 'differential', 'two zone', 'user defined']
@@ -1058,6 +1064,110 @@ cnorm_tor = B0_tor_norm() if (par.magnetic and par.B0_tor is not None) else 0.0
 
 
 
+# ----------------------------------------------------------------------------------------------------------------------
+# NEW (2026-10-30): conducting layer at the base of the mantle, 1 <= r <= r_surface (mantle = 'resolved'), ported from
+# PR #17 (A. Nuyt). Its conductivity relative to the fluid's is the number sigma_mantle, or the numpy expression
+# sigma_mantle of r and p = sigma_mantle_param (with the functions of B0_tor_profile).
+# ----------------------------------------------------------------------------------------------------------------------
+
+_sigma_m = None
+
+def sigma_mantle(r):
+    '''
+    The conductivity of the mantle layer at r, relative to the fluid
+    '''
+    global _sigma_m
+    if _sigma_m is None:
+        if isinstance(par.sigma_mantle, str):
+            names = { f: getattr(np, f) for f in ['sin', 'cos', 'tan', 'exp', 'log', 'sqrt', 'abs', 'tanh', 'sinh', 'cosh',
+                                                  'arctan', 'where', 'pi'] }
+            names['erf'] = scsp.erf
+            code = compile(par.sigma_mantle, '<sigma_mantle>', 'eval')
+            def f(r):
+                with np.errstate(all='ignore'):  # as in k_user
+                    s = eval(code, {'__builtins__': {}}, dict(names, r=r, p=par.sigma_mantle_param))
+                return np.broadcast_to(np.asarray(s, dtype=float), np.shape(r))
+            _sigma_m = f
+        else:
+            s0 = float(par.sigma_mantle)
+            _sigma_m = lambda r: np.full(np.shape(r), s0)
+    return _sigma_m(np.asarray(r, dtype=float))
+
+
+
+_dlnsigma_m = None
+
+def dlnsigma_mantle(r):
+    '''
+    d(ln sigma)/dr in the mantle layer, from a Chebyshev interpolant of ln(sigma) on [1, r_surface] (0 for a number)
+    '''
+    global _dlnsigma_m
+    if not isinstance(par.sigma_mantle, str):
+        return np.zeros(np.shape(r))
+    if _dlnsigma_m is None:
+        lns = ch.Chebyshev.interpolate(lambda r: np.log(sigma_mantle(r)), max(128, 4*par.N_mantle),
+                                       domain=[rcmb, par.r_surface])
+        lns = lns.trim(1e-13*np.abs(lns.coef).max())  # without the round-off tail (1e-14), which the derivative amplifies
+        _dlnsigma_m = lns.deriv()
+    return _dlnsigma_m(np.asarray(r, dtype=float))
+
+
+
+def mantle_conductance():
+    '''
+    The integral of sigma from r = 1 to r_surface: the c1_cmb of a thin wall with the same conductance
+    '''
+    x, w = np.polynomial.legendre.leggauss(200)
+    h = par.r_surface - rcmb
+    return 0.5*h*np.sum( w*sigma_mantle(rcmb + 0.5*h*(x + 1)) )
+
+
+
+def check_mantle():
+    '''
+    NEW (2026-10-30): stops on settings that mantle = 'resolved' does not cover, before any matrix is built
+    '''
+    if not par.r_surface > rcmb:
+        sys.exit("mantle = 'resolved' needs r_surface > 1 (the CMB), got %r" % (par.r_surface,))
+    if not (isinstance(par.N_mantle, (int, np.integer)) and par.N_mantle >= 4):
+        sys.exit('N_mantle = %r: an integer >= 4' % (par.N_mantle,))
+    try:
+        s = sigma_mantle(np.linspace(rcmb, par.r_surface, 401))
+    except Exception as err:
+        sys.exit('sigma_mantle = %r: %s: %s' % (par.sigma_mantle, type(err).__name__, err))
+    if not (np.all(np.isfinite(s)) and np.all(s > 0)):
+        sys.exit('sigma_mantle = %r must be finite and > 0 from r = 1 to r_surface' % (par.sigma_mantle,))
+    # N_mantle must resolve the profile: B holds the N_mantle-term Chebyshev series of r**2 sigma, and the toroidal rows
+    # that of r**2 (ln sigma)'. Where they do not resolve it they oscillate: sigma in B can dip below 0 (spurious
+    # growing modes) and (ln sigma)' is wrong (wrong toroidal modes). A step (where) or a kink (abs) is never resolved
+    if isinstance(par.sigma_mantle, str):
+        N4 = 4*par.N_mantle
+        c = np.abs(chebco_f(sigma_mantle, 2, N4, rcmb, par.r_surface, 0.))
+        with np.errstate(all='ignore'):
+            cl = np.abs(chebco_f(lambda r: np.log(sigma_mantle(r)), 0, N4, rcmb, par.r_surface, 0.))
+        # relative to the largest for r**2 sigma, absolute for ln sigma (the relative error of sigma)
+        tail = c[par.N_mantle:].max()/c.max(), cl[par.N_mantle:].max()
+        if not max(tail) <= 1e-6:
+            sys.exit('sigma_mantle = %r is not resolved by N_mantle = %d Chebyshev polynomials: the coefficients '
+                     'beyond N_mantle reach %.1e of the largest for r**2 sigma and %.1e for ln(sigma), both must be '
+                     '<= 1e-6. Increase N_mantle, or smooth the profile (a step or a kink is never resolved)'
+                     % (par.sigma_mantle, par.N_mantle, tail[0], tail[1]))
+    # A magnetic mantle (or fluid) would also change the background field at the CMB
+    if par.mu != 1:
+        sys.exit("mantle = 'resolved' assumes the permeability of vacuum in the fluid and in the layer (mu = 1)")
+    # The electric-field condition at the CMB has no u x B0 term: the fluid there must move with the layer
+    if par.hydro and (par.bco == 0 or par.Ek == 0):
+        sys.exit("mantle = 'resolved' needs a no-slip CMB (bco = 1, Ek > 0)")
+    if par.forcing in (2, 9) or (par.forcing == 7 and par.m != 0):
+        sys.exit("mantle = 'resolved': forcing = %d moves the CMB other than by a rotation about z, which the layer "
+                 "cannot follow" % par.forcing)
+
+
+if resolved_mantle:
+    check_mantle()
+
+
+
 def Dlam(lamb,N,R1,R2):
     '''
     Order lamb (>=1) derivative matrix, size N*N
@@ -1639,12 +1749,15 @@ def gamma_magnetic():
     Axial magnetic torque on the mantle (spherical) when there is a thin conductive layer at bottom. Needs m=0 and symm=1.
     NEW (2026-10-30): only the torque of the poloidal B0 (B0_r*b_phi): 0 without one. The b_r*B0_phi torque of a toroidal B0
     that does not vanish at the CMB is not included (rotdyn = 1 stops on it, utils.check_B0).
+    NEW (2026-10-30): also for a resolved conducting layer (mantle = 'resolved'): the Maxwell stress on the fluid side of
+    the CMB is the torque on the layer, since b is continuous there (mu = 1) and no torque crosses its insulating top
+    (for B0 = 'axial' and m = 1 it includes, as with a thin wall, the torque on the sources of B0 outside).
     '''
 
     if par.B0 is None:
         out = 0
 
-    elif (par.magnetic==1 and par.m == 0 and par.symm==1 and par.mantle=='TWA'):
+    elif (par.magnetic==1 and par.m == 0 and par.symm==1 and par.mantle in ['TWA', 'resolved']):
 
         out = np.zeros((1,n0+n0),dtype=complex)
         G = Tk( 1, par.N-1, 0)[:,0]
@@ -1662,7 +1775,7 @@ def gamma_magnetic():
             out[0,n0:n0+par.N]          =  (16*np.pi/5)     * G * h_cmb # l=1
             out[0,n0+par.N: n0+2*par.N] = -(16*18*np.pi/35) * G * h_cmb # l=3
 
-    elif (par.magnetic==1 and par.m == 1 and par.symm==-1 and par.mantle=='TWA'):
+    elif (par.magnetic==1 and par.m == 1 and par.symm==-1 and par.mantle in ['TWA', 'resolved']):
 
         out = np.zeros((1,n0+n0),dtype=complex)
         F = Tk( 1, par.N-1, 1)

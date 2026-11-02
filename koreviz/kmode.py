@@ -410,6 +410,9 @@ class kmode:
             raise ValueError("Potential extrapolation only valid when field='b'")
 
         rout = np.atleast_1d(rout)
+        # NEW (2026-10-30): a conducting mantle layer (mantle = 'resolved') carries its own field above the CMB
+        if self.par.mantle == 'resolved' and np.any(rout >= self.rcmb*(1 - 1e-12)):
+            raise ValueError("mantle = 'resolved': the field outside the CMB is not a potential field")
         Pcmb = self.Plj @ ch.chebvander( 1.0, self.N-1).ravel()  # P_l(rcmb)
         Picb = None
         if self.ricb > 0 and np.any(rout <= self.ricb*(1 + 1e-12)):

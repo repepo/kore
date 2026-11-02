@@ -1,0 +1,33 @@
+from params_default import default_params
+import numpy as np
+
+# Free decay of the magnetic field in a fluid shell 0.35 < r < 1 (insulating inner core) under a conducting mantle
+# layer 1 < r < 1.4 (mantle = 'resolved'), magnetic time units (eta = 1 in the fluid). No flow, so B0 plays no part.
+# sigma_mantle and the target are set by the test.
+par = default_params()
+
+par.hydro         = 0
+par.magnetic      = 1
+par.timescale     = 'magnetic'
+par.B0            = 'axial'
+
+par.ricb          = 0.35
+par.innercore     = 'insulator'
+par.m             = 0
+par.symm          = 1  # b antisymmetric: poloidal l = 1, 3, toroidal l = 2, 4
+
+par.mantle        = 'resolved'
+par.r_surface     = 1.4
+par.N_mantle      = 24
+par.sigma_mantle  = 0.3
+par.sigma_mantle_param = 10.0
+
+par.ncpus         = 2
+par.N             = 24
+par.lmax          = 3
+
+par.rtau          = 0.0
+par.itau          = 0.0
+par.nev           = 3
+
+par.set_scales()

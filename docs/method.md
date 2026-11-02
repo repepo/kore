@@ -17,7 +17,7 @@ and the temperature and composition are expanded directly in $Y_l^m$. Because th
 
 In radius, each scalar is expanded in Chebyshev polynomials on $[r_i, 1]$, `N` of them with an inner core. In a full sphere (`ricb = 0`) each scalar has a definite parity in $r$, so only the even or the odd polynomials are used: `N/2` coefficients.
 
-The unknown vector holds, in this order: the flow ($P$, then $T$), the magnetic field ($f$, then $g$), the 3 rotational unknowns ($\omega_M$, $\omega_{IC}$, $\varphi$) with `rotdyn = 1`, the inner-core field ($f_i$, then $g_i$, `N_cic/2` coefficients per degree) with a conducting inner core, the temperature and the composition. Within each part the coefficients are grouped by degree $l$. This is also the layout of the `.field` files.
+The unknown vector holds, in this order: the flow ($P$, then $T$), the magnetic field ($f$, then $g$), the 3 rotational unknowns ($\omega_M$, $\omega_{IC}$, $\varphi$) with `rotdyn = 1`, the inner-core field ($f_i$, then $g_i$, `N_cic/2` coefficients per degree) with a conducting inner core, the field in a conducting mantle layer ($f_m$, then $g_m$, `N_mantle` coefficients per degree) with `mantle = 'resolved'`, the temperature and the composition. Within each part the coefficients are grouped by degree $l$. This is also the layout of the `.field` files.
 
 
 ## Sparse spectral method

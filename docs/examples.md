@@ -97,3 +97,8 @@ The eigenvalue closest to the Kore reference (`reference.dintrans99`) must match
 ## No rotation
 
 `tests/norotation`, run by `test_norotation.py`. With `rotation = 0` and the viscous time scale, the toroidal flow in a full sphere decays freely, with eigenvalues $\lambda = -k^2$, where $k$ is the smallest root of $j_l(k) = 0$ for a no-slip boundary or of $k\,j_l'(k) = j_l(k)$ for a stress-free one. The test checks $l$ = 2 and 3, both boundary conditions and $m$ = 0, 1 and 2, to $10^{-10}$; the decay rate must not depend on $m$.
+
+
+## Conducting mantle layer
+
+`tests/conducting_mantle`, run by `test_conducting_mantle.py`. Free decay of the magnetic field (`hydro = 0`, magnetic time scale) in a shell with `ricb = 0.35` and an insulating inner core, under a conducting mantle layer from $r = 1$ to $r_s = 1.4$ (`mantle = 'resolved'`), with $m = 0$, $N = 24$, $l_{max} = 3$ and `N_mantle` = 24. `B0 = 'axial'` only sets the symmetry of $\mathbf{b}$: without flow it does not enter. The test checks the slowest poloidal $l = 1$ and toroidal $l = 2$ decay rates, to $10^{-9}$, for a uniform layer, $\sigma_m = 0.3$, against the exact values (spherical Bessel functions), and for $\sigma_m = 0.3\,e^{-10(r-1)}$ against a shooting solution.

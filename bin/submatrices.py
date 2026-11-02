@@ -552,6 +552,53 @@ def main(ncpus):
         sio.mmwrite('r2_D2g_ic.mtx', r2D2g)
 
     # -------------------------------------------------------------------------------------------------------------------------------------------
+    # ------------------------------ NEW (2026-10-30): the same for a conducting layer at the base of the mantle, on [1, r_surface] (mantle = 'resolved')
+    # -------------------------------------------------------------------------------------------------------------------------------------------
+    # The layer is at rest, so its field only diffuses, db/dt = -Em curl(eta curl b) with eta = 1/sigma(r). Divided by eta
+    # (sigma db/dt = Em [lap_l b + (ln sigma)' ...]) the conductivity profile enters only B (sigma*r**2) and the term
+    # (ln sigma)'*(r**2 g' + r g) of the toroidal equation, and A stays well scaled for small sigma or large contrasts.
+    # The radial (section p) and 1curl (section q) projections times r**2, in the C^(2) basis, all Chebyshev
+    # polynomials (no parity in a shell), two rows on top for the CMB and r_surface conditions.
+
+    if ut.resolved_mantle:
+
+        Nm = par.N_mantle
+        R1 = ut.rcmb
+        R2 = par.r_surface
+
+        def chebco_m(func, rpower):
+            # Chebyshev coefficients of r**rpower * func(r), without those at round-off level (relative to the largest),
+            # so that a smooth profile gives banded matrices; relative, since sigma may be small everywhere
+            c = ut.chebco_f(func, rpower, Nm, R1, R2, 0.)
+            c[np.abs(c) <= 1e-15*np.abs(c).max()] = 0.
+            return c
+
+        r1m  = ut.chebco(1, Nm, 1e-9, R1, R2)      # r
+        r2m  = ut.chebco(2, Nm, 1e-9, R1, R2)      # r**2
+        r2sm = chebco_m(ut.sigma_mantle, 2)         # r**2 sigma
+        r1dm = chebco_m(ut.dlnsigma_mantle, 1)      # r (ln sigma)'
+        r2dm = chebco_m(ut.dlnsigma_mantle, 2)      # r**2 (ln sigma)'
+
+        S0m = ut.Slam(0, Nm)
+        S1m = ut.Slam(1, Nm)
+        D1m = ut.Dlam(1, Nm, R1, R2)
+        D2m = ut.Dlam(2, Nm, R1, R2)
+
+        mats = { 'r2s_D0_man' : S1m * S0m * ut.Mlam(r2sm, 0, 0),           # r**2 sigma
+                 'r0_D0_man'  : S1m * S0m,                                  # identity
+                 'r1_D1_man'  : S1m * ut.Mlam(S0m * r1m, 1, 0) * D1m,       # r d/dr
+                 'r2_D2_man'  : ut.Mlam(S1m * S0m * r2m, 2, 0) * D2m,       # r**2 (d/dr)**2
+                 'r1d_D0_man' : S1m * S0m * ut.Mlam(r1dm, 0, 0),            # r (ln sigma)'
+                 'r2d_D1_man' : S1m * ut.Mlam(S0m * r2dm, 1, 0) * D1m }     # r**2 (ln sigma)' d/dr
+
+        z2m = ss.csr_matrix((2, Nm))
+        for name, mtx in mats.items():
+            mtx = ss.csr_matrix((Nm, Nm)) if np.isscalar(mtx) else ss.csr_matrix(mtx)  # Mlam gives 0 for a uniform layer
+            mtx = ss.vstack( [ z2m, mtx[:-2,:] ], format='csr' )
+            mtx.eliminate_zeros()
+            sio.mmwrite(name + '.mtx', mtx)
+
+    # -------------------------------------------------------------------------------------------------------------------------------------------
     # -------------------------------------------------------------------------------------------------------------------------------------------
     # ------------------------------------------------------------------------------------------------------------------------------------------- 
 

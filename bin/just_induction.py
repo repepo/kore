@@ -22,6 +22,12 @@ sys.path.insert(1,'koreviz/')
 import parameters as par
 import utils as ut
 
+# NEW (2026-10-30): the CMB rows of the induction equation also hold the layer's field with mantle = 'resolved',
+# which the slices below leave out
+if ut.resolved_mantle:
+    sys.exit("just_induction.py does not include the conducting mantle layer (mantle = 'resolved'): solve the full "
+             "problem with solve_nopp.py")
+
 # read the flow field, one solution per column
 ru = np.loadtxt('real_flow.field').reshape((2*ut.n,-1))
 iu = np.loadtxt('imag_flow.field').reshape((2*ut.n,-1))

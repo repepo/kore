@@ -264,7 +264,7 @@ $$
 \Gamma^{B}_{IC} = +\,Le^2 (\Omega\tau)^2 \oint_{ICB} s\, B_{0r}\, b_\phi\, dS .
 $$
 
-It is nonzero only on a body in which currents can flow: the mantle with a thin conducting wall, the inner core when it is conducting or has a thin wall. Since $B_{0r} \propto Y_l^0$ and $b_\phi$ comes from the toroidal scalars of $\mathbf{b}$, the integral selects a few toroidal degrees: $g_2$ at the boundary for a degree-1 background field (`'axial'`, the dipoles, FDM with `B0_l = 1`), and $g_1$ and $g_3$ for the quadrupole `'Luo_S2'`. `spin_doctor` writes these four torques, as complex amplitudes, to `flow.dat` and `magnetic.dat`.
+It is nonzero only on a body in which currents can flow: the mantle with a thin conducting wall or a conducting layer (`mantle = 'resolved'`: $\mathbf{b}$ is continuous at the CMB and no current crosses the layer's insulating top, so for $m = 0$ the stress on the fluid side is the torque on the layer), the inner core when it is conducting or has a thin wall. Since $B_{0r} \propto Y_l^0$ and $b_\phi$ comes from the toroidal scalars of $\mathbf{b}$, the integral selects a few toroidal degrees: $g_2$ at the boundary for a degree-1 background field (`'axial'`, the dipoles, FDM with `B0_l = 1`), and $g_1$ and $g_3$ for the quadrupole `'Luo_S2'`. `spin_doctor` writes these four torques, as complex amplitudes, to `flow.dat` and `magnetic.dat`.
 
 A toroidal background field (`B0_tor`, see [Background magnetic field](background-field.md#toroidal-field-b0_tor)) adds the stress $b_r B_{0\phi}$ wherever $k \ne 0$ at a wall, conducting or not (for $m = 0$ it involves $f_2$ at the wall for `B0_tor_l = 1`, $f_1$ and $f_3$ for `B0_tor_l = 2`). Its torque on the fluid enters `resid𝐋`; the torques on the mantle and the inner core above leave it out, which is why `rotdyn = 1` needs $k = 0$ at the walls.
 
@@ -280,7 +280,7 @@ $$
 \Gamma^{B}_{w} = Le^2 (\Omega\tau)^2 \oint \mathbf{r}\times\left( b_r\, \mathbf{B}_0 + B_{0r}\, \mathbf{b} \right) dS .
 $$
 
-`spin_doctor` evaluates it at an insulating CMB for `B0 = 'axial'`, whose sources lie outside (it is the torque $\mathbf{m}\times\mathbf{B}_0$ on the induced dipole $\mathbf{m}$), and at the ICB of a conducting or thin-wall inner core, or of one that holds currents or sources of $\mathbf{B}_0$ (`B0_ic = 'full sphere'`, `B0 = 'dipole'`). At a thin-wall mantle its CMB part equals $-\Gamma^{B}_M$, already in the balance. For $m = 0$ these terms vanish ($b_\phi = 0$ at an insulating wall) or are $-\Gamma^{B}_{IC}$; the stress of a toroidal field above is part of $\Gamma^{B}_{w}$ for both $m$.
+`spin_doctor` evaluates it at an insulating CMB for `B0 = 'axial'`, whose sources lie outside (it is the torque $\mathbf{m}\times\mathbf{B}_0$ on the induced dipole $\mathbf{m}$), and at the ICB of a conducting or thin-wall inner core, or of one that holds currents or sources of $\mathbf{B}_0$ (`B0_ic = 'full sphere'`, `B0 = 'dipole'`). At a thin-wall or resolved conducting mantle its CMB part equals $-\Gamma^{B}_M$, already in the balance. For $m = 0$ these terms vanish ($b_\phi = 0$ at an insulating wall) or are $-\Gamma^{B}_{IC}$; the stress of a toroidal field above is part of $\Gamma^{B}_{w}$ for both $m$.
 
 
 ### The mantle and the inner core

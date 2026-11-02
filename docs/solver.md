@@ -44,7 +44,7 @@ Unless `N` is set in `parameters.py`, `par.set_scales()` sets the Chebyshev trun
 
 Memory is usually the limit. It grows roughly as $N^{2.2}$ and is larger at lower Ekman numbers: with the default settings (BLR on, 8 processes) a run at `N` = 688 ($E_k$ = 1e-9) needs about 34 GB, and `N` = 1200 ($E_k$ = 1e-10, extrapolated) would need about 115 to 120 GB. The out-of-core option above roughly halves it.
 
-A conducting inner core has its own resolution, `N_cic` (see [Inner core and mantle](boundaries.md#conducting-inner-core)).
+A conducting inner core has its own resolution, `N_cic` (see [Inner core and mantle](boundaries.md#conducting-inner-core)), and so has a conducting mantle layer, `N_mantle`, which must also resolve the layer's conductivity profile (see [Inner core and mantle](boundaries.md#conducting-mantle-layer)).
 
 ### Inviscid runs with a magnetic field
 

@@ -83,7 +83,7 @@ with $p$ = `muw_cmb`. For $p = 1$ (the default) and $\mu = 1$ it is the insulati
 | `'wall'` (default) | Adds $\alpha\, r^l$ to $h$, with $\alpha$ chosen to satisfy the condition. The added term carries no current and keeps the ICB matching of `B0_ic`, so the currents in the fluid are unchanged. For $l = 1$ it is a uniform axial field. |
 | `'plain'` | $h$ unchanged. The field then meets the wall condition only for `mu = 1` and `c_cmb = 0` or `muw_cmb = 1`. |
 
-`B0_cmb` has no effect with an insulating mantle, with `mu = 1` and `c_cmb = 0` or `muw_cmb = 1`, or for `'axial'`. With the former condition (`muw_cmb = np.inf`, a highly permeable wall), for the S2 torsional mode with `c1_cmb = 0.015` it raises the frequency by 0.27% at `c_cmb = 0.01` and by 5.8% at `c_cmb = 0.3`.
+`B0_cmb` has no effect with an insulating mantle or a resolved conducting layer (`mantle = 'resolved'`, into which $\mathbf{B}_0$ continues as a potential field), with `mu = 1` and `c_cmb = 0` or `muw_cmb = 1`, or for `'axial'`. With the former condition (`muw_cmb = np.inf`, a highly permeable wall), for the S2 torsional mode with `c1_cmb = 0.015` it raises the frequency by 0.27% at `c_cmb = 0.01` and by 5.8% at `c_cmb = 0.3`.
 
 
 ## Toroidal field: `B0_tor`
