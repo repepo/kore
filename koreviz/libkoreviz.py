@@ -201,7 +201,6 @@ def get_ang_momentum(M,epsilon_cmb):
 
     l   = M.sh.l
     m   = M.sh.m
-    r   = M.r
     Slm = M.Slm[0,:]
     Tlm = M.Tlm[0,:]
 
@@ -241,7 +240,6 @@ def get_coriolis_torque(M,epsilon_cmb):
 
     l   = M.sh.l
     m   = M.sh.m
-    r   = M.r
     Qlm = M.Qlm[0,:]
     Slm = M.Slm[0,:]
     Tlm = M.Tlm[0,:]

@@ -246,7 +246,7 @@ print('   Actual kinetic energy:', K[solnum])
 # plt.show()
 
 
-fig, ax = subplots(nrows=2,ncols=1,figsize=(5,5))
+fig, ax = plt.subplots(nrows=2,ncols=1,figsize=(5,5))  # FIX (2026-11-02): plt., ran only under %pylab
 
 ax[0].plot(r,ke/totK,'--',lw=1,color='gray', label=r'Total kinetic energy')
 ax[0].plot(r,krad/totK, label=r'Radial')
@@ -277,5 +277,5 @@ ax[1].legend()
 
 
 
-tight_layout()
-show()
+plt.tight_layout()
+plt.show()

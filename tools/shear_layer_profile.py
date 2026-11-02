@@ -1,10 +1,6 @@
 import numpy as np
 import scipy.sparse as ss
-import scipy.sparse.linalg as ssl
 import sys
-import matplotlib.pyplot as plt
-import matplotlib
-import matplotlib.tri as tri
 import numpy.polynomial.chebyshev as ch
 
 import utils as ut

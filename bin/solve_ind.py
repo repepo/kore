@@ -19,9 +19,6 @@ import sys
 from solve_nopp import load_mat
 
 from petsc4py import PETSc
-from slepc4py import SLEPc
-import scipy.io as sio
-import scipy.sparse as ss
 import numpy as np
  
 from parameters import par
@@ -30,9 +27,7 @@ import utils as ut
  
 def main():
     
-    Print = PETSc.Sys.Print
     rank = PETSc.COMM_WORLD.getRank()
-    size = PETSc.COMM_WORLD.getSize()
     opts = PETSc.Options()
  
     # solver options from parameters.py, unless already given on the command line.
@@ -42,9 +37,6 @@ def main():
         if not key.startswith(skip) and not opts.hasName(key):
             opts.setValue(key, val)
     
-    if rank == 0:
-        tic = timer()
-        
     # ------------------------------------------------------------------ reads matrix A
     MA = load_mat('A_ind.npz')
     # done reading and preparing A
@@ -104,10 +96,8 @@ def main():
     if rank == 0:
  
         if not np.all(np.isfinite(bsol)):
-            success = 0
             print('Solver crashed, got nan\'s!')
         else:
-            success = 1 # got actual numbers ... but it could still be a bad solution ;)
             print(nsol, 'solution(s) computed')
             # one solution per column, same order as the flow solutions. FIX (2026-11-02): in par.field_format
             ut.save_field('magnetic', bsol[ :2*ut.n ])

@@ -18,7 +18,6 @@ import slepc4py
 slepc4py.init(sys.argv)
 from petsc4py import PETSc
 from slepc4py import SLEPc
-import scipy.io as sio
 import scipy.sparse as ss
 import numpy as np
 
@@ -164,7 +163,6 @@ def main():
 
     Print = PETSc.Sys.Print
     rank = PETSc.COMM_WORLD.getRank()
-    size = PETSc.COMM_WORLD.getSize()
     opts = PETSc.Options()
 
     # solver options from parameters.py, unless already given on the command line.
@@ -173,9 +171,6 @@ def main():
     for key, val in par.petsc_opts.items():
         if not key.startswith(skip) and not opts.hasName(key):
             opts.setValue(key, val)
-
-    if rank == 0:
-        tic = timer()
 
     # NEW (2026-10-06): optional Ruiz pre-scaling (par.prescale), eigenvalue problems only
     prescale = par.prescale

@@ -10,8 +10,6 @@ from timeit import default_timer as timer
 t_start = timer()  # wall clock from here, before scipy/utils are imported
 import sys
 sys.path.insert(1,'bin/')
-import scipy.io as sio
-import scipy.sparse as ss
 import os.path
 import multiprocessing as mp
 import numpy as np
@@ -262,7 +260,7 @@ def main(ncpus):
     do_vtorq_ic = par.hydro and (par.Ek != 0) and (par.bci == 1) and (par.ricb > 0) and (((par.m==0) and (par.symm==1)) or ((par.m==1) and (par.symm==-1)))
 
     if do_vtorq:
-        gvisc     = ut.gamma_visc(0,0,0)[0,:]    # viscous torque on the mantle
+        gvisc     = ut.gamma_visc()[0,:]    # viscous torque on the mantle
     if do_vtorq_ic:
         gvisc_icb = ut.gamma_visc_icb(par.ricb)[0,:]    # viscous torque on the IC
 
@@ -331,7 +329,7 @@ def main(ncpus):
 
 
         # diagnose solutions
-        [ udgn, bdgn, tdgn, cdgn ] = upp.diagnose( u_sol2, b_sol2, t_sol2, c_sol2, par.ricb, ut.rcmb, int(ncpus), sigma+1j*w )
+        [ udgn, bdgn, tdgn, cdgn ] = upp.diagnose( u_sol2, b_sol2, t_sol2, c_sol2, par.ricb, ut.rcmb, sigma+1j*w )
 
 
         if par.hydro:

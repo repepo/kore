@@ -15,11 +15,9 @@ t_start = timer()  # wall clock from here, before scipy/petsc/utils are imported
 import scipy.sparse.linalg as ssl
 import scipy.sparse as ss
 from mpi4py import MPI
-import scipy.io as sio
 import numpy as np
 import warnings
 import sys
-import glob
 
 import bc_variables as bv
 from parameters import par
@@ -235,7 +233,6 @@ def main():
             if par.symm == 1 and par.m == 2:
 
                 X = ut.ftest1(par.ricb)
-                XA = X[0]
                 XB = X[1]
                 XC = X[2]
 
@@ -980,9 +977,9 @@ def main():
                 if par.innercore == 'TWA' :
                     bc_b_list_inner = bc_b_thinlayer(l, 'nocurl', 1/par.mu, par.c_icb, par.c1_icb, 'icb', par.muw_icb)
                 elif par.innercore == 'insulator':
-                    bc_b_list_inner = bc_b_icb( l, 'nocurl', par.innercore, rank, bpp, k)
+                    bc_b_list_inner = bc_b_icb( l, 'nocurl', par.innercore)
                 elif par.innercore == 'conducting, Bessel':
-                    bc_b_list_inner = bc_b_icb( l, 'nocurl', par.innercore, rank, bpp, k)  # bc on mag. poloidal field has no coupling to velocity field
+                    bc_b_list_inner = bc_b_icb( l, 'nocurl', par.innercore)  # bc on mag. poloidal field has no coupling to velocity field
                 elif par.innercore == 'conducting, Chebys':
                     bc_b_list_inner = bc_b_cic( l, 'section_f')
 
@@ -991,7 +988,7 @@ def main():
             elif par.mantle == 'resolved':  # NEW (2026-10-30)
                 bc_b_list_outer = bc_b_mantle( l, 'section_f' )
             else:
-                bc_b_list_outer = bc_b_cmb( l, 'section_f', par.innercore )
+                bc_b_list_outer = bc_b_cmb( l, 'section_f' )
 
             for q in [0,1,2]:
                 if par.ricb > 0:
@@ -1079,9 +1076,9 @@ def main():
                 if par.innercore == 'TWA' :
                     bc_b_list_inner = bc_b_thinlayer(l, '1curl', 1/par.mu, par.c_icb, par.c1_icb, 'icb', par.muw_icb)
                 elif par.innercore == 'insulator':
-                    bc_b_list_inner = bc_b_icb( l, '1curl', par.innercore, rank, bpp, k)
+                    bc_b_list_inner = bc_b_icb( l, '1curl', par.innercore)
                 elif par.innercore == 'conducting, Bessel':
-                    bc_b_list_inner = bc_b_icb( l, '1curl', par.innercore, rank, bpp, k)  # bc on mag. toroidal field has coupling to the velocity field (spatial bc)
+                    bc_b_list_inner = bc_b_icb( l, '1curl', par.innercore)  # bc on mag. toroidal field has coupling to the velocity field (spatial bc)
                 elif par.innercore == 'conducting, Chebys':
                     bc_b_list_inner = bc_b_cic( l, 'section_g')
 
@@ -1090,7 +1087,7 @@ def main():
             elif par.mantle == 'resolved':  # NEW (2026-10-30)
                 bc_b_list_outer = bc_b_mantle( l, 'section_g' )
             else:
-                bc_b_list_outer = bc_b_cmb( l, 'section_g', par.innercore )
+                bc_b_list_outer = bc_b_cmb( l, 'section_g' )
 
             for q in [0,1,2]:
                 if par.ricb > 0:
@@ -1186,7 +1183,7 @@ def main():
             #print('utn = ',ut.n)
 
 
-            vtorq_mantle = par.vtrq * par.Ek * par.OmgTau * ut.gamma_visc(0,0,0)[0,ut.n:ut.n+ut.N1]  #T10
+            vtorq_mantle = par.vtrq * par.Ek * par.OmgTau * ut.gamma_visc()[0,ut.n:ut.n+ut.N1]  #T10
             visctorq_list_mantle = [ vtorq_mantle, row0, col ]
             for q in [0,1,2]: loc_list[q].append( visctorq_list_mantle[q] )
 
@@ -1712,7 +1709,7 @@ def bc_b_thinlayer(l, loc, mu_vf, c, c1, boundary, p=1.0):
 
 
 
-def bc_b_cmb(l,loc, innercore):
+def bc_b_cmb(l,loc):
     '''
     Insulating boundary conditions for the magnetic field at the CMB
     '''
@@ -1771,12 +1768,10 @@ def bc_b_cmb(l,loc, innercore):
 
 
 
-def bc_b_icb(l,loc, innercore, rank, bpp, k):
+def bc_b_icb(l,loc, innercore):
     '''
     Magnetic boundary conditions at the ICB for an insulating inner core, and for 'conducting, Bessel' (forced problems).
     '''
-    nb = int((par.lmax-par.m+1)/2.)
-
     if innercore == 'insulator': #------------------------------------------------------------------------------- insulating inner core
 
         # only one row needed for the bc in the insulator case
@@ -1866,7 +1861,6 @@ def bc_b_cic(l,loc):
     '''
     Here we write the boundary conditions between the conducting (solid) inner core and the fluid outer core
     '''
-    L       = l*(l+1)
     ric     = par.ricb    
     eta_i2o = 1/( par.mu_i2o * par.sigma_i2o )
     

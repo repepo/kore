@@ -212,14 +212,6 @@ def coriolis(l, section, component, offdiag):  # -------------------------------
 
 
 
-def poincare(l, section, component, offdiag):  # Coming soon
-
-    out = 0
-
-    return out
-
-
-
 def viscous_diffusion(l, section, component, offdiag):  # ----------------------------------- viscous force Ek*nabla^2 u
 
     out = 0
@@ -253,7 +245,6 @@ def lorentz_pol(l, section, component, offdiag):  # ----------------------------
     offd = 0
     m = par.m
     L = l*(l+1)
-    cdipole = ((par.magnetic == 1) and (par.B0 == 'dipole') and (par.ricb > 0))  # boolean
 
     if section == 'u':    # ------------------------------------------------------- 2curl, section u
 

@@ -40,9 +40,6 @@ def main(ncpus):
     # inner core's matrices for any forcing, so a forced run stopped, or read the files of an earlier run)
     cic        = ((par.innercore == 'conducting, Chebys') and par.magnetic and (par.ricb>0) )  # boolean
 
-    radial_profiles = ['eta', 'vsc', 'rho']
-
-    tic = timer()
     print('N =', par.N,', lmax =', par.lmax)
 
     # vector parity for poloidal and toroidals. If ricb>0 we don't use parities, not needed.

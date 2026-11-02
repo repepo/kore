@@ -578,8 +578,6 @@ def flow_worker( l, lp, lt, u_sol2, b_sol2, t_sol2, c_sol2, Ra, Rb, N, sqx, eigv
     [ wlorp, wlort ] = [0, 0]
     [ wther, wcomp ] = [0, 0]
     
-    L = l*(l+1)
-
     pol_B0 = par.magnetic and (par.B0 is not None)  # NEW (2026-10-30): a toroidal B0's work is added by magnetic_powers_grid
     if pol_B0:
         [ qlmb, slmb, tlmb ] = lorentz4pp(l, b_sol2)  # the l-component of the Lorentz force
@@ -643,8 +641,6 @@ def magnetic_worker(l, lp, lt, b_sol2, u_sol2, Ra, Rb, N, sqx):
     [ mdfsp, mdfst] = [0, 0]
     [ indup, indut] = [0, 0]
     [ brrms, cmb  ] = [0, 0]
-
-    L = l*(l+1)
 
     # NEW (2026-10-30): the poloidal B0's induction only (a toroidal B0's is added by magnetic_powers_grid); with
     # hydro = 0 there is no induction (FIX: indup, indut used qlmi, tlmi without a flow, an UnboundLocalError)
@@ -927,8 +923,6 @@ def induction4pp_dipo( l, u_sol2 ):
     ll0 = ut.ell( m, par.lmax, par.symm)
     lp  = ll0[0]  # l's for poloidals
     lt  = ll0[1]  # l's for toroidals
-    ricb = par.ricb
-    rcmb = ut.rcmb
     
     P = u_sol2[0]
     T = u_sol2[1]
@@ -994,8 +988,6 @@ def induction4pp_quad( l, u_sol2 ):
     ll0 = ut.ell( m, par.lmax, par.symm)
     lp  = ll0[0]  # l's for poloidals
     lt  = ll0[1]  # l's for toroidals
-    ricb = par.ricb
-    rcmb = ut.rcmb
     
     P = u_sol2[0]
     T = u_sol2[1]
@@ -1451,7 +1443,7 @@ def magnetic_powers_grid(utab, btab):
 
 
 
-def diagnose( usol2, bsol2, tsol2, csol2, Ra, Rb, ncpus, eigval, pool=None):
+def diagnose( usol2, bsol2, tsol2, csol2, Ra, Rb, eigval):
     '''
     Computes kinetic energy, internal and kinetic energy dissipation,
     and input power from body forces. Integrated From r=Ra to r=Rb, and
@@ -1461,7 +1453,8 @@ def diagnose( usol2, bsol2, tsol2, csol2, Ra, Rb, ncpus, eigval, pool=None):
     each l was a task for a pool of ncpus processes that received the full Chebyshev coefficients
     (32 MB at N = 1008) and evaluated each radial function about five times (the neighbouring l's in
     lorentz4pp, induction4pp, pressure4pp): 143 s per solution at N = 1008 on 8 processes, now 2 s.
-    Results agree with the old ones to rounding (~1e-14 relative). ncpus and pool are no longer used.
+    Results agree with the old ones to rounding (~1e-14 relative). FIX (2026-11-02): the unused arguments ncpus and
+    pool are removed.
     '''
     [out_u, out_b] = [0,0]
     [out_t, out_c] = [0,0]

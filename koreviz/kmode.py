@@ -260,7 +260,7 @@ class kmode:
         plt.axis('equal')
         plt.axis('off')
         if colbar:
-            cbar = add_colorbar(cont,aspect=40)
+            add_colorbar(cont,aspect=40)
 
         plt.tight_layout()
         plt.show()
@@ -299,7 +299,7 @@ class kmode:
         plt.axis('equal')
         plt.axis('off')
         if colbar:
-            cbar = add_colorbar(cont,aspect=60)
+            add_colorbar(cont,aspect=60)
         plt.tight_layout()
         plt.show()
 
@@ -338,7 +338,7 @@ class kmode:
         plt.axis('equal')
         plt.axis('off')
         if colbar:
-            cbar = add_colorbar(cont,aspect=60)
+            add_colorbar(cont,aspect=60)
         plt.tight_layout()
         plt.show()
 

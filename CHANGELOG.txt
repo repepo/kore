@@ -3,6 +3,22 @@ CHANGELOG - Kore, conductive_IC branch
 
 2026-11-02
 ----------
+Cleanup: unused code removed (bin/find_Rac_pbs.py, bin/bc_variables.py, bin/utils.py, bin/operators.py,
+bin/assemble.py, bin/spin_doctor.py, bin/utils4pp.py, bin/solve_nopp.py, bin/solve_ind.py, bin/submatrices.py,
+koreviz/, tools/)
+- bin/find_Rac_pbs.py is removed: it ran the removed bin/solve.py, read eigenvalues2.dat, which nothing writes, and
+  par.Ek_gap, which does not exist. tests/find_Rac.py does its job.
+- utils.gamma_visc() takes no arguments. Its terms for a spheroidal CMB (a1, a2, a3) were only ever called with 0,
+  which made them zero or overwrote them; the torque row is unchanged.
+- Never called or never read: utils.B0_norm2, operators.poincare (an empty stub), utils.lmax_top and lmax_bot, and
+  most of bc_variables.py (u0, u1P, u1T and the higher derivatives at both walls, and an ellipsoidal block kept in a
+  string).
+- Unused imports, local variables and arguments removed (among them utils4pp.diagnose's ncpus and pool, bc_b_icb's
+  rank, bpp and k, bc_b_cmb's innercore).
+- tools/plot_rad_con_tor_profile.py called subplots, tight_layout and show without plt., so it ran only under %pylab.
+
+2026-11-02
+----------
 Fix: B0_ic = 'full sphere' is renamed 'frozen currents', and misspelt B0_ic and B0_cmb values stop (bin/utils.py,
 bin/params_default.py, bin/spin_doctor.py, docs/)
 - The option keeps h as defined for a full sphere, so the part of its currents below ricb stays in the inner core: a
