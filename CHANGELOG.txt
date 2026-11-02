@@ -3,6 +3,36 @@ CHANGELOG - Kore, conductive_IC branch
 
 2026-11-02
 ----------
+Fix: a conducting inner core in forced runs. 'conducting, Chebys' stopped (or read the inner-core matrices of an
+earlier run), and 'conducting, Bessel' gave wrong solutions, and failed with forcing = 0 (bin/assemble.py,
+bin/submatrices.py, bin/utils.py, bin/spin_doctor.py, bin/params_default.py, docs/boundaries.md, docs/output.md)
+- 'conducting, Chebys' now works for forced problems as for eigenvalue problems: submatrices.py wrote the inner core's
+  matrices only for forcing = 0, while assemble.py uses them for any forcing, and the inner core's rows lacked the
+  -i omega b term, so its field was steady.
+- 'conducting, Bessel' (forced problems only) now stops with forcing = 0 (utils.check_innercore; it failed with an
+  UnboundLocalError in assemble.py). Its two ICB rows are those of 'conducting, Chebys' with the inner core eliminated:
+  (r f)' = (1 + x j_l'/j_l) f/mu_i2o and (r g)' = (1 + x j_l'/j_l) g/sigma_i2o, x = k ricb, k^2 = -i omega/(OmgTau Em
+  eta_i2o). The old rows had f and f' swapped, k lacked OmgTau and eta_i2o, and the flow entered the g row through terms
+  for B0 = 'axial' only, also at a no-slip ICB. A stress-free ICB now gets the u x B0 terms of 'conducting, Chebys'
+  (bc_b_cic_slip), for any poloidal B0. At omega = 0 (forcing = 12) x j_l'/j_l = l; it divided by zero.
+- utils.dlogjl (j_l'/j_l) was a continued fraction of 100 terms, wrong for |x| above about l + 200 (25% at |x| = 1e4,
+  an inner core at Em ~ 1e-9). It now uses scipy's jve for |x| > l, and the fraction, with enough terms, elsewhere
+  (against mpmath: <= 1.2e-11 for l <= 5000 and |x| <= 2e5; unchanged for |x| <= l).
+- spin_doctor: the magnetic torque on the inner core (and so resid L) left out 'conducting, Bessel'. With forcing = 12
+  resid u was |Dkin|/|Dint|, without the work of the Lorentz and buoyancy forces: 0.04 to 0.15 with a magnetic field.
+- Checked in the cloud (scipy LU on one rank with an MPI stub, no PETSc; Ek = 1e-3, Em = 1e-2, ricb = 0.35, N = 24,
+  N_cic = 24). In 14 forced runs (forcings 1, 7, 9 and 12; B0 'axial', 'dipole', 'Luo_S2'; no-slip and stress-free
+  ICB; mu_i2o, sigma_i2o = 2, 0.25 and 0.5, 3; Alfven time scale; Em = 1e-4; positive and negative frequency) the two
+  inner cores agree to 1.3e-10 (the old Bessel rows: field off by 9% to 600%, flow by up to 650%). The Chebys inner-core
+  field is c j_l(k r) to 2e-9, and the fluid's f, g satisfy the conditions above at the ICB to 5e-8 with either inner
+  core (old Bessel: off by 0.8 to 0.98). With N = 48 at Em = 1e-5 and 1e-6 (skin depth 0.014 and 0.0045 ricb) Chebys
+  needed N_cic = 64 and 128 for 3e-7 and 4e-9. Eigenvalue runs (Chebys with no-slip and stress-free ICB, insulator)
+  and forced runs with an insulating inner core: A, B, forcing vector and outputs unchanged, byte for byte, except
+  resid u with forcing = 12 and a magnetic field (0.15 -> 8e-8; 0.04 -> 2e-8 with a conducting inner core, where resid L
+  for Bessel went from 0.28 to 6e-7, as for Chebys).
+
+2026-11-02
+----------
 Fix: forcings 1, 2, 4, 5 and 6 stopped with an error; forcings 2, 6, 7 (m = 2) and 9 set wall values on the wrong rows
 (bin/assemble.py, bin/submatrices.py, bin/params_default.py, docs/setup.md)
 - Forcings 2, 4, 5 and 6 still used forcing_amplitude, since split into forcing_amplitude_cmb and _icb; 4 and 5 also the

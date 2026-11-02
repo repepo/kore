@@ -60,7 +60,7 @@ The residuals compare terms of balances that an exact solution satisfies. They a
 | Residual | Balance |
 |---|---|
 | `resid0` | The viscous dissipation computed in two ways, from $\int \mathbf{u}\cdot\nabla^2\mathbf{u}\,dV$ and from the rate of strain, plus the work of a rotating mantle and inner core on the fluid with `rotdyn = 1`, or of the walls set rotating by `forcing = 12` (the rotation rate times the viscous torque on each wall). `nan` if `Ek = 0`. |
-| `resid𝐮` | Kinetic energy: $2\sigma$ times the kinetic energy against the viscous dissipation and the work of the Lorentz and buoyancy forces. With `forcing = 12` (steady, no body force) $\int \mathbf{u}\cdot\nabla^2\mathbf{u}\,dV$ vanishes, and `resid𝐮` is its size relative to the viscous dissipation. With `bgflow = 1` the balance includes the work of the background flow (see [Background flow](bgflow.md)). |
+| `resid𝐮` | Kinetic energy: $2\sigma$ times the kinetic energy against the viscous dissipation and the work of the Lorentz and buoyancy forces. With `forcing = 12` (steady, no body force) $\int \mathbf{u}\cdot\nabla^2\mathbf{u}\,dV$ balances the work of the Lorentz and buoyancy forces (it vanishes without them), and `resid𝐮` is measured against the viscous dissipation too (before 2026-11-02 it was $\int \mathbf{u}\cdot\nabla^2\mathbf{u}\,dV$ alone, 0.04 to 0.15 with a magnetic field). With `bgflow = 1` the balance includes the work of the background flow (see [Background flow](bgflow.md)). |
 | `resid𝐛` | Magnetic energy: $2\sigma$ times the magnetic energy against the induction work and magnetic diffusion. |
 | `residθ` | Thermal "energy": $2\sigma$ times it against thermal diffusion and advection. |
 | `residξ` | The same for the composition. |

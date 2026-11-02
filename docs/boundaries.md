@@ -16,8 +16,8 @@ with poloidal scalar $f$ and toroidal scalar $g$, and $F = r f$, $G = r g$. Prim
 | Boundary | Setting | What it models | Parameters |
 |---|---|---|---|
 | ICB | `innercore = 'insulator'` | Electrically insulating inner core (default). | none |
-| ICB | `innercore = 'conducting, Chebys'` | Solid inner core with its own conductivity and permeability; the induction equation is solved inside it. For eigenvalue problems. | `sigma_i2o`, `mu_i2o`, `N_cic` |
-| ICB | `innercore = 'conducting, Bessel'` | The same, with an analytical solution inside the inner core. For forced problems only. | `sigma_i2o`, `mu_i2o` |
+| ICB | `innercore = 'conducting, Chebys'` | Solid inner core with its own conductivity and permeability; the induction equation is solved inside it. For eigenvalue and forced problems. | `sigma_i2o`, `mu_i2o`, `N_cic` |
+| ICB | `innercore = 'conducting, Bessel'` | The same, with an analytical solution inside the inner core. For forced problems only (`forcing` $\neq$ 0). | `sigma_i2o`, `mu_i2o` |
 | ICB | `innercore = 'TWA'` | Thin conducting layer on top of an insulating inner core. | `c_icb`, `c1_icb`, `muw_icb` |
 | CMB | `mantle = 'insulator'` | Electrically insulating mantle (default). | none |
 | CMB | `mantle = 'TWA'` | Thin conducting layer at the base of an insulating mantle. | `c_cmb`, `c1_cmb`, `muw_cmb`, `B0_cmb` |
@@ -54,7 +54,7 @@ $$
 \partial_t \mathbf{b}_i = (\Omega\tau)\, E_\eta\, \eta_{i}\, \nabla^2 \mathbf{b}_i, \qquad \eta_i = \frac{1}{\mu_{i2o}\,\sigma_{i2o}},
 $$
 
-where $\eta_i$ is the inner core's magnetic diffusivity relative to the fluid's. At the ICB, the normal field, the tangential $\mathbf{H} = \mathbf{b}/\mu$ and the tangential electric field are continuous. With subscripts $o$ (fluid) and $i$ (inner core), and the permeabilities relative to the fluid's:
+where $\eta_i$ is the inner core's magnetic diffusivity relative to the fluid's. In a forced problem the field oscillates at the forcing frequency $\omega$, $\partial_t = i\omega$ (before 2026-11-02 a forced run with `'conducting, Chebys'` stopped, or read the inner-core matrices of an earlier run, and had a steady field in the inner core). At the ICB, the normal field, the tangential $\mathbf{H} = \mathbf{b}/\mu$ and the tangential electric field are continuous. With subscripts $o$ (fluid) and $i$ (inner core), and the permeabilities relative to the fluid's:
 
 $$
 f_o = f_i, \qquad (r f_o)' = \frac{(r f_i)'}{\mu_{i2o}}, \qquad g_o = \frac{g_i}{\mu_{i2o}},
@@ -81,7 +81,15 @@ The poloidal field is solved with the radial component of the induction equation
 
 **Limits.** As `sigma_i2o` goes to zero the solution converges to the insulating one (linearly in `sigma_i2o`).
 
-`'conducting, Bessel'` is the forced-problem version: the inner-core field is taken as $j_l(k r)$, with $k = (1-i)\sqrt{\omega/2E_\eta}$ at the forcing frequency $\omega$, and only the matching conditions at the ICB are added to the matrix. Its ICB condition is flagged in the CHANGELOG as still to be checked.
+In a forced problem the inner-core field is confined to a skin layer of thickness $\delta = \sqrt{2(\Omega\tau)E_\eta\eta_i/|\omega|}$ below the ICB, which `N_cic` must resolve. In tests ($\omega = 0.8$, $r_i = 0.35$) `N_cic = 64` gave the field to $3\times10^{-7}$ at $\delta = 0.014\,r_i$ ($E_\eta = 10^{-5}$), but only to $3\times10^{-3}$ at $\delta = 0.0045\,r_i$ ($E_\eta = 10^{-6}$), where it took 128 ($4\times10^{-9}$).
+
+`'conducting, Bessel'` is the forced-problem version, without `N_cic`. At the forcing frequency the equation above, $i\omega\,\mathbf{b}_i = (\Omega\tau)E_\eta\eta_i\nabla^2\mathbf{b}_i$, is solved by $j_l(k r)$ in each degree, with $k^2 = -i\omega/((\Omega\tau)E_\eta\eta_i)$. With $x = k r_i$ and $x_d = x\, j_l'(x)/j_l(x)$, the conditions above become
+
+$$
+(r f_o)' = \frac{1 + x_d}{\mu_{i2o}}\, f_o, \qquad (r g_o)' - \frac{1 + x_d}{\sigma_{i2o}}\, g_o = \frac{r\,S_l}{(\Omega\tau)E_\eta} \qquad \text{at } r = r_i,
+$$
+
+with $S_l = 0$ at a no-slip ICB, and $x_d = l$ at $\omega = 0$ (`forcing = 12`). Without a forcing frequency there is no $k$, so a run with `forcing = 0` stops. In tests (forcings 1, 7, 9 and 12; `B0` = `'axial'`, `'dipole'` and `'Luo_S2'`; no-slip and stress-free ICB; `mu_i2o`, `sigma_i2o` $\neq 1$; the Alfvén time scale) the two inner cores give the same solution to $10^{-10}$. Before 2026-11-02 the two conditions had $f_o$ and $f_o'$ swapped, $k$ lacked $\Omega\tau$ and $\eta_i$, and the flow entered the condition on $g$ through terms valid for `B0 = 'axial'` only, so the solutions were wrong (the field by 9% to 600% in those tests), and `forcing = 12` divided by zero.
 
 
 ## Perfectly conducting inner core
@@ -150,7 +158,7 @@ Unlike the thin wall, the layer holds at any frequency, for any thickness and an
 
 ## Electromagnetic torques
 
-A conducting layer or inner core lets currents close outside the fluid, and the Lorentz force then exerts a torque on the boundary. `spin_doctor.py` reports $|\Gamma|_{mag}$ for the mantle (with `mantle = 'TWA'` or `'resolved'`) for $m = 0$, `symm = 1` (axial) and $m = 1$, `symm = -1` (equatorial), and $|\Gamma|_{magIC}$ for the inner core (with `'conducting, Chebys'` or `'TWA'`) for $m = 0$, `symm = 1`. The complex torques are written to `magnetic.dat` (see [Output and postprocessing](output.md)). With `rotdyn = 1` the same torques make the mantle and inner core rotate (see [Rotational dynamics](rotdyn.md)).
+A conducting layer or inner core lets currents close outside the fluid, and the Lorentz force then exerts a torque on the boundary. `spin_doctor.py` reports $|\Gamma|_{mag}$ for the mantle (with `mantle = 'TWA'` or `'resolved'`) for $m = 0$, `symm = 1` (axial) and $m = 1$, `symm = -1` (equatorial), and $|\Gamma|_{magIC}$ for the inner core (with `'conducting, Chebys'`, `'conducting, Bessel'` or `'TWA'`) for $m = 0$, `symm = 1`. The complex torques are written to `magnetic.dat` (see [Output and postprocessing](output.md)). With `rotdyn = 1` the same torques make the mantle and inner core rotate (see [Rotational dynamics](rotdyn.md)).
 
 
 ## Thin wall or conducting inner core?

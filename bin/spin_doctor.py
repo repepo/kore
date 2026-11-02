@@ -310,7 +310,9 @@ def main(ncpus):
     pol_B0      = par.magnetic and (par.B0 is not None)
     # NEW (2026-10-30): also for a resolved conducting layer (mantle = 'resolved'), see utils.gamma_magnetic
     do_mtorq    = pol_B0 and (par.mantle in ['TWA', 'resolved']) and (((par.m==0) and (par.symm==1)) or ((par.m==1) and (par.symm==-1)))
-    do_mtorq_ic = pol_B0 and (par.innercore in ['conducting, Chebys', 'TWA']) and ((par.m==0) and (par.symm==1))
+    # FIX (2026-11-02): also 'conducting, Bessel', whose torque gamma_magnetic_ic takes from the fluid side of the ICB as for
+    # the other two (resid L was 0.28 without it, in a forced run with forcing = 12)
+    do_mtorq_ic = pol_B0 and (par.innercore in ['conducting, Chebys', 'conducting, Bessel', 'TWA']) and ((par.m==0) and (par.symm==1))
     # FIX (2026-10-30): for m=1, symm=-1 a poloidal B0 also exerts torques that gamma_magnetic (conducting mantle only) and
     # gamma_magnetic_ic (m=0 only) leave out: through an insulating mantle when B0 is imposed from outside ('axial': the
     # torque m x B0 on the induced dipole m), and through the ICB when the inner core conducts, carries B0's currents
@@ -495,8 +497,11 @@ def main(ncpus):
         if par.hydro:  # FIX (2026-11-02): Wcmp, the compositional buoyancy, was left out
             resid1[i] = abs( 2*sigma*KE[i] - Dkin[i] - Wlor[i] + Wthm[i] + Wcmp[i] - Wbg[i] )/ \
                              max(abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wlor[i]), abs(Wthm[i]), abs(Wcmp[i]), abs(Wbg[i]))
-            if par.forcing == 12:  # steady, no body force: the integral of u.lap(u) vanishes; measured against the dissipation
-                resid1[i] = abs( Dkin[i] ) / abs( Dint[i] )
+            if par.forcing == 12:  # steady, no body force: the integral of u.lap(u) balances the Lorentz and buoyancy work
+                # (it vanishes without them); measured against the dissipation too. FIX (2026-11-02): with the Lorentz and
+                # buoyancy work; resid u was |Dkin|/|Dint|, 0.04 to 0.15 with a magnetic field
+                resid1[i] = abs( Dkin[i] + Wlor[i] - Wthm[i] - Wcmp[i] + Wbg[i] ) / \
+                            max(abs(Dint[i]), abs(Dkin[i]), abs(Wlor[i]), abs(Wthm[i]), abs(Wcmp[i]), abs(Wbg[i]))
         
         if par.magnetic:
             resid2[i] = abs( 2*sigma*ME[i] - Indu[i] - Mdfs[i] ) / \

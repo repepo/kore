@@ -280,6 +280,16 @@ def dlogjl(l,x):
     '''
     Log derivative of spherical Bessel function of the first kind
     '''
+    # FIX (2026-11-02): from scipy's (exponentially scaled) Bessel functions when |x| > l, as j_l'/j_l = l/x -
+    # J_(l+3/2)/J_(l+1/2). The continued fraction below had a fixed 100 terms and was wrong for |x| above about l + 200
+    # (2e-7 at |x| = 500 and l = 5, 25% at |x| = 1e4; |x| = ricb sqrt(omega/eta_ic) = 1e4 is Em ~ 1e-9 at omega = 1).
+    # It is kept for |x| <= l (results unchanged there), and where the Bessel functions underflow (l of thousands),
+    # with as many terms as it needs
+    if abs(x) > l:
+        j0, j1 = scsp.jve(l + 0.5, x), scsp.jve(l + 1.5, x)
+        if abs(j0) > 1e-250:
+            return l/x - j1/j0
+
     # functional form of the numerator and denominator in the continued fraction
     def num(k,x):
         return -1
@@ -308,9 +318,10 @@ def dlogjl(l,x):
                 break
         return f
 
-    # first 100 numerators and denominators in continued fraction
-    a = [num(k,x) for k in range(l+1, l+101)]
-    b = [denom(k,x) for k in range(l+1, l+101)]
+    # numerators and denominators in continued fraction, 100 terms beyond |x| (it converges once 2k + 1 > 2|x|)
+    nt = 101 + int(abs(x))  # FIX (2026-11-02): was 101 (see above)
+    a = [num(k,x) for k in range(l+1, l+nt)]
+    b = [denom(k,x) for k in range(l+1, l+nt)]
 
     # first term in the sum (in front of first quotient)
     b0 = l / x
@@ -1040,6 +1051,18 @@ def check_B0():
 
 
 
+def check_innercore():
+    '''
+    NEW (2026-11-02): innercore = 'conducting, Bessel' writes the field in the inner core as j_l(k r), with k from the
+    forcing frequency, so it needs a forced problem; an eigenvalue problem (forcing = 0) failed with an UnboundLocalError
+    in assemble.py. 'conducting, Chebys' covers both.
+    '''
+    if par.innercore == 'conducting, Bessel' and par.ricb > 0 and par.forcing == 0:
+        sys.exit("innercore = 'conducting, Bessel' needs a forced problem (forcing != 0): the field in the inner core "
+                 "oscillates at forcing_frequency. Use 'conducting, Chebys' for eigenvalue problems")
+
+
+
 def check_rotdyn():
     '''
     FIX (2026-10-30): stops rotdyn = 1 outside the requirements of docs/rotdyn.md, where it ran without a word and
@@ -1058,6 +1081,7 @@ def check_rotdyn():
 
 if par.magnetic:
     check_B0()
+    check_innercore()  # NEW (2026-11-02)
 if par.rotdyn:
     check_rotdyn()
 cnorm_tor = B0_tor_norm() if (par.magnetic and par.B0_tor is not None) else 0.0

@@ -36,7 +36,9 @@ def main(ncpus):
     quadrupole = ((par.B0 == 'Luo_S2') or ((par.B0 == 'FDM') and (par.B0_l == 2)))  # boolean
     pol        = (par.B0 is not None)      # NEW (2026-10-30): poloidal background field
     tor        = (par.B0_tor is not None)  # NEW (2026-10-30): toroidal background field
-    cic        = ((par.innercore == 'conducting, Chebys') and (par.forcing == 0) and par.magnetic and (par.ricb>0) )  # boolean
+    # FIX (2026-11-02): also for forced problems (was forcing == 0 only, while utils.cic, operators and assemble use the
+    # inner core's matrices for any forcing, so a forced run stopped, or read the files of an earlier run)
+    cic        = ((par.innercore == 'conducting, Chebys') and par.magnetic and (par.ricb>0) )  # boolean
 
     radial_profiles = ['eta', 'vsc', 'rho']
 

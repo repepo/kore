@@ -1101,7 +1101,9 @@ def main():
                 col = row
                 #print('l=',l,'rank=',rank, bpp_cic, k, ut.Nic, ( rank*bpp_cic + k )*ut.Nic, row, col)
 
-                mtx = op.magnetic_diffusion(l, 'fic', 'bpol_ic', 0)
+                # FIX (2026-11-02): minus i*omega times the field for forced problems (B holds +b here, A - i*omega*B), as in
+                # the mantle layer; without it a forced run had a steady field in the inner core
+                mtx = op.magnetic_diffusion(l, 'fic', 'bpol_ic', 0) - 1j*ut.wf*op.b(l, 'fic', 'bpol_ic', 0)
                 #mtx = par.OmgTau * par.Em_cic * L*( -L*r0_D0f_ic + 2*r1_D1f_ic + r2_D2f_ic )
                 loc_list = ut.packit(loc_list, mtx, row, col)
 
@@ -1122,7 +1124,7 @@ def main():
                 row = 2*(par.hydro + par.magnetic)*nb*ut.N1 + 3*par.rotdyn + nb_cic*ut.Nic + ( rank*bpp_cic + k )*ut.Nic
                 col = row
 
-                mtx = op.magnetic_diffusion(l, 'gic', 'btor_ic', 0)
+                mtx = op.magnetic_diffusion(l, 'gic', 'btor_ic', 0) - 1j*ut.wf*op.b(l, 'gic', 'btor_ic', 0)  # FIX (2026-11-02): as above
                 #mtx = par.OmgTau * par.Em_cic * L*( -L*r0_D0g_ic + 2*r1_D1g_ic + r2_D2g_ic )
                 loc_list = ut.packit(loc_list, mtx, row, col)
 
@@ -1797,20 +1799,27 @@ def bc_b_icb(l,loc, innercore, rank, bpp, k):
         out = icb_diag.tocoo()
         out2 = [out.data, out.row + row0, out.col + col0]
 
-    elif (innercore == 'conducting, Bessel') and (par.forcing != 0): #---------------------------------------------- inner core with conductivity equal to the outer core's
-        # assumes a Bessel function solution for the mag field in the IC 
-        # only one row needed for the bc in the conductor case
+    elif innercore == 'conducting, Bessel': #------------------------------------------------------------------- conducting inner core
+        # FIX (2026-11-02): rewritten. The field inside oscillates at the forcing frequency omega (forced problems only,
+        # utils.check_innercore): b_l(r) = b_l(ricb) j_l(k r)/j_l(k ricb), k^2 = -i omega/eta_ic, eta_ic = OmgTau*Em*eta_i2o,
+        # so r b_l'/b_l = x j_l'(x)/j_l(x) = xd at the ICB, x = k ricb. The rows are those of 'conducting, Chebys'
+        # (bc_b_cic) with the inner core eliminated:
+        #   section f:  f_ic = f,  (r f)' = (r f_ic)'/mu_i2o            ->  f + ricb f' = (1 + xd) f/mu_i2o
+        #   section g:  g_ic = mu_i2o g,  (r g)' = eta_i2o (r g_ic)'    ->  g + ricb g' = (1 + xd) g/sigma_i2o
+        # The old rows had f and f' swapped (the field outside did not match j_l(k r)), took k^2 = -i omega/Em, and
+        # coupled the flow in section g by terms for B0 = 'axial' only. A slipping ICB now gets the u x B0 terms of
+        # 'conducting, Chebys' (bc_b_cic_slip), for any poloidal B0.
+        eta_ic = par.OmgTau*par.Em/(par.mu_i2o*par.sigma_i2o)
+        bessel_wavenumber = (1-1j)*np.lib.scimath.sqrt(ut.wf/(2*eta_ic))  # complex square root: any sign of omega
+        x  = bessel_wavenumber*par.ricb
+        xd = l if x == 0 else x*ut.dlogjl(l, x)  # tends to l (a potential field) as omega -> 0
+
         icb_diag = ss.dok_matrix((1, ut.N1),dtype=complex)
 
         if loc == 'nocurl': # use loc_bot l's here (if external magnetic field is antisymm) --------
 
             # Physics ------------------------------------------
-            # FIX (2026-10-30, from PR #17): complex square root, a prograde forcing (frequency < 0) gave nan
-            bessel_wavenumber = (1-1j)*np.lib.scimath.sqrt(par.forcing_frequency/2/par.Em)
-            # the line just below works for lmax~150.
-            #icb_diag[0,:] = ut.jl(l,bessel_wavenumber*par.ricb,0) * bv.P0_icb - bessel_wavenumber * ut.jl(l,bessel_wavenumber*par.ricb,1) * bv.P1_icb
-            # the line below should work for all lmax
-            icb_diag[0,:] = bv.P0_icb - bessel_wavenumber/par.mu_i2o * ut.dlogjl(l,bessel_wavenumber*par.ricb) * bv.P1_icb + (1/par.mu_i2o-1)/par.ricb * bv.T1_icb
+            icb_diag[0,:] = bv.P0_icb + par.ricb*bv.P1_icb - (1 + xd)/par.mu_i2o * bv.P0_icb
             # --------------------------------------------------
 
             if ut.symmB0 == -1:
@@ -1822,12 +1831,7 @@ def bc_b_icb(l,loc, innercore, rank, bpp, k):
         elif loc == '1curl': # use loc_top l's here (if external magnetic field is antisymm) -------
 
             # Physics ---------------
-            bessel_wavenumber = (1-1j)*np.lib.scimath.sqrt(par.forcing_frequency/2/par.Em)  # FIX (2026-10-30): as above
-            eta_i2o = (1/par.mu_i2o/par.sigma_i2o)
-            # the line just below works for lmax~150.
-            #icb_diag[0,:] = ut.jl(l,bessel_wavenumber*par.ricb,0) * bv.T0_icb - bessel_wavenumber * ut.jl(l,bessel_wavenumber*par.ricb,1) * bv.T1_icb
-            # the line below should work for all lmax
-            icb_diag[0,:] = par.Em*(bv.T0_icb - eta_i2o * bessel_wavenumber * ut.dlogjl(l,bessel_wavenumber*par.ricb) * bv.T1_icb + (eta_i2o-1)/par.ricb * bv.T1_icb)
+            icb_diag[0,:] = bv.T0_icb + par.ricb*bv.T1_icb - (1 + xd)/par.sigma_i2o * bv.T0_icb
             # -----------------------
 
             if ut.symmB0 == -1:
@@ -1839,76 +1843,10 @@ def bc_b_icb(l,loc, innercore, rank, bpp, k):
         out = icb_diag.tocoo()
         out2 = [out.data, out.row + row0, out.col + col0]
 
-        # and now the velocity coupling terms
-        if par.hydro == 1:
-            if loc == '1curl': # ----------------------------------------------------------------------- 1curl
-
-                # first row (only one row needed here), goes with the -G'-(G/r) term
-
-                L = l*(l+1)
-
-                row11 = int( ut.N1*(l - ut.m_top)/2 )
-                row1 = 3*ut.n + row11   # starting row (first row of bc's)
-                col1 = row11
-
-                # l-1 terms ------------------------------------------------------------------------ l-1
-                if ((l-1 >= ut.m_top) and (ut.symm1==1)) or (ut.symm1==-1) :
-
-                    if ut.symm1 == 1 :
-                        col1a = nb*ut.N1 + ( rank*bpp + k - 1 )* ut.N1 # left of diag if symm
-                    elif ut.symm1 == -1 :
-                        col1a = nb*ut.N1 + ( rank*bpp + k )* ut.N1 # on the diag if antisymm
-
-                    icb_minus = ss.dok_matrix((1, ut.N1),dtype=complex)
-
-                    C = -(l-1)*np.sqrt(l**2-par.m**2)/(l*(2*l-1))
-                    C*=ut.B0_norm() # normalization factor
-
-                    # Physics -------------------
-                    icb_minus[0,:] = C*bv.T0_icb
-                    # ---------------------------
-                    out = icb_minus.tocoo()
-
-                    out2[0] = np.concatenate([out2[0],out.data])
-                    out2[1] = np.concatenate([out2[1],out.row+row1])
-                    out2[2] = np.concatenate([out2[2],out.col+col1a])
-
-                # l terms -------------------------------------------------------------------------- l
-                icb_0 = ss.dok_matrix((1, ut.N1),dtype=complex)
-
-                C = 1j*par.m/L
-                C*=ut.B0_norm() # normalization factor
-
-                # Physics ---------------------------------------------------
-                icb_0[0,:] = C*( bv.P1_icb + (l**2+l+1)*bv.P0_icb/par.ricb )
-                # -----------------------------------------------------------
-                out = icb_0.tocoo()
-
-                out2[0] = np.concatenate([out2[0],out.data])
-                out2[1] = np.concatenate([out2[1],out.row+row1])
-                out2[2] = np.concatenate([out2[2],out.col+col1])
-
-                # l+1 terms ------------------------------------------------------------------------ l+1
-                if ((l+1 <= ut.lmax_top-1) and (ut.symm1==-1)) or (ut.symm1==1) :
-
-                    if ut.symm1 == -1 :
-                        col1b = nb*ut.N1 + ( rank*bpp + k + 1 )* ut.N1 # right of diag if antisymm
-                    elif ut.symm1 == 1 :
-                        col1b = nb*ut.N1 + ( rank*bpp + k )* ut.N1 # on diag if symm
-
-                    icb_plus = ss.dok_matrix((1, ut.N1),dtype=complex)
-
-                    C = -(l+2)*np.sqrt((l+par.m+1)*(l-par.m+1))/((2*l+3)*(l+1))
-                    C*=ut.B0_norm() # normalization factor
-
-                    # Physics ------------------
-                    icb_plus[0,:] = C*bv.T0_icb
-                    # --------------------------
-                    out = icb_plus.tocoo()
-
-                    out2[0] = np.concatenate([out2[0],out.data])
-                    out2[1] = np.concatenate([out2[1],out.row+row1])
-                    out2[2] = np.concatenate([out2[2],out.col+col1b])
+        # a stress-free or inviscid ICB: the fluid's tangential E has the u x B0 part that the inner core's lacks
+        if loc == '1curl' and par.hydro and (par.B0 is not None) and (par.bci == 0 or par.Ek == 0):
+            slip = bc_b_cic_slip(l, row0)
+            out2 = [np.concatenate([out2[q], slip[q]]) for q in range(3)]
 
     return out2
 

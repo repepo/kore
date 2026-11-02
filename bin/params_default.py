@@ -162,8 +162,8 @@ class default_params():
 
         # Magnetic boundary conditions at the ICB:
         self.innercore = 'insulator'
-        # self.innercore = 'conducting, Chebys'  # For eigenvalue problems
-        # self.innercore = 'conducting, Bessel'  # For forced problems
+        # self.innercore = 'conducting, Chebys'  # Eigenvalue and forced problems (forced since 2026-11-02), N_cic polynomials inside
+        # self.innercore = 'conducting, Bessel'  # Forced problems only (forcing != 0): field inside j_l(k r) at forcing_frequency
         # self.innercore = 'TWA'  # Thin conductive wall layer (Roberts, Glatzmaier & Clune, 2010)
         # A perfectly conducting inner core is not available (its code was removed 2026-10-18, pending a rewrite).
         self.c_icb  = 0  # Ratio (h*mu_wall)/(ricb*mu_fluid) (if innercore='TWA')
