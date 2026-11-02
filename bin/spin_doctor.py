@@ -264,7 +264,9 @@ def main(ncpus):
         ( 'resid𝐋',      '{:8.2e}',   lambda i: residL[i] ),
         ( 'resid𝐄',      '{:8.2e}',   lambda i: residE[i] ),  # NEW (2026-10-18)
         ( 'Tor/Pol',     '{:8.2e}',   lambda i: ratio(KT[i], KP[i]) ),
-        ( 'Mag/Kin',     '{:8.2e}',   lambda i: ratio(ME[i], KE[i]) ),
+        # FIX (2026-11-02): ME is the energy of b itself since 2026-10-16 (it was written times OmgTau**2*Le2 before);
+        # Mag/Kin compares it with KE in kinetic-energy units, as resid E and the KE + ME = 1 normalisation do
+        ( 'Mag/Kin',     '{:8.2e}',   lambda i: ratio(par.OmgTau**2 * par.Le2 * ME[i], KE[i]) ),
         ( 'Geo',         '{:.4f}',    lambda i: geo[i] ),  # NEW (2026-10-11)
         ( '|𝚪|mag',      '{:8.2e}',   lambda i: np.abs(mtorq[i]) ),
         ( '|𝚪|magIC',    '{:8.2e}',   lambda i: np.abs(mtorq_ic[i]) ),

@@ -66,6 +66,16 @@ def main():
         alltop, allbot = None, None
 
     nb = int((par.lmax - par.m + 1)/2)  # number of block rows per quarter
+    # FIX (2026-11-02): the ranks must share the degrees evenly (also those of a conducting inner core, nb_cic = nb below).
+    # comm.Scatter gives each rank bpp of them and dropped the rest without a word, leaving zero rows in A and B, when
+    # mpiexec -n did not divide nb (e.g. a rank count other than ncpus, or lmax set by hand)
+    if nb % sizas != 0:
+        if rank == 0:
+            fit = [par.m - 1 + 2*sizas*j for j in (nb//sizas, nb//sizas + 1) if j > 0]
+            print('assemble.py: %d MPI ranks cannot share the nb = (lmax - m + 1)/2 = %d degrees of each symmetry evenly, '
+                  'and %d would be dropped. Run mpiexec -n with a divisor of %d (ncpus, if lmax is left to set_scales), '
+                  'or set lmax = %s' % (sizas, nb, nb % sizas, nb, ' or '.join(str(x) for x in fit)), flush=True)
+        sys.exit(1)
     bpp = int(nb/sizas)     # block rows per process
     
     loc_top = np.zeros(bpp, dtype=int)

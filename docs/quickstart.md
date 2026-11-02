@@ -45,7 +45,7 @@ The other parameters keep their defaults: an inner core of radius 0.35 (the CMB 
 
 ## Run
 
-A run has four steps. `ncpus` is the number of MPI processes. For the first two steps it must equal `par.ncpus` (4 by default), because the spherical-harmonic degrees are distributed in equal blocks among the processes.
+A run has four steps, each run on `ncpus` processes. Use `par.ncpus` (4 by default): `assemble.py` needs that many, or a divisor of it, because the spherical-harmonic degrees are shared evenly among the processes, and it stops otherwise.
 
 1. Generate the submatrices, the building blocks of the operators, as `*.mtx` files:
     ```Shell
@@ -72,14 +72,14 @@ The script `bin/runKore.sh` runs the four steps with 4 processes.
 `solve_nopp.py` prints the eigenvalues it found and their residuals. `spin_doctor.py` then prints a summary table, one row per solution:
 
 ```
-  ★      Damping σ       Frequency ω      resid0     resid𝐮     resid𝐛     residθ     resid𝐋    Tor/Pol    Mag/Kin     |𝚪|mag    |𝚪|magIC
- ‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾
-  0     -0.00464013       0.01150398     8.46e-13   1.89e-07   1.55e-06   0.00e+00   5.30e-07   1.56e+02   1.01e+00   3.07e-05   0.00e+00
-  1     -0.00435660       0.01030532     6.36e-11   1.89e-07   1.97e-06   0.00e+00   3.91e-07   1.80e+02   1.01e+00   4.06e-05   0.00e+00
-  2     -0.00494936       0.01270521     1.54e-10   1.45e-07   1.18e-06   0.00e+00   4.37e-07   1.38e+02   1.01e+00   2.86e-05   0.00e+00
+  ★      Damping σ       Frequency ω      resid0     resid𝐮     resid𝐛     residθ     resid𝐋     resid𝐄    Tor/Pol    Mag/Kin       Geo        |𝚪|mag    |𝚪|magIC
+ ‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾ ‾‾‾‾‾‾‾‾‾‾
+  0     -0.00463247       0.01149993     4.08e-11   1.88e-07   1.50e-06   0.00e+00   4.70e-07   1.38e-04   1.57e+02   1.01e+00     0.9994     3.06e-05   0.00e+00
+  1     -0.00434865       0.01030117     1.18e-10   1.87e-07   1.91e-06   0.00e+00   4.02e-07   1.18e-04   1.81e+02   1.01e+00     0.9995     4.04e-05   0.00e+00
+  2     -0.00494194       0.01270122     1.58e-10   1.44e-07   1.13e-06   0.00e+00   4.43e-07   1.80e-04   1.39e+02   1.01e+00     0.9993     2.84e-05   0.00e+00
 ```
 
-Solution 0 is the mode closest to the target. Its eigenvalue is $\lambda = \sigma + i\omega$, with damping rate $\sigma$ and frequency $\omega$ in units of the rotation rate. It is a torsional mode: the flow is almost entirely toroidal (Tor/Pol = 156), its kinetic and magnetic energies are equal (Mag/Kin = 1.01), and the magnetic torque on the conducting mantle ($|\Gamma|_{mag}$) is nonzero. All the residuals are far below $10^{-4}$, so the solution is accurate. The whole run takes about half a minute on 4 cores of a desktop machine.
+Solution 0 is the mode closest to the target. Its eigenvalue is $\lambda = \sigma + i\omega$, with damping rate $\sigma$ and frequency $\omega$ in units of the rotation rate. It is a torsional mode: the flow is almost entirely toroidal (Tor/Pol = 157) and nearly invariant along the rotation axis (Geo = 0.9994), its kinetic and magnetic energies are equal (Mag/Kin = 1.01), and the magnetic torque on the conducting mantle ($|\Gamma|_{mag}$) is nonzero. All the residuals but one are far below $10^{-4}$, so the solution is accurate. The exception, `resid𝐄` = $1.4\times10^{-4}$, is set by the thin wall: with both `c_cmb` and `c1_cmb` nonzero, the wall conditions close the energy budget only to about `c_cmb`·`c1_cmb` = $1.5\times10^{-4}$ (with `c_cmb = 0` it is $2\times10^{-6}$; see [Output and postprocessing](output.md#checking-the-results)). The whole run takes about half a minute on 4 cores of a desktop machine.
 
 [Output and postprocessing](output.md) explains every column, the files that are written and the plotting tools.
 

@@ -53,7 +53,7 @@ The sections below follow the order of `params_default.py`. The magnetic boundar
 | `bco` | 1 | Flow condition at the core-mantle boundary (CMB): 0 stress-free, 1 no-slip (or boundary forcing). |
 | `Ek` | $10^{-6}$ | Ekman number $E = \nu/\Omega L^2$. |
 
-`Ek = 0` gives an inviscid problem, with only the no-penetration condition $u_r = 0$ at the boundary. It works only for a full sphere (`ricb = 0`), and `N` must then be set by hand. A thin conducting wall with `c1` $\neq 0$ needs a viscous fluid and no-slip boundaries, and so does `rotdyn = 1`, which stops otherwise. A conducting inner core also works with a stress-free ICB (since 2026-10-30, see [Inner core and mantle](boundaries.md#conducting-inner-core)).
+`Ek = 0` gives an inviscid problem, with only the no-penetration condition $u_r = 0$ at the boundary. It works only for a full sphere (`ricb = 0`), and `N` must then be set by hand. A thin conducting wall with `c1` $\neq 0$ needs a viscous fluid and no-slip boundaries, and so does `rotdyn = 1`, which stops otherwise. A conducting inner core also works with a stress-free ICB (see [Inner core and mantle](boundaries.md#conducting-inner-core)).
 
 
 ## Eigenvalue or forced problem
@@ -91,7 +91,7 @@ The equations can be written with different units of time (see [Equations and sc
 |---|---|---|
 | `'rotation'` (default) | $1/\Omega$ | 1 |
 | `'viscous'` | $L^2/\nu$ | $1/E$ |
-| `'Alfven'` | $L\sqrt{\mu_0\rho}/B_0$ | $1/Le$ |
+| `'Alfven'` | $L\sqrt{\mu_0\rho}/B^*$, with $B^*$ the field's scale | $1/Le$ |
 | `'magnetic'` | $L^2/\eta$ | $1/E_\eta$ |
 
 Eigenvalues, frequencies and forcing frequencies are all in these units.
@@ -140,10 +140,10 @@ These mirror the thermal ones: `Schmidt` (Schmidt number $Sc = \nu/D$, default 1
 
 | Parameter | Default | Meaning |
 |---|---|---|
-| `ncpus` | 4 | Number of MPI processes for `submatrices.py` and `assemble.py`. |
-| `N` | `Ncheb(Ek)` | Number of Chebyshev polynomials in radius, in the fluid. Must be even for a full sphere. |
+| `ncpus` | 4 | Number of MPI processes for `submatrices.py` and `assemble.py`. When `lmax` is not set, it is chosen so that `assemble.py` can share the degrees evenly among `ncpus` processes. |
+| `N` | `Ncheb(Ek)` | Number of Chebyshev polynomials in radius, in the fluid. Must be even for a full sphere (the run stops otherwise). |
 | `g` | 1 | Approximate ratio $l_{max}/N$. |
-| `lmax` | from `N`, `g`, `ncpus`, `m` | Largest spherical-harmonic degree, $2\,n_{cpu} \lfloor gN/2n_{cpu} \rfloor + m - 1$. Set by hand, it must be even if $m$ is odd, and $l_{max} - m + 1$ must be divisible by $2\,n_{cpu}$. |
+| `lmax` | from `N`, `g`, `ncpus`, `m` | Largest spherical-harmonic degree, $2\,n_{cpu} \lfloor gN/2n_{cpu} \rfloor + m - 1$. Set by hand, it must be even if $m$ is odd and odd if $m$ is even, and $l_{max} - m + 1$ must be divisible by $2\,n_{cpu}$, with $n_{cpu}$ the number of processes running `assemble.py` (the run stops otherwise). |
 | `N_cic` | 64 | Chebyshev polynomials for the field inside a conducting inner core. |
 | `N_mantle` | 64 | Chebyshev polynomials for the field in a conducting mantle layer (`mantle = 'resolved'`); they must also resolve its conductivity profile. See [Inner core and mantle](boundaries.md#conducting-mantle-layer). |
 | `inviscid_basis` | `'low'` | Basis of the flow equations in an inviscid full sphere with a magnetic field: `'low'` (more accurate at a given `N`, denser matrix) or `'high'` (banded, converges more slowly in `N`). See [Solver settings](solver.md#inviscid-runs-with-a-magnetic-field). |

@@ -3,6 +3,73 @@ CHANGELOG - Kore, conductive_IC branch
 
 2026-11-02
 ----------
+Fix: spin_doctor.py's Mag/Kin was the energy of b over the kinetic energy (1e5 too large for the torsional mode).
+Docs: bin/parameters.py holds the Quick start's torsional-mode case again, with a new results table; wrong statements
+fixed, history notes removed from the user pages, long paragraphs split (bin/spin_doctor.py, bin/parameters.py,
+bin/utils4pp.py, README.md, docs/)
+- Since 2026-10-16 (14931e17) spin_doctor.py writes ME, the first column of magnetic.dat, as the energy of b itself, no
+  longer times OmgTau^2 Le2, while Mag/Kin still divided it by the kinetic energy: the torsional mode of the Quick
+  start showed Mag/Kin = 1.01e5 instead of 1.01. Mag/Kin now multiplies ME by OmgTau^2 Le2, as resid E and the KE + ME
+  = 1 normalisation of solve_nopp.py do. magnetic.dat is unchanged (its energy, diffusion and induction columns are
+  all those of b, so resid b can be checked from the file); output.md says so, and that older files hold ME multiplied.
+- bin/parameters.py had become a magnetic spin-over case (Ek = 1e-3, ricb = 0, m = 1, symm = -1, no target), while the
+  Quick start, the examples page and runKore.sh describe the torsional mode at Ek = 1e-7. It holds that case again,
+  as before 14931e17 (the JSON lines are kept).
+- The Quick start table (written 2026-10-11) gets the resid E and Geo columns, and the new eigenvalue,
+  -0.00463247 + 0.01149993i: the thin-wall conditions gained the wall-curvature term on 2026-10-21. resid E is
+  1.4e-4 there, the c*c1 limit of the thin-wall conditions (2e-6 with c_cmb = 0).
+- index.md offered a perfectly conducting inner core, removed in October. boundaries.md said that no residual tests
+  the inner core: resid E does, in eigenvalue problems. README.md and installation.md required SuperLU_DIST, which Kore
+  does not use (dropped from the configure line too). output.md listed .thm among reap.sh's files (it writes .tmp, and
+  .rot and .cmp). README.md and the Quick start say how many processes assemble.py may use.
+- installation.md: one section for macOS and Linux, which differed only in the architecture name and in how slepc4py
+  was built; slepc4py now comes from SLEPc's configure --with-slepc4py on both (it was setup.py install on macOS).
+- The notes on what older versions did ("before 2026-10-30 ...") are gone from the user pages (background-field.md,
+  boundaries.md, output.md, rotdyn.md, setup.md); the CHANGELOG entries of those dates describe the changes. The notes
+  on the columns of older result files stay.
+- Long table cells and paragraphs split (output.md: resid L, resid E, params.dat; boundaries.md; method.md;
+  background-field.md). boundaries.md marks the condition on lap f at a conducting ICB as not imposed where it lists
+  it. equations.md writes the field scale as B* (B0 is the background field), says where theta is the colatitude, and
+  has a missing period back.
+- Checked in the cloud with scipy (sparse LU and ARPACK in place of solve_nopp.py, 107648 unknowns, the eigenpairs to
+  5e-13): with muw_cmb = inf, the conditions without the curvature term, the run gives the old table to all printed
+  digits for the three eigenvalues, Tor/Pol, Mag/Kin and |Gamma|mag; with the new code only the Mag/Kin column changes
+  (1.01e5 to 1.01), all .dat files are byte for byte the same, and KE + OmgTau^2 Le2 ME = 1 for each eigenvector. On
+  chandler, solve_nopp.py (PETSc, 4 ranks, 15 s for the whole run) gives the same table but for resid0, which is
+  round-off and changes from run to run, and resid u and resid L of solutions 1 and 2 (up to 5% apart); the Quick
+  start shows that run. The m = 3 onset of bgflow.md, Ro = 0.419, was rechecked on the nonlinear basic state: sigma =
+  -6e-7 at Ro = 0.4193 and -6.3e-4 at 0.415.
+
+2026-11-02
+----------
+Fix: assemble.py hung or dropped degrees when the MPI ranks did not divide them; an odd N with an inner core crashed;
+an odd lmax - m + 1 gave a singular matrix; get_data.py and reap.sh mislabelled or misaligned the results
+(bin/assemble.py, bin/submatrices.py, bin/utils.py, tools/get_data.py, tools/reap.sh, docs/setup.md)
+- assemble.py gives each rank nb/size of the nb = (lmax - m + 1)/2 degrees of each symmetry. When the rank count did not
+  divide nb (mpiexec -n other than ncpus, or lmax set by hand), comm.Scatter failed on rank 0 and the other ranks waited
+  forever (mpi4py 4.1 with MPICH), or, going by the code, an mpi4py that does not check the counts dropped the remaining
+  degrees. It now stops on every rank, with a message that names the rank counts and the values of lmax that fit.
+- submatrices.py made room for the boundary rows with N1 = 2*int(N/2), which is N - 1 for an odd N with an inner core,
+  while the matrices have N columns: it crashed in vstack. It now uses utils.N1.
+- utils.check_resolution stops an odd lmax - m + 1 (a degree was dropped and A was singular) and an odd N in a full
+  sphere (it crashed in submatrices.py).
+- tools/get_data.py named 58 of the 67 params.dat columns and 19 of the 20 flow.dat ones. pandas then made the extra
+  leading columns the index and every label shifted, or, with pandas 3.1, it failed. The names are complete, and each
+  table gets as many names as it has columns (older files have fewer; any extra ones are named col<k>).
+- tools/reap.sh took the row count from flow.dat after it had read params.dat: the first folder's parameters were left
+  out ("head: invalid number of lines"), so each row of the .par file sat next to the results of the folder before it.
+  It now counts the rows of params.dat first, and skips folders without one. Its message for the .cmp file tested the
+  .tmp file.
+- Checked in the cloud (scipy, no PETSc). With MPICH 5.0 and mpi4py 4.1 from pip, assemble.py on 1, 2 and 5 ranks gives
+  A and B bit for bit as before; on 3 and 4 ranks (nb = 10) the old code hung, the new one stops at once. N = 25 with an
+  inner core (insulating, conducting, or thermal without a field) runs, with eigenvalues within 5e-9 of those at N = 24
+  and 26 (which differ by up to 6e-9) and residuals <= 4e-8; with an even N, A, B and the outputs are unchanged, byte
+  for byte. An odd N in a full sphere and lmax - m + 1 = 21 stop with a message (a crash and a singular matrix before).
+  reap.sh on three run folders, then get_data.py: every row holds its own run's parameters, flow, field and eigenvalues,
+  under the right labels.
+
+2026-11-02
+----------
 Fix: a conducting inner core in forced runs. 'conducting, Chebys' stopped (or read the inner-core matrices of an
 earlier run), and 'conducting, Bessel' gave wrong solutions, and failed with forcing = 0 (bin/assemble.py,
 bin/submatrices.py, bin/utils.py, bin/spin_doctor.py, bin/params_default.py, docs/boundaries.md, docs/output.md)

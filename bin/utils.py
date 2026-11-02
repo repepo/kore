@@ -1063,6 +1063,22 @@ def check_innercore():
 
 
 
+def check_resolution():
+    '''
+    NEW (2026-11-02): stops on truncations the matrices cannot hold. The degrees l split into two sets of
+    nb = (lmax - m + 1)/2, one per equatorial symmetry, so lmax - m + 1 must be even: with an odd count a degree was
+    dropped, and A was singular. In a full sphere each scalar has a parity in r and uses N/2 Chebyshev polynomials, so N
+    must be even there (an odd N crashed in submatrices.py).
+    '''
+    lm1 = par.lmax - par.m + 1
+    if lm1 % 2:
+        sys.exit('lmax - m + 1 = %d must be even: set lmax = %d or %d (lmax is even when m is odd, and odd when m is even)'
+                 % (lm1, par.lmax - 1, par.lmax + 1))
+    if par.ricb == 0 and par.N % 2:
+        sys.exit('N = %d must be even in a full sphere (ricb = 0)' % par.N)
+
+
+
 def check_rotdyn():
     '''
     FIX (2026-10-30): stops rotdyn = 1 outside the requirements of docs/rotdyn.md, where it ran without a word and
@@ -1079,6 +1095,7 @@ def check_rotdyn():
                  'inner core drag the fluid through the no-slip condition')
 
 
+check_resolution()  # NEW (2026-11-02)
 if par.magnetic:
     check_B0()
     check_innercore()  # NEW (2026-11-02)

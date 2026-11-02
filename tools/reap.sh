@@ -32,14 +32,16 @@ e=".eig"
 for d in $(ls -1d $1*)
 do
 
-	if [ -f $d/params.dat ]
-	then
-		head -n $lines $d/params.dat >> $1$p
-	fi
+	# FIX (2026-11-02): the number of solutions, from params.dat (spin_doctor writes it for every run, one row per
+	# solution). It was taken from flow.dat after params.dat had been read: the first folder's parameters were left
+	# out ("head: invalid number of lines"), which shifted every later row of .par against the other files, and a
+	# run without flow.dat (hydro = 0) used the count of the folder before.
+	[ -f $d/params.dat ] || continue
+	lines=`grep -c ^ $d/params.dat`
+	head -n $lines $d/params.dat >> $1$p
 
 	if [ -f $d/flow.dat ]
 	then
-        lines=`grep -c ^ $d/flow.dat`
         head -n $lines $d/flow.dat >> $1$f
 	fi
 
@@ -96,7 +98,7 @@ then
 	echo "Thermal data written to $1$t"
 fi
 
-if [ -f $1$t ]
+if [ -f $1$c ]  # FIX (2026-11-02): tested the thermal file
 then
 	echo "Compositional data written to $1$c"
 fi

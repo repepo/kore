@@ -154,7 +154,7 @@ def main(ncpus):
             gebasis[1] = 2
 
     # Used when making room for bc's
-    N1 = int((1 + np.sign(par.ricb)) * int(par.N/2))
+    N1 = ut.N1  # FIX (2026-11-02): was 2*int(N/2) with an inner core, N - 1 for an odd N, while the matrices have N columns (crash)
     z4 = ss.csr_matrix((4,N1))
     z3 = ss.csr_matrix((3,N1))
     z2 = ss.csr_matrix((2,N1))

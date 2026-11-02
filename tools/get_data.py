@@ -1,262 +1,70 @@
 import pandas as pd
-import numpy as np
-import numpy.lib.scimath as scimath
 import sys
 from os.path import exists
 
 
 '''
-Reads results produced by solve.py or collected by reap.sh into a pandas dataframe
+Reads results produced by spin_doctor.py or collected by reap.sh into a pandas dataframe, and saves it as csv
 Use as:
-python3 $KORE_DIR/tools/get_data.py filename 
+python3 $KORE_DIR/tools/get_data.py filename
 
-filename : prefix used when collecting data via reap.sh (leave empty when reading results directly from solve.py)
+filename : prefix used when collecting data via reap.sh (leave empty when reading the .dat files of the current folder)
 '''
 
-def load_results(filename):
-    df = pd.DataFrame()
-    if exists(filename + '.par'):
-        par = pd.read_csv(filename + '.par', sep=' ', names=['hydro',
-                                                             'magnetic',
-                                                             'thermal',
-                                                             'compositional',
-                                                             'Ek',
-                                                             'm',
-                                                             'symm',
-                                                             'ricb',
-                                                             'bci',
-                                                             'bco',
-                                                             'forcing',
-                                                             'forcing_frequency',
-                                                             'forcing_amplitude_cmb',
-                                                             'forcing_amplitude_icb',
-                                                             'projection',
-                                                             'B0type',
-                                                             'beta_actual',
-                                                             'B0_l',
-                                                             'innercore_mag_bc',
-                                                             'c_icb',
-                                                             'c1_icb',
-                                                             'mantle_mag_bc',
-                                                             'c_cmb',
-                                                             'c1_cmb',
-                                                             'mu',
-                                                             'Em',
-                                                             'Le2',
-                                                             'B0_norm',
-                                                             'Etherm',
-                                                             'heating',
-                                                             'BV2',
-                                                             'rc',
-                                                             'h',
-                                                             'rsy',
-                                                             'bci_thermal',
-                                                             'bco_thermal',
-                                                             'Ecomp',
-                                                             'compositional_background',
-                                                             'BV2_comp',
-                                                             'rcc',
-                                                             'hc',
-                                                             'rsyc',
-                                                             'bci_compositional',
-                                                             'bco_compositional',
-                                                             'OmgTau',
-                                                             'ncpus',
-                                                             'N',
-                                                             'lmax',
-                                                             'runtime',
-                                                             'mu_i2o',
-                                                             'sigma_i2o',
-                                                             'aux1',
-                                                             'aux2',
-                                                             'rotdyn',
-                                                             'MoIZ_M',
-                                                             'MoIZ_IC',
-                                                             'OmgtauIC',
-                                                             'gTorque'])
-        df = pd.concat([df, par], axis=1)
-    if exists(filename + '.flo'):
-        flo = pd.read_csv(filename + '.flo', sep=' ', names=["KE",
-                                                             "KP",
-                                                             "KT",
-                                                             "Dkin",
-                                                             "Dint",
-                                                             "Wlor",
-                                                             "Wthm",
-                                                             "Wcmp",
-                                                             "resid0",
-                                                             "residu",
-                                                             "vtorq_real",
-                                                             "vtorq_imag",
-                                                             "vtorq_ic_real",
-                                                             "vtorq_ic_imag",
-                                                             "elldom",
-                                                             "angmom_real",
-                                                             "angmom_imag",
-                                                             "residL",
-                                                             "geo"])
-        df = pd.concat([df, flo], axis=1)
-    if exists(filename + '.mag'):
-        mag = pd.read_csv(filename + '.mag', sep=' ', names=["ME",
-                                                             "Mdfs",
-                                                             "Indu",
-                                                             "residb",
-                                                             "mtorq_real",
-                                                             "mtorq_imag",
-                                                             "mtorq_ic_real",
-                                                             "mtorq_ic_imag",
-                                                             "brms"])
-        df = pd.concat([df, mag], axis=1)
-    if exists(filename + '.rot'):
-        rot = pd.read_csv(filename + '.rot', sep=' ', names=["omg_mantle",
-                                                             "omg_ic",
-                                                             "misalignmt",
-                                                             "gravtorq",
-                                                             "vtorq",
-                                                             "mtorq",
-                                                             "vtorq_ic",
-                                                             "mtorq_ic"])
-        df = pd.concat([df, rot], axis=1)
-    if exists(filename + '.tmp'):
-        tmp = pd.read_csv(filename + '.tmp', sep=' ', names=["TE",
-                                                             "Wadv_thm",
-                                                             "Dthm",
-                                                             "residt"])
-        df = pd.concat([df, tmp], axis=1)
-    if exists(filename + '.cmp'):
-        cmp = pd.read_csv(filename + '.cmp', sep=' ', names=["CE",
-                                                             "Wadv_cmp",
-                                                             "Dcmp",
-                                                             "residc"])  # NEW (2026-11-02): residξ column
-        df = pd.concat([df, cmp], axis=1)
-    if exists(filename + '.eig'):
-        eig = pd.read_csv(filename + '.eig', sep=' ', names=["rtau",
-                                                             "itau"])
-        df = pd.concat([df, eig], axis=1)
+# FIX (2026-11-02): the column names, in the order spin_doctor.py writes them. params.dat had 58 names for its 67
+# columns and flow.dat 19 for 20: pandas then made the extra leading columns the index and shifted every label (the
+# column "KE" held KP). The tables are read by read_table, which labels as many columns as a file has.
+PARAMS = ['hydro', 'magnetic', 'thermal', 'compositional', 'Ek', 'm', 'symm', 'ricb', 'bci', 'bco', 'forcing',
+          'forcing_frequency', 'forcing_amplitude_cmb', 'forcing_amplitude_icb', 'projection', 'B0type', 'beta_actual',
+          'B0_l', 'innercore_mag_bc', 'c_icb', 'c1_icb', 'mantle_mag_bc', 'c_cmb', 'c1_cmb', 'mu', 'Em', 'Le2',
+          'B0_norm', 'Etherm', 'heating', 'BV2', 'rc', 'h', 'rsy', 'bci_thermal', 'bco_thermal', 'Ecomp',
+          'compositional_background', 'BV2_comp', 'rcc', 'hc', 'rsyc', 'bci_compositional', 'bco_compositional',
+          'OmgTau', 'ncpus', 'N', 'lmax', 'runtime', 'mu_i2o', 'sigma_i2o', 'aux1', 'aux2', 'rotdyn', 'MoIZ_M',
+          'MoIZ_IC', 'OmgtauIC', 'gTorque', 'bgflow', 'bgflow_Ro', 'B0_tor', 'B0_tor_l', 'cnorm_tor', 'r_surface',
+          'N_mantle', 'sigma_mantle_cmb', 'c1_mantle']
+FLOW = ['KE', 'KP', 'KT', 'Dkin', 'Dint', 'Wlor', 'Wthm', 'Wcmp', 'resid0', 'residu', 'vtorq_real', 'vtorq_imag',
+        'vtorq_ic_real', 'vtorq_ic_imag', 'elldom', 'angmom_real', 'angmom_imag', 'residL', 'geo', 'Wbg']
+MAGNETIC = ['ME', 'Mdfs', 'Indu', 'residb', 'mtorq_real', 'mtorq_imag', 'mtorq_ic_real', 'mtorq_ic_imag', 'brms']
+ROTDYN = ['omg_mantle', 'omg_ic', 'misalignmt', 'gravtorq', 'vtorq', 'mtorq', 'vtorq_ic', 'mtorq_ic']
+THERMAL = ['TE', 'Wadv_thm', 'Dthm', 'residt']
+COMPOSITIONAL = ['CE', 'Wadv_cmp', 'Dcmp', 'residc']
+EIGENVALUES = ['rtau', 'itau']
+
+# the suffix reap.sh gives each table, the file it is collected from, and its column names
+TABLES = [('.par', 'params.dat',        PARAMS),
+          ('.flo', 'flow.dat',          FLOW),
+          ('.mag', 'magnetic.dat',      MAGNETIC),
+          ('.rot', 'rotdyn.dat',        ROTDYN),
+          ('.tmp', 'thermal.dat',       THERMAL),
+          ('.cmp', 'compositional.dat', COMPOSITIONAL),
+          ('.eig', 'eigenvalues.dat',   EIGENVALUES)]
+
+
+def read_table(fname, names):
+    '''
+    NEW (2026-11-02): reads one table and labels its columns with names, as many as it has. Files of an older
+    spin_doctor have fewer columns (new ones were always added at the end); columns beyond the names get col<k>.
+    '''
+    df = pd.read_csv(fname, sep=r'\s+', header=None)
+    n = df.shape[1]
+    df.columns = names[:n] + ['col%d' % k for k in range(len(names) + 1, n + 1)]
     return df
+
+
+def load_results(filename):
+    '''
+    The tables collected by reap.sh with the prefix filename
+    '''
+    tables = [ read_table(filename + suffix, names) for suffix, _, names in TABLES if exists(filename + suffix) ]
+    return pd.concat(tables, axis=1) if tables else pd.DataFrame()
 
 
 def load_result():
-    df = pd.DataFrame()
-    if exists('params.dat'):
-        par = pd.read_csv('params.dat', sep=' ', names=['hydro',
-                                                             'magnetic',
-                                                             'thermal',
-                                                             'compositional',
-                                                             'Ek',
-                                                             'm',
-                                                             'symm',
-                                                             'ricb',
-                                                             'bci',
-                                                             'bco',
-                                                             'forcing',
-                                                             'forcing_frequency',
-                                                             'forcing_amplitude_cmb',
-                                                             'forcing_amplitude_icb',
-                                                             'projection',
-                                                             'B0type',
-                                                             'beta_actual',
-                                                             'B0_l',
-                                                             'innercore_mag_bc',
-                                                             'c_icb',
-                                                             'c1_icb',
-                                                             'mantle_mag_bc',
-                                                             'c_cmb',
-                                                             'c1_cmb',
-                                                             'mu',
-                                                             'Em',
-                                                             'Le2',
-                                                             'B0_norm',
-                                                             'Etherm',
-                                                             'heating',
-                                                             'BV2',
-                                                             'rc',
-                                                             'h',
-                                                             'rsy',
-                                                             'bci_thermal',
-                                                             'bco_thermal',
-                                                             'Ecomp',
-                                                             'compositional_background',
-                                                             'BV2_comp',
-                                                             'rcc',
-                                                             'hc',
-                                                             'rsyc',
-                                                             'bci_compositional',
-                                                             'bco_compositional',
-                                                             'OmgTau',
-                                                             'ncpus',
-                                                             'N',
-                                                             'lmax',
-                                                             'runtime',
-                                                             'mu_i2o',
-                                                             'sigma_i2o',
-                                                             'aux1',
-                                                             'aux2',
-                                                             'rotdyn',
-                                                             'MoIZ_M',
-                                                             'MoIZ_IC',
-                                                             'OmgtauIC',
-                                                             'gTorque'])
-        df = pd.concat([df, par], axis=1)
-    if exists('flow.dat'):
-        flo = pd.read_csv('flow.dat', sep=' ', names=["KE",
-                                                      "KP",
-                                                      "KT",
-                                                      "Dkin",
-                                                      "Dint",
-                                                      "Wlor",
-                                                      "Wthm",
-                                                      "Wcmp",
-                                                      "resid0",
-                                                      "residu",
-                                                      "vtorq_real",
-                                                      "vtorq_imag",
-                                                      "vtorq_ic_real",
-                                                      "vtorq_ic_imag",
-                                                      "elldom",
-                                                      "angmom_real",
-                                                      "angmom_imag",
-                                                      "residL",
-                                                      "geo"])
-        df = pd.concat([df, flo], axis=1)
-    if exists('magnetic.dat'):
-        mag = pd.read_csv('magnetic.dat', sep=' ', names=["ME",
-                                                             "Mdfs",
-                                                             "Indu",
-                                                             "residb",
-                                                             "mtorq_real",
-                                                             "mtorq_imag",
-                                                             "mtorq_ic_real",
-                                                             "mtorq_ic_imag",
-                                                             "brms"])
-        df = pd.concat([df, mag], axis=1)
-    if exists('rotdyn.dat'):
-        rot = pd.read_csv('rotdyn.dat', sep=' ', names=["omg_mantle",
-                                                             "omg_ic",
-                                                             "misalignmt",
-                                                             "gravtorq",
-                                                             "vtorq",
-                                                             "mtorq",
-                                                             "vtorq_ic",
-                                                             "mtorq_ic"])
-        df = pd.concat([df, rot], axis=1)
-    if exists('thermal.dat'):
-        tmp = pd.read_csv('thermal.dat', sep=' ', names=["TE",
-                                                         "Wadv_thm",
-                                                         "Dthm",
-                                                         "residt"])
-        df = pd.concat([df, tmp], axis=1)
-    if exists('compositional.dat'):
-        cmp = pd.read_csv('compositional.dat', sep=' ', names=["CE",
-                                                             "Wadv_cmp",
-                                                             "Dcmp",
-                                                             "residc"])  # NEW (2026-11-02): residξ column
-        df = pd.concat([df, cmp], axis=1)
-    if exists('eigenvalues.dat'):
-        eig = pd.read_csv('eigenvalues.dat', sep=' ', names=["rtau",
-                                                             "itau"])
-        df = pd.concat([df, eig], axis=1)
-    return df
+    '''
+    The .dat files of the current folder
+    '''
+    tables = [ read_table(dat, names) for _, dat, names in TABLES if exists(dat) ]
+    return pd.concat(tables, axis=1) if tables else pd.DataFrame()
 
 
 # --- INITIALIZATION ---
@@ -272,4 +80,3 @@ if len(sys.argv) == 2:
     df.to_csv(filename + '.csv')
 else:
     df.to_csv('results.csv')
-

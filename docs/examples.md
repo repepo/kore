@@ -15,7 +15,7 @@ Each test copies `bin/` into its case folder, installs the case's parameter file
 
 ## The default torsional mode
 
-The parameters in `bin/parameters.py` set up a torsional Alfvén mode: an $l = 1$ free-decay-mode field, $\Lambda = 10$, $Pm = 0.1$, $E = 10^{-7}$, `ricb = 0.35`, no-slip boundaries, an insulating inner core and a thin conducting wall at the CMB (`c_cmb = 0.01`, `c1_cmb = 0.015`). The mode closest to the target is $\lambda = -0.00464013 + 0.01150398\,i$ in rotation units, with Tor/Pol = 156 and Mag/Kin = 1.01. The [Quick start](quickstart.md) runs it step by step.
+The parameters in `bin/parameters.py` set up a torsional Alfvén mode: an $l = 1$ free-decay-mode field, $\Lambda = 10$, $Pm = 0.1$, $E = 10^{-7}$, `ricb = 0.35`, no-slip boundaries, an insulating inner core and a thin conducting wall at the CMB (`c_cmb = 0.01`, `c1_cmb = 0.015`). The mode closest to the target is $\lambda = -0.00463247 + 0.01149993\,i$ in rotation units, with Tor/Pol = 157, Mag/Kin = 1.01 and Geo = 0.9994. The [Quick start](quickstart.md) runs it step by step.
 
 
 ## Spin-over mode

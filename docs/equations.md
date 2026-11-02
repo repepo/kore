@@ -44,16 +44,16 @@ $$
 \rho\mathbf{g} \longrightarrow \rho' \mathbf{g} = \rho_0 \alpha g_0 \frac{r}{R} \theta \mathbf{\hat r}.
 $$
 
-Now we make the dimensional units explicit. With $L$ being the unit of length, $\tau$ the unit of time,  $\theta^*$ the unit of temperature, $P^*$ the unit of pressure, and $\mathbf{\hat z}$ the unit vector along $\mathbf{\Omega}$, then the momentum equation, after dividing by $\rho_0$, is
+Now we make the dimensional units explicit. With $L$ being the unit of length, $\tau$ the unit of time, $\theta^*$ the unit of temperature, $P^*$ the unit of pressure, $B^*$ the unit of magnetic field, and $\mathbf{\hat z}$ the unit vector along $\mathbf{\Omega}$, then the momentum equation, after dividing by $\rho_0$, is
 
 $$
-\frac{L}{\tau^2}\,\partial_t \mathbf{u} +L\frac{\Omega}{\tau}\, 2\mathbf{\hat z}\times\mathbf{u}=-\frac{P^*}{\rho_0 L} \nabla p +  \frac{B_0^2}{L\rho_0 \mu_0}(\nabla \times \mathbf{B})\times \mathbf{B}          +  \frac{\alpha g_0 \theta^*}{R} L r \theta\mathbf{\hat r}+\frac{\nu }{\tau L}\nabla^2 \mathbf{u},
+\frac{L}{\tau^2}\,\partial_t \mathbf{u} +L\frac{\Omega}{\tau}\, 2\mathbf{\hat z}\times\mathbf{u}=-\frac{P^*}{\rho_0 L} \nabla p +  \frac{{B^*}^2}{L\rho_0 \mu_0}(\nabla \times \mathbf{B})\times \mathbf{B}          +  \frac{\alpha g_0 \theta^*}{R} L r \theta\mathbf{\hat r}+\frac{\nu }{\tau L}\nabla^2 \mathbf{u},
 $$
 
 where it is understood that the variables $r, t, \mathbf{u}, p, \theta, \mathbf{B}$ are now *dimensionless*. Multiply the equation by $\tau^2/L$ and get
 
 $$
-\partial_t \mathbf{u} + 2\,\Omega\tau\,\mathbf{\hat z}\times\mathbf{u}=- \nabla p + \frac{\tau^2 B_0^2}{L^2\rho_0 \mu_0}(\nabla \times \mathbf{B})\times \mathbf{B} + \tau^2 \frac{\alpha g_0 \theta^*}{R} r \theta \mathbf{\hat r}+\tau\frac{\nu}{L^2}\nabla^2 \mathbf{u}.
+\partial_t \mathbf{u} + 2\,\Omega\tau\,\mathbf{\hat z}\times\mathbf{u}=- \nabla p + \frac{\tau^2 {B^*}^2}{L^2\rho_0 \mu_0}(\nabla \times \mathbf{B})\times \mathbf{B} + \tau^2 \frac{\alpha g_0 \theta^*}{R} r \theta \mathbf{\hat r}+\tau\frac{\nu}{L^2}\nabla^2 \mathbf{u}.
 $$
 
 Above we have chosen the pressure scale as $P^*=\rho_0 L^2/\tau^2$. For the time being we leave the temperature scale $\theta^*$ unspecified, and define the *Ekman number* $E$ as
@@ -65,7 +65,7 @@ $$
 The *Lehnert number* $Le$ as
 
 $$
-Le \equiv \frac{B_0}{\Omega L \sqrt{\rho_0\mu_0}},
+Le \equiv \frac{B^*}{\Omega L \sqrt{\rho_0\mu_0}},
 $$
 
 the *Rayleigh number* $Ra$ as
@@ -80,7 +80,7 @@ $$
 Pr \equiv \frac{\nu}{\kappa},
 $$
 
-where $\kappa$ is the thermal diffusivity of the fluid So, the momentum equation becomes
+where $\kappa$ is the thermal diffusivity of the fluid. So, the momentum equation becomes
 
 $$
 \partial_t \mathbf{u} + 2\,(\Omega\tau)\,\mathbf{\hat z}\times\mathbf{u}=-\nabla p + (\Omega\tau)^2 Le^2(\nabla \times \mathbf{B})\times \mathbf{B}  + (\Omega\tau)^2 E^2\frac{Ra}{Pr}\,\theta\, r\, \mathbf{\hat r}+(\Omega\tau)\,E\,\nabla^2 \mathbf{u}.
@@ -105,7 +105,7 @@ $$
 $$
 
 
-A common choice for the time scale is the rotation time scale, so $\tau=1/\Omega$ and the $(\Omega\tau)$ factors go away. Another choice is the viscous diffusion time scale, with $\tau=L^2/\nu$, in which case $\Omega\tau=1/E$. Yet another choice is the Alfvén wave time scale, with $\tau=L \sqrt{\mu_0\rho_0}/B_0$ so that $\Omega\tau=1/Le$.
+A common choice for the time scale is the rotation time scale, so $\tau=1/\Omega$ and the $(\Omega\tau)$ factors go away. Another choice is the viscous diffusion time scale, with $\tau=L^2/\nu$, in which case $\Omega\tau=1/E$. Yet another choice is the Alfvén wave time scale, with $\tau=L \sqrt{\mu_0\rho_0}/B^*$ so that $\Omega\tau=1/Le$.
 
 
 
@@ -120,10 +120,10 @@ $$
 where $\eta$ is the magnetic diffusivity. Making the dimensional scale factors explicit we get
 
 $$
-\frac{B_0}{\tau} \partial_t \mathbf{B} = \frac{B_0}{\tau} \nabla \times (\mathbf{u} \times \mathbf{B}) + \eta \frac{B_0}{L^2}  \nabla^2\mathbf{B},
+\frac{B^*}{\tau} \partial_t \mathbf{B} = \frac{B^*}{\tau} \nabla \times (\mathbf{u} \times \mathbf{B}) + \eta \frac{B^*}{L^2}  \nabla^2\mathbf{B},
 $$
 
-where $\mathbf{u}, \mathbf{B}, t$ are now dimensionless. Multiply now by $\tau/B_0$ and obtain
+where $\mathbf{u}, \mathbf{B}, t$ are now dimensionless. Multiply now by $\tau/B^*$ and obtain
 
 $$
 \partial_t \mathbf{B} = \nabla \times (\mathbf{u} \times \mathbf{B}) + (\Omega\tau)E_\eta \nabla^2 \mathbf{B},
@@ -214,7 +214,7 @@ with $\nabla\cdot\mathbf{u} = \nabla\cdot\mathbf{b} = 0$, plus forcing terms in 
 | $\Omega\tau$ | `OmgTau` | Set by `timescale` (see [Setting up a problem](setup.md#time-scale)) |
 | $E$ | `Ek` | $\nu/\Omega L^2$ |
 | $E_\eta$ | `Em` | $\eta/\Omega L^2$ |
-| $Le$ | `Le` (`Le2` = $Le^2$) | $B_0/\Omega L\sqrt{\rho\mu_0}$ |
+| $Le$ | `Le` (`Le2` = $Le^2$) | $B^*/\Omega L\sqrt{\rho\mu_0}$ |
 | $\Lambda$, $Pm$ | `Lambda`, `Pm` | $Le^2/E_\eta$ and $E/E_\eta$ |
 | $N_0^2/\Omega^2$ | `BV2` | $-E^2 Ra/Pr$ |
 | $N_\xi^2/\Omega^2$ | `BV2_comp` | $-E^2 Ra_\xi/Sc$ |
@@ -230,7 +230,7 @@ For an axisymmetric, equatorially symmetric problem ($m = 0$, `symm = 1`) the fl
 
 ### The fluid
 
-Only the axisymmetric toroidal flow of degree 1, $u_\phi = t_1(r)\sin\theta$, carries axial angular momentum:
+Only the axisymmetric toroidal flow of degree 1, $u_\phi = t_1(r)\sin\theta$ (here $\theta$ is the colatitude, not the temperature), carries axial angular momentum:
 
 $$
 L_z = \int s\, u_\phi\, dV = \frac{8\pi}{3} \int_{r_i}^{1} r^3\, t_1(r)\, dr ,

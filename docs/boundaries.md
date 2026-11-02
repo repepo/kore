@@ -54,7 +54,7 @@ $$
 \partial_t \mathbf{b}_i = (\Omega\tau)\, E_\eta\, \eta_{i}\, \nabla^2 \mathbf{b}_i, \qquad \eta_i = \frac{1}{\mu_{i2o}\,\sigma_{i2o}},
 $$
 
-where $\eta_i$ is the inner core's magnetic diffusivity relative to the fluid's. In a forced problem the field oscillates at the forcing frequency $\omega$, $\partial_t = i\omega$ (before 2026-11-02 a forced run with `'conducting, Chebys'` stopped, or read the inner-core matrices of an earlier run, and had a steady field in the inner core). At the ICB, the normal field, the tangential $\mathbf{H} = \mathbf{b}/\mu$ and the tangential electric field are continuous. With subscripts $o$ (fluid) and $i$ (inner core), and the permeabilities relative to the fluid's:
+where $\eta_i$ is the inner core's magnetic diffusivity relative to the fluid's. In a forced problem the field oscillates at the forcing frequency $\omega$, $\partial_t = i\omega$. At the ICB, the normal field, the tangential $\mathbf{H} = \mathbf{b}/\mu$ and the tangential electric field are continuous. With subscripts $o$ (fluid) and $i$ (inner core), and the permeabilities relative to the fluid's:
 
 $$
 f_o = f_i, \qquad (r f_o)' = \frac{(r f_i)'}{\mu_{i2o}}, \qquad g_o = \frac{g_i}{\mu_{i2o}},
@@ -64,6 +64,8 @@ $$
 (r g_o)' = \eta_i\,(r g_i)', \qquad r^2 \nabla_l^2 f_o = \eta_i\, r^2 \nabla_l^2 f_i, \qquad \nabla_l^2 = \frac{d^2}{dr^2} + \frac{2}{r}\frac{d}{dr} - \frac{l(l+1)}{r^2} .
 $$
 
+The last condition, on $\nabla_l^2 f$, is not imposed: it follows from the others (see below).
+
 In the fluid the electric field is $\mathbf{E} = (\Omega\tau)E_\eta\nabla\times\mathbf{b} - \mathbf{u}\times\mathbf{B}_0$. At a no-slip ICB the fluid moves with the inner core, $\mathbf{u} = 0$, and the condition on $g$ above holds as it stands. At a stress-free ICB (`bci = 0`) the fluid slides over the inner core, and the tangential part of $\mathbf{u}\times\mathbf{B}_0$, which is $B_{0r}\,(\mathbf{u}\times\hat{\mathbf{r}})$ since $u_r = 0$, enters the condition on $g$:
 
 $$
@@ -71,11 +73,11 @@ $$
 S_l = \frac{\beta}{l(l+1)} \sum_{l'} \left[ i m\, D_{ll'}\, \frac{(r P_{l'})'}{r} + \frac{l_0(l_0+1) - l(l+1) - l'(l'+1)}{2}\, G_{ll'}\, T_{l'} \right],
 $$
 
-where $S_l$ is the $\nabla Y_l$ part of $B_{0r}\,(\mathbf{u}\times\hat{\mathbf{r}})$, $B_{0r} = \beta\, Y_{l_0}^0$ is the radial background field at the ICB (only a poloidal $\mathbf{B}_0$ has one), $P$ and $T$ are the poloidal and toroidal scalars of the flow, and $G_{ll'}$ and $D_{ll'}$ are the $Y_l$ components of $Y_{l_0}^0 Y_{l'}$ and of $(\mathrm{d}Y_{l_0}^0/\mathrm{d}\cos\theta)\, Y_{l'}$. A degree-1 field couples $g$ of degree $l$ to $P_l$ and $T_{l\pm1}$, a degree-2 field to $P_{l\pm1}$ and $T_l$, $T_{l\pm2}$. Before 2026-10-30 this term was missing, so a stress-free ICB with a conducting inner core gave wrong modes (eigenvalues off by up to 2% at `Ek` = `Em` = $10^{-3}$ in the tests); `spin_doctor`'s `resid𝐄` catches it.
+where $S_l$ is the $\nabla Y_l$ part of $B_{0r}\,(\mathbf{u}\times\hat{\mathbf{r}})$, $B_{0r} = \beta\, Y_{l_0}^0$ is the radial background field at the ICB (only a poloidal $\mathbf{B}_0$ has one), $P$ and $T$ are the poloidal and toroidal scalars of the flow, and $G_{ll'}$ and $D_{ll'}$ are the $Y_l$ components of $Y_{l_0}^0 Y_{l'}$ and of $(\mathrm{d}Y_{l_0}^0/\mathrm{d}\cos\theta)\, Y_{l'}$. A degree-1 field couples $g$ of degree $l$ to $P_l$ and $T_{l\pm1}$, a degree-2 field to $P_{l\pm1}$ and $T_l$, $T_{l\pm2}$.
 
-The poloidal field is solved with the radial component of the induction equation, as with an insulating inner core, and only the first two conditions are imposed on $f$. With the radial induction equation satisfied on both sides of the ICB, continuity of $f$ makes the radial component of $\nabla\times\mathbf{E}$ continuous, and that is the condition on $\nabla_l^2 f$. Before October 2026 Kore used the consoidal component instead, which is third order in $f$, and imposed the $\nabla_l^2 f$ condition as an extra row. Its tau error was integrated across the shell into a spurious term $c/r$ of the radial equation. For a torsional mode at Ek = $10^{-9}$ and `sigma_i2o` = $10^{-6}$ with $N = 688$, this gave resid b = $10^{-3}$ and a low-$l$ poloidal field wrong by factors of up to 30. The radial component gives $10^{-5}$ and the insulating-core field to four digits at the same $N$.
+The poloidal field is solved with the radial component of the induction equation, as with an insulating inner core, and only the first two conditions are imposed on $f$. With the radial induction equation satisfied on both sides of the ICB, continuity of $f$ makes the radial component of $\nabla\times\mathbf{E}$ continuous, and that is the condition on $\nabla_l^2 f$.
 
-`spin_doctor.py`'s residuals cover the fluid volume only. They do not test the inner-core field or the ICB conditions, so check `N_cic` by the change of the eigenvalue.
+`spin_doctor.py`'s `resid𝐄` tests the inner-core field and the ICB conditions; the other residuals cover the fluid. It is `nan` in forced problems, so check `N_cic` there by the change of the solution (see [Output and postprocessing](output.md#checking-the-results)).
 
 **Resolution.** `N_cic = 64` (the default) is safe for conductivity ratios from $10^{-4}$ to 1. In the tests behind this default, 16 polynomials put the eigenvalue off by $1.6\times10^{-3}$ at `sigma_i2o = 1`, and 48 gave broken eigenvectors for the modes away from the target at `sigma_i2o` = $10^{-2}$. The inner core adds $2\,n_{ic}$ unknowns, which is cheap: at $N = 232$ a torsional-mode run took 40 s and 7.8 GB with a conducting inner core, against 22 s and 7.3 GB with a thin wall.
 
@@ -89,12 +91,12 @@ $$
 (r f_o)' = \frac{1 + x_d}{\mu_{i2o}}\, f_o, \qquad (r g_o)' - \frac{1 + x_d}{\sigma_{i2o}}\, g_o = \frac{r\,S_l}{(\Omega\tau)E_\eta} \qquad \text{at } r = r_i,
 $$
 
-with $S_l = 0$ at a no-slip ICB, and $x_d = l$ at $\omega = 0$ (`forcing = 12`). Without a forcing frequency there is no $k$, so a run with `forcing = 0` stops. In tests (forcings 1, 7, 9 and 12; `B0` = `'axial'`, `'dipole'` and `'Luo_S2'`; no-slip and stress-free ICB; `mu_i2o`, `sigma_i2o` $\neq 1$; the Alfvén time scale) the two inner cores give the same solution to $10^{-10}$. Before 2026-11-02 the two conditions had $f_o$ and $f_o'$ swapped, $k$ lacked $\Omega\tau$ and $\eta_i$, and the flow entered the condition on $g$ through terms valid for `B0 = 'axial'` only, so the solutions were wrong (the field by 9% to 600% in those tests), and `forcing = 12` divided by zero.
+with $S_l = 0$ at a no-slip ICB, and $x_d = l$ at $\omega = 0$ (`forcing = 12`). Without a forcing frequency there is no $k$, so a run with `forcing = 0` stops. In tests (forcings 1, 7, 9 and 12; `B0` = `'axial'`, `'dipole'` and `'Luo_S2'`; no-slip and stress-free ICB; `mu_i2o`, `sigma_i2o` $\neq 1$; the Alfvén time scale) the two inner cores give the same solution to $10^{-10}$.
 
 
 ## Perfectly conducting inner core
 
-Not available at present. The former options `'perfect conductor, material'` and `'perfect conductor, spatial'` were unreachable (missing from `ic_bc_list` in `bin/utils.py`) and were removed in October 2026, together with the consoidal projection they relied on. A rewrite is pending. With the radial projection, $f = 0$ at the ICB is enough for the poloidal field: with $\mathbf{u} = 0$ there, the radial induction equation then gives $\nabla_l^2 f = 0$, the zero tangential electric field.
+Not available at present; a rewrite is pending. With the radial projection, $f = 0$ at the ICB is enough for the poloidal field: with $\mathbf{u} = 0$ there, the radial induction equation then gives $\nabla_l^2 f = 0$, the zero tangential electric field.
 
 
 ## Thin conducting wall
@@ -117,7 +119,13 @@ $$
 
 with $\mathcal{D}_l F = F'' - l(l+1)F/r^2 = r\,\nabla_l^2 f$. With $c = c_1 = 0$ and $\mu = 1$ they reduce to the insulating conditions. They were checked against the exact free-decay rates of a sphere and a shell bounded by thin walls, to $10^{-14}$.
 
-The last term of each poloidal condition is first order in $h$. It comes from the curvature of the wall, from matching the potential field at $r_j \pm h$ instead of $r_j$, and from the $l(l+1)/r^2$ part of $\nabla_l^2$ inside the wall. Guervilly, Wood & Brummell (2013, appendix A) take the limit $h \to 0$ with $h\mu_w$ and $h\sigma_w$ fixed, which needs $\mu_w \gg \mu_0$ for $c$ to stay finite. Their conditions are the ones above without this term, recovered with `muw_cmb = np.inf` (or `muw_icb`); for $p \gg 1$ the term is a correction of relative size about $1/(p\,l)$ to the $c$ term. For a wall with the permeability of vacuum ($p = 1$, the default, as at the Earth's CMB) the term cancels the $c$ term at leading order: a static field crosses such a wall unchanged, and only its conductance $c_1$ acts. With $c_1 = 0$ and $p = \mu = 1$ the wall conditions are then exactly the insulating ones, which the former conditions missed by $O(l\,c)$. Against an exact conducting layer (the layer's induction equation integrated across the wall, CMB and ICB, $p$ = 1 to 100, steady and oscillating fields), the conditions with the term are off by $O(h)$ relative to the wall's own effect; without it the error is $O(1)$ for small $p$ (8% at $l = 5$ at the ICB for $p = 1$).
+The last term of each poloidal condition is first order in $h$. It comes from the curvature of the wall, from matching the potential field at $r_j \pm h$ instead of $r_j$, and from the $l(l+1)/r^2$ part of $\nabla_l^2$ inside the wall.
+
+Guervilly, Wood & Brummell (2013, appendix A) take the limit $h \to 0$ with $h\mu_w$ and $h\sigma_w$ fixed, which needs $\mu_w \gg \mu_0$ for $c$ to stay finite. Their conditions are the ones above without this term, recovered with `muw_cmb = np.inf` (or `muw_icb`); for $p \gg 1$ the term is a correction of relative size about $1/(p\,l)$ to the $c$ term.
+
+For a wall with the permeability of vacuum ($p = 1$, the default, as at the Earth's CMB) the term cancels the $c$ term at leading order: a static field crosses such a wall unchanged, and only its conductance $c_1$ acts. With $c_1 = 0$ and $p = \mu = 1$ the wall conditions are then exactly the insulating ones; without the term they differ from them by $O(l\,c)$.
+
+Against an exact conducting layer (the layer's induction equation integrated across the wall, CMB and ICB, $p$ = 1 to 100, steady and oscillating fields), the conditions with the term are off by $O(h)$ relative to the wall's own effect; without it the error is $O(1)$ for small $p$ (8% at $l = 5$ at the ICB for $p = 1$).
 
 The thin-wall approximation itself needs the wall to be much thinner than its magnetic skin depth, $h \ll \delta_w = \sqrt{2\eta_w/\omega}$: the error on the wall's contribution to an eigenvalue grows as $(h/\delta_w)^2$.
 
@@ -151,7 +159,11 @@ As at a conducting inner core, the continuity of $\nabla_l^2 f/\sigma$ follows f
 | `sigma_mantle` | 1 | Conductivity of the layer / fluid: a number (uniform layer), or a numpy expression of `r` and `p`. |
 | `sigma_mantle_param` | 0 | The value of `p` in `sigma_mantle`. |
 
-An expression may use the functions allowed in `B0_tor_profile` (`sin`, `cos`, `tan`, `exp`, `log`, `sqrt`, `abs`, `tanh`, `sinh`, `cosh`, `arctan`, `where`, `pi`, `erf`). For example `'1e-2*exp(-p*(r - 1))'` is the exponential profile of PR #17 (A. Nuyt), and `'1e-2*(1 - tanh((r - 1.05)/0.02))/2 + 1e-8'` a layer about 0.05 thick with a smooth top (it needs `N_mantle = 128`). The profile must be smooth, positive on $[1, r_s]$ and resolved by `N_mantle` polynomials: B holds the `N_mantle`-term Chebyshev series of $r^2\sigma_m$, and the toroidal rows that of $r^2(\ln\sigma_m)'$, with $(\ln\sigma_m)'$ from an interpolant of $\ln\sigma_m$. Where they do not resolve the profile they oscillate: $\sigma_m$ in B can dip below 0, which gives spurious growing modes, and the toroidal modes come out wrong. The run therefore stops when the Chebyshev coefficients beyond `N_mantle` exceed $10^{-6}$ of the largest for $r^2\sigma_m$, or $10^{-6}$ for $\ln\sigma_m$ (the relative error of $\sigma_m$). A step (`where`) or a kink (`abs`) is never resolved: use a smooth transition, e.g. with `tanh` or `erf`. In free-decay tests the profiles that pass give decay rates within $10^{-6}$ of the exact ones. The solution in the layer is written to `real_magnetic_mantle.field` and `imag_magnetic_mantle.field`. `just_induction.py` (the induction equation alone) does not include the layer and stops.
+An expression may use the functions allowed in `B0_tor_profile` (`sin`, `cos`, `tan`, `exp`, `log`, `sqrt`, `abs`, `tanh`, `sinh`, `cosh`, `arctan`, `where`, `pi`, `erf`). For example `'1e-2*exp(-p*(r - 1))'` is the exponential profile of PR #17 (A. Nuyt), and `'1e-2*(1 - tanh((r - 1.05)/0.02))/2 + 1e-8'` a layer about 0.05 thick with a smooth top (it needs `N_mantle = 128`).
+
+The profile must be smooth, positive on $[1, r_s]$ and resolved by `N_mantle` polynomials: B holds the `N_mantle`-term Chebyshev series of $r^2\sigma_m$, and the toroidal rows that of $r^2(\ln\sigma_m)'$, with $(\ln\sigma_m)'$ from an interpolant of $\ln\sigma_m$. Where they do not resolve the profile they oscillate: $\sigma_m$ in B can dip below 0, which gives spurious growing modes, and the toroidal modes come out wrong. The run therefore stops when the Chebyshev coefficients beyond `N_mantle` exceed $10^{-6}$ of the largest for $r^2\sigma_m$, or $10^{-6}$ for $\ln\sigma_m$ (the relative error of $\sigma_m$). A step (`where`) or a kink (`abs`) is never resolved: use a smooth transition, e.g. with `tanh` or `erf`. In free-decay tests the profiles that pass give decay rates within $10^{-6}$ of the exact ones.
+
+The solution in the layer is written to `real_magnetic_mantle.field` and `imag_magnetic_mantle.field`. `just_induction.py` (the induction equation alone) does not include the layer and stops.
 
 Unlike the thin wall, the layer holds at any frequency, for any thickness and any smooth profile that `N_mantle` resolves. For a thin uniform layer, $r_s = 1 + h$ and `sigma_mantle` $= c_1/h$, it tends to the thin wall with `c1_cmb` $= c_1$ (and `c_cmb = 0`) as $h \to 0$, with a difference of order $h$; as `sigma_mantle` goes to 0 it tends to the insulating mantle. Free-decay rates of a conducting sphere or shell inside a uniform layer agree with the exact ones (spherical Bessel functions) to $10^{-11}$.
 
@@ -163,4 +175,8 @@ A conducting layer or inner core lets currents close outside the fluid, and the 
 
 ## Thin wall or conducting inner core?
 
-The thin wall is cheaper to set up, but it is not a substitute for a conducting inner core. When the inner core's field is a skin layer of depth $\delta = \sqrt{2\eta_i/\omega}$, the conducting inner core acts on the fluid exactly like a thin wall, but with a complex, frequency-dependent conductance, $c_1 \approx (1-i)\,\delta/2r_i$ for $\delta \ll r_i$. Kore's thin wall takes a real $c_1$. In tests with the torsional modes at $E = 10^{-7}$ and $10^{-8}$, the best real $c_1$ still left the eigenvalues 1 to 2% off, with errors of 5 to 15 degrees in the phase of the inner-core torque. The mode in which the inner core and the fluid oscillate together was off by about 20%. Use a conducting inner core when the inner core's electromagnetic coupling matters, and the thin wall for a thin conducting layer such as the base of the mantle. The same holds at the CMB: use `mantle = 'resolved'` when the layer is not thin compared with its skin depth, or when its conductivity varies across it.
+The thin wall is cheaper to set up, but it is not a substitute for a conducting inner core. When the inner core's field is a skin layer of depth $\delta = \sqrt{2\eta_i/\omega}$, the conducting inner core acts on the fluid exactly like a thin wall, but with a complex, frequency-dependent conductance, $c_1 \approx (1-i)\,\delta/2r_i$ for $\delta \ll r_i$. Kore's thin wall takes a real $c_1$.
+
+In tests with the torsional modes at $E = 10^{-7}$ and $10^{-8}$, the best real $c_1$ still left the eigenvalues 1 to 2% off, with errors of 5 to 15 degrees in the phase of the inner-core torque. The mode in which the inner core and the fluid oscillate together was off by about 20%.
+
+Use a conducting inner core when the inner core's electromagnetic coupling matters, and the thin wall for a thin conducting layer such as the base of the mantle. The same holds at the CMB: use `mantle = 'resolved'` when the layer is not thin compared with its skin depth, or when its conductivity varies across it.

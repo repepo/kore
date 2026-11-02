@@ -1439,7 +1439,7 @@ def kin_mag_energy(usol2, bsol2, Ra, Rb, ls=None):
     '''
     Returns [KE, ME] of one solution, integrated from r=Ra to r=Rb, with the same definitions
     and routines as diagnose/spin_doctor: KE = (1/2) ∫ 𝐮⋅𝐮 dV (flow_worker), and
-    ME = Le2*OmgTau**2 * (1/2) ∫ 𝐛⋅𝐛 dV (magnetic_worker, scaled as in spin_doctor).
+    ME = Le2*OmgTau**2 * (1/2) ∫ 𝐛⋅𝐛 dV (magnetic_worker, in kinetic-energy units as spin_doctor's Mag/Kin and resid E).
     usol2, bsol2 come from expand_reshape_sol (0 if the field is absent). Serial; computes only
     the energies, not the dissipation or power terms, so it is much cheaper than diagnose.
     ls: the l values to include (default all), so that callers can split the sum among processes.
