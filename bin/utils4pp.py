@@ -535,13 +535,16 @@ def thermal_advect(l, hlm0, plm0, flag):
 
     f0 = 4*np.pi/(2*l+1)
     f1 = l*(l+1) * 2*np.real( np.conj(plm0) * hlm0 )
+    # FIX (2026-11-02): 'differential' profiles are dT/dr = -(ricb/gap) r**-2 (operators.thermal_advection); the factor
+    # ricb/gap was missing here, so residθ (and residξ) came out as 1 - ricb/gap (0.46 at ricb = 0.35)
+    rgap = par.ricb/(ut.rcmb - par.ricb)
 
     if flag == 'thermal':
     
         if par.heating   == "internal":
             fr = r2
         elif par.heating == "differential":
-            fr = 1/rk
+            fr = rgap/rk
         elif par.heating == "two zone":
             fr = rk * ut.twozone(rk, par.args)
         elif par.heating == "user defined":
@@ -552,7 +555,7 @@ def thermal_advect(l, hlm0, plm0, flag):
         if par.comp_background  == "internal":
             fr = r2
         elif par.comp_background == "differential":
-            fr = 1/rk        
+            fr = rgap/rk
 
     return f0*fr*f1
 

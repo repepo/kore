@@ -248,7 +248,8 @@ def load_result():
     if exists('compositional.dat'):
         cmp = pd.read_csv('compositional.dat', sep=' ', names=["CE",
                                                              "Wadv_cmp",
-                                                             "Dcmp"])
+                                                             "Dcmp",
+                                                             "residc"])  # NEW (2026-11-02): residξ column
         df = pd.concat([df, cmp], axis=1)
     if exists('eigenvalues.dat'):
         eig = pd.read_csv('eigenvalues.dat', sep=' ', names=["rtau",

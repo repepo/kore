@@ -36,7 +36,7 @@ Eigenvectors are only defined up to a complex factor. Kore scales each one so th
 |---|---|
 | ★ | Solution number. |
 | Damping σ, Frequency ω | Real and imaginary parts of the eigenvalue (the forcing frequency for forced problems). |
-| resid0, resid𝐮, resid𝐛, residθ, resid𝐋, resid𝐄 | Residuals of the balances, see below. |
+| resid0, resid𝐮, resid𝐛, residθ, residξ, resid𝐋, resid𝐄 | Residuals of the balances, see below (residξ only with `compositional = 1`). |
 | Tor/Pol | Toroidal over poloidal kinetic energy. |
 | Mag/Kin | Magnetic over kinetic energy. |
 | Geo | Geostrophic fraction: the share of the energy of $u_\phi$ held by its average along the rotation axis (see below). Only for $m = 0$, `symm = 1`; `nan` otherwise. |
@@ -63,6 +63,7 @@ The residuals compare terms of balances that an exact solution satisfies. They a
 | `resid𝐮` | Kinetic energy: $2\sigma$ times the kinetic energy against the viscous dissipation and the work of the Lorentz and buoyancy forces. With `forcing = 12` (steady, no body force) $\int \mathbf{u}\cdot\nabla^2\mathbf{u}\,dV$ vanishes, and `resid𝐮` is its size relative to the viscous dissipation. With `bgflow = 1` the balance includes the work of the background flow (see [Background flow](bgflow.md)). |
 | `resid𝐛` | Magnetic energy: $2\sigma$ times the magnetic energy against the induction work and magnetic diffusion. |
 | `residθ` | Thermal "energy": $2\sigma$ times it against thermal diffusion and advection. |
+| `residξ` | The same for the composition. |
 | `resid𝐋` | Angular momentum of the fluid: $\lambda L$ ($L_z$ for $m = 0$; its equatorial components for $m = 1$, with the Coriolis torque) against the viscous and electromagnetic torques on the mantle and the inner core, and the Maxwell stress of the background field on the fluid side of a wall where those torques leave it out: a toroidal field with $k \neq 0$ at the wall, and for $m = 1$ an insulating CMB with `B0 = 'axial'` and the ICB of a conducting or thin-wall inner core, or of one that holds currents or sources of $\mathbf{B}_0$ (`B0_ic = 'full sphere'`, `B0 = 'dipole'`) (see [Angular momentum balance](equations.md#angular-momentum-balance)). Only for eigenvalue problems with $m = 0$, `symm = 1` and $m = 1$, `symm = -1`, and for `forcing = 12`, where the steady torques on the mantle and the inner core cancel; `nan` otherwise. It is 0 when no torque acts at the walls (`Ek = 0` or stress-free walls, or a full sphere with a stress-free CMB, and no magnetic torques): the balance is then not tested, so judge such modes by `resid𝐮` and `resid𝐛`. |
 | `resid𝐄` | Total energy of fluid, inner core, thin walls or a conducting mantle layer, and the potential field outside: $2\sigma$ times kinetic plus all magnetic energy against the viscous dissipation, the work of the background currents ($\mathbf{J}_0\times\mathbf{b}$, plus buoyancy) and the Ohmic losses in the fluid, a conducting inner core, thin walls and a mantle layer, written as $\eta\int|\nabla\times\mathbf{b}|^2\,dV$. Unlike `resid𝐛` it tests the matching conditions at the ICB and CMB. With `rotdyn = 1` it includes the rotational energy of the mantle and the inner core, the gravitational energy and the inner core's viscous relaxation, so it also tests their equations. At a stress-free wall it includes the power $2\,\mathrm{Re}\oint B_{0r}\,\mathbf{u}_t\cdot\mathbf{b}_t^*\,dS$ that the induction term carries through the wall (zero at a no-slip wall); a thin wall or a mantle layer still needs a no-slip boundary there, and `rotdyn = 1` no-slip walls. `nan` for forced problems (including `forcing = 12`, whose energy balance `resid0` and `resid𝐮` cover), `'conducting, Bessel'`, thin walls with `mu` $\neq 1$, or `rotdyn = 1` with `vtrq` or `mtrq` set to 0. |
 
@@ -92,7 +93,8 @@ Each run appends one row per solution to the files below, in the same order in e
 | 1-3     | Kinetic energy: total, poloidal, toroidal                             |
 | 4       | Viscous dissipation from $\int \mathbf{u}\cdot\nabla^2\mathbf{u}\,dV$ |
 | 5       | Viscous (internal) dissipation from the rate of strain                |
-| 6-8     | Work of the Lorentz force, the thermal and the compositional buoyancy |
+| 6       | Work of the Lorentz force                                             |
+| 7-8     | Minus the work of the thermal and of the compositional buoyancy force |
 | 9-10    | `resid0`, `resid𝐮`                                                   |
 | 11-12   | Viscous torque on the mantle (real, imaginary)                        |
 | 13-14   | Viscous torque on the inner core (real, imaginary)                    |
@@ -108,7 +110,7 @@ Each run appends one row per solution to the files below, in the same order in e
 
 **`thermal.dat`** (4 columns): thermal "energy", thermal advection, thermal diffusion, `residθ`.
 
-**`compositional.dat`** (3 columns): compositional "energy", advection, diffusion.
+**`compositional.dat`** (4 columns; 3 in files written before 2026-11-02): compositional "energy", advection, diffusion, `residξ`.
 
 **`rotdyn.dat`** (8 complex columns): see [Rotational dynamics](rotdyn.md#output).
 

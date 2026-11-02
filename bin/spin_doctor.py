@@ -232,6 +232,7 @@ def main(ncpus):
     resid1      = np.zeros(success)
     resid2      = np.zeros(success)
     resid3      = np.zeros(success)
+    resid4      = np.zeros(success)           # NEW (2026-11-02): composition balance, as resid3
     residL      = np.full(success, np.nan)    # angular momentum balance of the fluid (m=0, symm=1 axial; m=1, symm=-1 equatorial)
     residE      = np.full(success, np.nan)    # NEW (2026-10-18): full energy budget (fluid, inner core, walls, outside)
     budget      = np.full((success, 7), np.nan)  # NEW (2026-10-18): ME_ic, E_w, ME_ext, Ohm_f, Ohm_ic, Ohm_w, W_ex
@@ -268,6 +269,9 @@ def main(ncpus):
         ( '|𝚪|mag',      '{:8.2e}',   lambda i: np.abs(mtorq[i]) ),
         ( '|𝚪|magIC',    '{:8.2e}',   lambda i: np.abs(mtorq_ic[i]) ),
     ]
+    if par.compositional:  # NEW (2026-11-02): residual of the composition equation, next to residθ
+        k = [ h for h, _, _ in table_cols ].index('residθ')
+        table_cols.insert(k + 1, ( 'residξ', '{:8.2e}', lambda i: resid4[i] ))
     table_w = table_widths(table_cols)
     table_head, table_line = table_header(table_cols, table_w)
 
@@ -440,7 +444,7 @@ def main(ncpus):
         # pvf is the rate of working of external volume force
         # Dint is the rate of change of internal energy
         # Dkin is the kinetic energy dissipation (viscous dissipation) via ∫𝐮⋅∇²𝐮 dV
-        # Wthm is the rate of working of the buoyancy force (thermal)
+        # Wthm, Wcmp are minus the rate of working of the thermal and the compositional buoyancy force  # FIX (2026-11-02): sign
         # Dohm is the Ohmic dissipation or Joule heating via ∫|∇×𝐛|² dV
         # Mdfs is the magnetic diffusion via ∫𝐛⋅∇²𝐛 dV
         # Dthm is the thermal "dissipation" via ∫ θ ∇²θ dV
@@ -450,9 +454,10 @@ def main(ncpus):
         # TE is the thermal "energy" (1/2) ∫ θ² dV
         # resid0 is the relative residual of Dkin + Dint - pss = 0
         # Wbg is the rate of working of the background flow (bgflow = 1), -2 Re ∫ u*·(u·∇)U dV
-        # resid1 is the relative residual of 2*sigma*KE - Dkin - Wlor -Wthm - pvf - Wbg = 0
+        # resid1 is the relative residual of 2*sigma*KE - Dkin - Wlor + Wthm + Wcmp - pvf - Wbg = 0  # FIX (2026-11-02): + Wcmp
         # resid2 is the relative residual of 2*sigma*ME - Indu - Mdfs = 0
         # resid3 is the relative residual of 2*sigma*TE - Dthm - Wadv_thm = 0
+        # resid4 is the relative residual of 2*sigma*CE - Dcmp - Wadv_cmp = 0 (composition)  # NEW (2026-11-02)
         # ---------------------------------------------------------------------------------------------------------
 
         [repow, pss, pvf] = [0, 0, 0]  # power from the forcing needs to be computed, not coded yet. 
@@ -487,9 +492,9 @@ def main(ncpus):
         else:
             resid0[i] = np.nan
 
-        if par.hydro:
-            resid1[i] = abs( 2*sigma*KE[i] - Dkin[i] - Wlor[i] + Wthm[i] - Wbg[i] )/ \
-                             max(abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wlor[i]), abs(Wthm[i]), abs(Wbg[i]))
+        if par.hydro:  # FIX (2026-11-02): Wcmp, the compositional buoyancy, was left out
+            resid1[i] = abs( 2*sigma*KE[i] - Dkin[i] - Wlor[i] + Wthm[i] + Wcmp[i] - Wbg[i] )/ \
+                             max(abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wlor[i]), abs(Wthm[i]), abs(Wcmp[i]), abs(Wbg[i]))
             if par.forcing == 12:  # steady, no body force: the integral of u.lap(u) vanishes; measured against the dissipation
                 resid1[i] = abs( Dkin[i] ) / abs( Dint[i] )
         
@@ -500,6 +505,10 @@ def main(ncpus):
         if par.thermal:
             resid3[i] = abs( 2*sigma*TE[i] - Dthm[i] - Wadv_thm[i] ) / \
                              max( abs(2*sigma*TE[i]), abs(Dthm[i]), abs(Wadv_thm[i]))
+
+        if par.compositional:  # NEW (2026-11-02)
+            resid4[i] = abs( 2*sigma*CE[i] - Dcmp[i] - Wadv_cmp[i] ) / \
+                             max( abs(2*sigma*CE[i]), abs(Dcmp[i]), abs(Wadv_cmp[i]))
 
         # Angular momentum balance of the fluid: dL/dt = lambda*L must equal the torque on the fluid,
         # which is minus the viscous and magnetic torques it exerts on the mantle and the inner core, plus the wall
@@ -538,7 +547,7 @@ def main(ncpus):
             print('{:1.2e}   {:1.2e}   {:1.2e}   {:1.2e}   {:1.2e}   {:1.2e}   {:1.2e}'.format(imags[0], imags[1], imags[2], imags[3], imags[4], imags[5], sum(imags)))
             '''
 
-        # NEW (2026-10-18): full energy budget, 2 sigma (KE + ME + ME_ic + E_w + ME_ext) = Dkin + Wlor - Wthm + Indu
+        # NEW (2026-10-18): full energy budget, 2 sigma (KE + ME + ME_ic + E_w + ME_ext) = Dkin + Wlor - Wthm - Wcmp + Indu
         # - Ohm_f - Ohm_ic - Ohm_w, with the magnetic terms in kinetic-energy units (times OmgTau**2*Le2). It adds
         # what resid b cannot see: the field and Ohmic loss of a conducting inner core and of thin walls, the
         # potential fields beyond insulating boundaries, and so the matching conditions at the ICB and CMB.
@@ -567,13 +576,13 @@ def main(ncpus):
                 Wex -= s2*upp.slip_power(u_sol2, b_sol2)
             Etot = (KE[i] if par.hydro else 0) + s2*( ME[i] + MEic0 + Ew0 + MEext0 )
             Ohm  = s2*eta*( Ohm_f0 + Ohm_ic0 + Ohm_w0 )
-            Dk   = (Dkin[i] - Wthm[i]) if par.hydro else 0
+            Dk   = (Dkin[i] - Wthm[i] - Wcmp[i]) if par.hydro else 0  # FIX (2026-11-02): - Wcmp
             if par.rotdyn:
                 # spin_doctor's energies are int |u|^2 (twice the kinetic energy of the complex amplitude), so the solids
                 # enter as I*|omega|^2 and K*|phi|^2, and the powers as 2*Re(torque*conj(omega))
                 Kg    = par.gTorque * par.OmgTau**2
                 Etot += par.MoIZ_M*abs(omg_mantle[i])**2 + par.MoIZ_IC*abs(omg_incore[i])**2 + Kg*abs(misalignmt[i])**2
-                Dk    = -Dint[i] - Wthm[i] - 2*Kg*(par.OmgTau/par.OmgtauIC)*abs(misalignmt[i])**2
+                Dk    = -Dint[i] - Wthm[i] - Wcmp[i] - 2*Kg*(par.OmgTau/par.OmgtauIC)*abs(misalignmt[i])**2  # FIX (2026-11-02): - Wcmp
                 Wex  += 2*np.real( mtorq[i]*np.conj(omg_mantle[i]) + mtorq_ic[i]*np.conj(omg_incore[i]) )
             scale = max( abs(2*sigma*Etot), abs(Dk), Ohm, abs(Wex) )
             residE[i] = abs( 2*sigma*Etot - Dk - Wex + Ohm ) / scale
@@ -661,7 +670,7 @@ def main(ncpus):
 
     if par.compositional:
         with open('compositional.dat','ab') as dcmp:
-            np.savetxt(dcmp, np.c_[ CE, Wadv_cmp, Dcmp ])
+            np.savetxt(dcmp, np.c_[ CE, Wadv_cmp, Dcmp, resid4 ])  # NEW (2026-11-02): resid4 (residξ), as thermal.dat
 
     if not par.forcing:
         with open('eigenvalues.dat','ab') as deig:

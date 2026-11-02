@@ -1,6 +1,37 @@
 CHANGELOG - Kore, conductive_IC branch
 ======================================
 
+2026-11-02
+----------
+Fix: composition left out of the energy residuals; Etherm and Ecomp ignored by the matrices (bin/spin_doctor.py,
+bin/operators.py, bin/utils4pp.py, tools/get_data.py, docs/output.md, docs/setup.md)
+- spin_doctor's resid u and resid E left out the work of the compositional buoyancy (Wcmp, already computed and
+  written to flow.dat, column 8), so with compositional = 1 both were of order 1 whenever composition does work.
+  Wcmp now enters both as Wthm does, also in the rotdyn form of resid E. Wthm and Wcmp are minus the work of the
+  buoyancy forces; the comments and docs/output.md said they were the work itself.
+- New residξ, the composition balance |2 sigma CE - Dcmp - Wadv_cmp| / largest term, as residθ. It is printed
+  after residθ when compositional = 1 and written as a 4th column of compositional.dat (tools/get_data.py reads it
+  as residc; older files have 3 columns).
+- residθ with heating = 'differential' (and residξ with comp_background = 'differential') came out as
+  1 - ricb/(1 - ricb), 0.46 at ricb = 0.35: utils4pp.thermal_advect lacked the factor ricb/(1 - ricb) of the
+  background gradient dT/dr = -(ricb/(1 - ricb)) r^-2, which the matrices have (operators.thermal_advection).
+- operators.thermal_diffusion and compositional_diffusion used Ek/Prandtl and Ek/Schmidt, so Etherm and Ecomp set in
+  parameters.py changed nothing in the solution, while spin_doctor used them (residθ then wrong). They now use Etherm
+  and Ecomp, which set_scales() derives as before when they are not set. A then changes only in the last bit of the
+  diffusion entries when Prandtl or Schmidt is not 1 (Ek/Prandtl is now computed first), and B not at all.
+- Checked in the cloud (scipy shift-and-invert eigensolver on one rank with an MPI stub, no PETSc; Ek = 1e-3, N = 32,
+  ricb = 0.35, m = 4, or m = 0 with rotdyn; 4 modes each), before -> after:
+  * thermal + compositional, stress-free: resid u 0.26-0.56 -> <= 3e-12.
+  * the same with B0 = 'axial', no-slip: resid u 0.29-0.71 -> <= 5e-12, resid E 0.51-1.2 -> <= 9e-12.
+  * rotdyn = 1 (m = 0), 'axial', compositional only: resid u 0.28-1.7 -> <= 4e-12, resid E 2e-3-0.83 -> <= 4e-12.
+  * 'differential' heating and composition: residθ 0.46 -> <= 1e-14, resid u 0.07-0.26 -> <= 5e-12.
+  * Etherm = 3 Ek and Ecomp = Ek/2 set (Prandtl = Schmidt = 1): residθ 0.67 -> <= 4e-15; A and B are now those of
+    Prandtl = 1/3, Schmidt = 2, bit for bit, and so are the eigenvalues.
+  * residξ <= 3e-15 in all of these, and apart from the Etherm case the eigenvalues are unchanged (<= 3e-16).
+  * thermal only, and magnetic without thermal or composition: A and B bit for bit, and flow.dat, magnetic.dat,
+    thermal.dat and budget.dat byte for byte. With Prandtl or Schmidt not 1 and Etherm, Ecomp not set, A agrees with
+    the old one to 3e-16 per entry, and B bit for bit.
+
 2026-10-30
 ----------
 New: conducting mantle layer of finite thickness, mantle = 'resolved', ported by hand from PR #17 (A. Nuyt)

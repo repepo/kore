@@ -114,7 +114,7 @@ The background field itself is chosen with `B0`, `B0_tor`, `cnorm`, `cnorm_tor` 
 | Parameter | Default | Meaning |
 |---|---|---|
 | `Prandtl` | 1 | Prandtl number $Pr = \nu/\kappa$. |
-| `Etherm` | `Ek/Prandtl` | Thermal Ekman number. |
+| `Etherm` | `Ek/Prandtl` | Thermal Ekman number $\kappa/\Omega L^2$, the coefficient of thermal diffusion. Setting it leaves `BV2` as it is, derived from `Ra` and `Prandtl` unless set too. |
 | `heating` | `'internal'` | Background temperature gradient, see below. |
 | `Ra` | $2.5168 \times 10^8$ | Rayleigh number $Ra = \alpha g_0 L^3 \Delta T/\nu\kappa$, with $L$ the CMB radius and $\Delta T$ the temperature scale below. |
 | `BV2` | `-Ra*Ek**2/Prandtl` | Squared ratio of a reference Brunt-Väisälä frequency to the rotation rate, $N_0^2/\Omega^2$. Set it directly for problems without diffusion, where `Ra` is undefined. Negative values are unstably stratified. |

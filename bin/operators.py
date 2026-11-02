@@ -972,7 +972,7 @@ def thermal_diffusion(l, section, component, offdiag):
         else:
             difus = - L*Ih + 2*r1D1h + r2D2h  # eq. times r**2
 
-    return difus * par.OmgTau * par.Ek / par.Prandtl
+    return difus * par.OmgTau * par.Etherm  # FIX (2026-11-02): Etherm (Ek/Prandtl unless set), was always Ek/Prandtl
 
 
 
@@ -1024,7 +1024,7 @@ def compositional_diffusion(l, section, component, offdiag):
         else:
             difus = - L*Ii + 2*r1D1i + r2D2i  # eq. times r**2
 
-    return difus * par.OmgTau * par.Ek / par.Schmidt
+    return difus * par.OmgTau * par.Ecomp  # FIX (2026-11-02): Ecomp (Ek/Schmidt unless set), was always Ek/Schmidt
 
 
 # ----------------------------------------------------------------------------------------------------------------------
