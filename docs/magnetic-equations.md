@@ -500,8 +500,9 @@ The background's own force on $\mathbf U_0$ has two parts.
 
 1. *The azimuthal torque*, $\propto \mathbf B_p\cdot\nabla(s B_\phi)$: Ferraro's mechanism. It brakes $\Delta\Omega$ along the field
    lines in a time of about $1/(\Lambda_p\Omega)$, with $\Lambda_p$ the Elsasser number of the poloidal field built on the
-   background diffusivity. If viscous (or turbulent) stresses hold $\Delta\Omega$, the torque compares with them through the
-   Hartmann number $Ha$ of the background values:
+   background diffusivity. In a real system the wound field first has to build up, so the braking takes at least one
+   Alfvén crossing time of the poloidal field. If viscous (or turbulent) stresses hold $\Delta\Omega$, the torque compares
+   with them through the Hartmann number $Ha$ of the background values:
 
     $$
     \Lambda_p = \frac{\mathrm{Le}^2}{\rho_0\,\mathrm{Em}\,\eta_w}, \qquad
@@ -517,7 +518,71 @@ The background's own force on $\mathbf U_0$ has two parts.
     \mathrm{Le}_\phi = \mathrm{Le}\,\frac{\max\lvert B_\phi\rvert}{\max\lvert\mathbf B_p\rvert} .
     $$
 
-The resulting criteria and the checklist for solar inertial modes are on [Magnetic field](magnetic.md#validity-and-caveats).
+**The thermal-wind balance with the field.** With $\mathbf F_0$ added to the balance of [Differential rotation
+§2.4](differential_rotation_details.md#24-thermal-wind-entropy), the $\phi$-component of its curl reads
+
+$$
+\frac{\mathrm{Beyonce}\,g}{r}\,\frac{\partial S}{\partial\theta} = G^2 s\,\frac{\partial(1 + \Delta\Omega)^2}{\partial z} + \big[\nabla\times\mathbf F_0\big]_\phi ,
+$$
+
+and kore keeps only the first term on the right. For a toroidal field alone the second is
+
+$$
+\big[\nabla\times\mathbf F_0\big]_\phi = -\frac{\mathrm{Le}^2}{\rho_0\,s}\,\frac{\partial B_\phi^2}{\partial z} + \frac{\mathrm{Le}^2\rho_0'}{2\rho_0^2\,r\,s^2}\,\frac{\partial(s^2B_\phi^2)}{\partial\theta} ,
+$$
+
+the hoop stress and, with a varying density, the magnetic pressure. It vanishes for a field without current in the
+fluid: a poloidal field with $D_n h_n = 0$ for every degree, that is $h_n = a\,r^n + b\,r^{-(n+1)}$, and no toroidal part.
+For other fields, with the field and the rotation varying on the same scale, the ratio of the two terms is about
+
+$$
+\epsilon = \frac{\mathrm{Le}^2\lvert\mathbf B_0\rvert^2}{2\rho_0\lvert\Delta\Omega\rvert} ,
+$$
+
+condition 1 of [Magnetic field](magnetic.md#when-the-field-leaves-the-thermal-wind-unchanged); item 2 above is the same estimate
+for the wound field. A field varying on a shorter scale $\ell$ raises it by the ratio of the scales, or by its square
+for the tension of curved poloidal lines.
+
+**In the mode frequencies.** The thermal wind enters the frequency squared of a mode at order $2\Delta\Omega$
+([Differential rotation §1.3](differential_rotation_details.md#13-thermal-wind-balance)), so the error $\epsilon$ moves it
+by about $\mathrm{Le}^2\lvert\mathbf B_0\rvert^2/\rho_0$, and the frequency $\omega$ of a mode by about
+$\mathrm{Le}^2\lvert\mathbf B_0\rvert^2/2\rho_0\omega$, for modes that feel the baroclinicity and weighted by their share
+of the magnetised region. The field's direct force on a mode, which the linear problem includes, enters the frequency
+squared as $\mathrm{Le}^2\lvert\mathbf B_0\rvert^2k_\parallel^2/\rho_0$, with $k_\parallel$ the mode's wavenumber along
+the field: larger by $(k_\parallel r)^2$.
+
+**Uniform rotation.** Where $\Delta\Omega$ is uniform, $\mathbf F_0$ is balanced by an entropy change $\delta S$ with
+$(\mathrm{Beyonce}\,g/r)\,\partial_\theta\delta S = [\nabla\times\mathbf F_0]_\phi$. Relative to the background
+stratification it is about $(v_A/N\ell)^2$, with $v_A$ the Alfvén speed and $N$ the buoyancy frequency: below $10^{-5}$
+for a $10^5$ G field in the solar radiative interior.
+
+#### The Sun, Jupiter and Saturn
+
+Orders of magnitude at the depth where the field and the shear meet: the base of the solar convection zone, and the
+depth where the winds of Jupiter and Saturn end (about 3000 and 9000 km; Kaspi et al. 2018, Galanti et al. 2019), which
+is where their conductivity becomes large enough to limit them (Liu et al. 2008). Here Le is the local Alfvén speed over
+$\Omega R$, the quantity $\mathrm{Le}\lvert\mathbf B_0\rvert/\sqrt{\rho_0}$ of the conditions, and $\Delta\Omega$ is in
+units of $\Omega$.
+
+| | Sun, base of the convection zone | Jupiter, 0.96 R | Saturn, 0.86 R |
+| --- | --- | --- | --- |
+| rotation period | 25 d | 9.9 h | 10.6 h |
+| density (g cm⁻³) | 0.2 | 0.2 | 0.3 |
+| field (G) | 10⁴ toroidal (10⁵ in flux-tube models; D'Silva & Choudhuri 1993) | 10 | 0.5 |
+| Le | 0.03 (0.3) | 5×10⁻⁶ | 3×10⁻⁷ |
+| $\lvert\Delta\Omega\rvert$ | 0.1 | 0.01 | 0.03 |
+| $\epsilon$ | 0.005 (0.5) | 10⁻⁹ | 10⁻¹² |
+| poloidal field (G) | 10 | 10 | 0.5 |
+| magnetic diffusivity (cm² s⁻¹) | 10¹¹ to 10¹² (turbulent) | 10¹¹ | 3×10¹⁰ |
+| braking time, $1/\Lambda_p\Omega$ | a century or more | about a century | about 10⁴ years |
+
+For the Sun the frequency error of condition 1 is about 0.2 nHz for a 10⁴ G field and a mode of frequency near $\Omega$
+(more for slower modes), and about 20 nHz for 10⁵ G, before weighting by the mode's share of the layer. It reaches
+1 nHz near 2×10⁴ G. For Jupiter and Saturn this error, and the field's direct effect on a mode, stay below $10^{-6}$ of
+the rotation rate even with a hundred wavelengths along the field.
+
+The resulting conditions, this summary, and the checklist for solar inertial modes are on
+[Magnetic field](magnetic.md#validity-and-caveats).
 
 ## Energy budgets
 
@@ -802,11 +867,15 @@ Everything in `tests/magnetic/` (`run_all.sh`):
 
 ## References
 
+- D'Silva, S. & Choudhuri, A. R. 1993, A&A 272, 621 (flux-tube fields at the base of the solar convection zone).
 - Ferraro, V. C. A. 1937 (the law of isorotation).
+- Galanti, E., Kaspi, Y., et al. 2019, GRL 46, 616 (the depth of Saturn's winds).
 - Gerick, F. et al. 2021 ('G21 dipole').
 - Gizon, L. et al. 2021; Löptien, B. et al. 2018 (solar inertial modes).
 - Gough, D. O. & McIntyre, M. E. 1998; MacGregor, K. B. & Charbonneau, P. 1999 (tachocline confinement).
 - Gubbins, D. & Roberts, P. H. 1987 (free decay modes of a sphere).
+- Kaspi, Y., Galanti, E., et al. 2018, Nature 555, 223 (the depth of Jupiter's winds).
+- Liu, J., Goldreich, P. M. & Stevenson, D. J. 2008, Icarus 196, 653 (Ohmic limits on deep zonal winds).
 - Luo, J. & Jackson, A. 2022 ('Luo_S1', 'Luo_S2', `'mag_energy'`, torsional modes).
 - Malkus, W. V. R. 1967 (the field $s\,\hat{\boldsymbol\phi}$).
 - Schmitt, D. 2012 (`'Schmitt2012'`).

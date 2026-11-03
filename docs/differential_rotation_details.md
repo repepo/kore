@@ -143,7 +143,7 @@ modes.
 - The thermal wind is the one consistent with LBR buoyancy. The full anelastic balance would add a term
   $p_b S_0'/(\rho_0 g)$ to $S_{tw}$ ($p_b$ the background pressure perturbation), the analogue of the $p_1 S_0'$ term
   that LBR drops for the perturbations. It matters only where $S_0' \neq 0$.
-- There is no magnetic field and no viscous heating.
+- There is no viscous heating, and the background has no magnetic force: with `magnetic = 1` the field acts on the perturbation only ([Magnetic field](magnetic.md#when-the-field-leaves-the-thermal-wind-unchanged)).
 
 ## 2. Equations
 

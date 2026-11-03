@@ -242,22 +242,44 @@ The background field is held fixed. Two effects that would change the background
 - **Ohmic decay of the poloidal field.** A real field would decay by diffusion; here it does not, with or without
   rotation.
 - **The Lorentz force of the background field on the background flow.** The rotation is imposed and is not modified by
-  the field. With `B0_wound = 1` this force is dominated by the wound field, which can be large. For the tachocline this
-  is a significant approximation: a wound field that strong would brake the shear that makes it, as self-consistent
-  tachocline models include.
+  the field, and the thermal-wind entropy is computed from the rotation alone. With `B0_wound = 1` this force is
+  dominated by the wound field, which can be large. For the tachocline this is a significant approximation: a wound
+  field that strong would brake the shear that makes it, as self-consistent tachocline models include.
 
-**When the ignored force matters.** It has two parts, with three dimensionless numbers to watch. Their definitions and
-derivation are in [Magnetic field
-equations](magnetic-equations.md#when-the-ignored-lorentz-force-matters).
+### When the field leaves the thermal wind unchanged
 
-1. *Azimuthal torque* (Ferraro's mechanism). It brakes the shear along the field lines at a rate set by the Elsasser
-   number of the poloidal field built on the background diffusivity:
+With `thermal_wind` 1 or 2, the latitudinal entropy of the background balances the differential rotation alone
+([Background model](background.md#thermal-wind)). The force of the background field would enter the same balance. The
+derivations and the estimates are in [Magnetic field equations](magnetic-equations.md#when-the-ignored-lorentz-force-matters).
+
+**Exact: a field without current.** A poloidal field that carries no electric current in the fluid, with no toroidal
+part, exerts no force, so the thermal wind is exact. If the rotation also satisfies the Ferraro condition, the field
+does not wind up or decay, and the whole background is steady. `B0 = 'axial'` is such a field, and so is a `'general'`
+field whose profile of each degree n combines `r**n` and, in a shell, `r**-(n+1)`.
+
+**Approximate: any other field.** All other fields carry current: the other poloidal types, any `B0_tor`, and the wound
+field. The background is then a good approximation under three conditions.
+
+1. *The meridional force is weak.* The field's force in the meridional planes (magnetic pressure, the hoop stress of
+   the azimuthal field, the tension of curved poloidal lines) adds to the thermal-wind balance. It is negligible when
+
+    $$
+    \frac{\mathrm{Le}^2\,\lvert\mathbf B_0\rvert^2}{\rho_0} \ll 2\,\lvert\Delta\Omega\rvert ,
+    $$
+
+    with $\rho_0$ the background density and $\mathbf B_0$ the whole dimensionless field, wound part included. A field
+    that varies on a shorter scale than the rotation makes this stricter. Where it fails, the thermal-wind entropy is
+    wrong by about the ratio of the two sides.
+
+2. *The torque is slow.* A poloidal field crossed by the shear brakes it (Ferraro's mechanism), at a rate set by the
+   Elsasser number of the poloidal field built on the background diffusivity:
 
     $$
     \Lambda_p = \frac{\mathrm{Le}^2}{\rho_0\,\mathrm{Em}\,\eta_w},
     $$
 
-    with $\rho_0$ the background density and $\eta_w$ = `B0_wound_eta`. It matters unless this rate is small compared with
+    with $\eta_w$ = `B0_wound_eta`. The thermal wind follows the imposed rotation, so the torque does not change it
+    directly, but the rotation must be maintained against it. It is negligible when this rate is small compared with
     the mode frequencies, their damping rates, and the rate of whatever maintains the rotation. If viscous or turbulent
     stresses hold the rotation, it is tenable only for a Hartmann number of order one or less:
 
@@ -265,15 +287,18 @@ equations](magnetic-equations.md#when-the-ignored-lorentz-force-matters).
     Ha = \frac{\mathrm{Le}}{\sqrt{\rho_0\,\mathrm{Ek}\,\mathrm{Em}\,\eta_w}} \lesssim 1 .
     $$
 
-2. *Meridional force* (hoop stress and magnetic pressure of the wound field). It changes the thermal-wind balance and
-   drives magnetic buoyancy. It matters when the Lehnert number of the wound field, squared, is comparable with the
-   differential rotation:
+3. *The field is steady.* The Ferraro condition holds, or `B0_wound = 1` balances the winding. The wound field can be
+   much stronger than the poloidal field that makes it, so it must meet condition 1 too. The Ohmic decay of the field
+   must be slow compared with the modes.
 
-    $$
-    \mathrm{Le}_\phi^2 \gtrsim \Delta\Omega, \qquad \mathrm{Le}_\phi = \mathrm{Le}\,\frac{\max\lvert B_\phi\rvert}{\max\lvert\mathbf B_p\rvert} .
-    $$
+Where the rotation is uniform there is no thermal wind. In a stably stratified region the field's force is then
+balanced by a small change of the stratification, which kore leaves out. It is negligible when the Alfvén frequency is
+far below the buoyancy frequency.
 
-    It can matter even for a weak poloidal field, because the wound field can be much stronger.
+**What condition 1 means for the modes.** The error it leaves in the frequencies is about half the left side of
+condition 1, in units of the rotation rate, for modes that feel the baroclinicity (more for slower modes). The field's
+direct effect on a mode, which kore includes in full, is larger by about the square of the number of the mode's
+wavelengths along the field lines. So a field can change the modes while leaving the thermal wind unchanged.
 
 A `B0_wound` background is therefore a snapshot, valid for modes faster than these effects. This is the tachocline
 confinement problem (Gough & McIntyre 1998; MacGregor & Charbonneau 1999): with molecular diffusivities a weak poloidal
@@ -283,8 +308,29 @@ a Ferraro-consistent background (`B0 = 'ferraro'`, `diff_rot_type = 'ferraro'`) 
 code, with a Hartmann number near 30 and a braking time of about one rotation, test the mathematics (closed form,
 residuals, budgets), not the physical validity of such a background.
 
-**Checklist for solar inertial modes.** Their periods are longer than a rotation and their damping is weak (Löptien et
-al. 2018; Gizon et al. 2021), which makes every criterion above stricter.
+### The Sun, Jupiter and Saturn
+
+Orders of magnitude with published values, where the field and the shear meet. The numbers and references are on
+[Magnetic field equations](magnetic-equations.md#the-sun-jupiter-and-saturn).
+
+| region | condition 1: meridional force | condition 2: torque | the background |
+| --- | --- | --- | --- |
+| Sun, convection zone | holds: large-scale fields of a few thousand G give a ratio of 10⁻³ or less | the weak mean poloidal field (about 10 G) brakes the rotation over a century or more; Hartmann number of order one with turbulent values | consistent; the rotation does not follow poloidal field lines, so use a toroidal `B0_tor`, or `B0_wound` from a weak poloidal field |
+| Sun, tachocline | holds for 10⁴ G (ratio about 0.005); fails near 10⁵ G (ratio about 0.5) | set by the poloidal field and the diffusivity (above) | consistent up to about 2×10⁴ G |
+| Sun, radiative interior | no thermal wind: the rotation is uniform | the Ferraro condition holds | consistent with `'confined'` or `'ferraro'` fields |
+| Jupiter, winds (above 0.96 R) | holds: ratio about 10⁻⁹ | about a century | consistent |
+| Saturn, winds (above 0.86 R) | holds: ratio about 10⁻¹² | about 10⁴ years | consistent |
+
+The Sun is the case for magnetic effects on inertial modes. At the base of its convection zone a 10⁴ G field has a
+Lehnert number of a few hundredths: enough to matter for modes with several wavelengths along the field, while
+condition 1 still holds. In Jupiter and Saturn the Lehnert number is 10⁻⁵ to 10⁻⁷. Their fields change neither the
+thermal wind nor the inertial modes measurably: kore's background is consistent there, and the field's effect on the
+modes is negligible.
+
+### Checklist for solar inertial modes
+
+Their periods are longer than a rotation and their damping is weak (Löptien et al. 2018; Gizon et al. 2021), which
+makes every criterion above stricter.
 
 - **Time scales.** The braking rate and the Ohmic decay rate of the poloidal field must be small compared with the
   damping rate of the modes, not only with their frequency. The wound field needs a diffusion time across its layer to
@@ -294,8 +340,8 @@ al. 2018; Gizon et al. 2021), which makes every criterion above stricter.
 - **Critical layers and continua.** Where the mode frequency matches the local advection by the rotation (the critical
   latitudes) and at Alfvén resonances, the spectrum has continuous parts and the eigenfunctions thin layers. Check
   convergence in N and lmax, and tell discrete modes from the continuum.
-- **Thermal wind.** Keep the thermal-wind heat rows on (`thermal_wind`) and check the meridional criterion above: the
-  background baroclinicity does not include the forces of the wound field.
+- **Thermal wind.** Keep the thermal-wind heat rows on (`thermal_wind`) and check condition 1 above: the background
+  baroclinicity does not include the forces of the field.
 - **Consistent diffusivities.** The observed line widths set the turbulent viscosity (`ViscosD`). Take a turbulent
   magnetic Prandtl number near one (`Em` close to `Ek`) and set `B0_wound_eta` to the background's turbulent
   diffusivity. A wound field built with a molecular diffusivity under modes damped by turbulence is inconsistent.
