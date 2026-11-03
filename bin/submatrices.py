@@ -7,7 +7,8 @@ To use:
 where ncpus is the number of cores
 
 This program generates (in parallel) the operators involved in the differential
-equations as submatrices. They will be written to disk as .mtx files.
+equations as submatrices. They are written to disk in one file, submatrices.npz, with the parameters they were built
+from (NEW 2026-11-03, submatrix_io.py; formerly one <label>.mtx per operator, still written with par.write_mtx = 1).
 These submatrices are required for the assembly of the main matrices A and B.
 '''
 
@@ -22,6 +23,7 @@ import os
 from parameters import par
 import utils as ut
 import diff_rot as dr
+import submatrix_io as smio   # NEW (2026-11-03)
 
 
 
@@ -30,6 +32,9 @@ def main(ncpus):
     warnings.simplefilter('ignore', ss.SparseEfficiencyWarning)
 
     par.check_names()
+    if os.path.isfile(smio.FILE):   # NEW (2026-11-03): no operators of an earlier run survive a run that stops
+        os.remove(smio.FILE)
+    mats = {}   # NEW (2026-11-03): {label: matrix}, written to smio.FILE at the end
 
     inviscid   = ((par.ViscosD == 0) and (par.ricb == 0))        # boolean
 
@@ -389,7 +394,7 @@ def main(ncpus):
             if matrix.nnz > 0:
                 matrix.data[np.abs(matrix.data) < par.drop_tol*np.abs(matrix.data).max()] = 0
                 matrix.eliminate_zeros()
-        sio.mmwrite( labl1+'.mtx', matrix )
+        mats[labl1] = ss.coo_matrix(matrix)   # (as the .mtx it replaces was read back: COO, then CSR in submatrix_io)
         # ---------------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -400,7 +405,7 @@ def main(ncpus):
         # -------------------------------------------------------------------------------------------------------------------------------------------
         # Chebyshev series on [-ricb, ricb], one parity per section (vF for f, vG for g), rows r² r̂⋅ (fic) and r² r̂⋅∇× (gic) of
         # ∂b/∂t = ∇²b (times the diffusivity) in the C^(2) basis; one bc row per block after the parity reduction. These are
-        # not labels (decode_label and burrito are for the fluid shell): the names below are loaded by operators.py as any .mtx.
+        # not labels (decode_label and burrito are for the fluid shell): operators.py loads the names below as any operator.
         Nic = par.N_cic
         R1, R2 = 0, par.ricb
         r1ic = ut.chebco_f( lambda r: r,    Nic, R1, R2, 1e-15 )  # Chebyshev coefficients of r and r² on [-ricb, ricb]
@@ -416,11 +421,15 @@ def main(ncpus):
         zic2 = ss.csr_matrix((2, Nic))
         for name, mat in ops.items():
             mat = ss.vstack( [ zic2, mat[:-2,:] ], format='csr' )  # room for the bc rows at the top
-            sio.mmwrite( name + 'f_ic.mtx', ut.remroco( mat, vF, vF ) )  # operator parity 1: one bc row is left
-            sio.mmwrite( name + 'g_ic.mtx', ut.remroco( mat, vG, vG ) )
+            mats[name + 'f_ic'] = ss.coo_matrix( ut.remroco( mat, vF, vF ) )  # operator parity 1: one bc row is left
+            mats[name + 'g_ic'] = ss.coo_matrix( ut.remroco( mat, vG, vG ) )
 
+    smio.write(mats, par)   # NEW (2026-11-03): one file with the parameters, read by operators.py
+    if par.write_mtx:   # and, on request, one Matrix Market file per operator for outside tools (kore does not read them)
+        for name, mat in mats.items():
+            sio.mmwrite( name + '.mtx', mat )
     toc = timer()
-    print('Generated and written', np.size(labl), 'operator submatrices in', toc-tic, 'seconds')
+    print('Generated and written', np.size(labl), 'operator submatrices to', smio.FILE, 'in', toc-tic, 'seconds')
     return 0
 
 if __name__ == '__main__':

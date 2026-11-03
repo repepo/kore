@@ -17,7 +17,7 @@ the MPI that mpi4py was built with, which the script checks, since otherwise two
 and the multi-rank checks would test nothing.
 
 Each check can also be run by hand, from a kore run directory built for forcing 11: a copy of `bin/` with its
-`parameters.py`, the `*.mtx` files of `submatrices.py`, and the `A.npz`, `B.npz` and `B_forced.npz` of `assemble.py`.
+`parameters.py`, the `submatrices.npz` of `submatrices.py`, and the `A.npz`, `B.npz` and `B_forced.npz` of `assemble.py`.
 
 ## The runs
 

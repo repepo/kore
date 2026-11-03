@@ -639,7 +639,7 @@ Everything specific to the differential rotation is in one module, `bin/diff_rot
 | parameters | switches, profile choice, amplitude, `'user'` profiles | `bin/params_default.py` |
 | angular algebra | $X$, $D$, $P_n(X)$, the vector operations, harmonics on a grid | `bin/angular.py` |
 | everything else | profiles, thermal wind, angular couplings, labels, blocks, Δl ranges | `bin/diff_rot.py` |
-| radial matrices | builds the `.mtx` of the labels it is given | `submatrices.py` (`dr.labels()`), `radial_profiles.burrito` (`dr.profile_functions()`) |
+| radial matrices | builds the matrices of the labels it is given (into `submatrices.npz`) | `submatrices.py` (`dr.labels()`), `radial_profiles.burrito` (`dr.profile_functions()`) |
 | operators | thin wrappers | `operators.differential_rotation`, `operators.thermal_diffrot` |
 | assembly | places the blocks, over the Δl of `dr.dl_range` | `assemble.py` |
 | diagnostics | powers and budgets on an $(r, \theta)$ grid, independently of the algebra | `utils4pp.diff_rot_setup`, `spin_doctor.py` |
@@ -839,7 +839,7 @@ profile is dropped.
 
 `operators.differential_rotation(l, section, component, offdiag)` calls
 `diff_rot.momentum_block(l, section, component, offdiag, M)` with `M` the operators' namespace, where the
-`.mtx` matrices are loaded under their labels. For the row degree `l` (= $l'$), the section (`'u'` or `'v'`), the column
+matrices of `submatrices.npz` are loaded under their labels. For the row degree `l` (= $l'$), the section (`'u'` or `'v'`), the column
 type (`'upol'` for $P$, `'utor'` for $T$) and `offdiag` = $l - l'$, it sums over the degrees $n$ of $\Delta\Omega$ that
 couple this Δl (§3.5): $\lvert\Delta l\rvert \le$ `max_dl(n, …)` and the parity of Δl; for each, the coefficient
 `momentum_coef(name, n, l, m, offdiag)` times the matrix of each label of `momentum_labels(n, …)`. The result is

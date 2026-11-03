@@ -2,7 +2,7 @@
 '''
 ru_insane.py: are the operators sane?  Symmetry tests of kore's anelastic (LBR) operator
 blocks under the energy and entropy pairings, on random smooth fields that satisfy the
-boundary conditions.  No eigensolve, no MPI, no SLEPc: it needs only the *.mtx submatrices,
+boundary conditions.  No eigensolve, no MPI, no SLEPc: it needs only the submatrices (submatrices.npz),
 so it runs between submatrices.py and assemble.py, in seconds.
 
 To use (from the run directory, after ./bin/submatrices.py):

@@ -5,7 +5,8 @@ dr_cost.py WORKDIR N LMAX NCPUS [LIMIT_GB]: the cost of the differential rotatio
 For each case and n, builds a run in WORKDIR ('Wu 2005' with 'top hat', ricb 0.35, m 2, symm 1, diff_rot_type 'user' with
 ΔΩ = Σ_{k even <= n} 0.02 r² P_k), runs submatrices (NCPUS processes), assemble and solve (mpiexec -n NCPUS, MUMPS
 shift-invert, nev 4), and records the wall time and the peak memory of each step (the RSS summed over every process the
-step started, sampled every 0.1 s), the number and size of the *.mtx files and nnz of A and B. Cases: no differential
+step started, sampled every 0.1 s), the number of operators and the size of submatrices.npz (the *.mtx files before
+2026-11-03) and nnz of A and B. Cases: no differential
 rotation; momentum only (thermal 0); thermal with thermal_wind 1 (heat rows coupled up to n + 2) and 2 (2n + 2).
 
 Memory watchdog: when a step's processes exceed LIMIT_GB (default 30) together, the whole process tree is killed, the
@@ -124,9 +125,12 @@ for case, thermal, tw, ns in CASES:
                 st, dt, gb = run(cmd + ['-st_mat_mumps_icntl_14', '100'], d, 'log_solve')
                 r['icntl_14'] = 100
             r['t_' + step], r['gb_' + step] = dt, gb
-            if step == 'sub':
-                mtx = [f for f in os.listdir(d) if f.endswith('.mtx')]
-                r['n_mtx'], r['mb_mtx'] = len(mtx), sum(os.path.getsize(d + '/' + f) for f in mtx)/1e6
+            if step == 'sub' and os.path.isfile(d + '/submatrices.npz'):
+                # the operators and their size on disk: since 2026-11-03 one binary submatrices.npz (about 2.4 times smaller
+                # than the *.mtx text files that results from earlier versions counted)
+                with np.load(d + '/submatrices.npz') as z:
+                    r['n_mtx'] = sum(1 for k in z.files if k.endswith('.shape'))
+                r['mb_mtx'] = os.path.getsize(d + '/submatrices.npz')/1e6
             if step == 'asm' and st == 'ok':
                 z = np.load(d + '/A.npz'); r['nnzA'] = int(len(z['data'])); r['size'] = int(z['shape'][0])
                 r['mb_AB'] = (os.path.getsize(d + '/A.npz') + os.path.getsize(d + '/B.npz'))/1e6

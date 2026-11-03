@@ -522,6 +522,11 @@ class default_params():
         # thermal solar runs.
         self.drop_tol = 0
 
+        # NEW (2026-11-03): submatrices.py writes every operator to one file, submatrices.npz, with the parameters it used
+        # (operators.py loads it and stops if this run's parameters differ: bin/submatrix_io.py). 1 also writes one Matrix Market
+        # file per operator, <label>.mtx, for outside tools; kore itself no longer reads them.
+        self.write_mtx = 0
+
 
         # ----------------------------------------------------------------------------------------------------------------------
         # ----------------------------------------------------------------------------------------------------------------------

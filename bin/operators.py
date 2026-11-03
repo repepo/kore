@@ -1,20 +1,23 @@
-import glob
+import os
+import sys
 import scipy.sparse as ss
-import scipy.io as sio
 import numpy as np
 from parameters import par
 import utils as ut
 
 import diff_rot as dr
 import mag_algebra as ma   # NEW (2026-10-30)
+import submatrix_io as smio   # NEW (2026-11-03)
 
 
-# In the following loop we read all the submatrices needed (as per submatrices.py),
-# and create corresponding operator names as global variables
-fname = [f for f in glob.glob('*.mtx')]
-for label in fname :
-    varlabel = label[:-4]
-    globals()[varlabel] = ss.csr_matrix(sio.mmread(label))
+# The submatrices built by submatrices.py, each as a global variable named by its label (NEW 2026-11-03: all from one
+# file, submatrices.npz, and only if they were built with this run's parameters; formerly every *.mtx in the directory,
+# which let a file left from an earlier run stand in for one this run did not build)
+if not os.path.isfile(smio.FILE):
+    sys.exit('operators.py: no %s in %s: run submatrices.py first' % (smio.FILE, os.getcwd()))
+_mats, _built = smio.read()
+smio.check(_built, par)
+globals().update(_mats)
 
 
 

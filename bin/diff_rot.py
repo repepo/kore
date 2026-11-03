@@ -544,7 +544,7 @@ def momentum_block(l, section, component, offdiag, M):
     '''
     The block of the force W for the row degree l (section 'u' or 'v'), the column 'upol' (P) or 'utor' (T) and the
     source degree l + offdiag: Gaspard Σ_n Σ coefficient × radial operator / L'^3, the operators M[label] being the
-    *.mtx loaded by operators.py. Returns [matrix, offd] (offd: the column block offset in units of N1, utils.dr_offd),
+    matrices loaded by operators.py. Returns [matrix, offd] (offd: the column block offset in units of N1, utils.dr_offd),
     or [0, 0] if no degree couples this Δl.
     '''
     import utils as ut

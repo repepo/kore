@@ -1,6 +1,6 @@
 '''
 Shared pieces of the tests of the random Reynolds-stress forcing (forcing = 11, bin/reynolds_stress.py).
-Run from a kore run directory (its bin/, parameters.py and, where operators are used, the *.mtx files).
+Run from a kore run directory (its bin/, parameters.py and, where operators are used, submatrices.npz).
 
 - the energy pairing of kore's rows with a field, as bin/ru_insane.py:
     <a, F> = int (rho0 a)*.F dV = sum_l n_l L^3 [ int rho0^(1-rhopower_u) P_l* r^(3-rpower_u) row_u(F)_l dr

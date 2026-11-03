@@ -93,7 +93,7 @@ units of $\Omega_{\rm ref}$. The target above is the published mode.
 mpiexec -n 4 ./bin/assemble.py
 ```
 
-`submatrices.py` computes one sparse matrix per radial operator of the equations (the `*.mtx` files), using 4
+`submatrices.py` computes one sparse matrix per radial operator of the equations (all in `submatrices.npz`), using 4
 processes. `assemble.py` combines them over all degrees $l$ into the matrices $A$ and $B$ of the eigenproblem
 $A\mathbf x = \lambda B\mathbf x$ (`A.npz`, `B.npz`). The number of MPI ranks must equal `par.ncpus`.
 

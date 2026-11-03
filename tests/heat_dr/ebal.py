@@ -2,7 +2,7 @@
 '''
 ebal.py: matrix-level (spectral) energy and entropy budgets for kore anelastic (LBR) runs.
 
-Run from a kore run directory (needs the *.mtx submatrices, bin/, and the *.field files
+Run from a kore run directory (needs the submatrices.npz of submatrices.py, bin/, and the *.field files
 for the per-mode budget):
 
     python3 ebal.py            # per-mode budget + operator symmetry tests

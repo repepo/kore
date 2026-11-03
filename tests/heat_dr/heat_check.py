@@ -12,7 +12,7 @@ Grid side:   G = int p0 conj(s) [ i m Gaspard dOmega s + u_r dS_tw/dr + (u_theta
              the same integral of the r derivative of dS_tw/dx. Its Legendre coefficients are compared with the code's
              fits diff_rot.sigmaX (the algebra of diff_rot.sigma_coefficients). Only the profiles f_n come from diff_rot.
              thermal_wind = 3 (prescribed): dS_tw/dtheta = dSdtheta sin(2 theta), dS_tw/dx = -2 dSdtheta x.
-Run in a kore run directory with the *.mtx files (after submatrices.py): python3 heat_check.py [ntrials]
+Run in a kore run directory with the submatrices.npz of submatrices.py: python3 heat_check.py [ntrials]
 '''
 import sys, os, numpy as np
 sys.argv, argv0 = ['ebal.py', 'none'], sys.argv

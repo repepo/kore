@@ -2,7 +2,7 @@
 
 Companion of `docs/benchmarks.md` and of `tests/heat_dr/` (whose `csolve.py`, `sd_check.py` and `ebal.py`
 handle any Δl range and are used here too). Every script runs from a kore run directory (`bin/` copy, `parameters.py`;
-`ebal.py`/`sd_check.py` also need the `*.mtx` files of `submatrices.py`) and prints a verdict ending in `ok` or `FAIL`.
+`ebal.py`/`sd_check.py` also need the `submatrices.npz` of `submatrices.py`) and prints a verdict ending in `ok` or `FAIL`.
 The `*_bekki.py` scripts are the exception: they run from anywhere and build their own run directories from the
 repo's `bin/`.
 

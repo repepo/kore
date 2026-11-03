@@ -1,7 +1,7 @@
 # Checks of the differential-rotation terms of the heat equation
 
 Companion of `docs/differential_rotation_details.md` (§2.4, §2.5, §3.7, §7.2). Everything here runs on one core with numpy, scipy and mpi4py, from a kore
-run directory (a `bin/` copy, `parameters.py`, the `*.mtx` files of `submatrices.py`, and `A.npz`, `B.npz` of
+run directory (a `bin/` copy, `parameters.py`, the `submatrices.npz` of `submatrices.py`, and `A.npz`, `B.npz` of
 `assemble.py`). `run_all.sh` builds the runs it needs under `tests/heat_dr/runs/` and prints one line per check.
 
 | script | what it checks |

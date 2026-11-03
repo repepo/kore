@@ -6,7 +6,7 @@ table.
 
 | file | written by | content |
 | --- | --- | --- |
-| `*.mtx` | `submatrices.py` | one sparse matrix per radial operator |
+| `submatrices.npz` | `submatrices.py` | every radial operator (one sparse matrix per label) and the parameters they were built from; `operators.py` stops if a run's parameters differ. With `write_mtx = 1` also one `<label>.mtx` (Matrix Market) per operator, for outside tools |
 | `A.npz`, `B.npz` | `assemble.py` | the matrices of the eigenproblem $A\mathbf x = \lambda B\mathbf x$ |
 | `B_forced.npz` | `assemble.py`, with `forcing` > 0 | the right-hand sides of a forced run, one per column |
 | `eigenvalues0.dat` | `solve.py` | the eigenvalues of the last solve, one per row: $\mathrm{Re}\thinspace\lambda$, $\mathrm{Im}\thinspace\lambda$ |

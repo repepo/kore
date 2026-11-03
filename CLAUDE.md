@@ -23,7 +23,8 @@ history. §15 lists what the first threads of the claude.ai project behind this 
   (48 cores) keep each run under 240 GB. MUMPS is the big consumer; see §9 for out-of-core options.
 - **Commits**: leave changes uncommitted unless asked; the owner reviews and commits.
 - **Where things run**: every script reads `bin/parameters.py` (imported as `from parameters import par`) and writes
-  its output to the current directory; `operators.py` loads every `*.mtx` in the current directory. So run from the
+  its output to the current directory; `operators.py` loads `submatrices.npz` from the current directory (2026-11-03:
+  formerly every `*.mtx` there) and stops if it was built with other parameters. So run from the
   repo root (as `runKore.sh` does) or from a run directory holding its own `bin/` copy (as the test scripts build).
   `.gitignore` ignores `*.mtx *.npz *.field *.dat` (except `bin/jsoc_hmi_2010_2026.npz`), `__pycache__` and
   `.pytest_cache`.
@@ -38,8 +39,8 @@ history. §15 lists what the first threads of the claude.ai project behind this 
 ## 2. Pipeline (`runKore.sh`)
 
 ```
-./bin/submatrices.py ncpus          # radial operator blocks -> <label>.mtx  (multiprocessing)
-./bin/ru_insane.py                  # optional (not in runKore.sh): operator tests on the *.mtx, exit 1 on failure
+./bin/submatrices.py ncpus          # radial operator blocks -> submatrices.npz  (multiprocessing)
+./bin/ru_insane.py                  # optional (not in runKore.sh): operator tests on submatrices.npz, exit 1 on failure
 mpiexec -n ncpus ./bin/assemble.py  # A.npz, and B.npz (forcing = 0) or B_forced.npz (forcing > 0; both for 11)
 mpiexec -n ncpus ./bin/solve.py [petsc opts]   # SLEPc shift-invert (forcing = 0) or KSP LU (forcing > 0)
 ./bin/spin_doctor.py ncpus | tee out2          # energy/entropy budgets, residuals, tables
@@ -74,8 +75,9 @@ eigenvalues as ω, σ in nHz.
 | `smoothed_sun.py` | analytic even fit of the Model S ln ρ, with g, p, d ln ρ/dr, d ln p/dr (structure '8-term fit'; its g also serves 'old model S prototype') |
 | `model_s.at` | Model S table (columns As, c₁, ρ/ρ_c, p/p_c, x) for 'model S hydrostatic' and 'old model S prototype' |
 | `jsoc_hmi_2010_2026.npz` | the observed rotation Ω(r, θ), the mean of 83 HMI 72-day inversions (2010–2026), in the layout of `diff_rot_type = 'tabulated'` (`examples/smooth_sun`) |
-| `submatrices.py` | builds the list of labels (with `diff_rot.labels()`), computes each unique operator in parallel, writes `<label>.mtx`; calls `par.check_names()` and `diff_rot.check()` |
-| `operators.py` | loads every `*.mtx` as a global named by its label; physics functions `inertia`, `coriolis`, `viscous_diffusion`, `buoyancy`, `differential_rotation`, `entropy`, `thermal_advection`, `thermal_diffusion`, `thermal_diffrot` (the diff-rot ones return `diff_rot.momentum_block`, `heat_block`), and for `magnetic = 1` `lorentz`, `b`, `induction`, `magnetic_diffusion` |
+| `submatrices.py` | builds the list of labels (with `diff_rot.labels()`), computes each unique operator in parallel, writes them all to `submatrices.npz` (`submatrix_io.write`, with the parameters; `<label>.mtx` too with `write_mtx = 1`); calls `par.check_names()` and `diff_rot.check()` |
+| `submatrix_io.py` | the operator file `submatrices.npz`: `write`, `read`, `check` (stops when the run's parameters differ from those the operators were built with, all but `OPERATOR_INDEPENDENT` and `rsf_*`); numpy and scipy only |
+| `operators.py` | loads `submatrices.npz` (after `submatrix_io.check`), each operator as a global named by its label; physics functions `inertia`, `coriolis`, `viscous_diffusion`, `buoyancy`, `differential_rotation`, `entropy`, `thermal_advection`, `thermal_diffusion`, `thermal_diffrot` (the diff-rot ones return `diff_rot.momentum_block`, `heat_block`), and for `magnetic = 1` `lorentz`, `b`, `induction`, `magnetic_diffusion` |
 | `assemble.py` | MPI over l; places the blocks (the diff-rot Δl from `diff_rot.dl_range`), boundary-condition rows (`bc_u_spherical`, `bc_theta_spherical`), forcings 6, 7, 9, 10, 11; normalises A, B by ‖A‖ (eigen); `gather_csr` |
 | `reynolds_stress.py` | forcing 11: random Reynolds-stress body force f = ρ₀⁻¹∇·(ρ₀ s), the fluctuation-dissipation partner of the viscous force; `rhs(nsamp, seed)` gives one realisation per column of B_forced (docstring: physics, discretisation, normalisation) |
 | `bc_variables.py` | Chebyshev values/derivatives at the walls (`Ta`, `Tb`) and ln ρ₀ and its first two derivatives there (`lha*`, `lhb*`) |
@@ -428,7 +430,8 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
 
 - **New parameter**: default and comment in `params_default.py` (a name without a default there gets the warning of
   `check_names`); if it should be recorded, append a tuple at the end of `spin_doctor.param_table()` and update the
-  table in `docs/output.md`.
+  table in `docs/output.md`. A parameter that changes no operator (solver, forcing, boundary conditions, output) goes
+  into `submatrix_io.OPERATOR_INDEPENDENT`, or changing it between `submatrices.py` and `assemble.py` stops the run.
 - **New radial profile in an operator**: a function `f(r, rpower)` and its `fX(r, Dorder)` in `radial_profiles.py`, a
   3-letter code in `proffdir` (and in `ut.odd_profiles` if odd), labels in `submatrices.py` with the vector parity of the
   unknown's column (vP for P and s, vT for T, as the neighbouring labels), the term in `operators.py` with the L²/L³
