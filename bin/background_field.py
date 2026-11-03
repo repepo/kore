@@ -20,9 +20,11 @@ or added to the poloidal one (same equatorial symmetry only):
 NEW (2026-10-30): 'confined' h = r^l (r2² - r²)^p (r1 = 0) or r^l (r - r1)^p (r2 - r)^p between r1 = B0_conf_r1 and r2 = B0_conf_r2,
     zero outside, l = B0_l (1 or 2), p = B0_conf_p: h and its first p - 1 derivatives vanish at the edges, so the field is zero
     outside the region with no surface currents (B_r ∝ h and B_θ ∝ h' + h/r continuous; the current ∝ h'' + ... continuous for
-    p >= 3). The point: a poloidal field inside a region where ΔΩ is uniform is a steady background with the differential
+    p >= 3, which background.check_magnetic requires: the momentum rows hold the third derivative of h, and with p = 2 its delta
+    at the edges would be lost). The point: a poloidal field inside a region where ΔΩ is uniform is a steady background with the differential
     rotation (Ferraro's law, background.ferraro_mismatch). The kink at the edges is resolved by the Chebyshev series only
-    algebraically (coefficients ~ k^-(p+1)): use p = 4 and check convergence in N.
+    algebraically (coefficients ~ k^-(p+1)): the default p = 12 brings them to ~1e-14 by k = 192 (p = 4: ~1e-7); check
+    convergence in N.
 Equatorial symmetry: a poloidal field of degree n has (-1)^n, a toroidal one (-1)^(n+1) (B_φ ∝ sinθ is symmetric for n = 1).
 Only parameters, numpy and scipy are imported: utils.py and radial_profiles.py import this module.
 '''
@@ -46,7 +48,8 @@ elif par.B0 == 'ferraro':    # NEW (2026-10-30): odd degrees 1, 3, ..., B0_ferra
     B0_l   = 1
     symmB0 = -1
 elif par.B0 == 'general':    # NEW (2026-10-30): degrees of one parity, the lowest sets the symmetry (background.check_magnetic)
-    B0_l   = min(par.B0_profiles) if par.B0_profiles else 1
+    # FIX (2026-11-03): only the integer keys, so that other keys reach background._check_general's message instead of a crash here
+    B0_l   = min([n for n in par.B0_profiles if isinstance(n, (int, np.integer))] or [1])
     symmB0 = int((-1)**B0_l)
 elif par.B0 == 'Luo_S2':      # NEW (2026-10-28): degree 2
     B0_l   = 2
@@ -55,7 +58,8 @@ else:  # 'axial' (and any name that background.check() stops on)
     B0_l   = 1
     symmB0 = -1
 symm_pol = symmB0 if par.B0 is not None else None                                       # NEW (2026-10-28)
-B0_tor_l = (min(par.B0_tor_profiles) if par.B0_tor_profiles else 1) if par.B0_tor == 'general' else par.B0_tor_l   # NEW (2026-10-30)
+B0_tor_l = (min([n for n in par.B0_tor_profiles if isinstance(n, (int, np.integer))] or [1]) if par.B0_tor == 'general'
+            else par.B0_tor_l)   # NEW (2026-10-30; FIX 2026-11-03: integer keys only, as B0_l)
 symm_tor = int((-1)**(B0_tor_l + 1)) if par.B0_tor is not None else None             # of the toroidal B0
 if par.B0 is None and symm_tor is not None:
     symmB0 = symm_tor   # (with both fields background.check_magnetic() requires symm_pol = symm_tor)
@@ -188,10 +192,15 @@ def h(r, k):
         return beta**k*jl_k(B0_l, beta*np.abs(r), k)*np.where(r < 0, (-1.)**(B0_l + k), 1.)
     if par.B0 == 'axial':
         return [ r/2, 0.5*np.ones_like(r), np.zeros_like(r), np.zeros_like(r) ][k]
-    if par.B0 == 'confined':   # NEW (2026-10-30): the polynomial inside [r1, r2] (|r| in a full sphere, r^l carries the parity)
+    if par.B0 == 'confined':   # NEW (2026-10-30): the polynomial inside [r1, r2] (|r| in a full sphere)
         _, _, r1, r2 = _confined()
         inside = (np.abs(r) >= r1) & (np.abs(r) <= r2)
-        return np.where(inside, _confined_h(r, k), 0.)
+        if r1 == 0:   # r^l (r2² - r²)^p: r^l carries the parity
+            return np.where(inside, _confined_h(r, k), 0.)
+        # FIX (2026-11-03): with r1 > 0 in a full sphere, (r - r1)^p (r2 - r)^p is not symmetric about r = 0: evaluate at |r| with
+        # the parity (-1)^(l+k) of the k-th derivative, as FDM above (the signed r gave h(-r) unrelated to h(r), and submatrices
+        # kept only the right-parity half of a wrong field)
+        return np.where(inside, _confined_h(np.abs(r), k)*np.where(r < 0, (-1.)**(B0_l + k), 1.), 0.)
     if par.B0 in POLY:   # NEW (2026-10-28): the polynomial fields, plus the potential part of B0_ic (beta_ic)
         out = POLY[par.B0].deriv(k)(r) if k > 0 else POLY[par.B0](r)
         if beta_ic != 0:
@@ -220,14 +229,16 @@ def _gen_interp(kind, n):
     '''
     NEW (2026-10-30): the Chebyshev interpolant of the 'general' radial expression of degree n, kind 'h' (B0_profiles) or 'k'
     (B0_tor_profiles): degree max(64, 2N) on [ricb, 1], or on [-1, 1] at |r| with the parity (-1)^n in a full sphere (the
-    expression should go as r^n at r = 0); coefficients below 1e-15 of the largest are dropped, so that the derivatives (up
-    to the third) do not amplify round-off.
+    expression should go as r^n at r = 0); coefficients below 1e-13 of the largest are dropped, so that the derivatives (up
+    to the third) do not amplify round-off. p is B0_param for 'h' and B0_tor_param for 'k' (FIX 2026-11-03: both took
+    B0_param, unlike B0_tor 'user').
     '''
     key = (kind, n)
     if key not in _gen:
         expr = (par.B0_profiles if kind == 'h' else par.B0_tor_profiles)[n]
         code = compile(expr, '<B0 %s_%d>' % (kind, n), 'eval')
-        f = lambda r: np.broadcast_to(np.asarray(eval(code, {'__builtins__': {}}, dict(USER_NS, r=r, p=par.B0_param)), dtype=float), np.shape(r))
+        p = par.B0_param if kind == 'h' else par.B0_tor_param
+        f = lambda r: np.broadcast_to(np.asarray(eval(code, {'__builtins__': {}}, dict(USER_NS, r=r, p=p)), dtype=float), np.shape(r))
         deg = max(64, 2*par.N)
         if par.ricb == 0:
             c = np.polynomial.chebyshev.Chebyshev.interpolate(lambda r: f(np.abs(r))*np.sign(r)**n, deg, domain=[-1., 1.])
@@ -349,7 +360,13 @@ def B0_norm():
 
 beta_ic = B0_beta_ic()   # NEW (2026-10-28)
 # (only for the settings that background.check_magnetic() accepts, which imports this module before it checks them)
-cnorm = B0_norm() if (par.magnetic and par.B0 in B0_TYPES) else 0.0   # FIX (2026-10-28): also with ricb = 0
+# FIX (2026-11-03): a setting it stops on (e.g. B0 'general' with cnorm 'rms_cmb', a bad B0_profiles) no longer crashes the
+# import: the error is kept (cnorm_error) and check_magnetic stops with its own message, or with this one if it has none
+cnorm_error = None
+try:
+    cnorm = B0_norm() if (par.magnetic and par.B0 in B0_TYPES) else 0.0   # FIX (2026-10-28): also with ricb = 0
+except Exception as err:
+    cnorm, cnorm_error = np.nan, err
 
 
 def bpoX(r, Dorder):
@@ -410,7 +427,11 @@ def B0_tor_norm():
     return float(par.cnorm_tor)
 
 
-cnorm_tor = B0_tor_norm() if (par.magnetic and par.B0_tor in B0_TOR_TYPES) else 0.0   # FIX (2026-10-28): also with ricb = 0
+cnorm_tor_error = None   # FIX (2026-11-03): as cnorm_error
+try:
+    cnorm_tor = B0_tor_norm() if (par.magnetic and par.B0_tor in B0_TOR_TYPES) else 0.0   # FIX (2026-10-28): also with ricb = 0
+except Exception as err:
+    cnorm_tor, cnorm_tor_error = np.nan, err
 
 
 def btoX(r, Dorder):

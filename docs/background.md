@@ -209,13 +209,14 @@ Eigenvalues are in the frame rotating at $\Omega_{\rm ref}$, as for uniform rota
 | `diff_rot` | 0 | 1 adds the differential rotation |
 | `diff_rot_type` | `'Y20'` | the profile, see below |
 | `diff_rot_ampl` | 1.0 | the factor of $\Delta\Omega$, for every type (table below) |
-| `diff_rot_param` | 0.0 | the shape parameter: $\sigma$ of `'shellular'`, `p` in `'user'` expressions |
+| `diff_rot_param` | 0.0 | the shape parameter: $\sigma$ of `'shellular'`, `p` in `'user'` and `'ferraro'` expressions |
 | `diff_rot_term_amp` | `[1.0]*9` | $a_0, a_2, \dots, a_{16}$: factors of the $P_0, P_2, \dots, P_{16}$ terms of $\Delta\Omega$, any type, after `diff_rot_ampl` (missing entries are 1); e.g. `[1, 1, 0]` drops the $P_4$ part of `'solar_P4'` |
 | `diff_rot_profiles` | `{}` | `'user'`: `{n: 'numpy expression'}`, the shape $f_n$ of each even degree (below) |
 | `diff_rot_frame` | 456.0 | `'solar_P4'`, `'tabulated'`: $\Omega_{\rm ref}/2\pi$ in nHz |
 | `diff_rot_solar` | `[464, -76, -50, 433.5, 0.71, 0.045]` | `'solar_P4'`: $c_0$, $c_2$, $c_4$, $\Omega_{RZ}$ (nHz), $r_{tc}$, $d_{tc}$ |
 | `diff_rot_file` | `''` | `'tabulated'`: the .npz file, absolute or relative to the run directory |
-| `diff_rot_nmax` | 8 | `'tabulated'`: highest degree kept, even (up to 16 with `thermal_wind = 2`) |
+| `diff_rot_nmax` | 8 | `'tabulated'`, `'ferraro'`: highest degree kept, even (up to 16 with `thermal_wind = 2`) |
+| `diff_rot_F` | `'psi'` | `'ferraro'`: $\Delta\Omega = F(\psi)$, a numpy expression of `psi` and `p` |
 | `diff_rot_rdeg` | 24 | `'tabulated'`: degree of the Chebyshev fit of each $f_n$ in $r$ |
 | `diff_rot_window` | None | `'tabulated'`: None fits over the shell if ricb > 0 and is `'sun'` if ricb = 0; `'sun'`: one fit over the whole Sun, even in $r$, the same for any ricb |
 | `diff_rot_sun_deg` | 60 | `'sun'`: degree of that fit |
@@ -242,6 +243,7 @@ with a solar structure, $x = r$ otherwise.
 | `'solar_P4'` | $a\thinspace (\Omega/\Omega_{\rm ref} - 1)$, $\Omega$ the fit below | $P_0$, $P_2$, $P_4$ | `diff_rot_solar`, `diff_rot_frame`; defaults from Mukhopadhyay et al. 2026 |
 | `'tabulated'` | $a\thinspace (\Omega/\Omega_{\rm ref} - 1)$, $\Omega$ from `diff_rot_file` | $P_0 \dots P_{n_{\max}}$ | below |
 | `'user'` | $a\sum_n f_n(r) P_n(\cos\theta)$, $f_n$ from `diff_rot_profiles` | the keys of `diff_rot_profiles` | below |
+| `'ferraro'` | $a\thinspace F(\psi)$, $\psi$ the flux function of the poloidal magnetic field | $P_0 \dots P_{n_{\max}}$ | `magnetic = 1` only: constant along the field lines, so a steady background with the field ([Magnetic field](magnetic.md#with-a-differential-rotation)) |
 
 **`'rigid'`.** The eigenvalues are known exactly: with $\lambda_0$ the `diff_rot = 0` eigenvalue,
 

@@ -85,13 +85,14 @@ The columns follow the order of `spin_doctor.param_table`, counted from 1:
 | 75–80 | `diff_rot_window`, `diff_rot_hold`, `solar_rz_delta_cz`, `solar_rz_delta_sf`, `drop_tol`, `diff_rot_param` |
 | 81–82 | `stratification`, `diffusivity` |
 | 83–95 | `magnetic`, `B0`, `B0_l`, `cnorm`, `Hendrik`, `MagnetD`, `innercore`, `N_cic`, `mu_i2o`, `sigma_i2o`, `B0_tor`, `B0_tor_l`, `cnorm_tor` |
+| 96–107 | `B0_wound` (1 if the wound field was added), `B0_wound_eta`, `B0_conf_r1`, `B0_conf_r2`, `B0_conf_p`, `B0_param`, `B0_tor_param`, `B0_ferraro_nmax`, `mag_couplings` (as used: 0 the closed forms, 1 `mag_algebra.py`), `tol_B0`, `B0_ic`, `ferraro_policy` |
 
 - Names are written as their index in the lists of the code: `structure` in `background.STRUCTURES` (`'8-term fit'` 0,
   `'old model S prototype'` 1, `'model S hydrostatic'` 2, `'Wu 2005'` 3, `'Boussinesq'` 4), `stratification` in
   `background.STRATIFICATIONS` (`'top hat'` 0, `'odd top hat'` 1, `'solar_rz'` 2, `'linear'` 3, `'inverse square'` 4,
   `'user'` 5; −1 without a stratification), `diffusivity` in `background.DIFFUSIVITIES` (`'uniform'` 0, `'step'` 1,
   `'solar_rz'` 2, `'user'` 3) and `diff_rot_type` in `diff_rot.TYPES` (`'Y20'` 0, …, `'rigid'` 7, `'solar_P4'` 8,
-  `'tabulated'` 9, `'user'` 10).
+  `'tabulated'` 9, `'user'` 10, `'ferraro'` 11).
 - Column 64 is `structure_deg` for `'model S hydrostatic'`. Columns 65–66 are nan for the default window and
   ∓(`r_out` + 0.005) for `'sun'`.
 - `diff_rot_window` is 0 for the shell fit and 1 for the whole-Sun fit, with `diff_rot_rdeg` then the degree used,
@@ -99,12 +100,13 @@ The columns follow the order of `spin_doctor.param_table`, counted from 1:
 - The magnetic columns: `B0` is the index in `background_field.B0_TYPES` (`'axial'` 0, `'FDM'` 1, `'G21 dipole'` 2,
   `'Luo_S1'` 3, `'Luo_S2'` 4, `'confined'` 5, `'general'` 6, `'ferraro'` 7; −1 without a poloidal field), `B0_tor` in
   `background_field.B0_TOR_TYPES` (`'Malkus'` 0, `'wall'` 1, `'user'` 2, `'general'` 3; −1 without), `innercore` in
-  `background.INNER_CORES` (`'insulator'` 0, `'conducting, Chebys'` 1). `cnorm` and `cnorm_tor` are the numbers used, except
-  for `B0 = 'ferraro'`, where `cnorm` is written as 1 (the value used is computed later and not recorded). `B0_l` is the
-  lowest degree for `'general'` and 1 for `'ferraro'`; `B0_tor_l` is the parameter, which `B0_tor = 'general'` ignores. The
-  other magnetic parameters (`B0_wound`, the `'confined'`, `'general'` and `'ferraro'` settings, `mag_couplings`, `tol_B0`,
-  `B0_ic`) are not recorded.
+  `background.INNER_CORES` (`'insulator'` 0, `'conducting, Chebys'` 1), `B0_ic` in `background.B0_ICS` (`'potential'` 0,
+  `'full sphere'` 1) and `ferraro_policy` in `background.FERRARO_POLICIES` (`'warn'` 0, `'refuse'` 1). `cnorm` and
+  `cnorm_tor` are the numbers used. `B0_l` is the lowest degree for `'general'` and 1 for `'ferraro'`; `B0_tor_l` is the
+  parameter, which `B0_tor = 'general'` ignores. The expressions of `'general'` (`B0_profiles`, `B0_tor_profiles`), of
+  `'ferraro'` (`B0_ferraro_G`) and of `diff_rot_type = 'ferraro'` (`diff_rot_F`) go into the note after `#`.
 - `diff_rot_generic` and `diff_rot_hold` are not used (always 0 and nan); they keep the positions of the columns after
   them.
-- A row ends, after a `#` that `np.loadtxt` skips, with the `'user'` expressions and, for `'tabulated'`,
-  `diff_rot_file` with the first 12 hex digits of its sha256. A row with neither has no `#`.
+- A row ends, after a `#` that `np.loadtxt` skips, with the `'user'`, `'general'` and `'ferraro'` expressions and, for
+  `'tabulated'`, `diff_rot_file` with the first 12 hex digits of its sha256. A row with none of these has no `#`.
+- A `params.dat` written before the columns 96–107 were added has fewer columns: start a new file.

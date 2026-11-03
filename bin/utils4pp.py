@@ -1612,10 +1612,13 @@ def magnetic_powers_grid():
     '''
     m = par.m
     lmx = par.lmax + 1
-    xg, wx = np.polynomial.legendre.leggauss(lmx + 12)
+    nB = max([3] + list(bf.pol_profiles()) + list(bf.tor_profiles()))   # NEW (2026-10-30): any background degree
+    # FIX (2026-11-03): the products u*⋅(J0×b), E⋅J* have degree in cos θ up to 2 lmx + the degree D of the background (B0, or
+    # U0 = ΔΩ r sinθ e_φ of degree n_max + 1); lmx + 12 Gauss nodes integrate them exactly up to D = 22, more nodes beyond
+    D = max(nB, dr.n_max() + 1 if par.diff_rot else 0)
+    xg, wx = np.polynomial.legendre.leggauss(lmx + 12 + max(0, D - 22))
     sg = np.sqrt(1 - xg**2)
     Yg, dYg, Zg = angular.ylm_grid(m, lmx, xg)       # Y_l, ∂θY_l, i m Y_l/sinθ at the nodes, rows l
-    nB = max([3] + list(bf.pol_profiles()) + list(bf.tor_profiles()))   # NEW (2026-10-30): any background degree
     Y0, dY0, _ = angular.ylm_grid(0, nB, xg)         # m = 0, for B0
     lp_u, lt_u, _ = ut.ell(m, par.lmax, par.symm)
     lp_b, lt_b, ll = ut.ell(m, par.lmax, ut.bsymm)

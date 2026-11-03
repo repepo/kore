@@ -52,7 +52,7 @@ if par.ricb > 0:
     lha2 = rap.logrhoX(Ri,2)
 
 
-# to use in the b.c. and the torque calculation
+# to use in the b.c.
 Ta = Tk(-1, par.N-1, 4)
 Tb = Tk( 1, par.N-1, 5)
 

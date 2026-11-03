@@ -39,6 +39,12 @@ def diffusivity_code():
 def B0_code():  # NEW (2026-10-28): B0 as its index in background_field.B0_TYPES, -1 without the field
     return bf.B0_TYPES.index(par.B0) if (par.magnetic and par.B0 in bf.B0_TYPES) else -1
 
+def cnorm_used():  # FIX (2026-11-03): for B0 'ferraro', bf.cnorm is a placeholder (1); its cnorm is computed on first use
+    return bf.ferraro_cnorm() if (par.magnetic and par.B0 == 'ferraro') else bf.cnorm
+
+def index_in(value, names):  # NEW (2026-11-03): the index of a name in its tuple, -1 if it is not there
+    return names.index(value) if value in names else -1
+
 def solar_density_window(k):
     '''end k (0, 1) of par.solar_density_window, nan if None (the default window), -/+(r_out + 0.005) if 'sun' (even fit)'''
     w = par.solar_density_window
@@ -157,7 +163,7 @@ def param_table(elapsed):
         ( 'magnetic',                 par.magnetic,                '%d' ),    # NEW (2026-10-28), and the magnetic parameters:
         ( 'B0',                       B0_code(),                   '%d' ),    # index into background_field.B0_TYPES
         ( 'B0_l',                     bf.B0_l,                     '%d' ),
-        ( 'cnorm',                    bf.cnorm,                    '%.9e' ),  # as a number (0 without the field)
+        ( 'cnorm',                    cnorm_used(),                '%.9e' ),  # as a number (0 without the field)
         ( 'Hendrik',                  par.Hendrik,                 '%.9e' ),
         ( 'MagnetD',                  par.MagnetD,                 '%.9e' ),
         ( 'innercore',                bg.INNER_CORES.index(par.innercore) if par.innercore in bg.INNER_CORES else -1, '%d' ),  # NEW (2026-10-28)
@@ -167,6 +173,18 @@ def param_table(elapsed):
         ( 'B0_tor',                   bf.B0_TOR_TYPES.index(par.B0_tor) if (par.magnetic and par.B0_tor in bf.B0_TOR_TYPES) else -1, '%d' ),  # NEW (2026-10-28)
         ( 'B0_tor_l',                 par.B0_tor_l,                '%d' ),
         ( 'cnorm_tor',                bf.cnorm_tor,                '%.9e' ),  # as a number (0 without a toroidal field)
+        ( 'B0_wound',                 int(bf.wound_on()),          '%d' ),    # NEW (2026-11-03): 1 if the wound field was added
+        ( 'B0_wound_eta',             par.B0_wound_eta,            '%.9e' ),
+        ( 'B0_conf_r1',               par.B0_conf_r1,              '%.9e' ),  # 'confined'
+        ( 'B0_conf_r2',               par.B0_conf_r2,              '%.9e' ),
+        ( 'B0_conf_p',                par.B0_conf_p,               '%d' ),
+        ( 'B0_param',                 par.B0_param,                '%.9e' ),  # p of 'general' and 'ferraro' (expressions in the # note)
+        ( 'B0_tor_param',             par.B0_tor_param,            '%.9e' ),  # p of B0_tor 'user' and 'general'
+        ( 'B0_ferraro_nmax',          par.B0_ferraro_nmax,         '%d' ),
+        ( 'mag_couplings',            int(ut.mag_algebra),         '%d' ),    # as used: 0 the closed forms, 1 mag_algebra.py
+        ( 'tol_B0',                   par.tol_B0,                  '%.9e' ),
+        ( 'B0_ic',                    index_in(par.B0_ic, bg.B0_ICS), '%d' ),   # index into background.B0_ICS
+        ( 'ferraro_policy',           index_in(par.ferraro_policy, bg.FERRARO_POLICIES), '%d' ),   # background.FERRARO_POLICIES
     ]
 
 

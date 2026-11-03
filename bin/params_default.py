@@ -216,8 +216,9 @@ class default_params():
         # NEW (2026-10-28): used only with magnetic = 1. Ported by name from the conductive_IC branch; user guide docs/magnetic.md.
         # b = ∇×∇×(f r) + ∇×(g r), with the induction equation ∂b/∂t = ∇×(u×B0) + MagnetD ∇²b and the Lorentz force per unit
         # mass Hendrik ρ0⁻¹[(∇×b)×B0 + (∇×B0)×b] (Hendrik, MagnetD: set_scales from Le, Em).
-        # So far: ricb > 0, an insulating mantle, ViscosD > 0, eigenvalue problems, a poloidal B0 of degree 1 and/or a toroidal
-        # B0 of degree 1 (background.check() stops on anything else).
+        # Shell or full sphere, any structure, with or without a differential rotation; an insulating mantle, eigenvalue problems,
+        # a uniform magnetic diffusivity; ViscosD = 0 only in a full sphere. background.check_magnetic() stops on anything else
+        # (FIX 2026-11-03: this header still described the first step of the port).
 
         # Imposed background field B0 = cnorm ∇×∇×(h(r) Y_l0 r), axisymmetric and poloidal (background_field.py)
         self.B0 = 'axial'          # axial, uniform field along the spin axis (h = r/2, l = 1)
@@ -228,7 +229,7 @@ class default_params():
         # self.B0 = 'FDM'          # free poloidal decay mode of the shell (Zhang & Fearn 1994, 1995; Schmitt 2012), degree B0_l
         # self.B0 = 'confined'     # NEW (2026-10-30): a field confined to B0_conf_r1 <= r <= B0_conf_r2, degree B0_l (1 or 2),
         #                          # h = r^l (r2² - r²)^p (r1 = 0) or r^l (r - r1)^p (r2 - r)^p: zero outside, with h and its first p - 1
-        #                          # derivatives zero at the edges, so no surface currents (p = B0_conf_p >= 2; 4 makes h''' continuous).
+        #                          # derivatives zero at the edges, so no surface currents (p = B0_conf_p >= 3: h''' enters the rows).
         #                          # Put it where ΔΩ is uniform to have a steady background with a differential rotation (Ferraro)
         self.beta = 3.0            # 'FDM': first guess of its radial wavenumber β (the root of background_field.findbeta)
         self.B0_l = 1              # 'FDM', 'confined': its degree l
@@ -237,7 +238,7 @@ class default_params():
         # self.B0 = 'general'      # NEW (2026-10-30): any poloidal field Σ_n ∇×∇×(h_n Y_n0 r), B0_profiles = {n: 'numpy expression of r, p'}
         #                          # (degrees of one parity; h_n ~ r^n at r = 0 in a full sphere; p = B0_param); built by mag_algebra.py
         self.B0_profiles = {}
-        self.B0_tor_profiles = {}  # NEW (2026-10-30): B0_tor = 'general': {n: 'expression'} for k_n of Σ_n ∇×(k_n Y_n0 r)
+        self.B0_tor_profiles = {}  # NEW (2026-10-30): B0_tor = 'general': {n: 'expression'} for k_n of Σ_n ∇×(k_n Y_n0 r), p = B0_tor_param
         self.B0_param = 0.0
         # self.B0 = 'ferraro'      # NEW (2026-10-30): a poloidal field whose flux function is ψ = G(ΔΩ) (needs diff_rot = 1): its field
         #                          # lines lie on the surfaces of constant rotation (Ferraro), so it is a steady background with U0.
@@ -254,6 +255,10 @@ class default_params():
         # Ignored (docs/magnetic.md): the ohmic decay of B_p and the Lorentz force of B0 on the background flow.
         self.B0_wound = 0
         self.B0_wound_eta = 1.0
+        # NEW (2026-11-03): with diff_rot = 1 and a poloidal B0 (and no B0_wound), what to do when B0⋅∇ΔΩ ≠ 0, i.e. when the two
+        # are not a steady background together (background.ferraro_mismatch, above 1e-7): 'warn' prints the mismatch and goes on
+        # (the linear problem then assumes the background is maintained by something it leaves out), 'refuse' stops
+        self.ferraro_policy = 'warn'
         self.B0_conf_p  = 12       #                   the order of the zeros of h at the edges (12: Chebyshev series to 1e-14 by N ~ 192)
         # NEW (2026-10-30): where the couplings of the Lorentz force and of the induction come from: 'closed' (the closed forms of
         # operators.py, degree 1 and 2 only) or 'algebra' (mag_algebra.py, built from the recurrence algebra for any degrees; the

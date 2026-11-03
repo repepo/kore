@@ -24,9 +24,14 @@ Commands are given from the repository root unless a run directory is named. The
 
 **Notation.** At a fixed azimuthal order $m$ the angular functions are kore's Schmidt harmonics
 $Y_l = \sqrt{4\pi/(2l+1)}\,Y_l^m$ (Condon–Shortley phase), with $\int|Y_l|^2d\Omega = 4\pi/(2l+1)$; $L = l(l+1)$, and
-$L'$ is the $L$ of the row. The flow is $\mathbf{u} = \rho_0^{-1}\nabla\times\nabla\times(\rho_0 P Y_l\mathbf{r}) + \nabla\times(T Y_l\mathbf{r})$
-and the magnetic field $\mathbf{b} = \nabla\times\nabla\times(F Y_l\mathbf{r}) + \nabla\times(G Y_l\mathbf{r})$. The rows
-of the momentum equation are its projections $\hat{\mathbf{r}}\cdot\nabla\times\nabla\times$ (section u, the 2-curl) and
+$L'$ is the $L$ of the row. The flow and the magnetic field are
+
+$$
+\mathbf{u} = \rho_0^{-1}\nabla\times\nabla\times(\rho_0 P Y_l\mathbf{r}) + \nabla\times(T Y_l\mathbf{r}),\qquad
+\mathbf{b} = \nabla\times\nabla\times(F Y_l\mathbf{r}) + \nabla\times(G Y_l\mathbf{r}).
+$$
+
+The rows of the momentum equation are its projections $\hat{\mathbf{r}}\cdot\nabla\times\nabla\times$ (section u, the 2-curl) and
 $\hat{\mathbf{r}}\cdot\nabla\times$ (section v, the 1-curl); those of the induction equation are $\hat{\mathbf{r}}\cdot$
 (section f) and $\hat{\mathbf{r}}\cdot\nabla\times$ (section g).
 
@@ -34,8 +39,15 @@ $\hat{\mathbf{r}}\cdot\nabla\times$ (section v, the 1-curl); those of the induct
 
 ### A.1 Motivation
 
-The Lorentz force $(\nabla\times\mathbf{b})\times\mathbf{B}_0 + (\nabla\times\mathbf{B}_0)\times\mathbf{b}$ and the induction
-$\nabla\times(\mathbf{u}\times\mathbf{B}_0)$ are products of a perturbation of degree $l$ with a background of degree $n$.
+The Lorentz force and the induction,
+
+$$
+(\nabla\times\mathbf{b})\times\mathbf{B}_0 + (\nabla\times\mathbf{B}_0)\times\mathbf{b}
+\qquad\text{and}\qquad
+\nabla\times(\mathbf{u}\times\mathbf{B}_0),
+$$
+
+are products of a perturbation of degree $l$ with a background of degree $n$.
 Kore needs, for every pair of degrees, every radial term of these products, with its coefficient. With a variable density
 the factors $\rho_0$ and $\rho_0^{-1}$ add terms in $(\ln\rho_0)'$ and $(\ln\rho_0)''$. Done by hand, this algebra is long
 and easy to get wrong; `conductive_IC` has hand-derived forms for a dipole and a quadrupole at uniform density only.
@@ -147,8 +159,8 @@ Where each closed form in `operators.py` comes from:
 - **`tests/magnetic/row_check.py`** (in a run directory): what kore really assembles, i.e. the closed forms times this
   run's radial matrices, in their Gegenbauer bases, against derive.py evaluated with the run's own profiles. This catches a
   wrong label, a wrong power of $r$ or a wrong basis, even when the closed form is right. Degrees up to $m + 4$ by default.
-- **Energy budgets** (`budget_check.py`) and the identity
-  $\int\rho_0\mathbf{u}^*\cdot\mathbf{F}_L\,dV = -\mathrm{Hendrik}\,\overline{\int\mathbf{b}^*\cdot\nabla\times(\mathbf{u}\times\mathbf{B}_0)dV}$
+- **Energy budgets** (`budget_check.py`) and the identity between the work of the Lorentz force, $\int\rho_0\mathbf{u}^*\cdot\mathbf{F}_L\,dV$,
+  and minus Hendrik times the complex conjugate of the induction work, $\int\mathbf{b}^*\cdot\nabla\times(\mathbf{u}\times\mathbf{B}_0)\,dV$
   (`bin/ru_insane.py`): spin_doctor computes the powers of the Lorentz force and of the induction from the eigenvectors
   with its own formulas (on an $(r, \theta)$ grid for toroidal and degree-2 fields), independently of the operators.
 
@@ -304,9 +316,19 @@ each part is a few vectors of three kinds, a polynomial $c(x)$ times $\hat{\math
 | poloidal $h_n$ | $\frac{L_0 h}{r}P_n\,\hat{\mathbf{r}} - (h' + \frac{h}{r})P_n'\sin\theta\,\hat{\boldsymbol\theta}$ | $-(h'' + \frac{2h'}{r} - \frac{L_0 h}{r^2})P_n'\sin\theta\,\hat{\boldsymbol\phi}$ |
 | toroidal $k_n$ | $k\,P_n'\sin\theta\,\hat{\boldsymbol\phi}$ | $\frac{L_0 k}{r}P_n\,\hat{\mathbf{r}} - (k' + \frac{k}{r})P_n'\sin\theta\,\hat{\boldsymbol\theta}$ |
 
-The cross products with a perturbation Field $(q, s, t)$ reduce to the operations of `angular.py`: $\hat{\mathbf{r}}\times(q, s, t) = (0, t, -s)$;
-$\sin\theta\,\hat{\boldsymbol\theta} = x\hat{\mathbf{r}} - \hat{\mathbf{z}}$ (so `zcross`); $\sin\theta\,\hat{\boldsymbol\phi} = \hat{\mathbf{z}}\times\hat{\mathbf{r}}$, and
-$(\hat{\mathbf{z}}\times\hat{\mathbf{r}})\times\mathbf{F} = \hat{\mathbf{r}}(\hat{\mathbf{z}}\cdot\mathbf{F}) - \hat{\mathbf{z}}(\hat{\mathbf{r}}\cdot\mathbf{F})$; and the multiplication by $c(x)$ (`mult` with
+The cross products with a perturbation Field $(q, s, t)$ reduce to the operations of `angular.py`, through
+
+$$
+\hat{\mathbf{r}}\times(q, s, t) = (0, t, -s),\qquad
+\sin\theta\,\hat{\boldsymbol\theta} = x\hat{\mathbf{r}} - \hat{\mathbf{z}},\qquad
+\sin\theta\,\hat{\boldsymbol\phi} = \hat{\mathbf{z}}\times\hat{\mathbf{r}},
+$$
+
+$$
+(\hat{\mathbf{z}}\times\hat{\mathbf{r}})\times\mathbf{F} = \hat{\mathbf{r}}(\hat{\mathbf{z}}\cdot\mathbf{F}) - \hat{\mathbf{z}}(\hat{\mathbf{r}}\cdot\mathbf{F}),
+$$
+
+(the products with $\hat{\mathbf{z}}$ are `zcross`), and the multiplication by $c(x)$ (`mult` with
 the matrices $c(X)$, $c'(X)$). The perturbation's components are radial monomials ($u_r = LP/r$, $b_\theta$-part $F' + F/r$,
 $(\nabla\times\mathbf{b})_t = -(F'' + 2F'/r - LF/r^2)$, …), so the force $\mathbf{G} = \mathbf{J}_0\times\mathbf{b} - \mathbf{B}_0\times\mathbf{J}$ and the
 induction $\mathbf{E} = \mathbf{u}\times\mathbf{B}_0$ are sums of (radial monomial) × (sparse matrix on the degrees). The rows follow from
@@ -394,7 +416,12 @@ products of truncated matrices miss the degrees beyond the truncation. They are 
 is used (lmax + n + 6).
 
 **Step 4: vector fields.** A vector field is expanded as
-$\mathbf{F} = \sum_l\,[\,q_l Y_l\hat{\mathbf{r}} + s_l\,r\nabla Y_l + t_l\,r\nabla Y_l\times\hat{\mathbf{r}}\,]$. The operations
+
+$$
+\mathbf{F} = \sum_l\,\left[\,q_l Y_l\hat{\mathbf{r}} + s_l\,r\nabla Y_l + t_l\,r\nabla Y_l\times\hat{\mathbf{r}}\,\right].
+$$
+
+The operations
 $\mathbf{W}$ needs are exact sparse products of $X$, $D$ and diagonal matrices: multiplication by $g(x)$, $\hat{\mathbf{z}}\times$,
 $\hat{\mathbf{z}}\times(c\,\hat{\mathbf{r}})$, and the scalar $\sin\theta\,F_\theta$. The formulas are in the docstring of
 `bin/angular.py` and in [Differential rotation](differential_rotation_details.md), §3.
@@ -415,7 +442,12 @@ thermal-wind entropy $S_{tw} = \sum_n \sigma_n(r)P_n(\cos\theta)$ follows from t
 $D\sigma = (1-x^2)\,\partial_x S_{tw}$ is solved for the $\sigma_n$ by forward substitution, exactly.
 
 **Step 7b: the induction by the rotation (2026-10-30).** With a magnetic field, $\mathbf{U}_0$ also shears the field:
-$\nabla\times(\mathbf{U}_0\times\mathbf{b}) = (\mathbf{b}\cdot\nabla)\mathbf{U}_0 - (\mathbf{U}_0\cdot\nabla)\mathbf{b} = G[-im\Delta\Omega\,\mathbf{b} + \sin\theta(r\partial_r\Delta\Omega\,b_r + \partial_\theta\Delta\Omega\,b_\theta)\hat{\boldsymbol\phi}]$
+
+$$
+\nabla\times(\mathbf{U}_0\times\mathbf{b}) = (\mathbf{b}\cdot\nabla)\mathbf{U}_0 - (\mathbf{U}_0\cdot\nabla)\mathbf{b}
+= G\left[-im\Delta\Omega\,\mathbf{b} + \sin\theta\left(r\partial_r\Delta\Omega\,b_r + \partial_\theta\Delta\Omega\,b_\theta\right)\hat{\boldsymbol\phi}\right]
+$$
+
 (the $\hat{\mathbf{z}}\times\mathbf{b}$ terms of the two cancel). It has the structure of $\mathbf{W}$ without its $2\hat{\mathbf{z}}\times\mathbf{u}$, so it has
 its own primitives (`_induction_primitives`, the shapes $f\,LF/r$, $f(F' + F/r)$, $fG$, $(rf')LF/r$). The induction row f
 ($\hat{\mathbf{r}}\cdot$) sees only $-im\Delta\Omega\,b_r$; the row g ($\hat{\mathbf{r}}\cdot\nabla\times = L't/r$) sees the t components, including
@@ -423,8 +455,8 @@ the $\Omega$-effect from F (`induction_coefficients`, `induction_block`, `induct
 
 **Step 8: into kore.** Each radial operator is a label with the profile codes `zf`, `zd`, `zs` + degree for $f_n$,
 $rf_n'$, $r^2f_n''$ (and `tw`, `tp` for $p_0\sigma_n$, $p_0\sigma_n'$). `submatrices.py` builds its matrix. A block is then
-$G\sum_n\sum(\text{coefficient}\times\text{radial operator})/L'^3$, placed by `assemble.py` at the $\Delta l$ of the
-selection rules.
+$G$ times the sum, over the degrees $n$ and the terms, of coefficient × radial operator, divided by $L'^3$; `assemble.py`
+places it at the $\Delta l$ of the selection rules.
 
 ### B.3 Implementation
 

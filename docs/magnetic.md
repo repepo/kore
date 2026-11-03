@@ -79,12 +79,12 @@ Each poloidal option is one radial shape (or several, for `'general'`), times `c
 Notes:
 
 - `'G21 dipole'`, `'Luo_S1'` and `'Luo_S2'` are defined for a full sphere. With an inner core, `B0_ic = 'potential'`
-  (default) adds a potential field so that the field continues into the core; `B0_ic = 'full sphere'` (or any other
-  value) keeps the full-sphere formula.
+  (default) adds a potential field so that the field continues into the core; `B0_ic = 'full sphere'` keeps the
+  full-sphere formula.
 - `'Luo_S1'` and `'G21 dipole'` give the same run when `cnorm` is a name (`'mag_energy'`, `'Schmitt2012'`, `'rms_cmb'`). With a
   numerical `cnorm` the `'Luo_S1'` field is 30 times stronger.
 - `'confined'`: the layer runs from `B0_conf_r1` to `B0_conf_r2`, inside the outer wall. The defaults reach the centre,
-  which suits a full sphere; with an inner core, set `B0_conf_r1` at or above `ricb`. `B0_conf_p` (at least 2) is how
+  which suits a full sphere; with an inner core, set `B0_conf_r1` at or above `ricb`. `B0_conf_p` (at least 3) is how
   smoothly the field vanishes at the edges, so that no current sheet forms there.
 - `'general'`: the expressions are numpy expressions of `r` and `p` (`sin`, `cos`, `exp`, `sqrt`, `where`, `erf`, `pi`, ...).
   In a full sphere the profile of degree n should go as `r**n` at the centre. Example:
@@ -106,7 +106,7 @@ Each toroidal option is a purely azimuthal field: one radial shape times `cnorm_
 | `'Malkus'` | grows linearly with the distance to the axis (degree 1), the field of Malkus (1967) | `B0_tor_l` (1) | shell or full sphere; degree 2 shell only | `B0_tor_l` = 1 or 2 |
 | `'wall'` | zero at both walls | `B0_tor_l` (1) | shell or full sphere | `B0_tor_l` = 1 or 2 |
 | `'user'` | a radial shape given as an expression of `r` and `p` | `B0_tor_profile`, `B0_tor_param` (p), `B0_tor_l` (1) | shell or full sphere | `B0_tor_l` = 1 or 2 |
-| `'general'` | any sum of degrees | `B0_tor_profiles` = {degree: 'expression of r, p'}, with p = `B0_param` | shell or full sphere | any, of one parity |
+| `'general'` | any sum of degrees | `B0_tor_profiles` = {degree: 'expression of r, p'}, `B0_tor_param` (p) | shell or full sphere | any, of one parity |
 
 A `'user'` profile must be smooth, since its second derivative enters the equations. It is written to `params.dat`
 after `#`; the `'general'` and `'ferraro'` expressions are not.
@@ -125,7 +125,7 @@ of the dimensionless field is set by `cnorm` (poloidal) and `cnorm_tor` (toroida
 
 With a number, the field's size depends on the arbitrary scale of the formula, so `Le` alone does not say how strong
 the field is. Use `'mag_energy'` (as in the example) so that `Le` and the Elsasser number refer to a field of unit
-energy. `'confined'` and `'ferraro'` stop with `'rms_cmb'`; `'general'` fails with an error. Formulas:
+energy. `'confined'`, `'general'` and `'ferraro'` stop with `'rms_cmb'`. Formulas:
 [Magnetic field equations](magnetic-equations.md#normalisation).
 
 ## With a differential rotation
@@ -142,8 +142,7 @@ background is assumed to be held steady by something outside the model.
 
 With a poloidal field (and `B0_wound = 0`), kore prints at the start of the run how far the field and the rotation are
 from this condition, as a relative number ([definition](magnetic-equations.md#the-ferraro-condition)). Above `1e-7` it
-prints a warning. To make it stop instead, set `FERRARO_POLICY = 'refuse'` at the top of `bin/background.py` (it is a
-constant there, not a parameter).
+prints a warning. To make it stop instead, set `ferraro_policy = 'refuse'` (default `'warn'`).
 
 **Steady backgrounds.** Four ways to have a poloidal field and a differential rotation that are consistent:
 
@@ -204,7 +203,9 @@ Not supported (the run stops at startup):
 - a poloidal and a toroidal part of opposite equatorial symmetry;
 - the per-option limits of the tables above: degrees other than 1 or 2 for `'FDM'`, `'confined'` and `B0_tor_l`, `'Malkus'`
   of degree 2 in a full sphere, `'ferraro'` without `diff_rot = 1`, `B0 = 'ferraro'` with `diff_rot_type = 'ferraro'`,
-  `B0_wound = 1` without a poloidal field or without `diff_rot = 1`, and `cnorm = 'rms_cmb'` with `'confined'` or `'ferraro'`.
+  `B0_wound = 1` without a poloidal field or without `diff_rot = 1`, `B0_conf_p` below 3, and `cnorm = 'rms_cmb'` with
+  `'confined'`, `'general'` or `'ferraro'`;
+- a value of `mag_couplings`, `B0_ic` or `ferraro_policy` other than those listed on this page.
 
 ## Output
 
@@ -215,7 +216,7 @@ energy is 1 in the fluid.
 `spin_doctor` adds the Lorentz work to residσ and residω and prints two more residuals: resid𝐛, the energy budget of the
 induction equation in the fluid, and resid𝐄, the full energy budget including the field outside the fluid (no-slip walls
 only: `bco = 1`, and `bci = 1` with an inner core). Like residσ ([Solver](solver.md)), they should be small for a resolved mode. It also prints
-Mag/Kin, the ratio of magnetic to kinetic energy (without the factor `Hendrik`), and writes `magnetic.dat` and thirteen
+Mag/Kin, the ratio of magnetic to kinetic energy (without the factor `Hendrik`), and writes `magnetic.dat` and 25
 magnetic columns of `params.dat` ([Output files](output.md#magneticdat)).
 
 ## Practical tips
@@ -228,7 +229,7 @@ magnetic columns of `params.dat` ([Output files](output.md#magneticdat)).
   and most slowly when its layer reaches the centre of a full sphere.
 - **`tol_B0`** (default `1e-8`): the relative cut of the radial series of the background field. It sets the band width of
   the magnetic blocks and the fill-in of the LU factors. Lower it for more accurate operators.
-- **`mag_couplings`**: `'closed'` (default; any value other than `'algebra'` means this) uses the closed formulas, which
+- **`mag_couplings`**: `'closed'` (default) uses the closed formulas, which
   exist for fields of degree 1 and 2. `'algebra'` builds the couplings for any degree (`bin/mag_algebra.py`); it is used
   automatically for `'general'`, `'ferraro'` and `B0_wound = 1`. Both give the same eigenvalues to round-off.
 - **Memory.** Fields of high degree, and wound fields with a high-degree rotation, couple more degrees and need more LU

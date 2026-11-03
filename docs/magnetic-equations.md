@@ -105,9 +105,10 @@ core. `'full sphere'` keeps $h$ as it is (`conductive_IC`'s `B0_beta_ic`). `B0_i
 with `ricb = 0`.
 
 **Confined field.** `'confined'` is zero outside $r_1 \le r \le r_2$, and $h$ and its first $p - 1$ derivatives vanish at the
-edges, so there are no surface currents ($B_r \propto h$ and $B_\theta \propto h' + h/r$ are continuous for $p \ge 2$, the
-smallest value accepted; the volume current, which involves $h''$, is continuous for $p \ge 3$; $p = 4$ makes $h'''$
-continuous).
+edges, so there are no surface currents ($B_r \propto h$ and $B_\theta \propto h' + h/r$ are continuous for $p \ge 2$; the
+volume current, which involves $h''$, is continuous for $p \ge 3$, the smallest value accepted, because the rows of the
+momentum equation hold $h'''$, which would carry a delta at the edges for $p = 2$; $p = 4$ makes $h'''$ continuous).
+In a full sphere with $r_1 > 0$, $h$ is evaluated at $\lvert r\rvert$ with the parity $(-1)^l$.
 Its purpose: a poloidal field inside a region where $\Delta\Omega$ is uniform is a steady background with the differential
 rotation (Ferraro, [below](#with-a-differential-rotation)). With an inner core the region must lie in the fluid
 ($r_1 \ge$ `ricb`). The edges are smooth only to order $p$, so the Chebyshev series converge algebraically (coefficients
@@ -139,7 +140,7 @@ $$
 | `'Malkus'` | $r$ | for $n = 1$, $B_\phi = c_\mathrm{tor}\,s$ (Malkus 1967), with a uniform axial current $2c_\mathrm{tor}$ |
 | `'wall'` | $r(r - r_i)(1 - r)/(1 - r_i)^2$; with `ricb = 0`, $r^n(1 - r^2)$ | zero at both walls |
 | `'user'` | `B0_tor_profile`, a numpy expression of $r$ and $p$ = `B0_tor_param` | its derivatives from a Chebyshev interpolant (degree max(64, 2N)); written to `params.dat` after `#` |
-| `'general'` | $\sum_n k_n Y_n^0$, `B0_tor_profiles` = {n: 'numpy expression of r, p'}, with $p$ = `B0_param` (not `B0_tor_param`) | any degrees of one parity; derivatives as for the poloidal `'general'` |
+| `'general'` | $\sum_n k_n Y_n^0$, `B0_tor_profiles` = {n: 'numpy expression of r, p'}, with $p$ = `B0_tor_param` | any degrees of one parity; derivatives as for the poloidal `'general'` |
 
 `B0 = None` gives a toroidal field alone. A toroidal field that does not vanish at a wall (`'Malkus'`) carries a surface
 current there. The linear problem is unaffected: the walls' conditions on $\mathbf b$ do not involve $\mathbf B_0$, and
@@ -153,8 +154,8 @@ either.
 nodes):
 
 - `'rms_cmb'`: the rms of the radial field over the outer wall is 1, $c_\mathrm{norm} = \sqrt{2l+1}/(L\,h(1))$, $L = l(l+1)$.
-  Single-degree types only: `'confined'` and `'ferraro'` stop with a message (`'confined'` is zero at the wall);
-  `'general'` is not refused but fails (`B0_norm` raises a ValueError before `check_magnetic` runs).
+  Single-degree types only: `'confined'`, `'general'` and `'ferraro'` stop with a message (`'confined'` is zero at the
+  wall).
 - `'mag_energy'`: $\int B_0^2\,dV = 1$ over the fluid (Luo & Jackson 2022); `'Schmitt2012'`: $\int B_0^2\,dV = 4$. For one
   degree,
 
@@ -357,7 +358,7 @@ $$
 $$
 
 over the fluid at the start of every run with `diff_rot = 1` and a poloidal $\mathbf B_0$, except with `B0_wound = 1` (from the shapes $f_n$, with a fourth-order difference in $r$, and the poloidal
-profiles, on a grid). Above $10^{-7}$ the constant `background.FERRARO_POLICY` (set in `bin/background.py`, not a parameter) decides: `'warn'` (default: a warning, the
+profiles, on a grid). Above $10^{-7}$ the parameter `ferraro_policy` decides: `'warn'` (default: a warning, the
 background is assumed to be maintained) or `'refuse'`. Consistent backgrounds: a toroidal field, a `'confined'` field where
 $\Delta\Omega$ is uniform, `B0 = 'ferraro'`, `diff_rot_type = 'ferraro'`, or any poloidal field with `B0_wound = 1` (the
 winding balanced by diffusion; the run then reports that balance instead).

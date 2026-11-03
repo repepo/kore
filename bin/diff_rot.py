@@ -245,6 +245,9 @@ def check():
             sys.exit("diff_rot_type 'ferraro' with B0 'ferraro' is circular (each is built from the other): choose one")
         if par.diff_rot_nmax < 0 or par.diff_rot_nmax % 2:
             sys.exit('diff_rot_nmax must be even and >= 0')
+        if not isinstance(par.diff_rot_F, str) or not par.diff_rot_F or '#' in par.diff_rot_F:   # FIX (2026-11-03): params.dat
+            sys.exit("diff_rot_F: a numpy expression of psi and p as a string without '#' (it is written to params.dat), got %r"
+                     % (par.diff_rot_F,))
         r = np.linspace(max(par.ricb, 0.05), 1, 40)
         x = np.linspace(0.05, 0.95, 19)
         F = _ferraro_shapes()[1]
@@ -256,7 +259,10 @@ def check():
         codes(n)
 
 def description():
-    '''the profile definition as text for params.dat (a '#' comment): the 'user' expressions, empty otherwise'''
+    '''the profile definition as text for params.dat (a '#' comment): the 'user' expressions or (NEW 2026-11-03) the F of
+    'ferraro', empty otherwise'''
+    if par.diff_rot_type == 'ferraro':
+        return 'ferraro: F = %s ; p = %r' % (par.diff_rot_F, par.diff_rot_param)
     if par.diff_rot_type != 'user':
         return ''
     return 'user: ' + ' ; '.join('zf%d = %s' % (n, par.diff_rot_profiles[n]) for n in sorted(par.diff_rot_profiles)) + \

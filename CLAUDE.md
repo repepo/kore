@@ -8,7 +8,7 @@ an entropy equation, a solar background, and differential rotation with its ther
 Written 2026-10-13 against commit `b4598010` ("Radiative interior (Mukhopadhyay et al. 2025b) ..."), branch
 `anelastic_log` (github.com/repepo/kore), and checked against the code at `a2abc05` on 2026-10-28 (the differential
 rotation in `bin/diff_rot.py`, the background chosen by `structure`, `stratification` and `diffusivity`, `diff_rot_hold`
-removed, `docs/solver.md`, the GitHub test). Line numbers
+removed, `docs/solver.md`, the GitHub test), and against `80c2f233` on 2026-11-03 (the review of the magnetic port). Line numbers
 drift; check the code before relying on a detail here. The commit messages are long and accurate: `git log` is the best
 history. §15 lists what the first threads of the claude.ai project behind this branch found and changed.
 
@@ -52,14 +52,14 @@ copies `params_default.py` and `parameters.py` to `../run` and moves the outputs
 
 Outputs: `real_flow.field`, `imag_flow.field` (and `*_thermal.field`, `*_magnetic.field`), one column per solution,
 eigenvectors normalised to kinetic energy 1 (KE + Hendrik·ME = 1 with `magnetic = 1`); `eigenvalues0.dat` (this solve:
-Re λ, Im λ); `timing.dat`. `spin_doctor` appends to `eigenvalues.dat`, `params.dat` (95 columns, and a `#` note on rows
+Re λ, Im λ); `timing.dat`. `spin_doctor` appends to `eigenvalues.dat`, `params.dat` (107 columns, and a `#` note on rows
 that need one, §10), `flow.dat` (20), `thermal.dat` (7), `magnetic.dat` (11). A conducting inner core adds
 `*_magnetic_ic.field`. A `params.dat` from an older version has fewer columns: start a new one. `python3 bin/units.py` prints a run's
 eigenvalues as ω, σ in nHz.
 
 ## 3. File map
 
-`bin/` (≈7.6k lines of Python):
+`bin/` (≈10.6k lines of Python):
 
 | file | role |
 | --- | --- |
@@ -67,8 +67,9 @@ eigenvalues as ω, σ in nHz.
 | `params_default.py` | every parameter with long comments (the best parameter reference), `set_scales`, `check_names` (warns about names that kore does not define), solver options `petsc_opts`, `prescale`, `drop_tol` |
 | `units.py` | physical units for parameter files and scripts (kore itself never imports it): `set_physical` (Gaspard, Beyonce, ViscosD, ThermaD, `diff_rot_frame` from cgs values), `set_target` (`itau`, `rtau` from ω, σ in nHz), `nHz`; as a script, prints a run's eigenvalues in nHz |
 | `utils.py` | globals (`N1`, `n`, `sizmat`, `symm1`, `adiab_tw`, `odd_profiles`...), `dr_offd`, label decoding, Chebyshev transforms (`chebco_f`, `funcheb`, `fonzie`, `angine`), Gegenbauer matrices `Dlam`, `Slam`, `Mlam`, parity `remroco`, `ell`, erf profiles (`erf_top_hat`, `erf_top_hat_odd`, `erf_box`), `Ylm`, `load_npz_mmap` |
-| `background.py` | the background besides the rotation (§6): the type names `STRUCTURES`, `STRATIFICATIONS`, `DIFFUSIVITIES` (their order is the index written to `params.dat`), `check()` (stops on unknown, removed (`REMOVED`) or impossible settings; `check_magnetic()` for `magnetic = 1`), dS/dr (`gradS`), ν, κ and η (`diffusivity`), the 'user' expressions and their `description()` for `params.dat` |
-| `background_field.py` | the imposed magnetic field B0 (`magnetic = 1`, §4): `B0_TYPES` ('axial', 'FDM', 'G21 dipole', 'Luo_S1', 'Luo_S2'; the polynomial ones in `POLY`, `B0_beta_ic`), `B0_TOR_TYPES`, `symmB0`, `B0_l`, the FDM root `findbeta`, h and its derivatives `h(r, k)` (`jl_k` at ricb = 0), k(r, d), `cnorm` (`B0_norm`), `cnorm_tor`, the profiles `bpoX`, `btoX`; numpy and scipy only |
+| `background.py` | the background besides the rotation (§6): the type names `STRUCTURES`, `STRATIFICATIONS`, `DIFFUSIVITIES` (their order is the index written to `params.dat`), `check()` (stops on unknown, removed (`REMOVED`) or impossible settings; `check_magnetic()` for `magnetic = 1`, with the names `MAG_COUPLINGS`, `B0_ICS`, `FERRARO_POLICIES`), the Ferraro check (`ferraro_mismatch`, `ferraro_report`, `magnetic_diffrot`), dS/dr (`gradS`), ν, κ and η (`diffusivity`), the 'user', 'general' and 'ferraro' expressions and their `description()` for `params.dat` |
+| `background_field.py` | the imposed magnetic field B0 (`magnetic = 1`, §4): `B0_TYPES` ('axial', 'FDM', 'G21 dipole', 'Luo_S1', 'Luo_S2', 'confined', 'general', 'ferraro'; the polynomial ones in `POLY`, `B0_beta_ic`), `B0_TOR_TYPES`, `symmB0`, `B0_l`, the FDM root `findbeta`, h and its derivatives `h(r, k)` (`jl_k` at ricb = 0), k(r, d), the 'general' interpolants (`gen_profile`), the 'ferraro' projection (`ferraro_profile`, `ferraro_cnorm`), the wound field (`wound_profiles`, `wound_residual`), `cnorm` (`B0_norm`), `cnorm_tor` (with `cnorm_error`, `cnorm_tor_error` for check_magnetic), the profiles `bpoX`, `btoX` and, degree by degree, `pol_profiles`, `tor_profiles`; numpy and scipy only |
+| `mag_algebra.py` | the Lorentz and induction couplings for any background degree from the recurrence algebra of `angular.py` (`mag_couplings = 'algebra'`, forced for 'general', 'ferraro' and `B0_wound`): `coefficients`, `labels` (profile codes `hp`/`kt` + degree), `block`, `dl_range` |
 | `radial_profiles.py` | one class per structure (`wu2005_profiles`, `eight_term_profiles`, `modelS_profiles`, `modelS_hydrostatic_profiles`, `boussinesq_profiles`, on a base class `structure` that takes dS/dr, ν and κ from `background.py`), the dict `structures` and the instance `prf`; the `*X(r, Dorder)` derivative helpers; `proffdir` (label code → function); `burrito` (the integrand of one operator) |
 | `smoothed_sun.py` | analytic even fit of the Model S ln ρ, with g, p, d ln ρ/dr, d ln p/dr (structure '8-term fit'; its g also serves 'old model S prototype') |
 | `model_s.at` | Model S table (columns As, c₁, ρ/ρ_c, p/p_c, x) for 'model S hydrostatic' and 'old model S prototype' |
@@ -125,9 +126,11 @@ full sphere only: u rows in C^(3), v rows in C^(2) with no bc row, since the Lor
 insulating mantle, eigenproblems, uniform η, no inviscid shell: `background.check_magnetic()` stops otherwise.
 2026-10-30: with `diff_rot = 1` the induction gains ∇×(U0×b) (`diff_rot.induction_block`, any ΔΩ, same algebra as the force;
 a conducting inner core must co-rotate rigidly, `diff_rot.rigid_ricb`; `background.ferraro_mismatch` reports B0⋅∇Ω and
-`FERRARO_POLICY` 'warn'/'refuse'; spin_doctor's resid𝐄 uses the volume induction work, `utils4pp.INDU_WALLS`). New B0 types
-'confined' (h = r^l (r2² - r²)^p or r^l (r - r1)^p (r2 - r)^p, factored evaluation), 'general' (`B0_profiles`, `B0_tor_profiles`,
-any degrees) and 'ferraro' (ψ = G(ΔΩ), `B0_ferraro_G`, odd degrees to `B0_ferraro_nmax`; a toroidal part of even degree
+`par.ferraro_policy` 'warn'/'refuse' (a parameter since 2026-11-03, formerly the constant `background.FERRARO_POLICY`);
+spin_doctor's resid𝐄 uses the volume induction work, `utils4pp.INDU_WALLS`). New B0 types
+'confined' (h = r^l (r2² - r²)^p or r^l (r - r1)^p (r2 - r)^p, factored evaluation, at |r| with the parity (-1)^(l+k) when
+r1 > 0 in a full sphere (FIX 2026-11-03), `B0_conf_p` ≥ 3), 'general' (`B0_profiles` with p = `B0_param`, `B0_tor_profiles`
+with p = `B0_tor_param`, any degrees) and 'ferraro' (ψ = G(ΔΩ), `B0_ferraro_G`, odd degrees to `B0_ferraro_nmax`; a toroidal part of even degree
 may be added). The reverse, diff_rot_type 'ferraro' (NEW 2026-10-30): ΔΩ = F(ψ) of the given poloidal B0 (`diff_rot_F`, numpy in
 psi and p; even degrees to `diff_rot_nmax`, `diff_rot._ferraro_shapes`); refused with B0 'ferraro' (circular), without a
 poloidal B0, or with an F(ψ) odd in cos θ (quadrupolar field). B0_wound = 1 (NEW 2026-10-30): adds the steady toroidal field
@@ -441,6 +444,13 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
 
 ## 14. History (this branch, newest first)
 
+`80c2f233`, `03213082` docs/magnetic.md (when the ignored Lorentz force of B0 on ΔΩ matters, a checklist for solar
+inertial modes with `B0_wound`); `ab2c9201` `B0_wound`, the toroidal field wound by ΔΩ and balanced by diffusion;
+`71259d5c` diff_rot_type 'ferraro'; `b2d01e55` mag_algebra drops round-off coefficients, display math in the docs;
+`5c9127f7` the induction by ΔΩ, B0 'confined', 'general' and 'ferraro', `bin/mag_algebra.py`, the Ferraro check, the full
+energy budget with the wall flux; `dfb9c2fd`, `713b4c2c` `docs/derivations.md` and `tools/derive/`; `43113392`
+`PETSc.COMM_WORLD` in solve.py (slepc4py 3.26); `512fb493` the merge of anelastic_mag (the magnetic field, steps 1–5)
+into anelastic_log;
 `71b0b0f` the magnetic field in a full sphere, inviscid runs, 'G21 dipole', 'Luo_S1', 'Luo_S2', FDM of degree 2
 (step 5); `683efac` the toroidal B0 (step 4); `c55a8d9` the magnetic field with a variable density (step 3,
 `tests/magnetic/`); `c457a28` the magnetic field, steps 1 and 2 (insulating walls, conducting inner core;

@@ -20,6 +20,9 @@ STRATIFICATIONS = ('top hat', 'odd top hat', 'solar_rz', 'linear', 'inverse squa
 DIFFUSIVITIES = ('uniform', 'step', 'solar_rz', 'user')
 MAGNETIC_WALLS = ('insulator',)   # NEW (2026-10-28): mantle (magnetic = 1); B0 types: background_field.B0_TYPES
 INNER_CORES = ('insulator', 'conducting, Chebys')   # NEW (2026-10-28): innercore (magnetic = 1)
+MAG_COUPLINGS = ('closed', 'algebra')            # NEW (2026-11-03): mag_couplings, B0_ic and ferraro_policy (magnetic = 1),
+B0_ICS = ('potential', 'full sphere')            # also written to params.dat as these indices
+FERRARO_POLICIES = ('warn', 'refuse')
 
 # names that are no longer read and what to set instead (without this stop they would be ignored without notice)
 REMOVED = {
@@ -117,6 +120,8 @@ def check_magnetic():
                      % (par.B0, par.B0_tor))
     if par.B0 == 'general':   # NEW (2026-10-30)
         _check_general(par.B0_profiles, 'B0_profiles')
+        if par.cnorm == 'rms_cmb':   # FIX (2026-11-03): stopped here instead of crashing in background_field.B0_norm
+            sys.exit("B0 'general': use cnorm 'mag_energy' or a number")
     if par.B0 == 'ferraro':   # NEW (2026-10-30)
         if not par.diff_rot:
             sys.exit("B0 'ferraro' needs a differential rotation (diff_rot = 1): its flux function is G(ΔΩ)")
@@ -124,6 +129,9 @@ def check_magnetic():
             sys.exit("diff_rot_type 'ferraro' with B0 'ferraro' is circular (each is built from the other): choose one")
         if par.B0_ferraro_nmax < 1 or par.B0_ferraro_nmax % 2 == 0:
             sys.exit('B0_ferraro_nmax must be odd and >= 1 (the field has only odd degrees)')
+        if not isinstance(par.B0_ferraro_G, str) or not par.B0_ferraro_G or '#' in par.B0_ferraro_G:   # FIX (2026-11-03): params.dat
+            sys.exit("B0_ferraro_G: a numpy expression of w and p as a string without '#' (it is written to params.dat), got %r"
+                     % (par.B0_ferraro_G,))
         if par.cnorm == 'rms_cmb':
             sys.exit("B0 'ferraro': use cnorm 'mag_energy' or a number")
     if getattr(par, 'B0_wound', 0):   # NEW (2026-10-30): the wound toroidal field (background_field.wound_profiles)
@@ -135,8 +143,10 @@ def check_magnetic():
             sys.exit('B0_wound = 1: innercore %r is not supported (insulator or conducting, Chebys)' % (par.innercore,))
     if par.B0 == 'confined':   # NEW (2026-10-30)
         r1, r2 = par.B0_conf_r1, par.B0_conf_r2
-        if par.B0_l not in (1, 2) or par.B0_conf_p < 2 or not (0 <= r1 < r2 <= 1):
-            sys.exit("B0 'confined' needs B0_l = 1 or 2, B0_conf_p >= 2 and 0 <= B0_conf_r1 < B0_conf_r2 <= 1")
+        # FIX (2026-11-03): p >= 3, not 2: the momentum rows hold h''', which with p = 2 has a delta at the edges (h'' jumps)
+        # that the profiles, evaluated point by point, would drop
+        if par.B0_l not in (1, 2) or par.B0_conf_p < 3 or not (0 <= r1 < r2 <= 1):
+            sys.exit("B0 'confined' needs B0_l = 1 or 2, B0_conf_p >= 3 and 0 <= B0_conf_r1 < B0_conf_r2 <= 1")
         if par.ricb > 0 and r1 < par.ricb:
             sys.exit("B0 'confined' with an inner core: the region must lie in the fluid, B0_conf_r1 >= ricb")
         if par.cnorm == 'rms_cmb':
@@ -145,6 +155,13 @@ def check_magnetic():
         sys.exit("B0 'FDM' with B0_l = %r: only B0_l = 1 or 2 is implemented" % par.B0_l)
     if not (isinstance(par.cnorm, (int, float)) or par.cnorm in ('rms_cmb', 'mag_energy', 'Schmitt2012')):
         sys.exit("cnorm %r: a number, 'rms_cmb', 'mag_energy' or 'Schmitt2012'" % (par.cnorm,))
+    # FIX (2026-11-03): these two were not checked, and a misspelt value silently meant 'closed' or 'full sphere'
+    if getattr(par, 'mag_couplings', 'closed') not in MAG_COUPLINGS:
+        sys.exit('mag_couplings %r: set one of %s' % (par.mag_couplings, _names(MAG_COUPLINGS)))
+    if par.B0_ic not in B0_ICS:
+        sys.exit('B0_ic %r: set one of %s' % (par.B0_ic, _names(B0_ICS)))
+    if par.ferraro_policy not in FERRARO_POLICIES:   # NEW (2026-11-03): the parameter that replaces background.FERRARO_POLICY
+        sys.exit('ferraro_policy %r: set one of %s' % (par.ferraro_policy, _names(FERRARO_POLICIES)))
     if par.mantle not in MAGNETIC_WALLS:
         sys.exit('mantle %r: set one of %s' % (par.mantle, _names(MAGNETIC_WALLS)))
     if par.innercore not in INNER_CORES:
@@ -163,6 +180,11 @@ def check_magnetic():
         sys.exit('magnetic = 1 with ViscosD = 0 needs ricb = 0 (the inviscid formulation is for the full sphere only)')
     if par.forcing != 0:
         sys.exit('magnetic = 1 is implemented for eigenvalue problems only (forcing = 0)')
+    # FIX (2026-11-03): an error of cnorm, cnorm_tor at the import of background_field that no check above explains (before
+    # magnetic_diffrot, which uses them)
+    for name, err in (('cnorm', bf.cnorm_error), ('cnorm_tor', bf.cnorm_tor_error)):
+        if err is not None:
+            sys.exit('%s could not be computed: %s: %s' % (name, type(err).__name__, err))
     if par.diff_rot:   # NEW (2026-10-30): the induction by the background flow, ∇×(U0×b), is in (diff_rot.induction_block)
         magnetic_diffrot()
     if par.Hendrik <= 0 or par.MagnetD <= 0:
@@ -175,19 +197,19 @@ def _check_general(prof, name):
     import background_field as bf
     if not isinstance(prof, dict) or not prof:
         sys.exit("B0 'general' needs %s = {n: 'numpy expression of r, p'}" % name)
-    degs = sorted(prof)
+    degs = list(prof)   # FIX (2026-11-03): sorted only once they are known to be integers (sorting mixed keys raised)
     if any(not isinstance(n, (int, np.integer)) or n < 1 for n in degs) or len(set(n % 2 for n in degs)) > 1:
         sys.exit('%s: the degrees must be integers >= 1 of one parity (one equatorial symmetry), got %r' % (name, degs))
+    degs = sorted(degs)
     for n in degs:
+        if not isinstance(prof[n], str) or not prof[n] or '#' in prof[n]:   # FIX (2026-11-03): they are written to params.dat
+            sys.exit("%s[%d]: a numpy expression of r and p as a string without '#' (it is written to params.dat), got %r"
+                     % (name, n, prof[n]))
         try:
             bf.gen_profile('h' if name == 'B0_profiles' else 'k', n, np.linspace(max(par.ricb, 0.1), 1, 4), 0)
         except Exception as err:
             sys.exit('%s[%d] = %r: %s: %s' % (name, n, prof[n], type(err).__name__, err))
 
-
-# NEW (2026-10-30): what to do when a poloidal B0 and the differential rotation are not a steady background together.
-# 'warn': print the mismatch and go on (the linear problem assumes the background is maintained); 'refuse': stop.
-FERRARO_POLICY = 'warn'
 
 def ferraro_mismatch():
     '''
@@ -244,8 +266,9 @@ def magnetic_diffrot():
       - a conducting inner core must co-rotate rigidly: ΔΩ(ricb, θ) = c (f_n(ricb) = 0 for n > 0, diff_rot.rigid_ricb); its
         field then gains the Doppler term -i m G c b and the ICB matching is unchanged; a latitude-dependent ΔΩ(ricb) would
         shear a solid core, which kore does not model;
-      - a poloidal B0 and ΔΩ should satisfy Ferraro's law (ferraro_mismatch); FERRARO_POLICY says whether a mismatch above
-        1e-7 stops the run or only prints a warning.
+      - a poloidal B0 and ΔΩ should satisfy Ferraro's law (ferraro_mismatch); par.ferraro_policy says whether a mismatch above
+        1e-7 stops the run ('refuse') or only prints a warning ('warn', the default: the linear problem then assumes the
+        background is maintained). NEW (2026-11-03): a parameter, formerly the constant background.FERRARO_POLICY.
     '''
     import diff_rot as dr
     if par.innercore == 'conducting, Chebys':
@@ -268,8 +291,8 @@ def magnetic_diffrot():
     if mis > 1e-7:
         msg = ('the poloidal B0 and the differential rotation are not a steady background together: max |B0⋅∇ΔΩ| r = '
                '%.2e of max |B0| max |r∇ΔΩ| (Ferraro); the linear problem assumes the background is maintained' % mis)
-        if FERRARO_POLICY == 'refuse':
-            sys.exit(msg)
+        if par.ferraro_policy == 'refuse':
+            sys.exit(msg + " (ferraro_policy = 'refuse')")
         if not _warned:
             print('WARNING: ' + msg)
     _warned.append(1)
@@ -280,6 +303,15 @@ def description():
     out = []
     if par.magnetic and par.B0_tor == 'user':   # NEW (2026-10-28)
         out.append('B0_tor: k = %s ; p = %r' % (par.B0_tor_profile, par.B0_tor_param))
+    if par.magnetic:   # NEW (2026-11-03): the expressions of the 'general' and 'ferraro' fields
+        if par.B0 == 'general':
+            out.append('B0: ' + ' ; '.join('h%d = %s' % (n, par.B0_profiles[n]) for n in sorted(par.B0_profiles))
+                       + ' ; p = %r' % par.B0_param)
+        if par.B0 == 'ferraro':
+            out.append('B0: G = %s ; p = %r' % (par.B0_ferraro_G, par.B0_param))
+        if par.B0_tor == 'general':
+            out.append('B0_tor: ' + ' ; '.join('k%d = %s' % (n, par.B0_tor_profiles[n]) for n in sorted(par.B0_tor_profiles))
+                       + ' ; p = %r' % par.B0_tor_param)
     if par.thermal and par.stratification == 'user':
         out.append('stratification: %s ; p = %r' % (par.stratification_profile, par.stratification_param))
     if par.diffusivity == 'user':
