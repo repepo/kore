@@ -1111,9 +1111,9 @@ table.</p>
 </thead>
 <tbody>
 <tr>
-<td><code>*.mtx</code></td>
+<td><code>submatrices.npz</code></td>
 <td><code>submatrices.py</code></td>
-<td>one sparse matrix per radial operator</td>
+<td>every radial operator (one sparse matrix per label) and the parameters they were built from; <code>operators.py</code> stops if a run's parameters differ. With <code>write_mtx = 1</code> also one <code>&lt;label&gt;.mtx</code> (Matrix Market) per operator, for outside tools</td>
 </tr>
 <tr>
 <td><code>A.npz</code>, <code>B.npz</code></td>

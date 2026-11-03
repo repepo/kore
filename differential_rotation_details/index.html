@@ -2829,7 +2829,7 @@ highest degree of <span class="arithmatex">\(S_{tw}\)</span> (<code>diff_rot.tw_
 </tr>
 <tr>
 <td>radial matrices</td>
-<td>builds the <code>.mtx</code> of the labels it is given</td>
+<td>builds the matrices of the labels it is given (into <code>submatrices.npz</code>)</td>
 <td><code>submatrices.py</code> (<code>dr.labels()</code>), <code>radial_profiles.burrito</code> (<code>dr.profile_functions()</code>)</td>
 </tr>
 <tr>
@@ -3161,7 +3161,7 @@ profile is dropped.</p>
 <h3 id="71-momentum-diff_rotmomentum_block">7.1 Momentum: <code>diff_rot.momentum_block</code></h3>
 <p><code>operators.differential_rotation(l, section, component, offdiag)</code> calls
 <code>diff_rot.momentum_block(l, section, component, offdiag, M)</code> with <code>M</code> the operators' namespace, where the
-<code>.mtx</code> matrices are loaded under their labels. For the row degree <code>l</code> (= <span class="arithmatex">\(l'\)</span>), the section (<code>'u'</code> or <code>'v'</code>), the column
+matrices of <code>submatrices.npz</code> are loaded under their labels. For the row degree <code>l</code> (= <span class="arithmatex">\(l'\)</span>), the section (<code>'u'</code> or <code>'v'</code>), the column
 type (<code>'upol'</code> for <span class="arithmatex">\(P\)</span>, <code>'utor'</code> for <span class="arithmatex">\(T\)</span>) and <code>offdiag</code> = <span class="arithmatex">\(l - l'\)</span>, it sums over the degrees <span class="arithmatex">\(n\)</span> of <span class="arithmatex">\(\Delta\Omega\)</span> that
 couple this Δl (§3.5): <span class="arithmatex">\(\lvert\Delta l\rvert \le\)</span> <code>max_dl(n, …)</code> and the parity of Δl; for each, the coefficient
 <code>momentum_coef(name, n, l, m, offdiag)</code> times the matrix of each label of <code>momentum_labels(n, …)</code>. The result is

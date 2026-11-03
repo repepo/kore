@@ -1301,7 +1301,7 @@ units of <span class="arithmatex">\(\Omega_{\rm ref}\)</span>. The target above 
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>./bin/submatrices.py<span class="w"> </span><span class="m">4</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>mpiexec<span class="w"> </span>-n<span class="w"> </span><span class="m">4</span><span class="w"> </span>./bin/assemble.py
 </span></code></pre></div>
-<p><code>submatrices.py</code> computes one sparse matrix per radial operator of the equations (the <code>*.mtx</code> files), using 4
+<p><code>submatrices.py</code> computes one sparse matrix per radial operator of the equations (all in <code>submatrices.npz</code>), using 4
 processes. <code>assemble.py</code> combines them over all degrees <span class="arithmatex">\(l\)</span> into the matrices <span class="arithmatex">\(A\)</span> and <span class="arithmatex">\(B\)</span> of the eigenproblem
 <span class="arithmatex">\(A\mathbf x = \lambda B\mathbf x\)</span> (<code>A.npz</code>, <code>B.npz</code>). The number of MPI ranks must equal <code>par.ncpus</code>.</p>
 <h2 id="5-solve">5. Solve</h2>
