@@ -795,6 +795,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Validity and caveats">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#when-the-field-leaves-the-thermal-wind-unchanged" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When the field leaves the thermal wind unchanged
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-sun-jupiter-and-saturn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Sun, Jupiter and Saturn
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#checklist-for-solar-inertial-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checklist for solar inertial modes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1323,6 +1362,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Validity and caveats">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#when-the-field-leaves-the-thermal-wind-unchanged" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When the field leaves the thermal wind unchanged
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-sun-jupiter-and-saturn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Sun, Jupiter and Saturn
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#checklist-for-solar-inertial-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checklist for solar inertial modes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1761,21 +1839,39 @@ magnetic columns of <code>params.dat</code> (<a href="../output/#magneticdat">Ou
 <li><strong>Ohmic decay of the poloidal field.</strong> A real field would decay by diffusion; here it does not, with or without
   rotation.</li>
 <li><strong>The Lorentz force of the background field on the background flow.</strong> The rotation is imposed and is not modified by
-  the field. With <code>B0_wound = 1</code> this force is dominated by the wound field, which can be large. For the tachocline this
-  is a significant approximation: a wound field that strong would brake the shear that makes it, as self-consistent
-  tachocline models include.</li>
+  the field, and the thermal-wind entropy is computed from the rotation alone. With <code>B0_wound = 1</code> this force is
+  dominated by the wound field, which can be large. For the tachocline this is a significant approximation: a wound
+  field that strong would brake the shear that makes it, as self-consistent tachocline models include.</li>
 </ul>
-<p><strong>When the ignored force matters.</strong> It has two parts, with three dimensionless numbers to watch. Their definitions and
-derivation are in <a href="../magnetic-equations/#when-the-ignored-lorentz-force-matters">Magnetic field
-equations</a>.</p>
+<h3 id="when-the-field-leaves-the-thermal-wind-unchanged">When the field leaves the thermal wind unchanged</h3>
+<p>With <code>thermal_wind</code> 1 or 2, the latitudinal entropy of the background balances the differential rotation alone
+(<a href="../background/#thermal-wind">Background model</a>). The force of the background field would enter the same balance. The
+derivations and the estimates are in <a href="../magnetic-equations/#when-the-ignored-lorentz-force-matters">Magnetic field equations</a>.</p>
+<p><strong>Exact: a field without current.</strong> A poloidal field that carries no electric current in the fluid, with no toroidal
+part, exerts no force, so the thermal wind is exact. If the rotation also satisfies the Ferraro condition, the field
+does not wind up or decay, and the whole background is steady. <code>B0 = 'axial'</code> is such a field, and so is a <code>'general'</code>
+field whose profile of each degree n combines <code>r**n</code> and, in a shell, <code>r**-(n+1)</code>.</p>
+<p><strong>Approximate: any other field.</strong> All other fields carry current: the other poloidal types, any <code>B0_tor</code>, and the wound
+field. The background is then a good approximation under three conditions.</p>
 <ol>
 <li>
-<p><em>Azimuthal torque</em> (Ferraro's mechanism). It brakes the shear along the field lines at a rate set by the Elsasser
-   number of the poloidal field built on the background diffusivity:</p>
+<p><em>The meridional force is weak.</em> The field's force in the meridional planes (magnetic pressure, the hoop stress of
+   the azimuthal field, the tension of curved poloidal lines) adds to the thermal-wind balance. It is negligible when</p>
+<div class="arithmatex">\[
+\frac{\mathrm{Le}^2\,\lvert\mathbf B_0\rvert^2}{\rho_0} \ll 2\,\lvert\Delta\Omega\rvert ,
+\]</div>
+<p>with <span class="arithmatex">\(\rho_0\)</span> the background density and <span class="arithmatex">\(\mathbf B_0\)</span> the whole dimensionless field, wound part included. A field
+that varies on a shorter scale than the rotation makes this stricter. Where it fails, the thermal-wind entropy is
+wrong by about the ratio of the two sides.</p>
+</li>
+<li>
+<p><em>The torque is slow.</em> A poloidal field crossed by the shear brakes it (Ferraro's mechanism), at a rate set by the
+   Elsasser number of the poloidal field built on the background diffusivity:</p>
 <div class="arithmatex">\[
 \Lambda_p = \frac{\mathrm{Le}^2}{\rho_0\,\mathrm{Em}\,\eta_w},
 \]</div>
-<p>with <span class="arithmatex">\(\rho_0\)</span> the background density and <span class="arithmatex">\(\eta_w\)</span> = <code>B0_wound_eta</code>. It matters unless this rate is small compared with
+<p>with <span class="arithmatex">\(\eta_w\)</span> = <code>B0_wound_eta</code>. The thermal wind follows the imposed rotation, so the torque does not change it
+directly, but the rotation must be maintained against it. It is negligible when this rate is small compared with
 the mode frequencies, their damping rates, and the rate of whatever maintains the rotation. If viscous or turbulent
 stresses hold the rotation, it is tenable only for a Hartmann number of order one or less:</p>
 <div class="arithmatex">\[
@@ -1783,15 +1879,18 @@ Ha = \frac{\mathrm{Le}}{\sqrt{\rho_0\,\mathrm{Ek}\,\mathrm{Em}\,\eta_w}} \lesssi
 \]</div>
 </li>
 <li>
-<p><em>Meridional force</em> (hoop stress and magnetic pressure of the wound field). It changes the thermal-wind balance and
-   drives magnetic buoyancy. It matters when the Lehnert number of the wound field, squared, is comparable with the
-   differential rotation:</p>
-<div class="arithmatex">\[
-\mathrm{Le}_\phi^2 \gtrsim \Delta\Omega, \qquad \mathrm{Le}_\phi = \mathrm{Le}\,\frac{\max\lvert B_\phi\rvert}{\max\lvert\mathbf B_p\rvert} .
-\]</div>
-<p>It can matter even for a weak poloidal field, because the wound field can be much stronger.</p>
+<p><em>The field is steady.</em> The Ferraro condition holds, or <code>B0_wound = 1</code> balances the winding. The wound field can be
+   much stronger than the poloidal field that makes it, so it must meet condition 1 too. The Ohmic decay of the field
+   must be slow compared with the modes.</p>
 </li>
 </ol>
+<p>Where the rotation is uniform there is no thermal wind. In a stably stratified region the field's force is then
+balanced by a small change of the stratification, which kore leaves out. It is negligible when the Alfvén frequency is
+far below the buoyancy frequency.</p>
+<p><strong>What condition 1 means for the modes.</strong> The error it leaves in the frequencies is about half the left side of
+condition 1, in units of the rotation rate, for modes that feel the baroclinicity (more for slower modes). The field's
+direct effect on a mode, which kore includes in full, is larger by about the square of the number of the mode's
+wavelengths along the field lines. So a field can change the modes while leaving the thermal wind unchanged.</p>
 <p>A <code>B0_wound</code> background is therefore a snapshot, valid for modes faster than these effects. This is the tachocline
 confinement problem (Gough &amp; McIntyre 1998; MacGregor &amp; Charbonneau 1999): with molecular diffusivities a weak poloidal
 field in the radiative interior has a large Hartmann number, and its torque would impose isorotation along the field
@@ -1799,8 +1898,59 @@ lines and spread the shear of the convection zone inward. Below the tachocline a
 a Ferraro-consistent background (<code>B0 = 'ferraro'</code>, <code>diff_rot_type = 'ferraro'</code>) or a <code>'confined'</code> one. The checks of this
 code, with a Hartmann number near 30 and a braking time of about one rotation, test the mathematics (closed form,
 residuals, budgets), not the physical validity of such a background.</p>
-<p><strong>Checklist for solar inertial modes.</strong> Their periods are longer than a rotation and their damping is weak (Löptien et
-al. 2018; Gizon et al. 2021), which makes every criterion above stricter.</p>
+<h3 id="the-sun-jupiter-and-saturn">The Sun, Jupiter and Saturn</h3>
+<p>Orders of magnitude with published values, where the field and the shear meet. The numbers and references are on
+<a href="../magnetic-equations/#the-sun-jupiter-and-saturn">Magnetic field equations</a>.</p>
+<table>
+<thead>
+<tr>
+<th>region</th>
+<th>condition 1: meridional force</th>
+<th>condition 2: torque</th>
+<th>the background</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sun, convection zone</td>
+<td>holds: large-scale fields of a few thousand G give a ratio of 10⁻³ or less</td>
+<td>the weak mean poloidal field (about 10 G) brakes the rotation over a century or more; Hartmann number of order one with turbulent values</td>
+<td>consistent; the rotation does not follow poloidal field lines, so use a toroidal <code>B0_tor</code>, or <code>B0_wound</code> from a weak poloidal field</td>
+</tr>
+<tr>
+<td>Sun, tachocline</td>
+<td>holds for 10⁴ G (ratio about 0.005); fails near 10⁵ G (ratio about 0.5)</td>
+<td>set by the poloidal field and the diffusivity (above)</td>
+<td>consistent up to about 2×10⁴ G</td>
+</tr>
+<tr>
+<td>Sun, radiative interior</td>
+<td>no thermal wind: the rotation is uniform</td>
+<td>the Ferraro condition holds</td>
+<td>consistent with <code>'confined'</code> or <code>'ferraro'</code> fields</td>
+</tr>
+<tr>
+<td>Jupiter, winds (above 0.96 R)</td>
+<td>holds: ratio about 10⁻⁹</td>
+<td>about a century</td>
+<td>consistent</td>
+</tr>
+<tr>
+<td>Saturn, winds (above 0.86 R)</td>
+<td>holds: ratio about 10⁻¹²</td>
+<td>about 10⁴ years</td>
+<td>consistent</td>
+</tr>
+</tbody>
+</table>
+<p>The Sun is the case for magnetic effects on inertial modes. At the base of its convection zone a 10⁴ G field has a
+Lehnert number of a few hundredths: enough to matter for modes with several wavelengths along the field, while
+condition 1 still holds. In Jupiter and Saturn the Lehnert number is 10⁻⁵ to 10⁻⁷. Their fields change neither the
+thermal wind nor the inertial modes measurably: kore's background is consistent there, and the field's effect on the
+modes is negligible.</p>
+<h3 id="checklist-for-solar-inertial-modes">Checklist for solar inertial modes</h3>
+<p>Their periods are longer than a rotation and their damping is weak (Löptien et al. 2018; Gizon et al. 2021), which
+makes every criterion above stricter.</p>
 <ul>
 <li><strong>Time scales.</strong> The braking rate and the Ohmic decay rate of the poloidal field must be small compared with the
   damping rate of the modes, not only with their frequency. The wound field needs a diffusion time across its layer to
@@ -1810,8 +1960,8 @@ al. 2018; Gizon et al. 2021), which makes every criterion above stricter.</p>
 <li><strong>Critical layers and continua.</strong> Where the mode frequency matches the local advection by the rotation (the critical
   latitudes) and at Alfvén resonances, the spectrum has continuous parts and the eigenfunctions thin layers. Check
   convergence in N and lmax, and tell discrete modes from the continuum.</li>
-<li><strong>Thermal wind.</strong> Keep the thermal-wind heat rows on (<code>thermal_wind</code>) and check the meridional criterion above: the
-  background baroclinicity does not include the forces of the wound field.</li>
+<li><strong>Thermal wind.</strong> Keep the thermal-wind heat rows on (<code>thermal_wind</code>) and check condition 1 above: the background
+  baroclinicity does not include the forces of the field.</li>
 <li><strong>Consistent diffusivities.</strong> The observed line widths set the turbulent viscosity (<code>ViscosD</code>). Take a turbulent
   magnetic Prandtl number near one (<code>Em</code> close to <code>Ek</code>) and set <code>B0_wound_eta</code> to the background's turbulent
   diffusivity. A wound field built with a molecular diffusivity under modes damped by turbulence is inconsistent.</li>
