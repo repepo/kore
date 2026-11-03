@@ -32,6 +32,7 @@ history. §15 lists what the first threads of the claude.ai project behind this 
   residuals; for changes to the background, the differential rotation or the heat equation, `tests/diff_rot/regress.sh`
   (bitwise A, B against an older checkout) and `tests/heat_dr/run_all.sh`; before a push, `cd tests/ci; pytest -v`
   (the GitHub test, §11). Existing runs are expected to stay bitwise identical unless a change says otherwise.
+  `docs/checking.md` ("Checking a change") is the user-facing guide to these checks.
 - The checked-in `bin/parameters.py` is the "gi1" gravito-inertial mode: ricb 0.35, m 2, thermal, structure 'Wu 2005'
   (r_out 0.99) with stratification 'top hat', N 192, lmax 121, ncpus 10, target 2.04i; expected
   λ = −0.049653 + 2.037155i. `examples/smooth_sun/parameters.py` is the solar example (§6).
@@ -93,7 +94,8 @@ Other directories: `tests/ci/` (the test GitHub runs on every push, §11); `test
 `tests/rsf/` (§11, each with a README); `docs/` (mkdocs, public user documentation: `installation.md` (from conductive_IC), `getting-started.md` (a
 step-by-step run of Baruteau & Rieutord 2013 fig. 10), the user guide `background.md` (structure, stratification,
 diffusivity with ThermaD = 0, rotation and thermal wind), `forcing.md` (forcing 11: a worked m = 2 Rossby-mode scan, set-up,
-output), `magnetic.md` (choosing the background field B0, its options and caveats), `solver.md` (bad solutions, memory) and `output.md` (the files and their columns), `benchmarks.md` (set-up and result of each published benchmark), and the mathematical framework
+output), `magnetic.md` (choosing the background field B0, its options and caveats), `solver.md` (bad solutions, memory) and `output.md` (the files and their columns), `benchmarks.md` (set-up and result of each published benchmark), `checking.md` (which check to run after a change,
+and how: `regress.sh`, `regress_solve.sh`, the suites), and the mathematical framework
 `anelastic.md` (the LBR equations, non-dimensionalization, ThermaD = 0, the terms of a differential rotation, validity),
 `numerical-method.md` (unknowns, radial basis, rows, boundary conditions, checks), `differential_rotation_details.md`
 (the equations and code of the differential rotation), `magnetic-equations.md` (the magnetic equations, every B0
@@ -297,7 +299,8 @@ flow U₀ = Gaspard ΔΩ r sin θ e_φ in the frame Ω_ref. It works with any ba
   frequency and 0.4 nHz in growth rate of their compressible values; set-up and results in `docs/benchmarks.md`
   (`tests/diff_rot/lit_bench.py`, `solar_checks.py`). The full tables are in `docs/heat-equation.md` §6, §8, §9 and
   `docs/differential_rotation_details.md` §11 of commit 1fbe5f08 (`git show 1fbe5f08:docs/heat-equation.md`). The cost
-  against the highest degree (`tests/diff_rot/dr_cost.py`) is not documented yet.
+  against the highest degree (`tests/diff_rot/dr_cost.py`) is in `docs/solver.md` (N 96, lmax 97, 4 ranks: the
+  solve's memory grows about linearly, 0.2 GB per degree with the momentum equation alone, 0.4 GB with the heat equation).
 
 ## 9. Solver (`solve.py`)
 
@@ -363,8 +366,9 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
 - `tests/diff_rot/` (README): `gen_check.py` (the couplings of `diff_rot.py` against the closed forms of
   `tests/diff_rot/diff_rot_coefficients.py`, and the Δl ranges), `angular_check.py` (`angular.py`, no run directory;
   its reference for the primitives is `quad_reference.py`, the former quadrature builder, valid for l ≤ 645),
-  `regress.sh OLD_KORE` (15 configurations, each written in the parameter names of three generations of checkouts;
-  A and B bitwise equal), `tw_mukhopadhyay.py`, `mk_bekki.py` / `solve_bekki.py` / `run_bekki.py` (solar benchmark),
+  `regress.sh OLD_KORE` (26 small runs, 15 of the rotation and the heat equation, each written in the parameter names of
+  three generations of checkouts, and 11 magnetic ones, skipped when the older copy lacks their code; A and B bitwise
+  equal, or to 1e-13 of the row scale; how to make the older copy: `git archive <commit> | tar -x -C DIR`, docs/checking.md), `tw_mukhopadhyay.py`, `mk_bekki.py` / `solve_bekki.py` / `run_bekki.py` (solar benchmark),
   `mk_rz.py` (radiative interior, any inner radius), `lit_bench.py` and `solar_checks.py` (the benchmarks of
   `docs/benchmarks.md`), `dr_cost.py` (time and memory against the degree of ΔΩ),
   `ls_to_tabulated.py` (HMI table converter, input in `profiles/`: the Larson & Schou 2018 HMI average

@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
-# regress_solve.sh OLD_KORE [WORKDIR]: an eigenvalue run (mk_run.py defaults: thermal, conical diff rot) and a forced run
-# (forcing 10) built and solved with the bin/ of OLD_KORE (a checkout before forcing 11) and with this repo, one rank,
-# one thread; A, B, B_forced, eigenvalues and fields must be bitwise equal (solve.py now loops over the columns of
-# B_forced, assemble.py writes B for forcing 11). Needs petsc4py/slepc4py with MUMPS; MPIEXEC overrides 'mpiexec'.
+# regress_solve.sh OLD_KORE [WORKDIR]
+#
+# The companion of tests/diff_rot/regress.sh for solve.py: it builds and solves two runs with an older copy of kore
+# (OLD_KORE, e.g. made with 'git archive <commit> | tar -x -C OLD_KORE') and with this one, and requires the matrices
+# (A, B, B_forced), the eigenvalues and the fields to be bitwise equal. The two runs start from the defaults of
+# tests/heat_dr/mk_run.py (thermal, a 'conical' rotation, N 48): an eigenvalue run (nev 10) and a forced run (forcing 10).
+# Both solve on one rank with one thread, so that the results are reproducible to the last bit.
+# It was written when forcing 11 arrived (solve.py then loops over the columns of B_forced, and assemble.py writes B for
+# forcing 11), and works against any copy that has forcing 10. Needs petsc4py and slepc4py with MUMPS; MPIEXEC overrides
+# 'mpiexec'. Each run prints 'ok' with the files compared, or 'FAIL' with those that differ; the exit status is 1 on a FAIL.
 set -e -o pipefail
 OLD=$(cd "$1" && pwd); NEW=$(cd "$(dirname "$0")/../.." && pwd); W=${2:-$NEW/tests/rsf/runs_regress}
 MPI=${MPIEXEC:-mpiexec}

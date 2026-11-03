@@ -81,7 +81,8 @@ computes with scipy from the map of the noise, for a run small enough for a dens
 **`regress_solve.sh OLD_KORE [WORKDIR]`.** An eigenvalue run (thermal, conical differential rotation) and a forced run
 (forcing 10), built and solved with the `bin/` of another checkout `OLD_KORE` and with this one, on one rank and one
 thread: `A`, `B`, `B_forced`, `eigenvalues0.dat` and the field files must be bitwise equal. `run_all.sh` does not run
-it. `tests/diff_rot/regress.sh OLD_KORE` does the same for the matrices of 13 eigenvalue configurations.
+it. `tests/diff_rot/regress.sh OLD_KORE` does the same for the matrices of 26 small runs (15 of the rotation and the
+heat equation, 11 of the magnetic field); `docs/checking.md` explains both.
 
 `rsf_common.py` holds the pieces the checks share: the energy pairing of kore's rows with a field (as `bin/ru_insane.py`),
 the test fields, and their strain rate in tensor harmonics.

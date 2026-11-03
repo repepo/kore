@@ -12,6 +12,7 @@ nav:
       - Solver: solver.md
       - Output files: output.md
   - Benchmarks: benchmarks.md
+  - Checking a change: checking.md
   - Mathematical framework:
       - Anelastic equations: anelastic.md
       - Numerical method: numerical-method.md

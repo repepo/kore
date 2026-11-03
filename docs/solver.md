@@ -54,7 +54,8 @@ As a reference, the smooth Sun example (`examples/smooth_sun`: m 8, N 640, lmax 
 
 For the smooth Sun the memory grows roughly as $N^2 (l_{\max} - m + 1)^{1.35}$ (within about 15 %, more above
 N ≈ 1800). Wider angular couplings add to it: rotation to degree 12 needed 2.2 times the memory of
-degree 4 at the same N, and `thermal_wind` 2 about 1.7 times `thermal_wind` 1.
+degree 4 at the same N, and `thermal_wind` 2 about 1.7 times `thermal_wind` 1 ([below](#the-cost-of-a-differential-rotation),
+how this grows with the degree).
 
 What to try, cheapest first:
 
@@ -72,3 +73,42 @@ What to try, cheapest first:
    of 2 `ncpus`.
 
 `icntl_14` adds workspace, so set it only as high as `INFOG(1)=-9` requires.
+
+## The cost of a differential rotation
+
+A rotation profile with Legendre terms up to degree n couples each degree l of the solution to the degrees l − n to
+l + n (to l ± (n + 1) between its poloidal and toroidal parts). With the heat equation the thermal wind reaches
+further: to l ± (n + 2) with `thermal_wind` 1, and to l ± (2n + 2) with `thermal_wind` 2. The matrices get wider, and
+the factorization in `solve.py` needs more memory and time. `tests/diff_rot/dr_cost.py` measures this on one problem:
+N 96, lmax 97, m 2, structure 'Wu 2005' with stratification 'top hat', ricb 0.35, and a 'user' rotation of degree n,
+on 4 ranks of a laptop (Apple M4 Pro). The peak memory and the time of `solve.py`:
+
+| degree n | momentum only | with the heat equation, `thermal_wind` 1 | `thermal_wind` 2 |
+| --- | --- | --- | --- |
+| no rotation | 0.9 GB, 1 s | 1.0 GB, 2 s | 1.0 GB, 2 s |
+| 0 | 0.9 GB, 1 s | 1.4 GB, 2 s | 1.4 GB, 2 s |
+| 2 | 1.3 GB, 2 s | 2.3 GB, 4 s | 2.8 GB, 6 s |
+| 4 | 1.8 GB, 3 s | 3.1 GB, 7 s | 4.3 GB, 12 s |
+| 8 | 2.5 GB, 5 s | 5.0 GB, 17 s | 6.9 GB, 29 s |
+| 12 | 3.5 GB, 9 s | 7.1 GB, 31 s | 8.5 GB, 35 s |
+| 16 | 4.6 GB, 13 s | 8.4 GB, 49 s | 11.9 GB, 67 s |
+| 24 | 6.1 GB, 43 s | 10.4 GB, 63 s | |
+| 32 | 8.1 GB, 29 s | 15.3 GB, 95 s | |
+
+How to read it:
+
+- The memory grows about linearly with n, here by 0.2 GB per degree with the momentum equation alone and 0.4 GB per
+  degree with the heat equation. At n 32 the solve needs 9 times the memory of the run without rotation, and 15 times
+  with the heat equation.
+- `thermal_wind` 2 costs a little less than `thermal_wind` 1 at twice the degree: its heat rows reach about twice as far.
+- `submatrices.py` (2 s) and `assemble.py` (7 s at most) stay small: the factorization is what grows.
+- The time is noisier than the memory, since it also depends on how many iterations the eigensolver needs: in the
+  momentum case n 24 took longer than n 32.
+
+The memory also grows with N and lmax (above). To plan a large run, run the script at its resolution:
+
+```bash
+python3 tests/diff_rot/dr_cost.py WORKDIR N LMAX NCPUS [LIMIT_GB]
+```
+
+It kills any step that goes above `LIMIT_GB` (default 30) and then skips the larger degrees of that case.

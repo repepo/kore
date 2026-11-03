@@ -1,17 +1,30 @@
 #!/usr/bin/env python3
 '''
-dr_cost.py WORKDIR N LMAX NCPUS [LIMIT_GB]: the cost of the differential rotation against its highest degree n.
+dr_cost.py WORKDIR N LMAX NCPUS [LIMIT_GB]
 
-For each case and n, builds a run in WORKDIR ('Wu 2005' with 'top hat', ricb 0.35, m 2, symm 1, diff_rot_type 'user' with
-ΔΩ = Σ_{k even <= n} 0.02 r² P_k), runs submatrices (NCPUS processes), assemble and solve (mpiexec -n NCPUS, MUMPS
-shift-invert, nev 4), and records the wall time and the peak memory of each step (the RSS summed over every process the
-step started, sampled every 0.1 s), the number of operators and the size of submatrices.npz (the *.mtx files before
-2026-11-03) and nnz of A and B. Cases: no differential
-rotation; momentum only (thermal 0); thermal with thermal_wind 1 (heat rows coupled up to n + 2) and 2 (2n + 2).
+How much does a differential rotation cost? A rotation whose profile has Legendre terms up to P_n couples each degree l
+of the solution to the degrees l - n ... l + n (and the heat equation, through the thermal wind, further still), so the
+matrices get wider as n grows, and the sparse LU factorization of solve.py needs more time and memory. This script
+measures that growth, step by step, on one fixed problem; docs/solver.md shows its results.
 
-Memory watchdog: when a step's processes exceed LIMIT_GB (default 30) together, the whole process tree is killed, the
-run is recorded as 'killed', and the larger n of the same case are skipped. Results are appended to
-WORKDIR/results.json (a rerun skips what is there) and printed; the matrices are deleted after each run.
+    WORKDIR   where the runs are built; the results go to WORKDIR/results.json, and a rerun skips the runs already there
+    N, LMAX   the resolution; LMAX - 1 must be a multiple of 2 NCPUS (assemble.py's rule, with m = 2)
+    NCPUS     the processes of submatrices.py and the MPI ranks of assemble.py and solve.py
+    LIMIT_GB  the memory limit of one step, its processes together (default 30): a step above it is killed and recorded
+              as 'killed', and the larger n of the same case are skipped
+
+The problem: structure 'Wu 2005' with stratification 'top hat', ricb 0.35, m 2, symm 1, stress-free walls, ViscosD =
+ThermaD = 1e-4, and a 'user' rotation ΔΩ = 0.02 r² (P_0 + P_2 + ... + P_n); solve.py looks for 4 eigenvalues near 1i
+(MUMPS shift-invert). The cases, each for the degrees n listed in CASES below:
+    none, none_th   no differential rotation, without and with the heat equation: the reference costs
+    mom             the rotation in the momentum equation only (thermal = 0), n up to 32
+    tw1             with the heat equation and thermal_wind 1 (its rows couple up to n + 2), n up to 32
+    tw2             with thermal_wind 2 (its rows couple up to 2n + 2), n up to 16
+
+For each run it prints one line and records: the wall time and the peak memory of submatrices.py, assemble.py and
+solve.py (the resident memory summed over every process the step started, sampled every 0.1 s), the number of operators
+and the size of submatrices.npz, the size of the matrices and the nonzeros of A. The matrices and fields of a run are
+deleted once it is measured; its logs stay.
 '''
 import os, sys, shutil, subprocess, threading, time, json, signal, textwrap
 import numpy as np
@@ -86,6 +99,7 @@ def run(cmd, d, log):
     return ('killed' if killed else 'ok' if p.returncode == 0 else 'failed'), dt, peak
 
 
+# (case, thermal, thermal_wind, the degrees n of the rotation to measure; None: no differential rotation)
 CASES = [('none', 0, 0, [None]),
          ('mom', 0, 0, [0, 2, 4, 8, 12, 16, 24, 32]),
          ('none_th', 1, 0, [None]),
@@ -126,8 +140,8 @@ for case, thermal, tw, ns in CASES:
                 r['icntl_14'] = 100
             r['t_' + step], r['gb_' + step] = dt, gb
             if step == 'sub' and os.path.isfile(d + '/submatrices.npz'):
-                # the operators and their size on disk: since 2026-11-03 one binary submatrices.npz (about 2.4 times smaller
-                # than the *.mtx text files that results from earlier versions counted)
+                # the operators and their size on disk, under the names results.json has always used: since 2026-11-03
+                # submatrices.npz (binary, about 2.4 times smaller than the *.mtx text files that older results counted)
                 with np.load(d + '/submatrices.npz') as z:
                     r['n_mtx'] = sum(1 for k in z.files if k.endswith('.shape'))
                 r['mb_mtx'] = os.path.getsize(d + '/submatrices.npz')/1e6
@@ -143,7 +157,7 @@ for case, thermal, tw, ns in CASES:
         res[key] = r
         json.dump(res, open(RF, 'w'), indent=1)
         f = lambda k, fmt: (fmt % r[k]) if k in r else '-'
-        print('%-8s n %-4s %-8s sub %s s %s GB | asm %s s %s GB | solve %s s %s GB | %s mtx %s MB | size %s nnz A %s' % (
+        print('%-8s n %-4s %-8s sub %s s %s GB | asm %s s %s GB | solve %s s %s GB | %s operators %s MB | size %s nnz A %s' % (
             case, n, (r['status'] + ('*' if 'icntl_14' in r else '')) if r['status'] == 'ok' else r['status'] + '(' + r.get('killed_step', '') + ')',
             f('t_sub', '%5.1f'), f('gb_sub', '%5.2f'), f('t_asm', '%5.1f'), f('gb_asm', '%5.2f'),
             f('t_solve', '%6.1f'), f('gb_solve', '%5.2f'), f('n_mtx', '%d'), f('mb_mtx', '%.1f'),
