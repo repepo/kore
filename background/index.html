@@ -1653,7 +1653,7 @@ things follow:</p>
 <tr>
 <td><code>diff_rot_param</code></td>
 <td>0.0</td>
-<td>the shape parameter: <span class="arithmatex">\(\sigma\)</span> of <code>'shellular'</code>, <code>p</code> in <code>'user'</code> expressions</td>
+<td>the shape parameter: <span class="arithmatex">\(\sigma\)</span> of <code>'shellular'</code>, <code>p</code> in <code>'user'</code> and <code>'ferraro'</code> expressions</td>
 </tr>
 <tr>
 <td><code>diff_rot_term_amp</code></td>
@@ -1683,7 +1683,12 @@ things follow:</p>
 <tr>
 <td><code>diff_rot_nmax</code></td>
 <td>8</td>
-<td><code>'tabulated'</code>: highest degree kept, even (up to 16 with <code>thermal_wind = 2</code>)</td>
+<td><code>'tabulated'</code>, <code>'ferraro'</code>: highest degree kept, even (up to 16 with <code>thermal_wind = 2</code>)</td>
+</tr>
+<tr>
+<td><code>diff_rot_F</code></td>
+<td><code>'psi'</code></td>
+<td><code>'ferraro'</code>: <span class="arithmatex">\(\Delta\Omega = F(\psi)\)</span>, a numpy expression of <code>psi</code> and <code>p</code></td>
 </tr>
 <tr>
 <td><code>diff_rot_rdeg</code></td>
@@ -1800,6 +1805,12 @@ with a solar structure, <span class="arithmatex">\(x = r\)</span> otherwise.</p>
 <td><span class="arithmatex">\(a\sum_n f_n(r) P_n(\cos\theta)\)</span>, <span class="arithmatex">\(f_n\)</span> from <code>diff_rot_profiles</code></td>
 <td>the keys of <code>diff_rot_profiles</code></td>
 <td>below</td>
+</tr>
+<tr>
+<td><code>'ferraro'</code></td>
+<td><span class="arithmatex">\(a\thinspace F(\psi)\)</span>, <span class="arithmatex">\(\psi\)</span> the flux function of the poloidal magnetic field</td>
+<td><span class="arithmatex">\(P_0 \dots P_{n_{\max}}\)</span></td>
+<td><code>magnetic = 1</code> only: constant along the field lines, so a steady background with the field (<a href="../magnetic/#with-a-differential-rotation">Magnetic field</a>)</td>
 </tr>
 </tbody>
 </table>

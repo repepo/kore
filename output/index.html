@@ -1362,6 +1362,10 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 <td>83–95</td>
 <td><code>magnetic</code>, <code>B0</code>, <code>B0_l</code>, <code>cnorm</code>, <code>Hendrik</code>, <code>MagnetD</code>, <code>innercore</code>, <code>N_cic</code>, <code>mu_i2o</code>, <code>sigma_i2o</code>, <code>B0_tor</code>, <code>B0_tor_l</code>, <code>cnorm_tor</code></td>
 </tr>
+<tr>
+<td>96–107</td>
+<td><code>B0_wound</code> (1 if the wound field was added), <code>B0_wound_eta</code>, <code>B0_conf_r1</code>, <code>B0_conf_r2</code>, <code>B0_conf_p</code>, <code>B0_param</code>, <code>B0_tor_param</code>, <code>B0_ferraro_nmax</code>, <code>mag_couplings</code> (as used: 0 the closed forms, 1 <code>mag_algebra.py</code>), <code>tol_B0</code>, <code>B0_ic</code>, <code>ferraro_policy</code></td>
+</tr>
 </tbody>
 </table>
 <ul>
@@ -1370,7 +1374,7 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
   <code>background.STRATIFICATIONS</code> (<code>'top hat'</code> 0, <code>'odd top hat'</code> 1, <code>'solar_rz'</code> 2, <code>'linear'</code> 3, <code>'inverse square'</code> 4,
   <code>'user'</code> 5; −1 without a stratification), <code>diffusivity</code> in <code>background.DIFFUSIVITIES</code> (<code>'uniform'</code> 0, <code>'step'</code> 1,
   <code>'solar_rz'</code> 2, <code>'user'</code> 3) and <code>diff_rot_type</code> in <code>diff_rot.TYPES</code> (<code>'Y20'</code> 0, …, <code>'rigid'</code> 7, <code>'solar_P4'</code> 8,
-  <code>'tabulated'</code> 9, <code>'user'</code> 10).</li>
+  <code>'tabulated'</code> 9, <code>'user'</code> 10, <code>'ferraro'</code> 11).</li>
 <li>Column 64 is <code>structure_deg</code> for <code>'model S hydrostatic'</code>. Columns 65–66 are nan for the default window and
   ∓(<code>r_out</code> + 0.005) for <code>'sun'</code>.</li>
 <li><code>diff_rot_window</code> is 0 for the shell fit and 1 for the whole-Sun fit, with <code>diff_rot_rdeg</code> then the degree used,
@@ -1378,15 +1382,16 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 <li>The magnetic columns: <code>B0</code> is the index in <code>background_field.B0_TYPES</code> (<code>'axial'</code> 0, <code>'FDM'</code> 1, <code>'G21 dipole'</code> 2,
   <code>'Luo_S1'</code> 3, <code>'Luo_S2'</code> 4, <code>'confined'</code> 5, <code>'general'</code> 6, <code>'ferraro'</code> 7; −1 without a poloidal field), <code>B0_tor</code> in
   <code>background_field.B0_TOR_TYPES</code> (<code>'Malkus'</code> 0, <code>'wall'</code> 1, <code>'user'</code> 2, <code>'general'</code> 3; −1 without), <code>innercore</code> in
-  <code>background.INNER_CORES</code> (<code>'insulator'</code> 0, <code>'conducting, Chebys'</code> 1). <code>cnorm</code> and <code>cnorm_tor</code> are the numbers used, except
-  for <code>B0 = 'ferraro'</code>, where <code>cnorm</code> is written as 1 (the value used is computed later and not recorded). <code>B0_l</code> is the
-  lowest degree for <code>'general'</code> and 1 for <code>'ferraro'</code>; <code>B0_tor_l</code> is the parameter, which <code>B0_tor = 'general'</code> ignores. The
-  other magnetic parameters (<code>B0_wound</code>, the <code>'confined'</code>, <code>'general'</code> and <code>'ferraro'</code> settings, <code>mag_couplings</code>, <code>tol_B0</code>,
-  <code>B0_ic</code>) are not recorded.</li>
+  <code>background.INNER_CORES</code> (<code>'insulator'</code> 0, <code>'conducting, Chebys'</code> 1), <code>B0_ic</code> in <code>background.B0_ICS</code> (<code>'potential'</code> 0,
+  <code>'full sphere'</code> 1) and <code>ferraro_policy</code> in <code>background.FERRARO_POLICIES</code> (<code>'warn'</code> 0, <code>'refuse'</code> 1). <code>cnorm</code> and
+  <code>cnorm_tor</code> are the numbers used. <code>B0_l</code> is the lowest degree for <code>'general'</code> and 1 for <code>'ferraro'</code>; <code>B0_tor_l</code> is the
+  parameter, which <code>B0_tor = 'general'</code> ignores. The expressions of <code>'general'</code> (<code>B0_profiles</code>, <code>B0_tor_profiles</code>), of
+  <code>'ferraro'</code> (<code>B0_ferraro_G</code>) and of <code>diff_rot_type = 'ferraro'</code> (<code>diff_rot_F</code>) go into the note after <code>#</code>.</li>
 <li><code>diff_rot_generic</code> and <code>diff_rot_hold</code> are not used (always 0 and nan); they keep the positions of the columns after
   them.</li>
-<li>A row ends, after a <code>#</code> that <code>np.loadtxt</code> skips, with the <code>'user'</code> expressions and, for <code>'tabulated'</code>,
-  <code>diff_rot_file</code> with the first 12 hex digits of its sha256. A row with neither has no <code>#</code>.</li>
+<li>A row ends, after a <code>#</code> that <code>np.loadtxt</code> skips, with the <code>'user'</code>, <code>'general'</code> and <code>'ferraro'</code> expressions and, for
+  <code>'tabulated'</code>, <code>diff_rot_file</code> with the first 12 hex digits of its sha256. A row with none of these has no <code>#</code>.</li>
+<li>A <code>params.dat</code> written before the columns 96–107 were added has fewer columns: start a new file.</li>
 </ul>
 
 

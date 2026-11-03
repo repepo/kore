@@ -1359,15 +1359,23 @@ Commands are given from the repository root unless a run directory is named. The
 2026-10-29.</p>
 <p><strong>Notation.</strong> At a fixed azimuthal order <span class="arithmatex">\(m\)</span> the angular functions are kore's Schmidt harmonics
 <span class="arithmatex">\(Y_l = \sqrt{4\pi/(2l+1)}\,Y_l^m\)</span> (Condon–Shortley phase), with <span class="arithmatex">\(\int|Y_l|^2d\Omega = 4\pi/(2l+1)\)</span>; <span class="arithmatex">\(L = l(l+1)\)</span>, and
-<span class="arithmatex">\(L'\)</span> is the <span class="arithmatex">\(L\)</span> of the row. The flow is <span class="arithmatex">\(\mathbf{u} = \rho_0^{-1}\nabla\times\nabla\times(\rho_0 P Y_l\mathbf{r}) + \nabla\times(T Y_l\mathbf{r})\)</span>
-and the magnetic field <span class="arithmatex">\(\mathbf{b} = \nabla\times\nabla\times(F Y_l\mathbf{r}) + \nabla\times(G Y_l\mathbf{r})\)</span>. The rows
-of the momentum equation are its projections <span class="arithmatex">\(\hat{\mathbf{r}}\cdot\nabla\times\nabla\times\)</span> (section u, the 2-curl) and
+<span class="arithmatex">\(L'\)</span> is the <span class="arithmatex">\(L\)</span> of the row. The flow and the magnetic field are</p>
+<div class="arithmatex">\[
+\mathbf{u} = \rho_0^{-1}\nabla\times\nabla\times(\rho_0 P Y_l\mathbf{r}) + \nabla\times(T Y_l\mathbf{r}),\qquad
+\mathbf{b} = \nabla\times\nabla\times(F Y_l\mathbf{r}) + \nabla\times(G Y_l\mathbf{r}).
+\]</div>
+<p>The rows of the momentum equation are its projections <span class="arithmatex">\(\hat{\mathbf{r}}\cdot\nabla\times\nabla\times\)</span> (section u, the 2-curl) and
 <span class="arithmatex">\(\hat{\mathbf{r}}\cdot\nabla\times\)</span> (section v, the 1-curl); those of the induction equation are <span class="arithmatex">\(\hat{\mathbf{r}}\cdot\)</span>
 (section f) and <span class="arithmatex">\(\hat{\mathbf{r}}\cdot\nabla\times\)</span> (section g).</p>
 <h2 id="a-operators-involving-the-background-magnetic-field">A. Operators involving the background magnetic field</h2>
 <h3 id="a1-motivation">A.1 Motivation</h3>
-<p>The Lorentz force <span class="arithmatex">\((\nabla\times\mathbf{b})\times\mathbf{B}_0 + (\nabla\times\mathbf{B}_0)\times\mathbf{b}\)</span> and the induction
-<span class="arithmatex">\(\nabla\times(\mathbf{u}\times\mathbf{B}_0)\)</span> are products of a perturbation of degree <span class="arithmatex">\(l\)</span> with a background of degree <span class="arithmatex">\(n\)</span>.
+<p>The Lorentz force and the induction,</p>
+<div class="arithmatex">\[
+(\nabla\times\mathbf{b})\times\mathbf{B}_0 + (\nabla\times\mathbf{B}_0)\times\mathbf{b}
+\qquad\text{and}\qquad
+\nabla\times(\mathbf{u}\times\mathbf{B}_0),
+\]</div>
+<p>are products of a perturbation of degree <span class="arithmatex">\(l\)</span> with a background of degree <span class="arithmatex">\(n\)</span>.
 Kore needs, for every pair of degrees, every radial term of these products, with its coefficient. With a variable density
 the factors <span class="arithmatex">\(\rho_0\)</span> and <span class="arithmatex">\(\rho_0^{-1}\)</span> add terms in <span class="arithmatex">\((\ln\rho_0)'\)</span> and <span class="arithmatex">\((\ln\rho_0)''\)</span>. Done by hand, this algebra is long
 and easy to get wrong; <code>conductive_IC</code> has hand-derived forms for a dipole and a quadrupole at uniform density only.</p>
@@ -1545,8 +1553,8 @@ then returns <span class="arithmatex">\(-A\cdot\sum(\text{polynomial}\times\text
 <li><strong><code>tests/magnetic/row_check.py</code></strong> (in a run directory): what kore really assembles, i.e. the closed forms times this
   run's radial matrices, in their Gegenbauer bases, against derive.py evaluated with the run's own profiles. This catches a
   wrong label, a wrong power of <span class="arithmatex">\(r\)</span> or a wrong basis, even when the closed form is right. Degrees up to <span class="arithmatex">\(m + 4\)</span> by default.</li>
-<li><strong>Energy budgets</strong> (<code>budget_check.py</code>) and the identity
-  <span class="arithmatex">\(\int\rho_0\mathbf{u}^*\cdot\mathbf{F}_L\,dV = -\mathrm{Hendrik}\,\overline{\int\mathbf{b}^*\cdot\nabla\times(\mathbf{u}\times\mathbf{B}_0)dV}\)</span>
+<li><strong>Energy budgets</strong> (<code>budget_check.py</code>) and the identity between the work of the Lorentz force, <span class="arithmatex">\(\int\rho_0\mathbf{u}^*\cdot\mathbf{F}_L\,dV\)</span>,
+  and minus Hendrik times the complex conjugate of the induction work, <span class="arithmatex">\(\int\mathbf{b}^*\cdot\nabla\times(\mathbf{u}\times\mathbf{B}_0)\,dV\)</span>
   (<code>bin/ru_insane.py</code>): spin_doctor computes the powers of the Lorentz force and of the induction from the eigenvectors
   with its own formulas (on an <span class="arithmatex">\((r, \theta)\)</span> grid for toroidal and degree-2 fields), independently of the operators.</li>
 </ul>
@@ -1690,9 +1698,16 @@ each part is a few vectors of three kinds, a polynomial <span class="arithmatex"
 </tr>
 </tbody>
 </table>
-<p>The cross products with a perturbation Field <span class="arithmatex">\((q, s, t)\)</span> reduce to the operations of <code>angular.py</code>: <span class="arithmatex">\(\hat{\mathbf{r}}\times(q, s, t) = (0, t, -s)\)</span>;
-<span class="arithmatex">\(\sin\theta\,\hat{\boldsymbol\theta} = x\hat{\mathbf{r}} - \hat{\mathbf{z}}\)</span> (so <code>zcross</code>); <span class="arithmatex">\(\sin\theta\,\hat{\boldsymbol\phi} = \hat{\mathbf{z}}\times\hat{\mathbf{r}}\)</span>, and
-<span class="arithmatex">\((\hat{\mathbf{z}}\times\hat{\mathbf{r}})\times\mathbf{F} = \hat{\mathbf{r}}(\hat{\mathbf{z}}\cdot\mathbf{F}) - \hat{\mathbf{z}}(\hat{\mathbf{r}}\cdot\mathbf{F})\)</span>; and the multiplication by <span class="arithmatex">\(c(x)\)</span> (<code>mult</code> with
+<p>The cross products with a perturbation Field <span class="arithmatex">\((q, s, t)\)</span> reduce to the operations of <code>angular.py</code>, through</p>
+<div class="arithmatex">\[
+\hat{\mathbf{r}}\times(q, s, t) = (0, t, -s),\qquad
+\sin\theta\,\hat{\boldsymbol\theta} = x\hat{\mathbf{r}} - \hat{\mathbf{z}},\qquad
+\sin\theta\,\hat{\boldsymbol\phi} = \hat{\mathbf{z}}\times\hat{\mathbf{r}},
+\]</div>
+<div class="arithmatex">\[
+(\hat{\mathbf{z}}\times\hat{\mathbf{r}})\times\mathbf{F} = \hat{\mathbf{r}}(\hat{\mathbf{z}}\cdot\mathbf{F}) - \hat{\mathbf{z}}(\hat{\mathbf{r}}\cdot\mathbf{F}),
+\]</div>
+<p>(the products with <span class="arithmatex">\(\hat{\mathbf{z}}\)</span> are <code>zcross</code>), and the multiplication by <span class="arithmatex">\(c(x)\)</span> (<code>mult</code> with
 the matrices <span class="arithmatex">\(c(X)\)</span>, <span class="arithmatex">\(c'(X)\)</span>). The perturbation's components are radial monomials (<span class="arithmatex">\(u_r = LP/r\)</span>, <span class="arithmatex">\(b_\theta\)</span>-part <span class="arithmatex">\(F' + F/r\)</span>,
 <span class="arithmatex">\((\nabla\times\mathbf{b})_t = -(F'' + 2F'/r - LF/r^2)\)</span>, …), so the force <span class="arithmatex">\(\mathbf{G} = \mathbf{J}_0\times\mathbf{b} - \mathbf{B}_0\times\mathbf{J}\)</span> and the
 induction <span class="arithmatex">\(\mathbf{E} = \mathbf{u}\times\mathbf{B}_0\)</span> are sums of (radial monomial) × (sparse matrix on the degrees). The rows follow from</p>
@@ -1760,8 +1775,11 @@ rules: P→P and T→T couplings have <span class="arithmatex">\(|\Delta l| \le 
 <span class="arithmatex">\(\hat{\mathbf{z}}\times\)</span> and the curl add one degree). The matrices are exact; only their last few rows are wrong, because
 products of truncated matrices miss the degrees beyond the truncation. They are therefore built a few degrees beyond what
 is used (lmax + n + 6).</p>
-<p><strong>Step 4: vector fields.</strong> A vector field is expanded as
-<span class="arithmatex">\(\mathbf{F} = \sum_l\,[\,q_l Y_l\hat{\mathbf{r}} + s_l\,r\nabla Y_l + t_l\,r\nabla Y_l\times\hat{\mathbf{r}}\,]\)</span>. The operations
+<p><strong>Step 4: vector fields.</strong> A vector field is expanded as</p>
+<div class="arithmatex">\[
+\mathbf{F} = \sum_l\,\left[\,q_l Y_l\hat{\mathbf{r}} + s_l\,r\nabla Y_l + t_l\,r\nabla Y_l\times\hat{\mathbf{r}}\,\right].
+\]</div>
+<p>The operations
 <span class="arithmatex">\(\mathbf{W}\)</span> needs are exact sparse products of <span class="arithmatex">\(X\)</span>, <span class="arithmatex">\(D\)</span> and diagonal matrices: multiplication by <span class="arithmatex">\(g(x)\)</span>, <span class="arithmatex">\(\hat{\mathbf{z}}\times\)</span>,
 <span class="arithmatex">\(\hat{\mathbf{z}}\times(c\,\hat{\mathbf{r}})\)</span>, and the scalar <span class="arithmatex">\(\sin\theta\,F_\theta\)</span>. The formulas are in the docstring of
 <code>bin/angular.py</code> and in <a href="../differential_rotation_details/">Differential rotation</a>, §3.</p>
@@ -1777,16 +1795,19 @@ by <span class="arithmatex">\(L'\)</span> of the target. For example, <code>f_2C
 <p><strong>Step 7: the heat equation and the thermal wind.</strong> The heat terms need only <span class="arithmatex">\(P_n(X)\)</span>, <span class="arithmatex">\(P_n'(X)\)</span> and <span class="arithmatex">\(P_n'(X)\,D\)</span>. The
 thermal-wind entropy <span class="arithmatex">\(S_{tw} = \sum_n \sigma_n(r)P_n(\cos\theta)\)</span> follows from thermal-wind balance: in Legendre space,
 <span class="arithmatex">\(D\sigma = (1-x^2)\,\partial_x S_{tw}\)</span> is solved for the <span class="arithmatex">\(\sigma_n\)</span> by forward substitution, exactly.</p>
-<p><strong>Step 7b: the induction by the rotation (2026-10-30).</strong> With a magnetic field, <span class="arithmatex">\(\mathbf{U}_0\)</span> also shears the field:
-<span class="arithmatex">\(\nabla\times(\mathbf{U}_0\times\mathbf{b}) = (\mathbf{b}\cdot\nabla)\mathbf{U}_0 - (\mathbf{U}_0\cdot\nabla)\mathbf{b} = G[-im\Delta\Omega\,\mathbf{b} + \sin\theta(r\partial_r\Delta\Omega\,b_r + \partial_\theta\Delta\Omega\,b_\theta)\hat{\boldsymbol\phi}]\)</span>
-(the <span class="arithmatex">\(\hat{\mathbf{z}}\times\mathbf{b}\)</span> terms of the two cancel). It has the structure of <span class="arithmatex">\(\mathbf{W}\)</span> without its <span class="arithmatex">\(2\hat{\mathbf{z}}\times\mathbf{u}\)</span>, so it has
+<p><strong>Step 7b: the induction by the rotation (2026-10-30).</strong> With a magnetic field, <span class="arithmatex">\(\mathbf{U}_0\)</span> also shears the field:</p>
+<div class="arithmatex">\[
+\nabla\times(\mathbf{U}_0\times\mathbf{b}) = (\mathbf{b}\cdot\nabla)\mathbf{U}_0 - (\mathbf{U}_0\cdot\nabla)\mathbf{b}
+= G\left[-im\Delta\Omega\,\mathbf{b} + \sin\theta\left(r\partial_r\Delta\Omega\,b_r + \partial_\theta\Delta\Omega\,b_\theta\right)\hat{\boldsymbol\phi}\right]
+\]</div>
+<p>(the <span class="arithmatex">\(\hat{\mathbf{z}}\times\mathbf{b}\)</span> terms of the two cancel). It has the structure of <span class="arithmatex">\(\mathbf{W}\)</span> without its <span class="arithmatex">\(2\hat{\mathbf{z}}\times\mathbf{u}\)</span>, so it has
 its own primitives (<code>_induction_primitives</code>, the shapes <span class="arithmatex">\(f\,LF/r\)</span>, <span class="arithmatex">\(f(F' + F/r)\)</span>, <span class="arithmatex">\(fG\)</span>, <span class="arithmatex">\((rf')LF/r\)</span>). The induction row f
 (<span class="arithmatex">\(\hat{\mathbf{r}}\cdot\)</span>) sees only <span class="arithmatex">\(-im\Delta\Omega\,b_r\)</span>; the row g (<span class="arithmatex">\(\hat{\mathbf{r}}\cdot\nabla\times = L't/r\)</span>) sees the t components, including
 the <span class="arithmatex">\(\Omega\)</span>-effect from F (<code>induction_coefficients</code>, <code>induction_block</code>, <code>induction_dl_range</code>).</p>
 <p><strong>Step 8: into kore.</strong> Each radial operator is a label with the profile codes <code>zf</code>, <code>zd</code>, <code>zs</code> + degree for <span class="arithmatex">\(f_n\)</span>,
 <span class="arithmatex">\(rf_n'\)</span>, <span class="arithmatex">\(r^2f_n''\)</span> (and <code>tw</code>, <code>tp</code> for <span class="arithmatex">\(p_0\sigma_n\)</span>, <span class="arithmatex">\(p_0\sigma_n'\)</span>). <code>submatrices.py</code> builds its matrix. A block is then
-<span class="arithmatex">\(G\sum_n\sum(\text{coefficient}\times\text{radial operator})/L'^3\)</span>, placed by <code>assemble.py</code> at the <span class="arithmatex">\(\Delta l\)</span> of the
-selection rules.</p>
+<span class="arithmatex">\(G\)</span> times the sum, over the degrees <span class="arithmatex">\(n\)</span> and the terms, of coefficient × radial operator, divided by <span class="arithmatex">\(L'^3\)</span>; <code>assemble.py</code>
+places it at the <span class="arithmatex">\(\Delta l\)</span> of the selection rules.</p>
 <h3 id="b3-implementation">B.3 Implementation</h3>
 <table>
 <thead>

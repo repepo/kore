@@ -1724,9 +1724,10 @@ core, <code>B0_ic = 'potential'</code> (default) adds <span class="arithmatex">\
 core. <code>'full sphere'</code> keeps <span class="arithmatex">\(h\)</span> as it is (<code>conductive_IC</code>'s <code>B0_beta_ic</code>). <code>B0_ic</code> has no effect on the other types or
 with <code>ricb = 0</code>.</p>
 <p><strong>Confined field.</strong> <code>'confined'</code> is zero outside <span class="arithmatex">\(r_1 \le r \le r_2\)</span>, and <span class="arithmatex">\(h\)</span> and its first <span class="arithmatex">\(p - 1\)</span> derivatives vanish at the
-edges, so there are no surface currents (<span class="arithmatex">\(B_r \propto h\)</span> and <span class="arithmatex">\(B_\theta \propto h' + h/r\)</span> are continuous for <span class="arithmatex">\(p \ge 2\)</span>, the
-smallest value accepted; the volume current, which involves <span class="arithmatex">\(h''\)</span>, is continuous for <span class="arithmatex">\(p \ge 3\)</span>; <span class="arithmatex">\(p = 4\)</span> makes <span class="arithmatex">\(h'''\)</span>
-continuous).
+edges, so there are no surface currents (<span class="arithmatex">\(B_r \propto h\)</span> and <span class="arithmatex">\(B_\theta \propto h' + h/r\)</span> are continuous for <span class="arithmatex">\(p \ge 2\)</span>; the
+volume current, which involves <span class="arithmatex">\(h''\)</span>, is continuous for <span class="arithmatex">\(p \ge 3\)</span>, the smallest value accepted, because the rows of the
+momentum equation hold <span class="arithmatex">\(h'''\)</span>, which would carry a delta at the edges for <span class="arithmatex">\(p = 2\)</span>; <span class="arithmatex">\(p = 4\)</span> makes <span class="arithmatex">\(h'''\)</span> continuous).
+In a full sphere with <span class="arithmatex">\(r_1 &gt; 0\)</span>, <span class="arithmatex">\(h\)</span> is evaluated at <span class="arithmatex">\(\lvert r\rvert\)</span> with the parity <span class="arithmatex">\((-1)^l\)</span>.
 Its purpose: a poloidal field inside a region where <span class="arithmatex">\(\Delta\Omega\)</span> is uniform is a steady background with the differential
 rotation (Ferraro, <a href="#with-a-differential-rotation">below</a>). With an inner core the region must lie in the fluid
 (<span class="arithmatex">\(r_1 \ge\)</span> <code>ricb</code>). The edges are smooth only to order <span class="arithmatex">\(p\)</span>, so the Chebyshev series converge algebraically (coefficients
@@ -1773,7 +1774,7 @@ B_\phi = -c_\mathrm{tor}\,k\,\partial_\theta Y_n^0 =
 </tr>
 <tr>
 <td><code>'general'</code></td>
-<td><span class="arithmatex">\(\sum_n k_n Y_n^0\)</span>, <code>B0_tor_profiles</code> = {n: 'numpy expression of r, p'}, with <span class="arithmatex">\(p\)</span> = <code>B0_param</code> (not <code>B0_tor_param</code>)</td>
+<td><span class="arithmatex">\(\sum_n k_n Y_n^0\)</span>, <code>B0_tor_profiles</code> = {n: 'numpy expression of r, p'}, with <span class="arithmatex">\(p\)</span> = <code>B0_tor_param</code></td>
 <td>any degrees of one parity; derivatives as for the poloidal <code>'general'</code></td>
 </tr>
 </tbody>
@@ -1788,8 +1789,8 @@ either.</p>
 nodes):</p>
 <ul>
 <li><code>'rms_cmb'</code>: the rms of the radial field over the outer wall is 1, <span class="arithmatex">\(c_\mathrm{norm} = \sqrt{2l+1}/(L\,h(1))\)</span>, <span class="arithmatex">\(L = l(l+1)\)</span>.
-  Single-degree types only: <code>'confined'</code> and <code>'ferraro'</code> stop with a message (<code>'confined'</code> is zero at the wall);
-  <code>'general'</code> is not refused but fails (<code>B0_norm</code> raises a ValueError before <code>check_magnetic</code> runs).</li>
+  Single-degree types only: <code>'confined'</code>, <code>'general'</code> and <code>'ferraro'</code> stop with a message (<code>'confined'</code> is zero at the
+  wall).</li>
 <li><code>'mag_energy'</code>: <span class="arithmatex">\(\int B_0^2\,dV = 1\)</span> over the fluid (Luo &amp; Jackson 2022); <code>'Schmitt2012'</code>: <span class="arithmatex">\(\int B_0^2\,dV = 4\)</span>. For one
   degree,</li>
 </ul>
@@ -1966,7 +1967,7 @@ the background. <code>background.ferraro_mismatch</code> reports</p>
 \frac{\max\lvert\mathbf B_0\cdot\nabla\Delta\Omega\rvert\,r}{\max\lvert\mathbf B_0\rvert\,\max\lvert r\nabla\Delta\Omega\rvert}
 \]</div>
 <p>over the fluid at the start of every run with <code>diff_rot = 1</code> and a poloidal <span class="arithmatex">\(\mathbf B_0\)</span>, except with <code>B0_wound = 1</code> (from the shapes <span class="arithmatex">\(f_n\)</span>, with a fourth-order difference in <span class="arithmatex">\(r\)</span>, and the poloidal
-profiles, on a grid). Above <span class="arithmatex">\(10^{-7}\)</span> the constant <code>background.FERRARO_POLICY</code> (set in <code>bin/background.py</code>, not a parameter) decides: <code>'warn'</code> (default: a warning, the
+profiles, on a grid). Above <span class="arithmatex">\(10^{-7}\)</span> the parameter <code>ferraro_policy</code> decides: <code>'warn'</code> (default: a warning, the
 background is assumed to be maintained) or <code>'refuse'</code>. Consistent backgrounds: a toroidal field, a <code>'confined'</code> field where
 <span class="arithmatex">\(\Delta\Omega\)</span> is uniform, <code>B0 = 'ferraro'</code>, <code>diff_rot_type = 'ferraro'</code>, or any poloidal field with <code>B0_wound = 1</code> (the
 winding balanced by diffusion; the run then reports that balance instead).</p>
