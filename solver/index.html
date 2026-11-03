@@ -299,6 +299,25 @@
   
   
   
+    <li class="md-tabs__item">
+      <a href="../checking/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Checking a change
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
     
     
       <li class="md-tabs__item">
@@ -701,6 +720,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#the-cost-of-a-differential-rotation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The cost of a differential rotation
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -778,6 +808,33 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../checking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Checking a change
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
     
@@ -792,10 +849,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
             
   
   
@@ -813,8 +870,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1058,6 +1115,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#the-cost-of-a-differential-rotation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The cost of a differential rotation
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1143,7 +1211,8 @@ thermal runs with <code>ThermaD</code> = 0, where it hurts; 0 or 1 force it.</p>
 <code>thermal_wind</code> 2, <code>drop_tol</code> 1e-14) peaks at 21 GB on 4 ranks.</p>
 <p>For the smooth Sun the memory grows roughly as <span class="arithmatex">\(N^2 (l_{\max} - m + 1)^{1.35}\)</span> (within about 15 %, more above
 N ≈ 1800). Wider angular couplings add to it: rotation to degree 12 needed 2.2 times the memory of
-degree 4 at the same N, and <code>thermal_wind</code> 2 about 1.7 times <code>thermal_wind</code> 1.</p>
+degree 4 at the same N, and <code>thermal_wind</code> 2 about 1.7 times <code>thermal_wind</code> 1 (<a href="#the-cost-of-a-differential-rotation">below</a>,
+how this grows with the degree).</p>
 <p>What to try, cheapest first:</p>
 <ol>
 <li><strong>Resolution.</strong> Use the smallest N and lmax that pass the checks above. The eigenvalue usually converges at a lower
@@ -1160,6 +1229,93 @@ degree 4 at the same N, and <code>thermal_wind</code> 2 about 1.7 times <code>th
    of 2 <code>ncpus</code>.</li>
 </ol>
 <p><code>icntl_14</code> adds workspace, so set it only as high as <code>INFOG(1)=-9</code> requires.</p>
+<h2 id="the-cost-of-a-differential-rotation">The cost of a differential rotation</h2>
+<p>A rotation profile with Legendre terms up to degree n couples each degree l of the solution to the degrees l − n to
+l + n (to l ± (n + 1) between its poloidal and toroidal parts). With the heat equation the thermal wind reaches
+further: to l ± (n + 2) with <code>thermal_wind</code> 1, and to l ± (2n + 2) with <code>thermal_wind</code> 2. The matrices get wider, and
+the factorization in <code>solve.py</code> needs more memory and time. <code>tests/diff_rot/dr_cost.py</code> measures this on one problem:
+N 96, lmax 97, m 2, structure 'Wu 2005' with stratification 'top hat', ricb 0.35, and a 'user' rotation of degree n,
+on 4 ranks of a laptop (Apple M4 Pro). The peak memory and the time of <code>solve.py</code>:</p>
+<table>
+<thead>
+<tr>
+<th>degree n</th>
+<th>momentum only</th>
+<th>with the heat equation, <code>thermal_wind</code> 1</th>
+<th><code>thermal_wind</code> 2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>no rotation</td>
+<td>0.9 GB, 1 s</td>
+<td>1.0 GB, 2 s</td>
+<td>1.0 GB, 2 s</td>
+</tr>
+<tr>
+<td>0</td>
+<td>0.9 GB, 1 s</td>
+<td>1.4 GB, 2 s</td>
+<td>1.4 GB, 2 s</td>
+</tr>
+<tr>
+<td>2</td>
+<td>1.3 GB, 2 s</td>
+<td>2.3 GB, 4 s</td>
+<td>2.8 GB, 6 s</td>
+</tr>
+<tr>
+<td>4</td>
+<td>1.8 GB, 3 s</td>
+<td>3.1 GB, 7 s</td>
+<td>4.3 GB, 12 s</td>
+</tr>
+<tr>
+<td>8</td>
+<td>2.5 GB, 5 s</td>
+<td>5.0 GB, 17 s</td>
+<td>6.9 GB, 29 s</td>
+</tr>
+<tr>
+<td>12</td>
+<td>3.5 GB, 9 s</td>
+<td>7.1 GB, 31 s</td>
+<td>8.5 GB, 35 s</td>
+</tr>
+<tr>
+<td>16</td>
+<td>4.6 GB, 13 s</td>
+<td>8.4 GB, 49 s</td>
+<td>11.9 GB, 67 s</td>
+</tr>
+<tr>
+<td>24</td>
+<td>6.1 GB, 43 s</td>
+<td>10.4 GB, 63 s</td>
+<td></td>
+</tr>
+<tr>
+<td>32</td>
+<td>8.1 GB, 29 s</td>
+<td>15.3 GB, 95 s</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>How to read it:</p>
+<ul>
+<li>The memory grows about linearly with n, here by 0.2 GB per degree with the momentum equation alone and 0.4 GB per
+  degree with the heat equation. At n 32 the solve needs 9 times the memory of the run without rotation, and 15 times
+  with the heat equation.</li>
+<li><code>thermal_wind</code> 2 costs a little less than <code>thermal_wind</code> 1 at twice the degree: its heat rows reach about twice as far.</li>
+<li><code>submatrices.py</code> (2 s) and <code>assemble.py</code> (7 s at most) stay small: the factorization is what grows.</li>
+<li>The time is noisier than the memory, since it also depends on how many iterations the eigensolver needs: in the
+  momentum case n 24 took longer than n 32.</li>
+</ul>
+<p>The memory also grows with N and lmax (above). To plan a large run, run the script at its resolution:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python3<span class="w"> </span>tests/diff_rot/dr_cost.py<span class="w"> </span>WORKDIR<span class="w"> </span>N<span class="w"> </span>LMAX<span class="w"> </span>NCPUS<span class="w"> </span><span class="o">[</span>LIMIT_GB<span class="o">]</span>
+</span></code></pre></div>
+<p>It kills any step that goes above <code>LIMIT_GB</code> (default 30) and then skips the larger degrees of that case.</p>
 
 
 
