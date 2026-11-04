@@ -1851,9 +1851,9 @@ sphere needs N 192 (degree 1) to 384 (degree 2) for <span class="arithmatex">\(1
 monomials, a polynomial of degree <span class="arithmatex">\(2p + l\)</span> loses all its digits to cancellation near the edges.</p>
 <p><strong>Any degrees.</strong> <code>'general'</code> takes one profile <span class="arithmatex">\(h_n\)</span> per degree, given as expressions. Their derivatives come from
 Chebyshev interpolants (degree max(64, 2N)); in a full sphere they are evaluated at <span class="arithmatex">\(\lvert r\rvert\)</span> with the parity
-<span class="arithmatex">\((-1)^n\)</span>, and <span class="arithmatex">\(h_n\)</span> should go as <span class="arithmatex">\(r^n\)</span> at the centre. The degrees must have one parity (one equatorial symmetry); the
-lowest sets it. <code>cnorm = 'mag_energy'</code> sums <span class="arithmatex">\(\int B_0^2\,dV\)</span> over the degrees. The couplings come from the recurrence
-algebra (<a href="#couplings-for-any-background">Couplings for any background</a>).</p>
+<span class="arithmatex">\((-1)^n\)</span>, and <span class="arithmatex">\(h_n\)</span> should go as <span class="arithmatex">\(r^n\)</span> at the centre (<code>submatrices.py</code> warns otherwise). The degrees must have one
+parity (one equatorial symmetry); the lowest sets it. <code>cnorm = 'mag_energy'</code> sums <span class="arithmatex">\(\int B_0^2\,dV\)</span> over the degrees.
+The couplings come from the recurrence algebra (<a href="#couplings-for-any-background">Couplings for any background</a>).</p>
 <h3 id="toroidal-fields">Toroidal fields</h3>
 <p>A toroidal field is azimuthal: its field lines are circles around the axis. Each option gives a radial profile <span class="arithmatex">\(k(r)\)</span> of
 degree <span class="arithmatex">\(n\)</span> = <code>B0_tor_l</code> (several degrees for <code>'general'</code>), scaled by <span class="arithmatex">\(c_\mathrm{tor}\)</span> = <code>cnorm_tor</code>:</p>
@@ -2004,7 +2004,9 @@ change or extend the code.</p>
   degree and <span class="arithmatex">\(k\)</span> that of <span class="arithmatex">\((-1)^n\)</span> (<code>utils.odd_profiles</code>, both slots of a label). There is one boundary-condition row per
   block, the insulating condition at the outer wall (<code>assemble.bc_b_spherical</code>). The fields are regular at the centre:
   FDM <span class="arithmatex">\(j_l(\beta r)\)</span> (analytic derivatives, <code>background_field.jl_k</code>), the polynomial fields, 'wall' <span class="arithmatex">\(= r^n(1 - r^2)\)</span>,
-  'Malkus' for <span class="arithmatex">\(n = 1\)</span> only (<span class="arithmatex">\(k = r\)</span> is not regular for <span class="arithmatex">\(n = 2\)</span>), 'user' as <span class="arithmatex">\(f(\lvert r\rvert)\,\mathrm{sign}(r)^n\)</span>.
+  'Malkus' for <span class="arithmatex">\(n = 1\)</span> only (<span class="arithmatex">\(k = r\)</span> is not regular for <span class="arithmatex">\(n = 2\)</span>). 'general' and 'user' are evaluated as
+  <span class="arithmatex">\(f(\lvert r\rvert)\,\mathrm{sign}(r)^n\)</span>, regular only if <span class="arithmatex">\(f\)</span> goes as <span class="arithmatex">\(r^n\)</span> times a series in <span class="arithmatex">\(r^2\)</span>; <code>submatrices.py</code>
+  warns otherwise (<a href="../numerical-method/#regularity-at-the-centre">Regularity at the centre</a>).
   <code>cnorm</code> and <code>cnorm_tor</code> are computed as with an inner core; spin_doctor's inner-wall terms are skipped.</li>
 <li><strong>Inviscid runs</strong> (<code>ViscosD = 0</code>, full sphere only). The Lorentz labels have <span class="arithmatex">\(D^3\)</span> (rows u) and <span class="arithmatex">\(D^2\)</span> (rows v), so the
   rows are in <span class="arithmatex">\(C^{(3)}\)</span> (u) and <span class="arithmatex">\(C^{(2)}\)</span> (v), with one boundary-condition row (<span class="arithmatex">\(u_r = 0\)</span>) in u and none in v; without a

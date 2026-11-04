@@ -1824,7 +1824,7 @@ with a solar structure, <span class="arithmatex">\(x = r\)</span> otherwise.</p>
 <td><code>'Y20'</code></td>
 <td><span class="arithmatex">\(a\thinspace P_2(\cos\theta)\)</span></td>
 <td><span class="arithmatex">\(P_2\)</span></td>
-<td><span class="arithmatex">\(P_2\)</span> unnormalised, despite the name</td>
+<td><span class="arithmatex">\(P_2\)</span> unnormalised, despite the name; not regular at <span class="arithmatex">\(r = 0\)</span>: use ricb &gt; 0</td>
 </tr>
 <tr>
 <td><code>'Y20-wall-bounded'</code></td>
@@ -1854,7 +1854,7 @@ with a solar structure, <span class="arithmatex">\(x = r\)</span> otherwise.</p>
 <td><code>'conical'</code></td>
 <td><span class="arithmatex">\(\varepsilon\sin^2\theta\)</span>, <span class="arithmatex">\(\varepsilon = a\)</span></td>
 <td><span class="arithmatex">\(P_0\)</span>, <span class="arithmatex">\(P_2\)</span></td>
-<td>Guenel et al. 2016</td>
+<td>Guenel et al. 2016; not regular at <span class="arithmatex">\(r = 0\)</span>: use ricb &gt; 0</td>
 </tr>
 <tr>
 <td><code>'solar'</code></td>
@@ -1964,6 +1964,7 @@ differential rotation adds to the heat equation. The advection of <span class="a
   rotation alone, set <code>thermal_wind = 0</code>.</li>
 <li>With <code>magnetic = 1</code>, <span class="arithmatex">\(S_{tw}\)</span> leaves out the force of the background field: it is the same as in a run without a field
   (<a href="../magnetic/">Magnetic field</a>).</li>
+<li><code>thermal_wind</code> 3 is uniform in <span class="arithmatex">\(r\)</span>, so in a full sphere it is not regular at the centre and <code>submatrices.py</code> warns.</li>
 </ul>
 <h3 id="resolution-and-cost">Resolution and cost</h3>
 <ul>
@@ -1972,9 +1973,12 @@ differential rotation adds to the heat equation. The advection of <span class="a
   <span class="arithmatex">\(n_{\max}\)</span> (<span class="arithmatex">\(P \to P\)</span>, <span class="arithmatex">\(T \to T\)</span>) or <span class="arithmatex">\(n_{\max} + 1\)</span> (<span class="arithmatex">\(P \leftrightarrow T\)</span>).</li>
 <li><span class="arithmatex">\(S_{tw}\)</span> has degrees up to <span class="arithmatex">\(n_{\max} + 2\)</span> (<code>thermal_wind</code> 1) or <span class="arithmatex">\(2n_{\max} + 2\)</span> (<code>thermal_wind</code> 2), and the heat rows
   couple degrees that far apart. Matrices are therefore widest with <code>'tabulated'</code> and a large <code>diff_rot_nmax</code>.</li>
-<li>With <code>ricb = 0</code> (a full sphere) the profiles are evaluated at <span class="arithmatex">\(\lvert r\rvert\)</span>, to keep them smooth at the centre.
-  <code>'Y20-wall-bounded'</code> and <code>'shellular'</code> (except even <span class="arithmatex">\(\sigma &gt; 0\)</span>) have a kink at <span class="arithmatex">\(r = 0\)</span> and <code>submatrices.py</code> prints a
-  WARNING. The <code>'solar'</code> tachocline step needs N ≈ 400 at <code>ricb = 0</code>.</li>
+<li>With <code>ricb = 0</code> (a full sphere) each <span class="arithmatex">\(f_n\)</span> is evaluated at <span class="arithmatex">\(\lvert r\rvert\)</span>, and it is smooth at the centre only if
+  it goes as <span class="arithmatex">\(r^n\)</span> there (<a href="../numerical-method/#regularity-at-the-centre">Regularity at the centre</a>). <code>'Y20'</code> and
+  <code>'conical'</code> keep their <span class="arithmatex">\(P_2\)</span> term at the centre, <code>'Y20-wall-bounded'</code> and <code>'shellular'</code> (except even <span class="arithmatex">\(\sigma &gt; 0\)</span>)
+  have a kink there, and the fit of a <code>'tabulated'</code> rotation leaves its <span class="arithmatex">\(f_n\)</span> a small value there (about <span class="arithmatex">\(10^{-5}\)</span> of the
+  largest for the HMI table); <code>submatrices.py</code> prints a WARNING for each. The <code>'solar'</code> tachocline step needs N ≈ 400 at
+  <code>ricb = 0</code>.</li>
 <li>Modes that reach into a radiative interior have short radial wavelengths. In a full sphere with the radiative
   interior of stratification <code>'solar_rz'</code>, solar inertial modes needed N = 768 to 1024 for the <code>spin_doctor</code>
   residuals, although their eigenvalues converge at a lower N. <a href="../solver/">Solver</a> has the memory this takes.</li>
@@ -1991,13 +1995,17 @@ kore radius), <code>x</code> (<span class="arithmatex">\(r\cdot\)</span><code>r_
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">par</span><span class="o">.</span><span class="n">diffusivity_profiles</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'nu'</span><span class="p">:</span> <span class="s1">'0.01 + 0.99*0.5*(1 + tanh((x - 0.70)/0.015))'</span><span class="p">,</span> <span class="s1">'kappa'</span><span class="p">:</span> <span class="s1">'1'</span><span class="p">}</span>
 </span></code></pre></div>
 <p>kore evaluates them at <span class="arithmatex">\(\lvert r\rvert\)</span>, so in a full sphere <span class="arithmatex">\(dS/dr\)</span> is odd and <span class="arithmatex">\(\hat\nu\)</span>, <span class="arithmatex">\(\hat\kappa\)</span> and the <span class="arithmatex">\(f_n\)</span> are
-even whatever the expression; for a profile that is smooth at the centre, <span class="arithmatex">\(dS/dr\)</span> should still vanish there. The
+even whatever the expression. They are smooth at the centre only if the expression is: an odd power of <span class="arithmatex">\(r\)</span> in an even
+profile, or an even one in <span class="arithmatex">\(dS/dr\)</span>, makes a kink, and <span class="arithmatex">\(dS/dr\)</span> must vanish there as <span class="arithmatex">\(r\)</span>, <span class="arithmatex">\(f_n\)</span> as <span class="arithmatex">\(r^n\)</span>. <code>submatrices.py</code>
+warns about both (<a href="../numerical-method/#regularity-at-the-centre">Regularity at the centre</a>). The
 expressions must not contain <code>#</code>: <code>spin_doctor</code> writes them at the end of each <code>params.dat</code> row, after a <code>#</code>.</p>
 <h2 id="checks">Checks</h2>
 <p>Before anything is built, kore stops on a background that cannot work: an unknown type, a parameter name of an older
 version of kore (the message gives the replacement), <code>'Wu 2005'</code> without <span class="arithmatex">\(0 &lt;\)</span> <code>r_out</code> <span class="arithmatex">\(&lt; 1\)</span>, <code>'inverse square'</code> with
 <code>ricb = 0</code>, <span class="arithmatex">\(\delta\)</span> without <code>'solar_rz'</code>, or a <code>'user'</code> expression that does not evaluate. <code>submatrices.py</code> also warns
-about any name in the parameter file that kore does not define, so a misspelt name is not ignored without notice.
+about any name in the parameter file that kore does not define, so a misspelt name is not ignored without notice, and
+in a full sphere about each profile that is not smooth at the centre
+(<a href="../numerical-method/#regularity-at-the-centre">Regularity at the centre</a>).
 <code>spin_doctor</code> records the background of every solution in <code>params.dat</code> (<a href="../output/">Output files</a>).</p>
 
 

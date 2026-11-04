@@ -1186,14 +1186,16 @@ same MUMPS option is <code>st_mat_mumps_...</code> in one and <code>mat_mumps_..
 <h2 id="first-check-the-solution">First, check the solution</h2>
 <p>Judge each solution with <code>spin_doctor.py</code>, not with the residual that <code>solve.py</code> prints: with the Ruiz prescaling (on by
 default) that one is for the rescaled problem. Accept a mode when its energy and entropy residuals (residσ, resid𝑠)
-are below 1e-5 and its ℓ-convergence is below 1e-4. The same residuals judge a forced run, where σ = 0. When the walls
+are below 1e-5 and its ℓ-convergence is below 1e-4. In a full sphere, also check irreg₀: above 1e-6 the mode is not
+smooth at the centre (<a href="../numerical-method/#regularity-at-the-centre">Regularity at the centre</a>). The same residuals judge
+a forced run, where σ = 0. When the walls
 move radially (forcing 14), residσ also tests the pressure at the walls, which needs more radial resolution than the rest
 of the budget (<a href="../tidal-forcing/#interpreting-the-response">Tidal forcing</a>).</p>
 <p>A failure is one of two kinds:</p>
 <ul>
 <li><strong>Resolution.</strong> It fails every time, and the eigenvalue moves when N or lmax is raised. Raise N for the residuals and
   lmax for the ℓ-convergence. In a full sphere (ricb = 0) N counts both parities, so it needs about twice the N of a
-  shell.</li>
+  shell. N must be even.</li>
 <li><strong>Solver.</strong> It comes and goes between identical runs, or between runs with nearly the same parameters. See below.</li>
 </ul>
 <h2 id="bad-solutions">Bad solutions</h2>
@@ -1208,6 +1210,10 @@ of the budget (<a href="../tidal-forcing/#interpreting-the-response">Tidal forci
 <tr>
 <td>the mode you want is not among the solutions</td>
 <td>put the target on it (<code>units.set_target(par, omega=..., sigma=...)</code>, in nHz) and raise <code>nev</code>; to look for growing modes, put the target at σ &gt; 0</td>
+</tr>
+<tr>
+<td>in a full sphere without viscosity or with <code>ThermaD</code> = 0, modes that move when N or lmax is raised, some of them growing, many with irreg₀ near 1</td>
+<td>spurious modes (<a href="../numerical-method/#regularity-at-the-centre">Regularity at the centre</a>): target the mode you want and keep the modes that stay put in N and lmax</td>
 </tr>
 <tr>
 <td>the run stops with <code>INFOG(1)=-9</code></td>

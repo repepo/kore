@@ -941,6 +941,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#regularity-at-the-centre" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Regularity at the centre
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#checks" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1188,6 +1199,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#regularity-at-the-centre" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Regularity at the centre
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#checks" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1380,6 +1402,36 @@ one (<code>bci</code>, when <code>ricb &gt; 0</code>); the full sphere has no co
 <p>The density enters the stress-free and no-slip rows through <span class="arithmatex">\(u_\theta\)</span> and <span class="arithmatex">\(u_\phi\)</span>. The thermal conditions are used
 only when <code>ThermaD &gt; 0</code>. Without viscosity only <span class="arithmatex">\(P_l = 0\)</span> is imposed. <code>bco = 2</code> (and <code>bci = 2</code>) replaces <span class="arithmatex">\(u_r = 0\)</span> by a
 zero viscous radial stress, <span class="arithmatex">\(\left[r(\ln\rho_0)' - 3\right]P_l + 3rP_l' = 0\)</span>, which does not contain the pressure.</p>
+<h2 id="regularity-at-the-centre">Regularity at the centre</h2>
+<p>The centre of a full sphere is not a boundary, but the fields must be smooth there, and kore imposes no condition to
+make them so. This section says why none is needed, when a solution is still not smooth at the centre, and how to
+check it.</p>
+<p>A field that is smooth at the centre has radial functions that go as <span class="arithmatex">\(r^l\)</span> there, for a component of degree <span class="arithmatex">\(l\)</span>, times
+a series in <span class="arithmatex">\(r^2\)</span>. The basis gives <span class="arithmatex">\(P_l\)</span>, <span class="arithmatex">\(T_l\)</span>, <span class="arithmatex">\(s_l\)</span> (and the <span class="arithmatex">\(f_l\)</span>, <span class="arithmatex">\(g_l\)</span> of a magnetic field) the parity of <span class="arithmatex">\(l\)</span>, and
+the equations exclude the lower powers of that parity, as long as the background is smooth at the centre too. Each
+background profile follows the same rule with its own degree <span class="arithmatex">\(n\)</span>: the <span class="arithmatex">\(f_n\)</span> of a differential rotation, the <span class="arithmatex">\(h_n\)</span>,
+<span class="arithmatex">\(k_n\)</span> of a magnetic field and the <span class="arithmatex">\(\sigma_n\)</span> of a thermal wind go as <span class="arithmatex">\(r^n\)</span>, <span class="arithmatex">\(dS/dr\)</span> and <span class="arithmatex">\(g\)</span> as <span class="arithmatex">\(r\)</span>, and <span class="arithmatex">\(\ln\rho_0\)</span>,
+<span class="arithmatex">\(p_0\)</span>, <span class="arithmatex">\(\nu\)</span>, <span class="arithmatex">\(\kappa\)</span> are series in <span class="arithmatex">\(r^2\)</span>. kore evaluates every profile at <span class="arithmatex">\(\lvert r\rvert\)</span> with the parity of its
+degree, which gives the parity but neither the power nor the smoothness. A profile can fail in two ways:</p>
+<ul>
+<li><strong>It lacks the power.</strong> The <span class="arithmatex">\(P_2\)</span> term of <code>'Y20'</code> and <code>'conical'</code>, and the entropy of <code>thermal_wind</code> 3, keep their
+  value at the centre. The modes converge in N, but to solutions that are not smooth there either.</li>
+<li><strong>It has a kink or a jump.</strong> Its even or odd continuation to <span class="arithmatex">\(r &lt; 0\)</span> is not smooth: <code>'Y20-wall-bounded'</code>,
+  <code>'shellular'</code> unless <span class="arithmatex">\(\sigma\)</span> is even and positive, a <code>'user'</code> expression in <span class="arithmatex">\(\lvert r\rvert\)</span>, a <span class="arithmatex">\(dS/dr\)</span> that changes
+  abruptly near the centre. The modes then converge slowly in N.</li>
+</ul>
+<p>With <code>ricb = 0</code>, <code>submatrices.py</code> checks every profile near the centre and prints a WARNING for each failure
+(<code>background.centre_check</code>).</p>
+<p><strong>Spurious modes.</strong> Without viscosity (<code>ViscosD = 0</code>) or with <code>ThermaD = 0</code>, the spectrum of a full sphere also holds
+modes that do not converge when N or lmax is raised: without viscosity some of them grow, with <code>ThermaD = 0</code> they
+crowd near zero frequency. Many of them sit at the centre, where they are not smooth; others sit at the wall.
+Target the frequency of the mode you want, and keep the modes that stay put in N and lmax.</p>
+<p><strong>irreg₀.</strong> In a full sphere <code>spin_doctor</code> prints irreg₀ for each solution (column 28 of <code>flow.dat</code>): the largest term
+<span class="arithmatex">\(a_p r^p\)</span> with <span class="arithmatex">\(p &lt; l\)</span> of the flow and of the field, at <span class="arithmatex">\(r = \pi/\mathrm N\)</span> (about the spacing of the Chebyshev points
+at the centre), relative to their largest value (<code>utils4pp.centre_irregularity</code>). It is at round-off for a resolved
+smooth mode and near 1 for a spurious mode at the centre. Values in between come from a background that is not smooth
+at the centre, or from a mode that is not resolved there. After the table <code>spin_doctor</code> counts the solutions above
+<span class="arithmatex">\(10^{-6}\)</span>.</p>
 <h2 id="checks">Checks</h2>
 <p><code>spin_doctor.py</code> evaluates the budgets of <a href="../anelastic/#energy-balance">Energy balance</a> for each solution, from the
 fields and independently of the matrices. The radial integrals use Gauss–Legendre quadrature with <span class="arithmatex">\(3N/2\)</span> nodes, the
