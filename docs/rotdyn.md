@@ -42,7 +42,7 @@ The default moments of inertia and coupling constant are Earth-like values.
 ## Requirements
 
 - An axisymmetric, equatorially symmetric problem: `m = 0`, `symm = 1`.
-- An inner core (`ricb > 0`) and no-slip boundaries (`bci = bco = 1`, `Ek > 0`), since the solid bodies drag the fluid through the no-slip condition.
+- An inner core (`ricb > 0`), `Ek > 0` and a no-slip ICB (`bci = 1`), since the solid bodies drag the fluid through the no-slip condition. The CMB may be stress-free (`bco = 0`): the mantle then drags the fluid only through the topographic drag `kappa_cmb` on the slip (see [Inner core and mantle](boundaries.md#topographic-drag-at-the-cmb)), and magnetically.
 - Eigenvalue problems. The rotation of the boundaries in forced problems (libration) is prescribed through `forcing` instead.
 
 Kore stops with a message when one of these does not hold.

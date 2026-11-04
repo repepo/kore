@@ -44,6 +44,8 @@ Eigenvectors are only defined up to a complex factor. Kore scales each one so th
 | Geo | Geostrophic fraction: the share of the energy of $u_\phi$ held by its average along the rotation axis (see below). Only for $m = 0$, `symm = 1`; `nan` otherwise. |
 | \|𝚪\|mag | Modulus of the electromagnetic torque on the mantle. |
 | \|𝚪\|magIC | Modulus of the electromagnetic torque on the inner core. |
+| εTWA | Only with a thin wall (`'TWA'`): the estimated relative error of the wall's contribution, $\tfrac{2}{3}(h/\delta_w)^2$, the larger of the CMB and ICB values (see [Inner core and mantle](boundaries.md#thin-conducting-wall)). |
+| Dtopo, δσtopo | With a stress-free CMB (`bco = 0`): the dissipation of the topographic drag, $2(\Omega\tau)\hat\kappa\oint|\mathbf{u}_t - \mathbf{v}_m|^2\,dS$, and its damping rate $-D_\text{topo}/(2E)$; per unit $\hat\kappa$ (Dtopo/κ, δσtopo/κ) when `kappa_cmb = 0` (also `flow.dat` columns 21-22). |
 
 
 The geostrophic fraction measures how close the azimuthal flow is to being invariant along the rotation axis:
@@ -73,7 +75,7 @@ The residuals compare terms of balances that an exact solution satisfies. They a
 
 `resid𝐋` is 0 when no torque acts at the walls (`Ek = 0` or stress-free walls, or a full sphere with a stress-free CMB, and no magnetic torques): the balance is then not tested, so judge such modes by `resid𝐮` and `resid𝐛`.
 
-`resid𝐄` compares $2\sigma$ times the kinetic plus all the magnetic energy with the viscous dissipation, the work of the background currents ($\mathbf{J}_0\times\mathbf{b}$, plus buoyancy) and the Ohmic losses in the fluid, a conducting inner core, thin walls and a mantle layer, written as $\eta\int|\nabla\times\mathbf{b}|^2\,dV$. With `rotdyn = 1` it includes the rotational energy of the mantle and the inner core, the gravitational energy and the inner core's viscous relaxation, so it also tests their equations. At a stress-free wall it includes the power $2\,\mathrm{Re}\oint B_{0r}\,\mathbf{u}_t\cdot\mathbf{b}_t^*\,dS$ that the induction term carries through the wall (zero at a no-slip wall); a thin wall or a mantle layer still needs a no-slip boundary there, and `rotdyn = 1` no-slip walls.
+`resid𝐄` compares $2\sigma$ times the kinetic plus all the magnetic energy with the viscous dissipation, the work of the background currents ($\mathbf{J}_0\times\mathbf{b}$, plus buoyancy) and the Ohmic losses in the fluid, a conducting inner core, thin walls and a mantle layer, written as $\eta\int|\nabla\times\mathbf{b}|^2\,dV$. With `rotdyn = 1` it includes the rotational energy of the mantle and the inner core, the gravitational energy and the inner core's viscous relaxation, so it also tests their equations. At a stress-free wall it includes the power $2\,\mathrm{Re}\oint B_{0r}\,\mathbf{u}_t\cdot\mathbf{b}_t^*\,dS$ that the induction term carries through the wall (zero at a no-slip wall); thin walls and mantle layers are included with their slip terms (with $c \neq 0$ the thin-wall budget holds only to $O(c\,c_1)$), and the topographic drag (`kappa_cmb`) through $D_\text{topo}$.
 
 `resid𝐄` is `nan` for forced problems (including `forcing = 12`, whose energy balance `resid0` and `resid𝐮` cover), `'conducting, Bessel'`, thin walls with `mu` $\neq 1$, and `rotdyn = 1` with `vtrq` or `mtrq` set to 0.
 
@@ -92,7 +94,7 @@ As a rule of thumb they should all be below about $10^{-4}$. If they are not, in
 
 Each run appends one row per solution to the files below, in the same order in every file. Several runs in the same folder therefore build up a table of results, which `tools/getresults.py` can load.
 
-**`params.dat`**, the parameters of the run (67 columns): hydro, magnetic, thermal, compositional, Ek, m, symm, ricb, bci, bco, forcing, forcing_frequency, forcing_amplitude_cmb, forcing_amplitude_icb, projection, B0type, beta_actual, B0_l, innercore_mag_bc, c_icb, c1_icb, mantle_mag_bc, c_cmb, c1_cmb, mu, Em, Le2, B0_norm, Etherm, heating, BV2, rc, h, rsy, bci_thermal, bco_thermal, Ecomp, compositional_background, BV2_comp, rcc, hc, rsyc, bci_compositional, bco_compositional, OmgTau, ncpus, N, lmax, runtime, mu_i2o, sigma_i2o, aux1, aux2, rotdyn, MoIZ_M, MoIZ_IC, OmgtauIC, gTorque, bgflow, bgflow_Ro, B0_tor, B0_tor_l, cnorm_tor, r_surface, N_mantle, sigma_mantle_cmb, c1_mantle. The last four describe a conducting mantle layer: its outer radius, polynomials, conductivity at the CMB and conductance $\int_1^{r_s}\sigma_m\,dr$ (0 without one). `runtime` is the total time of `solve_nopp.py` plus `spin_doctor.py`. Text options are stored as their position in the list of options:
+**`params.dat`**, the parameters of the run (68 columns; 67 in files written before 2026-11-04): hydro, magnetic, thermal, compositional, Ek, m, symm, ricb, bci, bco, forcing, forcing_frequency, forcing_amplitude_cmb, forcing_amplitude_icb, projection, B0type, beta_actual, B0_l, innercore_mag_bc, c_icb, c1_icb, mantle_mag_bc, c_cmb, c1_cmb, mu, Em, Le2, B0_norm, Etherm, heating, BV2, rc, h, rsy, bci_thermal, bco_thermal, Ecomp, compositional_background, BV2_comp, rcc, hc, rsyc, bci_compositional, bco_compositional, OmgTau, ncpus, N, lmax, runtime, mu_i2o, sigma_i2o, aux1, aux2, rotdyn, MoIZ_M, MoIZ_IC, OmgtauIC, gTorque, bgflow, bgflow_Ro, B0_tor, B0_tor_l, cnorm_tor, r_surface, N_mantle, sigma_mantle_cmb, c1_mantle, kappa_cmb. r_surface to c1_mantle describe a conducting mantle layer: its outer radius, polynomials, conductivity at the CMB and conductance $\int_1^{r_s}\sigma_m\,dr$ (0 without one); kappa_cmb is the topographic drag at the CMB. `runtime` is the total time of `solve_nopp.py` plus `spin_doctor.py`. Text options are stored as their position in the list of options:
 
 - `B0type` in `['axial', 'dipole', 'G21 dipole', 'Luo_S1', 'Luo_S2', 'FDM']` (-1 for `B0 = None`)
 - `B0_tor` in `['Malkus', 'wall', 'user']` (-1 without)
@@ -102,7 +104,7 @@ Each run appends one row per solution to the files below, in the same order in e
 
 **`eigenvalues.dat`**: damping $\sigma$ and frequency $\omega$.
 
-**`flow.dat`** (20 columns; 19 in files written before 2026-10-23, 18 before 2026-10-11):
+**`flow.dat`** (22 columns; 20 in files written before 2026-11-04, 19 before 2026-10-23, 18 before 2026-10-11):
 
 | Columns | Quantity                                                              |
 |---------|-----------------------------------------------------------------------|
@@ -119,8 +121,9 @@ Each run appends one row per solution to the files below, in the same order in e
 | 18      | `residL`                                                              |
 | 19      | Geostrophic fraction of $u_\phi$ (`nan` unless $m = 0$, `symm = 1`)   |
 | 20      | Work of the background flow (`bgflow = 1`, see [Background flow](bgflow.md); 0 otherwise) |
+| 21-22   | With a stress-free CMB (`bco = 0`): the dissipation of the topographic drag $D_\text{topo} = 2(\Omega\tau)\hat\kappa\oint\|\mathbf{u}_t - \mathbf{v}_m\|^2 dS$ and its damping rate $-D_\text{topo}/(2E)$ ($E$ the kinetic plus the fluid's magnetic energy, in kinetic-energy units); **per unit $\hat\kappa$ when `kappa_cmb = 0`** (an a-posteriori estimate, see [Inner core and mantle](boundaries.md#topographic-drag-at-the-cmb)); 0 with a no-slip CMB |
 
-**`magnetic.dat`** (9 columns): magnetic energy, magnetic diffusion and induction work (of $\mathbf{b}$ itself, see below), `resid𝐛`, electromagnetic torque on the mantle (real, imaginary), electromagnetic torque on the inner core (real, imaginary), rms of $b_r$ at the CMB.
+**`magnetic.dat`** (11 columns; 9 in files written before 2026-11-04): magnetic energy, magnetic diffusion and induction work (of $\mathbf{b}$ itself, see below), `resid𝐛`, electromagnetic torque on the mantle (real, imaginary), electromagnetic torque on the inner core (real, imaginary), rms of $b_r$ at the CMB, and the estimated thin-wall error $\varepsilon_\text{TWA} = \tfrac{2}{3}(h/\delta_w)^2$ at the CMB and at the ICB (0 without a thin wall; see [Inner core and mantle](boundaries.md#thin-conducting-wall)).
 
 **`budget.dat`** (8 columns, in kinetic-energy units): magnetic energy inside the inner core (its field if conducting, $\frac{1}{2}\int|\mathbf{b}|^2/\mu_{i2o}\,dV$ with $\mu_{i2o}$ = `mu_i2o`; the potential field below an insulating inner core or thin wall), magnetic energy stored in thin walls or in a conducting mantle layer, energy of the potential field outside the CMB (outside $r_s$ with a mantle layer), Ohmic loss in the fluid, in a conducting inner core ($\eta_i\int|\nabla\times\mathbf{b}|^2/\mu_{i2o}\,dV$, $\eta_i = 1/(\mu_{i2o}\sigma_{i2o})$) and in thin walls or the mantle layer ($\int|\nabla\times\mathbf{b}|^2/\sigma_m\,dV$), Lorentz work plus induction work (the work of the background currents), `resid𝐄`.
 

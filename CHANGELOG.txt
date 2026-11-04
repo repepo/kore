@@ -1,6 +1,58 @@
 CHANGELOG - Kore, conductive_IC branch
 ======================================
 
+2026-11-04
+----------
+New: slipping fluid at conducting walls (thin walls, mantle layer) with the interface condition C.I, and a topographic
+drag at the CMB, kappa_cmb (bin/assemble.py, bin/utils.py, bin/utils4pp.py, bin/spin_doctor.py, bin/params_default.py,
+tools/get_data.py, docs/boundaries.md, docs/setup.md, docs/rotdyn.md, docs/output.md)
+- A stress-free wall (or Ek = 0) next to a thin wall (TWA) or a resolved mantle layer took the solid's tangential E from
+  OmgTau*Em*curl(b) of the fluid, without its u x B0: the rest-frame condition C.II of Rekier, Triana, Trinh & Buffett
+  (2023, arXiv:2303.00718), which forces a current sheet. Kore now continues the fluid's tangential E in the frame of
+  the solid (C.I), as it did for a slipping conducting inner core (2026-10-30). C.I is a modelling choice: the slip stands
+  in for an unresolved thin viscous layer, and it holds while that layer is thin against the magnetic skin depth
+  (assemble.py prints Pm*|itau| for a thin wall). bc_b_cic_slip takes the boundary (ICB, CMB) and the part ('cons', the
+  consoidal part of B0_r u_t x r_hat; 'curl', the radial induction of the slip). The thin wall's toroidal row gets
+  c1*r times the first, its poloidal row (the wall's dF/dt) the second; the mantle layer's E row sigma_m(1) times the
+  first. With rotdyn = 1 the slip is taken relative to the mantle. utils.check_mantle no longer stops a slipping CMB
+  (the forcing 2, 9, 7 stops stay), and the thin-wall warning is gone. upp.em_budget puts the slip in the thin-wall
+  currents (new upp.slip_lapF, which computes the radial induction on a grid, independently of the assembly), and
+  spin_doctor's resid E covers thin walls with slip.
+- New par.kappa_cmb = kappa/(rho Omega R), default 0: a linear drag at a stress-free CMB, Ek sigma_rt = -kappa_cmb (u_t -
+  v_mantle), for the form drag of CMB topography (Rekier et al.'s topographic dissipation at the diurnal frequency:
+  kappa_cmb = 4.5e-6). Rows: Ek P'' + kappa P' = 0 and Ek (T' - T/r) + kappa T = 0, with -kappa rcmb in the omega_m
+  column of T10 with rotdyn = 1, which now allows bco = 0 (bci = 1 still needed). utils.check_drag stops on
+  kappa_cmb < 0, Ek = 0 and forcing 9. spin_doctor: the drag torque through vtorq (gamma_visc), pss = upp.wall_power for
+  every problem with a stress-free CMB, and the drag's dissipation Dtopo = 2 OmgTau kappa oint |u_t - v_m|^2 dS
+  (upp.cmb_slip_sq) and damping -Dtopo/(2E) in the summary table and in flow.dat, now 22 columns (21-22; 0 with a no-slip
+  CMB, per unit kappa when kappa_cmb = 0: an a-posteriori estimate); kappa_cmb is the last column of params.dat, now 68; with rotdyn resid E includes Dtopo.
+- New thin-wall validity diagnostic, utils.twa_error: eps_twa = (2/3)(h/delta_w)^2, the first term the TWA leaves out
+  (the wall's own induction), with (h/delta_w)^2 = c c1 r^2 |lambda|/(2 OmgTau Em) for any muw, from each solution's
+  eigenvalue (the forcing frequency in forced problems). spin_doctor writes it to magnetic.dat, now 11 columns (eps_twa
+  at the CMB and the ICB, 0 without a thin wall), and prints the larger one (εTWA) in its table when a thin wall is
+  used. tools/get_data.py names the two columns. Nothing is printed during assembly.
+- Checked on mongo (N 48 unless stated, Ek = Em = 1e-3, 2 ranks):
+  * A.npz and B.npz bit for bit as before for no-slip thin walls (CMB, ICB), no-slip mantle layers, a stress-free ICB
+    with a conducting inner core, insulating walls with slip, hydro = 0, and kappa_cmb = 0 with a stress-free CMB.
+  * resid E with slip, c = 0: 1e-10 to 1e-14 for thin walls at the CMB and the ICB ('axial' m = 0, 1, 'Luo_S2' m = 0,
+    1, 'FDM' m = 2, c1 up to 0.3), and 6e-14 to 4e-11 for mantle layers (r_surface 1.2 to 1.83, a profile, with a
+    conducting inner core); 1e-3 to 1 without the slip terms. With c != 0 the thin-wall budget holds to O(c c1) only,
+    and slip makes this larger: 3.6e-3 at c = c1 = 1e-2 (3.5e-4 without slip), linear in c.
+  * A thin wall with c = 0 and c1 -> 0 tends to the insulating wall with slip, linearly in c1. A thin uniform layer
+    (sigma_m = 1, thickness h = 0.04 to 0.01) and the thin wall with c = c1 = h, both slipping, differ by 0.19 to 0.026
+    of the wall's effect (0.17 to 0.017 without slip); without the slip terms by 2e-2, the wall's whole effect.
+  * N_mantle 24, 32, 48 against 64 (thick layer, slip): 2e-8, 8e-13, 8e-15.
+  * kappa_cmb from 1e-4 to 1e4: the eigenvalues go from stress-free to no-slip (difference 2.4e-3, 2.4e-5, 2.4e-7 at
+    1, 1e2, 1e4); resid0, resid u, resid E < 1e-11; Dtopo = -(Dkin + Dint) to 1e-8. The torque from gamma_visc equals
+    (8 pi/3) OmgTau kappa (t10(1) - omega_m) to 6e-13 (also with rotdyn); resid L < 4e-12. rotdyn with a stress-free CMB
+    and drag, with a thin wall or a mantle layer and slip: resid L 4e-11, resid E 5e-7 and 9e-7.
+  * At Ek = 1e-5 the damping added per unit kappa_cmb is constant to 1% for kappa_cmb up to 0.03 sqrt(Ek) and falls as
+    1/kappa beyond sqrt(Ek). The a-posteriori estimate is off by 3% at Ek = 1e-3 and 25% at 1e-5.
+  * Mantle layer (sigma_m = 1, Em = 1e-3): as Ek decreases from 1e-3 to 1e-5 the stress-free + C.I eigenvalue tends to
+    the no-slip one (8e-2 to 6e-3), the C.II one does not (to 1.5e-2). Thick layer, weak field: b_t at the CMB is the
+    local skin-layer solution of Rekier et al. (eq. 16), |C|/(sqrt(2) delta/(4 eta)) = 0.991, 0.997, 0.999 at Em = 1e-4,
+    1e-5, 1e-6, arg C = 135 degrees.
+
 2026-11-02
 ----------
 Cleanup: unused code removed (bin/find_Rac_pbs.py, bin/bc_variables.py, bin/utils.py, bin/operators.py,

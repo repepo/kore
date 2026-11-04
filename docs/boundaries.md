@@ -127,9 +127,15 @@ For a wall with the permeability of vacuum ($p = 1$, the default, as at the Eart
 
 Against an exact conducting layer (the layer's induction equation integrated across the wall, CMB and ICB, $p$ = 1 to 100, steady and oscillating fields), the conditions with the term are off by $O(h)$ relative to the wall's own effect; without it the error is $O(1)$ for small $p$ (8% at $l = 5$ at the ICB for $p = 1$).
 
-The thin-wall approximation itself needs the wall to be much thinner than its magnetic skin depth, $h \ll \delta_w = \sqrt{2\eta_w/\omega}$: the error on the wall's contribution to an eigenvalue grows as $(h/\delta_w)^2$.
+The thin-wall approximation itself needs the wall to be much thinner than its magnetic skin depth, $h \ll \delta_w = \sqrt{2\eta_w/\omega}$: the error on the wall's contribution to an eigenvalue grows as $(h/\delta_w)^2$. Inside the wall $b'' = k^2 b$ with $k^2 = \lambda/\eta_w$, and the conditions keep only the linear profile across it; the first neglected term, the wall's own induction, is
 
-The term $\mathcal{D}_l F$ stands for the wall's $\partial_t F/\eta$, taken from the fluid next to it. That substitution needs the wall to move with the fluid, so a wall with $c_1 \neq 0$ needs a no-slip boundary and `Ek > 0`; `assemble.py` prints a warning otherwise. With a wall at the CMB, keep `B0_cmb = 'wall'` (the default) so that the background field satisfies the wall condition too (see [Background magnetic field](background-field.md#a-thin-conducting-wall-at-the-cmb-b0_cmb)).
+$$
+\varepsilon_\text{TWA} = \frac{|k h|^2}{3} = \frac{2}{3}\left(\frac{h}{\delta_w}\right)^2, \qquad \left(\frac{h}{\delta_w}\right)^2 = \frac{c\,c_1\, r_j^2\, |\lambda|}{2\,(\Omega\tau)E_\eta},
+$$
+
+of the wall's contribution (since $c\,c_1 = h^2\eta_f/(r_j^2\eta_w)$, for any `muw`), with $\lambda$ the eigenvalue (or the forcing frequency) in the run's time unit. The thin wall is valid while $(h/\delta_w)^2 \ll 1$; $\varepsilon_\text{TWA} \le 1\%$ means $h/\delta_w \lesssim 0.12$. Exact-layer comparisons give errors at or below $\varepsilon_\text{TWA}$. The weaker conditions $h/r_j \ll 1$ and $l\,h/r_j \ll 1$ (the O($h$) terms are in the conditions, so what is left is O($h^2$)) are not checked. `spin_doctor.py` computes it for each solution from its eigenvalue and writes it to `magnetic.dat` (CMB and ICB), and, when a thin wall is used, prints the larger of the two (`εTWA`) in its summary table. With $\sigma_w = \sigma_f$ and `muw = 1` ($c = c_1 = h/r_j$), $(h/\delta_w)^2 = c^2 r_j^2 |\lambda|/(2(\Omega\tau)E_\eta)$; for torsional modes ($\omega/\Omega = a\,L_e$) the 1% limit is about $c_1 \lesssim 0.17\,a^{-1/2}\Lambda^{-1/4}E_\eta^{1/4}$ in rotation units.
+
+The term $\mathcal{D}_l F$ stands for the wall's $\partial_t F/\eta$, taken from the fluid next to it, and $G'$ for the wall's tangential electric field. Both assume the fluid moves with the wall; with a slipping fluid (stress-free wall or `Ek = 0`) the conditions get the $\mathbf{u}\times\mathbf{B}_0$ terms of [Slipping fluid at a conducting wall](#slipping-fluid-at-a-conducting-wall). With a wall at the CMB, keep `B0_cmb = 'wall'` (the default) so that the background field satisfies the wall condition too (see [Background magnetic field](background-field.md#a-thin-conducting-wall-at-the-cmb-b0_cmb)).
 
 
 ## Conducting mantle layer
@@ -150,7 +156,7 @@ $$
 r f_m' + (l+1)\, f_m = 0, \qquad g_m = 0 \qquad (r = r_s).
 $$
 
-As at a conducting inner core, the continuity of $\nabla_l^2 f/\sigma$ follows from these. The electric field condition has no $\mathbf{u}\times\mathbf{B}_0$ term, so the fluid at the CMB must move with the layer: with flow (`hydro = 1`) the run stops unless the CMB is no-slip (`bco = 1`, `Ek > 0`), and in any case unless `mu = 1` and no forcing moves the CMB other than by a rotation about $z$ (`forcing = 2`, `9`, and `7` with $m \neq 0$ stop). The background field needs no change: it continues into the layer as a potential field.
+As at a conducting inner core, the continuity of $\nabla_l^2 f/\sigma$ follows from these. These conditions hold for a fluid that moves with the layer (a no-slip CMB); with a slipping fluid (`bco = 0` or `Ek = 0`) the electric-field condition gets the $\mathbf{u}\times\mathbf{B}_0$ term of the [next section](#slipping-fluid-at-a-conducting-wall). The run stops unless `mu = 1` and no forcing moves the CMB other than by a rotation about $z$ (`forcing = 2`, `9`, and `7` with $m \neq 0$ stop). The background field needs no change: it continues into the layer as a potential field.
 
 | Parameter | Default | Meaning |
 |---|---|---|
@@ -167,6 +173,48 @@ The solution in the layer is written to `magnetic_mantle.npy`. `just_induction.p
 
 Unlike the thin wall, the layer holds at any frequency, for any thickness and any smooth profile that `N_mantle` resolves. For a thin uniform layer, $r_s = 1 + h$ and `sigma_mantle` $= c_1/h$, it tends to the thin wall with `c1_cmb` $= c_1$ (and `c_cmb = 0`) as $h \to 0$, with a difference of order $h$; as `sigma_mantle` goes to 0 it tends to the insulating mantle. Free-decay rates of a conducting sphere or shell inside a uniform layer agree with the exact ones (spherical Bessel functions) to $10^{-11}$.
 
+
+## Slipping fluid at a conducting wall
+
+At a stress-free wall (`bci = 0`, `bco = 0`), or with `Ek = 0`, the fluid slides over the solid, and the tangential electric field at the interface depends on the frame in which it is taken. Kore continues the fluid's tangential electric field in the frame of the solid,
+
+$$
+\hat{\mathbf{r}}\times\left[\mathbf{E}\right] = 0, \qquad \mathbf{E} = (\Omega\tau)E_\eta\nabla\times\mathbf{b} - \mathbf{u}\times\mathbf{B}_0 \ \text{in the fluid}, \qquad (\mathbf{u}\times\mathbf{B}_0)_t = B_{0r}\,(\mathbf{u}_t - \mathbf{v}_s)\times\hat{\mathbf{r}},
+$$
+
+with $\mathbf{v}_s$ the velocity of the solid ($\Omega_m\hat{\mathbf{z}}\times\mathbf{r}$ for a mantle that rotates with `rotdyn = 1`, else 0). This is condition C.I of Rekier, Triana, Trinh & Buffett (2023, arXiv:2303.00718). For a true velocity discontinuity first principles give instead the continuity of the field in each medium's rest frame, $\hat{\mathbf{r}}\times[\mathbf{E} + \mathbf{v}\times\mathbf{B}] = 0$ (C.II), which forces a current sheet at the interface. C.I is therefore a modelling choice: the slip stands in for a thin viscous (Ekman-Hartmann) layer that is not resolved, across which the electric field barely changes while the current density does. It holds while that layer is thin against the magnetic skin depth $\sqrt{2(\Omega\tau)E_\eta/|\omega|}$, i.e. for $E_k/E_\eta\cdot|\omega| \ll 1$ (Ekman layer) and a Hartmann layer $\sqrt{E_k E_\eta}/(L_e |B_{0r}|)$ much thinner than the skin depth. For the Earth at diurnal frequencies the skin depth is about 100 m and the Hartmann layer about 16 cm. `assemble.py` prints $E_k/E_\eta\cdot|$`itau`$|$ when a slipping fluid meets a thin wall. With equal conductivities on both sides ($\sigma_m = \sigma_f$) the jump in the tangential current density at the interface, $\sigma B_{0r}(\mathbf{u}_t - \mathbf{v}_s)$, comes from the slip alone.
+
+The slip enters as follows. $S_l$ is the $\nabla Y_l$ part of $B_{0r}(\mathbf{u}_t\times\hat{\mathbf{r}})$ given above for a conducting inner core, and
+
+$$
+X_l = -\frac{\beta}{r} \sum_{l'} \left[ \frac{l_0(l_0+1) - l(l+1) - l'(l'+1)}{2}\, G_{ll'}\, \frac{(r P_{l'})'}{r} - i m\, D_{ll'}\, T_{l'} \right]
+$$
+
+the $Y_l$ part of $\hat{\mathbf{r}}\cdot\nabla\times(\mathbf{u}\times\mathbf{B}_0) = -\nabla\cdot(B_{0r}\mathbf{u}_t)$, the radial induction of the slip:
+
+- Conducting inner core (`'conducting, Chebys'`, `'conducting, Bessel'`): $(r g_o)'$ in the condition on $g$ becomes $(r g_o)' - r S_l/((\Omega\tau)E_\eta)$ (above).
+- Thin wall: in $G \pm c_1 r G'$, $G'$ becomes $G' - r^2 S_l/((\Omega\tau)E_\eta)$, and in the poloidal condition $\mathcal{D}_l F$ becomes $\mathcal{D}_l F + r^2 X_l/(l(l+1)(\Omega\tau)E_\eta)$, since the wall's $\partial_t F$ now includes the radial induction of the slip.
+- Mantle layer: $\sigma_m(1)\,(r g)'$ becomes $\sigma_m(1)\left[(r g)' - r^2 S_l/((\Omega\tau)E_\eta)\right]$. The condition on $\nabla_l^2 f$ still follows from $f = f_m$.
+
+`resid𝐄` closes with these terms: with slipping walls and $c = 0$ to $10^{-10}$ or better for thin walls at either boundary and for mantle layers of any thickness, against $10^{-3}$ to 1 without them. With $c \neq 0$ the thin-wall budget is exact only to $O(c\,c_1)$, and the slip makes this error larger (about $4\cdot10^{-3}$ at $c = c_1 = 10^{-2}$, $E_\eta = 10^{-3}$, against $4\cdot10^{-4}$ without slip). A thin uniform layer with $\sigma_m = 1$ and thickness $h$ tends to the thin wall with $c = c_1 = h$ at the same rate with and without slip; without the slip terms the difference is as large as the wall's whole effect. As $E_k$ decreases at fixed $E_\eta = 10^{-3}$ (mantle layer, $\sigma_m = 1$), the eigenvalue with a stress-free CMB and these terms approaches the no-slip one, as $E_k^{0.56}$ (from $8\cdot10^{-2}$ at $E_k = 10^{-3}$ to $6\cdot10^{-3}$ at $10^{-5}$), while without them (C.II) the difference levels off near $1.5\cdot10^{-2}$. With a thick layer ($r_s = 1.83$, $\sigma_m = 1$) and a weak field the tangential field at the CMB is $\mathbf{b}_t = C\,B_{0r}\mathbf{u}_t$ with $|C| = \sqrt{2}\,\delta/(4\eta)$ and $\arg C = 135°$, $\delta = \sqrt{2\eta/|\omega|}$, the local skin-layer solution of Rekier et al. (their eq. 16), to 0.1% at $E_\eta = 10^{-6}$.
+
+## Topographic drag at the CMB
+
+`kappa_cmb` ($\hat\kappa$, default 0) adds a linear drag to a stress-free CMB (`bco = 0`, `Ek > 0`): the tangential traction on the fluid is
+
+$$
+E_k\,\sigma_{rt} = -\hat\kappa\,(\mathbf{u}_t - \mathbf{v}_m), \qquad \hat\kappa = \frac{\kappa}{\rho\,\Omega R},
+$$
+
+for a stress $\kappa\,\mathbf{u}$ in SI units, with $\mathbf{v}_m$ the mantle's velocity ($\mathbf{v}_m = \Omega_m\hat{\mathbf{z}}\times\mathbf{r}$ with `rotdyn = 1`). With $\mathbf{u} = \nabla\times\nabla\times(P\,\hat{\mathbf{r}}) + \nabla\times(T\,\mathbf{r})$ per degree the boundary rows become
+
+$$
+P = 0, \qquad E_k P'' + \hat\kappa P' = 0, \qquad E_k\left(T' - \frac{T}{r}\right) + \hat\kappa\,(T - r\Omega_m\,\delta_{l1}) = 0 \qquad (r = 1),
+$$
+
+stress-free for $\hat\kappa = 0$ and no-slip for $\hat\kappa \to \infty$ (the eigenvalues approach the no-slip ones as $1/\hat\kappa$). In a test at $E_k = 10^{-5}$ the damping added per unit $\hat\kappa$ is constant to 1% up to $\hat\kappa \approx 0.03\sqrt{E_k}$, 8% lower at $0.3\sqrt{E_k}$, and falls as $1/\hat\kappa$ beyond $\sqrt{E_k}$. The drag is meant for the form drag of CMB topography on the interior flow, e.g. the topographic dissipation of Rekier et al. calibrated at the diurnal frequency, $\kappa \approx 11.3$ kg m$^{-2}$ s$^{-1}$, $\hat\kappa \approx 4.5\cdot10^{-6}$. In the Earth $\kappa$ is far larger than $\rho\sqrt{\nu\Omega} \approx 0.085$ kg m$^{-2}$ s$^{-1}$, but the form drag acts on the flow outside the viscous layer. In Kore the wall row also sets the slip of a viscous layer, which takes the drag as it stands only while $\hat\kappa \ll \sqrt{E_k}$ (drag-limited); for $\hat\kappa \gtrsim \sqrt{E_k}$ the Ekman layer limits the coupling instead. The magnetic conditions at a conducting CMB get the slip terms of the previous section.
+
+The axial torque on the mantle is $\Gamma = (8\pi/3)(\Omega\tau)\hat\kappa\,(T_1(1) - \Omega_m)$, the viscous torque of `gamma_visc` evaluated through the drag row, and with `rotdyn = 1` it drives the mantle's rotation. `spin_doctor.py` writes the drag's dissipation $D_\text{topo} = 2(\Omega\tau)\hat\kappa\oint|\mathbf{u}_t - \mathbf{v}_m|^2\,dS$ and $\delta\sigma = -D_\text{topo}/(2E)$ to `flow.dat` (columns 21-22) and the summary table (see [Output](output.md)); for a stress-free run with $\hat\kappa = 0$ they are given per unit $\hat\kappa$, an a-posteriori estimate of the drag's damping. It assumes the mode keeps its shape and its other losses, so it is a rough guide (3% off the eigenvalue shift in a test at $E_k = 10^{-3}$, 25% at $E_k = 10^{-5}$): for numbers, run with the drag. The run stops for $\hat\kappa < 0$, `Ek = 0` (no tangential condition) and `forcing = 9`.
 
 ## Electromagnetic torques
 

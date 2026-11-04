@@ -1073,9 +1073,47 @@ def check_rotdyn():
     '''
     if par.m != 0 or par.symm != 1 or par.ricb == 0 or par.forcing != 0:
         sys.exit('rotdyn = 1 needs m = 0, symm = 1, an inner core (ricb > 0) and an eigenvalue problem (forcing = 0)')
-    if par.Ek <= 0 or par.bci != 1 or par.bco != 1:
-        sys.exit('rotdyn = 1 needs a viscous fluid with no-slip walls (Ek > 0, bci = bco = 1): the mantle and the '
+    if par.Ek <= 0 or par.bci != 1:
+        sys.exit('rotdyn = 1 needs a viscous fluid with a no-slip ICB (Ek > 0, bci = 1): the mantle and the '
                  'inner core drag the fluid through the no-slip condition')
+    # NEW (2026-11-04): a stress-free CMB (bco = 0) is allowed: the mantle then drags the fluid through the topographic
+    # drag kappa_cmb on the slip T10 - rcmb*omega_m (none with kappa_cmb = 0), and its magnetic coupling sees the slip
+
+
+def twa_error(lam):
+    '''
+    NEW (2026-11-04): thin-wall validity for a solution with eigenvalue (or forcing frequency) lam, in the run's time
+    unit: [h/delta_w, eps_twa] at the CMB and at the ICB, 0 where there is no thin wall (spin_doctor writes eps_twa to
+    magnetic.dat). Inside the wall b'' = k^2 b,
+    k^2 = lam/eta_w, and the TWA keeps only the linear profile across it: the first neglected term, the wall's own
+    induction, is eps_twa = |k h|^2/3 = (2/3)(h/delta_w)^2 of the wall's contribution, delta_w = sqrt(2 eta_w/|lam|) its
+    skin depth. As c*c1 = h^2 mu_w sigma_w/(r^2 mu_f sigma_f) = h^2 eta_f/(r^2 eta_w), with eta_f = OmgTau*Em,
+        (h/delta_w)^2 = c*c1*r^2*|lam|/(2*OmgTau*Em)     (r = rcmb or ricb), for any muw.
+    The weaker conditions h/r << 1 and l*h/r << 1 are not checked here.
+    '''
+    out = []
+    for tw, c, c1, r in ((par.mantle == 'TWA', par.c_cmb, par.c1_cmb, rcmb),
+                         (par.innercore == 'TWA' and par.ricb > 0, par.c_icb, par.c1_icb, par.ricb)):
+        if tw and par.Em != 0:
+            hd2 = c*c1*r**2*abs(lam)/(2*par.OmgTau*par.Em)
+            out += [np.sqrt(hd2), 2*hd2/3]
+        else:
+            out += [0., 0.]
+    return np.array(out)
+
+
+def check_drag():
+    '''
+    NEW (2026-11-04): stops kappa_cmb (topographic drag at the CMB) outside what it covers
+    '''
+    if par.kappa_cmb < 0:
+        sys.exit('kappa_cmb = %r: the drag coefficient must be >= 0' % (par.kappa_cmb,))
+    if par.hydro and par.Ek == 0:
+        sys.exit('kappa_cmb > 0 needs Ek > 0: the inviscid problem (Ek = 0) has no tangential boundary condition')
+    if par.bco != 0:
+        print('Note: kappa_cmb is used only with a stress-free CMB (bco = 0); ignored with bco = %d' % par.bco)
+    if par.forcing == 9:
+        sys.exit('kappa_cmb > 0 with forcing = 9: the radial boundary velocity is not covered')
 
 
 check_resolution()  # NEW (2026-11-02)
@@ -1084,6 +1122,8 @@ if par.magnetic:
     check_innercore()  # NEW (2026-11-02)
 if par.rotdyn:
     check_rotdyn()
+if par.kappa_cmb != 0:  # NEW (2026-11-04)
+    check_drag()
 cnorm_tor = B0_tor_norm() if (par.magnetic and par.B0_tor is not None) else 0.0
 
 
@@ -1179,9 +1219,8 @@ def check_mantle():
     # A magnetic mantle (or fluid) would also change the background field at the CMB
     if par.mu != 1:
         sys.exit("mantle = 'resolved' assumes the permeability of vacuum in the fluid and in the layer (mu = 1)")
-    # The electric-field condition at the CMB has no u x B0 term: the fluid there must move with the layer
-    if par.hydro and (par.bco == 0 or par.Ek == 0):
-        sys.exit("mantle = 'resolved' needs a no-slip CMB (bco = 1, Ek > 0)")
+    # NEW (2026-11-04): a slipping CMB (bco = 0, or Ek = 0) is allowed: the electric-field row gets the u x B0 term
+    # (assemble.bc_b_mantle, condition C.I); this stop was there because it had none
     if par.forcing in (2, 9) or (par.forcing == 7 and par.m != 0):
         sys.exit("mantle = 'resolved': forcing = %d moves the CMB other than by a rotation about z, which the layer "
                  "cannot follow" % par.forcing)

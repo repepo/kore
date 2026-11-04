@@ -80,6 +80,13 @@ class default_params():
         # Use 0 for stress-free, 1 for no-slip or forced boundary flow
         self.bco = 1
 
+        # NEW (2026-11-04): topographic (form) drag at a stress-free CMB (bco = 0, Ek > 0): the tangential traction on
+        # the fluid is Ek*sigma_rt = -kappa_cmb*(u_t - v_mantle), a Robin condition between stress-free (0, the default)
+        # and no-slip (kappa_cmb -> inf). kappa_cmb = kappa/(rho*Omega*R) for a drag law of stress kappa*u (SI), e.g.
+        # the topographic dissipation of Rekier et al. calibrated at the diurnal frequency: kappa = 11.3 kg m^-2 s^-1,
+        # kappa_cmb = 4.5e-6. Drag-limited (the Earth's form drag on the interior flow) while kappa_cmb << sqrt(Ek).
+        self.kappa_cmb = 0.0
+
         # Rotation: 1 for a rotating frame, 0 for no rotation (the Coriolis force is then not assembled). Without
         # rotation the time scale cannot be 1/Omega: use timescale = 'viscous' (Ek then only labels the units and
         # can be any nonzero value, the results do not depend on it) or set OmgTau directly, and set N explicitly.
@@ -191,7 +198,7 @@ class default_params():
         # NEW (2026-10-30): a conducting layer at the base of the mantle, 1 <= r <= r_surface, insulating beyond (mantle =
         # 'resolved', ported from PR #17 by A. Nuyt). Its field is expanded in N_mantle Chebyshev polynomials, so unlike the
         # thin wall it holds for any thickness and frequency, and any smooth conductivity profile that N_mantle resolves
-        # (the run stops otherwise, utils.check_mantle). Needs mu = 1 and a no-slip CMB.
+        # (the run stops otherwise, utils.check_mantle). Needs mu = 1; a slipping CMB gets the u x B0 term (2026-11-04).
         self.r_surface = 1.83   # outer radius of the layer (the CMB is at 1); 1.83 for the whole mantle of the Earth
         self.N_mantle  = 64     # Chebyshev polynomials in the layer
         # Conductivity of the layer / conductivity of the fluid: a number (uniform layer), or a numpy expression of r and

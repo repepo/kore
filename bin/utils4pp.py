@@ -1380,6 +1380,61 @@ def slip_power(u_sol2, b_sol2):
 
 
 
+def cmb_slip_sq(u_sol2, omg_m=0):
+    '''
+    NEW (2026-11-04): oint |u_t - v_m|^2 dS over the CMB, the slip of the fluid relative to the mantle (v_m = omg_m z x r,
+    omg_m the mantle's rotation rate with rotdyn = 1, m = 0, symm = 1), with u_t = s grad(Y) + t grad(Y) x r_hat per
+    degree (s = P' + P/r, t = T) and oint |grad Y|^2 = L 4 pi/(2l+1). The topographic drag (kappa_cmb) dissipates
+    2*OmgTau*kappa_cmb times this, in the units of Dkin and Dint.
+    '''
+    lp, lt, _ = ut.ell(par.m, par.lmax, par.symm)
+    P, T = u_sol2[0], u_sol2[1]
+    R = ut.rcmb
+    out = 0.
+    for k, l in enumerate(lp):
+        d = ut.Dn_cheb(P[k,:], par.ricb, ut.rcmb, 1)
+        s = ch.chebval(1.0, d[:,0]) + ch.chebval(1.0, P[k,:])/R
+        out += 4*np.pi/(2*l+1)*l*(l+1)*R**2*abs(s)**2
+    for k, l in enumerate(lt):
+        t = ch.chebval(1.0, T[k,:])
+        if l == 1 and par.m == 0:
+            t = t - R*omg_m  # T10 of the mantle's rotation
+        out += 4*np.pi/(2*l+1)*l*(l+1)*R**2*abs(t)**2
+    return out
+
+
+
+def slip_lapF(u_sol2, boundary):
+    '''
+    NEW (2026-11-04): for each poloidal degree l of b, r^2/(L*OmgTau*Em) times [r.curl(u x B0)]_l at a slipping wall
+    (boundary = 'icb' or 'cmb'), the radial induction of the slip that the poloidal thin-wall condition adds to
+    lapF = r lap_l f (bc_b_thinlayer, bc_b_cic_slip with part = 'curl'). With u_r = 0, r.curl(u x B0) =
+    -(B0_r div(u_t) + dB0_r/dtheta u_theta)/r, computed on a Gauss grid and projected on Y_l (an independent check of
+    the coupling coefficients of the assembly). u_sol2 from expand_reshape_sol.
+    '''
+    lpu, ltu, _ = ut.ell(par.m, par.lmax, par.symm)
+    lpb = ut.ell(par.m, par.lmax, ut.bsymm)[0]
+    if not (par.hydro and par.B0 is not None):
+        return np.zeros(len(lpb))
+    r, xc = (par.ricb, -1) if boundary == 'icb' else (ut.rcmb, 1)
+    x, w = np.polynomial.legendre.leggauss(par.lmax + 9)
+    Y, dY, Z = ylm_grid(par.m, par.lmax + 3, x)
+    Y0, dY0, _ = ylm_grid(0, 2, x)
+    l0 = ut.B0_l
+    rr = np.array([r], dtype=float)
+    xr = xcheb(rr, par.ricb, ut.rcmb)
+    P, T = u_sol2[0].T, u_sol2[1].T
+    s = ch.chebval(xr, ut.Dcheb(P, par.ricb, ut.rcmb))[:,0] + ch.chebval(xr, P)[:,0]/r
+    t = ch.chebval(xr, T)[:,0]
+    uth  = s @ dY[lpu] + t @ Z[ltu]
+    divu = (-lpu*(lpu+1)*s) @ Y[lpu]
+    A = ut.B0_norm()*l0*(l0+1)*ut.h0(rr, par.B0, [par.beta, l0, par.ricb, 0])[0]/r
+    X = -( A*Y0[l0]*divu + A*dY0[l0]*uth )/r
+    Xl = np.array([ (2*l+1)/2*np.sum(w*X*Y[l]) for l in lpb ])
+    return r**2/(lpb*(lpb+1)*par.OmgTau*par.Em)*Xl
+
+
+
 def magnetic_powers_grid(utab, btab):
     '''
     The induction 2 Re int b*.curl(u x B0) dV and the complex power of the Lorentz force
@@ -1527,7 +1582,7 @@ def kin_mag_energy(usol2, bsol2, Ra, Rb, ls=None):
 
 
 # NEW (2026-10-18): the magnetic terms of the full energy budget (spin_doctor's resid E).
-def em_budget(bsol2, bic=None, bman=None):
+def em_budget(bsol2, bic=None, bman=None, usol2=None):
     '''
     Returns [Ohm_f, ME_ic, Ohm_ic, E_w, Ohm_w, ME_ext] for one solution, the terms of the magnetic energy budget
     that spin_doctor's fluid-only balance (resid b) leaves out, in the units of magnetic_worker's energy and of
@@ -1549,6 +1604,8 @@ def em_budget(bsol2, bic=None, bman=None):
     NEW (2026-10-30): with a conducting mantle layer (mantle = 'resolved', bman = its part of the solution vector) E_w and
     Ohm_w are the layer's (1/2) int |b|^2 and int |curl b|^2/sigma, and ME_ext the potential field beyond r_surface
     (nan without bman).
+    NEW (2026-11-04): with a slipping fluid at a thin wall (usol2 given), the wall's poloidal current takes the slip's
+    radial induction as well (slip_lapF), as the wall condition does.
     The wall's b_r jump (c term) and current (c1 term) follow from the thin-wall conditions of bc_b_thinlayer,
     so the boundary terms need no derivatives beyond the second. Assumes mu = 1 (fluid permeability) with walls.
     For ricb = 0 the inner-core terms are zero.
@@ -1585,6 +1642,8 @@ def em_budget(bsol2, bic=None, bman=None):
     hw = 0.0                               # wall thickness
     if par.mantle == 'TWA':
         c, c1 = par.c_cmb, par.c1_cmb
+        if usol2 is not None and c1 != 0 and (par.bco == 0 or par.Ek == 0):  # NEW (2026-11-04): slipping fluid
+            DF = DF + slip_lapF(usol2, 'cmb')
         p = par.muw_cmb
         if np.isinf(p):
             Fout = -(r*F1 + c1*r**2*DF)/lp     # field beyond the wall, from the wall condition
@@ -1615,6 +1674,8 @@ def em_budget(bsol2, bic=None, bman=None):
             hw = 0.0
             if par.innercore == 'TWA':
                 c, c1 = par.c_icb, par.c1_icb
+                if usol2 is not None and c1 != 0 and (par.bci == 0 or par.Ek == 0):  # NEW (2026-11-04): slipping fluid
+                    DF = DF + slip_lapF(usol2, 'icb')
                 p = par.muw_icb
                 if np.isinf(p):
                     Fin = (r*F1 - c1*r**2*DF)/(lp+1)  # field below the wall, from the wall condition

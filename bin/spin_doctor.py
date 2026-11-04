@@ -96,6 +96,7 @@ def param_table(elapsed):
         ( 'N_mantle',                 par.N_mantle*ut.resolved_mantle,  '%d' ),
         ( 'sigma_mantle_cmb',         float(ut.sigma_mantle(ut.rcmb)) if ut.resolved_mantle else 0.0, '%.9e' ),
         ( 'c1_mantle',                ut.mantle_conductance() if ut.resolved_mantle else 0.0,       '%.9e' ),
+        ( 'kappa_cmb',                par.kappa_cmb,               '%.9e' ),  # NEW (2026-11-04): topographic drag at the CMB
     ]
 
 
@@ -210,6 +211,10 @@ def main(ncpus):
     misalignmt  = np.zeros(success,dtype=complex)
     gravtorq    = np.zeros(success,dtype=complex)
     angmom     = np.zeros(success,dtype=complex)
+    twaerr      = np.zeros((success, 4))      # NEW (2026-11-04): thin-wall validity, utils.twa_error: h/delta_w, eps_twa at CMB, ICB
+    use_twa     = par.magnetic and (par.mantle == 'TWA' or (par.innercore == 'TWA' and par.ricb > 0))
+    Dtopo       = np.zeros(success)           # NEW (2026-11-04): topographic-drag dissipation at a stress-free CMB (kappa_cmb)
+    dsig        = np.zeros(success)           # NEW (2026-11-04): its damping rate, -Dtopo/(2 Etot)
     params      = []                               # one row of param_table() per solution
     # ------------------------------------------------------------------------------------------------------------------------
 
@@ -236,6 +241,11 @@ def main(ncpus):
         ( '|𝚪|mag',      '{:8.2e}',   lambda i: np.abs(mtorq[i]) ),
         ( '|𝚪|magIC',    '{:8.2e}',   lambda i: np.abs(mtorq_ic[i]) ),
     ]
+    if par.hydro and par.Ek != 0 and par.bco == 0:  # NEW (2026-11-04): topographic drag (per unit kappa_cmb if it is 0)
+        tag = '' if par.kappa_cmb != 0 else '/κ'
+        table_cols += [ ( 'Dtopo' + tag, '{:8.2e}', lambda i: Dtopo[i] ), ( 'δσtopo' + tag, '{:9.2e}', lambda i: dsig[i] ) ]
+    if use_twa:  # NEW (2026-11-04): estimated thin-wall error (2/3)(h/delta_w)^2, the larger of CMB and ICB
+        table_cols += [ ( 'εTWA', '{:8.2e}', lambda i: max(twaerr[i,1], twaerr[i,3]) ) ]
     if par.compositional:  # NEW (2026-11-02): residual of the composition equation, next to residθ
         k = [ h for h, _, _ in table_cols ].index('residθ')
         table_cols.insert(k + 1, ( 'residξ', '{:8.2e}', lambda i: resid4[i] ))
@@ -256,7 +266,7 @@ def main(ncpus):
     # none with Ek = 0 (bci, bco are then ignored). Without them every m=1, symm=-1 run took a viscous torque also at
     # stress-free walls, and a full sphere one at r = 0: with no torque at all L is zero to round-off, and resid L was O(1)
     # (now 0, as for m=0 with stress-free walls)
-    do_vtorq = par.hydro and (par.Ek != 0) and (par.bco == 1) and (((par.m==0) and (par.symm==1)) or ((par.m==1) and (par.symm==-1)))
+    do_vtorq = par.hydro and (par.Ek != 0) and (par.bco == 1 or par.kappa_cmb != 0) and (((par.m==0) and (par.symm==1)) or ((par.m==1) and (par.symm==-1)))
     do_vtorq_ic = par.hydro and (par.Ek != 0) and (par.bci == 1) and (par.ricb > 0) and (((par.m==0) and (par.symm==1)) or ((par.m==1) and (par.symm==-1)))
 
     if do_vtorq:
@@ -306,6 +316,8 @@ def main(ncpus):
             w = ut.wf
             sigma = 0
         sigmas[i], freqs[i] = sigma, w
+        if use_twa:  # NEW (2026-11-04)
+            twaerr[i] = ut.twa_error(sigma + 1j*w if par.forcing == 0 else w)
 
         [ u_sol2, b_sol2, t_sol2, c_sol2 ] = [0,0,0,0]
 
@@ -437,6 +449,18 @@ def main(ncpus):
                 pss = upp.wall_power(u_sol2)
             pvf = upp.body_force_power(u_sol2)
 
+        # NEW (2026-11-04): a slipping CMB (bco = 0): the wall stress works on the fluid's own slip, not only through the
+        # torques, so pss is the stress power from the flow at the walls for every problem (it includes the topographic
+        # drag, kappa_cmb). Dtopo is the drag's dissipation 2*OmgTau*kappa_cmb*oint |u_t - v_m|^2 (Dkin units); with
+        # kappa_cmb = 0 the same per unit kappa_cmb, an a-posteriori estimate, and dsig its damping 2 sigma Etot = -Dtopo
+        if par.hydro and par.Ek != 0 and par.bco == 0:
+            if par.forcing not in (12,):
+                pss = upp.wall_power(u_sol2)
+            slip2 = upp.cmb_slip_sq(u_sol2, omg_mantle[i] if par.rotdyn else 0)
+            Dtopo[i] = 2*par.OmgTau*(par.kappa_cmb if par.kappa_cmb != 0 else 1.0)*slip2
+            Etot0 = KE[i] + (par.OmgTau**2*par.Le2*ME[i] if par.magnetic else 0)
+            dsig[i] = -Dtopo[i]/(2*Etot0) if Etot0 > 0 else np.nan
+
         if par.Ek != 0 and par.hydro == 1:
             resid0[i] = abs( Dint0 + Dkin0 - pss ) / max( abs(Dint0), abs(Dkin0), abs(pss) )
         else:
@@ -513,21 +537,22 @@ def main(ncpus):
         # FIX (2026-10-30): slipping walls (stress-free, or Ek = 0) carry the u x B0 part of the Poynting flux, which
         # Indu includes (upp.slip_power, subtracted below); before, resid E needed no-slip walls. A thin wall still
         # needs a no-slip boundary (rotdyn = 1 stops on slipping walls, utils.check_rotdyn). Not for forced problems,
-        # 'conducting, Bessel', or mu != 1 with thin walls.
+        # 'conducting, Bessel', or mu != 1 with thin walls. NEW (2026-11-04): thin walls next to a slipping fluid too
+        # (their u x B0 terms, assemble.bc_b_thinlayer, and the wall currents in upp.em_budget).
         # With rotdyn = 1 the rotation energies of the mantle and the inner core and the gravitational energy join the
         # budget; the torques only move energy between fluid and solids, so the viscous term is the strain-rate
         # dissipation (Dint, without the work of the moving walls), the work of the moving walls through u x B0 is the
         # magnetic torque times the rotation rate, and the inner core's viscous relaxation dissipates K*|phi|^2/tau_IC.
         noslip = (par.bco == 1) and (par.ricb == 0 or par.bci == 1) and par.Ek > 0
-        slipok = not ( (par.ricb > 0 and (par.bci == 0 or par.Ek == 0) and par.innercore == 'TWA') or
-                       ((par.bco == 0 or par.Ek == 0) and par.mantle == 'TWA') )  # FIX (2026-10-30)
+        slipok = True  # NEW (2026-11-04): thin walls with slip are covered (was False for them, FIX 2026-10-30)
         rotok  = (not par.rotdyn) or (par.vtrq == 1 and par.mtrq == 1)  # switched-off torques do not conserve energy
         if par.magnetic and par.forcing == 0 and rotok and par.innercore != 'conducting, Bessel' and \
            (noslip or slipok or not par.hydro) and not (par.mu != 1 and 'TWA' in (par.innercore, par.mantle)):
             s2 = par.OmgTau**2 * par.Le2
             eta = par.OmgTau * par.Em
             Ohm_f0, MEic0, Ohm_ic0, Ew0, Ohm_w0, MEext0 = upp.em_budget(b_sol2, None if bic is None else bic[:,i],
-                                                                        None if bman is None else bman[:,i])
+                                                                        None if bman is None else bman[:,i],
+                                                                        u_sol2 if (par.hydro and not noslip) else None)
             Wex  = (Wlor[i] if par.hydro else 0) + s2*Indu[i]
             if par.hydro and not noslip:  # FIX (2026-10-30)
                 Wex -= s2*upp.slip_power(u_sol2, b_sol2)
@@ -540,6 +565,8 @@ def main(ncpus):
                 Kg    = par.gTorque * par.OmgTau**2
                 Etot += par.MoIZ_M*abs(omg_mantle[i])**2 + par.MoIZ_IC*abs(omg_incore[i])**2 + Kg*abs(misalignmt[i])**2
                 Dk    = -Dint[i] - Wthm[i] - Wcmp[i] - 2*Kg*(par.OmgTau/par.OmgtauIC)*abs(misalignmt[i])**2  # FIX (2026-11-02): - Wcmp
+                if par.bco == 0 and par.kappa_cmb != 0:  # NEW (2026-11-04): the drag dissipates the slip energy
+                    Dk -= Dtopo[i]
                 Wex  += 2*np.real( mtorq[i]*np.conj(omg_mantle[i]) + mtorq_ic[i]*np.conj(omg_incore[i]) )
             scale = max( abs(2*sigma*Etot), abs(Dk), Ohm, abs(Wex) )
             residE[i] = abs( 2*sigma*Etot - Dk - Wex + Ohm ) / scale
@@ -589,13 +616,15 @@ def main(ncpus):
                                     np.real(vtorq), np.imag(vtorq),
                                     np.real(vtorq_ic), np.imag(vtorq_ic),
                                     elldom, np.real(angmom), np.imag(angmom), residL, geo, # NEW (2026-10-11): geostrophic fraction, column 19
-                                    Wbg ])  # NEW (2026-10-23): background flow power, column 20
+                                    Wbg,    # NEW (2026-10-23): background flow power, column 20
+                                    Dtopo, dsig ])  # NEW (2026-11-04): topographic drag, columns 21-22 (0 with a no-slip CMB)
 
     if par.magnetic:
         with open('magnetic.dat','ab') as dmag:
             np.savetxt(dmag, np.c_[ ME, Mdfs, Indu, resid2,
                                     np.real(mtorq), np.imag(mtorq),
-                                    np.real(mtorq_ic), np.imag(mtorq_ic), brms])
+                                    np.real(mtorq_ic), np.imag(mtorq_ic), brms,
+                                    twaerr[:,1], twaerr[:,3] ])  # NEW (2026-11-04): eps_twa at the CMB and the ICB (0 without a thin wall)
 
     if par.magnetic:  # NEW (2026-10-18): terms of the full energy budget, in kinetic-energy units, and resid E
         with open('budget.dat','ab') as dbud:

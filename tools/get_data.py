@@ -21,10 +21,12 @@ PARAMS = ['hydro', 'magnetic', 'thermal', 'compositional', 'Ek', 'm', 'symm', 'r
           'compositional_background', 'BV2_comp', 'rcc', 'hc', 'rsyc', 'bci_compositional', 'bco_compositional',
           'OmgTau', 'ncpus', 'N', 'lmax', 'runtime', 'mu_i2o', 'sigma_i2o', 'aux1', 'aux2', 'rotdyn', 'MoIZ_M',
           'MoIZ_IC', 'OmgtauIC', 'gTorque', 'bgflow', 'bgflow_Ro', 'B0_tor', 'B0_tor_l', 'cnorm_tor', 'r_surface',
-          'N_mantle', 'sigma_mantle_cmb', 'c1_mantle']
+          'N_mantle', 'sigma_mantle_cmb', 'c1_mantle', 'kappa_cmb']  # NEW (2026-11-04): kappa_cmb
 FLOW = ['KE', 'KP', 'KT', 'Dkin', 'Dint', 'Wlor', 'Wthm', 'Wcmp', 'resid0', 'residu', 'vtorq_real', 'vtorq_imag',
-        'vtorq_ic_real', 'vtorq_ic_imag', 'elldom', 'angmom_real', 'angmom_imag', 'residL', 'geo', 'Wbg']
-MAGNETIC = ['ME', 'Mdfs', 'Indu', 'residb', 'mtorq_real', 'mtorq_imag', 'mtorq_ic_real', 'mtorq_ic_imag', 'brms']
+        'vtorq_ic_real', 'vtorq_ic_imag', 'elldom', 'angmom_real', 'angmom_imag', 'residL', 'geo', 'Wbg',
+        'Dtopo', 'dsigma_topo']  # NEW (2026-11-04)
+MAGNETIC = ['ME', 'Mdfs', 'Indu', 'residb', 'mtorq_real', 'mtorq_imag', 'mtorq_ic_real', 'mtorq_ic_imag', 'brms',
+            'eps_twa_cmb', 'eps_twa_icb']  # NEW (2026-11-04)
 ROTDYN = ['omg_mantle', 'omg_ic', 'misalignmt', 'gravtorq', 'vtorq', 'mtorq', 'vtorq_ic', 'mtorq_ic']
 THERMAL = ['TE', 'Wadv_thm', 'Dthm', 'residt']
 COMPOSITIONAL = ['CE', 'Wadv_cmp', 'Dcmp', 'residc']

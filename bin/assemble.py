@@ -50,13 +50,15 @@ def main():
 
     #print('rank',rank,ll_flo)
 
-    # NEW (2026-10-07): the thin-wall conditions (bc_b_thinlayer) take the wall's dB/dt from the fluid's eta*lap(b),
-    # which holds only if the fluid next to the wall moves with it (no-slip, Ek > 0)
-    if rank == 0 and par.magnetic:
-        if par.mantle == 'TWA' and (par.bco == 0 or par.Ek == 0) and (par.c1_cmb != 0):
-            print('Warning: mantle = \'TWA\' needs a no-slip CMB (bco = 1, Ek > 0); the wall conditions are not valid here')
-        if par.innercore == 'TWA' and par.ricb > 0 and (par.bci == 0 or par.Ek == 0) and (par.c1_icb != 0):
-            print('Warning: innercore = \'TWA\' needs a no-slip ICB (bci = 1, Ek > 0); the wall conditions are not valid here')
+    # NEW (2026-11-04): a thin wall next to a slipping fluid (stress-free, or Ek = 0) gets the u x B0 terms of the
+    # interface condition C.I (bc_b_thinlayer, bc_b_cic_slip); before, the wall conditions assumed a no-slip boundary
+    if rank == 0 and par.magnetic and par.hydro and (par.B0 is not None):
+        slip_twa = (par.mantle == 'TWA' and (par.bco == 0 or par.Ek == 0) and par.c1_cmb != 0) or \
+                   (par.innercore == 'TWA' and par.ricb > 0 and (par.bci == 0 or par.Ek == 0) and par.c1_icb != 0)
+        if slip_twa:
+            print('Note: slipping fluid at a thin wall: tangential E continuous in the frame of the walls (condition C.I of '
+                  'Rekier et al. 2023), valid while the unresolved viscous layer is thin against the magnetic skin depth '
+                  '(Pm*|itau| = %.1e << 1)' % (par.Ek/par.Em*abs(par.itau) if par.Em else np.nan))
 
     if rank == 0:
         alltop, allbot = ll_flo
@@ -885,6 +887,8 @@ def main():
             if ((par.rotdyn == 1) and (par.m == 0) and (par.symm == 1) and (l == 1)):
                 col = off_rotdyn
                 mantle_list = [ np.array([-ut.rcmb]) ,np.array([row])  ,np.array([col]) ]  # T10 - rcmb*omega_m = 0
+                if par.bco == 0:  # NEW (2026-11-04): drag on the slip, Ek (T' - T/r) + kappa (T10 - rcmb*omega_m) = 0
+                    mantle_list[0] = np.array([-(par.kappa_cmb/par.Ek)*ut.rcmb])
                 incore_list = [ np.array([-par.ricb]) ,np.array([row+1]), np.array([col+1]) ]  # T10 - ricb*omega_ic = 0
                 for q in [0,1,2]:
                     loc_list[q].append( mantle_list[q] )
@@ -1459,6 +1463,8 @@ def bc_u_spherical(l,loc):
                 else:
                     out[ 0,:] = Tbu[:,0]  # P  =0
                     out[ 1,:] = Tbu[:,2]  # P''=0
+                    if par.kappa_cmb != 0:  # NEW (2026-11-04): topographic drag, Ek P'' + kappa P' = 0 (P = 0)
+                        out[ 1,:] = Tbu[:,2] + (par.kappa_cmb/par.Ek)*Tbu[:,1]
 
             elif par.bco == 1: # no-slip cmb
 
@@ -1498,6 +1504,8 @@ def bc_u_spherical(l,loc):
 
             if   par.bco == 0: # stress-free cmb
                 out[ 0,:] = Tbv[:,1] - Tbv[:,0]/ut.rcmb  # T'-(T/r)=0
+                if par.kappa_cmb != 0:  # NEW (2026-11-04): topographic drag, Ek (T' - T/r) + kappa T = 0
+                    out[ 0,:] = Tbv[:,1] - Tbv[:,0]/ut.rcmb + (par.kappa_cmb/par.Ek)*Tbv[:,0]
 
             elif par.bco == 1: # no-slip cmb
                     out[ 0,:] = Tbv[:,0]  # T=0
@@ -1704,6 +1712,21 @@ def bc_b_thinlayer(l, loc, mu_vf, c, c1, boundary, p=1.0):
 
     out = out.tocoo()
     out2 = [out.data, out.row + row1, out.col + col0]
+
+    # NEW (2026-11-04): a slipping fluid (stress-free, or Ek = 0) hands the wall the tangential E of its u x B0 too
+    # (condition C.I, see bc_b_cic_slip). In the toroidal row the wall current c1*r*(r g)' becomes c1*r*r^2 times the
+    # consoidal part of E_t/(OmgTau*Em); in the poloidal row the wall's dF/dt/(OmgTau*Em), lapF, gets the radial
+    # induction of the slip, r^2/(L*OmgTau*Em) times [r.curl(u x B0)]_l
+    if boundary == 'cmb':
+        slips = (par.bco == 0 or par.Ek == 0)
+    else:
+        slips = (par.bci == 0 or par.Ek == 0)
+    if par.hydro and (par.B0 is not None) and slips and c1 != 0:
+        if loc == 'nocurl':
+            slip = bc_b_cic_slip(l, row1, boundary, 'curl', epsj*c1*rj*mu_vf)
+        else:
+            slip = bc_b_cic_slip(l, row1, boundary, 'cons', epsj*c1*rj)
+        out2 = [np.concatenate([out2[q], slip[q]]) for q in range(3)]
 
     return out2
 
@@ -1991,7 +2014,7 @@ def xY(l, k):
 
 
 
-def bc_b_cic_slip(l, row):
+def bc_b_cic_slip(l, row, boundary='icb', part='cons', factor=1.0):
     '''
     FIX (2026-10-30): the u x B0 term of the [nxE] row of section g (degree l, at row) of a conducting inner core, when
     the ICB slips (bci = 0 or Ek = 0). There u_r = 0, so (u x B0)_t = B0_r (u_t x r_hat), with B0_r = beta Y_l0 and
@@ -2001,12 +2024,29 @@ def bc_b_cic_slip(l, row):
     from div(B0_r grad(Y') x r_hat) = dB0_r/dtheta i m Y'/sin(theta) and div(B0_r grad(Y')) = (lap(B0_r Y') + B0_r lap(Y')
     - Y' lap(B0_r))/2 on the unit sphere. As E = OmgTau*Em curl(b) - u x B0 in the fluid, the row (r/(OmgTau*Em) times
     the jump of E) gets minus r/(OmgTau*Em) times this, at the columns of P and T of degree l'.
+    NEW (2026-11-04): boundary = 'icb' or 'cmb' (Ta and ricb, or Tb and rcmb with one parity per l in a full sphere), and
+    part = 'cons' (the above) or 'curl': r^2/(L*OmgTau*Em) times [r.curl(u x B0)]_l, the radial induction of the slip,
+    with r.curl(u x B0) = -div(B0_r u_t)/r = -(beta/r) sum_l' [ (L0 - L - L')/2 G s - i m D t ] (the s and t roles of the
+    consoidal part swapped), for the poloidal row of a thin wall (bc_b_thinlayer). factor multiplies the entries.
+    Both continue the fluid's lab-frame tangential E into the solid (condition C.I of Rekier et al. 2023,
+    arXiv:2303.00718). For a true velocity discontinuity first principles give the rest-frame condition C.II instead;
+    C.I is a modelling choice, justified because the slip stands in for a thin viscous (Ekman-Hartmann) layer that is
+    not resolved, and valid while that layer is thin against the magnetic skin depth.
     '''
-    m, r = par.m, par.ricb
-    L, l0 = l*(l+1), ut.B0_l
+    m, L, l0 = par.m, l*(l+1), ut.B0_l
     L0 = l0*(l0+1)
-    h = ut.h0(np.array([r]), par.B0, [par.beta, l0, r, 0])[0]
-    c = -ut.B0_norm()*L0*h/( par.OmgTau*par.Em*L )  # -r/(OmgTau*Em) times beta/L
+    if boundary == 'icb':
+        r = par.ricb
+        Tu = Tv = bv.Ta
+    else:
+        r = ut.rcmb
+        if par.ricb > 0:
+            Tu = Tv = bv.Tb
+        else:  # one parity per l in a full sphere, as in bc_u_spherical
+            Tu = bv.Tb[( par.m + 1 - ut.s )%2::2,:]
+            Tv = bv.Tb[( par.m + ut.s )%2::2,:]
+    h = ut.h0(np.array([r], dtype=float), par.B0, [par.beta, l0, par.ricb, 0])[0]
+    c = -factor*ut.B0_norm()*L0*h/( par.OmgTau*par.Em*L )  # -r/(OmgTau*Em) times beta/L, times factor
     lp_u, lt_u, _ = ut.ell(m, par.lmax, par.symm)
     data, cols = [], []
     for k in range(l-2, l+3):
@@ -2014,17 +2054,27 @@ def bc_b_cic_slip(l, row):
             G, D = xY(l, k), float(l == k)
         else:  # l0 = 2: Y_20 = (3 cos^2 - 1)/2
             G, D = (3*(xY(l, k-1)*xY(k-1, k) + xY(l, k+1)*xY(k+1, k)) - (l == k))/2, 3*xY(l, k)
-        if k in lp_u and D != 0:  # s = (P + r P')/r
-            data.append( c*1j*m*D*(bv.Ta[:,0] + r*bv.Ta[:,1])/r )
-            cols.append( int(ut.N1*(k - ut.m_top)/2) + np.arange(ut.N1) )
-        if k in lt_u and G != 0:
-            data.append( c*(L0 - L - k*(k+1))/2*G*bv.Ta[:,0] )
-            cols.append( ut.n + int(ut.N1*(k - ut.m_bot)/2) + np.arange(ut.N1) )
+        if part == 'cons':
+            if k in lp_u and D != 0:  # s = (P + r P')/r
+                data.append( c*1j*m*D*(Tu[:,0] + r*Tu[:,1])/r )
+                cols.append( int(ut.N1*(k - ut.m_top)/2) + np.arange(ut.N1) )
+            if k in lt_u and G != 0:
+                data.append( c*(L0 - L - k*(k+1))/2*G*Tv[:,0] )
+                cols.append( ut.n + int(ut.N1*(k - ut.m_bot)/2) + np.arange(ut.N1) )
+                if par.rotdyn and boundary == 'cmb' and k == 1:  # NEW (2026-11-04): slip relative to the mantle, T10 - r*omega_m
+                    data.append( np.array([ -c*(L0 - L - k*(k+1))/2*G*r ]) )
+                    cols.append( np.array([ off_rotdyn ]) )
+        else:
+            if k in lp_u and G != 0:
+                data.append( c*(L0 - L - k*(k+1))/2*G*(Tu[:,0] + r*Tu[:,1])/r )
+                cols.append( int(ut.N1*(k - ut.m_top)/2) + np.arange(ut.N1) )
+            if k in lt_u and D != 0:
+                data.append( -c*1j*m*D*Tv[:,0] )
+                cols.append( ut.n + int(ut.N1*(k - ut.m_bot)/2) + np.arange(ut.N1) )
     if not data:
         return [np.array([]), np.array([], dtype=int), np.array([], dtype=int)]
     data = np.concatenate(data)
     return [data, np.full(data.size, row), np.concatenate(cols)]
-
 
 
 
@@ -2043,6 +2093,9 @@ def bc_b_mantle(l, loc):
     The E condition takes u x B0 equal on both sides, i.e. a no-slip CMB (the layer at rest, or rotating with the
     fluid about z, rotdyn = 1). As at a conducting ICB (bc_b_cic), the continuity of eta lap_l f is implied: with f
     continuous the radial induction equation holds on both sides.
+    NEW (2026-11-04): with a slipping fluid (bco = 0, or Ek = 0) the section-q row gets the u x B0 of the fluid's E,
+    sigma(1) times the consoidal term of bc_b_cic_slip at the CMB (condition C.I, a modelling choice: see there).
+    The continuity of the curl part of E still follows from f = fm and the radial induction on both sides.
     '''
     Nm = par.N_mantle
 
@@ -2107,6 +2160,13 @@ def bc_b_mantle(l, loc):
     outdata = np.concatenate([ outf.data, outm.data ])
     outrow  = np.concatenate([ outf.row + row0, outm.row + row0 ])
     outcol  = np.concatenate([ outf.col + col_f, outm.col + col_m ])
+
+    # NEW (2026-11-04): the slip's u x B0 in the E row (first row of section q)
+    if loc == 'section_q' and par.hydro and (par.B0 is not None) and (par.bco == 0 or par.Ek == 0):
+        slip = bc_b_cic_slip(l, row0, 'cmb', 'cons', float(ut.sigma_mantle(rc)))
+        outdata = np.concatenate([outdata, slip[0]])
+        outrow  = np.concatenate([outrow,  slip[1]])
+        outcol  = np.concatenate([outcol,  slip[2]])
 
     return [outdata, outrow, outcol]
 

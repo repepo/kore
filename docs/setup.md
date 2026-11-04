@@ -51,9 +51,10 @@ The sections below follow the order of `params_default.py`. The magnetic boundar
 |---|---|---|
 | `bci` | 1 | Flow condition at the inner core boundary (ICB): 0 stress-free, 1 no-slip (or boundary forcing). Ignored if `ricb = 0`. |
 | `bco` | 1 | Flow condition at the core-mantle boundary (CMB): 0 stress-free, 1 no-slip (or boundary forcing). |
+| `kappa_cmb` | 0 | Topographic drag at a stress-free CMB, $\kappa/(\rho\Omega R)$ (see [Inner core and mantle](boundaries.md#topographic-drag-at-the-cmb)). |
 | `Ek` | $10^{-6}$ | Ekman number $E = \nu/\Omega L^2$. |
 
-`Ek = 0` gives an inviscid problem, with only the no-penetration condition $u_r = 0$ at the boundary. It works only for a full sphere (`ricb = 0`), and `N` must then be set by hand. A thin conducting wall with `c1` $\neq 0$ needs a viscous fluid and no-slip boundaries, and so does `rotdyn = 1`, which stops otherwise. A conducting inner core also works with a stress-free ICB (see [Inner core and mantle](boundaries.md#conducting-inner-core)).
+`Ek = 0` gives an inviscid problem, with only the no-penetration condition $u_r = 0$ at the boundary. It works only for a full sphere (`ricb = 0`), and `N` must then be set by hand. `rotdyn = 1` needs a viscous fluid and a no-slip ICB, and stops otherwise. Conducting walls (inner core, thin walls, mantle layer) also work with a slipping fluid (see [Inner core and mantle](boundaries.md#slipping-fluid-at-a-conducting-wall)).
 
 
 ## Eigenvalue or forced problem
