@@ -55,7 +55,7 @@ copies `params_default.py` and `parameters.py` to `../run` and moves the outputs
 Outputs: `real_flow.field`, `imag_flow.field` (and `*_thermal.field`, `*_magnetic.field`), one column per solution,
 eigenvectors normalised to kinetic energy 1 (KE + Hendrik·ME = 1 with `magnetic = 1`); `eigenvalues0.dat` (this solve:
 Re λ, Im λ); `timing.dat`. `spin_doctor` appends to `eigenvalues.dat`, `params.dat` (107 columns, and a `#` note on rows
-that need one, §10), `flow.dat` (20), `thermal.dat` (7), `magnetic.dat` (11). A conducting inner core adds
+that need one, §10), `flow.dat` (28), `thermal.dat` (7), `magnetic.dat` (11). A conducting inner core adds
 `*_magnetic_ic.field`. A `params.dat` from an older version has fewer columns: start a new one. `python3 bin/units.py` prints a run's
 eigenvalues as ω, σ in nHz.
 
@@ -179,7 +179,8 @@ the only physical unit it reads is the nHz of the solar rotation data.
 ## 5. Numerics and matrix layout
 
 - **Radial basis.** Chebyshev in x ∈ [−1, 1]: x ↦ r ∈ [ricb, 1] with an inner core (`N1 = N`), x = r ∈ [−1, 1] in a full
-  sphere (`ricb = 0`), where parity halves the basis (`N1 = N/2`, N must be even, use about twice a shell's N).
+  sphere (`ricb = 0`), where parity halves the basis (`N1 = N/2`, use about twice a shell's N; N must be even for any
+  ricb, `background.check` stops otherwise).
   Each section is written in a Gegenbauer basis: `u` C^(4), `v` C^(2), `f`, `g` C^(2), `h` C^(2) (C^(0) if ThermaD = 0, C^(1) with
   `adiab_tw`); inviscid full sphere: `u` C^(2), `v` C^(1). Products are `ut.Mlam` (multiplication by a profile's
   coefficients), derivatives `ut.Dlam`, basis changes `ut.Slam`.
@@ -195,7 +196,12 @@ the only physical unit it reads is the nHz of the solar rotation data.
   vector parity (vP = (−1)^m symm for P and s, −vP for T) and each operator's parity (r power, derivative orders,
   odd profiles in `ut.odd_profiles`, counted in both profile slots of a label since 2026-10-28). It prints a WARNING if a profile has wrong-parity coefficients: those parts are
   silently dropped. Profiles are therefore built even or odd: `pdS`, `dSd` as sign(r)·f(|r|), diff-rot profiles and
-  'user' diffusivities at |r|.
+  'user' diffusivities at |r|. Parity is not regularity (2026-11-04): a degree-n profile must also be r^n times a series
+  in r². At ricb = 0 `background.centre_check` (called by `submatrices.py`) warns about missing powers (the modes then
+  converge to irregular solutions: 'Y20', 'conical', thermal_wind 3, a 'tabulated' f_n(0) ~ 1e-5 with HMI) and about
+  kinks (slow convergence in N); spin_doctor's irreg₀ (`upp.centre_irregularity`, flow.dat column 28) measures each mode,
+  max |a_p| (π/N)^p over p < l relative to the field's max: round-off when regular, ~1 for spurious modes, > 1e-6
+  counted after the table.
 - **Operator labels** (`ut.decode_label`): `sX[fu1D][fu2D]_DY`, e.g. `u2lho1vsc0_D1`. `s` is the section; `X` lowers the r
   power (u: rpower_u − X, v: rpower_v − X, h: 2 − X, or 1 − X for ThermaD = 0 without `adiab_tw`; f, g: 2 − X without ρ₀;
   inviscid uses 3 − X, 2 − X and ρ₀², ρ₀; `ohr1` as the second profile lowers the ρ₀ power by one); each `fuD` is a 3-letter profile code and its derivative order; `_DY` is the derivative order on
@@ -293,8 +299,9 @@ flow U₀ = Gaspard ΔΩ r sin θ e_φ in the frame Ω_ref. It works with any ba
 - `diff_rot.check()` (called by `submatrices.py` when `diff_rot = 1`) stops on the former names `diff_rot_amplitude`,
   `diff_rot_generic` and `diff_rot_hold` (removed 2026-10-26, §12), on `thermal_wind` outside 0–3 and on
   `thermal_wind` 1 or 2 with Beyonce = 0. With `diff_rot = 0` these names only get the warning of `check_names`.
-- ViscosD, ThermaD, Beyonce must be computed for Ω_ref (`units.set_physical` does). At ricb = 0, 'Y20-wall-bounded' and
-  'shellular' (unless σ is even and > 0) have a kink at r = 0 (WARNING); 'solar' needs N ~ 400.
+- ViscosD, ThermaD, Beyonce must be computed for Ω_ref (`units.set_physical` does). At ricb = 0, 'Y20' and 'conical' are
+  irregular (their P2 term ≠ 0 at r = 0) and 'Y20-wall-bounded', 'shellular' (unless σ is even and > 0) have a kink
+  (WARNINGs from `background.centre_check`); 'solar' needs N ~ 400.
 - Benchmarks: Guenel et al. 2016 conical mode ω = 1.8173; solar inertial modes of Mukhopadhyay et al. 2025
   (`tests/diff_rot/run_bekki.py`, needs their `data/diff_rot.npz`, not in the repo): five modes within 0.2 nHz in
   frequency and 0.4 nHz in growth rate of their compressible values; set-up and results in `docs/benchmarks.md`
@@ -331,7 +338,7 @@ flow U₀ = Gaspard ΔΩ r sin θ e_φ in the frame Ω_ref. It works with any ba
 
 Radial integrals use Gauss–Legendre with 3N/2 nodes (`upp.setup_grid`); energies are ρ₀-weighted. Per solution the
 table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-convergence, max of the curl of the viscous force
-(cvf_r, cvf_l, cvfmax; r < 0.01 skipped at ricb = 0) and residens.
+(cvf_r, cvf_l, cvfmax; r < 0.01 skipped at ricb = 0), residens and, at ricb = 0, irreg₀ (§5).
 
 - residσ (`resid1`): 2σKE − Dkin − Wthm − Wdr − Wlor = 0; residω (`resid2`): the imaginary part with Coriolis;
   resid𝑠 (`resid3`): 2σTE − Dthm − Wadv − Wdr_thm = 0 (TE = ½∫p₀|s|²); residens: enstrophy balance; with `magnetic = 1`
@@ -424,8 +431,9 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   x1 ≥ ricb + 3 w1); a tiny ThermaD (1e-9) reproduces ThermaD = 0 eigenvalues except with the thermal wind and
   fixed-entropy walls (boundary layer, `docs/background.md`, ThermaD = 0). Raise `nev` by 1–2 if spurious modes take slots.
 - **ricb = 0**: profiles must be smooth and of the right parity at r = 0 (stratification 'top hat' needs x1 ≥ ~6 w1;
-  'odd top hat' and 'solar_rz' are smooth there). Model S profiles need ~100 Chebyshev polynomials per parity;
-  ru_insane fails at N 96 there.
+  'odd top hat' and 'solar_rz' are smooth there) and a degree-n profile must go as r^n (§5). Model S profiles need ~100
+  Chebyshev polynomials per parity; ru_insane fails at N 96 there. Inviscid and ThermaD = 0 full-sphere spectra hold
+  spurious modes that do not converge in N or lmax, many of them at the centre (irreg₀ 0.02–2).
 - **Open physics items** (§15, threads 11 and 13): the thermal wind omits the p₁S₀′ term, which matters where S₀′ ≠ 0
   (the 'solar_rz' interior); with the diffusionless thermal wind there are small-scale growing modes peaking at
   l ≈ lmax that do not converge in lmax (physical or not is open); the σₙ (ln ρ₀)′ heat rows converge slowly in N near

@@ -64,6 +64,9 @@ def check():
     for name, new in REMOVED.items():
         if hasattr(par, name):
             sys.exit('par.%s is no longer read: set %s' % (name, new))
+    if par.N % 2:   # NEW (2026-11-04): the operators of submatrices.py assume an even N (an odd one stopped there with a scipy error)
+        sys.exit('N must be even, got N = %r (the operators assume it, in a shell too; a full sphere uses N/2 Chebyshev '
+                 'polynomials of each parity)' % (par.N,))
     if par.structure == 'uniform':   # its name from 2026-10-26 to 2026-10-28
         sys.exit("structure 'uniform' is now called 'Boussinesq' (the same ρ0 = p0 = 1, g = r)")
     if par.structure not in STRUCTURES:
@@ -391,3 +394,95 @@ def diffusivity(prf, r, which):
 def nu_floor():
     '''the part of ν/ViscosD that is not turbulent (forcing 11): visc0 below the step of 'step' and 'solar_rz' if < 1'''
     return par.visc0 if par.diffusivity in ('step', 'solar_rz') and par.visc0 < 1 else 0.
+
+
+# ---------------------------------------------------------------------------------- NEW (2026-11-04): the centre, ricb = 0
+
+def _on(f, r):
+    '''f at the radii r, as an array of the shape of r (a profile can be a constant, e.g. a 'step' diffusivity without a step)'''
+    return np.asarray(f(r), dtype=float) + np.zeros(np.shape(r))
+
+def irregular_part(f, n, scale, r0=0.02, J=30, M=100):
+    '''
+    How far the radial profile f(r) is from regular at r = 0, as fractions of scale: (L, K). WHY: in a full sphere a
+    background term of degree n (f(r) P_n(cos θ), the poloidal or toroidal scalar of a field of degree n, or n = 1 for the
+    radial vectors g and dS/dr) is smooth at the centre only if f is r^n times a series in r². kore evaluates the profiles
+    at |r| with the parity (-1)^n, which keeps the parity but neither removes the powers below r^n (the modes then have them
+    too: they are not regular at r = 0) nor smooths a kink of f(|r|) (the series in N then converge slowly); see
+    docs/numerical-method.md, Regularity at the centre. HOW: the largest residuals of least-squares fits to f at M Chebyshev
+    points of (0, r0) of r^n Σ_j c_j T_2j(r/r0), j < J (L), and of the same with r^(n mod 2) in place of r^n, a series of the
+    parity of n (K, the kink). The fits resolve far finer scales than kore's basis (erf(r/0.005) gives round-off), so a power
+    below r^n counts with its full size, while a kink counts only as far as the fit cannot follow it (4(1 - r) r: 8e-4).
+    '''
+    s = 0.5*(1 + np.cos(np.pi*(np.arange(M) + 0.5)/M))
+    y = _on(f, r0*s)
+    T = np.polynomial.chebyshev.chebvander(s, 2*J - 2)[:, 0::2]
+    res = lambda V: np.abs(y - V @ np.linalg.lstsq(V, y, rcond=None)[0]).max()/scale
+    return res(s[:, None]**n*T), res(s[:, None]**(n % 2)*T)
+
+def _form(n):
+    return 'a series in r²' if n == 0 else ('r' if n == 1 else 'r^%d' % n) + ' times a series in r²'
+
+def centre_check(prf):
+    '''
+    A WARNING for each background profile that is not regular at r = 0 (called by submatrices.py when ricb = 0), from its
+    irregular_part relative to the largest profile of its family (the degrees of ΔΩ, of S_tw, of the poloidal and of the
+    toroidal B0) or to its own maximum (ln ρ0, p0, g, dS/dr, ν, κ): a kink above 1e-8 (the series converge slowly in N),
+    and powers below r^n above 1e-8 and ten times the kink (the modes are not regular there); prf is the structure
+    (radial_profiles.prf). The rotation types that are irregular by construction get a message of their own, and their
+    S_tw is not checked again. Returns the number of warnings.
+    '''
+    import diff_rot as dr
+    import background_field as bf
+    rg = np.linspace(0, 1, 401)[1:]
+    nwarn = [0]
+    def family(profiles, ref):   # profiles: [(name, n, f)]; the scale is the largest |f| of them all
+        scale = max([np.abs(_on(f, rg)).max() for _, _, f in profiles] + [0.])
+        bad = False
+        for name, n, f in profiles:
+            L, K = irregular_part(f, n, scale) if scale > 0 else (0., 0.)
+            # (with the absolute floor of the parity check in submatrices.py: a family that vanishes identically, e.g. the S_tw
+            # of the 'cylindrical' rotation, is all round-off)
+            if K > 1e-8 and K*scale > 1e-13:
+                print('WARNING: %s is not smooth at r = 0: within r < 0.02 its %s extension to r < 0 differs from %s by %.1e of '
+                      '%s (a kink or a jump), so the full sphere (ricb = 0) converges slowly in N' %
+                      (name, 'odd' if n % 2 else 'even', _form(n % 2), K, ref))
+                bad = True; nwarn[0] += 1
+            if L > max(1e-8, 10*K) and L*scale > 1e-13:
+                print('WARNING: %s is not regular at r = 0: within r < 0.02 it differs from %s by %.1e of %s, so in the full '
+                      'sphere (ricb = 0) the modes are not regular there either' % (name, _form(n), L, ref))
+                bad = True; nwarn[0] += 1
+        return bad
+    rot_bad = False
+    if par.diff_rot:
+        t = par.diff_rot_type
+        if t in ('Y20', 'conical'):
+            print("WARNING: diff_rot_type %r is not regular at r = 0 (its P2 term does not vanish there as r²): in the full "
+                  'sphere (ricb = 0) the modes are not regular at the centre either' % t)
+            rot_bad = True; nwarn[0] += 1
+        elif t == 'Y20-wall-bounded' or (t == 'shellular' and not (par.diff_rot_param % 2 == 0 and par.diff_rot_param > 0)):
+            # ΔΩ is used at |r| (diff_rot.fX): (1 - r) r and r**σ - 1 have a kink at r = 0
+            print('WARNING: diff_rot_type', t, 'is not smooth at r = 0, the full sphere (ricb = 0) converges slowly in N')
+            rot_bad = True; nwarn[0] += 1
+        else:
+            rot_bad = family([('f_%d of the rotation (diff_rot_type %r)' % (n, t), n, lambda r, n=n: dr.raw(n, r))
+                              for n in dr.degrees()], 'max |f_n|')
+        if par.thermal and (par.thermal_wind == 3 or (par.thermal_wind in (1, 2) and not rot_bad)):
+            family([('σ_%d of the thermal wind (thermal_wind %d)' % (n, par.thermal_wind), n, lambda r, n=n: dr.sigma(n, r, 0))
+                    for n in dr.tw_degrees()], 'max |σ_n|')
+    if par.magnetic:
+        pol, tor = bf.raw_profiles()
+        family([('h_%d of B0 %r' % (n, par.B0), n, f) for n, f in pol.items()], 'max |h_n|')
+        what = ', '.join(([] if par.B0_tor is None else ['B0_tor %r' % (par.B0_tor,)]) + (['B0_wound'] if bf.wound_on() else []))
+        family([('k_%d of the toroidal field (%s)' % (n, what), n, f) for n, f in tor.items()], 'max |k_n|')
+    singles = [('ln ρ0', 0, lambda r: prf.logrho(r, 0), 'structure'), ('p0', 0, lambda r: prf.pressure(r, 0), 'structure'),
+               ('g', 1, lambda r: prf.gravity(r, 0), 'structure')]
+    if par.thermal:
+        singles += [('dS/dr', 1, prf.gradS, 'stratification')]
+    if par.ViscosD > 0:
+        singles += [('ν', 0, lambda r: diffusivity(prf, r, 'nu'), 'diffusivity')]
+    if par.thermal and par.ThermaD > 0:
+        singles += [('κ', 0, lambda r: diffusivity(prf, r, 'kappa'), 'diffusivity')]
+    for name, n, f, kind in singles:
+        family([('%s (%s %r)' % (name, kind, getattr(par, kind)), n, f)], 'max |%s|' % name)
+    return nwarn[0]

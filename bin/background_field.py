@@ -224,6 +224,11 @@ def h(r, k):
              + 2*x**2*jl(0,b,0)*nl(0,x,1) + 8*jl(0,b,0)*nl(1,x,0) - 8*x*jl(0,b,0)*nl(1,x,1) + x**3*jl(0,b,0)*nl(1,x,1) )/r**3
 
 
+def _expr(expr, p, name):
+    '''NEW (2026-11-04): f(r) of a 'general' or 'user' expression in r and p (the numpy names of USER_NS), as written'''
+    code = compile(expr, name, 'eval')
+    return lambda r: np.broadcast_to(np.asarray(eval(code, {'__builtins__': {}}, dict(USER_NS, r=r, p=p)), dtype=float), np.shape(r))
+
 _gen = {}
 def _gen_interp(kind, n):
     '''
@@ -236,9 +241,7 @@ def _gen_interp(kind, n):
     key = (kind, n)
     if key not in _gen:
         expr = (par.B0_profiles if kind == 'h' else par.B0_tor_profiles)[n]
-        code = compile(expr, '<B0 %s_%d>' % (kind, n), 'eval')
-        p = par.B0_param if kind == 'h' else par.B0_tor_param
-        f = lambda r: np.broadcast_to(np.asarray(eval(code, {'__builtins__': {}}, dict(USER_NS, r=r, p=p)), dtype=float), np.shape(r))
+        f = _expr(expr, par.B0_param if kind == 'h' else par.B0_tor_param, '<B0 %s_%d>' % (kind, n))
         deg = max(64, 2*par.N)
         if par.ricb == 0:
             c = np.polynomial.chebyshev.Chebyshev.interpolate(lambda r: f(np.abs(r))*np.sign(r)**n, deg, domain=[-1., 1.])
@@ -283,16 +286,21 @@ def _ferraro_raw(n, r):
 
 def ferraro_profile(n, r, d):
     '''the d-th r-derivative of h_n of 'ferraro' (without cnorm): a Chebyshev interpolant of degree max(64, 2N), on [-1, 1] at |r|
-    with the parity (-1)^n in a full sphere'''
-    if n not in _fer:
+    with the parity (-1)^n in a full sphere. FIX (2026-11-04): the coefficients of every degree are cut at 1e-13 of the largest
+    of all the degrees, as wound_profiles does; the cut at 1e-13 of each degree's own largest kept the round-off of the
+    degrees that should vanish (3 to 15 for the uniform field of the 'cylindrical' rotation), which their third derivatives
+    raised to 1e-7, with the wrong parity in a full sphere (30 parity WARNINGs of submatrices.py)'''
+    if not _fer:
         deg = max(64, 2*par.N)
-        if par.ricb == 0:
-            g = lambda rr: _ferraro_raw(n, np.maximum(np.abs(rr), 1e-12))*np.sign(rr)**n
-            c = np.polynomial.chebyshev.Chebyshev.interpolate(g, deg, domain=[-1., 1.])
-        else:
-            c = np.polynomial.chebyshev.Chebyshev.interpolate(lambda rr: _ferraro_raw(n, rr), deg, domain=[par.ricb, 1.])
-        c.coef[np.abs(c.coef) < 1e-13*np.abs(c.coef).max()] = 0.
-        _fer[n] = c
+        for m in ferraro_degrees():
+            if par.ricb == 0:
+                g = lambda rr, m=m: _ferraro_raw(m, np.maximum(np.abs(rr), 1e-12))*np.sign(rr)**m
+                _fer[m] = np.polynomial.chebyshev.Chebyshev.interpolate(g, deg, domain=[-1., 1.])
+            else:
+                _fer[m] = np.polynomial.chebyshev.Chebyshev.interpolate(lambda rr, m=m: _ferraro_raw(m, rr), deg, domain=[par.ricb, 1.])
+        big = max(np.abs(c.coef).max() for c in _fer.values())
+        for c in _fer.values():
+            c.coef[np.abs(c.coef) < 1e-13*big] = 0.
     c = _fer[n]
     r = np.asarray(r, dtype=float)
     return c.deriv(d)(r) if d > 0 else c(r)
@@ -385,8 +393,7 @@ def k_user():
     '''the Chebyshev interpolant (degree max(64, 2N) on [ricb, 1]) of the 'user' expression B0_tor_profile'''
     global _kuser
     if _kuser is None:
-        code = compile(par.B0_tor_profile, '<B0_tor_profile>', 'eval')
-        f = lambda r: np.broadcast_to(np.asarray(eval(code, {'__builtins__': {}}, dict(USER_NS, r=r, p=par.B0_tor_param)), dtype=float), np.shape(r))
+        f = _expr(par.B0_tor_profile, par.B0_tor_param, '<B0_tor_profile>')
         if par.ricb == 0:   # NEW (2026-10-28): full sphere, at |r| with the parity (-1)^n (the expression should go as r^n at r = 0)
             g = lambda r: f(np.abs(r))*np.sign(r)**par.B0_tor_l
             _kuser = np.polynomial.chebyshev.Chebyshev.interpolate(g, max(64, 2*par.N), domain=[-1., 1.])
@@ -466,6 +473,31 @@ def tor_profiles():
             w = lambda r, d, c=c: c.deriv(d)(r) if d > 0 else c(r)
             out[n] = w if n not in out else (lambda r, d, a=out[n], b=w: a(r, d) + b(r, d))
     return out
+
+def raw_profiles():
+    '''
+    NEW (2026-11-04): the poloidal and toroidal background degree by degree, ({n: cnorm h_n(r)}, {n: cnorm_tor k_n(r)}) at r > 0,
+    as pol_profiles and tor_profiles but with the expressions of 'general' and B0_tor 'user' and the projection of 'ferraro'
+    themselves in place of their Chebyshev interpolants: background.centre_check tests these, since an interpolant at |r|
+    rounds off a kink at r = 0.
+    '''
+    pol = {n: (lambda r, f=f: f(r, 0)) for n, f in pol_profiles().items()}
+    tor = {n: (lambda r, f=f: f(r, 0)) for n, f in tor_profiles().items()}
+    if not par.magnetic:
+        return pol, tor
+    if par.B0 == 'general':
+        pol = {n: (lambda r, g=_expr(e, par.B0_param, ''): cnorm*g(r)) for n, e in par.B0_profiles.items()}
+    elif par.B0 == 'ferraro':
+        pol = {n: (lambda r, n=n: ferraro_cnorm()*_ferraro_raw(n, r)) for n in ferraro_degrees()}
+    raw = {}
+    if par.B0_tor == 'general':
+        raw = {n: (lambda r, g=_expr(e, par.B0_tor_param, ''): cnorm_tor*g(r)) for n, e in par.B0_tor_profiles.items()}
+    elif par.B0_tor == 'user':
+        raw = {par.B0_tor_l: (lambda r, g=_expr(par.B0_tor_profile, par.B0_tor_param, ''): cnorm_tor*g(r))}
+    for n, g in raw.items():   # plus the wound field where it is on (a Chebyshev series, regular by construction)
+        w = wound_profiles().get(n) if wound_on() else None
+        tor[n] = g if w is None else (lambda r, g=g, w=w: g(r) + w(r))
+    return pol, tor
 
 # -------------------------------- NEW (2026-10-30): B0_wound, the toroidal field the differential rotation winds from B0
 # WHY. A poloidal B0 that crosses the surfaces of constant rotation (B0⋅∇ΔΩ ≠ 0, not Ferraro) is wound up by ΔΩ into an

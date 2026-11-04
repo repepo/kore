@@ -41,6 +41,7 @@ Columns, counted from 1:
 | 24–25 | the power of the viscous stress on the fluid at the inner and at the outer wall, $2\,\mathrm{Re}\oint\mathbf u^*\cdot\boldsymbol\sigma\cdot\mathbf n\thinspace dA$ |
 | 26 | the viscous dissipation $\int\boldsymbol\sigma:\nabla\mathbf u\thinspace dV = \int 2\rho_0\nu\thinspace\mathsf e_d:\mathsf e_d\thinspace dV \geq 0$ ($\mathsf e_d$ the deviatoric rate of strain), from an $(r, \theta)$ grid; column 4 is $\int\mathbf u\cdot(\nabla\cdot\boldsymbol\sigma)\thinspace dV$ = columns 24 + 25 − 26 |
 | 27 | the relative residual of that identity |
+| 28 | in a full sphere, irreg₀: how far the solution is from smooth at the centre ([Regularity at the centre](numerical-method.md#regularity-at-the-centre)); NaN with an inner core |
 
 ## `thermal.dat`
 

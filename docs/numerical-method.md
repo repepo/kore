@@ -106,6 +106,41 @@ The density enters the stress-free and no-slip rows through $u_\theta$ and $u_\p
 only when `ThermaD > 0`. Without viscosity only $P_l = 0$ is imposed. `bco = 2` (and `bci = 2`) replaces $u_r = 0$ by a
 zero viscous radial stress, $\left[r(\ln\rho_0)' - 3\right]P_l + 3rP_l' = 0$, which does not contain the pressure.
 
+## Regularity at the centre
+
+The centre of a full sphere is not a boundary, but the fields must be smooth there, and kore imposes no condition to
+make them so. This section says why none is needed, when a solution is still not smooth at the centre, and how to
+check it.
+
+A field that is smooth at the centre has radial functions that go as $r^l$ there, for a component of degree $l$, times
+a series in $r^2$. The basis gives $P_l$, $T_l$, $s_l$ (and the $f_l$, $g_l$ of a magnetic field) the parity of $l$, and
+the equations exclude the lower powers of that parity, as long as the background is smooth at the centre too. Each
+background profile follows the same rule with its own degree $n$: the $f_n$ of a differential rotation, the $h_n$,
+$k_n$ of a magnetic field and the $\sigma_n$ of a thermal wind go as $r^n$, $dS/dr$ and $g$ as $r$, and $\ln\rho_0$,
+$p_0$, $\nu$, $\kappa$ are series in $r^2$. kore evaluates every profile at $\lvert r\rvert$ with the parity of its
+degree, which gives the parity but neither the power nor the smoothness. A profile can fail in two ways:
+
+- **It lacks the power.** The $P_2$ term of `'Y20'` and `'conical'`, and the entropy of `thermal_wind` 3, keep their
+  value at the centre. The modes converge in N, but to solutions that are not smooth there either.
+- **It has a kink or a jump.** Its even or odd continuation to $r < 0$ is not smooth: `'Y20-wall-bounded'`,
+  `'shellular'` unless $\sigma$ is even and positive, a `'user'` expression in $\lvert r\rvert$, a $dS/dr$ that changes
+  abruptly near the centre. The modes then converge slowly in N.
+
+With `ricb = 0`, `submatrices.py` checks every profile near the centre and prints a WARNING for each failure
+(`background.centre_check`).
+
+**Spurious modes.** Without viscosity (`ViscosD = 0`) or with `ThermaD = 0`, the spectrum of a full sphere also holds
+modes that do not converge when N or lmax is raised: without viscosity some of them grow, with `ThermaD = 0` they
+crowd near zero frequency. Many of them sit at the centre, where they are not smooth; others sit at the wall.
+Target the frequency of the mode you want, and keep the modes that stay put in N and lmax.
+
+**irreg₀.** In a full sphere `spin_doctor` prints irreg₀ for each solution (column 28 of `flow.dat`): the largest term
+$a_p r^p$ with $p < l$ of the flow and of the field, at $r = \pi/\mathrm N$ (about the spacing of the Chebyshev points
+at the centre), relative to their largest value (`utils4pp.centre_irregularity`). It is at round-off for a resolved
+smooth mode and near 1 for a spurious mode at the centre. Values in between come from a background that is not smooth
+at the centre, or from a mode that is not resolved there. After the table `spin_doctor` counts the solutions above
+$10^{-6}$.
+
 ## Checks
 
 `spin_doctor.py` evaluates the budgets of [Energy balance](anelastic.md#energy-balance) for each solution, from the

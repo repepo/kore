@@ -162,7 +162,10 @@ class default_params():
         # self.diff_rot_type = 'ferraro'  # NEW (2026-10-30): ΔΩ = F(ψ) from the poloidal background field (magnetic = 1), ψ its flux
         #   function and F = diff_rot_F: a steady background with B0 (Ferraro); even degrees up to diff_rot_nmax. The reverse
         #   of B0 = 'ferraro' (the field from a given rotation); the two cannot be combined
-        #   'Y20-wall-bounded' and 'shellular' (unless σ is even and > 0) are not smooth at r = 0: use ricb > 0.
+        #   At ricb = 0, 'Y20' and 'conical' are not regular (their P2 term does not vanish at r = 0), and
+        #   'Y20-wall-bounded' and 'shellular' (unless σ is even and > 0) are not smooth there (a kink): use ricb > 0.
+        #   submatrices.py warns about them and about any other profile that is not regular at the centre (NEW 2026-11-04;
+        #   docs/numerical-method.md, Regularity at the centre).
         self.diff_rot_ampl = 1.0  # the factor of ΔΩ, for every type (1 for 'solar', 'solar_P4', 'tabulated': the profile itself)
         self.diff_rot_F = 'psi'  # NEW (2026-10-30): 'ferraro': F, a numpy expression of psi (the flux function of B0) and p
         self.diff_rot_param = 0.0  # the shape parameter of the types that have one: σ for 'shellular'; p in 'user' expressions
@@ -404,7 +407,7 @@ class default_params():
         # Number of cpus
         self.ncpus = 2
 
-        # Chebyshev polynomial truncation level. Use function def at top or set manually. N must be even if ricb = 0.
+        # Chebyshev polynomial truncation level. Use function def at top or set manually. N must be even (kore stops otherwise).
         # With ricb = 0 only N/2 polynomials of one parity are used, so use about twice the N of a shell run.
         # Thermal runs: on the anel10 thermal setup (ricb 0.02, layer edges 0.03 wide), N = 480 under-resolves the more
         # damped modes at ThermaD 0 and 1e-9 (residσ up to 1e-4); N = 560 gives residσ <= 3.4e-8 and N = 640 <= 3.4e-11.

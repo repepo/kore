@@ -233,12 +233,12 @@ with a solar structure, $x = r$ otherwise.
 | `diff_rot_type` | $\Delta\Omega(r,\theta)$ | degrees | notes |
 | --- | --- | --- | --- |
 | `'rigid'` | $a$ | $P_0$ | test profile: a uniform offset of the rotation rate, with an exact answer (below); $a = 0$ gives uniform rotation with the diff-rot machinery on (needed for `thermal_wind = 3`) |
-| `'Y20'` | $a\thinspace P_2(\cos\theta)$ | $P_2$ | $P_2$ unnormalised, despite the name |
+| `'Y20'` | $a\thinspace P_2(\cos\theta)$ | $P_2$ | $P_2$ unnormalised, despite the name; not regular at $r = 0$: use ricb > 0 |
 | `'Y20-wall-bounded'` | $a\thinspace (1 - r)(r - r_i)\thinspace P_2(\cos\theta)$, $r_i$ = `ricb` | $P_2$ | not smooth at $r = 0$: use ricb > 0 |
 | `'shellular'` | $a\thinspace (r^\sigma - 1)$, $\sigma = p$ | $P_0$ | Baruteau & Rieutord 2013 ($a = 1$); not smooth at $r = 0$ unless $\sigma$ is even and positive |
 | `'shellular_boussinesq'` | $\tfrac12 N_0^2\thinspace (1 - r^2)$, $N_0^2 = a$ | $P_0$ | Mirouh et al. 2016; use `thermal_wind = 0` (their background has no thermal wind), structure `'Boussinesq'` and stratification `'linear'` |
 | `'cylindrical'` | $\varepsilon\thinspace r^2\sin^2\theta$, $\varepsilon = a$ | $P_0$, $P_2$ | Baruteau & Rieutord 2013; barotropic, $S_{tw} = 0$ |
-| `'conical'` | $\varepsilon\sin^2\theta$, $\varepsilon = a$ | $P_0$, $P_2$ | Guenel et al. 2016 |
+| `'conical'` | $\varepsilon\sin^2\theta$, $\varepsilon = a$ | $P_0$, $P_2$ | Guenel et al. 2016; not regular at $r = 0$: use ricb > 0 |
 | `'solar'` | $a\thinspace \times$ helioseismic fit, $P_0 + P_2$, tanh step at $x = 0.71$ of width 0.1 | $P_0$, $P_2$ | relative to 435 nHz; 4.5 nHz too fast at the equator and 12 nHz at the pole compared with the observations |
 | `'solar_P4'` | $a\thinspace (\Omega/\Omega_{\rm ref} - 1)$, $\Omega$ the fit below | $P_0$, $P_2$, $P_4$ | `diff_rot_solar`, `diff_rot_frame`; defaults from Mukhopadhyay et al. 2026 |
 | `'tabulated'` | $a\thinspace (\Omega/\Omega_{\rm ref} - 1)$, $\Omega$ from `diff_rot_file` | $P_0 \dots P_{n_{\max}}$ | below |
@@ -310,6 +310,7 @@ differential rotation adds to the heat equation. The advection of $s$ by the rot
   rotation alone, set `thermal_wind = 0`.
 - With `magnetic = 1`, $S_{tw}$ leaves out the force of the background field: it is the same as in a run without a field
   ([Magnetic field](magnetic.md)).
+- `thermal_wind` 3 is uniform in $r$, so in a full sphere it is not regular at the centre and `submatrices.py` warns.
 
 ### Resolution and cost
 
@@ -318,9 +319,12 @@ differential rotation adds to the heat equation. The advection of $s$ by the rot
   $n_{\max}$ ($P \to P$, $T \to T$) or $n_{\max} + 1$ ($P \leftrightarrow T$).
 - $S_{tw}$ has degrees up to $n_{\max} + 2$ (`thermal_wind` 1) or $2n_{\max} + 2$ (`thermal_wind` 2), and the heat rows
   couple degrees that far apart. Matrices are therefore widest with `'tabulated'` and a large `diff_rot_nmax`.
-- With `ricb = 0` (a full sphere) the profiles are evaluated at $\lvert r\rvert$, to keep them smooth at the centre.
-  `'Y20-wall-bounded'` and `'shellular'` (except even $\sigma > 0$) have a kink at $r = 0$ and `submatrices.py` prints a
-  WARNING. The `'solar'` tachocline step needs N ≈ 400 at `ricb = 0`.
+- With `ricb = 0` (a full sphere) each $f_n$ is evaluated at $\lvert r\rvert$, and it is smooth at the centre only if
+  it goes as $r^n$ there ([Regularity at the centre](numerical-method.md#regularity-at-the-centre)). `'Y20'` and
+  `'conical'` keep their $P_2$ term at the centre, `'Y20-wall-bounded'` and `'shellular'` (except even $\sigma > 0$)
+  have a kink there, and the fit of a `'tabulated'` rotation leaves its $f_n$ a small value there (about $10^{-5}$ of the
+  largest for the HMI table); `submatrices.py` prints a WARNING for each. The `'solar'` tachocline step needs N ≈ 400 at
+  `ricb = 0`.
 - Modes that reach into a radiative interior have short radial wavelengths. In a full sphere with the radiative
   interior of stratification `'solar_rz'`, solar inertial modes needed N = 768 to 1024 for the `spin_doctor`
   residuals, although their eigenvalues converge at a lower N. [Solver](solver.md) has the memory this takes.
@@ -341,7 +345,9 @@ par.diffusivity_profiles = {'nu': '0.01 + 0.99*0.5*(1 + tanh((x - 0.70)/0.015))'
 ```
 
 kore evaluates them at $\lvert r\rvert$, so in a full sphere $dS/dr$ is odd and $\hat\nu$, $\hat\kappa$ and the $f_n$ are
-even whatever the expression; for a profile that is smooth at the centre, $dS/dr$ should still vanish there. The
+even whatever the expression. They are smooth at the centre only if the expression is: an odd power of $r$ in an even
+profile, or an even one in $dS/dr$, makes a kink, and $dS/dr$ must vanish there as $r$, $f_n$ as $r^n$. `submatrices.py`
+warns about both ([Regularity at the centre](numerical-method.md#regularity-at-the-centre)). The
 expressions must not contain `#`: `spin_doctor` writes them at the end of each `params.dat` row, after a `#`.
 
 ## Checks
@@ -349,5 +355,7 @@ expressions must not contain `#`: `spin_doctor` writes them at the end of each `
 Before anything is built, kore stops on a background that cannot work: an unknown type, a parameter name of an older
 version of kore (the message gives the replacement), `'Wu 2005'` without $0 <$ `r_out` $< 1$, `'inverse square'` with
 `ricb = 0`, $\delta$ without `'solar_rz'`, or a `'user'` expression that does not evaluate. `submatrices.py` also warns
-about any name in the parameter file that kore does not define, so a misspelt name is not ignored without notice.
+about any name in the parameter file that kore does not define, so a misspelt name is not ignored without notice, and
+in a full sphere about each profile that is not smooth at the centre
+([Regularity at the centre](numerical-method.md#regularity-at-the-centre)).
 `spin_doctor` records the background of every solution in `params.dat` ([Output files](output.md)).

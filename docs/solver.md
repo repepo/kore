@@ -20,7 +20,9 @@ same MUMPS option is `st_mat_mumps_...` in one and `mat_mumps_...` in the other.
 
 Judge each solution with `spin_doctor.py`, not with the residual that `solve.py` prints: with the Ruiz prescaling (on by
 default) that one is for the rescaled problem. Accept a mode when its energy and entropy residuals (residσ, resid𝑠)
-are below 1e-5 and its ℓ-convergence is below 1e-4. The same residuals judge a forced run, where σ = 0. When the walls
+are below 1e-5 and its ℓ-convergence is below 1e-4. In a full sphere, also check irreg₀: above 1e-6 the mode is not
+smooth at the centre ([Regularity at the centre](numerical-method.md#regularity-at-the-centre)). The same residuals judge
+a forced run, where σ = 0. When the walls
 move radially (forcing 14), residσ also tests the pressure at the walls, which needs more radial resolution than the rest
 of the budget ([Tidal forcing](tidal-forcing.md#interpreting-the-response)).
 
@@ -28,7 +30,7 @@ A failure is one of two kinds:
 
 - **Resolution.** It fails every time, and the eigenvalue moves when N or lmax is raised. Raise N for the residuals and
   lmax for the ℓ-convergence. In a full sphere (ricb = 0) N counts both parities, so it needs about twice the N of a
-  shell.
+  shell. N must be even.
 - **Solver.** It comes and goes between identical runs, or between runs with nearly the same parameters. See below.
 
 ## Bad solutions
@@ -36,6 +38,7 @@ A failure is one of two kinds:
 | symptom | what to try |
 | --- | --- |
 | the mode you want is not among the solutions | put the target on it (`units.set_target(par, omega=..., sigma=...)`, in nHz) and raise `nev`; to look for growing modes, put the target at σ > 0 |
+| in a full sphere without viscosity or with `ThermaD` = 0, modes that move when N or lmax is raised, some of them growing, many with irreg₀ near 1 | spurious modes ([Regularity at the centre](numerical-method.md#regularity-at-the-centre)): target the mode you want and keep the modes that stay put in N and lmax |
 | the run stops with `INFOG(1)=-9` | MUMPS's workspace is too small: `st_mat_mumps_icntl_14` = 50, then 100–200 (extra workspace, in %) |
 | a forced run returns NaN | the same failure, but PETSc does not stop a forced solve: it returns Inf. Set `mat_mumps_icntl_14` = 100; `mat_mumps_icntl_4` = 1 prints MUMPS's error codes |
 | the run stops with `INFOG(1)=-13`, or is killed | out of memory: see below |

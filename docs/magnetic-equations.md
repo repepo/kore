@@ -128,9 +128,9 @@ monomials, a polynomial of degree $2p + l$ loses all its digits to cancellation 
 
 **Any degrees.** `'general'` takes one profile $h_n$ per degree, given as expressions. Their derivatives come from
 Chebyshev interpolants (degree max(64, 2N)); in a full sphere they are evaluated at $\lvert r\rvert$ with the parity
-$(-1)^n$, and $h_n$ should go as $r^n$ at the centre. The degrees must have one parity (one equatorial symmetry); the
-lowest sets it. `cnorm = 'mag_energy'` sums $\int B_0^2\,dV$ over the degrees. The couplings come from the recurrence
-algebra ([Couplings for any background](#couplings-for-any-background)).
+$(-1)^n$, and $h_n$ should go as $r^n$ at the centre (`submatrices.py` warns otherwise). The degrees must have one
+parity (one equatorial symmetry); the lowest sets it. `cnorm = 'mag_energy'` sums $\int B_0^2\,dV$ over the degrees.
+The couplings come from the recurrence algebra ([Couplings for any background](#couplings-for-any-background)).
 
 ### Toroidal fields
 
@@ -275,7 +275,9 @@ change or extend the code.
   degree and $k$ that of $(-1)^n$ (`utils.odd_profiles`, both slots of a label). There is one boundary-condition row per
   block, the insulating condition at the outer wall (`assemble.bc_b_spherical`). The fields are regular at the centre:
   FDM $j_l(\beta r)$ (analytic derivatives, `background_field.jl_k`), the polynomial fields, 'wall' $= r^n(1 - r^2)$,
-  'Malkus' for $n = 1$ only ($k = r$ is not regular for $n = 2$), 'user' as $f(\lvert r\rvert)\,\mathrm{sign}(r)^n$.
+  'Malkus' for $n = 1$ only ($k = r$ is not regular for $n = 2$). 'general' and 'user' are evaluated as
+  $f(\lvert r\rvert)\,\mathrm{sign}(r)^n$, regular only if $f$ goes as $r^n$ times a series in $r^2$; `submatrices.py`
+  warns otherwise ([Regularity at the centre](numerical-method.md#regularity-at-the-centre)).
   `cnorm` and `cnorm_tor` are computed as with an inner core; spin_doctor's inner-wall terms are skipped.
 - **Inviscid runs** (`ViscosD = 0`, full sphere only). The Lorentz labels have $D^3$ (rows u) and $D^2$ (rows v), so the
   rows are in $C^{(3)}$ (u) and $C^{(2)}$ (v), with one boundary-condition row ($u_r = 0$) in u and none in v; without a

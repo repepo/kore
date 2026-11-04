@@ -1893,3 +1893,47 @@ def identify(sol2):
     convergence = amps[-1] / amps[ maxid1 ]
 
     return max_ell, spread, convergence
+
+
+
+_centre_taylor = {}   # NEW (2026-11-04): (N, lmax) -> the Taylor table and grid of centre_irregularity
+
+def centre_irregularity(groups):
+    '''
+    NEW (2026-11-04): ricb = 0, how far a solution is from regular at r = 0. A degree-l component of a regular field goes as
+    r^l there, but kore's radial basis keeps only the parity of l, so the Taylor terms a_p r^p, p < l, of that parity can
+    appear: in spurious or unresolved modes, or with a background that is not regular at the centre (docs/numerical-method.md,
+    Regularity at the centre). Returns the largest |a_p| h^p, h = π/N (about the spacing of the Chebyshev points at the
+    centre), over the components of a group, relative to the largest |X_l(r)| of the group, and the largest over the groups.
+    groups: [[(C, ls), ...], ...], e.g. [[(P, lp), (T, lt)]] for the flow, C the Chebyshev coefficients (one row per l, as
+    from expand_reshape_sol) and ls their degrees. WHY h^p: a_p alone amplifies the radial truncation by up to N^p/p!, while
+    the h^p T_k^(p)(0)/p! of one T_k, k < N, add up to at most cosh π ≈ 12, so a resolved regular solution stays at round-off
+    for any N and l, and a solution irregular at the scale of the grid gives about 1.
+    '''
+    P = int(max(max(ls) for group in groups for _, ls in group))
+    if (par.N, P) not in _centre_taylor:
+        N, h = par.N, np.pi/par.N
+        t = np.zeros((P, N))   # t[p, k] = h^p T_k^(p)(0)/p!, the coefficient of y^p in T_k(h y) (x = r/rcmb at ricb = 0)
+        t[0, 0] = 1.
+        if N > 1 and P > 1:
+            t[1, 1] = h
+        for k in range(1, N - 1):   # T_(k+1) = 2x T_k - T_(k-1)
+            t[1:, k + 1] = 2*h*t[:-1, k]
+            t[:, k + 1] -= t[:, k - 1]
+        _centre_taylor.clear()
+        _centre_taylor[(par.N, P)] = (t, ch.chebvander(np.linspace(0, 1, 2*N + 1), N - 1))
+    t, V = _centre_taylor[(par.N, P)]
+    p = np.arange(P)
+    out = 0.0
+    for group in groups:
+        big = max(np.abs(V @ np.asarray(C).T).max() for C, _ in group)
+        if big == 0:
+            continue
+        worst = 0.0
+        for C, ls in group:
+            l = np.asarray(ls)[:, None]
+            low = (p < l) & ((l - p) % 2 == 0)   # the powers a regular solution lacks
+            if low.any():
+                worst = max(worst, np.abs((np.asarray(C) @ t.T)[low]).max())
+        out = max(out, worst/big)
+    return out

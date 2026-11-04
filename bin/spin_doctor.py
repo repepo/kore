@@ -197,6 +197,8 @@ def ratio(a, b):
 
 
 
+IRREG0_NOTE = 1e-6   # NEW (2026-11-04): main() counts the solutions with irreg₀ above this, after the table
+
 def table_widths(cols):
     '''
     Width of each column of the summary table: the wider of its header and a formatted
@@ -294,6 +296,7 @@ def main(ncpus):
     ldom        = np.zeros(success,dtype=int)
     lwidth      = np.zeros(success,dtype=int)
     lconv       = np.zeros(success)
+    irreg0      = np.full(success, np.nan)  # NEW (2026-11-04): ricb = 0, the part of the flow and field not regular at r = 0
 
     # thermal variables to be processed
     TE          = np.zeros(success)
@@ -354,7 +357,9 @@ def main(ncpus):
         ( 'cvf_l',         '{:d}',      lambda i: cuvismax_l[i] ),
         ( 'cvfmax',        '{:8.2e}',   lambda i: cuvismax[i] ),
         ( 'residens',      '{:8.2e}',   lambda i: resens[i] ),
-    ]
+    ] + ([   # NEW (2026-11-04): a full sphere, the Taylor terms at r = 0 that a regular solution lacks
+        ( 'irreg₀',        '{:8.2e}',   lambda i: irreg0[i] ),   # (upp.centre_irregularity)
+    ] if par.ricb == 0 else [])
     table_w = table_widths(table_cols)
     table_head, table_line = table_header(table_cols, table_w)
 
@@ -397,6 +402,13 @@ def main(ncpus):
 
         # identify solutions
         [ ldom[i], lwidth[i], lconv[i] ] = upp.identify( u_sol2 )
+
+        if par.ricb == 0:  # NEW (2026-11-04): how far the flow (and the field) is from regular at r = 0
+            groups = [ [ (u_sol2[0], lp), (u_sol2[1], lt) ] ]
+            if par.magnetic:
+                lbp, lbt = ut.ell(par.m, par.lmax, ut.bsymm)[:2]
+                groups.append( [ (b_sol2[0], lbp), (b_sol2[1], lbt) ] )
+            irreg0[i] = upp.centre_irregularity(groups)
 
         # diagnose solutions (serially since 2026-10-20, see upp.diagnose)
         [ udgn, tdgn ] = upp.diagnose( u_sol2, t_sol2, par.ricb, ut.rcmb, int(ncpus) )
@@ -524,6 +536,10 @@ def main(ncpus):
 
     # ------------------------------------------------------------------------------------------------------------------------
     print(table_line + '\n')
+    nirr = int(np.sum(irreg0 > IRREG0_NOTE))
+    if nirr:   # NEW (2026-11-04)
+        print('%d of the %d solutions have irreg₀ > %.0e: not regular at r = 0 (spurious or unresolved modes, or a background that is'
+              ' not regular there; docs/numerical-method.md, Regularity at the centre)\n' % (nirr, success, IRREG0_NOTE))
 
 
     # ---------------------------------------------------------- write post-processed data and parameters to disk
@@ -561,6 +577,7 @@ def main(ncpus):
         ( 'Wv_cmb',     Wv_cmb,     '%.9e' ),  #   and at the outer wall
         ( 'Dvisc',      Dvisc,      '%.9e' ),  # viscous dissipation ∫ 𝛔:∇𝐮 dV ≥ 0
         ( 'residD',     residD,     '%.9e' ),  # relative residual of Dkin = Wv_icb + Wv_cmb - Dvisc
+        ( 'irreg0',     irreg0,     '%.3e' ),  # NEW (2026-11-04): ricb = 0, irreg₀ (nan with an inner core)
     ]
     with open('flow.dat','ab') as dflo:
         np.savetxt(dflo, np.column_stack([ v for _, v, _ in flow_cols ]),

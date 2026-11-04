@@ -24,6 +24,8 @@ from parameters import par
 import utils as ut
 import diff_rot as dr
 import submatrix_io as smio   # NEW (2026-11-03)
+import background as bg
+import radial_profiles as rap
 
 
 
@@ -285,6 +287,11 @@ def main(ncpus):
             labl += [ lab ]
             arg2 += [ {'P': vP, 'T': vT, 'F': vF, 'G': vG}[kind] ]   # NEW (2026-10-30): F, G for the induction by the flow
 
+    if par.ricb == 0:
+        # NEW (2026-11-04): a WARNING for each profile that is not regular at r = 0, i.e. not r^n times a series in r² for its
+        # degree n (background.centre_check, which also gives the former warning on the kinks of 'Y20-wall-bounded', 'shellular')
+        bg.centre_check(rap.prf)
+
     # -------------------------------------------------------------------------------------------------------------------------------------------
     # ----------------------------------------------------------------------------------------------------- Generates the argument lists for Mlam
     # -------------------------------------------------------------------------------------------------------------------------------------------
@@ -328,10 +335,6 @@ def main(ncpus):
     # ---------------------------------------------------------------------------------------------------- Generate the Mlam matrices in parallel
     # -------------------------------------------------------------------------------------------------------------------------------------------
     pool2 = mp.Pool( processes = int(ncpus) )
-    if par.ricb == 0 and par.diff_rot == 1 and (par.diff_rot_type == 'Y20-wall-bounded' or
-            (par.diff_rot_type == 'shellular' and not (par.diff_rot_param % 2 == 0 and par.diff_rot_param > 0))):
-        # ΔΩ is used at |r| (diff_rot.fX): (1 - r) r and r**σ - 1 have a kink at r = 0
-        print('WARNING: diff_rot_type', par.diff_rot_type, 'is not smooth at r = 0, the full sphere (ricb = 0) converges slowly in N')
     if par.ricb == 0:  # profiles must have the parity assumed above, otherwise only part of them is kept
         for k,pkey1 in enumerate(pkey):
             c = np.abs(parg0[k])
