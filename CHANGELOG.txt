@@ -3,6 +3,44 @@ CHANGELOG - Kore, conductive_IC branch
 
 2026-11-04
 ----------
+New: latitude-dependent topographic drag at the CMB, topo_drag = 'rekier' (bin/topo.py (new), bin/assemble.py,
+bin/utils.py, bin/utils4pp.py, bin/spin_doctor.py, bin/params_default.py, tools/topo_iterate.sh (new), tools/get_data.py,
+docs/boundaries.md, docs/setup.md, docs/output.md)
+- The drag of internal waves radiated by the flow over CMB topography (Rekier, Triana, Barik, Abdulah & Kang,
+  arXiv:2507.01671, eqs. 20, 21, B1, B2, with the factor 4 pi^2 that the printed (B1) of v4 lacks restored: it is lost
+  between (A19) and (10), since with the (A2) convention eq. (12) makes |h^|^2/A = 4 pi^2 S; with it a sinusoidal ridge
+  gives Bell's rho U^2 h^2 k sqrt(N^2 - w^2)/4): a diagonal tensor diag(kappa_tt, kappa_pp)(theta) in units of
+  rho Omega R from the rms height topo_hrms and wavelength topo_lambda0 (in units of R) and the Hurst exponent topo_H of
+  the topography, N at the CMB from the stratification (BV2, BV2_comp with their profiles; 0 if unstable or without buoyancy; topo_N
+  overrides it) and the flow frequency w0 (the solver target's |Im tau|/OmgTau, the forcing frequency, or topo_omega).
+  bin/topo.py computes the tensor and the couplings of the CMB rows of P_l and T_l to all l' (within P and T, and P-T for
+  m != 0); assemble.bc_u_topo adds them to the stress-free rows, with the mantle's rotation for rotdyn. It cannot be
+  combined with kappa_cmb (utils.check_drag stops). spin_doctor: Dtopo from oint (u - v_m).K.(u - v_m)*
+  (upp.cmb_slip_K); params.dat gets topo_hrms, topo_lambda0, topo_H, topo_N_cmb and topo_omega (now 73 columns).
+- Rerun with the restored factor and topo_hrms = 2.73e-3/(2 pi): eigenvalues and Dtopo equal the earlier runs (with the
+  printed factor and 2.73e-3) to 2e-12 and 9e-11, kappa_eq = 4.4992e-6 again; topo_drag = None bit for bit, the w0
+  iteration converges in 3 steps, the 8 tests pass.
+- tools/topo_iterate.sh iterates w0 to the mode's frequency (track_target = 1): one pass of assemble, solve, spin_doctor
+  per step, submatrices once.
+- Checked on mongo (shell ricb = 0.35, stress-free walls, hydro, N 64 to 192):
+  * A.npz and B.npz bit for bit as before with topo_drag = None (kappa_cmb on and off, no-slip, rotdyn with kappa_cmb, a
+    thin wall with slip).
+  * A constant isotropic K through the coupling code (test hook topo_K) against kappa_cmb: eigenvalues to 4e-14 - 7e-12,
+    Dtopo to 5e-11 (m = 0, 1, 2).
+  * Isotropic K = cos^2(theta): P-T couplings nonzero for m = 1 (A_st[1,2] = 0.346i in topo.py's normalisation by
+    oint |grad Y_l|^2), zero for m = 0; Dtopo = -(Dkin + Dint) to 1e-10, resid0 1e-13.
+  * The drag of the paper with h_rms = 1.51 km (topo_hrms = 4.35e-4; 9.5 km with the printed factor), lambda0 =
+    1500 km, H = 0.8, N = 0: kappa_eq (the spin-over equivalent) = 4.4992e-6, the FCN calibration of kappa_cmb.
+    Spin-over damping / (-5 kappa_eq/(1 - ricb^5)) = 0.9985, 0.9955, 0.9848 at Ek = 1e-5, 1e-6, 1e-7 (0.9984, 0.9949, 0.9835 for the constant drag); topo_N = 1 and 2: 0.9955, 0.9938;
+    energy budget to 1e-12 - 3e-13, resid0 <= 2e-12. Eigenvalue at Ek = 1e-6 converged to 5e-10 (N 128/lmax 96 against
+    192/144). An m = 0 mode at w0 = 0.3 (a kink in K where f = w0) needs more lmax: resid L 3e-4, 7e-7, 7e-10 at lmax
+    71, 95, 143.
+  * N from the stratification: 'internal' BV2 = 0.25 -> 0.5; BV2 < 0 -> 0; 'two zone' BV2 = 4 -> 2.0; 'differential'
+    plus compositional -> 1.019 (expected 1.019).
+  * tools/topo_iterate.sh on an m = 0 mode from a 2% guess: converged in 3 steps (relative changes 2e-2, 4e-7, 3e-12).
+
+2026-11-04
+----------
 New: slipping fluid at conducting walls (thin walls, mantle layer) with the interface condition C.I, and a topographic
 drag at the CMB, kappa_cmb (bin/assemble.py, bin/utils.py, bin/utils4pp.py, bin/spin_doctor.py, bin/params_default.py,
 tools/get_data.py, docs/boundaries.md, docs/setup.md, docs/rotdyn.md, docs/output.md)

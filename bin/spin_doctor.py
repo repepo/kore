@@ -17,6 +17,7 @@ from parameters import par
 import utils as ut
 import utils4pp as upp
 import bgflow
+import topo  # NEW (2026-11-04)
 
 
 
@@ -26,6 +27,7 @@ def param_table(elapsed):
     The order here is the column order in params.dat. To add a parameter, append a
     tuple at the end so existing columns keep their positions.
     '''
+    topo_on = par.topo_drag is not None  # NEW (2026-11-04)
     return [
         ( 'hydro',                    par.hydro,                   '%d' ),
         ( 'magnetic',                 par.magnetic,                '%d' ),
@@ -97,6 +99,13 @@ def param_table(elapsed):
         ( 'sigma_mantle_cmb',         float(ut.sigma_mantle(ut.rcmb)) if ut.resolved_mantle else 0.0, '%.9e' ),
         ( 'c1_mantle',                ut.mantle_conductance() if ut.resolved_mantle else 0.0,       '%.9e' ),
         ( 'kappa_cmb',                par.kappa_cmb,               '%.9e' ),  # NEW (2026-11-04): topographic drag at the CMB
+        # NEW (2026-11-04): latitude-dependent topographic drag (topo_drag = 'rekier'; 0 otherwise): the inputs, and the N/Omega
+        # and w0/Omega it used (from the stratification and the solver target unless topo_N, topo_omega are set)
+        ( 'topo_hrms',                par.topo_hrms if topo_on else 0.0,    '%.9e' ),
+        ( 'topo_lambda0',             par.topo_lambda0 if topo_on else 0.0, '%.9e' ),
+        ( 'topo_H',                   par.topo_H if topo_on else 0.0,       '%.9e' ),
+        ( 'topo_N_cmb',               topo.N_cmb() if topo_on else 0.0,     '%.9e' ),
+        ( 'topo_omega',               topo.omega0() if topo_on else 0.0,    '%.9e' ),
     ]
 
 
@@ -242,7 +251,7 @@ def main(ncpus):
         ( '|𝚪|magIC',    '{:8.2e}',   lambda i: np.abs(mtorq_ic[i]) ),
     ]
     if par.hydro and par.Ek != 0 and par.bco == 0:  # NEW (2026-11-04): topographic drag (per unit kappa_cmb if it is 0)
-        tag = '' if par.kappa_cmb != 0 else '/κ'
+        tag = '' if (par.kappa_cmb != 0 or par.topo_drag is not None) else '/κ'
         table_cols += [ ( 'Dtopo' + tag, '{:8.2e}', lambda i: Dtopo[i] ), ( 'δσtopo' + tag, '{:9.2e}', lambda i: dsig[i] ) ]
     if use_twa:  # NEW (2026-11-04): estimated thin-wall error (2/3)(h/delta_w)^2, the larger of CMB and ICB
         table_cols += [ ( 'εTWA', '{:8.2e}', lambda i: max(twaerr[i,1], twaerr[i,3]) ) ]
@@ -266,7 +275,7 @@ def main(ncpus):
     # none with Ek = 0 (bci, bco are then ignored). Without them every m=1, symm=-1 run took a viscous torque also at
     # stress-free walls, and a full sphere one at r = 0: with no torque at all L is zero to round-off, and resid L was O(1)
     # (now 0, as for m=0 with stress-free walls)
-    do_vtorq = par.hydro and (par.Ek != 0) and (par.bco == 1 or par.kappa_cmb != 0) and (((par.m==0) and (par.symm==1)) or ((par.m==1) and (par.symm==-1)))
+    do_vtorq = par.hydro and (par.Ek != 0) and (par.bco == 1 or par.kappa_cmb != 0 or par.topo_drag is not None) and (((par.m==0) and (par.symm==1)) or ((par.m==1) and (par.symm==-1)))
     do_vtorq_ic = par.hydro and (par.Ek != 0) and (par.bci == 1) and (par.ricb > 0) and (((par.m==0) and (par.symm==1)) or ((par.m==1) and (par.symm==-1)))
 
     if do_vtorq:
@@ -456,8 +465,11 @@ def main(ncpus):
         if par.hydro and par.Ek != 0 and par.bco == 0:
             if par.forcing not in (12,):
                 pss = upp.wall_power(u_sol2)
-            slip2 = upp.cmb_slip_sq(u_sol2, omg_mantle[i] if par.rotdyn else 0)
-            Dtopo[i] = 2*par.OmgTau*(par.kappa_cmb if par.kappa_cmb != 0 else 1.0)*slip2
+            if par.topo_drag is not None:  # NEW (2026-11-04): latitude-dependent drag, oint (u - v_m).K.(u - v_m)*
+                Dtopo[i] = 2*par.OmgTau*upp.cmb_slip_K(u_sol2, omg_mantle[i] if par.rotdyn else 0)
+            else:
+                slip2 = upp.cmb_slip_sq(u_sol2, omg_mantle[i] if par.rotdyn else 0)
+                Dtopo[i] = 2*par.OmgTau*(par.kappa_cmb if par.kappa_cmb != 0 else 1.0)*slip2
             Etot0 = KE[i] + (par.OmgTau**2*par.Le2*ME[i] if par.magnetic else 0)
             dsig[i] = -Dtopo[i]/(2*Etot0) if Etot0 > 0 else np.nan
 
@@ -565,7 +577,7 @@ def main(ncpus):
                 Kg    = par.gTorque * par.OmgTau**2
                 Etot += par.MoIZ_M*abs(omg_mantle[i])**2 + par.MoIZ_IC*abs(omg_incore[i])**2 + Kg*abs(misalignmt[i])**2
                 Dk    = -Dint[i] - Wthm[i] - Wcmp[i] - 2*Kg*(par.OmgTau/par.OmgtauIC)*abs(misalignmt[i])**2  # FIX (2026-11-02): - Wcmp
-                if par.bco == 0 and par.kappa_cmb != 0:  # NEW (2026-11-04): the drag dissipates the slip energy
+                if par.bco == 0 and (par.kappa_cmb != 0 or par.topo_drag is not None):  # NEW (2026-11-04): the drag dissipates the slip energy
                     Dk -= Dtopo[i]
                 Wex  += 2*np.real( mtorq[i]*np.conj(omg_mantle[i]) + mtorq_ic[i]*np.conj(omg_incore[i]) )
             scale = max( abs(2*sigma*Etot), abs(Dk), Ohm, abs(Wex) )

@@ -1104,8 +1104,20 @@ def twa_error(lam):
 
 def check_drag():
     '''
-    NEW (2026-11-04): stops kappa_cmb (topographic drag at the CMB) outside what it covers
+    NEW (2026-11-04): stops kappa_cmb or topo_drag (topographic drag at the CMB) outside what they cover
     '''
+    if par.topo_drag is not None:
+        if par.topo_drag != 'rekier':
+            sys.exit("topo_drag = %r: None or 'rekier'" % (par.topo_drag,))
+        if par.kappa_cmb != 0:
+            sys.exit('topo_drag and kappa_cmb cannot be combined: set kappa_cmb = 0 with topo_drag')
+        if not (par.hydro and par.Ek > 0 and par.bco == 0):
+            sys.exit("topo_drag = 'rekier' needs flow with a stress-free CMB (hydro = 1, bco = 0) and Ek > 0")
+        if par.topo_K is None and not (par.topo_hrms > 0 and par.topo_lambda0 > 0 and par.topo_H > 0.5):
+            sys.exit('topo_drag: topo_hrms and topo_lambda0 must be > 0 and topo_H > 1/2 (eq. B2)')
+        if par.forcing in (9,):
+            sys.exit('topo_drag with forcing = 9: the radial boundary velocity is not covered')
+        return
     if par.kappa_cmb < 0:
         sys.exit('kappa_cmb = %r: the drag coefficient must be >= 0' % (par.kappa_cmb,))
     if par.hydro and par.Ek == 0:
@@ -1122,7 +1134,7 @@ if par.magnetic:
     check_innercore()  # NEW (2026-11-02)
 if par.rotdyn:
     check_rotdyn()
-if par.kappa_cmb != 0:  # NEW (2026-11-04)
+if par.kappa_cmb != 0 or par.topo_drag is not None:  # NEW (2026-11-04)
     check_drag()
 cnorm_tor = B0_tor_norm() if (par.magnetic and par.B0_tor is not None) else 0.0
 

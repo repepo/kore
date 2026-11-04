@@ -52,6 +52,12 @@ The sections below follow the order of `params_default.py`. The magnetic boundar
 | `bci` | 1 | Flow condition at the inner core boundary (ICB): 0 stress-free, 1 no-slip (or boundary forcing). Ignored if `ricb = 0`. |
 | `bco` | 1 | Flow condition at the core-mantle boundary (CMB): 0 stress-free, 1 no-slip (or boundary forcing). |
 | `kappa_cmb` | 0 | Topographic drag at a stress-free CMB, $\kappa/(\rho\Omega R)$ (see [Inner core and mantle](boundaries.md#topographic-drag-at-the-cmb)). |
+| `topo_drag` | `None` | `'rekier'`: latitude-dependent drag from the CMB topography instead of `kappa_cmb`, with `topo_hrms`, `topo_lambda0`, `topo_H`, `topo_N`, `topo_omega` (see [Inner core and mantle](boundaries.md#drag-from-the-topography)). |
+| `topo_hrms` | 0 | Rms height of the CMB topography, $h_\text{rms}/R$. |
+| `topo_lambda0` | 0.431 | Wavelength above which the topography spectrum is flat, $\lambda_0/R$. |
+| `topo_H` | 0.8 | Hurst exponent of the topography spectrum, which must exceed 1/2. |
+| `topo_N` | `None` | Buoyancy frequency at the CMB in units of $\Omega$; `None` takes it from the stratification. |
+| `topo_omega` | `None` | Frequency of the flow relative to the mantle in units of $\Omega$; `None` takes it from the solver target, or the forcing frequency in forced runs. |
 | `Ek` | $10^{-6}$ | Ekman number $E = \nu/\Omega L^2$. |
 
 `Ek = 0` gives an inviscid problem, with only the no-penetration condition $u_r = 0$ at the boundary. It works only for a full sphere (`ricb = 0`), and `N` must then be set by hand. `rotdyn = 1` needs a viscous fluid and a no-slip ICB, and stops otherwise. Conducting walls (inner core, thin walls, mantle layer) also work with a slipping fluid (see [Inner core and mantle](boundaries.md#slipping-fluid-at-a-conducting-wall)).

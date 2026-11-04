@@ -778,6 +778,10 @@ def main():
             bc_u_list = bc_u_spherical( l, 'section_u' )
             for q in [0,1,2]:
                 loc_list[q].append( bc_u_list[q] )
+            if par.topo_drag is not None:  # NEW (2026-11-04): latitude-dependent topographic drag at the CMB
+                bc_u_list = bc_u_topo( l, 'section_u' )
+                for q in [0,1,2]:
+                    loc_list[q].append( bc_u_list[q] )
             # ----------------------------------------------------------------------------------------------------------
 
 
@@ -878,6 +882,10 @@ def main():
             if (bc_u_list is None):  # no bc needed in section v if inviscid
                 pass
             else:
+                for q in [0,1,2]:
+                    loc_list[q].append( bc_u_list[q] )
+            if par.topo_drag is not None:  # NEW (2026-11-04): latitude-dependent topographic drag at the CMB
+                bc_u_list = bc_u_topo( l, 'section_v' )
                 for q in [0,1,2]:
                     loc_list[q].append( bc_u_list[q] )
 
@@ -1526,6 +1534,47 @@ def bc_u_spherical(l,loc):
     out2 = [out.data, out.row + row0, out.col + col0]
 
     return out2
+
+
+
+def bc_u_topo(l, loc):
+    '''
+    NEW (2026-11-04): the topographic-drag terms of the CMB rows (topo_drag = 'rekier', stress-free CMB): the row of P_l
+    (section u, Ek P'' = ...) and of T_l (section v, Ek (T' - T/r) = ...) get (1/Ek) sum_l' of the couplings of topo.py
+    times s_l' = P_l' + P_l/r and t_l' = T_l' at r = 1, with the drag on the slip relative to the
+    mantle (rotdyn: T10 - rcmb omega_m, the omega_m column). The stress-free part of the rows is that of bc_u_spherical.
+    '''
+    import topo
+    Ass, Ast, Ats, Att = topo.couplings()
+    r = ut.rcmb
+    if par.ricb > 0:
+        Tbu = Tbv = bv.Tb
+    else:  # one parity per l in a full sphere, as in bc_u_spherical
+        Tbu = bv.Tb[( par.m + 1 - ut.s )%2::2,:]
+        Tbv = bv.Tb[( par.m + ut.s )%2::2,:]
+    lp_u, lt_u, _ = ut.ell(par.m, par.lmax, par.symm)
+    if loc == 'section_u':
+        row = int(ut.N1*(l - ut.m_top)/2) + 1   # second CMB row of the block (the first is P = 0)
+        Cs, Ct = Ass[l], Ast[l]
+    else:
+        row = ut.n + int(ut.N1*(l - ut.m_bot)/2)
+        Cs, Ct = Ats[l], Att[l]
+    data, cols = [], []
+    for k in lp_u:
+        if Cs[k] != 0:
+            data.append( Cs[k]/par.Ek*(Tbu[:,1] + Tbu[:,0]/r) )
+            cols.append( int(ut.N1*(k - ut.m_top)/2) + np.arange(ut.N1) )
+    for k in lt_u:
+        if Ct[k] != 0:
+            data.append( Ct[k]/par.Ek*Tbv[:,0] )
+            cols.append( ut.n + int(ut.N1*(k - ut.m_bot)/2) + np.arange(ut.N1) )
+    if par.rotdyn and par.m == 0 and 1 in lt_u and Ct[1] != 0:  # the mantle's rotation, T10 = rcmb omega_m
+        data.append( np.array([ -Ct[1]/par.Ek*r ]) )
+        cols.append( np.array([ off_rotdyn ]) )
+    if not data:
+        return [np.array([]), np.array([], dtype=int), np.array([], dtype=int)]
+    data = np.concatenate(data).astype(complex)
+    return [data, np.full(data.size, row), np.concatenate(cols)]
 
 
 

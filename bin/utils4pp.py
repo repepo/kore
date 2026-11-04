@@ -1404,6 +1404,31 @@ def cmb_slip_sq(u_sol2, omg_m=0):
 
 
 
+def cmb_slip_K(u_sol2, omg_m=0):
+    '''
+    NEW (2026-11-04): oint (u_t - v_m).K.conj(u_t - v_m) dS over the CMB with the latitude-dependent topographic drag
+    K = diag(kappa_tt, kappa_pp) of topo.py (topo_drag = 'rekier'), on a Gauss grid in cos(theta); v_m as in cmb_slip_sq.
+    The drag dissipates 2*OmgTau times this (units of Dkin and Dint).
+    '''
+    import topo
+    lp, lt, _ = ut.ell(par.m, par.lmax, par.symm)
+    P, T = u_sol2[0], u_sol2[1]
+    R = ut.rcmb
+    nx = max(4*(par.lmax + 1), 2000)
+    x, w = np.polynomial.legendre.leggauss(nx)
+    Y, dY, Z = ylm_grid(par.m, par.lmax + 1, x)
+    kt, kp = topo.kappa(x)
+    s = np.array([ ch.chebval(1.0, ut.Dn_cheb(P[k,:], par.ricb, ut.rcmb, 1)[:,0]) + ch.chebval(1.0, P[k,:])/R
+                   for k in range(len(lp)) ])
+    t = np.array([ ch.chebval(1.0, T[k,:]) for k in range(len(lt)) ], dtype=complex)
+    if par.m == 0 and 1 in list(lt):
+        t[list(lt).index(1)] -= R*omg_m  # T10 of the mantle's rotation
+    uth = s @ dY[lp] + t @ Z[lt]
+    uph = s @ Z[lp] - t @ dY[lt]
+    return R**2*2*np.pi*np.sum(w*(kt*abs(uth)**2 + kp*abs(uph)**2))
+
+
+
 def slip_lapF(u_sol2, boundary):
     '''
     NEW (2026-11-04): for each poloidal degree l of b, r^2/(L*OmgTau*Em) times [r.curl(u x B0)]_l at a slipping wall

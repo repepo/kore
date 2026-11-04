@@ -87,6 +87,24 @@ class default_params():
         # kappa_cmb = 4.5e-6. Drag-limited (the Earth's form drag on the interior flow) while kappa_cmb << sqrt(Ek).
         self.kappa_cmb = 0.0
 
+        # NEW (2026-11-04): latitude-dependent topographic drag at a stress-free CMB (bco = 0, Ek > 0), from the
+        # internal-wave power of Rekier et al. (arXiv:2507.01671), eqs. (20), (21), (B1), (B2), with the factor 4 pi^2
+        # that the printed (B1) lacks: topo_drag = 'rekier' (None: off). It replaces kappa_cmb (the two cannot be
+        # combined) by the tensor diag(kappa_tt, kappa_pp)(theta) acting on the slip (bin/topo.py). Inputs: rms height
+        # and roll-off wavelength of the topography in units of the CMB radius, and the Hurst exponent (> 1/2), e.g.
+        # h_rms = 1.51 km and lambda0 = 1500 km at R = 3480 km: topo_hrms = 4.35e-4, topo_lambda0 = 0.431, topo_H = 0.8.
+        # N at the CMB comes from the stratification (BV2, heating, BV2_comp, comp_background; N = 0 if unstable or
+        # without buoyancy) unless topo_N (N/Omega) is set. The flow frequency w0 is |Im tau|/OmgTau of the solver
+        # target (the forcing frequency in forced problems) unless topo_omega (w0/Omega) is set: with track_target = 1,
+        # tools/topo_iterate.sh iterates it to the mode's own frequency.
+        self.topo_drag    = None
+        self.topo_hrms    = 0.0
+        self.topo_lambda0 = 0.431
+        self.topo_H       = 0.8
+        self.topo_N       = None
+        self.topo_omega   = None
+        self.topo_K       = None   # test hook: a function of x = cos(theta) returning (kappa_tt, kappa_pp) instead of eq. (B1)
+
         # Rotation: 1 for a rotating frame, 0 for no rotation (the Coriolis force is then not assembled). Without
         # rotation the time scale cannot be 1/Omega: use timescale = 'viscous' (Ek then only labels the units and
         # can be any nonzero value, the results do not depend on it) or set OmgTau directly, and set N explicitly.

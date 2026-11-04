@@ -200,21 +200,85 @@ the $Y_l$ part of $\hat{\mathbf{r}}\cdot\nabla\times(\mathbf{u}\times\mathbf{B}_
 
 ## Topographic drag at the CMB
 
-`kappa_cmb` ($\hat\kappa$, default 0) adds a linear drag to a stress-free CMB (`bco = 0`, `Ek > 0`): the tangential traction on the fluid is
+The core–mantle boundary is not smooth. When the core flow slides over its topography, it radiates internal waves that carry energy and angular momentum away from the flow. Rekier et al. (2025, arXiv:2507.01671) propose this form drag as a source of the damping of the free core nutation. Kore represents it as a drag at a stress-free CMB: the mantle exerts on the fluid a tangential stress proportional to the slip between the two,
 
 $$
-E_k\,\sigma_{rt} = -\hat\kappa\,(\mathbf{u}_t - \mathbf{v}_m), \qquad \hat\kappa = \frac{\kappa}{\rho\,\Omega R},
+E_k\,\sigma_{rt} = -K\,(\mathbf{u}_t - \mathbf{v}_m),
 $$
 
-for a stress $\kappa\,\mathbf{u}$ in SI units, with $\mathbf{v}_m$ the mantle's velocity ($\mathbf{v}_m = \Omega_m\hat{\mathbf{z}}\times\mathbf{r}$ with `rotdyn = 1`). With $\mathbf{u} = \nabla\times\nabla\times(P\,\hat{\mathbf{r}}) + \nabla\times(T\,\mathbf{r})$ per degree the boundary rows become
+where the left-hand side is the tangential viscous stress at the wall, $\mathbf{u}_t$ the tangential flow at the CMB and $\mathbf{v}_m$ the velocity of the mantle, which is zero unless `rotdyn = 1`. The drag coefficient $K$ is measured in units of $\rho\Omega R$. Without drag the wall is stress-free, and a very strong drag makes it no-slip.
+
+The drag needs a stress-free CMB (`bco = 0`) and a viscous fluid (`Ek > 0`). At a conducting CMB the magnetic boundary conditions then account for the slip, as described in [Slipping fluid at a conducting wall](#slipping-fluid-at-a-conducting-wall).
+
+### Constant drag
+
+The simplest choice is a constant coefficient, the same in every direction, set with `kappa_cmb`:
+
+```python
+par.bco       = 0
+par.kappa_cmb = 4.5e-6   # kappa/(rho Omega R)
+```
+
+This value is calibrated to the observed damping of the free core nutation.
+
+### Drag from the topography
+
+With `topo_drag = 'rekier'`, Kore computes the drag from a statistical description of the topography: its rms height $h_\text{rms}$, the wavelength $\lambda_0$ above which its spectrum is flat, and the Hurst exponent $H$, which sets how fast the spectrum decays at shorter wavelengths. A flow of frequency $\omega_0$ over the topography radiates waves in every direction in which they can propagate, and equating the power they carry away with the power dissipated by a linear drag gives
 
 $$
-P = 0, \qquad E_k P'' + \hat\kappa P' = 0, \qquad E_k\left(T' - \frac{T}{r}\right) + \hat\kappa\,(T - r\Omega_m\,\delta_{l1}) = 0 \qquad (r = 1),
+K_{\phi\phi} = \frac{\rho\, I_k}{|\omega_0|}\int_0^{2\pi} g\,\cos^2\alpha\;d\alpha,
+\qquad
+K_{\theta\theta} = \frac{\rho\, I_k}{|\omega_0|}\int_0^{2\pi} g\,\sin^2\alpha\;d\alpha,
 $$
 
-stress-free for $\hat\kappa = 0$ and no-slip for $\hat\kappa \to \infty$ (the eigenvalues approach the no-slip ones as $1/\hat\kappa$). In a test at $E_k = 10^{-5}$ the damping added per unit $\hat\kappa$ is constant to 1% up to $\hat\kappa \approx 0.03\sqrt{E_k}$, 8% lower at $0.3\sqrt{E_k}$, and falls as $1/\hat\kappa$ beyond $\sqrt{E_k}$. The drag is meant for the form drag of CMB topography on the interior flow, e.g. the topographic dissipation of Rekier et al. calibrated at the diurnal frequency, $\kappa \approx 11.3$ kg m$^{-2}$ s$^{-1}$, $\hat\kappa \approx 4.5\cdot10^{-6}$. In the Earth $\kappa$ is far larger than $\rho\sqrt{\nu\Omega} \approx 0.085$ kg m$^{-2}$ s$^{-1}$, but the form drag acts on the flow outside the viscous layer. In Kore the wall row also sets the slip of a viscous layer, which takes the drag as it stands only while $\hat\kappa \ll \sqrt{E_k}$ (drag-limited); for $\hat\kappa \gtrsim \sqrt{E_k}$ the Ekman layer limits the coupling instead. The magnetic conditions at a conducting CMB get the slip terms of the previous section.
+$$
+\begin{gathered}
+g = \sqrt{\max\left[0,\ (\omega_0^2 - N^2)(f^2 - \omega_0^2) + \omega_0^2\,\tilde f^2\sin^2\alpha\right]},\\
+f = 2\Omega\cos\theta, \qquad \tilde f = 2\Omega\sin\theta,
+\end{gathered}
+$$
 
-The axial torque on the mantle is $\Gamma = (8\pi/3)(\Omega\tau)\hat\kappa\,(T_1(1) - \Omega_m)$, the viscous torque of `gamma_visc` evaluated through the drag row, and with `rotdyn = 1` it drives the mantle's rotation. `spin_doctor.py` writes the drag's dissipation $D_\text{topo} = 2(\Omega\tau)\hat\kappa\oint|\mathbf{u}_t - \mathbf{v}_m|^2\,dS$ and $\delta\sigma = -D_\text{topo}/(2E)$ to `flow.dat` (columns 21-22) and the summary table (see [Output](output.md)); for a stress-free run with $\hat\kappa = 0$ they are given per unit $\hat\kappa$, an a-posteriori estimate of the drag's damping. It assumes the mode keeps its shape and its other losses, so it is a rough guide (3% off the eigenvalue shift in a test at $E_k = 10^{-3}$, 25% at $E_k = 10^{-5}$): for numbers, run with the drag. The run stops for $\hat\kappa < 0$, `Ek = 0` (no tangential condition) and `forcing = 9`.
+$$
+I_k = \int_0^\infty S(k)\,k^2\,dk = \frac{h_\text{rms}^2\,k_0\,\Gamma(H - 1/2)}{4\sqrt{\pi}\,\Gamma(H)},
+\qquad k_0 = \frac{2\pi}{\lambda_0}.
+$$
+
+Here $\alpha$ is the direction of a topographic wave vector, measured from east, $\theta$ is the colatitude, $N$ the buoyancy frequency at the top of the core and $S$ the spectrum of the topography. The radiated power has no term that mixes zonal and meridional flow, so the drag is a diagonal tensor that depends only on latitude. These formulas follow eqs. (B1) and (B2) of the paper, except that (B1) as printed in its version 4 lacks a factor $4\pi^2$, which Kore restores. With this factor, a sinusoidal ridge gives the classical result of Bell (1975).
+
+Kore divides $K$ by $\rho\Omega R$, so only the topographic lengths relative to the CMB radius are needed:
+
+```python
+par.bco          = 0
+par.topo_drag    = 'rekier'
+par.topo_hrms    = 4.35e-4   # h_rms/R, 1.5 km at the Earth's CMB
+par.topo_lambda0 = 0.431     # lambda_0/R, 1500 km
+par.topo_H       = 0.8       # Hurst exponent, must exceed 1/2
+```
+
+Without stratification, these values give the spin-over mode the same damping as the constant drag above. `topo_drag` and `kappa_cmb` cannot be used together.
+
+Kore takes $N$ from the stratification of the run, set by `BV2`, `BV2_comp` and their background profiles. It uses zero when the run has no buoyancy or when the stratification at the CMB is unstable, and `topo_N` (in units of $\Omega$) overrides it, which is useful in purely hydrodynamic runs. If $N$ exceeds the frequency of the flow, no waves can be radiated near the poles and the drag vanishes there.
+
+Because the drag varies with latitude, it couples each spherical harmonic degree to its neighbours at the boundary, and for non-axisymmetric modes it also couples poloidal and toroidal flow. Where the drag has a kink, for instance at the critical latitude where the local Coriolis frequency equals the frequency of the flow, these couplings decay slowly with degree, and the run needs a larger `lmax`.
+
+### The frequency of the flow
+
+The drag depends on the frequency of the flow relative to the mantle. In a forced problem this is the forcing frequency. In an eigenvalue problem it is the frequency of the mode itself, which is not known in advance, so Kore takes it from the solver target, and `tools/topo_iterate.sh` repeats the solution until the target and the eigenvalue agree. Each pass assembles the drag at the current target, solves, and moves the target to the eigenvalue found. A few passes are usually enough. Since the drag is built for a single frequency, the iteration follows one mode at a time.
+
+The script needs `par.track_target = 1` and `par.topo_omega = None`. Before the first run, write a guess of the eigenvalue to the file `track_target`, as damping rate and frequency in the time unit of the run. Then run the script from Kore's top folder, giving the tolerance on the relative change of the eigenvalue:
+
+```bash
+echo "-0.005 0.25" > track_target
+tools/topo_iterate.sh 1e-10
+```
+
+Setting `topo_omega` (in units of $\Omega$) fixes the frequency instead.
+
+### Validity and output
+
+The drag acts on the fluid through Kore's own Ekman layer at the wall. That layer passes the stress on unchanged only while the drag is weak compared with its own friction, that is, while each component of $K$ is much smaller than the square root of the Ekman number. In this drag-limited regime the damping added by the drag is proportional to $K$ and independent of the Ekman number. In the Earth the form drag acts directly on the flow outside the thin viscous layer, so runs should stay in this regime. At low Ekman numbers this means running with a smaller $K$ and scaling the added damping up by the same factor.
+
+The torque on the mantle follows from the same boundary stress, so `rotdyn = 1` works with both drags. `spin_doctor.py` writes the power dissipated by the drag, and the damping rate it implies, to `flow.dat`. For a stress-free run without drag these are given per unit `kappa_cmb`, as a rough estimate of the damping a drag would add. The topographic parameters, and the buoyancy frequency and flow frequency the drag used, are written to `params.dat` (see [Output](output.md)).
 
 ## Electromagnetic torques
 
