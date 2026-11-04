@@ -299,25 +299,6 @@
   
   
   
-    <li class="md-tabs__item">
-      <a href="../checking/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Checking a change
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
     
     
       <li class="md-tabs__item">
@@ -330,6 +311,25 @@
         </a>
       </li>
     
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../checking/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Modifying kore
+
+      </a>
+    </li>
   
 
       
@@ -991,33 +991,6 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../checking/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Checking a change
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
     
     
     
@@ -1032,10 +1005,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
         
           
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
             
   
   
@@ -1053,8 +1026,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1235,6 +1208,33 @@
           </ul>
         </nav>
       
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../checking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modifying kore
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1514,6 +1514,11 @@
 flow and of the field together: the field's Lorentz force acts on the flow, and the flow induces a perturbation of the
 field. The background field is fixed, steady and axisymmetric. It is imposed, not computed: there is no dynamo, and the
 background flow does not react to it.</p>
+<p><strong>kore does not include the field in the thermal-wind balance.</strong> The <a href="../background/#thermal-wind">thermal-wind entropy</a>
+is computed from the imposed rotation alone, as without a field, and the field's force acts only on the perturbations.
+This is exact for a field that carries no current, such as <code>B0 = 'axial'</code>, and a good approximation when the field's
+force is weak compared with the Coriolis force of the differential rotation
+(<a href="#validity-and-caveats">Validity and caveats</a>).</p>
 <p>This page shows how to set up a run and how to choose the background field. The equations, the formula of every field
 and the checks of the code are on <a href="../magnetic-equations/">Magnetic field equations</a>.</p>
 <h2 id="parameters-and-a-first-run">Parameters and a first run</h2>
@@ -1975,8 +1980,8 @@ writes <code>magnetic.dat</code> and 25 magnetic columns of <code>params.dat</co
   memory. If MUMPS stops with INFOG(1) = −9, raise <code>st_mat_mumps_icntl_14</code> in <code>petsc_opts</code> (<a href="../solver/">Solver</a>).</li>
 </ul>
 <h2 id="validity-and-caveats">Validity and caveats</h2>
-<p>kore holds the background field and the background flow fixed, and neither acts on the other. This section says what
-that leaves out and when it matters. Two effects that would change the background are left out:</p>
+<p>kore holds the background field and the background flow fixed. This section says what that leaves out and when it
+matters. Two effects that would change the background are left out:</p>
 <ul>
 <li><strong>Ohmic decay.</strong> A field that carries electric current would decay by diffusion; kore holds it fixed, with or without
   rotation. Only the wound field is steady by itself, since the winding balances its diffusion.</li>
