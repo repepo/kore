@@ -593,6 +593,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../tidal-forcing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tidal forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../magnetic/" class="md-nav__link">
         
   
@@ -1172,6 +1200,12 @@ seconds to minutes.</p>
 <td>3 min</td>
 </tr>
 <tr>
+<td><code>tests/tidal/run_all.sh</code></td>
+<td>the tidal forcing (forcing 14) against an exact solution, and the energy budget with the work at the walls and the viscous dissipation</td>
+<td>after a change of a boundary forcing, of <code>spin_doctor</code>'s budgets or of a force</td>
+<td>2 min on 4 ranks</td>
+</tr>
+<tr>
 <td><code>tests/rsf/regress_solve.sh</code></td>
 <td>eigenvalues, fields and forced solutions bitwise equal to an older copy</td>
 <td>after a change of <code>solve.py</code></td>
@@ -1179,7 +1213,7 @@ seconds to minutes.</p>
 </tr>
 </tbody>
 </table>
-<p><code>tests/diff_rot</code>, <code>tests/heat_dr</code>, <code>tests/magnetic</code> and <code>tests/rsf</code> each have a README that lists their scripts and
+<p><code>tests/diff_rot</code>, <code>tests/heat_dr</code>, <code>tests/magnetic</code>, <code>tests/rsf</code> and <code>tests/tidal</code> each have a README that lists their scripts and
 what each one checks; the CI test explains itself in <code>tests/ci/test_spinover.py</code>.</p>
 <h2 id="are-existing-runs-unchanged">Are existing runs unchanged?</h2>
 <p><code>tests/diff_rot/regress.sh</code> builds the same small runs twice, once with an older copy of kore and once with yours, and

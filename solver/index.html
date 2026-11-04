@@ -600,6 +600,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../tidal-forcing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tidal forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../magnetic/" class="md-nav__link">
         
   
@@ -1158,7 +1186,9 @@ same MUMPS option is <code>st_mat_mumps_...</code> in one and <code>mat_mumps_..
 <h2 id="first-check-the-solution">First, check the solution</h2>
 <p>Judge each solution with <code>spin_doctor.py</code>, not with the residual that <code>solve.py</code> prints: with the Ruiz prescaling (on by
 default) that one is for the rescaled problem. Accept a mode when its energy and entropy residuals (residσ, resid𝑠)
-are below 1e-5 and its ℓ-convergence is below 1e-4.</p>
+are below 1e-5 and its ℓ-convergence is below 1e-4. The same residuals judge a forced run, where σ = 0. When the walls
+move radially (forcing 14), residσ also tests the pressure at the walls, which needs more radial resolution than the rest
+of the budget (<a href="../tidal-forcing/#interpreting-the-response">Tidal forcing</a>).</p>
 <p>A failure is one of two kinds:</p>
 <ul>
 <li><strong>Resolution.</strong> It fails every time, and the eigenvalue moves when N or lmax is raised. Raise N for the residuals and

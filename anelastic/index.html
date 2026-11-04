@@ -595,6 +595,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../tidal-forcing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tidal forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../magnetic/" class="md-nav__link">
         
   
@@ -913,6 +941,56 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#energy-balance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Energy balance
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Energy balance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#kinetic-energy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kinetic energy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#entropy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Entropy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-forced-periodic-response" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A forced, periodic response
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#where-the-approximation-holds" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1227,6 +1305,56 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#energy-balance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Energy balance
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Energy balance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#kinetic-energy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kinetic energy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#entropy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Entropy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-forced-periodic-response" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A forced, periodic response
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#where-the-approximation-holds" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1313,12 +1441,12 @@ things (Brown et al. 2012; Vasil et al. 2013):</p>
 there. The entropy gradient is kept in the heat equation, where it is the source of <span class="arithmatex">\(s'\)</span> and gives gravity waves their
 restoring force. The Coriolis force, the self-gravity (absorbed into <span class="arithmatex">\(\Pi\)</span>) and the viscous force are not
 approximated.</p>
-<p><strong>Energy.</strong> Multiply the momentum equation by <span class="arithmatex">\(\rho_0\mathbf u^*\)</span> and integrate. The pressure does no work, although
-<span class="arithmatex">\(\nabla\cdot\mathbf u\neq 0\)</span>, because <span class="arithmatex">\(\nabla\Pi\)</span> is a gradient acting on the solenoidal <span class="arithmatex">\(\rho_0\mathbf u\)</span> and
-<span class="arithmatex">\(u_r = 0\)</span> on the walls. The Coriolis force does no work, and the viscous force only dissipates,
-<span class="arithmatex">\(-\tfrac12\int\rho_0\nu\thinspace\lvert\mathsf S\rvert^2\thinspace dV \le 0\)</span>, for any <span class="arithmatex">\(\nu(r)\)</span>. This holds only because the two
-terms of item 2 are dropped together: an anelastic set that keeps the force but drops the mass term makes the pressure
-do work (Brown et al. 2012).</p>
+<p><strong>Energy.</strong> Multiply the momentum equation by <span class="arithmatex">\(\rho_0\mathbf u^*\)</span> and integrate. The pressure does no work inside the
+fluid, although <span class="arithmatex">\(\nabla\cdot\mathbf u\neq 0\)</span>, because <span class="arithmatex">\(\nabla\Pi\)</span> is a gradient acting on the solenoidal <span class="arithmatex">\(\rho_0\mathbf u\)</span>:
+it only works through walls that move. The Coriolis force does no work, and the viscous force only dissipates, for any
+<span class="arithmatex">\(\nu(r)\)</span>. This holds only because the two terms of item 2 are dropped together: an anelastic set that keeps the force
+but drops the mass term makes the pressure do work (Brown et al. 2012). The full balance is under
+<a href="#energy-balance">Energy balance</a>.</p>
 <h2 id="non-dimensionalization">Non-dimensionalization</h2>
 <p>kore assumes <span class="arithmatex">\(\alpha T_0 = 1\)</span> and uses <span class="arithmatex">\(p_0\)</span> in place of <span class="arithmatex">\(\rho_0 T_0\)</span>, both exact for an ideal gas of uniform
 composition. Each quantity is then a scale times a dimensionless variable:</p>
@@ -1519,6 +1647,87 @@ prescribed. In a convection zone these terms act at the same order as the moment
 nothing maintains or evolves <span class="arithmatex">\(\Omega\)</span> and <span class="arithmatex">\(S_{tw}\)</span> against diffusion, and <span class="arithmatex">\(\rho_0\)</span>, <span class="arithmatex">\(T_0\)</span> and <span class="arithmatex">\(g\)</span> stay spherical (no
 centrifugal distortion). <a href="../differential_rotation_details/">Differential rotation</a> derives these terms and their
 spectral form.</p>
+<h2 id="energy-balance">Energy balance</h2>
+<p>kore's fields are complex amplitudes: a physical field is the amplitude times <span class="arithmatex">\(e^{im\phi + \lambda t}\)</span>, plus the complex
+conjugate. The product of two such fields, averaged over <span class="arithmatex">\(\phi\)</span> (or, for <span class="arithmatex">\(m = 0\)</span>, over a period of a forced response),
+is <span class="arithmatex">\(2\thinspace\mathrm{Re}\)</span> of the product of their amplitudes. kore writes every energy and power this way: the
+kinetic energy</p>
+<div class="arithmatex">\[
+K = \int\rho_0\lvert\mathbf u\rvert^2\thinspace dV ,
+\]</div>
+<p>the mean of <span class="arithmatex">\(\int\tfrac12\rho_0\thinspace\mathbf u_{\rm phys}^2\thinspace dV\)</span>, and the power of a force <span class="arithmatex">\(\mathbf F\)</span> per
+unit mass,</p>
+<div class="arithmatex">\[
+W[\mathbf F] = 2\thinspace\mathrm{Re}\int\rho_0\thinspace\mathbf u^*\cdot\mathbf F\thinspace dV .
+\]</div>
+<h3 id="kinetic-energy">Kinetic energy</h3>
+<p>Take the momentum equation with <span class="arithmatex">\(\partial_t = \lambda = \sigma - i\omega\)</span>, multiply it by <span class="arithmatex">\(2\rho_0\mathbf u^*\)</span>, integrate
+over the fluid and keep the real part:</p>
+<div class="arithmatex">\[
+2\sigma K = W_\nu + W_b + W_\Omega + W_p ,
+\]</div>
+<p>with, term by term:</p>
+<ul>
+<li><strong>Coriolis.</strong> <span class="arithmatex">\(\mathbf u^*\cdot(\hat{\mathbf z}\times\mathbf u)\)</span> is imaginary: the Coriolis force does no work.</li>
+<li><strong>Pressure.</strong> Since <span class="arithmatex">\(\nabla\cdot(\rho_0\mathbf u) = 0\)</span>, the power of <span class="arithmatex">\(-\nabla\Pi\)</span> is a flux through the walls,</li>
+</ul>
+<p>$$
+  W_p = -2\thinspace\mathrm{Re}\oint\rho_0\thinspace\Pi\thinspace u_r^*\thinspace(\hat{\mathbf r}\cdot\mathbf n)\thinspace dA ,
+  $$</p>
+<p>with <span class="arithmatex">\(\mathbf n\)</span> the outward normal of the fluid (<span class="arithmatex">\(-\hat{\mathbf r}\)</span> at the inner wall). It is zero when <span class="arithmatex">\(u_r = 0\)</span> at
+  the walls (<code>bco</code>, <code>bci</code> = 0 or 1), and not when the walls move radially (the tidal forcing 14) or with <code>bco = 2</code>.
+- <strong>Viscosity.</strong> With the stress <span class="arithmatex">\(\boldsymbol\sigma = \mathrm{ViscosD}\thinspace\rho_0\nu\thinspace\mathsf S\)</span>, an
+  integration by parts splits the power of the viscous force into the work of the stress at the walls and the
+  dissipation:</p>
+<p>$$
+  W_\nu = 2\thinspace\mathrm{Re}\int\mathbf u^<em>\cdot(\nabla\cdot\boldsymbol\sigma)\thinspace dV = W_\nu^{\rm wall} - D_\nu ,
+  \qquad W_\nu^{\rm wall} = 2\thinspace\mathrm{Re}\oint\mathbf u^</em>\cdot\boldsymbol\sigma\cdot\mathbf n\thinspace dA ,
+  $$</p>
+<p>$$
+  D_\nu = 2\thinspace\mathrm{Re}\int\boldsymbol\sigma:\nabla\mathbf u^<em>\thinspace dV = \int 4\thinspace\mathrm{ViscosD}\thinspace\rho_0\nu\thinspace\mathsf e_d:\mathsf e_d^</em>\thinspace dV \geq 0 ,
+  $$</p>
+<p>with <span class="arithmatex">\(\mathsf e = \tfrac12[\nabla\mathbf u + (\nabla\mathbf u)^{\mathsf T}]\)</span> the rate of strain and
+  <span class="arithmatex">\(\mathsf e_d = \mathsf e - \tfrac13(\nabla\cdot\mathbf u)\thinspace\mathsf I\)</span> its deviatoric part: <span class="arithmatex">\(\mathsf S = 2\mathsf e_d\)</span>,
+  and <span class="arithmatex">\(\boldsymbol\sigma\)</span> is symmetric and traceless, so that <span class="arithmatex">\(\boldsymbol\sigma:\nabla\mathbf u^* = \boldsymbol\sigma:\mathsf e_d^*\)</span>.
+  The physical dissipation is <span class="arithmatex">\(\int 2\rho\nu\thinspace\mathsf e_d:\mathsf e_d\thinspace dV\)</span>, and the factor 4 is its mean
+  in the convention above. <span class="arithmatex">\(W_\nu^{\rm wall}\)</span> is zero on a no-slip wall at rest and on an impenetrable stress-free wall.
+- <strong>Buoyancy.</strong> <span class="arithmatex">\(W_b = 2\thinspace\mathrm{Beyonce}\thinspace\mathrm{Re}\int\rho_0\thinspace g\thinspace s\thinspace u_r^*\thinspace dV\)</span>,
+  the energy exchanged with the entropy perturbation.
+- <strong>Differential rotation.</strong> Of the terms of <a href="#differential-rotation">Differential rotation</a>, the advection
+  <span class="arithmatex">\(i m\thinspace\mathrm{Gaspard}\thinspace\Delta\Omega\thinspace\mathbf u\)</span> and the Coriolis force of <span class="arithmatex">\(\Delta\Omega\)</span> do no
+  work. The last one does:</p>
+<p>$$
+  W_\Omega = -2\thinspace\mathrm{Gaspard}\thinspace\mathrm{Re}\int\rho_0\thinspace r\sin\theta\thinspace u_\phi^*\thinspace(\mathbf u\cdot\nabla\Delta\Omega)\thinspace dV ,
+  $$</p>
+<p>the Reynolds stress of the perturbation acting on the shear. <span class="arithmatex">\(W_\Omega &gt; 0\)</span> is energy that the perturbation takes from
+  the background flow.</p>
+<p>With a magnetic field the Lorentz force adds its power (<a href="../magnetic-equations/">Magnetic field</a>). The imaginary part of
+the same equation is the frequency balance: <span class="arithmatex">\(2\thinspace\mathrm{Im}(\lambda)\thinspace K\)</span> against the imaginary parts of
+the same integrals, where the Coriolis force now enters.</p>
+<h3 id="entropy">Entropy</h3>
+<p>Multiply the heat equation by <span class="arithmatex">\(2s^*\)</span>, integrate and keep the real part:</p>
+<div class="arithmatex">\[
+2\sigma T = W_{\rm adv} - D_{\rm th} + W_{\Omega,\rm th} , \qquad T = \int p_0\lvert s\rvert^2\thinspace dV ,
+\]</div>
+<p>with the advection by the background gradient
+<span class="arithmatex">\(W_{\rm adv} = -2\thinspace\mathrm{Re}\int p_0\thinspace\frac{dS}{dr}\thinspace u_r s^*\thinspace dV\)</span>, the diffusion
+<span class="arithmatex">\(D_{\rm th} = 2\thinspace\mathrm{ThermaD}\int\kappa p_0\lvert\nabla s\rvert^2\thinspace dV\)</span> (the wall term vanishes for
+both thermal conditions, <span class="arithmatex">\(s = 0\)</span> or <span class="arithmatex">\(\partial_r s = 0\)</span>), and, with a differential rotation,
+<span class="arithmatex">\(W_{\Omega,\rm th} = -2\thinspace\mathrm{Re}\int p_0\thinspace s^*\left[i m\thinspace\mathrm{Gaspard}\thinspace\Delta\Omega\thinspace s + \mathbf u\cdot\nabla S_{tw}\right]dV\)</span>.</p>
+<p><span class="arithmatex">\(T\)</span> is not an energy, and this budget closes on its own: the buoyancy work <span class="arithmatex">\(W_b\)</span> is only in the kinetic budget. The two
+combine into a total energy with the available potential energy, in the convention above
+<span class="arithmatex">\(\int\rho_0\thinspace\mathrm{Beyonce}\thinspace g\thinspace\lvert s\rvert^2/(dS/dr)\thinspace dV\)</span>: without diffusion its rate of
+change is <span class="arithmatex">\(-W_b\)</span>. It is positive only where the stratification is stable, and kore does not form it.</p>
+<h3 id="a-forced-periodic-response">A forced, periodic response</h3>
+<p>A forced run has <span class="arithmatex">\(\lambda = i\thinspace\)</span><code>forcing_frequency</code>, so <span class="arithmatex">\(\sigma = 0\)</span>, and the kinetic budget reads</p>
+<div class="arithmatex">\[
+P_{\rm in} \equiv W_p + W_\nu^{\rm wall} = D_\nu - W_b - W_\Omega :
+\]</div>
+<p>the power that the moving walls put into the flow is dissipated by viscosity, handed to the entropy perturbation, or
+given to the differential rotation. With a uniform rotation and no buoyancy, <span class="arithmatex">\(P_{\rm in} = D_\nu\)</span>. With a differential
+rotation <span class="arithmatex">\(W_\Omega\)</span> has either sign, so the power the forcing puts in and the heat the viscosity releases can differ.
+<a href="../tidal-forcing/">Tidal forcing</a> explains which of these quantities a tidal study needs, and
+<a href="../numerical-method/#checks">Numerical method</a> how <code>spin_doctor</code> computes them.</p>
 <h2 id="where-the-approximation-holds">Where the approximation holds</h2>
 <ul>
 <li><strong>Sound-proof</strong>: <span class="arithmatex">\(\max(\lvert\lambda\rvert^2, 4\Omega^2) \ll c^2k^2\)</span> for a mode of wavenumber <span class="arithmatex">\(k\)</span>, with <span class="arithmatex">\(c\)</span> the sound speed.

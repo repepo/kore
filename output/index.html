@@ -600,6 +600,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../tidal-forcing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tidal forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../magnetic/" class="md-nav__link">
         
   
@@ -1238,7 +1266,7 @@ which may have other columns.</p>
 </tr>
 <tr>
 <td>4</td>
-<td>the viscous dissipation</td>
+<td>the power of the viscous force <span class="arithmatex">\(\int\mathbf u\cdot(\nabla\cdot\boldsymbol\sigma)\thinspace dV\)</span>: minus the viscous dissipation when <span class="arithmatex">\(\mathbf u = 0\)</span> at the walls (column 26 otherwise)</td>
 </tr>
 <tr>
 <td>5–7</td>
@@ -1259,6 +1287,22 @@ which may have other columns.</p>
 <tr>
 <td>18–20</td>
 <td>the power of the differential rotation, its imaginary part, and its enstrophy term (0 without it)</td>
+</tr>
+<tr>
+<td>21–23</td>
+<td>the power of the pressure on the fluid at the inner and at the outer wall, <span class="arithmatex">\(-2\,\mathrm{Re}\oint\rho_0\Pi\thinspace u_r^*\thinspace dA\)</span> with <span class="arithmatex">\(\Pi = p'/\rho_0\)</span>, and the imaginary part of their sum; zero unless <span class="arithmatex">\(u_r \neq 0\)</span> at a wall (forced boundary flows, <code>bco = 2</code>); in residσ and residω</td>
+</tr>
+<tr>
+<td>24–25</td>
+<td>the power of the viscous stress on the fluid at the inner and at the outer wall, <span class="arithmatex">\(2\,\mathrm{Re}\oint\mathbf u^*\cdot\boldsymbol\sigma\cdot\mathbf n\thinspace dA\)</span></td>
+</tr>
+<tr>
+<td>26</td>
+<td>the viscous dissipation <span class="arithmatex">\(\int\boldsymbol\sigma:\nabla\mathbf u\thinspace dV = \int 2\rho_0\nu\thinspace\mathsf e_d:\mathsf e_d\thinspace dV \geq 0\)</span> (<span class="arithmatex">\(\mathsf e_d\)</span> the deviatoric rate of strain), from an <span class="arithmatex">\((r, \theta)\)</span> grid; column 4 is <span class="arithmatex">\(\int\mathbf u\cdot(\nabla\cdot\boldsymbol\sigma)\thinspace dV\)</span> = columns 24 + 25 − 26</td>
+</tr>
+<tr>
+<td>27</td>
+<td>the relative residual of that identity</td>
 </tr>
 </tbody>
 </table>

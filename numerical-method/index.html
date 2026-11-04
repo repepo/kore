@@ -595,6 +595,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../tidal-forcing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tidal forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../magnetic/" class="md-nav__link">
         
   
@@ -1353,17 +1381,75 @@ one (<code>bci</code>, when <code>ricb &gt; 0</code>); the full sphere has no co
 only when <code>ThermaD &gt; 0</code>. Without viscosity only <span class="arithmatex">\(P_l = 0\)</span> is imposed. <code>bco = 2</code> (and <code>bci = 2</code>) replaces <span class="arithmatex">\(u_r = 0\)</span> by a
 zero viscous radial stress, <span class="arithmatex">\(\left[r(\ln\rho_0)' - 3\right]P_l + 3rP_l' = 0\)</span>, which does not contain the pressure.</p>
 <h2 id="checks">Checks</h2>
-<p><code>spin_doctor.py</code> evaluates the energy balance of each solution, built from the fields independently of the
-matrices: with <span class="arithmatex">\(K = \int\rho_0\lvert\mathbf u\rvert^2\thinspace dV\)</span>,</p>
+<p><code>spin_doctor.py</code> evaluates the budgets of <a href="../anelastic/#energy-balance">Energy balance</a> for each solution, from the
+fields and independently of the matrices. The radial integrals use Gauss–Legendre quadrature with <span class="arithmatex">\(3N/2\)</span> nodes, the
+angular ones the orthogonality of the harmonics (<span class="arithmatex">\(\int\lvert Y_l\rvert^2\thinspace d\Omega = 4\pi/(2l+1)\)</span>). The force of a
+differential rotation and the dissipation <span class="arithmatex">\(D_\nu\)</span> are computed on an <span class="arithmatex">\((r, \cos\theta)\)</span> grid, with Gauss–Legendre
+quadrature in <span class="arithmatex">\(\cos\theta\)</span>, exact for these polynomials. Each residual is relative to the largest of its terms:</p>
+<table>
+<thead>
+<tr>
+<th>residual</th>
+<th>budget</th>
+<th>in <code>spin_doctor</code>'s names</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>residσ</td>
+<td><span class="arithmatex">\(2\sigma K - W_\nu - W_b - W_\Omega - W_p = 0\)</span> (and the Lorentz work)</td>
+<td><code>2σ KE - Dkin - Wthm - Wdr - Wp</code></td>
+</tr>
+<tr>
+<td>residω</td>
+<td>its imaginary part, with the Coriolis force</td>
+<td><code>2w KE + Wcor_im - Dkin_im - Wthm_im - Wdr_im - Wp_im</code>, <span class="arithmatex">\(w = \mathrm{Im}\thinspace\lambda\)</span></td>
+</tr>
+<tr>
+<td>resid<span class="arithmatex">\(s\)</span></td>
+<td><span class="arithmatex">\(2\sigma T - W_{\rm adv} + D_{\rm th} - W_{\Omega,\rm th} = 0\)</span></td>
+<td><code>2σ TE - Dthm - Wadv - Wdr_thm</code> (<code>Dthm</code> <span class="arithmatex">\(= -D_{\rm th}\)</span>)</td>
+</tr>
+<tr>
+<td>residD</td>
+<td><span class="arithmatex">\(W_\nu - W_\nu^{\rm wall} + D_\nu = 0\)</span></td>
+<td><code>Dkin - (Wv_icb + Wv_cmb) + Dvisc</code></td>
+</tr>
+</tbody>
+</table>
+<p>residσ and resid<span class="arithmatex">\(s\)</span> judge whether a solution is resolved (<a href="../solver/">Solver</a> gives the thresholds), also for forced
+runs, where <span class="arithmatex">\(\sigma = 0\)</span>. residD compares two independent computations of the viscous terms: <span class="arithmatex">\(W_\nu\)</span> from the viscous
+force of each degree (<code>utils4pp.visforce</code>), and <span class="arithmatex">\(D_\nu\)</span> from the strain rate on the grid
+(<code>utils4pp.viscous_dissipation</code>). It is <span class="arithmatex">\(10^{-15}\)</span> to <span class="arithmatex">\(10^{-12}\)</span>.</p>
+<p><strong>The work at the walls</strong> (<code>utils4pp.wall_powers</code>). kore does not solve for the pressure. <code>spin_doctor</code> recovers it
+from the momentum equation: <span class="arithmatex">\(\nabla\Pi = \mathbf F - \lambda\mathbf u\)</span>, with <span class="arithmatex">\(\mathbf F\)</span> every force but the pressure, and
+the consoidal component of a gradient is <span class="arithmatex">\(\Pi_l/r\)</span>, so that for each degree <span class="arithmatex">\(l\)</span> of <span class="arithmatex">\(P\)</span></p>
 <div class="arithmatex">\[
-\sigma K = -\frac{\mathrm{ViscosD}}{2}\int\rho_0\nu\thinspace\lvert\mathsf S\rvert^2\thinspace dV + \mathrm{Beyonce}\thinspace\mathrm{Re}\int\rho_0\thinspace g\thinspace u_r^* s\thinspace dV ,
+\Pi_l = r\left[\mathbf F - \lambda\mathbf u\right]_{s,l} ,
 \]</div>
-<p>and the entropy balance, the heat equation times <span class="arithmatex">\(s^*\)</span> integrated:</p>
+<p>the consoidal component of the Coriolis, viscous and differential-rotation forces and of <span class="arithmatex">\(\lambda\mathbf u\)</span>
+(<code>utils4pp.pressure_force</code>). The buoyancy is radial and does not enter. With <span class="arithmatex">\(q_l = \mathcal L P_l/r\)</span> the radial
+velocity, <span class="arithmatex">\(s_l\)</span> and <span class="arithmatex">\(t_l\)</span> the consoidal and toroidal components of <span class="arithmatex">\(\mathbf u\)</span>,</p>
 <div class="arithmatex">\[
-\sigma\int p_0\lvert s\rvert^2\thinspace dV = -\mathrm{Re}\int p_0\frac{dS}{dr}u_r s^*\thinspace dV - \mathrm{ThermaD}\int\kappa p_0\lvert\nabla s\rvert^2\thinspace dV .
+W_p = -2\thinspace\mathrm{Re}\sum_l \frac{4\pi}{2l+1}\Big[\rho_0\thinspace r^2\thinspace q_l^*\thinspace\Pi_l\Big]_{\rm inner}^{\rm outer},
 \]</div>
-<p>Their relative residuals are residσ and resid<span class="arithmatex">\(s\)</span> (<a href="../solver/">Solver</a> gives the thresholds). <code>ru_insane.py</code> checks the
-same pairings on the operators themselves: inertia Hermitian and positive, Coriolis anti-Hermitian, viscous Hermitian and</p>
+<p>and the stress on a sphere is</p>
+<div class="arithmatex">\[
+\boldsymbol\sigma\cdot\hat{\mathbf r} = \mathrm{ViscosD}\thinspace\rho_0\nu\left[\left(2q_l' + \tfrac23(\ln\rho_0)'q_l\right)Y\hat{\mathbf r} + \left(s_l' - \frac{s_l}{r} + \frac{q_l}{r}\right)r\nabla Y + \left(t_l' - \frac{t_l}{r}\right)r\nabla Y\times\hat{\mathbf r}\right],
+\]</div>
+<p>dotted with <span class="arithmatex">\(\mathbf u^*\)</span> and integrated over each wall for <span class="arithmatex">\(W_\nu^{\rm wall}\)</span>. <code>flow.dat</code> has these terms for each wall
+(<a href="../output/">Output files</a>).</p>
+<p><span class="arithmatex">\(\Pi_l\)</span> needs the radial derivatives of <span class="arithmatex">\(P_l\)</span> up to the third at the walls. That is where the truncation error of the
+tau method is largest, and near a surface of low density the <span class="arithmatex">\((\ln\rho_0)'\)</span> terms of the viscous force amplify it. The
+wall pressure therefore converges with N more slowly than the volume integrals. For <code>'Wu 2005'</code> (<code>r_out</code> 0.99) at
+Ek <span class="arithmatex">\(10^{-3}\)</span>, residσ of a forced run is <span class="arithmatex">\(5\times10^{-2}\)</span> at N 96 and <span class="arithmatex">\(2\times10^{-10}\)</span> at N 192 in a shell, and 0.36,
+<span class="arithmatex">\(6\times10^{-6}\)</span> and <span class="arithmatex">\(10^{-8}\)</span> at N 192, 288 and 384 in a full sphere, while the kinetic energy and the dissipation have
+converged at the lowest N. Where <span class="arithmatex">\(u_r = 0\)</span> at the walls, <span class="arithmatex">\(W_p = 0\)</span> whatever the resolution.</p>
+<p><code>ru_insane.py</code> checks the same pairings on the operators themselves: inertia Hermitian and positive, Coriolis
+anti-Hermitian, viscous Hermitian and negative, the entropy and diffusion blocks, the buoyancy and the advection against
+quadratures, and the differential-rotation blocks against an <span class="arithmatex">\((r, \theta)\)</span> grid. <code>tests/tidal</code> checks the budgets with
+moving walls, against an exact solution of the forced flow and on runs with a variable density, buoyancy and a
+differential rotation.</p>
 
 
 
