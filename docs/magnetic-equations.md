@@ -598,7 +598,9 @@ $$
 
 the hoop stress and, with a varying density, the magnetic pressure. It vanishes for a field without current in the
 fluid: a poloidal field with $D_n h_n = 0$ for every degree, that is $h_n = a\,r^n + b\,r^{-(n+1)}$, and no toroidal
-part. For other fields, with the field and the rotation varying on the same scale, the ratio of the two terms is about
+part. With a uniform density it also vanishes for the toroidal `'Malkus'` field with `B0_tor_l = 1`, $B_\phi \propto s$,
+whose force is then a gradient that pressure balances. For other fields, with the field and the rotation varying on the
+same scale, the ratio of the two terms is about
 
 $$
 \epsilon = \frac{\mathrm{Le}^2\lvert\mathbf B_0\rvert^2}{2\rho_0\lvert\Delta\Omega\rvert} ,

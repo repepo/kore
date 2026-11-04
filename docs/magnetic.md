@@ -5,6 +5,12 @@ flow and of the field together: the field's Lorentz force acts on the flow, and 
 field. The background field is fixed, steady and axisymmetric. It is imposed, not computed: there is no dynamo, and the
 background flow does not react to it.
 
+**kore does not include the field in the thermal-wind balance.** The [thermal-wind entropy](background.md#thermal-wind)
+is computed from the imposed rotation alone, as without a field, and the field's force acts only on the perturbations.
+This is exact for a field that carries no current, such as `B0 = 'axial'`, and a good approximation when the field's
+force is weak compared with the Coriolis force of the differential rotation
+([Validity and caveats](#validity-and-caveats)).
+
 This page shows how to set up a run and how to choose the background field. The equations, the formula of every field
 and the checks of the code are on [Magnetic field equations](magnetic-equations.md).
 
@@ -300,8 +306,8 @@ The field, more than the flow, usually sets the resolution and the memory a run 
 
 ## Validity and caveats
 
-kore holds the background field and the background flow fixed, and neither acts on the other. This section says what
-that leaves out and when it matters. Two effects that would change the background are left out:
+kore holds the background field and the background flow fixed. This section says what that leaves out and when it
+matters. Two effects that would change the background are left out:
 
 - **Ohmic decay.** A field that carries electric current would decay by diffusion; kore holds it fixed, with or without
   rotation. Only the wound field is steady by itself, since the winding balances its diffusion.

@@ -308,6 +308,8 @@ differential rotation adds to the heat equation. The advection of $s$ by the rot
   also the only background entropy gradient, and its effect on the modes is of the same order as the momentum terms.
 - With `diff_rot = 1` the default `thermal_wind = 1` includes the thermal wind. For the advection of $s$ by the
   rotation alone, set `thermal_wind = 0`.
+- With `magnetic = 1`, $S_{tw}$ leaves out the force of the background field: it is the same as in a run without a field
+  ([Magnetic field](magnetic.md)).
 
 ### Resolution and cost
 

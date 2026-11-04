@@ -1,4 +1,4 @@
-# Checking a change
+# Modifying kore
 
 After changing kore, two questions matter: do the runs that worked before still give the same results, and is the new
 part right? kore has a tool for each. Everything below runs from the repository, on one machine; most checks take

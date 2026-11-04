@@ -32,7 +32,7 @@ history. §15 lists what the first threads of the claude.ai project behind this 
   residuals; for changes to the background, the differential rotation or the heat equation, `tests/diff_rot/regress.sh`
   (bitwise A, B against an older checkout) and `tests/heat_dr/run_all.sh`; before a push, `cd tests/ci; pytest -v`
   (the GitHub test, §11). Existing runs are expected to stay bitwise identical unless a change says otherwise.
-  `docs/checking.md` ("Checking a change") is the user-facing guide to these checks.
+  `docs/checking.md` ("Modifying kore") is the user-facing guide to these checks.
 - The checked-in `bin/parameters.py` is the "gi1" gravito-inertial mode: ricb 0.35, m 2, thermal, structure 'Wu 2005'
   (r_out 0.99) with stratification 'top hat', N 192, lmax 121, ncpus 10, target 2.04i; expected
   λ = −0.049653 + 2.037155i. `examples/smooth_sun/parameters.py` is the solar example (§6).
