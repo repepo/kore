@@ -8,6 +8,7 @@ nav:
       - Background model: background.md
       - Convective forcing: forcing.md
       - Thermal forcing: thermal-forcing.md
+      - Tidal forcing: tidal-forcing.md
       - Magnetic field: magnetic.md
       - Solver: solver.md
       - Output files: output.md

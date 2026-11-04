@@ -530,7 +530,7 @@ def thermal_wind_entropy():
 
 
 
-_dr_bg = None  # NEW (2026-10-20): (key, diff_rot_background()) for the current radial grid, see diff_rot_setup
+_dr_bg = {}  # NEW (2026-10-20): {key: diff_rot_background()} for the radial grids in use, see diff_rot_setup
 
 
 def diff_rot_background(ll):
@@ -590,11 +590,13 @@ def diff_rot_setup():
 
     # NEW (2026-10-20): what does not depend on the solution (angular grid, Y, ΔΩ and S_tw on the grid) is computed
     # once per radial grid and kept in _dr_bg (2.5 s per solution before, at N = 192, lmax = 64, thermal_wind = 2)
-    global _dr_bg
+    # (NEW 2026-11-04: two grids are kept, the quadrature nodes of diagnose and the walls of wall_powers)
     key = ( rk.tobytes(), repr(sorted(vars(par).items())) )  # the grid and every parameter
-    if _dr_bg is None or _dr_bg[0] != key:
-        _dr_bg = ( key, diff_rot_background(ll) )
-    [ x, wx, sth, Y, dY, imY, dO, dOt, tw ] = _dr_bg[1]
+    if key not in _dr_bg:
+        if len(_dr_bg) >= 2:
+            _dr_bg.clear()
+        _dr_bg[key] = diff_rot_background(ll)
+    [ x, wx, sth, Y, dY, imY, dO, dOt, tw ] = _dr_bg[key]
 
     # 𝐮 and ∂ᵣ𝐮 on the grid: u[d] = [uᵣ, u_θ, uᵩ] (d = 0) or their radial derivatives (d = 1), rows rk, columns cosθ
     # NEW (2026-10-20): sums over l as matrix products (rows rk, columns l) @ (rows l, columns cosθ), not np.outer per l
@@ -1090,13 +1092,113 @@ def visforce( l ):
 
 
 
+def pressure_force(l, eigval):
+    '''
+    NEW (2026-11-04): the pressure gradient ∇Π = 𝐅 - λ𝐮, l-component (l of the poloidals), from the momentum equation
+    per unit mass λ𝐮 = 𝐅 - ∇Π, with Π = p′/ρ₀ (LBR) and 𝐅 every other force, as in flow_worker: the Coriolis force
+    -coriolis, (∇⋅𝛔)/ρ₀ (visforce), the buoyancy (radial, so not in the consoidal part) and the differential rotation
+    (drforce). eigval = λ = σ + iω, the fields ∝ e^{λt} (forced runs: i forcing_frequency). Returns [ [q, ∂ᵣq], [s, ∂ᵣs] ]
+    of ∇Π at rk: Π_l = r s (and Π_l′ = q where the momentum rows are solved). No Lorentz force: magnetic = 1 has no forced
+    runs.
+    '''
+    [ velq, vels, _ ] = velocity(l)
+    [ corq, cors, _ ] = coriolis(l)
+    q = [ -corq[d] - eigval*velq[d] for d in (0,1) ]
+    s = [ -cors[d] - eigval*vels[d] for d in (0,1) ]
+    forces = []
+    if par.ViscosD > 0:
+        forces.append( visforce(l) )
+    if par.thermal:
+        forces.append( buoyancy(l) )
+    if par.diff_rot:
+        forces.append( drforce[l] )
+    for [ fq, fs, _ ] in forces:
+        q = [ q[d] + fq[d] for d in (0,1) ]
+        s = [ s[d] + fs[d] for d in (0,1) ]
+    return [ q, s ]
 
 
 
+def wall_powers(usol, tsol, eigval):
+    '''
+    NEW (2026-11-04): the power of the wall stresses on the fluid, for [inner, outer] wall (inner 0 in a full sphere),
+        pressure  Wp = -2 ∮ ρ₀ Π uᵣ* dA (complex: its real part closes residσ, its imaginary part residω),
+        viscous   Wv =  2 Re ∮ 𝐮*⋅𝛔⋅𝐧 dA,   𝛔 = ρ₀ ν ViscosD [ ∇𝐮 + (∇𝐮)ᵀ - ⅔(∇⋅𝐮) 𝐈 ],   ∇⋅𝐮 = -(ln ρ₀)′ uᵣ,
+    with 𝐧 = -𝐫̂ at the inner wall; in the convention of dotprod_pol (the physical field is 𝐮 e^{imφ} + c.c.).
+    𝛔⋅𝐫̂ = ρ₀ ν ViscosD [ (2q′ + ⅔(ln ρ₀)′q) Y 𝐫̂ + (s′ - s/r + q/r) r∇Y + (t′ - t/r) r∇Y×𝐫̂ ]. Π from pressure_force at
+    the walls (eigval as there). Dkin = ∫ 𝐮⋅(∇⋅𝛔) dV = Wv - Dν (viscous_dissipation). Both are zero where uᵣ = 0 (Wp) or 𝐮 = 0 (Wv).
+    Sets the grid globals at the walls: call after the other diagnostics (diagnose, diagnose_magnetic).
+    '''
+    rw = np.array([ par.ricb, ut.rcmb ]) if par.ricb > 0 else np.array([ ut.rcmb ])
+    set_radii(rw)
+    set_solution(usol, tsol)
+    if par.diff_rot:
+        diff_rot_setup()
+    [ lp, lt, ll ] = ut.ell(par.m, par.lmax, par.symm)
+    nu = rho0*vsc0*par.ViscosD
+    Wp = np.zeros(len(rw), dtype=complex)
+    Wv = np.zeros(len(rw))
+    for l in ll:
+        [ velq, vels, velt ] = velocity(l)
+        if l in lp:
+            Pi = rk*pressure_force(l, eigval)[1][0]
+            Wp += -2*rho0*cdot_pol(l, velq[0], vels[0], Pi, 0*Pi)
+            tq = 2*velq[1] + (2/3)*lho1*velq[0]
+            ts = vels[1] - vels[0]/rk + velq[0]/rk
+            Wv += nu*dotprod_pol(l, velq[0], vels[0], tq, ts)
+        else:
+            tt = velt[1] - velt[0]/rk
+            Wv += nu*dotprod_tor(l, velt[0], tt)
+    if par.ricb > 0:
+        return [ Wp*np.array([-1, 1]), Wv*np.array([-1, 1]) ]
+    return [ np.concatenate(([0], Wp)), np.concatenate(([0], Wv)) ]
 
 
 
+def viscous_dissipation():
+    '''
+    NEW (2026-11-04): the viscous dissipation Dν = ∫ 𝛔:∇𝐮 dV = ∫ 2 ρ₀ ν ViscosD 𝐞_d:𝐞_d dV ≥ 0, 𝐞_d = 𝐞 - ⅓(∇⋅𝐮)𝐈 the deviatoric
+    part of the rate of strain 𝐞 = ½[∇𝐮 + (∇𝐮)ᵀ] (𝛔 = 2 ρ₀ ν ViscosD 𝐞_d), in the convention of dotprod_pol (the physical
+    field is 𝐮 e^{imφ} + c.c., so 2 𝐞_d:𝐞_d* for the complex amplitudes). Computed on an (rk, cosθ) grid from the velocity
+    (Gauss-Legendre in cosθ, exact for these polynomials), independently of visforce: Dkin = Wv - Dν (wall_powers) checks
+    both. Call after diagnose (at its grid).
+    '''
+    m = par.m
+    [ lp, lt, ll ] = ut.ell(par.m, par.lmax, par.symm)
+    x, wx = np.polynomial.legendre.leggauss( par.lmax + 12 )
+    sth = np.sqrt(1 - x**2)
+    [ Yg, dYg, Zg ] = angular.ylm_grid(m, int(max(ll)), x)    # Y, ∂θY, i m Y/sinθ, rows l
+    Vg = Zg/(1j*m) if m else 0*Yg                             # Y/sinθ (only used multiplied by m)
+    L  = (np.arange(np.shape(Yg)[0])*(np.arange(np.shape(Yg)[0]) + 1.))[:,None]
+    d2Yg = -x*dYg/sth - L*Yg + m**2*Vg/sth                     # ∂θ²Y, from the Legendre equation
+    dZg  = 1j*m*( dYg - x*Vg )/sth                             # ∂θ(i m Y/sinθ)
 
+    # u and its r- and θ-derivatives on the grid (rows rk, columns cosθ): u_r, u_θ, u_φ = Σ q Y, s ∂θY + t Z, s Z - t ∂θY
+    u, ur, ut_ = [ np.zeros((3, len(rk), len(x)), dtype=complex) for k in (0,1,2) ]
+    for l in ll:
+        [ q, s, t ] = velocity(l)
+        Y, dY, Z, d2Y, dZ = Yg[l], dYg[l], Zg[l], d2Yg[l], dZg[l]
+        for d, A in ((0, u), (1, ur)):
+            A[0] += np.outer(q[d], Y)
+            A[1] += np.outer(s[d], dY) + np.outer(t[d], Z)
+            A[2] += np.outer(s[d], Z) - np.outer(t[d], dY)
+        ut_[0] += np.outer(q[0], dY)
+        ut_[1] += np.outer(s[0], d2Y) + np.outer(t[0], dZ)
+        ut_[2] += np.outer(s[0], dZ) - np.outer(t[0], d2Y)
+
+    r, st, ct, im = rk[:,None], sth[None,:], x[None,:], 1j*m
+    err = ur[0]
+    ett = ( ut_[1] + u[0] )/r
+    epp = ( im*u[2] + ct*u[1] )/(r*st) + u[0]/r
+    ert = 0.5*( ur[1] - u[1]/r + ut_[0]/r )
+    erp = 0.5*( im*u[0]/(r*st) + ur[2] - u[2]/r )
+    etp = 0.5*( ut_[2] - ct*u[2]/st + im*u[1]/st )/r
+    div = err + ett + epp
+    ee  = ( abs(err - div/3)**2 + abs(ett - div/3)**2 + abs(epp - div/3)**2
+            + 2*( abs(ert)**2 + abs(erp)**2 + abs(etp)**2 ) )
+
+    f = 2 * 2*rho0[:,None]*vsc0[:,None]*par.ViscosD * ee       # 2 (c.c.) × 2 ρ₀ ν ViscosD 𝐞_d:𝐞_d*
+    return 2*np.pi*np.sum( (wk*rk**2)[:,None]*wx[None,:]*f )*(ut.rcmb - par.ricb)/2
 
 
 
@@ -1153,8 +1255,18 @@ def setup_grid(Ra, Rb):
     xk, wk = np.polynomial.legendre.leggauss(Nq)
 
     # rk are the corresponding radial points in the desired integration interval: from Ra to Rb
+    set_radii( 0.5*(Rb-Ra)*( xk + 1 ) + Ra )
+
+
+
+def set_radii(radii):
+    '''
+    NEW (2026-11-04): sets the radii rk and the background profiles sampled there (rho0, lho1..lho5, vsc0..vsc3, const0,
+    pss0, ...) as module globals, for the workers below. setup_grid calls it at the quadrature nodes, diagnose_4plot at
+    the plot radii and wall_powers at the walls.
+    '''
     global rk
-    rk = 0.5*(Rb-Ra)*( xk + 1 ) + Ra
+    rk = radii
 
     # x0 are the points in the appropriate domain of the Chebyshev polynomial solutions
     global x0
@@ -1745,40 +1857,7 @@ def diagnose_4plot( ncpus, usol, tsol, radii, field0):
     global field
     field =  field0
 
-    global rk
-    rk = radii
-    global r2
-    r2 = rk**2
-    global r3
-    r3 = rk**3
-    global r4
-    r4 = rk**4
-
-    global rho0
-    rho0 = np.exp(rap.logrhoX(rk, 0))
-
-    global lho1
-    lho1 = rap.logrhoX(rk,1)
-    global lho2
-    lho2 = rap.logrhoX(rk,2)
-    global lho3
-    lho3 = rap.logrhoX(rk,3)
-    global lho4
-    lho4 = rap.logrhoX(rk,4)
-    global lho5
-    lho5 = rap.logrhoX(rk,5)
-    global lh12
-    lh12 = lho1*lho2
-
-    # Kinematic viscosity and its derivatives
-    global vsc0
-    vsc0 = rap.viscoX( rk, 0)
-    global vsc1
-    vsc1 = rap.viscoX( rk, 1)
-    global vsc2
-    vsc2 = rap.viscoX( rk, 2)
-    global vsc3
-    vsc3 = rap.viscoX( rk, 3)
+    set_radii(radii)  # NEW (2026-11-04): the radii and the background profiles there
 
     set_solution(usol, tsol)  # NEW (2026-10-20): the solution and the tables of its radial functions at the radii
 

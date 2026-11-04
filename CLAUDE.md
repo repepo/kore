@@ -94,9 +94,10 @@ Other directories: `tests/ci/` (the test GitHub runs on every push, §11); `test
 `tests/rsf/` (§11, each with a README); `docs/` (mkdocs, public user documentation: `installation.md` (from conductive_IC), `getting-started.md` (a
 step-by-step run of Baruteau & Rieutord 2013 fig. 10), the user guide `background.md` (structure, stratification,
 diffusivity with ThermaD = 0, rotation and thermal wind), `forcing.md` (forcing 11: a worked m = 2 Rossby-mode scan, set-up,
-output), `magnetic.md` (choosing the background field B0, its options and caveats), `solver.md` (bad solutions, memory) and `output.md` (the files and their columns), `benchmarks.md` (set-up and result of each published benchmark), `checking.md` (which check to run after a change,
+output), `tidal-forcing.md` (forcing 14: the walls move as a degree-2 tide; the energy of the response), `magnetic.md` (choosing the background field B0, its options and caveats), `solver.md` (bad solutions, memory) and `output.md` (the files and their columns), `benchmarks.md` (set-up and result of each published benchmark), `checking.md` (which check to run after a change,
 and how: `regress.sh`, `regress_solve.sh`, the suites), and the mathematical framework
-`anelastic.md` (the LBR equations, non-dimensionalization, ThermaD = 0, the terms of a differential rotation, validity),
+`anelastic.md` (the LBR equations, non-dimensionalization, ThermaD = 0, the terms of a differential rotation, the energy
+balance with the work at the walls, validity),
 `numerical-method.md` (unknowns, radial basis, rows, boundary conditions, checks), `differential_rotation_details.md`
 (the equations and code of the differential rotation), `magnetic-equations.md` (the magnetic equations, every B0
 profile, rows, boundary conditions, Ferraro constructions, wound field, budgets, checks) and `reynolds-stress.md` (forcing 11: origin of the force,
@@ -350,6 +351,10 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   expressions, the table file and the first 12 hex digits of its sha256), which `np.loadtxt` skips. `flow.dat`,
   `thermal.dat`, `magnetic.dat` columns are the `flow_cols`, `thermal_cols`, `magnetic_cols` lists.
 - With diff rot, `upp.diff_rot_setup` computes the force and heat terms on an (r, cos θ) grid and projects them back.
+- Walls (2026-11-04): `upp.wall_powers` gives the work of the pressure (Π = r G_s from the consoidal momentum equation,
+  `pressure_force`; in residσ, residω) and of the viscous stress at each wall, `upp.viscous_dissipation` the dissipation
+  ∫𝛔:∇𝐮 on an (r, θ) grid; `Dkin` = Wv − Dvisc (residD). Π at the walls converges more slowly than the volume terms
+  ('Wu 2005' at Ek 1e-3: N 96 gives residσ 5e-2 in a forced run, N 192 2e-10); residσ flags it.
 
 ## 11. Tests
 
@@ -391,6 +396,9 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   dissipation bound), `spectrum_check.py pick|fields|check` (solve.py's sampled spectrum against the exact E[KE(w)]
   and the single-mode energy Θ f_eff); `run_all.sh` (needs petsc4py for the solves, and an `MPIEXEC` that starts
   mpi4py's MPI); `regress_solve.sh OLD_KORE` (eigen and forcing-10 solves bitwise against an older checkout).
+- `tests/tidal/` (README, `run_all.sh`, ~2 min on 4 ranks): `stokes_check.py` (forcing 14 without rotation against the
+  exact unsteady Stokes solution: P_2(r), KE, Wp, Wv, Dvisc), `budget_check.py` (residσ, residω, residD and the wall
+  work on seven runs: 'Wu 2005', buoyancy, diff rot, the three wall conditions, a full sphere at N 384), `mk_run.py`.
 - `tests/ci/test_spinover.py` (`cd tests/ci; pytest -v`, about 6 s): the test GitHub runs on every push to anelastic_log
   (`.github/workflows/anelastic_log.yml`: Ubuntu 24.04 with its PETSc/SLEPc 3.19, numpy 1.26 and scipy 1.11 packages, so
   `bin/` must not need newer ones; pushes that change only docs or `.md` files are skipped). It runs the smooth Sun

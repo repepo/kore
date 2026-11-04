@@ -31,12 +31,16 @@ Columns, counted from 1:
 | columns | content |
 | --- | --- |
 | 1–3 | kinetic energy, and its poloidal and toroidal parts (the eigenvectors are normalised to kinetic energy 1) |
-| 4 | the viscous dissipation |
+| 4 | the power of the viscous force $\int\mathbf u\cdot(\nabla\cdot\boldsymbol\sigma)\thinspace dV$: minus the viscous dissipation when $\mathbf u = 0$ at the walls (column 26 otherwise) |
 | 5–7 | the degree $l$ of the largest kinetic energy, the width of the $l$ spectrum, and the ℓ-convergence (the columns Peak ℓ, ℓ-Width and ℓ-Convergence of the `spin_doctor` table) |
 | 8–11 | the enstrophy, and the Coriolis, viscous and buoyancy terms of its balance |
 | 12–14 | the radius, the degree and the value of the largest toroidal component of the curl of the viscous force (cvf_r, cvf_l, cvfmax) |
 | 15–17 | the relative residuals of the enstrophy balance (residens), of the imaginary part of the power balance (residω) and of its real part, the energy residual (residσ) |
 | 18–20 | the power of the differential rotation, its imaginary part, and its enstrophy term (0 without it) |
+| 21–23 | the power of the pressure on the fluid at the inner and at the outer wall, $-2\,\mathrm{Re}\oint\rho_0\Pi\thinspace u_r^*\thinspace dA$ with $\Pi = p'/\rho_0$, and the imaginary part of their sum; zero unless $u_r \neq 0$ at a wall (forced boundary flows, `bco = 2`); in residσ and residω |
+| 24–25 | the power of the viscous stress on the fluid at the inner and at the outer wall, $2\,\mathrm{Re}\oint\mathbf u^*\cdot\boldsymbol\sigma\cdot\mathbf n\thinspace dA$ |
+| 26 | the viscous dissipation $\int\boldsymbol\sigma:\nabla\mathbf u\thinspace dV = \int 2\rho_0\nu\thinspace\mathsf e_d:\mathsf e_d\thinspace dV \geq 0$ ($\mathsf e_d$ the deviatoric rate of strain), from an $(r, \theta)$ grid; column 4 is $\int\mathbf u\cdot(\nabla\cdot\boldsymbol\sigma)\thinspace dV$ = columns 24 + 25 − 26 |
+| 27 | the relative residual of that identity |
 
 ## `thermal.dat`
 

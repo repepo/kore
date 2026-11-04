@@ -284,6 +284,13 @@ def main(ncpus):
     Wdr         = np.zeros(success)  # power of the differential-rotation force, real and imaginary parts
     Wdr_im      = np.zeros(success)
     Ensdr       = np.zeros(success)
+    Wp_icb      = np.zeros(success)  # NEW (2026-11-04): power of the pressure at the inner and outer walls (real part),
+    Wp_cmb      = np.zeros(success)  #   and the imaginary part of their sum (upp.wall_powers)
+    Wp_im       = np.zeros(success)
+    Wv_icb      = np.zeros(success)  # power of the viscous stress at the inner and outer walls (upp.wall_powers)
+    Wv_cmb      = np.zeros(success)
+    Dvisc       = np.zeros(success)  # viscous dissipation ∫ 𝛔:∇𝐮 dV (upp.viscous_dissipation)
+    residD      = np.full(success, np.nan)  # relative residual of Dkin = Wv_icb + Wv_cmb - Dvisc
     ldom        = np.zeros(success,dtype=int)
     lwidth      = np.zeros(success,dtype=int)
     lconv       = np.zeros(success)
@@ -332,7 +339,10 @@ def main(ncpus):
         ( 'residω',        '{:8.2e}',   lambda i: resid2[i] ),
     ] + ([
         ( 'resid𝑠',        '{:8.2e}',   lambda i: resid3[i] ),
-    ] if par.thermal else []) + ([
+    ] if par.thermal else []) + ([   # NEW (2026-11-04): forced runs, the power the walls put in and the viscous dissipation
+        ( 'P_in',          '{: .6e}',   lambda i: Wp_icb[i] + Wp_cmb[i] + Wv_icb[i] + Wv_cmb[i] ),
+        ( 'Dν',            '{: .6e}',   lambda i: Dvisc[i] ),
+    ] if par.forcing > 0 else []) + ([
         ( 'resid𝐛',        '{:8.2e}',   lambda i: residb[i] ),
         ( 'resid𝐄',        '{:8.2e}',   lambda i: residE[i] ),
         ( 'Mag/Kin',       '{:8.2e}',   lambda i: ratio(ME[i], KE[i]) ),   # as conductive_IC: ME without Hendrik
@@ -402,6 +412,15 @@ def main(ncpus):
             Ohm_f[i]  = par.MagnetD * Ohm_f0
             Ohm_ic[i] = par.MagnetD * Ohm_ic0
 
+        # NEW (2026-11-04): the viscous dissipation at the grid of diagnose, then the work of the wall stresses
+        # (wall_powers moves the grid globals to the walls)
+        if par.ViscosD>0:
+            Dvisc[i] = upp.viscous_dissipation()
+        [ Wp0, Wv0 ] = upp.wall_powers(u_sol2, t_sol2, sigma + 1j*w)
+        [ Wp_icb[i], Wp_cmb[i] ] = np.real(Wp0)
+        Wp_im[i] = np.sum(np.imag(Wp0))
+        [ Wv_icb[i], Wv_cmb[i] ] = Wv0
+
         if par.ViscosD>0:
             Ra = par.ricb
             Rb = ut.rcmb
@@ -442,7 +461,7 @@ def main(ncpus):
         # KE is kinetic energy
         # TE is the entropy "energy" (1/2) ∫ p s² dV
 
-        # Dkin is the kinetic energy dissipation (viscous dissipation) via ∫𝐮⋅∇²𝐮 dV
+        # Dkin is the power of the viscous force ∫ 𝐮⋅(∇⋅𝛔) dV = Wv - Dvisc (minus the viscous dissipation Dvisc if 𝐮 = 0 at the walls)
         # Dthm is the entropy "dissipation" via ThermaD ∫ s ∇⋅(κp∇s) dV = -ThermaD ∫ κp|∇s|² dV (+ surface term, zero for kore's thermal BCs)
 
         # Wthm is the rate of working of the buoyancy force (thermal) via ∫ ρ 𝐮⋅(Beyonce g s 𝐫̂) dV
@@ -453,8 +472,10 @@ def main(ncpus):
         #     Ensdr its enstrophy term (zero without diff_rot)
         # Wdr_thm is -2 Re ∫ p s* [ i m G ΔΩ s + 𝐮⋅∇S_tw ] dV, the differential-rotation terms of the heat equation
 
-        # resid1 is the relative residual of 2*sigma*KE - Dkin - Wthm - Wdr = 0 (residσ, real part of the power balance)
-        # resid2 is the relative residual of 2*w*KE + Wcor_im - Dkin_im - Wthm_im - Wdr_im = 0 (residω, its imaginary part;
+        # Wp is the power of the pressure at the walls, -2 Re ∮ ρ₀ Π uᵣ* dA (Wp_im its imaginary part), zero unless uᵣ ≠ 0
+        #     at a wall (forced boundary flows, bc 2); Dkin = Wv - Dvisc, Wv the power of the viscous stress at the walls
+        # resid1 is the relative residual of 2*sigma*KE - Dkin - Wthm - Wdr - Wp = 0 (residσ, real part of the power balance)
+        # resid2 is the relative residual of 2*w*KE + Wcor_im - Dkin_im - Wthm_im - Wdr_im - Wp_im = 0 (residω, its imaginary part;
         #        Wcor_im = 2 Im ∫ ρ 𝐮*⋅(2𝐳×𝐮) dV, Dkin_im = 2 Im ∫ 𝐮*⋅(∇⋅𝛔) dV, Wthm_im = 2 Im ∫ ρ 𝐮*⋅(Beyonce g s 𝐫̂) dV)
         # resid3 is the relative residual of 2*sigma*TE - Dthm - Wadv - Wdr_thm = 0
         # ---------------------------------------------------------------------------------------------------------
@@ -463,10 +484,15 @@ def main(ncpus):
         # NEW (2026-10-28): with magnetic = 1, Wlor (Wlor_im) is the power of the Lorentz force in residσ (residω), and
         # residb (resid𝐛) is the relative residual of 2*sigma*ME - Indu - Mdfs = 0 (the induction equation dotted with 𝐛*, in
         # the fluid; as conductive_IC's resid𝐛)
-        resid1[i] = ( abs( 2*sigma*KE[i] - Dkin[i] - Wthm[i] - Wdr[i] - Wlor[i] )
-                      / max( abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wthm[i]), abs(Wdr[i]), abs(Wlor[i]) ) )
-        resid2[i] = ( abs( 2*w*KE[i] + Wcor_im[i] - Dkin_im[i] - Wthm_im[i] - Wdr_im[i] - Wlor_im[i] )
-                      / max( abs(2*w*KE[i]), abs(Wcor_im[i]), abs(Dkin_im[i]), abs(Wthm_im[i]), abs(Wdr_im[i]), abs(Wlor_im[i]) ) )
+        Wp = Wp_icb[i] + Wp_cmb[i]
+        resid1[i] = ( abs( 2*sigma*KE[i] - Dkin[i] - Wthm[i] - Wdr[i] - Wlor[i] - Wp )
+                      / max( abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wthm[i]), abs(Wdr[i]), abs(Wlor[i]), abs(Wp) ) )
+        resid2[i] = ( abs( 2*w*KE[i] + Wcor_im[i] - Dkin_im[i] - Wthm_im[i] - Wdr_im[i] - Wlor_im[i] - Wp_im[i] )
+                      / max( abs(2*w*KE[i]), abs(Wcor_im[i]), abs(Dkin_im[i]), abs(Wthm_im[i]), abs(Wdr_im[i]), abs(Wlor_im[i]),
+                             abs(Wp_im[i]) ) )
+        if par.ViscosD>0:
+            Wv = Wv_icb[i] + Wv_cmb[i]
+            residD[i] = abs( Dkin[i] - Wv + Dvisc[i] ) / max( abs(Dkin[i]), abs(Wv), abs(Dvisc[i]) )
         if par.magnetic:
             residb[i] = abs( 2*sigma*ME[i] - Indu[i] - Mdfs[i] ) / max( abs(2*sigma*ME[i]), abs(Indu[i]), abs(Mdfs[i]) )
             # residE (resid𝐄, as conductive_IC): 2σ(KE + Hendrik (ME + MEic + MEext)) = Dkin + Wthm + Wlor + Hendrik Indu
@@ -528,6 +554,13 @@ def main(ncpus):
         ( 'Wdr',        Wdr,        '%.9e' ),  # differential-rotation power
         ( 'Wdr_im',     Wdr_im,     '%.9e' ),  # and its imaginary part
         ( 'Ensdr',      Ensdr,      '%.9e' ),  # differential-rotation enstrophy term (in resens)
+        ( 'Wp_icb',     Wp_icb,     '%.9e' ),  # NEW (2026-11-04): power of the pressure at the inner wall,
+        ( 'Wp_cmb',     Wp_cmb,     '%.9e' ),  #   at the outer wall,
+        ( 'Wp_im',      Wp_im,      '%.9e' ),  #   and the imaginary part of their sum (in residω)
+        ( 'Wv_icb',     Wv_icb,     '%.9e' ),  # power of the viscous stress at the inner wall,
+        ( 'Wv_cmb',     Wv_cmb,     '%.9e' ),  #   and at the outer wall
+        ( 'Dvisc',      Dvisc,      '%.9e' ),  # viscous dissipation ∫ 𝛔:∇𝐮 dV ≥ 0
+        ( 'residD',     residD,     '%.9e' ),  # relative residual of Dkin = Wv_icb + Wv_cmb - Dvisc
     ]
     with open('flow.dat','ab') as dflo:
         np.savetxt(dflo, np.column_stack([ v for _, v, _ in flow_cols ]),

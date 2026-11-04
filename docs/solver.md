@@ -20,7 +20,9 @@ same MUMPS option is `st_mat_mumps_...` in one and `mat_mumps_...` in the other.
 
 Judge each solution with `spin_doctor.py`, not with the residual that `solve.py` prints: with the Ruiz prescaling (on by
 default) that one is for the rescaled problem. Accept a mode when its energy and entropy residuals (residσ, resid𝑠)
-are below 1e-5 and its ℓ-convergence is below 1e-4.
+are below 1e-5 and its ℓ-convergence is below 1e-4. The same residuals judge a forced run, where σ = 0. When the walls
+move radially (forcing 14), residσ also tests the pressure at the walls, which needs more radial resolution than the rest
+of the budget ([Tidal forcing](tidal-forcing.md#interpreting-the-response)).
 
 A failure is one of two kinds:
 

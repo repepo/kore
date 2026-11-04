@@ -255,6 +255,37 @@ def main():
             np.savez('B_forced.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
 
 
+    elif par.forcing == 14: # ------------- Eccentricity or Obliquity tide forcing, (m, symm) = {(0, 1), (1, -1), (2, 1)}, l=2 radial velocity forcing
+
+        # uᵣ = forcing_amplitude Y_2^m at the walls (docs/tidal-forcing.md): the right-hand side of the P = ... rows of l = 2
+        # (bc_u_spherical: the outer wall first, then the inner one), P = A r/L. The no-slip rows are kept.
+        if rank == 0:
+            tides = { (0, 1): 'Eccentricity tide (l,m)=(2,0) radial velocity forcing (symmetric)',
+                      (1, -1): 'Obliquity tide (l,m)=(2,1) radial velocity forcing (antisymmetric)',
+                      (2, 1): 'Eccentricity tide (l,m)=(2,2) radial velocity forcing (symmetric)' }
+            if (par.m, par.symm) not in tides:
+                print('forcing 14 needs (m, symm) = (0, 1), (1, -1) or (2, 1)', flush=True)
+                comm.Abort(1)
+            if par.bco != 1 or par.bci != 1:
+                print('forcing 14 needs bco = bci = 1 (also in a full sphere)', flush=True)
+                comm.Abort(1)
+            print('-'*(len(tides[(par.m, par.symm)]) + 2))
+            print(' ' + tides[(par.m, par.symm)])
+            print('-'*(len(tides[(par.m, par.symm)]) + 2))
+
+            l = 2
+            L = l*(l+1)
+            pos = ut.N1*np.where(alltop==l)[0][0]
+
+            # forcing amplitude is the radial velocity amplitude
+            row = [ pos ]
+            bdat = [ par.forcing_amplitude_cmb * ut.rcmb / L ]
+            if par.ricb > 0:  # no inner wall in a full sphere
+                row.append( pos + 2 )
+                bdat.append( par.forcing_amplitude_icb * par.ricb / L )
+
+            B = ss.csr_matrix( ( bdat, (row, np.zeros(len(row))) ), shape=(ut.sizmat,1) )
+            np.savez('B_forced.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
 
     if rank == 0:
         tic = timer()

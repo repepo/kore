@@ -61,12 +61,12 @@ there. The entropy gradient is kept in the heat equation, where it is the source
 restoring force. The Coriolis force, the self-gravity (absorbed into $\Pi$) and the viscous force are not
 approximated.
 
-**Energy.** Multiply the momentum equation by $\rho_0\mathbf u^*$ and integrate. The pressure does no work, although
-$\nabla\cdot\mathbf u\neq 0$, because $\nabla\Pi$ is a gradient acting on the solenoidal $\rho_0\mathbf u$ and
-$u_r = 0$ on the walls. The Coriolis force does no work, and the viscous force only dissipates,
-$-\tfrac12\int\rho_0\nu\thinspace\lvert\mathsf S\rvert^2\thinspace dV \le 0$, for any $\nu(r)$. This holds only because the two
-terms of item 2 are dropped together: an anelastic set that keeps the force but drops the mass term makes the pressure
-do work (Brown et al. 2012).
+**Energy.** Multiply the momentum equation by $\rho_0\mathbf u^*$ and integrate. The pressure does no work inside the
+fluid, although $\nabla\cdot\mathbf u\neq 0$, because $\nabla\Pi$ is a gradient acting on the solenoidal $\rho_0\mathbf u$:
+it only works through walls that move. The Coriolis force does no work, and the viscous force only dissipates, for any
+$\nu(r)$. This holds only because the two terms of item 2 are dropped together: an anelastic set that keeps the force
+but drops the mass term makes the pressure do work (Brown et al. 2012). The full balance is under
+[Energy balance](#energy-balance).
 
 ## Non-dimensionalization
 
@@ -200,6 +200,112 @@ prescribed. In a convection zone these terms act at the same order as the moment
 nothing maintains or evolves $\Omega$ and $S_{tw}$ against diffusion, and $\rho_0$, $T_0$ and $g$ stay spherical (no
 centrifugal distortion). [Differential rotation](differential_rotation_details.md) derives these terms and their
 spectral form.
+
+## Energy balance
+
+kore's fields are complex amplitudes: a physical field is the amplitude times $e^{im\phi + \lambda t}$, plus the complex
+conjugate. The product of two such fields, averaged over $\phi$ (or, for $m = 0$, over a period of a forced response),
+is $2\thinspace\mathrm{Re}$ of the product of their amplitudes. kore writes every energy and power this way: the
+kinetic energy
+
+$$
+K = \int\rho_0\lvert\mathbf u\rvert^2\thinspace dV ,
+$$
+
+the mean of $\int\tfrac12\rho_0\thinspace\mathbf u_{\rm phys}^2\thinspace dV$, and the power of a force $\mathbf F$ per
+unit mass,
+
+$$
+W[\mathbf F] = 2\thinspace\mathrm{Re}\int\rho_0\thinspace\mathbf u^*\cdot\mathbf F\thinspace dV .
+$$
+
+### Kinetic energy
+
+Take the momentum equation with $\partial_t = \lambda = \sigma - i\omega$, multiply it by $2\rho_0\mathbf u^*$, integrate
+over the fluid and keep the real part:
+
+$$
+2\sigma K = W_\nu + W_b + W_\Omega + W_p ,
+$$
+
+with, term by term:
+
+- **Coriolis.** $\mathbf u^*\cdot(\hat{\mathbf z}\times\mathbf u)$ is imaginary: the Coriolis force does no work.
+- **Pressure.** Since $\nabla\cdot(\rho_0\mathbf u) = 0$, the power of $-\nabla\Pi$ is a flux through the walls,
+
+  $$
+  W_p = -2\thinspace\mathrm{Re}\oint\rho_0\thinspace\Pi\thinspace u_r^*\thinspace(\hat{\mathbf r}\cdot\mathbf n)\thinspace dA ,
+  $$
+
+  with $\mathbf n$ the outward normal of the fluid ($-\hat{\mathbf r}$ at the inner wall). It is zero when $u_r = 0$ at
+  the walls (`bco`, `bci` = 0 or 1), and not when the walls move radially (the tidal forcing 14) or with `bco = 2`.
+- **Viscosity.** With the stress $\boldsymbol\sigma = \mathrm{ViscosD}\thinspace\rho_0\nu\thinspace\mathsf S$, an
+  integration by parts splits the power of the viscous force into the work of the stress at the walls and the
+  dissipation:
+
+  $$
+  W_\nu = 2\thinspace\mathrm{Re}\int\mathbf u^*\cdot(\nabla\cdot\boldsymbol\sigma)\thinspace dV = W_\nu^{\rm wall} - D_\nu ,
+  \qquad W_\nu^{\rm wall} = 2\thinspace\mathrm{Re}\oint\mathbf u^*\cdot\boldsymbol\sigma\cdot\mathbf n\thinspace dA ,
+  $$
+
+  $$
+  D_\nu = 2\thinspace\mathrm{Re}\int\boldsymbol\sigma:\nabla\mathbf u^*\thinspace dV = \int 4\thinspace\mathrm{ViscosD}\thinspace\rho_0\nu\thinspace\mathsf e_d:\mathsf e_d^*\thinspace dV \geq 0 ,
+  $$
+
+  with $\mathsf e = \tfrac12[\nabla\mathbf u + (\nabla\mathbf u)^{\mathsf T}]$ the rate of strain and
+  $\mathsf e_d = \mathsf e - \tfrac13(\nabla\cdot\mathbf u)\thinspace\mathsf I$ its deviatoric part: $\mathsf S = 2\mathsf e_d$,
+  and $\boldsymbol\sigma$ is symmetric and traceless, so that $\boldsymbol\sigma:\nabla\mathbf u^* = \boldsymbol\sigma:\mathsf e_d^*$.
+  The physical dissipation is $\int 2\rho\nu\thinspace\mathsf e_d:\mathsf e_d\thinspace dV$, and the factor 4 is its mean
+  in the convention above. $W_\nu^{\rm wall}$ is zero on a no-slip wall at rest and on an impenetrable stress-free wall.
+- **Buoyancy.** $W_b = 2\thinspace\mathrm{Beyonce}\thinspace\mathrm{Re}\int\rho_0\thinspace g\thinspace s\thinspace u_r^*\thinspace dV$,
+  the energy exchanged with the entropy perturbation.
+- **Differential rotation.** Of the terms of [Differential rotation](#differential-rotation), the advection
+  $i m\thinspace\mathrm{Gaspard}\thinspace\Delta\Omega\thinspace\mathbf u$ and the Coriolis force of $\Delta\Omega$ do no
+  work. The last one does:
+
+  $$
+  W_\Omega = -2\thinspace\mathrm{Gaspard}\thinspace\mathrm{Re}\int\rho_0\thinspace r\sin\theta\thinspace u_\phi^*\thinspace(\mathbf u\cdot\nabla\Delta\Omega)\thinspace dV ,
+  $$
+
+  the Reynolds stress of the perturbation acting on the shear. $W_\Omega > 0$ is energy that the perturbation takes from
+  the background flow.
+
+With a magnetic field the Lorentz force adds its power ([Magnetic field](magnetic-equations.md)). The imaginary part of
+the same equation is the frequency balance: $2\thinspace\mathrm{Im}(\lambda)\thinspace K$ against the imaginary parts of
+the same integrals, where the Coriolis force now enters.
+
+### Entropy
+
+Multiply the heat equation by $2s^*$, integrate and keep the real part:
+
+$$
+2\sigma T = W_{\rm adv} - D_{\rm th} + W_{\Omega,\rm th} , \qquad T = \int p_0\lvert s\rvert^2\thinspace dV ,
+$$
+
+with the advection by the background gradient
+$W_{\rm adv} = -2\thinspace\mathrm{Re}\int p_0\thinspace\frac{dS}{dr}\thinspace u_r s^*\thinspace dV$, the diffusion
+$D_{\rm th} = 2\thinspace\mathrm{ThermaD}\int\kappa p_0\lvert\nabla s\rvert^2\thinspace dV$ (the wall term vanishes for
+both thermal conditions, $s = 0$ or $\partial_r s = 0$), and, with a differential rotation,
+$W_{\Omega,\rm th} = -2\thinspace\mathrm{Re}\int p_0\thinspace s^*\left[i m\thinspace\mathrm{Gaspard}\thinspace\Delta\Omega\thinspace s + \mathbf u\cdot\nabla S_{tw}\right]dV$.
+
+$T$ is not an energy, and this budget closes on its own: the buoyancy work $W_b$ is only in the kinetic budget. The two
+combine into a total energy with the available potential energy, in the convention above
+$\int\rho_0\thinspace\mathrm{Beyonce}\thinspace g\thinspace\lvert s\rvert^2/(dS/dr)\thinspace dV$: without diffusion its rate of
+change is $-W_b$. It is positive only where the stratification is stable, and kore does not form it.
+
+### A forced, periodic response
+
+A forced run has $\lambda = i\thinspace$`forcing_frequency`, so $\sigma = 0$, and the kinetic budget reads
+
+$$
+P_{\rm in} \equiv W_p + W_\nu^{\rm wall} = D_\nu - W_b - W_\Omega :
+$$
+
+the power that the moving walls put into the flow is dissipated by viscosity, handed to the entropy perturbation, or
+given to the differential rotation. With a uniform rotation and no buoyancy, $P_{\rm in} = D_\nu$. With a differential
+rotation $W_\Omega$ has either sign, so the power the forcing puts in and the heat the viscosity releases can differ.
+[Tidal forcing](tidal-forcing.md) explains which of these quantities a tidal study needs, and
+[Numerical method](numerical-method.md#checks) how `spin_doctor` computes them.
 
 ## Where the approximation holds
 

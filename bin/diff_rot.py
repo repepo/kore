@@ -159,8 +159,8 @@ def shapes():
         return {0: one}
     if t == 'Y20':                     # P2(cos θ), unnormalised
         return {2: one}
-    if t == 'Y20-wall-bounded':        # (1 - r)(r - ricb) P2(cos θ)
-        return {2: lambda r: (1 - r)*(r - par.ricb)}
+    if t == 'Y20-wall-bounded':        # (1 - r)(r - ricb) P2(cos θ), zero at boundaries and maximum value 1
+        return {2: lambda r: ((1 - r)*(r - par.ricb))/(0.25*(1 - par.ricb)**2)}
     if t == 'shellular':               # Ω ∝ r^σ, σ = diff_rot_param (Baruteau & Rieutord 2013)
         return {0: lambda r: r**p - 1}
     if t == 'shellular_boussinesq':    # (1 - r²)/2 (Mirouh et al. 2016: diff_rot_ampl = N0²)
