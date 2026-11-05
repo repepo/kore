@@ -336,7 +336,8 @@ differential rotation adds to the heat equation. The advection of $s$ by the rot
 A rotating star or planet is flattened at the poles: its surfaces of constant density, pressure and entropy, its level
 surfaces, are oblate spheroids rather than spheres. `centrifugal = 1` gives the background this shape, at first order
 in the flattening: the walls and the level surfaces become spheroids, and the flow feels them through its inertia, the
-Coriolis force and the buoyancy. The equations are on [Centrifugal deformation](centrifugal-equations.md).
+Coriolis force and the buoyancy, and with a magnetic field through the Lorentz force, the induction and the matching at
+the walls. The equations are on [Centrifugal deformation](centrifugal-equations.md).
 
 **How kore does it.** kore keeps its spherical grid and its radial profiles, and solves in coordinates that follow the
 level surfaces. The radius $r$ labels the level surface that encloses the volume of the sphere of radius $r$; every
@@ -345,6 +346,12 @@ inertia, the Coriolis force and the rate of change of the entropy gain terms pro
 buoyancy takes the effective gravity: the gravity less the mean centrifugal acceleration. The new terms couple the
 degrees as a differential rotation of degree 2 does, so the matrices are as wide as with one
 ([Resolution and cost](#resolution-and-cost)).
+
+**With a magnetic field.** The background field follows the level surfaces too: kore's formula for `B0` and `B0_tor`
+gives the field on the level surfaces, and the deformation carries it into the body, so its field lines are those of the
+sphere stretched with the level surfaces. It differs from the spherical formula by a fraction of order $f$:
+`submatrices.py` says so. At an insulating wall the field is matched to the potential field outside the deformed wall,
+and a conducting inner core is deformed with the fluid.
 
 ### Flattening
 
@@ -403,21 +410,28 @@ par.centrifugal_f     = 2.5e-3
 
 ### What it covers
 
-The deformation is complete at first order in $f$ for an inviscid fluid without thermal diffusion, rotating uniformly.
+The deformation is complete at first order in $f$ for an inviscid fluid without thermal or magnetic diffusion, rotating
+uniformly.
 Other terms keep the form they have in a sphere, and some settings stop the run:
 
-- The viscous force and the thermal diffusion keep their spherical form, so the damping rates are off by a fraction of
-  order $f$. The terms of a differential rotation keep their spherical form too. `submatrices.py` warns about each,
-  and about a flattening above 0.1, where the first order loses accuracy.
-- kore stops with `magnetic = 1`, with a forcing, and in a viscous run with stress-free walls: `bco` must be 1, and
-  `bci` too with an inner core.
+- The viscous force, the thermal diffusion and the magnetic diffusion keep their spherical form, so the damping rates
+  are off by a fraction of order $f$. The terms of a differential rotation keep their spherical form too.
+  `submatrices.py` warns about each, and about a flattening above 0.1, where the first order loses accuracy.
+- With a field the Lorentz force, the induction and the insulating walls are complete at first order, with any
+  background field, poloidal or toroidal, and in a full sphere.
+- kore stops with a forcing, in a viscous run with stress-free walls (`bco` must be 1, and `bci` too with an inner
+  core), and with a conducting inner core whose permeability differs from the fluid's (`mu_i2o` must be 1).
 
 ### Output
 
-- The eigenvectors are normalised to the kinetic energy of the deformed body, and the budgets of `spin_doctor`
-  (residσ, residω, resid𝑠) include the terms of the deformation. The enstrophy residual (residens) is not computed.
-- The field files hold the flow in the coordinates of the level surfaces. `tools/plot_field.py` draws the flow and the
-  entropy where they are in the body.
+- The eigenvectors are normalised to the kinetic energy of the deformed body (plus its magnetic energy with a field),
+  and the budgets of `spin_doctor` (residσ, residω, resid𝑠, resid𝐛) include the terms of the deformation. The full
+  energy budget resid𝐄 closes only at second order in $f$, so it is of order $f^2$ rather than round-off. The
+  enstrophy residual (residens) is not computed.
+- The field files hold the flow and the field in the coordinates of the level surfaces. `tools/plot_field.py` draws the
+  flow, the field and the entropy where they are in the body.
+- `magnetic.dat` gains a column with the part of the magnetic energy that the deformation adds
+  ([Output files](output.md#magneticdat)).
 - `params.dat` records the deformation in its columns 108–112 ([Output files](output.md#paramsdat)).
 
 ## `'user'` profiles

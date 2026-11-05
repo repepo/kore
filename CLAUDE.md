@@ -78,16 +78,16 @@ eigenvalues as ω, σ in nHz.
 | `jsoc_hmi_2010_2026.npz` | the observed rotation Ω(r, θ), the mean of 83 HMI 72-day inversions (2010–2026), in the layout of `diff_rot_type = 'tabulated'` (`examples/smooth_sun`) |
 | `submatrices.py` | builds the list of labels (with `diff_rot.labels()`), computes each unique operator in parallel, writes them all to `submatrices.npz` (`submatrix_io.write`, with the parameters; `<label>.mtx` too with `write_mtx = 1`); calls `par.check_names()` and `diff_rot.check()` |
 | `submatrix_io.py` | the operator file `submatrices.npz`: `write`, `read`, `check` (stops when the run's parameters differ from those the operators were built with, all but `OPERATOR_INDEPENDENT` and `rsf_*`); numpy and scipy only |
-| `operators.py` | loads `submatrices.npz` (after `submatrix_io.check`), each operator as a global named by its label; physics functions `inertia`, `coriolis`, `viscous_diffusion`, `buoyancy`, `differential_rotation`, `entropy`, `thermal_advection`, `thermal_diffusion`, `thermal_diffrot` (the diff-rot ones return `diff_rot.momentum_block`, `heat_block`), for `magnetic = 1` `lorentz`, `b`, `induction`, `magnetic_diffusion`, and for `centrifugal = 1` `centrifugal_inertia`, `centrifugal_coriolis`, `centrifugal_entropy` (they return `centrifugal.momentum_block`, `entropy_block`) |
+| `operators.py` | loads `submatrices.npz` (after `submatrix_io.check`), each operator as a global named by its label; physics functions `inertia`, `coriolis`, `viscous_diffusion`, `buoyancy`, `differential_rotation`, `entropy`, `thermal_advection`, `thermal_diffusion`, `thermal_diffrot` (the diff-rot ones return `diff_rot.momentum_block`, `heat_block`), for `magnetic = 1` `lorentz`, `b`, `induction`, `magnetic_diffusion`, and for `centrifugal = 1` `centrifugal_inertia`, `centrifugal_coriolis`, `centrifugal_entropy`, `centrifugal_magnetic` (they return `centrifugal.momentum_block`, `entropy_block`, `magnetic_block`) |
 | `assemble.py` | MPI over l; places the blocks (the diff-rot Δl from `diff_rot.dl_range`), boundary-condition rows (`bc_u_spherical`, `bc_theta_spherical`), forcings 6, 7, 9, 10, 11; normalises A, B by ‖A‖ (eigen); `gather_csr` |
 | `reynolds_stress.py` | forcing 11: random Reynolds-stress body force f = ρ₀⁻¹∇·(ρ₀ s), the fluctuation-dissipation partner of the viscous force; `rhs(nsamp, seed)` gives one realisation per column of B_forced (docstring: physics, discretisation, normalisation) |
 | `bc_variables.py` | Chebyshev values/derivatives at the walls (`Ta`, `Tb`) and ln ρ₀ and its first two derivatives there (`lha*`, `lhb*`) |
 | `solve.py` | reads its own rows of A, B (memory-mapped), optional Ruiz scaling, SLEPc/KSP, KE normalisation, writes fields |
-| `utils4pp.py` | post-processing: solution expansion, velocity/curl l-components, per-l workers (`flow_worker`, `thermal_worker`), `diff_rot_setup`, `diagnose`, `kinetic_energy`, `identify`, `centrifugal_terms` (the metric parts of KE, the Coriolis power and TE with `centrifugal = 1`) |
+| `utils4pp.py` | post-processing: solution expansion, velocity/curl l-components, per-l workers (`flow_worker`, `thermal_worker`), `diff_rot_setup`, `diagnose`, `kinetic_energy`, `identify`, `centrifugal_terms` (the metric parts of KE, the Coriolis power and TE with `centrifugal = 1`), `centrifugal_magnetic_energy`, `centrifugal_magnetic_terms` (with a field: MEc, the metric Lorentz and induction work, the potential field on the deformed walls) |
 | `spin_doctor.py` | runs the diagnostics per solution, prints the table, writes `params.dat` (`param_table`, `row_note`), `flow.dat`, `thermal.dat` |
 | `ru_insane.py` | operator symmetry and diff-rot block tests (see its docstring) |
 | `diff_rot.py` | the differential rotation (§8): the shapes fₙ of every type and their fits, the thermal-wind σₙ, the angular couplings of the momentum and heat terms, the labels, blocks and Δl ranges |
-| `centrifugal.py` | the centrifugal deformation (`centrifugal = 1`, §4): the flattening f(r) of each shape (`SHAPES`, `radau`, `shape_functions`, `flattening`), the profile codes `ce0`–`ce2` (`profile_functions`), `g_monopole`, `to_physical` (plots), `report`, the angular couplings (`primitives`, `momentum_coefficients`, `heat_coefficients`) and the terms (`labels`, `dl_range`, `momentum_block`, `entropy_block`); only `parameters` and `angular` imported at the top |
+| `centrifugal.py` | the centrifugal deformation (`centrifugal = 1`, §4): the flattening f(r) of each shape (`SHAPES`, `radau`, `shape_functions`, `flattening`), the profile codes `ce0`–`ce2` (`profile_functions`), `g_monopole`, `to_physical` (plots), `report`, the angular couplings (`primitives`, `momentum_coefficients`, `heat_coefficients`) and the terms (`labels`, `dl_range`, `momentum_block`, `entropy_block`); with a field the metric Lorentz force and induction (`magnetic_build`, `magnetic_labels`, `magnetic_dl_range`, `magnetic_block`) and the insulating walls (`wall_coefficients`, `wall_rows`, `wall_potential`); only `parameters` and `angular` imported at the top |
 | `angular.py` | the angular algebra at fixed m: the recurrence matrices X (cos θ) and D (−sin θ ∂θ), the vector operations (g(cos θ)·, ẑ×, sin θ F_θ), Schmidt harmonics at any l (`ylm_grid`, `ylm`); numpy and scipy only |
 | `targets.py` | analytic targets (spin-over, Rieutord–Valdettaro attractor) |
 
@@ -163,10 +163,19 @@ Clairaut's equation from the structure's g, `centrifugal.radau`; f_top = 5q_top/
 r_out for 'model S hydrostatic', else 1; `centrifugal_f` rescales it to f at the outer wall), 'uniform' (`centrifugal_f`),
 'user' (`centrifugal_profile` in r, x, p, as the other 'user' expressions). `centrifugal_q` > 0 adds the monopole
 −(2/3)Ω²r to g in `radial_profiles.graviX` (the buoyancy); `graviX(r, D, False)` is the structure's g, which the thermal
-wind keeps (as `diff_rot.sigma_coefficients`). Left spherical: the viscous force, the thermal diffusion and the diff-rot
-terms (WARNINGs from `centrifugal.report`); `background.check_centrifugal` stops with magnetic = 1, forcing ≠ 0 and
-stress-free walls with ViscosD > 0. Checks: `tests/centrifugal/` (§11); spin-over of a Maclaurin spheroid
-Im λ = 1 + f + f²/3 (exact 1 + f + f²/2).
+wind keeps (as `diff_rot.sigma_coefficients`). Left spherical: the viscous force, the thermal and magnetic diffusion and
+the diff-rot terms (WARNINGs from `centrifugal.report`); `background.check_centrifugal` stops with forcing ≠ 0, stress-free
+walls with ViscosD > 0, and a conducting inner core with mu_i2o ≠ 1. Checks: `tests/centrifugal/` (§11); spin-over of a
+Maclaurin spheroid Im λ = 1 + f + f²/3 (exact 1 + f + f²/2).
+With a field (magnetic = 1, phase 1b, 2026-11-05; `centrifugal.py` sections 4, 5): F, G describe the flux b̃ = J F⁻¹b, and
+kore's B0 formula gives B̃0 (the body's field is F B̃0/J). Covariant Lorentz force (1/J)[∇×(M b̃)×B̃0 + ∇×(M B̃0)×b̃],
+induction ∂ₜb̃ = ∇×(w×B̃0/J); first-order parts δ𝐆, δ𝐄 built with mag_algebra's recurrence algebra
+(`centrifugal.magnetic_build`), radial factors the product codes amplitude × B0 profile (`product_code`: `E` = ε, `N` = η,
+`C` = rη′, `Q` = r(rη′)′ (`ce3`), then `p`/`t` and the degree; `magnetic_profile_functions`), labels
+`magnetic_labels` (submatrices.py), blocks `operators.centrifugal_magnetic`, Δl up to nmax + 3 (`magnetic_dl_range`).
+Insulating walls matched on the deformed wall: extra entries in the bc rows on F, F′, G of l ± 1 … l ± 3
+(`centrifugal.wall_coefficients`, `wall_rows`, `assemble.bc_b_centrifugal`); a conducting inner core is deformed with the
+fluid and needs no new rows with mu_i2o = 1.
 
 **Velocity** (`utils4pp.cheb2space_pol`): u = ρ₀⁻¹∇×∇×(ρ₀ P **r**) + ∇×(T **r**), so ∇·(ρ₀u) = 0 exactly:
 u_r = L P/r, consoidal part P′ + P(1/r + (ln ρ₀)′), L = l(l+1).
@@ -381,7 +390,10 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
 - With diff rot, `upp.diff_rot_setup` computes the force and heat terms on an (r, cos θ) grid and projects them back.
 - With `centrifugal = 1` (2026-11-05) KE (also solve.py's normalisation), the Coriolis power and TE include the metric
   parts (`upp.centrifugal_terms`, from the fields on the grid, apart from the matrices); KP and KT are without them;
-  residens is NaN. `tools/plot_field.py` maps the fields to the body (`centrifugal.to_physical`).
+  residens is NaN. `tools/plot_field.py` maps the fields to the body (`centrifugal.to_physical`). With a field (phase
+  1b) the normalisation is KE + Hendrik (ME + MEc), MEc the metric part of the magnetic energy (`magnetic.dat` column 12,
+  `upp.centrifugal_magnetic_energy`); `upp.centrifugal_magnetic_terms` adds the metric Lorentz work to residσ, residω and
+  the metric induction work to resid𝐛 (round-off); resid𝐄 closes at O(f²) only (the products of first-order terms).
 - Walls (2026-11-04): `upp.wall_powers` gives the work of the pressure (Π = r G_s from the consoidal momentum equation,
   `pressure_force`; in residσ, residω) and of the viscous stress at each wall, `upp.viscous_dissipation` the dissipation
   ∫𝛔:∇𝐮 on an (r, θ) grid; `Dkin` = Wv − Dvisc (residD). Π at the walls converges more slowly than the volume terms
@@ -420,12 +432,18 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   worked examples: part A the magnetic field (derive.py `--b0 pol1|pol2|tor1|tor2`, the exact-interpolation fit, the code
   generation), part B the differential rotation (the recurrence algebra of `bin/angular.py`, the 12 primitives and the
   couplings of `bin/diff_rot.py`). The scripts' docstrings give the same rationale (2026-10-30).
-- `tests/centrifugal/` (README, `run_all.sh`, ~5 min; `SKIP_SOLVE=1` without PETSc; NEW 2026-11-05): `derive.py`
+- `tests/centrifugal/` (README, `run_all.sh`, ~7 min on 16 cores; `SKIP_SOLVE=1` without PETSc; NEW 2026-11-05): `derive.py`
   (sympy: every closed form of `centrifugal.py` from the map and w = J F⁻¹u), `algebra_check.py` (the couplings against
   quadratures with scipy's lpmv), `clairaut_check.py` (Maclaurin 5/4, polytrope 7.5/π², 'Wu 2005' against Clairaut's
   equation from ρ, the Sun's f/q 0.519), `eig_check.py` (f = 0 bitwise, the spin-over, a relabelled sphere moving at
-  O(c²), homogeneous 'clairaut' = 'uniform', the monopole = Beyonce(1 − 2q/3), the ideal fluid's real frequencies),
-  `budget_check.py`, `mk_run.py` (defaults: the inviscid Boussinesq full sphere, m 1, N 24, lmax 20, 'uniform' f 0);
+  O(c²), homogeneous 'clairaut' = 'uniform', the monopole = Beyonce(1 − 2q/3), the ideal fluid's real frequencies; with a
+  field: f = 0 bitwise, the relabelled sphere against the field written on the sphere), `budget_check.py [tol] [HALF]`
+  (with a field also resid𝐛, and resid𝐄 of second order from the run at half the flattening), `mk_run.py` (defaults: the
+  inviscid Boussinesq full sphere, m 1, N 24, lmax 20, 'uniform' f 0); phase 1b: `derive_mag.py [--quick]` (sympy: the
+  covariant magnetic terms from b = F b̃/J, kore's couplings against them, the wall terms; part B in parallel) and
+  `bc_check.py` (the wall rows against the exact matching of a potential field on the deformed wall: residual O(f²)),
+  `fcn.sh [WORKDIR] [NP]` (the free core nutation with a field and a conducting inner core at Ek 1e-7: Im λ moves by
+  f(1 + f/3) up to 1e-4 of f; 15 ranks, `st_mat_mumps_icntl_14` = 500; not in run_all.sh);
   `ru_insane.py` checks the metric blocks against quadratures.
 - `tests/rsf/` (README; `HOWTO.md` points to `docs/forcing.md` and `docs/reynolds-stress.md`; `example_m2/`, the
   chandler m = 2 scan, has its own README): shared
@@ -498,7 +516,9 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
 
 ## 14. History (this branch, newest first)
 
-2026-11-05 the centrifugal deformation, `centrifugal = 1` (`bin/centrifugal.py`, `tests/centrifugal/`,
+2026-11-05 the centrifugal deformation with a field (phase 1b: the metric Lorentz force and induction, the insulating
+walls on the deformed body, a conducting inner core with mu_i2o = 1, the free core nutation check `fcn.sh`);
+`9d245cd2` the centrifugal deformation, `centrifugal = 1` (`bin/centrifugal.py`, `tests/centrifugal/`,
 `docs/centrifugal-equations.md`);
 `80c2f233`, `03213082` docs/magnetic.md (when the ignored Lorentz force of B0 on ΔΩ matters, a checklist for solar
 inertial modes with `B0_wound`); `ab2c9201` `B0_wound`, the toroidal field wound by ΔΩ and balanced by diffusion;

@@ -243,11 +243,12 @@ c = 1.
 id_in = np.where((s**2/(a**2)) + (z**2/(c**2)) < 1.)
 if par.centrifugal:
     # NEW (2026-11-05): a deformed body (centrifugal = 1): the points, and the flow (u, mf), where they are in the body
-    # (centrifugal.to_physical); the walls are the level surfaces r = 1 and r = ricb of the reference radius
+    # (centrifugal.to_physical); the walls are the level surfaces r = 1 and r = ricb of the reference radius. The field b is
+    # a flux of the reference space like the flow (b = F b̃/J), so it maps the same way (NEW 2026-11-05, phase 1b)
     import centrifugal as cf
     sref, zref = s, z
     rref, tref = np.sqrt(s**2 + z**2), np.arctan2(s, z)
-    if sys.argv[5] in ['u', 'vel', 'mf']:
+    if sys.argv[5] in ['u', 'vel', 'mf', 'b']:
         s, z, ur, utheta, uphi = cf.to_physical(rref, tref, ur, utheta, uphi)
     else:   # other fields are drawn at their points in the body, with their components in the reference space
         s, z = cf.to_physical(rref, tref)

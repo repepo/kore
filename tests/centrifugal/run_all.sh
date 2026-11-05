@@ -1,6 +1,6 @@
 #!/bin/bash
 # Checks of the centrifugal deformation (centrifugal = 1; docs/centrifugal-equations.md, Checks). NEW (2026-11-05).
-# usage: tests/centrifugal/run_all.sh [WORKDIR]   (default tests/centrifugal/runs; about 5 minutes)
+# usage: tests/centrifugal/run_all.sh [WORKDIR]   (default tests/centrifugal/runs; about 7 minutes on 16 cores)
 # Needs numpy, scipy, sympy and mpi4py; the budgets also petsc4py and slepc4py (SKIP_SOLVE=1 skips them). With OLD_KORE set to
 # a copy of the commit before the change (git archive <commit> | tar -x -C $OLD_KORE), also tests/diff_rot/regress.sh.
 # Each check prints its verdict; the script ends with 'centrifugal checks ok' (exit 0) or lists the ones that failed (exit 1).
@@ -8,15 +8,20 @@ set -o pipefail
 T=$(cd "$(dirname "$0")" && pwd)
 W=${1:-$T/runs}; mkdir -p "$W"; cd "$W"
 failed=()
-check() { local name=$1; shift; if ! "$@"; then failed+=("$name"); fi; }
+check() { local name=$1 t0=$SECONDS; shift; if ! "$@"; then failed+=("$name"); fi; echo "    ($name: $((SECONDS - t0)) s)"; }
 
 echo "--- derive.py: the closed forms of bin/centrifugal.py from X = α + ξ, w = J F⁻¹ u (sympy)"
 check derive bash -c "python3 '$T/derive.py' | tail -1"
 echo "--- algebra_check.py: the angular couplings (angular.py's algebra) against a direct projection of the closed forms"
 check algebra bash -c "python3 '$T/algebra_check.py' | tail -1"
+echo "--- derive_mag.py: the magnetic terms of the deformed body from b = F b̃/J (sympy), and kore's couplings against them"
+check derive_mag bash -c "python3 '$T/derive_mag.py' | tail -1"
+echo "--- bc_check.py: the insulating-wall rows on the deformed wall against the exact matching of a potential field"
+check bc bash -c "python3 '$T/bc_check.py' | tail -1"
 echo "--- clairaut_check.py: the 'clairaut' flattening (Maclaurin 5/4, polytrope 7.5/π², Wu 2005 against Clairaut from ρ, the Sun)"
 check clairaut python3 "$T/clairaut_check.py"
-echo "--- eig_check.py: f = 0, the spin-over 1 + f, the relabelling test, homogeneous 'clairaut', the monopole, the ideal fluid"
+echo "--- eig_check.py: f = 0, the spin-over 1 + f, the relabelling test, homogeneous 'clairaut', the monopole, the ideal fluid,"
+echo "    f = 0 with a field, the relabelling test with the axial and the Malkus field"
 check eig python3 "$T/eig_check.py"
 
 echo "--- ru_insane.py: the metric blocks against (r, θ) quadratures, Hermitian and positive, in shells and full spheres"
@@ -53,6 +58,29 @@ if [ -z "$SKIP_SOLVE" ]; then
     python3 "$T/mk_run.py" $d "${cfgs[$i]}" solve > /dev/null || { failed+=("$d"); continue; }
     check $d bash -c "cd $d && python3 '$T/budget_check.py' | sed 's/^/$d: /'"
   done
+
+  # NEW (2026-11-05, phase 1b): with a field, at f and f/2 (@F@): residσ, residω, resid𝐛 to round-off, resid𝐄 of second order
+  echo "--- budget_check.py with a field: residσ, residω and resid𝐛 to round-off, resid𝐄 of second order in f (solve.py, 2 ranks)"
+  MAG="par.magnetic = 1; par.B0 = 'axial'; par.cnorm = 'mag_energy'; par.Ek = 1e-3; par.Em = 1e-3; par.Le = np.sqrt(1e-3); par.set_scales(); par.Gaspard = 1.; par.Beyonce = 1.; par.ricb = 0.35; par.N = 96; par.lmax = 24; par.ncpus = 2; par.nev = 4; par.itau = 1.0; par.prescale = None"
+  UP="par.centrifugal_shape = 'user'; par.centrifugal_f = None; par.centrifugal_profile = 'p*(1 + r**2)/2'; par.centrifugal_param = @F@"
+  GEN="par.diff_rot = 1; par.diff_rot_type = 'user'; par.diff_rot_profiles = {0: '0.05*r**2', 2: '-0.1*r**2', 4: '-0.03*r**4'}; par.lmax = 32; par.B0 = 'general'; par.B0_profiles = {1: 'r/6 - r**3/10', 3: '0.3*r**3*(1 - r**2)'}; par.B0_tor = 'general'; par.B0_tor_profiles = {2: 'r**2*(1 - r**2)'}; par.cnorm_tor = 'mag_energy'"
+  names=(bm_uniform bm_cic bm_fs bm_tor bm_gen)
+  cfgs=("$MAG; par.centrifugal_f = @F@"
+        "$MAG; $UP; par.innercore = 'conducting, Chebys'"
+        "$MAG; $UP; par.ricb = 0; par.B0 = 'Luo_S2'; par.symm = 1; par.itau = 0.6"
+        "$MAG; $UP; par.B0 = None; par.B0_tor = 'Malkus'; par.cnorm_tor = 'mag_energy'"
+        "$MAG; $UP; $GEN")
+  for i in "${!names[@]}"; do
+    d=${names[$i]}; built=1
+    for F in 0.005 0.01; do
+      python3 "$T/mk_run.py" ${d}_$F "${cfgs[$i]//@F@/$F}" solve > /dev/null || { failed+=("${d}_$F"); built=0; }
+    done
+    [ $built = 1 ] && check $d bash -c "cd ${d}_0.01 && python3 '$T/budget_check.py' 1e-8 ../${d}_0.005 | sed 's/^/$d: /'"
+  done
+  # the anelastic 'Wu 2005' with a field needs N 128 for its budgets (the sphere's are 2e-6 at N 96): closure only
+  d=bm_wu
+  python3 "$T/mk_run.py" $d "$MAG; $WU; par.thermal = 0; par.Beyonce = 1.; $CL; par.N = 128" solve > /dev/null && \
+    check $d bash -c "cd $d && python3 '$T/budget_check.py' 1e-7 | sed 's/^/$d: /'" || failed+=("$d")
 fi
 
 if [ -n "$OLD_KORE" ]; then
@@ -60,4 +88,4 @@ if [ -n "$OLD_KORE" ]; then
   check regress bash -c "bash '$T/../diff_rot/regress.sh' '$OLD_KORE' '$W/regress' | tail -1"
 fi
 
-if [ ${#failed[@]} -eq 0 ]; then echo "centrifugal checks ok"; else echo "centrifugal checks FAILED: ${failed[*]}"; exit 1; fi
+if [ ${#failed[@]} -eq 0 ]; then echo "centrifugal checks ok ($SECONDS s)"; else echo "centrifugal checks FAILED: ${failed[*]} ($SECONDS s)"; exit 1; fi

@@ -1729,6 +1729,210 @@ def em_budget(bsol, bic=None):
 
 
 
+# ----------------------------------------------------------------------------------------------------------------------
+# NEW (2026-11-05, phase 1b): the metric parts of the magnetic budgets with centrifugal = 1 (centrifugal.py, sections 4, 5)
+# ----------------------------------------------------------------------------------------------------------------------
+def _lcomp_metric(V, V1, amps, rr, m, lw):
+    '''
+    (M - I) V and its r-derivative as l-components on the degrees 0..lw (dicts q, s, t of (lw + 1, nr) arrays), from those of
+    V and V' at the radii rr, with the amplitudes amps = (ε, η, r η') there and the primitives of centrifugal.py (section 2):
+    d/dr [ε Ce V + η Ch V] = (η/r) Ce V + ε Ce V' + (r η'/r) Ch V + η Ch V'
+    '''
+    e, h, c = amps
+    Ce, Ch = cf.primitives('inertia', 'e', m, lw)[0], cf.primitives('inertia', 'h', m, lw)[0]
+    app = lambda C, U: {k: C[k]['q'] @ U['q'] + C[k]['a'] @ U['s'] + C[k]['T'] @ U['t'] for k in 'qst'}
+    eV, hV, eV1, hV1 = app(Ce, V), app(Ch, V), app(Ce, V1), app(Ch, V1)
+    return ({k: e*eV[k] + h*hV[k] for k in 'qst'},
+            {k: (h/rr)*eV[k] + e*eV1[k] + (c/rr)*hV[k] + h*hV1[k] for k in 'qst'})
+
+def _lcomp_curl(V, V1, rr):
+    '''∇× on l-components (as curl): (q, s, t) -> (L t/r, t' + t/r, (q - s)/r - s')'''
+    lv = np.arange(V['q'].shape[0]); L = (lv*(lv + 1.))[:, None]
+    return {'q': L*V['t']/rr, 's': V1['t'] + V['t']/rr, 't': (V['q'] - V['s'])/rr - V1['s']}
+
+def _lcomp_dot(U, V, rr, w):
+    '''∫ U*⋅V dV over the radii rr with the quadrature weights w (cdot_pol + cdot_tor summed over l)'''
+    lv = np.arange(U['q'].shape[0]); nl = (4*np.pi/(2*lv + 1))[:, None]; L = (lv*(lv + 1.))[:, None]
+    g = nl*(np.conj(U['q'])*V['q'] + L*(np.conj(U['s'])*V['s'] + np.conj(U['t'])*V['t']))
+    return np.sum(np.sum(g, 0)*rr**2*w)
+
+def _lcomp_field(bsol, rr, lw):
+    '''b̃ and b̃' as l-components on the degrees 0..lw at the radii rr, from the solution bsol (f, g)'''
+    lp, lt, _ = ut.ell(par.m, par.lmax, ut.bsymm)
+    z = lambda: {k: np.zeros((lw + 1, len(rr)), dtype=complex) for k in 'qst'}
+    B, B1 = z(), z()
+    Ft, Gt = cheb2space_table(bsol[0], 2, rr), cheb2space_table(bsol[1], 1, rr)
+    for k, l in enumerate(lp):
+        L = l*(l + 1.); F0, F1, F2 = Ft[0, k], Ft[1, k], Ft[2, k]
+        B['q'][l], B['s'][l] = L*F0/rr, F1 + F0/rr
+        B1['q'][l], B1['s'][l] = L*(F1/rr - F0/rr**2), F2 + F1/rr - F0/rr**2
+    for k, l in enumerate(lt):
+        B['t'][l], B1['t'][l] = Gt[0, k], Gt[1, k]
+    return B, B1
+
+def centrifugal_magnetic_energy(bsol, Ra, Rb):
+    '''
+    ∫ b̃*⋅(M - I) b̃ dV from Ra to Rb, the metric part of the field's energy (ME + this is ∫ |b|² dV of the body), on the grid of
+    setup_grid (solve.normalise_energy, after magnetic_energy)
+    '''
+    lw = cf.lw_of()
+    prof = cf.profile_functions()
+    B, B1 = _lcomp_field(bsol, rk, lw)
+    Mb, _ = _lcomp_metric(B, B1, [prof[c](rk, 0) for c in ('ce0', 'ce1', 'ce2')], rk, par.m, lw)
+    return np.real(_lcomp_dot(B, Mb, rk, wk*(Rb - Ra)/2))
+
+def centrifugal_magnetic_terms(bsol, bic=None):
+    '''
+    With centrifugal = 1 and magnetic = 1, the metric parts of the magnetic budgets (centrifugal.py, sections 4 and 5), in the
+    conventions of magnetic_worker and em_budget (no Hendrik or MagnetD), on the quadrature grid of diagnose (call it after
+    diagnose and diagnose_magnetic, before wall_powers moves the grid). b̃ is the field of the reference space (the flux
+    J F⁻¹ b), w the flow, j0 = ∇×b̃, jc = ∇×((M - I) b̃), B0, J0 = ∇×B0 and J0c = ∇×((M - I) B0), all of the reference space;
+    δ𝐆 and δ𝐄 are the first-order metric parts of the Lorentz force and of the induction's field, as the operators have them.
+    Returns a dict:
+        Wlor   : 2 ∫ w*⋅δ𝐆 dV (complex), added to the Lorentz power of residσ and residω
+        Indu   : 2 Re ∫ b̃*⋅∇×δ𝐄 dV, added to the induction work of resid𝐛 (the volume part 2 Re ∫ δ𝐄⋅j0* dV plus Iwall)
+        Iwall  : its wall terms 2 Re ∮ (δ𝐄×b̃*)⋅r̂ dS (zero at no-slip walls)
+        MEc    : ∫ b̃*⋅(M - I) b̃ dV, the metric part of the field's energy: ME + MEc = ∫ |b|² dV in the deformed fluid
+        InduM  : 2 Re ∫ jc*⋅𝐄 dV, 𝐄 = w×B0 + δ𝐄 + U0×b̃ the induction's field: the work on the metric part of the field
+        Ohmc   : 2 Re ∫ jc*⋅j0 dV (times MagnetD: the metric part of the Ohmic loss with the spherical diffusion)
+        MEext  : the energy of the potential field outside the deformed body (in place of em_budget's ME_ext)
+        MEic   : that of the field inside the inner core: the potential field of an insulating one, ∫ b̃*⋅M b̃ dV of a conducting
+                 one (in place of em_budget's ME_ic)
+        Ohm_ic : a conducting inner core's η_i 2 Re ∫ (j0 + jc)*⋅j0 dV (in place of em_budget's Ohm_ic, without MagnetD)
+    With them the budgets of the deformed body are: resid𝐛 with Indu, as in the sphere (the B rows of the field are those of
+    the sphere: ∂ₜb̃ = -∇×(Fᵀ𝐄) exactly); residσ, residω with Wlor; resid𝐄 with the energy ∫ b̃*⋅M b̃ dV (ME + MEc), whose rate
+    is the work 2 Re ∫ 𝐄⋅(∇×M b̃)* dV (Indu - Iwall + InduM) minus the Ohmic loss (Ohm_f + MagnetD Ohmc), the energy of the
+    potential fields of the deformed exterior and inner core, and that of a conducting inner core with its metric part.
+    resid𝐛, residσ and residω close to round-off; resid𝐄 to the second order in the flattening (the operators and the wall
+    rows are of first order).
+    '''
+    m = par.m
+    Ra, Rb = par.ricb, ut.rcmb
+    lw = cf.lw_of()
+    prof = cf.profile_functions()
+    amp = lambda rr: [prof[c](rr, 0) for c in ('ce0', 'ce1', 'ce2')]
+    lp_u, lt_u, _ = ut.ell(m, par.lmax, par.symm)
+    nB = max([3] + list(bf.pol_profiles()) + list(bf.tor_profiles()))
+    lw0 = nB + 4                                       # the degrees of B0 and of (M - I) B0, m = 0
+    D = max(nB, dr.n_max() + 1 if par.diff_rot else 0)
+    xg, wx = np.polynomial.legendre.leggauss(lw + 16 + max(0, D - 22))
+    Ym, Y0 = angular.ylm_grid(m, lw, xg), angular.ylm_grid(0, lw0, xg)
+    P2x = 1.5*xg**2 - 0.5
+
+    def flow(rr):   # w as l-components (with its (ln ρ0)' part, as velocity) at the radii rr
+        W = {k: np.zeros((lw + 1, len(rr)), dtype=complex) for k in 'qst'}
+        lh = rap.logrhoX(rr, 1)
+        Pt, Tt = cheb2space_table(usol2[0], 1, rr), cheb2space_table(usol2[1], 0, rr)
+        for k, l in enumerate(lp_u):
+            W['q'][l], W['s'][l] = l*(l + 1.)*Pt[0, k]/rr, Pt[1, k] + Pt[0, k]/rr + lh*Pt[0, k]
+        for k, l in enumerate(lt_u):
+            W['t'][l] = Tt[0, k]
+        return W
+    def background(rr):   # B0 and B0' as l-components on the degrees 0..lw0 at m = 0 (as magnetic_powers_grid)
+        V = {k: np.zeros((lw0 + 1, len(rr))) for k in 'qst'}; V1 = {k: np.zeros((lw0 + 1, len(rr))) for k in 'qst'}
+        for n, f in bf.pol_profiles().items():
+            L0 = n*(n + 1.); h0, h1, h2 = [ f(rr, d) for d in (0, 1, 2) ]
+            V['q'][n] += L0*h0/rr; V['s'][n] += h1 + h0/rr
+            V1['q'][n] += L0*(h1/rr - h0/rr**2); V1['s'][n] += h2 + h1/rr - h0/rr**2
+        for n, f in bf.tor_profiles().items():
+            k0, k1 = [ f(rr, d) for d in (0, 1) ]
+            V['t'][n] += k0; V1['t'][n] += k1
+        return V, V1
+    def synth(V, Yt):   # l-components -> (F_r, F_θ, F_φ) on (r, x), F = q Y r̂ + s r∇Y + t r∇Y×r̂
+        Y, dY, Z = Yt
+        return [ V['q'].T @ Y, V['s'].T @ dY + V['t'].T @ Z, V['s'].T @ Z - V['t'].T @ dY ]
+    def cross(a, c):
+        return [ a[1]*c[2] - a[2]*c[1], a[2]*c[0] - a[0]*c[2], a[0]*c[1] - a[1]*c[0] ]
+    def vol(f):   # ∫ f dV over the fluid, f on (rk, x), the e^{imφ} factors already combined (2π)
+        return 2*np.pi*np.sum((wk*rk**2)[:, None]*wx[None, :]*f)*(Rb - Ra)/2
+    def rotation(rr):   # U0 = Gaspard ΔΩ r sinθ e_φ (as magnetic_powers_grid)
+        z0 = 0*np.outer(rr, xg)
+        if not par.diff_rot:
+            return [ z0, z0, z0 ]
+        dO = sum(np.outer(dr.fX(n, rr, 0), np.polynomial.legendre.Legendre.basis(n)(xg)) for n in dr.degrees())
+        return [ z0, z0, par.Gaspard*dO*np.outer(rr, np.sqrt(1 - xg**2)) ]
+
+    out = {}
+    # the fluid: l-components, their metric parts and curls, then the products on the (r, x) grid
+    a_k = amp(rk)
+    B, B1 = _lcomp_field(bsol, rk, lw)
+    Mb, Mb1 = _lcomp_metric(B, B1, a_k, rk, m, lw)
+    j0, jc = _lcomp_curl(B, B1, rk), _lcomp_curl(Mb, Mb1, rk)
+    V0, V01 = background(rk)
+    M0, M01 = _lcomp_metric(V0, V01, a_k, rk, 0, lw0)
+    J0, J0c = _lcomp_curl(V0, V01, rk), _lcomp_curl(M0, M01, rk)
+    w, b, jg, jcg = [ synth(V, Ym) for V in (flow(rk), B, j0, jc) ]
+    B0g, J0g, J0cg = [ synth(V, Y0) for V in (V0, J0, J0c) ]
+    hP2 = a_k[1][:, None]*P2x[None, :]
+    G = [ -hP2*(p + q) + s + t for p, q, s, t in zip(cross(J0g, b), cross(jg, B0g), cross(J0cg, b), cross(jcg, B0g)) ]
+    out['Wlor'] = 2*vol(sum(np.conj(u)*g for u, g in zip(w, G)))
+    dE = [ -hP2*v for v in cross(w, B0g) ]
+    E = [ p + q + s for p, q, s in zip(cross(w, B0g), dE, cross(rotation(rk), b)) ]
+    out['InduM'] = 2*np.real(vol(sum(e*np.conj(j) for e, j in zip(E, jcg))))
+    wq = wk*(Rb - Ra)/2
+    out['MEc'] = np.real(_lcomp_dot(B, Mb, rk, wq))
+    out['Ohmc'] = 2*np.real(_lcomp_dot(jc, j0, rk, wq))
+    # the induction work of δ𝐄: its volume part and the wall terms 2 Re ∮ (δ𝐄×b̃*)⋅r̂ dS (w = 0 at no-slip walls)
+    rw = np.array([Ra if Ra > 0 else 0.5, Rb])   # (a dummy inner radius in a full sphere, its term is not used)
+    Bw = _lcomp_field(bsol, rw, lw)[0]
+    ww, bw, B0w = synth(flow(rw), Ym), synth(Bw, Ym), synth(background(rw)[0], Y0)
+    dEw = [ -(amp(rw)[1][:, None]*P2x[None, :])*v for v in cross(ww, B0w) ]
+    walls = 2*np.pi*np.sum(wx[None, :]*(dEw[1]*np.conj(bw[2]) - dEw[2]*np.conj(bw[1]))*(rw**2)[:, None], axis=1)
+    out['Iwall'] = 2*np.real(walls[1] - (walls[0] if Ra > 0 else 0))
+    out['Indu'] = 2*np.real(vol(sum(e*np.conj(j) for e, j in zip(dE, jg)))) + out['Iwall']
+
+    # the potential fields of the insulating exterior (and inner core): the coefficients A_l of ∇φ at the wall
+    # (centrifugal.wall_potential), the energy of the sphere's potential field (Σ (l + 1) |A_l|² R³ outside, Σ l |A_l|² R³
+    # inside, kore's ∫ |Y|² dΩ) and the shell between the sphere and the wall, ∮ |∇φ|² ξ_r dA with ξ_r = ε R P2
+    lv = np.arange(lw + 1); nl = 4*np.pi/(2*lv + 1)
+    def potential_energy(wall, k):
+        R = rw[k]
+        e0, h0 = [ float(a[k]) for a in amp(rw)[:2] ]
+        A = cf.wall_potential(wall, m, lw, e0, h0, R, Bw['q'][:, k], Bw['s'][:, k], Bw['t'][:, k])
+        kq = -(lv + 1.) if wall == 'outer' else lv*1.
+        sph = np.sum(nl*np.abs(kq)*np.abs(A)**2)*R**3
+        g = synth({'q': (kq*A)[:, None], 's': A[:, None], 't': 0*A[:, None]}, Ym)
+        shell = e0*R**3*2*np.pi*np.sum(wx*P2x*sum(np.abs(c[0])**2 for c in g))
+        return sph - shell if wall == 'outer' else sph + shell
+    out['MEext'] = potential_energy('outer', 1)
+    out['MEic'] = out['Ohm_ic'] = 0.0
+    if Ra == 0:
+        pass
+    elif par.innercore == 'insulator':
+        out['MEic'] = potential_energy('inner', 0)
+    elif bic is not None:
+        # a conducting inner core (mu_i2o = 1): its field as em_budget reads it, ∫ b̃*⋅M b̃ dV and η_i 2 Re ∫ (j0 + jc)*⋅j0 dV,
+        # with ε, η inside it from centrifugal.amplitudes
+        Nic = ut.Nic; nb = int((par.lmax - par.m + 1)/2)
+        if ut.symmB0 == -1: ixf, ixg = (par.m + ut.s)%2, (par.m + 1 - ut.s)%2
+        else:               ixf, ixg = (par.m + 1 - ut.s)%2, (par.m + ut.s)%2
+        xi, wi = np.polynomial.legendre.leggauss(max(2*par.N_cic, 64))
+        ri = 0.5*Ra*(xi + 1); wi = 0.5*Ra*wi
+        def icfun(a, ix, nd):
+            cc = np.zeros(par.N_cic, complex); cc[ix::2] = a; res = []
+            for j in range(nd+1):
+                res.append(ch.chebval(ri/Ra, cc)); cc = ch.chebder(cc)/Ra
+            return res
+        lp, lt, _ = ut.ell(m, par.lmax, ut.bsymm)
+        Bi = {k: np.zeros((lw + 1, len(ri)), dtype=complex) for k in 'qst'}
+        Bi1 = {k: np.zeros((lw + 1, len(ri)), dtype=complex) for k in 'qst'}
+        for k, l in enumerate(lp):
+            L = l*(l + 1.); f, f1, f2 = icfun(bic[k*Nic:(k+1)*Nic], ixf, 2)
+            Bi['q'][l], Bi['s'][l] = L*f/ri, f1 + f/ri
+            Bi1['q'][l], Bi1['s'][l] = L*(f1/ri - f/ri**2), f2 + f1/ri - f/ri**2
+        for k, l in enumerate(lt):
+            g, g1 = icfun(bic[nb*Nic + k*Nic: nb*Nic + (k+1)*Nic], ixg, 1)
+            Bi['t'][l], Bi1['t'][l] = g, g1
+        Mi, Mi1 = _lcomp_metric(Bi, Bi1, cf.amplitudes(ri), ri, m, lw)
+        j0i = _lcomp_curl(Bi, Bi1, ri)
+        out['MEic'] = np.real(_lcomp_dot(Bi, Bi, ri, wi) + _lcomp_dot(Bi, Mi, ri, wi))
+        out['Ohm_ic'] = 2*np.real(_lcomp_dot(j0i, j0i, ri, wi) + _lcomp_dot(_lcomp_curl(Mi, Mi1, ri), j0i, ri, wi))/(par.mu_i2o*par.sigma_i2o)
+    else:
+        out['MEic'] = out['Ohm_ic'] = np.nan
+    return out
+
+
+
 def diagnose_magnetic( bsol ):
     '''
     NEW (2026-10-28): magnetic_worker for every l, as an array (one row per l). Call it right after diagnose (same grid

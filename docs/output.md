@@ -71,6 +71,7 @@ the definitions are on [Magnetic field equations](magnetic-equations.md#energy-b
 | 8 | MEext, the energy of the potential field outside the outer wall |
 | 9, 10 | Ohm_f, Ohm_ic: the Ohmic losses in the fluid and in a conducting inner core |
 | 11 | the relative residual of the full energy budget (resid𝐄; nan unless the walls are no-slip: `bco = 1`, and `bci = 1` with an inner core) |
+| 12 | with `centrifugal = 1` only: MEc, the part of the magnetic energy that the deformation adds, so that ME + MEc is the energy of the field in the deformed fluid (the column Mag/Kin of the `spin_doctor` table is (ME + MEc)/KE; [Centrifugal deformation](centrifugal-equations.md#energy-budgets)) |
 
 ## `params.dat`
 

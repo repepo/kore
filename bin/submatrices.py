@@ -295,6 +295,10 @@ def main(ncpus):
         for lab, kind in cf.labels():
             labl += [ lab ]
             arg2 += [ {'P': vP, 'T': vT}[kind] ]
+        if par.magnetic:   # NEW (2026-11-05, phase 1b): the metric parts of the Lorentz force (u, v) and of the induction (f, g)
+            for lab, kind in cf.magnetic_labels():
+                labl += [ lab ]
+                arg2 += [ {'P': vP, 'T': vT, 'F': vF, 'G': vG}[kind] ]
 
     if par.ricb == 0:
         # NEW (2026-11-04): a WARNING for each profile that is not regular at r = 0, i.e. not r^n times a series in r² for its

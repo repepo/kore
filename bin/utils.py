@@ -78,6 +78,11 @@ if mag_algebra:
     odd_profiles += _ma.odd_codes()
 # the Δl of the magnetic couplings assemble.py loops over
 mag_dl = list(_ma.dl_range()) if mag_algebra else [-2, -1, 0, 1, 2]
+# NEW (2026-11-05): the metric magnetic terms of the deformed body (centrifugal.py): products of the map's even amplitudes and
+# the background field, odd for the odd degrees of B0
+if par.magnetic and getattr(par, 'centrifugal', 0):
+    import centrifugal as _cf
+    odd_profiles += _cf.magnetic_odd_codes()
 
 def dr_offd(l, ls, row, col):
     '''

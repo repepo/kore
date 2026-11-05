@@ -98,17 +98,17 @@ def check():
 def check_centrifugal():
     '''
     NEW (2026-11-05): stops on the settings that the centrifugal deformation (centrifugal = 1, centrifugal.py) cannot do yet:
-    a magnetic field (the metric terms of the induction, of the Lorentz force and of the field outside the deformed walls),
-    a forcing (the forced problems need the metric terms in A and boundary flows on the deformed walls) and stress-free
-    walls (their rows need the metric); and on incomplete shapes. centrifugal.report() (submatrices.py) prints the flattening
-    used and the warnings on the terms left spherical.
+    a forcing (the forced problems need the metric terms in A and boundary flows on the deformed walls), stress-free walls
+    (their rows need the metric) and, with magnetic = 1 (NEW 2026-11-05, phase 1b), a conducting inner core of another
+    permeability than the fluid's (its matching rows would need the metric); and on incomplete shapes.
+    centrifugal.report() (submatrices.py) prints the flattening used and the warnings on the terms left spherical.
     '''
     import centrifugal as cf
     if par.centrifugal != 1:
         sys.exit('centrifugal must be 0 or 1, got %r' % (par.centrifugal,))
-    if par.magnetic:
-        sys.exit('centrifugal = 1 with magnetic = 1 is not implemented (the metric terms of the induction, of the Lorentz force '
-                 'and of the field outside the deformed walls): set centrifugal = 0')
+    if par.magnetic and par.ricb > 0 and par.innercore == 'conducting, Chebys' and par.mu_i2o != 1:
+        sys.exit('centrifugal = 1 with a conducting inner core needs mu_i2o = 1: with another permeability the matching of the '
+                 'tangential field on the deformed inner boundary has metric terms that are not implemented')
     if par.forcing != 0:
         sys.exit('centrifugal = 1 is implemented for eigenvalue problems only (forcing = 0): the forced problems need the '
                  'metric terms of the time derivative in A and their boundary flows on the deformed walls')

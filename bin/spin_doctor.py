@@ -325,6 +325,9 @@ def main(ncpus):
     Ohm_ic      = np.zeros(success)  # MagnetD η_i ∫ |∇×𝐛|² dV over a conducting inner core
     residE      = np.full(success, np.nan)  # the full energy budget (no-slip walls only)
     Iwall       = np.zeros(success)  # NEW (2026-10-30): the wall terms in Indu (utils4pp.INDU_WALLS)
+    MEc         = np.zeros(success)  # NEW (2026-11-05): centrifugal = 1, ∫ 𝐛̃*⋅(M - I) 𝐛̃ dV: ME + MEc is the field's energy in the
+    InduM       = np.zeros(success)  #   deformed fluid; InduM, Ohmc the induction work and Ohmic loss (MagnetD) on the metric part
+    Ohmc        = np.zeros(success)  #   of the field, for resid𝐄 (upp.centrifugal_magnetic_terms)
 
     # residual errors to be processed
     resid1      = np.zeros(success)
@@ -356,7 +359,7 @@ def main(ncpus):
     ] if par.forcing > 0 else []) + ([
         ( 'resid𝐛',        '{:8.2e}',   lambda i: residb[i] ),
         ( 'resid𝐄',        '{:8.2e}',   lambda i: residE[i] ),
-        ( 'Mag/Kin',       '{:8.2e}',   lambda i: ratio(ME[i], KE[i]) ),   # as conductive_IC: ME without Hendrik
+        ( 'Mag/Kin',       '{:8.2e}',   lambda i: ratio(ME[i] + MEc[i], KE[i]) ),   # as conductive_IC: ME without Hendrik
     ] if par.magnetic else []) + [
         ( 'Peak ℓ',        '{:d}',      lambda i: ldom[i] ),
         ( 'ℓ-Width',       '{:d}',      lambda i: lwidth[i] ),
@@ -434,6 +437,15 @@ def main(ncpus):
             Ohm_f0, MEic[i], Ohm_ic0, MEext[i] = upp.em_budget( b_sol2, None if bic is None else bic[:,i] )
             Ohm_f[i]  = par.MagnetD * Ohm_f0
             Ohm_ic[i] = par.MagnetD * Ohm_ic0
+            if par.centrifugal:  # NEW (2026-11-05, phase 1b): the metric parts, on the same grid (upp.centrifugal_magnetic_terms)
+                cm = upp.centrifugal_magnetic_terms( b_sol2, None if bic is None else bic[:,i] )
+                Wlor[i]    += par.Hendrik * np.real(cm['Wlor'])
+                Wlor_im[i] += par.Hendrik * np.imag(cm['Wlor'])
+                Indu[i]    += cm['Indu']
+                Iwall[i]   += cm['Iwall']
+                MEc[i], InduM[i], Ohmc[i] = cm['MEc'], cm['InduM'], par.MagnetD * cm['Ohmc']
+                MEic[i], MEext[i] = cm['MEic'], cm['MEext']   # the potential fields of the deformed exterior and inner core,
+                Ohm_ic[i]  = par.MagnetD * cm['Ohm_ic']       # and a conducting inner core with its metric part
 
         # NEW (2026-11-04): the viscous dissipation at the grid of diagnose, then the work of the wall stresses
         # (wall_powers moves the grid globals to the walls)
@@ -535,9 +547,11 @@ def main(ncpus):
             # resid𝐄 at nan for every full-sphere run)
             if par.bco == 1 and (par.bci == 1 or par.ricb == 0):
                 H = par.Hendrik
-                Etot = KE[i] + H*( ME[i] + MEic[i] + MEext[i] )
-                Wex  = Wlor[i] + H*(Indu[i] - Iwall[i]) + Wdr[i]
-                Ohm  = H*( Ohm_f[i] + Ohm_ic[i] )
+                # NEW (2026-11-05): with centrifugal = 1 the energy of the deformed body, ∫ 𝐛̃*⋅M 𝐛̃ dV in the fluid (MEc), whose
+                # rate is the work 2 Re ∫ 𝐄⋅(∇×M 𝐛̃)* dV (InduM) minus the Ohmic loss (Ohmc); closes at second order in f
+                Etot = KE[i] + H*( ME[i] + MEc[i] + MEic[i] + MEext[i] )
+                Wex  = Wlor[i] + H*(Indu[i] - Iwall[i] + InduM[i]) + Wdr[i]
+                Ohm  = H*( Ohm_f[i] + Ohmc[i] + Ohm_ic[i] )
                 residE[i] = ( abs( 2*sigma*Etot - Dkin[i] - Wthm[i] - Wex + Ohm )
                               / max( abs(2*sigma*Etot), abs(Dkin[i]), abs(Wthm[i]), abs(Wex), Ohm, abs(Wdr[i]) ) )
 
@@ -631,7 +645,9 @@ def main(ncpus):
             ( 'Ohm_f',      Ohm_f,      '%.9e' ),  # MagnetD ∫ |∇×𝐛|² over the fluid
             ( 'Ohm_ic',     Ohm_ic,     '%.9e' ),  # MagnetD η_i ∫ |∇×𝐛|² over a conducting inner core
             ( 'residE',     residE,     '%.9e' ),  # full energy budget, resid𝐄 (nan without no-slip walls)
-        ]
+        ] + ([
+            ( 'MEc',        MEc,        '%.9e' ),  # NEW (2026-11-05): centrifugal = 1, the metric part of ME (ME + MEc: the
+        ] if par.centrifugal else [])              #   energy of the field in the deformed fluid)
         with open('magnetic.dat','ab') as dmag:
             np.savetxt(dmag, np.column_stack([ v for _, v, _ in magnetic_cols ]),
             fmt=[ f for _, _, f in magnetic_cols ])

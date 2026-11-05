@@ -147,6 +147,15 @@ def centrifugal_coriolis(l, section, component, offdiag):  # --------------- NEW
     return cf.momentum_block('coriolis', l, section, component, offdiag, globals())
 
 
+def centrifugal_magnetic(l, section, component, offdiag):  # ------- NEW (2026-11-05, phase 1b): magnetic terms of the deformed body
+    '''
+    The metric parts of the Lorentz force (section 'u', 'v'; component 'bpol', 'btor', times Hendrik) and of the induction
+    (section 'f', 'g'; component 'upol', 'utor') of the deformed body (centrifugal.magnetic_block), in the A sign of lorentz()
+    and induction(). Returns [matrix, offd] or [0, 0].
+    '''
+    return cf.magnetic_block(l, section, component, offdiag, globals())
+
+
 def centrifugal_entropy(l, section, component, offdiag):  # ------------ NEW (2026-11-05): heat time derivative of the deformed body
     '''
     (J - 1) s = η P2 s in the heat rows (centrifugal.entropy_block), with the sign of entropy() in B. Returns [matrix, offd].

@@ -403,6 +403,13 @@ def main():
                         if np.isscalar(mtx[0]): continue
                         col = ut.offset[sec] + col0 + mtx[1] * ut.N1
                         loc_list = ut.packit( loc_list, mtx[0], row, col)
+                if par.centrifugal:  # NEW (2026-11-05, phase 1b): the metric part of the Lorentz force of the deformed body (Δl up to nmax + 3)
+                    for i in cf.magnetic_dl_range():
+                        if l+i in ll_mag[0 if comp == 'bpol' else 1]:
+                            mtx = op.centrifugal_magnetic(l,'u',comp,i)
+                            if np.isscalar(mtx[0]): continue
+                            col = ut.offset[sec] + col0 + mtx[1] * ut.N1
+                            loc_list = ut.packit( loc_list, mtx[0], row, col)
 
 
         # ----------------------------------------------------------------------------------------------------------
@@ -493,6 +500,13 @@ def main():
                         if np.isscalar(mtx[0]): continue
                         col = ut.offset[sec] + col0 + mtx[1] * ut.N1
                         loc_list = ut.packit( loc_list, mtx[0], row, col)
+                if par.centrifugal:  # NEW (2026-11-05, phase 1b): the metric part of the Lorentz force
+                    for i in cf.magnetic_dl_range():
+                        if l+i in ll_mag[0 if comp == 'bpol' else 1]:
+                            mtx = op.centrifugal_magnetic(l,'v',comp,i)
+                            if np.isscalar(mtx[0]): continue
+                            col = ut.offset[sec] + col0 + mtx[1] * ut.N1
+                            loc_list = ut.packit( loc_list, mtx[0], row, col)
 
 
         # ----------------------------------------------------------------------------------------------------------
@@ -626,6 +640,13 @@ def main():
                             if np.isscalar(mtx[0]): continue
                             col = basecol + col0 + mtx[1] * ut.N1
                             loc_list = ut.packit( loc_list, mtx[0], row, col)
+                    if par.centrifugal:  # NEW (2026-11-05, phase 1b): the metric part of the induction of the deformed body
+                        for i in cf.magnetic_dl_range():
+                            if l+i in lls:
+                                mtx = op.centrifugal_magnetic(l, sec, ucomp, i)
+                                if np.isscalar(mtx[0]): continue
+                                col = basecol + col0 + mtx[1] * ut.N1
+                                loc_list = ut.packit( loc_list, mtx[0], row, col)
 
                 # NEW (2026-10-30): induction by the background flow ∇×(U0×b), from the poloidal (F, section f) and toroidal
                 # (G, section g) field: F→f, G→g at even Δl, F→g at odd Δl (diff_rot.induction_dl_range)
@@ -646,6 +667,10 @@ def main():
                 bc_b_list = bc_b_spherical(l, sec)
                 for q in [0,1,2]:
                     loc_list[q].append( bc_b_list[q] )
+                if par.centrifugal:  # NEW (2026-11-05, phase 1b): the metric parts of the insulating wall rows (deformed walls)
+                    bc_b_list = bc_b_centrifugal(l, sec, ll_mag)
+                    for q in [0,1,2]:
+                        loc_list[q].append( bc_b_list[q] )
                 if ut.cic:
                     bc_b_list = bc_b_cic(l, sec)
                     for q in [0,1,2]:
@@ -993,6 +1018,45 @@ def bc_b_spherical(l, sec):
 
     out = out.tocoo()
     return [out.data, out.row + row0, out.col + row0]
+
+
+
+def bc_b_centrifugal(l, sec, ll_mag):
+    '''
+    NEW (2026-11-05, phase 1b): with centrifugal = 1, the metric parts of the insulating wall rows of bc_b_spherical (the
+    potential field outside the deformed outer wall, and inside an insulating inner core; centrifugal.wall_rows): in the same
+    rows (row 0 at the outer wall, row 1 at the inner one), entries on F, F' and G of the degrees l ± 1 to l ± 3 (f and g
+    columns, each with its Chebyshev parity in a full sphere). A conducting inner core needs none (bc_b_cic stays exact).
+    '''
+    walls = [('outer', 0)] + ([('inner', 1)] if (par.ricb > 0 and not ut.cic) else [])
+    lfirst = lambda s: ut.m_bot if (s == 'f') == (ut.symmB0 == -1) else ut.m_top   # as in bc_b_spherical
+    lls = {'f': ll_mag[0], 'g': ll_mag[1]}
+    ixf = ( par.m + ut.s )%2 if ut.symmB0 == -1 else ( par.m + 1 - ut.s )%2
+    data, rows, cols = [], [], []
+    for wall, rr in walls:
+        B, W = cf.wall_rows(wall)
+        T = bv.Tb if wall == 'outer' else bv.Ta
+        row = ut.offset[sec] + int( ut.N1*(l - lfirst(sec))/2 ) + rr
+        for csec, kinds in (('f', ('F0', 'F1')), ('g', ('G0',))):
+            Tc = T if par.ricb > 0 else T[(ixf if csec == 'f' else 1 - ixf)::2, :]
+            for dl in range(-B, B + 1):
+                k = l + dl
+                if k not in lls[csec]:
+                    continue
+                vec = 0
+                for kind in kinds:
+                    c = cf._lookup(W[(sec, kind)], l, par.m, dl)
+                    if c != 0:
+                        vec = vec + c*Tc[:, 1 if kind == 'F1' else 0]
+                if np.isscalar(vec):
+                    continue
+                nz = np.nonzero(vec)[0]
+                data.append(vec[nz])
+                rows.append(np.full(nz.size, row))
+                cols.append(ut.offset[csec] + int( ut.N1*(k - lfirst(csec))/2 ) + nz)
+    if not data:
+        return [np.zeros(0), np.zeros(0, dtype=int), np.zeros(0, dtype=int)]
+    return [np.concatenate(data), np.concatenate(rows), np.concatenate(cols)]
 
 
 
