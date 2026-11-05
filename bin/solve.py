@@ -128,6 +128,8 @@ def normalise_energy(vecs):
     with KE as spin_doctor computes it (from ricb to rcmb, Gauss-Legendre quadrature, rho0 weight).
     NEW (2026-10-28): with magnetic = 1, KE + ME = 1 instead, ME = Hendrik ∫ ½ 𝐛⋅𝐛 dV over the shell (as conductive_IC: the
     field of a conducting inner core is scaled along, its energy not counted).
+    NEW (2026-11-05): with centrifugal = 1, KE is the kinetic energy of the deformed body, ∫ ½ ρ 𝐰⋅M 𝐰 dV (the energy that B
+    weights): its metric part comes from utils4pp.centrifugal_terms, computed on rank 0 (it couples the degrees).
     The other fields (thermal, ...) are scaled along. The complex phase is left as SLEPc returns it.
     Vectors with zero KE (or runs without flow) are left unchanged.
     Called on all ranks with the full vecs on each; the l-components are shared among the ranks
@@ -143,6 +145,8 @@ def normalise_energy(vecs):
         f = split_fields(vecs[:, i])
         usol2 = upp.expand_reshape_sol(f['flow'], par.symm)
         KE = upp.kinetic_energy(usol2, par.ricb, ut.rcmb, ll[rank::size])
+        if par.centrifugal and rank == 0:  # NEW (2026-11-05): on the grid and the tables (every l) kinetic_energy has just set
+            KE += upp.centrifugal_terms(par.ricb, ut.rcmb)[0]
         if par.magnetic:  # NEW (2026-10-28)
             bsol2 = upp.expand_reshape_sol(f['magnetic'], ut.bsymm)
             KE += par.Hendrik * upp.magnetic_energy(bsol2, par.ricb, ut.rcmb, ll[rank::size])

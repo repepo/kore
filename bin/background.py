@@ -84,6 +84,8 @@ def check():
             _check_expression(par.stratification_profile, par.stratification_param, 'stratification_profile')
     if par.magnetic:
         check_magnetic()
+    if par.centrifugal:   # NEW (2026-11-05)
+        check_centrifugal()
     if par.diffusivity not in DIFFUSIVITIES:
         sys.exit('diffusivity %r: set one of %s' % (par.diffusivity, _names(DIFFUSIVITIES)))
     if par.diffusivity == 'user':
@@ -91,6 +93,41 @@ def check():
             sys.exit("diffusivity 'user' needs diffusivity_profiles = {'nu': '...', 'kappa': '...'}")
         for k in ('nu', 'kappa'):
             _check_expression(par.diffusivity_profiles[k], par.diffusivity_param, "diffusivity_profiles['%s']" % k)
+
+
+def check_centrifugal():
+    '''
+    NEW (2026-11-05): stops on the settings that the centrifugal deformation (centrifugal = 1, centrifugal.py) cannot do yet:
+    a magnetic field (the metric terms of the induction, of the Lorentz force and of the field outside the deformed walls),
+    a forcing (the forced problems need the metric terms in A and boundary flows on the deformed walls) and stress-free
+    walls (their rows need the metric); and on incomplete shapes. centrifugal.report() (submatrices.py) prints the flattening
+    used and the warnings on the terms left spherical.
+    '''
+    import centrifugal as cf
+    if par.centrifugal != 1:
+        sys.exit('centrifugal must be 0 or 1, got %r' % (par.centrifugal,))
+    if par.magnetic:
+        sys.exit('centrifugal = 1 with magnetic = 1 is not implemented (the metric terms of the induction, of the Lorentz force '
+                 'and of the field outside the deformed walls): set centrifugal = 0')
+    if par.forcing != 0:
+        sys.exit('centrifugal = 1 is implemented for eigenvalue problems only (forcing = 0): the forced problems need the '
+                 'metric terms of the time derivative in A and their boundary flows on the deformed walls')
+    if par.ViscosD > 0 and (par.bco != 1 or (par.ricb > 0 and par.bci != 1)):
+        sys.exit('centrifugal = 1 needs no-slip walls (bco = 1, and bci = 1 with ricb > 0): the stress-free rows on a deformed '
+                 'wall need metric terms that are not implemented')
+    if par.centrifugal_shape not in cf.SHAPES:
+        sys.exit('centrifugal_shape %r: set one of %s' % (par.centrifugal_shape, _names(cf.SHAPES)))
+    q, f = par.centrifugal_q, par.centrifugal_f
+    if not isinstance(q, (int, float)) or q < 0:
+        sys.exit('centrifugal_q must be a number >= 0, got %r' % (q,))
+    if f is not None and not isinstance(f, (int, float)):
+        sys.exit('centrifugal_f must be None or a number, got %r' % (f,))
+    if par.centrifugal_shape == 'uniform' and f is None:
+        sys.exit("centrifugal_shape 'uniform' needs centrifugal_f, the flattening")
+    if par.centrifugal_shape == 'user':
+        if f is not None:
+            sys.exit("centrifugal_shape 'user' takes the flattening from centrifugal_profile: set centrifugal_f = None")
+        _check_expression(par.centrifugal_profile, par.centrifugal_param, 'centrifugal_profile')
 
 
 def check_magnetic():
@@ -485,4 +522,7 @@ def centre_check(prf):
         singles += [('κ', 0, lambda r: diffusivity(prf, r, 'kappa'), 'diffusivity')]
     for name, n, f, kind in singles:
         family([('%s (%s %r)' % (name, kind, getattr(par, kind)), n, f)], 'max |%s|' % name)
+    if par.centrifugal:   # NEW (2026-11-05): the flattening of the level surfaces must be even and smooth at r = 0
+        import centrifugal as cf
+        family([("the flattening f (centrifugal_shape %r)" % par.centrifugal_shape, 0, cf.flattening)], 'max |f|')
     return nwarn[0]

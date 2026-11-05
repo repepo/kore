@@ -23,6 +23,7 @@ import os
 from parameters import par
 import utils as ut
 import diff_rot as dr
+import centrifugal as cf   # NEW (2026-11-05)
 import submatrix_io as smio   # NEW (2026-11-03)
 import background as bg
 import radial_profiles as rap
@@ -286,6 +287,14 @@ def main(ncpus):
         for lab, kind in dr.labels():
             labl += [ lab ]
             arg2 += [ {'P': vP, 'T': vT, 'F': vF, 'G': vG}[kind] ]   # NEW (2026-10-30): F, G for the induction by the flow
+
+    if par.centrifugal == 1:
+        # NEW (2026-11-05): the centrifugal deformation (centrifugal.py): the radial operators of the metric terms of the inertia
+        # and the Coriolis force (sections u, v) and of the heat time derivative (section h), with the parity of their columns
+        cf.report()
+        for lab, kind in cf.labels():
+            labl += [ lab ]
+            arg2 += [ {'P': vP, 'T': vT}[kind] ]
 
     if par.ricb == 0:
         # NEW (2026-11-04): a WARNING for each profile that is not regular at r = 0, i.e. not r^n times a series in r² for its

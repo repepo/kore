@@ -58,6 +58,17 @@ sense so that the bc rows hold exactly (a correction at high degree leaves bc re
 because the stress-free rows carry (ln rho0)'' and k^4 factors, and that pollutes the test).
 Not handled: the inviscid formulation (ViscosD = 0, rows multiplied by rho0^2) and compositional blocks.
 
+NEW (2026-11-05): with centrifugal = 1 (bin/centrifugal.py: the metric terms of the deformed body, w the field of the
+reference space) the blocks of operators.centrifugal_inertia (Ic), centrifugal_coriolis (Cc) and centrifugal_entropy (Ec),
+packed as assemble.py packs them, are tested as the diff-rot blocks are: on the (P, s) and T parts of the fields, against
+direct (r, cos θ) quadratures of formulas written out independently of the recurrence algebra of angular.py,
+  Ic = int rho0 x*.(M - I)y,     (M - I)y = ε (3 y_z ẑ - y) + η [(3/2) cosθ (y_z r̂ + y_r ẑ) - y_r r̂ - P2 y]
+  Cc = int rho0 x*.2G (z̃ - ẑ)×y, (z̃ - ẑ)×y = -ε ẑ×y - η [(3/2) cos²θ ẑ×y - (cosθ/2) r̂×y]
+  Ec = int p0 η P2 x_s* y_s      (J - 1 = η P2)
+(ε, η = r ε' the profile codes ce0, ce1; errors relative to (max|ε| + max|η|) times the Cauchy-Schwarz bound), and for
+symmetry: Ic and Ec Hermitian, Cc anti-Hermitian (it does no work), I + Ic and E + Ec positive. KE + Ic of field 0 is also
+compared with utils4pp.centrifugal_terms (the metric part of spin_doctor's KE).
+
 NEW (2026-10-28): with magnetic = 1 (insulating walls or a conducting inner core), on random fields that satisfy the field's
 wall conditions (insulating walls: (l+1)f + rf' = 0 outside, lf - rf' = 0 inside, g = 0), with b = curl curl(f r) + curl(g r):
   b time derivative   <x, b y>_r = n_l L^3 int conj(x_f) row_f(b y) dr + (g alike): Hermitian positive
@@ -85,6 +96,7 @@ import radial_profiles as rap
 import operators as op
 import bc_variables as bv
 import diff_rot as dr
+import centrifugal as cf   # NEW (2026-11-05)
 
 ap = argparse.ArgumentParser(description='symmetry tests of the kore anelastic operator blocks')
 ap.add_argument('nvec', nargs='?', type=int, default=3, help='number of random fields (default 3)')
@@ -208,7 +220,7 @@ def pair(sec, l, left_vals, y):
 
 
 # ---------------------------------------------------------------------------- operator applications
-KEYS = ['I', 'C', 'V', 'B', 'E', 'A', 'D', 'R', 'Ht', 'Hw']
+KEYS = ['I', 'C', 'V', 'B', 'E', 'A', 'D', 'R', 'Ht', 'Hw', 'Ic', 'Cc', 'Ec']   # NEW (2026-11-05): Ic, Cc, Ec
 
 def dr_blocks(l, sec):
     '''
@@ -227,6 +239,19 @@ def dr_blocks(l, sec):
     return [b for b in out if not np.isscalar(b[0])]   # an operator returns a plain 0 for a Δl it does not have
 
 
+def cf_blocks(l, sec, fun):
+    '''
+    NEW (2026-11-05): the centrifugal blocks of row l in section sec (centrifugal = 1), as assemble.py packs them: list of
+    (mtx, offd, kind). fun: operators.centrifugal_inertia or centrifugal_coriolis (sections u, v), centrifugal_entropy (h)
+    '''
+    if not par.centrifugal:
+        return []
+    comp = {'u': [('upol', 'P'), ('utor', 'T')], 'v': [('upol', 'P'), ('utor', 'T')], 'h': [('temp', 'S')]}[sec]
+    out = [tuple(fun(l, sec, name, i)) + (kind,) for name, kind in comp for i in cf.dl_range(sec, name)
+           if l + i in (lt if kind == 'T' else lp)]
+    return [b for b in out if not np.isscalar(b[0])]
+
+
 def apply_blocks(blocks, fld, k):
     '''sum of the blocks (mtx, offd, kind) applied to the column blocks k + offd of the field (P, T, S)'''
     unk = dict(zip('PTS', fld))
@@ -241,7 +266,9 @@ def cross_pairings(left, right):
       B = int (rho0 u)*.(Beyonce g s r^),  and with the s* weight on the heat rows:
       E = int p0 |s|^2,  A = -int p0 S' u_r s*,  D = ThermaD int s* div(kappa p0 grad s);
     with diff_rot = 1 also R = int (rho0 u)*.G[(U0'.grad)u + (u.grad)U0'] (momentum diff-rot blocks) and the heat
-    diff-rot blocks Ht = -int p0 s* i m G dOmega s ('temp') and Hw = -int p0 s* u.grad S_tw ('upol', 'utor').
+    diff-rot blocks Ht = -int p0 s* i m G dOmega s ('temp') and Hw = -int p0 s* u.grad S_tw ('upol', 'utor');
+    NEW (2026-11-05) with centrifugal = 1 the metric blocks Ic = int (rho0 u)*.(M - I)u, Cc = int (rho0 u)*.2G(z̃ - ẑ)×u and
+    Ec = int p0 (J - 1)|s|^2 (centrifugal.py).
     '''
     na, nb = len(left), len(right)
     out = [[{k: 0j for k in KEYS} for b in range(nb)] for a in range(na)]
@@ -252,12 +279,14 @@ def cross_pairings(left, right):
         V  = op.viscous_diffusion(l, 'u', 'upol', 0)
         Bu = op.buoyancy(l, 'u', '', 0) if par.thermal else None
         Rb = dr_blocks(l, 'u')
+        Ib, Cb = cf_blocks(l, 'u', op.centrifugal_inertia), cf_blocks(l, 'u', op.centrifugal_coriolis)   # NEW (2026-11-05)
         ys = []
         for (P, T, S) in right:
             yC = Cd @ P[k]
             for (mtx, offd), i in Co:
                 yC = yC + mtx @ T[k + offd]
-            ys.append((I @ P[k], yC, V @ P[k], Bu @ S[k] if par.thermal else None, apply_blocks(Rb, (P, T, S), k)))
+            ys.append((I @ P[k], yC, V @ P[k], Bu @ S[k] if par.thermal else None, apply_blocks(Rb, (P, T, S), k),
+                       apply_blocks(Ib, (P, T, S), k), apply_blocks(Cb, (P, T, S), k)))
         for a, (P, T, S) in enumerate(left):
             Pv = vals_unknown(P[k], 'P')
             for b in range(nb):
@@ -265,6 +294,8 @@ def cross_pairings(left, right):
                 out[a][b]['C'] += pair('u', l, Pv, ys[b][1])
                 out[a][b]['V'] += pair('u', l, Pv, ys[b][2])
                 out[a][b]['R'] += pair('u', l, Pv, ys[b][4])
+                out[a][b]['Ic'] += pair('u', l, Pv, ys[b][5])
+                out[a][b]['Cc'] += pair('u', l, Pv, ys[b][6])
                 if par.thermal:
                     out[a][b]['B'] += pair('u', l, Pv, ys[b][3])
     for k, l in enumerate(lt):                                   # section v, rows for T_l
@@ -273,12 +304,14 @@ def cross_pairings(left, right):
         Co = [(op.coriolis(l, 'v', 'upol', i), i) for i in [-1, 1] if l + i in lp]
         V  = op.viscous_diffusion(l, 'v', 'utor', 0)
         Rb = dr_blocks(l, 'v')
+        Ib, Cb = cf_blocks(l, 'v', op.centrifugal_inertia), cf_blocks(l, 'v', op.centrifugal_coriolis)   # NEW (2026-11-05)
         ys = []
         for (P, T, S) in right:
             yC = Cd @ T[k]
             for (mtx, offd), i in Co:
                 yC = yC + mtx @ P[k + offd]
-            ys.append((I @ T[k], yC, V @ T[k], apply_blocks(Rb, (P, T, S), k)))
+            ys.append((I @ T[k], yC, V @ T[k], apply_blocks(Rb, (P, T, S), k),
+                       apply_blocks(Ib, (P, T, S), k), apply_blocks(Cb, (P, T, S), k)))
         for a, (P, T, S) in enumerate(left):
             Tv = vals_unknown(T[k], 'T')
             for b in range(nb):
@@ -286,6 +319,8 @@ def cross_pairings(left, right):
                 out[a][b]['C'] += pair('v', l, Tv, ys[b][1])
                 out[a][b]['V'] += pair('v', l, Tv, ys[b][2])
                 out[a][b]['R'] += pair('v', l, Tv, ys[b][3])
+                out[a][b]['Ic'] += pair('v', l, Tv, ys[b][4])
+                out[a][b]['Cc'] += pair('v', l, Tv, ys[b][5])
     if par.thermal:                                              # section h, rows for s_l
         for k, l in enumerate(lp):
             E = op.entropy(l, 'h', '', 0)
@@ -293,10 +328,11 @@ def cross_pairings(left, right):
             D = op.thermal_diffusion(l, 'h', '', 0) if par.ThermaD > 0 else None
             Hb = dr_blocks(l, 'h')
             Ht = [b for b in Hb if b[2] == 'S']; Hw = [b for b in Hb if b[2] != 'S']
+            Eb = cf_blocks(l, 'h', op.centrifugal_entropy)   # NEW (2026-11-05)
             ys = []
             for (P, T, S) in right:
                 ys.append((E @ S[k], A @ P[k], D @ S[k] if par.ThermaD > 0 else None,
-                           apply_blocks(Ht, (P, T, S), k), apply_blocks(Hw, (P, T, S), k)))
+                           apply_blocks(Ht, (P, T, S), k), apply_blocks(Hw, (P, T, S), k), apply_blocks(Eb, (P, T, S), k)))
             for a, (P, T, S) in enumerate(left):
                 Sv = vals_unknown(S[k], 'S')
                 for b in range(nb):
@@ -306,6 +342,7 @@ def cross_pairings(left, right):
                         out[a][b]['D'] += pair('h', l, Sv, ys[b][2])
                     out[a][b]['Ht'] += pair('h', l, Sv, ys[b][3])
                     out[a][b]['Hw'] += pair('h', l, Sv, ys[b][4])
+                    out[a][b]['Ec'] += pair('h', l, Sv, ys[b][5])
     return out
 
 
@@ -327,10 +364,10 @@ def direct_quadratures(P, T, S):
 
 
 # ------------------------------------------------------------- differential rotation: (r, θ) grid quadratures
-if par.diff_rot:
+if par.diff_rot or par.centrifugal:   # (the grid, NEW (2026-11-05): also for the centrifugal terms)
     m  = par.m
     G  = par.Gaspard
-    xg, wx = np.polynomial.legendre.leggauss(par.lmax + 12 + dr.tw_nmax() + dr.n_max())   # x = cos θ
+    xg, wx = np.polynomial.legendre.leggauss(par.lmax + 12 + (dr.tw_nmax() + dr.n_max() if par.diff_rot else 0))   # x = cos θ
     sg = np.sqrt(1 - xg**2)
     th = np.arccos(xg)
     def Ysch(l, mm):   # Schmidt harmonic Y_l^mm(θ) at φ = 0, as ut.Ylm
@@ -343,6 +380,8 @@ if par.diff_rot:
     h1   = rap.logrhoX(rk, 1)
     def fX(fun, r, d):   # ricb = 0: the physical, even f_n at |r| (as heat_check.py), not the code's fit at r
         return fun(np.abs(r), d)*np.sign(r)**d if ricb == 0 else fun(r, d)
+    dV = 2*np.pi*jac*(wk*rk**2)[:, None]*wx[None, :]        # r² dr d(cos θ) dφ
+if par.diff_rot:
     # ΔΩ = Σ_n f_n(r) P_n(cos θ) and its derivatives, (Nq, Nx): only the profiles come from diff_rot, the angular part
     # (numpy Legendre polynomials on the grid) is independent of its algebra
     Lg   = np.polynomial.legendre.Legendre
@@ -366,7 +405,8 @@ if par.diff_rot:
             Or = sum(f[n][1]*Lg.basis(n)(x) for n in nd)
             Ox = sum(f[n][0]*Lg.basis(n).deriv()(x) for n in nd)
             a = (1 + O) if par.thermal_wind == 2 else 1
-            q = (r**2*G**2/(par.Beyonce*rap.graviX(r, 0)))[:, None]
+            # NEW (2026-11-05): the structure's g, as diff_rot (not the effective g of centrifugal = 1)
+            q = (r**2*G**2/(par.Beyonce*rap.graviX(r, 0, False)))[:, None]
             return -q*(x*2*a*Or + (1 - x**2)*2*a*Ox/r[:, None])*par.thermal_wind_amplitude
         u_, w_ = np.polynomial.legendre.leggauss(dr.tw_nmax() + 4)
         def S_of(r):   # S(r, xg) = ∫_{-1}^{x} ∂S/∂x dx' (Gauss-Legendre on each [-1, x], exact) without its P0 part
@@ -381,9 +421,12 @@ if par.diff_rot:
         if not par.thermal_wind_radial:   # the heat equation without uᵣ ∂S_tw/∂r
             Stw_r = 0*Stw_r
         # size of ∇S_tw before the cancellations, G² r²/(Beyonce g) |∂F| (S_tw = 0 for 'cylindrical': round-off only)
-        aS = abs(G**2*rk**2/(par.Beyonce*rap.graviX(rk, 0)))[:, None]*2*abs(1 + (par.thermal_wind == 2)*dOm)*(abs(dOmr) + abs(dOmt/rk[:, None])) \
+        aS = abs(G**2*rk**2/(par.Beyonce*rap.graviX(rk, 0, False)))[:, None]*2*abs(1 + (par.thermal_wind == 2)*dOm)*(abs(dOmr) + abs(dOmt/rk[:, None])) \
             if par.thermal_wind != 3 else abs(par.dSdtheta)*np.ones_like(dOm)
-    dV = 2*np.pi*jac*(wk*rk**2)[:, None]*wx[None, :]        # r² dr d(cos θ) dφ
+if par.centrifugal:   # NEW (2026-11-05): ε and η = r ε' at the nodes (the fits the operators use, even in r), P2 on the grid
+    cprof = cf.profile_functions()
+    ceps, ceta = cprof['ce0'](rk, 0), cprof['ce1'](rk, 0)
+    P2g = 1.5*xg**2 - 0.5
 
 
 def grid_fields(fld):
@@ -419,6 +462,28 @@ def grid_pairings(gx, gy):
         out['Ht'] = np.sum(dV*pss0[:, None]*np.conj(xs)*1j*m*G*dOm*ys)
         out['Hw'] = np.sum(dV*pss0[:, None]*np.conj(xs)*(yr*Stw_r + yt*Stw_t/rk[:, None])) if par.thermal_wind else 0j
         out['Hwa'] = np.sum(dV*pss0[:, None]*abs(xs)*(abs(yr) + abs(yt/rk[:, None]))*aS) if par.thermal_wind else 0.
+    return out
+
+
+def grid_pairings_cf(gx, gy):
+    '''
+    NEW (2026-11-05): direct quadratures of the centrifugal terms, from grid_fields of x and y (the formulas of the docstring,
+    with ẑ = cosθ r̂ - sinθ θ̂, y_z = cosθ y_r - sinθ y_θ, ẑ×y = (-sinθ y_φ, -cosθ y_φ, cosθ y_θ + sinθ y_r),
+    r̂×y = (0, -y_φ, y_θ)): Ic, Cc and, with thermal = 1, Ec
+    '''
+    (xr, xt, xp, xs), (yr, yt, yp, ys) = gx, gy
+    e, h, c, s = ceps[:, None], ceta[:, None], xg[None, :], sg[None, :]
+    yz = c*yr - s*yt
+    My = [e*(3*yz*zz - yy) + h*(1.5*c*(yz*rr + yr*zz) - yr*rr - P2g*yy)
+          for yy, zz, rr in zip((yr, yt, yp), (c, -s, 0), (1, 0, 0))]
+    zy = (-s*yp, -c*yp, c*yt + s*yr)
+    ry = (0*yr, -yp, yt)
+    Cy = [-e*a - h*(1.5*c**2*a - 0.5*c*b) for a, b in zip(zy, ry)]
+    def dot(f):
+        return np.sum(dV*rho0[:, None]*(np.conj(xr)*f[0] + np.conj(xt)*f[1] + np.conj(xp)*f[2]))
+    out = {'Ic': dot(My), 'Cc': 2*G*dot(Cy)}
+    if par.thermal:
+        out['Ec'] = np.sum(dV*pss0[:, None]*np.conj(xs)*h*P2g*ys)
     return out
 
 
@@ -677,6 +742,42 @@ def main():
             print('rigid (d = %g): R = d(i m G I + C) %.2e' % (d, worst['rigid: R = d(i m G I + C)'])
                   + ('   Ht = -i m G d E %.2e   max|thermal-wind block|/max|entropy block| %.2e' % (worst['rigid: Ht = -i m G d E'],
                      worst.get('rigid: thermal-wind blocks vanish', np.nan)) if par.thermal else ''))
+    if par.centrifugal:   # NEW (2026-11-05): the metric blocks of the deformed body
+        cs = (abs(ceps).max() + abs(ceta).max()) or 1.
+        for a in range(nvec):          # symmetry on the whole fields
+            for b in range(a, nvec):
+                xy, yx = X[a][b], X[b][a]
+                sI = np.sqrt(X[a][a]['I'].real*X[b][b]['I'].real)
+                note('centrifugal inertia Hermitian', abs(xy['Ic'] - np.conj(yx['Ic']))/(cs*sI))
+                note('centrifugal Coriolis anti-Hermitian', abs(xy['Cc'] + np.conj(yx['Cc']))/(2*G*cs*sI))
+                if a == b:
+                    note('centrifugal KE positive', float((xy['I'] + xy['Ic']).real <= 0))
+                if par.thermal:
+                    sE = np.sqrt(X[a][a]['E'].real*X[b][b]['E'].real)
+                    note('centrifugal entropy Hermitian', abs(xy['Ec'] - np.conj(yx['Ec']))/(cs*sE))
+                    if a == b:
+                        note('centrifugal entropy positive', float((xy['E'] + xy['Ec']).real <= 0))
+        cparts = [p for (P, T, S) in fields for p in ((P, 0*T, S), (0*P, T, 0*S))]
+        Xc = cross_pairings(cparts, cparts)
+        gc = [grid_fields(f) for f in cparts]
+        for a in range(2*nvec):
+            for b in range(2*nvec):
+                o, g = Xc[a][b], grid_pairings_cf(gc[a], gc[b])
+                sI = np.sqrt(Xc[a][a]['I'].real*Xc[b][b]['I'].real)
+                if sI > 0:
+                    note('centrifugal inertia rows vs grid', abs(o['Ic'] - g['Ic'])/(cs*sI))
+                    note('centrifugal Coriolis rows vs grid', abs(o['Cc'] - g['Cc'])/(2*G*cs*sI))
+                if par.thermal:
+                    sE = np.sqrt(Xc[a][a]['E'].real*Xc[b][b]['E'].real)
+                    if sE > 0:
+                        note('centrifugal entropy rows vs grid', abs(o['Ec'] - g['Ec'])/(cs*sE))
+        print('centrifugal (%s, max|ε| + max|η| = %.3e): rows vs (r, theta) grid quadrature, /((max|ε| + max|η|) Cauchy-Schwarz bound): '
+              'inertia %.2e   Coriolis %.2e%s' % (par.centrifugal_shape, cs, worst['centrifugal inertia rows vs grid'],
+              worst['centrifugal Coriolis rows vs grid'], '   entropy %.2e' % worst['centrifugal entropy rows vs grid'] if par.thermal else ''))
+        print('centrifugal: inertia Hermitian %.2e (I + Ic positive: %s)   Coriolis anti-Hermitian %.2e%s' % (
+              worst['centrifugal inertia Hermitian'], 'yes' if worst['centrifugal KE positive'] == 0 else 'NO',
+              worst['centrifugal Coriolis anti-Hermitian'], '   entropy Hermitian %.2e (E + Ec positive: %s)' % (
+              worst['centrifugal entropy Hermitian'], 'yes' if worst['centrifugal entropy positive'] == 0 else 'NO') if par.thermal else ''))
     if par.magnetic:   # NEW (2026-10-28)
         magnetic_checks(nvec, rng, kmax, decay, note)
     try:                                                         # KE against the independent physical-space code
@@ -686,6 +787,11 @@ def main():
         KE_pp = upp.kinetic_energy(usol, ricb, rcmb)
         eK = abs(X[0][0]['I'].real/KE_pp - 1); note('KE vs utils4pp', eK)
         print('KE of field 0: pairing %.12e, utils4pp.kinetic_energy %.12e, rel. diff %.2e' % (X[0][0]['I'].real, KE_pp, eK))
+        if par.centrifugal:   # NEW (2026-11-05): on the grid and tables kinetic_energy has just set
+            KEc = upp.centrifugal_terms(ricb, rcmb)[0]
+            eKc = abs((X[0][0]['I'] + X[0][0]['Ic']).real/(KE_pp + KEc) - 1); note('centrifugal KE vs utils4pp', eKc)
+            print('KE of the deformed body, field 0: pairing %.12e, utils4pp %.12e, rel. diff %.2e'
+                  % ((X[0][0]['I'] + X[0][0]['Ic']).real, KE_pp + KEc, eKc))
     except Exception as e:
         print('utils4pp comparison skipped:', e)
     bad = {k: v for k, v in worst.items() if not (v < args.tol)}

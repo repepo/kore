@@ -24,7 +24,24 @@ from parameters import par
 import utils as ut
 import operators as op
 import diff_rot as dr
+import centrifugal as cf   # NEW (2026-11-05)
 import radial_profiles as rap
+
+def centrifugal_blocks(loc_list, fun, l, sec, comp, lls, row, col0, factor=1):
+    '''
+    NEW (2026-11-05): adds to loc_list the blocks of a centrifugal term (centrifugal = 1: operators.centrifugal_coriolis,
+    centrifugal_inertia or centrifugal_entropy, the Δl of centrifugal.dl_range) of the row degree l of section sec, for the
+    unknown comp ('upol', 'utor' or 'temp'), whose degrees are lls; col0 is the column of the first block of that unknown
+    for the same position as the row, and factor multiplies the blocks (-1 for the inertia in B).
+    '''
+    for i in cf.dl_range(sec, comp):
+        if l + i in lls:
+            mtx = fun(l, sec, comp, i)
+            if np.isscalar(mtx[0]): continue   # nothing couples this Δl
+            loc_list = ut.packit(loc_list, factor*mtx[0], row, col0 + mtx[1]*ut.N1)
+    return loc_list
+
+
 
 def main():
 
@@ -327,6 +344,9 @@ def main():
                     col = basecol + col0 + mtx[1] * ut.N1
                     loc_list = ut.packit( loc_list, mtx[0], row, col)
 
+        if par.centrifugal :  # NEW (2026-11-05): the Coriolis force of the deformed body, 2 Gaspard (z̃ - ẑ)×w, Δl = 0, ±2
+            loc_list = centrifugal_blocks( loc_list, op.centrifugal_coriolis, l, 'u', 'upol', ll_flo[0], row, basecol + col0)
+
 
         # Toroidal velocity terms (utor) ---------------------------------------------------------------------------
         # ------------------------------------------------------------------------------- A, 2curl (section u), utor
@@ -352,6 +372,9 @@ def main():
                     # -----------------------------------------------
                     col = basecol + col0 + mtx[1] * ut.N1
                     loc_list = ut.packit( loc_list, mtx[0], row, col)
+
+        if par.centrifugal :  # NEW (2026-11-05): Δl = ±1, ±3
+            loc_list = centrifugal_blocks( loc_list, op.centrifugal_coriolis, l, 'u', 'utor', ll_flo[1], row, basecol + col0)
 
 
 
@@ -426,6 +449,9 @@ def main():
                     col = basecol + col0 + mtx[1] * ut.N1
                     loc_list = ut.packit( loc_list, mtx[0], row, col)
 
+        if par.centrifugal :  # NEW (2026-11-05): the Coriolis force of the deformed body, Δl = ±1, ±3
+            loc_list = centrifugal_blocks( loc_list, op.centrifugal_coriolis, l, 'v', 'upol', ll_flo[0], row, basecol + col0)
+
 
         # Toroidal velocity terms ----------------------------------------------------------------------------------
         # ------------------------------------------------------------------------------- A, 1curl (section v), utor
@@ -451,6 +477,9 @@ def main():
                     # -----------------------------------------------
                     col = basecol + col0 + mtx[1] * ut.N1
                     loc_list = ut.packit( loc_list, mtx[0], row, col)
+
+        if par.centrifugal :  # NEW (2026-11-05): Δl = 0, ±2
+            loc_list = centrifugal_blocks( loc_list, op.centrifugal_coriolis, l, 'v', 'utor', ll_flo[1], row, basecol + col0)
 
 
 
@@ -684,6 +713,11 @@ def main():
 
             loc_list = ut.packit(loc_list, mtx, row, col)
 
+            if par.centrifugal:  # NEW (2026-11-05): -(M - I) ∂ₜw, the inertia of the deformed body (P: Δl = 0, ±2; T: ±1, ±3)
+                col0 = ( rank*bpp + k )* ut.N1
+                loc_list = centrifugal_blocks(loc_list, op.centrifugal_inertia, l, 'u', 'upol', ll_flo[0], row, col0, -1)
+                loc_list = centrifugal_blocks(loc_list, op.centrifugal_inertia, l, 'u', 'utor', ll_flo[1], row, nb*ut.N1 + col0, -1)
+
 
         # ----------------------------------------------------------------------- B matrix, 1curl (hydro), section v
         for k,l in enumerate(loc_bot):
@@ -694,6 +728,11 @@ def main():
             mtx = -op.inertia(l,'v','utor',0)
 
             loc_list = ut.packit(loc_list, mtx, row, col)
+
+            if par.centrifugal:  # NEW (2026-11-05): -(M - I) ∂ₜw (P: Δl = ±1, ±3; T: 0, ±2)
+                col0 = ( rank*bpp + k )* ut.N1
+                loc_list = centrifugal_blocks(loc_list, op.centrifugal_inertia, l, 'v', 'upol', ll_flo[0], row, col0, -1)
+                loc_list = centrifugal_blocks(loc_list, op.centrifugal_inertia, l, 'v', 'utor', ll_flo[1], row, nb*ut.N1 + col0, -1)
 
 
 
@@ -710,6 +749,10 @@ def main():
                 mtx = op.entropy(l,'h','', 0)
 
                 loc_list = ut.packit(loc_list, mtx, row, col)
+
+                if par.centrifugal:  # NEW (2026-11-05): (J - 1) ∂ₜs = η P2 ∂ₜs, Δl = 0, ±2
+                    col0 = 2*nb*ut.N1 + ( rank*bpp + k )* ut.N1
+                    loc_list = centrifugal_blocks(loc_list, op.centrifugal_entropy, l, 'h', 'temp', ll_flo[0], row, col0)
 
 
 
@@ -733,7 +776,9 @@ def main():
 
 
         # ---------------------------------------------------------------------- B matrix assembly
-        B = gather_csr(comm, loc_list, float)  # full B on rank 0, None elsewhere
+        # full B on rank 0, None elsewhere; complex with centrifugal = 1 (NEW 2026-11-05: its P-T inertia couplings are
+        # imaginary), real otherwise (as before, so that existing runs keep a bitwise identical B)
+        B = gather_csr(comm, loc_list, complex if par.centrifugal else float)
         del loc_list
 
         if rank == 0:

@@ -345,10 +345,17 @@ def gradSX(r, Dorder):   # dS/dr, odd extension to r<0 (used when ThermaD=0)
     return out
 
 
-def graviX(r, Dorder):   # g(r)
+def graviX(r, Dorder, effective=True):   # g(r)
+    '''NEW (2026-11-05): with centrifugal = 1 and centrifugal_q > 0, the effective gravity g - (2/3) Ω² r of the deformed
+    body (its centrifugal monopole, centrifugal.g_monopole), which the buoyancy takes (code 'gra'); effective=False gives
+    the structure's own g, which the thermal wind takes (as diff_rot.sigma_coefficients). The same otherwise.'''
 
     tol = 1e-14
-    out = ut.angine( prf.gravity, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)
+    grav = prf.gravity
+    if effective and par.centrifugal and par.centrifugal_q != 0:
+        import centrifugal as cf
+        grav = lambda rr, rpower: prf.gravity(rr, rpower) + (rr**rpower)*cf.g_monopole(rr)
+    out = ut.angine( grav, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)
 
     return out
 
@@ -375,18 +382,23 @@ proffdir = { 'lho':logrhoX, 'vsc':viscoX, 'gra':graviX, 'pss':pressX, 'pdS':pdSd
 # NEW (2026-10-28): magnetic = 1: 'eta' the magnetic diffusivity, 'bpo' cnorm h(r) of the background field (background_field.py)
 proffdir.update({ 'eta':etaX, 'bpo':bf.bpoX, 'bto':bf.btoX })   # bto: cnorm_tor k(r), toroidal B0
 # added by burrito on first use (_more_codes): the differential-rotation codes (zf, zd, zs, tw, tp + degree) from
-# diff_rot.profile_functions() and the background field degree by degree (hp, kt + degree) from mag_algebra.profile_functions()
+# diff_rot.profile_functions(), the background field degree by degree (hp, kt + degree) from mag_algebra.profile_functions()
+# and (NEW 2026-11-05) the centrifugal map (ce0, ce1, ce2) from centrifugal.profile_functions()
 # -------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------
 
 
 def _more_codes(c):
-    '''the profile codes added on first use: the differential rotation's (diff_rot.py) and, NEW (2026-10-30), the background
-    field's degree by degree, hp? and kt? (mag_algebra.py); imported here because they need utils'''
+    '''the profile codes added on first use: the differential rotation's (diff_rot.py), NEW (2026-10-30), the background
+    field's degree by degree, hp? and kt? (mag_algebra.py) and, NEW (2026-11-05), the centrifugal map's ce0, ce1, ce2
+    (centrifugal.py); imported here because they need utils'''
     if c[:2] in ('hp', 'kt'):
         import mag_algebra
         proffdir.update(mag_algebra.profile_functions())
+    elif c[:2] == 'ce':   # NEW (2026-11-05)
+        import centrifugal
+        proffdir.update(centrifugal.profile_functions())
     else:
         import diff_rot
         proffdir.update(diff_rot.profile_functions())

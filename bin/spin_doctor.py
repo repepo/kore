@@ -18,6 +18,7 @@ import diff_rot as dr
 import radial_profiles as rap
 import background as bg
 import background_field as bf
+import centrifugal as cf   # NEW (2026-11-05)
 
 
 
@@ -58,6 +59,8 @@ def row_note():
     notes = [bg.description()] if bg.description() else []
     if par.diff_rot and dr.description():
         notes.append(dr.description())
+    if cf.description():   # NEW (2026-11-05)
+        notes.append(cf.description())
     if par.diff_rot and par.diff_rot_type == 'tabulated':
         import hashlib
         with open(par.diff_rot_file, 'rb') as f:
@@ -185,6 +188,11 @@ def param_table(elapsed):
         ( 'tol_B0',                   par.tol_B0,                  '%.9e' ),
         ( 'B0_ic',                    index_in(par.B0_ic, bg.B0_ICS), '%d' ),   # index into background.B0_ICS
         ( 'ferraro_policy',           index_in(par.ferraro_policy, bg.FERRARO_POLICIES), '%d' ),   # background.FERRARO_POLICIES
+        ( 'centrifugal',              par.centrifugal,             '%d' ),    # NEW (2026-11-05), and the centrifugal parameters:
+        ( 'centrifugal_shape',        index_in(par.centrifugal_shape, cf.SHAPES), '%d' ),   # index into centrifugal.SHAPES
+        ( 'centrifugal_q',            par.centrifugal_q,           '%.9e' ),
+        ( 'centrifugal_f',            float(cf.flattening(np.array([1.0]))[0]) if par.centrifugal else 0.0, '%.9e' ),  # f at the outer wall, as used
+        ( 'centrifugal_param',        par.centrifugal_param,       '%.9e' ),  # p of 'user' (its expression in the # note)
     ]
 
 
@@ -413,6 +421,9 @@ def main(ncpus):
         # diagnose solutions (serially since 2026-10-20, see upp.diagnose)
         [ udgn, tdgn ] = upp.diagnose( u_sol2, t_sol2, par.ricb, ut.rcmb, int(ncpus) )
 
+        if par.centrifugal:  # NEW (2026-11-05): the metric parts of KE, of the Coriolis power and of TE, on the grid of diagnose
+            [ KEc, Wcorc, TEc ] = upp.centrifugal_terms( par.ricb, ut.rcmb )
+
         if par.magnetic:  # NEW (2026-10-28): on the grid and flow tables that diagnose has just set
             [ ME[i], Mdfs0, Indu[i], Wlor0, Wlor_im0 ] = np.sum( upp.diagnose_magnetic( b_sol2 ), 0)
             Iwall[i]   = upp.INDU_WALLS   # NEW (2026-10-30)
@@ -460,6 +471,10 @@ def main(ncpus):
           Wcor_im[i], Dkin_im[i], Wthm_im[i], Wdr_im[i], Ensdr[i] ] = np.sum( udgn, 0)
         Dkin[i] = Dkin0
         resens[i] = abs(Ensvel[i]*sigma+Enscor[i]-Ensbuo[i]-Ensvif[i]-Ensdr[i]) / max((abs(Ensvel[i]*sigma),abs(Enscor[i]),abs(Ensbuo[i]),abs(Ensvif[i]),abs(Ensdr[i])))
+        if par.centrifugal:  # NEW (2026-11-05): KE of the deformed body (∫ ρ0 w*⋅M w dV), Coriolis power with z̃ = F⁻¹ẑ
+            KE[i] += KEc
+            Wcor_im[i] += np.imag(Wcorc)
+            resens[i] = np.nan   # the enstrophy budget has no metric terms: not computed
         Wthm[i] = Wthm0  # rate of working of buoyancy, Beyonce already included (upp.buoyancy)
 
 
@@ -467,6 +482,8 @@ def main(ncpus):
 
             [ TE[i], Dthm0, Wadv_thm[i], Wdr_thm[i] ] = np.sum( tdgn, 0)
             Dthm[i] = Dthm0 * par.ThermaD
+            if par.centrifugal:  # NEW (2026-11-05): ∫ p0 J |s|² dV, the entropy "energy" of the deformed body
+                TE[i] += TEc
 
 
         # --------------------------------------------------------- Computing residuals to check the power balance:

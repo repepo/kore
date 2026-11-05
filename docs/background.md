@@ -1,6 +1,6 @@
 # Background model
 
-kore solves for small perturbations of a background. The background has four parts, each chosen by name in the
+kore solves for small perturbations of a background. The background has five parts, each chosen by name in the
 parameter file:
 
 | part | parameter | what it sets |
@@ -9,10 +9,11 @@ parameter file:
 | stratification | `stratification` | the entropy gradient $dS/dr$, with $S = \delta s/c_p$ (only with `thermal = 1`) |
 | diffusivity | `diffusivity` | the radial profiles of the viscosity $\nu$ and the thermal diffusivity $\kappa$ |
 | rotation | `diff_rot`, `diff_rot_type` | a uniform or a differential rotation $\Omega(r,\theta)$, and the latitudinal entropy that balances it |
+| shape | `centrifugal`, `centrifugal_shape` | a sphere, or a body flattened by its rotation |
 
 The equations in which they enter are on the page [Anelastic equations](anelastic.md). The code is in
 `bin/background.py` (the choice, the checks, the stratification and diffusivity types), `bin/radial_profiles.py` (one
-class per structure) and `bin/diff_rot.py` (the rotation).
+class per structure), `bin/diff_rot.py` (the rotation) and `bin/centrifugal.py` (the flattening).
 
 ## Units
 
@@ -330,11 +331,100 @@ differential rotation adds to the heat equation. The advection of $s$ by the rot
   residuals, although their eigenvalues converge at a lower N. [Solver](solver.md) has the memory this takes.
 - Check convergence with `spin_doctor` as for any run; its residuals include the terms of the differential rotation.
 
+## Centrifugal deformation
+
+A rotating star or planet is flattened at the poles: its surfaces of constant density, pressure and entropy, its level
+surfaces, are oblate spheroids rather than spheres. `centrifugal = 1` gives the background this shape, at first order
+in the flattening: the walls and the level surfaces become spheroids, and the flow feels them through its inertia, the
+Coriolis force and the buoyancy. The equations are on [Centrifugal deformation](centrifugal-equations.md).
+
+**How kore does it.** kore keeps its spherical grid and its radial profiles, and solves in coordinates that follow the
+level surfaces. The radius $r$ labels the level surface that encloses the volume of the sphere of radius $r$; every
+background profile is a function of it, and the walls are the level surfaces `ricb` and 1. In these coordinates the
+inertia, the Coriolis force and the rate of change of the entropy gain terms proportional to the flattening, and the
+buoyancy takes the effective gravity: the gravity less the mean centrifugal acceleration. The new terms couple the
+degrees as a differential rotation of degree 2 does, so the matrices are as wide as with one
+([Resolution and cost](#resolution-and-cost)).
+
+### Flattening
+
+`centrifugal_q` or `centrifugal_f` sets how flat the body is, and `centrifugal_shape` how the flattening varies inside
+it.
+
+| parameter | default | meaning |
+| --- | --- | --- |
+| `centrifugal` | 0 | 1 flattens the body |
+| `centrifugal_shape` | `'clairaut'` | how the flattening varies with the radius (below) |
+| `centrifugal_q` | 0.0 | $q = \Omega^2R^3/GM$ of the surface: the centrifugal over the gravitational acceleration at its equator. With any shape it also sets the effective gravity of the buoyancy |
+| `centrifugal_f` | None | the flattening of the outer wall, (equatorial − polar radius)/equatorial radius: the value of `'uniform'`, and for `'clairaut'` the scale of its shape in place of `centrifugal_q` |
+| `centrifugal_profile` | `''` | `'user'`: the flattening $f(r)$ as a numpy expression ([below](#user-profiles)) |
+| `centrifugal_param` | 0.0 | `'user'`: `p` in `centrifugal_profile` |
+
+| `centrifugal_shape` | the flattening $f(r)$ | set by |
+| --- | --- | --- |
+| `'clairaut'` | the hydrostatic shape of the structure: Clairaut's equation with its gravity | `centrifugal_q`, or `centrifugal_f` |
+| `'uniform'` | the same at every radius, as in a homogeneous body | `centrifugal_f` |
+| `'user'` | any profile | `centrifugal_profile`, `centrifugal_param` |
+
+- `'clairaut'` derives the density from the gravity, so $g$ must be the gravity of the structure's own mass, as it is in
+  `'model S hydrostatic'`, `'Wu 2005'` and `'Boussinesq'`. For `'Boussinesq'`, a homogeneous body, it gives
+  $f = 5q/4$ at every radius (the Maclaurin spheroid). The gravity of `'model S hydrostatic'` ends at the outer wall,
+  so for it kore applies the surface condition of Clairaut's equation at the wall, neglecting the mass above.
+- `submatrices.py` prints the flattening at the walls and, for `'clairaut'`, its ratio $f/q$ at the surface.
+
+Typical values:
+
+| body | `centrifugal_q` | flattening of the surface |
+| --- | --- | --- |
+| Earth | 3.5e-3 | 3.4e-3; the core-mantle boundary 2.5e-3 |
+| Jupiter | 0.089 | 0.065 |
+| Saturn | 0.155 | 0.098 |
+| Sun | 2e-5 | 8e-6 |
+
+A Jupiter-like body, with the flattening of its structure:
+
+```python
+par.structure         = 'Wu 2005'
+par.r_out             = 0.99
+par.centrifugal       = 1
+par.centrifugal_shape = 'clairaut'
+par.centrifugal_q     = 0.089
+```
+
+The level surfaces of the Earth's core are set by the whole planet, so give the flattening of the core-mantle boundary
+instead (and, with `thermal = 1`, `centrifugal_q` = 1.7e-3, its value at that boundary, for the effective gravity):
+
+```python
+par.structure         = 'Boussinesq'
+par.centrifugal       = 1
+par.centrifugal_shape = 'uniform'
+par.centrifugal_f     = 2.5e-3
+```
+
+### What it covers
+
+The deformation is complete at first order in $f$ for an inviscid fluid without thermal diffusion, rotating uniformly.
+Other terms keep the form they have in a sphere, and some settings stop the run:
+
+- The viscous force and the thermal diffusion keep their spherical form, so the damping rates are off by a fraction of
+  order $f$. The terms of a differential rotation keep their spherical form too. `submatrices.py` warns about each,
+  and about a flattening above 0.1, where the first order loses accuracy.
+- kore stops with `magnetic = 1`, with a forcing, and in a viscous run with stress-free walls: `bco` must be 1, and
+  `bci` too with an inner core.
+
+### Output
+
+- The eigenvectors are normalised to the kinetic energy of the deformed body, and the budgets of `spin_doctor`
+  (residσ, residω, resid𝑠) include the terms of the deformation. The enstrophy residual (residens) is not computed.
+- The field files hold the flow in the coordinates of the level surfaces. `tools/plot_field.py` draws the flow and the
+  entropy where they are in the body.
+- `params.dat` records the deformation in its columns 108–112 ([Output files](output.md#paramsdat)).
+
 ## `'user'` profiles
 
-`stratification_profile`, the two `diffusivity_profiles` and the `diff_rot_profiles` are numpy expressions of `r` (the
-kore radius), `x` ($r\cdot$`r_out` with a solar structure, $r$ otherwise) and `p` (`stratification_param`,
-`diffusivity_param` or `diff_rot_param`), with `sin`, `cos`, `tan`, `arcsin`, `arccos`, `arctan`, `sinh`, `cosh`,
+`stratification_profile`, the two `diffusivity_profiles`, the `diff_rot_profiles` and `centrifugal_profile` are numpy
+expressions of `r` (the kore radius), `x` ($r\cdot$`r_out` with a solar structure, $r$ otherwise) and `p`
+(`stratification_param`, `diffusivity_param`, `diff_rot_param` or `centrifugal_param`), with `sin`, `cos`, `tan`, `arcsin`, `arccos`, `arctan`, `sinh`, `cosh`,
 `tanh`, `exp`, `log`, `log10`, `sqrt`, `abs`, `sign`, `pi`, `where`, `minimum`, `maximum`, `erf`, `erfc`. For example:
 
 ```python
@@ -344,8 +434,8 @@ par.diffusivity = 'user'
 par.diffusivity_profiles = {'nu': '0.01 + 0.99*0.5*(1 + tanh((x - 0.70)/0.015))', 'kappa': '1'}
 ```
 
-kore evaluates them at $\lvert r\rvert$, so in a full sphere $dS/dr$ is odd and $\hat\nu$, $\hat\kappa$ and the $f_n$ are
-even whatever the expression. They are smooth at the centre only if the expression is: an odd power of $r$ in an even
+kore evaluates them at $\lvert r\rvert$, so in a full sphere $dS/dr$ is odd and $\hat\nu$, $\hat\kappa$, the $f_n$ and
+the flattening are even whatever the expression. They are smooth at the centre only if the expression is: an odd power of $r$ in an even
 profile, or an even one in $dS/dr$, makes a kink, and $dS/dr$ must vanish there as $r$, $f_n$ as $r^n$. `submatrices.py`
 warns about both ([Regularity at the centre](numerical-method.md#regularity-at-the-centre)). The
 expressions must not contain `#`: `spin_doctor` writes them at the end of each `params.dat` row, after a `#`.
@@ -354,7 +444,8 @@ expressions must not contain `#`: `spin_doctor` writes them at the end of each `
 
 Before anything is built, kore stops on a background that cannot work: an unknown type, a parameter name of an older
 version of kore (the message gives the replacement), `'Wu 2005'` without $0 <$ `r_out` $< 1$, `'inverse square'` with
-`ricb = 0`, $\delta$ without `'solar_rz'`, or a `'user'` expression that does not evaluate. `submatrices.py` also warns
+`ricb = 0`, $\delta$ without `'solar_rz'`, a centrifugal deformation with what it does not cover
+([above](#what-it-covers)) or without its flattening, or a `'user'` expression that does not evaluate. `submatrices.py` also warns
 about any name in the parameter file that kore does not define, so a misspelt name is not ignored without notice, and
 in a full sphere about each profile that is not smooth at the centre
 ([Regularity at the centre](numerical-method.md#regularity-at-the-centre)).

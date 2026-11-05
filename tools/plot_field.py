@@ -241,14 +241,28 @@ z = np.real(z0)
 a = 1.
 c = 1.
 id_in = np.where((s**2/(a**2)) + (z**2/(c**2)) < 1.)
+if par.centrifugal:
+    # NEW (2026-11-05): a deformed body (centrifugal = 1): the points, and the flow (u, mf), where they are in the body
+    # (centrifugal.to_physical); the walls are the level surfaces r = 1 and r = ricb of the reference radius
+    import centrifugal as cf
+    sref, zref = s, z
+    rref, tref = np.sqrt(s**2 + z**2), np.arctan2(s, z)
+    if sys.argv[5] in ['u', 'vel', 'mf']:
+        s, z, ur, utheta, uphi = cf.to_physical(rref, tref, ur, utheta, uphi)
+    else:   # other fields are drawn at their points in the body, with their components in the reference space
+        s, z = cf.to_physical(rref, tref)
 s1 = s[id_in]
 z1 = z[id_in]
 triang = tri.Triangulation(s1, z1)
-xmid = s1[triang.triangles].mean(axis=1)
-x2 = xmid*xmid
-ymid = z1[triang.triangles].mean(axis=1)
-y2 = ymid*ymid
-mask = np.where( (x2 + y2 <= ricb**2), 1, 0)
+if par.centrifugal:   # NEW (2026-11-05): the inner core is inside the level surface ricb (triangle midpoints in the reference space)
+    smid, zmid = sref[id_in][triang.triangles].mean(axis=1), zref[id_in][triang.triangles].mean(axis=1)
+    mask = np.where(smid**2 + zmid**2 <= ricb**2, 1, 0)
+else:
+    xmid = s1[triang.triangles].mean(axis=1)
+    x2 = xmid*xmid
+    ymid = z1[triang.triangles].mean(axis=1)
+    y2 = ymid*ymid
+    mask = np.where( (x2 + y2 <= ricb**2), 1, 0)
 triang.set_mask(mask)
 
 

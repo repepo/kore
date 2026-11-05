@@ -30,12 +30,12 @@ Columns, counted from 1:
 
 | columns | content |
 | --- | --- |
-| 1–3 | kinetic energy, and its poloidal and toroidal parts (the eigenvectors are normalised to kinetic energy 1) |
+| 1–3 | kinetic energy, and its poloidal and toroidal parts (the eigenvectors are normalised to kinetic energy 1); with `centrifugal = 1` column 1 is the kinetic energy of the deformed body, and columns 2–3 are its parts without the terms of the deformation |
 | 4 | the power of the viscous force $\int\mathbf u\cdot(\nabla\cdot\boldsymbol\sigma)\thinspace dV$: minus the viscous dissipation when $\mathbf u = 0$ at the walls (column 26 otherwise) |
 | 5–7 | the degree $l$ of the largest kinetic energy, the width of the $l$ spectrum, and the ℓ-convergence (the columns Peak ℓ, ℓ-Width and ℓ-Convergence of the `spin_doctor` table) |
 | 8–11 | the enstrophy, and the Coriolis, viscous and buoyancy terms of its balance |
 | 12–14 | the radius, the degree and the value of the largest toroidal component of the curl of the viscous force (cvf_r, cvf_l, cvfmax) |
-| 15–17 | the relative residuals of the enstrophy balance (residens), of the imaginary part of the power balance (residω) and of its real part, the energy residual (residσ) |
+| 15–17 | the relative residuals of the enstrophy balance (residens; NaN with `centrifugal = 1`), of the imaginary part of the power balance (residω) and of its real part, the energy residual (residσ) |
 | 18–20 | the power of the differential rotation, its imaginary part, and its enstrophy term (0 without it) |
 | 21–23 | the power of the pressure on the fluid at the inner and at the outer wall, $-2\,\mathrm{Re}\oint\rho_0\Pi\thinspace u_r^*\thinspace dA$ with $\Pi = p'/\rho_0$, and the imaginary part of their sum; zero unless $u_r \neq 0$ at a wall (forced boundary flows, `bco = 2`); in residσ and residω |
 | 24–25 | the power of the viscous stress on the fluid at the inner and at the outer wall, $2\,\mathrm{Re}\oint\mathbf u^*\cdot\boldsymbol\sigma\cdot\mathbf n\thinspace dA$ |
@@ -47,7 +47,7 @@ Columns, counted from 1:
 
 | columns | content |
 | --- | --- |
-| 1 | the entropy "energy" $\tfrac12\int p_0\lvert s\rvert^2\thinspace dV$ |
+| 1 | the entropy "energy" $\tfrac12\int p_0\lvert s\rvert^2\thinspace dV$ (of the deformed body with `centrifugal = 1`) |
 | 2 | the entropy advection by the background gradient |
 | 3 | the thermal diffusion |
 | 4 | the relative residual of the entropy balance (resid𝑠) |
@@ -91,6 +91,7 @@ The columns follow the order of `spin_doctor.param_table`, counted from 1:
 | 81–82 | `stratification`, `diffusivity` |
 | 83–95 | `magnetic`, `B0`, `B0_l`, `cnorm`, `Hendrik`, `MagnetD`, `innercore`, `N_cic`, `mu_i2o`, `sigma_i2o`, `B0_tor`, `B0_tor_l`, `cnorm_tor` |
 | 96–107 | `B0_wound` (1 if the wound field was added), `B0_wound_eta`, `B0_conf_r1`, `B0_conf_r2`, `B0_conf_p`, `B0_param`, `B0_tor_param`, `B0_ferraro_nmax`, `mag_couplings` (as used: 0 the closed forms, 1 `mag_algebra.py`), `tol_B0`, `B0_ic`, `ferraro_policy` |
+| 108–112 | `centrifugal`, `centrifugal_shape`, `centrifugal_q`, `centrifugal_f` (the flattening of the outer wall, as used), `centrifugal_param` |
 
 - Names are written as their index in the lists of the code: `structure` in `background.STRUCTURES` (`'8-term fit'` 0,
   `'old model S prototype'` 1, `'model S hydrostatic'` 2, `'Wu 2005'` 3, `'Boussinesq'` 4), `stratification` in
@@ -110,8 +111,10 @@ The columns follow the order of `spin_doctor.param_table`, counted from 1:
   `cnorm_tor` are the numbers used. `B0_l` is the lowest degree for `'general'` and 1 for `'ferraro'`; `B0_tor_l` is the
   parameter, which `B0_tor = 'general'` ignores. The expressions of `'general'` (`B0_profiles`, `B0_tor_profiles`), of
   `'ferraro'` (`B0_ferraro_G`) and of `diff_rot_type = 'ferraro'` (`diff_rot_F`) go into the note after `#`.
+- `centrifugal_shape` is the index in `centrifugal.SHAPES` (`'clairaut'` 0, `'uniform'` 1, `'user'` 2). Column 111 is the
+  flattening of the outer wall that the run used, with any shape (0 with `centrifugal = 0`).
 - `diff_rot_generic` and `diff_rot_hold` are not used (always 0 and nan); they keep the positions of the columns after
   them.
 - A row ends, after a `#` that `np.loadtxt` skips, with the `'user'`, `'general'` and `'ferraro'` expressions and, for
   `'tabulated'`, `diff_rot_file` with the first 12 hex digits of its sha256. A row with none of these has no `#`.
-- A `params.dat` written before the columns 96–107 were added has fewer columns: start a new file.
+- A `params.dat` written before the columns 108–112 were added has fewer columns: start a new file.

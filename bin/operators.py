@@ -7,6 +7,7 @@ import utils as ut
 
 import diff_rot as dr
 import mag_algebra as ma   # NEW (2026-10-30)
+import centrifugal as cf   # NEW (2026-11-05)
 import submatrix_io as smio   # NEW (2026-11-03)
 
 
@@ -128,6 +129,29 @@ def differential_rotation_induction(l, section, component, offdiag):  # ------- 
     'bpol' (F) or 'btor' (G), source degree l + offdiag. Returns [matrix, offd] (offd in units of N1).
     '''
     return dr.induction_block(l, section, component, offdiag, globals())
+
+
+def centrifugal_inertia(l, section, component, offdiag):  # --------------------- NEW (2026-11-05): inertia of the deformed body
+    '''
+    (M - I) w, the metric part of the inertia M ∂ₜw of the deformed body (centrifugal.momentum_block): rows of section 'u' or
+    'v', column 'upol' or 'utor', source degree l + offdiag; B gets minus it, as it gets minus inertia(). Returns [matrix, offd].
+    '''
+    return cf.momentum_block('inertia', l, section, component, offdiag, globals())
+
+
+def centrifugal_coriolis(l, section, component, offdiag):  # --------------- NEW (2026-11-05): Coriolis force of the deformed body
+    '''
+    2 Gaspard (z̃ - ẑ)×w, z̃ = F⁻¹ẑ, the metric part of the Coriolis force of the deformed body (centrifugal.momentum_block), with
+    the sign of coriolis() in A. Returns [matrix, offd].
+    '''
+    return cf.momentum_block('coriolis', l, section, component, offdiag, globals())
+
+
+def centrifugal_entropy(l, section, component, offdiag):  # ------------ NEW (2026-11-05): heat time derivative of the deformed body
+    '''
+    (J - 1) s = η P2 s in the heat rows (centrifugal.entropy_block), with the sign of entropy() in B. Returns [matrix, offd].
+    '''
+    return cf.entropy_block(l, offdiag, globals())
 
 
 def viscous_diffusion(l, section, component, offdiag):  # ------------------------------------------------ viscous force

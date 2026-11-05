@@ -11,6 +11,7 @@ import radial_profiles as rap
 import angular
 import diff_rot as dr
 import background_field as bf
+import centrifugal as cf   # NEW (2026-11-05)
 
 
 mp.set_start_method('fork')
@@ -505,7 +506,8 @@ def thermal_wind_entropy():
     Lg = np.polynomial.legendre.Legendre
     nd = dr.degrees()
     f = { n: [ dr.fX(n, rk, d) for d in (0,1,2) ] for n in nd }
-    g0, g1 = rap.graviX(rk, 0), rap.graviX(rk, 1)
+    # NEW (2026-11-05): the structure's g, as diff_rot.sigma_coefficients (not the effective g of centrifugal = 1)
+    g0, g1 = rap.graviX(rk, 0, False), rap.graviX(rk, 1, False)
     c = par.Gaspard**2/par.Beyonce
     e = int(par.thermal_wind == 2)
     X, W = Lg([0, 1]), Lg([2/3, 0, -2/3])   # x, 1 - x²
@@ -1360,6 +1362,54 @@ def kinetic_energy(usol, Ra, Rb, ls=None):
         kinet = 0.5*dotprod_tor(l, velt[0], velt[0])*rho0
         out += rad_quad( kinep + kinet, Ra, Rb, wk)
     return out
+
+
+
+def centrifugal_terms(Ra, Rb):
+    '''
+    NEW (2026-11-05): with centrifugal = 1 (centrifugal.py), the metric parts of the budgets, from the solution tables at the
+    current radii rk (after setup_grid and set_solution, as kinetic_energy and diagnose leave them), in the conventions of
+    flow_worker and thermal_worker (KE = ∫ ρ0 |u|² dV in their units, the complex powers 2 ∫ ρ0 u*⋅F dV):
+        KEc  = ∫ ρ0 w*⋅(M - I) w dV                the metric part of the kinetic energy: KE + KEc = ∫ ρ0 w*⋅M w dV is the
+                                                   kinetic energy of the deformed body, the one B weights
+        Wcor = 2 ∫ ρ0 w*⋅[2 Gaspard (z̃ - ẑ)×w] dV  the metric part of the Coriolis power (imaginary: it does no work)
+        TEc  = ∫ p0 (J - 1) |s|² dV = ∫ p0 η P2 |s|² dV   (0 without an entropy solution)
+    The metric terms are those of the operators, applied to the l-components (q, s, t) of w at each radius with the angular
+    couplings of centrifugal.primitives and the radial factors ε, η of the profile codes ce0, ce1. Returns [KEc, Wcor, TEc].
+    '''
+    m = par.m
+    lp, lt, ll = ut.ell(par.m, par.lmax, par.symm)
+    lw = cf.lw_of()
+    nr = len(rk)
+    W = {k: np.zeros((lw + 1, nr), dtype=complex) for k in 'qst'}   # rows: degree 0..lw, columns: radii
+    for l in ll:
+        [ q, s, t ] = velocity(l)
+        W['q'][l], W['s'][l], W['t'][l] = q[0], s[0], t[0]
+    prof = cf.profile_functions()
+    amp = {'e': prof['ce0'](rk, 0), 'h': prof['ce1'](rk, 0)}
+    lv = np.arange(lw + 1)
+    nl, Lv = 4*np.pi/(2*lv + 1), lv*(lv + 1.)
+    def apply(kind):   # the metric term as l-components at each radius
+        out = {k: np.zeros_like(W['q']) for k in 'qst'}
+        for a, f in amp.items():
+            C = cf.primitives(kind, a, m, lw)[0]
+            for k in 'qst':
+                out[k] += (C[k]['q'] @ W['q'] + C[k]['a'] @ W['s'] + C[k]['T'] @ W['t'])*f[None, :]
+        return out
+    def vdot(F):       # ∫ ρ0 w*⋅F dV, as cdot_pol + cdot_tor summed over l
+        g = nl[:, None]*(np.conj(W['q'])*F['q'] + Lv[:, None]*(np.conj(W['s'])*F['s'] + np.conj(W['t'])*F['t']))
+        return rad_quad(np.sum(g, 0)*r2*rho0, Ra, Rb, wk)
+    KEc  = np.real(vdot(apply('inertia')))
+    Wcor = 2*2*par.Gaspard*vdot(apply('coriolis'))
+    TEc  = 0.0
+    if par.thermal and 'ttab' in globals() and np.ndim(tsol2) == 2:
+        Sg = np.zeros((lw + 1, nr), dtype=complex)
+        for k, l in enumerate(lp):
+            Sg[l] = radial(ttab, k, 0, rk)[0]
+        P2 = angular.Algebra.get(m, lw).legendre(2)[0]
+        g = nl[:, None]*np.conj(Sg)*(P2 @ Sg)*amp['h'][None, :]
+        TEc = np.real(rad_quad(np.sum(g, 0)*r2*pss0, Ra, Rb, wk))
+    return [ KEc, Wcor, TEc ]
 
 
 
