@@ -67,7 +67,8 @@ direct (r, cos θ) quadratures of formulas written out independently of the recu
   Ec = int p0 η P2 x_s* y_s      (J - 1 = η P2)
 (ε, η = r ε' the profile codes ce0, ce1; errors relative to (max|ε| + max|η|) times the Cauchy-Schwarz bound), and for
 symmetry: Ic and Ec Hermitian, Cc anti-Hermitian (it does no work), I + Ic and E + Ec positive. KE + Ic of field 0 is also
-compared with utils4pp.centrifugal_terms (the metric part of spin_doctor's KE).
+compared with utils4pp.centrifugal_terms (the metric part of spin_doctor's KE). NEW (2026-11-06): for the exact spheroid
+(centrifugal_shape 'spheroid') the formulas are (M - I)y = (a² - 1) y + (c² - a²) y_z ẑ, (z̃ - ẑ)×y = (1/c - 1) ẑ×y, Ec = 0.
 
 NEW (2026-10-28): with magnetic = 1 (insulating walls or a conducting inner core), on random fields that satisfy the field's
 wall conditions (insulating walls: (l+1)f + rf' = 0 outside, lf - rf' = 0 inside, g = 0), with b = curl curl(f r) + curl(g r):
@@ -487,11 +488,15 @@ def grid_pairings_cf(gx, gy):
     zy = (-s*yp, -c*yp, c*yt + s*yr)
     ry = (0*yr, -yp, yt)
     Cy = [-e*a - h*(1.5*c**2*a - 0.5*c*b) for a, b in zip(zy, ry)]
+    if cf.exact():   # NEW (2026-11-06): the exact spheroid, (a² - 1) y + (c² - a²) y_z ẑ and (1/c - 1) ẑ×y
+        A_, C_ = cf.spheroid_axes()
+        My = [(A_**2 - 1)*yy + (C_**2 - A_**2)*yz*zz for yy, zz in zip((yr, yt, yp), (c, -s, 0))]
+        Cy = [(1/C_ - 1)*a for a in zy]
     def dot(f):
         return np.sum(dV*rho0[:, None]*(np.conj(xr)*f[0] + np.conj(xt)*f[1] + np.conj(xp)*f[2]))
     out = {'Ic': dot(My), 'Cc': 2*G*dot(Cy)}
     if par.thermal:
-        out['Ec'] = np.sum(dV*pss0[:, None]*np.conj(xs)*h*P2g*ys)
+        out['Ec'] = np.sum(dV*pss0[:, None]*np.conj(xs)*h*P2g*ys) if not cf.exact() else 0j   # (J = 1: NEW 2026-11-06)
     return out
 
 

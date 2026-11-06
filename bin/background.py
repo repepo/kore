@@ -102,7 +102,8 @@ def check_centrifugal():
     stress walls (bco, bci = 2; the stress-free and no-slip ones are done, phase 2) and, with magnetic = 1 (NEW 2026-11-05,
     phase 1b), a conducting inner core of another permeability than the fluid's (its matching rows would need the metric);
     NEW (2026-11-06, phase 2) rpower_v < 4 in a viscous full sphere with m != 0 when the body is deformed (the toroidal rows
-    of the metric viscous force have a term P/r); and on incomplete shapes.
+    of the metric viscous force have a term P/r); and on incomplete shapes. NEW (2026-11-06): the exact spheroid
+    (centrifugal_shape 'spheroid') is a homogeneous fluid without a field or a differential rotation.
     centrifugal.report() (submatrices.py) prints the flattening used and the warnings on the terms left spherical.
     '''
     import centrifugal as cf
@@ -126,6 +127,18 @@ def check_centrifugal():
         sys.exit('centrifugal_f must be None or a number, got %r' % (f,))
     if par.centrifugal_shape == 'uniform' and f is None:
         sys.exit("centrifugal_shape 'uniform' needs centrifugal_f, the flattening")
+    if par.centrifugal_shape == 'spheroid':   # NEW (2026-11-06): the exact spheroid (centrifugal.py, section 8)
+        if f is None or not f < 1:
+            sys.exit("centrifugal_shape 'spheroid' needs centrifugal_f, the flattening, below 1 (got %r)" % (f,))
+        if par.structure != 'Boussinesq' or par.diffusivity != 'uniform':
+            sys.exit("centrifugal_shape 'spheroid' is a homogeneous fluid: it needs structure 'Boussinesq' and diffusivity "
+                     "'uniform' (got %r, %r)" % (par.structure, par.diffusivity))
+        if par.magnetic or par.diff_rot:
+            sys.exit("centrifugal_shape 'spheroid' is implemented without a field and without a differential rotation "
+                     "(magnetic = 0, diff_rot = 0)")
+        if q != 0:
+            sys.exit("centrifugal_shape 'spheroid' takes its flattening from centrifugal_f and the effective gravity from the "
+                     "structure's g = r (that of a homogeneous spheroid): set centrifugal_q = 0")
     if par.centrifugal_shape == 'user':
         if f is not None:
             sys.exit("centrifugal_shape 'user' takes the flattening from centrifugal_profile: set centrifugal_f = None")

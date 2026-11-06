@@ -1376,6 +1376,8 @@ def centrifugal_terms(Ra, Rb):
         TEc  = ∫ p0 (J - 1) |s|² dV = ∫ p0 η P2 |s|² dV   (0 without an entropy solution)
     The metric terms are those of the operators, applied to the l-components (q, s, t) of w at each radius with the angular
     couplings of centrifugal.primitives and the radial factors ε, η of the profile codes ce0, ce1. Returns [KEc, Wcor, TEc].
+    NEW (2026-11-06): the exact spheroid (centrifugal_shape 'spheroid'), with the couplings of centrifugal.
+    spheroid_primitives and no radial factor; TEc = 0 (J = 1).
     '''
     m = par.m
     lp, lt, ll = ut.ell(par.m, par.lmax, par.symm)
@@ -1391,6 +1393,11 @@ def centrifugal_terms(Ra, Rb):
     nl, Lv = 4*np.pi/(2*lv + 1), lv*(lv + 1.)
     def apply(kind):   # the metric term as l-components at each radius
         out = {k: np.zeros_like(W['q']) for k in 'qst'}
+        if cf.exact():   # NEW (2026-11-06): the exact spheroid, constant couplings
+            C = cf.spheroid_primitives(kind, m, lw)[0]
+            for k in 'qst':
+                out[k] += C[k]['q'] @ W['q'] + C[k]['a'] @ W['s'] + C[k]['T'] @ W['t']
+            return out
         for a, f in amp.items():
             C = cf.primitives(kind, a, m, lw)[0]
             for k in 'qst':
@@ -1402,7 +1409,7 @@ def centrifugal_terms(Ra, Rb):
     KEc  = np.real(vdot(apply('inertia')))
     Wcor = 2*2*par.Gaspard*vdot(apply('coriolis'))
     TEc  = 0.0
-    if par.thermal and 'ttab' in globals() and np.ndim(tsol2) == 2:
+    if par.thermal and 'ttab' in globals() and np.ndim(tsol2) == 2 and not cf.exact():   # (NEW 2026-11-06: J = 1, none)
         Sg = np.zeros((lw + 1, nr), dtype=complex)
         for k, l in enumerate(lp):
             Sg[l] = radial(ttab, k, 0, rk)[0]
@@ -1476,6 +1483,10 @@ def _cf_expressions(kind, lw):
         A = angular.Algebra.get(par.m, lw)
         if kind == 'flow':
             _cf_expr[key] = cf._sum(cf._flow(A, 'P'), cf._flow(A, 'T'))
+        elif kind == 'visc' and cf.exact():   # NEW (2026-11-06): the exact spheroid's, times ν (the profile slot)
+            _cf_expr[key] = cf._rmul(cf.NU, cf._sum(cf.spheroid_terms(A, 'P', 'visc'), cf.spheroid_terms(A, 'T', 'visc')))
+        elif kind == 'heat' and cf.exact():   # NEW (2026-11-06): times κ p
+            _cf_expr[key] = cf._rmul(cf.NU, cf.spheroid_terms(A, 'S', 'heat'))
         elif kind == 'visc':
             _cf_expr[key] = cf._sum(cf.viscous_force(A, 'P'), cf.viscous_force(A, 'T'))
         elif kind == 'heat':
@@ -1499,6 +1510,7 @@ def centrifugal_dissipation_terms(Ra, Rb):
     viscous_force, rotation_force), δ that of the entropy diffusion (thermal_diffusion_metric), on the degrees that the
     operators use. The advection of the entropy by ΔΩ has a metric part (i m G η P2 ΔΩ s) whose power is imaginary: none
     here. Returns [Dkin_c, Wdr_c, Dthm_c].
+    NEW (2026-11-06): the exact spheroid (centrifugal_shape 'spheroid'): δV and δ of centrifugal.spheroid_terms, exact.
     '''
     lp, lt, _ = ut.ell(par.m, par.lmax, par.symm)
     prof = cf.profile_functions()

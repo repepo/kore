@@ -2,8 +2,8 @@
 
 This page gives the mathematics behind `centrifugal = 1`, for readers who want to check the code or extend it: the
 coordinates that follow the level surfaces, the equations in them and their rows, the magnetic field, the dissipative
-terms, the differential rotation, the flattening of each shape, the effective gravity, the energy budgets, the plots, the
-accuracy, and the checks. How to set up a run is on
+terms, the differential rotation, the exact spheroid, the flattening of each shape, the effective gravity, the energy
+budgets, the plots, the accuracy, and the checks. How to set up a run is on
 [Background model](background.md#centrifugal-deformation). The code is in `bin/centrifugal.py`, the checks in
 `tests/centrifugal/`.
 
@@ -260,6 +260,59 @@ change as follows.
 A degree $n$ of $\Delta\Omega$ couples $l$ to $l \pm (n + 2)$ of the same kind and to $l \pm (n + 3)$ of the other, two
 more than in the sphere (`centrifugal.rotation_build`).
 
+## The exact spheroid
+
+When every level surface has the same flattening, the body is a stretched sphere, and kore keeps the map exactly, at any
+flattening: `centrifugal_shape = 'spheroid'`. It serves a homogeneous fluid in a strongly flattened body or container,
+such as a fast-rotating planet with a rigid mantle (or, with $f < 0$, an elongated one), and it can be checked against
+exact solutions at any $f$.
+
+**The map.** The point $\boldsymbol\alpha$ of the reference space is at
+
+$$
+\mathbf X = \mathsf F\boldsymbol\alpha, \qquad \mathsf F = \mathrm{diag}(a, a, c), \qquad \frac{c}{a} = 1 - f, \qquad a^2c = 1,
+$$
+
+so the level surface $r$ is the spheroid of equatorial radius $ar$ and polar radius $cr$, with the volume of the sphere
+of radius $r$. At first order in $f$ this is the map of `'uniform'`, $a = 1 + f/3$ and $c = 1 - 2f/3$. The metric is
+constant, $J = 1$, $\mathsf M = \mathsf F^{\mathsf T}\mathsf F = \mathrm{diag}(a^2, a^2, c^2)$ and
+$\tilde{\mathbf z} = \hat{\mathbf z}/c$, and the Laplacian of the body, written in the reference space, is
+
+$$
+D = \nabla\cdot\left(\mathsf M^{-1}\nabla\right) = \frac{1}{a^2}\nabla^2 + \left(\frac{1}{c^2} - \frac{1}{a^2}\right)\partial_z^2 .
+$$
+
+**The terms.** Each term that changes gains a part that kore keeps whole. With
+$\mathsf Z\mathbf v = \hat{\mathbf z}(\hat{\mathbf z}\cdot\mathbf v)$, $\partial_z = \hat{\mathbf z}\cdot\nabla$ (on
+each Cartesian component of a vector) and $x = \cos\theta$, the parts beyond the sphere's are
+
+| term | its part beyond the sphere's |
+| --- | --- |
+| inertia | $(\mathsf M - \mathsf I)\thinspace\mathbf w = (a^2 - 1)\thinspace\mathbf w + (c^2 - a^2)\thinspace\mathsf Z\mathbf w$ |
+| Coriolis force | $(\tilde{\mathbf z} - \hat{\mathbf z})\times\mathbf w = (1/c - 1)\thinspace\hat{\mathbf z}\times\mathbf w$ |
+| viscous force | $\nu\left[(a^2/c^2 - 1)\thinspace\partial_z^2\mathbf w + (c^2 - a^2)\thinspace\mathsf Z D\mathbf w\right]$ |
+| thermal diffusion | $\kappa p_0\left[(1/a^2 - 1)\thinspace\nabla^2 s + (1/c^2 - 1/a^2)\thinspace\partial_z^2 s\right]$ |
+| traction on a level surface | $(a^2/c^2 - 1)\thinspace x\thinspace\partial_z\mathbf w + (c^2 - a^2)\thinspace\mathsf Z\left[\partial_r\mathbf w/a^2 + (1/c^2 - 1/a^2)\thinspace x\thinspace\partial_z\mathbf w\right]$ |
+| flux through a level surface | $(1/a^2 - 1)\thinspace\partial_r s + (1/c^2 - 1/a^2)\thinspace x\thinspace\partial_z s$ |
+
+The traction is that of the stress-free wall ([Dissipative terms](#dissipative-terms)),
+$\mathsf F^{\mathsf T}\mathsf S_X\mathsf F^{-\mathsf T}\hat{\mathbf r} = \mathsf M(\nabla\mathbf w)\mathsf M^{-1}\hat{\mathbf r} + (\nabla\mathbf w)^{\mathsf T}\hat{\mathbf r}$,
+with $(\nabla\mathbf w)_{ik} = \partial_k w_i$, less the sphere's. The rest keeps its spherical form: the time
+derivative of the entropy and its advection ($J = 1$), the pressure, and the buoyancy. With the gravity $g = r$ of
+`'Boussinesq'`, the buoyancy of the reference space acts in the body along $\mathsf F^{-\mathsf T}\boldsymbol\alpha = \nabla_X(r^2/2)$:
+normal to the level surfaces, as the effective gravity of a homogeneous body in hydrostatic equilibrium (a Maclaurin
+spheroid), whose effective potential depends on $r$ alone.
+
+**Rows.** $\mathsf Z$ multiplies by polynomials in $\cos\theta$ of degree 2 and $\partial_z$ raises or lowers the degree by
+one, so the inertia couples a degree $l$ to $l$ and $l \pm 2$ of the same kind and to $l \pm 1$ of the other, the viscous
+force and the stress-free rows reach $l \pm 4$ and $l \pm 3$, and the heat rows $l \pm 2$. The radial operators are kore's
+own, with no profile (`centrifugal.spheroid_build`, `spheroid_walls`), and the blocks reach $\lvert\Delta l\rvert$ = 4,
+one more than at first order.
+
+**Scope.** The fluid is homogeneous (`structure = 'Boussinesq'`, `diffusivity = 'uniform'`), with `centrifugal_q` = 0 (the
+effective gravity is already kore's $g$), and any $f < 1$. kore stops with a magnetic field or a differential rotation.
+The budgets of `spin_doctor` and the plots use the exact metric and map.
+
 ## The flattening
 
 The flattening of each level surface follows from hydrostatic balance in the rotating body. `'clairaut'` solves for it,
@@ -365,7 +418,8 @@ only moves.
 
 ## Accuracy
 
-The map, the transform of the flow and the covariant equations are exact. kore keeps them at first order in $f$.
+The map, the transform of the flow and the covariant equations are exact. kore keeps them at first order in $f$, except
+for the exact spheroid ([The exact spheroid](#the-exact-spheroid)), where the only error is that of the discretization.
 
 - **First order.** The error is of order $f^2$. For the spin-over of a Maclaurin spheroid it is $f^2/6$ in the frequency
   ([Checks](#checks)): 0.2 % at Saturn's flattening, where the deformation moves the frequency by 10 %.
@@ -405,13 +459,14 @@ Where each piece is in the code:
 | stops and warnings | `background.check_centrifugal`, `centrifugal.report` (`submatrices.py`), the centre check of the flattening; `centrifugal.deformed` (without a deformation kore keeps the bases and rows of the sphere) |
 | energies | `utils4pp.centrifugal_terms` (`solve.py`, `spin_doctor.py`) and `centrifugal_dissipation_terms` (`spin_doctor.py`); with a field `centrifugal_magnetic_energy` (`solve.py`) and `centrifugal_magnetic_terms` (`spin_doctor.py`, with `centrifugal.wall_potential` and `amplitudes`) |
 | plots | `centrifugal.to_physical` (`tools/plot_field.py`, the flow and the field) |
+| the exact spheroid | `centrifugal.exact`, `spheroid_axes`, `spheroid_terms`, `spheroid_build`, `spheroid_walls`, `spheroid_block` (through `momentum_block` and `diffusion_block`), `spheroid_primitives` (`utils4pp.centrifugal_terms`) |
 
 ## Checks
 
 The deformation was checked in four ways: its closed forms against a symbolic derivation from the definitions, its
 couplings, blocks and wall rows against direct quadratures, its eigenvalues against exact results (among them the modes
 of a spheroid, computed without the map), and the energy budgets. The scripts are in `tests/centrifugal/` (README;
-`run_all.sh`, about 13 minutes on 16 cores). Results of 2026-11-06:
+`run_all.sh`, about 14 minutes on 16 cores). Results of 2026-11-06:
 
 | check | script | result |
 | --- | --- | --- |
@@ -428,6 +483,7 @@ of a spheroid, computed without the map), and the energy budgets. The scripts ar
 | the free decay of a field in a sphere labelled as deformed inside: a full sphere, and a conducting inner core of the fluid's conductivity (the relabelling moves its boundary, which a uniform conductor does not see) and of another conductivity | `eig_check.py` | their part odd in $c$ is 2e-13 to 4e-11 of $\lambda$ at $c$ = 1e-3, of order $c^3$ |
 | the inertial modes of an inviscid homogeneous fluid in a spheroid, computed exactly without the map (the polynomial method, in Cartesian components): $d\omega/df$ of the 73 modes of degree $\le 7$ with $m$ = 0, 1, 2 against kore's | `spheroid_modes.py` | 1.4e-11 |
 | damped modes when the walls are deformed (Ek = 1e-3): kore's $d\lambda/df$ against the exact first-order shift computed from the sphere's mode alone (Hadamard's formula and a volume formula), with no-slip and stress-free walls, fixed entropy and fixed flux, in full spheres and shells | `shape_check.py` | 1e-10 to 3e-8; kore is 5e-2 off without the metric viscous terms |
+| the exact spheroid ($f$ = 0.3 and −0.2): its terms from the map (sympy); kore's couplings and wall rows against their projections on kore's rows; 176 inertial modes (degree $\le 7$, $m$ = 0–3) against the polynomial method; 20 viscous modes at Ek 0.1 (no-slip and stress-free) and 16 diffusion modes against exact Galerkin solutions (polynomial fields, rational integrals); the rigid rotation of a stress-free shell | `spheroid_check.py` | exact; 448 blocks to 4e-14, the wall rows to 1e-13; the modes to 2e-12, 6e-13 and 2e-13; $\lvert\lambda\rvert$ 2e-18 |
 | `'clairaut'` of a homogeneous body against `'uniform'` with $f = 5q/4$ | `eig_check.py` | 2e-13 |
 | the effective gravity with $g = r$: $q = 0.1$ against `Beyonce` $(1 - 2q/3)$ | `eig_check.py` | below 1e-14 |
 | a deformed, stratified ideal fluid has real frequencies | `eig_check.py` | $\lvert\mathrm{Re}\thinspace\lambda\rvert$ 2e-16 |

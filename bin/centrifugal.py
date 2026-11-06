@@ -38,9 +38,12 @@ thermal and the magnetic diffusion (in the fluid and in a conducting inner core)
 a differential rotation, given in the reference space as every profile (the body point X(r, θ) turns at ΔΩ(r, θ), so a ΔΩ
 of r alone is constant on the level surfaces), adds the metric parts of its force and of its advection of the entropy (its
 induction has none).
+NEW (2026-11-06, section 8): the exact spheroid, centrifugal_shape 'spheroid'. Every level surface has the flattening f and
+the map is the linear stretch X = diag(a, a, c) α (c/a = 1 - f, a² c = 1), whose metric is constant: its terms are kept
+exactly, at any f, for a homogeneous fluid without a field or a differential rotation.
 LEFT OUT (background.check_centrifugal stops, report() warns): forced problems, the zero radial stress walls (bco, bci = 2),
 a conducting inner core of another permeability (mu_i2o ≠ 1), the thermal-wind entropy (thermal_wind = 1, 2), which keeps
-the balance of the sphere, and the second order in f.
+the balance of the sphere, and the second order in f (but for the exact spheroid).
 
 Sections:
   1. the shape f(r): 'clairaut' (Clairaut's equation from the structure's g, solved in Radau's form), 'uniform' (constant f),
@@ -56,7 +59,10 @@ Sections:
      (diffusion_build), of the stress-free and fixed-flux wall rows (wall_dissipative) and, in a conducting inner core, of
      its diffusion and of the electric field's row at the ICB (diffusion_block_ic, icb_rows);
   7. the differential rotation: the metric parts of its force (rotation_force, rotation_build) and of its advection of the
-     entropy (rotation_heat_coefficients), and their blocks for operators.py.
+     entropy (rotation_heat_coefficients), and their blocks for operators.py;
+  8. the exact spheroid ('spheroid'): the metric parts of the linear stretch, exactly (spheroid_terms, spheroid_build,
+     spheroid_walls), their blocks (spheroid_block, through momentum_block and diffusion_block) and the primitives of the
+     inertia and the Coriolis force for the budgets (spheroid_primitives).
 Only parameters and angular are imported at the top: utils and radial_profiles are imported where needed (radial_profiles
 imports this module from burrito), so the algebra can be imported and tested without a run directory.
 '''
@@ -65,7 +71,8 @@ import numpy as np
 from parameters import par
 import angular
 
-SHAPES = ('clairaut', 'uniform', 'user')   # centrifugal_shape as written to params.dat: its index here
+SHAPES = ('clairaut', 'uniform', 'user', 'spheroid')   # centrifugal_shape as written to params.dat: its index here
+# (NEW 2026-11-06: 'spheroid', the exact spheroid of section 8)
 CODES = {'e': ('ce0', 'ce1'), 'h': ('ce1', 'ce2')}   # amplitude ε: codes of ε and r ε'; amplitude η = r ε': of η and r η'
 
 
@@ -127,6 +134,8 @@ def shape_functions():
                   surface condition; x_top³ because q is defined at the surface, with the mass inside x_top); with
                   centrifugal_f set, the same shape scaled to centrifugal_f at the outer wall. r ε' and r (r ε')' from η exactly.
       'uniform'   f = centrifugal_f
+      'spheroid'  f = centrifugal_f, kept exactly (section 8; NEW 2026-11-06): these are the profiles of its first order, for
+                  the plots and the reports only
       'user'      f = centrifugal_profile, a numpy expression of r, x and p = centrifugal_param, as the other 'user'
                   expressions (background._expression: x = r r_out with a solar structure, r otherwise), at |r|; r ε' and
                   r (r ε')' from the derivatives of its Chebyshev fit (profile_functions)
@@ -151,7 +160,7 @@ def shape_functions():
                        'h': lambda r: e(r)*eta(np.abs(r)*xs),
                        'k': lambda r: e(r)*(6 - 6*rho_s(np.abs(r)*xs)*(eta(np.abs(r)*xs) + 1) + eta(np.abs(r)*xs)),
                        'f_top': f_ref*np.exp(float(lnf(np.array([xt]))[0]) - lnf_ref), 'eta_top': eta_t})
-    elif t == 'uniform':
+    elif t in ('uniform', 'spheroid'):   # NEW (2026-11-06): 'spheroid' (section 8) has the profiles of 'uniform', its first order
         f0 = par.centrifugal_f
         _shape.update({'f': lambda r: f0*one(r), 'e': lambda r: -(2/3)*f0*one(r), 'h': lambda r: 0*one(r),
                        'k': lambda r: 0*one(r), 'f_top': np.nan, 'eta_top': np.nan})
@@ -181,7 +190,7 @@ def deformed():
         t, f = par.centrifugal_shape, par.centrifugal_f
         if t == 'clairaut':
             d = f != 0 if f is not None else par.centrifugal_q != 0
-        elif t == 'uniform':
+        elif t in ('uniform', 'spheroid'):   # NEW (2026-11-06): 'spheroid'
             d = f is not None and f != 0
         else:
             d = np.any(flattening(np.linspace(0., 1., 41)) != 0)
@@ -247,7 +256,19 @@ def to_physical(r, theta, wr=None, wt=None, wp=None):
         F w/J = w + ε ((3/2) w_z ẑ - w/2) + η w_r ((3/2) cosθ ẑ - r̂/2) - η P2 w
     and the basis turned by the colatitude change δθ = -(3/2) ε sinθ cosθ of the point. Returns (s, z), or
     (s, z, u_r, u_θ, u_φ) with the components (arrays broadcast together). A scalar (s, buoyancy) needs (s, z) only.
+    NEW (2026-11-06): the exact spheroid (section 8), exactly: s = a r sinθ, z = c r cosθ, u = F w (u_s = a w_s, u_z = c w_z,
+    u_φ = a w_φ), in the basis of the colatitude atan2(a sinθ, c cosθ) of the point.
     '''
+    if par.centrifugal_shape == 'spheroid':
+        a, c = spheroid_axes()
+        r = np.asarray(r, dtype=float)
+        ct, st = np.cos(theta), np.sin(theta)
+        s, z = a*r*st, c*r*ct
+        if wr is None:
+            return s, z
+        Us, Uz = a*(st*wr + ct*wt), c*(ct*wr - st*wt)
+        th = np.arctan2(a*st, c*ct)                 # the colatitude of the point (r > 0)
+        return s, z, np.sin(th)*Us + np.cos(th)*Uz, np.cos(th)*Us - np.sin(th)*Uz, a*wp + 0*Us
     prof = profile_functions()
     r = np.asarray(r, dtype=float)
     shp = np.broadcast(r, theta).shape
@@ -285,9 +306,11 @@ def report():
             msg += ', f/q = %.6f' % (S['f_top']/(par.centrifugal_q*x_top()**3))
     if par.centrifugal_q > 0 and par.thermal:
         msg += '; buoyancy with the effective gravity, g(1) %+.3e from the centrifugal monopole' % float(g_monopole(np.array([1.0]))[0])
+    if par.centrifugal_shape == 'spheroid':   # NEW (2026-11-06): section 8
+        msg += '; kept exactly: the level surface r = 1 has the radii a = %.12f (equator), c = %.12f (pole)' % spheroid_axes()
     print(msg)
     fmax = np.abs(flattening(np.linspace(max(par.ricb, 0.0), 1, 201))).max()
-    if fmax > 0.1:
+    if fmax > 0.1 and par.centrifugal_shape != 'spheroid':
         print('WARNING: centrifugal = 1: flattening up to %.3f, beyond about 0.1 the first order in f loses accuracy' % fmax)
     # FIX (2026-11-06, phase 2): the viscous force, the diffusion and the differential rotation have their metric terms now
     if par.diff_rot and par.thermal and par.thermal_wind in (1, 2):
@@ -413,6 +436,9 @@ def heat_label():
 def labels():
     '''[(label, 'P' or 'T')]: every radial operator of the centrifugal terms and the parity class of its column, for
     submatrices.py (each once; inertia and Coriolis share them)'''
+    if exact():   # NEW (2026-11-06): the exact spheroid's (section 8), with J = 1 (no heat label)
+        seen = set()
+        return [x for x in spheroid_labels(('inertia', 'coriolis')) if not (x[0] in seen or seen.add(x[0]))]
     out = []
     for amp in CODES:
         for (sec, comp) in MOMENTUM:
@@ -428,6 +454,8 @@ def dl_range(section, component):
     same = {('u', 'upol'): True, ('v', 'utor'): True, ('h', 'temp'): True, ('u', 'utor'): False, ('v', 'upol'): False,
             ('f', 'bpol'): True, ('g', 'btor'): True, ('f', 'btor'): False, ('g', 'bpol'): False}
     section, component = section.replace('ic', ''), component.replace('_ic', '')   # NEW (2026-11-06): a conducting core's
+    if exact():   # NEW (2026-11-06): the exact spheroid (section 8), ±4 and ±3 (its viscous force and wall rows)
+        return range(-4, 5, 2) if same[(section, component)] else range(-3, 4, 2)
     return range(-2, 3, 2) if same[(section, component)] else range(-3, 4, 2)
 
 def momentum_block(kind, l, section, component, offdiag, M):
@@ -442,6 +470,8 @@ def momentum_block(kind, l, section, component, offdiag, M):
     m = par.m
     if offdiag not in dl_range(section, component):
         return [0, 0]
+    if exact():   # NEW (2026-11-06): the exact spheroid (section 8)
+        return spheroid_block(kind, l, section, component, offdiag, M)
     out = 0
     for amp in CODES:
         momentum_coefficients(kind, amp, m)
@@ -463,7 +493,7 @@ def entropy_block(l, offdiag, M):
     '''
     import utils as ut
     m = par.m
-    if offdiag not in dl_range('h', 'temp'):
+    if offdiag not in dl_range('h', 'temp') or exact():   # NEW (2026-11-06): J = 1 in the exact spheroid
         return [0, 0]
     c = _lookup(heat_coefficients(m), l, m, offdiag)
     if c == 0:
@@ -649,7 +679,8 @@ def _curl_pert(A, pert):
     for key, M in _deriv(_shift(comp['s'], 1., 1)).items():
         _add(out['t'], key, -M)
     Z = A.zero()
-    keys = set(out['q']) | set(out['s']) | set(out['t'])
+    keys = dict.fromkeys([*out['q'], *out['s'], *out['t']])   # FIX (2026-11-06): an ordered union, not a set, whose order
+    #   follows the string hashes, which change from run to run (the sums then differed in the last bits between builds)
     return {(k[0] - 1,) + k[1:]: angular.Field(*[out[c].get(k, Z) for c in 'qst']) for k in keys}   # the 1/r
 
 def _product(A, vecs, pert, sign):
@@ -1013,7 +1044,8 @@ def _vec(A, q=None, s=None, t=None):
     '''a vector expression from scalar ones (components left out are zero)'''
     Z = A.zero()
     q, s, t = q or {}, s or {}, t or {}
-    return {k: angular.Field(q.get(k, Z), s.get(k, Z), t.get(k, Z)) for k in set(q) | set(s) | set(t)}
+    return {k: angular.Field(q.get(k, Z), s.get(k, Z), t.get(k, Z)) for k in dict.fromkeys([*q, *s, *t])}   # FIX (2026-11-06):
+    #   an ordered union, as in _curl_pert
 
 def _Lt(A, e):
     return _map(e, lambda M: A.L @ M)
@@ -1302,6 +1334,8 @@ def diffusion_coefficients(m):
 
 def diffusion_labels():
     '''[(label, 'P', 'T', 'S', 'F' or 'G')]: the radial operators of the metric diffusion and their columns, for submatrices.py'''
+    if exact():   # NEW (2026-11-06): the exact spheroid's (section 8)
+        return spheroid_labels(('visc', 'heat'))
     out = []
     for (row, X), d in diffusion_coefficients(par.m).items():
         out += [(lab, X) for lab in d]
@@ -1311,7 +1345,10 @@ def diffusion_orders():
     '''{section: the highest derivative in its metric diffusion}: v and g reach 3 for m ≠ 0 (P''' and F'''), and
     submatrices.py then builds them in the C^(3) basis'''
     out = {}
-    for (row, X), d in diffusion_coefficients(par.m).items():
+    blocks = diffusion_coefficients(par.m).items() if not exact() else \
+        [(rc, d) for kind in ('visc', 'heat') if kind in spheroid_coefficients(par.m)
+         for rc, d in spheroid_coefficients(par.m)[kind][0].items()]   # NEW (2026-11-06): the exact spheroid's
+    for (row, X), d in blocks:
         for lab in d:
             out[row] = max(out.get(row, 0), int(lab[-1]))
     return out
@@ -1325,6 +1362,8 @@ def diffusion_block(l, section, component, offdiag, M):
     of N1], or [0, 0] if nothing couples this Δl.
     '''
     import utils as ut
+    if exact():   # NEW (2026-11-06): the exact spheroid (section 8)
+        return spheroid_block('heat' if section == 'h' else 'visc', l, section, component, offdiag, M)
     X = {'upol': 'P', 'utor': 'T', 'temp': 'S', 'bpol': 'F', 'btor': 'G'}[component]
     diffusion_coefficients(par.m)
     out = 0
@@ -1351,7 +1390,10 @@ def wall_dissipative_rows(wall):
         return 0, {}
     if wall not in _dwall:
         R = ut.rcmb if wall == 'outer' else par.ricb
-        W = wall_dissipative(par.m, par.lmax + 12, R, wall_values(R))
+        if exact():   # NEW (2026-11-06): the exact spheroid's rows (section 8)
+            W = spheroid_walls(par.m, par.lmax + 12, R)
+        else:
+            W = wall_dissipative(par.m, par.lmax + 12, R, wall_values(R))
         B = _bandwidth({0: W})
         _dwall[wall] = (B, {k: angular.band(M, B) for k, M in W.items()})
     return _dwall[wall]
@@ -1608,3 +1650,206 @@ def rotation_block(l, section, component, offdiag, M):
         return [0, 0]
     offd = ut.dr_offd(l, l + offdiag, section, X)
     return [par.Gaspard*out/L**3, offd]
+
+
+# ======================================================================================================================
+# 8. The exact spheroid (NEW 2026-11-06, centrifugal_shape 'spheroid')
+# ======================================================================================================================
+# A body whose level surfaces all have one flattening f is the image of the reference space under a linear map, X = F α with
+# F = diag(a, a, c), c/a = 1 - f and a² c = 1 (the level surface r is the spheroid of the volume of the sphere r): the stretch
+# of section 1 kept exactly (at first order in f, a = 1 + f/3 and c = 1 - 2f/3, the map of 'uniform'). Its metric is
+# constant, J = 1, M = FᵀF = Q = diag(a², a², c²) and z̃ = ẑ/c, and the Laplacian of the body is, in the reference space,
+# D = ∇⋅(Q⁻¹∇) = ∇²/a² + (1/c² - 1/a²) ∂z². So the terms of sections 1 and 6 hold at any f, with no expansion in it
+# (Z v = ẑ (ẑ⋅v), (ẑ⋅∇)v = ∇(ẑ⋅v) - ẑ×(∇×v), ∂z² v = (ẑ⋅∇)²v, x = cos θ):
+#     inertia        (M - I) w = (a² - 1) w + (c² - a²) Z w
+#     Coriolis       (z̃ - ẑ)×w = (1/c - 1) ẑ×w
+#     viscous force  Fᵀ ν∇_X²(F w) - ν∇²w = ν [(a²/c² - 1) ∂z² w + (c² - a²) Z D w]                   (ν uniform)
+#     heat           J ∇_X⋅(κp ∇_X s) - ∇⋅(κp ∇s) = κp [(1/a² - 1) ∇²s + (1/c² - 1/a²) ∂z² s]            (κ p uniform)
+#     stress-free    the traction Fᵀσ_X F⁻ᵀ r̂ = Q (∇w) Q⁻¹ r̂ + (∇w)ᵀ r̂ ((∇w)_ij = ∂_j w_i) less the sphere's r̂⋅σ(w):
+#                    Q (∇w) Q⁻¹ r̂ - ∂ᵣw = (a²/c² - 1) x (ẑ⋅∇)w + (c² - a²) Z [∂ᵣw/a² + (1/c² - 1/a²) x (ẑ⋅∇)w]
+#     fixed flux     r̂⋅Q⁻¹∇s - ∂ᵣs = (1/a² - 1) ∂ᵣs + (1/c² - 1/a²) x ∂z s
+# The time derivative of s and its advection keep their spherical form (J = 1, w⋅∇S0), and so does the buoyancy: with
+# kore's g = r it acts along F⁻ᵀ𝐫 = ∇_X(r²/2) in the body, normal to the level surfaces, as the effective gravity of a
+# homogeneous body in hydrostatic equilibrium (a Maclaurin spheroid: its effective potential depends on r alone). The
+# couplings are built with the algebra of section 6 on expressions of constant coefficients and take kore's own labels (no
+# profile, or the uniform ν and κ p: 'vsc0', 'kps0'). The products of Z and ∂z² couple a degree l to l ± 4 of the same kind
+# and to l ± 3 of the other. The fluid is homogeneous (structure 'Boussinesq', diffusivity 'uniform'): its expressions have
+# no (ln ρ0) terms, and no profile derivatives. Checks: tests/centrifugal/spheroid_check.py.
+SPHEROID_KINDS = ('inertia', 'coriolis', 'visc', 'heat')
+
+def spheroid_axes(f=None):
+    '''(a, c), the equatorial and polar radii of the level surface r = 1 of the spheroid of flattening f (centrifugal_f):
+    c/a = 1 - f and a² c = 1'''
+    f = par.centrifugal_f if f is None else f
+    return (1 - f)**(-1/3), (1 - f)**(2/3)
+
+def exact():
+    '''the exact spheroid: centrifugal = 1 with centrifugal_shape 'spheroid' and a deformation (deformed())'''
+    return bool(par.centrifugal == 1 and par.centrifugal_shape == 'spheroid' and deformed())
+
+def _hom(e):
+    '''an expression without its (ln ρ0) terms: that of a homogeneous fluid (λ_k = 0)'''
+    return {k: M for k, M in e.items() if not k[5]}
+
+def _zgrad(A, e):
+    '''(ẑ⋅∇)v = ∇(ẑ⋅v) - ẑ×(∇×v) of a vector expression'''
+    return _sum(_grad(A, _zdot(A, e)), _sc(_zcr(A, _curl(A, e)), -1.))
+
+def _Z(A, e):
+    '''Z v = ẑ (ẑ⋅v)'''
+    return _zhat(A, _zdot(A, e))
+
+def _sdz(A, g):
+    '''∂z g = ẑ⋅∇g of a scalar expression'''
+    return _zdot(A, _grad(A, g))
+
+def spheroid_terms(A, X, kind, f=None):
+    '''
+    The exact metric terms of the unknown X ('P', 'T': the flow w; 'S': the entropy s) on the algebra A, as expressions
+    (the formulas above, flattening f or centrifugal_f): kind 'inertia' (M - I) w, 'coriolis' (z̃ - ẑ)×w, 'visc' the viscous
+    force per unit ν, 'traction' the stress-free wall rows per unit ν (vector expressions); 'heat' the diffusion per unit
+    κp, 'flux' the fixed-flux wall rows (scalar expressions, X = 'S')
+    '''
+    a, c = spheroid_axes(f)
+    a2, c2 = a*a, c*c
+    if X == 'S':
+        s = {(0, 'S', 0, None, None, ()): A.I}
+        if kind == 'heat':
+            return _sum(_sc(_div(A, _grad(A, s)), 1/a2 - 1), _sc(_sdz(A, _sdz(A, s)), 1/c2 - 1/a2))
+        if kind == 'flux':
+            return _sum(_sc(_dr(s), 1/a2 - 1), _sc(_map(_sdz(A, s), lambda M: A.X @ M), 1/c2 - 1/a2))
+    else:
+        w = _hom(_flow(A, X))
+        if kind == 'inertia':
+            return _sum(_sc(w, a2 - 1), _sc(_Z(A, w), c2 - a2))
+        if kind == 'coriolis':
+            return _sc(_zcr(A, w), 1/c - 1)
+        if kind == 'visc':
+            dz = _zgrad(A, _zgrad(A, w))
+            Dw = _sum(_sc(_curl(A, _curl(A, w)), -1/a2), _sc(dz, 1/c2 - 1/a2))    # D w (∇²w = -∇×∇×w, ∇⋅w = 0)
+            return _sum(_sc(dz, a2/c2 - 1), _sc(_Z(A, Dw), c2 - a2))
+        if kind == 'traction':
+            xz = _poly(A, _zgrad(A, w), _xp)
+            return _sum(_sc(xz, a2/c2 - 1), _sc(_Z(A, _sum(_sc(_dr(w), 1/a2), _sc(xz, 1/c2 - 1/a2))), c2 - a2))
+    sys.exit('centrifugal: no exact term %r of %r' % (kind, X))
+
+def _store_sph(out, row, X, e, Lt, code):
+    '''the row's monomials (constant coefficients: no amplitude, profile or λ) as kore's own labels
+    '{row}{rx}[{code}0]_D{d}', times Lt (L' of the target, or 1 for the heat rows), added to out[(row, X)]'''
+    d_ = out.setdefault((row, X), {})
+    for (p, Xn, dd, a, j, lam), M in e.items():
+        M = M.tocsr()
+        if M.nnz == 0 or abs(M).max() == 0:
+            continue
+        rx = ROWPOW2[row] - p
+        if not (0 <= rx <= 9 and a is None and j is None and not lam and Xn == X and dd <= 9):
+            sys.exit('centrifugal: the exact term r^%d %s^(%d) has no label in row %s' % (p, Xn, dd, row))
+        _add(d_, '%s%d%s_D%d' % (row, rx, '' if code is None else code + '0', dd), Lt(M).tocsr())
+
+def spheroid_build(m, lw, kinds=SPHEROID_KINDS, f=None):
+    '''
+    {kind: {(row, column): {label: sparse matrix [target l', source l]}}} of the exact metric terms on the degrees 0..lw:
+    'inertia' and 'coriolis' in the rows u, v (columns P, T; (M - I) w and (z̃ - ẑ)×w as section 3's momentum_block, without
+    2 Gaspard and the 1/L'^3), 'visc' in u, v (the sign of operators.viscous_diffusion, without ViscosD and the 1/L'^3) and
+    'heat' in h (column S; the sign of operators.thermal_diffusion, without ThermaD and the 1/L^3); pruned and checked
+    (_check_orders). Also used by tests/centrifugal/spheroid_check.py without a run.
+    '''
+    import mag_algebra as ma
+    A = angular.Algebra.get(m, lw)
+    Lt = lambda M: A.L @ M
+    out = {}
+    for kind in kinds:
+        o = {}
+        if kind == 'heat':
+            _store_sph(o, 'h', 'S', _shift(spheroid_terms(A, 'S', 'heat', f), 1., 2), lambda M: M, 'kps')   # r² (the row)
+        else:
+            for X in 'PT':
+                e = spheroid_terms(A, X, kind, f)
+                code = 'vsc' if kind == 'visc' else None
+                _store_sph(o, 'u', X, _row_u(e), Lt, code)
+                _store_sph(o, 'v', X, _row_v(e), Lt, code)
+        out[kind] = ma._prune(o)
+        _check_orders(out[kind])
+    return out
+
+def spheroid_walls(m, lw, R, f=None):
+    '''the exact metric parts of the stress-free and fixed-flux wall rows at the radius R, as wall_dissipative: {(row,
+    source): sparse matrix [l, l']}, rows 'u' (R² times the S part of the traction), 'v' (R times its T part) and 'h' (the
+    flux), sources 'P0', 'P1', 'P2', 'T0', 'T1', 'S0', 'S1'. Also used by tests/centrifugal/spheroid_check.py.'''
+    A = angular.Algebra.get(m, lw)
+    out = {}
+    for X in 'PT':
+        for (Xn, d), F in _at(spheroid_terms(A, X, 'traction', f), R, {}).items():
+            _add(out, ('u', '%s%d' % (Xn, d)), R**2*F.s)
+            _add(out, ('v', '%s%d' % (Xn, d)), R*F.t)
+    for (Xn, d), M in _at(spheroid_terms(A, 'S', 'flux', f), R, {}).items():
+        _add(out, ('h', '%s%d' % (Xn, d)), M)
+    for (row, src) in out:
+        if src not in ('P0', 'P1', 'P2', 'T0', 'T1', 'S0', 'S1'):
+            sys.exit('centrifugal: the exact wall row %s has a term in %s, which assemble.py does not place' % (row, src))
+    return {k: sp_csr(v) for k, v in out.items()}
+
+_sph = {}
+def spheroid_coefficients(m):
+    '''spheroid_build for this run (cached): {kind: (out, bands)} with the kinds of this run ('visc' with ViscosD > 0, 'heat'
+    with thermal diffusion), the bands by diagonal (angular.band, |Δl| <= 4)'''
+    if m not in _sph:
+        kinds = ['inertia', 'coriolis'] + (['visc'] if par.ViscosD > 0 else []) + \
+                (['heat'] if par.thermal and par.ThermaD > 0 else [])
+        _sph[m] = {}
+        for kind, out in spheroid_build(m, par.lmax + 16, kinds).items():
+            B = _bandwidth(out)
+            if B > 4:
+                sys.exit('centrifugal: the exact term %s couples degrees %d apart, more than assemble.py places' % (kind, B))
+            _sph[m][kind] = (out, {rc: {lab: angular.band(M, 4) for lab, M in d.items()} for rc, d in out.items()})
+    return _sph[m]
+
+def spheroid_labels(kinds):
+    '''[(label, 'P', 'T' or 'S')]: the radial operators of the exact terms of the kinds given (those of this run), for
+    submatrices.py'''
+    out = []
+    for kind, (o, _) in spheroid_coefficients(par.m).items():
+        if kind in kinds:
+            for (row, X), d in o.items():
+                out += [(lab, X) for lab in d]
+    return out
+
+def spheroid_block(kind, l, section, component, offdiag, M):
+    '''
+    The block of the exact metric term kind ('inertia', 'coriolis': momentum_block's conventions; 'visc', 'heat':
+    diffusion_block's) for the row degree l of section 'u', 'v' or 'h', the column 'upol', 'utor' or 'temp' and the source
+    degree l + offdiag: [factor Σ coefficient × radial operator / L'^3, the column block offset in units of N1] (factor 1, 2
+    Gaspard, ViscosD or ThermaD), or [0, 0] if nothing couples this Δl.
+    '''
+    import utils as ut
+    C = spheroid_coefficients(par.m)
+    if kind not in C:
+        return [0, 0]
+    X = {'upol': 'P', 'utor': 'T', 'temp': 'S'}[component]
+    out = 0
+    for lab, bnd in C[kind][1].get((section, X), {}).items():
+        v = _lookup(bnd, l, par.m, offdiag)
+        if v != 0:
+            out = out + v*M[lab]
+    if np.isscalar(out):
+        return [0, 0]
+    offd = ut.dr_offd(l, l + offdiag, section, X)
+    fac = {'inertia': 1., 'coriolis': 2*par.Gaspard, 'visc': par.ViscosD, 'heat': par.ThermaD}[kind]
+    return [fac*out/(l*(l + 1.))**3, offd]
+
+def spheroid_primitives(kind, m, lw, f=None):
+    '''
+    The primitive matrices C[k][shape] of the exact inertia and Coriolis terms on the degrees 0..lw, as primitives()
+    (k = 'q', 's', 't' the components of the result, shapes 'q', 'a', 'T' those of w): kind 'inertia' (M - I) w = (a² - 1) w
+    + (c² - a²) Z w, kind 'coriolis' (z̃ - ẑ)×w = (1/c - 1) ẑ×w, with no radial factor (for the budgets:
+    utils4pp.centrifugal_terms). Returns (C, A).
+    '''
+    A = angular.Algebra.get(m, lw)
+    a, c = spheroid_axes(f)
+    zdot, zhat, rhat, rcross = _ops(A)
+    C = {'q': {}, 's': {}, 't': {}}
+    for sh, w in {'q': A.field(q=A.I), 'a': A.field(s=A.I), 'T': A.field(t=A.I)}.items():
+        W = (a*a - 1)*w + (c*c - a*a)*zhat(zdot(w)) if kind == 'inertia' else (1/c - 1)*A.zcross(w)
+        for k in 'qst':
+            C[k][sh] = W[k].tocsr()
+    return C, A

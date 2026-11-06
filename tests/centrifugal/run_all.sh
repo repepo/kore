@@ -1,6 +1,6 @@
 #!/bin/bash
 # Checks of the centrifugal deformation (centrifugal = 1; docs/centrifugal-equations.md, Checks). NEW (2026-11-05).
-# usage: tests/centrifugal/run_all.sh [WORKDIR]   (default tests/centrifugal/runs; about 13 minutes on 16 cores)
+# usage: tests/centrifugal/run_all.sh [WORKDIR]   (default tests/centrifugal/runs; about 14 minutes on 16 cores)
 # Needs numpy, scipy, sympy and mpi4py; the budgets also petsc4py and slepc4py (SKIP_SOLVE=1 skips them). With OLD_KORE set to
 # a copy of the commit before the change (git archive <commit> | tar -x -C $OLD_KORE), also tests/diff_rot/regress.sh.
 # Each check prints its verdict; the script ends with 'centrifugal checks ok' (exit 0) or lists the ones that failed (exit 1).
@@ -32,6 +32,10 @@ echo "--- spheroid_modes.py: the inertial modes of a spheroid, exact (polynomial
 check spheroid python3 "$T/spheroid_modes.py"
 echo "--- shape_check.py: damped modes when the walls are deformed (no-slip, stress-free, heat), exactly at Ek 1e-3"
 check shape python3 "$T/shape_check.py" $(( $(nproc) < 11 ? $(nproc) : 11 ))
+# NEW (2026-11-06, the exact spheroid)
+echo "--- spheroid_check.py: the exact spheroid ('spheroid'): its terms from the map, kore's couplings and wall rows against"
+echo "    their projections, the inviscid, viscous and heat modes against exact solutions, the rigid rotation"
+check spheroid_exact python3 "$T/spheroid_check.py"
 
 echo "--- ru_insane.py: the metric blocks against (r, θ) quadratures, Hermitian and positive, in shells and full spheres"
 WU="par.structure = 'Wu 2005'; par.r_out = 0.99; par.thermal = 1; par.stratification = 'top hat'; par.aux1 = 0.5; par.aux2 = 0.03; par.aux3 = 0.85; par.aux4 = 0.03; par.aux5 = 2.5; par.Beyonce = 10."
@@ -40,14 +44,17 @@ US="par.centrifugal_shape = 'user'; par.centrifugal_f = None; par.centrifugal_pr
 BT="par.thermal = 1; par.stratification = 'linear'"
 VI="par.ViscosD = 1e-3; par.ThermaD = 1e-3"
 DR="par.diff_rot = 1; par.diff_rot_type = 'conical'; par.diff_rot_ampl = -0.25; par.thermal_wind = 1"
-names=(ru_wu_m1 ru_wu_m0 ru_wu_dr ru_bq_m2 ru_bq_fs1 ru_bq_fs2 ru_bq_td0)
+SP="par.centrifugal_shape = 'spheroid'; par.centrifugal_f = 0.3"     # NEW (2026-11-06): the exact spheroid
+names=(ru_wu_m1 ru_wu_m0 ru_wu_dr ru_bq_m2 ru_bq_fs1 ru_bq_fs2 ru_bq_td0 ru_sph_m1 ru_sph_fs2)
 cfgs=("$WU; $VI; $CL; par.ricb = 0.35; par.symm = 1; par.N = 96; par.lmax = 24"
       "$WU; $VI; $CL; par.ricb = 0.35; par.m = 0; par.symm = -1; par.N = 96; par.lmax = 25"
       "$WU; $VI; $CL; $DR; par.ricb = 0.35; par.symm = 1; par.N = 96; par.lmax = 24"
       "$BT; $VI; $US; par.ricb = 0.35; par.m = 2; par.symm = -1; par.N = 48; par.lmax = 21"
       "$BT; $VI; $US; par.N = 48; par.rpower_v = 4"
       "$BT; $VI; $US; par.m = 2; par.symm = 1; par.N = 48; par.lmax = 21; par.rpower_v = 4"
-      "$BT; par.ViscosD = 1e-3; par.ThermaD = 0; $US; par.symm = 1; par.N = 48; par.rpower_v = 4")
+      "$BT; par.ViscosD = 1e-3; par.ThermaD = 0; $US; par.symm = 1; par.N = 48; par.rpower_v = 4"
+      "$BT; $VI; $SP; par.ricb = 0.35; par.symm = 1; par.N = 48; par.lmax = 40"
+      "$BT; $VI; $SP; par.m = 2; par.symm = 1; par.N = 40; par.lmax = 41; par.rpower_v = 4")
 for i in "${!names[@]}"; do
   d=${names[$i]}
   python3 "$T/mk_run.py" $d "${cfgs[$i]}" > /dev/null || { failed+=("$d"); continue; }
@@ -57,11 +64,15 @@ done
 if [ -z "$SKIP_SOLVE" ]; then
   echo "--- budget_check.py: spin_doctor's budgets with the metric weights of KE, the Coriolis power and TE (solve.py, 2 ranks)"
   BUD="$WU; $VI; par.ricb = 0.35; par.symm = 1; par.N = 96; par.lmax = 40; par.ncpus = 2; par.nev = 4; par.itau = 0.3"
-  names=(bud_wu_sphere bud_wu_cl bud_wu_dr bud_bq_fs)
+  SPB="$BT; par.ViscosD = 1e-2; par.ThermaD = 1e-2; par.Beyonce = 2.; $SP; par.ncpus = 2; par.nev = 4; par.itau = 0.5"   # NEW (2026-11-06)
+  names=(bud_wu_sphere bud_wu_cl bud_wu_dr bud_bq_fs bud_sph_ns bud_sph_sf bud_sph_fs)
   cfgs=("$BUD; par.centrifugal = 0"
         "$BUD; $CL"
         "$BUD; $CL; $DR"
-        "$BT; $VI; $US; par.m = 2; par.symm = 1; par.N = 64; par.lmax = 41; par.ncpus = 2; par.nev = 4; par.itau = 0.5; par.rpower_v = 4")
+        "$BT; $VI; $US; par.m = 2; par.symm = 1; par.N = 64; par.lmax = 41; par.ncpus = 2; par.nev = 4; par.itau = 0.5; par.rpower_v = 4"
+        "$SPB; par.ricb = 0.35; par.symm = 1; par.N = 48; par.lmax = 40"
+        "$SPB; par.ricb = 0.35; par.bco = 0; par.bci = 0; par.bco_thermal = 1; par.m = 2; par.symm = -1; par.N = 48; par.lmax = 41"
+        "$SPB; par.m = 2; par.symm = 1; par.N = 40; par.lmax = 41; par.rpower_v = 4")
   for i in "${!names[@]}"; do
     d=${names[$i]}
     python3 "$T/mk_run.py" $d "${cfgs[$i]}" solve > /dev/null || { failed+=("$d"); continue; }

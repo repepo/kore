@@ -178,7 +178,7 @@ def part_a():
     zero_at(first(F.T*U0.cross(bX)), '   Fᵀ(U0×b) = U00×b̃: the induction by the background flow has no metric part')
     print('  (%.0f s)' % (time.time() - T0), flush=True)
 
-if '--skip-a' not in sys.argv:
+if __name__ == '__main__' and '--skip-a' not in sys.argv:   # (NEW 2026-11-06: not when imported, by spheroid_check.py)
     part_a()
 
 # ======================================================================================================================
@@ -557,94 +557,99 @@ def icb_column(task):
     return task, out, time.time() - t0
 
 # ======================================================================================================================
-part_b0()
-
-print('B1. the couplings of centrifugal.diffusion_build against the projected first-order rows', flush=True)
-CASES = [('visc', 1, 'P', 3), ('visc', 1, 'T', 2), ('heat', 1, 'S', 3), ('mag', 1, 'F', 3), ('mag', 1, 'G', 2)] if quick else \
-        [('visc', 1, 'P', 3), ('visc', 1, 'T', 2), ('visc', 0, 'P', 2), ('visc', 0, 'T', 3), ('visc', 2, 'P', 4), ('visc', 3, 'T', 4),
-         ('heat', 1, 'S', 3), ('heat', 0, 'S', 2), ('heat', 2, 'S', 4),
-         ('mag', 1, 'F', 3), ('mag', 1, 'G', 2), ('mag', 0, 'F', 2), ('mag', 2, 'G', 4), ('mag', 0, 'G', 3),
-         ('rot0', 1, 'P', 3), ('rot2', 1, 'T', 2), ('rot2', 0, 'P', 2), ('rot4', 2, 'P', 4), ('rot2', 3, 'T', 4)]
-CASES += [('rot2', 1, 'P', 3)] if quick else []
-WALLS = [(1.0, 1, 'P', 3), (1.0, 1, 'T', 2), (0.35, 2, 'P', 4), (1.0, 0, 'S', 2), (0.35, 1, 'S', 3)] if quick else \
-        [(1.0, 1, 'P', 3), (1.0, 1, 'T', 2), (1.0, 0, 'P', 2), (1.0, 0, 'T', 3), (0.35, 2, 'P', 4), (0.35, 3, 'T', 4),
-         (1.0, 0, 'S', 2), (0.35, 1, 'S', 3), (1.0, 2, 'S', 4)]
-ICB = [(0.35, 1, 'F', 3), (0.35, 1, 'G', 2)] if quick else \
-      [(0.35, 1, 'F', 3), (0.35, 1, 'G', 2), (0.35, 0, 'F', 2), (0.35, 0, 'G', 3), (0.6, 2, 'F', 4), (0.6, 3, 'G', 4)]
-LW = 24
-BLOCKS = {}
-for m in sorted({c[1] for c in CASES}):
-    BLOCKS[m] = cf.diffusion_build(m, LW)
-ROTB = {(c[1], int(c[0][3:])): cf.rotation_build(c[1], LW, [int(c[0][3:])]) for c in CASES if c[0].startswith('rot')}
-TASKS = [('B', c) for c in CASES] + [('C', w) for w in WALLS] + [('D', e) for e in ICB]
-TASKS.sort(key=lambda t: 0 if t[1][0] == 'visc' else (1 if t[0] == 'C' else 2))    # the longest first
 def run(task):
     return (task[0],) + {'B': one_column, 'C': wall_column, 'D': icb_column}[task[0]](task[1])
-try:
-    import multiprocessing
-    ncpu = len(os.sched_getaffinity(0)) if hasattr(os, 'sched_getaffinity') else (os.cpu_count() or 1)
-    with multiprocessing.get_context('fork').Pool(max(1, min(ncpu, 16))) as pool:
-        RESULTS = list(pool.imap_unordered(run, TASKS))
-except ValueError:          # no fork on this platform
-    RESULTS = list(map(run, TASKS))
 
-n_ok = 0
-for part, task, out, dt in sorted([x for x in RESULTS if x[0] == 'B'], key=lambda x: str(x[1])):
-    kind, m, X, lcol = task
-    worst = 0
-    scale = max(np.abs(v).max() for v in out.values())
-    for (row, lrow), der in sorted(out.items()):
-        can = candidate(ROTB[(m, int(kind[3:]))] if kind.startswith('rot') else BLOCKS[m], row, X, lrow, lcol)
-        err = np.abs(der - can).max()/scale
-        worst = max(worst, err)
-        if err > 1e-11:
-            bad.append('%s m=%d %s%d row %s%d' % (kind, m, X, lcol, row, lrow))
-            print('  FAIL  %s m=%d: %s row l=%d, column %s l=%d: derived %s, kore %s (rel. %.1e)'
-                  % (kind, m, row, lrow, X, lcol, np.round(der, 8), np.round(can, 8), err))
-        else:
-            n_ok += 1
-    dl = int(kind[3:]) + 3 if kind.startswith('rot') else 4
-    print("  %s  %-4s m=%d column %s l=%d: the rows %s of l' = l-%d..l+%d against kore's blocks, worst %.1e (%.0f s)"
-          % ('ok  ' if worst <= 1e-11 else 'FAIL', kind, m, X, lcol, '/'.join(sorted({k[0] for k in out})), dl, dl, worst, dt),
-          flush=True)
-print('  %d blocks agree' % n_ok)
+def main():   # (NEW 2026-11-06: a function, so that spheroid_check.py can import the Laurent polynomials above)
+    part_b0()
 
-print('C. the wall rows of centrifugal.wall_dissipative against the projected first-order traction and flux', flush=True)
-for part, task, out, dt in sorted([x for x in RESULTS if x[0] == 'C'], key=lambda x: str(x[1])):
-    R, m, X, lcol = task
-    vals = {a: float(AMPF[a](np.array([R]))[0]) for a in 'ENCQK'}
-    vals.update({('lam', k): float(FUNS['lr'][k](np.array([R]))[0]) for k in range(1, 4)})
-    W = cf.wall_dissipative(m, LW, R, vals)
-    worst = 0
-    scale = max(abs(v) for v in out.values())
-    for (row, lrow), der in sorted(out.items()):
-        can = sum(complex(M[lrow, lcol])*float(FUNS[src[0]][int(src[1])](np.array([R]))[0])
-                  for (rw, src), M in W.items() if rw == row and src[0] == X)
-        err = abs(der - can)/scale
-        worst = max(worst, err)
-        if err > 1e-11:
-            bad.append('wall R=%g m=%d %s%d row %s%d' % (R, m, X, lcol, row, lrow))
-            print('  FAIL  R=%g m=%d: %s row l=%d, column %s l=%d: derived %s, kore %s' % (R, m, row, lrow, X, lcol, der, can))
-    print("  %s  R=%g m=%d column %s l=%d: the %s rows of l' = l-4..l+4, worst %.1e (%.0f s)"
-          % ('ok  ' if worst <= 1e-11 else 'FAIL', R, m, X, lcol, 'stress-free' if X in 'PT' else 'flux', worst, dt), flush=True)
+    print('B1. the couplings of centrifugal.diffusion_build against the projected first-order rows', flush=True)
+    CASES = [('visc', 1, 'P', 3), ('visc', 1, 'T', 2), ('heat', 1, 'S', 3), ('mag', 1, 'F', 3), ('mag', 1, 'G', 2)] if quick else \
+            [('visc', 1, 'P', 3), ('visc', 1, 'T', 2), ('visc', 0, 'P', 2), ('visc', 0, 'T', 3), ('visc', 2, 'P', 4), ('visc', 3, 'T', 4),
+             ('heat', 1, 'S', 3), ('heat', 0, 'S', 2), ('heat', 2, 'S', 4),
+             ('mag', 1, 'F', 3), ('mag', 1, 'G', 2), ('mag', 0, 'F', 2), ('mag', 2, 'G', 4), ('mag', 0, 'G', 3),
+             ('rot0', 1, 'P', 3), ('rot2', 1, 'T', 2), ('rot2', 0, 'P', 2), ('rot4', 2, 'P', 4), ('rot2', 3, 'T', 4)]
+    CASES += [('rot2', 1, 'P', 3)] if quick else []
+    WALLS = [(1.0, 1, 'P', 3), (1.0, 1, 'T', 2), (0.35, 2, 'P', 4), (1.0, 0, 'S', 2), (0.35, 1, 'S', 3)] if quick else \
+            [(1.0, 1, 'P', 3), (1.0, 1, 'T', 2), (1.0, 0, 'P', 2), (1.0, 0, 'T', 3), (0.35, 2, 'P', 4), (0.35, 3, 'T', 4),
+             (1.0, 0, 'S', 2), (0.35, 1, 'S', 3), (1.0, 2, 'S', 4)]
+    ICB = [(0.35, 1, 'F', 3), (0.35, 1, 'G', 2)] if quick else \
+          [(0.35, 1, 'F', 3), (0.35, 1, 'G', 2), (0.35, 0, 'F', 2), (0.35, 0, 'G', 3), (0.6, 2, 'F', 4), (0.6, 3, 'G', 4)]
+    LW = 24
+    BLOCKS = {}
+    for m in sorted({c[1] for c in CASES}):
+        BLOCKS[m] = cf.diffusion_build(m, LW)
+    ROTB = {(c[1], int(c[0][3:])): cf.rotation_build(c[1], LW, [int(c[0][3:])]) for c in CASES if c[0].startswith('rot')}
+    TASKS = [('B', c) for c in CASES] + [('C', w) for w in WALLS] + [('D', e) for e in ICB]
+    TASKS.sort(key=lambda t: 0 if t[1][0] == 'visc' else (1 if t[0] == 'C' else 2))    # the longest first
+    try:
+        import multiprocessing
+        ncpu = len(os.sched_getaffinity(0)) if hasattr(os, 'sched_getaffinity') else (os.cpu_count() or 1)
+        with multiprocessing.get_context('fork').Pool(max(1, min(ncpu, 16))) as pool:
+            RESULTS = list(pool.imap_unordered(run, TASKS))
+    except ValueError:          # no fork on this platform
+        RESULTS = list(map(run, TASKS))
 
-print('D. the ICB row of the electric field (centrifugal.icb_electric) against the projected first-order field', flush=True)
-for part, task, out, dt in sorted([x for x in RESULTS if x[0] == 'D'], key=lambda x: str(x[1])):
-    R, m, X, lcol = task
-    vals = {a: float(AMPF[a](np.array([R]))[0]) for a in 'ENCQK'}
-    vals.update({('lam', k): 0. for k in range(1, 4)})
-    W = cf.icb_electric(m, LW, R, vals)
-    worst = 0
-    scale = max(abs(v) for v in out.values()) or 1.   # (zero for m = 0 and F: δ𝐄 is azimuthal, toroidal, there)
-    for (row, lrow), der in sorted(out.items()):
-        can = sum(complex(M[lrow, lcol])*float(FUNS[X][d](np.array([R]))[0]) for (Xn, d), M in W.items() if Xn == X)
-        err = abs(der - can)/scale
-        worst = max(worst, err)
-        if err > 1e-11:
-            bad.append('icb R=%g m=%d %s%d row %d' % (R, m, X, lcol, lrow))
-            print('  FAIL  R=%g m=%d: row l=%d, column %s l=%d: derived %s, kore %s' % (R, m, lrow, X, lcol, der, can))
-    print("  %s  R=%g m=%d column %s l=%d: the ICB rows of l' = l-4..l+4, worst %.1e (%.0f s)"
-          % ('ok  ' if worst <= 1e-11 else 'FAIL', R, m, X, lcol, worst, dt), flush=True)
+    n_ok = 0
+    for part, task, out, dt in sorted([x for x in RESULTS if x[0] == 'B'], key=lambda x: str(x[1])):
+        kind, m, X, lcol = task
+        worst = 0
+        scale = max(np.abs(v).max() for v in out.values())
+        for (row, lrow), der in sorted(out.items()):
+            can = candidate(ROTB[(m, int(kind[3:]))] if kind.startswith('rot') else BLOCKS[m], row, X, lrow, lcol)
+            err = np.abs(der - can).max()/scale
+            worst = max(worst, err)
+            if err > 1e-11:
+                bad.append('%s m=%d %s%d row %s%d' % (kind, m, X, lcol, row, lrow))
+                print('  FAIL  %s m=%d: %s row l=%d, column %s l=%d: derived %s, kore %s (rel. %.1e)'
+                      % (kind, m, row, lrow, X, lcol, np.round(der, 8), np.round(can, 8), err))
+            else:
+                n_ok += 1
+        dl = int(kind[3:]) + 3 if kind.startswith('rot') else 4
+        print("  %s  %-4s m=%d column %s l=%d: the rows %s of l' = l-%d..l+%d against kore's blocks, worst %.1e (%.0f s)"
+              % ('ok  ' if worst <= 1e-11 else 'FAIL', kind, m, X, lcol, '/'.join(sorted({k[0] for k in out})), dl, dl, worst, dt),
+              flush=True)
+    print('  %d blocks agree' % n_ok)
 
-print('derive_diff.py: %s (%.0f s)' % ('ok' if not bad else 'FAIL: %s' % bad, time.time() - T0))
-sys.exit(1 if bad else 0)
+    print('C. the wall rows of centrifugal.wall_dissipative against the projected first-order traction and flux', flush=True)
+    for part, task, out, dt in sorted([x for x in RESULTS if x[0] == 'C'], key=lambda x: str(x[1])):
+        R, m, X, lcol = task
+        vals = {a: float(AMPF[a](np.array([R]))[0]) for a in 'ENCQK'}
+        vals.update({('lam', k): float(FUNS['lr'][k](np.array([R]))[0]) for k in range(1, 4)})
+        W = cf.wall_dissipative(m, LW, R, vals)
+        worst = 0
+        scale = max(abs(v) for v in out.values())
+        for (row, lrow), der in sorted(out.items()):
+            can = sum(complex(M[lrow, lcol])*float(FUNS[src[0]][int(src[1])](np.array([R]))[0])
+                      for (rw, src), M in W.items() if rw == row and src[0] == X)
+            err = abs(der - can)/scale
+            worst = max(worst, err)
+            if err > 1e-11:
+                bad.append('wall R=%g m=%d %s%d row %s%d' % (R, m, X, lcol, row, lrow))
+                print('  FAIL  R=%g m=%d: %s row l=%d, column %s l=%d: derived %s, kore %s' % (R, m, row, lrow, X, lcol, der, can))
+        print("  %s  R=%g m=%d column %s l=%d: the %s rows of l' = l-4..l+4, worst %.1e (%.0f s)"
+              % ('ok  ' if worst <= 1e-11 else 'FAIL', R, m, X, lcol, 'stress-free' if X in 'PT' else 'flux', worst, dt), flush=True)
+
+    print('D. the ICB row of the electric field (centrifugal.icb_electric) against the projected first-order field', flush=True)
+    for part, task, out, dt in sorted([x for x in RESULTS if x[0] == 'D'], key=lambda x: str(x[1])):
+        R, m, X, lcol = task
+        vals = {a: float(AMPF[a](np.array([R]))[0]) for a in 'ENCQK'}
+        vals.update({('lam', k): 0. for k in range(1, 4)})
+        W = cf.icb_electric(m, LW, R, vals)
+        worst = 0
+        scale = max(abs(v) for v in out.values()) or 1.   # (zero for m = 0 and F: δ𝐄 is azimuthal, toroidal, there)
+        for (row, lrow), der in sorted(out.items()):
+            can = sum(complex(M[lrow, lcol])*float(FUNS[X][d](np.array([R]))[0]) for (Xn, d), M in W.items() if Xn == X)
+            err = abs(der - can)/scale
+            worst = max(worst, err)
+            if err > 1e-11:
+                bad.append('icb R=%g m=%d %s%d row %d' % (R, m, X, lcol, lrow))
+                print('  FAIL  R=%g m=%d: row l=%d, column %s l=%d: derived %s, kore %s' % (R, m, lrow, X, lcol, der, can))
+        print("  %s  R=%g m=%d column %s l=%d: the ICB rows of l' = l-4..l+4, worst %.1e (%.0f s)"
+              % ('ok  ' if worst <= 1e-11 else 'FAIL', R, m, X, lcol, worst, dt), flush=True)
+
+    print('derive_diff.py: %s (%.0f s)' % ('ok' if not bad else 'FAIL: %s' % bad, time.time() - T0))
+    sys.exit(1 if bad else 0)
+
+if __name__ == '__main__':
+    main()

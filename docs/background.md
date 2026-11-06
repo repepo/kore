@@ -335,10 +335,10 @@ differential rotation adds to the heat equation. The advection of $s$ by the rot
 
 A rotating star or planet is flattened at the poles: its surfaces of constant density, pressure and entropy, its level
 surfaces, are oblate spheroids rather than spheres. `centrifugal = 1` gives the background this shape, at first order
-in the flattening: the walls and the level surfaces become spheroids, and the flow feels them through every term of its
-equations, the inertia, the Coriolis force, the buoyancy, the viscous force and the diffusion, the walls and a
-differential rotation, and with a magnetic field the Lorentz force, the induction and the matching at the walls. The
-equations are on [Centrifugal deformation](centrifugal-equations.md).
+in the flattening (exactly, for a homogeneous fluid, with `'spheroid'`): the walls and the level surfaces become
+spheroids, and the flow feels them through every term of its equations, the inertia, the Coriolis force, the buoyancy,
+the viscous force and the diffusion, the walls and a differential rotation, and with a magnetic field the Lorentz force,
+the induction and the matching at the walls. The equations are on [Centrifugal deformation](centrifugal-equations.md).
 
 **How kore does it.** kore keeps its spherical grid and its radial profiles, and solves in coordinates that follow the
 level surfaces. The radius $r$ labels the level surface that encloses the volume of the sphere of radius $r$; every
@@ -365,7 +365,7 @@ it.
 | `centrifugal` | 0 | 1 flattens the body |
 | `centrifugal_shape` | `'clairaut'` | how the flattening varies with the radius (below) |
 | `centrifugal_q` | 0.0 | $q = \Omega^2R^3/GM$ of the surface: the centrifugal over the gravitational acceleration at its equator. With any shape it also sets the effective gravity of the buoyancy |
-| `centrifugal_f` | None | the flattening of the outer wall, (equatorial − polar radius)/equatorial radius: the value of `'uniform'`, and for `'clairaut'` the scale of its shape in place of `centrifugal_q` |
+| `centrifugal_f` | None | the flattening of the outer wall, (equatorial − polar radius)/equatorial radius: the value of `'uniform'` and `'spheroid'`, and for `'clairaut'` the scale of its shape in place of `centrifugal_q` |
 | `centrifugal_profile` | `''` | `'user'`: the flattening $f(r)$ as a numpy expression ([below](#user-profiles)) |
 | `centrifugal_param` | 0.0 | `'user'`: `p` in `centrifugal_profile` |
 
@@ -374,12 +374,19 @@ it.
 | `'clairaut'` | the hydrostatic shape of the structure: Clairaut's equation with its gravity | `centrifugal_q`, or `centrifugal_f` |
 | `'uniform'` | the same at every radius, as in a homogeneous body | `centrifugal_f` |
 | `'user'` | any profile | `centrifugal_profile`, `centrifugal_param` |
+| `'spheroid'` | the same at every radius, kept exactly at any flattening | `centrifugal_f` |
 
 - `'clairaut'` derives the density from the gravity, so $g$ must be the gravity of the structure's own mass, as it is in
   `'model S hydrostatic'`, `'Wu 2005'` and `'Boussinesq'`. For `'Boussinesq'`, a homogeneous body, it gives
   $f = 5q/4$ at every radius (the Maclaurin spheroid). The gravity of `'model S hydrostatic'` ends at the outer wall,
   so for it kore applies the surface condition of Clairaut's equation at the wall, neglecting the mass above.
 - `submatrices.py` prints the flattening at the walls and, for `'clairaut'`, its ratio $f/q$ at the surface.
+- `'spheroid'` is the body of `'uniform'` without the first-order approximation: the walls and the level surfaces are
+  exact spheroids, for strong flattenings, or with $f < 0$ elongated bodies. It suits a homogeneous fluid in a
+  fast-rotating body or in a rigid container, such as a planet with a rigid mantle. It needs `'Boussinesq'` with uniform
+  diffusivities and `centrifugal_q` = 0, and kore stops with a magnetic field or a differential rotation; the buoyancy is
+  that of a homogeneous body in hydrostatic equilibrium. Its viscous terms couple degrees four apart
+  ([The exact spheroid](centrifugal-equations.md#the-exact-spheroid)).
 
 Typical values:
 
@@ -415,10 +422,11 @@ par.centrifugal_f     = 2.5e-3
 The deformation is complete at first order in $f$: the inertia, the Coriolis force and the buoyancy, the viscous force
 with no-slip or stress-free walls, the thermal diffusion with fixed-entropy or fixed-flux walls, a differential rotation,
 and with a field the Lorentz force, the induction and the magnetic diffusion, insulating walls and a conducting inner
-core, with any background field, poloidal or toroidal, in shells and in full spheres.
+core, with any background field, poloidal or toroidal, in shells and in full spheres. `'spheroid'` keeps the inertia, the
+Coriolis force, the buoyancy, the viscous force and the thermal diffusion, with all their walls, exactly.
 
-- `submatrices.py` warns about a flattening above 0.1, where the first order loses accuracy, and with `thermal_wind` 1
-  or 2: the thermal-wind entropy keeps the balance of the sphere, so that balance misses its terms of order
+- `submatrices.py` warns about a flattening above 0.1, where the first order loses accuracy (not with `'spheroid'`),
+  and with `thermal_wind` 1 or 2: the thermal-wind entropy keeps the balance of the sphere, so that balance misses its terms of order
   $f\thinspace\Delta\Omega$.
 - A viscous full sphere with $m \neq 0$ needs `rpower_v = 4`: the deformation gives its toroidal rows a term that is a
   polynomial in $r$ only once multiplied by $r^4$. kore stops and says so.
