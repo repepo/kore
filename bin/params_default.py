@@ -351,6 +351,8 @@ class default_params():
         self.mantle    = 'insulator'
         # self.mantle    = 'TWA'                 # NEW (2026-11-06, from conductive_IC): a thin conducting wall at the base of
         #                                        # an insulating mantle (c_cmb, c1_cmb, muw_cmb, B0_cmb below)
+        # self.mantle    = 'resolved'            # NEW (2026-11-06, from conductive_IC): a conducting layer from the outer
+        #                                        # wall to r_surface, its field solved for (r_surface, N_mantle, sigma_mantle)
 
         # NEW (2026-11-06, from conductive_IC): the thin conducting walls ('TWA', the thin-wall approximation of Roberts,
         # Glatzmaier & Clune 2010; docs/magnetic.md, Thin conducting walls): a layer of thickness h, conductivity sigma_w and
@@ -376,6 +378,18 @@ class default_params():
         #   'plain': h unchanged; B0 then meets the wall condition only for p = 1 and mu = 1, or c = 0 and mu = 1.
         self.B0_cmb = 'wall'
         # self.B0_cmb = 'plain'
+
+        # NEW (2026-11-06, from conductive_IC, after PR #17 by A. Nuyt): the resolved conducting mantle (mantle = 'resolved'), a
+        # layer from the outer wall (r = 1) to r_surface, insulating beyond, at rest (with a differential rotation it turns with
+        # ΔΩ(1), uniform in latitude there), whose field is expanded in N_mantle Chebyshev polynomials on [1, r_surface]
+        # (docs/magnetic.md, Resolved conducting mantle). Unlike the thin wall it holds for any thickness and frequency, and
+        # for any smooth conductivity profile that N_mantle resolves (background.check_mantle stops otherwise). Needs mu = 1.
+        self.r_surface = 1.83   # outer radius of the layer; 1.83 is the whole mantle of the Earth
+        self.N_mantle  = 64     # Chebyshev polynomials in the layer
+        # the layer's conductivity relative to the fluid's: a number (a uniform layer), or a numpy expression of r and
+        # p = sigma_mantle_param with the names of the 'user' profiles, e.g. '1e-2*exp(-p*(r - 1))'
+        self.sigma_mantle = 1.0
+        self.sigma_mantle_param = 0.0
 
         # NEW (2026-10-28): innercore = 'conducting, Chebys' only (as conductive_IC)
         # (the inner-core field has the degrees of the fluid's, up to lmax: conductive_IC's lmax_cic is not ported, its ICB

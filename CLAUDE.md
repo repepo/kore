@@ -55,9 +55,9 @@ copies `params_default.py` and `parameters.py` to `../run` and moves the outputs
 Outputs: `real_flow.field`, `imag_flow.field` (and `*_thermal.field`, `*_magnetic.field`), one column per solution,
 eigenvectors normalised to kinetic energy 1 (KE + Hendrik·ME = 1 with `magnetic = 1`; ME + TE = 1 without the flow,
 `hydro = 0`); `eigenvalues0.dat` (this solve: Re λ, Im λ); `timing.dat`. `spin_doctor` appends to `eigenvalues.dat`,
-`params.dat` (122 columns, and a `#` note on rows that need one, §10), `flow.dat` (28), `thermal.dat` (7),
-`magnetic.dat` (11; 12 with `centrifugal = 1`, 16 with a thin wall). A conducting inner core adds
-`*_magnetic_ic.field`. A `params.dat` from an older version has fewer columns: start a new one. `python3 bin/units.py` prints a run's eigenvalues as ω, σ in nHz.
+`params.dat` (127 columns, and a `#` note on rows that need one, §10), `flow.dat` (28), `thermal.dat` (7),
+`magnetic.dat` (11; 12 with `centrifugal = 1`, 16 with a thin wall or a resolved mantle). A conducting inner core adds
+`*_magnetic_ic.field`, a resolved mantle `*_magnetic_mantle.field`. A `params.dat` from an older version has fewer columns: start a new one. `python3 bin/units.py` prints a run's eigenvalues as ω, σ in nHz.
 
 ## 3. File map
 
@@ -69,7 +69,7 @@ eigenvectors normalised to kinetic energy 1 (KE + Hendrik·ME = 1 with `magnetic
 | `params_default.py` | every parameter with long comments (the best parameter reference), `set_scales`, `check_names` (warns about names that kore does not define), solver options `petsc_opts`, `prescale`, `drop_tol` |
 | `units.py` | physical units for parameter files and scripts (kore itself never imports it): `set_physical` (Gaspard, Beyonce, ViscosD, ThermaD, `diff_rot_frame` from cgs values), `set_target` (`itau`, `rtau` from ω, σ in nHz), `nHz`; as a script, prints a run's eigenvalues in nHz |
 | `utils.py` | globals (`N1`, `n`, `sizmat`, `symm1`, `adiab_tw`, `odd_profiles`...), `dr_offd`, label decoding, Chebyshev transforms (`chebco_f`, `funcheb`, `fonzie`, `angine`), Gegenbauer matrices `Dlam`, `Slam`, `Mlam`, parity `remroco`, `ell`, erf profiles (`erf_top_hat`, `erf_top_hat_odd`, `erf_box`), `Ylm`, `load_npz_mmap` |
-| `background.py` | the background besides the rotation (§6): the type names `STRUCTURES`, `STRATIFICATIONS`, `DIFFUSIVITIES` (their order is the index written to `params.dat`), `check()` (stops on unknown, removed (`REMOVED`) or impossible settings; `check_magnetic()` for `magnetic = 1`, with the names `MAG_COUPLINGS`, `B0_ICS`, `FERRARO_POLICIES`; `check_centrifugal()` for `centrifugal = 1`), the Ferraro check (`ferraro_mismatch`, `ferraro_report`, `magnetic_diffrot`), dS/dr (`gradS`), ν, κ and η (`diffusivity`), the 'user', 'general' and 'ferraro' expressions and their `description()` for `params.dat` |
+| `background.py` | the background besides the rotation (§6): the type names `STRUCTURES`, `STRATIFICATIONS`, `DIFFUSIVITIES` (their order is the index written to `params.dat`), `check()` (stops on unknown, removed (`REMOVED`) or impossible settings; `check_magnetic()` for `magnetic = 1`, with the names `MAG_COUPLINGS`, `B0_ICS`, `FERRARO_POLICIES`; `check_centrifugal()` for `centrifugal = 1`; `check_twa()`, `check_mantle()` for the thin walls and the resolved mantle), the resolved mantle's σ (`sigma_mantle`, `dlnsigma_mantle`, `mantle_conductance`), the Ferraro check (`ferraro_mismatch`, `ferraro_report`, `magnetic_diffrot`), dS/dr (`gradS`), ν, κ and η (`diffusivity`), the 'user', 'general' and 'ferraro' expressions and their `description()` for `params.dat` |
 | `background_field.py` | the imposed magnetic field B0 (`magnetic = 1`, §4): `B0_TYPES` ('axial', 'FDM', 'G21 dipole', 'Luo_S1', 'Luo_S2', 'confined', 'general', 'ferraro'; the polynomial ones in `POLY`, `B0_beta_ic`), `B0_TOR_TYPES`, `symmB0`, `B0_l`, the FDM root `findbeta`, h and its derivatives `h(r, k)` (`jl_k` at ricb = 0), k(r, d), the 'general' interpolants (`gen_profile`), the 'ferraro' projection (`ferraro_profile`, `ferraro_cnorm`), the wound field (`wound_profiles`, `wound_residual`), `cnorm` (`B0_norm`), `cnorm_tor` (with `cnorm_error`, `cnorm_tor_error` for check_magnetic), the profiles `bpoX`, `btoX` and, degree by degree, `pol_profiles`, `tor_profiles`; numpy and scipy only |
 | `mag_algebra.py` | the Lorentz and induction couplings for any background degree from the recurrence algebra of `angular.py` (`mag_couplings = 'algebra'`, forced for 'general', 'ferraro' and `B0_wound`): `coefficients`, `labels` (profile codes `hp`/`kt` + degree), `block`, `dl_range` |
 | `radial_profiles.py` | one class per structure (`wu2005_profiles`, `eight_term_profiles`, `modelS_profiles`, `modelS_hydrostatic_profiles`, `boussinesq_profiles`, on a base class `structure` that takes dS/dr, ν and κ from `background.py`), the dict `structures` and the instance `prf`; the `*X(r, Dorder)` derivative helpers; `proffdir` (label code → function); `burrito` (the integrand of one operator) |
@@ -79,12 +79,12 @@ eigenvectors normalised to kinetic energy 1 (KE + Hendrik·ME = 1 with `magnetic
 | `submatrices.py` | builds the list of labels (with `diff_rot.labels()`), computes each unique operator in parallel, writes them all to `submatrices.npz` (`submatrix_io.write`, with the parameters; `<label>.mtx` too with `write_mtx = 1`); calls `par.check_names()` and `diff_rot.check()` |
 | `submatrix_io.py` | the operator file `submatrices.npz`: `write`, `read`, `check` (stops when the run's parameters differ from those the operators were built with, all but `OPERATOR_INDEPENDENT` and `rsf_*`); numpy and scipy only |
 | `operators.py` | loads `submatrices.npz` (after `submatrix_io.check`), each operator as a global named by its label; physics functions `inertia`, `coriolis`, `viscous_diffusion`, `buoyancy`, `differential_rotation`, `entropy`, `thermal_advection`, `thermal_diffusion`, `thermal_diffrot` (the diff-rot ones return `diff_rot.momentum_block`, `heat_block`), for `magnetic = 1` `lorentz`, `b`, `induction`, `magnetic_diffusion`, and for `centrifugal = 1` `centrifugal_inertia`, `centrifugal_coriolis`, `centrifugal_entropy`, `centrifugal_magnetic` (they return `centrifugal.momentum_block`, `entropy_block`, `magnetic_block`) |
-| `assemble.py` | MPI over l; places the blocks (the diff-rot Δl from `diff_rot.dl_range`), boundary-condition rows (`bc_u_spherical`, `bc_theta_spherical`; the field's `bc_b_spherical`, with thin walls `bc_b_twa` and `bc_b_slip`), forcings 6, 7, 9, 10, 11; normalises A, B by ‖A‖ (eigen); `gather_csr` |
+| `assemble.py` | MPI over l; places the blocks (the diff-rot Δl from `diff_rot.dl_range`), boundary-condition rows (`bc_u_spherical`, `bc_theta_spherical`; the field's `bc_b_spherical`, with thin walls `bc_b_twa` and `bc_b_slip`, the resolved mantle `bc_b_mantle`), forcings 6, 7, 9, 10, 11; normalises A, B by ‖A‖ (eigen); `gather_csr` |
 | `reynolds_stress.py` | forcing 11: random Reynolds-stress body force f = ρ₀⁻¹∇·(ρ₀ s), the fluctuation-dissipation partner of the viscous force; `rhs(nsamp, seed)` gives one realisation per column of B_forced (docstring: physics, discretisation, normalisation) |
 | `bc_variables.py` | Chebyshev values/derivatives at the walls (`Ta`, `Tb`) and ln ρ₀ and its first two derivatives there (`lha*`, `lhb*`) |
 | `solve.py` | reads its own rows of A, B (memory-mapped), optional Ruiz scaling, SLEPc/KSP, KE normalisation, writes fields |
-| `just_induction.py`, `solve_ind.py` | NEW 2026-11-06 (from conductive_IC): kinematic induction, the field a given flow (real/imag_flow.field) induces: (A_bb − λ B_bb) b = −A_bu u from A.npz, B.npz of a magnetic eigen assembly (λ the argument, default i forcing_frequency) → A_ind.npz, u_ind.npz; solve_ind.py (MPI, KSP LU) writes real/imag_magnetic(_ic).field |
-| `utils4pp.py` | post-processing: solution expansion, velocity/curl l-components, per-l workers (`flow_worker`, `thermal_worker`), `diff_rot_setup`, `diagnose`, `kinetic_energy`, `identify`, `centrifugal_terms` (the metric parts of KE, the Coriolis power and TE with `centrifugal = 1`), `centrifugal_magnetic_energy`, `centrifugal_magnetic_terms` (with a field: MEc, the metric Lorentz and induction work, the potential field on the deformed walls), `centrifugal_dissipation_terms` (phase 2: the metric parts of the viscous power, the work of ΔΩ and the thermal dissipation); thin walls `twa_budget`, `slip_lapF`, `twa_error`, `slipping_walls` (2026-11-06) |
+| `just_induction.py`, `solve_ind.py` | NEW 2026-11-06 (from conductive_IC): kinematic induction, the field a given flow (real/imag_flow.field) induces: (A_bb − λ B_bb) b = −A_bu u from A.npz, B.npz of a magnetic eigen assembly (λ the argument, default i forcing_frequency) → A_ind.npz, u_ind.npz; solve_ind.py (MPI, KSP LU) writes real/imag_magnetic(_ic, _mantle).field |
+| `utils4pp.py` | post-processing: solution expansion, velocity/curl l-components, per-l workers (`flow_worker`, `thermal_worker`), `diff_rot_setup`, `diagnose`, `kinetic_energy`, `identify`, `centrifugal_terms` (the metric parts of KE, the Coriolis power and TE with `centrifugal = 1`), `centrifugal_magnetic_energy`, `centrifugal_magnetic_terms` (with a field: MEc, the metric Lorentz and induction work, the potential field on the deformed walls), `centrifugal_dissipation_terms` (phase 2: the metric parts of the viscous power, the work of ΔΩ and the thermal dissipation); thin walls `twa_budget`, `slip_lapF`, `twa_error`, `slipping_walls`, the resolved mantle `mantle_budget` (2026-11-06) |
 | `spin_doctor.py` | runs the diagnostics per solution, prints the table, writes `params.dat` (`param_table`, `row_note`), `flow.dat`, `thermal.dat` |
 | `ru_insane.py` | operator symmetry and diff-rot block tests (see its docstring) |
 | `diff_rot.py` | the differential rotation (§8): the shapes fₙ of every type and their fits, the thermal-wind σₙ, the angular couplings of the momentum and heat terms, the labels, blocks and Δl ranges |
@@ -139,6 +139,15 @@ the insulating row (to round-off); `bc_b_slip` (`ut.twa_slips`: stress-free or V
 u×B0 by condition C.I (G′ → G′ − r S_l/η, D F → D F + r² X_l/(L η)) for any poloidal B0 through `angular.Algebra`
 (conductive_IC: one degree). `background_field.B0_alpha_cmb`: B0_cmb 'wall' adds α r^l to h (`h` wraps `_h`). A thin wall
 co-rotates: ΔΩ uniform in latitude there (`diff_rot.rigid_at`). mu ≠ 1 only with thin walls or a conducting IC at every wall.
+Resolved conducting mantle (2026-11-06, conductive_IC port phase 4, after PR #17 by A. Nuyt): `mantle = 'resolved'`
+(`r_surface`, `N_mantle`, `sigma_mantle` a number or an expression of r, p = `sigma_mantle_param`; `background.check_mantle`
+stops on an unresolved profile, mu ≠ 1, centrifugal, bco = 2). Sections `fm`, `gm` last (after fic, gic), N_mantle
+Chebyshev coefficients on [1, r_surface] per l (`ut.nman` per section); rows divided by η = 1/σ: B = L r²σ, A = −MagnetD L r²
+∇²_l (g: − r²(ln σ)′ D1 − r (ln σ)′), operators `*_man` built in submatrices.py; `assemble.bc_b_mantle`: f = fm, (rf)′ =
+(r fm)′, g = gm, σ(1)(rg)′ = (r gm)′ on the outer rows of f, g and row 0 of fm, gm, r fm′ + (l+1) fm = 0, gm = 0 at
+r_surface (row 1); a slipping fluid (`ut.mantle_slips`) adds σ(1)×(the thin wall's G′ term) through `bc_b_slip(...,
+factor=σ(1))`. With diff_rot the layer co-rotates with ΔΩ(1) (rigid_at; Doppler −i m G c b). Budget: `upp.mantle_budget`
+(E_w, Ohm_w = ∫|∇×b|²/σ, MEext beyond r_surface), exact; INDU_ROT_SOLID includes it.
 2026-10-30: with `diff_rot = 1` the induction gains ∇×(U0×b) (`diff_rot.induction_block`, any ΔΩ, same algebra as the force;
 a conducting inner core must co-rotate rigidly, `diff_rot.rigid_ricb`; `background.ferraro_mismatch` reports B0⋅∇Ω and
 `par.ferraro_policy` 'warn'/'refuse' (a parameter since 2026-11-03, formerly the constant `background.FERRARO_POLICY`);
@@ -418,8 +427,8 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   resid𝐛: 2σME − Indu − Mdfs = 0 in the fluid, and resid𝐄 the full energy budget with the inner core, the outside
   potential field and the Ohmic losses (`upp.em_budget`; impenetrable walls: with a slipping fluid the u×B0 wall flux
   comes from the grid, `upp.INDU_WALLS`, 2026-11-06; thin walls add E_w, Ohm_w (`upp.twa_budget`, `slip_lapF`), exact for
-  c = 0 and O(c c1) ≈ εTWA (`upp.twa_error`) otherwise; a conducting solid turning with ΔΩ keeps its U0×b flux,
-  `upp.INDU_ROT_SOLID`) (`upp.diagnose_magnetic`, Boussinesq Lorentz and induction terms ported
+  c = 0 and O(c c1) ≈ εTWA (`upp.twa_error`) otherwise; a resolved mantle adds its E_w, Ohm_w (`upp.mantle_budget`),
+  exact; a conducting solid turning with ΔΩ keeps its U0×b flux, `upp.INDU_ROT_SOLID`) (`upp.diagnose_magnetic`, Boussinesq Lorentz and induction terms ported
   from conductive_IC; ME = ½∫|b|², no Hendrik, as conductive_IC; Mag/Kin = Hendrik ME/KE since 2026-11-06, in KE units as conductive_IC 7660861). residω is O(1) for real
   eigenvalues (m = 0, ω = 0): all its terms are round-off there.
 - These residuals, not the eigenvalue alone, judge resolution: compare with a higher-N run; for thermal runs the
@@ -524,6 +533,11 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
 - `tests/twa/` (README, `run_all.sh`, ~1 min; NEW 2026-11-06): `twa_check.py` (thin walls: hydro = 0 free decay against
   the exact thin-wall rates; with the flow against conductive_IC 2d84351 eigenvalues hard-coded for N 48, lmax 20/19 on 2
   ranks; c = c1 = 0 equals insulating; the rigid offset with turning walls; resid𝐄 with sheared walls).
+- `tests/mantle/` (README, `run_all.sh`, ~1.5 min; NEW 2026-11-06): `mantle_check.py` (the resolved mantle: hydro = 0
+  free decay against exact rates, Bessel functions or DOP853 in the layer, uniform, exponential, full sphere, conducting
+  IC; with the flow against conductive_IC 2d84351 eigenvalues hard-coded for N 48, lmax 19-21 on 2 ranks; a thin layer
+  tends to 'TWA' (c = h, c1 = σh) at O(h); σ = 1e-9 equals insulating; 'Wu 2005' rigid offset and sheared rotation
+  resid𝐄; just_induction with the layer's field).
 - `tests/forcing/` (README, `run_all.sh`, ~20 s; NEW 2026-11-06): `rows_check.py` (forcings 6 at a no-slip and a
   stress-free ICB, 7 with m = 0 and 2, 9 Boussinesq, 'Wu 2005' and full sphere, 10: the wall values read back from the
   solution of small forced runs built with `tests/tidal/mk_run.py`, to 1e-10 of the amplitude).
@@ -591,7 +605,10 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
 
 ## 14. History (this branch, newest first)
 
-The conductive_IC port, phase 3 (2026-11-06): thin conducting walls (mantle, innercore 'TWA') with the slipping-fluid
+The conductive_IC port, phase 4 (2026-11-06): the resolved conducting mantle (`mantle = 'resolved'`, sections fm, gm,
+any smooth σ(r), the slipping-fluid term, co-rotation with ΔΩ(1), its energy and Ohmic loss in resid𝐄; `tests/mantle/`;
+params.dat columns 123-127, magnetic.dat 12-16 with it);
+`e23afcb` The conductive_IC port, phase 3 (2026-11-06): thin conducting walls (mantle, innercore 'TWA') with the slipping-fluid
 terms for any poloidal B0, B0_cmb, εTWA, the wall energies in resid𝐄; resid𝐄 also for stress-free impenetrable walls,
 and fixed for a conducting inner core turning with ΔΩ (`tests/twa/`; params.dat columns 114-122, magnetic.dat 12-16);
 `be668dd` the conductive_IC port, phase 2: `hydro = 0`, the field (or the entropy) without the flow, its free decay

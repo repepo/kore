@@ -11,6 +11,7 @@ import radial_profiles as rap
 import angular
 import diff_rot as dr
 import background_field as bf
+import background as bg   # NEW (2026-11-06): the conductivity of the resolved mantle (mantle_budget)
 import centrifugal as cf   # NEW (2026-11-05)
 
 
@@ -1817,7 +1818,7 @@ def ohmic_dissip_tor(l, tlm0, tlm1):
 
 
 
-def em_budget(bsol, bic=None, usol=None):
+def em_budget(bsol, bic=None, usol=None, bman=None):
     '''
     NEW (2026-10-28): the terms of the magnetic energy budget that the fluid-only resid𝐛 leaves out, ported from conductive_IC's
     em_budget for an insulating mantle and an insulating or conducting ('conducting, Chebys') inner core:
@@ -1836,6 +1837,8 @@ def em_budget(bsol, bic=None, usol=None):
     The field beyond the wall follows from the wall conditions (assemble.bc_b_twa), so no derivative beyond the second is
     needed. usol (the flow, expand_reshape_sol): with the fluid slipping along a thin wall, the wall's poloidal current takes
     the radial induction of the slip (slip_lapF), as the wall rows do. Assumes mu = 1 with thin walls.
+    NEW (2026-11-06): with the resolved mantle (mantle = 'resolved'; bman, its part of the solution vector) E_w and Ohm_w are
+    the layer's ½ ∫ |𝐛|² and ∫ |∇×𝐛|²/sigma (mantle_budget), and ME_ext the potential field beyond r_surface (nan without bman).
     Needs setup_grid (the fluid's quadrature grid).
     '''
     r_i, r_o = par.ricb, ut.rcmb
@@ -1862,6 +1865,8 @@ def em_budget(bsol, bic=None, usol=None):
     E_w = Ohm_w = 0.0   # NEW (2026-11-06): thin walls
     if ut.twa_o:
         ME_ext, E_w, Ohm_w = twa_budget(bsol, 'outer', bvals, usol)
+    elif ut.resolved_mantle:   # NEW (2026-11-06)
+        E_w, Ohm_w, ME_ext = mantle_budget(bman) if bman is not None else (np.nan, np.nan, np.nan)
     else:
         f = bvals(bsol[0], 0, 1.0)[0]
         ME_ext = np.sum( f0p*Lp*lp*np.abs(f)**2 ) * r_o   # potential field r^-(l+1) beyond r_o (F = r f there, r_o = 1)
@@ -1905,6 +1910,41 @@ def em_budget(bsol, bic=None, usol=None):
         ME_ic = Ohm_ic = np.nan
 
     return [ Ohm_f, ME_ic, Ohm_ic, ME_ext, E_w, Ohm_w ]
+
+
+
+def mantle_budget(bman):
+    '''
+    NEW (2026-11-06, conductive_IC's mantle_budget): [ME_m, Ohm_m, ME_ext] of the resolved mantle (mantle = 'resolved') from bman,
+    its part of one solution vector (N_mantle Chebyshev coefficients on [1, r_surface] per l, fm then gm), in the units of
+    em_budget: ½ ∫ |𝐛|² and ∫ |∇×𝐛|²/sigma over the layer, and the energy of the potential field r^-(l+1) beyond r_surface. The
+    integrands are those of a conducting inner core (em_budget).
+    '''
+    Nm = par.N_mantle; nb = int((par.lmax - par.m + 1)/2)
+    R1, R2 = ut.rcmb, par.r_surface
+    lpm, ltm = ut.ell(par.m, par.lmax, ut.bsymm)[:2]
+    xg, wg = np.polynomial.legendre.leggauss(max(2*Nm, 64))
+    rm = R1 + 0.5*(R2 - R1)*(xg + 1); wm = 0.5*(R2 - R1)*wg
+    eta = 1/bg.sigma_mantle(rm)
+    def mfun(a, nd):   # the radial function and its first nd r-derivatives on rm
+        cc = np.array(a, dtype=complex); out = []
+        for j in range(nd+1):
+            out.append(ch.chebval(xg, cc)); cc = ch.chebder(cc)*2/(R2 - R1)
+        return out
+    ME_m = Ohm_m = ME_ext = 0.0
+    for k, l in enumerate(lpm):
+        L = l*(l+1.); a0 = 4*np.pi/(2*l+1)
+        a = bman[k*Nm:(k+1)*Nm]
+        f, f1, f2 = mfun(a, 2)
+        ME_m   += np.sum( wm*a0*rm**2*( np.abs(L*f/rm)**2 + L*np.abs(f1 + f/rm)**2 ) )
+        Ohm_m  += np.sum( wm*eta*2*a0*L*rm**2*np.abs(f2 + 2*f1/rm - L*f/rm**2)**2 )
+        ME_ext += a0*L*l*R2*np.abs(np.sum(a))**2   # f(r_surface) is the sum of the coefficients
+    for k, l in enumerate(ltm):
+        L = l*(l+1.); a0 = 4*np.pi/(2*l+1)
+        g, g1 = mfun(bman[nb*Nm + k*Nm: nb*Nm + (k+1)*Nm], 1)
+        ME_m   += np.sum( wm*a0*rm**2*L*np.abs(g)**2 )
+        Ohm_m  += np.sum( wm*eta*2*a0*L*( L*np.abs(g)**2 + np.abs(rm*g1 + g)**2 ) )
+    return [ ME_m, Ohm_m, ME_ext ]
 
 
 
@@ -2410,7 +2450,7 @@ def magnetic_powers_grid(walls_only=False):
     global INDU_WALLS, INDU_ROT_SOLID
     INDU_WALLS = 2*np.real(walls[1] - (walls[0] if par.ricb > 0 else 0))   # no inner wall in a full sphere
     # NEW (2026-11-06): the U0×b part at a wall with a turning conducting solid behind it (INDU_ROT_SOLID)
-    solid = [ par.ricb > 0 and (ut.cic or ut.twa_i), ut.twa_o ]
+    solid = [ par.ricb > 0 and (ut.cic or ut.twa_i), ut.twa_o or ut.resolved_mantle ]   # (NEW 2026-11-06: the resolved mantle)
     if par.diff_rot and any(solid):
         Er = cross(rotation(rw), bw)
         rot = 2*np.pi*np.sum(wx[None, :]*(Er[1]*np.conj(bw[2]) - Er[2]*np.conj(bw[1]))*(rw**2)[:, None], axis=1)

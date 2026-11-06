@@ -61,6 +61,20 @@ def twa_slips(wall):
     on, b, c1 = (twa_o, par.bco, par.c1_cmb) if wall == 'outer' else (twa_i, par.bci, par.c1_icb)
     return bool(on and par.hydro and par.B0 is not None and (b == 0 or par.ViscosD == 0) and c1 != 0)
 
+# NEW (2026-11-06, from conductive_IC): the resolved conducting mantle (mantle = 'resolved'), whose field on [1, r_surface] is
+# part of the unknowns: N_mantle Chebyshev coefficients per l (all of them, the layer is a shell), in the sections fm (poloidal)
+# and gm (toroidal), with the l's of f and g, after the inner core's (conductive_IC's sections p, q)
+resolved_mantle = int(bool(par.magnetic and par.mantle == 'resolved'))
+nman   = int(par.N_mantle*(par.lmax-par.m+1)/2) if resolved_mantle else 0
+
+def mantle_slips():
+    '''
+    NEW (2026-11-06): whether the fluid slips along the resolved mantle (mantle = 'resolved'), whose electric-field row then
+    takes u×B0 (assemble.bc_b_mantle): a flow (hydro = 1), a poloidal B0, and a stress-free outer wall (bco = 0) or an
+    inviscid fluid (ViscosD = 0)
+    '''
+    return bool(resolved_mantle and par.hydro and par.B0 is not None and (par.bco == 0 or par.ViscosD == 0))
+
 # NEW (2026-11-06): the power of r of the g rows (r̂⋅∇× of the induction equation): 2, and 3 in a full sphere when the metric
 # part of the magnetic diffusion of the deformed body is on (centrifugal = 1, a deformation, m != 0), which has a term F/r
 # there (centrifugal.py, section 6): with r² that row would not be a polynomial in r (r = 0 is in the domain)
@@ -77,13 +91,16 @@ rpower_gic = 3 if (_mdiff and cic) else 2
 # this gives the size (rows or columns) of the main matrices
 # NEW (2026-11-06): without the flow (hydro = 0, as conductive_IC) the sections u, v are left out
 sizmat = 2*n*par.hydro + n*par.thermal + 2*n*par.magnetic + 2*nic  # NEW (2026-10-28): + the magnetic field (+ inner core)
+sizmat += 2*nman   # NEW (2026-11-06): + the field of a resolved mantle
 
 # NEW (2026-10-28): first row (and column) of each section in A and B: P, T, s, then f, g after s, then fic, gic, so that
 # the flow and the entropy keep their places and non-magnetic matrices are unchanged. NEW (2026-11-06): with hydro = 0
-# there are no sections u, v and the others start 2n earlier
+# there are no sections u, v and the others start 2n earlier; the resolved mantle's fm, gm come last
 _h = 2*n*par.hydro
 offset = { 'u': 0, 'v': n, 'h': _h, 'f': _h + par.thermal*n, 'g': _h + (1 + par.thermal)*n,
            'fic': _h + (2 + par.thermal)*n, 'gic': _h + (2 + par.thermal)*n + nic }
+offset['fm'] = offset['gic'] + nic
+offset['gm'] = offset['fm'] + nman
 
 # ThermaD = 0 with the thermal-wind advection (docs/differential_rotation_details.md §7.2): the section-h rows are r² (eq)/p instead of
 # r (eq)/p, in the C^(1) basis (u_θ has P'), still without thermal bc rows; the thermal-wind profiles are then σn, σn'

@@ -224,13 +224,14 @@ latitude, or the run stops. The method of each set-up is on
 
 ## Inner core and walls
 
-The perturbation field is matched at each wall to the field beyond it. The mantle is an electrical insulator, with or
-without a thin conducting layer at its base, so above it the field is a potential field. The inner core is an insulator
-(again with or without a thin conducting layer), or a conductor whose field kore then solves for together with the rest.
+The perturbation field is matched at each wall to the field beyond it. The mantle is an electrical insulator, possibly
+with a conducting layer at its base: a thin one, described by conditions at the wall alone, or one of any thickness whose
+field kore solves for. Beyond the conducting parts the field is a potential field. The inner core is an insulator (again
+with or without a thin conducting layer), or a conductor whose field kore then solves for together with the rest.
 
 | setting | values (default) | notes |
 | --- | --- | --- |
-| `mantle` | `'insulator'` (default) or `'TWA'` | `'TWA'`: a thin conducting wall at the base of the mantle (below) |
+| `mantle` | `'insulator'` (default), `'TWA'` or `'resolved'` | `'TWA'`: a thin conducting wall at the base of the mantle; `'resolved'`: a conducting layer of any thickness (both below) |
 | `innercore` | `'insulator'` (default), `'conducting, Chebys'` or `'TWA'` | need `ricb > 0`; conducting: a no-slip inner wall (`bci = 1`); `'TWA'`: a thin conducting wall on an insulating inner core |
 | `N_cic` | 64 | Chebyshev polynomials of the inner-core field (even, at least 4) |
 | `mu_i2o` | 1.0 | magnetic permeability, inner core over fluid |
@@ -276,6 +277,33 @@ of its effect.
 
 The conditions and their checks: [Magnetic field equations](magnetic-equations.md#thin-conducting-walls).
 
+### Resolved conducting mantle
+
+A thin wall stands for a layer much thinner than the depth to which the field of a mode enters it, its magnetic skin
+depth. A thicker or better conducting layer, or a slower mode, needs the field inside the layer itself:
+`mantle = 'resolved'` puts a conducting layer between the outer wall and `r_surface`, with an insulator beyond, and solves
+for its field together with the rest. The layer is solid and at rest, and its conductivity may vary with radius.
+
+| setting | default | meaning |
+| --- | --- | --- |
+| `r_surface` | 1.83 | outer radius of the layer, the outer wall being at 1 (1.83 is the whole mantle of the Earth) |
+| `N_mantle` | 64 | Chebyshev polynomials of the layer's field (at least 4) |
+| `sigma_mantle` | 1.0 | conductivity of the layer relative to the fluid's: a number, or a numpy expression of `r` and `p` such as `'1e-2*exp(-p*(r - 1))'` |
+| `sigma_mantle_param` | 0.0 | the `p` of that expression |
+
+- **Resolution.** The run stops if `N_mantle` polynomials do not resolve the conductivity profile; a step or a kink is
+  never resolved, so smooth it. The field in the layer needs enough of them too, which a second run with a larger
+  `N_mantle` shows.
+- **A fluid slipping along the layer** (`bco = 0` or `ViscosD = 0`) gets the same terms as along a thin wall, with the
+  layer's conductivity at the wall.
+- **With a differential rotation** the layer turns with the fluid at the outer wall, so the rotation must be uniform in
+  latitude there: the run stops otherwise.
+- **A thin layer** of thickness h and conductivity σ tends to the thin wall with `c_cmb` = h and `c1_cmb` = σh as h
+  decreases.
+- The layer and the fluid have the permeability of vacuum (`mu = 1`).
+
+The equations and their checks: [Magnetic field equations](magnetic-equations.md#resolved-conducting-mantle).
+
 ## The field without the flow
 
 Two tools leave the flow out: one checks the walls and the inner core against exact results, the other gives the field
@@ -302,8 +330,8 @@ mpiexec -n 4 ./bin/solve_ind.py
 
 The flow varies as $e^{\lambda t}$: `lambda` is the optional argument, a complex number such as the eigenvalue of a mode,
 and its default is $i\,$`forcing_frequency`, the time dependence of the forced runs (a steady flow when it is 0). The
-field is written as `real_magnetic.field`, `imag_magnetic.field` (and the inner core's files with a conducting inner
-core), one column per column of the flow.
+field is written as `real_magnetic.field`, `imag_magnetic.field` (and the files of a conducting inner core or of a
+resolved mantle), one column per column of the flow.
 
 ## What is supported
 
@@ -311,7 +339,8 @@ kore checks the combination of options at startup and stops on any it cannot han
 
 Supported: a shell or a full sphere (`ricb = 0`); any `structure`; eigenvalue problems; with or without a differential
 rotation; `ViscosD > 0`, or `ViscosD = 0` in a full sphere; with or without the flow (`hydro = 0`, above); insulating
-walls, thin conducting walls or a conducting inner core. The magnetic diffusivity is uniform.
+walls, thin conducting walls, a resolved conducting mantle or a conducting inner core. The magnetic diffusivity of the
+fluid is uniform.
 
 Not supported (the run stops at startup):
 
@@ -325,14 +354,18 @@ Not supported (the run stops at startup):
   with `B0_wound = 1`;
 - negative `c_cmb`, `c1_cmb`, `c_icb` or `c1_icb`, a `muw_cmb`, `muw_icb` or `mu` that is not positive, or `mu` other
   than 1 without a thin wall or a conducting inner core at every wall;
+- a resolved mantle with `mu` other than 1, with `centrifugal = 1`, with a flow through the outer wall (`bco = 2`), or
+  with a rotation that varies with latitude at the outer wall; an `r_surface` that is not above 1, an `N_mantle` that is
+  not an integer of at least 4, or a `sigma_mantle` that is not positive everywhere in the layer or that `N_mantle`
+  polynomials do not resolve;
 - a poloidal and a toroidal part of opposite equatorial symmetry;
 - the limits of the options above:
     - degrees other than 1 or 2 for `'FDM'`, `'confined'` and `B0_tor_l`, and `'Malkus'` of degree 2 in a full sphere;
     - a `'confined'` layer that is empty or does not lie in the fluid, or `B0_conf_p` below 3;
     - `B0_tor = 'user'` without `B0_tor_profile`, or `'general'` without profiles or with degrees that are not positive
       integers of one parity;
-    - an expression (`B0_tor_profile`, `B0_profiles`, `B0_tor_profiles`, `B0_ferraro_G`, `diff_rot_F`) that is empty or
-      contains `#`;
+    - an expression (`B0_tor_profile`, `B0_profiles`, `B0_tor_profiles`, `B0_ferraro_G`, `diff_rot_F`,
+      `sigma_mantle`) that is empty or contains `#`;
     - a `cnorm` other than a number, `'rms_cmb'`, `'mag_energy'` or `'Schmitt2012'`, or `'rms_cmb'` with `'confined'`,
       `'general'` or `'ferraro'`; a `cnorm_tor` other than a number, `'mag_energy'` or `'Schmitt2012'`;
     - `B0 = 'ferraro'` without `diff_rot = 1`, with `diff_rot_type = 'ferraro'`, or with `B0_ferraro_nmax` even or
@@ -350,13 +383,14 @@ A magnetic run writes the perturbation field next to the flow, and spin_doctor c
 budgets.
 
 `solve.py` writes `real_magnetic.field` and `imag_magnetic.field` (and `real_magnetic_ic.field`,
-`imag_magnetic_ic.field` for a conducting inner core). Each eigenvector is normalised so that the kinetic energy plus
-`Hendrik` times the magnetic energy is 1 in the fluid (the magnetic energy alone without the flow, `hydro = 0`).
+`imag_magnetic_ic.field` for a conducting inner core, `real_magnetic_mantle.field`, `imag_magnetic_mantle.field` for a
+resolved mantle). Each eigenvector is normalised so that the kinetic energy plus `Hendrik` times the magnetic energy is
+1 in the fluid (the magnetic energy alone without the flow, `hydro = 0`).
 
 `spin_doctor` adds the Lorentz work to residσ and residω, and prints two more residuals: resid𝐛, the energy budget of
-the induction equation in the fluid, and resid𝐄, the full energy budget including the field outside the fluid and in thin
-walls (for impenetrable walls, `bco` and `bci` 0 or 1, and any walls without the flow; not with thin walls and `mu` other
-than 1, nor with stress-free walls and `centrifugal = 1`). Like residσ ([Solver](solver.md)), they should be small for a
+the induction equation in the fluid, and resid𝐄, the full energy budget including the field outside the fluid, in thin
+walls and in a resolved mantle (for impenetrable walls, `bco` and `bci` 0 or 1, and any walls without the flow; not with
+thin walls and `mu` other than 1, nor with stress-free walls and `centrifugal = 1`). Like residσ ([Solver](solver.md)), they should be small for a
 resolved mode; with a thin wall whose `c` is not zero resid𝐄 closes only to the order of the approximation, about εTWA.
 It also prints Mag/Kin, the ratio of magnetic to kinetic energy (`Hendrik` ME/KE, both in the units of the kinetic
 energy), εTWA with a thin wall, and writes `magnetic.dat` and the magnetic columns of `params.dat`

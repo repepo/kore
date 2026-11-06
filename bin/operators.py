@@ -427,6 +427,10 @@ def b(l, section, component, offdiag):  # --------------------------------------
 
             out = L*(r3_D0g_ic if ut.rpower_gic == 3 else r2_D0g_ic)
 
+        elif section in ('fm', 'gm'):   # NEW (2026-11-06): the resolved mantle, sigma r² r̂⋅b (fm) and sigma r² r̂⋅∇×b (gm), the
+                                        # rows divided by the layer's η = 1/sigma (submatrices.py)
+            out = L*r2s_D0_man
+
     return out/L**3
 
 
@@ -507,8 +511,9 @@ def induction_pol(l, section, component, offdiag):  # --------------------------
 
 
 def magnetic_diffusion(l, section, component, offdiag):  # -------------------------------------------- −MagnetD ∇×(η∇×b)
-    '''the magnetic diffusion in the rows f, g (and in a conducting inner core, with its diffusivity 1/(mu_i2o sigma_i2o)):
-    same degree only, the η' terms included (η = 1 for now)'''
+    '''the magnetic diffusion in the rows f, g (and in a conducting inner core, with its diffusivity 1/(mu_i2o sigma_i2o), and
+    NEW 2026-11-06 in the resolved mantle, rows fm, gm divided by its η = 1/sigma): same degree only, the η' terms included
+    (η = 1 in the fluid for now)'''
     out = 0
     L = l*(l+1.)
 
@@ -532,6 +537,14 @@ def magnetic_diffusion(l, section, component, offdiag):  # ---------------------
                 out = L*( -L*r1_D0g_ic + 2*r2_D1g_ic + r3_D2g_ic ) / ( par.mu_i2o * par.sigma_i2o )
             else:
                 out = L*( -L*r0_D0g_ic + 2*r1_D1g_ic + r2_D2g_ic ) / ( par.mu_i2o * par.sigma_i2o )
+
+        elif section == 'fm' and component == 'bpol_m':   # NEW (2026-11-06): the resolved mantle, divided by its η = 1/sigma:
+                                                          # r² ∇²_l f
+            out = L*( -L*r0_D0_man + 2*r1_D1_man + r2_D2_man )
+
+        elif section == 'gm' and component == 'btor_m':   # r² ∇²_l g - (ln sigma)'(r² g' + r g)
+
+            out = L*( -L*r0_D0_man + 2*r1_D1_man + r2_D2_man - r2d_D1_man - r1d_D0_man )
 
     return par.MagnetD * out/L**3
 

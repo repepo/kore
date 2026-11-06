@@ -63,3 +63,7 @@ if ut.cic:  # NEW (2026-10-28): the inner-core field at r = ricb, its Chebyshev 
     ixg = 1 - ixf
     Tbfic = Tb_cic[ixf::2,:]
     Tbgic = Tb_cic[ixg::2,:]
+
+if ut.resolved_mantle:  # NEW (2026-11-06): the polynomials of the resolved mantle at its bottom (r = 1) and top (r_surface)
+    Tm_cmb  = Tk(-1, par.N_mantle-1, 1, ut.rcmb, par.r_surface)
+    Tm_surf = Tk( 1, par.N_mantle-1, 1, ut.rcmb, par.r_surface)

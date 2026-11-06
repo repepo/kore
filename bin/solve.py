@@ -180,7 +180,8 @@ def split_fields(vec):
     blocks = [ ('flow',     2*ut.n * par.hydro),                # NEW (2026-11-06): none with hydro = 0
                ('thermal',  ut.n * par.thermal),
                ('magnetic', 2*ut.n * par.magnetic),     # NEW (2026-10-28): f, g after s (ut.offset)
-               ('magnetic_ic', 2*ut.nic) ]              # NEW (2026-10-28): fic, gic, a conducting inner core
+               ('magnetic_ic', 2*ut.nic),               # NEW (2026-10-28): fic, gic, a conducting inner core
+               ('magnetic_mantle', 2*ut.nman) ]         # NEW (2026-11-06): fm, gm, the resolved mantle
     fields = {}
     offset = 0
     for name, size in blocks:

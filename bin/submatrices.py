@@ -498,6 +498,41 @@ def main(ncpus):
             elif gb_ic['g'] > 2:
                 sys.exit('submatrices: the inner-core rows gic need the C^(3) basis with their r² rows (m = 0): not expected')
 
+    if ut.resolved_mantle:
+        # -------------------------------------------------------------------------------------------------------------------------------------------
+        # NEW (2026-11-06): the field in the resolved conducting mantle (sections fm, gm), ported from conductive_IC's submatrices.py ---------------
+        # -------------------------------------------------------------------------------------------------------------------------------------------
+        # The layer only diffuses its field, ∂b/∂t = -MagnetD ∇×(η∇×b) with η = 1/sigma (at rest; the Doppler term of a rotating
+        # layer is added in assemble.py). Divided by η the profile enters only B (r² sigma) and the term (ln sigma)'(r² g' + r g)
+        # of the toroidal rows, and A stays well scaled for a small sigma or a large contrast. All the Chebyshev polynomials on
+        # [1, r_surface] (no parity in a shell), rows r² r̂⋅ (fm) and r² r̂⋅∇× (gm) in the C^(2) basis, two bc rows on top (the
+        # outer wall and r_surface, assemble.bc_b_mantle). Not labels: operators.py loads the names below as any operator.
+        Nm, R1, R2 = par.N_mantle, ut.rcmb, par.r_surface
+        def chebco_m(func):
+            # the Chebyshev coefficients of func on [1, r_surface] without those at round-off (relative to the largest, since
+            # sigma may be small everywhere), so that a smooth profile gives banded matrices
+            c = ut.chebco_f(func, Nm, R1, R2, 0.)
+            c[np.abs(c) <= 1e-15*np.abs(c).max()] = 0.
+            return c
+        r1m  = ut.chebco_f(lambda r: r,    Nm, R1, R2, 1e-15)
+        r2m  = ut.chebco_f(lambda r: r**2, Nm, R1, R2, 1e-15)
+        r2sm = chebco_m(lambda r: r**2*bg.sigma_mantle(r))        # r² sigma
+        r1dm = chebco_m(lambda r: r*bg.dlnsigma_mantle(r))        # r (ln sigma)'
+        r2dm = chebco_m(lambda r: r**2*bg.dlnsigma_mantle(r))     # r² (ln sigma)'
+        S0m, S1m = ut.Slam(0, Nm), ut.Slam(1, Nm)
+        D1m, D2m = ut.Dlam(1, Nm, R1, R2), ut.Dlam(2, Nm, R1, R2)
+        ops = { 'r2s_D0_man': S1m * S0m * ut.Mlam(r2sm, 0, 0),         # r² sigma
+                'r0_D0_man' : S1m * S0m,                                # 1
+                'r1_D1_man' : S1m * ut.Mlam(S0m * r1m, 1, 0) * D1m,     # r d/dr
+                'r2_D2_man' : ut.Mlam(S1m * S0m * r2m, 2, 0) * D2m,     # r² (d/dr)²
+                'r1d_D0_man': S1m * S0m * ut.Mlam(r1dm, 0, 0),          # r (ln sigma)'
+                'r2d_D1_man': S1m * ut.Mlam(S0m * r2dm, 1, 0) * D1m }   # r² (ln sigma)' d/dr
+        z2m = ss.csr_matrix((2, Nm))
+        for name, mat in ops.items():
+            mat = ss.vstack( [ z2m, ss.csr_matrix(mat)[:-2,:] ], format='csr' )  # room for the bc rows at the top
+            mat.eliminate_zeros()
+            mats[name] = ss.coo_matrix(mat)
+
     smio.write(mats, par)   # NEW (2026-11-03): one file with the parameters, read by operators.py
     if par.write_mtx:   # and, on request, one Matrix Market file per operator for outside tools (kore does not read them)
         for name, mat in mats.items():

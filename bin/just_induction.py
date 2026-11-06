@@ -10,7 +10,8 @@ B0, without the Lorentz force of b on the flow. In a run directory with magnetic
 
 The flow is read from real_flow.field and imag_flow.field, one solution per column, as another run wrote them with the same
 N, lmax, m, symm and ricb: a forced run of the flow alone (magnetic = 0), for instance. For a flow with the time dependence
-exp(lambda t) the rows of the field in A and B (sections f, g, and fic, gic of a conducting inner core) give
+exp(lambda t) the rows of the field in A and B (sections f, g, and fic, gic of a conducting inner core, fm, gm of a
+resolved mantle) give
 
     (A_bb - lambda B_bb) b = -A_bu u,
 
@@ -43,7 +44,7 @@ B = ut.load_csr('B.npz')
 if A.shape[0] != ut.sizmat:
     sys.exit('A.npz has %d rows, this run %d: run submatrices.py and assemble.py with these parameters' % (A.shape[0], ut.sizmat))
 
-ib = np.arange(ut.offset['f'], ut.sizmat)   # the field: sections f, g (and fic, gic), last in A (ut.offset)
+ib = np.arange(ut.offset['f'], ut.sizmat)   # the field: sections f, g (and fic, gic, fm, gm), last in A (ut.offset)
 Ab = A[ib]
 M = (Ab[:, ib] - lam*B[ib][:, ib]).tocsr()
 M.sort_indices()

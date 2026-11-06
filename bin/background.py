@@ -18,7 +18,7 @@ STRUCTURES = ('8-term fit', 'old model S prototype', 'model S hydrostatic', 'Wu 
 SOLAR = STRUCTURES[:3]   # the solar structures: the rotation also uses x = r r_out (diff_rot.solar_x)
 STRATIFICATIONS = ('top hat', 'odd top hat', 'solar_rz', 'linear', 'inverse square', 'user')
 DIFFUSIVITIES = ('uniform', 'step', 'solar_rz', 'user')
-MAGNETIC_WALLS = ('insulator', 'TWA')   # NEW (2026-10-28): mantle (magnetic = 1); B0 types: background_field.B0_TYPES
+MAGNETIC_WALLS = ('insulator', 'TWA', 'resolved')   # NEW (2026-10-28): mantle (magnetic = 1); B0 types: background_field.B0_TYPES
 INNER_CORES = ('insulator', 'conducting, Chebys', 'TWA')   # NEW (2026-10-28): innercore (magnetic = 1); 'TWA' NEW 2026-11-06
 B0_CMBS = ('wall', 'plain')   # NEW (2026-11-06): B0_cmb (magnetic = 1, mantle = 'TWA'), as written to params.dat
 MAG_COUPLINGS = ('closed', 'algebra')            # NEW (2026-11-03): mag_couplings, B0_ic and ferraro_policy (magnetic = 1),
@@ -156,6 +156,102 @@ def check_centrifugal():
                  '(set par.rpower_v = 4)' % (par.rpower_v,))
 
 
+# NEW (2026-11-06, from conductive_IC, after PR #17 by A. Nuyt): the resolved conducting mantle (mantle = 'resolved'), a layer
+# on [1, r_surface] whose field is part of the unknowns (sections fm, gm; assemble.bc_b_mantle). Its conductivity relative to
+# the fluid's is the number sigma_mantle, or the numpy expression sigma_mantle of r and p = sigma_mantle_param (with the names of
+# the 'user' profiles, background_field.USER_NS).
+
+_sigma_m = []
+
+def sigma_mantle(r):
+    '''NEW (2026-11-06): the conductivity of the resolved mantle at r (1 <= r <= r_surface), relative to the fluid's'''
+    if not _sigma_m:
+        if isinstance(par.sigma_mantle, str):
+            import background_field as bf
+            code = compile(par.sigma_mantle, '<sigma_mantle>', 'eval')
+            def f(r):
+                with np.errstate(all='ignore'):
+                    s = eval(code, {'__builtins__': {}}, dict(bf.USER_NS, r=r, p=par.sigma_mantle_param))
+                return np.broadcast_to(np.asarray(s, dtype=float), np.shape(r))
+            _sigma_m.append(f)
+        else:
+            s0 = float(par.sigma_mantle)
+            _sigma_m.append(lambda r: np.full(np.shape(r), s0))
+    return _sigma_m[0](np.asarray(r, dtype=float))
+
+
+_dlnsigma_m = []
+
+def dlnsigma_mantle(r):
+    '''
+    NEW (2026-11-06): (ln sigma)' in the resolved mantle, from a Chebyshev interpolant of ln sigma on [1, r_surface] without its
+    round-off tail, which the derivative would amplify (0 for a uniform layer, a number)
+    '''
+    if not isinstance(par.sigma_mantle, str):
+        return np.zeros(np.shape(r))
+    if not _dlnsigma_m:
+        lns = np.polynomial.Chebyshev.interpolate(lambda r: np.log(sigma_mantle(r)), max(128, 4*par.N_mantle),
+                                                  domain=[1.0, par.r_surface])
+        _dlnsigma_m.append(lns.trim(1e-13*np.abs(lns.coef).max()).deriv())
+    return _dlnsigma_m[0](np.asarray(r, dtype=float))
+
+
+def mantle_conductance():
+    '''NEW (2026-11-06): ∫ sigma dr from 1 to r_surface: the c1_cmb of a thin wall with the conductance of the resolved mantle'''
+    x, w = np.polynomial.legendre.leggauss(200)
+    h = par.r_surface - 1.0
+    return 0.5*h*np.sum(w*sigma_mantle(1.0 + 0.5*h*(x + 1)))
+
+
+def check_mantle():
+    '''
+    NEW (2026-11-06, conductive_IC's check_mantle): stops on the settings that the resolved mantle (mantle = 'resolved') does
+    not cover, before any matrix is built. r_surface > 1; N_mantle an integer >= 4; sigma_mantle a number, or an expression
+    without '#' (it is written to params.dat), finite and > 0 on [1, r_surface] and resolved by N_mantle Chebyshev polynomials:
+    B holds the N_mantle-term series of r² sigma and the toroidal rows that of r² (ln sigma)', which oscillate where they do not
+    resolve the profile (sigma in B can dip below 0, giving spurious growing modes, and (ln sigma)' is wrong, giving wrong
+    toroidal modes); a step or a kink is never resolved. Also mu = 1 (a magnetic mantle or fluid would change the background
+    field at the wall), a spherical body (centrifugal = 0) and an impenetrable wall (bco = 0 or 1: the u×B0 of a slipping fluid
+    assumes u_r = 0 there).
+    '''
+    num = (int, float, np.integer, np.floating)
+    if not (isinstance(par.r_surface, num) and np.isfinite(par.r_surface) and par.r_surface > 1):
+        sys.exit("mantle = 'resolved' needs a finite r_surface > 1 (the outer wall), got %r" % (par.r_surface,))
+    if not (isinstance(par.N_mantle, (int, np.integer)) and not isinstance(par.N_mantle, bool) and par.N_mantle >= 4):
+        sys.exit('N_mantle = %r: an integer >= 4' % (par.N_mantle,))
+    if isinstance(par.sigma_mantle, str):
+        if not par.sigma_mantle or '#' in par.sigma_mantle:
+            sys.exit("sigma_mantle: a number or a numpy expression of r and p without '#' (it is written to params.dat), "
+                     "got %r" % (par.sigma_mantle,))
+    elif not isinstance(par.sigma_mantle, num) or isinstance(par.sigma_mantle, bool):
+        sys.exit('sigma_mantle = %r: a number or a numpy expression of r and p' % (par.sigma_mantle,))
+    try:
+        s = sigma_mantle(np.linspace(1.0, par.r_surface, 401))
+    except Exception as err:
+        sys.exit('sigma_mantle = %r: %s: %s' % (par.sigma_mantle, type(err).__name__, err))
+    if not (np.all(np.isfinite(s)) and np.all(s > 0)):
+        sys.exit('sigma_mantle = %r must be finite and > 0 from r = 1 to r_surface' % (par.sigma_mantle,))
+    if isinstance(par.sigma_mantle, str):   # the coefficients beyond N_mantle of r² sigma (relative) and ln sigma (absolute)
+        N4 = 4*par.N_mantle
+        to_r = lambda x: 1.0 + 0.5*(par.r_surface - 1.0)*(x + 1)
+        c = np.abs(np.polynomial.chebyshev.chebinterpolate(lambda x: to_r(x)**2*sigma_mantle(to_r(x)), N4 - 1))
+        with np.errstate(all='ignore'):
+            cl = np.abs(np.polynomial.chebyshev.chebinterpolate(lambda x: np.log(sigma_mantle(to_r(x))), N4 - 1))
+        tail = c[par.N_mantle:].max()/c.max(), cl[par.N_mantle:].max()
+        if not max(tail) <= 1e-6:
+            sys.exit('sigma_mantle = %r is not resolved by N_mantle = %d Chebyshev polynomials: the coefficients beyond '
+                     'N_mantle reach %.1e of the largest for r**2 sigma and %.1e for ln(sigma), both must be <= 1e-6. Increase '
+                     'N_mantle, or smooth the profile (a step or a kink is never resolved)'
+                     % (par.sigma_mantle, par.N_mantle, tail[0], tail[1]))
+    if par.mu != 1:
+        sys.exit("mantle = 'resolved' assumes the permeability of vacuum in the fluid and in the layer (mu = 1)")
+    if par.centrifugal:
+        sys.exit("mantle = 'resolved' needs a spherical body (centrifugal = 0)")
+    if par.hydro and par.bco == 2:
+        sys.exit("mantle = 'resolved' needs an impenetrable outer wall (bco = 0 or 1): the u×B0 of a fluid slipping along it "
+                 "assumes u_r = 0 there")
+
+
 def check_twa():
     '''
     NEW (2026-11-06): stops on thin conducting walls (mantle or innercore 'TWA', from conductive_IC) outside what the wall rows
@@ -277,6 +373,8 @@ def check_magnetic():
             sys.exit('N_cic must be even and >= 4, got %r' % par.N_cic)
     if par.B0_cmb not in B0_CMBS:   # NEW (2026-11-06)
         sys.exit('B0_cmb %r: set one of %s' % (par.B0_cmb, _names(B0_CMBS)))
+    if par.mantle == 'resolved':   # NEW (2026-11-06): the resolved conducting mantle
+        check_mantle()
     check_twa()   # NEW (2026-11-06): thin conducting walls
     if par.ricb == 0:   # NEW (2026-10-28): the full sphere
         if par.innercore != 'insulator':
@@ -372,7 +470,8 @@ def magnetic_diffrot():
     NEW (2026-10-30): the checks of magnetic = 1 with diff_rot = 1:
       - a conducting inner core must co-rotate rigidly: ΔΩ(ricb, θ) = c (f_n(ricb) = 0 for n > 0, diff_rot.rigid_ricb); its
         field then gains the Doppler term -i m G c b and the ICB matching is unchanged; a latitude-dependent ΔΩ(ricb) would
-        shear a solid core, which kore does not model; NEW (2026-11-06): likewise a thin conducting wall, at its radius;
+        shear a solid core, which kore does not model; NEW (2026-11-06): likewise a thin conducting wall, at its radius, and
+        the resolved mantle at r = 1;
       - a poloidal B0 and ΔΩ should satisfy Ferraro's law (ferraro_mismatch); par.ferraro_policy says whether a mismatch above
         1e-7 stops the run ('refuse') or only prints a warning ('warn', the default: the linear problem then assumes the
         background is maintained). NEW (2026-11-03): a parameter, formerly the constant background.FERRARO_POLICY.
@@ -384,11 +483,14 @@ def magnetic_diffrot():
             sys.exit('magnetic = 1, diff_rot = 1 with a conducting inner core needs a rigid rotation of the inner boundary '
                      '(f_n(ricb) = 0 for every n > 0): ΔΩ(ricb, θ) varies with latitude')
     # NEW (2026-11-06): a thin conducting wall co-rotates with ΔΩ at its radius, which must then be uniform in latitude; in the
-    # frame of the wall its rows are those without the rotation (U0×b at the wall involves only b_r, which is continuous)
-    for on, r, name in ((par.mantle == 'TWA', 1.0, 'outer'), (par.innercore == 'TWA' and par.ricb > 0, par.ricb, 'inner')):
+    # frame of the wall its rows are those without the rotation (U0×b at the wall involves only b_r, which is continuous).
+    # Likewise the resolved mantle (mantle = 'resolved'), whose field then gains the Doppler term -i m G ΔΩ(1) b
+    for on, r, name in ((par.mantle in ('TWA', 'resolved'), 1.0, 'outer'),
+                        (par.innercore == 'TWA' and par.ricb > 0, par.ricb, 'inner')):
         if on and not dr.rigid_at(r)[1]:
-            sys.exit("magnetic = 1, diff_rot = 1 with a thin conducting wall ('TWA') at the %s boundary needs a rigid rotation "
-                     "there (f_n = 0 for every n > 0): ΔΩ varies with latitude at r = %g" % (name, r))
+            sys.exit("magnetic = 1, diff_rot = 1 with a conducting wall (%r) at the %s boundary needs a rigid rotation there "
+                     "(f_n = 0 for every n > 0): ΔΩ varies with latitude at r = %g"
+                     % (par.mantle if name == 'outer' else par.innercore, name, r))
     mis = ferraro_mismatch()
     if par.B0 == 'ferraro' and not _warned:
         ferraro_report()
@@ -425,6 +527,8 @@ def description():
         if par.B0_tor == 'general':
             out.append('B0_tor: ' + ' ; '.join('k%d = %s' % (n, par.B0_tor_profiles[n]) for n in sorted(par.B0_tor_profiles))
                        + ' ; p = %r' % par.B0_tor_param)
+    if par.magnetic and par.mantle == 'resolved' and isinstance(par.sigma_mantle, str):   # NEW (2026-11-06)
+        out.append('sigma_mantle: %s ; p = %r' % (par.sigma_mantle, par.sigma_mantle_param))
     if par.thermal and par.stratification == 'user':
         out.append('stratification: %s ; p = %r' % (par.stratification_profile, par.stratification_param))
     if par.diffusivity == 'user':

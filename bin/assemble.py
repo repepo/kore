@@ -26,6 +26,7 @@ import operators as op
 import diff_rot as dr
 import centrifugal as cf   # NEW (2026-11-05)
 import radial_profiles as rap
+import background as bg   # NEW (2026-11-06): the conductivity of the resolved mantle (bc_b_mantle)
 
 def centrifugal_blocks(loc_list, fun, l, sec, comp, lls, row, col0, factor=1, nblk=None, dls=None):
     '''
@@ -58,13 +59,14 @@ def main():
 
     ll_flo = ut.ell( par.m, par.lmax, par.symm)[:2]  # the ell indices for the flow u
 
-    # NEW (2026-11-06, as conductive_IC): a thin wall next to a slipping fluid gets the u×B0 terms of condition C.I (bc_b_slip)
-    if rank == 0 and (ut.twa_slips('outer') or ut.twa_slips('inner')):
+    # NEW (2026-11-06, as conductive_IC): a thin wall (or the resolved mantle) next to a slipping fluid gets the u×B0 terms of
+    # condition C.I (bc_b_slip)
+    if rank == 0 and (ut.twa_slips('outer') or ut.twa_slips('inner') or ut.mantle_slips()):
         pm = par.ViscosD/par.MagnetD
         ratio = '%.1e' % (pm*abs(par.itau)/par.Gaspard if par.Gaspard else pm)
-        print('Note: fluid slipping along a thin wall: the tangential electric field continued into the wall in its own frame '
-              '(condition C.I of Rekier et al. 2023), valid while the viscous layer left out is thin against the magnetic skin '
-              'depth (%s = %s << 1)' % ('Pm |itau|/Gaspard' if par.Gaspard else 'Pm', ratio))
+        print('Note: fluid slipping along a conducting wall: the tangential electric field continued into the wall in its own '
+              'frame (condition C.I of Rekier et al. 2023), valid while the viscous layer left out is thin against the magnetic '
+              'skin depth (%s = %s << 1)' % ('Pm |itau|/Gaspard' if par.Gaspard else 'Pm', ratio))
 
     if rank == 0:
         alltop, allbot = ll_flo
@@ -748,6 +750,19 @@ def main():
                     for q in [0,1,2]:
                         loc_list[q].append( bc_b_list[q] )
 
+        if ut.resolved_mantle:  # NEW (2026-11-06): the resolved mantle, sections fm, gm: A = -(diffusion), divided by the layer's
+            # η = 1/sigma (operators.magnetic_diffusion), its two bc rows the matching at the outer wall and at r_surface
+            for sec, comp, loc_mag in [ ('fm', 'bpol_m', loc_mag_f), ('gm', 'btor_m', loc_mag_g) ]:
+                for k,l in enumerate(loc_mag):
+                    row = ut.offset[sec] + ( rank*bpp + k )* par.N_mantle
+                    mtx = -1 * op.magnetic_diffusion(l, sec, comp, 0)
+                    if par.diff_rot:   # the layer turns with ΔΩ(1) = c (rigid: background.magnetic_diffrot): -(-i m G c b)
+                        mtx = mtx + 1j*par.m*par.Gaspard*dr.rigid_at(ut.rcmb)[0]*op.b(l, sec, comp, 0)
+                    loc_list = ut.packit( loc_list, mtx, row, row)
+                    bc_b_list = bc_b_mantle(l, sec)
+                    for q in [0,1,2]:
+                        loc_list[q].append( bc_b_list[q] )
+
 
     # ------------------------------------------------------------------------------------------------------------------ A matrix assembly
     A = gather_csr(comm, loc_list, complex)  # full A on rank 0, None elsewhere
@@ -856,6 +871,13 @@ def main():
                 for sec, comp, loc_mag in [ ('fic', 'bpol_ic', loc_mag_f), ('gic', 'btor_ic', loc_mag_g) ]:
                     for k,l in enumerate(loc_mag):
                         row = ut.offset[sec] + ( rank*bpp + k )* ut.Nic
+                        mtx = -op.b(l, sec, comp, 0)
+                        loc_list = ut.packit(loc_list, mtx, row, row)
+
+            if ut.resolved_mantle:  # NEW (2026-11-06): the field of the resolved mantle, B = -sigma b (its rows divided by η)
+                for sec, comp, loc_mag in [ ('fm', 'bpol_m', loc_mag_f), ('gm', 'btor_m', loc_mag_g) ]:
+                    for k,l in enumerate(loc_mag):
+                        row = ut.offset[sec] + ( rank*bpp + k )* par.N_mantle
                         mtx = -op.b(l, sec, comp, 0)
                         loc_list = ut.packit(loc_list, mtx, row, row)
 
@@ -1131,7 +1153,8 @@ def bc_b_spherical(l, sec):
     the two bc rows of each block: row 0 at the outer boundary (l+1) f + r f' = 0 and g = 0, row 1 at the inner boundary
     l f - r f' = 0 and g = 0 (b matches a potential field outside the shell, and inside it with ricb > 0).
     NEW (2026-11-06): a thin conducting wall (mantle or innercore 'TWA') has the rows of bc_b_twa instead, plus those of a
-    fluid slipping along it (bc_b_slip).
+    fluid slipping along it (bc_b_slip); with the resolved mantle (mantle = 'resolved') the outer rows are its matching
+    (bc_b_mantle, which assemble.main places with the mantle's own rows).
     '''
     inner = (par.ricb > 0) and not ut.cic   # NEW (2026-10-28): a full sphere has the outer row only, a conducting core bc_b_cic's
     out = ss.dok_matrix((1 + int(par.ricb > 0), ut.N1), dtype=complex)
@@ -1143,12 +1166,15 @@ def bc_b_spherical(l, sec):
 
     twa_o = par.mantle == 'TWA'                  # NEW (2026-11-06)
     twa_i = inner and par.innercore == 'TWA'
+    outer = not ut.resolved_mantle               # NEW (2026-11-06): the resolved mantle's outer rows are in bc_b_mantle
     if sec == 'f':
-        out[ 0,:] = bc_b_twa(l, sec, 'outer', Tb) if twa_o else (l+1) * Tb[:,0] + ut.rcmb * Tb[:,1]
+        if outer:
+            out[ 0,:] = bc_b_twa(l, sec, 'outer', Tb) if twa_o else (l+1) * Tb[:,0] + ut.rcmb * Tb[:,1]
         if inner:
             out[ 1,:] = bc_b_twa(l, sec, 'inner', bv.Ta) if twa_i else l * bv.Ta[:,0] - par.ricb * bv.Ta[:,1]
     elif sec == 'g':
-        out[ 0,:] = bc_b_twa(l, sec, 'outer', Tb) if twa_o else Tb[:,0]
+        if outer:
+            out[ 0,:] = bc_b_twa(l, sec, 'outer', Tb) if twa_o else Tb[:,0]
         if inner:
             out[ 1,:] = bc_b_twa(l, sec, 'inner', bv.Ta) if twa_i else bv.Ta[:,0]
 
@@ -1208,14 +1234,16 @@ def bc_b_twa(l, sec, wall, T):
 
 _slip_mats = {}
 
-def bc_b_slip(l, sec, wall, row):
+def bc_b_slip(l, sec, wall, row, factor=None):
     '''
     NEW (2026-11-06, conductive_IC's bc_b_cic_slip for a thin wall, here for any poloidal B0): with the fluid slipping along a
     thin wall (stress-free, bco or bci = 0, or ViscosD = 0; ut.twa_slips), the terms of u×B0 in the wall rows of bc_b_twa, at
-    the row of the degree l of section sec. The tangential electric field of the fluid, E = MagnetD ∇×b - u×B0 (- U0×b, which
-    the co-rotating wall cancels), is continued into the wall in the frame of the wall (condition C.I of Rekier, Triana, Trinh
-    & Buffett 2023, arXiv:2303.00718: a modelling choice, for a slip that stands in for a thin viscous layer not resolved, valid
-    while that layer is thin against the magnetic skin depth). With u_r = 0, (u×B0)_t = B0_r (u_t × r̂). Two parts:
+    the row of the degree l of section sec. factor stands for the wall's c1 in the toroidal row (default: c1_cmb or c1_icb):
+    sigma(1) in the electric-field row of the resolved mantle (bc_b_mantle, where G' carries that factor). The tangential
+    electric field of the fluid, E = MagnetD ∇×b - u×B0 (- U0×b, which the co-rotating wall cancels), is continued into the
+    wall in the frame of the wall (condition C.I of Rekier, Triana, Trinh & Buffett 2023, arXiv:2303.00718: a modelling
+    choice, for a slip that stands in for a thin viscous layer not resolved, valid while that layer is thin against the
+    magnetic skin depth). With u_r = 0, (u×B0)_t = B0_r (u_t × r̂). Two parts:
       - toroidal row: G' becomes G' - r S_l/MagnetD, with S_l the r∇Y_l part of B0_r (u_t × r̂);
       - poloidal row: D F, the wall's ∂F/∂t / MagnetD, gains r² X_l/(L MagnetD), X_l = [r̂⋅∇×(u×B0)]_l = -[∇⋅(B0_r u_t)]_l/r,
         the radial induction of the slip.
@@ -1226,7 +1254,7 @@ def bc_b_slip(l, sec, wall, row):
     import angular
     import background_field as bf
     r, sgn = (ut.rcmb, 1) if wall == 'outer' else (par.ricb, -1)
-    c1 = par.c1_cmb if wall == 'outer' else par.c1_icb
+    c1 = (par.c1_cmb if wall == 'outer' else par.c1_icb) if factor is None else factor
     m = par.m
     key = wall
     if key not in _slip_mats:   # the matrices of B0_r (u_t x r̂) and B0_r u_t on the degrees, once per wall
@@ -1311,6 +1339,57 @@ def bc_b_centrifugal(l, sec, ll_mag):
     if not data:
         return [np.zeros(0), np.zeros(0, dtype=int), np.zeros(0, dtype=int)]
     return [np.concatenate(data), np.concatenate(rows), np.concatenate(cols)]
+
+
+
+def bc_b_mantle(l, sec):
+    '''
+    NEW (2026-11-06, conductive_IC's bc_b_mantle, from PR #17 by A. Nuyt): the matching of the fluid's field with the resolved
+    mantle (mantle = 'resolved'), whose scalars fm, gm live on [1, r_surface], for the degree l, all the rows of the section
+    pair of sec ('fm': f and fm, 'gm': g and gm). With the permeability of vacuum everywhere (mu = 1) 𝐛 and the tangential 𝐄
+    are continuous at the outer wall, and the layer meets a potential field at r_surface:
+        f, row 0:    f - fm = 0                                 (n⋅b)
+        fm, row 0:   (r f)' - (r fm)' = 0                       (the toroidal part of n×b)
+        g, row 0:    g - gm = 0                                 (its consoidal part)
+        gm, row 0:   sigma(1) (r g)' - (r gm)' = 0              (the consoidal n×E: E = MagnetD ∇×b in the fluid, MagnetD ∇×b/sigma
+                                                                 in the layer)
+        fm, row 1:   r fm' + (l+1) fm = 0, gm, row 1: gm = 0    (r = r_surface)
+    As at a conducting inner core (bc_b_cic) the continuity of the toroidal n×E (of η ∇²_l f) follows from the radial induction
+    on both sides once b_r is continuous. These hold for a fluid at rest relative to the layer (with a differential rotation
+    the layer turns with the fluid next to it, and U0×b cancels in the jump of E); a fluid slipping along the wall (ut.mantle_slips)
+    adds u×B0 to the consoidal n×E of the fluid (bc_b_slip with the factor sigma(1), condition C.I, as conductive_IC).
+    '''
+    Nm, rc, rs = par.N_mantle, ut.rcmb, par.r_surface
+    s = 'f' if sec == 'fm' else 'g'
+    lfirst = ut.m_bot if (s == 'f') == (ut.symmB0 == -1) else ut.m_top   # as in bc_b_spherical
+    k = int( (l - lfirst)/2 )   # block index of l in its section
+    if par.ricb > 0:
+        Tf = bv.Tb
+    else:   # the fluid's Chebyshev polynomials of one parity in a full sphere, as in bc_b_spherical
+        ixf = ( par.m + ut.s )%2 if ut.symmB0 == -1 else ( par.m + 1 - ut.s )%2
+        Tf = bv.Tb[(ixf if s == 'f' else 1 - ixf)::2, :]
+    Tc, Ts = bv.Tm_cmb, bv.Tm_surf   # the layer's polynomials at its bottom (r = 1) and at its top (r_surface)
+    rowf = ut.offset[s] + k*ut.N1          # the fluid's outer row (row 0 of the block)
+    rowm = ut.offset[sec] + k*Nm           # the layer's rows 0 and 1
+    colf, colm = rowf, rowm
+    data, rows, cols = [], [], []
+    def put(vec, row, col0):
+        nz = np.nonzero(vec)[0]
+        data.append(np.asarray(vec[nz], dtype=complex)); rows.append(np.full(nz.size, row)); cols.append(col0 + nz)
+    sig = float(bg.sigma_mantle(rc)) if sec == 'gm' else 1.0
+    if sec == 'fm':
+        put( Tf[:,0], rowf, colf);  put(-Tc[:,0], rowf, colm)                                   # f - fm
+        put( Tf[:,0] + rc*Tf[:,1], rowm, colf);  put(-(Tc[:,0] + rc*Tc[:,1]), rowm, colm)       # (r f)' - (r fm)'
+        put( rs*Ts[:,1] + (l+1)*Ts[:,0], rowm + 1, colm)                                        # r fm' + (l+1) fm
+    else:
+        put( Tf[:,0], rowf, colf);  put(-Tc[:,0], rowf, colm)                                   # g - gm
+        put( sig*(Tf[:,0] + rc*Tf[:,1]), rowm, colf);  put(-(Tc[:,0] + rc*Tc[:,1]), rowm, colm) # sigma (r g)' - (r gm)'
+        put( Ts[:,0], rowm + 1, colm)                                                           # gm
+    out = [np.concatenate(data), np.concatenate(rows), np.concatenate(cols)]
+    if sec == 'gm' and ut.mantle_slips():   # the u×B0 of the slipping fluid in the consoidal n×E (row 0 of gm)
+        slip = bc_b_slip(l, 'g', 'outer', rowm, factor=sig)
+        out = [np.concatenate([out[q], slip[q]]) for q in range(3)]
+    return out
 
 
 

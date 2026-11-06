@@ -83,6 +83,10 @@ def solar_density_degree():
 
 
 
+def mantle_value(fun):
+    '''NEW (2026-11-06): a number of the resolved mantle for params.dat, 0 without it (mantle != 'resolved')'''
+    return float(np.asarray(fun())) if ut.resolved_mantle else 0.0
+
 def param_table(elapsed):
     '''
     Run parameters written as one row of params.dat, as (name, value, format) tuples.
@@ -203,6 +207,11 @@ def param_table(elapsed):
         ( 'muw_icb',                  par.muw_icb,                 '%.9e' ),
         ( 'mu',                       par.mu,                      '%.9e' ),
         ( 'B0_cmb',                   index_in(par.B0_cmb, bg.B0_CMBS), '%d' ),   # index into background.B0_CMBS
+        ( 'r_surface',                par.r_surface,               '%.9e' ),  # NEW (2026-11-06): the resolved mantle
+        ( 'N_mantle',                 par.N_mantle,                '%d' ),
+        ( 'sigma_mantle_cmb',         mantle_value(lambda: bg.sigma_mantle(ut.rcmb)), '%.9e' ),  # sigma at r = 1, as used
+        ( 'sigma_mantle_param',       par.sigma_mantle_param,      '%.9e' ),  # p of an expression (in the # note)
+        ( 'c1_mantle',                mantle_value(bg.mantle_conductance), '%.9e' ),   # ∫ sigma dr, the c1 of a thin wall
     ]
 
 
@@ -281,6 +290,9 @@ def main(ncpus):
     bic = None
     if ut.cic:  # NEW (2026-10-28): the field of a conducting inner core
         bic = ( np.loadtxt('real_magnetic_ic.field') + 1j*np.loadtxt('imag_magnetic_ic.field') ).reshape((2*ut.nic,-1))
+    bman = None
+    if ut.resolved_mantle:  # NEW (2026-11-06): the field of the resolved mantle
+        bman = ( np.loadtxt('real_magnetic_mantle.field') + 1j*np.loadtxt('imag_magnetic_mantle.field') ).reshape((2*ut.nman,-1))
 
     # NEW (2026-11-06): without the flow (hydro = 0) the solutions are counted in the field's (or the entropy's) file, and the
     # flow's diagnostics run on a zero flow (upp.zero_flow): they give zeros, and residσ, residω, residens are not computed
@@ -341,6 +353,7 @@ def main(ncpus):
     Ohm_w       = np.zeros(success)  #   loss (MagnetD, upp.em_budget)
     twaerr      = np.zeros((success, 4))   # NEW (2026-11-06): h/δ_w and ε_TWA at the outer and the inner wall (upp.twa_error)
     use_twa     = bool(ut.twa_o or ut.twa_i)
+    use_walls   = use_twa or bool(ut.resolved_mantle)   # NEW (2026-11-06): E_w, Ohm_w are those of the resolved mantle too
     MEc         = np.zeros(success)  # NEW (2026-11-05): centrifugal = 1, ∫ 𝐛̃*⋅(M - I) 𝐛̃ dV: ME + MEc is the field's energy in the
     InduM       = np.zeros(success)  #   deformed fluid; InduM, Ohmc the induction work and Ohmic loss (MagnetD) on the metric part
     Ohmc        = np.zeros(success)  #   of the field, for resid𝐄 (upp.centrifugal_magnetic_terms)
@@ -470,10 +483,11 @@ def main(ncpus):
             Wlor_im[i] = par.Hendrik * Wlor_im0
             # the parts of the magnetic energy budget outside the fluid, and the Ohmic losses (upp.em_budget, conductive_IC's)
             Ohm_f0, MEic[i], Ohm_ic0, MEext[i], E_w[i], Ohm_w0 = upp.em_budget( b_sol2, None if bic is None else bic[:,i],
-                                                                                u_sol2 if par.hydro else None )
+                                                                                u_sol2 if par.hydro else None,
+                                                                                None if bman is None else bman[:,i] )
             Ohm_f[i]  = par.MagnetD * Ohm_f0
             Ohm_ic[i] = par.MagnetD * Ohm_ic0
-            Ohm_w[i]  = par.MagnetD * Ohm_w0   # NEW (2026-11-06): thin walls (0 without)
+            Ohm_w[i]  = par.MagnetD * Ohm_w0   # NEW (2026-11-06): thin walls or the resolved mantle (0 without)
             if use_twa:
                 twaerr[i] = upp.twa_error(sigma + 1j*w)
             if par.centrifugal:  # NEW (2026-11-05, phase 1b): the metric parts, on the same grid (upp.centrifugal_magnetic_terms)
@@ -599,7 +613,8 @@ def main(ncpus):
             # NEW (2026-11-06, as conductive_IC): a fluid slipping along impenetrable walls (stress-free, or ViscosD = 0) too, with
             # the wall terms of u×B0 apart (upp.diagnose_magnetic computes INDU_WALLS then); not with centrifugal = 1. Thin walls
             # (mantle, innercore 'TWA') add the energy stored in them and their Ohmic loss (E_w, Ohm_w; upp.em_budget), which
-            # close the budget exactly for c = 0 and to O(c c1) otherwise; not with mu != 1 (the energies would need it).
+            # close the budget exactly for c = 0 and to O(c c1) otherwise; not with mu != 1 (the energies would need it). The
+            # resolved mantle adds its energy and Ohmic loss the same way (exact).
             noslip = par.bco == 1 and (par.bci == 1 or par.ricb == 0)
             imperm = par.ViscosD == 0 or (par.bco in (0, 1) and (par.ricb == 0 or par.bci in (0, 1)))
             if (noslip or not par.hydro or (imperm and not par.centrifugal)) and not (use_twa and par.mu != 1):
@@ -609,7 +624,7 @@ def main(ncpus):
                 Etot = KE[i] + H*( ME[i] + MEc[i] + MEic[i] + MEext[i] )
                 Wex  = Wlor[i] + H*(Indu[i] - Iwall[i] + InduM[i]) + Wdr[i]
                 Ohm  = H*( Ohm_f[i] + Ohmc[i] + Ohm_ic[i] )
-                if use_twa:   # NEW (2026-11-06)
+                if use_walls:   # NEW (2026-11-06)
                     Etot += H*E_w[i]
                     Ohm  += H*Ohm_w[i]
                 residE[i] = ( abs( 2*sigma*Etot - Dkin[i] - Wthm[i] - Wex + Ohm )
@@ -707,12 +722,12 @@ def main(ncpus):
             ( 'residE',     residE,     '%.9e' ),  # full energy budget, resid𝐄 (nan where it does not apply)
         ] + ([
             ( 'MEc',        MEc,        '%.9e' ),  # NEW (2026-11-05): centrifugal = 1, the metric part of ME (ME + MEc: the
-        ] if (par.centrifugal or use_twa) else []) + ([   # energy of the field in the deformed fluid; 0 with a thin wall)
-            ( 'E_w',        E_w,        '%.9e' ),  # NEW (2026-11-06): thin walls, the energy stored in them, without Hendrik,
-            ( 'Ohm_w',      Ohm_w,      '%.9e' ),  #   their Ohmic loss (MagnetD), and the estimated error ε_TWA of the
-            ( 'eps_twa_o',  twaerr[:,1], '%.9e' ), #   outer and of the inner wall (0 where there is none)
-            ( 'eps_twa_i',  twaerr[:,3], '%.9e' ),
-        ] if use_twa else [])
+        ] if (par.centrifugal or use_walls) else []) + ([   # energy of the field in the deformed fluid; 0 with a wall)
+            ( 'E_w',        E_w,        '%.9e' ),  # NEW (2026-11-06): thin walls (or the resolved mantle), the energy stored
+            ( 'Ohm_w',      Ohm_w,      '%.9e' ),  #   in them, without Hendrik, their Ohmic loss (MagnetD), and the estimated
+            ( 'eps_twa_o',  twaerr[:,1], '%.9e' ), #   error ε_TWA of the outer and of the inner thin wall (0 where there is
+            ( 'eps_twa_i',  twaerr[:,3], '%.9e' ), #   none)
+        ] if use_walls else [])
         with open('magnetic.dat','ab') as dmag:
             np.savetxt(dmag, np.column_stack([ v for _, v, _ in magnetic_cols ]),
             fmt=[ f for _, _, f in magnetic_cols ])
