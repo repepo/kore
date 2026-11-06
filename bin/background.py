@@ -100,6 +100,10 @@ def check():
             sys.exit("diffusivity 'user' needs diffusivity_profiles = {'nu': '...', 'kappa': '...'}")
         for k in ('nu', 'kappa'):
             _check_expression(par.diffusivity_profiles[k], par.diffusivity_param, "diffusivity_profiles['%s']" % k)
+    if par.rotdyn not in (0, 1):   # NEW (2026-11-06): the rotating solids
+        sys.exit('rotdyn %r: 0 (the mantle and the inner core turn with the frame) or 1 (they turn under the torques)' % (par.rotdyn,))
+    if par.rotdyn:
+        check_rotdyn()
 
 
 def check_centrifugal():
@@ -282,6 +286,49 @@ def check_twa():
     if par.hydro and ((twa_o and par.bco == 2) or (twa_i and par.bci == 2)):
         sys.exit("a thin conducting wall ('TWA') needs an impenetrable wall (bco, bci = 0 or 1): the terms of a fluid slipping "
                  "along it assume u_r = 0 there")
+
+
+def check_rotdyn():
+    '''
+    NEW (2026-11-06, conductive_IC's check_rotdyn): stops on the settings that the rotating solids (rotdyn = 1) do not cover.
+    The solids drag the fluid through the no-slip walls, where the toroidal flow of degree 1 is r omega (assemble.py), and
+    their torques act on that flow and on the toroidal field next to the walls, which hold the axial parts only for m = 0,
+    symm = 1 (rotdyn.py). Left out: a stress-free wall (no torque on the solid but the drag of conductive_IC's kappa_cmb,
+    not ported yet), the stresses of a differential rotation and of a toroidal B0 at the walls (its current sheet there), a
+    deformed body (spherical torques), and Gaspard = 0 (gTorque and OmgtauIC are in units of the rotation rate).
+    '''
+    import background_field as bf
+    if not (par.hydro and par.m == 0 and par.symm == 1 and par.ricb > 0 and par.forcing == 0):
+        sys.exit('rotdyn = 1 needs the flow (hydro = 1), m = 0, symm = 1, an inner core (ricb > 0) and an eigenvalue problem '
+                 '(forcing = 0)')
+    if not (par.ViscosD > 0 and par.bci == 1 and par.bco == 1):
+        sys.exit('rotdyn = 1 needs a viscous fluid with no-slip walls (ViscosD > 0, bci = bco = 1): the mantle and the inner '
+                 'core drag the fluid through them')
+    if not par.Gaspard > 0:
+        sys.exit('rotdyn = 1 needs a rotating frame (Gaspard > 0): gTorque and OmgtauIC are in units of the rotation rate')
+    if par.diff_rot:
+        sys.exit('rotdyn = 1 with a differential rotation (diff_rot = 1) is not covered: the solids would turn with ΔΩ at the '
+                 'walls, and the stresses of the background flow are left out')
+    if par.centrifugal:
+        sys.exit('rotdyn = 1 needs a spherical body (centrifugal = 0): the torques are those of spherical walls')
+    num = (int, float, np.integer, np.floating)
+    for name, ok in (('MoIZ_M', lambda v: 0 < v < np.inf), ('MoIZ_IC', lambda v: 0 < v < np.inf),
+                     ('gTorque', lambda v: 0 <= v < np.inf), ('OmgtauIC', lambda v: v > 0)):
+        v = getattr(par, name)
+        if not (isinstance(v, num) and not isinstance(v, bool) and ok(v)):
+            sys.exit('%s = %r: a number, > 0 for the moments of inertia and OmgtauIC (np.inf: no relaxation), >= 0 for '
+                     'gTorque, finite but OmgtauIC' % (name, v))
+    for name in ('vtrq', 'mtrq'):
+        if getattr(par, name) not in (0, 1):
+            sys.exit('%s = %r: 1 (the torque acts on the solids) or 0 (switched off)' % (name, getattr(par, name)))
+    if par.magnetic:
+        rr = np.linspace(par.ricb, 1.0, 201)
+        for n, k in bf.tor_profiles().items():
+            kk = np.abs(k(rr, 0))
+            if max(kk[0], kk[-1]) > 1e-10*max(kk.max(), 1e-300):
+                sys.exit("rotdyn = 1 needs a toroidal B0 that vanishes at both walls (e.g. B0_tor = 'wall'): the torque on "
+                         "its current sheet there is left out (degree %d: %.1e at the inner wall, %.1e at the outer)"
+                         % (n, kk[0], kk[-1]))
 
 
 def check_magnetic():

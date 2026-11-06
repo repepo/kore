@@ -401,6 +401,32 @@ class default_params():
 
 
         # ----------------------------------------------------------------------------------------------------------------------
+        # ------------------------------------------------------------------------------------------------------ Rotating solids
+        # ----------------------------------------------------------------------------------------------------------------------
+        # NEW (2026-11-06, from conductive_IC): rotdyn = 1 lets the mantle and the inner core turn as rigid bodies about the
+        # rotation axis under the torques of the fluid, viscous and magnetic, and under their gravitational coupling, with
+        # three more unknowns: their rotation rates omega_M, omega_IC relative to the frame and the angle phi between them
+        # (docs/rotating-solids.md). The fluid follows them through the no-slip walls. Axisymmetric, equatorially symmetric
+        # eigenvalue problems (m = 0, symm = 1, forcing = 0) with an inner core, ViscosD > 0, no-slip walls (bci = bco = 1),
+        # a rotating frame (Gaspard > 0), no differential rotation and a spherical body; a toroidal B0 must vanish at the walls
+        # (background.check_rotdyn stops otherwise).
+        self.rotdyn = 0
+        # axial moments of inertia of the mantle and of the inner core, in units of rho r0^5 (rho the density unit of the
+        # structure: rho0 = 1 for 'Boussinesq'). The defaults are the Earth's (r0 the radius of the core).
+        self.MoIZ_M  = 11.16
+        self.MoIZ_IC = 9.2e-3
+        # gravitational coupling between the inner core and the mantle, the torque K phi divided by rho r0^5 Omega^2
+        # (K = gTorque Gaspard^2 in the units of the run)
+        self.gTorque = 5e-8
+        # Omega tau_IC, the viscous relaxation time of the inner core towards gravitational alignment times the rotation rate:
+        # 2.3e3 is tau_IC = 1 year for the Earth; np.inf: no relaxation
+        self.OmgtauIC = 2.3e3
+        # 0 switches off the viscous (vtrq) or the magnetic (mtrq) torques on the solids (the fluid still feels its walls)
+        self.vtrq = 1
+        self.mtrq = 1
+
+
+        # ----------------------------------------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------------------------------- Forcing parameters
         # ----------------------------------------------------------------------------------------------------------------------
         self.forcing = 0  # Uncomment this line for eigenvalue problems

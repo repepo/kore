@@ -92,6 +92,10 @@ rpower_gic = 3 if (_mdiff and cic) else 2
 # NEW (2026-11-06): without the flow (hydro = 0, as conductive_IC) the sections u, v are left out
 sizmat = 2*n*par.hydro + n*par.thermal + 2*n*par.magnetic + 2*nic  # NEW (2026-10-28): + the magnetic field (+ inner core)
 sizmat += 2*nman   # NEW (2026-11-06): + the field of a resolved mantle
+# NEW (2026-11-06, from conductive_IC): the rotating solids (rotdyn = 1), three unknowns after everything else: the rotation
+# rates of the mantle and of the inner core relative to the frame, and the angle between them (rotdyn.py)
+rotdyn = int(bool(par.rotdyn))
+sizmat += 3*rotdyn
 
 # NEW (2026-10-28): first row (and column) of each section in A and B: P, T, s, then f, g after s, then fic, gic, so that
 # the flow and the entropy keep their places and non-magnetic matrices are unchanged. NEW (2026-11-06): with hydro = 0
@@ -101,6 +105,7 @@ offset = { 'u': 0, 'v': n, 'h': _h, 'f': _h + par.thermal*n, 'g': _h + (1 + par.
            'fic': _h + (2 + par.thermal)*n, 'gic': _h + (2 + par.thermal)*n + nic }
 offset['fm'] = offset['gic'] + nic
 offset['gm'] = offset['fm'] + nman
+offset['rot'] = sizmat - 3*rotdyn   # NEW (2026-11-06): omega_M, omega_IC, phi (rotdyn = 1), after all the fields
 
 # ThermaD = 0 with the thermal-wind advection (docs/differential_rotation_details.md §7.2): the section-h rows are r² (eq)/p instead of
 # r (eq)/p, in the C^(1) basis (u_θ has P'), still without thermal bc rows; the thermal-wind profiles are then σn, σn'

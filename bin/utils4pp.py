@@ -2307,8 +2307,8 @@ def diagnose_magnetic( bsol ):
     if use_grid():   # NEW (2026-10-28): toroidal B0 (or FORCE_GRID): the induction and Lorentz terms from the (r, θ) grid
         indu, plor = magnetic_powers_grid()
         out[0, 2] += indu; out[0, 3] += plor.real; out[0, 4] += plor.imag
-    elif slipping_walls():   # NEW (2026-11-06): the spectral Indu includes the wall terms; the full budget needs them apart
-        magnetic_powers_grid(walls_only=True)
+    elif slipping_walls() or ut.rotdyn:   # NEW (2026-11-06): the spectral Indu includes the wall terms; the full budget needs
+        magnetic_powers_grid(walls_only=True)   # them apart (rotdyn = 1: the no-slip walls move with the solids)
     return out
 
 
@@ -2326,6 +2326,9 @@ def slipping_walls():
 # (resid𝐛) needs them; the full budget (resid𝐄) needs the volume work ∫ 𝐄⋅(∇×𝐛)* alone, because the flux through a wall
 # leaves the fluid's magnetic energy for the energy outside (an insulating mantle or core) or inside (spin_doctor.py). They
 # vanish for no-slip walls without a differential rotation; U0×b does not vanish where ΔΩ is not zero at a wall.
+# NEW (2026-11-06): nor does u×B0 at the no-slip walls of rotating solids (rotdyn = 1). Their flux is the induction work of
+# the solid's rotation in the field (Re ∫ (𝐕×𝐁₀)⋅(∇×𝐛)* dV over it, 𝐕 = ω ẑ×𝐫), which the solid's rotational energy pays
+# for: it is minus the power of the magnetic torque on the solid, so resid𝐄 takes it out of the induction work, as here.
 INDU_WALLS = 0.0
 # NEW (2026-11-06): the part of INDU_WALLS from U0×b at the walls where a conducting solid turns with ΔΩ (a conducting inner
 # core, a thin conducting wall: ΔΩ is uniform in latitude there, background.magnetic_diffrot). That flux does not leave for

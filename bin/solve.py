@@ -181,7 +181,8 @@ def split_fields(vec):
                ('thermal',  ut.n * par.thermal),
                ('magnetic', 2*ut.n * par.magnetic),     # NEW (2026-10-28): f, g after s (ut.offset)
                ('magnetic_ic', 2*ut.nic),               # NEW (2026-10-28): fic, gic, a conducting inner core
-               ('magnetic_mantle', 2*ut.nman) ]         # NEW (2026-11-06): fm, gm, the resolved mantle
+               ('magnetic_mantle', 2*ut.nman),          # NEW (2026-11-06): fm, gm, the resolved mantle
+               ('rotdyn', 3*ut.rotdyn) ]                # NEW (2026-11-06): omega_M, omega_IC, phi, the rotating solids
     fields = {}
     offset = 0
     for name, size in blocks:

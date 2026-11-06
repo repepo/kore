@@ -27,6 +27,7 @@ import diff_rot as dr
 import centrifugal as cf   # NEW (2026-11-05)
 import radial_profiles as rap
 import background as bg   # NEW (2026-11-06): the conductivity of the resolved mantle (bc_b_mantle)
+import rotdyn as rd   # NEW (2026-11-06): the rotating solids (rotdyn = 1)
 
 def centrifugal_blocks(loc_list, fun, l, sec, comp, lls, row, col0, factor=1, nblk=None, dls=None):
     '''
@@ -763,6 +764,12 @@ def main():
                     for q in [0,1,2]:
                         loc_list[q].append( bc_b_list[q] )
 
+    if ut.rotdyn:  # NEW (2026-11-06, from conductive_IC): the rotating solids (rotdyn.py): their three rows of A, and their
+        # rotation in the no-slip rows of T of degree 1 (T = r omega at each wall), on rank 0
+        rot_list = rd.a_rows(rank == 0)
+        for q in [0,1,2]:
+            loc_list[q].append( rot_list[q] )
+
 
     # ------------------------------------------------------------------------------------------------------------------ A matrix assembly
     A = gather_csr(comm, loc_list, complex)  # full A on rank 0, None elsewhere
@@ -880,6 +887,11 @@ def main():
                         row = ut.offset[sec] + ( rank*bpp + k )* par.N_mantle
                         mtx = -op.b(l, sec, comp, 0)
                         loc_list = ut.packit(loc_list, mtx, row, row)
+
+        if ut.rotdyn:  # NEW (2026-11-06): the rotating solids, -I_M, -I_IC, -1 (rotdyn.py), on rank 0
+            rot_list = rd.b_rows(rank == 0)
+            for q in [0,1,2]:
+                loc_list[q].append( rot_list[q] )
 
 
         # ---------------------------------------------------------------------- B matrix assembly

@@ -44,7 +44,9 @@ B = ut.load_csr('B.npz')
 if A.shape[0] != ut.sizmat:
     sys.exit('A.npz has %d rows, this run %d: run submatrices.py and assemble.py with these parameters' % (A.shape[0], ut.sizmat))
 
-ib = np.arange(ut.offset['f'], ut.sizmat)   # the field: sections f, g (and fic, gic, fm, gm), last in A (ut.offset)
+# the field: sections f, g (and fic, gic, fm, gm), after the flow and the entropy; NEW (2026-11-06): before the rotating
+# solids (rotdyn = 1), left out here: for m = 0 their rotation induces no field and leaves the wall conditions unchanged
+ib = np.arange(ut.offset['f'], ut.offset['rot'])
 Ab = A[ib]
 M = (Ab[:, ib] - lam*B[ib][:, ib]).tocsr()
 M.sort_indices()

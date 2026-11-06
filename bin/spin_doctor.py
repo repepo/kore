@@ -19,6 +19,7 @@ import radial_profiles as rap
 import background as bg
 import background_field as bf
 import centrifugal as cf   # NEW (2026-11-05)
+import rotdyn as rd   # NEW (2026-11-06): the rotating solids and the angular momentum budget
 
 
 
@@ -212,6 +213,13 @@ def param_table(elapsed):
         ( 'sigma_mantle_cmb',         mantle_value(lambda: bg.sigma_mantle(ut.rcmb)), '%.9e' ),  # sigma at r = 1, as used
         ( 'sigma_mantle_param',       par.sigma_mantle_param,      '%.9e' ),  # p of an expression (in the # note)
         ( 'c1_mantle',                mantle_value(bg.mantle_conductance), '%.9e' ),   # ∫ sigma dr, the c1 of a thin wall
+        ( 'rotdyn',                   par.rotdyn,                  '%d' ),    # NEW (2026-11-06): the rotating solids
+        ( 'MoIZ_M',                   par.MoIZ_M,                  '%.9e' ),
+        ( 'MoIZ_IC',                  par.MoIZ_IC,                 '%.9e' ),
+        ( 'gTorque',                  par.gTorque,                 '%.9e' ),
+        ( 'OmgtauIC',                 par.OmgtauIC,                '%.9e' ),
+        ( 'vtrq',                     par.vtrq,                    '%d' ),
+        ( 'mtrq',                     par.mtrq,                    '%d' ),
     ]
 
 
@@ -293,6 +301,9 @@ def main(ncpus):
     bman = None
     if ut.resolved_mantle:  # NEW (2026-11-06): the field of the resolved mantle
         bman = ( np.loadtxt('real_magnetic_mantle.field') + 1j*np.loadtxt('imag_magnetic_mantle.field') ).reshape((2*ut.nman,-1))
+    rot = None
+    if ut.rotdyn:  # NEW (2026-11-06): omega_M, omega_IC, phi of the rotating solids
+        rot = ( np.loadtxt('real_rotdyn.field') + 1j*np.loadtxt('imag_rotdyn.field') ).reshape((3,-1))
 
     # NEW (2026-11-06): without the flow (hydro = 0) the solutions are counted in the field's (or the entropy's) file, and the
     # flow's diagnostics run on a zero flow (upp.zero_flow): they give zeros, and residσ, residω, residens are not computed
@@ -354,6 +365,17 @@ def main(ncpus):
     twaerr      = np.zeros((success, 4))   # NEW (2026-11-06): h/δ_w and ε_TWA at the outer and the inner wall (upp.twa_error)
     use_twa     = bool(ut.twa_o or ut.twa_i)
     use_walls   = use_twa or bool(ut.resolved_mantle)   # NEW (2026-11-06): E_w, Ohm_w are those of the resolved mantle too
+    # NEW (2026-11-06, from conductive_IC): the angular momentum of the fluid and the torques on its walls, axial (m = 0, symm = 1)
+    # or equatorial (m = 1, symm = -1), rotdyn.py, for a spherical body; resid𝐋 the balance λL = (the torques on the fluid),
+    # where rd.L_case()
+    do_torques  = bool(par.hydro and not par.centrifugal and ((par.m == 0 and par.symm == 1) or (par.m == 1 and par.symm == -1)))
+    L_case      = rd.L_case()
+    angmom      = np.zeros(success, dtype=complex)  # L (rotdyn.angular_momentum)
+    vtorq       = np.zeros(success, dtype=complex)  # viscous torque on the mantle (on everything beyond the outer wall)
+    vtorq_ic    = np.zeros(success, dtype=complex)  #   and on the inner core
+    mtorq       = np.zeros(success, dtype=complex)  # magnetic torque on the mantle (the Maxwell stress on the fluid's side)
+    mtorq_ic    = np.zeros(success, dtype=complex)  #   and on the inner core
+    residL      = np.full(success, np.nan)
     MEc         = np.zeros(success)  # NEW (2026-11-05): centrifugal = 1, ∫ 𝐛̃*⋅(M - I) 𝐛̃ dV: ME + MEc is the field's energy in the
     InduM       = np.zeros(success)  #   deformed fluid; InduM, Ohmc the induction work and Ohmic loss (MagnetD) on the metric part
     Ohmc        = np.zeros(success)  #   of the field, for resid𝐄 (upp.centrifugal_magnetic_terms)
@@ -391,7 +413,9 @@ def main(ncpus):
         ( 'resid𝐄',        '{:8.2e}',   lambda i: residE[i] ),
     ] if par.magnetic else []) + ([   # NEW (2026-11-06): the estimated error of the thin walls, the larger of the two
         ( 'εTWA',          '{:8.2e}',   lambda i: max(twaerr[i,1], twaerr[i,3]) ),
-    ] if use_twa else []) + ([
+    ] if use_twa else []) + ([   # NEW (2026-11-06): the angular momentum budget of the fluid (rotdyn.py)
+        ( 'resid𝐋',        '{:8.2e}',   lambda i: residL[i] ),
+    ] if L_case else []) + ([
         # FIX (2026-11-06): in the units of KE, Hendrik (ME + MEc)/KE, as resid𝐄 and the normalisation KE + Hendrik ME = 1
         # (as conductive_IC 7660861; it was ME/KE, off by the factor Hendrik). Not without the flow (hydro = 0)
         ( 'Mag/Kin',       '{:8.2e}',   lambda i: ratio(par.Hendrik*(ME[i] + MEc[i]), KE[i]) ),
@@ -511,6 +535,12 @@ def main(ncpus):
             Wp_im[i] = np.sum(np.imag(Wp0))
             [ Wv_icb[i], Wv_cmb[i] ] = Wv0
 
+        if do_torques:   # NEW (2026-11-06): the angular momentum of the fluid and the torques on its walls (rotdyn.py)
+            angmom[i] = rd.angular_momentum(u_sol2)
+            vtorq[i], vtorq_ic[i] = rd.viscous_torques(u_sol2)
+            if par.magnetic:
+                mtorq[i], mtorq_ic[i] = rd.wall_torques(b_sol2)
+
         if par.ViscosD>0 and par.hydro:
             Ra = par.ricb
             Rb = ut.rcmb
@@ -598,6 +628,17 @@ def main(ncpus):
         if par.ViscosD>0 and not par.centrifugal and par.hydro:   # NEW (2026-11-06, phase 2): not with centrifugal = 1 (Dvisc, Wv spherical)
             Wv = Wv_icb[i] + Wv_cmb[i]
             residD[i] = abs( Dkin[i] - Wv + Dvisc[i] ) / max( abs(Dkin[i]), abs(Wv), abs(Dvisc[i]) )
+        # NEW (2026-11-06, from conductive_IC): residL (resid𝐋), the angular momentum of the fluid, λL = the torques on it: minus
+        # those on the mantle and the inner core (viscous, and the Maxwell stress at the walls), and i Gaspard L, the Coriolis
+        # torque, in the equatorial case (conductive_IC's sign: L is L_x - i L_y there). Relative to the largest term and to
+        # |λ| ∫ ρ0 r³ |T| (rotdyn.angular_momentum), so that a flow with no torque on it (stress-free or inviscid walls, m = 0)
+        # tests that it carries no net angular momentum
+        if L_case:
+            lam = sigma + 1j*w
+            on_fluid = [ -vtorq[i], -vtorq_ic[i], -mtorq[i], -mtorq_ic[i] ] + ([ 1j*par.Gaspard*angmom[i] ] if par.m == 1 else [])
+            Labs = rd.angular_momentum(u_sol2, absval=True)
+            scale = max([ abs(lam)*Labs, par.Gaspard*Labs if par.m == 1 else 0.0 ] + [ abs(t) for t in on_fluid ])
+            residL[i] = abs( lam*angmom[i] - sum(on_fluid) )/scale if scale > 0 else 0.0
         if par.magnetic:
             residb[i] = abs( 2*sigma*ME[i] - Indu[i] - Mdfs[i] ) / max( abs(2*sigma*ME[i]), abs(Indu[i]), abs(Mdfs[i]) )
             # residE (resid𝐄, as conductive_IC): 2σ(KE + Hendrik (ME + MEic + MEext)) = Dkin + Wthm + Wlor + Hendrik Indu
@@ -617,7 +658,9 @@ def main(ncpus):
             # resolved mantle adds its energy and Ohmic loss the same way (exact).
             noslip = par.bco == 1 and (par.bci == 1 or par.ricb == 0)
             imperm = par.ViscosD == 0 or (par.bco in (0, 1) and (par.ricb == 0 or par.bci in (0, 1)))
-            if (noslip or not par.hydro or (imperm and not par.centrifugal)) and not (use_twa and par.mu != 1):
+            # NEW (2026-11-06): with rotating solids (rotdyn = 1) only with both torques on them (vtrq = mtrq = 1)
+            rotok = not ut.rotdyn or (par.vtrq == 1 and par.mtrq == 1)
+            if (noslip or not par.hydro or (imperm and not par.centrifugal)) and not (use_twa and par.mu != 1) and rotok:
                 H = par.Hendrik if par.hydro else 1.0
                 # NEW (2026-11-05): with centrifugal = 1 the energy of the deformed body, ∫ 𝐛̃*⋅M 𝐛̃ dV in the fluid (MEc), whose
                 # rate is the work 2 Re ∫ 𝐄⋅(∇×M 𝐛̃)* dV (InduM) minus the Ohmic loss (Ohmc); closes at second order in f
@@ -627,8 +670,20 @@ def main(ncpus):
                 if use_walls:   # NEW (2026-11-06)
                     Etot += H*E_w[i]
                     Ohm  += H*Ohm_w[i]
-                residE[i] = ( abs( 2*sigma*Etot - Dkin[i] - Wthm[i] - Wex + Ohm )
-                              / max( abs(2*sigma*Etot), abs(Dkin[i]), abs(Wthm[i]), abs(Wex), Ohm, abs(Wdr[i]) ) )
+                # NEW (2026-11-06, as conductive_IC): the rotating solids add their rotational energies and the gravitational
+                # energy, I_M |ω_M|² + I_IC |ω_IC|² + K |φ|² in the units of KE (a rigid rotation ω of the fluid has KE = I |ω|²),
+                # the power of the viscous torques on them, which is minus the work of the moving walls in Dkin, and the
+                # dissipation of the inner core's relaxation, 2 K (Gaspard/OmgtauIC) |φ|². Their magnetic torques only move energy
+                # between the field and the solids: the induction work leaves out the u×B0 flux at their walls (Iwall), which
+                # is the field's share of it (utils4pp.INDU_WALLS)
+                Wsol = 0.0
+                if ut.rotdyn:
+                    om, oi, ph = rot[:, i]
+                    K = rd.coupling()
+                    Etot += par.MoIZ_M*abs(om)**2 + par.MoIZ_IC*abs(oi)**2 + K*abs(ph)**2
+                    Wsol = 2*np.real(np.conj(om)*vtorq[i] + np.conj(oi)*vtorq_ic[i]) - 2*K*rd.relaxation()*abs(ph)**2
+                residE[i] = ( abs( 2*sigma*Etot - Dkin[i] - Wthm[i] - Wex - Wsol + Ohm )
+                              / max( abs(2*sigma*Etot), abs(Dkin[i]), abs(Wthm[i]), abs(Wex), Ohm, abs(Wdr[i]), abs(Wsol) ) )
 
         if par.thermal:
             resid3[i] = ( abs( 2*sigma*TE[i] - Dthm[i] - Wadv_thm[i] - Wdr_thm[i] )
@@ -684,6 +739,17 @@ def main(ncpus):
         ( 'Dvisc',      Dvisc,      '%.9e' ),  # viscous dissipation ∫ 𝛔:∇𝐮 dV ≥ 0
         ( 'residD',     residD,     '%.9e' ),  # relative residual of Dkin = Wv_icb + Wv_cmb - Dvisc
         ( 'irreg0',     irreg0,     '%.3e' ),  # NEW (2026-11-04): ricb = 0, irreg₀ (nan with an inner core)
+        ( 'angmom_re',  np.real(angmom),   '%.9e' ),  # NEW (2026-11-06): the angular momentum of the fluid (rotdyn.py), axial
+        ( 'angmom_im',  np.imag(angmom),   '%.9e' ),  #   for m = 0, symm = 1, equatorial for m = 1, symm = -1 (0 otherwise),
+        ( 'vtorq_re',   np.real(vtorq),    '%.9e' ),  #   the viscous torque on the mantle,
+        ( 'vtorq_im',   np.imag(vtorq),    '%.9e' ),
+        ( 'vtorq_ic_re', np.real(vtorq_ic), '%.9e' ), #   on the inner core,
+        ( 'vtorq_ic_im', np.imag(vtorq_ic), '%.9e' ),
+        ( 'mtorq_re',   np.real(mtorq),    '%.9e' ),  #   the magnetic torque on the mantle,
+        ( 'mtorq_im',   np.imag(mtorq),    '%.9e' ),
+        ( 'mtorq_ic_re', np.real(mtorq_ic), '%.9e' ), #   on the inner core,
+        ( 'mtorq_ic_im', np.imag(mtorq_ic), '%.9e' ),
+        ( 'residL',     residL,     '%.9e' ),  #   and resid𝐋 (nan where it does not apply)
     ]
     with open('flow.dat','ab') as dflo:
         np.savetxt(dflo, np.column_stack([ v for _, v, _ in flow_cols ]),
@@ -731,6 +797,19 @@ def main(ncpus):
         with open('magnetic.dat','ab') as dmag:
             np.savetxt(dmag, np.column_stack([ v for _, v, _ in magnetic_cols ]),
             fmt=[ f for _, _, f in magnetic_cols ])
+
+
+    if ut.rotdyn:   # NEW (2026-11-06, as conductive_IC's rotdyn.dat): the rotating solids, real and imaginary parts of each
+        rot_cols = [ ( 'omega_M',  rot[0] ),             # the rotation rate of the mantle, relative to the frame
+                     ( 'omega_IC', rot[1] ),             # of the inner core
+                     ( 'phi',      rot[2] ),             # the angle of the inner core relative to the mantle
+                     ( 'Kphi',     rd.coupling()*rot[2] ),   # the gravitational torque on the mantle (minus that on the inner core)
+                     ( 'vtorq',    vtorq ),              # the viscous torque on the mantle
+                     ( 'mtorq',    mtorq ),              # the magnetic torque on the mantle
+                     ( 'vtorq_ic', vtorq_ic ),           # the viscous torque on the inner core
+                     ( 'mtorq_ic', mtorq_ic ) ]          # the magnetic torque on the inner core
+        with open('rotdyn.dat','ab') as drd:
+            np.savetxt(drd, np.column_stack([ f(v) for _, v in rot_cols for f in (np.real, np.imag) ]), fmt='%.9e')
 
 
     if par.forcing == 0:

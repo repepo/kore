@@ -339,8 +339,8 @@ kore checks the combination of options at startup and stops on any it cannot han
 
 Supported: a shell or a full sphere (`ricb = 0`); any `structure`; eigenvalue problems; with or without a differential
 rotation; `ViscosD > 0`, or `ViscosD = 0` in a full sphere; with or without the flow (`hydro = 0`, above); insulating
-walls, thin conducting walls, a resolved conducting mantle or a conducting inner core. The magnetic diffusivity of the
-fluid is uniform.
+walls, thin conducting walls, a resolved conducting mantle or a conducting inner core; with rotating solids
+(`rotdyn = 1`, [Rotating solids](rotating-solids.md)). The magnetic diffusivity of the fluid is uniform.
 
 Not supported (the run stops at startup):
 
@@ -389,7 +389,7 @@ resolved mantle). Each eigenvector is normalised so that the kinetic energy plus
 
 `spin_doctor` adds the Lorentz work to residσ and residω, and prints two more residuals: resid𝐛, the energy budget of
 the induction equation in the fluid, and resid𝐄, the full energy budget including the field outside the fluid, in thin
-walls and in a resolved mantle (for impenetrable walls, `bco` and `bci` 0 or 1, and any walls without the flow; not with
+walls, in a resolved mantle and in rotating solids (for impenetrable walls, `bco` and `bci` 0 or 1, and any walls without the flow; not with
 thin walls and `mu` other than 1, nor with stress-free walls and `centrifugal = 1`). Like residσ ([Solver](solver.md)), they should be small for a
 resolved mode; with a thin wall whose `c` is not zero resid𝐄 closes only to the order of the approximation, about εTWA.
 It also prints Mag/Kin, the ratio of magnetic to kinetic energy (`Hendrik` ME/KE, both in the units of the kinetic

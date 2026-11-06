@@ -155,6 +155,7 @@ quadrature in $\cos\theta$, exact for these polynomials. Each residual is relati
 | residω | its imaginary part, with the Coriolis force | `2w KE + Wcor_im - Dkin_im - Wthm_im - Wdr_im - Wp_im`, $w = \mathrm{Im}\thinspace\lambda$ |
 | resid$s$ | $2\sigma T - W_{\rm adv} + D_{\rm th} - W_{\Omega,\rm th} = 0$ | `2σ TE - Dthm - Wadv - Wdr_thm` (`Dthm` $= -D_{\rm th}$) |
 | residD | $W_\nu - W_\nu^{\rm wall} + D_\nu = 0$ | `Dkin - (Wv_icb + Wv_cmb) + Dvisc` |
+| resid𝐋 | $\lambda L$ = the torques on the fluid ([Rotating solids equations](rotating-solids-equations.md#the-angular-momentum-balance-residl)) | `lam*angmom - (-vtorq - vtorq_ic - mtorq - mtorq_ic [+ i Gaspard angmom])` |
 
 residσ and resid$s$ judge whether a solution is resolved ([Solver](solver.md) gives the thresholds), also for forced
 runs, where $\sigma = 0$. residD compares two independent computations of the viscous terms: $W_\nu$ from the viscous

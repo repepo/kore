@@ -10,7 +10,7 @@ table.
 | `A.npz`, `B.npz` | `assemble.py` | the matrices of the eigenproblem $A\mathbf x = \lambda B\mathbf x$ |
 | `B_forced.npz` | `assemble.py`, with `forcing` > 0 | the right-hand sides of a forced run, one per column |
 | `eigenvalues0.dat` | `solve.py` | the eigenvalues of the last solve, one per row: $\mathrm{Re}\thinspace\lambda$, $\mathrm{Im}\thinspace\lambda$ |
-| `real_flow.field`, `imag_flow.field` | `solve.py` | the eigenvectors of the flow (or the forced flows), real and imaginary parts of their spectral coefficients, one column per solution; with `thermal = 1` also `real_thermal.field`, `imag_thermal.field` for $s$; with `magnetic = 1` also `real_magnetic.field`, `imag_magnetic.field` for $\mathbf b$, `real_magnetic_ic.field`, `imag_magnetic_ic.field` for a conducting inner core, and `real_magnetic_mantle.field`, `imag_magnetic_mantle.field` for a resolved mantle. Without the flow (`hydro = 0`) the flow's files are not written |
+| `real_flow.field`, `imag_flow.field` | `solve.py` | the eigenvectors of the flow (or the forced flows), real and imaginary parts of their spectral coefficients, one column per solution; with `thermal = 1` also `real_thermal.field`, `imag_thermal.field` for $s$; with `magnetic = 1` also `real_magnetic.field`, `imag_magnetic.field` for $\mathbf b$, `real_magnetic_ic.field`, `imag_magnetic_ic.field` for a conducting inner core, and `real_magnetic_mantle.field`, `imag_magnetic_mantle.field` for a resolved mantle; with `rotdyn = 1` also `real_rotdyn.field`, `imag_rotdyn.field` for the rotation rates of the mantle and of the inner core and the angle between them ([Rotating solids](rotating-solids.md)). Without the flow (`hydro = 0`) the flow's files are not written |
 | `rsf_spectrum.dat`, `rsf_ke.dat` | `solve.py`, with `forcing = 11` and `rsf_frequencies` | the power spectrum of the kinetic energy of the forced flow, appended, one row per frequency ([Convective forcing](forcing.md#reading-the-output)) |
 | `timing.dat` | `solve.py` | the run time of the solve, appended |
 | `eigenvalues.dat` | `spin_doctor.py` | the eigenvalues, appended |
@@ -18,9 +18,10 @@ table.
 | `flow.dat` | `spin_doctor.py` | the kinetic energy and the checks of each solution (below) |
 | `thermal.dat` | `spin_doctor.py`, with `thermal = 1` | the entropy budget of each solution (below) |
 | `magnetic.dat` | `spin_doctor.py`, with `magnetic = 1` | the magnetic energies and budgets of each solution (below) |
+| `rotdyn.dat` | `spin_doctor.py`, with `rotdyn = 1` | the rotation of the solids and the torques on them, for each solution (below) |
 
 `python3 bin/units.py` prints the eigenvalues of `eigenvalues0.dat` as frequency and growth rate in nHz
-([Background model](background.md#units)). Rows of `params.dat`, `flow.dat`, `thermal.dat` and `magnetic.dat` with the same index
+([Background model](background.md#units)). Rows of `params.dat`, `flow.dat`, `thermal.dat`, `magnetic.dat` and `rotdyn.dat` with the same index
 belong to the same solution. Start a new `params.dat` rather than append to one written by another version of kore,
 which may have other columns.
 
@@ -42,6 +43,8 @@ Columns, counted from 1:
 | 26 | the viscous dissipation $\int\boldsymbol\sigma:\nabla\mathbf u\thinspace dV = \int 2\rho_0\nu\thinspace\mathsf e_d:\mathsf e_d\thinspace dV \geq 0$ ($\mathsf e_d$ the deviatoric rate of strain), from an $(r, \theta)$ grid; column 4 is $\int\mathbf u\cdot(\nabla\cdot\boldsymbol\sigma)\thinspace dV$ = columns 24 + 25 − 26 |
 | 27 | the relative residual of that identity (NaN with `centrifugal = 1`, where columns 24–26 keep their spherical form) |
 | 28 | in a full sphere, irreg₀: how far the solution is from smooth at the centre ([Regularity at the centre](numerical-method.md#regularity-at-the-centre)); NaN with an inner core |
+| 29–38 | for `m = 0`, `symm = 1` and `m = 1`, `symm = -1` (0 otherwise, and with `centrifugal = 1`), real and imaginary parts of: the angular momentum of the fluid, axial or equatorial, and the viscous torques on the mantle and on the inner core, then the magnetic ones ([Rotating solids equations](rotating-solids-equations.md#torques)) |
+| 39 | resid𝐋, the relative residual of the fluid's angular momentum balance (NaN where it is not computed, [Rotating solids](rotating-solids.md#the-angular-momentum-check-residl)) |
 
 ## `thermal.dat`
 
@@ -75,6 +78,17 @@ the definitions are on [Magnetic field equations](magnetic-equations.md#energy-b
 | 13, 14 | with a thin wall (`mantle` or `innercore` `'TWA'`) or a resolved mantle (`mantle = 'resolved'`) only: E_w, the magnetic energy stored in the thin walls or in the layer, and Ohm_w, their Ohmic loss |
 | 15, 16 | with a thin wall or a resolved mantle only: εTWA, the estimated relative error of the outer and of the inner thin wall (0 where there is none; the `spin_doctor` table shows the larger) |
 
+## `rotdyn.dat`
+
+With `rotdyn = 1` ([Rotating solids](rotating-solids.md)), the real and imaginary parts (columns 1–2, 3–4, ...) of
+
+| columns | content |
+| --- | --- |
+| 1–6 | the rotation rates of the mantle and of the inner core relative to the frame, and the angle of the inner core relative to the mantle |
+| 7–8 | the gravitational torque on the mantle (minus that on the inner core) |
+| 9–12 | the viscous and the magnetic torques on the mantle |
+| 13–16 | the viscous and the magnetic torques on the inner core |
+
 ## `params.dat`
 
 The columns follow the order of `spin_doctor.param_table`, counted from 1:
@@ -98,6 +112,7 @@ The columns follow the order of `spin_doctor.param_table`, counted from 1:
 | 113 | `hydro` (0: no flow) |
 | 114–122 | `mantle`, `c_cmb`, `c1_cmb`, `muw_cmb`, `c_icb`, `c1_icb`, `muw_icb`, `mu`, `B0_cmb` |
 | 123–127 | `r_surface`, `N_mantle`, the conductivity of a resolved mantle at the outer wall (as used), `sigma_mantle_param`, its conductance $\int\sigma\,dr$ (the `c1_cmb` of a thin wall of the same conductance) |
+| 128–134 | `rotdyn`, `MoIZ_M`, `MoIZ_IC`, `gTorque`, `OmgtauIC`, `vtrq`, `mtrq` |
 
 - Names are written as their index in the lists of the code: `structure` in `background.STRUCTURES` (`'8-term fit'` 0,
   `'old model S prototype'` 1, `'model S hydrostatic'` 2, `'Wu 2005'` 3, `'Boussinesq'` 4), `stratification` in
@@ -127,5 +142,5 @@ The columns follow the order of `spin_doctor.param_table`, counted from 1:
 - A row ends, after a `#` that `np.loadtxt` skips, with the `'user'`, `'general'` and `'ferraro'` expressions, that of
   `sigma_mantle` and, for `'tabulated'`, `diff_rot_file` with the first 12 hex digits of its sha256. A row with none of
   these has no `#`.
-- A `params.dat` written before the columns 108–112, column 113, the columns 114–122 or 123–127 were added has fewer
-  columns: start a new file.
+- A `params.dat` written before the columns 108–112, column 113, the columns 114–122, 123–127 or 128–134 were added has
+  fewer columns: start a new file. The same holds for `flow.dat` before its columns 29–39.

@@ -801,7 +801,7 @@ Mag/Kin and writes `magnetic.dat`:
 | 8 | MEext | energy of the potential field outside the outer wall (beyond `r_surface` with a resolved mantle) |
 | 9 | Ohm_f | Ohmic loss in the fluid |
 | 10 | Ohm_ic | Ohmic loss in a conducting inner core |
-| 11 | residE | resid𝐄, the full energy budget (nan with a flow through a wall, `bco = 2` or `bci = 2`, with stress-free walls and `centrifugal = 1`, and with thin walls and `mu` ≠ 1) |
+| 11 | residE | resid𝐄, the full energy budget (nan with a flow through a wall, `bco = 2` or `bci = 2`, with stress-free walls and `centrifugal = 1`, with thin walls and `mu` ≠ 1, and with rotating solids unless `vtrq` and `mtrq` are 1) |
 | 12 | MEc | with `centrifugal = 1`, a thin wall or a resolved mantle: the energy that the deformation adds (0 without it) |
 | 13, 14 | E_w, Ohm_w | with a thin wall or a resolved mantle: the magnetic energy stored in the thin walls or in the layer, and their Ohmic loss |
 | 15, 16 | eps_twa_o, eps_twa_i | with a thin wall or a resolved mantle: $\varepsilon_\text{TWA}$ of the outer and of the inner thin wall (0 where there is none) |
@@ -858,6 +858,12 @@ $E_w = \tfrac12\int\lvert\mathbf b\rvert^2dV$ and loses $\mathrm{Ohm\_w} = \math
 over $1 \le r \le r_s$ (Gauss-Legendre in $r$), and MEext is the potential field beyond $r_s$. The full budget gains them
 as for thin walls, and closes exactly. A fluid slipping along the layer carries energy into it through
 $\mathbf u\times\mathbf B_0$, as into a thin wall (`INDU_WALLS`, above).
+
+**Rotating solids** (`rotdyn = 1`). The solids store their rotational and gravitational energy, and exchange energy with
+the fluid through the torques: the full budget gains that energy on the left, and the power of the viscous torques and
+the inner core's relaxation loss on the right, while the $\mathbf u\times\mathbf B_0$ flux through the moving no-slip
+walls is minus the power of the magnetic torques and leaves the induction work (`INDU_WALLS`). Only with both torques on
+the solids (`vtrq` and `mtrq` 1); [Rotating solids equations](rotating-solids-equations.md#energy).
 
 **How the terms are computed.** spin_doctor's Lorentz force (`utils4pp.lorentz4pp`) acts per volume, and its power
 $\int\mathbf u^*\cdot\mathbf G\,dV$ has no $\rho_0$. Its induction term (`induction4pp`) takes the components of

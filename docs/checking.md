@@ -21,9 +21,10 @@ seconds to minutes.
 | `tests/forcing/run_all.sh` | the wall values that the boundary forcings 6, 7, 9 and 10 impose, read back from the solution | after a change of a boundary forcing or of the wall rows | 20 s |
 | `tests/twa/run_all.sh` | the thin conducting walls (`'TWA'`): exact free-decay rates, eigenvalues of the `conductive_IC` branch, the slipping fluid, walls that turn with the fluid, the budgets | after a change of the magnetic walls, of the induction by the flow or the rotation, or of `spin_doctor`'s magnetic budgets | 1 min |
 | `tests/mantle/run_all.sh` | the resolved conducting mantle (`'resolved'`): exact free-decay rates, eigenvalues of the `conductive_IC` branch, the limits of a thin layer and of a vanishing conductivity, a layer that turns with the fluid, the budgets with a variable density, the kinematic induction | after a change of the magnetic walls, of the magnetic diffusion, of the induction by the flow or the rotation, of the layout of the unknowns, or of `spin_doctor`'s magnetic budgets | 1.5 min |
+| `tests/rotdyn/run_all.sh` | the rotating solids (`rotdyn = 1`) and resid𝐋: exact decoupled and heavy solids, eigenvalues and torques of the `conductive_IC` branch, the conservation of angular momentum and energy with a variable density, the equatorial angular momentum, the stops | after a change of the walls, of the viscous or magnetic stresses, of the layout of the unknowns, or of `spin_doctor`'s budgets | 1 min |
 | `tests/rsf/regress_solve.sh` | eigenvalues, fields and forced solutions bitwise equal to an older copy | after a change of `solve.py` | 15 s |
 
-`tests/diff_rot`, `tests/heat_dr`, `tests/magnetic`, `tests/centrifugal`, `tests/rsf`, `tests/tidal`, `tests/forcing`, `tests/decay`, `tests/twa` and `tests/mantle` each have a README
+`tests/diff_rot`, `tests/heat_dr`, `tests/magnetic`, `tests/centrifugal`, `tests/rsf`, `tests/tidal`, `tests/forcing`, `tests/decay`, `tests/twa`, `tests/mantle` and `tests/rotdyn` each have a README
 that lists their scripts and what each one checks; the CI test explains itself in `tests/ci/test_spinover.py`.
 
 ## Are existing runs unchanged?
