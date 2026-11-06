@@ -31,7 +31,11 @@ OPERATOR_INDEPENDENT = ('ncpus', 'petsc_opts', 'prescale', 'which_eigenpairs', '
                         'rpower_pp', 'rhopower_pp', 'hvisc', 'rvisc',
                         'timescale', 'Ek', 'Em', 'Etherm', 'Le', 'g',
                         'ferraro_policy', 'write_mtx', 'hydro',
-                        'c1_cmb', 'c_icb', 'c1_icb', 'muw_icb')   # NEW (2026-11-06): thin walls, rows of assemble.py only
+                        'c1_cmb', 'c_icb', 'c1_icb', 'muw_icb',   # NEW (2026-11-06): thin walls, rows of assemble.py only
+                        'kappa_cmb', 'topo_drag', 'topo_hrms', 'topo_lambda0', 'topo_H', 'topo_N', 'topo_omega', 'topo_K',
+                        # NEW (2026-11-06): the drag at the outer wall (topo.py) and the rotating solids (rotdyn.py): rows of
+                        # assemble.py only
+                        'rotdyn', 'MoIZ_M', 'MoIZ_IC', 'gTorque', 'OmgtauIC', 'vtrq', 'mtrq')
 
 
 def params_of(par):
@@ -69,7 +73,9 @@ def read(fname=FILE):
 def check(built, par, fname=FILE):
     '''stop if the parameters the operators were built from (built, from read()) differ from those of par'''
     now = params_of(par)
-    diff = [n for n in sorted(set(built) | set(now)) if built.get(n) != now.get(n)]
+    # NEW (2026-11-06): a name listed in OPERATOR_INDEPENDENT after the file was written is not compared either
+    diff = [n for n in sorted(set(built) | set(now)) if built.get(n) != now.get(n)
+            and n not in OPERATOR_INDEPENDENT and not n.startswith('rsf_')]
     if diff:
         lines = ['  %s: %s when built, %s now' % (n, built.get(n, '(absent)'), now.get(n, '(absent)')) for n in diff[:10]]
         more = ['  ... and %d more' % (len(diff) - 10)] if len(diff) > 10 else []

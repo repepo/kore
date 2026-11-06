@@ -39,8 +39,8 @@ incompressible fluid in a shell, ricb 0.35, Ek $10^{-3}$, N 48 or 64, `lmax` 19 
   angular momentum, Coriolis torque included: `'Wu 2005'` without and with a field (a conducting inner core and a
   resolved mantle), thin walls with a dipole, a toroidal field that does not vanish at the walls, and a full sphere with
   a field. Expected: $10^{-8}$ (in practice $10^{-15}$ to $10^{-9}$, the full sphere last).
-- **Stops.** `rotdyn = 1` with `m = 1`, with a stress-free wall, with a differential rotation, with a vanishing moment of
-  inertia, with `vtrq = 2`, and with a toroidal field that does not vanish at the walls stops in `submatrices.py` with
-  its message.
+- **Stops.** `rotdyn = 1` with `m = 1`, with a stress-free inner wall, with a differential rotation, with a vanishing
+  moment of inertia, with `vtrq = 2`, and with a toroidal field that does not vanish at the walls stops in
+  `submatrices.py` with its message.
 
 About 1 min on 2 ranks.

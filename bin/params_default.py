@@ -142,6 +142,30 @@ class default_params():
         # Use 0 for stress-free, 1 for no-slip or forced boundary flow
         self.bco = 0
 
+        # NEW (2026-11-06, from conductive_IC): a drag at a stress-free outer wall (bco = 0, ViscosD > 0), the form drag of the
+        # flow over the wall's topography (docs/drag.md, bin/topo.py): the wall exerts on the fluid the tangential stress
+        # -K (u_t - v_m), v_m the velocity of the mantle (rotdyn = 1; 0 otherwise), between stress-free (K = 0) and no-slip
+        # (K -> inf). K in units of rho_w Omega r0, rho_w the fluid's density at the wall. kappa_cmb: a constant K, the same in
+        # every direction (kappa_cmb = kappa/(rho_w Omega r0) for a drag of stress kappa u: the Earth's topographic drag of
+        # Rekier et al. calibrated at the diurnal frequency, kappa = 11.3 kg m^-2 s^-1, is 4.5e-6). background.check_drag stops
+        # on what it does not cover.
+        self.kappa_cmb = 0.0
+        # topo_drag = 'rekier' (None: off): instead of kappa_cmb, the latitude-dependent tensor diag(kappa_tt, kappa_pp)(theta) of
+        # the internal waves the flow radiates over the topography (Rekier et al. 2025, arXiv:2507.01671, eqs. 20, 21, B1, B2,
+        # with the factor 4 pi^2 that the printed B1 lacks). Inputs: the rms height and the roll-off wavelength of the
+        # topography in units of r0 (the outer radius of the fluid), and its Hurst exponent (> 1/2): the Earth's CMB (1.51 km,
+        # 1500 km at r0 = 3480 km) is topo_hrms = 4.35e-4, topo_lambda0 = 0.431, topo_H = 0.8. N, the buoyancy frequency at the
+        # wall, is that of the stratification (0 without buoyancy or where it is unstable) unless topo_N (N/Omega) is set; the
+        # frequency of the flow is |itau|/Gaspard, the solver's target (forced problems: |forcing_frequency|/Gaspard), unless
+        # topo_omega (w0/Omega) is set.
+        self.topo_drag    = None
+        self.topo_hrms    = 0.0
+        self.topo_lambda0 = 0.431
+        self.topo_H       = 0.8
+        self.topo_N       = None
+        self.topo_omega   = None
+        self.topo_K       = ''   # test hook: a numpy expression of x = cos(theta) giving (kappa_tt, kappa_pp) instead of B1
+
         # Differential rotation parameters. Set to 0 for solid body rotation. Ω_ref is the frame rotation rate (Gaspard in units of
         # the time scale) and ΔΩ is relative to it, so any timescale works: U0 = Gaspard ΔΩ r sinθ e_φ. User guide: docs/background.md (Rotation).
         # ----------------------------------------------------------------------------------------------------------------------

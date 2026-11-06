@@ -23,8 +23,8 @@ angular momentum and energy. Exit code 1 if a check fails.
 5. The equatorial resid𝐋 (m = 1, symm = -1, rotdyn = 0), lambda L = (the torques on the fluid) + i Gaspard L: 'Wu 2005'
    without and with a field (a conducting inner core and a resolved mantle), thin walls with a dipole, a toroidal B0 that
    does not vanish at the walls, a full sphere with a field; 1e-8.
-6. Stops: rotdyn = 1 with m = 1, with a stress-free wall, with a differential rotation, with a vanishing moment of inertia,
-   with vtrq = 2 and with a toroidal B0 that does not vanish at the walls stops in submatrices.py with its message.
+6. Stops: rotdyn = 1 with m = 1, with a stress-free inner wall, with a differential rotation, with a vanishing moment of
+   inertia, with vtrq = 2 and with a toroidal B0 that does not vanish at the walls stops in submatrices.py with its message.
 '''
 import os, sys, shutil, subprocess
 import numpy as np
@@ -182,7 +182,7 @@ def stops(name, extra, words):
     return p.returncode != 0 and words in p.stdout + p.stderr
 
 cases = [('m = 1', "par.m = 1", 'rotdyn = 1 needs the flow'),
-         ('stress-free wall', "par.bco = 0", 'rotdyn = 1 needs a viscous fluid with no-slip walls'),
+         ('stress-free inner wall', "par.bci = 0", 'with a no-slip inner wall (bci = 1)'),
          ('diff_rot', "par.diff_rot = 1", 'rotdyn = 1 with a differential rotation'),
          ('MoIZ_IC = 0', "par.MoIZ_IC = 0.0", 'MoIZ_IC = 0.0'),
          ('vtrq = 2', "par.vtrq = 2", 'vtrq = 2'),

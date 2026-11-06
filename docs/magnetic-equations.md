@@ -413,7 +413,9 @@ $$
 the second because the wall's $\partial_t F$ now includes the radial induction of the slip. `assemble.bc_b_slip` builds
 both for any poloidal $\mathbf B_0$ with the recurrence algebra (`angular.Algebra`): $B_{0r} = \sum_n n(n+1)h_n P_n/r$
 over the degrees of the background, times $\mathbf u_t = \sum_k s_k\,r\nabla Y_k + t_k\,r\nabla Y_k\times\hat{\mathbf r}$ with
-$s_k = P_k' + P_k/r + (\ln\rho_0)'P_k$ and $t_k = T_k$ at the wall; a toroidal background has no $B_{0r}$.
+$s_k = P_k' + P_k/r + (\ln\rho_0)'P_k$ and $t_k = T_k$ at the wall; a toroidal background has no $B_{0r}$. With the
+rotating solids the outer wall's frame turns with the mantle, and $t_1 = T_1 - r\,\omega_M$ there, the slip relative
+to it ([Rotating solids equations](rotating-solids-equations.md#equations)).
 `conductive_IC` has these terms for a single degree.
 
 **The background field at a thin outer wall** (`B0_cmb`). A steady $\mathbf B_0$ drives no current in the wall, but

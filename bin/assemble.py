@@ -28,6 +28,7 @@ import centrifugal as cf   # NEW (2026-11-05)
 import radial_profiles as rap
 import background as bg   # NEW (2026-11-06): the conductivity of the resolved mantle (bc_b_mantle)
 import rotdyn as rd   # NEW (2026-11-06): the rotating solids (rotdyn = 1)
+import topo   # NEW (2026-11-06): the drag at the outer wall (kappa_cmb, topo_drag)
 
 def centrifugal_blocks(loc_list, fun, l, sec, comp, lls, row, col0, factor=1, nblk=None, dls=None):
     '''
@@ -445,6 +446,10 @@ def main():
             bc_u_list = bc_u_centrifugal( l, 'section_u', ll_flo )
             for q in [0,1,2]:
                 loc_list[q].append( bc_u_list[q] )
+        if topo.on():  # NEW (2026-11-06, from conductive_IC): the drag at the stress-free outer wall, in its stress row
+            bc_u_list = topo.rows( l, 'u' )
+            for q in [0,1,2]:
+                loc_list[q].append( bc_u_list[q] )
         # ----------------------------------------------------------------------------------------------------------
 
 
@@ -562,6 +567,10 @@ def main():
                 loc_list[q].append( bc_u_list[q] )
             if par.centrifugal:  # NEW (2026-11-05, phase 2): the metric parts of the stress-free rows
                 bc_u_list = bc_u_centrifugal( l, 'section_v', ll_flo )
+                for q in [0,1,2]:
+                    loc_list[q].append( bc_u_list[q] )
+            if topo.on():  # NEW (2026-11-06, from conductive_IC): the drag at the stress-free outer wall
+                bc_u_list = topo.rows( l, 'v' )
                 for q in [0,1,2]:
                     loc_list[q].append( bc_u_list[q] )
         # ----------------------------------------------------------------------------------------------------------
@@ -1307,6 +1316,9 @@ def bc_b_slip(l, sec, wall, row, factor=None):
         if k in lt_u and ct != 0:
             data.append( ct*Tv[:,0] )
             cols.append( ut.offset['v'] + int(ut.N1*(k - ut.m_bot)/2) + np.arange(Tv.shape[0]) )
+            if ut.rotdyn and wall == 'outer' and k == 1:   # NEW (2026-11-06, as conductive_IC): the slip relative to the
+                data.append( np.array([ -ct*r ]) )          # rotating mantle, T_1 - r omega_M (the wall's own frame)
+                cols.append( np.array([ ut.offset['rot'] ]) )
     if not data:
         return [np.zeros(0, dtype=complex), np.zeros(0, dtype=int), np.zeros(0, dtype=int)]
     data = np.concatenate(data)

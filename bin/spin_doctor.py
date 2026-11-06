@@ -20,6 +20,7 @@ import background as bg
 import background_field as bf
 import centrifugal as cf   # NEW (2026-11-05)
 import rotdyn as rd   # NEW (2026-11-06): the rotating solids and the angular momentum budget
+import topo   # NEW (2026-11-06): the drag at the outer wall
 
 
 
@@ -94,6 +95,7 @@ def param_table(elapsed):
     The order here is the column order in params.dat. To add a parameter, append a
     tuple at the end so existing columns keep their positions.
     '''
+    topo_on = par.topo_drag is not None   # NEW (2026-11-06)
     return [
         ( 'thermal',                  par.thermal,                 '%d' ),
         ( 'm',                        par.m,                       '%d' ),
@@ -220,6 +222,15 @@ def param_table(elapsed):
         ( 'OmgtauIC',                 par.OmgtauIC,                '%.9e' ),
         ( 'vtrq',                     par.vtrq,                    '%d' ),
         ( 'mtrq',                     par.mtrq,                    '%d' ),
+        # NEW (2026-11-06): the drag at the outer wall (topo.py): kappa_cmb, topo_drag (1: 'rekier', 0: None), and with
+        # 'rekier' (0 otherwise) its inputs and the N/Omega and w0/Omega it used
+        ( 'kappa_cmb',                par.kappa_cmb,               '%.9e' ),
+        ( 'topo_drag',                int(topo_on),                '%d' ),
+        ( 'topo_hrms',                par.topo_hrms if topo_on else 0.0,     '%.9e' ),
+        ( 'topo_lambda0',             par.topo_lambda0 if topo_on else 0.0,  '%.9e' ),
+        ( 'topo_H',                   par.topo_H if topo_on else 0.0,        '%.9e' ),
+        ( 'topo_N_cmb',               topo.N_cmb() if topo_on else 0.0,      '%.9e' ),
+        ( 'topo_omega',               topo.omega0() if topo_on else 0.0,     '%.9e' ),
     ]
 
 
@@ -376,6 +387,11 @@ def main(ncpus):
     mtorq       = np.zeros(success, dtype=complex)  # magnetic torque on the mantle (the Maxwell stress on the fluid's side)
     mtorq_ic    = np.zeros(success, dtype=complex)  #   and on the inner core
     residL      = np.full(success, np.nan)
+    # NEW (2026-11-06, from conductive_IC): the drag at a stress-free outer wall (topo.py): Dtopo, the power it dissipates, and
+    # dsig = -Dtopo/(2 E), the damping rate it implies (E the energy of the mode); per unit kappa_cmb without a drag
+    do_drag     = bool(par.hydro and par.ViscosD > 0 and par.bco == 0 and par.Gaspard > 0 and not par.centrifugal)
+    Dtopo       = np.zeros(success)
+    dsig        = np.zeros(success)
     MEc         = np.zeros(success)  # NEW (2026-11-05): centrifugal = 1, ∫ 𝐛̃*⋅(M - I) 𝐛̃ dV: ME + MEc is the field's energy in the
     InduM       = np.zeros(success)  #   deformed fluid; InduM, Ohmc the induction work and Ohmic loss (MagnetD) on the metric part
     Ohmc        = np.zeros(success)  #   of the field, for resid𝐄 (upp.centrifugal_magnetic_terms)
@@ -415,7 +431,10 @@ def main(ncpus):
         ( 'εTWA',          '{:8.2e}',   lambda i: max(twaerr[i,1], twaerr[i,3]) ),
     ] if use_twa else []) + ([   # NEW (2026-11-06): the angular momentum budget of the fluid (rotdyn.py)
         ( 'resid𝐋',        '{:8.2e}',   lambda i: residL[i] ),
-    ] if L_case else []) + ([
+    ] if L_case else []) + ([   # NEW (2026-11-06): the drag at the outer wall (per unit kappa_cmb without one: '/κ')
+        ( 'Dtopo' + ('' if topo.on() else '/κ'),   '{:8.2e}',   lambda i: Dtopo[i] ),
+        ( 'δσtopo' + ('' if topo.on() else '/κ'),  '{:9.2e}',   lambda i: dsig[i] ),
+    ] if do_drag else []) + ([
         # FIX (2026-11-06): in the units of KE, Hendrik (ME + MEc)/KE, as resid𝐄 and the normalisation KE + Hendrik ME = 1
         # (as conductive_IC 7660861; it was ME/KE, off by the factor Hendrik). Not without the flow (hydro = 0)
         ( 'Mag/Kin',       '{:8.2e}',   lambda i: ratio(par.Hendrik*(ME[i] + MEc[i]), KE[i]) ),
@@ -685,6 +704,15 @@ def main(ncpus):
                 residE[i] = ( abs( 2*sigma*Etot - Dkin[i] - Wthm[i] - Wex - Wsol + Ohm )
                               / max( abs(2*sigma*Etot), abs(Dkin[i]), abs(Wthm[i]), abs(Wex), Ohm, abs(Wdr[i]), abs(Wsol) ) )
 
+        if do_drag:   # NEW (2026-11-06): the power the drag dissipates (per unit kappa_cmb without one) and its damping rate
+            Dtopo[i] = topo.dissipation(u_sol2, rot[0, i] if ut.rotdyn else 0)
+            E = KE[i]
+            if par.magnetic:
+                E += par.Hendrik*( ME[i] + MEc[i] + MEic[i] + MEext[i] + E_w[i] )
+            if ut.rotdyn:
+                E += par.MoIZ_M*abs(rot[0, i])**2 + par.MoIZ_IC*abs(rot[1, i])**2 + rd.coupling()*abs(rot[2, i])**2
+            dsig[i] = -Dtopo[i]/(2*E) if E > 0 else np.nan
+
         if par.thermal:
             resid3[i] = ( abs( 2*sigma*TE[i] - Dthm[i] - Wadv_thm[i] - Wdr_thm[i] )
                           / max( abs(2*sigma*TE[i]), abs(Dthm[i]), abs(Wadv_thm[i]), abs(Wdr_thm[i]) ) )
@@ -750,7 +778,9 @@ def main(ncpus):
         ( 'mtorq_ic_re', np.real(mtorq_ic), '%.9e' ), #   on the inner core,
         ( 'mtorq_ic_im', np.imag(mtorq_ic), '%.9e' ),
         ( 'residL',     residL,     '%.9e' ),  #   and resid𝐋 (nan where it does not apply)
-    ]
+        ( 'Dtopo',      Dtopo,      '%.9e' ),  # NEW (2026-11-06): the power the drag at the outer wall dissipates,
+        ( 'dsig',       dsig,       '%.9e' ),  #   and the damping rate it implies (per unit kappa_cmb without a drag; 0 with
+    ]                                          #   a no-slip outer wall)
     with open('flow.dat','ab') as dflo:
         np.savetxt(dflo, np.column_stack([ v for _, v, _ in flow_cols ]),
         fmt=[ f for _, _, f in flow_cols ])

@@ -11,7 +11,10 @@ relative to the frame, with phi the angle of the inner core relative to the mant
 
 with I_M, I_IC = MoIZ_M, MoIZ_IC, K = gTorque Gaspard^2 and G_M, G_IC the axial torques of the fluid on each solid: viscous
 (times vtrq) and magnetic (times mtrq). The fluid follows the solids through its no-slip walls: the toroidal flow of degree 1,
-u_phi = T sin(theta), is T(1) = omega_M and T(ricb) = ricb omega_IC there (a rigid rotation omega has T = omega r).
+u_phi = T sin(theta), is T(1) = omega_M and T(ricb) = ricb omega_IC there (a rigid rotation omega has T = omega r). NEW
+(2026-11-06, as conductive_IC): the outer wall may be stress-free (bco = 0) instead; the fluid slips along the mantle there,
+and a drag (kappa_cmb, topo_drag; topo.py) acts on the slip T_1 - r omega_M, its stress being the viscous torque on the
+mantle (none without a drag).
 
 The torques are in the convention of the complex amplitudes, in which the axial angular momentum of the fluid is
     L = ∫ rho0 s u_phi dV = (8π/3) ∫ rho0 r³ T dr        (T of degree 1 alone; Kore's Y_1^0 = cos(theta)):
@@ -83,9 +86,11 @@ def a_rows(rank0):
         d = np.atleast_1d(np.asarray(d, dtype=complex))
         data.append(d); rows.append(np.full(d.size, r)); cols.append(np.atleast_1d(np.asarray(c, dtype=int)))
     # the walls move with the solids: T(1) - omega_M = 0, T(ricb) - ricb omega_IC = 0 in the no-slip rows of T of degree 1
-    # (assemble.bc_u_spherical, section v: the outer wall's row first, then the inner one's)
+    # (assemble.bc_u_spherical, section v: the outer wall's row first, then the inner one's). NEW (2026-11-06): a stress-free
+    # outer wall (bco = 0) is not dragged along, but through the drag on the slip T_1 - omega_M (topo.rows), if any
     tcol = ut.offset['v'] + int(ut.N1*(1 - ut.m_bot)/2)
-    add(-ut.rcmb, tcol, iM)
+    if par.bco == 1:
+        add(-ut.rcmb, tcol, iM)
     add(-ri, tcol + 1, iI)
     # viscous torques, from T of degree 1 at each wall: A gets minus the torque
     import bc_variables as bv

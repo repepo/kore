@@ -266,8 +266,10 @@ of its effect.
   writes both to `magnetic.dat`; keep it small, say below 1%.
 - **A fluid slipping along the wall** (`bco = 0`, `bci = 0` or `ViscosD = 0`). The fluid's tangential electric field,
   including that of the flow across the background field, is continued into the wall in the wall's frame (condition C.I
-  of Rekier et al. 2023). The slip stands for a thin viscous layer that is not resolved, which must be thin against the
-  magnetic skin depth: `assemble.py` prints Pm times the target frequency in rotation units, which should be small.
+  of Rekier et al. 2023), which turns with the mantle with the [rotating solids](rotating-solids.md). The slip stands
+  for a thin viscous layer that is not resolved, which must be thin against the magnetic skin depth: `assemble.py`
+  prints Pm times the target frequency in rotation units, which should be small. A [drag](drag.md) at the outer wall
+  changes nothing here.
 - **With a differential rotation** the wall turns with the fluid next to it, so the rotation must be uniform in latitude
   there: the run stops otherwise.
 - **`B0_cmb`.** A steady background field drives no current in the wall, but it must meet the wall's condition at the

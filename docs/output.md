@@ -45,6 +45,7 @@ Columns, counted from 1:
 | 28 | in a full sphere, irreg₀: how far the solution is from smooth at the centre ([Regularity at the centre](numerical-method.md#regularity-at-the-centre)); NaN with an inner core |
 | 29–38 | for `m = 0`, `symm = 1` and `m = 1`, `symm = -1` (0 otherwise, and with `centrifugal = 1`), real and imaginary parts of: the angular momentum of the fluid, axial or equatorial, and the viscous torques on the mantle and on the inner core, then the magnetic ones ([Rotating solids equations](rotating-solids-equations.md#torques)) |
 | 39 | resid𝐋, the relative residual of the fluid's angular momentum balance (NaN where it is not computed, [Rotating solids](rotating-solids.md#the-angular-momentum-check-residl)) |
+| 40–41 | with a viscous fluid at a stress-free outer wall (not with `centrifugal = 1`), the power the drag at the wall dissipates and the damping rate it implies, Dtopo and δσtopo, per unit `kappa_cmb` without a drag ([Drag at the outer wall](drag.md#output)); 0 otherwise |
 
 ## `thermal.dat`
 
@@ -113,6 +114,7 @@ The columns follow the order of `spin_doctor.param_table`, counted from 1:
 | 114–122 | `mantle`, `c_cmb`, `c1_cmb`, `muw_cmb`, `c_icb`, `c1_icb`, `muw_icb`, `mu`, `B0_cmb` |
 | 123–127 | `r_surface`, `N_mantle`, the conductivity of a resolved mantle at the outer wall (as used), `sigma_mantle_param`, its conductance $\int\sigma\,dr$ (the `c1_cmb` of a thin wall of the same conductance) |
 | 128–134 | `rotdyn`, `MoIZ_M`, `MoIZ_IC`, `gTorque`, `OmgtauIC`, `vtrq`, `mtrq` |
+| 135–141 | `kappa_cmb`, `topo_drag` (1 for `'rekier'`, 0 for `None`), and with `'rekier'` (0 otherwise) `topo_hrms`, `topo_lambda0`, `topo_H`, and the buoyancy frequency and the frequency of the flow that the drag used, over the rotation rate ([Drag at the outer wall](drag.md)) |
 
 - Names are written as their index in the lists of the code: `structure` in `background.STRUCTURES` (`'8-term fit'` 0,
   `'old model S prototype'` 1, `'model S hydrostatic'` 2, `'Wu 2005'` 3, `'Boussinesq'` 4), `stratification` in
@@ -142,5 +144,5 @@ The columns follow the order of `spin_doctor.param_table`, counted from 1:
 - A row ends, after a `#` that `np.loadtxt` skips, with the `'user'`, `'general'` and `'ferraro'` expressions, that of
   `sigma_mantle` and, for `'tabulated'`, `diff_rot_file` with the first 12 hex digits of its sha256. A row with none of
   these has no `#`.
-- A `params.dat` written before the columns 108–112, column 113, the columns 114–122, 123–127 or 128–134 were added has
-  fewer columns: start a new file. The same holds for `flow.dat` before its columns 29–39.
+- A `params.dat` written before the columns 108–112, column 113, the columns 114–122, 123–127, 128–134 or 135–141 were
+  added has fewer columns: start a new file. The same holds for `flow.dat` before its columns 29–39 or 40–41.

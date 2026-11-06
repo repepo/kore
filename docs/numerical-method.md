@@ -98,6 +98,7 @@ one (`bci`, when `ricb > 0`); the full sphere has no condition at the centre:
 | setting | condition | rows |
 | --- | --- | --- |
 | `bco = 0` stress-free | $u_r = 0$, and zero tangential stress $\partial_r(u_\theta/r) = \partial_r(u_\phi/r) = 0$ | $P_l = 0$, $\thinspace r^2P_l'' + r^2(\ln\rho_0)'P_l' + \left[r^2(\ln\rho_0)'' + \mathcal L - 2 - r(\ln\rho_0)'\right]P_l = 0$, $\thinspace rT_l' - T_l = 0$ |
+| `bco = 0` with a drag (`kappa_cmb`, `topo_drag`) | $u_r = 0$, and the tangential stress balances the drag of the wall on the slip | the stress-free rows plus the terms of the drag ([Drag at the outer wall equations](drag-equations.md#the-rows)) |
 | `bco = 1` no-slip | $\mathbf u = 0$ | $P_l = 0$, $\thinspace P_l' + \left[(\ln\rho_0)' + 1/r\right]P_l = 0$, $\thinspace T_l = 0$ |
 | `bco_thermal = 0` | fixed entropy | $s_l = 0$ |
 | `bco_thermal = 1` | zero diffusive entropy flux | $s_l' = 0$ |

@@ -104,6 +104,72 @@ def check():
         sys.exit('rotdyn %r: 0 (the mantle and the inner core turn with the frame) or 1 (they turn under the torques)' % (par.rotdyn,))
     if par.rotdyn:
         check_rotdyn()
+    check_drag()   # NEW (2026-11-06): the drag at the outer wall (kappa_cmb, topo_drag)
+
+
+def check_drag():
+    '''
+    NEW (2026-11-06, conductive_IC's check_drag): stops on the settings that the drag at the outer wall (kappa_cmb, topo_drag;
+    topo.py) does not cover. The drag replaces the stress-free condition (bco = 0) by a Robin condition on the viscous stress,
+    in units of the rotation rate (K/(rho_w Omega r0)). Left out: a wall that moves radially (forcings 9 and 10), a deformed
+    body (the drag on the metric of the walls), and for topo_drag = 'rekier' a differential rotation (the frequency of the
+    flow relative to the wall would depend on latitude) and a frequency scan of forcing 11 without topo_omega (the drag is
+    built for one frequency). Only parameters are read here (radial_profiles.py calls check() before it builds its
+    profiles).
+    '''
+    num = (int, float, np.integer, np.floating)
+    def number(v, ok=lambda v: True):
+        return isinstance(v, num) and not isinstance(v, bool) and np.isfinite(v) and ok(v)
+    if par.topo_drag not in (None, 'rekier'):
+        sys.exit("topo_drag = %r: None (no topographic drag) or 'rekier'" % (par.topo_drag,))
+    if not number(par.kappa_cmb, lambda v: v >= 0):
+        sys.exit('kappa_cmb = %r: the drag coefficient is a finite number >= 0 (0: stress-free)' % (par.kappa_cmb,))
+    if par.kappa_cmb == 0 and par.topo_drag is None:
+        return
+    if par.topo_drag is not None and par.kappa_cmb != 0:
+        sys.exit('topo_drag and kappa_cmb cannot be combined: set kappa_cmb = 0 with topo_drag')
+    if not (par.hydro and par.ViscosD > 0 and par.bco == 0):
+        sys.exit('the drag at the outer wall (kappa_cmb, topo_drag) needs the flow (hydro = 1), a viscous fluid (ViscosD > 0) '
+                 'and a stress-free outer wall (bco = 0), whose condition it changes')
+    if not par.Gaspard > 0:
+        sys.exit('the drag at the outer wall needs a rotating frame (Gaspard > 0): it is in units of the rotation rate')
+    if par.centrifugal:
+        sys.exit('the drag at the outer wall needs a spherical body (centrifugal = 0)')
+    if par.forcing in (9, 10):
+        sys.exit('the drag at the outer wall with forcing %d is not covered: the wall moves radially' % par.forcing)
+    if par.topo_drag is None:
+        return
+    if par.diff_rot:
+        sys.exit("topo_drag = 'rekier' with a differential rotation (diff_rot = 1) is not covered: the frequency of the flow "
+                 "relative to the wall would depend on latitude")
+    for name in ('topo_N', 'topo_omega'):
+        v = getattr(par, name)
+        if v is not None and not number(v, lambda v: v >= 0):
+            sys.exit('%s = %r: None (from the run) or a number >= 0, in units of the rotation rate' % (name, v))
+    if not isinstance(par.topo_K, str):
+        sys.exit('topo_K = %r: a numpy expression of x (a test hook), or the empty string' % (par.topo_K,))
+    if par.topo_K:
+        x = np.linspace(-1, 1, 101)
+        try:
+            kt, kp = eval(par.topo_K, {'np': np, '__builtins__': {}}, {'x': x})
+            kk = np.array([np.broadcast_to(np.asarray(kt, dtype=float), x.shape),
+                           np.broadcast_to(np.asarray(kp, dtype=float), x.shape)])
+        except Exception as e:
+            sys.exit('topo_K = %r: not a pair of numpy expressions of x (%s)' % (par.topo_K, e))
+        if not (np.all(np.isfinite(kk)) and np.all(kk >= 0)):
+            sys.exit('topo_K = %r: kappa_tt and kappa_pp must be finite and >= 0' % (par.topo_K,))
+        return
+    if not (number(par.topo_hrms, lambda v: v > 0) and number(par.topo_lambda0, lambda v: v > 0)
+            and number(par.topo_H, lambda v: v > 0.5)):
+        sys.exit("topo_drag = 'rekier' needs topo_hrms > 0, topo_lambda0 > 0 and topo_H > 1/2 (eq. B2), got %r, %r, %r"
+                 % (par.topo_hrms, par.topo_lambda0, par.topo_H))
+    w = par.topo_omega if par.topo_omega is not None else (par.forcing_frequency if par.forcing != 0 else par.itau)
+    if w == 0:
+        sys.exit("topo_drag = 'rekier' needs a frequency of the flow other than 0 (the drag goes as 1/w0): set itau, the "
+                 "forcing frequency or topo_omega")
+    if par.forcing == 11 and getattr(par, 'rsf_frequencies', None) is not None and par.topo_omega is None:
+        sys.exit("topo_drag = 'rekier' with a frequency scan (rsf_frequencies) needs topo_omega: the drag is built for one "
+                 "frequency of the flow, not for each frequency of the scan")
 
 
 def check_centrifugal():
@@ -293,17 +359,18 @@ def check_rotdyn():
     NEW (2026-11-06, conductive_IC's check_rotdyn): stops on the settings that the rotating solids (rotdyn = 1) do not cover.
     The solids drag the fluid through the no-slip walls, where the toroidal flow of degree 1 is r omega (assemble.py), and
     their torques act on that flow and on the toroidal field next to the walls, which hold the axial parts only for m = 0,
-    symm = 1 (rotdyn.py). Left out: a stress-free wall (no torque on the solid but the drag of conductive_IC's kappa_cmb,
-    not ported yet), the stresses of a differential rotation and of a toroidal B0 at the walls (its current sheet there), a
-    deformed body (spherical torques), and Gaspard = 0 (gTorque and OmgtauIC are in units of the rotation rate).
+    symm = 1 (rotdyn.py). NEW (2026-11-06, as conductive_IC): the outer wall may also be stress-free (bco = 0), the mantle
+    then pulling on the fluid through the drag (kappa_cmb, topo_drag; topo.py) or not at all, and magnetically. Left out: a
+    stress-free inner wall, the stresses of a differential rotation and of a toroidal B0 at the walls (its current sheet
+    there), a deformed body (spherical torques), and Gaspard = 0 (gTorque and OmgtauIC are in units of the rotation rate).
     '''
     import background_field as bf
     if not (par.hydro and par.m == 0 and par.symm == 1 and par.ricb > 0 and par.forcing == 0):
         sys.exit('rotdyn = 1 needs the flow (hydro = 1), m = 0, symm = 1, an inner core (ricb > 0) and an eigenvalue problem '
                  '(forcing = 0)')
-    if not (par.ViscosD > 0 and par.bci == 1 and par.bco == 1):
-        sys.exit('rotdyn = 1 needs a viscous fluid with no-slip walls (ViscosD > 0, bci = bco = 1): the mantle and the inner '
-                 'core drag the fluid through them')
+    if not (par.ViscosD > 0 and par.bci == 1 and par.bco in (0, 1)):
+        sys.exit('rotdyn = 1 needs a viscous fluid (ViscosD > 0) with a no-slip inner wall (bci = 1), and an outer wall that is '
+                 'no-slip or stress-free (bco = 1 or 0): the mantle and the inner core drag the fluid through them')
     if not par.Gaspard > 0:
         sys.exit('rotdyn = 1 needs a rotating frame (Gaspard > 0): gTorque and OmgtauIC are in units of the rotation rate')
     if par.diff_rot:

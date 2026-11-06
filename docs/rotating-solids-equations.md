@@ -30,9 +30,13 @@ $$
 T(1) = \omega_M, \qquad T(r_i) = r_i\,\omega_{IC} ,
 $$
 
-and every other wall condition is unchanged. A rigid rotation carries an axisymmetric field without changing it, so the
-rotating solids leave the conditions on the field, and the field of a conducting inner core or mantle, as they are for
-solids at rest.
+and every other wall condition is unchanged. At a stress-free outer wall (`bco = 0`) the row of $T_1$ stays the
+stress-free one, and a drag acts there on the slip relative to the mantle, $T_1(1) - \omega_M$
+([Drag at the outer wall equations](drag-equations.md#the-rows)); without a drag only the field couples the fluid to the
+mantle. A rigid rotation carries an axisymmetric field without changing it, so the rotating solids leave the conditions
+on the field, and the field of a conducting inner core or mantle, as they are for solids at rest, but for a fluid
+slipping along a conducting outer wall, whose electric field enters the wall through the slip relative to the mantle
+(`assemble.bc_b_slip`).
 
 ## Torques
 
@@ -120,11 +124,13 @@ $$
 $$
 
 The power of the viscous torques is minus the work of the moving walls on the fluid, which the viscous power of the
-fluid includes. The power of the magnetic torques moves energy between the solids and the field: it is minus the flux
-of $\mathbf u\times\mathbf B_0$ through the moving walls, which resid𝐄 leaves out of the induction work
-(`utils4pp.INDU_WALLS`). So resid𝐄 adds the energy of the solids to the left-hand side, and the power of the viscous
-torques and the loss $-2Kc\lvert\varphi\rvert^2$ to the right. It does so when both torques act on the solids (`vtrq`
-and `mtrq` 1).
+fluid includes; at a stress-free outer wall with a drag the two differ by the power the drag dissipates ([Drag at the
+outer wall equations](drag-equations.md#power-and-damping-rate)). The power of the magnetic torques moves energy between
+the solids and the field: it is minus the flux of $\mathbf v\times\mathbf B_0$ through the moving walls ($\mathbf v$
+their velocity), which resid𝐄 leaves out of the induction work with the rest of the flux of $\mathbf u\times\mathbf B_0$
+through the walls (`utils4pp.INDU_WALLS`). So resid𝐄 adds the energy of the solids to the left-hand side, and the power
+of the viscous torques and the loss $-2Kc\lvert\varphi\rvert^2$ to the right. It does so when both torques act on the
+solids (`vtrq` and `mtrq` 1).
 
 ## Checks (2026-11-06)
 

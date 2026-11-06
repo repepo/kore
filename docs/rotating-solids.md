@@ -13,7 +13,8 @@ magnetic torques at the walls and to each other by gravity, as in the `conductiv
 | `vtrq`, `mtrq` | 1, 1 | 0 switches off the viscous or the magnetic torque on the solids; the fluid still follows the walls |
 
 The defaults are those of the `conductive_IC` branch for the Earth (2.3e3 is a relaxation time of one year). A run needs
-an axisymmetric, equatorially symmetric eigenvalue problem with no-slip walls:
+an axisymmetric, equatorially symmetric eigenvalue problem with a no-slip inner wall; the outer wall is no-slip, as
+here, or stress-free, with or without a drag ([Drag at the outer wall](drag.md)):
 
 ```python
 par.m = 0
@@ -28,8 +29,9 @@ par.rotdyn = 1
 Three unknowns join the fields: the rotation rates of the mantle and of the inner core relative to the frame, and the
 angle of the inner core relative to the mantle.
 
-- **The walls move with the solids.** The fluid at each no-slip wall turns with the solid beyond it.
-- **Viscous torque.** The stress of the fluid on each wall.
+- **The walls move with the solids.** The fluid at each no-slip wall turns with the solid beyond it. At a stress-free
+  outer wall the fluid slips along the mantle; a drag pulls it towards the mantle's rotation.
+- **Viscous torque.** The stress of the fluid on each wall: at a stress-free outer wall, that of the drag, or none.
 - **Magnetic torque.** The magnetic stress through each wall, which acts on whatever conducts beyond it: a thin
   conducting wall, a resolved mantle or a conducting inner core. An insulating solid feels none.
 - **Gravitational torque.** It pulls the inner core and the mantle back into alignment, in proportion to the angle
@@ -68,7 +70,8 @@ core.
 Not supported (the run stops at startup):
 
 - `m` other than 0, `symm` other than 1, a full sphere (`ricb = 0`), forced runs, or no flow (`hydro = 0`);
-- `ViscosD = 0`, or a wall that is not no-slip (`bci` or `bco` other than 1);
+- `ViscosD = 0`, an inner wall that is not no-slip (`bci` other than 1), or an outer wall that is neither no-slip nor
+  stress-free (`bco = 2`);
 - `Gaspard = 0`;
 - a differential rotation (`diff_rot = 1`) or `centrifugal = 1`;
 - a toroidal `B0_tor` that does not vanish at a wall;

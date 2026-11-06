@@ -11,6 +11,7 @@ nav:
       - Tidal forcing: tidal-forcing.md
       - Magnetic field: magnetic.md
       - Rotating solids: rotating-solids.md
+      - Drag at the outer wall: drag.md
       - Solver: solver.md
       - Output files: output.md
   - Benchmarks: benchmarks.md
@@ -21,6 +22,7 @@ nav:
       - Centrifugal deformation: centrifugal-equations.md
       - Magnetic field: magnetic-equations.md
       - Rotating solids: rotating-solids-equations.md
+      - Drag at the outer wall: drag-equations.md
       - Reynolds-stress forcing: reynolds-stress.md
       - Derivation tools: derivations.md
   - Modifying kore: checking.md
