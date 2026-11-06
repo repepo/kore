@@ -1422,11 +1422,19 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 </tr>
 <tr>
 <td>11</td>
-<td>the relative residual of the full energy budget (resid𝐄; nan unless the walls are no-slip: <code>bco = 1</code>, and <code>bci = 1</code> with an inner core, or there is no flow, <code>hydro = 0</code>)</td>
+<td>the relative residual of the full energy budget (resid𝐄; nan with a flow through a wall, <code>bco = 2</code> or <code>bci = 2</code>, with stress-free walls and <code>centrifugal = 1</code>, and with thin walls and <code>mu</code> other than 1)</td>
 </tr>
 <tr>
 <td>12</td>
-<td>with <code>centrifugal = 1</code> only: MEc, the part of the magnetic energy that the deformation adds, so that ME + MEc is the energy of the field in the deformed fluid (the column Mag/Kin of the <code>spin_doctor</code> table is Hendrik (ME + MEc)/KE; <a href="../centrifugal-equations/#energy-budgets">Centrifugal deformation</a>)</td>
+<td>with <code>centrifugal = 1</code> or a thin wall: MEc, the part of the magnetic energy that the deformation adds, so that ME + MEc is the energy of the field in the deformed fluid (the column Mag/Kin of the <code>spin_doctor</code> table is Hendrik (ME + MEc)/KE; <a href="../centrifugal-equations/#energy-budgets">Centrifugal deformation</a>); 0 without the deformation</td>
+</tr>
+<tr>
+<td>13, 14</td>
+<td>with a thin wall (<code>mantle</code> or <code>innercore</code> <code>'TWA'</code>) only: E_w, the magnetic energy stored in the thin walls, and Ohm_w, their Ohmic loss</td>
+</tr>
+<tr>
+<td>15, 16</td>
+<td>with a thin wall only: εTWA, the estimated relative error of the outer and of the inner thin wall (0 where there is none; the <code>spin_doctor</code> table shows the larger)</td>
 </tr>
 </tbody>
 </table>
@@ -1500,6 +1508,10 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 <td>113</td>
 <td><code>hydro</code> (0: no flow)</td>
 </tr>
+<tr>
+<td>114–122</td>
+<td><code>mantle</code>, <code>c_cmb</code>, <code>c1_cmb</code>, <code>muw_cmb</code>, <code>c_icb</code>, <code>c1_icb</code>, <code>muw_icb</code>, <code>mu</code>, <code>B0_cmb</code></td>
+</tr>
 </tbody>
 </table>
 <ul>
@@ -1516,8 +1528,10 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 <li>The magnetic columns: <code>B0</code> is the index in <code>background_field.B0_TYPES</code> (<code>'axial'</code> 0, <code>'FDM'</code> 1, <code>'G21 dipole'</code> 2,
   <code>'Luo_S1'</code> 3, <code>'Luo_S2'</code> 4, <code>'confined'</code> 5, <code>'general'</code> 6, <code>'ferraro'</code> 7; −1 without a poloidal field), <code>B0_tor</code> in
   <code>background_field.B0_TOR_TYPES</code> (<code>'Malkus'</code> 0, <code>'wall'</code> 1, <code>'user'</code> 2, <code>'general'</code> 3; −1 without), <code>innercore</code> in
-  <code>background.INNER_CORES</code> (<code>'insulator'</code> 0, <code>'conducting, Chebys'</code> 1), <code>B0_ic</code> in <code>background.B0_ICS</code> (<code>'potential'</code> 0,
-  <code>'frozen currents'</code> 1, formerly <code>'full sphere'</code>) and <code>ferraro_policy</code> in <code>background.FERRARO_POLICIES</code> (<code>'warn'</code> 0, <code>'refuse'</code> 1). <code>cnorm</code> and
+  <code>background.INNER_CORES</code> (<code>'insulator'</code> 0, <code>'conducting, Chebys'</code> 1, <code>'TWA'</code> 2), <code>mantle</code> in <code>background.MAGNETIC_WALLS</code>
+  (<code>'insulator'</code> 0, <code>'TWA'</code> 1), <code>B0_ic</code> in <code>background.B0_ICS</code> (<code>'potential'</code> 0, <code>'frozen currents'</code> 1, formerly
+  <code>'full sphere'</code>), <code>B0_cmb</code> in <code>background.B0_CMBS</code> (<code>'wall'</code> 0, <code>'plain'</code> 1) and <code>ferraro_policy</code> in
+  <code>background.FERRARO_POLICIES</code> (<code>'warn'</code> 0, <code>'refuse'</code> 1). <code>muw_cmb</code> and <code>muw_icb</code> may be <code>inf</code>. <code>cnorm</code> and
   <code>cnorm_tor</code> are the numbers used. <code>B0_l</code> is the lowest degree for <code>'general'</code> and 1 for <code>'ferraro'</code>; <code>B0_tor_l</code> is the
   parameter, which <code>B0_tor = 'general'</code> ignores. The expressions of <code>'general'</code> (<code>B0_profiles</code>, <code>B0_tor_profiles</code>), of
   <code>'ferraro'</code> (<code>B0_ferraro_G</code>) and of <code>diff_rot_type = 'ferraro'</code> (<code>diff_rot_F</code>) go into the note after <code>#</code>.</li>
@@ -1527,7 +1541,8 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
   them.</li>
 <li>A row ends, after a <code>#</code> that <code>np.loadtxt</code> skips, with the <code>'user'</code>, <code>'general'</code> and <code>'ferraro'</code> expressions and, for
   <code>'tabulated'</code>, <code>diff_rot_file</code> with the first 12 hex digits of its sha256. A row with none of these has no <code>#</code>.</li>
-<li>A <code>params.dat</code> written before the columns 108–112, or column 113, were added has fewer columns: start a new file.</li>
+<li>A <code>params.dat</code> written before the columns 108–112, column 113 or the columns 114–122 were added has fewer columns:
+  start a new file.</li>
 </ul>
 
 

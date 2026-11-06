@@ -807,6 +807,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Inner core and walls">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#thin-conducting-walls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Thin conducting walls
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1452,6 +1469,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Inner core and walls">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#thin-conducting-walls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Thin conducting walls
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1953,9 +1987,9 @@ the field lines: the shear keeps winding them up, and diffusion keeps the wound 
 latitude, or the run stops. The method of each set-up is on
 <a href="../magnetic-equations/#with-a-differential-rotation">Magnetic field equations</a>.</p>
 <h2 id="inner-core-and-walls">Inner core and walls</h2>
-<p>The perturbation field is matched at each wall to the field outside the fluid. The mantle is always an electrical
-insulator, so the field outside the outer wall is a potential field. The inner core is an insulator too, or a conductor
-whose field kore then solves for together with the rest.</p>
+<p>The perturbation field is matched at each wall to the field beyond it. The mantle is an electrical insulator, with or
+without a thin conducting layer at its base, so above it the field is a potential field. The inner core is an insulator
+(again with or without a thin conducting layer), or a conductor whose field kore then solves for together with the rest.</p>
 <table>
 <thead>
 <tr>
@@ -1967,13 +2001,13 @@ whose field kore then solves for together with the rest.</p>
 <tbody>
 <tr>
 <td><code>mantle</code></td>
-<td><code>'insulator'</code></td>
-<td>the only option: the field matches a potential field outside</td>
+<td><code>'insulator'</code> (default) or <code>'TWA'</code></td>
+<td><code>'TWA'</code>: a thin conducting wall at the base of the mantle (below)</td>
 </tr>
 <tr>
 <td><code>innercore</code></td>
-<td><code>'insulator'</code> (default) or <code>'conducting, Chebys'</code></td>
-<td>conducting: needs <code>ricb &gt; 0</code> and a no-slip inner wall (<code>bci = 1</code>)</td>
+<td><code>'insulator'</code> (default), <code>'conducting, Chebys'</code> or <code>'TWA'</code></td>
+<td>need <code>ricb &gt; 0</code>; conducting: a no-slip inner wall (<code>bci = 1</code>); <code>'TWA'</code>: a thin conducting wall on an insulating inner core</td>
 </tr>
 <tr>
 <td><code>N_cic</code></td>
@@ -1999,6 +2033,67 @@ whose field kore then solves for together with the rest.</p>
 </table>
 <p>The magnetic diffusivity of the inner core is <code>MagnetD</code> divided by <code>mu_i2o</code> and <code>sigma_i2o</code>. Matching conditions:
 <a href="../magnetic-equations/#boundary-conditions">Magnetic field equations</a>.</p>
+<h3 id="thin-conducting-walls">Thin conducting walls</h3>
+<p>A thin layer that conducts, such as the base of the Earth's mantle, carries currents that couple the field across the
+wall. <code>'TWA'</code> (the thin-wall approximation of Roberts, Glatzmaier &amp; Clune 2010, as in the <code>conductive_IC</code> branch)
+models such a layer through the boundary conditions of the field alone: the layer is not resolved and adds no unknowns.
+It is described by its thickness, conductivity and permeability, through three numbers per wall:</p>
+<table>
+<thead>
+<tr>
+<th>setting</th>
+<th>default</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>c_cmb</code>, <code>c_icb</code></td>
+<td><code>1e-5</code>, 0</td>
+<td>thickness times permeability of the wall, relative to the radius of the wall and to the fluid's permeability</td>
+</tr>
+<tr>
+<td><code>c1_cmb</code>, <code>c1_icb</code></td>
+<td><code>1e-5</code>, 0</td>
+<td>conductance of the wall: thickness times conductivity, relative to the radius and to the fluid's conductivity</td>
+</tr>
+<tr>
+<td><code>muw_cmb</code>, <code>muw_icb</code></td>
+<td>1.0</td>
+<td>permeability of the wall relative to vacuum; <code>np.inf</code> drops the terms of first order in the thickness</td>
+</tr>
+<tr>
+<td><code>mu</code></td>
+<td>1.0</td>
+<td>permeability of the fluid relative to vacuum; it enters the thin-wall conditions only</td>
+</tr>
+<tr>
+<td><code>B0_cmb</code></td>
+<td><code>'wall'</code></td>
+<td>how the background field meets a thin wall at the outer boundary: <code>'wall'</code> or <code>'plain'</code> (below)</td>
+</tr>
+</tbody>
+</table>
+<p>With <code>c</code> and <code>c1</code> zero and <code>mu = 1</code> a thin wall is an insulator. A wall with the permeability of vacuum (<code>muw</code> 1, the
+default, as at the Earth's mantle) lets a steady field through unchanged, and its conductance <code>c1</code> then sets nearly all
+of its effect.
+<code>mu</code> other than 1 needs a thin wall or a conducting inner core at every wall of the fluid.</p>
+<ul>
+<li><strong>Validity.</strong> The approximation holds while the wall is thin against its magnetic skin depth at the frequency of the
+  mode. spin_doctor prints the estimated relative error of the wall's effect, εTWA (the larger of the two walls), and
+  writes both to <code>magnetic.dat</code>; keep it small, say below 1%.</li>
+<li><strong>A fluid slipping along the wall</strong> (<code>bco = 0</code>, <code>bci = 0</code> or <code>ViscosD = 0</code>). The fluid's tangential electric field,
+  including that of the flow across the background field, is continued into the wall in the wall's frame (condition C.I
+  of Rekier et al. 2023). The slip stands for a thin viscous layer that is not resolved, which must be thin against the
+  magnetic skin depth: <code>assemble.py</code> prints Pm times the target frequency in rotation units, which should be small.</li>
+<li><strong>With a differential rotation</strong> the wall turns with the fluid next to it, so the rotation must be uniform in latitude
+  there: the run stops otherwise.</li>
+<li><strong><code>B0_cmb</code>.</strong> A steady background field drives no current in the wall, but it must meet the wall's condition at the
+  outer boundary. <code>'wall'</code> (default) adds a potential field to the fields of internal currents (<code>'G21 dipole'</code>,
+  <code>'Luo_S1'</code>, <code>'Luo_S2'</code>, <code>'FDM'</code>) so that they do; it changes nothing for <code>muw_cmb</code> 1 and <code>mu</code> 1. <code>'plain'</code> keeps them as
+  they are. The other fields are used as given.</li>
+</ul>
+<p>The conditions and their checks: <a href="../magnetic-equations/#thin-conducting-walls">Magnetic field equations</a>.</p>
 <h2 id="the-field-without-the-flow">The field without the flow</h2>
 <p>Two tools leave the flow out: one checks the walls and the inner core against exact results, the other gives the field
 that a known flow induces.</p>
@@ -2024,8 +2119,8 @@ core), one column per column of the flow.</p>
 <h2 id="what-is-supported">What is supported</h2>
 <p>kore checks the combination of options at startup and stops on any it cannot handle.</p>
 <p>Supported: a shell or a full sphere (<code>ricb = 0</code>); any <code>structure</code>; eigenvalue problems; with or without a differential
-rotation; <code>ViscosD &gt; 0</code>, or <code>ViscosD = 0</code> in a full sphere; with or without the flow (<code>hydro = 0</code>, above). The magnetic
-diffusivity is uniform.</p>
+rotation; <code>ViscosD &gt; 0</code>, or <code>ViscosD = 0</code> in a full sphere; with or without the flow (<code>hydro = 0</code>, above); insulating
+walls, thin conducting walls or a conducting inner core. The magnetic diffusivity is uniform.</p>
 <p>Not supported (the run stops at startup):</p>
 <ul>
 <li>no background field at all (<code>B0 = None</code> and <code>B0_tor = None</code>), or <code>Le</code> or <code>Em</code> zero;</li>
@@ -2033,6 +2128,11 @@ diffusivity is uniform.</p>
 <li><code>ViscosD = 0</code> with an inner core (<code>ricb &gt; 0</code>);</li>
 <li>a conducting inner core in a full sphere, without a no-slip inner wall (<code>bci = 1</code>), with an odd <code>N_cic</code> or one below
   4, or with a rotation that varies with latitude at its surface;</li>
+<li>a thin conducting wall on the inner core in a full sphere, with <code>centrifugal = 1</code>, with zero radial stress at the wall
+  (<code>bco = 2</code> or <code>bci = 2</code>), or with a rotation that varies with latitude at the wall; a thin wall at the outer boundary
+  with <code>B0_wound = 1</code>;</li>
+<li>negative <code>c_cmb</code>, <code>c1_cmb</code>, <code>c_icb</code> or <code>c1_icb</code>, a <code>muw_cmb</code>, <code>muw_icb</code> or <code>mu</code> that is not positive, or <code>mu</code> other
+  than 1 without a thin wall or a conducting inner core at every wall;</li>
 <li>a poloidal and a toroidal part of opposite equatorial symmetry;</li>
 <li>the limits of the options above:<ul>
 <li>degrees other than 1 or 2 for <code>'FDM'</code>, <code>'confined'</code> and <code>B0_tor_l</code>, and <code>'Malkus'</code> of degree 2 in a full sphere;</li>
@@ -2051,8 +2151,8 @@ diffusivity is uniform.</p>
 </ul>
 </li>
 <li>with <code>ferraro_policy = 'refuse'</code>, a field and a rotation further than <code>1e-7</code> from the Ferraro condition;</li>
-<li>a value of <code>B0</code>, <code>B0_tor</code>, <code>mantle</code>, <code>innercore</code>, <code>mag_couplings</code>, <code>B0_ic</code> or <code>ferraro_policy</code> other than those listed
-  on this page.</li>
+<li>a value of <code>B0</code>, <code>B0_tor</code>, <code>mantle</code>, <code>innercore</code>, <code>mag_couplings</code>, <code>B0_ic</code>, <code>B0_cmb</code> or <code>ferraro_policy</code> other than
+  those listed on this page.</li>
 </ul>
 <h2 id="output">Output</h2>
 <p>A magnetic run writes the perturbation field next to the flow, and spin_doctor checks each mode with the magnetic energy
@@ -2061,11 +2161,13 @@ budgets.</p>
 <code>imag_magnetic_ic.field</code> for a conducting inner core). Each eigenvector is normalised so that the kinetic energy plus
 <code>Hendrik</code> times the magnetic energy is 1 in the fluid (the magnetic energy alone without the flow, <code>hydro = 0</code>).</p>
 <p><code>spin_doctor</code> adds the Lorentz work to residσ and residω, and prints two more residuals: resid𝐛, the energy budget of
-the induction equation in the fluid, and resid𝐄, the full energy budget including the field outside the fluid (no-slip
-walls only: <code>bco = 1</code>, and <code>bci = 1</code> with an inner core; any walls without the flow). Like residσ (<a href="../solver/">Solver</a>), they should be small for a
-resolved mode. It also prints Mag/Kin, the ratio of magnetic to kinetic energy (<code>Hendrik</code> ME/KE, both in the units of the
-kinetic energy), and
-writes <code>magnetic.dat</code> and 25 magnetic columns of <code>params.dat</code> (<a href="../output/#magneticdat">Output files</a>).</p>
+the induction equation in the fluid, and resid𝐄, the full energy budget including the field outside the fluid and in thin
+walls (for impenetrable walls, <code>bco</code> and <code>bci</code> 0 or 1, and any walls without the flow; not with thin walls and <code>mu</code> other
+than 1, nor with stress-free walls and <code>centrifugal = 1</code>). Like residσ (<a href="../solver/">Solver</a>), they should be small for a
+resolved mode; with a thin wall whose <code>c</code> is not zero resid𝐄 closes only to the order of the approximation, about εTWA.
+It also prints Mag/Kin, the ratio of magnetic to kinetic energy (<code>Hendrik</code> ME/KE, both in the units of the kinetic
+energy), εTWA with a thin wall, and writes <code>magnetic.dat</code> and the magnetic columns of <code>params.dat</code>
+(<a href="../output/#magneticdat">Output files</a>).</p>
 <h2 id="practical-tips">Practical tips</h2>
 <p>The field, more than the flow, usually sets the resolution and the memory a run needs.</p>
 <ul>
