@@ -203,6 +203,34 @@ class default_params():
         # each f_n is held at its value there
         self.diff_rot_sun_deg = 60  # 'tabulated' with diff_rot_window = 'sun': degree (60: ~0.01 nHz on the Mukhopadhyay et al. 2025 profile)
 
+        # NEW (2026-11-05): centrifugal deformation of the body (bin/centrifugal.py; user guide: docs/background.md, Centrifugal
+        # deformation; equations: docs/centrifugal-equations.md). The rotating body is flattened: its level surfaces are
+        # r (1 - (2/3) f(r) P2(cos θ)) at first order in their flattening f. kore then solves in coordinates that follow them: the
+        # walls are level surfaces, every background profile is a function of their mean radius r, and the inertia, the Coriolis
+        # force and the time derivative of s gain P2 factors (couplings |Δl| <= 3). FIX (2026-11-06, phase 2): exact at first order
+        # in f, also with a field (phase 1b), the viscous force (no-slip and stress-free walls), the thermal and the magnetic
+        # diffusion and a differential rotation, which is given on the level surfaces (phase 2); with thermal_wind = 1 or 2 the
+        # entropy that balances it is that of the sphere. It stops with forcing != 0, bco or bci = 2 with viscosity, a conducting
+        # inner core with mu_i2o != 1, and a viscous full sphere with m != 0 and rpower_v < 4.
+        self.centrifugal = 0
+        self.centrifugal_shape = 'clairaut'  # f(r) from Clairaut's equation with the structure's g (its self-gravity), of amplitude
+        #   set by centrifugal_q at the surface, or by centrifugal_f at the outer wall if that is set
+        # self.centrifugal_shape = 'uniform'  # f = centrifugal_f everywhere (a homogeneous body, as the Maclaurin spheroid)
+        # self.centrifugal_shape = 'user'  # f = centrifugal_profile, a numpy expression of r, x and p = centrifugal_param
+        # self.centrifugal_shape = 'spheroid'  # NEW (2026-11-06): f = centrifugal_f everywhere, kept exactly at any f < 1 (the
+        #   stretched sphere of 'uniform' without the first-order approximation): a homogeneous fluid ('Boussinesq', uniform
+        #   diffusivities, centrifugal_q = 0), with or without a field, no differential rotation (docs/centrifugal-equations.md)
+        self.centrifugal_q = 0.0  # q = Ω² R³/(G M), centrifugal over gravitational acceleration at the equator of the surface
+        #   x = 1 (the outer wall for 'Boussinesq'): Earth 3.5e-3, Jupiter 0.089, Saturn 0.155. The g of 'model S hydrostatic'
+        #   ends at the outer wall: 'clairaut' applies its surface condition there, with q r_out³ (the mass above the wall
+        #   neglected). It also gives the buoyancy the effective gravity g - (2/3) Ω² r (any shape).
+        self.centrifugal_f = None  # flattening at the outer wall, (equatorial - polar radius)/equatorial radius: the value for
+        #   'uniform' and 'spheroid', and for 'clairaut' the scale of its shape in place of centrifugal_q (e.g. the Earth's
+        #   CMB, about 2.5e-3)
+        self.centrifugal_profile = ''  # 'user': f(r) as a numpy expression of r (kore radius), x (r r_out with a solar structure,
+        #   r otherwise) and p, with the functions of diff_rot_profiles, at |r|; no '#' (it is written to params.dat as a comment)
+        self.centrifugal_param = 0.0  # 'user': p
+
         # ----------------------------------------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------------------------------- Thermal parameters
         # ----------------------------------------------------------------------------------------------------------------------

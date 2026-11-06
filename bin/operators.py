@@ -7,6 +7,7 @@ import utils as ut
 
 import diff_rot as dr
 import mag_algebra as ma   # NEW (2026-10-30)
+import centrifugal as cf   # NEW (2026-11-05)
 import submatrix_io as smio   # NEW (2026-11-03)
 
 
@@ -128,6 +129,66 @@ def differential_rotation_induction(l, section, component, offdiag):  # ------- 
     'bpol' (F) or 'btor' (G), source degree l + offdiag. Returns [matrix, offd] (offd in units of N1).
     '''
     return dr.induction_block(l, section, component, offdiag, globals())
+
+
+def centrifugal_inertia(l, section, component, offdiag):  # --------------------- NEW (2026-11-05): inertia of the deformed body
+    '''
+    (M - I) w, the metric part of the inertia M ∂ₜw of the deformed body (centrifugal.momentum_block): rows of section 'u' or
+    'v', column 'upol' or 'utor', source degree l + offdiag; B gets minus it, as it gets minus inertia(). Returns [matrix, offd].
+    '''
+    return cf.momentum_block('inertia', l, section, component, offdiag, globals())
+
+
+def centrifugal_coriolis(l, section, component, offdiag):  # --------------- NEW (2026-11-05): Coriolis force of the deformed body
+    '''
+    2 Gaspard (z̃ - ẑ)×w, z̃ = F⁻¹ẑ, the metric part of the Coriolis force of the deformed body (centrifugal.momentum_block), with
+    the sign of coriolis() in A. Returns [matrix, offd].
+    '''
+    return cf.momentum_block('coriolis', l, section, component, offdiag, globals())
+
+
+def centrifugal_magnetic(l, section, component, offdiag):  # ------- NEW (2026-11-05, phase 1b): magnetic terms of the deformed body
+    '''
+    The metric parts of the Lorentz force (section 'u', 'v'; component 'bpol', 'btor', times Hendrik) and of the induction
+    (section 'f', 'g'; component 'upol', 'utor') of the deformed body (centrifugal.magnetic_block), in the A sign of lorentz()
+    and induction(). Returns [matrix, offd] or [0, 0].
+    '''
+    return cf.magnetic_block(l, section, component, offdiag, globals())
+
+
+def centrifugal_entropy(l, section, component, offdiag):  # ------------ NEW (2026-11-05): heat time derivative of the deformed body
+    '''
+    (J - 1) s = η P2 s in the heat rows (centrifugal.entropy_block), with the sign of entropy() in B. Returns [matrix, offd].
+    '''
+    return cf.entropy_block(l, offdiag, globals())
+
+
+def centrifugal_diffusion(l, section, component, offdiag):  # ------ NEW (2026-11-05, phase 2): diffusion of the deformed body
+    '''
+    The metric parts of the viscous force (section 'u', 'v'; component 'upol', 'utor'; the sign of viscous_diffusion, which
+    A gets with a minus), of the thermal diffusion (section 'h', component 'temp'; the sign of thermal_diffusion) and of the
+    magnetic diffusion (section 'f', 'g'; component 'bpol', 'btor'; the A sign) of the deformed body
+    (centrifugal.diffusion_block), times ViscosD, ThermaD or MagnetD. Returns [matrix, offd] or [0, 0].
+    '''
+    return cf.diffusion_block(l, section, component, offdiag, globals())
+
+
+def centrifugal_rotation(l, section, component, offdiag):  # ------ NEW (2026-11-06, phase 2): differential rotation of the deformed body
+    '''
+    The metric parts of the force of the differential rotation (section 'u', 'v'; component 'upol', 'utor'; the sign of
+    differential_rotation) and of its advection of s (section 'h', component 'temp'; the sign of thermal_diffrot) in the
+    deformed body (centrifugal.rotation_block). Returns [matrix, offd] or [0, 0].
+    '''
+    return cf.rotation_block(l, section, component, offdiag, globals())
+
+
+def centrifugal_diffusion_ic(l, section, component, offdiag):  # --- NEW (2026-11-06): diffusion of a deformed conducting core
+    '''
+    The metric part of the magnetic diffusion inside a conducting inner core (section 'fic', 'gic'; component 'bpol_ic',
+    'btor_ic'; the A sign) of the deformed body (centrifugal.diffusion_block_ic), times MagnetD and the core's diffusivity.
+    Returns [matrix, offd] or [0, 0].
+    '''
+    return cf.diffusion_block_ic(l, section, component, offdiag, globals())
 
 
 def viscous_diffusion(l, section, component, offdiag):  # ------------------------------------------------ viscous force
@@ -362,9 +423,9 @@ def b(l, section, component, offdiag):  # --------------------------------------
 
             out = L*r2_D0f_ic
 
-        elif section == 'gic' and component == 'btor_ic':  # r² r̂⋅∇×b
+        elif section == 'gic' and component == 'btor_ic':  # r² r̂⋅∇×b (NEW 2026-11-06: r³ with utils.rpower_gic = 3)
 
-            out = L*r2_D0g_ic
+            out = L*(r3_D0g_ic if ut.rpower_gic == 3 else r2_D0g_ic)
 
     return out/L**3
 
@@ -467,7 +528,10 @@ def magnetic_diffusion(l, section, component, offdiag):  # ---------------------
 
         elif section == 'gic' and component == 'btor_ic':
 
-            out = L*( -L*r0_D0g_ic + 2*r1_D1g_ic + r2_D2g_ic ) / ( par.mu_i2o * par.sigma_i2o )
+            if ut.rpower_gic == 3:   # NEW (2026-11-06): the rows r³ r̂⋅∇× of a deformed core (centrifugal.py, section 6)
+                out = L*( -L*r1_D0g_ic + 2*r2_D1g_ic + r3_D2g_ic ) / ( par.mu_i2o * par.sigma_i2o )
+            else:
+                out = L*( -L*r0_D0g_ic + 2*r1_D1g_ic + r2_D2g_ic ) / ( par.mu_i2o * par.sigma_i2o )
 
     return par.MagnetD * out/L**3
 

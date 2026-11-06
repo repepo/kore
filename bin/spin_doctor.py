@@ -18,6 +18,7 @@ import diff_rot as dr
 import radial_profiles as rap
 import background as bg
 import background_field as bf
+import centrifugal as cf   # NEW (2026-11-05)
 
 
 
@@ -58,6 +59,8 @@ def row_note():
     notes = [bg.description()] if bg.description() else []
     if par.diff_rot and dr.description():
         notes.append(dr.description())
+    if cf.description():   # NEW (2026-11-05)
+        notes.append(cf.description())
     if par.diff_rot and par.diff_rot_type == 'tabulated':
         import hashlib
         with open(par.diff_rot_file, 'rb') as f:
@@ -185,6 +188,11 @@ def param_table(elapsed):
         ( 'tol_B0',                   par.tol_B0,                  '%.9e' ),
         ( 'B0_ic',                    index_in(par.B0_ic, bg.B0_ICS), '%d' ),   # index into background.B0_ICS
         ( 'ferraro_policy',           index_in(par.ferraro_policy, bg.FERRARO_POLICIES), '%d' ),   # background.FERRARO_POLICIES
+        ( 'centrifugal',              par.centrifugal,             '%d' ),    # NEW (2026-11-05), and the centrifugal parameters:
+        ( 'centrifugal_shape',        index_in(par.centrifugal_shape, cf.SHAPES), '%d' ),   # index into centrifugal.SHAPES
+        ( 'centrifugal_q',            par.centrifugal_q,           '%.9e' ),
+        ( 'centrifugal_f',            float(cf.flattening(np.array([1.0]))[0]) if par.centrifugal else 0.0, '%.9e' ),  # f at the outer wall, as used
+        ( 'centrifugal_param',        par.centrifugal_param,       '%.9e' ),  # p of 'user' (its expression in the # note)
     ]
 
 
@@ -317,6 +325,9 @@ def main(ncpus):
     Ohm_ic      = np.zeros(success)  # MagnetD η_i ∫ |∇×𝐛|² dV over a conducting inner core
     residE      = np.full(success, np.nan)  # the full energy budget (no-slip walls only)
     Iwall       = np.zeros(success)  # NEW (2026-10-30): the wall terms in Indu (utils4pp.INDU_WALLS)
+    MEc         = np.zeros(success)  # NEW (2026-11-05): centrifugal = 1, ∫ 𝐛̃*⋅(M - I) 𝐛̃ dV: ME + MEc is the field's energy in the
+    InduM       = np.zeros(success)  #   deformed fluid; InduM, Ohmc the induction work and Ohmic loss (MagnetD) on the metric part
+    Ohmc        = np.zeros(success)  #   of the field, for resid𝐄 (upp.centrifugal_magnetic_terms)
 
     # residual errors to be processed
     resid1      = np.zeros(success)
@@ -348,7 +359,7 @@ def main(ncpus):
     ] if par.forcing > 0 else []) + ([
         ( 'resid𝐛',        '{:8.2e}',   lambda i: residb[i] ),
         ( 'resid𝐄',        '{:8.2e}',   lambda i: residE[i] ),
-        ( 'Mag/Kin',       '{:8.2e}',   lambda i: ratio(ME[i], KE[i]) ),   # as conductive_IC: ME without Hendrik
+        ( 'Mag/Kin',       '{:8.2e}',   lambda i: ratio(ME[i] + MEc[i], KE[i]) ),   # as conductive_IC: ME without Hendrik
     ] if par.magnetic else []) + [
         ( 'Peak ℓ',        '{:d}',      lambda i: ldom[i] ),
         ( 'ℓ-Width',       '{:d}',      lambda i: lwidth[i] ),
@@ -413,6 +424,11 @@ def main(ncpus):
         # diagnose solutions (serially since 2026-10-20, see upp.diagnose)
         [ udgn, tdgn ] = upp.diagnose( u_sol2, t_sol2, par.ricb, ut.rcmb, int(ncpus) )
 
+        if par.centrifugal:  # NEW (2026-11-05): the metric parts of KE, of the Coriolis power and of TE, on the grid of diagnose
+            [ KEc, Wcorc, TEc ] = upp.centrifugal_terms( par.ricb, ut.rcmb )
+            # NEW (2026-11-06, phase 2): those of the viscous power, of the differential rotation and of the entropy diffusion
+            [ Dkinc, Wdrc, Dthmc ] = upp.centrifugal_dissipation_terms( par.ricb, ut.rcmb )
+
         if par.magnetic:  # NEW (2026-10-28): on the grid and flow tables that diagnose has just set
             [ ME[i], Mdfs0, Indu[i], Wlor0, Wlor_im0 ] = np.sum( upp.diagnose_magnetic( b_sol2 ), 0)
             Iwall[i]   = upp.INDU_WALLS   # NEW (2026-10-30)
@@ -423,6 +439,16 @@ def main(ncpus):
             Ohm_f0, MEic[i], Ohm_ic0, MEext[i] = upp.em_budget( b_sol2, None if bic is None else bic[:,i] )
             Ohm_f[i]  = par.MagnetD * Ohm_f0
             Ohm_ic[i] = par.MagnetD * Ohm_ic0
+            if par.centrifugal:  # NEW (2026-11-05, phase 1b): the metric parts, on the same grid (upp.centrifugal_magnetic_terms)
+                cm = upp.centrifugal_magnetic_terms( b_sol2, None if bic is None else bic[:,i] )
+                Wlor[i]    += par.Hendrik * np.real(cm['Wlor'])
+                Wlor_im[i] += par.Hendrik * np.imag(cm['Wlor'])
+                Indu[i]    += cm['Indu']
+                Iwall[i]   += cm['Iwall']
+                MEc[i], InduM[i], Ohmc[i] = cm['MEc'], cm['InduM'], par.MagnetD * cm['Ohmc']
+                Mdfs[i]   += par.MagnetD * cm['Mdfs']         # NEW (2026-11-06, phase 2): the metric diffusion
+                MEic[i], MEext[i] = cm['MEic'], cm['MEext']   # the potential fields of the deformed exterior and inner core,
+                Ohm_ic[i]  = par.MagnetD * cm['Ohm_ic']       # and a conducting inner core with its metric part
 
         # NEW (2026-11-04): the viscous dissipation at the grid of diagnose, then the work of the wall stresses
         # (wall_powers moves the grid globals to the walls)
@@ -460,6 +486,14 @@ def main(ncpus):
           Wcor_im[i], Dkin_im[i], Wthm_im[i], Wdr_im[i], Ensdr[i] ] = np.sum( udgn, 0)
         Dkin[i] = Dkin0
         resens[i] = abs(Ensvel[i]*sigma+Enscor[i]-Ensbuo[i]-Ensvif[i]-Ensdr[i]) / max((abs(Ensvel[i]*sigma),abs(Enscor[i]),abs(Ensbuo[i]),abs(Ensvif[i]),abs(Ensdr[i])))
+        if par.centrifugal:  # NEW (2026-11-05): KE of the deformed body (∫ ρ0 w*⋅M w dV), Coriolis power with z̃ = F⁻¹ẑ
+            KE[i] += KEc
+            Wcor_im[i] += np.imag(Wcorc)
+            resens[i] = np.nan   # the enstrophy budget has no metric terms: not computed
+            # NEW (2026-11-06, phase 2): the powers of the viscous force and of the differential rotation of the deformed
+            # body; Dvisc and the wall powers stay those of the sphere, so residD is not computed
+            Dkin[i] += np.real(Dkinc); Dkin_im[i] += np.imag(Dkinc)
+            Wdr[i] += np.real(Wdrc); Wdr_im[i] += np.imag(Wdrc)
         Wthm[i] = Wthm0  # rate of working of buoyancy, Beyonce already included (upp.buoyancy)
 
 
@@ -467,6 +501,9 @@ def main(ncpus):
 
             [ TE[i], Dthm0, Wadv_thm[i], Wdr_thm[i] ] = np.sum( tdgn, 0)
             Dthm[i] = Dthm0 * par.ThermaD
+            if par.centrifugal:  # NEW (2026-11-05): ∫ p0 J |s|² dV, the entropy "energy" of the deformed body
+                TE[i] += TEc
+                Dthm[i] += par.ThermaD * Dthmc   # NEW (2026-11-06, phase 2): its metric diffusion
 
 
         # --------------------------------------------------------- Computing residuals to check the power balance:
@@ -502,7 +539,7 @@ def main(ncpus):
         resid2[i] = ( abs( 2*w*KE[i] + Wcor_im[i] - Dkin_im[i] - Wthm_im[i] - Wdr_im[i] - Wlor_im[i] - Wp_im[i] )
                       / max( abs(2*w*KE[i]), abs(Wcor_im[i]), abs(Dkin_im[i]), abs(Wthm_im[i]), abs(Wdr_im[i]), abs(Wlor_im[i]),
                              abs(Wp_im[i]) ) )
-        if par.ViscosD>0:
+        if par.ViscosD>0 and not par.centrifugal:   # NEW (2026-11-06, phase 2): not with centrifugal = 1 (Dvisc, Wv spherical)
             Wv = Wv_icb[i] + Wv_cmb[i]
             residD[i] = abs( Dkin[i] - Wv + Dvisc[i] ) / max( abs(Dkin[i]), abs(Wv), abs(Dvisc[i]) )
         if par.magnetic:
@@ -518,9 +555,11 @@ def main(ncpus):
             # resid𝐄 at nan for every full-sphere run)
             if par.bco == 1 and (par.bci == 1 or par.ricb == 0):
                 H = par.Hendrik
-                Etot = KE[i] + H*( ME[i] + MEic[i] + MEext[i] )
-                Wex  = Wlor[i] + H*(Indu[i] - Iwall[i]) + Wdr[i]
-                Ohm  = H*( Ohm_f[i] + Ohm_ic[i] )
+                # NEW (2026-11-05): with centrifugal = 1 the energy of the deformed body, ∫ 𝐛̃*⋅M 𝐛̃ dV in the fluid (MEc), whose
+                # rate is the work 2 Re ∫ 𝐄⋅(∇×M 𝐛̃)* dV (InduM) minus the Ohmic loss (Ohmc); closes at second order in f
+                Etot = KE[i] + H*( ME[i] + MEc[i] + MEic[i] + MEext[i] )
+                Wex  = Wlor[i] + H*(Indu[i] - Iwall[i] + InduM[i]) + Wdr[i]
+                Ohm  = H*( Ohm_f[i] + Ohmc[i] + Ohm_ic[i] )
                 residE[i] = ( abs( 2*sigma*Etot - Dkin[i] - Wthm[i] - Wex + Ohm )
                               / max( abs(2*sigma*Etot), abs(Dkin[i]), abs(Wthm[i]), abs(Wex), Ohm, abs(Wdr[i]) ) )
 
@@ -614,7 +653,9 @@ def main(ncpus):
             ( 'Ohm_f',      Ohm_f,      '%.9e' ),  # MagnetD ∫ |∇×𝐛|² over the fluid
             ( 'Ohm_ic',     Ohm_ic,     '%.9e' ),  # MagnetD η_i ∫ |∇×𝐛|² over a conducting inner core
             ( 'residE',     residE,     '%.9e' ),  # full energy budget, resid𝐄 (nan without no-slip walls)
-        ]
+        ] + ([
+            ( 'MEc',        MEc,        '%.9e' ),  # NEW (2026-11-05): centrifugal = 1, the metric part of ME (ME + MEc: the
+        ] if par.centrifugal else [])              #   energy of the field in the deformed fluid)
         with open('magnetic.dat','ab') as dmag:
             np.savetxt(dmag, np.column_stack([ v for _, v, _ in magnetic_cols ]),
             fmt=[ f for _, _, f in magnetic_cols ])

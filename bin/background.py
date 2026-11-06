@@ -84,6 +84,8 @@ def check():
             _check_expression(par.stratification_profile, par.stratification_param, 'stratification_profile')
     if par.magnetic:
         check_magnetic()
+    if par.centrifugal:   # NEW (2026-11-05)
+        check_centrifugal()
     if par.diffusivity not in DIFFUSIVITIES:
         sys.exit('diffusivity %r: set one of %s' % (par.diffusivity, _names(DIFFUSIVITIES)))
     if par.diffusivity == 'user':
@@ -91,6 +93,60 @@ def check():
             sys.exit("diffusivity 'user' needs diffusivity_profiles = {'nu': '...', 'kappa': '...'}")
         for k in ('nu', 'kappa'):
             _check_expression(par.diffusivity_profiles[k], par.diffusivity_param, "diffusivity_profiles['%s']" % k)
+
+
+def check_centrifugal():
+    '''
+    NEW (2026-11-05): stops on the settings that the centrifugal deformation (centrifugal = 1, centrifugal.py) cannot do yet:
+    a forcing (the forced problems need the metric terms in A and boundary flows on the deformed walls), the zero radial
+    stress walls (bco, bci = 2; the stress-free and no-slip ones are done, phase 2) and, with magnetic = 1 (NEW 2026-11-05,
+    phase 1b), a conducting inner core of another permeability than the fluid's (its matching rows would need the metric);
+    NEW (2026-11-06, phase 2) rpower_v < 4 in a viscous full sphere with m != 0 when the body is deformed (the toroidal rows
+    of the metric viscous force have a term P/r); and on incomplete shapes. NEW (2026-11-06): the exact spheroid
+    (centrifugal_shape 'spheroid') is a homogeneous fluid without a differential rotation (NEW 2026-11-06, step 2: with or
+    without a field).
+    centrifugal.report() (submatrices.py) prints the flattening used and the warnings on the terms left spherical.
+    '''
+    import centrifugal as cf
+    if par.centrifugal != 1:
+        sys.exit('centrifugal must be 0 or 1, got %r' % (par.centrifugal,))
+    if par.magnetic and par.ricb > 0 and par.innercore == 'conducting, Chebys' and par.mu_i2o != 1:
+        sys.exit('centrifugal = 1 with a conducting inner core needs mu_i2o = 1: with another permeability the matching of the '
+                 'tangential field on the deformed inner boundary has metric terms that are not implemented')
+    if par.forcing != 0:
+        sys.exit('centrifugal = 1 is implemented for eigenvalue problems only (forcing = 0): the forced problems need the '
+                 'metric terms of the time derivative in A and their boundary flows on the deformed walls')
+    if par.ViscosD > 0 and (par.bco == 2 or (par.ricb > 0 and par.bci == 2)):   # FIX (2026-11-05, phase 2): stress-free walls done
+        sys.exit('centrifugal = 1 takes no-slip or stress-free walls (bco, bci = 1 or 0): the zero radial stress rows (2) on a '
+                 'deformed wall need metric terms that are not implemented')
+    if par.centrifugal_shape not in cf.SHAPES:
+        sys.exit('centrifugal_shape %r: set one of %s' % (par.centrifugal_shape, _names(cf.SHAPES)))
+    q, f = par.centrifugal_q, par.centrifugal_f
+    if not isinstance(q, (int, float)) or q < 0:
+        sys.exit('centrifugal_q must be a number >= 0, got %r' % (q,))
+    if f is not None and not isinstance(f, (int, float)):
+        sys.exit('centrifugal_f must be None or a number, got %r' % (f,))
+    if par.centrifugal_shape == 'uniform' and f is None:
+        sys.exit("centrifugal_shape 'uniform' needs centrifugal_f, the flattening")
+    if par.centrifugal_shape == 'spheroid':   # NEW (2026-11-06): the exact spheroid (centrifugal.py, section 8)
+        if f is None or not f < 1:
+            sys.exit("centrifugal_shape 'spheroid' needs centrifugal_f, the flattening, below 1 (got %r)" % (f,))
+        if par.structure != 'Boussinesq' or par.diffusivity != 'uniform':
+            sys.exit("centrifugal_shape 'spheroid' is a homogeneous fluid: it needs structure 'Boussinesq' and diffusivity "
+                     "'uniform' (got %r, %r)" % (par.structure, par.diffusivity))
+        if par.diff_rot:   # (NEW 2026-11-06, step 2: a field is allowed)
+            sys.exit("centrifugal_shape 'spheroid' is implemented without a differential rotation (diff_rot = 0)")
+        if q != 0:
+            sys.exit("centrifugal_shape 'spheroid' takes its flattening from centrifugal_f and the effective gravity from the "
+                     "structure's g = r (that of a homogeneous spheroid): set centrifugal_q = 0")
+    if par.centrifugal_shape == 'user':
+        if f is not None:
+            sys.exit("centrifugal_shape 'user' takes the flattening from centrifugal_profile: set centrifugal_f = None")
+        _check_expression(par.centrifugal_profile, par.centrifugal_param, 'centrifugal_profile')
+    if par.ViscosD > 0 and par.ricb == 0 and par.m != 0 and par.rpower_v < 4 and cf.deformed():   # NEW (2026-11-06, phase 2)
+        sys.exit('centrifugal = 1 in a full sphere with viscosity and m != 0 needs rpower_v >= 4 (got %r): the metric part of '
+                 'the viscous force has a term P/r in the toroidal rows, which are polynomials in r only when multiplied by r^4 '
+                 '(set par.rpower_v = 4)' % (par.rpower_v,))
 
 
 def check_magnetic():
@@ -485,4 +541,7 @@ def centre_check(prf):
         singles += [('κ', 0, lambda r: diffusivity(prf, r, 'kappa'), 'diffusivity')]
     for name, n, f, kind in singles:
         family([('%s (%s %r)' % (name, kind, getattr(par, kind)), n, f)], 'max |%s|' % name)
+    if par.centrifugal:   # NEW (2026-11-05): the flattening of the level surfaces must be even and smooth at r = 0
+        import centrifugal as cf
+        family([("the flattening f (centrifugal_shape %r)" % par.centrifugal_shape, 0, cf.flattening)], 'max |f|')
     return nwarn[0]

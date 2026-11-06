@@ -48,6 +48,19 @@ cic    = int(bool(par.magnetic and par.innercore == 'conducting, Chebys' and par
 Nic    = int(par.N_cic/2)
 nic    = int(Nic*(par.lmax-par.m+1)/2) * cic
 
+# NEW (2026-11-06): the power of r of the g rows (r̂⋅∇× of the induction equation): 2, and 3 in a full sphere when the metric
+# part of the magnetic diffusion of the deformed body is on (centrifugal = 1, a deformation, m != 0), which has a term F/r
+# there (centrifugal.py, section 6): with r² that row would not be a polynomial in r (r = 0 is in the domain)
+def _metric_diffusion():
+    if not (par.magnetic and getattr(par, 'centrifugal', 0) == 1 and par.MagnetD > 0 and par.m != 0):
+        return False
+    import centrifugal as cf
+    return cf.deformed()
+_mdiff = _metric_diffusion()
+rpower_g = 3 if (_mdiff and par.ricb == 0) else 2
+# NEW (2026-11-06): the same for the rows gic of a conducting inner core, whose centre is in its domain (centrifugal.py, section 6)
+rpower_gic = 3 if (_mdiff and cic) else 2
+
 # this gives the size (rows or columns) of the main matrices
 sizmat = 2*n + n*par.thermal + 2*n*par.magnetic + 2*nic  # NEW (2026-10-28): + the magnetic field (+ inner core)
 
@@ -78,6 +91,11 @@ if mag_algebra:
     odd_profiles += _ma.odd_codes()
 # the Δl of the magnetic couplings assemble.py loops over
 mag_dl = list(_ma.dl_range()) if mag_algebra else [-2, -1, 0, 1, 2]
+# NEW (2026-11-05): the metric magnetic terms of the deformed body (centrifugal.py): products of the map's even amplitudes and
+# the background field, odd for the odd degrees of B0
+if par.magnetic and getattr(par, 'centrifugal', 0):
+    import centrifugal as _cf
+    odd_profiles += _cf.magnetic_odd_codes()
 
 def dr_offd(l, ls, row, col):
     '''
@@ -130,7 +148,7 @@ def decode_label(labl):
             rpower = 2 - rx ; rhopower = 0   # Non-adiabatic motion (or adiabatic with the thermal wind), we multiply the thermal equation by r²
 
     elif section in ['f', 'g']:   # NEW (2026-10-28): the induction equation, r² r̂⋅ (f) and r² r̂⋅∇× (g), not multiplied by ρ
-        rpower = 2 - rx ; rhopower = 0
+        rpower = (rpower_g if section == 'g' else 2) - rx ; rhopower = 0   # (NEW 2026-11-06: r³ for g, see rpower_g)
 
     if howlong in [9,13,17]:   # sXfu1X_DX or sXfu1Xfu2X_DX
         func1   = labl[2:5]

@@ -23,6 +23,7 @@ import os
 from parameters import par
 import utils as ut
 import diff_rot as dr
+import centrifugal as cf   # NEW (2026-11-05)
 import submatrix_io as smio   # NEW (2026-11-03)
 import background as bg
 import radial_profiles as rap
@@ -106,6 +107,11 @@ def main(ncpus):
 
     if par.ThermaD == 0:
         gebasis[2] = 1 if ut.adiab_tw else 0  # No thermal diffusion, C^(0) basis is enough (C^(1) for the thermal wind's P'), no need for thermal bc's
+
+    if par.centrifugal == 1 and cf.deformed():   # NEW (2026-11-05, phase 2): the metric viscous force has P''' in section v and the metric magnetic
+        for sec_, d_ in cf.diffusion_orders().items():   # diffusion F''' in section g (m ≠ 0): those sections in C^(3), with
+            k_ = section.index(sec_)                     # their bc rows (chop below)
+            gebasis[k_] = max(gebasis[k_], d_)
 
     # Zero matrices, used when making room for bc's
     N1 = int((1 + np.sign(par.ricb)) * int(par.N/2))
@@ -287,6 +293,26 @@ def main(ncpus):
             labl += [ lab ]
             arg2 += [ {'P': vP, 'T': vT, 'F': vF, 'G': vG}[kind] ]   # NEW (2026-10-30): F, G for the induction by the flow
 
+    if par.centrifugal == 1:
+        # NEW (2026-11-05): the centrifugal deformation (centrifugal.py): the radial operators of the metric terms of the inertia
+        # and the Coriolis force (sections u, v) and of the heat time derivative (section h), with the parity of their columns
+        cf.report()
+        for lab, kind in cf.labels():
+            labl += [ lab ]
+            arg2 += [ {'P': vP, 'T': vT}[kind] ]
+        if par.magnetic:   # NEW (2026-11-05, phase 1b): the metric parts of the Lorentz force (u, v) and of the induction (f, g)
+            for lab, kind in cf.magnetic_labels():
+                labl += [ lab ]
+                arg2 += [ {'P': vP, 'T': vT, 'F': vF, 'G': vG}[kind] ]
+        # NEW (2026-11-05, phase 2): the metric parts of the viscous force (u, v), the thermal (h) and the magnetic diffusion (f, g)
+        for lab, kind in cf.diffusion_labels():
+            labl += [ lab ]
+            arg2 += [ {'P': vP, 'T': vT, 'S': vS, 'F': vF, 'G': vG}[kind] ]
+        if par.diff_rot == 1:   # NEW (2026-11-06, phase 2): those of the differential rotation's force (u, v) and advection (h)
+            for lab, kind in cf.rotation_labels():
+                labl += [ lab ]
+                arg2 += [ {'P': vP, 'T': vT, 'S': vS}[kind] ]
+
     if par.ricb == 0:
         # NEW (2026-11-04): a WARNING for each profile that is not regular at r = 0, i.e. not r^n times a series in r² for its
         # degree n (background.centre_check, which also gives the former warning on the kinks of 'Y20-wall-bounded', 'shellular')
@@ -304,6 +330,14 @@ def main(ncpus):
 
     if par.ricb > 0:  # set vector_parity = 0, i.e. is not needed
         arg2 = np.size(labl)*[0]
+    else:  # NEW (2026-11-06): with r = 0 in the domain, r^p f(r) (p < 0) is a polynomial operator only if f vanishes there as r^-p;
+        for labl1 in dict.fromkeys(labl):   # otherwise its Chebyshev fit is wrong, silently (the metric viscous force's P/r was)
+            args_ = ut.decode_label(labl1)
+            if args_[1] < 0:
+                fr = np.abs(rap.burrito(np.array([1e-2, 1e-3, 1e-4]), *args_))
+                if fr[2] > 0 and fr[2] > 3*fr[1] and fr[1] > 3*fr[0]:
+                    print('WARNING: the radial operator of', labl1, 'grows as r -> 0 (r^%d times a profile that does not vanish '
+                          'there): its matrix is wrong in a full sphere' % args_[1])
 
     # This loop populates the lists pkey, parg1, parg2
     for k,labl1 in enumerate(labl) :
@@ -384,6 +418,8 @@ def main(ncpus):
 
         if secx == 'h' and par.ThermaD == 0:  # no thermal bc rows without diffusion, whatever the basis
             chop = 0
+        if secx in ('v', 'g') and gbx == 3 and par.ricb > 0:  # NEW (2026-11-05, phase 2): C^(3) for the metric diffusion, still
+            chop = 2                                           # two bc rows (with ricb = 0, int(3/2) = 1 is right)
         if secx == 'v' and inviscid:  # NEW (2026-10-28): no bc rows in section v without viscosity, whatever the basis (C^(2) when magnetic)
             chop = 0
         # ---------------------------------------------------------------------------------------------------------------------------------------
@@ -426,6 +462,41 @@ def main(ncpus):
             mat = ss.vstack( [ zic2, mat[:-2,:] ], format='csr' )  # room for the bc rows at the top
             mats[name + 'f_ic'] = ss.coo_matrix( ut.remroco( mat, vF, vF ) )  # operator parity 1: one bc row is left
             mats[name + 'g_ic'] = ss.coo_matrix( ut.remroco( mat, vG, vG ) )
+
+        if cf.ic_metric_on():
+            # NEW (2026-11-06): the metric diffusion of the deformed core (centrifugal.py, section 6): its operators r^p a(r) X^(d)
+            # (label + '_ic'), and for m ≠ 0 the rows gic at r³ (utils.rpower_gic) in the C^(3) basis (F''' terms), with their
+            # spherical operators rebuilt there (r1_D0, r3_D0, r2_D1, r3_D2 + 'g_ic')
+            amp = cf.amplitude_series()
+            labs = cf.ic_labels()
+            gb_ic = {'f': 2, 'g': max([2] + [d for _, row, _, _, _, d in labs if row == 'g'])}
+            vrow_ic = {'f': vF, 'g': vG*(-1)**ut.rpower_gic}   # the parity of the rows (that of r² ∇² on F, r^p ∇² on G)
+            def ic_op(fun, d, gb, vrow, vcol):
+                '''fun(r) times the d-th derivative in the C^(gb) basis on [-ricb, ricb], the bc row on top, reduced to the
+                parities of the rows and of the columns (as the operators above)'''
+                c = ut.chebco_f(fun, Nic, R1, R2, 1e-15)
+                for k_ in range(d):
+                    c = ut.Slam(k_, Nic) * c
+                mat = ut.Mlam(c, d, 0)
+                if d > 0:
+                    mat = mat * ut.Dlam(d, Nic, R1, R2)
+                for k_ in range(d, gb):
+                    mat = ut.Slam(k_, Nic) * mat
+                mat = ss.vstack( [ zic2, ss.csr_matrix(mat)[:-2,:] ], format='csr' )
+                return ss.coo_matrix( ut.remroco( mat, vrow, vcol ) )
+            for lab, row, X, rp, a, d in labs:
+                vcol = {'F': vF, 'G': vG}[X]
+                if vcol*(-1)**(rp + d) != vrow_ic[row]:
+                    sys.exit('submatrices: the inner-core operator %s has the parity of neither its row nor its column' % lab)
+                if rp < 0:
+                    sys.exit('submatrices: the inner-core operator %s has a negative power of r (the centre is in the core)' % lab)
+                mats[lab + '_ic'] = ic_op(lambda r, rp=rp, a=a: r**rp*(amp[a](r) if a is not None else 1.), d, gb_ic[row],
+                                          vrow_ic[row], vcol)   # (NEW 2026-11-06, step 2: a None, the exact spheroid's)
+            if ut.rpower_gic == 3:
+                for name, (rp, d) in { 'r1_D0': (1, 0), 'r3_D0': (3, 0), 'r2_D1': (2, 1), 'r3_D2': (3, 2) }.items():
+                    mats[name + 'g_ic'] = ic_op(lambda r, rp=rp: r**rp, d, gb_ic['g'], vrow_ic['g'], vG)
+            elif gb_ic['g'] > 2:
+                sys.exit('submatrices: the inner-core rows gic need the C^(3) basis with their r² rows (m = 0): not expected')
 
     smio.write(mats, par)   # NEW (2026-11-03): one file with the parameters, read by operators.py
     if par.write_mtx:   # and, on request, one Matrix Market file per operator for outside tools (kore does not read them)
