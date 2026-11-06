@@ -219,7 +219,7 @@ class default_params():
         # self.centrifugal_shape = 'user'  # f = centrifugal_profile, a numpy expression of r, x and p = centrifugal_param
         # self.centrifugal_shape = 'spheroid'  # NEW (2026-11-06): f = centrifugal_f everywhere, kept exactly at any f < 1 (the
         #   stretched sphere of 'uniform' without the first-order approximation): a homogeneous fluid ('Boussinesq', uniform
-        #   diffusivities, centrifugal_q = 0), without a field or a differential rotation (docs/centrifugal-equations.md)
+        #   diffusivities, centrifugal_q = 0), with or without a field, no differential rotation (docs/centrifugal-equations.md)
         self.centrifugal_q = 0.0  # q = Ω² R³/(G M), centrifugal over gravitational acceleration at the equator of the surface
         #   x = 1 (the outer wall for 'Boussinesq'): Earth 3.5e-3, Jupiter 0.089, Saturn 0.155. The g of 'model S hydrostatic'
         #   ends at the outer wall: 'clairaut' applies its surface condition there, with q r_out³ (the mass above the wall

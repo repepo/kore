@@ -560,9 +560,13 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
 
 ## 14. History (this branch, newest first)
 
-2026-11-06 the dissipative terms of the deformed body (phase 2: the viscous force with no-slip and stress-free walls, the
+`66a97b50` the exact spheroid with a field (step 2: the Lorentz force and the magnetic diffusion with the whole metric,
+insulating walls matched to the exact potential field of the spheroid, a conducting inner core with mu_i2o = 1; budgets to
+round-off); `06256694` the exact spheroid, `centrifugal_shape = 'spheroid'` (step 1: one flattening at any f < 1, a linear
+stretch, exact for a homogeneous fluid; `tests/centrifugal/spheroid_check.py`);
+`25fd581f` the dissipative terms of the deformed body (phase 2: the viscous force with no-slip and stress-free walls, the
 heat and magnetic diffusion with their wall rows, a conducting inner core, the metric terms of a differential rotation);
-2026-11-05 the centrifugal deformation with a field (phase 1b: the metric Lorentz force and induction, the insulating
+`57970a41` the centrifugal deformation with a field (phase 1b: the metric Lorentz force and induction, the insulating
 walls on the deformed body, a conducting inner core with mu_i2o = 1, the free core nutation check `fcn.sh`);
 `9d245cd2` the centrifugal deformation, `centrifugal = 1` (`bin/centrifugal.py`, `tests/centrifugal/`,
 `docs/centrifugal-equations.md`);
