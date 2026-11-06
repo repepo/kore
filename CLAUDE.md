@@ -226,7 +226,10 @@ G = Gaspard; `units.nHz`, `units.set_target`), so prograde modes have ω > 0 and
 B is −inertia (momentum) and +entropy (heat); in A the momentum rows are Coriolis − viscous − buoyancy + diff rot, the
 heat rows −advection + diffusion + diff-rot terms (operators return the A sign). Forced runs (`forcing > 0`) use
 A − i wf B as the matrix (wf = `forcing_frequency`) and a boundary right-hand side (forcing 11: random body forces,
-`reynolds_stress.py`).
+`reynolds_stress.py`). The boundary forcings (6, 7, 9, 10, 14) put their wall values on the right-hand side of the wall
+rows of `bc_u_spherical`: per degree P at the outer wall is row 0 and at the inner wall row 2 (T: rows 0 and 1). The
+tangential rows keep 0: they are the physical conditions for any P (no-slip (rP)'/r + P (ln ρ₀)' = 0, stress-free),
+where conductive_IC's rows P' = 0, P'' = 0 need the values of P' and P'' (`tests/forcing/rows_check.py`).
 
 **Scales.** `Gaspard` = Ωτ, `Beyonce` = (N₀τ)², `ViscosD` = ν₀τ/r₀² (the Ekman number when τ = 1/Ω),
 `ThermaD` = κ₀τ/r₀²; N² = Beyonce g dS/dr. `set_scales()` resets them by `timescale` ('rotation': Gaspard 1,
@@ -402,7 +405,7 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   resid𝑠 (`resid3`): 2σTE − Dthm − Wadv − Wdr_thm = 0 (TE = ½∫p₀|s|²); residens: enstrophy balance; with `magnetic = 1`
   resid𝐛: 2σME − Indu − Mdfs = 0 in the fluid, and resid𝐄 the full energy budget with the inner core, the outside
   potential field and the Ohmic losses (`upp.em_budget`, no-slip walls only) (`upp.diagnose_magnetic`, Boussinesq Lorentz and induction terms ported
-  from conductive_IC; Mag/Kin = ME/KE with ME = ½∫|b|², no Hendrik, as conductive_IC). residω is O(1) for real
+  from conductive_IC; ME = ½∫|b|², no Hendrik, as conductive_IC; Mag/Kin = Hendrik ME/KE since 2026-11-06, in KE units as conductive_IC 7660861). residω is O(1) for real
   eigenvalues (m = 0, ω = 0): all its terms are round-off there.
 - These residuals, not the eigenvalue alone, judge resolution: compare with a higher-N run; for thermal runs the
   entropy can be unresolved while P, T look converged. The docs report 1e-7 to 1e-12 for converged runs.
@@ -499,6 +502,9 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
 - `tests/tidal/` (README, `run_all.sh`, ~2 min on 4 ranks): `stokes_check.py` (forcing 14 without rotation against the
   exact unsteady Stokes solution: P_2(r), KE, Wp, Wv, Dvisc), `budget_check.py` (residσ, residω, residD and the wall
   work on seven runs: 'Wu 2005', buoyancy, diff rot, the three wall conditions, a full sphere at N 384), `mk_run.py`.
+- `tests/forcing/` (README, `run_all.sh`, ~20 s; NEW 2026-11-06): `rows_check.py` (forcings 6 at a no-slip and a
+  stress-free ICB, 7 with m = 0 and 2, 9 Boussinesq, 'Wu 2005' and full sphere, 10: the wall values read back from the
+  solution of small forced runs built with `tests/tidal/mk_run.py`, to 1e-10 of the amplitude).
 - `tests/ci/test_spinover.py` (`cd tests/ci; pytest -v`, about 6 s): the test GitHub runs on every push to anelastic_log
   (`.github/workflows/anelastic_log.yml`: Ubuntu 24.04 with its PETSc/SLEPc 3.19, numpy 1.26 and scipy 1.11 packages, so
   `bin/` must not need newer ones; pushes that change only docs or `.md` files are skipped). It runs the smooth Sun
@@ -560,6 +566,9 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
 
 ## 14. History (this branch, newest first)
 
+The conductive_IC port, phase 1 (2026-11-06): Mag/Kin = Hendrik ME/KE (as conductive_IC 7660861), the wall rows of
+forcings 6 (also at a stress-free ICB), 7 with m = 2 and 9 (as conductive_IC 35fff71), B0_ic 'full sphere' renamed
+'frozen currents' (the old name stops a run), `cnorm` as a numpy number, `tests/forcing/`;
 `66a97b50` the exact spheroid with a field (step 2: the Lorentz force and the magnetic diffusion with the whole metric,
 insulating walls matched to the exact potential field of the spheroid, a conducting inner core with mu_i2o = 1; budgets to
 round-off); `06256694` the exact spheroid, `centrifugal_shape = 'spheroid'` (step 1: one flattening at any f < 1, a linear

@@ -17,9 +17,10 @@ seconds to minutes.
 | `tests/centrifugal/run_all.sh` | the terms of the centrifugal deformation, with and without a field, against a symbolic derivation and quadratures, the rows of the insulating walls against the exact matching, its eigenvalues against exact results (among them the modes of a spheroid, inviscid and damped), the budgets | after a change of the deformation, of the inertia, the Coriolis force, the viscous force, the heat equation, the Lorentz force, the induction, the diffusion, the differential rotation or the wall rows, or of `spin_doctor`'s budgets | 17 min on 16 cores, 13 min with `SKIP_SOLVE=1` (no PETSc) |
 | `tests/rsf/run_all.sh` | the random Reynolds-stress forcing (forcing 11) | after a change of the forcing | 3 min |
 | `tests/tidal/run_all.sh` | the tidal forcing (forcing 14) against an exact solution, and the energy budget with the work at the walls and the viscous dissipation | after a change of a boundary forcing, of `spin_doctor`'s budgets or of a force | 2 min on 4 ranks |
+| `tests/forcing/run_all.sh` | the wall values that the boundary forcings 6, 7, 9 and 10 impose, read back from the solution | after a change of a boundary forcing or of the wall rows | 20 s |
 | `tests/rsf/regress_solve.sh` | eigenvalues, fields and forced solutions bitwise equal to an older copy | after a change of `solve.py` | 15 s |
 
-`tests/diff_rot`, `tests/heat_dr`, `tests/magnetic`, `tests/centrifugal`, `tests/rsf` and `tests/tidal` each have a README
+`tests/diff_rot`, `tests/heat_dr`, `tests/magnetic`, `tests/centrifugal`, `tests/rsf`, `tests/tidal` and `tests/forcing` each have a README
 that lists their scripts and what each one checks; the CI test explains itself in `tests/ci/test_spinover.py`.
 
 ## Are existing runs unchanged?

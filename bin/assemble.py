@@ -90,35 +90,31 @@ def main():
         if rank == 0:
             print('Buffett 2010 ICB radial velocity forcing')
 
-            if par.m == 1 and par.symm == -1:
+            if par.m == 1 and par.symm == -1 and par.ricb > 0 and par.bci in (0, 1):  # FIX (2026-11-06): ricb > 0 (as conductive_IC)
 
                 l = 2 # goes with the poloidals (2curl eqs) at the rows for the ICB boundary conditions
 
                 pos = ut.N1*np.where(alltop==l)[0][0]  # pos should be zero
-                row = np.arange(pos,pos+2)
-                col = np.zeros(2)
 
                 hft = 0.0025 # Inner core hydrostating flattening
                 C   = (1j)*(2/3)*np.sqrt(6)*hft*par.ricb
 
                 P   = ( par.ricb/(l*(l+1)) ) * C * par.forcing_amplitude_icb
-                dP  = -P/par.ricb
-                d2P = (2-l*(l+1))*P/(par.ricb**2)
 
-                if par.bci == 0: # stress-free
-                    #bdat = -1j*ut.wf*np.array([P, d2P])
-                    bdat = np.array([P, d2P])
+                # FIX (2026-11-06): the ICB's P row of bc_u_spherical (pos + 2; it went to the CMB's, pos), as conductive_IC
+                # 35fff71. Only P is given: the second ICB row of bc_u_spherical already holds the whole condition for P != 0,
+                # zero tangential velocity (no-slip, (rP)'/r + P (ln rho0)' = 0) or zero tangential stress (stress-free), so its
+                # right-hand side is 0. conductive_IC writes P' = dP = -P/ricb and P'' = (2 - L) P/ricb^2 there, the same
+                # conditions in its rows P' = 0 and P'' = 0; here those values made the ICB slip.
+                row  = [pos + 2]
+                bdat = [P]
 
-                elif par.bci == 1: # no-slip
-                    #bdat = -1j*ut.wf*np.array([P,  dP])
-                    bdat = np.array([P,  dP])
-
-                B = ss.csr_matrix( ( bdat, (row,col) ), shape=(ut.sizmat,1) )
+                B = ss.csr_matrix( ( bdat, (row, np.zeros(1)) ), shape=(ut.sizmat,1) )
                 np.savez('B_forced.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
 
             else:
 
-                print('Buffet2010 forcing requires m = 1, symm = -1')
+                print('Buffet2010 forcing requires m = 1, symm = -1, ricb > 0, bci = 0 or 1')
 
 
     elif par.forcing == 7: # ------------------------------------------------------------ longitudinal libration forcing
@@ -157,16 +153,17 @@ def main():
                 L = l * (l + 1)
 
                 pos = ut.N1 * np.where(alltop == l)[0][0]
-                row = np.arange(pos, pos + 2)
-                col = np.zeros(2)
 
                 # amplitude for the l=2 components
                 C_cmb = -par.forcing_frequency / L * par.forcing_amplitude_cmb
                 C_icb = -par.forcing_frequency / L * par.forcing_amplitude_icb * (par.ricb ** 2)
 
-                bdat = np.array([C_cmb, C_icb])
+                # FIX (2026-11-06): P at the CMB (row pos) and at the ICB (row pos + 2, bc_u_spherical), as conductive_IC
+                # 35fff71; C_icb went to the CMB's P' row (pos + 1). No inner wall in a full sphere.
+                row  = [pos] + ([pos + 2] if par.ricb > 0 else [])
+                bdat = [C_cmb] + ([C_icb] if par.ricb > 0 else [])
 
-                B = ss.csr_matrix((bdat, (row, col)), shape=(ut.sizmat, 1))
+                B = ss.csr_matrix((bdat, (row, np.zeros(len(row)))), shape=(ut.sizmat, 1))
                 np.savez('B_forced.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
 
             else:
@@ -191,8 +188,6 @@ def main():
                 L = l*(l+1)
 
                 pos = ut.N1*np.where(alltop==l)[0][0]
-                row = np.arange(pos,pos+2)
-                col = np.zeros(2)
 
                 #C_icb = L*par.m*par.forcing_frequency*par.forcing_amplitude_icb/par.ricb  # to be checked
                 #C_cmb = L*par.m*par.forcing_frequency*par.forcing_amplitude_cmb
@@ -201,9 +196,12 @@ def main():
                 C_icb = par.forcing_amplitude_icb * par.ricb / L
                 C_cmb = par.forcing_amplitude_cmb * ut.rcmb / L
 
-                bdat = np.array([C_cmb, C_icb])
+                # FIX (2026-11-06): P at the CMB (row pos) and at the ICB (row pos + 2, bc_u_spherical), as conductive_IC
+                # 35fff71; C_icb went to the CMB's P' row (pos + 1). No inner wall in a full sphere.
+                row  = [pos] + ([pos + 2] if par.ricb > 0 else [])
+                bdat = [C_cmb] + ([C_icb] if par.ricb > 0 else [])
 
-                B = ss.csr_matrix( ( bdat, (row,col) ), shape=(ut.sizmat,1) )
+                B = ss.csr_matrix( ( bdat, (row, np.zeros(len(row))) ), shape=(ut.sizmat,1) )
                 np.savez('B_forced.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
 
             else:

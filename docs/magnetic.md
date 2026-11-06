@@ -91,7 +91,9 @@ Notes:
 
 - **Full-sphere shapes with an inner core.** `'G21 dipole'`, `'Luo_S1'` and `'Luo_S2'` are defined for a full sphere.
   With an inner core, `B0_ic = 'potential'` (default) continues the field into the core as a potential field;
-  `B0_ic = 'full sphere'` keeps the full-sphere formula.
+  `B0_ic = 'frozen currents'` keeps the full-sphere formula, whose currents below the inner boundary then stay in the
+  core (fitting only when the core's magnetic decay time is much longer than the periods sought; the name was
+  `'full sphere'` before 2026-11-06).
 - **`'Luo_S1'` and `'G21 dipole'`** give the same run when `cnorm` is a name (`'mag_energy'`, `'Schmitt2012'`,
   `'rms_cmb'`). With a numerical `cnorm` the `'Luo_S1'` field is 30 times stronger.
 - **`'confined'`** puts the field in the layer from `B0_conf_r1` to `B0_conf_r2` and nowhere else. The defaults reach
@@ -283,7 +285,8 @@ budgets.
 `spin_doctor` adds the Lorentz work to residσ and residω, and prints two more residuals: resid𝐛, the energy budget of
 the induction equation in the fluid, and resid𝐄, the full energy budget including the field outside the fluid (no-slip
 walls only: `bco = 1`, and `bci = 1` with an inner core). Like residσ ([Solver](solver.md)), they should be small for a
-resolved mode. It also prints Mag/Kin, the ratio of magnetic to kinetic energy (without the factor `Hendrik`), and
+resolved mode. It also prints Mag/Kin, the ratio of magnetic to kinetic energy (`Hendrik` ME/KE, both in the units of the
+kinetic energy), and
 writes `magnetic.dat` and 25 magnetic columns of `params.dat` ([Output files](output.md#magneticdat)).
 
 ## Practical tips

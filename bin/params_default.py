@@ -297,9 +297,21 @@ class default_params():
         self.mag_couplings = 'closed'
 
         # NEW (2026-10-28): what the full-sphere fields ('G21 dipole', 'Luo_S1', 'Luo_S2') do with an inner core (ricb > 0), as
-        # conductive_IC: 'potential' (default) adds beta r^-(l+1) to h so that B0 continues as a potential field into the inner core
-        # (background_field.B0_beta_ic); 'full sphere' keeps h. No effect for 'axial', 'FDM' and with ricb = 0.
+        # conductive_IC. Such a field has currents below ricb, and nothing keeps them steady in a solid inner core of finite
+        # conductivity (no flow there, hence no EMF: an axisymmetric current decays on the core's magnetic diffusion time).
+        #   'potential' (default): removes them. background_field.B0_beta_ic adds beta r^-(l+1) to h, beta =
+        #       ricb^(l+1) (ricb h' - l h)/(2l + 1) at the ICB, which carries no current and keeps the CMB matching: the currents
+        #       in the fluid stay the same and B0 continues into the core as the potential field h(ricb) (r/ricb)^l. The steady
+        #       field for an insulating core and for any finite conductivity. (To keep exactly the fluid currents of the
+        #       full-sphere field, give cnorm as a number rather than 'mag_energy'.)
+        #   'frozen currents': h unchanged, so the currents below ricb stay in the core (FIX 2026-11-06: renamed as in
+        #       conductive_IC, was 'full sphere', which now stops with this name). Self-consistent only for a perfectly
+        #       conducting core, or as a snapshot of currents frozen in it, when its free-decay time (~0.006 Lu sigma_i2o
+        #       Alfven times, Lu = Le/Em, for l = 2 at ricb = 0.35; about 3000 years for l = 2 in the Earth) is much longer
+        #       than the periods sought. It does not tend to 'potential' as sigma_i2o decreases.
+        # No effect for 'axial', 'FDM' and other fields that already match a potential field at the ICB, nor with ricb = 0.
         self.B0_ic = 'potential'
+        # self.B0_ic = 'frozen currents'
 
         # Normalisation of B0 (cnorm):
         self.cnorm = 1             # a number: cnorm itself
@@ -344,7 +356,7 @@ class default_params():
         # --------------------------------------------------------------------------------------------------- Forcing parameters
         # ----------------------------------------------------------------------------------------------------------------------
         self.forcing = 0  # Uncomment this line for eigenvalue problems
-        # self.forcing = 6  # Buffett2010 ICB radial velocity boundary forcing, m=1,antisymm
+        # self.forcing = 6  # Buffett2010 ICB radial velocity boundary forcing, m=1,antisymm, ricb > 0
         # self.forcing = 7  # Longitudinal libration boundary forcing, m={0, 2}, symm, no-slip
         # self.forcing = 9  # Radial, symmetric, m=2 boundary flow forcing, bci=1.
         # self.forcing = 10 # Radial, symmetric, order m boundary flow forcing at the cmb (l=m), unit amplitude.

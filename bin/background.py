@@ -21,7 +21,7 @@ DIFFUSIVITIES = ('uniform', 'step', 'solar_rz', 'user')
 MAGNETIC_WALLS = ('insulator',)   # NEW (2026-10-28): mantle (magnetic = 1); B0 types: background_field.B0_TYPES
 INNER_CORES = ('insulator', 'conducting, Chebys')   # NEW (2026-10-28): innercore (magnetic = 1)
 MAG_COUPLINGS = ('closed', 'algebra')            # NEW (2026-11-03): mag_couplings, B0_ic and ferraro_policy (magnetic = 1),
-B0_ICS = ('potential', 'full sphere')            # also written to params.dat as these indices
+B0_ICS = ('potential', 'frozen currents')        # also written to params.dat as these indices ('frozen currents' was 'full sphere')
 FERRARO_POLICIES = ('warn', 'refuse')
 
 # names that are no longer read and what to set instead (without this stop they would be ignored without notice)
@@ -172,7 +172,8 @@ def check_magnetic():
                 bf.k(np.linspace(max(par.ricb, 0.1), 1, 4), 0)
             except Exception as err:
                 sys.exit('B0_tor_profile = %r: %s: %s' % (par.B0_tor_profile, type(err).__name__, err))
-        if not (isinstance(par.cnorm_tor, (int, float)) or par.cnorm_tor in ('mag_energy', 'Schmitt2012')):
+        # FIX (2026-11-06): numpy numbers too (np.int64 is not an int), as conductive_IC 4bfb389
+        if not (isinstance(par.cnorm_tor, (int, float, np.integer, np.floating)) or par.cnorm_tor in ('mag_energy', 'Schmitt2012')):
             sys.exit("cnorm_tor %r: a number, 'mag_energy' or 'Schmitt2012'" % (par.cnorm_tor,))
         if par.B0 is not None and bf.symm_pol != bf.symm_tor:
             sys.exit('B0 %r and B0_tor %r have opposite equatorial symmetries: they cannot be combined in one eigenproblem'
@@ -212,11 +213,14 @@ def check_magnetic():
             sys.exit("B0 'confined': cnorm 'rms_cmb' is not defined (B0 is zero at the CMB); use 'mag_energy' or a number")
     if par.B0 == 'FDM' and par.B0_l not in (1, 2):   # FIX (2026-10-28): the quadrupole couplings are implemented (operators.lorentz_pol2)
         sys.exit("B0 'FDM' with B0_l = %r: only B0_l = 1 or 2 is implemented" % par.B0_l)
-    if not (isinstance(par.cnorm, (int, float)) or par.cnorm in ('rms_cmb', 'mag_energy', 'Schmitt2012')):
+    if not (isinstance(par.cnorm, (int, float, np.integer, np.floating)) or par.cnorm in ('rms_cmb', 'mag_energy', 'Schmitt2012')):
         sys.exit("cnorm %r: a number, 'rms_cmb', 'mag_energy' or 'Schmitt2012'" % (par.cnorm,))
     # FIX (2026-11-03): these two were not checked, and a misspelt value silently meant 'closed' or 'full sphere'
     if getattr(par, 'mag_couplings', 'closed') not in MAG_COUPLINGS:
         sys.exit('mag_couplings %r: set one of %s' % (par.mag_couplings, _names(MAG_COUPLINGS)))
+    if par.B0_ic == 'full sphere':   # FIX (2026-11-06): renamed as in conductive_IC (1c9ba86); the index in params.dat is the same
+        sys.exit("B0_ic = 'full sphere' is now called 'frozen currents' (h unchanged: the currents of the full-sphere field "
+                 "below ricb stay in the inner core)")
     if par.B0_ic not in B0_ICS:
         sys.exit('B0_ic %r: set one of %s' % (par.B0_ic, _names(B0_ICS)))
     if par.ferraro_policy not in FERRARO_POLICIES:   # NEW (2026-11-03): the parameter that replaces background.FERRARO_POLICY

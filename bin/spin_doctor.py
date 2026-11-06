@@ -359,7 +359,9 @@ def main(ncpus):
     ] if par.forcing > 0 else []) + ([
         ( 'resid𝐛',        '{:8.2e}',   lambda i: residb[i] ),
         ( 'resid𝐄',        '{:8.2e}',   lambda i: residE[i] ),
-        ( 'Mag/Kin',       '{:8.2e}',   lambda i: ratio(ME[i] + MEc[i], KE[i]) ),   # as conductive_IC: ME without Hendrik
+        # FIX (2026-11-06): in the units of KE, Hendrik (ME + MEc)/KE, as resid𝐄 and the normalisation KE + Hendrik ME = 1
+        # (as conductive_IC 7660861; it was ME/KE, off by the factor Hendrik)
+        ( 'Mag/Kin',       '{:8.2e}',   lambda i: ratio(par.Hendrik*(ME[i] + MEc[i]), KE[i]) ),
     ] if par.magnetic else []) + [
         ( 'Peak ℓ',        '{:d}',      lambda i: ldom[i] ),
         ( 'ℓ-Width',       '{:d}',      lambda i: lwidth[i] ),

@@ -108,8 +108,9 @@ uniform field, potential everywhere. `'confined'` is zero at the wall. `'general
 **Full-sphere fields with an inner core.** `'G21 dipole'`, `'Luo_S1'` and `'Luo_S2'` are defined for a full sphere, and
 `B0_ic` says how to continue them into an inner core. `'potential'` (default) adds $\beta_i r^{-(l+1)}$,
 $\beta_i = r_i^{l+1}(r_i h' - l h)/(2l+1)$ at $r_i$, so that $rh' - lh = 0$ at the inner boundary: the field of the
-currents in the fluid, continued as a potential field into the core. `'full sphere'` keeps $h$ as it is
-(`conductive_IC`'s `B0_beta_ic`). `B0_ic` has no effect on the other types or with `ricb = 0`.
+currents in the fluid, continued as a potential field into the core (`conductive_IC`'s `B0_beta_ic`).
+`'frozen currents'` (the name in `conductive_IC`; `'full sphere'` before 2026-11-06) keeps $h$ as it is, with the
+currents below $r_i$ in the core. `B0_ic` has no effect on the other types or with `ricb = 0`.
 
 **Confined field.** `'confined'` fills the layer $r_1 \le r \le r_2$ and is zero outside it. Its purpose: a poloidal
 field in a layer where the rotation is uniform is not wound up, so it is a steady background with a differential
@@ -666,7 +667,7 @@ Mag/Kin and writes `magnetic.dat`:
 
 | column | name | meaning |
 | --- | --- | --- |
-| 1 | ME | magnetic energy in the fluid (without Hendrik, as `conductive_IC`; Mag/Kin is ME/KE) |
+| 1 | ME | magnetic energy in the fluid (without Hendrik, as `conductive_IC`; Mag/Kin is Hendrik ME/KE) |
 | 2 | Mdfs | magnetic diffusion |
 | 3 | Indu | induction work |
 | 4 | residb | resid𝐛, the relative residual of the induction budget |

@@ -62,7 +62,7 @@ the definitions are on [Magnetic field equations](magnetic-equations.md#energy-b
 
 | column | content |
 | --- | --- |
-| 1 | ME, the magnetic energy $\int\tfrac12\lvert\mathbf b\rvert^2 dV$ in the fluid (the column Mag/Kin of the `spin_doctor` table is ME/KE) |
+| 1 | ME, the magnetic energy $\int\tfrac12\lvert\mathbf b\rvert^2 dV$ in the fluid (the column Mag/Kin of the `spin_doctor` table is Hendrik ME/KE, in the units of KE) |
 | 2 | Mdfs, the magnetic diffusion term (of the deformed fluid with `centrifugal = 1`) |
 | 3 | Indu, the induction work |
 | 4 | the relative residual of the induction budget in the fluid (resid𝐛) |
@@ -71,7 +71,7 @@ the definitions are on [Magnetic field equations](magnetic-equations.md#energy-b
 | 8 | MEext, the energy of the potential field outside the outer wall |
 | 9, 10 | Ohm_f, Ohm_ic: the Ohmic losses in the fluid and in a conducting inner core |
 | 11 | the relative residual of the full energy budget (resid𝐄; nan unless the walls are no-slip: `bco = 1`, and `bci = 1` with an inner core) |
-| 12 | with `centrifugal = 1` only: MEc, the part of the magnetic energy that the deformation adds, so that ME + MEc is the energy of the field in the deformed fluid (the column Mag/Kin of the `spin_doctor` table is (ME + MEc)/KE; [Centrifugal deformation](centrifugal-equations.md#energy-budgets)) |
+| 12 | with `centrifugal = 1` only: MEc, the part of the magnetic energy that the deformation adds, so that ME + MEc is the energy of the field in the deformed fluid (the column Mag/Kin of the `spin_doctor` table is Hendrik (ME + MEc)/KE; [Centrifugal deformation](centrifugal-equations.md#energy-budgets)) |
 
 ## `params.dat`
 
@@ -108,7 +108,7 @@ The columns follow the order of `spin_doctor.param_table`, counted from 1:
   `'Luo_S1'` 3, `'Luo_S2'` 4, `'confined'` 5, `'general'` 6, `'ferraro'` 7; −1 without a poloidal field), `B0_tor` in
   `background_field.B0_TOR_TYPES` (`'Malkus'` 0, `'wall'` 1, `'user'` 2, `'general'` 3; −1 without), `innercore` in
   `background.INNER_CORES` (`'insulator'` 0, `'conducting, Chebys'` 1), `B0_ic` in `background.B0_ICS` (`'potential'` 0,
-  `'full sphere'` 1) and `ferraro_policy` in `background.FERRARO_POLICIES` (`'warn'` 0, `'refuse'` 1). `cnorm` and
+  `'frozen currents'` 1, formerly `'full sphere'`) and `ferraro_policy` in `background.FERRARO_POLICIES` (`'warn'` 0, `'refuse'` 1). `cnorm` and
   `cnorm_tor` are the numbers used. `B0_l` is the lowest degree for `'general'` and 1 for `'ferraro'`; `B0_tor_l` is the
   parameter, which `B0_tor = 'general'` ignores. The expressions of `'general'` (`B0_profiles`, `B0_tor_profiles`), of
   `'ferraro'` (`B0_ferraro_G`) and of `diff_rot_type = 'ferraro'` (`diff_rot_F`) go into the note after `#`.
