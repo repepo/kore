@@ -30,7 +30,8 @@ OPERATOR_INDEPENDENT = ('ncpus', 'petsc_opts', 'prescale', 'which_eigenpairs', '
                         'bci', 'bco', 'bci_thermal', 'bco_thermal', 'mu_i2o',
                         'rpower_pp', 'rhopower_pp', 'hvisc', 'rvisc',
                         'timescale', 'Ek', 'Em', 'Etherm', 'Le', 'g',
-                        'ferraro_policy', 'write_mtx', 'hydro')
+                        'ferraro_policy', 'write_mtx', 'hydro',
+                        'c1_cmb', 'c_icb', 'c1_icb', 'muw_icb')   # NEW (2026-11-06): thin walls, rows of assemble.py only
 
 
 def params_of(par):

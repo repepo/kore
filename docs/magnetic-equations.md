@@ -316,9 +316,9 @@ that have closed forms both give the same eigenvalues to round-off.
 
 ## Boundary conditions
 
-At each wall the perturbation field is matched to the field outside the fluid. The mantle is an insulator, so outside
-the outer wall the field is a potential field. The inner core is an insulator too, or a conductor whose field is solved
-for with the rest.
+At each wall the perturbation field is matched to the field beyond it. The mantle is an insulator, with or without a thin
+conducting layer at its base, so outside the outer wall the field is a potential field. The inner core is an insulator
+too (with or without a thin conducting layer), or a conductor whose field is solved for with the rest.
 
 **Insulating walls** (`assemble.bc_b_spherical`). Matching a potential field gives $(l+1)f + rf' = 0$ and $g = 0$ at the
 outer wall, $lf - r f' = 0$ and $g = 0$ at the inner one.
@@ -350,6 +350,80 @@ adds the field inside the inner core to the unknowns, as `conductive_IC` does:
 - **Output.** `real_magnetic_ic.field`, `imag_magnetic_ic.field`. The eigenvectors are normalised with the fluid's
   energies only (the inner-core field is scaled along), as in `conductive_IC`.
 
+### Thin conducting walls
+
+A thin conducting layer between the fluid and an insulator carries currents that couple the field across it. The
+thin-wall approximation (Roberts, Glatzmaier & Clune 2010; Guervilly, Wood & Brummell 2013, appendix A) replaces the layer
+by conditions on the field at the wall, so the layer adds no unknowns. `mantle = 'TWA'` puts one at the outer wall,
+`innercore = 'TWA'` one at the inner wall; the conditions are those of `conductive_IC` (`bc_b_thinlayer`, with its terms of
+first order in the thickness), in `assemble.bc_b_twa`.
+
+A layer of thickness $h$, conductivity $\sigma_w$ and permeability $\mu_w$ at the radius $r$ of the wall is described by
+
+$$
+c = \frac{h\,\mu_w}{r\,\mu_f}, \qquad c_1 = \frac{h\,\sigma_w}{r\,\sigma_f}, \qquad p = \frac{\mu_w}{\mu_0},
+$$
+
+(`c_cmb`, `c1_cmb`, `muw_cmb` or `c_icb`, `c1_icb`, `muw_icb`), with $\mu_f = \mu\,\mu_0$ and $\sigma_f$ the fluid's
+permeability and conductivity (`mu`); $h/r = c\,\mu/p$. With $F = rf$, $G = rg$ and
+$\mathcal D_l F = F'' - l(l+1)F/r^2 = r\nabla^2_l f$ the conditions are
+
+$$
+\text{outer:}\quad \Big(\frac1\mu + l\,c\Big)F' + \frac lr F + \frac{c_1}{\mu}\,r\,\mathcal D_l F + \frac{c\,\mu\,l}{p\,r}\Big(\frac{l+1}{p} - 1\Big)F = 0, \qquad G + c_1\,r\,G' = 0,
+$$
+
+$$
+\text{inner:}\quad \Big(\frac1\mu + (l+1)\,c\Big)F' - \frac{l+1}{r} F - \frac{c_1}{\mu}\,r\,\mathcal D_l F - \frac{c\,\mu\,(l+1)}{p\,r}\Big(\frac lp + 1\Big)F = 0, \qquad G - c_1\,r\,G' = 0.
+$$
+
+In kore's rows (on $f$, $g$) the outer conditions are written as they are, the inner poloidal one times $-1$ and the
+toroidal ones divided by $r$, so that with $c = c_1 = 0$ and $\mu = 1$ they are the rows of the insulating walls.
+
+- **The terms in $p$** are of first order in $h$: the curvature of the wall, the potential field matched at $r \pm h$,
+  and the $l(l+1)/r^2$ of $\nabla^2_l$ in the wall. They vanish for $p = \infty$ (`np.inf`), the limit of Guervilly et
+  al. ($h \to 0$ with $h\mu_w$ fixed). For $p = 1$, a wall with the permeability of vacuum, and $\mu = 1$ they cancel
+  the $c$ term for a steady field, which then crosses the wall as it would an insulator.
+- **$\mu$** enters only these conditions, so $\mu \neq 1$ needs a thin wall or a conducting inner core at every wall.
+- **$\mathcal D_l F$** stands for the wall's $\partial_t F/\eta$, taken from the fluid next to it (uniform diffusivity),
+  and $G'$ for the wall's tangential electric field. Both assume that the fluid moves with the wall.
+- **Validity.** The approximation keeps the linear profile of the field across the wall. Inside it $b'' = k^2 b$ with
+  $k^2 = \lambda/\eta_w$, and the first term left out, the wall's own induction, is a relative error
+
+    $$
+    \varepsilon_\text{TWA} = \frac{\lvert kh\rvert^2}{3} = \frac23\Big(\frac{h}{\delta_w}\Big)^2, \qquad \Big(\frac{h}{\delta_w}\Big)^2 = \frac{c\,c_1\,r^2\,\lvert\lambda\rvert}{2\,\mathrm{MagnetD}}
+    $$
+
+    of the wall's effect ($c\,c_1 = h^2\eta_f/(r^2\eta_w)$, any $p$), with $\lambda$ the eigenvalue in the frame of the
+    wall (`utils4pp.twa_error`; spin_doctor's εTWA). The conditions $h \ll r$ and $lh \ll r$ are not checked.
+
+**A fluid slipping along a thin wall** (`bco = 0`, `bci = 0` or `ViscosD = 0`; `utils.twa_slips`). The conditions above
+take the tangential electric field of the fluid, $\mathbf E = \mathrm{MagnetD}\,\nabla\times\mathbf b - \mathbf u\times\mathbf B_0$,
+in the frame of the wall. kore continues it into the wall (condition C.I of Rekier, Triana, Trinh & Buffett 2023): a
+modelling choice, for a slip that stands for a viscous layer that is not resolved, valid while that layer is thin
+against the magnetic skin depth. With $u_r = 0$ at the wall, $(\mathbf u\times\mathbf B_0)_t = B_{0r}\,(\mathbf u_t\times\hat{\mathbf r})$,
+which enters through two projections on the degree $l$: $S_l$, the $r\nabla Y_l$ part of $B_{0r}(\mathbf u_t\times\hat{\mathbf r})$,
+and $X_l = [\hat{\mathbf r}\cdot\nabla\times(\mathbf u\times\mathbf B_0)]_l = -[\nabla\cdot(B_{0r}\mathbf u_t)]_l/r$, the radial
+induction of the slip. In the conditions
+
+$$
+G' \to G' - \frac{r\,S_l}{\mathrm{MagnetD}}, \qquad \mathcal D_l F \to \mathcal D_l F + \frac{r^2 X_l}{l(l+1)\,\mathrm{MagnetD}},
+$$
+
+the second because the wall's $\partial_t F$ now includes the radial induction of the slip. `assemble.bc_b_slip` builds
+both for any poloidal $\mathbf B_0$ with the recurrence algebra (`angular.Algebra`): $B_{0r} = \sum_n n(n+1)h_n P_n/r$
+over the degrees of the background, times $\mathbf u_t = \sum_k s_k\,r\nabla Y_k + t_k\,r\nabla Y_k\times\hat{\mathbf r}$ with
+$s_k = P_k' + P_k/r + (\ln\rho_0)'P_k$ and $t_k = T_k$ at the wall; a toroidal background has no $B_{0r}$.
+`conductive_IC` has these terms for a single degree.
+
+**The background field at a thin outer wall** (`B0_cmb`). A steady $\mathbf B_0$ drives no current in the wall, but
+it must meet the steady condition, $(1/\mu + lc)(rh)' + (l + e)h = 0$ at $r = 1$ with $e = c\mu l((l+1)/p - 1)/p$
+($e = 0$ for $p = \infty$). With `B0_cmb = 'wall'` (default) the fields of internal currents (`'G21 dipole'`, `'Luo_S1'`,
+`'Luo_S2'`, `'FDM'`) gain $\alpha r^l$ in $h$ (`background_field.B0_alpha_cmb`), with $\alpha$ set by that condition. The
+added field is a potential field: it carries no current and keeps the matching at the inner wall. For $p = 1$ and
+$\mu = 1$ the condition is the insulating one, which these fields already meet. `'plain'` leaves $h$ unchanged; the other
+fields are used as given. At a thin inner wall the background is not adjusted (for $p = 1$ and $\mu = 1$ a potential
+field below meets its condition).
+
 ## With a differential rotation
 
 A differential rotation acts on magnetic field lines in two ways. It shears the perturbation field, which kore includes
@@ -373,6 +447,10 @@ $n + 1$. The Lorentz force needs nothing new: it does not involve $\mathbf U_0$.
 $\Delta\Omega(r_i, \theta) = c$ ($f_n(r_i) = 0$ for $n > 0$, `diff_rot.rigid_ricb`), or the run stops. Its field then
 gains $-imGc\,\mathbf b$. The matching conditions are unchanged, because only $b_r$, which is continuous, enters the
 tangential part of $\mathbf U_0\times\mathbf b$.
+
+**Thin conducting walls** turn with the fluid next to them in the same way, so $\Delta\Omega$ must be uniform in
+latitude at each thin wall (`diff_rot.rigid_at`), or the run stops. In the frame of the wall its conditions are those
+above, and $\mathbf U_0\times\mathbf b$ cancels there with the wall's own motion.
 
 ### The Ferraro condition
 
@@ -678,7 +756,10 @@ Mag/Kin and writes `magnetic.dat`:
 | 8 | MEext | energy of the potential field outside the outer wall |
 | 9 | Ohm_f | Ohmic loss in the fluid |
 | 10 | Ohm_ic | Ohmic loss in a conducting inner core |
-| 11 | residE | resid𝐄, the full energy budget (nan unless the walls are no-slip: `bco = 1`, and `bci = 1` with an inner core, or there is no flow, `hydro = 0`) |
+| 11 | residE | resid𝐄, the full energy budget (nan with a flow through a wall, `bco = 2` or `bci = 2`, with stress-free walls and `centrifugal = 1`, and with thin walls and `mu` ≠ 1) |
+| 12 | MEc | with `centrifugal = 1` or a thin wall: the energy that the deformation adds (0 without it) |
+| 13, 14 | E_w, Ohm_w | with a thin wall: the magnetic energy stored in the thin walls and their Ohmic loss |
+| 15, 16 | eps_twa_o, eps_twa_i | with a thin wall: $\varepsilon_\text{TWA}$ of the outer and of the inner wall (0 where there is none) |
 
 with the integrals over the fluid unless stated, and with the Lorentz force per volume without `Hendrik`
 $\mathbf G = (\nabla\times\mathbf b)\times\mathbf B_0 + (\nabla\times\mathbf B_0)\times\mathbf b$,
@@ -712,6 +793,21 @@ unlike resid𝐛 it sees the wall and ICB conditions. The $1/\mu_{i2o}$ of the i
 $2\sigma(\mathrm{ME} + \mathrm{MEic} + \mathrm{MEext}) = \mathrm{Indu} - \mathrm{Ohm\_f} - \mathrm{Ohm\_ic}$, without
 Hendrik and for any walls (Indu is then the induction by a differential rotation, or 0).
 
+**Slipping walls.** Where the fluid slips along an impenetrable wall (`bco` or `bci` 0, or `ViscosD = 0`),
+$\mathbf u\times\mathbf B_0$ carries magnetic energy through the wall, into the field beyond it (and into a thin wall).
+resid𝐄 then uses the volume work of the induction alone, Indu minus its wall terms (`utils4pp.INDU_WALLS`, from the
+$(r, \theta)$ grid), as with a differential rotation (below).
+
+**Thin walls** (`utils4pp.em_budget`, `twa_budget`, as `conductive_IC`). The walls store
+$E_w = \tfrac{cr}{2}\oint\lvert\mathbf b_t\rvert^2dS + \tfrac{h}{2p}\oint\lvert b_r\rvert^2dS$ (the poloidal tangential
+field: the toroidal condition has no $c$ term; the second term only for finite $p$), and lose
+$\mathrm{Ohm\_w} = \mathrm{MagnetD}\oint\lvert\mathbf K\rvert^2 dS/(c_1 r)$, with $\mathbf K$ the jump of $\mathbf b_t$ across
+the wall: $c_1\lvert r\nabla^2_l f\rvert^2$ from the poloidal condition (with the radial induction of a slip) and
+$\lvert g\rvert^2/c_1$ from the toroidal one. The field beyond the wall, which MEext and MEic count beyond $r \pm h$, follows
+from the wall conditions. The full budget gains $\mathrm{Hendrik}\,E_w$ on the left and $-\mathrm{Hendrik}\,\mathrm{Ohm\_w}$ on
+the right. It closes exactly for $c = 0$, and to $O(c\,c_1)$ otherwise, the order of the approximation itself (resid𝐄 is
+then about $\varepsilon_\text{TWA}$ or below); not with $\mu \neq 1$.
+
 **How the terms are computed.** spin_doctor's Lorentz force (`utils4pp.lorentz4pp`) acts per volume, and its power
 $\int\mathbf u^*\cdot\mathbf G\,dV$ has no $\rho_0$. Its induction term (`induction4pp`) takes the components of
 $\mathbf u$ with their $\lambda_1$ part, and holds for the non-solenoidal $\mathbf u$ of a variable density (resid𝐛
@@ -727,7 +823,11 @@ poloidal field it agrees with the spectral formulas to the 10 printed digits.
 $(r, \theta)$ grid). Because $\mathbf U_0\times\mathbf b$ does not vanish at a wall where $\Delta\Omega \ne 0$, it
 carries magnetic energy through the wall into the field outside: resid𝐛 (the fluid) uses the induction work with its
 wall terms, resid𝐄 (the full budget, which counts the energy outside) the volume work alone (`utils4pp.INDU_WALLS`),
-plus the power of the rotation's force on the flow.
+plus the power of the rotation's force on the flow. Where a conducting solid turns with the fluid (a conducting inner
+core, a thin wall), the flux of $\mathbf U_0\times\mathbf b$ through its surface is the induction work of the solid's own
+rotation, $\mathrm{Re}\int(\mathbf V\times\mathbf b)\cdot(\nabla\times\mathbf b)^*dV$ over it ($\mathbf V$ rigid, the potential
+field beyond carries none), and resid𝐄 keeps it (`utils4pp.INDU_ROT_SOLID`). Without it resid𝐄 was about $10^{-4}$ for a
+conducting inner core turning with $\Delta\Omega(r_i) \neq 0$; with it the budget is the same in every frame.
 
 ## Checks
 
@@ -989,6 +1089,40 @@ With a differential rotation the modes of the field alone equal, to $10^{-15}$, 
 B0 of $10^{-9}$, where the field and the flow decouple; the entropy of `'Boussinesq'` decays at the exact rates too, and
 the field of `just_induction.py` with `solve_ind.py` is that of a mode without Lorentz force to $10^{-14}$.
 
+### Thin conducting walls (2026-11-06)
+
+The thin walls were ported from `conductive_IC` (2d84351) and checked against exact decay rates, against that branch, and
+with the energy budgets (`tests/twa/twa_check.py`).
+
+**Free decay.** Without the flow each mode decays at MagnetD $k^2$, where $k$ makes $j_l(kr)$, $y_l(kr)$ meet the
+thin-wall conditions with $\mathcal D_l F = -k^2 F$ (`ricb` 0.35, N 48, `m` 0, MagnetD 1; poloidal $l$ = 1 (two modes),
+3 and toroidal $l$ = 2):
+
+| walls | largest relative error | resid𝐄 |
+| --- | --- | --- |
+| outer, $c = 0$, $c_1 = 0.1$ | 9e-16 | 8e-14 |
+| outer, $c = 0.05$, $c_1 = 0.1$, $p$ = 1, 3, $\infty$ | 4e-15 | 2e-2 to 3e-2 |
+| inner, $c = 0$, $c_1 = 0.2$ | 2e-15 | 4e-14 |
+| both, $\mu$ = 1.5 | 2e-15 | nan |
+| full sphere, $c = 0.05$, $c_1 = 0.1$, $p$ = 2, 3 | 3e-15 | 2e-2 |
+
+With $c \neq 0$ resid𝐄 scales as $c\,c_1$ (at $c\,c_1 = 5\cdot10^{-5}$: $2\cdot10^{-5}$ to $5\cdot10^{-4}$ whether $c$ or
+$c_1$ is the larger), at or below $\varepsilon_\text{TWA}$; the toroidal modes close to round-off (their condition has no
+$c$).
+
+**Against `conductive_IC`.** Thirteen runs with the flow (`'Boussinesq'`, Ek, Em and Le² $10^{-3}$, N 48, `lmax` 19 to
+21): no-slip and stress-free walls, a thin wall at either or both boundaries, $p$ = 1, 2, 3, 4 and $\infty$, $\mu$ = 1.3,
+the fields `'axial'`, `'G21 dipole'`, `'Luo_S2'` and `'FDM'`, $m$ = 0, 1, 2, both equatorial symmetries, and a full
+sphere. The eigenvalues agree to $3\cdot10^{-14}$, resid𝐄 and εTWA to the printed digits, and the energies and losses of
+the budget (MEic, E_w, MEext, Ohm_w, relative to Ohm_f) to about $10^{-10}$.
+
+**Budgets.** With a slipping fluid and $c = 0$, resid𝐄 closes to about $10^{-10}$ (N 48), and with `'Wu 2005'`
+(`r_out` 0.9, N 96, `lmax` 40) to $2.5\cdot10^{-10}$, as for insulating walls. A rigid rotation offset
+(`diff_rot_type = 'rigid'`, $a$ = 0.3, thin walls with $c \neq 0$ and a slipping fluid) gives the eigenvalues of the frame
+turning with the walls to $6\cdot10^{-15}$, with resid𝐄 and εTWA unchanged. With walls turning at different rates
+(`'shellular_boussinesq'`) resid𝐄 closes to $3\cdot10^{-10}$, and for a conducting inner core turning with the fluid it
+went from $1.5\cdot10^{-4}$ to $5\cdot10^{-10}$ (`INDU_ROT_SOLID`, above).
+
 ## References
 
 - D'Silva, S. & Choudhuri, A. R. 1993, A&A 272, 621 (flux-tube fields at the base of the solar convection zone).
@@ -998,10 +1132,14 @@ the field of `just_induction.py` with `solve_ind.py` is that of a mode without L
 - Gizon, L. et al. 2021; Löptien, B. et al. 2018 (solar inertial modes).
 - Gough, D. O. & McIntyre, M. E. 1998; MacGregor, K. B. & Charbonneau, P. 1999 (tachocline confinement).
 - Gubbins, D. & Roberts, P. H. 1987 (free decay modes of a sphere).
+- Guervilly, C., Wood, T. S. & Brummell, N. H. 2013, arXiv:1307.3873 (the thin-wall conditions, appendix A).
 - Kaspi, Y., Galanti, E., et al. 2018, Nature 555, 223 (the depth of Jupiter's winds).
 - Liu, J., Goldreich, P. M. & Stevenson, D. J. 2008, Icarus 196, 653 (Ohmic limits on deep zonal winds).
 - Luo, J. & Jackson, A. 2022 ('Luo_S1', 'Luo_S2', `'mag_energy'`, torsional modes).
 - Malkus, W. V. R. 1967 (the field $s\,\hat{\boldsymbol\phi}$).
+- Rekier, J., Triana, S. A., Trinh, A. & Buffett, B. 2023, arXiv:2303.00718 (the electric field at a slipping wall,
+  condition C.I).
+- Roberts, P. H., Glatzmaier, G. A. & Clune, T. L. 2010, GAFD (the thin-wall approximation).
 - Schmitt, D. 2012 (`'Schmitt2012'`).
 - Wu, Y. 2005 (inertial modes of a full sphere).
 - Zhang, K. & Fearn, D. R. 1994, 1995 (free decay modes of a shell).

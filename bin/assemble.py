@@ -58,6 +58,14 @@ def main():
 
     ll_flo = ut.ell( par.m, par.lmax, par.symm)[:2]  # the ell indices for the flow u
 
+    # NEW (2026-11-06, as conductive_IC): a thin wall next to a slipping fluid gets the u×B0 terms of condition C.I (bc_b_slip)
+    if rank == 0 and (ut.twa_slips('outer') or ut.twa_slips('inner')):
+        pm = par.ViscosD/par.MagnetD
+        ratio = '%.1e' % (pm*abs(par.itau)/par.Gaspard if par.Gaspard else pm)
+        print('Note: fluid slipping along a thin wall: the tangential electric field continued into the wall in its own frame '
+              '(condition C.I of Rekier et al. 2023), valid while the viscous layer left out is thin against the magnetic skin '
+              'depth (%s = %s << 1)' % ('Pm |itau|/Gaspard' if par.Gaspard else 'Pm', ratio))
+
     if rank == 0:
         alltop, allbot = ll_flo
     else:
@@ -1122,6 +1130,8 @@ def bc_b_spherical(l, sec):
     NEW (2026-10-28): boundary conditions for the magnetic field at insulating walls (conductive_IC's bc_b_cmb, bc_b_icb), on
     the two bc rows of each block: row 0 at the outer boundary (l+1) f + r f' = 0 and g = 0, row 1 at the inner boundary
     l f - r f' = 0 and g = 0 (b matches a potential field outside the shell, and inside it with ricb > 0).
+    NEW (2026-11-06): a thin conducting wall (mantle or innercore 'TWA') has the rows of bc_b_twa instead, plus those of a
+    fluid slipping along it (bc_b_slip).
     '''
     inner = (par.ricb > 0) and not ut.cic   # NEW (2026-10-28): a full sphere has the outer row only, a conducting core bc_b_cic's
     out = ss.dok_matrix((1 + int(par.ricb > 0), ut.N1), dtype=complex)
@@ -1131,21 +1141,136 @@ def bc_b_spherical(l, sec):
         ixf = ( par.m + ut.s )%2 if ut.symmB0 == -1 else ( par.m + 1 - ut.s )%2
         Tb = bv.Tb[(ixf if sec == 'f' else 1 - ixf)::2, :]
 
+    twa_o = par.mantle == 'TWA'                  # NEW (2026-11-06)
+    twa_i = inner and par.innercore == 'TWA'
     if sec == 'f':
-        out[ 0,:] = (l+1) * Tb[:,0] + ut.rcmb * Tb[:,1]
+        out[ 0,:] = bc_b_twa(l, sec, 'outer', Tb) if twa_o else (l+1) * Tb[:,0] + ut.rcmb * Tb[:,1]
         if inner:
-            out[ 1,:] = l * bv.Ta[:,0] - par.ricb * bv.Ta[:,1]
+            out[ 1,:] = bc_b_twa(l, sec, 'inner', bv.Ta) if twa_i else l * bv.Ta[:,0] - par.ricb * bv.Ta[:,1]
     elif sec == 'g':
-        out[ 0,:] = Tb[:,0]
+        out[ 0,:] = bc_b_twa(l, sec, 'outer', Tb) if twa_o else Tb[:,0]
         if inner:
-            out[ 1,:] = bv.Ta[:,0]
+            out[ 1,:] = bc_b_twa(l, sec, 'inner', bv.Ta) if twa_i else bv.Ta[:,0]
 
     # the first l of each section's block list: f has the l's of T (symmB0 = -1) or of P (symmB0 = 1), g the others
     lfirst = ut.m_bot if (sec == 'f') == (ut.symmB0 == -1) else ut.m_top
     row0 = ut.offset[sec] + int( ut.N1*(l - lfirst)/2 )
 
     out = out.tocoo()
-    return [out.data, out.row + row0, out.col + row0]
+    out = [out.data, out.row + row0, out.col + row0]
+    for on, wall, rr in ((twa_o, 'outer', 0), (twa_i, 'inner', 1)):   # NEW (2026-11-06): a fluid slipping along a thin wall
+        if on and ut.twa_slips(wall):
+            slip = bc_b_slip(l, sec, wall, row0 + rr)
+            out = [np.concatenate([out[q], slip[q]]) for q in range(3)]
+    return out
+
+
+
+def bc_b_twa(l, sec, wall, T):
+    '''
+    NEW (2026-11-06, conductive_IC's bc_b_thinlayer): the row of a thin conducting wall (the thin-wall approximation of
+    Roberts, Glatzmaier & Clune 2010, as written by Guervilly, Wood & Brummell 2013, appendix A, with conductive_IC's O(h)
+    terms), for the block of degree l in section sec ('f' or 'g') at the wall 'outer' (r = 1, mantle = 'TWA') or 'inner'
+    (r = ricb, innercore = 'TWA'). T: the values and r-derivatives of the Chebyshev polynomials there (bv.Tb, with one parity
+    in a full sphere, or bv.Ta). The wall: thickness h, conductivity sigma_w, permeability mu_w, between the fluid (mu, as a
+    ratio to vacuum) and an insulator; c = h mu_w/(r mu_f), c1 = h sigma_w/(r sigma_f), p = mu_w/mu0 (c_cmb, c1_cmb, muw_cmb or
+    c_icb, c1_icb, muw_icb). With F = r f, G = r g, D F = F'' - L F/r² = r ∇²_l f, conductive_IC's conditions are
+        outer:  (1/mu + l c) F' + (l/r) F + (c1/mu) r D F + (c mu l/(p r)) ((l+1)/p - 1) F = 0,         G + c1 r G' = 0
+        inner:  (1/mu + (l+1) c) F' - ((l+1)/r) F - (c1/mu) r D F - (c mu (l+1)/(p r)) (l/p + 1) F = 0,  G - c1 r G' = 0
+    written here in f, g: the outer rows as they are, the inner poloidal one times -1 and the toroidal ones divided by r, so
+    that with c = c1 = 0 and mu = 1 they are the rows of the insulating walls (bc_b_spherical). The terms in p are O(h) (the
+    wall's curvature, the potential field matched at r ± h, the l(l+1)/r² of ∇²_l in the wall); they vanish for p = np.inf,
+    the condition of Guervilly et al. (h -> 0 with h mu_w fixed), and cancel the c term at leading order for p = 1. D F stands
+    for the wall's ∂F/∂t / MagnetD, taken from the fluid next to it (uniform MagnetD), and G' for the wall's tangential
+    electric field: both assume the fluid moves with the wall; a slipping fluid adds the terms of bc_b_slip.
+    '''
+    if wall == 'outer':
+        r, c, c1, p, sgn = ut.rcmb, par.c_cmb, par.c1_cmb, par.muw_cmb, 1
+    else:
+        r, c, c1, p, sgn = par.ricb, par.c_icb, par.c1_icb, par.muw_icb, -1
+    mu = par.mu
+    L = l*(l + 1)
+    f0, f1, f2 = T[:,0], T[:,1], T[:,2]
+    if sec == 'g':
+        return f0 + sgn*c1*(f0 + r*f1)                       # (G ± c1 r G')/r
+    rDF = 2*r*f1 + r**2*f2 - L*f0                            # r D F
+    if wall == 'outer':
+        row = (1/mu + l*c)*(f0 + r*f1) + l*f0 + (c1/mu)*rDF
+        if c != 0 and not np.isinf(p):
+            row = row + (c*mu*l/p)*((l + 1)/p - 1)*f0
+    else:
+        row = (l + 1)*f0 - (1/mu + (l + 1)*c)*(f0 + r*f1) + (c1/mu)*rDF
+        if c != 0 and not np.isinf(p):
+            row = row + (c*mu*(l + 1)/p)*(l/p + 1)*f0
+    return row
+
+
+
+_slip_mats = {}
+
+def bc_b_slip(l, sec, wall, row):
+    '''
+    NEW (2026-11-06, conductive_IC's bc_b_cic_slip for a thin wall, here for any poloidal B0): with the fluid slipping along a
+    thin wall (stress-free, bco or bci = 0, or ViscosD = 0; ut.twa_slips), the terms of u×B0 in the wall rows of bc_b_twa, at
+    the row of the degree l of section sec. The tangential electric field of the fluid, E = MagnetD ∇×b - u×B0 (- U0×b, which
+    the co-rotating wall cancels), is continued into the wall in the frame of the wall (condition C.I of Rekier, Triana, Trinh
+    & Buffett 2023, arXiv:2303.00718: a modelling choice, for a slip that stands in for a thin viscous layer not resolved, valid
+    while that layer is thin against the magnetic skin depth). With u_r = 0, (u×B0)_t = B0_r (u_t × r̂). Two parts:
+      - toroidal row: G' becomes G' - r S_l/MagnetD, with S_l the r∇Y_l part of B0_r (u_t × r̂);
+      - poloidal row: D F, the wall's ∂F/∂t / MagnetD, gains r² X_l/(L MagnetD), X_l = [r̂⋅∇×(u×B0)]_l = -[∇⋅(B0_r u_t)]_l/r,
+        the radial induction of the slip.
+    Both from the angular algebra (angular.Algebra.mult): B0_r(r, θ) = Σ_n n(n+1) h_n(r)/r P_n(cos θ) of every degree n of the
+    poloidal B0 (background_field.pol_profiles; a toroidal B0 has no B0_r), times the flow's u_t = Σ_k s_k r∇Y_k + t_k r∇Y_k×r̂,
+    s_k = P_k' + P_k/r + (ln ρ0)' P_k, t_k = T_k at the wall. Entries on the columns of P and T (sections u, v).
+    '''
+    import angular
+    import background_field as bf
+    r, sgn = (ut.rcmb, 1) if wall == 'outer' else (par.ricb, -1)
+    c1 = par.c1_cmb if wall == 'outer' else par.c1_icb
+    m = par.m
+    key = wall
+    if key not in _slip_mats:   # the matrices of B0_r (u_t x r̂) and B0_r u_t on the degrees, once per wall
+        prof = bf.pol_profiles()
+        nB = max(prof)
+        A = angular.Algebra.get(m, par.lmax + nB + 6)
+        rr = np.array([float(r)])
+        g = dg = 0*A.I
+        for n, f in prof.items():
+            beta = n*(n + 1)*f(rr, 0)[0]/r
+            Pn, dPn = A.legendre(n)
+            g, dg = g + beta*Pn, dg + beta*dPn
+        Ms = (g @ A.L - dg @ A.D).tocsr()                      # [g S_k]_s L_l: S_k -> S_l
+        Mt = (1j*m*dg).tocsr()                                  # [g T_k]_s L_l: T_k -> S_l
+        _slip_mats[key] = (Ms, Mt, nB)
+    Ms, Mt, nB = _slip_mats[key]
+    L = l*(l + 1)
+    lp_u, lt_u = ut.ell(m, par.lmax, par.symm)[:2]
+    if par.ricb > 0:
+        Tu = Tv = bv.Tb if wall == 'outer' else bv.Ta
+    else:   # one parity per l in a full sphere, as in bc_u_spherical
+        Tu = bv.Tb[( m + 1 - ut.s )%2::2, :]
+        Tv = bv.Tb[( m + ut.s )%2::2, :]
+    lh1 = bv.lhb1 if wall == 'outer' else bv.lha1
+    eta = par.MagnetD
+    data, cols = [], []
+    for k in range(max(l - nB - 1, 0), l + nB + 2):
+        ms, mt = Ms[l, k], Mt[l, k]
+        if ms == 0 and mt == 0:
+            continue
+        if sec == 'g':   # ∓ c1 r S_l/MagnetD: S_l = (mt s_k - ms t_k)/L
+            cs, ct = -sgn*c1*r*mt/(L*eta), sgn*c1*r*ms/(L*eta)
+        else:            # (c1/mu) r³ X_l/(L MagnetD): X_l = (ms s_k + mt t_k)/r
+            cs, ct = (c1/par.mu)*r**2*ms/(L*eta), (c1/par.mu)*r**2*mt/(L*eta)
+        if k in lp_u and cs != 0:
+            data.append( cs*(Tu[:,1] + Tu[:,0]/r + lh1*Tu[:,0]) )
+            cols.append( ut.offset['u'] + int(ut.N1*(k - ut.m_top)/2) + np.arange(Tu.shape[0]) )
+        if k in lt_u and ct != 0:
+            data.append( ct*Tv[:,0] )
+            cols.append( ut.offset['v'] + int(ut.N1*(k - ut.m_bot)/2) + np.arange(Tv.shape[0]) )
+    if not data:
+        return [np.zeros(0, dtype=complex), np.zeros(0, dtype=int), np.zeros(0, dtype=int)]
+    data = np.concatenate(data)
+    return [data, np.full(data.size, row), np.concatenate(cols)]
 
 
 

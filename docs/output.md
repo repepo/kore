@@ -70,8 +70,10 @@ the definitions are on [Magnetic field equations](magnetic-equations.md#energy-b
 | 7 | MEic, the magnetic energy in the inner core |
 | 8 | MEext, the energy of the potential field outside the outer wall |
 | 9, 10 | Ohm_f, Ohm_ic: the Ohmic losses in the fluid and in a conducting inner core |
-| 11 | the relative residual of the full energy budget (resid𝐄; nan unless the walls are no-slip: `bco = 1`, and `bci = 1` with an inner core, or there is no flow, `hydro = 0`) |
-| 12 | with `centrifugal = 1` only: MEc, the part of the magnetic energy that the deformation adds, so that ME + MEc is the energy of the field in the deformed fluid (the column Mag/Kin of the `spin_doctor` table is Hendrik (ME + MEc)/KE; [Centrifugal deformation](centrifugal-equations.md#energy-budgets)) |
+| 11 | the relative residual of the full energy budget (resid𝐄; nan with a flow through a wall, `bco = 2` or `bci = 2`, with stress-free walls and `centrifugal = 1`, and with thin walls and `mu` other than 1) |
+| 12 | with `centrifugal = 1` or a thin wall: MEc, the part of the magnetic energy that the deformation adds, so that ME + MEc is the energy of the field in the deformed fluid (the column Mag/Kin of the `spin_doctor` table is Hendrik (ME + MEc)/KE; [Centrifugal deformation](centrifugal-equations.md#energy-budgets)); 0 without the deformation |
+| 13, 14 | with a thin wall (`mantle` or `innercore` `'TWA'`) only: E_w, the magnetic energy stored in the thin walls, and Ohm_w, their Ohmic loss |
+| 15, 16 | with a thin wall only: εTWA, the estimated relative error of the outer and of the inner thin wall (0 where there is none; the `spin_doctor` table shows the larger) |
 
 ## `params.dat`
 
@@ -94,6 +96,7 @@ The columns follow the order of `spin_doctor.param_table`, counted from 1:
 | 96–107 | `B0_wound` (1 if the wound field was added), `B0_wound_eta`, `B0_conf_r1`, `B0_conf_r2`, `B0_conf_p`, `B0_param`, `B0_tor_param`, `B0_ferraro_nmax`, `mag_couplings` (as used: 0 the closed forms, 1 `mag_algebra.py`), `tol_B0`, `B0_ic`, `ferraro_policy` |
 | 108–112 | `centrifugal`, `centrifugal_shape`, `centrifugal_q`, `centrifugal_f` (the flattening of the outer wall, as used), `centrifugal_param` |
 | 113 | `hydro` (0: no flow) |
+| 114–122 | `mantle`, `c_cmb`, `c1_cmb`, `muw_cmb`, `c_icb`, `c1_icb`, `muw_icb`, `mu`, `B0_cmb` |
 
 - Names are written as their index in the lists of the code: `structure` in `background.STRUCTURES` (`'8-term fit'` 0,
   `'old model S prototype'` 1, `'model S hydrostatic'` 2, `'Wu 2005'` 3, `'Boussinesq'` 4), `stratification` in
@@ -108,8 +111,10 @@ The columns follow the order of `spin_doctor.param_table`, counted from 1:
 - The magnetic columns: `B0` is the index in `background_field.B0_TYPES` (`'axial'` 0, `'FDM'` 1, `'G21 dipole'` 2,
   `'Luo_S1'` 3, `'Luo_S2'` 4, `'confined'` 5, `'general'` 6, `'ferraro'` 7; −1 without a poloidal field), `B0_tor` in
   `background_field.B0_TOR_TYPES` (`'Malkus'` 0, `'wall'` 1, `'user'` 2, `'general'` 3; −1 without), `innercore` in
-  `background.INNER_CORES` (`'insulator'` 0, `'conducting, Chebys'` 1), `B0_ic` in `background.B0_ICS` (`'potential'` 0,
-  `'frozen currents'` 1, formerly `'full sphere'`) and `ferraro_policy` in `background.FERRARO_POLICIES` (`'warn'` 0, `'refuse'` 1). `cnorm` and
+  `background.INNER_CORES` (`'insulator'` 0, `'conducting, Chebys'` 1, `'TWA'` 2), `mantle` in `background.MAGNETIC_WALLS`
+  (`'insulator'` 0, `'TWA'` 1), `B0_ic` in `background.B0_ICS` (`'potential'` 0, `'frozen currents'` 1, formerly
+  `'full sphere'`), `B0_cmb` in `background.B0_CMBS` (`'wall'` 0, `'plain'` 1) and `ferraro_policy` in
+  `background.FERRARO_POLICIES` (`'warn'` 0, `'refuse'` 1). `muw_cmb` and `muw_icb` may be `inf`. `cnorm` and
   `cnorm_tor` are the numbers used. `B0_l` is the lowest degree for `'general'` and 1 for `'ferraro'`; `B0_tor_l` is the
   parameter, which `B0_tor = 'general'` ignores. The expressions of `'general'` (`B0_profiles`, `B0_tor_profiles`), of
   `'ferraro'` (`B0_ferraro_G`) and of `diff_rot_type = 'ferraro'` (`diff_rot_F`) go into the note after `#`.
@@ -119,4 +124,5 @@ The columns follow the order of `spin_doctor.param_table`, counted from 1:
   them.
 - A row ends, after a `#` that `np.loadtxt` skips, with the `'user'`, `'general'` and `'ferraro'` expressions and, for
   `'tabulated'`, `diff_rot_file` with the first 12 hex digits of its sha256. A row with none of these has no `#`.
-- A `params.dat` written before the columns 108–112, or column 113, were added has fewer columns: start a new file.
+- A `params.dat` written before the columns 108–112, column 113 or the columns 114–122 were added has fewer columns:
+  start a new file.

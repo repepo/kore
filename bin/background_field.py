@@ -25,6 +25,8 @@ NEW (2026-10-30): 'confined' h = r^l (r2² - r²)^p (r1 = 0) or r^l (r - r1)^p (
     rotation (Ferraro's law, background.ferraro_mismatch). The kink at the edges is resolved by the Chebyshev series only
     algebraically (coefficients ~ k^-(p+1)): the default p = 12 brings them to ~1e-14 by k = 192 (p = 4: ~1e-7); check
     convergence in N.
+NEW (2026-11-06): with a thin conducting wall at the outer boundary (mantle = 'TWA') and B0_cmb = 'wall', the fields of internal
+    currents (B0_CMB_TYPES) gain alpha r^l in h, so that they meet the wall's steady condition (B0_alpha_cmb).
 Equatorial symmetry: a poloidal field of degree n has (-1)^n, a toroidal one (-1)^(n+1) (B_φ ∝ sinθ is symmetric for n = 1).
 Only parameters, numpy and scipy are imported: utils.py and radial_profiles.py import this module.
 '''
@@ -154,6 +156,28 @@ def B0_beta_ic():
         return ri**(l+1)*(ri*POLY[par.B0].deriv(1)(ri) - l*POLY[par.B0](ri))/(2*l + 1)
     return 0.0
 
+B0_CMB_TYPES = ('G21 dipole', 'Luo_S1', 'Luo_S2', 'FDM')   # NEW (2026-11-06): the fields of internal currents (B0_alpha_cmb)
+alpha_cmb = 0.0   # (set below, after beta_ic)
+
+def B0_alpha_cmb():
+    '''
+    NEW (2026-11-06): conductive_IC's B0_alpha_cmb: alpha of the potential field alpha r^l that h adds with a thin wall at the
+    outer boundary (mantle = 'TWA', B0_cmb = 'wall', a field of internal currents, B0_CMB_TYPES, and c_cmb != 0 or mu != 1),
+    so that B0 meets the steady thin-wall condition (1/mu + l c)(r h)' + (l + e) h = 0 at r = 1, e = c mu l ((l+1)/p - 1)/p
+    (c = c_cmb, p = muw_cmb, e = 0 for p = np.inf): the condition of assemble.bc_b_spherical on b with c1 = 0, since a steady
+    field drives no current in the wall. For p = 1 and mu = 1 it is the insulating condition, which these fields meet
+    (alpha = 0 to round-off). r^l carries no current and keeps r h' - l h = 0 at the inner boundary (B0_ic). 0 otherwise.
+    '''
+    if not (par.magnetic and par.mantle == 'TWA' and par.B0_cmb == 'wall' and par.B0 in B0_CMB_TYPES
+            and (par.c_cmb != 0 or par.mu != 1)):
+        return 0.0
+    l, one = B0_l, np.array([1.0])
+    h0, h1 = _h(one, 0)[0], _h(one, 1)[0]
+    k = 1/par.mu + l*par.c_cmb
+    p = par.muw_cmb
+    e = 0.0 if np.isinf(p) else par.c_cmb*par.mu*l*((l + 1)/p - 1)/p
+    return -( k*(h0 + h1) + (l + e)*h0 )/( k*(l + 1) + l + e )
+
 def _confined():
     '''
     NEW (2026-10-30): 'confined' as l and its linear factors [(a, b)] with h = r^l Π (a + b r)^p inside [r1, r2], and (r1, r2).
@@ -186,7 +210,15 @@ def h(r, k):
     The k-th r-derivative (k = 0..3) of the poloidal scalar h(r) of B0, without cnorm, at r > 0 (ricb > 0).
     The FDM expressions are those of conductive_IC's h0..h3 (ricb > 0 branch), which also hold for B0_l > 1.
     NEW (2026-10-28): with ricb = 0 (r on [-1, 1]) the FDM is h = j_l(βr), of parity (-1)^l (jl_k).
+    NEW (2026-11-06): plus alpha_cmb r^l with a thin wall at the outer boundary (B0_alpha_cmb; 0 otherwise).
     '''
+    out = _h(r, k)
+    if alpha_cmb != 0:
+        out = out + alpha_cmb*np.polynomial.Polynomial([0]*B0_l + [1]).deriv(k)(np.asarray(r, dtype=float))
+    return out
+
+def _h(r, k):
+    '''h(r) without the thin-wall term alpha_cmb r^l (h)'''
     r = np.asarray(r, dtype=float)
     if par.B0 == 'FDM' and par.ricb == 0:   # FIX (2026-10-28): analytic derivatives (a Chebyshev interpolant lost 3e-5 in the third)
         return beta**k*jl_k(B0_l, beta*np.abs(r), k)*np.where(r < 0, (-1.)**(B0_l + k), 1.)
@@ -367,6 +399,7 @@ def B0_norm():
 
 
 beta_ic = B0_beta_ic()   # NEW (2026-10-28)
+alpha_cmb = B0_alpha_cmb()   # NEW (2026-11-06): after beta_ic (B0_alpha_cmb reads _h, which holds it), before cnorm
 # (only for the settings that background.check_magnetic() accepts, which imports this module before it checks them)
 # FIX (2026-11-03): a setting it stops on (e.g. B0 'general' with cnorm 'rms_cmb', a bad B0_profiles) no longer crashes the
 # import: the error is kept (cnorm_error) and check_magnetic stops with its own message, or with this one if it has none

@@ -251,9 +251,10 @@ class default_params():
         # NEW (2026-10-28): used only with magnetic = 1. Ported by name from the conductive_IC branch; user guide docs/magnetic.md.
         # b = ∇×∇×(f r) + ∇×(g r), with the induction equation ∂b/∂t = ∇×(u×B0) + MagnetD ∇²b and the Lorentz force per unit
         # mass Hendrik ρ0⁻¹[(∇×b)×B0 + (∇×B0)×b] (Hendrik, MagnetD: set_scales from Le, Em).
-        # Shell or full sphere, any structure, with or without a differential rotation; an insulating mantle, eigenvalue problems,
-        # a uniform magnetic diffusivity; ViscosD = 0 only in a full sphere. background.check_magnetic() stops on anything else
-        # (FIX 2026-11-03: this header still described the first step of the port).
+        # Shell or full sphere, any structure, with or without a differential rotation; an insulating mantle or a thin conducting
+        # wall (NEW 2026-11-06), eigenvalue problems, a uniform magnetic diffusivity; ViscosD = 0 only in a full sphere.
+        # background.check_magnetic() stops on anything else (FIX 2026-11-03: this header still described the first step of
+        # the port).
 
         # Imposed background field B0 = cnorm ∇×∇×(h(r) Y_l0 r), axisymmetric and poloidal (background_field.py)
         self.B0 = 'axial'          # axial, uniform field along the spin axis (h = r/2, l = 1)
@@ -345,7 +346,36 @@ class default_params():
         self.innercore = 'insulator'
         # self.innercore = 'conducting, Chebys'  # NEW (2026-10-28): a conducting solid inner core; its field is part of the
         #                                        # unknowns (fic, gic), needs a no-slip inner boundary (bci = 1)
+        # self.innercore = 'TWA'                 # NEW (2026-11-06, from conductive_IC): a thin conducting wall on an
+        #                                        # insulating inner core (c_icb, c1_icb, muw_icb below)
         self.mantle    = 'insulator'
+        # self.mantle    = 'TWA'                 # NEW (2026-11-06, from conductive_IC): a thin conducting wall at the base of
+        #                                        # an insulating mantle (c_cmb, c1_cmb, muw_cmb, B0_cmb below)
+
+        # NEW (2026-11-06, from conductive_IC): the thin conducting walls ('TWA', the thin-wall approximation of Roberts,
+        # Glatzmaier & Clune 2010; docs/magnetic.md, Thin conducting walls): a layer of thickness h, conductivity sigma_w and
+        # permeability mu_w between the fluid and an insulator, described by c = h mu_w/(r mu_f) and c1 = h sigma_w/(r sigma_f)
+        # at the wall's radius r (assemble.bc_b_spherical). With c = c1 = 0 and mu = 1 a thin wall is an insulator.
+        self.c_cmb   = 1e-5    # c of a thin wall at the outer boundary (mantle = 'TWA')
+        self.c1_cmb  = 1e-5    # c1, the wall's conductance relative to the fluid's
+        # the wall's permeability relative to vacuum, p = mu_w/mu0. With c it sets the thickness h/r = c mu/p and the O(h)
+        # terms of the poloidal condition. p = 1 (default, a non-magnetic wall as at the Earth's CMB): these cancel the c term
+        # at leading order, and only c1 acts. np.inf: without them (h -> 0 with h mu_w fixed, Guervilly et al. 2013), right
+        # for mu_w >> mu0
+        self.muw_cmb = 1.0
+        self.c_icb   = 0.0     # the same for a thin wall on the inner core (innercore = 'TWA')
+        self.c1_icb  = 0.0
+        self.muw_icb = 1.0
+        self.mu      = 1.0     # permeability of the fluid relative to vacuum: it enters the thin-wall conditions only
+        # How B0 meets a thin wall at the outer boundary (mantle = 'TWA'). A steady B0 drives no current in the wall (c1 does
+        # not act on it), but c does: B0 has to satisfy (1/mu + l c)(r h)' + (l + e) h = 0 there, e = c mu l ((l+1)/p - 1)/p,
+        # which for p = 1 and mu = 1 is the insulating condition (B0 unchanged).
+        #   'wall' (default): background_field adds alpha r^l to h, alpha set by that condition, for the fields of internal
+        #       currents ('G21 dipole', 'Luo_S1', 'Luo_S2', 'FDM'); the added term carries no current and keeps the matching at
+        #       the inner boundary. The other fields are used as given ('axial' is imposed from outside the core).
+        #   'plain': h unchanged; B0 then meets the wall condition only for p = 1 and mu = 1, or c = 0 and mu = 1.
+        self.B0_cmb = 'wall'
+        # self.B0_cmb = 'plain'
 
         # NEW (2026-10-28): innercore = 'conducting, Chebys' only (as conductive_IC)
         # (the inner-core field has the degrees of the fluid's, up to lmax: conductive_IC's lmax_cic is not ported, its ICB

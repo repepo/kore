@@ -18,8 +18,9 @@ STRUCTURES = ('8-term fit', 'old model S prototype', 'model S hydrostatic', 'Wu 
 SOLAR = STRUCTURES[:3]   # the solar structures: the rotation also uses x = r r_out (diff_rot.solar_x)
 STRATIFICATIONS = ('top hat', 'odd top hat', 'solar_rz', 'linear', 'inverse square', 'user')
 DIFFUSIVITIES = ('uniform', 'step', 'solar_rz', 'user')
-MAGNETIC_WALLS = ('insulator',)   # NEW (2026-10-28): mantle (magnetic = 1); B0 types: background_field.B0_TYPES
-INNER_CORES = ('insulator', 'conducting, Chebys')   # NEW (2026-10-28): innercore (magnetic = 1)
+MAGNETIC_WALLS = ('insulator', 'TWA')   # NEW (2026-10-28): mantle (magnetic = 1); B0 types: background_field.B0_TYPES
+INNER_CORES = ('insulator', 'conducting, Chebys', 'TWA')   # NEW (2026-10-28): innercore (magnetic = 1); 'TWA' NEW 2026-11-06
+B0_CMBS = ('wall', 'plain')   # NEW (2026-11-06): B0_cmb (magnetic = 1, mantle = 'TWA'), as written to params.dat
 MAG_COUPLINGS = ('closed', 'algebra')            # NEW (2026-11-03): mag_couplings, B0_ic and ferraro_policy (magnetic = 1),
 B0_ICS = ('potential', 'frozen currents')        # also written to params.dat as these indices ('frozen currents' was 'full sphere')
 FERRARO_POLICIES = ('warn', 'refuse')
@@ -155,6 +156,38 @@ def check_centrifugal():
                  '(set par.rpower_v = 4)' % (par.rpower_v,))
 
 
+def check_twa():
+    '''
+    NEW (2026-11-06): stops on thin conducting walls (mantle or innercore 'TWA', from conductive_IC) outside what the wall rows
+    of assemble.bc_b_spherical cover. Their parameters must be numbers: c, c1 >= 0, muw > 0 (np.inf allowed), mu > 0. The fluid's
+    permeability mu enters the thin-wall conditions only, so mu != 1 needs a thin wall (or a conducting inner core) at every
+    wall of the fluid: an insulating wall with mu != 1 is a thin wall with c = c1 = 0. A thin wall needs an impenetrable
+    boundary (bco, bci = 0 or 1: the terms of a slipping fluid assume u_r = 0 there) and a spherical body (centrifugal = 0).
+    With a differential rotation, ΔΩ must be uniform in latitude at the thin wall (background.magnetic_diffrot): the wall
+    co-rotates with it, as a conducting inner core does.
+    '''
+    twa_o = par.mantle == 'TWA'
+    twa_i = par.innercore == 'TWA' and par.ricb > 0
+    num = (int, float, np.integer, np.floating)
+    for name in ('c_cmb', 'c1_cmb', 'muw_cmb', 'c_icb', 'c1_icb', 'muw_icb', 'mu'):
+        v = getattr(par, name)
+        if not isinstance(v, num) or isinstance(v, bool) or np.isnan(v) or v < 0 or (name.startswith('mu') and v == 0):
+            sys.exit('%s = %r: a number, >= 0 for c and c1 and > 0 for muw and mu' % (name, v))
+    for name in ('c_cmb', 'c1_cmb', 'c_icb', 'c1_icb', 'mu'):
+        if np.isinf(getattr(par, name)):
+            sys.exit('%s must be finite (only muw_cmb, muw_icb may be np.inf)' % name)
+    if par.mu != 1 and not (twa_o and (par.ricb == 0 or par.innercore in ('TWA', 'conducting, Chebys'))):
+        sys.exit("mu = %r enters only the thin-wall conditions: every wall of the fluid must then be a thin wall ('TWA'; an "
+                 "insulating wall with mu != 1 is a thin wall with c = c1 = 0) or a conducting inner core" % (par.mu,))
+    if not (twa_o or twa_i):
+        return
+    if par.centrifugal:
+        sys.exit("a thin conducting wall ('TWA') needs a spherical body (centrifugal = 0)")
+    if par.hydro and ((twa_o and par.bco == 2) or (twa_i and par.bci == 2)):
+        sys.exit("a thin conducting wall ('TWA') needs an impenetrable wall (bco, bci = 0 or 1): the terms of a fluid slipping "
+                 "along it assume u_r = 0 there")
+
+
 def check_magnetic():
     '''
     NEW (2026-10-28): stops on magnetic settings that are not implemented (yet).
@@ -207,6 +240,8 @@ def check_magnetic():
             sys.exit('B0_wound_eta must be > 0 (the diffusivity that balances the winding, in units of MagnetD)')
         if par.ricb > 0 and par.innercore not in ('insulator', 'conducting, Chebys'):
             sys.exit('B0_wound = 1: innercore %r is not supported (insulator or conducting, Chebys)' % (par.innercore,))
+        if par.mantle != 'insulator':   # NEW (2026-11-06): the wound field is solved with k = 0 at the outer wall
+            sys.exit("B0_wound = 1 needs an insulating mantle: the wound field is solved with B_phi = 0 at the outer wall")
     if par.B0 == 'confined':   # NEW (2026-10-30)
         r1, r2 = par.B0_conf_r1, par.B0_conf_r2
         # FIX (2026-11-03): p >= 3, not 2: the momentum rows hold h''', which with p = 2 has a delta at the edges (h'' jumps)
@@ -240,6 +275,9 @@ def check_magnetic():
             sys.exit("innercore 'conducting, Chebys' needs a no-slip inner boundary (bci = 1): the ICB matching assumes u = 0 there")
         if par.N_cic % 2 or par.N_cic < 4:
             sys.exit('N_cic must be even and >= 4, got %r' % par.N_cic)
+    if par.B0_cmb not in B0_CMBS:   # NEW (2026-11-06)
+        sys.exit('B0_cmb %r: set one of %s' % (par.B0_cmb, _names(B0_CMBS)))
+    check_twa()   # NEW (2026-11-06): thin conducting walls
     if par.ricb == 0:   # NEW (2026-10-28): the full sphere
         if par.innercore != 'insulator':
             sys.exit("innercore %r needs ricb > 0" % (par.innercore,))
@@ -334,7 +372,7 @@ def magnetic_diffrot():
     NEW (2026-10-30): the checks of magnetic = 1 with diff_rot = 1:
       - a conducting inner core must co-rotate rigidly: ΔΩ(ricb, θ) = c (f_n(ricb) = 0 for n > 0, diff_rot.rigid_ricb); its
         field then gains the Doppler term -i m G c b and the ICB matching is unchanged; a latitude-dependent ΔΩ(ricb) would
-        shear a solid core, which kore does not model;
+        shear a solid core, which kore does not model; NEW (2026-11-06): likewise a thin conducting wall, at its radius;
       - a poloidal B0 and ΔΩ should satisfy Ferraro's law (ferraro_mismatch); par.ferraro_policy says whether a mismatch above
         1e-7 stops the run ('refuse') or only prints a warning ('warn', the default: the linear problem then assumes the
         background is maintained). NEW (2026-11-03): a parameter, formerly the constant background.FERRARO_POLICY.
@@ -345,6 +383,12 @@ def magnetic_diffrot():
         if not ok:
             sys.exit('magnetic = 1, diff_rot = 1 with a conducting inner core needs a rigid rotation of the inner boundary '
                      '(f_n(ricb) = 0 for every n > 0): ΔΩ(ricb, θ) varies with latitude')
+    # NEW (2026-11-06): a thin conducting wall co-rotates with ΔΩ at its radius, which must then be uniform in latitude; in the
+    # frame of the wall its rows are those without the rotation (U0×b at the wall involves only b_r, which is continuous)
+    for on, r, name in ((par.mantle == 'TWA', 1.0, 'outer'), (par.innercore == 'TWA' and par.ricb > 0, par.ricb, 'inner')):
+        if on and not dr.rigid_at(r)[1]:
+            sys.exit("magnetic = 1, diff_rot = 1 with a thin conducting wall ('TWA') at the %s boundary needs a rigid rotation "
+                     "there (f_n = 0 for every n > 0): ΔΩ varies with latitude at r = %g" % (name, r))
     mis = ferraro_mismatch()
     if par.B0 == 'ferraro' and not _warned:
         ferraro_report()

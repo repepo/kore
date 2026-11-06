@@ -19,9 +19,10 @@ seconds to minutes.
 | `tests/tidal/run_all.sh` | the tidal forcing (forcing 14) against an exact solution, and the energy budget with the work at the walls and the viscous dissipation | after a change of a boundary forcing, of `spin_doctor`'s budgets or of a force | 2 min on 4 ranks |
 | `tests/decay/run_all.sh` | the free decay of the field and of the entropy without the flow (`hydro = 0`) against exact rates, and the kinematic induction (`just_induction.py`, `solve_ind.py`) | after a change of the magnetic diffusion, the magnetic walls, a conducting inner core, the heat diffusion or the layout of the unknowns | 30 s |
 | `tests/forcing/run_all.sh` | the wall values that the boundary forcings 6, 7, 9 and 10 impose, read back from the solution | after a change of a boundary forcing or of the wall rows | 20 s |
+| `tests/twa/run_all.sh` | the thin conducting walls (`'TWA'`): exact free-decay rates, eigenvalues of the `conductive_IC` branch, the slipping fluid, walls that turn with the fluid, the budgets | after a change of the magnetic walls, of the induction by the flow or the rotation, or of `spin_doctor`'s magnetic budgets | 1 min |
 | `tests/rsf/regress_solve.sh` | eigenvalues, fields and forced solutions bitwise equal to an older copy | after a change of `solve.py` | 15 s |
 
-`tests/diff_rot`, `tests/heat_dr`, `tests/magnetic`, `tests/centrifugal`, `tests/rsf`, `tests/tidal`, `tests/forcing` and `tests/decay` each have a README
+`tests/diff_rot`, `tests/heat_dr`, `tests/magnetic`, `tests/centrifugal`, `tests/rsf`, `tests/tidal`, `tests/forcing`, `tests/decay` and `tests/twa` each have a README
 that lists their scripts and what each one checks; the CI test explains itself in `tests/ci/test_spinover.py`.
 
 ## Are existing runs unchanged?

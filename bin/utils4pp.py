@@ -1817,16 +1817,25 @@ def ohmic_dissip_tor(l, tlm0, tlm1):
 
 
 
-def em_budget(bsol, bic=None):
+def em_budget(bsol, bic=None, usol=None):
     '''
     NEW (2026-10-28): the terms of the magnetic energy budget that the fluid-only resid𝐛 leaves out, ported from conductive_IC's
-    em_budget for an insulating mantle and an insulating or conducting ('conducting, Chebys') inner core (no thin walls):
-    [ Ohm_f, ME_ic, Ohm_ic, ME_ext ], without Hendrik or MagnetD:
+    em_budget for an insulating mantle and an insulating or conducting ('conducting, Chebys') inner core:
+    [ Ohm_f, ME_ic, Ohm_ic, ME_ext, E_w, Ohm_w ], without Hendrik or MagnetD:
       Ohm_f  : ∫ |∇×𝐛|² over the fluid
       ME_ic  : ½ ∫ |𝐛|²/mu_i2o inside the inner core: the field of a conducting inner core (bic: its part of the solution
-               vector), or the potential field below an insulating one
+               vector), or the potential field below an insulating one (below r - h with a thin wall)
       Ohm_ic : η_i ∫ |∇×𝐛|²/mu_i2o over a conducting inner core, η_i = 1/(mu_i2o sigma_i2o)
-      ME_ext : ½ ∫ |𝐛|² of the potential field outside the outer wall
+      ME_ext : ½ ∫ |𝐛|² of the potential field outside the outer wall (beyond r + h with a thin wall)
+    NEW (2026-11-06), with thin conducting walls (mantle, innercore 'TWA'; conductive_IC's terms, 0 without them):
+      E_w    : the magnetic energy stored in the walls: (c r/2) ∫ |𝐛_t|² dS of the poloidal field, the energy of the c term
+               (the toroidal condition has no c term, so the wall stores no toroidal energy), plus (h/(2p)) ∫ |b_r|² dS,
+               h = c r/p the wall's thickness (none for p = np.inf)
+      Ohm_w  : the Ohmic loss of the wall currents, ∫ |𝐊|² dS/(c1 r), 𝐊 the jump of 𝐛_t across the wall: c1 |r ∇²_l f|² from
+               the poloidal condition and |g|²/c1 from the toroidal one
+    The field beyond the wall follows from the wall conditions (assemble.bc_b_twa), so no derivative beyond the second is
+    needed. usol (the flow, expand_reshape_sol): with the fluid slipping along a thin wall, the wall's poloidal current takes
+    the radial induction of the slip (slip_lapF), as the wall rows do. Assumes mu = 1 with thin walls.
     Needs setup_grid (the fluid's quadrature grid).
     '''
     r_i, r_o = par.ricb, ut.rcmb
@@ -1850,11 +1859,18 @@ def em_budget(bsol, bic=None):
         return out
 
     ME_ic = Ohm_ic = 0.0
-    f = bvals(bsol[0], 0, 1.0)[0]
-    ME_ext = np.sum( f0p*Lp*lp*np.abs(f)**2 ) * r_o   # potential field r^-(l+1) beyond r_o (F = r f there, r_o = 1)
+    E_w = Ohm_w = 0.0   # NEW (2026-11-06): thin walls
+    if ut.twa_o:
+        ME_ext, E_w, Ohm_w = twa_budget(bsol, 'outer', bvals, usol)
+    else:
+        f = bvals(bsol[0], 0, 1.0)[0]
+        ME_ext = np.sum( f0p*Lp*lp*np.abs(f)**2 ) * r_o   # potential field r^-(l+1) beyond r_o (F = r f there, r_o = 1)
 
     if r_i == 0:   # NEW (2026-10-28): a full sphere, no inner core
         pass
+    elif ut.twa_i:   # NEW (2026-11-06)
+        ME_ic, Ew, Ohmw = twa_budget(bsol, 'inner', bvals, usol)
+        E_w, Ohm_w = E_w + Ew, Ohm_w + Ohmw
     elif par.innercore == 'insulator':
         f = bvals(bsol[0], 0, -1.0)[0]
         ME_ic = np.sum( f0p*Lp*(lp+1)*r_i*np.abs(f)**2 )   # potential field r^l below r_i
@@ -1888,7 +1904,97 @@ def em_budget(bsol, bic=None):
     else:
         ME_ic = Ohm_ic = np.nan
 
-    return [ Ohm_f, ME_ic, Ohm_ic, ME_ext ]
+    return [ Ohm_f, ME_ic, Ohm_ic, ME_ext, E_w, Ohm_w ]
+
+
+
+def twa_budget(bsol, wall, bvals, usol=None):
+    '''
+    NEW (2026-11-06, the thin-wall part of conductive_IC's em_budget): [ ME, E_w, Ohm_w ] of the thin wall 'outer' or 'inner':
+    the energy of the potential field beyond it (ME_ext beyond r + h, or ME_ic below r - h), and the wall's E_w and Ohm_w
+    (em_budget). bvals(C, nd, x): the values and r-derivatives of the rows of C at x = 1 (outer) or -1 (inner).
+    '''
+    [ lp, lt, _ ] = ut.ell(par.m, par.lmax, ut.bsymm)
+    f0p = 4*np.pi/(2*lp+1); f0t = 4*np.pi/(2*lt+1)
+    Lp = lp*(lp+1.); Lt = lt*(lt+1.)
+    if wall == 'outer':
+        r, c, c1, p, x, sl = ut.rcmb, par.c_cmb, par.c1_cmb, par.muw_cmb, 1.0, 1
+    else:
+        r, c, c1, p, x, sl = par.ricb, par.c_icb, par.c1_icb, par.muw_icb, -1.0, -1
+    f, f1, f2 = bvals(bsol[0], 2, x); g = bvals(bsol[1], 0, x)[0]
+    F, F1 = r*f, f + r*f1
+    DF = 2*f1 + r*f2 - Lp*f/r            # r ∇²_l f = F'' - L F/r²
+    if usol is not None and ut.twa_slips(wall):
+        DF = DF + slip_lapF(usol, wall)
+    E_w = Ohm_w = 0.0
+    hw = 0.0                               # the wall's thickness
+    if np.isinf(p):   # the field beyond the wall from the wall condition (outer: F' + l F/r + c1 r D F = 0 there)
+        Fx = -sl*(r*F1 + sl*c1*r**2*DF)/(lp if wall == 'outer' else lp + 1)
+    else:             # at r ± h, F ± h F' with h F' = c r F' (conductive_IC FIX 2026-10-21)
+        hw = c*r/p
+        Fx = F + sl*c*r*F1
+        E_w += np.sum( (hw/p)*f0p*Lp**2*np.abs(f)**2 )   # the radial field in the wall
+    E_w += np.sum( c*r**3*f0p*Lp*np.abs(F1/r)**2 )        # the tangential poloidal field, the c term
+    if c1 > 0:
+        Ohm_w += np.sum( 2*f0p*r*Lp*c1*np.abs(DF)**2 ) + np.sum( 2*f0t*r*Lt*np.abs(g)**2/c1 )
+    if wall == 'outer':
+        ME = np.sum( f0p*Lp*lp*np.abs(Fx/r)**2 ) * r/(r + hw)          # potential field r^-(l+1) beyond r + h
+    else:
+        ME = np.sum( f0p*Lp*(lp+1)*r*np.abs(Fx/r)**2 ) * r/(r - hw)    # potential field r^l below r - h
+    return [ ME, E_w, Ohm_w ]
+
+
+
+def slip_lapF(usol, wall):
+    '''
+    NEW (2026-11-06, conductive_IC's slip_lapF, here for any poloidal B0): for each poloidal degree l of b, r²/(L MagnetD) times
+    [r̂⋅∇×(u×B0)]_l at a thin wall along which the fluid slips ('outer' or 'inner'), the radial induction of the slip that the
+    poloidal wall row adds to D F (assemble.bc_b_slip). With u_r = 0, r̂⋅∇×(u×B0) = -(B0_r ∇_H⋅u_t + ∂θB0_r u_θ)/r, computed on
+    a Gauss grid in cos θ and projected on Y_l: a check of the angular algebra of the assembly. usol from expand_reshape_sol.
+    '''
+    lpu, ltu, _ = ut.ell(par.m, par.lmax, par.symm)
+    lpb = ut.ell(par.m, par.lmax, ut.bsymm)[0]
+    r = ut.rcmb if wall == 'outer' else par.ricb
+    prof = bf.pol_profiles()
+    nB = max(prof)
+    x, w = np.polynomial.legendre.leggauss(par.lmax + nB + 9)
+    Y, dY, Z = angular.ylm_grid(par.m, par.lmax + 1, x)
+    Y0, dY0, _ = angular.ylm_grid(0, nB, x)
+    rr = np.array([r], dtype=float)
+    Pt, Tt = cheb2space_table(usol[0], 1, rr), cheb2space_table(usol[1], 0, rr)
+    lh = rap.logrhoX(rr, 1)[0]
+    s_ = Pt[1][:, 0] + Pt[0][:, 0]/r + lh*Pt[0][:, 0]      # u_t = s r∇Y + t r∇Y×r̂ of each degree
+    t_ = Tt[0][:, 0]
+    uth  = s_ @ dY[lpu] + t_ @ Z[ltu]                        # u_θ
+    divu = (-lpu*(lpu+1)*s_) @ Y[lpu]                       # r ∇_H⋅u_t
+    Br = sum( n*(n+1)*f(rr, 0)[0]/r*Y0[n] for n, f in prof.items() )
+    dBr = sum( n*(n+1)*f(rr, 0)[0]/r*dY0[n] for n, f in prof.items() )
+    X = -( Br*divu + dBr*uth )/r
+    Xl = np.array([ (2*l+1)/2*np.sum(w*X*Y[l]) for l in lpb ])
+    return r**2/(lpb*(lpb+1)*par.MagnetD)*Xl
+
+
+
+def twa_error(lam):
+    '''
+    NEW (2026-11-06, conductive_IC's twa_error): how far a solution of eigenvalue lam (in the run's time unit) is from the thin
+    wall limit: [h/δ_w, ε_TWA] at the outer and at the inner wall, 0 where there is no thin wall (spin_doctor writes ε_TWA to
+    magnetic.dat). Inside the wall b'' = k² b with k² = lam/η_w, and the thin-wall conditions keep the linear profile across
+    it: the first term left out, the wall's own induction, is ε_TWA = |k h|²/3 = (2/3)(h/δ_w)² of the wall's part, δ_w =
+    sqrt(2 η_w/|lam|) the wall's skin depth. As c c1 = h² mu_w sigma_w/(r² mu_f sigma_f) = h² η_f/(r² η_w), η_f = MagnetD,
+        (h/δ_w)² = c c1 r² |lam|/(2 MagnetD)     (r = 1 or ricb), for any muw,
+    with lam in the frame of the wall: lam + i m Gaspard ΔΩ(r) when the wall turns with a differential rotation.
+    The weaker conditions h/r << 1 and l h/r << 1 are not checked.
+    '''
+    out = []
+    for on, c, c1, r in ((ut.twa_o, par.c_cmb, par.c1_cmb, ut.rcmb), (ut.twa_i, par.c_icb, par.c1_icb, par.ricb)):
+        if on and par.MagnetD != 0:
+            lw = lam + (1j*par.m*par.Gaspard*dr.rigid_at(r)[0] if par.diff_rot else 0)   # in the wall's frame
+            hd2 = c*c1*r**2*abs(lw)/(2*par.MagnetD)
+            out += [np.sqrt(hd2), 2*hd2/3]
+        else:
+            out += [0., 0.]
+    return np.array(out)
 
 
 
@@ -2152,15 +2258,27 @@ def diagnose_magnetic( bsol ):
     NEW (2026-10-28): magnetic_worker for every l, as an array (one row per l). Call it right after diagnose (same grid
     and flow solution).
     '''
-    global INDU_WALLS
+    global INDU_WALLS, INDU_ROT_SOLID
     INDU_WALLS = 0.0   # the spectral formulas: no-slip walls, where the wall terms vanish
+    INDU_ROT_SOLID = 0.0
     set_bsolution(bsol)
     ll = ut.ell(par.m, par.lmax, ut.bsymm)[2]
     out = np.array([ magnetic_worker(l) for l in ll ])
     if use_grid():   # NEW (2026-10-28): toroidal B0 (or FORCE_GRID): the induction and Lorentz terms from the (r, θ) grid
         indu, plor = magnetic_powers_grid()
         out[0, 2] += indu; out[0, 3] += plor.real; out[0, 4] += plor.imag
+    elif slipping_walls():   # NEW (2026-11-06): the spectral Indu includes the wall terms; the full budget needs them apart
+        magnetic_powers_grid(walls_only=True)
     return out
+
+
+
+def slipping_walls():
+    '''
+    NEW (2026-11-06): whether the fluid slips along a wall (bco = 0, or bci = 0 with an inner core, or ViscosD = 0), where u×B0
+    carries magnetic energy through the wall (INDU_WALLS). With the flow (hydro = 1) only.
+    '''
+    return bool(par.hydro and (par.ViscosD == 0 or par.bco == 0 or (par.ricb > 0 and par.bci == 0)))
 
 
 
@@ -2169,6 +2287,13 @@ def diagnose_magnetic( bsol ):
 # leaves the fluid's magnetic energy for the energy outside (an insulating mantle or core) or inside (spin_doctor.py). They
 # vanish for no-slip walls without a differential rotation; U0×b does not vanish where ΔΩ is not zero at a wall.
 INDU_WALLS = 0.0
+# NEW (2026-11-06): the part of INDU_WALLS from U0×b at the walls where a conducting solid turns with ΔΩ (a conducting inner
+# core, a thin conducting wall: ΔΩ is uniform in latitude there, background.magnetic_diffrot). That flux does not leave for
+# the energy beyond the wall: it is the induction work of the turning solid, Re ∫ (𝐕×𝐛)⋅(∇×𝐛)* dV over it, which equals the
+# flux because Re ∫ 𝐛*⋅∇×(𝐕×𝐛) dV = 0 for a rigid rotation 𝐕 and the potential field beyond carries none of it. The full
+# budget (resid𝐄) keeps it in the induction work (spin_doctor: Iwall = INDU_WALLS - INDU_ROT_SOLID). It was missing for a
+# conducting inner core turning with ΔΩ(ricb) ≠ 0 (resid𝐄 ~1e-4 for eigenvalues that are right).
+INDU_ROT_SOLID = 0.0
 
 # NEW (2026-10-28): True (or the environment variable KORE_MAG_GRID=1): magnetic_powers_grid also for a poloidal B0 alone, a
 # cross-check of the spectral formulas lorentz4pp, induction4pp (tests/magnetic)
@@ -2180,7 +2305,7 @@ def use_grid():
     return FORCE_GRID or par.B0_tor is not None or (par.B0 is not None and bf.B0_l != 1) or bool(par.diff_rot) or ut.mag_algebra
 
 
-def magnetic_powers_grid():
+def magnetic_powers_grid(walls_only=False):
     '''
     NEW (2026-10-28): the induction work Indu = 2 Re ∫ 𝐛*⋅∇×(𝐮×𝐁₀ + 𝐔₀×𝐛) dV (the 𝐔₀×𝐛 of a differential rotation: NEW
     2026-10-30) and the complex power of the Lorentz force
@@ -2189,6 +2314,8 @@ def magnetic_powers_grid():
     (velocity, bfield_pol/tor, curl) on Schmidt harmonics (angular.ylm_grid), B0 and ∇×B0 from h, k. Independent of
     lorentz4pp, induction4pp and of the operators. The induction work uses ∫ 𝐛*⋅∇×𝐄 = ∫ 𝐄⋅(∇×𝐛)* dV + [∮ (𝐄×𝐛*)⋅r̂ dS] at the
     walls, 𝐄 = 𝐮×𝐁₀, so it holds whatever the walls (𝐄 = 0 there with no-slip). Needs setup_grid, set_solution, set_bsolution.
+    NEW (2026-11-06): walls_only = True computes the wall terms alone (INDU_WALLS, also returned), for the full budget of a fluid
+    slipping along its walls when the induction work comes from the spectral formulas (diagnose_magnetic).
     '''
     m = par.m
     lmx = par.lmax + 1
@@ -2211,7 +2338,7 @@ def magnetic_powers_grid():
 
     z = np.zeros_like(rk, dtype=complex)
     U, B, J = {}, {}, {}
-    for l in ll:
+    for l in ([] if walls_only else ll):   # NEW (2026-11-06): not for the wall terms alone
         if l in lp_u:
             [ [q], [s] ] = cheb2space_pol(l, lp_u, utab[0], 0, rk); U[l] = (q, s, z)
         elif l in lt_u:
@@ -2250,12 +2377,13 @@ def magnetic_powers_grid():
         dO = sum(np.outer(dr.fX(n, rr, 0), np.polynomial.legendre.Legendre.basis(n)(xg)) for n in dr.degrees())
         return [ z0, z0, par.Gaspard*dO*np.outer(rr, sg) ]
 
-    B0v, J0v = background(rk)
-    G = [ a + c for a, c in zip(cross(j, B0v), cross(J0v, b)) ]
-    plor = 2*vol(sum(np.conj(uc)*gc for uc, gc in zip(u, G)))
-    # the electric field of the induction: 𝐄 = 𝐮×𝐁₀ + 𝐔₀×𝐛 (NEW 2026-10-30: the second term, with a differential rotation)
-    E = [ a + c for a, c in zip(cross(u, B0v), cross(rotation(rk), b)) ]
-    indu = 2*np.real(vol(sum(ec*np.conj(jc) for ec, jc in zip(E, j))))
+    if not walls_only:
+        B0v, J0v = background(rk)
+        G = [ a + c for a, c in zip(cross(j, B0v), cross(J0v, b)) ]
+        plor = 2*vol(sum(np.conj(uc)*gc for uc, gc in zip(u, G)))
+        # the electric field of the induction: 𝐄 = 𝐮×𝐁₀ + 𝐔₀×𝐛 (NEW 2026-10-30: the second term, with a differential rotation)
+        E = [ a + c for a, c in zip(cross(u, B0v), cross(rotation(rk), b)) ]
+        indu = 2*np.real(vol(sum(ec*np.conj(jc) for ec, jc in zip(E, j))))
     # wall terms 2 Re ∮ (E x b*).r̂ dS, from u and b at the walls (zero for no-slip walls, where u = 0)
     rw = np.array([par.ricb if par.ricb > 0 else 0.5, ut.rcmb])   # (a dummy inner radius in a full sphere, its term is not used)
     lh = rap.logrhoX(rw, 1)
@@ -2279,8 +2407,16 @@ def magnetic_powers_grid():
     Ew = [ a + c for a, c in zip(cross(uw, background(rw)[0]), cross(rotation(rw), bw)) ]   # U0 is not zero at the walls
     flux = (Ew[1]*np.conj(bw[2]) - Ew[2]*np.conj(bw[1]))          # (E x b*).r̂
     walls = 2*np.pi*np.sum(wx[None, :]*flux*(rw**2)[:, None], axis=1)
-    global INDU_WALLS
+    global INDU_WALLS, INDU_ROT_SOLID
     INDU_WALLS = 2*np.real(walls[1] - (walls[0] if par.ricb > 0 else 0))   # no inner wall in a full sphere
+    # NEW (2026-11-06): the U0×b part at a wall with a turning conducting solid behind it (INDU_ROT_SOLID)
+    solid = [ par.ricb > 0 and (ut.cic or ut.twa_i), ut.twa_o ]
+    if par.diff_rot and any(solid):
+        Er = cross(rotation(rw), bw)
+        rot = 2*np.pi*np.sum(wx[None, :]*(Er[1]*np.conj(bw[2]) - Er[2]*np.conj(bw[1]))*(rw**2)[:, None], axis=1)
+        INDU_ROT_SOLID = 2*np.real((rot[1] if solid[1] else 0) - (rot[0] if solid[0] else 0))
+    if walls_only:
+        return INDU_WALLS
     indu += INDU_WALLS
     return indu, plor
 

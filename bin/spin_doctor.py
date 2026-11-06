@@ -194,6 +194,15 @@ def param_table(elapsed):
         ( 'centrifugal_f',            float(cf.flattening(np.array([1.0]))[0]) if par.centrifugal else 0.0, '%.9e' ),  # f at the outer wall, as used
         ( 'centrifugal_param',        par.centrifugal_param,       '%.9e' ),  # p of 'user' (its expression in the # note)
         ( 'hydro',                    par.hydro,                   '%d' ),    # NEW (2026-11-06): 0 without the flow
+        ( 'mantle',                   index_in(par.mantle, bg.MAGNETIC_WALLS), '%d' ),   # NEW (2026-11-06): the thin walls,
+        ( 'c_cmb',                    par.c_cmb,                   '%.9e' ),  #   index into background.MAGNETIC_WALLS
+        ( 'c1_cmb',                   par.c1_cmb,                  '%.9e' ),
+        ( 'muw_cmb',                  par.muw_cmb,                 '%.9e' ),
+        ( 'c_icb',                    par.c_icb,                   '%.9e' ),
+        ( 'c1_icb',                   par.c1_icb,                  '%.9e' ),
+        ( 'muw_icb',                  par.muw_icb,                 '%.9e' ),
+        ( 'mu',                       par.mu,                      '%.9e' ),
+        ( 'B0_cmb',                   index_in(par.B0_cmb, bg.B0_CMBS), '%d' ),   # index into background.B0_CMBS
     ]
 
 
@@ -326,8 +335,12 @@ def main(ncpus):
     MEext       = np.zeros(success)  # ½ ∫ |𝐛|² of the potential field outside the outer wall
     Ohm_f       = np.zeros(success)  # MagnetD ∫ |∇×𝐛|² dV over the fluid
     Ohm_ic      = np.zeros(success)  # MagnetD η_i ∫ |∇×𝐛|² dV over a conducting inner core
-    residE      = np.full(success, np.nan)  # the full energy budget (no-slip walls only)
+    residE      = np.full(success, np.nan)  # the full energy budget (impenetrable walls; nan where it does not apply)
     Iwall       = np.zeros(success)  # NEW (2026-10-30): the wall terms in Indu (utils4pp.INDU_WALLS)
+    E_w         = np.zeros(success)  # NEW (2026-11-06): thin walls, the energy stored in them (without Hendrik) and their Ohmic
+    Ohm_w       = np.zeros(success)  #   loss (MagnetD, upp.em_budget)
+    twaerr      = np.zeros((success, 4))   # NEW (2026-11-06): h/δ_w and ε_TWA at the outer and the inner wall (upp.twa_error)
+    use_twa     = bool(ut.twa_o or ut.twa_i)
     MEc         = np.zeros(success)  # NEW (2026-11-05): centrifugal = 1, ∫ 𝐛̃*⋅(M - I) 𝐛̃ dV: ME + MEc is the field's energy in the
     InduM       = np.zeros(success)  #   deformed fluid; InduM, Ohmc the induction work and Ohmic loss (MagnetD) on the metric part
     Ohmc        = np.zeros(success)  #   of the field, for resid𝐄 (upp.centrifugal_magnetic_terms)
@@ -363,7 +376,9 @@ def main(ncpus):
     ] if par.forcing > 0 else []) + ([
         ( 'resid𝐛',        '{:8.2e}',   lambda i: residb[i] ),
         ( 'resid𝐄',        '{:8.2e}',   lambda i: residE[i] ),
-    ] if par.magnetic else []) + ([
+    ] if par.magnetic else []) + ([   # NEW (2026-11-06): the estimated error of the thin walls, the larger of the two
+        ( 'εTWA',          '{:8.2e}',   lambda i: max(twaerr[i,1], twaerr[i,3]) ),
+    ] if use_twa else []) + ([
         # FIX (2026-11-06): in the units of KE, Hendrik (ME + MEc)/KE, as resid𝐄 and the normalisation KE + Hendrik ME = 1
         # (as conductive_IC 7660861; it was ME/KE, off by the factor Hendrik). Not without the flow (hydro = 0)
         ( 'Mag/Kin',       '{:8.2e}',   lambda i: ratio(par.Hendrik*(ME[i] + MEc[i]), KE[i]) ),
@@ -447,14 +462,20 @@ def main(ncpus):
 
         if par.magnetic:  # NEW (2026-10-28): on the grid and flow tables that diagnose has just set
             [ ME[i], Mdfs0, Indu[i], Wlor0, Wlor_im0 ] = np.sum( upp.diagnose_magnetic( b_sol2 ), 0)
-            Iwall[i]   = upp.INDU_WALLS   # NEW (2026-10-30)
+            # NEW (2026-10-30): the wall terms of Indu that leave the fluid for the energy beyond the walls. FIX (2026-11-06):
+            # not U0×b where a conducting solid turns with ΔΩ (upp.INDU_ROT_SOLID: the induction work of its rotation)
+            Iwall[i]   = upp.INDU_WALLS - upp.INDU_ROT_SOLID
             Mdfs[i]    = par.MagnetD * Mdfs0
             Wlor[i]    = par.Hendrik * Wlor0
             Wlor_im[i] = par.Hendrik * Wlor_im0
             # the parts of the magnetic energy budget outside the fluid, and the Ohmic losses (upp.em_budget, conductive_IC's)
-            Ohm_f0, MEic[i], Ohm_ic0, MEext[i] = upp.em_budget( b_sol2, None if bic is None else bic[:,i] )
+            Ohm_f0, MEic[i], Ohm_ic0, MEext[i], E_w[i], Ohm_w0 = upp.em_budget( b_sol2, None if bic is None else bic[:,i],
+                                                                                u_sol2 if par.hydro else None )
             Ohm_f[i]  = par.MagnetD * Ohm_f0
             Ohm_ic[i] = par.MagnetD * Ohm_ic0
+            Ohm_w[i]  = par.MagnetD * Ohm_w0   # NEW (2026-11-06): thin walls (0 without)
+            if use_twa:
+                twaerr[i] = upp.twa_error(sigma + 1j*w)
             if par.centrifugal:  # NEW (2026-11-05, phase 1b): the metric parts, on the same grid (upp.centrifugal_magnetic_terms)
                 cm = upp.centrifugal_magnetic_terms( b_sol2, None if bic is None else bic[:,i] )
                 Wlor[i]    += par.Hendrik * np.real(cm['Wlor'])
@@ -568,20 +589,29 @@ def main(ncpus):
             # residE (resid𝐄, as conductive_IC): 2σ(KE + Hendrik (ME + MEic + MEext)) = Dkin + Wthm + Wlor + Hendrik Indu
             # - Hendrik (Ohm_f + Ohm_ic): the Lorentz work and the induction cancel except for the work of the background
             # currents, and the Ohmic losses replace ∫ 𝐛⋅∇²𝐛. It tests the wall and ICB conditions, which resid𝐛 cannot see.
-            # Needs no-slip walls (with stress-free ones the u×B0 part of the Poynting flux through the walls is missing).
+            # Needed no-slip walls (the spectral Indu holds the u×B0 flux through slipping walls, which it cannot tell apart).
             # NEW (2026-10-30): with a differential rotation, the power of its force on the flow (Wdr) enters too, and the
             # induction work is the volume part ∫ 𝐄⋅(∇×𝐛)* alone (Indu minus its wall terms upp.INDU_WALLS): U0×b at a wall
             # carries magnetic energy through it, into the field outside, which ME_ext and ME_ic already count.
             # FIX (2026-11-01): bci only where there is an inner wall (at ricb = 0 it is ignored, and the default bci = 0 left
             # resid𝐄 at nan for every full-sphere run). NEW (2026-11-06): without the flow (hydro = 0) for any walls, and
             # without Hendrik (only magnetic terms are left: 2σ(ME + MEic + MEext) = Indu - Iwall - Ohm_f - Ohm_ic)
-            if (par.bco == 1 and (par.bci == 1 or par.ricb == 0)) or not par.hydro:
+            # NEW (2026-11-06, as conductive_IC): a fluid slipping along impenetrable walls (stress-free, or ViscosD = 0) too, with
+            # the wall terms of u×B0 apart (upp.diagnose_magnetic computes INDU_WALLS then); not with centrifugal = 1. Thin walls
+            # (mantle, innercore 'TWA') add the energy stored in them and their Ohmic loss (E_w, Ohm_w; upp.em_budget), which
+            # close the budget exactly for c = 0 and to O(c c1) otherwise; not with mu != 1 (the energies would need it).
+            noslip = par.bco == 1 and (par.bci == 1 or par.ricb == 0)
+            imperm = par.ViscosD == 0 or (par.bco in (0, 1) and (par.ricb == 0 or par.bci in (0, 1)))
+            if (noslip or not par.hydro or (imperm and not par.centrifugal)) and not (use_twa and par.mu != 1):
                 H = par.Hendrik if par.hydro else 1.0
                 # NEW (2026-11-05): with centrifugal = 1 the energy of the deformed body, ∫ 𝐛̃*⋅M 𝐛̃ dV in the fluid (MEc), whose
                 # rate is the work 2 Re ∫ 𝐄⋅(∇×M 𝐛̃)* dV (InduM) minus the Ohmic loss (Ohmc); closes at second order in f
                 Etot = KE[i] + H*( ME[i] + MEc[i] + MEic[i] + MEext[i] )
                 Wex  = Wlor[i] + H*(Indu[i] - Iwall[i] + InduM[i]) + Wdr[i]
                 Ohm  = H*( Ohm_f[i] + Ohmc[i] + Ohm_ic[i] )
+                if use_twa:   # NEW (2026-11-06)
+                    Etot += H*E_w[i]
+                    Ohm  += H*Ohm_w[i]
                 residE[i] = ( abs( 2*sigma*Etot - Dkin[i] - Wthm[i] - Wex + Ohm )
                               / max( abs(2*sigma*Etot), abs(Dkin[i]), abs(Wthm[i]), abs(Wex), Ohm, abs(Wdr[i]) ) )
 
@@ -674,10 +704,15 @@ def main(ncpus):
             ( 'MEext',      MEext,      '%.9e' ),  # ½ ∫ |𝐛|² outside the outer wall, without Hendrik
             ( 'Ohm_f',      Ohm_f,      '%.9e' ),  # MagnetD ∫ |∇×𝐛|² over the fluid
             ( 'Ohm_ic',     Ohm_ic,     '%.9e' ),  # MagnetD η_i ∫ |∇×𝐛|² over a conducting inner core
-            ( 'residE',     residE,     '%.9e' ),  # full energy budget, resid𝐄 (nan without no-slip walls)
+            ( 'residE',     residE,     '%.9e' ),  # full energy budget, resid𝐄 (nan where it does not apply)
         ] + ([
             ( 'MEc',        MEc,        '%.9e' ),  # NEW (2026-11-05): centrifugal = 1, the metric part of ME (ME + MEc: the
-        ] if par.centrifugal else [])              #   energy of the field in the deformed fluid)
+        ] if (par.centrifugal or use_twa) else []) + ([   # energy of the field in the deformed fluid; 0 with a thin wall)
+            ( 'E_w',        E_w,        '%.9e' ),  # NEW (2026-11-06): thin walls, the energy stored in them, without Hendrik,
+            ( 'Ohm_w',      Ohm_w,      '%.9e' ),  #   their Ohmic loss (MagnetD), and the estimated error ε_TWA of the
+            ( 'eps_twa_o',  twaerr[:,1], '%.9e' ), #   outer and of the inner wall (0 where there is none)
+            ( 'eps_twa_i',  twaerr[:,3], '%.9e' ),
+        ] if use_twa else [])
         with open('magnetic.dat','ab') as dmag:
             np.savetxt(dmag, np.column_stack([ v for _, v, _ in magnetic_cols ]),
             fmt=[ f for _, _, f in magnetic_cols ])

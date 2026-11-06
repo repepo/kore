@@ -48,6 +48,19 @@ cic    = int(bool(par.magnetic and par.innercore == 'conducting, Chebys' and par
 Nic    = int(par.N_cic/2)
 nic    = int(Nic*(par.lmax-par.m+1)/2) * cic
 
+# NEW (2026-11-06, from conductive_IC): thin conducting walls (mantle, innercore 'TWA'; assemble.bc_b_twa)
+twa_o  = bool(par.magnetic and par.mantle == 'TWA')
+twa_i  = bool(par.magnetic and par.innercore == 'TWA' and par.ricb > 0)
+
+def twa_slips(wall):
+    '''
+    NEW (2026-11-06): whether the fluid slips along the thin wall 'outer' or 'inner' and drives currents in it through u×B0
+    (assemble.bc_b_slip): a thin wall that conducts (c1 != 0), a flow (hydro = 1), a poloidal B0, and a stress-free wall
+    (bco or bci = 0) or an inviscid fluid (ViscosD = 0)
+    '''
+    on, b, c1 = (twa_o, par.bco, par.c1_cmb) if wall == 'outer' else (twa_i, par.bci, par.c1_icb)
+    return bool(on and par.hydro and par.B0 is not None and (b == 0 or par.ViscosD == 0) and c1 != 0)
+
 # NEW (2026-11-06): the power of r of the g rows (r̂⋅∇× of the induction equation): 2, and 3 in a full sphere when the metric
 # part of the magnetic diffusion of the deformed body is on (centrifugal = 1, a deformation, m != 0), which has a term F/r
 # there (centrifugal.py, section 6): with r² that row would not be a polynomial in r (r = 0 is in the domain)

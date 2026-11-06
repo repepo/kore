@@ -717,7 +717,14 @@ def rigid_ricb(tol=1e-10):
     then gains the Doppler term -i m G c b (assemble.py), and nothing else changes (the matching conditions involve only
     b_r in U0×b, which is continuous).
     '''
-    ri = np.array([par.ricb])
+    return rigid_at(par.ricb, tol)
+
+
+def rigid_at(r, tol=1e-10):
+    '''
+    NEW (2026-11-06): rigid_ricb at any radius r of the fluid (a thin conducting wall at r = 1 or ricb: background.magnetic_diffrot)
+    '''
+    ri = np.array([r])
     vals = {n: float(raw(n, ri)[0]) for n in degrees()}
     big = max([1e-300] + [abs(raw(n, np.linspace(max(par.ricb, 1e-3), 1, 50))).max() for n in degrees()])
     c = vals.get(0, 0.0)
