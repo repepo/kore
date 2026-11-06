@@ -103,7 +103,8 @@ def check_centrifugal():
     phase 1b), a conducting inner core of another permeability than the fluid's (its matching rows would need the metric);
     NEW (2026-11-06, phase 2) rpower_v < 4 in a viscous full sphere with m != 0 when the body is deformed (the toroidal rows
     of the metric viscous force have a term P/r); and on incomplete shapes. NEW (2026-11-06): the exact spheroid
-    (centrifugal_shape 'spheroid') is a homogeneous fluid without a field or a differential rotation.
+    (centrifugal_shape 'spheroid') is a homogeneous fluid without a differential rotation (NEW 2026-11-06, step 2: with or
+    without a field).
     centrifugal.report() (submatrices.py) prints the flattening used and the warnings on the terms left spherical.
     '''
     import centrifugal as cf
@@ -133,9 +134,8 @@ def check_centrifugal():
         if par.structure != 'Boussinesq' or par.diffusivity != 'uniform':
             sys.exit("centrifugal_shape 'spheroid' is a homogeneous fluid: it needs structure 'Boussinesq' and diffusivity "
                      "'uniform' (got %r, %r)" % (par.structure, par.diffusivity))
-        if par.magnetic or par.diff_rot:
-            sys.exit("centrifugal_shape 'spheroid' is implemented without a field and without a differential rotation "
-                     "(magnetic = 0, diff_rot = 0)")
+        if par.diff_rot:   # (NEW 2026-11-06, step 2: a field is allowed)
+            sys.exit("centrifugal_shape 'spheroid' is implemented without a differential rotation (diff_rot = 0)")
         if q != 0:
             sys.exit("centrifugal_shape 'spheroid' takes its flattening from centrifugal_f and the effective gravity from the "
                      "structure's g = r (that of a homogeneous spheroid): set centrifugal_q = 0")

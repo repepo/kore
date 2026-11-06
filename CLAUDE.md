@@ -87,7 +87,7 @@ eigenvalues as ω, σ in nHz.
 | `spin_doctor.py` | runs the diagnostics per solution, prints the table, writes `params.dat` (`param_table`, `row_note`), `flow.dat`, `thermal.dat` |
 | `ru_insane.py` | operator symmetry and diff-rot block tests (see its docstring) |
 | `diff_rot.py` | the differential rotation (§8): the shapes fₙ of every type and their fits, the thermal-wind σₙ, the angular couplings of the momentum and heat terms, the labels, blocks and Δl ranges |
-| `centrifugal.py` | the centrifugal deformation (`centrifugal = 1`, §4): the flattening f(r) of each shape (`SHAPES`, `radau`, `shape_functions`, `flattening`), the profile codes `ce0`–`ce2` (`profile_functions`), `g_monopole`, `to_physical` (plots), `report`, the angular couplings (`primitives`, `momentum_coefficients`, `heat_coefficients`) and the terms (`labels`, `dl_range`, `momentum_block`, `entropy_block`); with a field the metric Lorentz force and induction (`magnetic_build`, `magnetic_labels`, `magnetic_dl_range`, `magnetic_block`) and the insulating walls (`wall_coefficients`, `wall_rows`, `wall_potential`); phase 2 the dissipative terms (`diffusion_build`, `diffusion_labels`, `diffusion_orders`, `diffusion_block`, the walls `wall_dissipative`, the ICB `icb_electric`), the differential rotation (`rotation_build`, `rotation_block`) and `deformed` (whether any of it applies); the exact spheroid (section 8: `exact`, `spheroid_axes`, `spheroid_terms`, `spheroid_build`, `spheroid_walls`, `spheroid_block`, `spheroid_primitives`); only `parameters` and `angular` imported at the top |
+| `centrifugal.py` | the centrifugal deformation (`centrifugal = 1`, §4): the flattening f(r) of each shape (`SHAPES`, `radau`, `shape_functions`, `flattening`), the profile codes `ce0`–`ce2` (`profile_functions`), `g_monopole`, `to_physical` (plots), `report`, the angular couplings (`primitives`, `momentum_coefficients`, `heat_coefficients`) and the terms (`labels`, `dl_range`, `momentum_block`, `entropy_block`); with a field the metric Lorentz force and induction (`magnetic_build`, `magnetic_labels`, `magnetic_dl_range`, `magnetic_block`) and the insulating walls (`wall_coefficients`, `wall_rows`, `wall_potential`); phase 2 the dissipative terms (`diffusion_build`, `diffusion_labels`, `diffusion_orders`, `diffusion_block`, the walls `wall_dissipative`, the ICB `icb_electric`), the differential rotation (`rotation_build`, `rotation_block`) and `deformed` (whether any of it applies); the exact spheroid (section 8: `exact`, `spheroid_axes`, `spheroid_terms`, `spheroid_build`, `spheroid_walls`, `spheroid_block`, `spheroid_primitives`; with a field `spheroid_magnetic_build`, `spheroid_lambda`, `spheroid_field_walls`, `spheroid_potential`, `spheroid_icb`); only `parameters` and `angular` imported at the top |
 | `angular.py` | the angular algebra at fixed m: the recurrence matrices X (cos θ) and D (−sin θ ∂θ), the vector operations (g(cos θ)·, ẑ×, sin θ F_θ), Schmidt harmonics at any l (`ylm_grid`, `ylm`); numpy and scipy only |
 | `targets.py` | analytic targets (spin-over, Rieutord–Valdettaro attractor) |
 
@@ -184,9 +184,17 @@ X = diag(a, a, c)α (c/a = 1 − f, a²c = 1) kept exactly at any f < 1: J = 1, 
 Laplacian D = ∇²/a² + (1/c² − 1/a²)∂z²; exact inertia, Coriolis, viscous and heat terms and stress-free and fixed-flux rows
 (`spheroid_terms`, `spheroid_build`, `spheroid_walls`; kore's own labels without profile, e.g. `u3_D2`, `u3vsc0_D4`,
 `h0kps0_D2`; Δl up to ±4 same kind, ±3 P↔T; `spheroid_block` behind `momentum_block`, `diffusion_block`; `exact()` gates
-it). Homogeneous only ('Boussinesq', diffusivity 'uniform', centrifugal_q = 0; no field, no ΔΩ: check_centrifugal stops);
+it). Homogeneous only ('Boussinesq', diffusivity 'uniform', centrifugal_q = 0; no ΔΩ: check_centrifugal stops);
 the buoyancy g = r is then normal to the level surfaces (Maclaurin). Budgets exact too (`spheroid_primitives` in
-`utils4pp.centrifugal_terms`). Checks `tests/centrifugal/spheroid_check.py` (exact Galerkin solvers for viscous and heat modes).
+`utils4pp.centrifugal_terms`). With a field (step 2, NEW 2026-11-06): b̃ = F⁻¹b, the induction is the sphere's (J = 1);
+the Lorentz force ∇×(M b̃)×B̃0 + ∇×(M B̃0)×b̃ less the sphere's (`spheroid_magnetic_build`, mag_algebra's labels, Δl up to
+n + 3 through B0 of degree n, routed by `magnetic_coefficients`) and the diffusion's field M∇×(M b̃) (`spheroid_terms`
+'mag', labels `f{rx}eta0_D{d}`, also in a conducting inner core, whose ICB row is `spheroid_icb`); insulating walls by the
+exact potential field in the spheroidal coordinates of the wall, whose angle is the reference colatitude there:
+q_l(b̃) = λ_l s_l(M b̃), t_l(M b̃) = 0, λ_l = (a²/k) d ln R_l/dν at ν0 = c/k, k = √|a² − c²| (R_l = Q_l^m(iν) oblate,
+Q_l^m(ν) prolate, P_l^m in an insulating inner core; `spheroid_lambda` by recurrence, `spheroid_field_walls` through
+`wall_rows`). Every budget closes to round-off, resid𝐄 too (`spheroid_potential`, the loss ∫ j*⋅M j with j = ∇×(M b̃)).
+Checks `tests/centrifugal/spheroid_check.py` (exact Galerkin solvers for viscous, heat and field-decay modes).
 With a field (magnetic = 1, phase 1b, 2026-11-05; `centrifugal.py` sections 4, 5): F, G describe the flux b̃ = J F⁻¹b, and
 kore's B0 formula gives B̃0 (the body's field is F B̃0/J). Covariant Lorentz force (1/J)[∇×(M b̃)×B̃0 + ∇×(M B̃0)×b̃],
 induction ∂ₜb̃ = ∇×(w×B̃0/J); first-order parts δ𝐆, δ𝐄 built with mag_algebra's recurrence algebra
@@ -454,14 +462,15 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   worked examples: part A the magnetic field (derive.py `--b0 pol1|pol2|tor1|tor2`, the exact-interpolation fit, the code
   generation), part B the differential rotation (the recurrence algebra of `bin/angular.py`, the 12 primitives and the
   couplings of `bin/diff_rot.py`). The scripts' docstrings give the same rationale (2026-10-30).
-- `tests/centrifugal/` (README, `run_all.sh`, ~14 min on 16 cores; `SKIP_SOLVE=1` without PETSc; NEW 2026-11-05): `derive.py`
+- `tests/centrifugal/` (README, `run_all.sh`, ~17 min on 16 cores; `SKIP_SOLVE=1` without PETSc; NEW 2026-11-05): `derive.py`
   (sympy: every closed form of `centrifugal.py` from the map and w = J F⁻¹u), `algebra_check.py` (the couplings against
   quadratures with scipy's lpmv), `clairaut_check.py` (Maclaurin 5/4, polytrope 7.5/π², 'Wu 2005' against Clairaut's
   equation from ρ, the Sun's f/q 0.519), `eig_check.py` (f = 0 bitwise, the spin-over, a relabelled sphere moving at
   O(c²), homogeneous 'clairaut' = 'uniform', the monopole = Beyonce(1 − 2q/3), the ideal fluid's real frequencies; with a
   field: f = 0 bitwise, the relabelled sphere against the field written on the sphere, in a viscous fluid; the relabelled
-  free decay), `budget_check.py [tol] [HALF]`
-  (with a field also resid𝐛, and resid𝐄 of second order from the run at half the flattening), `mk_run.py` (defaults: the
+  free decay), `budget_check.py [tol] [HALF | exact]`
+  (with a field also resid𝐛, and resid𝐄 of second order from the run at half the flattening; `exact`: resid𝐄 below tol,
+  the exact spheroid's `bms_*` runs), `mk_run.py` (defaults: the
   inviscid Boussinesq full sphere, m 1, N 24, lmax 20, 'uniform' f 0); phase 1b: `derive_mag.py [--quick]` (sympy: the
   covariant magnetic terms from b = F b̃/J, kore's couplings against them, the wall terms; part B in parallel) and
   `bc_check.py` (the wall rows against the exact matching of a potential field on the deformed wall: residual O(f²)),
@@ -475,7 +484,11 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   `ru_insane.py` checks the metric blocks against quadratures, and the viscous force Hermitian and negative; the exact
   spheroid: `spheroid_check.py` (its terms from the map, kore's couplings and walls against projections with
   derive_diff.py's Laurent polynomials, which it imports (derive_diff runs its checks in `main()`), and the inviscid,
-  viscous and heat modes against the polynomial method and exact rational Galerkin solvers; 45 s).
+  viscous and heat modes against the polynomial method and exact rational Galerkin solvers; with a field (step 2) the
+  field's couplings, λ_l against mpmath and the wall rows on exact potential fields, the axisymmetric free decay against
+  an exact Galerkin solver (the exterior through the closed form of Q_l^1), conducting and insulating inner cores, the
+  parting from 'uniform' as f²; 3 min on 4 cores; decay runs need Le 1e-8, or a viscous flow mode nearby moves the rates
+  by 1e-9).
 - `tests/rsf/` (README; `HOWTO.md` points to `docs/forcing.md` and `docs/reynolds-stress.md`; `example_m2/`, the
   chandler m = 2 scan, has its own README): shared
   pieces in `rsf_common.py`; `builder_check.py` (f = u against the inertia rows), `noise_check.py` (the noise

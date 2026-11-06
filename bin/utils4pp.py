@@ -1494,7 +1494,10 @@ def _cf_expressions(kind, lw):
         elif kind == 'rot':
             _cf_expr[key] = {n: cf._sum(cf.rotation_force(A, 'P', n, lw), cf.rotation_force(A, 'T', n, lw)) for n in dr.degrees()}
         elif kind == 'mag':
-            e = cf._sum(cf.magnetic_diffusion_metric(A, 'F', lw), cf.magnetic_diffusion_metric(A, 'G', lw))
+            if cf.exact():   # NEW (2026-11-06, step 2): the exact spheroid's, times η (the profile slot)
+                e = cf._rmul(cf.NU, cf._sum(cf.spheroid_terms(A, 'F', 'mag'), cf.spheroid_terms(A, 'G', 'mag')))
+            else:
+                e = cf._sum(cf.magnetic_diffusion_metric(A, 'F', lw), cf.magnetic_diffusion_metric(A, 'G', lw))
             _cf_expr[key] = (e, cf._curl(A, e))
     return _cf_expr[key]
 
@@ -1868,7 +1871,13 @@ def _lcomp_metric(V, V1, amps, rr, m, lw):
     (M - I) V and its r-derivative as l-components on the degrees 0..lw (dicts q, s, t of (lw + 1, nr) arrays), from those of
     V and V' at the radii rr, with the amplitudes amps = (ε, η, r η') there and the primitives of centrifugal.py (section 2):
     d/dr [ε Ce V + η Ch V] = (η/r) Ce V + ε Ce V' + (r η'/r) Ch V + η Ch V'
+    NEW (2026-11-06, step 2): the exact spheroid, (Q - I) V and (Q - I) V' with the constant couplings of
+    centrifugal.spheroid_primitives (amps not used)
     '''
+    if cf.exact():
+        C = cf.spheroid_primitives('inertia', m, lw)[0]
+        app = lambda U: {k: C[k]['q'] @ U['q'] + C[k]['a'] @ U['s'] + C[k]['T'] @ U['t'] for k in 'qst'}
+        return app(V), app(V1)
     e, h, c = amps
     Ce, Ch = cf.primitives('inertia', 'e', m, lw)[0], cf.primitives('inertia', 'h', m, lw)[0]
     app = lambda C, U: {k: C[k]['q'] @ U['q'] + C[k]['a'] @ U['s'] + C[k]['T'] @ U['t'] for k in 'qst'}
@@ -1997,7 +2006,7 @@ def centrifugal_magnetic_terms(bsol, bic=None):
     J0, J0c = _lcomp_curl(V0, V01, rk), _lcomp_curl(M0, M01, rk)
     w, b, jg, jcg = [ synth(V, Ym) for V in (flow(rk), B, j0, jc) ]
     B0g, J0g, J0cg = [ synth(V, Y0) for V in (V0, J0, J0c) ]
-    hP2 = a_k[1][:, None]*P2x[None, :]
+    hP2 = a_k[1][:, None]*P2x[None, :] if not cf.exact() else 0*P2x[None, :]   # J - 1 (NEW 2026-11-06, step 2: 0 exactly)
     G = [ -hP2*(p + q) + s + t for p, q, s, t in zip(cross(J0g, b), cross(jg, B0g), cross(J0cg, b), cross(jcg, B0g)) ]
     out['Wlor'] = 2*vol(sum(np.conj(u)*g for u, g in zip(w, G)))
     dE = [ -hP2*v for v in cross(w, B0g) ]
@@ -2020,12 +2029,18 @@ def centrifugal_magnetic_terms(bsol, bic=None):
         etaj = lambda j: rap.etaX(rk, j)
         Ek, CEk = _cf_eval(e, tabs, rk, ampk, etaj), _cf_eval(ce, tabs, rk, ampk, etaj)
         out['Mdfs'] = 2*np.real(_lcomp_dot(B, CEk, rk, wq))
-        out['Ohmc'] += 2*np.real(_lcomp_dot(j0, {k: -v for k, v in Ek.items()}, rk, wq))
+        if cf.exact():   # NEW (2026-11-06, step 2): the exact spheroid's loss 2 ∫ j*⋅Q j dV, j = ∇×(Q b̃) = j0 + jc
+            jt = {k: j0[k] + jc[k] for k in 'qst'}
+            out['Ohmc'] = 2*np.real(_lcomp_dot(jt, jt, rk, wq) + _lcomp_dot(jt, _lcomp_metric(jt, jt, None, rk, m, lw)[0], rk, wq)
+                                    - _lcomp_dot(j0, j0, rk, wq))
+        else:
+            out['Ohmc'] += 2*np.real(_lcomp_dot(j0, {k: -v for k, v in Ek.items()}, rk, wq))
     # the induction work of δ𝐄: its volume part and the wall terms 2 Re ∮ (δ𝐄×b̃*)⋅r̂ dS (w = 0 at no-slip walls)
     rw = np.array([Ra if Ra > 0 else 0.5, Rb])   # (a dummy inner radius in a full sphere, its term is not used)
     Bw = _lcomp_field(bsol, rw, lw)[0]
     ww, bw, B0w = synth(flow(rw), Ym), synth(Bw, Ym), synth(background(rw)[0], Y0)
-    dEw = [ -(amp(rw)[1][:, None]*P2x[None, :])*v for v in cross(ww, B0w) ]
+    hw = amp(rw)[1][:, None]*P2x[None, :] if not cf.exact() else 0*P2x[None, :]   # (NEW 2026-11-06, step 2: J = 1)
+    dEw = [ -hw*v for v in cross(ww, B0w) ]
     walls = 2*np.pi*np.sum(wx[None, :]*(dEw[1]*np.conj(bw[2]) - dEw[2]*np.conj(bw[1]))*(rw**2)[:, None], axis=1)
     out['Iwall'] = 2*np.real(walls[1] - (walls[0] if Ra > 0 else 0))
     out['Indu'] = 2*np.real(vol(sum(e*np.conj(j) for e, j in zip(dE, jg)))) + out['Iwall']
@@ -2036,6 +2051,9 @@ def centrifugal_magnetic_terms(bsol, bic=None):
     lv = np.arange(lw + 1); nl = 4*np.pi/(2*lv + 1)
     def potential_energy(wall, k):
         R = rw[k]
+        if cf.exact():   # NEW (2026-11-06, step 2): the exact spheroid, ∓R³ Σ λ_l |A_l|² ∫|Y_l|² dΩ (centrifugal.spheroid_potential)
+            A, lam = cf.spheroid_potential(wall, m, lw, R, Bw['q'][:, k], Bw['s'][:, k], Bw['t'][:, k])
+            return (-1. if wall == 'outer' else 1.)*np.sum(nl*lam*np.abs(A)**2)*R**3
         e0, h0 = [ float(a[k]) for a in amp(rw)[:2] ]
         A = cf.wall_potential(wall, m, lw, e0, h0, R, Bw['q'][:, k], Bw['s'][:, k], Bw['t'][:, k])
         kq = -(lv + 1.) if wall == 'outer' else lv*1.
@@ -2076,7 +2094,10 @@ def centrifugal_magnetic_terms(bsol, bic=None):
         j0i = _lcomp_curl(Bi, Bi1, ri)
         out['MEic'] = np.real(_lcomp_dot(Bi, Bi, ri, wi) + _lcomp_dot(Bi, Mi, ri, wi))
         ohm = _lcomp_dot(j0i, j0i, ri, wi) + _lcomp_dot(_lcomp_curl(Mi, Mi1, ri), j0i, ri, wi)
-        if cf.ic_metric_on():
+        if cf.exact():   # NEW (2026-11-06, step 2): the exact spheroid's ∫ j*⋅Q j dV, j = ∇×(Q b̃)
+            ji = {k: j0i[k] + v for k, v in _lcomp_curl(Mi, Mi1, ri).items()}
+            ohm = _lcomp_dot(ji, ji, ri, wi) + _lcomp_dot(ji, _lcomp_metric(ji, ji, None, ri, m, lw)[0], ri, wi)
+        elif cf.ic_metric_on():
             # NEW (2026-11-06, phase 2): the core's metric diffusion (uniform η_i), the loss 2 Re ∫ j0*⋅(-e) dV as in the fluid
             e = _cf_expressions('mag', lw)[0]
             nd = _cf_order(e)

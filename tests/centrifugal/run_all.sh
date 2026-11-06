@@ -1,6 +1,6 @@
 #!/bin/bash
 # Checks of the centrifugal deformation (centrifugal = 1; docs/centrifugal-equations.md, Checks). NEW (2026-11-05).
-# usage: tests/centrifugal/run_all.sh [WORKDIR]   (default tests/centrifugal/runs; about 14 minutes on 16 cores)
+# usage: tests/centrifugal/run_all.sh [WORKDIR]   (default tests/centrifugal/runs; about 17 minutes on 16 cores)
 # Needs numpy, scipy, sympy and mpi4py; the budgets also petsc4py and slepc4py (SKIP_SOLVE=1 skips them). With OLD_KORE set to
 # a copy of the commit before the change (git archive <commit> | tar -x -C $OLD_KORE), also tests/diff_rot/regress.sh.
 # Each check prints its verdict; the script ends with 'centrifugal checks ok' (exit 0) or lists the ones that failed (exit 1).
@@ -34,7 +34,9 @@ echo "--- shape_check.py: damped modes when the walls are deformed (no-slip, str
 check shape python3 "$T/shape_check.py" $(( $(nproc) < 11 ? $(nproc) : 11 ))
 # NEW (2026-11-06, the exact spheroid)
 echo "--- spheroid_check.py: the exact spheroid ('spheroid'): its terms from the map, kore's couplings and wall rows against"
-echo "    their projections, the inviscid, viscous and heat modes against exact solutions, the rigid rotation"
+echo "    their projections, the inviscid, viscous and heat modes against exact solutions, the rigid rotation; and (step 2)"
+echo "    with a field the insulating walls on exact potential fields, the free decay against an exact solution, the inner"
+echo "    cores, and the first-order code parting as f²"
 check spheroid_exact python3 "$T/spheroid_check.py"
 
 echo "--- ru_insane.py: the metric blocks against (r, θ) quadratures, Hermitian and positive, in shells and full spheres"
@@ -96,6 +98,23 @@ if [ -z "$SKIP_SOLVE" ]; then
       python3 "$T/mk_run.py" ${d}_$F "${cfgs[$i]//@F@/$F}" solve > /dev/null || { failed+=("${d}_$F"); built=0; }
     done
     [ $built = 1 ] && check $d bash -c "cd ${d}_0.01 && python3 '$T/budget_check.py' 1e-8 ../${d}_0.005 | sed 's/^/$d: /'"
+  done
+  # NEW (2026-11-06, step 2): the exact spheroid with a field (f = 0.3, -0.2 for the conducting inner core and the m = 2 case):
+  # every budget to round-off, the energy budget resid𝐄 too (an insulating and a conducting inner core, a full sphere with
+  # Luo_S2, the Malkus field, general poloidal and toroidal fields)
+  echo "--- budget_check.py in the exact spheroid with a field: residσ, residω, resid𝐛 and resid𝐄 to round-off (solve.py, 2 ranks)"
+  SPM="$MAG; $SP; par.lmax = 40"
+  GEN0="par.B0 = 'general'; par.B0_profiles = {1: 'r/6 - r**3/10', 3: '0.3*r**3*(1 - r**2)'}; par.B0_tor = 'general'; par.B0_tor_profiles = {2: 'r**2*(1 - r**2)'}; par.cnorm_tor = 'mag_energy'"
+  names=(bms_ins bms_cic bms_fs bms_tor bms_gen)
+  cfgs=("$SPM"
+        "$SPM; par.innercore = 'conducting, Chebys'; par.sigma_i2o = 0.3; par.centrifugal_f = -0.2"
+        "$SPM; par.ricb = 0; par.B0 = 'Luo_S2'; par.symm = 1; par.itau = 0.6; par.rpower_v = 4; par.lmax = 48"
+        "$SPM; par.B0 = None; par.B0_tor = 'Malkus'; par.cnorm_tor = 'mag_energy'"
+        "$SPM; $GEN0; par.centrifugal_f = -0.2; par.m = 2; par.symm = -1; par.lmax = 41")
+  for i in "${!names[@]}"; do
+    d=${names[$i]}
+    python3 "$T/mk_run.py" $d "${cfgs[$i]}" solve > /dev/null || { failed+=("$d"); continue; }
+    check $d bash -c "cd $d && python3 '$T/budget_check.py' 1e-9 exact | sed 's/^/$d: /'"
   done
   # the anelastic 'Wu 2005' with a field needs N 128 for its budgets (the sphere's are 2e-6 at N 96): closure only
   d=bm_wu

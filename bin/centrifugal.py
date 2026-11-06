@@ -40,7 +40,9 @@ of r alone is constant on the level surfaces), adds the metric parts of its forc
 induction has none).
 NEW (2026-11-06, section 8): the exact spheroid, centrifugal_shape 'spheroid'. Every level surface has the flattening f and
 the map is the linear stretch X = diag(a, a, c) α (c/a = 1 - f, a² c = 1), whose metric is constant: its terms are kept
-exactly, at any f, for a homogeneous fluid without a field or a differential rotation.
+exactly, at any f, for a homogeneous fluid without a differential rotation; NEW (2026-11-06, step 2) also with a field: the
+Lorentz force, the magnetic diffusion, the insulating walls matched to the potential field in the spheroidal coordinates of
+the wall, and a conducting inner core.
 LEFT OUT (background.check_centrifugal stops, report() warns): forced problems, the zero radial stress walls (bco, bci = 2),
 a conducting inner core of another permeability (mu_i2o ≠ 1), the thermal-wind entropy (thermal_wind = 1, 2), which keeps
 the balance of the sphere, and the second order in f (but for the exact spheroid).
@@ -62,7 +64,9 @@ Sections:
      entropy (rotation_heat_coefficients), and their blocks for operators.py;
   8. the exact spheroid ('spheroid'): the metric parts of the linear stretch, exactly (spheroid_terms, spheroid_build,
      spheroid_walls), their blocks (spheroid_block, through momentum_block and diffusion_block) and the primitives of the
-     inertia and the Coriolis force for the budgets (spheroid_primitives).
+     inertia and the Coriolis force for the budgets (spheroid_primitives); with a field (step 2), the Lorentz force
+     (spheroid_magnetic_build), the insulating wall rows (spheroid_lambda, spheroid_field_walls), the potential field for the
+     budgets (spheroid_potential) and the ICB row of a conducting inner core (spheroid_icb).
 Only parameters and angular are imported at the top: utils and radial_profiles are imported where needed (radial_profiles
 imports this module from burrito), so the algebra can be imported and tested without a run directory.
 '''
@@ -316,7 +320,10 @@ def report():
     if par.diff_rot and par.thermal and par.thermal_wind in (1, 2):
         print('WARNING: centrifugal = 1: the thermal-wind entropy S_tw balances ΔΩ in the sphere (the terms of order f ΔΩ of '
               'the balance are left out); its advection and the other terms of ΔΩ are those of the deformed body')
-    if par.magnetic:
+    if par.magnetic and exact():   # NEW (2026-11-06, step 2)
+        print('centrifugal = 1: B0 is given on the level surfaces (the reference space) and carried by the map: the field in '
+              'the body is diag(a, a, c) times the spherical formula')
+    elif par.magnetic:
         print('centrifugal = 1: B0 is given on the level surfaces (the reference space) and carried by the map: the field in '
               'the body differs from the spherical formula at order f')
 
@@ -545,8 +552,11 @@ def magnetic_profile_functions():
     return out
 
 def magnetic_odd_codes():
-    '''the product codes of odd parity at ricb = 0 (utils.odd_profiles): the amplitudes are even, B_n has the parity (-1)^n'''
+    '''the product codes of odd parity at ricb = 0 (utils.odd_profiles): the amplitudes are even, B_n has the parity (-1)^n;
+    NEW (2026-11-06, step 2) the exact spheroid's terms have mag_algebra's codes of B_n alone (section 8)'''
     import mag_algebra as ma
+    if exact():
+        return ma.odd_codes()
     return [product_code(a, B, n) for B, ns in ma.degrees().items() for n in ns if n % 2 for a in AMPS]
 
 # --- monomials (p, X, d, B, n, j, lam, a): r^p X^(d) [a B_n^(j)] λ_lam (mag_algebra's with the amplitude a, None if none);
@@ -776,10 +786,12 @@ def _bandwidth(blocks):
 
 _mcoef, _mband = {}, {}
 def magnetic_coefficients(m):
-    '''magnetic_build for this run's background (cached), also stored by diagonal'''
+    '''magnetic_build for this run's background (cached), also stored by diagonal; NEW (2026-11-06, step 2) the exact
+    spheroid's spheroid_magnetic_build (section 8)'''
     import mag_algebra as ma
     if m not in _mcoef:
-        out = magnetic_build(m, ma.degrees(), par.lmax + ma.nmax() + 16)
+        build = spheroid_magnetic_build if exact() else magnetic_build
+        out = build(m, ma.degrees(), par.lmax + ma.nmax() + 16)
         _mcoef[m] = out
         B = _bandwidth(out)
         _mband[m] = (B, {rc: {lab: angular.band(M, B) for lab, M in d.items()} for rc, d in out.items()})
@@ -931,14 +943,17 @@ def sp_csr(M):
 _wall = {}
 def wall_rows(wall):
     '''wall_coefficients for this run at the wall 'outer' (r = 1) or 'inner' (r = ricb, insulating inner core), cached, by
-    diagonal: (B, {(row, source): bands})'''
+    diagonal: (B, {(row, source): bands}); NEW (2026-11-06, step 2) the exact spheroid's spheroid_field_walls (section 8)'''
     import utils as ut
     if wall not in _wall:
         R = ut.rcmb if wall == 'outer' else par.ricb
-        prof = profile_functions()
-        eps = float(prof['ce0'](np.array([R]), 0)[0])
-        eta = float(prof['ce1'](np.array([R]), 0)[0])
-        W = wall_coefficients(wall, par.m, par.lmax + 12, eps, eta, R)
+        if exact():
+            W = spheroid_field_walls(wall, par.m, par.lmax + 12, R)
+        else:
+            prof = profile_functions()
+            eps = float(prof['ce0'](np.array([R]), 0)[0])
+            eta = float(prof['ce1'](np.array([R]), 0)[0])
+            W = wall_coefficients(wall, par.m, par.lmax + 12, eps, eta, R)
         B = _bandwidth({0: W})
         _wall[wall] = (B, {k: angular.band(M, B) for k, M in W.items()})
     return _wall[wall]
@@ -1334,8 +1349,8 @@ def diffusion_coefficients(m):
 
 def diffusion_labels():
     '''[(label, 'P', 'T', 'S', 'F' or 'G')]: the radial operators of the metric diffusion and their columns, for submatrices.py'''
-    if exact():   # NEW (2026-11-06): the exact spheroid's (section 8)
-        return spheroid_labels(('visc', 'heat'))
+    if exact():   # NEW (2026-11-06): the exact spheroid's (section 8; step 2: 'mag')
+        return spheroid_labels(('visc', 'heat', 'mag'))
     out = []
     for (row, X), d in diffusion_coefficients(par.m).items():
         out += [(lab, X) for lab in d]
@@ -1346,7 +1361,7 @@ def diffusion_orders():
     submatrices.py then builds them in the C^(3) basis'''
     out = {}
     blocks = diffusion_coefficients(par.m).items() if not exact() else \
-        [(rc, d) for kind in ('visc', 'heat') if kind in spheroid_coefficients(par.m)
+        [(rc, d) for kind in ('visc', 'heat', 'mag') if kind in spheroid_coefficients(par.m)
          for rc, d in spheroid_coefficients(par.m)[kind][0].items()]   # NEW (2026-11-06): the exact spheroid's
     for (row, X), d in blocks:
         for lab in d:
@@ -1362,8 +1377,8 @@ def diffusion_block(l, section, component, offdiag, M):
     of N1], or [0, 0] if nothing couples this Δl.
     '''
     import utils as ut
-    if exact():   # NEW (2026-11-06): the exact spheroid (section 8)
-        return spheroid_block('heat' if section == 'h' else 'visc', l, section, component, offdiag, M)
+    if exact():   # NEW (2026-11-06): the exact spheroid (section 8; step 2: 'mag' in f, g)
+        return spheroid_block({'h': 'heat', 'f': 'mag', 'g': 'mag'}.get(section, 'visc'), l, section, component, offdiag, M)
     X = {'upol': 'P', 'utor': 'T', 'temp': 'S', 'bpol': 'F', 'btor': 'G'}[component]
     diffusion_coefficients(par.m)
     out = 0
@@ -1410,6 +1425,7 @@ def wall_dissipative_rows(wall):
 # spherical diffusion, R [S part of 𝐄]_o - η_i R [S part of 𝐄]_i = 0, which with 𝐄 = M ∇×(M b̃) = ∇×b̃ + δ𝐄 per unit η,
 # δ𝐄 = (M - I)∇×b̃ + ∇×((M - I) b̃), gains R [S part of δ𝐄] on both sides (with F, F', F'' and G, G' there).
 LABEL_IC = re.compile(r'([fg])(\d)([ENCQK])et0_D(\d)$')
+LABEL_IC_SPH = re.compile(r'([fg])(\d)eta0_D(\d)$')   # NEW (2026-11-06, step 2): the exact spheroid's (no amplitude)
 
 def ic_metric_on():
     '''the metric magnetic diffusion of a conducting inner core and its ICB row: centrifugal = 1, a field with diffusion, a
@@ -1423,6 +1439,14 @@ def ic_labels():
     the power of r of the rows fic (2) and gic (utils.rpower_gic) minus rx'''
     import utils as ut
     out = []
+    if exact():   # NEW (2026-11-06, step 2): the exact spheroid's 'f{rx}eta0_D{d}', 'g{rx}eta0_D{d}' (amplitude None: 1)
+        for (row, X), d in spheroid_coefficients(par.m)['mag'][0].items():
+            for lab in d:
+                mt = LABEL_IC_SPH.match(lab)
+                if mt is None:
+                    sys.exit('centrifugal: the exact diffusion label %s has no counterpart in the inner core' % lab)
+                out.append((lab, row, X, (2 if row == 'f' else ut.rpower_gic) - int(mt.group(2)), None, int(mt.group(3))))
+        return out
     for (row, X), d in diffusion_coefficients(par.m).items():
         if row not in 'fg':
             continue
@@ -1445,11 +1469,13 @@ def diffusion_block_ic(l, section, component, offdiag, M):
     import utils as ut
     row = {'fic': 'f', 'gic': 'g'}[section]
     X = {'bpol_ic': 'F', 'btor_ic': 'G'}[component]
-    diffusion_coefficients(par.m)
+    if exact():   # NEW (2026-11-06, step 2): the exact spheroid's (section 8)
+        bands = spheroid_coefficients(par.m)['mag'][1].get((row, X), {})
+    else:
+        diffusion_coefficients(par.m)
+        bands = {lab: bnd for lab, bnd in _dband[par.m].get((row, X), {}).items() if LABEL_IC.match(lab) is not None}
     out = 0
-    for lab, bnd in _dband[par.m].get((row, X), {}).items():
-        if LABEL_IC.match(lab) is None:
-            continue
+    for lab, bnd in bands.items():
         v = _lookup(bnd, l, par.m, offdiag)
         if v != 0:
             out = out + v*M[lab + '_ic']
@@ -1480,7 +1506,10 @@ def icb_rows():
     '''icb_electric for this run at r = ricb (the amplitudes there from the fluid's profile codes; the map is smooth across),
     cached, by diagonal: (B, {(X, d): bands})'''
     if not _icb:
-        W = icb_electric(par.m, par.lmax + 12, par.ricb, wall_values(par.ricb))
+        if exact():   # NEW (2026-11-06, step 2): the exact spheroid's (section 8)
+            W = spheroid_icb(par.m, par.lmax + 12, par.ricb)
+        else:
+            W = icb_electric(par.m, par.lmax + 12, par.ricb, wall_values(par.ricb))
         B = _bandwidth({0: W})
         _icb.update({'B': B, 'W': {k: angular.band(M, B) for k, M in W.items()}})
     return _icb['B'], _icb['W']
@@ -1672,10 +1701,31 @@ def rotation_block(l, section, component, offdiag, M):
 # kore's g = r it acts along F⁻ᵀ𝐫 = ∇_X(r²/2) in the body, normal to the level surfaces, as the effective gravity of a
 # homogeneous body in hydrostatic equilibrium (a Maclaurin spheroid: its effective potential depends on r alone). The
 # couplings are built with the algebra of section 6 on expressions of constant coefficients and take kore's own labels (no
-# profile, or the uniform ν and κ p: 'vsc0', 'kps0'). The products of Z and ∂z² couple a degree l to l ± 4 of the same kind
-# and to l ± 3 of the other. The fluid is homogeneous (structure 'Boussinesq', diffusivity 'uniform'): its expressions have
-# no (ln ρ0) terms, and no profile derivatives. Checks: tests/centrifugal/spheroid_check.py.
-SPHEROID_KINDS = ('inertia', 'coriolis', 'visc', 'heat')
+# profile, or the uniform ν, κ p and η: 'vsc0', 'kps0', 'eta0'). The products of Z and ∂z² couple a degree l to l ± 4 of the
+# same kind and to l ± 3 of the other. The fluid is homogeneous (structure 'Boussinesq', diffusivity 'uniform'): its
+# expressions have no (ln ρ0) terms, and no profile derivatives. Checks: tests/centrifugal/spheroid_check.py.
+# NEW (2026-11-06, step 2) the field. b̃ = J F⁻¹ b = F⁻¹ b and the background B̃0 (kore's formula; F B̃0 in the body) are fluxes
+# of the reference space (section 4), so with J = 1 and M = Q the induction ∂ₜb̃ = ∇×(w × B̃0) is that of the sphere, and
+#     Lorentz force  ∇×(Q b̃) × B̃0 + ∇×(Q B̃0) × b̃ less the sphere's: (a² - 1)(J0×b - B0×J) + δ {[∇×(Z B0)]×b - B0×[∇×(Z b)]}
+#     diffusion      the field of ∂ₜb̃ = -∇×(η Q ∇×(Q b̃)) less the sphere's, per unit η:
+#                    (a⁴ - 1) ∇×b̃ + a² δ [Z ∇×b̃ + ∇×(Z b̃)] + δ² Z ∇×(Z b̃)
+# (δ = c² - a², Q - I = (a² - 1) I + δ Z; b, B0, J = ∇×b and J0 = ∇×B0 of the reference space). The force takes mag_algebra's
+# labels (the profiles hp, kt of B0), the diffusion 'eta0'; through B0 of degree n the force couples l to l ± (n + 3).
+# The walls are the level surfaces r = R, spheroids of semi-axes a R, c R. In the spheroidal coordinates confocal with the
+# wall, s = k R √(1 + ν²) √(1 - x²), z = k R ν x outside an oblate body (k² = a² - c², ν ≥ 0; s = k R √(ν² - 1) √(1 - x²),
+# z = k R ν x for a prolate one, k² = c² - a², ν ≥ 1), the wall is ν0 = c/k with x = cos θ: on it the spheroidal angle is
+# the reference colatitude. So the potential field outside, φ = Σ c_l Y_l R_l(ν)/R_l(ν0) with R_l = Q_l^m(iν) (Q_l^m(ν)
+# prolate; P_l^m inside an insulating inner core, regular there), is Φ = Σ c_l Y_l on the wall, and its flux per unit
+# reference area is b̃_r = (a²/(k R)) ∂ν φ (that of ∇φ through the surface ν0 per dx dφ is k R (1 ± ν0²) ∂ν φ, and
+# 1 ± ν0² = a²/k²). With the tangential field Fᵀb = Q b̃ = ∇_tan Φ:
+#     q_l(b̃) = λ_l s_l(Q b̃),  t_l(Q b̃) = 0  at r = R,     λ_l = (a²/k) d ln R_l(ν0)/dν
+# (-(l + 1) and l in the sphere), that is, with m_s, m_t the S and T parts of (Q - I) b̃ at R (q = L F/R, s = F' + F/R, t = G),
+#     outside  (l - μ) F - μ R (F' + m_s) = 0,  μ = λ_l/(l + 1)      ((l + 1) F + R F' for μ = -1)
+#     inside   (l + 1 - ν) F - ν R (F' + m_s) = 0,  ν = λ_l/l        (l F - R F' for ν = 1)
+#     and G + m_t = 0.
+# At a conducting inner core (mu_i2o = 1) b̃ is continuous, and the row of the tangential electric field gains the metric
+# part of the diffusion's field (section 6, with the formula above); the core's diffusion takes the fluid's terms with η_i.
+SPHEROID_KINDS = ('inertia', 'coriolis', 'visc', 'heat', 'mag')   # (NEW 2026-11-06, step 2: 'mag')
 
 def spheroid_axes(f=None):
     '''(a, c), the equatorial and polar radii of the level surface r = 1 of the spheroid of flattening f (centrifugal_f):
@@ -1708,7 +1758,8 @@ def spheroid_terms(A, X, kind, f=None):
     The exact metric terms of the unknown X ('P', 'T': the flow w; 'S': the entropy s) on the algebra A, as expressions
     (the formulas above, flattening f or centrifugal_f): kind 'inertia' (M - I) w, 'coriolis' (z̃ - ẑ)×w, 'visc' the viscous
     force per unit ν, 'traction' the stress-free wall rows per unit ν (vector expressions); 'heat' the diffusion per unit
-    κp, 'flux' the fixed-flux wall rows (scalar expressions, X = 'S')
+    κp, 'flux' the fixed-flux wall rows (scalar expressions, X = 'S'); NEW (2026-11-06, step 2) X = 'F', 'G' (the field b̃),
+    kind 'mag': the diffusion's field per unit η in kore's sign (minus the formula above, as magnetic_diffusion_metric)
     '''
     a, c = spheroid_axes(f)
     a2, c2 = a*a, c*c
@@ -1718,6 +1769,11 @@ def spheroid_terms(A, X, kind, f=None):
             return _sum(_sc(_div(A, _grad(A, s)), 1/a2 - 1), _sc(_sdz(A, _sdz(A, s)), 1/c2 - 1/a2))
         if kind == 'flux':
             return _sum(_sc(_dr(s), 1/a2 - 1), _sc(_map(_sdz(A, s), lambda M: A.X @ M), 1/c2 - 1/a2))
+    elif X in 'FG':   # NEW (2026-11-06, step 2)
+        b = _field(A, X)
+        if kind == 'mag':
+            j, cz = _curl(A, b), _curl(A, _Z(A, b))
+            return _sc(_sum(_sc(j, a2*a2 - 1), _sc(_sum(_Z(A, j), cz), a2*(c2 - a2)), _sc(_Z(A, cz), (c2 - a2)**2)), -1.)
     else:
         w = _hom(_flow(A, X))
         if kind == 'inertia':
@@ -1751,7 +1807,8 @@ def spheroid_build(m, lw, kinds=SPHEROID_KINDS, f=None):
     {kind: {(row, column): {label: sparse matrix [target l', source l]}}} of the exact metric terms on the degrees 0..lw:
     'inertia' and 'coriolis' in the rows u, v (columns P, T; (M - I) w and (z̃ - ẑ)×w as section 3's momentum_block, without
     2 Gaspard and the 1/L'^3), 'visc' in u, v (the sign of operators.viscous_diffusion, without ViscosD and the 1/L'^3) and
-    'heat' in h (column S; the sign of operators.thermal_diffusion, without ThermaD and the 1/L^3); pruned and checked
+    'heat' in h (column S; the sign of operators.thermal_diffusion, without ThermaD and the 1/L^3), NEW (2026-11-06, step 2)
+    'mag' in f, g (columns F, G; kore's A sign, as diffusion_build, without MagnetD and the 1/L'^3); pruned and checked
     (_check_orders). Also used by tests/centrifugal/spheroid_check.py without a run.
     '''
     import mag_algebra as ma
@@ -1762,6 +1819,11 @@ def spheroid_build(m, lw, kinds=SPHEROID_KINDS, f=None):
         o = {}
         if kind == 'heat':
             _store_sph(o, 'h', 'S', _shift(spheroid_terms(A, 'S', 'heat', f), 1., 2), lambda M: M, 'kps')   # r² (the row)
+        elif kind == 'mag':   # NEW (2026-11-06, step 2): f: -r² t, g: -r [q - (r s)'] (as diffusion_build)
+            for X in 'FG':
+                q, s, t = _parts(spheroid_terms(A, X, 'mag', f))
+                _store_sph(o, 'f', X, _shift(t, -1., 2), Lt, 'eta')
+                _store_sph(o, 'g', X, _shift(_sum(q, _sc(_dr(_shift(s, 1., 1)), -1.)), -1., 1), Lt, 'eta')
         else:
             for X in 'PT':
                 e = spheroid_terms(A, X, kind, f)
@@ -1792,10 +1854,11 @@ def spheroid_walls(m, lw, R, f=None):
 _sph = {}
 def spheroid_coefficients(m):
     '''spheroid_build for this run (cached): {kind: (out, bands)} with the kinds of this run ('visc' with ViscosD > 0, 'heat'
-    with thermal diffusion), the bands by diagonal (angular.band, |Δl| <= 4)'''
+    with thermal diffusion, NEW (2026-11-06, step 2) 'mag' with a field and MagnetD > 0), the bands by diagonal
+    (angular.band, |Δl| <= 4)'''
     if m not in _sph:
         kinds = ['inertia', 'coriolis'] + (['visc'] if par.ViscosD > 0 else []) + \
-                (['heat'] if par.thermal and par.ThermaD > 0 else [])
+                (['heat'] if par.thermal and par.ThermaD > 0 else []) + (['mag'] if par.magnetic and par.MagnetD > 0 else [])
         _sph[m] = {}
         for kind, out in spheroid_build(m, par.lmax + 16, kinds).items():
             B = _bandwidth(out)
@@ -1816,16 +1879,17 @@ def spheroid_labels(kinds):
 
 def spheroid_block(kind, l, section, component, offdiag, M):
     '''
-    The block of the exact metric term kind ('inertia', 'coriolis': momentum_block's conventions; 'visc', 'heat':
-    diffusion_block's) for the row degree l of section 'u', 'v' or 'h', the column 'upol', 'utor' or 'temp' and the source
-    degree l + offdiag: [factor Σ coefficient × radial operator / L'^3, the column block offset in units of N1] (factor 1, 2
-    Gaspard, ViscosD or ThermaD), or [0, 0] if nothing couples this Δl.
+    The block of the exact metric term kind ('inertia', 'coriolis': momentum_block's conventions; 'visc', 'heat', 'mag':
+    diffusion_block's) for the row degree l of section 'u', 'v', 'h' (NEW 2026-11-06, step 2: or 'f', 'g'), the column
+    'upol', 'utor', 'temp' (or 'bpol', 'btor') and the source degree l + offdiag: [factor Σ coefficient × radial operator /
+    L'^3, the column block offset in units of N1] (factor 1, 2 Gaspard, ViscosD, ThermaD or MagnetD), or [0, 0] if nothing
+    couples this Δl.
     '''
     import utils as ut
     C = spheroid_coefficients(par.m)
     if kind not in C:
         return [0, 0]
-    X = {'upol': 'P', 'utor': 'T', 'temp': 'S'}[component]
+    X = {'upol': 'P', 'utor': 'T', 'temp': 'S', 'bpol': 'F', 'btor': 'G'}[component]
     out = 0
     for lab, bnd in C[kind][1].get((section, X), {}).items():
         v = _lookup(bnd, l, par.m, offdiag)
@@ -1833,8 +1897,13 @@ def spheroid_block(kind, l, section, component, offdiag, M):
             out = out + v*M[lab]
     if np.isscalar(out):
         return [0, 0]
-    offd = ut.dr_offd(l, l + offdiag, section, X)
-    fac = {'inertia': 1., 'coriolis': 2*par.Gaspard, 'visc': par.ViscosD, 'heat': par.ThermaD}[kind]
+    if section in 'fg':   # NEW (2026-11-06, step 2): the field's rows and columns (as diffusion_block)
+        lF, lG = ut.ell(par.m, par.lmax, ut.bsymm)[:2]
+        rows, cols = {'f': lF, 'g': lG}[section], {'F': lF, 'G': lG}[X]
+        offd = int(np.where(cols == l + offdiag)[0][0] - np.where(rows == l)[0][0])
+    else:
+        offd = ut.dr_offd(l, l + offdiag, section, X)
+    fac = {'inertia': 1., 'coriolis': 2*par.Gaspard, 'visc': par.ViscosD, 'heat': par.ThermaD, 'mag': par.MagnetD}[kind]
     return [fac*out/(l*(l + 1.))**3, offd]
 
 def spheroid_primitives(kind, m, lw, f=None):
@@ -1853,3 +1922,146 @@ def spheroid_primitives(kind, m, lw, f=None):
         for k in 'qst':
             C[k][sh] = W[k].tocsr()
     return C, A
+
+
+# --- the field (NEW 2026-11-06, step 2): the Lorentz force, the insulating walls, the ICB row of a conducting inner core
+def _zvecs(vecs):
+    '''Z V = ẑ (ẑ⋅V) of axisymmetric background vectors (section 4's kinds): V_z = x V_r - sinθ V_θ, ẑ = x r̂ - sinθ θ̂'''
+    x = _xp
+    out = []
+    for kind, c, rad in vecs:
+        if kind != 'sp':
+            Vz = x*c if kind == 'r' else -1*(1 - x*x)*c
+            out += [('r', x*Vz, rad), ('st', -1*Vz, rad)]
+    return out
+
+def _store_ma(out, row, X, e, Lt):
+    '''the row's monomials (constant coefficients: no amplitude, homogeneous fluid) as mag_algebra's labels
+    '{row}{rx}{hp|kt}{n}{j}ohr1_D{d}' ('ohr1' in the rows u, v), times L' of the target, added to out[(row, X)]'''
+    import mag_algebra as ma
+    d_ = out.setdefault((row, X), {})
+    for (p, Xn, dd, B, n, j, lam, a), M in e.items():
+        M = M.tocsr()
+        if M.nnz == 0 or abs(M).max() == 0:
+            continue
+        rx = ma.ROWPOW[row] - p
+        if not (0 <= rx <= 9 and B is not None and a is None and not lam and j <= 9 and dd <= 9 and Xn == X):
+            sys.exit('centrifugal: the exact term r^%d %s^(%d) %s^(%s) has no label in row %s' % (p, Xn, dd, B, j, row))
+        _add(d_, '%s%d%s%d%s_D%d' % (row, rx, ma.code(B, n), j, 'ohr1' if row in 'uv' else '', dd), Lt(M).tocsr())
+
+def spheroid_magnetic_build(m, degs, lw, f=None):
+    '''
+    {(row, column): {label: sparse matrix [target l', source l]}}: the exact metric part of the Lorentz force (the formula of
+    the header) in the rows 'u', 'v' (columns 'F', 'G') for the background degrees degs = {'h': [...], 'k': [...]} on the
+    degrees 0..lw, with mag_algebra's labels (the coefficients are constant), in kore's A sign, without Hendrik and the
+    1/L'^3 of the row (as magnetic_build; the induction has no metric part, J = 1). Also used by
+    tests/centrifugal/spheroid_check.py without a run.
+    '''
+    import mag_algebra as ma
+    A = angular.Algebra.get(m, lw)
+    a, c = spheroid_axes(f)
+    k1, dl = a*a - 1, c*c - a*a
+    zdot, zhat, _, _ = _ops(A)
+    Lt = lambda M: A.L @ M
+    out = {}
+    for B in 'hk':
+        for n in degs.get(B, []):
+            bg = _background(n, B)
+            jz = _curl_vectors(_zvecs(bg['B0']))                          # ∇×(Z B0)
+            for X in 'FG':
+                b, J = _pert(A, X, 'b'), _pert(A, X, 'J')
+                zb = {key: zhat(zdot(F)) for key, F in b.items()}         # Z b
+                G = _product(A, bg['J0'], b, k1)                           # (a² - 1)(J0×b - B0×J)
+                _merge(G, _product(A, bg['B0'], J, -k1))
+                _merge(G, _product(A, jz, b, dl))                          # δ {[∇×(Z B0)]×b - B0×[∇×(Z b)]}
+                _merge(G, _product(A, bg['B0'], _curl_pert(A, zb), -dl))
+                urow = dict(G['q'])                                        # u: -r³ [q - (r s)'] (ρ0 = 1);   v: -r² t
+                for key, M in _deriv(_shift(G['s'], 1., 1)).items():
+                    _add(urow, key, -M)
+                _store_ma(out, 'u', X, _shift(urow, -1., 3), Lt)
+                _store_ma(out, 'v', X, _shift(G['t'], -1., 2), Lt)
+    return ma._prune(out)
+
+def spheroid_lambda(wall, m, lw, f=None):
+    '''
+    λ_l on the degrees 0..lw of the insulating wall rows (the header: q_l(b̃) = λ_l s_l(Q b̃) at the wall), λ_l = (a²/k)
+    d ln R_l(ν0)/dν with R_l = Q_l^m outside the outer wall ('outer') and P_l^m inside an insulating inner core ('inner'), of
+    the argument z = iν (oblate) or ν (prolate), by recurrence in l with the derivatives (z² - 1) R_l' = l z R_l - (l + m)
+    R_(l-1) = (l - m + 1) R_(l+1) - (l + 1) z R_l: the ratios P_l/P_(l-1) forward from l = m (P is the dominant solution),
+    Q_(l+1)/Q_l backward from far above lw (Q is the minimal one). The sphere's -(l + 1) and l below l = m and for f = 0.
+    Checked against mpmath (legenp, legenq) and the potential fields of the spheroid: tests/centrifugal/spheroid_check.py.
+    '''
+    a, c = spheroid_axes(f)
+    lv = np.arange(lw + 1)
+    lam = -(lv + 1.) if wall == 'outer' else lv*1.
+    if a == c:
+        return lam
+    k = np.sqrt(abs(a*a - c*c))
+    z, dz = (1j*c/k, 1j) if a > c else (c/k + 0j, 1.)
+    if wall == 'inner':
+        t = None
+        for l in range(m, lw + 1):
+            if l == m:
+                d = m*z/(z*z - 1)
+            else:
+                t = (2*m + 1)*z if l == m + 1 else ((2*l - 1)*z - (l - 1 + m)/t)/(l - m)
+                d = (l*z - (l + m)/t)/(z*z - 1)
+            lam[l] = (a*a/k)*(dz*d).real
+    else:
+        rho = abs(z + np.sqrt(z*z - 1))                                    # the ratio of the two solutions per degree
+        top = lw + 20 + int(min(np.ceil(40/np.log(max(rho*rho, 1 + 1e-12))), 10**6))
+        s = 0j
+        for l in range(top, m - 1, -1):   # s = Q_(l+1)/Q_l; then Q_l/Q_(l-1) = (l + m)/((2l + 1) z - (l - m + 1) s)
+            if l <= lw:
+                lam[l] = (a*a/k)*(dz*((l + 1)*z - (l - m + 1)*s)/(1 - z*z)).real
+            s = (l + m)/((2*l + 1)*z - (l - m + 1)*s)
+    return lam
+
+def spheroid_field_walls(wall, m, lw, R, f=None):
+    '''
+    The exact insulating wall rows at the radius R of the wall 'outer' or 'inner' (an insulating inner core), as their parts
+    beyond the sphere's rows (assemble.bc_b_spherical: f, (l + 1) F + R F' outside, l F - R F' inside; g, G), in the format of
+    wall_coefficients: {(row, source): sparse matrix [l, l']}, rows 'f', 'g', sources 'F0', 'F1', 'G0'. From the header's
+        outside  (l - μ) F - μ R (F' + m_s) = 0,  μ = λ_l/(l + 1);    inside  (l + 1 - ν) F - ν R (F' + m_s) = 0,  ν = λ_l/l;
+        G + m_t = 0,
+    λ_l of spheroid_lambda, m_s and m_t the S and T parts of (Q - I) b̃ at R (spheroid_primitives) with q = L F/R,
+    s = F' + F/R, t = G. Also used by tests/centrifugal/spheroid_check.py without a run.
+    '''
+    C, A = spheroid_primitives('inertia', m, lw, f)
+    L = A.L
+    lv = np.arange(lw + 1, dtype=float)
+    lam = spheroid_lambda(wall, m, lw, f)
+    mS = {'F0': C['s']['q'] @ L/R + C['s']['a']/R, 'F1': C['s']['a'], 'G0': C['s']['T']}
+    mT = {'F0': C['t']['q'] @ L/R + C['t']['a']/R, 'F1': C['t']['a'], 'G0': C['t']['T']}
+    if wall == 'outer':
+        mu = lam/(lv + 1)                                              # -1 in the sphere
+        out = {('f', 'F0'): sp_diags(-(1 + mu)), ('f', 'F1'): sp_diags(-R*(1 + mu))}
+    else:
+        mu = np.where(lv > 0, lam/np.where(lv > 0, lv, 1.), 1.)        # 1 in the sphere
+        out = {('f', 'F0'): sp_diags(1 - mu), ('f', 'F1'): sp_diags(R*(1 - mu))}
+    D = sp_diags(-R*mu)
+    for k in ('F0', 'F1', 'G0'):
+        out[('f', k)] = D @ mS[k] + out[('f', k)] if ('f', k) in out else D @ mS[k]
+        out[('g', k)] = mT[k]
+    return {k: sp_csr(v) for k, v in out.items()}
+
+def spheroid_potential(wall, m, lw, R, q, s, t, f=None):
+    '''
+    The potential field that matches the field b̃ at the wall (post-processing, utils4pp.centrifugal_magnetic_terms): from
+    the l-components q, s, t of b̃ at r = R (arrays on the degrees 0..lw), (A, λ) with A_l = s_l(Q b̃), the coefficients of the
+    tangential field ∇_tan Φ = Σ A_l r∇Y_l at R (Φ = R Σ A_l Y_l on the wall), and λ_l of spheroid_lambda: the wall rows make
+    q_l = λ_l A_l, and the energy of the potential field is -R³ Σ λ_l |A_l|² ∫|Y_l|² dΩ outside, R³ Σ λ_l |A_l|² ∫|Y_l|² dΩ
+    inside an insulating inner core (∫ |∇φ|² dV = ∓∮ Φ* b̃_r R² dΩ)
+    '''
+    C = spheroid_primitives('inertia', m, lw, f)[0]
+    return s + C['s']['q'] @ q + C['s']['a'] @ s + C['s']['T'] @ t, spheroid_lambda(wall, m, lw, f)
+
+def spheroid_icb(m, lw, R, f=None):
+    '''the exact metric part of the ICB row of the electric field of a conducting inner core, as icb_electric: {(X, d):
+    sparse matrix [l, l']}, R times the S part of δ𝐄 = Q ∇×(Q b̃) - ∇×b̃ per unit η at r = R (minus spheroid_terms' 'mag')'''
+    A = angular.Algebra.get(m, lw)
+    out = {}
+    for X in 'FG':
+        for (Xn, d), F in _at(_sc(spheroid_terms(A, X, 'mag', f), -1.), R, {}).items():
+            _add(out, (Xn, d), R*F.s)
+    return {k: sp_csr(v) for k, v in out.items()}

@@ -309,9 +309,55 @@ force and the stress-free rows reach $l \pm 4$ and $l \pm 3$, and the heat rows 
 own, with no profile (`centrifugal.spheroid_build`, `spheroid_walls`), and the blocks reach $\lvert\Delta l\rvert$ = 4,
 one more than at first order.
 
+**The field.** The field is carried back as a flux, as at first order ([Magnetic field](#magnetic-field)). With $J = 1$ the
+flow induces the flux $\tilde{\mathbf b} = \mathsf F^{-1}\mathbf b$ as it does in the sphere, while the Lorentz force and
+the magnetic diffusion keep $\mathsf M$ whole. With the currents $\mathbf j = \nabla\times\tilde{\mathbf b}$ and
+$\mathbf J_0 = \nabla\times\tilde{\mathbf B}_0$ of the sphere and $\delta = c^2 - a^2$, so that
+$\mathsf M - \mathsf I = (a^2 - 1)\thinspace\mathsf I + \delta\thinspace\mathsf Z$, their parts beyond the sphere's are
+
+| term | its part beyond the sphere's |
+| --- | --- |
+| Lorentz force, per Hendrik | $(a^2 - 1)\left(\mathbf j\times\tilde{\mathbf B}_0 + \mathbf J_0\times\tilde{\mathbf b}\right) + \delta\left\{[\nabla\times(\mathsf Z\tilde{\mathbf b})]\times\tilde{\mathbf B}_0 + [\nabla\times(\mathsf Z\tilde{\mathbf B}_0)]\times\tilde{\mathbf b}\right\}$ |
+| electric field of the diffusion, per MagnetD | $(a^4 - 1)\thinspace\mathbf j + a^2\delta\left[\mathsf Z\mathbf j + \nabla\times(\mathsf Z\tilde{\mathbf b})\right] + \delta^2\thinspace\mathsf Z\nabla\times(\mathsf Z\tilde{\mathbf b})$ |
+
+The force takes the labels of the sphere's Lorentz force (`bin/mag_algebra.py`) and couples $l$ to $l \pm (n + 3)$
+through a background of degree $n$; the diffusion takes kore's own labels (`eta0`) and reaches $l \pm 4$
+(`centrifugal.spheroid_magnetic_build`, `spheroid_build`).
+
+**Insulating walls.** Outside an insulating wall kore matches the exact potential field of the spheroid. In the spheroidal
+coordinates confocal with the wall, the wall is a surface $\nu = \nu_0$, and on it the angle of these coordinates is the
+reference colatitude. A potential of degree $l$ on the wall therefore meets the degree $l$ of the field alone, and the
+matching keeps one row per degree, as in the sphere. The flux through the wall and the tangential field are those of the
+potential $\Phi_l$ on it,
+
+$$
+\tilde b_{r,l} = \frac{\lambda_l}{R}\thinspace\Phi_l, \qquad \left[\mathsf M\tilde{\mathbf b}\right]_{{\rm tan},\thinspace l} = \nabla_{\rm tan}\Phi_l,
+\qquad \lambda_l = \frac{a^2}{k}\thinspace\frac{d\ln R_l}{d\nu}(\nu_0), \qquad k = \sqrt{\lvert a^2 - c^2\rvert}, \qquad \nu_0 = \frac{c}{k} ,
+$$
+
+with $kR$ the focal distance of the wall $r = R$ and $R_l$ the radial function of the potential: $Q_l^m(i\nu)$ outside
+an oblate wall, $Q_l^m(\nu)$ outside a prolate one, and $P_l^m$ of the same argument inside an insulating inner core (the
+level surfaces are similar, so $\nu_0$ is the same). In the sphere $\lambda_l$ is $-(l + 1)$ outside and $l$ inside.
+Eliminating $\Phi_l$, with $m_s$ and $m_t$ the spheroidal and toroidal parts of $(\mathsf M - \mathsf I)\tilde{\mathbf b}$
+at the wall, gives the rows
+
+$$
+l(l + 1)\thinspace F = \lambda_l\left(F + RF' + Rm_s\right), \qquad G + m_t = 0 ,
+$$
+
+which kore divides by $l + 1$ outside and by $l$ inside, as the rows of the sphere. They couple $F_l$ to $F_{l\pm2}$ and
+$G_{l\pm1}$, and $G_l$ to $F_{l\pm1}$. kore computes the logarithmic derivatives by recurrence, forward for $P_l^m$ and
+backward for $Q_l^m$ (`centrifugal.spheroid_lambda`, `spheroid_field_walls`).
+
+**Conducting inner core.** With `mu_i2o` = 1 the field is continuous at the inner boundary, as at first order, and the
+row of the tangential electric field gains the part of the diffusion above on each side, with the conductivity of each
+(`centrifugal.spheroid_icb`).
+
 **Scope.** The fluid is homogeneous (`structure = 'Boussinesq'`, `diffusivity = 'uniform'`), with `centrifugal_q` = 0 (the
-effective gravity is already kore's $g$), and any $f < 1$. kore stops with a magnetic field or a differential rotation.
-The budgets of `spin_doctor` and the plots use the exact metric and map.
+effective gravity is already kore's $g$), and any $f < 1$; with a field, any background, insulating walls and an inner
+core that is insulating or conducting with `mu_i2o` = 1. kore stops with a differential rotation. The budgets of
+`spin_doctor` and the plots use the exact metric and map, and every budget closes to round-off
+([Energy budgets](#energy-budgets)).
 
 ## The flattening
 
@@ -395,7 +441,11 @@ these close to round-off. The
 full budget resid𝐄 also counts the Ohmic loss with the metric current $\nabla\times((\mathsf M - \mathsf I)\tilde{\mathbf b})$,
 the energy of the potential field matched on each deformed wall, and the field of a conducting inner core with its
 metric. It closes at second order in $f$ only: kore keeps the first order of $1/J$ and of $\mathsf M$ in the force, in
-the induction, in the diffusion and in the matching at the walls, and the energy does not cancel their products.
+the induction, in the diffusion and in the matching at the walls, and the energy does not cancel their products. In the
+exact spheroid, where kore keeps $\mathsf M$ whole, it closes to round-off: the Ohmic loss there is MagnetD times
+$\int\nabla\times(\mathsf M\tilde{\mathbf b})^*\cdot\mathsf M\thinspace\nabla\times(\mathsf M\tilde{\mathbf b})\thinspace dV$,
+and the energy of the potential field beyond each wall is a wall integral with the $\lambda_l$ of its rows
+(`centrifugal.spheroid_potential`).
 
 ## Plots
 
@@ -459,14 +509,14 @@ Where each piece is in the code:
 | stops and warnings | `background.check_centrifugal`, `centrifugal.report` (`submatrices.py`), the centre check of the flattening; `centrifugal.deformed` (without a deformation kore keeps the bases and rows of the sphere) |
 | energies | `utils4pp.centrifugal_terms` (`solve.py`, `spin_doctor.py`) and `centrifugal_dissipation_terms` (`spin_doctor.py`); with a field `centrifugal_magnetic_energy` (`solve.py`) and `centrifugal_magnetic_terms` (`spin_doctor.py`, with `centrifugal.wall_potential` and `amplitudes`) |
 | plots | `centrifugal.to_physical` (`tools/plot_field.py`, the flow and the field) |
-| the exact spheroid | `centrifugal.exact`, `spheroid_axes`, `spheroid_terms`, `spheroid_build`, `spheroid_walls`, `spheroid_block` (through `momentum_block` and `diffusion_block`), `spheroid_primitives` (`utils4pp.centrifugal_terms`) |
+| the exact spheroid | `centrifugal.exact`, `spheroid_axes`, `spheroid_terms`, `spheroid_build`, `spheroid_walls`, `spheroid_block` (through `momentum_block` and `diffusion_block`), `spheroid_primitives` (`utils4pp.centrifugal_terms`); with a field `spheroid_magnetic_build` (through `magnetic_coefficients`), the insulating walls `spheroid_lambda`, `spheroid_field_walls` (through `wall_rows`), a conducting inner core `spheroid_icb` (through `icb_rows`), the energy of the potential fields `spheroid_potential` (`utils4pp.centrifugal_magnetic_terms`) |
 
 ## Checks
 
 The deformation was checked in four ways: its closed forms against a symbolic derivation from the definitions, its
 couplings, blocks and wall rows against direct quadratures, its eigenvalues against exact results (among them the modes
 of a spheroid, computed without the map), and the energy budgets. The scripts are in `tests/centrifugal/` (README;
-`run_all.sh`, about 14 minutes on 16 cores). Results of 2026-11-06:
+`run_all.sh`, about 17 minutes on 16 cores). Results of 2026-11-06:
 
 | check | script | result |
 | --- | --- | --- |
@@ -483,11 +533,13 @@ of a spheroid, computed without the map), and the energy budgets. The scripts ar
 | the free decay of a field in a sphere labelled as deformed inside: a full sphere, and a conducting inner core of the fluid's conductivity (the relabelling moves its boundary, which a uniform conductor does not see) and of another conductivity | `eig_check.py` | their part odd in $c$ is 2e-13 to 4e-11 of $\lambda$ at $c$ = 1e-3, of order $c^3$ |
 | the inertial modes of an inviscid homogeneous fluid in a spheroid, computed exactly without the map (the polynomial method, in Cartesian components): $d\omega/df$ of the 73 modes of degree $\le 7$ with $m$ = 0, 1, 2 against kore's | `spheroid_modes.py` | 1.4e-11 |
 | damped modes when the walls are deformed (Ek = 1e-3): kore's $d\lambda/df$ against the exact first-order shift computed from the sphere's mode alone (Hadamard's formula and a volume formula), with no-slip and stress-free walls, fixed entropy and fixed flux, in full spheres and shells | `shape_check.py` | 1e-10 to 3e-8; kore is 5e-2 off without the metric viscous terms |
-| the exact spheroid ($f$ = 0.3 and −0.2): its terms from the map (sympy); kore's couplings and wall rows against their projections on kore's rows; 176 inertial modes (degree $\le 7$, $m$ = 0–3) against the polynomial method; 20 viscous modes at Ek 0.1 (no-slip and stress-free) and 16 diffusion modes against exact Galerkin solutions (polynomial fields, rational integrals); the rigid rotation of a stress-free shell | `spheroid_check.py` | exact; 448 blocks to 4e-14, the wall rows to 1e-13; the modes to 2e-12, 6e-13 and 2e-13; $\lvert\lambda\rvert$ 2e-18 |
+| the exact spheroid ($f$ = 0.3 and −0.2): its terms from the map (sympy); kore's couplings and wall rows against their projections on kore's rows; 176 inertial modes (degree $\le 7$, $m$ = 0–3) against the polynomial method; 20 viscous modes at Ek 0.1 (no-slip and stress-free) and 16 diffusion modes against exact Galerkin solutions (polynomial fields, rational integrals); the rigid rotation of a stress-free shell | `spheroid_check.py` | exact; 448 blocks to 4e-14, the wall rows to 9e-14; the modes to 3e-13, 6e-13 and 1e-13; $\lvert\lambda\rvert$ 8e-19 |
+| the exact spheroid with a field: its terms from the map (sympy); kore's couplings of the Lorentz force and the diffusion and the row of a conducting inner core against their projections on kore's rows; $\lambda_l$ against mpmath and the rows of an insulating wall on exact potential fields of the spheroid; the free decay of an axisymmetric field (32 rates, $f$ = 0.3 and −0.2) against an exact Galerkin solution; a conducting inner core of the fluid's conductivity against the full spheroid, and an insulating one as the limit of a conducting one; magnetic modes against those of `'uniform'` | `spheroid_check.py` | exact; 339 blocks to 1e-13, the row at the inner core to 5e-14; $\lambda_l$ to 4e-15, the wall rows to 6e-14 (the sphere's rows leave 0.2); the decay rates to 8e-13; the cores to 3e-12, the limit to 8e-10; the two part as $f^2$ (orders 1.96 to 2.02, 10 modes) |
 | `'clairaut'` of a homogeneous body against `'uniform'` with $f = 5q/4$ | `eig_check.py` | 2e-13 |
 | the effective gravity with $g = r$: $q = 0.1$ against `Beyonce` $(1 - 2q/3)$ | `eig_check.py` | below 1e-14 |
 | a deformed, stratified ideal fluid has real frequencies | `eig_check.py` | $\lvert\mathrm{Re}\thinspace\lambda\rvert$ 2e-16 |
 | `'clairaut'`: a homogeneous body (5/4), the polytrope of index 1 ($15/(2\pi^2)$), `'Wu 2005'` against Clairaut's second-order equation integrated from $\rho$; `'model S hydrostatic'` gives $f/q$ = 0.519 at its wall | `clairaut_check.py` | 3e-12; below 1e-9 |
-| the budgets residσ, residω, resid𝑠 of `spin_doctor` (`solve.py`, 2 ranks; `'Wu 2005'` with an inner core, with and without a differential rotation, and a `'Boussinesq'` full sphere) | `budget_check.py` | below 1e-9, as in the sphere (6e-10); 1e-3 to 3e-2 without the metric weights |
+| the budgets residσ, residω, resid𝑠 of `spin_doctor` (`solve.py`, 2 ranks; `'Wu 2005'` with an inner core, with and without a differential rotation, and a `'Boussinesq'` full sphere) | `budget_check.py` | below 1e-9, as in the sphere (9e-10); 1e-3 to 3e-2 without the metric weights |
 | the budgets with a field (`solve.py`, 2 ranks): the axial field, a conducting inner core, a full sphere, the Malkus field, a poloidal and toroidal background with a differential rotation, each at two flattenings $f$ and $f/2$; `'Wu 2005'` with an inner core | `budget_check.py` | residσ and residω below 2e-13, resid𝐛 below 1e-12 (2e-8 for `'Wu 2005'`, set by its resolution as in the sphere); resid𝐄 of second order (orders 1.7 to 2.2 from the two flattenings) |
+| the budgets of the exact spheroid (`solve.py`, 2 ranks, $f$ = 0.3 or −0.2): a no-slip shell with buoyancy, a stress-free and fixed-flux shell, a full sphere; with a field an insulating and a conducting inner core, a full sphere, the Malkus field, a poloidal and toroidal background | `budget_check.py` | without a field below 5e-10 (the stress-free shell; the others below 6e-12); with a field residσ and residω below 5e-14, resid𝐛 and resid𝐄 below 3e-13 |
 | the free core nutation, the spin-over of a fixed mantle, with a field (Ek 1e-7, Em 1e-5, Le 3e-3, the axial field, a conducting inner core) at $f$ = ±2.5e-3 and $f/2$, and without the field; the shift is taken between the deformed runs ([Accuracy](#accuracy)) | `fcn.sh` | $\mathrm{Im}\thinspace\lambda$ moves by $f(1 + f/3)$, with the coefficient of $f^2$ 1/3 to 7e-4, plus 5.8e-4 of $f$ from the Ekman layers (Greenspan's boundary-layer theory gives 4.6e-4, which kore approaches slowly); the field changes the shift by 3.6e-5 of $f$, N 200 against N 160 by 5e-6 |

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 '''
-budget_check.py [tol] [HALF]: after spin_doctor.py, in a run directory: the budgets of every solution close below tol (default
-1e-8) (NEW 2026-11-05). With centrifugal = 1, spin_doctor weights the kinetic energy with M (KE of the deformed body), the
+budget_check.py [tol] [HALF | exact]: after spin_doctor.py, in a run directory: the budgets of every solution close below tol
+(default 1e-8) (NEW 2026-11-05). With centrifugal = 1, spin_doctor weights the kinetic energy with M (KE of the deformed body), the
 Coriolis power with z̃ and the entropy "energy" with J (utils4pp.centrifugal_terms, by quadrature on the grid, apart from
 the matrices): residσ and residω (flow.dat, columns 17 and 16) and resid𝑠 (thermal.dat, column 4) close only if these
 weights are those of B and A. Without them residσ, residω are of order f, resid𝑠 of order f times the damping.
@@ -16,6 +16,9 @@ NEW (2026-11-06, phase 2): the dissipation is that of the deformed body too. spi
 power, of the power of a differential rotation and of the entropy diffusion (utils4pp.centrifugal_dissipation_terms) and,
 with a field, of the magnetic diffusion (Mdfs, Ohmc of centrifugal_magnetic_terms); without them the residuals are of order
 f times the part of the eigenvalue that the diffusion (or the differential rotation) makes.
+NEW (2026-11-06, step 2): with 'exact' in place of HALF (the exact spheroid, centrifugal_shape 'spheroid', whose terms are all
+exact) resid𝐄 must close below tol too: it holds the energy of the potential fields outside and in an insulating inner core
+(spheroid_potential), and needs no-slip walls.
 '''
 import sys, os
 import numpy as np
@@ -23,6 +26,9 @@ sys.path.insert(0, os.path.abspath('bin'))
 from parameters import par
 tol = float(sys.argv[1]) if len(sys.argv) > 1 else 1e-8
 half = sys.argv[2] if len(sys.argv) > 2 else None
+exact = half == 'exact'   # NEW (2026-11-06, step 2)
+if exact:
+    half = None
 flow = np.atleast_2d(np.loadtxt('flow.dat'))
 worst = {'residσ': np.nanmax(flow[:, 16]), 'residω': np.nanmax(flow[:, 15])}
 try:
@@ -43,6 +49,10 @@ if mag is not None:
     worst['resid𝐛'] = np.nanmax(mag[:, 3])
     if not worst['resid𝐛'] < tol:
         bad.append('resid𝐛')
+    if exact:   # NEW (2026-11-06, step 2): the full energy budget (magnetic.dat column 11)
+        worst['resid𝐄'] = np.max(mag[:, 10])
+        if not worst['resid𝐄'] < tol:
+            bad.append('resid𝐄')
     if half is not None:   # each solution against the nearest one of HALF (eigenvalues.dat: the rows of magnetic.dat)
         mh = np.atleast_2d(np.loadtxt(half + '/magnetic.dat'))
         ev = lambda d, n: (lambda e: e[-n:, 0] + 1j*e[-n:, 1])(np.atleast_2d(np.loadtxt(d + 'eigenvalues.dat')))

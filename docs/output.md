@@ -112,8 +112,8 @@ The columns follow the order of `spin_doctor.param_table`, counted from 1:
   `cnorm_tor` are the numbers used. `B0_l` is the lowest degree for `'general'` and 1 for `'ferraro'`; `B0_tor_l` is the
   parameter, which `B0_tor = 'general'` ignores. The expressions of `'general'` (`B0_profiles`, `B0_tor_profiles`), of
   `'ferraro'` (`B0_ferraro_G`) and of `diff_rot_type = 'ferraro'` (`diff_rot_F`) go into the note after `#`.
-- `centrifugal_shape` is the index in `centrifugal.SHAPES` (`'clairaut'` 0, `'uniform'` 1, `'user'` 2). Column 111 is the
-  flattening of the outer wall that the run used, with any shape (0 with `centrifugal = 0`).
+- `centrifugal_shape` is the index in `centrifugal.SHAPES` (`'clairaut'` 0, `'uniform'` 1, `'user'` 2, `'spheroid'` 3).
+  Column 111 is the flattening of the outer wall that the run used, with any shape (0 with `centrifugal = 0`).
 - `diff_rot_generic` and `diff_rot_hold` are not used (always 0 and nan); they keep the positions of the columns after
   them.
 - A row ends, after a `#` that `np.loadtxt` skips, with the `'user'`, `'general'` and `'ferraro'` expressions and, for

@@ -384,8 +384,9 @@ it.
 - `'spheroid'` is the body of `'uniform'` without the first-order approximation: the walls and the level surfaces are
   exact spheroids, for strong flattenings, or with $f < 0$ elongated bodies. It suits a homogeneous fluid in a
   fast-rotating body or in a rigid container, such as a planet with a rigid mantle. It needs `'Boussinesq'` with uniform
-  diffusivities and `centrifugal_q` = 0, and kore stops with a magnetic field or a differential rotation; the buoyancy is
-  that of a homogeneous body in hydrostatic equilibrium. Its viscous terms couple degrees four apart
+  diffusivities and `centrifugal_q` = 0, and kore stops with a differential rotation; the buoyancy is that of a
+  homogeneous body in hydrostatic equilibrium. With a field, the potential field beyond an insulating wall is the exact
+  one of the spheroid. Its viscous terms and its magnetic diffusion couple degrees four apart
   ([The exact spheroid](centrifugal-equations.md#the-exact-spheroid)).
 
 Typical values:
@@ -423,7 +424,8 @@ The deformation is complete at first order in $f$: the inertia, the Coriolis for
 with no-slip or stress-free walls, the thermal diffusion with fixed-entropy or fixed-flux walls, a differential rotation,
 and with a field the Lorentz force, the induction and the magnetic diffusion, insulating walls and a conducting inner
 core, with any background field, poloidal or toroidal, in shells and in full spheres. `'spheroid'` keeps the inertia, the
-Coriolis force, the buoyancy, the viscous force and the thermal diffusion, with all their walls, exactly.
+Coriolis force, the buoyancy, the viscous force, the thermal diffusion and, with a field, the Lorentz force, the induction
+and the magnetic diffusion, with all their walls and a conducting inner core, exactly.
 
 - `submatrices.py` warns about a flattening above 0.1, where the first order loses accuracy (not with `'spheroid'`),
   and with `thermal_wind` 1 or 2: the thermal-wind entropy keeps the balance of the sphere, so that balance misses its terms of order
@@ -437,8 +439,8 @@ Coriolis force, the buoyancy, the viscous force and the thermal diffusion, with 
 
 - The eigenvectors are normalised to the kinetic energy of the deformed body (plus its magnetic energy with a field),
   and the budgets of `spin_doctor` (residσ, residω, resid𝑠, resid𝐛) include the terms of the deformation. The full
-  energy budget resid𝐄 closes only at second order in $f$, so it is of order $f^2$ rather than round-off. The
-  enstrophy and viscous residuals (residens, residD) are not computed.
+  energy budget resid𝐄 closes only at second order in $f$, so it is of order $f^2$ rather than round-off; with
+  `'spheroid'` it closes to round-off too. The enstrophy and viscous residuals (residens, residD) are not computed.
 - The field files hold the flow and the field in the coordinates of the level surfaces. `tools/plot_field.py` draws the
   flow, the field and the entropy where they are in the body.
 - `magnetic.dat` gains a column with the part of the magnetic energy that the deformation adds

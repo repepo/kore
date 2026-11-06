@@ -490,7 +490,8 @@ def main(ncpus):
                     sys.exit('submatrices: the inner-core operator %s has the parity of neither its row nor its column' % lab)
                 if rp < 0:
                     sys.exit('submatrices: the inner-core operator %s has a negative power of r (the centre is in the core)' % lab)
-                mats[lab + '_ic'] = ic_op(lambda r, rp=rp, a=a: r**rp*amp[a](r), d, gb_ic[row], vrow_ic[row], vcol)
+                mats[lab + '_ic'] = ic_op(lambda r, rp=rp, a=a: r**rp*(amp[a](r) if a is not None else 1.), d, gb_ic[row],
+                                          vrow_ic[row], vcol)   # (NEW 2026-11-06, step 2: a None, the exact spheroid's)
             if ut.rpower_gic == 3:
                 for name, (rp, d) in { 'r1_D0': (1, 0), 'r3_D0': (3, 0), 'r2_D1': (2, 1), 'r3_D2': (3, 2) }.items():
                     mats[name + 'g_ic'] = ic_op(lambda r, rp=rp: r**rp, d, gb_ic['g'], vrow_ic['g'], vG)
