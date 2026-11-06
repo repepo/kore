@@ -720,6 +720,56 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#centrifugal-deformation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Centrifugal deformation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Centrifugal deformation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#flattening" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flattening
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-covers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What it covers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#user-profiles" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1095,6 +1145,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../centrifugal-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Centrifugal deformation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../magnetic-equations/" class="md-nav__link">
         
   
@@ -1377,6 +1455,56 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#centrifugal-deformation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Centrifugal deformation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Centrifugal deformation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#flattening" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flattening
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-it-covers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What it covers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#user-profiles" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1416,7 +1544,7 @@
 
 
 <h1 id="background-model">Background model</h1>
-<p>kore solves for small perturbations of a background. The background has four parts, each chosen by name in the
+<p>kore solves for small perturbations of a background. The background has five parts, each chosen by name in the
 parameter file:</p>
 <table>
 <thead>
@@ -1447,11 +1575,16 @@ parameter file:</p>
 <td><code>diff_rot</code>, <code>diff_rot_type</code></td>
 <td>a uniform or a differential rotation <span class="arithmatex">\(\Omega(r,\theta)\)</span>, and the latitudinal entropy that balances it</td>
 </tr>
+<tr>
+<td>shape</td>
+<td><code>centrifugal</code>, <code>centrifugal_shape</code></td>
+<td>a sphere, or a body flattened by its rotation</td>
+</tr>
 </tbody>
 </table>
 <p>The equations in which they enter are on the page <a href="../anelastic/">Anelastic equations</a>. The code is in
 <code>bin/background.py</code> (the choice, the checks, the stratification and diffusivity types), <code>bin/radial_profiles.py</code> (one
-class per structure) and <code>bin/diff_rot.py</code> (the rotation).</p>
+class per structure), <code>bin/diff_rot.py</code> (the rotation) and <code>bin/centrifugal.py</code> (the flattening).</p>
 <h2 id="units">Units</h2>
 <p>kore is dimensionless (<a href="../anelastic/#non-dimensionalization">Non-dimensionalization</a>). The unit of length is the radius
 of the outer wall, <span class="arithmatex">\(r = 1\)</span>. <code>r_out</code> is that radius in star radii (1 by default), so <span class="arithmatex">\(x = r\cdot\)</span><code>r_out</code> is the radius
@@ -1984,25 +2117,209 @@ differential rotation adds to the heat equation. The advection of <span class="a
   residuals, although their eigenvalues converge at a lower N. <a href="../solver/">Solver</a> has the memory this takes.</li>
 <li>Check convergence with <code>spin_doctor</code> as for any run; its residuals include the terms of the differential rotation.</li>
 </ul>
-<h2 id="user-profiles"><code>'user'</code> profiles</h2>
-<p><code>stratification_profile</code>, the two <code>diffusivity_profiles</code> and the <code>diff_rot_profiles</code> are numpy expressions of <code>r</code> (the
-kore radius), <code>x</code> (<span class="arithmatex">\(r\cdot\)</span><code>r_out</code> with a solar structure, <span class="arithmatex">\(r\)</span> otherwise) and <code>p</code> (<code>stratification_param</code>,
-<code>diffusivity_param</code> or <code>diff_rot_param</code>), with <code>sin</code>, <code>cos</code>, <code>tan</code>, <code>arcsin</code>, <code>arccos</code>, <code>arctan</code>, <code>sinh</code>, <code>cosh</code>,
-<code>tanh</code>, <code>exp</code>, <code>log</code>, <code>log10</code>, <code>sqrt</code>, <code>abs</code>, <code>sign</code>, <code>pi</code>, <code>where</code>, <code>minimum</code>, <code>maximum</code>, <code>erf</code>, <code>erfc</code>. For example:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">par</span><span class="o">.</span><span class="n">stratification</span> <span class="o">=</span> <span class="s1">'user'</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">par</span><span class="o">.</span><span class="n">stratification_profile</span> <span class="o">=</span> <span class="s1">'2.5*exp(-((r - 0.75)/0.06)**2)'</span>      <span class="c1"># dS/dr in 1/L for r &gt;= 0</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">par</span><span class="o">.</span><span class="n">diffusivity</span> <span class="o">=</span> <span class="s1">'user'</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">par</span><span class="o">.</span><span class="n">diffusivity_profiles</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'nu'</span><span class="p">:</span> <span class="s1">'0.01 + 0.99*0.5*(1 + tanh((x - 0.70)/0.015))'</span><span class="p">,</span> <span class="s1">'kappa'</span><span class="p">:</span> <span class="s1">'1'</span><span class="p">}</span>
+<h2 id="centrifugal-deformation">Centrifugal deformation</h2>
+<p>A rotating star or planet is flattened at the poles: its surfaces of constant density, pressure and entropy, its level
+surfaces, are oblate spheroids rather than spheres. <code>centrifugal = 1</code> gives the background this shape, at first order
+in the flattening (exactly, for a homogeneous fluid, with <code>'spheroid'</code>): the walls and the level surfaces become
+spheroids, and the flow feels them through every term of its equations, the inertia, the Coriolis force, the buoyancy,
+the viscous force and the diffusion, the walls and a differential rotation, and with a magnetic field the Lorentz force,
+the induction and the matching at the walls. The equations are on <a href="../centrifugal-equations/">Centrifugal deformation</a>.</p>
+<p><strong>How kore does it.</strong> kore keeps its spherical grid and its radial profiles, and solves in coordinates that follow the
+level surfaces. The radius <span class="arithmatex">\(r\)</span> labels the level surface that encloses the volume of the sphere of radius <span class="arithmatex">\(r\)</span>; every
+background profile is a function of it, and the walls are the level surfaces <code>ricb</code> and 1. A differential rotation is
+such a profile too: a <span class="arithmatex">\(\Delta\Omega\)</span> that depends on <span class="arithmatex">\(r\)</span> alone is constant on the level surfaces. In these coordinates
+each term of the equations gains a part proportional to the flattening, and the buoyancy takes the effective gravity: the
+gravity less the mean centrifugal acceleration. The new terms couple the degrees as a differential rotation of degree 2
+does, so the matrices are as wide as with one (<a href="#resolution-and-cost">Resolution and cost</a>); with a differential rotation
+of degree <span class="arithmatex">\(n_{\max}\)</span>, as wide as with one of degree <span class="arithmatex">\(n_{\max} + 2\)</span>.</p>
+<p><strong>With a magnetic field.</strong> The background field follows the level surfaces too: kore's formula for <code>B0</code> and <code>B0_tor</code>
+gives the field on the level surfaces, and the deformation carries it into the body, so its field lines are those of the
+sphere stretched with the level surfaces. It differs from the spherical formula by a fraction of order <span class="arithmatex">\(f\)</span>:
+<code>submatrices.py</code> says so. At an insulating wall the field is matched to the potential field outside the deformed wall.
+The field diffuses in the deformed fluid, and in a conducting inner core, which is deformed with the fluid.</p>
+<h3 id="flattening">Flattening</h3>
+<p><code>centrifugal_q</code> or <code>centrifugal_f</code> sets how flat the body is, and <code>centrifugal_shape</code> how the flattening varies inside
+it.</p>
+<table>
+<thead>
+<tr>
+<th>parameter</th>
+<th>default</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>centrifugal</code></td>
+<td>0</td>
+<td>1 flattens the body</td>
+</tr>
+<tr>
+<td><code>centrifugal_shape</code></td>
+<td><code>'clairaut'</code></td>
+<td>how the flattening varies with the radius (below)</td>
+</tr>
+<tr>
+<td><code>centrifugal_q</code></td>
+<td>0.0</td>
+<td><span class="arithmatex">\(q = \Omega^2R^3/GM\)</span> of the surface: the centrifugal over the gravitational acceleration at its equator. With any shape it also sets the effective gravity of the buoyancy</td>
+</tr>
+<tr>
+<td><code>centrifugal_f</code></td>
+<td>None</td>
+<td>the flattening of the outer wall, (equatorial − polar radius)/equatorial radius: the value of <code>'uniform'</code> and <code>'spheroid'</code>, and for <code>'clairaut'</code> the scale of its shape in place of <code>centrifugal_q</code></td>
+</tr>
+<tr>
+<td><code>centrifugal_profile</code></td>
+<td><code>''</code></td>
+<td><code>'user'</code>: the flattening <span class="arithmatex">\(f(r)\)</span> as a numpy expression (<a href="#user-profiles">below</a>)</td>
+</tr>
+<tr>
+<td><code>centrifugal_param</code></td>
+<td>0.0</td>
+<td><code>'user'</code>: <code>p</code> in <code>centrifugal_profile</code></td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th><code>centrifugal_shape</code></th>
+<th>the flattening <span class="arithmatex">\(f(r)\)</span></th>
+<th>set by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>'clairaut'</code></td>
+<td>the hydrostatic shape of the structure: Clairaut's equation with its gravity</td>
+<td><code>centrifugal_q</code>, or <code>centrifugal_f</code></td>
+</tr>
+<tr>
+<td><code>'uniform'</code></td>
+<td>the same at every radius, as in a homogeneous body</td>
+<td><code>centrifugal_f</code></td>
+</tr>
+<tr>
+<td><code>'user'</code></td>
+<td>any profile</td>
+<td><code>centrifugal_profile</code>, <code>centrifugal_param</code></td>
+</tr>
+<tr>
+<td><code>'spheroid'</code></td>
+<td>the same at every radius, kept exactly at any flattening</td>
+<td><code>centrifugal_f</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><code>'clairaut'</code> derives the density from the gravity, so <span class="arithmatex">\(g\)</span> must be the gravity of the structure's own mass, as it is in
+  <code>'model S hydrostatic'</code>, <code>'Wu 2005'</code> and <code>'Boussinesq'</code>. For <code>'Boussinesq'</code>, a homogeneous body, it gives
+  <span class="arithmatex">\(f = 5q/4\)</span> at every radius (the Maclaurin spheroid). The gravity of <code>'model S hydrostatic'</code> ends at the outer wall,
+  so for it kore applies the surface condition of Clairaut's equation at the wall, neglecting the mass above.</li>
+<li><code>submatrices.py</code> prints the flattening at the walls and, for <code>'clairaut'</code>, its ratio <span class="arithmatex">\(f/q\)</span> at the surface.</li>
+<li><code>'spheroid'</code> is the body of <code>'uniform'</code> without the first-order approximation: the walls and the level surfaces are
+  exact spheroids, for strong flattenings, or with <span class="arithmatex">\(f &lt; 0\)</span> elongated bodies. It suits a homogeneous fluid in a
+  fast-rotating body or in a rigid container, such as a planet with a rigid mantle. It needs <code>'Boussinesq'</code> with uniform
+  diffusivities and <code>centrifugal_q</code> = 0, and kore stops with a differential rotation; the buoyancy is that of a
+  homogeneous body in hydrostatic equilibrium. With a field, the potential field beyond an insulating wall is the exact
+  one of the spheroid. Its viscous terms and its magnetic diffusion couple degrees four apart
+  (<a href="../centrifugal-equations/#the-exact-spheroid">The exact spheroid</a>).</li>
+</ul>
+<p>Typical values:</p>
+<table>
+<thead>
+<tr>
+<th>body</th>
+<th><code>centrifugal_q</code></th>
+<th>flattening of the surface</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Earth</td>
+<td>3.5e-3</td>
+<td>3.4e-3; the core-mantle boundary 2.5e-3</td>
+</tr>
+<tr>
+<td>Jupiter</td>
+<td>0.089</td>
+<td>0.065</td>
+</tr>
+<tr>
+<td>Saturn</td>
+<td>0.155</td>
+<td>0.098</td>
+</tr>
+<tr>
+<td>Sun</td>
+<td>2e-5</td>
+<td>8e-6</td>
+</tr>
+</tbody>
+</table>
+<p>A Jupiter-like body, with the flattening of its structure:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">par</span><span class="o">.</span><span class="n">structure</span>         <span class="o">=</span> <span class="s1">'Wu 2005'</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">par</span><span class="o">.</span><span class="n">r_out</span>             <span class="o">=</span> <span class="mf">0.99</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">par</span><span class="o">.</span><span class="n">centrifugal</span>       <span class="o">=</span> <span class="mi">1</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">par</span><span class="o">.</span><span class="n">centrifugal_shape</span> <span class="o">=</span> <span class="s1">'clairaut'</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">par</span><span class="o">.</span><span class="n">centrifugal_q</span>     <span class="o">=</span> <span class="mf">0.089</span>
 </span></code></pre></div>
-<p>kore evaluates them at <span class="arithmatex">\(\lvert r\rvert\)</span>, so in a full sphere <span class="arithmatex">\(dS/dr\)</span> is odd and <span class="arithmatex">\(\hat\nu\)</span>, <span class="arithmatex">\(\hat\kappa\)</span> and the <span class="arithmatex">\(f_n\)</span> are
-even whatever the expression. They are smooth at the centre only if the expression is: an odd power of <span class="arithmatex">\(r\)</span> in an even
+<p>The level surfaces of the Earth's core are set by the whole planet, so give the flattening of the core-mantle boundary
+instead (and, with <code>thermal = 1</code>, <code>centrifugal_q</code> = 1.7e-3, its value at that boundary, for the effective gravity):</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">par</span><span class="o">.</span><span class="n">structure</span>         <span class="o">=</span> <span class="s1">'Boussinesq'</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">par</span><span class="o">.</span><span class="n">centrifugal</span>       <span class="o">=</span> <span class="mi">1</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">par</span><span class="o">.</span><span class="n">centrifugal_shape</span> <span class="o">=</span> <span class="s1">'uniform'</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">par</span><span class="o">.</span><span class="n">centrifugal_f</span>     <span class="o">=</span> <span class="mf">2.5e-3</span>
+</span></code></pre></div>
+<h3 id="what-it-covers">What it covers</h3>
+<p>The deformation is complete at first order in <span class="arithmatex">\(f\)</span>: the inertia, the Coriolis force and the buoyancy, the viscous force
+with no-slip or stress-free walls, the thermal diffusion with fixed-entropy or fixed-flux walls, a differential rotation,
+and with a field the Lorentz force, the induction and the magnetic diffusion, insulating walls and a conducting inner
+core, with any background field, poloidal or toroidal, in shells and in full spheres. <code>'spheroid'</code> keeps the inertia, the
+Coriolis force, the buoyancy, the viscous force, the thermal diffusion and, with a field, the Lorentz force, the induction
+and the magnetic diffusion, with all their walls and a conducting inner core, exactly.</p>
+<ul>
+<li><code>submatrices.py</code> warns about a flattening above 0.1, where the first order loses accuracy (not with <code>'spheroid'</code>),
+  and with <code>thermal_wind</code> 1 or 2: the thermal-wind entropy keeps the balance of the sphere, so that balance misses its terms of order
+  <span class="arithmatex">\(f\thinspace\Delta\Omega\)</span>.</li>
+<li>A viscous full sphere with <span class="arithmatex">\(m \neq 0\)</span> needs <code>rpower_v = 4</code>: the deformation gives its toroidal rows a term that is a
+  polynomial in <span class="arithmatex">\(r\)</span> only once multiplied by <span class="arithmatex">\(r^4\)</span>. kore stops and says so.</li>
+<li>kore stops with a forcing, with walls of zero radial stress (<code>bco</code> or <code>bci</code> = 2) in a viscous run, and with a
+  conducting inner core whose permeability differs from the fluid's (<code>mu_i2o</code> must be 1).</li>
+</ul>
+<h3 id="output">Output</h3>
+<ul>
+<li>The eigenvectors are normalised to the kinetic energy of the deformed body (plus its magnetic energy with a field),
+  and the budgets of <code>spin_doctor</code> (residσ, residω, resid𝑠, resid𝐛) include the terms of the deformation. The full
+  energy budget resid𝐄 closes only at second order in <span class="arithmatex">\(f\)</span>, so it is of order <span class="arithmatex">\(f^2\)</span> rather than round-off; with
+  <code>'spheroid'</code> it closes to round-off too. The enstrophy and viscous residuals (residens, residD) are not computed.</li>
+<li>The field files hold the flow and the field in the coordinates of the level surfaces. <code>tools/plot_field.py</code> draws the
+  flow, the field and the entropy where they are in the body.</li>
+<li><code>magnetic.dat</code> gains a column with the part of the magnetic energy that the deformation adds
+  (<a href="../output/#magneticdat">Output files</a>).</li>
+<li><code>params.dat</code> records the deformation in its columns 108–112 (<a href="../output/#paramsdat">Output files</a>).</li>
+</ul>
+<h2 id="user-profiles"><code>'user'</code> profiles</h2>
+<p><code>stratification_profile</code>, the two <code>diffusivity_profiles</code>, the <code>diff_rot_profiles</code> and <code>centrifugal_profile</code> are numpy
+expressions of <code>r</code> (the kore radius), <code>x</code> (<span class="arithmatex">\(r\cdot\)</span><code>r_out</code> with a solar structure, <span class="arithmatex">\(r\)</span> otherwise) and <code>p</code>
+(<code>stratification_param</code>, <code>diffusivity_param</code>, <code>diff_rot_param</code> or <code>centrifugal_param</code>), with <code>sin</code>, <code>cos</code>, <code>tan</code>, <code>arcsin</code>, <code>arccos</code>, <code>arctan</code>, <code>sinh</code>, <code>cosh</code>,
+<code>tanh</code>, <code>exp</code>, <code>log</code>, <code>log10</code>, <code>sqrt</code>, <code>abs</code>, <code>sign</code>, <code>pi</code>, <code>where</code>, <code>minimum</code>, <code>maximum</code>, <code>erf</code>, <code>erfc</code>. For example:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">par</span><span class="o">.</span><span class="n">stratification</span> <span class="o">=</span> <span class="s1">'user'</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">par</span><span class="o">.</span><span class="n">stratification_profile</span> <span class="o">=</span> <span class="s1">'2.5*exp(-((r - 0.75)/0.06)**2)'</span>      <span class="c1"># dS/dr in 1/L for r &gt;= 0</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">par</span><span class="o">.</span><span class="n">diffusivity</span> <span class="o">=</span> <span class="s1">'user'</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">par</span><span class="o">.</span><span class="n">diffusivity_profiles</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'nu'</span><span class="p">:</span> <span class="s1">'0.01 + 0.99*0.5*(1 + tanh((x - 0.70)/0.015))'</span><span class="p">,</span> <span class="s1">'kappa'</span><span class="p">:</span> <span class="s1">'1'</span><span class="p">}</span>
+</span></code></pre></div>
+<p>kore evaluates them at <span class="arithmatex">\(\lvert r\rvert\)</span>, so in a full sphere <span class="arithmatex">\(dS/dr\)</span> is odd and <span class="arithmatex">\(\hat\nu\)</span>, <span class="arithmatex">\(\hat\kappa\)</span>, the <span class="arithmatex">\(f_n\)</span> and
+the flattening are even whatever the expression. They are smooth at the centre only if the expression is: an odd power of <span class="arithmatex">\(r\)</span> in an even
 profile, or an even one in <span class="arithmatex">\(dS/dr\)</span>, makes a kink, and <span class="arithmatex">\(dS/dr\)</span> must vanish there as <span class="arithmatex">\(r\)</span>, <span class="arithmatex">\(f_n\)</span> as <span class="arithmatex">\(r^n\)</span>. <code>submatrices.py</code>
 warns about both (<a href="../numerical-method/#regularity-at-the-centre">Regularity at the centre</a>). The
 expressions must not contain <code>#</code>: <code>spin_doctor</code> writes them at the end of each <code>params.dat</code> row, after a <code>#</code>.</p>
 <h2 id="checks">Checks</h2>
 <p>Before anything is built, kore stops on a background that cannot work: an unknown type, a parameter name of an older
 version of kore (the message gives the replacement), <code>'Wu 2005'</code> without <span class="arithmatex">\(0 &lt;\)</span> <code>r_out</code> <span class="arithmatex">\(&lt; 1\)</span>, <code>'inverse square'</code> with
-<code>ricb = 0</code>, <span class="arithmatex">\(\delta\)</span> without <code>'solar_rz'</code>, or a <code>'user'</code> expression that does not evaluate. <code>submatrices.py</code> also warns
+<code>ricb = 0</code>, <span class="arithmatex">\(\delta\)</span> without <code>'solar_rz'</code>, a centrifugal deformation with what it does not cover
+(<a href="#what-it-covers">above</a>) or without its flattening, or a <code>'user'</code> expression that does not evaluate. <code>submatrices.py</code> also warns
 about any name in the parameter file that kore does not define, so a misspelt name is not ignored without notice, and
 in a full sphere about each profile that is not smooth at the centre
 (<a href="../numerical-method/#regularity-at-the-centre">Regularity at the centre</a>).

@@ -973,6 +973,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../centrifugal-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Centrifugal deformation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../magnetic-equations/" class="md-nav__link">
         
   
@@ -1216,8 +1244,8 @@ of the budget (<a href="../tidal-forcing/#interpreting-the-response">Tidal forci
 <td>spurious modes (<a href="../numerical-method/#regularity-at-the-centre">Regularity at the centre</a>): target the mode you want and keep the modes that stay put in N and lmax</td>
 </tr>
 <tr>
-<td>the run stops with <code>INFOG(1)=-9</code></td>
-<td>MUMPS's workspace is too small: <code>st_mat_mumps_icntl_14</code> = 50, then 100–200 (extra workspace, in %)</td>
+<td>the run stops with <code>INFOG(1)=-9</code> or <code>-20</code></td>
+<td>MUMPS's workspace is too small (with -20, its reception buffer): <code>st_mat_mumps_icntl_14</code> = 50, then 100–200, or more (extra workspace, in %; the free core nutation of <code>tests/centrifugal/fcn.sh</code>, with a field and a conducting inner core, runs with 1000). On several ranks MUMPS does not repeat a run exactly, so a run near the limit can fail once and pass the next time</td>
 </tr>
 <tr>
 <td>a forced run returns NaN</td>

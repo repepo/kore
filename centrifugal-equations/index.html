@@ -1,0 +1,2118 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../differential_rotation_details/">
+      
+      
+        <link rel="next" href="../magnetic-equations/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Centrifugal deformation - User Manual</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#centrifugal-deformation-equations" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="User Manual" class="md-header__button md-logo" aria-label="User Manual" data-md-component="logo">
+      
+  <img src="../assets/test1.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            User Manual
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Centrifugal deformation
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Introduction
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../installation/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Installation
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../getting-started/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../background/" class="md-tabs__link">
+          
+  
+  
+  User guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../benchmarks/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Benchmarks
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../anelastic/" class="md-tabs__link">
+          
+  
+  
+  Mathematical framework
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../checking/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Modifying kore
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="User Manual" class="md-nav__button md-logo" aria-label="User Manual" data-md-component="logo">
+      
+  <img src="../assets/test1.png" alt="logo">
+
+    </a>
+    User Manual
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../background/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../forcing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Convective forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../thermal-forcing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Thermal forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tidal-forcing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tidal forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../magnetic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Magnetic field
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../solver/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Solver
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Output files
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../benchmarks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmarks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mathematical framework
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Mathematical framework
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../anelastic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Anelastic equations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../numerical-method/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical method
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../differential_rotation_details/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Differential rotation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Centrifugal deformation
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Centrifugal deformation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#coordinates-that-follow-the-level-surfaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Coordinates that follow the level surfaces
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#equations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Equations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rows
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#magnetic-field" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Magnetic field
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dissipative-terms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dissipative terms
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#differential-rotation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Differential rotation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-exact-spheroid" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The exact spheroid
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-flattening" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The flattening
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#effective-gravity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Effective gravity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#energy-budgets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Energy budgets
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#plots" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plots
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#accuracy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Accuracy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checks
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../magnetic-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Magnetic field
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reynolds-stress/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reynolds-stress forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../derivations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Derivation tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../checking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modifying kore
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#coordinates-that-follow-the-level-surfaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Coordinates that follow the level surfaces
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#equations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Equations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rows
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#magnetic-field" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Magnetic field
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dissipative-terms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dissipative terms
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#differential-rotation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Differential rotation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-exact-spheroid" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The exact spheroid
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-flattening" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The flattening
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#effective-gravity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Effective gravity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#energy-budgets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Energy budgets
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#plots" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plots
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#accuracy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Accuracy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checks
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="centrifugal-deformation-equations">Centrifugal deformation equations</h1>
+<p>This page gives the mathematics behind <code>centrifugal = 1</code>, for readers who want to check the code or extend it: the
+coordinates that follow the level surfaces, the equations in them and their rows, the magnetic field, the dissipative
+terms, the differential rotation, the exact spheroid, the flattening of each shape, the effective gravity, the energy
+budgets, the plots, the accuracy, and the checks. How to set up a run is on
+<a href="../background/#centrifugal-deformation">Background model</a>. The code is in <code>bin/centrifugal.py</code>, the checks in
+<code>tests/centrifugal/</code>.</p>
+<h2 id="coordinates-that-follow-the-level-surfaces">Coordinates that follow the level surfaces</h2>
+<p>kore's flow conserves mass exactly only when the density depends on the radius alone. In a flattened body the density
+is constant on spheroids, so rather than give every profile a part that depends on latitude, kore maps the body onto a
+reference space in which the level surfaces are spheres.</p>
+<p>A point <span class="arithmatex">\(\boldsymbol\alpha\)</span> of the reference space, at radius <span class="arithmatex">\(r\)</span> and colatitude <span class="arithmatex">\(\theta\)</span>, is at
+<span class="arithmatex">\(\mathbf X = \boldsymbol\alpha + \boldsymbol\xi\)</span> in the body, with</p>
+<div class="arithmatex">\[
+\boldsymbol\xi = \varepsilon(r)\thinspace\nabla\left(\tfrac12 r^2P_2(\cos\theta)\right)
+= \varepsilon(r)\thinspace r\left[P_2\thinspace\hat{\mathbf r} + \tfrac12\frac{dP_2}{d\theta}\thinspace\hat{\boldsymbol\theta}\right],
+\qquad \varepsilon = -\tfrac23 f ,
+\]</div>
+<p>where <span class="arithmatex">\(f(r)\)</span> is the flattening of the level surface <span class="arithmatex">\(r\)</span>, positive for an oblate body. At first order that surface is at
+the distance <span class="arithmatex">\(r(1 + \varepsilon P_2)\)</span> from the centre: its flattening is <span class="arithmatex">\(f\)</span> and its volume that of the sphere of radius
+<span class="arithmatex">\(r\)</span>. In Cartesian components <span class="arithmatex">\(\boldsymbol\xi = \varepsilon(r)\thinspace(-\alpha_x/2, -\alpha_y/2, \alpha_z)\)</span>, an
+axisymmetric stretch at each radius, so the map is smooth at the centre when <span class="arithmatex">\(\varepsilon\)</span> is even and smooth in <span class="arithmatex">\(r\)</span>; a
+purely radial <span class="arithmatex">\(\boldsymbol\xi\)</span> would not be.
+Every background profile is a function of <span class="arithmatex">\(r\)</span>, and the walls are the level surfaces <span class="arithmatex">\(r\)</span> = <code>ricb</code> and <span class="arithmatex">\(r = 1\)</span>.</p>
+<p>With the deformation gradient <span class="arithmatex">\(\mathsf F = \partial\mathbf X/\partial\boldsymbol\alpha = \mathsf I + \nabla\boldsymbol\xi\)</span>
+and <span class="arithmatex">\(J = \det\mathsf F\)</span>, kore's poloidal and toroidal scalars describe the flow carried back to the reference space,</p>
+<div class="arithmatex">\[
+\mathbf w = J\thinspace\mathsf F^{-1}\mathbf u .
+\]</div>
+<p>This transform keeps what kore's formulation relies on. Mass: <span class="arithmatex">\(\nabla_\alpha\cdot(\rho_0\mathbf w) = J\thinspace\nabla_X\cdot(\rho_0\mathbf u)\)</span>,
+so the exact <span class="arithmatex">\(\nabla\cdot(\rho_0\mathbf w) = 0\)</span> of kore's scalars is exact mass conservation in the body. Walls:
+<span class="arithmatex">\(\mathbf u\cdot\mathbf n\)</span> is proportional to <span class="arithmatex">\(w_r\)</span> on a level surface, and <span class="arithmatex">\(\mathbf u = 0\)</span> where <span class="arithmatex">\(\mathbf w = 0\)</span>, so the
+impenetrable and no-slip rows are unchanged.</p>
+<h2 id="equations">Equations</h2>
+<p>kore removes the pressure by taking curls of the momentum equation. In the reference space this works when the equation
+is written with covariant components, <span class="arithmatex">\(\mathsf F^{\mathsf T}\)</span> times it: the pressure force stays a gradient,
+<span class="arithmatex">\(\mathsf F^{\mathsf T}\nabla_X\Pi = \nabla_\alpha\Pi\)</span>. So does the buoyancy, which acts along the gradient of the
+effective potential, constant on the level surfaces. The dimensionless equations of
+<a href="../anelastic/#non-dimensionalization">Anelastic equations</a> become</p>
+<div class="arithmatex">\[
+\mathsf M\thinspace\partial_t\mathbf w + 2\thinspace\mathrm{Gaspard}\thinspace\tilde{\mathbf z}\times\mathbf w = -\nabla\Pi + \mathrm{Beyonce}\thinspace g_{\rm eff}\thinspace s\thinspace\hat{\mathbf r} + \dots ,
+\qquad \mathsf M = \frac{\mathsf F^{\mathsf T}\mathsf F}{J}, \quad \tilde{\mathbf z} = \mathsf F^{-1}\hat{\mathbf z},
+\]</div>
+<div class="arithmatex">\[
+p_0\left(J\thinspace\partial_t s + w_r\frac{dS}{dr}\right) = \dots ,
+\]</div>
+<p>with the dots the viscous force and the thermal diffusion, which take covariant forms too
+(<a href="#dissipative-terms">Dissipative terms</a>). Three terms of the ideal fluid change: the inertia gains the metric
+<span class="arithmatex">\(\mathsf M\)</span>, the Coriolis force turns with the map (<span class="arithmatex">\(\mathsf F^{\mathsf T}(\hat{\mathbf z}\times\mathsf F\mathbf w)/J = \tilde{\mathbf z}\times\mathbf w\)</span>),
+and the rate of change of the entropy gains <span class="arithmatex">\(J\)</span>. The advection keeps its form, <span class="arithmatex">\(\mathbf u\cdot\nabla_X S = w_r S'/J\)</span>,
+and the buoyancy takes the effective gravity <span class="arithmatex">\(g_{\rm eff}\)</span> (<a href="#effective-gravity">below</a>).</p>
+<p><strong>At first order.</strong> With <span class="arithmatex">\(\eta = r\varepsilon'\)</span> and <span class="arithmatex">\(w_z = \hat{\mathbf z}\cdot\mathbf w\)</span>,</p>
+<div class="arithmatex">\[
+(\mathsf M - \mathsf I)\thinspace\mathbf w = \varepsilon\left(3w_z\hat{\mathbf z} - \mathbf w\right) + \eta\left[\tfrac32\cos\theta\left(w_z\hat{\mathbf r} + w_r\hat{\mathbf z}\right) - w_r\hat{\mathbf r} - P_2\thinspace\mathbf w\right],
+\]</div>
+<div class="arithmatex">\[
+(\tilde{\mathbf z} - \hat{\mathbf z})\times\mathbf w = -\varepsilon\thinspace\hat{\mathbf z}\times\mathbf w - \eta\left[\tfrac32\cos^2\theta\thinspace\hat{\mathbf z}\times\mathbf w - \tfrac12\cos\theta\thinspace\hat{\mathbf r}\times\mathbf w\right],
+\]</div>
+<div class="arithmatex">\[
+J - 1 = \eta\thinspace P_2 .
+\]</div>
+<p>A uniform flattening has <span class="arithmatex">\(\eta = 0\)</span>: the map is then a linear stretch, and <span class="arithmatex">\(J = 1\)</span> at this order.</p>
+<h2 id="rows">Rows</h2>
+<p>The new terms have the form of the force of a differential rotation, so kore builds them with the same tools. Each one
+multiplies the components of <span class="arithmatex">\(\mathbf w\)</span> by polynomials in <span class="arithmatex">\(\cos\theta\)</span> of degree 2 at most, with the radial factor
+<span class="arithmatex">\(\varepsilon\)</span> or <span class="arithmatex">\(\eta\)</span>; kore builds their couplings with the recurrence algebra of <code>bin/angular.py</code> and projects them on
+its rows as it does the force (<a href="../differential_rotation_details/#3-spectral-form">Spectral form</a>), without the terms
+that come from the shear of the rotation.</p>
+<ul>
+<li><strong>Selection rules.</strong> A degree <span class="arithmatex">\(l\)</span> couples to <span class="arithmatex">\(l\)</span> and <span class="arithmatex">\(l \pm 2\)</span> of the same kind (poloidal to poloidal, toroidal to
+  toroidal, entropy to entropy), and to <span class="arithmatex">\(l \pm 1\)</span> and <span class="arithmatex">\(l \pm 3\)</span> of the other kind (poloidal to toroidal).</li>
+<li><strong>Matrices.</strong> <span class="arithmatex">\(A\)</span> gains <span class="arithmatex">\(2\thinspace\mathrm{Gaspard}\thinspace(\tilde{\mathbf z} - \hat{\mathbf z})\times\mathbf w\)</span> in
+  the momentum rows. <span class="arithmatex">\(B\)</span> gains <span class="arithmatex">\(-(\mathsf M - \mathsf I)\thinspace\mathbf w\)</span> in the momentum rows and
+  <span class="arithmatex">\((J - 1)\thinspace s = \eta P_2\thinspace s\)</span> in the heat rows, with the signs of the inertia and of the entropy. The
+  poloidal–toroidal couplings of the inertia are imaginary, so <span class="arithmatex">\(B\)</span> is complex.</li>
+<li><strong>Radial operators.</strong> Their labels are those of the differential rotation with the profile code of <span class="arithmatex">\(\varepsilon\)</span>
+  (<code>ce0</code>) or <span class="arithmatex">\(\eta\)</span> (<code>ce1</code>) in place of that of <span class="arithmatex">\(\Delta\Omega\)</span>, and that of <span class="arithmatex">\(r\varepsilon'\)</span> (<code>ce1</code>) or <span class="arithmatex">\(r\eta'\)</span> (<code>ce2</code>)
+  for the derivative terms (<code>centrifugal.MOMENTUM</code>). The heat rows use the operator of the entropy times <code>ce1</code>. The
+  three codes are Chebyshev fits on kore's grid, even in <span class="arithmatex">\(r\)</span>.</li>
+</ul>
+<h2 id="magnetic-field">Magnetic field</h2>
+<p>A field is carried back to the reference space in the same way as the flow, so that kore's poloidal and toroidal scalars
+of the field keep their meaning and most of its rows keep the form they have in a sphere.</p>
+<p><strong>The field as a flux.</strong> kore's scalars describe</p>
+<div class="arithmatex">\[
+\tilde{\mathbf b} = J\thinspace\mathsf F^{-1}\mathbf b, \qquad \tilde{\mathbf B}_0 = J\thinspace\mathsf F^{-1}\mathbf B_0 .
+\]</div>
+<p>The flux of <span class="arithmatex">\(\mathbf b\)</span> through a surface of the body is that of <span class="arithmatex">\(\tilde{\mathbf b}\)</span> through its image in the reference
+space, so <span class="arithmatex">\(\nabla\cdot\tilde{\mathbf b} = 0\)</span> is exact and the field lines of <span class="arithmatex">\(\tilde{\mathbf b}\)</span> are those of
+<span class="arithmatex">\(\mathbf b\)</span>, moved with the level surfaces. kore's formula for <code>B0</code> and <code>B0_tor</code> gives <span class="arithmatex">\(\tilde{\mathbf B}_0\)</span>: the
+background field of the body is <span class="arithmatex">\(\mathsf F\tilde{\mathbf B}_0/J\)</span>, the field of the sphere stretched with the level
+surfaces.</p>
+<p><strong>Equations.</strong> The Lorentz force is written with covariant components, as the rest of the momentum equation, and the
+induction equation for the flux:</p>
+<div class="arithmatex">\[
+\mathsf F^{\mathsf T}\mathbf F_L = \frac{\mathrm{Hendrik}}{\rho_0 J}\left[\nabla\times(\mathsf M\tilde{\mathbf b})\times\tilde{\mathbf B}_0 + \nabla\times(\mathsf M\tilde{\mathbf B}_0)\times\tilde{\mathbf b}\right],
+\qquad
+\partial_t\tilde{\mathbf b} = \nabla\times\left(\frac{\mathbf w\times\tilde{\mathbf B}_0}{J} - \mathrm{MagnetD}\thinspace\mathsf M\thinspace\nabla\times(\mathsf M\tilde{\mathbf b})\right) .
+\]</div>
+<p>Two identities of the map give them. The current of the body, carried back as a flux, is <span class="arithmatex">\(\nabla\times(\mathsf M\tilde{\mathbf b})\)</span>;
+and the cross product of two fields carried back as fluxes, <span class="arithmatex">\(\mathbf a = \mathsf F\tilde{\mathbf a}/J\)</span> and
+<span class="arithmatex">\(\mathbf c = \mathsf F\tilde{\mathbf c}/J\)</span>, has the covariant components
+<span class="arithmatex">\(\mathsf F^{\mathsf T}(\mathbf a\times\mathbf c) = (\tilde{\mathbf a}\times\tilde{\mathbf c})/J\)</span>. The electric field
+of the diffusion is MagnetD times the current of the body, whose covariant components are
+<span class="arithmatex">\(\mathsf M\thinspace\nabla\times(\mathsf M\tilde{\mathbf b})\)</span> (<a href="#dissipative-terms">Dissipative terms</a>).</p>
+<p><strong>At first order.</strong> With <span class="arithmatex">\(\mathsf M - \mathsf I\)</span> and <span class="arithmatex">\(J - 1 = \eta P_2\)</span> from above, and the currents
+<span class="arithmatex">\(\mathbf j = \nabla\times\tilde{\mathbf b}\)</span> and <span class="arithmatex">\(\mathbf J_0 = \nabla\times\tilde{\mathbf B}_0\)</span> of the sphere, the force
+and the electric field of the induction gain</p>
+<div class="arithmatex">\[
+\delta\mathbf G = -\eta P_2\left(\mathbf J_0\times\tilde{\mathbf b} + \mathbf j\times\tilde{\mathbf B}_0\right)
++ \left[\nabla\times\left((\mathsf M - \mathsf I)\tilde{\mathbf B}_0\right)\right]\times\tilde{\mathbf b}
++ \left[\nabla\times\left((\mathsf M - \mathsf I)\tilde{\mathbf b}\right)\right]\times\tilde{\mathbf B}_0 ,
+\qquad
+\delta\mathbf E = -\eta P_2\thinspace\mathbf w\times\tilde{\mathbf B}_0 .
+\]</div>
+<p>A uniform flattening has <span class="arithmatex">\(\eta = 0\)</span>, and only the two currents of the metric remain. A flattening that varies with the
+radius gives the background field a current even where the spherical formula has none: the axial field, for one, is no
+longer uniform in the body.</p>
+<p><strong>Rows.</strong> <span class="arithmatex">\(\delta\mathbf G\)</span> enters the momentum rows as the Lorentz force of the sphere does (times Hendrik), and
+<span class="arithmatex">\(\nabla\times\delta\mathbf E\)</span> the rows of <span class="arithmatex">\(f\)</span> and <span class="arithmatex">\(g\)</span> as the induction does; both are built with the recurrence algebra
+of <code>bin/mag_algebra.py</code>. A background of degrees up to <span class="arithmatex">\(n\)</span> couples a degree <span class="arithmatex">\(l\)</span> to <span class="arithmatex">\(l \pm (n + 3)\)</span> at most, two more
+than in the sphere. The radial factors are products of the profile codes of the deformation and of the background: a
+label carries the amplitude <code>E</code> (<span class="arithmatex">\(\varepsilon\)</span>), <code>N</code> (<span class="arithmatex">\(\eta\)</span>), <code>C</code> (<span class="arithmatex">\(r\eta'\)</span>) or <code>Q</code> (<span class="arithmatex">\(r(r\eta')'\)</span>), then <code>p</code> or <code>t</code>
+and the degree of the poloidal or toroidal profile (<code>centrifugal.product_code</code>).</p>
+<p><strong>Insulating walls.</strong> Outside an insulating wall the field is a potential field <span class="arithmatex">\(\nabla\phi\)</span> of the body, and the wall
+is a level surface, so the matching happens on the spheroid. In the reference space, at the wall <span class="arithmatex">\(r = R\)</span>, the flux
+through the wall and the tangential field are continuous:</p>
+<div class="arithmatex">\[
+\tilde b_r = \left[J\thinspace\mathsf F^{-1}\nabla\phi(\mathbf X)\right]_r, \qquad
+\left[\mathsf M\tilde{\mathbf b}\right]_{\rm tan} = \nabla_{\rm tan}\thinspace\phi(\mathbf X(\boldsymbol\alpha)) .
+\]</div>
+<p>At first order, with <span class="arithmatex">\(m_s\)</span> and <span class="arithmatex">\(m_t\)</span> the spheroidal and toroidal parts of <span class="arithmatex">\((\mathsf M - \mathsf I)\tilde{\mathbf b}\)</span> at
+the wall, <span class="arithmatex">\(\delta s = (\boldsymbol\xi\cdot\nabla\phi)/R\)</span> and <span class="arithmatex">\(\delta q = -[\nabla\times(\boldsymbol\xi\times\nabla\phi)]_r\)</span>
+(each of degree <span class="arithmatex">\(l\)</span>), eliminating the potential gives the rows</p>
+<div class="arithmatex">\[
+(l+1)F + RF' + R(m_s - \delta s) - \frac{R\thinspace\delta q}{l+1} = 0, \qquad G + m_t = 0 \qquad \text{(outer wall)},
+\]</div>
+<div class="arithmatex">\[
+lF - RF' - R(m_s - \delta s) - \frac{R\thinspace\delta q}{l} = 0, \qquad G + m_t = 0 \qquad \text{(insulating inner core)},
+\]</div>
+<p>which couple <span class="arithmatex">\(F_l\)</span> to <span class="arithmatex">\(F_{l\pm2}\)</span>, <span class="arithmatex">\(G_{l\pm1}\)</span> and <span class="arithmatex">\(G_{l\pm3}\)</span>, and <span class="arithmatex">\(G_l\)</span> to <span class="arithmatex">\(G_{l\pm2}\)</span>, <span class="arithmatex">\(F_{l\pm1}\)</span> and <span class="arithmatex">\(F_{l\pm3}\)</span>.</p>
+<p><strong>Conducting inner core.</strong> The inner core is deformed with the fluid, on the same map, and its field is a flux too. With
+the permeability of the fluid (<code>mu_i2o</code> = 1) the field <span class="arithmatex">\(\tilde{\mathbf b}\)</span> is continuous at the inner boundary, since
+<span class="arithmatex">\(\mathbf b\)</span> is and the map is smooth across it, so the rows that match the field keep their form. The tangential electric
+field is continuous too. The flow vanishes at the no-slip boundary, so on each side this field is that of the diffusion,
+and its row gains the metric part of the diffusion of the fluid and of the core (<a href="#dissipative-terms">Dissipative terms</a>).</p>
+<h2 id="dissipative-terms">Dissipative terms</h2>
+<p>The viscous force and the thermal and magnetic diffusion act in the body, so a damped mode feels the deformed walls and
+the deformed profiles through them. kore carries each back to the reference space as it does the inertia: it keeps its
+spherical form and gains a part of first order in <span class="arithmatex">\(f\)</span>.</p>
+<p><strong>Viscous force.</strong> With <span class="arithmatex">\(\mathbf V(\mathbf u) = \rho_0^{-1}\nabla\cdot(\rho_0\nu\thinspace\mathsf S)\)</span> the force per
+unit mass (<a href="../anelastic/">Anelastic equations</a>), its covariant form is, up to a gradient that the curl rows remove,</p>
+<div class="arithmatex">\[
+\mathsf F^{\mathsf T}\mathbf V\left(\frac{\mathsf F\mathbf w}{J}\right) = \mathbf V(\mathbf w) - \boldsymbol\xi\times\nabla\times\mathbf V(\mathbf w)
++ \mathbf V\left(\nabla\times(\boldsymbol\xi\times\mathbf w) - \boldsymbol\xi\thinspace\nabla\cdot\mathbf w\right)
+- \xi_r\frac{d\nu}{dr}\thinspace\nabla\cdot\mathsf S(\mathbf w) - \nabla\left(\frac{\xi_r}{\rho_0}\frac{d(\rho_0\nu)}{dr}\right)\cdot\mathsf S(\mathbf w) .
+\]</div>
+<p>The second and third terms carry the force of the sphere along the displacement <span class="arithmatex">\(\boldsymbol\xi\)</span>; the last two come from
+<span class="arithmatex">\(\nu\)</span> and <span class="arithmatex">\(\rho_0\)</span>, which are constant on the level surfaces rather than on the spheres.</p>
+<p><strong>Thermal diffusion.</strong> The heat rows are the equation times <span class="arithmatex">\(J\)</span>, and the diffusion becomes</p>
+<div class="arithmatex">\[
+J\thinspace\nabla_X\cdot\left(\kappa p_0\nabla_X s\right) = \nabla\cdot\left(\kappa p_0\thinspace\mathsf M^{-1}\nabla s\right),
+\]</div>
+<p>whose first-order part is <span class="arithmatex">\(-\nabla\cdot(\kappa p_0(\mathsf M - \mathsf I)\nabla s)\)</span>.</p>
+<p><strong>Magnetic diffusion.</strong> The current of the body, carried back as a flux, is <span class="arithmatex">\(\nabla\times(\mathsf M\tilde{\mathbf b})\)</span>,
+and the covariant components of the electric field of the diffusion are MagnetD times
+<span class="arithmatex">\(\mathsf M\thinspace\nabla\times(\mathsf M\tilde{\mathbf b})\)</span>. Its first-order part is MagnetD times
+<span class="arithmatex">\((\mathsf M - \mathsf I)\nabla\times\tilde{\mathbf b} + \nabla\times((\mathsf M - \mathsf I)\tilde{\mathbf b})\)</span>. A
+conducting inner core gains the same terms with its own diffusivity.</p>
+<p><strong>Walls.</strong> The no-slip, impenetrable and fixed-entropy rows keep their form: <span class="arithmatex">\(\mathbf w = 0\)</span>, <span class="arithmatex">\(w_r = 0\)</span> and <span class="arithmatex">\(s = 0\)</span> on a
+level surface are <span class="arithmatex">\(\mathbf u = 0\)</span>, <span class="arithmatex">\(\mathbf u\cdot\mathbf n = 0\)</span> and <span class="arithmatex">\(s = 0\)</span> in the body. The two other walls change:</p>
+<ul>
+<li>a stress-free wall has no tangential stress on the deformed wall: the tangential part of
+  <span class="arithmatex">\(\mathsf F^{\mathsf T}\mathsf S_X\mathsf F^{-\mathsf T}\hat{\mathbf r}\)</span> vanishes, with <span class="arithmatex">\(\mathsf S_X\)</span> the rate of strain
+  of the body, <span class="arithmatex">\(\mathsf F^{-\mathsf T}\hat{\mathbf r}\)</span> the normal to the level surface and <span class="arithmatex">\(\mathsf F^{\mathsf T}\)</span> taking
+  the components along its tangents;</li>
+<li>a fixed-flux wall has no flux through the deformed wall: <span class="arithmatex">\(\hat{\mathbf r}\cdot\mathsf M^{-1}\nabla s = 0\)</span>.</li>
+</ul>
+<p><strong>Rows.</strong> The first-order parts multiply the fields and their derivatives by polynomials in <span class="arithmatex">\(\cos\theta\)</span> of degree 2 at
+most, so they couple the degrees as the inertia does: <span class="arithmatex">\(l\)</span> to <span class="arithmatex">\(l\)</span> and <span class="arithmatex">\(l \pm 2\)</span> of the same kind, and to <span class="arithmatex">\(l \pm 1\)</span> and
+<span class="arithmatex">\(l \pm 3\)</span> of the other. Their radial factors are products of the amplitudes of the map, of the diffusivity and its
+derivatives, and of the derivatives of <span class="arithmatex">\(\ln\rho_0\)</span> (<code>centrifugal.diffusion_build</code>). When <span class="arithmatex">\(m \neq 0\)</span> the toroidal rows of
+the viscous force and of the induction reach the third derivative of <span class="arithmatex">\(P\)</span> and of <span class="arithmatex">\(F\)</span>, and kore builds those sections in the
+basis that has it. In a full sphere these rows have terms in <span class="arithmatex">\(P/r\)</span> and <span class="arithmatex">\(F/r\)</span>, polynomials only once the rows are
+multiplied by <span class="arithmatex">\(r^4\)</span> and <span class="arithmatex">\(r^3\)</span>: kore does it for the field (in a conducting inner core too), and asks for <code>rpower_v</code> = 4
+for the flow.</p>
+<h2 id="differential-rotation">Differential rotation</h2>
+<p>A differential rotation is a profile like the others: <span class="arithmatex">\(\Delta\Omega(r, \theta)\)</span> is given in the reference space, so the
+point of the body at <span class="arithmatex">\(\mathbf X(r, \theta)\)</span> turns at <span class="arithmatex">\(\Delta\Omega(r, \theta)\)</span>, and a rotation that depends on <span class="arithmatex">\(r\)</span> alone
+is constant on the level surfaces. The flow of the body is <span class="arithmatex">\(\mathbf U_0 = \mathrm{Gaspard}\thinspace\Delta\Omega\thinspace\hat{\mathbf z}\times\mathbf X\)</span>.
+The map commutes with the rotations about the axis, so the flux of this flow is <span class="arithmatex">\(J\)</span> times the spherical formula
+<span class="arithmatex">\(\mathbf U_{00} = \mathrm{Gaspard}\thinspace\Delta\Omega\thinspace\hat{\mathbf z}\times\boldsymbol\alpha\)</span>, and its terms
+change as follows.</p>
+<ul>
+<li><strong>Momentum.</strong> The force <span class="arithmatex">\((\mathbf U_0\cdot\nabla)\mathbf u + (\mathbf u\cdot\nabla)\mathbf U_0\)</span> gains, up to a
+  gradient, with <span class="arithmatex">\(\boldsymbol\omega_0 = \nabla\times\mathbf U_{00}\)</span>,</li>
+</ul>
+<p>$$
+  \delta\mathbf W = -\mathbf U_{00}\times\nabla\times\left((\mathsf M - \mathsf I)\thinspace\mathbf w\right)
+  + (\varepsilon + \eta P_2)\thinspace\mathbf w\times\boldsymbol\omega_0
+  - \eta\thinspace\mathrm{Gaspard}\thinspace\Delta\Omega\left(\hat{\mathbf z}\times\mathbf w - \cos\theta\thinspace\hat{\mathbf r}\times\mathbf w\right).
+  $$</p>
+<ul>
+<li><strong>Heat.</strong> The advection of the entropy times <span class="arithmatex">\(J\)</span> is <span class="arithmatex">\((1 + \eta P_2)\thinspace\mathbf U_{00}\cdot\nabla s\)</span>: the heat
+  rows gain <span class="arithmatex">\(i m\thinspace\mathrm{Gaspard}\thinspace\eta P_2\thinspace\Delta\Omega\thinspace s\)</span>.</li>
+<li><strong>Induction.</strong> The electric field of the flow carries back exactly,
+  <span class="arithmatex">\(\mathsf F^{\mathsf T}(\mathbf U_0\times\mathbf b) = \mathbf U_{00}\times\tilde{\mathbf b}\)</span>: no new term.</li>
+</ul>
+<p>A degree <span class="arithmatex">\(n\)</span> of <span class="arithmatex">\(\Delta\Omega\)</span> couples <span class="arithmatex">\(l\)</span> to <span class="arithmatex">\(l \pm (n + 2)\)</span> of the same kind and to <span class="arithmatex">\(l \pm (n + 3)\)</span> of the other, two
+more than in the sphere (<code>centrifugal.rotation_build</code>).</p>
+<h2 id="the-exact-spheroid">The exact spheroid</h2>
+<p>When every level surface has the same flattening, the body is a stretched sphere, and kore keeps the map exactly, at any
+flattening: <code>centrifugal_shape = 'spheroid'</code>. It serves a homogeneous fluid in a strongly flattened body or container,
+such as a fast-rotating planet with a rigid mantle (or, with <span class="arithmatex">\(f &lt; 0\)</span>, an elongated one), and it can be checked against
+exact solutions at any <span class="arithmatex">\(f\)</span>.</p>
+<p><strong>The map.</strong> The point <span class="arithmatex">\(\boldsymbol\alpha\)</span> of the reference space is at</p>
+<div class="arithmatex">\[
+\mathbf X = \mathsf F\boldsymbol\alpha, \qquad \mathsf F = \mathrm{diag}(a, a, c), \qquad \frac{c}{a} = 1 - f, \qquad a^2c = 1,
+\]</div>
+<p>so the level surface <span class="arithmatex">\(r\)</span> is the spheroid of equatorial radius <span class="arithmatex">\(ar\)</span> and polar radius <span class="arithmatex">\(cr\)</span>, with the volume of the sphere
+of radius <span class="arithmatex">\(r\)</span>. At first order in <span class="arithmatex">\(f\)</span> this is the map of <code>'uniform'</code>, <span class="arithmatex">\(a = 1 + f/3\)</span> and <span class="arithmatex">\(c = 1 - 2f/3\)</span>. The metric is
+constant, <span class="arithmatex">\(J = 1\)</span>, <span class="arithmatex">\(\mathsf M = \mathsf F^{\mathsf T}\mathsf F = \mathrm{diag}(a^2, a^2, c^2)\)</span> and
+<span class="arithmatex">\(\tilde{\mathbf z} = \hat{\mathbf z}/c\)</span>, and the Laplacian of the body, written in the reference space, is</p>
+<div class="arithmatex">\[
+D = \nabla\cdot\left(\mathsf M^{-1}\nabla\right) = \frac{1}{a^2}\nabla^2 + \left(\frac{1}{c^2} - \frac{1}{a^2}\right)\partial_z^2 .
+\]</div>
+<p><strong>The terms.</strong> Each term that changes gains a part that kore keeps whole. With
+<span class="arithmatex">\(\mathsf Z\mathbf v = \hat{\mathbf z}(\hat{\mathbf z}\cdot\mathbf v)\)</span>, <span class="arithmatex">\(\partial_z = \hat{\mathbf z}\cdot\nabla\)</span> (on
+each Cartesian component of a vector) and <span class="arithmatex">\(x = \cos\theta\)</span>, the parts beyond the sphere's are</p>
+<table>
+<thead>
+<tr>
+<th>term</th>
+<th>its part beyond the sphere's</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>inertia</td>
+<td><span class="arithmatex">\((\mathsf M - \mathsf I)\thinspace\mathbf w = (a^2 - 1)\thinspace\mathbf w + (c^2 - a^2)\thinspace\mathsf Z\mathbf w\)</span></td>
+</tr>
+<tr>
+<td>Coriolis force</td>
+<td><span class="arithmatex">\((\tilde{\mathbf z} - \hat{\mathbf z})\times\mathbf w = (1/c - 1)\thinspace\hat{\mathbf z}\times\mathbf w\)</span></td>
+</tr>
+<tr>
+<td>viscous force</td>
+<td><span class="arithmatex">\(\nu\left[(a^2/c^2 - 1)\thinspace\partial_z^2\mathbf w + (c^2 - a^2)\thinspace\mathsf Z D\mathbf w\right]\)</span></td>
+</tr>
+<tr>
+<td>thermal diffusion</td>
+<td><span class="arithmatex">\(\kappa p_0\left[(1/a^2 - 1)\thinspace\nabla^2 s + (1/c^2 - 1/a^2)\thinspace\partial_z^2 s\right]\)</span></td>
+</tr>
+<tr>
+<td>traction on a level surface</td>
+<td><span class="arithmatex">\((a^2/c^2 - 1)\thinspace x\thinspace\partial_z\mathbf w + (c^2 - a^2)\thinspace\mathsf Z\left[\partial_r\mathbf w/a^2 + (1/c^2 - 1/a^2)\thinspace x\thinspace\partial_z\mathbf w\right]\)</span></td>
+</tr>
+<tr>
+<td>flux through a level surface</td>
+<td><span class="arithmatex">\((1/a^2 - 1)\thinspace\partial_r s + (1/c^2 - 1/a^2)\thinspace x\thinspace\partial_z s\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>The traction is that of the stress-free wall (<a href="#dissipative-terms">Dissipative terms</a>),
+<span class="arithmatex">\(\mathsf F^{\mathsf T}\mathsf S_X\mathsf F^{-\mathsf T}\hat{\mathbf r} = \mathsf M(\nabla\mathbf w)\mathsf M^{-1}\hat{\mathbf r} + (\nabla\mathbf w)^{\mathsf T}\hat{\mathbf r}\)</span>,
+with <span class="arithmatex">\((\nabla\mathbf w)_{ik} = \partial_k w_i\)</span>, less the sphere's. The rest keeps its spherical form: the time
+derivative of the entropy and its advection (<span class="arithmatex">\(J = 1\)</span>), the pressure, and the buoyancy. With the gravity <span class="arithmatex">\(g = r\)</span> of
+<code>'Boussinesq'</code>, the buoyancy of the reference space acts in the body along <span class="arithmatex">\(\mathsf F^{-\mathsf T}\boldsymbol\alpha = \nabla_X(r^2/2)\)</span>:
+normal to the level surfaces, as the effective gravity of a homogeneous body in hydrostatic equilibrium (a Maclaurin
+spheroid), whose effective potential depends on <span class="arithmatex">\(r\)</span> alone.</p>
+<p><strong>Rows.</strong> <span class="arithmatex">\(\mathsf Z\)</span> multiplies by polynomials in <span class="arithmatex">\(\cos\theta\)</span> of degree 2 and <span class="arithmatex">\(\partial_z\)</span> raises or lowers the degree by
+one, so the inertia couples a degree <span class="arithmatex">\(l\)</span> to <span class="arithmatex">\(l\)</span> and <span class="arithmatex">\(l \pm 2\)</span> of the same kind and to <span class="arithmatex">\(l \pm 1\)</span> of the other, the viscous
+force and the stress-free rows reach <span class="arithmatex">\(l \pm 4\)</span> and <span class="arithmatex">\(l \pm 3\)</span>, and the heat rows <span class="arithmatex">\(l \pm 2\)</span>. The radial operators are kore's
+own, with no profile (<code>centrifugal.spheroid_build</code>, <code>spheroid_walls</code>), and the blocks reach <span class="arithmatex">\(\lvert\Delta l\rvert\)</span> = 4,
+one more than at first order.</p>
+<p><strong>The field.</strong> The field is carried back as a flux, as at first order (<a href="#magnetic-field">Magnetic field</a>). With <span class="arithmatex">\(J = 1\)</span> the
+flow induces the flux <span class="arithmatex">\(\tilde{\mathbf b} = \mathsf F^{-1}\mathbf b\)</span> as it does in the sphere, while the Lorentz force and
+the magnetic diffusion keep <span class="arithmatex">\(\mathsf M\)</span> whole. With the currents <span class="arithmatex">\(\mathbf j = \nabla\times\tilde{\mathbf b}\)</span> and
+<span class="arithmatex">\(\mathbf J_0 = \nabla\times\tilde{\mathbf B}_0\)</span> of the sphere and <span class="arithmatex">\(\delta = c^2 - a^2\)</span>, so that
+<span class="arithmatex">\(\mathsf M - \mathsf I = (a^2 - 1)\thinspace\mathsf I + \delta\thinspace\mathsf Z\)</span>, their parts beyond the sphere's are</p>
+<table>
+<thead>
+<tr>
+<th>term</th>
+<th>its part beyond the sphere's</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Lorentz force, per Hendrik</td>
+<td><span class="arithmatex">\((a^2 - 1)\left(\mathbf j\times\tilde{\mathbf B}_0 + \mathbf J_0\times\tilde{\mathbf b}\right) + \delta\left\{[\nabla\times(\mathsf Z\tilde{\mathbf b})]\times\tilde{\mathbf B}_0 + [\nabla\times(\mathsf Z\tilde{\mathbf B}_0)]\times\tilde{\mathbf b}\right\}\)</span></td>
+</tr>
+<tr>
+<td>electric field of the diffusion, per MagnetD</td>
+<td><span class="arithmatex">\((a^4 - 1)\thinspace\mathbf j + a^2\delta\left[\mathsf Z\mathbf j + \nabla\times(\mathsf Z\tilde{\mathbf b})\right] + \delta^2\thinspace\mathsf Z\nabla\times(\mathsf Z\tilde{\mathbf b})\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>The force takes the labels of the sphere's Lorentz force (<code>bin/mag_algebra.py</code>) and couples <span class="arithmatex">\(l\)</span> to <span class="arithmatex">\(l \pm (n + 3)\)</span>
+through a background of degree <span class="arithmatex">\(n\)</span>; the diffusion takes kore's own labels (<code>eta0</code>) and reaches <span class="arithmatex">\(l \pm 4\)</span>
+(<code>centrifugal.spheroid_magnetic_build</code>, <code>spheroid_build</code>).</p>
+<p><strong>Insulating walls.</strong> Outside an insulating wall kore matches the exact potential field of the spheroid. In the spheroidal
+coordinates confocal with the wall, the wall is a surface <span class="arithmatex">\(\nu = \nu_0\)</span>, and on it the angle of these coordinates is the
+reference colatitude. A potential of degree <span class="arithmatex">\(l\)</span> on the wall therefore meets the degree <span class="arithmatex">\(l\)</span> of the field alone, and the
+matching keeps one row per degree, as in the sphere. The flux through the wall and the tangential field are those of the
+potential <span class="arithmatex">\(\Phi_l\)</span> on it,</p>
+<div class="arithmatex">\[
+\tilde b_{r,l} = \frac{\lambda_l}{R}\thinspace\Phi_l, \qquad \left[\mathsf M\tilde{\mathbf b}\right]_{{\rm tan},\thinspace l} = \nabla_{\rm tan}\Phi_l,
+\qquad \lambda_l = \frac{a^2}{k}\thinspace\frac{d\ln R_l}{d\nu}(\nu_0), \qquad k = \sqrt{\lvert a^2 - c^2\rvert}, \qquad \nu_0 = \frac{c}{k} ,
+\]</div>
+<p>with <span class="arithmatex">\(kR\)</span> the focal distance of the wall <span class="arithmatex">\(r = R\)</span> and <span class="arithmatex">\(R_l\)</span> the radial function of the potential: <span class="arithmatex">\(Q_l^m(i\nu)\)</span> outside
+an oblate wall, <span class="arithmatex">\(Q_l^m(\nu)\)</span> outside a prolate one, and <span class="arithmatex">\(P_l^m\)</span> of the same argument inside an insulating inner core (the
+level surfaces are similar, so <span class="arithmatex">\(\nu_0\)</span> is the same). In the sphere <span class="arithmatex">\(\lambda_l\)</span> is <span class="arithmatex">\(-(l + 1)\)</span> outside and <span class="arithmatex">\(l\)</span> inside.
+Eliminating <span class="arithmatex">\(\Phi_l\)</span>, with <span class="arithmatex">\(m_s\)</span> and <span class="arithmatex">\(m_t\)</span> the spheroidal and toroidal parts of <span class="arithmatex">\((\mathsf M - \mathsf I)\tilde{\mathbf b}\)</span>
+at the wall, gives the rows</p>
+<div class="arithmatex">\[
+l(l + 1)\thinspace F = \lambda_l\left(F + RF' + Rm_s\right), \qquad G + m_t = 0 ,
+\]</div>
+<p>which kore divides by <span class="arithmatex">\(l + 1\)</span> outside and by <span class="arithmatex">\(l\)</span> inside, as the rows of the sphere. They couple <span class="arithmatex">\(F_l\)</span> to <span class="arithmatex">\(F_{l\pm2}\)</span> and
+<span class="arithmatex">\(G_{l\pm1}\)</span>, and <span class="arithmatex">\(G_l\)</span> to <span class="arithmatex">\(F_{l\pm1}\)</span>. kore computes the logarithmic derivatives by recurrence, forward for <span class="arithmatex">\(P_l^m\)</span> and
+backward for <span class="arithmatex">\(Q_l^m\)</span> (<code>centrifugal.spheroid_lambda</code>, <code>spheroid_field_walls</code>).</p>
+<p><strong>Conducting inner core.</strong> With <code>mu_i2o</code> = 1 the field is continuous at the inner boundary, as at first order, and the
+row of the tangential electric field gains the part of the diffusion above on each side, with the conductivity of each
+(<code>centrifugal.spheroid_icb</code>).</p>
+<p><strong>Scope.</strong> The fluid is homogeneous (<code>structure = 'Boussinesq'</code>, <code>diffusivity = 'uniform'</code>), with <code>centrifugal_q</code> = 0 (the
+effective gravity is already kore's <span class="arithmatex">\(g\)</span>), and any <span class="arithmatex">\(f &lt; 1\)</span>; with a field, any background, insulating walls and an inner
+core that is insulating or conducting with <code>mu_i2o</code> = 1. kore stops with a differential rotation. The budgets of
+<code>spin_doctor</code> and the plots use the exact metric and map, and every budget closes to round-off
+(<a href="#energy-budgets">Energy budgets</a>).</p>
+<h2 id="the-flattening">The flattening</h2>
+<p>The flattening of each level surface follows from hydrostatic balance in the rotating body. <code>'clairaut'</code> solves for it,
+<code>'uniform'</code> and <code>'user'</code> take it as given.</p>
+<p><strong><code>'clairaut'</code>.</strong> Clairaut's equation, in Radau's form for <span class="arithmatex">\(\eta_R = d\ln f/d\ln x\)</span>, with <span class="arithmatex">\(x\)</span> the radius in units of
+the radius of the body:</p>
+<div class="arithmatex">\[
+x\frac{d\eta_R}{dx} = 6 - 6\thinspace\frac{\rho}{\bar\rho}\thinspace(\eta_R + 1) - \eta_R^2 + \eta_R, \qquad \eta_R(0) = 0,
+\]</div>
+<p>with <span class="arithmatex">\(\bar\rho\)</span> the mean density inside <span class="arithmatex">\(x\)</span>. kore takes the density ratio from the gravity alone, by Poisson's equation,</p>
+<div class="arithmatex">\[
+\frac{\rho}{\bar\rho} = \frac{x g' + 2g}{3g},
+\]</div>
+<p>so the structure's <span class="arithmatex">\(g\)</span> must be its self-gravity. kore integrates from the centre and fixes the scale of <span class="arithmatex">\(f\)</span> by the
+surface condition <span class="arithmatex">\(x f' + 2f = \tfrac52 q\)</span>, that is</p>
+<div class="arithmatex">\[
+f(x_t) = \frac{5\thinspace q_t}{2\left(\eta_R(x_t) + 2\right)}, \qquad q_t = q\thinspace x_t^3 ,
+\]</div>
+<p>at the top <span class="arithmatex">\(x_t\)</span> of the structure: the surface <span class="arithmatex">\(x = 1\)</span>, or the outer wall for <code>'model S hydrostatic'</code>, whose gravity ends
+there (the mass above it neglected). With <code>centrifugal_f</code> set, the scale instead makes <span class="arithmatex">\(f\)</span> = <code>centrifugal_f</code> at the
+outer wall. A homogeneous body has <span class="arithmatex">\(\eta_R = 0\)</span> and <span class="arithmatex">\(f = 5q/4\)</span>, the Maclaurin spheroid at first order; a polytrope of
+index 1 has <span class="arithmatex">\(f/q = 15/(2\pi^2)\)</span> at the surface. Since <span class="arithmatex">\(\eta = \varepsilon\thinspace\eta_R\)</span>, the codes <code>ce1</code> and <code>ce2</code>
+follow from <span class="arithmatex">\(\eta_R\)</span> without differentiating:</p>
+<div class="arithmatex">\[
+r\varepsilon' = \varepsilon\thinspace\eta_R, \qquad r\left(r\varepsilon'\right)' = \varepsilon\left[6 - 6\thinspace\frac{\rho}{\bar\rho}\thinspace(\eta_R + 1) + \eta_R\right].
+\]</div>
+<p><strong><code>'uniform'</code> and <code>'user'</code>.</strong> <code>'uniform'</code> has <span class="arithmatex">\(f\)</span> = <code>centrifugal_f</code> and <span class="arithmatex">\(\eta = 0\)</span>. <code>'user'</code> evaluates
+<code>centrifugal_profile</code> at <span class="arithmatex">\(\lvert r\rvert\)</span> and takes <span class="arithmatex">\(r\varepsilon'\)</span> and <span class="arithmatex">\(r(r\varepsilon')'\)</span> from the derivatives of the
+Chebyshev fit of <span class="arithmatex">\(\varepsilon\)</span>.</p>
+<h2 id="effective-gravity">Effective gravity</h2>
+<p>The buoyancy acts along the gradient of the effective potential, the gravitational plus the centrifugal one, which is
+constant on each level surface. At first order its parts in <span class="arithmatex">\(P_2\)</span> cancel there, and what remains is</p>
+<div class="arithmatex">\[
+\Phi_{\rm eff} = \Phi_0(r) - \tfrac13\Omega^2r^2, \qquad g_{\rm eff} = \frac{d\Phi_{\rm eff}}{dr} = g - \tfrac23\Omega^2 r .
+\]</div>
+<p>In kore's units the second term is <span class="arithmatex">\(-\tfrac23\thinspace q_t\thinspace g(x_t)\thinspace x/x_t\)</span>
+(<code>centrifugal.g_monopole</code>), which <code>radial_profiles.graviX</code> adds to <span class="arithmatex">\(g\)</span> when <code>centrifugal_q</code> &gt; 0, with any shape.</p>
+<h2 id="energy-budgets">Energy budgets</h2>
+<p>The energies of the deformed body are integrals over the body. Written in the reference space they gain the metric, so
+<code>spin_doctor</code> adds the metric parts to its budgets, computed from the fields on its own grid
+(<code>utils4pp.centrifugal_terms</code>), independently of the matrices. In the conventions of
+<a href="../anelastic/#energy-balance">Energy balance</a>:</p>
+<div class="arithmatex">\[
+K = \int\rho_0\thinspace\mathbf w^*\cdot\mathsf M\thinspace\mathbf w\thinspace dV, \qquad
+T = \int p_0\thinspace J\thinspace\lvert s\rvert^2\thinspace dV ,
+\]</div>
+<p>and the power of the Coriolis force is <span class="arithmatex">\(2\int\rho_0\thinspace\mathbf w^*\cdot[2\thinspace\mathrm{Gaspard}\thinspace\tilde{\mathbf z}\times\mathbf w]\thinspace dV\)</span>,
+imaginary: it still does no work. <code>solve.py</code> normalises the eigenvectors to this <span class="arithmatex">\(K\)</span>. <code>spin_doctor</code> adds the metric parts
+of the viscous power, of the power of a differential rotation and of the entropy diffusion in the same way
+(<code>utils4pp.centrifugal_dissipation_terms</code>), so the budgets close as well as without the deformation. It computes neither
+the enstrophy residual nor the viscous one, whose wall terms keep their spherical form (residens and residD are NaN).</p>
+<p><strong>With a field.</strong> The magnetic energy of the deformed fluid is</p>
+<div class="arithmatex">\[
+\tfrac12\int\tilde{\mathbf b}^*\cdot\mathsf M\thinspace\tilde{\mathbf b}\thinspace dV = \mathrm{ME} + \mathrm{MEc},
+\]</div>
+<p>with MEc the part of the metric (<code>magnetic.dat</code>, column 12), and <code>solve.py</code> normalises to <span class="arithmatex">\(K\)</span> plus Hendrik times it.
+<code>spin_doctor</code> adds the metric parts of the Lorentz work (<span class="arithmatex">\(\delta\mathbf G\)</span>) to residσ and residω, and those of the
+induction work (<span class="arithmatex">\(\delta\mathbf E\)</span>) and of the magnetic diffusion to resid𝐛 (<code>utils4pp.centrifugal_magnetic_terms</code>), so
+these close to round-off. The
+full budget resid𝐄 also counts the Ohmic loss with the metric current <span class="arithmatex">\(\nabla\times((\mathsf M - \mathsf I)\tilde{\mathbf b})\)</span>,
+the energy of the potential field matched on each deformed wall, and the field of a conducting inner core with its
+metric. It closes at second order in <span class="arithmatex">\(f\)</span> only: kore keeps the first order of <span class="arithmatex">\(1/J\)</span> and of <span class="arithmatex">\(\mathsf M\)</span> in the force, in
+the induction, in the diffusion and in the matching at the walls, and the energy does not cancel their products. In the
+exact spheroid, where kore keeps <span class="arithmatex">\(\mathsf M\)</span> whole, it closes to round-off: the Ohmic loss there is MagnetD times
+<span class="arithmatex">\(\int\nabla\times(\mathsf M\tilde{\mathbf b})^*\cdot\mathsf M\thinspace\nabla\times(\mathsf M\tilde{\mathbf b})\thinspace dV\)</span>,
+and the energy of the potential field beyond each wall is a wall integral with the <span class="arithmatex">\(\lambda_l\)</span> of its rows
+(<code>centrifugal.spheroid_potential</code>).</p>
+<h2 id="plots">Plots</h2>
+<p><code>tools/plot_field.py</code> draws the fields where they are in the body (<code>centrifugal.to_physical</code>). The reference point
+<span class="arithmatex">\((r, \theta)\)</span> is at the distance <span class="arithmatex">\(\varpi\)</span> from the axis and the height <span class="arithmatex">\(z\)</span>,</p>
+<div class="arithmatex">\[
+\varpi = r\sin\theta\thinspace(1 - \varepsilon/2), \qquad z = r\cos\theta\thinspace(1 + \varepsilon),
+\]</div>
+<p>and the flow there is <span class="arithmatex">\(\mathbf u = \mathsf F\mathbf w/J\)</span>, at first order</p>
+<div class="arithmatex">\[
+\mathbf u = \mathbf w + \varepsilon\left(\tfrac32 w_z\hat{\mathbf z} - \tfrac12\mathbf w\right) + \eta\thinspace w_r\left(\tfrac32\cos\theta\thinspace\hat{\mathbf z} - \tfrac12\hat{\mathbf r}\right) - \eta P_2\thinspace\mathbf w ,
+\]</div>
+<p>given in the spherical basis of the body point, turned by <span class="arithmatex">\(-\tfrac32\varepsilon\sin\theta\cos\theta\)</span> in colatitude from
+that of <span class="arithmatex">\((r, \theta)\)</span>. The field <span class="arithmatex">\(\mathbf b = \mathsf F\tilde{\mathbf b}/J\)</span> maps in the same way. A scalar, such as <span class="arithmatex">\(s\)</span>,
+only moves.</p>
+<h2 id="accuracy">Accuracy</h2>
+<p>The map, the transform of the flow and the covariant equations are exact. kore keeps them at first order in <span class="arithmatex">\(f\)</span>, except
+for the exact spheroid (<a href="#the-exact-spheroid">The exact spheroid</a>), where the only error is that of the discretization.</p>
+<ul>
+<li><strong>First order.</strong> The error is of order <span class="arithmatex">\(f^2\)</span>. For the spin-over of a Maclaurin spheroid it is <span class="arithmatex">\(f^2/6\)</span> in the frequency
+  (<a href="#checks">Checks</a>): 0.2 % at Saturn's flattening, where the deformation moves the frequency by 10 %.
+  <code>submatrices.py</code> warns above <span class="arithmatex">\(f = 0.1\)</span>.</li>
+<li><strong>Thermal wind.</strong> With <code>thermal_wind</code> 1 or 2 the entropy <span class="arithmatex">\(S_{tw}\)</span> balances <span class="arithmatex">\(\Delta\Omega\)</span> as in the sphere: the terms
+  of order <span class="arithmatex">\(f\thinspace\Delta\Omega\)</span> of that balance are missing, while its advection and the other terms of
+  <span class="arithmatex">\(\Delta\Omega\)</span> are those of the deformed body. <code>submatrices.py</code> warns.</li>
+<li><strong>What stops the run.</strong> The rows of a wall of zero radial stress (<code>bco</code> or <code>bci</code> = 2) would change on a deformed wall,
+  so kore stops with them in a viscous run. The matching rows of a conducting inner core change too when its permeability
+  differs from the fluid's, so kore stops unless <code>mu_i2o</code> = 1. It also stops with a forcing, and in a viscous full
+  sphere with <span class="arithmatex">\(m \neq 0\)</span> unless <code>rpower_v</code> = 4 (<a href="#dissipative-terms">Dissipative terms</a>).</li>
+<li><strong>Shifts measured from a sphere.</strong> A body that is not deformed keeps the bases and rows of the sphere
+  (<code>centrifugal.deformed</code>), so that its matrices are those of <code>centrifugal = 0</code>. A deformed body with <span class="arithmatex">\(m \neq 0\)</span> writes
+  the rows of the toroidal flow in <span class="arithmatex">\(C^{(3)}\)</span> when it is viscous, and those of the toroidal field when the field diffuses
+  (<a href="#dissipative-terms">Dissipative terms</a>). A shift taken between a deformed run and one at <span class="arithmatex">\(f = 0\)</span> therefore also
+  holds the difference of their errors of discretization, which near the resolution limit can rival the part of the
+  shift that the Ekman layers make: for the nutation of <a href="#checks">Checks</a> without its field, 1.5e-6 in <span class="arithmatex">\(\lambda\)</span> at
+  N 160, 6e-4 of <span class="arithmatex">\(f\)</span>, as large as that part. Taken between deformed runs, at <span class="arithmatex">\(\pm f\)</span>, the shift does not carry it: it
+  moves by 1e-6 of <span class="arithmatex">\(f\)</span> from N 160 to N 200, 5e-6 with the field.</li>
+</ul>
+<h2 id="implementation">Implementation</h2>
+<p>Where each piece is in the code:</p>
+<table>
+<thead>
+<tr>
+<th>piece</th>
+<th>code</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>the flattening and the profile codes</td>
+<td><code>centrifugal.radau</code>, <code>shape_functions</code>, <code>profile_functions</code> (codes <code>ce0</code>, <code>ce1</code>, <code>ce2</code> in <code>radial_profiles.proffdir</code>)</td>
+</tr>
+<tr>
+<td>the angular couplings</td>
+<td><code>centrifugal.primitives</code>, <code>momentum_coefficients</code>, <code>heat_coefficients</code></td>
+</tr>
+<tr>
+<td>labels, blocks, assembly</td>
+<td><code>centrifugal.labels</code> (<code>submatrices.py</code>), <code>momentum_block</code>, <code>entropy_block</code> (<code>operators.centrifugal_inertia</code>, <code>centrifugal_coriolis</code>, <code>centrifugal_entropy</code>), <code>dl_range</code> (<code>assemble.centrifugal_blocks</code>)</td>
+</tr>
+<tr>
+<td>the magnetic terms</td>
+<td><code>centrifugal.magnetic_build</code> with the product codes of <code>magnetic_profile_functions</code>, <code>magnetic_labels</code> (<code>submatrices.py</code>), <code>magnetic_block</code> (<code>operators.centrifugal_magnetic</code>), <code>magnetic_dl_range</code> (<code>assemble.py</code>)</td>
+</tr>
+<tr>
+<td>the insulating walls</td>
+<td><code>centrifugal.wall_coefficients</code>, <code>wall_rows</code> (<code>assemble.bc_b_centrifugal</code>)</td>
+</tr>
+<tr>
+<td>the dissipative terms</td>
+<td><code>centrifugal.diffusion_build</code> (<code>viscous_force</code>, <code>thermal_diffusion_metric</code>, <code>magnetic_diffusion_metric</code>) with the product codes of <code>diffusion_profile_functions</code>, <code>diffusion_labels</code> (<code>submatrices.py</code>, with the bases of <code>diffusion_orders</code>), <code>diffusion_block</code> (<code>operators.centrifugal_diffusion</code>)</td>
+</tr>
+<tr>
+<td>the stress-free and fixed-flux walls</td>
+<td><code>centrifugal.wall_dissipative</code>, <code>wall_dissipative_rows</code> (<code>assemble.bc_u_centrifugal</code>, <code>bc_theta_centrifugal</code>)</td>
+</tr>
+<tr>
+<td>a conducting inner core</td>
+<td><code>centrifugal.ic_labels</code>, <code>diffusion_block_ic</code> (<code>operators.centrifugal_diffusion_ic</code>), <code>icb_electric</code>, <code>icb_rows</code> (<code>assemble.bc_b_cic_centrifugal</code>); the rows <span class="arithmatex">\(r^3\)</span> of <code>utils.rpower_g</code>, <code>rpower_gic</code></td>
+</tr>
+<tr>
+<td>the differential rotation</td>
+<td><code>centrifugal.rotation_force</code>, <code>rotation_build</code>, <code>rotation_heat_coefficients</code>, <code>rotation_labels</code>, <code>rotation_block</code> (<code>operators.centrifugal_rotation</code>)</td>
+</tr>
+<tr>
+<td>effective gravity</td>
+<td><code>centrifugal.g_monopole</code> in <code>radial_profiles.graviX</code></td>
+</tr>
+<tr>
+<td>stops and warnings</td>
+<td><code>background.check_centrifugal</code>, <code>centrifugal.report</code> (<code>submatrices.py</code>), the centre check of the flattening; <code>centrifugal.deformed</code> (without a deformation kore keeps the bases and rows of the sphere)</td>
+</tr>
+<tr>
+<td>energies</td>
+<td><code>utils4pp.centrifugal_terms</code> (<code>solve.py</code>, <code>spin_doctor.py</code>) and <code>centrifugal_dissipation_terms</code> (<code>spin_doctor.py</code>); with a field <code>centrifugal_magnetic_energy</code> (<code>solve.py</code>) and <code>centrifugal_magnetic_terms</code> (<code>spin_doctor.py</code>, with <code>centrifugal.wall_potential</code> and <code>amplitudes</code>)</td>
+</tr>
+<tr>
+<td>plots</td>
+<td><code>centrifugal.to_physical</code> (<code>tools/plot_field.py</code>, the flow and the field)</td>
+</tr>
+<tr>
+<td>the exact spheroid</td>
+<td><code>centrifugal.exact</code>, <code>spheroid_axes</code>, <code>spheroid_terms</code>, <code>spheroid_build</code>, <code>spheroid_walls</code>, <code>spheroid_block</code> (through <code>momentum_block</code> and <code>diffusion_block</code>), <code>spheroid_primitives</code> (<code>utils4pp.centrifugal_terms</code>); with a field <code>spheroid_magnetic_build</code> (through <code>magnetic_coefficients</code>), the insulating walls <code>spheroid_lambda</code>, <code>spheroid_field_walls</code> (through <code>wall_rows</code>), a conducting inner core <code>spheroid_icb</code> (through <code>icb_rows</code>), the energy of the potential fields <code>spheroid_potential</code> (<code>utils4pp.centrifugal_magnetic_terms</code>)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="checks">Checks</h2>
+<p>The deformation was checked in four ways: its closed forms against a symbolic derivation from the definitions, its
+couplings, blocks and wall rows against direct quadratures, its eigenvalues against exact results (among them the modes
+of a spheroid, computed without the map), and the energy budgets. The scripts are in <code>tests/centrifugal/</code> (README;
+<code>run_all.sh</code>, about 17 minutes on 16 cores). Results of 2026-11-06:</p>
+<table>
+<thead>
+<tr>
+<th>check</th>
+<th>script</th>
+<th>result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>every closed form above, from the map and <span class="arithmatex">\(\mathbf w = J\mathsf F^{-1}\mathbf u\)</span> in Cartesian components (sympy): the level surfaces, the exact identities of the covariant equations, the first-order terms, the plot map, the effective potential</td>
+<td><code>derive.py</code></td>
+<td>exact</td>
+</tr>
+<tr>
+<td>the magnetic terms, from <span class="arithmatex">\(\mathbf b = \mathsf F\tilde{\mathbf b}/J\)</span> alone (sympy): the covariant Lorentz force and induction, their first-order parts <span class="arithmatex">\(\delta\mathbf G\)</span> and <span class="arithmatex">\(\delta\mathbf E\)</span>, a potential field on the deformed wall; then kore's couplings against the projections of <span class="arithmatex">\(\delta\mathbf G\)</span> and <span class="arithmatex">\(\delta\mathbf E\)</span> on its rows, block by block, and the wall terms against closed forms</td>
+<td><code>derive_mag.py</code></td>
+<td>exact; blocks 1e-14</td>
+</tr>
+<tr>
+<td>the dissipative terms and the differential rotation, from the map alone (sympy): the covariant viscous force, the stress on the level surface, the thermal diffusion and the flux through the level surface, the magnetic diffusion, the force of a differential rotation; then kore's couplings, the stress-free and fixed-flux rows and the row of the electric field at a conducting inner core against their projections on kore's rows</td>
+<td><code>derive_diff.py</code></td>
+<td>exact; 239 blocks to 1e-13, the wall rows to 3e-13</td>
+</tr>
+<tr>
+<td>the angular couplings against Gauss–Legendre projections of the closed forms, <span class="arithmatex">\(m\)</span> = 0–6, <span class="arithmatex">\(l \le 36\)</span></td>
+<td><code>algebra_check.py</code></td>
+<td>5e-14</td>
+</tr>
+<tr>
+<td>the rows of an insulating wall (outer wall and inner core, <span class="arithmatex">\(m\)</span> = 0, 1, 2, 5) against the exact matching of a potential field on the deformed wall, computed on the wall by quadrature</td>
+<td><code>bc_check.py</code></td>
+<td>of second order: the residual falls by 4.0 when <span class="arithmatex">\(f\)</span> is halved, by 2.0 with the rows of the sphere</td>
+</tr>
+<tr>
+<td>the metric blocks against <span class="arithmatex">\((r, \theta)\)</span> quadratures, in shells and full spheres; inertia and entropy Hermitian and positive, Coriolis anti-Hermitian, the viscous force Hermitian and negative</td>
+<td><code>bin/ru_insane.py</code></td>
+<td>6e-14; the viscous force 6e-11 with the profiles of <code>'Wu 2005'</code>, as in the sphere</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(f = 0\)</span> gives the matrices of <code>centrifugal = 0</code>, also with a field (a conducting inner core; a poloidal and toroidal background); <code>centrifugal = 0</code> leaves the 26 runs of <code>tests/diff_rot/regress.sh</code> unchanged</td>
+<td><code>eig_check.py</code>, <code>regress.sh</code></td>
+<td>bitwise</td>
+</tr>
+<tr>
+<td>the spin-over of a Maclaurin spheroid (inviscid, uniform <span class="arithmatex">\(f\)</span>): <span class="arithmatex">\(\mathrm{Im}\thinspace\lambda = 1 + f + f^2/3\)</span>, against the exact <span class="arithmatex">\(2a^2/(a^2 + c^2) = 1 + f + f^2/2\)</span></td>
+<td><code>eig_check.py</code></td>
+<td><span class="arithmatex">\(f/3\)</span> in <span class="arithmatex">\((\mathrm{Im}\thinspace\lambda - 1)/f - 1\)</span> for <span class="arithmatex">\(f = \pm10^{-3}, \pm10^{-2}\)</span></td>
+</tr>
+<tr>
+<td>a sphere labelled as a deformed one (<span class="arithmatex">\(f = c(1 - r^2)^2\)</span>, zero at the wall): 13 resolved modes move as <span class="arithmatex">\(c^2\)</span>, with no part odd in <span class="arithmatex">\(c\)</span></td>
+<td><code>eig_check.py</code></td>
+<td>odd part 1.6e-4 <span class="arithmatex">\(c^2\)</span></td>
+</tr>
+<tr>
+<td>the same with a field, in a viscous fluid (Ek = Em = 1e-3): the axial and the Malkus field carried by the relabelling, against the same physical field written on the sphere (<code>'general'</code> profiles); the parts of the shifts odd in <span class="arithmatex">\(c\)</span></td>
+<td><code>eig_check.py</code></td>
+<td>4e-6 (axial) and 3e-5 (Malkus); 3 % to 60 % without the metric part of the magnetic diffusion, 4 % up to 160 times the shift without that of the viscous force</td>
+</tr>
+<tr>
+<td>the free decay of a field in a sphere labelled as deformed inside: a full sphere, and a conducting inner core of the fluid's conductivity (the relabelling moves its boundary, which a uniform conductor does not see) and of another conductivity</td>
+<td><code>eig_check.py</code></td>
+<td>their part odd in <span class="arithmatex">\(c\)</span> is 2e-13 to 4e-11 of <span class="arithmatex">\(\lambda\)</span> at <span class="arithmatex">\(c\)</span> = 1e-3, of order <span class="arithmatex">\(c^3\)</span></td>
+</tr>
+<tr>
+<td>the inertial modes of an inviscid homogeneous fluid in a spheroid, computed exactly without the map (the polynomial method, in Cartesian components): <span class="arithmatex">\(d\omega/df\)</span> of the 73 modes of degree <span class="arithmatex">\(\le 7\)</span> with <span class="arithmatex">\(m\)</span> = 0, 1, 2 against kore's</td>
+<td><code>spheroid_modes.py</code></td>
+<td>1.4e-11</td>
+</tr>
+<tr>
+<td>damped modes when the walls are deformed (Ek = 1e-3): kore's <span class="arithmatex">\(d\lambda/df\)</span> against the exact first-order shift computed from the sphere's mode alone (Hadamard's formula and a volume formula), with no-slip and stress-free walls, fixed entropy and fixed flux, in full spheres and shells</td>
+<td><code>shape_check.py</code></td>
+<td>1e-10 to 3e-8; kore is 5e-2 off without the metric viscous terms</td>
+</tr>
+<tr>
+<td>the exact spheroid (<span class="arithmatex">\(f\)</span> = 0.3 and −0.2): its terms from the map (sympy); kore's couplings and wall rows against their projections on kore's rows; 176 inertial modes (degree <span class="arithmatex">\(\le 7\)</span>, <span class="arithmatex">\(m\)</span> = 0–3) against the polynomial method; 20 viscous modes at Ek 0.1 (no-slip and stress-free) and 16 diffusion modes against exact Galerkin solutions (polynomial fields, rational integrals); the rigid rotation of a stress-free shell</td>
+<td><code>spheroid_check.py</code></td>
+<td>exact; 448 blocks to 4e-14, the wall rows to 9e-14; the modes to 3e-13, 6e-13 and 1e-13; <span class="arithmatex">\(\lvert\lambda\rvert\)</span> 8e-19</td>
+</tr>
+<tr>
+<td>the exact spheroid with a field: its terms from the map (sympy); kore's couplings of the Lorentz force and the diffusion and the row of a conducting inner core against their projections on kore's rows; <span class="arithmatex">\(\lambda_l\)</span> against mpmath and the rows of an insulating wall on exact potential fields of the spheroid; the free decay of an axisymmetric field (32 rates, <span class="arithmatex">\(f\)</span> = 0.3 and −0.2) against an exact Galerkin solution; a conducting inner core of the fluid's conductivity against the full spheroid, and an insulating one as the limit of a conducting one; magnetic modes against those of <code>'uniform'</code></td>
+<td><code>spheroid_check.py</code></td>
+<td>exact; 339 blocks to 1e-13, the row at the inner core to 5e-14; <span class="arithmatex">\(\lambda_l\)</span> to 4e-15, the wall rows to 6e-14 (the sphere's rows leave 0.2); the decay rates to 8e-13; the cores to 3e-12, the limit to 8e-10; the two part as <span class="arithmatex">\(f^2\)</span> (orders 1.96 to 2.02, 10 modes)</td>
+</tr>
+<tr>
+<td><code>'clairaut'</code> of a homogeneous body against <code>'uniform'</code> with <span class="arithmatex">\(f = 5q/4\)</span></td>
+<td><code>eig_check.py</code></td>
+<td>2e-13</td>
+</tr>
+<tr>
+<td>the effective gravity with <span class="arithmatex">\(g = r\)</span>: <span class="arithmatex">\(q = 0.1\)</span> against <code>Beyonce</code> <span class="arithmatex">\((1 - 2q/3)\)</span></td>
+<td><code>eig_check.py</code></td>
+<td>below 1e-14</td>
+</tr>
+<tr>
+<td>a deformed, stratified ideal fluid has real frequencies</td>
+<td><code>eig_check.py</code></td>
+<td><span class="arithmatex">\(\lvert\mathrm{Re}\thinspace\lambda\rvert\)</span> 2e-16</td>
+</tr>
+<tr>
+<td><code>'clairaut'</code>: a homogeneous body (5/4), the polytrope of index 1 (<span class="arithmatex">\(15/(2\pi^2)\)</span>), <code>'Wu 2005'</code> against Clairaut's second-order equation integrated from <span class="arithmatex">\(\rho\)</span>; <code>'model S hydrostatic'</code> gives <span class="arithmatex">\(f/q\)</span> = 0.519 at its wall</td>
+<td><code>clairaut_check.py</code></td>
+<td>3e-12; below 1e-9</td>
+</tr>
+<tr>
+<td>the budgets residσ, residω, resid𝑠 of <code>spin_doctor</code> (<code>solve.py</code>, 2 ranks; <code>'Wu 2005'</code> with an inner core, with and without a differential rotation, and a <code>'Boussinesq'</code> full sphere)</td>
+<td><code>budget_check.py</code></td>
+<td>below 1e-9, as in the sphere (9e-10); 1e-3 to 3e-2 without the metric weights</td>
+</tr>
+<tr>
+<td>the budgets with a field (<code>solve.py</code>, 2 ranks): the axial field, a conducting inner core, a full sphere, the Malkus field, a poloidal and toroidal background with a differential rotation, each at two flattenings <span class="arithmatex">\(f\)</span> and <span class="arithmatex">\(f/2\)</span>; <code>'Wu 2005'</code> with an inner core</td>
+<td><code>budget_check.py</code></td>
+<td>residσ and residω below 2e-13, resid𝐛 below 1e-12 (2e-8 for <code>'Wu 2005'</code>, set by its resolution as in the sphere); resid𝐄 of second order (orders 1.7 to 2.2 from the two flattenings)</td>
+</tr>
+<tr>
+<td>the budgets of the exact spheroid (<code>solve.py</code>, 2 ranks, <span class="arithmatex">\(f\)</span> = 0.3 or −0.2): a no-slip shell with buoyancy, a stress-free and fixed-flux shell, a full sphere; with a field an insulating and a conducting inner core, a full sphere, the Malkus field, a poloidal and toroidal background</td>
+<td><code>budget_check.py</code></td>
+<td>without a field below 5e-10 (the stress-free shell; the others below 6e-12); with a field residσ and residω below 5e-14, resid𝐛 and resid𝐄 below 3e-13</td>
+</tr>
+<tr>
+<td>the free core nutation, the spin-over of a fixed mantle, with a field (Ek 1e-7, Em 1e-5, Le 3e-3, the axial field, a conducting inner core) at <span class="arithmatex">\(f\)</span> = ±2.5e-3 and <span class="arithmatex">\(f/2\)</span>, and without the field; the shift is taken between the deformed runs (<a href="#accuracy">Accuracy</a>)</td>
+<td><code>fcn.sh</code></td>
+<td><span class="arithmatex">\(\mathrm{Im}\thinspace\lambda\)</span> moves by <span class="arithmatex">\(f(1 + f/3)\)</span>, with the coefficient of <span class="arithmatex">\(f^2\)</span> 1/3 to 7e-4, plus 5.8e-4 of <span class="arithmatex">\(f\)</span> from the Ekman layers (Greenspan's boundary-layer theory gives 4.6e-4, which kore approaches slowly); the field changes the shift by 3.6e-5 of <span class="arithmatex">\(f\)</span>, N 200 against N 160 by 5e-6</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "content.code.copy"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

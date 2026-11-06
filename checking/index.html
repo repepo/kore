@@ -875,6 +875,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../centrifugal-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Centrifugal deformation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../magnetic-equations/" class="md-nav__link">
         
   
@@ -1194,6 +1222,12 @@ seconds to minutes.</p>
 <td>30 min with <code>SKIP_DERIVE=1</code>, 60 min in full</td>
 </tr>
 <tr>
+<td><code>tests/centrifugal/run_all.sh</code></td>
+<td>the terms of the centrifugal deformation, with and without a field, against a symbolic derivation and quadratures, the rows of the insulating walls against the exact matching, its eigenvalues against exact results (among them the modes of a spheroid, inviscid and damped), the budgets</td>
+<td>after a change of the deformation, of the inertia, the Coriolis force, the viscous force, the heat equation, the Lorentz force, the induction, the diffusion, the differential rotation or the wall rows, or of <code>spin_doctor</code>'s budgets</td>
+<td>17 min on 16 cores, 13 min with <code>SKIP_SOLVE=1</code> (no PETSc)</td>
+</tr>
+<tr>
 <td><code>tests/rsf/run_all.sh</code></td>
 <td>the random Reynolds-stress forcing (forcing 11)</td>
 <td>after a change of the forcing</td>
@@ -1213,8 +1247,8 @@ seconds to minutes.</p>
 </tr>
 </tbody>
 </table>
-<p><code>tests/diff_rot</code>, <code>tests/heat_dr</code>, <code>tests/magnetic</code>, <code>tests/rsf</code> and <code>tests/tidal</code> each have a README that lists their scripts and
-what each one checks; the CI test explains itself in <code>tests/ci/test_spinover.py</code>.</p>
+<p><code>tests/diff_rot</code>, <code>tests/heat_dr</code>, <code>tests/magnetic</code>, <code>tests/centrifugal</code>, <code>tests/rsf</code> and <code>tests/tidal</code> each have a README
+that lists their scripts and what each one checks; the CI test explains itself in <code>tests/ci/test_spinover.py</code>.</p>
 <h2 id="are-existing-runs-unchanged">Are existing runs unchanged?</h2>
 <p><code>tests/diff_rot/regress.sh</code> builds the same small runs twice, once with an older copy of kore and once with yours, and
 compares their matrices A and B entry by entry. Equal matrices give equal eigenvalues and eigenvectors, so this is the
