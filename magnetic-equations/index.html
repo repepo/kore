@@ -1863,8 +1863,9 @@ uniform field, potential everywhere. <code>'confined'</code> is zero at the wall
 <p><strong>Full-sphere fields with an inner core.</strong> <code>'G21 dipole'</code>, <code>'Luo_S1'</code> and <code>'Luo_S2'</code> are defined for a full sphere, and
 <code>B0_ic</code> says how to continue them into an inner core. <code>'potential'</code> (default) adds <span class="arithmatex">\(\beta_i r^{-(l+1)}\)</span>,
 <span class="arithmatex">\(\beta_i = r_i^{l+1}(r_i h' - l h)/(2l+1)\)</span> at <span class="arithmatex">\(r_i\)</span>, so that <span class="arithmatex">\(rh' - lh = 0\)</span> at the inner boundary: the field of the
-currents in the fluid, continued as a potential field into the core. <code>'full sphere'</code> keeps <span class="arithmatex">\(h\)</span> as it is
-(<code>conductive_IC</code>'s <code>B0_beta_ic</code>). <code>B0_ic</code> has no effect on the other types or with <code>ricb = 0</code>.</p>
+currents in the fluid, continued as a potential field into the core (<code>conductive_IC</code>'s <code>B0_beta_ic</code>).
+<code>'frozen currents'</code> (the name in <code>conductive_IC</code>; <code>'full sphere'</code> before 2026-11-06) keeps <span class="arithmatex">\(h\)</span> as it is, with the
+currents below <span class="arithmatex">\(r_i\)</span> in the core. <code>B0_ic</code> has no effect on the other types or with <code>ricb = 0</code>.</p>
 <p><strong>Confined field.</strong> <code>'confined'</code> fills the layer <span class="arithmatex">\(r_1 \le r \le r_2\)</span> and is zero outside it. Its purpose: a poloidal
 field in a layer where the rotation is uniform is not wound up, so it is a steady background with a differential
 rotation (<a href="#the-ferraro-condition">The Ferraro condition</a>). With an inner core the layer must lie in the fluid
@@ -2423,7 +2424,7 @@ Mag/Kin and writes <code>magnetic.dat</code>:</p>
 <tr>
 <td>1</td>
 <td>ME</td>
-<td>magnetic energy in the fluid (without Hendrik, as <code>conductive_IC</code>; Mag/Kin is ME/KE)</td>
+<td>magnetic energy in the fluid (without Hendrik, as <code>conductive_IC</code>; Mag/Kin is Hendrik ME/KE)</td>
 </tr>
 <tr>
 <td>2</td>

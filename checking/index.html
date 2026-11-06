@@ -1240,6 +1240,12 @@ seconds to minutes.</p>
 <td>2 min on 4 ranks</td>
 </tr>
 <tr>
+<td><code>tests/forcing/run_all.sh</code></td>
+<td>the wall values that the boundary forcings 6, 7, 9 and 10 impose, read back from the solution</td>
+<td>after a change of a boundary forcing or of the wall rows</td>
+<td>20 s</td>
+</tr>
+<tr>
 <td><code>tests/rsf/regress_solve.sh</code></td>
 <td>eigenvalues, fields and forced solutions bitwise equal to an older copy</td>
 <td>after a change of <code>solve.py</code></td>
@@ -1247,7 +1253,7 @@ seconds to minutes.</p>
 </tr>
 </tbody>
 </table>
-<p><code>tests/diff_rot</code>, <code>tests/heat_dr</code>, <code>tests/magnetic</code>, <code>tests/centrifugal</code>, <code>tests/rsf</code> and <code>tests/tidal</code> each have a README
+<p><code>tests/diff_rot</code>, <code>tests/heat_dr</code>, <code>tests/magnetic</code>, <code>tests/centrifugal</code>, <code>tests/rsf</code>, <code>tests/tidal</code> and <code>tests/forcing</code> each have a README
 that lists their scripts and what each one checks; the CI test explains itself in <code>tests/ci/test_spinover.py</code>.</p>
 <h2 id="are-existing-runs-unchanged">Are existing runs unchanged?</h2>
 <p><code>tests/diff_rot/regress.sh</code> builds the same small runs twice, once with an older copy of kore and once with yours, and

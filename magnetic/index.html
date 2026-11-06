@@ -1719,7 +1719,9 @@ formulas are on <a href="../magnetic-equations/#poloidal-fields">Magnetic field 
 <ul>
 <li><strong>Full-sphere shapes with an inner core.</strong> <code>'G21 dipole'</code>, <code>'Luo_S1'</code> and <code>'Luo_S2'</code> are defined for a full sphere.
   With an inner core, <code>B0_ic = 'potential'</code> (default) continues the field into the core as a potential field;
-  <code>B0_ic = 'full sphere'</code> keeps the full-sphere formula.</li>
+  <code>B0_ic = 'frozen currents'</code> keeps the full-sphere formula, whose currents below the inner boundary then stay in the
+  core (fitting only when the core's magnetic decay time is much longer than the periods sought; the name was
+  <code>'full sphere'</code> before 2026-11-06).</li>
 <li><strong><code>'Luo_S1'</code> and <code>'G21 dipole'</code></strong> give the same run when <code>cnorm</code> is a name (<code>'mag_energy'</code>, <code>'Schmitt2012'</code>,
   <code>'rms_cmb'</code>). With a numerical <code>cnorm</code> the <code>'Luo_S1'</code> field is 30 times stronger.</li>
 <li><strong><code>'confined'</code></strong> puts the field in the layer from <code>B0_conf_r1</code> to <code>B0_conf_r2</code> and nowhere else. The defaults reach
@@ -2016,7 +2018,8 @@ budgets.</p>
 <p><code>spin_doctor</code> adds the Lorentz work to residσ and residω, and prints two more residuals: resid𝐛, the energy budget of
 the induction equation in the fluid, and resid𝐄, the full energy budget including the field outside the fluid (no-slip
 walls only: <code>bco = 1</code>, and <code>bci = 1</code> with an inner core). Like residσ (<a href="../solver/">Solver</a>), they should be small for a
-resolved mode. It also prints Mag/Kin, the ratio of magnetic to kinetic energy (without the factor <code>Hendrik</code>), and
+resolved mode. It also prints Mag/Kin, the ratio of magnetic to kinetic energy (<code>Hendrik</code> ME/KE, both in the units of the
+kinetic energy), and
 writes <code>magnetic.dat</code> and 25 magnetic columns of <code>params.dat</code> (<a href="../output/#magneticdat">Output files</a>).</p>
 <h2 id="practical-tips">Practical tips</h2>
 <p>The field, more than the flow, usually sets the resolution and the memory a run needs.</p>

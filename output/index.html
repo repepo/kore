@@ -1390,7 +1390,7 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 <tbody>
 <tr>
 <td>1</td>
-<td>ME, the magnetic energy <span class="arithmatex">\(\int\tfrac12\lvert\mathbf b\rvert^2 dV\)</span> in the fluid (the column Mag/Kin of the <code>spin_doctor</code> table is ME/KE)</td>
+<td>ME, the magnetic energy <span class="arithmatex">\(\int\tfrac12\lvert\mathbf b\rvert^2 dV\)</span> in the fluid (the column Mag/Kin of the <code>spin_doctor</code> table is Hendrik ME/KE, in the units of KE)</td>
 </tr>
 <tr>
 <td>2</td>
@@ -1426,7 +1426,7 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 </tr>
 <tr>
 <td>12</td>
-<td>with <code>centrifugal = 1</code> only: MEc, the part of the magnetic energy that the deformation adds, so that ME + MEc is the energy of the field in the deformed fluid (the column Mag/Kin of the <code>spin_doctor</code> table is (ME + MEc)/KE; <a href="../centrifugal-equations/#energy-budgets">Centrifugal deformation</a>)</td>
+<td>with <code>centrifugal = 1</code> only: MEc, the part of the magnetic energy that the deformation adds, so that ME + MEc is the energy of the field in the deformed fluid (the column Mag/Kin of the <code>spin_doctor</code> table is Hendrik (ME + MEc)/KE; <a href="../centrifugal-equations/#energy-budgets">Centrifugal deformation</a>)</td>
 </tr>
 </tbody>
 </table>
@@ -1513,7 +1513,7 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
   <code>'Luo_S1'</code> 3, <code>'Luo_S2'</code> 4, <code>'confined'</code> 5, <code>'general'</code> 6, <code>'ferraro'</code> 7; −1 without a poloidal field), <code>B0_tor</code> in
   <code>background_field.B0_TOR_TYPES</code> (<code>'Malkus'</code> 0, <code>'wall'</code> 1, <code>'user'</code> 2, <code>'general'</code> 3; −1 without), <code>innercore</code> in
   <code>background.INNER_CORES</code> (<code>'insulator'</code> 0, <code>'conducting, Chebys'</code> 1), <code>B0_ic</code> in <code>background.B0_ICS</code> (<code>'potential'</code> 0,
-  <code>'full sphere'</code> 1) and <code>ferraro_policy</code> in <code>background.FERRARO_POLICIES</code> (<code>'warn'</code> 0, <code>'refuse'</code> 1). <code>cnorm</code> and
+  <code>'frozen currents'</code> 1, formerly <code>'full sphere'</code>) and <code>ferraro_policy</code> in <code>background.FERRARO_POLICIES</code> (<code>'warn'</code> 0, <code>'refuse'</code> 1). <code>cnorm</code> and
   <code>cnorm_tor</code> are the numbers used. <code>B0_l</code> is the lowest degree for <code>'general'</code> and 1 for <code>'ferraro'</code>; <code>B0_tor_l</code> is the
   parameter, which <code>B0_tor = 'general'</code> ignores. The expressions of <code>'general'</code> (<code>B0_profiles</code>, <code>B0_tor_profiles</code>), of
   <code>'ferraro'</code> (<code>B0_ferraro_G</code>) and of <code>diff_rot_type = 'ferraro'</code> (<code>diff_rot_F</code>) go into the note after <code>#</code>.</li>
