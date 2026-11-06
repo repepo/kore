@@ -1235,7 +1235,7 @@ table.</p>
 <tr>
 <td><code>real_flow.field</code>, <code>imag_flow.field</code></td>
 <td><code>solve.py</code></td>
-<td>the eigenvectors of the flow (or the forced flows), real and imaginary parts of their spectral coefficients, one column per solution; with <code>thermal = 1</code> also <code>real_thermal.field</code>, <code>imag_thermal.field</code> for <span class="arithmatex">\(s\)</span>; with <code>magnetic = 1</code> also <code>real_magnetic.field</code>, <code>imag_magnetic.field</code> for <span class="arithmatex">\(\mathbf b\)</span>, and <code>real_magnetic_ic.field</code>, <code>imag_magnetic_ic.field</code> for a conducting inner core</td>
+<td>the eigenvectors of the flow (or the forced flows), real and imaginary parts of their spectral coefficients, one column per solution; with <code>thermal = 1</code> also <code>real_thermal.field</code>, <code>imag_thermal.field</code> for <span class="arithmatex">\(s\)</span>; with <code>magnetic = 1</code> also <code>real_magnetic.field</code>, <code>imag_magnetic.field</code> for <span class="arithmatex">\(\mathbf b\)</span>, and <code>real_magnetic_ic.field</code>, <code>imag_magnetic_ic.field</code> for a conducting inner core. Without the flow (<code>hydro = 0</code>) the flow's files are not written</td>
 </tr>
 <tr>
 <td><code>rsf_spectrum.dat</code>, <code>rsf_ke.dat</code></td>
@@ -1290,7 +1290,7 @@ which may have other columns.</p>
 <tbody>
 <tr>
 <td>1–3</td>
-<td>kinetic energy, and its poloidal and toroidal parts (the eigenvectors are normalised to kinetic energy 1); with <code>centrifugal = 1</code> column 1 is the kinetic energy of the deformed body, and columns 2–3 are its parts without the terms of the deformation</td>
+<td>kinetic energy, and its poloidal and toroidal parts (the eigenvectors are normalised to kinetic energy 1); with <code>centrifugal = 1</code> column 1 is the kinetic energy of the deformed body, and columns 2–3 are its parts without the terms of the deformation. Without the flow (<code>hydro = 0</code>) the flow's columns are 0 or nan, the eigenvectors are normalised to a magnetic energy (<code>magnetic.dat</code>, column 1) plus an entropy "energy" (<code>thermal.dat</code>, column 1) of 1, and columns 5–7 and 28 describe the field, or the entropy without a field</td>
 </tr>
 <tr>
 <td>4</td>
@@ -1422,7 +1422,7 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 </tr>
 <tr>
 <td>11</td>
-<td>the relative residual of the full energy budget (resid𝐄; nan unless the walls are no-slip: <code>bco = 1</code>, and <code>bci = 1</code> with an inner core)</td>
+<td>the relative residual of the full energy budget (resid𝐄; nan unless the walls are no-slip: <code>bco = 1</code>, and <code>bci = 1</code> with an inner core, or there is no flow, <code>hydro = 0</code>)</td>
 </tr>
 <tr>
 <td>12</td>
@@ -1496,6 +1496,10 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 <td>108–112</td>
 <td><code>centrifugal</code>, <code>centrifugal_shape</code>, <code>centrifugal_q</code>, <code>centrifugal_f</code> (the flattening of the outer wall, as used), <code>centrifugal_param</code></td>
 </tr>
+<tr>
+<td>113</td>
+<td><code>hydro</code> (0: no flow)</td>
+</tr>
 </tbody>
 </table>
 <ul>
@@ -1523,7 +1527,7 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
   them.</li>
 <li>A row ends, after a <code>#</code> that <code>np.loadtxt</code> skips, with the <code>'user'</code>, <code>'general'</code> and <code>'ferraro'</code> expressions and, for
   <code>'tabulated'</code>, <code>diff_rot_file</code> with the first 12 hex digits of its sha256. A row with none of these has no <code>#</code>.</li>
-<li>A <code>params.dat</code> written before the columns 108–112 were added has fewer columns: start a new file.</li>
+<li>A <code>params.dat</code> written before the columns 108–112, or column 113, were added has fewer columns: start a new file.</li>
 </ul>
 
 

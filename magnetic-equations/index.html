@@ -1258,6 +1258,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#free-decay-without-the-flow-2026-11-06" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Free decay without the flow (2026-11-06)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1688,6 +1699,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#free-decay-without-the-flow-2026-11-06" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Free decay without the flow (2026-11-06)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2046,8 +2068,9 @@ change or extend the code.</p>
 <p><strong>Solver.</strong> <code>solve.py</code> writes <code>real_magnetic.field</code>, <code>imag_magnetic.field</code> and normalises the eigenvectors (over the
   shell, as <code>conductive_IC</code>) to</p>
 <div class="arithmatex">\[
-\mathrm{KE} + \mathrm{Hendrik}\int\tfrac12\lvert\mathbf b\rvert^2dV = 1 .
+\mathrm{KE} + \mathrm{Hendrik}\int\tfrac12\lvert\mathbf b\rvert^2dV = 1 ,
 \]</div>
+<p>and without the flow (<code>hydro = 0</code>) to <span class="arithmatex">\(\int\tfrac12\lvert\mathbf b\rvert^2dV = 1\)</span>.</p>
 </li>
 </ul>
 <h3 id="couplings-for-any-background">Couplings for any background</h3>
@@ -2469,7 +2492,7 @@ Mag/Kin and writes <code>magnetic.dat</code>:</p>
 <tr>
 <td>11</td>
 <td>residE</td>
-<td>resid𝐄, the full energy budget (nan unless the walls are no-slip: <code>bco = 1</code>, and <code>bci = 1</code> with an inner core)</td>
+<td>resid𝐄, the full energy budget (nan unless the walls are no-slip: <code>bco = 1</code>, and <code>bci = 1</code> with an inner core, or there is no flow, <code>hydro = 0</code>)</td>
 </tr>
 </tbody>
 </table>
@@ -2495,7 +2518,9 @@ Mag/Kin and writes <code>magnetic.dat</code>:</p>
 2\sigma[\mathrm{KE} + \mathrm{Hendrik}(\mathrm{ME} + \mathrm{MEic} + \mathrm{MEext})] = \mathrm{Dkin} + \mathrm{Wthm} + \mathrm{Wlor} + \mathrm{Hendrik}(\mathrm{Indu} - \mathrm{Ohm\_f} - \mathrm{Ohm\_ic}) :
 \]</div>
 <p>unlike resid𝐛 it sees the wall and ICB conditions. The <span class="arithmatex">\(1/\mu_{i2o}\)</span> of the inner core's energy and Ohmic loss is not in
-<code>conductive_IC</code>'s <code>em_budget</code> (there resid𝐄 is <span class="arithmatex">\(10^{-2}\)</span> at <code>mu_i2o</code> = 2).</p>
+<code>conductive_IC</code>'s <code>em_budget</code> (there resid𝐄 is <span class="arithmatex">\(10^{-2}\)</span> at <code>mu_i2o</code> = 2). Without the flow (<code>hydro = 0</code>) it is
+<span class="arithmatex">\(2\sigma(\mathrm{ME} + \mathrm{MEic} + \mathrm{MEext}) = \mathrm{Indu} - \mathrm{Ohm\_f} - \mathrm{Ohm\_ic}\)</span>, without
+Hendrik and for any walls (Indu is then the induction by a differential rotation, or 0).</p>
 <p><strong>How the terms are computed.</strong> spin_doctor's Lorentz force (<code>utils4pp.lorentz4pp</code>) acts per volume, and its power
 <span class="arithmatex">\(\int\mathbf u^*\cdot\mathbf G\,dV\)</span> has no <span class="arithmatex">\(\rho_0\)</span>. Its induction term (<code>induction4pp</code>) takes the components of
 <span class="arithmatex">\(\mathbf u\)</span> with their <span class="arithmatex">\(\lambda_1\)</span> part, and holds for the non-solenoidal <span class="arithmatex">\(\mathbf u\)</span> of a variable density (resid𝐛
@@ -2913,6 +2938,46 @@ core with <span class="arithmatex">\(\psi\)</span> not constant on it. With a to
   build A and B bitwise equal to the code before.</p>
 </li>
 </ul>
+<h3 id="free-decay-without-the-flow-2026-11-06">Free decay without the flow (2026-11-06)</h3>
+<p>Without the flow (<code>hydro = 0</code>, as <code>conductive_IC</code>) a field of uniform conductivity only diffuses, and each mode decays at
+the rate MagnetD <span class="arithmatex">\(k^2\)</span>, where <span class="arithmatex">\(k\)</span> makes the spherical Bessel functions <span class="arithmatex">\(j_l(kr)\)</span>, <span class="arithmatex">\(y_l(kr)\)</span> meet the conditions at the
+walls: <span class="arithmatex">\(j_{l-1}(k)\,y_{l+1}(kr_i) = y_{l-1}(k)\,j_{l+1}(kr_i)\)</span> for a poloidal field between insulators,
+<span class="arithmatex">\(j_l(k)\,y_l(kr_i) = y_l(k)\,j_l(kr_i)\)</span> for a toroidal one, and a 3 × 3 determinant with <span class="arithmatex">\(j_l(k\sqrt{\sigma_{i2o}}\,r)\)</span>
+inside a conducting inner core. <code>tests/decay/decay_check.py</code> finds the roots with scipy and compares (<code>ricb</code> = 0.35, N 48,
+<code>lmax</code> 15, <code>m</code> 0, MagnetD 1):</p>
+<table>
+<thead>
+<tr>
+<th>case</th>
+<th>modes</th>
+<th>largest relative error</th>
+<th>resid𝐛, resid𝐄</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>insulating walls</td>
+<td>poloidal <span class="arithmatex">\(l\)</span> = 1 (two), 3; toroidal <span class="arithmatex">\(l\)</span> = 2: rates 10.041029, 45.156235, 33.260470, 37.495006</td>
+<td>4e-15</td>
+<td>≤ 5e-12</td>
+</tr>
+<tr>
+<td>conducting inner core, <code>sigma_i2o</code> 0.3</td>
+<td>the same: 9.993017, 43.759526, 33.248628, 35.942816</td>
+<td>6e-14</td>
+<td>≤ 8e-11</td>
+</tr>
+<tr>
+<td>full sphere</td>
+<td><span class="arithmatex">\(\pi^2\)</span>, <span class="arithmatex">\(4\pi^2\)</span>, and 33.217462 (poloidal <span class="arithmatex">\(l\)</span> = 3 and toroidal <span class="arithmatex">\(l\)</span> = 2 together)</td>
+<td>9e-15</td>
+<td>≤ 2e-13</td>
+</tr>
+</tbody>
+</table>
+<p>With a differential rotation the modes of the field alone equal, to <span class="arithmatex">\(10^{-15}\)</span>, those of the same run with the flow and a
+B0 of <span class="arithmatex">\(10^{-9}\)</span>, where the field and the flow decouple; the entropy of <code>'Boussinesq'</code> decays at the exact rates too, and
+the field of <code>just_induction.py</code> with <code>solve_ind.py</code> is that of a mode without Lorentz force to <span class="arithmatex">\(10^{-14}\)</span>.</p>
 <h2 id="references">References</h2>
 <ul>
 <li>D'Silva, S. &amp; Choudhuri, A. R. 1993, A&amp;A 272, 621 (flux-tube fields at the base of the solar convection zone).</li>
