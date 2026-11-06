@@ -684,6 +684,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../drag/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Drag at the outer wall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../solver/" class="md-nav__link">
         
   
@@ -1096,6 +1124,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../drag-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Drag at the outer wall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../reynolds-stress/" class="md-nav__link">
         
   
@@ -1427,6 +1483,10 @@ which may have other columns.</p>
 <td>39</td>
 <td>resid𝐋, the relative residual of the fluid's angular momentum balance (NaN where it is not computed, <a href="../rotating-solids/#the-angular-momentum-check-residl">Rotating solids</a>)</td>
 </tr>
+<tr>
+<td>40–41</td>
+<td>with a viscous fluid at a stress-free outer wall (not with <code>centrifugal = 1</code>), the power the drag at the wall dissipates and the damping rate it implies, Dtopo and δσtopo, per unit <code>kappa_cmb</code> without a drag (<a href="../drag/#output">Drag at the outer wall</a>); 0 otherwise</td>
+</tr>
 </tbody>
 </table>
 <h2 id="thermaldat"><code>thermal.dat</code></h2>
@@ -1639,6 +1699,10 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 <td>128–134</td>
 <td><code>rotdyn</code>, <code>MoIZ_M</code>, <code>MoIZ_IC</code>, <code>gTorque</code>, <code>OmgtauIC</code>, <code>vtrq</code>, <code>mtrq</code></td>
 </tr>
+<tr>
+<td>135–141</td>
+<td><code>kappa_cmb</code>, <code>topo_drag</code> (1 for <code>'rekier'</code>, 0 for <code>None</code>), and with <code>'rekier'</code> (0 otherwise) <code>topo_hrms</code>, <code>topo_lambda0</code>, <code>topo_H</code>, and the buoyancy frequency and the frequency of the flow that the drag used, over the rotation rate (<a href="../drag/">Drag at the outer wall</a>)</td>
+</tr>
 </tbody>
 </table>
 <ul>
@@ -1670,8 +1734,8 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 <li>A row ends, after a <code>#</code> that <code>np.loadtxt</code> skips, with the <code>'user'</code>, <code>'general'</code> and <code>'ferraro'</code> expressions, that of
   <code>sigma_mantle</code> and, for <code>'tabulated'</code>, <code>diff_rot_file</code> with the first 12 hex digits of its sha256. A row with none of
   these has no <code>#</code>.</li>
-<li>A <code>params.dat</code> written before the columns 108–112, column 113, the columns 114–122, 123–127 or 128–134 were added has
-  fewer columns: start a new file. The same holds for <code>flow.dat</code> before its columns 29–39.</li>
+<li>A <code>params.dat</code> written before the columns 108–112, column 113, the columns 114–122, 123–127, 128–134 or 135–141 were
+  added has fewer columns: start a new file. The same holds for <code>flow.dat</code> before its columns 29–39 or 40–41.</li>
 </ul>
 
 

@@ -679,6 +679,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../drag/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Drag at the outer wall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../solver/" class="md-nav__link">
         
   
@@ -1387,6 +1415,34 @@
     
   
     Rotating solids
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../drag-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Drag at the outer wall
   
 
     
@@ -2331,7 +2387,9 @@ G' \to G' - \frac{r\,S_l}{\mathrm{MagnetD}}, \qquad \mathcal D_l F \to \mathcal 
 <p>the second because the wall's <span class="arithmatex">\(\partial_t F\)</span> now includes the radial induction of the slip. <code>assemble.bc_b_slip</code> builds
 both for any poloidal <span class="arithmatex">\(\mathbf B_0\)</span> with the recurrence algebra (<code>angular.Algebra</code>): <span class="arithmatex">\(B_{0r} = \sum_n n(n+1)h_n P_n/r\)</span>
 over the degrees of the background, times <span class="arithmatex">\(\mathbf u_t = \sum_k s_k\,r\nabla Y_k + t_k\,r\nabla Y_k\times\hat{\mathbf r}\)</span> with
-<span class="arithmatex">\(s_k = P_k' + P_k/r + (\ln\rho_0)'P_k\)</span> and <span class="arithmatex">\(t_k = T_k\)</span> at the wall; a toroidal background has no <span class="arithmatex">\(B_{0r}\)</span>.
+<span class="arithmatex">\(s_k = P_k' + P_k/r + (\ln\rho_0)'P_k\)</span> and <span class="arithmatex">\(t_k = T_k\)</span> at the wall; a toroidal background has no <span class="arithmatex">\(B_{0r}\)</span>. With the
+rotating solids the outer wall's frame turns with the mantle, and <span class="arithmatex">\(t_1 = T_1 - r\,\omega_M\)</span> there, the slip relative
+to it (<a href="../rotating-solids-equations/#equations">Rotating solids equations</a>).
 <code>conductive_IC</code> has these terms for a single degree.</p>
 <p><strong>The background field at a thin outer wall</strong> (<code>B0_cmb</code>). A steady <span class="arithmatex">\(\mathbf B_0\)</span> drives no current in the wall, but
 it must meet the steady condition, <span class="arithmatex">\((1/\mu + lc)(rh)' + (l + e)h = 0\)</span> at <span class="arithmatex">\(r = 1\)</span> with <span class="arithmatex">\(e = c\mu l((l+1)/p - 1)/p\)</span>

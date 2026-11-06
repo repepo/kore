@@ -679,6 +679,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../drag/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Drag at the outer wall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../solver/" class="md-nav__link">
         
   
@@ -1118,6 +1146,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../drag-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Drag at the outer wall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../reynolds-stress/" class="md-nav__link">
         
   
@@ -1465,6 +1521,11 @@ one (<code>bci</code>, when <code>ricb &gt; 0</code>); the full sphere has no co
 <td><code>bco = 0</code> stress-free</td>
 <td><span class="arithmatex">\(u_r = 0\)</span>, and zero tangential stress <span class="arithmatex">\(\partial_r(u_\theta/r) = \partial_r(u_\phi/r) = 0\)</span></td>
 <td><span class="arithmatex">\(P_l = 0\)</span>, <span class="arithmatex">\(\thinspace r^2P_l'' + r^2(\ln\rho_0)'P_l' + \left[r^2(\ln\rho_0)'' + \mathcal L - 2 - r(\ln\rho_0)'\right]P_l = 0\)</span>, <span class="arithmatex">\(\thinspace rT_l' - T_l = 0\)</span></td>
+</tr>
+<tr>
+<td><code>bco = 0</code> with a drag (<code>kappa_cmb</code>, <code>topo_drag</code>)</td>
+<td><span class="arithmatex">\(u_r = 0\)</span>, and the tangential stress balances the drag of the wall on the slip</td>
+<td>the stress-free rows plus the terms of the drag (<a href="../drag-equations/#the-rows">Drag at the outer wall equations</a>)</td>
 </tr>
 <tr>
 <td><code>bco = 1</code> no-slip</td>

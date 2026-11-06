@@ -677,6 +677,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../drag/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Drag at the outer wall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../solver/" class="md-nav__link">
         
   
@@ -967,6 +995,34 @@
     
   
     Rotating solids
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../drag-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Drag at the outer wall
   
 
     
@@ -1326,6 +1382,12 @@ seconds to minutes.</p>
 <td>1 min</td>
 </tr>
 <tr>
+<td><code>tests/drag/run_all.sh</code></td>
+<td>the drag at the outer wall (<code>kappa_cmb</code>, <code>topo_drag</code>): eigenvalues and torques of the <code>conductive_IC</code> branch, the conservation of angular momentum and energy with the rotating solids, the limits of a weak and of a stiff drag, a rigid differential rotation, the frequencies of the drag of the topography, the power through the wall, the stops</td>
+<td>after a change of the walls, of the viscous stress, of the rotating solids, or of <code>spin_doctor</code>'s budgets</td>
+<td>2 min</td>
+</tr>
+<tr>
 <td><code>tests/rsf/regress_solve.sh</code></td>
 <td>eigenvalues, fields and forced solutions bitwise equal to an older copy</td>
 <td>after a change of <code>solve.py</code></td>
@@ -1333,7 +1395,7 @@ seconds to minutes.</p>
 </tr>
 </tbody>
 </table>
-<p><code>tests/diff_rot</code>, <code>tests/heat_dr</code>, <code>tests/magnetic</code>, <code>tests/centrifugal</code>, <code>tests/rsf</code>, <code>tests/tidal</code>, <code>tests/forcing</code>, <code>tests/decay</code>, <code>tests/twa</code>, <code>tests/mantle</code> and <code>tests/rotdyn</code> each have a README
+<p><code>tests/diff_rot</code>, <code>tests/heat_dr</code>, <code>tests/magnetic</code>, <code>tests/centrifugal</code>, <code>tests/rsf</code>, <code>tests/tidal</code>, <code>tests/forcing</code>, <code>tests/decay</code>, <code>tests/twa</code>, <code>tests/mantle</code>, <code>tests/rotdyn</code> and <code>tests/drag</code> each have a README
 that lists their scripts and what each one checks; the CI test explains itself in <code>tests/ci/test_spinover.py</code>.</p>
 <h2 id="are-existing-runs-unchanged">Are existing runs unchanged?</h2>
 <p><code>tests/diff_rot/regress.sh</code> builds the same small runs twice, once with an older copy of kore and once with yours, and

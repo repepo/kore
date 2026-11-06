@@ -12,7 +12,7 @@
         <link rel="prev" href="../magnetic/">
       
       
-        <link rel="next" href="../solver/">
+        <link rel="next" href="../drag/">
       
       
         
@@ -775,6 +775,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../drag/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Drag at the outer wall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../solver/" class="md-nav__link">
         
   
@@ -1085,6 +1113,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../drag-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Drag at the outer wall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../reynolds-stress/" class="md-nav__link">
         
   
@@ -1296,7 +1352,8 @@ magnetic torques at the walls and to each other by gravity, as in the <code>cond
 </tbody>
 </table>
 <p>The defaults are those of the <code>conductive_IC</code> branch for the Earth (2.3e3 is a relaxation time of one year). A run needs
-an axisymmetric, equatorially symmetric eigenvalue problem with no-slip walls:</p>
+an axisymmetric, equatorially symmetric eigenvalue problem with a no-slip inner wall; the outer wall is no-slip, as
+here, or stress-free, with or without a drag (<a href="../drag/">Drag at the outer wall</a>):</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">par</span><span class="o">.</span><span class="n">m</span> <span class="o">=</span> <span class="mi">0</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">par</span><span class="o">.</span><span class="n">symm</span> <span class="o">=</span> <span class="mi">1</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">par</span><span class="o">.</span><span class="n">bci</span> <span class="o">=</span> <span class="mi">1</span>
@@ -1307,8 +1364,9 @@ an axisymmetric, equatorially symmetric eigenvalue problem with no-slip walls:</
 <p>Three unknowns join the fields: the rotation rates of the mantle and of the inner core relative to the frame, and the
 angle of the inner core relative to the mantle.</p>
 <ul>
-<li><strong>The walls move with the solids.</strong> The fluid at each no-slip wall turns with the solid beyond it.</li>
-<li><strong>Viscous torque.</strong> The stress of the fluid on each wall.</li>
+<li><strong>The walls move with the solids.</strong> The fluid at each no-slip wall turns with the solid beyond it. At a stress-free
+  outer wall the fluid slips along the mantle; a drag pulls it towards the mantle's rotation.</li>
+<li><strong>Viscous torque.</strong> The stress of the fluid on each wall: at a stress-free outer wall, that of the drag, or none.</li>
 <li><strong>Magnetic torque.</strong> The magnetic stress through each wall, which acts on whatever conducts beyond it: a thin
   conducting wall, a resolved mantle or a conducting inner core. An insulating solid feels none.</li>
 <li><strong>Gravitational torque.</strong> It pulls the inner core and the mantle back into alignment, in proportion to the angle
@@ -1341,7 +1399,8 @@ core.</p>
 <p>Not supported (the run stops at startup):</p>
 <ul>
 <li><code>m</code> other than 0, <code>symm</code> other than 1, a full sphere (<code>ricb = 0</code>), forced runs, or no flow (<code>hydro = 0</code>);</li>
-<li><code>ViscosD = 0</code>, or a wall that is not no-slip (<code>bci</code> or <code>bco</code> other than 1);</li>
+<li><code>ViscosD = 0</code>, an inner wall that is not no-slip (<code>bci</code> other than 1), or an outer wall that is neither no-slip nor
+  stress-free (<code>bco = 2</code>);</li>
 <li><code>Gaspard = 0</code>;</li>
 <li>a differential rotation (<code>diff_rot = 1</code>) or <code>centrifugal = 1</code>;</li>
 <li>a toroidal <code>B0_tor</code> that does not vanish at a wall;</li>

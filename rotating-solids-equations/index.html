@@ -12,7 +12,7 @@
         <link rel="prev" href="../magnetic-equations/">
       
       
-        <link rel="next" href="../reynolds-stress/">
+        <link rel="next" href="../drag-equations/">
       
       
         
@@ -679,6 +679,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../drag/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Drag at the outer wall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../solver/" class="md-nav__link">
         
   
@@ -1096,6 +1124,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../drag-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Drag at the outer wall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../reynolds-stress/" class="md-nav__link">
         
   
@@ -1301,9 +1357,13 @@ no-slip rows of that degree become</p>
 <div class="arithmatex">\[
 T(1) = \omega_M, \qquad T(r_i) = r_i\,\omega_{IC} ,
 \]</div>
-<p>and every other wall condition is unchanged. A rigid rotation carries an axisymmetric field without changing it, so the
-rotating solids leave the conditions on the field, and the field of a conducting inner core or mantle, as they are for
-solids at rest.</p>
+<p>and every other wall condition is unchanged. At a stress-free outer wall (<code>bco = 0</code>) the row of <span class="arithmatex">\(T_1\)</span> stays the
+stress-free one, and a drag acts there on the slip relative to the mantle, <span class="arithmatex">\(T_1(1) - \omega_M\)</span>
+(<a href="../drag-equations/#the-rows">Drag at the outer wall equations</a>); without a drag only the field couples the fluid to the
+mantle. A rigid rotation carries an axisymmetric field without changing it, so the rotating solids leave the conditions
+on the field, and the field of a conducting inner core or mantle, as they are for solids at rest, but for a fluid
+slipping along a conducting outer wall, whose electric field enters the wall through the slip relative to the mantle
+(<code>assemble.bc_b_slip</code>).</p>
 <h2 id="torques">Torques</h2>
 <p>The torques are the moments of the stresses on each wall. With <span class="arithmatex">\(T\)</span> the toroidal flow of degree 1, the axial angular
 momentum of the fluid is</p>
@@ -1366,11 +1426,13 @@ units of <code>spin_doctor</code>'s kinetic energy a rigid rotation <span class=
 = 2\,\mathrm{Re}\left(\omega_M^*\,\Gamma_M + \omega_{IC}^*\,\Gamma_{IC}\right) - 2Kc\,\lvert\varphi\rvert^2 .
 \]</div>
 <p>The power of the viscous torques is minus the work of the moving walls on the fluid, which the viscous power of the
-fluid includes. The power of the magnetic torques moves energy between the solids and the field: it is minus the flux
-of <span class="arithmatex">\(\mathbf u\times\mathbf B_0\)</span> through the moving walls, which resid𝐄 leaves out of the induction work
-(<code>utils4pp.INDU_WALLS</code>). So resid𝐄 adds the energy of the solids to the left-hand side, and the power of the viscous
-torques and the loss <span class="arithmatex">\(-2Kc\lvert\varphi\rvert^2\)</span> to the right. It does so when both torques act on the solids (<code>vtrq</code>
-and <code>mtrq</code> 1).</p>
+fluid includes; at a stress-free outer wall with a drag the two differ by the power the drag dissipates (<a href="../drag-equations/#power-and-damping-rate">Drag at the
+outer wall equations</a>). The power of the magnetic torques moves energy between
+the solids and the field: it is minus the flux of <span class="arithmatex">\(\mathbf v\times\mathbf B_0\)</span> through the moving walls (<span class="arithmatex">\(\mathbf v\)</span>
+their velocity), which resid𝐄 leaves out of the induction work with the rest of the flux of <span class="arithmatex">\(\mathbf u\times\mathbf B_0\)</span>
+through the walls (<code>utils4pp.INDU_WALLS</code>). So resid𝐄 adds the energy of the solids to the left-hand side, and the power
+of the viscous torques and the loss <span class="arithmatex">\(-2Kc\lvert\varphi\rvert^2\)</span> to the right. It does so when both torques act on the
+solids (<code>vtrq</code> and <code>mtrq</code> 1).</p>
 <h2 id="checks-2026-11-06">Checks (2026-11-06)</h2>
 <p><code>tests/rotdyn/rotdyn_check.py</code> (<code>run_all.sh</code>, about 1 min on 2 ranks):</p>
 <ul>

@@ -1,0 +1,1576 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../rotating-solids-equations/">
+      
+      
+        <link rel="next" href="../reynolds-stress/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Drag at the outer wall - User Manual</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#drag-at-the-outer-wall-equations" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="User Manual" class="md-header__button md-logo" aria-label="User Manual" data-md-component="logo">
+      
+  <img src="../assets/test1.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            User Manual
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Drag at the outer wall
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Introduction
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../installation/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Installation
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../getting-started/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../background/" class="md-tabs__link">
+          
+  
+  
+  User guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../benchmarks/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Benchmarks
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../anelastic/" class="md-tabs__link">
+          
+  
+  
+  Mathematical framework
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../checking/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Modifying kore
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="User Manual" class="md-nav__button md-logo" aria-label="User Manual" data-md-component="logo">
+      
+  <img src="../assets/test1.png" alt="logo">
+
+    </a>
+    User Manual
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../background/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../forcing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Convective forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../thermal-forcing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Thermal forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tidal-forcing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tidal forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../magnetic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Magnetic field
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rotating-solids/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rotating solids
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../drag/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Drag at the outer wall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../solver/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Solver
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Output files
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../benchmarks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmarks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mathematical framework
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Mathematical framework
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../anelastic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Anelastic equations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../numerical-method/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical method
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../differential_rotation_details/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Differential rotation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../centrifugal-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Centrifugal deformation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../magnetic-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Magnetic field
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rotating-solids-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rotating solids
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Drag at the outer wall
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Drag at the outer wall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-condition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The condition
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-drag-of-the-topography" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The drag of the topography
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-rows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The rows
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#power-and-damping-rate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Power and damping rate
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checks-2026-11-06" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checks (2026-11-06)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reynolds-stress/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reynolds-stress forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../derivations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Derivation tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../checking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modifying kore
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-condition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The condition
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-drag-of-the-topography" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The drag of the topography
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-rows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The rows
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#power-and-damping-rate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Power and damping rate
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checks-2026-11-06" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checks (2026-11-06)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="drag-at-the-outer-wall-equations">Drag at the outer wall equations</h1>
+<p>This page gives the condition of a drag at a stress-free outer wall (<a href="../drag/">Drag at the outer wall</a>), the drag of the
+topography, how the condition enters the rows of the wall, and the power and damping rate that <code>spin_doctor</code> reports.
+They are those of the <code>conductive_IC</code> branch (its <code>topo.py</code>, the drag rows of its <code>assemble.py</code> and
+<code>utils4pp.cmb_slip_K</code>), written for any density and viscosity profile in <code>bin/topo.py</code>.</p>
+<h2 id="the-condition">The condition</h2>
+<p>The wall pulls on the fluid along it with a stress in proportion to the slip, the flow along the wall relative to the
+mantle. The tangential viscous stress of the fluid at the outer wall (<span class="arithmatex">\(u_r = 0\)</span> there) then meets</p>
+<div class="arithmatex">\[
+\rho_0\,\nu\,\mathrm{ViscosD}\;r\,\partial_r\!\left(\frac{\mathbf u_t}{r}\right)
+= -\,\mathrm{Gaspard}\;\rho_w\,\mathsf K\,(\mathbf u_t - \mathbf v_m) \qquad (r = 1),
+\]</div>
+<p>with <span class="arithmatex">\(\mathsf K\)</span> the drag coefficient in units of <span class="arithmatex">\(\rho_w\Omega r_0\)</span> (<span class="arithmatex">\(\rho_w\)</span> the fluid's density at the wall), <span class="arithmatex">\(\nu\)</span>
+the viscosity profile of the structure, and <span class="arithmatex">\(\mathbf v_m = \omega_M\,\hat{\mathbf z}\times\mathbf r\)</span> the velocity of the
+mantle (<code>rotdyn = 1</code>, 0 otherwise). <span class="arithmatex">\(\mathsf K = 0\)</span> is the stress-free wall and <span class="arithmatex">\(\mathsf K\to\infty\)</span> the no-slip one.
+<span class="arithmatex">\(\rho_0 = \rho_w\)</span> cancels, and the condition is</p>
+<div class="arithmatex">\[
+r\,\partial_r\!\left(\frac{\mathbf u_t}{r}\right) + q\,\mathsf K\,(\mathbf u_t - \mathbf v_m) = 0, \qquad
+q = \frac{\mathrm{Gaspard}}{\mathrm{ViscosD}\,\nu(1)} .
+\]</div>
+<p><code>kappa_cmb</code> is <span class="arithmatex">\(\mathsf K\)</span> times the unit tensor. For a dimensional drag of stress <span class="arithmatex">\(\kappa\,\mathbf u_t\)</span>,
+<code>kappa_cmb</code> <span class="arithmatex">\(= \kappa/(\rho_w\Omega r_0)\)</span>.</p>
+<h2 id="the-drag-of-the-topography">The drag of the topography</h2>
+<p>A flow of amplitudes <span class="arithmatex">\(U_x\)</span> (zonal) and <span class="arithmatex">\(U_y\)</span> (meridional) and frequency <span class="arithmatex">\(\omega_0\)</span> along a topography of spectrum <span class="arithmatex">\(S(k)\)</span>
+radiates internal waves of mean power per unit area</p>
+<div class="arithmatex">\[
+P = \frac{\rho\,I_k}{2\lvert\omega_0\rvert}\int_0^{2\pi}\left(U_x^2\cos^2\alpha + U_y^2\sin^2\alpha\right) g\;d\alpha,
+\qquad
+g = \sqrt{\max\left[0,\ (\omega_0^2 - N^2)(f^2 - \omega_0^2) + \omega_0^2\,\tilde f^2\sin^2\alpha\right]},
+\]</div>
+<div class="arithmatex">\[
+f = 2\Omega\cos\theta, \qquad \tilde f = 2\Omega\sin\theta, \qquad
+I_k = \int_0^\infty S\,k^2\,dk = \frac{h_\text{rms}^2\,k_0\,\Gamma(H - 1/2)}{4\sqrt\pi\,\Gamma(H)}, \qquad
+k_0 = \frac{2\pi}{\lambda_0},
+\]</div>
+<p>with <span class="arithmatex">\(\alpha\)</span> the direction of a wave vector of the topography from east, <span class="arithmatex">\(\theta\)</span> the colatitude and <span class="arithmatex">\(N\)</span> the buoyancy
+frequency at the wall (Rekier et al. 2025, eqs. B1 and B2). Their eq. (B1) as printed (version 4 of the preprint) lacks
+a factor <span class="arithmatex">\(4\pi^2\)</span>, lost between their eqs. (A19) and (10); with it, a sinusoidal ridge gives the classical
+<span class="arithmatex">\(\rho U^2h^2k\sqrt{N^2 - \omega^2}/4\)</span> of Bell (1975), and kore keeps it. The power has no term that mixes the zonal and
+the meridional flow, so the linear drag of the same mean power is a diagonal tensor on <span class="arithmatex">\((u_\theta, u_\phi)\)</span>, in units of
+<span class="arithmatex">\(\rho\Omega r_0\)</span>:</p>
+<div class="arithmatex">\[
+\mathsf K_{\theta\theta} = \frac{I_k/r_0}{\lvert\omega_0/\Omega\rvert}\int_0^{2\pi}\sin^2\alpha\,\frac{g}{\Omega^2}\,d\alpha,
+\qquad
+\mathsf K_{\phi\phi} = \frac{I_k/r_0}{\lvert\omega_0/\Omega\rvert}\int_0^{2\pi}\cos^2\alpha\,\frac{g}{\Omega^2}\,d\alpha .
+\]</div>
+<p>The inputs are <code>topo_hrms</code> <span class="arithmatex">\(= h_\text{rms}/r_0\)</span>, <code>topo_lambda0</code> <span class="arithmatex">\(= \lambda_0/r_0\)</span> and <code>topo_H</code> <span class="arithmatex">\(= H\)</span>, with
+<span class="arithmatex">\(N/\Omega\)</span> from the stratification, <span class="arithmatex">\(\sqrt{\mathrm{Beyonce}\;g\,dS/dr}/\mathrm{Gaspard}\)</span> at the wall (0 without buoyancy
+or where it is unstable), or <code>topo_N</code>, and <span class="arithmatex">\(\omega_0/\Omega\)</span> = <code>topo_omega</code>, or <span class="arithmatex">\(\lvert\)</span><code>itau</code><span class="arithmatex">\(\rvert\)</span>/Gaspard
+(eigenvalue problems), or <span class="arithmatex">\(\lvert\)</span><code>forcing_frequency</code><span class="arithmatex">\(\rvert\)</span>/Gaspard (forced runs). The integral over <span class="arithmatex">\(\alpha\)</span> is a
+midpoint rule of 2048 points (<code>topo.kappa</code>). Where <span class="arithmatex">\(g\)</span> vanishes for every <span class="arithmatex">\(\alpha\)</span> no wave can be radiated and the drag
+vanishes: near the poles when <span class="arithmatex">\(N\)</span> exceeds <span class="arithmatex">\(\omega_0\)</span>.</p>
+<h2 id="the-rows">The rows</h2>
+<p>At the wall a degree <span class="arithmatex">\(l\)</span> of the flow slips along it as</p>
+<div class="arithmatex">\[
+\mathbf u_t = s_l\,\nabla_1 Y_l + t_l\,\nabla_1 Y_l\times\hat{\mathbf r}, \qquad
+s_l = P_l' + \frac{P_l}{r} + (\ln\rho_0)'P_l, \qquad t_l = T_l ,
+\]</div>
+<p>with <span class="arithmatex">\(\nabla_1\)</span> the gradient on the unit sphere (<a href="../numerical-method/#unknowns">Numerical method</a>). The stress-free rows
+of <code>assemble.bc_u_spherical</code> are <span class="arithmatex">\(r^2\)</span> (section <code>u</code>, the second row of the outer wall) and <span class="arithmatex">\(r\)</span> (section <code>v</code>, its first
+row) times the parts of <span class="arithmatex">\(r\,\partial_r(\mathbf u_t/r)\)</span> on <span class="arithmatex">\(\nabla_1 Y_l\)</span> and on <span class="arithmatex">\(\nabla_1 Y_l\times\hat{\mathbf r}\)</span>. The
+drag adds the same parts of <span class="arithmatex">\(q\,\mathsf K\,\mathbf u_t\)</span>, which couple the degree <span class="arithmatex">\(l\)</span> to <span class="arithmatex">\(s\)</span> and <span class="arithmatex">\(t\)</span> of every degree
+<span class="arithmatex">\(l'\)</span>:</p>
+<div class="arithmatex">\[
+(\text{row } \texttt u)_l + r^2 q\sum_{l'}\left(A_{ss}^{ll'}s_{l'} + A_{st}^{ll'}t_{l'}\right) = 0, \qquad
+(\text{row } \texttt v)_l + r\,q\sum_{l'}\left(A_{ts}^{ll'}s_{l'} + A_{tt}^{ll'}t_{l'}\right) = 0,
+\]</div>
+<div class="arithmatex">\[
+A_{xy}^{ll'} = \frac{\oint x_l^*\cdot\mathsf K\,y_{l'}\,dS}{\oint\lvert x_l\rvert^2dS}, \qquad
+x, y \in \{\,s: \nabla_1 Y,\ \ t: \nabla_1 Y\times\hat{\mathbf r}\,\} ,
+\]</div>
+<p>on the unit sphere (<code>topo.couplings</code>, <code>topo.rows</code>). A constant drag gives $A_{ss} = A_{tt} = $ <code>kappa_cmb</code> and no
+coupling between degrees. The drag of the topography is even about the equator, so it couples degrees of the same
+symmetry: <span class="arithmatex">\(l\)</span> to <span class="arithmatex">\(l\pm2, \dots\)</span> within <span class="arithmatex">\(P\)</span> and within <span class="arithmatex">\(T\)</span>, and for <span class="arithmatex">\(m \neq 0\)</span> <span class="arithmatex">\(P_l\)</span> to <span class="arithmatex">\(T_{l\pm1}, \dots\)</span>. The integrals
+are Gauss–Legendre quadratures in <span class="arithmatex">\(\cos\theta\)</span> with <span class="arithmatex">\(\max(4(l_\text{max} + 2), 2000)\)</span> nodes, many since <span class="arithmatex">\(\mathsf K\)</span> has
+kinks where <span class="arithmatex">\(g\)</span> starts to vanish. With the rotating mantle the toroidal flow of degree 1 slips by
+<span class="arithmatex">\(T_1 - r\,\omega_M\)</span>, which gives the rows a column of <span class="arithmatex">\(\omega_M\)</span>
+(<a href="../rotating-solids-equations/#equations">Rotating solids equations</a>).</p>
+<h2 id="power-and-damping-rate">Power and damping rate</h2>
+<p><code>spin_doctor</code> computes the power the drag dissipates from the flow at the wall (<code>topo.dissipation</code>),</p>
+<div class="arithmatex">\[
+D_\text{topo} = 2\,\mathrm{Gaspard}\;\rho_w\oint(\mathbf u_t - \mathbf v_m)^*\cdot\mathsf K\,(\mathbf u_t - \mathbf v_m)\,dS ,
+\]</div>
+<p>in the units of its energies (the integral of <span class="arithmatex">\(\rho_0\lvert\mathbf u\rvert^2\)</span> of the complex amplitude, whose rate of
+change is <span class="arithmatex">\(2\sigma\)</span> times it), and the damping rate it implies, <span class="arithmatex">\(\delta\sigma_\text{topo} = -D_\text{topo}/(2E)\)</span>, with
+<span class="arithmatex">\(E\)</span> the energy of the mode: the kinetic energy, plus <code>Hendrik</code> times the magnetic energy inside and outside the fluid
+and that stored in the conducting walls, plus the energy of the rotating solids. With a stress-free wall and no drag,
+both use <span class="arithmatex">\(\mathsf K = 1\)</span>: per unit <code>kappa_cmb</code>.</p>
+<p><strong>The power through the wall.</strong> The viscous stress at the wall works on the fluid at the rate <span class="arithmatex">\(W_\nu\)</span> (<code>flow.dat</code>
+column 25), and on the mantle at the rate <span class="arithmatex">\(2\,\mathrm{Re}(\omega_M^*\Gamma^\nu_M)\)</span> of its viscous torque. The condition
+above makes their sum minus the drag's dissipation:</p>
+<div class="arithmatex">\[
+D_\text{topo} = -W_\nu - 2\,\mathrm{Re}\left(\omega_M^*\,\Gamma^\nu_M\right) .
+\]</div>
+<p>So the budgets need no new term: residσ and resid𝐄 already count the power of the stress at the walls, and the energy
+budget of the rotating solids the power of their torques. <span class="arithmatex">\(\delta\sigma_\text{topo}\)</span> is the drag's share of the damping
+rate, one term of that budget.</p>
+<h2 id="checks-2026-11-06">Checks (2026-11-06)</h2>
+<p><code>tests/drag/drag_check.py</code> (<code>run_all.sh</code>, about 2 min on 2 ranks):</p>
+<ul>
+<li><strong>Against <code>conductive_IC</code></strong> (2d84351), eleven runs: a constant drag on the spin-over mode in a shell and in a full
+  sphere; the drag of the topography on the spin-over mode, on an <span class="arithmatex">\(m = 2\)</span> mode and in a full sphere; the rotating solids
+  with a stress-free outer wall without a drag, with each drag, with thin walls and a dipole, and with a conducting
+  inner core, a resolved mantle and a field of degree 2; the drag of the topography with a thin wall and a dipole.
+  Eigenvalues to <span class="arithmatex">\(6\cdot10^{-14}\)</span>, and the rotation of the solids and the torques on the mantle in <code>rotdyn.dat</code> to
+  <span class="arithmatex">\(3\cdot10^{-10}\)</span>, its precision.</li>
+<li><strong>Conservation</strong> with <code>'Wu 2005'</code> (<code>r_out</code> 0.9, N 64) and the rotating solids: every mode but <span class="arithmatex">\(\lambda = 0\)</span> carries
+  no total angular momentum (<span class="arithmatex">\(2\cdot10^{-9}\)</span>) and closes resid𝐋 (<span class="arithmatex">\(10^{-9}\)</span>); with <code>kappa_cmb</code> the energy budget of
+  the fluid and the solids closes (<span class="arithmatex">\(10^{-10}\)</span>), with the drag of the topography, a dipole, a conducting inner core and a
+  resolved mantle resid𝐄 does (<span class="arithmatex">\(10^{-10}\)</span>).</li>
+<li><strong>Equivalences.</strong> A constant tensor given to the drag of the topography (the test hook <code>topo_K</code>) gives the eigenvalues
+  of <code>kappa_cmb</code> (<span class="arithmatex">\(2\cdot10^{-14}\)</span>). A rigid differential rotation <span class="arithmatex">\(a = 0.3\)</span> with <code>kappa_cmb</code> gives the eigenvalues of
+  a frame turning <span class="arithmatex">\(1 + a\)</span> times faster with <code>kappa_cmb</code><span class="arithmatex">\(/(1 + a)\)</span>, shifted by <span class="arithmatex">\(-i\,m\,\mathrm{Gaspard}\,a\)</span>
+  (<span class="arithmatex">\(2\cdot10^{-16}\)</span>): the drag acts on the slip relative to the mantle, in units of the frame's rotation rate.</li>
+<li><strong>Limits.</strong> <code>kappa_cmb</code> = <span class="arithmatex">\(10^8\)</span> gives the eigenvalues of a no-slip wall (<span class="arithmatex">\(7\cdot10^{-12}\)</span>; with the rotating solids
+  <span class="arithmatex">\(10^{-10}\)</span>, and their <code>rotdyn.dat</code>). A weak drag (<code>kappa_cmb</code> = <span class="arithmatex">\(10^{-6}\)</span>) dissipates <code>kappa_cmb</code> times the Dtopo/κ of
+  the stress-free run (<span class="arithmatex">\(6\cdot10^{-5}\)</span>; with the rotating solids <span class="arithmatex">\(2\cdot10^{-5}\)</span>), and with the mantle at rest changes
+  the damping rate of the spin-over mode by <code>kappa_cmb</code> times its δσtopo/κ (<span class="arithmatex">\(5\cdot10^{-4}\)</span>). With the rotating solids
+  the change is 0.49 times it for their axial mode: the drag turns the mantle, which changes the other losses at the
+  same order.</li>
+<li><strong>Frequencies.</strong> <span class="arithmatex">\(N/\Omega\)</span> and <span class="arithmatex">\(\omega_0/\Omega\)</span> in <code>params.dat</code>: <code>topo_N</code> and <code>topo_omega</code> when set,
+  <span class="arithmatex">\(\sqrt{10}\)</span> for the stratification <code>'linear'</code> with Beyonce 10, <span class="arithmatex">\(\lvert\)</span><code>itau</code><span class="arithmatex">\(\rvert\)</span> and the forcing frequency
+  otherwise (<span class="arithmatex">\(10^{-9}\)</span>). The same run with a time unit twice as long (Gaspard 2, Beyonce 40, ViscosD, ThermaD and <code>itau</code>
+  doubled) has its eigenvalues doubled (<span class="arithmatex">\(10^{-15}\)</span>).</li>
+<li><strong>The power through the wall</strong> closes in every run with a drag but the stiff ones (whose slip is round-off), to
+  <span class="arithmatex">\(2\cdot10^{-9}\)</span>, and in a forced run (forcing 6) to the printed digits.</li>
+<li><strong>Stops</strong> of <code>background.check_drag</code>.</li>
+</ul>
+<p>Also checked once:</p>
+<ul>
+<li><strong>Calibration.</strong> At Ek <span class="arithmatex">\(10^{-4}\)</span> (N 64) the Earth's topography (<code>topo_hrms</code> 4.35e-4, <code>topo_lambda0</code> 0.431, <code>topo_H</code>
+  0.8, <span class="arithmatex">\(N = 0\)</span>) adds to the damping of the spin-over mode (<span class="arithmatex">\(\omega_0/\Omega\)</span> = 0.995) <span class="arithmatex">\(-2.3100\cdot10^{-5}\)</span>, and
+  <code>kappa_cmb</code> = 4.5e-6 adds <span class="arithmatex">\(-2.3038\cdot10^{-5}\)</span>.</li>
+<li><strong>Weak and strong drag</strong> (the spin-over mode, Ek <span class="arithmatex">\(10^{-3}\)</span>, <span class="arithmatex">\(\sqrt{E} = 0.032\)</span>). The change of the damping rate over
+  <code>kappa_cmb</code> times δσtopo/κ is 0.97 at <code>kappa_cmb</code> = <span class="arithmatex">\(10^{-3}\)</span>, 0.76 at <span class="arithmatex">\(10^{-2}\)</span> and 0.47 at <span class="arithmatex">\(3\cdot10^{-2}\)</span>; the
+  share of the no-slip wall's added damping is 0.72 at <span class="arithmatex">\(3\cdot10^{-2}\)</span>, 0.94 at 0.1 and 0.998 at 1. With
+  <code>kappa_cmb</code> = <span class="arithmatex">\(10^{-4}\)</span> the added damping is <span class="arithmatex">\(-5.042\cdot10^{-4}\)</span> at Ek <span class="arithmatex">\(10^{-3}\)</span> and <span class="arithmatex">\(-5.063\cdot10^{-4}\)</span> at
+  <span class="arithmatex">\(10^{-4}\)</span>.</li>
+<li><strong>Quadrature.</strong> For the spin-over test (<span class="arithmatex">\(\omega_0/\Omega\)</span> = 0.98, <span class="arithmatex">\(N/\Omega\)</span> = 0.5) the couplings change by
+  <span class="arithmatex">\(6\cdot10^{-7}\)</span> of the largest from 2000 to 16000 nodes, the error of the kinks. The nodes are those of
+  <code>conductive_IC</code> (computed by <code>scipy.special.roots_legendre</code> instead of <code>numpy</code>'s <code>leggauss</code>, ten times faster; the
+  couplings agree to <span class="arithmatex">\(5\cdot10^{-12}\)</span>).</li>
+<li><strong>Other forcings.</strong> The random Reynolds stress (forcing 11) with <code>kappa_cmb</code> and with the drag of the topography, and
+  the entropy at the inner wall (forcing 13) with <code>kappa_cmb</code>: Dtopo is minus the power of the stress at the wall, to
+  the printed digits.</li>
+<li><strong>Operators.</strong> The drag and the rotating solids change only rows of <code>assemble.py</code>: <code>submatrices.npz</code> is bitwise the
+  same with and without them, so their parameters are not stored in it.</li>
+</ul>
+<h2 id="reference">Reference</h2>
+<ul>
+<li>Rekier, J., Triana, S. A., Barik, A., Abdulah, A. &amp; Kang, S. 2025, arXiv:2507.01671 (eqs. 20, 21, B1 and B2).</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "content.code.copy"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

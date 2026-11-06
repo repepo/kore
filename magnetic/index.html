@@ -997,6 +997,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../drag/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Drag at the outer wall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../solver/" class="md-nav__link">
         
   
@@ -1287,6 +1315,34 @@
     
   
     Rotating solids
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../drag-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Drag at the outer wall
   
 
     
@@ -2163,8 +2219,10 @@ of its effect.
   writes both to <code>magnetic.dat</code>; keep it small, say below 1%.</li>
 <li><strong>A fluid slipping along the wall</strong> (<code>bco = 0</code>, <code>bci = 0</code> or <code>ViscosD = 0</code>). The fluid's tangential electric field,
   including that of the flow across the background field, is continued into the wall in the wall's frame (condition C.I
-  of Rekier et al. 2023). The slip stands for a thin viscous layer that is not resolved, which must be thin against the
-  magnetic skin depth: <code>assemble.py</code> prints Pm times the target frequency in rotation units, which should be small.</li>
+  of Rekier et al. 2023), which turns with the mantle with the <a href="../rotating-solids/">rotating solids</a>. The slip stands
+  for a thin viscous layer that is not resolved, which must be thin against the magnetic skin depth: <code>assemble.py</code>
+  prints Pm times the target frequency in rotation units, which should be small. A <a href="../drag/">drag</a> at the outer wall
+  changes nothing here.</li>
 <li><strong>With a differential rotation</strong> the wall turns with the fluid next to it, so the rotation must be uniform in latitude
   there: the run stops otherwise.</li>
 <li><strong><code>B0_cmb</code>.</strong> A steady background field drives no current in the wall, but it must meet the wall's condition at the
