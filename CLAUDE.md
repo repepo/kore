@@ -83,11 +83,11 @@ eigenvalues as ω, σ in nHz.
 | `reynolds_stress.py` | forcing 11: random Reynolds-stress body force f = ρ₀⁻¹∇·(ρ₀ s), the fluctuation-dissipation partner of the viscous force; `rhs(nsamp, seed)` gives one realisation per column of B_forced (docstring: physics, discretisation, normalisation) |
 | `bc_variables.py` | Chebyshev values/derivatives at the walls (`Ta`, `Tb`) and ln ρ₀ and its first two derivatives there (`lha*`, `lhb*`) |
 | `solve.py` | reads its own rows of A, B (memory-mapped), optional Ruiz scaling, SLEPc/KSP, KE normalisation, writes fields |
-| `utils4pp.py` | post-processing: solution expansion, velocity/curl l-components, per-l workers (`flow_worker`, `thermal_worker`), `diff_rot_setup`, `diagnose`, `kinetic_energy`, `identify`, `centrifugal_terms` (the metric parts of KE, the Coriolis power and TE with `centrifugal = 1`), `centrifugal_magnetic_energy`, `centrifugal_magnetic_terms` (with a field: MEc, the metric Lorentz and induction work, the potential field on the deformed walls) |
+| `utils4pp.py` | post-processing: solution expansion, velocity/curl l-components, per-l workers (`flow_worker`, `thermal_worker`), `diff_rot_setup`, `diagnose`, `kinetic_energy`, `identify`, `centrifugal_terms` (the metric parts of KE, the Coriolis power and TE with `centrifugal = 1`), `centrifugal_magnetic_energy`, `centrifugal_magnetic_terms` (with a field: MEc, the metric Lorentz and induction work, the potential field on the deformed walls), `centrifugal_dissipation_terms` (phase 2: the metric parts of the viscous power, the work of ΔΩ and the thermal dissipation) |
 | `spin_doctor.py` | runs the diagnostics per solution, prints the table, writes `params.dat` (`param_table`, `row_note`), `flow.dat`, `thermal.dat` |
 | `ru_insane.py` | operator symmetry and diff-rot block tests (see its docstring) |
 | `diff_rot.py` | the differential rotation (§8): the shapes fₙ of every type and their fits, the thermal-wind σₙ, the angular couplings of the momentum and heat terms, the labels, blocks and Δl ranges |
-| `centrifugal.py` | the centrifugal deformation (`centrifugal = 1`, §4): the flattening f(r) of each shape (`SHAPES`, `radau`, `shape_functions`, `flattening`), the profile codes `ce0`–`ce2` (`profile_functions`), `g_monopole`, `to_physical` (plots), `report`, the angular couplings (`primitives`, `momentum_coefficients`, `heat_coefficients`) and the terms (`labels`, `dl_range`, `momentum_block`, `entropy_block`); with a field the metric Lorentz force and induction (`magnetic_build`, `magnetic_labels`, `magnetic_dl_range`, `magnetic_block`) and the insulating walls (`wall_coefficients`, `wall_rows`, `wall_potential`); only `parameters` and `angular` imported at the top |
+| `centrifugal.py` | the centrifugal deformation (`centrifugal = 1`, §4): the flattening f(r) of each shape (`SHAPES`, `radau`, `shape_functions`, `flattening`), the profile codes `ce0`–`ce2` (`profile_functions`), `g_monopole`, `to_physical` (plots), `report`, the angular couplings (`primitives`, `momentum_coefficients`, `heat_coefficients`) and the terms (`labels`, `dl_range`, `momentum_block`, `entropy_block`); with a field the metric Lorentz force and induction (`magnetic_build`, `magnetic_labels`, `magnetic_dl_range`, `magnetic_block`) and the insulating walls (`wall_coefficients`, `wall_rows`, `wall_potential`); phase 2 the dissipative terms (`diffusion_build`, `diffusion_labels`, `diffusion_orders`, `diffusion_block`, the walls `wall_dissipative`, the ICB `icb_electric`), the differential rotation (`rotation_build`, `rotation_block`) and `deformed` (whether any of it applies); only `parameters` and `angular` imported at the top |
 | `angular.py` | the angular algebra at fixed m: the recurrence matrices X (cos θ) and D (−sin θ ∂θ), the vector operations (g(cos θ)·, ẑ×, sin θ F_θ), Schmidt harmonics at any l (`ylm_grid`, `ylm`); numpy and scipy only |
 | `targets.py` | analytic targets (spin-over, Rieutord–Valdettaro attractor) |
 
@@ -163,10 +163,22 @@ Clairaut's equation from the structure's g, `centrifugal.radau`; f_top = 5q_top/
 r_out for 'model S hydrostatic', else 1; `centrifugal_f` rescales it to f at the outer wall), 'uniform' (`centrifugal_f`),
 'user' (`centrifugal_profile` in r, x, p, as the other 'user' expressions). `centrifugal_q` > 0 adds the monopole
 −(2/3)Ω²r to g in `radial_profiles.graviX` (the buoyancy); `graviX(r, D, False)` is the structure's g, which the thermal
-wind keeps (as `diff_rot.sigma_coefficients`). Left spherical: the viscous force, the thermal and magnetic diffusion and
-the diff-rot terms (WARNINGs from `centrifugal.report`); `background.check_centrifugal` stops with forcing ≠ 0, stress-free
-walls with ViscosD > 0, and a conducting inner core with mu_i2o ≠ 1. Checks: `tests/centrifugal/` (§11); spin-over of a
-Maclaurin spheroid Im λ = 1 + f + f²/3 (exact 1 + f + f²/2).
+wind keeps (as `diff_rot.sigma_coefficients`). `background.check_centrifugal` stops with forcing ≠ 0, bco or bci = 2
+(zero radial stress) with ViscosD > 0, a conducting inner core with mu_i2o ≠ 1, and a viscous full sphere with m ≠ 0 and
+rpower_v < 4; `centrifugal.report` warns that thermal_wind 1, 2 keep the sphere's S_tw. Checks: `tests/centrifugal/`
+(§11); spin-over of a Maclaurin spheroid Im λ = 1 + f + f²/3 (exact 1 + f + f²/2).
+Dissipative terms (phase 2, 2026-11-06; `centrifugal.py` sections 6, 7): the covariant viscous force Fᵀ V(F w/J) = V(w) + δV
+with no-slip and stress-free walls (the tangential traction on the level surface), the heat diffusion ∇⋅(κ M⁻¹∇s) with
+fixed-entropy and fixed-flux walls (r̂⋅M⁻¹∇s), the magnetic diffusion E = η M∇×(M b̃) in the fluid and a conducting inner
+core (with the ICB row of the tangential electric field), and a differential rotation given on the level surfaces
+(`diffusion_build`, `wall_dissipative`, `icb_electric`, `rotation_build`; labels `diffusion_labels`, `rotation_labels`,
+blocks `operators.centrifugal_diffusion`, `centrifugal_diffusion_ic`, `centrifugal_rotation`; wall rows in
+`assemble.bc_u_centrifugal`, `bc_theta_centrifugal`, `bc_b_cic_centrifugal`). With m ≠ 0 the sections v (viscous, P''')
+and g (field, F''') are built in the C^(3) basis (`diffusion_orders`), and the rows of g and gic at r³ in a full sphere and
+a conducting inner core (`utils.rpower_g`, `rpower_gic`). Every phase-2 change is gated on `centrifugal.deformed()` (f ≠ 0
+somewhere): f = 0 keeps the sphere's bases and rows, bitwise centrifugal = 0. deformed() runs before the structure exists
+(background.check, utils), so 'clairaut' is decided from centrifugal_f or centrifugal_q. A shift taken from an f = 0 run
+also holds the change of basis (1.5e-6 in λ for the nutation at N 160): take shifts between deformed runs (±f).
 With a field (magnetic = 1, phase 1b, 2026-11-05; `centrifugal.py` sections 4, 5): F, G describe the flux b̃ = J F⁻¹b, and
 kore's B0 formula gives B̃0 (the body's field is F B̃0/J). Covariant Lorentz force (1/J)[∇×(M b̃)×B̃0 + ∇×(M B̃0)×b̃],
 induction ∂ₜb̃ = ∇×(w×B̃0/J); first-order parts δ𝐆, δ𝐄 built with mag_algebra's recurrence algebra
@@ -175,7 +187,7 @@ induction ∂ₜb̃ = ∇×(w×B̃0/J); first-order parts δ𝐆, δ𝐄 built w
 `magnetic_labels` (submatrices.py), blocks `operators.centrifugal_magnetic`, Δl up to nmax + 3 (`magnetic_dl_range`).
 Insulating walls matched on the deformed wall: extra entries in the bc rows on F, F′, G of l ± 1 … l ± 3
 (`centrifugal.wall_coefficients`, `wall_rows`, `assemble.bc_b_centrifugal`); a conducting inner core is deformed with the
-fluid and needs no new rows with mu_i2o = 1.
+fluid and, with mu_i2o = 1, needs no new rows for the ideal terms (its magnetic diffusion adds the ICB row, phase 2).
 
 **Velocity** (`utils4pp.cheb2space_pol`): u = ρ₀⁻¹∇×∇×(ρ₀ P **r**) + ∇×(T **r**), so ∇·(ρ₀u) = 0 exactly:
 u_r = L P/r, consoidal part P′ + P(1/r + (ln ρ₀)′), L = l(l+1).
@@ -394,6 +406,8 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   1b) the normalisation is KE + Hendrik (ME + MEc), MEc the metric part of the magnetic energy (`magnetic.dat` column 12,
   `upp.centrifugal_magnetic_energy`); `upp.centrifugal_magnetic_terms` adds the metric Lorentz work to residσ, residω and
   the metric induction work to resid𝐛 (round-off); resid𝐄 closes at O(f²) only (the products of first-order terms).
+  Phase 2: `upp.centrifugal_dissipation_terms` adds the metric parts of the viscous power Dkin, of the work of ΔΩ and of
+  the thermal dissipation (the budgets close to round-off); Dvisc and the wall powers stay spherical, so residD is NaN.
 - Walls (2026-11-04): `upp.wall_powers` gives the work of the pressure (Π = r G_s from the consoidal momentum equation,
   `pressure_force`; in residσ, residω) and of the viscous stress at each wall, `upp.viscous_dissipation` the dissipation
   ∫𝛔:∇𝐮 on an (r, θ) grid; `Dkin` = Wv − Dvisc (residD). Π at the walls converges more slowly than the volume terms
@@ -432,19 +446,25 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   worked examples: part A the magnetic field (derive.py `--b0 pol1|pol2|tor1|tor2`, the exact-interpolation fit, the code
   generation), part B the differential rotation (the recurrence algebra of `bin/angular.py`, the 12 primitives and the
   couplings of `bin/diff_rot.py`). The scripts' docstrings give the same rationale (2026-10-30).
-- `tests/centrifugal/` (README, `run_all.sh`, ~7 min on 16 cores; `SKIP_SOLVE=1` without PETSc; NEW 2026-11-05): `derive.py`
+- `tests/centrifugal/` (README, `run_all.sh`, ~13 min on 16 cores; `SKIP_SOLVE=1` without PETSc; NEW 2026-11-05): `derive.py`
   (sympy: every closed form of `centrifugal.py` from the map and w = J F⁻¹u), `algebra_check.py` (the couplings against
   quadratures with scipy's lpmv), `clairaut_check.py` (Maclaurin 5/4, polytrope 7.5/π², 'Wu 2005' against Clairaut's
   equation from ρ, the Sun's f/q 0.519), `eig_check.py` (f = 0 bitwise, the spin-over, a relabelled sphere moving at
   O(c²), homogeneous 'clairaut' = 'uniform', the monopole = Beyonce(1 − 2q/3), the ideal fluid's real frequencies; with a
-  field: f = 0 bitwise, the relabelled sphere against the field written on the sphere), `budget_check.py [tol] [HALF]`
+  field: f = 0 bitwise, the relabelled sphere against the field written on the sphere, in a viscous fluid; the relabelled
+  free decay), `budget_check.py [tol] [HALF]`
   (with a field also resid𝐛, and resid𝐄 of second order from the run at half the flattening), `mk_run.py` (defaults: the
   inviscid Boussinesq full sphere, m 1, N 24, lmax 20, 'uniform' f 0); phase 1b: `derive_mag.py [--quick]` (sympy: the
   covariant magnetic terms from b = F b̃/J, kore's couplings against them, the wall terms; part B in parallel) and
   `bc_check.py` (the wall rows against the exact matching of a potential field on the deformed wall: residual O(f²)),
-  `fcn.sh [WORKDIR] [NP]` (the free core nutation with a field and a conducting inner core at Ek 1e-7: Im λ moves by
-  f(1 + f/3) up to 1e-4 of f; 15 ranks, `st_mat_mumps_icntl_14` = 500; not in run_all.sh);
-  `ru_insane.py` checks the metric blocks against quadratures.
+  `fcn.sh [WORKDIR] [NP]` (the free core nutation with a field and a conducting inner core at Ek 1e-7, the shift taken
+  between ±f: Im λ moves by f(1 + f/3) plus 6.1e-4 of f from the Ekman layers and the field, Greenspan's value 4.6e-4;
+  15 ranks, `st_mat_mumps_icntl_14` = 1000, 5 min, 15 GB; not in run_all.sh); phase 2: `derive_diff.py [--quick]` (sympy:
+  the viscous force, the traction on the level surface, the heat diffusion and flux, the magnetic diffusion and the ΔΩ
+  force from the map, and kore's blocks and wall rows against them), `spheroid_modes.py [--ekman]` (the exact inertial
+  modes of a spheroid by the polynomial method: dω/df of 73 modes against kore's), `shape_check.py [NPROC]` (damped modes
+  on deformed walls at Ek 1e-3 against Hadamard's formula and a volume formula: no-slip, stress-free, heat);
+  `ru_insane.py` checks the metric blocks against quadratures, and the viscous force Hermitian and negative.
 - `tests/rsf/` (README; `HOWTO.md` points to `docs/forcing.md` and `docs/reynolds-stress.md`; `example_m2/`, the
   chandler m = 2 scan, has its own README): shared
   pieces in `rsf_common.py`; `builder_check.py` (f = u against the inertia rows), `noise_check.py` (the noise
@@ -516,6 +536,8 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
 
 ## 14. History (this branch, newest first)
 
+2026-11-06 the dissipative terms of the deformed body (phase 2: the viscous force with no-slip and stress-free walls, the
+heat and magnetic diffusion with their wall rows, a conducting inner core, the metric terms of a differential rotation);
 2026-11-05 the centrifugal deformation with a field (phase 1b: the metric Lorentz force and induction, the insulating
 walls on the deformed body, a conducting inner core with mu_i2o = 1, the free core nutation check `fcn.sh`);
 `9d245cd2` the centrifugal deformation, `centrifugal = 1` (`bin/centrifugal.py`, `tests/centrifugal/`,

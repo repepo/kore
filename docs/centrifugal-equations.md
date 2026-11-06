@@ -1,8 +1,9 @@
 # Centrifugal deformation equations
 
 This page gives the mathematics behind `centrifugal = 1`, for readers who want to check the code or extend it: the
-coordinates that follow the level surfaces, the equations in them and their rows, the magnetic field, the flattening of
-each shape, the effective gravity, the energy budgets, the plots, the accuracy, and the checks. How to set up a run is on
+coordinates that follow the level surfaces, the equations in them and their rows, the magnetic field, the dissipative
+terms, the differential rotation, the flattening of each shape, the effective gravity, the energy budgets, the plots, the
+accuracy, and the checks. How to set up a run is on
 [Background model](background.md#centrifugal-deformation). The code is in `bin/centrifugal.py`, the checks in
 `tests/centrifugal/`.
 
@@ -57,7 +58,8 @@ $$
 p_0\left(J\thinspace\partial_t s + w_r\frac{dS}{dr}\right) = \dots ,
 $$
 
-with the dots the viscous force and the thermal diffusion. Three terms change: the inertia gains the metric
+with the dots the viscous force and the thermal diffusion, which take covariant forms too
+([Dissipative terms](#dissipative-terms)). Three terms of the ideal fluid change: the inertia gains the metric
 $\mathsf M$, the Coriolis force turns with the map ($\mathsf F^{\mathsf T}(\hat{\mathbf z}\times\mathsf F\mathbf w)/J = \tilde{\mathbf z}\times\mathbf w$),
 and the rate of change of the entropy gains $J$. The advection keeps its form, $\mathbf u\cdot\nabla_X S = w_r S'/J$,
 and the buoyancy takes the effective gravity $g_{\rm eff}$ ([below](#effective-gravity)).
@@ -120,14 +122,15 @@ induction equation for the flux:
 $$
 \mathsf F^{\mathsf T}\mathbf F_L = \frac{\mathrm{Hendrik}}{\rho_0 J}\left[\nabla\times(\mathsf M\tilde{\mathbf b})\times\tilde{\mathbf B}_0 + \nabla\times(\mathsf M\tilde{\mathbf B}_0)\times\tilde{\mathbf b}\right],
 \qquad
-\partial_t\tilde{\mathbf b} = \nabla\times\left(\frac{\mathbf w\times\tilde{\mathbf B}_0}{J}\right) + \mathrm{MagnetD}\thinspace\nabla^2\tilde{\mathbf b} .
+\partial_t\tilde{\mathbf b} = \nabla\times\left(\frac{\mathbf w\times\tilde{\mathbf B}_0}{J} - \mathrm{MagnetD}\thinspace\mathsf M\thinspace\nabla\times(\mathsf M\tilde{\mathbf b})\right) .
 $$
 
 Two identities of the map give them. The current of the body, carried back as a flux, is $\nabla\times(\mathsf M\tilde{\mathbf b})$;
 and the cross product of two fields carried back as fluxes, $\mathbf a = \mathsf F\tilde{\mathbf a}/J$ and
 $\mathbf c = \mathsf F\tilde{\mathbf c}/J$, has the covariant components
-$\mathsf F^{\mathsf T}(\mathbf a\times\mathbf c) = (\tilde{\mathbf a}\times\tilde{\mathbf c})/J$. The magnetic diffusion
-keeps its spherical form ([Accuracy](#accuracy)).
+$\mathsf F^{\mathsf T}(\mathbf a\times\mathbf c) = (\tilde{\mathbf a}\times\tilde{\mathbf c})/J$. The electric field
+of the diffusion is MagnetD times the current of the body, whose covariant components are
+$\mathsf M\thinspace\nabla\times(\mathsf M\tilde{\mathbf b})$ ([Dissipative terms](#dissipative-terms)).
 
 **At first order.** With $\mathsf M - \mathsf I$ and $J - 1 = \eta P_2$ from above, and the currents
 $\mathbf j = \nabla\times\tilde{\mathbf b}$ and $\mathbf J_0 = \nabla\times\tilde{\mathbf B}_0$ of the sphere, the force
@@ -176,9 +179,86 @@ $$
 which couple $F_l$ to $F_{l\pm2}$, $G_{l\pm1}$ and $G_{l\pm3}$, and $G_l$ to $G_{l\pm2}$, $F_{l\pm1}$ and $F_{l\pm3}$.
 
 **Conducting inner core.** The inner core is deformed with the fluid, on the same map, and its field is a flux too. With
-the permeability of the fluid (`mu_i2o` = 1) the matching needs no new terms: the flux through the inner boundary is
-continuous, and with it the tangential $\mathsf M\tilde{\mathbf b}$ is continuous exactly when the tangential
-$\tilde{\mathbf b}$ is; the rows of the electric field keep their form, since the flow vanishes at the no-slip boundary.
+the permeability of the fluid (`mu_i2o` = 1) the field $\tilde{\mathbf b}$ is continuous at the inner boundary, since
+$\mathbf b$ is and the map is smooth across it, so the rows that match the field keep their form. The tangential electric
+field is continuous too. The flow vanishes at the no-slip boundary, so on each side this field is that of the diffusion,
+and its row gains the metric part of the diffusion of the fluid and of the core ([Dissipative terms](#dissipative-terms)).
+
+## Dissipative terms
+
+The viscous force and the thermal and magnetic diffusion act in the body, so a damped mode feels the deformed walls and
+the deformed profiles through them. kore carries each back to the reference space as it does the inertia: it keeps its
+spherical form and gains a part of first order in $f$.
+
+**Viscous force.** With $\mathbf V(\mathbf u) = \rho_0^{-1}\nabla\cdot(\rho_0\nu\thinspace\mathsf S)$ the force per
+unit mass ([Anelastic equations](anelastic.md)), its covariant form is, up to a gradient that the curl rows remove,
+
+$$
+\mathsf F^{\mathsf T}\mathbf V\left(\frac{\mathsf F\mathbf w}{J}\right) = \mathbf V(\mathbf w) - \boldsymbol\xi\times\nabla\times\mathbf V(\mathbf w)
++ \mathbf V\left(\nabla\times(\boldsymbol\xi\times\mathbf w) - \boldsymbol\xi\thinspace\nabla\cdot\mathbf w\right)
+- \xi_r\frac{d\nu}{dr}\thinspace\nabla\cdot\mathsf S(\mathbf w) - \nabla\left(\frac{\xi_r}{\rho_0}\frac{d(\rho_0\nu)}{dr}\right)\cdot\mathsf S(\mathbf w) .
+$$
+
+The second and third terms carry the force of the sphere along the displacement $\boldsymbol\xi$; the last two come from
+$\nu$ and $\rho_0$, which are constant on the level surfaces rather than on the spheres.
+
+**Thermal diffusion.** The heat rows are the equation times $J$, and the diffusion becomes
+
+$$
+J\thinspace\nabla_X\cdot\left(\kappa p_0\nabla_X s\right) = \nabla\cdot\left(\kappa p_0\thinspace\mathsf M^{-1}\nabla s\right),
+$$
+
+whose first-order part is $-\nabla\cdot(\kappa p_0(\mathsf M - \mathsf I)\nabla s)$.
+
+**Magnetic diffusion.** The current of the body, carried back as a flux, is $\nabla\times(\mathsf M\tilde{\mathbf b})$,
+and the covariant components of the electric field of the diffusion are MagnetD times
+$\mathsf M\thinspace\nabla\times(\mathsf M\tilde{\mathbf b})$. Its first-order part is MagnetD times
+$(\mathsf M - \mathsf I)\nabla\times\tilde{\mathbf b} + \nabla\times((\mathsf M - \mathsf I)\tilde{\mathbf b})$. A
+conducting inner core gains the same terms with its own diffusivity.
+
+**Walls.** The no-slip, impenetrable and fixed-entropy rows keep their form: $\mathbf w = 0$, $w_r = 0$ and $s = 0$ on a
+level surface are $\mathbf u = 0$, $\mathbf u\cdot\mathbf n = 0$ and $s = 0$ in the body. The two other walls change:
+
+- a stress-free wall has no tangential stress on the deformed wall: the tangential part of
+  $\mathsf F^{\mathsf T}\mathsf S_X\mathsf F^{-\mathsf T}\hat{\mathbf r}$ vanishes, with $\mathsf S_X$ the rate of strain
+  of the body, $\mathsf F^{-\mathsf T}\hat{\mathbf r}$ the normal to the level surface and $\mathsf F^{\mathsf T}$ taking
+  the components along its tangents;
+- a fixed-flux wall has no flux through the deformed wall: $\hat{\mathbf r}\cdot\mathsf M^{-1}\nabla s = 0$.
+
+**Rows.** The first-order parts multiply the fields and their derivatives by polynomials in $\cos\theta$ of degree 2 at
+most, so they couple the degrees as the inertia does: $l$ to $l$ and $l \pm 2$ of the same kind, and to $l \pm 1$ and
+$l \pm 3$ of the other. Their radial factors are products of the amplitudes of the map, of the diffusivity and its
+derivatives, and of the derivatives of $\ln\rho_0$ (`centrifugal.diffusion_build`). When $m \neq 0$ the toroidal rows of
+the viscous force and of the induction reach the third derivative of $P$ and of $F$, and kore builds those sections in the
+basis that has it. In a full sphere these rows have terms in $P/r$ and $F/r$, polynomials only once the rows are
+multiplied by $r^4$ and $r^3$: kore does it for the field (in a conducting inner core too), and asks for `rpower_v` = 4
+for the flow.
+
+## Differential rotation
+
+A differential rotation is a profile like the others: $\Delta\Omega(r, \theta)$ is given in the reference space, so the
+point of the body at $\mathbf X(r, \theta)$ turns at $\Delta\Omega(r, \theta)$, and a rotation that depends on $r$ alone
+is constant on the level surfaces. The flow of the body is $\mathbf U_0 = \mathrm{Gaspard}\thinspace\Delta\Omega\thinspace\hat{\mathbf z}\times\mathbf X$.
+The map commutes with the rotations about the axis, so the flux of this flow is $J$ times the spherical formula
+$\mathbf U_{00} = \mathrm{Gaspard}\thinspace\Delta\Omega\thinspace\hat{\mathbf z}\times\boldsymbol\alpha$, and its terms
+change as follows.
+
+- **Momentum.** The force $(\mathbf U_0\cdot\nabla)\mathbf u + (\mathbf u\cdot\nabla)\mathbf U_0$ gains, up to a
+  gradient, with $\boldsymbol\omega_0 = \nabla\times\mathbf U_{00}$,
+
+  $$
+  \delta\mathbf W = -\mathbf U_{00}\times\nabla\times\left((\mathsf M - \mathsf I)\thinspace\mathbf w\right)
+  + (\varepsilon + \eta P_2)\thinspace\mathbf w\times\boldsymbol\omega_0
+  - \eta\thinspace\mathrm{Gaspard}\thinspace\Delta\Omega\left(\hat{\mathbf z}\times\mathbf w - \cos\theta\thinspace\hat{\mathbf r}\times\mathbf w\right).
+  $$
+
+- **Heat.** The advection of the entropy times $J$ is $(1 + \eta P_2)\thinspace\mathbf U_{00}\cdot\nabla s$: the heat
+  rows gain $i m\thinspace\mathrm{Gaspard}\thinspace\eta P_2\thinspace\Delta\Omega\thinspace s$.
+- **Induction.** The electric field of the flow carries back exactly,
+  $\mathsf F^{\mathsf T}(\mathbf U_0\times\mathbf b) = \mathbf U_{00}\times\tilde{\mathbf b}$: no new term.
+
+A degree $n$ of $\Delta\Omega$ couples $l$ to $l \pm (n + 2)$ of the same kind and to $l \pm (n + 3)$ of the other, two
+more than in the sphere (`centrifugal.rotation_build`).
 
 ## The flattening
 
@@ -244,9 +324,10 @@ T = \int p_0\thinspace J\thinspace\lvert s\rvert^2\thinspace dV ,
 $$
 
 and the power of the Coriolis force is $2\int\rho_0\thinspace\mathbf w^*\cdot[2\thinspace\mathrm{Gaspard}\thinspace\tilde{\mathbf z}\times\mathbf w]\thinspace dV$,
-imaginary: it still does no work. `solve.py` normalises the eigenvectors to this $K$. The viscous and diffusive terms are
-those of the sphere, as in the matrices, so the budgets close as well as without the deformation. `spin_doctor` does
-not compute the enstrophy residual (residens is NaN).
+imaginary: it still does no work. `solve.py` normalises the eigenvectors to this $K$. `spin_doctor` adds the metric parts
+of the viscous power, of the power of a differential rotation and of the entropy diffusion in the same way
+(`utils4pp.centrifugal_dissipation_terms`), so the budgets close as well as without the deformation. It computes neither
+the enstrophy residual nor the viscous one, whose wall terms keep their spherical form (residens and residD are NaN).
 
 **With a field.** The magnetic energy of the deformed fluid is
 
@@ -255,12 +336,13 @@ $$
 $$
 
 with MEc the part of the metric (`magnetic.dat`, column 12), and `solve.py` normalises to $K$ plus Hendrik times it.
-`spin_doctor` adds the metric parts of the Lorentz work ($\delta\mathbf G$) to residσ and residω and those of the
-induction work ($\delta\mathbf E$) to resid𝐛 (`utils4pp.centrifugal_magnetic_terms`), so these close to round-off. The
+`spin_doctor` adds the metric parts of the Lorentz work ($\delta\mathbf G$) to residσ and residω, and those of the
+induction work ($\delta\mathbf E$) and of the magnetic diffusion to resid𝐛 (`utils4pp.centrifugal_magnetic_terms`), so
+these close to round-off. The
 full budget resid𝐄 also counts the Ohmic loss with the metric current $\nabla\times((\mathsf M - \mathsf I)\tilde{\mathbf b})$,
 the energy of the potential field matched on each deformed wall, and the field of a conducting inner core with its
 metric. It closes at second order in $f$ only: kore keeps the first order of $1/J$ and of $\mathsf M$ in the force, in
-the induction and in the matching at the walls, and the energy does not cancel their products.
+the induction, in the diffusion and in the matching at the walls, and the energy does not cancel their products.
 
 ## Plots
 
@@ -283,20 +365,26 @@ only moves.
 
 ## Accuracy
 
-The map, the transform of the flow and the covariant equations are exact. kore keeps them at first order in $f$, and
-keeps some terms in the form they have in a sphere.
+The map, the transform of the flow and the covariant equations are exact. kore keeps them at first order in $f$.
 
 - **First order.** The error is of order $f^2$. For the spin-over of a Maclaurin spheroid it is $f^2/6$ in the frequency
   ([Checks](#checks)): 0.2 % at Saturn's flattening, where the deformation moves the frequency by 10 %.
   `submatrices.py` warns above $f = 0.1$.
-- **Viscous force, thermal and magnetic diffusion.** Their metric parts are of relative size $f$, so an eigenvalue is
-  off by about $f$ times the part of it that the diffusion makes: for a weakly damped mode, a fraction of order $f$ of
-  its damping rate, and the same amount in frequency.
-- **Differential rotation.** Its terms keep their spherical form: the terms of order $f\thinspace\Delta\Omega$ are left
-  out.
-- **What stops the run.** The rows of a stress-free wall change on a deformed wall, so kore stops with stress-free walls
-  in a viscous run. The matching rows of a conducting inner core change too when its permeability differs from the
-  fluid's, so kore stops unless `mu_i2o` = 1. It also stops with a forcing.
+- **Thermal wind.** With `thermal_wind` 1 or 2 the entropy $S_{tw}$ balances $\Delta\Omega$ as in the sphere: the terms
+  of order $f\thinspace\Delta\Omega$ of that balance are missing, while its advection and the other terms of
+  $\Delta\Omega$ are those of the deformed body. `submatrices.py` warns.
+- **What stops the run.** The rows of a wall of zero radial stress (`bco` or `bci` = 2) would change on a deformed wall,
+  so kore stops with them in a viscous run. The matching rows of a conducting inner core change too when its permeability
+  differs from the fluid's, so kore stops unless `mu_i2o` = 1. It also stops with a forcing, and in a viscous full
+  sphere with $m \neq 0$ unless `rpower_v` = 4 ([Dissipative terms](#dissipative-terms)).
+- **Shifts measured from a sphere.** A body that is not deformed keeps the bases and rows of the sphere
+  (`centrifugal.deformed`), so that its matrices are those of `centrifugal = 0`. A deformed body with $m \neq 0$ writes
+  the rows of the toroidal flow in $C^{(3)}$ when it is viscous, and those of the toroidal field when the field diffuses
+  ([Dissipative terms](#dissipative-terms)). A shift taken between a deformed run and one at $f = 0$ therefore also
+  holds the difference of their errors of discretization, which near the resolution limit can rival the part of the
+  shift that the Ekman layers make: for the nutation of [Checks](#checks) without its field, 1.5e-6 in $\lambda$ at
+  N 160, 6e-4 of $f$, as large as that part. Taken between deformed runs, at $\pm f$, the shift does not carry it: it
+  moves by 1e-6 of $f$ from N 160 to N 200, 5e-6 with the field.
 
 ## Implementation
 
@@ -309,32 +397,41 @@ Where each piece is in the code:
 | labels, blocks, assembly | `centrifugal.labels` (`submatrices.py`), `momentum_block`, `entropy_block` (`operators.centrifugal_inertia`, `centrifugal_coriolis`, `centrifugal_entropy`), `dl_range` (`assemble.centrifugal_blocks`) |
 | the magnetic terms | `centrifugal.magnetic_build` with the product codes of `magnetic_profile_functions`, `magnetic_labels` (`submatrices.py`), `magnetic_block` (`operators.centrifugal_magnetic`), `magnetic_dl_range` (`assemble.py`) |
 | the insulating walls | `centrifugal.wall_coefficients`, `wall_rows` (`assemble.bc_b_centrifugal`) |
+| the dissipative terms | `centrifugal.diffusion_build` (`viscous_force`, `thermal_diffusion_metric`, `magnetic_diffusion_metric`) with the product codes of `diffusion_profile_functions`, `diffusion_labels` (`submatrices.py`, with the bases of `diffusion_orders`), `diffusion_block` (`operators.centrifugal_diffusion`) |
+| the stress-free and fixed-flux walls | `centrifugal.wall_dissipative`, `wall_dissipative_rows` (`assemble.bc_u_centrifugal`, `bc_theta_centrifugal`) |
+| a conducting inner core | `centrifugal.ic_labels`, `diffusion_block_ic` (`operators.centrifugal_diffusion_ic`), `icb_electric`, `icb_rows` (`assemble.bc_b_cic_centrifugal`); the rows $r^3$ of `utils.rpower_g`, `rpower_gic` |
+| the differential rotation | `centrifugal.rotation_force`, `rotation_build`, `rotation_heat_coefficients`, `rotation_labels`, `rotation_block` (`operators.centrifugal_rotation`) |
 | effective gravity | `centrifugal.g_monopole` in `radial_profiles.graviX` |
-| stops and warnings | `background.check_centrifugal`, `centrifugal.report` (`submatrices.py`), the centre check of the flattening |
-| energies | `utils4pp.centrifugal_terms` (`solve.py`, `spin_doctor.py`); with a field `centrifugal_magnetic_energy` (`solve.py`) and `centrifugal_magnetic_terms` (`spin_doctor.py`, with `centrifugal.wall_potential` and `amplitudes`) |
+| stops and warnings | `background.check_centrifugal`, `centrifugal.report` (`submatrices.py`), the centre check of the flattening; `centrifugal.deformed` (without a deformation kore keeps the bases and rows of the sphere) |
+| energies | `utils4pp.centrifugal_terms` (`solve.py`, `spin_doctor.py`) and `centrifugal_dissipation_terms` (`spin_doctor.py`); with a field `centrifugal_magnetic_energy` (`solve.py`) and `centrifugal_magnetic_terms` (`spin_doctor.py`, with `centrifugal.wall_potential` and `amplitudes`) |
 | plots | `centrifugal.to_physical` (`tools/plot_field.py`, the flow and the field) |
 
 ## Checks
 
 The deformation was checked in four ways: its closed forms against a symbolic derivation from the definitions, its
-couplings, blocks and wall rows against direct quadratures, its eigenvalues against exact results, and the energy
-budgets. The scripts are in `tests/centrifugal/` (README; `run_all.sh`, about 7 minutes on 16 cores). Results of 2026-11-05:
+couplings, blocks and wall rows against direct quadratures, its eigenvalues against exact results (among them the modes
+of a spheroid, computed without the map), and the energy budgets. The scripts are in `tests/centrifugal/` (README;
+`run_all.sh`, about 13 minutes on 16 cores). Results of 2026-11-06:
 
 | check | script | result |
 | --- | --- | --- |
 | every closed form above, from the map and $\mathbf w = J\mathsf F^{-1}\mathbf u$ in Cartesian components (sympy): the level surfaces, the exact identities of the covariant equations, the first-order terms, the plot map, the effective potential | `derive.py` | exact |
 | the magnetic terms, from $\mathbf b = \mathsf F\tilde{\mathbf b}/J$ alone (sympy): the covariant Lorentz force and induction, their first-order parts $\delta\mathbf G$ and $\delta\mathbf E$, a potential field on the deformed wall; then kore's couplings against the projections of $\delta\mathbf G$ and $\delta\mathbf E$ on its rows, block by block, and the wall terms against closed forms | `derive_mag.py` | exact; blocks 1e-14 |
+| the dissipative terms and the differential rotation, from the map alone (sympy): the covariant viscous force, the stress on the level surface, the thermal diffusion and the flux through the level surface, the magnetic diffusion, the force of a differential rotation; then kore's couplings, the stress-free and fixed-flux rows and the row of the electric field at a conducting inner core against their projections on kore's rows | `derive_diff.py` | exact; 239 blocks to 1e-13, the wall rows to 3e-13 |
 | the angular couplings against Gauss–Legendre projections of the closed forms, $m$ = 0–6, $l \le 36$ | `algebra_check.py` | 5e-14 |
 | the rows of an insulating wall (outer wall and inner core, $m$ = 0, 1, 2, 5) against the exact matching of a potential field on the deformed wall, computed on the wall by quadrature | `bc_check.py` | of second order: the residual falls by 4.0 when $f$ is halved, by 2.0 with the rows of the sphere |
-| the metric blocks against $(r, \theta)$ quadratures, in shells and full spheres; inertia and entropy Hermitian and positive, Coriolis anti-Hermitian | `bin/ru_insane.py` | 6e-14 |
+| the metric blocks against $(r, \theta)$ quadratures, in shells and full spheres; inertia and entropy Hermitian and positive, Coriolis anti-Hermitian, the viscous force Hermitian and negative | `bin/ru_insane.py` | 6e-14; the viscous force 6e-11 with the profiles of `'Wu 2005'`, as in the sphere |
 | $f = 0$ gives the matrices of `centrifugal = 0`, also with a field (a conducting inner core; a poloidal and toroidal background); `centrifugal = 0` leaves the 26 runs of `tests/diff_rot/regress.sh` unchanged | `eig_check.py`, `regress.sh` | bitwise |
 | the spin-over of a Maclaurin spheroid (inviscid, uniform $f$): $\mathrm{Im}\thinspace\lambda = 1 + f + f^2/3$, against the exact $2a^2/(a^2 + c^2) = 1 + f + f^2/2$ | `eig_check.py` | $f/3$ in $(\mathrm{Im}\thinspace\lambda - 1)/f - 1$ for $f = \pm10^{-3}, \pm10^{-2}$ |
 | a sphere labelled as a deformed one ($f = c(1 - r^2)^2$, zero at the wall): 13 resolved modes move as $c^2$, with no part odd in $c$ | `eig_check.py` | odd part 1.6e-4 $c^2$ |
-| the same with a field: the axial and the Malkus field carried by the relabelling, against the same physical field written on the sphere (`'general'` profiles); the shifts of the resolved modes (Em = 1e-4) | `eig_check.py` | agree to 1–2 % (axial) and 3–4 % (Malkus); the rest is the metric part of the magnetic diffusion, left out ([Accuracy](#accuracy)) |
+| the same with a field, in a viscous fluid (Ek = Em = 1e-3): the axial and the Malkus field carried by the relabelling, against the same physical field written on the sphere (`'general'` profiles); the parts of the shifts odd in $c$ | `eig_check.py` | 4e-6 (axial) and 3e-5 (Malkus); 3 % to 60 % without the metric part of the magnetic diffusion, 4 % up to 160 times the shift without that of the viscous force |
+| the free decay of a field in a sphere labelled as deformed inside: a full sphere, and a conducting inner core of the fluid's conductivity (the relabelling moves its boundary, which a uniform conductor does not see) and of another conductivity | `eig_check.py` | their part odd in $c$ is 2e-13 to 4e-11 of $\lambda$ at $c$ = 1e-3, of order $c^3$ |
+| the inertial modes of an inviscid homogeneous fluid in a spheroid, computed exactly without the map (the polynomial method, in Cartesian components): $d\omega/df$ of the 73 modes of degree $\le 7$ with $m$ = 0, 1, 2 against kore's | `spheroid_modes.py` | 1.4e-11 |
+| damped modes when the walls are deformed (Ek = 1e-3): kore's $d\lambda/df$ against the exact first-order shift computed from the sphere's mode alone (Hadamard's formula and a volume formula), with no-slip and stress-free walls, fixed entropy and fixed flux, in full spheres and shells | `shape_check.py` | 1e-10 to 3e-8; kore is 5e-2 off without the metric viscous terms |
 | `'clairaut'` of a homogeneous body against `'uniform'` with $f = 5q/4$ | `eig_check.py` | 2e-13 |
 | the effective gravity with $g = r$: $q = 0.1$ against `Beyonce` $(1 - 2q/3)$ | `eig_check.py` | below 1e-14 |
 | a deformed, stratified ideal fluid has real frequencies | `eig_check.py` | $\lvert\mathrm{Re}\thinspace\lambda\rvert$ 2e-16 |
 | `'clairaut'`: a homogeneous body (5/4), the polytrope of index 1 ($15/(2\pi^2)$), `'Wu 2005'` against Clairaut's second-order equation integrated from $\rho$; `'model S hydrostatic'` gives $f/q$ = 0.519 at its wall | `clairaut_check.py` | 3e-12; below 1e-9 |
-| the budgets residσ, residω, resid𝑠 of `spin_doctor` (`solve.py`, 2 ranks; `'Wu 2005'` with an inner core, with and without a differential rotation, and a `'Boussinesq'` full sphere) | `budget_check.py` | below 7e-10, as without the deformation; 1e-3 to 3e-2 without the metric parts |
-| the budgets with a field (`solve.py`, 2 ranks): the axial field, a conducting inner core, a full sphere, the Malkus field, a poloidal and toroidal background with a differential rotation, each at two flattenings $f$ and $f/2$; `'Wu 2005'` with an inner core | `budget_check.py` | residσ and residω below 1e-13, resid𝐛 below 3e-12 (2e-8 for `'Wu 2005'`, set by its resolution as in the sphere); resid𝐄 of second order (orders 1.7 to 2.0 from the two flattenings) |
-| the free core nutation, the spin-over of a fixed mantle, with a field (Ek 1e-7, Em 1e-5, Le 3e-3, the axial field, a conducting inner core) at $f$ = 2.5e-3 and $f/2$, and without the field | `fcn.sh` | $\mathrm{Im}\thinspace\lambda$ moves by $f(1 + f/3)$, with the coefficient of $f^2$ 1/3 to 1e-3, up to 1e-4 of $f$ that the viscosity and the field add (in their spherical form, [Accuracy](#accuracy)); the field changes the shift by 3e-5 of $f$, N 200 against N 160 by 5e-6 |
+| the budgets residσ, residω, resid𝑠 of `spin_doctor` (`solve.py`, 2 ranks; `'Wu 2005'` with an inner core, with and without a differential rotation, and a `'Boussinesq'` full sphere) | `budget_check.py` | below 1e-9, as in the sphere (6e-10); 1e-3 to 3e-2 without the metric weights |
+| the budgets with a field (`solve.py`, 2 ranks): the axial field, a conducting inner core, a full sphere, the Malkus field, a poloidal and toroidal background with a differential rotation, each at two flattenings $f$ and $f/2$; `'Wu 2005'` with an inner core | `budget_check.py` | residσ and residω below 2e-13, resid𝐛 below 1e-12 (2e-8 for `'Wu 2005'`, set by its resolution as in the sphere); resid𝐄 of second order (orders 1.7 to 2.2 from the two flattenings) |
+| the free core nutation, the spin-over of a fixed mantle, with a field (Ek 1e-7, Em 1e-5, Le 3e-3, the axial field, a conducting inner core) at $f$ = ±2.5e-3 and $f/2$, and without the field; the shift is taken between the deformed runs ([Accuracy](#accuracy)) | `fcn.sh` | $\mathrm{Im}\thinspace\lambda$ moves by $f(1 + f/3)$, with the coefficient of $f^2$ 1/3 to 7e-4, plus 5.8e-4 of $f$ from the Ekman layers (Greenspan's boundary-layer theory gives 4.6e-4, which kore approaches slowly); the field changes the shift by 3.6e-5 of $f$, N 200 against N 160 by 5e-6 |

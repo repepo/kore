@@ -385,7 +385,9 @@ proffdir.update({ 'eta':etaX, 'bpo':bf.bpoX, 'bto':bf.btoX })   # bto: cnorm_tor
 # diff_rot.profile_functions(), the background field degree by degree (hp, kt + degree) from mag_algebra.profile_functions()
 # and (NEW 2026-11-05) the centrifugal map (ce0..ce3) from centrifugal.profile_functions() and, with magnetic = 1, the
 # products of its amplitudes and the background field degree by degree (E, N, C, Q + p, t + degree) from
-# centrifugal.magnetic_profile_functions()
+# centrifugal.magnetic_profile_functions(); NEW (2026-11-06, phase 2) with the profiles of the diffusion (E, N, C, Q, K + vs,
+# kp, et: Evs, Nkp, Ket, ...) and with the shapes of ΔΩ (E, N, C, Q, K + z + degree: Ez0, Nz2, ...) from
+# centrifugal.diffusion_profile_functions() and centrifugal.rotation_profile_functions()
 # -------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------
@@ -393,8 +395,9 @@ proffdir.update({ 'eta':etaX, 'bpo':bf.bpoX, 'bto':bf.btoX })   # bto: cnorm_tor
 
 def _more_codes(c):
     '''the profile codes added on first use: the differential rotation's (diff_rot.py), NEW (2026-10-30), the background
-    field's degree by degree, hp? and kt? (mag_algebra.py) and, NEW (2026-11-05), the centrifugal map's ce0..ce3 and its
-    products with the background field, Ep?, Nt?, ... (centrifugal.py); imported here because they need utils'''
+    field's degree by degree, hp? and kt? (mag_algebra.py) and, NEW (2026-11-05), the centrifugal map's ce0..ce4 and its
+    products with the background field, Ep?, Nt?, ..., with the profiles of the diffusion, Evs, Nkp, Ket, ... and (NEW
+    2026-11-06) with the shapes of ΔΩ, Ez0, Nz2, ... (centrifugal.py); imported here because they need utils'''
     if c[:2] in ('hp', 'kt'):
         import mag_algebra
         proffdir.update(mag_algebra.profile_functions())
@@ -404,6 +407,12 @@ def _more_codes(c):
     elif c[0] in 'ENCQ' and c[1] in 'pt':   # NEW (2026-11-05): products of the map's amplitudes and the background field
         import centrifugal
         proffdir.update(centrifugal.magnetic_profile_functions())
+    elif c[0] in 'ENCQK' and c[1:] in ('vs', 'kp', 'et'):   # NEW (2026-11-05, phase 2): products of the map's amplitudes and
+        import centrifugal                                    # the profiles of the diffusion, ν, κ p, η (Evs, Nkp, ...)
+        proffdir.update(centrifugal.diffusion_profile_functions())
+    elif c[0] in 'ENCQK' and c[1] == 'z':   # NEW (2026-11-06, phase 2): products of the map's amplitudes and the shapes of ΔΩ
+        import centrifugal
+        proffdir.update(centrifugal.rotation_profile_functions())
     else:
         import diff_rot
         proffdir.update(diff_rot.profile_functions())

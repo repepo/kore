@@ -23,18 +23,28 @@ A x = λ B x near a target by shift-invert (scipy splu and eigs). The checks, ea
               the value of J is tested by the entropy budget of damped modes (budget_check.py)
   zero field  (NEW, phase 1b) as zero with a field: a shell with a conducting inner core and the axial field, and the
               full sphere with a poloidal and a toroidal 'general' field
-  relabelled  (NEW, phase 1b) the relabelling test with a field: the field of the body is F B̃0/J, so a sphere labelled
-  field       as deformed inside (f = c (1 - r²)², c = 1e-4) with kore's field B̃0 is the sphere with the field carried
-              by the map. For the axial field (flux function s²/2) that is the poloidal h = (1 + ε) r/2; for the Malkus
-              field s φ̂ it is s (1 - η P2) φ̂, the toroidal k1 = r (1 + η/5), k3 = -η r/5. On the resolved modes (equal
-              at lmax 46 and 62 to 1e-5) both runs must move the eigenvalues alike: |Δλ(deformed) - Δλ(mapped field)|
-              below 3 % (axial) and 9 % (Malkus) of the shift. The remainder is the magnetic diffusion, kept spherical
-              in the reference space (centrifugal.py, section 4): it shrinks with Em (below 0.5 % of the shift when
-              extrapolated to Em = 0). Each term matters: leaving out δ𝐄, the factor 1/J of the force or
-              ∇×((M - I)b)×B0, or flipping the sign of ∇×((M - I)B0)×b gives 5 % to 44 % (axial) and 14 % to 450 %
-              (Malkus), at least four times the tolerance in one of the two
+  relabelled  (NEW, phase 1b; FIX 2026-11-06, phase 2) the relabelling test with a field: the field of the body is
+  field       F B̃0/J, so a sphere labelled as deformed inside (f = c (1 - r²)², c = ±1e-3) with kore's field B̃0 is the
+              sphere with the field carried by the map. For the axial field (flux function s²/2) that is the poloidal
+              h = (1 + ε) r/2; for the Malkus field s φ̂ it is s (1 - η P2) φ̂, the toroidal k1 = r (1 + η/5), k3 = -η r/5.
+              The fluid is viscous (Ek = Em = 1e-3, no-slip walls), so that every metric term enters. Both runs must move
+              the eigenvalues alike at first order: the parts of the shifts odd in c (the even part is kore's error of
+              second order) agree to 1e-3 on the resolved modes (the eigenvalue equal at lmax 40 and 52 to 1e-9, and the
+              shift of the mapped field to 1e-3), to 4e-6 (axial) and 3e-5 (Malkus). (At c = 1e-4 the eigensolver's noise,
+              about 1e-11, is 1e-4 of the smallest shifts; at 3e-3 the error of third order in c of the odd part is
+              2e-4 of them.) Leaving out the metric part of the magnetic diffusion puts them 3 % to 60 % off, that of the
+              viscous force 4 % to 170 % (axial) and up to 160 times the shift (Malkus). (Phase 1b's version was inviscid,
+              with the diffusion kept spherical, and agreed to 1-2 % and 3-4 %; leaving out δ𝐄, the factor 1/J of the
+              force or ∇×((M - I)b)×B0, or flipping the sign of ∇×((M - I)B0)×b gave 5 % to 44 % and 14 % to 450 % there)
+  relabelled  (NEW, phase 2) the free decay of a field (Le = 1e-6, so that the flow does not act back on it) in a sphere
+  decay       labelled as deformed inside (c = ±1e-3): the decay rates must not move at first order, |λ(c) - λ(-c)|/2
+              below 1e-9 |λ| (it is of order c³: 2e-13 to 4e-11 of |λ|). Three cases: a full sphere with an
+              insulating wall; a conducting inner core of the fluid's conductivity, where the relabelling moves the inner
+              boundary, which a uniform conductor does not see (this tests the metric diffusion of the core and the
+              matching rows at the boundary); and one of conductivity 0.3, with f = c (r² - ricb²)² (1 - r²)², which
+              leaves both boundaries in place
 
-Usage: python3 eig_check.py   (about a minute; exit code 1 if a check fails)
+Usage: python3 eig_check.py   (two to three minutes on four cores; exit code 1 if a check fails)
 '''
 import os, sys, subprocess
 import numpy as np
@@ -156,34 +166,66 @@ verdict('zero field', max(dz) == 0, 'max |A, B (f = 0) - A, B (centrifugal = 0)|
         '%.1e (full sphere, general poloidal and toroidal field)' % tuple(dz))
 
 # ---------------------------------------------------------------------------------------------- relabelled field (phase 1b)
-C = 1e-4
-ETA = '(8/3)*%r*r**2*(1 - r**2)' % C          # η = r ε' of ε = -(2/3) f, f = C (1 - r²)²
-FR = ("par.magnetic = 1; par.Ek = 0; par.Em = 1e-4; par.Le = 0.1; par.set_scales(); par.ViscosD = 0; par.bci = 0; par.bco = 0; "
-      "par.N = 96; par.lmax = 46")
-CF = ("par.centrifugal_shape = 'user'; par.centrifugal_f = None; par.centrifugal_profile = 'p*(1 - r**2)**2'; "
-      "par.centrifugal_param = %r" % C)
-FIELDS = {   # name: (the field B̃0, the field F B̃0/J it gives the body, the target, the tolerance)
-    'axial':  ("par.B0 = 'axial'", "par.B0 = 'general'; par.B0_profiles = {1: '(1 - (2/3)*%r*(1 - r**2)**2)*r/2'}" % C,
-               1.0j, 0.03),
+# FIX (2026-11-06, phase 2): a viscous fluid (every metric term enters), the shifts at c = ±1e-3 and their parts odd in c
+# compared (the even part is kore's error of second order), on the modes whose shift is resolved; tolerance 1e-3 for both
+# fields (was 3 % and 9 %, inviscid, with the magnetic diffusion kept spherical)
+C, TOL = 1e-3, 1e-3
+FR = ("par.magnetic = 1; par.Ek = 1e-3; par.Em = 1e-3; par.Le = 0.1; par.set_scales(); par.bci = 1; par.bco = 1; "
+      "par.rpower_v = 4; par.N = 64; par.lmax = 40")
+def cf_shape(c):
+    return ("par.centrifugal_shape = 'user'; par.centrifugal_f = None; par.centrifugal_profile = 'p*(1 - r**2)**2'; "
+            "par.centrifugal_param = %r" % c)
+def eta(c):
+    return '(8/3)*%r*r**2*(1 - r**2)' % c     # η = r ε' of ε = -(2/3) f, f = c (1 - r²)²
+FIELDS = {   # name: (the field B̃0, the field F B̃0/J it gives the body at c, the target)
+    'axial':  ("par.B0 = 'axial'",
+               lambda c: "par.B0 = 'general'; par.B0_profiles = {1: '(1 - (2/3)*%r*(1 - r**2)**2)*r/2'}" % c, -0.02 + 1.0j),
     'Malkus': ("par.B0 = None; par.B0_tor = 'Malkus'",
-               "par.B0 = None; par.B0_tor = 'general'; par.B0_tor_profiles = {1: 'r*(1 + %s/5)', 3: '-(%s)*r/5'}" % (ETA, ETA),
-               0.97j, 0.09)}
-for name, (fld, mapped, s, tol) in FIELDS.items():
+               lambda c: "par.B0 = None; par.B0_tor = 'general'; par.B0_tor_profiles = {1: 'r*(1 + %s/5)', 3: '-(%s)*r/5'}"
+                         % (eta(c), eta(c)), -0.02 + 0.97j)}
+shift = lambda d, x: nearest(eigs(d, x + 1e-7j, 3), x) - x
+for name, (fld, mapped, s) in FIELDS.items():
     build('fr_0', FR + '; ' + fld + '; par.centrifugal = 0')
-    build('fr_hi', FR + '; ' + fld + '; par.centrifugal = 0; par.lmax = 62')
-    build('fr_cf', FR + '; ' + fld + '; ' + CF)
-    build('fr_map', FR + '; ' + mapped + '; par.centrifugal = 0')
+    build('fr_hi', FR + '; ' + fld + '; par.centrifugal = 0; par.lmax = 52')
+    for k, c in (('p', C), ('m', -C)):
+        build('fr_cf' + k, FR + '; ' + fld + '; ' + cf_shape(c))
+        build('fr_map' + k, FR + '; ' + mapped(c) + '; par.centrifugal = 0')
+    build('fr_map_hi', FR + '; ' + mapped(C) + '; par.centrifugal = 0; par.lmax = 52')
     l0s, his = eigs('fr_0', s, 10), eigs('fr_hi', s, 16)
     rows = []
-    for l0 in [x for x in l0s if abs(his - x).min() < 1e-5]:
-        dcf = nearest(eigs('fr_cf', l0 + 1e-7j, 3), l0) - l0
-        dmap = nearest(eigs('fr_map', l0 + 1e-7j, 3), l0) - l0
-        rows.append((l0, dcf, dmap))
-    big = max([abs(r[2]) for r in rows] + [0.])
-    rel = [abs(dcf - dmap)/abs(dmap) for l0, dcf, dmap in rows if abs(dmap) > 1e-2*big]   # (the spin-over hardly moves)
-    verdict('field ' + name, len(rel) >= 2 and max(rel) < tol, '%d resolved modes moved by %.1e to %.1e (c = %g): '
-            '|Δλ(deformed) - Δλ(mapped field)|/|Δλ| = %s (below %g; the spherical diffusion)'
-            % (len(rel), min(abs(r[2]) for r in rows if abs(r[2]) > 1e-2*big), big, C, ', '.join('%.3f' % v for v in rel), tol))
+    for l0 in [x for x in l0s if abs(his - x).min() < 1e-9]:
+        dmap = (shift('fr_mapp', l0) - shift('fr_mapm', l0))/2
+        if abs(shift('fr_map_hi', nearest(his, l0)) - shift('fr_mapp', l0)) > 1e-3*abs(dmap):   # the shift is not resolved
+            continue
+        rows.append((l0, (shift('fr_cfp', l0) - shift('fr_cfm', l0))/2, dmap))
+    rel = [abs(dcf - dmap)/abs(dmap) for l0, dcf, dmap in rows]
+    verdict('field ' + name, len(rel) >= 4 and max(rel) < TOL, '%d resolved modes moved by %.1e to %.1e (c = ±%g): '
+            '|Δλ(deformed) - Δλ(mapped field)|/|Δλ| of the parts odd in c <= %.1e (below %g)'
+            % (len(rel), min([abs(r[2]) for r in rows] or [0.]), max([abs(r[2]) for r in rows] or [0.]), C,
+               max(rel or [np.inf]), TOL))
+
+# ------------------------------------------------------------------------------------------- relabelled decay (phase 2)
+# NEW (2026-11-06, phase 2): the free decay of a field (Le = 1e-6, so the flow does not act back on it) in a sphere labelled
+# as deformed inside: its decay rates must not move at first order in c
+DEC = "par.magnetic = 1; par.B0 = 'axial'; par.Em = 1e-2; par.Le = 1e-6; par.N = 48; par.lmax = 24"
+IC = "par.Ek = 1e-3; par.set_scales(); par.ricb = 0.35; par.innercore = 'conducting, Chebys'; par.mu_i2o = 1.; par.Nic = 24"
+DECAY = {   # name: (the run, the relabelling f / c)
+    'sphere': (DEC + "; par.Ek = 0; par.set_scales(); par.ViscosD = 0", 'p*(1 - r**2)**2'),
+    'core': (DEC + '; ' + IC + '; par.sigma_i2o = 1.', 'p*(1 - r**2)**2'),
+    'core 0.3': (DEC + '; ' + IC + '; par.sigma_i2o = 0.3', 'p*(r**2 - 0.35**2)**2*(1 - r**2)**2')}
+CD, res = 1e-3, []
+for name, (run, prof) in DECAY.items():
+    build('dc_0', run + '; par.centrifugal = 0')
+    for k, c in (('p', CD), ('m', -CD)):
+        build('dc_' + k, run + "; par.centrifugal_shape = 'user'; par.centrifugal_f = None; par.centrifugal_profile = %r; "
+              "par.centrifugal_param = %r" % (prof, c))
+    l0s = []
+    for s in (-0.1, -0.35, -0.6):
+        l0s += [x for x in eigs('dc_0', s, 4) if abs(x.imag) < 1e-8 and min([abs(x - y) for y in l0s] + [1.]) > 1e-6]
+    odd = [abs(shift('dc_p', l0) - shift('dc_m', l0))/2/abs(l0) for l0 in l0s]
+    res.append((name, len(odd), max(odd or [np.inf])))
+verdict('relabelled decay', all(n >= 4 and o < 1e-9 for _, n, o in res), 'the free decay of a field in a sphere labelled as deformed, '
+        'c = ±%g: |λ(c) - λ(-c)|/(2|λ|) <= %s (O(c³))' % (CD, ', '.join('%.0e (%s, %d modes)' % (o, nm, n) for nm, n, o in res)))
 
 print('eig_check.py: %s' % ('FAIL ' + ', '.join(fail) if fail else 'ok'))
 sys.exit(1 if fail else 0)

@@ -207,10 +207,11 @@ class default_params():
         # deformation; equations: docs/centrifugal-equations.md). The rotating body is flattened: its level surfaces are
         # r (1 - (2/3) f(r) P2(cos θ)) at first order in their flattening f. kore then solves in coordinates that follow them: the
         # walls are level surfaces, every background profile is a function of their mean radius r, and the inertia, the Coriolis
-        # force and the time derivative of s gain P2 factors (couplings |Δl| <= 3). Exact at first order in f for an inviscid fluid
-        # without thermal diffusion in uniform rotation; the viscous force, the thermal diffusion and a differential rotation keep
-        # their spherical form (damping rates off by a fraction of order f). It stops with magnetic = 1, forcing != 0 and
-        # stress-free walls.
+        # force and the time derivative of s gain P2 factors (couplings |Δl| <= 3). FIX (2026-11-06, phase 2): exact at first order
+        # in f, also with a field (phase 1b), the viscous force (no-slip and stress-free walls), the thermal and the magnetic
+        # diffusion and a differential rotation, which is given on the level surfaces (phase 2); with thermal_wind = 1 or 2 the
+        # entropy that balances it is that of the sphere. It stops with forcing != 0, bco or bci = 2 with viscosity, a conducting
+        # inner core with mu_i2o != 1, and a viscous full sphere with m != 0 and rpower_v < 4.
         self.centrifugal = 0
         self.centrifugal_shape = 'clairaut'  # f(r) from Clairaut's equation with the structure's g (its self-gravity), of amplitude
         #   set by centrifugal_q at the surface, or by centrifugal_f at the outer wall if that is set

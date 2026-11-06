@@ -1,6 +1,6 @@
 #!/bin/bash
 # Checks of the centrifugal deformation (centrifugal = 1; docs/centrifugal-equations.md, Checks). NEW (2026-11-05).
-# usage: tests/centrifugal/run_all.sh [WORKDIR]   (default tests/centrifugal/runs; about 7 minutes on 16 cores)
+# usage: tests/centrifugal/run_all.sh [WORKDIR]   (default tests/centrifugal/runs; about 13 minutes on 16 cores)
 # Needs numpy, scipy, sympy and mpi4py; the budgets also petsc4py and slepc4py (SKIP_SOLVE=1 skips them). With OLD_KORE set to
 # a copy of the commit before the change (git archive <commit> | tar -x -C $OLD_KORE), also tests/diff_rot/regress.sh.
 # Each check prints its verdict; the script ends with 'centrifugal checks ok' (exit 0) or lists the ones that failed (exit 1).
@@ -16,6 +16,10 @@ echo "--- algebra_check.py: the angular couplings (angular.py's algebra) against
 check algebra bash -c "python3 '$T/algebra_check.py' | tail -1"
 echo "--- derive_mag.py: the magnetic terms of the deformed body from b = F b̃/J (sympy), and kore's couplings against them"
 check derive_mag bash -c "python3 '$T/derive_mag.py' | tail -1"
+# NEW (2026-11-06, phase 2)
+echo "--- derive_diff.py: the viscous force, the diffusion, the stress-free and fixed-flux walls and the differential rotation"
+echo "    of the deformed body (sympy), and kore's couplings and wall rows against them"
+check derive_diff bash -c "python3 '$T/derive_diff.py' | tail -1"
 echo "--- bc_check.py: the insulating-wall rows on the deformed wall against the exact matching of a potential field"
 check bc bash -c "python3 '$T/bc_check.py' | tail -1"
 echo "--- clairaut_check.py: the 'clairaut' flattening (Maclaurin 5/4, polytrope 7.5/π², Wu 2005 against Clairaut from ρ, the Sun)"
@@ -23,6 +27,11 @@ check clairaut python3 "$T/clairaut_check.py"
 echo "--- eig_check.py: f = 0, the spin-over 1 + f, the relabelling test, homogeneous 'clairaut', the monopole, the ideal fluid,"
 echo "    f = 0 with a field, the relabelling test with the axial and the Malkus field"
 check eig python3 "$T/eig_check.py"
+# NEW (2026-11-06, phase 2)
+echo "--- spheroid_modes.py: the inertial modes of a spheroid, exact (polynomial method), against kore's dω/df (73 modes)"
+check spheroid python3 "$T/spheroid_modes.py"
+echo "--- shape_check.py: damped modes when the walls are deformed (no-slip, stress-free, heat), exactly at Ek 1e-3"
+check shape python3 "$T/shape_check.py" $(( $(nproc) < 11 ? $(nproc) : 11 ))
 
 echo "--- ru_insane.py: the metric blocks against (r, θ) quadratures, Hermitian and positive, in shells and full spheres"
 WU="par.structure = 'Wu 2005'; par.r_out = 0.99; par.thermal = 1; par.stratification = 'top hat'; par.aux1 = 0.5; par.aux2 = 0.03; par.aux3 = 0.85; par.aux4 = 0.03; par.aux5 = 2.5; par.Beyonce = 10."
@@ -36,9 +45,9 @@ cfgs=("$WU; $VI; $CL; par.ricb = 0.35; par.symm = 1; par.N = 96; par.lmax = 24"
       "$WU; $VI; $CL; par.ricb = 0.35; par.m = 0; par.symm = -1; par.N = 96; par.lmax = 25"
       "$WU; $VI; $CL; $DR; par.ricb = 0.35; par.symm = 1; par.N = 96; par.lmax = 24"
       "$BT; $VI; $US; par.ricb = 0.35; par.m = 2; par.symm = -1; par.N = 48; par.lmax = 21"
-      "$BT; $VI; $US; par.N = 48"
-      "$BT; $VI; $US; par.m = 2; par.symm = 1; par.N = 48; par.lmax = 21"
-      "$BT; par.ViscosD = 1e-3; par.ThermaD = 0; $US; par.symm = 1; par.N = 48")
+      "$BT; $VI; $US; par.N = 48; par.rpower_v = 4"
+      "$BT; $VI; $US; par.m = 2; par.symm = 1; par.N = 48; par.lmax = 21; par.rpower_v = 4"
+      "$BT; par.ViscosD = 1e-3; par.ThermaD = 0; $US; par.symm = 1; par.N = 48; par.rpower_v = 4")
 for i in "${!names[@]}"; do
   d=${names[$i]}
   python3 "$T/mk_run.py" $d "${cfgs[$i]}" > /dev/null || { failed+=("$d"); continue; }
@@ -52,7 +61,7 @@ if [ -z "$SKIP_SOLVE" ]; then
   cfgs=("$BUD; par.centrifugal = 0"
         "$BUD; $CL"
         "$BUD; $CL; $DR"
-        "$BT; $VI; $US; par.m = 2; par.symm = 1; par.N = 64; par.lmax = 41; par.ncpus = 2; par.nev = 4; par.itau = 0.5")
+        "$BT; $VI; $US; par.m = 2; par.symm = 1; par.N = 64; par.lmax = 41; par.ncpus = 2; par.nev = 4; par.itau = 0.5; par.rpower_v = 4")
   for i in "${!names[@]}"; do
     d=${names[$i]}
     python3 "$T/mk_run.py" $d "${cfgs[$i]}" solve > /dev/null || { failed+=("$d"); continue; }
@@ -67,7 +76,7 @@ if [ -z "$SKIP_SOLVE" ]; then
   names=(bm_uniform bm_cic bm_fs bm_tor bm_gen)
   cfgs=("$MAG; par.centrifugal_f = @F@"
         "$MAG; $UP; par.innercore = 'conducting, Chebys'"
-        "$MAG; $UP; par.ricb = 0; par.B0 = 'Luo_S2'; par.symm = 1; par.itau = 0.6"
+        "$MAG; $UP; par.ricb = 0; par.B0 = 'Luo_S2'; par.symm = 1; par.itau = 0.6; par.rpower_v = 4"
         "$MAG; $UP; par.B0 = None; par.B0_tor = 'Malkus'; par.cnorm_tor = 'mag_energy'"
         "$MAG; $UP; $GEN")
   for i in "${!names[@]}"; do

@@ -27,18 +27,22 @@ import diff_rot as dr
 import centrifugal as cf   # NEW (2026-11-05)
 import radial_profiles as rap
 
-def centrifugal_blocks(loc_list, fun, l, sec, comp, lls, row, col0, factor=1):
+def centrifugal_blocks(loc_list, fun, l, sec, comp, lls, row, col0, factor=1, nblk=None, dls=None):
     '''
     NEW (2026-11-05): adds to loc_list the blocks of a centrifugal term (centrifugal = 1: operators.centrifugal_coriolis,
-    centrifugal_inertia or centrifugal_entropy, the Δl of centrifugal.dl_range) of the row degree l of section sec, for the
-    unknown comp ('upol', 'utor' or 'temp'), whose degrees are lls; col0 is the column of the first block of that unknown
-    for the same position as the row, and factor multiplies the blocks (-1 for the inertia in B).
+    centrifugal_inertia, centrifugal_entropy or, phase 2, centrifugal_diffusion and centrifugal_diffusion_ic; the Δl of
+    centrifugal.dl_range) of the row degree l of section sec, for the unknown comp ('upol', 'utor', 'temp', 'bpol', 'btor',
+    'bpol_ic' or 'btor_ic'), whose degrees are lls; col0 is the column of the first block of that unknown for the same
+    position as the row, factor multiplies the blocks (-1 for the inertia in B and the viscous force in A), nblk is the
+    size of a block (N1, or Nic in a conducting inner core) and dls the Δl to place (default centrifugal.dl_range; NEW
+    2026-11-06: centrifugal.rotation_dl_range for operators.centrifugal_rotation)
     '''
-    for i in cf.dl_range(sec, comp):
+    nblk = ut.N1 if nblk is None else nblk
+    for i in (cf.dl_range(sec, comp) if dls is None else dls):
         if l + i in lls:
             mtx = fun(l, sec, comp, i)
             if np.isscalar(mtx[0]): continue   # nothing couples this Δl
-            loc_list = ut.packit(loc_list, factor*mtx[0], row, col0 + mtx[1]*ut.N1)
+            loc_list = ut.packit(loc_list, factor*mtx[0], row, col0 + mtx[1]*nblk)
     return loc_list
 
 
@@ -346,6 +350,11 @@ def main():
 
         if par.centrifugal :  # NEW (2026-11-05): the Coriolis force of the deformed body, 2 Gaspard (z̃ - ẑ)×w, Δl = 0, ±2
             loc_list = centrifugal_blocks( loc_list, op.centrifugal_coriolis, l, 'u', 'upol', ll_flo[0], row, basecol + col0)
+            if par.ViscosD > 0:  # NEW (2026-11-05, phase 2): the metric part of the viscous force, minus (as -visc)
+                loc_list = centrifugal_blocks( loc_list, op.centrifugal_diffusion, l, 'u', 'upol', ll_flo[0], row, basecol + col0, -1)
+            if par.diff_rot:  # NEW (2026-11-06, phase 2): the metric part of the differential rotation's force (as diff_rot's)
+                loc_list = centrifugal_blocks( loc_list, op.centrifugal_rotation, l, 'u', 'upol', ll_flo[0], row, basecol + col0,
+                                               dls=cf.rotation_dl_range('u', 'upol'))
 
 
         # Toroidal velocity terms (utor) ---------------------------------------------------------------------------
@@ -375,6 +384,11 @@ def main():
 
         if par.centrifugal :  # NEW (2026-11-05): Δl = ±1, ±3
             loc_list = centrifugal_blocks( loc_list, op.centrifugal_coriolis, l, 'u', 'utor', ll_flo[1], row, basecol + col0)
+            if par.ViscosD > 0:  # NEW (2026-11-05, phase 2): the metric part of the viscous force (Δl = ±1)
+                loc_list = centrifugal_blocks( loc_list, op.centrifugal_diffusion, l, 'u', 'utor', ll_flo[1], row, basecol + col0, -1)
+            if par.diff_rot:  # NEW (2026-11-06, phase 2): the metric part of the differential rotation's force (as diff_rot's)
+                loc_list = centrifugal_blocks( loc_list, op.centrifugal_rotation, l, 'u', 'utor', ll_flo[1], row, basecol + col0,
+                                               dls=cf.rotation_dl_range('u', 'utor'))
 
 
 
@@ -418,6 +432,10 @@ def main():
         bc_u_list = bc_u_spherical( l, 'section_u' )
         for q in [0,1,2]:
             loc_list[q].append( bc_u_list[q] )
+        if par.centrifugal and par.ViscosD > 0:  # NEW (2026-11-05, phase 2): the metric parts of the stress-free rows
+            bc_u_list = bc_u_centrifugal( l, 'section_u', ll_flo )
+            for q in [0,1,2]:
+                loc_list[q].append( bc_u_list[q] )
         # ----------------------------------------------------------------------------------------------------------
 
 
@@ -458,6 +476,11 @@ def main():
 
         if par.centrifugal :  # NEW (2026-11-05): the Coriolis force of the deformed body, Δl = ±1, ±3
             loc_list = centrifugal_blocks( loc_list, op.centrifugal_coriolis, l, 'v', 'upol', ll_flo[0], row, basecol + col0)
+            if par.ViscosD > 0:  # NEW (2026-11-05, phase 2): the metric part of the viscous force (Δl = ±1)
+                loc_list = centrifugal_blocks( loc_list, op.centrifugal_diffusion, l, 'v', 'upol', ll_flo[0], row, basecol + col0, -1)
+            if par.diff_rot:  # NEW (2026-11-06, phase 2): the metric part of the differential rotation's force (as diff_rot's)
+                loc_list = centrifugal_blocks( loc_list, op.centrifugal_rotation, l, 'v', 'upol', ll_flo[0], row, basecol + col0,
+                                               dls=cf.rotation_dl_range('v', 'upol'))
 
 
         # Toroidal velocity terms ----------------------------------------------------------------------------------
@@ -487,6 +510,11 @@ def main():
 
         if par.centrifugal :  # NEW (2026-11-05): Δl = 0, ±2
             loc_list = centrifugal_blocks( loc_list, op.centrifugal_coriolis, l, 'v', 'utor', ll_flo[1], row, basecol + col0)
+            if par.ViscosD > 0:  # NEW (2026-11-05, phase 2): the metric part of the viscous force, minus (as -visc)
+                loc_list = centrifugal_blocks( loc_list, op.centrifugal_diffusion, l, 'v', 'utor', ll_flo[1], row, basecol + col0, -1)
+            if par.diff_rot:  # NEW (2026-11-06, phase 2): the metric part of the differential rotation's force (as diff_rot's)
+                loc_list = centrifugal_blocks( loc_list, op.centrifugal_rotation, l, 'v', 'utor', ll_flo[1], row, basecol + col0,
+                                               dls=cf.rotation_dl_range('v', 'utor'))
 
 
 
@@ -523,6 +551,10 @@ def main():
         else:
             for q in [0,1,2]:
                 loc_list[q].append( bc_u_list[q] )
+            if par.centrifugal:  # NEW (2026-11-05, phase 2): the metric parts of the stress-free rows
+                bc_u_list = bc_u_centrifugal( l, 'section_v', ll_flo )
+                for q in [0,1,2]:
+                    loc_list[q].append( bc_u_list[q] )
         # ----------------------------------------------------------------------------------------------------------
 
 
@@ -565,6 +597,9 @@ def main():
                         if np.isscalar(mtx[0]): continue
                         col = basecol + col0 + mtx[1] * ut.N1
                         loc_list = ut.packit( loc_list, mtx[0], row, col)
+                if par.centrifugal:  # NEW (2026-11-06, phase 2): its metric part i m G η P2 ΔΩ s (the heat rows are times J)
+                    loc_list = centrifugal_blocks( loc_list, op.centrifugal_rotation, l, 'h', 'temp', ll_flo[0], row, basecol + col0,
+                                                   dls=cf.rotation_dl_range('h', 'temp'))
 
                 if par.thermal_wind :  # advection of the thermal-wind entropy by u
 
@@ -598,6 +633,9 @@ def main():
 
                 loc_list = ut.packit(loc_list, mtx, row, col)
 
+                if par.centrifugal:  # NEW (2026-11-05, phase 2): the metric part of the thermal diffusion, -∇⋅(κp (M - I)∇s), Δl = 0, ±2
+                    loc_list = centrifugal_blocks(loc_list, op.centrifugal_diffusion, l, 'h', 'temp', ll_flo[0], row, basecol + col0)
+
             # time derivative for forced problems: A - i wf B with B = +entropy here (B = -inertia in the momentum rows)
             if par.forcing != 0:
                 mtx = -1j*ut.wf*op.entropy(l,'h','',0)
@@ -613,6 +651,10 @@ def main():
             if bc_theta_list is not None:
                 for q in [0,1,2]:
                     loc_list[q].append( bc_theta_list[q] )
+                if par.centrifugal:  # NEW (2026-11-05, phase 2): the metric parts of the fixed-flux rows
+                    bc_theta_list = bc_theta_centrifugal( l, ll_flo )
+                    for q in [0,1,2]:
+                        loc_list[q].append( bc_theta_list[q] )
             # ----------------------------------------------------------------------------------------------------------
 
 
@@ -662,6 +704,9 @@ def main():
                 # magnetic diffusion
                 mtx = -1 * op.magnetic_diffusion(l, sec, comp, 0)
                 loc_list = ut.packit( loc_list, mtx, row, row)
+                if par.centrifugal and par.MagnetD > 0:  # NEW (2026-11-05, phase 2): its metric part (the A sign), from F and G
+                    for bcomp, bsec, lls in [ ('bpol', 'f', ll_mag[0]), ('btor', 'g', ll_mag[1]) ]:
+                        loc_list = centrifugal_blocks(loc_list, op.centrifugal_diffusion, l, sec, bcomp, lls, row, ut.offset[bsec] + col0)
 
                 # boundary-condition rows: insulating walls, or the matching with a conducting inner core at the ICB
                 bc_b_list = bc_b_spherical(l, sec)
@@ -675,6 +720,10 @@ def main():
                     bc_b_list = bc_b_cic(l, sec)
                     for q in [0,1,2]:
                         loc_list[q].append( bc_b_list[q] )
+                    if sec == 'g' and cf.ic_metric_on():   # NEW (2026-11-06): the metric parts of the ICB electric-field row
+                        bc_b_list = bc_b_cic_centrifugal(l, ll_mag)
+                        for q in [0,1,2]:
+                            loc_list[q].append( bc_b_list[q] )
 
         if ut.cic:  # NEW (2026-10-28): conducting inner core, sections fic, gic: A = -(diffusion), its bc row is the ICB matching
             for sec, comp, loc_mag in [ ('fic', 'bpol_ic', loc_mag_f), ('gic', 'btor_ic', loc_mag_g) ]:
@@ -684,6 +733,10 @@ def main():
                     if par.diff_rot:   # NEW (2026-10-30): the core co-rotates with ΔΩ(ricb) = c (rigid: background.magnetic_diffrot)
                         mtx = mtx + 1j*par.m*par.Gaspard*dr.rigid_ricb()[0]*op.b(l, sec, comp, 0)   # -(-i m G c b), the A sign
                     loc_list = ut.packit( loc_list, mtx, row, row)
+                    if cf.ic_metric_on():   # NEW (2026-11-06): the metric part of the diffusion of a deformed core (the A sign)
+                        for bcomp, bsec, lls in [ ('bpol_ic', 'fic', ll_mag[0]), ('btor_ic', 'gic', ll_mag[1]) ]:
+                            loc_list = centrifugal_blocks(loc_list, op.centrifugal_diffusion_ic, l, sec, bcomp, lls, row,
+                                                          ut.offset[bsec] + ( rank*bpp + k )* ut.Nic, nblk=ut.Nic)
                     bc_b_list = bc_b_cic(l, sec)
                     for q in [0,1,2]:
                         loc_list[q].append( bc_b_list[q] )
@@ -989,6 +1042,82 @@ def bc_u_spherical(l,loc):
 
 
 
+def bc_u_centrifugal(l, loc, ll_flo):
+    '''
+    NEW (2026-11-05, phase 2): with centrifugal = 1 and viscosity, the metric parts of the stress-free rows of bc_u_spherical
+    (zero tangential traction on the deformed walls; centrifugal.wall_dissipative_rows): in the same rows (section u: row 1
+    at the outer wall, row 3 at the inner one; section v: row 0 outside, row 1 inside), entries on P, P', P'' and T, T' of the
+    degrees l, l ± 2 (the same kind as the row) and l ± 1 (the other), each with its Chebyshev parity in a full sphere. The
+    impenetrable and no-slip rows need none (w_r = 0 and w = 0 are u⋅n = 0 and u = 0).
+    '''
+    sec = 'u' if loc == 'section_u' else 'v'
+    walls = ([('outer', 1 if sec == 'u' else 0, bv.Tb)] if par.bco == 0 else []) + \
+            ([('inner', 3 if sec == 'u' else 1, bv.Ta)] if (par.ricb > 0 and par.bci == 0) else [])
+    ix = {'P': ( par.m + 1 - ut.s )%2, 'T': ( par.m + ut.s )%2}   # the Chebyshev parities of P and T (as bc_u_spherical)
+    lfirst = {'P': ut.m_top, 'T': ut.m_bot}
+    base = {'P': 0, 'T': ut.n}
+    row0 = base['P' if sec == 'u' else 'T'] + int( ut.N1*(l - lfirst['P' if sec == 'u' else 'T'])/2 )
+    data, rows, cols = [], [], []
+    for wall, rr, T in walls:
+        B, W = cf.wall_dissipative_rows(wall)
+        for X, lls, kinds in (('P', ll_flo[0], ('P0', 'P1', 'P2')), ('T', ll_flo[1], ('T0', 'T1'))):
+            Tc = T if par.ricb > 0 else T[ix[X]::2, :]
+            for dl in range(-B, B + 1):
+                k = l + dl
+                if k not in lls:
+                    continue
+                vec = 0
+                for kind in kinds:
+                    c = cf._lookup(W[(sec, kind)], l, par.m, dl) if (sec, kind) in W else 0
+                    if c != 0:
+                        vec = vec + c*Tc[:, int(kind[1])]
+                if np.isscalar(vec):
+                    continue
+                nz = np.nonzero(vec)[0]
+                data.append(vec[nz])
+                rows.append(np.full(nz.size, row0 + rr))
+                cols.append(base[X] + int( ut.N1*(k - lfirst[X])/2 ) + nz)
+    if not data:
+        return [np.zeros(0), np.zeros(0, dtype=int), np.zeros(0, dtype=int)]
+    return [np.concatenate(data), np.concatenate(rows), np.concatenate(cols)]
+
+
+
+def bc_theta_centrifugal(l, ll_flo):
+    '''
+    NEW (2026-11-05, phase 2): with centrifugal = 1, the metric parts of the fixed-flux rows of bc_theta_spherical (zero flux
+    through the deformed walls, r̂⋅M⁻¹∇s = 0; centrifugal.wall_dissipative_rows): in the same rows (row 0 at the outer wall,
+    row 1 at the inner one), entries on s and s' of the degrees l, l ± 2. The fixed-entropy rows need none.
+    '''
+    walls = ([('outer', 0, bv.Tb)] if par.bco_thermal == 1 else []) + \
+            ([('inner', 1, bv.Ta)] if (par.ricb > 0 and par.bci_thermal == 1) else [])
+    ixh = ( par.m + 1 - ut.s )%2
+    row0 = 2*ut.n + int( ut.N1*(l - ut.m_top)/2 )
+    data, rows, cols = [], [], []
+    for wall, rr, T in walls:
+        B, W = cf.wall_dissipative_rows(wall)
+        Tc = T if par.ricb > 0 else T[ixh::2, :]
+        for dl in range(-B, B + 1):
+            k = l + dl
+            if k not in ll_flo[0]:
+                continue
+            vec = 0
+            for kind in ('S0', 'S1'):
+                c = cf._lookup(W[('h', kind)], l, par.m, dl) if ('h', kind) in W else 0
+                if c != 0:
+                    vec = vec + c*Tc[:, int(kind[1])]
+            if np.isscalar(vec):
+                continue
+            nz = np.nonzero(vec)[0]
+            data.append(vec[nz])
+            rows.append(np.full(nz.size, row0 + rr))
+            cols.append(2*ut.n + int( ut.N1*(k - ut.m_top)/2 ) + nz)
+    if not data:
+        return [np.zeros(0), np.zeros(0, dtype=int), np.zeros(0, dtype=int)]
+    return [np.concatenate(data), np.concatenate(rows), np.concatenate(cols)]
+
+
+
 def bc_b_spherical(l, sec):
     '''
     NEW (2026-10-28): boundary conditions for the magnetic field at insulating walls (conductive_IC's bc_b_cmb, bc_b_icb), on
@@ -1026,7 +1155,8 @@ def bc_b_centrifugal(l, sec, ll_mag):
     NEW (2026-11-05, phase 1b): with centrifugal = 1, the metric parts of the insulating wall rows of bc_b_spherical (the
     potential field outside the deformed outer wall, and inside an insulating inner core; centrifugal.wall_rows): in the same
     rows (row 0 at the outer wall, row 1 at the inner one), entries on F, F' and G of the degrees l ± 1 to l ± 3 (f and g
-    columns, each with its Chebyshev parity in a full sphere). A conducting inner core needs none (bc_b_cic stays exact).
+    columns, each with its Chebyshev parity in a full sphere). A conducting inner core: its rows that match the field stay
+    exact (bc_b_cic); FIX (2026-11-06, phase 2): the row of the electric field gains a metric part (bc_b_cic_centrifugal).
     '''
     walls = [('outer', 0)] + ([('inner', 1)] if (par.ricb > 0 and not ut.cic) else [])
     lfirst = lambda s: ut.m_bot if (s == 'f') == (ut.symmB0 == -1) else ut.m_top   # as in bc_b_spherical
@@ -1102,6 +1232,43 @@ def bc_b_cic(l, sec):
     outic = outic.tocoo()
     return [ np.concatenate([outoc.data, outic.data]), np.concatenate([outoc.row + row0, outic.row + row0]),
              np.concatenate([outoc.col + colo, outic.col + coli]) ]
+
+
+
+def bc_b_cic_centrifugal(l, ll_mag):
+    '''
+    NEW (2026-11-06): with centrifugal = 1 and a conducting inner core, the metric parts of the ICB row of the electric field
+    (bc_b_cic's row 1 of g, degree l; centrifugal.icb_rows): R [S part of δ𝐄]_o - η_i R [S part of δ𝐄]_i, with entries on
+    F, F', F'' and G, G' at the ICB of the degrees l, l ± 1 to l ± 3, in the fluid's columns (f, g) and the core's (fic, gic).
+    '''
+    eta_i2o = 1/( par.mu_i2o * par.sigma_i2o )
+    lfirst  = lambda s: ut.m_bot if ((s in ['f', 'fic']) == (ut.symmB0 == -1)) else ut.m_top   # as in bc_b_cic
+    lls     = {'F': ll_mag[0], 'G': ll_mag[1]}
+    row     = ut.offset['g'] + int( (l - lfirst('g'))/2 )*ut.N1 + 1
+    B, W    = cf.icb_rows()
+    data, rows, cols = [], [], []
+    for X, (so, si, To, Ti) in (('F', ('f', 'fic', bv.Ta, bv.Tbfic)), ('G', ('g', 'gic', bv.Ta, bv.Tbgic))):
+        for dl in range(-B, B + 1):
+            k = l + dl
+            if k not in lls[X]:
+                continue
+            vo, vi = 0, 0
+            for d in range(3):
+                if (X, d) in W:
+                    c = cf._lookup(W[(X, d)], l, par.m, dl)
+                    if c != 0:
+                        vo = vo + c*To[:, d]
+                        vi = vi - eta_i2o*c*Ti[:, d]
+            for vec, sec, nb in ((vo, so, ut.N1), (vi, si, ut.Nic)):
+                if np.isscalar(vec):
+                    continue
+                nz = np.nonzero(vec)[0]
+                data.append(vec[nz])
+                rows.append(np.full(nz.size, row))
+                cols.append(ut.offset[sec] + int( (k - lfirst(sec))/2 )*nb + nz)
+    if not data:
+        return [np.zeros(0), np.zeros(0, dtype=int), np.zeros(0, dtype=int)]
+    return [np.concatenate(data), np.concatenate(rows), np.concatenate(cols)]
 
 
 

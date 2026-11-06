@@ -30,12 +30,17 @@ With a field (magnetic = 1, NEW phase 1b, sections 4 and 5) the field is a flux 
 and so is the background: kore's formula for B0 gives B̃0 on the level surfaces, and the field of the body is F B̃0/J. Then
 ∇⋅b̃ = 0 is exact, the Lorentz force takes its covariant form (1/J)[∇×(M b̃) × B̃0 + ∇×(M B̃0) × b̃] and the induction
 ∂ₜb̃ = ∇×(w × B̃0/J); their first-order metric parts are built with the recurrence algebra of mag_algebra.py. At an
-insulating wall the field is matched to the potential field outside on the deformed wall; a conducting inner core on the
-same map needs no new rows when its permeability is the fluid's (mu_i2o = 1).
-LEFT OUT (background.check_centrifugal stops or warns): the metric terms of the viscous force, of the thermal and magnetic
-diffusion and of the stress-free rows (relative size ε times the diffusion: no-slip runs are right in the bulk, with damping
-rates off by a fraction of order ε), of the differential rotation, and of the matching at a conducting inner core of another
-permeability (mu_i2o ≠ 1).
+insulating wall the field is matched to the potential field outside on the deformed wall; at a conducting inner core of the
+fluid's permeability (mu_i2o = 1) b̃ is continuous, and the row of the tangential electric field gains the metric part of the
+diffusion (section 6).
+NEW (2026-11-06, phase 2, sections 6 and 7): the dissipative terms take their covariant forms too, the viscous force, the
+thermal and the magnetic diffusion (in the fluid and in a conducting inner core) and the stress-free and fixed-flux wall rows;
+a differential rotation, given in the reference space as every profile (the body point X(r, θ) turns at ΔΩ(r, θ), so a ΔΩ
+of r alone is constant on the level surfaces), adds the metric parts of its force and of its advection of the entropy (its
+induction has none).
+LEFT OUT (background.check_centrifugal stops, report() warns): forced problems, the zero radial stress walls (bco, bci = 2),
+a conducting inner core of another permeability (mu_i2o ≠ 1), the thermal-wind entropy (thermal_wind = 1, 2), which keeps
+the balance of the sphere, and the second order in f.
 
 Sections:
   1. the shape f(r): 'clairaut' (Clairaut's equation from the structure's g, solved in Radau's form), 'uniform' (constant f),
@@ -46,11 +51,16 @@ Sections:
   4. the magnetic terms: the profile codes of ε, η times the profiles of B0, the metric parts of the Lorentz force and of
      the induction (magnetic_build) and their blocks for operators.py;
   5. the insulating walls: the metric parts of the matching rows (wall_coefficients, wall_rows for assemble.py), the
-     potential field outside for spin_doctor (wall_potential) and ε, η inside the inner core (amplitudes).
+     potential field outside for spin_doctor (wall_potential) and ε, η inside the inner core (amplitudes);
+  6. the dissipative terms: the metric parts of the viscous force and of the thermal and magnetic diffusion
+     (diffusion_build), of the stress-free and fixed-flux wall rows (wall_dissipative) and, in a conducting inner core, of
+     its diffusion and of the electric field's row at the ICB (diffusion_block_ic, icb_rows);
+  7. the differential rotation: the metric parts of its force (rotation_force, rotation_build) and of its advection of the
+     entropy (rotation_heat_coefficients), and their blocks for operators.py.
 Only parameters and angular are imported at the top: utils and radial_profiles are imported where needed (radial_profiles
 imports this module from burrito), so the algebra can be imported and tested without a run directory.
 '''
-import sys
+import sys, re
 import numpy as np
 from parameters import par
 import angular
@@ -158,6 +168,26 @@ def flattening(r):
     '''f(r), the flattening of the level surface of mean radius r (kore units)'''
     return shape_functions()['f'](np.asarray(r, dtype=float))
 
+_deformed = []
+def deformed():
+    '''NEW (2026-11-06, phase 2): whether the body is deformed at all, f ≠ 0 somewhere in 0 <= r <= 1. Without a deformation
+    (q = 0, or 'uniform' with centrifugal_f = 0) every metric term vanishes and kore keeps the sphere's bases and rows (the
+    C^(3) basis of the sections v and g, the rows r³ of g and gic, rpower_v >= 4 in a viscous full sphere), so that its
+    matrices are exactly those of centrifugal = 0. The dissipative terms and those of the differential rotation are left out
+    then too (diffusion_kinds, rotation_on, wall_dissipative_rows), being zero.
+    FIX (2026-11-06): it is called before the structure is built (background.check_centrifugal, utils), so 'clairaut', whose
+    f is its scale (centrifugal_f, or centrifugal_q) times a positive shape from the structure's g, is decided by the scale'''
+    if not _deformed:
+        t, f = par.centrifugal_shape, par.centrifugal_f
+        if t == 'clairaut':
+            d = f != 0 if f is not None else par.centrifugal_q != 0
+        elif t == 'uniform':
+            d = f is not None and f != 0
+        else:
+            d = np.any(flattening(np.linspace(0., 1., 41)) != 0)
+        _deformed.append(bool(d))
+    return _deformed[0]
+
 # Chebyshev fits on kore's radial grid (as diff_rot._fit), even in r when ricb = 0 (the shapes are evaluated at |r|)
 _fits = {}
 def _fit(key, func):
@@ -188,6 +218,8 @@ def profile_functions():
         out['ce1'] = lambda r, Dorder: _eval(_fit('ce1', lambda rr, rpower: pw(rr, rpower)*rr*out['ce0'](rr, 1)), r, Dorder)
         out['ce2'] = lambda r, Dorder: _eval(_fit('ce2', lambda rr, rpower: pw(rr, rpower)*rr*out['ce1'](rr, 1)), r, Dorder)
     out['ce3'] = lambda r, Dorder: _eval(_fit('ce3', lambda rr, rpower: pw(rr, rpower)*rr*out['ce2'](rr, 1)), r, Dorder)
+    # NEW (2026-11-05, phase 2) ce4 = r (ce3)', for the dissipative terms
+    out['ce4'] = lambda r, Dorder: _eval(_fit('ce4', lambda rr, rpower: pw(rr, rpower)*rr*out['ce3'](rr, 1)), r, Dorder)
     return out
 
 def g_monopole(r):
@@ -257,16 +289,10 @@ def report():
     fmax = np.abs(flattening(np.linspace(max(par.ricb, 0.0), 1, 201))).max()
     if fmax > 0.1:
         print('WARNING: centrifugal = 1: flattening up to %.3f, beyond about 0.1 the first order in f loses accuracy' % fmax)
-    left = (['the viscous force'] if par.ViscosD > 0 else []) + (['the thermal diffusion'] if par.thermal and par.ThermaD > 0 else [])
-    if left:
-        print('WARNING: centrifugal = 1: %s of the sphere (the metric terms of the diffusion are not implemented): damping '
-              'rates are off by a fraction of order f' % ' and '.join(left))
-    if par.diff_rot:
-        print('WARNING: centrifugal = 1: the differential-rotation terms are those of the sphere (the terms of order f ΔΩ are '
-              'left out)')
-    if par.magnetic and par.MagnetD > 0:   # NEW (2026-11-05, phase 1b)
-        print('WARNING: centrifugal = 1: the magnetic diffusion of the sphere (its metric terms are not implemented): Ohmic '
-              'damping rates are off by a fraction of order f')
+    # FIX (2026-11-06, phase 2): the viscous force, the diffusion and the differential rotation have their metric terms now
+    if par.diff_rot and par.thermal and par.thermal_wind in (1, 2):
+        print('WARNING: centrifugal = 1: the thermal-wind entropy S_tw balances ΔΩ in the sphere (the terms of order f ΔΩ of '
+              'the balance are left out); its advection and the other terms of ΔΩ are those of the deformed body')
     if par.magnetic:
         print('centrifugal = 1: B0 is given on the level surfaces (the reference space) and carried by the map: the field in '
               'the body differs from the spherical formula at order f')
@@ -398,8 +424,10 @@ def labels():
 
 def dl_range(section, component):
     '''the Δl = l_source - l_target of the blocks assemble.py places: 0, ±2 between degrees of the same kind (u rows and P
-    columns, v and T, h and s), ±1, ±3 between P and T'''
-    same = {('u', 'upol'): True, ('v', 'utor'): True, ('h', 'temp'): True, ('u', 'utor'): False, ('v', 'upol'): False}
+    columns, v and T, h and s; NEW phase 2: f and F, g and G), ±1, ±3 between P and T (f and G, g and F)'''
+    same = {('u', 'upol'): True, ('v', 'utor'): True, ('h', 'temp'): True, ('u', 'utor'): False, ('v', 'upol'): False,
+            ('f', 'bpol'): True, ('g', 'btor'): True, ('f', 'btor'): False, ('g', 'bpol'): False}
+    section, component = section.replace('ic', ''), component.replace('_ic', '')   # NEW (2026-11-06): a conducting core's
     return range(-2, 3, 2) if same[(section, component)] else range(-3, 4, 2)
 
 def momentum_block(kind, l, section, component, offdiag, M):
@@ -453,7 +481,7 @@ def entropy_block(l, offdiag, M):
 # With the current j̃ = J F⁻¹ ∇×b = ∇×(M b̃) and Fᵀ(a×c) = (ã×c̃)/J (a = F ã/J, c = F c̃/J):
 #     covariant Lorentz force (over ρ0, times Hendrik as now):   (1/J) [∇×(M b̃) × B̃0 + ∇×(M B̃0) × b̃]
 #     induction:                                                  ∂ₜb̃ = ∇×(w × B̃0/J) + the magnetic diffusion
-# The diffusion keeps its spherical form (its metric terms are left out, as those of the viscous force). At first order, with
+# The metric part of the diffusion is in section 6 (FIX 2026-11-06, phase 2; phase 1b left it out). At first order, with
 # M - I and J - 1 = η P2 of section 1, the metric parts are (B0, J0 = ∇×B0, b, J = ∇×b all of the reference space)
 #     δ𝐆 = -η P2 (J0×b - B0×J) + [∇×((M - I)B0)]×b - B0×[∇×((M - I)b)],      δ𝐄 = -η P2 (w×B0)   (induction ∇×δ𝐄)
 # and they enter kore's rows as the force 𝐆 and the field 𝐄 = u×B0 of mag_algebra.py. They are built here with its recurrence
@@ -461,7 +489,8 @@ def entropy_block(l, offdiag, M):
 # a sum of Fields; a radial factor is a monomial r^p X^(d) [a B_n^(j)] λ_k whose amplitude a is one of AMPS, and the product
 # a B_n^(j) is one profile code (product_code: 'E', 'N', 'C', 'Q' then 'p' + degree for h_n, 't' + degree for k_n), the
 # derivative digit j of the label applying to B_n only. An amplitude's derivative is the next one over r (ε' = η/r, ...).
-AMPS = {'E': ('ce0', 'N'), 'N': ('ce1', 'C'), 'C': ('ce2', 'Q'), 'Q': ('ce3', None)}   # amplitude: (its code, that of r a')
+AMPS = {'E': ('ce0', 'N'), 'N': ('ce1', 'C'), 'C': ('ce2', 'Q'), 'Q': ('ce3', 'K'),   # amplitude: (its code, that of r a')
+        'K': ('ce4', None)}   # NEW (2026-11-05, phase 2): ce4 = r (ce3)', for the dissipative terms (section 6)
 _xp = np.polynomial.Polynomial([0., 1.])     # x = cos θ
 _P2p = (3*_xp*_xp - 1)/2
 
@@ -778,9 +807,10 @@ def magnetic_block(l, section, component, offdiag, M):
 # inner core), whose metric terms take its spherical value a_l R^-(l+2) (or a_l R^(l-1)) = c_l = F_l' + F_l/R, gives
 #     outer:  (l+1) F + R F' + R (m_s - δs) - R δq/(l+1) = 0,      G + m_t = 0
 #     inner:  l F - R F' - R (m_s - δs) - R δq/l = 0,              G + m_t = 0
-# rows that couple F_l to F_(l±2) and G_(l±1, l±3), and G_l to G_(l±2) and F_(l±1, l±3). A conducting inner core on the same map
-# needs none (background.check_centrifugal: mu_i2o = 1): b̃_r is continuous, with it the tangential M b̃ continuous is the
-# tangential b̃ continuous, and the electric field's rows keep their form with the spherical diffusion (w = 0 at the ICB).
+# rows that couple F_l to F_(l±2) and G_(l±1, l±3), and G_l to G_(l±2) and F_(l±1, l±3). At a conducting inner core on the
+# same map (background.check_centrifugal: mu_i2o = 1) b̃_r is continuous, with it the tangential M b̃ continuous is the
+# tangential b̃ continuous, so the rows that match the field keep their form; FIX (2026-11-06, phase 2): the row of the
+# tangential electric field gains the metric part of the diffusion (section 6, icb_rows).
 def wall_coefficients(wall, m, lw, eps, eta, R):
     '''
     The metric parts of the wall rows at the radius R of the wall 'outer' or 'inner' with ε = eps, η = eta there: {(row,
@@ -836,21 +866,28 @@ def wall_potential(wall, m, lw, eps, eta, R, q, s, t):
     return s + ms - eps*(_wall_D(A, wall)[0] @ s)
 
 _amp_all = {}
-def amplitudes(r):
+def amplitude_series():
     '''
-    (ε, η = r ε', r η') at any radii 0 <= r <= 1, also inside the inner core, where the profile codes (fits on the fluid's
-    domain) are not defined: from an even Chebyshev interpolant of the shape's ε on [-1, 1] (post-processing of a conducting
-    inner core, utils4pp.centrifugal_magnetic_terms)
+    {'E': ε, 'N': η = r ε', 'C': r η', 'Q': r C', 'K': r Q'} (the amplitudes of AMPS) as Chebyshev series on [-1, 1], also
+    defined inside the inner core, where the profile codes (fits on the fluid's domain) are not: from an even interpolant
+    of the shape's ε (a conducting inner core: its metric diffusion, section 6, and its post-processing)
     '''
     if not _amp_all:
         C = np.polynomial.chebyshev.Chebyshev
         S = shape_functions()
-        e = C.interpolate(lambda x: S['e'](np.abs(x)), 2*max(par.N, 64) + 1, domain=[-1, 1])
+        a = C.interpolate(lambda x: S['e'](np.abs(x)), 2*max(par.N, 64) + 1, domain=[-1, 1])
         x = C.identity(domain=[-1, 1])
-        h = x*e.deriv()
-        _amp_all.update({'e': e, 'h': h, 'c': x*h.deriv()})
+        for k in 'ENCQK':   # NEW (2026-11-06): the whole chain (was ε, η, r η')
+            _amp_all[k] = a
+            a = x*a.deriv()
+    return _amp_all
+
+def amplitudes(r):
+    '''(ε, η = r ε', r η') at any radii 0 <= r <= 1, also inside the inner core (amplitude_series; post-processing of a
+    conducting inner core, utils4pp.centrifugal_magnetic_terms)'''
+    A = amplitude_series()
     r = np.asarray(r, dtype=float)
-    return _amp_all['e'](r), _amp_all['h'](r), _amp_all['c'](r)
+    return A['E'](r), A['N'](r), A['C'](r)
 
 def sp_diags(v):
     import scipy.sparse as sps
@@ -874,3 +911,700 @@ def wall_rows(wall):
         B = _bandwidth({0: W})
         _wall[wall] = (B, {k: angular.band(M, B) for k, M in W.items()})
     return _wall[wall]
+
+
+# ======================================================================================================================
+# 6. The dissipative terms (NEW 2026-11-05, phase 2)
+# ======================================================================================================================
+# The viscous force, the thermal and the magnetic diffusion are operators of the body. Pulled back to the reference space
+# they gain first-order parts, as the inertia did, but with derivatives: they couple a degree l to l ± 2 of the same kind and
+# to l ± 1, l ± 3 of the other kind, through radial operators made of the amplitudes of the map, the coefficient profile (ν,
+# κ p or η) and the (ln ρ0) derivatives. From the map alone (tests/centrifugal/derive_diff.py checks each formula):
+#   viscous force per unit mass, V(u) = (1/ρ0) ∇⋅(ρ0 ν σ(u)), σ(u) = ∇u + (∇u)ᵀ - (2/3)(∇⋅u) I. Its covariant form is
+#   Fᵀ V(F w/J) = V(w) + δV with, up to a gradient (which kore's curl rows remove),
+#       δV = -ξ×(∇×V(w)) + V(∇×(ξ×w) + λ1 w_r ξ) - ξ_r ν' ∇⋅σ(w) - ∇(ξ_r κ)⋅σ(w),      κ = ν' + ν λ1:
+#   the first two terms are the change of coordinates (the Lie derivative of the force along ξ, with ∇⋅w = -λ1 w_r), the last
+#   two that of the profiles, which are constant on the level surfaces and not on the spheres;
+#   heat rows (the equation times J): J ∇_X⋅(κp ∇_X s) = ∇⋅(κp M⁻¹ ∇s), first order δ = -∇⋅(κp (M - I) ∇s);
+#   induction: the electric field of the diffusion is Fᵀ(η ∇_X×b) = η M ∇×(M b̃), first order δ = η [(M - I) ∇×b̃ + ∇×((M - I) b̃)];
+#   walls: stress-free, the tangential part of Fᵀ σ_X F⁻ᵀ r̂ (the traction on the level surface, in the tangent vectors F t);
+#   fixed flux, r̂⋅M⁻¹∇s = 0 (the flux through the level surface).
+# They are built with the recurrence algebra of section 2 on expressions {monomial: Field (or sparse matrix)}, a monomial
+# (p, X, d, a, j, lam) being r^p X^(d) a c^(j) Λ: a power of r, the d-th derivative of the unknown X (P, T, S for the entropy,
+# F, G; None for a radial factor alone), an amplitude a of the map (AMPS), the j-th derivative of the coefficient profile c
+# and a product Λ of (ln ρ0) derivatives, the sorted tuple of their orders. A label gets the product code a + 'vs', 'kp' or
+# 'et' (a c, DIFF_CODES) with the digit j, and Λ as 'lho' k (λ_k), or 'lh1' k, 'lh2' k (λ1 λ_k, λ2 λ_k) in the first slot.
+# Terms whose order is above the row's (r⁵ ρ0 r̂⋅∇×∇× has fourth derivatives of P) appear term by term and cancel in the sum,
+# to round-off (dropped by mag_algebra._prune, and checked: _check_orders). The toroidal rows (v, g) keep third derivatives of
+# P (F) for m ≠ 0, the part of ∂ᵣ² of the poloidal flow that the P2 factors turn toroidal: submatrices.py then builds those
+# sections in the C^(3) basis (orders()).
+DIFF_CODES = {'vs': 'vsc', 'kp': 'kps', 'et': 'eta'}   # the product code's suffix: the code of the profile it multiplies
+ROWPOW2 = {'u': 5, 'v': 3, 'h': 2, 'f': 2, 'g': 2}     # the power of r of the rows (decode_label: rpower = ROWPOW2 - rx)
+
+def diffusion_profile_functions():
+    '''{product code: f(r, Dorder)} for radial_profiles.burrito: a(r) c^(Dorder)(r), the amplitude a (AMPS, from
+    profile_functions) and the coefficient profile c of radial_profiles (vsc: ν, kps: κ p, eta: η)'''
+    import radial_profiles as rap
+    amp = profile_functions()
+    out = {}
+    for a, (ca, _) in AMPS.items():
+        for sfx, base in DIFF_CODES.items():
+            out[a + sfx] = lambda r, Dorder, A=amp[ca], base=base: A(r, 0)*rap.proffdir[base](r, Dorder)
+    return out
+
+# --- expressions of monomials (p, X, d, a, j, lam)
+def _sum(*es):
+    out = {}
+    for e in es:
+        for k, M in e.items():
+            _add(out, k, M)
+    return out
+
+def _sc(e, c):
+    return {k: c*M for k, M in e.items()}
+
+def _map(e, fn):
+    return {k: fn(M) for k, M in e.items()}
+
+def _dr(e):
+    '''d/dr of an expression: the product rule on r^p, X^(d) (X not None), the amplitude (a' = (next amplitude)/r), the
+    profile c^(j) (j not None) and each λ_k of Λ (λ_k' = λ_(k+1))'''
+    out = {}
+    for (p, X, d, a, j, lam), M in e.items():
+        if p != 0:
+            _add(out, (p - 1, X, d, a, j, lam), p*M)
+        if X is not None:
+            _add(out, (p, X, d + 1, a, j, lam), M)
+        if a is not None:
+            if AMPS[a][1] is None:
+                sys.exit('centrifugal: a derivative of the amplitude %s has no profile code' % a)
+            _add(out, (p - 1, X, d, AMPS[a][1], j, lam), M)
+        if j is not None:
+            _add(out, (p, X, d, a, j + 1, lam), M)
+        for i in range(len(lam)):
+            _add(out, (p, X, d, a, j, tuple(sorted(lam[:i] + (lam[i] + 1,) + lam[i + 1:]))), M)
+    return out
+
+def _rf(*terms):
+    '''a radial factor {(p, None, 0, a, j, lam): c} from (c, p, a, j, lam)'''
+    out = {}
+    for c, p, a, j, lam in terms:
+        _add(out, (p, None, 0, a, j, tuple(sorted(lam))), c)
+    return out
+
+def _rmul(f, e):
+    '''the product of the radial factor f and the expression e'''
+    out = {}
+    for (p1, _, _, a1, j1, l1), c in f.items():
+        for (p, X, d, a, j, lam), M in e.items():
+            if a1 is not None and a is not None:
+                sys.exit('centrifugal: two amplitudes in one term')
+            if j1 is not None and j is not None:
+                sys.exit('centrifugal: two profile factors in one term')
+            _add(out, (p + p1, X, d, a if a1 is None else a1, j if j1 is None else j1, tuple(sorted(lam + l1))), c*M)
+    return out
+
+# --- vector calculus on vector expressions {monomial: Field (q, s, t) on R_l, S_l, T_l} and scalar ones {monomial: matrix}
+def _parts(e):
+    '''the components q, s, t of a vector expression, as three scalar expressions'''
+    return tuple({k: F[c] for k, F in e.items()} for c in 'qst')
+
+def _vec(A, q=None, s=None, t=None):
+    '''a vector expression from scalar ones (components left out are zero)'''
+    Z = A.zero()
+    q, s, t = q or {}, s or {}, t or {}
+    return {k: angular.Field(q.get(k, Z), s.get(k, Z), t.get(k, Z)) for k in set(q) | set(s) | set(t)}
+
+def _Lt(A, e):
+    return _map(e, lambda M: A.L @ M)
+
+def _div(A, e):
+    '''∇⋅v = q' + 2q/r - L s/r'''
+    q, s, _ = _parts(e)
+    return _sum(_dr(q), _shift(q, 2., -1), _shift(_Lt(A, s), -1., -1))
+
+def _grad(A, g):
+    '''∇g = g' R + (g/r) S'''
+    return _sum(_vec(A, q=_dr(g)), _vec(A, s=_shift(g, 1., -1)))
+
+def _curl(A, e):
+    '''∇×v: (q, s, t) -> (L t/r, (r t)'/r, (q - (r s)')/r)'''
+    q, s, t = _parts(e)
+    return _vec(A, q=_shift(_Lt(A, t), 1., -1), s=_shift(_dr(_shift(t, 1., 1)), 1., -1),
+                t=_sum(_shift(q, 1., -1), _shift(_dr(_shift(s, 1., 1)), -1., -1)))
+
+def _divsig(A, e):
+    '''∇⋅σ(v) = ∇²v + (1/3)∇(∇⋅v) = (4/3)∇(∇⋅v) - ∇×∇×v'''
+    return _sum(_sc(_grad(A, _div(A, e)), 4/3), _sc(_curl(A, _curl(A, e)), -1.))
+
+def _rsig(A, e):
+    '''r̂⋅σ(v) = (2q' - (2/3)∇⋅v) R + (s' + (q - s)/r) S + (t' - t/r) T'''
+    q, s, t = _parts(e)
+    return _vec(A, q=_sum(_sc(_dr(q), 2.), _sc(_div(A, e), -2/3)), s=_sum(_dr(s), _shift(q, 1., -1), _shift(s, -1., -1)),
+                t=_sum(_dr(t), _shift(t, -1., -1)))
+
+def _zdot(A, e):
+    '''ẑ⋅v = x v_r - sinθ v_θ (scalar)'''
+    return _map(e, lambda F: A.X @ F.q - A.sin_theta(F))
+
+def _zhat(A, g):
+    '''g ẑ for a scalar g'''
+    return _map(g, lambda c: angular.Field(A.X @ c, A.Li @ (A.Dd @ c), A.Li @ (1j*A.m*c)))
+
+def _zcr(A, e):
+    return _map(e, A.zcross)
+
+def _rcr(e):
+    '''r̂ × v: r̂ × S_l = -T_l, r̂ × T_l = S_l'''
+    return _map(e, lambda F: angular.Field(0*F.q, F.t, -1*F.s))
+
+def _poly(A, e, c):
+    '''c(x) v, c a numpy Polynomial in x = cos θ'''
+    import mag_algebra as ma
+    g, dg = ma._poly_mats(A, c)
+    return _map(e, lambda F: A.mult(F, g, dg))
+
+def _zsig(A, e):
+    '''ẑ⋅σ(v) = 2∇v_z - ẑ×(∇×v) - (2/3)(∇⋅v) ẑ'''
+    return _sum(_sc(_grad(A, _zdot(A, e)), 2.), _sc(_zcr(A, _curl(A, e)), -1.), _sc(_zhat(A, _div(A, e)), -2/3))
+
+def _H(A, e):
+    '''H v = (3/2) v_z ẑ - v/2, H = ∇∇(r² P2/2) (ξ = ε H 𝐫)'''
+    return _sum(_sc(_zhat(A, _zdot(A, e)), 1.5), _sc(e, -0.5))
+
+def _Hr(A, g):
+    '''g H r̂ = g [(3/2) x ẑ - r̂/2] for a scalar g'''
+    return _sum(_sc(_zhat(A, _map(g, lambda c: A.X @ c)), 1.5), _vec(A, q=_sc(g, -0.5)))
+
+EPS_R = _rf((1., 1, 'E', None, ()))       # ε r: ξ = ε r H r̂, ξ_r = ε r P2
+LAM1 = _rf((1., 0, None, None, (1,)))     # λ1
+
+def _xi_cross(A, e):
+    '''ξ × v = ε r [(3/2) x ẑ×v - (1/2) r̂×v]'''
+    return _rmul(EPS_R, _sum(_poly(A, _zcr(A, e), 1.5*_xp), _sc(_rcr(e), -0.5)))
+
+def _metric(A, e, lw):
+    '''(M - I) v (section 1): the amplitudes ε ('E') and η ('N') times the primitives of the inertia'''
+    out = {}
+    for a, amp in (('E', 'e'), ('N', 'h')):
+        C = primitives('inertia', amp, A.m, lw)[0]
+        for (p, X, d, a0, j, lam), F in e.items():
+            if a0 is not None:
+                sys.exit('centrifugal: two amplitudes in one term')
+            _add(out, (p, X, d, a, j, lam), angular.Field(*[C[k]['q'] @ F.q + C[k]['a'] @ F.s + C[k]['T'] @ F.t for k in 'qst']))
+    return out
+
+# --- the unknowns
+def _flow(A, X):
+    '''w of the unknown X: P, q = L P/r, s = P' + P/r + λ1 P; T, t = T'''
+    I, L = A.I, A.L
+    if X == 'P':
+        return _vec(A, q={(-1, 'P', 0, None, None, ()): L},
+                    s={(-1, 'P', 0, None, None, ()): I, (0, 'P', 1, None, None, ()): I, (0, 'P', 0, None, None, (1,)): I})
+    return _vec(A, t={(0, 'T', 0, None, None, ()): I})
+
+def _field(A, X):
+    '''b̃ of the unknown X: F, q = L F/r, s = F' + F/r; G, t = G'''
+    I, L = A.I, A.L
+    if X == 'F':
+        return _vec(A, q={(-1, 'F', 0, None, None, ()): L}, s={(-1, 'F', 0, None, None, ()): I, (0, 'F', 1, None, None, ()): I})
+    return _vec(A, t={(0, 'G', 0, None, None, ()): I})
+
+NU = _rf((1., 0, None, 0, ()))                                    # ν
+KAPPA = _rf((1., 0, None, 1, ()), (1., 0, None, 0, (1,)))         # κ = ν' + ν λ1 = (ρ0 ν)'/ρ0
+
+def _visc(A, e):
+    '''the viscous force per unit mass of a flow v: V(v) = ν ∇⋅σ(v) + κ r̂⋅σ(v)'''
+    return _sum(_rmul(NU, _divsig(A, e)), _rmul(KAPPA, _rsig(A, e)))
+
+def viscous_force(A, X):
+    '''δV of the flow of the unknown X ('P' or 'T'), up to a gradient (the formula above), as a vector expression'''
+    w = _flow(A, X)
+    out = _sc(_xi_cross(A, _curl(A, _visc(A, w))), -1.)                                        # -ξ×(∇×V(w))
+    du = _sum(_curl(A, _xi_cross(A, w)), _rmul(EPS_R, _Hr(A, _rmul(LAM1, _parts(w)[0]))))   # ∇×(ξ×w) + λ1 w_r ξ
+    out = _sum(out, _visc(A, du))
+    out = _sum(out, _rmul(_rf((-1., 1, 'E', 1, ())), _poly(A, _divsig(A, w), _P2p)))         # -ξ_r ν' ∇⋅σ(w)
+    g = _rf((1., 1, 'E', 1, ()), (1., 1, 'E', 0, (1,)))                                       # ξ_r κ = g P2, g = ε r κ
+    rs = _rsig(A, w)
+    # -∇(g P2)⋅σ(w) = -[g' P2 - 3 (g/r) x²] r̂⋅σ(w) - 3 (g/r) x ẑ⋅σ(w)
+    return _sum(out, _sc(_rmul(_dr(g), _poly(A, rs, _P2p)), -1.), _rmul(_shift(g, 3., -1), _poly(A, rs, _xp*_xp)),
+                _rmul(_shift(g, -3., -1), _poly(A, _zsig(A, w), _xp)))
+
+def thermal_diffusion_metric(A, lw):
+    '''-∇⋅(κp (M - I) ∇s), the first-order part of J ∇⋅(κp ∇s) (scalar expression; ∇s: q = s', s/r on S)'''
+    gs = _vec(A, q={(0, 'S', 1, None, None, ()): A.I}, s={(-1, 'S', 0, None, None, ()): A.I})
+    return _sc(_div(A, _rmul(NU, _metric(A, gs, lw))), -1.)      # NU: the profile slot, here κ p
+
+def magnetic_diffusion_metric(A, X, lw):
+    '''the first-order part of the electric field of the diffusion, -η [(M - I) ∇×b̃ + ∇×((M - I) b̃)], b̃ of the unknown X'''
+    b = _field(A, X)
+    return _sc(_rmul(NU, _sum(_metric(A, _curl(A, b), lw), _curl(A, _metric(A, b, lw)))), -1.)   # NU: here η
+
+# --- the rows and their labels
+def _label(row, rx, a, sfx, j, lam, d):
+    '''the label of r^(rowpower - rx) [a c^(j)] Λ X^(d) in the row: '{row}{rx}{a}{sfx}{j}[lho{k}]_D{d}' or, with a product of
+    two (ln ρ0) derivatives, '{row}{rx}lh{i}{k}{a}{sfx}{j}_D{d}' (burrito takes such products in the first slot); None if it
+    has none'''
+    prod = '%s%s%d' % (a, sfx, j)
+    if len(lam) == 0:
+        mid = prod
+    elif len(lam) == 1:
+        mid = prod + 'lho%d' % lam[0]
+    elif len(lam) == 2 and lam[0] in (1, 2) and lam[1] <= 9:
+        mid = 'lh%d%d' % lam + prod
+    else:
+        return None
+    return '%s%d%s_D%d' % (row, rx, mid, d)
+
+def _store2(out, row, X, e, Lt, sfx):
+    '''the row's monomials as labels, times Lt (L' of the target, or 1 for the heat rows), added to out[(row, X)]'''
+    d_ = out.setdefault((row, X), {})
+    for (p, Xn, dd, a, j, lam), M in e.items():
+        M = M.tocsr()
+        if M.nnz == 0 or abs(M).max() == 0:
+            continue
+        rx = ROWPOW2[row] - p
+        lab = _label(row, rx, a, sfx, j, lam, dd) if (0 <= rx <= 9 and a is not None and j is not None and j <= 9
+                                                       and dd <= 9 and Xn == X) else None
+        if lab is None:
+            sys.exit('centrifugal: the term r^%d %s^(%d) %s c^(%s) λ%s has no label in row %s' % (p, Xn, dd, a, j, lam, row))
+        _add(d_, lab, Lt(M).tocsr())
+
+def _row_u(e):
+    '''r³ [q - (r s)'] of a force per unit mass (times L', ρ0 and 1/L'³ in the block: the row r⁵ ρ0 r̂⋅∇×∇×)'''
+    q, s, _ = _parts(e)
+    return _shift(_sum(q, _sc(_dr(_shift(s, 1., 1)), -1.)), 1., 3)
+
+def _row_v(e):
+    '''r² t (the row r³ ρ0 r̂⋅∇×)'''
+    return _shift(_parts(e)[2], 1., 2)
+
+def diffusion_build(m, lw, kinds=('visc', 'heat', 'mag')):
+    '''
+    {(row, column): {label: sparse matrix [target l', source l]}} of the first-order dissipative terms on the degrees 0..lw:
+    'visc' the viscous force δV in the rows u, v (columns P, T; the sign of operators.viscous_diffusion, without ViscosD and
+    the 1/L'^3), 'heat' -∇⋅(κp (M - I) ∇s) in the rows h (column S; the sign of operators.thermal_diffusion, without ThermaD
+    and 1/L^3), 'mag' the field of the diffusion in the rows f, g (columns F, G; kore's A sign, as magnetic_build, without
+    MagnetD and the 1/L'^3); pruned (mag_algebra._prune). Also used by tests/centrifugal/derive_diff.py without a run.
+    '''
+    import mag_algebra as ma
+    A = angular.Algebra.get(m, lw)
+    Lt = lambda M: A.L @ M
+    out = {}
+    if 'visc' in kinds:
+        for X in 'PT':
+            V = viscous_force(A, X)
+            _store2(out, 'u', X, _row_u(V), Lt, 'vs')
+            _store2(out, 'v', X, _row_v(V), Lt, 'vs')
+    if 'heat' in kinds:
+        _store2(out, 'h', 'S', _shift(thermal_diffusion_metric(A, lw), 1., 2), lambda M: M, 'kp')   # r² (the row)
+    if 'mag' in kinds:
+        for X in 'FG':
+            E = magnetic_diffusion_metric(A, X, lw)
+            q, s, t = _parts(E)
+            _store2(out, 'f', X, _shift(t, -1., 2), Lt, 'et')                                       # f: -r² t
+            _store2(out, 'g', X, _shift(_sum(q, _sc(_dr(_shift(s, 1., 1)), -1.)), -1., 1), Lt, 'et')   # g: -r [q - (r s)']
+    out = ma._prune(out)
+    _check_orders(out)
+    return out
+
+MAXD = {'u': 4, 'v': 3, 'h': 2, 'f': 2, 'g': 3}
+def _check_orders(out):
+    '''stops if a term above the order of its row is left (they cancel in exact arithmetic: see the section's header)'''
+    for (row, X), d in out.items():
+        for lab in d:
+            if int(lab[-1]) > MAXD[row]:
+                sys.exit('centrifugal: the metric term %s (column %s) is above the order of its row: the cancellation failed' % (lab, X))
+
+# --- the stress-free and fixed-flux wall rows
+E1, N1 = _rf((1., 0, 'E', None, ())), _rf((1., 0, 'N', None, ()))   # ε, η
+
+def wall_traction(A, X):
+    '''
+    The first-order part of the traction Fᵀ σ_X F⁻ᵀ r̂ on a level surface, per unit ν (vector expression; its S and T parts
+    make the stress-free rows), for the flow of the unknown X (tests/centrifugal/derive_diff.py, part A):
+        r̂⋅σ(δu0) - (a⋅∇)w - ε H b + ε H (r̂⋅σ(w)) - (3/2) ε x ẑ⋅σ(w) + (ε/2 - η P2) r̂⋅σ(w)   (+ radial parts),
+    δu0 = (∇ξ)w - (∇⋅ξ)w = ε H w + η w_r H r̂ - η P2 w (the velocity of the body minus w, at the same reference point),
+    a = ∂ᵣξ = (ε + η) H r̂, (ẑ⋅∇)w = ∇w_z - ẑ×(∇×w), b = (∇w)ᵀ r̂ = ∇w_r - (w - w_r r̂)/r
+    '''
+    w = _flow(A, X)
+    q, s, t = _parts(w)
+    rs = _rsig(A, w)
+    du0 = _sum(_rmul(E1, _H(A, w)), _rmul(N1, _Hr(A, q)), _sc(_rmul(N1, _poly(A, w, _P2p)), -1.))
+    zgrad = _sum(_grad(A, _zdot(A, w)), _sc(_zcr(A, _curl(A, w)), -1.))
+    adw = _rmul(_sum(E1, N1), _sum(_poly(A, zgrad, 1.5*_xp), _sc(_dr(w), -0.5)))
+    b = _sum(_grad(A, q), _sc(_shift(_vec(A, s=s, t=t), 1., -1), -1.))
+    return _sum(_rsig(A, du0), _sc(adw, -1.), _sc(_rmul(E1, _H(A, b)), -1.), _rmul(E1, _H(A, rs)),
+                _sc(_rmul(E1, _poly(A, _zsig(A, w), _xp)), -1.5), _rmul(_sc(E1, 0.5), rs), _sc(_rmul(N1, _poly(A, rs, _P2p)), -1.))
+
+def wall_flux(A, lw):
+    '''-r̂⋅(M - I)∇s, the first-order part of the flux r̂⋅M⁻¹∇s through a level surface (scalar expression)'''
+    gs = _vec(A, q={(0, 'S', 1, None, None, ()): A.I}, s={(-1, 'S', 0, None, None, ()): A.I})
+    return _sc(_parts(_metric(A, gs, lw))[0], -1.)
+
+def _at(e, R, vals):
+    '''{(X, d): matrix}: the expression at r = R, with vals = {amplitude: a(R), ('lam', k): λ_k(R)} (no profile factor)'''
+    out = {}
+    for (p, X, d, a, j, lam), M in e.items():
+        if j is not None:
+            sys.exit('centrifugal: a profile factor in a wall row')
+        c = R**p*(1. if a is None else vals[a])
+        for k in lam:
+            c = c*vals[('lam', k)]
+        _add(out, (X, d), c*M)
+    return out
+
+def wall_values(R):
+    '''the amplitudes and the (ln ρ0) derivatives at the radius R, for wall_dissipative'''
+    import radial_profiles as rap
+    prof = profile_functions()
+    vals = {a: float(prof[c](np.array([R]), 0)[0]) for a, (c, _) in AMPS.items()}
+    vals.update({('lam', k): float(np.asarray(rap.logrhoX(np.array([R]), k)).ravel()[0]) for k in range(1, 4)})
+    return vals
+
+def wall_dissipative(m, lw, R, vals):
+    '''
+    The metric parts of the stress-free and fixed-flux wall rows at the radius R: {(row, source): sparse matrix [l, l']},
+    rows 'u' (R² times the S part of the traction: kore's row of zero consoidal stress), 'v' (R times its T part: zero
+    toroidal stress) and 'h' (the flux, kore's row s' = 0); sources 'P0', 'P1', 'P2', 'T0', 'T1', 'S0', 'S1' (the column's
+    value and derivatives at R); vals as wall_values. Also used by tests/centrifugal/derive_diff.py without a run.
+    '''
+    A = angular.Algebra.get(m, lw)
+    out = {}
+    for X in 'PT':
+        for (Xn, d), F in _at(wall_traction(A, X), R, vals).items():
+            _add(out, ('u', '%s%d' % (Xn, d)), R**2*F.s)
+            _add(out, ('v', '%s%d' % (Xn, d)), R*F.t)
+    for (Xn, d), M in _at(wall_flux(A, lw), R, vals).items():
+        _add(out, ('h', '%s%d' % (Xn, d)), M)
+    return {k: sp_csr(v) for k, v in out.items()}
+
+# --- in a run: the coefficients (cached, by diagonal), the labels, the blocks and the wall rows
+def diffusion_kinds():
+    '''the dissipative terms of this run: 'visc' (ViscosD > 0), 'heat' (thermal diffusion), 'mag' (a field with diffusion);
+    none if the body is not deformed (deformed())'''
+    if not deformed():   # NEW (2026-11-06)
+        return ()
+    return tuple(k for k, on in (('visc', par.ViscosD > 0), ('heat', par.thermal and par.ThermaD > 0),
+                                 ('mag', par.magnetic and par.MagnetD > 0)) if on)
+
+_dcoef, _dband = {}, {}
+def diffusion_coefficients(m):
+    '''diffusion_build for this run (cached), also stored by diagonal'''
+    if m not in _dcoef:
+        out = diffusion_build(m, par.lmax + 16, diffusion_kinds())
+        B = _bandwidth(out)
+        if B > 2:
+            sys.exit('centrifugal: the metric diffusion couples degrees %d apart, more than assemble.py places' % B)
+        _dcoef[m] = out
+        _dband[m] = {rc: {lab: angular.band(M, B) for lab, M in d.items()} for rc, d in out.items()}
+    return _dcoef[m]
+
+def diffusion_labels():
+    '''[(label, 'P', 'T', 'S', 'F' or 'G')]: the radial operators of the metric diffusion and their columns, for submatrices.py'''
+    out = []
+    for (row, X), d in diffusion_coefficients(par.m).items():
+        out += [(lab, X) for lab in d]
+    return out
+
+def diffusion_orders():
+    '''{section: the highest derivative in its metric diffusion}: v and g reach 3 for m ≠ 0 (P''' and F'''), and
+    submatrices.py then builds them in the C^(3) basis'''
+    out = {}
+    for (row, X), d in diffusion_coefficients(par.m).items():
+        for lab in d:
+            out[row] = max(out.get(row, 0), int(lab[-1]))
+    return out
+
+def diffusion_block(l, section, component, offdiag, M):
+    '''
+    The block of the metric diffusion for the row degree l of section 'u', 'v' (the viscous force: ViscosD times the sign of
+    operators.viscous_diffusion, which A gets with a minus), 'h' (the thermal diffusion: ThermaD, the sign of
+    thermal_diffusion) or 'f', 'g' (the magnetic diffusion: MagnetD, the A sign), the column 'upol', 'utor', 'temp', 'bpol'
+    or 'btor' and the source degree l + offdiag: [Σ coefficient × radial operator / L'^3, the column block offset in units
+    of N1], or [0, 0] if nothing couples this Δl.
+    '''
+    import utils as ut
+    X = {'upol': 'P', 'utor': 'T', 'temp': 'S', 'bpol': 'F', 'btor': 'G'}[component]
+    diffusion_coefficients(par.m)
+    out = 0
+    for lab, bnd in _dband[par.m].get((section, X), {}).items():
+        v = _lookup(bnd, l, par.m, offdiag)
+        if v != 0:
+            out = out + v*M[lab]
+    if np.isscalar(out):
+        return [0, 0]
+    lp, lt = ut.ell(par.m, par.lmax, par.symm)[:2]
+    lF, lG = (ut.ell(par.m, par.lmax, ut.bsymm)[:2] if par.magnetic else (None, None))
+    rows = {'u': lp, 'v': lt, 'h': lp, 'f': lF, 'g': lG}[section]
+    cols = {'P': lp, 'T': lt, 'S': lp, 'F': lF, 'G': lG}[X]
+    offd = int(np.where(cols == l + offdiag)[0][0] - np.where(rows == l)[0][0])
+    scale = {'u': par.ViscosD, 'v': par.ViscosD, 'h': par.ThermaD, 'f': par.MagnetD, 'g': par.MagnetD}[section]
+    return [scale*out/(l*(l + 1.))**3, offd]
+
+_dwall = {}
+def wall_dissipative_rows(wall):
+    '''wall_dissipative for this run at the wall 'outer' (r = rcmb) or 'inner' (r = ricb), cached, by diagonal:
+    (B, {(row, source): bands})'''
+    import utils as ut
+    if not deformed():   # NEW (2026-11-06): no metric part on the walls of a sphere
+        return 0, {}
+    if wall not in _dwall:
+        R = ut.rcmb if wall == 'outer' else par.ricb
+        W = wall_dissipative(par.m, par.lmax + 12, R, wall_values(R))
+        B = _bandwidth({0: W})
+        _dwall[wall] = (B, {k: angular.band(M, B) for k, M in W.items()})
+    return _dwall[wall]
+
+# --- a conducting inner core (NEW 2026-11-06): its metric diffusion and the electric field's row at the ICB
+# Inside the core the field only diffuses, ∂ₜb̃ = -∇×(η_i M ∇×(M b̃)) with the uniform η_i = 1/(mu_i2o sigma_i2o), so its rows
+# fic, gic get the metric terms of the fluid's rows f, g (diffusion_build) with η' = 0: the labels with the profile's own
+# value (j = 0), their amplitudes taken from amplitude_series (the map is smooth across the ICB) and built on the core's
+# Chebyshev series in submatrices.py. The core's centre is in its domain, so the rows gic, which have a term F/r for m ≠ 0,
+# are r³ r̂⋅∇× there (utils.rpower_gic, as rpower_g in a full sphere), and in the C^(3) basis (F''').
+# At the ICB the field b̃ is continuous (b is, and F, J are; the core has the fluid's permeability), so the rows that match
+# it keep their form. The tangential electric field is continuous too; its toroidal part follows from the radial induction
+# equation on both sides (u = 0 at the no-slip ICB), its consoidal part is the row of g that assemble.bc_b_cic writes for the
+# spherical diffusion, R [S part of 𝐄]_o - η_i R [S part of 𝐄]_i = 0, which with 𝐄 = M ∇×(M b̃) = ∇×b̃ + δ𝐄 per unit η,
+# δ𝐄 = (M - I)∇×b̃ + ∇×((M - I) b̃), gains R [S part of δ𝐄] on both sides (with F, F', F'' and G, G' there).
+LABEL_IC = re.compile(r'([fg])(\d)([ENCQK])et0_D(\d)$')
+
+def ic_metric_on():
+    '''the metric magnetic diffusion of a conducting inner core and its ICB row: centrifugal = 1, a field with diffusion, a
+    conducting inner core, and a deformation (deformed())'''
+    import utils as ut
+    return bool(par.centrifugal == 1 and par.magnetic and par.MagnetD > 0 and ut.cic and deformed())
+
+def ic_labels():
+    '''[(label, row 'f' or 'g', column 'F' or 'G', power of r, amplitude, derivative order)]: the operators of the metric
+    diffusion inside a conducting inner core, those of the fluid's rows with the profile's value (j = 0; η' = 0 inside);
+    the power of r of the rows fic (2) and gic (utils.rpower_gic) minus rx'''
+    import utils as ut
+    out = []
+    for (row, X), d in diffusion_coefficients(par.m).items():
+        if row not in 'fg':
+            continue
+        for lab in d:
+            mt = LABEL_IC.match(lab)
+            if mt is None:
+                if not re.match(r'[fg]\d[ENCQK]et[1-9]_D\d$', lab):   # η' terms vanish in the core: any other label is unexpected
+                    sys.exit('centrifugal: the metric diffusion label %s has no counterpart in the inner core' % lab)
+                continue
+            rp = (2 if row == 'f' else ut.rpower_gic) - int(mt.group(2))
+            out.append((lab, row, X, rp, mt.group(3), int(mt.group(4))))
+    return out
+
+def diffusion_block_ic(l, section, component, offdiag, M):
+    '''
+    The block of the metric diffusion inside a conducting inner core for the row degree l of section 'fic' or 'gic', the
+    column 'bpol_ic' or 'btor_ic' and the source degree l + offdiag (the A sign, as diffusion_block): [MagnetD η_i Σ
+    coefficient × the core's operator (label + '_ic') / L'^3, the column block offset in units of Nic], or [0, 0].
+    '''
+    import utils as ut
+    row = {'fic': 'f', 'gic': 'g'}[section]
+    X = {'bpol_ic': 'F', 'btor_ic': 'G'}[component]
+    diffusion_coefficients(par.m)
+    out = 0
+    for lab, bnd in _dband[par.m].get((row, X), {}).items():
+        if LABEL_IC.match(lab) is None:
+            continue
+        v = _lookup(bnd, l, par.m, offdiag)
+        if v != 0:
+            out = out + v*M[lab + '_ic']
+    if np.isscalar(out):
+        return [0, 0]
+    lF, lG = ut.ell(par.m, par.lmax, ut.bsymm)[:2]
+    rows, cols = {'f': lF, 'g': lG}[row], {'F': lF, 'G': lG}[X]
+    offd = int(np.where(cols == l + offdiag)[0][0] - np.where(rows == l)[0][0])
+    return [par.MagnetD*out/(par.mu_i2o*par.sigma_i2o)/(l*(l + 1.))**3, offd]
+
+def icb_electric(m, lw, R, vals):
+    '''
+    The metric part of the ICB row of the electric field: {(X, d): sparse matrix [l, l']}, R times the S part of δ𝐄 per unit
+    η at r = R (the formula above) for the column X ('F' or 'G') of degree l', its d-th derivative there; vals as
+    wall_values. Also used by tests/centrifugal/derive_diff.py without a run.
+    '''
+    A = angular.Algebra.get(m, lw)
+    out = {}
+    for X in 'FG':
+        b = _field(A, X)
+        E = _sum(_metric(A, _curl(A, b), lw), _curl(A, _metric(A, b, lw)))
+        for (Xn, d), F in _at(E, R, vals).items():
+            _add(out, (Xn, d), R*F.s)
+    return {k: sp_csr(v) for k, v in out.items()}
+
+_icb = {}
+def icb_rows():
+    '''icb_electric for this run at r = ricb (the amplitudes there from the fluid's profile codes; the map is smooth across),
+    cached, by diagonal: (B, {(X, d): bands})'''
+    if not _icb:
+        W = icb_electric(par.m, par.lmax + 12, par.ricb, wall_values(par.ricb))
+        B = _bandwidth({0: W})
+        _icb.update({'B': B, 'W': {k: angular.band(M, B) for k, M in W.items()}})
+    return _icb['B'], _icb['W']
+
+
+# ======================================================================================================================
+# 7. The differential rotation (NEW 2026-11-06, phase 2)
+# ======================================================================================================================
+# The background flow of the body is U0 = G ΔΩ ẑ×X (G = Gaspard), with diff_rot's ΔΩ(r, θ) given in the reference space as
+# every other profile: the body point X(r, θ) turns at ΔΩ(r, θ) (a ΔΩ of r alone is constant on the level surfaces). The
+# map commutes with the rotations about the axis, F⁻¹(ẑ×X) = ẑ×α, so the flow's flux is w0 = J F⁻¹ U0 = J U00,
+# U00 = G ΔΩ ẑ×α its spherical formula. Pulled back (tests/centrifugal/derive_diff.py,
+# part A5):
+#   momentum: the force W(u) = (U0⋅∇)u + (u⋅∇)U0 of diff_rot.py is, in covariant form and up to a gradient,
+#       W(w) + δW,   δW = -U00×∇×((M - I) w) + (ε + η P2) w×ω0 - η G ΔΩ (ẑ×w - x r̂×w),   ω0 = ∇×U00
+#   (from -[w0×∇×(M w) + w×∇×(M w0)]/J, with (J M - I) U00 = -ε U00 for an azimuthal flow);
+#   heat (its rows are the equation times J): J U0⋅∇_X s = (1 + η P2) U00⋅∇s, the metric part i m G η P2 ΔΩ s;
+#   induction: the electric field of the flow pulls back exactly, Fᵀ(U0×b) = U00×b̃, with no metric part.
+# With ΔΩ = Σ_n f_n(r) P_n(x) (diff_rot.fX: f_n with its amplitudes), ω0 = G [(2 f_n + r f_n') P_n ẑ - (r f_n' x P_n
+# + f_n (1 - x²) P_n') r̂]. The terms are built per degree n with the algebra of section 6, f_n in the profile slot: product
+# codes a + 'z' + the degree's character (rot_code). W(u) is algebraic in u, so the rows keep the orders of diff_rot's (u: P'',
+# T'; v: P', T), the higher derivatives of the curl form cancelling to round-off (_check_orders). They couple l to l ± (n + 2).
+MAXD_ROT = {'u': 2, 'v': 1}
+
+def rot_code(a, n):
+    '''the profile code of the amplitude a (AMPS) times f_n, the degree-n shape of ΔΩ'''
+    import diff_rot as dr
+    return a + 'z' + dr.DIGITS[n]
+
+def rotation_on():
+    '''the metric terms of the differential rotation: centrifugal = 1 with diff_rot = 1, and a deformation (deformed())'''
+    return bool(par.centrifugal == 1 and par.diff_rot and deformed())
+
+def rotation_profile_functions():
+    '''{product code: f(r, Dorder)} for radial_profiles.burrito: a(r) f_n^(Dorder)(r), the amplitude a (profile_functions)
+    and diff_rot.fX'''
+    import diff_rot as dr
+    amp = profile_functions()
+    out = {}
+    for n in dr.degrees():
+        for a, (ca, _) in AMPS.items():
+            out[rot_code(a, n)] = lambda r, Dorder, A=amp[ca], n=n: A(r, 0)*dr.fX(n, r, Dorder)
+    return out
+
+def _legendre(n):
+    '''P_n as a numpy Polynomial in x'''
+    return np.polynomial.Polynomial(np.polynomial.legendre.leg2poly([0]*n + [1]))
+
+def rotation_force(A, X, n, lw):
+    '''δW of the flow of the unknown X ('P' or 'T') for ΔΩ = c(r) P_n(x), per unit G (c in the profile slot), up to a
+    gradient (the formula above), as a vector expression'''
+    w = _flow(A, X)
+    Pn = _legendre(n)
+    c, rc1 = _rf((1., 0, None, 0, ())), _rf((1., 1, None, 1, ()))          # c, r c'
+    v = _curl(A, _metric(A, w, lw))                                        # ∇×((M - I) w)
+    # -U00×v = -c r P_n (v_z r̂ - v_r ẑ)
+    t1 = _rmul(_rf((-1., 1, None, 0, ())), _poly(A, _sum(_vec(A, q=_zdot(A, v)), _sc(_zhat(A, _parts(v)[0]), -1.)), Pn))
+    # w×ω0 = -g1 ẑ×w - g2 r̂×w,  g1 = (2c + r c') P_n,  g2 = -(r c') x P_n - c (1 - x²) P_n'
+    zw, rw = _zcr(A, w), _rcr(w)
+    wxo = _sum(_sc(_rmul(c, _poly(A, zw, Pn)), -2.), _sc(_rmul(rc1, _poly(A, zw, Pn)), -1.),
+               _rmul(rc1, _poly(A, rw, _xp*Pn)), _rmul(c, _poly(A, rw, (1 - _xp*_xp)*Pn.deriv())))
+    t2 = _sum(_rmul(E1, wxo), _rmul(N1, _poly(A, wxo, _P2p)))              # (ε + η P2) w×ω0
+    t3 = _sc(_rmul(N1, _rmul(c, _poly(A, _sum(zw, _sc(_poly(A, rw, _xp), -1.)), Pn))), -1.)   # -η c P_n (ẑ×w - x r̂×w)
+    return _sum(t1, t2, t3)
+
+def rotation_build(m, lw, degrees):
+    '''
+    {(row, column): {label: sparse matrix [target l', source l]}} of δW in the rows u, v (columns P, T) for the degrees n of
+    ΔΩ (the sign of diff_rot.momentum_block, without Gaspard and the 1/L'^3), pruned and checked (MAXD_ROT). Also used by
+    tests/centrifugal/derive_diff.py without a run.
+    '''
+    import mag_algebra as ma, diff_rot as dr
+    A = angular.Algebra.get(m, lw)
+    Lt = lambda M: A.L @ M
+    out = {}
+    for n in degrees:
+        for X in 'PT':
+            W = rotation_force(A, X, n, lw)
+            _store2(out, 'u', X, _row_u(W), Lt, 'z' + dr.DIGITS[n])
+            _store2(out, 'v', X, _row_v(W), Lt, 'z' + dr.DIGITS[n])
+    out = ma._prune(out)
+    for (row, X), d in out.items():
+        for lab in d:
+            if int(lab[-1]) > MAXD_ROT[row]:
+                sys.exit('centrifugal: the metric term %s of the differential rotation (column %s) is above the order of '
+                         'its row: the cancellation failed' % (lab, X))
+    return out
+
+_rcoef, _rband = {}, {}
+def rotation_coefficients(m):
+    '''rotation_build for this run (cached), also stored by diagonal'''
+    import diff_rot as dr
+    if m not in _rcoef:
+        out = rotation_build(m, par.lmax + dr.n_max() + 10, dr.degrees())
+        B = _bandwidth(out)
+        if B > dr.n_max() + 3:
+            sys.exit('centrifugal: the metric terms of the differential rotation couple degrees %d apart, more than '
+                     'assemble.py places' % B)
+        _rcoef[m] = out
+        _rband[m] = {rc: {lab: angular.band(M, B) for lab, M in d.items()} for rc, d in out.items()}
+    return _rcoef[m]
+
+def rotation_heat_label(n):
+    '''the radial operator of η f_n s in the heat rows: that of diff_rot's i m G ΔΩ s with the profile η f_n'''
+    return ('h0pss0%s0_D0' if par.ThermaD > 0 else 'h0%s0_D0') % rot_code('N', n)
+
+_rheat = {}
+def rotation_heat_coefficients(m):
+    '''(P2 P_n)(X) by diagonal for every degree n of ΔΩ'''
+    import diff_rot as dr
+    if m not in _rheat:
+        A = angular.Algebra.get(m, par.lmax + dr.n_max() + 10)
+        P2 = A.legendre(2)[0]
+        _rheat[m] = {n: angular.band(P2 @ A.legendre(n)[0], n + 2) for n in dr.degrees()}
+    return _rheat[m]
+
+def rotation_labels():
+    '''[(label, 'P', 'T' or 'S')]: the radial operators of the metric terms of the differential rotation and their columns,
+    for submatrices.py'''
+    import diff_rot as dr
+    out = []
+    if not rotation_on():   # NEW (2026-11-06): none without a deformation
+        return out
+    for (row, X), d in rotation_coefficients(par.m).items():
+        out += [(lab, X) for lab in d]
+    if par.thermal:
+        out += [(rotation_heat_label(n), 'S') for n in dr.degrees()]
+    return out
+
+def rotation_dl_range(section, component):
+    '''the Δl of the blocks: 0, ±2, ..., ±(n_max + 2) within a kind (u and P, v and T, h and s), ±1, ..., ±(n_max + 3) across'''
+    import diff_rot as dr
+    nd = dr.n_max() + 2
+    same = (section == 'h') or ((section == 'u') == (component == 'upol'))
+    return range(-nd, nd + 1, 2) if same else range(-nd - 1, nd + 2, 2)
+
+def rotation_block(l, section, component, offdiag, M):
+    '''
+    The block of the metric terms of the differential rotation for the row degree l and the source degree l + offdiag:
+    section 'u', 'v' (column 'upol', 'utor'): δW with the sign of diff_rot.momentum_block (A gets it with +), Gaspard Σ
+    coefficient × radial operator / L'^3; section 'h' (column 'temp'): i m G η P2 ΔΩ s with the sign of diff_rot.heat_block.
+    Returns [matrix, offd] or [0, 0].
+    '''
+    import utils as ut, diff_rot as dr
+    m = par.m
+    if offdiag not in rotation_dl_range(section, component) or not rotation_on():   # NEW (2026-11-06): rotation_on
+        return [0, 0]
+    L = l*(l + 1.)
+    out = 0
+    if section == 'h':
+        for n, bnd in rotation_heat_coefficients(m).items():
+            v = _lookup(bnd, l, m, offdiag)
+            if v != 0:
+                out = out + 1j*m*v*M[rotation_heat_label(n)]
+        if np.isscalar(out):
+            return [0, 0]
+        lp = ut.ell(par.m, par.lmax, par.symm)[0]
+        offd = int(np.where(lp == l + offdiag)[0][0] - np.where(lp == l)[0][0])
+        return [-par.Gaspard*out/L**3, offd]
+    X = 'P' if component == 'upol' else 'T'
+    rotation_coefficients(m)
+    for lab, bnd in _rband[m].get((section, X), {}).items():
+        v = _lookup(bnd, l, m, offdiag)
+        if v != 0:
+            out = out + v*M[lab]
+    if np.isscalar(out):
+        return [0, 0]
+    offd = ut.dr_offd(l, l + offdiag, section, X)
+    return [par.Gaspard*out/L**3, offd]

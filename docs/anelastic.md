@@ -197,8 +197,8 @@ The first term is the advection of $s$ by $\mathbf U_0$. The other two are the a
 latitudinal background entropy $S_{tw}(r,\theta)$: either the thermal wind that balances $\Omega(r,\theta)$ (the
 latitudinal entropy a differentially rotating star needs to be in equilibrium; Bekki, Cameron & Gizon 2022) or
 prescribed. In a convection zone these terms act at the same order as the momentum terms. The background is fixed:
-nothing maintains or evolves $\Omega$ and $S_{tw}$ against diffusion, and $\rho_0$, $T_0$ and $g$ stay spherical (no
-centrifugal distortion). [Differential rotation](differential_rotation_details.md) derives these terms and their
+nothing maintains or evolves $\Omega$ and $S_{tw}$ against diffusion, and $\rho_0$, $T_0$ and $g$ stay spherical
+unless `centrifugal = 1` flattens the body ([Centrifugal deformation](background.md#centrifugal-deformation)). [Differential rotation](differential_rotation_details.md) derives these terms and their
 spectral form.
 
 ## Energy balance

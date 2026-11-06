@@ -122,7 +122,11 @@ if par.ViscosD == 0:
 divp0 = hasattr(op, 'h0_D0')   # ThermaD=0 heat rows divided by p0
 
 gb   = {'u': 4, 'v': 2, 'h': 2 if par.ThermaD > 0 else int(ut.adiab_tw), 'f': 2, 'g': 2}   # Gegenbauer basis of each section (C^(1) for ThermaD = 0 with the thermal wind)
+if par.centrifugal and par.ViscosD > 0 and cf.deformed():   # NEW (2026-11-06): the metric viscous force puts v in C^(3) for m != 0, as submatrices.py
+    gb['v'] = max(gb['v'], cf.diffusion_orders().get('v', 0))
 chop = {s: (gb[s] if ricb > 0 else gb[s]//2) for s in gb}         # rows reserved for bc's
+if ricb > 0 and gb['v'] == 3:             # NEW (2026-11-06): still two bc rows in C^(3) (submatrices.py)
+    chop['v'] = 2
 if par.ThermaD == 0:
     chop['h'] = 0                                                 # no thermal bc rows, whatever the basis
 
@@ -220,7 +224,7 @@ def pair(sec, l, left_vals, y):
 
 
 # ---------------------------------------------------------------------------- operator applications
-KEYS = ['I', 'C', 'V', 'B', 'E', 'A', 'D', 'R', 'Ht', 'Hw', 'Ic', 'Cc', 'Ec']   # NEW (2026-11-05): Ic, Cc, Ec
+KEYS = ['I', 'C', 'V', 'B', 'E', 'A', 'D', 'R', 'Ht', 'Hw', 'Ic', 'Cc', 'Ec', 'Vc']   # NEW (2026-11-05): Ic, Cc, Ec; (2026-11-06) Vc
 
 def dr_blocks(l, sec):
     '''
@@ -280,13 +284,14 @@ def cross_pairings(left, right):
         Bu = op.buoyancy(l, 'u', '', 0) if par.thermal else None
         Rb = dr_blocks(l, 'u')
         Ib, Cb = cf_blocks(l, 'u', op.centrifugal_inertia), cf_blocks(l, 'u', op.centrifugal_coriolis)   # NEW (2026-11-05)
+        Vb = cf_blocks(l, 'u', op.centrifugal_diffusion) if par.ViscosD > 0 else []                       # NEW (2026-11-06)
         ys = []
         for (P, T, S) in right:
             yC = Cd @ P[k]
             for (mtx, offd), i in Co:
                 yC = yC + mtx @ T[k + offd]
             ys.append((I @ P[k], yC, V @ P[k], Bu @ S[k] if par.thermal else None, apply_blocks(Rb, (P, T, S), k),
-                       apply_blocks(Ib, (P, T, S), k), apply_blocks(Cb, (P, T, S), k)))
+                       apply_blocks(Ib, (P, T, S), k), apply_blocks(Cb, (P, T, S), k), apply_blocks(Vb, (P, T, S), k)))
         for a, (P, T, S) in enumerate(left):
             Pv = vals_unknown(P[k], 'P')
             for b in range(nb):
@@ -296,6 +301,7 @@ def cross_pairings(left, right):
                 out[a][b]['R'] += pair('u', l, Pv, ys[b][4])
                 out[a][b]['Ic'] += pair('u', l, Pv, ys[b][5])
                 out[a][b]['Cc'] += pair('u', l, Pv, ys[b][6])
+                out[a][b]['Vc'] += pair('u', l, Pv, ys[b][7])
                 if par.thermal:
                     out[a][b]['B'] += pair('u', l, Pv, ys[b][3])
     for k, l in enumerate(lt):                                   # section v, rows for T_l
@@ -305,13 +311,14 @@ def cross_pairings(left, right):
         V  = op.viscous_diffusion(l, 'v', 'utor', 0)
         Rb = dr_blocks(l, 'v')
         Ib, Cb = cf_blocks(l, 'v', op.centrifugal_inertia), cf_blocks(l, 'v', op.centrifugal_coriolis)   # NEW (2026-11-05)
+        Vb = cf_blocks(l, 'v', op.centrifugal_diffusion) if par.ViscosD > 0 else []                       # NEW (2026-11-06)
         ys = []
         for (P, T, S) in right:
             yC = Cd @ T[k]
             for (mtx, offd), i in Co:
                 yC = yC + mtx @ P[k + offd]
             ys.append((I @ T[k], yC, V @ T[k], apply_blocks(Rb, (P, T, S), k),
-                       apply_blocks(Ib, (P, T, S), k), apply_blocks(Cb, (P, T, S), k)))
+                       apply_blocks(Ib, (P, T, S), k), apply_blocks(Cb, (P, T, S), k), apply_blocks(Vb, (P, T, S), k)))
         for a, (P, T, S) in enumerate(left):
             Tv = vals_unknown(T[k], 'T')
             for b in range(nb):
@@ -321,6 +328,7 @@ def cross_pairings(left, right):
                 out[a][b]['R'] += pair('v', l, Tv, ys[b][3])
                 out[a][b]['Ic'] += pair('v', l, Tv, ys[b][4])
                 out[a][b]['Cc'] += pair('v', l, Tv, ys[b][5])
+                out[a][b]['Vc'] += pair('v', l, Tv, ys[b][6])
     if par.thermal:                                              # section h, rows for s_l
         for k, l in enumerate(lp):
             E = op.entropy(l, 'h', '', 0)
@@ -654,6 +662,30 @@ def random_fields(rng, kmax, decay, lmax_test):
     return P, T, S
 
 
+def regular_fields(rng):
+    '''
+    NEW (2026-11-06): a field regular at r = 0 with no-slip walls, for the full sphere: P_l = r^l (1 - r²)² q(r²),
+    T_l = r^l (1 - r²) q(r²) with random q of degree 6, for l up to N/2 - 8 (so that the rows stay below the truncation).
+    The random fields above have the parity of r^l but not its zero at the centre; the spherical rows do not mind, but the
+    metric viscous force couples l to l ± 2 through terms whose pairing is symmetric only after integrating by parts, which
+    leaves a term at r = 0 unless the fields vanish there as r^l.
+    '''
+    P = np.zeros((nl, N1), dtype=complex)
+    T = np.zeros((nl, N1), dtype=complex)
+    for ls, out, start, nw in ((lp, P, iP, 2), (lt, T, iT, 1)):
+        for k, l in enumerate(ls):
+            if l > N//2 - 8:
+                continue
+            q = rng.standard_normal(4) + 1j*rng.standard_normal(4)
+            poly = (np.polynomial.Polynomial([0]*l + [1])*np.polynomial.Polynomial([1, 0, -1])**nw
+                    *np.polynomial.Polynomial([q[0], 0, q[1], 0, q[2], 0, q[3]]))
+            cc = np.zeros(N, dtype=complex)
+            c_ = ch.poly2cheb(poly.coef)
+            cc[:len(c_)] = c_
+            out[k] = cc[start::2]
+    return P, T, np.zeros((nl, N1), dtype=complex)
+
+
 # ---------------------------------------------------------------------------------------- driver
 WORST = {}   # the worst relative error of each test (main, magnetic_checks)
 
@@ -744,6 +776,11 @@ def main():
                      worst.get('rigid: thermal-wind blocks vanish', np.nan)) if par.thermal else ''))
     if par.centrifugal:   # NEW (2026-11-05): the metric blocks of the deformed body
         cs = (abs(ceps).max() + abs(ceta).max()) or 1.
+        vc_on = par.ViscosD > 0 and par.bco == 1 and (ricb == 0 or par.bci == 1)   # NEW (2026-11-06)
+        if vc_on and ricb == 0:        # the metric viscous force in a full sphere: on fields regular at the centre
+            Xv = cross_pairings(*(2*([regular_fields(rng) for _ in range(nvec)],)))
+        else:
+            Xv = X
         for a in range(nvec):          # symmetry on the whole fields
             for b in range(a, nvec):
                 xy, yx = X[a][b], X[b][a]
@@ -752,6 +789,12 @@ def main():
                 note('centrifugal Coriolis anti-Hermitian', abs(xy['Cc'] + np.conj(yx['Cc']))/(2*G*cs*sI))
                 if a == b:
                     note('centrifugal KE positive', float((xy['I'] + xy['Ic']).real <= 0))
+                if vc_on:   # NEW (2026-11-06): the metric viscous force, Hermitian (no-slip walls: no wall term), V + Vc negative
+                    vxy, vyx = Xv[a][b], Xv[b][a]
+                    sV = np.sqrt(abs(Xv[a][a]['V'].real*Xv[b][b]['V'].real))
+                    note('centrifugal viscous Hermitian', abs(vxy['Vc'] - np.conj(vyx['Vc']))/(cs*sV))
+                    if a == b:
+                        note('centrifugal viscous negative', float((vxy['V'] + vxy['Vc']).real >= 0))
                 if par.thermal:
                     sE = np.sqrt(X[a][a]['E'].real*X[b][b]['E'].real)
                     note('centrifugal entropy Hermitian', abs(xy['Ec'] - np.conj(yx['Ec']))/(cs*sE))
@@ -778,6 +821,13 @@ def main():
               worst['centrifugal inertia Hermitian'], 'yes' if worst['centrifugal KE positive'] == 0 else 'NO',
               worst['centrifugal Coriolis anti-Hermitian'], '   entropy Hermitian %.2e (E + Ec positive: %s)' % (
               worst['centrifugal entropy Hermitian'], 'yes' if worst['centrifugal entropy positive'] == 0 else 'NO') if par.thermal else ''))
+        if vc_on:   # NEW (2026-11-06)
+            print('centrifugal: viscous force Hermitian %.2e (V + Vc negative: %s), relative to max|ε| + max|η| times the '
+                  'Cauchy-Schwarz bound of V%s' % (worst['centrifugal viscous Hermitian'],
+                  'yes' if worst['centrifugal viscous negative'] == 0 else 'NO', ' (fields regular at r = 0)' if ricb == 0 else ''))
+        elif par.ViscosD > 0:
+            print('centrifugal: viscous force symmetry not tested (needs no-slip walls: the random fields satisfy the '
+                  'spherical stress-free rows only)')
     if par.magnetic:   # NEW (2026-10-28)
         magnetic_checks(nvec, rng, kmax, decay, note)
     try:                                                         # KE against the independent physical-space code

@@ -12,7 +12,7 @@ clairaut_check.py: the flattening of centrifugal_shape 'clairaut' against known 
   Sun           structure 'model S hydrostatic' (r_out 0.985, the mass above the wall neglected): f/q at the wall, printed
                 with the check that it lies between 1/2 (a point mass) and 0.53 (k2 of the Sun is about 0.03)
 
-Usage: python3 clairaut_check.py   (builds the runs cl_wu and cl_sun with mk_run.py in the current directory; ~20 s)
+Usage: python3 clairaut_check.py   (builds the runs cl_wu and cl_sun with mk_run.py in the current directory; under a minute)
 '''
 import os, sys, subprocess
 import numpy as np
@@ -52,8 +52,9 @@ verdict('polytrope', abs(fq - 7.5/np.pi**2) < 1e-9, 'n = 1: f/q = %.12f, 7.5/Ï€Â
 
 # ------------------------------------------------------------------------------------------------------------ Wu 2005
 q = 0.089
+# FIX (2026-11-06, phase 2): rpower_v = 4, which a viscous, deformed full sphere with m != 0 needs now (background.check_centrifugal)
 build('cl_wu', "par.structure = 'Wu 2005'; par.r_out = 0.99; par.ricb = 0; par.ViscosD = 1e-3; par.centrifugal_shape = 'clairaut'; "
-               "par.centrifugal_f = None; par.centrifugal_q = %r; par.N = 48" % q)
+               "par.centrifugal_f = None; par.centrifugal_q = %r; par.N = 48; par.rpower_v = 4" % q)
 out = run_python('cl_wu', '''
 import numpy as np, centrifugal as cf
 from parameters import par
@@ -88,7 +89,7 @@ verdict('codes', fd1 < 1e-6*emax and fd2 < 1e-6*emax and fit < 1e-8*emax,
 
 # ---------------------------------------------------------------------------------------------------------------- Sun
 build('cl_sun', "par.structure = 'model S hydrostatic'; par.r_out = 0.985; par.ricb = 0; par.ViscosD = 1e-3; par.N = 48; "
-                "par.centrifugal_shape = 'clairaut'; par.centrifugal_f = None; par.centrifugal_q = 2e-5")
+                "par.centrifugal_shape = 'clairaut'; par.centrifugal_f = None; par.centrifugal_q = 2e-5; par.rpower_v = 4")
 v = [float(t) for t in run_python('cl_sun', '''
 import numpy as np, centrifugal as cf
 from parameters import par

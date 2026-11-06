@@ -12,6 +12,10 @@ their products are not cancelled in the energy. With HALF, the run directory of 
 resid𝐄 must be 4 times that of HALF, solution by solution: an order log2(ratio) within 0.4 of 2 (a term of first order
 would give 1). Also solve.py's normalisation: KE = 1, with a field KE + Hendrik (ME + MEc) = 1, the energies of the
 deformed body (their metric parts are computed on rank 0 from every degree: with several ranks they must count once).
+NEW (2026-11-06, phase 2): the dissipation is that of the deformed body too. spin_doctor adds the metric parts of the viscous
+power, of the power of a differential rotation and of the entropy diffusion (utils4pp.centrifugal_dissipation_terms) and,
+with a field, of the magnetic diffusion (Mdfs, Ohmc of centrifugal_magnetic_terms); without them the residuals are of order
+f times the part of the eigenvalue that the diffusion (or the differential rotation) makes.
 '''
 import sys, os
 import numpy as np

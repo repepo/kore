@@ -426,6 +426,8 @@ def main(ncpus):
 
         if par.centrifugal:  # NEW (2026-11-05): the metric parts of KE, of the Coriolis power and of TE, on the grid of diagnose
             [ KEc, Wcorc, TEc ] = upp.centrifugal_terms( par.ricb, ut.rcmb )
+            # NEW (2026-11-06, phase 2): those of the viscous power, of the differential rotation and of the entropy diffusion
+            [ Dkinc, Wdrc, Dthmc ] = upp.centrifugal_dissipation_terms( par.ricb, ut.rcmb )
 
         if par.magnetic:  # NEW (2026-10-28): on the grid and flow tables that diagnose has just set
             [ ME[i], Mdfs0, Indu[i], Wlor0, Wlor_im0 ] = np.sum( upp.diagnose_magnetic( b_sol2 ), 0)
@@ -444,6 +446,7 @@ def main(ncpus):
                 Indu[i]    += cm['Indu']
                 Iwall[i]   += cm['Iwall']
                 MEc[i], InduM[i], Ohmc[i] = cm['MEc'], cm['InduM'], par.MagnetD * cm['Ohmc']
+                Mdfs[i]   += par.MagnetD * cm['Mdfs']         # NEW (2026-11-06, phase 2): the metric diffusion
                 MEic[i], MEext[i] = cm['MEic'], cm['MEext']   # the potential fields of the deformed exterior and inner core,
                 Ohm_ic[i]  = par.MagnetD * cm['Ohm_ic']       # and a conducting inner core with its metric part
 
@@ -487,6 +490,10 @@ def main(ncpus):
             KE[i] += KEc
             Wcor_im[i] += np.imag(Wcorc)
             resens[i] = np.nan   # the enstrophy budget has no metric terms: not computed
+            # NEW (2026-11-06, phase 2): the powers of the viscous force and of the differential rotation of the deformed
+            # body; Dvisc and the wall powers stay those of the sphere, so residD is not computed
+            Dkin[i] += np.real(Dkinc); Dkin_im[i] += np.imag(Dkinc)
+            Wdr[i] += np.real(Wdrc); Wdr_im[i] += np.imag(Wdrc)
         Wthm[i] = Wthm0  # rate of working of buoyancy, Beyonce already included (upp.buoyancy)
 
 
@@ -496,6 +503,7 @@ def main(ncpus):
             Dthm[i] = Dthm0 * par.ThermaD
             if par.centrifugal:  # NEW (2026-11-05): ∫ p0 J |s|² dV, the entropy "energy" of the deformed body
                 TE[i] += TEc
+                Dthm[i] += par.ThermaD * Dthmc   # NEW (2026-11-06, phase 2): its metric diffusion
 
 
         # --------------------------------------------------------- Computing residuals to check the power balance:
@@ -531,7 +539,7 @@ def main(ncpus):
         resid2[i] = ( abs( 2*w*KE[i] + Wcor_im[i] - Dkin_im[i] - Wthm_im[i] - Wdr_im[i] - Wlor_im[i] - Wp_im[i] )
                       / max( abs(2*w*KE[i]), abs(Wcor_im[i]), abs(Dkin_im[i]), abs(Wthm_im[i]), abs(Wdr_im[i]), abs(Wlor_im[i]),
                              abs(Wp_im[i]) ) )
-        if par.ViscosD>0:
+        if par.ViscosD>0 and not par.centrifugal:   # NEW (2026-11-06, phase 2): not with centrifugal = 1 (Dvisc, Wv spherical)
             Wv = Wv_icb[i] + Wv_cmb[i]
             residD[i] = abs( Dkin[i] - Wv + Dvisc[i] ) / max( abs(Dkin[i]), abs(Wv), abs(Dvisc[i]) )
         if par.magnetic:

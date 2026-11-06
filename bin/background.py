@@ -98,9 +98,11 @@ def check():
 def check_centrifugal():
     '''
     NEW (2026-11-05): stops on the settings that the centrifugal deformation (centrifugal = 1, centrifugal.py) cannot do yet:
-    a forcing (the forced problems need the metric terms in A and boundary flows on the deformed walls), stress-free walls
-    (their rows need the metric) and, with magnetic = 1 (NEW 2026-11-05, phase 1b), a conducting inner core of another
-    permeability than the fluid's (its matching rows would need the metric); and on incomplete shapes.
+    a forcing (the forced problems need the metric terms in A and boundary flows on the deformed walls), the zero radial
+    stress walls (bco, bci = 2; the stress-free and no-slip ones are done, phase 2) and, with magnetic = 1 (NEW 2026-11-05,
+    phase 1b), a conducting inner core of another permeability than the fluid's (its matching rows would need the metric);
+    NEW (2026-11-06, phase 2) rpower_v < 4 in a viscous full sphere with m != 0 when the body is deformed (the toroidal rows
+    of the metric viscous force have a term P/r); and on incomplete shapes.
     centrifugal.report() (submatrices.py) prints the flattening used and the warnings on the terms left spherical.
     '''
     import centrifugal as cf
@@ -112,9 +114,9 @@ def check_centrifugal():
     if par.forcing != 0:
         sys.exit('centrifugal = 1 is implemented for eigenvalue problems only (forcing = 0): the forced problems need the '
                  'metric terms of the time derivative in A and their boundary flows on the deformed walls')
-    if par.ViscosD > 0 and (par.bco != 1 or (par.ricb > 0 and par.bci != 1)):
-        sys.exit('centrifugal = 1 needs no-slip walls (bco = 1, and bci = 1 with ricb > 0): the stress-free rows on a deformed '
-                 'wall need metric terms that are not implemented')
+    if par.ViscosD > 0 and (par.bco == 2 or (par.ricb > 0 and par.bci == 2)):   # FIX (2026-11-05, phase 2): stress-free walls done
+        sys.exit('centrifugal = 1 takes no-slip or stress-free walls (bco, bci = 1 or 0): the zero radial stress rows (2) on a '
+                 'deformed wall need metric terms that are not implemented')
     if par.centrifugal_shape not in cf.SHAPES:
         sys.exit('centrifugal_shape %r: set one of %s' % (par.centrifugal_shape, _names(cf.SHAPES)))
     q, f = par.centrifugal_q, par.centrifugal_f
@@ -128,6 +130,10 @@ def check_centrifugal():
         if f is not None:
             sys.exit("centrifugal_shape 'user' takes the flattening from centrifugal_profile: set centrifugal_f = None")
         _check_expression(par.centrifugal_profile, par.centrifugal_param, 'centrifugal_profile')
+    if par.ViscosD > 0 and par.ricb == 0 and par.m != 0 and par.rpower_v < 4 and cf.deformed():   # NEW (2026-11-06, phase 2)
+        sys.exit('centrifugal = 1 in a full sphere with viscosity and m != 0 needs rpower_v >= 4 (got %r): the metric part of '
+                 'the viscous force has a term P/r in the toroidal rows, which are polynomials in r only when multiplied by r^4 '
+                 '(set par.rpower_v = 4)' % (par.rpower_v,))
 
 
 def check_magnetic():

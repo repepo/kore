@@ -31,16 +31,16 @@ Columns, counted from 1:
 | columns | content |
 | --- | --- |
 | 1–3 | kinetic energy, and its poloidal and toroidal parts (the eigenvectors are normalised to kinetic energy 1); with `centrifugal = 1` column 1 is the kinetic energy of the deformed body, and columns 2–3 are its parts without the terms of the deformation |
-| 4 | the power of the viscous force $\int\mathbf u\cdot(\nabla\cdot\boldsymbol\sigma)\thinspace dV$: minus the viscous dissipation when $\mathbf u = 0$ at the walls (column 26 otherwise) |
+| 4 | the power of the viscous force $\int\mathbf u\cdot(\nabla\cdot\boldsymbol\sigma)\thinspace dV$: minus the viscous dissipation when $\mathbf u = 0$ at the walls (column 26 otherwise); with `centrifugal = 1` that of the deformed body |
 | 5–7 | the degree $l$ of the largest kinetic energy, the width of the $l$ spectrum, and the ℓ-convergence (the columns Peak ℓ, ℓ-Width and ℓ-Convergence of the `spin_doctor` table) |
 | 8–11 | the enstrophy, and the Coriolis, viscous and buoyancy terms of its balance |
 | 12–14 | the radius, the degree and the value of the largest toroidal component of the curl of the viscous force (cvf_r, cvf_l, cvfmax) |
 | 15–17 | the relative residuals of the enstrophy balance (residens; NaN with `centrifugal = 1`), of the imaginary part of the power balance (residω) and of its real part, the energy residual (residσ) |
-| 18–20 | the power of the differential rotation, its imaginary part, and its enstrophy term (0 without it) |
+| 18–20 | the power of the differential rotation, its imaginary part, and its enstrophy term (0 without it); with `centrifugal = 1` the powers are those of the deformed body |
 | 21–23 | the power of the pressure on the fluid at the inner and at the outer wall, $-2\,\mathrm{Re}\oint\rho_0\Pi\thinspace u_r^*\thinspace dA$ with $\Pi = p'/\rho_0$, and the imaginary part of their sum; zero unless $u_r \neq 0$ at a wall (forced boundary flows, `bco = 2`); in residσ and residω |
 | 24–25 | the power of the viscous stress on the fluid at the inner and at the outer wall, $2\,\mathrm{Re}\oint\mathbf u^*\cdot\boldsymbol\sigma\cdot\mathbf n\thinspace dA$ |
 | 26 | the viscous dissipation $\int\boldsymbol\sigma:\nabla\mathbf u\thinspace dV = \int 2\rho_0\nu\thinspace\mathsf e_d:\mathsf e_d\thinspace dV \geq 0$ ($\mathsf e_d$ the deviatoric rate of strain), from an $(r, \theta)$ grid; column 4 is $\int\mathbf u\cdot(\nabla\cdot\boldsymbol\sigma)\thinspace dV$ = columns 24 + 25 − 26 |
-| 27 | the relative residual of that identity |
+| 27 | the relative residual of that identity (NaN with `centrifugal = 1`, where columns 24–26 keep their spherical form) |
 | 28 | in a full sphere, irreg₀: how far the solution is from smooth at the centre ([Regularity at the centre](numerical-method.md#regularity-at-the-centre)); NaN with an inner core |
 
 ## `thermal.dat`
@@ -49,7 +49,7 @@ Columns, counted from 1:
 | --- | --- |
 | 1 | the entropy "energy" $\tfrac12\int p_0\lvert s\rvert^2\thinspace dV$ (of the deformed body with `centrifugal = 1`) |
 | 2 | the entropy advection by the background gradient |
-| 3 | the thermal diffusion |
+| 3 | the thermal diffusion (of the deformed body with `centrifugal = 1`) |
 | 4 | the relative residual of the entropy balance (resid𝑠) |
 | 5 | the work of the buoyancy force |
 | 6 | the energy residual (residσ) |
@@ -63,7 +63,7 @@ the definitions are on [Magnetic field equations](magnetic-equations.md#energy-b
 | column | content |
 | --- | --- |
 | 1 | ME, the magnetic energy $\int\tfrac12\lvert\mathbf b\rvert^2 dV$ in the fluid (the column Mag/Kin of the `spin_doctor` table is ME/KE) |
-| 2 | Mdfs, the magnetic diffusion term |
+| 2 | Mdfs, the magnetic diffusion term (of the deformed fluid with `centrifugal = 1`) |
 | 3 | Indu, the induction work |
 | 4 | the relative residual of the induction budget in the fluid (resid𝐛) |
 | 5, 6 | Wlor, Wlor_im: the power of the Lorentz force, real and imaginary parts (in residσ and residω) |
