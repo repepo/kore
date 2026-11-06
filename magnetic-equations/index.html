@@ -12,7 +12,7 @@
         <link rel="prev" href="../centrifugal-equations/">
       
       
-        <link rel="next" href="../reynolds-stress/">
+        <link rel="next" href="../rotating-solids-equations/">
       
       
         
@@ -631,6 +631,34 @@
     
   
     Magnetic field
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rotating-solids/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rotating solids
   
 
     
@@ -1339,6 +1367,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rotating-solids-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rotating solids
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -2701,7 +2757,7 @@ Mag/Kin and writes <code>magnetic.dat</code>:</p>
 <tr>
 <td>11</td>
 <td>residE</td>
-<td>resid𝐄, the full energy budget (nan with a flow through a wall, <code>bco = 2</code> or <code>bci = 2</code>, with stress-free walls and <code>centrifugal = 1</code>, and with thin walls and <code>mu</code> ≠ 1)</td>
+<td>resid𝐄, the full energy budget (nan with a flow through a wall, <code>bco = 2</code> or <code>bci = 2</code>, with stress-free walls and <code>centrifugal = 1</code>, with thin walls and <code>mu</code> ≠ 1, and with rotating solids unless <code>vtrq</code> and <code>mtrq</code> are 1)</td>
 </tr>
 <tr>
 <td>12</td>
@@ -2763,6 +2819,11 @@ then about <span class="arithmatex">\(\varepsilon_\text{TWA}\)</span> or below);
 over <span class="arithmatex">\(1 \le r \le r_s\)</span> (Gauss-Legendre in <span class="arithmatex">\(r\)</span>), and MEext is the potential field beyond <span class="arithmatex">\(r_s\)</span>. The full budget gains them
 as for thin walls, and closes exactly. A fluid slipping along the layer carries energy into it through
 <span class="arithmatex">\(\mathbf u\times\mathbf B_0\)</span>, as into a thin wall (<code>INDU_WALLS</code>, above).</p>
+<p><strong>Rotating solids</strong> (<code>rotdyn = 1</code>). The solids store their rotational and gravitational energy, and exchange energy with
+the fluid through the torques: the full budget gains that energy on the left, and the power of the viscous torques and
+the inner core's relaxation loss on the right, while the <span class="arithmatex">\(\mathbf u\times\mathbf B_0\)</span> flux through the moving no-slip
+walls is minus the power of the magnetic torques and leaves the induction work (<code>INDU_WALLS</code>). Only with both torques on
+the solids (<code>vtrq</code> and <code>mtrq</code> 1); <a href="../rotating-solids-equations/#energy">Rotating solids equations</a>.</p>
 <p><strong>How the terms are computed.</strong> spin_doctor's Lorentz force (<code>utils4pp.lorentz4pp</code>) acts per volume, and its power
 <span class="arithmatex">\(\int\mathbf u^*\cdot\mathbf G\,dV\)</span> has no <span class="arithmatex">\(\rho_0\)</span>. Its induction term (<code>induction4pp</code>) takes the components of
 <span class="arithmatex">\(\mathbf u\)</span> with their <span class="arithmatex">\(\lambda_1\)</span> part, and holds for the non-solenoidal <span class="arithmatex">\(\mathbf u\)</span> of a variable density (resid𝐛

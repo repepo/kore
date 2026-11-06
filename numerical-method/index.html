@@ -651,6 +651,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../rotating-solids/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rotating solids
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../solver/" class="md-nav__link">
         
   
@@ -1042,6 +1070,34 @@
     
   
     Magnetic field
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rotating-solids-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rotating solids
   
 
     
@@ -1494,6 +1550,11 @@ quadrature in <span class="arithmatex">\(\cos\theta\)</span>, exact for these po
 <td>residD</td>
 <td><span class="arithmatex">\(W_\nu - W_\nu^{\rm wall} + D_\nu = 0\)</span></td>
 <td><code>Dkin - (Wv_icb + Wv_cmb) + Dvisc</code></td>
+</tr>
+<tr>
+<td>resid𝐋</td>
+<td><span class="arithmatex">\(\lambda L\)</span> = the torques on the fluid (<a href="../rotating-solids-equations/#the-angular-momentum-balance-residl">Rotating solids equations</a>)</td>
+<td><code>lam*angmom - (-vtorq - vtorq_ic - mtorq - mtorq_ic [+ i Gaspard angmom])</code></td>
 </tr>
 </tbody>
 </table>

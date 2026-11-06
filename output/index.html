@@ -656,6 +656,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../rotating-solids/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rotating solids
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../solver/" class="md-nav__link">
         
   
@@ -770,6 +798,17 @@
     <span class="md-ellipsis">
       
         magnetic.dat
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rotdyndat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        rotdyn.dat
       
     </span>
   </a>
@@ -1029,6 +1068,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../rotating-solids-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rotating solids
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../reynolds-stress/" class="md-nav__link">
         
   
@@ -1172,6 +1239,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#rotdyndat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        rotdyn.dat
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#paramsdat" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1235,7 +1313,7 @@ table.</p>
 <tr>
 <td><code>real_flow.field</code>, <code>imag_flow.field</code></td>
 <td><code>solve.py</code></td>
-<td>the eigenvectors of the flow (or the forced flows), real and imaginary parts of their spectral coefficients, one column per solution; with <code>thermal = 1</code> also <code>real_thermal.field</code>, <code>imag_thermal.field</code> for <span class="arithmatex">\(s\)</span>; with <code>magnetic = 1</code> also <code>real_magnetic.field</code>, <code>imag_magnetic.field</code> for <span class="arithmatex">\(\mathbf b\)</span>, <code>real_magnetic_ic.field</code>, <code>imag_magnetic_ic.field</code> for a conducting inner core, and <code>real_magnetic_mantle.field</code>, <code>imag_magnetic_mantle.field</code> for a resolved mantle. Without the flow (<code>hydro = 0</code>) the flow's files are not written</td>
+<td>the eigenvectors of the flow (or the forced flows), real and imaginary parts of their spectral coefficients, one column per solution; with <code>thermal = 1</code> also <code>real_thermal.field</code>, <code>imag_thermal.field</code> for <span class="arithmatex">\(s\)</span>; with <code>magnetic = 1</code> also <code>real_magnetic.field</code>, <code>imag_magnetic.field</code> for <span class="arithmatex">\(\mathbf b\)</span>, <code>real_magnetic_ic.field</code>, <code>imag_magnetic_ic.field</code> for a conducting inner core, and <code>real_magnetic_mantle.field</code>, <code>imag_magnetic_mantle.field</code> for a resolved mantle; with <code>rotdyn = 1</code> also <code>real_rotdyn.field</code>, <code>imag_rotdyn.field</code> for the rotation rates of the mantle and of the inner core and the angle between them (<a href="../rotating-solids/">Rotating solids</a>). Without the flow (<code>hydro = 0</code>) the flow's files are not written</td>
 </tr>
 <tr>
 <td><code>rsf_spectrum.dat</code>, <code>rsf_ke.dat</code></td>
@@ -1272,10 +1350,15 @@ table.</p>
 <td><code>spin_doctor.py</code>, with <code>magnetic = 1</code></td>
 <td>the magnetic energies and budgets of each solution (below)</td>
 </tr>
+<tr>
+<td><code>rotdyn.dat</code></td>
+<td><code>spin_doctor.py</code>, with <code>rotdyn = 1</code></td>
+<td>the rotation of the solids and the torques on them, for each solution (below)</td>
+</tr>
 </tbody>
 </table>
 <p><code>python3 bin/units.py</code> prints the eigenvalues of <code>eigenvalues0.dat</code> as frequency and growth rate in nHz
-(<a href="../background/#units">Background model</a>). Rows of <code>params.dat</code>, <code>flow.dat</code>, <code>thermal.dat</code> and <code>magnetic.dat</code> with the same index
+(<a href="../background/#units">Background model</a>). Rows of <code>params.dat</code>, <code>flow.dat</code>, <code>thermal.dat</code>, <code>magnetic.dat</code> and <code>rotdyn.dat</code> with the same index
 belong to the same solution. Start a new <code>params.dat</code> rather than append to one written by another version of kore,
 which may have other columns.</p>
 <h2 id="flowdat"><code>flow.dat</code></h2>
@@ -1335,6 +1418,14 @@ which may have other columns.</p>
 <tr>
 <td>28</td>
 <td>in a full sphere, irreg₀: how far the solution is from smooth at the centre (<a href="../numerical-method/#regularity-at-the-centre">Regularity at the centre</a>); NaN with an inner core</td>
+</tr>
+<tr>
+<td>29–38</td>
+<td>for <code>m = 0</code>, <code>symm = 1</code> and <code>m = 1</code>, <code>symm = -1</code> (0 otherwise, and with <code>centrifugal = 1</code>), real and imaginary parts of: the angular momentum of the fluid, axial or equatorial, and the viscous torques on the mantle and on the inner core, then the magnetic ones (<a href="../rotating-solids-equations/#torques">Rotating solids equations</a>)</td>
+</tr>
+<tr>
+<td>39</td>
+<td>resid𝐋, the relative residual of the fluid's angular momentum balance (NaN where it is not computed, <a href="../rotating-solids/#the-angular-momentum-check-residl">Rotating solids</a>)</td>
 </tr>
 </tbody>
 </table>
@@ -1438,6 +1529,34 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 </tr>
 </tbody>
 </table>
+<h2 id="rotdyndat"><code>rotdyn.dat</code></h2>
+<p>With <code>rotdyn = 1</code> (<a href="../rotating-solids/">Rotating solids</a>), the real and imaginary parts (columns 1–2, 3–4, ...) of</p>
+<table>
+<thead>
+<tr>
+<th>columns</th>
+<th>content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1–6</td>
+<td>the rotation rates of the mantle and of the inner core relative to the frame, and the angle of the inner core relative to the mantle</td>
+</tr>
+<tr>
+<td>7–8</td>
+<td>the gravitational torque on the mantle (minus that on the inner core)</td>
+</tr>
+<tr>
+<td>9–12</td>
+<td>the viscous and the magnetic torques on the mantle</td>
+</tr>
+<tr>
+<td>13–16</td>
+<td>the viscous and the magnetic torques on the inner core</td>
+</tr>
+</tbody>
+</table>
 <h2 id="paramsdat"><code>params.dat</code></h2>
 <p>The columns follow the order of <code>spin_doctor.param_table</code>, counted from 1:</p>
 <table>
@@ -1516,6 +1635,10 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 <td>123–127</td>
 <td><code>r_surface</code>, <code>N_mantle</code>, the conductivity of a resolved mantle at the outer wall (as used), <code>sigma_mantle_param</code>, its conductance <span class="arithmatex">\(\int\sigma\,dr\)</span> (the <code>c1_cmb</code> of a thin wall of the same conductance)</td>
 </tr>
+<tr>
+<td>128–134</td>
+<td><code>rotdyn</code>, <code>MoIZ_M</code>, <code>MoIZ_IC</code>, <code>gTorque</code>, <code>OmgtauIC</code>, <code>vtrq</code>, <code>mtrq</code></td>
+</tr>
 </tbody>
 </table>
 <ul>
@@ -1547,8 +1670,8 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 <li>A row ends, after a <code>#</code> that <code>np.loadtxt</code> skips, with the <code>'user'</code>, <code>'general'</code> and <code>'ferraro'</code> expressions, that of
   <code>sigma_mantle</code> and, for <code>'tabulated'</code>, <code>diff_rot_file</code> with the first 12 hex digits of its sha256. A row with none of
   these has no <code>#</code>.</li>
-<li>A <code>params.dat</code> written before the columns 108–112, column 113, the columns 114–122 or 123–127 were added has fewer
-  columns: start a new file.</li>
+<li>A <code>params.dat</code> written before the columns 108–112, column 113, the columns 114–122, 123–127 or 128–134 were added has
+  fewer columns: start a new file. The same holds for <code>flow.dat</code> before its columns 29–39.</li>
 </ul>
 
 
