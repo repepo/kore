@@ -240,12 +240,42 @@ whose field kore then solves for together with the rest.
 The magnetic diffusivity of the inner core is `MagnetD` divided by `mu_i2o` and `sigma_i2o`. Matching conditions:
 [Magnetic field equations](magnetic-equations.md#boundary-conditions).
 
+## The field without the flow
+
+Two tools leave the flow out: one checks the walls and the inner core against exact results, the other gives the field
+that a known flow induces.
+
+**Free decay: `hydro = 0`.** Without the momentum equation the field only diffuses, and is carried by the differential
+rotation with `diff_rot = 1`. Each mode then decays at a rate that the conductivity, the walls and the inner core alone
+set, which for a uniform conductivity is known exactly ([Checks](magnetic-equations.md#free-decay-without-the-flow-2026-11-06)).
+The background field does no work, but `B0` still sets the equatorial symmetry of the perturbation, as with the flow.
+With `thermal = 1` the same switch gives the free decay of the entropy. Only eigenvalue problems can leave the flow out.
+`solve.py` writes no flow files and normalises each eigenvector to a magnetic energy of 1 (plus the entropy's with
+`thermal = 1`), without `Hendrik`;
+`spin_doctor` prints resid𝐛 and resid𝐄, for any walls, and none of the flow's columns.
+
+**Kinematic induction.** `bin/just_induction.py` and `bin/solve_ind.py` give the field that a given flow induces in B0,
+without the force of that field on the flow. Assemble a magnetic eigenvalue problem (`submatrices.py`, `assemble.py`),
+put the flow in `real_flow.field` and `imag_flow.field` (written by a run with the same `N`, `lmax`, `m`, `symm` and
+`ricb`, a forced run of the flow alone for instance), then run
+
+```shell
+./bin/just_induction.py [lambda]
+mpiexec -n 4 ./bin/solve_ind.py
+```
+
+The flow varies as $e^{\lambda t}$: `lambda` is the optional argument, a complex number such as the eigenvalue of a mode,
+and its default is $i\,$`forcing_frequency`, the time dependence of the forced runs (a steady flow when it is 0). The
+field is written as `real_magnetic.field`, `imag_magnetic.field` (and the inner core's files with a conducting inner
+core), one column per column of the flow.
+
 ## What is supported
 
 kore checks the combination of options at startup and stops on any it cannot handle.
 
 Supported: a shell or a full sphere (`ricb = 0`); any `structure`; eigenvalue problems; with or without a differential
-rotation; `ViscosD > 0`, or `ViscosD = 0` in a full sphere. The magnetic diffusivity is uniform.
+rotation; `ViscosD > 0`, or `ViscosD = 0` in a full sphere; with or without the flow (`hydro = 0`, above). The magnetic
+diffusivity is uniform.
 
 Not supported (the run stops at startup):
 
@@ -280,11 +310,11 @@ budgets.
 
 `solve.py` writes `real_magnetic.field` and `imag_magnetic.field` (and `real_magnetic_ic.field`,
 `imag_magnetic_ic.field` for a conducting inner core). Each eigenvector is normalised so that the kinetic energy plus
-`Hendrik` times the magnetic energy is 1 in the fluid.
+`Hendrik` times the magnetic energy is 1 in the fluid (the magnetic energy alone without the flow, `hydro = 0`).
 
 `spin_doctor` adds the Lorentz work to residσ and residω, and prints two more residuals: resid𝐛, the energy budget of
 the induction equation in the fluid, and resid𝐄, the full energy budget including the field outside the fluid (no-slip
-walls only: `bco = 1`, and `bci = 1` with an inner core). Like residσ ([Solver](solver.md)), they should be small for a
+walls only: `bco = 1`, and `bci = 1` with an inner core; any walls without the flow). Like residσ ([Solver](solver.md)), they should be small for a
 resolved mode. It also prints Mag/Kin, the ratio of magnetic to kinetic energy (`Hendrik` ME/KE, both in the units of the
 kinetic energy), and
 writes `magnetic.dat` and 25 magnetic columns of `params.dat` ([Output files](output.md#magneticdat)).

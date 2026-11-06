@@ -269,7 +269,7 @@ def main():
                 print('forcing 13 with forcing_frequency = 0 needs a no-slip wall (bci = 1 or bco = 1)', flush=True)
                 comm.Abort(1)
 
-            row = 2*ut.n + int(ut.N1*(2 - ut.m_top)/2) + 1  # entropy block, l = 2, inner-wall row (bc_theta_spherical)
+            row = ut.offset['h'] + int(ut.N1*(2 - ut.m_top)/2) + 1  # entropy block, l = 2, inner-wall row (bc_theta_spherical)
             B = ss.csr_matrix( ( [par.forcing_amplitude_icb/2], ([row], [0]) ), shape=(ut.sizmat,1) )
             np.savez('B_forced.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
 
@@ -315,7 +315,7 @@ def main():
     # ------------------------------------------------------------------------------------------------------------------------------------------------
     # -------------------------------------------------------------------------------------------------------------- A matrix, 2curl hydro (section u)
     # ------------------------------------------------------------------------------------------------------------------------------------------------
-    for k,l in enumerate(loc_top): # 2curl hydro eqs
+    for k,l in enumerate(loc_top if par.hydro else []): # 2curl hydro eqs (NEW 2026-11-06: none with hydro = 0)
 
         col0 = ( rank*bpp + k )* ut.N1
         row  = col0
@@ -441,7 +441,7 @@ def main():
     # ------------------------------------------------------------------------------------------------------------------------------------------------
     # -------------------------------------------------------------------------------------------------------------- A matrix, 1curl hydro (section v)
     # ------------------------------------------------------------------------------------------------------------------------------------------------
-    for k,l in enumerate(loc_bot): # 1curl Navier-Stokes equations
+    for k,l in enumerate(loc_bot if par.hydro else []): # 1curl Navier-Stokes equations (none with hydro = 0)
 
         col0 = (rank*bpp + k )* ut.N1
         row  = col0 + nb*ut.N1
@@ -571,24 +571,25 @@ def main():
         for k,l in enumerate(loc_top): # here use the l's from loc_top
 
             col0 = (rank*bpp + k )* ut.N1
-            row = 2*nb*ut.N1 + col0
+            row = ut.offset['h'] + col0   # NEW (2026-11-06): ut.offset (2*nb*ut.N1, or 0 with hydro = 0)
 
             # Poloidal velocity terms: -rʰ p uᵣ dS/dr -------------------------------------------------------------------
             # ----------------------------------------------------------------------- A, heat equation (section h), upol
             # ----------------------------------------------------------------------------------------------------------
             basecol = 0
 
-            # Physics ------------------------------------
-            mtx = op.thermal_advection(l,'h','upol',0)
-            # --------------------------------------------
-            col = basecol + col0
+            if par.hydro:   # NEW (2026-11-06): no flow with hydro = 0
+                # Physics ------------------------------------
+                mtx = op.thermal_advection(l,'h','upol',0)
+                # --------------------------------------------
+                col = basecol + col0
 
-            loc_list = ut.packit( loc_list, mtx, row, col)
+                loc_list = ut.packit( loc_list, mtx, row, col)
 
             if par.diff_rot :  # differential rotation terms of the heat equation (diff_rot.heat_block)
 
                 # advection of s by the background rotation, Δl = 0, ±2 ------------------------------------------
-                basecol = 2*nb*ut.N1
+                basecol = ut.offset['h']
                 for i in dr.dl_range('h','temp') :
                     if l+i in ll_flo[0] :
                         mtx = op.thermal_diffrot(l,'h','temp',i)
@@ -599,7 +600,7 @@ def main():
                     loc_list = centrifugal_blocks( loc_list, op.centrifugal_rotation, l, 'h', 'temp', ll_flo[0], row, basecol + col0,
                                                    dls=cf.rotation_dl_range('h', 'temp'))
 
-                if par.thermal_wind :  # advection of the thermal-wind entropy by u
+                if par.thermal_wind and par.hydro :  # advection of the thermal-wind entropy by u
 
                     basecol = 0  # poloidal part, Δl = 0, ±2, ..., ±(the highest degree of S_tw)
                     for i in dr.dl_range('h','upol') :
@@ -622,7 +623,7 @@ def main():
             # ----------------------------------------------------------------------- A, heat equation (section h), temp
             # ----------------------------------------------------------------------------------------------------------
             if par.ThermaD > 0:
-                basecol = 2*nb*ut.N1
+                basecol = ut.offset['h']
 
                 # Physics ----------------------------
                 mtx = op.thermal_diffusion(l,'h','',0)
@@ -637,7 +638,7 @@ def main():
             # time derivative for forced problems: A - i wf B with B = +entropy here (B = -inertia in the momentum rows)
             if par.forcing != 0:
                 mtx = -1j*ut.wf*op.entropy(l,'h','',0)
-                col = 2*nb*ut.N1 + col0
+                col = ut.offset['h'] + col0
                 loc_list = ut.packit(loc_list, mtx, row, col)
 
 
@@ -672,8 +673,8 @@ def main():
                 col0 = (rank*bpp + k )* ut.N1
                 row  = ut.offset[sec] + col0
 
-                # induction by the flow, poloidal (upol) and toroidal (utor) columns
-                for basecol, ucomp, lls in [ (0, 'upol', ll_flo[0]), (ut.n, 'utor', ll_flo[1]) ]:
+                # induction by the flow, poloidal (upol) and toroidal (utor) columns (NEW 2026-11-06: none with hydro = 0)
+                for basecol, ucomp, lls in ([ (0, 'upol', ll_flo[0]), (ut.n, 'utor', ll_flo[1]) ] if par.hydro else []):
                     for i in ut.mag_dl:   # poloidal and toroidal B0 couplings (operators.induction returns 0 for the others; NEW 2026-10-30: ut.mag_dl)
                         if l+i in lls:
                             mtx = op.induction(l, sec, ucomp, i)
@@ -780,7 +781,7 @@ def main():
 
 
         # ----------------------------------------------------------------------- B matrix, 2curl (hydro), section u
-        for k,l in enumerate(loc_top):
+        for k,l in enumerate(loc_top if par.hydro else []):   # NEW (2026-11-06): none with hydro = 0
 
             row = ( rank*bpp + k )* ut.N1
             col = row
@@ -796,7 +797,7 @@ def main():
 
 
         # ----------------------------------------------------------------------- B matrix, 1curl (hydro), section v
-        for k,l in enumerate(loc_bot):
+        for k,l in enumerate(loc_bot if par.hydro else []):
 
             row = nb*ut.N1 + ( rank*bpp + k )* ut.N1
             col = row
@@ -819,7 +820,7 @@ def main():
             # ------------------------------------------------------------------- B, theta_pol, nocurl (heat), section h
             for k,l in enumerate(loc_top):  # loc_top here because theta
                                             # follows the same symmetry as u
-                row = 2*nb*ut.N1 + ( rank*bpp + k )* ut.N1
+                row = ut.offset['h'] + ( rank*bpp + k )* ut.N1   # NEW (2026-11-06): ut.offset (2*nb*ut.N1 with the flow)
                 col = row
 
                 mtx = op.entropy(l,'h','', 0)
@@ -827,7 +828,7 @@ def main():
                 loc_list = ut.packit(loc_list, mtx, row, col)
 
                 if par.centrifugal:  # NEW (2026-11-05): (J - 1) ∂ₜs = η P2 ∂ₜs, Δl = 0, ±2
-                    col0 = 2*nb*ut.N1 + ( rank*bpp + k )* ut.N1
+                    col0 = ut.offset['h'] + ( rank*bpp + k )* ut.N1
                     loc_list = centrifugal_blocks(loc_list, op.centrifugal_entropy, l, 'h', 'temp', ll_flo[0], row, col0)
 
 
@@ -1090,7 +1091,7 @@ def bc_theta_centrifugal(l, ll_flo):
     walls = ([('outer', 0, bv.Tb)] if par.bco_thermal == 1 else []) + \
             ([('inner', 1, bv.Ta)] if (par.ricb > 0 and par.bci_thermal == 1) else [])
     ixh = ( par.m + 1 - ut.s )%2
-    row0 = 2*ut.n + int( ut.N1*(l - ut.m_top)/2 )
+    row0 = ut.offset['h'] + int( ut.N1*(l - ut.m_top)/2 )
     data, rows, cols = [], [], []
     for wall, rr, T in walls:
         B, W = cf.wall_dissipative_rows(wall)
@@ -1109,7 +1110,7 @@ def bc_theta_centrifugal(l, ll_flo):
             nz = np.nonzero(vec)[0]
             data.append(vec[nz])
             rows.append(np.full(nz.size, row0 + rr))
-            cols.append(2*ut.n + int( ut.N1*(k - ut.m_top)/2 ) + nz)
+            cols.append(ut.offset['h'] + int( ut.N1*(k - ut.m_top)/2 ) + nz)
     if not data:
         return [np.zeros(0), np.zeros(0, dtype=int), np.zeros(0, dtype=int)]
     return [np.concatenate(data), np.concatenate(rows), np.concatenate(cols)]
@@ -1300,7 +1301,7 @@ def bc_theta_spherical(l):
             elif par.bci_thermal == 1: # zero diffusive entropy flux at icb
                 out[ 1,:] = bv.Ta[:,1] # s'=0
 
-        row0 = 2*ut.n + int(ut.N1*(l-ut.m_top)/2)
+        row0 = ut.offset['h'] + int(ut.N1*(l-ut.m_top)/2)   # NEW (2026-11-06): ut.offset (2 ut.n with the flow)
         col0 = row0
 
         out = out.tocoo()

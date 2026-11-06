@@ -132,7 +132,9 @@ def normalise_energy(vecs):
     weights): its metric part comes from utils4pp.centrifugal_terms, computed on rank 0 (it couples the degrees); with
     magnetic = 1 too, ME is that of the field in the deformed fluid (utils4pp.centrifugal_magnetic_energy, rank 0).
     The other fields (thermal, ...) are scaled along. The complex phase is left as SLEPc returns it.
-    Vectors with zero KE (or runs without flow) are left unchanged.
+    NEW (2026-11-06): without the flow (hydro = 0) ME + TE = 1 instead, without Hendrik (the Lorentz force is absent, so no
+    energy unit links the field to a flow), TE = ½ ∫ p₀ |s|² dV as spin_doctor's; a free-decay mode has one of the two.
+    Vectors with zero energy are left unchanged.
     Called on all ranks with the full vecs on each; the l-components are shared among the ranks
     and their energies summed with an MPI Allreduce.
     '''
@@ -142,22 +144,31 @@ def normalise_energy(vecs):
     rank, size = comm.Get_rank(), comm.Get_size()
     ll = ut.ell(par.m, par.lmax, par.symm)[2]
     t0 = timer()
+    H = par.Hendrik if par.hydro else 1.0   # NEW (2026-11-06): ME alone without the flow
     for i in range(vecs.shape[1]):
         f = split_fields(vecs[:, i])
-        usol2 = upp.expand_reshape_sol(f['flow'], par.symm)
-        KE = upp.kinetic_energy(usol2, par.ricb, ut.rcmb, ll[rank::size])
-        if par.centrifugal and rank == 0:  # NEW (2026-11-05): on the grid and the tables (every l) kinetic_energy has just set
-            KE += upp.centrifugal_terms(par.ricb, ut.rcmb)[0]
+        KE = 0.0
+        if par.hydro:
+            usol2 = upp.expand_reshape_sol(f['flow'], par.symm)
+            KE = upp.kinetic_energy(usol2, par.ricb, ut.rcmb, ll[rank::size])
+            if par.centrifugal and rank == 0:  # NEW (2026-11-05): on the grid and the tables (every l) kinetic_energy has just set
+                KE += upp.centrifugal_terms(par.ricb, ut.rcmb)[0]
+        elif par.thermal:  # NEW (2026-11-06): the entropy "energy" of a run without the flow
+            tsol2 = upp.expand_reshape_sol(f['thermal'], par.symm)
+            KE = upp.thermal_energy(tsol2, par.ricb, ut.rcmb, ll[rank::size])
+            if par.centrifugal and rank == 0:  # its metric part, on the tables thermal_energy has just set
+                KE += upp.centrifugal_terms(par.ricb, ut.rcmb)[2]
         if par.magnetic:  # NEW (2026-10-28)
             bsol2 = upp.expand_reshape_sol(f['magnetic'], ut.bsymm)
-            KE += par.Hendrik * upp.magnetic_energy(bsol2, par.ricb, ut.rcmb, ll[rank::size])
+            KE += H * upp.magnetic_energy(bsol2, par.ricb, ut.rcmb, ll[rank::size])
             if par.centrifugal and rank == 0:  # NEW (2026-11-05, phase 1b): the metric part, ME + it = ∫ ½ 𝐛⋅𝐛 dV of the body
-                KE += par.Hendrik * upp.centrifugal_magnetic_energy(bsol2, par.ricb, ut.rcmb)
+                KE += H * upp.centrifugal_magnetic_energy(bsol2, par.ricb, ut.rcmb)
         KE = comm.allreduce(KE, op=MPI.SUM)
         if KE > 0:
             vecs[:, i] /= np.sqrt(KE)
-    PETSc.Sys.Print('Eigenvectors normalised to', 'KE + ME = 1 in' if par.magnetic else 'kinetic energy = 1 in',
-                    round(timer()-t0, 2), 'seconds')
+    what = ('KE + ME = 1' if par.magnetic else 'kinetic energy = 1') if par.hydro else \
+           ' + '.join(['ME'] * par.magnetic + ['TE'] * par.thermal) + ' = 1'
+    PETSc.Sys.Print('Eigenvectors normalised to', what, 'in', round(timer()-t0, 2), 'seconds')
 
 
 def split_fields(vec):
@@ -166,7 +177,7 @@ def split_fields(vec):
     in the order the unknowns are stacked in A and B (see ut.sizmat).
     Returns a dict {field name: block of rows}, only for the fields present.
     '''
-    blocks = [ ('flow',     2*ut.n),
+    blocks = [ ('flow',     2*ut.n * par.hydro),                # NEW (2026-11-06): none with hydro = 0
                ('thermal',  ut.n * par.thermal),
                ('magnetic', 2*ut.n * par.magnetic),     # NEW (2026-10-28): f, g after s (ut.offset)
                ('magnetic_ic', 2*ut.nic) ]              # NEW (2026-10-28): fic, gic, a conducting inner core

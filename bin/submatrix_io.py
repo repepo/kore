@@ -24,13 +24,13 @@ FILE = 'submatrices.npz'
 # parameters that change no radial operator: the solver and its target, the parallel layout, the forcing (assemble.py,
 # reynolds_stress.py; also every rsf_* name), the boundary conditions (rows of assemble.py), post-processing, the inputs of
 # set_scales (their results Gaspard, ViscosD, ThermaD, Beyonce, Hendrik, MagnetD are compared), the Ferraro policy (it only
-# stops a run) and the .mtx export
+# stops a run), the .mtx export and hydro (NEW 2026-11-06: submatrices.py builds the flow's operators either way)
 OPERATOR_INDEPENDENT = ('ncpus', 'petsc_opts', 'prescale', 'which_eigenpairs', 'nev', 'tol', 'maxit', 'rtau', 'itau',
                         'forcing', 'forcing_frequency', 'forcing_amplitude_cmb', 'forcing_amplitude_icb',
                         'bci', 'bco', 'bci_thermal', 'bco_thermal', 'mu_i2o',
                         'rpower_pp', 'rhopower_pp', 'hvisc', 'rvisc',
                         'timescale', 'Ek', 'Em', 'Etherm', 'Le', 'g',
-                        'ferraro_policy', 'write_mtx')
+                        'ferraro_policy', 'write_mtx', 'hydro')
 
 
 def params_of(par):

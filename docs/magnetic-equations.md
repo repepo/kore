@@ -289,8 +289,10 @@ change or extend the code.
   shell, as `conductive_IC`) to
 
     $$
-    \mathrm{KE} + \mathrm{Hendrik}\int\tfrac12\lvert\mathbf b\rvert^2dV = 1 .
+    \mathrm{KE} + \mathrm{Hendrik}\int\tfrac12\lvert\mathbf b\rvert^2dV = 1 ,
     $$
+
+    and without the flow (`hydro = 0`) to $\int\tfrac12\lvert\mathbf b\rvert^2dV = 1$.
 
 ### Couplings for any background
 
@@ -676,7 +678,7 @@ Mag/Kin and writes `magnetic.dat`:
 | 8 | MEext | energy of the potential field outside the outer wall |
 | 9 | Ohm_f | Ohmic loss in the fluid |
 | 10 | Ohm_ic | Ohmic loss in a conducting inner core |
-| 11 | residE | resid𝐄, the full energy budget (nan unless the walls are no-slip: `bco = 1`, and `bci = 1` with an inner core) |
+| 11 | residE | resid𝐄, the full energy budget (nan unless the walls are no-slip: `bco = 1`, and `bci = 1` with an inner core, or there is no flow, `hydro = 0`) |
 
 with the integrals over the fluid unless stated, and with the Lorentz force per volume without `Hendrik`
 $\mathbf G = (\nabla\times\mathbf b)\times\mathbf B_0 + (\nabla\times\mathbf B_0)\times\mathbf b$,
@@ -706,7 +708,9 @@ $$
 $$
 
 unlike resid𝐛 it sees the wall and ICB conditions. The $1/\mu_{i2o}$ of the inner core's energy and Ohmic loss is not in
-`conductive_IC`'s `em_budget` (there resid𝐄 is $10^{-2}$ at `mu_i2o` = 2).
+`conductive_IC`'s `em_budget` (there resid𝐄 is $10^{-2}$ at `mu_i2o` = 2). Without the flow (`hydro = 0`) it is
+$2\sigma(\mathrm{ME} + \mathrm{MEic} + \mathrm{MEext}) = \mathrm{Indu} - \mathrm{Ohm\_f} - \mathrm{Ohm\_ic}$, without
+Hendrik and for any walls (Indu is then the induction by a differential rotation, or 0).
 
 **How the terms are computed.** spin_doctor's Lorentz force (`utils4pp.lorentz4pp`) acts per volume, and its power
 $\int\mathbf u^*\cdot\mathbf G\,dV$ has no $\rho_0$. Its induction term (`induction4pp`) takes the components of
@@ -965,6 +969,25 @@ the new features nothing changed.
   part of degree 2): $\le 2.4\cdot10^{-10}$.
 - **Unchanged without the new features**: `regress.sh` bitwise, heat_dr, ru_insane identical, and 26 magnetic cases
   build A and B bitwise equal to the code before.
+
+### Free decay without the flow (2026-11-06)
+
+Without the flow (`hydro = 0`, as `conductive_IC`) a field of uniform conductivity only diffuses, and each mode decays at
+the rate MagnetD $k^2$, where $k$ makes the spherical Bessel functions $j_l(kr)$, $y_l(kr)$ meet the conditions at the
+walls: $j_{l-1}(k)\,y_{l+1}(kr_i) = y_{l-1}(k)\,j_{l+1}(kr_i)$ for a poloidal field between insulators,
+$j_l(k)\,y_l(kr_i) = y_l(k)\,j_l(kr_i)$ for a toroidal one, and a 3 × 3 determinant with $j_l(k\sqrt{\sigma_{i2o}}\,r)$
+inside a conducting inner core. `tests/decay/decay_check.py` finds the roots with scipy and compares (`ricb` = 0.35, N 48,
+`lmax` 15, `m` 0, MagnetD 1):
+
+| case | modes | largest relative error | resid𝐛, resid𝐄 |
+| --- | --- | --- | --- |
+| insulating walls | poloidal $l$ = 1 (two), 3; toroidal $l$ = 2: rates 10.041029, 45.156235, 33.260470, 37.495006 | 4e-15 | ≤ 5e-12 |
+| conducting inner core, `sigma_i2o` 0.3 | the same: 9.993017, 43.759526, 33.248628, 35.942816 | 6e-14 | ≤ 8e-11 |
+| full sphere | $\pi^2$, $4\pi^2$, and 33.217462 (poloidal $l$ = 3 and toroidal $l$ = 2 together) | 9e-15 | ≤ 2e-13 |
+
+With a differential rotation the modes of the field alone equal, to $10^{-15}$, those of the same run with the flow and a
+B0 of $10^{-9}$, where the field and the flow decouple; the entropy of `'Boussinesq'` decays at the exact rates too, and
+the field of `just_induction.py` with `solve_ind.py` is that of a mode without Lorentz force to $10^{-14}$.
 
 ## References
 

@@ -10,7 +10,7 @@ table.
 | `A.npz`, `B.npz` | `assemble.py` | the matrices of the eigenproblem $A\mathbf x = \lambda B\mathbf x$ |
 | `B_forced.npz` | `assemble.py`, with `forcing` > 0 | the right-hand sides of a forced run, one per column |
 | `eigenvalues0.dat` | `solve.py` | the eigenvalues of the last solve, one per row: $\mathrm{Re}\thinspace\lambda$, $\mathrm{Im}\thinspace\lambda$ |
-| `real_flow.field`, `imag_flow.field` | `solve.py` | the eigenvectors of the flow (or the forced flows), real and imaginary parts of their spectral coefficients, one column per solution; with `thermal = 1` also `real_thermal.field`, `imag_thermal.field` for $s$; with `magnetic = 1` also `real_magnetic.field`, `imag_magnetic.field` for $\mathbf b$, and `real_magnetic_ic.field`, `imag_magnetic_ic.field` for a conducting inner core |
+| `real_flow.field`, `imag_flow.field` | `solve.py` | the eigenvectors of the flow (or the forced flows), real and imaginary parts of their spectral coefficients, one column per solution; with `thermal = 1` also `real_thermal.field`, `imag_thermal.field` for $s$; with `magnetic = 1` also `real_magnetic.field`, `imag_magnetic.field` for $\mathbf b$, and `real_magnetic_ic.field`, `imag_magnetic_ic.field` for a conducting inner core. Without the flow (`hydro = 0`) the flow's files are not written |
 | `rsf_spectrum.dat`, `rsf_ke.dat` | `solve.py`, with `forcing = 11` and `rsf_frequencies` | the power spectrum of the kinetic energy of the forced flow, appended, one row per frequency ([Convective forcing](forcing.md#reading-the-output)) |
 | `timing.dat` | `solve.py` | the run time of the solve, appended |
 | `eigenvalues.dat` | `spin_doctor.py` | the eigenvalues, appended |
@@ -30,7 +30,7 @@ Columns, counted from 1:
 
 | columns | content |
 | --- | --- |
-| 1–3 | kinetic energy, and its poloidal and toroidal parts (the eigenvectors are normalised to kinetic energy 1); with `centrifugal = 1` column 1 is the kinetic energy of the deformed body, and columns 2–3 are its parts without the terms of the deformation |
+| 1–3 | kinetic energy, and its poloidal and toroidal parts (the eigenvectors are normalised to kinetic energy 1); with `centrifugal = 1` column 1 is the kinetic energy of the deformed body, and columns 2–3 are its parts without the terms of the deformation. Without the flow (`hydro = 0`) the flow's columns are 0 or nan, the eigenvectors are normalised to a magnetic energy (`magnetic.dat`, column 1) plus an entropy "energy" (`thermal.dat`, column 1) of 1, and columns 5–7 and 28 describe the field, or the entropy without a field |
 | 4 | the power of the viscous force $\int\mathbf u\cdot(\nabla\cdot\boldsymbol\sigma)\thinspace dV$: minus the viscous dissipation when $\mathbf u = 0$ at the walls (column 26 otherwise); with `centrifugal = 1` that of the deformed body |
 | 5–7 | the degree $l$ of the largest kinetic energy, the width of the $l$ spectrum, and the ℓ-convergence (the columns Peak ℓ, ℓ-Width and ℓ-Convergence of the `spin_doctor` table) |
 | 8–11 | the enstrophy, and the Coriolis, viscous and buoyancy terms of its balance |
@@ -70,7 +70,7 @@ the definitions are on [Magnetic field equations](magnetic-equations.md#energy-b
 | 7 | MEic, the magnetic energy in the inner core |
 | 8 | MEext, the energy of the potential field outside the outer wall |
 | 9, 10 | Ohm_f, Ohm_ic: the Ohmic losses in the fluid and in a conducting inner core |
-| 11 | the relative residual of the full energy budget (resid𝐄; nan unless the walls are no-slip: `bco = 1`, and `bci = 1` with an inner core) |
+| 11 | the relative residual of the full energy budget (resid𝐄; nan unless the walls are no-slip: `bco = 1`, and `bci = 1` with an inner core, or there is no flow, `hydro = 0`) |
 | 12 | with `centrifugal = 1` only: MEc, the part of the magnetic energy that the deformation adds, so that ME + MEc is the energy of the field in the deformed fluid (the column Mag/Kin of the `spin_doctor` table is Hendrik (ME + MEc)/KE; [Centrifugal deformation](centrifugal-equations.md#energy-budgets)) |
 
 ## `params.dat`
@@ -93,6 +93,7 @@ The columns follow the order of `spin_doctor.param_table`, counted from 1:
 | 83–95 | `magnetic`, `B0`, `B0_l`, `cnorm`, `Hendrik`, `MagnetD`, `innercore`, `N_cic`, `mu_i2o`, `sigma_i2o`, `B0_tor`, `B0_tor_l`, `cnorm_tor` |
 | 96–107 | `B0_wound` (1 if the wound field was added), `B0_wound_eta`, `B0_conf_r1`, `B0_conf_r2`, `B0_conf_p`, `B0_param`, `B0_tor_param`, `B0_ferraro_nmax`, `mag_couplings` (as used: 0 the closed forms, 1 `mag_algebra.py`), `tol_B0`, `B0_ic`, `ferraro_policy` |
 | 108–112 | `centrifugal`, `centrifugal_shape`, `centrifugal_q`, `centrifugal_f` (the flattening of the outer wall, as used), `centrifugal_param` |
+| 113 | `hydro` (0: no flow) |
 
 - Names are written as their index in the lists of the code: `structure` in `background.STRUCTURES` (`'8-term fit'` 0,
   `'old model S prototype'` 1, `'model S hydrostatic'` 2, `'Wu 2005'` 3, `'Boussinesq'` 4), `stratification` in
@@ -118,4 +119,4 @@ The columns follow the order of `spin_doctor.param_table`, counted from 1:
   them.
 - A row ends, after a `#` that `np.loadtxt` skips, with the `'user'`, `'general'` and `'ferraro'` expressions and, for
   `'tabulated'`, `diff_rot_file` with the first 12 hex digits of its sha256. A row with none of these has no `#`.
-- A `params.dat` written before the columns 108–112 were added has fewer columns: start a new file.
+- A `params.dat` written before the columns 108–112, or column 113, were added has fewer columns: start a new file.

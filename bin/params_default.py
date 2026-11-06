@@ -9,10 +9,14 @@ class default_params():
         # ----------------------------------------------------------------------------------------------------------------------
         # ------------------------------------------------------------------------------------------------------ Physics modules       
         # ----------------------------------------------------------------------------------------------------------------------
-        self.thermal = 0  # set to 1 to include the thermal (entropy) equation; the Navier-Stokes equation is always solved
+        self.thermal = 0  # set to 1 to include the thermal (entropy) equation
         # NEW (2026-10-28): set to 1 to include the induction equation and the Lorentz force (Magnetic parameters below,
         # docs/magnetic.md)
         self.magnetic = 0
+        # NEW (2026-11-06, as conductive_IC): 1 solves the momentum equation for the flow. 0 leaves the flow out, for the free
+        # decay of the field (magnetic = 1: diffusion, with the walls and a conducting inner core, and the induction by a
+        # differential rotation) or of the entropy (thermal = 1); eigenvalue problems only (forcing = 0)
+        self.hydro = 1
 
 
         # ----------------------------------------------------------------------------------------------------------------------

@@ -193,6 +193,7 @@ def param_table(elapsed):
         ( 'centrifugal_q',            par.centrifugal_q,           '%.9e' ),
         ( 'centrifugal_f',            float(cf.flattening(np.array([1.0]))[0]) if par.centrifugal else 0.0, '%.9e' ),  # f at the outer wall, as used
         ( 'centrifugal_param',        par.centrifugal_param,       '%.9e' ),  # p of 'user' (its expression in the # note)
+        ( 'hydro',                    par.hydro,                   '%d' ),    # NEW (2026-11-06): 0 without the flow
     ]
 
 
@@ -272,7 +273,9 @@ def main(ncpus):
     if ut.cic:  # NEW (2026-10-28): the field of a conducting inner core
         bic = ( np.loadtxt('real_magnetic_ic.field') + 1j*np.loadtxt('imag_magnetic_ic.field') ).reshape((2*ut.nic,-1))
 
-    success = np.shape(ru)[1]
+    # NEW (2026-11-06): without the flow (hydro = 0) the solutions are counted in the field's (or the entropy's) file, and the
+    # flow's diagnostics run on a zero flow (upp.zero_flow): they give zeros, and residσ, residω, residens are not computed
+    success = np.shape(ru if par.hydro else (rb if par.magnetic else rt))[1]
 
     # ------------------------------------------------------------------------------------------------------------------
     # hydrodynamical variables to be processed
@@ -348,10 +351,11 @@ def main(ncpus):
         ( '★',             '{:d}',      lambda i: i ),
         ( 'Re λ',          '{: .9f}',   lambda i: sigmas[i] ),
         ( 'Im λ',          '{: .9f}',   lambda i: freqs[i] ),
+    ] + ([   # NEW (2026-11-06): the flow's columns only with the flow (hydro = 1)
         ( '𝒯/𝒫',           '{:8.2e}',   lambda i: ratio(KT[i], KP[i]) ),
         ( 'residσ',        '{:8.2e}',   lambda i: resid1[i] ),
         ( 'residω',        '{:8.2e}',   lambda i: resid2[i] ),
-    ] + ([
+    ] if par.hydro else []) + ([
         ( 'resid𝑠',        '{:8.2e}',   lambda i: resid3[i] ),
     ] if par.thermal else []) + ([   # NEW (2026-11-04): forced runs, the power the walls put in and the viscous dissipation
         ( 'P_in',          '{: .6e}',   lambda i: Wp_icb[i] + Wp_cmb[i] + Wv_icb[i] + Wv_cmb[i] ),
@@ -359,18 +363,20 @@ def main(ncpus):
     ] if par.forcing > 0 else []) + ([
         ( 'resid𝐛',        '{:8.2e}',   lambda i: residb[i] ),
         ( 'resid𝐄',        '{:8.2e}',   lambda i: residE[i] ),
+    ] if par.magnetic else []) + ([
         # FIX (2026-11-06): in the units of KE, Hendrik (ME + MEc)/KE, as resid𝐄 and the normalisation KE + Hendrik ME = 1
-        # (as conductive_IC 7660861; it was ME/KE, off by the factor Hendrik)
+        # (as conductive_IC 7660861; it was ME/KE, off by the factor Hendrik). Not without the flow (hydro = 0)
         ( 'Mag/Kin',       '{:8.2e}',   lambda i: ratio(par.Hendrik*(ME[i] + MEc[i]), KE[i]) ),
-    ] if par.magnetic else []) + [
+    ] if par.magnetic and par.hydro else []) + [
         ( 'Peak ℓ',        '{:d}',      lambda i: ldom[i] ),
         ( 'ℓ-Width',       '{:d}',      lambda i: lwidth[i] ),
         ( 'ℓ-Convergence', '{:8.2e}',   lambda i: lconv[i] ),
+    ] + ([
         ( 'cvf_r',         '{:5.3f}',   lambda i: cuvismax_r[i] ),
         ( 'cvf_l',         '{:d}',      lambda i: cuvismax_l[i] ),
         ( 'cvfmax',        '{:8.2e}',   lambda i: cuvismax[i] ),
         ( 'residens',      '{:8.2e}',   lambda i: resens[i] ),
-    ] + ([   # NEW (2026-11-04): a full sphere, the Taylor terms at r = 0 that a regular solution lacks
+    ] if par.hydro else []) + ([   # NEW (2026-11-04): a full sphere, the Taylor terms at r = 0 that a regular solution lacks
         ( 'irreg₀',        '{:8.2e}',   lambda i: irreg0[i] ),   # (upp.centre_irregularity)
     ] if par.ricb == 0 else [])
     table_w = table_widths(table_cols)
@@ -393,10 +399,13 @@ def main(ncpus):
 
         t_sol2 = 0
 
-        rflow = np.copy(ru[:,i])
-        iflow = np.copy(iu[:,i])
-        # Expand solution
-        u_sol2 = upp.expand_reshape_sol( rflow + 1j*iflow, par.symm)
+        if par.hydro:
+            rflow = np.copy(ru[:,i])
+            iflow = np.copy(iu[:,i])
+            # Expand solution
+            u_sol2 = upp.expand_reshape_sol( rflow + 1j*iflow, par.symm)
+        else:
+            u_sol2 = upp.zero_flow()   # NEW (2026-11-06)
         [ lp, lt, ll] = ut.ell(par.m, par.lmax, par.symm)
         lpi = np.searchsorted(ll,lp);  # Poloidal indices
         lti = np.searchsorted(ll,lt);  # Toroidal indices
@@ -413,14 +422,19 @@ def main(ncpus):
             b_sol2 = upp.expand_reshape_sol( np.copy(rb[:,i]) + 1j*np.copy(ib[:,i]), ut.bsymm)
 
 
-        # identify solutions
-        [ ldom[i], lwidth[i], lconv[i] ] = upp.identify( u_sol2 )
+        # identify solutions (NEW 2026-11-06: without the flow, the field, or the entropy)
+        if par.hydro:
+            [ ldom[i], lwidth[i], lconv[i] ] = upp.identify( u_sol2 )
+        else:
+            [ ldom[i], lwidth[i], lconv[i] ] = upp.identify( b_sol2, ut.bsymm ) if par.magnetic else upp.identify( t_sol2 )
 
         if par.ricb == 0:  # NEW (2026-11-04): how far the flow (and the field) is from regular at r = 0
-            groups = [ [ (u_sol2[0], lp), (u_sol2[1], lt) ] ]
+            groups = [ [ (u_sol2[0], lp), (u_sol2[1], lt) ] ] if par.hydro else []
             if par.magnetic:
                 lbp, lbt = ut.ell(par.m, par.lmax, ut.bsymm)[:2]
                 groups.append( [ (b_sol2[0], lbp), (b_sol2[1], lbt) ] )
+            if par.thermal and not par.hydro:   # NEW (2026-11-06): the entropy, without the flow
+                groups.append( [ (t_sol2, lp) ] )
             irreg0[i] = upp.centre_irregularity(groups)
 
         # diagnose solutions (serially since 2026-10-20, see upp.diagnose)
@@ -453,15 +467,16 @@ def main(ncpus):
                 Ohm_ic[i]  = par.MagnetD * cm['Ohm_ic']       # and a conducting inner core with its metric part
 
         # NEW (2026-11-04): the viscous dissipation at the grid of diagnose, then the work of the wall stresses
-        # (wall_powers moves the grid globals to the walls)
-        if par.ViscosD>0:
+        # (wall_powers moves the grid globals to the walls). NEW (2026-11-06): none without the flow
+        if par.ViscosD>0 and par.hydro:
             Dvisc[i] = upp.viscous_dissipation()
-        [ Wp0, Wv0 ] = upp.wall_powers(u_sol2, t_sol2, sigma + 1j*w)
-        [ Wp_icb[i], Wp_cmb[i] ] = np.real(Wp0)
-        Wp_im[i] = np.sum(np.imag(Wp0))
-        [ Wv_icb[i], Wv_cmb[i] ] = Wv0
+        if par.hydro:
+            [ Wp0, Wv0 ] = upp.wall_powers(u_sol2, t_sol2, sigma + 1j*w)
+            [ Wp_icb[i], Wp_cmb[i] ] = np.real(Wp0)
+            Wp_im[i] = np.sum(np.imag(Wp0))
+            [ Wv_icb[i], Wv_cmb[i] ] = Wv0
 
-        if par.ViscosD>0:
+        if par.ViscosD>0 and par.hydro:
             Ra = par.ricb
             Rb = ut.rcmb
             ii = np.arange(0,par.N)
@@ -487,7 +502,8 @@ def main(ncpus):
         [ KE[i], Dkin0, Ensvel[i], Enscor[i], Ensvif[i], Ensbuo[i], Wthm0, Wdr[i],
           Wcor_im[i], Dkin_im[i], Wthm_im[i], Wdr_im[i], Ensdr[i] ] = np.sum( udgn, 0)
         Dkin[i] = Dkin0
-        resens[i] = abs(Ensvel[i]*sigma+Enscor[i]-Ensbuo[i]-Ensvif[i]-Ensdr[i]) / max((abs(Ensvel[i]*sigma),abs(Enscor[i]),abs(Ensbuo[i]),abs(Ensvif[i]),abs(Ensdr[i])))
+        resens[i] = abs(Ensvel[i]*sigma+Enscor[i]-Ensbuo[i]-Ensvif[i]-Ensdr[i]) / max((abs(Ensvel[i]*sigma),abs(Enscor[i]),abs(Ensbuo[i]),abs(Ensvif[i]),abs(Ensdr[i]))) \
+                    if par.hydro else np.nan   # NEW (2026-11-06): no flow, no enstrophy budget
         if par.centrifugal:  # NEW (2026-11-05): KE of the deformed body (∫ ρ0 w*⋅M w dV), Coriolis power with z̃ = F⁻¹ẑ
             KE[i] += KEc
             Wcor_im[i] += np.imag(Wcorc)
@@ -536,12 +552,15 @@ def main(ncpus):
         # residb (resid𝐛) is the relative residual of 2*sigma*ME - Indu - Mdfs = 0 (the induction equation dotted with 𝐛*, in
         # the fluid; as conductive_IC's resid𝐛)
         Wp = Wp_icb[i] + Wp_cmb[i]
-        resid1[i] = ( abs( 2*sigma*KE[i] - Dkin[i] - Wthm[i] - Wdr[i] - Wlor[i] - Wp )
-                      / max( abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wthm[i]), abs(Wdr[i]), abs(Wlor[i]), abs(Wp) ) )
-        resid2[i] = ( abs( 2*w*KE[i] + Wcor_im[i] - Dkin_im[i] - Wthm_im[i] - Wdr_im[i] - Wlor_im[i] - Wp_im[i] )
-                      / max( abs(2*w*KE[i]), abs(Wcor_im[i]), abs(Dkin_im[i]), abs(Wthm_im[i]), abs(Wdr_im[i]), abs(Wlor_im[i]),
-                             abs(Wp_im[i]) ) )
-        if par.ViscosD>0 and not par.centrifugal:   # NEW (2026-11-06, phase 2): not with centrifugal = 1 (Dvisc, Wv spherical)
+        if par.hydro:   # NEW (2026-11-06): nan without the flow
+            resid1[i] = ( abs( 2*sigma*KE[i] - Dkin[i] - Wthm[i] - Wdr[i] - Wlor[i] - Wp )
+                          / max( abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wthm[i]), abs(Wdr[i]), abs(Wlor[i]), abs(Wp) ) )
+            resid2[i] = ( abs( 2*w*KE[i] + Wcor_im[i] - Dkin_im[i] - Wthm_im[i] - Wdr_im[i] - Wlor_im[i] - Wp_im[i] )
+                          / max( abs(2*w*KE[i]), abs(Wcor_im[i]), abs(Dkin_im[i]), abs(Wthm_im[i]), abs(Wdr_im[i]), abs(Wlor_im[i]),
+                                 abs(Wp_im[i]) ) )
+        else:
+            resid1[i] = resid2[i] = np.nan
+        if par.ViscosD>0 and not par.centrifugal and par.hydro:   # NEW (2026-11-06, phase 2): not with centrifugal = 1 (Dvisc, Wv spherical)
             Wv = Wv_icb[i] + Wv_cmb[i]
             residD[i] = abs( Dkin[i] - Wv + Dvisc[i] ) / max( abs(Dkin[i]), abs(Wv), abs(Dvisc[i]) )
         if par.magnetic:
@@ -554,9 +573,10 @@ def main(ncpus):
             # induction work is the volume part ∫ 𝐄⋅(∇×𝐛)* alone (Indu minus its wall terms upp.INDU_WALLS): U0×b at a wall
             # carries magnetic energy through it, into the field outside, which ME_ext and ME_ic already count.
             # FIX (2026-11-01): bci only where there is an inner wall (at ricb = 0 it is ignored, and the default bci = 0 left
-            # resid𝐄 at nan for every full-sphere run)
-            if par.bco == 1 and (par.bci == 1 or par.ricb == 0):
-                H = par.Hendrik
+            # resid𝐄 at nan for every full-sphere run). NEW (2026-11-06): without the flow (hydro = 0) for any walls, and
+            # without Hendrik (only magnetic terms are left: 2σ(ME + MEic + MEext) = Indu - Iwall - Ohm_f - Ohm_ic)
+            if (par.bco == 1 and (par.bci == 1 or par.ricb == 0)) or not par.hydro:
+                H = par.Hendrik if par.hydro else 1.0
                 # NEW (2026-11-05): with centrifugal = 1 the energy of the deformed body, ∫ 𝐛̃*⋅M 𝐛̃ dV in the fluid (MEc), whose
                 # rate is the work 2 Re ∫ 𝐄⋅(∇×M 𝐛̃)* dV (InduM) minus the Ohmic loss (Ohmc); closes at second order in f
                 Etot = KE[i] + H*( ME[i] + MEc[i] + MEic[i] + MEext[i] )

@@ -1365,6 +1365,35 @@ def kinetic_energy(usol, Ra, Rb, ls=None):
 
 
 
+def zero_flow():
+    '''
+    NEW (2026-11-06): a zero flow, in the shape that expand_reshape_sol gives, for the post-processing of a run without the
+    flow (hydro = 0): the flow's diagnostics then give zeros and set the grid and tables as with a flow.
+    '''
+    nl = int((par.lmax - par.m + 1)/2)
+    return [ np.zeros((nl, par.N), dtype=complex), np.zeros((nl, par.N), dtype=complex) ]
+
+
+
+def thermal_energy(tsol, Ra, Rb, ls=None):
+    '''
+    NEW (2026-11-06): the entropy "energy" TE = ½ ∫ p₀ |s|² dV of the entropy solution tsol (expand_reshape_sol), from Ra to
+    Rb, with the integrand and the quadrature of thermal_worker (spin_doctor's TE). ls restricts the sum to some l values
+    (default: all; only the l's of the entropy count). For solve.py's normalisation without the flow (hydro = 0); the tables
+    it leaves (a zero flow, tsol) serve centrifugal_terms for the metric part TEc.
+    '''
+    setup_grid(Ra, Rb)
+    set_solution(zero_flow(), tsol, 3, 2)
+    lp = list(ut.ell(par.m, par.lmax, par.symm)[0])
+    out = 0.0
+    for l in (lp if ls is None else ls):
+        if l in lp:
+            hlm0 = radial(ttab, lp.index(l), 0, rk)[0]
+            out += rad_quad(entropy_energy(l, hlm0), Ra, Rb, wk)
+    return out
+
+
+
 def centrifugal_terms(Ra, Rb):
     '''
     NEW (2026-11-05): with centrifugal = 1 (centrifugal.py), the metric parts of the budgets, from the solution tables at the
@@ -2308,28 +2337,36 @@ def diagnose_4plot( ncpus, usol, tsol, radii, field0):
 
 
 
-def identify(sol2):
+def identify(sol2, vsymm=None):
+    '''
+    [the dominant degree, the width of the band of degrees above 0.1 of its amplitude, the amplitude of the highest degree
+    relative to the dominant one] of the solution sol2 (expand_reshape_sol). NEW (2026-11-06): vsymm, the equatorial symmetry
+    of sol2 (default par.symm, the flow's; ut.bsymm for the magnetic field), and a scalar field (the entropy, one array with the
+    degrees of P), for the runs without the flow (hydro = 0)
+    '''
 
     threshold = 0.1
 
-    P = np.abs(sol2[0])
-    T = np.abs(sol2[1])
+    scalar = not isinstance(sol2, (list, tuple))
+    P = np.abs(sol2 if scalar else sol2[0])
+    T = None if scalar else np.abs(sol2[1])
 
     lm1 = par.lmax - par.m + 1
-    s   = int( par.symm*0.5 + 0.5 ) # s=0 if antisymm, s=1 if symm
+    s   = int( (par.symm if vsymm is None else vsymm)*0.5 + 0.5 ) # s=0 if antisymm, s=1 if symm
     idp = np.arange( (np.sign(par.m)+s  )%2, lm1, 2, dtype=int)
     idt = np.arange( (np.sign(par.m)+s+1)%2, lm1, 2, dtype=int)
     ll  = np.arange( par.m+1-np.sign(par.m), par.lmax+2-np.sign(par.m), dtype=int)
 
     amps      = np.zeros_like(ll,dtype=float)
     amps[idp] = np.sum(P, axis=1)
-    amps[idt] = np.sum(T, axis=1)
+    if not scalar:
+        amps[idt] = np.sum(T, axis=1)
 
     maxid1      = np.argmax( amps )
     max_ell     = ll[ maxid1 ]
     maxids      = amps > threshold * amps[ maxid1 ]
     spread      = ll[maxids][-1] - ll[maxids][0]
-    convergence = amps[-1] / amps[ maxid1 ]
+    convergence = amps[ idp[-1] if scalar else -1 ] / amps[ maxid1 ]   # (a scalar has no toroidal degrees)
 
     return max_ell, spread, convergence
 

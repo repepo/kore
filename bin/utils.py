@@ -62,12 +62,15 @@ rpower_g = 3 if (_mdiff and par.ricb == 0) else 2
 rpower_gic = 3 if (_mdiff and cic) else 2
 
 # this gives the size (rows or columns) of the main matrices
-sizmat = 2*n + n*par.thermal + 2*n*par.magnetic + 2*nic  # NEW (2026-10-28): + the magnetic field (+ inner core)
+# NEW (2026-11-06): without the flow (hydro = 0, as conductive_IC) the sections u, v are left out
+sizmat = 2*n*par.hydro + n*par.thermal + 2*n*par.magnetic + 2*nic  # NEW (2026-10-28): + the magnetic field (+ inner core)
 
 # NEW (2026-10-28): first row (and column) of each section in A and B: P, T, s, then f, g after s, then fic, gic, so that
-# the flow and the entropy keep their places and non-magnetic matrices are unchanged
-offset = { 'u': 0, 'v': n, 'h': 2*n, 'f': (2 + par.thermal)*n, 'g': (3 + par.thermal)*n,
-           'fic': (4 + par.thermal)*n, 'gic': (4 + par.thermal)*n + nic }
+# the flow and the entropy keep their places and non-magnetic matrices are unchanged. NEW (2026-11-06): with hydro = 0
+# there are no sections u, v and the others start 2n earlier
+_h = 2*n*par.hydro
+offset = { 'u': 0, 'v': n, 'h': _h, 'f': _h + par.thermal*n, 'g': _h + (1 + par.thermal)*n,
+           'fic': _h + (2 + par.thermal)*n, 'gic': _h + (2 + par.thermal)*n + nic }
 
 # ThermaD = 0 with the thermal-wind advection (docs/differential_rotation_details.md §7.2): the section-h rows are r² (eq)/p instead of
 # r (eq)/p, in the C^(1) basis (u_θ has P'), still without thermal bc rows; the thermal-wind profiles are then σn, σn'

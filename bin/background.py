@@ -64,6 +64,12 @@ def check():
     for name, new in REMOVED.items():
         if hasattr(par, name):
             sys.exit('par.%s is no longer read: set %s' % (name, new))
+    if par.hydro not in (0, 1):   # NEW (2026-11-06): hydro = 0, no flow (as conductive_IC)
+        sys.exit('hydro %r: 1 (the flow is solved) or 0 (no flow)' % (par.hydro,))
+    if par.hydro == 0 and not (par.magnetic or par.thermal):
+        sys.exit('hydro = 0 needs magnetic = 1 or thermal = 1: without the flow nothing else is solved')
+    if par.hydro == 0 and par.forcing != 0:
+        sys.exit('hydro = 0 is for eigenvalue problems (forcing = 0): the free decay of the field or of the entropy')
     if par.N % 2:   # NEW (2026-11-04): the operators of submatrices.py assume an even N (an odd one stopped there with a scipy error)
         sys.exit('N must be even, got N = %r (the operators assume it, in a shell too; a full sphere uses N/2 Chebyshev '
                  'polynomials of each parity)' % (par.N,))
