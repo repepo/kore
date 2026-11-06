@@ -1092,6 +1092,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#resolved-conducting-mantle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resolved conducting mantle
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1291,6 +1302,17 @@
     <span class="md-ellipsis">
       
         Thin conducting walls (2026-11-06)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resolved-conducting-mantle-2026-11-06" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resolved conducting mantle (2026-11-06)
       
     </span>
   </a>
@@ -1561,6 +1583,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#resolved-conducting-mantle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resolved conducting mantle
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1760,6 +1793,17 @@
     <span class="md-ellipsis">
       
         Thin conducting walls (2026-11-06)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resolved-conducting-mantle-2026-11-06" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resolved conducting mantle (2026-11-06)
       
     </span>
   </a>
@@ -2145,9 +2189,10 @@ monomial becomes a label with the profile codes <code>hp</code> + degree (<span 
 or toroidal), <code>'ferraro'</code> and <code>B0_wound = 1</code> have no closed forms and switch to the algebra by themselves. For the types
 that have closed forms both give the same eigenvalues to round-off.</p>
 <h2 id="boundary-conditions">Boundary conditions</h2>
-<p>At each wall the perturbation field is matched to the field beyond it. The mantle is an insulator, with or without a thin
-conducting layer at its base, so outside the outer wall the field is a potential field. The inner core is an insulator
-too (with or without a thin conducting layer), or a conductor whose field is solved for with the rest.</p>
+<p>At each wall the perturbation field is matched to the field beyond it. The mantle is an insulator, possibly with a
+conducting layer at its base, thin (conditions at the wall) or of any thickness (its field solved for), so beyond the
+conducting parts the field is a potential field. The inner core is an insulator too (with or without a thin conducting
+layer), or a conductor whose field is solved for with the rest.</p>
 <p><strong>Insulating walls</strong> (<code>assemble.bc_b_spherical</code>). Matching a potential field gives <span class="arithmatex">\((l+1)f + rf' = 0\)</span> and <span class="arithmatex">\(g = 0\)</span> at the
 outer wall, <span class="arithmatex">\(lf - r f' = 0\)</span> and <span class="arithmatex">\(g = 0\)</span> at the inner one.</p>
 <p><strong>Conducting inner core.</strong> <code>innercore = 'conducting, Chebys'</code> (eigenvalue problems, no-slip inner boundary <code>bci = 1</code>)
@@ -2240,6 +2285,47 @@ added field is a potential field: it carries no current and keeps the matching a
 <span class="arithmatex">\(\mu = 1\)</span> the condition is the insulating one, which these fields already meet. <code>'plain'</code> leaves <span class="arithmatex">\(h\)</span> unchanged; the other
 fields are used as given. At a thin inner wall the background is not adjusted (for <span class="arithmatex">\(p = 1\)</span> and <span class="arithmatex">\(\mu = 1\)</span> a potential
 field below meets its condition).</p>
+<h3 id="resolved-conducting-mantle">Resolved conducting mantle</h3>
+<p>A layer that is not thin against its magnetic skin depth, or whose conductivity varies across it, cannot be reduced to
+conditions at the wall. <code>mantle = 'resolved'</code> (as <code>conductive_IC</code>, after PR #17 by A. Nuyt) adds the field of a solid
+conducting layer <span class="arithmatex">\(1 \le r \le r_s\)</span> (<code>r_surface</code>) to the unknowns, with an insulator beyond. Its conductivity relative to
+the fluid's, <span class="arithmatex">\(\sigma(r)\)</span> (<code>sigma_mantle</code>, a number or an expression of <span class="arithmatex">\(r\)</span> and <code>sigma_mantle_param</code>), may vary with
+radius.</p>
+<ul>
+<li><strong>Unknowns.</strong> Sections <code>fm</code>, <code>gm</code>, last (after <code>fic</code>, <code>gic</code>; <code>ut.offset</code>), with the degrees of <code>f</code>, <code>g</code>. Each block is
+  the Chebyshev series on <span class="arithmatex">\([1, r_s]\)</span> (both parities), <code>N_mantle</code> coefficients per degree (<code>ut.nman</code> per section).</li>
+<li>
+<p><strong>Equation.</strong> The layer is at rest and its field diffuses, with the diffusivity <span class="arithmatex">\(\mathrm{MagnetD}/\sigma\)</span>:</p>
+<div class="arithmatex">\[
+\frac{\partial\mathbf b}{\partial t} = -\mathrm{MagnetD}\,\nabla\times\Big(\frac1\sigma\nabla\times\mathbf b\Big)
+\quad\Longrightarrow\quad
+\sigma\,\partial_t f = \mathrm{MagnetD}\,\nabla^2_l f, \qquad
+\sigma\,\partial_t g = \mathrm{MagnetD}\Big[\nabla^2_l g - \frac{(\ln\sigma)'}{r}(rg)'\Big].
+\]</div>
+<p>The rows are those of the fluid (<span class="arithmatex">\(r^2\hat{\mathbf r}\cdot\)</span> and <span class="arithmatex">\(r^2\hat{\mathbf r}\cdot\nabla\times\)</span>, the
+<span class="arithmatex">\(C^{(2)}\)</span> basis) times <span class="arithmatex">\(\sigma\)</span>, so that <span class="arithmatex">\(\sigma\)</span> enters only <span class="arithmatex">\(B\)</span>, through <span class="arithmatex">\(r^2\sigma\)</span>, and the toroidal rows through
+<span class="arithmatex">\((\ln\sigma)'\)</span>; <span class="arithmatex">\(A\)</span> stays well scaled for a small <span class="arithmatex">\(\sigma\)</span> or a large contrast. Their matrices are built apart from the
+labels (<code>submatrices.py</code>: <code>r2s_D0_man</code>, <code>r0_D0_man</code>, <code>r1_D1_man</code>, <code>r2_D2_man</code>, <code>r1d_D0_man</code>, <code>r2d_D1_man</code>), with
+<span class="arithmatex">\((\ln\sigma)'\)</span> from a Chebyshev interpolant of <span class="arithmatex">\(\ln\sigma\)</span> (<code>background.dlnsigma_mantle</code>). <code>background.check_mantle</code>
+stops the run if <code>N_mantle</code> polynomials do not resolve <span class="arithmatex">\(r^2\sigma\)</span> and <span class="arithmatex">\(\ln\sigma\)</span> (coefficients beyond <code>N_mantle</code> above
+<span class="arithmatex">\(10^{-6}\)</span>): an unresolved <span class="arithmatex">\(\sigma\)</span> in <span class="arithmatex">\(B\)</span> can dip below 0 and give growing modes.
+- <strong>Matching at the outer wall</strong> (<code>assemble.bc_b_mantle</code>), the outer row of <code>f</code>, <code>g</code> and the first of <code>fm</code>, <code>gm</code>: <span class="arithmatex">\(\mathbf b\)</span>
+  continuous, <span class="arithmatex">\(f = f_m\)</span>, <span class="arithmatex">\((rf)' = (rf_m)'\)</span>, <span class="arithmatex">\(g = g_m\)</span> (with <span class="arithmatex">\(\mu = 1\)</span> on both sides), and the tangential electric field
+  <span class="arithmatex">\(\eta\nabla\times\mathbf b\)</span> continuous, <span class="arithmatex">\(\sigma(1)\,(rg)' = (rg_m)'\)</span>. Its other part, which drives <span class="arithmatex">\(b_r\)</span>, follows from
+  the continuity of <span class="arithmatex">\(b_r\)</span> and the radial induction equation on both sides.
+- <strong>The surface</strong> <span class="arithmatex">\(r = r_s\)</span>, the second row of <code>fm</code>, <code>gm</code>: <span class="arithmatex">\(r f_m' + (l+1) f_m = 0\)</span> and <span class="arithmatex">\(g_m = 0\)</span> (a potential field
+  beyond).
+- <strong>A fluid slipping along the layer</strong> (<code>bco = 0</code> or <code>ViscosD = 0</code>; <code>utils.mantle_slips</code>). The fluid's tangential
+  electric field includes <span class="arithmatex">\(-\mathbf u\times\mathbf B_0\)</span>, continued into the layer as for a thin wall (condition C.I):
+  <span class="arithmatex">\(\sigma(1)\,[(rg)' - r\,S_l/\mathrm{MagnetD}] = (rg_m)'\)</span>, with the <span class="arithmatex">\(S_l\)</span> of a thin wall (<code>assemble.bc_b_slip</code>, with
+  <span class="arithmatex">\(\sigma(1)\)</span> for <span class="arithmatex">\(c_1\)</span>). The radial induction of the slip is in the fluid's own equation, and the poloidal matching needs
+  nothing more.
+- <strong>Output.</strong> <code>real_magnetic_mantle.field</code>, <code>imag_magnetic_mantle.field</code> (<code>fm</code> then <code>gm</code>), scaled with the fluid's
+  field.</p>
+</li>
+</ul>
+<p>As <span class="arithmatex">\(r_s \to 1\)</span> with <span class="arithmatex">\(\sigma\,(r_s - 1)\)</span> fixed the layer tends to a thin wall with <span class="arithmatex">\(c = r_s - 1\)</span> and <span class="arithmatex">\(c_1 = \sigma(r_s - 1)\)</span>, at
+first order in the thickness (<a href="#resolved-conducting-mantle-2026-11-06">Checks</a>).</p>
 <h2 id="with-a-differential-rotation">With a differential rotation</h2>
 <p>A differential rotation acts on magnetic field lines in two ways. It shears the perturbation field, which kore includes
 in the linear problem: this section gives that term. It also winds up the background field, which kore holds fixed: the
@@ -2260,7 +2346,8 @@ gains <span class="arithmatex">\(-imGc\,\mathbf b\)</span>. The matching conditi
 tangential part of <span class="arithmatex">\(\mathbf U_0\times\mathbf b\)</span>.</p>
 <p><strong>Thin conducting walls</strong> turn with the fluid next to them in the same way, so <span class="arithmatex">\(\Delta\Omega\)</span> must be uniform in
 latitude at each thin wall (<code>diff_rot.rigid_at</code>), or the run stops. In the frame of the wall its conditions are those
-above, and <span class="arithmatex">\(\mathbf U_0\times\mathbf b\)</span> cancels there with the wall's own motion.</p>
+above, and <span class="arithmatex">\(\mathbf U_0\times\mathbf b\)</span> cancels there with the wall's own motion. The <strong>resolved mantle</strong> turns with
+<span class="arithmatex">\(\Delta\Omega(1) = c\)</span>, uniform in latitude, and its field gains <span class="arithmatex">\(-imGc\,\mathbf b\)</span> like a conducting inner core.</p>
 <h3 id="the-ferraro-condition">The Ferraro condition</h3>
 <p>The rotation winds up a poloidal field line unless the rotation rate is the same all along it. So nothing is wound up
 when the rotation rate is constant along every poloidal field line: Ferraro's law of isorotation. kore checks this at
@@ -2599,7 +2686,7 @@ Mag/Kin and writes <code>magnetic.dat</code>:</p>
 <tr>
 <td>8</td>
 <td>MEext</td>
-<td>energy of the potential field outside the outer wall</td>
+<td>energy of the potential field outside the outer wall (beyond <code>r_surface</code> with a resolved mantle)</td>
 </tr>
 <tr>
 <td>9</td>
@@ -2619,17 +2706,17 @@ Mag/Kin and writes <code>magnetic.dat</code>:</p>
 <tr>
 <td>12</td>
 <td>MEc</td>
-<td>with <code>centrifugal = 1</code> or a thin wall: the energy that the deformation adds (0 without it)</td>
+<td>with <code>centrifugal = 1</code>, a thin wall or a resolved mantle: the energy that the deformation adds (0 without it)</td>
 </tr>
 <tr>
 <td>13, 14</td>
 <td>E_w, Ohm_w</td>
-<td>with a thin wall: the magnetic energy stored in the thin walls and their Ohmic loss</td>
+<td>with a thin wall or a resolved mantle: the magnetic energy stored in the thin walls or in the layer, and their Ohmic loss</td>
 </tr>
 <tr>
 <td>15, 16</td>
 <td>eps_twa_o, eps_twa_i</td>
-<td>with a thin wall: <span class="arithmatex">\(\varepsilon_\text{TWA}\)</span> of the outer and of the inner wall (0 where there is none)</td>
+<td>with a thin wall or a resolved mantle: <span class="arithmatex">\(\varepsilon_\text{TWA}\)</span> of the outer and of the inner thin wall (0 where there is none)</td>
 </tr>
 </tbody>
 </table>
@@ -2671,6 +2758,11 @@ the wall: <span class="arithmatex">\(c_1\lvert r\nabla^2_l f\rvert^2\)</span> fr
 from the wall conditions. The full budget gains <span class="arithmatex">\(\mathrm{Hendrik}\,E_w\)</span> on the left and <span class="arithmatex">\(-\mathrm{Hendrik}\,\mathrm{Ohm\_w}\)</span> on
 the right. It closes exactly for <span class="arithmatex">\(c = 0\)</span>, and to <span class="arithmatex">\(O(c\,c_1)\)</span> otherwise, the order of the approximation itself (resid𝐄 is
 then about <span class="arithmatex">\(\varepsilon_\text{TWA}\)</span> or below); not with <span class="arithmatex">\(\mu \neq 1\)</span>.</p>
+<p><strong>Resolved mantle</strong> (<code>utils4pp.mantle_budget</code>, as <code>conductive_IC</code>). The layer stores
+<span class="arithmatex">\(E_w = \tfrac12\int\lvert\mathbf b\rvert^2dV\)</span> and loses <span class="arithmatex">\(\mathrm{Ohm\_w} = \mathrm{MagnetD}\int\lvert\nabla\times\mathbf b\rvert^2/\sigma\,dV\)</span>
+over <span class="arithmatex">\(1 \le r \le r_s\)</span> (Gauss-Legendre in <span class="arithmatex">\(r\)</span>), and MEext is the potential field beyond <span class="arithmatex">\(r_s\)</span>. The full budget gains them
+as for thin walls, and closes exactly. A fluid slipping along the layer carries energy into it through
+<span class="arithmatex">\(\mathbf u\times\mathbf B_0\)</span>, as into a thin wall (<code>INDU_WALLS</code>, above).</p>
 <p><strong>How the terms are computed.</strong> spin_doctor's Lorentz force (<code>utils4pp.lorentz4pp</code>) acts per volume, and its power
 <span class="arithmatex">\(\int\mathbf u^*\cdot\mathbf G\,dV\)</span> has no <span class="arithmatex">\(\rho_0\)</span>. Its induction term (<code>induction4pp</code>) takes the components of
 <span class="arithmatex">\(\mathbf u\)</span> with their <span class="arithmatex">\(\lambda_1\)</span> part, and holds for the non-solenoidal <span class="arithmatex">\(\mathbf u\)</span> of a variable density (resid𝐛
@@ -2686,7 +2778,7 @@ poloidal field it agrees with the spectral formulas to the 10 printed digits.</p
 carries magnetic energy through the wall into the field outside: resid𝐛 (the fluid) uses the induction work with its
 wall terms, resid𝐄 (the full budget, which counts the energy outside) the volume work alone (<code>utils4pp.INDU_WALLS</code>),
 plus the power of the rotation's force on the flow. Where a conducting solid turns with the fluid (a conducting inner
-core, a thin wall), the flux of <span class="arithmatex">\(\mathbf U_0\times\mathbf b\)</span> through its surface is the induction work of the solid's own
+core, a thin wall, a resolved mantle), the flux of <span class="arithmatex">\(\mathbf U_0\times\mathbf b\)</span> through its surface is the induction work of the solid's own
 rotation, <span class="arithmatex">\(\mathrm{Re}\int(\mathbf V\times\mathbf b)\cdot(\nabla\times\mathbf b)^*dV\)</span> over it (<span class="arithmatex">\(\mathbf V\)</span> rigid, the potential
 field beyond carries none), and resid𝐄 keeps it (<code>utils4pp.INDU_ROT_SOLID</code>). Without it resid𝐄 was about <span class="arithmatex">\(10^{-4}\)</span> for a
 conducting inner core turning with <span class="arithmatex">\(\Delta\Omega(r_i) \neq 0\)</span>; with it the budget is the same in every frame.</p>
@@ -3188,6 +3280,63 @@ the budget (MEic, E_w, MEext, Ohm_w, relative to Ohm_f) to about <span class="ar
 turning with the walls to <span class="arithmatex">\(6\cdot10^{-15}\)</span>, with resid𝐄 and εTWA unchanged. With walls turning at different rates
 (<code>'shellular_boussinesq'</code>) resid𝐄 closes to <span class="arithmatex">\(3\cdot10^{-10}\)</span>, and for a conducting inner core turning with the fluid it
 went from <span class="arithmatex">\(1.5\cdot10^{-4}\)</span> to <span class="arithmatex">\(5\cdot10^{-10}\)</span> (<code>INDU_ROT_SOLID</code>, above).</p>
+<h3 id="resolved-conducting-mantle-2026-11-06">Resolved conducting mantle (2026-11-06)</h3>
+<p>The resolved mantle was ported from <code>conductive_IC</code> (2d84351) and checked against exact decay rates, against that branch,
+against the thin walls, and with the energy budgets (<code>tests/mantle/mantle_check.py</code>).</p>
+<p><strong>Free decay.</strong> Without the flow each mode decays at MagnetD <span class="arithmatex">\(k^2\)</span>, with <span class="arithmatex">\(j_l(kr)\)</span>, <span class="arithmatex">\(y_l(kr)\)</span> in the fluid and in the
+layer <span class="arithmatex">\(j_l(k\sqrt\sigma\,r)\)</span>, <span class="arithmatex">\(y_l(k\sqrt\sigma\,r)\)</span> for a uniform <span class="arithmatex">\(\sigma\)</span>, or the solution of its equations integrated
+from <span class="arithmatex">\(r_s\)</span> (scipy's DOP853 at rtol <span class="arithmatex">\(10^{-13}\)</span>), matched as above (<code>ricb</code> 0.35, N 48, <code>m</code> 0, MagnetD 1; poloidal <span class="arithmatex">\(l\)</span> = 1
+(two modes), 3 and toroidal <span class="arithmatex">\(l\)</span> = 2):</p>
+<table>
+<thead>
+<tr>
+<th>layer</th>
+<th>rates</th>
+<th>largest relative error</th>
+<th>resid𝐛, resid𝐄</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex">\(\sigma\)</span> = 0.3, <span class="arithmatex">\(r_s\)</span> = 1.4 (<code>conductive_IC</code>'s test)</td>
+<td>8.220477, 33.204363, 29.002791, 28.121940</td>
+<td>1e-15</td>
+<td>≤ 1e-13</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\sigma = 0.3\,e^{-10(r-1)}\)</span>, <span class="arithmatex">\(r_s\)</span> = 1.4 (<code>conductive_IC</code>'s test)</td>
+<td>9.521791, 42.322149, 31.916490, 34.954516</td>
+<td>7e-15</td>
+<td>≤ 8e-13</td>
+</tr>
+<tr>
+<td>full sphere, <span class="arithmatex">\(\sigma\)</span> = 2, <span class="arithmatex">\(r_s\)</span> = 1.3</td>
+<td>3.790859, 19.320734, 11.729515, 15.398290</td>
+<td>1e-15</td>
+<td>≤ 6e-13</td>
+</tr>
+<tr>
+<td>conducting inner core (<code>sigma_i2o</code> 0.3), <span class="arithmatex">\(\sigma = 0.5\,r^{-6}\)</span>, <span class="arithmatex">\(r_s\)</span> = 1.5</td>
+<td>8.623323, 36.247125, 29.781714, 29.597419</td>
+<td>2e-14</td>
+<td>≤ 1e-12</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Against <code>conductive_IC</code>.</strong> Five runs with the flow (<code>'Boussinesq'</code>, Ek, Em and Le² <span class="arithmatex">\(10^{-3}\)</span>, N 48, <code>lmax</code> 19 to 21):
+no-slip walls under a uniform layer, a fluid slipping along both walls with a field of degree 2 under an exponential
+layer, a full sphere with a slipping fluid, a conducting inner core, and <span class="arithmatex">\(m\)</span> = 2 under a thin layer (<span class="arithmatex">\(r_s\)</span> = 1.1,
+<span class="arithmatex">\(\sigma\)</span> = 2) with a slipping fluid. The eigenvalues agree to <span class="arithmatex">\(7\cdot10^{-15}\)</span>, resid𝐄 to the printed digits, and the
+energies and losses of the budget (E_w, Ohm_w, MEext, relative to Ohm_f) to about <span class="arithmatex">\(10^{-10}\)</span>.</p>
+<p><strong>Limits.</strong> A layer of thickness <span class="arithmatex">\(h\)</span> and conductance <span class="arithmatex">\(\sigma h\)</span> = 0.01, with a fluid slipping along it, differs from the
+thin wall with <span class="arithmatex">\(c = h\)</span> and <span class="arithmatex">\(c_1\)</span> = 0.01 by <span class="arithmatex">\(1.0\cdot10^{-4}\)</span>, <span class="arithmatex">\(5.2\cdot10^{-5}\)</span> and <span class="arithmatex">\(2.6\cdot10^{-5}\)</span> for <span class="arithmatex">\(h\)</span> = 0.01, 0.005
+and 0.0025: at first order in <span class="arithmatex">\(h\)</span>. A layer of <span class="arithmatex">\(\sigma = 10^{-9}\)</span> gives the eigenvalues of an insulating mantle to
+<span class="arithmatex">\(3\cdot10^{-12}\)</span>.</p>
+<p><strong>Budgets and rotation.</strong> With <code>'Wu 2005'</code> (<code>r_out</code> 0.9, N 64), a conducting inner core and a fluid slipping along an
+exponential layer, a rigid rotation offset (<span class="arithmatex">\(a\)</span> = 0.3) gives the eigenvalues of the frame turning with the solids to
+<span class="arithmatex">\(3\cdot10^{-15}\)</span>, with resid𝐄 <span class="arithmatex">\(2.5\cdot10^{-10}\)</span> in both frames, and with the layer, the inner core and the fluid turning
+at different rates (<span class="arithmatex">\(\Delta\Omega = 0.4\,(0.5 + r^2)\)</span>) resid𝐄 closes to <span class="arithmatex">\(3\cdot10^{-10}\)</span>. The field of <code>just_induction.py</code>
+with <code>solve_ind.py</code> is that of a mode without Lorentz force to <span class="arithmatex">\(4\cdot10^{-14}\)</span>, in the fluid and in the layer.</p>
 <h2 id="references">References</h2>
 <ul>
 <li>D'Silva, S. &amp; Choudhuri, A. R. 1993, A&amp;A 272, 621 (flux-tube fields at the base of the solar convection zone).</li>

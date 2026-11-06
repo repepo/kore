@@ -1235,7 +1235,7 @@ table.</p>
 <tr>
 <td><code>real_flow.field</code>, <code>imag_flow.field</code></td>
 <td><code>solve.py</code></td>
-<td>the eigenvectors of the flow (or the forced flows), real and imaginary parts of their spectral coefficients, one column per solution; with <code>thermal = 1</code> also <code>real_thermal.field</code>, <code>imag_thermal.field</code> for <span class="arithmatex">\(s\)</span>; with <code>magnetic = 1</code> also <code>real_magnetic.field</code>, <code>imag_magnetic.field</code> for <span class="arithmatex">\(\mathbf b\)</span>, and <code>real_magnetic_ic.field</code>, <code>imag_magnetic_ic.field</code> for a conducting inner core. Without the flow (<code>hydro = 0</code>) the flow's files are not written</td>
+<td>the eigenvectors of the flow (or the forced flows), real and imaginary parts of their spectral coefficients, one column per solution; with <code>thermal = 1</code> also <code>real_thermal.field</code>, <code>imag_thermal.field</code> for <span class="arithmatex">\(s\)</span>; with <code>magnetic = 1</code> also <code>real_magnetic.field</code>, <code>imag_magnetic.field</code> for <span class="arithmatex">\(\mathbf b\)</span>, <code>real_magnetic_ic.field</code>, <code>imag_magnetic_ic.field</code> for a conducting inner core, and <code>real_magnetic_mantle.field</code>, <code>imag_magnetic_mantle.field</code> for a resolved mantle. Without the flow (<code>hydro = 0</code>) the flow's files are not written</td>
 </tr>
 <tr>
 <td><code>rsf_spectrum.dat</code>, <code>rsf_ke.dat</code></td>
@@ -1414,7 +1414,7 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 </tr>
 <tr>
 <td>8</td>
-<td>MEext, the energy of the potential field outside the outer wall</td>
+<td>MEext, the energy of the potential field outside the outer wall (beyond <code>r_surface</code> with a resolved mantle)</td>
 </tr>
 <tr>
 <td>9, 10</td>
@@ -1426,15 +1426,15 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 </tr>
 <tr>
 <td>12</td>
-<td>with <code>centrifugal = 1</code> or a thin wall: MEc, the part of the magnetic energy that the deformation adds, so that ME + MEc is the energy of the field in the deformed fluid (the column Mag/Kin of the <code>spin_doctor</code> table is Hendrik (ME + MEc)/KE; <a href="../centrifugal-equations/#energy-budgets">Centrifugal deformation</a>); 0 without the deformation</td>
+<td>with <code>centrifugal = 1</code>, a thin wall or a resolved mantle: MEc, the part of the magnetic energy that the deformation adds, so that ME + MEc is the energy of the field in the deformed fluid (the column Mag/Kin of the <code>spin_doctor</code> table is Hendrik (ME + MEc)/KE; <a href="../centrifugal-equations/#energy-budgets">Centrifugal deformation</a>); 0 without the deformation</td>
 </tr>
 <tr>
 <td>13, 14</td>
-<td>with a thin wall (<code>mantle</code> or <code>innercore</code> <code>'TWA'</code>) only: E_w, the magnetic energy stored in the thin walls, and Ohm_w, their Ohmic loss</td>
+<td>with a thin wall (<code>mantle</code> or <code>innercore</code> <code>'TWA'</code>) or a resolved mantle (<code>mantle = 'resolved'</code>) only: E_w, the magnetic energy stored in the thin walls or in the layer, and Ohm_w, their Ohmic loss</td>
 </tr>
 <tr>
 <td>15, 16</td>
-<td>with a thin wall only: εTWA, the estimated relative error of the outer and of the inner thin wall (0 where there is none; the <code>spin_doctor</code> table shows the larger)</td>
+<td>with a thin wall or a resolved mantle only: εTWA, the estimated relative error of the outer and of the inner thin wall (0 where there is none; the <code>spin_doctor</code> table shows the larger)</td>
 </tr>
 </tbody>
 </table>
@@ -1512,6 +1512,10 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 <td>114–122</td>
 <td><code>mantle</code>, <code>c_cmb</code>, <code>c1_cmb</code>, <code>muw_cmb</code>, <code>c_icb</code>, <code>c1_icb</code>, <code>muw_icb</code>, <code>mu</code>, <code>B0_cmb</code></td>
 </tr>
+<tr>
+<td>123–127</td>
+<td><code>r_surface</code>, <code>N_mantle</code>, the conductivity of a resolved mantle at the outer wall (as used), <code>sigma_mantle_param</code>, its conductance <span class="arithmatex">\(\int\sigma\,dr\)</span> (the <code>c1_cmb</code> of a thin wall of the same conductance)</td>
+</tr>
 </tbody>
 </table>
 <ul>
@@ -1529,20 +1533,22 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
   <code>'Luo_S1'</code> 3, <code>'Luo_S2'</code> 4, <code>'confined'</code> 5, <code>'general'</code> 6, <code>'ferraro'</code> 7; −1 without a poloidal field), <code>B0_tor</code> in
   <code>background_field.B0_TOR_TYPES</code> (<code>'Malkus'</code> 0, <code>'wall'</code> 1, <code>'user'</code> 2, <code>'general'</code> 3; −1 without), <code>innercore</code> in
   <code>background.INNER_CORES</code> (<code>'insulator'</code> 0, <code>'conducting, Chebys'</code> 1, <code>'TWA'</code> 2), <code>mantle</code> in <code>background.MAGNETIC_WALLS</code>
-  (<code>'insulator'</code> 0, <code>'TWA'</code> 1), <code>B0_ic</code> in <code>background.B0_ICS</code> (<code>'potential'</code> 0, <code>'frozen currents'</code> 1, formerly
+  (<code>'insulator'</code> 0, <code>'TWA'</code> 1, <code>'resolved'</code> 2), <code>B0_ic</code> in <code>background.B0_ICS</code> (<code>'potential'</code> 0, <code>'frozen currents'</code> 1, formerly
   <code>'full sphere'</code>), <code>B0_cmb</code> in <code>background.B0_CMBS</code> (<code>'wall'</code> 0, <code>'plain'</code> 1) and <code>ferraro_policy</code> in
   <code>background.FERRARO_POLICIES</code> (<code>'warn'</code> 0, <code>'refuse'</code> 1). <code>muw_cmb</code> and <code>muw_icb</code> may be <code>inf</code>. <code>cnorm</code> and
   <code>cnorm_tor</code> are the numbers used. <code>B0_l</code> is the lowest degree for <code>'general'</code> and 1 for <code>'ferraro'</code>; <code>B0_tor_l</code> is the
   parameter, which <code>B0_tor = 'general'</code> ignores. The expressions of <code>'general'</code> (<code>B0_profiles</code>, <code>B0_tor_profiles</code>), of
-  <code>'ferraro'</code> (<code>B0_ferraro_G</code>) and of <code>diff_rot_type = 'ferraro'</code> (<code>diff_rot_F</code>) go into the note after <code>#</code>.</li>
+  <code>'ferraro'</code> (<code>B0_ferraro_G</code>), of <code>diff_rot_type = 'ferraro'</code> (<code>diff_rot_F</code>) and of a resolved mantle (<code>sigma_mantle</code>)
+  go into the note after <code>#</code>. Columns 125 and 127 are 0 without a resolved mantle.</li>
 <li><code>centrifugal_shape</code> is the index in <code>centrifugal.SHAPES</code> (<code>'clairaut'</code> 0, <code>'uniform'</code> 1, <code>'user'</code> 2, <code>'spheroid'</code> 3).
   Column 111 is the flattening of the outer wall that the run used, with any shape (0 with <code>centrifugal = 0</code>).</li>
 <li><code>diff_rot_generic</code> and <code>diff_rot_hold</code> are not used (always 0 and nan); they keep the positions of the columns after
   them.</li>
-<li>A row ends, after a <code>#</code> that <code>np.loadtxt</code> skips, with the <code>'user'</code>, <code>'general'</code> and <code>'ferraro'</code> expressions and, for
-  <code>'tabulated'</code>, <code>diff_rot_file</code> with the first 12 hex digits of its sha256. A row with none of these has no <code>#</code>.</li>
-<li>A <code>params.dat</code> written before the columns 108–112, column 113 or the columns 114–122 were added has fewer columns:
-  start a new file.</li>
+<li>A row ends, after a <code>#</code> that <code>np.loadtxt</code> skips, with the <code>'user'</code>, <code>'general'</code> and <code>'ferraro'</code> expressions, that of
+  <code>sigma_mantle</code> and, for <code>'tabulated'</code>, <code>diff_rot_file</code> with the first 12 hex digits of its sha256. A row with none of
+  these has no <code>#</code>.</li>
+<li>A <code>params.dat</code> written before the columns 108–112, column 113, the columns 114–122 or 123–127 were added has fewer
+  columns: start a new file.</li>
 </ul>
 
 
