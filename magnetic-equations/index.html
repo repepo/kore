@@ -1159,6 +1159,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#current-sheets-at-slipping-walls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Current sheets at slipping walls
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1402,6 +1413,17 @@
     <span class="md-ellipsis">
       
         Dipole and slipping inner core (2026-11-07)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#current-sheets-at-slipping-walls-2026-11-07" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Current sheets at slipping walls (2026-11-07)
       
     </span>
   </a>
@@ -1739,6 +1761,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#current-sheets-at-slipping-walls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Current sheets at slipping walls
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1988,6 +2021,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#current-sheets-at-slipping-walls-2026-11-07" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Current sheets at slipping walls (2026-11-07)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2165,12 +2209,13 @@ h = j_l(\beta r) \ \text{with}\ j_{l-1}(\beta) = 0 \quad (r_i = 0).
 current. The FDM, <code>'G21 dipole'</code>, <code>'Luo_S1'</code> and <code>'Luo_S2'</code> match one at the outer wall (<span class="arithmatex">\(rh' + (l+1)h = 0\)</span> at <span class="arithmatex">\(r = 1\)</span>),
 and the FDM matches one at both walls, so it suits insulating walls. <code>'axial'</code> is the uniform field, potential
 everywhere. <code>'dipole'</code> is a potential field throughout the fluid and matches one at the outer wall; its source lies at
-the centre, inside the inner core. <code>'confined'</code> is zero at the wall. <code>'general'</code> and <code>'ferraro'</code> need not match, at
-either wall (at the inner wall the potential field that is regular in the core has <span class="arithmatex">\(rh' - lh = 0\)</span>). The induction does
+the centre, inside the inner core. <code>'confined'</code> is zero at the wall. <code>'general'</code> and <code>'ferraro'</code> are taken as fields of
+currents in the fluid, which need not match the potential field of those currents at either wall (at the inner wall the
+potential field that is regular in the core has <span class="arithmatex">\(rh' - lh = 0\)</span>). The induction does
 not see the surface current, since the walls' conditions on <span class="arithmatex">\(\mathbf b\)</span> do not involve <span class="arithmatex">\(\mathbf B_0\)</span>, but it pushes on
-the fluid along the wall with a force that goes as <span class="arithmatex">\(b_r\)</span> there, as that of a toroidal field does
-(<a href="#toroidal-fields">Toroidal fields</a>). A no-slip wall takes it; along a slipping wall (<code>bco</code> or <code>bci</code> 0 or 2, or
-<code>ViscosD</code> = 0) with an insulator beyond, it is left out of the fluid's equations, and resid𝐄 leaves it out too.</p>
+the fluid along the wall with a force that goes as <span class="arithmatex">\(b_r\)</span> there, as that of a toroidal field does. A no-slip wall takes
+that push, and the stress rows of a slipping wall hold it
+(<a href="#current-sheets-at-slipping-walls">Current sheets at slipping walls</a>).</p>
 <p><strong>Full-sphere fields with an inner core.</strong> <code>'G21 dipole'</code>, <code>'Luo_S1'</code> and <code>'Luo_S2'</code> are defined for a full sphere, and
 <code>B0_ic</code> says how to continue them into an inner core. <code>'potential'</code> (default) adds <span class="arithmatex">\(\beta_i r^{-(l+1)}\)</span>,
 <span class="arithmatex">\(\beta_i = r_i^{l+1}(r_i h' - l h)/(2l+1)\)</span> at <span class="arithmatex">\(r_i\)</span>, so that <span class="arithmatex">\(rh' - lh = 0\)</span> at the inner boundary: the field of the
@@ -2190,7 +2235,8 @@ With <span class="arithmatex">\(p = 12\)</span> the budgets close to <span class
 sphere needs N 192 (degree 1) to 384 (degree 2) for <span class="arithmatex">\(10^{-9}\)</span>. <span class="arithmatex">\(h\)</span> is evaluated in factored form: expanded into
 monomials, a polynomial of degree <span class="arithmatex">\(2p + l\)</span> loses all its digits to cancellation near the edges.</p>
 <p><strong>Any degrees.</strong> <code>'general'</code> takes one profile <span class="arithmatex">\(h_n\)</span> per degree, given as expressions. Their derivatives come from
-Chebyshev interpolants (degree max(64, 2N)); in a full sphere they are evaluated at <span class="arithmatex">\(\lvert r\rvert\)</span> with the parity
+Chebyshev interpolants (degree max(64, 2N), their coefficients from a DCT, without those below <span class="arithmatex">\(10^{-13}\)</span> of the
+largest, whose round-off the derivatives would amplify at the walls); in a full sphere they are evaluated at <span class="arithmatex">\(\lvert r\rvert\)</span> with the parity
 <span class="arithmatex">\((-1)^n\)</span>, and <span class="arithmatex">\(h_n\)</span> should go as <span class="arithmatex">\(r^n\)</span> at the centre (<code>submatrices.py</code> warns otherwise). The degrees must have one
 parity (one equatorial symmetry); the lowest sets it. <code>cnorm = 'mag_energy'</code> sums <span class="arithmatex">\(\int B_0^2\,dV\)</span> over the degrees.
 The couplings come from the recurrence algebra (<a href="#couplings-for-any-background">Couplings for any background</a>).</p>
@@ -2226,7 +2272,7 @@ B_\phi = -c_\mathrm{tor}\,k\,\partial_\theta Y_n^0 =
 <tr>
 <td><code>'user'</code></td>
 <td><code>B0_tor_profile</code>, a numpy expression of <span class="arithmatex">\(r\)</span> and <span class="arithmatex">\(p\)</span> = <code>B0_tor_param</code></td>
-<td>its derivatives from a Chebyshev interpolant (degree max(64, 2N)); written to <code>params.dat</code> after <code>#</code></td>
+<td>its derivatives from a Chebyshev interpolant (degree max(64, 2N), cut as for the poloidal <code>'general'</code>); written to <code>params.dat</code> after <code>#</code></td>
 </tr>
 <tr>
 <td><code>'general'</code></td>
@@ -2241,9 +2287,9 @@ field on (a conducting inner core, the resolved mantle or a conducting thin laye
 themselves). The induction does not see it: the walls' conditions on <span class="arithmatex">\(\mathbf b\)</span> do not involve <span class="arithmatex">\(\mathbf B_0\)</span>, and where
 no flow crosses a wall the toroidal <span class="arithmatex">\(\mathbf u\times\mathbf B_0\)</span> is normal to it, whether the fluid slips along it or not.
 The sheet does push on the fluid, with <span class="arithmatex">\(\mathrm{Hendrik}\,\mathbf K_0\times\mathbf b\)</span>, whose part along the wall is
-<span class="arithmatex">\(\mp\mathrm{Hendrik}\,B_{0\phi}\,b_r\,\hat{\boldsymbol\phi}\)</span> per area. A no-slip wall takes that push. A stress-free wall
-(<code>bco</code> or <code>bci</code> 0 or 2), or an inviscid fluid, would need it in the fluid's equations, which do not hold it, so such a
-run stops at startup (<code>background.tor_sheet</code>; with <code>rotdyn = 1</code>, <code>check_rotdyn</code>). Inside a conducting inner core <span class="arithmatex">\(\mathbf B_0\)</span> does not enter either: there
+<span class="arithmatex">\(\mp\mathrm{Hendrik}\,B_{0\phi}\,b_r\,\hat{\boldsymbol\phi}\)</span> per area. A no-slip wall takes that push, and the stress
+rows of a slipping wall hold it (<a href="#current-sheets-at-slipping-walls">Current sheets at slipping walls</a>); with
+<code>rotdyn = 1</code> the field must vanish at both walls (<code>background.check_rotdyn</code>). Inside a conducting inner core <span class="arithmatex">\(\mathbf B_0\)</span> does not enter either: there
 is no flow there, so the matching conditions do not involve it (for a wall that the forcing moves,
 <a href="#forced-runs">Forced runs</a>). <code>B0 = None</code> gives a toroidal field alone.</p>
 <h3 id="normalisation">Normalisation</h3>
@@ -2538,6 +2584,81 @@ stops the run if <code>N_mantle</code> polynomials do not resolve <span class="a
 </ul>
 <p>As <span class="arithmatex">\(r_s \to 1\)</span> with <span class="arithmatex">\(\sigma\,(r_s - 1)\)</span> fixed the layer tends to a thin layer (<code>'TWA'</code>) with <span class="arithmatex">\(c = r_s - 1\)</span> and <span class="arithmatex">\(c_1 = \sigma(r_s - 1)\)</span>, at
 first order in the thickness (<a href="#resolved-conducting-mantle-2026-11-06">Checks</a>).</p>
+<h3 id="current-sheets-at-slipping-walls">Current sheets at slipping walls</h3>
+<p>Where <span class="arithmatex">\(\mathbf B_0\)</span> does not meet the field beyond an insulating wall, it ends there in a sheet of current, and the sheet
+pushes the fluid along the wall wherever the perturbation's radial field crosses it. A no-slip wall takes that push. A
+wall that the fluid slips along exerts no stress along itself, so the fluid's viscous stress must balance the push, and
+the stress-free rows hold it (<code>assemble.bc_u_sheet</code>).</p>
+<p><strong>The sheet</strong> (<code>background.sheet_jump</code>). Beyond an insulator, or a thin layer that does not conduct (<span class="arithmatex">\(c_1 = 0\)</span>), no
+current flows, so the field there is the one that the wall's steady condition sets. In a sheet on the fluid's side of
+the wall, the tangential <span class="arithmatex">\(\mathbf B_0\)</span> drops from its value in the fluid to the value that meets that condition with the
+same <span class="arithmatex">\(B_{0r}\)</span>. The drop <span class="arithmatex">\(\Delta\mathbf B_{0t}\)</span> carries the current <span class="arithmatex">\(\mathbf K_0 = \mp\hat{\mathbf r}\times\Delta\mathbf B_{0t}\)</span>
+at the outer and the inner wall. A conducting inner core, the resolved mantle and a conducting thin layer take the field
+on and hold any drop of it themselves, with no sheet in the fluid. Degree by degree:</p>
+<ul>
+<li><strong>Toroidal.</strong> Nothing beyond carries a toroidal field, so <span class="arithmatex">\(\Delta\mathbf B_{0t} = B_{0\phi}\,\hat{\boldsymbol\phi}\)</span>
+  at the wall.</li>
+<li>
+<p><strong>Poloidal.</strong> <span class="arithmatex">\(\Delta\mathbf B_{0t} = c_\mathrm{norm}\,a_n\,r\nabla Y_n^0\)</span>, with <span class="arithmatex">\(a_n\)</span> from the steady condition of a
+  thin layer with <span class="arithmatex">\(c_1 = 0\)</span> (<a href="#thin-conducting-layer">Thin conducting layer</a>; an insulator is <span class="arithmatex">\(c = 0\)</span>, <span class="arithmatex">\(\mu = 1\)</span>, which
+  gives <span class="arithmatex">\((rh_n' + (n+1)h_n)/r\)</span> at the outer wall and <span class="arithmatex">\((rh_n' - nh_n)/r\)</span> at the inner one):</p>
+<div class="arithmatex">\[
+a_n = \frac{D\,(rh_n)' + (n + e)\,h_n}{r\,D}, \qquad D = \frac1\mu + n\,c, \qquad e = \frac{c\,\mu\,n}{p}\Big(\frac{n+1}{p} - 1\Big) \qquad \text{(outer)},
+\]</div>
+<div class="arithmatex">\[
+a_n = \frac{D\,(rh_n)' - (n + 1 + e)\,h_n}{r\,D}, \qquad D = \frac1\mu + (n+1)\,c, \qquad e = \frac{c\,\mu\,(n+1)}{p}\Big(\frac np + 1\Big) \qquad \text{(inner)},
+\]</div>
+<p>with <span class="arithmatex">\(e = 0\)</span> for <span class="arithmatex">\(p = \infty\)</span>. A field that goes on through the wall has no sheet: <code>'axial'</code> at either wall (imposed
+from beyond the outer wall, it is a potential field in an insulating core too), and at the inner wall <code>'dipole'</code> and
+the fields of <code>B0_ic = 'frozen currents'</code>, whose sources lie in the core (<code>background.pol_continues</code>; <code>'confined'</code> is
+zero there). The other fields are those of sources inside the wall (currents in the fluid, as <code>'general'</code> and
+<code>'ferraro'</code> are taken whatever their profiles; at the outer wall also the source of <code>'dipole'</code> at the centre and the
+currents of <code>'frozen currents'</code> in the core), and end in a sheet where they do not meet the condition: the fields
+that <code>B0_cmb = 'wall'</code> adjusts meet it at the outer wall, and the FDM, <code>'G21 dipole'</code>, <code>'Luo_S1'</code> and <code>'Luo_S2'</code> meet
+it at the inner wall only where the permeability does not jump there.</p>
+</li>
+</ul>
+<p>A degree counts where its drop is above the round-off of its profile at the wall: <span class="arithmatex">\(10^{-10}\)</span> of the largest value of
+that degree of <span class="arithmatex">\(\mathbf B_0\)</span> over the fluid, or for a poloidal degree the bound on <span class="arithmatex">\(h_n'\)</span> at a wall that moves
+(<a href="#forced-runs">Forced runs</a>) where that is larger. So the fields that meet the condition by
+construction have no sheet.</p>
+<p><strong>The push.</strong> The force on the sheet, <span class="arithmatex">\(\mathrm{Hendrik}\,\mathbf K_0\times\mathbf b\)</span>, has a part along the wall,
+<span class="arithmatex">\(\mp\mathrm{Hendrik}\,b_r\,\Delta\mathbf B_{0t}\)</span> at the outer and the inner wall, through <span class="arithmatex">\(b_r\)</span>, which crosses the
+sheet unchanged. The viscous stress of the fluid balances it, with one form at both walls, since the fluid lies on the
+other side of the sheet at the inner wall:</p>
+<div class="arithmatex">\[
+\mathrm{ViscosD}\,\rho_0\nu\left[r\,\partial_r\Big(\frac{\mathbf u_t}{r}\Big) + \nabla_H u_r\right] = -\mathrm{Hendrik}\,b_r\,\Delta\mathbf B_{0t}.
+\]</div>
+<p>The stress-free rows (<a href="../numerical-method/#boundary-conditions">Boundary conditions</a>) are <span class="arithmatex">\(r^2\)</span> times the
+<span class="arithmatex">\(r\nabla Y_l\)</span> part of the bracket (the row of <span class="arithmatex">\(P_l\)</span>) and <span class="arithmatex">\(r\)</span> times its <span class="arithmatex">\(r\nabla Y_l\times\hat{\mathbf r}\)</span> part (that
+of <span class="arithmatex">\(T_l\)</span>). They gain <span class="arithmatex">\(r^2 q\)</span> and <span class="arithmatex">\(r q\)</span> times the same parts of <span class="arithmatex">\(b_r\,\Delta\mathbf B_{0t}\)</span>, with
+<span class="arithmatex">\(q = \mathrm{Hendrik}/(\mathrm{ViscosD}\,\rho_0\nu)\)</span> at the wall. With <span class="arithmatex">\(b_r = \sum_k k(k+1)\,f_k\,Y_k/r\)</span> these are entries on the columns of <span class="arithmatex">\(f\)</span> at the wall, from the
+recurrence algebra (<code>angular.Algebra</code>, as in <code>assemble.bc_b_slip</code>). A drag at the same wall
+(<a href="../drag-equations/">Drag at the outer wall equations</a>) adds its own terms to the same rows.</p>
+<ul>
+<li><strong>Zero radial stress</strong> (<code>bco</code> or <code>bci</code> 2). The fluid crosses the wall, and the rows leave out the normal part of the
+  push, <span class="arithmatex">\(\mathrm{Hendrik}\,\Delta\mathbf B_{0t}\cdot\mathbf b_t\)</span> along the fluid's outward normal (the drop of the
+  magnetic pressure across the sheet), as their zero viscous radial stress leaves out the pressure itself.</li>
+<li><strong>The sheet's push on <span class="arithmatex">\(\mathbf B_0\)</span></strong> itself, <span class="arithmatex">\(\mp\mathrm{Hendrik}\,B_{0r}\,\Delta\mathbf B_{0t}\)</span>, is steady: it is part
+  of the background's Lorentz force, which kore leaves out
+  (<a href="#when-the-ignored-lorentz-force-matters">When the ignored Lorentz force matters</a>).</li>
+<li><strong>Budgets.</strong> The push works on the fluid through the viscous stress at the wall, so its power is in the work of that
+  stress (<code>flow.dat</code> columns 24–25), which residσ and resid𝐄 count, and its torque in the viscous torque at the wall.
+  The magnetic torque, taken with <span class="arithmatex">\(\mathbf B_0\)</span> on the fluid's side, holds that of the sheet's own currents, which the
+  viscous one balances: only their sum (<code>flow.dat</code> columns 31–38) is the torque through the wall, which resid𝐋 counts.
+  These budgets close with the push or without it, so they do not check it: the smoothed sheets and the angular
+  momentum do (<a href="#current-sheets-at-slipping-walls-2026-11-07">Checks</a>).</li>
+</ul>
+<p><strong>Stops</strong> (<code>background.check_magnetic</code>):</p>
+<ul>
+<li>an inviscid fluid (<code>ViscosD = 0</code>, a full sphere), which has no stress at the wall to take the push: the push would
+  drive a layer of no thickness along the wall, which its equations do not resolve;</li>
+<li>a deformed body (<code>centrifugal = 1</code>), where the push on the deformed wall is not derived;</li>
+<li>a field that goes on beyond a slipping wall (above) where the permeability jumps there: <span class="arithmatex">\(\mu \neq 1\)</span>, or a thin layer
+  with <span class="arithmatex">\(c \neq 0\)</span> and <span class="arithmatex">\(p \neq 1\)</span>. The field beyond, and so the sheet, depends on how its sources meet the jump (for
+  <code>'axial'</code> at the inner wall, on how the jump bends the imposed field), which kore does not model.</li>
+</ul>
+<p>With <code>rotdyn = 1</code> a toroidal <span class="arithmatex">\(\mathbf B_0\)</span> must vanish at both walls (<code>background.check_rotdyn</code>).</p>
 <h2 id="forced-runs">Forced runs</h2>
 <p>A forced run (<code>forcing</code> other than 0, as in <code>conductive_IC</code>) solves the equations at the one frequency <span class="arithmatex">\(w\)</span> of the
 forcing (<code>forcing_frequency</code>), with every perturbation going as <span class="arithmatex">\(e^{iwt}\)</span> and the forcing in the right-hand side:</p>
@@ -2673,12 +2794,14 @@ and its <span class="arithmatex">\(p\)</span> must be 1 where that part reaches 
 boundary under a poloidal <span class="arithmatex">\(\mathbf B_0\)</span>, which carries the fluid's tangential electric field in its own frame whatever its
 permeability. The run stops otherwise (<code>background.check_forced_magnetic</code>). <span class="arithmatex">\(\mathbf B_0\)</span> reaches the wall where <span class="arithmatex">\(h_n\)</span> or
 <span class="arithmatex">\(h_n'\)</span> (its poloidal part) or <span class="arithmatex">\(k_n\)</span> (its toroidal part) of some degree is not zero there, to <span class="arithmatex">\(10^{-6}\)</span> of the largest of
-them over the fluid; <span class="arithmatex">\(h_n'\)</span> to <span class="arithmatex">\(10^{-12}\,n^2\,2/(1 - r_i)\)</span> instead where that is larger, ten times the round-off of the
-slope of a profile interpolated at degree <span class="arithmatex">\(n = \max(64, 2N)\)</span> (<code>background.b0_at_wall</code>: <code>'confined'</code> never reaches a wall,
+them over the fluid; <span class="arithmatex">\(h_n'\)</span> to <span class="arithmatex">\(10^{-12}\,n^2\,2/(1 - r_i)\)</span> instead where that is larger, ten times a bound on the
+round-off of the slope of a profile interpolated at degree <span class="arithmatex">\(n = \max(64, 2N)\)</span> (<code>background.b0_at_wall</code>: <code>'confined'</code> never reaches a wall,
 the toroidal <code>'wall'</code> vanishes at both; a field meant to vanish there needs an <code>N</code> that resolves it). Walls that stay in
 place take any permeability.</p>
 <p><strong>Left out</strong>, in both pictures: the matching holds at the sphere, not at the displaced boundary, so the displacement
-<span class="arithmatex">\(\xi_r\)</span> times the jump of <span class="arithmatex">\(\partial_r\mathbf B_0\)</span> across the wall (the background's current there) is not in it.</p>
+<span class="arithmatex">\(\xi_r\)</span> times the jump of <span class="arithmatex">\(\partial_r\mathbf B_0\)</span> across the wall (the background's current there) is not in it, nor the
+displacement of a current sheet of <span class="arithmatex">\(\mathbf B_0\)</span> at the wall
+(<a href="#current-sheets-at-slipping-walls">Current sheets at slipping walls</a>).</p>
 <p><code>conductive_IC</code> has the rows without <span class="arithmatex">\(\mathbf u\times\mathbf B_0\)</span> at every wall and no motion inside the solids, and it
 stops the resolved mantle behind a wall that moves. Its thin layers therefore follow <code>'deforming'</code> with a poloidal
 <span class="arithmatex">\(\mathbf B_0\)</span> (it stops a toroidal one in forced runs), while for a conducting inner core behind a wall that moves
@@ -3459,7 +3582,8 @@ against 0.3822 for <span class="arithmatex">\(\lambda_\mathrm{in}\)</span> = 0.7
   to <span class="arithmatex">\(10^{-5}\)</span>–<span class="arithmatex">\(7\cdot10^{-3}\)</span> relative at N 64 (the fast branch to <span class="arithmatex">\(10^{-4}\)</span> at N 96). The error does not change with
   Em (<span class="arithmatex">\(10^{-8}\)</span> to <span class="arithmatex">\(10^{-10}\)</span>) or with Le: it is that of the magnetic boundary layer the insulating wall imposes
   (Malkus's ideal solution has a tangential <span class="arithmatex">\(\mathbf b\)</span> there), not resolved at these N. Since 2026-11-07 an inviscid
-  run with this field and an insulating mantle, where the field is not zero, stops (<a href="#toroidal-fields">Toroidal fields</a>).</p>
+  run with this field and an insulating mantle, where the field is not zero, stops
+  (<a href="#current-sheets-at-slipping-walls">Current sheets at slipping walls</a>).</p>
 </li>
 <li>
 <p><strong>Torsional modes of Luo &amp; Jackson (2022)</strong> (<code>conductive_IC</code>'s <code>tests/torsional_s2</code>: 'Luo_S2', inviscid, Lu
@@ -3509,9 +3633,10 @@ the new features nothing changed.</p>
   2005', 'Malkus' (and 'Wu 2005'), 'wall' of degree 2, 'axial' + 'wall', a conducting inner core, 'confined', and with a
   differential rotation. <strong>Against sympy</strong> (<code>algebra_check.py</code>): every block for poloidal and toroidal fields of degree
   1–4 (3 and 4 have no closed forms), several <span class="arithmatex">\(m\)</span>, <span class="arithmatex">\(l\)</span> up to 12.</li>
-<li><strong>'general'</strong>: <span class="arithmatex">\(h_1 = r/2\)</span> gives exactly the 'axial' eigenvalues, <span class="arithmatex">\(k_1 = r\)</span> exactly the 'Malkus' ones; fields of
-  degrees 1 + 3 (full sphere), 2 + 4 (shell), toroidal 1 + 3, and a poloidal 1 + 3 with a toroidal 2 and a differential
-  rotation (also 'Wu 2005'): budgets <span class="arithmatex">\(\le 5\cdot10^{-12}\)</span>.</li>
+<li><strong>'general'</strong>: <span class="arithmatex">\(h_1 = r/2\)</span> gives exactly the 'axial' eigenvalues (no-slip walls: at a slipping insulating outer wall
+  <code>'general'</code> ends in a sheet, being taken as a field of currents in the fluid), <span class="arithmatex">\(k_1 = r\)</span> exactly the 'Malkus' ones;
+  fields of degrees 1 + 3 (full sphere), 2 + 4 (shell), toroidal 1 + 3, and a poloidal 1 + 3 with a toroidal 2 and a
+  differential rotation (also 'Wu 2005'): budgets <span class="arithmatex">\(\le 5\cdot10^{-12}\)</span>.</li>
 <li><strong>'confined'</strong>: degree 1 and 2, shell layer [0.4, 0.8] and full-sphere layer [0, 0.6]: budgets <span class="arithmatex">\(10^{-12}\)</span>–<span class="arithmatex">\(10^{-14}\)</span>
   (shell), <span class="arithmatex">\(4\cdot10^{-10}\)</span> (degree 1, N 192) and <span class="arithmatex">\(2\cdot10^{-9}\)</span> (degree 2, N 384) in the full sphere; with
   <span class="arithmatex">\(\Delta\Omega\)</span> uniform inside the layer, <code>ferraro_mismatch</code> = <span class="arithmatex">\(10^{-29}\)</span> and the budgets close as without rotation.</li>
@@ -3818,14 +3943,62 @@ rest, and under forcing 10 with a differential rotation (<code>'shellular_boussi
 <span class="arithmatex">\(4\cdot10^{-10}\)</span> in all, and under forcing 6 with the core deforming, with <code>'axial'</code> and with the dipole, which the
 deforming core holds as <span class="arithmatex">\(a\,x + b\,x^3\)</span> (<span class="arithmatex">\(6\cdot10^{-11}\)</span>). Forcing 6 in <code>'Wu 2005'</code> closes it to <span class="arithmatex">\(6\cdot10^{-12}\)</span>, and to
 <span class="arithmatex">\(2\cdot10^{-3}\)</span> only without the slip's term in <span class="arithmatex">\((\ln\rho_0)'\)</span>.</p>
-<p><strong>Stops.</strong> A toroidal <span class="arithmatex">\(\mathbf B_0\)</span> that is not zero at a slipping wall with an insulator beyond stops the run
-(<a href="#toroidal-fields">Toroidal fields</a>): at a stress-free outer or inner wall (<code>bco</code> or <code>bci</code> 0 or 2), in an inviscid
-full sphere, and behind a thin layer that does not conduct, at either wall, also where it is <span class="arithmatex">\(10^{-5}\)</span> of the field
-under a dipole, and where a profile that is not smooth at the centre of a full sphere misses its zero at the wall (the
-message says so); with no-slip walls, a conducting inner core, a conducting thin layer, the resolved mantle or
-<code>'wall'</code> the run goes on. <code>'general'</code> and <code>'user'</code> profiles that are not finite where they are interpolated (<code>r</code> = 0 in a full
+<p><strong>Stops.</strong> A toroidal <span class="arithmatex">\(\mathbf B_0\)</span> that is not zero at the wall of an inviscid full sphere with an insulator beyond
+stops the run (<a href="#current-sheets-at-slipping-walls">Current sheets at slipping walls</a>), also where it is
+<span class="arithmatex">\(4\cdot10^{-6}\)</span> of the field under a strong <code>'axial'</code> one, and where a profile that is not smooth at the centre misses its zero at the
+wall (the message says so); with <code>rotdyn = 1</code> it stops at any wall. At a viscous slipping wall the run goes on, the
+push in its stress rows: stress-free outer and inner walls (<code>bco</code> or <code>bci</code> 0 or 2) and a thin layer that does not
+conduct, at either wall. So it does with no-slip walls, a conducting inner core, a conducting thin layer, the resolved
+mantle or <code>'wall'</code>. <code>'general'</code> and <code>'user'</code> profiles that are not finite where they are interpolated (<code>r</code> = 0 in a full
 sphere) stop too, and so does a field that is zero, which <code>'mag_energy'</code> cannot normalise (<code>'ferraro'</code> among them), or a
 <code>'ferraro'</code> field that is not finite.</p>
+<h3 id="current-sheets-at-slipping-walls-2026-11-07">Current sheets at slipping walls (2026-11-07)</h3>
+<p><code>tests/sheet/sheet_check.py</code> (<code>run_all.sh</code>, about 11 min on 2 ranks) checks the push of the sheets
+(<a href="#current-sheets-at-slipping-walls">Current sheets at slipping walls</a>) with Ek = Em = <span class="arithmatex">\(10^{-2}\)</span>, Hendrik 0.1,
+N 160, <span class="arithmatex">\(m\)</span> = 1, <code>'Boussinesq'</code> unless stated.</p>
+<p><strong>Smoothed sheets.</strong> A sheet is the limit of a field that falls to the field beyond across a thin layer in the fluid,
+whose force kore takes in the volume. With layers of width <span class="arithmatex">\(\delta\)</span> = <span class="arithmatex">\(2\cdot10^{-3}\)</span>, <span class="arithmatex">\(10^{-3}\)</span> and <span class="arithmatex">\(5\cdot10^{-4}\)</span>, the
+first four eigenvalues of the run with the sheet and its push are approached as <span class="arithmatex">\(\delta\)</span> (the error halves with
+<span class="arithmatex">\(\delta\)</span>, by 0.49 to 0.53), and the extrapolation to <span class="arithmatex">\(\delta = 0\)</span> that removes the terms in <span class="arithmatex">\(\delta\)</span> and <span class="arithmatex">\(\delta^2\)</span>
+meets them to <span class="arithmatex">\(8\cdot10^{-8}\)</span> to <span class="arithmatex">\(5\cdot10^{-5}\)</span>, against <span class="arithmatex">\(9\cdot10^{-3}\)</span> to 1.7 for the run without the push. Nine
+cases: a toroidal sheet (<span class="arithmatex">\(k = r\)</span>) at the outer wall and at an inner wall with zero radial stress (<code>bci = 2</code>, with
+<code>cnorm_tor</code> 2 and Hendrik 0.025, which give the eigenvalues of 1 and 0.1 to <span class="arithmatex">\(10^{-13}\)</span>, so that a push that missed the
+normalisation would show); a poloidal one (<code>'general'</code>) at the outer wall (degrees 1 and 3, <code>cnorm</code> 2 and Hendrik
+0.025) and at the inner one; at an outer thin layer that does not conduct (<span class="arithmatex">\(c\)</span> = 0.05, <span class="arithmatex">\(p\)</span> = 3, <span class="arithmatex">\(\mu\)</span> = 1.5) and at an
+inner one, with degree 3 (<span class="arithmatex">\(\mu\)</span> = 0.8), which bring in the terms <span class="arithmatex">\(e\)</span>; the toroidal sheet at the outer wall of
+<code>'Wu 2005'</code> (<code>r_out</code> 0.9) with a viscosity <span class="arithmatex">\(1 + r\)</span>, where <span class="arithmatex">\(\rho_0\nu\)</span> is 0.07 at the wall; the outer toroidal sheet
+with a drag at the same wall (<code>kappa_cmb</code> 0.01), whose terms share its rows and which moves the eigenvalues by
+<span class="arithmatex">\(2\cdot10^{-2}\)</span>; and a poloidal and a toroidal sheet together at the outer wall with <span class="arithmatex">\(m\)</span> = 2 and <code>symm = -1</code>, whose
+rows and columns are the other sets of degrees.</p>
+<p><strong>Angular momentum.</strong> With <span class="arithmatex">\(m\)</span> = 0 between insulating stress-free walls nothing outside the fluid exerts a torque on it,
+so a mode with <span class="arithmatex">\(\lambda \neq 0\)</span> carries no axial angular momentum <span class="arithmatex">\(L_z\)</span>. With a toroidal sheet of degree 2 at the walls
+under <code>'axial'</code> (N 64; 96 for <code>'Wu 2005'</code>), <span class="arithmatex">\(\lvert L_z\rvert\)</span> is below <span class="arithmatex">\(10^{-13}\)</span> in a shell (with
+<code>cnorm_tor = 'mag_energy'</code>), a full sphere and <code>'Wu 2005'</code> (0.6 to 1.1 without the push), and so is resid𝐋.</p>
+<p><strong>Budgets.</strong> residσ and resid𝐄 close to <span class="arithmatex">\(2\cdot10^{-10}\)</span> in all these runs (resid𝐄 is nan with <span class="arithmatex">\(\mu \neq 1\)</span>).</p>
+<p><strong>Stops.</strong> The runs stop with their messages: an inviscid full sphere with a poloidal sheet, also behind a layer where
+the permeability jumps, where the message asks for a field that meets the layer's condition (with <code>B0_cmb = 'wall'</code>
+the same run goes on); <code>centrifugal = 1</code> with a sheet at a slipping wall; and a field that goes on beyond a slipping
+wall where the permeability jumps: <code>'axial'</code> with <span class="arithmatex">\(\mu\)</span> = 1.5 or a thin layer with <span class="arithmatex">\(p\)</span> = 2, at the outer wall, at the
+inner one and in an inviscid fluid, and <code>'dipole'</code> and <code>'G21 dipole'</code> with <code>'frozen currents'</code> at the inner wall. With
+a no-slip wall or one permeability they go on, and so does a poloidal sheet at a wall with zero radial stress. The
+toroidal sheet's stops and runs are in <code>tests/inner_core</code> (<a href="#dipole-and-slipping-inner-core-2026-11-07">above</a>).</p>
+<p><strong>The walls' conditions.</strong> A poloidal sheet's drop comes from the steady condition of the wall
+(<code>background._pol_wall_row</code>), which the smoothed sheets cannot check: a wrong condition would leave a sheet in the
+smoothed runs too, which the push would then follow. Its rows equal the solver's (<code>assemble.bc_b_spherical</code>: an
+insulator's, or a thin layer's with <span class="arithmatex">\(c_1 = 0\)</span>) at both walls, degrees 1 to 6, to <span class="arithmatex">\(2\cdot10^{-16}\)</span>, in the runs of the
+outer poloidal sheet and of the two thin layers. <code>'FDM'</code> and <code>'G21 dipole'</code>, which <code>B0_cmb = 'wall'</code> adjusts to an
+outer layer where the permeability jumps, have no sheet there, while <code>'G21 dipole'</code> with <code>B0_cmb = 'plain'</code> has one.</p>
+<p><strong>Interpolated profiles.</strong> The profiles of <code>'general'</code>, <code>'ferraro'</code> and <code>B0_tor = 'user'</code>, the wound field's
+<span class="arithmatex">\(\Delta\Omega\)</span> and the resolved mantle's <span class="arithmatex">\(\ln\sigma\)</span> are Chebyshev interpolants whose coefficients come from a DCT since
+2026-11-07. numpy's interpolation, used before, left round-off that grows with the degree, above the cut at <span class="arithmatex">\(10^{-13}\)</span>
+from N about 450, and the derivatives at the walls amplified it: with a <code>'general'</code> field <span class="arithmatex">\(h_1 = r^2\)</span> (no-slip walls,
+Ek <span class="arithmatex">\(10^{-3}\)</span>) the eigenvalues moved by <span class="arithmatex">\(3\cdot10^{-5}\)</span> at N 450 and <span class="arithmatex">\(2\cdot10^{-4}\)</span> at N 800, and the operators filled
+up in <span class="arithmatex">\(r\)</span>. They now agree to <span class="arithmatex">\(10^{-13}\)</span> from N 160 to 800. A <code>B0_tor = 'user'</code> profile also kept the round-off of its
+interpolant, unlike <code>'general'</code>: it moved the eigenvalues with N (<span class="arithmatex">\(10^{-8}\)</span> at N 240) and left residσ at <span class="arithmatex">\(10^{-4}\)</span>
+where the fluid crosses the wall (<code>bci = 2</code>). So did the wound field's <span class="arithmatex">\(\Delta\Omega\)</span>, whose slope its source takes (a
+slope of <span class="arithmatex">\(2\cdot10^{-4}\)</span> of itself at N 800 for the <code>'conical'</code> rotation, constant in <span class="arithmatex">\(r\)</span>), and the wound field itself,
+cut at <span class="arithmatex">\(10^{-14}\)</span> (its second derivative, the highest that the operators take, <span class="arithmatex">\(2\cdot10^{-7}\)</span> of its largest value off
+at the walls at N 800): both are now cut at <span class="arithmatex">\(10^{-13}\)</span>.</p>
 <h2 id="references">References</h2>
 <ul>
 <li>D'Silva, S. &amp; Choudhuri, A. R. 1993, A&amp;A 272, 621 (flux-tube fields at the base of the solar convection zone).</li>

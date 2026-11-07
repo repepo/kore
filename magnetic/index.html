@@ -832,6 +832,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#current-sheets-at-slipping-walls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Current sheets at slipping walls
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1645,6 +1656,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#current-sheets-at-slipping-walls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Current sheets at slipping walls
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1994,9 +2016,11 @@ formulas are on <a href="../magnetic-equations/#poloidal-fields">Magnetic field 
 <p><strong><code>'ferraro'</code></strong> takes <code>B0_ferraro_G</code>, a numpy expression of <code>w</code> (the differential rotation) and <code>p</code>: see
   <a href="#four-ways-to-a-steady-background">Four ways to a steady background</a>.</p>
 </li>
-<li><strong>At the walls.</strong> <code>'general'</code> and <code>'ferraro'</code> need not meet a potential field at an insulating wall. Where they do not,
-  they end there in a sheet of current, whose push on a fluid slipping along the wall is left out
-  (<a href="../magnetic-equations/#poloidal-fields">Magnetic field equations</a>); a no-slip wall takes it.</li>
+<li><strong>At the walls.</strong> kore takes <code>'general'</code> and <code>'ferraro'</code> as fields of currents in the fluid. Where they do not meet
+  the potential field of those currents beyond an insulating wall, they end there in a sheet of current, which pushes
+  the fluid along the wall (<a href="#current-sheets-at-slipping-walls">Current sheets at slipping walls</a>). So does a part
+  written into them whose sources lie beyond the wall, such as the uniform field <code>{1: 'r/2'}</code>: use <code>'axial'</code> for a
+  uniform field and <code>'dipole'</code> for a dipole at the centre.</li>
 </ul>
 <h3 id="toroidal-field-b0_tor">Toroidal field: <code>B0_tor</code></h3>
 <p>The toroidal part is purely azimuthal. A differential rotation does not wind it up, so it suits any rotation. Each
@@ -2054,11 +2078,8 @@ option is one radial shape times <code>cnorm_tor</code>; the formulas are on
 <code>'general'</code> (poloidal or toroidal) and <code>'ferraro'</code> are written to <code>params.dat</code> after <code>#</code>, so they must not contain <code>#</code>.</p>
 <p><strong>At the walls.</strong> A toroidal field that is not zero at a wall ends there in a sheet of current, unless a conductor
 beyond the wall carries the field on: a conducting inner core, the resolved mantle or a conducting thin layer. The sheet
-pushes the fluid along the wall. A no-slip wall takes that push, but a slipping one would pass it to the fluid, and kore
-does not include it, so a run stops at startup where the toroidal field is not zero at a stress-free wall (or at the
-wall of an inviscid fluid) with an insulator, or a thin layer that does not conduct, beyond. Use a field that vanishes
-there (<code>'wall'</code>), a no-slip wall, or a conductor beyond (with <code>bco</code> or <code>bci</code> 0 or 1). With the rotating solids the field
-must vanish at both walls, whatever they are (<a href="../rotating-solids/">Rotating solids</a>).</p>
+pushes the fluid along the wall (<a href="#current-sheets-at-slipping-walls">Current sheets at slipping walls</a>). With the
+rotating solids the field must vanish at both walls, whatever they are (<a href="../rotating-solids/">Rotating solids</a>).</p>
 <h3 id="amplitude">Amplitude</h3>
 <p>The shapes above have arbitrary scales, so the size of the field is set separately. The field in the equations is <code>Le</code>
 times a dimensionless field, whose size is fixed by <code>cnorm</code> (poloidal part) and <code>cnorm_tor</code> (toroidal part). The Lorentz
@@ -2363,6 +2384,26 @@ for its field together with the rest. The layer is solid and at rest (unless a f
 <li>The layer and the fluid have the permeability of vacuum (<code>mu = 1</code>).</li>
 </ul>
 <p>The equations and their checks: <a href="../magnetic-equations/#resolved-conducting-mantle">Magnetic field equations</a>.</p>
+<h3 id="current-sheets-at-slipping-walls">Current sheets at slipping walls</h3>
+<p>A background field that does not meet the field beyond an insulating wall ends there in a sheet of current: a toroidal
+field that is not zero at the wall, or a poloidal one that does not meet the field beyond. <code>'general'</code> and <code>'ferraro'</code>
+need not; where the permeability jumps at the wall (<code>mu</code> other than 1, or a thin layer with <code>c</code> other than 0 and <code>muw</code>
+other than 1), the other fields of sources inside the wall meet it only at the outer wall, where <code>B0_cmb = 'wall'</code>
+adjusts them. A conducting inner core, the resolved mantle or a conducting thin layer carries the field on,
+with no sheet in the fluid. The sheet pushes the fluid along the wall wherever the perturbation's field crosses the
+wall. A no-slip wall takes that push. Along a stress-free wall (<code>bco</code> or <code>bci</code> 0 or 2) the fluid's viscous stress takes
+it, and kore includes it in the conditions there
+(<a href="../magnetic-equations/#current-sheets-at-slipping-walls">Magnetic field equations</a>).</p>
+<ul>
+<li><strong>Inviscid fluid.</strong> It has no stress to take the push, so a sheet stops an inviscid run. Use a field that meets the
+  wall (<code>B0_tor = 'wall'</code>, a poloidal field that matches the potential field or, where the permeability jumps, one that
+  <code>B0_cmb = 'wall'</code> adjusts), a viscous fluid, or a conductor beyond.</li>
+<li><strong><code>centrifugal = 1</code>.</strong> A sheet at a slipping wall stops the run.</li>
+<li><strong>Fields that go on through the wall.</strong> <code>'axial'</code>, imposed from beyond the outer wall, and at the inner wall
+  <code>'dipole'</code> and the fields of <code>B0_ic = 'frozen currents'</code>, whose sources lie in the core, go on through the wall with
+  no sheet. Where the permeability jumps at a slipping wall they stop: the field beyond then depends on how the jump
+  bends the imposed field or meets the sources, which kore does not model.</li>
+</ul>
 <h2 id="the-field-without-the-flow">The field without the flow</h2>
 <p>Two tools leave the flow out: one checks the walls and the inner core against exact results, the other gives the field
 that a known flow induces.</p>
@@ -2487,9 +2528,13 @@ walls, a thin conducting layer, a resolved conducting mantle or a conducting inn
   that the forcing moves radially (forcing 6, and 9, 14 and 7 with <code>m</code> 2 where <code>forcing_amplitude_icb</code> is not 0);</li>
 <li>the libration of the inner core (forcing 7 with <code>m</code> 0 and <code>forcing_amplitude_icb</code> not 0) behind a stress-free inner
   wall (<code>bci = 0</code>) along a conducting inner core or a conducting thin layer on it, across a poloidal field;</li>
-<li>a toroidal field that is not zero at a stress-free wall (<code>bco</code> or <code>bci</code> 0 or 2), or at the wall of an inviscid fluid,
-  with an insulator or a thin layer that does not conduct (<code>c1_cmb</code> or <code>c1_icb</code> 0) beyond
-  (<a href="#toroidal-field-b0_tor">Toroidal field</a>);</li>
+<li>a current sheet of the field (a toroidal field that is not zero at the wall, or a poloidal one that does not meet the
+  field beyond) at the wall of an inviscid full sphere, or at a slipping wall with <code>centrifugal = 1</code>, with an insulator
+  or a thin layer that does not conduct (<code>c1_cmb</code> or <code>c1_icb</code> 0) beyond
+  (<a href="#current-sheets-at-slipping-walls">Current sheets at slipping walls</a>);</li>
+<li><code>'axial'</code> at a slipping wall, or <code>'dipole'</code> or <code>B0_ic = 'frozen currents'</code> at a slipping inner wall, where the
+  permeability jumps (<code>mu</code> other than 1, or a thin layer whose <code>c_cmb</code> or <code>c_icb</code> is not 0 and whose <code>muw_cmb</code> or
+  <code>muw_icb</code> is not 1), with an insulator or a thin layer that does not conduct beyond;</li>
 <li>a permeability other than 1 at a wall that the forcing moves radially and that B0 reaches: <code>mu</code>, <code>mu_i2o</code> with a
   conducting inner core, and a thin layer's <code>muw_cmb</code> or <code>muw_icb</code> where the part of B0 that it acts on reaches the wall
   (<a href="#a-boundary-that-moves">A boundary that moves</a>); the outer wall moves under forcing 10, and under 9, 14 and 7 with

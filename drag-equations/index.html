@@ -1449,8 +1449,10 @@ above makes their sum minus the drag's dissipation:</p>
 <div class="arithmatex">\[
 D_\text{topo} = -W_\nu - 2\,\mathrm{Re}\left(\omega_M^*\,\Gamma^\nu_M\right) .
 \]</div>
-<p>So the budgets need no new term: residσ and resid𝐄 already count the power of the stress at the walls, and the energy
-budget of the rotating solids the power of their torques. <span class="arithmatex">\(\delta\sigma_\text{topo}\)</span> is the drag's share of the damping
+<p>Where the background field also ends in a current sheet at the wall, its push joins the drag in the condition
+(<a href="../magnetic-equations/#current-sheets-at-slipping-walls">Magnetic field equations</a>), and <span class="arithmatex">\(W_\nu\)</span> holds the push's
+power too, which then adds to the right-hand side. So the budgets need no new term: residσ and resid𝐄 already count the
+power of the stress at the walls, and the energy budget of the rotating solids the power of their torques. <span class="arithmatex">\(\delta\sigma_\text{topo}\)</span> is the drag's share of the damping
 rate, one term of that budget.</p>
 <h2 id="checks-2026-11-06">Checks (2026-11-06)</h2>
 <p><code>tests/drag/drag_check.py</code> (<code>run_all.sh</code>, about 2 min on 2 ranks):</p>

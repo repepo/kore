@@ -1399,7 +1399,10 @@ from the matrices, and checks</p>
 \]</div>
 <p>with the viscous torques from <span class="arithmatex">\(T\)</span> at the walls and the magnetic ones from the stress
 <span class="arithmatex">\(\mathrm{Hendrik}\,(B_{0r}\,\mathbf b + b_r\,\mathbf B_0)\)</span> on a grid in <span class="arithmatex">\(\theta\)</span> at each wall, for any poloidal and
-toroidal background (<code>rotdyn.viscous_torques</code>, <code>wall_torques</code>), whatever <code>vtrq</code> and <code>mtrq</code>. The other forces exert no
+toroidal background (<code>rotdyn.viscous_torques</code>, <code>wall_torques</code>), whatever <code>vtrq</code> and <code>mtrq</code>. Both are taken on the
+fluid's side of the walls: where <span class="arithmatex">\(\mathbf B_0\)</span> ends at a wall in a current sheet
+(<a href="../magnetic-equations/#current-sheets-at-slipping-walls">Current sheets at slipping walls</a>), the magnetic one holds
+the torque on the sheet's currents, which the viscous one balances at a slipping wall. The other forces exert no
 net axial torque: the pressure is normal to the walls, the buoyancy radial, and for <span class="arithmatex">\(m = 0\)</span> neither the Coriolis force
 nor the advection by a differential rotation <span class="arithmatex">\(\Delta\Omega\)</span> has one, since
 <span class="arithmatex">\(\int\rho_0\,\mathbf u\cdot\nabla(s^2\Delta\Omega)\,dV = 0\)</span> between impenetrable walls.</p>

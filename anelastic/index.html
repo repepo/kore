@@ -1832,7 +1832,9 @@ over the fluid and keep the real part:</p>
   <span class="arithmatex">\(\mathsf e_d = \mathsf e - \tfrac13(\nabla\cdot\mathbf u)\thinspace\mathsf I\)</span> its deviatoric part: <span class="arithmatex">\(\mathsf S = 2\mathsf e_d\)</span>,
   and <span class="arithmatex">\(\boldsymbol\sigma\)</span> is symmetric and traceless, so that <span class="arithmatex">\(\boldsymbol\sigma:\nabla\mathbf u^* = \boldsymbol\sigma:\mathsf e_d^*\)</span>.
   The physical dissipation is <span class="arithmatex">\(\int 2\rho\nu\thinspace\mathsf e_d:\mathsf e_d\thinspace dV\)</span>, and the factor 4 is its mean
-  in the convention above. <span class="arithmatex">\(W_\nu^{\rm wall}\)</span> is zero on a no-slip wall at rest and on an impenetrable stress-free wall.</p>
+  in the convention above. <span class="arithmatex">\(W_\nu^{\rm wall}\)</span> is zero on a no-slip wall at rest and on an impenetrable stress-free wall,
+unless a force acts on the fluid at that wall: a drag (<a href="../drag/">Drag at the outer wall</a>) or the push of the background
+field's current sheet (<a href="../magnetic-equations/#current-sheets-at-slipping-walls">Magnetic field equations</a>).</p>
 <ul>
 <li>
 <p><strong>Buoyancy.</strong> <span class="arithmatex">\(W_b = 2\thinspace\mathrm{Beyonce}\thinspace\mathrm{Re}\int\rho_0\thinspace g\thinspace s\thinspace u_r^*\thinspace dV\)</span>,
