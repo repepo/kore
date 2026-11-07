@@ -64,7 +64,7 @@ Coriolis force turns; the spin-over mode is one of these), with or without the r
 ## What is supported
 
 Supported: any `structure`; with or without buoyancy; with or without a field, with any poloidal `B0` and a toroidal
-`B0_tor` that vanishes at both walls; insulating walls, thin conducting walls, a resolved mantle or a conducting inner
+`B0_tor` that vanishes at both walls; insulating walls, a thin conducting layer, a resolved mantle or a conducting inner
 core.
 
 Not supported (the run stops at startup):

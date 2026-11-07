@@ -62,7 +62,7 @@ $$
 \Gamma^B_{IC} = \mathrm{Hendrik}\oint s\,B_{0r}\,b_\phi\,dS\,\Big|_{r=r_i} .
 $$
 
-It acts on everything beyond the wall: a thin wall, a resolved mantle or a conducting inner core (at an insulating wall
+It acts on everything beyond the wall: a thin conducting layer, a resolved mantle or a conducting inner core (at an insulating wall
 $b_\phi = 0$). With $b_\phi = -\sum_l g_l\,\partial_\theta Y_l$ and $B_{0r} = \sum_n n(n+1)\,h_n Y_n/r$ (the degrees $n$
 of the poloidal background, `cnorm` included),
 
@@ -141,14 +141,14 @@ solids (`vtrq` and `mtrq` 1).
   ($10^{-14}$).
 - **Heavy solids.** Moments of inertia of $10^{12}$ give the eigenvalues of fixed walls ($10^{-12}$).
 - **Against `conductive_IC`** (2d84351), five runs: without a field (two sets of solids, one of them Earth-like), thin
-  walls with a dipole, a conducting inner core and a resolved mantle with a field of degree 2, an axial field with an
-  exponential resolved mantle and a thin wall on the inner core. Eigenvalues to $10^{-14}$, and the rotation of the
+  conducting layers with a dipole, a conducting inner core and a resolved mantle with a field of degree 2, an axial field with an
+  exponential resolved mantle and a thin layer on the inner core. Eigenvalues to $10^{-14}$, and the rotation of the
   solids and the torques on the mantle in `rotdyn.dat` to $10^{-10}$, its precision.
 - **Conservation** with `'Wu 2005'` (`r_out` 0.9, N 64): every mode but $\lambda = 0$ carries no total angular
   momentum ($10^{-9}$) and closes resid𝐋 ($10^{-9}$); without a field the energy budget of the fluid and the solids
   closes ($10^{-10}$), with a dipole, a conducting inner core and a resolved mantle resid𝐄 does ($10^{-10}$).
 - **Equatorial resid𝐋** without the solids: $10^{-15}$ without a field, $10^{-14}$ to $10^{-11}$ with a field (a
-  conducting inner core and a resolved mantle, thin walls, a toroidal field that does not vanish at the walls), and
+  conducting inner core and a resolved mantle, thin layers, a toroidal field that does not vanish at the walls), and
   $10^{-9}$ in a full sphere.
 - **Stops** of `background.check_rotdyn`.
 

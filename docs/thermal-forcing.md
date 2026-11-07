@@ -16,7 +16,8 @@ with $A$ = `forcing_amplitude_icb`. With `bci_thermal = 1` the condition is on t
 $\partial_r s(r_i, \theta) = A\thinspace P_2(\cos\theta)$, a prescribed heat flux. $P_2$ is $-\tfrac12$ at the equator
 and $1$ at the poles, so a negative $A$ makes the equator warmer. The pattern is axisymmetric and equatorially
 symmetric, so the run needs `m = 0` and `symm = 1`, and also `ricb > 0`, `thermal = 1` and `ThermaD > 0`. The problem
-is linear: the flow is proportional to $A$.
+is linear: the flow is proportional to $A$. With `magnetic = 1` the perturbation of the field is solved with the flow
+([Magnetic field](magnetic.md#forced-runs)).
 
 With `forcing_frequency = 0` the solution is the steady flow. At least one wall must then be no-slip (`bci = 1` or
 `bco = 1`): with two stress-free walls a rigid rotation of the fluid also solves the equations, and the solution is

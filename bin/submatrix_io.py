@@ -35,7 +35,8 @@ OPERATOR_INDEPENDENT = ('ncpus', 'petsc_opts', 'prescale', 'which_eigenpairs', '
                         'kappa_cmb', 'topo_drag', 'topo_hrms', 'topo_lambda0', 'topo_H', 'topo_N', 'topo_omega', 'topo_K',
                         # NEW (2026-11-06): the drag at the outer wall (topo.py) and the rotating solids (rotdyn.py): rows of
                         # assemble.py only
-                        'rotdyn', 'MoIZ_M', 'MoIZ_IC', 'gTorque', 'OmgtauIC', 'vtrq', 'mtrq')
+                        'rotdyn', 'MoIZ_M', 'MoIZ_IC', 'gTorque', 'OmgtauIC', 'vtrq', 'mtrq',
+                        'forced_walls')   # NEW (2026-11-06): the solids under a radial boundary flow, rows of assemble.py
 
 
 def params_of(par):

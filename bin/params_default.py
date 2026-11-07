@@ -370,43 +370,47 @@ class default_params():
         self.innercore = 'insulator'
         # self.innercore = 'conducting, Chebys'  # NEW (2026-10-28): a conducting solid inner core; its field is part of the
         #                                        # unknowns (fic, gic), needs a no-slip inner boundary (bci = 1)
-        # self.innercore = 'TWA'                 # NEW (2026-11-06, from conductive_IC): a thin conducting wall on an
+        # self.innercore = 'conducting, Bessel'  # NEW (2026-11-06, from conductive_IC): the same core in forced problems only
+        #                                        # (forcing != 0): its field, j_l(k r) at the forcing frequency, is solved
+        #                                        # exactly and leaves only the rows of the inner wall (no fic, gic, N_cic)
+        # self.innercore = 'TWA'                 # NEW (2026-11-06, from conductive_IC): a thin conducting layer on an
         #                                        # insulating inner core (c_icb, c1_icb, muw_icb below)
         self.mantle    = 'insulator'
-        # self.mantle    = 'TWA'                 # NEW (2026-11-06, from conductive_IC): a thin conducting wall at the base of
-        #                                        # an insulating mantle (c_cmb, c1_cmb, muw_cmb, B0_cmb below)
+        # self.mantle    = 'TWA'                 # NEW (2026-11-06, from conductive_IC): a thin conducting layer at the base
+        #                                        # of an insulating mantle (c_cmb, c1_cmb, muw_cmb, B0_cmb below)
         # self.mantle    = 'resolved'            # NEW (2026-11-06, from conductive_IC): a conducting layer from the outer
         #                                        # wall to r_surface, its field solved for (r_surface, N_mantle, sigma_mantle)
 
-        # NEW (2026-11-06, from conductive_IC): the thin conducting walls ('TWA', the thin-wall approximation of Roberts,
-        # Glatzmaier & Clune 2010; docs/magnetic.md, Thin conducting walls): a layer of thickness h, conductivity sigma_w and
+        # NEW (2026-11-06, from conductive_IC): the thin conducting layer ('TWA', the thin-wall approximation of Roberts,
+        # Glatzmaier & Clune 2010; docs/magnetic.md, Thin conducting layer): a layer of thickness h, conductivity sigma_w and
         # permeability mu_w between the fluid and an insulator, described by c = h mu_w/(r mu_f) and c1 = h sigma_w/(r sigma_f)
-        # at the wall's radius r (assemble.bc_b_spherical). With c = c1 = 0 and mu = 1 a thin wall is an insulator.
-        self.c_cmb   = 1e-5    # c of a thin wall at the outer boundary (mantle = 'TWA')
-        self.c1_cmb  = 1e-5    # c1, the wall's conductance relative to the fluid's
-        # the wall's permeability relative to vacuum, p = mu_w/mu0. With c it sets the thickness h/r = c mu/p and the O(h)
-        # terms of the poloidal condition. p = 1 (default, a non-magnetic wall as at the Earth's CMB): these cancel the c term
+        # at the wall's radius r (assemble.bc_b_spherical). With c = c1 = 0 and mu = 1 the layer is an insulator.
+        self.c_cmb   = 1e-5    # c of a thin conducting layer at the outer wall (mantle = 'TWA')
+        self.c1_cmb  = 1e-5    # c1, the layer's conductance relative to the fluid's
+        # the layer's permeability relative to vacuum, p = mu_w/mu0. With c it sets the thickness h/r = c mu/p and the O(h)
+        # terms of the poloidal condition. p = 1 (default, a non-magnetic layer as at the Earth's CMB): these cancel the c term
         # at leading order, and only c1 acts. np.inf: without them (h -> 0 with h mu_w fixed, Guervilly et al. 2013), right
         # for mu_w >> mu0
         self.muw_cmb = 1.0
-        self.c_icb   = 0.0     # the same for a thin wall on the inner core (innercore = 'TWA')
+        self.c_icb   = 0.0     # the same for a thin layer on the inner core (innercore = 'TWA')
         self.c1_icb  = 0.0
         self.muw_icb = 1.0
         self.mu      = 1.0     # permeability of the fluid relative to vacuum: it enters the thin-wall conditions only
-        # How B0 meets a thin wall at the outer boundary (mantle = 'TWA'). A steady B0 drives no current in the wall (c1 does
+        # How B0 meets a thin layer at the outer wall (mantle = 'TWA'). A steady B0 drives no current in the layer (c1 does
         # not act on it), but c does: B0 has to satisfy (1/mu + l c)(r h)' + (l + e) h = 0 there, e = c mu l ((l+1)/p - 1)/p,
         # which for p = 1 and mu = 1 is the insulating condition (B0 unchanged).
         #   'wall' (default): background_field adds alpha r^l to h, alpha set by that condition, for the fields of internal
         #       currents ('G21 dipole', 'Luo_S1', 'Luo_S2', 'FDM'); the added term carries no current and keeps the matching at
         #       the inner boundary. The other fields are used as given ('axial' is imposed from outside the core).
-        #   'plain': h unchanged; B0 then meets the wall condition only for p = 1 and mu = 1, or c = 0 and mu = 1.
+        #   'plain': h unchanged; B0 then meets the layer's condition only for p = 1 and mu = 1, or c = 0 and mu = 1.
         self.B0_cmb = 'wall'
         # self.B0_cmb = 'plain'
 
         # NEW (2026-11-06, from conductive_IC, after PR #17 by A. Nuyt): the resolved conducting mantle (mantle = 'resolved'), a
         # layer from the outer wall (r = 1) to r_surface, insulating beyond, at rest (with a differential rotation it turns with
-        # ΔΩ(1), uniform in latitude there), whose field is expanded in N_mantle Chebyshev polynomials on [1, r_surface]
-        # (docs/magnetic.md, Resolved conducting mantle). Unlike the thin wall it holds for any thickness and frequency, and
+        # ΔΩ(1), uniform in latitude there; with forced_walls 'deforming' it deforms with a forcing that moves the outer wall),
+        # whose field is expanded in N_mantle Chebyshev polynomials on [1, r_surface] (docs/magnetic.md, Resolved conducting
+        # mantle). Unlike 'TWA' it holds for any thickness and frequency, and
         # for any smooth conductivity profile that N_mantle resolves (background.check_mantle stops otherwise). Needs mu = 1.
         self.r_surface = 1.83   # outer radius of the layer; 1.83 is the whole mantle of the Earth
         self.N_mantle  = 64     # Chebyshev polynomials in the layer
@@ -415,7 +419,7 @@ class default_params():
         self.sigma_mantle = 1.0
         self.sigma_mantle_param = 0.0
 
-        # NEW (2026-10-28): innercore = 'conducting, Chebys' only (as conductive_IC)
+        # NEW (2026-10-28): innercore = 'conducting, Chebys' (N_cic) and, NEW 2026-11-06, 'conducting, Bessel' (mu_i2o, sigma_i2o)
         # (the inner-core field has the degrees of the fluid's, up to lmax: conductive_IC's lmax_cic is not ported, its ICB
         # matching couples the two degree by degree)
         self.N_cic     = 64    # Chebyshev polynomials of the inner-core field on [-ricb, ricb], N_cic/2 of one parity per l
@@ -468,6 +472,17 @@ class default_params():
         # Forcing amplitude (boundary forcings 6, 7, 9, 10, 13, 14; forcing 11 ignores it: its power scales with rsf_scale)
         self.forcing_amplitude_cmb = 1.0
         self.forcing_amplitude_icb = 0.0
+
+        # NEW (2026-11-06): with a field (magnetic = 1), what a radial boundary flow (forcings 6, 7 with m != 0, 9, 10, 14)
+        # stands for at a wall with a conducting solid behind it; the wall stays at the sphere either way (docs/magnetic.md)
+        self.forced_walls = None           # the picture of the forcing: 'rigid' for forcings 6 and 7, 'deforming' for 9, 10, 14
+        # self.forced_walls = 'rigid'      # the solid is rigid and at rest, only its shape moves past the sphere (a librating
+                                           # triaxial mantle, the flattened inner core of forcing 6): the flow passes through
+        # self.forced_walls = 'deforming'  # the solid deforms with the boundary (a tide): its surface moves with the fluid,
+                                           # and inside a resolved mantle or a conducting inner core its motion induces field
+        # Either way a wall that the forcing moves needs one permeability on both sides where B0 reaches it: mu = 1, mu_i2o = 1
+        # with a conducting inner core, and a thin layer's muw = 1 where the poloidal B0 reaches the wall if c != 0 or the
+        # layer conducts at rest ('rigid'), and where the toroidal B0 does if c1 != 0 (background.check_forced_magnetic)
 
         # Random Reynolds-stress body force (forcing = 11, bin/reynolds_stress.py): f = rho0^-1 div(rho0 s), s a random
         # symmetric traceless stress, white in time, with covariance 4 Theta nu_t/rho0 (Landau-Lifshitz form), the

@@ -686,7 +686,8 @@ def main():
         # --------------------------------------------------------------------------------------------------------------------------------------------------
         # ----------------------------------------------------------------------------------------------------- A matrix, induction equation (sections f, g)
         # --------------------------------------------------------------------------------------------------------------------------------------------------
-        # A holds the right-hand side: induction ∇×(u×B0) and diffusion MagnetD ∇²b (iω_f b would go with forcing, not allowed yet)
+        # A holds the right-hand side: induction ∇×(u×B0) and diffusion MagnetD ∇²b; NEW (2026-11-06, as conductive_IC): and in
+        # forced problems the time derivative, A - i wf B with B = -b in the rows of the field (sections f, g, fic, gic, fm, gm)
         for sec, comp, loc_mag in [ ('f', 'bpol', loc_mag_f), ('g', 'btor', loc_mag_g) ]:
             for k,l in enumerate(loc_mag):
 
@@ -722,6 +723,8 @@ def main():
 
                 # magnetic diffusion
                 mtx = -1 * op.magnetic_diffusion(l, sec, comp, 0)
+                if par.forcing != 0:   # NEW (2026-11-06): the forced problem, + i wf b
+                    mtx = mtx + 1j*ut.wf*op.b(l, sec, comp, 0)
                 loc_list = ut.packit( loc_list, mtx, row, row)
                 if par.centrifugal and par.MagnetD > 0:  # NEW (2026-11-05, phase 2): its metric part (the A sign), from F and G
                     for bcomp, bsec, lls in [ ('bpol', 'f', ll_mag[0]), ('btor', 'g', ll_mag[1]) ]:
@@ -751,6 +754,8 @@ def main():
                     mtx = -1 * op.magnetic_diffusion(l, sec, comp, 0)
                     if par.diff_rot:   # NEW (2026-10-30): the core co-rotates with ΔΩ(ricb) = c (rigid: background.magnetic_diffrot)
                         mtx = mtx + 1j*par.m*par.Gaspard*dr.rigid_ricb()[0]*op.b(l, sec, comp, 0)   # -(-i m G c b), the A sign
+                    if par.forcing != 0:   # NEW (2026-11-06, as conductive_IC): the forced problem, + i wf b
+                        mtx = mtx + 1j*ut.wf*op.b(l, sec, comp, 0)
                     loc_list = ut.packit( loc_list, mtx, row, row)
                     if cf.ic_metric_on():   # NEW (2026-11-06): the metric part of the diffusion of a deformed core (the A sign)
                         for bcomp, bsec, lls in [ ('bpol_ic', 'fic', ll_mag[0]), ('btor_ic', 'gic', ll_mag[1]) ]:
@@ -759,6 +764,10 @@ def main():
                     bc_b_list = bc_b_cic(l, sec)
                     for q in [0,1,2]:
                         loc_list[q].append( bc_b_list[q] )
+                    if bg.deforms('inner'):   # NEW (2026-11-06): the induction by the core's own motion (forced_walls 'deforming')
+                        bc_b_list = deform_rows(l, sec, row)
+                        for q in [0,1,2]:
+                            loc_list[q].append( bc_b_list[q] )
 
         if ut.resolved_mantle:  # NEW (2026-11-06): the resolved mantle, sections fm, gm: A = -(diffusion), divided by the layer's
             # η = 1/sigma (operators.magnetic_diffusion), its two bc rows the matching at the outer wall and at r_surface
@@ -768,10 +777,16 @@ def main():
                     mtx = -1 * op.magnetic_diffusion(l, sec, comp, 0)
                     if par.diff_rot:   # the layer turns with ΔΩ(1) = c (rigid: background.magnetic_diffrot): -(-i m G c b)
                         mtx = mtx + 1j*par.m*par.Gaspard*dr.rigid_at(ut.rcmb)[0]*op.b(l, sec, comp, 0)
+                    if par.forcing != 0:   # NEW (2026-11-06, as conductive_IC): the forced problem, + i wf b
+                        mtx = mtx + 1j*ut.wf*op.b(l, sec, comp, 0)
                     loc_list = ut.packit( loc_list, mtx, row, row)
                     bc_b_list = bc_b_mantle(l, sec)
                     for q in [0,1,2]:
                         loc_list[q].append( bc_b_list[q] )
+                    if bg.deforms('outer'):   # NEW (2026-11-06): the induction by the mantle's own motion (forced_walls 'deforming')
+                        bc_b_list = deform_rows(l, sec, row)
+                        for q in [0,1,2]:
+                            loc_list[q].append( bc_b_list[q] )
 
     if ut.rotdyn:  # NEW (2026-11-06, from conductive_IC): the rotating solids (rotdyn.py): their three rows of A, and their
         # rotation in the no-slip rows of T of degree 1 (T = r omega at each wall), on rank 0
@@ -1174,8 +1189,9 @@ def bc_b_spherical(l, sec):
     the two bc rows of each block: row 0 at the outer boundary (l+1) f + r f' = 0 and g = 0, row 1 at the inner boundary
     l f - r f' = 0 and g = 0 (b matches a potential field outside the shell, and inside it with ricb > 0).
     NEW (2026-11-06): a thin conducting wall (mantle or innercore 'TWA') has the rows of bc_b_twa instead, plus those of a
-    fluid slipping along it (bc_b_slip); with the resolved mantle (mantle = 'resolved') the outer rows are its matching
-    (bc_b_mantle, which assemble.main places with the mantle's own rows).
+    fluid slipping along it (bc_b_slip) and of a radial boundary flow through it (bc_b_radial); with the resolved mantle (mantle = 'resolved') the outer rows are its matching
+    (bc_b_mantle, which assemble.main places with the mantle's own rows). NEW (2026-11-06): the inner rows of innercore
+    'conducting, Bessel' are those of bc_b_bessel.
     '''
     inner = (par.ricb > 0) and not ut.cic   # NEW (2026-10-28): a full sphere has the outer row only, a conducting core bc_b_cic's
     out = ss.dok_matrix((1 + int(par.ricb > 0), ut.N1), dtype=complex)
@@ -1192,12 +1208,13 @@ def bc_b_spherical(l, sec):
         if outer:
             out[ 0,:] = bc_b_twa(l, sec, 'outer', Tb) if twa_o else (l+1) * Tb[:,0] + ut.rcmb * Tb[:,1]
         if inner:
-            out[ 1,:] = bc_b_twa(l, sec, 'inner', bv.Ta) if twa_i else l * bv.Ta[:,0] - par.ricb * bv.Ta[:,1]
+            out[ 1,:] = bc_b_twa(l, sec, 'inner', bv.Ta) if twa_i else ( bc_b_bessel(l, sec) if ut.bessel else
+                                                                         l * bv.Ta[:,0] - par.ricb * bv.Ta[:,1] )
     elif sec == 'g':
         if outer:
             out[ 0,:] = bc_b_twa(l, sec, 'outer', Tb) if twa_o else Tb[:,0]
         if inner:
-            out[ 1,:] = bc_b_twa(l, sec, 'inner', bv.Ta) if twa_i else bv.Ta[:,0]
+            out[ 1,:] = bc_b_twa(l, sec, 'inner', bv.Ta) if twa_i else ( bc_b_bessel(l, sec) if ut.bessel else bv.Ta[:,0] )
 
     # the first l of each section's block list: f has the l's of T (symmB0 = -1) or of P (symmB0 = 1), g the others
     lfirst = ut.m_bot if (sec == 'f') == (ut.symmB0 == -1) else ut.m_top
@@ -1209,7 +1226,40 @@ def bc_b_spherical(l, sec):
         if on and ut.twa_slips(wall):
             slip = bc_b_slip(l, sec, wall, row0 + rr)
             out = [np.concatenate([out[q], slip[q]]) for q in range(3)]
+    # NEW (2026-11-06): a radial boundary flow through a wall with a conducting layer or core at rest behind it (bc_b_radial):
+    # in the rows of a thin conducting layer, coef the factor of D F (f) or of G' (g) in bc_b_twa's rows; in the electric-field
+    # row of 'conducting, Bessel', that of G' in bc_b_bessel's
+    for on, wall, rr, r, c1, sgn in ((twa_o, 'outer', 0, ut.rcmb, par.c1_cmb, 1), (twa_i, 'inner', 1, par.ricb, par.c1_icb, -1)):
+        if on and c1 != 0 and (bg.flows_through(wall) or bg.thin_drop(wall)):   # (NEW 2026-11-06: thin_drop, a layer that
+            rad = bc_b_radial(l, sec, wall, row0 + rr, (c1/par.mu)*r if sec == 'f' else sgn*c1,   # deforms across the
+                              tor_half=not bg.flows_through(wall))                                 # toroidal B0's drop)
+            out = [np.concatenate([out[q], rad[q]]) for q in range(3)]
+    if inner and ut.bessel and sec == 'g' and bg.flows_through('inner'):
+        rad = bc_b_radial(l, 'g', 'inner', row0 + 1, -par.sigma_i2o/(1 + ut.bessel_ic(l)[1]))
+        out = [np.concatenate([out[q], rad[q]]) for q in range(3)]
     return out
+
+
+
+def bc_b_bessel(l, sec):
+    '''
+    NEW (2026-11-06, conductive_IC's 'conducting, Bessel' rows of bc_b_icb): the inner row of the block of degree l in section
+    sec ('f' or 'g') for a conducting inner core whose field is not among the unknowns (forced problems only). Inside the core
+    the field is b(ricb) j_l(k r)/j_l(k ricb) (utils.bessel_ic: k² = -i w/η_i, xd = r b'/b there), so the matching of
+    'conducting, Chebys' (bc_b_cic: f_o = f_i, mu_i2o (f + r f')_o = (f + r f')_i, mu_i2o g_o = g_i,
+    (g + r g')_o = η_i (g + r g')_i, η_i = 1/(mu_i2o sigma_i2o)) leaves, with f_i, g_i eliminated,
+        f:  ((1 + xd)/mu_i2o - 1) f - ricb f' = 0,       g:  g - sigma_i2o (g + ricb g')/(1 + xd) = 0
+    (conductive_IC's (r f)' = (1 + xd) f/mu_i2o and (r g)' = (1 + xd) g/sigma_i2o), written so that they are the rows of an
+    insulating core (l f - ricb f' = 0, g = 0) for sigma_i2o -> 0 with mu_i2o = 1 (the poloidal one already for w -> 0). A
+    radial boundary flow through the inner wall into the core at rest (forced_walls = 'rigid') adds its u×B0 to the g row, as
+    to bc_b_cic's (bc_b_radial, with the factor -sigma_i2o/(1 + xd) of G' = (r g)' there). A core that deforms with the wall
+    (forced_walls = 'deforming') is not a Bessel function inside: background.check_forced_magnetic stops it.
+    '''
+    k, xd = ut.bessel_ic(l)
+    T = bv.Ta
+    if sec == 'f':
+        return ((1 + xd)/par.mu_i2o - 1)*T[:,0] - par.ricb*T[:,1]
+    return T[:,0] - (par.sigma_i2o/(1 + xd))*(T[:,0] + par.ricb*T[:,1])
 
 
 
@@ -1229,7 +1279,9 @@ def bc_b_twa(l, sec, wall, T):
     wall's curvature, the potential field matched at r ± h, the l(l+1)/r² of ∇²_l in the wall); they vanish for p = np.inf,
     the condition of Guervilly et al. (h -> 0 with h mu_w fixed), and cancel the c term at leading order for p = 1. D F stands
     for the wall's ∂F/∂t / MagnetD, taken from the fluid next to it (uniform MagnetD), and G' for the wall's tangential
-    electric field: both assume the fluid moves with the wall; a slipping fluid adds the terms of bc_b_slip.
+    electric field: both assume the fluid moves with the wall; a slipping fluid adds the terms of bc_b_slip, and a radial
+    boundary flow through a wall at rest (forced_walls = 'rigid') those of bc_b_radial; a layer that deforms with the boundary
+    across the drop of a toroidal B0 (forced_walls = 'deforming', background.thin_drop) half those of its toroidal part.
     '''
     if wall == 'outer':
         r, c, c1, p, sgn = ut.rcmb, par.c_cmb, par.c1_cmb, par.muw_cmb, 1
@@ -1264,7 +1316,8 @@ def bc_b_slip(l, sec, wall, row, factor=None):
     electric field of the fluid, E = MagnetD ∇×b - u×B0 (- U0×b, which the co-rotating wall cancels), is continued into the
     wall in the frame of the wall (condition C.I of Rekier, Triana, Trinh & Buffett 2023, arXiv:2303.00718: a modelling
     choice, for a slip that stands in for a thin viscous layer not resolved, valid while that layer is thin against the
-    magnetic skin depth). With u_r = 0, (u×B0)_t = B0_r (u_t × r̂). Two parts:
+    magnetic skin depth). Here the terms of u_t, (u×B0)_t = B0_r (u_t × r̂); those of a radial boundary flow through the wall,
+    uᵣ (r̂×B0_t), are bc_b_radial's. Two parts:
       - toroidal row: G' becomes G' - r S_l/MagnetD, with S_l the r∇Y_l part of B0_r (u_t × r̂);
       - poloidal row: D F, the wall's ∂F/∂t / MagnetD, gains r² X_l/(L MagnetD), X_l = [r̂⋅∇×(u×B0)]_l = -[∇⋅(B0_r u_t)]_l/r,
         the radial induction of the slip.
@@ -1326,6 +1379,150 @@ def bc_b_slip(l, sec, wall, row, factor=None):
 
 
 
+_radial_mats = {}
+
+def bc_b_radial(l, sec, wall, row, coef, tor_half=False):
+    '''
+    NEW (2026-11-06): where the forcing prescribes a radial flow at the wall 'outer' or 'inner' and the solid behind it is rigid
+    (forced_walls = 'rigid', background.flows_through), the terms of that flow's u×B0 in the electric-field row of the
+    conducting solid, at the row of the degree l of section sec. The wall stays at the sphere and the solid stays at rest
+    (only its shape moves past the sphere): the flow passes through the wall, and the tangential electric field of the fluid,
+    E = MagnetD ∇×b - u×B0, is continued into the solid at rest (the same condition as for a slipping fluid, bc_b_slip). With
+    forced_walls = 'deforming' the solid's surface moves with the fluid, u×B0 cancels in the matching, and the rows are those
+    without it (the motion inside a thick solid is in its own rows, deform_rows). With uᵣ ≠ 0, (u×B0)_t gains uᵣ (r̂×B0_t),
+    for a poloidal and a toroidal B0, whose parts on r∇Y_l and r∇Y_l×r̂ are S_l and T_l:
+      - the consoidal electric-field row (sec 'g'; coef the factor of G' = (r g)' in it): G' becomes G' - r S_l/MagnetD;
+      - the poloidal row of a thin wall (sec 'f'; coef the factor of D F in it, the wall's ∂F/∂t/MagnetD): D F gains
+        r T_l/MagnetD = r² X_l/(L MagnetD), X_l = [r̂⋅∇×(u×B0)]_l = [∇⋅(uᵣ B0_t)]_l, the radial induction of the flow.
+    A conducting inner core and the resolved mantle need the first only: their toroidal electric field follows from b_r and
+    the radial induction on both sides (bc_b_cic). S_l, T_l from the angular algebra of the induction (mag_algebra:
+    uᵣ r̂ × B0 = -B0 × uᵣ r̂ over the vectors of every degree of B0), with uᵣ = L P/r at the wall: entries on the columns of P.
+    NEW (2026-11-06): tor_half = True, half the terms of the toroidal B0 alone: a thin conducting layer that deforms with the
+    boundary across the drop of the toroidal B0 to 0 (background.thin_drop).
+    '''
+    import angular
+    import mag_algebra as ma
+    import background_field as bf
+    r = ut.rcmb if wall == 'outer' else par.ricb
+    m = par.m
+    key = (wall, 'tor_half') if tor_half else wall
+    if key not in _radial_mats:   # S_l and T_l of uᵣ r̂ × B0 for uᵣ = Y_k (columns k), once per wall
+        prof = {'h': {} if tor_half else bf.pol_profiles(), 'k': bf.tor_profiles()}
+        nB = max([1] + list(prof['h']) + list(prof['k']))
+        A = angular.Algebra.get(m, par.lmax + nB + 6)
+        F = A.field(q=A.I)
+        rr = np.array([float(r)])
+        Ms = Mt = A.zero()
+        for B, pr in prof.items():
+            for n, f in pr.items():
+                for kind, c, rad in ma._background(n, B)['B0']:
+                    if kind == 'r':   # r̂ × r̂ = 0
+                        continue
+                    val = sum(cc*r**p*f(rr, j)[0] for cc, p, _, _, j in rad)
+                    V = ma._vcross(A, kind, c, F)
+                    Ms, Mt = Ms - val*V.s, Mt - val*V.t
+        w = 0.5 if tor_half else 1.0
+        _radial_mats[key] = ((w*Ms).tocsr(), (w*Mt).tocsr(), nB)
+    Ms, Mt, nB = _radial_mats[key]
+    lp_u = ut.ell(m, par.lmax, par.symm)[0]
+    if par.ricb > 0:
+        Tu = bv.Tb if wall == 'outer' else bv.Ta
+    else:   # one parity per l in a full sphere, as in bc_u_spherical
+        Tu = bv.Tb[( m + 1 - ut.s )%2::2, :]
+    M = Ms if sec == 'g' else Mt
+    sign = -1 if sec == 'g' else 1   # -r S_l in G', +r T_l in D F; r S_l = Σ_k M[l, k] L_k P_k (and T_l)
+    data, cols = [], []
+    for k in range(max(l - nB - 1, 0), l + nB + 2):
+        w = M[l, k] if k <= par.lmax + nB + 5 else 0
+        if w == 0 or k not in lp_u:
+            continue
+        data.append( (sign*coef*w*k*(k + 1)/par.MagnetD)*Tu[:,0] )
+        cols.append( ut.offset['u'] + int(ut.N1*(k - ut.m_top)/2) + np.arange(Tu.shape[0]) )
+    if not data:
+        return [np.zeros(0, dtype=complex), np.zeros(0, dtype=int), np.zeros(0, dtype=int)]
+    data = np.concatenate(data)
+    return [data, np.full(data.size, row), np.concatenate(cols)]
+
+
+_deform_cache = {}
+def deform_rows(l, sec, row):
+    '''
+    NEW (2026-11-06): with forced_walls 'deforming' and a thick conducting solid behind a wall that the forcing moves radially
+    (background.deforms), the induction ∇×(v×B0) of the solid's own motion in its rows of degree l: section sec 'fm', 'gm' (the
+    resolved mantle) or 'fic', 'gic' (a conducting inner core), row the first row of the block. The solid deforms with the
+    wall: v = ∇×∇×(P_s Y_k 𝐫), P_s = P(r_w) φ_k (background.deform_profile), so the entries sit on the columns of the flow's
+    P of degree k, through its Chebyshev polynomials at the wall (as bc_b_radial), and B0 is the background continued inside
+    the solid (background_field.solid_profiles). In the A sign, the rows of the solid's induction equation take
+        fm: -sigma r² L' t/L'³,   gm: -sigma r L' (q - (r s)')/L'³,   fic, gic: the same without sigma,
+    (q, s, t) the parts of v×B0 on Y_l 𝐫̂, r∇Y_l and r∇Y_l×𝐫̂ (mag_algebra.induction_monomials): for each k a known function
+    of r times P(r_w). Its Chebyshev series on the solid's domain (exact for the core, whose functions are polynomials) gives
+    the C^(2) coefficients of the rows below the matching rows, as submatrices.py builds the solid's operators, reduced in the
+    core to the parity of its rows (the other parity is zero, which is checked).
+    '''
+    import mag_algebra as ma
+    import background_field as bf
+    wall = 'outer' if sec in ('fm', 'gm') else 'inner'
+    X = 'f' if sec in ('fm', 'fic') else 'g'
+    if wall not in _deform_cache:   # the profiles inside the solid and the angular algebra, once per wall
+        pol, tor = bf.solid_profiles(wall)
+        nB = max([1] + list(pol) + list(tor))
+        mons = ma.induction_monomials(par.m, {'h': sorted(pol), 'k': sorted(tor)}, par.lmax + nB + 8)
+        _deform_cache[wall] = ({'h': pol, 'k': tor}, nB, {x: list(e.items()) for x, e in mons.items()})
+    prof, nB, mons = _deform_cache[wall]
+    if wall == 'outer':
+        N, R1, R2, sig = par.N_mantle, ut.rcmb, par.r_surface, bg.sigma_mantle
+    else:
+        N, R1, R2, sig = par.N_cic, 0, par.ricb, None   # (chebco_f: R1 = 0 is the domain [-ricb, ricb])
+    Nq = 2*((N + par.lmax + 2*nB + 17)//2)   # enough nodes for the core's polynomials, truncated to N after
+    S2 = ut.Slam(1, Nq) @ ut.Slam(0, Nq)
+    lp_u = ut.ell(par.m, par.lmax, par.symm)[0]
+    if par.ricb > 0:
+        Tu = bv.Tb if wall == 'outer' else bv.Ta
+    else:   # one parity per l in a full sphere, as in bc_u_spherical
+        Tu = bv.Tb[( par.m + 1 - ut.s )%2::2, :]
+    if wall == 'inner':   # the parity of the core's rows (submatrices.py: vF for fic, vG = -vF for gic, at r² rows)
+        if ut.rpower_gic != 2:
+            sys.exit('assemble.deform_rows: the rows gic of a deformed core (rpower_gic = 3) are not covered')
+        vrow = ut.symmB0*int( (1 - 2*(par.m%2)) * par.symm )*(1 if X == 'f' else -1)
+        idj = int( (1 - vrow)/2 )
+    L3 = (l*(l + 1.))**3
+    data, rows, cols = [], [], []
+    for k in lp_u:
+        if abs(k - l) > nB + 1:
+            continue
+        terms = [ (M[l, k], key) for key, M in mons[X] if M[l, k] != 0 ]
+        if not terms:
+            continue
+        phi = bg.deform_profile(wall, k)
+        def fun(r, terms=terms, phi=phi, mag=False):   # (mag: the sum of the moduli of the terms, a scale)
+            out = np.zeros(np.shape(r), dtype=float if mag else complex)
+            for c, (p, _, d, B, n, j, _) in terms:
+                v = c*r**p*phi(r, d)*prof[B][n](r, j)
+                out = out + (np.abs(v) if mag else v)
+            return out*(sig(r) if sig is not None else 1.)/L3
+        c2 = S2 @ ut.chebco_f(fun, Nq, R1, R2, 0.)
+        vec = np.zeros(N, dtype=complex)
+        vec[2:] = c2[:N - 2]   # rows 0 and 1: the matching rows (bc_b_mantle, bc_b_cic)
+        # the terms can cancel exactly (B0_tor 'Malkus', k = r, induces nothing in the g rows): drop the round-off, relative to
+        # the size of the terms (as mag_algebra._prune)
+        xs = np.cos(np.pi*(np.arange(Nq) + 0.5)/Nq)
+        scale = np.abs(fun(R1 + (R2 - R1)*(xs + 1)/2 if R1 > 0 else R2*xs, mag=True)).max()
+        vec[np.abs(vec) <= 1e-13*scale] = 0
+        if wall == 'inner':
+            off = np.abs(vec[1 - idj::2]).max()
+            if off > 1e-9*scale:
+                sys.exit('assemble.deform_rows: the induction of the core has the parity of neither its rows nor its '
+                         'columns (%s, l = %d, k = %d: %.1e)' % (sec, l, k, off/scale))
+            vec = vec[idj::2]
+        colk = ut.offset['u'] + int(ut.N1*(k - ut.m_top)/2) + np.arange(Tu.shape[0])
+        for i in np.nonzero(vec)[0]:
+            data.append(vec[i]*Tu[:, 0]); rows.append(np.full(Tu.shape[0], row + i)); cols.append(colk)
+    if not data:
+        return [np.zeros(0, dtype=complex), np.zeros(0, dtype=int), np.zeros(0, dtype=int)]
+    return [np.concatenate(data), np.concatenate(rows), np.concatenate(cols)]
+
+
+
 def bc_b_centrifugal(l, sec, ll_mag):
     '''
     NEW (2026-11-05, phase 1b): with centrifugal = 1, the metric parts of the insulating wall rows of bc_b_spherical (the
@@ -1381,7 +1578,9 @@ def bc_b_mantle(l, sec):
     As at a conducting inner core (bc_b_cic) the continuity of the toroidal n×E (of η ∇²_l f) follows from the radial induction
     on both sides once b_r is continuous. These hold for a fluid at rest relative to the layer (with a differential rotation
     the layer turns with the fluid next to it, and U0×b cancels in the jump of E); a fluid slipping along the wall (ut.mantle_slips)
-    adds u×B0 to the consoidal n×E of the fluid (bc_b_slip with the factor sigma(1), condition C.I, as conductive_IC).
+    adds u×B0 to the consoidal n×E of the fluid (bc_b_slip with the factor sigma(1), condition C.I, as conductive_IC), and so
+    does a radial boundary flow through the wall into the layer at rest (bc_b_radial; forced_walls = 'rigid'). With
+    forced_walls = 'deforming' the layer moves with the wall and its rows take the induction of that motion (deform_rows).
     '''
     Nm, rc, rs = par.N_mantle, ut.rcmb, par.r_surface
     s = 'f' if sec == 'fm' else 'g'
@@ -1413,6 +1612,9 @@ def bc_b_mantle(l, sec):
     if sec == 'gm' and ut.mantle_slips():   # the u×B0 of the slipping fluid in the consoidal n×E (row 0 of gm)
         slip = bc_b_slip(l, 'g', 'outer', rowm, factor=sig)
         out = [np.concatenate([out[q], slip[q]]) for q in range(3)]
+    if sec == 'gm' and bg.flows_through('outer'):   # NEW (2026-11-06): that of a radial boundary flow (bc_b_radial)
+        rad = bc_b_radial(l, 'g', 'outer', rowm, sig)
+        out = [np.concatenate([out[q], rad[q]]) for q in range(3)]
     return out
 
 
@@ -1423,8 +1625,13 @@ def bc_b_cic(l, sec):
     row in each of the four sections: in f (its row 1) [n⋅b] f_o - f_i = 0; in g (its row 1) the toroidal [n×E]
     (g + r g')_o - η_i (g + r g')_i = 0 with η_i = 1/(mu_i2o sigma_i2o); in fic (its row 0) the toroidal [n×b/μ]
     mu_i2o (f + r f')_o - (f + r f')_i = 0; in gic (its row 0) the consoidal [n×b/μ] mu_i2o g_o - g_i = 0. As in
-    conductive_IC the continuity of η∇²_l f is not imposed: with b_r continuous it follows from the radial induction equation
-    on both sides, since u = 0 at the no-slip ICB.
+    conductive_IC the continuity of η∇²_l f (the toroidal [n×E]) is not imposed: with b_r continuous it follows from the radial
+    induction equation on both sides. NEW (2026-11-06): with a radial boundary flow at the ICB (forced problems,
+    forced_walls = 'rigid') the core stays at rest and the flow passes through the wall: the g row takes the flow's u×B0
+    (bc_b_radial), and the radial induction, with that u×B0 in the fluid and none in the core, makes the toroidal part match
+    a core at rest too. With forced_walls = 'deforming' the core deforms with the wall: these rows hold no u×B0, and the
+    core's rows the induction of its motion inside (deform_rows). Where the forcing moves the wall along itself (the
+    libration, no u×B0 in these rows) the core turns with the wall, which induces no field in an axisymmetric B0.
     '''
     ric     = par.ricb
     eta_i2o = 1/( par.mu_i2o * par.sigma_i2o )
@@ -1457,8 +1664,12 @@ def bc_b_cic(l, sec):
 
     outoc = outoc.tocoo()
     outic = outic.tocoo()
-    return [ np.concatenate([outoc.data, outic.data]), np.concatenate([outoc.row + row0, outic.row + row0]),
-             np.concatenate([outoc.col + colo, outic.col + coli]) ]
+    out = [ np.concatenate([outoc.data, outic.data]), np.concatenate([outoc.row + row0, outic.row + row0]),
+            np.concatenate([outoc.col + colo, outic.col + coli]) ]
+    if sec == 'g' and bg.flows_through('inner'):   # NEW (2026-11-06): the u×B0 of a radial boundary flow (bc_b_radial)
+        rad = bc_b_radial(l, 'g', 'inner', row0, 1)
+        out = [np.concatenate([out[q], rad[q]]) for q in range(3)]
+    return out
 
 
 

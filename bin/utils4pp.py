@@ -1101,8 +1101,8 @@ def pressure_force(l, eigval):
     per unit mass λ𝐮 = 𝐅 - ∇Π, with Π = p′/ρ₀ (LBR) and 𝐅 every other force, as in flow_worker: the Coriolis force
     -coriolis, (∇⋅𝛔)/ρ₀ (visforce), the buoyancy (radial, so not in the consoidal part) and the differential rotation
     (drforce). eigval = λ = σ + iω, the fields ∝ e^{λt} (forced runs: i forcing_frequency). Returns [ [q, ∂ᵣq], [s, ∂ᵣs] ]
-    of ∇Π at rk: Π_l = r s (and Π_l′ = q where the momentum rows are solved). No Lorentz force: magnetic = 1 has no forced
-    runs.
+    of ∇Π at rk: Π_l = r s (and Π_l′ = q where the momentum rows are solved). Without the Lorentz force, which wall_powers
+    adds at the walls where it is needed (NEW 2026-11-06: lorentz_walls).
     '''
     [ velq, vels, _ ] = velocity(l)
     [ corq, cors, _ ] = coriolis(l)
@@ -1122,7 +1122,65 @@ def pressure_force(l, eigval):
 
 
 
-def wall_powers(usol, tsol, eigval):
+def walls_move():
+    '''
+    NEW (2026-11-06): whether a wall can move radially, so that the pressure works on the fluid there (wall_powers): a forced
+    problem (a boundary flow with uᵣ ≠ 0 at a wall) or a wall with zero radial stress (bco or bci = 2)
+    '''
+    return bool(par.forcing != 0 or par.bco == 2 or (par.ricb > 0 and par.bci == 2))
+
+
+
+def lorentz_walls(bsol):
+    '''
+    NEW (2026-11-06): the consoidal part s_l of the Lorentz force 𝐅 = (∇×𝐛)×𝐁₀ + (∇×𝐁₀)×𝐛 (no Hendrik, per unit volume) at the
+    current radii rk, {l: s_l} for the degrees l of the flow's poloidal scalar: the part of 𝐅 that the pressure balances there
+    (pressure_force leaves it out). From the field bsol (expand_reshape_sol with ut.bsymm), B0 and ∇×B0 of any degrees, on a
+    Gauss-Legendre grid in cos θ (as magnetic_powers_grid), projected on r∇Y_l: s_l = ∮ 𝐅⋅(r∇Y_l)* dΩ / ∮ |r∇Y_l|² dΩ.
+    '''
+    m = par.m
+    lmx = par.lmax + 1
+    nB = max([3] + list(bf.pol_profiles()) + list(bf.tor_profiles()))
+    xg, wx = np.polynomial.legendre.leggauss(lmx + nB + 12)
+    Yg, dYg, Zg = angular.ylm_grid(m, lmx, xg)
+    Y0, dY0, _ = angular.ylm_grid(0, nB, xg)
+    lp_u = ut.ell(m, par.lmax, par.symm)[0]
+    lp_b, lt_b, ll = ut.ell(m, par.lmax, ut.bsymm)
+    set_bsolution(bsol, 2)   # f, f', f'' for b and ∇×b
+    z = np.zeros_like(rk, dtype=complex)
+    b = [0*np.outer(rk, xg)]*3; j = [0*np.outer(rk, xg)]*3
+    for l in ll:
+        if l in lp_b:
+            [ [q, q1], [s_, s1] ] = bfield_pol(l, 1)
+            bq = (q, s_, z); [ cr, cc, ct ] = curl(l, [q, q1], [s_, s1], [z, z])
+        else:
+            [ t, t1 ] = bfield_tor(l, 1)
+            bq = (z, z, t); [ cr, cc, ct ] = curl(l, [z, z], [z, z], [t, t1])
+        for F, (qq, ss_, tt) in ((b, bq), (j, (cr[0], cc[0], ct[0]))):
+            F[0] = F[0] + np.outer(qq, Yg[l])
+            F[1] = F[1] + np.outer(ss_, dYg[l]) + np.outer(tt, Zg[l])
+            F[2] = F[2] + np.outer(ss_, Zg[l]) - np.outer(tt, dYg[l])
+    B0 = [0*np.outer(rk, xg)]*3; J0 = [0*np.outer(rk, xg)]*3
+    for n, f in bf.pol_profiles().items():   # cnorm ∇×∇×(h Y_n 𝐫), as magnetic_powers_grid
+        L0 = n*(n + 1.); hh = [ f(rk, d) for d in (0, 1, 2) ]
+        Dh = hh[2] + 2*hh[1]/rk - L0*hh[0]/rk**2
+        B0 = [ B0[0] + np.outer(L0*hh[0]/rk, Y0[n]), B0[1] + np.outer(hh[1] + hh[0]/rk, dY0[n]), B0[2] ]
+        J0 = [ J0[0], J0[1], J0[2] + np.outer(Dh, dY0[n]) ]
+    for n, f in bf.tor_profiles().items():   # cnorm_tor ∇×(k Y_n 𝐫)
+        L0 = n*(n + 1.); kk = [ f(rk, d) for d in (0, 1) ]
+        B0 = [ B0[0], B0[1], B0[2] - np.outer(kk[0], dY0[n]) ]
+        J0 = [ J0[0] + np.outer(L0*kk[0]/rk, Y0[n]), J0[1] + np.outer(kk[1] + kk[0]/rk, dY0[n]), J0[2] ]
+    cross = lambda a, c: [ a[1]*c[2] - a[2]*c[1], a[2]*c[0] - a[0]*c[2], a[0]*c[1] - a[1]*c[0] ]
+    G = [ a + c for a, c in zip(cross(j, B0), cross(J0, b)) ]
+    out = {}
+    for l in lp_u:
+        nrm = np.sum(wx*(np.abs(dYg[l])**2 + np.abs(Zg[l])**2))
+        out[l] = np.sum(wx[None, :]*(G[1]*np.conj(dYg[l])[None, :] + G[2]*np.conj(Zg[l])[None, :]), axis=1)/nrm
+    return out
+
+
+
+def wall_powers(usol, tsol, eigval, bsol=None):
     '''
     NEW (2026-11-04): the power of the wall stresses on the fluid, for [inner, outer] wall (inner 0 in a full sphere),
         pressure  Wp = -2 ∮ ρ₀ Π uᵣ* dA (complex: its real part closes residσ, its imaginary part residω),
@@ -1131,6 +1189,8 @@ def wall_powers(usol, tsol, eigval):
     𝛔⋅𝐫̂ = ρ₀ ν ViscosD [ (2q′ + ⅔(ln ρ₀)′q) Y 𝐫̂ + (s′ - s/r + q/r) r∇Y + (t′ - t/r) r∇Y×𝐫̂ ]. Π from pressure_force at
     the walls (eigval as there). Dkin = ∫ 𝐮⋅(∇⋅𝛔) dV = Wv - Dν (viscous_dissipation). Both are zero where uᵣ = 0 (Wp) or 𝐮 = 0 (Wv).
     Sets the grid globals at the walls: call after the other diagnostics (diagnose, diagnose_magnetic).
+    NEW (2026-11-06): bsol, the field (magnetic = 1): where a wall can move radially (walls_move) Π includes the Lorentz force's
+    part, Hendrik s_l/ρ₀ (lorentz_walls), which a forced problem with a field needs.
     '''
     rw = np.array([ par.ricb, ut.rcmb ]) if par.ricb > 0 else np.array([ ut.rcmb ])
     set_radii(rw)
@@ -1141,10 +1201,13 @@ def wall_powers(usol, tsol, eigval):
     nu = rho0*vsc0*par.ViscosD
     Wp = np.zeros(len(rw), dtype=complex)
     Wv = np.zeros(len(rw))
+    lor = lorentz_walls(bsol) if (bsol is not None and walls_move()) else {}   # NEW (2026-11-06)
     for l in ll:
         [ velq, vels, velt ] = velocity(l)
         if l in lp:
             Pi = rk*pressure_force(l, eigval)[1][0]
+            if l in lor:
+                Pi = Pi + rk*par.Hendrik*lor[l]/rho0
             Wp += -2*rho0*cdot_pol(l, velq[0], vels[0], Pi, 0*Pi)
             tq = 2*velq[1] + (2/3)*lho1*velq[0]
             ts = vels[1] - vels[0]/rk + velq[0]/rk
@@ -1825,7 +1888,8 @@ def em_budget(bsol, bic=None, usol=None, bman=None):
     [ Ohm_f, ME_ic, Ohm_ic, ME_ext, E_w, Ohm_w ], without Hendrik or MagnetD:
       Ohm_f  : ∫ |∇×𝐛|² over the fluid
       ME_ic  : ½ ∫ |𝐛|²/mu_i2o inside the inner core: the field of a conducting inner core (bic: its part of the solution
-               vector), or the potential field below an insulating one (below r - h with a thin wall)
+               vector; NEW 2026-11-06: 'conducting, Bessel' from the fluid's field at the inner wall, bessel_budget), or the
+               potential field below an insulating one (below r - h with a thin wall)
       Ohm_ic : η_i ∫ |∇×𝐛|²/mu_i2o over a conducting inner core, η_i = 1/(mu_i2o sigma_i2o)
       ME_ext : ½ ∫ |𝐛|² of the potential field outside the outer wall (beyond r + h with a thin wall)
     NEW (2026-11-06), with thin conducting walls (mantle, innercore 'TWA'; conductive_IC's terms, 0 without them):
@@ -1836,7 +1900,9 @@ def em_budget(bsol, bic=None, usol=None, bman=None):
                the poloidal condition and |g|²/c1 from the toroidal one
     The field beyond the wall follows from the wall conditions (assemble.bc_b_twa), so no derivative beyond the second is
     needed. usol (the flow, expand_reshape_sol): with the fluid slipping along a thin wall, the wall's poloidal current takes
-    the radial induction of the slip (slip_lapF), as the wall rows do. Assumes mu = 1 with thin walls.
+    the radial induction of the slip (slip_lapF), as the wall rows do, and of a radial boundary flow through a wall at rest
+    (radial_lapF; forced_walls = 'rigid'), or half its toroidal part where the layer deforms across a toroidal B0
+    (background.thin_drop). Assumes mu = 1 with thin walls.
     NEW (2026-11-06): with the resolved mantle (mantle = 'resolved'; bman, its part of the solution vector) E_w and Ohm_w are
     the layer's ½ ∫ |𝐛|² and ∫ |∇×𝐛|²/sigma (mantle_budget), and ME_ext the potential field beyond r_surface (nan without bman).
     Needs setup_grid (the fluid's quadrature grid).
@@ -1879,6 +1945,8 @@ def em_budget(bsol, bic=None, usol=None, bman=None):
     elif par.innercore == 'insulator':
         f = bvals(bsol[0], 0, -1.0)[0]
         ME_ic = np.sum( f0p*Lp*(lp+1)*r_i*np.abs(f)**2 )   # potential field r^l below r_i
+    elif ut.bessel:   # NEW (2026-11-06): 'conducting, Bessel', in closed form
+        ME_ic, Ohm_ic = bessel_budget(bsol, bvals)
     elif bic is not None:
         # the inner-core field: Chebyshev series in x = r/ricb on [-1, 1], one parity per l
         Nic = ut.Nic; nb = int((par.lmax - par.m + 1)/2)
@@ -1910,6 +1978,43 @@ def em_budget(bsol, bic=None, usol=None, bman=None):
         ME_ic = Ohm_ic = np.nan
 
     return [ Ohm_f, ME_ic, Ohm_ic, ME_ext, E_w, Ohm_w ]
+
+
+
+def bessel_budget(bsol, bvals):
+    '''
+    NEW (2026-11-06): [ME_ic, Ohm_ic] of the inner core 'conducting, Bessel' in the units of em_budget (its integrands of a
+    conducting inner core), in closed form, exact for any skin depth. Inside the core f = f_R j_l(k r)/j_l(k R) and
+    g = g_R j_l(k r)/j_l(k R), R = ricb, f_R = f(R) and g_R = mu_i2o g(R) from the fluid's side (bc_b_cic), k and xd = R f'/f
+    at R from utils.bessel_ic. Both solve ∇²_l f = -k² f with k² imaginary, so with F = r f, F'' = -k² r F + L F/r², and
+    integrating |F'|² by parts,
+        ∫ (L |f|² + |(r f)'|²) dr = R f_R* (r f)'(R) + k² ∫ r² |f|² dr = R (1 + xd) |f_R|² + k² I,
+    whose imaginary part gives I = ∫ r² |f|² dr = -R Im(xd) |f_R|²/Im(k²) (Lommel's integral; R³/(2l+3) |f_R|² at k = 0) and
+    whose real part is R (1 + Re xd) |f_R|². Then, with a_l = 4π/(2l+1), η_i = 1/(mu_i2o sigma_i2o) and ∇²_l f = -k² f,
+        ME_ic  = Σ a_l L [ R (1 + Re xd) |f_R|² ] + Σ a_l L I_g,
+        Ohm_ic = η_i Σ 2 a_l L |k|⁴ I_f + η_i Σ 2 a_l L R (1 + Re xd) |g_R|²,
+    both divided by mu_i2o (𝐇 = 𝐛/mu_i2o), as for 'conducting, Chebys'.
+    '''
+    R = par.ricb
+    lp, lt = ut.ell(par.m, par.lmax, ut.bsymm)[:2]
+    eta_i = 1/(par.mu_i2o*par.sigma_i2o)
+    fR = bvals(bsol[0], 0, -1.0)[0]
+    gR = par.mu_i2o*bvals(bsol[1], 0, -1.0)[0]
+    def parts(l):   # |k|⁴, R (1 + Re xd) and I/|b_R|²
+        k, xd = ut.bessel_ic(l)
+        k2 = k*k
+        I = R**3/(2*l + 3) if k == 0 else -R*np.imag(xd)/np.imag(k2)
+        return abs(k2)**2, R*(1 + np.real(xd)), I
+    ME_ic = Ohm_ic = 0.0
+    for c, l in enumerate(lp):
+        L = l*(l + 1.); a0 = 4*np.pi/(2*l + 1); k4, S, I = parts(l)
+        ME_ic  += a0*L*S*abs(fR[c])**2
+        Ohm_ic += eta_i*2*a0*L*k4*I*abs(fR[c])**2
+    for c, l in enumerate(lt):
+        L = l*(l + 1.); a0 = 4*np.pi/(2*l + 1); k4, S, I = parts(l)
+        ME_ic  += a0*L*I*abs(gR[c])**2
+        Ohm_ic += eta_i*2*a0*L*S*abs(gR[c])**2
+    return ME_ic/par.mu_i2o, Ohm_ic/par.mu_i2o
 
 
 
@@ -1948,6 +2053,91 @@ def mantle_budget(bman):
 
 
 
+def deform_work(usol, bic=None, bman=None):
+    '''
+    NEW (2026-11-06): with forced_walls 'deforming' (background.deforms), the work of the motion of a thick conducting solid
+    that deforms with its wall on the solid's field, 2 Re ∫ (𝐯×𝐁₀)⋅(∇×𝐛)* dV over the resolved mantle (bman, its part of the
+    solution vector) and a conducting inner core (bic), in the units of em_budget (no MagnetD): 𝐯 = ∇×∇×(P(r_w) φ Y 𝐫), φ from
+    background.deform_profile and P(r_w) from the flow usol (expand_reshape_sol) at the wall, 𝐁₀ continued inside the solid
+    (background_field.solid_profiles), 𝐛 from the solid's Chebyshev coefficients. On a Gauss grid in r and cos θ, independent
+    of the rows (assemble.deform_rows). The full budget (resid𝐄) adds it to the induction work (spin_doctor): with the solid's
+    surface moving with the fluid, the tangential electric field is continuous at the wall and the fluxes of 𝐄×𝐛* through it
+    cancel, so the field's energy changes by the work of the fluid's motion and of the solid's, less the Ohmic losses.
+    '''
+    m = par.m
+    lp_u = ut.ell(m, par.lmax, par.symm)[0]
+    lp_b, lt_b = ut.ell(m, par.lmax, ut.bsymm)[:2]
+    nb = int((par.lmax - m + 1)/2)
+    lmx = par.lmax + 1
+    cross = lambda a, c: [ a[1]*c[2] - a[2]*c[1], a[2]*c[0] - a[0]*c[2], a[0]*c[1] - a[1]*c[0] ]
+    total = 0.0
+    for wall in ('inner', 'outer'):
+        if not bg.deforms(wall):
+            continue
+        C = bic if wall == 'inner' else bman
+        if C is None:
+            return np.nan
+        pol, tor = bf.solid_profiles(wall)
+        nB = max([1] + list(pol) + list(tor))
+        xg, wx = np.polynomial.legendre.leggauss(lmx + nB + 12)
+        Yg, dYg, Zg = angular.ylm_grid(m, lmx, xg)
+        Y0, dY0, _ = angular.ylm_grid(0, nB, xg)
+        if wall == 'inner':   # the core's series in x = r/ricb on [-1, 1], one parity per section (as em_budget)
+            rw, Nb, Nc = par.ricb, ut.Nic, par.N_cic
+            xr, wr = np.polynomial.legendre.leggauss(max(2*Nc, par.lmax + 2*nB + 20, 64))
+            rr, wrr = 0.5*rw*(xr + 1), 0.5*rw*wr
+            if ut.symmB0 == -1: ixf, ixg = (m + ut.s)%2, (m + 1 - ut.s)%2
+            else:               ixf, ixg = (m + 1 - ut.s)%2, (m + ut.s)%2
+            def sfun(a, ix, nd):
+                cc = np.zeros(Nc, complex); cc[ix::2] = a; out = []
+                for j in range(nd + 1):
+                    out.append(ch.chebval(rr/rw, cc)); cc = ch.chebder(cc)/rw
+                return out
+        else:   # the mantle's series on [1, r_surface], all the polynomials (as mantle_budget)
+            rw, Nb, Rs = ut.rcmb, par.N_mantle, par.r_surface
+            xr, wr = np.polynomial.legendre.leggauss(max(2*Nb, 64))
+            rr, wrr = rw + 0.5*(Rs - rw)*(xr + 1), 0.5*(Rs - rw)*wr
+            ixf = ixg = None
+            def sfun(a, ix, nd):
+                cc = np.array(a, dtype=complex); out = []
+                for j in range(nd + 1):
+                    out.append(ch.chebval(xr, cc)); cc = ch.chebder(cc)*2/(Rs - rw)
+                return out
+        def synth(qs):   # {l: (q, s, t)} on rr -> (F_r, F_θ, F_φ) on (rr, x), F = q Y 𝐫̂ + s r∇Y + t r∇Y×𝐫̂
+            Fr = Ft = Fp = 0*np.outer(rr, xg)
+            for l, (q, s, t) in qs.items():
+                Fr = Fr + np.outer(q, Yg[l]); Ft = Ft + np.outer(s, dYg[l]) + np.outer(t, Zg[l])
+                Fp = Fp + np.outer(s, Zg[l]) - np.outer(t, dYg[l])
+            return [ Fr, Ft, Fp ]
+        z = np.zeros_like(rr, dtype=complex)
+        J = {}   # ∇×𝐛: from f, t = -(f'' + 2f'/r - L f/r²); from g, q = L g/r, s = g' + g/r
+        for k, l in enumerate(lp_b):
+            L = l*(l + 1.)
+            f, f1, f2 = sfun(C[k*Nb:(k + 1)*Nb], ixf, 2)
+            J[l] = (z, z, -(f2 + 2*f1/rr - L*f/rr**2))
+        for k, l in enumerate(lt_b):
+            L = l*(l + 1.)
+            g, g1 = sfun(C[nb*Nb + k*Nb: nb*Nb + (k + 1)*Nb], ixg, 1)
+            J[l] = (L*g/rr, g1 + g/rr, z)
+        P0 = cheb2space_table(usol[0], 0, np.array([float(rw)]))[0][:, 0]   # P at the wall, each degree of lp_u
+        V = {}   # 𝐯 = ∇×∇×(P(r_w) φ Y 𝐫): q = L P_s/r, s = P_s' + P_s/r
+        for k, l in enumerate(lp_u):
+            phi = bg.deform_profile(wall, l)
+            Ps, Ps1 = P0[k]*phi(rr, 0), P0[k]*phi(rr, 1)
+            V[l] = (l*(l + 1.)*Ps/rr, Ps1 + Ps/rr, z)
+        B0 = [ 0*np.outer(rr, xg) ]*3   # 𝐁₀ inside the solid
+        for n, f in pol.items():
+            hh = [ f(rr, d) for d in (0, 1) ]
+            B0 = [ B0[0] + np.outer(n*(n + 1.)*hh[0]/rr, Y0[n]), B0[1] + np.outer(hh[1] + hh[0]/rr, dY0[n]), B0[2] ]
+        for n, f in tor.items():
+            B0 = [ B0[0], B0[1], B0[2] - np.outer(f(rr, 0), dY0[n]) ]
+        W, j = cross(synth(V), B0), synth(J)
+        dens = sum(w*np.conj(c) for w, c in zip(W, j))
+        total += 2*np.real(2*np.pi*np.sum((wrr*rr**2)[:, None]*wx[None, :]*dens))
+    return total
+
+
+
 def twa_budget(bsol, wall, bvals, usol=None):
     '''
     NEW (2026-11-06, the thin-wall part of conductive_IC's em_budget): [ ME, E_w, Ohm_w ] of the thin wall 'outer' or 'inner':
@@ -1966,6 +2156,10 @@ def twa_budget(bsol, wall, bvals, usol=None):
     DF = 2*f1 + r*f2 - Lp*f/r            # r ∇²_l f = F'' - L F/r²
     if usol is not None and ut.twa_slips(wall):
         DF = DF + slip_lapF(usol, wall)
+    if usol is not None and c1 != 0 and bg.flows_through(wall):   # NEW (2026-11-06): a radial boundary flow through the wall
+        DF = DF + radial_lapF(usol, wall)
+    elif usol is not None and bg.thin_drop(wall):   # or the layer deforming across the drop of the toroidal B0: half of it
+        DF = DF + 0.5*radial_lapF(usol, wall, tor_only=True)
     E_w = Ohm_w = 0.0
     hw = 0.0                               # the wall's thickness
     if np.isinf(p):   # the field beyond the wall from the wall condition (outer: F' + l F/r + c1 r D F = 0 there)
@@ -2010,6 +2204,36 @@ def slip_lapF(usol, wall):
     Br = sum( n*(n+1)*f(rr, 0)[0]/r*Y0[n] for n, f in prof.items() )
     dBr = sum( n*(n+1)*f(rr, 0)[0]/r*dY0[n] for n, f in prof.items() )
     X = -( Br*divu + dBr*uth )/r
+    Xl = np.array([ (2*l+1)/2*np.sum(w*X*Y[l]) for l in lpb ])
+    return r**2/(lpb*(lpb+1)*par.MagnetD)*Xl
+
+
+
+def radial_lapF(usol, wall, tor_only=False):
+    '''
+    NEW (2026-11-06): as slip_lapF, for the radial boundary flow of a forced problem (background.flows_through): for each
+    poloidal degree l of b, r²/(L MagnetD) [r̂⋅∇×(uᵣ r̂×B0)]_l at the wall, the radial induction of the flow that the poloidal
+    row of a thin conducting layer at rest adds to D F (assemble.bc_b_radial). r̂⋅∇×(uᵣ r̂×B0) = ∇_H⋅(uᵣ B0_t) =
+    uᵣ ∇_H⋅B0_t + B0_t⋅∇_H uᵣ, ∇_H⋅B0_t = -(r² B0_r)'/r² (∇⋅B0 = 0), for a poloidal and a toroidal B0, computed on a Gauss
+    grid in cos θ and projected on Y_l: a check of the angular algebra of the assembly. usol from expand_reshape_sol.
+    NEW (2026-11-06): tor_only = True, from the toroidal B0 alone (a thin layer that deforms across its drop, thin_drop).
+    '''
+    lpu = ut.ell(par.m, par.lmax, par.symm)[0]
+    lpb = ut.ell(par.m, par.lmax, ut.bsymm)[0]
+    r = ut.rcmb if wall == 'outer' else par.ricb
+    pol, tor = ({} if tor_only else bf.pol_profiles()), bf.tor_profiles()
+    nB = max([1] + list(pol) + list(tor))
+    x, w = np.polynomial.legendre.leggauss(par.lmax + nB + 9)
+    Y, dY, Z = angular.ylm_grid(par.m, par.lmax + 1, x)
+    Y0, dY0, _ = angular.ylm_grid(0, nB, x)
+    rr = np.array([r], dtype=float)
+    P0 = cheb2space_table(usol[0], 0, rr)[0][:, 0]
+    ur_k = lpu*(lpu + 1)*P0/r                              # uᵣ = L P/r of each degree
+    ur, dur, zur = ur_k @ Y[lpu], ur_k @ dY[lpu], ur_k @ Z[lpu]   # uᵣ, ∂θuᵣ, i m uᵣ/sinθ
+    divB = sum( -n*(n+1)*(f(rr, 0)[0] + r*f(rr, 1)[0])/r**2*Y0[n] for n, f in pol.items() )   # ∇_H⋅B0_t
+    Bth  = sum( (f(rr, 1)[0] + f(rr, 0)[0]/r)*dY0[n] for n, f in pol.items() )             # B0_θ
+    Bph  = sum( -f(rr, 0)[0]*dY0[n] for n, f in tor.items() )                              # B0_φ
+    X = ur*divB + (Bth*dur + Bph*zur)/r
     Xl = np.array([ (2*l+1)/2*np.sum(w*X*Y[l]) for l in lpb ])
     return r**2/(lpb*(lpb+1)*par.MagnetD)*Xl
 
@@ -2307,8 +2531,9 @@ def diagnose_magnetic( bsol ):
     if use_grid():   # NEW (2026-10-28): toroidal B0 (or FORCE_GRID): the induction and Lorentz terms from the (r, θ) grid
         indu, plor = magnetic_powers_grid()
         out[0, 2] += indu; out[0, 3] += plor.real; out[0, 4] += plor.imag
-    elif slipping_walls() or ut.rotdyn:   # NEW (2026-11-06): the spectral Indu includes the wall terms; the full budget needs
-        magnetic_powers_grid(walls_only=True)   # them apart (rotdyn = 1: the no-slip walls move with the solids)
+    elif slipping_walls() or ut.rotdyn or walls_move():   # NEW (2026-11-06): the spectral Indu includes the wall terms;
+        magnetic_powers_grid(walls_only=True)   # the full budget needs them apart (rotdyn = 1: the no-slip walls move with the
+                                                # solids; forced problems and bco, bci = 2: the walls that move, walls_move)
     return out
 
 
@@ -2453,11 +2678,44 @@ def magnetic_powers_grid(walls_only=False):
     global INDU_WALLS, INDU_ROT_SOLID
     INDU_WALLS = 2*np.real(walls[1] - (walls[0] if par.ricb > 0 else 0))   # no inner wall in a full sphere
     # NEW (2026-11-06): the U0×b part at a wall with a turning conducting solid behind it (INDU_ROT_SOLID)
-    solid = [ par.ricb > 0 and (ut.cic or ut.twa_i), ut.twa_o or ut.resolved_mantle ]   # (NEW 2026-11-06: the resolved mantle)
-    if par.diff_rot and any(solid):
+    solid = [ par.ricb > 0 and (ut.cic or ut.bessel or ut.twa_i), ut.twa_o or ut.resolved_mantle ]   # (NEW 2026-11-06: the
+    if par.diff_rot and any(solid):                                                         # resolved mantle, the Bessel core)
         Er = cross(rotation(rw), bw)
         rot = 2*np.pi*np.sum(wx[None, :]*(Er[1]*np.conj(bw[2]) - Er[2]*np.conj(bw[1]))*(rw**2)[:, None], axis=1)
         INDU_ROT_SOLID = 2*np.real((rot[1] if solid[1] else 0) - (rot[0] if solid[0] else 0))
+    # NEW (2026-11-06): likewise at a wall where the solid behind it moves with the fluid, with velocity 𝐕 (a forced problem):
+    # u_t where the wall is no-slip (the libration), plus uᵣ r̂ at a thin conducting layer with forced_walls 'deforming' (the
+    # layer deforms with the boundary). What stays in the induction work follows the solid's rows. A thin conducting layer
+    # moves with the fluid (bc_b_twa), so 𝐕×B0 drives no current of its own in it, and the forcing works against the force on
+    # its surface current 𝐊 = 𝐧×(𝐛_beyond - 𝐛): 2 Re ∮ (𝐕×B0)⋅𝐊* dS, 𝐛_beyond the potential field just beyond the wall. A
+    # conducting inner core (Chebys or Bessel) and the resolved mantle have rows without 𝐕×B0 (bc_b_cic, bc_b_bessel,
+    # bc_b_mantle): next to them the tangential electric field jumps by the consoidal part of the u_t×B0 of the libration's
+    # rigid turning, which induces nothing inside the solid (its toroidal part is 0), and whose flux
+    # 2 Re ∮ ((𝐕×B0)×𝐛_tor*)⋅𝐧 dS is the work of that turning, 𝐛_tor the part of b from g (n: out of the fluid). Where such a
+    # thick solid deforms with the boundary (background.deforms) its motion inside is modelled, and the work of its uᵣ is the
+    # volume integral deform_work (spin_doctor). With forced_walls 'rigid' a radial boundary flow passes through the wall into
+    # the solid at rest, whose rows take its u×B0 (assemble.bc_b_radial): its flux leaves the fluid for the solid's field, as
+    # at a slipping wall, and stays in INDU_WALLS
+    if par.forcing != 0 and any(solid):
+        ns = np.array([ float(par.bci == 1 and par.ViscosD > 0), float(par.bco == 1 and par.ViscosD > 0) ])[:, None]
+        rad = float(bg.forced_walls() == 'deforming')*np.array([ float(ut.twa_i), float(ut.twa_o) ])[:, None]
+        B0w = background(rw)[0]
+        # the mean B0 across a thin layer that deforms: the toroidal part falls to 0 across it (background.thin_drop)
+        B0m = [ B0w[0], B0w[1], B0w[2] + 0.5*sum(np.outer(f(rw, 0), dY0[n]) for n, f in bf.tor_profiles().items()) ]
+        z0 = 0*uw[0]
+        Ev = [ a + c for a, c in zip(cross([ uw[0]*rad, z0, z0 ], B0m), cross([ z0, uw[1]*ns, uw[2]*ns ], B0w)) ]
+        bt = synth({ l: v for l, v in Bw.items() if l in lt_b })
+        Bb = {}
+        for l in lp_b:   # f ~ r^l inside the inner wall, r^-(l+1) beyond the outer one: s = (l+1) f/r, -l f/r
+            F0 = Bt[0][0, list(lp_b).index(l)]
+            Bb[l] = (l*(l + 1.)*F0/rw, np.array([ (l + 1)*F0[0]/rw[0], -l*F0[1]/rw[1] ]), zw)
+        bb = synth(Bb)
+        thin = [ ut.twa_i, ut.twa_o ]
+        mov = []
+        for w in (0, 1):
+            d = [ bw[c][w] - bb[c][w] for c in range(3) ] if thin[w] else [ bt[c][w] for c in range(3) ]
+            mov.append( 2*np.pi*rw[w]**2*np.sum(wx*(Ev[1][w]*np.conj(d[2]) - Ev[2][w]*np.conj(d[1]))) )
+        INDU_ROT_SOLID += 2*np.real((mov[1] if solid[1] else 0) - (mov[0] if solid[0] else 0))
     if walls_only:
         return INDU_WALLS
     indu += INDU_WALLS

@@ -246,6 +246,31 @@ def build(m, degs, lw):
                 _store(out, 'g', X, _shift(grow, -1., 1), Lt)
     return _prune(out)
 
+def induction_monomials(m, degs, lw):
+    '''
+    NEW (2026-11-06): the induction ∇×(v×B0) of a velocity v = ∇×∇×(P Y 𝐫) in the rows f and g, as build() for the
+    column P but without the λ1 P of the fluid's (ρ0 u = ∇×∇×(ρ0 P Y 𝐫)) and kept as monomials, for a conducting solid that
+    deforms with a moving wall (assemble.deform_rows): {'f': e, 'g': e}, e = {(p, 'P', d, B, n, j, 0): M} for
+    r^p P^(d) B_n^(j), M [target l', source l] times L' of the target, in kore's A sign, without the 1/L'^3 of the row. The
+    caller evaluates B_n^(j) with the background continued inside the solid (background_field.solid_profiles); degs as in
+    build().
+    '''
+    A = angular.Algebra.get(m, lw)
+    pert = {key: F for key, F in _pert(A, 'P', 'u').items() if key[6] == 0}
+    out = {'f': {}, 'g': {}}
+    for B in 'hk':
+        for n in degs.get(B, []):
+            E = _product(A, _background(n, B)['B0'], pert, -1.)
+            # f: -r³ r̂⋅∇×E = -r² L' t;   g: -r³ r̂⋅∇×∇×E = -r L' [q - (r s)']   (L' added below)
+            for key, M in _shift(E['t'], -1., 2).items():
+                _add(out['f'], key, (A.L @ M).tocsr())
+            grow = dict(E['q'])
+            for key, M in _deriv(_shift(E['s'], 1., 1)).items():
+                _add(grow, key, -M)
+            for key, M in _shift(grow, -1., 1).items():
+                _add(out['g'], key, (A.L @ M).tocsr())
+    return out
+
 PRUNE = 1e-13
 def _prune(out):
     '''

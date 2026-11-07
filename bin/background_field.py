@@ -507,6 +507,54 @@ def tor_profiles():
             out[n] = w if n not in out else (lambda r, d, a=out[n], b=w: a(r, d) + b(r, d))
     return out
 
+def _powers(terms, rw):
+    '''NEW (2026-11-06): f(r, d) = the d-th r-derivative of Σ c (r/rw)^p over terms = [(c, p)], for any integer p and d'''
+    def f(r, d):
+        r = np.asarray(r, dtype=float)
+        out = np.zeros_like(r)
+        for c, p in terms:
+            fac = np.prod([p - i for i in range(d)]) if d > 0 else 1.0
+            if c != 0 and fac != 0:
+                out = out + c*fac*r**(p - d)/rw**p
+        return out
+    return f
+
+def solid_profiles(wall):
+    '''
+    NEW (2026-11-06): the background inside the conducting solid behind the wall 'outer' (the resolved mantle, between the
+    outer wall rw and r_surface) or 'inner' (a conducting inner core, below rw = ricb), for a solid that deforms with the
+    boundary (background.deforms): ({n: cnorm h_n^(d)}, {n: cnorm_tor k_n^(d)}), functions f(r, d) as pol_profiles and
+    tor_profiles, continued from the wall so that B0 is continuous there (h and h' for the poloidal part, B0_r ∝ h and
+    B0_t ∝ (r h)'/r; k for the toroidal part, B0_φ ∝ k):
+      poloidal  mantle: a (r/rw)^n + b (r/rw)^-(n+1), the potential field (no current) with a + b = h, n a - (n+1) b = rw h'
+                core:   a (r/rw)^n + b (r/rw)^(n+2), regular at the centre, b = (rw h' - n h)/2: the potential field where B0
+                        meets the potential condition r h' = n h at the inner wall ('axial', 'FDM', B0_ic = 'potential'),
+                        the lowest regular current otherwise (it gives back 'G21 dipole' and 'Luo_S1' with 'frozen currents')
+      toroidal  the steady field of a uniform conductor: mantle a (r/rw)^n + b (r/rw)^-(n+1), zero at r_surface (an
+                insulator beyond); core k(rw) (r/rw)^n
+    with h, h', k at rw.
+    '''
+    rw = 1.0 if wall == 'outer' else par.ricb   # (utils.rcmb = 1)
+    x = np.array([float(rw)])
+    pol, tor = {}, {}
+    for n, f in pol_profiles().items():
+        h0, h1 = f(x, 0)[0], rw*f(x, 1)[0]
+        if wall == 'outer':
+            terms = [((((n + 1)*h0 + h1)/(2*n + 1)), n), (((n*h0 - h1)/(2*n + 1)), -(n + 1))]
+        else:
+            b = (h1 - n*h0)/2
+            terms = [(h0 - b, n), (b, n + 2)]
+        pol[n] = _powers(terms, rw)
+    for n, f in tor_profiles().items():
+        k0 = f(x, 0)[0]
+        if wall == 'outer':
+            q = (par.r_surface/rw)**(-(2*n + 1))   # a + b = k0, a (rs/rw)^n + b (rs/rw)^-(n+1) = 0
+            terms = [(-k0*q/(1 - q), n), (k0/(1 - q), -(n + 1))]
+        else:
+            terms = [(k0, n)]
+        tor[n] = _powers(terms, rw)
+    return pol, tor
+
 def raw_profiles():
     '''
     NEW (2026-11-04): the poloidal and toroidal background degree by degree, ({n: cnorm h_n(r)}, {n: cnorm_tor k_n(r)}) at r > 0,
@@ -627,7 +675,7 @@ def wound_profiles():
         rhs = -r**2*c
         A[0] = 0; A[0, 0] = 1; rhs[0] = 0          # r = 1: k = 0 (insulating mantle)
         A[-1] = 0; rhs[-1] = 0
-        if fs or par.innercore != 'conducting, Chebys':
+        if fs or par.innercore not in ('conducting, Chebys', 'conducting, Bessel'):   # (NEW 2026-11-06: Bessel too, B0 is steady)
             A[-1, -1] = 1                           # r = -1 (parity) or an insulating inner core: k = 0
         else:                                       # conducting inner core: r k' + (1 - (n+1)/sigma_i2o) k = 0
             A[-1] = par.ricb*D[-1]; A[-1, -1] += 1 - (n + 1)/par.sigma_i2o

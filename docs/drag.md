@@ -76,7 +76,7 @@ Ekman number of about 1e-8. The same holds for each direction of the drag of the
 With `rotdyn = 1` the outer wall may be stress-free, with or without a drag. The drag then acts on the slip relative to
 the turning mantle, and pulls the mantle in return: its torque is the viscous torque on the mantle in `rotdyn.dat`.
 Without a drag the mantle feels only the magnetic torque and gravity. A fluid slipping along a conducting outer wall
-(a thin wall or a resolved mantle, [Magnetic field](magnetic.md#inner-core-and-walls)) induces its field through the
+(a thin conducting layer or a resolved mantle, [Magnetic field](magnetic.md#inner-core-and-walls)) induces its field through the
 slip relative to the turning mantle too.
 
 ## Output

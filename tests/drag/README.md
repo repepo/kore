@@ -23,8 +23,8 @@ incompressible fluid in a shell, ricb 0.35, Ek $10^{-3}$, N 48 or 64, `lmax` 19 
 - **conductive_IC.** Eleven runs whose eigenvalues and `rotdyn.dat` the `conductive_IC` branch (2d84351) gave for the
   same parameters: a constant drag on the spin-over mode in a shell and in a full sphere; the drag of the topography on
   the spin-over mode, on an `m = 2` mode and in a full sphere; the rotating solids with a stress-free outer wall,
-  without a drag, with each drag, with thin walls and a dipole, and with a conducting inner core, a resolved mantle and
-  a field of degree 2; the drag of the topography with a thin wall and a dipole. Expected: the first two eigenvalues to
+  without a drag, with each drag, with thin conducting layers and a dipole, and with a conducting inner core, a resolved
+  mantle and a field of degree 2; the drag of the topography with a thin layer and a dipole. Expected: the first two eigenvalues to
   $10^{-10}$ (in practice $10^{-14}$), and with the solids the rotation of the solids and the torques on the mantle,
   relative to $\omega_M$, to $10^{-8}$ (in practice $10^{-10}$, the precision of `rotdyn.dat`).
 - **Conservation.** With a variable density (`'Wu 2005'`, `r_out` 0.9, N 64) and the rotating solids, `kappa_cmb`

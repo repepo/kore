@@ -28,7 +28,7 @@ N 48).
   parameters: no-slip walls, a fluid slipping along both walls with a field of degree 2 under an exponential layer, a full
   sphere with a slipping fluid, a conducting inner core, and `m` 2 under a thin layer. Expected: $10^{-10}$ (in practice
   $10^{-14}$). These runs use `lmax` 19 to 21 on 2 ranks (1 with `NCPUS = 1`), as the reference runs.
-- **Thin layer.** A layer of thickness h and conductivity σ tends to the thin wall (`mantle = 'TWA'`) with `c_cmb` = h and
+- **Thin layer.** A layer of thickness h and conductivity σ tends to the thin conducting layer (`mantle = 'TWA'`) with `c_cmb` = h and
   `c1_cmb` = σh, with a fluid slipping along it: halving h (0.01, 0.005, 0.0025) halves the difference of the eigenvalues
   (ratios between 0.4 and 0.6).
 - **Vanishing conductivity.** A layer with σ = $10^{-9}$ gives the eigenvalues of an insulating mantle ($10^{-7}$).

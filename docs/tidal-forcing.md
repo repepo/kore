@@ -32,8 +32,8 @@ proportional to the amplitudes, and every power to their square.
 
 Requirements: `bco = 1` and `bci = 1` (also in a full sphere, where `bci` is otherwise ignored), and one of the three
 pairs (`m`, `symm`) above. In a full sphere (`ricb = 0`) only the outer wall moves. `assemble.py` stops with a message
-when a requirement is not met. The forcing works with any `structure`, with `thermal = 1` and with a differential
-rotation.
+when a requirement is not met. The forcing works with any `structure`, with `thermal = 1`, with a differential
+rotation and with a field ([Magnetic field](magnetic.md#forced-runs)).
 
 ## Example: the (2, 2) tide in a rotating shell
 

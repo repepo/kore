@@ -130,8 +130,9 @@ rate, one term of that budget.
 
 - **Against `conductive_IC`** (2d84351), eleven runs: a constant drag on the spin-over mode in a shell and in a full
   sphere; the drag of the topography on the spin-over mode, on an $m = 2$ mode and in a full sphere; the rotating solids
-  with a stress-free outer wall without a drag, with each drag, with thin walls and a dipole, and with a conducting
-  inner core, a resolved mantle and a field of degree 2; the drag of the topography with a thin wall and a dipole.
+  with a stress-free outer wall without a drag, with each drag, with thin conducting layers and a dipole, and with a
+  conducting inner core, a resolved mantle and a field of degree 2; the drag of the topography with a thin layer and a
+  dipole.
   Eigenvalues to $6\cdot10^{-14}$, and the rotation of the solids and the torques on the mantle in `rotdyn.dat` to
   $3\cdot10^{-10}$, its precision.
 - **Conservation** with `'Wu 2005'` (`r_out` 0.9, N 64) and the rotating solids: every mode but $\lambda = 0$ carries

@@ -48,6 +48,55 @@ cic    = int(bool(par.magnetic and par.innercore == 'conducting, Chebys' and par
 Nic    = int(par.N_cic/2)
 nic    = int(Nic*(par.lmax-par.m+1)/2) * cic
 
+# NEW (2026-11-06, from conductive_IC): a conducting inner core whose field is not among the unknowns (innercore 'conducting,
+# Bessel', forced problems only): inside it the field is b(ricb) j_l(k r)/j_l(k ricb), with k from the forcing frequency
+# (bessel_ic), and its two inner-wall rows are those of 'conducting, Chebys' with the core eliminated (assemble.bc_b_bessel)
+bessel = int(bool(par.magnetic and par.innercore == 'conducting, Bessel' and par.ricb > 0))
+
+def xdlogjl(l, x):
+    '''
+    NEW (2026-11-06, conductive_IC's dlogjl times x): x j_l'(x)/j_l(x) = l - x j_(l+1)(x)/j_l(x) for a complex x, j_l the
+    spherical Bessel function of the first kind (l at x = 0). Where |x| > l from scipy's exponentially scaled Bessel functions
+    (jve; their ratio does not overflow), elsewhere (and where those underflow) from the continued fraction
+    j_(l+1)/j_l = 1/((2l+3)/x - 1/((2l+5)/x - ...)) by the modified Lentz method, with more terms than |x|. Written as
+    l - x j_(l+1)/j_l, so that its imaginary part keeps its precision at small |x| (Im xd ~ -Im x²/(2l+3)).
+    '''
+    x = complex(x)
+    if x == 0:
+        return complex(l)
+    if abs(x) > l:
+        j0, j1 = scsp.jve(l + 0.5, x), scsp.jve(l + 1.5, x)
+        if abs(j0) > 1e-250:
+            return l - x*j1/j0
+    tiny = 1e-300
+    f = c = tiny   # q = 1/(b_1 - 1/(b_2 - ...)), b_k = (2(l + k) + 1)/x, a_1 = 1, a_k = -1 after
+    d = 0j
+    for k in range(1, 200 + 2*int(abs(x))):
+        b, a = (2*(l + k) + 1)/x, (1. if k == 1 else -1.)
+        d = b + a*d
+        d = 1/(d if d != 0 else tiny)
+        c = b + a/c
+        c = c if c != 0 else tiny
+        f *= c*d
+        if abs(c*d - 1) < 1e-16:
+            break
+    return l - x*f
+
+def bessel_ic(l):
+    '''
+    NEW (2026-11-06, conductive_IC's 'conducting, Bessel'): (k, xd) of the inner core of degree l: inside it the field is
+    b(ricb) j_l(k r)/j_l(k ricb), the solution of i w b = η_i ∇²b regular at r = 0, so k² = -i w/η_i, η_i = MagnetD/(mu_i2o
+    sigma_i2o), with w the frequency in the frame of the core: forcing_frequency, plus m Gaspard c with a differential rotation
+    (the core turns with ΔΩ(ricb) = c, background.magnetic_diffrot). xd = x j_l'(x)/j_l(x), x = k ricb, is r b'/b inside at
+    the inner wall (l at w = 0, a potential field).
+    '''
+    w = wf
+    if par.diff_rot:
+        import diff_rot as dr
+        w = w + par.m*par.Gaspard*dr.rigid_ricb()[0]
+    k = (1 - 1j)*np.emath.sqrt(w/(2*par.MagnetD/(par.mu_i2o*par.sigma_i2o)))   # either sign of w
+    return k, xdlogjl(l, k*par.ricb)
+
 # NEW (2026-11-06, from conductive_IC): thin conducting walls (mantle, innercore 'TWA'; assemble.bc_b_twa)
 twa_o  = bool(par.magnetic and par.mantle == 'TWA')
 twa_i  = bool(par.magnetic and par.innercore == 'TWA' and par.ricb > 0)

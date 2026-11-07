@@ -84,7 +84,7 @@ eigenvectors normalised to kinetic energy 1 (KE + Hendrik·ME = 1 with `magnetic
 | `reynolds_stress.py` | forcing 11: random Reynolds-stress body force f = ρ₀⁻¹∇·(ρ₀ s), the fluctuation-dissipation partner of the viscous force; `rhs(nsamp, seed)` gives one realisation per column of B_forced (docstring: physics, discretisation, normalisation) |
 | `bc_variables.py` | Chebyshev values/derivatives at the walls (`Ta`, `Tb`) and ln ρ₀ and its first two derivatives there (`lha*`, `lhb*`) |
 | `solve.py` | reads its own rows of A, B (memory-mapped), optional Ruiz scaling, SLEPc/KSP, KE normalisation, writes fields |
-| `just_induction.py`, `solve_ind.py` | NEW 2026-11-06 (from conductive_IC): kinematic induction, the field a given flow (real/imag_flow.field) induces: (A_bb − λ B_bb) b = −A_bu u from A.npz, B.npz of a magnetic eigen assembly (λ the argument, default i forcing_frequency) → A_ind.npz, u_ind.npz; solve_ind.py (MPI, KSP LU) writes real/imag_magnetic(_ic, _mantle).field |
+| `just_induction.py`, `solve_ind.py` | NEW 2026-11-06 (from conductive_IC): kinematic induction, the field a given flow (real/imag_flow.field) induces: (A_bb − λ B_bb) b = −A_bu u from A.npz, B.npz of a magnetic eigen assembly (λ the argument, default i forcing_frequency; in a forced assembly A holds A − i wf B, so λ = i wf needs no B.npz) → A_ind.npz, u_ind.npz; solve_ind.py (MPI, KSP LU) writes real/imag_magnetic(_ic, _mantle).field |
 | `rotdyn.py` | NEW 2026-11-06 (from conductive_IC): the rotating solids (`rotdyn = 1`, §4): `a_rows`, `b_rows` (the three rows of A, B and the wall entries), `coupling` (K), `relaxation`, `viscous_factor`, `magnetic_factors` (C_l); for spin_doctor `L_case`, `angular_momentum`, `viscous_torques`, `wall_torques` (resid𝐋, axial and equatorial) |
 | `topo.py` | NEW 2026-11-06 (from conductive_IC): the drag at a stress-free outer wall (`kappa_cmb`, `topo_drag = 'rekier'`, §4): `on`, `wall_profiles` (ρ₀, ν at the wall), `ratio` (q = Gaspard/(ViscosD ν(1))), `N_cmb`, `omega0`, `Ik_R`, `kappa` (Rekier et al. 2025 B1 with the 4π², or the test hook `topo_K`), `grid` (the cached Gauss–Legendre wall grid), `couplings` (A_ss, A_st, A_ts, A_tt), `rows` (the drag's entries in the stress rows, the ω_M column with `rotdyn = 1`); for spin_doctor `dissipation` (Dtopo) |
 | `utils4pp.py` | post-processing: solution expansion, velocity/curl l-components, per-l workers (`flow_worker`, `thermal_worker`), `diff_rot_setup`, `diagnose`, `kinetic_energy`, `identify`, `centrifugal_terms` (the metric parts of KE, the Coriolis power and TE with `centrifugal = 1`), `centrifugal_magnetic_energy`, `centrifugal_magnetic_terms` (with a field: MEc, the metric Lorentz and induction work, the potential field on the deformed walls), `centrifugal_dissipation_terms` (phase 2: the metric parts of the viscous power, the work of ΔΩ and the thermal dissipation); thin walls `twa_budget`, `slip_lapF`, `twa_error`, `slipping_walls`, the resolved mantle `mantle_budget` (2026-11-06) |
@@ -135,8 +135,8 @@ A toroidal B0 (step 4): `B0_tor` 'Malkus' (k = r, B0 = s φ̂), 'wall' or 'user'
 poloidal B0 of degree 2 (`operators.lorentz_pol2`/`induction_pol2`, tables of label expressions fitted from derive.py; spin_doctor
 uses the grid for it), the full sphere (ricb = 0: parity of h (-1)^l, of k (-1)^n via `ut.odd_profiles`, f of parity
 `vF = symmB0·vP`, one bc row at the CMB; FDM = j_l(βr) with analytic derivatives `bf.jl_k`) and inviscid runs (ViscosD = 0,
-full sphere only: u rows in C^(3), v rows in C^(2) with no bc row, since the Lorentz labels have D3, D2). For now:
-eigenproblems, uniform η, no inviscid shell: `background.check_magnetic()` stops otherwise.
+full sphere only: u rows in C^(3), v rows in C^(2) with no bc row, since the Lorentz labels have D3, D2). Uniform η, no
+inviscid shell: `background.check_magnetic()` stops otherwise. Forced runs: see below (phase 6a).
 Thin conducting walls (2026-11-06, conductive_IC port phase 3): `mantle`, `innercore` = 'TWA' (`c_cmb`, `c1_cmb`, `muw_cmb`,
 `c_icb`, `c1_icb`, `muw_icb`, fluid `mu`, `B0_cmb`; `background.check_twa`). `assemble.bc_b_twa`: conductive_IC's
 bc_b_thinlayer with its O(h) muw terms, outer rows as there, inner poloidal × −1, toroidal / r, so c = c1 = 0, mu = 1 is
@@ -177,6 +177,46 @@ drag's stress is then the viscous torque on the mantle (rotdyn's torque from T a
 `background.check_drag`: hydro, ViscosD > 0, bco = 0, Gaspard > 0, no centrifugal, not forcings 9, 10, not kappa_cmb with
 topo_drag; for 'rekier' no diff_rot, w0 ≠ 0, and topo_omega with a forcing 11 scan (`rsf_frequencies`). The drag and the
 solids' parameters are in `submatrix_io.OPERATOR_INDEPENDENT` (rows of assemble.py only).
+Forced runs with a field (2026-11-06, conductive_IC port phase 6a; `docs/magnetic-equations.md#forced-runs`,
+`tests/forced_field`): every field row (f, g, fic, gic, fm, gm) gets +1j wf op.b (A − i wf B, B = −op.b there); A is not
+normalised (forcing ≠ 0), forcing 11 writes B.npz unnormalised and scans with A − i(w − wf)B. `innercore = 'conducting,
+Bessel'` (forced only): the core's field j_l(k r), k² = −i w/(η_i MagnetD), w = wf + m Gaspard ΔΩ(ricb) (`utils.bessel_ic`,
+`xdlogjl` = x j_l′/j_l), two inner rows `assemble.bc_b_bessel` (bc_b_cic with the core eliminated), no fic/gic; energy and
+Ohmic loss in closed form (`utils4pp.bessel_budget`); stops in eigenproblems, rsf scans and just_induction with λ ≠ i wf
+(just_induction with λ ≠ i wf stops in any forced run but forcing 11, the only one that writes B.npz).
+Walls the forcing moves radially (`background.moves_radially`: 10; 9, 14, 7 m ≠ 0 with their amplitude; 6 at the ICB):
+`forced_walls` (`background.forced_walls`; None → 'rigid' for forcings 6, 7, 'deforming' for 9, 10, 14) says how the
+conducting solid behind moves. 'rigid' (`flows_through`): the solid at rest, the flow's u×B0 continued into it,
+`assemble.bc_b_radial` (S_l, X_l of u_r r̂×B0_t, recurrence algebra, on the P columns at the wall) in the TWA rows and the
+E_t row of cIC/Bessel/mantle. 'deforming': rows at the wall without u×B0 (as conductive_IC); a thick solid
+(`background.deforms`: resolved mantle, 'conducting, Chebys') moves inside with v = ∇×∇×(P(r_w) φ_l Y r⃗)
+(`deform_profile`: mantle φ = 1/r, purely radial; core φ = ((l+3)x^l − (l+1)x^(l+2))/2, φ(1) = 1, (rφ)′(1) = 0), across B0
+continued inside (`background_field.solid_profiles`: poloidal a x^n + b x^−(n+1) in the mantle, a x^n + b x^(n+2) in the
+core, C¹; toroidal zero at r_surface, k(ricb) x^n in the core), and its induction fills the solid's rows
+(`assemble.deform_rows`: ∂t f += t_l, ∂t g += (q_l − (r s_l)′)/r, × σ in the mantle; `mag_algebra.induction_monomials`;
+Chebyshev projection on Nq nodes into C^(2), parity checked in the core). A TWA under 'deforming' with a toroidal B0 ≠ 0 at
+the wall (`background.thin_drop`) gets half the toroidal bc_b_radial terms (`tor_half`): the drop of B0_tor to 0 across the
+layer, the limit of a thin deforming resolved mantle (78% off without it). Stops (`check_forced_magnetic`): 'deforming'
+with the inner wall moving and Bessel; a permeability jump at a wall that moves radially where B0 reaches it
+(`b0_at_wall(wall, parts)`: h, h' (parts 'p') or k ('t') not 0 there, to 1e-6 of the largest of all three; h' to 10× the
+round-off of a slope of an interpolant of degree n = max(64, 2N), ~1e-13 n² 2/(1 − ricb), where larger: 1e-7 to 3e-6 at
+N 800 to 2000; an unresolved profile is off by more), in both pictures: mu = 1 and mu_i2o = 1 (either part); a TWA's
+muw = 1 for the poloidal part if c ≠ 0 or the layer conducts at rest ('rigid': its E is driven by u_r r̂ × its own
+B_t = (p/μ) B0_t, the rows take the fluid's), for the toroidal part if c1 ≠ 0 ('rigid': same; 'deforming': the layer meets
+p/(2μ) of B0_t, not half); muw free otherwise (c = c1 = 0: enters nothing; a deforming sheet, c = 0, carries the fluid's
+E' in its frame whatever p, and p enters the rows only through c; a thick layer with c1 = 0 holds no B0_tor) (Andres
+2026-11-06, for simplicity: a moving surface where μ jumps moves the magnetization of B0; fixed walls take any μ;
+general terms derived, not built); a forced_walls value is
+checked in every magnetic run (`check_magnetic`); a TWA or the
+resolved mantle with bco/bci = 2 stops (a radial flow nothing prescribes). conductive_IC's cIC under a radial forcing (rows without
+u×B0, no motion inside) matches neither picture, so it is not compared; its resolved mantle stops there. Left out in both:
+the interface displacement (ξ_r times the jump of ∂_r B0). spin_doctor: Wp includes the Lorentz pressure
+(`utils4pp.lorentz_walls`) when `walls_move()` (forcing ≠ 0, bco or bci = 2), also in resid𝐄; the flux of V×B0 at a wall
+whose solid moves with the fluid stays in the induction work (INDU_ROT_SOLID; V = u_t at a no-slip wall, plus u_r r̂ at a
+TWA under 'deforming' with the mean B0, toroidal halved: TWA 2Re∮(V×B0)·K*, cIC/mantle 2Re∮((V×B0)×b_tor*)·n); a
+deforming thick solid's work 2Re∫(v×B0)·(∇×b)* dV (`utils4pp.deform_work`, Gauss grid) joins it (Iwall −= it; without it
+resid𝐄 ~1e-2); the 'rigid' flux stays in INDU_WALLS; twa_budget's DF gets radial_lapF ('rigid') or 0.5 radial_lapF(tor_only)
+(thin_drop). B0_tor allowed in forced runs (conductive_IC stops it).
 2026-10-30: with `diff_rot = 1` the induction gains ∇×(U0×b) (`diff_rot.induction_block`, any ΔΩ, same algebra as the force;
 a conducting inner core must co-rotate rigidly, `diff_rot.rigid_ricb`; `background.ferraro_mismatch` reports B0⋅∇Ω and
 `par.ferraro_policy` 'warn'/'refuse' (a parameter since 2026-11-03, formerly the constant `background.FERRARO_POLICY`);
@@ -592,6 +632,20 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   kappa_cmb = a frame 1 + a times faster with kappa_cmb/(1 + a), shifted by −i m Gaspard a; kappa_cmb 1e8 = no-slip;
   a weak drag against Dtopo/κ and δσtopo/κ; the N/Ω and w0/Ω in params.dat, a doubled time unit, a forced run;
   Dtopo = −Wv_cmb − 2 Re(ω_M* Γ_M) in every run with a drag; the stops of check_drag).
+- `tests/forced_field/` (README, `run_all.sh`, ~3 min; NEW 2026-11-06): `forced_check.py` (8 forced runs with a field
+  against conductive_IC 2d84351, KE, ME, MEic hard-coded for N 48, lmax 19-21 on 2 ranks: libration, forcing 9 insulating
+  and TWA 'deforming'; Bessel = Chebys ('rigid') under forcing 9, also with diff_rot and with sigma_i2o 0.3, and with
+  mu_i2o 1.5 where forcing 9 moves the outer wall only, and forcing 6; A(w1) − A(w2) = −i(w1 − w2)B and A(0) = A_eig;
+  forcing 11 scans independent of the assembly frequency; resid𝐄 at moving walls, 13 'rigid' (2 of them free walls,
+  bco/bci = 2, in eigenproblems) and 17 'deforming' runs ('Wu 2005' N 96, Malkus, general, G21, Luo_S2, full sphere, slip,
+  σ(r), sigma_i2o, forcings 6, 7 m 2, 9, 10, 14), and 2 with no wall moving radially (forcing 13, libration); a thin
+  resolved mantle → TWA at O(h) in both pictures (axial, Malkus); bc_b_radial's algebra (and tor_half) against a grid;
+  kinematic induction in forced runs; the stops, also of the 'deforming' defaults of forcings 9 and 14 (forcing 10's by
+  its matrix, default = 'deforming' exactly), and of a permeability jump at a wall that moves where B0 reaches it, in both
+  pictures (also muw of a sheet at rest under B0 'axial'; not at walls that stay in place, for muw of a TWA with
+  c = c1 = 0, of sheets that deform under 'axial' or of a thick layer with c1 = 0 under 'Malkus', or where B0 is 0 at the
+  walls: B0_tor 'wall', a 'general' h with h = h' = 0 at the wall); xdlogjl against mpmath). A thin layer's budget closes exactly at c = 0 or
+  c1 = 0 (O(c c1) otherwise): f6_muw_fixed shows muw at a fixed wall with c_cmb 1e-3, c1_cmb 0.
 - `tests/forcing/` (README, `run_all.sh`, ~20 s; NEW 2026-11-06): `rows_check.py` (forcings 6 at a no-slip and a
   stress-free ICB, 7 with m = 0 and 2, 9 Boussinesq, 'Wu 2005' and full sphere, 10: the wall values read back from the
   solution of small forced runs built with `tests/tidal/mk_run.py`, to 1e-10 of the amplitude).

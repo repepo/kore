@@ -10,7 +10,7 @@ table.
 | `A.npz`, `B.npz` | `assemble.py` | the matrices of the eigenproblem $A\mathbf x = \lambda B\mathbf x$ |
 | `B_forced.npz` | `assemble.py`, with `forcing` > 0 | the right-hand sides of a forced run, one per column |
 | `eigenvalues0.dat` | `solve.py` | the eigenvalues of the last solve, one per row: $\mathrm{Re}\thinspace\lambda$, $\mathrm{Im}\thinspace\lambda$ |
-| `real_flow.field`, `imag_flow.field` | `solve.py` | the eigenvectors of the flow (or the forced flows), real and imaginary parts of their spectral coefficients, one column per solution; with `thermal = 1` also `real_thermal.field`, `imag_thermal.field` for $s$; with `magnetic = 1` also `real_magnetic.field`, `imag_magnetic.field` for $\mathbf b$, `real_magnetic_ic.field`, `imag_magnetic_ic.field` for a conducting inner core, and `real_magnetic_mantle.field`, `imag_magnetic_mantle.field` for a resolved mantle; with `rotdyn = 1` also `real_rotdyn.field`, `imag_rotdyn.field` for the rotation rates of the mantle and of the inner core and the angle between them ([Rotating solids](rotating-solids.md)). Without the flow (`hydro = 0`) the flow's files are not written |
+| `real_flow.field`, `imag_flow.field` | `solve.py` | the eigenvectors of the flow (or the forced flows), real and imaginary parts of their spectral coefficients, one column per solution; with `thermal = 1` also `real_thermal.field`, `imag_thermal.field` for $s$; with `magnetic = 1` also `real_magnetic.field`, `imag_magnetic.field` for $\mathbf b$, `real_magnetic_ic.field`, `imag_magnetic_ic.field` for the inner core `'conducting, Chebys'`, and `real_magnetic_mantle.field`, `imag_magnetic_mantle.field` for a resolved mantle; with `rotdyn = 1` also `real_rotdyn.field`, `imag_rotdyn.field` for the rotation rates of the mantle and of the inner core and the angle between them ([Rotating solids](rotating-solids.md)). Without the flow (`hydro = 0`) the flow's files are not written |
 | `rsf_spectrum.dat`, `rsf_ke.dat` | `solve.py`, with `forcing = 11` and `rsf_frequencies` | the power spectrum of the kinetic energy of the forced flow, appended, one row per frequency ([Convective forcing](forcing.md#reading-the-output)) |
 | `timing.dat` | `solve.py` | the run time of the solve, appended |
 | `eigenvalues.dat` | `spin_doctor.py` | the eigenvalues, appended |
@@ -74,10 +74,10 @@ the definitions are on [Magnetic field equations](magnetic-equations.md#energy-b
 | 7 | MEic, the magnetic energy in the inner core |
 | 8 | MEext, the energy of the potential field outside the outer wall (beyond `r_surface` with a resolved mantle) |
 | 9, 10 | Ohm_f, Ohm_ic: the Ohmic losses in the fluid and in a conducting inner core |
-| 11 | the relative residual of the full energy budget (resid𝐄; nan with a flow through a wall, `bco = 2` or `bci = 2`, with stress-free walls and `centrifugal = 1`, and with thin walls and `mu` other than 1) |
-| 12 | with `centrifugal = 1`, a thin wall or a resolved mantle: MEc, the part of the magnetic energy that the deformation adds, so that ME + MEc is the energy of the field in the deformed fluid (the column Mag/Kin of the `spin_doctor` table is Hendrik (ME + MEc)/KE; [Centrifugal deformation](centrifugal-equations.md#energy-budgets)); 0 without the deformation |
-| 13, 14 | with a thin wall (`mantle` or `innercore` `'TWA'`) or a resolved mantle (`mantle = 'resolved'`) only: E_w, the magnetic energy stored in the thin walls or in the layer, and Ohm_w, their Ohmic loss |
-| 15, 16 | with a thin wall or a resolved mantle only: εTWA, the estimated relative error of the outer and of the inner thin wall (0 where there is none; the `spin_doctor` table shows the larger) |
+| 11 | the relative residual of the full energy budget (resid𝐄; nan with stress-free walls and `centrifugal = 1`, with thin conducting layers and `mu` other than 1, and with rotating solids unless `vtrq` and `mtrq` are 1) |
+| 12 | with `centrifugal = 1`, a thin conducting layer or a resolved mantle: MEc, the part of the magnetic energy that the deformation adds, so that ME + MEc is the energy of the field in the deformed fluid (the column Mag/Kin of the `spin_doctor` table is Hendrik (ME + MEc)/KE; [Centrifugal deformation](centrifugal-equations.md#energy-budgets)); 0 without the deformation |
+| 13, 14 | with a thin conducting layer (`mantle` or `innercore` `'TWA'`) or a resolved mantle (`mantle = 'resolved'`) only: E_w, the magnetic energy stored in the thin layers or in the mantle, and Ohm_w, their Ohmic loss |
+| 15, 16 | with a thin conducting layer or a resolved mantle only: εTWA, the estimated relative error of the outer and of the inner thin layer (0 where there is none; the `spin_doctor` table shows the larger) |
 
 ## `rotdyn.dat`
 
@@ -112,7 +112,7 @@ The columns follow the order of `spin_doctor.param_table`, counted from 1:
 | 108–112 | `centrifugal`, `centrifugal_shape`, `centrifugal_q`, `centrifugal_f` (the flattening of the outer wall, as used), `centrifugal_param` |
 | 113 | `hydro` (0: no flow) |
 | 114–122 | `mantle`, `c_cmb`, `c1_cmb`, `muw_cmb`, `c_icb`, `c1_icb`, `muw_icb`, `mu`, `B0_cmb` |
-| 123–127 | `r_surface`, `N_mantle`, the conductivity of a resolved mantle at the outer wall (as used), `sigma_mantle_param`, its conductance $\int\sigma\,dr$ (the `c1_cmb` of a thin wall of the same conductance) |
+| 123–127 | `r_surface`, `N_mantle`, the conductivity of a resolved mantle at the outer wall (as used), `sigma_mantle_param`, its conductance $\int\sigma\,dr$ (the `c1_cmb` of a thin conducting layer of the same conductance) |
 | 128–134 | `rotdyn`, `MoIZ_M`, `MoIZ_IC`, `gTorque`, `OmgtauIC`, `vtrq`, `mtrq` |
 | 135–141 | `kappa_cmb`, `topo_drag` (1 for `'rekier'`, 0 for `None`), and with `'rekier'` (0 otherwise) `topo_hrms`, `topo_lambda0`, `topo_H`, and the buoyancy frequency and the frequency of the flow that the drag used, over the rotation rate ([Drag at the outer wall](drag.md)) |
 
@@ -129,7 +129,7 @@ The columns follow the order of `spin_doctor.param_table`, counted from 1:
 - The magnetic columns: `B0` is the index in `background_field.B0_TYPES` (`'axial'` 0, `'FDM'` 1, `'G21 dipole'` 2,
   `'Luo_S1'` 3, `'Luo_S2'` 4, `'confined'` 5, `'general'` 6, `'ferraro'` 7; −1 without a poloidal field), `B0_tor` in
   `background_field.B0_TOR_TYPES` (`'Malkus'` 0, `'wall'` 1, `'user'` 2, `'general'` 3; −1 without), `innercore` in
-  `background.INNER_CORES` (`'insulator'` 0, `'conducting, Chebys'` 1, `'TWA'` 2), `mantle` in `background.MAGNETIC_WALLS`
+  `background.INNER_CORES` (`'insulator'` 0, `'conducting, Chebys'` 1, `'TWA'` 2, `'conducting, Bessel'` 3), `mantle` in `background.MAGNETIC_WALLS`
   (`'insulator'` 0, `'TWA'` 1, `'resolved'` 2), `B0_ic` in `background.B0_ICS` (`'potential'` 0, `'frozen currents'` 1, formerly
   `'full sphere'`), `B0_cmb` in `background.B0_CMBS` (`'wall'` 0, `'plain'` 1) and `ferraro_policy` in
   `background.FERRARO_POLICIES` (`'warn'` 0, `'refuse'` 1). `muw_cmb` and `muw_icb` may be `inf`. `cnorm` and

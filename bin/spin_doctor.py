@@ -531,6 +531,10 @@ def main(ncpus):
             Ohm_f[i]  = par.MagnetD * Ohm_f0
             Ohm_ic[i] = par.MagnetD * Ohm_ic0
             Ohm_w[i]  = par.MagnetD * Ohm_w0   # NEW (2026-11-06): thin walls or the resolved mantle (0 without)
+            if par.hydro and (bg.deforms('inner') or bg.deforms('outer')):
+                # NEW (2026-11-06): the work of the motion of a thick conducting solid that deforms with its wall (forced_walls
+                # 'deforming') on its own field, a volume integral over the solid (upp.deform_work), part of the induction work
+                Iwall[i] -= upp.deform_work( u_sol2, None if bic is None else bic[:,i], None if bman is None else bman[:,i] )
             if use_twa:
                 twaerr[i] = upp.twa_error(sigma + 1j*w)
             if par.centrifugal:  # NEW (2026-11-05, phase 1b): the metric parts, on the same grid (upp.centrifugal_magnetic_terms)
@@ -549,7 +553,7 @@ def main(ncpus):
         if par.ViscosD>0 and par.hydro:
             Dvisc[i] = upp.viscous_dissipation()
         if par.hydro:
-            [ Wp0, Wv0 ] = upp.wall_powers(u_sol2, t_sol2, sigma + 1j*w)
+            [ Wp0, Wv0 ] = upp.wall_powers(u_sol2, t_sol2, sigma + 1j*w, b_sol2 if par.magnetic else None)
             [ Wp_icb[i], Wp_cmb[i] ] = np.real(Wp0)
             Wp_im[i] = np.sum(np.imag(Wp0))
             [ Wv_icb[i], Wv_cmb[i] ] = Wv0
@@ -679,7 +683,10 @@ def main(ncpus):
             imperm = par.ViscosD == 0 or (par.bco in (0, 1) and (par.ricb == 0 or par.bci in (0, 1)))
             # NEW (2026-11-06): with rotating solids (rotdyn = 1) only with both torques on them (vtrq = mtrq = 1)
             rotok = not ut.rotdyn or (par.vtrq == 1 and par.mtrq == 1)
-            if (noslip or not par.hydro or (imperm and not par.centrifugal)) and not (use_twa and par.mu != 1) and rotok:
+            # NEW (2026-11-06): walls that move radially too (forced problems, a free wall bco or bci = 2), with the work of the
+            # pressure there (Wpe below)
+            moving = upp.walls_move()
+            if (noslip or not par.hydro or ((imperm or moving) and not par.centrifugal)) and not (use_twa and par.mu != 1) and rotok:
                 H = par.Hendrik if par.hydro else 1.0
                 # NEW (2026-11-05): with centrifugal = 1 the energy of the deformed body, ∫ 𝐛̃*⋅M 𝐛̃ dV in the fluid (MEc), whose
                 # rate is the work 2 Re ∫ 𝐄⋅(∇×M 𝐛̃)* dV (InduM) minus the Ohmic loss (Ohmc); closes at second order in f
@@ -701,8 +708,12 @@ def main(ncpus):
                     K = rd.coupling()
                     Etot += par.MoIZ_M*abs(om)**2 + par.MoIZ_IC*abs(oi)**2 + K*abs(ph)**2
                     Wsol = 2*np.real(np.conj(om)*vtorq[i] + np.conj(oi)*vtorq_ic[i]) - 2*K*rd.relaxation()*abs(ph)**2
-                residE[i] = ( abs( 2*sigma*Etot - Dkin[i] - Wthm[i] - Wex - Wsol + Ohm )
-                              / max( abs(2*sigma*Etot), abs(Dkin[i]), abs(Wthm[i]), abs(Wex), Ohm, abs(Wdr[i]), abs(Wsol) ) )
+                # NEW (2026-11-06): the work of the pressure where a wall moves radially (forced problems, bco or bci = 2), as
+                # in residσ (upp.walls_move: only there, so that the other runs keep their numbers)
+                Wpe = Wp if upp.walls_move() else 0.0
+                residE[i] = ( abs( 2*sigma*Etot - Dkin[i] - Wthm[i] - Wex - Wsol - Wpe + Ohm )
+                              / max( abs(2*sigma*Etot), abs(Dkin[i]), abs(Wthm[i]), abs(Wex), Ohm, abs(Wdr[i]), abs(Wsol),
+                                     abs(Wpe) ) )
 
         if do_drag:   # NEW (2026-11-06): the power the drag dissipates (per unit kappa_cmb without one) and its damping rate
             Dtopo[i] = topo.dissipation(u_sol2, rot[0, i] if ut.rotdyn else 0)

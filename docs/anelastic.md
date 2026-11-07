@@ -239,6 +239,7 @@ with, term by term:
 
   with $\mathbf n$ the outward normal of the fluid ($-\hat{\mathbf r}$ at the inner wall). It is zero when $u_r = 0$ at
   the walls (`bco`, `bci` = 0 or 1), and not when the walls move radially (the tidal forcing 14) or with `bco = 2`.
+
 - **Viscosity.** With the stress $\boldsymbol\sigma = \mathrm{ViscosD}\thinspace\rho_0\nu\thinspace\mathsf S$, an
   integration by parts splits the power of the viscous force into the work of the stress at the walls and the
   dissipation:
@@ -257,8 +258,10 @@ with, term by term:
   and $\boldsymbol\sigma$ is symmetric and traceless, so that $\boldsymbol\sigma:\nabla\mathbf u^* = \boldsymbol\sigma:\mathsf e_d^*$.
   The physical dissipation is $\int 2\rho\nu\thinspace\mathsf e_d:\mathsf e_d\thinspace dV$, and the factor 4 is its mean
   in the convention above. $W_\nu^{\rm wall}$ is zero on a no-slip wall at rest and on an impenetrable stress-free wall.
+
 - **Buoyancy.** $W_b = 2\thinspace\mathrm{Beyonce}\thinspace\mathrm{Re}\int\rho_0\thinspace g\thinspace s\thinspace u_r^*\thinspace dV$,
   the energy exchanged with the entropy perturbation.
+
 - **Differential rotation.** Of the terms of [Differential rotation](#differential-rotation), the advection
   $i m\thinspace\mathrm{Gaspard}\thinspace\Delta\Omega\thinspace\mathbf u$ and the Coriolis force of $\Delta\Omega$ do no
   work. The last one does:

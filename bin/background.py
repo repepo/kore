@@ -19,7 +19,9 @@ SOLAR = STRUCTURES[:3]   # the solar structures: the rotation also uses x = r r_
 STRATIFICATIONS = ('top hat', 'odd top hat', 'solar_rz', 'linear', 'inverse square', 'user')
 DIFFUSIVITIES = ('uniform', 'step', 'solar_rz', 'user')
 MAGNETIC_WALLS = ('insulator', 'TWA', 'resolved')   # NEW (2026-10-28): mantle (magnetic = 1); B0 types: background_field.B0_TYPES
-INNER_CORES = ('insulator', 'conducting, Chebys', 'TWA')   # NEW (2026-10-28): innercore (magnetic = 1); 'TWA' NEW 2026-11-06
+INNER_CORES = ('insulator', 'conducting, Chebys', 'TWA', 'conducting, Bessel')   # NEW (2026-10-28): innercore (magnetic = 1);
+# 'TWA' and 'conducting, Bessel' (forced problems only) NEW 2026-11-06; params.dat writes the index
+CONDUCTING_CORES = ('conducting, Chebys', 'conducting, Bessel')   # NEW (2026-11-06): the inner cores of finite conductivity
 B0_CMBS = ('wall', 'plain')   # NEW (2026-11-06): B0_cmb (magnetic = 1, mantle = 'TWA'), as written to params.dat
 MAG_COUPLINGS = ('closed', 'algebra')            # NEW (2026-11-03): mag_couplings, B0_ic and ferraro_policy (magnetic = 1),
 B0_ICS = ('potential', 'frozen currents')        # also written to params.dat as these indices ('frozen currents' was 'full sphere')
@@ -281,8 +283,8 @@ def check_mantle():
     B holds the N_mantle-term series of r² sigma and the toroidal rows that of r² (ln sigma)', which oscillate where they do not
     resolve the profile (sigma in B can dip below 0, giving spurious growing modes, and (ln sigma)' is wrong, giving wrong
     toroidal modes); a step or a kink is never resolved. Also mu = 1 (a magnetic mantle or fluid would change the background
-    field at the wall), a spherical body (centrifugal = 0) and an impenetrable wall (bco = 0 or 1: the u×B0 of a slipping fluid
-    assumes u_r = 0 there).
+    field at the wall), a spherical body (centrifugal = 0) and bco = 0 or 1 (with bco = 2 the fluid crosses the wall, and the
+    rows follow a radial flow there only where a forcing moves the wall: forced_walls).
     '''
     num = (int, float, np.integer, np.floating)
     if not (isinstance(par.r_surface, num) and np.isfinite(par.r_surface) and par.r_surface > 1):
@@ -318,8 +320,9 @@ def check_mantle():
     if par.centrifugal:
         sys.exit("mantle = 'resolved' needs a spherical body (centrifugal = 0)")
     if par.hydro and par.bco == 2:
-        sys.exit("mantle = 'resolved' needs an impenetrable outer wall (bco = 0 or 1): the u×B0 of a fluid slipping along it "
-                 "assumes u_r = 0 there")
+        sys.exit("mantle = 'resolved' needs bco = 0 or 1: with zero radial stress at the outer wall (bco = 2) the fluid "
+                 "crosses it, and the mantle's rows follow a radial flow there only where a forcing moves the wall "
+                 "(forced_walls)")
 
 
 def check_twa():
@@ -327,8 +330,9 @@ def check_twa():
     NEW (2026-11-06): stops on thin conducting walls (mantle or innercore 'TWA', from conductive_IC) outside what the wall rows
     of assemble.bc_b_spherical cover. Their parameters must be numbers: c, c1 >= 0, muw > 0 (np.inf allowed), mu > 0. The fluid's
     permeability mu enters the thin-wall conditions only, so mu != 1 needs a thin wall (or a conducting inner core) at every
-    wall of the fluid: an insulating wall with mu != 1 is a thin wall with c = c1 = 0. A thin wall needs an impenetrable
-    boundary (bco, bci = 0 or 1: the terms of a slipping fluid assume u_r = 0 there) and a spherical body (centrifugal = 0).
+    wall of the fluid: an insulating wall with mu != 1 is a thin wall with c = c1 = 0. A thin wall needs bco, bci = 0 or 1
+    (with 2 the fluid crosses the wall, and the rows follow a radial flow there only where a forcing moves the wall:
+    forced_walls) and a spherical body (centrifugal = 0).
     With a differential rotation, ΔΩ must be uniform in latitude at the thin wall (background.magnetic_diffrot): the wall
     co-rotates with it, as a conducting inner core does.
     '''
@@ -342,16 +346,18 @@ def check_twa():
     for name in ('c_cmb', 'c1_cmb', 'c_icb', 'c1_icb', 'mu'):
         if np.isinf(getattr(par, name)):
             sys.exit('%s must be finite (only muw_cmb, muw_icb may be np.inf)' % name)
-    if par.mu != 1 and not (twa_o and (par.ricb == 0 or par.innercore in ('TWA', 'conducting, Chebys'))):
-        sys.exit("mu = %r enters only the thin-wall conditions: every wall of the fluid must then be a thin wall ('TWA'; an "
-                 "insulating wall with mu != 1 is a thin wall with c = c1 = 0) or a conducting inner core" % (par.mu,))
+    if par.mu != 1 and not (twa_o and (par.ricb == 0 or par.innercore in ('TWA',) + CONDUCTING_CORES)):
+        sys.exit("mu = %r enters only the thin-wall conditions: every wall of the fluid must then have a thin conducting "
+                 "layer ('TWA'; an insulating wall with mu != 1 is a layer with c = c1 = 0) or a conducting inner core"
+                 % (par.mu,))
     if not (twa_o or twa_i):
         return
     if par.centrifugal:
-        sys.exit("a thin conducting wall ('TWA') needs a spherical body (centrifugal = 0)")
+        sys.exit("a thin conducting layer ('TWA') needs a spherical body (centrifugal = 0)")
     if par.hydro and ((twa_o and par.bco == 2) or (twa_i and par.bci == 2)):
-        sys.exit("a thin conducting wall ('TWA') needs an impenetrable wall (bco, bci = 0 or 1): the terms of a fluid slipping "
-                 "along it assume u_r = 0 there")
+        sys.exit("a thin conducting layer ('TWA') needs bco, bci = 0 or 1 at its wall: with zero radial stress (2) the fluid "
+                 "crosses the wall, and the layer's rows follow a radial flow there only where a forcing moves the wall "
+                 "(forced_walls)")
 
 
 def check_rotdyn():
@@ -396,6 +402,173 @@ def check_rotdyn():
                 sys.exit("rotdyn = 1 needs a toroidal B0 that vanishes at both walls (e.g. B0_tor = 'wall'): the torque on "
                          "its current sheet there is left out (degree %d: %.1e at the inner wall, %.1e at the outer)"
                          % (n, kk[0], kk[-1]))
+
+
+def moves_radially(wall):
+    '''
+    NEW (2026-11-06): whether the forcing prescribes a radial flow (uᵣ ≠ 0) at the wall 'outer' or 'inner', which stands for
+    the motion of the boundary (the wall itself stays at the sphere): forcing 10 at the outer wall; forcings 9, 14 and 7 with
+    m != 0 where their amplitude (forcing_amplitude_cmb, forcing_amplitude_icb) is not 0; forcing 6 at the inner wall
+    '''
+    f = par.forcing
+    if wall == 'outer':
+        return f == 10 or ((f in (9, 14) or (f == 7 and par.m != 0)) and par.forcing_amplitude_cmb != 0)
+    return par.ricb > 0 and par.forcing_amplitude_icb != 0 and (f in (6, 9, 14) or (f == 7 and par.m != 0))
+
+
+def forced_walls():
+    '''
+    NEW (2026-11-06): what a radial boundary flow (moves_radially) stands for at a wall with a conducting solid behind it:
+    par.forced_walls, or with None (the default) the picture of the forcing, 'rigid' for forcings 6 and 7 (a rigid solid whose
+    shape moves past the sphere: the flattened inner core of forcing 6, the librating triaxial mantle of forcing 7 with m = 2)
+    and 'deforming' for forcings 9, 10 and 14 (a boundary that moves, a tide)
+    '''
+    fw = getattr(par, 'forced_walls', None)
+    if fw is None:
+        return 'rigid' if par.forcing in (6, 7) else 'deforming'
+    return fw
+
+
+def flows_through(wall):
+    '''
+    NEW (2026-11-06): whether a radial boundary flow at the wall 'outer' or 'inner' (moves_radially) passes through it into a
+    rigid solid at rest (forced_walls 'rigid'), whose rows then take the flow's u×B0 (assemble.bc_b_radial)
+    '''
+    return moves_radially(wall) and forced_walls() == 'rigid'
+
+
+def deforms(wall):
+    '''
+    NEW (2026-11-06): whether a thick conducting solid behind the wall 'outer' or 'inner' deforms with a radial boundary flow
+    there (forced_walls 'deforming'): the resolved mantle, or a conducting inner core ('conducting, Chebys'). Its rows then take
+    the induction ∇×(v×B0) of its own motion (assemble.deform_rows): v from deform_profile, B0 the background continued inside
+    the solid (background_field.solid_profiles). A thin conducting layer ('TWA') has no inside: its rows hold the motion already.
+    '''
+    if not (par.magnetic and par.hydro and moves_radially(wall) and forced_walls() == 'deforming'):
+        return False
+    if wall == 'outer':
+        return par.mantle == 'resolved'
+    return par.ricb > 0 and par.innercore == 'conducting, Chebys'
+
+
+def thin_drop(wall):
+    '''
+    NEW (2026-11-06): whether a thin conducting layer ('TWA') at the wall 'outer' or 'inner' deforms with a radial boundary flow
+    there (forced_walls 'deforming') while a toroidal B0 is present. Its toroidal part is continuous at the wall (no
+    permeability jump where it reaches a wall that moves: check_forced_magnetic) and falls to 0 across the layer (an
+    insulator beyond it): the layer, moving with the fluid, carries half of it on average, so its
+    rows take half the u×B0 of the toroidal part of a flow through it (assemble.bc_b_radial, tor_half), the limit of a thin
+    resolved layer that deforms (deforms). The poloidal part varies by O(h) across the layer and adds nothing at that order.
+    '''
+    import background_field as bf
+    if not (par.magnetic and par.hydro and moves_radially(wall) and forced_walls() == 'deforming' and bf.tor_profiles()):
+        return False
+    if wall == 'outer':
+        return par.mantle == 'TWA' and par.c1_cmb != 0
+    return par.ricb > 0 and par.innercore == 'TWA' and par.c1_icb != 0
+
+
+def deform_profile(wall, l):
+    '''
+    NEW (2026-11-06): the motion of a thick conducting solid that deforms with its wall (deforms), degree l: its velocity is
+    ∇×∇×(P(r_w) φ Y_l 𝐫), P(r_w) the flow's poloidal scalar at the wall and φ(r_w) = 1, so that the radial velocities match
+    there; returns φ as f(r, d), its d-th derivative.
+      'outer' (the resolved mantle, r_w = 1): φ = 1/r, so v = uᵣ(1)/r² 𝐫̂, purely radial: no tangential motion anywhere,
+               solenoidal, the volume of every shell kept.
+      'inner' (a conducting inner core, r_w = ricb): φ = ((l+3) x^l - (l+1) x^(l+2))/2, x = r/ricb, the simplest profile
+               that is regular at the centre (x^l and x^(l+2)) with no tangential motion at the wall (φ' + φ/r = 0 there).
+    Both match a no-slip wall, where the fluid's tangential velocity is 0.
+    '''
+    import background_field as bf
+    if wall == 'outer':
+        return bf._powers([(1.0, -1)], 1.0)
+    return bf._powers([((l + 3)/2., l), (-(l + 1)/2., l + 2)], par.ricb)
+
+
+def b0_at_wall(wall, parts='pt'):
+    '''
+    NEW (2026-11-06): whether B0 reaches the wall 'outer' or 'inner': with 'p' in parts its poloidal part (h or h' of some
+    degree is not 0 there), with 't' its toroidal part (k), to 1e-6 of the largest of h, h' and k over the fluid (B0_tor
+    'wall' is 0 at the walls, 'confined' outside its region). Where they are 0, that part of B0 is 0 at the wall, and a
+    permeability that jumps there moves nothing of it.
+    The slope h' of a profile interpolated at degree n = max(64, 2N) ('general', 'ferraro': background_field) carries
+    round-off of about 1e-13 n² 2/(1 - ricb) of it at an end, 1e-10 at small N and up to some 1e-6 at N 2000, so h' gets
+    ten times that where it exceeds 1e-6. A profile that the interpolant does not resolve is off by more: a field meant to
+    vanish at a moving wall needs an N that resolves it.
+    '''
+    import background_field as bf
+    try:
+        pol = [(f, d) for f in bf.pol_profiles().values() for d in (0, 1)]
+        tor = [(f, 0) for f in bf.tor_profiles().values()]
+        test = (pol if 'p' in parts else []) + (tor if 't' in parts else [])
+        if not test:
+            return False
+        n = 400   # Chebyshev points inside the fluid (none at r = 0)
+        x = par.ricb + (1 - par.ricb)*0.5*(1 + np.cos(np.pi*(np.arange(n) + 0.5)/n))
+        rw = np.array([1.0 if wall == 'outer' else float(par.ricb)])
+        big = max(np.max(np.abs(f(x, d))) for f, d in pol + tor)
+        tol = (1e-6, max(1e-6, 1e-12*max(64, 2*par.N)**2*2/(1 - par.ricb)))   # h and k; h'
+        return not all(np.max(np.abs(f(rw, d))) <= tol[d]*big for f, d in test)   # (a NaN counts as reaching the wall)
+    except Exception:
+        return True
+
+
+def check_forced_magnetic():
+    '''
+    NEW (2026-11-06): stops on the forced problems with a field (magnetic = 1) that are not covered. Every wall stays at the
+    sphere. A radial boundary flow (moves_radially) stands for a boundary that moves, and forced_walls (forced_walls())
+    says how the conducting solid behind the wall moves with it, which its tangential electric field depends on:
+      'rigid':     the solid is at rest (or turns about z) and only its shape moves past the sphere; the flow passes through
+                   the wall, and its u×B0 enters the solid's rows (flows_through, assemble.bc_b_radial). Any solid.
+      'deforming': the solid deforms with the boundary (a tide): its surface moves with the fluid, so u×B0 cancels in the
+                   matching (the rows without it, as conductive_IC), and the motion inside a thick solid induces field there
+                   (deforms, deform_profile, assemble.deform_rows). Not with innercore 'conducting, Bessel' behind a wall
+                   that moves (its field would no longer be a Bessel function).
+    A wall that moves, where B0 reaches it (b0_at_wall), needs one permeability on both sides of every surface there whose
+    jump the rows would miss, under either forced_walls: a surface where the permeability jumps would carry the jump of the
+    magnetization of B0 along as it moves, which the rows leave out. So mu_i2o = 1 with a conducting inner core, and mu = 1
+    (the fluid against the layer or the insulator beyond). The permeability muw of a thin layer ('TWA'; its rows hold it
+    only through c) must be 1 where the part of B0 that it acts on reaches the wall:
+      - a layer with a thickness (c != 0): the poloidal B0, and the toroidal B0 too if the layer conducts (c1 != 0);
+      - a conducting layer at rest under the flow through it ('rigid', flows_through): both, since the u×B0 of its rows is
+        that of its own field, muw/mu times the fluid's;
+      - a conducting layer that deforms with the boundary ('deforming') across the drop of a toroidal B0 (thin_drop): the
+        toroidal B0, of which it carries muw/(2 mu), half for muw = mu.
+    Elsewhere muw acts on no part of B0 at the wall and takes any value: in an insulating layer (c = c1 = 0), in a layer with
+    a thickness that does not conduct under a toroidal B0 alone (it holds none of it), and in a conducting sheet (c = 0)
+    that deforms with the boundary under a poloidal B0 (in its own frame it carries the fluid's electric field, whatever its
+    own field). Walls that stay in place take any permeability.
+    The rows of innercore 'conducting, Bessel' hold at forcing_frequency only (k of its field j_l(k r)), so a frequency scan
+    (forcing 11 with rsf_frequencies), which shifts A by multiples of B, cannot use them.
+    '''
+    if forced_walls() == 'deforming' and par.ricb > 0 and moves_radially('inner'):
+        if par.innercore == 'conducting, Bessel':
+            sys.exit("forced_walls = 'deforming' with innercore 'conducting, Bessel': forcing = %d moves the inner wall "
+                     "radially, and the field that the core's motion induces is not a Bessel function. Use innercore "
+                     "'conducting, Chebys', or forced_walls = 'rigid' (the core at rest)" % par.forcing)
+    for wall in ('outer', 'inner'):
+        if not moves_radially(wall):
+            continue
+        solid = par.mantle if wall == 'outer' else par.innercore
+        names = [('mu_i2o' if solid in CONDUCTING_CORES else 'mu', 'pt')]
+        if solid == 'TWA':   # the parts of B0 that the layer's permeability acts on
+            c, c1, muw = ('c_cmb', 'c1_cmb', 'muw_cmb') if wall == 'outer' else ('c_icb', 'c1_icb', 'muw_icb')
+            thick, conducts = getattr(par, c) != 0, getattr(par, c1) != 0
+            parts = ('p' if thick else '') + ('t' if conducts and (thick or thin_drop(wall)) else '')
+            if conducts and flows_through(wall):
+                parts = 'pt'
+            if parts:
+                names.append((muw, parts))
+        jumps = ['%s = %r' % (n, getattr(par, n)) for n, part in names if getattr(par, n) != 1 and b0_at_wall(wall, part)]
+        if jumps:
+            sys.exit("forcing = %d moves the %s wall radially where B0 reaches it: %s must be 1, one permeability on both "
+                     "sides of every surface there (a surface where the permeability jumps would carry the jump of the "
+                     "magnetization of B0 along as it moves). Walls that stay in place take any permeability"
+                     % (par.forcing, wall, ' and '.join(jumps)))
+    if (par.innercore == 'conducting, Bessel' and par.ricb > 0 and par.forcing == 11
+            and getattr(par, 'rsf_frequencies', None) is not None):
+        sys.exit("innercore 'conducting, Bessel' with a frequency scan (forcing 11, rsf_frequencies): its rows hold at "
+                 "forcing_frequency only. Use 'conducting, Chebys'")
 
 
 def check_magnetic():
@@ -448,8 +621,9 @@ def check_magnetic():
             sys.exit('B0_wound = 1 winds a toroidal field from the poloidal B0 with the differential rotation: it needs a poloidal B0 and diff_rot = 1')
         if not par.B0_wound_eta > 0:
             sys.exit('B0_wound_eta must be > 0 (the diffusivity that balances the winding, in units of MagnetD)')
-        if par.ricb > 0 and par.innercore not in ('insulator', 'conducting, Chebys'):
-            sys.exit('B0_wound = 1: innercore %r is not supported (insulator or conducting, Chebys)' % (par.innercore,))
+        if par.ricb > 0 and par.innercore not in ('insulator',) + CONDUCTING_CORES:
+            sys.exit('B0_wound = 1: innercore %r is not supported (insulator, conducting, Chebys or conducting, Bessel)'
+                     % (par.innercore,))
         if par.mantle != 'insulator':   # NEW (2026-11-06): the wound field is solved with k = 0 at the outer wall
             sys.exit("B0_wound = 1 needs an insulating mantle: the wound field is solved with B_phi = 0 at the outer wall")
     if par.B0 == 'confined':   # NEW (2026-10-30)
@@ -480,11 +654,21 @@ def check_magnetic():
         sys.exit('mantle %r: set one of %s' % (par.mantle, _names(MAGNETIC_WALLS)))
     if par.innercore not in INNER_CORES:
         sys.exit('innercore %r: set one of %s' % (par.innercore, _names(INNER_CORES)))
-    if par.innercore == 'conducting, Chebys':
+    if par.innercore in CONDUCTING_CORES and par.ricb > 0:
         if par.bci != 1:
-            sys.exit("innercore 'conducting, Chebys' needs a no-slip inner boundary (bci = 1): the ICB matching assumes u = 0 there")
+            sys.exit("innercore %r needs a no-slip inner boundary (bci = 1): its matching leaves out a fluid slipping along "
+                     "the inner wall" % (par.innercore,))
+        num = (int, float, np.integer, np.floating)   # NEW (2026-11-06): they divide (operators, bc_b_cic, bc_b_bessel)
+        for name in ('mu_i2o', 'sigma_i2o'):
+            v = getattr(par, name)
+            if not (isinstance(v, num) and not isinstance(v, bool) and np.isfinite(v) and v > 0):
+                sys.exit('%s = %r: a finite number > 0' % (name, v))
+    if par.innercore == 'conducting, Chebys' and par.ricb > 0:
         if par.N_cic % 2 or par.N_cic < 4:
             sys.exit('N_cic must be even and >= 4, got %r' % par.N_cic)
+    if par.innercore == 'conducting, Bessel' and par.ricb > 0 and par.forcing == 0:   # NEW (2026-11-06, as conductive_IC)
+        sys.exit("innercore 'conducting, Bessel' needs a forced problem (forcing != 0): the field in the inner core oscillates "
+                 "at the forcing frequency. Use 'conducting, Chebys' for eigenvalue problems")
     if par.B0_cmb not in B0_CMBS:   # NEW (2026-11-06)
         sys.exit('B0_cmb %r: set one of %s' % (par.B0_cmb, _names(B0_CMBS)))
     if par.mantle == 'resolved':   # NEW (2026-11-06): the resolved conducting mantle
@@ -497,8 +681,12 @@ def check_magnetic():
             sys.exit("B0_tor 'Malkus' with B0_tor_l = 2 is not regular at r = 0 (k = r would need to go as r²): use 'wall' or 'user' with ricb = 0")
     if par.ViscosD == 0 and par.ricb > 0:   # NEW (2026-10-28): the inviscid path (bases, one bc row) exists for the full sphere only
         sys.exit('magnetic = 1 with ViscosD = 0 needs ricb = 0 (the inviscid formulation is for the full sphere only)')
-    if par.forcing != 0:
-        sys.exit('magnetic = 1 is implemented for eigenvalue problems only (forcing = 0)')
+    if getattr(par, 'forced_walls', None) not in (None, 'rigid', 'deforming'):   # NEW (2026-11-06), in every magnetic run
+        sys.exit("forced_walls = %r: None (the picture of the forcing: 'rigid' for forcings 6 and 7, 'deforming' for 9, 10 "
+                 "and 14), 'rigid' (the solids at rest, the boundary flow passes through the walls) or 'deforming' (the "
+                 "solids deform with the boundary)" % (par.forced_walls,))
+    if par.forcing != 0:   # NEW (2026-11-06, as conductive_IC): forced problems with a field
+        check_forced_magnetic()
     # FIX (2026-11-03): an error of cnorm, cnorm_tor at the import of background_field that no check above explains (before
     # magnetic_diffrot, which uses them)
     for name, err in (('cnorm', bf.cnorm_error), ('cnorm_tor', bf.cnorm_tor_error)):
@@ -591,7 +779,7 @@ def magnetic_diffrot():
         background is maintained). NEW (2026-11-03): a parameter, formerly the constant background.FERRARO_POLICY.
     '''
     import diff_rot as dr
-    if par.innercore == 'conducting, Chebys':
+    if par.innercore in CONDUCTING_CORES:   # NEW (2026-11-06): 'conducting, Bessel' too (its k in utils.bessel_ic)
         c, ok = dr.rigid_ricb()
         if not ok:
             sys.exit('magnetic = 1, diff_rot = 1 with a conducting inner core needs a rigid rotation of the inner boundary '
