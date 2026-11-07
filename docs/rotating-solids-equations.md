@@ -87,7 +87,10 @@ $$
 
 with the viscous torques from $T$ at the walls and the magnetic ones from the stress
 $\mathrm{Hendrik}\,(B_{0r}\,\mathbf b + b_r\,\mathbf B_0)$ on a grid in $\theta$ at each wall, for any poloidal and
-toroidal background (`rotdyn.viscous_torques`, `wall_torques`), whatever `vtrq` and `mtrq`. The other forces exert no
+toroidal background (`rotdyn.viscous_torques`, `wall_torques`), whatever `vtrq` and `mtrq`. Both are taken on the
+fluid's side of the walls: where $\mathbf B_0$ ends at a wall in a current sheet
+([Current sheets at slipping walls](magnetic-equations.md#current-sheets-at-slipping-walls)), the magnetic one holds
+the torque on the sheet's currents, which the viscous one balances at a slipping wall. The other forces exert no
 net axial torque: the pressure is normal to the walls, the buoyancy radial, and for $m = 0$ neither the Coriolis force
 nor the advection by a differential rotation $\Delta\Omega$ has one, since
 $\int\rho_0\,\mathbf u\cdot\nabla(s^2\Delta\Omega)\,dV = 0$ between impenetrable walls.

@@ -113,9 +113,11 @@ Notes:
 
 - **`'ferraro'`** takes `B0_ferraro_G`, a numpy expression of `w` (the differential rotation) and `p`: see
   [Four ways to a steady background](#four-ways-to-a-steady-background).
-- **At the walls.** `'general'` and `'ferraro'` need not meet a potential field at an insulating wall. Where they do not,
-  they end there in a sheet of current, whose push on a fluid slipping along the wall is left out
-  ([Magnetic field equations](magnetic-equations.md#poloidal-fields)); a no-slip wall takes it.
+- **At the walls.** kore takes `'general'` and `'ferraro'` as fields of currents in the fluid. Where they do not meet
+  the potential field of those currents beyond an insulating wall, they end there in a sheet of current, which pushes
+  the fluid along the wall ([Current sheets at slipping walls](#current-sheets-at-slipping-walls)). So does a part
+  written into them whose sources lie beyond the wall, such as the uniform field `{1: 'r/2'}`: use `'axial'` for a
+  uniform field and `'dipole'` for a dipole at the centre.
 
 ### Toroidal field: `B0_tor`
 
@@ -136,11 +138,8 @@ A `'user'` profile must be smooth, since its second derivative enters the equati
 
 **At the walls.** A toroidal field that is not zero at a wall ends there in a sheet of current, unless a conductor
 beyond the wall carries the field on: a conducting inner core, the resolved mantle or a conducting thin layer. The sheet
-pushes the fluid along the wall. A no-slip wall takes that push, but a slipping one would pass it to the fluid, and kore
-does not include it, so a run stops at startup where the toroidal field is not zero at a stress-free wall (or at the
-wall of an inviscid fluid) with an insulator, or a thin layer that does not conduct, beyond. Use a field that vanishes
-there (`'wall'`), a no-slip wall, or a conductor beyond (with `bco` or `bci` 0 or 1). With the rotating solids the field
-must vanish at both walls, whatever they are ([Rotating solids](rotating-solids.md)).
+pushes the fluid along the wall ([Current sheets at slipping walls](#current-sheets-at-slipping-walls)). With the
+rotating solids the field must vanish at both walls, whatever they are ([Rotating solids](rotating-solids.md)).
 
 ### Amplitude
 
@@ -328,6 +327,27 @@ for its field together with the rest. The layer is solid and at rest (unless a f
 
 The equations and their checks: [Magnetic field equations](magnetic-equations.md#resolved-conducting-mantle).
 
+### Current sheets at slipping walls
+
+A background field that does not meet the field beyond an insulating wall ends there in a sheet of current: a toroidal
+field that is not zero at the wall, or a poloidal one that does not meet the field beyond. `'general'` and `'ferraro'`
+need not; where the permeability jumps at the wall (`mu` other than 1, or a thin layer with `c` other than 0 and `muw`
+other than 1), the other fields of sources inside the wall meet it only at the outer wall, where `B0_cmb = 'wall'`
+adjusts them. A conducting inner core, the resolved mantle or a conducting thin layer carries the field on,
+with no sheet in the fluid. The sheet pushes the fluid along the wall wherever the perturbation's field crosses the
+wall. A no-slip wall takes that push. Along a stress-free wall (`bco` or `bci` 0 or 2) the fluid's viscous stress takes
+it, and kore includes it in the conditions there
+([Magnetic field equations](magnetic-equations.md#current-sheets-at-slipping-walls)).
+
+- **Inviscid fluid.** It has no stress to take the push, so a sheet stops an inviscid run. Use a field that meets the
+  wall (`B0_tor = 'wall'`, a poloidal field that matches the potential field or, where the permeability jumps, one that
+  `B0_cmb = 'wall'` adjusts), a viscous fluid, or a conductor beyond.
+- **`centrifugal = 1`.** A sheet at a slipping wall stops the run.
+- **Fields that go on through the wall.** `'axial'`, imposed from beyond the outer wall, and at the inner wall
+  `'dipole'` and the fields of `B0_ic = 'frozen currents'`, whose sources lie in the core, go on through the wall with
+  no sheet. Where the permeability jumps at a slipping wall they stop: the field beyond then depends on how the jump
+  bends the imposed field or meets the sources, which kore does not model.
+
 ## The field without the flow
 
 Two tools leave the flow out: one checks the walls and the inner core against exact results, the other gives the field
@@ -449,9 +469,13 @@ Not supported (the run stops at startup):
   that the forcing moves radially (forcing 6, and 9, 14 and 7 with `m` 2 where `forcing_amplitude_icb` is not 0);
 - the libration of the inner core (forcing 7 with `m` 0 and `forcing_amplitude_icb` not 0) behind a stress-free inner
   wall (`bci = 0`) along a conducting inner core or a conducting thin layer on it, across a poloidal field;
-- a toroidal field that is not zero at a stress-free wall (`bco` or `bci` 0 or 2), or at the wall of an inviscid fluid,
-  with an insulator or a thin layer that does not conduct (`c1_cmb` or `c1_icb` 0) beyond
-  ([Toroidal field](#toroidal-field-b0_tor));
+- a current sheet of the field (a toroidal field that is not zero at the wall, or a poloidal one that does not meet the
+  field beyond) at the wall of an inviscid full sphere, or at a slipping wall with `centrifugal = 1`, with an insulator
+  or a thin layer that does not conduct (`c1_cmb` or `c1_icb` 0) beyond
+  ([Current sheets at slipping walls](#current-sheets-at-slipping-walls));
+- `'axial'` at a slipping wall, or `'dipole'` or `B0_ic = 'frozen currents'` at a slipping inner wall, where the
+  permeability jumps (`mu` other than 1, or a thin layer whose `c_cmb` or `c_icb` is not 0 and whose `muw_cmb` or
+  `muw_icb` is not 1), with an insulator or a thin layer that does not conduct beyond;
 - a permeability other than 1 at a wall that the forcing moves radially and that B0 reaches: `mu`, `mu_i2o` with a
   conducting inner core, and a thin layer's `muw_cmb` or `muw_icb` where the part of B0 that it acts on reaches the wall
   ([A boundary that moves](#a-boundary-that-moves)); the outer wall moves under forcing 10, and under 9, 14 and 7 with

@@ -80,7 +80,7 @@ eigenvectors normalised to kinetic energy 1 (KE + Hendrik·ME = 1 with `magnetic
 | `submatrices.py` | builds the list of labels (with `diff_rot.labels()`), computes each unique operator in parallel, writes them all to `submatrices.npz` (`submatrix_io.write`, with the parameters; `<label>.mtx` too with `write_mtx = 1`); calls `par.check_names()` and `diff_rot.check()` |
 | `submatrix_io.py` | the operator file `submatrices.npz`: `write`, `read`, `check` (stops when the run's parameters differ from those the operators were built with, all but `OPERATOR_INDEPENDENT` and `rsf_*`); numpy and scipy only |
 | `operators.py` | loads `submatrices.npz` (after `submatrix_io.check`), each operator as a global named by its label; physics functions `inertia`, `coriolis`, `viscous_diffusion`, `buoyancy`, `differential_rotation`, `entropy`, `thermal_advection`, `thermal_diffusion`, `thermal_diffrot` (the diff-rot ones return `diff_rot.momentum_block`, `heat_block`), for `magnetic = 1` `lorentz`, `b`, `induction`, `magnetic_diffusion`, and for `centrifugal = 1` `centrifugal_inertia`, `centrifugal_coriolis`, `centrifugal_entropy`, `centrifugal_magnetic` (they return `centrifugal.momentum_block`, `entropy_block`, `magnetic_block`) |
-| `assemble.py` | MPI over l; places the blocks (the diff-rot Δl from `diff_rot.dl_range`), boundary-condition rows (`bc_u_spherical`, `bc_theta_spherical`; the field's `bc_b_spherical`, with thin walls `bc_b_twa` and `bc_b_slip`, the resolved mantle `bc_b_mantle`), forcings 6, 7, 9, 10, 11; normalises A, B by ‖A‖ (eigen); `gather_csr` |
+| `assemble.py` | MPI over l; places the blocks (the diff-rot Δl from `diff_rot.dl_range`), boundary-condition rows (`bc_u_spherical`, `bc_theta_spherical`, the push of B0's current sheet at a slipping wall `bc_u_sheet`; the field's `bc_b_spherical`, with thin walls `bc_b_twa` and `bc_b_slip`, the resolved mantle `bc_b_mantle`), forcings 6, 7, 9, 10, 11; normalises A, B by ‖A‖ (eigen); `gather_csr` |
 | `reynolds_stress.py` | forcing 11: random Reynolds-stress body force f = ρ₀⁻¹∇·(ρ₀ s), the fluctuation-dissipation partner of the viscous force; `rhs(nsamp, seed)` gives one realisation per column of B_forced (docstring: physics, discretisation, normalisation) |
 | `bc_variables.py` | Chebyshev values/derivatives at the walls (`Ta`, `Tb`) and ln ρ₀ and its first two derivatives there (`lha*`, `lhb*`) |
 | `solve.py` | reads its own rows of A, B (memory-mapped), optional Ruiz scaling, SLEPc/KSP, KE normalisation, writes fields |
@@ -238,22 +238,54 @@ with c1 ≠ 0, with a poloidal B0 (`check_forced_magnetic`: the frame term of th
 resid𝐄, are not built). Forcing 7 with m = 0 takes bci = 0 (any bci at ricb = 0, two rows only with bci = 1 as before):
 the stress-free row takes no C_icb (conductive_IC wrote C_icb on it), and assemble.py notes that forcing_amplitude_icb
 then has no effect. The C.I note prints Pm |forcing_frequency|/Gaspard in forced runs (it printed itau). rotdyn still
-needs bci = 1, as in conductive_IC. Stop (after conductive_IC's, but narrower: conductive_IC stops at any slipping
-wall, also behind a conductor, and has no bc 2): a toroidal B0 ≠ 0 at a slipping wall (bco or bci 0 or 2, or
-ViscosD = 0) with an insulator or a TWA with c1 = 0 beyond (`background.tor_sheet`; `tor_at_wall`: B0_tor's k alone,
-1e-10 of max |k| per degree on check_rotdyn's 201 points, not b0_at_wall's cut, which the poloidal field sets, nor its
-try/except; the wound field is left out, `tor_profiles(wound=False)`: it is 0 at insulating walls and thin layers by
-construction, to its fit's round-off, 4e-9 at N 800 in a full sphere; below 1e-4 of max |k| for 'user' or 'general' the
-message names the likely causes: an inexact zero, an interpolant that does not resolve it, or in a full sphere a
-profile that is not smooth at r = 0, e.g. 'r*(1 - r)**2' for degree 1, 1e-6 at N 48, 2.5e-10 at N 400): its surface current K0 = ±B0_φ θ̂ pushes the fluid with ∓Hendrik B0_φ b_r φ̂ per area, which no stress
-condition holds and resid𝐄 leaves out (a no-slip wall takes it); a conducting core, the resolved mantle and a TWA with
-c1 ≠ 0 carry the field on, with no sheet in the fluid. With rotdyn = 1 the loop leaves it to check_rotdyn, which stops
-on k ≠ 0 at either wall whatever the wall; the message offers 'conducting, Bessel' in forced runs only and a conductor
-with bc 0 or 1 where bc = 2 (inviscid too); other settings can still refuse a remedy it names (centrifugal, B0_wound,
-a ΔΩ varying at the wall, forcing 7 with the core librating, a drag with bco = 1), each with its own stop. regress.sh m_tor (both walls) and m_gen (bci) are now no-slip there;
-docs/magnetic-equations.md's inviscid Malkus (1967) check (insulating mantle) stops now. Left out, as before: the same push of the sheet of a
-'general' or 'ferraro' poloidal field that does not meet a potential field at a slipping insulating wall,
-Hendrik K0_φ b_r θ̂ (the docs say so). ru_insane's current-free identity skips a toroidal part (B0_tor, the wound field).
+needs bci = 1, as in conductive_IC. Phase 6b stopped a toroidal B0 ≠ 0 at any slipping wall with an insulator or a TWA
+with c1 = 0 beyond (as conductive_IC, which also stops behind a conductor); phase 6c (below) puts the push in the stress
+rows and keeps the stop for an inviscid fluid. `tor_at_wall`: B0_tor's k alone, 1e-10 of max |k| per degree on
+check_rotdyn's 201 points (not b0_at_wall's cut, which the poloidal field sets, nor its try/except); the wound field is
+left out, `tor_profiles(wound=False)`: it is 0 at insulating walls and thin layers by construction, to its fit's
+round-off, 4e-9 at N 800 in a full sphere. With rotdyn = 1 check_rotdyn stops on k ≠ 0 at either wall whatever the wall.
+regress.sh m_tor (both walls) and m_gen (bci) are no-slip there; docs/magnetic-equations.md's inviscid Malkus (1967)
+check (insulating mantle) stops. ru_insane's current-free identity skips a toroidal part (B0_tor, the wound field).
+Current sheets at slipping walls (2026-11-07, conductive_IC port phase 6c; `tests/sheet`): where B0 ends at a wall with
+an insulator or a TWA with c1 = 0 beyond (`background.wall_bare`) in a current sheet on the fluid's side, ΔB0_t =
+B0_t(fluid) − μ H0_t(beyond) (`background.sheet_jump`, with cnorm: toroidal {n: k_n(r_w)} where |k| is above 1e-10 of
+max |k| per degree, the wound field left out; poloidal {n: a_n}, a_n = ±R/(r D) from `_pol_wall_row`, R the steady f row
+of a TWA with c1 = 0 (c, muw, mu; an insulator c = 0, mu = 1), D = 1/μ + n c outside, 1/μ + (n+1) c inside, counted
+above max(1e-10, 1e-12 n_i² 2/(1 − ricb)) of the degree's largest |B0| (n_i = max(64, 2N)); none for a field that goes
+on beyond, `pol_continues`: 'axial' (imposed from beyond the outer wall, a potential field in an insulating core too)
+and 'confined' at both walls, 'dipole' and the B0_ic 'frozen currents' fields at the inner wall; every other field is
+one of sources inside the wall, 'general' and 'ferraro' whatever their profiles taken as fields of currents in the
+fluid). The sheet K0 = ∓r̂×ΔB0_t (outer/inner) pushes a fluid slipping along the wall (`wall_slips`: bco/bci 0 or 2, or
+ViscosD = 0; `sheet_push`) with ∓Hendrik b_r ΔB0_t per area; the tangential stress, viscous and Maxwell, is continuous
+through the sheet, so the balance has one form at both walls: ViscosD ρ0 ν [r∂r(u_t/r) + ∇₁u_r/r] = −Hendrik b_r ΔB0_t.
+`assemble.bc_u_sheet(l, sec)` adds r² q (section u: outer row 1, inner row 3) and r q (section v: rows 0, 1) times the
+S_l, T_l parts of b_r ΔB0_t (`mag_algebra._vcross` on `angular.Algebra`, b_r = L_k f_k/r: the f columns of degrees |k −
+l| ≤ nB + 1 at the wall, Tb/Ta, one parity at ricb = 0), q = Hendrik/(ViscosD ρ0 ν) at the wall; `sheet_on` in
+assemble.main (tests/sheet patches that line for its no-push runs). bc 2 leaves out the normal part, +Hendrik ΔB0_t·b_t
+along the fluid's outward normal (the drop of the magnetic pressure across the sheet, as it leaves out p). The push's
+power is in Wv (flow.dat 24–25) and its torque in the viscous torque; the magnetic torque, B0 taken on the fluid's side
+(rotdyn.wall_torques), holds the sheet's own, so only their sum is the torque through the wall. residσ, resid𝐄 and
+resid𝐋 close with or without the push and do not check it: smoothed sheets and L_z = 0 (m 0, insulating stress-free
+walls) do, and `_pol_wall_row` is checked against bc_b_spherical's rows (tests/sheet). Stops (check_magnetic, over the
+walls that slip and are bare): a sheet in an inviscid fluid (a full sphere: ViscosD = 0 with ricb > 0 stops earlier; its
+message names the likely causes below 1e-4 of max |k| for 'user' or 'general': an inexact zero, an interpolant that does
+not resolve it, a profile not smooth at r = 0, e.g. 'r*(1 - r)**2' for degree 1); a sheet with centrifugal = 1; a field
+that goes on beyond (not 'confined') where `wall_permeable` (mu ≠ 1, or a TWA with c ≠ 0 and muw ≠ 1) and
+b0_at_wall(wall, 'p'). FIX: B0_tor 'user' (`k_user`) drops the Chebyshev coefficients below 1e-13 of the largest, as
+'general' (their round-off moved the eigenvalues 1e-8 at N 240 and left residσ at 1e-4 at bci 2). FIX: the interpolants
+of 'general', 'ferraro', B0_tor 'user', the wound field's ΔΩ and the resolved mantle's ln σ take their coefficients from
+a DCT (`background_field.cheb_interp`): numpy's Chebyshev.interpolate (chebvander recurrence) leaves round-off of about
+1e-16 j at degree j, above the 1e-13 cut from N about 450 (erratically), and the derivatives amplified it (h''' of
+'general' r**2 off by 4e8 at N 800 in a shell; its eigenvalues (no-slip, Ek 1e-3) 3e-5 off at N 450, 2e-4 at N 800, the
+operators dense in r; false sheets). The wound field's ΔΩ (`_wound_rot`, whose slope the source takes) is cut at 1e-13
+too (the 'conical' ΔΩ, constant in r, had a slope of 2.5e-9 of itself at N 48, 2e-4 at N 800), and its k at 1e-13
+instead of 1e-14 (k'', the highest derivative the operators take, 2e-7 off at the walls at N 800 for 'conical', below
+1e-8 now; the cut also drops resolved content below 1e-13, k'' about 4e-6 off for a ΔΩ layer of width 0.02). regress.sh
+m_gen (outer), m_fer and m_fdr (both walls; mk_run's bco = bci = 0) hold the poloidal push: against a checkout before 6c
+they FAIL, as intended (the stress rows of those walls gain entries on f, and A, B, divided by ‖A‖, change by 1e-5
+elsewhere; with the normalisation undone only those rows differ); m_wnd FAILs too, by 8e-13 of the row scale (its
+eigenvalues by 4e-12), with the wound field's round-off cut. tests/centrifugal/run_all.sh runs its piped checks with
+`bash -o pipefail` (a FAIL was hidden).
 2026-10-30: with `diff_rot = 1` the induction gains ∇×(U0×b) (`diff_rot.induction_block`, any ΔΩ, same algebra as the force;
 a conducting inner core must co-rotate rigidly, `diff_rot.rigid_ricb`; `background.ferraro_mismatch` reports B0⋅∇Ω and
 `par.ferraro_policy` 'warn'/'refuse' (a parameter since 2026-11-03, formerly the constant `background.FERRARO_POLICY`);
@@ -455,6 +487,8 @@ To add a type, see §13.
 - `bco`/`bci` = 1 no-slip: P = 0, P′ + P((ln ρ₀)′ + 1/r) = 0, T = 0.
 - 0 stress-free, impenetrable: P = 0; r²P″ + r²(ln ρ₀)′P′ + (r²(ln ρ₀)″ + L − 2 − r(ln ρ₀)′)P = 0; rT′ − T = 0.
 - 2: zero radial stress instead of P = 0: (r(ln ρ₀)′ − 3)P + 3rP′ = 0.
+- 0 or 2 where B0 ends at the wall in a current sheet (an insulator or a TWA with c1 = 0 beyond): the tangential stress
+  rows gain the sheet's push (`bc_u_sheet`, phase 6c, §4); a drag at bco = 0 adds `topo.rows`.
 - `bci`, `bci_thermal` are ignored at ricb = 0 (regularity comes from the parity basis).
 - Thermal (ThermaD > 0 only): `b*_thermal` 0 fixed s, 1 s′ = 0.
 
@@ -693,10 +727,25 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   dipole), 6 in 'Wu 2005' (the slip's (ln ρ0)' term, which only a flow through the wall sees: 2e-3 without it); 26 stops
   and runs that go on: dipole, a singular 'general' and a 0/0 'user' profile in a full sphere (and the where() form,
   which runs), a zero field with cnorm_tor 'mag_energy', a zero 'ferraro' field and a NaN one (cnorm 1), cIC with bci = 2, centrifugal with a
-  slipping cIC, forcing 7 with the core librating behind a slipping conducting wall, a toroidal B0's sheet at a slipping
-  wall (bco 0 and 2, bci 0 and 2, inviscid, TWA c1 = 0 at either wall, a 1e-5 sheet under the dipole, an irregular
-  full-sphere profile's, rotdyn's stop instead) and the runs that go on (no-slip, cIC, TWA c1 ≠ 0 at either wall,
-  resolved mantle, 'wall'); 50 checks).
+  slipping cIC, forcing 7 with the core librating behind a slipping conducting wall, a toroidal B0's sheet in an
+  inviscid full sphere (also 4e-6 of the field under a strong 'axial' one, and an irregular full-sphere profile's),
+  rotdyn's stop, and the runs that go on (since 6c a viscous slipping wall: bco 0 and 2, bci 0 and 2, TWA c1 = 0 at
+  either wall; no-slip, cIC, TWA c1 ≠ 0 at either wall, resolved mantle, 'wall'); 50 checks).
+- `tests/sheet/` (README, `run_all.sh`, ~11 min on 2 ranks; NEW 2026-11-07, phase 6c): `sheet_check.py` (the push of
+  B0's current sheet at a slipping wall: nine smoothed sheets, B0 falling to the field beyond over δ = 2e-3, 1e-3, 5e-4,
+  the first four eigenvalues against the sharp run with the push (error ratio 0.35–0.65, the δ, δ² extrapolation 10×
+  closer, the no-push run 10× farther): toroidal k = r at the outer wall (bco 0) and the inner one (bci 2, cnorm_tor 2
+  with Hendrik 0.025, the eigenvalues of 1 and 0.1), 'general' outer (n 1 and 3, cnorm 2 with Hendrik 0.025) and inner,
+  a TWA with c1 = 0 outer (n 1, c 0.05, muw 3, mu 1.5) and inner (n 3, mu 0.8), Wu 2005 with ν = 1 + r (ρ0 ν = 0.07 at
+  the wall), the outer toroidal one with kappa_cmb 0.01 (it must move the eigenvalues 10× the error at 5e-4), and
+  'general' with a toroidal sheet at the outer wall with m 2, symm -1 (lmax 25: the other l-sets); L_z = 0 and resid𝐋
+  for m 0 in a shell (cnorm_tor 'mag_energy'), a full sphere and Wu (|L_z| > 1e-3 without the push); residσ, resid𝐄 <
+  1e-8; stops (inviscid poloidal, also behind a permeable layer with B0_cmb 'plain'; centrifugal; 'axial' with mu 1.5 or
+  a muw 2 layer at the outer wall, at the inner one (no B0_ic tag) and inviscid; 'dipole' and G21 'frozen currents' at a
+  muw 2 inner layer) and runs (no-slip, one permeability, a poloidal sheet at bco 2, the inviscid permeable layer with
+  B0_cmb 'wall'); `_pol_wall_row` against bc_b_spherical's f rows at both walls, n 1–6, to 1e-13, and B0_cmb 'wall'
+  ('FDM', G21) with no sheet at a permeable outer layer, 'plain' G21 with one; the no-push runs patch assemble.py's
+  sheet_on line; 44 checks).
 - `tests/forcing/` (README, `run_all.sh`, ~20 s; NEW 2026-11-06): `rows_check.py` (forcings 6 at a no-slip and a
   stress-free ICB, 7 with m = 0 and 2, 9 Boussinesq, 'Wu 2005' and full sphere, 10: the wall values read back from the
   solution of small forced runs built with `tests/tidal/mk_run.py`, to 1e-10 of the amplitude).
@@ -764,7 +813,10 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
 
 ## 14. History (this branch, newest first)
 
-The conductive_IC port, phase 6b (2026-11-07): B0 'dipole', a fluid slipping along a conducting inner core (both kinds,
+The conductive_IC port, phase 6c (2026-11-07): the push of B0's current sheets, toroidal and poloidal, at slipping
+viscous walls in the stress rows (`assemble.bc_u_sheet`, `background.sheet_jump`), the stop kept for an inviscid fluid,
+the round-off of B0_tor 'user' profiles, the interpolants of B0's profiles by a DCT, `tests/sheet/`;
+`4b44eb0` the conductive_IC port, phase 6b (2026-11-07): B0 'dipole', a fluid slipping along a conducting inner core (both kinds,
 condition C.I in the core's electric-field row), the libration of the mantle with a stress-free inner wall, finite
 'general' and 'user' profiles, the stop for a toroidal B0's current sheet at a slipping wall, `tests/inner_core/`;
 `ddd59a2` the conductive_IC port, phase 6a (2026-11-07): forced runs with a field (every field row; 'conducting, Bessel';

@@ -37,6 +37,7 @@ Only parameters, numpy and scipy are imported: utils.py and radial_profiles.py i
 import numpy as np
 import scipy.special as scsp
 import scipy.optimize as so
+import scipy.fftpack as sft   # NEW (2026-11-07): the DCT of cheb_interp
 from parameters import par
 
 # the names the 'user' and 'general' expressions may use (NEW 2026-10-30: defined here, before cnorm needs them at import)
@@ -263,6 +264,26 @@ def _h(r, k):
              + 2*x**2*jl(0,b,0)*nl(0,x,1) + 8*jl(0,b,0)*nl(1,x,0) - 8*x*jl(0,b,0)*nl(1,x,1) + x**3*jl(0,b,0)*nl(1,x,1) )/r**3
 
 
+def cheb_interp(f, deg, domain):
+    '''
+    NEW (2026-11-07, phase 6c): the Chebyshev interpolant of degree deg of f on domain [a, b], at the deg + 1 points of the
+    first kind, its coefficients by a DCT (as utils.chebco_f). FIX: numpy's Chebyshev.interpolate takes them from the
+    recurrence of chebvander, whose round-off grows as about 1e-16 j of the largest coefficient at degree j and passes the
+    cut at 1e-13 of the profiles from a degree of some 900 (N about 450 at degree max(64, 2N)), so that hundreds of noise
+    coefficients were kept, which the derivatives amplify: the slope at r = 1 of the 'general' r/6 - r**3/10 was off by
+    8e-6 at N 800 in a shell (a sheet at a wall that it meets, background.sheet_jump), its third derivative by 1.6e7. The DCT
+    keeps the round-off near 1e-16 of the largest coefficient at every degree. With deg even, x = 0 is one of the points
+    exactly (r = 0 of a full sphere, where a profile that numpy cannot evaluate gives coefficients that are not finite:
+    background._check_general).
+    '''
+    n = deg + 1
+    a, b = float(domain[0]), float(domain[1])
+    x = np.sin(0.5*np.pi*(n - 1 - 2*np.arange(n))/n)   # cos(π(j + 1/2)/n), from 1 down to -1, x = 0 exact for n odd
+    r = a + (b - a)*(x + 1)/2
+    c = sft.dct(np.broadcast_to(np.asarray(f(r), dtype=float), r.shape))/n
+    c[0] /= 2
+    return np.polynomial.chebyshev.Chebyshev(c, domain=[a, b])
+
 def _expr(expr, p, name):
     '''NEW (2026-11-04): f(r) of a 'general' or 'user' expression in r and p (the numpy names of USER_NS), as written'''
     code = compile(expr, name, 'eval')
@@ -273,9 +294,9 @@ def _gen_interp(kind, n):
     '''
     NEW (2026-10-30): the Chebyshev interpolant of the 'general' radial expression of degree n, kind 'h' (B0_profiles) or 'k'
     (B0_tor_profiles): degree max(64, 2N) on [ricb, 1], or on [-1, 1] at |r| with the parity (-1)^n in a full sphere (the
-    expression should go as r^n at r = 0); coefficients below 1e-13 of the largest are dropped, so that the derivatives (up
-    to the third) do not amplify round-off. p is B0_param for 'h' and B0_tor_param for 'k' (FIX 2026-11-03: both took
-    B0_param, unlike B0_tor 'user').
+    expression should go as r^n at r = 0), by cheb_interp (FIX 2026-11-07: a DCT); coefficients below 1e-13 of the largest
+    are dropped, so that the derivatives (up to the third) do not amplify round-off. p is B0_param for 'h' and B0_tor_param
+    for 'k' (FIX 2026-11-03: both took B0_param, unlike B0_tor 'user').
     '''
     key = (kind, n)
     if key not in _gen:
@@ -284,9 +305,9 @@ def _gen_interp(kind, n):
         deg = max(64, 2*par.N)
         with np.errstate(divide='ignore', invalid='ignore'):   # (a profile that is not finite there: background._check_general)
             if par.ricb == 0:
-                c = np.polynomial.chebyshev.Chebyshev.interpolate(lambda r: f(np.abs(r))*np.sign(r)**n, deg, domain=[-1., 1.])
+                c = cheb_interp(lambda r: f(np.abs(r))*np.sign(r)**n, deg, [-1., 1.])
             else:
-                c = np.polynomial.chebyshev.Chebyshev.interpolate(f, deg, domain=[par.ricb, 1.])
+                c = cheb_interp(f, deg, [par.ricb, 1.])
         c.coef[np.abs(c.coef) < 1e-13*np.abs(c.coef).max()] = 0.   # the round-off of the interpolation, which the derivatives amplify
         _gen[key] = c
     return _gen[key]
@@ -309,8 +330,9 @@ def gen_profile(kind, n, r, d):
 # there for a regular field, and the functions (1 - x²) P_n' vanish there), and at the centre in a full sphere; at the outer
 # wall ψ = 0 keeps the field inside (no radial field crosses it). Wherever the field does not match a potential field at
 # the wall (with ψ = 0 there, wherever ∂ψ/∂r is not 0), it meets the insulating mantle with a surface current (allowed: the
-# perturbation's boundary conditions do not involve B0; NEW 2026-11-07: its push on a fluid slipping along the wall, which a
-# no-slip wall takes, is left out, docs/magnetic-equations.md, Poloidal fields).
+# perturbation's boundary conditions do not involve B0; NEW 2026-11-07: a no-slip wall takes its push on the fluid, and
+# the stress rows of a slipping wall hold it, background.sheet_jump, docs/magnetic-equations.md, Current sheets at slipping
+# walls).
 _fer = {}
 def _ferraro_psi(r, x):
     '''ψ = G(ΔΩ(r, x)) on the grid (r, x), ΔΩ from diff_rot.raw (amplitude included)'''
@@ -327,8 +349,8 @@ def _ferraro_raw(n, r):
     return (2*n + 1)/(2*n*(n + 1.))*(_ferraro_psi(r, xg) @ (wg*dPn))/r
 
 def ferraro_profile(n, r, d):
-    '''the d-th r-derivative of h_n of 'ferraro' (without cnorm): a Chebyshev interpolant of degree max(64, 2N), on [-1, 1] at |r|
-    with the parity (-1)^n in a full sphere. FIX (2026-11-04): the coefficients of every degree are cut at 1e-13 of the largest
+    '''the d-th r-derivative of h_n of 'ferraro' (without cnorm): a Chebyshev interpolant of degree max(64, 2N) (cheb_interp,
+    FIX 2026-11-07: a DCT), on [-1, 1] at |r| with the parity (-1)^n in a full sphere. FIX (2026-11-04): the coefficients of every degree are cut at 1e-13 of the largest
     of all the degrees, as wound_profiles does; the cut at 1e-13 of each degree's own largest kept the round-off of the
     degrees that should vanish (3 to 15 for the uniform field of the 'cylindrical' rotation), which their third derivatives
     raised to 1e-7, with the wrong parity in a full sphere (30 parity WARNINGs of submatrices.py)'''
@@ -337,9 +359,9 @@ def ferraro_profile(n, r, d):
         for m in ferraro_degrees():
             if par.ricb == 0:
                 g = lambda rr, m=m: _ferraro_raw(m, np.maximum(np.abs(rr), 1e-12))*np.sign(rr)**m
-                _fer[m] = np.polynomial.chebyshev.Chebyshev.interpolate(g, deg, domain=[-1., 1.])
+                _fer[m] = cheb_interp(g, deg, [-1., 1.])
             else:
-                _fer[m] = np.polynomial.chebyshev.Chebyshev.interpolate(lambda rr, m=m: _ferraro_raw(m, rr), deg, domain=[par.ricb, 1.])
+                _fer[m] = cheb_interp(lambda rr, m=m: _ferraro_raw(m, rr), deg, [par.ricb, 1.])
         big = max(np.abs(c.coef).max() for c in _fer.values())
         for c in _fer.values():
             c.coef[np.abs(c.coef) < 1e-13*big] = 0.
@@ -433,16 +455,20 @@ def bpoX(r, Dorder):
 _kuser = None
 
 def k_user():
-    '''the Chebyshev interpolant (degree max(64, 2N) on [ricb, 1]) of the 'user' expression B0_tor_profile'''
+    '''the Chebyshev interpolant (degree max(64, 2N) on [ricb, 1], cheb_interp) of the 'user' expression B0_tor_profile. FIX
+    (2026-11-07): coefficients below 1e-13 of the largest are dropped, as for 'general' (_gen_interp). Their round-off, which
+    the derivatives amplify (for k = r at N 160, its second and third derivatives 3e-2 and 1e3 off at the walls), moved the
+    eigenvalues with N (2e-9 at N 160, 1e-8 at N 240) and spoilt residσ where a wall moves (bci 2: 1e-4 at N 160)'''
     global _kuser
     if _kuser is None:
         f = _expr(par.B0_tor_profile, par.B0_tor_param, '<B0_tor_profile>')
         with np.errstate(divide='ignore', invalid='ignore'):   # FIX (2026-11-07): where(r == 0, 0, ...) evaluates both sides
             if par.ricb == 0:   # NEW (2026-10-28): full sphere, at |r| with the parity (-1)^n (the expression should go as r^n at r = 0)
                 g = lambda r: f(np.abs(r))*np.sign(r)**par.B0_tor_l
-                _kuser = np.polynomial.chebyshev.Chebyshev.interpolate(g, max(64, 2*par.N), domain=[-1., 1.])
+                _kuser = cheb_interp(g, max(64, 2*par.N), [-1., 1.])
             else:
-                _kuser = np.polynomial.chebyshev.Chebyshev.interpolate(f, max(64, 2*par.N), domain=[par.ricb, 1.])
+                _kuser = cheb_interp(f, max(64, 2*par.N), [par.ricb, 1.])
+            _kuser.coef[np.abs(_kuser.coef) < 1e-13*np.abs(_kuser.coef).max()] = 0.   # (no cut if a coefficient is not finite)
     return _kuser
 
 
@@ -631,11 +657,16 @@ def _wound_source(r, x):
     return par.Gaspard*np.outer(r, sin)*(Br*dW + Bt*tW)/(par.B0_wound_eta*par.MagnetD)
 
 def _wound_rot(n):
-    '''the Chebyshev interpolant of diff_rot.raw(n, r) (degree max(64, 2N), on [-1, 1] at |r| in a full sphere)'''
+    '''the Chebyshev interpolant of diff_rot.raw(n, r) (degree max(64, 2N), on [-1, 1] at |r| in a full sphere; cheb_interp).
+    FIX (2026-11-07): coefficients below 1e-13 of the largest are dropped, as for 'general'; the source takes the slope,
+    which amplified them: the 'conical' ΔΩ, constant in r, had a slope of 2.5e-9 of itself at N 48, 2e-4 at N 800 (numpy's
+    interpolation; 2e-11 to 2e-9 with the DCT uncut, 0 now)'''
     import diff_rot as dr
     if ('w', n) not in _wnd:
         a = -1. if par.ricb == 0 else par.ricb
-        _wnd[('w', n)] = np.polynomial.chebyshev.Chebyshev.interpolate(lambda r: dr.raw(n, r), max(64, 2*par.N), domain=[a, 1.])
+        w = cheb_interp(lambda r: dr.raw(n, r), max(64, 2*par.N), [a, 1.])
+        w.coef[np.abs(w.coef) < 1e-13*np.abs(w.coef).max()] = 0.
+        _wnd[('w', n)] = w
     return _wnd[('w', n)]
 
 def _wound_degrees():
@@ -694,7 +725,10 @@ def wound_profiles():
             A[-1] = par.ricb*D[-1]; A[-1, -1] += 1 - (n + 1)/par.sigma_i2o
         k = np.linalg.solve(A, rhs)
         ch = np.polynomial.chebyshev.Chebyshev.fit(r, k, M, domain=[a, 1.])
-        ch.coef[np.abs(ch.coef) < 1e-14*np.abs(ch.coef).max()] = 0.
+        ch.coef[np.abs(ch.coef) < 1e-13*np.abs(ch.coef).max()] = 0.   # FIX (2026-11-07): 1e-13, as the other profiles: with
+        # 1e-14 the round-off of the collocation at N 800 stayed, and k'' (the highest derivative of k that the operators
+        # take) was 2e-7 of its largest value off at the walls ('conical'), below 1e-8 now. Like their cut, it also drops
+        # resolved content below 1e-13 (k'' about 4e-6 off for a ΔΩ layer of width 0.02)
         out[n] = ch
     _wnd['k'] = out
     return out

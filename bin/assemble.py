@@ -72,6 +72,9 @@ def main():
               'frame (condition C.I of Rekier et al. 2023), valid while the viscous layer left out is thin against the magnetic '
               'skin depth (%s = %s << 1)' % ('Pm |%s|/Gaspard' % wname if par.Gaspard else 'Pm', ratio))
 
+    # NEW (2026-11-07, phase 6c): B0's current sheet at a slipping wall pushes the fluid, in the stress rows (bc_u_sheet)
+    sheet_on = bool(par.magnetic and par.hydro and par.ViscosD > 0 and (bg.sheet_push('outer') or bg.sheet_push('inner')))
+
     if rank == 0:
         alltop, allbot = ll_flo
     else:
@@ -463,6 +466,10 @@ def main():
             bc_u_list = topo.rows( l, 'u' )
             for q in [0,1,2]:
                 loc_list[q].append( bc_u_list[q] )
+        if sheet_on:  # NEW (2026-11-07, phase 6c): the push of B0's current sheet at a slipping wall, in its stress rows
+            bc_u_list = bc_u_sheet( l, 'u' )
+            for q in [0,1,2]:
+                loc_list[q].append( bc_u_list[q] )
         # ----------------------------------------------------------------------------------------------------------
 
 
@@ -584,6 +591,10 @@ def main():
                     loc_list[q].append( bc_u_list[q] )
             if topo.on():  # NEW (2026-11-06, from conductive_IC): the drag at the stress-free outer wall
                 bc_u_list = topo.rows( l, 'v' )
+                for q in [0,1,2]:
+                    loc_list[q].append( bc_u_list[q] )
+            if sheet_on:  # NEW (2026-11-07, phase 6c): the push of B0's current sheet at a slipping wall
+                bc_u_list = bc_u_sheet( l, 'v' )
                 for q in [0,1,2]:
                     loc_list[q].append( bc_u_list[q] )
         # ----------------------------------------------------------------------------------------------------------
@@ -1158,6 +1169,83 @@ def bc_u_centrifugal(l, loc, ll_flo):
     if not data:
         return [np.zeros(0), np.zeros(0, dtype=int), np.zeros(0, dtype=int)]
     return [np.concatenate(data), np.concatenate(rows), np.concatenate(cols)]
+
+
+
+_sheet_mats = {}
+
+def bc_u_sheet(l, sec):
+    '''
+    NEW (2026-11-07, phase 6c): the push of B0's current sheet at a slipping wall (background.sheet_push) in the stress rows
+    of the degree l, section sec 'u' (P_l) or 'v' (T_l), as [data, row, col]. Where B0 ends at the wall in a current sheet
+    on the fluid's side (background.sheet_jump: its tangential part jumps by ΔB0_t to the field beyond), the sheet, of current
+    K0 = ∓r̂ × ΔB0_t at the outer and the inner wall, pushes the fluid with Hendrik K0×b, whose part along the wall is
+    ∓Hendrik b_r ΔB0_t per area (b is continuous across the sheet). The viscous stress of the fluid at the wall takes it, as
+    it takes a drag (topo.rows), in one form at both walls: the tangential stress, viscous and Maxwell, is continuous
+    through the sheet and a slipping wall, and the Maxwell stress Hendrik (B0_r b_t + b_r B0_t) is larger by Hendrik b_r ΔB0_t
+    on the fluid's side, so that
+        ViscosD ρ0 ν [r ∂r(u_t/r) + ∇₁u_r/r] = -Hendrik b_r ΔB0_t,
+    and the stress rows of bc_u_spherical, r² (section u: the second row of the outer wall, the fourth of the inner one) and
+    r (section v: the first and the second) times the parts of [r ∂r(u_t/r) + ∇₁u_r/r] on ∇₁Y_l and ∇₁Y_l × r̂, gain r² q
+    and r q times the same parts of b_r ΔB0_t, q = Hendrik/(ViscosD ρ0 ν) at the wall (ν the viscosity profile). Those
+    parts come from the angular algebra (mag_algebra._vcross): b_r ΔB0_t = (r̂ × ΔB0_t) × b_r r̂, with r̂ × ΔB0_t = -k_n P_n'
+    sinθ θ̂ for the toroidal jump (B0_phi = k_n P_n' sinθ) and -a_n P_n' sinθ φ̂ for the poloidal one (ΔB0_t = a_n ∇₁Y_n),
+    and b_r = L_k F_k/r: entries on F of every degree k with |k - l| <= nB + 1, its value at the wall. The normal part of
+    the push, Hendrik ΔB0_t⋅b_t along the fluid's outward normal (the drop of the magnetic pressure Hendrik B0⋅b across the
+    sheet), the wall takes (and the zero viscous radial stress of bco, bci = 2, which leaves out the pressure, leaves it out
+    too).
+    '''
+    import angular
+    import mag_algebra as ma
+    import radial_profiles as rap
+    m = par.m
+    lp_u, lt_u = ut.ell(m, par.lmax, par.symm)[:2]
+    lp_f = lt_u if ut.symmB0 == -1 else lp_u   # f has the l's of T (symmB0 = -1) or of P (symmB0 = 1)
+    lfirst_f = ut.m_bot if ut.symmB0 == -1 else ut.m_top
+    if par.ricb > 0:
+        Tf = {'outer': bv.Tb, 'inner': bv.Ta}
+    else:   # one parity of Chebyshev polynomials per section in a full sphere (as bc_b_spherical)
+        ixf = ( m + ut.s )%2 if ut.symmB0 == -1 else ( m + 1 - ut.s )%2
+        Tf = {'outer': bv.Tb[ixf::2, :]}
+    data, rows, cols = [], [], []
+    for wall, rr_u, rr_v in (('outer', 1, 0), ('inner', 3, 1)):
+        if not bg.sheet_push(wall):
+            continue
+        r = ut.rcmb if wall == 'outer' else par.ricb
+        if wall not in _sheet_mats:   # the parts of b_r ΔB0_t on S_l, T_l for b_r = L_k Y_k (columns k), once per wall
+            tor, pol = bg.sheet_jump(wall)
+            nB = max(list(tor) + list(pol))
+            A = angular.Algebra.get(m, par.lmax + nB + 6)
+            F = A.field(q=A.L)
+            Ws = Wt = A.zero()
+            for kind, jumps in (('st', tor), ('sp', pol)):
+                for n, a in jumps.items():
+                    dPn = np.polynomial.Legendre.basis(n).convert(kind=np.polynomial.Polynomial).deriv()
+                    V = ma._vcross(A, kind, -a*dPn, F)
+                    Ws, Wt = Ws + V.s, Wt + V.t
+            rw = np.array([float(r)])
+            q = par.Hendrik/(par.ViscosD*float(np.exp(np.ravel(rap.logrhoX(rw, 0))[0]))*float(np.ravel(rap.viscoX(rw, 0))[0]))
+            _sheet_mats[wall] = (Ws.tocsr(), Wt.tocsr(), nB, q)
+        Ws, Wt, nB, q = _sheet_mats[wall]
+        if sec == 'u':
+            if l not in lp_u:
+                continue
+            row, W, fac = ut.offset['u'] + int(ut.N1*(l - ut.m_top)/2) + rr_u, Ws, r**2*q/r
+        else:
+            if l not in lt_u:
+                continue
+            row, W, fac = ut.offset['v'] + int(ut.N1*(l - ut.m_bot)/2) + rr_v, Wt, r*q/r
+        T = Tf[wall]
+        for k in range(max(l - nB - 1, 0), l + nB + 2):
+            w = W[l, k] if k < W.shape[1] else 0
+            if w == 0 or k not in lp_f:
+                continue
+            data.append( fac*w*T[:,0] )
+            rows.append( np.full(T.shape[0], row) )
+            cols.append( ut.offset['f'] + int(ut.N1*(k - lfirst_f)/2) + np.arange(T.shape[0]) )
+    if not data:
+        return [np.zeros(0, dtype=complex), np.zeros(0, dtype=int), np.zeros(0, dtype=int)]
+    return [np.concatenate(data).astype(complex), np.concatenate(rows), np.concatenate(cols)]
 
 
 

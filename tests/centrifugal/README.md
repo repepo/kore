@@ -5,7 +5,10 @@ Companion of `docs/background.md` (Centrifugal deformation) and `docs/centrifuga
 deformed body, phase 2, NEW 2026-11-06; the exact spheroid `'spheroid'`, NEW 2026-11-06). `run_all.sh [WORKDIR]` builds the runs it needs under
 `tests/centrifugal/runs/` and prints one verdict per check and its time (about 17 minutes on 16 cores; the budgets need
 petsc4py and slepc4py, `SKIP_SOLVE=1 run_all.sh` skips them: 13 minutes on 16 cores, 15 on four; with `OLD_KORE` set to a copy of
-the commit before the change it also runs `tests/diff_rot/regress.sh`, 2 minutes more). The times of the budget
+the commit before the change it also runs `tests/diff_rot/regress.sh`, 2 minutes more, and prints the runs that differ:
+against a checkout older than phase 6c of the `conductive_IC` port, m_gen, m_fer and m_fdr fail, as intended, with the
+push of the poloidal current sheet at their stress-free walls, and m_wnd by $8\cdot10^{-13}$ of the row scale, with the
+round-off of the wound field's profiles cut). The times of the budget
 checks leave out their runs, which `mk_run.py` builds and solves first.
 
 | script | what it checks |

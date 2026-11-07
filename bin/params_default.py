@@ -360,8 +360,8 @@ class default_params():
         # symmetry (a toroidal field of degree l has (-1)^(l+1), a poloidal one (-1)^l: the dipole and B0_tor_l = 1 cannot be combined)
         self.B0_tor = None
         # self.B0_tor = 'Malkus'   # k = r: B0 = cnorm_tor s φ̂ (Malkus 1967), current J0 = 2 cnorm_tor ẑ; nonzero at the walls (surface
-        #                          # currents there, whose push a slipping fluid would feel: with bco or bci 0 or 2, or ViscosD = 0,
-        #                          # and an insulator beyond, the run stops; see docs/magnetic.md)
+        #                          # currents there, whose push on a fluid slipping along the wall (bco or bci 0 or 2) the stress rows
+        #                          # hold; an inviscid fluid (ViscosD = 0) with an insulator beyond stops; see docs/magnetic.md)
         # self.B0_tor = 'wall'     # k = r (r - ricb)(1 - r)/(1 - ricb)²: vanishes at both walls
         # self.B0_tor = 'user'     # k = B0_tor_profile, a numpy expression of r and p = B0_tor_param (sin ... tanh, exp, log, sqrt,
         #                          # where, erf, pi), e.g. 'r*(1 - r)**2' (smooth: its first two derivatives enter the rows)

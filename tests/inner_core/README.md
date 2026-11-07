@@ -47,12 +47,13 @@ numpy, scipy, mpi4py, and petsc4py and slepc4py with MUMPS; `NCPUS` caps the ran
   that are not finite at the centre of a full sphere (and goes on with the `where` form its message suggests), a zero
   toroidal field with `cnorm_tor = 'mag_energy'`, a zero `'ferraro'` field with `cnorm = 'mag_energy'` and one that is not finite, a conducting
   inner core with `bci = 2`, `centrifugal = 1` with a fluid slipping along a conducting inner core, the libration of the
-  inner core behind a stress-free wall along a conducting core, and a toroidal field that is not zero at a slipping wall
-  with an insulator beyond: a stress-free outer or inner wall (`bco` or `bci` 0 or 2), an inviscid full sphere, a thin
-  layer that does not conduct at either wall, a sheet of $10^{-5}$ of the toroidal field under the dipole (whose
-  $h'$ is large at the inner wall), and the small sheet that a profile which is not smooth at the centre of a full sphere
-  leaves at its wall (the message says why); with `rotdyn = 1` it stops with the reason of the rotating solids. It goes on with
-  no-slip walls, a conducting inner core, a conducting thin layer at either wall or the resolved mantle beyond, and with
-  `B0_tor = 'wall'`.
+  inner core behind a stress-free wall along a conducting core, and a toroidal field that is not zero at the wall of an
+  inviscid full sphere with an insulator beyond, whose current sheet there would push the fluid: also a sheet of
+  $4\cdot10^{-6}$ of the toroidal field under a strong `'axial'` field (whose $h'$ hides it from `b0_at_wall`'s cut), and the
+  small sheet that a profile which is not smooth at the centre leaves at the wall (the message says why); with
+  `rotdyn = 1` it stops with the reason of the rotating solids. The same sheet at a viscous slipping wall goes on, its push
+  in the stress rows (`tests/sheet` checks it): a stress-free outer or inner wall (`bco` or `bci` 0 or 2), and a thin layer
+  that does not conduct at either wall. It goes on too with no-slip walls, a conducting inner core, a conducting thin layer
+  at either wall or the resolved mantle beyond, and with `B0_tor = 'wall'`.
 
 About 1.5 min on 2 ranks.

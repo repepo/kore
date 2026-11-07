@@ -68,7 +68,11 @@ cfgs_old[14]=""
 
 # -------------------------------------------------------- the runs of the magnetic field (name, change, code they need)
 # (Le² = Em = 1e-3; the rotation of the defaults is kept only where the run is about it; no-slip walls where the toroidal
-# field is not 0 at a wall: a slipping wall there stops, background.tor_sheet)
+# field is not 0 at a wall, which stopped a slipping wall before phase 6c. The stress-free walls of m_gen (outer), m_fer
+# and m_fdr (both) hold the push of the poloidal B0's current sheet there since phase 6c (2026-11-07, background.sheet_jump):
+# against an older checkout these three FAIL, as intended: the stress rows of those walls gain entries on f, and A and B,
+# divided by the norm of A, change by 1e-5 elsewhere. m_wnd FAILs too, by 8e-13 of the row scale (its eigenvalues by 4e-12):
+# phase 6c cuts the round-off of the wound field's profiles at 1e-13)
 MAG="par.magnetic=1; par.B0='axial'; par.cnorm='mag_energy'; par.Hendrik=1e-3; par.MagnetD=1e-3"
 GEN="par.B0='general'; par.B0_profiles={1: 'r/6 - r**3/10', 3: '0.3*r**3*(1 - r**2)'}"
 DRU="par.diff_rot_type='user'; par.diff_rot_ampl=0.2; par.diff_rot_profiles={0: '(2/3)*r**2 - (8/15)*r**4', 2: '-(2/3)*r**2 + (16/21)*r**4', 4: '-(8/35)*r**4'}"

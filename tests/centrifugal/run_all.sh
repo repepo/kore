@@ -2,26 +2,32 @@
 # Checks of the centrifugal deformation (centrifugal = 1; docs/centrifugal-equations.md, Checks). NEW (2026-11-05).
 # usage: tests/centrifugal/run_all.sh [WORKDIR]   (default tests/centrifugal/runs; about 17 minutes on 16 cores)
 # Needs numpy, scipy, sympy and mpi4py; the budgets also petsc4py and slepc4py (SKIP_SOLVE=1 skips them). With OLD_KORE set to
-# a copy of the commit before the change (git archive <commit> | tar -x -C $OLD_KORE), also tests/diff_rot/regress.sh.
+# a copy of the commit before the change (git archive <commit> | tar -x -C $OLD_KORE), also tests/diff_rot/regress.sh, which
+# fails in the runs that a later commit changed on purpose: against a checkout older than phase 6c of the conductive_IC port
+# (2026-11-07), m_gen, m_fer and m_fdr (the push of the poloidal current sheet at their stress-free walls) and m_wnd (by 8e-13
+# of the row scale: the round-off of the wound field's profiles, now cut).
 # Each check prints its verdict; the script ends with 'centrifugal checks ok' (exit 0) or lists the ones that failed (exit 1).
 set -o pipefail
+# FIX (2026-11-07): each check whose output is piped (tail, grep, sed) runs in bash -o pipefail -c, so that its script's
+# failure is the check's (the pipefail of this script does not reach the shells that bash -c starts: a failing
+# budget_check.py piped into sed passed)
 T=$(cd "$(dirname "$0")" && pwd)
 W=${1:-$T/runs}; mkdir -p "$W"; cd "$W"
 failed=()
 check() { local name=$1 t0=$SECONDS; shift; if ! "$@"; then failed+=("$name"); fi; echo "    ($name: $((SECONDS - t0)) s)"; }
 
 echo "--- derive.py: the closed forms of bin/centrifugal.py from X = α + ξ, w = J F⁻¹ u (sympy)"
-check derive bash -c "python3 '$T/derive.py' | tail -1"
+check derive bash -o pipefail -c "python3 '$T/derive.py' | tail -1"
 echo "--- algebra_check.py: the angular couplings (angular.py's algebra) against a direct projection of the closed forms"
-check algebra bash -c "python3 '$T/algebra_check.py' | tail -1"
+check algebra bash -o pipefail -c "python3 '$T/algebra_check.py' | tail -1"
 echo "--- derive_mag.py: the magnetic terms of the deformed body from b = F b̃/J (sympy), and kore's couplings against them"
-check derive_mag bash -c "python3 '$T/derive_mag.py' | tail -1"
+check derive_mag bash -o pipefail -c "python3 '$T/derive_mag.py' | tail -1"
 # NEW (2026-11-06, phase 2)
 echo "--- derive_diff.py: the viscous force, the diffusion, the stress-free and fixed-flux walls and the differential rotation"
 echo "    of the deformed body (sympy), and kore's couplings and wall rows against them"
-check derive_diff bash -c "python3 '$T/derive_diff.py' | tail -1"
+check derive_diff bash -o pipefail -c "python3 '$T/derive_diff.py' | tail -1"
 echo "--- bc_check.py: the insulating-wall rows on the deformed wall against the exact matching of a potential field"
-check bc bash -c "python3 '$T/bc_check.py' | tail -1"
+check bc bash -o pipefail -c "python3 '$T/bc_check.py' | tail -1"
 echo "--- clairaut_check.py: the 'clairaut' flattening (Maclaurin 5/4, polytrope 7.5/π², Wu 2005 against Clairaut from ρ, the Sun)"
 check clairaut python3 "$T/clairaut_check.py"
 echo "--- eig_check.py: f = 0, the spin-over 1 + f, the relabelling test, homogeneous 'clairaut', the monopole, the ideal fluid,"
@@ -60,7 +66,7 @@ cfgs=("$WU; $VI; $CL; par.ricb = 0.35; par.symm = 1; par.N = 96; par.lmax = 24"
 for i in "${!names[@]}"; do
   d=${names[$i]}
   python3 "$T/mk_run.py" $d "${cfgs[$i]}" > /dev/null || { failed+=("$d"); continue; }
-  check $d bash -c "cd $d && python3 bin/ru_insane.py | grep 'centrifugal\|PASS\|FAIL' | sed 's/^/$d: /'"
+  check $d bash -o pipefail -c "cd $d && python3 bin/ru_insane.py | grep 'centrifugal\|PASS\|FAIL' | sed 's/^/$d: /'"
 done
 
 if [ -z "$SKIP_SOLVE" ]; then
@@ -78,7 +84,7 @@ if [ -z "$SKIP_SOLVE" ]; then
   for i in "${!names[@]}"; do
     d=${names[$i]}
     python3 "$T/mk_run.py" $d "${cfgs[$i]}" solve > /dev/null || { failed+=("$d"); continue; }
-    check $d bash -c "cd $d && python3 '$T/budget_check.py' | sed 's/^/$d: /'"
+    check $d bash -o pipefail -c "cd $d && python3 '$T/budget_check.py' | sed 's/^/$d: /'"
   done
 
   # NEW (2026-11-05, phase 1b): with a field, at f and f/2 (@F@): residσ, residω, resid𝐛 to round-off, resid𝐄 of second order
@@ -97,7 +103,7 @@ if [ -z "$SKIP_SOLVE" ]; then
     for F in 0.005 0.01; do
       python3 "$T/mk_run.py" ${d}_$F "${cfgs[$i]//@F@/$F}" solve > /dev/null || { failed+=("${d}_$F"); built=0; }
     done
-    [ $built = 1 ] && check $d bash -c "cd ${d}_0.01 && python3 '$T/budget_check.py' 1e-8 ../${d}_0.005 | sed 's/^/$d: /'"
+    [ $built = 1 ] && check $d bash -o pipefail -c "cd ${d}_0.01 && python3 '$T/budget_check.py' 1e-8 ../${d}_0.005 | sed 's/^/$d: /'"
   done
   # NEW (2026-11-06, step 2): the exact spheroid with a field (f = 0.3, -0.2 for the conducting inner core and the m = 2 case):
   # every budget to round-off, the energy budget resid𝐄 too (an insulating and a conducting inner core, a full sphere with
@@ -114,17 +120,17 @@ if [ -z "$SKIP_SOLVE" ]; then
   for i in "${!names[@]}"; do
     d=${names[$i]}
     python3 "$T/mk_run.py" $d "${cfgs[$i]}" solve > /dev/null || { failed+=("$d"); continue; }
-    check $d bash -c "cd $d && python3 '$T/budget_check.py' 1e-9 exact | sed 's/^/$d: /'"
+    check $d bash -o pipefail -c "cd $d && python3 '$T/budget_check.py' 1e-9 exact | sed 's/^/$d: /'"
   done
   # the anelastic 'Wu 2005' with a field needs N 128 for its budgets (the sphere's are 2e-6 at N 96): closure only
   d=bm_wu
   python3 "$T/mk_run.py" $d "$MAG; $WU; par.thermal = 0; par.Beyonce = 1.; $CL; par.N = 128" solve > /dev/null && \
-    check $d bash -c "cd $d && python3 '$T/budget_check.py' 1e-7 | sed 's/^/$d: /'" || failed+=("$d")
+    check $d bash -o pipefail -c "cd $d && python3 '$T/budget_check.py' 1e-7 | sed 's/^/$d: /'" || failed+=("$d")
 fi
 
 if [ -n "$OLD_KORE" ]; then
   echo "--- regress.sh: centrifugal = 0 leaves the matrices of the 26 regression runs unchanged"
-  check regress bash -c "bash '$T/../diff_rot/regress.sh' '$OLD_KORE' '$W/regress' | tail -1"
+  check regress bash -o pipefail -c "bash '$T/../diff_rot/regress.sh' '$OLD_KORE' '$W/regress' | grep -v ': ok$'"
 fi
 
 if [ ${#failed[@]} -eq 0 ]; then echo "centrifugal checks ok ($SECONDS s)"; else echo "centrifugal checks FAILED: ${failed[*]} ($SECONDS s)"; exit 1; fi

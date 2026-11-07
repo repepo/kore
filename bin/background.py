@@ -261,13 +261,14 @@ _dlnsigma_m = []
 def dlnsigma_mantle(r):
     '''
     NEW (2026-11-06): (ln sigma)' in the resolved mantle, from a Chebyshev interpolant of ln sigma on [1, r_surface] without its
-    round-off tail, which the derivative would amplify (0 for a uniform layer, a number)
+    round-off tail, which the derivative would amplify (0 for a uniform layer, a number). FIX (2026-11-07): the interpolant
+    by a DCT (background_field.cheb_interp), whose round-off stays below the cut at any N_mantle
     '''
+    import background_field as bf
     if not isinstance(par.sigma_mantle, str):
         return np.zeros(np.shape(r))
     if not _dlnsigma_m:
-        lns = np.polynomial.Chebyshev.interpolate(lambda r: np.log(sigma_mantle(r)), max(128, 4*par.N_mantle),
-                                                  domain=[1.0, par.r_surface])
+        lns = bf.cheb_interp(lambda r: np.log(sigma_mantle(r)), max(128, 4*par.N_mantle), [1.0, par.r_surface])
         _dlnsigma_m.append(lns.trim(1e-13*np.abs(lns.coef).max()).deriv())
     return _dlnsigma_m[0](np.asarray(r, dtype=float))
 
@@ -497,10 +498,11 @@ def b0_at_wall(wall, parts='pt'):
     degree is not 0 there), with 't' its toroidal part (k), to 1e-6 of the largest of h, h' and k over the fluid (B0_tor
     'wall' is 0 at the walls, 'confined' outside its region). Where they are 0, that part of B0 is 0 at the wall, and a
     permeability that jumps there moves nothing of it.
-    The slope h' of a profile interpolated at degree n = max(64, 2N) ('general', 'ferraro': background_field) carries
-    round-off of about 1e-13 n² 2/(1 - ricb) of it at an end, 1e-10 at small N and up to some 1e-6 at N 2000, so h' gets
-    ten times that where it exceeds 1e-6. A profile that the interpolant does not resolve is off by more: a field meant to
-    vanish at a moving wall needs an N that resolves it.
+    The slope h' of a profile interpolated at degree n = max(64, 2N) ('general', 'ferraro': background_field.cheb_interp,
+    its coefficients below 1e-13 of the largest cut) carries round-off below 1e-13 n² 2/(1 - ricb) of it at an end, about
+    1e-9 at small N and up to some 5e-6 at N 2000, so the tolerance on h' is ten times that bound where this exceeds 1e-6.
+    A profile that the interpolant does not resolve is off by more: a field meant to vanish at a moving wall needs an N that
+    resolves it.
     '''
     import background_field as bf
     try:
@@ -527,7 +529,7 @@ def tor_at_wall(wall):
     enter (not b0_at_wall's cut, which the poloidal field sets), and an error in evaluating them is not caught. The wound
     field (B0_wound) is 0 at an insulating wall and at a thin layer by construction (wound_profiles: k = 0 at r = 1, and at
     ricb unless the core conducts), to the round-off of its Chebyshev fit, which grows with N (4e-9 of its largest value
-    at N 800 in a full sphere): it has no sheet where tor_sheet looks for one.
+    at N 800 in a full sphere): it has no sheet where sheet_jump looks for one.
     '''
     import background_field as bf
     rr = np.linspace(par.ricb, 1.0, 201)
@@ -540,30 +542,134 @@ def tor_at_wall(wall):
     return out
 
 
-def tor_sheet(wall):
+def wall_bare(wall):
     '''
-    NEW (2026-11-07, after conductive_IC): whether the toroidal B0 ends at the wall 'outer' or 'inner' in a current sheet on
-    the fluid's side that the fluid, slipping along the wall, would feel. The sheet is there where B0_tor is not 0 at the
-    wall (above 1e-10 of its largest |k| over the fluid, degree by degree: tor_at_wall, check_rotdyn's test) and the
-    solid beyond does not carry it on: an insulator, or a thin layer that does not conduct ('TWA' with c1 = 0). A conducting
-    inner core, the resolved mantle and a conducting layer take the field on and hold its drop to 0 themselves
-    (conductive_IC stops behind them too). The sheet's current, K0 = ±B0_phi θ̂ per area at the outer and inner wall, pushes
-    on the fluid with Hendrik K0×b, whose part along the wall is ∓Hendrik B0_phi b_r φ̂, where b_r is not 0. A no-slip wall
-    takes that force, but the stress condition of a slipping wall (bco or bci = 0 or 2) leaves it out, and so does an
-    inviscid fluid (ViscosD = 0), which has none: check_magnetic stops these runs.
+    NEW (2026-11-07, phase 6c): whether the solid beyond the wall 'outer' or 'inner' does not conduct: an insulator, or a thin
+    layer that does not conduct ('TWA' with c1 = 0). B0 then ends at the wall in a current sheet on the fluid's side wherever
+    it does not meet the field beyond (sheet_jump). A conducting inner core, the resolved mantle and a conducting layer take
+    the field on and hold any drop of it themselves, with no sheet in the fluid.
     '''
-    if not (par.magnetic and par.hydro):
+    if wall == 'outer':
+        return par.mantle == 'insulator' or (par.mantle == 'TWA' and par.c1_cmb == 0)
+    return par.ricb > 0 and (par.innercore == 'insulator' or (par.innercore == 'TWA' and par.c1_icb == 0))
+
+
+def wall_slips(wall):
+    '''NEW (2026-11-07, phase 6c): whether the fluid slips along the wall 'outer' or 'inner': a stress-free wall (bco or bci 0,
+    or 2 with zero radial stress) or an inviscid fluid (ViscosD = 0)'''
+    if not par.hydro:
         return False
     if wall == 'outer':
-        slips = par.ViscosD == 0 or par.bco in (0, 2)
-        bare = par.mantle == 'insulator' or (par.mantle == 'TWA' and par.c1_cmb == 0)
+        return par.ViscosD == 0 or par.bco in (0, 2)
+    return par.ricb > 0 and (par.ViscosD == 0 or par.bci in (0, 2))
+
+
+def pol_continues(wall):
+    '''
+    NEW (2026-11-07, phase 6c): whether the poloidal B0's own field goes on beyond the wall 'outer' or 'inner': 'axial' at both
+    walls (imposed from beyond the outer wall, where its sources lie; a uniform field, it is a potential field in an
+    insulating core too), 'dipole' (its source at the centre) and the fields of B0_ic = 'frozen currents' (currents in the
+    core) at the inner wall, whose sources lie beyond it; 'confined', which is 0 at the walls and beyond. There B0 has no
+    sheet as long as the permeability does not jump at the wall (sheet_jump). The other fields, those of sources inside the
+    wall ('general' and 'ferraro', whatever their profiles, taken as fields of currents in the fluid; at the outer wall also
+    'dipole' and the fields of 'frozen currents'), meet the solid beyond with the field that its steady condition sets: the
+    potential field of those sources through an insulator or a thin layer.
+    '''
+    if par.B0 in ('axial', 'confined'):
+        return True
+    return wall == 'inner' and (par.B0 == 'dipole' or (par.B0 in ('G21 dipole', 'Luo_S1', 'Luo_S2')
+                                                        and par.B0_ic == 'frozen currents'))
+
+
+def wall_permeable(wall):
+    '''NEW (2026-11-07, phase 6c): whether the permeability jumps at the wall 'outer' or 'inner' or across a thin layer on it:
+    mu != 1 (the fluid against the layer or the insulator beyond), or a thin layer ('TWA') with a thickness (c != 0) whose
+    permeability is not that of the vacuum beyond (muw != 1). A layer with muw = 1 around a fluid with mu = 1 changes no
+    field that goes on through it.'''
+    o = wall == 'outer'
+    twa = (par.mantle if o else par.innercore) == 'TWA'
+    c, p = (par.c_cmb, par.muw_cmb) if o else (par.c_icb, par.muw_icb)
+    return par.mu != 1 or (twa and c != 0 and p != 1)
+
+
+def _pol_wall_row(wall, n, h0, h1):
+    '''NEW (2026-11-07, phase 6c): (R, D) of the steady condition of the wall on the poloidal profile h of degree n (h0 = h,
+    h1 = h' there): R the f row of assemble.bc_b_twa with c1 = 0 (the rows of the insulating walls for c = 0 and mu = 1:
+    r h' + (n+1) h outside, n h - r h' inside), D = 1/mu + n c (outer), the factor of (r h)' in R, or 1/mu + (n+1) c
+    (inner), its factor in -R.'''
+    o = wall == 'outer'
+    twa = (par.mantle if o else par.innercore) == 'TWA'
+    r = 1.0 if o else float(par.ricb)
+    c, p = ((par.c_cmb, par.muw_cmb) if o else (par.c_icb, par.muw_icb)) if twa else (0.0, 1.0)
+    mu = par.mu
+    rh1 = h0 + r*h1   # (r h)'
+    if o:
+        D = 1/mu + n*c
+        R = D*rh1 + n*h0
+        if c != 0 and not np.isinf(p):
+            R = R + (c*mu*n/p)*((n + 1)/p - 1)*h0
     else:
-        slips = par.ricb > 0 and (par.ViscosD == 0 or par.bci in (0, 2))
-        bare = par.innercore == 'insulator' or (par.innercore == 'TWA' and par.c1_icb == 0)
-    if not (slips and bare):
+        D = 1/mu + (n + 1)*c
+        R = (n + 1)*h0 - D*rh1
+        if c != 0 and not np.isinf(p):
+            R = R + (c*mu*(n + 1)/p)*(n/p + 1)*h0
+    return R, D
+
+
+def sheet_jump(wall):
+    '''
+    NEW (2026-11-07, phase 6c): the jump of B0 along the wall 'outer' or 'inner' where it ends in a current sheet on the
+    fluid's side, ΔB0_t = B0_t(fluid) - mu H0_t(beyond) (the field beyond as kore's B0 in the fluid, with the permeability
+    mu of the fluid relative to the solid's), whose push on the fluid along the wall is ∓Hendrik b_r ΔB0_t per area at the
+    outer and the inner wall (assemble.bc_u_sheet; docs/magnetic-equations.md, Current sheets at slipping walls): ({n: k_n},
+    {n: a_n}) of the degrees n where it is not 0, {} and {} where the solid beyond conducts (wall_bare).
+      toroidal:  B0_phi = k_n P_n' sinθ falls to 0 beyond (no current there, nor in a layer that does not conduct): k_n at
+                 the wall, for B0_tor's own profiles, of the degrees whose |k| there is above 1e-10 of their largest value
+                 over the fluid (tor_at_wall's test). The wound field (B0_wound) is 0 at such a wall by construction.
+      poloidal:  ΔB0_t = a_n ∇₁Y_n: with the steady condition R = 0 of the wall on h_n (_pol_wall_row), which B0 meets where
+                 it has no sheet, a_n = R/(r D) outside and -R/(r D) inside (for an insulator (r h' + (n+1) h)/r and
+                 (r h' - n h)/r, the jump of B0_θ to the potential field), for the fields that meet the solid beyond with
+                 the field its condition sets (not pol_continues), and only the degrees with |a_n| above the round-off of h'
+                 at the wall, max(1e-10, 1e-12 n_i² 2/(1 - ricb)) of the largest |B0| of that degree over the fluid (n_i =
+                 max(64, 2N) the degree of the interpolants of 'general' and 'ferraro', b0_at_wall): the fields that meet
+                 the condition by construction do so to round-off (FIX 2026-11-07: the interpolants by a DCT,
+                 background_field.cheb_interp; numpy's left round-off above this tolerance from N about 450). A field that
+                 goes on beyond (pol_continues) has no sheet where the permeability does not jump; where it does,
+                 check_magnetic stops.
+    '''
+    import background_field as bf
+    if not (par.magnetic and wall_bare(wall)):
+        return {}, {}
+    rw = 1.0 if wall == 'outer' else float(par.ricb)
+    x = np.array([rw])
+    tor = {}
+    rr = np.linspace(par.ricb, 1.0, 201)
+    for n, k in bf.tor_profiles(wound=False).items():
+        kk = np.abs(k(rr, 0))
+        kw = float(k(x, 0)[0])
+        if abs(kw) > 1e-10*max(float(kk.max()), 1e-300):
+            tor[n] = kw
+    pol = {}
+    if par.B0 is not None and not pol_continues(wall):
+        ra = rr[rr > 0]
+        ni = max(64, 2*par.N)
+        tol = max(1e-10, 1e-12*ni**2*2/(1 - par.ricb))
+        for n, h in bf.pol_profiles().items():
+            big = float(np.max(np.abs(n*(n + 1)*h(ra, 0)/ra) + np.abs(h(ra, 1) + h(ra, 0)/ra)))
+            R, D = _pol_wall_row(wall, n, float(h(x, 0)[0]), float(h(x, 1)[0]))
+            a = (R if wall == 'outer' else -R)/(rw*D)
+            if abs(a) > tol*max(big, 1e-300):
+                pol[n] = a
+    return tor, pol
+
+
+def sheet_push(wall):
+    '''NEW (2026-11-07, phase 6c): whether B0's current sheet at the wall 'outer' or 'inner' pushes a fluid slipping along it
+    (wall_slips and a jump, sheet_jump), so that the stress rows of that wall take the push (assemble.bc_u_sheet)'''
+    if not (par.magnetic and wall_slips(wall)):
         return False
-    kw = tor_at_wall(wall)
-    return kw is not None and kw[1] > 1e-10*kw[2]
+    tor, pol = sheet_jump(wall)
+    return bool(tor or pol)
 
 
 def check_forced_magnetic():
@@ -766,37 +872,74 @@ def check_magnetic():
     if par.B0_tor is not None and not np.isfinite(bf.cnorm_tor):   # FIX (2026-11-07): the same for the toroidal part
         sys.exit('cnorm_tor = %r for B0_tor %r: the field is zero, or not finite, over the fluid, so it cannot be '
                  'normalised' % (bf.cnorm_tor, par.B0_tor))
-    # NEW (2026-11-07, after conductive_IC): a toroidal B0's current sheet at a slipping wall, tor_sheet. With rotdyn = 1,
-    # check_rotdyn stops instead, on a toroidal B0 at either wall whatever the wall (the torque on the sheet is left out)
+    # NEW (2026-11-07, phase 6c): B0's current sheet at a slipping wall (sheet_jump) pushes the fluid along it, and the
+    # stress rows of a viscous fluid take that push (assemble.bc_u_sheet). Stops: an inviscid fluid, which cannot hold it; a
+    # deformed body (the metric part of the push is not derived); and a field that goes on beyond the wall (pol_continues)
+    # where the permeability jumps, whose field beyond, and so the sheet, kore does not know. With rotdyn = 1,
+    # check_rotdyn stops on a toroidal B0 at either wall whatever the wall (the torque on the sheet is left out)
     for wall in ('outer', 'inner'):
-        if not par.rotdyn and tor_sheet(wall):
-            o = wall == 'outer'
-            bc, c1 = ('bco', 'c1_cmb') if o else ('bci', 'c1_icb')
-            why = ('the fluid is inviscid (ViscosD = 0)' if par.ViscosD == 0
-                   else 'the fluid slips (%s = %d)' % (bc, getattr(par, bc)))
-            beyond = ('an insulator' if (par.mantle if o else par.innercore) == 'insulator'
-                      else 'a thin layer that does not conduct (%s = 0)' % c1)
-            fix = ('a viscous fluid with a no-slip wall (ViscosD > 0, %s = 1)' % bc if par.ViscosD == 0
-                   else 'a no-slip wall (%s = 1)' % bc)
-            solids = ("mantle 'resolved', or 'TWA' with c1_cmb != 0" if o else
-                      "innercore 'conducting, Chebys'%s, or 'TWA' with c1_icb != 0"
-                      % (" or 'conducting, Bessel'" if par.forcing != 0 else ''))   # Bessel: forced runs only
-            if getattr(par, bc) == 2:   # these solids need bc 0 or 1 (check_mantle, check_twa, above), inviscid or not
-                solids += ', with %s = 0 or 1' % bc
+        if not (wall_slips(wall) and wall_bare(wall)):
+            continue
+        o = wall == 'outer'
+        bc, c1 = ('bco', 'c1_cmb') if o else ('bci', 'c1_icb')
+        beyond = ('an insulator' if (par.mantle if o else par.innercore) == 'insulator'
+                  else 'a thin layer that does not conduct (%s = 0)' % c1)
+        if (par.B0 not in (None, 'confined') and pol_continues(wall) and wall_permeable(wall)
+                and b0_at_wall(wall, 'p')):
+            twa = (par.mantle if o else par.innercore) == 'TWA'
+            c, p = ('c_cmb', 'muw_cmb') if o else ('c_icb', 'muw_icb')
+            imposed = par.B0 == 'axial' and not o   # (imposed from beyond the outer wall, it goes on through the core)
+            sys.exit("B0 %r%s goes on beyond the %s wall%s, and the fluid slips along that wall (%s) with %s beyond and a "
+                     "permeability that jumps there (mu = %r%s): the field beyond the wall, which sets the current sheet "
+                     "there and its push on the fluid, depends on %s, which kore does not model. Use mu = 1%s, %s, or a "
+                     "conductor beyond"
+                     % (par.B0, " (B0_ic 'frozen currents')" if (not o and par.B0 in ('G21 dipole', 'Luo_S1', 'Luo_S2')
+                                                                   and par.B0_ic == 'frozen currents') else '',
+                        wall, ' (the field imposed from beyond the outer wall, through the core)' if imposed
+                        else ', where its sources are',
+                        'ViscosD = 0' if par.ViscosD == 0 else '%s = %d' % (bc, getattr(par, bc)), beyond, par.mu,
+                        ", %s = %r, %s = %r" % (c, getattr(par, c), p, getattr(par, p)) if twa else '',
+                        'how the jump bends the imposed field' if imposed else 'how those sources meet the jump',
+                        " and %s = 0 or %s = 1" % (c, p) if twa else '',
+                        ('a viscous fluid with a no-slip wall (ViscosD > 0, %s = 1)' if par.ViscosD == 0
+                         else 'a no-slip wall (%s = 1)') % bc))
+        tor, pol = sheet_jump(wall)
+        if not (tor or pol):
+            continue
+        what = []
+        if tor:
             n, kw, kmax = tor_at_wall(wall)
-            small = ''   # a profile meant to vanish there that does so only to a small part of the field
-            if kw < 1e-4*kmax and par.B0_tor in ('user', 'general'):
-                small = (". If the profile is meant to vanish at the wall, it does so only to %.0e of the field: its zero "
-                         "may be inexact (a constant given to a few digits), or its interpolant may not resolve it at this "
-                         "N%s" % (kw/kmax, ", or, in a full sphere, the profile may not be smooth at r = 0 (it must be a "
-                                  "series in r of the parity of its degree, e.g. 'r*(1 - r**2)**2' for degree 1)"
-                                  if par.ricb == 0 else ''))
-            sys.exit("The toroidal B0 is not 0 at the %s wall (degree %d: |k| %.1e there, %.1e at most in the fluid), "
-                     "where %s and the solid beyond is %s: the current sheet that ends the field there pushes the fluid "
-                     "along the wall (%sHendrik B0_phi b_r per area), and that force is not in the fluid's equations. Use "
-                     "a toroidal B0 that vanishes at the wall (e.g. B0_tor = 'wall'), %s, or a conductor beyond, which "
-                     "holds the sheet itself (%s)%s" % (wall, n, kw, kmax, why, beyond, '-' if o else '+', fix, solids,
-                                                         small))
+            what.append('the toroidal B0 is not 0 there (degree %d: |k| %.1e, %.1e at most in the fluid)' % (n, kw, kmax))
+        if pol:
+            n = max(pol, key=lambda d: abs(pol[d]))
+            what.append("the poloidal B0 does not meet the field beyond (degree %d: B0_θ jumps by %.1e ∂θP_%d)"
+                        % (n, pol[n], n))
+        what = ' and '.join(what)
+        if par.ViscosD == 0:   # (a full sphere and its outer wall: with an inner core the inviscid path stopped above)
+            small = ''   # a toroidal profile meant to vanish there that does so only to a small part of the field
+            if tor:
+                n, kw, kmax = tor_at_wall(wall)
+                if kw < 1e-4*kmax and par.B0_tor in ('user', 'general'):
+                    small = (". If the toroidal profile is meant to vanish at the wall, it does so only to %.0e of the "
+                             "field: its zero may be inexact (a constant given to a few digits), its interpolant may not "
+                             "resolve it at this N, or the profile may not be smooth at r = 0 (it must be a series in r of "
+                             "the parity of its degree, e.g. 'r*(1 - r**2)**2' for degree 1)" % (kw/kmax))
+            sys.exit("B0 ends at the %s wall in a current sheet (%s), with %s beyond, and the fluid is inviscid "
+                     "(ViscosD = 0): the sheet pushes the fluid along the wall (-Hendrik b_r ΔB0_t per area), which an "
+                     "inviscid fluid cannot hold (the push would drive a layer of no thickness along the wall, which its "
+                     "equations do not resolve). Use a viscous fluid (ViscosD > 0, whose stress at the wall takes the push), "
+                     "a field that meets the wall (a toroidal B0 that vanishes there, e.g. B0_tor = 'wall', and a poloidal "
+                     "one that %s), or a conductor beyond (%s'TWA' with c1_cmb != 0), which holds the sheet itself%s"
+                     % (wall, what, beyond,
+                        "meets the steady condition of the wall, where the permeability jumps (B0_cmb = 'wall', the "
+                        "default, adjusts 'G21 dipole', 'Luo_S1', 'Luo_S2' and 'FDM' to it)" if wall_permeable(wall)
+                        else 'matches the potential field',
+                        "mantle 'resolved', or " if par.mu == 1 else '', small))
+        if par.centrifugal:
+            sys.exit("B0 ends at the %s wall in a current sheet (%s), with %s beyond, and the fluid slips along that wall "
+                     "(%s = %d) in a deformed body (centrifugal = 1): the push of the sheet on the deformed wall, with its "
+                     "metric part, is not derived. Use centrifugal = 0, a no-slip wall (%s = 1), or a field that meets the "
+                     "wall" % (wall, what, beyond, bc, getattr(par, bc), bc))
     if par.diff_rot:   # NEW (2026-10-30): the induction by the background flow, ∇×(U0×b), is in (diff_rot.induction_block)
         magnetic_diffrot()
     if par.Hendrik <= 0 or par.MagnetD <= 0:

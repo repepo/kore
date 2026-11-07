@@ -257,7 +257,9 @@ with, term by term:
   $\mathsf e_d = \mathsf e - \tfrac13(\nabla\cdot\mathbf u)\thinspace\mathsf I$ its deviatoric part: $\mathsf S = 2\mathsf e_d$,
   and $\boldsymbol\sigma$ is symmetric and traceless, so that $\boldsymbol\sigma:\nabla\mathbf u^* = \boldsymbol\sigma:\mathsf e_d^*$.
   The physical dissipation is $\int 2\rho\nu\thinspace\mathsf e_d:\mathsf e_d\thinspace dV$, and the factor 4 is its mean
-  in the convention above. $W_\nu^{\rm wall}$ is zero on a no-slip wall at rest and on an impenetrable stress-free wall.
+  in the convention above. $W_\nu^{\rm wall}$ is zero on a no-slip wall at rest and on an impenetrable stress-free wall,
+unless a force acts on the fluid at that wall: a drag ([Drag at the outer wall](drag.md)) or the push of the background
+field's current sheet ([Magnetic field equations](magnetic-equations.md#current-sheets-at-slipping-walls)).
 
 - **Buoyancy.** $W_b = 2\thinspace\mathrm{Beyonce}\thinspace\mathrm{Re}\int\rho_0\thinspace g\thinspace s\thinspace u_r^*\thinspace dV$,
   the energy exchanged with the entropy perturbation.

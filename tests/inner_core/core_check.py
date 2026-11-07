@@ -32,11 +32,12 @@ row, assemble.bc_b_slip), against the conductive_IC branch and between the two c
    full sphere (the where() form of the message runs), a zero toroidal field normalised by its energy and a zero
    'ferraro' field (its own cnorm) and a NaN one, a conducting inner core with bci = 2, centrifugal = 1 with a fluid slipping along a
    conducting inner core, the libration of an inner core behind a stress-free wall along a conducting core, and a
-   toroidal B0 that is not 0 at a slipping wall with an insulator beyond (the current sheet there:
-   background.tor_sheet): stress-free outer and inner walls (bc 0 and 2), an inviscid full sphere, a thin layer that
-   does not conduct at either wall, a sheet of 1e-5 under the dipole (b0_at_wall's cut would miss it), one that an
-   irregular profile leaves at the wall of a full sphere (the message says why), and rotdyn = 1 (its own stop); the same
-   with no-slip walls, a conducting core, a conducting layer at either wall, the resolved mantle or B0_tor 'wall' runs.
+   toroidal B0 that is not 0 at a slipping wall with an insulator beyond (its current sheet there, background.sheet_jump):
+   an inviscid full sphere, also with a sheet of 1e-6 under a strong 'axial' field (b0_at_wall's cut would miss it) and
+   with one that an irregular profile leaves at the wall (the message says why), and rotdyn = 1 (its own stop). The same
+   sheet at a viscous slipping wall runs, its push in the stress rows (phase 6c, tests/sheet): stress-free outer and inner
+   walls (bc 0 and 2), a thin layer that does not conduct at either wall; and so do no-slip walls, a conducting core, a
+   conducting layer at either wall, the resolved mantle and B0_tor 'wall'.
 '''
 import os, sys, shutil, subprocess
 import numpy as np
@@ -271,34 +272,30 @@ cases = [
      'the u×B0 of the slip relative to the core alone, which is not implemented'),
 ]
 TOR = SMALL + "; par.B0 = None; par.B0_tor = 'Malkus'"   # k = r: not 0 at either wall
-cases += [   # the current sheet of a toroidal B0 at a slipping wall with an insulator beyond (background.tor_sheet)
-    ('stop_sheet_outer', TOR + '; par.bco = 0', "The toroidal B0 is not 0 at the outer wall"),
-    ('stop_sheet_inner', TOR + '; par.bci = 0', "The toroidal B0 is not 0 at the inner wall"),
-    ('stop_sheet_bco2', TOR + '; par.bco = 2', ("outer wall (degree 1: |k| 1.0e+00 there, 1.0e+00 at most in the fluid), "
-                                                "where the fluid slips (bco = 2)",
-                                                "(mantle 'resolved', or 'TWA' with c1_cmb != 0, with bco = 0 or 1)")),
-    ('stop_sheet_bci2', TOR + '; par.bci = 2', ('inner wall (degree 1: |k| 3.5e-01 there, 1.0e+00 at most in the fluid), '
-                                                'where the fluid slips (bci = 2)',   # and no Bessel core: an eigenproblem
-                                                "(innercore 'conducting, Chebys', or 'TWA' with c1_icb != 0, with bci = 0 "
-                                                "or 1)")),
-    ('stop_sheet_inviscid', TOR + '; par.ricb = 0; par.ViscosD = 0; par.m = 2', 'where the fluid is inviscid (ViscosD = 0)'),
-    ('stop_sheet_layer', TOR + "; par.bco = 0; par.mantle = 'TWA'; par.c_cmb = 0.01; par.c1_cmb = 0.0",
-     'a thin layer that does not conduct (c1_cmb = 0)'),
-    ('stop_sheet_layer_ic', TOR + "; par.bci = 0; par.innercore = 'TWA'; par.c_icb = 0.01; par.c1_icb = 0.0",
-     'a thin layer that does not conduct (c1_icb = 0)'),
-    # a sheet of 1e-5 of the toroidal field, under a dipole whose h' at ricb is 23: b0_at_wall's cut (1e-6 of the
-    # largest of h, h' and k) would not see it
-    ('stop_sheet_small', SMALL + "; par.B0 = 'dipole'; par.B0_tor = 'user'; par.B0_tor_l = 2; "
-                         "par.B0_tor_profile = '(r - 0.35)*(1 - r) + 1e-6'; par.bco = 0",
-     'The toroidal B0 is not 0 at the outer wall (degree 2: |k| 1.0e-06 there'),
+INV = "; par.ricb = 0; par.ViscosD = 0; par.m = 2"            # an inviscid full sphere
+cases += [   # the current sheet of a toroidal B0 at a slipping wall with an insulator beyond (background.sheet_jump)
+    ('stop_sheet_inviscid', TOR + INV, ('B0 ends at the outer wall in a current sheet (the toroidal B0 is not 0 there '
+                                        '(degree 1: |k| 1.0e+00, 1.0e+00 at most in the fluid)), with an insulator beyond, '
+                                        'and the fluid is inviscid (ViscosD = 0)')),
+    # a sheet of 4e-6 of the toroidal field (|k| = 1e-6 at the wall) under an 'axial' field of 100 (h' = 50): b0_at_wall's
+    # cut (1e-6 of the largest of h, h' and k) would not see it
+    ('stop_sheet_small', SMALL + INV + "; par.B0 = 'axial'; par.cnorm = 100; par.B0_tor = 'user'; par.B0_tor_l = 2; "
+                         "par.cnorm_tor = 1; par.B0_tor_profile = 'r**2*(1 - r**2) + 1e-6*r**2'",   # even in r: smooth at 0
+     ('the toroidal B0 is not 0 there (degree 2: |k| 1.0e-06, 2.5e-01 at most', 'it does so only to 4e-06 of the field')),
     ('stop_sheet_rotdyn', TOR + '; par.bco = 0; par.m = 0; par.rotdyn = 1',   # check_rotdyn's stop, not the sheet's remedies
      'rotdyn = 1 needs a toroidal B0 that vanishes at both walls'),
     # a profile meant to vanish at the wall that is not smooth at the centre of a full sphere (r|r| at |r|): its
     # interpolant misses the zero at the wall, and the message says why
-    ('stop_sheet_irregular', TOR + "; par.B0_tor = 'user'; par.B0_tor_profile = 'r*(1 - r)**2'; par.ricb = 0; par.bco = 0",
-     'in a full sphere, the profile may not be smooth at r = 0'),
+    ('stop_sheet_irregular', TOR + INV + "; par.B0_tor = 'user'; par.B0_tor_profile = 'r*(1 - r)**2'",
+     'or the profile may not be smooth at r = 0'),
+    ('runs_sheet_outer', TOR + '; par.bco = 0', None),   # a viscous slipping wall takes the push (phase 6c)
+    ('runs_sheet_inner', TOR + '; par.bci = 0', None),
+    ('runs_sheet_bco2', TOR + '; par.bco = 2', None),
+    ('runs_sheet_bci2', TOR + '; par.bci = 2', None),
+    ('runs_sheet_bare_layer', TOR + "; par.bco = 0; par.mantle = 'TWA'; par.c_cmb = 0.01; par.c1_cmb = 0.0", None),
+    ('runs_sheet_bare_layer_ic', TOR + "; par.bci = 0; par.innercore = 'TWA'; par.c_icb = 0.01; par.c1_icb = 0.0", None),
     ('runs_sheet_noslip', TOR, None),   # no-slip walls take the push
-    ('runs_sheet_core', TOR + '; ' + CORE + '; par.N_cic = 16', None),   # the conductor beyond holds the sheet: no stop
+    ('runs_sheet_core', TOR + '; ' + CORE + '; par.N_cic = 16', None),   # the conductor beyond holds the sheet
     ('runs_sheet_layer', TOR + "; par.bco = 0; par.mantle = 'TWA'; par.c_cmb = 0.01; par.c1_cmb = 1e-3", None),
     ('runs_sheet_layer_ic', TOR + "; par.bci = 0; par.innercore = 'TWA'; par.c_icb = 0.01; par.c1_icb = 1e-3", None),
     ('runs_sheet_mantle', TOR + "; par.bco = 0; par.mantle = 'resolved'", None),

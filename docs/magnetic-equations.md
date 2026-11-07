@@ -105,12 +105,13 @@ $$
 current. The FDM, `'G21 dipole'`, `'Luo_S1'` and `'Luo_S2'` match one at the outer wall ($rh' + (l+1)h = 0$ at $r = 1$),
 and the FDM matches one at both walls, so it suits insulating walls. `'axial'` is the uniform field, potential
 everywhere. `'dipole'` is a potential field throughout the fluid and matches one at the outer wall; its source lies at
-the centre, inside the inner core. `'confined'` is zero at the wall. `'general'` and `'ferraro'` need not match, at
-either wall (at the inner wall the potential field that is regular in the core has $rh' - lh = 0$). The induction does
+the centre, inside the inner core. `'confined'` is zero at the wall. `'general'` and `'ferraro'` are taken as fields of
+currents in the fluid, which need not match the potential field of those currents at either wall (at the inner wall the
+potential field that is regular in the core has $rh' - lh = 0$). The induction does
 not see the surface current, since the walls' conditions on $\mathbf b$ do not involve $\mathbf B_0$, but it pushes on
-the fluid along the wall with a force that goes as $b_r$ there, as that of a toroidal field does
-([Toroidal fields](#toroidal-fields)). A no-slip wall takes it; along a slipping wall (`bco` or `bci` 0 or 2, or
-`ViscosD` = 0) with an insulator beyond, it is left out of the fluid's equations, and resid𝐄 leaves it out too.
+the fluid along the wall with a force that goes as $b_r$ there, as that of a toroidal field does. A no-slip wall takes
+that push, and the stress rows of a slipping wall hold it
+([Current sheets at slipping walls](#current-sheets-at-slipping-walls)).
 
 **Full-sphere fields with an inner core.** `'G21 dipole'`, `'Luo_S1'` and `'Luo_S2'` are defined for a full sphere, and
 `B0_ic` says how to continue them into an inner core. `'potential'` (default) adds $\beta_i r^{-(l+1)}$,
@@ -135,7 +136,8 @@ sphere needs N 192 (degree 1) to 384 (degree 2) for $10^{-9}$. $h$ is evaluated 
 monomials, a polynomial of degree $2p + l$ loses all its digits to cancellation near the edges.
 
 **Any degrees.** `'general'` takes one profile $h_n$ per degree, given as expressions. Their derivatives come from
-Chebyshev interpolants (degree max(64, 2N)); in a full sphere they are evaluated at $\lvert r\rvert$ with the parity
+Chebyshev interpolants (degree max(64, 2N), their coefficients from a DCT, without those below $10^{-13}$ of the
+largest, whose round-off the derivatives would amplify at the walls); in a full sphere they are evaluated at $\lvert r\rvert$ with the parity
 $(-1)^n$, and $h_n$ should go as $r^n$ at the centre (`submatrices.py` warns otherwise). The degrees must have one
 parity (one equatorial symmetry); the lowest sets it. `cnorm = 'mag_energy'` sums $\int B_0^2\,dV$ over the degrees.
 The couplings come from the recurrence algebra ([Couplings for any background](#couplings-for-any-background)).
@@ -158,7 +160,7 @@ $$
 | --- | --- | --- |
 | `'Malkus'` | $r$ | for $n = 1$, $B_\phi = c_\mathrm{tor}\,s$ (Malkus 1967), with a uniform axial current $2c_\mathrm{tor}$ |
 | `'wall'` | $r(r - r_i)(1 - r)/(1 - r_i)^2$; with `ricb = 0`, $r^n(1 - r^2)$ | zero at both walls |
-| `'user'` | `B0_tor_profile`, a numpy expression of $r$ and $p$ = `B0_tor_param` | its derivatives from a Chebyshev interpolant (degree max(64, 2N)); written to `params.dat` after `#` |
+| `'user'` | `B0_tor_profile`, a numpy expression of $r$ and $p$ = `B0_tor_param` | its derivatives from a Chebyshev interpolant (degree max(64, 2N), cut as for the poloidal `'general'`); written to `params.dat` after `#` |
 | `'general'` | $\sum_n k_n Y_n^0$, `B0_tor_profiles` = {n: 'numpy expression of r, p'}, with $p$ = `B0_tor_param` | any degrees of one parity; derivatives as for the poloidal `'general'` |
 
 **At the walls.** A toroidal field that does not vanish at a wall (`'Malkus'`) ends there in a surface current,
@@ -167,9 +169,9 @@ field on (a conducting inner core, the resolved mantle or a conducting thin laye
 themselves). The induction does not see it: the walls' conditions on $\mathbf b$ do not involve $\mathbf B_0$, and where
 no flow crosses a wall the toroidal $\mathbf u\times\mathbf B_0$ is normal to it, whether the fluid slips along it or not.
 The sheet does push on the fluid, with $\mathrm{Hendrik}\,\mathbf K_0\times\mathbf b$, whose part along the wall is
-$\mp\mathrm{Hendrik}\,B_{0\phi}\,b_r\,\hat{\boldsymbol\phi}$ per area. A no-slip wall takes that push. A stress-free wall
-(`bco` or `bci` 0 or 2), or an inviscid fluid, would need it in the fluid's equations, which do not hold it, so such a
-run stops at startup (`background.tor_sheet`; with `rotdyn = 1`, `check_rotdyn`). Inside a conducting inner core $\mathbf B_0$ does not enter either: there
+$\mp\mathrm{Hendrik}\,B_{0\phi}\,b_r\,\hat{\boldsymbol\phi}$ per area. A no-slip wall takes that push, and the stress
+rows of a slipping wall hold it ([Current sheets at slipping walls](#current-sheets-at-slipping-walls)); with
+`rotdyn = 1` the field must vanish at both walls (`background.check_rotdyn`). Inside a conducting inner core $\mathbf B_0$ does not enter either: there
 is no flow there, so the matching conditions do not involve it (for a wall that the forcing moves,
 [Forced runs](#forced-runs)). `B0 = None` gives a toroidal field alone.
 
@@ -496,6 +498,88 @@ radius.
 As $r_s \to 1$ with $\sigma\,(r_s - 1)$ fixed the layer tends to a thin layer (`'TWA'`) with $c = r_s - 1$ and $c_1 = \sigma(r_s - 1)$, at
 first order in the thickness ([Checks](#resolved-conducting-mantle-2026-11-06)).
 
+### Current sheets at slipping walls
+
+Where $\mathbf B_0$ does not meet the field beyond an insulating wall, it ends there in a sheet of current, and the sheet
+pushes the fluid along the wall wherever the perturbation's radial field crosses it. A no-slip wall takes that push. A
+wall that the fluid slips along exerts no stress along itself, so the fluid's viscous stress must balance the push, and
+the stress-free rows hold it (`assemble.bc_u_sheet`).
+
+**The sheet** (`background.sheet_jump`). Beyond an insulator, or a thin layer that does not conduct ($c_1 = 0$), no
+current flows, so the field there is the one that the wall's steady condition sets. In a sheet on the fluid's side of
+the wall, the tangential $\mathbf B_0$ drops from its value in the fluid to the value that meets that condition with the
+same $B_{0r}$. The drop $\Delta\mathbf B_{0t}$ carries the current $\mathbf K_0 = \mp\hat{\mathbf r}\times\Delta\mathbf B_{0t}$
+at the outer and the inner wall. A conducting inner core, the resolved mantle and a conducting thin layer take the field
+on and hold any drop of it themselves, with no sheet in the fluid. Degree by degree:
+
+- **Toroidal.** Nothing beyond carries a toroidal field, so $\Delta\mathbf B_{0t} = B_{0\phi}\,\hat{\boldsymbol\phi}$
+  at the wall.
+- **Poloidal.** $\Delta\mathbf B_{0t} = c_\mathrm{norm}\,a_n\,r\nabla Y_n^0$, with $a_n$ from the steady condition of a
+  thin layer with $c_1 = 0$ ([Thin conducting layer](#thin-conducting-layer); an insulator is $c = 0$, $\mu = 1$, which
+  gives $(rh_n' + (n+1)h_n)/r$ at the outer wall and $(rh_n' - nh_n)/r$ at the inner one):
+
+    $$
+    a_n = \frac{D\,(rh_n)' + (n + e)\,h_n}{r\,D}, \qquad D = \frac1\mu + n\,c, \qquad e = \frac{c\,\mu\,n}{p}\Big(\frac{n+1}{p} - 1\Big) \qquad \text{(outer)},
+    $$
+
+    $$
+    a_n = \frac{D\,(rh_n)' - (n + 1 + e)\,h_n}{r\,D}, \qquad D = \frac1\mu + (n+1)\,c, \qquad e = \frac{c\,\mu\,(n+1)}{p}\Big(\frac np + 1\Big) \qquad \text{(inner)},
+    $$
+
+    with $e = 0$ for $p = \infty$. A field that goes on through the wall has no sheet: `'axial'` at either wall (imposed
+    from beyond the outer wall, it is a potential field in an insulating core too), and at the inner wall `'dipole'` and
+    the fields of `B0_ic = 'frozen currents'`, whose sources lie in the core (`background.pol_continues`; `'confined'` is
+    zero there). The other fields are those of sources inside the wall (currents in the fluid, as `'general'` and
+    `'ferraro'` are taken whatever their profiles; at the outer wall also the source of `'dipole'` at the centre and the
+    currents of `'frozen currents'` in the core), and end in a sheet where they do not meet the condition: the fields
+    that `B0_cmb = 'wall'` adjusts meet it at the outer wall, and the FDM, `'G21 dipole'`, `'Luo_S1'` and `'Luo_S2'` meet
+    it at the inner wall only where the permeability does not jump there.
+
+A degree counts where its drop is above the round-off of its profile at the wall: $10^{-10}$ of the largest value of
+that degree of $\mathbf B_0$ over the fluid, or for a poloidal degree the bound on $h_n'$ at a wall that moves
+([Forced runs](#forced-runs)) where that is larger. So the fields that meet the condition by
+construction have no sheet.
+
+**The push.** The force on the sheet, $\mathrm{Hendrik}\,\mathbf K_0\times\mathbf b$, has a part along the wall,
+$\mp\mathrm{Hendrik}\,b_r\,\Delta\mathbf B_{0t}$ at the outer and the inner wall, through $b_r$, which crosses the
+sheet unchanged. The viscous stress of the fluid balances it, with one form at both walls, since the fluid lies on the
+other side of the sheet at the inner wall:
+
+$$
+\mathrm{ViscosD}\,\rho_0\nu\left[r\,\partial_r\Big(\frac{\mathbf u_t}{r}\Big) + \nabla_H u_r\right] = -\mathrm{Hendrik}\,b_r\,\Delta\mathbf B_{0t}.
+$$
+
+The stress-free rows ([Boundary conditions](numerical-method.md#boundary-conditions)) are $r^2$ times the
+$r\nabla Y_l$ part of the bracket (the row of $P_l$) and $r$ times its $r\nabla Y_l\times\hat{\mathbf r}$ part (that
+of $T_l$). They gain $r^2 q$ and $r q$ times the same parts of $b_r\,\Delta\mathbf B_{0t}$, with
+$q = \mathrm{Hendrik}/(\mathrm{ViscosD}\,\rho_0\nu)$ at the wall. With $b_r = \sum_k k(k+1)\,f_k\,Y_k/r$ these are entries on the columns of $f$ at the wall, from the
+recurrence algebra (`angular.Algebra`, as in `assemble.bc_b_slip`). A drag at the same wall
+([Drag at the outer wall equations](drag-equations.md)) adds its own terms to the same rows.
+
+- **Zero radial stress** (`bco` or `bci` 2). The fluid crosses the wall, and the rows leave out the normal part of the
+  push, $\mathrm{Hendrik}\,\Delta\mathbf B_{0t}\cdot\mathbf b_t$ along the fluid's outward normal (the drop of the
+  magnetic pressure across the sheet), as their zero viscous radial stress leaves out the pressure itself.
+- **The sheet's push on $\mathbf B_0$** itself, $\mp\mathrm{Hendrik}\,B_{0r}\,\Delta\mathbf B_{0t}$, is steady: it is part
+  of the background's Lorentz force, which kore leaves out
+  ([When the ignored Lorentz force matters](#when-the-ignored-lorentz-force-matters)).
+- **Budgets.** The push works on the fluid through the viscous stress at the wall, so its power is in the work of that
+  stress (`flow.dat` columns 24–25), which residσ and resid𝐄 count, and its torque in the viscous torque at the wall.
+  The magnetic torque, taken with $\mathbf B_0$ on the fluid's side, holds that of the sheet's own currents, which the
+  viscous one balances: only their sum (`flow.dat` columns 31–38) is the torque through the wall, which resid𝐋 counts.
+  These budgets close with the push or without it, so they do not check it: the smoothed sheets and the angular
+  momentum do ([Checks](#current-sheets-at-slipping-walls-2026-11-07)).
+
+**Stops** (`background.check_magnetic`):
+
+- an inviscid fluid (`ViscosD = 0`, a full sphere), which has no stress at the wall to take the push: the push would
+  drive a layer of no thickness along the wall, which its equations do not resolve;
+- a deformed body (`centrifugal = 1`), where the push on the deformed wall is not derived;
+- a field that goes on beyond a slipping wall (above) where the permeability jumps there: $\mu \neq 1$, or a thin layer
+  with $c \neq 0$ and $p \neq 1$. The field beyond, and so the sheet, depends on how its sources meet the jump (for
+  `'axial'` at the inner wall, on how the jump bends the imposed field), which kore does not model.
+
+With `rotdyn = 1` a toroidal $\mathbf B_0$ must vanish at both walls (`background.check_rotdyn`).
+
 ## Forced runs
 
 A forced run (`forcing` other than 0, as in `conductive_IC`) solves the equations at the one frequency $w$ of the
@@ -639,13 +723,15 @@ $\mathbf B_0$ alone, which holds none of it, and in a conducting layer without a
 boundary under a poloidal $\mathbf B_0$, which carries the fluid's tangential electric field in its own frame whatever its
 permeability. The run stops otherwise (`background.check_forced_magnetic`). $\mathbf B_0$ reaches the wall where $h_n$ or
 $h_n'$ (its poloidal part) or $k_n$ (its toroidal part) of some degree is not zero there, to $10^{-6}$ of the largest of
-them over the fluid; $h_n'$ to $10^{-12}\,n^2\,2/(1 - r_i)$ instead where that is larger, ten times the round-off of the
-slope of a profile interpolated at degree $n = \max(64, 2N)$ (`background.b0_at_wall`: `'confined'` never reaches a wall,
+them over the fluid; $h_n'$ to $10^{-12}\,n^2\,2/(1 - r_i)$ instead where that is larger, ten times a bound on the
+round-off of the slope of a profile interpolated at degree $n = \max(64, 2N)$ (`background.b0_at_wall`: `'confined'` never reaches a wall,
 the toroidal `'wall'` vanishes at both; a field meant to vanish there needs an `N` that resolves it). Walls that stay in
 place take any permeability.
 
 **Left out**, in both pictures: the matching holds at the sphere, not at the displaced boundary, so the displacement
-$\xi_r$ times the jump of $\partial_r\mathbf B_0$ across the wall (the background's current there) is not in it.
+$\xi_r$ times the jump of $\partial_r\mathbf B_0$ across the wall (the background's current there) is not in it, nor the
+displacement of a current sheet of $\mathbf B_0$ at the wall
+([Current sheets at slipping walls](#current-sheets-at-slipping-walls)).
 
 `conductive_IC` has the rows without $\mathbf u\times\mathbf B_0$ at every wall and no motion inside the solids, and it
 stops the resolved mantle behind a wall that moves. Its thin layers therefore follow `'deforming'` with a poloidal
@@ -1274,7 +1360,8 @@ Step 5 (2026-10-28) was checked against the inviscid modes of Wu (2005) and of L
   to $10^{-5}$–$7\cdot10^{-3}$ relative at N 64 (the fast branch to $10^{-4}$ at N 96). The error does not change with
   Em ($10^{-8}$ to $10^{-10}$) or with Le: it is that of the magnetic boundary layer the insulating wall imposes
   (Malkus's ideal solution has a tangential $\mathbf b$ there), not resolved at these N. Since 2026-11-07 an inviscid
-  run with this field and an insulating mantle, where the field is not zero, stops ([Toroidal fields](#toroidal-fields)).
+  run with this field and an insulating mantle, where the field is not zero, stops
+  ([Current sheets at slipping walls](#current-sheets-at-slipping-walls)).
 - **Torsional modes of Luo & Jackson (2022)** (`conductive_IC`'s `tests/torsional_s2`: 'Luo_S2', inviscid, Lu
   $2\cdot10^4$, m 0, `timescale = 'Alfven'`). This code converges to their modes as $N^{-3}$:
 
@@ -1307,9 +1394,10 @@ the new features nothing changed.
   2005', 'Malkus' (and 'Wu 2005'), 'wall' of degree 2, 'axial' + 'wall', a conducting inner core, 'confined', and with a
   differential rotation. **Against sympy** (`algebra_check.py`): every block for poloidal and toroidal fields of degree
   1–4 (3 and 4 have no closed forms), several $m$, $l$ up to 12.
-- **'general'**: $h_1 = r/2$ gives exactly the 'axial' eigenvalues, $k_1 = r$ exactly the 'Malkus' ones; fields of
-  degrees 1 + 3 (full sphere), 2 + 4 (shell), toroidal 1 + 3, and a poloidal 1 + 3 with a toroidal 2 and a differential
-  rotation (also 'Wu 2005'): budgets $\le 5\cdot10^{-12}$.
+- **'general'**: $h_1 = r/2$ gives exactly the 'axial' eigenvalues (no-slip walls: at a slipping insulating outer wall
+  `'general'` ends in a sheet, being taken as a field of currents in the fluid), $k_1 = r$ exactly the 'Malkus' ones;
+  fields of degrees 1 + 3 (full sphere), 2 + 4 (shell), toroidal 1 + 3, and a poloidal 1 + 3 with a toroidal 2 and a
+  differential rotation (also 'Wu 2005'): budgets $\le 5\cdot10^{-12}$.
 - **'confined'**: degree 1 and 2, shell layer [0.4, 0.8] and full-sphere layer [0, 0.6]: budgets $10^{-12}$–$10^{-14}$
   (shell), $4\cdot10^{-10}$ (degree 1, N 192) and $2\cdot10^{-9}$ (degree 2, N 384) in the full sphere; with
   $\Delta\Omega$ uniform inside the layer, `ferraro_mismatch` = $10^{-29}$ and the budgets close as without rotation.
@@ -1530,14 +1618,70 @@ $4\cdot10^{-10}$ in all, and under forcing 6 with the core deforming, with `'axi
 deforming core holds as $a\,x + b\,x^3$ ($6\cdot10^{-11}$). Forcing 6 in `'Wu 2005'` closes it to $6\cdot10^{-12}$, and to
 $2\cdot10^{-3}$ only without the slip's term in $(\ln\rho_0)'$.
 
-**Stops.** A toroidal $\mathbf B_0$ that is not zero at a slipping wall with an insulator beyond stops the run
-([Toroidal fields](#toroidal-fields)): at a stress-free outer or inner wall (`bco` or `bci` 0 or 2), in an inviscid
-full sphere, and behind a thin layer that does not conduct, at either wall, also where it is $10^{-5}$ of the field
-under a dipole, and where a profile that is not smooth at the centre of a full sphere misses its zero at the wall (the
-message says so); with no-slip walls, a conducting inner core, a conducting thin layer, the resolved mantle or
-`'wall'` the run goes on. `'general'` and `'user'` profiles that are not finite where they are interpolated (`r` = 0 in a full
+**Stops.** A toroidal $\mathbf B_0$ that is not zero at the wall of an inviscid full sphere with an insulator beyond
+stops the run ([Current sheets at slipping walls](#current-sheets-at-slipping-walls)), also where it is
+$4\cdot10^{-6}$ of the field under a strong `'axial'` one, and where a profile that is not smooth at the centre misses its zero at the
+wall (the message says so); with `rotdyn = 1` it stops at any wall. At a viscous slipping wall the run goes on, the
+push in its stress rows: stress-free outer and inner walls (`bco` or `bci` 0 or 2) and a thin layer that does not
+conduct, at either wall. So it does with no-slip walls, a conducting inner core, a conducting thin layer, the resolved
+mantle or `'wall'`. `'general'` and `'user'` profiles that are not finite where they are interpolated (`r` = 0 in a full
 sphere) stop too, and so does a field that is zero, which `'mag_energy'` cannot normalise (`'ferraro'` among them), or a
 `'ferraro'` field that is not finite.
+
+### Current sheets at slipping walls (2026-11-07)
+
+`tests/sheet/sheet_check.py` (`run_all.sh`, about 11 min on 2 ranks) checks the push of the sheets
+([Current sheets at slipping walls](#current-sheets-at-slipping-walls)) with Ek = Em = $10^{-2}$, Hendrik 0.1,
+N 160, $m$ = 1, `'Boussinesq'` unless stated.
+
+**Smoothed sheets.** A sheet is the limit of a field that falls to the field beyond across a thin layer in the fluid,
+whose force kore takes in the volume. With layers of width $\delta$ = $2\cdot10^{-3}$, $10^{-3}$ and $5\cdot10^{-4}$, the
+first four eigenvalues of the run with the sheet and its push are approached as $\delta$ (the error halves with
+$\delta$, by 0.49 to 0.53), and the extrapolation to $\delta = 0$ that removes the terms in $\delta$ and $\delta^2$
+meets them to $8\cdot10^{-8}$ to $5\cdot10^{-5}$, against $9\cdot10^{-3}$ to 1.7 for the run without the push. Nine
+cases: a toroidal sheet ($k = r$) at the outer wall and at an inner wall with zero radial stress (`bci = 2`, with
+`cnorm_tor` 2 and Hendrik 0.025, which give the eigenvalues of 1 and 0.1 to $10^{-13}$, so that a push that missed the
+normalisation would show); a poloidal one (`'general'`) at the outer wall (degrees 1 and 3, `cnorm` 2 and Hendrik
+0.025) and at the inner one; at an outer thin layer that does not conduct ($c$ = 0.05, $p$ = 3, $\mu$ = 1.5) and at an
+inner one, with degree 3 ($\mu$ = 0.8), which bring in the terms $e$; the toroidal sheet at the outer wall of
+`'Wu 2005'` (`r_out` 0.9) with a viscosity $1 + r$, where $\rho_0\nu$ is 0.07 at the wall; the outer toroidal sheet
+with a drag at the same wall (`kappa_cmb` 0.01), whose terms share its rows and which moves the eigenvalues by
+$2\cdot10^{-2}$; and a poloidal and a toroidal sheet together at the outer wall with $m$ = 2 and `symm = -1`, whose
+rows and columns are the other sets of degrees.
+
+**Angular momentum.** With $m$ = 0 between insulating stress-free walls nothing outside the fluid exerts a torque on it,
+so a mode with $\lambda \neq 0$ carries no axial angular momentum $L_z$. With a toroidal sheet of degree 2 at the walls
+under `'axial'` (N 64; 96 for `'Wu 2005'`), $\lvert L_z\rvert$ is below $10^{-13}$ in a shell (with
+`cnorm_tor = 'mag_energy'`), a full sphere and `'Wu 2005'` (0.6 to 1.1 without the push), and so is resid𝐋.
+
+**Budgets.** residσ and resid𝐄 close to $2\cdot10^{-10}$ in all these runs (resid𝐄 is nan with $\mu \neq 1$).
+
+**Stops.** The runs stop with their messages: an inviscid full sphere with a poloidal sheet, also behind a layer where
+the permeability jumps, where the message asks for a field that meets the layer's condition (with `B0_cmb = 'wall'`
+the same run goes on); `centrifugal = 1` with a sheet at a slipping wall; and a field that goes on beyond a slipping
+wall where the permeability jumps: `'axial'` with $\mu$ = 1.5 or a thin layer with $p$ = 2, at the outer wall, at the
+inner one and in an inviscid fluid, and `'dipole'` and `'G21 dipole'` with `'frozen currents'` at the inner wall. With
+a no-slip wall or one permeability they go on, and so does a poloidal sheet at a wall with zero radial stress. The
+toroidal sheet's stops and runs are in `tests/inner_core` ([above](#dipole-and-slipping-inner-core-2026-11-07)).
+
+**The walls' conditions.** A poloidal sheet's drop comes from the steady condition of the wall
+(`background._pol_wall_row`), which the smoothed sheets cannot check: a wrong condition would leave a sheet in the
+smoothed runs too, which the push would then follow. Its rows equal the solver's (`assemble.bc_b_spherical`: an
+insulator's, or a thin layer's with $c_1 = 0$) at both walls, degrees 1 to 6, to $2\cdot10^{-16}$, in the runs of the
+outer poloidal sheet and of the two thin layers. `'FDM'` and `'G21 dipole'`, which `B0_cmb = 'wall'` adjusts to an
+outer layer where the permeability jumps, have no sheet there, while `'G21 dipole'` with `B0_cmb = 'plain'` has one.
+
+**Interpolated profiles.** The profiles of `'general'`, `'ferraro'` and `B0_tor = 'user'`, the wound field's
+$\Delta\Omega$ and the resolved mantle's $\ln\sigma$ are Chebyshev interpolants whose coefficients come from a DCT since
+2026-11-07. numpy's interpolation, used before, left round-off that grows with the degree, above the cut at $10^{-13}$
+from N about 450, and the derivatives at the walls amplified it: with a `'general'` field $h_1 = r^2$ (no-slip walls,
+Ek $10^{-3}$) the eigenvalues moved by $3\cdot10^{-5}$ at N 450 and $2\cdot10^{-4}$ at N 800, and the operators filled
+up in $r$. They now agree to $10^{-13}$ from N 160 to 800. A `B0_tor = 'user'` profile also kept the round-off of its
+interpolant, unlike `'general'`: it moved the eigenvalues with N ($10^{-8}$ at N 240) and left residσ at $10^{-4}$
+where the fluid crosses the wall (`bci = 2`). So did the wound field's $\Delta\Omega$, whose slope its source takes (a
+slope of $2\cdot10^{-4}$ of itself at N 800 for the `'conical'` rotation, constant in $r$), and the wound field itself,
+cut at $10^{-14}$ (its second derivative, the highest that the operators take, $2\cdot10^{-7}$ of its largest value off
+at the walls at N 800): both are now cut at $10^{-13}$.
 
 ## References
 

@@ -120,8 +120,10 @@ $$
 D_\text{topo} = -W_\nu - 2\,\mathrm{Re}\left(\omega_M^*\,\Gamma^\nu_M\right) .
 $$
 
-So the budgets need no new term: residσ and resid𝐄 already count the power of the stress at the walls, and the energy
-budget of the rotating solids the power of their torques. $\delta\sigma_\text{topo}$ is the drag's share of the damping
+Where the background field also ends in a current sheet at the wall, its push joins the drag in the condition
+([Magnetic field equations](magnetic-equations.md#current-sheets-at-slipping-walls)), and $W_\nu$ holds the push's
+power too, which then adds to the right-hand side. So the budgets need no new term: residσ and resid𝐄 already count the
+power of the stress at the walls, and the energy budget of the rotating solids the power of their torques. $\delta\sigma_\text{topo}$ is the drag's share of the damping
 rate, one term of that budget.
 
 ## Checks (2026-11-06)
