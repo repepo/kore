@@ -1381,7 +1381,7 @@ L = \int\rho_0\,s\,u_\phi\,dV = \frac{8\pi}{3}\int_{r_i}^{1}\rho_0\,r^3\,T\,dr .
 \Gamma^B_M = -\mathrm{Hendrik}\oint s\,B_{0r}\,b_\phi\,dS\,\Big|_{r=1}, \qquad
 \Gamma^B_{IC} = \mathrm{Hendrik}\oint s\,B_{0r}\,b_\phi\,dS\,\Big|_{r=r_i} .
 \]</div>
-<p>It acts on everything beyond the wall: a thin wall, a resolved mantle or a conducting inner core (at an insulating wall
+<p>It acts on everything beyond the wall: a thin conducting layer, a resolved mantle or a conducting inner core (at an insulating wall
 <span class="arithmatex">\(b_\phi = 0\)</span>). With <span class="arithmatex">\(b_\phi = -\sum_l g_l\,\partial_\theta Y_l\)</span> and <span class="arithmatex">\(B_{0r} = \sum_n n(n+1)\,h_n Y_n/r\)</span> (the degrees <span class="arithmatex">\(n\)</span>
 of the poloidal background, <code>cnorm</code> included),</p>
 <div class="arithmatex">\[
@@ -1441,14 +1441,14 @@ solids (<code>vtrq</code> and <code>mtrq</code> 1).</p>
   (<span class="arithmatex">\(10^{-14}\)</span>).</li>
 <li><strong>Heavy solids.</strong> Moments of inertia of <span class="arithmatex">\(10^{12}\)</span> give the eigenvalues of fixed walls (<span class="arithmatex">\(10^{-12}\)</span>).</li>
 <li><strong>Against <code>conductive_IC</code></strong> (2d84351), five runs: without a field (two sets of solids, one of them Earth-like), thin
-  walls with a dipole, a conducting inner core and a resolved mantle with a field of degree 2, an axial field with an
-  exponential resolved mantle and a thin wall on the inner core. Eigenvalues to <span class="arithmatex">\(10^{-14}\)</span>, and the rotation of the
+  conducting layers with a dipole, a conducting inner core and a resolved mantle with a field of degree 2, an axial field with an
+  exponential resolved mantle and a thin layer on the inner core. Eigenvalues to <span class="arithmatex">\(10^{-14}\)</span>, and the rotation of the
   solids and the torques on the mantle in <code>rotdyn.dat</code> to <span class="arithmatex">\(10^{-10}\)</span>, its precision.</li>
 <li><strong>Conservation</strong> with <code>'Wu 2005'</code> (<code>r_out</code> 0.9, N 64): every mode but <span class="arithmatex">\(\lambda = 0\)</span> carries no total angular
   momentum (<span class="arithmatex">\(10^{-9}\)</span>) and closes resid𝐋 (<span class="arithmatex">\(10^{-9}\)</span>); without a field the energy budget of the fluid and the solids
   closes (<span class="arithmatex">\(10^{-10}\)</span>), with a dipole, a conducting inner core and a resolved mantle resid𝐄 does (<span class="arithmatex">\(10^{-10}\)</span>).</li>
 <li><strong>Equatorial resid𝐋</strong> without the solids: <span class="arithmatex">\(10^{-15}\)</span> without a field, <span class="arithmatex">\(10^{-14}\)</span> to <span class="arithmatex">\(10^{-11}\)</span> with a field (a
-  conducting inner core and a resolved mantle, thin walls, a toroidal field that does not vanish at the walls), and
+  conducting inner core and a resolved mantle, thin layers, a toroidal field that does not vanish at the walls), and
   <span class="arithmatex">\(10^{-9}\)</span> in a full sphere.</li>
 <li><strong>Stops</strong> of <code>background.check_rotdyn</code>.</li>
 </ul>

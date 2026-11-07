@@ -811,10 +811,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#thin-conducting-walls" class="md-nav__link">
+  <a href="#thin-conducting-layer" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Thin conducting walls
+        Thin conducting layer
       
     </span>
   </a>
@@ -845,6 +845,34 @@
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#forced-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Forced runs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Forced runs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-boundary-that-moves" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A boundary that moves
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1596,10 +1624,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#thin-conducting-walls" class="md-nav__link">
+  <a href="#thin-conducting-layer" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Thin conducting walls
+        Thin conducting layer
       
     </span>
   </a>
@@ -1630,6 +1658,34 @@
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#forced-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Forced runs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Forced runs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-boundary-that-moves" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A boundary that moves
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2137,17 +2193,17 @@ with or without a thin conducting layer), or a conductor whose field kore then s
 <tr>
 <td><code>mantle</code></td>
 <td><code>'insulator'</code> (default), <code>'TWA'</code> or <code>'resolved'</code></td>
-<td><code>'TWA'</code>: a thin conducting wall at the base of the mantle; <code>'resolved'</code>: a conducting layer of any thickness (both below)</td>
+<td><code>'TWA'</code>: a thin conducting layer at the base of the mantle; <code>'resolved'</code>: a conducting layer of any thickness (both below)</td>
 </tr>
 <tr>
 <td><code>innercore</code></td>
-<td><code>'insulator'</code> (default), <code>'conducting, Chebys'</code> or <code>'TWA'</code></td>
-<td>need <code>ricb &gt; 0</code>; conducting: a no-slip inner wall (<code>bci = 1</code>); <code>'TWA'</code>: a thin conducting wall on an insulating inner core</td>
+<td><code>'insulator'</code> (default), <code>'conducting, Chebys'</code>, <code>'conducting, Bessel'</code> or <code>'TWA'</code></td>
+<td>need <code>ricb &gt; 0</code>; conducting: a no-slip inner wall (<code>bci = 1</code>), <code>'conducting, Bessel'</code> in forced runs only (<a href="#forced-runs">Forced runs</a>); <code>'TWA'</code>: a thin conducting layer on an insulating inner core</td>
 </tr>
 <tr>
 <td><code>N_cic</code></td>
 <td>64</td>
-<td>Chebyshev polynomials of the inner-core field (even, at least 4)</td>
+<td>Chebyshev polynomials of the inner-core field with <code>'conducting, Chebys'</code> (even, at least 4)</td>
 </tr>
 <tr>
 <td><code>mu_i2o</code></td>
@@ -2168,11 +2224,12 @@ with or without a thin conducting layer), or a conductor whose field kore then s
 </table>
 <p>The magnetic diffusivity of the inner core is <code>MagnetD</code> divided by <code>mu_i2o</code> and <code>sigma_i2o</code>. Matching conditions:
 <a href="../magnetic-equations/#boundary-conditions">Magnetic field equations</a>.</p>
-<h3 id="thin-conducting-walls">Thin conducting walls</h3>
-<p>A thin layer that conducts, such as the base of the Earth's mantle, carries currents that couple the field across the
-wall. <code>'TWA'</code> (the thin-wall approximation of Roberts, Glatzmaier &amp; Clune 2010, as in the <code>conductive_IC</code> branch)
-models such a layer through the boundary conditions of the field alone: the layer is not resolved and adds no unknowns.
-It is described by its thickness, conductivity and permeability, through three numbers per wall:</p>
+<h3 id="thin-conducting-layer">Thin conducting layer</h3>
+<p>A thin layer that conducts, such as the base of the Earth's mantle, carries currents that couple the field across it.
+<code>'TWA'</code> (the thin-wall approximation of Roberts, Glatzmaier &amp; Clune 2010, as in the <code>conductive_IC</code> branch) models such
+a layer, at the base of an insulating mantle or on an insulating inner core, through the boundary conditions of the field
+alone: the layer is not resolved and adds no unknowns. It is described by its thickness, conductivity and permeability,
+through three numbers per wall:</p>
 <table>
 <thead>
 <tr>
@@ -2185,17 +2242,17 @@ It is described by its thickness, conductivity and permeability, through three n
 <tr>
 <td><code>c_cmb</code>, <code>c_icb</code></td>
 <td><code>1e-5</code>, 0</td>
-<td>thickness times permeability of the wall, relative to the radius of the wall and to the fluid's permeability</td>
+<td>thickness times permeability of the layer, relative to the radius of the wall and to the fluid's permeability</td>
 </tr>
 <tr>
 <td><code>c1_cmb</code>, <code>c1_icb</code></td>
 <td><code>1e-5</code>, 0</td>
-<td>conductance of the wall: thickness times conductivity, relative to the radius and to the fluid's conductivity</td>
+<td>conductance of the layer: thickness times conductivity, relative to the radius and to the fluid's conductivity</td>
 </tr>
 <tr>
 <td><code>muw_cmb</code>, <code>muw_icb</code></td>
 <td>1.0</td>
-<td>permeability of the wall relative to vacuum; <code>np.inf</code> drops the terms of first order in the thickness</td>
+<td>permeability of the layer relative to vacuum; <code>np.inf</code> drops the terms of first order in the thickness</td>
 </tr>
 <tr>
 <td><code>mu</code></td>
@@ -2205,37 +2262,38 @@ It is described by its thickness, conductivity and permeability, through three n
 <tr>
 <td><code>B0_cmb</code></td>
 <td><code>'wall'</code></td>
-<td>how the background field meets a thin wall at the outer boundary: <code>'wall'</code> or <code>'plain'</code> (below)</td>
+<td>how the background field meets a thin layer at the outer wall: <code>'wall'</code> or <code>'plain'</code> (below)</td>
 </tr>
 </tbody>
 </table>
-<p>With <code>c</code> and <code>c1</code> zero and <code>mu = 1</code> a thin wall is an insulator. A wall with the permeability of vacuum (<code>muw</code> 1, the
+<p>With <code>c</code> and <code>c1</code> zero and <code>mu = 1</code> the layer is an insulator. A layer with the permeability of vacuum (<code>muw</code> 1, the
 default, as at the Earth's mantle) lets a steady field through unchanged, and its conductance <code>c1</code> then sets nearly all
 of its effect.
-<code>mu</code> other than 1 needs a thin wall or a conducting inner core at every wall of the fluid.</p>
+<code>mu</code> other than 1 needs a thin layer or a conducting inner core at every wall of the fluid.</p>
 <ul>
-<li><strong>Validity.</strong> The approximation holds while the wall is thin against its magnetic skin depth at the frequency of the
-  mode. spin_doctor prints the estimated relative error of the wall's effect, εTWA (the larger of the two walls), and
+<li><strong>Validity.</strong> The approximation holds while the layer is thin against its magnetic skin depth at the frequency of the
+  mode. spin_doctor prints the estimated relative error of the layer's effect, εTWA (the larger of the two walls), and
   writes both to <code>magnetic.dat</code>; keep it small, say below 1%.</li>
 <li><strong>A fluid slipping along the wall</strong> (<code>bco = 0</code>, <code>bci = 0</code> or <code>ViscosD = 0</code>). The fluid's tangential electric field,
-  including that of the flow across the background field, is continued into the wall in the wall's frame (condition C.I
-  of Rekier et al. 2023), which turns with the mantle with the <a href="../rotating-solids/">rotating solids</a>. The slip stands
+  including that of the flow across the background field, is continued into the layer in the frame of the solid
+  (condition C.I of Rekier et al. 2023), which turns with the mantle with the <a href="../rotating-solids/">rotating solids</a>. The slip stands
   for a thin viscous layer that is not resolved, which must be thin against the magnetic skin depth: <code>assemble.py</code>
   prints Pm times the target frequency in rotation units, which should be small. A <a href="../drag/">drag</a> at the outer wall
   changes nothing here.</li>
-<li><strong>With a differential rotation</strong> the wall turns with the fluid next to it, so the rotation must be uniform in latitude
-  there: the run stops otherwise.</li>
-<li><strong><code>B0_cmb</code>.</strong> A steady background field drives no current in the wall, but it must meet the wall's condition at the
-  outer boundary. <code>'wall'</code> (default) adds a potential field to the fields of internal currents (<code>'G21 dipole'</code>,
+<li><strong>With a differential rotation</strong> the solid turns with the fluid next to it, so the rotation must be uniform in
+  latitude at the wall: the run stops otherwise.</li>
+<li><strong><code>B0_cmb</code>.</strong> A steady background field drives no current in the layer, but it must meet the layer's condition at the
+  outer wall. <code>'wall'</code> (default) adds a potential field to the fields of internal currents (<code>'G21 dipole'</code>,
   <code>'Luo_S1'</code>, <code>'Luo_S2'</code>, <code>'FDM'</code>) so that they do; it changes nothing for <code>muw_cmb</code> 1 and <code>mu</code> 1. <code>'plain'</code> keeps them as
   they are. The other fields are used as given.</li>
 </ul>
-<p>The conditions and their checks: <a href="../magnetic-equations/#thin-conducting-walls">Magnetic field equations</a>.</p>
+<p>The conditions and their checks: <a href="../magnetic-equations/#thin-conducting-layer">Magnetic field equations</a>.</p>
 <h3 id="resolved-conducting-mantle">Resolved conducting mantle</h3>
-<p>A thin wall stands for a layer much thinner than the depth to which the field of a mode enters it, its magnetic skin
+<p><code>'TWA'</code> stands for a layer much thinner than the depth to which the field of a mode enters it, its magnetic skin
 depth. A thicker or better conducting layer, or a slower mode, needs the field inside the layer itself:
 <code>mantle = 'resolved'</code> puts a conducting layer between the outer wall and <code>r_surface</code>, with an insulator beyond, and solves
-for its field together with the rest. The layer is solid and at rest, and its conductivity may vary with radius.</p>
+for its field together with the rest. The layer is solid and at rest (unless a forcing moves the outer boundary:
+<a href="#a-boundary-that-moves">A boundary that moves</a>), and its conductivity may vary with radius.</p>
 <table>
 <thead>
 <tr>
@@ -2271,12 +2329,13 @@ for its field together with the rest. The layer is solid and at rest, and its co
 <li><strong>Resolution.</strong> The run stops if <code>N_mantle</code> polynomials do not resolve the conductivity profile; a step or a kink is
   never resolved, so smooth it. The field in the layer needs enough of them too, which a second run with a larger
   <code>N_mantle</code> shows.</li>
-<li><strong>A fluid slipping along the layer</strong> (<code>bco = 0</code> or <code>ViscosD = 0</code>) gets the same terms as along a thin wall, with the
+<li><strong>A fluid slipping along the layer</strong> (<code>bco = 0</code> or <code>ViscosD = 0</code>) gets the same terms as along a thin layer, with the
   layer's conductivity at the wall.</li>
-<li><strong>With a differential rotation</strong> the layer turns with the fluid at the outer wall, so the rotation must be uniform in
+<li><strong>With a differential rotation</strong> the mantle turns with the fluid at the outer wall, so the rotation must be uniform in
   latitude there: the run stops otherwise.</li>
-<li><strong>A thin layer</strong> of thickness h and conductivity σ tends to the thin wall with <code>c_cmb</code> = h and <code>c1_cmb</code> = σh as h
-  decreases.</li>
+<li><strong>A thin layer</strong> of thickness h and conductivity σ tends to <code>mantle = 'TWA'</code> with <code>c_cmb</code> = h and <code>c1_cmb</code> = σh as h
+  decreases, also under a forcing that moves the outer boundary, in both pictures of
+  <a href="#a-boundary-that-moves">A boundary that moves</a>.</li>
 <li>The layer and the fluid have the permeability of vacuum (<code>mu = 1</code>).</li>
 </ul>
 <p>The equations and their checks: <a href="../magnetic-equations/#resolved-conducting-mantle">Magnetic field equations</a>.</p>
@@ -2302,28 +2361,108 @@ put the flow in <code>real_flow.field</code> and <code>imag_flow.field</code> (w
 and its default is <span class="arithmatex">\(i\,\)</span><code>forcing_frequency</code>, the time dependence of the forced runs (a steady flow when it is 0). The
 field is written as <code>real_magnetic.field</code>, <code>imag_magnetic.field</code> (and the files of a conducting inner core or of a
 resolved mantle), one column per column of the flow.</p>
+<h2 id="forced-runs">Forced runs</h2>
+<p>A forced run gives the response of the flow and the field to a periodic forcing at one frequency, such as a tide or a
+libration of the walls (<code>forcing</code> other than 0; <a href="../tidal-forcing/">Tidal forcing</a>, <a href="../thermal-forcing/">Thermal forcing</a>,
+<a href="../forcing/">Convective forcing</a>). With a field every forcing runs as without one: the field is solved with the flow at
+the forcing frequency, with any of the walls and inner cores above, and spin_doctor checks the budgets of the solution.
+The solution is written as solved, with the amplitude that the forcing sets.</p>
+<ul>
+<li><strong>A conducting inner core at one frequency.</strong> At a single frequency the field inside a uniform conducting inner core
+  is a spherical Bessel function of the radius. <code>innercore = 'conducting, Bessel'</code> uses it, so the core adds conditions
+  at the inner wall but no unknowns, and gives the solution of <code>'conducting, Chebys'</code> without <code>N_cic</code>. Since that field
+  depends on the frequency, it serves the forced runs at <code>forcing_frequency</code> only. With a differential rotation the core
+  turns with the fluid at the inner wall, and the frequency is that in its frame.</li>
+<li><strong>Budgets.</strong> resid𝐄 includes the work of the pressure, with its magnetic part, where the forcing moves a boundary,
+  and the work of a conducting solid that the boundary moves on the field
+  (<a href="../magnetic-equations/#energy-budgets">Energy budgets</a>).</li>
+<li><strong>Kinematic induction</strong> works in the directory of a forced run too: <code>just_induction.py</code> without <code>lambda</code> takes the
+  forced matrix as it is, at <code>forcing_frequency</code>. Another <code>lambda</code> needs <code>B.npz</code>, which forcing 11 alone writes.</li>
+</ul>
+<p>The checks: <a href="../magnetic-equations/#forced-runs-2026-11-06">Magnetic field equations</a>.</p>
+<h3 id="a-boundary-that-moves">A boundary that moves</h3>
+<p>Forcings 6, 9, 10 and 14, and 7 with <code>m</code> 2, stand for a boundary that moves or is not spherical. The walls stay spheres,
+and the forcing prescribes the radial flow at the wall instead. A conducting solid behind such a wall moves too, and the
+currents in it depend on how it moves across B0. <code>forced_walls</code> sets that motion:</p>
+<table>
+<thead>
+<tr>
+<th><code>forced_walls</code></th>
+<th>the solid behind the wall</th>
+<th>suits</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>'rigid'</code></td>
+<td>is at rest, and only its shape moves past the sphere: the flow passes through the wall</td>
+<td>a triaxial mantle that librates (7 with <code>m</code> 2), the flattened inner core of forcing 6</td>
+</tr>
+<tr>
+<td><code>'deforming'</code></td>
+<td>deforms with the boundary: its surface moves with the fluid, and its inside moves with it</td>
+<td>a boundary that moves (9, 10), a tide (14)</td>
+</tr>
+<tr>
+<td><code>None</code> (default)</td>
+<td><code>'rigid'</code> for forcings 6 and 7, <code>'deforming'</code> for 9, 10 and 14</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>A deforming solid moves in the simplest way that matches the wall:</p>
+<ul>
+<li>a resolved mantle moves radially only, with a speed that falls as <span class="arithmatex">\(1/r^2\)</span> from that of the wall, which keeps the
+  volume of every shell;</li>
+<li>a conducting inner core (<code>'conducting, Chebys'</code>) moves with the simplest flow that is regular at its centre and has no
+  motion along the wall;</li>
+<li>with <code>'TWA'</code> the solid moves with the fluid at the wall, and so does the thin conducting layer at its surface, the only
+  part of it that conducts.</li>
+</ul>
+<p>Its motion across the background field, continued into the solid from the wall, induces a field there, which kore
+solves for with the rest, and spin_doctor adds its work to resid𝐄. With a poloidal field and <code>'TWA'</code>, <code>'deforming'</code>
+gives the solutions of the <code>conductive_IC</code> branch. Where a no-slip wall also moves along itself, as in a libration, the
+solid turns with it in both pictures. With insulating solids <code>forced_walls</code> changes nothing. <code>'deforming'</code> does not take
+<code>'conducting, Bessel'</code> behind a wall that moves, since the core's field is then no longer a Bessel function.</p>
+<p>In both pictures a wall that moves, where B0 reaches it, needs the same permeability on both sides: a surface where the
+permeability jumps would carry magnetized matter through B0 as it moves. So <code>mu</code> must be 1, and <code>mu_i2o</code> 1 with a
+conducting inner core. A thin layer's <code>muw_cmb</code> or <code>muw_icb</code> must be 1 where the poloidal part of B0 reaches the wall if
+the layer has a thickness (<code>c</code> not 0) or conducts at rest (<code>'rigid'</code>), and where the toroidal part reaches it if the
+layer conducts (<code>c1</code> not 0). Otherwise it takes any value, as in an insulating layer (<code>c</code> and <code>c1</code> both 0) or a
+conducting layer without a thickness (<code>c</code> 0) that deforms with the boundary under a poloidal B0. Walls that stay in
+place take any permeability.</p>
+<p>The equations: <a href="../magnetic-equations/#forced-runs">Magnetic field equations</a>.</p>
 <h2 id="what-is-supported">What is supported</h2>
 <p>kore checks the combination of options at startup and stops on any it cannot handle.</p>
-<p>Supported: a shell or a full sphere (<code>ricb = 0</code>); any <code>structure</code>; eigenvalue problems; with or without a differential
+<p>Supported: a shell or a full sphere (<code>ricb = 0</code>); any <code>structure</code>; eigenvalue problems and forced runs; with or without a differential
 rotation; <code>ViscosD &gt; 0</code>, or <code>ViscosD = 0</code> in a full sphere; with or without the flow (<code>hydro = 0</code>, above); insulating
-walls, thin conducting walls, a resolved conducting mantle or a conducting inner core; with rotating solids
+walls, a thin conducting layer, a resolved conducting mantle or a conducting inner core; with rotating solids
 (<code>rotdyn = 1</code>, <a href="../rotating-solids/">Rotating solids</a>). The magnetic diffusivity of the fluid is uniform.</p>
 <p>Not supported (the run stops at startup):</p>
 <ul>
 <li>no background field at all (<code>B0 = None</code> and <code>B0_tor = None</code>), or <code>Le</code> or <code>Em</code> zero;</li>
-<li>forced runs (<code>forcing</code> other than 0);</li>
 <li><code>ViscosD = 0</code> with an inner core (<code>ricb &gt; 0</code>);</li>
-<li>a conducting inner core in a full sphere, without a no-slip inner wall (<code>bci = 1</code>), with an odd <code>N_cic</code> or one below
-  4, or with a rotation that varies with latitude at its surface;</li>
-<li>a thin conducting wall on the inner core in a full sphere, with <code>centrifugal = 1</code>, with zero radial stress at the wall
-  (<code>bco = 2</code> or <code>bci = 2</code>), or with a rotation that varies with latitude at the wall; a thin wall at the outer boundary
-  with <code>B0_wound = 1</code>;</li>
+<li>a conducting inner core in a full sphere, without a no-slip inner wall (<code>bci = 1</code>), with an <code>mu_i2o</code> or a <code>sigma_i2o</code>
+  that is not a positive number, with an odd <code>N_cic</code> or one below 4 (<code>'conducting, Chebys'</code>), or with a rotation that
+  varies with latitude at its surface;</li>
+<li><code>'conducting, Bessel'</code> in an eigenvalue problem, in a frequency scan of forcing 11 (<code>rsf_frequencies</code>), or in
+  <code>just_induction.py</code> with a <code>lambda</code> other than <span class="arithmatex">\(i\,\)</span><code>forcing_frequency</code>; <code>just_induction.py</code> with such a <code>lambda</code> in a
+  forced run other than forcing 11;</li>
+<li>a thin conducting layer on the inner core in a full sphere, with <code>centrifugal = 1</code>, with zero radial stress at the wall
+  (<code>bco = 2</code> or <code>bci = 2</code>), or with a rotation that varies with latitude at the wall;</li>
 <li>negative <code>c_cmb</code>, <code>c1_cmb</code>, <code>c_icb</code> or <code>c1_icb</code>, a <code>muw_cmb</code>, <code>muw_icb</code> or <code>mu</code> that is not positive, or <code>mu</code> other
-  than 1 without a thin wall or a conducting inner core at every wall;</li>
-<li>a resolved mantle with <code>mu</code> other than 1, with <code>centrifugal = 1</code>, with a flow through the outer wall (<code>bco = 2</code>), or
-  with a rotation that varies with latitude at the outer wall; an <code>r_surface</code> that is not above 1, an <code>N_mantle</code> that is
-  not an integer of at least 4, or a <code>sigma_mantle</code> that is not positive everywhere in the layer or that <code>N_mantle</code>
-  polynomials do not resolve;</li>
+  than 1 without a thin layer or a conducting inner core at every wall;</li>
+<li>a resolved mantle with <code>mu</code> other than 1, with <code>centrifugal = 1</code>, with zero radial stress at the outer wall
+  (<code>bco = 2</code>), or with a rotation that varies with latitude at the outer wall; an <code>r_surface</code> that is not above 1, an
+  <code>N_mantle</code> that is not an integer of at least 4, or a <code>sigma_mantle</code> that is not positive everywhere in the layer or
+  that <code>N_mantle</code> polynomials do not resolve;</li>
+<li>with <code>forced_walls = 'deforming'</code> (the default of forcings 9, 10 and 14), <code>'conducting, Bessel'</code> behind an inner wall
+  that the forcing moves radially (forcing 6, and 9, 14 and 7 with <code>m</code> 2 where <code>forcing_amplitude_icb</code> is not 0);</li>
+<li>a permeability other than 1 at a wall that the forcing moves radially and that B0 reaches: <code>mu</code>, <code>mu_i2o</code> with a
+  conducting inner core, and a thin layer's <code>muw_cmb</code> or <code>muw_icb</code> where the part of B0 that it acts on reaches the wall
+  (<a href="#a-boundary-that-moves">A boundary that moves</a>); the outer wall moves under forcing 10, and under 9, 14 and 7 with
+  <code>m</code> 2 where <code>forcing_amplitude_cmb</code> is not 0, the inner wall under 6, 9, 14 and 7 with <code>m</code> 2 where
+  <code>forcing_amplitude_icb</code> is not 0;</li>
 <li>a poloidal and a toroidal part of opposite equatorial symmetry;</li>
 <li>the limits of the options above:<ul>
 <li>degrees other than 1 or 2 for <code>'FDM'</code>, <code>'confined'</code> and <code>B0_tor_l</code>, and <code>'Malkus'</code> of degree 2 in a full sphere;</li>
@@ -2338,27 +2477,30 @@ walls, thin conducting walls, a resolved conducting mantle or a conducting inner
   below 1;</li>
 <li><code>diff_rot_type = 'ferraro'</code> without a poloidal field, with a <code>diff_rot_F</code> of the wrong equatorial symmetry, or with
   a negative or odd <code>diff_rot_nmax</code>;</li>
-<li><code>B0_wound = 1</code> without a poloidal field or without <code>diff_rot = 1</code>, or with <code>B0_wound_eta</code> not positive;</li>
+<li><code>B0_wound = 1</code> without a poloidal field or without <code>diff_rot = 1</code>, with <code>B0_wound_eta</code> not positive, or with a
+  mantle other than <code>'insulator'</code> or a thin layer on the inner core;</li>
 </ul>
 </li>
 <li>with <code>ferraro_policy = 'refuse'</code>, a field and a rotation further than <code>1e-7</code> from the Ferraro condition;</li>
-<li>a value of <code>B0</code>, <code>B0_tor</code>, <code>mantle</code>, <code>innercore</code>, <code>mag_couplings</code>, <code>B0_ic</code>, <code>B0_cmb</code> or <code>ferraro_policy</code> other than
-  those listed on this page.</li>
+<li>a value of <code>B0</code>, <code>B0_tor</code>, <code>mantle</code>, <code>innercore</code>, <code>mag_couplings</code>, <code>B0_ic</code>, <code>B0_cmb</code>, <code>forced_walls</code> or
+  <code>ferraro_policy</code> other than those listed on this page.</li>
 </ul>
 <h2 id="output">Output</h2>
 <p>A magnetic run writes the perturbation field next to the flow, and spin_doctor checks each mode with the magnetic energy
 budgets.</p>
 <p><code>solve.py</code> writes <code>real_magnetic.field</code> and <code>imag_magnetic.field</code> (and <code>real_magnetic_ic.field</code>,
 <code>imag_magnetic_ic.field</code> for a conducting inner core, <code>real_magnetic_mantle.field</code>, <code>imag_magnetic_mantle.field</code> for a
-resolved mantle). Each eigenvector is normalised so that the kinetic energy plus <code>Hendrik</code> times the magnetic energy is
-1 in the fluid (the magnetic energy alone without the flow, <code>hydro = 0</code>).</p>
+resolved mantle; <code>'conducting, Bessel'</code> writes no inner-core field). Each eigenvector is normalised so that the kinetic
+energy plus <code>Hendrik</code> times the magnetic energy is 1 in the fluid (the magnetic energy alone without the flow,
+<code>hydro = 0</code>); a forced solution is written as solved.</p>
 <p><code>spin_doctor</code> adds the Lorentz work to residσ and residω, and prints two more residuals: resid𝐛, the energy budget of
 the induction equation in the fluid, and resid𝐄, the full energy budget including the field outside the fluid, in thin
-walls, in a resolved mantle and in rotating solids (for impenetrable walls, <code>bco</code> and <code>bci</code> 0 or 1, and any walls without the flow; not with
-thin walls and <code>mu</code> other than 1, nor with stress-free walls and <code>centrifugal = 1</code>). Like residσ (<a href="../solver/">Solver</a>), they should be small for a
-resolved mode; with a thin wall whose <code>c</code> is not zero resid𝐄 closes only to the order of the approximation, about εTWA.
+layers, in a resolved mantle and in rotating solids (not with thin layers and <code>mu</code> other than 1, with stress-free walls
+and <code>centrifugal = 1</code>, or with rotating solids unless <code>vtrq</code> and <code>mtrq</code> are 1). Like residσ (<a href="../solver/">Solver</a>), they
+should be small for a resolved mode; with a thin layer whose <code>c</code> is not zero resid𝐄 closes only to the order of the
+approximation, about εTWA.
 It also prints Mag/Kin, the ratio of magnetic to kinetic energy (<code>Hendrik</code> ME/KE, both in the units of the kinetic
-energy), εTWA with a thin wall, and writes <code>magnetic.dat</code> and the magnetic columns of <code>params.dat</code>
+energy), εTWA with a thin layer, and writes <code>magnetic.dat</code> and the magnetic columns of <code>params.dat</code>
 (<a href="../output/#magneticdat">Output files</a>).</p>
 <h2 id="practical-tips">Practical tips</h2>
 <p>The field, more than the flow, usually sets the resolution and the memory a run needs.</p>

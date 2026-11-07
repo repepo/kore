@@ -1716,6 +1716,8 @@ because every frequency uses the same realisations: the shape of a spectrum is m
 <li>In a full sphere (<code>ricb = 0</code>), <code>N</code> must be even, and <code>rpower_u</code> ≥ 5, <code>rpower_v</code> ≥ 3 (the defaults).</li>
 <li><code>forcing_amplitude_cmb</code> is not used: the power scales with <code>rsf_scale</code> instead.</li>
 <li>The heat equation is not forced: the right-hand side is zero in its rows, also with <code>thermal = 1</code>.</li>
+<li>With <code>magnetic = 1</code> the perturbation of the field is solved with the flow, and a scan needs the inner core
+  <code>'conducting, Chebys'</code> rather than <code>'conducting, Bessel'</code> (<a href="../magnetic/#forced-runs">Magnetic field</a>).</li>
 </ul>
 <p><code>assemble.py</code> stops with a message if one of the first two is not met.</p>
 <h3 id="where-the-force-acts">Where the force acts</h3>

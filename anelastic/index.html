@@ -1815,10 +1815,12 @@ over the fluid and keep the real part:</p>
   W_p = -2\thinspace\mathrm{Re}\oint\rho_0\thinspace\Pi\thinspace u_r^*\thinspace(\hat{\mathbf r}\cdot\mathbf n)\thinspace dA ,
   $$</p>
 <p>with <span class="arithmatex">\(\mathbf n\)</span> the outward normal of the fluid (<span class="arithmatex">\(-\hat{\mathbf r}\)</span> at the inner wall). It is zero when <span class="arithmatex">\(u_r = 0\)</span> at
-  the walls (<code>bco</code>, <code>bci</code> = 0 or 1), and not when the walls move radially (the tidal forcing 14) or with <code>bco = 2</code>.
-- <strong>Viscosity.</strong> With the stress <span class="arithmatex">\(\boldsymbol\sigma = \mathrm{ViscosD}\thinspace\rho_0\nu\thinspace\mathsf S\)</span>, an
+  the walls (<code>bco</code>, <code>bci</code> = 0 or 1), and not when the walls move radially (the tidal forcing 14) or with <code>bco = 2</code>.</p>
+<ul>
+<li><strong>Viscosity.</strong> With the stress <span class="arithmatex">\(\boldsymbol\sigma = \mathrm{ViscosD}\thinspace\rho_0\nu\thinspace\mathsf S\)</span>, an
   integration by parts splits the power of the viscous force into the work of the stress at the walls and the
-  dissipation:</p>
+  dissipation:</li>
+</ul>
 <p>$$
   W_\nu = 2\thinspace\mathrm{Re}\int\mathbf u^<em>\cdot(\nabla\cdot\boldsymbol\sigma)\thinspace dV = W_\nu^{\rm wall} - D_\nu ,
   \qquad W_\nu^{\rm wall} = 2\thinspace\mathrm{Re}\oint\mathbf u^</em>\cdot\boldsymbol\sigma\cdot\mathbf n\thinspace dA ,
@@ -1830,12 +1832,18 @@ over the fluid and keep the real part:</p>
   <span class="arithmatex">\(\mathsf e_d = \mathsf e - \tfrac13(\nabla\cdot\mathbf u)\thinspace\mathsf I\)</span> its deviatoric part: <span class="arithmatex">\(\mathsf S = 2\mathsf e_d\)</span>,
   and <span class="arithmatex">\(\boldsymbol\sigma\)</span> is symmetric and traceless, so that <span class="arithmatex">\(\boldsymbol\sigma:\nabla\mathbf u^* = \boldsymbol\sigma:\mathsf e_d^*\)</span>.
   The physical dissipation is <span class="arithmatex">\(\int 2\rho\nu\thinspace\mathsf e_d:\mathsf e_d\thinspace dV\)</span>, and the factor 4 is its mean
-  in the convention above. <span class="arithmatex">\(W_\nu^{\rm wall}\)</span> is zero on a no-slip wall at rest and on an impenetrable stress-free wall.
-- <strong>Buoyancy.</strong> <span class="arithmatex">\(W_b = 2\thinspace\mathrm{Beyonce}\thinspace\mathrm{Re}\int\rho_0\thinspace g\thinspace s\thinspace u_r^*\thinspace dV\)</span>,
-  the energy exchanged with the entropy perturbation.
-- <strong>Differential rotation.</strong> Of the terms of <a href="#differential-rotation">Differential rotation</a>, the advection
+  in the convention above. <span class="arithmatex">\(W_\nu^{\rm wall}\)</span> is zero on a no-slip wall at rest and on an impenetrable stress-free wall.</p>
+<ul>
+<li>
+<p><strong>Buoyancy.</strong> <span class="arithmatex">\(W_b = 2\thinspace\mathrm{Beyonce}\thinspace\mathrm{Re}\int\rho_0\thinspace g\thinspace s\thinspace u_r^*\thinspace dV\)</span>,
+  the energy exchanged with the entropy perturbation.</p>
+</li>
+<li>
+<p><strong>Differential rotation.</strong> Of the terms of <a href="#differential-rotation">Differential rotation</a>, the advection
   <span class="arithmatex">\(i m\thinspace\mathrm{Gaspard}\thinspace\Delta\Omega\thinspace\mathbf u\)</span> and the Coriolis force of <span class="arithmatex">\(\Delta\Omega\)</span> do no
   work. The last one does:</p>
+</li>
+</ul>
 <p>$$
   W_\Omega = -2\thinspace\mathrm{Gaspard}\thinspace\mathrm{Re}\int\rho_0\thinspace r\sin\theta\thinspace u_\phi^*\thinspace(\mathbf u\cdot\nabla\Delta\Omega)\thinspace dV ,
   $$</p>

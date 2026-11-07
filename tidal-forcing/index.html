@@ -1380,8 +1380,8 @@ amplitude to <span class="arithmatex">\(w\xi\)</span> (the factor <span class="a
 proportional to the amplitudes, and every power to their square.</p>
 <p>Requirements: <code>bco = 1</code> and <code>bci = 1</code> (also in a full sphere, where <code>bci</code> is otherwise ignored), and one of the three
 pairs (<code>m</code>, <code>symm</code>) above. In a full sphere (<code>ricb = 0</code>) only the outer wall moves. <code>assemble.py</code> stops with a message
-when a requirement is not met. The forcing works with any <code>structure</code>, with <code>thermal = 1</code> and with a differential
-rotation.</p>
+when a requirement is not met. The forcing works with any <code>structure</code>, with <code>thermal = 1</code>, with a differential
+rotation and with a field (<a href="../magnetic/#forced-runs">Magnetic field</a>).</p>
 <h2 id="example-the-2-2-tide-in-a-rotating-shell">Example: the (2, 2) tide in a rotating shell</h2>
 <p>Write in <code>bin/parameters.py</code></p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">params_default</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_params</span>

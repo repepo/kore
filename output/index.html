@@ -1369,7 +1369,7 @@ table.</p>
 <tr>
 <td><code>real_flow.field</code>, <code>imag_flow.field</code></td>
 <td><code>solve.py</code></td>
-<td>the eigenvectors of the flow (or the forced flows), real and imaginary parts of their spectral coefficients, one column per solution; with <code>thermal = 1</code> also <code>real_thermal.field</code>, <code>imag_thermal.field</code> for <span class="arithmatex">\(s\)</span>; with <code>magnetic = 1</code> also <code>real_magnetic.field</code>, <code>imag_magnetic.field</code> for <span class="arithmatex">\(\mathbf b\)</span>, <code>real_magnetic_ic.field</code>, <code>imag_magnetic_ic.field</code> for a conducting inner core, and <code>real_magnetic_mantle.field</code>, <code>imag_magnetic_mantle.field</code> for a resolved mantle; with <code>rotdyn = 1</code> also <code>real_rotdyn.field</code>, <code>imag_rotdyn.field</code> for the rotation rates of the mantle and of the inner core and the angle between them (<a href="../rotating-solids/">Rotating solids</a>). Without the flow (<code>hydro = 0</code>) the flow's files are not written</td>
+<td>the eigenvectors of the flow (or the forced flows), real and imaginary parts of their spectral coefficients, one column per solution; with <code>thermal = 1</code> also <code>real_thermal.field</code>, <code>imag_thermal.field</code> for <span class="arithmatex">\(s\)</span>; with <code>magnetic = 1</code> also <code>real_magnetic.field</code>, <code>imag_magnetic.field</code> for <span class="arithmatex">\(\mathbf b\)</span>, <code>real_magnetic_ic.field</code>, <code>imag_magnetic_ic.field</code> for the inner core <code>'conducting, Chebys'</code>, and <code>real_magnetic_mantle.field</code>, <code>imag_magnetic_mantle.field</code> for a resolved mantle; with <code>rotdyn = 1</code> also <code>real_rotdyn.field</code>, <code>imag_rotdyn.field</code> for the rotation rates of the mantle and of the inner core and the angle between them (<a href="../rotating-solids/">Rotating solids</a>). Without the flow (<code>hydro = 0</code>) the flow's files are not written</td>
 </tr>
 <tr>
 <td><code>rsf_spectrum.dat</code>, <code>rsf_ke.dat</code></td>
@@ -1573,19 +1573,19 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 </tr>
 <tr>
 <td>11</td>
-<td>the relative residual of the full energy budget (resid𝐄; nan with a flow through a wall, <code>bco = 2</code> or <code>bci = 2</code>, with stress-free walls and <code>centrifugal = 1</code>, and with thin walls and <code>mu</code> other than 1)</td>
+<td>the relative residual of the full energy budget (resid𝐄; nan with stress-free walls and <code>centrifugal = 1</code>, with thin conducting layers and <code>mu</code> other than 1, and with rotating solids unless <code>vtrq</code> and <code>mtrq</code> are 1)</td>
 </tr>
 <tr>
 <td>12</td>
-<td>with <code>centrifugal = 1</code>, a thin wall or a resolved mantle: MEc, the part of the magnetic energy that the deformation adds, so that ME + MEc is the energy of the field in the deformed fluid (the column Mag/Kin of the <code>spin_doctor</code> table is Hendrik (ME + MEc)/KE; <a href="../centrifugal-equations/#energy-budgets">Centrifugal deformation</a>); 0 without the deformation</td>
+<td>with <code>centrifugal = 1</code>, a thin conducting layer or a resolved mantle: MEc, the part of the magnetic energy that the deformation adds, so that ME + MEc is the energy of the field in the deformed fluid (the column Mag/Kin of the <code>spin_doctor</code> table is Hendrik (ME + MEc)/KE; <a href="../centrifugal-equations/#energy-budgets">Centrifugal deformation</a>); 0 without the deformation</td>
 </tr>
 <tr>
 <td>13, 14</td>
-<td>with a thin wall (<code>mantle</code> or <code>innercore</code> <code>'TWA'</code>) or a resolved mantle (<code>mantle = 'resolved'</code>) only: E_w, the magnetic energy stored in the thin walls or in the layer, and Ohm_w, their Ohmic loss</td>
+<td>with a thin conducting layer (<code>mantle</code> or <code>innercore</code> <code>'TWA'</code>) or a resolved mantle (<code>mantle = 'resolved'</code>) only: E_w, the magnetic energy stored in the thin layers or in the mantle, and Ohm_w, their Ohmic loss</td>
 </tr>
 <tr>
 <td>15, 16</td>
-<td>with a thin wall or a resolved mantle only: εTWA, the estimated relative error of the outer and of the inner thin wall (0 where there is none; the <code>spin_doctor</code> table shows the larger)</td>
+<td>with a thin conducting layer or a resolved mantle only: εTWA, the estimated relative error of the outer and of the inner thin layer (0 where there is none; the <code>spin_doctor</code> table shows the larger)</td>
 </tr>
 </tbody>
 </table>
@@ -1693,7 +1693,7 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 </tr>
 <tr>
 <td>123–127</td>
-<td><code>r_surface</code>, <code>N_mantle</code>, the conductivity of a resolved mantle at the outer wall (as used), <code>sigma_mantle_param</code>, its conductance <span class="arithmatex">\(\int\sigma\,dr\)</span> (the <code>c1_cmb</code> of a thin wall of the same conductance)</td>
+<td><code>r_surface</code>, <code>N_mantle</code>, the conductivity of a resolved mantle at the outer wall (as used), <code>sigma_mantle_param</code>, its conductance <span class="arithmatex">\(\int\sigma\,dr\)</span> (the <code>c1_cmb</code> of a thin conducting layer of the same conductance)</td>
 </tr>
 <tr>
 <td>128–134</td>
@@ -1719,7 +1719,7 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 <li>The magnetic columns: <code>B0</code> is the index in <code>background_field.B0_TYPES</code> (<code>'axial'</code> 0, <code>'FDM'</code> 1, <code>'G21 dipole'</code> 2,
   <code>'Luo_S1'</code> 3, <code>'Luo_S2'</code> 4, <code>'confined'</code> 5, <code>'general'</code> 6, <code>'ferraro'</code> 7; −1 without a poloidal field), <code>B0_tor</code> in
   <code>background_field.B0_TOR_TYPES</code> (<code>'Malkus'</code> 0, <code>'wall'</code> 1, <code>'user'</code> 2, <code>'general'</code> 3; −1 without), <code>innercore</code> in
-  <code>background.INNER_CORES</code> (<code>'insulator'</code> 0, <code>'conducting, Chebys'</code> 1, <code>'TWA'</code> 2), <code>mantle</code> in <code>background.MAGNETIC_WALLS</code>
+  <code>background.INNER_CORES</code> (<code>'insulator'</code> 0, <code>'conducting, Chebys'</code> 1, <code>'TWA'</code> 2, <code>'conducting, Bessel'</code> 3), <code>mantle</code> in <code>background.MAGNETIC_WALLS</code>
   (<code>'insulator'</code> 0, <code>'TWA'</code> 1, <code>'resolved'</code> 2), <code>B0_ic</code> in <code>background.B0_ICS</code> (<code>'potential'</code> 0, <code>'frozen currents'</code> 1, formerly
   <code>'full sphere'</code>), <code>B0_cmb</code> in <code>background.B0_CMBS</code> (<code>'wall'</code> 0, <code>'plain'</code> 1) and <code>ferraro_policy</code> in
   <code>background.FERRARO_POLICIES</code> (<code>'warn'</code> 0, <code>'refuse'</code> 1). <code>muw_cmb</code> and <code>muw_icb</code> may be <code>inf</code>. <code>cnorm</code> and
