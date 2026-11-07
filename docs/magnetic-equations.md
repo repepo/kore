@@ -82,6 +82,7 @@ $$
 | `B0` | $h(r)$ | degree, symmetry |
 | --- | --- | --- |
 | `'axial'` | $r/2$: the uniform field $c_\mathrm{norm}\hat{\mathbf z}$, no current | $l = 1$, antisymmetric |
+| `'dipole'` | $1/(2r^2)$: the field of a dipole at the centre, $c_\mathrm{norm}(\cos\theta\,\hat{\mathbf r} + \tfrac12\sin\theta\,\hat{\boldsymbol\theta})/r^3$, no current in the fluid; `ricb` > 0 only | $l = 1$, antisymmetric |
 | `'FDM'` | the poloidal free decay mode (equation below) | $l$ = `B0_l` = 1 (antisymmetric) or 2 (symmetric) |
 | `'G21 dipole'` | $r/6 - r^3/10$ (Gerick et al. 2021) | $l = 1$, antisymmetric |
 | `'Luo_S1'` | $5r - 3r^3$ (Luo & Jackson 2022): 30 times the $h$ of `'G21 dipole'`, so the same field with `cnorm` `'mag_energy'`, `'Schmitt2012'` or `'rms_cmb'`, and 30 times stronger with a numerical `cnorm` | $l = 1$, antisymmetric |
@@ -100,10 +101,16 @@ h = j_l(\beta r)\,y_{l-1}(\beta) - j_{l-1}(\beta)\,y_l(\beta r) \quad (r_i > 0),
 h = j_l(\beta r) \ \text{with}\ j_{l-1}(\beta) = 0 \quad (r_i = 0).
 $$
 
-**At the outer wall.** A field that does not match a potential field at the outer wall meets the insulating mantle with
-a surface current, which the linear problem allows. The FDM, `'G21 dipole'`, `'Luo_S1'` and `'Luo_S2'` match one there
-($rh' + (l+1)h = 0$ at $r = 1$), and the FDM matches one at both walls, so it suits insulating walls. `'axial'` is the
-uniform field, potential everywhere. `'confined'` is zero at the wall. `'general'` and `'ferraro'` need not match.
+**At the walls.** A field that does not match a potential field at an insulating wall meets the insulator with a surface
+current. The FDM, `'G21 dipole'`, `'Luo_S1'` and `'Luo_S2'` match one at the outer wall ($rh' + (l+1)h = 0$ at $r = 1$),
+and the FDM matches one at both walls, so it suits insulating walls. `'axial'` is the uniform field, potential
+everywhere. `'dipole'` is a potential field throughout the fluid and matches one at the outer wall; its source lies at
+the centre, inside the inner core. `'confined'` is zero at the wall. `'general'` and `'ferraro'` need not match, at
+either wall (at the inner wall the potential field that is regular in the core has $rh' - lh = 0$). The induction does
+not see the surface current, since the walls' conditions on $\mathbf b$ do not involve $\mathbf B_0$, but it pushes on
+the fluid along the wall with a force that goes as $b_r$ there, as that of a toroidal field does
+([Toroidal fields](#toroidal-fields)). A no-slip wall takes it; along a slipping wall (`bco` or `bci` 0 or 2, or
+`ViscosD` = 0) with an insulator beyond, it is left out of the fluid's equations, and resid𝐄 leaves it out too.
 
 **Full-sphere fields with an inner core.** `'G21 dipole'`, `'Luo_S1'` and `'Luo_S2'` are defined for a full sphere, and
 `B0_ic` says how to continue them into an inner core. `'potential'` (default) adds $\beta_i r^{-(l+1)}$,
@@ -154,11 +161,17 @@ $$
 | `'user'` | `B0_tor_profile`, a numpy expression of $r$ and $p$ = `B0_tor_param` | its derivatives from a Chebyshev interpolant (degree max(64, 2N)); written to `params.dat` after `#` |
 | `'general'` | $\sum_n k_n Y_n^0$, `B0_tor_profiles` = {n: 'numpy expression of r, p'}, with $p$ = `B0_tor_param` | any degrees of one parity; derivatives as for the poloidal `'general'` |
 
-**At the walls.** A toroidal field that does not vanish at a wall (`'Malkus'`) carries a surface current there. The
-linear problem is unaffected: the walls' conditions on $\mathbf b$ do not involve $\mathbf B_0$, and
-$\mathbf u\times\mathbf B_0 = 0$ on a no-slip wall. Inside a conducting inner core $\mathbf B_0$ does not enter either:
-there is no flow there, and $\mathbf u\times\mathbf B_0 = 0$ at the no-slip inner boundary, so the matching conditions
-do not involve it. `B0 = None` gives a toroidal field alone.
+**At the walls.** A toroidal field that does not vanish at a wall (`'Malkus'`) ends there in a surface current,
+$\mathbf K_0 = \pm B_{0\phi}\,\hat{\boldsymbol\theta}$ at the outer and the inner wall, unless a conductor beyond takes the
+field on (a conducting inner core, the resolved mantle or a conducting thin layer, which hold its drop to zero
+themselves). The induction does not see it: the walls' conditions on $\mathbf b$ do not involve $\mathbf B_0$, and where
+no flow crosses a wall the toroidal $\mathbf u\times\mathbf B_0$ is normal to it, whether the fluid slips along it or not.
+The sheet does push on the fluid, with $\mathrm{Hendrik}\,\mathbf K_0\times\mathbf b$, whose part along the wall is
+$\mp\mathrm{Hendrik}\,B_{0\phi}\,b_r\,\hat{\boldsymbol\phi}$ per area. A no-slip wall takes that push. A stress-free wall
+(`bco` or `bci` 0 or 2), or an inviscid fluid, would need it in the fluid's equations, which do not hold it, so such a
+run stops at startup (`background.tor_sheet`; with `rotdyn = 1`, `check_rotdyn`). Inside a conducting inner core $\mathbf B_0$ does not enter either: there
+is no flow there, so the matching conditions do not involve it (for a wall that the forcing moves,
+[Forced runs](#forced-runs)). `B0 = None` gives a toroidal field alone.
 
 ### Normalisation
 
@@ -324,8 +337,8 @@ layer), or a conductor whose field is solved for with the rest.
 **Insulating walls** (`assemble.bc_b_spherical`). Matching a potential field gives $(l+1)f + rf' = 0$ and $g = 0$ at the
 outer wall, $lf - r f' = 0$ and $g = 0$ at the inner one.
 
-**Conducting inner core.** `innercore = 'conducting, Chebys'` (eigenvalue problems and forced runs, no-slip inner
-boundary `bci = 1`) adds the field inside the inner core to the unknowns, as `conductive_IC` does
+**Conducting inner core.** `innercore = 'conducting, Chebys'` (eigenvalue problems and forced runs) adds the field
+inside the inner core to the unknowns, as `conductive_IC` does
 (`'conducting, Bessel'`, for forced runs, solves it in closed form instead: [Forced runs](#forced-runs)):
 
 - **Unknowns.** Sections `fic`, `gic` after `f`, `g` (`ut.offset`), with the degrees of `f`, `g` (up to `lmax`;
@@ -347,9 +360,16 @@ boundary `bci = 1`) adds the field inside the inner core to the unknowns, as `co
 
 - **Matching at the ICB** (`assemble.bc_b_cic`), one row in each section, the inner one of `f`, `g` and the only one of
   `fic`, `gic`: $f_o = f_i$ ($[b_r]$), $(g + rg')_o = \eta_i (g + rg')_i$ (tangential $\mathbf E$),
-  $\mu_{i2o}(f + rf')_o = (f + rf')_i$ and $\mu_{i2o}\,g_o = g_i$ (tangential $\mathbf H$). The continuity of
-  $\eta\nabla^2_l f$ is not imposed: with $b_r$ continuous it follows from the radial induction equation on both sides,
-  since $\mathbf u = 0$ at the no-slip ICB (for a wall that the forcing moves, [Forced runs](#forced-runs)).
+  $\mu_{i2o}(f + rf')_o = (f + rf')_i$ and $\mu_{i2o}\,g_o = g_i$ (tangential $\mathbf H$). The other part of the
+  tangential $\mathbf E$, which drives $b_r$, is not imposed: with $b_r$ continuous it follows from the radial induction
+  equation on both sides, which holds that of the flow in the fluid (for a wall that the forcing moves,
+  [Forced runs](#forced-runs)).
+- **A fluid slipping along the core** (`bci = 0`; `utils.cic_slips`). The fluid's tangential electric field includes
+  $-\mathbf u\times\mathbf B_0$, continued into the core as into a thin layer (condition C.I,
+  [Thin conducting layer](#thin-conducting-layer)): $(rg)'_o - r\,S_l/\mathrm{MagnetD} = \eta_i\,(rg_i)'$, with the
+  $S_l$ of a thin layer (`assemble.bc_b_cic` through `bc_b_slip`). The radial induction of the slip is in the fluid's own
+  equation, and the poloidal matching needs nothing more. A toroidal $\mathbf B_0$ adds nothing: $\mathbf u\times\mathbf B_0$
+  is then normal to the wall.
 - **Output.** `real_magnetic_ic.field`, `imag_magnetic_ic.field`. The eigenvectors are normalised with the fluid's
   energies only (the inner-core field is scaled along), as in `conductive_IC`.
 
@@ -423,9 +443,10 @@ to it ([Rotating solids equations](rotating-solids-equations.md#equations)).
 
 **The background field at a thin outer layer** (`B0_cmb`). A steady $\mathbf B_0$ drives no current in the layer, but
 it must meet the steady condition, $(1/\mu + lc)(rh)' + (l + e)h = 0$ at $r = 1$ with $e = c\mu l((l+1)/p - 1)/p$
-($e = 0$ for $p = \infty$). With `B0_cmb = 'wall'` (default) the fields of internal currents (`'G21 dipole'`, `'Luo_S1'`,
-`'Luo_S2'`, `'FDM'`) gain $\alpha r^l$ in $h$ (`background_field.B0_alpha_cmb`), with $\alpha$ set by that condition. The
-added field is a potential field: it carries no current and keeps the matching at the inner wall. For $p = 1$ and
+($e = 0$ for $p = \infty$). With `B0_cmb = 'wall'` (default) the fields of internal currents (`'dipole'`,
+`'G21 dipole'`, `'Luo_S1'`, `'Luo_S2'`, `'FDM'`) gain $\alpha r^l$ in $h$ (`background_field.B0_alpha_cmb`), with
+$\alpha$ set by that condition. The added field is a potential field: it carries no current and keeps the matching at
+the inner wall. For $p = 1$ and
 $\mu = 1$ the condition is the insulating one, which these fields already meet. `'plain'` leaves $h$ unchanged; the other
 fields are used as given. At a thin layer on the inner core the background is not adjusted (for $p = 1$ and $\mu = 1$ a potential
 field below meets its condition).
@@ -491,6 +512,12 @@ $$
 - **Kinematic induction** (`just_induction.py`) in a forced run takes $A$ as it is for its default
   $\lambda = i\,w$. Another $\lambda$ takes $A - (\lambda - i\,w)B$, so it needs `B.npz`, which forcing 11 alone
   writes: in another forced run it stops.
+- **Libration with a stress-free inner wall.** The libration of the walls (forcing 7, $m$ = 0) takes `bci = 0` too, as in
+  `conductive_IC`. The inner wall's row is then the stress-free one, which holds no libration of the inner core: the
+  libration does not reach the fluid through the wall's stress. Across a poloidal field it would reach it through a
+  conducting inner core or a conducting thin layer on it, by the $\mathbf u\times\mathbf B_0$ of the slip relative to the
+  core, which is not built: that case stops (`background.check_forced_magnetic`). With an insulating core, or a toroidal
+  $\mathbf B_0$ alone, `forcing_amplitude_icb` has no effect (`assemble.py` says so).
 
 **The Bessel inner core** (`innercore = 'conducting, Bessel'`, from `conductive_IC`). At one frequency the field of a
 uniform conducting inner core, regular at the centre, is known: each scalar goes as $j_l(kr)$, with
@@ -507,7 +534,9 @@ $$
 \Big(\frac{1 + x_d}{\mu_{i2o}} - 1\Big)f - r_i f' = 0, \qquad g - \frac{\sigma_{i2o}}{1 + x_d}\,(g + r_i g') = 0,
 $$
 
-the rows of an insulating core for $\sigma_{i2o} \to 0$ with $\mu_{i2o} = 1$ (the poloidal one already for $w \to 0$). `utils.xdlogjl` computes
+the rows of an insulating core for $\sigma_{i2o} \to 0$ with $\mu_{i2o} = 1$ (the poloidal one already for $w \to 0$). A
+fluid slipping along the core (`bci = 0`) puts $g + r_i g' - r_i S_l/\mathrm{MagnetD}$ in the second, as for
+`'conducting, Chebys'` (`assemble.bc_b_spherical`). `utils.xdlogjl` computes
 $x_d = l - x\,j_{l+1}(x)/j_l(x)$, from scipy's exponentially scaled Bessel functions where $\lvert x\rvert > l$ and from the
 continued fraction of $j_{l+1}/j_l$ (modified Lentz) elsewhere. These rows hold at that frequency only: the run stops in
 an eigenvalue problem and in a frequency scan, and `just_induction.py` with another $\lambda$. spin_doctor takes the
@@ -546,9 +575,11 @@ libration, the solid turns with it, which induces nothing in the axisymmetric $\
     $b_r$ continuous and the radial induction on both sides, with $u_r$ in the fluid and none in the solid: it matches a
     solid at rest too.
 
-- **`'deforming'`**: the solid deforms with the boundary. Its surface moves with the fluid, $\mathbf v_s = \mathbf u$ at
-  the wall, so $\mathbf u\times\mathbf B_0$ cancels in the matching, and the rows at the wall are those of a wall at rest
-  without it, as in `conductive_IC`. Inside a thick conducting solid the motion induces a field too (below).
+- **`'deforming'`**: the solid deforms with the boundary. Its surface moves with the fluid across the wall,
+  $v_{s,r} = u_r$, so the $\mathbf u\times\mathbf B_0$ of the radial flow cancels in the matching, and the rows at the wall
+  are those of a wall at rest without it, as in `conductive_IC`. Along a slipping wall the fluid's motion relative to
+  the solid keeps its $\mathbf u\times\mathbf B_0$ in the electric-field row (`assemble.bc_b_slip`), as at a wall at rest.
+  Inside a thick conducting solid the motion induces a field too (below).
 
 **A deforming solid.** With `'deforming'`, the resolved mantle and `'conducting, Chebys'` behind a wall that the forcing
 moves (`background.deforms`) move inside as well, across the background field, and the field that this motion induces is
@@ -563,7 +594,8 @@ solved for with the rest:
 - **The background inside the solid** (`background_field.solid_profiles`). Each degree of $\mathbf B_0$ is continued from
   the wall so that it is continuous there, with $x = r/r_w$: a poloidal $h_n$, with $h_n'$, as the potential field
   $a\,x^n + b\,x^{-(n+1)}$ in the mantle and as $a\,x^n + b\,x^{n+2}$ in the core (regular, and a potential field where
-  $\mathbf B_0$ meets the potential condition at the inner wall); a toroidal $k_n$ as the steady field of a uniform
+  $\mathbf B_0$ meets the potential condition at the inner wall; for `'dipole'` it carries currents in place of the
+  source at the centre); a toroidal $k_n$ as the steady field of a uniform
   conductor, $a\,x^n + b\,x^{-(n+1)}$ with $k_n = 0$ at $r_s$ in the mantle, $k_n(r_i)\,x^n$ in the core.
 - **Rows** (`assemble.deform_rows`). With
   $\mathbf v_s\times\mathbf B_0 = \sum_l q_l\,Y_l\hat{\mathbf r} + s_l\,r\nabla Y_l + t_l\,r\nabla Y_l\times\hat{\mathbf r}$,
@@ -714,7 +746,7 @@ the axis and at $r = 1$, and the error of $\psi$ rebuilt from the degrees):
 - $\psi$ must vanish on the axis (it must be constant there for a regular field; for a rotation that varies along the
   axis, $G$ has to vanish on the values $\Delta\Omega$ takes there);
 - and at the outer wall, if the field is to stay inside the fluid (wherever the field does not match a potential field
-  at the wall, it meets the insulating mantle with a surface current, which the linear problem allows);
+  at the wall, it meets the insulating mantle with a surface current: [Poloidal fields](#poloidal-fields));
 - the series is cut at `B0_ferraro_nmax` (odd, $\ge 1$), which sets the residual $\mathbf B_0\cdot\nabla\Delta\Omega$.
 
 A toroidal part (`B0_tor`, any type) can be added: it is consistent with any axisymmetric rotation, and it must have the
@@ -991,7 +1023,8 @@ $2\sigma(\mathrm{ME} + \mathrm{MEic} + \mathrm{MEext}) = \mathrm{Indu} - \mathrm
 Hendrik and for any walls (Indu is then the induction by a differential rotation, or 0).
 
 **Slipping walls.** Where the fluid slips along an impenetrable wall (`bco` or `bci` 0, or `ViscosD = 0`),
-$\mathbf u\times\mathbf B_0$ carries magnetic energy through the wall, into the field beyond it (and into a thin layer).
+$\mathbf u\times\mathbf B_0$ carries magnetic energy through the wall, into the field beyond it (a conducting inner core
+or mantle, a thin layer, or the potential field of an insulator).
 resid𝐄 then uses the volume work of the induction alone, Indu minus its wall terms (`utils4pp.INDU_WALLS`, from the
 $(r, \theta)$ grid), as with a differential rotation (below).
 
@@ -1021,7 +1054,8 @@ the boundary also works on the field, in a way that follows how the solid behind
 ([Forced runs](#forced-runs)):
 
 - **Where the solid moves with the fluid at the wall**: a no-slip wall that moves along itself (the libration), and a
-  thin conducting layer under `'deforming'`. The wall's velocity $\mathbf V$ ($\mathbf u_t$ at a no-slip wall, plus
+  thin conducting layer under `'deforming'`, which moves with the fluid across the wall (and along it where the wall is
+  no-slip). The wall's velocity $\mathbf V$ ($\mathbf u_t$ at a no-slip wall, plus
   $u_r\hat{\mathbf r}$ at a thin layer under `'deforming'`) carries the flux of $\mathbf V\times\mathbf B_0$ out of the fluid, which
   resid𝐄 keeps in the induction work (`INDU_ROT_SOLID`). At a thin layer it is the work against the Lorentz force on its
   current $\mathbf K$ (above), $2\,\mathrm{Re}\oint(\mathbf V\times\mathbf B_0)\cdot\mathbf K^*dS$, with $\mathbf B_0$ its
@@ -1029,8 +1063,9 @@ the boundary also works on the field, in a way that follows how the solid behind
   mantle it is the flux of the jump of the tangential electric field, $2\,\mathrm{Re}\oint\big((\mathbf V\times\mathbf B_0)\times\mathbf b_T^*\big)\cdot
   \mathbf n\,dS$, with $\mathbf b_T$ the toroidal part of $\mathbf b$ (the only part with which a consoidal field has a
   flux).
-- **A thick solid that deforms** (`'deforming'`, `background.deforms`). Its surface moves with the fluid, so the
-  tangential electric field is continuous at the wall and the fluxes through it cancel. The work of its motion inside,
+- **A thick solid that deforms** (`'deforming'`, `background.deforms`). Its surface moves with the fluid across the
+  wall, so the radial flow's part of the tangential electric field is continuous there and its fluxes cancel; along a
+  slipping wall the flux of the slip stays in `INDU_WALLS`, as at rest. The work of its motion inside,
   $2\,\mathrm{Re}\int(\mathbf v_s\times\mathbf B_0)\cdot(\nabla\times\mathbf b)^*dV$ over the solid, joins the induction
   work (`utils4pp.deform_work`, on a Gauss grid in $r$ and $\cos\theta$, apart from the rows).
 - **`'rigid'`**. The flow passes through the wall into the solid at rest, whose rows take its $\mathbf u\times\mathbf B_0$:
@@ -1238,7 +1273,8 @@ Step 5 (2026-10-28) was checked against the inviscid modes of Wu (2005) and of L
   inertial modes $\lambda_\mathrm{in}$ of both symmetries and Le 0.1, 0.3, both branches of the Malkus frequency above
   to $10^{-5}$–$7\cdot10^{-3}$ relative at N 64 (the fast branch to $10^{-4}$ at N 96). The error does not change with
   Em ($10^{-8}$ to $10^{-10}$) or with Le: it is that of the magnetic boundary layer the insulating wall imposes
-  (Malkus's ideal solution has a tangential $\mathbf b$ there), not resolved at these N.
+  (Malkus's ideal solution has a tangential $\mathbf b$ there), not resolved at these N. Since 2026-11-07 an inviscid
+  run with this field and an insulating mantle, where the field is not zero, stops ([Toroidal fields](#toroidal-fields)).
 - **Torsional modes of Luo & Jackson (2022)** (`conductive_IC`'s `tests/torsional_s2`: 'Luo_S2', inviscid, Lu
   $2\cdot10^4$, m 0, `timescale = 'Alfven'`). This code converges to their modes as $N^{-3}$:
 
@@ -1459,6 +1495,49 @@ toroidal field in the thin layer's conditions (`background.thin_drop`) the diffe
 
 **Kinematic induction.** `just_induction.py` and `solve_ind.py` give back the field of the coupled run from its flow, to
 $4\cdot10^{-15}$, with the Bessel core, under the resolved mantle, and with both solids deforming.
+
+### Dipole and slipping inner core (2026-11-07)
+
+`B0 = 'dipole'` and a fluid slipping along a conducting inner core were ported from `conductive_IC` (2d84351) and checked
+against that branch, between the two cores, and with the energy budgets (`tests/inner_core/core_check.py`;
+`'Boussinesq'`, N 48).
+
+**The dipole.** Seven eigenvalue runs (Ek $10^{-3}$, Em = Le = $10^{-2}$, `cnorm` 1): insulating walls,
+`cnorm = 'mag_energy'`, the antisymmetric modes, a thin layer at the outer wall, the resolved mantle, a thin layer on the
+inner core, and the rotating solids with a conducting inner core. The eigenvalues agree with `conductive_IC` to
+$4\cdot10^{-12}$ (its $r^{-2}$ series of $h$ is cut at `tol_B0`), and resid𝐋 closes to $2\cdot10^{-12}$. The libration of
+the mantle with the Bessel core gives its kinetic energy to the 10 digits written.
+
+**A slipping inner wall.** Five eigenvalue runs with `bci = 0` and `'conducting, Chebys'` (Ek, Em and Le² $10^{-3}$, or
+Em = Le = $10^{-2}$ with the dipole): `'axial'` with the antisymmetric modes of $m$ = 1 and with $m$ = 0, the dipole,
+`'G21 dipole'` with $\mu_{i2o}$ = 2 and $\sigma_{i2o}$ = 0.3, and `'Luo_S2'` with both walls stress-free and
+$\sigma_{i2o}$ = 0.5. The eigenvalues agree with `conductive_IC` to $6\cdot10^{-13}$ ($4\cdot10^{-15}$ without the dipole),
+resid𝐄 closes to $2\cdot10^{-11}$ and resid𝐋 ($m$ = 0) to $3\cdot10^{-15}$. Without the slip's term in the core's row
+resid𝐄 is $7\cdot10^{-5}$ to $4\cdot10^{-2}$, while resid𝐛, the budget of the fluid alone, does not see it. With
+`'Wu 2005'` (`r_out` 0.9, N 96, `N_cic` 48, with buoyancy) resid𝐄 closes to $4\cdot10^{-10}$ ($2\cdot10^{-8}$ in the most
+damped mode with `N_cic` 24); the slip's term in $(\ln\rho_0)'$ acts only where the flow crosses the wall, under forcing 6
+(below). A rigid rotation offset
+(`diff_rot_type = 'rigid'`, $a$ = 0.3, both walls stress-free) gives the eigenvalues of the frame turning with the solids
+to $2\cdot10^{-14}$, with the same resid𝐄, and `just_induction.py` with `solve_ind.py` gives back the field of a mode
+without Lorentz force, in the fluid and in the core, to $6\cdot10^{-15}$.
+
+**Forced runs.** The libration of the mantle with a slipping inner wall, with `'axial'` and with the dipole: both cores
+give `conductive_IC`'s kinetic energy to the 10 digits written, and the same flow and field to $3\cdot10^{-14}$. Forcing
+10 with `'G21 dipole'`, $\sigma_{i2o}$ = 0.3 and $\mu_{i2o}$ = 1.5, which a wrong factor of either would show: the Bessel
+core gives the Chebyshev one to $2\cdot10^{-14}$, as it does under forcing 6, which moves the inner wall past the core at
+rest, and under forcing 10 with a differential rotation (`'shellular_boussinesq'`, N 64). resid𝐄 closes to
+$4\cdot10^{-10}$ in all, and under forcing 6 with the core deforming, with `'axial'` and with the dipole, which the
+deforming core holds as $a\,x + b\,x^3$ ($6\cdot10^{-11}$). Forcing 6 in `'Wu 2005'` closes it to $6\cdot10^{-12}$, and to
+$2\cdot10^{-3}$ only without the slip's term in $(\ln\rho_0)'$.
+
+**Stops.** A toroidal $\mathbf B_0$ that is not zero at a slipping wall with an insulator beyond stops the run
+([Toroidal fields](#toroidal-fields)): at a stress-free outer or inner wall (`bco` or `bci` 0 or 2), in an inviscid
+full sphere, and behind a thin layer that does not conduct, at either wall, also where it is $10^{-5}$ of the field
+under a dipole, and where a profile that is not smooth at the centre of a full sphere misses its zero at the wall (the
+message says so); with no-slip walls, a conducting inner core, a conducting thin layer, the resolved mantle or
+`'wall'` the run goes on. `'general'` and `'user'` profiles that are not finite where they are interpolated (`r` = 0 in a full
+sphere) stop too, and so does a field that is zero, which `'mag_energy'` cannot normalise (`'ferraro'` among them), or a
+`'ferraro'` field that is not finite.
 
 ## References
 

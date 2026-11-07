@@ -124,6 +124,15 @@ def mantle_slips():
     '''
     return bool(resolved_mantle and par.hydro and par.B0 is not None and (par.bco == 0 or par.ViscosD == 0))
 
+def cic_slips():
+    '''
+    NEW (2026-11-07, conductive_IC's slip_icb): whether the fluid slips along a conducting inner core ('conducting, Chebys'
+    or 'conducting, Bessel'), whose electric-field row then takes u×B0 (assemble.bc_b_cic, bc_b_spherical): a flow
+    (hydro = 1), a poloidal B0 (a toroidal one gives u×B0 no tangential part along the wall), and a stress-free inner wall
+    (bci = 0; an inviscid fluid, ViscosD = 0, has no inner core)
+    '''
+    return bool((cic or bessel) and par.hydro and par.B0 is not None and par.bci == 0)
+
 # NEW (2026-11-06): the power of r of the g rows (r̂⋅∇× of the induction equation): 2, and 3 in a full sphere when the metric
 # part of the magnetic diffusion of the deformed body is on (centrifugal = 1, a deformation, m != 0), which has a term F/r
 # there (centrifugal.py, section 6): with r² that row would not be a polynomial in r (r = 0 is in the domain)

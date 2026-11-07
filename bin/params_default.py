@@ -287,6 +287,8 @@ class default_params():
         # self.B0 = 'Luo_S1'       # NEW (2026-10-28): h = (5 - 3r²) r (Luo & Jackson 2022), l = 1
         # self.B0 = 'Luo_S2'       # NEW (2026-10-28): h = (157 - 296r² + 143r⁴) r² (Luo & Jackson 2022), l = 2, quadrupole
         # self.B0 = 'FDM'          # free poloidal decay mode of the shell (Zhang & Fearn 1994, 1995; Schmitt 2012), degree B0_l
+        # self.B0 = 'dipole'       # NEW (2026-11-07, from conductive_IC): a dipole at the centre, h = 1/(2r²), l = 1, current-free
+        #                          # in the fluid; singular at r = 0, so it needs ricb > 0 (its source is in the inner core)
         # self.B0 = 'confined'     # NEW (2026-10-30): a field confined to B0_conf_r1 <= r <= B0_conf_r2, degree B0_l (1 or 2),
         #                          # h = r^l (r2² - r²)^p (r1 = 0) or r^l (r - r1)^p (r2 - r)^p: zero outside, with h and its first p - 1
         #                          # derivatives zero at the edges, so no surface currents (p = B0_conf_p >= 3: h''' enters the rows).
@@ -338,7 +340,8 @@ class default_params():
         #       conducting core, or as a snapshot of currents frozen in it, when its free-decay time (~0.006 Lu sigma_i2o
         #       Alfven times, Lu = Le/Em, for l = 2 at ricb = 0.35; about 3000 years for l = 2 in the Earth) is much longer
         #       than the periods sought. It does not tend to 'potential' as sigma_i2o decreases.
-        # No effect for 'axial', 'FDM' and other fields that already match a potential field at the ICB, nor with ricb = 0.
+        # No effect for 'axial', 'FDM' and other fields that already match a potential field at the ICB, nor for 'dipole' (its
+        # source is in the core), nor with ricb = 0.
         self.B0_ic = 'potential'
         # self.B0_ic = 'frozen currents'
 
@@ -357,7 +360,8 @@ class default_params():
         # symmetry (a toroidal field of degree l has (-1)^(l+1), a poloidal one (-1)^l: the dipole and B0_tor_l = 1 cannot be combined)
         self.B0_tor = None
         # self.B0_tor = 'Malkus'   # k = r: B0 = cnorm_tor s φ̂ (Malkus 1967), current J0 = 2 cnorm_tor ẑ; nonzero at the walls (surface
-        #                          # currents there; the linear problem is unaffected, see docs/magnetic.md)
+        #                          # currents there, whose push a slipping fluid would feel: with bco or bci 0 or 2, or ViscosD = 0,
+        #                          # and an insulator beyond, the run stops; see docs/magnetic.md)
         # self.B0_tor = 'wall'     # k = r (r - ricb)(1 - r)/(1 - ricb)²: vanishes at both walls
         # self.B0_tor = 'user'     # k = B0_tor_profile, a numpy expression of r and p = B0_tor_param (sin ... tanh, exp, log, sqrt,
         #                          # where, erf, pi), e.g. 'r*(1 - r)**2' (smooth: its first two derivatives enter the rows)
@@ -369,7 +373,8 @@ class default_params():
         # Magnetic boundary conditions at the inner boundary and at the outer boundary
         self.innercore = 'insulator'
         # self.innercore = 'conducting, Chebys'  # NEW (2026-10-28): a conducting solid inner core; its field is part of the
-        #                                        # unknowns (fic, gic), needs a no-slip inner boundary (bci = 1)
+        #                                        # unknowns (fic, gic); NEW 2026-11-07: bci = 0 or 1 (a fluid slipping along
+        #                                        # it carries its u×B0 into the core, assemble.bc_b_cic)
         # self.innercore = 'conducting, Bessel'  # NEW (2026-11-06, from conductive_IC): the same core in forced problems only
         #                                        # (forcing != 0): its field, j_l(k r) at the forcing frequency, is solved
         #                                        # exactly and leaves only the rows of the inner wall (no fic, gic, N_cic)
@@ -400,8 +405,8 @@ class default_params():
         # not act on it), but c does: B0 has to satisfy (1/mu + l c)(r h)' + (l + e) h = 0 there, e = c mu l ((l+1)/p - 1)/p,
         # which for p = 1 and mu = 1 is the insulating condition (B0 unchanged).
         #   'wall' (default): background_field adds alpha r^l to h, alpha set by that condition, for the fields of internal
-        #       currents ('G21 dipole', 'Luo_S1', 'Luo_S2', 'FDM'); the added term carries no current and keeps the matching at
-        #       the inner boundary. The other fields are used as given ('axial' is imposed from outside the core).
+        #       currents ('G21 dipole', 'Luo_S1', 'Luo_S2', 'FDM', 'dipole'); the added term carries no current and keeps the
+        #       matching at the inner boundary. The other fields are used as given ('axial' is imposed from outside the core).
         #   'plain': h unchanged; B0 then meets the layer's condition only for p = 1 and mu = 1, or c = 0 and mu = 1.
         self.B0_cmb = 'wall'
         # self.B0_cmb = 'plain'
@@ -459,7 +464,7 @@ class default_params():
         # ----------------------------------------------------------------------------------------------------------------------
         self.forcing = 0  # Uncomment this line for eigenvalue problems
         # self.forcing = 6  # Buffett2010 ICB radial velocity boundary forcing, m=1,antisymm, ricb > 0
-        # self.forcing = 7  # Longitudinal libration boundary forcing, m={0, 2}, symm, no-slip
+        # self.forcing = 7  # Longitudinal libration boundary forcing, m={0, 2}, symm, no-slip (NEW 2026-11-07: m = 0 also with bci = 0)
         # self.forcing = 9  # Radial, symmetric, m=2 boundary flow forcing, bci=1.
         # self.forcing = 10 # Radial, symmetric, order m boundary flow forcing at the cmb (l=m), unit amplitude.
         # self.forcing = 11 # Random Reynolds-stress body force (convective noise), any m, symm; rsf_* below.

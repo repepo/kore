@@ -62,13 +62,15 @@ def main():
     ll_flo = ut.ell( par.m, par.lmax, par.symm)[:2]  # the ell indices for the flow u
 
     # NEW (2026-11-06, as conductive_IC): a thin wall (or the resolved mantle) next to a slipping fluid gets the u×B0 terms of
-    # condition C.I (bc_b_slip)
-    if rank == 0 and (ut.twa_slips('outer') or ut.twa_slips('inner') or ut.mantle_slips()):
+    # condition C.I (bc_b_slip); NEW (2026-11-07) a conducting inner core too (ut.cic_slips), and the frequency of a forced
+    # run is forcing_frequency (it was itau there too)
+    if rank == 0 and (ut.twa_slips('outer') or ut.twa_slips('inner') or ut.mantle_slips() or ut.cic_slips()):
         pm = par.ViscosD/par.MagnetD
-        ratio = '%.1e' % (pm*abs(par.itau)/par.Gaspard if par.Gaspard else pm)
+        w, wname = (par.forcing_frequency, 'forcing_frequency') if par.forcing else (par.itau, 'itau')
+        ratio = '%.1e' % (pm*abs(w)/par.Gaspard if par.Gaspard else pm)
         print('Note: fluid slipping along a conducting wall: the tangential electric field continued into the wall in its own '
               'frame (condition C.I of Rekier et al. 2023), valid while the viscous layer left out is thin against the magnetic '
-              'skin depth (%s = %s << 1)' % ('Pm |itau|/Gaspard' if par.Gaspard else 'Pm', ratio))
+              'skin depth (%s = %s << 1)' % ('Pm |%s|/Gaspard' % wname if par.Gaspard else 'Pm', ratio))
 
     if rank == 0:
         alltop, allbot = ll_flo
@@ -134,23 +136,33 @@ def main():
         # libration in longitude as a boundary flow forcing
         if rank == 0:
 
-            if par.m == 0 and par.symm == 1 and par.bci == 1 and par.bco == 1:
+            # NEW (2026-11-07, as conductive_IC): the inner wall may be stress-free (bci = 0; any bci in a full sphere). Its row is
+            # then the stress-free one and takes no libration (conductive_IC wrote C_icb on it): an inner core that librates
+            # behind a stress-free wall reaches the fluid only through the u×B0 of the slip relative to it, in a conducting
+            # core or layer, which is not implemented (background.check_forced_magnetic stops it); an insulating core does
+            # not reach it at all
+            slip_ic = par.ricb == 0 or par.bci == 0
+            if par.m == 0 and par.symm == 1 and par.bco == 1 and (par.bci == 1 or slip_ic):
 
                 print('--------------------------------------------')
                 print('Longitudinal libration - axial forcing (m = 0)')
                 print('--------------------------------------------')
 
+                if par.ricb > 0 and slip_ic and par.forcing_amplitude_icb != 0:
+                    print('Note: the inner wall is stress-free (bci = 0): the libration of the inner core does not reach the '
+                          'fluid (forcing_amplitude_icb has no effect)')
+
                 l = 1   # l=1 Toroidal boundary forcing
 
                 pos = ut.n + ut.N1*np.where(allbot==l)[0][0]
-                row = np.arange(pos,pos+2)
-                col = np.zeros(2)
+                row = np.arange(pos,pos+2) if par.bci == 1 else np.array([pos])   # (bci = 1: as before, also at ricb = 0)
+                col = np.zeros(row.size)
 
                 # forcing amplitude is (1/2) of libration amplitude in radians
                 C_icb = 1j* par.forcing_frequency * par.forcing_amplitude_icb * par.ricb / 2
                 C_cmb = 1j* par.forcing_frequency * par.forcing_amplitude_cmb / 2 # rcmb is 1
 
-                bdat = np.array([C_cmb, C_icb])
+                bdat = np.array([C_cmb, C_icb][:row.size])
 
                 B = ss.csr_matrix( ( bdat, (row,col) ), shape=(ut.sizmat,1) )
                 np.savez('B_forced.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
@@ -180,7 +192,8 @@ def main():
 
             else:
 
-                print(' ** Longitudinal libration requires m = 0, symm = 1 and no-slip boundaries **')
+                print(' ** Longitudinal libration requires m = 0, symm = 1, a no-slip outer wall (bco = 1) and bci = 0 or 1 (any '
+                      'bci in a full sphere), or m = 2, symm = 1 and no-slip walls (bci = bco = 1) **')
 
 
 
@@ -1191,7 +1204,8 @@ def bc_b_spherical(l, sec):
     NEW (2026-11-06): a thin conducting wall (mantle or innercore 'TWA') has the rows of bc_b_twa instead, plus those of a
     fluid slipping along it (bc_b_slip) and of a radial boundary flow through it (bc_b_radial); with the resolved mantle (mantle = 'resolved') the outer rows are its matching
     (bc_b_mantle, which assemble.main places with the mantle's own rows). NEW (2026-11-06): the inner rows of innercore
-    'conducting, Bessel' are those of bc_b_bessel.
+    'conducting, Bessel' are those of bc_b_bessel, plus the u×B0 of a radial boundary flow through the wall (bc_b_radial)
+    and, NEW (2026-11-07), of a fluid slipping along the core (bc_b_slip, ut.cic_slips).
     '''
     inner = (par.ricb > 0) and not ut.cic   # NEW (2026-10-28): a full sphere has the outer row only, a conducting core bc_b_cic's
     out = ss.dok_matrix((1 + int(par.ricb > 0), ut.N1), dtype=complex)
@@ -1237,6 +1251,9 @@ def bc_b_spherical(l, sec):
     if inner and ut.bessel and sec == 'g' and bg.flows_through('inner'):
         rad = bc_b_radial(l, 'g', 'inner', row0 + 1, -par.sigma_i2o/(1 + ut.bessel_ic(l)[1]))
         out = [np.concatenate([out[q], rad[q]]) for q in range(3)]
+    if inner and ut.bessel and sec == 'g' and ut.cic_slips():   # NEW (2026-11-07): a fluid slipping along the core: G' has
+        slip = bc_b_slip(l, 'g', 'inner', row0 + 1, factor=par.sigma_i2o/(1 + ut.bessel_ic(l)[1]))   # the factor
+        out = [np.concatenate([out[q], slip[q]]) for q in range(3)]                               # -sigma_i2o/(1 + xd) here
     return out
 
 
@@ -1252,8 +1269,10 @@ def bc_b_bessel(l, sec):
     (conductive_IC's (r f)' = (1 + xd) f/mu_i2o and (r g)' = (1 + xd) g/sigma_i2o), written so that they are the rows of an
     insulating core (l f - ricb f' = 0, g = 0) for sigma_i2o -> 0 with mu_i2o = 1 (the poloidal one already for w -> 0). A
     radial boundary flow through the inner wall into the core at rest (forced_walls = 'rigid') adds its u×B0 to the g row, as
-    to bc_b_cic's (bc_b_radial, with the factor -sigma_i2o/(1 + xd) of G' = (r g)' there). A core that deforms with the wall
-    (forced_walls = 'deforming') is not a Bessel function inside: background.check_forced_magnetic stops it.
+    to bc_b_cic's (bc_b_radial, with the factor -sigma_i2o/(1 + xd) of G' = (r g)' there), and so does a fluid slipping along
+    the core (NEW 2026-11-07: bci = 0, ut.cic_slips; bc_b_slip with factor sigma_i2o/(1 + xd), both in bc_b_spherical). A
+    core that deforms with the wall (forced_walls = 'deforming') is not a Bessel function inside:
+    background.check_forced_magnetic stops it.
     '''
     k, xd = ut.bessel_ic(l)
     T = bv.Ta
@@ -1312,7 +1331,10 @@ def bc_b_slip(l, sec, wall, row, factor=None):
     NEW (2026-11-06, conductive_IC's bc_b_cic_slip for a thin wall, here for any poloidal B0): with the fluid slipping along a
     thin wall (stress-free, bco or bci = 0, or ViscosD = 0; ut.twa_slips), the terms of u×B0 in the wall rows of bc_b_twa, at
     the row of the degree l of section sec. factor stands for the wall's c1 in the toroidal row (default: c1_cmb or c1_icb):
-    sigma(1) in the electric-field row of the resolved mantle (bc_b_mantle, where G' carries that factor). The tangential
+    sigma(1) in the electric-field row of the resolved mantle (bc_b_mantle, where G' carries that factor). At the inner wall
+    the term is -factor (-r S_l/MagnetD), the sign of c1 in bc_b_twa's inner row, so there factor is minus the factor of G'
+    in the row: NEW (2026-11-07) -1 in that of 'conducting, Chebys' (bc_b_cic), sigma_i2o/(1 + xd) in that of
+    'conducting, Bessel' (bc_b_bessel), for a fluid slipping along a conducting inner core (ut.cic_slips). The tangential
     electric field of the fluid, E = MagnetD ∇×b - u×B0 (- U0×b, which the co-rotating wall cancels), is continued into the
     wall in the frame of the wall (condition C.I of Rekier, Triana, Trinh & Buffett 2023, arXiv:2303.00718: a modelling
     choice, for a slip that stands in for a thin viscous layer not resolved, valid while that layer is thin against the
@@ -1632,6 +1654,10 @@ def bc_b_cic(l, sec):
     a core at rest too. With forced_walls = 'deforming' the core deforms with the wall: these rows hold no u×B0, and the
     core's rows the induction of its motion inside (deform_rows). Where the forcing moves the wall along itself (the
     libration, no u×B0 in these rows) the core turns with the wall, which induces no field in an axisymmetric B0.
+    NEW (2026-11-07, conductive_IC's slip_icb): with the fluid slipping along the core (bci = 0, ut.cic_slips) the g row takes
+    the u×B0 of the slip, continued into the core as into a thin wall (condition C.I, bc_b_slip with factor -1):
+    (g + r g')_o - r S_l/MagnetD - η_i (g + r g')_i = 0; the toroidal part follows as above, the slip's radial induction
+    being in the fluid's equation.
     '''
     ric     = par.ricb
     eta_i2o = 1/( par.mu_i2o * par.sigma_i2o )
@@ -1669,6 +1695,9 @@ def bc_b_cic(l, sec):
     if sec == 'g' and bg.flows_through('inner'):   # NEW (2026-11-06): the u×B0 of a radial boundary flow (bc_b_radial)
         rad = bc_b_radial(l, 'g', 'inner', row0, 1)
         out = [np.concatenate([out[q], rad[q]]) for q in range(3)]
+    if sec == 'g' and ut.cic_slips():   # NEW (2026-11-07): the u×B0 of a fluid slipping along the core (bc_b_slip; the
+        slip = bc_b_slip(l, 'g', 'inner', row0, factor=-1)   # factor -1 undoes its sign at the inner wall: G' - r S_l/MagnetD)
+        out = [np.concatenate([out[q], slip[q]]) for q in range(3)]
     return out
 
 

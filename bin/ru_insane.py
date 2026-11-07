@@ -75,7 +75,9 @@ wall conditions (insulating walls: (l+1)f + rf' = 0 outside, lf - rf' = 0 inside
   b time derivative   <x, b y>_r = n_l L^3 int conj(x_f) row_f(b y) dr + (g alike): Hermitian positive
   magnetic diffusion  under the same pairing: Hermitian negative (with the insulating rows the wall terms are Hermitian and
                       negative too; not with a conducting inner core, whose matching rows couple to fic, gic: skipped then)
-  Lorentz/induction   for B0 = 'axial' (no background current) and no-slip walls, the energy identity
+  Lorentz/induction   for a B0 without current in the fluid ('axial', and NEW 2026-11-07 'dipole', with no toroidal part:
+                      B0_tor None, B0_wound 0) and no-slip walls,
+                      the energy identity
                       int rho0 u*.F_L dV = -Hendrik conj(int b*.curl(u x B0) dV), F_L the Lorentz force per unit mass:
                       <u, Lorentz b> (the u, v pairing above) against Hendrik conj(E_b(b, induction u)), where
                       E_b(x, X) = n_l L^3 int [ D_l conj(x_f) row_f(X) - conj(x_g) row_g(X) ] dr = int x*.(curl(u x B0)) dV for
@@ -602,8 +604,12 @@ def magnetic_checks(nvec, rng, kmax, decay, note):
     print('magnetic: b block Hermitian %.2e%s' % (worst_of('magnetic b Hermitian'),
           '' if ut.cic else ', diffusion Hermitian %.2e (negative: %s)' % (worst_of('magnetic diff Hermitian'),
           'yes' if worst_of('magnetic diff negative') == 0 else 'NO')))
-    if par.B0 != 'axial' or par.bci != 1 or par.bco != 1:
-        print('magnetic: Lorentz/induction identity skipped (needs B0 = \'axial\' and no-slip walls)'); return
+    # (NEW 2026-11-07: 'dipole', also current-free; FIX 2026-11-07: skipped with a toroidal part, B0_tor or the wound field,
+    # which carries current)
+    if (par.B0 not in ('axial', 'dipole') or par.B0_tor is not None or ut.bf.wound_on() or par.bci != 1
+            or par.bco != 1):
+        print('magnetic: Lorentz/induction identity skipped (needs B0 = \'axial\' or \'dipole\' without a toroidal part, '
+              'and no-slip walls)'); return
     for a in range(nvec):
         F, Gf = bf[a]
         for c in range(nvec):

@@ -5,6 +5,10 @@ NEW (2026-10-28): the imposed background magnetic field B0 (magnetic = 1), porte
 B0 = cnorm ∇×∇×(h(r) Y_l0 r), axisymmetric and poloidal, with Y_l0 the Schmidt harmonic P_l(cos θ) of kore. So
 B0_r = cnorm l(l+1) h Y_l0/r and ∇×B0 = cnorm (D_l h) ∂θY_l0 φ̂, D_l h = h'' + 2h'/r - l(l+1)h/r².
     'axial'  h = r/2 (l = 1): the uniform field B0 = cnorm ẑ, no current.
+    'dipole' h = 1/(2r²) (l = 1, NEW 2026-11-07, conductive_IC's): the field of a dipole at the centre, B0 = cnorm (cos θ r̂ +
+             ½ sin θ θ̂)/r³ (B0_r = cnorm at the poles of the outer wall), current-free in the fluid and matching an insulator
+             at the outer wall. Its source is in the inner core, so it needs ricb > 0 and B0_ic does not apply; a conducting
+             inner core that deforms (solid_profiles) holds it as the lowest regular current that continues the field.
     'G21 dipole'  h = r/6 - r³/10 (Gerick et al. 2021), 'Luo_S1' h = (5 - 3r²) r, 'Luo_S2' h = (157 - 296r² + 143r⁴) r² (degree 2)
              (Luo & Jackson 2022): fields of a full sphere; with ricb > 0 and B0_ic = 'potential' (default, as conductive_IC)
              h + β r^-(l+1), β = ricb^(l+1)(ricb h' - l h)/(2l+1) at ricb, so that B0 continues as a potential field into the
@@ -40,7 +44,7 @@ USER_NS = { name: getattr(np, name) for name in ('sin', 'cos', 'tan', 'exp', 'lo
                                                   'arctan', 'where', 'pi') }
 USER_NS['erf'] = scsp.erf
 
-B0_TYPES = ('axial', 'FDM', 'G21 dipole', 'Luo_S1', 'Luo_S2', 'confined', 'general', 'ferraro')   # as written to params.dat: the index here (append new types at the end)
+B0_TYPES = ('axial', 'FDM', 'G21 dipole', 'Luo_S1', 'Luo_S2', 'confined', 'general', 'ferraro', 'dipole')   # as written to params.dat: the index here (append new types at the end)
 B0_TOR_TYPES = ('Malkus', 'wall', 'user', 'general')   # NEW (2026-10-28): toroidal B0, as written to params.dat
 
 if par.B0 in ('FDM', 'confined'):   # NEW (2026-10-30): 'confined', of degree B0_l
@@ -56,7 +60,7 @@ elif par.B0 == 'general':    # NEW (2026-10-30): degrees of one parity, the lowe
 elif par.B0 == 'Luo_S2':      # NEW (2026-10-28): degree 2
     B0_l   = 2
     symmB0 = 1
-else:  # 'axial' (and any name that background.check() stops on)
+else:  # 'axial', 'dipole' (and any name that background.check() stops on)
     B0_l   = 1
     symmB0 = -1
 symm_pol = symmB0 if par.B0 is not None else None                                       # NEW (2026-10-28)
@@ -156,7 +160,7 @@ def B0_beta_ic():
         return ri**(l+1)*(ri*POLY[par.B0].deriv(1)(ri) - l*POLY[par.B0](ri))/(2*l + 1)
     return 0.0
 
-B0_CMB_TYPES = ('G21 dipole', 'Luo_S1', 'Luo_S2', 'FDM')   # NEW (2026-11-06): the fields of internal currents (B0_alpha_cmb)
+B0_CMB_TYPES = ('G21 dipole', 'Luo_S1', 'Luo_S2', 'FDM', 'dipole')   # NEW (2026-11-06): the fields of internal currents (B0_alpha_cmb)
 alpha_cmb = 0.0   # (set below, after beta_ic)
 
 def B0_alpha_cmb():
@@ -224,6 +228,9 @@ def _h(r, k):
         return beta**k*jl_k(B0_l, beta*np.abs(r), k)*np.where(r < 0, (-1.)**(B0_l + k), 1.)
     if par.B0 == 'axial':
         return [ r/2, 0.5*np.ones_like(r), np.zeros_like(r), np.zeros_like(r) ][k]
+    if par.B0 == 'dipole':   # NEW (2026-11-07, conductive_IC's h0..h3): d^k/dr^k r^-2/2, singular at r = 0 (ricb > 0 only)
+        with np.errstate(divide='ignore', invalid='ignore'):
+            return (0.5, -1., 3., -12.)[k]*r**(-2. - k)
     if par.B0 == 'confined':   # NEW (2026-10-30): the polynomial inside [r1, r2] (|r| in a full sphere)
         _, _, r1, r2 = _confined()
         inside = (np.abs(r) >= r1) & (np.abs(r) <= r2)
@@ -275,10 +282,11 @@ def _gen_interp(kind, n):
         expr = (par.B0_profiles if kind == 'h' else par.B0_tor_profiles)[n]
         f = _expr(expr, par.B0_param if kind == 'h' else par.B0_tor_param, '<B0 %s_%d>' % (kind, n))
         deg = max(64, 2*par.N)
-        if par.ricb == 0:
-            c = np.polynomial.chebyshev.Chebyshev.interpolate(lambda r: f(np.abs(r))*np.sign(r)**n, deg, domain=[-1., 1.])
-        else:
-            c = np.polynomial.chebyshev.Chebyshev.interpolate(f, deg, domain=[par.ricb, 1.])
+        with np.errstate(divide='ignore', invalid='ignore'):   # (a profile that is not finite there: background._check_general)
+            if par.ricb == 0:
+                c = np.polynomial.chebyshev.Chebyshev.interpolate(lambda r: f(np.abs(r))*np.sign(r)**n, deg, domain=[-1., 1.])
+            else:
+                c = np.polynomial.chebyshev.Chebyshev.interpolate(f, deg, domain=[par.ricb, 1.])
         c.coef[np.abs(c.coef) < 1e-13*np.abs(c.coef).max()] = 0.   # the round-off of the interpolation, which the derivatives amplify
         _gen[key] = c
     return _gen[key]
@@ -299,8 +307,10 @@ def gen_profile(kind, n, r, d):
 # field); the series is cut at B0_ferraro_nmax. The user chooses G (B0_ferraro_G, a numpy expression of w = ΔΩ and p =
 # B0_param). Assumptions (background.ferraro_report prints how well they hold): ψ = 0 on the axis (it must be constant
 # there for a regular field, and the functions (1 - x²) P_n' vanish there), and at the centre in a full sphere; at the outer
-# wall ψ = 0 keeps the field inside (no radial field crosses it), otherwise the field meets the insulating mantle with a
-# surface current (allowed: the perturbation's boundary conditions do not involve B0).
+# wall ψ = 0 keeps the field inside (no radial field crosses it). Wherever the field does not match a potential field at
+# the wall (with ψ = 0 there, wherever ∂ψ/∂r is not 0), it meets the insulating mantle with a surface current (allowed: the
+# perturbation's boundary conditions do not involve B0; NEW 2026-11-07: its push on a fluid slipping along the wall, which a
+# no-slip wall takes, is left out, docs/magnetic-equations.md, Poloidal fields).
 _fer = {}
 def _ferraro_psi(r, x):
     '''ψ = G(ΔΩ(r, x)) on the grid (r, x), ΔΩ from diff_rot.raw (amplitude included)'''
@@ -427,11 +437,12 @@ def k_user():
     global _kuser
     if _kuser is None:
         f = _expr(par.B0_tor_profile, par.B0_tor_param, '<B0_tor_profile>')
-        if par.ricb == 0:   # NEW (2026-10-28): full sphere, at |r| with the parity (-1)^n (the expression should go as r^n at r = 0)
-            g = lambda r: f(np.abs(r))*np.sign(r)**par.B0_tor_l
-            _kuser = np.polynomial.chebyshev.Chebyshev.interpolate(g, max(64, 2*par.N), domain=[-1., 1.])
-        else:
-            _kuser = np.polynomial.chebyshev.Chebyshev.interpolate(f, max(64, 2*par.N), domain=[par.ricb, 1.])
+        with np.errstate(divide='ignore', invalid='ignore'):   # FIX (2026-11-07): where(r == 0, 0, ...) evaluates both sides
+            if par.ricb == 0:   # NEW (2026-10-28): full sphere, at |r| with the parity (-1)^n (the expression should go as r^n at r = 0)
+                g = lambda r: f(np.abs(r))*np.sign(r)**par.B0_tor_l
+                _kuser = np.polynomial.chebyshev.Chebyshev.interpolate(g, max(64, 2*par.N), domain=[-1., 1.])
+            else:
+                _kuser = np.polynomial.chebyshev.Chebyshev.interpolate(f, max(64, 2*par.N), domain=[par.ricb, 1.])
     return _kuser
 
 
@@ -491,9 +502,10 @@ def pol_profiles():
         return {n: (lambda r, d, n=n: ferraro_cnorm()*ferraro_profile(n, r, d)) for n in ferraro_degrees()}
     return {B0_l: bpoX}
 
-def tor_profiles():
+def tor_profiles(wound=True):
     '''{n: f(r, Dorder)}: the toroidal background degree by degree, cnorm_tor k_n^(Dorder) (mag_algebra.py), plus the wound
-    field k_n of B0_wound (wound_profiles) where it is on'''
+    field k_n of B0_wound (wound_profiles) where it is on (NEW 2026-11-07: and wound is True; background.tor_at_wall leaves
+    it out)'''
     if not par.magnetic:
         return {}
     out = {}
@@ -501,7 +513,7 @@ def tor_profiles():
         out = {n: (lambda r, d, n=n: cnorm_tor*gen_profile('k', n, r, d)) for n in sorted(par.B0_tor_profiles)}
     elif par.B0_tor is not None:
         out = {par.B0_tor_l: btoX}
-    if wound_on():   # NEW (2026-10-30): added degree by degree to the user's toroidal part
+    if wound and wound_on():   # NEW (2026-10-30): added degree by degree to the user's toroidal part
         for n, c in wound_profiles().items():
             w = lambda r, d, c=c: c.deriv(d)(r) if d > 0 else c(r)
             out[n] = w if n not in out else (lambda r, d, a=out[n], b=w: a(r, d) + b(r, d))
@@ -529,7 +541,8 @@ def solid_profiles(wall):
       poloidal  mantle: a (r/rw)^n + b (r/rw)^-(n+1), the potential field (no current) with a + b = h, n a - (n+1) b = rw h'
                 core:   a (r/rw)^n + b (r/rw)^(n+2), regular at the centre, b = (rw h' - n h)/2: the potential field where B0
                         meets the potential condition r h' = n h at the inner wall ('axial', 'FDM', B0_ic = 'potential'),
-                        the lowest regular current otherwise (it gives back 'G21 dipole' and 'Luo_S1' with 'frozen currents')
+                        the lowest regular current otherwise (it gives back 'G21 dipole' and 'Luo_S1' with 'frozen currents';
+                        for 'dipole', NEW 2026-11-07, a field with currents in place of the point source at the centre)
       toroidal  the steady field of a uniform conductor: mantle a (r/rw)^n + b (r/rw)^-(n+1), zero at r_surface (an
                 insulator beyond); core k(rw) (r/rw)^n
     with h, h', k at rw.

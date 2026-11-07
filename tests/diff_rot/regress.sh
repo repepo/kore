@@ -67,17 +67,18 @@ cfgs_old[13]="par.diff_rot_type='solar_P4'; par.diff_rot_amplitude=1.3; par.ther
 cfgs_old[14]=""
 
 # -------------------------------------------------------- the runs of the magnetic field (name, change, code they need)
-# (Le² = Em = 1e-3; the rotation of the defaults is kept only where the run is about it)
+# (Le² = Em = 1e-3; the rotation of the defaults is kept only where the run is about it; no-slip walls where the toroidal
+# field is not 0 at a wall: a slipping wall there stops, background.tor_sheet)
 MAG="par.magnetic=1; par.B0='axial'; par.cnorm='mag_energy'; par.Hendrik=1e-3; par.MagnetD=1e-3"
 GEN="par.B0='general'; par.B0_profiles={1: 'r/6 - r**3/10', 3: '0.3*r**3*(1 - r**2)'}"
 DRU="par.diff_rot_type='user'; par.diff_rot_ampl=0.2; par.diff_rot_profiles={0: '(2/3)*r**2 - (8/15)*r**4', 2: '-(2/3)*r**2 + (16/21)*r**4', 4: '-(8/35)*r**4'}"
 mnames=(m_ax m_cic m_tor m_fs m_conf m_gen m_alg m_dr m_fer m_fdr m_wnd)
 mcfgs=("$MAG; par.diff_rot=0"
        "$MAG; par.diff_rot=0; par.B0='FDM'; par.innercore='conducting, Chebys'; par.bci=1"
-       "$MAG; par.diff_rot=0; par.B0_tor='Malkus'; par.B0_tor_l=2; par.m=2; par.symm=1; par.lmax=21"
+       "$MAG; par.diff_rot=0; par.B0_tor='Malkus'; par.B0_tor_l=2; par.m=2; par.symm=1; par.lmax=21; par.bci=1; par.bco=1"
        "$MAG; par.diff_rot=0; par.ricb=0; par.B0='Luo_S2'"
        "$MAG; par.diff_rot=0; par.B0='confined'; par.B0_l=2; par.B0_conf_r1=0.4; par.B0_conf_r2=0.8"
-       "$MAG; par.diff_rot=0; $GEN; par.B0_tor='general'; par.B0_tor_profiles={2: 'r**2*(1 - r**2)'}; par.cnorm_tor='mag_energy'"
+       "$MAG; par.diff_rot=0; $GEN; par.B0_tor='general'; par.B0_tor_profiles={2: 'r**2*(1 - r**2)'}; par.cnorm_tor='mag_energy'; par.bci=1"
        "$MAG; par.diff_rot=0; par.mag_couplings='algebra'; par.B0='Luo_S2'; par.innercore='conducting, Chebys'; par.bci=1"
        "$MAG"
        "$MAG; $DRU; par.B0='ferraro'; par.B0_ferraro_nmax=7"

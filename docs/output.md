@@ -127,7 +127,7 @@ The columns follow the order of `spin_doctor.param_table`, counted from 1:
 - `diff_rot_window` is 0 for the shell fit and 1 for the whole-Sun fit, with `diff_rot_rdeg` then the degree used,
   `diff_rot_sun_deg`.
 - The magnetic columns: `B0` is the index in `background_field.B0_TYPES` (`'axial'` 0, `'FDM'` 1, `'G21 dipole'` 2,
-  `'Luo_S1'` 3, `'Luo_S2'` 4, `'confined'` 5, `'general'` 6, `'ferraro'` 7; −1 without a poloidal field), `B0_tor` in
+  `'Luo_S1'` 3, `'Luo_S2'` 4, `'confined'` 5, `'general'` 6, `'ferraro'` 7, `'dipole'` 8; −1 without a poloidal field), `B0_tor` in
   `background_field.B0_TOR_TYPES` (`'Malkus'` 0, `'wall'` 1, `'user'` 2, `'general'` 3; −1 without), `innercore` in
   `background.INNER_CORES` (`'insulator'` 0, `'conducting, Chebys'` 1, `'TWA'` 2, `'conducting, Bessel'` 3), `mantle` in `background.MAGNETIC_WALLS`
   (`'insulator'` 0, `'TWA'` 1, `'resolved'` 2), `B0_ic` in `background.B0_ICS` (`'potential'` 0, `'frozen currents'` 1, formerly

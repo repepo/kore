@@ -192,6 +192,10 @@ def check_centrifugal():
     if par.magnetic and par.ricb > 0 and par.innercore == 'conducting, Chebys' and par.mu_i2o != 1:
         sys.exit('centrifugal = 1 with a conducting inner core needs mu_i2o = 1: with another permeability the matching of the '
                  'tangential field on the deformed inner boundary has metric terms that are not implemented')
+    if (par.magnetic and par.hydro and par.ricb > 0 and par.innercore == 'conducting, Chebys' and par.B0 is not None
+            and par.bci == 0):   # NEW (2026-11-07): the slipping fluid of utils.cic_slips
+        sys.exit('centrifugal = 1 with a conducting inner core and a poloidal B0 needs a no-slip inner wall (bci = 1): the '
+                 'u×B0 of a fluid slipping along the deformed inner boundary has metric terms that are not implemented')
     if par.forcing != 0:
         sys.exit('centrifugal = 1 is implemented for eigenvalue problems only (forcing = 0): the forced problems need the '
                  'metric terms of the time derivative in A and their boundary flows on the deformed walls')
@@ -477,7 +481,9 @@ def deform_profile(wall, l):
                solenoidal, the volume of every shell kept.
       'inner' (a conducting inner core, r_w = ricb): φ = ((l+3) x^l - (l+1) x^(l+2))/2, x = r/ricb, the simplest profile
                that is regular at the centre (x^l and x^(l+2)) with no tangential motion at the wall (φ' + φ/r = 0 there).
-    Both match a no-slip wall, where the fluid's tangential velocity is 0.
+    Both match a no-slip wall, where the fluid's tangential velocity is 0. Along a slipping wall (NEW 2026-11-07: bci = 0 with
+    a conducting inner core too, as bco = 0 with the resolved mantle) that velocity is the slip relative to the solid, whose
+    u×B0 enters the wall's electric-field row (assemble.bc_b_slip).
     '''
     import background_field as bf
     if wall == 'outer':
@@ -511,6 +517,53 @@ def b0_at_wall(wall, parts='pt'):
         return not all(np.max(np.abs(f(rw, d))) <= tol[d]*big for f, d in test)   # (a NaN counts as reaching the wall)
     except Exception:
         return True
+
+
+def tor_at_wall(wall):
+    '''
+    NEW (2026-11-07): (n, |k| at the wall 'outer' or 'inner', max |k| over the fluid) for the degree n of B0_tor's own
+    profiles (background_field.tor_profiles without the wound field) whose |k| at the wall is the largest part of its own
+    largest value, on the 201 points from ricb to 1 that check_rotdyn takes; None without B0_tor. Only the toroidal profiles
+    enter (not b0_at_wall's cut, which the poloidal field sets), and an error in evaluating them is not caught. The wound
+    field (B0_wound) is 0 at an insulating wall and at a thin layer by construction (wound_profiles: k = 0 at r = 1, and at
+    ricb unless the core conducts), to the round-off of its Chebyshev fit, which grows with N (4e-9 of its largest value
+    at N 800 in a full sphere): it has no sheet where tor_sheet looks for one.
+    '''
+    import background_field as bf
+    rr = np.linspace(par.ricb, 1.0, 201)
+    out = None
+    for n, k in bf.tor_profiles(wound=False).items():
+        kk = np.abs(k(rr, 0))
+        kw, big = float(kk[-1 if wall == 'outer' else 0]), max(float(kk.max()), 1e-300)
+        if out is None or kw/big > out[1]/out[2]:
+            out = (n, kw, big)
+    return out
+
+
+def tor_sheet(wall):
+    '''
+    NEW (2026-11-07, after conductive_IC): whether the toroidal B0 ends at the wall 'outer' or 'inner' in a current sheet on
+    the fluid's side that the fluid, slipping along the wall, would feel. The sheet is there where B0_tor is not 0 at the
+    wall (above 1e-10 of its largest |k| over the fluid, degree by degree: tor_at_wall, check_rotdyn's test) and the
+    solid beyond does not carry it on: an insulator, or a thin layer that does not conduct ('TWA' with c1 = 0). A conducting
+    inner core, the resolved mantle and a conducting layer take the field on and hold its drop to 0 themselves
+    (conductive_IC stops behind them too). The sheet's current, K0 = ±B0_phi θ̂ per area at the outer and inner wall, pushes
+    on the fluid with Hendrik K0×b, whose part along the wall is ∓Hendrik B0_phi b_r φ̂, where b_r is not 0. A no-slip wall
+    takes that force, but the stress condition of a slipping wall (bco or bci = 0 or 2) leaves it out, and so does an
+    inviscid fluid (ViscosD = 0), which has none: check_magnetic stops these runs.
+    '''
+    if not (par.magnetic and par.hydro):
+        return False
+    if wall == 'outer':
+        slips = par.ViscosD == 0 or par.bco in (0, 2)
+        bare = par.mantle == 'insulator' or (par.mantle == 'TWA' and par.c1_cmb == 0)
+    else:
+        slips = par.ricb > 0 and (par.ViscosD == 0 or par.bci in (0, 2))
+        bare = par.innercore == 'insulator' or (par.innercore == 'TWA' and par.c1_icb == 0)
+    if not (slips and bare):
+        return False
+    kw = tor_at_wall(wall)
+    return kw is not None and kw[1] > 1e-10*kw[2]
 
 
 def check_forced_magnetic():
@@ -569,6 +622,13 @@ def check_forced_magnetic():
             and getattr(par, 'rsf_frequencies', None) is not None):
         sys.exit("innercore 'conducting, Bessel' with a frequency scan (forcing 11, rsf_frequencies): its rows hold at "
                  "forcing_frequency only. Use 'conducting, Chebys'")
+    if (par.forcing == 7 and par.m == 0 and par.ricb > 0 and par.bci == 0 and par.forcing_amplitude_icb != 0 and par.hydro
+            and par.B0 is not None and (par.innercore in CONDUCTING_CORES or (par.innercore == 'TWA' and par.c1_icb != 0))):
+        # NEW (2026-11-07): the slip of utils.cic_slips, twa_slips('inner'), relative to a core that librates
+        sys.exit('forcing 7 (m = 0) with forcing_amplitude_icb != 0 behind a stress-free inner wall (bci = 0) along a '
+                 'conducting inner core or a conducting thin layer on it: the libration of the core reaches the fluid there '
+                 'through the u×B0 of the slip relative to the core alone, which is not implemented. Set bci = 1, or '
+                 'forcing_amplitude_icb = 0')
 
 
 def check_magnetic():
@@ -592,8 +652,11 @@ def check_magnetic():
                 sys.exit("B0_tor 'user' needs B0_tor_profile, a numpy expression of r and p (without '#'), got %r" % (par.B0_tor_profile,))
             try:
                 bf.k(np.linspace(max(par.ricb, 0.1), 1, 4), 0)
+                finite = np.all(np.isfinite(bf.k_user().coef))
             except Exception as err:
                 sys.exit('B0_tor_profile = %r: %s: %s' % (par.B0_tor_profile, type(err).__name__, err))
+            if not finite:   # FIX (2026-11-07): as for 'general' (_check_general), it gave a zero field, silently
+                _not_finite('B0_tor_profile', par.B0_tor_profile)
         # FIX (2026-11-06): numpy numbers too (np.int64 is not an int), as conductive_IC 4bfb389
         if not (isinstance(par.cnorm_tor, (int, float, np.integer, np.floating)) or par.cnorm_tor in ('mag_energy', 'Schmitt2012')):
             sys.exit("cnorm_tor %r: a number, 'mag_energy' or 'Schmitt2012'" % (par.cnorm_tor,))
@@ -655,9 +718,12 @@ def check_magnetic():
     if par.innercore not in INNER_CORES:
         sys.exit('innercore %r: set one of %s' % (par.innercore, _names(INNER_CORES)))
     if par.innercore in CONDUCTING_CORES and par.ricb > 0:
-        if par.bci != 1:
-            sys.exit("innercore %r needs a no-slip inner boundary (bci = 1): its matching leaves out a fluid slipping along "
-                     "the inner wall" % (par.innercore,))
+        # NEW (2026-11-07, as conductive_IC): a fluid slipping along the core (bci = 0) is allowed, with its u×B0 in the
+        # core's electric-field row (utils.cic_slips); it stopped here before (it needed bci = 1)
+        if par.hydro and par.bci == 2:
+            sys.exit("innercore %r needs bci = 0 or 1: with zero radial stress (2) the fluid crosses the inner wall, and the "
+                     "core's rows follow a radial flow there only where a forcing moves the wall (forced_walls)"
+                     % (par.innercore,))
         num = (int, float, np.integer, np.floating)   # NEW (2026-11-06): they divide (operators, bc_b_cic, bc_b_bessel)
         for name in ('mu_i2o', 'sigma_i2o'):
             v = getattr(par, name)
@@ -677,6 +743,8 @@ def check_magnetic():
     if par.ricb == 0:   # NEW (2026-10-28): the full sphere
         if par.innercore != 'insulator':
             sys.exit("innercore %r needs ricb > 0" % (par.innercore,))
+        if par.B0 == 'dipole':   # NEW (2026-11-07, as conductive_IC)
+            sys.exit("B0 'dipole' is singular at r = 0: it needs an inner core (ricb > 0), which holds its source")
         if par.B0_tor is not None and par.B0_tor_l == 2 and par.B0_tor == 'Malkus':
             sys.exit("B0_tor 'Malkus' with B0_tor_l = 2 is not regular at r = 0 (k = r would need to go as r²): use 'wall' or 'user' with ricb = 0")
     if par.ViscosD == 0 and par.ricb > 0:   # NEW (2026-10-28): the inviscid path (bases, one bc row) exists for the full sphere only
@@ -692,6 +760,43 @@ def check_magnetic():
     for name, err in (('cnorm', bf.cnorm_error), ('cnorm_tor', bf.cnorm_tor_error)):
         if err is not None:
             sys.exit('%s could not be computed: %s: %s' % (name, type(err).__name__, err))
+    if par.B0 is not None and not np.isfinite(bf.cnorm):   # FIX (2026-11-07): a field that is zero or not finite
+        sys.exit('cnorm = %r for B0 %r: the field is zero, or not finite, over the fluid, so it cannot be normalised'
+                 % (bf.cnorm, par.B0))
+    if par.B0_tor is not None and not np.isfinite(bf.cnorm_tor):   # FIX (2026-11-07): the same for the toroidal part
+        sys.exit('cnorm_tor = %r for B0_tor %r: the field is zero, or not finite, over the fluid, so it cannot be '
+                 'normalised' % (bf.cnorm_tor, par.B0_tor))
+    # NEW (2026-11-07, after conductive_IC): a toroidal B0's current sheet at a slipping wall, tor_sheet. With rotdyn = 1,
+    # check_rotdyn stops instead, on a toroidal B0 at either wall whatever the wall (the torque on the sheet is left out)
+    for wall in ('outer', 'inner'):
+        if not par.rotdyn and tor_sheet(wall):
+            o = wall == 'outer'
+            bc, c1 = ('bco', 'c1_cmb') if o else ('bci', 'c1_icb')
+            why = ('the fluid is inviscid (ViscosD = 0)' if par.ViscosD == 0
+                   else 'the fluid slips (%s = %d)' % (bc, getattr(par, bc)))
+            beyond = ('an insulator' if (par.mantle if o else par.innercore) == 'insulator'
+                      else 'a thin layer that does not conduct (%s = 0)' % c1)
+            fix = ('a viscous fluid with a no-slip wall (ViscosD > 0, %s = 1)' % bc if par.ViscosD == 0
+                   else 'a no-slip wall (%s = 1)' % bc)
+            solids = ("mantle 'resolved', or 'TWA' with c1_cmb != 0" if o else
+                      "innercore 'conducting, Chebys'%s, or 'TWA' with c1_icb != 0"
+                      % (" or 'conducting, Bessel'" if par.forcing != 0 else ''))   # Bessel: forced runs only
+            if getattr(par, bc) == 2:   # these solids need bc 0 or 1 (check_mantle, check_twa, above), inviscid or not
+                solids += ', with %s = 0 or 1' % bc
+            n, kw, kmax = tor_at_wall(wall)
+            small = ''   # a profile meant to vanish there that does so only to a small part of the field
+            if kw < 1e-4*kmax and par.B0_tor in ('user', 'general'):
+                small = (". If the profile is meant to vanish at the wall, it does so only to %.0e of the field: its zero "
+                         "may be inexact (a constant given to a few digits), or its interpolant may not resolve it at this "
+                         "N%s" % (kw/kmax, ", or, in a full sphere, the profile may not be smooth at r = 0 (it must be a "
+                                  "series in r of the parity of its degree, e.g. 'r*(1 - r**2)**2' for degree 1)"
+                                  if par.ricb == 0 else ''))
+            sys.exit("The toroidal B0 is not 0 at the %s wall (degree %d: |k| %.1e there, %.1e at most in the fluid), "
+                     "where %s and the solid beyond is %s: the current sheet that ends the field there pushes the fluid "
+                     "along the wall (%sHendrik B0_phi b_r per area), and that force is not in the fluid's equations. Use "
+                     "a toroidal B0 that vanishes at the wall (e.g. B0_tor = 'wall'), %s, or a conductor beyond, which "
+                     "holds the sheet itself (%s)%s" % (wall, n, kw, kmax, why, beyond, '-' if o else '+', fix, solids,
+                                                         small))
     if par.diff_rot:   # NEW (2026-10-30): the induction by the background flow, ∇×(U0×b), is in (diff_rot.induction_block)
         magnetic_diffrot()
     if par.Hendrik <= 0 or par.MagnetD <= 0:
@@ -714,8 +819,25 @@ def _check_general(prof, name):
                      % (name, n, prof[n]))
         try:
             bf.gen_profile('h' if name == 'B0_profiles' else 'k', n, np.linspace(max(par.ricb, 0.1), 1, 4), 0)
+            finite = np.all(np.isfinite(bf._gen_interp('h' if name == 'B0_profiles' else 'k', n).coef))
         except Exception as err:
             sys.exit('%s[%d] = %r: %s: %s' % (name, n, prof[n], type(err).__name__, err))
+        if not finite:   # FIX (2026-11-07): a profile singular in the domain (r**-2 with ricb = 0) gave a zero field, silently
+            _not_finite('%s[%d]' % (name, n), prof[n])
+
+
+def _not_finite(name, expr):
+    '''
+    FIX (2026-11-07): stops on a 'general' or 'user' profile that is not finite at some point of its Chebyshev interpolation
+    (background_field._gen_interp, k_user: the nodes of [ricb, 1], or of [-1, 1] at |r| in a full sphere, r = 0 among them),
+    where it gave NaN coefficients and so no field at all. Only these points are tested: a profile singular between them
+    passes, with an interpolant that is finite but wrong.
+    '''
+    sys.exit('%s = %r is not finite at some of the points where it is interpolated (%s)%s'
+             % (name, expr, '[-1, 1] at |r|, r = 0 included' if par.ricb == 0 else '[ricb, 1]',
+                ': if the field is regular but the expression is 0/0 at r = 0, write it in a form that numpy evaluates '
+                'there (a series, or where(r == 0, 0, ...)); a field singular at r = 0 needs an inner core (ricb > 0)'
+                if par.ricb == 0 else ''))
 
 
 def ferraro_mismatch():
@@ -793,10 +915,21 @@ def magnetic_diffrot():
             sys.exit("magnetic = 1, diff_rot = 1 with a conducting wall (%r) at the %s boundary needs a rigid rotation there "
                      "(f_n = 0 for every n > 0): ΔΩ varies with latitude at r = %g"
                      % (par.mantle if name == 'outer' else par.innercore, name, r))
+    import background_field as bf
+    if par.B0 == 'ferraro':   # FIX (2026-11-07): its cnorm is ferraro_cnorm, not bf.cnorm (1), which check_magnetic tests
+        with np.errstate(divide='ignore', invalid='ignore'):
+            for n in bf.ferraro_degrees():   # builds the interpolants of h_n (background_field._fer)
+                bf.ferraro_profile(n, np.array([1.0]), 0)
+            cf = bf.ferraro_cnorm()
+        if not all(np.all(np.isfinite(c.coef)) for c in bf._fer.values()):   # as _check_general for 'general'
+            sys.exit("B0 'ferraro' (G = %r) is not finite over the fluid: G must be finite on the values that ΔΩ takes "
+                     "there" % (par.B0_ferraro_G,))
+        if not np.isfinite(cf):
+            sys.exit("cnorm = %r for B0 'ferraro' (G = %r): the field is zero, or not finite, over the fluid, so it cannot "
+                     "be normalised" % (cf, par.B0_ferraro_G))
     mis = ferraro_mismatch()
     if par.B0 == 'ferraro' and not _warned:
         ferraro_report()
-    import background_field as bf
     if bf.wound_on():   # NEW (2026-10-30): B0⋅∇Ω ≠ 0 is the point here: report how well the wound field balances it instead
         if not _warned:
             print('B0_wound: toroidal degrees %s; steady induction residual max |η(∇² - 1/s²)B_φ + G s B_p⋅∇ΔΩ| / max |G s B_p⋅∇ΔΩ| = %.2e'

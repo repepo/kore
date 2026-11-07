@@ -146,7 +146,7 @@ then returns $-A\cdot\sum(\text{polynomial}\times\text{label})/L'^3$ for each bl
 
 Where each closed form in `operators.py` comes from:
 
-- degree-1 poloidal field ('axial', 'FDM' with `B0_l` = 1, 'G21 dipole', 'Luo_S1'): `conductive_IC`'s hand-derived forms
+- degree-1 poloidal field ('axial', 'dipole', 'FDM' with `B0_l` = 1, 'G21 dipole', 'Luo_S1'): `conductive_IC`'s hand-derived forms
   (commit 39487bbf), with the $(\ln\rho_0)'$ terms derived for this branch;
 - degree-2 poloidal field ('Luo_S2', 'FDM' with `B0_l` = 2): fitted (`fit_rows.py pol 2`) and generated (`gen_table.py`);
 - toroidal fields of degree 1 and 2: fitted (`fit_rows.py tor 1`, `tor 2`).
