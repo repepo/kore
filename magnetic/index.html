@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -1818,8 +1818,8 @@ field. The background field is fixed, steady and axisymmetric. It is imposed, no
 background flow does not react to it.</p>
 <p><strong>kore does not include the field in the thermal-wind balance.</strong> The <a href="../background/#thermal-wind">thermal-wind entropy</a>
 is computed from the imposed rotation alone, as without a field, and the field's force acts only on the perturbations.
-This is exact for a field that carries no current, such as <code>B0 = 'axial'</code>, and a good approximation when the field's
-force is weak compared with the Coriolis force of the differential rotation
+This is exact for a field that carries no current, such as <code>B0 = 'axial'</code> or <code>'dipole'</code>, and a good approximation when
+the field's force is weak compared with the Coriolis force of the differential rotation
 (<a href="#validity-and-caveats">Validity and caveats</a>).</p>
 <p>This page shows how to set up a run and how to choose the background field. The equations, the formula of every field
 and the checks of the code are on <a href="../magnetic-equations/">Magnetic field equations</a>.</p>
@@ -1904,6 +1904,13 @@ formulas are on <a href="../magnetic-equations/#poloidal-fields">Magnetic field 
 <td>1</td>
 </tr>
 <tr>
+<td><code>'dipole'</code></td>
+<td>the field of a dipole at the centre</td>
+<td>none</td>
+<td>shell only</td>
+<td>1</td>
+</tr>
+<tr>
 <td><code>'FDM'</code></td>
 <td>the slowest free decay mode of the given degree, for insulating walls</td>
 <td><code>B0_l</code> (1); <code>beta</code>, the first guess of the root finder</td>
@@ -1968,6 +1975,10 @@ formulas are on <a href="../magnetic-equations/#poloidal-fields">Magnetic field 
   <code>B0_ic = 'frozen currents'</code> keeps the full-sphere formula, whose currents below the inner boundary then stay in the
   core (fitting only when the core's magnetic decay time is much longer than the periods sought; the name was
   <code>'full sphere'</code> before 2026-11-06).</li>
+<li><strong><code>'dipole'</code></strong> is the field of a dipole at the centre, seen from outside its source: it carries no current in the
+  fluid and meets an insulating mantle as it is. Its source is in the inner core, so it needs one, and <code>B0_ic</code> does not
+  apply to it. A conducting inner core that moves with a forced boundary holds it as a regular field instead
+  (<a href="#a-boundary-that-moves">A boundary that moves</a>).</li>
 <li><strong><code>'Luo_S1'</code> and <code>'G21 dipole'</code></strong> give the same run when <code>cnorm</code> is a name (<code>'mag_energy'</code>, <code>'Schmitt2012'</code>,
   <code>'rms_cmb'</code>). With a numerical <code>cnorm</code> the <code>'Luo_S1'</code> field is 30 times stronger.</li>
 <li><strong><code>'confined'</code></strong> puts the field in the layer from <code>B0_conf_r1</code> to <code>B0_conf_r2</code> and nowhere else. The defaults reach
@@ -1983,6 +1994,9 @@ formulas are on <a href="../magnetic-equations/#poloidal-fields">Magnetic field 
 <p><strong><code>'ferraro'</code></strong> takes <code>B0_ferraro_G</code>, a numpy expression of <code>w</code> (the differential rotation) and <code>p</code>: see
   <a href="#four-ways-to-a-steady-background">Four ways to a steady background</a>.</p>
 </li>
+<li><strong>At the walls.</strong> <code>'general'</code> and <code>'ferraro'</code> need not meet a potential field at an insulating wall. Where they do not,
+  they end there in a sheet of current, whose push on a fluid slipping along the wall is left out
+  (<a href="../magnetic-equations/#poloidal-fields">Magnetic field equations</a>); a no-slip wall takes it.</li>
 </ul>
 <h3 id="toroidal-field-b0_tor">Toroidal field: <code>B0_tor</code></h3>
 <p>The toroidal part is purely azimuthal. A differential rotation does not wind it up, so it suits any rotation. Each
@@ -2038,6 +2052,13 @@ option is one radial shape times <code>cnorm_tor</code>; the formulas are on
 </table>
 <p>A <code>'user'</code> profile must be smooth, since its second derivative enters the equations. The expressions of <code>'user'</code>,
 <code>'general'</code> (poloidal or toroidal) and <code>'ferraro'</code> are written to <code>params.dat</code> after <code>#</code>, so they must not contain <code>#</code>.</p>
+<p><strong>At the walls.</strong> A toroidal field that is not zero at a wall ends there in a sheet of current, unless a conductor
+beyond the wall carries the field on: a conducting inner core, the resolved mantle or a conducting thin layer. The sheet
+pushes the fluid along the wall. A no-slip wall takes that push, but a slipping one would pass it to the fluid, and kore
+does not include it, so a run stops at startup where the toroidal field is not zero at a stress-free wall (or at the
+wall of an inviscid fluid) with an insulator, or a thin layer that does not conduct, beyond. Use a field that vanishes
+there (<code>'wall'</code>), a no-slip wall, or a conductor beyond (with <code>bco</code> or <code>bci</code> 0 or 1). With the rotating solids the field
+must vanish at both walls, whatever they are (<a href="../rotating-solids/">Rotating solids</a>).</p>
 <h3 id="amplitude">Amplitude</h3>
 <p>The shapes above have arbitrary scales, so the size of the field is set separately. The field in the equations is <code>Le</code>
 times a dimensionless field, whose size is fixed by <code>cnorm</code> (poloidal part) and <code>cnorm_tor</code> (toroidal part). The Lorentz
@@ -2069,7 +2090,7 @@ force goes as <code>Le</code> squared.</p>
 <tr>
 <td><code>'rms_cmb'</code></td>
 <td>the rms radial field over the outer wall is 1</td>
-<td><code>cnorm</code> with <code>'axial'</code>, <code>'FDM'</code>, <code>'G21 dipole'</code>, <code>'Luo_S1'</code>, <code>'Luo_S2'</code> only</td>
+<td><code>cnorm</code> with <code>'axial'</code>, <code>'dipole'</code>, <code>'FDM'</code>, <code>'G21 dipole'</code>, <code>'Luo_S1'</code>, <code>'Luo_S2'</code> only</td>
 </tr>
 </tbody>
 </table>
@@ -2198,7 +2219,7 @@ with or without a thin conducting layer), or a conductor whose field kore then s
 <tr>
 <td><code>innercore</code></td>
 <td><code>'insulator'</code> (default), <code>'conducting, Chebys'</code>, <code>'conducting, Bessel'</code> or <code>'TWA'</code></td>
-<td>need <code>ricb &gt; 0</code>; conducting: a no-slip inner wall (<code>bci = 1</code>), <code>'conducting, Bessel'</code> in forced runs only (<a href="#forced-runs">Forced runs</a>); <code>'TWA'</code>: a thin conducting layer on an insulating inner core</td>
+<td>need <code>ricb &gt; 0</code>; <code>'conducting, Bessel'</code> in forced runs only (<a href="#forced-runs">Forced runs</a>); <code>'TWA'</code>: a thin conducting layer on an insulating inner core</td>
 </tr>
 <tr>
 <td><code>N_cic</code></td>
@@ -2222,7 +2243,10 @@ with or without a thin conducting layer), or a conductor whose field kore then s
 </tr>
 </tbody>
 </table>
-<p>The magnetic diffusivity of the inner core is <code>MagnetD</code> divided by <code>mu_i2o</code> and <code>sigma_i2o</code>. Matching conditions:
+<p>The magnetic diffusivity of the inner core is <code>MagnetD</code> divided by <code>mu_i2o</code> and <code>sigma_i2o</code>. Where the fluid slips
+along a conducting inner core (a stress-free inner wall, <code>bci = 0</code>), its tangential electric field, that of its flow
+across the background field included, is continued into the core, as along a
+<a href="#thin-conducting-layer">thin conducting layer</a>. Matching conditions:
 <a href="../magnetic-equations/#boundary-conditions">Magnetic field equations</a>.</p>
 <h3 id="thin-conducting-layer">Thin conducting layer</h3>
 <p>A thin layer that conducts, such as the base of the Earth's mantle, carries currents that couple the field across it.
@@ -2278,12 +2302,12 @@ of its effect.
   including that of the flow across the background field, is continued into the layer in the frame of the solid
   (condition C.I of Rekier et al. 2023), which turns with the mantle with the <a href="../rotating-solids/">rotating solids</a>. The slip stands
   for a thin viscous layer that is not resolved, which must be thin against the magnetic skin depth: <code>assemble.py</code>
-  prints Pm times the target frequency in rotation units, which should be small. A <a href="../drag/">drag</a> at the outer wall
-  changes nothing here.</li>
+  prints Pm times the frequency in rotation units (that of the target, or <code>forcing_frequency</code> in a forced run), which
+  should be small. A <a href="../drag/">drag</a> at the outer wall changes nothing here.</li>
 <li><strong>With a differential rotation</strong> the solid turns with the fluid next to it, so the rotation must be uniform in
   latitude at the wall: the run stops otherwise.</li>
 <li><strong><code>B0_cmb</code>.</strong> A steady background field drives no current in the layer, but it must meet the layer's condition at the
-  outer wall. <code>'wall'</code> (default) adds a potential field to the fields of internal currents (<code>'G21 dipole'</code>,
+  outer wall. <code>'wall'</code> (default) adds a potential field to the fields of internal currents (<code>'dipole'</code>, <code>'G21 dipole'</code>,
   <code>'Luo_S1'</code>, <code>'Luo_S2'</code>, <code>'FDM'</code>) so that they do; it changes nothing for <code>muw_cmb</code> 1 and <code>mu</code> 1. <code>'plain'</code> keeps them as
   they are. The other fields are used as given.</li>
 </ul>
@@ -2400,7 +2424,7 @@ currents in it depend on how it moves across B0. <code>forced_walls</code> sets 
 </tr>
 <tr>
 <td><code>'deforming'</code></td>
-<td>deforms with the boundary: its surface moves with the fluid, and its inside moves with it</td>
+<td>deforms with the boundary: its surface moves with the fluid across the wall, and its inside moves with it</td>
 <td>a boundary that moves (9, 10), a tide (14)</td>
 </tr>
 <tr>
@@ -2416,14 +2440,16 @@ currents in it depend on how it moves across B0. <code>forced_walls</code> sets 
   volume of every shell;</li>
 <li>a conducting inner core (<code>'conducting, Chebys'</code>) moves with the simplest flow that is regular at its centre and has no
   motion along the wall;</li>
-<li>with <code>'TWA'</code> the solid moves with the fluid at the wall, and so does the thin conducting layer at its surface, the only
-  part of it that conducts.</li>
+<li>with <code>'TWA'</code> the solid moves with the fluid across the wall (and along it where the wall is no-slip), and so does the
+  thin conducting layer at its surface, the only part of it that conducts.</li>
 </ul>
 <p>Its motion across the background field, continued into the solid from the wall, induces a field there, which kore
-solves for with the rest, and spin_doctor adds its work to resid𝐄. With a poloidal field and <code>'TWA'</code>, <code>'deforming'</code>
-gives the solutions of the <code>conductive_IC</code> branch. Where a no-slip wall also moves along itself, as in a libration, the
-solid turns with it in both pictures. With insulating solids <code>forced_walls</code> changes nothing. <code>'deforming'</code> does not take
-<code>'conducting, Bessel'</code> behind a wall that moves, since the core's field is then no longer a Bessel function.</p>
+solves for with the rest, and spin_doctor adds its work to resid𝐄. In a conducting inner core the background is continued
+as the simplest field that is regular at the centre, so <code>'dipole'</code>, whose source is at the centre, becomes there a field
+with currents. With a poloidal field and <code>'TWA'</code>, <code>'deforming'</code> gives the solutions of the <code>conductive_IC</code> branch. Where
+a no-slip wall also moves along itself, as in a libration, the solid turns with it in both pictures. With insulating
+solids <code>forced_walls</code> changes nothing. <code>'deforming'</code> does not take <code>'conducting, Bessel'</code> behind a wall that moves, since
+the core's field is then no longer a Bessel function.</p>
 <p>In both pictures a wall that moves, where B0 reaches it, needs the same permeability on both sides: a surface where the
 permeability jumps would carry magnetized matter through B0 as it moves. So <code>mu</code> must be 1, and <code>mu_i2o</code> 1 with a
 conducting inner core. A thin layer's <code>muw_cmb</code> or <code>muw_icb</code> must be 1 where the poloidal part of B0 reaches the wall if
@@ -2442,9 +2468,10 @@ walls, a thin conducting layer, a resolved conducting mantle or a conducting inn
 <ul>
 <li>no background field at all (<code>B0 = None</code> and <code>B0_tor = None</code>), or <code>Le</code> or <code>Em</code> zero;</li>
 <li><code>ViscosD = 0</code> with an inner core (<code>ricb &gt; 0</code>);</li>
-<li>a conducting inner core in a full sphere, without a no-slip inner wall (<code>bci = 1</code>), with an <code>mu_i2o</code> or a <code>sigma_i2o</code>
-  that is not a positive number, with an odd <code>N_cic</code> or one below 4 (<code>'conducting, Chebys'</code>), or with a rotation that
-  varies with latitude at its surface;</li>
+<li>a conducting inner core in a full sphere, with zero radial stress at the inner wall (<code>bci = 2</code>), with an <code>mu_i2o</code> or
+  a <code>sigma_i2o</code> that is not a positive number, with an odd <code>N_cic</code> or one below 4 (<code>'conducting, Chebys'</code>), with a
+  rotation that varies with latitude at its surface, or with <code>centrifugal = 1</code> and an <code>mu_i2o</code> other than 1 or a fluid
+  slipping along it (<code>bci = 0</code>) across a poloidal field;</li>
 <li><code>'conducting, Bessel'</code> in an eigenvalue problem, in a frequency scan of forcing 11 (<code>rsf_frequencies</code>), or in
   <code>just_induction.py</code> with a <code>lambda</code> other than <span class="arithmatex">\(i\,\)</span><code>forcing_frequency</code>; <code>just_induction.py</code> with such a <code>lambda</code> in a
   forced run other than forcing 11;</li>
@@ -2458,6 +2485,11 @@ walls, a thin conducting layer, a resolved conducting mantle or a conducting inn
   that <code>N_mantle</code> polynomials do not resolve;</li>
 <li>with <code>forced_walls = 'deforming'</code> (the default of forcings 9, 10 and 14), <code>'conducting, Bessel'</code> behind an inner wall
   that the forcing moves radially (forcing 6, and 9, 14 and 7 with <code>m</code> 2 where <code>forcing_amplitude_icb</code> is not 0);</li>
+<li>the libration of the inner core (forcing 7 with <code>m</code> 0 and <code>forcing_amplitude_icb</code> not 0) behind a stress-free inner
+  wall (<code>bci = 0</code>) along a conducting inner core or a conducting thin layer on it, across a poloidal field;</li>
+<li>a toroidal field that is not zero at a stress-free wall (<code>bco</code> or <code>bci</code> 0 or 2), or at the wall of an inviscid fluid,
+  with an insulator or a thin layer that does not conduct (<code>c1_cmb</code> or <code>c1_icb</code> 0) beyond
+  (<a href="#toroidal-field-b0_tor">Toroidal field</a>);</li>
 <li>a permeability other than 1 at a wall that the forcing moves radially and that B0 reaches: <code>mu</code>, <code>mu_i2o</code> with a
   conducting inner core, and a thin layer's <code>muw_cmb</code> or <code>muw_icb</code> where the part of B0 that it acts on reaches the wall
   (<a href="#a-boundary-that-moves">A boundary that moves</a>); the outer wall moves under forcing 10, and under 9, 14 and 7 with
@@ -2465,16 +2497,19 @@ walls, a thin conducting layer, a resolved conducting mantle or a conducting inn
   <code>forcing_amplitude_icb</code> is not 0;</li>
 <li>a poloidal and a toroidal part of opposite equatorial symmetry;</li>
 <li>the limits of the options above:<ul>
+<li><code>'dipole'</code> in a full sphere;</li>
 <li>degrees other than 1 or 2 for <code>'FDM'</code>, <code>'confined'</code> and <code>B0_tor_l</code>, and <code>'Malkus'</code> of degree 2 in a full sphere;</li>
 <li>a <code>'confined'</code> layer that is empty or does not lie in the fluid, or <code>B0_conf_p</code> below 3;</li>
 <li><code>B0_tor = 'user'</code> without <code>B0_tor_profile</code>, or <code>'general'</code> without profiles or with degrees that are not positive
-  integers of one parity;</li>
+  integers of one parity; a <code>'user'</code> or <code>'general'</code> profile that is not finite at a point where it is interpolated
+  (<code>r</code> = 0 among them in a full sphere, where an expression that is 0/0 needs another form);</li>
 <li>an expression (<code>B0_tor_profile</code>, <code>B0_profiles</code>, <code>B0_tor_profiles</code>, <code>B0_ferraro_G</code>, <code>diff_rot_F</code>,
   <code>sigma_mantle</code>) that is empty or contains <code>#</code>;</li>
 <li>a <code>cnorm</code> other than a number, <code>'rms_cmb'</code>, <code>'mag_energy'</code> or <code>'Schmitt2012'</code>, or <code>'rms_cmb'</code> with <code>'confined'</code>,
-  <code>'general'</code> or <code>'ferraro'</code>; a <code>cnorm_tor</code> other than a number, <code>'mag_energy'</code> or <code>'Schmitt2012'</code>;</li>
-<li><code>B0 = 'ferraro'</code> without <code>diff_rot = 1</code>, with <code>diff_rot_type = 'ferraro'</code>, or with <code>B0_ferraro_nmax</code> even or
-  below 1;</li>
+  <code>'general'</code> or <code>'ferraro'</code>; a <code>cnorm_tor</code> other than a number, <code>'mag_energy'</code> or <code>'Schmitt2012'</code>; a field that is
+  zero with <code>'mag_energy'</code> or <code>'Schmitt2012'</code>;</li>
+<li><code>B0 = 'ferraro'</code> without <code>diff_rot = 1</code>, with <code>diff_rot_type = 'ferraro'</code>, with a <code>B0_ferraro_G</code> that is not
+  finite on the values the rotation takes, or with <code>B0_ferraro_nmax</code> even or below 1;</li>
 <li><code>diff_rot_type = 'ferraro'</code> without a poloidal field, with a <code>diff_rot_F</code> of the wrong equatorial symmetry, or with
   a negative or odd <code>diff_rot_nmax</code>;</li>
 <li><code>B0_wound = 1</code> without a poloidal field or without <code>diff_rot = 1</code>, with <code>B0_wound_eta</code> not positive, or with a
@@ -2536,8 +2571,8 @@ derivations and the estimates are in
 <a href="../magnetic-equations/#when-the-ignored-lorentz-force-matters">Magnetic field equations</a>.</p>
 <p><strong>Exact: a field without current.</strong> A poloidal field that carries no electric current in the fluid, with no toroidal
 part, exerts no force, so the thermal wind is exact. If the rotation also satisfies the Ferraro condition, the field
-does not wind up or decay, and the whole background is steady. <code>B0 = 'axial'</code> is such a field, and so is a <code>'general'</code>
-field whose profile of each degree n combines <code>r**n</code> and, in a shell, <code>r**-(n+1)</code>.</p>
+does not wind up or decay, and the whole background is steady. <code>B0 = 'axial'</code> and <code>'dipole'</code> are such fields, and so is
+a <code>'general'</code> field whose profile of each degree n combines <code>r**n</code> and, in a shell, <code>r**-(n+1)</code>.</p>
 <p><strong>Approximate: any other field.</strong> All other fields carry current: the other poloidal types, any <code>B0_tor</code>, and the wound
 field. The background is then a good approximation under three conditions.</p>
 <ol>
@@ -2742,7 +2777,7 @@ steady over the lifetime of the modes.</p>
       <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "content.code.copy"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
+      <script src="../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
         <script src="../javascripts/mathjax.js"></script>
       

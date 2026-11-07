@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -1382,6 +1382,12 @@ seconds to minutes.</p>
 <td>3 min</td>
 </tr>
 <tr>
+<td><code>tests/inner_core/run_all.sh</code></td>
+<td>the field of a dipole at the centre and a fluid slipping along a conducting inner core: eigenvalues and forced solutions of the <code>conductive_IC</code> branch, the Bessel inner core against the Chebyshev one, the budgets with a variable density, a rigid rotation offset, the stops (among them a toroidal field's current sheet at a slipping wall)</td>
+<td>after a change of the magnetic walls or the inner core, of the induction by the flow, or of <code>spin_doctor</code>'s magnetic budgets</td>
+<td>1.5 min</td>
+</tr>
+<tr>
 <td><code>tests/rotdyn/run_all.sh</code></td>
 <td>the rotating solids (<code>rotdyn = 1</code>) and resid𝐋: exact decoupled and heavy solids, eigenvalues and torques of the <code>conductive_IC</code> branch, the conservation of angular momentum and energy with a variable density, the equatorial angular momentum, the stops</td>
 <td>after a change of the walls, of the viscous or magnetic stresses, of the layout of the unknowns, or of <code>spin_doctor</code>'s budgets</td>
@@ -1401,7 +1407,7 @@ seconds to minutes.</p>
 </tr>
 </tbody>
 </table>
-<p><code>tests/diff_rot</code>, <code>tests/heat_dr</code>, <code>tests/magnetic</code>, <code>tests/centrifugal</code>, <code>tests/rsf</code>, <code>tests/tidal</code>, <code>tests/forcing</code>, <code>tests/decay</code>, <code>tests/twa</code>, <code>tests/mantle</code>, <code>tests/forced_field</code>, <code>tests/rotdyn</code> and <code>tests/drag</code> each have a README
+<p><code>tests/diff_rot</code>, <code>tests/heat_dr</code>, <code>tests/magnetic</code>, <code>tests/centrifugal</code>, <code>tests/rsf</code>, <code>tests/tidal</code>, <code>tests/forcing</code>, <code>tests/decay</code>, <code>tests/twa</code>, <code>tests/mantle</code>, <code>tests/forced_field</code>, <code>tests/inner_core</code>, <code>tests/rotdyn</code> and <code>tests/drag</code> each have a README
 that lists their scripts and what each one checks; the CI test explains itself in <code>tests/ci/test_spinover.py</code>.</p>
 <h2 id="are-existing-runs-unchanged">Are existing runs unchanged?</h2>
 <p><code>tests/diff_rot/regress.sh</code> builds the same small runs twice, once with an older copy of kore and once with yours, and
@@ -1533,7 +1539,7 @@ for a magnetic run.</p>
       <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "content.code.copy"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
+      <script src="../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
         <script src="../javascripts/mathjax.js"></script>
       
