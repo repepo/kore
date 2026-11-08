@@ -679,6 +679,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../bgflow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../magnetic/" class="md-nav__link">
         
   
@@ -1118,6 +1146,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../bgflow-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../centrifugal-equations/" class="md-nav__link">
         
   
@@ -1501,7 +1557,8 @@ equation; <span class="arithmatex">\(\nabla\Pi\)</span> drops out of both becaus
 factor <span class="arithmatex">\(\rho_0\)</span> (<code>rhopower_u = rhopower_v = 1</code>) improves the accuracy of the viscous rows near a surface where
 <span class="arithmatex">\(\rho_0\)</span> is small. Without viscosity (<code>ViscosD = 0</code>) the momentum rows are <span class="arithmatex">\(r^3\rho_0^2\)</span> and <span class="arithmatex">\(r^2\rho_0\)</span> times the
 equations. With <code>ThermaD = 0</code> the heat rows are divided by <span class="arithmatex">\(p_0\)</span>, <span class="arithmatex">\(r\thinspace(\partial_t s + u_r\thinspace dS/dr)/\mathcal L^3\)</span>,
-which is better conditioned where <span class="arithmatex">\(p_0\)</span> is small (and <span class="arithmatex">\(r^2/p_0\)</span> times the equation with the thermal wind); with
+which is better conditioned where <span class="arithmatex">\(p_0\)</span> is small (and <span class="arithmatex">\(r^2/p_0\)</span> times the equation with the thermal wind or a background
+flow); with
 <code>CompoD = 0</code> those of the composition are divided by <span class="arithmatex">\(\rho_0\)</span> in the same way. The Coriolis force couples <span class="arithmatex">\(l\)</span> to
 <span class="arithmatex">\(l\pm1\)</span>; the other terms keep <span class="arithmatex">\(l\)</span>.</p>
 <table>
@@ -1656,7 +1713,8 @@ check it.</p>
 a series in <span class="arithmatex">\(r^2\)</span>. The basis gives <span class="arithmatex">\(P_l\)</span>, <span class="arithmatex">\(T_l\)</span>, <span class="arithmatex">\(s_l\)</span> (and the <span class="arithmatex">\(f_l\)</span>, <span class="arithmatex">\(g_l\)</span> of a magnetic field) the parity of <span class="arithmatex">\(l\)</span>, and
 the equations exclude the lower powers of that parity, as long as the background is smooth at the centre too. Each
 background profile follows the same rule with its own degree <span class="arithmatex">\(n\)</span>: the <span class="arithmatex">\(f_n\)</span> of a differential rotation, the <span class="arithmatex">\(h_n\)</span>,
-<span class="arithmatex">\(k_n\)</span> of a magnetic field and the <span class="arithmatex">\(\sigma_n\)</span> of a thermal wind go as <span class="arithmatex">\(r^n\)</span>, <span class="arithmatex">\(dS/dr\)</span> and <span class="arithmatex">\(g\)</span> as <span class="arithmatex">\(r\)</span>, and <span class="arithmatex">\(\ln\rho_0\)</span>,
+<span class="arithmatex">\(k_n\)</span> of a magnetic field, the <span class="arithmatex">\(\sigma_n\)</span> of a thermal wind and the <span class="arithmatex">\(P_n\)</span>, <span class="arithmatex">\(T_n\)</span>, <span class="arithmatex">\(\sigma_n\)</span>, <span class="arithmatex">\(\gamma_n\)</span> of a background flow
+go as <span class="arithmatex">\(r^n\)</span>, <span class="arithmatex">\(dS/dr\)</span> and <span class="arithmatex">\(g\)</span> as <span class="arithmatex">\(r\)</span>, and <span class="arithmatex">\(\ln\rho_0\)</span>,
 <span class="arithmatex">\(p_0\)</span>, <span class="arithmatex">\(\nu\)</span>, <span class="arithmatex">\(\kappa\)</span> are series in <span class="arithmatex">\(r^2\)</span>. kore evaluates every profile at <span class="arithmatex">\(\lvert r\rvert\)</span> with the parity of its
 degree, which gives the parity but neither the power nor the smoothness. A profile can fail in two ways:</p>
 <ul>

@@ -12,7 +12,7 @@
         <link rel="prev" href="../libration/">
       
       
-        <link rel="next" href="../magnetic/">
+        <link rel="next" href="../bgflow/">
       
       
         
@@ -775,6 +775,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../bgflow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../magnetic/" class="md-nav__link">
         
   
@@ -1065,6 +1093,34 @@
     
   
     Differential rotation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bgflow-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background flow
   
 
     
@@ -1490,7 +1546,8 @@ term of the budgets is zero: the residuals then compare round-off with round-off
 </table>
 <p>The solution is written as for any forced run (<a href="../output/">Output files</a>), and <code>tests/couette</code> checks it against the
 <code>conductive_IC</code> branch, the exact flow without rotation and the rigid rotations, and checks its budgets
-(<a href="../checking/">Modifying kore</a>).</p>
+(<a href="../checking/">Modifying kore</a>). <code>bin/bgflow.py</code> turns the flow, linear or nonlinear, into the background of other runs,
+whose waves and instabilities it carries (<a href="../bgflow/#a-background-from-turning-walls">Background flow</a>).</p>
 
 
 

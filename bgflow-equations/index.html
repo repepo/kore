@@ -1,0 +1,1775 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../differential_rotation_details/">
+      
+      
+        <link rel="next" href="../centrifugal-equations/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+    
+    
+      
+        <title>Background flow - User Manual</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#background-flow-equations" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="User Manual" class="md-header__button md-logo" aria-label="User Manual" data-md-component="logo">
+      
+  <img src="../assets/test1.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            User Manual
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Background flow
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Introduction
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../installation/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Installation
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../getting-started/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../background/" class="md-tabs__link">
+          
+  
+  
+  User guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../benchmarks/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Benchmarks
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../anelastic/" class="md-tabs__link">
+          
+  
+  
+  Mathematical framework
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../checking/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Modifying kore
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="User Manual" class="md-nav__button md-logo" aria-label="User Manual" data-md-component="logo">
+      
+  <img src="../assets/test1.png" alt="logo">
+
+    </a>
+    User Manual
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../background/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../forcing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Convective forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../thermal-forcing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Thermal forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tidal-forcing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tidal forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../libration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Libration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../couette-flow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spherical Couette flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bgflow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../magnetic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Magnetic field
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rotating-solids/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rotating solids
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../drag/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Drag at the outer wall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../solver/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Solver
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Output files
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../benchmarks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmarks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mathematical framework
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Mathematical framework
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../anelastic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Anelastic equations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../numerical-method/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical method
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../differential_rotation_details/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Differential rotation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background flow
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-background" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The background
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-terms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The terms
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rows-and-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rows and implementation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-walls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The walls
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#energy-budgets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Energy budgets
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#newtons-method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Newton's method
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The file
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../centrifugal-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Centrifugal deformation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../magnetic-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Magnetic field
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rotating-solids-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rotating solids
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../drag-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Drag at the outer wall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reynolds-stress/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reynolds-stress forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../derivations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Derivation tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../checking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modifying kore
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-background" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The background
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-terms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The terms
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rows-and-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rows and implementation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-walls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The walls
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#energy-budgets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Energy budgets
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#newtons-method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Newton's method
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The file
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="background-flow-equations">Background flow equations</h1>
+<p>This page gives the background flow of <code>bgflow = 1</code> (<a href="../bgflow/">Background flow</a>), the terms it adds to the
+perturbation equations, how they become rows, what happens at the walls, the powers that <code>spin_doctor</code> reports, and the
+Newton's method that gives the nonlinear flow of turning walls. They are the terms of the <code>conductive_IC</code> branch's
+<code>bgflow.py</code>, written in <code>bin/bgflow.py</code> for any density, in a shell or a full sphere, with the entropy, the composition
+and the magnetic field.</p>
+<h2 id="the-background">The background</h2>
+<p>The background is written as the perturbations are (<a href="../numerical-method/#unknowns">Numerical method</a>), with a poloidal
+and a toroidal scalar for each degree, so that it carries no mass across a sphere whatever its scalars:</p>
+<div class="arithmatex">\[
+\mathbf U = \mathrm{Ro}\thinspace G\sum_n\left[\frac{1}{\rho_0}\nabla\times\nabla\times(\rho_0 P_n Y_n\thinspace\mathbf r)
++ \nabla\times(T_n Y_n\thinspace\mathbf r)\right],
+\qquad S_U = \mathrm{Ro}\sum_n\sigma_n Y_n, \qquad C_U = \mathrm{Ro}\sum_n\gamma_n Y_n ,
+\]</div>
+<p>with <span class="arithmatex">\(Y_n\)</span> the Legendre polynomial of degree <span class="arithmatex">\(n\)</span> in <span class="arithmatex">\(\cos\theta\)</span>, <span class="arithmatex">\(\mathrm{Ro}\)</span> = <code>bgflow_Ro</code>, <span class="arithmatex">\(G\)</span> = <code>Gaspard</code> (1 when
+<code>Gaspard = 0</code>), and <span class="arithmatex">\(\nabla\cdot(\rho_0\mathbf U) = 0\)</span>. <span class="arithmatex">\(S_U\)</span> and <span class="arithmatex">\(C_U\)</span> are the entropy and the composition that the
+flow brought about in the run that made it. With <span class="arithmatex">\(\lambda_1 = (\ln\rho_0)'\)</span> and a prime for <span class="arithmatex">\(d/dr\)</span>, the components are</p>
+<div class="arithmatex">\[
+U_r = \mathrm{Ro}\thinspace G\sum_n\frac{n(n+1)P_n}{r}Y_n, \qquad
+U_\theta = \mathrm{Ro}\thinspace G\sum_n\left(P_n' + \frac{P_n}{r} + \lambda_1 P_n\right)\partial_\theta Y_n, \qquad
+U_\phi = -\mathrm{Ro}\thinspace G\sum_n T_n\thinspace\partial_\theta Y_n .
+\]</div>
+<p><span class="arithmatex">\(T_1 = r\)</span> is a rotation at the rate <span class="arithmatex">\(\mathrm{Ro}\thinspace G\)</span>, and at Ro = 1 <span class="arithmatex">\(T_1 = (f_0 - f_2/5)\thinspace r\)</span>,
+<span class="arithmatex">\(T_3 = f_2\thinspace r/5\)</span> is the differential rotation <span class="arithmatex">\(\Delta\Omega = f_0 + f_2 Y_2\)</span> of <code>diff_rot</code>. The poloidal
+scalars make the meridional circulation. The vorticity <span class="arithmatex">\(\boldsymbol\Omega_U = \nabla\times\mathbf U\)</span> follows degree by
+degree: <span class="arithmatex">\(\Omega_\phi = \mathrm{Ro}\thinspace G\left[(rs_n)'/r - n(n+1)P_n/r^2\right]\partial_\theta Y_n\)</span> from <span class="arithmatex">\(P_n\)</span>, with
+<span class="arithmatex">\(s_n = P_n' + P_n/r + \lambda_1 P_n\)</span>, and <span class="arithmatex">\(\Omega_r = \mathrm{Ro}\thinspace G\thinspace n(n+1)T_n Y_n/r\)</span>,
+<span class="arithmatex">\(\Omega_\theta = \mathrm{Ro}\thinspace G\thinspace(rT_n)'\thinspace\partial_\theta Y_n/r\)</span> from <span class="arithmatex">\(T_n\)</span>.</p>
+<p>Like the perturbations, the background is symmetric about the equator: <span class="arithmatex">\(P_n\)</span>, <span class="arithmatex">\(\sigma_n\)</span>, <span class="arithmatex">\(\gamma_n\)</span> of even <span class="arithmatex">\(n\)</span> and
+<span class="arithmatex">\(T_n\)</span> of odd <span class="arithmatex">\(n\)</span>.</p>
+<h2 id="the-terms">The terms</h2>
+<p>The perturbation equations, linearised about <span class="arithmatex">\(\mathbf U\)</span>, <span class="arithmatex">\(S_U\)</span> and <span class="arithmatex">\(C_U\)</span>, gain the advection of the perturbation by
+the background and of the background by the perturbation. The momentum equation gains</p>
+<div class="arithmatex">\[
+(\mathbf U\cdot\nabla)\mathbf u + (\mathbf u\cdot\nabla)\mathbf U
+= \nabla(\mathbf U\cdot\mathbf u) - \mathbf U\times\boldsymbol\omega - \mathbf u\times\boldsymbol\Omega_U ,
+\qquad \boldsymbol\omega = \nabla\times\mathbf u ,
+\]</div>
+<p>on the side of the inertia; the gradient joins the pressure and leaves the rows, which take the curl and the double curl
+of the equation. The heat and the composition equations gain</p>
+<div class="arithmatex">\[
+p_0\left(\mathbf U\cdot\nabla s + \mathbf u\cdot\nabla S_U\right), \qquad
+\rho_0\left(\mathbf U\cdot\nabla c + \mathbf u\cdot\nabla C_U\right)
+\]</div>
+<p>on the side of <span class="arithmatex">\(\partial_t\)</span>, and the induction equation gains <span class="arithmatex">\(\nabla\times(\mathbf U\times\mathbf b)\)</span> on the side of
+the induction. The background itself is held fixed: what keeps <span class="arithmatex">\(\mathbf U\)</span>, <span class="arithmatex">\(S_U\)</span> and <span class="arithmatex">\(C_U\)</span> steady (the walls, the
+buoyancy of <span class="arithmatex">\(S_U\)</span> and <span class="arithmatex">\(C_U\)</span>, the advection of <span class="arithmatex">\(\mathbf U\)</span> by itself) belongs to the equations of the background, not to
+those of the perturbation.</p>
+<h2 id="rows-and-implementation">Rows and implementation</h2>
+<p>This section says how the terms become radial operators and where they sit in the matrices. It matters only to change
+or extend the code.</p>
+<ul>
+<li><strong>Angular couplings.</strong> The background vectors are polynomials in <span class="arithmatex">\(\cos\theta\)</span> times <span class="arithmatex">\(\hat{\mathbf r}\)</span>,
+  <span class="arithmatex">\(\sin\theta\thinspace\hat{\boldsymbol\theta}\)</span> or <span class="arithmatex">\(\sin\theta\thinspace\hat{\boldsymbol\phi}\)</span>, and their products
+  with the perturbation are sparse matrices over the degrees, built exactly with the recurrence algebra of <code>angular.py</code>,
+  as for a background field (<a href="../magnetic-equations/#couplings-for-any-background">Magnetic field equations</a>): a degree
+  <span class="arithmatex">\(n\)</span> of <span class="arithmatex">\(\mathbf U\)</span> couples the degree <span class="arithmatex">\(l\)</span> of a row to <span class="arithmatex">\(l'\)</span> with <span class="arithmatex">\(\lvert l - l'\rvert \le n + 1\)</span>. <code>bgflow.build</code>
+  writes each term as a sum of radial monomials times these matrices, in kore's rows: <span class="arithmatex">\(r^5\rho_0\)</span> and <span class="arithmatex">\(r^3\rho_0\)</span> times
+  <span class="arithmatex">\(\hat{\mathbf r}\cdot\nabla\times\nabla\times\)</span> and <span class="arithmatex">\(\hat{\mathbf r}\cdot\nabla\times\)</span> of the momentum equation
+  (sections <code>u</code>, <code>v</code>), <span class="arithmatex">\(r^2\)</span> times the heat and composition equations (<code>h</code>, <code>c</code>), and the rows <code>f</code>, <code>g</code> of the induction.</li>
+<li>
+<p><strong>Labels and profile codes.</strong> A monomial <span class="arithmatex">\(r^p\thinspace w_B^{(j)}\thinspace X^{(d)}\)</span> of a row is the label
+  <code>{row}{q}w{B}{n}{j}[lho{k} | pss0 | dns0]_D{d}</code>, with <span class="arithmatex">\(q\)</span> the power of the row minus <span class="arithmatex">\(p\)</span>, <span class="arithmatex">\(w_B\)</span> a profile code of
+  degree <span class="arithmatex">\(n\)</span> and its <span class="arithmatex">\(j\)</span>-th derivative, <code>lho{k}</code> a factor <span class="arithmatex">\((\ln\rho_0)^{(k)}\)</span>, <code>pss0</code> and <code>dns0</code> a factor <span class="arithmatex">\(p_0\)</span> or
+  <span class="arithmatex">\(\rho_0\)</span>, and <span class="arithmatex">\(X^{(d)}\)</span> the <span class="arithmatex">\(d\)</span>-th derivative of the unknown. For example <code>v2wt10_D1</code> is
+  <span class="arithmatex">\(r\thinspace\mathrm{Ro}\thinspace G\thinspace T_1 P_l'\)</span> in the rows of <span class="arithmatex">\(T_l\)</span>, times its angular coefficient. The profile codes, per degree <span class="arithmatex">\(n\)</span> (one character, 0–9 then a–z: degrees
+  up to 35), are</p>
+<table>
+<thead>
+<tr>
+<th>code</th>
+<th>profile</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>wq</code></td>
+<td><span class="arithmatex">\(\mathrm{Ro}\thinspace G\thinspace n(n+1)P_n/r\)</span></td>
+</tr>
+<tr>
+<td><code>ws</code></td>
+<td><span class="arithmatex">\(\mathrm{Ro}\thinspace G\left(P_n' + P_n/r + \lambda_1 P_n\right)\)</span></td>
+</tr>
+<tr>
+<td><code>wt</code></td>
+<td><span class="arithmatex">\(\mathrm{Ro}\thinspace G\thinspace T_n\)</span></td>
+</tr>
+<tr>
+<td><code>wh</code>, <code>wd</code></td>
+<td><span class="arithmatex">\(\mathrm{Ro}\thinspace p_0\sigma_n\)</span>, <span class="arithmatex">\(\mathrm{Ro}\thinspace p_0\sigma_n'\)</span> (without <span class="arithmatex">\(p_0\)</span> where the heat rows are divided by it)</td>
+</tr>
+<tr>
+<td><code>wc</code>, <code>we</code></td>
+<td><span class="arithmatex">\(\mathrm{Ro}\thinspace\rho_0\gamma_n\)</span>, <span class="arithmatex">\(\mathrm{Ro}\thinspace\rho_0\gamma_n'\)</span> (without <span class="arithmatex">\(\rho_0\)</span> where the rows of the composition are divided by it)</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p><strong>Assembly.</strong> <code>assemble.bgflow_blocks</code> places the blocks of each row degree for every <span class="arithmatex">\(\Delta l\)</span> up to the largest
+  degree of the background plus one, in the rows <code>u</code>, <code>v</code> (columns <span class="arithmatex">\(P\)</span>, <span class="arithmatex">\(T\)</span>), <code>h</code> (<span class="arithmatex">\(s\)</span>, <span class="arithmatex">\(P\)</span>, <span class="arithmatex">\(T\)</span>), <code>c</code> (<span class="arithmatex">\(c\)</span>, <span class="arithmatex">\(P\)</span>, <span class="arithmatex">\(T\)</span>)
+  and <code>f</code>, <code>g</code> (columns of the field). <code>operators.background_flow</code> returns each block as the sum of the angular
+  coefficients times the radial operators, divided by <span class="arithmatex">\(\mathcal L^3\)</span> of the row as every operator.</p>
+</li>
+<li><strong>Without diffusion.</strong> With <code>ThermaD = 0</code> the heat rows are <span class="arithmatex">\(r^2(\text{eq})/p_0\)</span> in the <span class="arithmatex">\(C^{(1)}\)</span> basis, as with the
+  thermal wind (<a href="../differential_rotation_details/">Differential rotation</a>): <span class="arithmatex">\(\mathbf u\cdot\nabla S_U\)</span> holds <span class="arithmatex">\(u_\theta\)</span>,
+  which holds <span class="arithmatex">\(P_l'\)</span>, and <span class="arithmatex">\(\mathbf U\cdot\nabla s\)</span> holds <span class="arithmatex">\(U_\theta\partial_\theta s/r\)</span>. With <code>CompoD = 0</code> the rows of
+  the composition are <span class="arithmatex">\(r^2(\text{eq})/\rho_0\)</span> in <span class="arithmatex">\(C^{(1)}\)</span> in the same way.</li>
+<li><strong>Inviscid runs</strong> (<code>ViscosD = 0</code>, full sphere). The terms hold <span class="arithmatex">\(P_l'''\)</span> in the rows <code>u</code> and <span class="arithmatex">\(P_l''\)</span> in the rows <code>v</code>,
+  so these rows are in <span class="arithmatex">\(C^{(3)}\)</span> and <span class="arithmatex">\(C^{(2)}\)</span> and are <span class="arithmatex">\(r^5\rho_0^2\)</span> and <span class="arithmatex">\(r^3\rho_0\)</span> times the equations, as with a
+  magnetic field.</li>
+<li><strong>Full sphere.</strong> Each scalar has the parity <span class="arithmatex">\((-1)^n\)</span> of its degree, and the codes <code>wq</code>, <code>ws</code>, <code>wd</code>, <code>we</code> the opposite
+  one. An expression is evaluated at <span class="arithmatex">\(\lvert r\rvert\)</span> with that parity and interpolated at the Chebyshev–Lobatto points
+  of <span class="arithmatex">\([-1, 1]\)</span> (of <span class="arithmatex">\([r_i, 1]\)</span> in a shell), so that a scalar that vanishes at the wall vanishes there to round-off.
+  A scalar of degree <span class="arithmatex">\(n\)</span> is smooth at the centre if it goes as <span class="arithmatex">\(r^n\)</span> times a series in <span class="arithmatex">\(r^2\)</span>; <code>submatrices.py</code> warns
+  for each one that does not (<a href="../numerical-method/#regularity-at-the-centre">Regularity at the centre</a>).</li>
+</ul>
+<h2 id="the-walls">The walls</h2>
+<p>kore's walls are impenetrable, so the background must not cross them: <span class="arithmatex">\(P_n = 0\)</span> at each wall, which <code>submatrices.py</code>
+checks to <span class="arithmatex">\(10^{-10}\)</span> of the largest <span class="arithmatex">\(\lvert P_n\rvert\)</span>, <span class="arithmatex">\(\lvert T_n\rvert\)</span>. A conducting solid at a wall (an inner core,
+a thin conducting layer, a resolved mantle) carries its field along as a solid body, so the background must turn
+rigidly there: <span class="arithmatex">\(P_n = P_n' = 0\)</span>, and <span class="arithmatex">\(T_n = 0\)</span> for <span class="arithmatex">\(n \neq 1\)</span>. The solid then turns with the fluid at the wall, at</p>
+<div class="arithmatex">\[
+\Omega_w = \mathrm{Ro}\thinspace G\thinspace\frac{T_1(r_w)}{r_w}
+\]</div>
+<p>relative to the frame, and the equation of its field gains the advection by that rotation, <span class="arithmatex">\(-i\thinspace m\thinspace
+\Omega_w\thinspace\mathbf b\)</span> (<code>bgflow.rigid_rate</code>, added as for a differential rotation). The Bessel inner core and
+<code>spin_doctor</code>'s energies of the solids use the frequency in the frame of the solid.</p>
+<p>With a background field <span class="arithmatex">\(\mathbf B_0\)</span> the linear problem also assumes that the field is steady under the background
+flow. <code>bgflow.steadiness</code> reports</p>
+<div class="arithmatex">\[
+\max\lvert\nabla\times(\mathbf U\times\mathbf B_0)\rvert\thinspace r \Big/ \left(\max\lvert\mathbf U\rvert\max\lvert\mathbf B_0\rvert\right)
+\]</div>
+<p>on a grid of the fluid (with the flow of a differential rotation added), and warns above <span class="arithmatex">\(10^{-7}\)</span>, or stops with
+<code>ferraro_policy = 'refuse'</code>. A rotation about the axis keeps an axisymmetric field steady when the rotation rate is
+constant along the field lines (<a href="../magnetic-equations/#the-ferraro-condition">Magnetic field equations</a>), so a rigid
+rotation keeps any of them.</p>
+<h2 id="energy-budgets">Energy budgets</h2>
+<p><code>spin_doctor</code> adds the background's terms to the budgets of <a href="../anelastic/#energy-balance">Energy balance</a>, computed on
+a grid of Gauss–Legendre points in <span class="arithmatex">\(\cos\theta\)</span> that makes the angular products exact (<code>utils4pp.bgflow_setup</code>):</p>
+<div class="arithmatex">\[
+W_\mathrm{bg} = -2\thinspace\mathrm{Re}\int\rho_0\thinspace\mathbf u^*\cdot\left[(\mathbf U\cdot\nabla)\mathbf u + (\mathbf u\cdot\nabla)\mathbf U\right] dV ,
+\]</div>
+<p>its imaginary part, and the enstrophy term of the same force. The part of <span class="arithmatex">\((\mathbf U\cdot\nabla)\mathbf u\)</span> has no real
+part, <span class="arithmatex">\(\mathrm{Re}\int\rho_0\thinspace\mathbf u^*\cdot(\mathbf U\cdot\nabla)\mathbf u\thinspace dV = \tfrac12\int\rho_0\thinspace\mathbf U\cdot\nabla\lvert\mathbf u\rvert^2\thinspace dV = 0\)</span>,
+since <span class="arithmatex">\(\nabla\cdot(\rho_0\mathbf U) = 0\)</span> and <span class="arithmatex">\(\mathbf U\)</span> runs along the walls: <span class="arithmatex">\(W_\mathrm{bg}\)</span> is the power that the
+perturbation draws from the shear of the background through <span class="arithmatex">\((\mathbf u\cdot\nabla)\mathbf U\)</span>. In the same way
+<span class="arithmatex">\(\mathbf r\times[(\mathbf U\cdot\nabla)\mathbf u + (\mathbf u\cdot\nabla)\mathbf U] = (\mathbf U\cdot\nabla)(\mathbf r\times\mathbf u) + (\mathbf u\cdot\nabla)(\mathbf r\times\mathbf U)\)</span>,
+whose integral with <span class="arithmatex">\(\rho_0\)</span> is a flux through the walls, zero when neither flow crosses them: the background puts no
+torque in the fluid, and the budget of its angular momentum (resid𝐋, axial and equatorial) holds as without it. The heat and composition budgets gain</p>
+<div class="arithmatex">\[
+W_\mathrm{bg}^{s} = -2\thinspace\mathrm{Re}\int p_0\thinspace s^*\left(\mathbf U\cdot\nabla s + \mathbf u\cdot\nabla S_U\right) dV ,
+\qquad
+W_\mathrm{bg}^{c} = -2\thinspace\mathrm{Re}\int\rho_0\thinspace c^*\left(\mathbf U\cdot\nabla c + \mathbf u\cdot\nabla C_U\right) dV .
+\]</div>
+<p>The force is computed with its gradient <span class="arithmatex">\(\nabla(\mathbf U\cdot\mathbf u)\)</span>, so that the pressure that <code>spin_doctor</code>
+derives from the momentum equation, and its power at the walls, are the physical ones. The columns are in
+<a href="../output/">Output files</a>.</p>
+<h2 id="newtons-method">Newton's method</h2>
+<p>The nonlinear flow of turning walls is the steady solution of the full axisymmetric equations, in which the flow also
+carries itself and its entropy and composition along. <code>bgflow.py</code> finds it with kore's own matrices. For <span class="arithmatex">\(m = 0\)</span> the
+fields of a forced run are <span class="arithmatex">\(\mathbf x + \mathrm{c.c.} = 2\mathbf x\)</span>, so the steady problem reads</p>
+<div class="arithmatex">\[
+A\mathbf x + \tfrac12 B(2\mathbf x)\thinspace\mathbf x = \mathbf b ,
+\]</div>
+<p>with <span class="arithmatex">\(A\mathbf x = \mathbf b\)</span> the linear problem of forcing 12 and <span class="arithmatex">\(B(\mathbf V)\)</span> the matrix of the terms of a
+background <span class="arithmatex">\(\mathbf V\)</span>. <span class="arithmatex">\(B(\mathbf V)\mathbf w\)</span> is linear and symmetric in its two flows, so <span class="arithmatex">\(B(2\mathbf x)\)</span> is also the
+Jacobian of the quadratic term, and a Newton step is</p>
+<div class="arithmatex">\[
+\left(A + B_k\right)\mathbf x_{k+1} = \mathbf b + \tfrac12 B_k\thinspace\mathbf x_k, \qquad B_k = B(2\mathbf x_k),
+\]</div>
+<p>with every degree of <span class="arithmatex">\(\mathbf x_k\)</span> in <span class="arithmatex">\(B_k\)</span>. <span class="arithmatex">\(B_k\)</span> is the matrix of a run with <code>bgflow = 1</code> and the background
+<span class="arithmatex">\(2\mathbf x_k\)</span> minus that of the same run at <code>bgflow_Ro = 0</code>, so that both have the same rows and bases. Ro rises from 0
+in steps of at most 0.15, each starting from the flow of the last step with its part of order <span class="arithmatex">\(\mathrm{Ro}^2\)</span> scaled to
+the new Ro, and the iterations of a step stop when one moves <span class="arithmatex">\(\mathbf x\)</span> by less than <span class="arithmatex">\(10^{-9}\)</span> of itself. The matrices of <span class="arithmatex">\(m = 0\)</span>
+couple every degree of the background with every other, so the solves are dense. At Ek <span class="arithmatex">\(10^{-3}\)</span> and Ro 1
+(<a href="../bgflow/#example-waves-on-the-flow-of-an-inner-core-that-turns">the example</a>), each step takes three or four
+iterations, the change squaring at each, and the flow differs from Ro times the linear flow by 6%.</p>
+<h2 id="the-file">The file</h2>
+<p><code>bgflow.py nmax [nonlinear]</code> writes <code>bgflow.npz</code>:</p>
+<table>
+<thead>
+<tr>
+<th>key</th>
+<th>content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>nP</code>, <code>P</code>; <code>nT</code>, <code>T</code></td>
+<td>the degrees <span class="arithmatex">\(n \le\)</span> nmax and the Chebyshev coefficients of <span class="arithmatex">\(P_n\)</span>, <span class="arithmatex">\(T_n\)</span> per unit Ro, one row per degree, on <span class="arithmatex">\([r_i, 1]\)</span> (on <span class="arithmatex">\([-1, 1]\)</span>, of parity <span class="arithmatex">\((-1)^n\)</span>, in a full sphere)</td>
+</tr>
+<tr>
+<td><code>nS</code>, <code>S</code>; <code>nC</code>, <code>C</code></td>
+<td>the same for <span class="arithmatex">\(\sigma_n\)</span> and <span class="arithmatex">\(\gamma_n\)</span>, with <code>thermal = 1</code> and <code>compositional = 1</code></td>
+</tr>
+<tr>
+<td><code>ricb</code></td>
+<td>the radius of the inner wall</td>
+</tr>
+<tr>
+<td><code>rho_r</code>, <code>rho</code></td>
+<td>the density at 8 radii: the poloidal flow is that density's</td>
+</tr>
+<tr>
+<td><code>wall</code>, <code>ratio</code></td>
+<td>the wall that turned (<code>'inner'</code> or <code>'outer'</code>), and the rate of the other relative to it</td>
+</tr>
+<tr>
+<td><code>Ro</code></td>
+<td>for a nonlinear flow, the Ro it holds at</td>
+</tr>
+</tbody>
+</table>
+<p>P and T are the scalars of the run's flow divided by the rate of the wall in units of <span class="arithmatex">\(1/\tau\)</span>, and <span class="arithmatex">\(\sigma_n\)</span>,
+<span class="arithmatex">\(\gamma_n\)</span> those of its entropy and composition divided by that rate over <span class="arithmatex">\(G\)</span>. The files of <code>conductive_IC</code> hold <code>nP</code>, <code>P</code>, <code>nT</code>, <code>T</code>, <code>ricb</code> (and <code>Ro</code>), and are read as they are,
+for a uniform density.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "content.code.copy"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

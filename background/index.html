@@ -958,6 +958,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../bgflow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../magnetic/" class="md-nav__link">
         
   
@@ -1248,6 +1276,34 @@
     
   
     Differential rotation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bgflow-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background flow
   
 
     
@@ -1734,7 +1790,7 @@
 
 
 <h1 id="background-model">Background model</h1>
-<p>kore solves for small perturbations of a background. The background has six parts, each chosen by name in the
+<p>kore solves for small perturbations of a background. The background has seven parts, each chosen by name in the
 parameter file:</p>
 <table>
 <thead>
@@ -1775,11 +1831,17 @@ parameter file:</p>
 <td><code>centrifugal</code>, <code>centrifugal_shape</code></td>
 <td>a sphere, or a body flattened by its rotation</td>
 </tr>
+<tr>
+<td>flow</td>
+<td><code>bgflow</code></td>
+<td>a steady axisymmetric flow with a meridional circulation, such as the flow of turning walls (<a href="../bgflow/">Background flow</a>)</td>
+</tr>
 </tbody>
 </table>
 <p>The equations in which they enter are on the page <a href="../anelastic/">Anelastic equations</a>. The code is in
 <code>bin/background.py</code> (the choice, the checks, the stratification and diffusivity types), <code>bin/radial_profiles.py</code> (one
-class per structure), <code>bin/diff_rot.py</code> (the rotation) and <code>bin/centrifugal.py</code> (the flattening).</p>
+class per structure), <code>bin/diff_rot.py</code> (the rotation), <code>bin/centrifugal.py</code> (the flattening) and <code>bin/bgflow.py</code> (the
+flow).</p>
 <h2 id="units">Units</h2>
 <p>kore is dimensionless (<a href="../anelastic/#non-dimensionalization">Non-dimensionalization</a>). The unit of length is the radius
 of the outer wall, <span class="arithmatex">\(r = 1\)</span>. <code>r_out</code> is that radius in star radii (1 by default), so <span class="arithmatex">\(x = r\cdot\)</span><code>r_out</code> is the radius

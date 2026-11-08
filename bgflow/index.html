@@ -1,0 +1,1741 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../couette-flow/">
+      
+      
+        <link rel="next" href="../magnetic/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+    
+    
+      
+        <title>Background flow - User Manual</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#background-flow" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="User Manual" class="md-header__button md-logo" aria-label="User Manual" data-md-component="logo">
+      
+  <img src="../assets/test1.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            User Manual
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Background flow
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Introduction
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../installation/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Installation
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../getting-started/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../background/" class="md-tabs__link">
+          
+  
+  
+  User guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../benchmarks/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Benchmarks
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../anelastic/" class="md-tabs__link">
+          
+  
+  
+  Mathematical framework
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../checking/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Modifying kore
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="User Manual" class="md-nav__button md-logo" aria-label="User Manual" data-md-component="logo">
+      
+  <img src="../assets/test1.png" alt="logo">
+
+    </a>
+    User Manual
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../background/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../forcing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Convective forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../thermal-forcing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Thermal forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tidal-forcing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tidal forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../libration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Libration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../couette-flow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spherical Couette flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background flow
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-it-adds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What it adds
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-background-from-turning-walls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A background from turning walls
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-waves-on-the-flow-of-an-inner-core-that-turns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example: waves on the flow of an inner core that turns
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-background-from-expressions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A background from expressions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resolution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../magnetic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Magnetic field
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rotating-solids/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rotating solids
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../drag/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Drag at the outer wall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../solver/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Solver
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Output files
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../benchmarks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmarks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mathematical framework
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Mathematical framework
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../anelastic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Anelastic equations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../numerical-method/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical method
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../differential_rotation_details/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Differential rotation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bgflow-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../centrifugal-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Centrifugal deformation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../magnetic-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Magnetic field
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rotating-solids-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rotating solids
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../drag-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Drag at the outer wall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reynolds-stress/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reynolds-stress forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../derivations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Derivation tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../checking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modifying kore
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-it-adds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What it adds
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-background-from-turning-walls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A background from turning walls
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-waves-on-the-flow-of-an-inner-core-that-turns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example: waves on the flow of an inner core that turns
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-background-from-expressions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A background from expressions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resolution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="background-flow">Background flow</h1>
+<p>With <code>bgflow = 1</code> the fluid carries a steady, axisymmetric background flow, and kore solves the waves and instabilities
+of the fluid on top of it. A differential rotation (<code>diff_rot = 1</code>, <a href="../background/#rotation">Background model</a>) is
+the special case of a flow along the azimuth. The flow that turning walls drive also turns in the meridional planes
+(up along the axis and back near the walls, or the reverse), and its rotation has a shape that no rotation profile of
+<code>diff_rot</code> holds. That flow, written by kore from its own run of turning walls (<a href="../couette-flow/">Spherical Couette
+flow</a>), is the main use; a flow given as expressions of <span class="arithmatex">\(r\)</span> is the other.</p>
+<h2 id="what-it-adds">What it adds</h2>
+<p>The background flow carries the perturbations and is distorted by them. kore adds both effects to each equation it
+solves: to the momentum equation the advection of the flow by the background and of the background by the flow, to the
+heat and composition equations the advection of the entropy and the composition, and to the induction equation the
+field that the background flow induces from the perturbed field. The background may also carry its own entropy and
+composition, the ones that the flow brought about in the run that made it; the flow of the perturbation then carries
+those too.</p>
+<p>The background is</p>
+<div class="arithmatex">\[
+\mathbf U = \mathrm{Ro}\thinspace\mathrm{Gaspard}\sum_n\left[\rho_0^{-1}\nabla\times\nabla\times(\rho_0 P_n Y_n\thinspace\mathbf r)
++ \nabla\times(T_n Y_n\thinspace\mathbf r)\right],
+\]</div>
+<p>with <span class="arithmatex">\(Y_n\)</span> the Legendre polynomial of degree <span class="arithmatex">\(n\)</span> in <span class="arithmatex">\(\cos\theta\)</span> and <span class="arithmatex">\(\mathrm{Ro}\)</span> = <code>bgflow_Ro</code>, the rate of the flow
+in units of the rotation rate of the frame (with <code>Gaspard = 0</code>, a frame at rest, in units of <span class="arithmatex">\(1/\tau\)</span>). It carries no mass across a sphere:
+<span class="arithmatex">\(\nabla\cdot(\rho_0\mathbf U) = 0\)</span>. Its entropy and composition are <span class="arithmatex">\(\mathrm{Ro}\sum_n\sigma_n Y_n\)</span> and
+<span class="arithmatex">\(\mathrm{Ro}\sum_n\gamma_n Y_n\)</span>, used with <code>thermal = 1</code> and <code>compositional = 1</code>. The radial functions <span class="arithmatex">\(P_n\)</span>, <span class="arithmatex">\(T_n\)</span>,
+<span class="arithmatex">\(\sigma_n\)</span>, <span class="arithmatex">\(\gamma_n\)</span> (per unit Ro) come from a file or from expressions. The terms are in
+<a href="../bgflow-equations/">Background flow equations</a>.</p>
+<p>It works with any <code>structure</code>, in a shell or a full sphere, with or without the diffusion of the entropy and of the
+composition, without viscosity in a full sphere, with a differential rotation, a magnetic field, conducting solids,
+the forcings, and in eigenvalue and forced problems. The background must</p>
+<ul>
+<li>be <strong>symmetric about the equator</strong>, as kore's perturbations are (<code>symm</code>): <span class="arithmatex">\(P_n\)</span>, <span class="arithmatex">\(\sigma_n\)</span>, <span class="arithmatex">\(\gamma_n\)</span> of even
+  <span class="arithmatex">\(n\)</span> and <span class="arithmatex">\(T_n\)</span> of odd <span class="arithmatex">\(n\)</span>;</li>
+<li><strong>not cross the walls</strong>: <span class="arithmatex">\(P_n = 0\)</span> there;</li>
+<li><strong>turn rigidly at a conducting solid</strong> (a conducting inner core, a thin conducting layer, a resolved mantle): <span class="arithmatex">\(P_n\)</span>,
+  <span class="arithmatex">\(P_n'\)</span> and every <span class="arithmatex">\(T_n\)</span> but <span class="arithmatex">\(T_1\)</span> vanish at its wall, and the solid turns with the fluid there, at
+  <span class="arithmatex">\(\mathrm{Ro}\thinspace\mathrm{Gaspard}\thinspace T_1/r\)</span>, so that its field is carried along.</li>
+</ul>
+<p>With a background field (<code>magnetic = 1</code>), <code>submatrices.py</code> prints how far the field is from steady under the
+background flow, <span class="arithmatex">\(\lvert\nabla\times(\mathbf U\times\mathbf B_0)\rvert\thinspace r\)</span> relative to
+<span class="arithmatex">\(\lvert\mathbf U\rvert\lvert\mathbf B_0\rvert\)</span>, and warns above <span class="arithmatex">\(10^{-7}\)</span> (it stops with <code>ferraro_policy = 'refuse'</code>):
+the linear problem assumes that something maintains the background. A uniform axial field under a rotation about the
+axis is steady; most other pairs are not. kore stops with <code>centrifugal = 1</code>, <code>rotdyn = 1</code> and <code>topo_drag = 'rekier'</code>.</p>
+<h2 id="a-background-from-turning-walls">A background from turning walls</h2>
+<p>A forcing-12 run of kore gives the steady flow of walls that turn about the axis at their own rates. In its folder,</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>python3<span class="w"> </span>bin/bgflow.py<span class="w"> </span><span class="m">12</span>
+</span></code></pre></div>
+<p>writes <code>bgflow.npz</code> with the degrees <span class="arithmatex">\(n \le 12\)</span> of that flow, per unit Ro: the flow of the linear equations, which is
+proportional to the rates. Ro is the rate of the inner wall over <code>Gaspard</code> (of the outer wall when the inner one is at
+rest), and the other wall turns at the same fraction of it as in the run. Copy the file to the folder of the run that
+uses it, with <code>bgflow = 1</code> and the Ro you want: any Ro gives the linear flow at that rate. The degrees of the run that
+wrote it go up to its <code>lmax</code> and fall off quickly: in the example below the degrees above 12 move the eigenvalues by
+about <span class="arithmatex">\(10^{-4}\)</span>, those above 6 by <span class="arithmatex">\(5\times10^{-3}\)</span>. Thinner layers, at lower Ek, need more.</p>
+<p>The linear flow holds for small Ro. At larger Ro the flow carries itself along: it moves its own momentum, which the
+linear equations leave out. With</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python3<span class="w"> </span>bin/bgflow.py<span class="w"> </span><span class="m">12</span><span class="w"> </span>nonlinear
+</span></code></pre></div>
+<p>kore solves the full steady equations of the axisymmetric flow at the Ro of the run (<code>forcing_amplitude_icb</code> over
+<code>Gaspard</code>) by Newton's method, starting from the linear flow and raising Ro in steps of 0.15. The file then holds that
+Ro, and a run that reads it needs <code>bgflow_Ro</code> at that value: the flow at another Ro is not this one scaled. Each step
+prints how far the iteration still moves, and it converges in a few iterations, the error squaring at each. The method
+is on <a href="../bgflow-equations/#newtons-method">Background flow equations</a>.</p>
+<p>The file also holds the density of the run (the poloidal flow is that density's), the <code>ricb</code>, and which wall turned.
+kore stops when a run reads it with another <code>ricb</code>, another density, or (for a nonlinear file) another <code>bgflow_Ro</code>.
+With entropy or composition (<code>thermal</code>, <code>compositional</code> = 1), the file holds the parts of the entropy and of the
+composition that the flow brought about, <span class="arithmatex">\(\sigma_n\)</span> and <span class="arithmatex">\(\gamma_n\)</span>. <code>bgflow.py</code> does not write the flow of a run with a
+background field: the steady state of such a run has a field that the flow induces from <span class="arithmatex">\(\mathbf B_0\)</span>, which the file
+would leave out. The files that the <code>conductive_IC</code> branch writes are read as they are.</p>
+<h2 id="example-waves-on-the-flow-of-an-inner-core-that-turns">Example: waves on the flow of an inner core that turns</h2>
+<p>The flow of <a href="../couette-flow/#example-an-inner-core-that-turns">Spherical Couette flow</a> at Ek <span class="arithmatex">\(10^{-3}\)</span>, nonlinear at Ro
+= 1 (the inner core turning at twice the rate of the frame), and the waves of <span class="arithmatex">\(m = 2\)</span> on it. First the flow: write in
+<code>bin/parameters.py</code></p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">params_default</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_params</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">par</span> <span class="o">=</span> <span class="n">default_params</span><span class="p">()</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">par</span><span class="o">.</span><span class="n">timescale</span> <span class="o">=</span> <span class="s1">'rotation'</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">par</span><span class="o">.</span><span class="n">Ek</span> <span class="o">=</span> <span class="mf">1e-3</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">par</span><span class="o">.</span><span class="n">set_scales</span><span class="p">()</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">par</span><span class="o">.</span><span class="n">structure</span> <span class="o">=</span> <span class="s1">'Boussinesq'</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">par</span><span class="o">.</span><span class="n">ricb</span> <span class="o">=</span> <span class="mf">0.35</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="n">par</span><span class="o">.</span><span class="n">bci</span> <span class="o">=</span> <span class="mi">1</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="n">par</span><span class="o">.</span><span class="n">bco</span> <span class="o">=</span> <span class="mi">1</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="n">par</span><span class="o">.</span><span class="n">m</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="n">par</span><span class="o">.</span><span class="n">symm</span> <span class="o">=</span> <span class="mi">1</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="n">par</span><span class="o">.</span><span class="n">N</span> <span class="o">=</span> <span class="mi">48</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="n">par</span><span class="o">.</span><span class="n">lmax</span> <span class="o">=</span> <span class="mi">31</span>
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="n">par</span><span class="o">.</span><span class="n">ncpus</span> <span class="o">=</span> <span class="mi">2</span>
+</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>
+</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="n">par</span><span class="o">.</span><span class="n">forcing</span> <span class="o">=</span> <span class="mi">12</span>
+</span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="n">par</span><span class="o">.</span><span class="n">forcing_frequency</span> <span class="o">=</span> <span class="mf">0.0</span>
+</span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="n">par</span><span class="o">.</span><span class="n">forcing_amplitude_icb</span> <span class="o">=</span> <span class="mf">1.0</span>
+</span><span id="__span-2-23"><a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="n">par</span><span class="o">.</span><span class="n">forcing_amplitude_cmb</span> <span class="o">=</span> <span class="mf">0.0</span>
+</span></code></pre></div>
+<p>and run</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>./bin/submatrices.py<span class="w"> </span><span class="m">2</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>mpiexec<span class="w"> </span>-n<span class="w"> </span><span class="m">2</span><span class="w"> </span>./bin/assemble.py
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>mpiexec<span class="w"> </span>-n<span class="w"> </span><span class="m">2</span><span class="w"> </span>./bin/solve.py
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>python3<span class="w"> </span>bin/bgflow.py<span class="w"> </span><span class="m">12</span><span class="w"> </span>nonlinear
+</span></code></pre></div>
+<p>Then, in a new folder with that <code>bgflow.npz</code>, the same parameters with</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">par</span><span class="o">.</span><span class="n">m</span> <span class="o">=</span> <span class="mi">2</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">par</span><span class="o">.</span><span class="n">lmax</span> <span class="o">=</span> <span class="mi">29</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">par</span><span class="o">.</span><span class="n">forcing</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">par</span><span class="o">.</span><span class="n">itau</span> <span class="o">=</span> <span class="mf">1.0</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="n">par</span><span class="o">.</span><span class="n">bgflow</span> <span class="o">=</span> <span class="mi">1</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">par</span><span class="o">.</span><span class="n">bgflow_Ro</span> <span class="o">=</span> <span class="mf">1.0</span>
+</span></code></pre></div>
+<p>and run <code>submatrices.py</code>, <code>assemble.py</code>, <code>solve.py</code> and <code>spin_doctor.py</code>. The eigenvalue nearest <span class="arithmatex">\(1i\)</span> is
+<span class="arithmatex">\(-0.1818 + 1.1437i\)</span> on the flow, and <span class="arithmatex">\(-0.2687 + 0.9803i\)</span> without it. The nonlinear flow differs from the linear flow at
+Ro = 1 by 6%, and the linear flow gives <span class="arithmatex">\(-0.1811 + 1.1491i\)</span>: at this rate the nonlinear part moves the eigenvalues by
+about 0.005. The eigenvalues hold to 8 digits at N 64 and <code>lmax</code> 41, and the <code>conductive_IC</code> branch gives the same ones
+from its own matrices (<code>tests/bgflow</code>). The whole example takes about two minutes on two cores, most of it in Newton's
+method.</p>
+<h2 id="a-background-from-expressions">A background from expressions</h2>
+<p>With <code>bgflow_profiles</code> the background is given as numpy expressions of <span class="arithmatex">\(r\)</span> (and <code>ricb</code>, with the functions of
+<code>diff_rot_profiles</code>), one per radial function and degree, per unit Ro:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">par</span><span class="o">.</span><span class="n">bgflow</span> <span class="o">=</span> <span class="mi">1</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">par</span><span class="o">.</span><span class="n">bgflow_Ro</span> <span class="o">=</span> <span class="mf">0.3</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">par</span><span class="o">.</span><span class="n">bgflow_profiles</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'P2'</span><span class="p">:</span> <span class="s1">'0.2*(r-ricb)**2*(1-r)**2'</span><span class="p">,</span>   <span class="c1"># a meridional cell in each hemisphere</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>                       <span class="s1">'T1'</span><span class="p">:</span> <span class="s1">'0.5*r'</span><span class="p">,</span>                      <span class="c1"># a rotation</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>                       <span class="s1">'T3'</span><span class="p">:</span> <span class="s1">'(r-ricb)*(1-r)*r'</span><span class="p">,</span>            <span class="c1"># and its shear</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>                       <span class="s1">'S2'</span><span class="p">:</span> <span class="s1">'0.05*(r-ricb)*(1-r)'</span><span class="p">}</span>         <span class="c1"># an entropy of degree 2 (thermal = 1)</span>
+</span></code></pre></div>
+<p>The keys are the kind (<code>P</code>, <code>T</code>, <code>S</code> for <span class="arithmatex">\(\sigma_n\)</span>, <code>C</code> for <span class="arithmatex">\(\gamma_n\)</span>) and the degree. <code>bgflow_file</code> is then not
+read. This <span class="arithmatex">\(P_2\)</span> vanishes at both walls with its derivative, and <span class="arithmatex">\(T_3\)</span> vanishes there, so the flow is a rigid rotation
+at each wall and the walls may be conducting. In a full sphere an expression is evaluated at <span class="arithmatex">\(\lvert r\rvert\)</span> with the
+parity <span class="arithmatex">\((-1)^n\)</span> of its degree; a smooth flow goes as <span class="arithmatex">\(r^n\)</span> times a series in <span class="arithmatex">\(r^2\)</span>, as
+<code>'P2': 'r**2*(1-r**2)**2'</code> (<a href="../numerical-method/#regularity-at-the-centre">Regularity at the centre</a>).</p>
+<h2 id="resolution">Resolution</h2>
+<p>A background flow can make the waves much harder to resolve than the same waves in a fluid at rest, in two ways.</p>
+<ul>
+<li><strong>The flow strains the waves.</strong> In a full sphere a meridional circulation of degree 2 is a straining flow at the
+  centre, which presses the waves into thin layers there, where the Chebyshev points are furthest apart. The budgets
+  and irreg₀ then fail, and they converge as N grows: with the circulation <span class="arithmatex">\(P_2 = 2r^2(1-r^2)^2\)</span> at Ro = 0.1 and Ek
+  <span class="arithmatex">\(10^{-3}\)</span>, residσ is <span class="arithmatex">\(3\times10^{-1}\)</span> at N 64, <span class="arithmatex">\(3\times10^{-4}\)</span> at N 96, <span class="arithmatex">\(10^{-8}\)</span> at N 128 and <span class="arithmatex">\(10^{-12}\)</span> at N
+  160.</li>
+<li><strong>The flow carries what nothing smooths.</strong> Without the diffusion of the entropy or of the composition, or without
+  viscosity, the background carries the perturbation along its streamlines with nothing to limit how fine it gets.
+  The frequencies of that transport, <span class="arithmatex">\(m\)</span> times the angular velocities of the flow and the rates of its meridional
+  circulation, form a continuous band, and a target in that band gives modes that do not converge. Target outside it,
+  and keep the modes that stay put when N and lmax are raised.</li>
+</ul>
+<p>As with any run, compare two resolutions; <code>spin_doctor</code>'s residuals tell when the budget, and so the mode, is resolved
+(<a href="../numerical-method/#checks">Numerical method</a>).</p>
+<h2 id="output">Output</h2>
+<p><code>spin_doctor.py</code> adds the power of the background's terms to the budgets: in <code>flow.dat</code> the power of its force on the
+flow, Wbg, its imaginary part and its enstrophy term (columns 46–48), in <code>thermal.dat</code> and <code>composition.dat</code> the work
+of its advection (column 8). They enter residσ, residω, residens, resid𝑠, resid𝑐 and resid𝐄. The power Wbg is what
+the perturbation draws from the shear of the background: a growing mode takes its energy from there. The background
+puts no torque in the fluid, so resid𝐋 holds as without it, axial and equatorial. <code>params.dat</code> gets <code>bgflow</code> and
+<code>bgflow_Ro</code> (columns 155–156), and after the <code>#</code> the expressions of the background or the name of its file with the
+first 12 hexadecimal digits of its sha256 (<a href="../output/">Output files</a>).</p>
+<h2 id="parameters">Parameters</h2>
+<table>
+<thead>
+<tr>
+<th>parameter</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bgflow</code></td>
+<td>1 for a background flow</td>
+</tr>
+<tr>
+<td><code>bgflow_Ro</code></td>
+<td>its rate Ro, in units of the frame's rotation rate (of <span class="arithmatex">\(1/\tau\)</span> with <code>Gaspard = 0</code>); a nonlinear file holds at its own Ro only</td>
+</tr>
+<tr>
+<td><code>bgflow_file</code></td>
+<td>the file of the background, <code>'bgflow.npz'</code> by default, read when <code>bgflow_profiles</code> is empty</td>
+</tr>
+<tr>
+<td><code>bgflow_profiles</code></td>
+<td>the background as expressions, <code>{'P2': '...', 'T1': '...', ...}</code>, per unit Ro; no <code>#</code> in them (they are written to <code>params.dat</code>)</td>
+</tr>
+</tbody>
+</table>
+<p><code>tests/bgflow</code> checks the background against the <code>conductive_IC</code> branch, its terms against a differential rotation, a
+change of frame and a computation on a grid, and the budgets (<a href="../checking/">Modifying kore</a>).</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "content.code.copy"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

@@ -684,6 +684,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../bgflow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../magnetic/" class="md-nav__link">
         
   
@@ -1087,6 +1115,34 @@
     
   
     Differential rotation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bgflow-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background flow
   
 
     
@@ -1578,6 +1634,10 @@ which may have other columns.</p>
 <td>44–45</td>
 <td>with <code>compositional = 1</code>, the power of the buoyancy of the composition, <span class="arithmatex">\(2\thinspace\mathrm{BeyonceC}\thinspace\mathrm{Re}\int\rho_0\thinspace g\thinspace c\thinspace u_r^*\thinspace dV\)</span>, and its imaginary part, in residσ and residω (the entropy's is in <code>thermal.dat</code>); 0 otherwise</td>
 </tr>
+<tr>
+<td>46–48</td>
+<td>with a background flow <span class="arithmatex">\(\mathbf U\)</span> (<code>bgflow = 1</code>, <a href="../bgflow/#output">Background flow</a>), the power of its force on the flow, <span class="arithmatex">\(-2\thinspace\mathrm{Re}\int\rho_0\thinspace\mathbf u^*\cdot\left[(\mathbf U\cdot\nabla)\mathbf u + (\mathbf u\cdot\nabla)\mathbf U\right] dV\)</span>, its imaginary part and its enstrophy term, in residσ, resid𝐄, residω and residens; 0 otherwise</td>
+</tr>
 </tbody>
 </table>
 <h2 id="thermaldat"><code>thermal.dat</code></h2>
@@ -1616,6 +1676,10 @@ which may have other columns.</p>
 <tr>
 <td>7</td>
 <td>the terms of the differential rotation in the heat equation</td>
+</tr>
+<tr>
+<td>8</td>
+<td>with a background flow, the work of its terms in the heat equation, <span class="arithmatex">\(-2\thinspace\mathrm{Re}\int p_0\thinspace s^*(\mathbf U\cdot\nabla s + \mathbf u\cdot\nabla S_U)\thinspace dV\)</span> (<span class="arithmatex">\(S_U\)</span> the background's entropy), in resid𝑠; 0 otherwise</td>
 </tr>
 </tbody>
 </table>
@@ -1657,6 +1721,10 @@ with <span class="arithmatex">\(\rho_0\)</span> in place of <span class="arithma
 <tr>
 <td>7</td>
 <td>the advection by the differential rotation; it only moves the frequency, so this real part is 0 to round-off</td>
+</tr>
+<tr>
+<td>8</td>
+<td>with a background flow, the work of its terms, <span class="arithmatex">\(-2\thinspace\mathrm{Re}\int\rho_0\thinspace c^*(\mathbf U\cdot\nabla c + \mathbf u\cdot\nabla C_U)\thinspace dV\)</span> (<span class="arithmatex">\(C_U\)</span> the background's composition), in resid𝑐; 0 otherwise</td>
 </tr>
 </tbody>
 </table>
@@ -1843,6 +1911,10 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 <td>151–154</td>
 <td><code>comp_two_zone</code> (<span class="arithmatex">\(r_c\)</span>, <span class="arithmatex">\(h\)</span>) and <code>two_zone</code> (<span class="arithmatex">\(r_c\)</span>, <span class="arithmatex">\(h\)</span>)</td>
 </tr>
+<tr>
+<td>155–156</td>
+<td><code>bgflow</code>, <code>bgflow_Ro</code> (0 without a background flow)</td>
+</tr>
 </tbody>
 </table>
 <ul>
@@ -1873,11 +1945,12 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 <li><code>diff_rot_generic</code> and <code>diff_rot_hold</code> are not used (always 0 and nan); they keep the positions of the columns after
   them.</li>
 <li>A row ends, after a <code>#</code> that <code>np.loadtxt</code> skips, with the <code>'user'</code> (the composition's too), <code>'general'</code> and <code>'ferraro'</code> expressions, that of
-  <code>sigma_mantle</code> and, for <code>'tabulated'</code>, <code>diff_rot_file</code> with the first 12 hex digits of its sha256. A row with none of
-  these has no <code>#</code>.</li>
-<li>A <code>params.dat</code> written before the columns 108–112, column 113, the columns 114–122, 123–127, 128–134, 135–141 or
-  142–154 were added has fewer columns: start a new file. The same holds for <code>flow.dat</code> before its columns 29–39, 40–41,
-  42–43 or 44–45.</li>
+  <code>sigma_mantle</code> and, for <code>'tabulated'</code>, <code>diff_rot_file</code> with the first 12 hex digits of its sha256; with a background
+  flow, its expressions (<code>bgflow_profiles</code>) or <code>bgflow_file</code> with the first 12 hex digits of its sha256. A row with none
+  of these has no <code>#</code>.</li>
+<li>A <code>params.dat</code> written before the columns 108–112, column 113, the columns 114–122, 123–127, 128–134, 135–141,
+  142–154 or 155–156 were added has fewer columns: start a new file. The same holds for <code>flow.dat</code> before its columns
+  29–39, 40–41, 42–43, 44–45 or 46–48, and for <code>thermal.dat</code> and <code>composition.dat</code> before their column 8.</li>
 </ul>
 
 
