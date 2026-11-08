@@ -132,11 +132,15 @@ def L_case():
     Whether spin_doctor checks the angular momentum of the fluid (resid𝐋): eigenvalue problems with the flow, m = 0, symm = 1
     (axial) or m = 1, symm = -1 (equatorial, without a differential rotation, whose stresses would add an equatorial torque),
     and a spherical body. For m = 0 the advection by a differential rotation has no net torque (∫ rho0 u⋅∇(s U0) dV = 0 between
-    impenetrable walls).
+    impenetrable walls). NEW (2026-11-08): also the axial balance of the forced problems whose walls move only along
+    themselves and that put no force in the fluid: the libration (forcing 7, m = 0), the steady rotation of the walls (12)
+    and the thermal forcing (13). A radial boundary flow would add the Coriolis torque of the mass it carries through the
+    walls, and a body force (11) its own torque.
     '''
     axial = par.m == 0 and par.symm == 1
     equatorial = par.m == 1 and par.symm == -1 and not par.diff_rot
-    return bool(par.hydro and par.forcing == 0 and not par.centrifugal and (axial or equatorial))
+    forced = par.forcing in (7, 12, 13) and axial
+    return bool(par.hydro and not par.centrifugal and ((par.forcing == 0 and (axial or equatorial)) or forced))
 
 
 def _factor():

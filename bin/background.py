@@ -26,6 +26,7 @@ B0_CMBS = ('wall', 'plain')   # NEW (2026-11-06): B0_cmb (magnetic = 1, mantle =
 MAG_COUPLINGS = ('closed', 'algebra')            # NEW (2026-11-03): mag_couplings, B0_ic and ferraro_policy (magnetic = 1),
 B0_ICS = ('potential', 'frozen currents')        # also written to params.dat as these indices ('frozen currents' was 'full sphere')
 FERRARO_POLICIES = ('warn', 'refuse')
+FORCINGS = (6, 7, 9, 10, 11, 12, 13, 14)   # NEW (2026-11-08): the forced problems of assemble.py (0: eigenvalue problems)
 
 # names that are no longer read and what to set instead (without this stop they would be ignored without notice)
 REMOVED = {
@@ -73,6 +74,8 @@ def check():
         sys.exit('hydro = 0 needs magnetic = 1 or thermal = 1: without the flow nothing else is solved')
     if par.hydro == 0 and par.forcing != 0:
         sys.exit('hydro = 0 is for eigenvalue problems (forcing = 0): the free decay of the field or of the entropy')
+    if par.forcing != 0:   # NEW (2026-11-08)
+        check_forcing()
     if par.N % 2:   # NEW (2026-11-04): the operators of submatrices.py assume an even N (an odd one stopped there with a scipy error)
         sys.exit('N must be even, got N = %r (the operators assume it, in a shell too; a full sphere uses N/2 Chebyshev '
                  'polynomials of each parity)' % (par.N,))
@@ -107,6 +110,45 @@ def check():
     if par.rotdyn:
         check_rotdyn()
     check_drag()   # NEW (2026-11-06): the drag at the outer wall (kappa_cmb, topo_drag)
+
+
+def check_forcing():
+    '''
+    NEW (2026-11-08): stops on a forcing that does not exist (assemble.py would write no right-hand side, and solve.py would
+    stop on the missing B_forced.npz), and on the settings that forcing 12, the steady rotation of the walls (from
+    conductive_IC), does not cover. Forcing 12 drives an axisymmetric, equatorially symmetric flow (m = 0, symm = 1) through
+    the viscosity of the fluid, steadily (forcing_frequency = 0). A wall that turns must be no-slip: a stress-free wall
+    does not carry the fluid (and the rows of a fluid slipping along a conducting solid hold the solid at rest). The walls
+    stay in place (bc 0 or 1): a steady flow through a wall of zero radial stress would move it without end. With
+    thermal = 1 it needs ThermaD > 0: without diffusion the steady entropy equation, u_r dS/dr = 0, leaves the entropy
+    undetermined. Forcings 13 and 14 check their settings in assemble.py.
+    '''
+    if par.forcing not in FORCINGS:
+        sys.exit('forcing %r: 0 (an eigenvalue problem) or one of the forced problems %s' % (par.forcing, _names(FORCINGS)))
+    if par.forcing != 12:
+        return
+    if par.m != 0 or par.symm != 1:
+        sys.exit('forcing 12 needs m = 0 and symm = 1: walls that turn about z drive an axisymmetric, symmetric flow')
+    if par.forcing_frequency != 0:
+        sys.exit('forcing 12 is a steady rotation of the walls: it needs forcing_frequency = 0 (got %r). Walls that turn back '
+                 'and forth are the libration, forcing 7' % (par.forcing_frequency,))
+    if par.ViscosD == 0:
+        sys.exit('forcing 12 needs a viscous fluid (ViscosD > 0): the walls drive the fluid by its viscosity')
+    if par.ricb == 0 and par.forcing_amplitude_icb != 0:
+        sys.exit('forcing 12 in a full sphere (ricb = 0) has no inner core to turn: set forcing_amplitude_icb = 0')
+    if par.thermal and par.ThermaD == 0:
+        sys.exit('forcing 12 with thermal = 1 needs ThermaD > 0: without diffusion the steady entropy equation, '
+                 'u_r dS/dr = 0, leaves the entropy undetermined')
+    walls = [('outer', 'bco', 'forcing_amplitude_cmb')] + ([('inner', 'bci', 'forcing_amplitude_icb')] if par.ricb > 0 else [])
+    for wall, bc, rate in walls:
+        if getattr(par, bc) not in (0, 1):
+            sys.exit('forcing 12 needs walls that stay in place, %s = 0 or 1 (got %r): a steady flow through a wall of zero '
+                     'radial stress would move it without end' % (bc, getattr(par, bc)))
+        if getattr(par, rate) != 0 and getattr(par, bc) != 1:
+            sys.exit('forcing 12: the %s wall turns (%s = %r) but is stress-free (%s = 0), so it does not carry the fluid. '
+                     'Make it no-slip (%s = 1), or set %s = 0' % (wall, rate, getattr(par, rate), bc, bc, rate))
+    if all(getattr(par, rate) == 0 for wall, bc, rate in walls):
+        sys.exit('forcing 12 needs a wall that turns: forcing_amplitude_cmb or forcing_amplitude_icb other than 0')
 
 
 def check_drag():

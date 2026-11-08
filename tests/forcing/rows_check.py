@@ -8,8 +8,9 @@ same at the inner wall; for T the outer row, then the inner one). This check sol
 reads the wall values back from the solution: the imposed P or T, and the tangential condition, which must stay
 homogeneous (zero tangential velocity at a no-slip wall, (rP)'/r + P (ln ρ0)' = 0, or zero tangential stress at a
 stress-free one). The cases: forcing 6 (no-slip and stress-free inner wall), 7 (m = 0 and m = 2), 9 (in an
-incompressible shell, with a variable density, and in a full sphere) and 10. Before 2026-11-06 forcings 6, 7 (m = 2)
-and 9 put the inner wall's value on the outer wall's rows.
+incompressible shell, with a variable density, and in a full sphere), 10, and NEW (2026-11-08) 12 (both walls turning,
+the inner one under a stress-free outer wall at rest, whose toroidal row stays rT' - T = 0, and a full sphere). Before
+2026-11-06 forcings 6, 7 (m = 2) and 9 put the inner wall's value on the outer wall's rows.
 
 Exit code 1 if a case is off by more than 1e-10 of its amplitude.
 '''
@@ -49,6 +50,16 @@ cases = [
      [('P', 2, 'o', 0.5/6), ('ns', 2, 'o', 0)]),
     ('f10', 'par.forcing = 10; par.m = 3; par.symm = 1',
      [('P', 3, 'o', 1/12), ('ns', 3, 'o', 0), ('P', 3, 'i', 0), ('ns', 3, 'i', 0)]),
+    # NEW (2026-11-08): forcing 12, T_1 = ΔΩ r/2 at a turning wall ('tsf': the toroidal stress-free row rT' - T = 0)
+    ('f12', 'par.forcing = 12; par.m = 0; par.symm = 1; par.forcing_frequency = 0.; par.forcing_amplitude_cmb = 0.5; '
+            'par.forcing_amplitude_icb = 1.',
+     [('T', 1, 'o', 0.5/2), ('T', 1, 'i', 1.0*0.35/2)]),
+    ('f12_slip', 'par.forcing = 12; par.m = 0; par.symm = 1; par.forcing_frequency = 0.; par.bco = 0; '
+                 'par.forcing_amplitude_cmb = 0.; par.forcing_amplitude_icb = 1.',
+     [('T', 1, 'i', 1.0*0.35/2), ('tsf', 1, 'o', 0)]),
+    ('f12_sphere', 'par.forcing = 12; par.m = 0; par.symm = 1; par.forcing_frequency = 0.; par.ricb = 0; '
+                   'par.forcing_amplitude_cmb = 0.5',
+     [('T', 1, 'o', 0.5/2)]),
 ]
 
 check = r'''
@@ -68,7 +79,7 @@ Plj, Tlj = upp.expand_reshape_sol(x, par.symm)
 lp, lt = ut.ell(par.m, par.lmax, par.symm)[:2]
 dom = [par.ricb, 1.] if par.ricb > 0 else [-1., 1.]
 def series(kind, l):
-    c = Plj[list(lp).index(l)] if kind != 'T' else Tlj[list(lt).index(l)]
+    c = Plj[list(lp).index(l)] if kind not in ('T', 'tsf') else Tlj[list(lt).index(l)]
     return ch.Chebyshev(c, domain=dom)
 for kind, l, wall, value in eval(sys.argv[1]):
     r = 1. if wall == 'o' else par.ricb
@@ -77,7 +88,7 @@ for kind, l, wall, value in eval(sys.argv[1]):
     h1, h2 = rap.logrhoX(np.array([r]), 1)[0], rap.logrhoX(np.array([r]), 2)[0]
     L = l*(l + 1)
     got = {'P': F0, 'T': F0, 'ns': F1 + F0*(1/r + h1),
-           'sf': r**2*F2 + r**2*h1*F1 + (r**2*h2 + L - 2 - r*h1)*F0}[kind]
+           'sf': r**2*F2 + r**2*h1*F1 + (r**2*h2 + L - 2 - r*h1)*F0, 'tsf': r*F1 - F0}[kind]
     print(kind, l, wall, repr(complex(got)), repr(complex(value)))
 '''
 

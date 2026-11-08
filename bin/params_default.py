@@ -468,13 +468,15 @@ class default_params():
         # self.forcing = 9  # Radial, symmetric, m=2 boundary flow forcing, bci=1.
         # self.forcing = 10 # Radial, symmetric, order m boundary flow forcing at the cmb (l=m), unit amplitude.
         # self.forcing = 11 # Random Reynolds-stress body force (convective noise), any m, symm; rsf_* below.
+        # self.forcing = 12 # Steady rotation of the walls about z (spherical Couette flow), m=0, symm, forcing_frequency = 0; a turning wall is no-slip (docs/couette-flow.md)
         # self.forcing = 13 # Entropy forcing_amplitude_icb P2(cos θ) at the inner wall (its gradient with bci_thermal = 1), m=0, symm.
         # self.forcing = 14 # Tide: radial velocity forcing_amplitude Y_2^m at the walls, (m, symm) = (0, 1), (1, -1), (2, 1); bci = bco = 1 (docs/tidal-forcing.md)
 
         # Forcing frequency (ignored if forcing == 0)
         self.forcing_frequency = 1.0  # negative is prograde
 
-        # Forcing amplitude (boundary forcings 6, 7, 9, 10, 13, 14; forcing 11 ignores it: its power scales with rsf_scale)
+        # Forcing amplitude (boundary forcings 6, 7, 9, 10, 13, 14; for 12 the rotation rates of the walls, in units of 1/tau;
+        # forcing 11 ignores it: its power scales with rsf_scale)
         self.forcing_amplitude_cmb = 1.0
         self.forcing_amplitude_icb = 0.0
 

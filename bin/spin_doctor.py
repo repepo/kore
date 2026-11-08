@@ -457,6 +457,11 @@ def main(ncpus):
     print(table_line)
 
 
+    # FIX (2026-11-08): the forced runs whose walls drive the flow along themselves, the libration (forcing 7, m = 0) and the
+    # steady rotation of the walls (12). There Dkin = Wv - Dvisc is a small difference of two large terms, the power of the
+    # walls' viscous stress and the dissipation, so residσ and resid𝐄 are relative to Dvisc too (as conductive_IC 4bfb389)
+    walls_drive = par.forcing == 12 or (par.forcing == 7 and par.m == 0)
+
     # Begin processing all solutions
     for i in range(success):
 
@@ -641,11 +646,18 @@ def main(ncpus):
         # the fluid; as conductive_IC's resid𝐛)
         Wp = Wp_icb[i] + Wp_cmb[i]
         if par.hydro:   # NEW (2026-11-06): nan without the flow
-            resid1[i] = ( abs( 2*sigma*KE[i] - Dkin[i] - Wthm[i] - Wdr[i] - Wlor[i] - Wp )
-                          / max( abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wthm[i]), abs(Wdr[i]), abs(Wlor[i]), abs(Wp) ) )
-            resid2[i] = ( abs( 2*w*KE[i] + Wcor_im[i] - Dkin_im[i] - Wthm_im[i] - Wdr_im[i] - Wlor_im[i] - Wp_im[i] )
-                          / max( abs(2*w*KE[i]), abs(Wcor_im[i]), abs(Dkin_im[i]), abs(Wthm_im[i]), abs(Wdr_im[i]), abs(Wlor_im[i]),
-                                 abs(Wp_im[i]) ) )
+            # FIX (2026-11-08): relative to the viscous dissipation Dvisc too where the walls drive the flow (walls_drive):
+            # without a field, buoyancy or a differential rotation every other term is small, and residσ was the round-off of
+            # Dkin relative to itself, about 1
+            scale1 = max( abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wthm[i]), abs(Wdr[i]), abs(Wlor[i]), abs(Wp),
+                          abs(Dvisc[i]) if walls_drive else 0.0 )
+            resid1[i] = abs( 2*sigma*KE[i] - Dkin[i] - Wthm[i] - Wdr[i] - Wlor[i] - Wp )/scale1
+            # FIX (2026-11-08): 0 when every term is 0, a steady flow of m = 0 (forcing 12, forcing 13 at frequency 0), whose
+            # fields are real: the imaginary part of the balance holds trivially (it was 0/0)
+            scale2 = max( abs(2*w*KE[i]), abs(Wcor_im[i]), abs(Dkin_im[i]), abs(Wthm_im[i]), abs(Wdr_im[i]), abs(Wlor_im[i]),
+                          abs(Wp_im[i]) )
+            resid2[i] = abs( 2*w*KE[i] + Wcor_im[i] - Dkin_im[i] - Wthm_im[i] - Wdr_im[i] - Wlor_im[i] - Wp_im[i] )/scale2 \
+                        if scale2 > 0 else 0.0
         else:
             resid1[i] = resid2[i] = np.nan
         if par.ViscosD>0 and not par.centrifugal and par.hydro:   # NEW (2026-11-06, phase 2): not with centrifugal = 1 (Dvisc, Wv spherical)
@@ -663,7 +675,10 @@ def main(ncpus):
             scale = max([ abs(lam)*Labs, par.Gaspard*Labs if par.m == 1 else 0.0 ] + [ abs(t) for t in on_fluid ])
             residL[i] = abs( lam*angmom[i] - sum(on_fluid) )/scale if scale > 0 else 0.0
         if par.magnetic:
-            residb[i] = abs( 2*sigma*ME[i] - Indu[i] - Mdfs[i] ) / max( abs(2*sigma*ME[i]), abs(Indu[i]), abs(Mdfs[i]) )
+            # FIX (2026-11-08): 0 when every term is 0, a field that the flow leaves unchanged (it was 0/0): the Malkus field
+            # B0 ∝ s φ̂ under an axisymmetric flow (forcing 12), which neither shears it nor carries B0/s, uniform, around
+            scaleb = max( abs(2*sigma*ME[i]), abs(Indu[i]), abs(Mdfs[i]) )
+            residb[i] = abs( 2*sigma*ME[i] - Indu[i] - Mdfs[i] )/scaleb if scaleb > 0 else 0.0
             # residE (resid𝐄, as conductive_IC): 2σ(KE + Hendrik (ME + MEic + MEext)) = Dkin + Wthm + Wlor + Hendrik Indu
             # - Hendrik (Ohm_f + Ohm_ic): the Lorentz work and the induction cancel except for the work of the background
             # currents, and the Ohmic losses replace ∫ 𝐛⋅∇²𝐛. It tests the wall and ICB conditions, which resid𝐛 cannot see.
@@ -711,9 +726,11 @@ def main(ncpus):
                 # NEW (2026-11-06): the work of the pressure where a wall moves radially (forced problems, bco or bci = 2), as
                 # in residσ (upp.walls_move: only there, so that the other runs keep their numbers)
                 Wpe = Wp if upp.walls_move() else 0.0
+                # FIX (2026-11-08): relative to the viscous dissipation Dvisc too where the walls drive the flow (walls_drive), as
+                # residσ: where the field takes little of the walls' power every other term is small (b = 0 for the Malkus field)
                 residE[i] = ( abs( 2*sigma*Etot - Dkin[i] - Wthm[i] - Wex - Wsol - Wpe + Ohm )
                               / max( abs(2*sigma*Etot), abs(Dkin[i]), abs(Wthm[i]), abs(Wex), Ohm, abs(Wdr[i]), abs(Wsol),
-                                     abs(Wpe) ) )
+                                     abs(Wpe), abs(Dvisc[i]) if walls_drive else 0.0 ) )
 
         if do_drag:   # NEW (2026-11-06): the power the drag dissipates (per unit kappa_cmb without one) and its damping rate
             Dtopo[i] = topo.dissipation(u_sol2, rot[0, i] if ut.rotdyn else 0)
@@ -724,9 +741,9 @@ def main(ncpus):
                 E += par.MoIZ_M*abs(rot[0, i])**2 + par.MoIZ_IC*abs(rot[1, i])**2 + rd.coupling()*abs(rot[2, i])**2
             dsig[i] = -Dtopo[i]/(2*E) if E > 0 else np.nan
 
-        if par.thermal:
-            resid3[i] = ( abs( 2*sigma*TE[i] - Dthm[i] - Wadv_thm[i] - Wdr_thm[i] )
-                          / max( abs(2*sigma*TE[i]), abs(Dthm[i]), abs(Wadv_thm[i]), abs(Wdr_thm[i]) ) )
+        if par.thermal:   # FIX (2026-11-08): 0 when every term is 0 (an entropy of 0, as resid𝐛; it was 0/0)
+            scale3 = max( abs(2*sigma*TE[i]), abs(Dthm[i]), abs(Wadv_thm[i]), abs(Wdr_thm[i]) )
+            resid3[i] = abs( 2*sigma*TE[i] - Dthm[i] - Wadv_thm[i] - Wdr_thm[i] )/scale3 if scale3 > 0 else 0.0
 
         # ------------------------------------------------------------------------------------------------------------------
         print(table_row(table_cols, table_w, i))

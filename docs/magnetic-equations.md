@@ -599,6 +599,15 @@ $$
 - **Kinematic induction** (`just_induction.py`) in a forced run takes $A$ as it is for its default
   $\lambda = i\,w$. Another $\lambda$ takes $A - (\lambda - i\,w)B$, so it needs `B.npz`, which forcing 11 alone
   writes: in another forced run it stops.
+- **Walls that turn about the axis** (forcing 7 with $m$ = 0, forcing 12). At a no-slip wall the fluid turns with the
+  wall, and so does a conducting solid behind it. A rotation $\mathbf v = \Omega_w\hat{\mathbf z}\times\mathbf r$
+  leaves the axisymmetric $\mathbf B_0$ as it is, $\nabla\times(\mathbf v\times\mathbf B_0) = 0$, so the solid's
+  equations hold no motion; and at the wall the tangential part of $\mathbf u\times\mathbf B_0$, $u_\phi B_{0r}$, is
+  the same on both sides, so the matching rows hold none either: they are those of walls at rest. The same holds with
+  any permeability, since $B_{0r}$ is continuous and the turning surface moves into itself. Forcing 12 sets
+  $T_1 = \Omega_w r_w/2$ at each no-slip wall ($\Omega_w$ = `forcing_amplitude_cmb`, `forcing_amplitude_icb`) at
+  $w = 0$; a rigid rotation of the fluid and the solids together then induces no field
+  ([Spherical Couette flow](couette-flow.md)).
 - **Libration with a stress-free inner wall.** The libration of the walls (forcing 7, $m$ = 0) takes `bci = 0` too, as in
   `conductive_IC`. The inner wall's row is then the stress-free one, which holds no libration of the inner core: the
   libration does not reach the fluid through the wall's stress. Across a poloidal field it would reach it through a
@@ -1686,6 +1695,28 @@ where the fluid crosses the wall (`bci = 2`). So did the wound field's $\Delta\O
 slope of $2\cdot10^{-4}$ of itself at N 800 for the `'conical'` rotation, constant in $r$), and the wound field itself,
 cut at $10^{-14}$ (its second derivative, the highest that the operators take, $2\cdot10^{-7}$ of its largest value off
 at the walls at N 800): both are now cut at $10^{-13}$.
+
+### The steady rotation of the walls (2026-11-08)
+
+Forcing 12 was ported from `conductive_IC` (2d84351, its commit 0780790) and checked against that branch, against exact
+flows, and with the budgets (`tests/couette/couette_check.py`; `'Boussinesq'`, Ek, Em and Le² $10^{-3}$, N 48, `lmax` 31
+unless stated).
+
+**Against `conductive_IC`.** Eight runs with `'axial'` or `'Luo_S2'`: insulating, conducting (Chebyshev and Bessel) and
+thin-layer inner cores, thin-layer and resolved mantles, a conducting inner core of permeability 1.5 and conductivity
+0.3, and a thin outer layer of permeability 2 with a thickness, with the inner core or both walls turning. The kinetic
+energy and the magnetic energies in the fluid and in the inner core agree to the 10 digits written, the fields to
+$7\cdot10^{-14}$, and residσ, resid𝐋 and resid𝐄 close to $6\cdot10^{-14}$ ($2\cdot10^{-10}$ with `'Luo_S2'`).
+
+**Rigid rotation.** With both walls at one rate, in a full sphere, and with an inner core turning under a stress-free outer
+wall at rest, the fluid turns rigidly and the field is not changed ($\mathbf b$ is $10^{-13}$ of the flow in the full
+sphere, $3\cdot10^{-15}$ in the shells), with a conducting inner core, thin layers, a resolved mantle, and solids whose
+permeability differs from the fluid's.
+
+**Budgets.** resid𝐄 closes to $2\cdot10^{-14}$ with `'Wu 2005'` (`r_out` 0.9, N 96, buoyancy, the Chebyshev core and a
+thin outer layer), with a differential rotation, with the toroidal `'wall'` and `'Malkus'`, and with a fluid slipping
+along a thin layer or a resolved mantle at rest. An axisymmetric flow neither shears `'Malkus'`
+($\mathbf B_0 \propto s\,\hat{\boldsymbol\phi}$) nor carries $B_0/s$, uniform, around: its field stays exactly 0.
 
 ## References
 

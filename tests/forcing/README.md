@@ -21,7 +21,8 @@ of `bc_u_spherical`: per degree, the rows of the outer wall come first, then tho
 one small forced run per case and reads the wall values back from the solution: the imposed P or T, and the
 tangential condition, which stays homogeneous (zero tangential velocity at a no-slip wall, zero tangential stress at a
 stress-free one, written for any density). Cases: forcing 6 at a no-slip and at a stress-free inner wall, forcing 7
-with m = 0 and m = 2, forcing 9 in an incompressible shell, with the density of 'Wu 2005' and in a full sphere, and
-forcing 10. Expected: every value to $10^{-10}$ of the amplitude (in practice $10^{-12}$ or better). Before
+with m = 0 and m = 2, forcing 9 in an incompressible shell, with the density of 'Wu 2005' and in a full sphere, forcing
+10, and forcing 12 with both walls turning, with the inner one under a stress-free outer wall at rest, and in a full
+sphere. Expected: every value to $10^{-10}$ of the amplitude (in practice $10^{-12}$ or better). Before
 2026-11-06 forcings 6, 7 (m = 2) and 9 put the inner wall's value on a row of the outer wall, which this check shows
 as errors of order 1.

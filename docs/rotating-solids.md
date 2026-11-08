@@ -57,8 +57,11 @@ The equations: [Rotating solids equations](rotating-solids-equations.md).
 The angular momentum of the fluid changes only through the torques on it, which `spin_doctor` computes from the fields,
 apart from the matrices. It prints resid𝐋, the relative residual of that balance, for eigenvalue problems with the flow
 and either `m = 0`, `symm = 1` (the axial angular momentum) or `m = 1`, `symm = -1` (the equatorial one, which the
-Coriolis force turns; the spin-over mode is one of these), with or without the rotating solids. It is not computed with
-`centrifugal = 1`, nor for `m = 1` with a differential rotation. Like residσ, it should be small for a resolved mode.
+Coriolis force turns; the spin-over mode is one of these), with or without the rotating solids. It also prints it for
+the forced runs with `m = 0`, `symm = 1` whose walls move only along themselves and that put no force in the fluid: the
+libration (forcing 7), the steady rotation of the walls (forcing 12, [Spherical Couette flow](couette-flow.md)) and the
+thermal forcing (forcing 13). It is not computed with `centrifugal = 1`, nor for `m = 1` with a differential rotation.
+Like residσ, it should be small for a resolved mode.
 `flow.dat` has the angular momentum, the torques and resid𝐋 ([Output files](output.md#flowdat)).
 
 ## What is supported

@@ -24,7 +24,9 @@ are below 1e-5 and its ℓ-convergence is below 1e-4. In a full sphere, also che
 smooth at the centre ([Regularity at the centre](numerical-method.md#regularity-at-the-centre)). The same residuals judge
 a forced run, where σ = 0. When the walls
 move radially (forcing 14), residσ also tests the pressure at the walls, which needs more radial resolution than the rest
-of the budget ([Tidal forcing](tidal-forcing.md#interpreting-the-response)).
+of the budget ([Tidal forcing](tidal-forcing.md#interpreting-the-response)). A forced flow that is a rigid rotation, as
+forcing 12 gives with both walls at one rate, has no budget to judge: every term is zero, and its residuals compare
+round-off with round-off ([Spherical Couette flow](couette-flow.md#reading-the-output)).
 
 A failure is one of two kinds:
 

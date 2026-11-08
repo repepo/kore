@@ -111,6 +111,12 @@ $$
 
 A differential rotation would add a torque here, so this case needs `diff_rot = 0`.
 
+**Forced runs.** In a forced run $\lambda = i\,w$, $w$ the forcing frequency, and the axial balance holds as above where
+the forcing moves the walls only along themselves and puts no force in the fluid: the libration (forcing 7 with $m$ =
+0), the steady rotation of the walls (forcing 12, where $\lambda = 0$ and the torques on the two solids cancel) and the
+thermal forcing (forcing 13). A flow through a wall would add the Coriolis torque of the mass it carries across, and a
+body force (forcing 11) its own torque, so resid𝐋 is not computed for the other forcings.
+
 resid𝐋 is the residual of the balance relative to the largest of $\lvert\lambda\rvert L_{\rm abs}$, the torques, and
 Gaspard $L_{\rm abs}$ for $m = 1$, with $L_{\rm abs}$ the same integral of $\lvert T\rvert$: a mode on which no torque
 acts (stress-free walls) is then checked to carry no angular momentum.
@@ -158,3 +164,8 @@ solids (`vtrq` and `mtrq` 1).
 Also checked once: the equatorial balance with the opposite sign of the Coriolis torque fails by O(1); the axial resid𝐋
 is $10^{-14}$ with a differential rotation (`'conical'`, `'Wu 2005'`); the solids work with buoyancy (`thermal = 1`,
 resid𝐋 $10^{-13}$, total angular momentum $10^{-10}$).
+
+**Forced runs** (2026-11-08, `tests/couette`): resid𝐋 closes to $2\cdot10^{-13}$ or better for the steady rotation of
+the walls without and with a field (any of the walls and inner cores, a variable density, buoyancy, a differential
+rotation, a fluid slipping along a wall at rest, with a drag), $10^{-11}$ with the field `'Luo_S2'` over the Bessel
+core, and to $3\cdot10^{-13}$ for the libration and the thermal forcing.

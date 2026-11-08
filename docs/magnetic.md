@@ -379,11 +379,12 @@ resolved mantle), one column per column of the flow.
 
 ## Forced runs
 
-A forced run gives the response of the flow and the field to a periodic forcing at one frequency, such as a tide or a
-libration of the walls (`forcing` other than 0; [Tidal forcing](tidal-forcing.md), [Thermal forcing](thermal-forcing.md),
-[Convective forcing](forcing.md)). With a field every forcing runs as without one: the field is solved with the flow at
-the forcing frequency, with any of the walls and inner cores above, and spin_doctor checks the budgets of the solution.
-The solution is written as solved, with the amplitude that the forcing sets.
+A forced run gives the response of the flow and the field to a forcing at one frequency, such as a tide, a libration of
+the walls or their steady rotation (`forcing` other than 0; [Tidal forcing](tidal-forcing.md),
+[Thermal forcing](thermal-forcing.md), [Spherical Couette flow](couette-flow.md), [Convective forcing](forcing.md)).
+With a field every forcing runs as without one: the field is solved with the flow at the forcing frequency, with any of
+the walls and inner cores above, and spin_doctor checks the budgets of the solution. The solution is written as solved,
+with the amplitude that the forcing sets.
 
 - **A conducting inner core at one frequency.** At a single frequency the field inside a uniform conducting inner core
   is a spherical Bessel function of the radius. `innercore = 'conducting, Bessel'` uses it, so the core adds conditions
@@ -393,6 +394,10 @@ The solution is written as solved, with the amplitude that the forcing sets.
 - **Budgets.** resid𝐄 includes the work of the pressure, with its magnetic part, where the forcing moves a boundary,
   and the work of a conducting solid that the boundary moves on the field
   ([Energy budgets](magnetic-equations.md#energy-budgets)).
+- **Walls that turn.** Where the forcing turns a no-slip wall about the axis, in the libration (forcing 7, `m` 0) and the
+  steady rotation of the walls (forcing 12), a conducting solid behind the wall turns with it. A rotation about the axis
+  leaves the axisymmetric B0 as it is, so the solid induces no field itself: the field comes from the shear and the
+  circulation of the fluid, and diffuses into the solid.
 - **Kinematic induction** works in the directory of a forced run too: `just_induction.py` without `lambda` takes the
   forced matrix as it is, at `forcing_frequency`. Another `lambda` needs `B.npz`, which forcing 11 alone writes.
 

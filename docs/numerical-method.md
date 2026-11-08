@@ -160,7 +160,10 @@ quadrature in $\cos\theta$, exact for these polynomials. Each residual is relati
 | resid𝐋 | $\lambda L$ = the torques on the fluid ([Rotating solids equations](rotating-solids-equations.md#the-angular-momentum-balance-residl)) | `lam*angmom - (-vtorq - vtorq_ic - mtorq - mtorq_ic [+ i Gaspard angmom])` |
 
 residσ and resid$s$ judge whether a solution is resolved ([Solver](solver.md) gives the thresholds), also for forced
-runs, where $\sigma = 0$. residD compares two independent computations of the viscous terms: $W_\nu$ from the viscous
+runs, where $\sigma = 0$. Where the walls drive the flow along themselves (the libration, forcing 7 with $m$ = 0, and
+the steady rotation of the walls, forcing 12), $W_\nu = W_\nu^{\rm wall} - D_\nu$ is a small difference of two large
+terms, so residσ, and resid𝐄 with a field, are relative to $D_\nu$ too. A residual whose terms all vanish, such as
+residω of a steady flow with $m$ = 0, is 0. residD compares two independent computations of the viscous terms: $W_\nu$ from the viscous
 force of each degree (`utils4pp.visforce`), and $D_\nu$ from the strain rate on the grid
 (`utils4pp.viscous_dissipation`). It is $10^{-15}$ to $10^{-12}$.
 

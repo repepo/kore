@@ -283,6 +283,32 @@ def main():
                 print(e if isinstance(e, SystemExit) else repr(e), flush=True)
                 comm.Abort(1)
 
+    elif par.forcing == 12: # ----------------------------------------- steady rotation of the walls (m = 0), spherical Couette flow
+
+        # NEW (2026-11-08, from conductive_IC 0780790): the walls turn steadily about z relative to the frame, the outer one at
+        # forcing_amplitude_cmb and the inner one at forcing_amplitude_icb (units of 1/tau), so u_phi = dOmega r sin(theta)
+        # at a no-slip wall: T_1 = dOmega r/2 there (the field plus its complex conjugate, u_phi = 2 T_1 sin(theta)), the
+        # right-hand side of the no-slip rows T = 0 of l = 1 (bc_u_spherical, section v: the outer wall, then the inner one).
+        # The problem is A x = b (forcing_frequency 0). A wall that turns is no-slip; a wall at rest may be stress-free, and
+        # the fluid then slips along it (background.check_forcing)
+        if rank == 0:
+
+            walls = [ ('outer', par.bco, par.forcing_amplitude_cmb, ut.rcmb) ] + \
+                    ([ ('inner', par.bci, par.forcing_amplitude_icb, par.ricb) ] if par.ricb > 0 else [])
+            head = ' Steady rotation of the walls (forcing 12): ' + ', '.join(
+                'the %s wall %s' % (wall, 'at %g' % rate if rate else 'at rest') for wall, bc, rate, r in walls)
+            print('-'*(len(head) + 1))
+            print(head)
+            print('-'*(len(head) + 1))
+
+            l = 1
+            pos = ut.n + ut.N1*np.where(allbot==l)[0][0]
+            row  = [ pos + k for k, (wall, bc, rate, r) in enumerate(walls) if bc == 1 ]
+            bdat = [ rate*r/2 for wall, bc, rate, r in walls if bc == 1 ]
+
+            B = ss.csr_matrix( ( np.array(bdat, dtype=complex), (row, np.zeros(len(row))) ), shape=(ut.sizmat,1) )
+            np.savez('B_forced.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
+
     elif par.forcing == 13: # ------------------------------------------ latitudinal entropy at the inner wall (m = 0)
 
         # s = forcing_amplitude_icb P2(cos θ) at r = ricb (bci_thermal = 0), or ds/dr = forcing_amplitude_icb P2(cos θ)

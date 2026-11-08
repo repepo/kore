@@ -100,7 +100,8 @@ flow that the drag of the topography used (columns 135–141, [Output files](out
 
 Supported: any `structure` (the density and the viscosity at the wall enter); a full sphere; any `m`; with or without
 buoyancy; with or without a field, with any magnetic walls; the rotating solids; a constant drag with a differential
-rotation; eigenvalue problems, and the forced runs whose outer wall does not move (forcings 6, 11 and 13).
+rotation; eigenvalue problems, and the forced runs whose outer wall does not move (forcings 6, 11 and 13, and 12 with
+the outer wall at rest).
 
 Not supported (the run stops at startup):
 
