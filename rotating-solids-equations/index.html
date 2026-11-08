@@ -623,6 +623,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../couette-flow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spherical Couette flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../magnetic/" class="md-nav__link">
         
   
@@ -1417,6 +1445,11 @@ viscous ones with <span class="arithmatex">\(16\pi/3\)</span> for <span class="a
 \lambda L = -\Gamma_M - \Gamma_{IC} + i\,\mathrm{Gaspard}\,L .
 \]</div>
 <p>A differential rotation would add a torque here, so this case needs <code>diff_rot = 0</code>.</p>
+<p><strong>Forced runs.</strong> In a forced run <span class="arithmatex">\(\lambda = i\,w\)</span>, <span class="arithmatex">\(w\)</span> the forcing frequency, and the axial balance holds as above where
+the forcing moves the walls only along themselves and puts no force in the fluid: the libration (forcing 7 with <span class="arithmatex">\(m\)</span> =
+0), the steady rotation of the walls (forcing 12, where <span class="arithmatex">\(\lambda = 0\)</span> and the torques on the two solids cancel) and the
+thermal forcing (forcing 13). A flow through a wall would add the Coriolis torque of the mass it carries across, and a
+body force (forcing 11) its own torque, so resid𝐋 is not computed for the other forcings.</p>
 <p>resid𝐋 is the residual of the balance relative to the largest of <span class="arithmatex">\(\lvert\lambda\rvert L_{\rm abs}\)</span>, the torques, and
 Gaspard <span class="arithmatex">\(L_{\rm abs}\)</span> for <span class="arithmatex">\(m = 1\)</span>, with <span class="arithmatex">\(L_{\rm abs}\)</span> the same integral of <span class="arithmatex">\(\lvert T\rvert\)</span>: a mode on which no torque
 acts (stress-free walls) is then checked to carry no angular momentum.</p>
@@ -1458,6 +1491,10 @@ solids (<code>vtrq</code> and <code>mtrq</code> 1).</p>
 <p>Also checked once: the equatorial balance with the opposite sign of the Coriolis torque fails by O(1); the axial resid𝐋
 is <span class="arithmatex">\(10^{-14}\)</span> with a differential rotation (<code>'conical'</code>, <code>'Wu 2005'</code>); the solids work with buoyancy (<code>thermal = 1</code>,
 resid𝐋 <span class="arithmatex">\(10^{-13}\)</span>, total angular momentum <span class="arithmatex">\(10^{-10}\)</span>).</p>
+<p><strong>Forced runs</strong> (2026-11-08, <code>tests/couette</code>): resid𝐋 closes to <span class="arithmatex">\(2\cdot10^{-13}\)</span> or better for the steady rotation of
+the walls without and with a field (any of the walls and inner cores, a variable density, buoyancy, a differential
+rotation, a fluid slipping along a wall at rest, with a drag), <span class="arithmatex">\(10^{-11}\)</span> with the field <code>'Luo_S2'</code> over the Bessel
+core, and to <span class="arithmatex">\(3\cdot10^{-13}\)</span> for the libration and the thermal forcing.</p>
 
 
 

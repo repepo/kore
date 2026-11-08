@@ -623,6 +623,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../couette-flow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spherical Couette flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../magnetic/" class="md-nav__link">
         
   
@@ -2122,7 +2150,7 @@ of a spheroid, computed without the map), and the energy budgets. The scripts ar
 <tr>
 <td><code>'clairaut'</code> of a homogeneous body against <code>'uniform'</code> with <span class="arithmatex">\(f = 5q/4\)</span></td>
 <td><code>eig_check.py</code></td>
-<td>2e-13</td>
+<td>exact: the same matrices</td>
 </tr>
 <tr>
 <td>the effective gravity with <span class="arithmatex">\(g = r\)</span>: <span class="arithmatex">\(q = 0.1\)</span> against <code>Beyonce</code> <span class="arithmatex">\((1 - 2q/3)\)</span></td>
@@ -2137,7 +2165,7 @@ of a spheroid, computed without the map), and the energy budgets. The scripts ar
 <tr>
 <td><code>'clairaut'</code>: a homogeneous body (5/4), the polytrope of index 1 (<span class="arithmatex">\(15/(2\pi^2)\)</span>), <code>'Wu 2005'</code> against Clairaut's second-order equation integrated from <span class="arithmatex">\(\rho\)</span>; <code>'model S hydrostatic'</code> gives <span class="arithmatex">\(f/q\)</span> = 0.519 at its wall</td>
 <td><code>clairaut_check.py</code></td>
-<td>3e-12; below 1e-9</td>
+<td>exact (homogeneous), 3e-11 (polytrope), 5e-13 (<code>'Wu 2005'</code>)</td>
 </tr>
 <tr>
 <td>the budgets residσ, residω, resid𝑠 of <code>spin_doctor</code> (<code>solve.py</code>, 2 ranks; <code>'Wu 2005'</code> with an inner core, with and without a differential rotation, and a <code>'Boussinesq'</code> full sphere)</td>

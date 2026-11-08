@@ -623,6 +623,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../couette-flow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spherical Couette flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../magnetic/" class="md-nav__link">
         
   
@@ -1892,7 +1920,9 @@ degree by degree (<code>B0 = 'general'</code>) or built from a differential rota
 <code>bin/mag_algebra.py</code> builds the couplings at run time instead, for any degrees, with the exact recurrence algebra of part B:
 nothing is fitted, and the result is exact up to round-off at any <span class="arithmatex">\(n\)</span> and <span class="arithmatex">\(l\)</span>.</p>
 <p><strong>Method.</strong> The background is a sum over degrees of poloidal and toroidal parts. With <span class="arithmatex">\(\partial_\theta P_n = -\sin\theta\,P_n'(x)\)</span>,
-each part is a few vectors of three kinds, a polynomial <span class="arithmatex">\(c(x)\)</span> times <span class="arithmatex">\(\hat{\mathbf{r}}\)</span>, <span class="arithmatex">\(\sin\theta\,\hat{\boldsymbol\theta}\)</span> or <span class="arithmatex">\(\sin\theta\,\hat{\boldsymbol\phi}\)</span>:</p>
+each part is a few vectors of three kinds, a polynomial <span class="arithmatex">\(c(x)\)</span> times <span class="arithmatex">\(\hat{\mathbf{r}}\)</span>, <span class="arithmatex">\(\sin\theta\,\hat{\boldsymbol\theta}\)</span> or <span class="arithmatex">\(\sin\theta\,\hat{\boldsymbol\phi}\)</span>
+(<span class="arithmatex">\(c\)</span> is kept as a Legendre series, and <span class="arithmatex">\(c(X)\)</span>, <span class="arithmatex">\(c'(X)\)</span> are sums of the <span class="arithmatex">\(P_k(X)\)</span>, <span class="arithmatex">\(P_k'(X)\)</span> of part B, step 3: in powers of <span class="arithmatex">\(x\)</span>
+the coefficients of <span class="arithmatex">\(P_n\)</span> grow as about <span class="arithmatex">\((1 + \sqrt2)^n\)</span>, and the round-off with them):</p>
 <table>
 <thead>
 <tr>

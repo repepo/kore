@@ -623,6 +623,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../couette-flow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spherical Couette flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../magnetic/" class="md-nav__link">
         
   
@@ -1430,6 +1458,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#the-steady-rotation-of-the-walls-2026-11-08" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The steady rotation of the walls (2026-11-08)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2032,6 +2071,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#the-steady-rotation-of-the-walls-2026-11-08" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The steady rotation of the walls (2026-11-08)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2425,7 +2475,10 @@ rotation uses, for</p>
 <span class="arithmatex">\(\sin\theta\,\hat{\boldsymbol\theta}\)</span> or <span class="arithmatex">\(\sin\theta\,\hat{\boldsymbol\phi}\)</span>; the products with the perturbation are
 sparse matrices on the degrees, times radial monomials; the rows take one radial derivative (product rule); each final
 monomial becomes a label with the profile codes <code>hp</code> + degree (<span class="arithmatex">\(c_\mathrm{norm}h_n\)</span>) and <code>kt</code> + degree
-(<span class="arithmatex">\(c_\mathrm{tor}k_n\)</span>). <a href="../derivations/">Derivation tools</a>, part A.6, gives the method.</p>
+(<span class="arithmatex">\(c_\mathrm{tor}k_n\)</span>). <a href="../derivations/">Derivation tools</a>, part A.6, gives the method. The polynomials are kept as
+Legendre series and applied to the harmonics through the Legendre recurrence, which keeps the couplings exact to round-off
+at any degree (written in powers of <span class="arithmatex">\(x\)</span>, <span class="arithmatex">\(P_n\)</span> has large coefficients of alternating signs, and their round-off grows by a
+factor of about 2.4 per degree).</p>
 <p><code>mag_couplings = 'algebra'</code> uses it for every type; <code>'closed'</code> (default) keeps the closed forms. <code>'general'</code> (poloidal
 or toroidal), <code>'ferraro'</code> and <code>B0_wound = 1</code> have no closed forms and switch to the algebra by themselves. For the types
 that have closed forms both give the same eigenvalues to round-off.</p>
@@ -2673,6 +2726,15 @@ forcing (<code>forcing_frequency</code>), with every perturbation going as <span
 <li><strong>Kinematic induction</strong> (<code>just_induction.py</code>) in a forced run takes <span class="arithmatex">\(A\)</span> as it is for its default
   <span class="arithmatex">\(\lambda = i\,w\)</span>. Another <span class="arithmatex">\(\lambda\)</span> takes <span class="arithmatex">\(A - (\lambda - i\,w)B\)</span>, so it needs <code>B.npz</code>, which forcing 11 alone
   writes: in another forced run it stops.</li>
+<li><strong>Walls that turn about the axis</strong> (forcing 7 with <span class="arithmatex">\(m\)</span> = 0, forcing 12). At a no-slip wall the fluid turns with the
+  wall, and so does a conducting solid behind it. A rotation <span class="arithmatex">\(\mathbf v = \Omega_w\hat{\mathbf z}\times\mathbf r\)</span>
+  leaves the axisymmetric <span class="arithmatex">\(\mathbf B_0\)</span> as it is, <span class="arithmatex">\(\nabla\times(\mathbf v\times\mathbf B_0) = 0\)</span>, so the solid's
+  equations hold no motion; and at the wall the tangential part of <span class="arithmatex">\(\mathbf u\times\mathbf B_0\)</span>, <span class="arithmatex">\(u_\phi B_{0r}\)</span>, is
+  the same on both sides, so the matching rows hold none either: they are those of walls at rest. The same holds with
+  any permeability, since <span class="arithmatex">\(B_{0r}\)</span> is continuous and the turning surface moves into itself. Forcing 12 sets
+  <span class="arithmatex">\(T_1 = \Omega_w r_w/2\)</span> at each no-slip wall (<span class="arithmatex">\(\Omega_w\)</span> = <code>forcing_amplitude_cmb</code>, <code>forcing_amplitude_icb</code>) at
+  <span class="arithmatex">\(w = 0\)</span>; a rigid rotation of the fluid and the solids together then induces no field
+  (<a href="../couette-flow/">Spherical Couette flow</a>).</li>
 <li><strong>Libration with a stress-free inner wall.</strong> The libration of the walls (forcing 7, <span class="arithmatex">\(m\)</span> = 0) takes <code>bci = 0</code> too, as in
   <code>conductive_IC</code>. The inner wall's row is then the stress-free one, which holds no libration of the inner core: the
   libration does not reach the fluid through the wall's stress. Across a poloidal field it would reach it through a
@@ -3632,7 +3694,8 @@ the new features nothing changed.</p>
   <span class="arithmatex">\(\le 6\cdot10^{-13}\)</span> for 'axial' (m 0, 1), 'FDM' (degree 2), 'Luo_S2' (shell, full sphere, 'Wu 2005'), 'FDM' with 'Wu
   2005', 'Malkus' (and 'Wu 2005'), 'wall' of degree 2, 'axial' + 'wall', a conducting inner core, 'confined', and with a
   differential rotation. <strong>Against sympy</strong> (<code>algebra_check.py</code>): every block for poloidal and toroidal fields of degree
-  1–4 (3 and 4 have no closed forms), several <span class="arithmatex">\(m\)</span>, <span class="arithmatex">\(l\)</span> up to 12.</li>
+  1–4 (3 and 4 have no closed forms), several <span class="arithmatex">\(m\)</span>, <span class="arithmatex">\(l\)</span> up to 12; and the angular factors <span class="arithmatex">\(P_n\)</span>, <span class="arithmatex">\(P_n'\)</span>, <span class="arithmatex">\(P_n''\)</span> of degrees
+  15 to 35 against Gauss–Legendre quadrature, within <span class="arithmatex">\(10^{-13}\)</span> of their largest entry.</li>
 <li><strong>'general'</strong>: <span class="arithmatex">\(h_1 = r/2\)</span> gives exactly the 'axial' eigenvalues (no-slip walls: at a slipping insulating outer wall
   <code>'general'</code> ends in a sheet, being taken as a field of currents in the fluid), <span class="arithmatex">\(k_1 = r\)</span> exactly the 'Malkus' ones;
   fields of degrees 1 + 3 (full sphere), 2 + 4 (shell), toroidal 1 + 3, and a poloidal 1 + 3 with a toroidal 2 and a
@@ -3999,6 +4062,23 @@ where the fluid crosses the wall (<code>bci = 2</code>). So did the wound field'
 slope of <span class="arithmatex">\(2\cdot10^{-4}\)</span> of itself at N 800 for the <code>'conical'</code> rotation, constant in <span class="arithmatex">\(r\)</span>), and the wound field itself,
 cut at <span class="arithmatex">\(10^{-14}\)</span> (its second derivative, the highest that the operators take, <span class="arithmatex">\(2\cdot10^{-7}\)</span> of its largest value off
 at the walls at N 800): both are now cut at <span class="arithmatex">\(10^{-13}\)</span>.</p>
+<h3 id="the-steady-rotation-of-the-walls-2026-11-08">The steady rotation of the walls (2026-11-08)</h3>
+<p>Forcing 12 was ported from <code>conductive_IC</code> (2d84351, its commit 0780790) and checked against that branch, against exact
+flows, and with the budgets (<code>tests/couette/couette_check.py</code>; <code>'Boussinesq'</code>, Ek, Em and Le² <span class="arithmatex">\(10^{-3}\)</span>, N 48, <code>lmax</code> 31
+unless stated).</p>
+<p><strong>Against <code>conductive_IC</code>.</strong> Eight runs with <code>'axial'</code> or <code>'Luo_S2'</code>: insulating, conducting (Chebyshev and Bessel) and
+thin-layer inner cores, thin-layer and resolved mantles, a conducting inner core of permeability 1.5 and conductivity
+0.3, and a thin outer layer of permeability 2 with a thickness, with the inner core or both walls turning. The kinetic
+energy and the magnetic energies in the fluid and in the inner core agree to the 10 digits written, the fields to
+<span class="arithmatex">\(7\cdot10^{-14}\)</span>, and residσ, resid𝐋 and resid𝐄 close to <span class="arithmatex">\(6\cdot10^{-14}\)</span> (<span class="arithmatex">\(2\cdot10^{-10}\)</span> with <code>'Luo_S2'</code>).</p>
+<p><strong>Rigid rotation.</strong> With both walls at one rate, in a full sphere, and with an inner core turning under a stress-free outer
+wall at rest, the fluid turns rigidly and the field is not changed (<span class="arithmatex">\(\mathbf b\)</span> is <span class="arithmatex">\(10^{-13}\)</span> of the flow in the full
+sphere, <span class="arithmatex">\(3\cdot10^{-15}\)</span> in the shells), with a conducting inner core, thin layers, a resolved mantle, and solids whose
+permeability differs from the fluid's.</p>
+<p><strong>Budgets.</strong> resid𝐄 closes to <span class="arithmatex">\(2\cdot10^{-14}\)</span> with <code>'Wu 2005'</code> (<code>r_out</code> 0.9, N 96, buoyancy, the Chebyshev core and a
+thin outer layer), with a differential rotation, with the toroidal <code>'wall'</code> and <code>'Malkus'</code>, and with a fluid slipping
+along a thin layer or a resolved mantle at rest. An axisymmetric flow neither shears <code>'Malkus'</code>
+(<span class="arithmatex">\(\mathbf B_0 \propto s\,\hat{\boldsymbol\phi}\)</span>) nor carries <span class="arithmatex">\(B_0/s\)</span>, uniform, around: its field stays exactly 0.</p>
 <h2 id="references">References</h2>
 <ul>
 <li>D'Silva, S. &amp; Choudhuri, A. R. 1993, A&amp;A 272, 621 (flux-tube fields at the base of the solar convection zone).</li>

@@ -628,6 +628,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../couette-flow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spherical Couette flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../magnetic/" class="md-nav__link">
         
   
@@ -1389,8 +1417,11 @@ nothing.</p>
 <p>The angular momentum of the fluid changes only through the torques on it, which <code>spin_doctor</code> computes from the fields,
 apart from the matrices. It prints resid𝐋, the relative residual of that balance, for eigenvalue problems with the flow
 and either <code>m = 0</code>, <code>symm = 1</code> (the axial angular momentum) or <code>m = 1</code>, <code>symm = -1</code> (the equatorial one, which the
-Coriolis force turns; the spin-over mode is one of these), with or without the rotating solids. It is not computed with
-<code>centrifugal = 1</code>, nor for <code>m = 1</code> with a differential rotation. Like residσ, it should be small for a resolved mode.
+Coriolis force turns; the spin-over mode is one of these), with or without the rotating solids. It also prints it for
+the forced runs with <code>m = 0</code>, <code>symm = 1</code> whose walls move only along themselves and that put no force in the fluid: the
+libration (forcing 7), the steady rotation of the walls (forcing 12, <a href="../couette-flow/">Spherical Couette flow</a>) and the
+thermal forcing (forcing 13). It is not computed with <code>centrifugal = 1</code>, nor for <code>m = 1</code> with a differential rotation.
+Like residσ, it should be small for a resolved mode.
 <code>flow.dat</code> has the angular momentum, the torques and resid𝐋 (<a href="../output/#flowdat">Output files</a>).</p>
 <h2 id="what-is-supported">What is supported</h2>
 <p>Supported: any <code>structure</code>; with or without buoyancy; with or without a field, with any poloidal <code>B0</code> and a toroidal

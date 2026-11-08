@@ -628,6 +628,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../couette-flow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spherical Couette flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../magnetic/" class="md-nav__link">
         
   
@@ -1330,7 +1358,9 @@ are below 1e-5 and its ℓ-convergence is below 1e-4. In a full sphere, also che
 smooth at the centre (<a href="../numerical-method/#regularity-at-the-centre">Regularity at the centre</a>). The same residuals judge
 a forced run, where σ = 0. When the walls
 move radially (forcing 14), residσ also tests the pressure at the walls, which needs more radial resolution than the rest
-of the budget (<a href="../tidal-forcing/#interpreting-the-response">Tidal forcing</a>).</p>
+of the budget (<a href="../tidal-forcing/#interpreting-the-response">Tidal forcing</a>). A forced flow that is a rigid rotation, as
+forcing 12 gives with both walls at one rate, has no budget to judge: every term is zero, and its residuals compare
+round-off with round-off (<a href="../couette-flow/#reading-the-output">Spherical Couette flow</a>).</p>
 <p>A failure is one of two kinds:</p>
 <ul>
 <li><strong>Resolution.</strong> It fails every time, and the eigenvalue moves when N or lmax is raised. Raise N for the residuals and
