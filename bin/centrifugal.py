@@ -537,8 +537,10 @@ def entropy_block(l, offdiag, M):
 # derivative digit j of the label applying to B_n only. An amplitude's derivative is the next one over r (ε' = η/r, ...).
 AMPS = {'E': ('ce0', 'N'), 'N': ('ce1', 'C'), 'C': ('ce2', 'Q'), 'Q': ('ce3', 'K'),   # amplitude: (its code, that of r a')
         'K': ('ce4', None)}   # NEW (2026-11-05, phase 2): ce4 = r (ce3)', for the dissipative terms (section 6)
-_xp = np.polynomial.Polynomial([0., 1.])     # x = cos θ
-_P2p = (3*_xp*_xp - 1)/2
+# x = cos θ and P2 as Legendre series (FIX 2026-11-08, phase 6e: they meet the background's P_n, now Legendre series too,
+# whose values on the matrix X mag_algebra._poly_mats sums over the P_k(X) of angular's recurrence)
+_xp = np.polynomial.Legendre([0., 1.])
+_P2p = np.polynomial.Legendre([0., 0., 1.])
 
 def product_code(a, B, n):
     '''the profile code of the product of the amplitude a (AMPS) and the background profile B ('h' or 'k') of degree n'''
@@ -1122,7 +1124,7 @@ def _rcr(e):
     return _map(e, lambda F: angular.Field(0*F.q, F.t, -1*F.s))
 
 def _poly(A, e, c):
-    '''c(x) v, c a numpy Polynomial in x = cos θ'''
+    '''c(x) v, c a numpy Legendre series in x = cos θ'''
     import mag_algebra as ma
     g, dg = ma._poly_mats(A, c)
     return _map(e, lambda F: A.mult(F, g, dg))
@@ -1571,8 +1573,9 @@ def rotation_profile_functions():
     return out
 
 def _legendre(n):
-    '''P_n as a numpy Polynomial in x'''
-    return np.polynomial.Polynomial(np.polynomial.legendre.leg2poly([0]*n + [1]))
+    '''P_n as a numpy Legendre series in x (FIX 2026-11-08, phase 6e: not a Polynomial from leg2poly, whose coefficients
+    grow as about (1 + √2)^n: see mag_algebra._poly_mats)'''
+    return np.polynomial.Legendre.basis(n)
 
 def rotation_force(A, X, n, lw):
     '''δW of the flow of the unknown X ('P' or 'T') for ΔΩ = c(r) P_n(x), per unit G (c in the profile slot), up to a

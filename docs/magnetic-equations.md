@@ -323,7 +323,10 @@ The background vectors are polynomials in $x = \cos\theta$ times $\hat{\mathbf r
 $\sin\theta\,\hat{\boldsymbol\theta}$ or $\sin\theta\,\hat{\boldsymbol\phi}$; the products with the perturbation are
 sparse matrices on the degrees, times radial monomials; the rows take one radial derivative (product rule); each final
 monomial becomes a label with the profile codes `hp` + degree ($c_\mathrm{norm}h_n$) and `kt` + degree
-($c_\mathrm{tor}k_n$). [Derivation tools](derivations.md), part A.6, gives the method.
+($c_\mathrm{tor}k_n$). [Derivation tools](derivations.md), part A.6, gives the method. The polynomials are kept as
+Legendre series and applied to the harmonics through the Legendre recurrence, which keeps the couplings exact to round-off
+at any degree (written in powers of $x$, $P_n$ has large coefficients of alternating signs, and their round-off grows by a
+factor of about 2.4 per degree).
 
 `mag_couplings = 'algebra'` uses it for every type; `'closed'` (default) keeps the closed forms. `'general'` (poloidal
 or toroidal), `'ferraro'` and `B0_wound = 1` have no closed forms and switch to the algebra by themselves. For the types
@@ -1393,7 +1396,8 @@ the new features nothing changed.
   $\le 6\cdot10^{-13}$ for 'axial' (m 0, 1), 'FDM' (degree 2), 'Luo_S2' (shell, full sphere, 'Wu 2005'), 'FDM' with 'Wu
   2005', 'Malkus' (and 'Wu 2005'), 'wall' of degree 2, 'axial' + 'wall', a conducting inner core, 'confined', and with a
   differential rotation. **Against sympy** (`algebra_check.py`): every block for poloidal and toroidal fields of degree
-  1–4 (3 and 4 have no closed forms), several $m$, $l$ up to 12.
+  1–4 (3 and 4 have no closed forms), several $m$, $l$ up to 12; and the angular factors $P_n$, $P_n'$, $P_n''$ of degrees
+  15 to 35 against Gauss–Legendre quadrature, within $10^{-13}$ of their largest entry.
 - **'general'**: $h_1 = r/2$ gives exactly the 'axial' eigenvalues (no-slip walls: at a slipping insulating outer wall
   `'general'` ends in a sheet, being taken as a field of currents in the fluid), $k_1 = r$ exactly the 'Malkus' ones;
   fields of degrees 1 + 3 (full sphere), 2 + 4 (shell), toroidal 1 + 3, and a poloidal 1 + 3 with a toroidal 2 and a

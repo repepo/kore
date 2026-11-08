@@ -124,7 +124,19 @@ def _lam(e):
 
 # ----------------------------------------------------------------------------------------------- the angular operations
 def _poly_mats(A, c):
-    '''c(X) and c'(X) for a numpy Polynomial c in x (Horner)'''
+    '''c(X) and c'(X) for c a numpy Legendre series in x, summed over the P_k(X), P_k'(X) of angular's recurrence
+    (Algebra.legendre), or a numpy Polynomial of low degree in x (x, 1 - x², by Horner).
+    FIX (2026-11-08, phase 6e): the background's P_n were Polynomials (Legendre.convert), whose coefficients in powers of x
+    grow as about (1 + √2)^n with alternating signs, so that the round-off of the coefficients and of Horner's scheme left
+    P_n(X) off by 6e-12 of its largest entry at n 15, 8e-10 at n 21, 4e-7 at n 29 and 8e-5 at n 35 (m 0 to 2), and P_n'(X)
+    by about half that; summed over the recurrence's P_k(X) they are below 1e-14 at every n'''
+    if isinstance(c, np.polynomial.Legendre):
+        M, dM = 0*A.I, 0*A.I
+        for k, a in enumerate(c.coef):
+            if a != 0:
+                Pk, dPk = A.legendre(k)
+                M, dM = M + a*Pk, dM + a*dPk
+        return M.tocsr(), dM.tocsr()
     def ev(q):
         M = 0*A.I
         for a in q.coef[::-1]:
@@ -137,8 +149,9 @@ def _rcross(F):
     return angular.Field(0*F.q, F.t, -F.s)
 
 def _vcross(A, kind, c, F):
-    '''V × F for V = c(x) r̂ ('r'), c(x) sinθ θ̂ ('st') or c(x) sinθ φ̂ ('sp'); c a numpy Polynomial in x'''
-    x = np.polynomial.Polynomial([0, 1])
+    '''V × F for V = c(x) r̂ ('r'), c(x) sinθ θ̂ ('st') or c(x) sinθ φ̂ ('sp'); c a numpy Legendre series (or Polynomial)
+    in x'''
+    x = type(c).identity(domain=c.domain, window=c.window)
     if kind == 'r':
         return A.mult(_rcross(F), *_poly_mats(A, c))
     if kind == 'st':   # c sinθ θ̂ = c (x r̂ - ẑ)
@@ -171,7 +184,7 @@ def _pert(A, X, kind):
 
 def _background(n, B):
     '''the background vectors of degree n: {'B0': [...], 'J0': [...]}, each a list of (kind, c(x), [(coef, p, B, n, j)])'''
-    Pn = np.polynomial.Legendre.basis(n).convert(kind=np.polynomial.Polynomial)
+    Pn = np.polynomial.Legendre.basis(n)   # FIX (2026-11-08, phase 6e): a Legendre series, not a Polynomial (_poly_mats)
     dPn = Pn.deriv()
     L0 = n*(n + 1.)
     if B == 'h':

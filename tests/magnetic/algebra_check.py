@@ -83,5 +83,53 @@ for kind in ('pol', 'tor'):
                         bad.append(label)
                     else:
                         n_ok += 1
+# NEW (2026-11-08, phase 6e): high degrees. The angular factors of the background vectors, P_n and -P_n' with their
+# derivatives (mag_algebra._background through _poly_mats), on the harmonics against Gauss-Legendre quadrature of the
+# orthonormal associated Legendre functions Q_l (their own recurrence in l at each node), independent of angular.py:
+# M[l', l] = sqrt((2l' + 1)/(2l + 1)) ∫ Q_l' f Q_l dx for kore's Schmidt harmonics, on the source degrees l whose products
+# stay below the truncation at lw. numpy's nodes and weights are refined by two Newton steps on P_N (they leave 4e-13 in
+# the Gram matrix of the Q_l, 6e-15 after). In powers of x (up to phase 6d) the factors were 3e-12 of the largest entry off
+# at n 15, 4e-10 at n 21 and 7e-5 at n 35; summed over the recurrence they meet the quadrature to below 1e-13
+import numpy as np, angular
+def gauss(N):
+    x = np.polynomial.legendre.leggauss(N)[0]
+    for it in range(3):
+        p0, p1 = np.ones_like(x), x.copy()
+        for k in range(1, N):
+            p0, p1 = p1, ((2*k + 1)*x*p1 - k*p0)/(k + 1)
+        dp = N*(x*p1 - p0)/(x*x - 1)
+        if it < 2:
+            x = x - p1/dp
+    return x, 2/((1 - x*x)*dp*dp)
+def orthonormal(x, m, lw):
+    Q = {m: np.sqrt((2*m + 1)/2.)*np.prod([np.sqrt((2*k - 1)/(2.*k)) for k in range(1, m + 1)])*(1 - x*x)**(m/2)}
+    Q[m + 1] = x*np.sqrt(2*m + 3.)*Q[m]
+    for l in range(m + 2, lw + 1):
+        Q[l] = np.sqrt((4.*l*l - 1)/(l*l - m*m))*(x*Q[l - 1] - np.sqrt(((l - 1.)**2 - m*m)/(4*(l - 1.)**2 - 1))*Q[l - 2])
+    return Q
+xg, wg = gauss(160)
+worst = 0.
+for n in ((15, 35) if quick else (15, 21, 29, 35)):
+    for m in (0, 1, 2):
+        lw = 40 + n
+        A = angular.Algebra(m, lw)
+        Q = orthonormal(xg, m, lw)
+        ls = range(m, lw - n)
+        for c in (ma._background(n, 'h')['B0'][0][1], ma._background(n, 'h')['B0'][1][1]):   # P_n ('r'), -P_n' ('st')
+            for M, cq in zip(ma._poly_mats(A, c), (c, c.deriv())):
+                M, f = M.toarray(), cq(xg)
+                R = np.zeros_like(M)
+                for l in ls:
+                    for lp in range(max(m, l - n - 1), min(lw, l + n + 1) + 1):
+                        R[lp, l] = np.sqrt((2*lp + 1.)/(2*l + 1))*np.sum(wg*Q[lp]*f*Q[l])
+                err = np.abs(M[:, ls] - R[:, ls]).max()/np.abs(R[:, ls]).max()
+                worst = max(worst, err)
+                label = 'background factor of degree %d (n=%d m=%d)' % (cq.degree(), n, m)
+                if err > 1e-12:
+                    bad.append(label); print('%-50s %.1e of the largest entry  <-- FAIL' % (label, err))
+                else:
+                    n_ok += 1
+print('high degrees: the background factors P_n, -P_n\' and their derivatives against quadrature: worst %.1e of the largest '
+      'entry (tol 1e-12)' % worst)
 print('algebra_check.py: %d blocks ok, %s' % (n_ok, 'ok' if not bad else 'FAIL: %s' % bad))
 sys.exit(1 if bad else 0)

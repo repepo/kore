@@ -1220,7 +1220,8 @@ def bc_u_sheet(l, sec):
             Ws = Wt = A.zero()
             for kind, jumps in (('st', tor), ('sp', pol)):
                 for n, a in jumps.items():
-                    dPn = np.polynomial.Legendre.basis(n).convert(kind=np.polynomial.Polynomial).deriv()
+                    dPn = np.polynomial.Legendre.basis(n).deriv()   # FIX (2026-11-08, phase 6e): a Legendre series
+                    # (mag_algebra._poly_mats), not a Polynomial, whose coefficients grow as about (1 + √2)^n
                     V = ma._vcross(A, kind, -a*dPn, F)
                     Ws, Wt = Ws + V.s, Wt + V.t
             rw = np.array([float(r)])

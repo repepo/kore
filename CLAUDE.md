@@ -793,6 +793,12 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   instead, `background_field.cheb_interp` at the first-kind points (`utils.chebco_f` on kore's grid) or a DCT-I at
   Gauss-Lobatto points (`wound_profiles`), and drop the coefficients below a fraction of the largest before
   differentiating: 1e-13 for the profiles, 1e-15 for Clairaut's g/x (the solar structures have content down to 1e-15).
+- **Legendre polynomials in powers of x** (phase 6e): the coefficients of P_n in powers of x grow as about (1 + √2)^n
+  with alternating signs, so a P_n converted to a numpy Polynomial (Legendre.convert, leg2poly) and evaluated by
+  Horner on the matrix X has a round-off that grows by a factor of about 2.4 per degree (P_n(X) 6e-12 of its largest
+  entry off at n 15, 4e-7 at n 29, 8e-5 at n 35). Keep angular factors as numpy Legendre series
+  (`mag_algebra._poly_mats` sums the P_k(X), P_k'(X) of `angular.Algebra.legendre`); a Polynomial is fine only for low
+  degrees (x, 1 - x²).
 - `params_default` says `rpower_pp`, `rhopower_pp` are "not read by the current pipeline", but `utils4pp.setup_grid`
   uses them as the enstrophy weight `const0`.
 - `utils4pp` calls `mp.set_start_method('fork')` at import (needed on macOS).
@@ -821,7 +827,9 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
 
 ## 14. History (this branch, newest first)
 
-The conductive_IC port, phase 6d (2026-11-08): numpy's remaining Chebyshev interpolants and fits replaced by DCTs
+The conductive_IC port, phase 6e (2026-11-08): the background's angular factors (mag_algebra, the sheet push, the
+centrifugal rotation force) as Legendre series summed over the recurrence's P_k(X), not in powers of x, §12;
+the conductive_IC port, phase 6d (2026-11-08): numpy's remaining Chebyshev interpolants and fits replaced by DCTs
 (Clairaut's g/x, the amplitudes inside a conducting inner core, model S hydrostatic's ρ, g, ln p, row_check's fits, and
 the wound field's k and ru_insane's S_tw, whose SVD failed at some N), §12;
 `8b841ed` the conductive_IC port, phase 6c (2026-11-07): the push of B0's current sheets, toroidal and poloidal, at slipping

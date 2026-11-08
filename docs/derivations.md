@@ -309,7 +309,9 @@ degree by degree (`B0 = 'general'`) or built from a differential rotation (`'fer
 nothing is fitted, and the result is exact up to round-off at any $n$ and $l$.
 
 **Method.** The background is a sum over degrees of poloidal and toroidal parts. With $\partial_\theta P_n = -\sin\theta\,P_n'(x)$,
-each part is a few vectors of three kinds, a polynomial $c(x)$ times $\hat{\mathbf{r}}$, $\sin\theta\,\hat{\boldsymbol\theta}$ or $\sin\theta\,\hat{\boldsymbol\phi}$:
+each part is a few vectors of three kinds, a polynomial $c(x)$ times $\hat{\mathbf{r}}$, $\sin\theta\,\hat{\boldsymbol\theta}$ or $\sin\theta\,\hat{\boldsymbol\phi}$
+($c$ is kept as a Legendre series, and $c(X)$, $c'(X)$ are sums of the $P_k(X)$, $P_k'(X)$ of part B, step 3: in powers of $x$
+the coefficients of $P_n$ grow as about $(1 + \sqrt2)^n$, and the round-off with them):
 
 | part | $\mathbf{B}_0$ | $\mathbf{J}_0 = \nabla\times\mathbf{B}_0$ |
 | --- | --- | --- |
