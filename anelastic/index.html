@@ -1042,6 +1042,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#composition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Composition
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#differential-rotation" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1490,6 +1501,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#composition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Composition
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#differential-rotation" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1821,6 +1843,57 @@ periods are short compared with the time of thermal diffusion. The equation is t
 thermal boundary conditions: <code>bci_thermal</code> and <code>bco_thermal</code> are not used. The rows kore builds in that case are on
 <a href="../numerical-method/">Numerical method</a>, and what to watch for in such runs is in
 <a href="../background/#thermad-0">Background model</a>.</p>
+<h2 id="composition">Composition</h2>
+<p>A fluid can also be stratified by its composition, as a star by the helium and heavier elements that settle below its
+convection zone, or a planet's core by its light elements. With <code>compositional = 1</code> kore solves for the perturbation
+<span class="arithmatex">\(c\)</span> of a second scalar, the composition, beside the entropy or without it. The flow carries <span class="arithmatex">\(c\)</span> across the background
+gradient <span class="arithmatex">\(dC/dr\)</span>, <span class="arithmatex">\(c\)</span> diffuses with its own diffusivity, and it changes the density, so it has its own buoyancy. Its
+equation is that of the entropy with $
+ho_0$ in place of <span class="arithmatex">\(p_0\)</span>, the conservation of a mass fraction:</p>
+<div class="arithmatex">\[
+\rho_0\left(\partial_t c + u_r\frac{dC}{dr}\right) = \mathrm{CompoD}\thinspace\nabla\cdot\left(D\thinspace\rho_0\nabla c\right),
+\]</div>
+<p>and the momentum equation gains the force <span class="arithmatex">\(\mathrm{BeyonceC}\thinspace g\thinspace c\thinspace\hat{\mathbf r}\)</span> beside
+<span class="arithmatex">\(\mathrm{Beyonce}\thinspace g\thinspace s\thinspace\hat{\mathbf r}\)</span>. <span class="arithmatex">\(c\)</span> measures the deficit of density that the
+composition makes at a given pressure and entropy, relative to <span class="arithmatex">\(\rho_0\)</span>: like <span class="arithmatex">\(s\)</span>, a larger <span class="arithmatex">\(c\)</span> is lighter. The
+buoyancy frequency then has two parts,</p>
+<div class="arithmatex">\[
+N^2 = \mathrm{Beyonce}\thinspace g\thinspace\frac{dS}{dr} + \mathrm{BeyonceC}\thinspace g\thinspace\frac{dC}{dr},
+\]</div>
+<p>and each can have its own sign: a stable composition gradient under an unstable entropy gradient, or the reverse, is
+the double-diffusive case. <span class="arithmatex">\(D\)</span> is the profile of the diffusivity of the composition (<code>diffusivity</code>), and two numbers
+carry its scales:</p>
+<table>
+<thead>
+<tr>
+<th>parameter</th>
+<th>definition</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>BeyonceC</code></td>
+<td><span class="arithmatex">\(g_{\mathrm{ref}}\thinspace\tau^2/L\)</span>, for <span class="arithmatex">\(c\)</span> a relative density</td>
+<td>buoyancy of the composition</td>
+</tr>
+<tr>
+<td><code>CompoD</code></td>
+<td><span class="arithmatex">\(D_{\mathrm{ref}}\thinspace\tau/L^2\)</span></td>
+<td>diffusivity of the composition</td>
+</tr>
+</tbody>
+</table>
+<p><code>set_scales()</code> sets <code>CompoD</code> from <code>Ecomp</code> <span class="arithmatex">\(= D_{\mathrm{ref}}/(\Omega L^2)\)</span> as it sets <code>ThermaD</code> from <code>Etherm</code>, and
+<code>BeyonceC</code> to 0, so set <code>BeyonceC</code> after calling it. The composition takes the wall conditions of the entropy, a fixed
+composition (<span class="arithmatex">\(c = 0\)</span>) or no flux (<span class="arithmatex">\(\partial_r c = 0\)</span>). With <code>CompoD = 0</code> it is only carried by the flow, as the entropy
+with <code>ThermaD = 0</code>: its equation is then of first order and takes no wall conditions. With a differential rotation it
+gains the advection <span class="arithmatex">\(i\thinspace m\thinspace\mathrm{Gaspard}\thinspace\Delta\Omega\thinspace c\)</span> inside the bracket; the
+background composition is spherical, so nothing in it plays the part of the thermal wind.</p>
+<p>With <code>'Boussinesq'</code> and <code>diffusivity = 'uniform'</code> the equation is
+<span class="arithmatex">\(\partial_t c + u_r\thinspace dC/dr = \mathrm{CompoD}\thinspace\nabla^2 c\)</span>. This is the composition of the <code>conductive_IC</code>
+branch with its <span class="arithmatex">\(\xi = -c\)</span>, <code>BV2_comp</code> = <code>BeyonceC</code> and <code>Ecomp</code> = <code>CompoD</code>: its gradient <code>'internal'</code> is <code>'linear'</code>
+here, and its <code>'differential'</code> is <code>'inverse square'</code> with <code>BeyonceC</code> = <code>BV2_comp</code><span class="arithmatex">\(\cdot\)</span><code>ricb</code>/(1 − <code>ricb</code>).</p>
 <h2 id="differential-rotation">Differential rotation</h2>
 <p>With a differential rotation <span class="arithmatex">\(\Omega(r,\theta) = \Omega_{\rm ref}\left[1 + \Delta\Omega(r,\theta)\right]\)</span>, kore solves in
 the frame rotating at <span class="arithmatex">\(\Omega_{\rm ref}\)</span>, where the background is a steady azimuthal flow,</p>
@@ -1860,7 +1933,7 @@ W[\mathbf F] = 2\thinspace\mathrm{Re}\int\rho_0\thinspace\mathbf u^*\cdot\mathbf
 <p>Take the momentum equation with <span class="arithmatex">\(\partial_t = \lambda = \sigma - i\omega\)</span>, multiply it by <span class="arithmatex">\(2\rho_0\mathbf u^*\)</span>, integrate
 over the fluid and keep the real part:</p>
 <div class="arithmatex">\[
-2\sigma K = W_\nu + W_b + W_\Omega + W_p ,
+2\sigma K = W_\nu + W_b + W_c + W_\Omega + W_p ,
 \]</div>
 <p>with, term by term:</p>
 <ul>
@@ -1894,7 +1967,9 @@ field's current sheet (<a href="../magnetic-equations/#current-sheets-at-slippin
 <ul>
 <li>
 <p><strong>Buoyancy.</strong> <span class="arithmatex">\(W_b = 2\thinspace\mathrm{Beyonce}\thinspace\mathrm{Re}\int\rho_0\thinspace g\thinspace s\thinspace u_r^*\thinspace dV\)</span>,
-  the energy exchanged with the entropy perturbation.</p>
+  the energy exchanged with the entropy perturbation, and with <code>compositional = 1</code>
+  <span class="arithmatex">\(W_c = 2\thinspace\mathrm{BeyonceC}\thinspace\mathrm{Re}\int\rho_0\thinspace g\thinspace c\thinspace u_r^*\thinspace dV\)</span>,
+  the energy exchanged with the composition.</p>
 </li>
 <li>
 <p><strong>Differential rotation.</strong> Of the terms of <a href="#differential-rotation">Differential rotation</a>, the advection
@@ -1924,13 +1999,18 @@ both thermal conditions, <span class="arithmatex">\(s = 0\)</span> or <span clas
 combine into a total energy with the available potential energy, in the convention above
 <span class="arithmatex">\(\int\rho_0\thinspace\mathrm{Beyonce}\thinspace g\thinspace\lvert s\rvert^2/(dS/dr)\thinspace dV\)</span>: without diffusion its rate of
 change is <span class="arithmatex">\(-W_b\)</span>. It is positive only where the stratification is stable, and kore does not form it.</p>
+<p>The composition has the same budget with <span class="arithmatex">\(\rho_0\)</span> in place of <span class="arithmatex">\(p_0\)</span>:
+<span class="arithmatex">\(2\sigma C = W_{\rm adv,c} - D_{\rm c}\)</span>, with <span class="arithmatex">\(C = \int\rho_0\lvert c\rvert^2\thinspace dV\)</span>,
+<span class="arithmatex">\(W_{\rm adv,c} = -2\thinspace\mathrm{Re}\int\rho_0\thinspace\frac{dC}{dr}\thinspace u_r c^*\thinspace dV\)</span> and
+<span class="arithmatex">\(D_{\rm c} = 2\thinspace\mathrm{CompoD}\int D\rho_0\lvert\nabla c\rvert^2\thinspace dV\)</span>. The advection by a
+differential rotation only enters its imaginary part.</p>
 <h3 id="a-forced-periodic-response">A forced, periodic response</h3>
 <p>A forced run has <span class="arithmatex">\(\lambda = i\thinspace\)</span><code>forcing_frequency</code>, so <span class="arithmatex">\(\sigma = 0\)</span>, and the kinetic budget reads</p>
 <div class="arithmatex">\[
-P_{\rm in} \equiv W_p + W_\nu^{\rm wall} = D_\nu - W_b - W_\Omega :
+P_{\rm in} \equiv W_p + W_\nu^{\rm wall} = D_\nu - W_b - W_c - W_\Omega :
 \]</div>
-<p>the power that the moving walls put into the flow is dissipated by viscosity, handed to the entropy perturbation, or
-given to the differential rotation. With a uniform rotation and no buoyancy, <span class="arithmatex">\(P_{\rm in} = D_\nu\)</span>. With a differential
+<p>the power that the moving walls put into the flow is dissipated by viscosity, handed to the entropy perturbation or to
+the composition, or given to the differential rotation. With a uniform rotation and no buoyancy, <span class="arithmatex">\(P_{\rm in} = D_\nu\)</span>. With a differential
 rotation <span class="arithmatex">\(W_\Omega\)</span> has either sign, so the power the forcing puts in and the heat the viscosity releases can differ.
 <a href="../tidal-forcing/">Tidal forcing</a> explains which of these quantities a tidal study needs, and
 <a href="../numerical-method/#checks">Numerical method</a> how <code>spin_doctor</code> computes them.</p>

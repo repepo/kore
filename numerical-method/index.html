@@ -1450,14 +1450,17 @@ u_r = \frac{\mathcal L\thinspace P_l}{r}\thinspace Y, \qquad
 \mathbf u_h = \left(P_l' + \frac{P_l}{r} + \frac{d\ln\rho_0}{dr}P_l\right) r\nabla Y + T_l\thinspace\nabla Y\times\mathbf r ,
 \]</div>
 <p>with a prime for <span class="arithmatex">\(d/dr\)</span> (<code>utils4pp.cheb2space_pol</code>, <code>cheb2space_tor</code>). With <code>thermal = 1</code> the third unknown is
-<span class="arithmatex">\(s = s_l(r)\thinspace Y\)</span>.</p>
+<span class="arithmatex">\(s = s_l(r)\thinspace Y\)</span>. With <code>compositional = 1</code> the composition <span class="arithmatex">\(c = c_l(r)\thinspace Y\)</span>, of the degrees and parity
+of <span class="arithmatex">\(s\)</span>, comes after the unknowns of the field and before those of the rotating solids, so that a run without it keeps
+the layout of its matrices.</p>
 <h2 id="radial-basis">Radial basis</h2>
-<p>Each radial function <span class="arithmatex">\(P_l\)</span>, <span class="arithmatex">\(T_l\)</span>, <span class="arithmatex">\(s_l\)</span> is expanded in Chebyshev polynomials: N of them on the shell
+<p>Each radial function <span class="arithmatex">\(P_l\)</span>, <span class="arithmatex">\(T_l\)</span>, <span class="arithmatex">\(s_l\)</span>, <span class="arithmatex">\(c_l\)</span> is expanded in Chebyshev polynomials: N of them on the shell
 <span class="arithmatex">\([\)</span><code>ricb</code><span class="arithmatex">\(, 1]\)</span>, or, in a full sphere (<code>ricb = 0</code>), the N/2 polynomials on <span class="arithmatex">\([-1, 1]\)</span> that have the parity of the field.
 A radial derivative of order <span class="arithmatex">\(k\)</span> maps Chebyshev coefficients to coefficients in the Gegenbauer (ultraspherical) basis
 <span class="arithmatex">\(C^{(k)}\)</span>, where it is a sparse matrix, and so is the product with a profile expanded in Chebyshev polynomials. The rows
-of each section are written in the Gegenbauer basis of its highest derivative: <span class="arithmatex">\(C^{(4)}\)</span> for <code>u</code>, <span class="arithmatex">\(C^{(2)}\)</span> for <code>v</code> and
-<code>h</code> (<span class="arithmatex">\(C^{(0)}\)</span> for <code>h</code> with <code>ThermaD = 0</code>, <span class="arithmatex">\(C^{(1)}\)</span> if a thermal wind is included). This makes <span class="arithmatex">\(A\)</span> and <span class="arithmatex">\(B\)</span> sparse.</p>
+of each section are written in the Gegenbauer basis of its highest derivative: <span class="arithmatex">\(C^{(4)}\)</span> for <code>u</code>, <span class="arithmatex">\(C^{(2)}\)</span> for <code>v</code>,
+<code>h</code> and <code>c</code> (<span class="arithmatex">\(C^{(0)}\)</span> for <code>h</code> with <code>ThermaD = 0</code>, <span class="arithmatex">\(C^{(1)}\)</span> if a thermal wind is included; <span class="arithmatex">\(C^{(0)}\)</span> for <code>c</code> with
+<code>CompoD = 0</code>). This makes <span class="arithmatex">\(A\)</span> and <span class="arithmatex">\(B\)</span> sparse.</p>
 <h2 id="rows">Rows</h2>
 <p>The pressure is removed by taking the radial components of the curl and of the double curl of the momentum
 equation; <span class="arithmatex">\(\nabla\Pi\)</span> drops out of both because it is a gradient. Each term becomes a radial operator acting on <span class="arithmatex">\(P_l\)</span>,
@@ -1486,6 +1489,11 @@ equation; <span class="arithmatex">\(\nabla\Pi\)</span> drops out of both becaus
 <td>of <span class="arithmatex">\(s_l\)</span></td>
 <td><span class="arithmatex">\(r^2\thinspace(\text{heat equation})/\mathcal L^3\)</span></td>
 </tr>
+<tr>
+<td><code>c</code></td>
+<td>of <span class="arithmatex">\(c_l\)</span></td>
+<td><span class="arithmatex">\(r^2\thinspace(\text{equation of the composition})/\mathcal L^3\)</span></td>
+</tr>
 </tbody>
 </table>
 <p>All rows are projected on <span class="arithmatex">\(Y_l^m\)</span> and divided by <span class="arithmatex">\(\mathcal L^3\)</span>, with <span class="arithmatex">\(l\)</span> the degree of the row. The powers of <span class="arithmatex">\(r\)</span> are
@@ -1493,8 +1501,9 @@ equation; <span class="arithmatex">\(\nabla\Pi\)</span> drops out of both becaus
 factor <span class="arithmatex">\(\rho_0\)</span> (<code>rhopower_u = rhopower_v = 1</code>) improves the accuracy of the viscous rows near a surface where
 <span class="arithmatex">\(\rho_0\)</span> is small. Without viscosity (<code>ViscosD = 0</code>) the momentum rows are <span class="arithmatex">\(r^3\rho_0^2\)</span> and <span class="arithmatex">\(r^2\rho_0\)</span> times the
 equations. With <code>ThermaD = 0</code> the heat rows are divided by <span class="arithmatex">\(p_0\)</span>, <span class="arithmatex">\(r\thinspace(\partial_t s + u_r\thinspace dS/dr)/\mathcal L^3\)</span>,
-which is better conditioned where <span class="arithmatex">\(p_0\)</span> is small (and <span class="arithmatex">\(r^2/p_0\)</span> times the equation with the thermal wind). The Coriolis
-force couples <span class="arithmatex">\(l\)</span> to <span class="arithmatex">\(l\pm1\)</span>; the other terms keep <span class="arithmatex">\(l\)</span>.</p>
+which is better conditioned where <span class="arithmatex">\(p_0\)</span> is small (and <span class="arithmatex">\(r^2/p_0\)</span> times the equation with the thermal wind); with
+<code>CompoD = 0</code> those of the composition are divided by <span class="arithmatex">\(\rho_0\)</span> in the same way. The Coriolis force couples <span class="arithmatex">\(l\)</span> to
+<span class="arithmatex">\(l\pm1\)</span>; the other terms keep <span class="arithmatex">\(l\)</span>.</p>
 <table>
 <thead>
 <tr>
@@ -1539,6 +1548,26 @@ force couples <span class="arithmatex">\(l\)</span> to <span class="arithmatex">
 <td><code>thermal_diffusion</code></td>
 <td><span class="arithmatex">\(\kappa p_0\)</span></td>
 </tr>
+<tr>
+<td><span class="arithmatex">\(\mathrm{BeyonceC}\thinspace g\thinspace c\thinspace\hat{\mathbf r}\)</span></td>
+<td><code>comp_buoyancy</code></td>
+<td><span class="arithmatex">\(g\)</span></td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\rho_0\thinspace\partial_t c\)</span></td>
+<td><code>composition</code></td>
+<td><span class="arithmatex">\(\rho_0\)</span></td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\rho_0\thinspace u_r\thinspace dC/dr\)</span></td>
+<td><code>comp_advection</code></td>
+<td><span class="arithmatex">\(\rho_0\thinspace dC/dr\)</span> (<span class="arithmatex">\(dC/dr\)</span> if <code>CompoD = 0</code>)</td>
+</tr>
+<tr>
+<td><span class="arithmatex">\(\mathrm{CompoD}\thinspace\nabla\cdot(D\rho_0\nabla c)\)</span></td>
+<td><code>comp_diffusion</code></td>
+<td><span class="arithmatex">\(D\rho_0\)</span></td>
+</tr>
 </tbody>
 </table>
 <p><code>submatrices.py</code> writes one sparse matrix per radial operator, for example <code>u1lho2_D0</code> for <span class="arithmatex">\(r^4\rho_0\thinspace(\ln\rho_0)''\)</span>
@@ -1557,7 +1586,8 @@ momentum rows and <span class="arithmatex">\(-\)</span><code>thermal_advection</
 <div class="arithmatex">\[
 \lambda\thinspace p_0 s = -p_0 u_r\frac{dS}{dr} + \mathrm{ThermaD}\thinspace\nabla\cdot(\kappa p_0\nabla s),
 \]</div>
-<p>projected as in the table above. <code>solve.py</code> finds the eigenvalues nearest a target <span class="arithmatex">\(\tau\)</span> by shift-and-invert with SLEPc,
+<p>projected as in the table above. The composition enters in the same way: <code>composition</code> in <span class="arithmatex">\(B\)</span>, <span class="arithmatex">\(-\)</span><code>comp_buoyancy</code> in
+the momentum rows of <span class="arithmatex">\(A\)</span>, and <span class="arithmatex">\(-\)</span><code>comp_advection</code> <span class="arithmatex">\(+\)</span> <code>comp_diffusion</code> in its own rows. <code>solve.py</code> finds the eigenvalues nearest a target <span class="arithmatex">\(\tau\)</span> by shift-and-invert with SLEPc,
 factoring <span class="arithmatex">\(A - \tau B\)</span> once with MUMPS (<a href="../solver/">Solver</a>). Forced runs solve
 <span class="arithmatex">\((A - i\thinspace\mathrm{wf}\thinspace B)\mathbf x = \mathbf b\)</span>, with wf the forcing frequency; for the random
 force of forcing 11, <span class="arithmatex">\(\mathbf b\)</span> is derived on <a href="../reynolds-stress/">Reynolds-stress forcing</a>.</p>
@@ -1603,10 +1633,20 @@ one (<code>bci</code>, when <code>ricb &gt; 0</code>); the full sphere has no co
 <td>zero diffusive entropy flux</td>
 <td><span class="arithmatex">\(s_l' = 0\)</span></td>
 </tr>
+<tr>
+<td><code>bco_compositional = 0</code></td>
+<td>fixed composition</td>
+<td><span class="arithmatex">\(c_l = 0\)</span></td>
+</tr>
+<tr>
+<td><code>bco_compositional = 1</code></td>
+<td>zero diffusive flux of the composition</td>
+<td><span class="arithmatex">\(c_l' = 0\)</span></td>
+</tr>
 </tbody>
 </table>
 <p>The density enters the stress-free and no-slip rows through <span class="arithmatex">\(u_\theta\)</span> and <span class="arithmatex">\(u_\phi\)</span>. The thermal conditions are used
-only when <code>ThermaD &gt; 0</code>. Without viscosity only <span class="arithmatex">\(P_l = 0\)</span> is imposed. <code>bco = 2</code> (and <code>bci = 2</code>) replaces <span class="arithmatex">\(u_r = 0\)</span> by a
+only when <code>ThermaD &gt; 0</code>, those of the composition only when <code>CompoD &gt; 0</code>. Without viscosity only <span class="arithmatex">\(P_l = 0\)</span> is imposed. <code>bco = 2</code> (and <code>bci = 2</code>) replaces <span class="arithmatex">\(u_r = 0\)</span> by a
 zero viscous radial stress, <span class="arithmatex">\(\left[r(\ln\rho_0)' - 3\right]P_l + 3rP_l' = 0\)</span>, which does not contain the pressure.</p>
 <h2 id="regularity-at-the-centre">Regularity at the centre</h2>
 <p>The centre of a full sphere is not a boundary, but the fields must be smooth there, and kore imposes no condition to
@@ -1655,18 +1695,23 @@ quadrature in <span class="arithmatex">\(\cos\theta\)</span>, exact for these po
 <tbody>
 <tr>
 <td>residσ</td>
-<td><span class="arithmatex">\(2\sigma K - W_\nu - W_b - W_\Omega - W_p - W_f = 0\)</span> (and the Lorentz work)</td>
-<td><code>2σ KE - Dkin - Wthm - Wdr - Wp - Wf</code></td>
+<td><span class="arithmatex">\(2\sigma K - W_\nu - W_b - W_c - W_\Omega - W_p - W_f = 0\)</span> (and the Lorentz work)</td>
+<td><code>2σ KE - Dkin - Wthm - Wcmp - Wdr - Wp - Wf</code></td>
 </tr>
 <tr>
 <td>residω</td>
 <td>its imaginary part, with the Coriolis force</td>
-<td><code>2w KE + Wcor_im - Dkin_im - Wthm_im - Wdr_im - Wp_im - Wf_im</code>, <span class="arithmatex">\(w = \mathrm{Im}\thinspace\lambda\)</span></td>
+<td><code>2w KE + Wcor_im - Dkin_im - Wthm_im - Wcmp_im - Wdr_im - Wp_im - Wf_im</code>, <span class="arithmatex">\(w = \mathrm{Im}\thinspace\lambda\)</span></td>
 </tr>
 <tr>
 <td>resid<span class="arithmatex">\(s\)</span></td>
 <td><span class="arithmatex">\(2\sigma T - W_{\rm adv} + D_{\rm th} - W_{\Omega,\rm th} = 0\)</span></td>
 <td><code>2σ TE - Dthm - Wadv - Wdr_thm</code> (<code>Dthm</code> <span class="arithmatex">\(= -D_{\rm th}\)</span>)</td>
+</tr>
+<tr>
+<td>resid<span class="arithmatex">\(c\)</span></td>
+<td><span class="arithmatex">\(2\sigma C - W_{\rm adv,c} + D_{\rm c} = 0\)</span></td>
+<td><code>2σ CE - Dcmp - Wadv_cmp - Wdr_cmp</code> (<code>Dcmp</code> <span class="arithmatex">\(= -D_{\rm c}\)</span>)</td>
 </tr>
 <tr>
 <td>residD</td>
@@ -1680,7 +1725,7 @@ quadrature in <span class="arithmatex">\(\cos\theta\)</span>, exact for these po
 </tr>
 </tbody>
 </table>
-<p>residσ and resid<span class="arithmatex">\(s\)</span> judge whether a solution is resolved (<a href="../solver/">Solver</a> gives the thresholds), also for forced
+<p>residσ, resid<span class="arithmatex">\(s\)</span> and resid<span class="arithmatex">\(c\)</span> judge whether a solution is resolved (<a href="../solver/">Solver</a> gives the thresholds), also for forced
 runs, where <span class="arithmatex">\(\sigma = 0\)</span>. Where the walls drive the flow along themselves (the libration, forcing 7 with <span class="arithmatex">\(m\)</span> = 0, and
 the steady rotation of the walls, forcing 12), <span class="arithmatex">\(W_\nu = W_\nu^{\rm wall} - D_\nu\)</span> is a small difference of two large
 terms, so residσ, and resid𝐄 with a field, are relative to <span class="arithmatex">\(D_\nu\)</span> too. A residual whose terms all vanish, such as

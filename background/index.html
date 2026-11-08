@@ -648,6 +648,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#composition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Composition
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#rotation" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1551,6 +1562,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#composition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Composition
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#rotation" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1712,7 +1734,7 @@
 
 
 <h1 id="background-model">Background model</h1>
-<p>kore solves for small perturbations of a background. The background has five parts, each chosen by name in the
+<p>kore solves for small perturbations of a background. The background has six parts, each chosen by name in the
 parameter file:</p>
 <table>
 <thead>
@@ -1736,7 +1758,12 @@ parameter file:</p>
 <tr>
 <td>diffusivity</td>
 <td><code>diffusivity</code></td>
-<td>the radial profiles of the viscosity <span class="arithmatex">\(\nu\)</span> and the thermal diffusivity <span class="arithmatex">\(\kappa\)</span></td>
+<td>the radial profiles of the viscosity <span class="arithmatex">\(\nu\)</span> and the thermal diffusivity <span class="arithmatex">\(\kappa\)</span> (and of <span class="arithmatex">\(D\)</span>, the composition's)</td>
+</tr>
+<tr>
+<td>composition</td>
+<td><code>comp_stratification</code></td>
+<td>the gradient <span class="arithmatex">\(dC/dr\)</span> of a second scalar, the composition (only with <code>compositional = 1</code>)</td>
 </tr>
 <tr>
 <td>rotation</td>
@@ -1879,6 +1906,11 @@ sphere (<code>ricb = 0</code>) kore uses it as an odd function of <span class="a
 <td>needs <code>ricb</code> &gt; 0</td>
 </tr>
 <tr>
+<td><code>'two zone'</code></td>
+<td><span class="arithmatex">\(\tfrac12\left[1 + \tanh\frac{2(r - r_c)}{h}\right]\)</span>: a nearly neutral inner zone under a stratified outer one</td>
+<td><code>two_zone</code> = <span class="arithmatex">\([r_c, h]\)</span> ([0.7, 0.1])</td>
+</tr>
+<tr>
 <td><code>'user'</code></td>
 <td><code>stratification_profile</code>, a numpy expression (<a href="#user-profiles">below</a>)</td>
 <td><code>stratification_param</code> (<span class="arithmatex">\(p\)</span>)</td>
@@ -1910,7 +1942,9 @@ it scales with <code>r_out</code>. <span class="arithmatex">\(\delta &lt; 0\)</s
 smooth Sun example, <span class="arithmatex">\(\delta_{cz} = -4\times10^{-7}\)</span> makes the HFR <span class="arithmatex">\(m = 8\)</span> mode 34 nHz more retrograde than
 <span class="arithmatex">\(\delta_{cz} = 0\)</span>.</p>
 <h2 id="diffusivity">Diffusivity</h2>
-<p><span class="arithmatex">\(\nu\)</span> = <code>ViscosD</code> <span class="arithmatex">\(\hat\nu(r)\)</span> and <span class="arithmatex">\(\kappa\)</span> = <code>ThermaD</code> <span class="arithmatex">\(\hat\kappa(r)\)</span>; <code>diffusivity</code> sets <span class="arithmatex">\(\hat\nu\)</span> and <span class="arithmatex">\(\hat\kappa\)</span>.</p>
+<p><span class="arithmatex">\(\nu\)</span> = <code>ViscosD</code> <span class="arithmatex">\(\hat\nu(r)\)</span> and <span class="arithmatex">\(\kappa\)</span> = <code>ThermaD</code> <span class="arithmatex">\(\hat\kappa(r)\)</span>; <code>diffusivity</code> sets <span class="arithmatex">\(\hat\nu\)</span> and <span class="arithmatex">\(\hat\kappa\)</span>, and
+<span class="arithmatex">\(\hat D\)</span> of the composition's <span class="arithmatex">\(D\)</span> = <code>CompoD</code> <span class="arithmatex">\(\hat D(r)\)</span> (<a href="#composition">Composition</a>) as it sets <span class="arithmatex">\(\hat\kappa\)</span>, with <code>comp0</code>
+in place of <code>therm0</code>.</p>
 <table>
 <thead>
 <tr>
@@ -1937,7 +1971,7 @@ smooth Sun example, <span class="arithmatex">\(\delta_{cz} = -4\times10^{-7}\)</
 </tr>
 <tr>
 <td><code>'user'</code></td>
-<td><code>diffusivity_profiles = {'nu': '...', 'kappa': '...'}</code>, numpy expressions (<a href="#user-profiles">below</a>)</td>
+<td><code>diffusivity_profiles = {'nu': '...', 'kappa': '...'}</code>, numpy expressions (<a href="#user-profiles">below</a>), and <code>'D': '...'</code> with <code>compositional = 1</code></td>
 <td><code>diffusivity_param</code> (<span class="arithmatex">\(p\)</span>)</td>
 </tr>
 </tbody>
@@ -1946,8 +1980,8 @@ smooth Sun example, <span class="arithmatex">\(\delta_{cz} = -4\times10^{-7}\)</
 <li>With <code>'step'</code> and <code>'solar_rz'</code>, <code>ViscosD</code> and <code>ThermaD</code> are the values above the step (the convection zone of the
   Sun). Mukhopadhyay et al. 2025b use <code>visc0</code> = 0.01 and <code>therm0</code> = 0.04.</li>
 <li>Any type is multiplied by <span class="arithmatex">\((\rho_0(x_2)/\rho_0)^p\)</span>, <span class="arithmatex">\(x_2\)</span> = <code>aux3</code>, with <span class="arithmatex">\(p\)</span> = <code>visc_pow</code> for <span class="arithmatex">\(\hat\nu\)</span> and <code>therm_pow</code>
-  for <span class="arithmatex">\(\hat\kappa\)</span>: 0 (the default) keeps the kinematic diffusivities as set, 1 makes <span class="arithmatex">\(\rho_0\nu\)</span> and <span class="arithmatex">\(\rho_0\kappa\)</span>
-  follow the profile instead.</li>
+  for <span class="arithmatex">\(\hat\kappa\)</span> (and <code>comp_pow</code> for <span class="arithmatex">\(\hat D\)</span>): 0 (the default) keeps the kinematic diffusivities as set, 1 makes
+  <span class="arithmatex">\(\rho_0\nu\)</span> and <span class="arithmatex">\(\rho_0\kappa\)</span> follow the profile instead.</li>
 <li><a href="../forcing/">Forcing 11</a> (random Reynolds stresses) uses the turbulent part of the viscosity, <code>ViscosD</code> <span class="arithmatex">\((\hat\nu - \nu_f)\)</span>: the
   floor <span class="arithmatex">\(\nu_f\)</span> is <code>visc0</code> with <code>'step'</code> and <code>'solar_rz'</code> when <code>visc0</code> &lt; 1 and 0 otherwise, unless <code>rsf_nu_floor</code> is
   set.</li>
@@ -1976,6 +2010,66 @@ rotation option. What to watch for:</p>
 <li><strong>Check the convergence in N.</strong> In a full sphere, eigenfunctions with <code>ThermaD = 0</code> need more radial resolution than
   diffusive ones (N = 200 instead of 120 for a smooth solar model). Where <span class="arithmatex">\(\rho_0\)</span> nearly vanishes at the outer wall
   (structure <code>'Wu 2005'</code> with <code>r_out</code> close to 1), the thermal-wind rows converge slowly in N.</li>
+</ul>
+<h2 id="composition">Composition</h2>
+<p>A fluid can be stratified by its composition as well as by its entropy: the helium and heavier elements below the
+convection zone of a star, or the light elements in a planet's core. With <code>compositional = 1</code> kore solves for a second
+scalar, the composition <span class="arithmatex">\(c\)</span>, which the flow carries across a background gradient, which diffuses, and which has its own
+buoyancy. It can be alone (<code>thermal = 0</code>) or beside the entropy, which makes a double-diffusive fluid. Its equation and
+its energy budget are on <a href="../anelastic/#composition">Anelastic equations</a>.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">par</span><span class="o">.</span><span class="n">compositional</span> <span class="o">=</span> <span class="mi">1</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">par</span><span class="o">.</span><span class="n">comp_stratification</span> <span class="o">=</span> <span class="s1">'linear'</span>      <span class="c1"># dC/dr = r</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">par</span><span class="o">.</span><span class="n">BeyonceC</span> <span class="o">=</span> <span class="mf">10.</span>                      <span class="c1"># N_c^2 = BeyonceC g dC/dr, set after set_scales()</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">par</span><span class="o">.</span><span class="n">CompoD</span> <span class="o">=</span> <span class="mf">1e-3</span>                       <span class="c1"># its diffusivity factor (set_scales() takes it from Ecomp)</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">par</span><span class="o">.</span><span class="n">bci_compositional</span> <span class="o">=</span> <span class="mi">0</span>               <span class="c1"># at each wall, 0: c = 0, 1: no flux</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">par</span><span class="o">.</span><span class="n">bco_compositional</span> <span class="o">=</span> <span class="mi">0</span>
+</span></code></pre></div>
+<p><code>comp_stratification</code> sets <span class="arithmatex">\(dC/dr\)</span> for <span class="arithmatex">\(r \ge 0\)</span>, of amplitude 1: <code>BeyonceC</code> sets the size of <span class="arithmatex">\(N_c^2\)</span>. It has no default
+with <code>compositional = 1</code>. As with the entropy, a full sphere uses it as an odd function of <span class="arithmatex">\(r\)</span>.</p>
+<table>
+<thead>
+<tr>
+<th><code>comp_stratification</code></th>
+<th><span class="arithmatex">\(dC/dr\)</span></th>
+<th>parameters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>'linear'</code></td>
+<td><span class="arithmatex">\(r\)</span>; with <code>'Boussinesq'</code>, <span class="arithmatex">\(N_c^2\)</span> = <code>BeyonceC</code> <span class="arithmatex">\(r^2\)</span></td>
+<td>–</td>
+</tr>
+<tr>
+<td><code>'inverse square'</code></td>
+<td><span class="arithmatex">\(1/r^2\)</span>, diffusion between the walls</td>
+<td>needs <code>ricb</code> &gt; 0</td>
+</tr>
+<tr>
+<td><code>'two zone'</code></td>
+<td><span class="arithmatex">\(\tfrac12\left[1 + \tanh\frac{2(r - r_c)}{h}\right]\)</span>, as the entropy's</td>
+<td><code>comp_two_zone</code> = <span class="arithmatex">\([r_c, h]\)</span> ([0.7, 0.1])</td>
+</tr>
+<tr>
+<td><code>'user'</code></td>
+<td><code>comp_stratification_profile</code>, a numpy expression (<a href="#user-profiles">below</a>)</td>
+<td><code>comp_stratification_param</code> (<span class="arithmatex">\(p\)</span>)</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Sign.</strong> A larger <span class="arithmatex">\(c\)</span> is lighter, as a larger <span class="arithmatex">\(s\)</span>: the composition is stable where <code>BeyonceC</code> <span class="arithmatex">\(dC/dr &gt; 0\)</span>.</li>
+<li><strong>Diffusivity.</strong> <span class="arithmatex">\(D\)</span> = <code>CompoD</code> <span class="arithmatex">\(\hat D(r)\)</span>, with <span class="arithmatex">\(\hat D\)</span> from <code>diffusivity</code> (<a href="#diffusivity">Diffusivity</a>).
+  <code>CompoD = 0</code> removes the diffusion: the composition is then only carried, it takes no wall conditions, and the
+  advice of <a href="#thermad-0">ThermaD = 0</a> applies to it.</li>
+<li><strong>What it works with.</strong> Every structure, a full sphere, a differential rotation (which only advects <span class="arithmatex">\(c\)</span>), the
+  deformed body, a magnetic field with conducting solids, the rotating solids, the drag at the outer wall (whose
+  buoyancy frequency includes <span class="arithmatex">\(N_c^2\)</span>), forced runs and the free decay (<code>hydro = 0</code>). The wave-like tide (forcing 1)
+  needs <code>compositional = 0</code>, and the steady rotation of the walls (forcing 12) needs <code>CompoD</code> &gt; 0.</li>
+<li><strong>Physical units.</strong> <code>units.set_physical(par, ..., D=...)</code>, with <span class="arithmatex">\(D\)</span> in cm²/s, also sets <code>CompoD</code> and
+  <code>BeyonceC</code> = <code>Beyonce</code>; <span class="arithmatex">\(c\)</span> is then the relative deficit of density that the composition makes.</li>
+<li><strong>Output.</strong> <code>composition.dat</code>, the power of its buoyancy in <code>flow.dat</code> and the column resid𝑐 of the <code>spin_doctor</code>
+  table (<a href="../output/#compositiondat">Output files</a>).</li>
 </ul>
 <h2 id="rotation">Rotation</h2>
 <p>With <code>diff_rot = 0</code> (the default) the background rotates uniformly at the rate of the frame. With <code>diff_rot = 1</code> it
@@ -2205,9 +2299,9 @@ convection zone whose rotation depends on latitude only:</p>
 <p>with <code>diff_rot_solar</code> = [<span class="arithmatex">\(c_0\)</span>, <span class="arithmatex">\(c_2\)</span>, <span class="arithmatex">\(c_4\)</span>, <span class="arithmatex">\(\Omega_{RZ}\)</span>, <span class="arithmatex">\(r_{tc}\)</span>, <span class="arithmatex">\(d_{tc}\)</span>] (nHz, and fractions of R☉).</p>
 <p><strong><code>'user'</code>.</strong> <code>diff_rot_profiles</code> gives the shape of each even degree as a numpy expression (<a href="#user-profiles">below</a>).
 For example, the cylindrical rotation as a <code>'user'</code> profile (it gives the same matrices as <code>'cylindrical'</code>):</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">par</span><span class="o">.</span><span class="n">diff_rot_type</span>     <span class="o">=</span> <span class="s1">'user'</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">par</span><span class="o">.</span><span class="n">diff_rot_profiles</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="s1">'(2/3)*r**2'</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="s1">'-(2/3)*r**2'</span><span class="p">}</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">par</span><span class="o">.</span><span class="n">diff_rot_ampl</span>     <span class="o">=</span> <span class="o">-</span><span class="mf">0.25</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">par</span><span class="o">.</span><span class="n">diff_rot_type</span>     <span class="o">=</span> <span class="s1">'user'</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">par</span><span class="o">.</span><span class="n">diff_rot_profiles</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="s1">'(2/3)*r**2'</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="s1">'-(2/3)*r**2'</span><span class="p">}</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">par</span><span class="o">.</span><span class="n">diff_rot_ampl</span>     <span class="o">=</span> <span class="o">-</span><span class="mf">0.25</span>
 </span></code></pre></div>
 <p>The degrees must be even. Any degree up to 16 works with <code>thermal_wind = 2</code> (32 with <code>thermal_wind = 1</code>).</p>
 <p><strong><code>'tabulated'</code>.</strong> The file holds <code>ome[θ, r]</code> (nHz), <code>r</code> (R☉) and <code>theta</code> (rad), the layout of <code>data/diff_rot.npz</code>
@@ -2427,18 +2521,18 @@ it.</p>
 </tbody>
 </table>
 <p>A Jupiter-like body, with the flattening of its structure:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">par</span><span class="o">.</span><span class="n">structure</span>         <span class="o">=</span> <span class="s1">'Wu 2005'</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">par</span><span class="o">.</span><span class="n">r_out</span>             <span class="o">=</span> <span class="mf">0.99</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">par</span><span class="o">.</span><span class="n">centrifugal</span>       <span class="o">=</span> <span class="mi">1</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">par</span><span class="o">.</span><span class="n">centrifugal_shape</span> <span class="o">=</span> <span class="s1">'clairaut'</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">par</span><span class="o">.</span><span class="n">centrifugal_q</span>     <span class="o">=</span> <span class="mf">0.089</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">par</span><span class="o">.</span><span class="n">structure</span>         <span class="o">=</span> <span class="s1">'Wu 2005'</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">par</span><span class="o">.</span><span class="n">r_out</span>             <span class="o">=</span> <span class="mf">0.99</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">par</span><span class="o">.</span><span class="n">centrifugal</span>       <span class="o">=</span> <span class="mi">1</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">par</span><span class="o">.</span><span class="n">centrifugal_shape</span> <span class="o">=</span> <span class="s1">'clairaut'</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">par</span><span class="o">.</span><span class="n">centrifugal_q</span>     <span class="o">=</span> <span class="mf">0.089</span>
 </span></code></pre></div>
 <p>The level surfaces of the Earth's core are set by the whole planet, so give the flattening of the core-mantle boundary
 instead (and, with <code>thermal = 1</code>, <code>centrifugal_q</code> = 1.7e-3, its value at that boundary, for the effective gravity):</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">par</span><span class="o">.</span><span class="n">structure</span>         <span class="o">=</span> <span class="s1">'Boussinesq'</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">par</span><span class="o">.</span><span class="n">centrifugal</span>       <span class="o">=</span> <span class="mi">1</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">par</span><span class="o">.</span><span class="n">centrifugal_shape</span> <span class="o">=</span> <span class="s1">'uniform'</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">par</span><span class="o">.</span><span class="n">centrifugal_f</span>     <span class="o">=</span> <span class="mf">2.5e-3</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">par</span><span class="o">.</span><span class="n">structure</span>         <span class="o">=</span> <span class="s1">'Boussinesq'</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">par</span><span class="o">.</span><span class="n">centrifugal</span>       <span class="o">=</span> <span class="mi">1</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">par</span><span class="o">.</span><span class="n">centrifugal_shape</span> <span class="o">=</span> <span class="s1">'uniform'</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">par</span><span class="o">.</span><span class="n">centrifugal_f</span>     <span class="o">=</span> <span class="mf">2.5e-3</span>
 </span></code></pre></div>
 <h3 id="what-it-covers">What it covers</h3>
 <p>The deformation is complete at first order in <span class="arithmatex">\(f\)</span>: the inertia, the Coriolis force and the buoyancy, the viscous force
@@ -2469,17 +2563,18 @@ and the magnetic diffusion, with all their walls and a conducting inner core, ex
 <li><code>params.dat</code> records the deformation in its columns 108–112 (<a href="../output/#paramsdat">Output files</a>).</li>
 </ul>
 <h2 id="user-profiles"><code>'user'</code> profiles</h2>
-<p><code>stratification_profile</code>, the two <code>diffusivity_profiles</code>, the <code>diff_rot_profiles</code> and <code>centrifugal_profile</code> are numpy
-expressions of <code>r</code> (the kore radius), <code>x</code> (<span class="arithmatex">\(r\cdot\)</span><code>r_out</code> with a solar structure, <span class="arithmatex">\(r\)</span> otherwise) and <code>p</code>
-(<code>stratification_param</code>, <code>diffusivity_param</code>, <code>diff_rot_param</code> or <code>centrifugal_param</code>), with <code>sin</code>, <code>cos</code>, <code>tan</code>, <code>arcsin</code>, <code>arccos</code>, <code>arctan</code>, <code>sinh</code>, <code>cosh</code>,
+<p><code>stratification_profile</code>, <code>comp_stratification_profile</code>, the <code>diffusivity_profiles</code>, the <code>diff_rot_profiles</code> and
+<code>centrifugal_profile</code> are numpy expressions of <code>r</code> (the kore radius), <code>x</code> (<span class="arithmatex">\(r\cdot\)</span><code>r_out</code> with a solar structure, <span class="arithmatex">\(r\)</span>
+otherwise) and <code>p</code> (<code>stratification_param</code>, <code>comp_stratification_param</code>, <code>diffusivity_param</code>, <code>diff_rot_param</code> or
+<code>centrifugal_param</code>), with <code>sin</code>, <code>cos</code>, <code>tan</code>, <code>arcsin</code>, <code>arccos</code>, <code>arctan</code>, <code>sinh</code>, <code>cosh</code>,
 <code>tanh</code>, <code>exp</code>, <code>log</code>, <code>log10</code>, <code>sqrt</code>, <code>abs</code>, <code>sign</code>, <code>pi</code>, <code>where</code>, <code>minimum</code>, <code>maximum</code>, <code>erf</code>, <code>erfc</code>. For example:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">par</span><span class="o">.</span><span class="n">stratification</span> <span class="o">=</span> <span class="s1">'user'</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">par</span><span class="o">.</span><span class="n">stratification_profile</span> <span class="o">=</span> <span class="s1">'2.5*exp(-((r - 0.75)/0.06)**2)'</span>      <span class="c1"># dS/dr in 1/L for r &gt;= 0</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">par</span><span class="o">.</span><span class="n">diffusivity</span> <span class="o">=</span> <span class="s1">'user'</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">par</span><span class="o">.</span><span class="n">diffusivity_profiles</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'nu'</span><span class="p">:</span> <span class="s1">'0.01 + 0.99*0.5*(1 + tanh((x - 0.70)/0.015))'</span><span class="p">,</span> <span class="s1">'kappa'</span><span class="p">:</span> <span class="s1">'1'</span><span class="p">}</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">par</span><span class="o">.</span><span class="n">stratification</span> <span class="o">=</span> <span class="s1">'user'</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">par</span><span class="o">.</span><span class="n">stratification_profile</span> <span class="o">=</span> <span class="s1">'2.5*exp(-((r - 0.75)/0.06)**2)'</span>      <span class="c1"># dS/dr in 1/L for r &gt;= 0</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">par</span><span class="o">.</span><span class="n">diffusivity</span> <span class="o">=</span> <span class="s1">'user'</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">par</span><span class="o">.</span><span class="n">diffusivity_profiles</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'nu'</span><span class="p">:</span> <span class="s1">'0.01 + 0.99*0.5*(1 + tanh((x - 0.70)/0.015))'</span><span class="p">,</span> <span class="s1">'kappa'</span><span class="p">:</span> <span class="s1">'1'</span><span class="p">}</span>
 </span></code></pre></div>
-<p>kore evaluates them at <span class="arithmatex">\(\lvert r\rvert\)</span>, so in a full sphere <span class="arithmatex">\(dS/dr\)</span> is odd and <span class="arithmatex">\(\hat\nu\)</span>, <span class="arithmatex">\(\hat\kappa\)</span>, the <span class="arithmatex">\(f_n\)</span> and
-the flattening are even whatever the expression. They are smooth at the centre only if the expression is: an odd power of <span class="arithmatex">\(r\)</span> in an even
+<p>kore evaluates them at <span class="arithmatex">\(\lvert r\rvert\)</span>, so in a full sphere <span class="arithmatex">\(dS/dr\)</span> and <span class="arithmatex">\(dC/dr\)</span> are odd and <span class="arithmatex">\(\hat\nu\)</span>, <span class="arithmatex">\(\hat\kappa\)</span>,
+<span class="arithmatex">\(\hat D\)</span>, the <span class="arithmatex">\(f_n\)</span> and the flattening are even whatever the expression. They are smooth at the centre only if the expression is: an odd power of <span class="arithmatex">\(r\)</span> in an even
 profile, or an even one in <span class="arithmatex">\(dS/dr\)</span>, makes a kink, and <span class="arithmatex">\(dS/dr\)</span> must vanish there as <span class="arithmatex">\(r\)</span>, <span class="arithmatex">\(f_n\)</span> as <span class="arithmatex">\(r^n\)</span>. <code>submatrices.py</code>
 warns about both (<a href="../numerical-method/#regularity-at-the-centre">Regularity at the centre</a>). The
 expressions must not contain <code>#</code>: <code>spin_doctor</code> writes them at the end of each <code>params.dat</code> row, after a <code>#</code>.</p>

@@ -878,6 +878,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#compositiondat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        composition.dat
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#magneticdat" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1340,6 +1351,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#compositiondat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        composition.dat
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#magneticdat" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1425,7 +1447,7 @@ table.</p>
 <tr>
 <td><code>real_flow.field</code>, <code>imag_flow.field</code></td>
 <td><code>solve.py</code></td>
-<td>the eigenvectors of the flow (or the forced flows), real and imaginary parts of their spectral coefficients, one column per solution; with <code>thermal = 1</code> also <code>real_thermal.field</code>, <code>imag_thermal.field</code> for <span class="arithmatex">\(s\)</span>; with <code>magnetic = 1</code> also <code>real_magnetic.field</code>, <code>imag_magnetic.field</code> for <span class="arithmatex">\(\mathbf b\)</span>, <code>real_magnetic_ic.field</code>, <code>imag_magnetic_ic.field</code> for the inner core <code>'conducting, Chebys'</code>, and <code>real_magnetic_mantle.field</code>, <code>imag_magnetic_mantle.field</code> for a resolved mantle; with <code>rotdyn = 1</code> also <code>real_rotdyn.field</code>, <code>imag_rotdyn.field</code> for the rotation rates of the mantle and of the inner core and the angle between them (<a href="../rotating-solids/">Rotating solids</a>). Without the flow (<code>hydro = 0</code>) the flow's files are not written</td>
+<td>the eigenvectors of the flow (or the forced flows), real and imaginary parts of their spectral coefficients, one column per solution; with <code>thermal = 1</code> also <code>real_thermal.field</code>, <code>imag_thermal.field</code> for <span class="arithmatex">\(s\)</span>; with <code>compositional = 1</code> also <code>real_composition.field</code>, <code>imag_composition.field</code> for <span class="arithmatex">\(c\)</span>; with <code>magnetic = 1</code> also <code>real_magnetic.field</code>, <code>imag_magnetic.field</code> for <span class="arithmatex">\(\mathbf b\)</span>, <code>real_magnetic_ic.field</code>, <code>imag_magnetic_ic.field</code> for the inner core <code>'conducting, Chebys'</code>, and <code>real_magnetic_mantle.field</code>, <code>imag_magnetic_mantle.field</code> for a resolved mantle; with <code>rotdyn = 1</code> also <code>real_rotdyn.field</code>, <code>imag_rotdyn.field</code> for the rotation rates of the mantle and of the inner core and the angle between them (<a href="../rotating-solids/">Rotating solids</a>). Without the flow (<code>hydro = 0</code>) the flow's files are not written</td>
 </tr>
 <tr>
 <td><code>rsf_spectrum.dat</code>, <code>rsf_ke.dat</code></td>
@@ -1458,6 +1480,11 @@ table.</p>
 <td>the entropy budget of each solution (below)</td>
 </tr>
 <tr>
+<td><code>composition.dat</code></td>
+<td><code>spin_doctor.py</code>, with <code>compositional = 1</code></td>
+<td>the budget of the composition of each solution (below)</td>
+</tr>
+<tr>
 <td><code>magnetic.dat</code></td>
 <td><code>spin_doctor.py</code>, with <code>magnetic = 1</code></td>
 <td>the magnetic energies and budgets of each solution (below)</td>
@@ -1470,8 +1497,8 @@ table.</p>
 </tbody>
 </table>
 <p><code>python3 bin/units.py</code> prints the eigenvalues of <code>eigenvalues0.dat</code> as frequency and growth rate in nHz
-(<a href="../background/#units">Background model</a>). Rows of <code>params.dat</code>, <code>flow.dat</code>, <code>thermal.dat</code>, <code>magnetic.dat</code> and <code>rotdyn.dat</code> with the same index
-belong to the same solution. Start a new <code>params.dat</code> rather than append to one written by another version of kore,
+(<a href="../background/#units">Background model</a>). Rows of <code>params.dat</code>, <code>flow.dat</code>, <code>thermal.dat</code>, <code>composition.dat</code>,
+<code>magnetic.dat</code> and <code>rotdyn.dat</code> with the same index belong to the same solution. Start a new <code>params.dat</code> rather than append to one written by another version of kore,
 which may have other columns.</p>
 <h2 id="flowdat"><code>flow.dat</code></h2>
 <p>Columns, counted from 1:</p>
@@ -1485,7 +1512,7 @@ which may have other columns.</p>
 <tbody>
 <tr>
 <td>1–3</td>
-<td>kinetic energy, and its poloidal and toroidal parts (the eigenvectors are normalised to kinetic energy 1); with <code>centrifugal = 1</code> column 1 is the kinetic energy of the deformed body, and columns 2–3 are its parts without the terms of the deformation. Without the flow (<code>hydro = 0</code>) the flow's columns are 0 or nan, the eigenvectors are normalised to a magnetic energy (<code>magnetic.dat</code>, column 1) plus an entropy "energy" (<code>thermal.dat</code>, column 1) of 1, and columns 5–7 and 28 describe the field, or the entropy without a field</td>
+<td>kinetic energy, and its poloidal and toroidal parts (the eigenvectors are normalised to kinetic energy 1); with <code>centrifugal = 1</code> column 1 is the kinetic energy of the deformed body, and columns 2–3 are its parts without the terms of the deformation. Without the flow (<code>hydro = 0</code>) the flow's columns are 0 or nan, the eigenvectors are normalised to a magnetic energy (<code>magnetic.dat</code>, column 1) plus the "energies" of the entropy and of the composition (<code>thermal.dat</code>, <code>composition.dat</code>, column 1) of 1, and columns 5–7 and 28 describe the field, or the entropy without a field</td>
 </tr>
 <tr>
 <td>4</td>
@@ -1547,6 +1574,10 @@ which may have other columns.</p>
 <td>42–43</td>
 <td>for the forcings that drive the flow by a body force, 1 (<a href="../tidal-forcing/#the-wave-like-tide-forcing-1">Tidal forcing</a>) and 8 (<a href="../libration/">Libration</a>): the power of that force on the fluid, <span class="arithmatex">\(2\thinspace\mathrm{Re}\int\rho_0\thinspace\mathbf u^*\cdot\mathbf f\thinspace dV\)</span>, and its imaginary part, in residσ and residω; the column P_in of the <code>spin_doctor</code> table adds it to the powers of the walls (columns 21, 22, 24, 25); 0 otherwise</td>
 </tr>
+<tr>
+<td>44–45</td>
+<td>with <code>compositional = 1</code>, the power of the buoyancy of the composition, <span class="arithmatex">\(2\thinspace\mathrm{BeyonceC}\thinspace\mathrm{Re}\int\rho_0\thinspace g\thinspace c\thinspace u_r^*\thinspace dV\)</span>, and its imaginary part, in residσ and residω (the entropy's is in <code>thermal.dat</code>); 0 otherwise</td>
+</tr>
 </tbody>
 </table>
 <h2 id="thermaldat"><code>thermal.dat</code></h2>
@@ -1585,6 +1616,47 @@ which may have other columns.</p>
 <tr>
 <td>7</td>
 <td>the terms of the differential rotation in the heat equation</td>
+</tr>
+</tbody>
+</table>
+<h2 id="compositiondat"><code>composition.dat</code></h2>
+<p>With <code>compositional = 1</code> (<a href="../background/#composition">Composition</a>), the budget of the composition, as <code>thermal.dat</code>
+with <span class="arithmatex">\(\rho_0\)</span> in place of <span class="arithmatex">\(p_0\)</span> (<a href="../anelastic/#entropy">Anelastic equations</a>):</p>
+<table>
+<thead>
+<tr>
+<th>columns</th>
+<th>content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>the composition's "energy" <span class="arithmatex">\(\tfrac12\int\rho_0\lvert c\rvert^2\thinspace dV\)</span> (of the deformed body with <code>centrifugal = 1</code>)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>the advection by the background gradient</td>
+</tr>
+<tr>
+<td>3</td>
+<td>the diffusion (of the deformed body with <code>centrifugal = 1</code>)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>the relative residual of the balance of the composition (resid𝑐)</td>
+</tr>
+<tr>
+<td>5</td>
+<td>the work of its buoyancy force (<code>flow.dat</code>, column 44)</td>
+</tr>
+<tr>
+<td>6</td>
+<td>the energy residual (residσ)</td>
+</tr>
+<tr>
+<td>7</td>
+<td>the advection by the differential rotation; it only moves the frequency, so this real part is 0 to round-off</td>
 </tr>
 </tbody>
 </table>
@@ -1763,13 +1835,22 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 <td>135–141</td>
 <td><code>kappa_cmb</code>, <code>topo_drag</code> (1 for <code>'rekier'</code>, 0 for <code>None</code>), and with <code>'rekier'</code> (0 otherwise) <code>topo_hrms</code>, <code>topo_lambda0</code>, <code>topo_H</code>, and the buoyancy frequency and the frequency of the flow that the drag used, over the rotation rate (<a href="../drag/">Drag at the outer wall</a>)</td>
 </tr>
+<tr>
+<td>142–150</td>
+<td><code>compositional</code>, <code>comp_stratification</code>, <code>comp_stratification_param</code>, <code>BeyonceC</code>, <code>CompoD</code>, <code>comp0</code>, <code>comp_pow</code>, <code>bci_compositional</code>, <code>bco_compositional</code></td>
+</tr>
+<tr>
+<td>151–154</td>
+<td><code>comp_two_zone</code> (<span class="arithmatex">\(r_c\)</span>, <span class="arithmatex">\(h\)</span>) and <code>two_zone</code> (<span class="arithmatex">\(r_c\)</span>, <span class="arithmatex">\(h\)</span>)</td>
+</tr>
 </tbody>
 </table>
 <ul>
 <li>Names are written as their index in the lists of the code: <code>structure</code> in <code>background.STRUCTURES</code> (<code>'8-term fit'</code> 0,
   <code>'old model S prototype'</code> 1, <code>'model S hydrostatic'</code> 2, <code>'Wu 2005'</code> 3, <code>'Boussinesq'</code> 4), <code>stratification</code> in
   <code>background.STRATIFICATIONS</code> (<code>'top hat'</code> 0, <code>'odd top hat'</code> 1, <code>'solar_rz'</code> 2, <code>'linear'</code> 3, <code>'inverse square'</code> 4,
-  <code>'user'</code> 5; −1 without a stratification), <code>diffusivity</code> in <code>background.DIFFUSIVITIES</code> (<code>'uniform'</code> 0, <code>'step'</code> 1,
+  <code>'user'</code> 5, <code>'two zone'</code> 6; −1 without a stratification), <code>comp_stratification</code> in <code>background.COMP_STRATIFICATIONS</code>
+  (<code>'linear'</code> 0, <code>'inverse square'</code> 1, <code>'two zone'</code> 2, <code>'user'</code> 3; −1 with <code>compositional = 0</code>), <code>diffusivity</code> in <code>background.DIFFUSIVITIES</code> (<code>'uniform'</code> 0, <code>'step'</code> 1,
   <code>'solar_rz'</code> 2, <code>'user'</code> 3) and <code>diff_rot_type</code> in <code>diff_rot.TYPES</code> (<code>'Y20'</code> 0, …, <code>'rigid'</code> 7, <code>'solar_P4'</code> 8,
   <code>'tabulated'</code> 9, <code>'user'</code> 10, <code>'ferraro'</code> 11).</li>
 <li>Column 64 is <code>structure_deg</code> for <code>'model S hydrostatic'</code>. Columns 65–66 are nan for the default window and
@@ -1791,11 +1872,12 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
   Column 111 is the flattening of the outer wall that the run used, with any shape (0 with <code>centrifugal = 0</code>).</li>
 <li><code>diff_rot_generic</code> and <code>diff_rot_hold</code> are not used (always 0 and nan); they keep the positions of the columns after
   them.</li>
-<li>A row ends, after a <code>#</code> that <code>np.loadtxt</code> skips, with the <code>'user'</code>, <code>'general'</code> and <code>'ferraro'</code> expressions, that of
+<li>A row ends, after a <code>#</code> that <code>np.loadtxt</code> skips, with the <code>'user'</code> (the composition's too), <code>'general'</code> and <code>'ferraro'</code> expressions, that of
   <code>sigma_mantle</code> and, for <code>'tabulated'</code>, <code>diff_rot_file</code> with the first 12 hex digits of its sha256. A row with none of
   these has no <code>#</code>.</li>
-<li>A <code>params.dat</code> written before the columns 108–112, column 113, the columns 114–122, 123–127, 128–134 or 135–141 were
-  added has fewer columns: start a new file. The same holds for <code>flow.dat</code> before its columns 29–39, 40–41 or 42–43.</li>
+<li>A <code>params.dat</code> written before the columns 108–112, column 113, the columns 114–122, 123–127, 128–134, 135–141 or
+  142–154 were added has fewer columns: start a new file. The same holds for <code>flow.dat</code> before its columns 29–39, 40–41,
+  42–43 or 44–45.</li>
 </ul>
 
 
