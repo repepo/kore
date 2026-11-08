@@ -623,6 +623,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../libration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Libration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../couette-flow/" class="md-nav__link">
         
   
@@ -1449,7 +1477,10 @@ viscous ones with <span class="arithmatex">\(16\pi/3\)</span> for <span class="a
 the forcing moves the walls only along themselves and puts no force in the fluid: the libration (forcing 7 with <span class="arithmatex">\(m\)</span> =
 0), the steady rotation of the walls (forcing 12, where <span class="arithmatex">\(\lambda = 0\)</span> and the torques on the two solids cancel) and the
 thermal forcing (forcing 13). A flow through a wall would add the Coriolis torque of the mass it carries across, and a
-body force (forcing 11) its own torque, so resid𝐋 is not computed for the other forcings.</p>
+body force its own torque. For the body forces <span class="arithmatex">\(\mathbf f\)</span> that <code>spin_doctor</code> knows, the Poincaré force of the libration
+in the frame of the mantle (forcing 8) and the force of the wave-like tide (forcing 1, axial for <span class="arithmatex">\(m\)</span> = 0 and equatorial
+for <span class="arithmatex">\(m\)</span> = 1), the balance includes that torque, the same integral as <span class="arithmatex">\(L\)</span> over the toroidal part of <span class="arithmatex">\(\mathbf f\)</span> of degree 1
+(<code>utils4pp.body_force_terms</code>). resid𝐋 is not computed for the other forcings.</p>
 <p>resid𝐋 is the residual of the balance relative to the largest of <span class="arithmatex">\(\lvert\lambda\rvert L_{\rm abs}\)</span>, the torques, and
 Gaspard <span class="arithmatex">\(L_{\rm abs}\)</span> for <span class="arithmatex">\(m = 1\)</span>, with <span class="arithmatex">\(L_{\rm abs}\)</span> the same integral of <span class="arithmatex">\(\lvert T\rvert\)</span>: a mode on which no torque
 acts (stress-free walls) is then checked to carry no angular momentum.</p>

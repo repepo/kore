@@ -623,6 +623,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../libration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Libration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../couette-flow/" class="md-nav__link">
         
   
@@ -1627,13 +1655,13 @@ quadrature in <span class="arithmatex">\(\cos\theta\)</span>, exact for these po
 <tbody>
 <tr>
 <td>residσ</td>
-<td><span class="arithmatex">\(2\sigma K - W_\nu - W_b - W_\Omega - W_p = 0\)</span> (and the Lorentz work)</td>
-<td><code>2σ KE - Dkin - Wthm - Wdr - Wp</code></td>
+<td><span class="arithmatex">\(2\sigma K - W_\nu - W_b - W_\Omega - W_p - W_f = 0\)</span> (and the Lorentz work)</td>
+<td><code>2σ KE - Dkin - Wthm - Wdr - Wp - Wf</code></td>
 </tr>
 <tr>
 <td>residω</td>
 <td>its imaginary part, with the Coriolis force</td>
-<td><code>2w KE + Wcor_im - Dkin_im - Wthm_im - Wdr_im - Wp_im</code>, <span class="arithmatex">\(w = \mathrm{Im}\thinspace\lambda\)</span></td>
+<td><code>2w KE + Wcor_im - Dkin_im - Wthm_im - Wdr_im - Wp_im - Wf_im</code>, <span class="arithmatex">\(w = \mathrm{Im}\thinspace\lambda\)</span></td>
 </tr>
 <tr>
 <td>resid<span class="arithmatex">\(s\)</span></td>
@@ -1656,8 +1684,16 @@ quadrature in <span class="arithmatex">\(\cos\theta\)</span>, exact for these po
 runs, where <span class="arithmatex">\(\sigma = 0\)</span>. Where the walls drive the flow along themselves (the libration, forcing 7 with <span class="arithmatex">\(m\)</span> = 0, and
 the steady rotation of the walls, forcing 12), <span class="arithmatex">\(W_\nu = W_\nu^{\rm wall} - D_\nu\)</span> is a small difference of two large
 terms, so residσ, and resid𝐄 with a field, are relative to <span class="arithmatex">\(D_\nu\)</span> too. A residual whose terms all vanish, such as
-residω of a steady flow with <span class="arithmatex">\(m\)</span> = 0, is 0. residD compares two independent computations of the viscous terms: <span class="arithmatex">\(W_\nu\)</span> from the viscous
-force of each degree (<code>utils4pp.visforce</code>), and <span class="arithmatex">\(D_\nu\)</span> from the strain rate on the grid
+residω of a steady flow with <span class="arithmatex">\(m\)</span> = 0, is 0. <span class="arithmatex">\(W_f = 2\thinspace\mathrm{Re}\int\rho_0\thinspace\mathbf u^*\cdot\mathbf f\thinspace dV\)</span>
+is the power of a body force that the right-hand side puts in the fluid: that of a known flow <span class="arithmatex">\(\mathbf x\)</span> whose
+equations make it (forcings 1 and 8),</p>
+<div class="arithmatex">\[
+\mathbf f = -\left[\lambda\mathbf x + 2\thinspace\mathrm{Gaspard}\thinspace\hat{\mathbf z}\times\mathbf x -
+\frac{\nabla\cdot\boldsymbol\sigma(\mathbf x)}{\rho_0} - \mathbf F_\Omega(\mathbf x)\right] ,
+\]</div>
+<p>with <span class="arithmatex">\(\mathbf F_\Omega\)</span> the force of a differential rotation (<code>utils4pp.body_force_terms</code>). Its enstrophy term enters
+residens, and <span class="arithmatex">\(W_f\)</span> is 0 for the other forcings. residD compares two independent computations of the viscous terms:
+<span class="arithmatex">\(W_\nu\)</span> from the viscous force of each degree (<code>utils4pp.visforce</code>), and <span class="arithmatex">\(D_\nu\)</span> from the strain rate on the grid
 (<code>utils4pp.viscous_dissipation</code>). It is <span class="arithmatex">\(10^{-15}\)</span> to <span class="arithmatex">\(10^{-12}\)</span>.</p>
 <p><strong>The work at the walls</strong> (<code>utils4pp.wall_powers</code>). kore does not solve for the pressure. <code>spin_doctor</code> recovers it
 from the momentum equation: <span class="arithmatex">\(\nabla\Pi = \mathbf F - \lambda\mathbf u\)</span>, with <span class="arithmatex">\(\mathbf F\)</span> every force but the pressure, and

@@ -628,6 +628,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../libration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Libration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../couette-flow/" class="md-nav__link">
         
   
@@ -1420,7 +1448,10 @@ and either <code>m = 0</code>, <code>symm = 1</code> (the axial angular momentum
 Coriolis force turns; the spin-over mode is one of these), with or without the rotating solids. It also prints it for
 the forced runs with <code>m = 0</code>, <code>symm = 1</code> whose walls move only along themselves and that put no force in the fluid: the
 libration (forcing 7), the steady rotation of the walls (forcing 12, <a href="../couette-flow/">Spherical Couette flow</a>) and the
-thermal forcing (forcing 13). It is not computed with <code>centrifugal = 1</code>, nor for <code>m = 1</code> with a differential rotation.
+thermal forcing (forcing 13), and for those whose body force it knows, with the torque of that force: the libration in
+the frame of the mantle (forcing 8, <a href="../libration/">Libration</a>) and the wave-like tide (forcing 1, <code>m = 0</code> or <code>m = 1</code>,
+<a href="../tidal-forcing/#the-wave-like-tide-forcing-1">Tidal forcing</a>). It is not computed with <code>centrifugal = 1</code>, nor for
+<code>m = 1</code> with a differential rotation.
 Like residσ, it should be small for a resolved mode.
 <code>flow.dat</code> has the angular momentum, the torques and resid𝐋 (<a href="../output/#flowdat">Output files</a>).</p>
 <h2 id="what-is-supported">What is supported</h2>

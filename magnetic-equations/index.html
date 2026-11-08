@@ -623,6 +623,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../libration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Libration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../couette-flow/" class="md-nav__link">
         
   
@@ -2741,6 +2769,16 @@ forcing (<code>forcing_frequency</code>), with every perturbation going as <span
   conducting inner core or a conducting thin layer on it, by the <span class="arithmatex">\(\mathbf u\times\mathbf B_0\)</span> of the slip relative to the
   core, which is not built: that case stops (<code>background.check_forced_magnetic</code>). With an insulating core, or a toroidal
   <span class="arithmatex">\(\mathbf B_0\)</span> alone, <code>forcing_amplitude_icb</code> has no effect (<code>assemble.py</code> says so).</li>
+<li><strong>The libration in the frame of the mantle</strong> (forcing 8, <a href="../libration/">Libration</a>). Its right-hand side is
+  <span class="arithmatex">\(-A\mathbf x\)</span> on the interior rows of every equation of the fluid, with <span class="arithmatex">\(\mathbf x\)</span> the rigid libration of the mantle
+  (<span class="arithmatex">\(T_1 = iwA\thinspace r/2\)</span>, <code>utils.lifted_flow</code>; <code>assemble.lifted_rhs</code>), the induction rows included. Since
+  <span class="arithmatex">\(\nabla\times(\mathbf x\times\mathbf B_0) = 0\)</span> these get nothing, and the field is that of forcing 7 with the inner
+  core's angle <span class="arithmatex">\(A + A_{IC}\)</span>, while the flow is forcing 7's minus <span class="arithmatex">\(\mathbf x\)</span>. The walls are at rest, so a fluid that slips
+  along a stress-free wall slips relative to the solid behind it, with the rows of a slipping fluid at a wall at rest.
+  The libration of the inner core relative to the mantle behind a stress-free inner wall stops as for forcing 7.</li>
+<li><strong>The eccentricity tide</strong> (forcing 2). It moves the walls along themselves too, with a tangential velocity that is not
+  a rotation. A conducting solid behind such a wall would deform along it and induce a field, which no row holds: the
+  run needs insulating walls (<code>background.check_forced_magnetic</code>).</li>
 </ul>
 <p><strong>The Bessel inner core</strong> (<code>innercore = 'conducting, Bessel'</code>, from <code>conductive_IC</code>). At one frequency the field of a
 uniform conducting inner core, regular at the centre, is known: each scalar goes as <span class="arithmatex">\(j_l(kr)\)</span>, with</p>
@@ -3283,8 +3321,10 @@ Mag/Kin and writes <code>magnetic.dat</code>:</p>
 <div class="arithmatex">\[
 2\sigma[\mathrm{KE} + \mathrm{Hendrik}(\mathrm{ME} + \mathrm{MEic} + \mathrm{MEext})] = \mathrm{Dkin} + \mathrm{Wthm} + \mathrm{Wlor} + \mathrm{Hendrik}(\mathrm{Indu} - \mathrm{Ohm\_f} - \mathrm{Ohm\_ic}) :
 \]</div>
-<p>unlike resid𝐛 it sees the wall and ICB conditions. The <span class="arithmatex">\(1/\mu_{i2o}\)</span> of the inner core's energy and Ohmic loss is not in
-<code>conductive_IC</code>'s <code>em_budget</code> (there resid𝐄 is <span class="arithmatex">\(10^{-2}\)</span> at <code>mu_i2o</code> = 2). Without the flow (<code>hydro = 0</code>) it is
+<p>unlike resid𝐛 it sees the wall and ICB conditions. A body force that the right-hand side puts in the fluid, the Poincaré
+force of the libration in the frame of the mantle (forcing 8), adds its power Wf (<code>flow.dat</code> column 42) on the right. The
+<span class="arithmatex">\(1/\mu_{i2o}\)</span> of the inner core's energy and Ohmic loss is not in <code>conductive_IC</code>'s <code>em_budget</code> (there resid𝐄 is
+<span class="arithmatex">\(10^{-2}\)</span> at <code>mu_i2o</code> = 2). Without the flow (<code>hydro = 0</code>) it is
 <span class="arithmatex">\(2\sigma(\mathrm{ME} + \mathrm{MEic} + \mathrm{MEext}) = \mathrm{Indu} - \mathrm{Ohm\_f} - \mathrm{Ohm\_ic}\)</span>, without
 Hendrik and for any walls (Indu is then the induction by a differential rotation, or 0).</p>
 <p><strong>Slipping walls.</strong> Where the fluid slips along an impenetrable wall (<code>bco</code> or <code>bci</code> 0, or <code>ViscosD = 0</code>),
@@ -3796,7 +3836,7 @@ inside a conducting inner core. <code>tests/decay/decay_check.py</code> finds th
 <td>conducting inner core, <code>sigma_i2o</code> 0.3</td>
 <td>the same: 9.993017, 43.759526, 33.248628, 35.942816</td>
 <td>6e-14</td>
-<td>≤ 8e-11</td>
+<td>≤ 2e-10</td>
 </tr>
 <tr>
 <td>full sphere</td>
@@ -3808,7 +3848,10 @@ inside a conducting inner core. <code>tests/decay/decay_check.py</code> finds th
 </table>
 <p>With a differential rotation the modes of the field alone equal, to <span class="arithmatex">\(10^{-15}\)</span>, those of the same run with the flow and a
 B0 of <span class="arithmatex">\(10^{-9}\)</span>, where the field and the flow decouple; the entropy of <code>'Boussinesq'</code> decays at the exact rates too, and
-the field of <code>just_induction.py</code> with <code>solve_ind.py</code> is that of a mode without Lorentz force to <span class="arithmatex">\(10^{-14}\)</span>.</p>
+the field of <code>just_induction.py</code> with <code>solve_ind.py</code> is that of a mode without Lorentz force to <span class="arithmatex">\(10^{-14}\)</span>. resid𝐛 takes
+the magnetic diffusion from <span class="arithmatex">\(\int\mathbf b\cdot\nabla^2\mathbf b\,dV\)</span>, whose round-off grows with N and differs
+from one machine to another: with the conducting inner core it is <span class="arithmatex">\(8\times10^{-11}\)</span> on one and <span class="arithmatex">\(2\times10^{-10}\)</span> on
+another, and the check holds the budgets to <span class="arithmatex">\(10^{-9}\)</span>.</p>
 <h3 id="thin-conducting-layer-2026-11-06">Thin conducting layer (2026-11-06)</h3>
 <p>The thin layers were ported from <code>conductive_IC</code> (2d84351) and checked against exact decay rates, against that branch, and
 with the energy budgets (<code>tests/twa/twa_check.py</code>).</p>

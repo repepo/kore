@@ -12,7 +12,7 @@
         <link rel="prev" href="../thermal-forcing/">
       
       
-        <link rel="next" href="../couette-flow/">
+        <link rel="next" href="../libration/">
       
       
         
@@ -714,10 +714,60 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#the-wave-like-tide-forcing-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The wave-like tide (forcing 1)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-eccentricity-tide-of-enceladus-forcing-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The eccentricity tide of Enceladus (forcing 2)
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../libration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Libration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1344,6 +1394,28 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#the-wave-like-tide-forcing-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The wave-like tide (forcing 1)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-eccentricity-tide-of-enceladus-forcing-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The eccentricity tide of Enceladus (forcing 2)
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1366,6 +1438,10 @@
 the surface of a star or a planet. kore returns the flow this drives in the fluid: the tidally forced inertial and
 gravito-inertial waves, with their dissipation and the power that the tide puts in. A scan of <code>forcing_frequency</code> gives
 the frequency spectrum of the response.</p>
+<p>Two more tides are at the end of this page. Forcing 1 splits the tide of an incompressible fluid into the equilibrium
+tide, the flow that follows the bulge, and the wave-like tide that the rotation excites, and solves for the wave-like
+part (<a href="#the-wave-like-tide-forcing-1">The wave-like tide</a>). Forcing 2 moves the walls of the ocean of Enceladus with its
+eccentricity tide (<a href="#the-eccentricity-tide-of-enceladus-forcing-2">The eccentricity tide of Enceladus</a>).</p>
 <h2 id="what-it-imposes">What it imposes</h2>
 <p>At each wall <span class="arithmatex">\(r_w\)</span> the radial velocity is</p>
 <div class="arithmatex">\[
@@ -1390,12 +1466,12 @@ u_r(r_w, \theta, \phi, t) = A_w\thinspace Y_2^m(\theta)\thinspace e^{i(m\phi + w
 <tr>
 <td>obliquity, <span class="arithmatex">\((2, 1)\)</span></td>
 <td>1, −1</td>
-<td><span class="arithmatex">\(-2\sqrt3\thinspace A\sin\theta\cos\theta\cos(\phi + wt)\)</span></td>
+<td><span class="arithmatex">\(-\sqrt6\thinspace A\sin\theta\cos\theta\cos(\phi + wt)\)</span></td>
 </tr>
 <tr>
 <td>eccentricity and asynchronism, <span class="arithmatex">\((2, 2)\)</span></td>
 <td>2, 1</td>
-<td><span class="arithmatex">\(\sqrt3\thinspace A\sin^2\theta\cos(2\phi + wt)\)</span></td>
+<td><span class="arithmatex">\(\tfrac{\sqrt6}{2}\thinspace A\sin^2\theta\cos(2\phi + wt)\)</span></td>
 </tr>
 </tbody>
 </table>
@@ -1583,6 +1659,94 @@ physical flow.</p>
 </table>
 <p>The fields are written as for any forced run (<a href="../output/">Output files</a>), and <code>tests/tidal</code> checks the forcing against an
 exact solution of the forced flow.</p>
+<h2 id="the-wave-like-tide-forcing-1">The wave-like tide (forcing 1)</h2>
+<p>In a fluid body the tide has two parts. The equilibrium tide is the large-scale flow that follows the tidal bulge as it
+moves, a potential flow in an incompressible fluid. The wave-like tide is the response that the Coriolis force on that
+flow excites: inertial waves, whose dissipation depends strongly on the frequency. Forcing 1 solves for the wave-like
+part alone, as Lin &amp; Ogilvie (2018) do, so that its response and its dissipation are seen on their own.</p>
+<p>The equilibrium tide of degree 2 in a shell is</p>
+<div class="arithmatex">\[
+\mathbf u_e = \nabla\big[X(r)\thinspace Y_2^m(\theta)\thinspace e^{i(m\phi + wt)}\big] + \text{c.c.}, \qquad
+X(r) = -\frac{3a}{4}\thinspace\frac{r^2 + \tfrac23 r_i^5 r^{-3}}{1 - r_i^5} ,
+\]</div>
+<p>with <span class="arithmatex">\(a\)</span> = <code>forcing_amplitude_cmb</code> and <span class="arithmatex">\(w\)</span> = <code>forcing_frequency</code>. It moves the outer wall radially,
+<span class="arithmatex">\(u_r = -\tfrac32 a\thinspace Y_2^m e^{i(m\phi + wt)}\)</span> + c.c. there, and leaves the inner wall in place. In a fluid of
+uniform density it is solenoidal and irrotational, so its inertia and its viscous force are gradients, which the
+pressure takes up. What remains is the Coriolis force on it, <span class="arithmatex">\(-2\thinspace\mathrm{Gaspard}\thinspace\hat{\mathbf z}\times\mathbf u_e\)</span>,
+a body force on the wave-like tide <span class="arithmatex">\(\mathbf u'\)</span>. kore solves for <span class="arithmatex">\(\mathbf u'\)</span>, whose walls are at rest: impenetrable, and
+no-slip or stress-free as <code>bci</code> and <code>bco</code> say. The whole tide is <span class="arithmatex">\(\mathbf u_e + \mathbf u'\)</span>. The conditions at the walls
+hold for <span class="arithmatex">\(\mathbf u'\)</span> alone, so at a no-slip wall the whole tide slips with the tangential velocity of <span class="arithmatex">\(\mathbf u_e\)</span>.</p>
+<p>Requirements: <code>structure = 'Boussinesq'</code>, <code>thermal = 0</code> and <code>magnetic = 0</code>, since the equilibrium tide above is that of
+a uniform fluid, with no stratification to displace and no field to induce; (<code>m</code>, <code>symm</code>) = (0, 1), (1, −1) or (2, 1);
+<code>bci</code> and <code>bco</code> 0 or 1, and no drag at the outer wall (<code>kappa_cmb</code> 0, <code>topo_drag</code> <code>None</code>), which would act on the slip
+of the whole tide. With <code>m = 2</code> the run needs an inner core: in a full sphere the Coriolis force on the equilibrium tide
+is a gradient and drives nothing. With <code>m</code> = 0 or 1 a full sphere works, and there alone the fluid may be inviscid
+(<code>ViscosD = 0</code>).</p>
+<p><strong>Example.</strong> In the example of forcing 14 above, set</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">par</span><span class="o">.</span><span class="n">forcing</span> <span class="o">=</span> <span class="mi">1</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">par</span><span class="o">.</span><span class="n">forcing_frequency</span> <span class="o">=</span> <span class="mf">1.0</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">par</span><span class="o">.</span><span class="n">forcing_amplitude_cmb</span> <span class="o">=</span> <span class="mf">1.0</span>   <span class="c1"># a</span>
+</span></code></pre></div>
+<p>and run the same four steps. <code>spin_doctor</code> prints residσ <span class="arithmatex">\(8\times10^{-15}\)</span>, and P_in = Dν = 0.019314: the power of the
+body force on the wave-like tide, <code>flow.dat</code> column 42, which the viscosity dissipates. The walls do no work, since
+<span class="arithmatex">\(\mathbf u'\)</span> is at rest there, and <span class="arithmatex">\(D_\nu\)</span> is the dissipation of <span class="arithmatex">\(\mathbf u'\)</span> alone. The flow in <code>real_flow.field</code> and
+<code>imag_flow.field</code> is <span class="arithmatex">\(\mathbf u'\)</span>; add <span class="arithmatex">\(\mathbf u_e\)</span> for the whole tide.</p>
+<h2 id="the-eccentricity-tide-of-enceladus-forcing-2">The eccentricity tide of Enceladus (forcing 2)</h2>
+<p>Enceladus keeps its ocean between an icy shell and a rocky core. On its eccentric orbit the tide stretches and squeezes
+both, so the walls of the ocean move, radially and along themselves. Rekier et al. (2019, appendix A.1) give these
+motions as fits in the ratio of the ocean's radii, <code>ricb</code> (<code>utils.eccen_tide</code>). Forcing 2 moves the walls with those
+fits, and kore returns the flow in the ocean, with its inertial waves and their dissipation.</p>
+<p>Each wall moves with the velocity <span class="arithmatex">\(iw\boldsymbol\xi\)</span> + c.c., with <span class="arithmatex">\(\boldsymbol\xi\)</span> the displacement of the tide at that wall,
+radial and tangential, of degree 2, and <span class="arithmatex">\(w\)</span> = <code>forcing_frequency</code>. One amplitude, <code>forcing_amplitude_cmb</code>, scales the
+fits at both walls (1: the fits as they are). The tide of a moon that turns once per orbit has three parts, each a run:
+<code>m = 0</code>, and <code>m = 2</code> with <span class="arithmatex">\(w\)</span> = −<code>Gaspard</code> (prograde) and <span class="arithmatex">\(w\)</span> = <code>Gaspard</code> (retrograde); their powers add. The fits are
+the tide at the orbital frequency, <span class="arithmatex">\(|w|\)</span> = <code>Gaspard</code>; at another frequency <code>assemble.py</code> prints a note and keeps the
+same displacement.</p>
+<p>Requirements: <code>ricb</code> from 16/21 to 1, where the fits hold (Enceladus has about 0.88); (<code>m</code>, <code>symm</code>) = (0, 1) or (2, 1);
+no-slip walls (<code>bci = bco = 1</code>, <code>ViscosD &gt; 0</code>), which the tide moves along themselves. Any <code>structure</code>, buoyancy and a
+differential rotation work, and a field with insulating walls (<code>'insulator'</code>, or <code>'TWA'</code> with <code>c1</code> 0): a conducting
+solid behind a wall would deform along it, which is not covered (<a href="../magnetic/#a-boundary-that-moves">Magnetic field</a>).
+The power is read as for forcing 14 (<a href="#the-energy-of-the-response">The energy of the response</a>): P_in is the work of the
+moving walls, <code>flow.dat</code> columns 21, 22, 24 and 25. For example, the prograde part with <code>ricb = 37/42</code>, Ek <span class="arithmatex">\(10^{-3}\)</span>, N
+48 and <code>lmax</code> 61 gives P_in = Dν = <span class="arithmatex">\(2.17\times10^{-11}\)</span> at <code>forcing_amplitude_cmb = 1</code>.</p>
+<table>
+<thead>
+<tr>
+<th>parameter</th>
+<th>forcing 1</th>
+<th>forcing 2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>forcing_frequency</code></td>
+<td><span class="arithmatex">\(w\)</span>, not 0</td>
+<td><span class="arithmatex">\(w\)</span>, ± <code>Gaspard</code></td>
+</tr>
+<tr>
+<td><code>forcing_amplitude_cmb</code></td>
+<td><span class="arithmatex">\(a\)</span>: <span class="arithmatex">\(u_r = -\tfrac32 a\thinspace Y_2^m\)</span> at the outer wall</td>
+<td>the scale of the fits, at both walls</td>
+</tr>
+<tr>
+<td><code>forcing_amplitude_icb</code></td>
+<td>not used</td>
+<td>not used</td>
+</tr>
+<tr>
+<td><code>m</code>, <code>symm</code></td>
+<td>(0, 1), (1, −1), (2, 1)</td>
+<td>(0, 1), (2, 1)</td>
+</tr>
+<tr>
+<td><code>bci</code>, <code>bco</code></td>
+<td>0 or 1</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<p><code>tests/cic_forcings</code> checks both against the <code>conductive_IC</code> branch, the wave-like tide against rigid rotations that
+solve it exactly in a full sphere, and their budgets and stops; <code>tests/forcing</code> checks the wall values of forcing 2.</p>
 
 
 

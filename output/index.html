@@ -628,6 +628,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../libration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Libration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../couette-flow/" class="md-nav__link">
         
   
@@ -1515,6 +1543,10 @@ which may have other columns.</p>
 <td>40–41</td>
 <td>with a viscous fluid at a stress-free outer wall (not with <code>centrifugal = 1</code>), the power the drag at the wall dissipates and the damping rate it implies, Dtopo and δσtopo, per unit <code>kappa_cmb</code> without a drag (<a href="../drag/#output">Drag at the outer wall</a>); 0 otherwise</td>
 </tr>
+<tr>
+<td>42–43</td>
+<td>for the forcings that drive the flow by a body force, 1 (<a href="../tidal-forcing/#the-wave-like-tide-forcing-1">Tidal forcing</a>) and 8 (<a href="../libration/">Libration</a>): the power of that force on the fluid, <span class="arithmatex">\(2\thinspace\mathrm{Re}\int\rho_0\thinspace\mathbf u^*\cdot\mathbf f\thinspace dV\)</span>, and its imaginary part, in residσ and residω; the column P_in of the <code>spin_doctor</code> table adds it to the powers of the walls (columns 21, 22, 24, 25); 0 otherwise</td>
+</tr>
 </tbody>
 </table>
 <h2 id="thermaldat"><code>thermal.dat</code></h2>
@@ -1763,7 +1795,7 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
   <code>sigma_mantle</code> and, for <code>'tabulated'</code>, <code>diff_rot_file</code> with the first 12 hex digits of its sha256. A row with none of
   these has no <code>#</code>.</li>
 <li>A <code>params.dat</code> written before the columns 108–112, column 113, the columns 114–122, 123–127, 128–134 or 135–141 were
-  added has fewer columns: start a new file. The same holds for <code>flow.dat</code> before its columns 29–39 or 40–41.</li>
+  added has fewer columns: start a new file. The same holds for <code>flow.dat</code> before its columns 29–39, 40–41 or 42–43.</li>
 </ul>
 
 

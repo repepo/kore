@@ -621,6 +621,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../libration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Libration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../couette-flow/" class="md-nav__link">
         
   
@@ -1387,15 +1415,21 @@ seconds to minutes.</p>
 </tr>
 <tr>
 <td><code>tests/forcing/run_all.sh</code></td>
-<td>the wall values that the boundary forcings 6, 7, 9, 10 and 12 impose, read back from the solution</td>
+<td>the wall values that the boundary forcings 2, 6, 7, 9, 10 and 12 impose, read back from the solution</td>
 <td>after a change of a boundary forcing or of the wall rows</td>
-<td>30 s</td>
+<td>40 s</td>
 </tr>
 <tr>
 <td><code>tests/couette/run_all.sh</code></td>
 <td>the steady rotation of the walls (forcing 12): the solutions of the <code>conductive_IC</code> branch, the exact flow without rotation, the rigid rotations with conducting solids, the budgets of the flows that the walls drive (also the libration and the thermal forcing), the stops</td>
 <td>after a change of a boundary forcing, of the magnetic walls or the inner core, or of <code>spin_doctor</code>'s budgets</td>
 <td>1.5 min on 2 ranks</td>
+</tr>
+<tr>
+<td><code>tests/cic_forcings/run_all.sh</code></td>
+<td>the tides and the libration of the <code>conductive_IC</code> branch (forcings 1, 2 and 8): their solutions there, the libration in the frame of the mantle against that of the walls (forcing 7), the wave-like tide against the rigid rotations that solve it in a full sphere, the budgets with the power of the body force, the stops</td>
+<td>after a change of a boundary or body forcing, of the right-hand side of a forced run, or of <code>spin_doctor</code>'s budgets</td>
+<td>2.5 min on 2 ranks</td>
 </tr>
 <tr>
 <td><code>tests/twa/run_all.sh</code></td>
@@ -1447,7 +1481,7 @@ seconds to minutes.</p>
 </tr>
 </tbody>
 </table>
-<p><code>tests/diff_rot</code>, <code>tests/heat_dr</code>, <code>tests/magnetic</code>, <code>tests/centrifugal</code>, <code>tests/rsf</code>, <code>tests/tidal</code>, <code>tests/forcing</code>, <code>tests/couette</code>, <code>tests/decay</code>, <code>tests/twa</code>, <code>tests/mantle</code>, <code>tests/forced_field</code>, <code>tests/inner_core</code>, <code>tests/sheet</code>, <code>tests/rotdyn</code> and <code>tests/drag</code> each have a README
+<p><code>tests/diff_rot</code>, <code>tests/heat_dr</code>, <code>tests/magnetic</code>, <code>tests/centrifugal</code>, <code>tests/rsf</code>, <code>tests/tidal</code>, <code>tests/forcing</code>, <code>tests/couette</code>, <code>tests/cic_forcings</code>, <code>tests/decay</code>, <code>tests/twa</code>, <code>tests/mantle</code>, <code>tests/forced_field</code>, <code>tests/inner_core</code>, <code>tests/sheet</code>, <code>tests/rotdyn</code> and <code>tests/drag</code> each have a README
 that lists their scripts and what each one checks; the CI test explains itself in <code>tests/ci/test_spinover.py</code>.</p>
 <h2 id="are-existing-runs-unchanged">Are existing runs unchanged?</h2>
 <p><code>tests/diff_rot/regress.sh</code> builds the same small runs twice, once with an older copy of kore and once with yours, and
