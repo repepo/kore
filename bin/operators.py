@@ -158,17 +158,19 @@ def centrifugal_magnetic(l, section, component, offdiag):  # ------- NEW (2026-1
 
 def centrifugal_entropy(l, section, component, offdiag):  # ------------ NEW (2026-11-05): heat time derivative of the deformed body
     '''
-    (J - 1) s = η P2 s in the heat rows (centrifugal.entropy_block), with the sign of entropy() in B. Returns [matrix, offd].
+    (J - 1) s = η P2 s in the heat rows (centrifugal.entropy_block), with the sign of entropy() in B; NEW (2026-11-08) section
+    'c', (J - 1) c in the rows of the composition, with the sign of composition(). Returns [matrix, offd].
     '''
-    return cf.entropy_block(l, offdiag, globals())
+    return cf.entropy_block(l, offdiag, globals(), section)
 
 
 def centrifugal_diffusion(l, section, component, offdiag):  # ------ NEW (2026-11-05, phase 2): diffusion of the deformed body
     '''
     The metric parts of the viscous force (section 'u', 'v'; component 'upol', 'utor'; the sign of viscous_diffusion, which
-    A gets with a minus), of the thermal diffusion (section 'h', component 'temp'; the sign of thermal_diffusion) and of the
-    magnetic diffusion (section 'f', 'g'; component 'bpol', 'btor'; the A sign) of the deformed body
-    (centrifugal.diffusion_block), times ViscosD, ThermaD or MagnetD. Returns [matrix, offd] or [0, 0].
+    A gets with a minus), of the thermal diffusion (section 'h', component 'temp'; the sign of thermal_diffusion), of the
+    magnetic diffusion (section 'f', 'g'; component 'bpol', 'btor'; the A sign) and, NEW (2026-11-08), of the diffusion of the
+    composition (section 'c', component 'comp'; the sign of comp_diffusion) of the deformed body (centrifugal.diffusion_block),
+    times ViscosD, ThermaD, MagnetD or CompoD. Returns [matrix, offd] or [0, 0].
     '''
     return cf.diffusion_block(l, section, component, offdiag, globals())
 
@@ -176,8 +178,9 @@ def centrifugal_diffusion(l, section, component, offdiag):  # ------ NEW (2026-1
 def centrifugal_rotation(l, section, component, offdiag):  # ------ NEW (2026-11-06, phase 2): differential rotation of the deformed body
     '''
     The metric parts of the force of the differential rotation (section 'u', 'v'; component 'upol', 'utor'; the sign of
-    differential_rotation) and of its advection of s (section 'h', component 'temp'; the sign of thermal_diffrot) in the
-    deformed body (centrifugal.rotation_block). Returns [matrix, offd] or [0, 0].
+    differential_rotation) and of its advection of s (section 'h', component 'temp'; the sign of thermal_diffrot) and, NEW
+    (2026-11-08), of c (section 'c', component 'comp'; the sign of comp_diffrot) in the deformed body
+    (centrifugal.rotation_block). Returns [matrix, offd] or [0, 0].
     '''
     return cf.rotation_block(l, section, component, offdiag, globals())
 
@@ -282,6 +285,75 @@ def thermal_diffusion(l, section, component, offdiag):  # rʰ  ∇⋅(κ p ∇s)
               +     h0kps0_D2 
 
     return par.ThermaD * out/L**3
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------ NEW (2026-11-08): the composition c (compositional = 1)
+# ----------------------------------------------------------------------------------------------------------------------
+# A second scalar as the entropy: ρ0 (∂c/∂t + uᵣ dC/dr) = CompoD ∇⋅(D ρ0 ∇c) in the rows of section c, r² times the equation
+# (r times it over ρ0 with CompoD = 0), and the buoyancy BeyonceC g c r̂ in the momentum equation. The operators are those of
+# the entropy with ρ0 in place of p0 ('dns', 'rdC', 'dCd', 'Drh' for 'pss', 'pdS', 'dSd', 'kps').
+
+def comp_buoyancy(l, section, component, offdiag):  # BeyonceC g c r̂, rows r⁵ ρ0 r̂⋅∇×∇× (as buoyancy)
+
+    out = 0
+    L = l*(l+1.)
+
+    if (section == 'u') and (offdiag == 0) :
+
+        out = 1.0 * u2gra0_D0
+
+    return par.BeyonceC * out/L**2
+
+
+
+def composition(l, section, component, offdiag):  # r² ρ c  (r c if CompoD=0: divided by ρ)
+
+    out = 0
+    L = l*(l+1.)
+
+    if (section == 'c') and (offdiag == 0) :
+
+        out = c0dns0_D0 if par.CompoD > 0 else c0_D0
+
+    return out/L**3
+
+
+
+def comp_advection(l, section, component, offdiag):  # −r² ρ uᵣ dC/dr  (−r uᵣ dC/dr if CompoD=0)
+
+    out = 0
+    L = l*(l+1.)
+
+    if (section == 'c') and (component == 'upol') and (offdiag == 0) :
+
+        out = -1.0 * ( c1rdC0_D0 if par.CompoD > 0 else c1dCd0_D0 )
+
+    return out/L**2
+
+
+
+def comp_diffrot(l, section, component, offdiag):  # ------------------- Differential rotation terms of the composition
+    """
+        ρ0 i m Gaspard ΔΩ c in the rows of the composition (diff_rot.comp_block): column 'comp', source degree l + offdiag.
+        Returns [matrix, offd] with the sign of thermal_diffrot (add it with +).
+    """
+    return dr.comp_block(l, component, offdiag, globals())
+
+
+
+def comp_diffusion(l, section, component, offdiag):  # r² ∇⋅(D ρ ∇c)
+
+    out = 0
+    L = l*(l+1.)
+
+    if (section == 'c') and (offdiag == 0) :
+
+        out = - L * c2Drh0_D0                   \
+              + 2 * c1Drh0_D1 +     c0Drh1_D1   \
+              +     c0Drh0_D2
+
+    return par.CompoD * out/L**3
 
 
 # ----------------------------------------------------------------------------------------------------------------------

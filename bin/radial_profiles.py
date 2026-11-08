@@ -35,6 +35,20 @@ class structure():  # ------------------------------------------------ What ever
         return (r**rpower)*out
 
 
+    def gradC(self, r):  # ------------------ NEW (2026-11-08): dC/dr at r >= 0 (compositional = 1)
+        return bg.gradC(self, r)
+
+
+    def rdCdr(self, r, rpower):
+        # ------------------------ NEW (2026-11-08): ρ(r) dC/dr, as pdSdr
+        out = np.zeros_like(r)
+        x = abs(r)<1
+        # odd extension to r<0 (only used when ricb=0, where submatrices treats 'rdC' as odd)
+        out[x] = self.density(r[x],0)*np.sign(r[x])*self.gradC(np.abs(r[x]))
+        # -----------------------------------
+        return (r**rpower)*out
+
+
     def viscosity(self, r, rpower):  # ------------------ ν(r)/ViscosD
         return (r**rpower)*bg.diffusivity(self, r, 'nu')
 
@@ -45,6 +59,10 @@ class structure():  # ------------------------------------------------ What ever
 
     def magnetic_diffusivity(self, r, rpower):  # ------------------ η(r)/MagnetD, NEW (2026-10-28)
         return (r**rpower)*bg.diffusivity(self, r, 'eta')
+
+
+    def comp_diffusivity(self, r, rpower):  # ------------------ D(r)/CompoD, NEW (2026-11-08)
+        return (r**rpower)*bg.diffusivity(self, r, 'D')
 
 
 class wu2005_profiles(structure):  # --------------------------------------------------- structure = 'Wu 2005'
@@ -350,6 +368,40 @@ def gradSX(r, Dorder):   # dS/dr, odd extension to r<0 (used when ThermaD=0)
     return out
 
 
+def densX(r, Dorder):   # NEW (2026-11-08): ρ(r), the composition's time derivative
+
+    tol = 1e-14
+    out = ut.angine( prf.density, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)
+
+    return out
+
+
+def rdCdrX(r, Dorder):   # NEW (2026-11-08): ρ(r) dC/dr, the composition's advection
+
+    tol = 1e-14
+    out = ut.angine( prf.rdCdr, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)
+
+    return out
+
+
+def gradCX(r, Dorder):   # NEW (2026-11-08): dC/dr, odd extension to r<0 (used when CompoD=0)
+
+    tol = 1e-14
+    dC  = lambda rr, rpower: (rr**rpower)*np.sign(rr)*prf.gradC(np.abs(rr))
+    out = ut.angine( dC, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)
+
+    return out
+
+
+def DrhoX(r, Dorder):   # NEW (2026-11-08): D(r)ρ(r), the composition's diffusion
+
+    tol = 1e-14
+    Drh = lambda rr, rpower: prf.comp_diffusivity(rr, rpower) * prf.density(rr, 0)  # ut.angine needs a function f(r, rpower)
+    out = ut.angine( Drh, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)
+
+    return out
+
+
 def graviX(r, Dorder, effective=True):   # g(r)
     '''NEW (2026-11-05): with centrifugal = 1 and centrifugal_q > 0, the effective gravity g - (2/3) Ω² r of the deformed
     body (its centrifugal monopole, centrifugal.g_monopole), which the buoyancy takes (code 'gra'); effective=False gives
@@ -386,13 +438,16 @@ def pressX(r, Dorder):   # ρ(r)T(r)
 proffdir = { 'lho':logrhoX, 'vsc':viscoX, 'gra':graviX, 'pss':pressX, 'pdS':pdSdrX, 'dSd':gradSX, 'kps':kappressX }
 # NEW (2026-10-28): magnetic = 1: 'eta' the magnetic diffusivity, 'bpo' cnorm h(r) of the background field (background_field.py)
 proffdir.update({ 'eta':etaX, 'bpo':bf.bpoX, 'bto':bf.btoX })   # bto: cnorm_tor k(r), toroidal B0
+# NEW (2026-11-08): compositional = 1: 'dns' ρ, 'rdC' ρ dC/dr, 'dCd' dC/dr, 'Drh' D ρ (as 'pss', 'pdS', 'dSd', 'kps' for s)
+proffdir.update({ 'dns':densX, 'rdC':rdCdrX, 'dCd':gradCX, 'Drh':DrhoX })
 # added by burrito on first use (_more_codes): the differential-rotation codes (zf, zd, zs, tw, tp + degree) from
 # diff_rot.profile_functions(), the background field degree by degree (hp, kt + degree) from mag_algebra.profile_functions()
 # and (NEW 2026-11-05) the centrifugal map (ce0..ce3) from centrifugal.profile_functions() and, with magnetic = 1, the
 # products of its amplitudes and the background field degree by degree (E, N, C, Q + p, t + degree) from
 # centrifugal.magnetic_profile_functions(); NEW (2026-11-06, phase 2) with the profiles of the diffusion (E, N, C, Q, K + vs,
 # kp, et: Evs, Nkp, Ket, ...) and with the shapes of ΔΩ (E, N, C, Q, K + z + degree: Ez0, Nz2, ...) from
-# centrifugal.diffusion_profile_functions() and centrifugal.rotation_profile_functions()
+# centrifugal.diffusion_profile_functions() and centrifugal.rotation_profile_functions() (NEW 2026-11-08: Dr, D ρ, as well:
+# EDr, NDr, ...)
 # -------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------
@@ -401,7 +456,7 @@ proffdir.update({ 'eta':etaX, 'bpo':bf.bpoX, 'bto':bf.btoX })   # bto: cnorm_tor
 def _more_codes(c):
     '''the profile codes added on first use: the differential rotation's (diff_rot.py), NEW (2026-10-30), the background
     field's degree by degree, hp? and kt? (mag_algebra.py) and, NEW (2026-11-05), the centrifugal map's ce0..ce4 and its
-    products with the background field, Ep?, Nt?, ..., with the profiles of the diffusion, Evs, Nkp, Ket, ... and (NEW
+    products with the background field, Ep?, Nt?, ..., with the profiles of the diffusion, Evs, Nkp, Ket, EDr, ... and (NEW
     2026-11-06) with the shapes of ΔΩ, Ez0, Nz2, ... (centrifugal.py); imported here because they need utils'''
     if c[:2] in ('hp', 'kt'):
         import mag_algebra
@@ -412,8 +467,8 @@ def _more_codes(c):
     elif c[0] in 'ENCQ' and c[1] in 'pt':   # NEW (2026-11-05): products of the map's amplitudes and the background field
         import centrifugal
         proffdir.update(centrifugal.magnetic_profile_functions())
-    elif c[0] in 'ENCQK' and c[1:] in ('vs', 'kp', 'et'):   # NEW (2026-11-05, phase 2): products of the map's amplitudes and
-        import centrifugal                                    # the profiles of the diffusion, ν, κ p, η (Evs, Nkp, ...)
+    elif c[0] in 'ENCQK' and c[1:] in ('vs', 'kp', 'et', 'Dr'):   # NEW (2026-11-05, phase 2): products of the map's amplitudes
+        import centrifugal                       # and the profiles of the diffusion, ν, κ p, η, D ρ (Evs, Nkp, ...; Dr NEW 2026-11-08)
         proffdir.update(centrifugal.diffusion_profile_functions())
     elif c[0] in 'ENCQK' and c[1] == 'z':   # NEW (2026-11-06, phase 2): products of the map's amplitudes and the shapes of ΔΩ
         import centrifugal

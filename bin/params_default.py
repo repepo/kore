@@ -15,8 +15,13 @@ class default_params():
         self.magnetic = 0
         # NEW (2026-11-06, as conductive_IC): 1 solves the momentum equation for the flow. 0 leaves the flow out, for the free
         # decay of the field (magnetic = 1: diffusion, with the walls and a conducting inner core, and the induction by a
-        # differential rotation) or of the entropy (thermal = 1); eigenvalue problems only (forcing = 0)
+        # differential rotation) or of the entropy (thermal = 1) or of the composition (compositional = 1); eigenvalue
+        # problems only (forcing = 0)
         self.hydro = 1
+        # NEW (2026-11-08, from conductive_IC): set to 1 to include the composition c, a second scalar that the flow carries as
+        # it carries the entropy, with its own equation, diffusivity and buoyancy (Compositional parameters below; user guide
+        # docs/background.md, Composition)
+        self.compositional = 0
 
 
         # ----------------------------------------------------------------------------------------------------------------------
@@ -77,9 +82,12 @@ class default_params():
         #   'inverse square'  1/r²: conduction between the walls (needs ricb > 0)
         #   'user'            stratification_profile, a numpy expression of r, x and p = stratification_param in units of 1/L
         #                     (the names and the x of diff_rot_profiles), e.g. '2.5*exp(-((r - 0.75)/0.06)**2)'
+        #   'two zone'        NEW (2026-11-08, conductive_IC's 'two zone' heating): (1 + tanh(2(r - rc)/h))/2, [rc, h] =
+        #                     two_zone, a neutral inner zone below a stratified outer one, the step of width h at r = rc
         self.stratification = None
         self.stratification_profile = ''
         self.stratification_param = 0.0
+        self.two_zone = [0.7, 0.1]
         self.solar_rz_dSdr  = 2.615
         self.solar_rz_steps = [0.61, 0.68, 0.04]
         self.solar_rz_core  = 0.05
@@ -87,25 +95,28 @@ class default_params():
         self.solar_rz_delta_cz = 0.0
         self.solar_rz_delta_sf = 0.0
 
-        # diffusivity: ν/ViscosD and κ/ThermaD:
+        # diffusivity: ν/ViscosD, κ/ThermaD and (NEW 2026-11-08, compositional = 1) D/CompoD, the diffusivity of the composition:
         #   'uniform'   1
-        #   'step'      visc0, therm0 below and 1 above the upper edge of the erf box at x2 = aux3 of width aux4 (needed also
-        #               when thermal = 0 unless visc0 = therm0 = 1), so ViscosD and ThermaD are the convection-zone values
-        #   'solar_rz'  visc0, therm0 below and 1 above as (1 + erf((x - x_OS)/d_OS))/2, [x_OS, d_OS] = solar_rz_os
+        #   'step'      visc0, therm0, comp0 below and 1 above the upper edge of the erf box at x2 = aux3 of width aux4 (needed
+        #               also when thermal = 0 unless visc0 = therm0 = comp0 = 1), so ViscosD, ThermaD and CompoD are the
+        #               convection-zone values
+        #   'solar_rz'  visc0, therm0, comp0 below and 1 above as (1 + erf((x - x_OS)/d_OS))/2, [x_OS, d_OS] = solar_rz_os
         #               (Mukhopadhyay et al. 2025 eqs. 8-9; their ν_RZ/ν_CZ = 0.01, κ_RZ/κ_CZ = 0.04)
-        #   'user'      diffusivity_profiles = {'nu': '...', 'kappa': '...'}, numpy expressions of r, x and p = diffusivity_param,
-        #               evaluated at |r| (even in a full sphere)
+        #   'user'      diffusivity_profiles = {'nu': '...', 'kappa': '...'} and, with compositional = 1, 'D': '...', numpy
+        #               expressions of r, x and p = diffusivity_param, evaluated at |r| (even in a full sphere)
         # Solar: visc0 ~ 1e-11, therm0 ~ 1e-6 to 1e-5 (ν ~ 10, κ_rad ~ 1e5 to 1e7 cm²/s against ν_t ~ κ_t ~ 1e12), so in practice
-        # they are numerical floors; see sun/solar-profile.md. visc_pow and therm_pow multiply ν and κ of any type by
-        # (ρ(x2)/ρ(r))**pow, x2 = aux3: 0 keeps the kinematic diffusivities constant (recommended), 1 the dynamic ones (ρν, ρκ),
-        # ViscosD and ThermaD being then the values at x2. rvisc and hvisc are not used.
+        # they are numerical floors; see sun/solar-profile.md. visc_pow, therm_pow and comp_pow multiply ν, κ and D of any type
+        # by (ρ(x2)/ρ(r))**pow, x2 = aux3: 0 keeps the kinematic diffusivities constant (recommended), 1 the dynamic ones (ρν,
+        # ρκ, ρD), ViscosD, ThermaD and CompoD being then the values at x2. rvisc and hvisc are not used.
         self.diffusivity = 'uniform'
         self.diffusivity_profiles = {}
         self.diffusivity_param = 0.0
         self.visc0     = 1.0
         self.therm0    = 1.0
+        self.comp0     = 1.0   # NEW (2026-11-08)
         self.visc_pow  = 0.0
         self.therm_pow = 0.0
+        self.comp_pow  = 0.0   # NEW (2026-11-08)
         self.rvisc     = 0.0
         self.hvisc     = 0.0
 
@@ -124,6 +135,7 @@ class default_params():
         # ----------------------------------------------------------------------------------------------------------------------
         self.Ek     = 0
         self.Etherm = 0
+        self.Ecomp  = 0   # NEW (2026-11-08): D0/(Ω r0²), the compositional Ekman number (conductive_IC's Ecomp, Ek/Schmidt)
         # NEW (2026-10-28): magnetic inputs of set_scales, with the rotation rate Ω as Ek: the Lehnert number
         # Le = B0/(Ω r0 sqrt(ρ0 μ0)) and the magnetic Ekman number Em = η0/(Ω r0²), so Em = Ek/Pm and the Elsasser number
         # is Λ = Le²/Em
@@ -267,6 +279,32 @@ class default_params():
         # (the unknown is the entropy s = δs/c_p: 0 is fixed entropy s=0, 1 is zero diffusive entropy flux s'=0; used only if ThermaD>0)
         self.bci_thermal = 0
         self.bco_thermal = 0
+
+
+        # ----------------------------------------------------------------------------------------------------------------------
+        # --------------------------------------------------------------------------------------------- Compositional parameters
+        # ----------------------------------------------------------------------------------------------------------------------
+        # NEW (2026-11-08, from conductive_IC): used only with compositional = 1; user guide docs/background.md (Composition),
+        # equations docs/anelastic.md. The composition c (the perturbation of a background C(r)) is carried by the flow as the
+        # entropy is, in anelastic form ρ0 (∂c/∂t + uᵣ dC/dr) = CompoD ∇⋅(D ρ0 ∇c), and makes the fluid lighter where it is
+        # higher, as s does: its buoyancy per unit mass is BeyonceC g c r̂, its buoyancy frequency N_c² = BeyonceC g dC/dr (> 0
+        # stable), apart from the entropy's N² = Beyonce g dS/dr. conductive_IC's Boussinesq composition ξ is -c, with
+        # BeyonceC = BV2_comp and CompoD = Ecomp (as its temperature θ is -s, Beyonce = BV2, ThermaD = Etherm).
+        # comp_stratification: dC/dr for r >= 0 (kore makes it odd in r), of amplitude 1 (BeyonceC sets the size); no default:
+        #   'linear'          r: with 'Boussinesq', N_c² = BeyonceC r² (conductive_IC's 'internal')
+        #   'inverse square'  1/r²: diffusion between the walls (conductive_IC's 'differential' times (1 - ricb)/ricb; needs
+        #                     ricb > 0)
+        #   'two zone'        (1 + tanh(2(r - rc)/h))/2, [rc, h] = comp_two_zone (as the entropy's 'two zone')
+        #   'user'            comp_stratification_profile, a numpy expression of r, x and p = comp_stratification_param, as the
+        #                     entropy's 'user'
+        self.comp_stratification = None
+        self.comp_stratification_profile = ''
+        self.comp_stratification_param = 0.0
+        self.comp_two_zone = [0.7, 0.1]
+        # Compositional boundary conditions: 0 for a fixed composition c = 0, 1 for a zero diffusive flux c' = 0 (used only if
+        # CompoD > 0)
+        self.bci_compositional = 0
+        self.bco_compositional = 0
 
 
         # ----------------------------------------------------------------------------------------------------------------------
@@ -549,6 +587,10 @@ class default_params():
         self.Beyonce   = 0  # (N0*Tau)**2               Buoyancy force factor. Set to 1 for unit time Tau = 1/N0 = sqrt(r0/g0)
         self.ViscosD   = 0  # nu0 * Tau / r0**2         Viscous force factor. Set to 1 for viscous diffusion time scale. This is the Ekman number if Tau = 1/Omega
         self.ThermaD   = 0  # kappa0 * Tau / r0**2      Thermal diffusion factor. Set to 1 for thermal diffusion time scale
+        # NEW (2026-11-08): compositional = 1 only; set_scales sets CompoD from Ecomp, and BeyonceC = 0 (set it after)
+        self.BeyonceC  = 0  # (N_c0*Tau)**2             Compositional buoyancy factor: N_c² = BeyonceC g dC/dr
+        self.CompoD    = 0  # D0 * Tau / r0**2          Compositional diffusion factor
+        # CompoD = 0 is treated as ThermaD = 0 below: the composition rows are divided by ρ0, of first order, with no bc rows
         # NEW (2026-10-28): magnetic = 1 only; set_scales sets them as (Gaspard Le)² and Gaspard Em
         self.Hendrik   = 0  # (Tau B0/r0)**2/(rho0 mu0)  Lorentz force factor, (Gaspard*Le)**2. 1 for the Alfvén time scale
         self.MagnetD   = 0  # eta0 * Tau / r0**2         Magnetic diffusion factor, Gaspard*Em. 1 for the magnetic diffusion time scale
@@ -667,8 +709,8 @@ class default_params():
         }
 
         # Pre-scaling of the eigenvalue problem (forcing == 0 only; ignored for forced problems).
-        # prescale = None (default): automatic, on (1) except for thermal = 1 with ThermaD = 0, where it is off (0).
-        # Set 0 or 1 explicitly to override.
+        # prescale = None (default): automatic, on (1) except for thermal = 1 with ThermaD = 0 (NEW 2026-11-08: or compositional = 1
+        # with CompoD = 0, the same rows), where it is off (0). Set 0 or 1 explicitly to override.
         # Measured effect on spin_doctor residuals (anelastic_log, 2026-10):
         #   - hydro only (thermal = 0): better (anel10: residσ ~1e-11 -> ~1e-12, ℓ-Convergence ~1e-13 -> ~1e-15)
         #   - thermal, ThermaD > 0: 10-1e6x better (gi1: residσ ~1e-10 -> ~1e-14); for tiny ThermaD (1e-7, 1e-9) without it
@@ -717,12 +759,16 @@ class default_params():
         Sets some basic dimensionless parameters based on a chosen time scale
         '''
 
+        # NEW (2026-11-08): the composition's factors as the entropy's, BeyonceC as Beyonce (0 but for 'free fall', where the
+        # unit of time comes from the entropy's N0) and CompoD = D0 Tau/r0² from Ecomp as ThermaD from Etherm
         if self.timescale == "rotation":  # unit time Tau = 1/Omega
 
-            self.Gaspard = 1            # Omega*Tau                 
-            self.Beyonce = 0            # (N0*Tau)**2               
-            self.ViscosD = self.Ek      # nu0 * Tau / r0**2         
-            self.ThermaD = self.Etherm  # kappa0 * Tau / r0**2      
+            self.Gaspard = 1            # Omega*Tau
+            self.Beyonce = 0            # (N0*Tau)**2
+            self.ViscosD = self.Ek      # nu0 * Tau / r0**2
+            self.ThermaD = self.Etherm  # kappa0 * Tau / r0**2
+            self.BeyonceC = 0           # (N_c0*Tau)**2
+            self.CompoD  = self.Ecomp   # D0 * Tau / r0**2
 
         elif self.timescale == "viscous":  # viscous diffusion time scale
 
@@ -730,14 +776,18 @@ class default_params():
             self.Beyonce = 0                    # (N0*Tau)**2
             self.ViscosD = 1                    # nu0 * Tau / r0**2
             self.ThermaD = self.Etherm/self.Ek  # kappa0 * Tau / r0**2
-        
-        
+            self.BeyonceC = 0                   # (N_c0*Tau)**2
+            self.CompoD  = self.Ecomp/self.Ek   # D0 * Tau / r0**2
+
+
         elif self.timescale == "free fall":  # unit time Tau = 1/N0 = sqrt(r0/g0)
 
             self.Gaspard = 0  # Omega*Tau
             self.Beyonce = 1  # (N0*Tau)**2
             self.ViscosD = 0  # nu0 * Tau / r0**2
             self.ThermaD = 0  # kappa0 * Tau / r0**2
+            self.BeyonceC = 0  # (N_c0*Tau)**2
+            self.CompoD  = 0   # D0 * Tau / r0**2
 
         # NEW (2026-10-28): the magnetic time scales, unit time the Alfvén time r0 sqrt(ρ0 μ0)/B0 = 1/(Ω Le) or the magnetic
         # diffusion time r0²/η0 = 1/(Ω Em)
@@ -747,6 +797,8 @@ class default_params():
             self.Beyonce = 0                    # (N0*Tau)**2
             self.ViscosD = self.Ek/self.Le      # nu0 * Tau / r0**2
             self.ThermaD = self.Etherm/self.Le  # kappa0 * Tau / r0**2
+            self.BeyonceC = 0                   # (N_c0*Tau)**2
+            self.CompoD  = self.Ecomp/self.Le   # D0 * Tau / r0**2
 
         elif self.timescale == "magnetic":
 
@@ -754,6 +806,8 @@ class default_params():
             self.Beyonce = 0                    # (N0*Tau)**2
             self.ViscosD = self.Ek/self.Em      # nu0 * Tau / r0**2
             self.ThermaD = self.Etherm/self.Em  # kappa0 * Tau / r0**2
+            self.BeyonceC = 0                   # (N_c0*Tau)**2
+            self.CompoD  = self.Ecomp/self.Em   # D0 * Tau / r0**2
 
         # NEW (2026-10-28): the magnetic factors for any time scale (Le, Em are defined with Ω, as Ek). The removed magnetic
         # code of this branch (before 8eb16917) had Hendrik = Le for 'rotation': the Lorentz force goes with Le².

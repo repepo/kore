@@ -253,7 +253,7 @@ want = {'t_so': (0.5, 0.98), 't_m2': (0.0, 0.7), 'r_t': (0.3, 0.2), 'th': (np.sq
 bad = []
 for name, (n, w) in want.items():
     p = table(dirs[name], 'params.dat')[-1]
-    if len(p) != 141 or abs(p[139] - n) > 1e-9*max(1, n) or abs(p[140] - w) > 1e-9:
+    if len(p) < 141 or abs(p[139] - n) > 1e-9*max(1, n) or abs(p[140] - w) > 1e-9:   # (later columns appended after 141)
         bad.append('%s (%s)' % (name, ', '.join('%.9g' % v for v in p[139:141])))
 err = closest(eig(dirs['th2']), 2*eig(dirs['th'])[:2])
 f = table(dirs['forced'], 'flow.dat')

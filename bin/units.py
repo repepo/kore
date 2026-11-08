@@ -8,6 +8,7 @@ ThermaD, N² through Beyonce, eigenvalues λ in units of Ω. The one unit it rea
 In a parameter file (after r_out is set):
     import units
     units.set_physical(par, frame_nHz=456.0, nu=1e12, kappa=1e12)   # Gaspard, Beyonce, ViscosD, ThermaD, diff_rot_frame
+                                                                     # (and D=...: CompoD, BeyonceC, compositional = 1)
     units.set_target(par, omega=-254.8, sigma=-33.5)                 # itau, rtau from ω, σ in nHz
 In a run directory, the eigenvalues as ω and σ in nHz:
     python3 bin/units.py [eigenvalues0.dat]
@@ -19,11 +20,13 @@ RSUN  = 6.9599e10   # cm, as examples/smooth_sun and the builders
 GSURF = 2.7361e4    # cm/s²
 
 
-def set_physical(par, frame_nHz, nu, kappa, radius=RSUN, gsurf=GSURF):
+def set_physical(par, frame_nHz, nu, kappa, radius=RSUN, gsurf=GSURF, D=None):
     '''
     Gaspard = 1, Beyonce = gsurf/(L Ω²), ViscosD = ν/(Ω L²), ThermaD = κ/(Ω L²) and diff_rot_frame = frame_nHz, with
     Ω = 2π frame_nHz 1e-9 s⁻¹ and L = r_out radius; ν, κ in cm²/s, radius in cm, gsurf in cm/s² (Beyonce as for the
-    solar structures, whose g is 1 at the surface).
+    solar structures, whose g is 1 at the surface). NEW (2026-11-08): with D, the diffusivity of the composition in cm²/s
+    (compositional = 1), also CompoD = D/(Ω L²) and BeyonceC = Beyonce: the composition c is then the relative deficit of
+    density it makes (the entropy's s is in units of c_p), so that N_c²/Ω² = BeyonceC g dC/dr with dC/dr per unit length L.
     '''
     Omega = 2*np.pi*frame_nHz*1e-9
     L = par.r_out*radius
@@ -32,6 +35,9 @@ def set_physical(par, frame_nHz, nu, kappa, radius=RSUN, gsurf=GSURF):
     par.ViscosD = nu/(Omega*L**2)
     par.ThermaD = kappa/(Omega*L**2)
     par.diff_rot_frame = frame_nHz
+    if D is not None:
+        par.CompoD = D/(Omega*L**2)
+        par.BeyonceC = par.Beyonce
 
 
 def set_target(par, omega, sigma):

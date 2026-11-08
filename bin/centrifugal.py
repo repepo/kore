@@ -445,8 +445,11 @@ def momentum_labels(amp, section, component):
     a, s = CODES[amp]
     return [(k, t.format(a=a, s=s)) for k, t in MOMENTUM[(section, component)]]
 
-def heat_label():
-    '''the radial operator of η s in the heat rows: that of operators.entropy times the profile ce1'''
+def heat_label(section='h'):
+    '''the radial operator of η s in the heat rows: that of operators.entropy times the profile ce1; NEW (2026-11-08) section
+    'c', that of η c in the rows of the composition (operators.composition times ce1)'''
+    if section == 'c':
+        return ('c0dns0%s0_D0' if par.CompoD > 0 else 'c0%s0_D0') % CODES['h'][0]
     return ('h0pss0%s0_D0' if par.ThermaD > 0 else 'h0%s0_D0') % CODES['h'][0]
 
 def labels():
@@ -461,14 +464,17 @@ def labels():
             out += [(lab, 'P' if comp == 'upol' else 'T') for _, lab in momentum_labels(amp, sec, comp)]
     if par.thermal:
         out.append((heat_label(), 'P'))
+    if par.compositional:   # NEW (2026-11-08)
+        out.append((heat_label('c'), 'C'))
     seen = set()
     return [x for x in out if not (x[0] in seen or seen.add(x[0]))]
 
 def dl_range(section, component):
     '''the Δl = l_source - l_target of the blocks assemble.py places: 0, ±2 between degrees of the same kind (u rows and P
-    columns, v and T, h and s; NEW phase 2: f and F, g and G), ±1, ±3 between P and T (f and G, g and F)'''
+    columns, v and T, h and s; NEW phase 2: f and F, g and G; NEW 2026-11-08: c and the composition), ±1, ±3 between P and T
+    (f and G, g and F)'''
     same = {('u', 'upol'): True, ('v', 'utor'): True, ('h', 'temp'): True, ('u', 'utor'): False, ('v', 'upol'): False,
-            ('f', 'bpol'): True, ('g', 'btor'): True, ('f', 'btor'): False, ('g', 'bpol'): False}
+            ('f', 'bpol'): True, ('g', 'btor'): True, ('f', 'btor'): False, ('g', 'bpol'): False, ('c', 'comp'): True}
     section, component = section.replace('ic', ''), component.replace('_ic', '')   # NEW (2026-11-06): a conducting core's
     if exact():   # NEW (2026-11-06): the exact spheroid (section 8), ±4 and ±3 (its viscous force and wall rows)
         return range(-4, 5, 2) if same[(section, component)] else range(-3, 4, 2)
@@ -502,21 +508,22 @@ def momentum_block(kind, l, section, component, offdiag, M):
     fac = 1.0 if kind == 'inertia' else 2*par.Gaspard
     return [fac*out/(l*(l + 1.))**3, offd]
 
-def entropy_block(l, offdiag, M):
+def entropy_block(l, offdiag, M, section='h'):
     '''
     The block of (J - 1) s = η P2 s in the heat rows (B, the sign of operators.entropy, whose radial operator it multiplies
-    by η) for the row degree l and the source degree l + offdiag (0, ±2): [matrix, offd] or [0, 0].
+    by η) for the row degree l and the source degree l + offdiag (0, ±2): [matrix, offd] or [0, 0]. NEW (2026-11-08): section
+    'c', (J - 1) c in the rows of the composition (the sign of operators.composition).
     '''
     import utils as ut
     m = par.m
-    if offdiag not in dl_range('h', 'temp') or exact():   # NEW (2026-11-06): J = 1 in the exact spheroid
-        return [0, 0]
+    if offdiag not in dl_range(section, 'temp' if section == 'h' else 'comp') or exact():   # NEW (2026-11-06): J = 1 in the
+        return [0, 0]                                                                          # exact spheroid
     c = _lookup(heat_coefficients(m), l, m, offdiag)
     if c == 0:
         return [0, 0]
     lp = ut.ell(par.m, par.lmax, par.symm)[0]
     offd = int(np.where(lp == l + offdiag)[0][0] - np.where(lp == l)[0][0])
-    return [c*M[heat_label()]/(l*(l + 1.))**3, offd]
+    return [c*M[heat_label(section)]/(l*(l + 1.))**3, offd]
 
 
 # ======================================================================================================================
@@ -989,25 +996,28 @@ def wall_rows(wall):
 #       δV = -ξ×(∇×V(w)) + V(∇×(ξ×w) + λ1 w_r ξ) - ξ_r ν' ∇⋅σ(w) - ∇(ξ_r κ)⋅σ(w),      κ = ν' + ν λ1:
 #   the first two terms are the change of coordinates (the Lie derivative of the force along ξ, with ∇⋅w = -λ1 w_r), the last
 #   two that of the profiles, which are constant on the level surfaces and not on the spheres;
-#   heat rows (the equation times J): J ∇_X⋅(κp ∇_X s) = ∇⋅(κp M⁻¹ ∇s), first order δ = -∇⋅(κp (M - I) ∇s);
+#   heat rows (the equation times J): J ∇_X⋅(κp ∇_X s) = ∇⋅(κp M⁻¹ ∇s), first order δ = -∇⋅(κp (M - I) ∇s); NEW (2026-11-08)
+#   the rows of the composition the same with D ρ0 and c;
 #   induction: the electric field of the diffusion is Fᵀ(η ∇_X×b) = η M ∇×(M b̃), first order δ = η [(M - I) ∇×b̃ + ∇×((M - I) b̃)];
 #   walls: stress-free, the tangential part of Fᵀ σ_X F⁻ᵀ r̂ (the traction on the level surface, in the tangent vectors F t);
 #   fixed flux, r̂⋅M⁻¹∇s = 0 (the flux through the level surface).
 # They are built with the recurrence algebra of section 2 on expressions {monomial: Field (or sparse matrix)}, a monomial
 # (p, X, d, a, j, lam) being r^p X^(d) a c^(j) Λ: a power of r, the d-th derivative of the unknown X (P, T, S for the entropy,
-# F, G; None for a radial factor alone), an amplitude a of the map (AMPS), the j-th derivative of the coefficient profile c
-# and a product Λ of (ln ρ0) derivatives, the sorted tuple of their orders. A label gets the product code a + 'vs', 'kp' or
-# 'et' (a c, DIFF_CODES) with the digit j, and Λ as 'lho' k (λ_k), or 'lh1' k, 'lh2' k (λ1 λ_k, λ2 λ_k) in the first slot.
+# C for the composition, F, G; None for a radial factor alone), an amplitude a of the map (AMPS), the j-th derivative of the
+# coefficient profile c and a product Λ of (ln ρ0) derivatives, the sorted tuple of their orders. A label gets the product
+# code a + 'vs', 'kp', 'Dr' or 'et' (a c, DIFF_CODES) with the digit j, and Λ as 'lho' k (λ_k), or 'lh1' k, 'lh2' k (λ1 λ_k,
+# λ2 λ_k) in the first slot.
 # Terms whose order is above the row's (r⁵ ρ0 r̂⋅∇×∇× has fourth derivatives of P) appear term by term and cancel in the sum,
 # to round-off (dropped by mag_algebra._prune, and checked: _check_orders). The toroidal rows (v, g) keep third derivatives of
 # P (F) for m ≠ 0, the part of ∂ᵣ² of the poloidal flow that the P2 factors turn toroidal: submatrices.py then builds those
 # sections in the C^(3) basis (orders()).
-DIFF_CODES = {'vs': 'vsc', 'kp': 'kps', 'et': 'eta'}   # the product code's suffix: the code of the profile it multiplies
-ROWPOW2 = {'u': 5, 'v': 3, 'h': 2, 'f': 2, 'g': 2}     # the power of r of the rows (decode_label: rpower = ROWPOW2 - rx)
+DIFF_CODES = {'vs': 'vsc', 'kp': 'kps', 'et': 'eta', 'Dr': 'Drh'}   # the product code's suffix: the code of the profile it
+# multiplies (NEW 2026-11-08: 'Dr', D ρ0 of the composition)
+ROWPOW2 = {'u': 5, 'v': 3, 'h': 2, 'f': 2, 'g': 2, 'c': 2}     # the power of r of the rows (decode_label: rpower = ROWPOW2 - rx)
 
 def diffusion_profile_functions():
     '''{product code: f(r, Dorder)} for radial_profiles.burrito: a(r) c^(Dorder)(r), the amplitude a (AMPS, from
-    profile_functions) and the coefficient profile c of radial_profiles (vsc: ν, kps: κ p, eta: η)'''
+    profile_functions) and the coefficient profile c of radial_profiles (vsc: ν, kps: κ p, eta: η, NEW 2026-11-08 Drh: D ρ0)'''
     import radial_profiles as rap
     amp = profile_functions()
     out = {}
@@ -1195,10 +1205,11 @@ def viscous_force(A, X):
     return _sum(out, _sc(_rmul(_dr(g), _poly(A, rs, _P2p)), -1.), _rmul(_shift(g, 3., -1), _poly(A, rs, _xp*_xp)),
                 _rmul(_shift(g, -3., -1), _poly(A, _zsig(A, w), _xp)))
 
-def thermal_diffusion_metric(A, lw):
-    '''-∇⋅(κp (M - I) ∇s), the first-order part of J ∇⋅(κp ∇s) (scalar expression; ∇s: q = s', s/r on S)'''
-    gs = _vec(A, q={(0, 'S', 1, None, None, ()): A.I}, s={(-1, 'S', 0, None, None, ()): A.I})
-    return _sc(_div(A, _rmul(NU, _metric(A, gs, lw))), -1.)      # NU: the profile slot, here κ p
+def thermal_diffusion_metric(A, lw, X='S'):
+    '''-∇⋅(κp (M - I) ∇s), the first-order part of J ∇⋅(κp ∇s) (scalar expression; ∇s: q = s', s/r on S); NEW (2026-11-08)
+    X = 'C', the same for the composition c (κp is then D ρ0)'''
+    gs = _vec(A, q={(0, X, 1, None, None, ()): A.I}, s={(-1, X, 0, None, None, ()): A.I})
+    return _sc(_div(A, _rmul(NU, _metric(A, gs, lw))), -1.)      # NU: the profile slot, here κ p (D ρ0)
 
 def magnetic_diffusion_metric(A, X, lw):
     '''the first-order part of the electric field of the diffusion, -η [(M - I) ∇×b̃ + ∇×((M - I) b̃)], b̃ of the unknown X'''
@@ -1250,7 +1261,9 @@ def diffusion_build(m, lw, kinds=('visc', 'heat', 'mag')):
     'visc' the viscous force δV in the rows u, v (columns P, T; the sign of operators.viscous_diffusion, without ViscosD and
     the 1/L'^3), 'heat' -∇⋅(κp (M - I) ∇s) in the rows h (column S; the sign of operators.thermal_diffusion, without ThermaD
     and 1/L^3), 'mag' the field of the diffusion in the rows f, g (columns F, G; kore's A sign, as magnetic_build, without
-    MagnetD and the 1/L'^3); pruned (mag_algebra._prune). Also used by tests/centrifugal/derive_diff.py without a run.
+    MagnetD and the 1/L'^3), NEW (2026-11-08) 'comp' -∇⋅(D ρ0 (M - I) ∇c) in the rows c (column C; the sign of
+    operators.comp_diffusion, without CompoD and 1/L^3); pruned (mag_algebra._prune). Also used by
+    tests/centrifugal/derive_diff.py without a run.
     '''
     import mag_algebra as ma
     A = angular.Algebra.get(m, lw)
@@ -1263,6 +1276,8 @@ def diffusion_build(m, lw, kinds=('visc', 'heat', 'mag')):
             _store2(out, 'v', X, _row_v(V), Lt, 'vs')
     if 'heat' in kinds:
         _store2(out, 'h', 'S', _shift(thermal_diffusion_metric(A, lw), 1., 2), lambda M: M, 'kp')   # r² (the row)
+    if 'comp' in kinds:   # NEW (2026-11-08)
+        _store2(out, 'c', 'C', _shift(thermal_diffusion_metric(A, lw, 'C'), 1., 2), lambda M: M, 'Dr')   # r² (the row)
     if 'mag' in kinds:
         for X in 'FG':
             E = magnetic_diffusion_metric(A, X, lw)
@@ -1273,7 +1288,7 @@ def diffusion_build(m, lw, kinds=('visc', 'heat', 'mag')):
     _check_orders(out)
     return out
 
-MAXD = {'u': 4, 'v': 3, 'h': 2, 'f': 2, 'g': 3}
+MAXD = {'u': 4, 'v': 3, 'h': 2, 'f': 2, 'g': 3, 'c': 2}
 def _check_orders(out):
     '''stops if a term above the order of its row is left (they cancel in exact arithmetic: see the section's header)'''
     for (row, X), d in out.items():
@@ -1346,12 +1361,13 @@ def wall_dissipative(m, lw, R, vals):
 
 # --- in a run: the coefficients (cached, by diagonal), the labels, the blocks and the wall rows
 def diffusion_kinds():
-    '''the dissipative terms of this run: 'visc' (ViscosD > 0), 'heat' (thermal diffusion), 'mag' (a field with diffusion);
-    none if the body is not deformed (deformed())'''
+    '''the dissipative terms of this run: 'visc' (ViscosD > 0), 'heat' (thermal diffusion), 'mag' (a field with diffusion),
+    NEW (2026-11-08) 'comp' (the composition with diffusion); none if the body is not deformed (deformed())'''
     if not deformed():   # NEW (2026-11-06)
         return ()
     return tuple(k for k, on in (('visc', par.ViscosD > 0), ('heat', par.thermal and par.ThermaD > 0),
-                                 ('mag', par.magnetic and par.MagnetD > 0)) if on)
+                                 ('mag', par.magnetic and par.MagnetD > 0),
+                                 ('comp', par.compositional and par.CompoD > 0)) if on)
 
 _dcoef, _dband = {}, {}
 def diffusion_coefficients(m):
@@ -1366,9 +1382,10 @@ def diffusion_coefficients(m):
     return _dcoef[m]
 
 def diffusion_labels():
-    '''[(label, 'P', 'T', 'S', 'F' or 'G')]: the radial operators of the metric diffusion and their columns, for submatrices.py'''
-    if exact():   # NEW (2026-11-06): the exact spheroid's (section 8; step 2: 'mag')
-        return spheroid_labels(('visc', 'heat', 'mag'))
+    '''[(label, 'P', 'T', 'S', 'F', 'G' or 'C')]: the radial operators of the metric diffusion and their columns, for
+    submatrices.py'''
+    if exact():   # NEW (2026-11-06): the exact spheroid's (section 8; step 2: 'mag'; NEW 2026-11-08: 'comp')
+        return spheroid_labels(('visc', 'heat', 'mag', 'comp'))
     out = []
     for (row, X), d in diffusion_coefficients(par.m).items():
         out += [(lab, X) for lab in d]
@@ -1379,7 +1396,7 @@ def diffusion_orders():
     submatrices.py then builds them in the C^(3) basis'''
     out = {}
     blocks = diffusion_coefficients(par.m).items() if not exact() else \
-        [(rc, d) for kind in ('visc', 'heat', 'mag') if kind in spheroid_coefficients(par.m)
+        [(rc, d) for kind in ('visc', 'heat', 'mag', 'comp') if kind in spheroid_coefficients(par.m)
          for rc, d in spheroid_coefficients(par.m)[kind][0].items()]   # NEW (2026-11-06): the exact spheroid's
     for (row, X), d in blocks:
         for lab in d:
@@ -1390,14 +1407,16 @@ def diffusion_block(l, section, component, offdiag, M):
     '''
     The block of the metric diffusion for the row degree l of section 'u', 'v' (the viscous force: ViscosD times the sign of
     operators.viscous_diffusion, which A gets with a minus), 'h' (the thermal diffusion: ThermaD, the sign of
-    thermal_diffusion) or 'f', 'g' (the magnetic diffusion: MagnetD, the A sign), the column 'upol', 'utor', 'temp', 'bpol'
-    or 'btor' and the source degree l + offdiag: [Σ coefficient × radial operator / L'^3, the column block offset in units
-    of N1], or [0, 0] if nothing couples this Δl.
+    thermal_diffusion), 'f', 'g' (the magnetic diffusion: MagnetD, the A sign) or, NEW (2026-11-08), 'c' (the diffusion of the
+    composition: CompoD, the sign of comp_diffusion), the column 'upol', 'utor', 'temp', 'bpol', 'btor' or 'comp' and the
+    source degree l + offdiag: [Σ coefficient × radial operator / L'^3, the column block offset in units of N1], or [0, 0] if
+    nothing couples this Δl.
     '''
     import utils as ut
-    if exact():   # NEW (2026-11-06): the exact spheroid (section 8; step 2: 'mag' in f, g)
-        return spheroid_block({'h': 'heat', 'f': 'mag', 'g': 'mag'}.get(section, 'visc'), l, section, component, offdiag, M)
-    X = {'upol': 'P', 'utor': 'T', 'temp': 'S', 'bpol': 'F', 'btor': 'G'}[component]
+    if exact():   # NEW (2026-11-06): the exact spheroid (section 8; step 2: 'mag' in f, g; NEW 2026-11-08: 'comp' in c)
+        return spheroid_block({'h': 'heat', 'c': 'comp', 'f': 'mag', 'g': 'mag'}.get(section, 'visc'), l, section, component,
+                              offdiag, M)
+    X = {'upol': 'P', 'utor': 'T', 'temp': 'S', 'bpol': 'F', 'btor': 'G', 'comp': 'C'}[component]
     diffusion_coefficients(par.m)
     out = 0
     for lab, bnd in _dband[par.m].get((section, X), {}).items():
@@ -1408,10 +1427,10 @@ def diffusion_block(l, section, component, offdiag, M):
         return [0, 0]
     lp, lt = ut.ell(par.m, par.lmax, par.symm)[:2]
     lF, lG = (ut.ell(par.m, par.lmax, ut.bsymm)[:2] if par.magnetic else (None, None))
-    rows = {'u': lp, 'v': lt, 'h': lp, 'f': lF, 'g': lG}[section]
-    cols = {'P': lp, 'T': lt, 'S': lp, 'F': lF, 'G': lG}[X]
+    rows = {'u': lp, 'v': lt, 'h': lp, 'f': lF, 'g': lG, 'c': lp}[section]
+    cols = {'P': lp, 'T': lt, 'S': lp, 'F': lF, 'G': lG, 'C': lp}[X]
     offd = int(np.where(cols == l + offdiag)[0][0] - np.where(rows == l)[0][0])
-    scale = {'u': par.ViscosD, 'v': par.ViscosD, 'h': par.ThermaD, 'f': par.MagnetD, 'g': par.MagnetD}[section]
+    scale = {'u': par.ViscosD, 'v': par.ViscosD, 'h': par.ThermaD, 'f': par.MagnetD, 'g': par.MagnetD, 'c': par.CompoD}[section]
     return [scale*out/(l*(l + 1.))**3, offd]
 
 _dwall = {}
@@ -1631,8 +1650,11 @@ def rotation_coefficients(m):
         _rband[m] = {rc: {lab: angular.band(M, B) for lab, M in d.items()} for rc, d in out.items()}
     return _rcoef[m]
 
-def rotation_heat_label(n):
-    '''the radial operator of η f_n s in the heat rows: that of diff_rot's i m G ΔΩ s with the profile η f_n'''
+def rotation_heat_label(n, section='h'):
+    '''the radial operator of η f_n s in the heat rows: that of diff_rot's i m G ΔΩ s with the profile η f_n; NEW (2026-11-08)
+    section 'c', that of η f_n c in the rows of the composition'''
+    if section == 'c':
+        return ('c0dns0%s0_D0' if par.CompoD > 0 else 'c0%s0_D0') % rot_code('N', n)
     return ('h0pss0%s0_D0' if par.ThermaD > 0 else 'h0%s0_D0') % rot_code('N', n)
 
 _rheat = {}
@@ -1646,8 +1668,8 @@ def rotation_heat_coefficients(m):
     return _rheat[m]
 
 def rotation_labels():
-    '''[(label, 'P', 'T' or 'S')]: the radial operators of the metric terms of the differential rotation and their columns,
-    for submatrices.py'''
+    '''[(label, 'P', 'T', 'S' or 'C')]: the radial operators of the metric terms of the differential rotation and their
+    columns, for submatrices.py'''
     import diff_rot as dr
     out = []
     if not rotation_on():   # NEW (2026-11-06): none without a deformation
@@ -1656,21 +1678,25 @@ def rotation_labels():
         out += [(lab, X) for lab in d]
     if par.thermal:
         out += [(rotation_heat_label(n), 'S') for n in dr.degrees()]
+    if par.compositional:   # NEW (2026-11-08)
+        out += [(rotation_heat_label(n, 'c'), 'C') for n in dr.degrees()]
     return out
 
 def rotation_dl_range(section, component):
-    '''the Δl of the blocks: 0, ±2, ..., ±(n_max + 2) within a kind (u and P, v and T, h and s), ±1, ..., ±(n_max + 3) across'''
+    '''the Δl of the blocks: 0, ±2, ..., ±(n_max + 2) within a kind (u and P, v and T, h and s, c and the composition),
+    ±1, ..., ±(n_max + 3) across'''
     import diff_rot as dr
     nd = dr.n_max() + 2
-    same = (section == 'h') or ((section == 'u') == (component == 'upol'))
+    same = (section in ('h', 'c')) or ((section == 'u') == (component == 'upol'))
     return range(-nd, nd + 1, 2) if same else range(-nd - 1, nd + 2, 2)
 
 def rotation_block(l, section, component, offdiag, M):
     '''
     The block of the metric terms of the differential rotation for the row degree l and the source degree l + offdiag:
     section 'u', 'v' (column 'upol', 'utor'): δW with the sign of diff_rot.momentum_block (A gets it with +), Gaspard Σ
-    coefficient × radial operator / L'^3; section 'h' (column 'temp'): i m G η P2 ΔΩ s with the sign of diff_rot.heat_block.
-    Returns [matrix, offd] or [0, 0].
+    coefficient × radial operator / L'^3; section 'h' (column 'temp'): i m G η P2 ΔΩ s with the sign of diff_rot.heat_block;
+    NEW (2026-11-08) section 'c' (column 'comp'): i m G η P2 ΔΩ c with the sign of diff_rot.comp_block. Returns [matrix, offd]
+    or [0, 0].
     '''
     import utils as ut, diff_rot as dr
     m = par.m
@@ -1678,11 +1704,11 @@ def rotation_block(l, section, component, offdiag, M):
         return [0, 0]
     L = l*(l + 1.)
     out = 0
-    if section == 'h':
+    if section in ('h', 'c'):
         for n, bnd in rotation_heat_coefficients(m).items():
             v = _lookup(bnd, l, m, offdiag)
             if v != 0:
-                out = out + 1j*m*v*M[rotation_heat_label(n)]
+                out = out + 1j*m*v*M[rotation_heat_label(n, section)]
         if np.isscalar(out):
             return [0, 0]
         lp = ut.ell(par.m, par.lmax, par.symm)[0]
@@ -1713,6 +1739,7 @@ def rotation_block(l, section, component, offdiag, M):
 #     Coriolis       (z̃ - ẑ)×w = (1/c - 1) ẑ×w
 #     viscous force  Fᵀ ν∇_X²(F w) - ν∇²w = ν [(a²/c² - 1) ∂z² w + (c² - a²) Z D w]                   (ν uniform)
 #     heat           J ∇_X⋅(κp ∇_X s) - ∇⋅(κp ∇s) = κp [(1/a² - 1) ∇²s + (1/c² - 1/a²) ∂z² s]            (κ p uniform)
+#                    (NEW 2026-11-08: and the same for the composition c, with D ρ0, its flux rows as those of s)
 #     stress-free    the traction Fᵀσ_X F⁻ᵀ r̂ = Q (∇w) Q⁻¹ r̂ + (∇w)ᵀ r̂ ((∇w)_ij = ∂_j w_i) less the sphere's r̂⋅σ(w):
 #                    Q (∇w) Q⁻¹ r̂ - ∂ᵣw = (a²/c² - 1) x (ẑ⋅∇)w + (c² - a²) Z [∂ᵣw/a² + (1/c² - 1/a²) x (ẑ⋅∇)w]
 #     fixed flux     r̂⋅Q⁻¹∇s - ∂ᵣs = (1/a² - 1) ∂ᵣs + (1/c² - 1/a²) x ∂z s
@@ -1720,8 +1747,8 @@ def rotation_block(l, section, component, offdiag, M):
 # kore's g = r it acts along F⁻ᵀ𝐫 = ∇_X(r²/2) in the body, normal to the level surfaces, as the effective gravity of a
 # homogeneous body in hydrostatic equilibrium (a Maclaurin spheroid: its effective potential depends on r alone). The
 # couplings are built with the algebra of section 6 on expressions of constant coefficients and take kore's own labels (no
-# profile, or the uniform ν, κ p and η: 'vsc0', 'kps0', 'eta0'). The products of Z and ∂z² couple a degree l to l ± 4 of the
-# same kind and to l ± 3 of the other. The fluid is homogeneous (structure 'Boussinesq', diffusivity 'uniform'): its
+# profile, or the uniform ν, κ p, η and D ρ0: 'vsc0', 'kps0', 'eta0', 'Drh0'). The products of Z and ∂z² couple a degree l
+# to l ± 4 of the same kind and to l ± 3 of the other. The fluid is homogeneous (structure 'Boussinesq', diffusivity 'uniform'): its
 # expressions have no (ln ρ0) terms, and no profile derivatives. Checks: tests/centrifugal/spheroid_check.py.
 # NEW (2026-11-06, step 2) the field. b̃ = J F⁻¹ b = F⁻¹ b and the background B̃0 (kore's formula; F B̃0 in the body) are fluxes
 # of the reference space (section 4), so with J = 1 and M = Q the induction ∂ₜb̃ = ∇×(w × B̃0) is that of the sphere, and
@@ -1777,13 +1804,14 @@ def spheroid_terms(A, X, kind, f=None):
     The exact metric terms of the unknown X ('P', 'T': the flow w; 'S': the entropy s) on the algebra A, as expressions
     (the formulas above, flattening f or centrifugal_f): kind 'inertia' (M - I) w, 'coriolis' (z̃ - ẑ)×w, 'visc' the viscous
     force per unit ν, 'traction' the stress-free wall rows per unit ν (vector expressions); 'heat' the diffusion per unit
-    κp, 'flux' the fixed-flux wall rows (scalar expressions, X = 'S'); NEW (2026-11-06, step 2) X = 'F', 'G' (the field b̃),
-    kind 'mag': the diffusion's field per unit η in kore's sign (minus the formula above, as magnetic_diffusion_metric)
+    κp, 'flux' the fixed-flux wall rows (scalar expressions, X = 'S'; NEW 2026-11-08, or 'C', the composition, per unit D ρ0);
+    NEW (2026-11-06, step 2) X = 'F', 'G' (the field b̃), kind 'mag': the diffusion's field per unit η in kore's sign (minus
+    the formula above, as magnetic_diffusion_metric)
     '''
     a, c = spheroid_axes(f)
     a2, c2 = a*a, c*c
-    if X == 'S':
-        s = {(0, 'S', 0, None, None, ()): A.I}
+    if X in ('S', 'C'):
+        s = {(0, X, 0, None, None, ()): A.I}
         if kind == 'heat':
             return _sum(_sc(_div(A, _grad(A, s)), 1/a2 - 1), _sc(_sdz(A, _sdz(A, s)), 1/c2 - 1/a2))
         if kind == 'flux':
@@ -1827,8 +1855,9 @@ def spheroid_build(m, lw, kinds=SPHEROID_KINDS, f=None):
     'inertia' and 'coriolis' in the rows u, v (columns P, T; (M - I) w and (z̃ - ẑ)×w as section 3's momentum_block, without
     2 Gaspard and the 1/L'^3), 'visc' in u, v (the sign of operators.viscous_diffusion, without ViscosD and the 1/L'^3) and
     'heat' in h (column S; the sign of operators.thermal_diffusion, without ThermaD and the 1/L^3), NEW (2026-11-06, step 2)
-    'mag' in f, g (columns F, G; kore's A sign, as diffusion_build, without MagnetD and the 1/L'^3); pruned and checked
-    (_check_orders). Also used by tests/centrifugal/spheroid_check.py without a run.
+    'mag' in f, g (columns F, G; kore's A sign, as diffusion_build, without MagnetD and the 1/L'^3), NEW (2026-11-08) 'comp'
+    in c (column C; the sign of operators.comp_diffusion, without CompoD and the 1/L^3); pruned and checked (_check_orders).
+    Also used by tests/centrifugal/spheroid_check.py without a run.
     '''
     import mag_algebra as ma
     A = angular.Algebra.get(m, lw)
@@ -1838,6 +1867,8 @@ def spheroid_build(m, lw, kinds=SPHEROID_KINDS, f=None):
         o = {}
         if kind == 'heat':
             _store_sph(o, 'h', 'S', _shift(spheroid_terms(A, 'S', 'heat', f), 1., 2), lambda M: M, 'kps')   # r² (the row)
+        elif kind == 'comp':   # NEW (2026-11-08)
+            _store_sph(o, 'c', 'C', _shift(spheroid_terms(A, 'C', 'heat', f), 1., 2), lambda M: M, 'Drh')  # r² (the row)
         elif kind == 'mag':   # NEW (2026-11-06, step 2): f: -r² t, g: -r [q - (r s)'] (as diffusion_build)
             for X in 'FG':
                 q, s, t = _parts(spheroid_terms(A, X, 'mag', f))
@@ -1873,11 +1904,12 @@ def spheroid_walls(m, lw, R, f=None):
 _sph = {}
 def spheroid_coefficients(m):
     '''spheroid_build for this run (cached): {kind: (out, bands)} with the kinds of this run ('visc' with ViscosD > 0, 'heat'
-    with thermal diffusion, NEW (2026-11-06, step 2) 'mag' with a field and MagnetD > 0), the bands by diagonal
-    (angular.band, |Δl| <= 4)'''
+    with thermal diffusion, NEW (2026-11-06, step 2) 'mag' with a field and MagnetD > 0, NEW (2026-11-08) 'comp' with the
+    composition and CompoD > 0), the bands by diagonal (angular.band, |Δl| <= 4)'''
     if m not in _sph:
         kinds = ['inertia', 'coriolis'] + (['visc'] if par.ViscosD > 0 else []) + \
-                (['heat'] if par.thermal and par.ThermaD > 0 else []) + (['mag'] if par.magnetic and par.MagnetD > 0 else [])
+                (['heat'] if par.thermal and par.ThermaD > 0 else []) + (['mag'] if par.magnetic and par.MagnetD > 0 else []) + \
+                (['comp'] if par.compositional and par.CompoD > 0 else [])
         _sph[m] = {}
         for kind, out in spheroid_build(m, par.lmax + 16, kinds).items():
             B = _bandwidth(out)
@@ -1887,8 +1919,8 @@ def spheroid_coefficients(m):
     return _sph[m]
 
 def spheroid_labels(kinds):
-    '''[(label, 'P', 'T' or 'S')]: the radial operators of the exact terms of the kinds given (those of this run), for
-    submatrices.py'''
+    '''[(label, 'P', 'T', 'S', 'F', 'G' or 'C')]: the radial operators of the exact terms of the kinds given (those of this
+    run), for submatrices.py'''
     out = []
     for kind, (o, _) in spheroid_coefficients(par.m).items():
         if kind in kinds:
@@ -1898,17 +1930,17 @@ def spheroid_labels(kinds):
 
 def spheroid_block(kind, l, section, component, offdiag, M):
     '''
-    The block of the exact metric term kind ('inertia', 'coriolis': momentum_block's conventions; 'visc', 'heat', 'mag':
-    diffusion_block's) for the row degree l of section 'u', 'v', 'h' (NEW 2026-11-06, step 2: or 'f', 'g'), the column
-    'upol', 'utor', 'temp' (or 'bpol', 'btor') and the source degree l + offdiag: [factor Σ coefficient × radial operator /
-    L'^3, the column block offset in units of N1] (factor 1, 2 Gaspard, ViscosD, ThermaD or MagnetD), or [0, 0] if nothing
-    couples this Δl.
+    The block of the exact metric term kind ('inertia', 'coriolis': momentum_block's conventions; 'visc', 'heat', 'mag',
+    'comp': diffusion_block's) for the row degree l of section 'u', 'v', 'h' (NEW 2026-11-06, step 2: or 'f', 'g'; NEW
+    2026-11-08: or 'c'), the column 'upol', 'utor', 'temp' (or 'bpol', 'btor', 'comp') and the source degree l + offdiag:
+    [factor Σ coefficient × radial operator / L'^3, the column block offset in units of N1] (factor 1, 2 Gaspard, ViscosD,
+    ThermaD, MagnetD or CompoD), or [0, 0] if nothing couples this Δl.
     '''
     import utils as ut
     C = spheroid_coefficients(par.m)
     if kind not in C:
         return [0, 0]
-    X = {'upol': 'P', 'utor': 'T', 'temp': 'S', 'bpol': 'F', 'btor': 'G'}[component]
+    X = {'upol': 'P', 'utor': 'T', 'temp': 'S', 'bpol': 'F', 'btor': 'G', 'comp': 'C'}[component]
     out = 0
     for lab, bnd in C[kind][1].get((section, X), {}).items():
         v = _lookup(bnd, l, par.m, offdiag)
@@ -1922,7 +1954,8 @@ def spheroid_block(kind, l, section, component, offdiag, M):
         offd = int(np.where(cols == l + offdiag)[0][0] - np.where(rows == l)[0][0])
     else:
         offd = ut.dr_offd(l, l + offdiag, section, X)
-    fac = {'inertia': 1., 'coriolis': 2*par.Gaspard, 'visc': par.ViscosD, 'heat': par.ThermaD, 'mag': par.MagnetD}[kind]
+    fac = {'inertia': 1., 'coriolis': 2*par.Gaspard, 'visc': par.ViscosD, 'heat': par.ThermaD, 'mag': par.MagnetD,
+           'comp': par.CompoD}[kind]
     return [fac*out/(l*(l + 1.))**3, offd]
 
 def spheroid_primitives(kind, m, lw, f=None):

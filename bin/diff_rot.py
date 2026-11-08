@@ -16,6 +16,7 @@ seen in the frame of Ω_ref as the flow U0 = Gaspard ΔΩ r sinθ e_φ, together
 S_tw = Σ_n σ_n(r) P_n(cos θ) of thermal-wind balance (or prescribed). They add
     momentum rows (sections u, v):  W = Gaspard [ΔΩ (i m u + 2 ẑ×u) + sinθ (r ∂ᵣΔΩ u_r + ∂_θΔΩ u_θ) e_φ]
     heat rows (section h):          p0 [i m Gaspard ΔΩ s + u_r ∂ᵣS_tw + (u_θ/r) ∂_θS_tw]
+    composition rows (section c):   ρ0 i m Gaspard ΔΩ c   (NEW 2026-11-08, compositional = 1)
 Sections of this module:
   1. profiles: the shapes f_n of the predefined types, of 'tabulated' (a table of Ω(r, θ)) and of 'user' (numpy
      expressions in par.diff_rot_profiles), and their Chebyshev fits for submatrices.py (profile codes zf, zd, zs:
@@ -509,9 +510,15 @@ def _heat_labels():
         out['tor'].append((n, 'h1%s0_D0' % c['tw']))      # (c') -i m r p0 σn T
     return out
 
+def _comp_labels():
+    '''NEW (2026-11-08): the section-c terms, [(n, label)] of (a) i m G ΔΩ c alone (the background composition is spherical,
+    so it has no part that balances ΔΩ, as S_tw does); rows r² ρ0 (eq) (CompoD > 0) or r (eq)/ρ0 (CompoD = 0)'''
+    return [(n, ('c0dns0%s0_D0' if par.CompoD > 0 else 'c0%s0_D0') % codes(n)['f']) for n in degrees()]
+
 def labels():
-    '''[(label, 'P', 'T', 'F' or 'G')]: every radial operator of the differential-rotation terms and the parity class of its
-    column (P for the P and s columns, T for T, F and G for the poloidal and toroidal magnetic field), for submatrices.py'''
+    '''[(label, 'P', 'T', 'F', 'G' or 'C')]: every radial operator of the differential-rotation terms and the parity class of
+    its column (P for the P and s columns, T for T, F and G for the poloidal and toroidal magnetic field, NEW 2026-11-08 C for
+    the composition), for submatrices.py'''
     out = []
     for n in degrees():
         for (sec, comp) in MOMENTUM:
@@ -525,16 +532,21 @@ def labels():
         for n in degrees():
             for (sec, comp) in INDUCTION:
                 out += [(lab, 'F' if comp == 'bpol' else 'G') for _, lab in induction_labels(n, sec, comp)]
+    if par.compositional:   # NEW (2026-11-08): the advection of the composition by ΔΩ
+        out += [(lab, 'C') for _, lab in _comp_labels()]
     return out
 
 def dl_range(section, component):
-    '''the Δl = l_source - l_target of the blocks assemble.py places (rows: section u, v, h; columns: upol, utor, temp)'''
+    '''the Δl = l_source - l_target of the blocks assemble.py places (rows: section u, v, h, NEW 2026-11-08 c; columns: upol,
+    utor, temp, comp)'''
     if section in ('u', 'v'):
         nd = n_max()
         same = (section == 'u') == (component == 'upol')
         return range(-nd, nd + 1, 2) if same else range(-nd - 1, nd + 2, 2)
-    if component == 'temp':
+    if component in ('temp', 'comp'):
         return range(-n_max(), n_max() + 1, 2)
+    if section == 'c':   # NEW (2026-11-08): no thermal wind of the composition
+        return range(0)
     nw = tw_nmax()
     if not (par.thermal_wind and nw):
         return range(0)
@@ -592,6 +604,25 @@ def heat_block(l, component, offdiag, M):
         return [0, 0]
     offd = int(np.where((lt if kind == 'T' else lp) == ls)[0][0] - np.where(lp == l)[0][0])
     return [-out/L**3, offd]
+
+def comp_block(l, component, offdiag, M):
+    '''
+    NEW (2026-11-08): the block of the advection of the composition by the background rotation for the row degree l, the
+    column 'comp' (c) and the source degree l + offdiag: (a) of heat_block with c, i m G Σ_n P_n(X) [rʰ ρ0 f_n] c (rʰ f_n with
+    CompoD = 0), divided by L^3 and with the sign of heat_block. Returns [matrix, offd] or [0, 0].
+    '''
+    import utils as ut
+    m = par.m
+    lp = ut.ell(par.m, par.lmax, par.symm)[0]
+    out = 0
+    if component == 'comp' and offdiag % 2 == 0:
+        for n, lab in _comp_labels():
+            if abs(offdiag) <= n:
+                out = out + 1j*m*heat_coef('P%d' % n, l, m, offdiag)*M[lab]
+    if np.isscalar(out):
+        return [0, 0]
+    offd = int(np.where(lp == l + offdiag)[0][0] - np.where(lp == l)[0][0])
+    return [-par.Gaspard*out/(l*(l + 1.))**3, offd]
 
 
 

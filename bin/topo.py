@@ -68,15 +68,19 @@ def ratio():
 def N_cmb():
     '''
     N/Omega at the outer wall: topo_N if set, else sqrt(Beyonce g dS/dr)/Gaspard of the stratification (N^2 = Beyonce g dS/dr,
-    docs/anelastic.md), 0 without buoyancy (thermal = 0) and where the stratification is unstable (N^2 < 0)
+    docs/anelastic.md), 0 without buoyancy (thermal = 0) and where the stratification is unstable (N^2 < 0). NEW (2026-11-08):
+    with the composition (compositional = 1) N^2 has its part too, BeyonceC g dC/dr
     '''
     if par.topo_N is not None:
         return float(par.topo_N)
-    if not par.thermal:
+    if not (par.thermal or par.compositional):
         return 0.0
     import radial_profiles as rap
     rr = np.array([float(ut.rcmb)])
-    n2 = par.Beyonce*float(np.ravel(rap.prf.gravity(rr, 0))[0])*float(np.ravel(rap.prf.gradS(rr))[0])
+    g = float(np.ravel(rap.prf.gravity(rr, 0))[0])
+    n2 = par.Beyonce*g*float(np.ravel(rap.prf.gradS(rr))[0]) if par.thermal else 0.0
+    if par.compositional:
+        n2 += par.BeyonceC*g*float(np.ravel(rap.prf.gradC(rr))[0])
     return float(np.sqrt(max(n2, 0.0)))/par.Gaspard
 
 

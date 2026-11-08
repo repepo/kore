@@ -10,19 +10,20 @@ table.
 | `A.npz`, `B.npz` | `assemble.py` | the matrices of the eigenproblem $A\mathbf x = \lambda B\mathbf x$ |
 | `B_forced.npz` | `assemble.py`, with `forcing` > 0 | the right-hand sides of a forced run, one per column |
 | `eigenvalues0.dat` | `solve.py` | the eigenvalues of the last solve, one per row: $\mathrm{Re}\thinspace\lambda$, $\mathrm{Im}\thinspace\lambda$ |
-| `real_flow.field`, `imag_flow.field` | `solve.py` | the eigenvectors of the flow (or the forced flows), real and imaginary parts of their spectral coefficients, one column per solution; with `thermal = 1` also `real_thermal.field`, `imag_thermal.field` for $s$; with `magnetic = 1` also `real_magnetic.field`, `imag_magnetic.field` for $\mathbf b$, `real_magnetic_ic.field`, `imag_magnetic_ic.field` for the inner core `'conducting, Chebys'`, and `real_magnetic_mantle.field`, `imag_magnetic_mantle.field` for a resolved mantle; with `rotdyn = 1` also `real_rotdyn.field`, `imag_rotdyn.field` for the rotation rates of the mantle and of the inner core and the angle between them ([Rotating solids](rotating-solids.md)). Without the flow (`hydro = 0`) the flow's files are not written |
+| `real_flow.field`, `imag_flow.field` | `solve.py` | the eigenvectors of the flow (or the forced flows), real and imaginary parts of their spectral coefficients, one column per solution; with `thermal = 1` also `real_thermal.field`, `imag_thermal.field` for $s$; with `compositional = 1` also `real_composition.field`, `imag_composition.field` for $c$; with `magnetic = 1` also `real_magnetic.field`, `imag_magnetic.field` for $\mathbf b$, `real_magnetic_ic.field`, `imag_magnetic_ic.field` for the inner core `'conducting, Chebys'`, and `real_magnetic_mantle.field`, `imag_magnetic_mantle.field` for a resolved mantle; with `rotdyn = 1` also `real_rotdyn.field`, `imag_rotdyn.field` for the rotation rates of the mantle and of the inner core and the angle between them ([Rotating solids](rotating-solids.md)). Without the flow (`hydro = 0`) the flow's files are not written |
 | `rsf_spectrum.dat`, `rsf_ke.dat` | `solve.py`, with `forcing = 11` and `rsf_frequencies` | the power spectrum of the kinetic energy of the forced flow, appended, one row per frequency ([Convective forcing](forcing.md#reading-the-output)) |
 | `timing.dat` | `solve.py` | the run time of the solve, appended |
 | `eigenvalues.dat` | `spin_doctor.py` | the eigenvalues, appended |
 | `params.dat` | `spin_doctor.py` | the parameters of each solution (below) |
 | `flow.dat` | `spin_doctor.py` | the kinetic energy and the checks of each solution (below) |
 | `thermal.dat` | `spin_doctor.py`, with `thermal = 1` | the entropy budget of each solution (below) |
+| `composition.dat` | `spin_doctor.py`, with `compositional = 1` | the budget of the composition of each solution (below) |
 | `magnetic.dat` | `spin_doctor.py`, with `magnetic = 1` | the magnetic energies and budgets of each solution (below) |
 | `rotdyn.dat` | `spin_doctor.py`, with `rotdyn = 1` | the rotation of the solids and the torques on them, for each solution (below) |
 
 `python3 bin/units.py` prints the eigenvalues of `eigenvalues0.dat` as frequency and growth rate in nHz
-([Background model](background.md#units)). Rows of `params.dat`, `flow.dat`, `thermal.dat`, `magnetic.dat` and `rotdyn.dat` with the same index
-belong to the same solution. Start a new `params.dat` rather than append to one written by another version of kore,
+([Background model](background.md#units)). Rows of `params.dat`, `flow.dat`, `thermal.dat`, `composition.dat`,
+`magnetic.dat` and `rotdyn.dat` with the same index belong to the same solution. Start a new `params.dat` rather than append to one written by another version of kore,
 which may have other columns.
 
 ## `flow.dat`
@@ -31,7 +32,7 @@ Columns, counted from 1:
 
 | columns | content |
 | --- | --- |
-| 1–3 | kinetic energy, and its poloidal and toroidal parts (the eigenvectors are normalised to kinetic energy 1); with `centrifugal = 1` column 1 is the kinetic energy of the deformed body, and columns 2–3 are its parts without the terms of the deformation. Without the flow (`hydro = 0`) the flow's columns are 0 or nan, the eigenvectors are normalised to a magnetic energy (`magnetic.dat`, column 1) plus an entropy "energy" (`thermal.dat`, column 1) of 1, and columns 5–7 and 28 describe the field, or the entropy without a field |
+| 1–3 | kinetic energy, and its poloidal and toroidal parts (the eigenvectors are normalised to kinetic energy 1); with `centrifugal = 1` column 1 is the kinetic energy of the deformed body, and columns 2–3 are its parts without the terms of the deformation. Without the flow (`hydro = 0`) the flow's columns are 0 or nan, the eigenvectors are normalised to a magnetic energy (`magnetic.dat`, column 1) plus the "energies" of the entropy and of the composition (`thermal.dat`, `composition.dat`, column 1) of 1, and columns 5–7 and 28 describe the field, or the entropy without a field |
 | 4 | the power of the viscous force $\int\mathbf u\cdot(\nabla\cdot\boldsymbol\sigma)\thinspace dV$: minus the viscous dissipation when $\mathbf u = 0$ at the walls (column 26 otherwise); with `centrifugal = 1` that of the deformed body |
 | 5–7 | the degree $l$ of the largest kinetic energy, the width of the $l$ spectrum, and the ℓ-convergence (the columns Peak ℓ, ℓ-Width and ℓ-Convergence of the `spin_doctor` table) |
 | 8–11 | the enstrophy, and the Coriolis, viscous and buoyancy terms of its balance |
@@ -47,6 +48,7 @@ Columns, counted from 1:
 | 39 | resid𝐋, the relative residual of the fluid's angular momentum balance (NaN where it is not computed, [Rotating solids](rotating-solids.md#the-angular-momentum-check-residl)) |
 | 40–41 | with a viscous fluid at a stress-free outer wall (not with `centrifugal = 1`), the power the drag at the wall dissipates and the damping rate it implies, Dtopo and δσtopo, per unit `kappa_cmb` without a drag ([Drag at the outer wall](drag.md#output)); 0 otherwise |
 | 42–43 | for the forcings that drive the flow by a body force, 1 ([Tidal forcing](tidal-forcing.md#the-wave-like-tide-forcing-1)) and 8 ([Libration](libration.md)): the power of that force on the fluid, $2\thinspace\mathrm{Re}\int\rho_0\thinspace\mathbf u^*\cdot\mathbf f\thinspace dV$, and its imaginary part, in residσ and residω; the column P_in of the `spin_doctor` table adds it to the powers of the walls (columns 21, 22, 24, 25); 0 otherwise |
+| 44–45 | with `compositional = 1`, the power of the buoyancy of the composition, $2\thinspace\mathrm{BeyonceC}\thinspace\mathrm{Re}\int\rho_0\thinspace g\thinspace c\thinspace u_r^*\thinspace dV$, and its imaginary part, in residσ and residω (the entropy's is in `thermal.dat`); 0 otherwise |
 
 ## `thermal.dat`
 
@@ -59,6 +61,21 @@ Columns, counted from 1:
 | 5 | the work of the buoyancy force |
 | 6 | the energy residual (residσ) |
 | 7 | the terms of the differential rotation in the heat equation |
+
+## `composition.dat`
+
+With `compositional = 1` ([Composition](background.md#composition)), the budget of the composition, as `thermal.dat`
+with $\rho_0$ in place of $p_0$ ([Anelastic equations](anelastic.md#entropy)):
+
+| columns | content |
+| --- | --- |
+| 1 | the composition's "energy" $\tfrac12\int\rho_0\lvert c\rvert^2\thinspace dV$ (of the deformed body with `centrifugal = 1`) |
+| 2 | the advection by the background gradient |
+| 3 | the diffusion (of the deformed body with `centrifugal = 1`) |
+| 4 | the relative residual of the balance of the composition (resid𝑐) |
+| 5 | the work of its buoyancy force (`flow.dat`, column 44) |
+| 6 | the energy residual (residσ) |
+| 7 | the advection by the differential rotation; it only moves the frequency, so this real part is 0 to round-off |
 
 ## `magnetic.dat`
 
@@ -116,11 +133,14 @@ The columns follow the order of `spin_doctor.param_table`, counted from 1:
 | 123–127 | `r_surface`, `N_mantle`, the conductivity of a resolved mantle at the outer wall (as used), `sigma_mantle_param`, its conductance $\int\sigma\,dr$ (the `c1_cmb` of a thin conducting layer of the same conductance) |
 | 128–134 | `rotdyn`, `MoIZ_M`, `MoIZ_IC`, `gTorque`, `OmgtauIC`, `vtrq`, `mtrq` |
 | 135–141 | `kappa_cmb`, `topo_drag` (1 for `'rekier'`, 0 for `None`), and with `'rekier'` (0 otherwise) `topo_hrms`, `topo_lambda0`, `topo_H`, and the buoyancy frequency and the frequency of the flow that the drag used, over the rotation rate ([Drag at the outer wall](drag.md)) |
+| 142–150 | `compositional`, `comp_stratification`, `comp_stratification_param`, `BeyonceC`, `CompoD`, `comp0`, `comp_pow`, `bci_compositional`, `bco_compositional` |
+| 151–154 | `comp_two_zone` ($r_c$, $h$) and `two_zone` ($r_c$, $h$) |
 
 - Names are written as their index in the lists of the code: `structure` in `background.STRUCTURES` (`'8-term fit'` 0,
   `'old model S prototype'` 1, `'model S hydrostatic'` 2, `'Wu 2005'` 3, `'Boussinesq'` 4), `stratification` in
   `background.STRATIFICATIONS` (`'top hat'` 0, `'odd top hat'` 1, `'solar_rz'` 2, `'linear'` 3, `'inverse square'` 4,
-  `'user'` 5; −1 without a stratification), `diffusivity` in `background.DIFFUSIVITIES` (`'uniform'` 0, `'step'` 1,
+  `'user'` 5, `'two zone'` 6; −1 without a stratification), `comp_stratification` in `background.COMP_STRATIFICATIONS`
+  (`'linear'` 0, `'inverse square'` 1, `'two zone'` 2, `'user'` 3; −1 with `compositional = 0`), `diffusivity` in `background.DIFFUSIVITIES` (`'uniform'` 0, `'step'` 1,
   `'solar_rz'` 2, `'user'` 3) and `diff_rot_type` in `diff_rot.TYPES` (`'Y20'` 0, …, `'rigid'` 7, `'solar_P4'` 8,
   `'tabulated'` 9, `'user'` 10, `'ferraro'` 11).
 - Column 64 is `structure_deg` for `'model S hydrostatic'`. Columns 65–66 are nan for the default window and
@@ -142,8 +162,9 @@ The columns follow the order of `spin_doctor.param_table`, counted from 1:
   Column 111 is the flattening of the outer wall that the run used, with any shape (0 with `centrifugal = 0`).
 - `diff_rot_generic` and `diff_rot_hold` are not used (always 0 and nan); they keep the positions of the columns after
   them.
-- A row ends, after a `#` that `np.loadtxt` skips, with the `'user'`, `'general'` and `'ferraro'` expressions, that of
+- A row ends, after a `#` that `np.loadtxt` skips, with the `'user'` (the composition's too), `'general'` and `'ferraro'` expressions, that of
   `sigma_mantle` and, for `'tabulated'`, `diff_rot_file` with the first 12 hex digits of its sha256. A row with none of
   these has no `#`.
-- A `params.dat` written before the columns 108–112, column 113, the columns 114–122, 123–127, 128–134 or 135–141 were
-  added has fewer columns: start a new file. The same holds for `flow.dat` before its columns 29–39, 40–41 or 42–43.
+- A `params.dat` written before the columns 108–112, column 113, the columns 114–122, 123–127, 128–134, 135–141 or
+  142–154 were added has fewer columns: start a new file. The same holds for `flow.dat` before its columns 29–39, 40–41,
+  42–43 or 44–45.

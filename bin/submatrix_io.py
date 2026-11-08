@@ -36,7 +36,9 @@ OPERATOR_INDEPENDENT = ('ncpus', 'petsc_opts', 'prescale', 'which_eigenpairs', '
                         # NEW (2026-11-06): the drag at the outer wall (topo.py) and the rotating solids (rotdyn.py): rows of
                         # assemble.py only
                         'rotdyn', 'MoIZ_M', 'MoIZ_IC', 'gTorque', 'OmgtauIC', 'vtrq', 'mtrq',
-                        'forced_walls')   # NEW (2026-11-06): the solids under a radial boundary flow, rows of assemble.py
+                        'forced_walls',   # NEW (2026-11-06): the solids under a radial boundary flow, rows of assemble.py
+                        'Ecomp', 'bci_compositional', 'bco_compositional')   # NEW (2026-11-08): the composition's (CompoD is
+                        # compared), its walls
 
 
 def params_of(par):

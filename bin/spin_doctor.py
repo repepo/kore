@@ -39,6 +39,10 @@ def stratification_code():
 def diffusivity_code():
     return bg.DIFFUSIVITIES.index(par.diffusivity)
 
+def comp_stratification_code():   # NEW (2026-11-08): -1 without the composition (compositional = 0)
+    return bg.COMP_STRATIFICATIONS.index(par.comp_stratification) if (par.compositional and
+                                                                       par.comp_stratification in bg.COMP_STRATIFICATIONS) else -1
+
 def B0_code():  # NEW (2026-10-28): B0 as its index in background_field.B0_TYPES, -1 without the field
     return bf.B0_TYPES.index(par.B0) if (par.magnetic and par.B0 in bf.B0_TYPES) else -1
 
@@ -231,6 +235,20 @@ def param_table(elapsed):
         ( 'topo_H',                   par.topo_H if topo_on else 0.0,        '%.9e' ),
         ( 'topo_N_cmb',               topo.N_cmb() if topo_on else 0.0,      '%.9e' ),
         ( 'topo_omega',               topo.omega0() if topo_on else 0.0,     '%.9e' ),
+        # NEW (2026-11-08, from conductive_IC): the composition and the 'two zone' gradients (two_zone: the entropy's)
+        ( 'compositional',            par.compositional,           '%d' ),
+        ( 'comp_stratification',      comp_stratification_code(),  '%d' ),    # index into background.COMP_STRATIFICATIONS
+        ( 'comp_stratification_param', par.comp_stratification_param, '%.9e' ),  # p of 'user' (its expression in the # note)
+        ( 'BeyonceC',                 par.BeyonceC,                '%.9e' ),
+        ( 'CompoD',                   par.CompoD,                  '%.9e' ),
+        ( 'comp0',                    par.comp0,                   '%.9e' ),
+        ( 'comp_pow',                 par.comp_pow,                '%.9e' ),
+        ( 'bci_compositional',        par.bci_compositional,       '%d' ),
+        ( 'bco_compositional',        par.bco_compositional,       '%d' ),
+        ( 'comp_two_zone_rc',         par.comp_two_zone[0],        '%.9e' ),
+        ( 'comp_two_zone_h',          par.comp_two_zone[1],        '%.9e' ),
+        ( 'two_zone_rc',              par.two_zone[0],             '%.9e' ),
+        ( 'two_zone_h',               par.two_zone[1],             '%.9e' ),
     ]
 
 
@@ -315,10 +333,13 @@ def main(ncpus):
     rot = None
     if ut.rotdyn:  # NEW (2026-11-06): omega_M, omega_IC, phi of the rotating solids
         rot = ( np.loadtxt('real_rotdyn.field') + 1j*np.loadtxt('imag_rotdyn.field') ).reshape((3,-1))
+    if par.compositional:  # NEW (2026-11-08): the composition
+        rc = ( np.loadtxt('real_composition.field') + 1j*np.loadtxt('imag_composition.field') ).reshape((ut.n,-1))
 
     # NEW (2026-11-06): without the flow (hydro = 0) the solutions are counted in the field's (or the entropy's) file, and the
     # flow's diagnostics run on a zero flow (upp.zero_flow): they give zeros, and residσ, residω, residens are not computed
-    success = np.shape(ru if par.hydro else (rb if par.magnetic else rt))[1]
+    # (NEW 2026-11-08: or the composition's)
+    success = np.shape(ru if par.hydro else (rb if par.magnetic else (rt if par.thermal else rc)))[1]
 
     # ------------------------------------------------------------------------------------------------------------------
     # hydrodynamical variables to be processed
@@ -361,6 +382,15 @@ def main(ncpus):
     Wadv_thm    = np.zeros(success)
     Dthm        = np.zeros(success)
     Wdr_thm     = np.zeros(success)
+
+    # NEW (2026-11-08): the composition (compositional = 1): its budget (upp.composition_worker) and the power of its buoyancy
+    CE          = np.zeros(success)  # ½ ∫ ρ₀ |c|² dV
+    Wadv_cmp    = np.zeros(success)  # -∫ ρ₀ (dC/dr) uᵣ c* dV
+    Dcmp        = np.zeros(success)  # CompoD ∫ c* ∇⋅(D ρ₀ ∇c) dV
+    Wdr_cmp     = np.zeros(success)  # -2 Re ∫ ρ₀ c* i m G ΔΩ c dV
+    Wcmp        = np.zeros(success)  # 2 Re ∫ ρ 𝐮*⋅(BeyonceC g c 𝐫̂) dV (in residσ), and its imaginary part (in residω)
+    Wcmp_im     = np.zeros(success)
+    resid4      = np.zeros(success)  # resid𝑐, the budget of the composition
 
     # magnetic variables to be processed (NEW 2026-10-28)
     ME          = np.zeros(success)  # ∫ ½ 𝐛⋅𝐛 dV (as conductive_IC's magnetic.dat: without Hendrik)
@@ -425,7 +455,9 @@ def main(ncpus):
         ( 'residω',        '{:8.2e}',   lambda i: resid2[i] ),
     ] if par.hydro else []) + ([
         ( 'resid𝑠',        '{:8.2e}',   lambda i: resid3[i] ),
-    ] if par.thermal else []) + ([   # NEW (2026-11-04): forced runs, the power the walls put in and the viscous dissipation
+    ] if par.thermal else []) + ([   # NEW (2026-11-08): the budget of the composition
+        ( 'resid𝑐',        '{:8.2e}',   lambda i: resid4[i] ),
+    ] if par.compositional else []) + ([   # NEW (2026-11-04): forced runs, the power the walls put in and the viscous dissipation
         ( 'P_in',          '{: .6e}',   lambda i: Wp_icb[i] + Wp_cmb[i] + Wv_icb[i] + Wv_cmb[i] + Wf[i] ),
         ( 'Dν',            '{: .6e}',   lambda i: Dvisc[i] ),
     ] if par.forcing > 0 else []) + ([
@@ -504,12 +536,16 @@ def main(ncpus):
         if par.magnetic:  # NEW (2026-10-28)
             b_sol2 = upp.expand_reshape_sol( np.copy(rb[:,i]) + 1j*np.copy(ib[:,i]), ut.bsymm)
 
+        c_sol2 = upp.expand_reshape_sol( np.copy(rc[:,i]), par.symm ) if par.compositional else 0   # NEW (2026-11-08)
 
-        # identify solutions (NEW 2026-11-06: without the flow, the field, or the entropy)
+
+        # identify solutions (NEW 2026-11-06: without the flow, the field, or the entropy; NEW 2026-11-08: or the composition)
         if par.hydro:
             [ ldom[i], lwidth[i], lconv[i] ] = upp.identify( u_sol2 )
-        else:
+        elif par.magnetic or par.thermal:
             [ ldom[i], lwidth[i], lconv[i] ] = upp.identify( b_sol2, ut.bsymm ) if par.magnetic else upp.identify( t_sol2 )
+        else:
+            [ ldom[i], lwidth[i], lconv[i] ] = upp.identify( c_sol2 )
 
         if par.ricb == 0:  # NEW (2026-11-04): how far the flow (and the field) is from regular at r = 0
             groups = [ [ (u_sol2[0], lp), (u_sol2[1], lt) ] ] if par.hydro else []
@@ -518,15 +554,21 @@ def main(ncpus):
                 groups.append( [ (b_sol2[0], lbp), (b_sol2[1], lbt) ] )
             if par.thermal and not par.hydro:   # NEW (2026-11-06): the entropy, without the flow
                 groups.append( [ (t_sol2, lp) ] )
+            if par.compositional and not par.hydro:   # NEW (2026-11-08): the composition, without the flow
+                groups.append( [ (c_sol2, lp) ] )
             irreg0[i] = upp.centre_irregularity(groups)
 
         # diagnose solutions (serially since 2026-10-20, see upp.diagnose)
-        [ udgn, tdgn ] = upp.diagnose( u_sol2, t_sol2, par.ricb, ut.rcmb, int(ncpus) )
+        [ udgn, tdgn ] = upp.diagnose( u_sol2, t_sol2, par.ricb, ut.rcmb, int(ncpus), csol=c_sol2 )
+        if par.compositional:  # NEW (2026-11-08): the budget of the composition, on the grid and tables of diagnose
+            cdgn = upp.diagnose_composition()
 
         if par.centrifugal:  # NEW (2026-11-05): the metric parts of KE, of the Coriolis power and of TE, on the grid of diagnose
             [ KEc, Wcorc, TEc ] = upp.centrifugal_terms( par.ricb, ut.rcmb )
             # NEW (2026-11-06, phase 2): those of the viscous power, of the differential rotation and of the entropy diffusion
             [ Dkinc, Wdrc, Dthmc ] = upp.centrifugal_dissipation_terms( par.ricb, ut.rcmb )
+            if par.compositional:   # NEW (2026-11-08): those of CE and of the diffusion of the composition
+                [ CEc, Dcmpc ] = upp.centrifugal_composition_terms( par.ricb, ut.rcmb )
 
         if par.magnetic:  # NEW (2026-10-28): on the grid and flow tables that diagnose has just set
             [ ME[i], Mdfs0, Indu[i], Wlor0, Wlor_im0 ] = np.sum( upp.diagnose_magnetic( b_sol2 ), 0)
@@ -565,12 +607,12 @@ def main(ncpus):
         if par.ViscosD>0 and par.hydro:
             Dvisc[i] = upp.viscous_dissipation()
         if par.hydro:
-            [ Wp0, Wv0 ] = upp.wall_powers(u_sol2, t_sol2, sigma + 1j*w, b_sol2 if par.magnetic else None)
+            [ Wp0, Wv0 ] = upp.wall_powers(u_sol2, t_sol2, sigma + 1j*w, b_sol2 if par.magnetic else None, csol=c_sol2)
             [ Wp_icb[i], Wp_cmb[i] ] = np.real(Wp0)
             Wp_im[i] = np.sum(np.imag(Wp0))
             [ Wv_icb[i], Wv_cmb[i] ] = Wv0
         if body_force:   # NEW (2026-11-08): forcings 1 and 8 (after wall_powers: it resets the grid and the tables)
-            [ Wf0, Ensf[i], Tf[i] ] = upp.body_force_terms(u_sol2, sigma + 1j*w, t_sol2)
+            [ Wf0, Ensf[i], Tf[i] ] = upp.body_force_terms(u_sol2, sigma + 1j*w, t_sol2, c_sol2)
             Wf[i], Wf_im[i] = np.real(Wf0), np.imag(Wf0)
 
         if do_torques:   # NEW (2026-11-06): the angular momentum of the fluid and the torques on its walls (rotdyn.py)
@@ -603,7 +645,7 @@ def main(ncpus):
         KT[i] = np.sum( udgn[lti,0])  # Toroidal kinetic energy
 
         [ KE[i], Dkin0, Ensvel[i], Enscor[i], Ensvif[i], Ensbuo[i], Wthm0, Wdr[i],
-          Wcor_im[i], Dkin_im[i], Wthm_im[i], Wdr_im[i], Ensdr[i] ] = np.sum( udgn, 0)
+          Wcor_im[i], Dkin_im[i], Wthm_im[i], Wdr_im[i], Ensdr[i], Wcmp[i], Wcmp_im[i] ] = np.sum( udgn, 0)
         Dkin[i] = Dkin0
         resens[i] = abs(Ensvel[i]*sigma+Enscor[i]-Ensbuo[i]-Ensvif[i]-Ensdr[i]-Ensf[i]) / max((abs(Ensvel[i]*sigma),abs(Enscor[i]),abs(Ensbuo[i]),abs(Ensvif[i]),abs(Ensdr[i]),abs(Ensf[i]))) \
                     if par.hydro else np.nan   # NEW (2026-11-06): no flow, no enstrophy budget
@@ -625,6 +667,14 @@ def main(ncpus):
             if par.centrifugal:  # NEW (2026-11-05): ∫ p0 J |s|² dV, the entropy "energy" of the deformed body
                 TE[i] += TEc
                 Dthm[i] += par.ThermaD * Dthmc   # NEW (2026-11-06, phase 2): its metric diffusion
+
+        if par.compositional:   # NEW (2026-11-08): the budget of the composition, as that of the entropy
+
+            [ CE[i], Dcmp0, Wadv_cmp[i], Wdr_cmp[i] ] = np.sum( cdgn, 0)
+            Dcmp[i] = Dcmp0 * par.CompoD
+            if par.centrifugal:  # ∫ ρ0 J |c|² dV and the metric diffusion
+                CE[i] += CEc
+                Dcmp[i] += par.CompoD * Dcmpc
 
 
         # --------------------------------------------------------- Computing residuals to check the power balance:
@@ -648,6 +698,8 @@ def main(ncpus):
         # resid2 is the relative residual of 2*w*KE + Wcor_im - Dkin_im - Wthm_im - Wdr_im - Wp_im = 0 (residω, its imaginary part;
         #        Wcor_im = 2 Im ∫ ρ 𝐮*⋅(2𝐳×𝐮) dV, Dkin_im = 2 Im ∫ 𝐮*⋅(∇⋅𝛔) dV, Wthm_im = 2 Im ∫ ρ 𝐮*⋅(Beyonce g s 𝐫̂) dV)
         # resid3 is the relative residual of 2*sigma*TE - Dthm - Wadv - Wdr_thm = 0
+        # NEW (2026-11-08): Wcmp (Wcmp_im) is the power of the buoyancy of the composition, in resid1 (resid2) and resid𝐄, and
+        #     resid4 (resid𝑐) the relative residual of 2*sigma*CE - Dcmp - Wadv_cmp - Wdr_cmp = 0, the budget of the composition
         # NEW (2026-11-08): Wf (Wf_im) is the power of the body force of forcings 1 and 8, in resid1 (resid2) and in P_in,
         #     Ensf its enstrophy term and Tf its torque in resid𝐋 (upp.body_force_terms; zero for the other forcings)
         # ---------------------------------------------------------------------------------------------------------
@@ -662,14 +714,14 @@ def main(ncpus):
             # without a field, buoyancy or a differential rotation every other term is small, and residσ was the round-off of
             # Dkin relative to itself, about 1
             scale1 = max( abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wthm[i]), abs(Wdr[i]), abs(Wlor[i]), abs(Wp), abs(Wf[i]),
-                          abs(Dvisc[i]) if walls_drive else 0.0 )
-            resid1[i] = abs( 2*sigma*KE[i] - Dkin[i] - Wthm[i] - Wdr[i] - Wlor[i] - Wp - Wf[i] )/scale1
+                          abs(Dvisc[i]) if walls_drive else 0.0, abs(Wcmp[i]) )
+            resid1[i] = abs( 2*sigma*KE[i] - Dkin[i] - Wthm[i] - Wcmp[i] - Wdr[i] - Wlor[i] - Wp - Wf[i] )/scale1
             # FIX (2026-11-08): 0 when every term is 0, a steady flow of m = 0 (forcing 12, forcing 13 at frequency 0), whose
             # fields are real: the imaginary part of the balance holds trivially (it was 0/0)
             scale2 = max( abs(2*w*KE[i]), abs(Wcor_im[i]), abs(Dkin_im[i]), abs(Wthm_im[i]), abs(Wdr_im[i]), abs(Wlor_im[i]),
-                          abs(Wp_im[i]), abs(Wf_im[i]) )
-            resid2[i] = abs( 2*w*KE[i] + Wcor_im[i] - Dkin_im[i] - Wthm_im[i] - Wdr_im[i] - Wlor_im[i] - Wp_im[i] - Wf_im[i] )/scale2 \
-                        if scale2 > 0 else 0.0
+                          abs(Wp_im[i]), abs(Wf_im[i]), abs(Wcmp_im[i]) )
+            resid2[i] = abs( 2*w*KE[i] + Wcor_im[i] - Dkin_im[i] - Wthm_im[i] - Wcmp_im[i] - Wdr_im[i] - Wlor_im[i] - Wp_im[i]
+                             - Wf_im[i] )/scale2 if scale2 > 0 else 0.0
         else:
             resid1[i] = resid2[i] = np.nan
         if par.ViscosD>0 and not par.centrifugal and par.hydro:   # NEW (2026-11-06, phase 2): not with centrifugal = 1 (Dvisc, Wv spherical)
@@ -741,9 +793,9 @@ def main(ncpus):
                 # FIX (2026-11-08): relative to the viscous dissipation Dvisc too where the walls drive the flow (walls_drive), as
                 # residσ: where the field takes little of the walls' power every other term is small (b = 0 for the Malkus field)
                 # NEW (2026-11-08): the power of the body force of forcings 1 and 8 (Wf)
-                residE[i] = ( abs( 2*sigma*Etot - Dkin[i] - Wthm[i] - Wex - Wsol - Wpe - Wf[i] + Ohm )
+                residE[i] = ( abs( 2*sigma*Etot - Dkin[i] - Wthm[i] - Wcmp[i] - Wex - Wsol - Wpe - Wf[i] + Ohm )
                               / max( abs(2*sigma*Etot), abs(Dkin[i]), abs(Wthm[i]), abs(Wex), Ohm, abs(Wdr[i]), abs(Wsol),
-                                     abs(Wpe), abs(Wf[i]), abs(Dvisc[i]) if walls_drive else 0.0 ) )
+                                     abs(Wpe), abs(Wf[i]), abs(Dvisc[i]) if walls_drive else 0.0, abs(Wcmp[i]) ) )
 
         if do_drag:   # NEW (2026-11-06): the power the drag dissipates (per unit kappa_cmb without one) and its damping rate
             Dtopo[i] = topo.dissipation(u_sol2, rot[0, i] if ut.rotdyn else 0)
@@ -757,6 +809,10 @@ def main(ncpus):
         if par.thermal:   # FIX (2026-11-08): 0 when every term is 0 (an entropy of 0, as resid𝐛; it was 0/0)
             scale3 = max( abs(2*sigma*TE[i]), abs(Dthm[i]), abs(Wadv_thm[i]), abs(Wdr_thm[i]) )
             resid3[i] = abs( 2*sigma*TE[i] - Dthm[i] - Wadv_thm[i] - Wdr_thm[i] )/scale3 if scale3 > 0 else 0.0
+
+        if par.compositional:   # NEW (2026-11-08): resid𝑐, as resid𝑠
+            scale4 = max( abs(2*sigma*CE[i]), abs(Dcmp[i]), abs(Wadv_cmp[i]), abs(Wdr_cmp[i]) )
+            resid4[i] = abs( 2*sigma*CE[i] - Dcmp[i] - Wadv_cmp[i] - Wdr_cmp[i] )/scale4 if scale4 > 0 else 0.0
 
         # ------------------------------------------------------------------------------------------------------------------
         print(table_row(table_cols, table_w, i))
@@ -824,6 +880,8 @@ def main(ncpus):
                                                #   a no-slip outer wall)
         ( 'Wf',         Wf,         '%.9e' ),  # NEW (2026-11-08): forcings 1 and 8, the power of the body force (in P_in),
         ( 'Wf_im',      Wf_im,      '%.9e' ),  #   and its imaginary part (0 for the other forcings)
+        ( 'Wcmp',       Wcmp,       '%.9e' ),  # NEW (2026-11-08): the power of the buoyancy of the composition (in residσ),
+        ( 'Wcmp_im',    Wcmp_im,    '%.9e' ),  #   and its imaginary part (in residω; 0 without the composition)
     ]
     with open('flow.dat','ab') as dflo:
         np.savetxt(dflo, np.column_stack([ v for _, v, _ in flow_cols ]),
@@ -844,6 +902,23 @@ def main(ncpus):
         with open('thermal.dat','ab') as dtmp:
             np.savetxt(dtmp, np.column_stack([ v for _, v, _ in thermal_cols ]),
             fmt=[ f for _, _, f in thermal_cols ])
+
+
+    if par.compositional:
+        # NEW (2026-11-08): composition.dat columns, in order (as thermal.dat): (name, values, format). To add a column, append
+        # a tuple at the end.
+        composition_cols = [
+            ( 'CE',         CE,         '%.18e' ),
+            ( 'Wadv_cmp',   Wadv_cmp,   '%.18e' ),
+            ( 'Dcmp',       Dcmp,       '%.18e' ),  # times CompoD
+            ( 'resid4',     resid4,     '%.18e' ),  # budget of the composition, resid𝑐
+            ( 'Wcmp',       Wcmp,       '%.18e' ),  # the work of its buoyancy (in residσ)
+            ( 'resid1',     resid1,     '%.18e' ),  # KE budget, residσ
+            ( 'Wdr_cmp',    Wdr_cmp,    '%.18e' ),  # its advection by the differential rotation
+        ]
+        with open('composition.dat','ab') as dcmp:
+            np.savetxt(dcmp, np.column_stack([ v for _, v, _ in composition_cols ]),
+            fmt=[ f for _, _, f in composition_cols ])
 
 
     if par.magnetic:

@@ -1,13 +1,14 @@
 # Background model
 
-kore solves for small perturbations of a background. The background has five parts, each chosen by name in the
+kore solves for small perturbations of a background. The background has six parts, each chosen by name in the
 parameter file:
 
 | part | parameter | what it sets |
 | --- | --- | --- |
 | structure | `structure` | the density $\rho_0$, $p_0 = \rho_0 T_0$ and gravity $g$, functions of $r$ |
 | stratification | `stratification` | the entropy gradient $dS/dr$, with $S = \delta s/c_p$ (only with `thermal = 1`) |
-| diffusivity | `diffusivity` | the radial profiles of the viscosity $\nu$ and the thermal diffusivity $\kappa$ |
+| diffusivity | `diffusivity` | the radial profiles of the viscosity $\nu$ and the thermal diffusivity $\kappa$ (and of $D$, the composition's) |
+| composition | `comp_stratification` | the gradient $dC/dr$ of a second scalar, the composition (only with `compositional = 1`) |
 | rotation | `diff_rot`, `diff_rot_type` | a uniform or a differential rotation $\Omega(r,\theta)$, and the latitudinal entropy that balances it |
 | shape | `centrifugal`, `centrifugal_shape` | a sphere, or a body flattened by its rotation |
 
@@ -99,6 +100,7 @@ sphere (`ricb = 0`) kore uses it as an odd function of $r$, so it should go to z
 | `'solar_rz'` | the radiative interior of Mukhopadhyay et al. 2025b, below | `solar_rz_dSdr`, `solar_rz_steps`, `solar_rz_core`, `solar_rz_delta_cz`, `solar_rz_delta_sf`, `solar_rz_os` |
 | `'linear'` | $r$; with `'Boussinesq'`, $N^2$ = `Beyonce` $r^2$ (Rieutord 2006, Mirouh et al. 2016) | – |
 | `'inverse square'` | $1/r^2$, conduction between the walls | needs `ricb` > 0 |
+| `'two zone'` | $\tfrac12\left[1 + \tanh\frac{2(r - r_c)}{h}\right]$: a nearly neutral inner zone under a stratified outer one | `two_zone` = $[r_c, h]$ ([0.7, 0.1]) |
 | `'user'` | `stratification_profile`, a numpy expression ([below](#user-profiles)) | `stratification_param` ($p$) |
 
 - `'top hat'` in a full sphere needs $x_1 \gtrsim 6 w_1$, so that $dS/dr \to 0$ at the centre; otherwise use
@@ -130,20 +132,22 @@ $\delta_{cz} = 0$.
 
 ## Diffusivity
 
-$\nu$ = `ViscosD` $\hat\nu(r)$ and $\kappa$ = `ThermaD` $\hat\kappa(r)$; `diffusivity` sets $\hat\nu$ and $\hat\kappa$.
+$\nu$ = `ViscosD` $\hat\nu(r)$ and $\kappa$ = `ThermaD` $\hat\kappa(r)$; `diffusivity` sets $\hat\nu$ and $\hat\kappa$, and
+$\hat D$ of the composition's $D$ = `CompoD` $\hat D(r)$ ([Composition](#composition)) as it sets $\hat\kappa$, with `comp0`
+in place of `therm0`.
 
 | `diffusivity` | $\hat\nu$, $\hat\kappa$ | parameters |
 | --- | --- | --- |
 | `'uniform'` (default) | 1 | – |
 | `'step'` | `visc0`, `therm0` below $r$ = `aux3`, 1 above, joined by an erf of width `aux4` | `visc0`, `therm0`, `aux3`, `aux4` |
 | `'solar_rz'` | `visc0`, `therm0` below $x_{OS}$, 1 above, as $\tfrac12[1 + \mathrm{erf}((x - x_{OS})/d_{OS})]$ (Mukhopadhyay et al. 2025b, eqs. 8–9) | `visc0`, `therm0`, `solar_rz_os` |
-| `'user'` | `diffusivity_profiles = {'nu': '...', 'kappa': '...'}`, numpy expressions ([below](#user-profiles)) | `diffusivity_param` ($p$) |
+| `'user'` | `diffusivity_profiles = {'nu': '...', 'kappa': '...'}`, numpy expressions ([below](#user-profiles)), and `'D': '...'` with `compositional = 1` | `diffusivity_param` ($p$) |
 
 - With `'step'` and `'solar_rz'`, `ViscosD` and `ThermaD` are the values above the step (the convection zone of the
   Sun). Mukhopadhyay et al. 2025b use `visc0` = 0.01 and `therm0` = 0.04.
 - Any type is multiplied by $(\rho_0(x_2)/\rho_0)^p$, $x_2$ = `aux3`, with $p$ = `visc_pow` for $\hat\nu$ and `therm_pow`
-  for $\hat\kappa$: 0 (the default) keeps the kinematic diffusivities as set, 1 makes $\rho_0\nu$ and $\rho_0\kappa$
-  follow the profile instead.
+  for $\hat\kappa$ (and `comp_pow` for $\hat D$): 0 (the default) keeps the kinematic diffusivities as set, 1 makes
+  $\rho_0\nu$ and $\rho_0\kappa$ follow the profile instead.
 - [Forcing 11](forcing.md) (random Reynolds stresses) uses the turbulent part of the viscosity, `ViscosD` $(\hat\nu - \nu_f)$: the
   floor $\nu_f$ is `visc0` with `'step'` and `'solar_rz'` when `visc0` < 1 and 0 otherwise, unless `rsf_nu_floor` is
   set.
@@ -173,6 +177,46 @@ rotation option. What to watch for:
 - **Check the convergence in N.** In a full sphere, eigenfunctions with `ThermaD = 0` need more radial resolution than
   diffusive ones (N = 200 instead of 120 for a smooth solar model). Where $\rho_0$ nearly vanishes at the outer wall
   (structure `'Wu 2005'` with `r_out` close to 1), the thermal-wind rows converge slowly in N.
+
+## Composition
+
+A fluid can be stratified by its composition as well as by its entropy: the helium and heavier elements below the
+convection zone of a star, or the light elements in a planet's core. With `compositional = 1` kore solves for a second
+scalar, the composition $c$, which the flow carries across a background gradient, which diffuses, and which has its own
+buoyancy. It can be alone (`thermal = 0`) or beside the entropy, which makes a double-diffusive fluid. Its equation and
+its energy budget are on [Anelastic equations](anelastic.md#composition).
+
+```python
+par.compositional = 1
+par.comp_stratification = 'linear'      # dC/dr = r
+par.BeyonceC = 10.                      # N_c^2 = BeyonceC g dC/dr, set after set_scales()
+par.CompoD = 1e-3                       # its diffusivity factor (set_scales() takes it from Ecomp)
+par.bci_compositional = 0               # at each wall, 0: c = 0, 1: no flux
+par.bco_compositional = 0
+```
+
+`comp_stratification` sets $dC/dr$ for $r \ge 0$, of amplitude 1: `BeyonceC` sets the size of $N_c^2$. It has no default
+with `compositional = 1`. As with the entropy, a full sphere uses it as an odd function of $r$.
+
+| `comp_stratification` | $dC/dr$ | parameters |
+| --- | --- | --- |
+| `'linear'` | $r$; with `'Boussinesq'`, $N_c^2$ = `BeyonceC` $r^2$ | – |
+| `'inverse square'` | $1/r^2$, diffusion between the walls | needs `ricb` > 0 |
+| `'two zone'` | $\tfrac12\left[1 + \tanh\frac{2(r - r_c)}{h}\right]$, as the entropy's | `comp_two_zone` = $[r_c, h]$ ([0.7, 0.1]) |
+| `'user'` | `comp_stratification_profile`, a numpy expression ([below](#user-profiles)) | `comp_stratification_param` ($p$) |
+
+- **Sign.** A larger $c$ is lighter, as a larger $s$: the composition is stable where `BeyonceC` $dC/dr > 0$.
+- **Diffusivity.** $D$ = `CompoD` $\hat D(r)$, with $\hat D$ from `diffusivity` ([Diffusivity](#diffusivity)).
+  `CompoD = 0` removes the diffusion: the composition is then only carried, it takes no wall conditions, and the
+  advice of [ThermaD = 0](#thermad-0) applies to it.
+- **What it works with.** Every structure, a full sphere, a differential rotation (which only advects $c$), the
+  deformed body, a magnetic field with conducting solids, the rotating solids, the drag at the outer wall (whose
+  buoyancy frequency includes $N_c^2$), forced runs and the free decay (`hydro = 0`). The wave-like tide (forcing 1)
+  needs `compositional = 0`, and the steady rotation of the walls (forcing 12) needs `CompoD` > 0.
+- **Physical units.** `units.set_physical(par, ..., D=...)`, with $D$ in cm²/s, also sets `CompoD` and
+  `BeyonceC` = `Beyonce`; $c$ is then the relative deficit of density that the composition makes.
+- **Output.** `composition.dat`, the power of its buoyancy in `flow.dat` and the column resid𝑐 of the `spin_doctor`
+  table ([Output files](output.md#compositiondat)).
 
 ## Rotation
 
@@ -449,9 +493,10 @@ and the magnetic diffusion, with all their walls and a conducting inner core, ex
 
 ## `'user'` profiles
 
-`stratification_profile`, the two `diffusivity_profiles`, the `diff_rot_profiles` and `centrifugal_profile` are numpy
-expressions of `r` (the kore radius), `x` ($r\cdot$`r_out` with a solar structure, $r$ otherwise) and `p`
-(`stratification_param`, `diffusivity_param`, `diff_rot_param` or `centrifugal_param`), with `sin`, `cos`, `tan`, `arcsin`, `arccos`, `arctan`, `sinh`, `cosh`,
+`stratification_profile`, `comp_stratification_profile`, the `diffusivity_profiles`, the `diff_rot_profiles` and
+`centrifugal_profile` are numpy expressions of `r` (the kore radius), `x` ($r\cdot$`r_out` with a solar structure, $r$
+otherwise) and `p` (`stratification_param`, `comp_stratification_param`, `diffusivity_param`, `diff_rot_param` or
+`centrifugal_param`), with `sin`, `cos`, `tan`, `arcsin`, `arccos`, `arctan`, `sinh`, `cosh`,
 `tanh`, `exp`, `log`, `log10`, `sqrt`, `abs`, `sign`, `pi`, `where`, `minimum`, `maximum`, `erf`, `erfc`. For example:
 
 ```python
@@ -461,8 +506,8 @@ par.diffusivity = 'user'
 par.diffusivity_profiles = {'nu': '0.01 + 0.99*0.5*(1 + tanh((x - 0.70)/0.015))', 'kappa': '1'}
 ```
 
-kore evaluates them at $\lvert r\rvert$, so in a full sphere $dS/dr$ is odd and $\hat\nu$, $\hat\kappa$, the $f_n$ and
-the flattening are even whatever the expression. They are smooth at the centre only if the expression is: an odd power of $r$ in an even
+kore evaluates them at $\lvert r\rvert$, so in a full sphere $dS/dr$ and $dC/dr$ are odd and $\hat\nu$, $\hat\kappa$,
+$\hat D$, the $f_n$ and the flattening are even whatever the expression. They are smooth at the centre only if the expression is: an odd power of $r$ in an even
 profile, or an even one in $dS/dr$, makes a kink, and $dS/dr$ must vanish there as $r$, $f_n$ as $r^n$. `submatrices.py`
 warns about both ([Regularity at the centre](numerical-method.md#regularity-at-the-centre)). The
 expressions must not contain `#`: `spin_doctor` writes them at the end of each `params.dat` row, after a `#`.

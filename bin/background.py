@@ -1,8 +1,8 @@
 '''
 The background besides the rotation (diff_rot.py), each part chosen by name in parameters.py (params_default.py):
     structure       ρ0, p0 and g: a class of radial_profiles.py
-    stratification  dS/dr, S = δs/c_p (thermal = 1)
-    diffusivity     ν/ViscosD and κ/ThermaD
+    stratification  dS/dr, S = δs/c_p (thermal = 1); NEW (2026-11-08) comp_stratification, dC/dr (compositional = 1)
+    diffusivity     ν/ViscosD, κ/ThermaD and (NEW 2026-11-08) D/CompoD
 x = r r_out is the radius in star radii (r_out: the outer wall). The 'user' types take numpy expressions of r, x and one
 parameter p, as diff_rot_profiles does, and params.dat records them after '#' (description).
 Only parameters is imported at the top: radial_profiles.py calls check() before it builds its profiles (prf), and the
@@ -16,7 +16,9 @@ from parameters import par
 # As written to params.dat (spin_doctor): the index in each tuple. Append new types at the end.
 STRUCTURES = ('8-term fit', 'old model S prototype', 'model S hydrostatic', 'Wu 2005', 'Boussinesq')
 SOLAR = STRUCTURES[:3]   # the solar structures: the rotation also uses x = r r_out (diff_rot.solar_x)
-STRATIFICATIONS = ('top hat', 'odd top hat', 'solar_rz', 'linear', 'inverse square', 'user')
+STRATIFICATIONS = ('top hat', 'odd top hat', 'solar_rz', 'linear', 'inverse square', 'user', 'two zone')   # ('two zone': NEW
+# 2026-11-08, conductive_IC's)
+COMP_STRATIFICATIONS = ('linear', 'inverse square', 'two zone', 'user')   # NEW (2026-11-08): comp_stratification, dC/dr
 DIFFUSIVITIES = ('uniform', 'step', 'solar_rz', 'user')
 MAGNETIC_WALLS = ('insulator', 'TWA', 'resolved')   # NEW (2026-10-28): mantle (magnetic = 1); B0 types: background_field.B0_TYPES
 INNER_CORES = ('insulator', 'conducting, Chebys', 'TWA', 'conducting, Bessel')   # NEW (2026-10-28): innercore (magnetic = 1);
@@ -78,10 +80,13 @@ def check():
             sys.exit('par.%s is no longer read: set %s' % (name, new))
     if par.hydro not in (0, 1):   # NEW (2026-11-06): hydro = 0, no flow (as conductive_IC)
         sys.exit('hydro %r: 1 (the flow is solved) or 0 (no flow)' % (par.hydro,))
-    if par.hydro == 0 and not (par.magnetic or par.thermal):
-        sys.exit('hydro = 0 needs magnetic = 1 or thermal = 1: without the flow nothing else is solved')
+    if par.compositional not in (0, 1):   # NEW (2026-11-08)
+        sys.exit('compositional %r: 1 (the composition is solved) or 0' % (par.compositional,))
+    if par.hydro == 0 and not (par.magnetic or par.thermal or par.compositional):
+        sys.exit('hydro = 0 needs magnetic = 1, thermal = 1 or compositional = 1: without the flow nothing else is solved')
     if par.hydro == 0 and par.forcing != 0:
-        sys.exit('hydro = 0 is for eigenvalue problems (forcing = 0): the free decay of the field or of the entropy')
+        sys.exit('hydro = 0 is for eigenvalue problems (forcing = 0): the free decay of the field, of the entropy or of the '
+                 'composition')
     if par.forcing != 0:   # NEW (2026-11-08)
         check_forcing()
     if par.N % 2:   # NEW (2026-11-04): the operators of submatrices.py assume an even N (an odd one stopped there with a scipy error)
@@ -102,6 +107,10 @@ def check():
             sys.exit("solar_rz_delta_cz, solar_rz_delta_sf are part of stratification 'solar_rz'")
         if par.stratification == 'user':
             _check_expression(par.stratification_profile, par.stratification_param, 'stratification_profile')
+        if par.stratification == 'two zone':   # NEW (2026-11-08)
+            _check_two_zone('two_zone')
+    if par.compositional:   # NEW (2026-11-08)
+        check_composition()
     if par.magnetic:
         check_magnetic()
     if par.centrifugal:   # NEW (2026-11-05)
@@ -109,15 +118,55 @@ def check():
     if par.diffusivity not in DIFFUSIVITIES:
         sys.exit('diffusivity %r: set one of %s' % (par.diffusivity, _names(DIFFUSIVITIES)))
     if par.diffusivity == 'user':
-        if sorted(par.diffusivity_profiles) != ['kappa', 'nu']:
-            sys.exit("diffusivity 'user' needs diffusivity_profiles = {'nu': '...', 'kappa': '...'}")
-        for k in ('nu', 'kappa'):
+        # NEW (2026-11-08): and 'D', the composition's, with compositional = 1 (allowed, and unused, without it)
+        need = ['kappa', 'nu'] + (['D'] if par.compositional else [])
+        if not isinstance(par.diffusivity_profiles, dict) or not set(need) <= set(par.diffusivity_profiles) \
+                or not set(par.diffusivity_profiles) <= {'nu', 'kappa', 'D'}:
+            sys.exit("diffusivity 'user' needs diffusivity_profiles = {'nu': '...', 'kappa': '...'%s}" %
+                     (", 'D': '...'" if par.compositional else " (and 'D': '...' with compositional = 1)"))
+        for k in sorted(par.diffusivity_profiles):
             _check_expression(par.diffusivity_profiles[k], par.diffusivity_param, "diffusivity_profiles['%s']" % k)
     if par.rotdyn not in (0, 1):   # NEW (2026-11-06): the rotating solids
         sys.exit('rotdyn %r: 0 (the mantle and the inner core turn with the frame) or 1 (they turn under the torques)' % (par.rotdyn,))
     if par.rotdyn:
         check_rotdyn()
     check_drag()   # NEW (2026-11-06): the drag at the outer wall (kappa_cmb, topo_drag)
+
+
+def _check_two_zone(name):
+    '''NEW (2026-11-08): the 'two zone' step [rc, h] of the entropy (two_zone) or of the composition (comp_two_zone)'''
+    v = getattr(par, name)
+    try:
+        rc, h = [float(x) for x in v]
+    except (TypeError, ValueError):
+        sys.exit("%s = %r: [rc, h], the radius of the step of the 'two zone' gradient and its width" % (name, v))
+    if not (np.isfinite(rc) and np.isfinite(h) and h > 0):
+        sys.exit("%s = %r: [rc, h] with a width h > 0" % (name, v))
+
+
+def check_composition():
+    '''
+    NEW (2026-11-08, from conductive_IC): stops on the settings that the composition (compositional = 1) cannot take: a
+    gradient type that does not exist, 'inverse square' without an inner core (1/r² is singular at r = 0), an expression
+    that does not evaluate, a negative diffusion factor.
+    '''
+    if par.comp_stratification not in COMP_STRATIFICATIONS:
+        sys.exit('comp_stratification %r: set one of %s' % (par.comp_stratification, _names(COMP_STRATIFICATIONS)))
+    if par.comp_stratification == 'inverse square' and par.ricb == 0:
+        sys.exit("comp_stratification 'inverse square' needs ricb > 0")
+    if par.comp_stratification == 'user':
+        _check_expression(par.comp_stratification_profile, par.comp_stratification_param, 'comp_stratification_profile')
+    if par.comp_stratification == 'two zone':
+        _check_two_zone('comp_two_zone')
+    for name in ('CompoD', 'BeyonceC'):
+        v = getattr(par, name)
+        if not (isinstance(v, (int, float, np.integer, np.floating)) and not isinstance(v, bool) and np.isfinite(v)):
+            sys.exit('%s = %r: a finite number' % (name, v))
+    if par.CompoD < 0:
+        sys.exit('CompoD = %r: the compositional diffusion factor is >= 0 (0: no diffusion of the composition)' % (par.CompoD,))
+    if par.bci_compositional not in (0, 1) or par.bco_compositional not in (0, 1):
+        sys.exit('bci_compositional, bco_compositional: 0 (fixed composition) or 1 (zero flux), got %r, %r'
+                 % (par.bci_compositional, par.bco_compositional))
 
 
 def check_forcing():
@@ -129,7 +178,8 @@ def check_forcing():
     does not carry the fluid (and the rows of a fluid slipping along a conducting solid hold the solid at rest). The walls
     stay in place (bc 0 or 1): a steady flow through a wall of zero radial stress would move it without end. With
     thermal = 1 it needs ThermaD > 0: without diffusion the steady entropy equation, u_r dS/dr = 0, leaves the entropy
-    undetermined. Forcings 13 and 14 check their settings in assemble.py; forcings 1, 2 and 8 check_tides.
+    undetermined, and (NEW 2026-11-08) with compositional = 1 CompoD > 0 for the same reason. Forcings 13 and 14 check
+    their settings in assemble.py; forcings 1, 2 and 8 check_tides.
     '''
     if par.forcing in NOT_PORTED:
         sys.exit('forcing %d: %s' % (par.forcing, NOT_PORTED[par.forcing]))
@@ -151,6 +201,9 @@ def check_forcing():
     if par.thermal and par.ThermaD == 0:
         sys.exit('forcing 12 with thermal = 1 needs ThermaD > 0: without diffusion the steady entropy equation, '
                  'u_r dS/dr = 0, leaves the entropy undetermined')
+    if par.compositional and par.CompoD == 0:   # NEW (2026-11-08)
+        sys.exit('forcing 12 with compositional = 1 needs CompoD > 0: without diffusion the steady composition equation, '
+                 'u_r dC/dr = 0, leaves the composition undetermined')
     walls = [('outer', 'bco', 'forcing_amplitude_cmb')] + ([('inner', 'bci', 'forcing_amplitude_icb')] if par.ricb > 0 else [])
     for wall, bc, rate in walls:
         if getattr(par, bc) not in (0, 1):
@@ -169,7 +222,8 @@ def check_tides():
     (forcing_frequency != 0).
       1, the wave-like tide (Lin & Ogilvie 2018): (m, symm) = (0, 1), (1, -1) or (2, 1); the equilibrium tide ∇(X Y₂ᵐ) is a
          potential flow, solenoidal and with no viscous force, only for a uniform density ('Boussinesq'), with no
-         stratification to displace (thermal = 0) and no field to induce (magnetic = 0); it moves the outer wall radially,
+         stratification to displace (thermal = 0, compositional = 0) and no field to induce (magnetic = 0); it moves the
+         outer wall radially,
          so the walls of the flow solved for are impenetrable (bco, bci 0 or 1) and the drag at the outer wall, which would
          act on the slip of the whole tide, is left out. For m = 2 the Coriolis force on it is a gradient in a full sphere,
          which drives nothing: ricb > 0.
@@ -194,9 +248,10 @@ def check_tides():
         if par.m == 2 and par.ricb == 0:
             sys.exit('forcing 1 with m = 2 needs an inner core (ricb > 0): in a full sphere the Coriolis force on the '
                      'equilibrium tide r² Y_2^2 is a gradient, which drives no flow')
-        if par.structure != 'Boussinesq' or par.thermal or par.magnetic:
-            sys.exit("forcing 1 (the wave-like tide) needs structure 'Boussinesq', thermal = 0 and magnetic = 0: its "
-                     "equilibrium tide is the potential flow of a uniform fluid with no stratification and no field")
+        if par.structure != 'Boussinesq' or par.thermal or par.compositional or par.magnetic:
+            sys.exit("forcing 1 (the wave-like tide) needs structure 'Boussinesq', thermal = 0, compositional = 0 and "
+                     "magnetic = 0: its equilibrium tide is the potential flow of a uniform fluid with no stratification "
+                     "and no field")
         if par.bco not in (0, 1) or (par.ricb > 0 and par.bci not in (0, 1)):
             sys.exit('forcing 1 needs impenetrable walls (bco, bci = 0 or 1): the radial motion of the outer wall is that of '
                      'the equilibrium tide')
@@ -1238,9 +1293,12 @@ def description():
         out.append('sigma_mantle: %s ; p = %r' % (par.sigma_mantle, par.sigma_mantle_param))
     if par.thermal and par.stratification == 'user':
         out.append('stratification: %s ; p = %r' % (par.stratification_profile, par.stratification_param))
+    if par.compositional and par.comp_stratification == 'user':   # NEW (2026-11-08)
+        out.append('comp_stratification: %s ; p = %r' % (par.comp_stratification_profile, par.comp_stratification_param))
     if par.diffusivity == 'user':
-        out.append('diffusivity: nu = %s ; kappa = %s ; p = %r' % (par.diffusivity_profiles['nu'],
-                   par.diffusivity_profiles['kappa'], par.diffusivity_param))
+        out.append('diffusivity: nu = %s ; kappa = %s%s ; p = %r' % (par.diffusivity_profiles['nu'],
+                   par.diffusivity_profiles['kappa'],
+                   ' ; D = %s' % par.diffusivity_profiles['D'] if par.compositional else '', par.diffusivity_param))
     return ' ; '.join(out)
 
 
@@ -1267,6 +1325,8 @@ def gradS(prf, r):
         return 1/r**2
     if t == 'user':             # stratification_profile in r, x, p = stratification_param
         return _expression(par.stratification_profile, par.stratification_param, 'stratification_profile')(r)
+    if t == 'two zone':         # NEW (2026-11-08): conductive_IC's, a neutral inner zone below a stratified outer one
+        return two_zone(r, *par.two_zone)
     # 'solar_rz': Mukhopadhyay et al. 2025 eq. (10), times erf(x/w0) so that it is odd and smooth at r = 0
     x = r*par.r_out
     x1, x2, d = par.solar_rz_steps
@@ -1277,6 +1337,26 @@ def gradS(prf, r):
         delta = par.solar_rz_delta_cz + (par.solar_rz_delta_sf - par.solar_rz_delta_cz)*np.exp(-((xa - 0.985)/0.015)**2)
         out = out + delta*prf.dlog_p(r)*0.5*(1 + ss.erf((xa - xos)/dos))
     return out
+
+
+def two_zone(r, rc, h):
+    '''NEW (2026-11-08): the 'two zone' gradient (1 + tanh(2(r - rc)/h))/2 at r >= 0, conductive_IC's (utils.twozone there)'''
+    return 0.5*(1 + np.tanh(2*(np.asarray(r, dtype=float) - rc)/h))
+
+def gradC(prf, r):
+    '''
+    NEW (2026-11-08): dC/dr at r >= 0, the gradient of the background composition (compositional = 1), of amplitude 1
+    (BeyonceC sets the size of N_c² = BeyonceC g dC/dr); kore uses it as an odd function of r (radial_profiles.rdCdr,
+    gradCX), as dS/dr. prf, the structure, is not used (the same signature as gradS).
+    '''
+    t = par.comp_stratification
+    if t == 'linear':           # r: N_c² = BeyonceC r² with 'Boussinesq' (conductive_IC's 'internal')
+        return np.array(r, dtype=float)
+    if t == 'inverse square':   # 1/r²: diffusion between the walls (ricb > 0; conductive_IC's 'differential')
+        return 1/r**2
+    if t == 'two zone':
+        return two_zone(r, *par.comp_two_zone)
+    return _expression(par.comp_stratification_profile, par.comp_stratification_param, 'comp_stratification_profile')(r)
 
 
 # -------------------------------------------------------------------------------------------------------- diffusivity
@@ -1297,11 +1377,11 @@ def rho_pow(prf, r, p):
     return np.exp( -p*( prf.logrho(r, 0) - prf.logrho(par.aux3, 0) ) )
 
 def diffusivity(prf, r, which):
-    '''ν/ViscosD (which = 'nu') or κ/ThermaD ('kappa') at r, even in r, times (ρ0(aux3)/ρ0)**visc_pow (therm_pow);
-    η/MagnetD ('eta') is 1 for now, whatever the diffusivity type'''
+    '''ν/ViscosD (which = 'nu'), κ/ThermaD ('kappa') or (NEW 2026-11-08) D/CompoD ('D') at r, even in r, times
+    (ρ0(aux3)/ρ0)**visc_pow (therm_pow, comp_pow); η/MagnetD ('eta') is 1 for now, whatever the diffusivity type'''
     if which == 'eta':  # NEW (2026-10-28): the hook for a magnetic diffusivity profile (the operators have η and η')
         return np.ones_like(r)
-    c, pw = (par.visc0, par.visc_pow) if which == 'nu' else (par.therm0, par.therm_pow)
+    c, pw = {'nu': (par.visc0, par.visc_pow), 'kappa': (par.therm0, par.therm_pow), 'D': (par.comp0, par.comp_pow)}[which]
     t = par.diffusivity
     if t == 'uniform':
         out = np.ones_like(r)
@@ -1404,6 +1484,10 @@ def centre_check(prf):
         singles += [('ν', 0, lambda r: diffusivity(prf, r, 'nu'), 'diffusivity')]
     if par.thermal and par.ThermaD > 0:
         singles += [('κ', 0, lambda r: diffusivity(prf, r, 'kappa'), 'diffusivity')]
+    if par.compositional:   # NEW (2026-11-08): the composition's gradient and diffusivity
+        singles += [('dC/dr', 1, prf.gradC, 'comp_stratification')]
+        if par.CompoD > 0:
+            singles += [('D', 0, lambda r: diffusivity(prf, r, 'D'), 'diffusivity')]
     for name, n, f, kind in singles:
         family([('%s (%s %r)' % (name, kind, getattr(par, kind)), n, f)], 'max |%s|' % name)
     if par.centrifugal:   # NEW (2026-11-05): the flattening of the level surfaces must be even and smooth at r = 0

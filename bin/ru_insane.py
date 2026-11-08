@@ -56,7 +56,16 @@ The random fields have Chebyshev coefficients up to degree kmax (default N1/4) d
 exp(-k/decay) (default kmax/8), with the lowest coefficients adjusted in the least-squares
 sense so that the bc rows hold exactly (a correction at high degree leaves bc residuals of 1e-6
 because the stress-free rows carry (ln rho0)'' and k^4 factors, and that pollutes the test).
-Not handled: the inviscid formulation (ViscosD = 0, rows multiplied by rho0^2) and compositional blocks.
+Not handled: the inviscid formulation (ViscosD = 0, rows multiplied by rho0^2).
+
+NEW (2026-11-08): with compositional = 1 the blocks of the composition c (section c, operators.composition, comp_advection,
+comp_diffusion, comp_buoyancy), on random fields c that satisfy its wall rows, as those of the entropy with rho0 in place of
+p0: under the c* pairing (int rho0 x_c* y_c dV for the time derivative) the composition block Hermitian positive and the
+diffusion block Hermitian negative, and the buoyancy, advection and composition rows against direct quadratures,
+  W_buo = int rho0 BeyonceC g u_r* c dV,  W_adv = -int rho0 C' u_r c* dV,  CE = int rho0 |c|^2 dV;
+with diff_rot = 1 the blocks of operators.comp_diffrot against int rho0 x_c* i m G dOmega y_c dV on the grid (with the A
+sign) and anti-Hermitian; with centrifugal = 1 those of operators.centrifugal_entropy in section c against
+int rho0 eta P2 x_c* y_c dV (0 for the exact spheroid), Hermitian, and E + Ec positive.
 
 NEW (2026-11-05): with centrifugal = 1 (bin/centrifugal.py: the metric terms of the deformed body, w the field of the
 reference space) the blocks of operators.centrifugal_inertia (Ic), centrifugal_coriolis (Cc) and centrifugal_entropy (Ec),
@@ -133,6 +142,10 @@ if ricb > 0 and gb['v'] == 3:             # NEW (2026-11-06): still two bc rows 
     chop['v'] = 2
 if par.ThermaD == 0:
     chop['h'] = 0                                                 # no thermal bc rows, whatever the basis
+comp_on = bool(par.compositional)   # NEW (2026-11-08): the composition, section c: C^(2) with two (one) bc rows, as h, or
+if comp_on:                         # C^(0) without bc rows when CompoD = 0
+    gb['c'] = 2 if par.CompoD > 0 else 0
+    chop['c'] = (2 if ricb > 0 else 1) if par.CompoD > 0 else 0
 
 vP = int((1 - 2*(par.m % 2))*par.symm)   # Chebyshev parity of P (ricb=0 only)
 vT = -vP
@@ -141,7 +154,7 @@ s_ = int((par.symm + 1)/2)
 iP = (par.m + 1 - s_) % 2                # first Chebyshev index kept for P, T, s when ricb=0
 iT = (par.m + s_) % 2
 iS = iP
-istart = {'P': iP, 'T': iT, 'S': iS}
+istart = {'P': iP, 'T': iT, 'S': iS, 'C': iS}   # (NEW 2026-11-08: the composition, C, has the parity of P and s)
 
 
 def row_parity(label, vpar):
@@ -154,6 +167,8 @@ hlab = 'h0_D0' if divp0 else 'h0pss0_D0'
 idj = {'u': (1 - row_parity('u3_D0', vP))//2,
        'v': (1 - row_parity('v1_D0', vT))//2,
        'h': (1 - row_parity(hlab, vS))//2}
+if comp_on:   # NEW (2026-11-08)
+    idj['c'] = (1 - row_parity('c0dns0_D0' if par.CompoD > 0 else 'c0_D0', vS))//2
 
 # ---------------------------------------------------------------------------------------- quadrature
 Nq = args.nq if args.nq > 0 else 2*N + 2       # even, so r=0 is never a node when ricb=0
@@ -166,10 +181,13 @@ else:
     jac = 0.5*rcmb
 
 rho0 = np.exp(rap.logrhoX(rk, 0))
+if par.thermal or comp_on:
+    gra0 = rap.graviX(rk, 0)
 if par.thermal:
     pss0 = rap.pressX(rk, 0)
-    gra0 = rap.graviX(rk, 0)
     dS0  = rap.prf.gradS(np.abs(rk))*np.sign(rk)
+if comp_on:   # NEW (2026-11-08): dC/dr, odd in r as dS/dr
+    dC0  = rap.prf.gradC(np.abs(rk))*np.sign(rk)
 
 # pairing weights (functions of r) for each section
 wgt = {'u': rho0**(1 - par.rhopower_u) * rk**(3 - par.rpower_u),
@@ -181,6 +199,8 @@ if par.thermal:
         wgt['h'] = pss0 if ut.adiab_tw else pss0*rk   # rows are r (eq/p0)/L^3, r^2 (eq/p0)/L^3 with the thermal wind
     else:
         wgt['h'] = rk                          # rows are r (eq)/L^3
+if comp_on:   # NEW (2026-11-08): rows r^2 (eq)/L^3, or r (eq/rho0)/L^3 with CompoD = 0
+    wgt['c'] = np.ones_like(rk) if par.CompoD > 0 else rho0*rk
 
 # Chebyshev values at the nodes, and values of a C^(lamb) series at the nodes (three-term recurrence)
 Tmat = ch.chebvander(xk, N - 1)                # (Nq, N)
@@ -556,6 +576,11 @@ def bc_rows(l, sec):
         rows.append(Tbh[:, par.bco_thermal])
         if ricb > 0:
             rows.append(bv.Ta[:, par.bci_thermal])
+    elif sec == 'c' and par.CompoD > 0:    # NEW (2026-11-08): c = 0 (0) or c' = 0 (1)
+        Tbh = bv.Tb if ricb > 0 else bv.Tb[ixu::2, :]
+        rows.append(Tbh[:, par.bco_compositional])
+        if ricb > 0:
+            rows.append(bv.Ta[:, par.bci_compositional])
     if len(rows) == 0:
         return np.zeros((0, N1), dtype=complex)
     return np.array(rows, dtype=complex)
@@ -660,6 +685,112 @@ def magnetic_checks(nvec, rng, kmax, decay, note):
           % worst_of('magnetic Lorentz/induction identity'))
 
 
+def composition_checks(fields, rng, kmax, decay, note):
+    '''
+    NEW (2026-11-08): the tests of the composition's blocks (docstring), on the flows of fields (their P, T) and random
+    compositions c that satisfy the wall rows of section c; note(name, value) records each relative error
+    '''
+    nvec = len(fields)
+    win = np.exp(-np.arange(kmax)/decay) if decay > 0 else np.ones(kmax)
+    Cs = []
+    for _ in range(nvec):
+        C = np.zeros((nl, N1), dtype=complex)
+        for k, l in enumerate(lp):
+            C[k, :kmax] = win*(rng.standard_normal(kmax) + 1j*rng.standard_normal(kmax))
+            C[k] = enforce_bc(C[k], bc_rows(l, 'c'))
+            if l > args.lmax_test: C[k] = 0
+        Cs.append(C)
+    blk = []
+    for k, l in enumerate(lp):
+        b = {'E': op.composition(l, 'c', '', 0), 'A': op.comp_advection(l, 'c', 'upol', 0),
+             'B': op.comp_buoyancy(l, 'u', '', 0), 'D': op.comp_diffusion(l, 'c', '', 0) if par.CompoD > 0 else None}
+        b['R'] = [tuple(op.comp_diffrot(l, 'c', 'comp', i)) for i in dr.dl_range('c', 'comp') if l + i in lp] \
+            if par.diff_rot else []
+        b['Ec'] = [tuple(op.centrifugal_entropy(l, 'c', 'comp', i)) for i in cf.dl_range('c', 'comp') if l + i in lp] \
+            if par.centrifugal else []
+        b['R'] = [x for x in b['R'] if not np.isscalar(x[0])]
+        b['Ec'] = [x for x in b['Ec'] if not np.isscalar(x[0])]
+        blk.append(b)
+    def pairs(x, y):
+        '''x, y: (P, C); E = int rho0 x_c* y_c, D = CompoD int x_c* div(D rho0 grad y_c), A = -int rho0 C' u_r(y) x_c*,
+        B = int (rho0 u(x))*.(BeyonceC g y_c r^), R = -int rho0 x_c* i m G dOmega y_c, Ec = int rho0 (J - 1) x_c* y_c (dV)'''
+        out = dict(E=0j, D=0j, A=0j, B=0j, R=0j, Ec=0j)
+        for k, l in enumerate(lp):
+            b = blk[k]
+            xc = vals_unknown(x[1][k], 'C')
+            out['E'] += pair('c', l, xc, b['E'] @ y[1][k])
+            out['A'] += pair('c', l, xc, b['A'] @ y[0][k])
+            out['B'] += pair('u', l, vals_unknown(x[0][k], 'P'), b['B'] @ y[1][k])
+            if b['D'] is not None:
+                out['D'] += pair('c', l, xc, b['D'] @ y[1][k])
+            for key in ('R', 'Ec'):
+                if b[key]:
+                    out[key] += pair('c', l, xc, sum(mtx @ y[1][k + offd] for mtx, offd in b[key]))
+        return out
+    F = [(fields[a][0], Cs[a]) for a in range(nvec)]
+    X = [[pairs(F[a], F[b]) for b in range(nvec)] for a in range(nvec)]
+    for a in range(nvec):
+        for b in range(a, nvec):
+            xy, yx = X[a][b], X[b][a]
+            note('composition Hermitian', abs(xy['E'] - np.conj(yx['E']))/abs(xy['E']))
+            if par.CompoD > 0:
+                note('composition diffusion Hermitian', abs(xy['D'] - np.conj(yx['D']))/abs(xy['D']))
+            if a == b:
+                note('composition positive', float(xy['E'].real <= 0))
+                if par.CompoD > 0:
+                    note('composition diffusion negative', float(xy['D'].real >= 0))
+    for a in range(nvec):   # the rows against direct quadratures of the fields
+        P, C = F[a]
+        wb = wa = ce = 0j
+        for k, l in enumerate(lp):
+            L = l*(l + 1.); nl_ = 4*np.pi/(2*l + 1)
+            ur = L*vals_unknown(P[k], 'P')/rk
+            cv = vals_unknown(C[k], 'C')
+            wb += nl_*jac*np.sum(wk*rho0*par.BeyonceC*gra0*np.conj(ur)*cv*rk**2)
+            wa += -nl_*jac*np.sum(wk*rho0*dC0*ur*np.conj(cv)*rk**2)
+            ce += nl_*jac*np.sum(wk*rho0*np.abs(cv)**2*rk**2)
+        o = X[a][a]
+        if par.BeyonceC != 0:
+            note('composition buoyancy rows vs quadrature', abs(o['B'] - wb)/abs(wb))
+        note('composition advection rows vs quadrature', abs(o['A'] - wa)/abs(wa))
+        note('composition rows vs quadrature', abs(o['E'] - ce)/abs(ce))
+    print('composition (CompoD %g): block Herm. %.2e (positive: %s)%s; rows vs direct quadratures: buoyancy %s   '
+          'advection %.2e   composition %.2e' % (par.CompoD, worst_of('composition Hermitian'),
+          'yes' if worst_of('composition positive') == 0 else 'NO',
+          '   diffusion Herm. %.2e (negative: %s)' % (worst_of('composition diffusion Hermitian'),
+          'yes' if worst_of('composition diffusion negative') == 0 else 'NO') if par.CompoD > 0 else '',
+          '%.2e' % worst_of('composition buoyancy rows vs quadrature') if par.BeyonceC != 0 else 'n/a (BeyonceC = 0)',
+          worst_of('composition advection rows vs quadrature'), worst_of('composition rows vs quadrature')))
+    if not (par.diff_rot or par.centrifugal):
+        return
+    cg = [np.array([vals_unknown(c, 'C') for c in C]).T @ Yp for (P, C) in F]   # c on the (r, θ) grid
+    sE = lambda a, b: np.sqrt(X[a][a]['E'].real*X[b][b]['E'].real)
+    for a in range(nvec):
+        for b in range(nvec):
+            o = X[a][b]
+            if par.diff_rot:
+                g = np.sum(dV*rho0[:, None]*np.conj(cg[a])*1j*par.m*par.Gaspard*dOm*cg[b])
+                note('composition diff-rot rows vs grid', abs(o['R'] + g)/abs(g) if g != 0 else abs(o['R']))
+                Om = np.max(abs(dOm))
+                if par.m != 0 and Om > 0:
+                    note('composition diff-rot anti-Hermitian', abs(o['R'] + np.conj(X[b][a]['R']))/(par.m*par.Gaspard*Om*sE(a, b)))
+            if par.centrifugal:
+                cs = (abs(ceps).max() + abs(ceta).max()) or 1.
+                g = np.sum(dV*rho0[:, None]*np.conj(cg[a])*ceta[:, None]*P2g*cg[b]) if not cf.exact() else 0j
+                note('composition centrifugal rows vs grid', abs(o['Ec'] - g)/(cs*sE(a, b)))
+                note('composition centrifugal Hermitian', abs(o['Ec'] - np.conj(X[b][a]['Ec']))/(cs*sE(a, b)))
+                if a == b:
+                    note('composition centrifugal positive', float((o['E'] + o['Ec']).real <= 0))
+    if par.diff_rot:
+        print('composition diff-rot: i m G dOmega c vs grid %.2e   anti-Herm. %s' % (worst_of('composition diff-rot rows vs grid'),
+              '%.2e' % worst_of('composition diff-rot anti-Hermitian') if 'composition diff-rot anti-Hermitian' in WORST
+              else 'n/a (m = 0)'))
+    if par.centrifugal:
+        print('composition centrifugal: rows vs grid %.2e   Hermitian %.2e (E + Ec positive: %s)'
+              % (worst_of('composition centrifugal rows vs grid'), worst_of('composition centrifugal Hermitian'),
+                 'yes' if worst_of('composition centrifugal positive') == 0 else 'NO'))
+
+
 def worst_of(name):
     return WORST.get(name, np.nan)
 
@@ -715,8 +846,9 @@ def main():
     kmax  = args.kmax if args.kmax > 0 else N1//4
     decay = args.decay if args.decay > 0 else kmax/8
     rng   = np.random.default_rng(args.seed)
-    print('ru_insane.py: N=%d, lmax=%d, m=%d, symm=%d, ricb=%g, bci=%d, bco=%d, thermal=%d, ThermaD=%g, divp0=%s'
-          % (N, par.lmax, par.m, par.symm, ricb, par.bci, par.bco, par.thermal, par.ThermaD, divp0))
+    print('ru_insane.py: N=%d, lmax=%d, m=%d, symm=%d, ricb=%g, bci=%d, bco=%d, thermal=%d, ThermaD=%g, divp0=%s%s'
+          % (N, par.lmax, par.m, par.symm, ricb, par.bci, par.bco, par.thermal, par.ThermaD, divp0,
+             ', compositional=1, CompoD=%g' % par.CompoD if comp_on else ''))
     fields = [random_fields(rng, kmax, decay, args.lmax_test) for _ in range(nvec)]
     t0 = time.time()
     X = cross_pairings(fields, fields)
@@ -849,6 +981,8 @@ def main():
         elif par.ViscosD > 0:
             print('centrifugal: viscous force symmetry not tested (needs no-slip walls: the random fields satisfy the '
                   'spherical stress-free rows only)')
+    if comp_on:   # NEW (2026-11-08)
+        composition_checks(fields, rng, kmax, decay, note)
     if par.magnetic:   # NEW (2026-10-28)
         magnetic_checks(nvec, rng, kmax, decay, note)
     try:                                                         # KE against the independent physical-space code

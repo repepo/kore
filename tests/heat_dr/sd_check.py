@@ -24,7 +24,7 @@ for i, lam in enumerate(lams):
     usol = upp.expand_reshape_sol(sol[:2*ut.n], par.symm)
     tsol = upp.expand_reshape_sol(sol[2*ut.n:3*ut.n], par.symm) if par.thermal else 0
     [ udgn, tdgn ] = upp.diagnose(usol, tsol, ricb, rcmb, 1)
-    [ KE, Dkin, Ensvel, Enscor, Ensvif, Ensbuo, Wthm, Wdr, Wcor_im, Dkin_im, Wthm_im, Wdr_im, Ensdr ] = np.sum(udgn, 0)
+    [ KE, Dkin, Ensvel, Enscor, Ensvif, Ensbuo, Wthm, Wdr, Wcor_im, Dkin_im, Wthm_im, Wdr_im, Ensdr ] = np.sum(udgn, 0)[:13]
     s, w = lam.real, lam.imag
     r1 = [ res([2*s*KE, -Dkin, -Wthm, -Wdr]), res([2*s*KE, -Dkin, -Wthm]) ]
     r2 = [ res([2*w*KE, Wcor_im, -Dkin_im, -Wthm_im, -Wdr_im]), res([2*w*KE, Wcor_im, -Dkin_im, -Wthm_im]) ]

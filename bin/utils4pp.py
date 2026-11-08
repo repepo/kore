@@ -577,7 +577,8 @@ def diff_rot_setup():
         𝐅 = -G [ (𝐔₀′⋅∇)𝐮 + (𝐮⋅∇)𝐔₀′ ] = -G [ ΔΩ (i m 𝐮 + 2𝐳×𝐮) + (𝐮⋅∇ΔΩ) r sinθ 𝐞ᵩ ],   𝐔₀′ = ΔΩ r sinθ 𝐞ᵩ,
     (right-hand side of the momentum equation per unit mass, G = Gaspard, ΔΩ = Σₙ fₙ(r) Pₙ(cosθ), diff_rot.fX) and of ∂ᵣ𝐅;
     with thermal = 1, drheat[l], the l-components of the left-hand-side terms p₀ [ i m G ΔΩ s + 𝐮⋅∇S_tw ] of the heat
-    equation (S_tw = 0 if thermal_wind = 0).
+    equation (S_tw = 0 if thermal_wind = 0); NEW (2026-11-08) with compositional = 1 and a solution of the composition,
+    drcomp[l], those of ρ₀ i m G ΔΩ c in its equation.
     𝐮 is evaluated on the (rk, cosθ) grid from the l-components of velocity(),
         uᵣ = Σ q Y,   u_θ = Σ s ∂_θY + t i m Y/sinθ,   uᵩ = Σ s i m Y/sinθ - t ∂_θY,     Y = ut.Ylm,
     and the products are projected back on Y, (∂_θY, i m Y/sinθ), (i m Y/sinθ, -∂_θY) by Gauss-Legendre quadrature in
@@ -585,6 +586,7 @@ def diff_rot_setup():
     '''
     global drforce
     global drheat
+    global drcomp
 
     m = par.m
     G = par.Gaspard
@@ -647,6 +649,11 @@ def diff_rot_setup():
         hl = proj( pss0[:,None]*h, Y )/nl
         drheat = { l: hl[:,k] for k,l in enumerate(ll) }
 
+    if comp_on():   # NEW (2026-11-08): ρ₀ i m G ΔΩ c, the composition's (no part balances ΔΩ: C is spherical)
+        cg = np.transpose(ctab[0]) @ Y[[ list(ll).index(l) for l in lp ]]
+        cl = proj( rho0[:,None]*(1j*m*G*dO[0]*cg), Y )/nl
+        drcomp = { l: cl[:,k] for k,l in enumerate(ll) }
+
 
 
 def flow_worker( l ):
@@ -655,6 +662,8 @@ def flow_worker( l ):
     Includes the kinetic energy, the kinetic energy dissipation, the rate of working (power) of the
     buoyancy force, the enstrophy budget terms, the differential rotation power, and the imaginary parts
     of the Coriolis, viscous and buoyancy powers for the frequency balance.
+    NEW (2026-11-08): with compositional = 1 the buoyancy force is that of the entropy and of the composition (the enstrophy
+    term Enstro_buo of both), the power of the entropy's is Wthm and the composition's Wcmp (and Wcmp_im), the last two values.
     '''
 
     Ra = par.ricb
@@ -687,8 +696,15 @@ def flow_worker( l ):
         [ cuvifq, cuvifs, cuvift ] = [0,0,0]
 
 
-    if par.thermal:
-        [   buoq,   buos,   buot ] = buoyancy(l)     # buoyancy force
+    # buoyancy force: that of the entropy (bth), NEW (2026-11-08) of the composition (bcp) and their sum
+    bth = buoyancy(l, 'thermal') if par.thermal else None
+    bcp = buoyancy(l, 'comp') if comp_on() else None
+    if bth is not None and bcp is not None:
+        buo = [ [ bth[k][d] + bcp[k][d] for d in (0,1,2) ] for k in (0,1,2) ]
+    else:
+        buo = bth if bth is not None else bcp
+    if buo is not None:
+        [   buoq,   buos,   buot ] = buo
         [ cubuoq, cubuos, cubuot ] = curl(l, buoq, buos, buot)  # its curl
 
 
@@ -707,7 +723,7 @@ def flow_worker( l ):
     else:
         [ enstro_vif_p, enstro_vif_t ] = [0,0]
 
-    if par.thermal:
+    if buo is not None:
         enstro_buo_p = dotprod_pol(l, cuvelq[0], cuvels[0], cubuoq[0], cubuos[0] ) * const0**2
         enstro_buo_t = dotprod_tor(l, cuvelt[0], cubuot[0] ) * const0**2
 
@@ -726,7 +742,7 @@ def flow_worker( l ):
 
     # rate of working of the buoyancy force ρ𝐮⋅(Beyonce g s 𝐫̂), the buoyancy force per unit mass as in operators.buoyancy
     if par.thermal:
-        wbuop = dotprod_pol(l, velq[0], vels[0], buoq[0], buos[0])*rho0
+        wbuop = dotprod_pol(l, velq[0], vels[0], bth[0][0], bth[1][0])*rho0
     else:
         wbuop = 0
 
@@ -739,7 +755,7 @@ def flow_worker( l ):
     else:
         pvif = 0
     if par.thermal:
-        pbuo = 2*cdot_pol(l, velq[0], vels[0], buoq[0], buos[0])*rho0
+        pbuo = 2*cdot_pol(l, velq[0], vels[0], bth[0][0], bth[1][0])*rho0
     else:
         pbuo = 0
 
@@ -756,10 +772,18 @@ def flow_worker( l ):
     Enstro_vel_l = rad_quad( enstro_vel_p + enstro_vel_t, Ra, Rb, wk)
     Enstro_cor_l = rad_quad( enstro_cor_p + enstro_cor_t, Ra, Rb, wk)
     Enstro_vif_l = rad_quad( enstro_vif_p + enstro_vif_t, Ra, Rb, wk)
-    if par.thermal:
+    if buo is not None:
         Enstro_buo_l = rad_quad( enstro_buo_p + enstro_buo_t, Ra, Rb, wk)
     else:
         Enstro_buo_l = 0
+
+    # NEW (2026-11-08): the power of the buoyancy of the composition, 2 ∫ ρ 𝐮*⋅(BeyonceC g c 𝐫̂) dV: real part Wcmp, imaginary
+    # part Wcmp_im
+    [ Wcmp_l, Wcmp_im_l ] = [ 0, 0 ]
+    if bcp is not None:
+        pcmp = 2*cdot_pol(l, velq[0], vels[0], bcp[0][0], bcp[1][0])*rho0
+        Wcmp_l    = np.real( rad_quad( pcmp, Ra, Rb, wk ) )   # (as Wthm: 2 Re cdot_pol is dotprod_pol)
+        Wcmp_im_l = np.imag( rad_quad( pcmp, Ra, Rb, wk ) )
 
 
     # differential rotation: complex power 2 ∫ ρ 𝐮*⋅𝐅 dV of the force 𝐅 = -G[(𝐔₀′⋅∇)𝐮 + (𝐮⋅∇)𝐔₀′] (diff_rot_setup),
@@ -775,7 +799,7 @@ def flow_worker( l ):
         Enstro_dr_l = rad_quad( enstro_dr, Ra, Rb, wk)
 
     return [ Kene_l, Dkin_l, Enstro_vel_l, Enstro_cor_l, Enstro_vif_l, Enstro_buo_l, Wthm_l, Wdr_l,
-             Wcor_im_l, Dkin_im_l, Wthm_im_l, Wdr_im_l, Enstro_dr_l ]
+             Wcor_im_l, Dkin_im_l, Wthm_im_l, Wdr_im_l, Enstro_dr_l, Wcmp_l, Wcmp_im_l ]
 
 
 
@@ -863,6 +887,51 @@ def thermal_worker( l ):
         Wdr_l = -rad_quad( dotprod_scal(l, drheat[l], hlm0), Ra, Rb, wk )
 
     return [ Tene_l, Dthm_l, Wadv_l, Wdr_l ]
+
+
+
+def composition_worker( l ):
+    '''
+    NEW (2026-11-08): the budget of the composition, l-component (l a poloidal l), as thermal_worker's of the entropy with
+    ρ₀ in place of p₀. The equation of section c (operators.composition, comp_advection, comp_diffusion),
+        ρ₀ ∂c/∂t = -ρ₀ uᵣ dC/dr + CompoD ∇⋅(D ρ₀ ∇c)   (- ρ₀ i m G ΔΩ c with diff_rot = 1),
+    times c* and integrated over the fluid gives 2σ CE = Wadv + CompoD Dcmp + Wdr, with
+        CE   = ½ ∫ ρ₀ |c|² dV                           the composition's "energy"
+        Wadv = -∫ ρ₀ (dC/dr) uᵣ c* dV                   the advection of the background composition
+        Dcmp = ∫ c* ∇⋅(D ρ₀ ∇c) dV = -∫ D ρ₀ |∇c|² dV + [ r² D ρ₀ c* ∂c/∂r ]   its diffusion
+        Wdr  = -2 Re ∫ ρ₀ c* i m G ΔΩ c dV              (diff_rot_setup, drcomp)
+    (real parts, the 2Re convention of thermal_worker). Uses the tables of set_solution (csol). Returns
+    [ CE_l, Dcmp_l, Wadv_l, Wdr_l ], Dcmp_l without the CompoD factor.
+    '''
+    Ra = par.ricb
+    Rb = ut.rcmb
+
+    lp  = ut.ell( par.m, par.lmax, par.symm)[0]
+    idx = list(lp).index(l)
+    L   = l*(l+1)
+    nl  = 4*np.pi/(2*l+1)
+
+    f_c = radial( ctab, idx, 1, rk )
+    c0, c1 = f_c[0], f_c[1]   # c, ∂c/∂r
+
+    [ velq, _, _ ] = velocity(l)  # velq[0] is uᵣ
+
+    Cene_l = rad_quad( 0.5*rho0*dotprod_scal(l, c0, c0), Ra, Rb, wk )
+    Wadv_l = rad_quad( -rdC0*dotprod_scal(l, velq[0], c0), Ra, Rb, wk )
+
+    Dcmp_l = 0
+    if par.CompoD > 0:
+        Dcmp_l = rad_quad( -Drh0*nl*2*( r2*np.abs(c1)**2 + L*np.abs(c0)**2 ), Ra, Rb, wk )
+        [ rb, Drhb, cbnd ] = csfc   # the surface term [ r² D ρ₀ c* ∂c/∂r ] from Ra to Rb
+        f_cb = radial( cbnd, idx, 1, rb )
+        sfc  = nl * rb**2 * Drhb * 2*np.real( np.conj(f_cb[0]) * f_cb[1] )
+        Dcmp_l += sfc[1] - sfc[0]
+
+    Wdr_l = 0
+    if par.diff_rot:
+        Wdr_l = -rad_quad( dotprod_scal(l, drcomp[l], c0), Ra, Rb, wk )
+
+    return [ Cene_l, Dcmp_l, Wadv_l, Wdr_l ]
 
 
 
@@ -1111,7 +1180,7 @@ def pressure_force(l, eigval):
     forces = []
     if par.ViscosD > 0:
         forces.append( visforce(l) )
-    if par.thermal:
+    if par.thermal or comp_on():   # (NEW 2026-11-08: and the composition's)
         forces.append( buoyancy(l) )
     if par.diff_rot:
         forces.append( drforce[l] )
@@ -1180,7 +1249,7 @@ def lorentz_walls(bsol):
 
 
 
-def wall_powers(usol, tsol, eigval, bsol=None):
+def wall_powers(usol, tsol, eigval, bsol=None, csol=0):
     '''
     NEW (2026-11-04): the power of the wall stresses on the fluid, for [inner, outer] wall (inner 0 in a full sphere),
         pressure  Wp = -2 ∮ ρ₀ Π uᵣ* dA (complex: its real part closes residσ, its imaginary part residω),
@@ -1190,11 +1259,11 @@ def wall_powers(usol, tsol, eigval, bsol=None):
     the walls (eigval as there). Dkin = ∫ 𝐮⋅(∇⋅𝛔) dV = Wv - Dν (viscous_dissipation). Both are zero where uᵣ = 0 (Wp) or 𝐮 = 0 (Wv).
     Sets the grid globals at the walls: call after the other diagnostics (diagnose, diagnose_magnetic).
     NEW (2026-11-06): bsol, the field (magnetic = 1): where a wall can move radially (walls_move) Π includes the Lorentz force's
-    part, Hendrik s_l/ρ₀ (lorentz_walls), which a forced problem with a field needs.
+    part, Hendrik s_l/ρ₀ (lorentz_walls), which a forced problem with a field needs. NEW (2026-11-08): csol, the composition.
     '''
     rw = np.array([ par.ricb, ut.rcmb ]) if par.ricb > 0 else np.array([ ut.rcmb ])
     set_radii(rw)
-    set_solution(usol, tsol)
+    set_solution(usol, tsol, csol=csol)
     if par.diff_rot:
         diff_rot_setup()
     [ lp, lt, ll ] = ut.ell(par.m, par.lmax, par.symm)
@@ -1268,7 +1337,7 @@ def viscous_dissipation():
 
 
 
-def body_force_terms(usol, eigval, tsol=0):
+def body_force_terms(usol, eigval, tsol=0, csol=0):
     '''
     NEW (2026-11-08): forcings 1 and 8, the terms of the body force 𝐟 that the known flow 𝐱 (utils.lifted_flow) puts in the
     momentum equation of the flow 𝐮 solved for (assemble.lifted_rhs): 𝐟 = -[λ𝐱 + 2 Gaspard 𝐳×𝐱 - (∇⋅𝛔(𝐱))/ρ₀ - 𝐅(𝐱)], the
@@ -1281,7 +1350,8 @@ def body_force_terms(usol, eigval, tsol=0):
     The gradients in 𝐟 (the inertia and the viscous force of the equilibrium tide, the Coriolis force on the rigid libration)
     do no work between impenetrable walls, have no torque and no curl: they leave the three terms unchanged. On the
     quadrature grid of diagnose, by the routines of flow_worker; call after diagnose. It leaves the tables of the solution
-    usol, tsol (the entropy, as given by expand_reshape_sol, with thermal = 1) at that grid.
+    usol, tsol (the entropy, as given by expand_reshape_sol, with thermal = 1) and (NEW 2026-11-08) csol (the composition)
+    at that grid.
     '''
     Ra, Rb = par.ricb, ut.rcmb
     [ lp, lt, ll ] = ut.ell(par.m, par.lmax, par.symm)
@@ -1300,7 +1370,7 @@ def body_force_terms(usol, eigval, tsol=0):
         if par.diff_rot:
             f = [ [ f[k][d] + drforce[l][k][d] for d in (0, 1) ] for k in (0, 1, 2) ]
         F[l] = f
-    set_solution(usol, tsol)
+    set_solution(usol, tsol, csol=csol)
     Wf, Ensf, Tf = 0j, 0.0, 0j
     for l in ll:
         [ velq, vels, velt ] = velocity(l)
@@ -1318,11 +1388,27 @@ def body_force_terms(usol, eigval, tsol=0):
 
 
 
-def buoyancy(l):
+def comp_on():
+    '''NEW (2026-11-08): whether the tables of a solution of the composition are set (compositional = 1, set_solution)'''
+    return bool(par.compositional) and 'csol2' in globals() and np.ndim(csol2) == 2
+
+
+
+def buoyancy(l, which='all'):
     '''
     Returns the l-degree (rad,con,tor) components of the buoyancy force, and its radial derivatives.
     Use it to compute the rate of working (power) of the thermal buoyancy
+    NEW (2026-11-08): which = 'thermal', the entropy's Beyonce g s 𝐫̂, 'comp', the composition's BeyonceC g c 𝐫̂ (with its
+    tables, comp_on), or 'all', the buoyancy force, their sum (each alone when the other is absent)
     '''
+    if which == 'all':
+        th = buoyancy(l, 'thermal') if par.thermal else None
+        cp = buoyancy(l, 'comp') if comp_on() else None
+        if th is not None and cp is not None:
+            return [ [ th[k][d] + cp[k][d] for d in (0,1,2) ] for k in (0,1,2) ]
+        if th is not None or cp is not None:
+            return th if th is not None else cp
+    tab, fac = (ctab, par.BeyonceC) if which == 'comp' else (ttab if par.thermal else None, par.Beyonce)
 
     ll = ut.ell( par.m, par.lmax, par.symm)
     lp  = ll[0]  # l's for poloidals
@@ -1338,17 +1424,17 @@ def buoyancy(l):
     out_con2 = np.zeros_like(rk, dtype='complex128')
     out_tor2 = np.zeros_like(rk, dtype='complex128')
 
-    if l in lp:
+    if l in lp and tab is not None:
         idx   = list(lp).index(l)
-        f_pol = radial( ttab, idx, 2, rk )  # NEW (2026-10-20): from the table, and g from set_solution
+        f_pol = radial( tab, idx, 2, rk )  # NEW (2026-10-20): from the table, and g from set_solution
         [ grv0, grv1, grv2 ] = grv
         out_rad0 = f_pol[0] * grv0
         out_rad1 = f_pol[1] * grv0 + f_pol[0] * grv1
         out_rad2 = f_pol[2] * grv0 + f_pol[1] * grv1 + f_pol[1] * grv1 + f_pol[0] * grv2
         
-    return [ [out_rad0*par.Beyonce, out_rad1*par.Beyonce, out_rad2*par.Beyonce],
-             [out_con0*par.Beyonce, out_con1*par.Beyonce, out_con2*par.Beyonce],
-             [out_tor0*par.Beyonce, out_tor1*par.Beyonce, out_tor2*par.Beyonce] ]
+    return [ [out_rad0*fac, out_rad1*fac, out_rad2*fac],
+             [out_con0*fac, out_con1*fac, out_con2*fac],
+             [out_tor0*fac, out_tor1*fac, out_tor2*fac] ]
 
 
 
@@ -1435,26 +1521,41 @@ def set_radii(radii):
         global kps0
         kps0 = rap.prf.thermal_diffusivity( rk, 0) * pss0         # κ p₀ (equal to rap.kappressX( rk, 0))
 
+    if par.compositional:
+        # NEW (2026-11-08): background profiles for the budget of the composition (composition_worker), ρ₀ is rho0
+        global rdC0
+        rdC0 = rap.rdCdrX( rk, 0)                                 # ρ₀ dC/dr
+        global Drh0
+        Drh0 = rap.prf.comp_diffusivity( rk, 0) * rho0            # D ρ₀ (equal to rap.DrhoX( rk, 0))
 
 
-def set_solution(usol, tsol, ndp=5, ndt=4):
+
+def set_solution(usol, tsol, ndp=5, ndt=4, csol=0):
     '''
     NEW (2026-10-20): sets the solution usol2, tsol2 (as given by expand_reshape_sol) as module globals for the
     workers, together with the tables of its radial functions at the current radii rk (cheb2space_table):
     utab = [ poloidal up to the ndp-th r-derivative, toroidal up to the ndt-th ] (visforce needs 5 and 4,
     velocity alone 3 and 2) and, with thermal = 1 and an entropy solution, ttab (up to the 2nd derivative),
     g and its derivatives at rk (grv, for buoyancy) and s, ∂s/∂r and κ p₀ at the walls (tsfc, for thermal_worker).
+    NEW (2026-11-08): with compositional = 1 and a solution of the composition csol (expand_reshape_sol), csol2 and the same
+    for it: ctab, grv, and c, ∂c/∂r and D ρ₀ at the walls (csfc, for composition_worker).
     Call it after rk is set (setup_grid, diagnose_4plot).
     '''
-    global usol2, tsol2, utab, ttab, grv, tsfc
+    global usol2, tsol2, utab, ttab, grv, tsfc, csol2, ctab, csfc
     usol2 = usol
     tsol2 = tsol
+    csol2 = csol
     utab  = [ cheb2space_table(usol[0], ndp, rk), cheb2space_table(usol[1], ndt, rk) ]
     if par.thermal and np.ndim(tsol) == 2:
         ttab = cheb2space_table(tsol, 2, rk)
         grv  = [ rap.graviX(rk, d) for d in (0,1,2) ]
         rb   = np.array([ par.ricb, ut.rcmb ])
         tsfc = [ rb, rap.prf.thermal_diffusivity(rb, 0) * rap.pressX(rb, 0), cheb2space_table(tsol, 1, rb) ]
+    if par.compositional and np.ndim(csol) == 2:
+        ctab = cheb2space_table(csol, 2, rk)
+        grv  = [ rap.graviX(rk, d) for d in (0,1,2) ]
+        rb   = np.array([ par.ricb, ut.rcmb ])
+        csfc = [ rb, rap.prf.comp_diffusivity(rb, 0) * rap.densX(rb, 0), cheb2space_table(csol, 1, rb) ]
 
 
 
@@ -1503,6 +1604,24 @@ def thermal_energy(tsol, Ra, Rb, ls=None):
         if l in lp:
             hlm0 = radial(ttab, lp.index(l), 0, rk)[0]
             out += rad_quad(entropy_energy(l, hlm0), Ra, Rb, wk)
+    return out
+
+
+
+def composition_energy(csol, Ra, Rb, ls=None):
+    '''
+    NEW (2026-11-08): CE = ½ ∫ ρ₀ |c|² dV of the solution of the composition csol (expand_reshape_sol), from Ra to Rb, with
+    the integrand and the quadrature of composition_worker; ls as thermal_energy. For solve.py's normalisation without the
+    flow (hydro = 0); the tables it leaves (a zero flow, csol) serve centrifugal_composition_terms.
+    '''
+    setup_grid(Ra, Rb)
+    set_solution(zero_flow(), 0, 3, 2, csol=csol)
+    lp = list(ut.ell(par.m, par.lmax, par.symm)[0])
+    out = 0.0
+    for l in (lp if ls is None else ls):
+        if l in lp:
+            c0 = radial(ctab, lp.index(l), 0, rk)[0]
+            out += rad_quad(0.5*rho0*dotprod_scal(l, c0, c0), Ra, Rb, wk)
     return out
 
 
@@ -1618,8 +1737,8 @@ def _cf_vdot(W, F, weight, Ra, Rb):
 _cf_expr = {}
 def _cf_expressions(kind, lw):
     '''the expressions of centrifugal.py for the budgets, built once: 'flow' (w of P, T), 'visc' (δV of P, T), 'heat'
-    (-∇⋅(κp (M - I)∇s)), 'rot' ({n: δW of P, T}), 'mag' (the metric part of the diffusion's field of F, G, as
-    magnetic_diffusion_metric, and its curl)'''
+    (-∇⋅(κp (M - I)∇s)), NEW (2026-11-08) 'comp' (-∇⋅(D ρ0 (M - I)∇c)), 'rot' ({n: δW of P, T}), 'mag' (the metric part of
+    the diffusion's field of F, G, as magnetic_diffusion_metric, and its curl)'''
     key = (kind, lw)
     if key not in _cf_expr:
         A = angular.Algebra.get(par.m, lw)
@@ -1629,6 +1748,10 @@ def _cf_expressions(kind, lw):
             _cf_expr[key] = cf._rmul(cf.NU, cf._sum(cf.spheroid_terms(A, 'P', 'visc'), cf.spheroid_terms(A, 'T', 'visc')))
         elif kind == 'heat' and cf.exact():   # NEW (2026-11-06): times κ p
             _cf_expr[key] = cf._rmul(cf.NU, cf.spheroid_terms(A, 'S', 'heat'))
+        elif kind == 'comp' and cf.exact():   # NEW (2026-11-08): the composition's, times D ρ0
+            _cf_expr[key] = cf._rmul(cf.NU, cf.spheroid_terms(A, 'C', 'heat'))
+        elif kind == 'comp':
+            _cf_expr[key] = cf.thermal_diffusion_metric(A, lw, 'C')
         elif kind == 'visc':
             _cf_expr[key] = cf._sum(cf.viscous_force(A, 'P'), cf.viscous_force(A, 'T'))
         elif kind == 'heat':
@@ -1686,6 +1809,42 @@ def centrifugal_dissipation_terms(Ra, Rb):
         lv = np.arange(lw + 1); nl = (4*np.pi/(2*lv + 1))[:, None]
         Dthm_c = 2*np.real(rad_quad(np.sum(nl*np.conj(S['S'][0])*D, 0)*r2, Ra, Rb, wk))
     return [ Dkin_c, Wdr_c, Dthm_c ]
+
+def centrifugal_composition_terms(Ra, Rb):
+    '''
+    NEW (2026-11-08): with centrifugal = 1 and compositional = 1, the metric parts of the budget of the composition, from its
+    tables at the current radii rk (set_solution with csol), as TEc (centrifugal_terms) and Dthm_c (centrifugal_dissipation_
+    terms) for the entropy, with ρ₀ in place of p₀:
+        CEc  = ∫ ρ₀ (J - 1) |c|² dV = ∫ ρ₀ η P2 |c|² dV   (0 in the exact spheroid, J = 1)
+        Dcmp = 2 Re ∫ c* δ dV,  δ = -∇⋅(D ρ₀ (M - I)∇c)   without CompoD (0 without CompoD)
+    Returns [CEc, Dcmp_c].
+    '''
+    m = par.m
+    lp = ut.ell(par.m, par.lmax, par.symm)[0]
+    CEc, Dcmp_c = 0.0, 0.0
+    if not comp_on():
+        return [ CEc, Dcmp_c ]
+    lw = cf.lw_of()
+    nr = len(rk)
+    lv = np.arange(lw + 1)
+    nlv = 4*np.pi/(2*lv + 1)
+    prof = cf.profile_functions()
+    if not cf.exact():
+        Cg = np.zeros((lw + 1, nr), dtype=complex)
+        for k, l in enumerate(lp):
+            Cg[l] = radial(ctab, k, 0, rk)[0]
+        P2 = angular.Algebra.get(m, lw).legendre(2)[0]
+        g = nlv[:, None]*np.conj(Cg)*(P2 @ Cg)*prof['ce1'](rk, 0)[None, :]
+        CEc = np.real(rad_quad(np.sum(g, 0)*r2*rho0, Ra, Rb, wk))
+    if par.CompoD > 0:
+        lw = par.lmax + 16
+        amp = {a: prof[c](rk, 0) for a, (c, _) in cf.AMPS.items()}
+        e = _cf_expressions('comp', lw)
+        C = {'C': _cf_table(csol2, lp, _cf_order(e), rk, lw)}
+        D = _cf_eval(e, C, rk, amp, lambda j: rap.DrhoX(rk, j), vector=False)['s']
+        nl = (4*np.pi/(2*np.arange(lw + 1) + 1))[:, None]
+        Dcmp_c = 2*np.real(rad_quad(np.sum(nl*np.conj(C['C'][0])*D, 0)*r2, Ra, Rb, wk))
+    return [ CEc, Dcmp_c ]
 
 
 
@@ -2772,7 +2931,7 @@ def magnetic_powers_grid(walls_only=False):
 
 
 
-def diagnose( usol, tsol, Ra, Rb, ncpus):
+def diagnose( usol, tsol, Ra, Rb, ncpus, csol=0):
     '''
     Computes kinetic energy, internal and kinetic energy dissipation,
     and input power from body forces. Integrated From r=Ra to r=Rb, and
@@ -2782,12 +2941,14 @@ def diagnose( usol, tsol, Ra, Rb, ncpus):
     one l after another, read them from these tables. Before, each l was a task for a pool of ncpus processes,
     and each worker evaluated its radial functions with chebval (a Python loop over N) several times over
     (velocity, coriolis with the neighbouring l's, visforce, buoyancy). ncpus is no longer used.
+    NEW (2026-11-08): csol, the solution of the composition (compositional = 1), for the buoyancy and for
+    diagnose_composition, which takes the tables set here.
     '''
 
     out_t = 0
 
     setup_grid(Ra, Rb)  # quadrature grid and background profiles, as module globals
-    set_solution(usol, tsol)  # the solution and the tables of its radial functions at rk, as module globals
+    set_solution(usol, tsol, csol=csol)  # the solution and the tables of its radial functions at rk, as module globals
     if par.diff_rot:
         diff_rot_setup()  # differential-rotation force and heat-equation terms, as module globals
 
@@ -2799,13 +2960,24 @@ def diagnose( usol, tsol, Ra, Rb, ncpus):
         out_t = np.array([ thermal_worker(l) for l in lp_u ])
 
     return [ out_u, out_t ]
+
+
+
+def diagnose_composition():
+    '''
+    NEW (2026-11-08): the budget of the composition (composition_worker), one row per l of the poloidals, on the grid and the
+    tables that diagnose has just set (with csol)
+    '''
+    lp = ut.ell(par.m, par.lmax, par.symm)[0]
+    return np.array([ composition_worker(l) for l in lp ])
     
 
 
-def diagnose_4plot( ncpus, usol, tsol, radii, field0):
+def diagnose_4plot( ncpus, usol, tsol, radii, field0, csol=0):
     '''
     Returns the [rad,con,tor] components of the field field0 (see worker_4plot), one row per l, at the radii.
     NEW (2026-10-20): serial, from tables of the radial functions at the radii (set_solution); ncpus is no longer used.
+    NEW (2026-11-08): csol, the composition, whose buoyancy 'buo' includes.
     '''
 
     global field
@@ -2813,7 +2985,7 @@ def diagnose_4plot( ncpus, usol, tsol, radii, field0):
 
     set_radii(radii)  # NEW (2026-11-04): the radii and the background profiles there
 
-    set_solution(usol, tsol)  # NEW (2026-10-20): the solution and the tables of its radial functions at the radii
+    set_solution(usol, tsol, csol=csol)  # NEW (2026-10-20): the solution and the tables of its radial functions at the radii
 
     [ lp_u, lt_u, ll ] = ut.ell(par.m, par.lmax, par.symm)  # the l-indices of the flow field
 

@@ -134,6 +134,7 @@ def normalise_energy(vecs):
     The other fields (thermal, ...) are scaled along. The complex phase is left as SLEPc returns it.
     NEW (2026-11-06): without the flow (hydro = 0) ME + TE = 1 instead, without Hendrik (the Lorentz force is absent, so no
     energy unit links the field to a flow), TE = ½ ∫ p₀ |s|² dV as spin_doctor's; a free-decay mode has one of the two.
+    NEW (2026-11-08): and + CE with the composition (compositional = 1), CE = ½ ∫ ρ₀ |c|² dV as spin_doctor's.
     Vectors with zero energy are left unchanged.
     Called on all ranks with the full vecs on each; the l-components are shared among the ranks
     and their energies summed with an MPI Allreduce.
@@ -158,6 +159,11 @@ def normalise_energy(vecs):
             KE = upp.thermal_energy(tsol2, par.ricb, ut.rcmb, ll[rank::size])
             if par.centrifugal and rank == 0:  # its metric part, on the tables thermal_energy has just set
                 KE += upp.centrifugal_terms(par.ricb, ut.rcmb)[2]
+        if par.compositional and not par.hydro:  # NEW (2026-11-08): the composition's "energy" without the flow
+            csol2 = upp.expand_reshape_sol(f['composition'], par.symm)
+            KE += upp.composition_energy(csol2, par.ricb, ut.rcmb, ll[rank::size])
+            if par.centrifugal and rank == 0:  # its metric part, on the tables composition_energy has just set
+                KE += upp.centrifugal_composition_terms(par.ricb, ut.rcmb)[0]
         if par.magnetic:  # NEW (2026-10-28)
             bsol2 = upp.expand_reshape_sol(f['magnetic'], ut.bsymm)
             KE += H * upp.magnetic_energy(bsol2, par.ricb, ut.rcmb, ll[rank::size])
@@ -167,7 +173,7 @@ def normalise_energy(vecs):
         if KE > 0:
             vecs[:, i] /= np.sqrt(KE)
     what = ('KE + ME = 1' if par.magnetic else 'kinetic energy = 1') if par.hydro else \
-           ' + '.join(['ME'] * par.magnetic + ['TE'] * par.thermal) + ' = 1'
+           ' + '.join(['ME'] * par.magnetic + ['TE'] * par.thermal + ['CE'] * par.compositional) + ' = 1'
     PETSc.Sys.Print('Eigenvectors normalised to', what, 'in', round(timer()-t0, 2), 'seconds')
 
 
@@ -182,6 +188,7 @@ def split_fields(vec):
                ('magnetic', 2*ut.n * par.magnetic),     # NEW (2026-10-28): f, g after s (ut.offset)
                ('magnetic_ic', 2*ut.nic),               # NEW (2026-10-28): fic, gic, a conducting inner core
                ('magnetic_mantle', 2*ut.nman),          # NEW (2026-11-06): fm, gm, the resolved mantle
+               ('composition', ut.n * ut.compositional),   # NEW (2026-11-08): c, the composition (ut.offset['c'])
                ('rotdyn', 3*ut.rotdyn) ]                # NEW (2026-11-06): omega_M, omega_IC, phi, the rotating solids
     fields = {}
     offset = 0
@@ -300,8 +307,9 @@ def main():
 
     # optional Ruiz pre-scaling (par.prescale), eigenvalue problems only
     prescale = getattr(par, 'prescale', 0)
-    if prescale is None:  # automatic: Ruiz helps everywhere except thermal runs without entropy diffusion
-        prescale = 0 if (par.thermal and par.ThermaD == 0) else 1
+    if prescale is None:  # automatic: Ruiz helps everywhere except thermal runs without entropy diffusion (NEW 2026-11-08:
+        # and the composition without its diffusion, the same rows)
+        prescale = 0 if ((par.thermal and par.ThermaD == 0) or (par.compositional and par.CompoD == 0)) else 1
     tau = par.rtau + par.itau*1j
     if prescale and par.forcing != 0:
         Print('Note: prescale applies to eigenvalue problems only; not used for this forced problem.')

@@ -171,6 +171,48 @@ thermal boundary conditions: `bci_thermal` and `bco_thermal` are not used. The r
 [Numerical method](numerical-method.md), and what to watch for in such runs is in
 [Background model](background.md#thermad-0).
 
+## Composition
+
+A fluid can also be stratified by its composition, as a star by the helium and heavier elements that settle below its
+convection zone, or a planet's core by its light elements. With `compositional = 1` kore solves for the perturbation
+$c$ of a second scalar, the composition, beside the entropy or without it. The flow carries $c$ across the background
+gradient $dC/dr$, $c$ diffuses with its own diffusivity, and it changes the density, so it has its own buoyancy. Its
+equation is that of the entropy with $ho_0$ in place of $p_0$, the conservation of a mass fraction:
+
+$$
+\rho_0\left(\partial_t c + u_r\frac{dC}{dr}\right) = \mathrm{CompoD}\thinspace\nabla\cdot\left(D\thinspace\rho_0\nabla c\right),
+$$
+
+and the momentum equation gains the force $\mathrm{BeyonceC}\thinspace g\thinspace c\thinspace\hat{\mathbf r}$ beside
+$\mathrm{Beyonce}\thinspace g\thinspace s\thinspace\hat{\mathbf r}$. $c$ measures the deficit of density that the
+composition makes at a given pressure and entropy, relative to $\rho_0$: like $s$, a larger $c$ is lighter. The
+buoyancy frequency then has two parts,
+
+$$
+N^2 = \mathrm{Beyonce}\thinspace g\thinspace\frac{dS}{dr} + \mathrm{BeyonceC}\thinspace g\thinspace\frac{dC}{dr},
+$$
+
+and each can have its own sign: a stable composition gradient under an unstable entropy gradient, or the reverse, is
+the double-diffusive case. $D$ is the profile of the diffusivity of the composition (`diffusivity`), and two numbers
+carry its scales:
+
+| parameter | definition | meaning |
+| --- | --- | --- |
+| `BeyonceC` | $g_{\mathrm{ref}}\thinspace\tau^2/L$, for $c$ a relative density | buoyancy of the composition |
+| `CompoD` | $D_{\mathrm{ref}}\thinspace\tau/L^2$ | diffusivity of the composition |
+
+`set_scales()` sets `CompoD` from `Ecomp` $= D_{\mathrm{ref}}/(\Omega L^2)$ as it sets `ThermaD` from `Etherm`, and
+`BeyonceC` to 0, so set `BeyonceC` after calling it. The composition takes the wall conditions of the entropy, a fixed
+composition ($c = 0$) or no flux ($\partial_r c = 0$). With `CompoD = 0` it is only carried by the flow, as the entropy
+with `ThermaD = 0`: its equation is then of first order and takes no wall conditions. With a differential rotation it
+gains the advection $i\thinspace m\thinspace\mathrm{Gaspard}\thinspace\Delta\Omega\thinspace c$ inside the bracket; the
+background composition is spherical, so nothing in it plays the part of the thermal wind.
+
+With `'Boussinesq'` and `diffusivity = 'uniform'` the equation is
+$\partial_t c + u_r\thinspace dC/dr = \mathrm{CompoD}\thinspace\nabla^2 c$. This is the composition of the `conductive_IC`
+branch with its $\xi = -c$, `BV2_comp` = `BeyonceC` and `Ecomp` = `CompoD`: its gradient `'internal'` is `'linear'`
+here, and its `'differential'` is `'inverse square'` with `BeyonceC` = `BV2_comp`$\cdot$`ricb`/(1 − `ricb`).
+
 ## Differential rotation
 
 With a differential rotation $\Omega(r,\theta) = \Omega_{\rm ref}\left[1 + \Delta\Omega(r,\theta)\right]$, kore solves in
@@ -225,7 +267,7 @@ Take the momentum equation with $\partial_t = \lambda = \sigma - i\omega$, multi
 over the fluid and keep the real part:
 
 $$
-2\sigma K = W_\nu + W_b + W_\Omega + W_p ,
+2\sigma K = W_\nu + W_b + W_c + W_\Omega + W_p ,
 $$
 
 with, term by term:
@@ -262,7 +304,9 @@ unless a force acts on the fluid at that wall: a drag ([Drag at the outer wall](
 field's current sheet ([Magnetic field equations](magnetic-equations.md#current-sheets-at-slipping-walls)).
 
 - **Buoyancy.** $W_b = 2\thinspace\mathrm{Beyonce}\thinspace\mathrm{Re}\int\rho_0\thinspace g\thinspace s\thinspace u_r^*\thinspace dV$,
-  the energy exchanged with the entropy perturbation.
+  the energy exchanged with the entropy perturbation, and with `compositional = 1`
+  $W_c = 2\thinspace\mathrm{BeyonceC}\thinspace\mathrm{Re}\int\rho_0\thinspace g\thinspace c\thinspace u_r^*\thinspace dV$,
+  the energy exchanged with the composition.
 
 - **Differential rotation.** Of the terms of [Differential rotation](#differential-rotation), the advection
   $i m\thinspace\mathrm{Gaspard}\thinspace\Delta\Omega\thinspace\mathbf u$ and the Coriolis force of $\Delta\Omega$ do no
@@ -298,16 +342,22 @@ combine into a total energy with the available potential energy, in the conventi
 $\int\rho_0\thinspace\mathrm{Beyonce}\thinspace g\thinspace\lvert s\rvert^2/(dS/dr)\thinspace dV$: without diffusion its rate of
 change is $-W_b$. It is positive only where the stratification is stable, and kore does not form it.
 
+The composition has the same budget with $\rho_0$ in place of $p_0$:
+$2\sigma C = W_{\rm adv,c} - D_{\rm c}$, with $C = \int\rho_0\lvert c\rvert^2\thinspace dV$,
+$W_{\rm adv,c} = -2\thinspace\mathrm{Re}\int\rho_0\thinspace\frac{dC}{dr}\thinspace u_r c^*\thinspace dV$ and
+$D_{\rm c} = 2\thinspace\mathrm{CompoD}\int D\rho_0\lvert\nabla c\rvert^2\thinspace dV$. The advection by a
+differential rotation only enters its imaginary part.
+
 ### A forced, periodic response
 
 A forced run has $\lambda = i\thinspace$`forcing_frequency`, so $\sigma = 0$, and the kinetic budget reads
 
 $$
-P_{\rm in} \equiv W_p + W_\nu^{\rm wall} = D_\nu - W_b - W_\Omega :
+P_{\rm in} \equiv W_p + W_\nu^{\rm wall} = D_\nu - W_b - W_c - W_\Omega :
 $$
 
-the power that the moving walls put into the flow is dissipated by viscosity, handed to the entropy perturbation, or
-given to the differential rotation. With a uniform rotation and no buoyancy, $P_{\rm in} = D_\nu$. With a differential
+the power that the moving walls put into the flow is dissipated by viscosity, handed to the entropy perturbation or to
+the composition, or given to the differential rotation. With a uniform rotation and no buoyancy, $P_{\rm in} = D_\nu$. With a differential
 rotation $W_\Omega$ has either sign, so the power the forcing puts in and the heat the viscosity releases can differ.
 [Tidal forcing](tidal-forcing.md) explains which of these quantities a tidal study needs, and
 [Numerical method](numerical-method.md#checks) how `spin_doctor` computes them.

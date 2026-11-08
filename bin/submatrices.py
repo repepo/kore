@@ -58,6 +58,7 @@ def main(ncpus):
     vT = -vP
 
     vS = vP  # this is the vector parity of the entropy perturbation
+    vC = vP  # NEW (2026-11-08): and of the composition
     # NEW (2026-10-28): the magnetic field has the opposite parities when B0 is equatorially antisymmetric
     vF = ut.symmB0*vP
     vG = -vF
@@ -95,8 +96,8 @@ def main(ncpus):
     G     = [ G0, G1, G2, G3, G4 ]  # fixed this for the inviscid and no thermal diffusion cases
 
     # Sets the Gegenbauer basis order for each section
-    gebasis = [  4,   2,   2,   2,   2  ]  # NEW (2026-10-28): f, g (magnetic field) in C^(2), 2 bc rows each, as conductive_IC
-    section = [ 'u', 'v', 'h', 'f', 'g' ]
+    gebasis = [  4,   2,   2,   2,   2,   2  ]  # NEW (2026-10-28): f, g (magnetic field) in C^(2), 2 bc rows each, as conductive_IC
+    section = [ 'u', 'v', 'h', 'f', 'g', 'c' ]   # NEW (2026-11-08): c, the composition, as h
 
     if inviscid:
         gebasis[0] = 2  # only up to second derivatives in section u
@@ -107,6 +108,8 @@ def main(ncpus):
 
     if par.ThermaD == 0:
         gebasis[2] = 1 if ut.adiab_tw else 0  # No thermal diffusion, C^(0) basis is enough (C^(1) for the thermal wind's P'), no need for thermal bc's
+    if par.CompoD == 0:
+        gebasis[5] = 0   # NEW (2026-11-08): the composition without diffusion, as the entropy (no thermal wind of c)
 
     if par.centrifugal == 1 and cf.deformed():   # NEW (2026-11-05, phase 2): the metric viscous force has P''' in section v and the metric magnetic
         for sec_, d_ in cf.diffusion_orders().items():   # diffusion F''' in section g (m ≠ 0): those sections in C^(3), with
@@ -163,7 +166,7 @@ def main(ncpus):
                   'u1lho1vsc0_D3',     'u2vsc0_D3',     'u1vsc1_D3',     'u1vsc0_D4'    ]
 
     # Buoyancy force
-    if par.thermal == 1:
+    if par.thermal == 1 or par.compositional == 1:   # NEW (2026-11-08): the same operator for the composition's (BeyonceC)
         arg2 += [ vP ]  # poloidal parity here because the entropy perturbation follows the same parity as the radial velocity
         labl += [ 'u2gra0_D0' ]
 
@@ -206,6 +209,19 @@ def main(ncpus):
         if par.ThermaD > 0:
             arg2 += [ vP ]*4
             labl += [ 'h2kps0_D0', 'h1kps0_D1', 'h0kps1_D1', 'h0kps0_D2' ]
+
+    if par.compositional == 1:
+        # -------------------------------------------------------------------------------------------------------------------------------------------
+        # NEW (2026-11-08): the composition, as the heat equation with ρ in place of p -------------------------------------------- section c
+        # -------------------------------------------------------------------------------------------------------------------------------------------
+        if par.CompoD > 0:
+            # r² ρ c and the advection -r² ρ uᵣ dC/dr, the diffusion r² ∇⋅(D ρ ∇c)
+            arg2 += [ vC ]*6
+            labl += [ 'c0dns0_D0', 'c1rdC0_D0', 'c2Drh0_D0', 'c1Drh0_D1', 'c0Drh1_D1', 'c0Drh0_D2' ]
+        else:
+            # no diffusion: the equation divided by ρ, r c and -r uᵣ dC/dr
+            arg2 += [ vC ]*2
+            labl += [ 'c0_D0', 'c1dCd0_D0' ]
 
     if par.magnetic == 1:
         # -------------------------------------------------------------------------------------------------------------------------------------------
@@ -291,7 +307,8 @@ def main(ncpus):
         dr.check()
         for lab, kind in dr.labels():
             labl += [ lab ]
-            arg2 += [ {'P': vP, 'T': vT, 'F': vF, 'G': vG}[kind] ]   # NEW (2026-10-30): F, G for the induction by the flow
+            arg2 += [ {'P': vP, 'T': vT, 'F': vF, 'G': vG, 'C': vC}[kind] ]   # NEW (2026-10-30): F, G for the induction by
+            # the flow; NEW (2026-11-08): C, the advection of the composition
 
     if par.centrifugal == 1:
         # NEW (2026-11-05): the centrifugal deformation (centrifugal.py): the radial operators of the metric terms of the inertia
@@ -299,7 +316,7 @@ def main(ncpus):
         cf.report()
         for lab, kind in cf.labels():
             labl += [ lab ]
-            arg2 += [ {'P': vP, 'T': vT}[kind] ]
+            arg2 += [ {'P': vP, 'T': vT, 'C': vC}[kind] ]   # (NEW 2026-11-08: C, the time derivative of the composition)
         if par.magnetic:   # NEW (2026-11-05, phase 1b): the metric parts of the Lorentz force (u, v) and of the induction (f, g)
             for lab, kind in cf.magnetic_labels():
                 labl += [ lab ]
@@ -307,11 +324,11 @@ def main(ncpus):
         # NEW (2026-11-05, phase 2): the metric parts of the viscous force (u, v), the thermal (h) and the magnetic diffusion (f, g)
         for lab, kind in cf.diffusion_labels():
             labl += [ lab ]
-            arg2 += [ {'P': vP, 'T': vT, 'S': vS, 'F': vF, 'G': vG}[kind] ]
+            arg2 += [ {'P': vP, 'T': vT, 'S': vS, 'F': vF, 'G': vG, 'C': vC}[kind] ]
         if par.diff_rot == 1:   # NEW (2026-11-06, phase 2): those of the differential rotation's force (u, v) and advection (h)
             for lab, kind in cf.rotation_labels():
                 labl += [ lab ]
-                arg2 += [ {'P': vP, 'T': vT, 'S': vS}[kind] ]
+                arg2 += [ {'P': vP, 'T': vT, 'S': vS, 'C': vC}[kind] ]
 
     if par.ricb == 0:
         # NEW (2026-11-04): a WARNING for each profile that is not regular at r = 0, i.e. not r^n times a series in r² for its
@@ -417,6 +434,8 @@ def main(ncpus):
             chop = gbx
 
         if secx == 'h' and par.ThermaD == 0:  # no thermal bc rows without diffusion, whatever the basis
+            chop = 0
+        if secx == 'c' and par.CompoD == 0:   # NEW (2026-11-08): nor rows of the composition's walls without its diffusion
             chop = 0
         if secx in ('v', 'g') and gbx == 3 and par.ricb > 0:  # NEW (2026-11-05, phase 2): C^(3) for the metric diffusion, still
             chop = 2                                           # two bc rows (with ricb = 0, int(3/2) = 1 is right)

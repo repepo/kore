@@ -528,6 +528,10 @@ def main():
             col = basecol + col0
             loc_list = ut.packit( loc_list, mtx, row, col)
 
+        if par.compositional == 1 :  # NEW (2026-11-08): the buoyancy of the composition, BeyonceC g c (section c's column)
+            mtx = -1 * op.comp_buoyancy(l,'u','',0)
+            loc_list = ut.packit( loc_list, mtx, row, ut.offset['c'] + col0)
+
 
 
 
@@ -909,6 +913,53 @@ def main():
                         for q in [0,1,2]:
                             loc_list[q].append( bc_b_list[q] )
 
+    if par.compositional == 1:  # NEW (2026-11-08): the composition c (section c), as the heat equation with ρ in place of p
+
+        # --------------------------------------------------------------------------------------------------------------------------------------------------
+        # ----------------------------------------------------------------------------------------------------- A matrix, composition (section c)
+        # --------------------------------------------------------------------------------------------------------------------------------------------------
+        for k,l in enumerate(loc_top): # the l's of P and s
+
+            col0 = (rank*bpp + k )* ut.N1
+            row = ut.offset['c'] + col0
+            basecol = ut.offset['c']
+
+            if par.hydro:   # the advection of the background composition: -rʰ ρ uᵣ dC/dr (P columns)
+                mtx = op.comp_advection(l,'c','upol',0)
+                loc_list = ut.packit( loc_list, mtx, row, col0)
+
+            if par.diff_rot :  # its advection by the background rotation, i m G ΔΩ c, Δl = 0, ±2, ... (diff_rot.comp_block)
+                for i in dr.dl_range('c','comp') :
+                    if l+i in ll_flo[0] :
+                        mtx = op.comp_diffrot(l,'c','comp',i)
+                        if np.isscalar(mtx[0]): continue
+                        col = basecol + col0 + mtx[1] * ut.N1
+                        loc_list = ut.packit( loc_list, mtx[0], row, col)
+                if par.centrifugal:  # its metric part i m G η P2 ΔΩ c (the rows are times J)
+                    loc_list = centrifugal_blocks( loc_list, op.centrifugal_rotation, l, 'c', 'comp', ll_flo[0], row, basecol + col0,
+                                                   dls=cf.rotation_dl_range('c', 'comp'))
+
+            if par.CompoD > 0:   # the diffusion CompoD rʰ ∇⋅(D ρ ∇c)
+                mtx = op.comp_diffusion(l,'c','',0)
+                loc_list = ut.packit(loc_list, mtx, row, basecol + col0)
+                if par.centrifugal:  # its metric part, -∇⋅(D ρ (M - I)∇c), Δl = 0, ±2
+                    loc_list = centrifugal_blocks(loc_list, op.centrifugal_diffusion, l, 'c', 'comp', ll_flo[0], row, basecol + col0)
+
+            # time derivative for forced problems: A - i wf B with B = +composition here
+            if par.forcing != 0:
+                mtx = -1j*ut.wf*op.composition(l,'c','',0)
+                loc_list = ut.packit(loc_list, mtx, row, basecol + col0)
+
+            # the rows of the walls: c = 0 or c' = 0 (bci_compositional, bco_compositional)
+            bc_c_list = bc_theta_spherical( l, 'c' )
+            if bc_c_list is not None:
+                for q in [0,1,2]:
+                    loc_list[q].append( bc_c_list[q] )
+                if par.centrifugal:  # the metric parts of the rows of zero flux
+                    bc_c_list = bc_theta_centrifugal( l, ll_flo, 'c' )
+                    for q in [0,1,2]:
+                        loc_list[q].append( bc_c_list[q] )
+
     if ut.rotdyn:  # NEW (2026-11-06, from conductive_IC): the rotating solids (rotdyn.py): their three rows of A, and their
         # rotation in the no-slip rows of T of degree 1 (T = r omega at each wall), on rank 0
         rot_list = rd.a_rows(rank == 0)
@@ -1041,6 +1092,15 @@ def main():
                         mtx = -op.b(l, sec, comp, 0)
                         loc_list = ut.packit(loc_list, mtx, row, row)
 
+        if par.compositional == 1:  # NEW (2026-11-08): rʰ ρ (d/dt) c in the rows of the composition (section c), as the entropy
+
+            for k,l in enumerate(loc_top):
+                row = ut.offset['c'] + ( rank*bpp + k )* ut.N1
+                mtx = op.composition(l,'c','', 0)
+                loc_list = ut.packit(loc_list, mtx, row, row)
+                if par.centrifugal:  # (J - 1) ∂ₜc = η P2 ∂ₜc, Δl = 0, ±2
+                    loc_list = centrifugal_blocks(loc_list, op.centrifugal_entropy, l, 'c', 'comp', ll_flo[0], row, row)
+
         if ut.rotdyn:  # NEW (2026-11-06): the rotating solids, -I_M, -I_IC, -1 (rotdyn.py), on rank 0
             rot_list = rd.b_rows(rank == 0)
             for q in [0,1,2]:
@@ -1121,12 +1181,13 @@ def gather_csr(comm, loc_list, dtype):
 def lifted_rhs(A, x):
     '''
     NEW (2026-11-08): forcings 1 and 8, the right-hand side b = -A 𝐱 on the interior rows of the fluid's equations (sections
-    u, v, h, f, g) and 0 on every other row, for the known flow 𝐱 (utils.lifted_flow): the flow solved for is then
+    u, v, h, f, g, c) and 0 on every other row, for the known flow 𝐱 (utils.lifted_flow): the flow solved for is then
     𝐮' = 𝐮 - 𝐱, with 𝐮 the solution of the same equations with no force, whose walls move as 𝐱 does there, while 𝐮' meets
     the boundary rows of walls at rest. b holds the body force -(i w 𝐱 + 2 Gaspard 𝐳×𝐱 - (∇⋅𝛔(𝐱))/ρ₀ - 𝐅(𝐱)) (𝐅 the force
-    of a differential rotation) and the induction and the entropy advection by 𝐱, each in the curls and rows of A, so
+    of a differential rotation) and the induction and the advection of the entropy (and of the composition) by 𝐱, each in the
+    curls and rows of A, so
     that 𝐮' + 𝐱 is exactly the flow with the walls moving (to round-off, whatever the background). The boundary rows of a
-    block are those that the block's own time derivative (operators.inertia, entropy, b) leaves empty at the top, where
+    block are those that the block's own time derivative (operators.inertia, entropy, b, composition) leaves empty at the top, where
     submatrices.py made room for them; the rows of the solids beyond the walls are boundary rows too.
     A is the matrix of the forced problem (i w B included, not normalised).
     '''
@@ -1142,6 +1203,8 @@ def lifted_rhs(A, x):
     if par.magnetic:
         lf, lg = ut.ell(par.m, par.lmax, ut.bsymm)[:2]
         blocks += [ ('f', op.b(lf[0], 'f', 'bpol', 0)), ('g', op.b(lg[0], 'g', 'btor', 0)) ]
+    if par.compositional:   # (NEW 2026-11-08)
+        blocks += [ ('c', op.composition(lp[0], 'c', '', 0)) ]
     interior = np.zeros(ut.sizmat, dtype=bool)
     for sec, mtx in blocks:
         nbc = top_rows(mtx)
@@ -1391,16 +1454,18 @@ def bc_u_sheet(l, sec):
 
 
 
-def bc_theta_centrifugal(l, ll_flo):
+def bc_theta_centrifugal(l, ll_flo, sec='h'):
     '''
     NEW (2026-11-05, phase 2): with centrifugal = 1, the metric parts of the fixed-flux rows of bc_theta_spherical (zero flux
     through the deformed walls, r̂⋅M⁻¹∇s = 0; centrifugal.wall_dissipative_rows): in the same rows (row 0 at the outer wall,
-    row 1 at the inner one), entries on s and s' of the degrees l, l ± 2. The fixed-entropy rows need none.
+    row 1 at the inner one), entries on s and s' of the degrees l, l ± 2. The fixed-entropy rows need none. NEW (2026-11-08):
+    sec 'c', the same for the composition (bco_compositional, bci_compositional), whose flux has the metric of the entropy's.
     '''
-    walls = ([('outer', 0, bv.Tb)] if par.bco_thermal == 1 else []) + \
-            ([('inner', 1, bv.Ta)] if (par.ricb > 0 and par.bci_thermal == 1) else [])
+    bco, bci = (par.bco_thermal, par.bci_thermal) if sec == 'h' else (par.bco_compositional, par.bci_compositional)
+    walls = ([('outer', 0, bv.Tb)] if bco == 1 else []) + \
+            ([('inner', 1, bv.Ta)] if (par.ricb > 0 and bci == 1) else [])
     ixh = ( par.m + 1 - ut.s )%2
-    row0 = ut.offset['h'] + int( ut.N1*(l - ut.m_top)/2 )
+    row0 = ut.offset[sec] + int( ut.N1*(l - ut.m_top)/2 )
     data, rows, cols = [], [], []
     for wall, rr, T in walls:
         B, W = cf.wall_dissipative_rows(wall)
@@ -1419,7 +1484,7 @@ def bc_theta_centrifugal(l, ll_flo):
             nz = np.nonzero(vec)[0]
             data.append(vec[nz])
             rows.append(np.full(nz.size, row0 + rr))
-            cols.append(ut.offset['h'] + int( ut.N1*(k - ut.m_top)/2 ) + nz)
+            cols.append(ut.offset[sec] + int( ut.N1*(k - ut.m_top)/2 ) + nz)
     if not data:
         return [np.zeros(0), np.zeros(0, dtype=int), np.zeros(0, dtype=int)]
     return [np.concatenate(data), np.concatenate(rows), np.concatenate(cols)]
@@ -1969,12 +2034,15 @@ def bc_b_cic_centrifugal(l, ll_mag):
 
 
 
-def bc_theta_spherical(l):
+def bc_theta_spherical(l, sec='h'):
     '''
-    Thermal boundary conditions for the temperature/entropy field.
+    Thermal boundary conditions for the temperature/entropy field. NEW (2026-11-08): sec 'c', those of the composition
+    (bco_compositional, bci_compositional: 0 for c = 0, 1 for c' = 0, with CompoD > 0).
     '''
+    D, bco, bci = (par.ThermaD, par.bco_thermal, par.bci_thermal) if sec == 'h' else \
+                  (par.CompoD, par.bco_compositional, par.bci_compositional)
 
-    if par.ThermaD > 0:
+    if D > 0:
 
         num_rows_h = int(1 + 1*np.sign(par.ricb))  # 1 if no IC, 2 if present
         #num_rows_h = 2
@@ -1987,19 +2055,19 @@ def bc_theta_spherical(l):
             Tbh = bv.Tb[ixh::2,:] # for cmb
             #Tch = bv.Tc[ixh::2,0] # for origin
 
-        if par.bco_thermal == 0: # fixed entropy at cmb (not isothermal: δT/T also depends on δp)
+        if bco == 0: # fixed entropy at cmb (not isothermal: δT/T also depends on δp)
             out[ 0,:] = Tbh[:,0] # s=0
 
-        elif par.bco_thermal == 1: # zero diffusive entropy flux at cmb
+        elif bco == 1: # zero diffusive entropy flux at cmb
             out[ 0,:] = Tbh[:,1]   # s'=0
 
         if par.ricb > 0 :
-            if par.bci_thermal == 0:   # fixed entropy at icb
+            if bci == 0:   # fixed entropy at icb
                 out[ 1,:] = bv.Ta[:,0] # s=0
-            elif par.bci_thermal == 1: # zero diffusive entropy flux at icb
+            elif bci == 1: # zero diffusive entropy flux at icb
                 out[ 1,:] = bv.Ta[:,1] # s'=0
 
-        row0 = ut.offset['h'] + int(ut.N1*(l-ut.m_top)/2)   # NEW (2026-11-06): ut.offset (2 ut.n with the flow)
+        row0 = ut.offset[sec] + int(ut.N1*(l-ut.m_top)/2)   # NEW (2026-11-06): ut.offset (2 ut.n with the flow)
         col0 = row0
 
         out = out.tocoo()

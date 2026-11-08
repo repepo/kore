@@ -150,6 +150,9 @@ rpower_gic = 3 if (_mdiff and cic) else 2
 # NEW (2026-11-06): without the flow (hydro = 0, as conductive_IC) the sections u, v are left out
 sizmat = 2*n*par.hydro + n*par.thermal + 2*n*par.magnetic + 2*nic  # NEW (2026-10-28): + the magnetic field (+ inner core)
 sizmat += 2*nman   # NEW (2026-11-06): + the field of a resolved mantle
+# NEW (2026-11-08, from conductive_IC): the composition c (compositional = 1), a second scalar with the l's of s, after the fields
+compositional = int(bool(par.compositional))
+sizmat += n*compositional
 # NEW (2026-11-06, from conductive_IC): the rotating solids (rotdyn = 1), three unknowns after everything else: the rotation
 # rates of the mantle and of the inner core relative to the frame, and the angle between them (rotdyn.py)
 rotdyn = int(bool(par.rotdyn))
@@ -163,6 +166,8 @@ offset = { 'u': 0, 'v': n, 'h': _h, 'f': _h + par.thermal*n, 'g': _h + (1 + par.
            'fic': _h + (2 + par.thermal)*n, 'gic': _h + (2 + par.thermal)*n + nic }
 offset['fm'] = offset['gic'] + nic
 offset['gm'] = offset['fm'] + nman
+offset['c'] = sizmat - 3*rotdyn - n*compositional   # NEW (2026-11-08): the composition, after all the fields (before the
+# rotating solids), so that the runs without it are unchanged
 offset['rot'] = sizmat - 3*rotdyn   # NEW (2026-11-06): omega_M, omega_IC, phi (rotdyn = 1), after all the fields
 
 # ThermaD = 0 with the thermal-wind advection (docs/differential_rotation_details.md §7.2): the section-h rows are r² (eq)/p instead of
@@ -170,8 +175,8 @@ offset['rot'] = sizmat - 3*rotdyn   # NEW (2026-11-06): omega_M, omega_IC, phi (
 adiab_tw = bool(par.thermal == 1 and par.ThermaD == 0 and par.diff_rot == 1 and par.thermal_wind >= 1)
 
 # profiles that are odd in r (parity of the operators with ricb = 0): g, p dS/dr, (ln ρ)'^2-type products, dS/dr and the
-# derivatives σn' of the thermal-wind entropy (codes tp + degree character, diff_rot.codes)
-odd_profiles = ['gra', 'pdS', 'lh1', 'dSd'] + ['tp' + c for c in '0123456789abcdefghijklmnopqrstuvwxyz']
+# derivatives σn' of the thermal-wind entropy (codes tp + degree character, diff_rot.codes); NEW (2026-11-08) ρ dC/dr and dC/dr
+odd_profiles = ['gra', 'pdS', 'lh1', 'dSd'] + ['tp' + c for c in '0123456789abcdefghijklmnopqrstuvwxyz'] + ['rdC', 'dCd']
 # NEW (2026-10-28): the background field's h (k) of degree n has the parity (-1)^n at ricb = 0
 if par.magnetic:
     if par.B0 is not None and bf.B0_l % 2:
@@ -196,7 +201,8 @@ if par.magnetic and getattr(par, 'centrifugal', 0):
 def dr_offd(l, ls, row, col):
     '''
     block offset, in units of N1 as assemble.py uses it, of the column block of the unknown col ('P', 'S' or 'T') of degree ls
-    for the row of degree l of section row ('u', 'h': rows in the poloidal l set; 'v': toroidal)
+    for the row of degree l of section row ('u', 'h', 'c': rows in the poloidal l set; 'v': toroidal); 'C', the composition,
+    as 'S'
     '''
     lp, lt, _ = ell(par.m, par.lmax, par.symm)
     rows = lt if row == 'v' else lp
@@ -217,7 +223,7 @@ def decode_label(labl):
     (section, rpower, rhopower, func1, dorder1, func2, dorder2, dx) = (None, None, None, None, None, None, None, None)
 
     howlong = len(labl)
-    section = labl[0]        # this is 'u' or 'v' or 'h' (or 'f', 'g' with magnetic = 1)
+    section = labl[0]        # this is 'u' or 'v' or 'h' (or 'f', 'g' with magnetic = 1, 'c' with compositional = 1)
     rx      = int(labl[1])   # related to rpower
     dx      = int(labl[-1])  # operators' derivative order
 
@@ -242,6 +248,12 @@ def decode_label(labl):
             rpower = 1 - rx ; rhopower = 0   # Adiabatic motion, we multiply the thermal equation by r
         else:
             rpower = 2 - rx ; rhopower = 0   # Non-adiabatic motion (or adiabatic with the thermal wind), we multiply the thermal equation by r²
+
+    elif section == 'c':   # NEW (2026-11-08): the composition, as the entropy: r² (eq), or r (eq)/ρ without diffusion (CompoD = 0)
+        if par.CompoD == 0:
+            rpower = 1 - rx ; rhopower = 0
+        else:
+            rpower = 2 - rx ; rhopower = 0
 
     elif section in ['f', 'g']:   # NEW (2026-10-28): the induction equation, r² r̂⋅ (f) and r² r̂⋅∇× (g), not multiplied by ρ
         rpower = (rpower_g if section == 'g' else 2) - rx ; rhopower = 0   # (NEW 2026-11-06: r³ for g, see rpower_g)

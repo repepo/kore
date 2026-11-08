@@ -22,16 +22,19 @@ u_r = \frac{\mathcal L\thinspace P_l}{r}\thinspace Y, \qquad
 $$
 
 with a prime for $d/dr$ (`utils4pp.cheb2space_pol`, `cheb2space_tor`). With `thermal = 1` the third unknown is
-$s = s_l(r)\thinspace Y$.
+$s = s_l(r)\thinspace Y$. With `compositional = 1` the composition $c = c_l(r)\thinspace Y$, of the degrees and parity
+of $s$, comes after the unknowns of the field and before those of the rotating solids, so that a run without it keeps
+the layout of its matrices.
 
 ## Radial basis
 
-Each radial function $P_l$, $T_l$, $s_l$ is expanded in Chebyshev polynomials: N of them on the shell
+Each radial function $P_l$, $T_l$, $s_l$, $c_l$ is expanded in Chebyshev polynomials: N of them on the shell
 $[$`ricb`$, 1]$, or, in a full sphere (`ricb = 0`), the N/2 polynomials on $[-1, 1]$ that have the parity of the field.
 A radial derivative of order $k$ maps Chebyshev coefficients to coefficients in the Gegenbauer (ultraspherical) basis
 $C^{(k)}$, where it is a sparse matrix, and so is the product with a profile expanded in Chebyshev polynomials. The rows
-of each section are written in the Gegenbauer basis of its highest derivative: $C^{(4)}$ for `u`, $C^{(2)}$ for `v` and
-`h` ($C^{(0)}$ for `h` with `ThermaD = 0`, $C^{(1)}$ if a thermal wind is included). This makes $A$ and $B$ sparse.
+of each section are written in the Gegenbauer basis of its highest derivative: $C^{(4)}$ for `u`, $C^{(2)}$ for `v`,
+`h` and `c` ($C^{(0)}$ for `h` with `ThermaD = 0`, $C^{(1)}$ if a thermal wind is included; $C^{(0)}$ for `c` with
+`CompoD = 0`). This makes $A$ and $B$ sparse.
 
 ## Rows
 
@@ -44,14 +47,16 @@ $T_l$ or $s_l$:
 | `u` | of $P_l$ | $r^5\rho_0\thinspace\hat{\mathbf r}\cdot\nabla\times\nabla\times(\text{momentum})/\mathcal L^3$ |
 | `v` | of $T_l$ | $r^3\rho_0\thinspace\hat{\mathbf r}\cdot\nabla\times(\text{momentum})/\mathcal L^3$ |
 | `h` | of $s_l$ | $r^2\thinspace(\text{heat equation})/\mathcal L^3$ |
+| `c` | of $c_l$ | $r^2\thinspace(\text{equation of the composition})/\mathcal L^3$ |
 
 All rows are projected on $Y_l^m$ and divided by $\mathcal L^3$, with $l$ the degree of the row. The powers of $r$ are
 `rpower_u` (5) and `rpower_v` (3), the smallest that keep every operator a polynomial in $r$. The
 factor $\rho_0$ (`rhopower_u = rhopower_v = 1`) improves the accuracy of the viscous rows near a surface where
 $\rho_0$ is small. Without viscosity (`ViscosD = 0`) the momentum rows are $r^3\rho_0^2$ and $r^2\rho_0$ times the
 equations. With `ThermaD = 0` the heat rows are divided by $p_0$, $r\thinspace(\partial_t s + u_r\thinspace dS/dr)/\mathcal L^3$,
-which is better conditioned where $p_0$ is small (and $r^2/p_0$ times the equation with the thermal wind). The Coriolis
-force couples $l$ to $l\pm1$; the other terms keep $l$.
+which is better conditioned where $p_0$ is small (and $r^2/p_0$ times the equation with the thermal wind); with
+`CompoD = 0` those of the composition are divided by $\rho_0$ in the same way. The Coriolis force couples $l$ to
+$l\pm1$; the other terms keep $l$.
 
 | term | function in `bin/operators.py` | profiles |
 | --- | --- | --- |
@@ -62,6 +67,10 @@ force couples $l$ to $l\pm1$; the other terms keep $l$.
 | $p_0\thinspace\partial_t s$ | `entropy` | $p_0$ |
 | $p_0\thinspace u_r\thinspace dS/dr$ | `thermal_advection` | $p_0\thinspace dS/dr$ ($dS/dr$ if `ThermaD = 0`) |
 | $\mathrm{ThermaD}\thinspace\nabla\cdot(\kappa p_0\nabla s)$ | `thermal_diffusion` | $\kappa p_0$ |
+| $\mathrm{BeyonceC}\thinspace g\thinspace c\thinspace\hat{\mathbf r}$ | `comp_buoyancy` | $g$ |
+| $\rho_0\thinspace\partial_t c$ | `composition` | $\rho_0$ |
+| $\rho_0\thinspace u_r\thinspace dC/dr$ | `comp_advection` | $\rho_0\thinspace dC/dr$ ($dC/dr$ if `CompoD = 0`) |
+| $\mathrm{CompoD}\thinspace\nabla\cdot(D\rho_0\nabla c)$ | `comp_diffusion` | $D\rho_0$ |
 
 `submatrices.py` writes one sparse matrix per radial operator, for example `u1lho2_D0` for $r^4\rho_0\thinspace(\ln\rho_0)''$
 times the unknown (the label grammar and the profile codes are in `utils.decode_label` and `radial_profiles.proffdir`).
@@ -85,7 +94,8 @@ $$
 \lambda\thinspace p_0 s = -p_0 u_r\frac{dS}{dr} + \mathrm{ThermaD}\thinspace\nabla\cdot(\kappa p_0\nabla s),
 $$
 
-projected as in the table above. `solve.py` finds the eigenvalues nearest a target $\tau$ by shift-and-invert with SLEPc,
+projected as in the table above. The composition enters in the same way: `composition` in $B$, $-$`comp_buoyancy` in
+the momentum rows of $A$, and $-$`comp_advection` $+$ `comp_diffusion` in its own rows. `solve.py` finds the eigenvalues nearest a target $\tau$ by shift-and-invert with SLEPc,
 factoring $A - \tau B$ once with MUMPS ([Solver](solver.md)). Forced runs solve
 $(A - i\thinspace\mathrm{wf}\thinspace B)\mathbf x = \mathbf b$, with wf the forcing frequency; for the random
 force of forcing 11, $\mathbf b$ is derived on [Reynolds-stress forcing](reynolds-stress.md).
@@ -103,9 +113,11 @@ one (`bci`, when `ricb > 0`); the full sphere has no condition at the centre:
 | `bco = 1` no-slip | $\mathbf u = 0$ | $P_l = 0$, $\thinspace P_l' + \left[(\ln\rho_0)' + 1/r\right]P_l = 0$, $\thinspace T_l = 0$ |
 | `bco_thermal = 0` | fixed entropy | $s_l = 0$ |
 | `bco_thermal = 1` | zero diffusive entropy flux | $s_l' = 0$ |
+| `bco_compositional = 0` | fixed composition | $c_l = 0$ |
+| `bco_compositional = 1` | zero diffusive flux of the composition | $c_l' = 0$ |
 
 The density enters the stress-free and no-slip rows through $u_\theta$ and $u_\phi$. The thermal conditions are used
-only when `ThermaD > 0`. Without viscosity only $P_l = 0$ is imposed. `bco = 2` (and `bci = 2`) replaces $u_r = 0$ by a
+only when `ThermaD > 0`, those of the composition only when `CompoD > 0`. Without viscosity only $P_l = 0$ is imposed. `bco = 2` (and `bci = 2`) replaces $u_r = 0$ by a
 zero viscous radial stress, $\left[r(\ln\rho_0)' - 3\right]P_l + 3rP_l' = 0$, which does not contain the pressure.
 
 ## Regularity at the centre
@@ -153,13 +165,14 @@ quadrature in $\cos\theta$, exact for these polynomials. Each residual is relati
 
 | residual | budget | in `spin_doctor`'s names |
 | --- | --- | --- |
-| residσ | $2\sigma K - W_\nu - W_b - W_\Omega - W_p - W_f = 0$ (and the Lorentz work) | `2σ KE - Dkin - Wthm - Wdr - Wp - Wf` |
-| residω | its imaginary part, with the Coriolis force | `2w KE + Wcor_im - Dkin_im - Wthm_im - Wdr_im - Wp_im - Wf_im`, $w = \mathrm{Im}\thinspace\lambda$ |
+| residσ | $2\sigma K - W_\nu - W_b - W_c - W_\Omega - W_p - W_f = 0$ (and the Lorentz work) | `2σ KE - Dkin - Wthm - Wcmp - Wdr - Wp - Wf` |
+| residω | its imaginary part, with the Coriolis force | `2w KE + Wcor_im - Dkin_im - Wthm_im - Wcmp_im - Wdr_im - Wp_im - Wf_im`, $w = \mathrm{Im}\thinspace\lambda$ |
 | resid$s$ | $2\sigma T - W_{\rm adv} + D_{\rm th} - W_{\Omega,\rm th} = 0$ | `2σ TE - Dthm - Wadv - Wdr_thm` (`Dthm` $= -D_{\rm th}$) |
+| resid$c$ | $2\sigma C - W_{\rm adv,c} + D_{\rm c} = 0$ | `2σ CE - Dcmp - Wadv_cmp - Wdr_cmp` (`Dcmp` $= -D_{\rm c}$) |
 | residD | $W_\nu - W_\nu^{\rm wall} + D_\nu = 0$ | `Dkin - (Wv_icb + Wv_cmb) + Dvisc` |
 | resid𝐋 | $\lambda L$ = the torques on the fluid ([Rotating solids equations](rotating-solids-equations.md#the-angular-momentum-balance-residl)) | `lam*angmom - (-vtorq - vtorq_ic - mtorq - mtorq_ic [+ i Gaspard angmom])` |
 
-residσ and resid$s$ judge whether a solution is resolved ([Solver](solver.md) gives the thresholds), also for forced
+residσ, resid$s$ and resid$c$ judge whether a solution is resolved ([Solver](solver.md) gives the thresholds), also for forced
 runs, where $\sigma = 0$. Where the walls drive the flow along themselves (the libration, forcing 7 with $m$ = 0, and
 the steady rotation of the walls, forcing 12), $W_\nu = W_\nu^{\rm wall} - D_\nu$ is a small difference of two large
 terms, so residσ, and resid𝐄 with a field, are relative to $D_\nu$ too. A residual whose terms all vanish, such as

@@ -62,8 +62,9 @@ if B is not None and B.shape != A.shape:
              % (B.shape + A.shape))
 
 # the field: sections f, g (and fic, gic, fm, gm), after the flow and the entropy; NEW (2026-11-06): before the rotating
-# solids (rotdyn = 1), left out here: for m = 0 their rotation induces no field and leaves the wall conditions unchanged
-ib = np.arange(ut.offset['f'], ut.offset['rot'])
+# solids (rotdyn = 1), left out here: for m = 0 their rotation induces no field and leaves the wall conditions unchanged;
+# NEW (2026-11-08): and before the composition (compositional = 1), which the flow carries but which induces no field
+ib = np.arange(ut.offset['f'], ut.offset['c'])
 Ab = A[ib]
 M = (Ab[:, ib] - dlam*B[ib][:, ib]).tocsr() if B is not None else Ab[:, ib].tocsr()
 M.sort_indices()
