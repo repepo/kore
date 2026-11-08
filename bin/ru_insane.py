@@ -92,6 +92,7 @@ sys.path.insert(0, os.path.join(os.getcwd(), 'bin'))                    # the ru
 sys.path.insert(1, os.path.dirname(os.path.abspath(__file__)))
 import numpy as np
 import scipy.sparse as ss
+import scipy.fftpack as sft   # FIX (2026-11-08, phase 6d): the DCT of the S_tw interpolant
 import numpy.polynomial.chebyshev as ch
 from parameters import par
 import utils as ut
@@ -427,7 +428,16 @@ if par.diff_rot:
                 out[:, j] = (dSdx(r, t) @ w_)*(xj + 1)/2
             return out - (out @ wx)[:, None]/2
         Stw_t = -sg*dSdx(rk, xg)                   # ∂θS_tw
-        Sc = ch.chebfit(xc, S_of(0.5*(rcmb - r0)*(xc + 1) + r0), 2*N - 1)
+        # FIX (2026-11-08, phase 6d): the interpolant on the 2N points of the first kind by a DCT (as utils.chebco_f, here
+        # along r), not numpy's chebfit (chebvander's recurrence, then an SVD): its round-off, which the derivative
+        # amplifies by up to (2N)², moved ∂ᵣS_tw at the outermost node by 7e-10 of its largest value at N 160 and 2e-7 at
+        # N 800 ('conical'), and its SVD (LAPACK gelsd) did not converge at some N (244, 378, 450, ... with the reference
+        # LAPACK, 433, 437, 440, ... with OpenBLAS): a LinAlgError that stopped the script before any test. Coefficients
+        # below 1e-14 of the largest are dropped (then 5e-12 of the largest ∂ᵣS_tw for 'conical', 8e-11 for a 'user' tanh
+        # of width 0.05, at any N)
+        Sc = sft.dct(S_of(0.5*(rcmb - r0)*(xc + 1) + r0), axis=0)/(2*N)
+        Sc[0] /= 2
+        Sc[np.abs(Sc) < 1e-14*np.abs(Sc).max()] = 0.
         Stw_r = ch.chebval((2*rk - r0 - rcmb)/(rcmb - r0), ch.chebder(Sc)).T*2/(rcmb - r0)
         if not par.thermal_wind_radial:   # the heat equation without uᵣ ∂S_tw/∂r
             Stw_r = 0*Stw_r

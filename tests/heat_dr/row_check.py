@@ -21,7 +21,7 @@ usage: python3 row_check.py [tol] [ntrials]     (ThermaD = 0 runs only; tol defa
 '''
 import sys, os, itertools
 sys.path.insert(0, os.path.abspath('bin'))
-import numpy as np, scipy.sparse as ss, scipy.special as sp
+import numpy as np, scipy.sparse as ss, scipy.special as sp, scipy.fftpack as sft
 import numpy.polynomial.chebyshev as C
 import numpy.polynomial.polynomial as Pw
 import numpy.polynomial.legendre as Lg
@@ -64,8 +64,13 @@ Y = {l: Yl(l) for l in ll}
 # raw profiles (even extension at ricb = 0 as in kore), derivatives from high-degree Chebyshev fits on the domain
 a = ricb if ricb > 0 else -1.
 MF = int(os.environ.get('FC_M', 400)); xf = np.cos(np.pi*(np.arange(MF) + 0.5)/MF); rf = 0.5*(1 - a)*(xf + 1) + a
+def cfit(y):   # the least-squares fit of degree MF//2 on the MF first-kind points: the truncated DCT (FIX 2026-11-08,
+    # phase 6d: numpy's chebfit left round-off that chebder amplified, sigma_n' 3e-5 of its largest value off at the
+    # outer wall)
+    c = sft.dct(np.asarray(y, dtype=float), axis=0)/MF; c[0] /= 2
+    return c[:MF//2 + 1]
 def fitd(func, d):
-    c = C.chebfit(xf, func(rf), MF//2)
+    c = cfit(func(rf))
     for _ in range(d): c = C.chebder(c)*(2/(1 - a))
     return C.chebval(2*(r - a)/(1 - a) - 1, c)
 ab = lambda rr: np.abs(rr) if ricb == 0 else rr
@@ -106,7 +111,7 @@ def stw_sigma(rr):
         out[i] = lc
     return out
 def fitd_at(func, d, rr):
-    c = C.chebfit(xf, func(rf), MF//2)
+    c = cfit(func(rf))
     for _ in range(d): c = C.chebder(c)*(2/(1 - a))
     return C.chebval(2*(rr - a)/(1 - a) - 1, c)
 
@@ -114,7 +119,7 @@ if tw:
     sig_f = stw_sigma(rf)                                # on the fit grid, for the r derivative
     sig = np.zeros((nr, 8)); sig1 = np.zeros((nr, 8))
     for n in range(8):
-        c = C.chebfit(xf, sig_f[:, n], MF//2)
+        c = cfit(sig_f[:, n])
         sig[:, n] = C.chebval(2*(r - a)/(1 - a) - 1, c)
         sig1[:, n] = C.chebval(2*(r - a)/(1 - a) - 1, C.chebder(c)*(2/(1 - a)))
     Sx  = np.zeros((nr, len(xq))); Sr = np.zeros((nr, len(xq)))

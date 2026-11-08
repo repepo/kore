@@ -221,20 +221,25 @@ class modelS_hydrostatic_profiles(structure):  # ------------------------- struc
         c2 = np.zeros(par.structure_deg + 1)
         c2[0::2] = c
         lrho = C(c2, domain=[-W, W])                                   # ln(ρ/ρ_c of Model S)
-        rc = C.interpolate(lambda y: np.exp(lrho(np.abs(y))), 500, domain=[-W, W])
+        # FIX (2026-11-08, phase 6d): the three interpolants of degree 500 by a DCT (background_field.cheb_interp, as B0's
+        # profiles since phase 6c). numpy's Chebyshev.interpolate (chebvander's recurrence) left round-off of up to 2e-14 (g)
+        # and 1.3e-13 (ln p) of the largest coefficient at degrees 300 to 500, so the cut below landed early (degree 191
+        # instead of 195 for g and 200 instead of 208 for ln p at r_out 0.985, structure_deg 30) or, for ln p, never (e.g.
+        # r_out 0.99 with structure_deg 40): d ln p/dr was then 2.5e-10 off, and the operators of p filled up at N >= 450
+        rc = bf.cheb_interp(lambda y: np.exp(lrho(np.abs(y))), 500, [-W, W])
         xs, ws = np.polynomial.legendre.leggauss(200)
         xs, ws = (xs + 1)/2, ws/2
         mx = lambda y: y**3*((rc(np.outer(y, xs))*xs**2) @ ws)       # m(x) = x³ ∫₀¹ s² ρ(s x) ds (units of ρ_c R³)
         ks = x >= par.r_out                                         # Model S above r_out, only for m(1)
         m1 = mx(np.array([par.r_out]))[0] + np.sum(np.diff(x[ks])*(x[ks][1:]**2*rho[ks][1:] + x[ks][:-1]**2*rho[ks][:-1])/2)
-        self.g = C.interpolate(lambda y: y*((rc(np.outer(y, xs))*xs**2) @ ws)/m1, 500, domain=[-W, W])
+        self.g = bf.cheb_interp(lambda y: y*((rc(np.outer(y, xs))*xs**2) @ ws)/m1, 500, [-W, W])
         s = (x > 0.05) & (x < 0.95)
         K = np.median(-np.gradient(p, x)[s]/(rho[s]*g[s]))
         def P(y):   # p_ModelS(r_out) + K ∫_|y|^r_out ρ g dx, by quadrature from the surface (keeps the relative accuracy of small p)
             ya = np.abs(np.atleast_1d(y))[:, None]
             t = ya + (par.r_out - ya)*xs
             return np.interp(par.r_out, x, p) + K*(par.r_out - ya[:, 0])*((np.exp(lrho(t))*self.g(t)) @ ws)
-        self.lp = C.interpolate(lambda y: np.log(P(y)/P(0.0)), 500, domain=[-W, W])   # p(0) = 1
+        self.lp = bf.cheb_interp(lambda y: np.log(P(y)/P(0.0)), 500, [-W, W])   # p(0) = 1
         for f, odd in (('g', 1), ('lp', 0)):    # cut each series (g odd, ln p even) where its coefficients first drop below
             c = getattr(self, f).coef               # 1e-15 of the largest: beyond is round-off
             kc = np.nonzero(np.abs(c[odd::2]) < 1e-15*np.abs(c).max())[0]

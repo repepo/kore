@@ -645,9 +645,9 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   (sympy: every closed form of `centrifugal.py` from the map and w = J F⁻¹u), `algebra_check.py` (the couplings against
   quadratures with scipy's lpmv), `clairaut_check.py` (Maclaurin 5/4, polytrope 7.5/π², 'Wu 2005' against Clairaut's
   equation from ρ, the Sun's f/q 0.519), `eig_check.py` (f = 0 bitwise, the spin-over, a relabelled sphere moving at
-  O(c²), homogeneous 'clairaut' = 'uniform', the monopole = Beyonce(1 − 2q/3), the ideal fluid's real frequencies; with a
-  field: f = 0 bitwise, the relabelled sphere against the field written on the sphere, in a viscous fluid; the relabelled
-  free decay), `budget_check.py [tol] [HALF | exact]`
+  O(c²), homogeneous 'clairaut' = 'uniform' (bitwise since phase 6d), the monopole = Beyonce(1 − 2q/3), the ideal fluid's
+  real frequencies; with a field: f = 0 bitwise, the relabelled sphere against the field written on the sphere, in a
+  viscous fluid; the relabelled free decay), `budget_check.py [tol] [HALF | exact]`
   (with a field also resid𝐛, and resid𝐄 of second order from the run at half the flattening; `exact`: resid𝐄 below tol,
   the exact spheroid's `bms_*` runs), `mk_run.py` (defaults: the
   inviscid Boussinesq full sphere, m 1, N 24, lmax 20, 'uniform' f 0); phase 1b: `derive_mag.py [--quick]` (sympy: the
@@ -785,6 +785,14 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   l ≈ lmax that do not converge in lmax (physical or not is open); the σₙ (ln ρ₀)′ heat rows converge slowly in N near
   the surface for 'Wu 2005' with r_out → 1 at ricb = 0 (only `tests/heat_dr/row_check.py` sees it); two growing modes
   in the m = 3 n0 window of the solar benchmark (−260.6 nHz, growth +18.0; −250.5, +5.0) have not been examined.
+- **numpy's Chebyshev interpolants and fits** (phases 6c, 6d): `Chebyshev.interpolate`, `chebinterpolate`, `chebfit`
+  and `Chebyshev.fit` build their matrix by chebvander's recurrence, whose round-off grows as about 1e-16 j at degree
+  j (above a 1e-13 cut from degree ~900) and which each derivative amplifies by up to j²; `chebfit` and `fit` also
+  solve by an SVD (LAPACK gelsd) that fails to converge at some sizes, a LinAlgError (Gauss-Lobatto interpolation in a
+  shell at M = 360 and 596 among others with the reference LAPACK, at other sizes with OpenBLAS). Interpolate by a DCT
+  instead, `background_field.cheb_interp` at the first-kind points (`utils.chebco_f` on kore's grid) or a DCT-I at
+  Gauss-Lobatto points (`wound_profiles`), and drop the coefficients below a fraction of the largest before
+  differentiating: 1e-13 for the profiles, 1e-15 for Clairaut's g/x (the solar structures have content down to 1e-15).
 - `params_default` says `rpower_pp`, `rhopower_pp` are "not read by the current pipeline", but `utils4pp.setup_grid`
   uses them as the enstrophy weight `const0`.
 - `utils4pp` calls `mp.set_start_method('fork')` at import (needed on macOS).
@@ -813,7 +821,10 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
 
 ## 14. History (this branch, newest first)
 
-The conductive_IC port, phase 6c (2026-11-07): the push of B0's current sheets, toroidal and poloidal, at slipping
+The conductive_IC port, phase 6d (2026-11-08): numpy's remaining Chebyshev interpolants and fits replaced by DCTs
+(Clairaut's g/x, the amplitudes inside a conducting inner core, model S hydrostatic's ρ, g, ln p, row_check's fits, and
+the wound field's k and ru_insane's S_tw, whose SVD failed at some N), §12;
+`8b841ed` the conductive_IC port, phase 6c (2026-11-07): the push of B0's current sheets, toroidal and poloidal, at slipping
 viscous walls in the stress rows (`assemble.bc_u_sheet`, `background.sheet_jump`), the stop kept for an inviscid fluid,
 the round-off of B0_tor 'user' profiles, the interpolants of B0's profiles by a DCT, `tests/sheet/`;
 `4b44eb0` the conductive_IC port, phase 6b (2026-11-07): B0 'dipole', a fluid slipping along a conducting inner core (both kinds,

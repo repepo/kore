@@ -724,7 +724,12 @@ def wound_profiles():
         else:                                       # conducting inner core: r k' + (1 - (n+1)/sigma_i2o) k = 0
             A[-1] = par.ricb*D[-1]; A[-1, -1] += 1 - (n + 1)/par.sigma_i2o
         k = np.linalg.solve(A, rhs)
-        ch = np.polynomial.chebyshev.Chebyshev.fit(r, k, M, domain=[a, 1.])
+        # FIX (2026-11-08, phase 6d): the interpolant of degree M at the M + 1 Gauss-Lobatto points r (r[0] = 1) by a DCT-I,
+        # not numpy's Chebyshev.fit (the same interpolant, by an SVD: LAPACK gelsd did not converge at some N, a LinAlgError
+        # that stopped submatrices.py, e.g. N 180 and 298 in a shell with the reference LAPACK, 445 with OpenBLAS)
+        ch = sft.dct(k, type=1)/M
+        ch[0] /= 2; ch[-1] /= 2
+        ch = np.polynomial.chebyshev.Chebyshev(ch, domain=[a, 1.])
         ch.coef[np.abs(ch.coef) < 1e-13*np.abs(ch.coef).max()] = 0.   # FIX (2026-11-07): 1e-13, as the other profiles: with
         # 1e-14 the round-off of the collocation at N 800 stayed, and k'' (the highest derivative of k that the operators
         # take) was 2e-7 of its largest value off at the walls ('conical'), below 1e-8 now. Like their cut, it also drops

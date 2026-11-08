@@ -13,8 +13,9 @@ A x = λ B x near a target by shift-invert (scipy splu and eigs). The checks, ea
               points are labelled differently inside, so the eigenvalues must move at O(c²) only. On the well-resolved
               modes of the sphere (equal at two resolutions), the odd part (λ(c) - λ(-c))/2 is O(c³) and λ(c) - λ(0)
               is O(c²): this tests every metric term (inertia, Coriolis, the factors ε and η, all Δl) at once
-  clairaut    'clairaut' with 'Boussinesq' (homogeneous: η = 0, f = 5q/4 at every r) gives the eigenvalues of 'uniform'
-              with f = 5q/4 and the same q
+  clairaut    'clairaut' with 'Boussinesq' (homogeneous: η = 0, f = 5q/4 at every r) gives the matrices A and B of
+              'uniform' with f = 5q/4 and the same q, entry by entry, and so its eigenvalues (FIX 2026-11-08: with
+              Clairaut's interpolant by a DCT, centrifugal.radau; the matrices differed by about 2e-12 of the row scale)
   monopole    thermal Boussinesq (g = r): with q > 0 and f = 0, g_eff = (1 - 2q/3) r, so the eigenvalues equal those of
               Beyonce (1 - 2q/3) without the monopole
   ideal       inviscid and adiabatic (ViscosD = ThermaD = 0), stratified, deformed with η ≠ 0: the system conserves the
@@ -121,9 +122,11 @@ verdict('relabelling', ok, '%d resolved modes: |λ(c) - λ(-c)|/(2c²) <= %.1e (
 q = 0.04
 build('cl_c', "par.centrifugal_shape = 'clairaut'; par.centrifugal_f = None; par.centrifugal_q = %r" % q)
 build('cl_u', "par.centrifugal_f = %r; par.centrifugal_q = %r" % (1.25*q, q))
+dM = max(abs(load('cl_c', M).astype(complex) - load('cl_u', M).astype(complex)).max() for M in 'AB')
 a, b = eigs('cl_c', 0.6j, 8), eigs('cl_u', 0.6j, 8)
 dmax = max(abs(nearest(b, x) - x) for x in a)
-verdict('clairaut', dmax < 1e-12, "homogeneous 'clairaut' against 'uniform' f = 5q/4 (q = %g): max |Δλ| = %.1e" % (q, dmax))
+verdict('clairaut', dM == 0 and dmax < 1e-12, "homogeneous 'clairaut' against 'uniform' f = 5q/4 (q = %g): max |A, B "
+        "difference| = %.1e, max |Δλ| = %.1e" % (q, dM, dmax))
 
 # -------------------------------------------------------------------------------------------------------------- monopole
 TH = "par.thermal = 1; par.stratification = 'linear'; par.symm = 1; par.lmax = 30; par.N = 36"

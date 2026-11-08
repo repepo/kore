@@ -100,14 +100,23 @@ def radau(g, xt, n=256):
         x η' = 6 - 6 ρ*(η + 1) - η² + η,   η = x f'/f,   ρ* = ρ/ρ̄ = (x g' + 2g)/(3g),   η(0) = 0
     (ρ̄ the mean density inside x; ρ* from g alone, by Poisson's equation, so the structure's g must be its self-gravity),
     integrated from the centre (series η = -(6/7)(ρ* - 1) near it) with ln(f/f_c)' = η/x alongside. ρ* = 1 + x h'/(3h)
-    with h = g/x from an even Chebyshev interpolant of degree n. Returns (eta, lnf, rho_s): callables of x in [0, xt] (at |x|)
-    for η, ln(f/f_c) and ρ*. The surface condition x f' + 2f = (5/2) q at xt then gives f_c (shape_functions).
+    with h = g/x from an even Chebyshev interpolant of degree 2n - 1 (FIX 2026-11-08: by a DCT, its coefficients below
+    1e-15 of the largest dropped). Returns (eta, lnf, rho_s): callables of x in [0, xt] (at |x|) for η, ln(f/f_c) and ρ*.
+    The surface condition x f' + 2f = (5/2) q at xt then gives f_c (shape_functions).
     A homogeneous body (g ∝ x) has η = 0 (the Maclaurin f = 5q/4); a polytrope of index 1 has f(xt)/q = 7.5/π².
     '''
     from scipy.integrate import solve_ivp
-    C = np.polynomial.chebyshev.Chebyshev
-    h = C.interpolate(lambda y: np.asarray(g(np.abs(y)), dtype=float)/np.abs(y), 2*n - 1, domain=[-xt, xt])   # g/x, even
+    import background_field as bf
+    h = bf.cheb_interp(lambda y: np.asarray(g(np.abs(y)), dtype=float)/np.abs(y), 2*n - 1, [-xt, xt])   # g/x, even
     # (an odd degree: an even number of Chebyshev points, so x = 0 is not one of them)
+    # FIX (2026-11-08, phase 6d): a DCT (cheb_interp, as B0's profiles since phase 6c) instead of numpy's
+    # Chebyshev.interpolate, whose round-off (2e-17 j to 5e-17 j of the largest coefficient up to j = 511) h' amplified at
+    # x = xt: ρ* was 1.1e-7 off there for every structure (a homogeneous body too, where ρ* = 1), r (r ε')' 2.5e-6 of ε
+    # off at the outer wall of 'model S hydrostatic' (x_top = r_out), and its fit ce4 there 43 times its size off at N 450
+    # (4.6e-3 now). The cut is at 1e-15, not at the profiles' 1e-13: the g/x of the solar structures have content down to
+    # 1e-15 of their largest coefficient (to degree 130 for '8-term fit', about 200 for 'model S hydrostatic'), which a cut
+    # at 1e-13 truncates
+    h.coef[np.abs(h.coef) < 1e-15*np.abs(h.coef).max()] = 0.
     hd = h.deriv()
     rho_s = lambda y: 1 + np.abs(y)*hd(np.abs(y))/(3*h(np.abs(y)))
     def rhs(y, v):
@@ -913,12 +922,19 @@ def amplitude_series():
     '''
     {'E': ε, 'N': η = r ε', 'C': r η', 'Q': r C', 'K': r Q'} (the amplitudes of AMPS) as Chebyshev series on [-1, 1], also
     defined inside the inner core, where the profile codes (fits on the fluid's domain) are not: from an even interpolant
-    of the shape's ε (a conducting inner core: its metric diffusion, section 6, and its post-processing)
+    of the shape's ε (a conducting inner core: its metric diffusion, section 6, and its post-processing).
+    FIX (2026-11-08, phase 6d): the interpolant by background_field.cheb_interp (a DCT), its coefficients below 1e-13 of the
+    largest dropped, as B0's profiles (phase 6c). numpy's Chebyshev.interpolate left round-off of about 1e-16 j at degree j,
+    which the chain amplified: Q (r³ d³ε/dr³, in the rows gic) was off in the core by 1e-8 of max |ε| at N 160, 2e-6 at N 450
+    and 2e-5 at N 800, and the core's operators were dense. The DCT alone still leaves 1e-8 at N 800; the cut alone keeps
+    numpy's round-off from N about 450. A 'clairaut' ε has a floor of its own, from its ODE (Q about 2e-9 of max |ε|)
     '''
     if not _amp_all:
+        import background_field as bf
         C = np.polynomial.chebyshev.Chebyshev
         S = shape_functions()
-        a = C.interpolate(lambda x: S['e'](np.abs(x)), 2*max(par.N, 64) + 1, domain=[-1, 1])
+        a = bf.cheb_interp(lambda x: S['e'](np.abs(x)), 2*max(par.N, 64) + 1, [-1., 1.])
+        a.coef[np.abs(a.coef) < 1e-13*np.abs(a.coef).max()] = 0.   # the round-off, which the derivatives amplify
         x = C.identity(domain=[-1, 1])
         for k in 'ENCQK':   # NEW (2026-11-06): the whole chain (was ε, η, r η')
             _amp_all[k] = a
