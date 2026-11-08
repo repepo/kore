@@ -724,6 +724,95 @@ def Ylm_full(lmax, m, theta, phi):
     return out
 
 
+# NEW (2026-11-08, from conductive_IC, forcing 2): the Enceladus eccentricity tide of Rekier, Trinh, Triana & Dehant
+# (2019, arXiv:1904.02487, appendix A.1), as conductive_IC's ut.eccen_tide (fits by J. Rekier): Padé [3/3] fits in
+# η - 37/42 (η = ricb, the radius of the core in units of the ocean's outer radius, the fits hold for η in [16/21, 1]),
+# numerator and denominator coefficients of 1, x, x², x³, for each wall and m sign(forcing_frequency) (-2 prograde,
+# 0, 2 retrograde): of P = ξ_r/6 and dP = ξ_t/√3 - ξ_r/6, with ξ_r and ξ_t the paper's radial and tangential
+# displacements of the wall, in units of the ocean's outer radius
+ECCEN_TIDE = {
+    ('cmb', -2): {
+        'P': ( [3.00927601455473e-07, 9.923006738722803e-07, 2.0022902696912132e-06, 2.078150971132207e-06],
+               [0.9796806966104893, 10.138063592395676, 22.793605369253733, 49.52238501116611] ),
+        'dP': ( [3.6923409583928235e-08, 5.525597059314317e-07, 1.491072486300637e-06, 1.7131360325476716e-06],
+                [0.990016066975477, 10.903688391808103, 28.973467794986213, 54.35051022571307] ),
+    },
+    ('cmb', 0): {
+        'P': ( [-1.0530272472650882e-07, -3.4723290320109935e-07, -7.006556396692487e-07, -7.272013553918712e-07],
+               [0.9796806966105374, 10.138063592396957, 22.793605369262107, 49.52238501117491] ),
+        'dP': ( [-1.2920501863486681e-08, -1.933556188506115e-07, -5.217666801343201e-07, -5.994727342457128e-07],
+                [0.990016066975396, 10.903688391807878, 28.973467794991336, 54.35051022572941] ),
+    },
+    ('cmb', 2): {
+        'P': ( [-4.2989657350784934e-08, -1.4175723912463045e-07, -2.860414670987557e-07, -2.9687871016172726e-07],
+               [0.9796806966105591, 10.1380635923966, 22.793605369256564, 49.522385011165795] ),
+        'dP': ( [-5.274772797703058e-09, -7.893710084733917e-08, -2.1301035518586083e-07, -2.4473371893559314e-07],
+                [0.990016066975294, 10.903688391807277, 28.973467794994058, 54.35051022573984] ),
+    },
+    ('icb', -2): {
+        'P': ( [1.450645275222846e-09, 1.6226580438374377e-08, 3.8162533600883e-08, 2.1621482543044536e-08],
+               [1.0040474189168584, 9.816014125318514, 12.467747302017761, -0.13326826070343542] ),
+        'dP': ( [5.690951704457902e-11, 6.365766130462465e-10, 1.4971346844873185e-09, 8.482212366654875e-10],
+                [1.0040474189168667, 9.816014125318599, 12.467747302017914, -0.13326826070340814] ),
+    },
+    ('icb', 0): {
+        'P': ( [-5.076201031536069e-10, -5.678120334892032e-09, -1.3354104944854432e-08, -7.565942816136093e-09],
+               [1.0040474189168602, 9.81601412531852, 12.467747302017683, -0.13326826070345546] ),
+        'dP': ( [-1.991418260963427e-11, -2.22755412021775e-10, -5.238880076023669e-10, -2.96815602688989e-10],
+                [1.0040474189168587, 9.816014125318501, 12.46774730201766, -0.13326826070345907] ),
+    },
+    ('icb', 2): {
+        'P': ( [-2.072350393175482e-10, -2.3180829197677505e-09, -5.451790514411792e-09, -3.0887832204348696e-09],
+               [1.0040474189168525, 9.816014125318436, 12.46774730201756, -0.13326826070347508] ),
+        'dP': ( [-8.129931006368303e-12, -9.093951614946213e-11, -2.138763834981828e-10, -1.2117446238077878e-10],
+                [1.0040474189168571, 9.816014125318477, 12.467747302017562, -0.13326826070347858] ),
+    },
+}
+
+
+def eccen_tide(m, eta, boundary):
+    '''
+    NEW (2026-11-08, from conductive_IC): [P, dP] of the Enceladus eccentricity tide (ECCEN_TIDE) at the wall boundary
+    ('cmb' or 'icb'), for the component m (m sign(forcing_frequency): -2, 0 or 2) and η = eta, per unit forcing amplitude:
+    P = ξ_r/6 and dP = ξ_t/√3 - ξ_r/6. The values are conductive_IC's, to the last bit (the same arithmetic). With
+    uᵣ = 6 P/r, the poloidal scalar of the radial displacement ξ_r is P at the outer wall and ricb P at the inner one,
+    and the tangential one, P' + P/r = ξ_t/√3, is P + dP at both (assemble.py, forcing 2)
+    '''
+    x = -0.8809523809523809 + eta
+    def pade(c):
+        num, den = c
+        return (num[0] + num[1]*x + num[2]*x**2 + num[3]*x**3)/(den[0] + den[1]*x + den[2]*x**2 + den[3]*x**3)
+    fit = ECCEN_TIDE[(boundary, m)]
+    return np.array([ pade(fit['P']), pade(fit['dP']) ])
+
+
+def lifted_flow():
+    '''
+    NEW (2026-11-08): the known flow 𝐱 of forcings 1 and 8, whose equations make their body force (assemble.lifted_rhs: the
+    right-hand side -A 𝐱 on the interior rows of the fluid, with the boundary rows of walls at rest), as a vector of the
+    unknowns (length sizmat; its Chebyshev coefficients in the blocks of the flow, one parity per l in a full sphere):
+      forcing 8: the rigid libration of the mantle, T₁ = i w A r/2 (A = forcing_amplitude_cmb, the angle, w =
+                 forcing_frequency): the flow of the mantle's frame relative to the mean frame of forcing 7;
+      forcing 1: the equilibrium tide 𝐮_e = ∇(X Y₂ᵐ), with X = -(3a/4)(r² + (2/3) ricb⁵/r³)/(1 - ricb⁵) harmonic and
+                 X' = 0 at the inner wall (a = forcing_amplitude_cmb, conductive_IC's normalisation: uᵣ = -(3/2) a Y₂ᵐ at
+                 the outer wall), so its poloidal scalar is P₂ = -(a/4)(r² - ricb⁵/r³)/(1 - ricb⁵).
+    '''
+    x = np.zeros(sizmat, dtype=complex)
+    A, w, ri = par.forcing_amplitude_cmb, par.forcing_frequency, par.ricb
+    if par.forcing == 8:
+        sec, l, mb, ip, f = 'v', 1, m_bot, (m + s)%2, lambda r: 0.5j*w*A*r
+    elif par.forcing == 1:
+        sec, l, mb, ip, f = 'u', 2, m_top, (m + 1 - s)%2, lambda r: -0.25*A*(r**2 - ri**5*r**-3.)/(1 - ri**5)
+    else:
+        return x
+    c = chebco_f(f, par.N, ri, rcmb, 1e-15)
+    if ri == 0:   # one parity per l in a full sphere (utils4pp.expand_sol)
+        c = c[ip::2]
+    pos = offset[sec] + int(N1*(l - mb)/2)
+    x[pos:pos + N1] = c
+    return x
+
+
 def load_csr(filename):
     # utility to load sparse matrices efficiently
     loader = np.load(filename)

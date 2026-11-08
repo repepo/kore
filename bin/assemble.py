@@ -102,7 +102,56 @@ def main():
 
 
 
-    if par.forcing == 6: # -------------------------------------------------- Buffett 2010 ICB radial velocity forcing
+    if par.forcing == 1: # ------------------------ the wave-like tide (Lin & Ogilvie 2018), (m, symm) = (0, 1), (1, -1), (2, 1)
+
+        # NEW (2026-11-08, from conductive_IC): the flow solved for is the wave-like tide 𝐮' = 𝐮 - 𝐮_e, 𝐮_e = ∇(X Y₂ᵐ) the
+        # equilibrium tide (utils.lifted_flow: a potential flow that moves the outer wall radially, uᵣ = -(3/2) a Y₂ᵐ there with
+        # a = forcing_amplitude_cmb, and not the inner one), with the boundary rows of walls at rest (Ogilvie's convention: the
+        # tide 𝐮 = 𝐮_e + 𝐮' slips along a no-slip wall with the tangential velocity of 𝐮_e). Its right-hand side, the Coriolis
+        # force on the equilibrium tide, -2 Gaspard 𝐳×𝐮_e (the inertia and the viscous force of 𝐮_e are gradients, which the
+        # curls of the rows cancel), is -A 𝐱 on the interior rows, written after A (lifted_rhs). conductive_IC wrote the
+        # force without Gaspard (Ek times too small with the 'viscous' time scale), for m = 2 only. background.check_forcing
+        # stops the settings it does not cover: a uniform density with no stratification and no field (𝐮_e is solenoidal and
+        # irrotational there), impenetrable walls.
+        if rank == 0:
+            head = ' Wave-like tide (Lin & Ogilvie 2018): the Coriolis force on the equilibrium tide, (l, m) = (2, %d)' % par.m
+            print('-'*(len(head) + 1))
+            print(head)
+            print('-'*(len(head) + 1))
+
+    elif par.forcing == 2: # ------------------------------ the eccentricity tide of Enceladus (Rekier et al. 2019), m = 0, 2
+
+        # NEW (2026-11-08, from conductive_IC): the walls of Enceladus's ocean move radially and along themselves with the
+        # eccentricity tide, from the fits of Rekier, Trinh, Triana & Dehant (2019) to its displacements ξ_r and ξ_t at each wall
+        # (utils.eccen_tide; ricb from 16/21 to 1, in units of the ocean's outer radius; m sign(forcing_frequency) = -2, 0, 2).
+        # The velocity is i w ξ, w = forcing_frequency (the fits are the tide at the orbital frequency of a synchronous moon,
+        # |w| = Gaspard), one amplitude for both walls (forcing_amplitude_cmb): the right-hand side of the no-slip rows of P of
+        # degree 2 (bc_u_spherical: P, then the consoidal velocity P' + P/r + (ln ρ0)' P, at the outer wall, then at the inner
+        # one), with P = ξ_r r/6. FIX (2026-11-08): conductive_IC wrote i A ξ, the phase of prograde tides (w < 0) off by π and
+        # the size of w left out, and the inner wall's P without the factor ricb (uᵣ there 1/ricb too large).
+        if rank == 0:
+            head = ' Eccentricity tide of Enceladus (Rekier et al. 2019), m = %d' % (par.m*int(np.sign(par.forcing_frequency)))
+            print('-'*(len(head) + 1))
+            print(head)
+            print('-'*(len(head) + 1))
+            if abs(par.forcing_frequency) != par.Gaspard:
+                print('Note: the fits of forcing 2 are the tide at the orbital frequency of a synchronous moon, |forcing_frequency| '
+                      '= Gaspard (%g); at %g the walls keep the same displacement' % (par.Gaspard, par.forcing_frequency))
+            if par.forcing_amplitude_icb != 0:
+                print('Note: forcing 2 takes one amplitude for both walls, forcing_amplitude_cmb (forcing_amplitude_icb is not used)')
+
+            l = 2
+            pos = ut.N1*np.where(alltop==l)[0][0]
+            mt = par.m*int(np.sign(par.forcing_frequency))
+            Pc, dPc = ut.eccen_tide(mt, par.ricb, 'cmb')
+            Pi, dPi = ut.eccen_tide(mt, par.ricb, 'icb')
+            row  = [pos, pos + 1, pos + 2, pos + 3]
+            bdat = 1j*par.forcing_frequency*par.forcing_amplitude_cmb*np.array([Pc, Pc + dPc, par.ricb*Pi, Pi + dPi])
+
+            B = ss.csr_matrix( ( bdat, (row, np.zeros(4)) ), shape=(ut.sizmat,1) )
+            np.savez('B_forced.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
+
+    elif par.forcing == 6: # -------------------------------------------------- Buffett 2010 ICB radial velocity forcing
 
         if rank == 0:
             print('Buffett 2010 ICB radial velocity forcing')
@@ -197,6 +246,28 @@ def main():
 
                 print(' ** Longitudinal libration requires m = 0, symm = 1, a no-slip outer wall (bco = 1) and bci = 0 or 1 (any '
                       'bci in a full sphere), or m = 2, symm = 1 and no-slip walls (bci = bco = 1) **')
+
+
+    elif par.forcing == 8: # ---------------------------------------- longitudinal libration in the frame of the mantle (m = 0)
+
+        # NEW (2026-11-08, from conductive_IC): the libration of forcing 7 (m = 0) seen from the mantle, which turns by the angle
+        # A cos(w t) about z relative to the mean frame (A = forcing_amplitude_cmb, w = forcing_frequency). There the outer wall
+        # is at rest, the inner core turns with the mantle (or librates relative to it by the angle forcing_amplitude_icb), and
+        # the fluid feels the Poincaré force (w² A/2) r sinθ 𝐞ᵩ and, with a differential rotation, the Coriolis force of the
+        # libration on the background flow. Its right-hand side, -A 𝐱 on the interior rows with 𝐱 the rigid libration of the
+        # mantle T₁ = i w A r/2 (utils.lifted_flow), is written after A (lifted_rhs), and the inner wall's libration on the
+        # no-slip row of T₁ there: the flow is that of forcing 7 (with forcing_amplitude_icb + A for its inner core) minus 𝐱,
+        # exactly. FIX (2026-11-08): conductive_IC's force was twice the Poincaré force of the angle A. Any walls: a stress-free
+        # wall is at rest in this frame, and the fluid's slip along it is relative to the solid behind it (the drag, a
+        # conducting solid: bc_b_slip).
+        if rank == 0:
+            head = ' Longitudinal libration in the frame of the mantle (forcing 8): the Poincaré force'
+            print('-'*(len(head) + 1))
+            print(head)
+            print('-'*(len(head) + 1))
+            if par.ricb > 0 and par.bci != 1 and par.forcing_amplitude_icb != 0:
+                print('Note: the inner wall is stress-free (bci = %d): the libration of the inner core relative to the mantle does '
+                      'not reach the fluid (forcing_amplitude_icb has no effect)' % par.bci)
 
 
 
@@ -855,6 +926,14 @@ def main():
             Anorm = ssl.norm(A)
             A.data *= 1/Anorm  # in place, no copy of A (same arithmetic as scipy's A/Anorm)
 
+        if par.forcing in (1, 8):   # NEW (2026-11-08): the body force of the known flow utils.lifted_flow (lifted_rhs)
+            b = lifted_rhs(A, ut.lifted_flow())
+            if par.forcing == 8 and par.ricb > 0 and par.bci == 1:   # the libration of the inner core relative to the mantle,
+                # on the inner wall's no-slip row of T of degree 1 (bc_u_spherical, section v), as forcing 7
+                b[ut.n + ut.N1*np.where(allbot==1)[0][0] + 1] = 0.5j*par.forcing_frequency*par.forcing_amplitude_icb*par.ricb
+            B = ss.csr_matrix(b.reshape(-1, 1))
+            np.savez('B_forced.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
+
         toc = timer()
         print('--------------------------------------------')
         print(' Matrix A assembled in', '{: 4.3f}'.format(toc-tic), 'seconds')
@@ -1036,6 +1115,42 @@ def gather_csr(comm, loc_list, dtype):
             raise ValueError('matrix entry outside 0..sizmat-1')
         return ss.csr_matrix((fdat, (frow, fcol)), shape=(ut.sizmat, ut.sizmat), dtype=dtype)
     return None
+
+
+
+def lifted_rhs(A, x):
+    '''
+    NEW (2026-11-08): forcings 1 and 8, the right-hand side b = -A 𝐱 on the interior rows of the fluid's equations (sections
+    u, v, h, f, g) and 0 on every other row, for the known flow 𝐱 (utils.lifted_flow): the flow solved for is then
+    𝐮' = 𝐮 - 𝐱, with 𝐮 the solution of the same equations with no force, whose walls move as 𝐱 does there, while 𝐮' meets
+    the boundary rows of walls at rest. b holds the body force -(i w 𝐱 + 2 Gaspard 𝐳×𝐱 - (∇⋅𝛔(𝐱))/ρ₀ - 𝐅(𝐱)) (𝐅 the force
+    of a differential rotation) and the induction and the entropy advection by 𝐱, each in the curls and rows of A, so
+    that 𝐮' + 𝐱 is exactly the flow with the walls moving (to round-off, whatever the background). The boundary rows of a
+    block are those that the block's own time derivative (operators.inertia, entropy, b) leaves empty at the top, where
+    submatrices.py made room for them; the rows of the solids beyond the walls are boundary rows too.
+    A is the matrix of the forced problem (i w B included, not normalised).
+    '''
+    def top_rows(mtx):   # the empty rows at the top of a block
+        nnz = np.diff(ss.csr_matrix(mtx).indptr)
+        return int(np.argmax(nnz > 0))
+    lp, lt = ut.ell(par.m, par.lmax, par.symm)[:2]
+    blocks = []   # (section, the block's time derivative)
+    if par.hydro:
+        blocks += [ ('u', op.inertia(lp[0], 'u', 'upol', 0)), ('v', op.inertia(lt[0], 'v', 'utor', 0)) ]
+    if par.thermal:
+        blocks += [ ('h', op.entropy(lp[0], 'h', '', 0)) ]
+    if par.magnetic:
+        lf, lg = ut.ell(par.m, par.lmax, ut.bsymm)[:2]
+        blocks += [ ('f', op.b(lf[0], 'f', 'bpol', 0)), ('g', op.b(lg[0], 'g', 'btor', 0)) ]
+    interior = np.zeros(ut.sizmat, dtype=bool)
+    for sec, mtx in blocks:
+        nbc = top_rows(mtx)
+        for k in range(int((par.lmax - par.m + 1)/2)):
+            r0 = ut.offset[sec] + k*ut.N1
+            interior[r0 + nbc: r0 + ut.N1] = True
+    b = -(A @ x)
+    b[~interior] = 0
+    return b
 
 
 

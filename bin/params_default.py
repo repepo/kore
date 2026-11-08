@@ -463,8 +463,11 @@ class default_params():
         # --------------------------------------------------------------------------------------------------- Forcing parameters
         # ----------------------------------------------------------------------------------------------------------------------
         self.forcing = 0  # Uncomment this line for eigenvalue problems
+        # self.forcing = 1  # Wave-like tide (Lin & Ogilvie 2018): the Coriolis force on the equilibrium tide, (m, symm) = (0, 1), (1, -1), (2, 1) (docs/tidal-forcing.md)
+        # self.forcing = 2  # Eccentricity tide of Enceladus (Rekier et al. 2019), m = 0 or 2, symm, bci = bco = 1, 16/21 <= ricb < 1 (docs/tidal-forcing.md)
         # self.forcing = 6  # Buffett2010 ICB radial velocity boundary forcing, m=1,antisymm, ricb > 0
         # self.forcing = 7  # Longitudinal libration boundary forcing, m={0, 2}, symm, no-slip (NEW 2026-11-07: m = 0 also with bci = 0)
+        # self.forcing = 8  # Longitudinal libration in the frame of the mantle (the Poincaré force), m=0, symm (docs/libration.md)
         # self.forcing = 9  # Radial, symmetric, m=2 boundary flow forcing, bci=1.
         # self.forcing = 10 # Radial, symmetric, order m boundary flow forcing at the cmb (l=m), unit amplitude.
         # self.forcing = 11 # Random Reynolds-stress body force (convective noise), any m, symm; rsf_* below.
@@ -476,6 +479,8 @@ class default_params():
         self.forcing_frequency = 1.0  # negative is prograde
 
         # Forcing amplitude (boundary forcings 6, 7, 9, 10, 13, 14; for 12 the rotation rates of the walls, in units of 1/tau;
+        # for 7 and 8 the angles of the libration, 8's inner core relative to the mantle (0: it librates with the mantle); for 1
+        # the tide's a, u_r = -(3/2) a Y_2^m at the outer wall; for 2 one amplitude for both walls, forcing_amplitude_cmb;
         # forcing 11 ignores it: its power scales with rsf_scale)
         self.forcing_amplitude_cmb = 1.0
         self.forcing_amplitude_icb = 0.0

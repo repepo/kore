@@ -346,6 +346,10 @@ def main(ncpus):
     Wv_icb      = np.zeros(success)  # power of the viscous stress at the inner and outer walls (upp.wall_powers)
     Wv_cmb      = np.zeros(success)
     Dvisc       = np.zeros(success)  # viscous dissipation ∫ 𝛔:∇𝐮 dV (upp.viscous_dissipation)
+    Wf          = np.zeros(success)  # NEW (2026-11-08): forcings 1 and 8, the power of the body force (upp.body_force_terms),
+    Wf_im       = np.zeros(success)  #   its imaginary part, its enstrophy term and its torque on the fluid
+    Ensf        = np.zeros(success)
+    Tf          = np.zeros(success, dtype=complex)
     residD      = np.full(success, np.nan)  # relative residual of Dkin = Wv_icb + Wv_cmb - Dvisc
     ldom        = np.zeros(success,dtype=int)
     lwidth      = np.zeros(success,dtype=int)
@@ -422,7 +426,7 @@ def main(ncpus):
     ] if par.hydro else []) + ([
         ( 'resid𝑠',        '{:8.2e}',   lambda i: resid3[i] ),
     ] if par.thermal else []) + ([   # NEW (2026-11-04): forced runs, the power the walls put in and the viscous dissipation
-        ( 'P_in',          '{: .6e}',   lambda i: Wp_icb[i] + Wp_cmb[i] + Wv_icb[i] + Wv_cmb[i] ),
+        ( 'P_in',          '{: .6e}',   lambda i: Wp_icb[i] + Wp_cmb[i] + Wv_icb[i] + Wv_cmb[i] + Wf[i] ),
         ( 'Dν',            '{: .6e}',   lambda i: Dvisc[i] ),
     ] if par.forcing > 0 else []) + ([
         ( 'resid𝐛',        '{:8.2e}',   lambda i: residb[i] ),
@@ -461,6 +465,9 @@ def main(ncpus):
     # steady rotation of the walls (12). There Dkin = Wv - Dvisc is a small difference of two large terms, the power of the
     # walls' viscous stress and the dissipation, so residσ and resid𝐄 are relative to Dvisc too (as conductive_IC 4bfb389)
     walls_drive = par.forcing == 12 or (par.forcing == 7 and par.m == 0)
+    # NEW (2026-11-08): the body force of a known flow, forcings 1 and 8 (assemble.lifted_rhs): its power, enstrophy term and
+    # torque (upp.body_force_terms) enter residσ, residω, residens, resid𝐄 and resid𝐋, and P_in
+    body_force = par.forcing in (1, 8)
 
     # Begin processing all solutions
     for i in range(success):
@@ -562,6 +569,9 @@ def main(ncpus):
             [ Wp_icb[i], Wp_cmb[i] ] = np.real(Wp0)
             Wp_im[i] = np.sum(np.imag(Wp0))
             [ Wv_icb[i], Wv_cmb[i] ] = Wv0
+        if body_force:   # NEW (2026-11-08): forcings 1 and 8 (after wall_powers: it resets the grid and the tables)
+            [ Wf0, Ensf[i], Tf[i] ] = upp.body_force_terms(u_sol2, sigma + 1j*w, t_sol2)
+            Wf[i], Wf_im[i] = np.real(Wf0), np.imag(Wf0)
 
         if do_torques:   # NEW (2026-11-06): the angular momentum of the fluid and the torques on its walls (rotdyn.py)
             angmom[i] = rd.angular_momentum(u_sol2)
@@ -595,7 +605,7 @@ def main(ncpus):
         [ KE[i], Dkin0, Ensvel[i], Enscor[i], Ensvif[i], Ensbuo[i], Wthm0, Wdr[i],
           Wcor_im[i], Dkin_im[i], Wthm_im[i], Wdr_im[i], Ensdr[i] ] = np.sum( udgn, 0)
         Dkin[i] = Dkin0
-        resens[i] = abs(Ensvel[i]*sigma+Enscor[i]-Ensbuo[i]-Ensvif[i]-Ensdr[i]) / max((abs(Ensvel[i]*sigma),abs(Enscor[i]),abs(Ensbuo[i]),abs(Ensvif[i]),abs(Ensdr[i]))) \
+        resens[i] = abs(Ensvel[i]*sigma+Enscor[i]-Ensbuo[i]-Ensvif[i]-Ensdr[i]-Ensf[i]) / max((abs(Ensvel[i]*sigma),abs(Enscor[i]),abs(Ensbuo[i]),abs(Ensvif[i]),abs(Ensdr[i]),abs(Ensf[i]))) \
                     if par.hydro else np.nan   # NEW (2026-11-06): no flow, no enstrophy budget
         if par.centrifugal:  # NEW (2026-11-05): KE of the deformed body (∫ ρ0 w*⋅M w dV), Coriolis power with z̃ = F⁻¹ẑ
             KE[i] += KEc
@@ -638,6 +648,8 @@ def main(ncpus):
         # resid2 is the relative residual of 2*w*KE + Wcor_im - Dkin_im - Wthm_im - Wdr_im - Wp_im = 0 (residω, its imaginary part;
         #        Wcor_im = 2 Im ∫ ρ 𝐮*⋅(2𝐳×𝐮) dV, Dkin_im = 2 Im ∫ 𝐮*⋅(∇⋅𝛔) dV, Wthm_im = 2 Im ∫ ρ 𝐮*⋅(Beyonce g s 𝐫̂) dV)
         # resid3 is the relative residual of 2*sigma*TE - Dthm - Wadv - Wdr_thm = 0
+        # NEW (2026-11-08): Wf (Wf_im) is the power of the body force of forcings 1 and 8, in resid1 (resid2) and in P_in,
+        #     Ensf its enstrophy term and Tf its torque in resid𝐋 (upp.body_force_terms; zero for the other forcings)
         # ---------------------------------------------------------------------------------------------------------
 
 
@@ -649,14 +661,14 @@ def main(ncpus):
             # FIX (2026-11-08): relative to the viscous dissipation Dvisc too where the walls drive the flow (walls_drive):
             # without a field, buoyancy or a differential rotation every other term is small, and residσ was the round-off of
             # Dkin relative to itself, about 1
-            scale1 = max( abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wthm[i]), abs(Wdr[i]), abs(Wlor[i]), abs(Wp),
+            scale1 = max( abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wthm[i]), abs(Wdr[i]), abs(Wlor[i]), abs(Wp), abs(Wf[i]),
                           abs(Dvisc[i]) if walls_drive else 0.0 )
-            resid1[i] = abs( 2*sigma*KE[i] - Dkin[i] - Wthm[i] - Wdr[i] - Wlor[i] - Wp )/scale1
+            resid1[i] = abs( 2*sigma*KE[i] - Dkin[i] - Wthm[i] - Wdr[i] - Wlor[i] - Wp - Wf[i] )/scale1
             # FIX (2026-11-08): 0 when every term is 0, a steady flow of m = 0 (forcing 12, forcing 13 at frequency 0), whose
             # fields are real: the imaginary part of the balance holds trivially (it was 0/0)
             scale2 = max( abs(2*w*KE[i]), abs(Wcor_im[i]), abs(Dkin_im[i]), abs(Wthm_im[i]), abs(Wdr_im[i]), abs(Wlor_im[i]),
-                          abs(Wp_im[i]) )
-            resid2[i] = abs( 2*w*KE[i] + Wcor_im[i] - Dkin_im[i] - Wthm_im[i] - Wdr_im[i] - Wlor_im[i] - Wp_im[i] )/scale2 \
+                          abs(Wp_im[i]), abs(Wf_im[i]) )
+            resid2[i] = abs( 2*w*KE[i] + Wcor_im[i] - Dkin_im[i] - Wthm_im[i] - Wdr_im[i] - Wlor_im[i] - Wp_im[i] - Wf_im[i] )/scale2 \
                         if scale2 > 0 else 0.0
         else:
             resid1[i] = resid2[i] = np.nan
@@ -670,7 +682,7 @@ def main(ncpus):
         # tests that it carries no net angular momentum
         if L_case:
             lam = sigma + 1j*w
-            on_fluid = [ -vtorq[i], -vtorq_ic[i], -mtorq[i], -mtorq_ic[i] ] + ([ 1j*par.Gaspard*angmom[i] ] if par.m == 1 else [])
+            on_fluid = [ -vtorq[i], -vtorq_ic[i], -mtorq[i], -mtorq_ic[i], Tf[i] ] + ([ 1j*par.Gaspard*angmom[i] ] if par.m == 1 else [])
             Labs = rd.angular_momentum(u_sol2, absval=True)
             scale = max([ abs(lam)*Labs, par.Gaspard*Labs if par.m == 1 else 0.0 ] + [ abs(t) for t in on_fluid ])
             residL[i] = abs( lam*angmom[i] - sum(on_fluid) )/scale if scale > 0 else 0.0
@@ -728,9 +740,10 @@ def main(ncpus):
                 Wpe = Wp if upp.walls_move() else 0.0
                 # FIX (2026-11-08): relative to the viscous dissipation Dvisc too where the walls drive the flow (walls_drive), as
                 # residσ: where the field takes little of the walls' power every other term is small (b = 0 for the Malkus field)
-                residE[i] = ( abs( 2*sigma*Etot - Dkin[i] - Wthm[i] - Wex - Wsol - Wpe + Ohm )
+                # NEW (2026-11-08): the power of the body force of forcings 1 and 8 (Wf)
+                residE[i] = ( abs( 2*sigma*Etot - Dkin[i] - Wthm[i] - Wex - Wsol - Wpe - Wf[i] + Ohm )
                               / max( abs(2*sigma*Etot), abs(Dkin[i]), abs(Wthm[i]), abs(Wex), Ohm, abs(Wdr[i]), abs(Wsol),
-                                     abs(Wpe), abs(Dvisc[i]) if walls_drive else 0.0 ) )
+                                     abs(Wpe), abs(Wf[i]), abs(Dvisc[i]) if walls_drive else 0.0 ) )
 
         if do_drag:   # NEW (2026-11-06): the power the drag dissipates (per unit kappa_cmb without one) and its damping rate
             Dtopo[i] = topo.dissipation(u_sol2, rot[0, i] if ut.rotdyn else 0)
@@ -808,7 +821,10 @@ def main(ncpus):
         ( 'residL',     residL,     '%.9e' ),  #   and resid𝐋 (nan where it does not apply)
         ( 'Dtopo',      Dtopo,      '%.9e' ),  # NEW (2026-11-06): the power the drag at the outer wall dissipates,
         ( 'dsig',       dsig,       '%.9e' ),  #   and the damping rate it implies (per unit kappa_cmb without a drag; 0 with
-    ]                                          #   a no-slip outer wall)
+                                               #   a no-slip outer wall)
+        ( 'Wf',         Wf,         '%.9e' ),  # NEW (2026-11-08): forcings 1 and 8, the power of the body force (in P_in),
+        ( 'Wf_im',      Wf_im,      '%.9e' ),  #   and its imaginary part (0 for the other forcings)
+    ]
     with open('flow.dat','ab') as dflo:
         np.savetxt(dflo, np.column_stack([ v for _, v, _ in flow_cols ]),
         fmt=[ f for _, _, f in flow_cols ])

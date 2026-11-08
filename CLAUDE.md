@@ -69,8 +69,8 @@ eigenvectors normalised to kinetic energy 1 (KE + Hendrik·ME = 1 with `magnetic
 | `parameters.py` | the run's parameters: `par = default_params()`, `par.timescale = 'rotation'; par.set_scales()`, then overrides |
 | `params_default.py` | every parameter with long comments (the best parameter reference), `set_scales`, `check_names` (warns about names that kore does not define), solver options `petsc_opts`, `prescale`, `drop_tol` |
 | `units.py` | physical units for parameter files and scripts (kore itself never imports it): `set_physical` (Gaspard, Beyonce, ViscosD, ThermaD, `diff_rot_frame` from cgs values), `set_target` (`itau`, `rtau` from ω, σ in nHz), `nHz`; as a script, prints a run's eigenvalues in nHz |
-| `utils.py` | globals (`N1`, `n`, `sizmat`, `symm1`, `adiab_tw`, `odd_profiles`...), `dr_offd`, label decoding, Chebyshev transforms (`chebco_f`, `funcheb`, `fonzie`, `angine`), Gegenbauer matrices `Dlam`, `Slam`, `Mlam`, parity `remroco`, `ell`, erf profiles (`erf_top_hat`, `erf_top_hat_odd`, `erf_box`), `Ylm`, `load_npz_mmap` |
-| `background.py` | the background besides the rotation (§6): the type names `STRUCTURES`, `STRATIFICATIONS`, `DIFFUSIVITIES` (their order is the index written to `params.dat`), `check()` (stops on unknown, removed (`REMOVED`) or impossible settings; `check_magnetic()` for `magnetic = 1`, with the names `MAG_COUPLINGS`, `B0_ICS`, `FERRARO_POLICIES`; `check_centrifugal()` for `centrifugal = 1`; `check_twa()`, `check_mantle()` for the thin walls and the resolved mantle, `check_rotdyn()` for the rotating solids, `check_drag()` for the drag at the outer wall, `check_forcing()` for forced runs: a known forcing number (`FORCINGS`), and forcing 12's settings), the resolved mantle's σ (`sigma_mantle`, `dlnsigma_mantle`, `mantle_conductance`), the Ferraro check (`ferraro_mismatch`, `ferraro_report`, `magnetic_diffrot`), dS/dr (`gradS`), ν, κ and η (`diffusivity`), the 'user', 'general' and 'ferraro' expressions and their `description()` for `params.dat` |
+| `utils.py` | globals (`N1`, `n`, `sizmat`, `symm1`, `adiab_tw`, `odd_profiles`...), `dr_offd`, label decoding, Chebyshev transforms (`chebco_f`, `funcheb`, `fonzie`, `angine`), Gegenbauer matrices `Dlam`, `Slam`, `Mlam`, parity `remroco`, `ell`, erf profiles (`erf_top_hat`, `erf_top_hat_odd`, `erf_box`), `Ylm`, `load_npz_mmap`, `eccen_tide` (forcing 2's fits), `lifted_flow` (the known flow x of forcings 1, 8) |
+| `background.py` | the background besides the rotation (§6): the type names `STRUCTURES`, `STRATIFICATIONS`, `DIFFUSIVITIES` (their order is the index written to `params.dat`), `check()` (stops on unknown, removed (`REMOVED`) or impossible settings; `check_magnetic()` for `magnetic = 1`, with the names `MAG_COUPLINGS`, `B0_ICS`, `FERRARO_POLICIES`; `check_centrifugal()` for `centrifugal = 1`; `check_twa()`, `check_mantle()` for the thin walls and the resolved mantle, `check_rotdyn()` for the rotating solids, `check_drag()` for the drag at the outer wall, `check_forcing()` for forced runs: a known forcing number (`FORCINGS`; `NOT_PORTED` 3, 4, 5), forcing 12's settings, and `check_tides()` for 1, 2, 8), the resolved mantle's σ (`sigma_mantle`, `dlnsigma_mantle`, `mantle_conductance`), the Ferraro check (`ferraro_mismatch`, `ferraro_report`, `magnetic_diffrot`), dS/dr (`gradS`), ν, κ and η (`diffusivity`), the 'user', 'general' and 'ferraro' expressions and their `description()` for `params.dat` |
 | `background_field.py` | the imposed magnetic field B0 (`magnetic = 1`, §4): `B0_TYPES` ('axial', 'FDM', 'G21 dipole', 'Luo_S1', 'Luo_S2', 'confined', 'general', 'ferraro', 'dipole'; the polynomial ones in `POLY`, `B0_beta_ic`), `B0_TOR_TYPES`, `symmB0`, `B0_l`, the FDM root `findbeta`, h and its derivatives `h(r, k)` (`jl_k` at ricb = 0), k(r, d), the 'general' interpolants (`gen_profile`), the 'ferraro' projection (`ferraro_profile`, `ferraro_cnorm`), the wound field (`wound_profiles`, `wound_residual`), `cnorm` (`B0_norm`), `cnorm_tor` (with `cnorm_error`, `cnorm_tor_error` for check_magnetic), the profiles `bpoX`, `btoX` and, degree by degree, `pol_profiles`, `tor_profiles`; numpy and scipy only |
 | `mag_algebra.py` | the Lorentz and induction couplings for any background degree from the recurrence algebra of `angular.py` (`mag_couplings = 'algebra'`, forced for 'general', 'ferraro' and `B0_wound`): `coefficients`, `labels` (profile codes `hp`/`kt` + degree), `block`, `dl_range` |
 | `radial_profiles.py` | one class per structure (`wu2005_profiles`, `eight_term_profiles`, `modelS_profiles`, `modelS_hydrostatic_profiles`, `boussinesq_profiles`, on a base class `structure` that takes dS/dr, ν and κ from `background.py`), the dict `structures` and the instance `prf`; the `*X(r, Dorder)` derivative helpers; `proffdir` (label code → function); `burrito` (the integrand of one operator) |
@@ -80,14 +80,14 @@ eigenvectors normalised to kinetic energy 1 (KE + Hendrik·ME = 1 with `magnetic
 | `submatrices.py` | builds the list of labels (with `diff_rot.labels()`), computes each unique operator in parallel, writes them all to `submatrices.npz` (`submatrix_io.write`, with the parameters; `<label>.mtx` too with `write_mtx = 1`); calls `par.check_names()` and `diff_rot.check()` |
 | `submatrix_io.py` | the operator file `submatrices.npz`: `write`, `read`, `check` (stops when the run's parameters differ from those the operators were built with, all but `OPERATOR_INDEPENDENT` and `rsf_*`); numpy and scipy only |
 | `operators.py` | loads `submatrices.npz` (after `submatrix_io.check`), each operator as a global named by its label; physics functions `inertia`, `coriolis`, `viscous_diffusion`, `buoyancy`, `differential_rotation`, `entropy`, `thermal_advection`, `thermal_diffusion`, `thermal_diffrot` (the diff-rot ones return `diff_rot.momentum_block`, `heat_block`), for `magnetic = 1` `lorentz`, `b`, `induction`, `magnetic_diffusion`, and for `centrifugal = 1` `centrifugal_inertia`, `centrifugal_coriolis`, `centrifugal_entropy`, `centrifugal_magnetic` (they return `centrifugal.momentum_block`, `entropy_block`, `magnetic_block`) |
-| `assemble.py` | MPI over l; places the blocks (the diff-rot Δl from `diff_rot.dl_range`), boundary-condition rows (`bc_u_spherical`, `bc_theta_spherical`, the push of B0's current sheet at a slipping wall `bc_u_sheet`; the field's `bc_b_spherical`, with thin walls `bc_b_twa` and `bc_b_slip`, the resolved mantle `bc_b_mantle`), forcings 6, 7, 9, 10, 11, 12 (the walls' steady rotation: T_1 = Ω r/2 at each no-slip wall); normalises A, B by ‖A‖ (eigen); `gather_csr` |
+| `assemble.py` | MPI over l; places the blocks (the diff-rot Δl from `diff_rot.dl_range`), boundary-condition rows (`bc_u_spherical`, `bc_theta_spherical`, the push of B0's current sheet at a slipping wall `bc_u_sheet`; the field's `bc_b_spherical`, with thin walls `bc_b_twa` and `bc_b_slip`, the resolved mantle `bc_b_mantle`), forcings 1, 2, 6, 7, 8, 9, 10, 11, 12 (the walls' steady rotation: T_1 = Ω r/2 at each no-slip wall); `lifted_rhs` (forcings 1, 8: b = −A x on the interior rows); normalises A, B by ‖A‖ (eigen); `gather_csr` |
 | `reynolds_stress.py` | forcing 11: random Reynolds-stress body force f = ρ₀⁻¹∇·(ρ₀ s), the fluctuation-dissipation partner of the viscous force; `rhs(nsamp, seed)` gives one realisation per column of B_forced (docstring: physics, discretisation, normalisation) |
 | `bc_variables.py` | Chebyshev values/derivatives at the walls (`Ta`, `Tb`) and ln ρ₀ and its first two derivatives there (`lha*`, `lhb*`) |
 | `solve.py` | reads its own rows of A, B (memory-mapped), optional Ruiz scaling, SLEPc/KSP, KE normalisation, writes fields |
 | `just_induction.py`, `solve_ind.py` | NEW 2026-11-06 (from conductive_IC): kinematic induction, the field a given flow (real/imag_flow.field) induces: (A_bb − λ B_bb) b = −A_bu u from A.npz, B.npz of a magnetic eigen assembly (λ the argument, default i forcing_frequency; in a forced assembly A holds A − i wf B, so λ = i wf needs no B.npz) → A_ind.npz, u_ind.npz; solve_ind.py (MPI, KSP LU) writes real/imag_magnetic(_ic, _mantle).field |
 | `rotdyn.py` | NEW 2026-11-06 (from conductive_IC): the rotating solids (`rotdyn = 1`, §4): `a_rows`, `b_rows` (the three rows of A, B and the wall entries), `coupling` (K), `relaxation`, `viscous_factor`, `magnetic_factors` (C_l); for spin_doctor `L_case`, `angular_momentum`, `viscous_torques`, `wall_torques` (resid𝐋, axial and equatorial) |
 | `topo.py` | NEW 2026-11-06 (from conductive_IC): the drag at a stress-free outer wall (`kappa_cmb`, `topo_drag = 'rekier'`, §4): `on`, `wall_profiles` (ρ₀, ν at the wall), `ratio` (q = Gaspard/(ViscosD ν(1))), `N_cmb`, `omega0`, `Ik_R`, `kappa` (Rekier et al. 2025 B1 with the 4π², or the test hook `topo_K`), `grid` (the cached Gauss–Legendre wall grid), `couplings` (A_ss, A_st, A_ts, A_tt), `rows` (the drag's entries in the stress rows, the ω_M column with `rotdyn = 1`); for spin_doctor `dissipation` (Dtopo) |
-| `utils4pp.py` | post-processing: solution expansion, velocity/curl l-components, per-l workers (`flow_worker`, `thermal_worker`), `diff_rot_setup`, `diagnose`, `kinetic_energy`, `identify`, `centrifugal_terms` (the metric parts of KE, the Coriolis power and TE with `centrifugal = 1`), `centrifugal_magnetic_energy`, `centrifugal_magnetic_terms` (with a field: MEc, the metric Lorentz and induction work, the potential field on the deformed walls), `centrifugal_dissipation_terms` (phase 2: the metric parts of the viscous power, the work of ΔΩ and the thermal dissipation); thin walls `twa_budget`, `slip_lapF`, `twa_error`, `slipping_walls`, the resolved mantle `mantle_budget` (2026-11-06) |
+| `utils4pp.py` | post-processing: solution expansion, velocity/curl l-components, per-l workers (`flow_worker`, `thermal_worker`), `diff_rot_setup`, `diagnose`, `kinetic_energy`, `identify`, `centrifugal_terms` (the metric parts of KE, the Coriolis power and TE with `centrifugal = 1`), `centrifugal_magnetic_energy`, `centrifugal_magnetic_terms` (with a field: MEc, the metric Lorentz and induction work, the potential field on the deformed walls), `centrifugal_dissipation_terms` (phase 2: the metric parts of the viscous power, the work of ΔΩ and the thermal dissipation); thin walls `twa_budget`, `slip_lapF`, `twa_error`, `slipping_walls`, the resolved mantle `mantle_budget` (2026-11-06); `body_force_terms` (forcings 1, 8: Wf, its enstrophy term and torque, 2026-11-08) |
 | `spin_doctor.py` | runs the diagnostics per solution, prints the table, writes `params.dat` (`param_table`, `row_note`), `flow.dat`, `thermal.dat` |
 | `ru_insane.py` | operator symmetry and diff-rot block tests (see its docstring) |
 | `diff_rot.py` | the differential rotation (§8): the shapes fₙ of every type and their fits, the thermal-wind σₙ, the angular couplings of the momentum and heat terms, the labels, blocks and Δl ranges |
@@ -99,7 +99,9 @@ Other directories: `tests/ci/` (the test GitHub runs on every push, §11); `test
 `tests/centrifugal/` and `tests/rsf/` (§11, each with a README); `docs/` (mkdocs, public user documentation: `installation.md` (from conductive_IC), `getting-started.md` (a
 step-by-step run of Baruteau & Rieutord 2013 fig. 10), the user guide `background.md` (structure, stratification,
 diffusivity with ThermaD = 0, rotation and thermal wind, centrifugal deformation), `forcing.md` (forcing 11: a worked m = 2 Rossby-mode scan, set-up,
-output), `tidal-forcing.md` (forcing 14: the walls move as a degree-2 tide; the energy of the response), `couette-flow.md`
+output), `tidal-forcing.md` (forcing 14: the walls move as a degree-2 tide; the energy of the response; forcing 1, the
+wave-like tide; forcing 2, the eccentricity tide of Enceladus), `libration.md` (forcings 7 and 8: the walls librate, or
+the frame of the mantle with the Poincaré force; one example in both frames), `couette-flow.md`
 (forcing 12: the walls turn steadily, spherical Couette flow; Proudman's solution as the example, figure
 `docs/assets/couette-flow.png`), `magnetic.md` (choosing the background field B0, its options and caveats), `rotating-solids.md` (`rotdyn`, resid𝐋), `drag.md` (`kappa_cmb`, `topo_drag`: the drag at the outer wall, weak and strong drag, Dtopo), `solver.md` (bad solutions, memory) and `output.md` (the files and their columns), `benchmarks.md` (set-up and result of each published benchmark), `checking.md` (which check to run after a change,
 and how: `regress.sh`, `regress_solve.sh`, the suites), and the mathematical framework
@@ -186,6 +188,18 @@ thermal, bc 0 or 1, a turning wall no-slip, some wall turning. Conducting solids
 the axisymmetric B0 alone and the tangential u×B0 = u_φ B0r θ̂ matches, so the field rows are those of walls at rest
 (any permeability). A forced rigid rotation (walls at one rate, full sphere, IC under a stress-free wall at rest) gives
 b = 0 and O(1) residuals (round-off over round-off).
+Forcings 1, 2, 8 (2026-11-08, conductive_IC port phase 7b; `background.check_tides`, `tests/cic_forcings`; 3, 4, 5 stop
+with `background.NOT_PORTED`): 2 = the Enceladus eccentricity tide on the no-slip rows of P_2 (P = i wf A P_fit, ricb
+i wf A P_fit at the ICB, (rP)'/r = i wf A (P_fit + dP_fit) at both; `utils.eccen_tide`, Padé fits in ricb − 37/42, keyed
+m sign(wf); conductive_IC left out wf and the ricb; 16/21 ≤ ricb < 1, bci = bco = 1, insulating walls). 1 and 8 put a
+body force by a known flow x (`utils.lifted_flow`): b = −A x on the interior rows of u, v, h, f, g (`assemble.lifted_rhs`;
+boundary rows = the empty top rows of op.inertia/entropy/b, and every other row 0), so u' = u − x meets homogeneous
+wall rows exactly. 8: x = the mantle's rigid libration T_1 = i wf A r/2, u8 = u7(A_icb7 = A + A_icb) − x, b8 = b7 (the
+ICB's relative libration on its no-slip T row; conductive_IC's force was 2× the Poincaré force; any walls 0/1,
+ViscosD = 0 only at ricb = 0). 1: x = ∇(X Y_2^m), P_2 = −(a/4)(r² − ricb⁵/r³)/(1 − ricb⁵) (u_r = −1.5 a at the CMB),
+Ogilvie's homogeneous rows on u'; m = 0, 1, 2 ((2, 1) needs ricb > 0: the force is a gradient), Boussinesq, thermal =
+magnetic = 0, bc 0/1, no drag; carries Gaspard (conductive_IC's did not). spin_doctor: `upp.body_force_terms` (Wf, its
+enstrophy term, its torque Tf) in residσ, residω, residens, resid𝐄, resid𝐋 and P_in, flow.dat 42–43.
 Forced runs with a field (2026-11-06, conductive_IC port phase 6a; `docs/magnetic-equations.md#forced-runs`,
 `tests/forced_field`): every field row (f, g, fic, gic, fm, gm) gets +1j wf op.b (A − i wf B, B = −op.b there); A is not
 normalised (forcing ≠ 0), forcing 11 writes B.npz unnormalised and scans with A − i(w − wf)B. `innercore = 'conducting,
@@ -193,7 +207,8 @@ Bessel'` (forced only): the core's field j_l(k r), k² = −i w/(η_i MagnetD), 
 `xdlogjl` = x j_l′/j_l), two inner rows `assemble.bc_b_bessel` (bc_b_cic with the core eliminated), no fic/gic; energy and
 Ohmic loss in closed form (`utils4pp.bessel_budget`); stops in eigenproblems, rsf scans and just_induction with λ ≠ i wf
 (just_induction with λ ≠ i wf stops in any forced run but forcing 11, the only one that writes B.npz).
-Walls the forcing moves radially (`background.moves_radially`: 10; 9, 14, 7 m ≠ 0 with their amplitude; 6 at the ICB):
+Walls the forcing moves radially (`background.moves_radially`: 10; 9, 14, 7 m ≠ 0 with their amplitude; 6 at the ICB;
+2 at both walls, with forcing_amplitude_cmb):
 `forced_walls` (`background.forced_walls`; None → 'rigid' for forcings 6, 7, 'deforming' for 9, 10, 14) says how the
 conducting solid behind moves. 'rigid' (`flows_through`): the solid at rest, the flow's u×B0 continued into it,
 `assemble.bc_b_radial` (S_l, X_l of u_r r̂×B0_t, recurrence algebra, on the P columns at the wall) in the TWA rows and the
@@ -390,9 +405,10 @@ G = Gaspard; `units.nHz`, `units.set_target`), so prograde modes have ω > 0 and
 B is −inertia (momentum) and +entropy (heat); in A the momentum rows are Coriolis − viscous − buoyancy + diff rot, the
 heat rows −advection + diffusion + diff-rot terms (operators return the A sign). Forced runs (`forcing > 0`) use
 A − i wf B as the matrix (wf = `forcing_frequency`) and a boundary right-hand side (forcing 11: random body forces,
-`reynolds_stress.py`). The boundary forcings (6, 7, 9, 10, 12, 14) put their wall values on the right-hand side of the wall
-rows of `bc_u_spherical`: per degree P at the outer wall is row 0 and at the inner wall row 2 (T: rows 0 and 1). The
-tangential rows keep 0: they are the physical conditions for any P (no-slip (rP)'/r + P (ln ρ₀)' = 0, stress-free),
+`reynolds_stress.py`; forcings 1 and 8: −A x of a known flow, §4). The boundary forcings (2, 6, 7, 9, 10, 12,
+14) put their wall values on the right-hand side of the wall rows of `bc_u_spherical`: per degree P at the outer wall is
+row 0 and at the inner wall row 2 (T: rows 0 and 1). The tangential rows keep 0 (but forcing 2's, whose tide moves the
+walls along themselves): they are the physical conditions for any P (no-slip (rP)'/r + P (ln ρ₀)' = 0, stress-free),
 where conductive_IC's rows P' = 0, P'' = 0 need the values of P' and P'' (`tests/forcing/rows_check.py`).
 
 **Scales.** `Gaspard` = Ωτ, `Beyonce` = (N₀τ)², `ViscosD` = ν₀τ/r₀² (the Ekman number when τ = 1/Ω),
@@ -585,9 +601,13 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   Wv − Dvisc is a small difference there; residσ was ~1 for the libration); residω, resid𝐛, resid𝑠 are 0 when all
   their terms are exactly 0 (a steady m = 0 flow; 'Malkus' under an axisymmetric flow, b ≡ 0). A forced rigid rotation
   (walls at one rate, a full sphere, an inner core under a stress-free wall at rest) has round-off terms only: its
-  residuals are round-off over round-off, O(1).
+  residuals are round-off over round-off, O(1). NEW 2026-11-08: forcings 1 and 8 add the power of their body force,
+  Wf (and Wf_im) from `upp.body_force_terms` (the routines of flow_worker on x, then on u), to residσ, residω, resid𝐄 and
+  P_in (flow.dat 42–43), its enstrophy term to residens, its torque to resid𝐋. Full-sphere budgets at N 48 are ~1e-8
+  (forcing 7 too), 1e-15 at N 96.
 - resid𝐋 (NEW 2026-11-06, `rotdyn.L_case`: eigen, hydro, no centrifugal; m = 0, symm = 1, or m = 1, symm = −1 without
-  diff_rot; since 2026-11-08 also forcings 7 (m = 0), 12 and 13, axial, with λ = i wf): λL = −(torques on the walls) (+ i Gaspard L for m = 1, L = (L_x − i L_y)/N, N = −1/√2), viscous from T of
+  diff_rot; since 2026-11-08 also forcings 7 (m = 0), 8, 12 and 13, axial, and 1 (m = 0 axial, m = 1 equatorial),
+  with λ = i wf and the body force's torque): λL = −(torques on the walls) (+ i Gaspard L for m = 1, L = (L_x − i L_y)/N, N = −1/√2), viscous from T of
   degree 1, magnetic from the Maxwell stress on a θ grid (`rotdyn.wall_torques`, any B0); relative to |λ|∫|T| and the
   torques. 1e-15 hydro, 1e-11 with fields, 1e-9 full sphere. flow.dat columns 29–39 (L, torques, resid𝐋); rotdyn.dat.
 - Dtopo, δσtopo (NEW 2026-11-06, `topo.dissipation`; viscous runs with bco = 0, Gaspard > 0, no centrifugal): the power
@@ -694,7 +714,8 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   work on seven runs: 'Wu 2005', buoyancy, diff rot, the three wall conditions, a full sphere at N 384), `mk_run.py`.
 - `tests/decay/` (README, `run_all.sh`, ~30 s; NEW 2026-11-06): `decay_check.py` (hydro = 0: the free-decay rates of the
   field between insulators, with a conducting inner core (sigma_i2o 0.3), in a full sphere, and of the entropy, against
-  the roots of spherical Bessel functions (scipy), to 1e-10; with a differential rotation hydro = 0 against hydro = 1 with
+  the roots of spherical Bessel functions (scipy), to 1e-10, the budgets to 1e-9 (resid𝐛 with the conducting core 1e-10
+  at round-off: Mdfs = ∫ b⋅∇²b, third derivatives, grows with N); with a differential rotation hydro = 0 against hydro = 1 with
   cnorm 1e-9; just_induction.py + solve_ind.py against a mode with Hendrik 1e-30).
 - `tests/twa/` (README, `run_all.sh`, ~1 min; NEW 2026-11-06): `twa_check.py` (thin walls: hydro = 0 free decay against
   the exact thin-wall rates; with the flow against conductive_IC 2d84351 eigenvalues hard-coded for N 48, lmax 20/19 on 2
@@ -762,8 +783,9 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   sheet_on line; 44 checks).
 - `tests/forcing/` (README, `run_all.sh`, ~30 s; NEW 2026-11-06): `rows_check.py` (forcings 6 at a no-slip and a
   stress-free ICB, 7 with m = 0 and 2, 9 Boussinesq, 'Wu 2005' and full sphere, 10, and 12 with both walls turning,
-  under a stress-free outer wall and in a full sphere: the wall values read back from the solution of small forced runs
-  built with `tests/tidal/mk_run.py`, to 1e-10 of the amplitude).
+  under a stress-free outer wall and in a full sphere, and (2026-11-08) 2 with m 2 for both signs of wf and m 0 at ricb
+  37/42 (expected values strings evaluated in the run, from `utils.eccen_tide`): the wall values read back from the
+  solution of small forced runs built with `tests/tidal/mk_run.py`, to 1e-10 of the amplitude).
 - `tests/couette/` (README, `run_all.sh`, ~1.5 min on 2 ranks; NEW 2026-11-08): `couette_check.py`, forcing 12: eleven
   runs against conductive_IC 2d84351 (KE, ME, MEic hard-coded, N 48, lmax 31; the IC turning, both walls, the mantle;
   'axial' over insulating, Chebys, Bessel, TWA cores, TWA and resolved mantles, mu_i2o 1.5 and muw_cmb 2 with c_cmb;
@@ -772,6 +794,15 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   and permeable solids), the budgets ('Wu 2005' with buoyancy and a field, diff_rot, 'Malkus' (b ≡ 0) and 'wall', a
   slipping fluid with a drag, TWA, resolved mantle), the libration and forcing 13 (resid𝐋, residσ, residω), the stops of
   `background.check_forcing`.
+- `tests/cic_forcings/` (README, `run_all.sh`, ~2.5 min on 2 ranks; NEW 2026-11-08): `cic_forcings_check.py`, forcings 1, 2,
+  8: KE (ME) against conductive_IC 2d84351 (forcing 1 m 2 no-slip and stress-free, lmax 41; forcing 8 at twice cic's
+  angle, without and with 'axial' + Chebys, lmax 23) and the 12 eccen_tide pairs bitwise; forcing 8 = forcing 7 − x to
+  1e-12 (Boussinesq, 'Wu 2005' + diff_rot, Bessel + TWA field, full sphere, IC librating relative, slipping ICB; −x
+  alone without coupling: stress-free, inviscid full sphere); forcing 1 budgets (m 0, 1 shell and full sphere at N 96,
+  stress-free, diff_rot, 'user' ν), the exact rigid rotations of a stress-free or inviscid full sphere (T_1 = 3ia/(2w) r
+  for m 0, (3√3/4) i a/(w − 1) r for m 1), Gaspard scaling (viscous units: KE × 1e6); forcing 2 budgets (m 0, 2 ±,
+  'Wu 2005', 'Y20' diff_rot, a field); forcing 8 budgets where 7 cannot go (drag, TWA, resolved mantle, slipping ICB
+  along a Chebys core); 21 stops.
 - `tests/ci/test_spinover.py` (`cd tests/ci; pytest -v`, about 6 s): the test GitHub runs on every push to anelastic_log
   (`.github/workflows/anelastic_log.yml`: Ubuntu 24.04 with its PETSc/SLEPc 3.19, numpy 1.26 and scipy 1.11 packages, so
   `bin/` must not need newer ones; pushes that change only docs or `.md` files are skipped). It runs the smooth Sun
@@ -850,13 +881,19 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
 
 ## 14. History (this branch, newest first)
 
-The conductive_IC port, phase 7a (2026-11-08): forcing 12, the steady rotation of the walls (spherical Couette flow;
+The conductive_IC port, phase 7b (2026-11-08): forcings 1 (the wave-like tide, any m of degree 2, with Gaspard), 2 (the
+Enceladus eccentricity tide, with w and ricb fixed) and 8 (the libration in the frame of the mantle, the Poincaré force
+at its size, any walls) under conductive_IC's numbers, 3, 4, 5 stopped (`background.NOT_PORTED`), `check_tides`; the
+lifted right-hand side −A x (`assemble.lifted_rhs`, `utils.lifted_flow`), the body force's power, enstrophy term and
+torque in spin_doctor (flow.dat 42–43), `tests/cic_forcings/`, `docs/libration.md`, the √2 in tidal-forcing.md's table
+of u_r (kore's Y_l^m have ∫|Y|² = 4π/(2l+1) for every m);
+`dde6f94` the conductive_IC port, phase 7a (2026-11-08): forcing 12, the steady rotation of the walls (spherical Couette flow;
 `background.check_forcing`, also stopping unknown forcing numbers), resid𝐋 for forcings 7 (m = 0), 12 and 13, residσ and
 resid𝐄 relative to Dvisc where the walls drive the flow, residω, resid𝐛, resid𝑠 0 when all their terms are 0,
 `tests/couette/`, `docs/couette-flow.md`;
-The conductive_IC port, phase 6e (2026-11-08): the background's angular factors (mag_algebra, the sheet push, the
+`893bc76` the conductive_IC port, phase 6e (2026-11-08): the background's angular factors (mag_algebra, the sheet push, the
 centrifugal rotation force) as Legendre series summed over the recurrence's P_k(X), not in powers of x, §12;
-the conductive_IC port, phase 6d (2026-11-08): numpy's remaining Chebyshev interpolants and fits replaced by DCTs
+`52fc122` the conductive_IC port, phase 6d (2026-11-08): numpy's remaining Chebyshev interpolants and fits replaced by DCTs
 (Clairaut's g/x, the amplitudes inside a conducting inner core, model S hydrostatic's ρ, g, ln p, row_check's fits, and
 the wound field's k and ru_insane's S_tw, whose SVD failed at some N), §12;
 `8b841ed` the conductive_IC port, phase 6c (2026-11-07): the push of B0's current sheets, toroidal and poloidal, at slipping

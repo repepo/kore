@@ -153,8 +153,8 @@ quadrature in $\cos\theta$, exact for these polynomials. Each residual is relati
 
 | residual | budget | in `spin_doctor`'s names |
 | --- | --- | --- |
-| residσ | $2\sigma K - W_\nu - W_b - W_\Omega - W_p = 0$ (and the Lorentz work) | `2σ KE - Dkin - Wthm - Wdr - Wp` |
-| residω | its imaginary part, with the Coriolis force | `2w KE + Wcor_im - Dkin_im - Wthm_im - Wdr_im - Wp_im`, $w = \mathrm{Im}\thinspace\lambda$ |
+| residσ | $2\sigma K - W_\nu - W_b - W_\Omega - W_p - W_f = 0$ (and the Lorentz work) | `2σ KE - Dkin - Wthm - Wdr - Wp - Wf` |
+| residω | its imaginary part, with the Coriolis force | `2w KE + Wcor_im - Dkin_im - Wthm_im - Wdr_im - Wp_im - Wf_im`, $w = \mathrm{Im}\thinspace\lambda$ |
 | resid$s$ | $2\sigma T - W_{\rm adv} + D_{\rm th} - W_{\Omega,\rm th} = 0$ | `2σ TE - Dthm - Wadv - Wdr_thm` (`Dthm` $= -D_{\rm th}$) |
 | residD | $W_\nu - W_\nu^{\rm wall} + D_\nu = 0$ | `Dkin - (Wv_icb + Wv_cmb) + Dvisc` |
 | resid𝐋 | $\lambda L$ = the torques on the fluid ([Rotating solids equations](rotating-solids-equations.md#the-angular-momentum-balance-residl)) | `lam*angmom - (-vtorq - vtorq_ic - mtorq - mtorq_ic [+ i Gaspard angmom])` |
@@ -163,8 +163,18 @@ residσ and resid$s$ judge whether a solution is resolved ([Solver](solver.md) g
 runs, where $\sigma = 0$. Where the walls drive the flow along themselves (the libration, forcing 7 with $m$ = 0, and
 the steady rotation of the walls, forcing 12), $W_\nu = W_\nu^{\rm wall} - D_\nu$ is a small difference of two large
 terms, so residσ, and resid𝐄 with a field, are relative to $D_\nu$ too. A residual whose terms all vanish, such as
-residω of a steady flow with $m$ = 0, is 0. residD compares two independent computations of the viscous terms: $W_\nu$ from the viscous
-force of each degree (`utils4pp.visforce`), and $D_\nu$ from the strain rate on the grid
+residω of a steady flow with $m$ = 0, is 0. $W_f = 2\thinspace\mathrm{Re}\int\rho_0\thinspace\mathbf u^*\cdot\mathbf f\thinspace dV$
+is the power of a body force that the right-hand side puts in the fluid: that of a known flow $\mathbf x$ whose
+equations make it (forcings 1 and 8),
+
+$$
+\mathbf f = -\left[\lambda\mathbf x + 2\thinspace\mathrm{Gaspard}\thinspace\hat{\mathbf z}\times\mathbf x -
+\frac{\nabla\cdot\boldsymbol\sigma(\mathbf x)}{\rho_0} - \mathbf F_\Omega(\mathbf x)\right] ,
+$$
+
+with $\mathbf F_\Omega$ the force of a differential rotation (`utils4pp.body_force_terms`). Its enstrophy term enters
+residens, and $W_f$ is 0 for the other forcings. residD compares two independent computations of the viscous terms:
+$W_\nu$ from the viscous force of each degree (`utils4pp.visforce`), and $D_\nu$ from the strain rate on the grid
 (`utils4pp.viscous_dissipation`). It is $10^{-15}$ to $10^{-12}$.
 
 **The work at the walls** (`utils4pp.wall_powers`). kore does not solve for the pressure. `spin_doctor` recovers it

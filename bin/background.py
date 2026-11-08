@@ -26,7 +26,15 @@ B0_CMBS = ('wall', 'plain')   # NEW (2026-11-06): B0_cmb (magnetic = 1, mantle =
 MAG_COUPLINGS = ('closed', 'algebra')            # NEW (2026-11-03): mag_couplings, B0_ic and ferraro_policy (magnetic = 1),
 B0_ICS = ('potential', 'frozen currents')        # also written to params.dat as these indices ('frozen currents' was 'full sphere')
 FERRARO_POLICIES = ('warn', 'refuse')
-FORCINGS = (6, 7, 9, 10, 11, 12, 13, 14)   # NEW (2026-11-08): the forced problems of assemble.py (0: eigenvalue problems)
+FORCINGS = (1, 2, 6, 7, 8, 9, 10, 11, 12, 13, 14)   # NEW (2026-11-08): the forced problems of assemble.py (0: eigenvalue problems)
+# NEW (2026-11-08): the forcings of conductive_IC that were not ported, and what to use instead (check_forcing stops on them)
+NOT_PORTED = {
+    3: "conductive_IC's body force of Rovira-Navarro et al. (2019), whose rows were written in the wrong basis there, is not "
+       "ported: forcing 14 imposes the radial motion of the walls of a tide",
+    4: "conductive_IC's test case of forcing 1's force times constants of the Enceladus fits is not ported: use forcing 1",
+    5: "conductive_IC's test case of the Coriolis force on grad(Y_2^0/r) is not ported: forcing 1 with m = 0 is the "
+       "Coriolis force on the equilibrium tide",
+}
 
 # names that are no longer read and what to set instead (without this stop they would be ignored without notice)
 REMOVED = {
@@ -121,10 +129,14 @@ def check_forcing():
     does not carry the fluid (and the rows of a fluid slipping along a conducting solid hold the solid at rest). The walls
     stay in place (bc 0 or 1): a steady flow through a wall of zero radial stress would move it without end. With
     thermal = 1 it needs ThermaD > 0: without diffusion the steady entropy equation, u_r dS/dr = 0, leaves the entropy
-    undetermined. Forcings 13 and 14 check their settings in assemble.py.
+    undetermined. Forcings 13 and 14 check their settings in assemble.py; forcings 1, 2 and 8 check_tides.
     '''
+    if par.forcing in NOT_PORTED:
+        sys.exit('forcing %d: %s' % (par.forcing, NOT_PORTED[par.forcing]))
     if par.forcing not in FORCINGS:
         sys.exit('forcing %r: 0 (an eigenvalue problem) or one of the forced problems %s' % (par.forcing, _names(FORCINGS)))
+    if par.forcing in (1, 2, 8):
+        check_tides()
     if par.forcing != 12:
         return
     if par.m != 0 or par.symm != 1:
@@ -149,6 +161,65 @@ def check_forcing():
                      'Make it no-slip (%s = 1), or set %s = 0' % (wall, rate, getattr(par, rate), bc, bc, rate))
     if all(getattr(par, rate) == 0 for wall, bc, rate in walls):
         sys.exit('forcing 12 needs a wall that turns: forcing_amplitude_cmb or forcing_amplitude_icb other than 0')
+
+
+def check_tides():
+    '''
+    NEW (2026-11-08, from conductive_IC): stops on the settings that forcings 1, 2 and 8 do not cover. Each has a frequency
+    (forcing_frequency != 0).
+      1, the wave-like tide (Lin & Ogilvie 2018): (m, symm) = (0, 1), (1, -1) or (2, 1); the equilibrium tide ∇(X Y₂ᵐ) is a
+         potential flow, solenoidal and with no viscous force, only for a uniform density ('Boussinesq'), with no
+         stratification to displace (thermal = 0) and no field to induce (magnetic = 0); it moves the outer wall radially,
+         so the walls of the flow solved for are impenetrable (bco, bci 0 or 1) and the drag at the outer wall, which would
+         act on the slip of the whole tide, is left out. For m = 2 the Coriolis force on it is a gradient in a full sphere,
+         which drives nothing: ricb > 0.
+      2, the eccentricity tide of Enceladus (Rekier et al. 2019): m = 0 or 2 and symm = 1, no-slip walls (bci = bco = 1,
+         which the fits move radially and along themselves) and ricb from 16/21 to 1, where the fits hold
+         (background.check_forced_magnetic: no conducting solid behind the walls).
+      8, the libration in the frame of the mantle: m = 0, symm = 1; the walls are solids that stay in place (bco, bci 0 or
+         1: the mantle, and the inner core that turns with it); the inner core's own libration relative to the mantle
+         (forcing_amplitude_icb) needs an inner core.
+    An inviscid fluid (ViscosD = 0, forcings 1 and 8) needs a full sphere: kore's inviscid formulation (its bases and its one
+    wall row) is for ricb = 0 only.
+    '''
+    f = par.forcing
+    if par.forcing_frequency == 0:
+        sys.exit('forcing %d needs forcing_frequency != 0: it is a periodic forcing' % f)
+    if par.ViscosD == 0 and par.ricb > 0:
+        sys.exit('forcing %d with an inviscid fluid (ViscosD = 0) needs ricb = 0: the inviscid formulation is for the full '
+                 'sphere only' % f)
+    if f == 1:
+        if (par.m, par.symm) not in ((0, 1), (1, -1), (2, 1)):
+            sys.exit('forcing 1 (the wave-like tide) needs (m, symm) = (0, 1), (1, -1) or (2, 1), the degree-2 tide')
+        if par.m == 2 and par.ricb == 0:
+            sys.exit('forcing 1 with m = 2 needs an inner core (ricb > 0): in a full sphere the Coriolis force on the '
+                     'equilibrium tide r² Y_2^2 is a gradient, which drives no flow')
+        if par.structure != 'Boussinesq' or par.thermal or par.magnetic:
+            sys.exit("forcing 1 (the wave-like tide) needs structure 'Boussinesq', thermal = 0 and magnetic = 0: its "
+                     "equilibrium tide is the potential flow of a uniform fluid with no stratification and no field")
+        if par.bco not in (0, 1) or (par.ricb > 0 and par.bci not in (0, 1)):
+            sys.exit('forcing 1 needs impenetrable walls (bco, bci = 0 or 1): the radial motion of the outer wall is that of '
+                     'the equilibrium tide')
+        if par.kappa_cmb != 0 or par.topo_drag is not None:
+            sys.exit('forcing 1 with a drag at the outer wall (kappa_cmb, topo_drag) is not covered: the drag would act on '
+                     'the slip of the whole tide, the equilibrium tide included')
+    elif f == 2:
+        if (par.m, par.symm) not in ((0, 1), (2, 1)):
+            sys.exit('forcing 2 (the eccentricity tide of Enceladus) needs m = 0 or 2 and symm = 1')
+        if not 16/21 <= par.ricb < 1:
+            sys.exit('forcing 2: the fits of the tide hold for ricb from 16/21 = %.4f to 1 (got %r)' % (16/21, par.ricb))
+        if par.bco != 1 or par.bci != 1 or par.ViscosD == 0:
+            sys.exit('forcing 2 needs no-slip walls (bci = bco = 1, ViscosD > 0): the tide moves them radially and along '
+                     'themselves')
+    elif f == 8:
+        if par.m != 0 or par.symm != 1:
+            sys.exit('forcing 8 (the libration in the frame of the mantle) needs m = 0 and symm = 1')
+        if par.bco not in (0, 1) or (par.ricb > 0 and par.bci not in (0, 1)):
+            sys.exit('forcing 8 needs walls that stay in place (bco, bci = 0 or 1): they are the mantle that librates and the '
+                     'inner core that turns with it')
+        if par.ricb == 0 and par.forcing_amplitude_icb != 0:
+            sys.exit('forcing 8 in a full sphere (ricb = 0) has no inner core to librate relative to the mantle: set '
+                     'forcing_amplitude_icb = 0')
 
 
 def check_drag():
@@ -455,9 +526,12 @@ def moves_radially(wall):
     '''
     NEW (2026-11-06): whether the forcing prescribes a radial flow (uᵣ ≠ 0) at the wall 'outer' or 'inner', which stands for
     the motion of the boundary (the wall itself stays at the sphere): forcing 10 at the outer wall; forcings 9, 14 and 7 with
-    m != 0 where their amplitude (forcing_amplitude_cmb, forcing_amplitude_icb) is not 0; forcing 6 at the inner wall
+    m != 0 where their amplitude (forcing_amplitude_cmb, forcing_amplitude_icb) is not 0; forcing 6 at the inner wall;
+    NEW (2026-11-08) forcing 2 at both walls where forcing_amplitude_cmb is not 0 (one amplitude for both)
     '''
     f = par.forcing
+    if f == 2:
+        return par.forcing_amplitude_cmb != 0 and (wall == 'outer' or par.ricb > 0)
     if wall == 'outer':
         return f == 10 or ((f in (9, 14) or (f == 7 and par.m != 0)) and par.forcing_amplitude_cmb != 0)
     return par.ricb > 0 and par.forcing_amplitude_icb != 0 and (f in (6, 9, 14) or (f == 7 and par.m != 0))
@@ -741,7 +815,19 @@ def check_forced_magnetic():
     own field). Walls that stay in place take any permeability.
     The rows of innercore 'conducting, Bessel' hold at forcing_frequency only (k of its field j_l(k r)), so a frequency scan
     (forcing 11 with rsf_frequencies), which shifts A by multiples of B, cannot use them.
+    NEW (2026-11-08): forcing 2 moves the walls along themselves too, which no row of a conducting solid holds: it needs
+    insulating walls (an insulator, or a thin layer that does not conduct, c1 = 0).
     '''
+    if par.forcing == 2:   # NEW (2026-11-08): the tide moves the walls along themselves too
+        solids = []
+        if par.mantle == 'resolved' or (par.mantle == 'TWA' and par.c1_cmb != 0):
+            solids.append('mantle %r' % par.mantle)
+        if par.innercore in CONDUCTING_CORES or (par.innercore == 'TWA' and par.c1_icb != 0):
+            solids.append('innercore %r' % par.innercore)
+        if solids:
+            sys.exit("forcing 2 with a conducting solid behind a wall (%s) is not covered: the tide moves the walls along "
+                     "themselves, and the electric field of a solid that deforms that way is not implemented. Use insulating "
+                     "walls ('insulator', or 'TWA' with c1 = 0)" % ', '.join(solids))
     if forced_walls() == 'deforming' and par.ricb > 0 and moves_radially('inner'):
         if par.innercore == 'conducting, Bessel':
             sys.exit("forced_walls = 'deforming' with innercore 'conducting, Bessel': forcing = %d moves the inner wall "
@@ -770,13 +856,14 @@ def check_forced_magnetic():
             and getattr(par, 'rsf_frequencies', None) is not None):
         sys.exit("innercore 'conducting, Bessel' with a frequency scan (forcing 11, rsf_frequencies): its rows hold at "
                  "forcing_frequency only. Use 'conducting, Chebys'")
-    if (par.forcing == 7 and par.m == 0 and par.ricb > 0 and par.bci == 0 and par.forcing_amplitude_icb != 0 and par.hydro
+    if (par.forcing in (7, 8) and par.m == 0 and par.ricb > 0 and par.bci == 0 and par.forcing_amplitude_icb != 0 and par.hydro
             and par.B0 is not None and (par.innercore in CONDUCTING_CORES or (par.innercore == 'TWA' and par.c1_icb != 0))):
-        # NEW (2026-11-07): the slip of utils.cic_slips, twa_slips('inner'), relative to a core that librates
-        sys.exit('forcing 7 (m = 0) with forcing_amplitude_icb != 0 behind a stress-free inner wall (bci = 0) along a '
+        # NEW (2026-11-07): the slip of utils.cic_slips, twa_slips('inner'), relative to a core that librates (NEW 2026-11-08:
+        # forcing 8 too, whose inner core librates relative to the mantle by forcing_amplitude_icb)
+        sys.exit('forcing %d (m = 0) with forcing_amplitude_icb != 0 behind a stress-free inner wall (bci = 0) along a '
                  'conducting inner core or a conducting thin layer on it: the libration of the core reaches the fluid there '
                  'through the u×B0 of the slip relative to the core alone, which is not implemented. Set bci = 1, or '
-                 'forcing_amplitude_icb = 0')
+                 'forcing_amplitude_icb = 0' % par.forcing)
 
 
 def check_magnetic():

@@ -60,7 +60,10 @@ and either `m = 0`, `symm = 1` (the axial angular momentum) or `m = 1`, `symm = 
 Coriolis force turns; the spin-over mode is one of these), with or without the rotating solids. It also prints it for
 the forced runs with `m = 0`, `symm = 1` whose walls move only along themselves and that put no force in the fluid: the
 libration (forcing 7), the steady rotation of the walls (forcing 12, [Spherical Couette flow](couette-flow.md)) and the
-thermal forcing (forcing 13). It is not computed with `centrifugal = 1`, nor for `m = 1` with a differential rotation.
+thermal forcing (forcing 13), and for those whose body force it knows, with the torque of that force: the libration in
+the frame of the mantle (forcing 8, [Libration](libration.md)) and the wave-like tide (forcing 1, `m = 0` or `m = 1`,
+[Tidal forcing](tidal-forcing.md#the-wave-like-tide-forcing-1)). It is not computed with `centrifugal = 1`, nor for
+`m = 1` with a differential rotation.
 Like residσ, it should be small for a resolved mode.
 `flow.dat` has the angular momentum, the torques and resid𝐋 ([Output files](output.md#flowdat)).
 

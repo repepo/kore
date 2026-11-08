@@ -614,6 +614,16 @@ $$
   conducting inner core or a conducting thin layer on it, by the $\mathbf u\times\mathbf B_0$ of the slip relative to the
   core, which is not built: that case stops (`background.check_forced_magnetic`). With an insulating core, or a toroidal
   $\mathbf B_0$ alone, `forcing_amplitude_icb` has no effect (`assemble.py` says so).
+- **The libration in the frame of the mantle** (forcing 8, [Libration](libration.md)). Its right-hand side is
+  $-A\mathbf x$ on the interior rows of every equation of the fluid, with $\mathbf x$ the rigid libration of the mantle
+  ($T_1 = iwA\thinspace r/2$, `utils.lifted_flow`; `assemble.lifted_rhs`), the induction rows included. Since
+  $\nabla\times(\mathbf x\times\mathbf B_0) = 0$ these get nothing, and the field is that of forcing 7 with the inner
+  core's angle $A + A_{IC}$, while the flow is forcing 7's minus $\mathbf x$. The walls are at rest, so a fluid that slips
+  along a stress-free wall slips relative to the solid behind it, with the rows of a slipping fluid at a wall at rest.
+  The libration of the inner core relative to the mantle behind a stress-free inner wall stops as for forcing 7.
+- **The eccentricity tide** (forcing 2). It moves the walls along themselves too, with a tangential velocity that is not
+  a rotation. A conducting solid behind such a wall would deform along it and induce a field, which no row holds: the
+  run needs insulating walls (`background.check_forced_magnetic`).
 
 **The Bessel inner core** (`innercore = 'conducting, Bessel'`, from `conductive_IC`). At one frequency the field of a
 uniform conducting inner core, regular at the centre, is known: each scalar goes as $j_l(kr)$, with
@@ -1115,8 +1125,10 @@ $$
 2\sigma[\mathrm{KE} + \mathrm{Hendrik}(\mathrm{ME} + \mathrm{MEic} + \mathrm{MEext})] = \mathrm{Dkin} + \mathrm{Wthm} + \mathrm{Wlor} + \mathrm{Hendrik}(\mathrm{Indu} - \mathrm{Ohm\_f} - \mathrm{Ohm\_ic}) :
 $$
 
-unlike resid𝐛 it sees the wall and ICB conditions. The $1/\mu_{i2o}$ of the inner core's energy and Ohmic loss is not in
-`conductive_IC`'s `em_budget` (there resid𝐄 is $10^{-2}$ at `mu_i2o` = 2). Without the flow (`hydro = 0`) it is
+unlike resid𝐛 it sees the wall and ICB conditions. A body force that the right-hand side puts in the fluid, the Poincaré
+force of the libration in the frame of the mantle (forcing 8), adds its power Wf (`flow.dat` column 42) on the right. The
+$1/\mu_{i2o}$ of the inner core's energy and Ohmic loss is not in `conductive_IC`'s `em_budget` (there resid𝐄 is
+$10^{-2}$ at `mu_i2o` = 2). Without the flow (`hydro = 0`) it is
 $2\sigma(\mathrm{ME} + \mathrm{MEic} + \mathrm{MEext}) = \mathrm{Indu} - \mathrm{Ohm\_f} - \mathrm{Ohm\_ic}$, without
 Hendrik and for any walls (Indu is then the induction by a differential rotation, or 0).
 
@@ -1458,12 +1470,15 @@ inside a conducting inner core. `tests/decay/decay_check.py` finds the roots wit
 | case | modes | largest relative error | resid𝐛, resid𝐄 |
 | --- | --- | --- | --- |
 | insulating walls | poloidal $l$ = 1 (two), 3; toroidal $l$ = 2: rates 10.041029, 45.156235, 33.260470, 37.495006 | 4e-15 | ≤ 5e-12 |
-| conducting inner core, `sigma_i2o` 0.3 | the same: 9.993017, 43.759526, 33.248628, 35.942816 | 6e-14 | ≤ 8e-11 |
+| conducting inner core, `sigma_i2o` 0.3 | the same: 9.993017, 43.759526, 33.248628, 35.942816 | 6e-14 | ≤ 2e-10 |
 | full sphere | $\pi^2$, $4\pi^2$, and 33.217462 (poloidal $l$ = 3 and toroidal $l$ = 2 together) | 9e-15 | ≤ 2e-13 |
 
 With a differential rotation the modes of the field alone equal, to $10^{-15}$, those of the same run with the flow and a
 B0 of $10^{-9}$, where the field and the flow decouple; the entropy of `'Boussinesq'` decays at the exact rates too, and
-the field of `just_induction.py` with `solve_ind.py` is that of a mode without Lorentz force to $10^{-14}$.
+the field of `just_induction.py` with `solve_ind.py` is that of a mode without Lorentz force to $10^{-14}$. resid𝐛 takes
+the magnetic diffusion from $\int\mathbf b\cdot\nabla^2\mathbf b\,dV$, whose round-off grows with N and differs
+from one machine to another: with the conducting inner core it is $8\times10^{-11}$ on one and $2\times10^{-10}$ on
+another, and the check holds the budgets to $10^{-9}$.
 
 ### Thin conducting layer (2026-11-06)
 

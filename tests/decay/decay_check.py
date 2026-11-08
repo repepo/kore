@@ -16,7 +16,11 @@ is the toroidal condition above, s' = 0 at the outer wall gives j_l'(k) y_l(k ri
 with a differential rotation, the field's modes of hydro = 0 (diffusion and induction by the rotation) are those of the
 same run with the flow and a vanishing B0 (cnorm 1e-9: the field and the flow then decouple); and just_induction.py with
 solve_ind.py give the field of a mode of a run whose Lorentz force vanishes (Hendrik 1e-30), from its flow and eigenvalue.
-Each run's spin_doctor budgets (resid𝐛, resid𝐄, resid𝑠) must close too. Exit code 1 if a value is off by more than 1e-10.
+Each run's spin_doctor budgets (resid𝐛, resid𝐄, resid𝑠) must close too, to 1e-9. FIX (2026-11-08): they were held to
+1e-10, which resid𝐛 of the conducting inner core met on one machine and not on another (8e-11, 2e-10): it takes the
+magnetic diffusion from the integral of 𝐛⋅∇²𝐛, the third derivative of the poloidal scalar, whose round-off grows with
+N (4e-10 at N 64, with the decay rates exact to 5e-14). Exit code 1 if an eigenvalue or a field is off by more than
+1e-10, or a budget by more than 1e-9.
 '''
 import os, sys, subprocess
 import numpy as np
@@ -110,7 +114,7 @@ def budgets(d):
 fail = 0
 def report(name, err, budget):
     global fail
-    ok = err < 1e-10 and budget < 1e-10
+    ok = err < 1e-10 and budget < 1e-9
     fail |= not ok
     print('%-15s %s  (largest error %.1e, largest budget residual %.1e)' % (name, 'ok' if ok else 'FAIL', err, budget))
 

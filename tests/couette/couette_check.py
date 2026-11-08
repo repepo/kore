@@ -261,7 +261,7 @@ STOPS = [
     ('stop_bc2', "par.bco = 2", 'walls that stay in place'),
     ('stop_slip_turn', "par.bci = 0", 'the inner wall turns'),
     ('stop_no_turn', "par.forcing_amplitude_icb = 0.0", 'needs a wall that turns'),
-    ('stop_forcing', "par.forcing = 5", 'forcing 5: 0 (an eigenvalue problem)'),
+    ('stop_forcing', "par.forcing = 15", 'forcing 15: 0 (an eigenvalue problem)'),
     ('slip_at_rest', "par.bco = 0", None),
     ('sphere', "par.ricb = 0; par.forcing_amplitude_icb = 0.0; par.forcing_amplitude_cmb = 1.0", None),
 ]

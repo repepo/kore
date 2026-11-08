@@ -135,11 +135,12 @@ def L_case():
     impenetrable walls). NEW (2026-11-08): also the axial balance of the forced problems whose walls move only along
     themselves and that put no force in the fluid: the libration (forcing 7, m = 0), the steady rotation of the walls (12)
     and the thermal forcing (13). A radial boundary flow would add the Coriolis torque of the mass it carries through the
-    walls, and a body force (11) its own torque.
+    walls, and a random body force (11) its own torque. The body forces of forcings 1 (axial or equatorial) and 8 (axial),
+    whose walls are at rest, add theirs (utils4pp.body_force_terms).
     '''
     axial = par.m == 0 and par.symm == 1
     equatorial = par.m == 1 and par.symm == -1 and not par.diff_rot
-    forced = par.forcing in (7, 12, 13) and axial
+    forced = (par.forcing in (7, 8, 12, 13) and axial) or (par.forcing == 1 and (axial or equatorial))
     return bool(par.hydro and not par.centrifugal and ((par.forcing == 0 and (axial or equatorial)) or forced))
 
 

@@ -115,7 +115,10 @@ A differential rotation would add a torque here, so this case needs `diff_rot = 
 the forcing moves the walls only along themselves and puts no force in the fluid: the libration (forcing 7 with $m$ =
 0), the steady rotation of the walls (forcing 12, where $\lambda = 0$ and the torques on the two solids cancel) and the
 thermal forcing (forcing 13). A flow through a wall would add the Coriolis torque of the mass it carries across, and a
-body force (forcing 11) its own torque, so resid𝐋 is not computed for the other forcings.
+body force its own torque. For the body forces $\mathbf f$ that `spin_doctor` knows, the Poincaré force of the libration
+in the frame of the mantle (forcing 8) and the force of the wave-like tide (forcing 1, axial for $m$ = 0 and equatorial
+for $m$ = 1), the balance includes that torque, the same integral as $L$ over the toroidal part of $\mathbf f$ of degree 1
+(`utils4pp.body_force_terms`). resid𝐋 is not computed for the other forcings.
 
 resid𝐋 is the residual of the balance relative to the largest of $\lvert\lambda\rvert L_{\rm abs}$, the torques, and
 Gaspard $L_{\rm abs}$ for $m = 1$, with $L_{\rm abs}$ the same integral of $\lvert T\rvert$: a mode on which no torque

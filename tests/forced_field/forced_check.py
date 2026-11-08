@@ -75,7 +75,8 @@ T = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(T, '..', 'tidal'))
 import mk_run   # noqa: E402  (the run builder of tests/tidal: 'Boussinesq', ricb 0.35, NCPUS ranks)
 
-W = sys.argv[1] if len(sys.argv) > 1 else os.path.join(T, 'runs')
+# FIX (2026-11-08): absolute, since check 9 imports utils from a run directory after a chdir (a relative WORKDIR failed)
+W = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else os.path.join(T, 'runs')
 os.makedirs(W, exist_ok=True)
 LMAX_LINE = 'par.lmax = par.ellmax(par.ncpus, max(g, 4.*par.ncpus/par.N), par.m, par.N)'
 assert LMAX_LINE in mk_run.T

@@ -380,11 +380,12 @@ resolved mantle), one column per column of the flow.
 ## Forced runs
 
 A forced run gives the response of the flow and the field to a forcing at one frequency, such as a tide, a libration of
-the walls or their steady rotation (`forcing` other than 0; [Tidal forcing](tidal-forcing.md),
+the walls or their steady rotation (`forcing` other than 0; [Tidal forcing](tidal-forcing.md), [Libration](libration.md),
 [Thermal forcing](thermal-forcing.md), [Spherical Couette flow](couette-flow.md), [Convective forcing](forcing.md)).
-With a field every forcing runs as without one: the field is solved with the flow at the forcing frequency, with any of
-the walls and inner cores above, and spin_doctor checks the budgets of the solution. The solution is written as solved,
-with the amplitude that the forcing sets.
+With a field every forcing but the wave-like tide (forcing 1, whose equilibrium tide is that of a fluid without a field)
+runs as without one: the field is solved with the flow at the forcing frequency, with any of the walls and inner cores
+above (insulating walls for the eccentricity tide, forcing 2), and spin_doctor checks the budgets of the solution. The
+solution is written as solved, with the amplitude that the forcing sets.
 
 - **A conducting inner core at one frequency.** At a single frequency the field inside a uniform conducting inner core
   is a spherical Bessel function of the radius. `innercore = 'conducting, Bessel'` uses it, so the core adds conditions
@@ -397,7 +398,8 @@ with the amplitude that the forcing sets.
 - **Walls that turn.** Where the forcing turns a no-slip wall about the axis, in the libration (forcing 7, `m` 0) and the
   steady rotation of the walls (forcing 12), a conducting solid behind the wall turns with it. A rotation about the axis
   leaves the axisymmetric B0 as it is, so the solid induces no field itself: the field comes from the shear and the
-  circulation of the fluid, and diffuses into the solid.
+  circulation of the fluid, and diffuses into the solid. In the frame of the mantle (forcing 8) the mantle is at rest,
+  and the field is that of forcing 7.
 - **Kinematic induction** works in the directory of a forced run too: `just_induction.py` without `lambda` takes the
   forced matrix as it is, at `forcing_frequency`. Another `lambda` needs `B.npz`, which forcing 11 alone writes.
 
@@ -430,7 +432,8 @@ as the simplest field that is regular at the centre, so `'dipole'`, whose source
 with currents. With a poloidal field and `'TWA'`, `'deforming'` gives the solutions of the `conductive_IC` branch. Where
 a no-slip wall also moves along itself, as in a libration, the solid turns with it in both pictures. With insulating
 solids `forced_walls` changes nothing. `'deforming'` does not take `'conducting, Bessel'` behind a wall that moves, since
-the core's field is then no longer a Bessel function.
+the core's field is then no longer a Bessel function. The eccentricity tide (forcing 2) also moves its walls along
+themselves, which a conducting solid behind them would follow by deforming: it needs insulating walls.
 
 In both pictures a wall that moves, where B0 reaches it, needs the same permeability on both sides: a surface where the
 permeability jumps would carry magnetized matter through B0 as it moves. So `mu` must be 1, and `mu_i2o` 1 with a
@@ -472,8 +475,11 @@ Not supported (the run stops at startup):
   that `N_mantle` polynomials do not resolve;
 - with `forced_walls = 'deforming'` (the default of forcings 9, 10 and 14), `'conducting, Bessel'` behind an inner wall
   that the forcing moves radially (forcing 6, and 9, 14 and 7 with `m` 2 where `forcing_amplitude_icb` is not 0);
-- the libration of the inner core (forcing 7 with `m` 0 and `forcing_amplitude_icb` not 0) behind a stress-free inner
-  wall (`bci = 0`) along a conducting inner core or a conducting thin layer on it, across a poloidal field;
+- the libration of the inner core (forcing 7 with `m` 0, or forcing 8, and `forcing_amplitude_icb` not 0) behind a
+  stress-free inner wall (`bci = 0`) along a conducting inner core or a conducting thin layer on it, across a poloidal
+  field;
+- the eccentricity tide (forcing 2) with a conducting solid behind a wall: a resolved mantle, a thin layer that conducts
+  (`c1_cmb` or `c1_icb` not 0), a conducting inner core; and the wave-like tide (forcing 1) with a field;
 - a current sheet of the field (a toroidal field that is not zero at the wall, or a poloidal one that does not meet the
   field beyond) at the wall of an inviscid full sphere, or at a slipping wall with `centrifugal = 1`, with an insulator
   or a thin layer that does not conduct (`c1_cmb` or `c1_icb` 0) beyond

@@ -22,4 +22,6 @@ scipy. The cases: a shell between insulators, a conducting inner core (`sigma_i2
 differential rotation the field's modes without the flow must equal those of the same run with the flow and a vanishing
 B0 (the two then decouple), and `just_induction.py` with `solve_ind.py` must give back the field of a mode whose Lorentz
 force vanishes, from its flow and its eigenvalue. Expected: every eigenvalue and field to $10^{-10}$ (in practice
-$10^{-13}$ or better), and the budgets of `spin_doctor` (resid𝐛, resid𝐄, resid𝑠) to $10^{-10}$. About 30 s on 2 ranks.
+$10^{-13}$ or better), and the budgets of `spin_doctor` (resid𝐛, resid𝐄, resid𝑠) to $10^{-9}$ (in practice
+$5\cdot10^{-12}$ or better, but resid𝐛 with the conducting inner core, $2\cdot10^{-10}$: it takes the magnetic
+diffusion from the integral of $\mathbf b\cdot\nabla^2\mathbf b$, whose round-off grows with N). About 30 s on 2 ranks.

@@ -7,10 +7,13 @@ of bc_u_spherical (bin/assemble.py: per degree, the rows P = 0 and the tangentia
 same at the inner wall; for T the outer row, then the inner one). This check solves one small forced run per case and
 reads the wall values back from the solution: the imposed P or T, and the tangential condition, which must stay
 homogeneous (zero tangential velocity at a no-slip wall, (rP)'/r + P (ln ρ0)' = 0, or zero tangential stress at a
-stress-free one). The cases: forcing 6 (no-slip and stress-free inner wall), 7 (m = 0 and m = 2), 9 (in an
-incompressible shell, with a variable density, and in a full sphere), 10, and NEW (2026-11-08) 12 (both walls turning,
-the inner one under a stress-free outer wall at rest, whose toroidal row stays rT' - T = 0, and a full sphere). Before
-2026-11-06 forcings 6, 7 (m = 2) and 9 put the inner wall's value on the outer wall's rows.
+stress-free one) except for forcing 2, whose tide moves the walls along themselves too. The cases: forcing 6 (no-slip
+and stress-free inner wall), 7 (m = 0 and m = 2), 9 (in an incompressible shell, with a variable density, and in a full
+sphere), 10, and NEW (2026-11-08) 12 (both walls turning, the inner one under a stress-free outer wall at rest, whose
+toroidal row stays rT' - T = 0, and a full sphere) and 2 (m 2 for both signs of the frequency, and m 0, at ricb 37/42:
+P = i w A P_fit at the outer wall and i w A ricb P_fit at the inner one, (rP)'/r = i w A (P_fit + dP_fit) at both, with
+the fits of utils.eccen_tide). Before 2026-11-06 forcings 6, 7 (m = 2) and 9 put the inner wall's value on the outer
+wall's rows, and before 2026-11-08 forcing 2 (in conductive_IC) left out the frequency w, and ricb at the inner wall.
 
 Exit code 1 if a case is off by more than 1e-10 of its amplitude.
 '''
@@ -61,6 +64,13 @@ cases = [
                    'par.forcing_amplitude_cmb = 0.5',
      [('T', 1, 'o', 0.5/2)]),
 ]
+# NEW (2026-11-08): forcing 2, the eccentricity tide of Enceladus; its values come from utils.eccen_tide in the run
+# (strings, evaluated there), for the component m sign(w)
+TIDE = "1j*par.forcing_frequency*par.forcing_amplitude_cmb*ut.eccen_tide(par.m*int(np.sign(par.forcing_frequency)), par.ricb, '%s')"
+for name, extra in [('f2_m2', 'par.m = 2'), ('f2_m2_pro', 'par.m = 2; par.forcing_frequency = -1.'), ('f2_m0', 'par.m = 0')]:
+    cases.append((name, 'par.forcing = 2; par.symm = 1; par.ricb = 37/42; par.forcing_amplitude_cmb = 0.5; ' + extra,
+                  [('P', 2, 'o', '(%s)[0]' % (TIDE % 'cmb')), ('ns', 2, 'o', 'sum(%s)' % (TIDE % 'cmb')),
+                   ('P', 2, 'i', 'par.ricb*(%s)[0]' % (TIDE % 'icb')), ('ns', 2, 'i', 'sum(%s)' % (TIDE % 'icb'))]))
 
 check = r'''
 import sys; sys.path.insert(0, 'bin')
@@ -82,6 +92,8 @@ def series(kind, l):
     c = Plj[list(lp).index(l)] if kind not in ('T', 'tsf') else Tlj[list(lt).index(l)]
     return ch.Chebyshev(c, domain=dom)
 for kind, l, wall, value in eval(sys.argv[1]):
+    if isinstance(value, str):
+        value = eval(value)
     r = 1. if wall == 'o' else par.ricb
     F = series(kind, l)
     F0, F1, F2 = F(r), F.deriv()(r), F.deriv(2)(r)
@@ -100,13 +112,10 @@ for name, extra, expect in cases:
     p = subprocess.run([sys.executable, '-c', check, repr(expect)], cwd=d, capture_output=True, text=True)
     if p.returncode:
         print(name, 'FAILED to read the solution:', p.stderr[-2000:]); fail = 1; continue
-    scale = max(abs(v) for _, _, _, v in expect)
-    worst = 0
-    for line in p.stdout.split('\n'):
-        if not line.strip(): continue
-        kind, l, wall, got, value = line.split(' ', 4)
-        got, value = complex(got), complex(value)
-        worst = max(worst, abs(got - value)/scale)
+    rows = [line.split(' ', 4) for line in p.stdout.split('\n') if line.strip()]
+    rows = [(complex(got), complex(value)) for kind, l, wall, got, value in rows]
+    scale = max(abs(value) for got, value in rows)
+    worst = max(abs(got - value)/scale for got, value in rows)
     ok = worst < 1e-10
     fail |= not ok
     print('%-14s %s  (largest error %.1e of the amplitude)' % (name, 'ok' if ok else 'FAIL', worst))

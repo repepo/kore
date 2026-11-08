@@ -1268,6 +1268,55 @@ def viscous_dissipation():
 
 
 
+def body_force_terms(usol, eigval, tsol=0):
+    '''
+    NEW (2026-11-08): forcings 1 and 8, the terms of the body force 𝐟 that the known flow 𝐱 (utils.lifted_flow) puts in the
+    momentum equation of the flow 𝐮 solved for (assemble.lifted_rhs): 𝐟 = -[λ𝐱 + 2 Gaspard 𝐳×𝐱 - (∇⋅𝛔(𝐱))/ρ₀ - 𝐅(𝐱)], the
+    equations of 𝐱 itself (𝐅 the force of a differential rotation, diff_rot_setup; 𝐱 carries no entropy and no field), with
+    λ = eigval = i forcing_frequency. Returns
+      Wf,   the complex power 2 ∫ ρ₀ 𝐮*⋅𝐟 dV (its real part in residσ, its imaginary part in residω);
+      Ensf, its enstrophy term ∫ (∇×𝐮)⋅(∇×𝐟) dV, weighted as flow_worker's (residens);
+      Tf,   the torque of 𝐟 on the fluid, factor ∫ ρ₀ r³ t₁ dr from the toroidal part t₁ of 𝐟 of degree 1 (rotdyn.angular_momentum's
+            normalisation, axial for m = 0 and equatorial for m = 1; resid𝐋).
+    The gradients in 𝐟 (the inertia and the viscous force of the equilibrium tide, the Coriolis force on the rigid libration)
+    do no work between impenetrable walls, have no torque and no curl: they leave the three terms unchanged. On the
+    quadrature grid of diagnose, by the routines of flow_worker; call after diagnose. It leaves the tables of the solution
+    usol, tsol (the entropy, as given by expand_reshape_sol, with thermal = 1) at that grid.
+    '''
+    Ra, Rb = par.ricb, ut.rcmb
+    [ lp, lt, ll ] = ut.ell(par.m, par.lmax, par.symm)
+    xsol = expand_reshape_sol( ut.lifted_flow()[:2*ut.n], par.symm )
+    setup_grid(Ra, Rb)
+    set_solution(xsol, np.zeros((len(lp), par.N), complex) if par.thermal else 0)   # 𝐱 carries no entropy (diff_rot_setup)
+    if par.diff_rot:
+        diff_rot_setup()   # drforce of 𝐱
+    F = {}
+    for l in ll:
+        v, c = velocity(l), coriolis(l)
+        f = [ [ -(eigval*v[k][d] + c[k][d]) for d in (0, 1) ] for k in (0, 1, 2) ]
+        if par.ViscosD > 0:
+            vf = visforce(l)
+            f = [ [ f[k][d] + vf[k][d] for d in (0, 1) ] for k in (0, 1, 2) ]
+        if par.diff_rot:
+            f = [ [ f[k][d] + drforce[l][k][d] for d in (0, 1) ] for k in (0, 1, 2) ]
+        F[l] = f
+    set_solution(usol, tsol)
+    Wf, Ensf, Tf = 0j, 0.0, 0j
+    for l in ll:
+        [ velq, vels, velt ] = velocity(l)
+        [ fq, fs, ft ] = F[l]
+        Wf += rad_quad( 2*( cdot_pol(l, velq[0], vels[0], fq[0], fs[0]) + cdot_tor(l, velt[0], ft[0]) )*rho0, Ra, Rb, wk )
+        [ cuq, cus, cut ] = curl(l, velq, vels, velt)
+        [ cfq, cfs, cft ] = curl(l, fq, fs, ft)
+        Ensf += rad_quad( ( dotprod_pol(l, cuq[0], cus[0], cfq[0], cfs[0]) + dotprod_tor(l, cut[0], cft[0]) )*const0**2,
+                          Ra, Rb, wk )
+        if l == 1 and l in lt:
+            import rotdyn as rd
+            Tf = rd._factor()*rad_quad( rho0*rk**3*ft[0], Ra, Rb, wk )
+    return [ Wf, Ensf, Tf ]
+
+
+
 
 def buoyancy(l):
     '''

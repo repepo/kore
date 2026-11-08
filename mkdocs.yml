@@ -9,6 +9,7 @@ nav:
       - Convective forcing: forcing.md
       - Thermal forcing: thermal-forcing.md
       - Tidal forcing: tidal-forcing.md
+      - Libration: libration.md
       - Spherical Couette flow: couette-flow.md
       - Magnetic field: magnetic.md
       - Rotating solids: rotating-solids.md

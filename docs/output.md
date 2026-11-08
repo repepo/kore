@@ -46,6 +46,7 @@ Columns, counted from 1:
 | 29–38 | for `m = 0`, `symm = 1` and `m = 1`, `symm = -1` (0 otherwise, and with `centrifugal = 1`), real and imaginary parts of: the angular momentum of the fluid, axial or equatorial, and the viscous torques on the mantle and on the inner core, then the magnetic ones ([Rotating solids equations](rotating-solids-equations.md#torques)); both are taken on the fluid's side of the wall, so where the background field ends there in a current sheet the magnetic one holds the torque on the sheet's currents and only their sum is the torque through the wall |
 | 39 | resid𝐋, the relative residual of the fluid's angular momentum balance (NaN where it is not computed, [Rotating solids](rotating-solids.md#the-angular-momentum-check-residl)) |
 | 40–41 | with a viscous fluid at a stress-free outer wall (not with `centrifugal = 1`), the power the drag at the wall dissipates and the damping rate it implies, Dtopo and δσtopo, per unit `kappa_cmb` without a drag ([Drag at the outer wall](drag.md#output)); 0 otherwise |
+| 42–43 | for the forcings that drive the flow by a body force, 1 ([Tidal forcing](tidal-forcing.md#the-wave-like-tide-forcing-1)) and 8 ([Libration](libration.md)): the power of that force on the fluid, $2\thinspace\mathrm{Re}\int\rho_0\thinspace\mathbf u^*\cdot\mathbf f\thinspace dV$, and its imaginary part, in residσ and residω; the column P_in of the `spin_doctor` table adds it to the powers of the walls (columns 21, 22, 24, 25); 0 otherwise |
 
 ## `thermal.dat`
 
@@ -145,4 +146,4 @@ The columns follow the order of `spin_doctor.param_table`, counted from 1:
   `sigma_mantle` and, for `'tabulated'`, `diff_rot_file` with the first 12 hex digits of its sha256. A row with none of
   these has no `#`.
 - A `params.dat` written before the columns 108–112, column 113, the columns 114–122, 123–127, 128–134 or 135–141 were
-  added has fewer columns: start a new file. The same holds for `flow.dat` before its columns 29–39 or 40–41.
+  added has fewer columns: start a new file. The same holds for `flow.dat` before its columns 29–39, 40–41 or 42–43.
