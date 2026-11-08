@@ -24,6 +24,7 @@ from parameters import par
 import utils as ut
 import diff_rot as dr
 import centrifugal as cf   # NEW (2026-11-05)
+import bgflow as bgf   # NEW (2026-11-08)
 import submatrix_io as smio   # NEW (2026-11-03)
 import background as bg
 import radial_profiles as rap
@@ -37,6 +38,7 @@ def main(ncpus):
     par.check_names()
     if os.path.isfile(smio.FILE):   # NEW (2026-11-03): no operators of an earlier run survive a run that stops
         os.remove(smio.FILE)
+    bgf.check()   # NEW (2026-11-08): the stops of a background flow (bgflow = 1)
     mats = {}   # NEW (2026-11-03): {label: matrix}, written to smio.FILE at the end
 
     inviscid   = ((par.ViscosD == 0) and (par.ricb == 0))        # boolean
@@ -102,14 +104,15 @@ def main(ncpus):
     if inviscid:
         gebasis[0] = 2  # only up to second derivatives in section u
         gebasis[1] = 1  # up to first derivatives in section v
-        if par.magnetic:   # NEW (2026-10-28): the Lorentz force has third derivatives of f in section u and second ones of g in
-            gebasis[0] = 3  # section v; section v still has no bc rows (chop = 0 below), section u one (P = 0)
-            gebasis[1] = 2
+        if par.magnetic or par.bgflow:   # NEW (2026-10-28): the Lorentz force has third derivatives of f in section u and second
+            gebasis[0] = 3  # ones of g in section v (NEW 2026-11-08: a background flow, P''' and P''); section v still has no bc
+            gebasis[1] = 2  # rows (chop = 0 below), section u one (P = 0)
 
     if par.ThermaD == 0:
         gebasis[2] = 1 if ut.adiab_tw else 0  # No thermal diffusion, C^(0) basis is enough (C^(1) for the thermal wind's P'), no need for thermal bc's
     if par.CompoD == 0:
-        gebasis[5] = 0   # NEW (2026-11-08): the composition without diffusion, as the entropy (no thermal wind of c)
+        gebasis[5] = 1 if ut.adiab_c else 0   # NEW (2026-11-08): the composition without diffusion, as the entropy (C^(1) under
+        # a background flow, ut.adiab_c)
 
     if par.centrifugal == 1 and cf.deformed():   # NEW (2026-11-05, phase 2): the metric viscous force has P''' in section v and the metric magnetic
         for sec_, d_ in cf.diffusion_orders().items():   # diffusion F''' in section g (m ≠ 0): those sections in C^(3), with
@@ -309,6 +312,14 @@ def main(ncpus):
             labl += [ lab ]
             arg2 += [ {'P': vP, 'T': vT, 'F': vF, 'G': vG, 'C': vC}[kind] ]   # NEW (2026-10-30): F, G for the induction by
             # the flow; NEW (2026-11-08): C, the advection of the composition
+
+    if par.bgflow == 1:
+        # NEW (2026-11-08): a background flow (bgflow.py): the radial operators of its terms in the rows u, v (its advection of
+        # u and u's of it), h and c (the advection of s, c by it and of its S, C by u) and f, g (the induction ∇×(U×b)), each
+        # with the parity of its column
+        for lab, kind in bgf.labels():
+            labl += [ lab ]
+            arg2 += [ {'P': vP, 'T': vT, 'S': vS, 'C': vC, 'F': vF, 'G': vG}[kind] ]
 
     if par.centrifugal == 1:
         # NEW (2026-11-05): the centrifugal deformation (centrifugal.py): the radial operators of the metric terms of the inertia

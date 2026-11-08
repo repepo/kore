@@ -35,7 +35,7 @@ for i, lam in enumerate(lams):
     dR = abs((Wdr + 1j*Wdr_im) + 2*x['R'])/(2*abs(lam)*KE) if par.diff_rot else np.nan
     line = ' %3d  %9.6f  %9.6f  | %8.1e  %8.1e  | %8.1e  %8.1e  | %8.1e  %8.1e  |' % (i, s, w, *r1, *r2, *re)
     if par.thermal:
-        [ TE, Dthm, Wadv, Wdr_thm ] = np.sum(tdgn, 0)
+        [ TE, Dthm, Wadv, Wdr_thm ] = np.sum(tdgn, 0)[:4]
         Dthm *= par.ThermaD
         r3 = [ res([2*s*TE, -Dthm, -Wadv, -Wdr_thm]), res([2*s*TE, -Dthm, -Wadv]) ]
         dH = abs(Wdr_thm - 2*x['H'].real)/(2*abs(lam)*TE) if par.diff_rot else np.nan

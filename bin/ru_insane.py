@@ -57,6 +57,8 @@ exp(-k/decay) (default kmax/8), with the lowest coefficients adjusted in the lea
 sense so that the bc rows hold exactly (a correction at high degree leaves bc residuals of 1e-6
 because the stress-free rows carry (ln rho0)'' and k^4 factors, and that pollutes the test).
 Not handled: the inviscid formulation (ViscosD = 0, rows multiplied by rho0^2).
+NEW (2026-11-08): nor the blocks of a background flow (bgflow = 1, operators.background_flow): they are not paired here;
+tests/bgflow checks them (the eigenvalues against conductive_IC's, the rows against a grid, the budgets of spin_doctor).
 
 NEW (2026-11-08): with compositional = 1 the blocks of the composition c (section c, operators.composition, comp_advection,
 comp_diffusion, comp_buoyancy), on random fields c that satisfy its wall rows, as those of the entropy with rho0 in place of
@@ -143,8 +145,8 @@ if ricb > 0 and gb['v'] == 3:             # NEW (2026-11-06): still two bc rows 
 if par.ThermaD == 0:
     chop['h'] = 0                                                 # no thermal bc rows, whatever the basis
 comp_on = bool(par.compositional)   # NEW (2026-11-08): the composition, section c: C^(2) with two (one) bc rows, as h, or
-if comp_on:                         # C^(0) without bc rows when CompoD = 0
-    gb['c'] = 2 if par.CompoD > 0 else 0
+if comp_on:                         # C^(0) without bc rows when CompoD = 0 (C^(1) under a background flow, ut.adiab_c)
+    gb['c'] = 2 if par.CompoD > 0 else int(ut.adiab_c)
     chop['c'] = (2 if ricb > 0 else 1) if par.CompoD > 0 else 0
 
 vP = int((1 - 2*(par.m % 2))*par.symm)   # Chebyshev parity of P (ricb=0 only)
@@ -199,8 +201,8 @@ if par.thermal:
         wgt['h'] = pss0 if ut.adiab_tw else pss0*rk   # rows are r (eq/p0)/L^3, r^2 (eq/p0)/L^3 with the thermal wind
     else:
         wgt['h'] = rk                          # rows are r (eq)/L^3
-if comp_on:   # NEW (2026-11-08): rows r^2 (eq)/L^3, or r (eq/rho0)/L^3 with CompoD = 0
-    wgt['c'] = np.ones_like(rk) if par.CompoD > 0 else rho0*rk
+if comp_on:   # NEW (2026-11-08): rows r^2 (eq)/L^3, or r (eq/rho0)/L^3 with CompoD = 0 (r^2 (eq/rho0)/L^3 under a
+    wgt['c'] = np.ones_like(rk) if par.CompoD > 0 else (rho0 if ut.adiab_c else rho0*rk)   # background flow, ut.adiab_c)
 
 # Chebyshev values at the nodes, and values of a C^(lamb) series at the nodes (three-term recurrence)
 Tmat = ch.chebvander(xk, N - 1)                # (Nq, N)

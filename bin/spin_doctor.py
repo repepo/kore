@@ -21,6 +21,7 @@ import background_field as bf
 import centrifugal as cf   # NEW (2026-11-05)
 import rotdyn as rd   # NEW (2026-11-06): the rotating solids and the angular momentum budget
 import topo   # NEW (2026-11-06): the drag at the outer wall
+import bgflow as bgf   # NEW (2026-11-08): a background flow (bgflow = 1)
 
 
 
@@ -61,12 +62,15 @@ def solar_density_window(k):
 
 def row_note():
     '''the '#' comment ending each params.dat row: the 'user' expressions of the background and of the rotation
-    (background.description, diff_rot.description) and the 'tabulated' file with the first 12 hex digits of its sha256'''
+    (background.description, diff_rot.description) and the 'tabulated' file with the first 12 hex digits of its sha256;
+    NEW (2026-11-08) the background flow's expressions or its file and sha256 (bgflow.description)'''
     notes = [bg.description()] if bg.description() else []
     if par.diff_rot and dr.description():
         notes.append(dr.description())
     if cf.description():   # NEW (2026-11-05)
         notes.append(cf.description())
+    if par.bgflow:   # NEW (2026-11-08)
+        notes.append(bgf.description())
     if par.diff_rot and par.diff_rot_type == 'tabulated':
         import hashlib
         with open(par.diff_rot_file, 'rb') as f:
@@ -249,6 +253,9 @@ def param_table(elapsed):
         ( 'comp_two_zone_h',          par.comp_two_zone[1],        '%.9e' ),
         ( 'two_zone_rc',              par.two_zone[0],             '%.9e' ),
         ( 'two_zone_h',               par.two_zone[1],             '%.9e' ),
+        # NEW (2026-11-08, from conductive_IC): a background flow (bgflow.py; its expressions or its file in the # note)
+        ( 'bgflow',                   par.bgflow,                  '%d' ),
+        ( 'bgflow_Ro',                par.bgflow_Ro if par.bgflow else 0.0, '%.9e' ),
     ]
 
 
@@ -371,6 +378,9 @@ def main(ncpus):
     Wf_im       = np.zeros(success)  #   its imaginary part, its enstrophy term and its torque on the fluid
     Ensf        = np.zeros(success)
     Tf          = np.zeros(success, dtype=complex)
+    Wbg         = np.zeros(success)  # NEW (2026-11-08): a background flow (bgflow = 1), the power of its force on the flow,
+    Wbg_im      = np.zeros(success)  #   its imaginary part and its enstrophy term (upp.bgflow_setup)
+    Ensbg       = np.zeros(success)
     residD      = np.full(success, np.nan)  # relative residual of Dkin = Wv_icb + Wv_cmb - Dvisc
     ldom        = np.zeros(success,dtype=int)
     lwidth      = np.zeros(success,dtype=int)
@@ -382,12 +392,14 @@ def main(ncpus):
     Wadv_thm    = np.zeros(success)
     Dthm        = np.zeros(success)
     Wdr_thm     = np.zeros(success)
+    Wbg_thm     = np.zeros(success)  # NEW (2026-11-08): -2 Re ∫ p₀ s* (𝐔⋅∇s + 𝐮⋅∇S) dV, a background flow
 
     # NEW (2026-11-08): the composition (compositional = 1): its budget (upp.composition_worker) and the power of its buoyancy
     CE          = np.zeros(success)  # ½ ∫ ρ₀ |c|² dV
     Wadv_cmp    = np.zeros(success)  # -∫ ρ₀ (dC/dr) uᵣ c* dV
     Dcmp        = np.zeros(success)  # CompoD ∫ c* ∇⋅(D ρ₀ ∇c) dV
     Wdr_cmp     = np.zeros(success)  # -2 Re ∫ ρ₀ c* i m G ΔΩ c dV
+    Wbg_cmp     = np.zeros(success)  # -2 Re ∫ ρ₀ c* (𝐔⋅∇c + 𝐮⋅∇C) dV, a background flow (NEW 2026-11-08)
     Wcmp        = np.zeros(success)  # 2 Re ∫ ρ 𝐮*⋅(BeyonceC g c 𝐫̂) dV (in residσ), and its imaginary part (in residω)
     Wcmp_im     = np.zeros(success)
     resid4      = np.zeros(success)  # resid𝑐, the budget of the composition
@@ -645,9 +657,10 @@ def main(ncpus):
         KT[i] = np.sum( udgn[lti,0])  # Toroidal kinetic energy
 
         [ KE[i], Dkin0, Ensvel[i], Enscor[i], Ensvif[i], Ensbuo[i], Wthm0, Wdr[i],
-          Wcor_im[i], Dkin_im[i], Wthm_im[i], Wdr_im[i], Ensdr[i], Wcmp[i], Wcmp_im[i] ] = np.sum( udgn, 0)
+          Wcor_im[i], Dkin_im[i], Wthm_im[i], Wdr_im[i], Ensdr[i], Wcmp[i], Wcmp_im[i], Wbg[i], Wbg_im[i], Ensbg[i] ] = np.sum( udgn, 0)
         Dkin[i] = Dkin0
-        resens[i] = abs(Ensvel[i]*sigma+Enscor[i]-Ensbuo[i]-Ensvif[i]-Ensdr[i]-Ensf[i]) / max((abs(Ensvel[i]*sigma),abs(Enscor[i]),abs(Ensbuo[i]),abs(Ensvif[i]),abs(Ensdr[i]),abs(Ensf[i]))) \
+        # (NEW 2026-11-08: Ensbg, the enstrophy term of a background flow)
+        resens[i] = abs(Ensvel[i]*sigma+Enscor[i]-Ensbuo[i]-Ensvif[i]-Ensdr[i]-Ensf[i]-Ensbg[i]) / max((abs(Ensvel[i]*sigma),abs(Enscor[i]),abs(Ensbuo[i]),abs(Ensvif[i]),abs(Ensdr[i]),abs(Ensf[i]),abs(Ensbg[i]))) \
                     if par.hydro else np.nan   # NEW (2026-11-06): no flow, no enstrophy budget
         if par.centrifugal:  # NEW (2026-11-05): KE of the deformed body (∫ ρ0 w*⋅M w dV), Coriolis power with z̃ = F⁻¹ẑ
             KE[i] += KEc
@@ -662,7 +675,7 @@ def main(ncpus):
 
         if par.thermal:
 
-            [ TE[i], Dthm0, Wadv_thm[i], Wdr_thm[i] ] = np.sum( tdgn, 0)
+            [ TE[i], Dthm0, Wadv_thm[i], Wdr_thm[i], Wbg_thm[i] ] = np.sum( tdgn, 0)
             Dthm[i] = Dthm0 * par.ThermaD
             if par.centrifugal:  # NEW (2026-11-05): ∫ p0 J |s|² dV, the entropy "energy" of the deformed body
                 TE[i] += TEc
@@ -670,7 +683,7 @@ def main(ncpus):
 
         if par.compositional:   # NEW (2026-11-08): the budget of the composition, as that of the entropy
 
-            [ CE[i], Dcmp0, Wadv_cmp[i], Wdr_cmp[i] ] = np.sum( cdgn, 0)
+            [ CE[i], Dcmp0, Wadv_cmp[i], Wdr_cmp[i], Wbg_cmp[i] ] = np.sum( cdgn, 0)
             Dcmp[i] = Dcmp0 * par.CompoD
             if par.centrifugal:  # ∫ ρ0 J |c|² dV and the metric diffusion
                 CE[i] += CEc
@@ -702,6 +715,9 @@ def main(ncpus):
         #     resid4 (resid𝑐) the relative residual of 2*sigma*CE - Dcmp - Wadv_cmp - Wdr_cmp = 0, the budget of the composition
         # NEW (2026-11-08): Wf (Wf_im) is the power of the body force of forcings 1 and 8, in resid1 (resid2) and in P_in,
         #     Ensf its enstrophy term and Tf its torque in resid𝐋 (upp.body_force_terms; zero for the other forcings)
+        # NEW (2026-11-08): Wbg (Wbg_im) is the power of the force of a background flow 𝐔 (bgflow = 1), -[(𝐔⋅∇)𝐮 + (𝐮⋅∇)𝐔],
+        #     in resid1 (resid2) and resid𝐄, Ensbg its enstrophy term in resens; Wbg_thm (Wbg_cmp) -2 Re ∫ p₀ s* (𝐔⋅∇s + 𝐮⋅∇S)
+        #     dV (the same with ρ₀, c, C) in resid3 (resid4) (upp.bgflow_setup; zero without)
         # ---------------------------------------------------------------------------------------------------------
 
 
@@ -714,14 +730,14 @@ def main(ncpus):
             # without a field, buoyancy or a differential rotation every other term is small, and residσ was the round-off of
             # Dkin relative to itself, about 1
             scale1 = max( abs(2*sigma*KE[i]), abs(Dkin[i]), abs(Wthm[i]), abs(Wdr[i]), abs(Wlor[i]), abs(Wp), abs(Wf[i]),
-                          abs(Dvisc[i]) if walls_drive else 0.0, abs(Wcmp[i]) )
-            resid1[i] = abs( 2*sigma*KE[i] - Dkin[i] - Wthm[i] - Wcmp[i] - Wdr[i] - Wlor[i] - Wp - Wf[i] )/scale1
+                          abs(Dvisc[i]) if walls_drive else 0.0, abs(Wcmp[i]), abs(Wbg[i]) )
+            resid1[i] = abs( 2*sigma*KE[i] - Dkin[i] - Wthm[i] - Wcmp[i] - Wdr[i] - Wlor[i] - Wp - Wf[i] - Wbg[i] )/scale1
             # FIX (2026-11-08): 0 when every term is 0, a steady flow of m = 0 (forcing 12, forcing 13 at frequency 0), whose
             # fields are real: the imaginary part of the balance holds trivially (it was 0/0)
             scale2 = max( abs(2*w*KE[i]), abs(Wcor_im[i]), abs(Dkin_im[i]), abs(Wthm_im[i]), abs(Wdr_im[i]), abs(Wlor_im[i]),
-                          abs(Wp_im[i]), abs(Wf_im[i]), abs(Wcmp_im[i]) )
+                          abs(Wp_im[i]), abs(Wf_im[i]), abs(Wcmp_im[i]), abs(Wbg_im[i]) )
             resid2[i] = abs( 2*w*KE[i] + Wcor_im[i] - Dkin_im[i] - Wthm_im[i] - Wcmp_im[i] - Wdr_im[i] - Wlor_im[i] - Wp_im[i]
-                             - Wf_im[i] )/scale2 if scale2 > 0 else 0.0
+                             - Wf_im[i] - Wbg_im[i] )/scale2 if scale2 > 0 else 0.0
         else:
             resid1[i] = resid2[i] = np.nan
         if par.ViscosD>0 and not par.centrifugal and par.hydro:   # NEW (2026-11-06, phase 2): not with centrifugal = 1 (Dvisc, Wv spherical)
@@ -770,7 +786,7 @@ def main(ncpus):
                 # NEW (2026-11-05): with centrifugal = 1 the energy of the deformed body, ∫ 𝐛̃*⋅M 𝐛̃ dV in the fluid (MEc), whose
                 # rate is the work 2 Re ∫ 𝐄⋅(∇×M 𝐛̃)* dV (InduM) minus the Ohmic loss (Ohmc); closes at second order in f
                 Etot = KE[i] + H*( ME[i] + MEc[i] + MEic[i] + MEext[i] )
-                Wex  = Wlor[i] + H*(Indu[i] - Iwall[i] + InduM[i]) + Wdr[i]
+                Wex  = Wlor[i] + H*(Indu[i] - Iwall[i] + InduM[i]) + Wdr[i] + Wbg[i]   # (NEW 2026-11-08: Wbg)
                 Ohm  = H*( Ohm_f[i] + Ohmc[i] + Ohm_ic[i] )
                 if use_walls:   # NEW (2026-11-06)
                     Etot += H*E_w[i]
@@ -795,7 +811,7 @@ def main(ncpus):
                 # NEW (2026-11-08): the power of the body force of forcings 1 and 8 (Wf)
                 residE[i] = ( abs( 2*sigma*Etot - Dkin[i] - Wthm[i] - Wcmp[i] - Wex - Wsol - Wpe - Wf[i] + Ohm )
                               / max( abs(2*sigma*Etot), abs(Dkin[i]), abs(Wthm[i]), abs(Wex), Ohm, abs(Wdr[i]), abs(Wsol),
-                                     abs(Wpe), abs(Wf[i]), abs(Dvisc[i]) if walls_drive else 0.0, abs(Wcmp[i]) ) )
+                                     abs(Wpe), abs(Wf[i]), abs(Dvisc[i]) if walls_drive else 0.0, abs(Wcmp[i]), abs(Wbg[i]) ) )
 
         if do_drag:   # NEW (2026-11-06): the power the drag dissipates (per unit kappa_cmb without one) and its damping rate
             Dtopo[i] = topo.dissipation(u_sol2, rot[0, i] if ut.rotdyn else 0)
@@ -807,12 +823,12 @@ def main(ncpus):
             dsig[i] = -Dtopo[i]/(2*E) if E > 0 else np.nan
 
         if par.thermal:   # FIX (2026-11-08): 0 when every term is 0 (an entropy of 0, as resid𝐛; it was 0/0)
-            scale3 = max( abs(2*sigma*TE[i]), abs(Dthm[i]), abs(Wadv_thm[i]), abs(Wdr_thm[i]) )
-            resid3[i] = abs( 2*sigma*TE[i] - Dthm[i] - Wadv_thm[i] - Wdr_thm[i] )/scale3 if scale3 > 0 else 0.0
+            scale3 = max( abs(2*sigma*TE[i]), abs(Dthm[i]), abs(Wadv_thm[i]), abs(Wdr_thm[i]), abs(Wbg_thm[i]) )
+            resid3[i] = abs( 2*sigma*TE[i] - Dthm[i] - Wadv_thm[i] - Wdr_thm[i] - Wbg_thm[i] )/scale3 if scale3 > 0 else 0.0
 
         if par.compositional:   # NEW (2026-11-08): resid𝑐, as resid𝑠
-            scale4 = max( abs(2*sigma*CE[i]), abs(Dcmp[i]), abs(Wadv_cmp[i]), abs(Wdr_cmp[i]) )
-            resid4[i] = abs( 2*sigma*CE[i] - Dcmp[i] - Wadv_cmp[i] - Wdr_cmp[i] )/scale4 if scale4 > 0 else 0.0
+            scale4 = max( abs(2*sigma*CE[i]), abs(Dcmp[i]), abs(Wadv_cmp[i]), abs(Wdr_cmp[i]), abs(Wbg_cmp[i]) )
+            resid4[i] = abs( 2*sigma*CE[i] - Dcmp[i] - Wadv_cmp[i] - Wdr_cmp[i] - Wbg_cmp[i] )/scale4 if scale4 > 0 else 0.0
 
         # ------------------------------------------------------------------------------------------------------------------
         print(table_row(table_cols, table_w, i))
@@ -882,6 +898,9 @@ def main(ncpus):
         ( 'Wf_im',      Wf_im,      '%.9e' ),  #   and its imaginary part (0 for the other forcings)
         ( 'Wcmp',       Wcmp,       '%.9e' ),  # NEW (2026-11-08): the power of the buoyancy of the composition (in residσ),
         ( 'Wcmp_im',    Wcmp_im,    '%.9e' ),  #   and its imaginary part (in residω; 0 without the composition)
+        ( 'Wbg',        Wbg,        '%.9e' ),  # NEW (2026-11-08): the power of the force of a background flow (in residσ),
+        ( 'Wbg_im',     Wbg_im,     '%.9e' ),  #   its imaginary part (in residω)
+        ( 'Ensbg',      Ensbg,      '%.9e' ),  #   and its enstrophy term (in resens; 0 without bgflow)
     ]
     with open('flow.dat','ab') as dflo:
         np.savetxt(dflo, np.column_stack([ v for _, v, _ in flow_cols ]),
@@ -898,6 +917,7 @@ def main(ncpus):
             ( 'Wthm',       Wthm,       '%.18e' ),  # buoyancy work
             ( 'resid1',     resid1,     '%.18e' ),  # KE budget, residσ
             ( 'Wdr_thm',    Wdr_thm,    '%.18e' ),  # differential-rotation terms of the heat equation
+            ( 'Wbg_thm',    Wbg_thm,    '%.18e' ),  # NEW (2026-11-08): those of a background flow (0 without bgflow)
         ]
         with open('thermal.dat','ab') as dtmp:
             np.savetxt(dtmp, np.column_stack([ v for _, v, _ in thermal_cols ]),
@@ -915,6 +935,7 @@ def main(ncpus):
             ( 'Wcmp',       Wcmp,       '%.18e' ),  # the work of its buoyancy (in residσ)
             ( 'resid1',     resid1,     '%.18e' ),  # KE budget, residσ
             ( 'Wdr_cmp',    Wdr_cmp,    '%.18e' ),  # its advection by the differential rotation
+            ( 'Wbg_cmp',    Wbg_cmp,    '%.18e' ),  # NEW (2026-11-08): and by a background flow (0 without bgflow)
         ]
         with open('composition.dat','ab') as dcmp:
             np.savetxt(dcmp, np.column_stack([ v for _, v, _ in composition_cols ]),

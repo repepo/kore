@@ -49,6 +49,7 @@ Columns, counted from 1:
 | 40–41 | with a viscous fluid at a stress-free outer wall (not with `centrifugal = 1`), the power the drag at the wall dissipates and the damping rate it implies, Dtopo and δσtopo, per unit `kappa_cmb` without a drag ([Drag at the outer wall](drag.md#output)); 0 otherwise |
 | 42–43 | for the forcings that drive the flow by a body force, 1 ([Tidal forcing](tidal-forcing.md#the-wave-like-tide-forcing-1)) and 8 ([Libration](libration.md)): the power of that force on the fluid, $2\thinspace\mathrm{Re}\int\rho_0\thinspace\mathbf u^*\cdot\mathbf f\thinspace dV$, and its imaginary part, in residσ and residω; the column P_in of the `spin_doctor` table adds it to the powers of the walls (columns 21, 22, 24, 25); 0 otherwise |
 | 44–45 | with `compositional = 1`, the power of the buoyancy of the composition, $2\thinspace\mathrm{BeyonceC}\thinspace\mathrm{Re}\int\rho_0\thinspace g\thinspace c\thinspace u_r^*\thinspace dV$, and its imaginary part, in residσ and residω (the entropy's is in `thermal.dat`); 0 otherwise |
+| 46–48 | with a background flow $\mathbf U$ (`bgflow = 1`, [Background flow](bgflow.md#output)), the power of its force on the flow, $-2\thinspace\mathrm{Re}\int\rho_0\thinspace\mathbf u^*\cdot\left[(\mathbf U\cdot\nabla)\mathbf u + (\mathbf u\cdot\nabla)\mathbf U\right] dV$, its imaginary part and its enstrophy term, in residσ, resid𝐄, residω and residens; 0 otherwise |
 
 ## `thermal.dat`
 
@@ -61,6 +62,7 @@ Columns, counted from 1:
 | 5 | the work of the buoyancy force |
 | 6 | the energy residual (residσ) |
 | 7 | the terms of the differential rotation in the heat equation |
+| 8 | with a background flow, the work of its terms in the heat equation, $-2\thinspace\mathrm{Re}\int p_0\thinspace s^*(\mathbf U\cdot\nabla s + \mathbf u\cdot\nabla S_U)\thinspace dV$ ($S_U$ the background's entropy), in resid𝑠; 0 otherwise |
 
 ## `composition.dat`
 
@@ -76,6 +78,7 @@ with $\rho_0$ in place of $p_0$ ([Anelastic equations](anelastic.md#entropy)):
 | 5 | the work of its buoyancy force (`flow.dat`, column 44) |
 | 6 | the energy residual (residσ) |
 | 7 | the advection by the differential rotation; it only moves the frequency, so this real part is 0 to round-off |
+| 8 | with a background flow, the work of its terms, $-2\thinspace\mathrm{Re}\int\rho_0\thinspace c^*(\mathbf U\cdot\nabla c + \mathbf u\cdot\nabla C_U)\thinspace dV$ ($C_U$ the background's composition), in resid𝑐; 0 otherwise |
 
 ## `magnetic.dat`
 
@@ -135,6 +138,7 @@ The columns follow the order of `spin_doctor.param_table`, counted from 1:
 | 135–141 | `kappa_cmb`, `topo_drag` (1 for `'rekier'`, 0 for `None`), and with `'rekier'` (0 otherwise) `topo_hrms`, `topo_lambda0`, `topo_H`, and the buoyancy frequency and the frequency of the flow that the drag used, over the rotation rate ([Drag at the outer wall](drag.md)) |
 | 142–150 | `compositional`, `comp_stratification`, `comp_stratification_param`, `BeyonceC`, `CompoD`, `comp0`, `comp_pow`, `bci_compositional`, `bco_compositional` |
 | 151–154 | `comp_two_zone` ($r_c$, $h$) and `two_zone` ($r_c$, $h$) |
+| 155–156 | `bgflow`, `bgflow_Ro` (0 without a background flow) |
 
 - Names are written as their index in the lists of the code: `structure` in `background.STRUCTURES` (`'8-term fit'` 0,
   `'old model S prototype'` 1, `'model S hydrostatic'` 2, `'Wu 2005'` 3, `'Boussinesq'` 4), `stratification` in
@@ -163,8 +167,9 @@ The columns follow the order of `spin_doctor.param_table`, counted from 1:
 - `diff_rot_generic` and `diff_rot_hold` are not used (always 0 and nan); they keep the positions of the columns after
   them.
 - A row ends, after a `#` that `np.loadtxt` skips, with the `'user'` (the composition's too), `'general'` and `'ferraro'` expressions, that of
-  `sigma_mantle` and, for `'tabulated'`, `diff_rot_file` with the first 12 hex digits of its sha256. A row with none of
-  these has no `#`.
-- A `params.dat` written before the columns 108–112, column 113, the columns 114–122, 123–127, 128–134, 135–141 or
-  142–154 were added has fewer columns: start a new file. The same holds for `flow.dat` before its columns 29–39, 40–41,
-  42–43 or 44–45.
+  `sigma_mantle` and, for `'tabulated'`, `diff_rot_file` with the first 12 hex digits of its sha256; with a background
+  flow, its expressions (`bgflow_profiles`) or `bgflow_file` with the first 12 hex digits of its sha256. A row with none
+  of these has no `#`.
+- A `params.dat` written before the columns 108–112, column 113, the columns 114–122, 123–127, 128–134, 135–141,
+  142–154 or 155–156 were added has fewer columns: start a new file. The same holds for `flow.dat` before its columns
+  29–39, 40–41, 42–43, 44–45 or 46–48, and for `thermal.dat` and `composition.dat` before their column 8.

@@ -29,6 +29,7 @@ import radial_profiles as rap
 import background as bg   # NEW (2026-11-06): the conductivity of the resolved mantle (bc_b_mantle)
 import rotdyn as rd   # NEW (2026-11-06): the rotating solids (rotdyn = 1)
 import topo   # NEW (2026-11-06): the drag at the outer wall (kappa_cmb, topo_drag)
+import bgflow as bgf   # NEW (2026-11-08): a background flow (bgflow = 1)
 
 def centrifugal_blocks(loc_list, fun, l, sec, comp, lls, row, col0, factor=1, nblk=None, dls=None):
     '''
@@ -47,6 +48,16 @@ def centrifugal_blocks(loc_list, fun, l, sec, comp, lls, row, col0, factor=1, nb
             if np.isscalar(mtx[0]): continue   # nothing couples this Δl
             loc_list = ut.packit(loc_list, factor*mtx[0], row, col0 + mtx[1]*nblk)
     return loc_list
+
+
+def bgflow_blocks(loc_list, l, sec, comp, lls, row, col0):
+    '''
+    NEW (2026-11-08): adds to loc_list the blocks of the background flow's terms (bgflow = 1: operators.background_flow, the
+    Δl of bgflow.dl_range, |Δl| <= nmax + 1) of the row degree l of section sec ('u', 'v', 'h', 'c', 'f' or 'g') for the
+    unknown comp ('upol', 'utor', 'temp', 'comp', 'bpol' or 'btor') of degrees lls; col0 is the column of the first block of
+    that unknown for the same position as the row (as centrifugal_blocks)
+    '''
+    return centrifugal_blocks(loc_list, op.background_flow, l, sec, comp, lls, row, col0, dls=bgf.dl_range())
 
 
 
@@ -479,6 +490,9 @@ def main():
                 loc_list = centrifugal_blocks( loc_list, op.centrifugal_rotation, l, 'u', 'upol', ll_flo[0], row, basecol + col0,
                                                dls=cf.rotation_dl_range('u', 'upol'))
 
+        if par.bgflow :  # NEW (2026-11-08): the force of a background flow, (U⋅∇)u + (u⋅∇)U (bgflow.py), |Δl| <= nmax + 1
+            loc_list = bgflow_blocks( loc_list, l, 'u', 'upol', ll_flo[0], row, basecol + col0)
+
 
         # Toroidal velocity terms (utor) ---------------------------------------------------------------------------
         # ------------------------------------------------------------------------------- A, 2curl (section u), utor
@@ -512,6 +526,9 @@ def main():
             if par.diff_rot:  # NEW (2026-11-06, phase 2): the metric part of the differential rotation's force (as diff_rot's)
                 loc_list = centrifugal_blocks( loc_list, op.centrifugal_rotation, l, 'u', 'utor', ll_flo[1], row, basecol + col0,
                                                dls=cf.rotation_dl_range('u', 'utor'))
+
+        if par.bgflow :  # NEW (2026-11-08): the force of a background flow
+            loc_list = bgflow_blocks( loc_list, l, 'u', 'utor', ll_flo[1], row, basecol + col0)
 
 
 
@@ -617,6 +634,9 @@ def main():
                 loc_list = centrifugal_blocks( loc_list, op.centrifugal_rotation, l, 'v', 'upol', ll_flo[0], row, basecol + col0,
                                                dls=cf.rotation_dl_range('v', 'upol'))
 
+        if par.bgflow :  # NEW (2026-11-08): the force of a background flow
+            loc_list = bgflow_blocks( loc_list, l, 'v', 'upol', ll_flo[0], row, basecol + col0)
+
 
         # Toroidal velocity terms ----------------------------------------------------------------------------------
         # ------------------------------------------------------------------------------- A, 1curl (section v), utor
@@ -650,6 +670,9 @@ def main():
             if par.diff_rot:  # NEW (2026-11-06, phase 2): the metric part of the differential rotation's force (as diff_rot's)
                 loc_list = centrifugal_blocks( loc_list, op.centrifugal_rotation, l, 'v', 'utor', ll_flo[1], row, basecol + col0,
                                                dls=cf.rotation_dl_range('v', 'utor'))
+
+        if par.bgflow :  # NEW (2026-11-08): the force of a background flow
+            loc_list = bgflow_blocks( loc_list, l, 'v', 'utor', ll_flo[1], row, basecol + col0)
 
 
 
@@ -764,6 +787,13 @@ def main():
                             loc_list = ut.packit( loc_list, mtx[0], row, col)
 
 
+            if par.bgflow :  # NEW (2026-11-08): the advection by a background flow and of its entropy, -p0 (U⋅∇s + u⋅∇S)
+                loc_list = bgflow_blocks( loc_list, l, 'h', 'temp', ll_flo[0], row, ut.offset['h'] + col0)
+                if par.hydro:
+                    loc_list = bgflow_blocks( loc_list, l, 'h', 'upol', ll_flo[0], row, col0)
+                    loc_list = bgflow_blocks( loc_list, l, 'h', 'utor', ll_flo[1], row, nb*ut.N1 + col0)
+
+
             # entropy (s) terms: ThermaD rʰ ∇⋅(κ p ∇s) -----------------------------------------------------------------
             # ----------------------------------------------------------------------- A, heat equation (section h), temp
             # ----------------------------------------------------------------------------------------------------------
@@ -846,6 +876,10 @@ def main():
                                 col = ut.offset[bsec] + col0 + mtx[1] * ut.N1
                                 loc_list = ut.packit( loc_list, mtx[0], row, col)
 
+                if par.bgflow:   # NEW (2026-11-08): the induction by a background flow, ∇×(U×b) (bgflow.py)
+                    for bcomp, bsec, lls in [ ('bpol', 'f', ll_mag[0]), ('btor', 'g', ll_mag[1]) ]:
+                        loc_list = bgflow_blocks( loc_list, l, sec, bcomp, lls, row, ut.offset[bsec] + col0)
+
                 # magnetic diffusion
                 mtx = -1 * op.magnetic_diffusion(l, sec, comp, 0)
                 if par.forcing != 0:   # NEW (2026-11-06): the forced problem, + i wf b
@@ -879,6 +913,8 @@ def main():
                     mtx = -1 * op.magnetic_diffusion(l, sec, comp, 0)
                     if par.diff_rot:   # NEW (2026-10-30): the core co-rotates with ΔΩ(ricb) = c (rigid: background.magnetic_diffrot)
                         mtx = mtx + 1j*par.m*par.Gaspard*dr.rigid_ricb()[0]*op.b(l, sec, comp, 0)   # -(-i m G c b), the A sign
+                    if par.bgflow:   # NEW (2026-11-08): and with a background flow, rigid there (bgflow.check)
+                        mtx = mtx + 1j*par.m*bgf.rigid_rate(par.ricb)[0]*op.b(l, sec, comp, 0)
                     if par.forcing != 0:   # NEW (2026-11-06, as conductive_IC): the forced problem, + i wf b
                         mtx = mtx + 1j*ut.wf*op.b(l, sec, comp, 0)
                     loc_list = ut.packit( loc_list, mtx, row, row)
@@ -902,6 +938,8 @@ def main():
                     mtx = -1 * op.magnetic_diffusion(l, sec, comp, 0)
                     if par.diff_rot:   # the layer turns with ΔΩ(1) = c (rigid: background.magnetic_diffrot): -(-i m G c b)
                         mtx = mtx + 1j*par.m*par.Gaspard*dr.rigid_at(ut.rcmb)[0]*op.b(l, sec, comp, 0)
+                    if par.bgflow:   # NEW (2026-11-08): and with a background flow, rigid there (bgflow.check)
+                        mtx = mtx + 1j*par.m*bgf.rigid_rate(ut.rcmb)[0]*op.b(l, sec, comp, 0)
                     if par.forcing != 0:   # NEW (2026-11-06, as conductive_IC): the forced problem, + i wf b
                         mtx = mtx + 1j*ut.wf*op.b(l, sec, comp, 0)
                     loc_list = ut.packit( loc_list, mtx, row, row)
@@ -938,6 +976,12 @@ def main():
                 if par.centrifugal:  # its metric part i m G η P2 ΔΩ c (the rows are times J)
                     loc_list = centrifugal_blocks( loc_list, op.centrifugal_rotation, l, 'c', 'comp', ll_flo[0], row, basecol + col0,
                                                    dls=cf.rotation_dl_range('c', 'comp'))
+
+            if par.bgflow :  # NEW (2026-11-08): the advection by a background flow and of its composition, -ρ0 (U⋅∇c + u⋅∇C)
+                loc_list = bgflow_blocks( loc_list, l, 'c', 'comp', ll_flo[0], row, basecol + col0)
+                if par.hydro:
+                    loc_list = bgflow_blocks( loc_list, l, 'c', 'upol', ll_flo[0], row, col0)
+                    loc_list = bgflow_blocks( loc_list, l, 'c', 'utor', ll_flo[1], row, nb*ut.N1 + col0)
 
             if par.CompoD > 0:   # the diffusion CompoD rʰ ∇⋅(D ρ ∇c)
                 mtx = op.comp_diffusion(l,'c','',0)

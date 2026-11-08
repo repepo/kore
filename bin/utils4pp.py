@@ -13,6 +13,7 @@ import diff_rot as dr
 import background_field as bf
 import background as bg   # NEW (2026-11-06): the conductivity of the resolved mantle (mantle_budget)
 import centrifugal as cf   # NEW (2026-11-05)
+import bgflow as bgf   # NEW (2026-11-08): a background flow (bgflow = 1)
 
 
 mp.set_start_method('fork')
@@ -656,6 +657,92 @@ def diff_rot_setup():
 
 
 
+_bg_bg = {}  # NEW (2026-11-08): {key: bgflow_background()} for the radial grids in use, see bgflow_setup
+
+
+def bgflow_background(ll):
+    '''
+    NEW (2026-11-08): the parts of bgflow_setup that do not depend on the solution, at the current radii rk: the
+    Gauss-Legendre grid x = cosθ and weights wx, Y, ∂_θY and i m Y/sinθ for the l's ll (angular.ylm_grid), the background
+    flow 𝐔, ∂ᵣ𝐔, ∂ᵣ²𝐔 and its vorticity 𝛀_U, ∂ᵣ𝛀_U on the (rk, cosθ) grid (bgflow.flow_grid), and the gradients ∇S, ∇C of
+    the background's entropy and composition (bgflow.scalar_grid; None without thermal, compositional).
+    '''
+    x, wx = np.polynomial.legendre.leggauss( par.lmax + 12 + bgf.nmax() )   # exact for the products of 𝐔 (degree <= nmax + 1)
+    [ Yg, dYg, Zg ] = angular.ylm_grid(par.m, int(ll.max()), x)             # with 𝐮 and Y* (degree <= lmax + 1 each)
+    Ug = bgf.flow_grid(rk, x, nd=2)
+    gS = bgf.scalar_grid('S', rk, x) if par.thermal else None
+    gC = bgf.scalar_grid('C', rk, x) if par.compositional else None
+    return [ x, wx, Yg[ll].astype(complex), dYg[ll].astype(complex), Zg[ll], Ug, gS, gC ]
+
+
+
+def bgflow_setup():
+    '''
+    NEW (2026-11-08): the background flow (bgflow = 1, bgflow.py). Sets, as module globals for the workers, as diff_rot_setup:
+    bgforce[l] = [ [q, ∂ᵣq], [s, ∂ᵣs], [t, ∂ᵣt] ], the l-components of the force of the background on the perturbation per
+    unit mass and of its r-derivative,
+        𝐅 = -[ (𝐔⋅∇)𝐮 + (𝐮⋅∇)𝐔 ] = -∇(𝐔⋅𝐮) + 𝐔×𝛚 + 𝐮×𝛀_U,   𝛚 = ∇×𝐮,  𝛀_U = ∇×𝐔
+    (the right-hand side of the momentum equation; the gradient, which the rows of A leave out with their curls, is included
+    so that the pressure of pressure_force is the physical one), from 𝐮, 𝛚, the background (bgflow_background) and their
+    r-derivatives on the (rk, cosθ) grid, projected as in diff_rot_setup (the gradient of φ = 𝐔⋅𝐮: q = φ′, s = φ/r);
+    with thermal = 1, bgheat[l], the l-components of the left-hand-side terms p₀ (𝐔⋅∇s + 𝐮⋅∇S) of the heat equation, and
+    with a solution of the composition, bgcomp[l], those of ρ₀ (𝐔⋅∇c + 𝐮⋅∇C) in its equation.
+    '''
+    global bgforce
+    global bgheat
+    global bgcomp
+
+    [ lp, lt, ll ] = ut.ell( par.m, par.lmax, par.symm)
+    ll = np.asarray(ll)
+    key = ( rk.tobytes(), repr(sorted(vars(par).items())) )
+    if key not in _bg_bg:
+        if len(_bg_bg) >= 2:
+            _bg_bg.clear()
+        _bg_bg[key] = bgflow_background(ll)
+    [ x, wx, Y, dY, imY, Ug, gS, gC ] = _bg_bg[key]
+
+    def grid(q, s, t):   # (rows l, columns rk) -> the (r, θ, φ) components on (rk, cosθ)
+        return [ q.T @ Y, s.T @ dY + t.T @ imY, s.T @ imY - t.T @ dY ]
+    vel = [ velocity(l) for l in ll ]
+    u = [ grid(*[ np.array([ v[c][d] for v in vel ]) for c in (0,1,2) ]) for d in (0,1,2) ]   # 𝐮, ∂ᵣ𝐮, ∂ᵣ²𝐮
+    cu = [ curl(l, *v) for l, v in zip(ll, vel) ]
+    w = [ grid(*[ np.array([ c[k][d] for c in cu ]) for k in (0,1,2) ]) for d in (0,1) ]      # 𝛚, ∂ᵣ𝛚
+
+    cross = lambda a, b: [ a[1]*b[2] - a[2]*b[1], a[2]*b[0] - a[0]*b[2], a[0]*b[1] - a[1]*b[0] ]
+    add = lambda *vs: [ sum(c) for c in zip(*vs) ]
+    dot = lambda a, b: a[0]*b[0] + a[1]*b[1] + a[2]*b[2]
+    U, W = Ug['U'], Ug['W']
+    F0 = add( cross(U[0], w[0]), cross(u[0], W[0]) )
+    F1 = add( cross(U[1], w[0]), cross(U[0], w[1]), cross(u[1], W[0]), cross(u[0], W[1]) )
+    phi = [ dot(U[0], u[0]), dot(U[1], u[0]) + dot(U[0], u[1]), dot(U[2], u[0]) + 2*dot(U[1], u[1]) + dot(U[0], u[2]) ]
+
+    nl = 4*np.pi/(2*ll+1)  # ∫ |Y|² dΩ
+    L  = ll*(ll+1)
+    r  = rk[:,None]
+    proj = lambda f, Z: 2*np.pi*(f*wx) @ np.conj(Z).T  # ∫ f Z* dΩ, rows rk, columns l
+    ph = [ proj(p, Y)/nl for p in phi ]               # φ, ∂ᵣφ, ∂ᵣ²φ
+    q = [ proj(F[0], Y)/nl for F in (F0, F1) ]
+    s = [ ( proj(F[1], dY) + proj(F[2], imY) )/(L*nl) for F in (F0, F1) ]
+    t = [ ( proj(F[1], imY) - proj(F[2], dY) )/(L*nl) for F in (F0, F1) ]
+    q = [ q[0] - ph[1], q[1] - ph[2] ]
+    s = [ s[0] - ph[0]/r, s[1] - ph[1]/r + ph[0]/r**2 ]
+    bgforce = { l: [ [q[0][:,k], q[1][:,k]], [s[0][:,k], s[1][:,k]], [t[0][:,k], t[1][:,k]] ] for k,l in enumerate(ll) }
+
+    ip = [ list(ll).index(l) for l in lp ]
+    def advection(tab, grad):   # 𝐔⋅∇X + 𝐮⋅∇X0 on the grid, X from its table (rows the l's of lp), ∇X0 the background's
+        X0 = np.transpose(tab[0]) @ Y[ip]
+        X1 = np.transpose(tab[1]) @ Y[ip]
+        gX = [ X1, (np.transpose(tab[0]) @ dY[ip])/r, (np.transpose(tab[0]) @ imY[ip])/r ]
+        return dot(U[0], gX) + dot(u[0], grad)
+    if par.thermal and np.ndim(tsol2) == 2:
+        hl = proj( pss0[:,None]*advection(ttab, gS), Y )/nl
+        bgheat = { l: hl[:,k] for k,l in enumerate(ll) }
+    if comp_on():
+        cl = proj( rho0[:,None]*advection(ctab, gC), Y )/nl
+        bgcomp = { l: cl[:,k] for k,l in enumerate(ll) }
+
+
+
 def flow_worker( l ):
     '''
     Computes the power balance from the momentum (the Navier-Stokes) equation, l-component.
@@ -664,6 +751,8 @@ def flow_worker( l ):
     of the Coriolis, viscous and buoyancy powers for the frequency balance.
     NEW (2026-11-08): with compositional = 1 the buoyancy force is that of the entropy and of the composition (the enstrophy
     term Enstro_buo of both), the power of the entropy's is Wthm and the composition's Wcmp (and Wcmp_im), the last two values.
+    NEW (2026-11-08): with a background flow (bgflow = 1) the power of its force, Wbg and Wbg_im, and its enstrophy term
+    Enstro_bg, the last three values (0 without).
     '''
 
     Ra = par.ricb
@@ -798,8 +887,20 @@ def flow_worker( l ):
         enstro_dr = ( dotprod_pol(l, cuvelq[0], cuvels[0], cudrq[0], cudrs[0]) + dotprod_tor(l, cuvelt[0], cudrt[0]) ) * const0**2
         Enstro_dr_l = rad_quad( enstro_dr, Ra, Rb, wk)
 
+    # NEW (2026-11-08): a background flow, the complex power 2 ∫ ρ 𝐮*⋅𝐅 dV of its force 𝐅 = -[(𝐔⋅∇)𝐮 + (𝐮⋅∇)𝐔] (bgflow_setup)
+    # and its enstrophy term, as those of the differential rotation; the last three values
+    [ Wbg_l, Wbg_im_l, Enstro_bg_l ] = [0, 0, 0]
+    if par.bgflow:
+        [   bgq,   bgs,   bgt ] = bgforce[l]
+        [ cubgq, cubgs, cubgt ] = curl(l, bgq, bgs, bgt)
+        pbg = 2*( cdot_pol(l, velq[0], vels[0], bgq[0], bgs[0]) + cdot_tor(l, velt[0], bgt[0]) )*rho0
+        Wbg_l    = np.real( rad_quad( pbg, Ra, Rb, wk) )
+        Wbg_im_l = np.imag( rad_quad( pbg, Ra, Rb, wk) )
+        enstro_bg = ( dotprod_pol(l, cuvelq[0], cuvels[0], cubgq[0], cubgs[0]) + dotprod_tor(l, cuvelt[0], cubgt[0]) ) * const0**2
+        Enstro_bg_l = rad_quad( enstro_bg, Ra, Rb, wk)
+
     return [ Kene_l, Dkin_l, Enstro_vel_l, Enstro_cor_l, Enstro_vif_l, Enstro_buo_l, Wthm_l, Wdr_l,
-             Wcor_im_l, Dkin_im_l, Wthm_im_l, Wdr_im_l, Enstro_dr_l, Wcmp_l, Wcmp_im_l ]
+             Wcor_im_l, Dkin_im_l, Wthm_im_l, Wdr_im_l, Enstro_dr_l, Wcmp_l, Wcmp_im_l, Wbg_l, Wbg_im_l, Enstro_bg_l ]
 
 
 
@@ -851,7 +952,8 @@ def thermal_worker( l ):
     (real parts, same 2Re and Yₗᵐ conventions as flow_worker). The surface term vanishes for fixed-entropy
     or fixed-flux walls and at r=0. With diff_rot = 1 the left-hand side gains p₀ [ i m G ΔΩ s + 𝐮⋅∇S_tw ] and the
     budget the term Wdr = -2 Re ∫ p₀ s* [ i m G ΔΩ s + 𝐮⋅∇S_tw ] dV (from diff_rot_setup).
-    Uses the global solutions usol2, tsol2. Returns [ TE_l, Dthm_l, Wadv_l, Wdr_l ], Dthm_l without the ThermaD factor.
+    NEW (2026-11-08): with a background flow (bgflow = 1) the term Wbg = -2 Re ∫ p₀ s* (𝐔⋅∇s + 𝐮⋅∇S) dV (bgflow_setup).
+    Uses the global solutions usol2, tsol2. Returns [ TE_l, Dthm_l, Wadv_l, Wdr_l, Wbg_l ], Dthm_l without the ThermaD factor.
     The profiles are the physical ones (setup_grid), so the budget residual also flags a mismatch between
     the intended and the assembled heat equation (e.g. a diffusion operator with a wrong coefficient, or,
     when ricb=0, a profile without the parity that submatrices assumes).
@@ -886,7 +988,12 @@ def thermal_worker( l ):
     if par.diff_rot:
         Wdr_l = -rad_quad( dotprod_scal(l, drheat[l], hlm0), Ra, Rb, wk )
 
-    return [ Tene_l, Dthm_l, Wadv_l, Wdr_l ]
+    # NEW (2026-11-08): a background flow, -2 Re ∫ p₀ s* (𝐔⋅∇s + 𝐮⋅∇S) dV (bgflow_setup)
+    Wbg_l = 0
+    if par.bgflow:
+        Wbg_l = -rad_quad( dotprod_scal(l, bgheat[l], hlm0), Ra, Rb, wk )
+
+    return [ Tene_l, Dthm_l, Wadv_l, Wdr_l, Wbg_l ]
 
 
 
@@ -900,8 +1007,9 @@ def composition_worker( l ):
         Wadv = -∫ ρ₀ (dC/dr) uᵣ c* dV                   the advection of the background composition
         Dcmp = ∫ c* ∇⋅(D ρ₀ ∇c) dV = -∫ D ρ₀ |∇c|² dV + [ r² D ρ₀ c* ∂c/∂r ]   its diffusion
         Wdr  = -2 Re ∫ ρ₀ c* i m G ΔΩ c dV              (diff_rot_setup, drcomp)
+        Wbg  = -2 Re ∫ ρ₀ c* (𝐔⋅∇c + 𝐮⋅∇C) dV          (a background flow, bgflow_setup, bgcomp)
     (real parts, the 2Re convention of thermal_worker). Uses the tables of set_solution (csol). Returns
-    [ CE_l, Dcmp_l, Wadv_l, Wdr_l ], Dcmp_l without the CompoD factor.
+    [ CE_l, Dcmp_l, Wadv_l, Wdr_l, Wbg_l ], Dcmp_l without the CompoD factor.
     '''
     Ra = par.ricb
     Rb = ut.rcmb
@@ -931,7 +1039,11 @@ def composition_worker( l ):
     if par.diff_rot:
         Wdr_l = -rad_quad( dotprod_scal(l, drcomp[l], c0), Ra, Rb, wk )
 
-    return [ Cene_l, Dcmp_l, Wadv_l, Wdr_l ]
+    Wbg_l = 0   # NEW (2026-11-08): a background flow, -2 Re ∫ ρ₀ c* (𝐔⋅∇c + 𝐮⋅∇C) dV (bgflow_setup)
+    if par.bgflow:
+        Wbg_l = -rad_quad( dotprod_scal(l, bgcomp[l], c0), Ra, Rb, wk )
+
+    return [ Cene_l, Dcmp_l, Wadv_l, Wdr_l, Wbg_l ]
 
 
 
@@ -1168,10 +1280,11 @@ def pressure_force(l, eigval):
     '''
     NEW (2026-11-04): the pressure gradient ∇Π = 𝐅 - λ𝐮, l-component (l of the poloidals), from the momentum equation
     per unit mass λ𝐮 = 𝐅 - ∇Π, with Π = p′/ρ₀ (LBR) and 𝐅 every other force, as in flow_worker: the Coriolis force
-    -coriolis, (∇⋅𝛔)/ρ₀ (visforce), the buoyancy (radial, so not in the consoidal part) and the differential rotation
-    (drforce). eigval = λ = σ + iω, the fields ∝ e^{λt} (forced runs: i forcing_frequency). Returns [ [q, ∂ᵣq], [s, ∂ᵣs] ]
-    of ∇Π at rk: Π_l = r s (and Π_l′ = q where the momentum rows are solved). Without the Lorentz force, which wall_powers
-    adds at the walls where it is needed (NEW 2026-11-06: lorentz_walls).
+    -coriolis, (∇⋅𝛔)/ρ₀ (visforce), the buoyancy (radial, so not in the consoidal part), the differential rotation
+    (drforce) and (NEW 2026-11-08) a background flow (bgforce, with its gradient part). eigval = λ = σ + iω, the fields
+    ∝ e^{λt} (forced runs: i forcing_frequency). Returns [ [q, ∂ᵣq], [s, ∂ᵣs] ] of ∇Π at rk: Π_l = r s (and Π_l′ = q
+    where the momentum rows are solved). Without the Lorentz force, which wall_powers adds at the walls where it is needed
+    (NEW 2026-11-06: lorentz_walls).
     '''
     [ velq, vels, _ ] = velocity(l)
     [ corq, cors, _ ] = coriolis(l)
@@ -1184,6 +1297,8 @@ def pressure_force(l, eigval):
         forces.append( buoyancy(l) )
     if par.diff_rot:
         forces.append( drforce[l] )
+    if par.bgflow:   # NEW (2026-11-08)
+        forces.append( bgforce[l] )
     for [ fq, fs, _ ] in forces:
         q = [ q[d] + fq[d] for d in (0,1) ]
         s = [ s[d] + fs[d] for d in (0,1) ]
@@ -1266,6 +1381,8 @@ def wall_powers(usol, tsol, eigval, bsol=None, csol=0):
     set_solution(usol, tsol, csol=csol)
     if par.diff_rot:
         diff_rot_setup()
+    if par.bgflow:   # NEW (2026-11-08)
+        bgflow_setup()
     [ lp, lt, ll ] = ut.ell(par.m, par.lmax, par.symm)
     nu = rho0*vsc0*par.ViscosD
     Wp = np.zeros(len(rw), dtype=complex)
@@ -1341,7 +1458,8 @@ def body_force_terms(usol, eigval, tsol=0, csol=0):
     '''
     NEW (2026-11-08): forcings 1 and 8, the terms of the body force 𝐟 that the known flow 𝐱 (utils.lifted_flow) puts in the
     momentum equation of the flow 𝐮 solved for (assemble.lifted_rhs): 𝐟 = -[λ𝐱 + 2 Gaspard 𝐳×𝐱 - (∇⋅𝛔(𝐱))/ρ₀ - 𝐅(𝐱)], the
-    equations of 𝐱 itself (𝐅 the force of a differential rotation, diff_rot_setup; 𝐱 carries no entropy and no field), with
+    equations of 𝐱 itself (𝐅 the force of a differential rotation, diff_rot_setup, and NEW 2026-11-08 of a background flow,
+    bgflow_setup; 𝐱 carries no entropy and no field), with
     λ = eigval = i forcing_frequency. Returns
       Wf,   the complex power 2 ∫ ρ₀ 𝐮*⋅𝐟 dV (its real part in residσ, its imaginary part in residω);
       Ensf, its enstrophy term ∫ (∇×𝐮)⋅(∇×𝐟) dV, weighted as flow_worker's (residens);
@@ -1360,6 +1478,8 @@ def body_force_terms(usol, eigval, tsol=0, csol=0):
     set_solution(xsol, np.zeros((len(lp), par.N), complex) if par.thermal else 0)   # 𝐱 carries no entropy (diff_rot_setup)
     if par.diff_rot:
         diff_rot_setup()   # drforce of 𝐱
+    if par.bgflow:
+        bgflow_setup()     # bgforce of 𝐱 (NEW 2026-11-08)
     F = {}
     for l in ll:
         v, c = velocity(l), coriolis(l)
@@ -1369,6 +1489,8 @@ def body_force_terms(usol, eigval, tsol=0, csol=0):
             f = [ [ f[k][d] + vf[k][d] for d in (0, 1) ] for k in (0, 1, 2) ]
         if par.diff_rot:
             f = [ [ f[k][d] + drforce[l][k][d] for d in (0, 1) ] for k in (0, 1, 2) ]
+        if par.bgflow:
+            f = [ [ f[k][d] + bgforce[l][k][d] for d in (0, 1) ] for k in (0, 1, 2) ]
         F[l] = f
     set_solution(usol, tsol, csol=csol)
     Wf, Ensf, Tf = 0j, 0.0, 0j
@@ -2455,13 +2577,16 @@ def twa_error(lam):
     it: the first term left out, the wall's own induction, is ε_TWA = |k h|²/3 = (2/3)(h/δ_w)² of the wall's part, δ_w =
     sqrt(2 η_w/|lam|) the wall's skin depth. As c c1 = h² mu_w sigma_w/(r² mu_f sigma_f) = h² η_f/(r² η_w), η_f = MagnetD,
         (h/δ_w)² = c c1 r² |lam|/(2 MagnetD)     (r = 1 or ricb), for any muw,
-    with lam in the frame of the wall: lam + i m Gaspard ΔΩ(r) when the wall turns with a differential rotation.
+    with lam in the frame of the wall: lam + i m Gaspard ΔΩ(r) when the wall turns with a differential rotation (NEW 2026-11-08:
+    and + i m times the rate of a background flow there, bgflow.rigid_rate).
     The weaker conditions h/r << 1 and l h/r << 1 are not checked.
     '''
     out = []
     for on, c, c1, r in ((ut.twa_o, par.c_cmb, par.c1_cmb, ut.rcmb), (ut.twa_i, par.c_icb, par.c1_icb, par.ricb)):
         if on and par.MagnetD != 0:
             lw = lam + (1j*par.m*par.Gaspard*dr.rigid_at(r)[0] if par.diff_rot else 0)   # in the wall's frame
+            if par.bgflow:   # NEW (2026-11-08)
+                lw = lw + 1j*par.m*bgf.rigid_rate(r)[0]
             hd2 = c*c1*r**2*abs(lw)/(2*par.MagnetD)
             out += [np.sqrt(hd2), 2*hd2/3]
         else:
@@ -2777,14 +2902,17 @@ import os
 FORCE_GRID = os.environ.get('KORE_MAG_GRID', '0') == '1'
 
 def use_grid():
-    # lorentz4pp, induction4pp: dipole only, and without the induction by a differential rotation (NEW 2026-10-30)
-    return FORCE_GRID or par.B0_tor is not None or (par.B0 is not None and bf.B0_l != 1) or bool(par.diff_rot) or ut.mag_algebra
+    # lorentz4pp, induction4pp: dipole only, and without the induction by a differential rotation (NEW 2026-10-30) or by a
+    # background flow (NEW 2026-11-08)
+    return (FORCE_GRID or par.B0_tor is not None or (par.B0 is not None and bf.B0_l != 1) or bool(par.diff_rot) or ut.mag_algebra
+            or bool(par.bgflow))
 
 
 def magnetic_powers_grid(walls_only=False):
     '''
     NEW (2026-10-28): the induction work Indu = 2 Re ∫ 𝐛*⋅∇×(𝐮×𝐁₀ + 𝐔₀×𝐛) dV (the 𝐔₀×𝐛 of a differential rotation: NEW
-    2026-10-30) and the complex power of the Lorentz force
+    2026-10-30; NEW 2026-11-08: 𝐔₀ also holds a background flow, bgflow = 1, bgflow.flow_grid) and the complex power of the
+    Lorentz force
     2 ∫ 𝐮*⋅[(∇×𝐛)×𝐁₀ + (∇×𝐁₀)×𝐛] dV (no Hendrik), for any B0 (poloidal and/or toroidal, background_field), computed on an
     (r, θ) grid from the vector fields: u (with its (ln ρ0)' part), b and ∇×b synthesised from their l-components
     (velocity, bfield_pol/tor, curl) on Schmidt harmonics (angular.ylm_grid), B0 and ∇×B0 from h, k. Independent of
@@ -2798,7 +2926,7 @@ def magnetic_powers_grid(walls_only=False):
     nB = max([3] + list(bf.pol_profiles()) + list(bf.tor_profiles()))   # NEW (2026-10-30): any background degree
     # FIX (2026-11-03): the products u*⋅(J0×b), E⋅J* have degree in cos θ up to 2 lmx + the degree D of the background (B0, or
     # U0 = ΔΩ r sinθ e_φ of degree n_max + 1); lmx + 12 Gauss nodes integrate them exactly up to D = 22, more nodes beyond
-    D = max(nB, dr.n_max() + 1 if par.diff_rot else 0)
+    D = max(nB, dr.n_max() + 1 if par.diff_rot else 0, bgf.nmax() + 1 if par.bgflow else 0)   # (NEW 2026-11-08: U of bgflow)
     xg, wx = np.polynomial.legendre.leggauss(lmx + 12 + max(0, D - 22))
     sg = np.sqrt(1 - xg**2)
     Yg, dYg, Zg = angular.ylm_grid(m, lmx, xg)       # Y_l, ∂θY_l, i m Y_l/sinθ at the nodes, rows l
@@ -2848,10 +2976,13 @@ def magnetic_powers_grid(walls_only=False):
 
     def rotation(rr):   # NEW (2026-10-30): the background flow U0 = Gaspard ΔΩ r sinθ e_φ at the radii rr, (r, θ, φ) on (rr, x)
         z0 = 0*np.outer(rr, xg)
-        if not par.diff_rot:
-            return [ z0, z0, z0 ]
-        dO = sum(np.outer(dr.fX(n, rr, 0), np.polynomial.legendre.Legendre.basis(n)(xg)) for n in dr.degrees())
-        return [ z0, z0, par.Gaspard*dO*np.outer(rr, sg) ]
+        out = [ z0, z0, z0 ]
+        if par.diff_rot:
+            dO = sum(np.outer(dr.fX(n, rr, 0), np.polynomial.legendre.Legendre.basis(n)(xg)) for n in dr.degrees())
+            out = [ z0, z0, par.Gaspard*dO*np.outer(rr, sg) ]
+        if par.bgflow:   # NEW (2026-11-08): and the background flow of bgflow.py, its three components
+            out = [ a + c for a, c in zip(out, bgf.flow_grid(np.asarray(rr, dtype=float), xg, nd=0)['U'][0]) ]
+        return out
 
     if not walls_only:
         B0v, J0v = background(rk)
@@ -2887,7 +3018,7 @@ def magnetic_powers_grid(walls_only=False):
     INDU_WALLS = 2*np.real(walls[1] - (walls[0] if par.ricb > 0 else 0))   # no inner wall in a full sphere
     # NEW (2026-11-06): the U0×b part at a wall with a turning conducting solid behind it (INDU_ROT_SOLID)
     solid = [ par.ricb > 0 and (ut.cic or ut.bessel or ut.twa_i), ut.twa_o or ut.resolved_mantle ]   # (NEW 2026-11-06: the
-    if par.diff_rot and any(solid):                                                         # resolved mantle, the Bessel core)
+    if (par.diff_rot or par.bgflow) and any(solid):                                         # resolved mantle, the Bessel core)
         Er = cross(rotation(rw), bw)
         rot = 2*np.pi*np.sum(wx[None, :]*(Er[1]*np.conj(bw[2]) - Er[2]*np.conj(bw[1]))*(rw**2)[:, None], axis=1)
         INDU_ROT_SOLID = 2*np.real((rot[1] if solid[1] else 0) - (rot[0] if solid[0] else 0))
@@ -2951,6 +3082,8 @@ def diagnose( usol, tsol, Ra, Rb, ncpus, csol=0):
     set_solution(usol, tsol, csol=csol)  # the solution and the tables of its radial functions at rk, as module globals
     if par.diff_rot:
         diff_rot_setup()  # differential-rotation force and heat-equation terms, as module globals
+    if par.bgflow:
+        bgflow_setup()    # NEW (2026-11-08): those of a background flow
 
     [ lp_u, lt_u, ll ] = ut.ell(par.m, par.lmax, par.symm)  # the l-indices of the flow field
 

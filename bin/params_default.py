@@ -271,6 +271,25 @@ class default_params():
         #   r otherwise) and p, with the functions of diff_rot_profiles, at |r|; no '#' (it is written to params.dat as a comment)
         self.centrifugal_param = 0.0  # 'user': p
 
+        # NEW (2026-11-08, from conductive_IC): a background flow U(r, θ), axisymmetric, with a meridional circulation and toroidal
+        # degrees beyond those of diff_rot (bin/bgflow.py; user guide docs/bgflow.md, equations docs/bgflow-equations.md): the
+        # steady flow that turning walls drive (forcing 12), linear or nonlinear, written by `python3 bin/bgflow.py nmax
+        # [nonlinear]` in the folder of that run, or given as expressions. U = bgflow_Ro Gaspard Σ_n [ρ0⁻¹∇×∇×(ρ0 P_n Y_n 𝐫) +
+        # ∇×(T_n Y_n 𝐫)] (∇⋅(ρ0 U) = 0; Gaspard taken as 1 when it is 0), with the entropy and composition the flow brought,
+        # S = bgflow_Ro Σ σ_n Y_n and C = bgflow_Ro Σ γ_n Y_n (optional, with thermal and compositional = 1). The perturbations
+        # are advected by U and advect it, (U⋅∇)u + (u⋅∇)U, U⋅∇s + u⋅∇S, U⋅∇c + u⋅∇C and ∇×(U×b), for any density, in a shell or
+        # a full sphere, together with diff_rot. U must be symmetric about the equator and must not cross a wall; at a conducting
+        # solid (inner core, thin layer, mantle) it must turn rigidly, and the solid turns with it. Without the diffusion of the
+        # entropy (ThermaD = 0) or of the composition (CompoD = 0), their rows are r² (eq)/p0 (r² (eq)/ρ0) in the C^(1) basis, as
+        # with thermal_wind. It stops with centrifugal = 1, rotdyn = 1 and topo_drag 'rekier'.
+        self.bgflow = 0
+        self.bgflow_file = 'bgflow.npz'  # the background (bgflow_profiles empty): Chebyshev series nP, P, nT, T [, nS, S, nC, C]
+        #   per unit Ro on [ricb, 1] ([-1, 1] with ricb = 0), and ricb; conductive_IC's files are read as they are
+        self.bgflow_Ro = 0.0  # the rate of the flow, in units of the frame's rotation rate (of 1/τ with Gaspard = 0): the forcing
+        #   amplitude over Gaspard of the run that wrote the file; a nonlinear file holds at its own Ro only
+        self.bgflow_profiles = {}  # in place of bgflow_file: {'P2': expr, 'T1': expr, 'T3': expr, 'S2': expr, ...}, numpy
+        #   expressions of r (with ricb, and the functions of diff_rot_profiles) of P_n, T_n, σ_n, γ_n per unit Ro; no '#'
+
         # ----------------------------------------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------------------------------- Thermal parameters
         # ----------------------------------------------------------------------------------------------------------------------

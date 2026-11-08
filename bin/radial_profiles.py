@@ -447,7 +447,7 @@ proffdir.update({ 'dns':densX, 'rdC':rdCdrX, 'dCd':gradCX, 'Drh':DrhoX })
 # centrifugal.magnetic_profile_functions(); NEW (2026-11-06, phase 2) with the profiles of the diffusion (E, N, C, Q, K + vs,
 # kp, et: Evs, Nkp, Ket, ...) and with the shapes of ΔΩ (E, N, C, Q, K + z + degree: Ez0, Nz2, ...) from
 # centrifugal.diffusion_profile_functions() and centrifugal.rotation_profile_functions() (NEW 2026-11-08: Dr, D ρ, as well:
-# EDr, NDr, ...)
+# EDr, NDr, ...), and (NEW 2026-11-08) the background flow's (w + q, s, t, h, d, c, e + degree) from bgflow.profile_functions()
 # -------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------
@@ -473,6 +473,9 @@ def _more_codes(c):
     elif c[0] in 'ENCQK' and c[1] == 'z':   # NEW (2026-11-06, phase 2): products of the map's amplitudes and the shapes of ΔΩ
         import centrifugal
         proffdir.update(centrifugal.rotation_profile_functions())
+    elif c[0] == 'w':   # NEW (2026-11-08): the background flow degree by degree, wq?, ws?, wt?, wh?, wd?, wc?, we? (bgflow.py)
+        import bgflow
+        proffdir.update(bgflow.profile_functions())
     else:
         import diff_rot
         proffdir.update(diff_rot.profile_functions())

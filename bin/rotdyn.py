@@ -131,11 +131,14 @@ def L_case():
     '''
     Whether spin_doctor checks the angular momentum of the fluid (resid𝐋): eigenvalue problems with the flow, m = 0, symm = 1
     (axial) or m = 1, symm = -1 (equatorial, without a differential rotation, whose stresses would add an equatorial torque),
-    and a spherical body. For m = 0 the advection by a differential rotation has no net torque (∫ rho0 u⋅∇(s U0) dV = 0 between
-    impenetrable walls). NEW (2026-11-08): also the axial balance of the forced problems whose walls move only along
-    themselves and that put no force in the fluid: the libration (forcing 7, m = 0), the steady rotation of the walls (12)
-    and the thermal forcing (13). A radial boundary flow would add the Coriolis torque of the mass it carries through the
-    walls, and a random body force (11) its own torque. The body forces of forcings 1 (axial or equatorial) and 8 (axial),
+    and a spherical body. For m = 0 the advection by a differential rotation has no net torque (∫ rho0 u⋅∇(s U0) dV = 0
+    between impenetrable walls). NEW (2026-11-08): a background flow (bgflow = 1) has none for any m: 𝐫×[(𝐔⋅∇)𝐮 + (𝐮⋅∇)𝐔] =
+    (𝐔⋅∇)(𝐫×𝐮) + (𝐮⋅∇)(𝐫×𝐔), whose integral with rho0 is a flux through the walls, 0 with ∇⋅(rho0 𝐔) = ∇⋅(rho0 𝐮) = 0 and
+    neither flow crossing them (the equatorial budget closes to round-off with one, tests/bgflow). NEW (2026-11-08): also
+    the axial balance of the forced problems whose walls move only along themselves and that put no force in the fluid:
+    the libration (forcing 7, m = 0), the steady rotation of the walls (12) and the thermal forcing (13). A radial
+    boundary flow would add the Coriolis torque of the mass it carries through the walls, and a random body force (11)
+    its own torque. The body forces of forcings 1 (axial or equatorial) and 8 (axial),
     whose walls are at rest, add theirs (utils4pp.body_force_terms).
     '''
     axial = par.m == 0 and par.symm == 1

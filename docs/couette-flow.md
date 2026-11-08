@@ -119,4 +119,5 @@ term of the budgets is zero: the residuals then compare round-off with round-off
 
 The solution is written as for any forced run ([Output files](output.md)), and `tests/couette` checks it against the
 `conductive_IC` branch, the exact flow without rotation and the rigid rotations, and checks its budgets
-([Modifying kore](checking.md)).
+([Modifying kore](checking.md)). `bin/bgflow.py` turns the flow, linear or nonlinear, into the background of other runs,
+whose waves and instabilities it carries ([Background flow](bgflow.md#a-background-from-turning-walls)).

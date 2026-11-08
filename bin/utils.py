@@ -87,13 +87,17 @@ def bessel_ic(l):
     NEW (2026-11-06, conductive_IC's 'conducting, Bessel'): (k, xd) of the inner core of degree l: inside it the field is
     b(ricb) j_l(k r)/j_l(k ricb), the solution of i w b = η_i ∇²b regular at r = 0, so k² = -i w/η_i, η_i = MagnetD/(mu_i2o
     sigma_i2o), with w the frequency in the frame of the core: forcing_frequency, plus m Gaspard c with a differential rotation
-    (the core turns with ΔΩ(ricb) = c, background.magnetic_diffrot). xd = x j_l'(x)/j_l(x), x = k ricb, is r b'/b inside at
-    the inner wall (l at w = 0, a potential field).
+    (the core turns with ΔΩ(ricb) = c, background.magnetic_diffrot), plus (NEW 2026-11-08) m times the rate of a background
+    flow there (bgflow.rigid_rate). xd = x j_l'(x)/j_l(x), x = k ricb, is r b'/b inside at the inner wall (l at w = 0, a
+    potential field).
     '''
     w = wf
     if par.diff_rot:
         import diff_rot as dr
         w = w + par.m*par.Gaspard*dr.rigid_ricb()[0]
+    if par.bgflow:   # NEW (2026-11-08): and the rate of a background flow at the inner wall (bgflow.rigid_rate)
+        import bgflow as _bgf
+        w = w + par.m*_bgf.rigid_rate(par.ricb)[0]
     k = (1 - 1j)*np.emath.sqrt(w/(2*par.MagnetD/(par.mu_i2o*par.sigma_i2o)))   # either sign of w
     return k, xdlogjl(l, k*par.ricb)
 
@@ -171,8 +175,14 @@ offset['c'] = sizmat - 3*rotdyn - n*compositional   # NEW (2026-11-08): the comp
 offset['rot'] = sizmat - 3*rotdyn   # NEW (2026-11-06): omega_M, omega_IC, phi (rotdyn = 1), after all the fields
 
 # ThermaD = 0 with the thermal-wind advection (docs/differential_rotation_details.md §7.2): the section-h rows are r² (eq)/p instead of
-# r (eq)/p, in the C^(1) basis (u_θ has P'), still without thermal bc rows; the thermal-wind profiles are then σn, σn'
-adiab_tw = bool(par.thermal == 1 and par.ThermaD == 0 and par.diff_rot == 1 and par.thermal_wind >= 1)
+# r (eq)/p, in the C^(1) basis (u_θ has P'), still without thermal bc rows; the thermal-wind profiles are then σn, σn'.
+# NEW (2026-11-08): also with a background flow (bgflow = 1), whose advection u⋅∇S and U⋅∇s have P'/r, s/r (bgflow.py)
+# NEW (2026-11-08): the same for the composition without diffusion (CompoD = 0) under a background flow: rows r² (eq)/ρ in C^(1)
+def adiabatic_rows():
+    '''(adiab_tw, adiab_c) of the current parameters (bgflow.newton changes bgflow between its assemblies)'''
+    return (bool(par.thermal == 1 and par.ThermaD == 0 and ((par.diff_rot == 1 and par.thermal_wind >= 1) or par.bgflow)),
+            bool(par.compositional == 1 and par.CompoD == 0 and par.bgflow))
+adiab_tw, adiab_c = adiabatic_rows()
 
 # profiles that are odd in r (parity of the operators with ricb = 0): g, p dS/dr, (ln ρ)'^2-type products, dS/dr and the
 # derivatives σn' of the thermal-wind entropy (codes tp + degree character, diff_rot.codes); NEW (2026-11-08) ρ dC/dr and dC/dr
@@ -197,6 +207,10 @@ mag_dl = list(_ma.dl_range()) if mag_algebra else [-2, -1, 0, 1, 2]
 if par.magnetic and getattr(par, 'centrifugal', 0):
     import centrifugal as _cf
     odd_profiles += _cf.magnetic_odd_codes()
+# NEW (2026-11-08): the profile codes of a background flow (bgflow.py) of odd parity
+if par.bgflow:
+    import bgflow as _bgf
+    odd_profiles += _bgf.odd_codes()
 
 def dr_offd(l, ls, row, col):
     '''
@@ -228,16 +242,16 @@ def decode_label(labl):
     dx      = int(labl[-1])  # operators' derivative order
 
     if section == 'u':
-        if par.ViscosD == 0 and par.magnetic:   # NEW (2026-10-28): inviscid with a magnetic field, r⁵ ρ² (the Lorentz force has h/r²)
-            rpower = par.rpower_u - rx ; rhopower = 2
+        if par.ViscosD == 0 and (par.magnetic or par.bgflow):   # NEW (2026-10-28): inviscid with a magnetic field, r⁵ ρ² (the
+            rpower = par.rpower_u - rx ; rhopower = 2   # Lorentz force has h/r²; NEW 2026-11-08: also a background flow, P'''
         elif par.ViscosD == 0:
             rpower = 3 - rx ; rhopower = 2   # Inviscid, we multiply the r̂⋅∇×∇× equations by r³ ρ**rhopower
         else:
             rpower = par.rpower_u - rx ; rhopower = par.rhopower_u   # Viscous, we multiply the r̂⋅∇×∇× equations by (r**rpower_u)*(ρ**rhopower)
 
     elif section == 'v':
-        if par.ViscosD == 0 and par.magnetic:   # NEW (2026-10-28): inviscid with a magnetic field, r³ ρ
-            rpower = par.rpower_v - rx ; rhopower = 1
+        if par.ViscosD == 0 and (par.magnetic or par.bgflow):   # NEW (2026-10-28): inviscid with a magnetic field (2026-11-08:
+            rpower = par.rpower_v - rx ; rhopower = 1           # or a background flow), r³ ρ
         elif par.ViscosD == 0:
             rpower = 2 - rx ; rhopower = 1   # Inviscid, we multiply the r̂⋅∇× equations by r² ρ
         else:
@@ -250,7 +264,7 @@ def decode_label(labl):
             rpower = 2 - rx ; rhopower = 0   # Non-adiabatic motion (or adiabatic with the thermal wind), we multiply the thermal equation by r²
 
     elif section == 'c':   # NEW (2026-11-08): the composition, as the entropy: r² (eq), or r (eq)/ρ without diffusion (CompoD = 0)
-        if par.CompoD == 0:
+        if par.CompoD == 0 and not adiab_c:   # (r² (eq)/ρ under a background flow, adiab_c)
             rpower = 1 - rx ; rhopower = 0
         else:
             rpower = 2 - rx ; rhopower = 0

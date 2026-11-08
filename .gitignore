@@ -2,6 +2,7 @@
 *.mtx
 *.npz
 !bin/jsoc_hmi_2010_2026.npz
+!tests/bgflow/cic_bgflow_*.npz
 *.field
 *.dat
 *__pycache__*

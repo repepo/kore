@@ -1,6 +1,6 @@
 # Background model
 
-kore solves for small perturbations of a background. The background has six parts, each chosen by name in the
+kore solves for small perturbations of a background. The background has seven parts, each chosen by name in the
 parameter file:
 
 | part | parameter | what it sets |
@@ -11,10 +11,12 @@ parameter file:
 | composition | `comp_stratification` | the gradient $dC/dr$ of a second scalar, the composition (only with `compositional = 1`) |
 | rotation | `diff_rot`, `diff_rot_type` | a uniform or a differential rotation $\Omega(r,\theta)$, and the latitudinal entropy that balances it |
 | shape | `centrifugal`, `centrifugal_shape` | a sphere, or a body flattened by its rotation |
+| flow | `bgflow` | a steady axisymmetric flow with a meridional circulation, such as the flow of turning walls ([Background flow](bgflow.md)) |
 
 The equations in which they enter are on the page [Anelastic equations](anelastic.md). The code is in
 `bin/background.py` (the choice, the checks, the stratification and diffusivity types), `bin/radial_profiles.py` (one
-class per structure), `bin/diff_rot.py` (the rotation) and `bin/centrifugal.py` (the flattening).
+class per structure), `bin/diff_rot.py` (the rotation), `bin/centrifugal.py` (the flattening) and `bin/bgflow.py` (the
+flow).
 
 ## Units
 

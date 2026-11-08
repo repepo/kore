@@ -54,7 +54,8 @@ All rows are projected on $Y_l^m$ and divided by $\mathcal L^3$, with $l$ the de
 factor $\rho_0$ (`rhopower_u = rhopower_v = 1`) improves the accuracy of the viscous rows near a surface where
 $\rho_0$ is small. Without viscosity (`ViscosD = 0`) the momentum rows are $r^3\rho_0^2$ and $r^2\rho_0$ times the
 equations. With `ThermaD = 0` the heat rows are divided by $p_0$, $r\thinspace(\partial_t s + u_r\thinspace dS/dr)/\mathcal L^3$,
-which is better conditioned where $p_0$ is small (and $r^2/p_0$ times the equation with the thermal wind); with
+which is better conditioned where $p_0$ is small (and $r^2/p_0$ times the equation with the thermal wind or a background
+flow); with
 `CompoD = 0` those of the composition are divided by $\rho_0$ in the same way. The Coriolis force couples $l$ to
 $l\pm1$; the other terms keep $l$.
 
@@ -130,7 +131,8 @@ A field that is smooth at the centre has radial functions that go as $r^l$ there
 a series in $r^2$. The basis gives $P_l$, $T_l$, $s_l$ (and the $f_l$, $g_l$ of a magnetic field) the parity of $l$, and
 the equations exclude the lower powers of that parity, as long as the background is smooth at the centre too. Each
 background profile follows the same rule with its own degree $n$: the $f_n$ of a differential rotation, the $h_n$,
-$k_n$ of a magnetic field and the $\sigma_n$ of a thermal wind go as $r^n$, $dS/dr$ and $g$ as $r$, and $\ln\rho_0$,
+$k_n$ of a magnetic field, the $\sigma_n$ of a thermal wind and the $P_n$, $T_n$, $\sigma_n$, $\gamma_n$ of a background flow
+go as $r^n$, $dS/dr$ and $g$ as $r$, and $\ln\rho_0$,
 $p_0$, $\nu$, $\kappa$ are series in $r^2$. kore evaluates every profile at $\lvert r\rvert$ with the parity of its
 degree, which gives the parity but neither the power nor the smoothness. A profile can fail in two ways:
 

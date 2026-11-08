@@ -42,13 +42,26 @@ OPERATOR_INDEPENDENT = ('ncpus', 'petsc_opts', 'prescale', 'which_eigenpairs', '
 
 
 def params_of(par):
-    '''{name: repr(value)} of the parameters that can change an operator (all but OPERATOR_INDEPENDENT and rsf_*)'''
+    '''{name: repr(value)} of the parameters that can change an operator (all but OPERATOR_INDEPENDENT and rsf_*); NEW
+    (2026-11-08) with a background flow from a file (bgflow = 1, bgflow_profiles empty), the sha256 of that file as well, under
+    the name 'bgflow_file sha256' (its content changes the operators, not only its name)'''
     out = {}
     for name, value in sorted(vars(par).items()):
         if name in OPERATOR_INDEPENDENT or name.startswith('rsf_'):
             continue
         out[name] = repr(value.tolist() if isinstance(value, np.ndarray) else value)
+    if getattr(par, 'bgflow', 0) and not getattr(par, 'bgflow_profiles', None):
+        out['bgflow_file sha256'] = _sha256(par.bgflow_file)
     return out
+
+
+def _sha256(fname):
+    '''the sha256 of a file as hex text, '(absent)' if there is none'''
+    import hashlib
+    if not os.path.isfile(fname):
+        return '(absent)'
+    with open(fname, 'rb') as f:
+        return hashlib.sha256(f.read()).hexdigest()
 
 
 def write(mats, par, fname=FILE):

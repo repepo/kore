@@ -11,6 +11,7 @@ nav:
       - Tidal forcing: tidal-forcing.md
       - Libration: libration.md
       - Spherical Couette flow: couette-flow.md
+      - Background flow: bgflow.md
       - Magnetic field: magnetic.md
       - Rotating solids: rotating-solids.md
       - Drag at the outer wall: drag.md
@@ -21,6 +22,7 @@ nav:
       - Anelastic equations: anelastic.md
       - Numerical method: numerical-method.md
       - Differential rotation: differential_rotation_details.md
+      - Background flow: bgflow-equations.md
       - Centrifugal deformation: centrifugal-equations.md
       - Magnetic field: magnetic-equations.md
       - Rotating solids: rotating-solids-equations.md

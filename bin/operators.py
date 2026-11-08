@@ -8,6 +8,7 @@ import utils as ut
 import diff_rot as dr
 import mag_algebra as ma   # NEW (2026-10-30)
 import centrifugal as cf   # NEW (2026-11-05)
+import bgflow as bgf   # NEW (2026-11-08)
 import submatrix_io as smio   # NEW (2026-11-03)
 
 
@@ -129,6 +130,17 @@ def differential_rotation_induction(l, section, component, offdiag):  # ------- 
     'bpol' (F) or 'btor' (G), source degree l + offdiag. Returns [matrix, offd] (offd in units of N1).
     '''
     return dr.induction_block(l, section, component, offdiag, globals())
+
+
+def background_flow(l, section, component, offdiag):  # ------------------------- NEW (2026-11-08): the terms of a background flow
+    '''
+    The terms of the background flow U, S, C (bgflow.py) in the A sign, source degree l + offdiag (bgflow.block): the force
+    (U⋅∇)u + (u⋅∇)U in the rows of section 'u', 'v' (column 'upol', 'utor'; with the sign of coriolis()), the advection
+    -p0 (U⋅∇s + u⋅∇S) in section 'h' (column 'temp', 'upol', 'utor'; the sign of thermal_advection), -ρ0 (U⋅∇c + u⋅∇C) in
+    section 'c' (column 'comp', 'upol', 'utor') and the induction ∇×(U×b) in section 'f', 'g' (column 'bpol', 'btor'; the A sign
+    of induction()). Returns [matrix, offd] (offd in units of N1) or [0, 0].
+    '''
+    return bgf.block(l, section, component, offdiag, globals())
 
 
 def centrifugal_inertia(l, section, component, offdiag):  # --------------------- NEW (2026-11-05): inertia of the deformed body

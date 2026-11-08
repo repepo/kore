@@ -1428,8 +1428,9 @@ def centre_check(prf):
     '''
     A WARNING for each background profile that is not regular at r = 0 (called by submatrices.py when ricb = 0), from its
     irregular_part relative to the largest profile of its family (the degrees of ΔΩ, of S_tw, of the poloidal and of the
-    toroidal B0) or to its own maximum (ln ρ0, p0, g, dS/dr, ν, κ): a kink above 1e-8 (the series converge slowly in N),
-    and powers below r^n above 1e-8 and ten times the kink (the modes are not regular there); prf is the structure
+    toroidal B0; NEW 2026-11-08 the P_n and T_n of a background flow, its σ_n, its γ_n) or to its own maximum (ln ρ0, p0,
+    g, dS/dr, ν, κ): a kink above 1e-8 (the series converge slowly in N), and powers below r^n above 1e-8 and ten times
+    the kink (the modes are not regular there); prf is the structure
     (radial_profiles.prf). The rotation types that are irregular by construction get a message of their own, and their
     S_tw is not checked again. Returns the number of warnings.
     '''
@@ -1471,6 +1472,13 @@ def centre_check(prf):
         if par.thermal and (par.thermal_wind == 3 or (par.thermal_wind in (1, 2) and not rot_bad)):
             family([('σ_%d of the thermal wind (thermal_wind %d)' % (n, par.thermal_wind), n, lambda r, n=n: dr.sigma(n, r, 0))
                     for n in dr.tw_degrees()], 'max |σ_n|')
+    if par.bgflow:   # NEW (2026-11-08): the scalars of a background flow (bgflow.py), each of its degree n, as they are given
+        import bgflow as bgf
+        dg = bgf.degrees()
+        family([('%s_%d of the background flow' % (K, n), n, bgf.raw(K, n)) for K in 'PT' for n in dg[K]],
+               'max |P_n|, |T_n|')
+        for K, sym in (('S', 'σ'), ('C', 'γ')):
+            family([('%s_%d of the background flow' % (sym, n), n, bgf.raw(K, n)) for n in dg[K]], 'max |%s_n|' % sym)
     if par.magnetic:
         pol, tor = bf.raw_profiles()
         family([('h_%d of B0 %r' % (n, par.B0), n, f) for n, f in pol.items()], 'max |h_n|')
