@@ -179,6 +179,15 @@ rotation option. What to watch for:
 - **Check the convergence in N.** In a full sphere, eigenfunctions with `ThermaD = 0` need more radial resolution than
   diffusive ones (N = 200 instead of 120 for a smooth solar model). Where $\rho_0$ nearly vanishes at the outer wall
   (structure `'Wu 2005'` with `r_out` close to 1), the thermal-wind rows converge slowly in N.
+- **A forced run needs the fluid to carry the entropy round.** Without diffusion the rows of the entropy hold only
+  its transport, $i(w + m\Omega)\thinspace s$ and $u_r\thinspace dS/dr$, at the frequency $w$ of the run
+  (`forcing_frequency`, or each of `rsf_frequencies` for forcing 11 with a scan), $\Omega$ being the angular velocity
+  of the differential rotation and of the background flow. Where $w + m\Omega$ is 0 everywhere (a steady run with
+  $m = 0$, or with no rotation) the entropy is undetermined; where it changes sign in the fluid (a `'Y20'` rotation in
+  a steady run) the entropy has a critical layer that no resolution resolves; and a background flow with a meridional
+  circulation makes it resonate on some streamlines at any frequency. kore stops in these cases
+  ([Combining features](compatibility.md#forced-runs)). A rotation of one sign, as a `'rigid'` offset or a
+  `'conical'` one in a steady run, runs.
 
 ## Composition
 
@@ -214,7 +223,8 @@ with `compositional = 1`. As with the entropy, a full sphere uses it as an odd f
 - **What it works with.** Every structure, a full sphere, a differential rotation (which only advects $c$), the
   deformed body, a magnetic field with conducting solids, the rotating solids, the drag at the outer wall (whose
   buoyancy frequency includes $N_c^2$), forced runs and the free decay (`hydro = 0`). The wave-like tide (forcing 1)
-  needs `compositional = 0`, and the steady rotation of the walls (forcing 12) needs `CompoD` > 0.
+  needs `compositional = 0`, and a forced run with `CompoD = 0` has the condition of one with `ThermaD = 0`
+  ([ThermaD = 0](#thermad-0)): the steady rotation of the walls (forcing 12), for one, needs `CompoD` > 0.
 - **Physical units.** `units.set_physical(par, ..., D=...)`, with $D$ in cm²/s, also sets `CompoD` and
   `BeyonceC` = `Beyonce`; $c$ is then the relative deficit of density that the composition makes.
 - **Output.** `composition.dat`, the power of its buoyancy in `flow.dat` and the column resid𝑐 of the `spin_doctor`
@@ -345,7 +355,7 @@ differential rotation adds to the heat equation. The advection of $s$ by the rot
 | 2 | the same | thermal wind of the full $(1 + \Delta\Omega)^2$ balance; frame independent |
 | 3 | the same | prescribed: $\partial_\theta S_{tw}$ = `dSdtheta` $\sin 2\theta$, uniform in $r$ (Bekki et al. 2024) |
 
-- `thermal_wind` 1 and 2 need `Beyonce > 0`. With `timescale = 'rotation'`, `set_scales()` sets `Beyonce = 0`, so set
+- `thermal_wind` 1 and 2 need `Beyonce` other than 0. With `timescale = 'rotation'`, `set_scales()` sets `Beyonce = 0`, so set
   it after calling `set_scales()`.
 - `dSdtheta` is in the units of $s$ ($\delta s/c_p$): `dSdtheta` $= \Delta_\theta s/c_p$, with $\Delta_\theta s$ in erg g⁻¹ K⁻¹. Bekki et al. use
   $c_p$ = 4.17e8, Model S has about 3.46e8. Negative values give warm poles. The thermal-wind amplitude does not apply.
@@ -467,19 +477,24 @@ par.centrifugal_f     = 2.5e-3
 ### What it covers
 
 The deformation is complete at first order in $f$: the inertia, the Coriolis force and the buoyancy, the viscous force
-with no-slip or stress-free walls, the thermal diffusion with fixed-entropy or fixed-flux walls, a differential rotation,
-and with a field the Lorentz force, the induction and the magnetic diffusion, insulating walls and a conducting inner
-core, with any background field, poloidal or toroidal, in shells and in full spheres. `'spheroid'` keeps the inertia, the
-Coriolis force, the buoyancy, the viscous force, the thermal diffusion and, with a field, the Lorentz force, the induction
-and the magnetic diffusion, with all their walls and a conducting inner core, exactly.
+with no-slip or stress-free walls, the thermal diffusion with fixed-entropy or fixed-flux walls and that of the
+composition with its walls, a differential rotation, and with a field the Lorentz force, the induction and the magnetic
+diffusion, insulating walls and a conducting inner core, with any background field, poloidal or toroidal, in shells and
+in full spheres. `'spheroid'` keeps the inertia, the Coriolis force, the buoyancy, the viscous force, the diffusion of
+the entropy and of the composition and, with a field, the Lorentz force, the induction and the magnetic diffusion, with
+all their walls and a conducting inner core, exactly.
 
 - `submatrices.py` warns about a flattening above 0.1, where the first order loses accuracy (not with `'spheroid'`),
   and with `thermal_wind` 1 or 2: the thermal-wind entropy keeps the balance of the sphere, so that balance misses its terms of order
   $f\thinspace\Delta\Omega$.
-- A viscous full sphere with $m \neq 0$ needs `rpower_v = 4`: the deformation gives its toroidal rows a term that is a
-  polynomial in $r$ only once multiplied by $r^4$. kore stops and says so.
-- kore stops with a forcing, with walls of zero radial stress (`bco` or `bci` = 2) in a viscous run, and with a
-  conducting inner core whose permeability differs from the fluid's (`mu_i2o` must be 1).
+- A viscous flow in a full sphere with $m \neq 0$ needs `rpower_v` of at least 4: the deformation gives its toroidal rows a term
+  that is a polynomial in $r$ only once multiplied by $r^4$. kore stops and says so.
+- kore stops with a forcing, and with walls of zero radial stress (`bco` or `bci` = 2) for a viscous flow; with
+  `hydro = 0` there are no rows of the flow, and the walls take any value. With a field it stops with a conducting
+  inner core whose permeability differs from the fluid's (`mu_i2o` must be 1) or, under a poloidal B0, behind a
+  stress-free inner wall (`bci` must be 1), and where B0 ends in a current sheet at a wall the fluid slips along. The
+  rotating solids, the drag at the outer wall, thin conducting layers, the resolved mantle and a background flow need a
+  spherical body ([Combining features](compatibility.md)).
 
 ### Output
 

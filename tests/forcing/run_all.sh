@@ -8,5 +8,7 @@ W=${1:-$T/runs}; mkdir -p "$W"
 fail=0
 python3 "$T/rows_check.py" "$W/rows" || fail=1
 echo
+python3 "$T/stops_check.py" "$W" || fail=1   # NEW (2026-11-09): the stops of the forced runs
+echo
 [ $fail = 0 ] && echo "tests/forcing: all checks passed" || echo "tests/forcing: FAILED"
 exit $fail

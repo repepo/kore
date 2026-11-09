@@ -118,11 +118,14 @@ thermal forcing (forcing 13). A flow through a wall would add the Coriolis torqu
 body force its own torque. For the body forces $\mathbf f$ that `spin_doctor` knows, the Poincaré force of the libration
 in the frame of the mantle (forcing 8) and the force of the wave-like tide (forcing 1, axial for $m$ = 0 and equatorial
 for $m$ = 1), the balance includes that torque, the same integral as $L$ over the toroidal part of $\mathbf f$ of degree 1
-(`utils4pp.body_force_terms`). resid𝐋 is not computed for the other forcings.
+(`utils4pp.body_force_terms`). resid𝐋 is not computed for the other forcings, nor with a wall of zero radial stress
+(`bco` or `bci` = 2) of a viscous fluid: the fluid crosses it, carrying angular momentum through it.
 
-resid𝐋 is the residual of the balance relative to the largest of $\lvert\lambda\rvert L_{\rm abs}$, the torques, and
-Gaspard $L_{\rm abs}$ for $m = 1$, with $L_{\rm abs}$ the same integral of $\lvert T\rvert$: a mode on which no torque
-acts (stress-free walls) is then checked to carry no angular momentum.
+resid𝐋 is the residual of the balance relative to the largest of $\lvert\lambda\rvert L_{\rm abs}$, the torques,
+ViscosD $L_{\rm abs}$, and Gaspard $L_{\rm abs}$ for $m = 1$, with $L_{\rm abs}$ the same integral of $\lvert T\rvert$:
+a mode on which no torque acts (stress-free walls) is then checked to carry no angular momentum, and a steady flow
+($\lambda = 0$) on which none acts, such as the thermal forcing between stress-free walls with a drag, to feel no torque
+on the scale of the viscous one.
 
 ## Energy
 

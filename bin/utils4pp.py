@@ -1317,9 +1317,10 @@ def pressure_force(l, eigval):
 def walls_move():
     '''
     NEW (2026-11-06): whether a wall can move radially, so that the pressure works on the fluid there (wall_powers): a forced
-    problem (a boundary flow with uᵣ ≠ 0 at a wall) or a wall with zero radial stress (bco or bci = 2)
+    problem (a boundary flow with uᵣ ≠ 0 at a wall) or a wall with zero radial stress (bco or bci = 2) of a viscous fluid
+    (FIX 2026-11-09: an inviscid fluid's one wall row is no penetration, whatever bco)
     '''
-    return bool(par.forcing != 0 or par.bco == 2 or (par.ricb > 0 and par.bci == 2))
+    return bool(par.forcing != 0 or (par.ViscosD > 0 and (par.bco == 2 or (par.ricb > 0 and par.bci == 2))))
 
 
 
@@ -2897,7 +2898,7 @@ def slipping_walls():
 # for: it is minus the power of the magnetic torque on the solid, so resid𝐄 takes it out of the induction work, as here.
 INDU_WALLS = 0.0
 # NEW (2026-11-06): the part of INDU_WALLS from U0×b at the walls where a conducting solid turns with ΔΩ (a conducting inner
-# core, a thin conducting wall: ΔΩ is uniform in latitude there, background.magnetic_diffrot). That flux does not leave for
+# core, a thin layer that conducts, c1 != 0, the resolved mantle: ΔΩ is uniform in latitude there, background.magnetic_diffrot). That flux does not leave for
 # the energy beyond the wall: it is the induction work of the turning solid, Re ∫ (𝐕×𝐛)⋅(∇×𝐛)* dV over it, which equals the
 # flux because Re ∫ 𝐛*⋅∇×(𝐕×𝐛) dV = 0 for a rigid rotation 𝐕 and the potential field beyond carries none of it. The full
 # budget (resid𝐄) keeps it in the induction work (spin_doctor: Iwall = INDU_WALLS - INDU_ROT_SOLID). It was missing for a
@@ -3026,10 +3027,15 @@ def magnetic_powers_grid(walls_only=False):
     INDU_WALLS = 2*np.real(walls[1] - (walls[0] if par.ricb > 0 else 0))   # no inner wall in a full sphere
     # NEW (2026-11-06): the U0×b part at a wall with a turning conducting solid behind it (INDU_ROT_SOLID)
     solid = [ par.ricb > 0 and (ut.cic or ut.bessel or ut.twa_i), ut.twa_o or ut.resolved_mantle ]   # (NEW 2026-11-06: the
-    if (par.diff_rot or par.bgflow) and any(solid):                                         # resolved mantle, the Bessel core)
+    # resolved mantle, the Bessel core). FIX (2026-11-09): of these, the solids that turn rigidly with the fluid next to them,
+    # a thin layer only where it conducts (c1 != 0, background.magnetic_diffrot): a layer that does not lets any rotation by,
+    # and the flux leaves for the field beyond it, as at an insulator (resid𝐄 4e-4 instead of 3e-8 with 'conical')
+    turning = [ par.ricb > 0 and (ut.cic or ut.bessel or (ut.twa_i and par.c1_icb != 0)),
+                (ut.twa_o and par.c1_cmb != 0) or ut.resolved_mantle ]
+    if (par.diff_rot or par.bgflow) and any(turning):
         Er = cross(rotation(rw), bw)
         rot = 2*np.pi*np.sum(wx[None, :]*(Er[1]*np.conj(bw[2]) - Er[2]*np.conj(bw[1]))*(rw**2)[:, None], axis=1)
-        INDU_ROT_SOLID = 2*np.real((rot[1] if solid[1] else 0) - (rot[0] if solid[0] else 0))
+        INDU_ROT_SOLID = 2*np.real((rot[1] if turning[1] else 0) - (rot[0] if turning[0] else 0))
     # NEW (2026-11-06): likewise at a wall where the solid behind it moves with the fluid, with velocity 𝐕 (a forced problem):
     # u_t where the wall is no-slip (the libration), plus uᵣ r̂ at a thin conducting layer with forced_walls 'deforming' (the
     # layer deforms with the boundary). What stays in the induction work follows the solid's rows. A thin conducting layer

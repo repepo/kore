@@ -21,12 +21,22 @@ The checks:
   5. the poloidal B0 of degree 2 (NEW 2026-10-28, 'Luo_S2', FDM with B0_l = 2): derive.rows(b0=('pol', 2)) against the tables of
      operators.induction_pol2, lorentz_pol2, read from bin/operators.py.
 Degrees l = 3..6, m = 0..3 (about 40 minutes on one core). Exit 1 on a mismatch.
+usage: python3 tests/magnetic/derive_check.py [--part k/K]   (NEW 2026-11-09: --part runs every K-th check from the k-th,
+       derive.part; run_all.sh runs the K parts side by side)
 '''
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import derive as d, sympy as sy
 from derive import r
 BAD = []   # labels of the failed checks
+_mine, PART = d.part(sys.argv)
+NCHK = [0]   # the checks this run made
+def mine():
+    '''True for the checks of this part (derive.part), counting them'''
+    if _mine():
+        NCHK[0] += 1
+        return True
+    return False
 def compare(a, b, label):
     '''derive.compare, recording a failure: the factor must be -1 (the A sign) and the mismatch below 1e-10'''
     c, err = d.compare(a, b, label)
@@ -97,6 +107,7 @@ for (row, part, form, p) in cases:
             cf = form(l, m, part, dl)
             lc = l + dl
             if cf is None or cf == 0 or lc < max(m, 1): continue
+            if not mine(): continue
             sym = unif(d.rows(row, part, lc, l, m))
             compare(sym, d.as_dict(cf/r**p), '%s row l=%d m=%d, %s col l%+d' % (row, l, m, part, dl))
 
@@ -137,6 +148,7 @@ for (row, part, p) in [('f','P',3), ('g','P',3), ('u','F',5), ('u','G',5)]:
         for dl in (-1, 0, 1):
             lc = l + dl
             if lc < max(m, 1): continue
+            if not mine(): continue
             sym = split(d.rows(row, part, lc, l, m))
             cand = {'f': lambda: f_extra(l, m, dl) if dl else 0, 'g': lambda: g_extra(l, m, dl)}[row]() if row in 'fg' else u_extra(l, m, part, dl)
             cand = sy.expand(cand)
@@ -206,6 +218,7 @@ for n, form, dls in ((1, tor_form, (-1, 0, 1)), (2, tor2_form, (-2, -1, 0, 1, 2)
         for dl in dls:
             lc = l + dl
             if lc < max(m, 1): continue
+            if not mine(): continue
             sym = d.rows(row, part, lc, l, m, b0=('tor', n))
             cand = sy.expand(form(row, part, l, m, dl))
             if cand == 0:
@@ -247,6 +260,7 @@ for (row, part, p) in [('f','P',3), ('f','T',3), ('g','P',3), ('g','T',3), ('u',
         for dl in (-2, -1, 0, 1, 2):
             lc = l + dl
             if lc < max(m, 1): continue
+            if not mine(): continue
             sym = d.rows(row, part, lc, l, m, b0=('pol', 2))
             cand = sy.expand(pol2_form(row, part, l, m, dl))
             if cand == 0:
@@ -258,9 +272,11 @@ for (row, part, p) in [('f','P',3), ('f','T',3), ('g','P',3), ('g','T',3), ('u',
 for row, part in [('v','F'),('v','G'),('f','T'),('g','T')]:
     for l, m in [(3,1),(4,0)]:
         for dl in (-1,0,1):
+            if not mine(): continue
             out = d.rows(row, part, l+dl, l, m)
             if [k for k in out if any(n[0]=='lr' for n,p in k[0])]:
                 BAD.append('lambda terms in %s %s' % (row, part)); print('LAMBDA TERMS in row', row, 'column', part, l, m, dl)
-print('rows v and T columns: no (ln rho0) terms' if not any('lambda terms in' in b for b in BAD) else '')
-print('derive_check.py:', 'ok' if not BAD else 'FAIL: %s' % BAD)
+if not PART:
+    print('rows v and T columns: no (ln rho0) terms' if not any('lambda terms in' in b for b in BAD) else '')
+print('derive_check.py%s: %d checks, %s' % (PART, NCHK[0], 'ok' if not BAD else 'FAIL: %s' % BAD))
 sys.exit(1 if BAD else 0)

@@ -14,8 +14,9 @@ tests/bgflow/run_all.sh [WORKDIR]
 builds the test runs (in `tests/bgflow/runs/` by default), runs every check and exits with 1 if one failed. It needs
 numpy, scipy, mpi4py, and petsc4py and slepc4py with MUMPS; `NCPUS` sets the number of ranks (default 2, and at most 2
 are used), `MPIEXEC` replaces `mpiexec`. The runs are built with `tests/tidal/mk_run.py` (an incompressible fluid in a
-rotating shell, ricb 0.35, Ek $10^{-3}$, no-slip walls, `m` 2, N 48 unless said otherwise). About 8.5 minutes on 2
-ranks.
+rotating shell, ricb 0.35, Ek $10^{-3}$, no-slip walls, `m` 2, N 48 unless said otherwise). About 8.5 minutes of runs on 2
+ranks, which (NEW 2026-11-09) run side by side, `NPAR` at a time (by default the processors over the ranks of a run, at most
+one run per 2 GB of available memory): 9 min with `NPAR = 2` on four processors that two other suites shared.
 
 ## The checks
 

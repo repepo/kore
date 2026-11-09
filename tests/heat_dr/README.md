@@ -23,7 +23,12 @@ run directory (a `bin/` copy, `parameters.py`, the `submatrices.npz` of `submatr
 the anti-Hermitian heat advection and the rigid-offset identity; it runs on any diff-rot run (N >= 96 for its 1e-6
 tolerance; at N = 48 the pre-existing viscous and inertia Hermitian tests fail on truncation).
 
-Every check prints a verdict line ending in `ok` or `FAIL`; `run_all.sh` stops at the first crash (`set -e -o pipefail`).
+The checks that `run_all.sh` runs print their verdicts (lines ending in `ok` or `FAIL`; `tw_sympy.py` a line per item
+and the count of failures, `sd_check.py` only with `diff_rot = 1`) and (NEW 2026-11-09) exit with 1 on a `FAIL`, as does
+the line of `run_all.sh` on the WARNINGs of the 'solar' and 'cylindrical' runs; `run_all.sh` stops at the first crash
+or `FAIL` (`set -e -o pipefail`), so its exit code is their verdict. The ratios of `tw_limit.py` (they must tend to a
+constant) and the balances of `terms.py` are read from the output, as are `mpi_check.sh` and `forced_check.py`, which
+`run_all.sh` does not run.
 Results of the last full run (2026-10-12): section 5 of `docs/heat-equation.md` in commit 1fbe5f08
 (`git show 1fbe5f08:docs/heat-equation.md`).
 

@@ -55,3 +55,4 @@ for t in range(ntr_):
     err = abs(H - G)/max(abs(G), Ga, 1e-300); worst = max(worst, err if np.isfinite(err) else np.inf)
     print(' trial %d: assembled %s  grid %s  rel diff %.1e' % (t, H, G, err))
 print('worst relative difference %.1e  ->  %s' % (worst, 'ok' if worst < 1e-8 else 'FAIL'))
+sys.exit(not worst < 1e-8)   # (NEW 2026-11-09: the verdict is the exit code too, so run_all.sh stops at a FAIL)

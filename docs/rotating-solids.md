@@ -63,15 +63,17 @@ libration (forcing 7), the steady rotation of the walls (forcing 12, [Spherical 
 thermal forcing (forcing 13), and for those whose body force it knows, with the torque of that force: the libration in
 the frame of the mantle (forcing 8, [Libration](libration.md)) and the wave-like tide (forcing 1, `m = 0` or `m = 1`,
 [Tidal forcing](tidal-forcing.md#the-wave-like-tide-forcing-1)). It is not computed with `centrifugal = 1`, nor for
-`m = 1` with a differential rotation.
+`m = 1` with a differential rotation, nor with a wall of zero radial stress (`bco` or `bci` = 2) of a viscous fluid,
+which the fluid crosses.
 Like residσ, it should be small for a resolved mode.
 `flow.dat` has the angular momentum, the torques and resid𝐋 ([Output files](output.md#flowdat)).
 
 ## What is supported
 
-Supported: any `structure`; with or without buoyancy; with or without a field, with any poloidal `B0` and a toroidal
-`B0_tor` that vanishes at both walls; insulating walls, a thin conducting layer, a resolved mantle or a conducting inner
-core.
+Supported: any `structure`; with or without buoyancy; a no-slip or a stress-free outer wall, with or without a drag
+([Drag at the outer wall](drag.md)); with or without a field, with any poloidal `B0` and a toroidal `B0_tor` that
+vanishes at both walls; insulating walls, a thin conducting layer, a resolved mantle or a conducting inner core
+(`'conducting, Chebys'`: `'conducting, Bessel'` serves forced runs only).
 
 Not supported (the run stops at startup):
 
@@ -79,7 +81,7 @@ Not supported (the run stops at startup):
 - `ViscosD = 0`, an inner wall that is not no-slip (`bci` other than 1), or an outer wall that is neither no-slip nor
   stress-free (`bco = 2`);
 - `Gaspard = 0`;
-- a differential rotation (`diff_rot = 1`) or `centrifugal = 1`;
+- a differential rotation (`diff_rot = 1`), a background flow (`bgflow = 1`) or `centrifugal = 1`;
 - a toroidal `B0_tor` that does not vanish at a wall;
 - `MoIZ_M` or `MoIZ_IC` not positive and finite, `gTorque` negative or infinite, `OmgtauIC` not positive, `vtrq` or
   `mtrq` other than 0 or 1, `rotdyn` other than 0 or 1.

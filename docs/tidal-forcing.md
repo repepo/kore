@@ -27,18 +27,20 @@ with $A_w$ = `forcing_amplitude_cmb` at the outer wall and `forcing_amplitude_ic
 | obliquity, $(2, 1)$ | 1, −1 | $-\sqrt6\thinspace A\sin\theta\cos\theta\cos(\phi + wt)$ |
 | eccentricity and asynchronism, $(2, 2)$ | 2, 1 | $\tfrac{\sqrt6}{2}\thinspace A\sin^2\theta\cos(2\phi + wt)$ |
 
-The tangential velocity at the walls is zero: forcing 14 keeps the no-slip conditions and replaces only $u_r = 0$ by
-the imposed value. The pattern turns at the angular velocity $-w/m$ in the frame, so a negative $w$ is prograde, as
+With a viscous fluid the tangential velocity at the walls is zero: forcing 14 keeps the no-slip conditions and replaces
+only $u_r = 0$ by the imposed value; an inviscid fluid (in a full sphere) slips along them. The pattern turns at the angular velocity $-w/m$ in the frame, so a negative $w$ is prograde, as
 everywhere in kore. For a body spinning at the frame rate $\Omega$ and a companion on a circular orbit of angular velocity
 $n$, the $(2, 2)$ tide has $w = 2(\Omega - n)\tau$ in kore's units ([Anelastic equations](anelastic.md#the-time-scale)).
 If the wall follows a tidal displacement $\xi\thinspace Y_2^m e^{i(m\phi + wt)}$ + c.c., its velocity is $iw\xi$: set the
 amplitude to $w\xi$ (the factor $i$ shifts the phase and changes no power). The problem is linear: the flow is
 proportional to the amplitudes, and every power to their square.
 
-Requirements: `bco = 1` and `bci = 1` (also in a full sphere, where `bci` is otherwise ignored), and one of the three
-pairs (`m`, `symm`) above. In a full sphere (`ricb = 0`) only the outer wall moves. `assemble.py` stops with a message
-when a requirement is not met. The forcing works with any `structure`, with `thermal = 1`, with a differential
-rotation and with a field ([Magnetic field](magnetic.md#forced-runs)).
+Requirements: no-slip walls (`bco = 1`, and `bci = 1` with an inner core), or an inviscid fluid in a full sphere,
+whose one wall row keeps the fluid from crossing the wall whatever `bco`; and one of the three pairs (`m`, `symm`)
+above. In a full sphere (`ricb = 0`) only the outer wall moves. kore stops with a message when a requirement is not
+met. The forcing works with any `structure`, with buoyancy, a differential rotation, a background flow and a field
+([Magnetic field](magnetic.md#forced-runs)); like every forced run it needs a spherical body (`centrifugal = 0`), and
+[Combining features](compatibility.md#forced-runs) shows what else it combines with.
 
 ## Example: the (2, 2) tide in a rotating shell
 
@@ -170,7 +172,7 @@ physical flow.
 | `forcing_amplitude_cmb` | $A$ at the outer wall: the amplitude of the radial velocity |
 | `forcing_amplitude_icb` | $A$ at the inner wall (not used in a full sphere) |
 | `m`, `symm` | (0, 1), (1, −1) or (2, 1) |
-| `bci`, `bco` | 1 |
+| `bci`, `bco` | `bco = 1`, and `bci = 1` with an inner core (an inviscid fluid in a full sphere: any) |
 
 The fields are written as for any forced run ([Output files](output.md)), and `tests/tidal` checks the forcing against an
 exact solution of the forced flow.
@@ -197,12 +199,13 @@ a body force on the wave-like tide $\mathbf u'$. kore solves for $\mathbf u'$, w
 no-slip or stress-free as `bci` and `bco` say. The whole tide is $\mathbf u_e + \mathbf u'$. The conditions at the walls
 hold for $\mathbf u'$ alone, so at a no-slip wall the whole tide slips with the tangential velocity of $\mathbf u_e$.
 
-Requirements: `structure = 'Boussinesq'`, `thermal = 0` and `magnetic = 0`, since the equilibrium tide above is that of
-a uniform fluid, with no stratification to displace and no field to induce; (`m`, `symm`) = (0, 1), (1, −1) or (2, 1);
-`bci` and `bco` 0 or 1, and no drag at the outer wall (`kappa_cmb` 0, `topo_drag` `None`), which would act on the slip
-of the whole tide. With `m = 2` the run needs an inner core: in a full sphere the Coriolis force on the equilibrium tide
-is a gradient and drives nothing. With `m` = 0 or 1 a full sphere works, and there alone the fluid may be inviscid
-(`ViscosD = 0`).
+Requirements: `structure = 'Boussinesq'`, `thermal = 0`, `compositional = 0` and `magnetic = 0`, since the
+equilibrium tide above is that of a uniform fluid, with no stratification to displace and no field to induce; (`m`,
+`symm`) = (0, 1), (1, −1) or (2, 1); `bco` 0 or 1, and `bci` 0 or 1 with an inner core; and no drag at the outer wall (`kappa_cmb` 0, `topo_drag`
+`None`), which would act on the slip of the whole tide. With `m = 2` the run needs an inner core: in a full sphere the
+Coriolis force on the equilibrium tide is a gradient and drives nothing. With `m` = 0 or 1 a full sphere works, and
+there alone the fluid may be inviscid (`ViscosD = 0`), with any `bco`. A differential rotation and a background flow
+work.
 
 **Example.** In the example of forcing 14 above, set
 
@@ -232,9 +235,11 @@ the tide at the orbital frequency, $|w|$ = `Gaspard`; at another frequency `asse
 same displacement.
 
 Requirements: `ricb` from 16/21 to 1, where the fits hold (Enceladus has about 0.88); (`m`, `symm`) = (0, 1) or (2, 1);
-no-slip walls (`bci = bco = 1`, `ViscosD > 0`), which the tide moves along themselves. Any `structure`, buoyancy and a
-differential rotation work, and a field with insulating walls (`'insulator'`, or `'TWA'` with `c1` 0): a conducting
-solid behind a wall would deform along it, which is not covered ([Magnetic field](magnetic.md#a-boundary-that-moves)).
+no-slip walls (`bci = bco = 1`, `ViscosD > 0`), which the tide moves along themselves. Any `structure`, buoyancy, a
+differential rotation and a background flow work, and a field with insulating walls (`'insulator'`, or `'TWA'` with
+`c1` 0), whose permeability is the fluid's where B0 reaches the wall (`mu` = 1, and `muw` = 1 in a layer with a
+thickness, `c` not 0, under a poloidal B0). kore stops with a conducting solid behind a wall, which the tide would
+deform along the wall ([Magnetic field](magnetic.md#a-boundary-that-moves)).
 The power is read as for forcing 14 ([The energy of the response](#the-energy-of-the-response)): P_in is the work of the
 moving walls, `flow.dat` columns 21, 22, 24 and 25. For example, the prograde part with `ricb = 37/42`, Ek $10^{-3}$, N
 48 and `lmax` 61 gives P_in = Dν = $2.17\times10^{-11}$ at `forcing_amplitude_cmb = 1`.
@@ -245,7 +250,7 @@ moving walls, `flow.dat` columns 21, 22, 24 and 25. For example, the prograde pa
 | `forcing_amplitude_cmb` | $a$: $u_r = -\tfrac32 a\thinspace Y_2^m$ at the outer wall | the scale of the fits, at both walls |
 | `forcing_amplitude_icb` | not used | not used |
 | `m`, `symm` | (0, 1), (1, −1), (2, 1) | (0, 1), (2, 1) |
-| `bci`, `bco` | 0 or 1 | 1 |
+| `bci`, `bco` | `bco` 0 or 1, and `bci` 0 or 1 with an inner core (an inviscid fluid: any `bco`) | 1 |
 
 `tests/cic_forcings` checks both against the `conductive_IC` branch, the wave-like tide against rigid rotations that
 solve it exactly in a full sphere, and their budgets and stops; `tests/forcing` checks the wall values of forcing 2.

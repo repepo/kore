@@ -1,0 +1,35 @@
+/* NEW (2026-11-09): the tables of compatibility.md, which tools/compat_tables.py writes in <div class="compat">: narrow
+   columns, so that the grid of 17 features fits the page, and the marks in colour (✓ green, ✗ red, ○ and – grey) */
+:root {
+  --compat-yes: #2e7d32;
+  --compat-no: #c62828;
+}
+[data-md-color-scheme="slate"] {
+  --compat-yes: #81c784;
+  --compat-no: #ef9a9a;
+}
+.md-typeset .compat table:not([class]) {
+  font-size: .7rem;
+}
+.md-typeset .compat table:not([class]) th,
+.md-typeset .compat table:not([class]) td {
+  min-width: 0;
+  padding: .3em .45em;
+  vertical-align: middle;
+}
+.md-typeset .compat table:not([class]) th:not([align]),
+.md-typeset .compat table:not([class]) td:not([align]) {
+  text-align: center;
+}
+.md-typeset .compat table:not([class]) th:first-child,
+.md-typeset .compat table:not([class]) td:first-child {
+  text-align: left;
+  font-weight: 700;
+}
+.md-typeset .compat .y { color: var(--compat-yes); }
+.md-typeset .compat .x { color: var(--compat-no); }
+.md-typeset .compat .o,
+.md-typeset .compat .n { color: var(--md-default-fg-color--light); }
+.md-typeset .compat td:has(> .d) { background-color: var(--md-default-fg-color--lightest); }
+.md-typeset .compat abbr { text-decoration: none; cursor: help; }
+.md-typeset .compat span[title] { cursor: help; }

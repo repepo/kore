@@ -153,7 +153,8 @@ Where each closed form in `operators.py` comes from:
 
 ### A.4 Verification
 
-- **`tests/magnetic/derive_check.py`** (no run directory, about 40 minutes): derive.py against every closed form, term by
+- **`tests/magnetic/derive_check.py`** (no run directory, about 40 minutes on one core; `--part k/K` runs every K-th
+  check, which `run_all.sh` spreads over its jobs): derive.py against every closed form, term by
   term: `conductive_IC`'s uniform-density operators, the $(\ln\rho_0)'$ terms, the toroidal forms, and the degree-2 tables
   (read from the source of `operators.py`). Degrees $l$ 3–6, $m$ 0–3.
 - **`tests/magnetic/row_check.py`** (in a run directory): what kore really assembles, i.e. the closed forms times this
@@ -268,7 +269,7 @@ g row at $\Delta l = -1$ is `-Cm*l*(l-1)*(l+1)*(g2bto0_D0 + g1bto0lho1_D0 - g1bt
 
 ```
 rows v and T columns: no (ln rho0) terms
-derive_check.py: ok
+derive_check.py: 532 checks, ok
 ```
 
 row_check runs in a run directory after `submatrices.py`; `tests/magnetic/mk_run.py NAME 'par.x = ..'` builds one:

@@ -31,6 +31,8 @@ All are hydrodynamic and rigidly rotating.
   between a convection zone and a radiative floor, $\ell_c$ from $H_p$, and `rsf_theta` `'nu'` and `'mlt'`.
 - `sun_cut`: as `sun_mlt`, with the inner cut `rsf_rcut` 0.45 of width 0.2, across the tail of the viscosity step.
 - `sp`: a shell at N 48 and lmax 24 with no-slip walls, $\ell_c$ = 0.1 and 40 realisations, for the solves.
+- `sp_fs`, `sp_mag` (NEW 2026-11-09): the same in a full sphere, and in a shell at N 32 and lmax 16 with a field
+  (B0 `'axial'`) and a conducting inner core (`'conducting, Chebys'`, `N_cic` 16), for the same solves.
 
 The first six runs use $\Theta = 1$, $\nu_t = \nu$, $\ell_c = 0.05$ and `rsf_taper` 0.1.
 
@@ -77,6 +79,9 @@ computes with scipy from the map of the noise, for a run small enough for a dens
   in `rsf_ke.dat` against a scipy solve (below $10^{-8}$), and `rsf_spectrum.dat` against the exact mean (every
   deviation below 4.5 standard errors). It also prints the energy of the mode, its normal-mode estimate and the
   fluctuation–dissipation value $\Theta_{\rm eff}f_t$.
+- `run_all.sh` runs the three steps in `sp` and `sp_fs`, and `check` alone in `sp_mag` at the frequencies 0.3, 0.4
+  and 0.5, which it writes itself: the spectrum with a field has no isolated damped mode for `pick`, and `fields`
+  reads the flow alone.
 
 **`regress_solve.sh OLD_KORE [WORKDIR]`.** An eigenvalue run (thermal, conical differential rotation) and a forced run
 (forcing 10), built and solved with the `bin/` of another checkout `OLD_KORE` and with this one, on one rank and one

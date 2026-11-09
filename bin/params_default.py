@@ -147,11 +147,12 @@ class default_params():
         # ---------------------------------------------------------------------------------------------- Hydrodynamic parameters
         # ----------------------------------------------------------------------------------------------------------------------
         # Inner core mechanical boundary conditions
-        # Use 0 for stress-free, 1 for no-slip or forced boundary flow. Ignored if ricb = 0
+        # 0 stress-free, 1 no-slip, 2 zero radial stress. Ignored if ricb = 0 (NEW 2026-11-09: and, as bco, with an inviscid
+        # fluid, ViscosD = 0, whose one wall row is no penetration)
         self.bci = 0
 
         # CMB mechanical boundary conditions
-        # Use 0 for stress-free, 1 for no-slip or forced boundary flow
+        # 0 stress-free, 1 no-slip, 2 zero radial stress
         self.bco = 0
 
         # NEW (2026-11-06, from conductive_IC): a drag at a stress-free outer wall (bco = 0, ViscosD > 0), the form drag of the
@@ -218,7 +219,7 @@ class default_params():
         # The thermal-wind entropy (thermal_wind = 1, 2) is that of ΔΩ (with its factor diff_rot_ampl), times thermal_wind_amplitude.
 
         self.thermal_wind = 1  # With thermal = 1 and diff_rot = 1 the heat equation gets the advection i m Gaspard ΔΩ s and,
-        # if thermal_wind = 1 (needs Beyonce > 0), the advection of the thermal-wind background entropy S_tw(r,θ)
+        # if thermal_wind = 1 (needs Beyonce != 0), the advection of the thermal-wind background entropy S_tw(r,θ)
         # that Ω(r,θ) implies, to first order in ΔΩ (docs/differential_rotation_details.md §2.4); thermal_wind = 2 uses the exact (1+ΔΩ)² balance,
         # which adds O(ΔΩ²) to the σn and degrees up to 2 n_max + 2 (diff_rot.sigma_coefficients). thermal_wind = 0 keeps the advection term only
         # (e.g. Mirouh et al. 2016, Ω(r) imposed). With ThermaD = 0 and thermal_wind >= 1 the heat rows are r² (eq)/p in a C^(1) basis.
@@ -522,23 +523,23 @@ class default_params():
         self.forcing = 0  # Uncomment this line for eigenvalue problems
         # self.forcing = 1  # Wave-like tide (Lin & Ogilvie 2018): the Coriolis force on the equilibrium tide, (m, symm) = (0, 1), (1, -1), (2, 1) (docs/tidal-forcing.md)
         # self.forcing = 2  # Eccentricity tide of Enceladus (Rekier et al. 2019), m = 0 or 2, symm, bci = bco = 1, 16/21 <= ricb < 1 (docs/tidal-forcing.md)
-        # self.forcing = 6  # Buffett2010 ICB radial velocity boundary forcing, m=1,antisymm, ricb > 0
-        # self.forcing = 7  # Longitudinal libration boundary forcing, m={0, 2}, symm, no-slip (NEW 2026-11-07: m = 0 also with bci = 0)
+        # self.forcing = 6  # Buffett2010 ICB radial velocity boundary forcing, m=1,antisymm, ricb > 0, bci = 0 or 1
+        # self.forcing = 7  # Libration of the walls, symm: m = 0 with bco = 1, bci = 0 or 1 and viscosity; m = 2 with bco = 1 (and bci = 1 with an inner core), or inviscid (docs/libration.md)
         # self.forcing = 8  # Longitudinal libration in the frame of the mantle (the Poincaré force), m=0, symm (docs/libration.md)
-        # self.forcing = 9  # Radial, symmetric, m=2 boundary flow forcing, bci=1.
-        # self.forcing = 10 # Radial, symmetric, order m boundary flow forcing at the cmb (l=m), unit amplitude.
+        # self.forcing = 9  # Radial, symmetric, m=2 boundary flow forcing, bci=1 (with an inner core and viscosity), bco = 0 or 1 where it moves the outer wall (forcing_amplitude_cmb != 0).
+        # self.forcing = 10 # Radial, symmetric, order m >= 1 boundary flow forcing at the cmb (l=m), unit amplitude, bco = 0 or 1.
         # self.forcing = 11 # Random Reynolds-stress body force (convective noise), any m, symm; rsf_* below.
         # self.forcing = 12 # Steady rotation of the walls about z (spherical Couette flow), m=0, symm, forcing_frequency = 0; a turning wall is no-slip (docs/couette-flow.md)
         # self.forcing = 13 # Entropy forcing_amplitude_icb P2(cos θ) at the inner wall (its gradient with bci_thermal = 1), m=0, symm.
-        # self.forcing = 14 # Tide: radial velocity forcing_amplitude Y_2^m at the walls, (m, symm) = (0, 1), (1, -1), (2, 1); bci = bco = 1 (docs/tidal-forcing.md)
+        # self.forcing = 14 # Tide: radial velocity forcing_amplitude Y_2^m at the walls, (m, symm) = (0, 1), (1, -1), (2, 1); bco = 1 (and bci = 1 with an inner core) (docs/tidal-forcing.md)
 
         # Forcing frequency (ignored if forcing == 0)
         self.forcing_frequency = 1.0  # negative is prograde
 
-        # Forcing amplitude (boundary forcings 6, 7, 9, 10, 13, 14; for 12 the rotation rates of the walls, in units of 1/tau;
+        # Forcing amplitude (boundary forcings 6, 7, 9, 13, 14; for 12 the rotation rates of the walls, in units of 1/tau;
         # for 7 and 8 the angles of the libration, 8's inner core relative to the mantle (0: it librates with the mantle); for 1
         # the tide's a, u_r = -(3/2) a Y_2^m at the outer wall; for 2 one amplitude for both walls, forcing_amplitude_cmb;
-        # forcing 11 ignores it: its power scales with rsf_scale)
+        # forcing 10 ignores them, its radial flow has a unit amplitude; forcing 11 too: its power scales with rsf_scale)
         self.forcing_amplitude_cmb = 1.0
         self.forcing_amplitude_icb = 0.0
 
@@ -549,8 +550,8 @@ class default_params():
                                            # triaxial mantle, the flattened inner core of forcing 6): the flow passes through
         # self.forced_walls = 'deforming'  # the solid deforms with the boundary (a tide): its surface moves with the fluid,
                                            # and inside a resolved mantle or a conducting inner core its motion induces field
-        # Either way a wall that the forcing moves needs one permeability on both sides where B0 reaches it: mu = 1, mu_i2o = 1
-        # with a conducting inner core, and a thin layer's muw = 1 where the poloidal B0 reaches the wall if c != 0 or the
+        # Either way a wall that the forcing moves needs one permeability on both sides where B0 reaches it: mu_i2o = 1 at an
+        # inner wall with a conducting inner core behind it, mu = 1 at any other, and a thin layer's muw = 1 where the poloidal B0 reaches the wall if c != 0 or the
         # layer conducts at rest ('rigid'), and where the toroidal B0 does if c1 != 0 (background.check_forced_magnetic)
 
         # Random Reynolds-stress body force (forcing = 11, bin/reynolds_stress.py): f = rho0^-1 div(rho0 s), s a random

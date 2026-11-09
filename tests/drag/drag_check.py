@@ -30,7 +30,8 @@ and angular momentum. Exit code 1 if a check fails.
    the stratification otherwise ('linear', Beyonce 10: sqrt(10)), w0/Omega = topo_omega when set, |itau|/Gaspard otherwise,
    |forcing_frequency|/Gaspard in a forced run (forcing 6); 1e-9. The same run with a time unit twice as long (Gaspard 2,
    Beyonce 40, ViscosD, ThermaD and itau doubled) has its eigenvalues doubled (1e-10) and the same N/Omega and w0/Omega. The
-   forced run closes Dtopo = -Wv_cmb (1e-8).
+   forced run closes Dtopo = -Wv_cmb (1e-8), and so do (NEW 2026-11-09) two forced runs with kappa_cmb that stopped before:
+   forcing 9 with the outer wall in place (forcing_amplitude_cmb = 0) and forcing 13, steady, between stress-free walls.
 6. The power of the drag: what the viscous stress at the outer wall takes from the fluid goes to the drag and to the
    turning mantle, Dtopo = -Wv_cmb - 2 Re(omega_M* G_M) (G_M the viscous torque on the mantle), in every run with a drag but
    the stiff ones of 4, whose slip is round-off; 1e-8.
@@ -248,6 +249,15 @@ dirs['th2'] = build('th2', TH + "; par.Gaspard = 2.0; par.Beyonce = 40.0; par.Vi
 drag_runs += ['th', 'th2']
 dirs['forced'] = build('forced', N48 + "; par.m = 1; par.symm = -1; par.bco = 0; " + REK + "; par.topo_N = 0.5; "
                                        "par.forcing = 6; par.forcing_frequency = 0.9; par.forcing_amplitude_icb = 1.0", 20)
+# NEW (2026-11-09): forcing 9 with the outer wall in place and forcing 13 at frequency 0 between stress-free walls, with
+# kappa_cmb (they stopped before: the drag acts on the outer wall's slip, and on the rigid rotation that would otherwise
+# also solve the steady problem of forcing 13)
+dirs['forced9'] = build('forced9', N48 + "; par.m = 2; par.symm = 1; par.bco = 0; par.kappa_cmb = 0.05; par.forcing = 9; "
+                                         "par.forcing_frequency = 0.9; par.forcing_amplitude_cmb = 0.0; "
+                                         "par.forcing_amplitude_icb = 1.0", 21)
+dirs['forced13'] = build('forced13', N48 + "; par.m = 0; par.symm = 1; par.bci = 0; par.bco = 0; par.kappa_cmb = 0.05; "
+                                           "par.thermal = 1; par.stratification = 'linear'; par.forcing = 13; "
+                                           "par.forcing_frequency = 0.0; par.forcing_amplitude_icb = 1.0", 19)
 want = {'t_so': (0.5, 0.98), 't_m2': (0.0, 0.7), 'r_t': (0.3, 0.2), 'th': (np.sqrt(10), 0.98), 'th2': (np.sqrt(10), 0.98),
         'forced': (0.5, 0.9)}
 bad = []
@@ -256,16 +266,19 @@ for name, (n, w) in want.items():
     if len(p) < 141 or abs(p[139] - n) > 1e-9*max(1, n) or abs(p[140] - w) > 1e-9:   # (later columns appended after 141)
         bad.append('%s (%s)' % (name, ', '.join('%.9g' % v for v in p[139:141])))
 err = closest(eig(dirs['th2']), 2*eig(dirs['th'])[:2])
-f = table(dirs['forced'], 'flow.dat')
-ef = abs(f[0, 39] + f[0, 24])/max(abs(f[0, 39]), abs(f[0, 24]))
-report('frequencies', not bad and err < 1e-10 and ef < 1e-8,
-       'N/Omega and w0/Omega of %d runs%s; time unit x2: eigenvalues %.1e from twice; forced run: Dtopo = -Wv_cmb to %.1e'
-       % (len(want) - len(bad), '; not: ' + ', '.join(bad) if bad else '', err, ef))
+ef = []
+for name in ('forced', 'forced9', 'forced13'):
+    f = table(dirs[name], 'flow.dat')
+    ef.append(abs(f[0, 39] + f[0, 24])/max(abs(f[0, 39]), abs(f[0, 24])))
+report('frequencies', not bad and err < 1e-10 and all(e < 1e-8 for e in ef),
+       'N/Omega and w0/Omega of %d runs%s; time unit x2: eigenvalues %.1e from twice; forced runs (6, 9, 13): Dtopo = '
+       '-Wv_cmb to %s' % (len(want) - len(bad), '; not: ' + ', '.join(bad) if bad else '', err,
+                          ', '.join('%.1e' % e for e in ef)))
 
 # 6. the power of the drag (the stiff runs left out: their slip is round-off)
 res = {name: wall_power(dirs[name]) for name in drag_runs}
 worst = max(res, key=res.get)
-report('wall power', res[worst] < 1e-8, 'Dtopo = -Wv_cmb - 2 Re(omega_M* G_M) to %.1e (%s) in %d runs' %
+report('wall power', all(v < 1e-8 for v in res.values()), 'Dtopo = -Wv_cmb - 2 Re(omega_M* G_M) to %.1e (%s) in %d runs' %
        (res[worst], worst, len(res)))
 
 # 7. the stops of background.check_drag
@@ -288,7 +301,7 @@ cases = [('topo_drag', "par.topo_drag = 'Rekier'", "None (no topographic drag) o
          ('kappa_cmb < 0', "par.kappa_cmb = -1.0", 'the drag coefficient is a finite number >= 0'),
          ('both drags', KR + "; par.kappa_cmb = 0.01", 'topo_drag and kappa_cmb cannot be combined'),
          ('no-slip wall', "par.kappa_cmb = 0.01; par.bco = 1", 'and a stress-free outer wall (bco = 0)'),
-         ('inviscid', "par.kappa_cmb = 0.01; par.ViscosD = 0.0", 'a viscous fluid (ViscosD > 0)'),
+         ('inviscid', "par.kappa_cmb = 0.01; par.ViscosD = 0.0; par.ricb = 0", 'a viscous fluid (ViscosD > 0)'),
          ('centrifugal', "par.kappa_cmb = 0.01; par.centrifugal = 1", 'needs a spherical body (centrifugal = 0)'),
          ('forcing 9', "par.kappa_cmb = 0.01; par.m = 2; par.symm = 1; par.forcing = 9", 'with forcing 9 is not covered'),
          ('diff_rot', KR + "; par.diff_rot = 1", 'with a differential rotation (diff_rot = 1) is not covered'),

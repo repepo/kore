@@ -231,7 +231,7 @@ $l \pm 3$ of the other. Their radial factors are products of the amplitudes of t
 derivatives, and of the derivatives of $\ln\rho_0$ (`centrifugal.diffusion_build`). When $m \neq 0$ the toroidal rows of
 the viscous force and of the induction reach the third derivative of $P$ and of $F$, and kore builds those sections in the
 basis that has it. In a full sphere these rows have terms in $P/r$ and $F/r$, polynomials only once the rows are
-multiplied by $r^4$ and $r^3$: kore does it for the field (in a conducting inner core too), and asks for `rpower_v` = 4
+multiplied by $r^4$ and $r^3$: kore does it for the field (in a conducting inner core too), and asks for `rpower_v` ≥ 4
 for the flow.
 
 ## Differential rotation
@@ -478,9 +478,12 @@ for the exact spheroid ([The exact spheroid](#the-exact-spheroid)), where the on
   of order $f\thinspace\Delta\Omega$ of that balance are missing, while its advection and the other terms of
   $\Delta\Omega$ are those of the deformed body. `submatrices.py` warns.
 - **What stops the run.** The rows of a wall of zero radial stress (`bco` or `bci` = 2) would change on a deformed wall,
-  so kore stops with them in a viscous run. The matching rows of a conducting inner core change too when its permeability
-  differs from the fluid's, so kore stops unless `mu_i2o` = 1. It also stops with a forcing, and in a viscous full
-  sphere with $m \neq 0$ unless `rpower_v` = 4 ([Dissipative terms](#dissipative-terms)).
+  so kore stops with them for a viscous flow. The matching rows of a conducting inner core change too when its
+  permeability differs from the fluid's, so kore stops unless `mu_i2o` = 1, and so does the $\mathbf u\times\mathbf B_0$
+  of a fluid that slips along it under a poloidal B0, so kore stops unless `bci` = 1. The push of a current sheet on a
+  wall the fluid slips along would change on a deformed wall too: kore stops where B0 ends in a sheet at such a wall.
+  It also stops with a forcing, and for a viscous flow in a full sphere with $m \neq 0$ unless `rpower_v` ≥ 4
+  ([Dissipative terms](#dissipative-terms)).
 - **Shifts measured from a sphere.** A body that is not deformed keeps the bases and rows of the sphere
   (`centrifugal.deformed`), so that its matrices are those of `centrifugal = 0`. A deformed body with $m \neq 0$ writes
   the rows of the toroidal flow in $C^{(3)}$ when it is viscous, and those of the toroidal field when the field diffuses

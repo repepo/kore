@@ -31,7 +31,8 @@ walls, N 48) unless said otherwise, built with tests/tidal/mk_run.py's template.
    0/0); a stress-free outer wall at rest, along which the fluid slips, with a drag (kappa_cmb), with a thin conducting
    layer and with a resolved mantle. resid𝐄 is relative to the viscous dissipation too (as residσ, below).
 5. The budgets of the other forced flows that the walls drive: the libration (forcing 7, m 0), with and without a field
-   (a stress-free inner wall along a conducting inner core at rest), and the thermal forcing (13, steady). resid𝐋 is
+   (a stress-free inner wall along a conducting inner core at rest), and the thermal forcing (13, steady; NEW 2026-11-09:
+   also between stress-free walls with the drag kappa_cmb, which stopped before). resid𝐋 is
    computed for them since 2026-11-08 (it was nan), and residσ is relative to the viscous dissipation too (it was about
    1 for the libration, the round-off of the small power of the viscous force relative to itself). residω is 0 for the
    steady runs (it was 0/0).
@@ -243,6 +244,10 @@ d = build('f13', F13, lmax=31)
 b = budgets(d)
 budgets_ok('f13', d, need=('σ', 'ω', '𝐋', '𝑠'))
 report('f13_resid_w', b['ω'] == 0, 'residω %r: every term of the imaginary balance is 0 in a steady flow of m = 0' % b['ω'])
+# NEW (2026-11-09): between stress-free walls with the drag kappa_cmb, which acts on the rigid rotation that would otherwise
+# also solve the steady problem (it stopped before)
+budgets_ok('f13_drag', build('f13_drag', F13 + "; par.bci = 0; par.bco = 0; par.kappa_cmb = 0.05", lmax=31),
+           need=('σ', 'ω', '𝐋', '𝑠'))
 
 # 6. the stops (at the start of submatrices.py) and the cases that run
 BASE = F12 + "; " + IC1
@@ -250,7 +255,8 @@ STOPS = [
     ('stop_freq', "par.forcing_frequency = 0.5", 'it needs forcing_frequency = 0'),
     ('stop_m1', "par.m = 1", 'needs m = 0 and symm = 1'),
     ('stop_symm', "par.symm = -1", 'needs m = 0 and symm = 1'),
-    ('stop_inviscid', "par.ViscosD = 0.0", 'needs a viscous fluid'),
+    ('stop_inviscid', "par.ViscosD = 0.0; par.ricb = 0; par.forcing_amplitude_icb = 0.0; par.forcing_amplitude_cmb = 1.0",
+     'needs a viscous fluid'),   # (in a full sphere: an inviscid shell stops before, in background.check)
     ('stop_sphere_ic', "par.ricb = 0", 'has no inner core to turn'),
     ('stop_thermal', "par.thermal = 1; par.stratification = 'top hat'; par.ThermaD = 0.0", 'needs ThermaD > 0'),
     ('stop_bc2', "par.bco = 2", 'walls that stay in place'),

@@ -750,12 +750,14 @@ def main(ncpus):
         # those on the mantle and the inner core (viscous, and the Maxwell stress at the walls), and i Gaspard L, the Coriolis
         # torque, in the equatorial case (conductive_IC's sign: L is L_x - i L_y there). Relative to the largest term and to
         # |λ| ∫ ρ0 r³ |T| (rotdyn.angular_momentum), so that a flow with no torque on it (stress-free or inviscid walls, m = 0)
-        # tests that it carries no net angular momentum
+        # tests that it carries no net angular momentum. NEW (2026-11-09): and to ViscosD ∫ ρ0 r³ |T|, the torque that
+        # viscosity puts on such an angular momentum, so that a steady flow (λ = 0) on which no torque acts is checked too:
+        # forcing 13 between stress-free walls with the drag kappa_cmb (one torque of round-off, 0/0 before: resid𝐋 1)
         if L_case:
             lam = sigma + 1j*w
             on_fluid = [ -vtorq[i], -vtorq_ic[i], -mtorq[i], -mtorq_ic[i], Tf[i] ] + ([ 1j*par.Gaspard*angmom[i] ] if par.m == 1 else [])
             Labs = rd.angular_momentum(u_sol2, absval=True)
-            scale = max([ abs(lam)*Labs, par.Gaspard*Labs if par.m == 1 else 0.0 ] + [ abs(t) for t in on_fluid ])
+            scale = max([ abs(lam)*Labs, par.Gaspard*Labs if par.m == 1 else 0.0, par.ViscosD*Labs ] + [ abs(t) for t in on_fluid ])
             residL[i] = abs( lam*angmom[i] - sum(on_fluid) )/scale if scale > 0 else 0.0
         if par.magnetic:
             # FIX (2026-11-08): 0 when every term is 0, a field that the flow leaves unchanged (it was 0/0): the Malkus field
@@ -773,11 +775,14 @@ def main(ncpus):
             # resid𝐄 at nan for every full-sphere run). NEW (2026-11-06): without the flow (hydro = 0) for any walls, and
             # without Hendrik (only magnetic terms are left: 2σ(ME + MEic + MEext) = Indu - Iwall - Ohm_f - Ohm_ic)
             # NEW (2026-11-06, as conductive_IC): a fluid slipping along impenetrable walls (stress-free, or ViscosD = 0) too, with
-            # the wall terms of u×B0 apart (upp.diagnose_magnetic computes INDU_WALLS then); not with centrifugal = 1. Thin walls
+            # the wall terms of u×B0 apart (upp.diagnose_magnetic computes INDU_WALLS then); not with centrifugal = 1 (a viscous
+            # fluid along stress-free walls; an inviscid one has the no-slip case's budget, FIX 2026-11-09). Thin walls
             # (mantle, innercore 'TWA') add the energy stored in them and their Ohmic loss (E_w, Ohm_w; upp.em_budget), which
             # close the budget exactly for c = 0 and to O(c c1) otherwise; not with mu != 1 (the energies would need it). The
             # resolved mantle adds its energy and Ohmic loss the same way (exact).
-            noslip = par.bco == 1 and (par.bci == 1 or par.ricb == 0)
+            # FIX (2026-11-09): bco and bci mean nothing to an inviscid fluid (its one wall row is no penetration), whose
+            # budget closes as a no-slip one's, to O(f²) with centrifugal = 1: it was nan at bco 0 and computed at bco 1
+            noslip = (par.bco == 1 or par.ViscosD == 0) and (par.bci == 1 or par.ricb == 0)
             imperm = par.ViscosD == 0 or (par.bco in (0, 1) and (par.ricb == 0 or par.bci in (0, 1)))
             # NEW (2026-11-06): with rotating solids (rotdyn = 1) only with both torques on them (vtrq = mtrq = 1)
             rotok = not ut.rotdyn or (par.vtrq == 1 and par.mtrq == 1)

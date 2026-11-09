@@ -662,7 +662,8 @@ $\mathrm{MagnetD}\,\eta_s\nabla\times\mathbf b - \mathbf v_s\times\mathbf B_0$, 
 solid's material, so the matching depends on how the solid moves. Where a no-slip wall moves along itself, as in a
 libration, the solid turns with it, which induces nothing in the axisymmetric $\mathbf B_0$. For the radial motion
 `forced_walls` chooses between two consistent pictures; `None`, the default, takes `'rigid'` for forcings 6 and 7 and
-`'deforming'` for 9, 10 and 14 (`background.forced_walls`).
+`'deforming'` for 9, 10 and 14 (`background.forced_walls`). The eccentricity tide (forcing 2) moves both walls, radially
+and along themselves; it needs insulating walls, so of this section only the permeability below applies to it.
 
 - **`'rigid'`**: the solid is at rest and only its shape moves past the sphere, so the flow passes through the
   wall. The fluid's tangential electric field, $\mathbf u\times\mathbf B_0$ included, is continued into the solid, as for a
@@ -731,7 +732,8 @@ changes by $O(h)$ across the layer and needs nothing more.
 **Permeability at a wall that moves.** A surface where the permeability jumps separates matter that $\mathbf B_0$
 magnetizes differently, so moving it moves magnetization through $\mathbf B_0$, which changes the field. The rows above
 hold with the same permeability on both sides of every surface that moves. A wall that the forcing moves, where
-$\mathbf B_0$ reaches it, therefore needs $\mu = 1$, and $\mu_{i2o} = 1$ with a conducting inner core, in both pictures.
+$\mathbf B_0$ reaches it, therefore needs $\mu_{i2o} = 1$ at an inner wall with a conducting inner core behind it, and
+$\mu = 1$ at any other, in both pictures.
 A thin layer holds $(p/\mu)\,\mathbf B_{0t}$ of the part of $\mathbf B_0$ that enters it ($\mathbf H_t$ is continuous),
 and its $p$ must be 1 where that part reaches the wall:
 
@@ -784,8 +786,9 @@ $\Delta\Omega(r_i, \theta) = c$ ($f_n(r_i) = 0$ for $n > 0$, `diff_rot.rigid_ric
 gains $-imGc\,\mathbf b$. The matching conditions are unchanged, because only $b_r$, which is continuous, enters the
 tangential part of $\mathbf U_0\times\mathbf b$.
 
-**A solid with a thin conducting layer** turns with the fluid next to it in the same way, so $\Delta\Omega$ must be
-uniform in latitude at each such wall (`diff_rot.rigid_at`), or the run stops. In the frame of the solid the layer's
+**A solid with a thin layer that conducts** ($c_1 \neq 0$) turns with the fluid next to it in the same way, so
+$\Delta\Omega$ must be uniform in latitude at each such wall (`diff_rot.rigid_at`), or the run stops; a layer that
+does not conduct ($c_1 = 0$) takes any rotation. In the frame of the solid the layer's
 conditions are those above, and $\mathbf U_0\times\mathbf b$ cancels there with the solid's own rotation. The **resolved mantle** turns with
 $\Delta\Omega(1) = c$, uniform in latitude, and its field gains $-imGc\,\mathbf b$ like a conducting inner core.
 
@@ -1093,7 +1096,7 @@ Mag/Kin and writes `magnetic.dat`:
 | 8 | MEext | energy of the potential field outside the outer wall (beyond `r_surface` with a resolved mantle) |
 | 9 | Ohm_f | Ohmic loss in the fluid |
 | 10 | Ohm_ic | Ohmic loss in a conducting inner core |
-| 11 | residE | resid𝐄, the full energy budget (nan with stress-free walls and `centrifugal = 1`, with thin layers and `mu` ≠ 1, and with rotating solids unless `vtrq` and `mtrq` are 1) |
+| 11 | residE | resid𝐄, the full energy budget (nan for a viscous fluid along a wall that is not no-slip with `centrifugal = 1`, with thin layers and `mu` ≠ 1, and with rotating solids unless `vtrq` and `mtrq` are 1) |
 | 12 | MEc | with `centrifugal = 1`, a thin layer or a resolved mantle: the energy that the deformation adds (0 without it) |
 | 13, 14 | E_w, Ohm_w | with a thin layer or a resolved mantle: the magnetic energy stored in the thin layers or in the mantle, and their Ohmic loss |
 | 15, 16 | eps_twa_o, eps_twa_i | with a thin layer or a resolved mantle: $\varepsilon_\text{TWA}$ of the outer and of the inner thin layer (0 where there is none) |

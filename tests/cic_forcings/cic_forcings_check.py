@@ -130,7 +130,7 @@ if other == '-':
 else:
     u7 = load(other, 'flow')
     out = {'flow': abs(u8 + x - u7).max()/abs(u7).max()}
-    for n in ('magnetic', 'magnetic_ic', 'magnetic_mantle', 'temperature'):
+    for n in ('magnetic', 'magnetic_ic', 'magnetic_mantle', 'thermal', 'composition'):   # (FIX 2026-11-09: 'thermal', the entropy's file; 'temperature' read nothing)
         a, b = load('.', n), load(other, n)
         if a is not None and b is not None:
             out[n] = abs(a - b).max()/max(abs(b).max(), 1e-300)
@@ -295,7 +295,7 @@ STOPS = [
     ('stop_f8_m2', F8 + "; par.m = 2", 'needs m = 0 and symm = 1'),
     ('stop_f8_sphere', F8 + "; par.ricb = 0; par.forcing_amplitude_icb = 0.1", 'has no inner core to librate'),
     ('stop_f8_w0', F8 + "; par.forcing_frequency = 0.0", 'needs forcing_frequency != 0'),
-    ('stop_f8_inviscid', F8 + "; par.ViscosD = 0.0", 'with an inviscid fluid (ViscosD = 0) needs ricb = 0'),
+    ('stop_f8_inviscid', F8 + "; par.ViscosD = 0.0", 'an inviscid fluid (ViscosD = 0) needs ricb = 0'),
     ('stop_f8_bc2', F8 + "; par.bci = 2", 'needs walls that stay in place'),
 ]
 for name, extra, msg in STOPS:

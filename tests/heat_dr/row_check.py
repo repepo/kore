@@ -221,3 +221,4 @@ for walls in (True, False):
     if walls:
         ok = max(eB, eA) < tol and alt > 1e-3
 print('row_check: N=%d ricb=%g m=%d symm=%d thermal_wind=%d G=%g  -> %s' % (N, ricb, m, par.symm, tw, G, 'ok' if ok else 'FAIL'))
+sys.exit(not ok)   # (NEW 2026-11-09: the verdict is the exit code too, so run_all.sh stops at a FAIL)

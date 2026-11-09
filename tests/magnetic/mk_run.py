@@ -19,6 +19,8 @@ par.structure = 'Wu 2005'; par.r_out = 0.99
 par.ricb = 0.35; par.bci = 1; par.bco = 1; par.m = 1; par.symm = -1
 par.magnetic = 1; par.B0 = 'axial'; par.B0_l = 1; par.cnorm = 'mag_energy'; par.innercore = 'insulator'; par.mantle = 'insulator'
 par.N = 96; par.lmax = 24; par.ncpus = 2; par.nev = 5; par.rtau = 0.0; par.itau = 1.0
+par.petsc_opts['st_mat_mumps_icntl_14'] = 50   # NEW (2026-11-09): more MUMPS workspace (%): with many runs side by side an N 192
+                                                # factorization ran short of it now and then (INFOG(1) = -9), never alone
 {extra}
 ''')
 d = sys.argv[1]; extra = sys.argv[2] if len(sys.argv) > 2 else ''; solve = 'solve' in sys.argv[3:]

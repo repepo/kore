@@ -37,7 +37,8 @@ Checks of the background flow (bgflow = 1, bin/bgflow.py; docs/bgflow.md):
 
 Exit code 1 if a check failed.
 '''
-import os, sys, shutil, subprocess, json
+import os, sys, shutil, subprocess, json, signal, threading
+from concurrent.futures import ThreadPoolExecutor, wait
 import numpy as np
 import scipy.linalg as sl
 import scipy.sparse as ss
@@ -56,6 +57,7 @@ NC = str(min(mk_run.NCPUS, 2))   # (every lmax - m + 1 below is a multiple of 4)
 
 def setup(d, extra, lmax, files=()):
     '''the run directory d (bin and parameters.py, as mk_run.build) with that lmax; files: [(source, name)] copied into it'''
+    halt_if_stopped(d)
     if os.path.isdir(d):
         shutil.rmtree(d)
     os.makedirs(d + '/bin')
@@ -74,7 +76,7 @@ def run(d, steps='savd', check=True):
             'v': mk_run.MPIEXEC.split() + ['-n', NC, py, 'bin/solve.py'], 'd': [py, 'bin/spin_doctor.py', NC]}
     out = ''
     for st in steps:
-        p = subprocess.run(cmds[st], cwd=d, capture_output=True, text=True)
+        p = step(cmds[st], d, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         out = p.stdout + p.stderr
         open(os.path.join(d, 'log_' + st), 'w').write(out)
         if p.returncode:
@@ -84,16 +86,120 @@ def run(d, steps='savd', check=True):
     return 0, out
 
 
-def build(name, extra, lmax, steps='savd', files=()):
+def _build(name, extra, lmax, steps='savd', files=()):
     d = os.path.join(W, name)
     setup(d, extra, lmax, files)
     run(d, steps)
     return d
 
 
+# NEW (2026-11-09): the runs are built side by side, NPAR at a time (environment variable; by default the processors over
+# the ranks of a run, and at most one run per 2 GB of available memory), each by a thread that waits on its steps: start()
+# queues a run, build() waits for it. Every run is queued before the checks (below the settings), and the checks read
+# them in their own order, so the output is that of a serial run.
+def npar():
+    if os.environ.get('NPAR'):
+        return max(1, int(os.environ['NPAR']))
+    n = len(os.sched_getaffinity(0)) if hasattr(os, 'sched_getaffinity') else (os.cpu_count() or 1)
+    n //= int(NC)
+    try:
+        mem = [int(x.split()[1]) for x in open('/proc/meminfo') if x.startswith('MemAvailable:')][0] // (2*1024**2)
+        n = min(n, mem)
+    except (OSError, IndexError, ValueError):
+        pass
+    return max(1, n)
+
+POOL = ThreadPoolExecutor(npar())
+RUNS = {}   # name: (settings, future)
+
+# NEW (2026-11-09): an interrupt (INT, or TERM) passes a Ctrl-C to the steps that run, no step starts after it, and the
+# check ends, with 128 + the signal: the pool's threads would otherwise go on with their runs, and then with the runs
+# not yet started, before the process ends. Every process of the check is a step (step()): it starts, and joins LIVE,
+# only under LOCK and while STOP is empty, and the handler, under LOCK, fills STOP and interrupts the steps of LIVE, so
+# that none escapes it (a thread whose step ended while the main thread was in eigs, which holds the interpreter, may
+# start its next one first: LIVE has it). The handler raises nothing, and takes no lock but LOCK (reentrant: the main
+# thread, which runs it, may hold it), with os.kill, not Popen.send_signal, which takes a lock of the process: an
+# exception raised at any point of the main thread can leave a lock of the pool, of a future or of a process taken, on
+# which a thread then waits forever. Each thread ends at its next look at STOP instead (halt_if_stopped()): the main
+# thread waits in steps of 0.2 s (step(), result()), and a thread of the pool ends its run at its next step.
+STOP, LIVE, LOCK = [], set(), threading.RLock()   # STOP: the signals received
+
+def _interrupted(signum, frame):
+    with LOCK:
+        STOP.append(signum)
+        for p in LIVE:
+            _ctrl_c(p)
+
+signal.signal(signal.SIGINT, _interrupted)
+signal.signal(signal.SIGTERM, _interrupted)
+
+def _ctrl_c(p):
+    if p.returncode is None:   # (not yet waited for)
+        try:
+            os.kill(p.pid, signal.SIGINT)
+        except ProcessLookupError:
+            pass
+
+def halt_if_stopped(d):
+    '''after an interrupt, ends the thread: the main thread (the check) with 128 + the signal, another (its run in d)
+    as a run that failed'''
+    if STOP:
+        if threading.current_thread() is threading.main_thread():
+            print('%s: interrupted' % os.path.basename(sys.argv[0]), file=sys.stderr, flush=True)
+            raise SystemExit(128 + STOP[0])
+        sys.exit('%s: interrupted' % d)
+
+def step(cmd, d, **kw):
+    '''subprocess.run(cmd, cwd=d, **kw) for every process of the check: none starts after an interrupt, which ends the
+    one that runs'''
+    with LOCK:
+        halt_if_stopped(d)
+        p = subprocess.Popen(cmd, cwd=d, **kw)
+        LIVE.add(p)
+    hit = False
+    try:
+        while True:
+            try:
+                out, err = p.communicate(timeout=0.2)   # (a timeout loses no output)
+                break
+            except subprocess.TimeoutExpired:
+                if STOP and not hit:   # (started by the main thread while it ran the handler: not yet in LIVE then)
+                    _ctrl_c(p)
+                    hit = True
+    finally:
+        with LOCK:
+            LIVE.discard(p)
+    halt_if_stopped(d)
+    return subprocess.CompletedProcess(cmd, p.returncode, out, err)
+
+def result(f):
+    '''f.result() of a future of the pool, waited for in steps of 0.2 s'''
+    while not wait((f,), timeout=0.2).done:
+        halt_if_stopped('')
+    halt_if_stopped('')
+    return f.result()
+
+def start(name, extra, lmax, steps='savd', files=()):
+    '''queues the run W/name (once; the same name must come with the same settings)'''
+    key = (extra, lmax, steps, list(files))
+    if name not in RUNS:
+        RUNS[name] = (key, POOL.submit(_build, name, extra, lmax, steps, files))
+    assert RUNS[name][0] == key, 'two runs named %s' % name
+    return RUNS[name][1]
+
+def build(name, extra, lmax, steps='savd', files=()):
+    '''the folder of the run W/name, once built; a run that fails stops the check (and the runs not yet started)'''
+    try:
+        return result(start(name, extra, lmax, steps, files))
+    except BaseException:
+        for key, f in RUNS.values():
+            f.cancel()
+        raise
+
+
 def script(d, args, check=True):
     '''python3 args in the run directory d: (returncode, output)'''
-    p = subprocess.run([py] + args, cwd=d, capture_output=True, text=True)
+    p = step([py] + args, d, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     out = p.stdout + p.stderr
     if check and p.returncode:
         sys.exit('%s: %s failed\n%s' % (d, ' '.join(args), out[-3000:]))
@@ -199,11 +305,63 @@ SHELL = {'P2': '0.2*(r-ricb)**2*(1-r)**2', 'T1': '0.5*r', 'T3': '(r-ricb)*(1-r)*
 FLOW = {k: v for k, v in SHELL.items() if k[0] in 'PT'}
 SPHERE = {'P2': '0.1*r**2*(1-r**2)**2', 'T1': '0.5*r', 'T3': 'r**3*(1-r**2)', 'S2': '0.05*r**2*(1-r**2)'}
 LIN, NL = os.path.join(T, 'cic_bgflow_lin.npz'), os.path.join(T, 'cic_bgflow_nl.npz')
+F12 = "par.m = 0; par.symm = 1; par.forcing = 12; par.forcing_frequency = 0.0; par.N = 48"   # (1. and 3.)
+SMALL = 'par.N = 24; par.m = 2; par.ViscosD = 1e-2; par.thermal_wind = 0'   # (2.)
+DR = "par.diff_rot = 1; par.diff_rot_ampl = 1.0; par.diff_rot_type = 'user'; par.diff_rot_profiles = {0: '0.3*r**2', 2: '-0.2*r**2'}"
+TOR = BG({'T1': '0.34*r**3', 'T3': '-0.04*r**3'}, 1.0)   # the same flow: T_1 = (f_0 - f_2/5) r, T_3 = f_2 r/5
+OPS = (('shell', '; '.join([SMALL, TH, CO, MAG, WU, "par.B0 = 'axial'"])),
+       ('sphere', '; '.join([SMALL, TH, MAG, "par.ricb = 0.0; par.B0 = 'G21 dipole'"])))
+Ro = 0.1
+FRAME = {
+    'sphere': "par.ricb = 0.0",
+    'sphere_inviscid': "par.ricb = 0.0; par.ViscosD = 0.0; " + WU + "; " + TH + "; par.ThermaD = 0.0; " + CO
+                       + "; par.CompoD = 0.0; " + MAG + "; par.B0 = 'axial'",
+    'adiabatic': WU + "; " + TH + "; par.ThermaD = 0.0; " + CO + "; par.CompoD = 0.0",
+    'field_solids': MAG + "; par.B0 = 'axial'; par.innercore = 'conducting, Chebys'; par.N_cic = 24; par.mantle = 'resolved'; "
+                    "par.r_surface = 1.3; par.N_mantle = 24; par.sigma_mantle = 0.5",
+    'field_twa': MAG + "; par.B0 = 'axial'; " + TWA2,
+}
+WU_ALL = '; '.join([WU, TH, CO, MAG, "par.B0 = 'axial'", CHEB, MAN, 'par.N = 96', BG(SHELL)])
+F1 = "par.forcing = 1; par.forcing_frequency = 0.37; par.forcing_amplitude_cmb = 1.0; par.N = 48"   # (3.)
+LIB = "par.m = 0; par.symm = 1; par.forcing_frequency = 0.7; par.forcing_amplitude_cmb = 0.3; par.N = 48"
+F8, F7 = LIB + "; par.forcing = 8", LIB + "; par.forcing = 7; par.forcing_amplitude_icb = 0.3"
+BOTH = "par.forcing_amplitude_cmb = 0.4; par.forcing_amplitude_icb = -0.3"
+BUDGETS = [   # (3.) name, settings, lmax
+    ('sphere', '; '.join(["par.ricb = 0.0", TH, MAG, "par.B0 = 'G21 dipole'", 'par.N = 96', BG(SPHERE)]), 45),
+    ('adiabatic', '; '.join([WU, TH, CO, "par.Beyonce = 0.1; par.BeyonceC = 0.05; par.ThermaD = 0; par.CompoD = 0",
+                             'par.N = 64', BG(SHELL, 0.1)]), 29),
+    ('inviscid', "par.ricb = 0.0; par.ViscosD = 0; par.symm = -1; par.itau = 0.6667; par.N = 64; "
+                 + BG({k: v for k, v in SPHERE.items() if k[0] in 'PT'}, 0.01), 29),
+    ('twa', '; '.join([MAG, "par.B0 = 'axial'", TWA2, 'par.N = 64', BG(FLOW)]), 29),
+    ('equatorial', "par.m = 1; par.symm = -1; par.itau = -1.0; par.N = 48; " + BG(FLOW), 32),
+    ('f1', F1 + "; par.m = 2; " + BG(FLOW), 41),
+    ('f8', F8 + "; " + BG(FLOW), 23),
+    ('f7', F7 + "; " + BG(FLOW), 23),
+    ('f8_twa', F8 + "; par.bco = 0; " + MAG + "; par.B0 = 'axial'; par.mantle = 'TWA'; par.c_cmb = 0.0; "
+               "par.c1_cmb = 0.02; " + BG(FLOW), 23),
+    ('f12', F12 + "; " + BOTH + "; " + BG(FLOW), 23),
+    ('f12_field', F12 + "; " + BOTH + "; " + MAG + "; par.B0 = 'axial'; " + CHEB + "; " + BG(FLOW), 23),
+]
+RUN = {name: (extra, lmax) for name, extra, lmax in BUDGETS}
+
+# every run of 1. to 3., queued now (the longest first)
+start('wu_all', WU_ALL, 41)
+for name, extra, lmax in BUDGETS:
+    start(name, extra, lmax)
+start('cic_f12', F12 + "; par.forcing_amplitude_icb = 1.0; par.forcing_amplitude_cmb = 0.0", 31, steps='sav')
+for tag, f, ro in (('lin', LIN, 0.3), ('nl', NL, 1.0)):
+    start('cic_eig_' + tag, "par.m = 2; par.N = 48; par.bgflow = 1; par.bgflow_Ro = %r" % ro, 29, steps='sa',
+          files=[(f, 'bgflow.npz')])
+for tag, ex in OPS:
+    start('dr_' + tag, ex + '; ' + DR, 13, steps='sa'), start('tor_' + tag, ex + '; ' + TOR, 13, steps='sa')
+for tag, ex in FRAME.items():
+    ex = SMALL + '; ' + ex
+    start('frame_%s_bg' % tag, ex + '; ' + BG({'T1': 'r'}, Ro), 13, steps='sa')
+    start('frame_%s_ref' % tag, ex + '; par.Gaspard = %r; ' % (1 + Ro) + BG({'T1': 'r'}, 0.0), 13, steps='sa')
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 # 1. against conductive_IC 2d84351
-F12 = "par.m = 0; par.symm = 1; par.forcing = 12; par.forcing_frequency = 0.0; par.N = 48"
 d = build('cic_f12', F12 + "; par.forcing_amplitude_icb = 1.0; par.forcing_amplitude_cmb = 0.0", 31, steps='sav')
 A0 = load_csr(d + '/A.npz')
 for args, ref, tag, tol in ((['12'], LIN, 'writer_lin', 1e-12), (['12', 'nonlinear'], NL, 'writer_nl', 1e-10)):
@@ -241,12 +399,8 @@ for tag, f, ro in (('lin', LIN, 0.3), ('nl', NL, 1.0)):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-# 2. the operators
-SMALL = 'par.N = 24; par.m = 2; par.ViscosD = 1e-2; par.thermal_wind = 0'
-DR = "par.diff_rot = 1; par.diff_rot_ampl = 1.0; par.diff_rot_type = 'user'; par.diff_rot_profiles = {0: '0.3*r**2', 2: '-0.2*r**2'}"
-TOR = BG({'T1': '0.34*r**3', 'T3': '-0.04*r**3'}, 1.0)   # the same flow: T_1 = (f_0 - f_2/5) r, T_3 = f_2 r/5
-for tag, ex in (('shell', '; '.join([SMALL, TH, CO, MAG, WU, "par.B0 = 'axial'"])),
-                ('sphere', '; '.join([SMALL, TH, MAG, "par.ricb = 0.0; par.B0 = 'G21 dipole'"]))):
+# 2. the operators (SMALL, DR, TOR, OPS, Ro and FRAME above)
+for tag, ex in OPS:
     d1, d2 = build('dr_' + tag, ex + '; ' + DR, 13, steps='sa'), build('tor_' + tag, ex + '; ' + TOR, 13, steps='sa')
     e = {}
     for M in ('A', 'B'):
@@ -254,16 +408,6 @@ for tag, ex in (('shell', '; '.join([SMALL, TH, CO, MAG, WU, "par.B0 = 'axial'"]
         e[M] = abs(M1 - M2).max()/abs(M1).max()
     report('tor=diffrot_' + tag, max(e.values()) < 1e-14, 'A %.1e, B %.1e of the largest entry' % (e['A'], e['B']))
 
-Ro = 0.1
-FRAME = {
-    'sphere': "par.ricb = 0.0",
-    'sphere_inviscid': "par.ricb = 0.0; par.ViscosD = 0.0; " + WU + "; " + TH + "; par.ThermaD = 0.0; " + CO
-                       + "; par.CompoD = 0.0; " + MAG + "; par.B0 = 'axial'",
-    'adiabatic': WU + "; " + TH + "; par.ThermaD = 0.0; " + CO + "; par.CompoD = 0.0",
-    'field_solids': MAG + "; par.B0 = 'axial'; par.innercore = 'conducting, Chebys'; par.N_cic = 24; par.mantle = 'resolved'; "
-                    "par.r_surface = 1.3; par.N_mantle = 24; par.sigma_mantle = 0.5",
-    'field_twa': MAG + "; par.B0 = 'axial'; " + TWA2,
-}
 for tag, ex in FRAME.items():
     ex = SMALL + '; ' + ex
     d1 = build('frame_%s_bg' % tag, ex + '; ' + BG({'T1': 'r'}, Ro), 13, steps='sa')
@@ -277,7 +421,7 @@ for tag, ex in FRAME.items():
     report('frame_' + tag, bool(np.all(dl <= lim)) and sel.sum() > 0,
            '%d eigenvalues, max |Δλ| %.1e, max |Δλ|/(κ eps) %.1e' % (sel.sum(), dl.max(), (dl/(lim/10)).max()))
 
-d_wu = build('wu_all', '; '.join([WU, TH, CO, MAG, "par.B0 = 'axial'", CHEB, MAN, 'par.N = 96', BG(SHELL)]), 41)
+d_wu = build('wu_all', WU_ALL, 41)
 rc, out = script(d_wu, [os.path.join(T, 'rows_check.py'), '.'], check=False)
 if rc:
     report('rows', False, 'rows_check.py failed: ' + out.strip()[-300:])
@@ -288,34 +432,29 @@ else:
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-# 3. the budgets
+# 3. the budgets (the runs in BUDGETS above)
+run_of = lambda name: build(name, *RUN[name])
 budgets_ok('wu_all', d_wu, ('σ', 'ω', '𝑠', '𝑐', '𝐛', '𝐄'))
 powers_ok('wu_all', d_wu)
-d = build('sphere', '; '.join(["par.ricb = 0.0", TH, MAG, "par.B0 = 'G21 dipole'", 'par.N = 96', BG(SPHERE)]), 45)
+d = run_of('sphere')
 budgets_ok('sphere', d, ('σ', 'ω', '𝑠', '𝐛', '𝐄'))
 powers_ok('sphere', d)
-d = build('adiabatic', '; '.join([WU, TH, CO, "par.Beyonce = 0.1; par.BeyonceC = 0.05; par.ThermaD = 0; par.CompoD = 0",
-                                  'par.N = 64', BG(SHELL, 0.1)]), 29)
+d = run_of('adiabatic')
 budgets_ok('adiabatic', d, ('σ', 'ω', '𝑠', '𝑐'))
 powers_ok('adiabatic', d)
-d = build('inviscid', "par.ricb = 0.0; par.ViscosD = 0; par.symm = -1; par.itau = 0.6667; par.N = 64; "
-          + BG({k: v for k, v in SPHERE.items() if k[0] in 'PT'}, 0.01), 29)
+d = run_of('inviscid')
 budgets_ok('inviscid', d, ('σ', 'ω'), loose=('σ',))
-d = build('twa', '; '.join([MAG, "par.B0 = 'axial'", TWA2, 'par.N = 64', BG(FLOW)]), 29)
+d = run_of('twa')
 budgets_ok('twa', d, ('σ', 'ω', '𝐛', '𝐄'))
-d = build('equatorial', "par.m = 1; par.symm = -1; par.itau = -1.0; par.N = 48; " + BG(FLOW), 32)
+d = run_of('equatorial')
 budgets_ok('equatorial', d, ('σ', 'ω', '𝐋'))
 
-F1 = "par.forcing = 1; par.forcing_frequency = 0.37; par.forcing_amplitude_cmb = 1.0; par.N = 48"
-LIB = "par.m = 0; par.symm = 1; par.forcing_frequency = 0.7; par.forcing_amplitude_cmb = 0.3; par.N = 48"
-F8, F7 = LIB + "; par.forcing = 8", LIB + "; par.forcing = 7; par.forcing_amplitude_icb = 0.3"
-BOTH = "par.forcing_amplitude_cmb = 0.4; par.forcing_amplitude_icb = -0.3"
-d = build('f1', F1 + "; par.m = 2; " + BG(FLOW), 41)
+d = run_of('f1')
 budgets_ok('f1', d, ('σ', 'ω'))
 powers_ok('f1', d)
-d8 = build('f8', F8 + "; " + BG(FLOW), 23)
+d8 = run_of('f8')
 budgets_ok('f8', d8, ('σ', 'ω', '𝐋'))
-d7 = build('f7', F7 + "; " + BG(FLOW), 23)
+d7 = run_of('f7')
 FRAME8 = r'''
 import os, sys, json; sys.path.insert(0, 'bin')
 import numpy as np
@@ -330,12 +469,11 @@ print(json.dumps({'flow': abs(u8 + x - u7).max()/abs(u7).max()}))
 rc, out = script(d8, ['-c', FRAME8, os.path.abspath(d7)], check=False)
 e = json.loads(out.strip().splitlines()[-1])['flow'] if rc == 0 else np.nan
 report('f8+x=f7', e < 1e-12, '%.1e of the largest coefficient' % e)
-d = build('f8_twa', F8 + "; par.bco = 0; " + MAG + "; par.B0 = 'axial'; par.mantle = 'TWA'; par.c_cmb = 0.0; "
-          "par.c1_cmb = 0.02; " + BG(FLOW), 23)
+d = run_of('f8_twa')
 budgets_ok('f8_twa', d, ('σ', 'ω', '𝐋', '𝐄'))
-d = build('f12', F12 + "; " + BOTH + "; " + BG(FLOW), 23)
+d = run_of('f12')
 budgets_ok('f12', d, ('σ', '𝐋'))
-d = build('f12_field', F12 + "; " + BOTH + "; " + MAG + "; par.B0 = 'axial'; " + CHEB + "; " + BG(FLOW), 23)
+d = run_of('f12_field')
 budgets_ok('f12_field', d, ('σ', '𝐋', '𝐄'))
 
 
@@ -365,10 +503,13 @@ STOPS = [
     ('stop_density', ST + WU + "; par.bgflow = 1; par.bgflow_Ro = 0.3", 'was written for another density',
      [(LIN, 'bgflow.npz')]),
 ]
-for name, extra, msg, files in STOPS:
+def stop_run(name, extra, files):
     d = os.path.join(W, name)
     setup(d, extra, 13, files)
-    rc, out = run(d, 's', check=False)
+    return run(d, 's', check=False)
+stopped = [POOL.submit(stop_run, name, extra, files) for name, extra, msg, files in STOPS]   # (side by side too)
+for (name, extra, msg, files), f in zip(STOPS, stopped):
+    rc, out = result(f)
     report(name, rc != 0 and msg in out, (out.strip().splitlines() or ['(no output)'])[-1][:110])
 d = os.path.join(W, 'warn_centre')   # (a warning, not a stop: P_2 must go as r² at the centre of a full sphere)
 setup(d, ST + "par.ricb = 0.0; " + BG({'P2': '0.1*(1-r**2)', 'T1': 'r'}), 13)
@@ -385,4 +526,5 @@ for name, extra, msg in (
     report(name, rc != 0 and msg in out, (out.strip().splitlines() or ['(no output)'])[-1][:110])
 
 print('bgflow_check: ' + ('all cases ok' if not fail else 'FAILED'))
+halt_if_stopped('')   # (an interrupt, while the main thread did not look)
 sys.exit(1 if fail else 0)

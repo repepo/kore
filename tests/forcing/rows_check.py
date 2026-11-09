@@ -12,8 +12,13 @@ and stress-free inner wall), 7 (m = 0 and m = 2), 9 (in an incompressible shell,
 sphere), 10, and NEW (2026-11-08) 12 (both walls turning, the inner one under a stress-free outer wall at rest, whose
 toroidal row stays rT' - T = 0, and a full sphere) and 2 (m 2 for both signs of the frequency, and m 0, at ricb 37/42:
 P = i w A P_fit at the outer wall and i w A ricb P_fit at the inner one, (rP)'/r = i w A (P_fit + dP_fit) at both, with
-the fits of utils.eccen_tide). Before 2026-11-06 forcings 6, 7 (m = 2) and 9 put the inner wall's value on the outer
-wall's rows, and before 2026-11-08 forcing 2 (in conductive_IC) left out the frequency w, and ricb at the inner wall.
+the fits of utils.eccen_tide). NEW (2026-11-09, phase 11): the settings that did not run before and run now: forcing
+14 in a full sphere with bci = 0 and with an inviscid fluid at bco = 0, and forcing 9 with the drag kappa_cmb at an
+outer wall that stays in place, which stopped; forcing 9 in a full sphere with bci = 0 and forcing 7 (m = 2) with an
+inviscid fluid at bco = 0 (its one wall row, P), for which assemble.py wrote no right-hand side. And two that ran before
+without a check: forcing 9 at a stress-free outer wall, forcing 10 with an inviscid fluid at bco = 0. Before 2026-11-06
+forcings 6, 7 (m = 2) and 9 put the inner wall's value on the outer wall's rows, and before 2026-11-08 forcing 2 (in
+conductive_IC) left out the frequency w, and ricb at the inner wall.
 
 Exit code 1 if a case is off by more than 1e-10 of its amplitude.
 '''
@@ -63,6 +68,29 @@ cases = [
     ('f12_sphere', 'par.forcing = 12; par.m = 0; par.symm = 1; par.forcing_frequency = 0.; par.ricb = 0; '
                    'par.forcing_amplitude_cmb = 0.5',
      [('T', 1, 'o', 0.5/2)]),
+    # NEW (2026-11-09, phase 11): settings that did not run before and run now (background.check_forcing; for forcing 9
+    # with the drag, background.check_drag): bci in a full sphere, forcings 7 (m = 2) and 14 at any bco with an inviscid
+    # fluid (its one wall row, P), and forcing 9 with the drag at an outer wall that stays in place (f9_sphere_bci0 and
+    # f7_m2_inviscid got no right-hand side from assemble.py, the others stopped); and two that ran before without a
+    # check: f9_slip (the radial flow at a stress-free outer wall) and f10_inviscid
+    ('f9_sphere_bci0', 'par.forcing = 9; par.m = 2; par.symm = 1; par.ricb = 0; par.bci = 0; par.forcing_amplitude_cmb = 0.5',
+     [('P', 2, 'o', 0.5/6), ('ns', 2, 'o', 0)]),
+    ('f14_sphere_bci0', 'par.forcing = 14; par.m = 2; par.symm = 1; par.ricb = 0; par.bci = 0; par.forcing_amplitude_cmb = 0.5',
+     [('P', 2, 'o', 0.5/6), ('ns', 2, 'o', 0)]),
+    ('f9_slip', 'par.forcing = 9; par.m = 2; par.symm = 1; par.bco = 0; par.forcing_amplitude_cmb = 0.5; '
+                'par.forcing_amplitude_icb = 1.',
+     [('P', 2, 'o', 0.5/6), ('sf', 2, 'o', 0), ('P', 2, 'i', 0.35/6), ('ns', 2, 'i', 0)]),
+    ('f9_drag', 'par.forcing = 9; par.m = 2; par.symm = 1; par.bco = 0; par.kappa_cmb = 0.05; par.forcing_amplitude_cmb = 0.; '
+                'par.forcing_amplitude_icb = 1.',
+     [('P', 2, 'o', 0), ('P', 2, 'i', 0.35/6), ('ns', 2, 'i', 0)]),
+    ('f7_m2_inviscid', 'par.forcing = 7; par.m = 2; par.symm = 1; par.ricb = 0; par.ViscosD = 0.; par.bco = 0; '
+                       'par.forcing_amplitude_cmb = 0.5',
+     [('P', 2, 'o', -wf/6*0.5)]),
+    ('f10_inviscid', 'par.forcing = 10; par.m = 3; par.symm = 1; par.ricb = 0; par.ViscosD = 0.; par.bco = 0',
+     [('P', 3, 'o', 1/12)]),
+    ('f14_inviscid', 'par.forcing = 14; par.m = 1; par.symm = -1; par.ricb = 0; par.ViscosD = 0.; par.bco = 0; '
+                     'par.forcing_amplitude_cmb = 0.5',
+     [('P', 2, 'o', 0.5/6)]),
 ]
 # NEW (2026-11-08): forcing 2, the eccentricity tide of Enceladus; its values come from utils.eccen_tide in the run
 # (strings, evaluated there), for the component m sign(w)

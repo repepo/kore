@@ -63,4 +63,6 @@ the line `sheet_on = ...` of its copy of `assemble.py` switched off.
 The toroidal sheet's stops in an inviscid run and with the rotating solids, and its runs at each kind of slipping wall,
 are checked in `tests/inner_core`.
 
-About 11 min on 2 ranks.
+About 11 min of runs on 2 ranks, which (NEW 2026-11-09) run side by side, `NPAR` at a time (by default the processors
+over `NCPUS`, at most one run per 2 GB of available memory): 8 min with `NPAR = 2` on four processors that two other
+suites shared.

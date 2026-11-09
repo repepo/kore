@@ -50,8 +50,8 @@ par.topo_H = 0.8
 
 Without buoyancy these values damp the spin-over mode as `kappa_cmb` = 4.5e-6 does, to 0.3 %.
 
-- **The buoyancy frequency** at the wall is that of the stratification (`thermal = 1`), or 0 without buoyancy or where
-  the stratification is unstable. `topo_N` sets it instead.
+- **The buoyancy frequency** at the wall is that of the stratification (`thermal = 1`, with the composition's part
+  when `compositional = 1`), or 0 without buoyancy or where the stratification is unstable. `topo_N` sets it instead.
 - **The frequency of the flow.** The drag depends on the frequency of the flow relative to the mantle, which an
   eigenvalue problem does not know in advance: kore takes the frequency of the solver's target (`itau`), or the forcing
   frequency in a forced run, unless `topo_omega` sets it. For a mode, solve again until the two agree
@@ -115,18 +115,24 @@ flow that the drag of the topography used (columns 135–141, [Output files](out
 ## What is supported
 
 Supported: any `structure` (the density and the viscosity at the wall enter); a full sphere; any `m`; with or without
-buoyancy; with or without a field, with any magnetic walls; the rotating solids; a constant drag with a differential
-rotation; eigenvalue problems, and the forced runs whose outer wall does not move (forcings 6, 11 and 13, and 12 with
-the outer wall at rest).
+buoyancy; with or without a field, with any magnetic walls (but `'axial'` where the permeability jumps at the wall and
+nothing beyond it conducts: [Current sheets at slipping walls](magnetic.md#current-sheets-at-slipping-walls)); the
+rotating solids; a constant drag with a differential rotation or a background flow; eigenvalue problems, and the forced
+runs whose outer wall stays in place and may slip: forcings 6, 8, 9 with `forcing_amplitude_cmb = 0`, 11, 13 (at
+frequency 0 also between stress-free walls with `kappa_cmb`, which holds the rigid rotation that would otherwise solve
+the steady problem too), and 12 with the outer wall at rest.
 
 Not supported (the run stops at startup):
 
 - a drag without the flow (`hydro = 0`), without viscosity (`ViscosD = 0`), or at an outer wall that is not stress-free
   (`bco` other than 0);
-- `Gaspard = 0`, `centrifugal = 1`, or forcings 9 and 10, which move the outer wall;
+- `Gaspard = 0`, `centrifugal = 1`, or a forcing that moves the outer wall radially: 10, and 9 where
+  `forcing_amplitude_cmb` is not 0 (forcings 2, 7 and 14 need a no-slip outer wall, which takes no drag);
+- forcing 1, the wave-like tide: the drag would act on the slip of the whole tide, its equilibrium part included;
 - `kappa_cmb` and `topo_drag` together;
-- the drag of the topography with a differential rotation, with a frequency of the flow of 0, or in a frequency scan of
-  forcing 11 (`rsf_frequencies`) without `topo_omega`, since it is built for one frequency;
+- the drag of the topography with a differential rotation or a background flow (`bgflow = 1`), with a frequency of
+  the flow of 0 (`topo_omega`, or without it the run's frequency: forcing 12, and 13 at frequency 0), or in a frequency
+  scan of forcing 11 (`rsf_frequencies`) without `topo_omega`, since it is built for one frequency;
 - `kappa_cmb` negative or not finite, `topo_drag` other than `None` and `'rekier'`, `topo_hrms` or `topo_lambda0` not
   positive, `topo_H` not above 1/2, `topo_N` or `topo_omega` negative.
 

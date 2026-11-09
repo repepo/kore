@@ -87,6 +87,10 @@ def check():
     if par.hydro == 0 and par.forcing != 0:
         sys.exit('hydro = 0 is for eigenvalue problems (forcing = 0): the free decay of the field, of the entropy or of the '
                  'composition')
+    if par.hydro and par.ViscosD == 0 and par.ricb > 0:   # NEW (2026-11-09): any inviscid shell, not only some (phase 11)
+        sys.exit('an inviscid fluid (ViscosD = 0) needs ricb = 0: kore\'s inviscid formulation (its bases and its one wall '
+                 'row, no penetration) is for the full sphere only. In a shell the wall rows of a viscous fluid would stay '
+                 'empty, five for each pair of degrees, and A - λB would be singular for every λ')
     if par.forcing != 0:   # NEW (2026-11-08)
         check_forcing()
     if par.field_format not in ('npy', 'text'):   # NEW (2026-11-08): the solution files (field_io.py)
@@ -187,8 +191,35 @@ def check_forcing():
     does not carry the fluid (and the rows of a fluid slipping along a conducting solid hold the solid at rest). The walls
     stay in place (bc 0 or 1): a steady flow through a wall of zero radial stress would move it without end. With
     thermal = 1 it needs ThermaD > 0: without diffusion the steady entropy equation, u_r dS/dr = 0, leaves the entropy
-    undetermined, and (NEW 2026-11-08) with compositional = 1 CompoD > 0 for the same reason. Forcings 13 and 14 check
-    their settings in assemble.py; forcings 1, 2 and 8 check_tides.
+    undetermined, and (NEW 2026-11-08) with compositional = 1 CompoD > 0 for the same reason (since 2026-11-09 in
+    check_transport, which covers every forcing). Forcings 1, 2 and 8 check_tides.
+    NEW (2026-11-09, phase 11): the settings of forcings 6, 7, 9, 10, 11, 13 and 14, which assemble.py tested only as it
+    wrote the right-hand side (6, 7, 9 and 10 then printed a line and wrote none, so that solve.py solved whatever
+    B_forced.npz an earlier run had left in the folder; assemble.py now removes it first), stop here, before anything is
+    built:
+      6, the radial flow at the inner wall of Buffett (2010): m = 1, symm = -1, an inner core, bci = 0 or 1;
+      7, the libration of the walls: m = 0, symm = 1, a no-slip outer wall and bci = 0 or 1; or m = 2 (the walls move
+         radially), symm = 1, no-slip walls. An inviscid fluid does not feel walls that slide along themselves (m = 0): its
+         flow is 0 (it went on the first interior row of T_1 instead, a spurious force);
+      9, a radial flow of degree 2 at the walls: m = 2, symm = 1, a no-slip inner wall and, where it moves the outer wall
+         (forcing_amplitude_cmb != 0), an outer wall whose first row is P (bco = 0 or 1: with zero radial stress, 2, the
+         flow went on the stress row);
+     10, a radial flow of degree l = m at the outer wall: symm = 1 and m >= 1 (with m = 0 the degree l = m is not among the
+         degrees of P: an IndexError), bco = 0 or 1 as 9;
+     11, the Reynolds stress of the turbulence, the conditions of reynolds_stress.Builder and its taper (which keep their
+         own tests): a viscous fluid (the noise is the partner of the viscous force); rsf_taper > 0, and rsf_taper_in > 0
+         in a full sphere (the stress vanishes at the walls and at r = 0); with rsf_rcut, ricb <= rsf_rcut < 1 -
+         rsf_rcut_width and rsf_rcut_width > 0; rsf_theta 'nu', 'mlt' (with rsf_lum, and visc_pow = 0) or a number; in a
+         full sphere rpower_u >= 5 and rpower_v >= 3;
+     13, the entropy at the inner wall: m = 0, symm = 1, an inner core, thermal = 1 with ThermaD > 0 (the wall rows of s),
+         an amplitude; steady (forcing_frequency = 0), a rigid rotation would also solve A x = 0 between stress-free walls:
+         a no-slip wall, or the constant drag kappa_cmb, which acts on it;
+     14, the tides: (m, symm) = (0, 1), (1, -1) or (2, 1), no-slip walls.
+    bci means nothing in a full sphere (ricb = 0), nor bco and bci in an inviscid one (its one wall row is no
+    penetration): there 7 (m = 2), 9 and 14 take any. NEW (2026-11-09): any forcing at frequency 0 (for forcing 11, a
+    frequency of its scan) needs walls that stay in place, bco and bci 0 or 1, as forcing 12 did: a steady flow through a
+    wall of zero radial stress would move it without end (forcing 13 with bci = 2 gave u_r = 2.7e-2 at the inner wall, and
+    resid𝐋 1). An entropy or a composition without diffusion: check_transport (submatrices.py).
     '''
     if par.forcing in NOT_PORTED:
         sys.exit('forcing %d: %s' % (par.forcing, NOT_PORTED[par.forcing]))
@@ -196,7 +227,66 @@ def check_forcing():
         sys.exit('forcing %r: 0 (an eigenvalue problem) or one of the forced problems %s' % (par.forcing, _names(FORCINGS)))
     if par.forcing in (1, 2, 8):
         check_tides()
-    if par.forcing != 12:
+    f, full, inviscid = par.forcing, par.ricb == 0, par.ViscosD == 0
+    if f == 6 and not (par.m == 1 and par.symm == -1 and par.ricb > 0 and par.bci in (0, 1)):
+        sys.exit('forcing 6 (the radial flow of Buffett 2010 at the inner wall) needs m = 1, symm = -1, an inner core '
+                 '(ricb > 0) and bci = 0 or 1')
+    if f == 7:
+        if par.m == 0 and inviscid:
+            sys.exit('forcing 7 with m = 0 turns the walls along themselves, which an inviscid fluid (ViscosD = 0) does not '
+                     'feel: its flow is 0. In the frame of the mantle (forcing 8) it is the rigid counter-libration')
+        ok0 = par.m == 0 and par.symm == 1 and par.bco == 1 and (full or par.bci in (0, 1))
+        ok2 = par.m == 2 and par.symm == 1 and (inviscid or (par.bco == 1 and (full or par.bci == 1)))
+        if not (ok0 or ok2):
+            sys.exit('forcing 7 (the libration of the walls) needs m = 0, symm = 1, a no-slip outer wall (bco = 1) and bci = 0 '
+                     'or 1; or m = 2, symm = 1 and no-slip walls (bco = 1, and bci = 1 with an inner core)')
+    if f == 9 and not (par.m == 2 and par.symm == 1 and (full or inviscid or par.bci == 1)):
+        sys.exit('forcing 9 (a radial flow of degree 2 at the walls) needs m = 2, symm = 1 and, with an inner core, a no-slip '
+                 'inner wall (bci = 1)')
+    if f == 10 and not (par.symm == 1 and par.m >= 1):
+        sys.exit('forcing 10 (a radial flow of degree l = m at the outer wall) needs symm = 1 and m >= 1: with m = 0 the '
+                 'degree 0 is not one of the poloidal flow')
+    if f in (9, 10) and not (inviscid or par.bco in (0, 1)) and moves_radially('outer'):   # (FIX 2026-11-09: forcing 9 with
+        # forcing_amplitude_cmb = 0 writes 0 on the stress row and leaves a wall of zero radial stress free, as it should)
+        sys.exit('forcing %d moves the outer wall radially: it needs bco = 0 or 1, whose first wall row is the radial flow '
+                 '(with bco = 2 the wall would be free to move, its row the zero radial stress)' % f)
+    if f == 13:
+        if not (par.m == 0 and par.symm == 1 and par.ricb > 0 and par.thermal and par.ThermaD > 0
+                and par.forcing_amplitude_icb != 0):
+            sys.exit('forcing 13 needs m = 0, symm = 1, ricb > 0, thermal = 1, ThermaD > 0 and forcing_amplitude_icb != 0')
+        if par.forcing_frequency == 0 and par.bci != 1 and par.bco != 1 and not par.kappa_cmb > 0:
+            sys.exit('forcing 13 with forcing_frequency = 0 needs a no-slip wall (bci = 1 or bco = 1) or the drag kappa_cmb: '
+                     'between stress-free walls a rigid rotation would also solve the steady problem')
+    if f == 14:
+        if (par.m, par.symm) not in ((0, 1), (1, -1), (2, 1)):
+            sys.exit('forcing 14 needs (m, symm) = (0, 1), (1, -1) or (2, 1), the degree-2 tides')
+        if not (inviscid or (par.bco == 1 and (full or par.bci == 1))):
+            sys.exit('forcing 14 needs no-slip walls (bco = 1, and bci = 1 with an inner core)')
+    if f == 11:   # (the messages of reynolds_stress.py)
+        if inviscid:
+            sys.exit('forcing = 11 needs ViscosD > 0 (the noise is the partner of the viscous force)')
+        if not (par.rsf_taper > 0 and (par.ricb > 0 or par.rsf_taper_in > 0)):
+            sys.exit('rsf_taper (and rsf_taper_in with ricb = 0) must be > 0: the stress has to vanish at the walls '
+                     '(and at r = 0), where the stress-free rows carry no surface traction')
+        if par.rsf_rcut is not None and not (par.rsf_rcut_width > 0 and par.ricb <= par.rsf_rcut < 1 - par.rsf_rcut_width):
+            sys.exit('rsf_rcut must lie in [ricb, rcmb - rsf_rcut_width) and rsf_rcut_width must be > 0')
+        th = par.rsf_theta
+        if isinstance(th, str) and th not in ('nu', 'mlt'):
+            sys.exit("rsf_theta must be 'nu', 'mlt' or a number")
+        if isinstance(th, str) and th == 'mlt' and par.rsf_lum is None:
+            sys.exit("rsf_theta = 'mlt' needs rsf_lum, the luminosity in kore units (params_default.py)")
+        if isinstance(th, str) and th == 'mlt' and getattr(par, 'visc_pow', 0) != 0:
+            sys.exit("rsf_theta = 'mlt' takes the convective fraction of the flux as nu_t/max(nu_t), which needs visc_pow = 0")
+        if full and (par.rpower_u < 5 or par.rpower_v < 3):
+            sys.exit('forcing = 11 with ricb = 0 needs rpower_u >= 5 and rpower_v >= 3 (params_default.py)')
+    scan = f == 11 and getattr(par, 'rsf_frequencies', None) is not None
+    if 0 in _frequencies() and not inviscid:   # NEW (2026-11-09): any steady forcing, as forcing 12
+        for wall, bc in [('outer', 'bco')] + ([('inner', 'bci')] if par.ricb > 0 else []):
+            if getattr(par, bc) not in (0, 1):
+                sys.exit('forcing %d at frequency 0%s needs walls that stay in place, %s = 0 or 1 (got %r): a steady flow '
+                         'through a wall of zero radial stress would move it without end'
+                         % (f, ' (a frequency of its scan)' if scan else '', bc, getattr(par, bc)))
+    if f != 12:
         return
     if par.m != 0 or par.symm != 1:
         sys.exit('forcing 12 needs m = 0 and symm = 1: walls that turn about z drive an axisymmetric, symmetric flow')
@@ -207,23 +297,97 @@ def check_forcing():
         sys.exit('forcing 12 needs a viscous fluid (ViscosD > 0): the walls drive the fluid by its viscosity')
     if par.ricb == 0 and par.forcing_amplitude_icb != 0:
         sys.exit('forcing 12 in a full sphere (ricb = 0) has no inner core to turn: set forcing_amplitude_icb = 0')
-    if par.thermal and par.ThermaD == 0:
-        sys.exit('forcing 12 with thermal = 1 needs ThermaD > 0: without diffusion the steady entropy equation, '
-                 'u_r dS/dr = 0, leaves the entropy undetermined')
-    if par.compositional and par.CompoD == 0:   # NEW (2026-11-08)
-        sys.exit('forcing 12 with compositional = 1 needs CompoD > 0: without diffusion the steady composition equation, '
-                 'u_r dC/dr = 0, leaves the composition undetermined')
     walls = [('outer', 'bco', 'forcing_amplitude_cmb')] + ([('inner', 'bci', 'forcing_amplitude_icb')] if par.ricb > 0 else [])
-    for wall, bc, rate in walls:
-        if getattr(par, bc) not in (0, 1):
-            sys.exit('forcing 12 needs walls that stay in place, %s = 0 or 1 (got %r): a steady flow through a wall of zero '
-                     'radial stress would move it without end' % (bc, getattr(par, bc)))
+    for wall, bc, rate in walls:   # (the walls stay in place: above)
         if getattr(par, rate) != 0 and getattr(par, bc) != 1:
             sys.exit('forcing 12: the %s wall turns (%s = %r) but is stress-free (%s = 0), so it does not carry the fluid. '
                      'Make it no-slip (%s = 1), or set %s = 0' % (wall, rate, getattr(par, rate), bc, bc, rate))
     if all(getattr(par, rate) == 0 for wall, bc, rate in walls):
         sys.exit('forcing 12 needs a wall that turns: forcing_amplitude_cmb or forcing_amplitude_icb other than 0')
 
+
+def _frequencies():
+    '''the frequencies a forced run solves at: forcing_frequency, or for forcing 11 the frequencies of its scan'''
+    if par.forcing == 11 and getattr(par, 'rsf_frequencies', None) is not None:
+        return [float(w) for w in np.atleast_1d(np.asarray(par.rsf_frequencies, dtype=float))]
+    return [float(par.forcing_frequency)]
+
+def transport_rate(r, x):
+    '''
+    NEW (2026-11-09): Ω(r, x), the rate at which the fluid carries a scalar round about z relative to the frame, on the grid of
+    radii r and x = cos θ: Gaspard ΔΩ of the differential rotation (diff_rot = 1) plus U_φ/(r sinθ) = Ro rate_unit Σ T_n(r)
+    P_n'(x)/r of the background flow's toroidal part (bgflow = 1); 0 without either. The rows of s and c hold
+    i (w + m Ω) s at the frequency w (a 'rigid' ΔΩ = a gives i (w + m G a)).
+    '''
+    L = np.polynomial.legendre.Legendre
+    out = np.zeros((len(r), len(x)))
+    if par.diff_rot:
+        import diff_rot as dr
+        for n in dr.degrees():
+            out += par.Gaspard*np.outer(dr.raw(n, r), L.basis(n)(x))
+    if par.bgflow and par.bgflow_Ro != 0:
+        import bgflow as bgf
+        for n, T in bgf.source()['T'].items():
+            out += par.bgflow_Ro*bgf.rate_unit()*np.outer(T(r)/r, L.basis(n).deriv()(x))
+    return out
+
+def check_transport():
+    '''
+    NEW (2026-11-09): stops a forced run of an entropy without diffusion (thermal = 1, ThermaD = 0), or of a composition
+    without it (compositional = 1, CompoD = 0), where the scalar has no regular solution; submatrices.py calls it before
+    anything is built, after bgflow.check and diff_rot.check, whose profiles it reads. Without diffusion and wall rows the
+    rows of s hold only i (w + m Ω) s, the advection of s by a background flow and that of S by u (transport_rate: Ω):
+      - where w + m Ω = 0 everywhere (frequency 0 with m = 0, or with no rotation that carries s round: diff_rot_ampl = 0,
+        bgflow_Ro = 0, a flow with no toroidal part; or w = -m G a with a 'rigid' ΔΩ = a), s enters only through the
+        buoyancy of the flow's rows, which leave its last coefficients of each degree free: A is singular (N 24, m 2: a
+        kernel of 4 coefficients for each degree of s; solve.py got NaN);
+      - where w + m Ω vanishes or changes sign inside the fluid (a ΔΩ of both signs, 'Y20', at frequency 0, or w in the
+        band of -m Ω), s ∝ 1/(w + m Ω) there, a critical layer that no resolution resolves: the solution does not converge
+        (frequency 0 with 'Y20': the power of the forcing 26.8, 26.5, 33.2 at lmax 13, 25, 37);
+      - a background flow with a meridional circulation (a poloidal part) carries s along closed streamlines, and the time
+        a turn takes grows without end towards the walls and the edges of its cells, where the flow stops: at any
+        frequency s resonates on some streamlines (w + m Ω, summed over a turn, a multiple of 2π). At m = 0 and frequency
+        0 A tends to singular as N grows (its smallest singular value falls 150 times from N 24 to 48), and with a
+        toroidal part the budgets do not close and do not converge (residσ 0.11, 0.04, 0.07 at N 24, 48, 96; a background
+        from turning walls 0.96, 0.90).
+    A rate of one sign in the fluid (a 'rigid' offset, 'conical', T_1 alone) runs: A is regular and the solution converges.
+    With ThermaD > 0 (CompoD > 0) every case runs.
+    '''
+    if par.forcing == 0:
+        return
+    scalars = [(name, what, sym, sw) for on, name, D, what, sym, sw in
+               ((par.thermal, 'ThermaD', par.ThermaD, 'entropy', 's', 'thermal'),
+                (par.compositional, 'CompoD', par.CompoD, 'composition', 'c', 'compositional')) if on and D == 0]
+    if not scalars:
+        return
+    scan = par.forcing == 11 and getattr(par, 'rsf_frequencies', None) is not None
+    r = np.linspace(max(par.ricb, 1e-3), 1, 66)[1:-1]   # (inside the fluid)
+    x = np.linspace(-1, 1, 65)[1:-1]
+    W = par.m*transport_rate(r, x)
+    meridional = False
+    if par.bgflow and par.bgflow_Ro != 0:
+        import bgflow as bgf
+        src = bgf.source()
+        big = max([1e-300] + [np.abs(F(r)).max() for k in 'PT' for F in src[k].values()])
+        meridional = any(np.abs(P(r)).max() > 1e-10*big for P in src['P'].values())   # (a rotation's file: round-off P_n)
+    for w in _frequencies():
+        d = w + W
+        tol = 1e-6*max(abs(w), np.abs(W).max())
+        name, what, sym, sw = scalars[0]
+        if meridional:
+            why = ('the meridional circulation of the background flow (its poloidal part) carries the %s along closed '
+                   'streamlines, on which it resonates: the %s has no regular solution' % (what, what))
+        elif d.max() - d.min() <= tol and abs(d).max() <= tol:
+            why = ('the rows of the %s hold i (w + m Ω) %s, Ω the rate at which the fluid carries it round about z, and w + m Ω '
+                   '= 0 everywhere: the %s is undetermined (A is singular)' % (what, sym, what))
+        elif d.min() <= tol and d.max() >= -tol:
+            why = ('the rows of the %s hold i (w + m Ω) %s, Ω the rate at which the fluid carries it round about z, and w + m Ω '
+                   'vanishes inside the fluid (it goes from %.3g to %.3g): the %s has a critical layer there, which no '
+                   'resolution resolves' % (what, sym, d.min(), d.max(), what))
+        else:
+            continue
+        sys.exit('forcing %d at frequency %s%s with %s = 1 needs %s > 0: without diffusion %s'
+                 % (par.forcing, '%g' % w, ' (a frequency of its scan)' if scan else '', sw, name, why))
 
 def check_tides():
     '''
@@ -242,15 +406,12 @@ def check_tides():
       8, the libration in the frame of the mantle: m = 0, symm = 1; the walls are solids that stay in place (bco, bci 0 or
          1: the mantle, and the inner core that turns with it); the inner core's own libration relative to the mantle
          (forcing_amplitude_icb) needs an inner core.
-    An inviscid fluid (ViscosD = 0, forcings 1 and 8) needs a full sphere: kore's inviscid formulation (its bases and its one
-    wall row) is for ricb = 0 only.
+    (An inviscid fluid, ViscosD = 0, needs a full sphere: check() stops an inviscid shell, whatever the forcing. Its one wall
+    row is the impenetrable one, whatever bco: NEW 2026-11-09, forcings 1 and 8 then take any bco.)
     '''
     f = par.forcing
     if par.forcing_frequency == 0:
         sys.exit('forcing %d needs forcing_frequency != 0: it is a periodic forcing' % f)
-    if par.ViscosD == 0 and par.ricb > 0:
-        sys.exit('forcing %d with an inviscid fluid (ViscosD = 0) needs ricb = 0: the inviscid formulation is for the full '
-                 'sphere only' % f)
     if f == 1:
         if (par.m, par.symm) not in ((0, 1), (1, -1), (2, 1)):
             sys.exit('forcing 1 (the wave-like tide) needs (m, symm) = (0, 1), (1, -1) or (2, 1), the degree-2 tide')
@@ -261,7 +422,8 @@ def check_tides():
             sys.exit("forcing 1 (the wave-like tide) needs structure 'Boussinesq', thermal = 0, compositional = 0 and "
                      "magnetic = 0: its equilibrium tide is the potential flow of a uniform fluid with no stratification "
                      "and no field")
-        if par.bco not in (0, 1) or (par.ricb > 0 and par.bci not in (0, 1)):
+        if par.ViscosD > 0 and (par.bco not in (0, 1) or (par.ricb > 0 and par.bci not in (0, 1))):   # (FIX 2026-11-09: any
+            # bco with an inviscid fluid, whose one wall row is the impenetrable one)
             sys.exit('forcing 1 needs impenetrable walls (bco, bci = 0 or 1): the radial motion of the outer wall is that of '
                      'the equilibrium tide')
         if par.kappa_cmb != 0 or par.topo_drag is not None:
@@ -278,7 +440,7 @@ def check_tides():
     elif f == 8:
         if par.m != 0 or par.symm != 1:
             sys.exit('forcing 8 (the libration in the frame of the mantle) needs m = 0 and symm = 1')
-        if par.bco not in (0, 1) or (par.ricb > 0 and par.bci not in (0, 1)):
+        if par.ViscosD > 0 and (par.bco not in (0, 1) or (par.ricb > 0 and par.bci not in (0, 1))):   # (FIX 2026-11-09: as 1)
             sys.exit('forcing 8 needs walls that stay in place (bco, bci = 0 or 1): they are the mantle that librates and the '
                      'inner core that turns with it')
         if par.ricb == 0 and par.forcing_amplitude_icb != 0:
@@ -290,7 +452,8 @@ def check_drag():
     '''
     NEW (2026-11-06, conductive_IC's check_drag): stops on the settings that the drag at the outer wall (kappa_cmb, topo_drag;
     topo.py) does not cover. The drag replaces the stress-free condition (bco = 0) by a Robin condition on the viscous stress,
-    in units of the rotation rate (K/(rho_w Omega r0)). Left out: a wall that moves radially (forcings 9 and 10), a deformed
+    in units of the rotation rate (K/(rho_w Omega r0)). Left out: a wall that moves radially (forcing 10, and NEW 2026-11-09
+    forcing 9 only where forcing_amplitude_cmb != 0: moves_radially), a deformed
     body (the drag on the metric of the walls), and for topo_drag = 'rekier' a differential rotation (the frequency of the
     flow relative to the wall would depend on latitude) and a frequency scan of forcing 11 without topo_omega (the drag is
     built for one frequency). Only parameters are read here (radial_profiles.py calls check() before it builds its
@@ -314,8 +477,9 @@ def check_drag():
         sys.exit('the drag at the outer wall needs a rotating frame (Gaspard > 0): it is in units of the rotation rate')
     if par.centrifugal:
         sys.exit('the drag at the outer wall needs a spherical body (centrifugal = 0)')
-    if par.forcing in (9, 10):
-        sys.exit('the drag at the outer wall with forcing %d is not covered: the wall moves radially' % par.forcing)
+    if par.forcing in (9, 10) and moves_radially('outer'):   # (NEW 2026-11-09: forcing 9 with the outer wall in place runs)
+        sys.exit('the drag at the outer wall with forcing %d is not covered: the wall moves radially%s' % (par.forcing,
+                 ' (forcing_amplitude_cmb != 0)' if par.forcing == 9 else ''))
     if par.topo_drag is None:
         return
     if par.diff_rot:
@@ -362,6 +526,8 @@ def check_centrifugal():
     (centrifugal_shape 'spheroid') is a homogeneous fluid without a differential rotation (NEW 2026-11-06, step 2: with or
     without a field).
     centrifugal.report() (submatrices.py) prints the flattening used and the warnings on the terms left spherical.
+    NEW (2026-11-09, phase 11): the two stops on the rows of the flow (bco, bci = 2 and rpower_v) only with the flow
+    (hydro = 1): with hydro = 0 there are no such rows, and centrifugal.py builds no viscous metric terms.
     '''
     import centrifugal as cf
     if par.centrifugal != 1:
@@ -376,7 +542,7 @@ def check_centrifugal():
     if par.forcing != 0:
         sys.exit('centrifugal = 1 is implemented for eigenvalue problems only (forcing = 0): the forced problems need the '
                  'metric terms of the time derivative in A and their boundary flows on the deformed walls')
-    if par.ViscosD > 0 and (par.bco == 2 or (par.ricb > 0 and par.bci == 2)):   # FIX (2026-11-05, phase 2): stress-free walls done
+    if par.hydro and par.ViscosD > 0 and (par.bco == 2 or (par.ricb > 0 and par.bci == 2)):   # FIX (2026-11-05, phase 2): stress-free walls done
         sys.exit('centrifugal = 1 takes no-slip or stress-free walls (bco, bci = 1 or 0): the zero radial stress rows (2) on a '
                  'deformed wall need metric terms that are not implemented')
     if par.centrifugal_shape not in cf.SHAPES:
@@ -403,7 +569,7 @@ def check_centrifugal():
         if f is not None:
             sys.exit("centrifugal_shape 'user' takes the flattening from centrifugal_profile: set centrifugal_f = None")
         _check_expression(par.centrifugal_profile, par.centrifugal_param, 'centrifugal_profile')
-    if par.ViscosD > 0 and par.ricb == 0 and par.m != 0 and par.rpower_v < 4 and cf.deformed():   # NEW (2026-11-06, phase 2)
+    if par.hydro and par.ViscosD > 0 and par.ricb == 0 and par.m != 0 and par.rpower_v < 4 and cf.deformed():   # NEW (2026-11-06, phase 2)
         sys.exit('centrifugal = 1 in a full sphere with viscosity and m != 0 needs rpower_v >= 4 (got %r): the metric part of '
                  'the viscous force has a term P/r in the toroidal rows, which are polynomials in r only when multiplied by r^4 '
                  '(set par.rpower_v = 4)' % (par.rpower_v,))
@@ -501,7 +667,8 @@ def check_mantle():
         sys.exit("mantle = 'resolved' assumes the permeability of vacuum in the fluid and in the layer (mu = 1)")
     if par.centrifugal:
         sys.exit("mantle = 'resolved' needs a spherical body (centrifugal = 0)")
-    if par.hydro and par.bco == 2:
+    if par.hydro and par.ViscosD > 0 and par.bco == 2:   # (NEW 2026-11-09: an inviscid fluid takes any bco, its one wall row
+        # being no penetration)
         sys.exit("mantle = 'resolved' needs bco = 0 or 1: with zero radial stress at the outer wall (bco = 2) the fluid "
                  "crosses it, and the mantle's rows follow a radial flow there only where a forcing moves the wall "
                  "(forced_walls)")
@@ -514,9 +681,10 @@ def check_twa():
     permeability mu enters the thin-wall conditions only, so mu != 1 needs a thin wall (or a conducting inner core) at every
     wall of the fluid: an insulating wall with mu != 1 is a thin wall with c = c1 = 0. A thin wall needs bco, bci = 0 or 1
     (with 2 the fluid crosses the wall, and the rows follow a radial flow there only where a forcing moves the wall:
-    forced_walls) and a spherical body (centrifugal = 0).
-    With a differential rotation, ΔΩ must be uniform in latitude at the thin wall (background.magnetic_diffrot): the wall
-    co-rotates with it, as a conducting inner core does.
+    forced_walls; NEW 2026-11-09: a viscous fluid's, an inviscid one has no such row) and a spherical body (centrifugal = 0).
+    With a differential rotation, ΔΩ must be uniform in latitude at a thin wall that conducts, c1 != 0
+    (background.magnetic_diffrot): the wall co-rotates with it, as a conducting inner core does. One that does not (c1 = 0)
+    takes any rotation.
     '''
     twa_o = par.mantle == 'TWA'
     twa_i = par.innercore == 'TWA' and par.ricb > 0
@@ -536,7 +704,8 @@ def check_twa():
         return
     if par.centrifugal:
         sys.exit("a thin conducting layer ('TWA') needs a spherical body (centrifugal = 0)")
-    if par.hydro and ((twa_o and par.bco == 2) or (twa_i and par.bci == 2)):
+    if par.hydro and par.ViscosD > 0 and ((twa_o and par.bco == 2) or (twa_i and par.bci == 2)):   # (NEW 2026-11-09: an
+        # inviscid fluid takes any bco, its one wall row being no penetration)
         sys.exit("a thin conducting layer ('TWA') needs bco, bci = 0 or 1 at its wall: with zero radial stress (2) the fluid "
                  "crosses the wall, and the layer's rows follow a radial flow there only where a forcing moves the wall "
                  "(forced_walls)")
@@ -865,8 +1034,8 @@ def check_forced_magnetic():
                    that moves (its field would no longer be a Bessel function).
     A wall that moves, where B0 reaches it (b0_at_wall), needs one permeability on both sides of every surface there whose
     jump the rows would miss, under either forced_walls: a surface where the permeability jumps would carry the jump of the
-    magnetization of B0 along as it moves, which the rows leave out. So mu_i2o = 1 with a conducting inner core, and mu = 1
-    (the fluid against the layer or the insulator beyond). The permeability muw of a thin layer ('TWA'; its rows hold it
+    magnetization of B0 along as it moves, which the rows leave out. So mu_i2o = 1 at an inner wall with a conducting inner
+    core behind it, and mu = 1 at any other (the fluid against the layer or the insulator beyond). The permeability muw of a thin layer ('TWA'; its rows hold it
     only through c) must be 1 where the part of B0 that it acts on reaches the wall:
       - a layer with a thickness (c != 0): the poloidal B0, and the toroidal B0 too if the layer conducts (c1 != 0);
       - a conducting layer at rest under the flow through it ('rigid', flows_through): both, since the u×B0 of its rows is
@@ -1046,8 +1215,6 @@ def check_magnetic():
             sys.exit("B0 'dipole' is singular at r = 0: it needs an inner core (ricb > 0), which holds its source")
         if par.B0_tor is not None and par.B0_tor_l == 2 and par.B0_tor == 'Malkus':
             sys.exit("B0_tor 'Malkus' with B0_tor_l = 2 is not regular at r = 0 (k = r would need to go as r²): use 'wall' or 'user' with ricb = 0")
-    if par.ViscosD == 0 and par.ricb > 0:   # NEW (2026-10-28): the inviscid path (bases, one bc row) exists for the full sphere only
-        sys.exit('magnetic = 1 with ViscosD = 0 needs ricb = 0 (the inviscid formulation is for the full sphere only)')
     if getattr(par, 'forced_walls', None) not in (None, 'rigid', 'deforming'):   # NEW (2026-11-06), in every magnetic run
         sys.exit("forced_walls = %r: None (the picture of the forcing: 'rigid' for forcings 6 and 7, 'deforming' for 9, 10 "
                  "and 14), 'rigid' (the solids at rest, the boundary flow passes through the walls) or 'deforming' (the "
@@ -1108,7 +1275,7 @@ def check_magnetic():
             what.append("the poloidal B0 does not meet the field beyond (degree %d: B0_θ jumps by %.1e ∂θP_%d)"
                         % (n, pol[n], n))
         what = ' and '.join(what)
-        if par.ViscosD == 0:   # (a full sphere and its outer wall: with an inner core the inviscid path stopped above)
+        if par.ViscosD == 0:   # (a full sphere and its outer wall: check() stops an inviscid shell)
             small = ''   # a toroidal profile meant to vanish there that does so only to a small part of the field
             if tor:
                 n, kw, kmax = tor_at_wall(wall)
@@ -1203,7 +1370,14 @@ def ferraro_mismatch():
         Br = Br + np.outer(n0*(n0 + 1.)*h0/r, P.basis(n0)(x))
         Bt = Bt + np.outer(h1 + h0/r, -sth*P.basis(n0).deriv()(x))
     bdo = Br*dO_r + Bt*dO_t/r[:, None]
-    scale = np.sqrt(Br**2 + Bt**2).max()*np.sqrt((dO_r*r[:, None])**2 + dO_t**2).max()
+    grad = np.sqrt((dO_r*r[:, None])**2 + dO_t**2).max()
+    # FIX (2026-11-09, phase 11): a uniform ΔΩ (diff_rot_type 'rigid', or a constant profile) winds up no field, but its
+    # gradient is round-off, and the ratio of two round-off numbers came out anywhere from 0 to 1: a false warning, and a stop
+    # with 'refuse' for some amplitudes. A ΔΩ uniform to 1e-10 of its largest value over the grid is uniform
+    big = np.abs(sum(np.outer(dr.raw(n, r), P.basis(n)(x)) for n in dr.degrees())).max()
+    if grad <= 1e-10*big:
+        return 0.0
+    scale = np.sqrt(Br**2 + Bt**2).max()*grad
     return float(np.abs(bdo*r[:, None]).max()/scale) if scale > 0 else 0.0
 
 def ferraro_report():
@@ -1244,13 +1418,16 @@ def magnetic_diffrot():
                      '(f_n(ricb) = 0 for every n > 0): ΔΩ(ricb, θ) varies with latitude')
     # NEW (2026-11-06): a thin conducting wall co-rotates with ΔΩ at its radius, which must then be uniform in latitude; in the
     # frame of the wall its rows are those without the rotation (U0×b at the wall involves only b_r, which is continuous).
-    # Likewise the resolved mantle (mantle = 'resolved'), whose field then gains the Doppler term -i m G ΔΩ(1) b
-    for on, r, name in ((par.mantle in ('TWA', 'resolved'), 1.0, 'outer'),
-                        (par.innercore == 'TWA' and par.ricb > 0, par.ricb, 'inner')):
+    # Likewise the resolved mantle (mantle = 'resolved'), whose field then gains the Doppler term -i m G ΔΩ(1) b.
+    # NEW (2026-11-09, phase 11): only a layer that conducts (c1 != 0): one with c1 = 0 carries no current, and its
+    # conditions, those of the field alone, do not depend on how it turns
+    for on, r, name in ((par.mantle == 'resolved' or (par.mantle == 'TWA' and par.c1_cmb != 0), 1.0, 'outer'),
+                        (par.innercore == 'TWA' and par.ricb > 0 and par.c1_icb != 0, par.ricb, 'inner')):
         if on and not dr.rigid_at(r)[1]:
-            sys.exit("magnetic = 1, diff_rot = 1 with a conducting wall (%r) at the %s boundary needs a rigid rotation there "
-                     "(f_n = 0 for every n > 0): ΔΩ varies with latitude at r = %g"
-                     % (par.mantle if name == 'outer' else par.innercore, name, r))
+            sys.exit("magnetic = 1, diff_rot = 1 with a conducting wall (%r%s) at the %s boundary needs a rigid rotation "
+                     "there (f_n = 0 for every n > 0): ΔΩ varies with latitude at r = %g"
+                     % (par.mantle if name == 'outer' else par.innercore,
+                        '' if (par.mantle if name == 'outer' else par.innercore) != 'TWA' else ', c1 != 0', name, r))
     import background_field as bf
     if par.B0 == 'ferraro':   # FIX (2026-11-07): its cnorm is ferraro_cnorm, not bf.cnorm (1), which check_magnetic tests
         with np.errstate(divide='ignore', invalid='ignore'):

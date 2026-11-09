@@ -139,12 +139,16 @@ def L_case():
     the libration (forcing 7, m = 0), the steady rotation of the walls (12) and the thermal forcing (13). A radial
     boundary flow would add the Coriolis torque of the mass it carries through the walls, and a random body force (11)
     its own torque. The body forces of forcings 1 (axial or equatorial) and 8 (axial),
-    whose walls are at rest, add theirs (utils4pp.body_force_terms).
+    whose walls are at rest, add theirs (utils4pp.body_force_terms). FIX (2026-11-09): for the same reason not with a wall
+    of zero radial stress (bco or bci = 2) of a viscous fluid, which the fluid crosses.
     '''
     axial = par.m == 0 and par.symm == 1
     equatorial = par.m == 1 and par.symm == -1 and not par.diff_rot
     forced = (par.forcing in (7, 8, 12, 13) and axial) or (par.forcing == 1 and (axial or equatorial))
-    return bool(par.hydro and not par.centrifugal and ((par.forcing == 0 and (axial or equatorial)) or forced))
+    # FIX (2026-11-09): nor with a wall of zero radial stress (bco or bci = 2), which the fluid crosses (resid𝐋 ~1 for
+    # resolved modes): an inviscid fluid's one wall row is no penetration, whatever bco
+    imperm = par.ViscosD == 0 or (par.bco in (0, 1) and (par.ricb == 0 or par.bci in (0, 1)))
+    return bool(par.hydro and not par.centrifugal and imperm and ((par.forcing == 0 and (axial or equatorial)) or forced))
 
 
 def _factor():

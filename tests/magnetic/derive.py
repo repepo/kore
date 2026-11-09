@@ -211,6 +211,22 @@ def compare(a, b, label):
     return c, err
 
 
+def part(argv):
+    '''
+    NEW (2026-11-09): the share of a check script given by --part k/K on its command line (k = 0..K-1). Returns
+    (mine, label): mine() is called once per check, in the script's order, and is True for every K-th check from the k-th,
+    so that the K parts, run side by side (tests/magnetic/run_all.sh), make every check once; label is ' part k/K' for the
+    verdict line, '' without --part (then mine() is always True).
+    '''
+    if '--part' not in argv:
+        return (lambda: True), ''
+    k, K = (int(x) for x in argv[argv.index('--part') + 1].split('/'))
+    if not 0 <= k < K:
+        raise SystemExit('--part k/K needs 0 <= k < K, not %d/%d' % (k, K))
+    count = itertools.count()
+    return (lambda: next(count) % K == k), ' part %d/%d' % (k, K)
+
+
 def as_dict(expr):
     '''a closed form (sympy, in the symbols P0, P1, h0, lr1, ... and r) as the dict of project(), for compare()'''
     e = sy.expand(expr)

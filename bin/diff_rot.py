@@ -237,8 +237,9 @@ def check():
             sys.exit('par.%s is no longer read: use %s' % (name, new))
     if par.thermal and par.thermal_wind not in (0, 1, 2, 3):
         sys.exit('thermal_wind must be 0, 1, 2 or 3')
-    if par.thermal and par.thermal_wind in (1, 2) and par.Beyonce == 0:
-        sys.exit('thermal_wind = 1, 2 needs Beyonce > 0 (S_tw is O(1/Beyonce)): set thermal_wind = 0 or set Beyonce after set_scales()')
+    if par.thermal and par.thermal_wind in (1, 2) and par.Beyonce == 0:   # (FIX 2026-11-09: the message said > 0; a negative
+        # Beyonce, an unstable stratification, has its thermal wind too)
+        sys.exit('thermal_wind = 1, 2 needs Beyonce != 0 (S_tw is O(1/Beyonce)): set thermal_wind = 0 or set Beyonce after set_scales()')
     if par.diff_rot_type == 'ferraro':   # NEW (2026-10-30)
         if not par.magnetic or par.B0 is None:
             sys.exit("diff_rot_type 'ferraro' deduces ΔΩ from the poloidal background field: it needs magnetic = 1 and a poloidal B0")

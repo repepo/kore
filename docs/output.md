@@ -98,7 +98,7 @@ the definitions are on [Magnetic field equations](magnetic-equations.md#energy-b
 | 7 | MEic, the magnetic energy in the inner core |
 | 8 | MEext, the energy of the potential field outside the outer wall (beyond `r_surface` with a resolved mantle) |
 | 9, 10 | Ohm_f, Ohm_ic: the Ohmic losses in the fluid and in a conducting inner core |
-| 11 | the relative residual of the full energy budget (resid𝐄; nan with stress-free walls and `centrifugal = 1`, with thin conducting layers and `mu` other than 1, and with rotating solids unless `vtrq` and `mtrq` are 1) |
+| 11 | the relative residual of the full energy budget (resid𝐄; nan for a viscous fluid along a wall that is not no-slip with `centrifugal = 1`, with thin conducting layers and `mu` other than 1, and with rotating solids unless `vtrq` and `mtrq` are 1) |
 | 12 | with `centrifugal = 1`, a thin conducting layer or a resolved mantle: MEc, the part of the magnetic energy that the deformation adds, so that ME + MEc is the energy of the field in the deformed fluid (the column Mag/Kin of the `spin_doctor` table is Hendrik (ME + MEc)/KE; [Centrifugal deformation](centrifugal-equations.md#energy-budgets)); 0 without the deformation |
 | 13, 14 | with a thin conducting layer (`mantle` or `innercore` `'TWA'`) or a resolved mantle (`mantle = 'resolved'`) only: E_w, the magnetic energy stored in the thin layers or in the mantle, and Ohm_w, their Ohmic loss |
 | 15, 16 | with a thin conducting layer or a resolved mantle only: εTWA, the estimated relative error of the outer and of the inner thin layer (0 where there is none; the `spin_doctor` table shows the larger) |

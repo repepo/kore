@@ -1361,11 +1361,12 @@ def wall_dissipative(m, lw, R, vals):
 
 # --- in a run: the coefficients (cached, by diagonal), the labels, the blocks and the wall rows
 def diffusion_kinds():
-    '''the dissipative terms of this run: 'visc' (ViscosD > 0), 'heat' (thermal diffusion), 'mag' (a field with diffusion),
-    NEW (2026-11-08) 'comp' (the composition with diffusion); none if the body is not deformed (deformed())'''
+    '''the dissipative terms of this run: 'visc' (ViscosD > 0, NEW 2026-11-09: and the flow, hydro = 1), 'heat' (thermal
+    diffusion), 'mag' (a field with diffusion), NEW (2026-11-08) 'comp' (the composition with diffusion); none if the body
+    is not deformed (deformed())'''
     if not deformed():   # NEW (2026-11-06)
         return ()
-    return tuple(k for k, on in (('visc', par.ViscosD > 0), ('heat', par.thermal and par.ThermaD > 0),
+    return tuple(k for k, on in (('visc', par.hydro and par.ViscosD > 0), ('heat', par.thermal and par.ThermaD > 0),
                                  ('mag', par.magnetic and par.MagnetD > 0),
                                  ('comp', par.compositional and par.CompoD > 0)) if on)
 
@@ -1903,11 +1904,12 @@ def spheroid_walls(m, lw, R, f=None):
 
 _sph = {}
 def spheroid_coefficients(m):
-    '''spheroid_build for this run (cached): {kind: (out, bands)} with the kinds of this run ('visc' with ViscosD > 0, 'heat'
+    '''spheroid_build for this run (cached): {kind: (out, bands)} with the kinds of this run ('visc' with ViscosD > 0 and,
+    NEW 2026-11-09, the flow, 'heat'
     with thermal diffusion, NEW (2026-11-06, step 2) 'mag' with a field and MagnetD > 0, NEW (2026-11-08) 'comp' with the
     composition and CompoD > 0), the bands by diagonal (angular.band, |Δl| <= 4)'''
     if m not in _sph:
-        kinds = ['inertia', 'coriolis'] + (['visc'] if par.ViscosD > 0 else []) + \
+        kinds = ['inertia', 'coriolis'] + (['visc'] if par.hydro and par.ViscosD > 0 else []) + \
                 (['heat'] if par.thermal and par.ThermaD > 0 else []) + (['mag'] if par.magnetic and par.MagnetD > 0 else []) + \
                 (['comp'] if par.compositional and par.CompoD > 0 else [])
         _sph[m] = {}

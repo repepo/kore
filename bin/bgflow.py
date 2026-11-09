@@ -507,8 +507,6 @@ def check():
     if par.topo_drag == 'rekier':
         sys.exit("bgflow = 1 with topo_drag 'rekier' is not covered: the drag is built for the frequency of the flow "
                  "relative to the wall, which a background flow there would change with latitude")
-    if par.ViscosD == 0 and par.ricb > 0:
-        sys.exit('bgflow = 1 with ViscosD = 0 needs ricb = 0 (the inviscid formulation is for the full sphere only)')
     if not (isinstance(par.bgflow_Ro, (int, float, np.integer, np.floating)) and np.isfinite(par.bgflow_Ro)):
         sys.exit('bgflow_Ro = %r: a finite number' % (par.bgflow_Ro,))
     if not isinstance(par.bgflow_profiles, dict):
@@ -537,7 +535,10 @@ def check():
                 sys.exit('bgflow: %s_%d of the background is not finite' % (k, n))
             if n > NMAX:
                 sys.exit('bgflow: degree %d of the background above the largest the profile codes allow (%d)' % (n, NMAX))
-    if not par.bgflow_profiles and src['P'] and _density_mismatch(load()) > 1e-8:
+    rg = np.linspace(max(par.ricb, 1e-3), 1, 64)   # FIX (2026-11-09): a rotation's file has round-off poloidal parts, which
+    big = max([1e-300] + [np.abs(f(rg)).max() for k in 'PT' for f in src[k].values()])   # suit any density
+    pol = any(np.abs(P(rg)).max() > 1e-10*big for P in src['P'].values())
+    if not par.bgflow_profiles and pol and _density_mismatch(load()) > 1e-8:
         sys.exit("bgflow_file %r was written for another density (%s): its poloidal flow ρ0⁻¹∇×∇×(ρ0 P 𝐫) is that "
                  "density's (∇⋅(ρ0 U) = 0), so it is not a flow of this run's" %
                  (par.bgflow_file, 'a uniform one, conductive_IC' if 'rho' not in load() else 'its structure'))
@@ -552,10 +553,12 @@ def check():
         if through:
             sys.exit('bgflow: the background flows through the wall r = %g (P_n(%g) != 0 for n = %s): kore\'s walls are '
                      'impenetrable' % (r, r, through))
-    if par.magnetic:
-        walls = [(par.mantle in ('TWA', 'resolved'), 1.0, 'the outer wall (mantle %r)' % par.mantle),
-                 (par.ricb > 0 and (par.innercore in bg.CONDUCTING_CORES or par.innercore == 'TWA'), par.ricb,
-                  'the inner wall (innercore %r)' % par.innercore)]
+    if par.magnetic:   # (NEW 2026-11-09, phase 11: a thin layer only if it conducts, c1 != 0; one that does not carries no
+        # current, and its conditions, those of the field alone, do not depend on how it turns)
+        walls = [(par.mantle == 'resolved' or (par.mantle == 'TWA' and par.c1_cmb != 0), 1.0,
+                  'the outer wall (mantle %r)' % par.mantle),
+                 (par.ricb > 0 and (par.innercore in bg.CONDUCTING_CORES or (par.innercore == 'TWA' and par.c1_icb != 0)),
+                  par.ricb, 'the inner wall (innercore %r)' % par.innercore)]
         for on, r, name in walls:
             if on and not rigid_rate(r)[1]:
                 sys.exit('bgflow = 1 with a conducting solid at %s needs a rigid rotation of the background there '

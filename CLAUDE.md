@@ -32,7 +32,12 @@ history. §15 lists what the first threads of the claude.ai project behind this 
   residuals; for changes to the background, the differential rotation or the heat equation, `tests/diff_rot/regress.sh`
   (bitwise A, B against an older checkout) and `tests/heat_dr/run_all.sh`; before a push, `cd tests/ci; pytest -v`
   (the GitHub test, §11). Existing runs are expected to stay bitwise identical unless a change says otherwise.
-  `docs/checking.md` ("Modifying kore") is the user-facing guide to these checks.
+  `docs/checking.md` ("Modifying kore") is the user-facing guide to these checks. NEW 2026-11-09: `tests/run_suites.sh
+  [WORKDIR [SUITE ...]]` runs every suite (or those named) side by side, the longest first, each in WORKDIR/SUITE with
+  its log in WORKDIR/logs; with `OLD_KORE` also regress.sh and regress_solve.sh. To split the suites between two machines,
+  give each its list (the magnetic suite on one, the others on the other); `MAG_NPAR`, `CF_NPAR`, `OTHER_NPAR` (sheet,
+  bgflow, heat_dr: their runs side by side, NPAR in each suite's run_all.sh) and `JOBS` set the jobs; with jobs side
+  by side the suites set OMP_NUM_THREADS (and OpenBLAS's, MKL's) to 1 unless set, and Open MPI's binding to none.
 - The checked-in `bin/parameters.py` is the "gi1" gravito-inertial mode: ricb 0.35, m 2, thermal, structure 'Wu 2005'
   (r_out 0.99) with stratification 'top hat', N 192, lmax 121, ncpus 10, target 2.04i; expected
   λ = −0.049653 + 2.037155i. `examples/smooth_sun/parameters.py` is the solar example (§6).
@@ -108,8 +113,8 @@ ones too (check_names warns), and does not call set_scales. docs/output.md#the-p
 | `angular.py` | the angular algebra at fixed m: the recurrence matrices X (cos θ) and D (−sin θ ∂θ), the vector operations (g(cos θ)·, ẑ×, sin θ F_θ), Schmidt harmonics at any l (`ylm_grid`, `ylm`); numpy and scipy only |
 | `targets.py` | analytic targets (spin-over, Rieutord–Valdettaro attractor) |
 
-Other directories: `tests/ci/` (the test GitHub runs on every push, §11); `tests/diff_rot/`, `tests/heat_dr/`,
-`tests/centrifugal/` and `tests/rsf/` (§11, each with a README); `docs/` (mkdocs, public user documentation: `installation.md` (from conductive_IC), `getting-started.md` (a
+Other directories: `tests/ci/` (the test GitHub runs on every push, §11); the other folders of `tests/`, one per
+suite, each with a README and (but `tests/diff_rot/`) a `run_all.sh` (§11); `docs/` (mkdocs, public user documentation: `installation.md` (from conductive_IC), `getting-started.md` (a
 step-by-step run of Baruteau & Rieutord 2013 fig. 10), the user guide `background.md` (structure, stratification,
 diffusivity with ThermaD = 0, composition, rotation and thermal wind, centrifugal deformation), `forcing.md` (forcing 11: a worked m = 2 Rossby-mode scan, set-up,
 output), `tidal-forcing.md` (forcing 14: the walls move as a degree-2 tide; the energy of the response; forcing 1, the
@@ -118,7 +123,7 @@ the frame of the mantle with the Poincaré force; one example in both frames), `
 (forcing 12: the walls turn steadily, spherical Couette flow; Proudman's solution as the example, figure
 `docs/assets/couette-flow.png`), `bgflow.md` (a background flow with a meridional circulation: written from a forcing-12
 run, linear or by Newton's method, or given by expressions; the example of waves on the flow of a turning inner core),
-`magnetic.md` (choosing the background field B0, its options and caveats), `rotating-solids.md` (`rotdyn`, resid𝐋), `drag.md` (`kappa_cmb`, `topo_drag`: the drag at the outer wall, weak and strong drag, Dtopo), `solver.md` (bad solutions, memory) and `output.md` (the files and their columns), `benchmarks.md` (set-up and result of each published benchmark), `checking.md` (which check to run after a change,
+`magnetic.md` (choosing the background field B0, its options and caveats), `rotating-solids.md` (`rotdyn`, resid𝐋), `drag.md` (`kappa_cmb`, `topo_drag`: the drag at the outer wall, weak and strong drag, Dtopo), `compatibility.md` (which features combine, which combinations stop at startup, and which ones a suite checks), `solver.md` (bad solutions, memory) and `output.md` (the files and their columns), `benchmarks.md` (set-up and result of each published benchmark), `checking.md` (which check to run after a change,
 and how: `regress.sh`, `regress_solve.sh`, the suites), and the mathematical framework
 `anelastic.md` (the LBR equations, non-dimensionalization, ThermaD = 0, the composition, the terms of a differential
 rotation, the energy balance with the work at the walls, validity),
@@ -139,8 +144,9 @@ sphere too, checked against KE), `ell_spectrum.py`, `shear_layer_profile.py`, `p
 assignment, by ast byte spans so comments and other statements stay, else a new last line; warns for Ek, Etherm,
 Ecomp, Le, timescale after the last set_scales call), `dodirs.sh`, `dosubs.sh`, `subramp.sh` (PBS, runs ramp.sh),
 `reap.sh`, `get_data.py` (pandas, named columns, read with float_precision 'round_trip'), `getresults.py`,
-`topo_iterate.sh`), `koreviz/`, `koreviz_mod/` (visualisation); `srunKore.sh` (SLURM);
-`poly.n1_gamma3.h5`, `theprofile.data` (files of the removed file-based models, unused).
+`topo_iterate.sh`; NEW 2026-11-09 `compat_tables.py`: the cells of the two tables of `docs/compatibility.md`, the grid of
+feature pairs and the forcings, with their marks, notes and tests, which it writes between the page's markers;
+`--check` exits 1 if the page differs), `koreviz/`, `koreviz_mod/` (visualisation); `srunKore.sh` (SLURM).
 
 ## 4. Formulation
 
@@ -208,11 +214,13 @@ topo_drag; for 'rekier' no diff_rot, w0 ≠ 0, and topo_omega with a forcing 11 
 solids' parameters are in `submatrix_io.OPERATOR_INDEPENDENT` (rows of assemble.py only).
 Forcing 12 (2026-11-08, conductive_IC 0780790; `docs/couette-flow.md`, `tests/couette`): the walls turn steadily about z
 at forcing_amplitude_cmb, _icb (units 1/τ), T_1 = Ω r/2 on the no-slip wall's T row (field + c.c.: u_φ = Ω r sinθ), at
-wf = 0. `background.check_forcing`: m = 0, symm = 1, wf = 0, ViscosD > 0, no IC rate at ricb = 0, ThermaD > 0 with
-thermal, bc 0 or 1, a turning wall no-slip, some wall turning. Conducting solids turn with their walls: a rotation leaves
+wf = 0. `background.check_forcing`: m = 0, symm = 1, wf = 0, ViscosD > 0, no IC rate at ricb = 0, bc 0 or 1 (since
+2026-11-09 the rule of every steady forcing), a turning wall no-slip, some wall turning; ThermaD > 0 with thermal (CompoD
+> 0 with the composition) from `background.check_transport` (w + mΩ = 0 at m = 0). Conducting solids turn with their walls: a rotation leaves
 the axisymmetric B0 alone and the tangential u×B0 = u_φ B0r θ̂ matches, so the field rows are those of walls at rest
 (any permeability). A forced rigid rotation (walls at one rate, full sphere, IC under a stress-free wall at rest) gives
-b = 0 and O(1) residuals (round-off over round-off).
+b = 0 and O(1) residuals (round-off over round-off), but for resid𝐋 (round-off, 9e-15 in a shell, since its scale got
+ViscosD ∫ρ0 r³|T| on 2026-11-09).
 Forcings 1, 2, 8 (2026-11-08, conductive_IC port phase 7b; `background.check_tides`, `tests/cic_forcings`; 3, 4, 5 stop
 with `background.NOT_PORTED`): 2 = the Enceladus eccentricity tide on the no-slip rows of P_2 (P = i wf A P_fit, ricb
 i wf A P_fit at the ICB, (rP)'/r = i wf A (P_fit + dP_fit) at both; `utils.eccen_tide`, Padé fits in ricb − 37/42, keyed
@@ -434,8 +442,10 @@ with the same numbers are identical; anelastic ones only without diffusion). Row
 from `Ecomp` and BeyonceC = 0, so set BeyonceC after it. It goes wherever s goes: the full sphere (vector parity that of
 P), diff rot (the advection i m G ΔΩ c only, no thermal wind of the composition, `diff_rot.comp_block`), the deformed body
 (`centrifugal.entropy_block(..., 'c')`, the diffusion's metric terms with the code `Drh`), fields, the solids, the drag
-(`topo.N_cmb` adds BeyonceC g dC/dr), forced runs (forcing 12 needs CompoD > 0; forcing 1 needs compositional = 0) and
-`hydro = 0`. conductive_IC's Boussinesq composition ξ is −c, BV2_comp = BeyonceC, Ecomp = CompoD; its 'internal' gradient
+(`topo.N_cmb` adds BeyonceC g dC/dr), forced runs (with CompoD = 0 only where w + mΩ keeps one sign in the fluid, never
+0, and no background flow has a meridional circulation: `background.check_transport`, so not forcing 12; forcing 1
+needs compositional = 0) and `hydro = 0`. conductive_IC's Boussinesq composition ξ is −c, BV2_comp = BeyonceC, Ecomp =
+CompoD; its 'internal' gradient
 is 'linear', its 'differential' one 'inverse square' with BeyonceC = BV2_comp ricb/(1 − ricb), its 'two zone' heating the
 entropy's stratification 'two zone'; it has no 'two zone' composition (kore's is `comp_stratification = 'two zone'`).
 
@@ -612,7 +622,7 @@ flow U₀ = Gaspard ΔΩ r sin θ e_φ in the frame Ω_ref. It works with any ba
   (P↔T) (`diff_rot.dl_range`); `ut.dr_offd` gives the column block.
 - **Heat** (`operators.thermal_diffrot` → `diff_rot.heat_block`, `thermal = 1`): i m G ΔΩ s always; `thermal_wind` 1
   (linear) / 2 (exact (1+ΔΩ)², frame independent) add u_r ∂S_tw/∂r + (u_θ/r)∂S_tw/∂θ with the thermal-wind entropy
-  S_tw = Σ σₙ Pₙ (`diff_rot.sigma_coefficients`, by the Legendre algebra; needs Beyonce > 0); 3 prescribes
+  S_tw = Σ σₙ Pₙ (`diff_rot.sigma_coefficients`, by the Legendre algebra; needs Beyonce ≠ 0); 3 prescribes
   ∂S_tw/∂θ = `dSdtheta` sin 2θ (Bekki et al. 2024); 0 none. `thermal_wind_radial = 0` drops the u_r term (as Bekki et al.
   and Mukhopadhyay et al.); `thermal_wind_amplitude` scales S_tw. S_tw has degrees up to `diff_rot.tw_nmax()` (n_max + 2
   for thermal_wind 1, 2 n_max + 2 for 2, 2 for 3).
@@ -687,7 +697,8 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   Wv − Dvisc is a small difference there; residσ was ~1 for the libration); residω, resid𝐛, resid𝑠 are 0 when all
   their terms are exactly 0 (a steady m = 0 flow; 'Malkus' under an axisymmetric flow, b ≡ 0). A forced rigid rotation
   (walls at one rate, a full sphere, an inner core under a stress-free wall at rest) has round-off terms only: its
-  residuals are round-off over round-off, O(1). NEW 2026-11-08: forcings 1 and 8 add the power of their body force,
+  residuals are round-off over round-off, O(1), but for resid𝐋, whose scale has had ViscosD ∫ρ0 r³|T| since 2026-11-09.
+  NEW 2026-11-08: forcings 1 and 8 add the power of their body force,
   Wf (and Wf_im) from `upp.body_force_terms` (the routines of flow_worker on x, then on u), to residσ, residω, resid𝐄 and
   P_in (flow.dat 42–43), its enstrophy term to residens, its torque to resid𝐋. NEW 2026-11-08: a background flow
   (`bgflow = 1`) adds Wbg = −2 Re ∫ρ₀u*·[(U·∇)u + (u·∇)U], Wbg_im and Ensbg (flow.dat 46–48) to residσ, residω, resid𝐄 and
@@ -749,7 +760,11 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   `heat_check.py`, `asm_check.py`, `row_check.py`, `rigid_thermal.py`, `tw_sympy.py`, `csolve.py` (scipy solve, no
   equilibration), `eig2kore.py` (writes csolve's eigenpairs as solve.py does, so spin_doctor runs without
   PETSc/SLEPc), `sd_check.py`, `ebal.py`, `terms.py`, `tw_limit.py` (thermal_wind 2 → 1 as the amplitude → 0),
-  `mpi_check.sh` (bitwise A, B on 1–4 ranks), `forced_check.py`; `run_all.sh` runs them all (~10 min).
+  `mpi_check.sh` (bitwise A, B on 1–4 ranks), `forced_check.py`; `run_all.sh` runs all but `eig2kore.py`, `mpi_check.sh`
+  and `forced_check.py` (~10 min serial; NEW 2026-11-09: it builds the runs side by side first, NPAR at a time, default
+  the processors with at most one per 2 GB; each check it runs exits with 1 on a FAIL, as does its line on the WARNINGs
+  of the 'solar' and 'cylindrical' runs, and it stops there, so its exit code is their verdict; tw_limit.py's ratios
+  and terms.py's balances are read).
 - `tests/diff_rot/` (README): `gen_check.py` (the couplings of `diff_rot.py` against the closed forms of
   `tests/diff_rot/diff_rot_coefficients.py`, and the Δl ranges), `angular_check.py` (`angular.py`, no run directory;
   its reference for the primitives is `quad_reference.py`, the former quadrature builder, valid for l ≤ 645),
@@ -760,7 +775,10 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   `docs/benchmarks.md`), `dr_cost.py` (time and memory against the degree of ΔΩ),
   `ls_to_tabulated.py` (HMI table converter, input in `profiles/`: the Larson & Schou 2018 HMI average
   `rot2d.hmiv72d.ave` and `rmesh.orig`).
-- `tests/magnetic/` (README, `run_all.sh`, ~40 min): `derive.py` (the magnetic rows from the definitions, sympy),
+- `tests/magnetic/` (README, `run_all.sh`: NEW 2026-11-09 its checks are independent jobs, NPAR at a time (default the
+  processors, at most one per 3 GB), the longest first (FIRST), logs in WORKDIR/logs, the sympy checks in parts
+  (`--part k/K`: derive_check.py NPAR, algebra_check.py NPAR/2, dr_induction_check.py NPAR/8, rounded up); two hours
+  of jobs, 31 min with NPAR = 4): `derive.py` (the magnetic rows from the definitions, sympy),
   `derive_check.py` (against conductive_IC's operators and the anelastic closed forms), `row_check.py` (each row block of a
   run against derive.py, unweighted), `budget_check.py` (spin_doctor's residσ, residω, resid𝐛, resid𝐄), `continuity.py`
   ('Wu 2005' with r_out = √ε → 'Boussinesq'), `malkus_check.py` (the Malkus field against Malkus 1967), `mk_run.py`.
@@ -778,7 +796,9 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   worked examples: part A the magnetic field (derive.py `--b0 pol1|pol2|tor1|tor2`, the exact-interpolation fit, the code
   generation), part B the differential rotation (the recurrence algebra of `bin/angular.py`, the 12 primitives and the
   couplings of `bin/diff_rot.py`). The scripts' docstrings give the same rationale (2026-10-30).
-- `tests/centrifugal/` (README, `run_all.sh`, ~17 min on 16 cores; `SKIP_SOLVE=1` without PETSc; NEW 2026-11-05): `derive.py`
+- `tests/centrifugal/` (README, `run_all.sh`: NEW 2026-11-09 its checks are jobs side by side, NPAR at a time, the longest
+  first (FIRST), logs in WORKDIR/logs; 55 min of processor time, 25 min with NPAR = 4; `SKIP_SOLVE=1` without PETSc;
+  NEW 2026-11-05): `derive.py`
   (sympy: every closed form of `centrifugal.py` from the map and w = J F⁻¹u), `algebra_check.py` (the couplings against
   quadratures with scipy's lpmv), `clairaut_check.py` (Maclaurin 5/4, polytrope 7.5/π², 'Wu 2005' against Clairaut's
   equation from ρ, the Sun's f/q 0.519), `eig_check.py` (f = 0 bitwise, the spin-over, a relabelled sphere moving at
@@ -810,7 +830,8 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   pieces in `rsf_common.py`; `builder_check.py` (f = u against the inertia rows), `noise_check.py` (the noise
   amplitude against the documented Θ laws, and the noise against the viscous operator, exactly; no forcing beyond the
   dissipation bound), `spectrum_check.py pick|fields|check` (solve.py's sampled spectrum against the exact E[KE(w)]
-  and the single-mode energy Θ f_eff); `run_all.sh` (needs petsc4py for the solves, and an `MPIEXEC` that starts
+  and the single-mode energy Θ f_eff; in a shell `sp`, NEW 2026-11-09 also in a full sphere `sp_fs` and with a field
+  and a conducting inner core `sp_mag`); `run_all.sh` (needs petsc4py for the solves, and an `MPIEXEC` that starts
   mpi4py's MPI); `regress_solve.sh OLD_KORE` (eigen and forcing-10 solves bitwise against an older checkout).
 - `tests/tidal/` (README, `run_all.sh`, ~2 min on 4 ranks): `stokes_check.py` (forcing 14 without rotation against the
   exact unsteady Stokes solution: P_2(r), KE, Wp, Wv, Dvisc), `budget_check.py` (residσ, residω, residD and the wall
@@ -869,7 +890,9 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   inviscid full sphere (also 4e-6 of the field under a strong 'axial' one, and an irregular full-sphere profile's),
   rotdyn's stop, and the runs that go on (since 6c a viscous slipping wall: bco 0 and 2, bci 0 and 2, TWA c1 = 0 at
   either wall; no-slip, cIC, TWA c1 ≠ 0 at either wall, resolved mantle, 'wall'); 50 checks).
-- `tests/sheet/` (README, `run_all.sh`, ~11 min on 2 ranks; NEW 2026-11-07, phase 6c): `sheet_check.py` (the push of
+- `tests/sheet/` (README, `run_all.sh`, ~11 min of runs on 2 ranks, NEW 2026-11-09 side by side, NPAR at a time: 8
+  min with NPAR = 2 on four processors that two other suites shared; NEW 2026-11-07, phase 6c): `sheet_check.py` (the
+  push of
   B0's current sheet at a slipping wall: nine smoothed sheets, B0 falling to the field beyond over δ = 2e-3, 1e-3, 5e-4,
   the first four eigenvalues against the sharp run with the push (error ratio 0.35–0.65, the δ, δ² extrapolation 10×
   closer, the no-push run 10× farther): toroidal k = r at the outer wall (bco 0) and the inner one (bci 2, cnorm_tor 2
@@ -884,11 +907,18 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   B0_cmb 'wall'); `_pol_wall_row` against bc_b_spherical's f rows at both walls, n 1–6, to 1e-13, and B0_cmb 'wall'
   ('FDM', G21) with no sheet at a permeable outer layer, 'plain' G21 with one; the no-push runs patch assemble.py's
   sheet_on line; 44 checks).
-- `tests/forcing/` (README, `run_all.sh`, ~30 s; NEW 2026-11-06): `rows_check.py` (forcings 6 at a no-slip and a
+- `tests/forcing/` (README, `run_all.sh`, ~1.5 min; NEW 2026-11-06): `rows_check.py` (forcings 6 at a no-slip and a
   stress-free ICB, 7 with m = 0 and 2, 9 Boussinesq, 'Wu 2005' and full sphere, 10, and 12 with both walls turning,
   under a stress-free outer wall and in a full sphere, and (2026-11-08) 2 with m 2 for both signs of wf and m 0 at ricb
-  37/42 (expected values strings evaluated in the run, from `utils.eccen_tide`): the wall values read back from the
-  solution of small forced runs built with `tests/tidal/mk_run.py`, to 1e-10 of the amplitude).
+  37/42 (expected values strings evaluated in the run, from `utils.eccen_tide`), and (2026-11-09) the settings that did
+  not run before phase 11 and run now (14 in a full sphere with bci 0 and inviscid at bco 0, 9 with kappa_cmb at an
+  outer wall that stays in place, which stopped; 9 in a full sphere with bci 0 and 7 (m 2) inviscid at bco 0, which got
+  no right-hand side) and two that ran before without a check (9 at a stress-free outer wall, 10 inviscid at bco 0): the wall values read back from the solution of small forced runs built with
+  `tests/tidal/mk_run.py`, to 1e-10 of the amplitude); `stops_check.py` (NEW 2026-11-09: the stops phase 11 added or
+  moved to startup, each with its message: forcings 6, 7, 9, 10, 11 (its own conditions included), 13 and 14 in
+  `background.check_forcing`, the steady-wall rule, the transport rule of `background.check_transport`, the inviscid
+  shell, 9 with the drag; and the nearby settings that run; from `submatrices.py` alone on 1 rank. Forcing 12's stops
+  are in tests/couette, those of forcings 1, 2, 8 and 3-5 in tests/cic_forcings).
 - `tests/couette/` (README, `run_all.sh`, ~1.5 min on 2 ranks; NEW 2026-11-08): `couette_check.py`, forcing 12: eleven
   runs against conductive_IC 2d84351 (KE, ME, MEic hard-coded, N 48, lmax 31; the IC turning, both walls, the mantle;
   'axial' over insulating, Chebys, Bessel, TWA cores, TWA and resolved mantles, mu_i2o 1.5 and muw_cmb 2 with c_cmb;
@@ -915,7 +945,9 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   'user' and 'step' diffusivities, hydro = 0, 'two zone'), and 'Wu 2005' without diffusion (eigenvalues only: the
   budgets are weighted by ρ₀ and p₀); both scalars equal = the entropy with Beyonce doubled; 'Wu 2005' budgets below
   1e-9; ru_insane on six runs; 11 stops.
-- `tests/bgflow/` (README, `run_all.sh`, ~8.5 min on 2 ranks; NEW 2026-11-08): `bgflow_check.py`, the background flow:
+- `tests/bgflow/` (README, `run_all.sh`, ~8.5 min of runs on 2 ranks, NEW 2026-11-09 side by side, NPAR at a time: 9
+  min with NPAR = 2 on four processors that two other suites shared; NEW 2026-11-08): `bgflow_check.py`, the
+  background flow:
   `bin/bgflow.py 12 [nonlinear]` in the run of conductive_IC 2d84351's inner core turning at 1 (N 48, lmax 31) gives its
   files `cic_bgflow_lin.npz`, `cic_bgflow_nl.npz` again (1e-12 of the largest coefficient, the nonlinear one 1e-10) and
   leaves A as it was; eigenvalues under them against conductive_IC's (1e-9); a toroidal background = diff_rot 'user'
@@ -978,8 +1010,10 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
 - `params_default` says `rpower_pp`, `rhopower_pp` are "not read by the current pipeline", but `utils4pp.setup_grid`
   uses them as the enstrophy weight `const0`.
 - `utils4pp` calls `mp.set_start_method('fork')` at import (needed on macOS).
-- Stale upstream leftovers: `tools/submit4.sh` calls the removed `postprocess.py`; `ci.yml` only deploys the mkdocs
-  site from main/master; the top-level `README.md` is upstream's, except its test badge.
+- Stale upstream leftovers: `tools/submit4.sh` calls the removed `postprocess.py`; the top-level `README.md` is
+  upstream's, except its test badge and (NEW 2026-11-09) its Documentation section, which points to the online manual
+  (repepo.github.io/kore, published by `.github/workflows/docs.yml` from the default branch) in place of the old setup
+  steps.
 - `rvisc`, `hvisc` are not used; they are only echoed to `params.dat`.
 - `Ek`, `Etherm`, `Ecomp`, `Le` and `timescale` are read only by `set_scales`, which `parameters.py` calls before its own
   values: setting them after it changes nothing (ramp `ViscosD`, `ThermaD`, ...; `tools/setpar.py` warns).
@@ -995,6 +1029,12 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   3-letter code in `proffdir` (and in `ut.odd_profiles` if odd), labels in `submatrices.py` with the vector parity of the
   unknown's column (vP for P and s, vT for T, as the neighbouring labels), the term in `operators.py` with the L²/L³
   division, the block in `assemble.py`. Check with `ru_insane.py` and a balance in `spin_doctor`.
+- **New feature, or a new stop**: its row and column in `docs/compatibility.md` (the grid, the forcings table and the
+  conditions under it): edit the cells in `tools/compat_tables.py` (and the codes, notes and requirements in the page
+  itself), run it, and `--check` before a push. A test mark only where a suite checks the combination against theory, an
+  independent computation, conductive_IC or a closing budget (§11), not where it only compares a run with an earlier
+  one. The page's tables are HTML in markdown (`md_in_html`, `<div class="compat" markdown="1">`), styled by
+  `docs/stylesheets/compat.css` (`extra_css`).
 - **New diff-rot type**: its shapes {n: fₙ} in `diff_rot.shapes()`, its name appended to `diff_rot.TYPES` (the index is
   written to `params.dat`), the table in `docs/background.md` (Profiles); run `regress.sh` and `gen_check.py`.
 - **New background type**: a structure is a subclass of `radial_profiles.structure` with `logrho`, `gravity`,
@@ -1006,7 +1046,43 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
 
 ## 14. History (this branch, newest first)
 
-The conductive_IC port, phase 10 (2026-11-08): the solution files as `.npy` by default (`field_format`, `bin/field_io.py`,
+The conductive_IC port, phase 11 (2026-11-09): `docs/compatibility.md` ('Combining features'), which features combine,
+which stop and which a suite checks: a grid of feature pairs and a table of the forcings, with the conditions of each
+forcing under it, written by `tools/compat_tables.py` (`--check`); the audit behind it: an inviscid fluid in a shell
+stops in `background.check` whatever the features (its wall rows left A − λB singular), forcing 7 with m = 0 and an
+inviscid fluid stops (its flow is 0), a forced run (at any frequency, also those of forcing 11's scan) of an entropy or
+a composition without diffusion stops where the fluid does not carry it round (`background.check_transport`, from
+submatrices.py; the rows hold i(w + mΩ)s): w + mΩ = 0 everywhere (A singular), w + mΩ of both signs in the fluid (a
+critical layer) or a background flow with a meridional circulation (the scalar resonates on its closed streamlines);
+any forcing at frequency 0 needs walls that stay in place, bco and bci 0 or 1, as forcing 12 did (13 at bci 2 gave
+resid𝐋 1); the settings of forcings 6, 7, 9, 10, 11, 13 and 14 stop at startup (`check_forcing`; assemble.py wrote no
+right-hand side for some and solve.py then solved an earlier run's `B_forced.npz`, which assemble.py now removes first;
+forcing 11's own conditions, in `reynolds_stress.py`, came only after every operator was built), with new stops for 9
+and 10 at bco 2 where they move the outer wall (the flow went on the stress row) and for 10 with m = 0 (an IndexError);
+and the stops stricter than needed are relaxed: bci in a full sphere for forcings 7 (m 2), 9 and 14, bco with an
+inviscid fluid for forcings 1, 7 (m 2), 8 and 14, a thin layer and the resolved mantle (7 and 9 wrote no right-hand
+side, the others stopped; `utils4pp.walls_move` only with viscosity, so that an inviscid run at bco 2 gives bco 0's
+files bitwise), forcing 9 with the drag where the outer wall stays in place (`moves_radially`), forcing 13 at frequency
+0 between stress-free walls with `kappa_cmb`, the rigid rotation that a differential rotation or a background flow needs
+at a thin layer only where it conducts (c1 ≠ 0; so too INDU_ROT_SOLID in `utils4pp.magnetic_powers_grid`: counted at a
+layer that does not conduct as well, it would leave resid𝐄 4e-4 instead of 3e-8 with 'conical'), centrifugal's stops on
+the flow's rows only
+with hydro = 1, bgflow's density check of a file only where its flow has a poloidal part (a rotation's file, whose P is
+round-off, stopped); the Ferraro check of a uniform ΔΩ is 0 (it was round-off over round-off, up to 1, a false warning
+and a stop with 'refuse'); thermal_wind's message says Beyonce ≠ 0, as it tests; resid𝐋's scale with ViscosD ∫ρ0 r³|T|
+(a steady run on which no torque acts), and no resid𝐋 at a wall of zero radial stress of a viscous fluid
+(`rotdyn.L_case`: the fluid crosses it); resid𝐄 of an inviscid fluid in a deformed body (centrifugal = 1) whatever
+bco (it was nan at bco 0);
+`tests/forcing/stops_check.py`, the new cases of rows_check.py, couette's and drag's runs that stopped before (drag's
+checks NaN-safe), cic_forcings comparing the entropy's file ('thermal'), rsf's spectrum check in a full sphere (sp_fs)
+and with a field and a conducting inner core (sp_mag), the checks of heat_dr's run_all.sh exit with 1 on a FAIL (its
+parity WARNINGs too); faster tests: the
+magnetic, centrifugal, sheet, bgflow and heat_dr suites run their checks or build their runs side by side (NPAR, capped
+by the memory; the magnetic sympy checks in parts, `--part k/K`), `tests/run_suites.sh` runs the suites side by side
+(one BLAS thread per process, Open MPI unbound), the ci test without pytest; the stops and conditions on each docs page
+with their exact scope; `theprofile.data` and `poly.n1_gamma3.h5`, which nothing read, removed; the README's old
+setup steps replaced by links to the online manual;
+`6349f974` the conductive_IC port, phase 10 (2026-11-08): the solution files as `.npy` by default (`field_format`, `bin/field_io.py`,
 every reader: spin_doctor, bgflow.py, just_induction.py, the tests, the tools, koreviz), the JSON parameter file
 (`export_json`, `load_json`, from conductive_IC 08c004a by Ankit Barik), eigenmode tracking (`track_target`), the run
 tools (`ramp.sh`, `setpar.py`, `dodirs.sh`, `subramp.sh`, `reap.sh`, `get_data.py` with every column named,

@@ -179,12 +179,22 @@ because every frequency uses the same realisations: the shape of a spectrum is m
 
 - `ViscosD` > 0: the force is the partner of the viscous force.
 - In a full sphere (`ricb = 0`), `N` must be even, and `rpower_u` ≥ 5, `rpower_v` ≥ 3 (the defaults).
+- `rsf_taper` > 0, and `rsf_taper_in` > 0 in a full sphere: the force must vanish at the walls (below). With
+  `rsf_rcut`, `ricb` ≤ `rsf_rcut` < 1 − `rsf_rcut_width` and `rsf_rcut_width` > 0.
 - `forcing_amplitude_cmb` is not used: the power scales with `rsf_scale` instead.
-- The heat equation is not forced: the right-hand side is zero in its rows, also with `thermal = 1`.
+- The equations of the entropy and of the composition are not forced: the right-hand side is zero in their rows. Without
+  their diffusion (`ThermaD = 0`, `CompoD = 0`) the fluid must carry them round at every frequency of the run,
+  `forcing_frequency` or each of `rsf_frequencies`: kore stops where $w + m\Omega$ is 0 everywhere or changes sign in
+  the fluid, $\Omega$ the angular velocity of the differential rotation and of the background flow, and with a
+  background flow that has a meridional circulation ([ThermaD = 0](background.md#thermad-0)).
+- A steady run (a frequency 0) needs walls that stay in place, `bco` and `bci` 0 or 1.
 - With `magnetic = 1` the perturbation of the field is solved with the flow, and a scan needs the inner core
   `'conducting, Chebys'` rather than `'conducting, Bessel'` ([Magnetic field](magnetic.md#forced-runs)).
+- With the topographic drag (`topo_drag = 'rekier'`) a scan needs `topo_omega` ([Drag at the outer wall](drag.md#drag-of-the-topography-topo_drag-rekier)).
+- Like every forced run it needs a spherical body (`centrifugal = 0`); [Combining features](compatibility.md#forced-runs)
+  shows what else it combines with.
 
-`assemble.py` stops with a message if one of the first two is not met.
+kore stops with a message where a requirement is not met.
 
 ### Where the force acts
 

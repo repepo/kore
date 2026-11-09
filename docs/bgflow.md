@@ -31,15 +31,16 @@ $\sigma_n$, $\gamma_n$ (per unit Ro) come from a file or from expressions. The t
 [Background flow equations](bgflow-equations.md).
 
 It works with any `structure`, in a shell or a full sphere, with or without the diffusion of the entropy and of the
-composition, without viscosity in a full sphere, with a differential rotation, a magnetic field, conducting solids,
-the forcings, and in eigenvalue and forced problems. The background must
+composition (a forced run without it has a condition of its own, below), without viscosity in a full sphere, with a differential rotation, a magnetic field, conducting solids,
+the constant drag at the outer wall and the forcings, in eigenvalue and forced problems, and in the free decay
+(`hydro = 0`), where it carries the entropy, the composition and the field. The background must
 
 - be **symmetric about the equator**, as kore's perturbations are (`symm`): $P_n$, $\sigma_n$, $\gamma_n$ of even
   $n$ and $T_n$ of odd $n$;
 - **not cross the walls**: $P_n = 0$ there;
-- **turn rigidly at a conducting solid** (a conducting inner core, a thin conducting layer, a resolved mantle): $P_n$,
-  $P_n'$ and every $T_n$ but $T_1$ vanish at its wall, and the solid turns with the fluid there, at
-  $\mathrm{Ro}\thinspace\mathrm{Gaspard}\thinspace T_1/r$, so that its field is carried along.
+- **turn rigidly at a conducting solid** (a conducting inner core, a thin layer that conducts, `c1_cmb` or `c1_icb`
+  not 0, a resolved mantle): $P_n$, $P_n'$ and every $T_n$ but $T_1$ vanish at its wall, and the solid turns with the
+  fluid there, at $\mathrm{Ro}\thinspace\mathrm{Gaspard}\thinspace T_1/r$, so that its field is carried along.
 
 With a background field (`magnetic = 1`), `submatrices.py` prints how far the field is from steady under the
 background flow, $\lvert\nabla\times(\mathbf U\times\mathbf B_0)\rvert\thinspace r$ relative to
@@ -76,7 +77,8 @@ prints how far the iteration still moves, and it converges in a few iterations, 
 is on [Background flow equations](bgflow-equations.md#newtons-method).
 
 The file also holds the density of the run (the poloidal flow is that density's), the `ricb`, and which wall turned.
-kore stops when a run reads it with another `ricb`, another density, or (for a nonlinear file) another `bgflow_Ro`.
+kore stops when a run reads it with another `ricb`, with another density where it has a poloidal flow, or, for a
+nonlinear file, with another `bgflow_Ro`.
 With entropy or composition (`thermal`, `compositional` = 1), the file holds the parts of the entropy and of the
 composition that the flow brought about, $\sigma_n$ and $\gamma_n$. `bgflow.py` does not write the flow of a run with a
 background field: the steady state of such a run has a field that the flow induces from $\mathbf B_0$, which the file
@@ -175,7 +177,11 @@ A background flow can make the waves much harder to resolve than the same waves 
   viscosity, the background carries the perturbation along its streamlines with nothing to limit how fine it gets.
   The frequencies of that transport, $m$ times the angular velocities of the flow and the rates of its meridional
   circulation, form a continuous band, and a target in that band gives modes that do not converge. Target outside it,
-  and keep the modes that stay put when N and lmax are raised.
+  and keep the modes that stay put when N and lmax are raised. A forced run has no target to move: without the
+  diffusion of the entropy or of the composition kore stops it if the background has a meridional circulation, on
+  whose closed streamlines the scalar resonates, or if $w + m\Omega$ vanishes somewhere in the fluid, $w$ being the
+  frequency of the run and $\Omega$ the angular velocity of the background and of a differential rotation
+  ([Combining features](compatibility.md#forced-runs)).
 
 As with any run, compare two resolutions; `spin_doctor`'s residuals tell when the budget, and so the mode, is resolved
 ([Numerical method](numerical-method.md#checks)).

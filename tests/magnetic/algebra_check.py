@@ -12,7 +12,8 @@ HOW. A block is Σ coefficient × label (in kore's A sign, without Hendrik and 1
 [λ_k] X^(d) (rpow 5, 3, 2, 2 for u, v, f, g) and kore's row = derive's row × (-r^5/L'³) (u) or × (-r³/L'³) (v, f, g) give
 the candidate -Σ coefficient × r^(-X) (u, v) or r^(-1-X) (f, g) × B_n^(j) λ_k X^(d) in derive's monomials, which
 derive.compare() must find equal (factor 1, mismatch below 1e-10).
-usage: python3 tests/magnetic/algebra_check.py [--quick]
+usage: python3 tests/magnetic/algebra_check.py [--quick] [--part k/K]   (NEW 2026-11-09: --part runs every K-th block, the
+       high degrees counting as one, from the k-th, derive.part; run_all.sh runs the K parts side by side)
 '''
 import sys, os, types, re
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -24,6 +25,7 @@ import mag_algebra as ma
 from derive import r
 
 quick = '--quick' in sys.argv
+mine, PART = d.part(sys.argv)
 S = {}
 def sym(name):
     return S.setdefault(name, sy.Symbol(name))
@@ -65,7 +67,7 @@ for kind in ('pol', 'tor'):
             for X in cols:
                 for dl in range(-n - 1, n + 2):
                     lc = l + dl
-                    if lc < max(m, 1):
+                    if lc < max(m, 1) or not mine():
                         continue
                     der = d.rows(row, X, lc, l, m, b0=(kind, n))
                     cand = candidate(blocks, row, X, l, dl)
@@ -109,7 +111,8 @@ def orthonormal(x, m, lw):
     return Q
 xg, wg = gauss(160)
 worst = 0.
-for n in ((15, 35) if quick else (15, 21, 29, 35)):
+HIGH = mine()   # with --part, the high degrees count as one block
+for n in (((15, 35) if quick else (15, 21, 29, 35)) if HIGH else ()):
     for m in (0, 1, 2):
         lw = 40 + n
         A = angular.Algebra(m, lw)
@@ -129,7 +132,8 @@ for n in ((15, 35) if quick else (15, 21, 29, 35)):
                     bad.append(label); print('%-50s %.1e of the largest entry  <-- FAIL' % (label, err))
                 else:
                     n_ok += 1
-print('high degrees: the background factors P_n, -P_n\' and their derivatives against quadrature: worst %.1e of the largest '
-      'entry (tol 1e-12)' % worst)
-print('algebra_check.py: %d blocks ok, %s' % (n_ok, 'ok' if not bad else 'FAIL: %s' % bad))
+if HIGH:
+    print('high degrees: the background factors P_n, -P_n\' and their derivatives against quadrature: worst %.1e of the '
+          'largest entry (tol 1e-12)' % worst)
+print('algebra_check.py%s: %d blocks ok, %s' % (PART, n_ok, 'ok' if not bad else 'FAIL: %s' % bad))
 sys.exit(1 if bad else 0)

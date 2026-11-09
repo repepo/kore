@@ -267,7 +267,7 @@ STOPS = [
                         "'D': '...'"),
     ('stop_forcing1',   CO + "; par.forcing = 1; par.forcing_frequency = 0.37", 'compositional = 0'),
     ('stop_forcing12',  CO + "; par.CompoD = 0; par.m = 0; par.forcing = 12; par.forcing_frequency = 0.0; "
-                        "par.forcing_amplitude_cmb = 1.0", 'forcing 12 with compositional = 1 needs CompoD > 0'),
+                        "par.forcing_amplitude_cmb = 1.0", 'with compositional = 1 needs CompoD > 0'),
 ]
 for name, extra, msg in STOPS:
     rc, out = run(setup(name, extra, 49 if 'par.m = 0' not in extra else 31), 's')

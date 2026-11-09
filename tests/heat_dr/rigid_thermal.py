@@ -17,3 +17,4 @@ for l0 in sorted(lb, key=lambda z: -z.real):
 back = max(np.min(abs(lb - 1j*m*G*dO - z))/abs(z) for z in ld)   # and every diff-rot eigenvalue has its partner
 print('worst |diff|/|lambda| = %.1e over %d baseline modes; every diff-rot mode matched to %.1e  ->  %s'
       % (worst, len(lb), back, 'ok' if max(worst, back) < 1e-8 else 'FAIL'))
+sys.exit(not max(worst, back) < 1e-8)   # (NEW 2026-11-09: the verdict is the exit code too, so run_all.sh stops at a FAIL)

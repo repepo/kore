@@ -1,8 +1,12 @@
 # Checks of the magnetic field
 
 Companion of `docs/magnetic.md` and `docs/magnetic-equations.md`, for the magnetic terms with a variable density (steps 3 to 5 of the port from conductive_IC,
-2026-10-28: any density, the toroidal B0, the full sphere and the poloidal B0 of degree 2). `run_all.sh [WORKDIR]` builds the runs it needs under `tests/magnetic/runs/` and prints one verdict per check
-(about 60 minutes, two thirds of it derive_check.py, which `SKIP_DERIVE=1 run_all.sh` skips; the solves need petsc4py and slepc4py, see the note on slepc4py 3.26 below).
+2026-10-28: any density, the toroidal B0, the full sphere and the poloidal B0 of degree 2). `run_all.sh [WORKDIR]` builds the runs it needs under `tests/magnetic/runs/` and prints one verdict per check.
+NEW (2026-11-09): the checks are independent jobs, run side by side NPAR at a time, the longest first (two hours of jobs in all:
+31 minutes with NPAR = 4); NPAR defaults to the number of processors, at most one job per 3 GB of available memory, and the
+sympy checks run in parts (derive_check.py in NPAR, algebra_check.py in NPAR/2 and dr_induction_check.py in NPAR/8,
+rounded up). Each job writes `WORKDIR/logs/NAME.log`; the logs are printed in order at the end (a sympy
+check's parts as one line, with the log of any part that failed), then the slowest jobs. `SKIP_DERIVE=1 run_all.sh` skips the three sympy checks. The solves need petsc4py and slepc4py.
 
 | script | what it checks |
 | --- | --- |
@@ -26,6 +30,3 @@ is the guide to all of these, with worked examples.
 
 Results of 2026-10-28 are in `docs/magnetic-equations.md` (Checks). `derive.py` was used to derive, not only to check, the anelastic
 terms: the derivation, the row checks and the budgets are independent of each other.
-
-On chandler, slepc4py 3.26 has no `SLEPc.COMM_WORLD`, which `bin/solve.py` uses: the solves fail there until that is fixed
-(`PETSc.COMM_WORLD` is the same communicator); slepc4py 3.25 (mongo) works.

@@ -56,11 +56,13 @@ solution in that basis loses all its digits (at $w = 2$, $\nu = 10^{-3}$).
 | `f14_m2_wu_conical` | forcing 14, variable density, buoyancy, conical rotation and thermal wind, N 192, lmax about N/4 |
 | `f14_sphere_wu` | forcing 14 in a full sphere with a variable density, N 384 |
 
-For each solution it requires residσ and residω below $10^{-7}$, residD below $10^{-10}$ and a positive dissipation;
+For each solution it requires residσ and residω below $10^{-7}$ ($10^{-6}$ for `f14_m2_wu_conical`), residD below
+$10^{-10}$ and a positive dissipation;
 zero wall work where $u_r = 0$ at the walls; and, in forced runs, a positive power input $W_p + W_\nu^{\rm wall}$ equal to
-$D_\nu - W_b - W_\Omega$. Last, it checks that `assemble.py` stops on every rank, with its message, when forcing 14
-is given a stress-free wall. Expected: residσ $10^{-14}$ to $10^{-10}$, up to $2\times10^{-8}$ for `f14_m2_wu_conical`,
-where it varies between repeated runs (MUMPS on several ranks is not reproducible); residD $10^{-15}$ to $10^{-12}$.
+$D_\nu - W_b - W_\Omega$. Last, it checks that the run stops at startup, with its message, when forcing 14 is given a
+stress-free wall. Expected: residσ $10^{-14}$ to $10^{-10}$; for `f14_m2_wu_conical` anywhere from $3\times10^{-10}$ to
+$1.2\times10^{-7}$ between repeated runs of the same code (MUMPS on several ranks is not reproducible; its $D_{\rm kin}$
+agrees to 11 digits), hence its wider tolerance (2026-11-09); residD $10^{-15}$ to $10^{-12}$.
 
 **Resolution of the wall pressure.** The pressure at a wall needs more radial resolution than the volume terms, with a
 variable density: for `'Wu 2005'` at Ek $10^{-3}$, residσ of a forced run is $5\times10^{-2}$ at N 96 and

@@ -39,6 +39,9 @@ def main(ncpus):
     if os.path.isfile(smio.FILE):   # NEW (2026-11-03): no operators of an earlier run survive a run that stops
         os.remove(smio.FILE)
     bgf.check()   # NEW (2026-11-08): the stops of a background flow (bgflow = 1)
+    if par.diff_rot == 1:
+        dr.check()   # (again below: here for check_transport, which reads the profiles)
+    bg.check_transport()   # NEW (2026-11-09): a forced run of an entropy or a composition without diffusion
     mats = {}   # NEW (2026-11-03): {label: matrix}, written to smio.FILE at the end
 
     inviscid   = ((par.ViscosD == 0) and (par.ricb == 0))        # boolean

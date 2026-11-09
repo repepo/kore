@@ -3,8 +3,11 @@
 Companion of `docs/background.md` (Centrifugal deformation) and `docs/centrifugal-equations.md`, for `centrifugal = 1`
 (`bin/centrifugal.py`, NEW 2026-11-05; with a field, phase 1b; the dissipative terms and the differential rotation of the
 deformed body, phase 2, NEW 2026-11-06; the exact spheroid `'spheroid'`, NEW 2026-11-06). `run_all.sh [WORKDIR]` builds the runs it needs under
-`tests/centrifugal/runs/` and prints one verdict per check and its time (about 17 minutes on 16 cores; the budgets need
-petsc4py and slepc4py, `SKIP_SOLVE=1 run_all.sh` skips them: 13 minutes on 16 cores, 15 on four; with `OLD_KORE` set to a copy of
+`tests/centrifugal/runs/` and prints one verdict per check and its time. Since 2026-11-09 the checks run side by side,
+`NPAR` at a time (default: the number of processors, at most one per 3 GB of memory), the longest first, each with its
+log in `WORKDIR/logs`: 55 minutes of processor time in all, 25 minutes with `NPAR = 4` on four processors (before, one
+after the other, about 17 minutes on 16 cores); the budgets need
+petsc4py and slepc4py, `SKIP_SOLVE=1 run_all.sh` skips them; with `OLD_KORE` set to a copy of
 the commit before the change it also runs `tests/diff_rot/regress.sh`, 2 minutes more, and prints the runs that differ:
 against a checkout older than phase 6c of the `conductive_IC` port, m_gen, m_fer and m_fdr fail, as intended, with the
 push of the poloidal current sheet at their stress-free walls, and m_wnd by $8\cdot10^{-13}$ of the row scale, with the

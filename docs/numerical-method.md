@@ -52,8 +52,8 @@ $T_l$ or $s_l$:
 All rows are projected on $Y_l^m$ and divided by $\mathcal L^3$, with $l$ the degree of the row. The powers of $r$ are
 `rpower_u` (5) and `rpower_v` (3), the smallest that keep every operator a polynomial in $r$. The
 factor $\rho_0$ (`rhopower_u = rhopower_v = 1`) improves the accuracy of the viscous rows near a surface where
-$\rho_0$ is small. Without viscosity (`ViscosD = 0`) the momentum rows are $r^3\rho_0^2$ and $r^2\rho_0$ times the
-equations. With `ThermaD = 0` the heat rows are divided by $p_0$, $r\thinspace(\partial_t s + u_r\thinspace dS/dr)/\mathcal L^3$,
+$\rho_0$ is small. Without viscosity (`ViscosD = 0`), which kore takes in a full sphere only (it stops an inviscid fluid
+in a shell), the momentum rows are $r^3\rho_0^2$ and $r^2\rho_0$ times the equations. With `ThermaD = 0` the heat rows are divided by $p_0$, $r\thinspace(\partial_t s + u_r\thinspace dS/dr)/\mathcal L^3$,
 which is better conditioned where $p_0$ is small (and $r^2/p_0$ times the equation with the thermal wind or a background
 flow); with
 `CompoD = 0` those of the composition are divided by $\rho_0$ in the same way. The Coriolis force couples $l$ to
@@ -118,7 +118,7 @@ one (`bci`, when `ricb > 0`); the full sphere has no condition at the centre:
 | `bco_compositional = 1` | zero diffusive flux of the composition | $c_l' = 0$ |
 
 The density enters the stress-free and no-slip rows through $u_\theta$ and $u_\phi$. The thermal conditions are used
-only when `ThermaD > 0`, those of the composition only when `CompoD > 0`. Without viscosity only $P_l = 0$ is imposed. `bco = 2` (and `bci = 2`) replaces $u_r = 0$ by a
+only when `ThermaD > 0`, those of the composition only when `CompoD > 0`. Without viscosity only $P_l = 0$ is imposed at the outer wall, whatever `bco`. `bco = 2` (and `bci = 2`) replaces $u_r = 0$ by a
 zero viscous radial stress, $\left[r(\ln\rho_0)' - 3\right]P_l + 3rP_l' = 0$, which does not contain the pressure.
 
 ## Regularity at the centre

@@ -2,7 +2,7 @@
 # Builds the test runs of the random Reynolds-stress forcing (forcing = 11, bin/reynolds_stress.py) and runs every check.
 # usage: tests/rsf/run_all.sh [WORKDIR]   (default: tests/rsf/runs; needs numpy, scipy, mpi4py and, for the solves,
 #        petsc4py/slepc4py with MUMPS; MPIEXEC overrides 'mpiexec' and must start ranks of mpi4py's MPI; about half an
-#        hour on one core)
+#        hour on one core, of which 1.5 minutes for sp_fs and sp_mag, NEW 2026-11-09)
 # A failed build stops the script; a failed check is reported and the others still run. Exit code 1 if any check failed.
 set -e -o pipefail
 T=$(cd "$(dirname "$0")" && pwd)
@@ -35,6 +35,11 @@ python3 "$H/mk_run.py" sun_cut "$SUN; par.rsf_theta='mlt'; par.rsf_lum=7e-7; par
 # the spectrum run: small enough for a dense eigensolve (sizmat 1152), lmax - m + 1 = 24 for 2 MPI ranks in assemble.py;
 # no-slip, so that the energy pairing of spectrum_check.py has no boundary terms
 python3 "$H/mk_run.py" sp    "par.N=48; par.lmax=24; par.bci=1; par.bco=1; $RSF; par.rsf_lc=0.1; par.rsf_taper=0.2; par.rsf_nsamp=40"
+# NEW (2026-11-09): the same in a full sphere, and with a field and a conducting inner core (sizmat 1152): their solves
+# against the same exact spectrum, below
+MAG="par.magnetic=1; par.B0='axial'; par.Hendrik=1e-3; par.MagnetD=1e-3; par.innercore='conducting, Chebys'; par.N_cic=16"
+python3 "$H/mk_run.py" sp_fs  "par.N=48; par.lmax=24; par.ricb=0; par.bci=1; par.bco=1; $RSF; par.rsf_lc=0.1; par.rsf_taper=0.2; par.rsf_nsamp=40"
+python3 "$H/mk_run.py" sp_mag "par.N=32; par.lmax=16; par.bci=1; par.bco=1; $RSF; par.rsf_lc=0.1; par.rsf_taper=0.2; par.rsf_nsamp=40; $MAG"
 
 echo "--- builder_check: f = u against kore's inertia rows (1e-9 at N 48 is profile truncation)"
 for d in sh48 sh128 fs160 fs192 shpow fspow sun sun_cut; do
@@ -83,5 +88,21 @@ d = np.abs(a - b).max()/np.abs(b[:, 1:]).max()
 print('  scan with 1 and 2 ranks, KE of every realisation: max rel. diff %.1e   %s' % (d, 'ok' if d < 1e-10 else 'FAIL'))
 sys.exit(0 if d < 1e-10 else 1)
 EOF"
+
+echo "--- spectrum_check in a full sphere (sp_fs, the same steps)"
+cd "$W/sp_fs"
+python3 "$T/spectrum_check.py" pick
+$MPI -n 1 python3 bin/solve.py > log_solve 2>&1
+chk "python3 '$T/spectrum_check.py' fields | tail -1"
+echo "par.rsf_frequencies = np.load('rsf_freqs.npy')" >> bin/parameters.py
+rm -f rsf_spectrum.dat rsf_ke.dat
+$MPI -n 1 python3 bin/solve.py > log_scan 2>&1
+chk "python3 '$T/spectrum_check.py' check"
+echo "--- spectrum_check with a field (B0 'axial') and a conducting inner core (sp_mag), at three frequencies given here:
+    its spectrum has no isolated damped mode for 'pick', and 'fields' reads the flow alone"
+cd "$W/sp_mag"
+echo "par.rsf_frequencies = np.array([0.3, 0.4, 0.5])" >> bin/parameters.py
+$MPI -n 1 python3 bin/solve.py > log_scan 2>&1
+chk "python3 '$T/spectrum_check.py' check"
 echo "--- $([ $fail = 0 ] && echo 'all checks passed' || echo 'SOME CHECKS FAILED')"
 exit $fail

@@ -18,6 +18,7 @@ from mpi4py import MPI
 import numpy as np
 import warnings
 import sys
+import os
 
 import bc_variables as bv
 from parameters import par
@@ -71,6 +72,11 @@ def main():
     rank  = comm.Get_rank()
 
     ll_flo = ut.ell( par.m, par.lmax, par.symm)[:2]  # the ell indices for the flow u
+
+    # NEW (2026-11-09, phase 11): a forced run writes its right-hand side B_forced.npz below (forcings 1 and 8 after A). One
+    # left in the folder by an earlier run goes first, so that solve.py never solves it in place of this run's
+    if rank == 0 and par.forcing != 0 and os.path.exists('B_forced.npz'):
+        os.remove('B_forced.npz')
 
     # NEW (2026-11-06, as conductive_IC): a thin wall (or the resolved mantle) next to a slipping fluid gets the u×B0 terms of
     # condition C.I (bc_b_slip); NEW (2026-11-07) a conducting inner core too (ut.cic_slips), and the frequency of a forced
@@ -189,9 +195,10 @@ def main():
                 B = ss.csr_matrix( ( bdat, (row, np.zeros(1)) ), shape=(ut.sizmat,1) )
                 np.savez('B_forced.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
 
-            else:
+            else:   # (background.check_forcing stops these settings at startup)
 
-                print('Buffet2010 forcing requires m = 1, symm = -1, ricb > 0, bci = 0 or 1')
+                print('Buffet2010 forcing requires m = 1, symm = -1, ricb > 0, bci = 0 or 1', flush=True)
+                comm.Abort(1)   # FIX (2026-11-09): it wrote no right-hand side and went on
 
 
     elif par.forcing == 7: # ------------------------------------------------------------ longitudinal libration forcing
@@ -230,7 +237,9 @@ def main():
                 B = ss.csr_matrix( ( bdat, (row,col) ), shape=(ut.sizmat,1) )
                 np.savez('B_forced.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
 
-            elif par.m == 2 and par.symm == 1 and par.bci == 1 and par.bco == 1:
+            # NEW (2026-11-09): any bci in a full sphere, and any walls with an inviscid fluid (its one wall row, P = 0, takes
+            # the radial flow), as background.check_forcing
+            elif par.m == 2 and par.symm == 1 and (par.ViscosD == 0 or (par.bco == 1 and (par.ricb == 0 or par.bci == 1))):
 
                 print('--------------------------------------------')
                 print('Longitudinal libration - radial forcing (m = {:n})'.format(np.sign(par.forcing_frequency)*par.m))
@@ -253,10 +262,11 @@ def main():
                 B = ss.csr_matrix((bdat, (row, np.zeros(len(row)))), shape=(ut.sizmat, 1))
                 np.savez('B_forced.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
 
-            else:
+            else:   # (background.check_forcing stops these settings at startup)
 
                 print(' ** Longitudinal libration requires m = 0, symm = 1, a no-slip outer wall (bco = 1) and bci = 0 or 1 (any '
-                      'bci in a full sphere), or m = 2, symm = 1 and no-slip walls (bci = bco = 1) **')
+                      'bci in a full sphere), or m = 2, symm = 1 and no-slip walls (bci = bco = 1) **', flush=True)
+                comm.Abort(1)   # FIX (2026-11-09): it wrote no right-hand side and went on
 
 
     elif par.forcing == 8: # ---------------------------------------- longitudinal libration in the frame of the mantle (m = 0)
@@ -292,7 +302,10 @@ def main():
             print(' m=2 radial velocity forcing                ')
             print('--------------------------------------------')
 
-            if (par.symm == 1 and par.m==2) and (par.bci==1):
+            # NEW (2026-11-09): bci matters only at an inner wall of a viscous fluid (as background.check_forcing)
+            if par.symm == 1 and par.m == 2 and (par.ricb == 0 or par.ViscosD == 0 or par.bci == 1) \
+                    and (par.ViscosD == 0 or par.bco in (0, 1) or par.forcing_amplitude_cmb == 0):   # FIX (2026-11-09): with
+                # bco = 2 row pos is not P, the stress row, which takes the 0 of a wall that the forcing leaves free
 
                 l = 2   #
                 L = l*(l+1)
@@ -314,9 +327,10 @@ def main():
                 B = ss.csr_matrix( ( bdat, (row, np.zeros(len(row))) ), shape=(ut.sizmat,1) )
                 np.savez('B_forced.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
 
-            else:
+            else:   # (background.check_forcing stops these settings at startup)
 
-                print('This boundary flow forcing needs symm = 1 and m = 2 and bci = 1')
+                print('This boundary flow forcing needs symm = 1, m = 2, bci = 1 and bco = 0 or 1', flush=True)
+                comm.Abort(1)   # FIX (2026-11-09): it wrote no right-hand side and went on
 
     elif par.forcing == 10: # --------------------------------------------------------------- m=2 radial velocity forcing
 
@@ -327,7 +341,8 @@ def main():
             print(' m=%d radial forcing                        ' %par.m)
             print('--------------------------------------------')
 
-            if ( par.symm == 1 ):
+            # FIX (2026-11-09): m = 0 has no degree l = m among those of P (an IndexError), and with bco = 2 row pos is not P
+            if par.symm == 1 and par.m >= 1 and (par.ViscosD == 0 or par.bco in (0, 1)):
 
                 l = par.m   #
                 L = l*(l+1)
@@ -348,9 +363,10 @@ def main():
                 B = ss.csr_matrix( ( bdat, (row,col) ), shape=(ut.sizmat,1) )
                 np.savez('B_forced.npz', data=B.data, indices=B.indices, indptr=B.indptr, shape=B.shape)
 
-            else:
+            else:   # (background.check_forcing stops these settings at startup)
 
-                print('This boundary flow forcing needs symm = 1')
+                print('This boundary flow forcing needs symm = 1, m >= 1 and bco = 0 or 1', flush=True)
+                comm.Abort(1)   # FIX (2026-11-09): it wrote no right-hand side and went on
 
     elif par.forcing == 11: # -------------------------------------------- random Reynolds-stress body force (convection)
 
@@ -401,8 +417,14 @@ def main():
             if par.m != 0 or par.symm != 1 or par.ricb == 0 or par.thermal == 0 or par.ThermaD == 0 or par.forcing_amplitude_icb == 0:
                 print('forcing 13 needs m = 0, symm = 1, ricb > 0, thermal = 1, ThermaD > 0 and forcing_amplitude_icb != 0', flush=True)
                 comm.Abort(1)
-            if par.forcing_frequency == 0 and par.bci == 0 and par.bco == 0:  # a rigid rotation would solve A x = 0
-                print('forcing 13 with forcing_frequency = 0 needs a no-slip wall (bci = 1 or bco = 1)', flush=True)
+            # a rigid rotation would solve A x = 0 (FIX 2026-11-09: also between walls of zero radial stress, bc 2; NEW: the
+            # constant drag kappa_cmb acts on it), as background.check_forcing
+            if par.forcing_frequency == 0 and par.bci != 1 and par.bco != 1 and not par.kappa_cmb > 0:
+                print('forcing 13 with forcing_frequency = 0 needs a no-slip wall (bci = 1 or bco = 1) or the drag kappa_cmb',
+                      flush=True)
+                comm.Abort(1)
+            if par.forcing_frequency == 0 and (par.bci == 2 or par.bco == 2):   # NEW (2026-11-09), as check_forcing
+                print('forcing 13 at frequency 0 needs walls that stay in place, bci and bco 0 or 1', flush=True)
                 comm.Abort(1)
 
             row = ut.offset['h'] + int(ut.N1*(2 - ut.m_top)/2) + 1  # entropy block, l = 2, inner-wall row (bc_theta_spherical)
@@ -421,8 +443,10 @@ def main():
             if (par.m, par.symm) not in tides:
                 print('forcing 14 needs (m, symm) = (0, 1), (1, -1) or (2, 1)', flush=True)
                 comm.Abort(1)
-            if par.bco != 1 or par.bci != 1:
-                print('forcing 14 needs bco = bci = 1 (also in a full sphere)', flush=True)
+            # NEW (2026-11-09): bci means nothing in a full sphere, nor bco and bci with an inviscid fluid (its one wall row,
+            # P = 0, takes the radial flow), as background.check_forcing
+            if not (par.ViscosD == 0 or (par.bco == 1 and (par.ricb == 0 or par.bci == 1))):
+                print('forcing 14 needs no-slip walls (bco = 1, and bci = 1 with an inner core)', flush=True)
                 comm.Abort(1)
             print('-'*(len(tides[(par.m, par.symm)]) + 2))
             print(' ' + tides[(par.m, par.symm)])

@@ -29,3 +29,24 @@ inner one, $(rP)'/r = iwA\thinspace(P_{\rm fit} + dP_{\rm fit})$ at both, with t
 every value to $10^{-10}$ of the amplitude (in practice $10^{-12}$ or better). Before 2026-11-06 forcings 6, 7 (m = 2)
 and 9 put the inner wall's value on a row of the outer wall, which this check shows as errors of order 1, and before
 2026-11-08 forcing 2 (in `conductive_IC`) left out the frequency $w$, and the factor $r_i$ at the inner wall.
+Since 2026-11-09 the cases also include the settings that did not run before and run now: forcing 14 in a full sphere
+with `bci = 0` and with an inviscid fluid at `bco = 0`, and forcing 9 with the drag `kappa_cmb` at an outer wall that
+stays in place (`forcing_amplitude_cmb = 0`), which stopped; forcing 9 in a full sphere with `bci = 0` and forcing 7
+(m = 2) with an inviscid fluid at `bco = 0`, whose one wall row is the radial flow, for which `assemble.py` wrote no
+right-hand side; and two settings that ran before without a check: forcing 9 at a stress-free outer wall, and forcing
+10 with an inviscid fluid at `bco = 0`.
+
+**`stops_check.py`.** The settings of the forced runs that kore stops at startup (`background.check_forcing`, and
+`background.check_transport` in `submatrices.py`), each with its message, and the nearby settings that run, each from
+`submatrices.py` alone (1 rank, N 24): an inviscid fluid in a shell; the settings of forcings 6, 7, 9, 10, 11, 13 and
+14, which `assemble.py` used to test only as it wrote the right-hand side, after every operator was built (6, 7, 9 and
+10 then wrote none, and `solve.py` solved whatever `B_forced.npz` an earlier run had left); forcing 7 with m = 0 and an
+inviscid fluid, whose flow is 0; a forced run of an entropy or a composition without diffusion where the fluid does not
+carry it round: $w + m\Omega = 0$ everywhere (also at a frequency of the scan of forcing 11), $w + m\Omega$ of both
+signs in the fluid (a critical layer), or a background flow with a meridional circulation; any forcing at frequency 0
+with a wall of zero radial stress (`bco` or `bci` = 2); forcing 9 with the drag where it moves the outer wall. Among
+the cases that run: a forced run without diffusion where the fluid carries the scalar round at a rate of one sign.
+Also three settings outside the forcings that the same review relaxed: a thin layer and the resolved mantle around an
+inviscid fluid with `bco = 2` (its one wall row keeps the fluid from crossing the wall whatever `bco`), and a uniform
+differential rotation with a field under `ferraro_policy = 'refuse'`. Expected: every stop with its message, every
+other case runs.

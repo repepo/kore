@@ -50,3 +50,4 @@ for i, lam in enumerate(lams):
         worst = max([worst] + [v if np.isfinite(v) else np.inf for v in ([dR, dH] if par.thermal else [dR])])
 if par.diff_rot:
     print('worst dWdr, dWdr_thm %.1e  ->  %s' % (worst, 'ok' if worst < 1e-5 else 'FAIL'))
+sys.exit(not worst < 1e-5)   # (NEW 2026-11-09: the verdict is the exit code too, so run_all.sh stops at a FAIL)

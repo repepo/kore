@@ -45,7 +45,8 @@ one form at both walls. Exit code 1 if a check fails.
    outer layer's condition (background_field.B0_alpha_cmb, a third copy), have no sheet there (c 0.05, muw 3, mu 1.5),
    while 'G21 dipole' with B0_cmb = 'plain' has one.
 '''
-import os, sys, shutil, subprocess
+import os, sys, shutil, subprocess, signal, threading
+from concurrent.futures import ThreadPoolExecutor, wait
 import numpy as np
 
 T = os.path.dirname(os.path.abspath(__file__))
@@ -60,9 +61,112 @@ PUSH_LINE = '    sheet_on = bool(par.magnetic'   # assemble.main: whether the st
 NCPUS = min(mk_run.NCPUS, 2)
 
 
+# NEW (2026-11-09): the runs are built side by side, NPAR at a time (environment variable; by default the processors over
+# NCPUS, and at most one run per 2 GB of available memory), each by a thread that waits on its steps; start() queues a run,
+# build() waits for it. The checks read the runs in their own order, so the output is that of a serial run.
+def npar():
+    if os.environ.get('NPAR'):
+        return max(1, int(os.environ['NPAR']))
+    n = len(os.sched_getaffinity(0)) if hasattr(os, 'sched_getaffinity') else (os.cpu_count() or 1)
+    n //= NCPUS
+    try:
+        mem = [int(x.split()[1]) for x in open('/proc/meminfo') if x.startswith('MemAvailable:')][0] // (2*1024**2)
+        n = min(n, mem)
+    except (OSError, IndexError, ValueError):
+        pass
+    return max(1, n)
+
+POOL = ThreadPoolExecutor(npar())
+RUNS = {}   # name: (settings, future)
+
+# NEW (2026-11-09): an interrupt (INT, or TERM) passes a Ctrl-C to the steps that run, no step starts after it, and the
+# check ends, with 128 + the signal: the pool's threads would otherwise go on with their runs, and then with the runs
+# not yet started, before the process ends. Every process of the check is a step (step()): it starts, and joins LIVE,
+# only under LOCK and while STOP is empty, and the handler, under LOCK, fills STOP and interrupts the steps of LIVE, so
+# that none escapes it. The handler raises nothing, and takes no lock but LOCK (reentrant: the main thread, which runs
+# it, may hold it), with os.kill, not Popen.send_signal, which takes a lock of the process: an exception raised at any
+# point of the main thread can leave a lock of the pool, of a future or of a process taken, on which a thread then waits
+# forever. Each thread ends at its next look at STOP instead (halt_if_stopped()): the main thread waits in steps of
+# 0.2 s (step(), result()), and a thread of the pool ends its run at its next step.
+STOP, LIVE, LOCK = [], set(), threading.RLock()   # STOP: the signals received
+
+def _interrupted(signum, frame):
+    with LOCK:
+        STOP.append(signum)
+        for p in LIVE:
+            _ctrl_c(p)
+
+signal.signal(signal.SIGINT, _interrupted)
+signal.signal(signal.SIGTERM, _interrupted)
+
+def _ctrl_c(p):
+    if p.returncode is None:   # (not yet waited for)
+        try:
+            os.kill(p.pid, signal.SIGINT)
+        except ProcessLookupError:
+            pass
+
+def halt_if_stopped(d):
+    '''after an interrupt, ends the thread: the main thread (the check) with 128 + the signal, another (its run in d)
+    as a run that failed'''
+    if STOP:
+        if threading.current_thread() is threading.main_thread():
+            print('%s: interrupted' % os.path.basename(sys.argv[0]), file=sys.stderr, flush=True)
+            raise SystemExit(128 + STOP[0])
+        sys.exit('%s: interrupted' % d)
+
+def step(cmd, d, **kw):
+    '''subprocess.run(cmd, cwd=d, **kw) for every process of the check: none starts after an interrupt, which ends the
+    one that runs'''
+    with LOCK:
+        halt_if_stopped(d)
+        p = subprocess.Popen(cmd, cwd=d, **kw)
+        LIVE.add(p)
+    hit = False
+    try:
+        while True:
+            try:
+                out, err = p.communicate(timeout=0.2)   # (a timeout loses no output)
+                break
+            except subprocess.TimeoutExpired:
+                if STOP and not hit:   # (started by the main thread while it ran the handler: not yet in LIVE then)
+                    _ctrl_c(p)
+                    hit = True
+    finally:
+        with LOCK:
+            LIVE.discard(p)
+    halt_if_stopped(d)
+    return subprocess.CompletedProcess(cmd, p.returncode, out, err)
+
+def result(f):
+    '''f.result() of a future of the pool, waited for in steps of 0.2 s'''
+    while not wait((f,), timeout=0.2).done:
+        halt_if_stopped('')
+    halt_if_stopped('')
+    return f.result()
+
+def start(name, extra, lmax, nopush=False):
+    '''queues the run W/name (once; the same name must come with the same settings)'''
+    key = (extra, lmax, nopush)
+    if name not in RUNS:
+        RUNS[name] = (key, POOL.submit(_build, name, extra, lmax, nopush))
+    assert RUNS[name][0] == key, 'two runs named %s' % name
+    return RUNS[name][1]
+
 def build(name, extra, lmax, nopush=False):
+    '''the folder of the run W/name, once built; a run that fails stops the check (and the runs not yet started)'''
+    try:
+        return result(start(name, extra, lmax, nopush))
+    except BaseException:
+        for key, f in RUNS.values():
+            f.cancel()
+        raise
+
+
+def _build(name, extra, lmax, nopush=False):
     '''a run in W/name (mk_run's defaults, then extra) with that lmax on NCPUS ranks; nopush: without the push'''
     d = os.path.join(W, name)
+    halt_if_stopped(d)
     if os.path.isdir(d):
         shutil.rmtree(d)
     os.makedirs(d + '/bin')
@@ -74,13 +178,17 @@ def build(name, extra, lmax, nopush=False):
         assert a.count(PUSH_LINE) == 1, 'assemble.py has no line %r' % PUSH_LINE
         open(d + '/bin/assemble.py', 'w').write(a.replace(PUSH_LINE, PUSH_LINE.replace('bool(', 'False and bool(')))
     T0 = mk_run.T.replace(LMAX_LINE, 'par.lmax = %d' % lmax)
+    # NEW (2026-11-09): more MUMPS workspace (%), as in tests/magnetic: with many runs side by side, lz_wu_nopush's
+    # factorization ran short of it once (INFOG(1) = -9, on chandler with some 70 jobs at once), never alone
+    T0 = T0.replace('{extra}', "par.petsc_opts['st_mat_mumps_icntl_14'] = 50\n{extra}")
     open(d + '/bin/parameters.py', 'w').write(T0.format(ncpus=NCPUS, extra=extra.replace('; ', '\n')))
     py, n = sys.executable, str(NCPUS)
     for cmd, log in (([py, 'bin/submatrices.py', n], 'log_sub'),
                      (mk_run.MPIEXEC.split() + ['-n', n, py, 'bin/assemble.py'], 'log_asm'),
                      (mk_run.MPIEXEC.split() + ['-n', n, py, 'bin/solve.py'], 'log_solve'),
                      ([py, 'bin/spin_doctor.py', n], 'out2')):
-        p = subprocess.run(cmd, cwd=d, stdout=open(d + '/' + log, 'w'), stderr=subprocess.STDOUT)
+        with open(d + '/' + log, 'w') as out:
+            p = step(cmd, d, stdout=out, stderr=subprocess.STDOUT)
         if p.returncode:
             sys.exit('%s: %s failed\n%s' % (d, cmd[-2] if cmd[-1] == n else cmd[-1], open(d + '/' + log).read()[-3000:]))
     for f in os.listdir(d):
@@ -169,9 +277,26 @@ cases = [   # name, settings, the B0 of a smoothing width (None: sharp), whether
      True),
 ]
 assert 'par.m = 2; par.symm = -1' in cases[-1][1]
+lmax_of = lambda base: 23 + int(base.split('par.m = ')[1].split(';')[0])   # lmax - m + 1 = 24, a multiple of 2 NCPUS
+M0 = ("par.magnetic = 1; par.Ek = 1e-2; par.ViscosD = 1e-2; par.Hendrik = 1e-1; par.MagnetD = 1e-2; par.nev = 4; "
+      "par.itau = 0.5; par.N = 64; par.B0 = 'axial'; par.cnorm = 1; par.B0_tor = 'user'; par.B0_tor_l = 2; par.cnorm_tor = 1; "
+      "par.m = 0; par.symm = 1; par.bco = 0; par.bci = 0")   # (the runs of 2.)
+LZ = (('lz_shell', "par.B0_tor_profile = 'r'; par.cnorm_tor = 'mag_energy'"),
+      ('lz_sphere', "par.ricb = 0; par.B0_tor_profile = 'r**2'"),
+      ('lz_wu', "par.N = 96; " + WU + "; par.B0_tor_profile = 'r'"))
+for name, base, b0, check_E in cases:   # every run of 1. and 2., queued now
+    L = lmax_of(base)
+    start(name, base + '; ' + b0(None), L)
+    start(name + '_nopush', base + '; ' + b0(None), L, nopush=True)
+    for dl in (2e-3, 1e-3, 5e-4):
+        start('%s_d%g' % (name, dl), base + '; ' + b0(dl), L)
+for name, extra in LZ:
+    for nopush in (False, True):
+        start(name + ('_nopush' if nopush else ''), M0 + '; ' + extra, 23, nopush=nopush)
+
 refs = {}
 for name, base, b0, check_E in cases:
-    L = 23 + int(base.split('par.m = ')[1].split(';')[0])   # lmax: lmax - m + 1 = 24, a multiple of 2 NCPUS
+    L = lmax_of(base)
     d0 = build(name, base + '; ' + b0(None), L)
     ref = refs[name] = eig(d0)[:4]
     budgets.append((name, d0, check_E))
@@ -185,13 +310,8 @@ for name, base, b0, check_E in cases:
            % (e1, e2, e3, e3/e2, eR, e0, '' if np.isinf(ed) else ', %.1e without the drag' % ed))
 
 
-# 2. axial angular momentum (m 0, insulating stress-free walls)
-M0 = ("par.magnetic = 1; par.Ek = 1e-2; par.ViscosD = 1e-2; par.Hendrik = 1e-1; par.MagnetD = 1e-2; par.nev = 4; "
-      "par.itau = 0.5; par.N = 64; par.B0 = 'axial'; par.cnorm = 1; par.B0_tor = 'user'; par.B0_tor_l = 2; par.cnorm_tor = 1; "
-      "par.m = 0; par.symm = 1; par.bco = 0; par.bci = 0")
-for name, extra in (('lz_shell', "par.B0_tor_profile = 'r'; par.cnorm_tor = 'mag_energy'"),
-                    ('lz_sphere', "par.ricb = 0; par.B0_tor_profile = 'r**2'"),
-                    ('lz_wu', "par.N = 96; " + WU + "; par.B0_tor_profile = 'r'")):
+# 2. axial angular momentum (m 0, insulating stress-free walls; M0 and LZ above)
+for name, extra in LZ:
     out = []
     for nopush in (False, True):
         d = build(name + ('_nopush' if nopush else ''), M0 + '; ' + extra, 23, nopush=nopush)
@@ -217,6 +337,7 @@ def stops(name, extra, words):
     '''whether submatrices.py stops with a message that contains words (a string, or a tuple of strings that must all be
     there); words None: whether it goes on'''
     d = os.path.join(W, name)
+    halt_if_stopped(d)
     if os.path.isdir(d):
         shutil.rmtree(d)
     os.makedirs(d + '/bin')
@@ -224,7 +345,7 @@ def stops(name, extra, words):
         if os.path.isfile(mk_run.BIN + '/' + f) and f != 'parameters.py':
             shutil.copy(mk_run.BIN + '/' + f, d + '/bin/' + f)
     open(d + '/bin/parameters.py', 'w').write(mk_run.T.format(ncpus=1, extra=extra.replace('; ', '\n')))
-    p = subprocess.run([sys.executable, 'bin/submatrices.py', '1'], cwd=d, capture_output=True, text=True)
+    p = step([sys.executable, 'bin/submatrices.py', '1'], d, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     if words is None:
         return p.returncode == 0
     return p.returncode != 0 and all(w in p.stdout + p.stderr for w in ((words,) if isinstance(words, str) else words))
@@ -269,8 +390,9 @@ stop_cases = [
     ('runs_dipole_layer', SMALL + "; par.B0 = 'dipole'; " + LAYER_I + "; par.bci = 0", None),
     ('runs_pol_bco2', SMALL + "; par.B0 = 'general'; par.B0_profiles = {1: 'r**2'}; par.bco = 2", None),
 ]
-for name, extra, words in stop_cases:
-    report(name, stops(name, extra, words), 'stops with its message' if words else 'goes on')
+stopped = [POOL.submit(stops, name, extra, words) for name, extra, words in stop_cases]   # (side by side too)
+for (name, extra, words), f in zip(stop_cases, stopped):
+    report(name, result(f), 'stops with its message' if words else 'goes on')
 
 
 # 5. the wall conditions: background._pol_wall_row against the f rows of assemble.bc_b_spherical, and B0_cmb = 'wall'
@@ -308,7 +430,7 @@ print('JUMP', bg.sheet_jump('outer')[1])
 def probe(d, code, key):
     '''what the python code run in the run directory d prints after key, on the one line of its stdout that starts with
     key (None if the code fails or prints no such line), and the tail of its output'''
-    p = subprocess.run([sys.executable, '-c', code], cwd=d, capture_output=True, text=True)
+    p = step([sys.executable, '-c', code], d, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     hit = [s[len(key):].strip() for s in p.stdout.splitlines() if s.startswith(key)]
     return (hit[0] if p.returncode == 0 and len(hit) == 1 else None), (p.stdout + p.stderr)[-500:]
 
@@ -335,4 +457,5 @@ for name, extra, has in (('cmb_wall_fdm', "par.B0 = 'FDM'", False), ('cmb_wall_g
     report(name, jump is not None and (jump != '{}') == has, 'the outer sheet %s' % (jump if jump is not None else out))
 
 print('sheet_check: ' + ('all cases ok' if not fail else 'FAILED'))
+halt_if_stopped('')   # (an interrupt, while the main thread did not look)
 sys.exit(fail)

@@ -17,11 +17,13 @@ of small differences of rotation, whose flow is too weak to carry itself along.
 
 The flow is steady, axisymmetric and equatorially symmetric, so the run needs `forcing_frequency = 0` (walls that turn
 back and forth are the libration, forcing 7), `m = 0` and `symm = 1`, and a viscous fluid (`ViscosD > 0`). In a full
-sphere (`ricb = 0`) only the outer wall can turn, and the fluid turns rigidly with it. With buoyancy (`thermal = 1`) the
-run needs `ThermaD > 0`: without thermal diffusion nothing sets the steady entropy. Any `structure`, a differential
-rotation and a field work as in the other runs. With `magnetic = 1` a conducting inner core or mantle turns with its
-wall, and the field that the flow induces in the fluid and in the solids is solved with it
-([Magnetic field](magnetic.md#forced-runs)).
+sphere (`ricb = 0`) only the outer wall can turn, and the fluid turns rigidly with it. With buoyancy the run needs its
+diffusion, `ThermaD > 0` with `thermal = 1` and `CompoD > 0` with `compositional = 1`: without it nothing sets the
+steady entropy or composition. Any `structure`, a differential rotation, a background flow and a field work as in the
+other runs. With `magnetic = 1` a conducting inner core or mantle turns with its wall, and the field that the flow
+induces in the fluid and in the solids is solved with it ([Magnetic field](magnetic.md#forced-runs)). Like every forced
+run it needs a spherical body (`centrifugal = 0`); [Combining features](compatibility.md#forced-runs) shows what else it
+combines with.
 
 ## Example: an inner core that turns
 

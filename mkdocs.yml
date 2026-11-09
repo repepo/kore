@@ -15,6 +15,7 @@ nav:
       - Magnetic field: magnetic.md
       - Rotating solids: rotating-solids.md
       - Drag at the outer wall: drag.md
+      - Combining features: compatibility.md
       - Solver: solver.md
       - Output files: output.md
   - Benchmarks: benchmarks.md
@@ -58,6 +59,7 @@ theme:
         name: Switch to light mode
 
 markdown_extensions:
+  - md_in_html
   - pymdownx.arithmatex:
       generic: true
   - pymdownx.highlight:
@@ -69,6 +71,9 @@ markdown_extensions:
   - pymdownx.superfences
 
 
+
+extra_css:
+  - stylesheets/compat.css
 
 extra_javascript:
   - javascripts/mathjax.js

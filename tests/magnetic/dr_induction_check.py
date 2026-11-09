@@ -12,7 +12,8 @@ HOW. kore's block is Gaspard Σ coefficient × label / L'³, a label being r^(2-
 times F^(d) or G^(d); derive.py's row times -r³/L'³ must equal it. With Gaspard = 1 the candidate in derive's monomials is
     -Σ coefficient × r^(-1-X) × (w or r w') × X^(d)        (w = f_n)
 and derive.compare() must find the factor 1 and a mismatch below 1e-10.
-usage: python3 tests/magnetic/dr_induction_check.py [--quick]
+usage: python3 tests/magnetic/dr_induction_check.py [--quick] [--part k/K]   (NEW 2026-11-09: --part runs every K-th block
+       from the k-th, derive.part; run_all.sh runs the K parts side by side)
 '''
 import sys, os, types
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -25,6 +26,7 @@ import diff_rot as dr
 from derive import r
 
 quick = '--quick' in sys.argv
+mine, PART = d.part(sys.argv)
 w0, w1 = sy.symbols('w0 w1')
 X = {k: sy.Symbol(k) for k in ('F0', 'F1', 'F2', 'G0', 'G1')}
 
@@ -63,7 +65,7 @@ for n, m, l in cases:
     for row, col, part in (('f', 'bpol', 'F'), ('f', 'btor', 'G'), ('g', 'bpol', 'F'), ('g', 'btor', 'G')):
         for dl in range(-n - 1, n + 2):
             lc = l + dl
-            if lc < max(m, 1):
+            if lc < max(m, 1) or not mine():
                 continue
             der = d.rows_dr(row, part, lc, l, m, n)
             cand = candidate(row, col, n, l, m, dl)
@@ -81,5 +83,5 @@ for n, m, l in cases:
                 bad.append(label)
             else:
                 n_ok += 1
-print('dr_induction_check.py: %d blocks ok, %s' % (n_ok, 'ok' if not bad else 'FAIL: %s' % bad))
+print('dr_induction_check.py%s: %d blocks ok, %s' % (PART, n_ok, 'ok' if not bad else 'FAIL: %s' % bad))
 sys.exit(1 if bad else 0)

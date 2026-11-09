@@ -13,14 +13,18 @@ the acceleration of the frame instead.
 The frame turns at the mean rate, and the walls turn back and forth in it. With `m = 0` the mantle turns by the angle
 $A\cos wt$ about the $z$ axis and the inner core by $A_{IC}\cos wt$, with $A$ = `forcing_amplitude_cmb`, $A_{IC}$ =
 `forcing_amplitude_icb` (in radians) and $w$ = `forcing_frequency`. A no-slip wall carries the fluid with it,
-$u_\phi = -wA\thinspace r\sin\theta\sin wt$ at the outer wall. The outer wall must be no-slip (`bco = 1`). The inner
-wall may be no-slip or stress-free (`bci` = 1 or 0); a stress-free inner wall does not pass the libration of the inner
-core to the fluid, so $A_{IC}$ then has no effect. In a full sphere (`ricb = 0`) only the mantle librates.
+$u_\phi = -wA\thinspace r\sin\theta\sin wt$ at the outer wall. The outer wall must be no-slip (`bco = 1`), and the
+fluid viscous: walls that slide along themselves do not move an inviscid fluid, and kore stops. The inner wall may be
+no-slip or stress-free (`bci` = 1 or 0); a stress-free inner wall does not pass the libration of the inner core to the
+fluid, so $A_{IC}$ then has no effect. With a field it would pass it through the field where the inner core, or a thin
+layer on it, conducts: kore stops on that case, $A_{IC}$ not 0 behind a stress-free inner wall under a poloidal B0. In a
+full sphere (`ricb = 0`) only the mantle librates.
 
 With `m = 2` forcing 7 stands for a mantle whose equator is elongated, which moves its shape past the sphere as it
 librates. The walls stay spheres, and the forcing imposes the radial velocity of that motion at each wall,
 $u_r = -wA\thinspace r_w\thinspace Y_2^2(\theta)\thinspace e^{i(2\phi + wt)}$ + c.c. at the wall of radius $r_w$, with
-$A$ at the outer wall and $A_{IC}$ at the inner one, and no-slip walls (`bci = bco = 1`). With a field, how a
+$A$ at the outer wall and $A_{IC}$ at the inner one, and no-slip walls (`bco = 1`, and `bci = 1` with an inner core),
+or an inviscid fluid in a full sphere, whose one wall row keeps the fluid from crossing the wall whatever `bco`. With a field, how a
 conducting solid behind such a wall moves is set by `forced_walls` ([Magnetic field](magnetic.md#a-boundary-that-moves)).
 
 ## Forcing 8: the frame of the mantle
@@ -41,10 +45,12 @@ about the axis leaves the axisymmetric B0 as it is.
 The walls are at rest in this frame, so forcing 8 takes the walls that forcing 7 cannot move: a stress-free outer wall,
 along which the fluid slips relative to the mantle and a drag acts on that slip ([Drag at the outer wall](drag.md)),
 with or without a conducting mantle, and an inviscid fluid in a full sphere. It needs `m = 0`, `symm = 1`, a frequency
-other than 0, and walls that stay in place (`bco` and `bci` 0 or 1). In a full sphere there is no inner core to
-librate: $A_{IC}$ must be 0. Any `structure`, buoyancy, a differential rotation and a field work as in the other runs
-([Magnetic field](magnetic.md#forced-runs)). Use forcing 8 for what an observer on the mantle sees, or where forcing 7
-does not take the walls.
+other than 0, and walls that stay in place (`bco` and `bci` 0 or 1; an inviscid fluid takes any `bco`). In a full
+sphere there is no inner core to librate: $A_{IC}$ must be 0. Any `structure`, buoyancy, a differential rotation and a
+field work as in the other runs ([Magnetic field](magnetic.md#forced-runs)), but for the case that stops forcing 7 too:
+an inner core that librates relative to the mantle ($A_{IC}$ not 0) behind a stress-free inner wall, where the core or
+a thin layer on it conducts, under a poloidal B0. Use forcing 8 for what an observer on the mantle sees, or where
+forcing 7 does not take the walls.
 
 ## Example: a librating shell in both frames
 
@@ -127,8 +133,10 @@ frame, and its flow is minus the libration of the mantle.
 | `forcing_amplitude_cmb` | $A$, the angle of the mantle's libration (forcing 7 with `m` 2: the amplitude of the radial velocity at the outer wall over $w$) |
 | `forcing_amplitude_icb` | $A_{IC}$, that of the inner core: in the mean frame for forcing 7, relative to the mantle for forcing 8 (0 in a full sphere) |
 | `m`, `symm` | 0, 1 (forcing 7 also 2, 1) |
-| `bci`, `bco` | forcing 7: `bco = 1`, `bci` 0 or 1 (`m` 2: both 1); forcing 8: 0 or 1 |
+| `bci`, `bco` | forcing 7: `bco = 1`, `bci` 0 or 1 (`m` 2: `bci = 1`); forcing 8: `bco` 0 or 1, `bci` 0 or 1. `bci` only with an inner core; an inviscid fluid (forcing 7 with `m` 2, forcing 8) takes any `bco` |
 
-The solution is written as for any forced run ([Output files](output.md)). `tests/forcing` checks the wall values of
+Like every forced run, forcings 7 and 8 need a spherical body (`centrifugal = 0`); [Combining features](compatibility.md#forced-runs)
+shows what else they combine with. The solution is written as for any forced run ([Output files](output.md)).
+`tests/forcing` checks the wall values of
 forcing 7, `tests/couette` its budgets, and `tests/cic_forcings` forcing 8 against forcing 7 and against the
 `conductive_IC` branch, its budgets where forcing 7 cannot follow, and its stops.

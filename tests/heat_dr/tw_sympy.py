@@ -43,3 +43,4 @@ for n in (2, 4, 6):
     v = sp.simplify(ex[n].subs(cyl).doit())
     print('%-4s cylindrical, exact sigma%d = %s' % ('ok' if v == 0 else 'FAIL', n, v)); nfail += (v != 0)
 print('%d failures' % nfail)
+import sys; sys.exit(nfail > 0)   # (NEW 2026-11-09: the verdict is the exit code too, so run_all.sh stops at a FAIL)
