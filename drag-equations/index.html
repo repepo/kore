@@ -1268,6 +1268,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#on-a-deformed-body" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        On a deformed body
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#checks" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1459,6 +1470,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#on-a-deformed-body" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        On a deformed body
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#checks" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1567,8 +1589,8 @@ drag adds the same parts of <span class="arithmatex">\(q\,\mathsf K\,\mathbf u_t
 A_{xy}^{ll'} = \frac{\oint x_l^*\cdot\mathsf K\,y_{l'}\,dS}{\oint\lvert x_l\rvert^2dS}, \qquad
 x, y \in \{\,s: \nabla_1 Y,\ \ t: \nabla_1 Y\times\hat{\mathbf r}\,\} ,
 \]</div>
-<p>on the unit sphere (<code>topo.couplings</code>, <code>topo.rows</code>). A constant drag gives <span class="arithmatex">\(A_{ss} = A_{tt}\)</span> equal to <code>kappa_cmb</code> and no
-coupling between degrees. The drag of the topography is even about the equator, so it couples degrees of the same
+<p>on the unit sphere (<code>topo.couplings</code>, <code>topo.rows</code>). On a sphere a constant drag gives <span class="arithmatex">\(A_{ss} = A_{tt}\)</span> equal to
+<code>kappa_cmb</code> and no coupling between degrees. The drag of the topography is even about the equator, so it couples degrees of the same
 symmetry: <span class="arithmatex">\(l\)</span> to <span class="arithmatex">\(l\pm2, \dots\)</span> within <span class="arithmatex">\(P\)</span> and within <span class="arithmatex">\(T\)</span>, and for <span class="arithmatex">\(m \neq 0\)</span> <span class="arithmatex">\(P_l\)</span> to <span class="arithmatex">\(T_{l\pm1}, \dots\)</span>. The integrals
 are Gauss–Legendre quadratures in <span class="arithmatex">\(\cos\theta\)</span> with <span class="arithmatex">\(\max(4(l_\text{max} + 2), 2000)\)</span> nodes, many since <span class="arithmatex">\(\mathsf K\)</span> has
 kinks where <span class="arithmatex">\(g\)</span> starts to vanish. With the rotating mantle the toroidal flow of degree 1 slips by
@@ -1595,12 +1617,63 @@ D_\text{topo} = -W_\nu - 2\,\mathrm{Re}\left(\omega_M^*\,\Gamma^\nu_M\right) .
 power too, which then adds to the right-hand side. So the budgets need no new term: residσ and resid𝐄 already count the
 power of the stress at the walls, and the energy budget of the rotating solids the power of their torques. <span class="arithmatex">\(\delta\sigma_\text{topo}\)</span> is the drag's share of the damping
 rate, one term of that budget.</p>
+<h2 id="on-a-deformed-body">On a deformed body</h2>
+<p>On a body flattened by its rotation (<code>centrifugal = 1</code>) the outer wall is the level surface <span class="arithmatex">\(r = 1\)</span> of the map that
+carries the reference sphere into the body, and kore solves for the flux <span class="arithmatex">\(\mathbf w = J\mathsf F^{-1}\mathbf u\)</span> of the
+reference space (<a href="../centrifugal-equations/">Centrifugal deformation equations</a>). The drag acts on the slip along the
+body's wall, per unit of its area. Carried back to the reference sphere, it becomes a drag on <span class="arithmatex">\(\mathbf w\)</span> with an
+effective tensor, which the rows and the power above take in place of <span class="arithmatex">\(\mathsf K\)</span>.</p>
+<p><strong>The condition.</strong> With <span class="arithmatex">\(\mathsf F\)</span> the gradient of the map, <span class="arithmatex">\(J\)</span> its determinant and <span class="arithmatex">\(\mathbf N = \mathsf F^{-\mathsf T}
+\hat{\mathbf r}\)</span> the normal to the level surface (not normalised), the rows of a stress-free wall hold the tangential
+components of <span class="arithmatex">\(\mathsf F^{\mathsf T}\mathsf S_X\mathbf N\)</span>, with <span class="arithmatex">\(\mathsf S_X\)</span> the rate of strain of the body
+(<a href="../centrifugal-equations/#dissipative-terms">Dissipative terms</a>). The drag's condition on the body's wall,
+<span class="arithmatex">\(2\mathsf S_X\hat{\mathbf n} + q\,\mathsf K\,\mathbf u_t = 0\)</span>, times <span class="arithmatex">\(\lvert\mathbf N\rvert\,\mathsf F^{\mathsf T}\)</span>, is</p>
+<div class="arithmatex">\[
+2\left[\mathsf F^{\mathsf T}\mathsf S_X\mathbf N\right]_t + q\,\mathsf K_\text{eff}\,\mathbf w_t = 0, \qquad
+\mathsf K_\text{eff} = \frac{\lvert\mathbf N\rvert}{J}\,\mathsf F^{\mathsf T}\mathsf K\,\mathsf F .
+\]</div>
+<p>The map is axisymmetric, so <span class="arithmatex">\(\mathsf K_\text{eff}\)</span> is diagonal on <span class="arithmatex">\((w_\theta, w_\phi)\)</span>, as <span class="arithmatex">\(\mathsf K\)</span> is on
+<span class="arithmatex">\((u_\theta, u_\phi)\)</span>:</p>
+<div class="arithmatex">\[
+\mathsf K_\text{eff} = \mathrm{diag}\left(h_\theta\,\mathsf K_{\theta\theta}(x_n),\ h_\phi\,\mathsf K_{\phi\phi}(x_n)\right),
+\qquad
+h_\theta = \frac{\lvert\mathbf N\rvert\,\lvert\mathsf F\hat{\boldsymbol\theta}\rvert^2}{J}, \qquad
+h_\phi = \frac{\lvert\mathbf N\rvert\,\lvert\mathsf F\hat{\boldsymbol\phi}\rvert^2}{J},
+\]</div>
+<p>with <span class="arithmatex">\(x_n\)</span> the cosine of the colatitude of the wall's normal. The drag of the topography takes there the local vertical,
+<span class="arithmatex">\(f = 2\Omega x_n\)</span> and <span class="arithmatex">\(\tilde f = 2\Omega\sqrt{1 - x_n^2}\)</span>, and the buoyancy frequency <span class="arithmatex">\(N\lvert\mathbf N\rvert\)</span>: the
+effective gravity and the gradient of the entropy across the wall both grow as <span class="arithmatex">\(\lvert\mathbf N\rvert =
+\lvert\nabla r\rvert\)</span> (<span class="arithmatex">\(N\)</span> that of the reference sphere, <code>topo_N</code> when set). With <span class="arithmatex">\(x = \cos\theta\)</span> and <span class="arithmatex">\(P_2 = (3x^2 -
+1)/2\)</span>:</p>
+<ul>
+<li><strong>first order</strong> (<code>'clairaut'</code>, <code>'uniform'</code>, <code>'user'</code>; <span class="arithmatex">\(\varepsilon\)</span> and <span class="arithmatex">\(\eta\)</span> the amplitudes of the map at the wall):
+  <span class="arithmatex">\(h_\theta = 1 + \varepsilon - (3\varepsilon + 2\eta)P_2\)</span>, <span class="arithmatex">\(h_\phi = 1 - \varepsilon - (\varepsilon + 2\eta)P_2\)</span>,
+  <span class="arithmatex">\(\lvert\mathbf N\rvert = 1 - (\varepsilon + \eta)P_2\)</span>, <span class="arithmatex">\(x_n = x - \tfrac32\varepsilon x(1 - x^2)\)</span>;</li>
+<li><strong>the exact spheroid</strong> (semi-axes <span class="arithmatex">\(a\)</span>, <span class="arithmatex">\(a\)</span>, <span class="arithmatex">\(c\)</span> with <span class="arithmatex">\(a^2c = 1\)</span>, <span class="arithmatex">\(Q = a^2x^2 + c^2(1 - x^2)\)</span>):
+  <span class="arithmatex">\(h_\theta = aQ^{3/2}\)</span>, <span class="arithmatex">\(h_\phi = a^3Q^{1/2}\)</span>, <span class="arithmatex">\(\lvert\mathbf N\rvert = aQ^{1/2}\)</span>, <span class="arithmatex">\(x_n = ax/Q^{1/2}\)</span>.</li>
+</ul>
+<p>kore takes <span class="arithmatex">\(\mathsf K\)</span> at <span class="arithmatex">\(x_n\)</span> node by node, without expanding it about <span class="arithmatex">\(x\)</span>, since the drag of the topography has kinks
+(<code>topo.wall_metric</code>, <code>topo.wall_tensor</code>). <span class="arithmatex">\(\mathsf K_\text{eff}\)</span> varies with latitude even for a constant <code>kappa_cmb</code>,
+so the couplings <span class="arithmatex">\(A_{xy}^{ll'}\)</span> join the degrees: <span class="arithmatex">\(l\)</span> to <span class="arithmatex">\(l \pm 2\)</span> and, for <span class="arithmatex">\(m \neq 0\)</span>, <span class="arithmatex">\(P_l\)</span> to <span class="arithmatex">\(T_{l\pm1}\)</span> at first
+order, every degree of the same symmetry for the exact spheroid.</p>
+<p><strong>Power.</strong> The area of the body's wall is <span class="arithmatex">\(dS_X = J\lvert\mathbf N\rvert\,dS\)</span> (Nanson's formula), so the same tensor
+gives the power the drag dissipates on the body's wall,</p>
+<div class="arithmatex">\[
+D_\text{topo} = 2\,\mathrm{Gaspard}\;\rho_w\oint\mathbf w_t^*\cdot\mathsf K_\text{eff}\,\mathbf w_t\,dS
+\]</div>
+<p>on the reference sphere, and <span class="arithmatex">\(\delta\sigma_\text{topo} = -D_\text{topo}/(2E)\)</span> with <span class="arithmatex">\(E\)</span> the energy of the deformed body
+(<a href="../centrifugal-equations/#energy-budgets">Energy budgets</a>). kore stops with the rotating solids on a deformed body, so
+<span class="arithmatex">\(\mathbf v_m = 0\)</span> here.</p>
 <h2 id="checks">Checks</h2>
 <p><code>tests/drag</code> checks the drag against exact limits (a very stiff drag gives a no-slip wall; a weak drag adds the damping
 that Dtopo/κ and δσtopo/κ predict), against equivalences (a constant drag tensor gives the constant drag; a uniform
 rotation offset gives a faster frame), the conservation of angular momentum and energy with the rotating solids, and
 the power through the wall. With the Earth's topography and no stratification, the drag of the topography damps the
 spin-over mode as much as <code>kappa_cmb</code> = 4.5e-6, to within 0.3 %.</p>
+<p>On a deformed body, <code>tests/drag/deformed_check.py</code> checks the drag against the exact decay of a rigid rotation and the
+exact spin-over flow of a spheroid, at flattenings up to 0.3 (to <span class="arithmatex">\(2\cdot10^{-8}\)</span>), the first-order shapes against the
+exact spheroid (they differ at second order in the flattening), a sphere relabelled as deformed (its drag is the
+sphere's), and the weak and stiff limits in a viscous spheroidal shell.</p>
 <h2 id="reference">Reference</h2>
 <ul>
 <li>Rekier, J., Triana, S. A., Barik, A., Abdulah, A. &amp; Kang, S. 2025, arXiv:2507.01671 (eqs. 20, 21, B1 and B2).</li>

@@ -891,6 +891,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#on-a-deformed-body" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        On a deformed body
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#output" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1504,6 +1515,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#on-a-deformed-body" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        On a deformed body
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#output" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1654,6 +1676,18 @@ down to Ekman numbers of about 1e-8.</p>
 <h2 id="with-the-rotating-solids">With the rotating solids</h2>
 <p>With <code>rotdyn = 1</code> the drag acts on the slip relative to the turning mantle, and pulls the mantle in return; its torque
 appears as the viscous torque on the mantle in <code>rotdyn.dat</code>.</p>
+<h2 id="on-a-deformed-body">On a deformed body</h2>
+<p>With the centrifugal deformation (<code>centrifugal = 1</code>, <a href="../background/#centrifugal-deformation">Centrifugal deformation</a>)
+the outer wall is a spheroid, and the drag acts on the slip along it. Each point of the wall takes the drag of the
+latitude of its local vertical, and the drag of the topography takes the buoyancy frequency of the deformed wall, which
+is larger where the wall is nearer the centre. This is exact for <code>centrifugal_shape = 'spheroid'</code> and first order in the
+flattening for the other shapes. <code>topo_N</code> is then the buoyancy frequency on the reference sphere, and <code>topo_hrms</code> and
+<code>topo_lambda0</code> are relative to the mean radius.</p>
+<p>On a deformed wall even a constant drag couples degrees: check the convergence in <code>lmax</code>. The rotating solids still
+need a spherical body.</p>
+<p>For the Earth (a flattening of 1/400) the deformation changes the damping of the spin-over mode by 0.02 % with
+<code>kappa_cmb</code>, and by up to 0.4 % with the drag of the topography. At a flattening of 0.3 the changes are 8 % and 8 % to
+30 %.</p>
 <h2 id="output">Output</h2>
 <p>For a viscous run with a stress-free outer wall, <code>spin_doctor</code> prints two columns:</p>
 <ul>
@@ -1666,13 +1700,13 @@ with it.</p>
 <p><code>flow.dat</code> holds both (columns 40–41), and <code>params.dat</code> the drag settings (<a href="../output/">Output files</a>).</p>
 <h2 id="what-is-supported">What is supported</h2>
 <p>Supported: any structure; a full sphere; any <code>m</code>; with or without buoyancy; with or without a magnetic field; the
-rotating solids; a constant drag together with differential rotation or a background flow; eigenvalue problems, and
-the forced runs whose outer wall stays in place and may slip (forcings 6, 8, 11, 13, and 9 and 12 with the outer wall
-at rest).</p>
+rotating solids; a deformed body (<a href="#on-a-deformed-body">above</a>); a constant drag together with differential rotation
+or a background flow; eigenvalue problems, and the forced runs whose outer wall stays in place and may slip (forcings
+6, 8, 11, 13, and 9 and 12 with the outer wall at rest).</p>
 <p>Not supported (kore stops with a message):</p>
 <ul>
 <li>a drag without the flow (<code>hydro = 0</code>), without viscosity, or at an outer wall that is not stress-free;</li>
-<li>a non-rotating frame, the centrifugal deformation, or a forcing that moves the outer wall radially;</li>
+<li>a non-rotating frame, or a forcing that moves the outer wall radially;</li>
 <li>the wave-like tide (forcing 1);</li>
 <li><code>kappa_cmb</code> and <code>topo_drag</code> together;</li>
 <li>the drag of the topography with differential rotation or a background flow, with a flow frequency of 0, or in a

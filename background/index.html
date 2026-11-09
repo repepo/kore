@@ -2459,10 +2459,10 @@ keeps its spherical grid and solves in coordinates that follow the flattened sur
 </span></code></pre></div>
 <h3 id="limitations">Limitations</h3>
 <ul>
-<li>The deformation works with buoyancy, viscosity, thermal and compositional diffusion, differential rotation and a
-  magnetic field (insulating walls or a conducting inner core), in shells and full spheres.</li>
-<li>It does not work with forced runs, walls of zero radial stress (<code>bci</code> or <code>bco</code> = 2), the rotating solids, the drag at
-  the outer wall, thin conducting layers, a resolved mantle or a background flow. kore stops and says why
+<li>The deformation works with buoyancy, viscosity, thermal and compositional diffusion, differential rotation, the drag
+  at the outer wall and a magnetic field (insulating walls or a conducting inner core), in shells and full spheres.</li>
+<li>It does not work with forced runs, walls of zero radial stress (<code>bci</code> or <code>bco</code> = 2), the rotating solids, thin
+  conducting layers, a resolved mantle or a background flow. kore stops and says why
   (<a href="../compatibility/">Combining features</a>).</li>
 <li>A viscous flow in a full sphere with <code>m</code> ≠ 0 needs <code>rpower_v</code> of at least 4; kore stops and says so.</li>
 <li>With the thermal wind, the background entropy ignores the flattening. <code>submatrices.py</code> warns about this.</li>

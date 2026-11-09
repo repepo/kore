@@ -1851,6 +1851,9 @@ level surface are <span class="arithmatex">\(\mathbf u = 0\)</span>, <span class
   the components along its tangents;</li>
 <li>a fixed-flux wall has no flux through the deformed wall: <span class="arithmatex">\(\hat{\mathbf r}\cdot\mathsf M^{-1}\nabla s = 0\)</span>.</li>
 </ul>
+<p>A drag at a stress-free outer wall acts on the slip along the deformed wall, per unit of its area; carried back to the
+reference sphere, its tensor joins the stress-free rows (<a href="../drag-equations/#on-a-deformed-body">Drag at the outer wall
+equations</a>).</p>
 <p><strong>Rows.</strong> The first-order parts multiply the fields and their derivatives by polynomials in <span class="arithmatex">\(\cos\theta\)</span> of degree 2 at
 most, so they couple the degrees as the inertia does: <span class="arithmatex">\(l\)</span> to <span class="arithmatex">\(l\)</span> and <span class="arithmatex">\(l \pm 2\)</span> of the same kind, and to <span class="arithmatex">\(l \pm 1\)</span> and
 <span class="arithmatex">\(l \pm 3\)</span> of the other. Their radial factors are products of the amplitudes of the map, of the diffusivity and its
@@ -2148,6 +2151,10 @@ for the exact spheroid (<a href="#the-exact-spheroid">The exact spheroid</a>), w
 <td><code>centrifugal.wall_dissipative</code>, <code>wall_dissipative_rows</code> (<code>assemble.bc_u_centrifugal</code>, <code>bc_theta_centrifugal</code>)</td>
 </tr>
 <tr>
+<td>the drag at the outer wall</td>
+<td><code>topo.wall_metric</code>, <code>wall_tensor</code> (<code>topo.grid</code>, for the rows and <code>topo.dissipation</code>)</td>
+</tr>
+<tr>
 <td>a conducting inner core</td>
 <td><code>centrifugal.ic_labels</code>, <code>diffusion_block_ic</code> (<code>operators.centrifugal_diffusion_ic</code>), <code>icb_electric</code>, <code>icb_rows</code> (<code>assemble.bc_b_cic_centrifugal</code>); the rows <span class="arithmatex">\(r^3\)</span> of <code>utils.rpower_g</code>, <code>rpower_gic</code></td>
 </tr>
@@ -2190,6 +2197,8 @@ for the exact spheroid (<a href="#the-exact-spheroid">The exact spheroid</a>), w
   structures; and, for the exact spheroid, viscous and diffusive modes against exact Galerkin solutions.</li>
 <li><strong>Budgets.</strong> residσ, residω, resid𝑠 and, with a field, resid𝐛 and resid𝐄 close for resolved modes, as in the sphere.</li>
 </ul>
+<p>The drag at the outer wall on the deformed body is checked by <code>tests/drag/deformed_check.py</code>
+(<a href="../drag-equations/#checks">Drag at the outer wall equations</a>).</p>
 
 
 
