@@ -175,6 +175,10 @@ sizmat += n*compositional
 # rates of the mantle and of the inner core relative to the frame, and the angle between them (rotdyn.py)
 rotdyn = int(bool(par.rotdyn))
 sizmat += 3*rotdyn
+# NEW (2026-11-09): the wobble of the mantle (wobble = 1), one unknown after everything else: its equatorial rotation Mc
+# relative to the frame (wobble.py)
+wobble = int(bool(getattr(par, 'wobble', 0)))
+sizmat += wobble
 
 # NEW (2026-10-28): first row (and column) of each section in A and B: P, T, s, then f, g after s, then fic, gic, so that
 # the flow and the entropy keep their places and non-magnetic matrices are unchanged. NEW (2026-11-06): with hydro = 0
@@ -184,9 +188,10 @@ offset = { 'u': 0, 'v': n, 'h': _h, 'f': _h + par.thermal*n, 'g': _h + (1 + par.
            'fic': _h + (2 + par.thermal)*n, 'gic': _h + (2 + par.thermal)*n + nic }
 offset['fm'] = offset['gic'] + nic
 offset['gm'] = offset['fm'] + nman
-offset['c'] = sizmat - 3*rotdyn - n*compositional   # NEW (2026-11-08): the composition, after all the fields (before the
+offset['c'] = sizmat - wobble - 3*rotdyn - n*compositional   # NEW (2026-11-08): the composition, after all the fields (before the
 # rotating solids), so that the runs without it are unchanged
-offset['rot'] = sizmat - 3*rotdyn   # NEW (2026-11-06): omega_M, omega_IC, phi (rotdyn = 1), after all the fields
+offset['rot'] = sizmat - wobble - 3*rotdyn   # NEW (2026-11-06): omega_M, omega_IC, phi (rotdyn = 1), after all the fields
+offset['wob'] = sizmat - wobble   # NEW (2026-11-09): Mc, the wobble of the mantle (wobble = 1), last
 
 # ThermaD = 0 with the thermal-wind advection (docs/differential_rotation_details.md §7.2): the section-h rows are r² (eq)/p instead of
 # r (eq)/p, in the C^(1) basis (u_θ has P'), still without thermal bc rows; the thermal-wind profiles are then σn, σn'.

@@ -29,6 +29,7 @@ import centrifugal as cf   # NEW (2026-11-05)
 import radial_profiles as rap
 import background as bg   # NEW (2026-11-06): the conductivity of the resolved mantle (bc_b_mantle)
 import rotdyn as rd   # NEW (2026-11-06): the rotating solids (rotdyn = 1)
+import wobble as wb   # NEW (2026-11-09): the wobble of the mantle (wobble = 1)
 import topo   # NEW (2026-11-06): the drag at the outer wall (kappa_cmb, topo_drag)
 import bgflow as bgf   # NEW (2026-11-08): a background flow (bgflow = 1)
 
@@ -1034,6 +1035,11 @@ def main():
         for q in [0,1,2]:
             loc_list[q].append( rot_list[q] )
 
+    if ut.wobble:  # NEW (2026-11-09): the wobble of the mantle (wobble.py): the row of Mc, with the torques of the flow, on rank 0
+        wob_list = wb.a_rows(rank == 0)
+        for q in [0,1,2]:
+            loc_list[q].append( wob_list[q] )
+
 
     # ------------------------------------------------------------------------------------------------------------------ A matrix assembly
     A = gather_csr(comm, loc_list, complex)  # full A on rank 0, None elsewhere
@@ -1173,6 +1179,11 @@ def main():
             rot_list = rd.b_rows(rank == 0)
             for q in [0,1,2]:
                 loc_list[q].append( rot_list[q] )
+
+        if ut.wobble:  # NEW (2026-11-09): -A_M on Mc and the Poincaré force on the rows of T of degree 1 (wobble.py), on rank 0
+            wob_list = wb.b_rows(rank == 0, op.inertia(1,'v','utor',0) if rank == 0 else None)
+            for q in [0,1,2]:
+                loc_list[q].append( wob_list[q] )
 
 
         # ---------------------------------------------------------------------- B matrix assembly

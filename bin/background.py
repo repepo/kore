@@ -145,6 +145,10 @@ def check():
         sys.exit('rotdyn %r: 0 (the mantle and the inner core turn with the frame) or 1 (they turn under the torques)' % (par.rotdyn,))
     if par.rotdyn:
         check_rotdyn()
+    if getattr(par, 'wobble', 0) not in (0, 1):   # NEW (2026-11-09): the wobble of the mantle
+        sys.exit('wobble %r: 0 (the mantle turns with the frame) or 1 (it wobbles under the torques of the fluid)' % (par.wobble,))
+    if getattr(par, 'wobble', 0):
+        check_wobble()
     check_drag()   # NEW (2026-11-06): the drag at the outer wall (kappa_cmb, topo_drag)
 
 
@@ -709,6 +713,32 @@ def check_twa():
         sys.exit("a thin conducting layer ('TWA') needs bco, bci = 0 or 1 at its wall: with zero radial stress (2) the fluid "
                  "crosses the wall, and the layer's rows follow a radial flow there only where a forcing moves the wall "
                  "(forced_walls)")
+
+
+def check_wobble():
+    '''
+    NEW (2026-11-09): stops on the settings that the wobble of the mantle (wobble = 1, wobble.py) does not cover. Its torques
+    are those of a homogeneous fluid on a no-slip wall that is the reference sphere of a linear map: a sphere or the exact
+    spheroid. Left out: an inner core, a field, buoyancy (gravitational torques), the other shapes, the rotating solids,
+    a differential rotation, a background flow and the forcings.
+    '''
+    if not (par.hydro and par.m == 1 and par.symm == -1 and par.forcing == 0 and par.ricb == 0):
+        sys.exit('wobble = 1 needs the flow (hydro = 1), m = 1, symm = -1, a full sphere (ricb = 0) and an eigenvalue problem '
+                 '(forcing = 0)')
+    if not (par.ViscosD > 0 and par.bco == 1 and par.Gaspard > 0):
+        sys.exit('wobble = 1 needs a viscous fluid (ViscosD > 0), a no-slip wall (bco = 1) and a rotating frame (Gaspard > 0)')
+    if par.magnetic or par.thermal or par.compositional or par.rotdyn or par.diff_rot or par.bgflow:
+        sys.exit('wobble = 1 is implemented for a homogeneous fluid without a field, buoyancy, rotating solids, a differential '
+                 'rotation or a background flow')
+    if par.centrifugal and par.centrifugal_shape != 'spheroid':
+        sys.exit("wobble = 1 with centrifugal = 1 needs centrifugal_shape 'spheroid' (the torques are those of its wall)")
+    if par.structure != 'Boussinesq':
+        sys.exit("wobble = 1 needs structure 'Boussinesq' (a homogeneous fluid)")
+    num = (int, float, np.integer, np.floating)
+    for name, ok in (('MoIX_M', lambda v: 0 < v < np.inf), ('dynflat_M', lambda v: np.isfinite(v))):
+        v = getattr(par, name)
+        if not (isinstance(v, num) and not isinstance(v, bool) and ok(v)):
+            sys.exit('%s = %r: a finite number, > 0 for the moment of inertia' % (name, v))
 
 
 def check_rotdyn():

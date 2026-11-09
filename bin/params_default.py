@@ -518,6 +518,18 @@ class default_params():
         # 0 switches off the viscous (vtrq) or the magnetic (mtrq) torques on the solids (the fluid still feels its walls)
         self.vtrq = 1
         self.mtrq = 1
+        # NEW (2026-11-09): wobble = 1 lets the mantle turn about an equatorial axis under the pressure and viscous torques of
+        # the fluid (bin/wobble.py; Triana, Rekier, Trinh & Dehant 2019): the m = 1 coupling of the free core nutation, the
+        # Chandler wobble and the inertial modes. The flow is solved in the frame of the mantle, with the Poincaré force; one
+        # more unknown, Mc, the mantle's equatorial rotation (its rigid rotation is T_1 = r Mc/2). m = 1, symm = -1, full
+        # sphere, no-slip wall, a homogeneous fluid without a field, in a sphere (centrifugal = 0) or in the exact spheroid
+        # (centrifugal = 1, centrifugal_shape 'spheroid'), whose flattened wall gives the pressure torque
+        # (background.check_wobble stops otherwise).
+        self.wobble = 0
+        # the mantle's moment of inertia about an equatorial axis, A_M, in units of rho r0^5 (r0 the mean radius of the wall,
+        # kore's unit of length), and its dynamical flattening (C_M - A_M)/A_M
+        self.MoIX_M    = 11.16
+        self.dynflat_M = 3.3e-3
 
 
         # ----------------------------------------------------------------------------------------------------------------------
