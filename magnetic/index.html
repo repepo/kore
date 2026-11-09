@@ -2373,6 +2373,10 @@ or on an insulating inner core, through boundary conditions alone, without extra
   prints the estimated relative error, εTWA; keep it below about 1 %.</li>
 <li><strong>With differential rotation</strong>, a conducting layer turns with the fluid next to it, so the rotation must be uniform in
   latitude at that wall.</li>
+<li><strong>On the exact spheroid</strong> (<code>centrifugal_shape = 'spheroid'</code>) the layer at the outer wall works in its thin limit,
+  <code>c_cmb = 0</code> and <code>mu = 1</code>, and with the flow it needs a no-slip outer wall (<code>bco = 1</code>). The layer lies between two
+  level surfaces, so in an oblate body it is a little thicker at the equator than at the poles
+  (<a href="../centrifugal-equations/#the-exact-spheroid">The exact spheroid</a>).</li>
 </ul>
 <p>The conditions: <a href="../magnetic-equations/#thin-conducting-layer">Magnetic field equations</a>.</p>
 <h3 id="resolved-conducting-mantle">Resolved conducting mantle</h3>
@@ -2415,6 +2419,9 @@ beyond, and solves for the field inside it. The layer is solid and at rest, and 
   field in the layer with a second run at a larger <code>N_mantle</code>.</li>
 <li><strong>With differential rotation</strong> the rotation must be uniform in latitude at the outer wall.</li>
 <li>The layer and the fluid have the permeability of vacuum (<code>mu = 1</code>).</li>
+<li><strong>On the exact spheroid</strong> (<code>centrifugal_shape = 'spheroid'</code>) the layer ends at the level surface <code>r_surface</code>, a
+  spheroid of the same flattening, and with the flow the outer wall must be no-slip (<code>bco = 1</code>)
+  (<a href="../centrifugal-equations/#the-exact-spheroid">The exact spheroid</a>).</li>
 </ul>
 <p>The equations: <a href="../magnetic-equations/#resolved-conducting-mantle">Magnetic field equations</a>.</p>
 <h3 id="current-sheets-at-slipping-walls">Current sheets at slipping walls</h3>
