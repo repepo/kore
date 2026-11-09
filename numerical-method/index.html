@@ -1547,6 +1547,13 @@ A radial derivative of order <span class="arithmatex">\(k\)</span> maps Chebyshe
 of each section are written in the Gegenbauer basis of its highest derivative: <span class="arithmatex">\(C^{(4)}\)</span> for <code>u</code>, <span class="arithmatex">\(C^{(2)}\)</span> for <code>v</code>,
 <code>h</code> and <code>c</code> (<span class="arithmatex">\(C^{(0)}\)</span> for <code>h</code> with <code>ThermaD = 0</code>, <span class="arithmatex">\(C^{(1)}\)</span> if a thermal wind is included; <span class="arithmatex">\(C^{(0)}\)</span> for <code>c</code> with
 <code>CompoD = 0</code>). This makes <span class="arithmatex">\(A\)</span> and <span class="arithmatex">\(B\)</span> sparse.</p>
+<p>An inviscid fluid (<code>ViscosD = 0</code>, in a full sphere) has its <code>u</code> rows in <span class="arithmatex">\(C^{(2)}\)</span> and its <code>v</code> rows in <span class="arithmatex">\(C^{(1)}\)</span>. With a
+magnetic field, or a background flow, those rows also hold third and second derivatives, and <code>inviscid_basis</code> sets how
+they are written. With <code>'low'</code> (the default) the rows stay in <span class="arithmatex">\(C^{(2)}\)</span> and <span class="arithmatex">\(C^{(1)}\)</span>, and those terms are converted back
+exactly, which makes their blocks of <span class="arithmatex">\(A\)</span> dense. With <code>'high'</code> the rows are in <span class="arithmatex">\(C^{(3)}\)</span> and <span class="arithmatex">\(C^{(2)}\)</span>, and <span class="arithmatex">\(A\)</span> stays
+sparse, but the eigenvalues converge much more slowly with N: at N = 128 the torsional modes of
+<a href="https://doi.org/10.1098/rspa.2021.0982">Luo &amp; Jackson (2022)</a> are <span class="arithmatex">\(10^{-4}\)</span> off with <code>'high'</code> against <span class="arithmatex">\(5\cdot10^{-6}\)</span>
+with <code>'low'</code>. Use <code>'high'</code> only when the dense blocks cost too much memory, at N of about 1000 or more.</p>
 <h2 id="rows">Rows</h2>
 <p>The pressure is removed by taking the radial components of the curl and of the double curl of the momentum
 equation; <span class="arithmatex">\(\nabla\Pi\)</span> drops out of both because it is a gradient. Each term becomes a radial operator acting on <span class="arithmatex">\(P_l\)</span>,
