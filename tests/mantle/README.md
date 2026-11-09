@@ -42,14 +42,15 @@ N 48).
 
 About 1.5 min on 2 ranks.
 
-**`derive_spheroid.py`** (NEW 2026-11-09; sympy and numpy, about a minute, no run). The thin layer on the exact spheroid
+**`derive_spheroid.py`** (NEW 2026-11-09; sympy and numpy, about 3 min, no run). The thin layer on the exact spheroid
 (`mantle = 'TWA'` with `centrifugal_shape = 'spheroid'`, `centrifugal.spheroid_twa`): the Legendre series of the weight
 $V(x)$ of its sheet current ($10^{-14}$), and its rows on polynomial fields against the sheet built point by point from
 the covariant electric field, whose radial part is set so that no current crosses the layer (m 1 and 2, f ±0.1, the wall
 at 1 and 0.8; $10^{-11}$ of the largest row, in practice $3\times10^{-14}$). With `c1` = 0 the rows are those of the
-insulating spheroid.
+insulating spheroid. NEW (2026-11-09): the terms of a fluid slipping along the layer (`centrifugal.spheroid_twa_slip`)
+against the sheet of $-\mathbf w\times\tilde{\mathbf B}_0$ built the same way, f ±0.1 and 0 ($10^{-11}$, in practice $10^{-13}$).
 
-**`spheroid_mantle_check.py`** (NEW 2026-11-09; runs, `[WORKDIR] [NCPUS]`, about 1 min on 4 ranks). The conducting
+**`spheroid_mantle_check.py`** (NEW 2026-11-09; runs, `[WORKDIR] [NCPUS]`, about 2.5 min on 8 ranks). The conducting
 mantles on the exact spheroid:
 
 - **A larger spheroid.** A resolved mantle of the fluid's conductivity without the flow decays as a uniform spheroid of
@@ -60,3 +61,7 @@ mantles on the exact spheroid:
   and 0.6; in practice 0.50 to 0.55).
 - **A small flattening.** At f = $10^{-7}$ the thin layer and a resolved mantle whose conductivity varies give the
   sphere's eigenvalues ($10^{-6}$; in practice $10^{-7}$).
+- **A slipping fluid** (NEW 2026-11-09). The last two checks with a stress-free wall (`bco` = 0), whose u×B0 enters the
+  mantles' rows, and for the first eigenvalue of an inviscid fluid (in practice $10^{-7}$ against the sphere, ratios 0.50
+  to 0.53). Without the slip term in the thin layer the differences stay at $6\times10^{-4}$; with the sphere's slip term
+  (no weight $V$) they stop falling near $3\times10^{-5}$.

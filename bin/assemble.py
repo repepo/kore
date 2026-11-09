@@ -1621,7 +1621,8 @@ def bc_b_spherical(l, sec):
     out = [out.data, out.row + row0, out.col + row0]
     for on, wall, rr in ((twa_o, 'outer', 0), (twa_i, 'inner', 1)):   # NEW (2026-11-06): a fluid slipping along a thin wall
         if on and ut.twa_slips(wall):
-            slip = bc_b_slip(l, sec, wall, row0 + rr)
+            slip = bc_b_slip_spheroid(l, sec, row0) if (wall == 'outer' and cf.twa_metric_on()) else \
+                   bc_b_slip(l, sec, wall, row0 + rr)   # (NEW 2026-11-09: on the exact spheroid, bc_b_slip_spheroid)
             out = [np.concatenate([out[q], slip[q]]) for q in range(3)]
     # NEW (2026-11-06): a radial boundary flow through a wall with a conducting layer or core at rest behind it (bc_b_radial):
     # in the rows of a thin conducting layer, coef the factor of D F (f) or of G' (g) in bc_b_twa's rows; in the electric-field
@@ -1777,6 +1778,46 @@ def bc_b_slip(l, sec, wall, row, factor=None):
             if ut.rotdyn and wall == 'outer' and k == 1:   # NEW (2026-11-06, as conductive_IC): the slip relative to the
                 data.append( np.array([ -ct*r ]) )          # rotating mantle, T_1 - r omega_M (the wall's own frame)
                 cols.append( np.array([ ut.offset['rot'] ]) )
+    if not data:
+        return [np.zeros(0, dtype=complex), np.zeros(0, dtype=int), np.zeros(0, dtype=int)]
+    data = np.concatenate(data)
+    return [data, np.full(data.size, row), np.concatenate(cols)]
+
+
+
+def bc_b_slip_spheroid(l, sec, row):
+    '''
+    NEW (2026-11-09): bc_b_slip on the exact spheroid for a fluid slipping along the thin conducting layer at the outer wall
+    (mantle = 'TWA', ut.twa_slips, cf.twa_metric_on): the u×B0 of the slip in the layer's rows (centrifugal.spheroid_twa_slip,
+    through the sheet's weight V), at the row of the degree l of section sec ('f' or 'g'), entries on the columns of P (its
+    value and r-derivative) and T at the wall, divided by MagnetD. In the sphere (f = 0) the same as bc_b_slip.
+    '''
+    import background_field as bf
+    if 'br' not in _slip_mats:
+        br = np.zeros(1)
+        for n, fn in bf.pol_profiles().items():
+            br = np.concatenate([br, np.zeros(max(0, n + 1 - br.size))])
+            br[n] += n*(n + 1)*fn(np.array([float(ut.rcmb)]), 0)[0]/ut.rcmb
+        _slip_mats['br'] = cf.twa_slip_rows(np.polynomial.Legendre(br))
+    W = _slip_mats['br']
+    m = par.m
+    lp_u, lt_u = ut.ell(m, par.lmax, par.symm)[:2]
+    if par.ricb > 0:
+        Tu = Tv = bv.Tb
+    else:   # one parity per l in a full sphere, as in bc_b_slip
+        Tu = bv.Tb[( m + 1 - ut.s )%2::2, :]
+        Tv = bv.Tb[( m + ut.s )%2::2, :]
+    data, cols = [], []
+    for src, sec_c, ls, T, lfirst in (('P0', 'u', lp_u, Tu, ut.m_top), ('P1', 'u', lp_u, Tu, ut.m_top),
+                                      ('T0', 'v', lt_u, Tv, ut.m_bot)):
+        M = W.get((sec, src))
+        if M is None:
+            continue
+        rowv = M.getrow(l)
+        for k, c in zip(rowv.indices, rowv.data):
+            if k in ls and c != 0:
+                data.append( (c/par.MagnetD)*T[:, int(src[1])] )
+                cols.append( ut.offset[sec_c] + int(ut.N1*(k - lfirst)/2) + np.arange(T.shape[0]) )
     if not data:
         return [np.zeros(0, dtype=complex), np.zeros(0, dtype=int), np.zeros(0, dtype=int)]
     data = np.concatenate(data)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 '''
-usage: derive_spheroid.py   (sympy and numpy, about a minute, no run)
+usage: derive_spheroid.py   (sympy and numpy, about 3 minutes, no run)
 
 NEW (2026-11-09): the rows of the thin conducting layer on the exact spheroid (mantle = 'TWA', bin/centrifugal.py, section 8:
 spheroid_twa, twa_weight) on their own, for polynomial fields b̃ = Σ ∇×∇×(f_l Y_l r) + ∇×(g_l Y_l r) (m = 1 and 2, kore's
@@ -15,6 +15,8 @@ Schmidt Y_l, random coefficients, f_l and g_l r^l times polynomials in r²) in s
      c = 0, mu = 1: (l + 1) F + R F' + c1 R² ∇²_l F and G + c1 (G + R G')) plus spheroid_twa's parts on F, F', F'', G, G',
      1e-11 of the largest row. The construction of K̃ here (a 3×3 solve per point) is independent of the formula of
      centrifugal.py (the weight V); with c1 = 0 the rows are those of the insulating spheroid (spheroid_field_walls).
+  3. NEW (2026-11-09): a fluid slipping along the layer: for a flow w (P_l = 0 at R) and a poloidal B̃0 of degrees 1 to 3,
+     the sheet of E = -w×B̃0 built as in 2, against spheroid_twa_slip (the rows f: μ R k_t, g: k_s), f ±0.1 and 0, 1e-11.
 Exit code 1 if a check fails.
 '''
 import os, sys, types
@@ -150,6 +152,55 @@ for m in (1, 2):
             Wi = cf.spheroid_field_walls('outer', m, LW, R, f)
             d0 = max((abs(W0[k] - Wi[k]).max() if k in Wi else abs(W0[k]).max()) for k in W0)
             check('m %d, f %+.1f, R %.1f: c1 = 0 gives the insulating spheroid\'s rows' % (m, f, R), d0, 1e-14)
+
+print('3. a fluid slipping along the thin layer: the u×B0 of the slip in its rows (spheroid_twa_slip)')
+for m in (1, 2):
+    Yg, dY, Zg = angular.ylm_grid(m, LW, xg)                                # (proj's harmonics, of this m)
+    for f in (0.1, -0.1, 0.0):
+        a, c = cf.spheroid_axes(f)
+        Pinv = np.diag([1/a**2, 1/a**2, 1/c**2])
+        mu = cf.spheroid_lambda('outer', m, LW, f)/(lv + 1)
+        for R in (1.0, 0.8):
+            lf = list(range(m, m + 4))
+            # w: P_l = r^l (r² - R²) (c0 + c1 r²), so that w_r = 0 at R; T_l = r^l (c0 + c1 r²)
+            polw = {l: [-R**2*c0, c0 - R**2*c1_, c1_] for l in lf
+                    for c0, c1_ in [rng.normal(size=2) + 1j*rng.normal(size=2)]}
+            torw = {l: list(rng.normal(size=2) + 1j*rng.normal(size=2)) for l in lf}
+            w_sym = field(polw, torw, m)
+            hb = {1: [1.3, -0.4], 2: [0.7, 0.2], 3: [-0.5, 0.3]}            # B̃0 = Σ ∇×∇×(h_n P_n r), h_n = r^n (h0 + h1 r²)
+            B_sym = field(hb, {}, 0)
+            E_sym = [-sp.expand(e) for e in (w_sym[1]*B_sym[2] - w_sym[2]*B_sym[1], w_sym[2]*B_sym[0] - w_sym[0]*B_sym[2],
+                                             w_sym[0]*B_sym[1] - w_sym[1]*B_sym[0])]   # -w×B̃0
+            wr, _, _ = spherical(w_sym, R, xg, sg)
+            check('m %d, f %+.1f, R %.1f: w_r = 0 at the wall' % (m, f, R), np.abs(wr).max(), 1e-13)
+            Er, Et, Ep = spherical(E_sym, R, xg, sg)
+            K = np.zeros((3, xg.size), dtype=complex)
+            for i in range(xg.size):
+                rh, th, ph = np.array([sg[i], 0, xg[i]]), np.array([xg[i], 0, -sg[i]]), np.array([0, 1., 0])
+                EH = Et[i]*th + Ep[i]*ph
+                er = -(rh @ Pinv @ EH)/(rh @ Pinv @ rh)
+                Jv = c1*R*(Pinv @ (EH + er*rh))
+                K[:, i] = [Jv @ rh, Jv @ th, Jv @ ph]
+            ks, kt = proj(K[1], K[2])
+            rowf, rowg = mu*R*kt, ks
+            # kore's, on the flow's P, P', T at R
+            br = np.zeros(4)
+            for n, (h0, h1) in hb.items():
+                br[n] = n*(n + 1)*(h0*R**n + h1*R**(n + 2))/R
+            W = cf.spheroid_twa_slip(m, LW, R, c1, np.polynomial.Legendre(br), f)
+            src = {'P0': np.array([complex(radial(l, polw[l]).subs(rs, R)) if l in polw else 0j for l in lv]),
+                   'P1': np.array([complex(sp.diff(radial(l, polw[l]), rs).subs(rs, R)) if l in polw else 0j for l in lv]),
+                   'T0': np.array([complex(radial(l, torw[l]).subs(rs, R)) if l in torw else 0j for l in lv])}
+            kf, kg = 0*lv.astype(complex), 0*lv.astype(complex)
+            for (row, sname), M in W.items():
+                if row == 'f':
+                    kf = kf + M @ src[sname]
+                else:
+                    kg = kg + M @ src[sname]
+            sel = (lv >= m) & (lv <= LT)
+            scale = max(np.abs(rowf[sel]).max(), np.abs(rowg[sel]).max())
+            err = max(np.abs(kf - rowf)[sel].max(), np.abs(kg - rowg)[sel].max())/scale
+            check('m %d, f %+.1f, R %.1f: kore\'s slip terms in the rows f, g (l <= %d)' % (m, f, R, LT), err, 1e-11)
 
 print('\nderive_spheroid: ' + ('all checks passed' if not fails else 'FAILED: ' + '; '.join(fails)))
 sys.exit(1 if fails else 0)

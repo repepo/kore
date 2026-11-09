@@ -17,6 +17,11 @@ layer without a run.
    'G21 dipole', a no-slip wall); f = 0.1.
 3. A flattening of 1e-7 against the sphere: the eigenvalues of the thin layer and of a resolved mantle whose σ varies (with
    the flow, B0 'G21 dipole') move by O(f) only, below 1e-6.
+4. NEW (2026-11-09): a fluid slipping along the mantle (bco = 0, and an inviscid fluid, ViscosD = 0), whose u×B0 enters the
+   mantle's rows (assemble.bc_b_slip, bc_b_slip_spheroid): checks 3 (against the sphere's slip rows, 1e-6) and 2 (the thin
+   layer with its sheet's weight V against resolved layers; with the sphere's slip rows in the thin layer instead the
+   differences stop falling at about 3e-5, and without any slip term at 6e-4) with a stress-free wall, and the first
+   eigenvalue of an inviscid fluid against the sphere's and against resolved layers of uniform σ.
 '''
 import os, sys
 import numpy as np
@@ -87,6 +92,29 @@ for name, extra in (('twa', twa(C1)), ('res', resolved(1.2, '0.5*exp(-2*(r - 1))
     l1 = eig('%s_f1e-7' % name, dict(rtau=0.0, itau=1.0, nev=4), f=1e-7, **FLOW, **extra)
     print('     sphere %s\n     f 1e-7 %s' % (l0, l1), flush=True)
     check('%s: the eigenvalues at f = 1e-7 against the sphere\'s' % name, closest(l1, l0[:3]), 1e-6)
+
+print('4. a fluid slipping along the mantle (bco = 0; ViscosD = 0)')
+SLIP = dict(FLOW, bco=0)
+INV = dict(FLOW, Ek=0.0, ViscosD=0.0)
+for name, extra in (('twa', twa(C1)), ('res', resolved(1.2, '0.5*exp(-2*(r - 1))', 24))):
+    for label, base, nref in (('slip', SLIP, 3), ('inviscid', INV, 1)):
+        l0 = eig('%s_%s_sphere' % (name, label), dict(rtau=0.0, itau=1.0, nev=4), f=0.0, **base, **extra)
+        l1 = eig('%s_%s_f1e-7' % (name, label), dict(rtau=0.0, itau=1.0, nev=4), f=1e-7, **base, **extra)
+        check('%s, %s: the eigenvalues at f = 1e-7 against the sphere\'s' % (name, label), closest(l1, l0[:nref]), 1e-6)
+for label, base, nref, profs in (('slip', SLIP, 2, ('uniform', 'exp')), ('inviscid', INV, 1, ('uniform',))):
+    slv = dict(rtau=0.0, itau=1.0, nev=4)
+    lt = eig('twa_%s' % label, slv, f=0.1, **base, **twa(C1))
+    for prof in profs:
+        dif = []
+        for h in (0.02, 0.01, 0.005):
+            sig = C1/h if prof == 'uniform' else '%r*exp(-%r*(r - 1))' % (float(C1*K/(h*(1 - np.exp(-K)))), float(K/h))
+            lr = eig('thin_%s_%s_%g' % (label, prof, h), slv, f=0.1, **base, **resolved(1 + h, sig, 12))
+            dif.append(closest(lr, lt[:nref]))
+        q = [dif[1]/dif[0], dif[2]/dif[1]]
+        print('     %s, %s σ: differences %s' % (label, prof, ' '.join('%.2e' % x for x in dif)), flush=True)
+        check('%s, %s σ: halving h halves the difference from the thin layer (ratios %.2f, %.2f)' % (label, prof, *q),
+              max(abs(x - 0.5) for x in q), 0.1)
+        check('%s, %s σ: the difference at h = 0.005' % (label, prof), dif[2], 2e-3)
 
 print('\nspheroid_mantle_check: ' + ('all checks passed' if not fails else 'FAILED: ' + '; '.join(fails)))
 sys.exit(1 if fails else 0)

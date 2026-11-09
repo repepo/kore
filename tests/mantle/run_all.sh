@@ -7,7 +7,7 @@ T=$(cd "$(dirname "$0")" && pwd)
 W=${1:-$T/runs}; mkdir -p "$W"
 fail=0
 python3 "$T/mantle_check.py" "$W" || fail=1
-# NEW (2026-11-09): the conducting mantles on the exact spheroid (about 2 min more on 2 ranks)
+# NEW (2026-11-09): the conducting mantles on the exact spheroid (about 3 min for derive_spheroid, 2.5 min on 8 ranks for the runs)
 python3 "$T/derive_spheroid.py" || fail=1
 python3 "$T/spheroid_mantle_check.py" "$W/spheroid" "${NCPUS:-2}" || fail=1
 echo

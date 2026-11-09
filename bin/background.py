@@ -683,9 +683,10 @@ def check_spheroid_mantle(what):
     '''
     NEW (2026-11-09): a conducting mantle (what: "mantle = 'resolved'" or "mantle = 'TWA'") in a deformed body: only the exact
     spheroid (centrifugal_shape 'spheroid'; centrifugal.py, section 8), whose level surfaces are homothetic, so that the
-    mantle's rows take the metric of the fluid's, and a fluid at rest at the wall (a viscous no-slip wall, bco = 1, or no
-    flow): a fluid that slips along it would add its u×B0 to the mantle's rows (assemble.bc_b_slip), which the spheroid's
-    rows leave out. An undeformed body (deformed() false) takes the sphere's rows.
+    mantle's rows take the metric of the fluid's. An undeformed body (deformed() false) takes the sphere's rows.
+    FIX (2026-11-09): a fluid that slips along the mantle (bco = 0 or ViscosD = 0) no longer stops: its u×B0 enters the
+    electric-field row of the resolved mantle as in the sphere (assemble.bc_b_slip, w×B̃0 being the covariant u×B0) and the
+    thin layer's rows through its sheet (assemble.bc_b_slip_spheroid, centrifugal.spheroid_twa_slip).
     '''
     import centrifugal as cf
     if not cf.deformed():
@@ -693,9 +694,6 @@ def check_spheroid_mantle(what):
     if par.centrifugal_shape != 'spheroid':
         sys.exit("%s in a deformed body needs the exact spheroid (centrifugal_shape 'spheroid'), not %r"
                  % (what, par.centrifugal_shape))
-    if par.hydro and not (par.ViscosD > 0 and par.bco == 1):
-        sys.exit("%s on the spheroid needs a fluid at rest at the wall: a viscous fluid (ViscosD > 0) and a no-slip outer "
-                 "wall (bco = 1), or no flow (hydro = 0)" % what)
 
 
 def check_twa():

@@ -417,6 +417,11 @@ q_l(b̃) = λ_l s_l(M b̃), t_l(M b̃) = 0, λ_l = (a²/k) d ln R_l/dν at ν0 =
 Q_l^m(ν) prolate, P_l^m in an insulating inner core; `spheroid_lambda` by recurrence, `spheroid_field_walls` through
 `wall_rows`). Every budget closes to round-off, resid𝐄 too (`spheroid_potential`, the loss ∫ j*⋅M j with j = ∇×(M b̃)).
 Checks `tests/centrifugal/spheroid_check.py` (exact Galerkin solvers for viscous, heat and field-decay modes).
+Conducting mantles on the spheroid (2026-11-09; centrifugal.py end of section 8, `background.check_spheroid_mantle`):
+'resolved' (metric diffusion `spheroid_mantle_build`, `assemble.bc_b_mantle_centrifugal`) and 'TWA' in the thin limit
+c_cmb = 0, mu = 1 (sheet K̃ with weight V(x), `spheroid_twa`, `twa_rows`); resid𝐄 nan. A slipping fluid (bco = 0 or
+ViscosD = 0): Fᵀ(u×B) = w×B̃0, so the resolved mantle takes the sphere's `bc_b_slip` unchanged and the thin layer
+`bc_b_slip_spheroid` (`spheroid_twa_slip`, through V). Checks `tests/mantle/derive_spheroid.py`, `spheroid_mantle_check.py`.
 With a field (magnetic = 1, phase 1b, 2026-11-05; `centrifugal.py` sections 4, 5): F, G describe the flux b̃ = J F⁻¹b, and
 kore's B0 formula gives B̃0 (the body's field is F B̃0/J). Covariant Lorentz force (1/J)[∇×(M b̃)×B̃0 + ∇×(M B̃0)×b̃],
 induction ∂ₜb̃ = ∇×(w×B̃0/J); first-order parts δ𝐆, δ𝐄 built with mag_algebra's recurrence algebra

@@ -224,7 +224,7 @@ or on an insulating inner core, through boundary conditions alone, without extra
 - **With differential rotation**, a conducting layer turns with the fluid next to it, so the rotation must be uniform in
   latitude at that wall.
 - **On the exact spheroid** (`centrifugal_shape = 'spheroid'`) the layer at the outer wall works in its thin limit,
-  `c_cmb = 0` and `mu = 1`, and with the flow it needs a no-slip outer wall (`bco = 1`). The layer lies between two
+  `c_cmb = 0` and `mu = 1`, with a no-slip or a slipping fluid at the wall. The layer lies between two
   level surfaces, so in an oblate body it is a little thicker at the equator than at the poles
   ([The exact spheroid](centrifugal-equations.md#the-exact-spheroid)).
 

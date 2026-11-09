@@ -2123,7 +2123,8 @@ def spheroid_icb(m, lw, R, f=None):
 
 # --- NEW (2026-11-09): conducting mantles on the exact spheroid: the resolved mantle and the thin conducting layer
 # The resolved mantle (mantle = 'resolved') fills the level surfaces 1 <= r <= r_surface, spheroids of the fluid's flattening.
-# At rest (the wall is no-slip) its field only diffuses, σ ∂ₜb̃ = -∇×E + (ln σ)' r̂ × E per MagnetD, E = Q ∇×(Q b̃) the
+# At rest its field only diffuses (FIX 2026-11-09: a fluid slipping along it adds its u×B0 to the row at r = 1, as in the
+# sphere, assemble.bc_b_slip), σ ∂ₜb̃ = -∇×E + (ln σ)' r̂ × E per MagnetD, E = Q ∇×(Q b̃) the
 # covariant electric field (Fᵀ times the body's, per unit η) and σ = σ(r) constant on the level surfaces. Its rows are those
 # of the sphere (assemble.bc_b_mantle, divided by η) plus the metric parts:
 #     diffusion   the fluid's (spheroid_build 'mag': -∇×δE, δE = Q ∇×(Q b̃) - ∇×b̃) and, in the rows gm, the part of
@@ -2139,7 +2140,7 @@ def spheroid_icb(m, lw, R, f=None):
 # The thin conducting layer (mantle = 'TWA', c_cmb = 0, mu = 1) is the thin limit of that mantle: the layer 1 <= r <= 1 + h,
 # whose thickness in the body is a h at the equator and c h at the poles, with σ_w h = c1 R fixed as h -> 0 (c1 = c1_cmb).
 # There its current is a sheet K̃ = ∫ J̃ dr along the wall, J̃ = σ_w Q⁻¹ E (the flux of the current, J̃ = ∇×(Q b̃)), with the
-# tangential E of the fluid next to it (no-slip) and its radial part set by J̃_r = 0 inside the layer: (Q⁻¹ E)_r = 0 gives,
+# tangential E of the fluid next to it (FIX 2026-11-09: with a slipping fluid, its u×B0 too: spheroid_twa_slip) and its radial part set by J̃_r = 0 inside the layer: (Q⁻¹ E)_r = 0 gives,
 # with x = cos θ and ẑ_H = ẑ - x r̂,
 #     K̃ = (c1 R/a²) [E_H + V(x) ẑ_H (ẑ_H⋅E_H)],     V(x) = (a² - c²)/(c² + (a² - c²) x²)
 # (V = 0 in the sphere: K̃ = c1 R (∇×b̃)_H). V is not a polynomial: its Legendre series (to 1e-17 of its first coefficient,
@@ -2208,6 +2209,36 @@ def spheroid_twa(m, lw, R, c1, f=None):
         for (Xn, d), F in _at(K0, R, {}).items():
             _add(out, ('f', '%s%d' % (Xn, d)), R*F.t)
             _add(out, ('g', '%s%d' % (Xn, d)), -F.s)
+    return {k: sp_csr(v) for k, v in out.items()}
+
+def spheroid_twa_slip(m, lw, R, c1, br, f=None):
+    '''
+    NEW (2026-11-09): a fluid slipping along the thin conducting layer on the exact spheroid (stress-free, bco = 0, or
+    inviscid; utils.twa_slips): the terms of its u×B0 in the layer's rows, which replace the sphere's (assemble.bc_b_slip),
+    in the format of spheroid_twa with the sources 'P0', 'P1', 'T0' (the flow's columns at R). The covariant electric field
+    of the fluid is E = MagnetD Q ∇×(Q b̃) - w×B̃0 (Fᵀ(u×B) = w×B̃0 at J = 1, w = F⁻¹u, kore's P and T, and B̃0 = F⁻¹B0, kore's
+    B0 formula), and the tangential E is continued into the layer at rest (condition C.I, as in the sphere): the sheet of
+    spheroid_twa's header gains, per MagnetD (the rows of the layer being those of E/MagnetD),
+        K̃_slip = (c1 R/a²) [S + V(x) ẑ_H (ẑ_H⋅S)],     S = -(w×B̃0)_H = B0_r (r̂×w_t)
+    (w_r = 0 at the wall): f gains μ R k_t, g gains k_s of K̃_slip, without the 1/MagnetD. br: B0_r(R, x) as a numpy Legendre
+    series (Σ n(n+1) h_n(R)/R P_n, background_field.pol_profiles). In the sphere (V = 0, a = 1, μ = -1) these are bc_b_slip's
+    (G' - R S_l/MagnetD in the g row times c1, D F + R² X_l/(L MagnetD) in the f row times c1).
+    '''
+    a, c = spheroid_axes(f)
+    A = angular.Algebra.get(m, lw)
+    lv = np.arange(lw + 1, dtype=float)
+    mu = spheroid_lambda('outer', m, lw, f)/(lv + 1)
+    V = twa_weight(f)
+    tang = lambda e: _map(e, lambda F: angular.Field(0*F.q, F.s, F.t))
+    out = {}
+    for X in 'PT':
+        S = _poly(A, _rcr(tang(_flow(A, X))), br)
+        if V.degree() > 0 or V.coef[0] != 0:
+            S = _sum(S, _poly(A, tang(_zhat(A, _zdot(A, S))), V))
+        K = _sc(S, c1*R/(a*a))
+        for (Xn, d), F in _at(K, R, {('lam', 1): 0.}).items():   # λ1 = 0: the spheroid is homogeneous
+            _add(out, ('f', '%s%d' % (Xn, d)), sp_diags(R*mu) @ F.t)
+            _add(out, ('g', '%s%d' % (Xn, d)), F.s)
     return {k: sp_csr(v) for k, v in out.items()}
 
 def mantle_metric_on():
@@ -2296,6 +2327,15 @@ def mantle_rows():
             B = _bandwidth({0: W})
             _mwall[key] = (B, {k: angular.band(M, B) for k, M in W.items()})
     return _mwall
+
+_twa_slip = {}
+def twa_slip_rows(br):
+    '''spheroid_twa_slip for this run at the outer wall (c1_cmb, br the B0_r series there), cached: {(row, source): csr}'''
+    import utils as ut
+    if not _twa_slip:
+        _twa_slip.update(spheroid_twa_slip(par.m, par.lmax + len(twa_weight().coef) + br.degree() + 12, ut.rcmb,
+                                           par.c1_cmb, br))
+    return _twa_slip
 
 _twa = {}
 def twa_rows():

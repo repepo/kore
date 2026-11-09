@@ -374,8 +374,13 @@ $\hat{\mathbf z}$ and $x = \cos\theta$; the term in $V$ makes the current along 
 sheet makes the tangential field jump to the potential field outside, and kore adds its spheroidal and toroidal parts
 to the rows of the insulating wall. $V$ is not a polynomial: its Legendre series, of degree 28 at $f$ = 0.1, couples
 the rows of the wall over that many degrees. The layer lies between level surfaces, so its thickness in the body is $ah$ at the equator and
-$ch$ at the poles. Both mantles need a fluid at rest at the wall: a no-slip wall (`bco` = 1) or no flow
-(`centrifugal.spheroid_twa`, `mantle_rows`).
+$ch$ at the poles (`centrifugal.spheroid_twa`, `mantle_rows`).
+
+A fluid may also slip along either mantle (`bco` = 0, or an inviscid fluid). Its $\mathbf E_H$ then includes
+$-(\mathbf w\times\tilde{\mathbf B}_0)_H$, which is the body's $-\mathbf u\times\mathbf B_0$ in the reference variables
+(with $J$ = 1), and the layer at rest takes it on, as in the sphere (condition C.I). For the resolved mantle this is the
+sphere's slip term in the row of the electric field at the wall. For the thin layer it goes through the sheet, weight
+$V$ included (`centrifugal.spheroid_twa_slip`).
 
 **Scope.** The fluid is homogeneous (`structure = 'Boussinesq'`, `diffusivity = 'uniform'`), with `centrifugal_q` = 0 (the
 effective gravity is already kore's $g$), and any $f < 1$; with a field, any background, insulating walls, an inner
