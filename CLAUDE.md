@@ -113,7 +113,7 @@ ones too (check_names warns), and does not call set_scales. docs/output.md#the-p
 | `angular.py` | the angular algebra at fixed m: the recurrence matrices X (cos θ) and D (−sin θ ∂θ), the vector operations (g(cos θ)·, ẑ×, sin θ F_θ), Schmidt harmonics at any l (`ylm_grid`, `ylm`); numpy and scipy only |
 | `targets.py` | analytic targets (spin-over, Rieutord–Valdettaro attractor) |
 
-Other directories: `tests/ci/` (the test GitHub runs on every push, §11); the other folders of `tests/`, one per
+Other directories: `tests/ci/` (the tests GitHub runs on every push, with a few suites, §11); the other folders of `tests/`, one per
 suite, each with a README and (but `tests/diff_rot/`) a `run_all.sh` (§11); `docs/` (mkdocs, public user documentation: `installation.md` (from conductive_IC), `getting-started.md` (a
 step-by-step run of Baruteau & Rieutord 2013 fig. 10), the user guide `background.md` (structure, stratification,
 diffusivity with ThermaD = 0, composition, rotation and thermal wind, centrifugal deformation), `forcing.md` (forcing 11: a worked m = 2 Rossby-mode scan, set-up,
@@ -170,7 +170,10 @@ A toroidal B0 (step 4): `B0_tor` 'Malkus' (k = r, B0 = s φ̂), 'wall' or 'user'
 poloidal B0 of degree 2 (`operators.lorentz_pol2`/`induction_pol2`, tables of label expressions fitted from derive.py; spin_doctor
 uses the grid for it), the full sphere (ricb = 0: parity of h (-1)^l, of k (-1)^n via `ut.odd_profiles`, f of parity
 `vF = symmB0·vP`, one bc row at the CMB; FDM = j_l(βr) with analytic derivatives `bf.jl_k`) and inviscid runs (ViscosD = 0,
-full sphere only: u rows in C^(3), v rows in C^(2) with no bc row, since the Lorentz labels have D3, D2). Uniform η, no
+full sphere only: FIX 2026-11-09 `inviscid_basis` 'low' (default, as conductive_IC): u rows in C^(2), v rows in C^(1) with no
+bc row, the D3, D2 Lorentz (and bgflow) labels converted back with the dense inverse of G[dx][dx-gbx] in submatrices.py;
+'high', the only basis before: C^(3), C^(2), A banded, but Luo & Jackson's torsional S2 modes at N 128 were 2e-5, 1.2e-4
+off against 8e-7, 5e-6, and 1e-5 from conductive_IC's (now 3e-10, tests/ci/test_benchmarks.py)). Uniform η, no
 inviscid shell: `background.check_magnetic()` stops otherwise. Forced runs: see below (phase 6a).
 Thin conducting walls (2026-11-06, conductive_IC port phase 3): `mantle`, `innercore` = 'TWA' (`c_cmb`, `c1_cmb`, `muw_cmb`,
 `c_icb`, `c1_icb`, `muw_icb`, fluid `mu`, `B0_cmb`; `background.check_twa`). `assemble.bc_b_twa`: conductive_IC's
@@ -504,7 +507,7 @@ the only physical unit it reads is the nHz of the solar rotation data.
   sphere (`ricb = 0`), where parity halves the basis (`N1 = N/2`, use about twice a shell's N; N must be even for any
   ricb, `background.check` stops otherwise).
   Each section is written in a Gegenbauer basis: `u` C^(4), `v` C^(2), `f`, `g` C^(2), `h` C^(2) (C^(0) if ThermaD = 0, C^(1) with
-  `adiab_tw`), `c` C^(2) (C^(0) if CompoD = 0); inviscid full sphere: `u` C^(2), `v` C^(1). Products are `ut.Mlam` (multiplication by a profile's
+  `adiab_tw`), `c` C^(2) (C^(0) if CompoD = 0); inviscid full sphere: `u` C^(2), `v` C^(1) (with a field or a bgflow too, `inviscid_basis` 'low'; 'high': C^(3), C^(2)). Products are `ut.Mlam` (multiplication by a profile's
   coefficients), derivatives `ut.Dlam`, basis changes `ut.Slam`.
 - **Sizes.** `n = N1*(lmax-m+1)/2`, `sizmat = 2n*hydro + n*thermal + 2n*magnetic + 2 nic + 2 nman + n*compositional + 3 rotdyn`.
   Unknown vector: [P blocks for the poloidal l's][T blocks for the toroidal l's][s blocks, same l's as P][f blocks][g
@@ -973,9 +976,18 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   (r, θ) grid, 1e-8) in eigen and forced runs (forcings 1, 8 (+ x = forcing 7), 12 with a field; m 1 symm −1 for the
   equatorial resid𝐋); the stops and the full-sphere centre warning. `rows_check.py` (each row of `bgflow.build` against
   the fields on a θ grid, 1e-8).
-- `tests/ci/test_spinover.py` (`cd tests/ci; pytest -v`, about 6 s): the test GitHub runs on every push to main, the default branch
+- `tests/ci/` (`cd tests/ci; pytest -v`, about 1 min on 4 cores): what GitHub runs on every push to main, the default branch
   (`.github/workflows/anelastic_log.yml`: Ubuntu 24.04 with its PETSc/SLEPc 3.19, numpy 1.26 and scipy 1.11 packages, so
-  `bin/` must not need newer ones; pushes that change only docs or `.md` files are skipped). It runs the smooth Sun
+  `bin/` must not need newer ones; pushes that change only docs or `.md` files are skipped). NEW (2026-11-09) the workflow
+  is a matrix of jobs side by side: `tests/ci` and the suites decay, tidal, forcing, rotdyn, inner_core and composition (their
+  run_all.sh; 30 s to 3.5 min each). `test_benchmarks.py` (NEW 2026-11-09, ported from conductive_IC's tests): the onset of
+  convection of Jones et al. 2000 (full sphere, 'linear') and Dormy et al. 2004 (shell, 'inverse square'), σ solved at
+  0.999 and 1.001 of conductive_IC's Ra_c, the interpolated root and ω_c to 1e-5 (conductive_IC's BV2 = -Ra Ek²/Pr is
+  Beyonce, times ricb/(1 - ricb) for 'differential'); the torsional modes of Luo & Jackson 2022 (B0 'Luo_S2', inviscid
+  full sphere, N 128: conductive_IC's eigenvalues to 5e-7, in practice 3e-10, and Luo & Jackson's to 2e-6, 1e-5; it fails
+  with inviscid_basis 'high', 2e-5 and 1.2e-4 from theirs); the toroidal viscous decay without rotation against Bessel roots.
+  `test_operators.py` (NEW 2026-11-09): ru_insane.py on the heat_dr 'Wu 2005' conical run (N 96) and the magnetic 'axial'
+  run, gen_check.py on the first. `test_spinover.py` (about 6 s) runs the smooth Sun
   example with m 1, N 32, lmax 16 on 2 ranks, and a rigid rotation offset ('rigid', 0.1): its spin-over is exact, λ = i
   (found to 1e-16; a 1 % error in the rotation terms or in the ν′ or (ln ρ₀)′ terms of the toroidal viscous force moves
   it by 1e-6 to 1e-3). conductive_IC has its own tests and workflow: do not run one branch's tests on the other.

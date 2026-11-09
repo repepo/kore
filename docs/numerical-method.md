@@ -36,6 +36,14 @@ of each section are written in the Gegenbauer basis of its highest derivative: $
 `h` and `c` ($C^{(0)}$ for `h` with `ThermaD = 0`, $C^{(1)}$ if a thermal wind is included; $C^{(0)}$ for `c` with
 `CompoD = 0`). This makes $A$ and $B$ sparse.
 
+An inviscid fluid (`ViscosD = 0`, in a full sphere) has its `u` rows in $C^{(2)}$ and its `v` rows in $C^{(1)}$. With a
+magnetic field, or a background flow, those rows also hold third and second derivatives, and `inviscid_basis` sets how
+they are written. With `'low'` (the default) the rows stay in $C^{(2)}$ and $C^{(1)}$, and those terms are converted back
+exactly, which makes their blocks of $A$ dense. With `'high'` the rows are in $C^{(3)}$ and $C^{(2)}$, and $A$ stays
+sparse, but the eigenvalues converge much more slowly with N: at N = 128 the torsional modes of
+[Luo & Jackson (2022)](https://doi.org/10.1098/rspa.2021.0982) are $10^{-4}$ off with `'high'` against $5\cdot10^{-6}$
+with `'low'`. Use `'high'` only when the dense blocks cost too much memory, at N of about 1000 or more.
+
 ## Rows
 
 The pressure is removed by taking the radial components of the curl and of the double curl of the momentum

@@ -660,6 +660,16 @@ class default_params():
         # Powers of the density ρ₀ multiplying the same equations
         self.rhopower_u = 1
         self.rhopower_v = 1
+
+        # NEW (2026-11-09, from conductive_IC): the basis of the flow's rows in an inviscid full sphere (ViscosD = 0, ricb = 0)
+        # with a field or a background flow, whose f''' (u rows) and g'' (v rows) need a higher basis than the C^(2), C^(1)
+        # of an inviscid flow alone:
+        #   'low'   rows in C^(2), C^(1), those terms converted back exactly (dense blocks of A: more memory and a slower
+        #           solve at large N; conductive_IC at N 1024 2.6x the memory, 4x the solve time of 'high')
+        #   'high'  rows in C^(3), C^(2) (A banded; the only basis before 2026-11-09): the eigenvalues converge much more
+        #           slowly where the magnetic boundary layer is not resolved (Luo & Jackson's torsional S2 modes at N 128:
+        #           2e-5 and 1.2e-4 from their values against 8e-7 and 5e-6 with 'low'). Worth it only at N >~ 1000.
+        self.inviscid_basis = 'low'
         # Powers of r and ρ₀ for the pressure equation (not read by the current pipeline)
         self.rpower_pp   = 4
         self.rhopower_pp = 4

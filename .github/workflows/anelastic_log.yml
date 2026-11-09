@@ -1,8 +1,12 @@
-# The tests of the default branch, main (tests/ci): run on every push to main, on pull requests into it, and from
-# "Run workflow" in the Actions tab. conductive_IC has its own tests and workflow (conductive_IC.yml).
+# The tests of the default branch, main: run on every push to main, on pull requests into it, and from "Run workflow" in
+# the Actions tab. conductive_IC has its own tests and workflow (conductive_IC.yml).
 # Keep this same file on every branch that may become the default (as with docs.yml and conductive_IC.yml): GitHub
 # lists workflows, and serves their badges, from the default branch, so a workflow missing there is marked deleted
 # and its badge breaks.
+#
+# One job per entry of the matrix, side by side: 'ci' is tests/ci (pytest: the spin-over, the literature benchmarks, the
+# operator checks), the others are suites of tests/ run by their run_all.sh, a few minutes each, chosen to reach
+# different parts of the code. The other suites (docs/checking.md) take longer, or need sympy, pandas or matplotlib.
 name: Tests
 
 on:
@@ -23,7 +27,19 @@ jobs:
     # "Run workflow" can be started on any branch: only test main
     if: github.event_name != 'workflow_dispatch' || github.ref_name == 'main'
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false   # one failing suite does not cancel the others
+      matrix:
+        suite:
+          - ci            # tests/ci: spin-over of the smooth Sun, convection onset, torsional modes, operator symmetries
+          - decay         # the field and the entropy without the flow (Bessel roots), kinematic induction
+          - tidal         # forcing 14 against the Stokes solution, the energy budget at the walls
+          - forcing       # the boundary forcings' wall values, and the stops at startup
+          - rotdyn        # the rotating solids and the angular momentum
+          - inner_core    # B0 'dipole', a conducting inner core, a fluid slipping along it
+          - composition   # the composition, against conductive_IC and against the entropy
+    name: test (${{ matrix.suite }})
     env:
       PETSC_DIR: /usr/lib/petscdir/petsc-complex
       SLEPC_DIR: /usr/lib/slepcdir/slepc-complex
@@ -38,8 +54,15 @@ jobs:
             libpetsc-complex-dev libslepc-complex-dev \
             python3-petsc4py-complex python3-slepc4py-complex
 
-      - name: Run tests
+      - name: Run tests/ci
+        if: matrix.suite == 'ci'
         working-directory: tests/ci
         run: |
           ulimit -s unlimited
           pytest -v
+
+      - name: Run tests/${{ matrix.suite }}
+        if: matrix.suite != 'ci'
+        run: |
+          ulimit -s unlimited
+          bash tests/${{ matrix.suite }}/run_all.sh "$RUNNER_TEMP/${{ matrix.suite }}"

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 '''
-The test GitHub runs on every push to main, the default branch (.github/workflows/anelastic_log.yml). To run it locally:
-> cd tests/ci; pytest -v
+One of the tests GitHub runs on every push to main, the default branch (.github/workflows/anelastic_log.yml; with
+test_benchmarks.py, test_operators.py and a few suites of tests/). To run it locally:
+> cd tests/ci; pytest -v test_spinover.py
 
 The smooth Sun example (examples/smooth_sun: full sphere, Model S structure, radiative interior, ν and κ step,
 stress-free wall) at low resolution, with m = 1 and, in place of the observed rotation, a rigid one 10 % faster than the

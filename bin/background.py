@@ -91,6 +91,8 @@ def check():
         sys.exit('an inviscid fluid (ViscosD = 0) needs ricb = 0: kore\'s inviscid formulation (its bases and its one wall '
                  'row, no penetration) is for the full sphere only. In a shell the wall rows of a viscous fluid would stay '
                  'empty, five for each pair of degrees, and A - λB would be singular for every λ')
+    if par.inviscid_basis not in ('low', 'high'):   # NEW (2026-11-09)
+        sys.exit("inviscid_basis %r: 'low' (rows in C^(2), C^(1)) or 'high' (C^(3), C^(2))" % (par.inviscid_basis,))
     if par.forcing != 0:   # NEW (2026-11-08)
         check_forcing()
     if par.field_format not in ('npy', 'text'):   # NEW (2026-11-08): the solution files (field_io.py)

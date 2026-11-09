@@ -9,7 +9,7 @@ part right? kore has a tool for each. Everything below runs from the repository;
 | --- | --- | --- |
 | residuals of `spin_doctor.py` | each solution satisfies its energy and entropy budgets | every run ([Solver](solver.md#first-check-the-solution)) |
 | `bin/ru_insane.py` | the operators have the symmetries of the equations | after `submatrices.py`, when an operator changed (seconds) |
-| `tests/ci` (`pytest -v`) | a quick end-to-end test; GitHub runs it on every push | before every push (seconds) |
+| `tests/ci` (`pytest -v`) | quick end-to-end tests: the spin-over of the smooth Sun, the onset of convection and torsional modes against published values, the symmetries of the operators; GitHub runs them on every push, with the `decay`, `tidal`, `forcing`, `rotdyn`, `inner_core` and `composition` suites below | before every push (about a minute) |
 | `tests/diff_rot/regress.sh` | the matrices of a set of small runs are unchanged ([below](#are-existing-runs-unchanged)) | after any change that should not alter results (minutes) |
 | `tests/rsf/regress_solve.sh` | eigenvalues, fields and forced solutions are unchanged | after a change of `solve.py` |
 | `tests/heat_dr/run_all.sh` | the heat equation and the differential rotation | after a change of the background, the rotation or the heat equation |

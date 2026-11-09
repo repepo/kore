@@ -15,6 +15,7 @@ These submatrices are required for the assembly of the main matrices A and B.
 from timeit import default_timer as timer
 import multiprocessing as mp
 import scipy.sparse as ss
+import scipy.linalg as sla   # NEW (2026-11-09): inviscid_basis 'low'
 import scipy.io as sio
 import numpy as np
 import warnings
@@ -107,9 +108,14 @@ def main(ncpus):
     if inviscid:
         gebasis[0] = 2  # only up to second derivatives in section u
         gebasis[1] = 1  # up to first derivatives in section v
-        if par.magnetic or par.bgflow:   # NEW (2026-10-28): the Lorentz force has third derivatives of f in section u and second
-            gebasis[0] = 3  # ones of g in section v (NEW 2026-11-08: a background flow, P''' and P''); section v still has no bc
-            gebasis[1] = 2  # rows (chop = 0 below), section u one (P = 0)
+        # FIX (2026-11-09): with a field (or a background flow) the Lorentz force has f''' in section u and g'' in section v
+        # (a background flow P''' and P''). inviscid_basis 'low' (the default, as conductive_IC) keeps the rows in C^(2), C^(1)
+        # and converts those terms back exactly (dx > gbx below); 'high' puts the rows in C^(3), C^(2) (A banded, as before
+        # 2026-11-09), whose eigenvalues converge much more slowly: Luo & Jackson's torsional S2 modes at N 128 were 2e-5 and
+        # 1.2e-4 from their values ('low': 8e-7, 5e-6, conductive_IC's). Section v has no bc rows (chop = 0 below), u one (P = 0).
+        if (par.magnetic or par.bgflow) and par.inviscid_basis == 'high':
+            gebasis[0] = 3
+            gebasis[1] = 2
 
     if par.ThermaD == 0:
         gebasis[2] = 1 if ut.adiab_tw else 0  # No thermal diffusion, C^(0) basis is enough (C^(1) for the thermal wind's P'), no need for thermal bc's
@@ -430,9 +436,18 @@ def main(ncpus):
         # Multiply by appropriate derivative matrix on the right and change to C^(4), C^(3) or C^(2) basis depending on section
         idx = [ j for j,x in enumerate(pkey) if (x == opkey[k]) ]  # find matrix index in pkey
         
-        if dx > gbx:  # G[gbx][gbx-dx] would index from the end of the list: a wrong basis, silently
+        if dx > gbx and inviscid and secx in ('u', 'v'):
+            # FIX (2026-11-09, inviscid_basis 'low', from conductive_IC): f''' in section u (C^(2)), g'' in section v (C^(1)),
+            # P''' and P'' of a background flow, back from C^(dx) to C^(gbx) with the inverse of the conversion G[dx][dx-gbx]
+            # (upper triangular, its inverse dense: these blocks of A are dense). G[gbx][gbx-dx] would index from the end of
+            # the list: a wrong basis, silently
+            Cup = G[dx][dx-gbx].toarray()
+            Sinv = sla.solve_triangular(Cup, np.identity(Cup.shape[0]))
+            matrix = ss.csr_matrix(Sinv) * matlist[idx[0]] * D[dx]
+        elif dx > gbx:
             raise ValueError('%s: derivative order %d needs at least the C^(%d) basis, section %s has C^(%d)' % (labl1, dx, dx, secx, gbx))
-        matrix = G[gbx][gbx-dx] * matlist[idx[0]] * D[dx]
+        else:
+            matrix = G[gbx][gbx-dx] * matlist[idx[0]] * D[dx]
 
         if par.ricb == 0 :  # --------------------------------------------------------- If no solid inner core then remove unneeded rows and cols
 
