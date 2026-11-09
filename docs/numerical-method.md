@@ -219,10 +219,8 @@ dotted with $\mathbf u^*$ and integrated over each wall for $W_\nu^{\rm wall}$. 
 
 $\Pi_l$ needs the radial derivatives of $P_l$ up to the third at the walls. That is where the truncation error of the
 tau method is largest, and near a surface of low density the $(\ln\rho_0)'$ terms of the viscous force amplify it. The
-wall pressure therefore converges with N more slowly than the volume integrals. For `'Wu 2005'` (`r_out` 0.99) at
-Ek $10^{-3}$, residσ of a forced run is $5\times10^{-2}$ at N 96 and $2\times10^{-10}$ at N 192 in a shell, and 0.36,
-$6\times10^{-6}$ and $10^{-8}$ at N 192, 288 and 384 in a full sphere, while the kinetic energy and the dissipation have
-converged at the lowest N. Where $u_r = 0$ at the walls, $W_p = 0$ whatever the resolution.
+wall pressure therefore converges with N more slowly than the volume integrals: residσ of a forced run with moving
+walls can need two to four times the N at which the kinetic energy and the dissipation have converged. Where $u_r = 0$ at the walls, $W_p = 0$ whatever the resolution.
 
 `ru_insane.py` checks the same pairings on the operators themselves: inertia Hermitian and positive, Coriolis
 anti-Hermitian, viscous Hermitian and negative, the entropy and diffusion blocks, the buoyancy and the advection against

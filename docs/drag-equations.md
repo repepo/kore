@@ -2,8 +2,7 @@
 
 This page gives the condition of a drag at a stress-free outer wall ([Drag at the outer wall](drag.md)), the drag of the
 topography, how the condition enters the rows of the wall, and the power and damping rate that `spin_doctor` reports.
-They are those of the `conductive_IC` branch (its `topo.py`, the drag rows of its `assemble.py` and
-`utils4pp.cmb_slip_K`), written for any density and viscosity profile in `bin/topo.py`.
+They hold for any density and viscosity profile (`bin/topo.py`).
 
 ## The condition
 
@@ -90,7 +89,7 @@ A_{xy}^{ll'} = \frac{\oint x_l^*\cdot\mathsf K\,y_{l'}\,dS}{\oint\lvert x_l\rver
 x, y \in \{\,s: \nabla_1 Y,\ \ t: \nabla_1 Y\times\hat{\mathbf r}\,\} ,
 $$
 
-on the unit sphere (`topo.couplings`, `topo.rows`). A constant drag gives $A_{ss} = A_{tt} = $ `kappa_cmb` and no
+on the unit sphere (`topo.couplings`, `topo.rows`). A constant drag gives $A_{ss} = A_{tt}$ equal to `kappa_cmb` and no
 coupling between degrees. The drag of the topography is even about the equator, so it couples degrees of the same
 symmetry: $l$ to $l\pm2, \dots$ within $P$ and within $T$, and for $m \neq 0$ $P_l$ to $T_{l\pm1}, \dots$. The integrals
 are Gauss–Legendre quadratures in $\cos\theta$ with $\max(4(l_\text{max} + 2), 2000)$ nodes, many since $\mathsf K$ has
@@ -126,58 +125,13 @@ power too, which then adds to the right-hand side. So the budgets need no new te
 power of the stress at the walls, and the energy budget of the rotating solids the power of their torques. $\delta\sigma_\text{topo}$ is the drag's share of the damping
 rate, one term of that budget.
 
-## Checks (2026-11-06)
+## Checks
 
-`tests/drag/drag_check.py` (`run_all.sh`, about 2 min on 2 ranks):
-
-- **Against `conductive_IC`** (2d84351), eleven runs: a constant drag on the spin-over mode in a shell and in a full
-  sphere; the drag of the topography on the spin-over mode, on an $m = 2$ mode and in a full sphere; the rotating solids
-  with a stress-free outer wall without a drag, with each drag, with thin conducting layers and a dipole, and with a
-  conducting inner core, a resolved mantle and a field of degree 2; the drag of the topography with a thin layer and a
-  dipole.
-  Eigenvalues to $6\cdot10^{-14}$, and the rotation of the solids and the torques on the mantle in `rotdyn.dat` to
-  $3\cdot10^{-10}$, its precision.
-- **Conservation** with `'Wu 2005'` (`r_out` 0.9, N 64) and the rotating solids: every mode but $\lambda = 0$ carries
-  no total angular momentum ($2\cdot10^{-9}$) and closes resid𝐋 ($10^{-9}$); with `kappa_cmb` the energy budget of
-  the fluid and the solids closes ($10^{-10}$), with the drag of the topography, a dipole, a conducting inner core and a
-  resolved mantle resid𝐄 does ($10^{-10}$).
-- **Equivalences.** A constant tensor given to the drag of the topography (the test hook `topo_K`) gives the eigenvalues
-  of `kappa_cmb` ($2\cdot10^{-14}$). A rigid differential rotation $a = 0.3$ with `kappa_cmb` gives the eigenvalues of
-  a frame turning $1 + a$ times faster with `kappa_cmb`$/(1 + a)$, shifted by $-i\,m\,\mathrm{Gaspard}\,a$
-  ($2\cdot10^{-16}$): the drag acts on the slip relative to the mantle, in units of the frame's rotation rate.
-- **Limits.** `kappa_cmb` = $10^8$ gives the eigenvalues of a no-slip wall ($7\cdot10^{-12}$; with the rotating solids
-  $10^{-10}$, and their `rotdyn.dat`). A weak drag (`kappa_cmb` = $10^{-6}$) dissipates `kappa_cmb` times the Dtopo/κ of
-  the stress-free run ($6\cdot10^{-5}$; with the rotating solids $2\cdot10^{-5}$), and with the mantle at rest changes
-  the damping rate of the spin-over mode by `kappa_cmb` times its δσtopo/κ ($5\cdot10^{-4}$). With the rotating solids
-  the change is 0.49 times it for their axial mode: the drag turns the mantle, which changes the other losses at the
-  same order.
-- **Frequencies.** $N/\Omega$ and $\omega_0/\Omega$ in `params.dat`: `topo_N` and `topo_omega` when set,
-  $\sqrt{10}$ for the stratification `'linear'` with Beyonce 10, $\lvert$`itau`$\rvert$ and the forcing frequency
-  otherwise ($10^{-9}$). The same run with a time unit twice as long (Gaspard 2, Beyonce 40, ViscosD, ThermaD and `itau`
-  doubled) has its eigenvalues doubled ($10^{-15}$).
-- **The power through the wall** closes in every run with a drag but the stiff ones (whose slip is round-off), to
-  $2\cdot10^{-9}$, and in a forced run (forcing 6) to the printed digits.
-- **Stops** of `background.check_drag`.
-
-Also checked once:
-
-- **Calibration.** At Ek $10^{-4}$ (N 64) the Earth's topography (`topo_hrms` 4.35e-4, `topo_lambda0` 0.431, `topo_H`
-  0.8, $N = 0$) adds to the damping of the spin-over mode ($\omega_0/\Omega$ = 0.995) $-2.3100\cdot10^{-5}$, and
-  `kappa_cmb` = 4.5e-6 adds $-2.3038\cdot10^{-5}$.
-- **Weak and strong drag** (the spin-over mode, Ek $10^{-3}$, $\sqrt{E} = 0.032$). The change of the damping rate over
-  `kappa_cmb` times δσtopo/κ is 0.97 at `kappa_cmb` = $10^{-3}$, 0.76 at $10^{-2}$ and 0.47 at $3\cdot10^{-2}$; the
-  share of the no-slip wall's added damping is 0.72 at $3\cdot10^{-2}$, 0.94 at 0.1 and 0.998 at 1. With
-  `kappa_cmb` = $10^{-4}$ the added damping is $-5.042\cdot10^{-4}$ at Ek $10^{-3}$ and $-5.063\cdot10^{-4}$ at
-  $10^{-4}$.
-- **Quadrature.** For the spin-over test ($\omega_0/\Omega$ = 0.98, $N/\Omega$ = 0.5) the couplings change by
-  $6\cdot10^{-7}$ of the largest from 2000 to 16000 nodes, the error of the kinks. The nodes are those of
-  `conductive_IC` (computed by `scipy.special.roots_legendre` instead of `numpy`'s `leggauss`, ten times faster; the
-  couplings agree to $5\cdot10^{-12}$).
-- **Other forcings.** The random Reynolds stress (forcing 11) with `kappa_cmb` and with the drag of the topography, and
-  the entropy at the inner wall (forcing 13) with `kappa_cmb`: Dtopo is minus the power of the stress at the wall, to
-  the printed digits.
-- **Operators.** The drag and the rotating solids change only rows of `assemble.py`: `submatrices.npz` is bitwise the
-  same with and without them, so their parameters are not stored in it.
+`tests/drag` checks the drag against exact limits (a very stiff drag gives a no-slip wall; a weak drag adds the damping
+that Dtopo/κ and δσtopo/κ predict), against equivalences (a constant drag tensor gives the constant drag; a uniform
+rotation offset gives a faster frame), the conservation of angular momentum and energy with the rotating solids, and
+the power through the wall. With the Earth's topography and no stratification, the drag of the topography damps the
+spin-over mode as much as `kappa_cmb` = 4.5e-6, to within 0.3 %.
 
 ## Reference
 

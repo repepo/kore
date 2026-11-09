@@ -1,30 +1,32 @@
 # Thermal forcing
 
-Forcing 13 heats the inner wall unevenly in latitude, as the Sun heats the ground of a planet more at the equator
-than at the poles. kore returns the flow that this heating drives: an overturning circulation in the meridional
-plane, like the Hadley cells of the Earth's atmosphere, and the zonal winds that the Coriolis force makes of it.
+Forcing 13 heats the inner wall unevenly in latitude, the way the Sun heats the ground of a planet more at the equator
+than at the poles. kore returns the flow that this heating drives: an overturning circulation in the meridional plane,
+like the Hadley cells of the Earth's atmosphere, together with the zonal winds that the Coriolis force makes of it.
 
 ## What it imposes
 
-The entropy at the inner wall $r = r_i$ is
+The entropy at the inner wall varies with latitude as
 
 $$
 s(r_i, \theta) = A\thinspace P_2(\cos\theta), \qquad P_2(\cos\theta) = \tfrac12 (3\cos^2\theta - 1),
 $$
 
-with $A$ = `forcing_amplitude_icb`. With `bci_thermal = 1` the condition is on the gradient instead,
-$\partial_r s(r_i, \theta) = A\thinspace P_2(\cos\theta)$, a prescribed heat flux. $P_2$ is $-\tfrac12$ at the equator
-and $1$ at the poles, so a negative $A$ makes the equator warmer. The pattern is axisymmetric and equatorially
-symmetric, so the run needs `m = 0` and `symm = 1`, and also `ricb > 0`, `thermal = 1`, `ThermaD > 0` and $A$ not 0.
-The problem is linear: the flow is proportional to $A$. With `magnetic = 1` the perturbation of the field is solved
-with the flow ([Magnetic field](magnetic.md#forced-runs)). Like every forced run it needs a spherical body
-(`centrifugal = 0`); [Combining features](compatibility.md#forced-runs) shows what else it combines with.
+with $A$ = `forcing_amplitude_icb`. With `bci_thermal = 1` the same pattern is imposed on the heat flux instead. $P_2$
+is $-\tfrac12$ at the equator and 1 at the poles, so a negative $A$ makes the equator warmer. The flow is proportional
+to $A$.
 
-With `forcing_frequency = 0` the solution is the steady flow. At least one wall must then be no-slip (`bci = 1` or
-`bco = 1`), or the outer wall must hold the fluid back with the constant drag (`kappa_cmb` > 0,
-[Drag at the outer wall](drag.md)): between two walls that let the fluid slip freely a rigid rotation also solves the
-equations, and the solution is not unique. Both walls must also stay in place (`bci` and `bco` 0 or 1): a steady flow
-through a wall of zero radial stress would move it without end. A non-zero `forcing_frequency` $w$ gives the response to a heating that oscillates as $e^{iwt}$.
+Requirements:
+
+- `m = 0` and `symm = 1` (the pattern is axisymmetric and symmetric about the equator);
+- an inner core (`ricb > 0`), `thermal = 1` and `ThermaD > 0`.
+
+With `forcing_frequency = 0` the solution is the steady flow. It then needs at least one no-slip wall (`bci = 1` or
+`bco = 1`) or a drag at the outer wall ([Drag at the outer wall](drag.md)); otherwise a rigid rotation could be added
+to any solution. Both walls must also stay in place (`bci` and `bco` 0 or 1). A non-zero `forcing_frequency` gives the response to a heating that oscillates in time.
+
+The forcing also works with a magnetic field ([Magnetic field](magnetic.md#forced-runs)).
+[Combining features](compatibility.md#forced-runs) lists what else it combines with.
 
 ## Example: a Hadley cell
 
@@ -40,7 +42,7 @@ par.Ek = 1e-3
 par.Etherm = 1e-3
 par.set_scales()                  # Gaspard = 1, ViscosD = Ek, ThermaD = Etherm
 
-# Boussinesq fluid in a thin rotating shell, conductive and stably stratified: N² = Beyonce/r
+# Boussinesq fluid in a thin rotating shell, stably stratified
 par.structure = 'Boussinesq'
 par.stratification = 'inverse square'
 par.thermal = 1
@@ -78,26 +80,26 @@ It takes a few seconds. The solution is in `flow.npy` and `thermal.npy` ([Output
 ![Hadley cell of the example](assets/thermal-forcing.png)
 
 The figure shows the northern hemisphere. The fluid rises over the warm equator, moves poleward aloft, sinks at high
-latitudes and returns to the equator along the ground: one cell per hemisphere. The Coriolis force turns the
-poleward flow aloft into a prograde (westerly) jet, and the return flow near the ground into retrograde (easterly)
-winds at low latitudes. Poleward of about 25° the winds near the ground are prograde, because a steady flow exerts no
-net torque on the ground.
+latitudes and returns to the equator along the ground: one cell per hemisphere. The Coriolis force turns the poleward
+flow aloft into a prograde (westerly) jet, and the return flow near the ground into retrograde (easterly) winds at low
+latitudes. At higher latitudes the winds near the ground are prograde, because a steady flow exerts no net torque on
+the ground.
 
-A linear, axisymmetric flow has no eddies. As a result, the cell reaches from the equator to the pole, and there are no
-Ferrel cells. At lower Ekman numbers the circulation retreats into the Ekman layer at the ground and towards the
-equator. A stress-free top wall then also has a weak reversed cell above it.
+A linear, axisymmetric flow has no eddies, so the cell reaches from the equator to the pole and there are no Ferrel
+cells. At lower Ekman numbers the circulation retreats into the boundary layer at the ground and towards the equator.
 
 ## Reading the output
 
-For `m = 0` each field is its coefficient times $P_l(\cos\theta)$, plus the complex conjugate. With the poloidal and
-toroidal scalars $P_l(r)$, $T_l(r)$ and the entropy $s_l(r)$ (Chebyshev series in $r$ over $[r_i, 1]$, one block
-of `N` coefficients per $l$; $l$ even for $P$ and $s$, odd for $T$), and with $\rho_0 = 1$ as in the example,
+For `m = 0`, each field is a sum over Legendre polynomials $P_l(\cos\theta)$. With the poloidal and toroidal
+coefficients $P_l(r)$, $T_l(r)$ and the entropy coefficients $s_l(r)$ of the solution ([Output files](output.md)), and
+uniform density as in the example, the meridional streamfunction $\psi$, the zonal velocity and the entropy are
 
 $$
 \psi = -2\thinspace\mathrm{Re} \sum_l r\thinspace P_l(r) \sin\theta\thinspace \partial_\theta P_l(\cos\theta), \qquad
 u_\phi = -2\thinspace\mathrm{Re} \sum_l T_l(r)\thinspace \partial_\theta P_l(\cos\theta), \qquad
-s = 2\thinspace\mathrm{Re} \sum_l s_l(r)\thinspace P_l(\cos\theta),
+s = 2\thinspace\mathrm{Re} \sum_l s_l(r)\thinspace P_l(\cos\theta).
 $$
 
-where the meridional streamfunction $\psi$ gives $u_r = \partial_\theta\psi/(r^2\sin\theta)$ and
-$u_\theta = -\partial_r\psi/(r\sin\theta)$. In the northern hemisphere $\psi < 0$ is a cell that rises at the equator.
+The streamfunction gives the meridional velocity, $u_r = \partial_\theta\psi/(r^2\sin\theta)$ and
+$u_\theta = -\partial_r\psi/(r\sin\theta)$. In the northern hemisphere, negative $\psi$ is a cell that rises at the
+equator.

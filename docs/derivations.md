@@ -14,13 +14,12 @@ reach (verification), and how to run the tools yourself (worked examples).
 
 | background | where kore gets the coefficients | how they were obtained | how they are checked |
 | --- | --- | --- | --- |
-| magnetic field | closed forms in `bin/operators.py` (`lorentz*`, `induction*`) | derived once from the definitions with sympy (`tests/magnetic/derive.py`), turned into formulas in $l$, $m$ (`tools/derive/fit_rows.py`) and into code (`tools/derive/gen_table.py`) | `tests/magnetic/derive_check.py`, `row_check.py`, `budget_check.py`, `bin/ru_insane.py`, comparison with `conductive_IC` |
+| magnetic field | closed forms in `bin/operators.py` (`lorentz*`, `induction*`) | derived once from the definitions with sympy (`tests/magnetic/derive.py`), turned into formulas in $l$, $m$ (`tools/derive/fit_rows.py`) and into code (`tools/derive/gen_table.py`) | `tests/magnetic/derive_check.py`, `row_check.py`, `budget_check.py`, `bin/ru_insane.py`, comparison with an independent code |
 | differential rotation | computed while kore runs, by an exact recurrence algebra (`bin/angular.py`, `bin/diff_rot.py`) | nothing to fit: the algebra is exact for any degree of $\Delta\Omega$ | `tests/diff_rot/angular_check.py`, `gen_check.py` (closed forms of `diff_rot_coefficients.py`), `quad_reference.py`, `tests/heat_dr/tw_sympy.py` |
 
-**Prerequisites.** Python 3 with numpy and scipy (kore's environment, e.g. `source ~/z2/bin/activate`), and sympy for the
+**Prerequisites.** Python 3 with numpy and scipy (kore's python environment), and sympy for the
 magnetic derivations (`pip install sympy`). The differential-rotation tools need no sympy, except `tw_sympy.py`.
-Commands are given from the repository root unless a run directory is named. The outputs shown were recorded on
-2026-10-29.
+Commands are given from the repository root unless a run directory is named.
 
 **Notation.** At a fixed azimuthal order $m$ the angular functions are kore's Schmidt harmonics
 $Y_l = \sqrt{4\pi/(2l+1)}\,Y_l^m$ (Condon–Shortley phase), with $\int|Y_l|^2d\Omega = 4\pi/(2l+1)$; $L = l(l+1)$, and
@@ -50,7 +49,7 @@ $$
 are products of a perturbation of degree $l$ with a background of degree $n$.
 Kore needs, for every pair of degrees, every radial term of these products, with its coefficient. With a variable density
 the factors $\rho_0$ and $\rho_0^{-1}$ add terms in $(\ln\rho_0)'$ and $(\ln\rho_0)''$. Done by hand, this algebra is long
-and easy to get wrong; `conductive_IC` has hand-derived forms for a dipole and a quadrupole at uniform density only.
+and easy to get wrong.
 
 So the algebra is done by a program, once, from the definitions:
 
@@ -140,14 +139,14 @@ then returns $-A\cdot\sum(\text{polynomial}\times\text{label})/L'^3$ for each bl
 | step 1, derive one block | `tests/magnetic/derive.py` | `rows` (`velocity`, `bfield`, `B0`, `lorentz`, `project`) |
 | steps 3–4, closed forms in $l$, $m$ | `tools/derive/fit_rows.py` | `A` (angular factors), `fit` (exact interpolation), `main` |
 | step 5, code | `tools/derive/gen_table.py` | `main` (labels, table entries, label parities) |
-| the operators | `bin/operators.py` | `lorentz`, `induction` (poloidal + toroidal); degree-1 poloidal `lorentz_pol`, `induction_pol` (conductive_IC's forms, plus `lorentz_rho` and the `lho` labels for $(\ln\rho_0)'$); `lorentz_tor`, `induction_tor`, `*_tor2`, `*_pol2` (fitted); `quad_factors`, `moff` (column offsets) |
+| the operators | `bin/operators.py` | `lorentz`, `induction` (poloidal + toroidal); degree-1 poloidal `lorentz_pol`, `induction_pol` (hand-derived forms, plus `lorentz_rho` and the `lho` labels for $(\ln\rho_0)'$); `lorentz_tor`, `induction_tor`, `*_tor2`, `*_pol2` (fitted); `quad_factors`, `moff` (column offsets) |
 | the radial matrices of the labels | `bin/submatrices.py` | the magnetic label lists |
 | placing the blocks, $\Delta l = -2..2$ | `bin/assemble.py` | the loops over `op.lorentz`, `op.induction` |
 
 Where each closed form in `operators.py` comes from:
 
-- degree-1 poloidal field ('axial', 'dipole', 'FDM' with `B0_l` = 1, 'G21 dipole', 'Luo_S1'): `conductive_IC`'s hand-derived forms
-  (commit 39487bbf), with the $(\ln\rho_0)'$ terms derived for this branch;
+- degree-1 poloidal field ('axial', 'dipole', 'FDM' with `B0_l` = 1, 'G21 dipole', 'Luo_S1'): hand-derived forms, with the
+  $(\ln\rho_0)'$ terms derived separately;
 - degree-2 poloidal field ('Luo_S2', 'FDM' with `B0_l` = 2): fitted (`fit_rows.py pol 2`) and generated (`gen_table.py`);
 - toroidal fields of degree 1 and 2: fitted (`fit_rows.py tor 1`, `tor 2`).
 
@@ -155,7 +154,7 @@ Where each closed form in `operators.py` comes from:
 
 - **`tests/magnetic/derive_check.py`** (no run directory, about 40 minutes on one core; `--part k/K` runs every K-th
   check, which `run_all.sh` spreads over its jobs): derive.py against every closed form, term by
-  term: `conductive_IC`'s uniform-density operators, the $(\ln\rho_0)'$ terms, the toroidal forms, and the degree-2 tables
+  term: the uniform-density operators, the $(\ln\rho_0)'$ terms, the toroidal forms, and the degree-2 tables
   (read from the source of `operators.py`). Degrees $l$ 3–6, $m$ 0–3.
 - **`tests/magnetic/row_check.py`** (in a run directory): what kore really assembles, i.e. the closed forms times this
   run's radial matrices, in their Gegenbauer bases, against derive.py evaluated with the run's own profiles. This catches a
@@ -169,14 +168,11 @@ Where each closed form in `operators.py` comes from:
 the range the closed forms were fitted on. They show that the code equals the fit and the derivation there, not that the
 formulas hold at large $l$. The evidence at large $l$ is:
 
-- poloidal fields ('axial', 'FDM' of degree 1 and 2, 'G21 dipole', 'Luo_S1', 'Luo_S2'): the eigenvalues agree with
-  `conductive_IC`, whose closed forms were derived independently, to $6\cdot10^{-13}$ or better with lmax 63–66 (full
-  sphere and inner core) and 79–128 (conducting inner core), and to $10^{-9}$ for the inviscid torsional modes of 'Luo_S2'
-  with lmax 95–191 (against `conductive_IC` with its inviscid bases corrected, [Magnetic field equations](magnetic-equations.md#full-sphere-inviscid-runs-and-degree-2-poloidal-fields));
+- poloidal fields ('axial', 'FDM' of degree 1 and 2, 'G21 dipole', 'Luo_S1', 'Luo_S2'): the eigenvalues agree to
+  round-off with an independent code whose closed forms were derived separately, at `lmax` up to about 190;
 - toroidal fields (no independent code): the energy budgets, which sum the powers over all degrees of the run
-  (lmax 47–64, residuals $10^{-11}$ to $10^{-13}$), and the Malkus (1967) frequencies ([Magnetic field equations](magnetic-equations.md#toroidal-field-2026-10-28),
-  Checks). Both test the operators through whole eigenvectors, not coefficient by coefficient;
-- a one-off comparison (2026-10-30) of every fitted coefficient of the degree-2 fields with derive.py at $l = 20$, $m = 3$
+  (lmax 47–64, residuals $10^{-11}$ to $10^{-13}$), and the Malkus (1967) frequencies ([Magnetic field equations](magnetic-equations.md#checks)). Both test the operators through whole eigenvectors, not coefficient by coefficient;
+- a one-off comparison of every fitted coefficient of the degree-2 fields with derive.py at $l = 20$, $m = 3$
   and $l = 31$, $m = 7$, outside the fitting range: largest relative difference $4.3\cdot10^{-10}$ (poloidal, 40 blocks)
   and $2.0\cdot10^{-10}$ (toroidal, 34 blocks), no term missing (the round-off of derive.py's quadrature at these
   degrees). The degree-1 fields were not compared there.
@@ -224,10 +220,10 @@ $ python3 derive.py f P 2 4 1 --b0 pol2
 ```
 
 **Find the closed forms.** `tools/derive/fit_rows.py KIND N` does steps 1, 3 and 4 for every block. The toroidal $n = 1$
-field, rows f and g only (25 s on 30 cores; the derived rows are cached in `fit_tor1.pkl`, so a second run is instant):
+field, rows f and g only (the derived rows are cached in `fit_tor1.pkl`, so a second run is instant):
 
 ```
-$ python3 tools/derive/fit_rows.py tor 1 --rows f,g --l 2:8 --jobs 30 | tee tor1_fg.log
+$ python3 tools/derive/fit_rows.py tor 1 --rows f,g --l 2:8 --jobs 8 | tee tor1_fg.log
 f P dl+0  P0*k0 r^-2             [a + b m^2] = l*(l + 1)
 g P dl-1  P0*k0 r^-3             [a + b m^2] = l*(l - 1)*(l + 1)
 g P dl-1  P0*k0*lr1 r^-2         [a + b m^2] = l*(l - 1)*(l + 1)
@@ -239,7 +235,7 @@ g T dl+0  T0*k0 r^-2             [a + b m^2] = l*(l + 1)
 ```
 
 A line ending in `None` means the polynomial needs more points than the $l$ range gives: widen the range. For the degree-2
-poloidal field, `python3 tools/derive/fit_rows.py pol 2 --jobs 30` ($l$ 3–9, about 15 min) gives all blocks except four of
+poloidal field, `python3 tools/derive/fit_rows.py pol 2 --jobs 8` ($l$ 3–9) gives all blocks except four of
 the u row at $\Delta l = 0$, whose $a(l)$ has degree 6; `--rows u --l 3:14` gives those too. These two runs reproduce every
 coefficient of `operators.induction_pol2` and `lorentz_pol2`.
 
@@ -300,9 +296,9 @@ full sphere to reach round-off. `tests/magnetic/run_all.sh` runs all the magneti
    `assemble.py` loops over $\Delta l = -2..2$, so widen that loop for $n > 2$.
 3. *Check.* Extend `derive_check.py` with the new tables (its section 5 reads them from `operators.py`), run `row_check.py`
    and the budgets on a run with the new field, compare at a few large $l$ with derive.py, and compare with an independent
-   code or an analytic result where you have one. Since 2026-10-30 there is a shorter way for any degree: see A.6.
+   code or an analytic result where you have one. There is a shorter way for any degree: see A.6.
 
-### A.6 Any background field: the couplings from the recurrence algebra (2026-10-30)
+### A.6 Any background field: the couplings from the recurrence algebra
 
 **Motivation.** The closed forms of A.2–A.5 exist for one degree at a time (1 and 2). A field made of many degrees — given
 degree by degree (`B0 = 'general'`) or built from a differential rotation (`'ferraro'`) — would need a new fit for each degree.
@@ -353,7 +349,7 @@ with the profile codes `hp` + degree ($c_\mathrm{norm}h_n$) and `kt` + degree ($
 `background_field.pol_profiles`, `tor_profiles`.
 
 **Verification.** For degrees 1 and 2 the eigenvalues equal those of the closed forms to $\le 6\cdot10^{-13}$ (14 cases,
-[Magnetic field equations](magnetic-equations.md#differential-rotation-confined-general-and-ferraro-fields-2026-10-30)); `tests/magnetic/algebra_check.py` compares every block with derive.py for degrees 1–4;
+[Magnetic field equations](magnetic-equations.md#checks)); `tests/magnetic/algebra_check.py` compares every block with derive.py for degrees 1–4;
 the energy budgets close to round-off for fields of several degrees.
 
 **How to use it.** `par.mag_couplings = 'algebra'` for any type, or a type that needs it:
@@ -444,7 +440,7 @@ by $L'$ of the target. For example, `f_2C_D0P` multiplies $f\,P$ in the u row.
 thermal-wind entropy $S_{tw} = \sum_n \sigma_n(r)P_n(\cos\theta)$ follows from thermal-wind balance: in Legendre space,
 $D\sigma = (1-x^2)\,\partial_x S_{tw}$ is solved for the $\sigma_n$ by forward substitution, exactly.
 
-**Step 7b: the induction by the rotation (2026-10-30).** With a magnetic field, $\mathbf{U}_0$ also shears the field:
+**Step 7b: the induction by the rotation.** With a magnetic field, $\mathbf{U}_0$ also shears the field:
 
 $$
 \nabla\times(\mathbf{U}_0\times\mathbf{b}) = (\mathbf{b}\cdot\nabla)\mathbf{U}_0 - (\mathbf{U}_0\cdot\nabla)\mathbf{b}
@@ -488,7 +484,7 @@ places it at the $\Delta l$ of the selection rules.
   forms of `diff_rot_coefficients.py`, for all $l \le$ lmax and $m \le$ mmax (recorded runs: lmax 20 and 1025, agreement
   to $10^{-15}$ of the row scale), and, for $n$ = 4 … nmax, that no coupling falls outside the $\Delta l$ kore assembles (a
   coupling there would be dropped silently).
-- **The induction by the rotation** (2026-10-30): `tests/magnetic/dr_induction_check.py` compares every block of
+- **The induction by the rotation**: `tests/magnetic/dr_induction_check.py` compares every block of
   `induction_block` with `derive.rows_dr` (sympy, $\mathbf{U}_0 = w(r)P_n\,r\sin\theta\,\hat{\boldsymbol\phi}$) for $n$ up to 6 and $l$ up to 25;
   `tests/magnetic/rigid_check.py` uses that a uniform $\Delta\Omega = c$ is a rigid rotation, $\lambda = \lambda(\text{Gaspard } 1 + c) - imc$
   exactly, for several background fields and a conducting inner core.

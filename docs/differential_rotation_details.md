@@ -924,16 +924,9 @@ poloidal one, which depends on the symmetry (`utils.dr_offd`).
 rotation, the terms couple different degrees, so a per-degree worker cannot evaluate them from its own degree alone.
 `utils4pp.diff_rot_setup`, called once per solution by `utils4pp.diagnose`, therefore:
 
-1. builds $\mathbf u$ and $\partial_r\mathbf u$ on the $(r_k, \cos\theta)$ grid from the per-degree components (`velocity`), with
-   `lmax` + 10 + max($n_{tw}$, $n_{\max}$) Gauss–Legendre nodes in $\cos\theta$. The harmonics
-   $Y_l$, $\partial_\theta Y_l$ and $Z_l$ come from `angular.ylm_grid`: the recurrence of $X$ started at
-   $Y_m \propto \sin^m\theta$, differentiated in $\theta$ for $\partial_\theta Y_l$, and started at $\sin^{m-1}\theta$ for
-   $Y_l/\sin\theta$, so that nothing is divided by $\sin\theta$. The recurrence is linear, so it is carried as a
-   mantissa times a power of two per node: for large $m$ the start $\sin^{m-1}\theta$ would underflow near the poles
-   (from $m \approx 330$ at $l$ of a few thousand), and the mantissas are rescaled by $2^{-600}$ when they grow past
-   $2^{600}$, which is exact. It is valid at any $l$ and $m$ (it matches exact rational values of $P_l$ to
-   $\sim 10^{-13}$ up to $l = 2000$, and keeps the norms to $\sim 10^{-13}$ at $m = 1425$, $l = 3000$), where
-   `scipy.special.sph_harm_y` is NaN from $l = 646$ on; `utils.Ylm` and `utils.Ylm_full` use it too;
+1. builds $\mathbf u$ and $\partial_r\mathbf u$ on an $(r_k, \cos\theta)$ grid from the per-degree components
+   (`velocity`), with `lmax` + 10 + max($n_{tw}$, $n_{\max}$) Gauss–Legendre nodes in $\cos\theta$. The harmonics come
+   from `angular.ylm_grid`, a recurrence that avoids dividing by $\sin\theta$ and stays accurate at any degree and order;
 2. evaluates $\Delta\Omega$, $\partial_r\Delta\Omega$, $\partial_r^2\Delta\Omega$, $\partial_\theta\Delta\Omega$ there, as numpy Legendre series of the $f_n$ (`diff_rot.fX`);
 3. forms the force $\mathbf F = -\mathbf W$ of (2.6) and its radial derivative (the `force` closure), and projects
    them back on $(q, s, t)$ with (3.4): `drforce[l]`;

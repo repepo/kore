@@ -957,7 +957,7 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   (r, θ) grid, 1e-8) in eigen and forced runs (forcings 1, 8 (+ x = forcing 7), 12 with a field; m 1 symm −1 for the
   equatorial resid𝐋); the stops and the full-sphere centre warning. `rows_check.py` (each row of `bgflow.build` against
   the fields on a θ grid, 1e-8).
-- `tests/ci/test_spinover.py` (`cd tests/ci; pytest -v`, about 6 s): the test GitHub runs on every push to anelastic_log
+- `tests/ci/test_spinover.py` (`cd tests/ci; pytest -v`, about 6 s): the test GitHub runs on every push to main, the default branch
   (`.github/workflows/anelastic_log.yml`: Ubuntu 24.04 with its PETSc/SLEPc 3.19, numpy 1.26 and scipy 1.11 packages, so
   `bin/` must not need newer ones; pushes that change only docs or `.md` files are skipped). It runs the smooth Sun
   example with m 1, N 32, lmax 16 on 2 ranks, and a rigid rotation offset ('rigid', 0.1): its spin-over is exact, λ = i
@@ -1011,7 +1011,7 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   uses them as the enstrophy weight `const0`.
 - `utils4pp` calls `mp.set_start_method('fork')` at import (needed on macOS).
 - Stale upstream leftovers: `tools/submit4.sh` calls the removed `postprocess.py`; the top-level `README.md` is
-  upstream's, except its test badge and (NEW 2026-11-09) its Documentation section, which points to the online manual
+  upstream's, except its badges (tests on main, docs, license) and (NEW 2026-11-09) its Documentation section, which points to the online manual
   (repepo.github.io/kore, published by `.github/workflows/docs.yml` from the default branch) in place of the old setup
   steps.
 - `rvisc`, `hvisc` are not used; they are only echoed to `params.dat`.

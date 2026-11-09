@@ -1,9 +1,7 @@
 # Rotating solids equations
 
 This page gives the equations of the rotating solids (`rotdyn = 1`, [Rotating solids](rotating-solids.md)), the torques
-that couple them to the fluid, and the angular momentum balance that `spin_doctor` checks (resid𝐋). They are those of
-the `conductive_IC` branch (its rows in `assemble.py`, `utils.gamma_visc`, `gamma_magnetic`, `utils4pp.angrymom` and
-`torque_walls`), written for any density profile and any poloidal background field in `bin/rotdyn.py`.
+that couple them to the fluid, and the angular momentum balance that `spin_doctor` checks (resid𝐋). They hold for any density profile and any poloidal background field (`bin/rotdyn.py`).
 
 ## Equations
 
@@ -71,7 +69,7 @@ $$
 C_l = 2\pi r^2\sum_n n(n+1)\,h_n\,\frac{2l(l+1)}{(2l+1)(2n+1)}\left(\delta_{n,l-1} - \delta_{n,l+1}\right),
 $$
 
-which is $\tfrac{16\pi}{5}\,r^2 h_1 g_2$ for a dipole (`conductive_IC`'s `gamma_magnetic`).
+which is $\tfrac{16\pi}{5}\,r^2 h_1 g_2$ for a dipole.
 
 **Gravitational.** $K\varphi$ on the mantle and $-K\varphi$ on the inner core, which also relaxes towards alignment at
 the rate $c$.
@@ -147,31 +145,9 @@ through the walls (`utils4pp.INDU_WALLS`). So resid𝐄 adds the energy of the s
 of the viscous torques and the loss $-2Kc\lvert\varphi\rvert^2$ to the right. It does so when both torques act on the
 solids (`vtrq` and `mtrq` 1).
 
-## Checks (2026-11-06)
+## Checks
 
-`tests/rotdyn/rotdyn_check.py` (`run_all.sh`, about 1 min on 2 ranks):
-
-- **Decoupled solids.** With `vtrq = 0` and no field the solids feel only each other: two modes are the roots of
-  $\lambda^2 + c\lambda + K(1/I_M + 1/I_{IC}) = 0$ ($3\times10^{-15}$), the others those of fixed walls
-  ($10^{-14}$).
-- **Heavy solids.** Moments of inertia of $10^{12}$ give the eigenvalues of fixed walls ($10^{-12}$).
-- **Against `conductive_IC`** (2d84351), five runs: without a field (two sets of solids, one of them Earth-like), thin
-  conducting layers with a dipole, a conducting inner core and a resolved mantle with a field of degree 2, an axial field with an
-  exponential resolved mantle and a thin layer on the inner core. Eigenvalues to $10^{-14}$, and the rotation of the
-  solids and the torques on the mantle in `rotdyn.dat` to $10^{-10}$, its precision.
-- **Conservation** with `'Wu 2005'` (`r_out` 0.9, N 64): every mode but $\lambda = 0$ carries no total angular
-  momentum ($10^{-9}$) and closes resid𝐋 ($10^{-9}$); without a field the energy budget of the fluid and the solids
-  closes ($10^{-10}$), with a dipole, a conducting inner core and a resolved mantle resid𝐄 does ($10^{-10}$).
-- **Equatorial resid𝐋** without the solids: $10^{-15}$ without a field, $10^{-14}$ to $10^{-11}$ with a field (a
-  conducting inner core and a resolved mantle, thin layers, a toroidal field that does not vanish at the walls), and
-  $10^{-9}$ in a full sphere.
-- **Stops** of `background.check_rotdyn`.
-
-Also checked once: the equatorial balance with the opposite sign of the Coriolis torque fails by O(1); the axial resid𝐋
-is $10^{-14}$ with a differential rotation (`'conical'`, `'Wu 2005'`); the solids work with buoyancy (`thermal = 1`,
-resid𝐋 $10^{-13}$, total angular momentum $10^{-10}$).
-
-**Forced runs** (2026-11-08, `tests/couette`): resid𝐋 closes to $2\cdot10^{-13}$ or better for the steady rotation of
-the walls without and with a field (any of the walls and inner cores, a variable density, buoyancy, a differential
-rotation, a fluid slipping along a wall at rest, with a drag), $10^{-11}$ with the field `'Luo_S2'` over the Bessel
-core, and to $3\cdot10^{-13}$ for the libration and the thermal forcing.
+`tests/rotdyn` checks the rotating solids against exact results (solids coupled only to each other; very heavy solids,
+which behave as fixed walls), the conservation of total angular momentum and energy with a variable density and a
+magnetic field, and the equatorial angular momentum balance. `tests/couette` checks resid𝐋 in the forced runs with
+turning walls, libration and thermal forcing.

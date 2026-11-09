@@ -2,9 +2,8 @@
 
 This page gives the background flow of `bgflow = 1` ([Background flow](bgflow.md)), the terms it adds to the
 perturbation equations, how they become rows, what happens at the walls, the powers that `spin_doctor` reports, and the
-Newton's method that gives the nonlinear flow of turning walls. They are the terms of the `conductive_IC` branch's
-`bgflow.py`, written in `bin/bgflow.py` for any density, in a shell or a full sphere, with the entropy, the composition
-and the magnetic field.
+Newton's method that gives the nonlinear flow of turning walls. They hold for any density, in a shell or a full sphere, with the entropy, the composition and the magnetic field
+(`bin/bgflow.py`).
 
 ## The background
 
@@ -200,5 +199,4 @@ iterations, the change squaring at each, and the flow differs from Ro times the 
 | `Ro` | for a nonlinear flow, the Ro it holds at |
 
 P and T are the scalars of the run's flow divided by the rate of the wall in units of $1/\tau$, and $\sigma_n$,
-$\gamma_n$ those of its entropy and composition divided by that rate over $G$. The files of `conductive_IC` hold `nP`, `P`, `nT`, `T`, `ricb` (and `Ro`), and are read as they are,
-for a uniform density.
+$\gamma_n$ those of its entropy and composition divided by that rate over $G$.

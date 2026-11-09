@@ -116,8 +116,8 @@ that push, and the stress rows of a slipping wall hold it
 **Full-sphere fields with an inner core.** `'G21 dipole'`, `'Luo_S1'` and `'Luo_S2'` are defined for a full sphere, and
 `B0_ic` says how to continue them into an inner core. `'potential'` (default) adds $\beta_i r^{-(l+1)}$,
 $\beta_i = r_i^{l+1}(r_i h' - l h)/(2l+1)$ at $r_i$, so that $rh' - lh = 0$ at the inner boundary: the field of the
-currents in the fluid, continued as a potential field into the core (`conductive_IC`'s `B0_beta_ic`).
-`'frozen currents'` (the name in `conductive_IC`; `'full sphere'` before 2026-11-06) keeps $h$ as it is, with the
+currents in the fluid, continued as a potential field into the core.
+`'frozen currents'` keeps $h$ as it is, with the
 currents below $r_i$ in the core. `B0_ic` has no effect on the other types or with `ricb = 0`.
 
 **Confined field.** `'confined'` fills the layer $r_1 \le r \le r_2$ and is zero outside it. Its purpose: a poloidal
@@ -178,8 +178,7 @@ is no flow there, so the matching conditions do not involve it (for a wall that 
 ### Normalisation
 
 The profiles have arbitrary scales, so the amplitude is set apart: `cnorm` multiplies the poloidal part and `cnorm_tor`
-the toroidal part. Each is a number, or a name that kore turns into a number as `conductive_IC` does
-(`background_field.B0_norm`, Gauss–Legendre quadrature with 240 nodes):
+the toroidal part. Each is a number, or a name that kore turns into a number (`background_field.B0_norm`):
 
 - `'rms_cmb'` (`cnorm` only): the rms of the radial field over the outer wall is 1,
   $c_\mathrm{norm} = \sqrt{2l+1}/(L\,h(1))$, $L = l(l+1)$. Single-degree types only: `'general'` and `'ferraro'` stop
@@ -213,7 +212,7 @@ $\nabla\cdot\mathbf u = -\lambda_1 u_r$. The rows were derived from the definiti
 (sympy, exact projection on the harmonics). For $\mathbf B_0$ of degree 1:
 
 - rows `f`, columns P: every $d/dr$ on $P$ becomes $d/dr + \lambda_1$ (label `f1bpo0lho1_D0`);
-- rows `g`, columns P, diagonal in $l$ only (in the scale of `conductive_IC`'s rows; zero for m = 0), from
+- rows `g`, columns P, diagonal in $l$ only (zero for m = 0), from
   $-\mathbf B_0\nabla\cdot\mathbf u$ and the $\lambda_1 P$ above:
 
     $$
@@ -261,12 +260,11 @@ change or extend the code.
 - **Labels.** Each operator is a sum of labelled radial products. `decode_label` gives sections `f` and `g` the row
   power $2 - X$ and no $\rho_0$. The profile codes are `bpo` ($c_\mathrm{norm} h^{(k)}$), `bto`
   ($c_\mathrm{tor} k^{(j)}$) and `eta` ($\eta$). The Lorentz labels carry `ohr1` (one power of $\rho_0$ less), so the
-  momentum rows hold $r^p$ times the force $\rho_0 \mathbf F_L$. `submatrices.py` lists each label next to its
-  `conductive_IC` name. `tol_B0` (default 1e-8) is the relative cut of the Chebyshev series of $r^p h^{(k)}$: it sets
+  momentum rows hold $r^p$ times the force $\rho_0 \mathbf F_L$. `tol_B0` (default 1e-8) is the relative cut of the Chebyshev series of $r^p h^{(k)}$: it sets
   the band width of the magnetic blocks.
-- **Operators** (`operators.lorentz`, `induction`, `magnetic_diffusion`, `b`). They are the `conductive_IC` operators
-  divided by $L^3$ of the row, as every operator of this branch, with Hendrik and MagnetD for
-  $(\Omega\tau\,\mathrm{Le})^2$ and $\Omega\tau\,\mathrm{Em}$. The sign convention is the branch's: A holds the
+- **Operators** (`operators.lorentz`, `induction`, `magnetic_diffusion`, `b`). They are
+  divided by $L^3$ of the row, as every operator of kore, with Hendrik and MagnetD for
+  $(\Omega\tau\,\mathrm{Le})^2$ and $\Omega\tau\,\mathrm{Em}$. The sign convention is kore's: A holds the
   right-hand side, B is $-\mathbf b$ in the induction rows (as $-$inertia in the momentum rows).
 - **Toroidal field** (`operators.induction_tor`, `lorentz_tor`). Closed forms for a toroidal field of degree 1 or 2. The
   rows were derived with `derive.py` (any $\rho_0$) and fitted in $l$: every coefficient is $im$ (same degree) or the
@@ -298,10 +296,9 @@ change or extend the code.
 - **Inviscid runs** (`ViscosD = 0`, full sphere only). The Lorentz labels have $D^3$ (rows u) and $D^2$ (rows v), so the
   rows are in $C^{(3)}$ (u) and $C^{(2)}$ (v), with one boundary-condition row ($u_r = 0$) in u and none in v; without a
   field they stay in $C^{(2)}$ and $C^{(1)}$. `decode_label` gives the u and v labels the row powers of the viscous
-  rows. `conductive_IC` keeps $C^{(2)}$ and $C^{(1)}$ and so converts these terms with the wrong matrices; its torsional
-  test is barely affected ([Checks](#full-sphere-inviscid-runs-and-degree-2-poloidal-fields)).
+  rows.
 - **Solver.** `solve.py` writes `magnetic.npy` and normalises the eigenvectors (over the
-  shell, as `conductive_IC`) to
+  fluid) to
 
     $$
     \mathrm{KE} + \mathrm{Hendrik}\int\tfrac12\lvert\mathbf b\rvert^2dV = 1 ,
@@ -343,13 +340,11 @@ layer), or a conductor whose field is solved for with the rest.
 outer wall, $lf - r f' = 0$ and $g = 0$ at the inner one.
 
 **Conducting inner core.** `innercore = 'conducting, Chebys'` (eigenvalue problems and forced runs) adds the field
-inside the inner core to the unknowns, as `conductive_IC` does
-(`'conducting, Bessel'`, for forced runs, solves it in closed form instead: [Forced runs](#forced-runs)):
+inside the inner core to the unknowns (`'conducting, Bessel'`, for forced runs, solves it in closed form instead: [Forced runs](#forced-runs)):
 
-- **Unknowns.** Sections `fic`, `gic` after `f`, `g` (`ut.offset`), with the degrees of `f`, `g` (up to `lmax`;
-  `conductive_IC`'s `lmax_cic` is not ported, as its ICB matching couples the degrees one by one). Each block is the
+- **Unknowns.** Sections `fic`, `gic` after `f`, `g` (`ut.offset`), with the degrees of `f`, `g` (up to `lmax`). Each block is the
   Chebyshev series on $[-r_i, r_i]$ of one parity (that of the field at the centre), `N_cic`/2 coefficients per degree
-  (`ut.Nic`, default `N_cic` = 64; `conductive_IC` found broken eigenvectors with 48 at `sigma_i2o` = $10^{-2}$);
+  (`ut.Nic`, default `N_cic` = 64; fewer can spoil the eigenvectors of a weakly conducting core);
   `ut.nic` per section.
 - **Equation.** The field diffuses (a core that a forcing moves also induces field: [Forced runs](#forced-runs)), with
   $\mu_{i2o}$, $\sigma_{i2o}$ (`mu_i2o`, `sigma_i2o`) the permeability and conductivity relative to the fluid:
@@ -376,15 +371,15 @@ inside the inner core to the unknowns, as `conductive_IC` does
   equation, and the poloidal matching needs nothing more. A toroidal $\mathbf B_0$ adds nothing: $\mathbf u\times\mathbf B_0$
   is then normal to the wall.
 - **Output.** `magnetic_ic.npy`. The eigenvectors are normalised with the fluid's
-  energies only (the inner-core field is scaled along), as in `conductive_IC`.
+  energies only (the inner-core field is scaled along).
 
 ### Thin conducting layer
 
 A thin conducting layer between the fluid and an insulator carries currents that couple the field across it. The
 thin-wall approximation (Roberts, Glatzmaier & Clune 2010; Guervilly, Wood & Brummell 2013, appendix A) replaces the layer
 by conditions on the field at the wall, so the layer adds no unknowns. `mantle = 'TWA'` puts one at the base of the
-mantle, at the outer wall, `innercore = 'TWA'` one on the inner core, at the inner wall; the conditions are those of `conductive_IC` (`bc_b_thinlayer`, with its terms of
-first order in the thickness), in `assemble.bc_b_twa`.
+mantle, at the outer wall, `innercore = 'TWA'` one on the inner core, at the inner wall; the conditions include the terms of
+first order in the thickness (`assemble.bc_b_twa`).
 
 A layer of thickness $h$, conductivity $\sigma_w$ and permeability $\mu_w$ at the radius $r$ of the wall is described by
 
@@ -444,7 +439,6 @@ over the degrees of the background, times $\mathbf u_t = \sum_k s_k\,r\nabla Y_k
 $s_k = P_k' + P_k/r + (\ln\rho_0)'P_k$ and $t_k = T_k$ at the wall; a toroidal background has no $B_{0r}$. With the
 rotating solids the outer wall's frame turns with the mantle, and $t_1 = T_1 - r\,\omega_M$ there, the slip relative
 to it ([Rotating solids equations](rotating-solids-equations.md#equations)).
-`conductive_IC` has these terms for a single degree.
 
 **The background field at a thin outer layer** (`B0_cmb`). A steady $\mathbf B_0$ drives no current in the layer, but
 it must meet the steady condition, $(1/\mu + lc)(rh)' + (l + e)h = 0$ at $r = 1$ with $e = c\mu l((l+1)/p - 1)/p$
@@ -459,7 +453,7 @@ field below meets its condition).
 ### Resolved conducting mantle
 
 A layer that is not thin against its magnetic skin depth, or whose conductivity varies across it, cannot be reduced to
-conditions at the wall. `mantle = 'resolved'` (as `conductive_IC`, after PR #17 by A. Nuyt) adds the field of a solid
+conditions at the wall. `mantle = 'resolved'` adds the field of a solid
 conducting layer $1 \le r \le r_s$ (`r_surface`) to the unknowns, with an insulator beyond. Its conductivity relative to
 the fluid's, $\sigma(r)$ (`sigma_mantle`, a number or an expression of $r$ and `sigma_mantle_param`), may vary with
 radius.
@@ -499,7 +493,7 @@ radius.
   field.
 
 As $r_s \to 1$ with $\sigma\,(r_s - 1)$ fixed the layer tends to a thin layer (`'TWA'`) with $c = r_s - 1$ and $c_1 = \sigma(r_s - 1)$, at
-first order in the thickness ([Checks](#resolved-conducting-mantle-2026-11-06)).
+first order in the thickness ([Checks](#checks)).
 
 ### Current sheets at slipping walls
 
@@ -570,7 +564,7 @@ recurrence algebra (`angular.Algebra`, as in `assemble.bc_b_slip`). A drag at th
   The magnetic torque, taken with $\mathbf B_0$ on the fluid's side, holds that of the sheet's own currents, which the
   viscous one balances: only their sum (`flow.dat` columns 31–38) is the torque through the wall, which resid𝐋 counts.
   These budgets close with the push or without it, so they do not check it: the smoothed sheets and the angular
-  momentum do ([Checks](#current-sheets-at-slipping-walls-2026-11-07)).
+  momentum do ([Checks](#checks)).
 
 **Stops** (`background.check_magnetic`):
 
@@ -585,7 +579,7 @@ With `rotdyn = 1` a toroidal $\mathbf B_0$ must vanish at both walls (`backgroun
 
 ## Forced runs
 
-A forced run (`forcing` other than 0, as in `conductive_IC`) solves the equations at the one frequency $w$ of the
+A forced run (`forcing` other than 0) solves the equations at the one frequency $w$ of the
 forcing (`forcing_frequency`), with every perturbation going as $e^{iwt}$ and the forcing in the right-hand side:
 
 $$
@@ -608,8 +602,7 @@ $$
   $T_1 = \Omega_w r_w/2$ at each no-slip wall ($\Omega_w$ = `forcing_amplitude_cmb`, `forcing_amplitude_icb`) at
   $w = 0$; a rigid rotation of the fluid and the solids together then induces no field
   ([Spherical Couette flow](couette-flow.md)).
-- **Libration with a stress-free inner wall.** The libration of the walls (forcing 7, $m$ = 0) takes `bci = 0` too, as in
-  `conductive_IC`. The inner wall's row is then the stress-free one, which holds no libration of the inner core: the
+- **Libration with a stress-free inner wall.** The libration of the walls (forcing 7, $m$ = 0) takes `bci = 0` too. The inner wall's row is then the stress-free one, which holds no libration of the inner core: the
   libration does not reach the fluid through the wall's stress. Across a poloidal field it would reach it through a
   conducting inner core or a conducting thin layer on it, by the $\mathbf u\times\mathbf B_0$ of the slip relative to the
   core, which is not built: that case stops (`background.check_forced_magnetic`). With an insulating core, or a toroidal
@@ -625,7 +618,7 @@ $$
   a rotation. A conducting solid behind such a wall would deform along it and induce a field, which no row holds: the
   run needs insulating walls (`background.check_forced_magnetic`).
 
-**The Bessel inner core** (`innercore = 'conducting, Bessel'`, from `conductive_IC`). At one frequency the field of a
+**The Bessel inner core** (`innercore = 'conducting, Bessel'`). At one frequency the field of a
 uniform conducting inner core, regular at the centre, is known: each scalar goes as $j_l(kr)$, with
 
 $$
@@ -684,7 +677,7 @@ and along themselves; it needs insulating walls, so of this section only the per
 
 - **`'deforming'`**: the solid deforms with the boundary. Its surface moves with the fluid across the wall,
   $v_{s,r} = u_r$, so the $\mathbf u\times\mathbf B_0$ of the radial flow cancels in the matching, and the rows at the wall
-  are those of a wall at rest without it, as in `conductive_IC`. Along a slipping wall the fluid's motion relative to
+  are those of a wall at rest without it. Along a slipping wall the fluid's motion relative to
   the solid keeps its $\mathbf u\times\mathbf B_0$ in the electric-field row (`assemble.bc_b_slip`), as at a wall at rest.
   Inside a thick conducting solid the motion induces a field too (below).
 
@@ -726,7 +719,7 @@ next to it, which holds that motion. One part is not there: a toroidal $\mathbf 
 zero across the layer, toward the insulator beyond, so the layer's motion meets half of it on average
 (`background.thin_drop`). Its conditions gain half the `'rigid'` terms of
 the toroidal part alone ($S_l$ and $X_l$ with half the toroidal $\mathbf B_{0t}$ at the wall, `assemble.bc_b_radial`).
-This is the limit of a thin resolved mantle that deforms ([Checks](#forced-runs-2026-11-06)). A poloidal $\mathbf B_0$
+This is the limit of a thin resolved mantle that deforms ([Checks](#checks)). A poloidal $\mathbf B_0$
 changes by $O(h)$ across the layer and needs nothing more.
 
 **Permeability at a wall that moves.** A surface where the permeability jumps separates matter that $\mathbf B_0$
@@ -757,10 +750,6 @@ $\xi_r$ times the jump of $\partial_r\mathbf B_0$ across the wall (the backgroun
 displacement of a current sheet of $\mathbf B_0$ at the wall
 ([Current sheets at slipping walls](#current-sheets-at-slipping-walls)).
 
-`conductive_IC` has the rows without $\mathbf u\times\mathbf B_0$ at every wall and no motion inside the solids, and it
-stops the resolved mantle behind a wall that moves. Its thin layers therefore follow `'deforming'` with a poloidal
-$\mathbf B_0$ (it stops a toroidal one in forced runs), while for a conducting inner core behind a wall that moves
-radially its solutions match neither picture: the core's surface moves with the fluid and its inside is at rest.
 
 ## With a differential rotation
 
@@ -1087,7 +1076,7 @@ Mag/Kin and writes `magnetic.dat`:
 
 | column | name | meaning |
 | --- | --- | --- |
-| 1 | ME | magnetic energy in the fluid (without Hendrik, as `conductive_IC`; Mag/Kin is Hendrik ME/KE) |
+| 1 | ME | magnetic energy in the fluid (without Hendrik; Mag/Kin is Hendrik ME/KE) |
 | 2 | Mdfs | magnetic diffusion |
 | 3 | Indu | induction work |
 | 4 | residb | resid𝐛, the relative residual of the induction budget |
@@ -1122,16 +1111,14 @@ $$
 \mathrm{Ohm\_ic} = \mathrm{MagnetD}\,\eta_i\int_{\mathrm{ic}}\frac{\lvert\nabla\times\mathbf b\rvert^2}{\mu_{i2o}}\,dV .
 $$
 
-**The full budget.** resid𝐄 (`conductive_IC`'s, `utils4pp.em_budget`) closes
+**The full budget.** resid𝐄 (`utils4pp.em_budget`) closes
 
 $$
 2\sigma[\mathrm{KE} + \mathrm{Hendrik}(\mathrm{ME} + \mathrm{MEic} + \mathrm{MEext})] = \mathrm{Dkin} + \mathrm{Wthm} + \mathrm{Wlor} + \mathrm{Hendrik}(\mathrm{Indu} - \mathrm{Ohm\_f} - \mathrm{Ohm\_ic}) :
 $$
 
 unlike resid𝐛 it sees the wall and ICB conditions. A body force that the right-hand side puts in the fluid, the Poincaré
-force of the libration in the frame of the mantle (forcing 8), adds its power Wf (`flow.dat` column 42) on the right. The
-$1/\mu_{i2o}$ of the inner core's energy and Ohmic loss is not in `conductive_IC`'s `em_budget` (there resid𝐄 is
-$10^{-2}$ at `mu_i2o` = 2). Without the flow (`hydro = 0`) it is
+force of the libration in the frame of the mantle (forcing 8), adds its power Wf (`flow.dat` column 42) on the right. Without the flow (`hydro = 0`) it is
 $2\sigma(\mathrm{ME} + \mathrm{MEic} + \mathrm{MEext}) = \mathrm{Indu} - \mathrm{Ohm\_f} - \mathrm{Ohm\_ic}$, without
 Hendrik and for any walls (Indu is then the induction by a differential rotation, or 0).
 
@@ -1141,7 +1128,7 @@ or mantle, a thin layer, or the potential field of an insulator).
 resid𝐄 then uses the volume work of the induction alone, Indu minus its wall terms (`utils4pp.INDU_WALLS`, from the
 $(r, \theta)$ grid), as with a differential rotation (below).
 
-**Thin layers** (`utils4pp.em_budget`, `twa_budget`, as `conductive_IC`). The layers store
+**Thin layers** (`utils4pp.em_budget`, `twa_budget`). The layers store
 $E_w = \tfrac{cr}{2}\oint\lvert\mathbf b_t\rvert^2dS + \tfrac{h}{2p}\oint\lvert b_r\rvert^2dS$ (the poloidal tangential
 field: the toroidal condition has no $c$ term; the second term only for finite $p$), and lose
 $\mathrm{Ohm\_w} = \mathrm{MagnetD}\oint\lvert\mathbf K\rvert^2 dS/(c_1 r)$, with
@@ -1154,7 +1141,7 @@ MEic count beyond $r \pm h$, follows from its conditions. The full budget gains 
 $-\mathrm{Hendrik}\,\mathrm{Ohm\_w}$ on the right. It closes exactly for $c = 0$, and to $O(c\,c_1)$ otherwise, the order of the approximation itself (resid𝐄 is
 then about $\varepsilon_\text{TWA}$ or below); not with $\mu \neq 1$.
 
-**Resolved mantle** (`utils4pp.mantle_budget`, as `conductive_IC`). The layer stores
+**Resolved mantle** (`utils4pp.mantle_budget`). The layer stores
 $E_w = \tfrac12\int\lvert\mathbf b\rvert^2dV$ and loses $\mathrm{Ohm\_w} = \mathrm{MagnetD}\int\lvert\nabla\times\mathbf b\rvert^2/\sigma\,dV$
 over $1 \le r \le r_s$ (Gauss-Legendre in $r$), and MEext is the potential field beyond $r_s$. The full budget gains them
 as for thin layers, and closes exactly. A fluid slipping along the layer carries energy into it through
@@ -1196,7 +1183,7 @@ the solids (`vtrq` and `mtrq` 1); [Rotating solids equations](rotating-solids-eq
 **How the terms are computed.** spin_doctor's Lorentz force (`utils4pp.lorentz4pp`) acts per volume, and its power
 $\int\mathbf u^*\cdot\mathbf G\,dV$ has no $\rho_0$. Its induction term (`induction4pp`) takes the components of
 $\mathbf u$ with their $\lambda_1$ part, and holds for the non-solenoidal $\mathbf u$ of a variable density (resid𝐛
-closes to $10^{-10}$ with 'Wu 2005', [Checks](#variable-density-checks-2026-10-28)). These spectral formulas are used
+closes to $10^{-10}$ with 'Wu 2005', [Checks](#checks)). These spectral formulas are used
 for a poloidal field of degree 1 alone, with the closed-form couplings and no differential rotation. Otherwise
 (`utils4pp.use_grid`: a toroidal part, a poloidal field of degree other than 1, a differential rotation, the
 recurrence-algebra couplings, or `KORE_MAG_GRID=1` in the environment) both come instead from
@@ -1216,525 +1203,20 @@ conducting inner core turning with $\Delta\Omega(r_i) \neq 0$; with it the budge
 
 ## Checks
 
-Each step of the port was checked when it was built: against `conductive_IC`, against exact and published solutions,
-term by term against a symbolic derivation, and with the energy budgets. The parts were ported from the `conductive_IC`
-branch (commit `39487bbf`), formula by formula, into this branch's conventions: on 2026-10-28 insulating walls (step 1),
-a conducting inner core (step 2), any density profile (step 3), a toroidal background field (step 4), the full sphere,
-inviscid runs and the poloidal fields of degree 2 (step 5); on 2026-10-30 the induction by a differential rotation, a
-confined field, fields of any degrees and the Ferraro field, with couplings built from the recurrence algebra. The
-scripts are in `tests/magnetic/` (`run_all.sh`).
-
-### Against `conductive_IC`, insulating walls (2026-10-28)
-
-Step 1 reproduces `conductive_IC` to round-off, for every eigenvalue and residual.
-
-Spin-over geometry of the `conductive_IC` test: ricb 0.35, Ek 1e-3, no-slip walls (`bci = bco = 1`), N 68, lmax 64 (63
-for m = 0), 2 ranks; $\Lambda = 1$, Pm = 1 (Le $= \sqrt{10^{-3}}$, Em $= 10^{-3}$), `cnorm = 'mag_energy'`, insulating
-walls; `conductive_IC` at `39487bbf` with the same parameters. All five eigenvalues of each run:
-
-| case | target | largest relative difference |
-| --- | --- | --- |
-| `'axial'`, m 1, symm −1 | 1.0i | 8e-15 |
-| `'FDM'`, m 1, symm −1 | 1.0i | 7e-15 |
-| `'axial'`, m 0, symm 1 | 0.3i | 1e-13 |
-| `'FDM'`, m 0, symm 1 | 0.3i | 9e-14 |
-
-The least damped m = 1 mode: λ = −0.104550975908 + 1.009269490234i (`'axial'`), −0.104198820746 + 1.008910499350i
-(`'FDM'`). residσ and resid𝐛 agree with `conductive_IC`'s resid𝐮 and resid𝐛 mode by mode (1e-15 to 1e-10). Without the
-field (`magnetic = 0`, structure `'Boussinesq'`, no-slip) the hydrodynamic spin-over is λ = −0.1019947097 +
-1.0057336901i, the `conductive_IC` reference. Non-magnetic matrices are bitwise unchanged (`tests/diff_rot/regress.sh`).
-
-### Conducting inner core (2026-10-28)
-
-Step 2 reproduces `conductive_IC` with a conducting inner core to round-off, residuals included.
-
-FDM ($l = 1$), `cnorm = 'Schmitt2012'`, ricb 0.35, Ek $10^{-5}$, $\Lambda = 10$, Pm 0.1, no-slip walls, insulating
-mantle, conducting inner core, 4 ranks, the same parameters in `conductive_IC` (`39487bbf`). The m = 0 target is the
-most torsional of the modes there at this resolution (ω 0.0747, σ −0.0233, 𝒯/𝒫 18, Geo 0.90).
-
-| case | N, lmax | largest relative difference (5 eigenvalues) |
-| --- | --- | --- |
-| m 0, $\sigma_{i2o} = \mu_{i2o} = 1$, `N_cic` 64 | 80, 79 | 2e-13 |
-| m 1 (target 1.0i) | 80, 80 | 4e-14 |
-| m 0 | 128, 127 | 6e-13 |
-| m 1 | 128, 128 | 1e-14 |
-| m 0, $\sigma_{i2o} = 10^{-2}$ | 80, 79 | 3e-13 |
-| m 0, `N_cic` 48 / 96 | 80, 79 | 3e-13 / 2e-13 |
-| m 0, $\mu_{i2o} = 2$ | 80, 79 | 2e-13 |
-| m 1, $\mu_{i2o} = 2$, $\sigma_{i2o} = 0.3$ | 80, 80 | 7e-14 |
-
-The least damped m = 0 mode: λ = −0.023322278633 + 0.074686068661i (N 80), −0.023322202914 + 0.074686566522i (N 128).
-residσ, resid𝐛 and resid𝐄 equal `conductive_IC`'s resid𝐮, resid𝐛, resid𝐄 to the printed digits (resid𝐄 with
-$\mu_{i2o} \ne 1$ apart, see [Energy budgets](#energy-budgets)). N 80 is not enough at Ek $10^{-5}$: residuals $10^{-6}$
-to $10^{-3}$, $10^{-14}$ to $10^{-6}$ at N 128. `N_cic` 48, 64 and 96 give the same eigenvalues to $2\cdot10^{-14}$. At
-Ek $10^{-3}$ (the geometry above, $\Lambda$ = Pm = 1) 'axial' m 1 and 'FDM' m 0 agree to $3\cdot10^{-13}$, with all
-residuals below $10^{-10}$.
-
-### Variable density checks (2026-10-28)
-
-No other code has the terms of step 3, so they were checked five ways: against their derivation, with operator
-identities, row by row, with the energy budgets, and by continuity towards a uniform density. The scripts are in
-`tests/magnetic/` (`run_all.sh`), with `bin/ru_insane.py`:
-
-- **Derivation.** The rows derived from the definitions reproduce `conductive_IC`'s 44 uniform-density blocks exactly
-  (factor −1, the A sign; l 3–6, m 0–3), and the $(\ln\rho_0)'$ terms equal the closed forms of
-  [Variable density](#variable-density) to $\le 2\cdot10^{-14}$; the rows `v` and the T columns have none. The closed
-  forms are those of the planning notes: none had to be corrected.
-- **Uniform density unchanged.** The 4 insulating and 9 conducting-core cases above give A and B bitwise equal to the
-  code before this step.
-- **Operator identities** (`bin/ru_insane.py`, B0 'axial', no-slip):
-  $\int\rho_0\mathbf u^*\cdot\mathbf F_L\,dV = -\mathrm{Hendrik}\,\overline{\int\mathbf b^*\cdot\nabla\times(\mathbf u\times\mathbf B_0)\,dV}$
-  to $5\cdot10^{-15}$ ('Boussinesq') and $1\cdot10^{-10}$ ('Wu 2005', r_out 0.99, N 96; $7\cdot10^{-13}$ at N 160), m 0,
-  1, 2; switching off the g-row or the u-row terms gives $2\cdot10^{-3}$ and 0.2. b block Hermitian positive and
-  diffusion Hermitian negative to $10^{-14}$.
-- **Row checks** (`row_check.py`, 'Wu 2005', N 192): every magnetic row block against the derivation, unweighted, to
-  $10^{-14}$ ('axial' m 1, 'FDM' m 0 with `tol_B0` = 1e-15; $8\cdot10^{-9}$ with the default `tol_B0` = 1e-8, the cut of
-  the B0 series). At N 96 the blocks with $\lambda_1$ are good to $10^{-7}$ only: the series of $(\ln\rho_0)'$ converge
-  slowly, its pole sits at $r = 1/r_\mathrm{out}$.
-- **Energy budgets** ('Wu 2005', r_out 0.99, ricb 0.35, FDM, conducting inner core, no-slip, $\Lambda$ = Pm = 1). At Ek
-  $10^{-3}$, residσ, residω, resid𝐛 and resid𝐄 for m 0 and m 1 are $10^{-3}$ at N 68, $10^{-7}$ at N 128 and
-  $\le 6\cdot10^{-10}$ at N 192. At Ek $10^{-4}$ (all residuals $\le 3\cdot10^{-9}$ at N 256):
-
-    | mode | λ (N 256) | change |
-    | --- | --- | --- |
-    | least damped, m 1 | −0.005739718 + 1.003574886i | $3\cdot10^{-9}$ at N 192, $10^{-8}$ with lmax 96 instead of 64 |
-    | m 0, near 0.0442i | −0.017420795 + 0.044242829i | |
-
-    The budgets use spin_doctor's own Lorentz and induction formulas, so they check the rows independently; the f and g
-    rows need no $\rho_0$ weight, although $\lambda_1 \approx -200$ at the outer wall.
-
-- **Continuity** ('Wu 2005' with r_out = $\sqrt\epsilon$, so the stratification is $O(\epsilon)$, against 'Boussinesq';
-  axial, m 1, Ek $10^{-3}$, N 96): the eigenvalue moves linearly with the stratification.
-
-    | $\epsilon$ | $10^{-4}$ | $10^{-3}$ | $10^{-2}$ | $10^{-1}$ |
-    | --- | --- | --- | --- | --- |
-    | (λ − λ of 'Boussinesq')/ε | 0.05186 − 0.00053i | 0.05188 | 0.05215 | 0.05498 |
-
-### Toroidal field (2026-10-28)
-
-Step 4 was checked against its derivation, with the energy budgets, and against the exact frequencies of the Malkus
-(1967) field.
-
-- **Derivation.** The closed forms equal derive.py's rows ($b_0$ = ('tor', 1) and ('tor', 2), any $\rho_0$) for l 3–6, m
-  0–3 (`derive_check.py`); every coefficient fitted from l 2–9, m 0–3 (n = 1) and l 3–9 (n = 2), exactly.
-- **Earlier cases unchanged.** The 13 cases of steps 1 and 2 and three 'Wu 2005' cases of step 3 give A and B bitwise
-  equal to the code before this step.
-- **Row checks** ('Wu 2005', N 192): 'Malkus' m 1 to $10^{-14}$; 'wall' m 0, 2 to $2\cdot10^{-10}$, in the u-row blocks
-  with $k\lambda_1$ only (they vanish at the wall, where $\lambda_1$ is large, so the relative error of the near-wall
-  $\lambda_1$ series shows; it does not decrease with N).
-- **Energy budgets.** 'Malkus' and 'wall', 'Boussinesq' (N 68, 96) and 'Wu 2005' (N 128, 192), insulating and conducting
-  inner core, m 0 and 1, Ek = Em = $10^{-3}$, $\mathrm{Le}^2 = 10^{-3}$, `cnorm_tor = 'mag_energy'`: residσ, resid𝐛,
-  resid𝐄 $\le 6\cdot10^{-13}$, eigenvalues the same at both N to the printed digits. Unlike a poloidal field, the
-  toroidal one has no radial component, hence no Hartmann layer at the walls, and 'Wu 2005' converges fast.
-- **Degree 2 and combined fields.** 'Malkus' and 'wall' with `B0_tor_l = 2`, 'Boussinesq' (N 68, 96) and 'Wu 2005' (N
-  128, 192), conducting inner core, m 0 and 1: residuals $\le 10^{-11}$, eigenvalues the same at both N to the printed
-  digits. FDM plus a degree-2 'wall' field ('Wu 2005'): residuals $2\cdot10^{-10}$ at N 192 (the poloidal field's
-  Hartmann layer sets the resolution); row check of 'axial' plus a degree-2 'Malkus' field, m 2: $10^{-14}$. A 'user'
-  profile `'r'` gives the 'Malkus' eigenvalues to $10^{-12}$.
-- **Malkus (1967).** With $B_\phi = \mathrm{Le}\,s$ the induction is $im\,\mathrm{Le}\,\mathbf u$ and the Lorentz force,
-  up to a gradient,
-
-    $$
-    \mathbf F_L = \frac{im\,\mathrm{Le}^2}{\lambda}\left(im\,\mathbf u + 2\hat{\mathbf z}\times\mathbf u\right),
-    $$
-
-    so the ideal problem reduces to that of the inertial waves (frequency $\lambda_\mathrm{in}$) in any container:
-
-    $$
-    \omega = \frac{\lambda_\mathrm{in}}{2}\left[1 \pm \sqrt{1 + \frac{4\mathrm{Le}^2 m(m - \lambda_\mathrm{in})}{\lambda_\mathrm{in}^2}}\right]
-    $$
-
-    (kore's Im of the eigenvalue; the spin-over, $\lambda_\mathrm{in} = m = 1$, does not move). For small Le the shift
-    divided by $\mathrm{Le}^2$ tends to
-
-    $$
-    \frac{m(m-\lambda_\mathrm{in})}{\lambda_\mathrm{in}} .
-    $$
-
-    For six m = 1 modes near 0.75i ('Boussinesq', ricb 0.35, Pm 1, insulating walls) the frequency shift is exactly
-    quadratic in Le (the same shift divided by $\mathrm{Le}^2$ for $\mathrm{Le}^2$ = 1e-6, 4e-6 and 1.6e-5), and its
-    distance to this limit falls with the diffusivities: 2–8 % at Ek = Em = $10^{-5}$, 0.4–1 % at $10^{-6}$ (e.g. 0.3808
-    against 0.3822 for $\lambda_\mathrm{in}$ = 0.7235). `tests/magnetic/malkus_check.py`.
-
-### Full sphere, inviscid runs and degree-2 poloidal fields
-
-Step 5 (2026-10-28) was checked against the inviscid modes of Wu (2005) and of Luo & Jackson (2022), against
-`conductive_IC`, and with the energy budgets.
-
-- **Hydrodynamics.** Inviscid Boussinesq full sphere (Ek = 0, `'Boussinesq'`): the inertial modes of Wu (2005, Table 1,
-  β = 0) to the 10 digits given (e.g. 0.6666666667, 1.4964360838, 1.2319250547 for $\lvert m\rvert = 2$); 'Wu 2005'
-  against its Table 2. No non-magnetic code changed (`regress.sh` bitwise).
-- **Against `conductive_IC`** (`39487bbf`, the geometry of the first check, all eigenvalues of each run): full sphere,
-  'axial', 'FDM' ($l$ = 1, 2), 'G21 dipole', 'Luo_S1', 'Luo_S2', m 0–2 and both symmetries, $\le 5\cdot10^{-13}$; with
-  an inner core (insulating or conducting, `B0_ic = 'potential'`): 'G21 dipole', 'Luo_S1', 'Luo_S2', 'FDM' $l = 2$ (m 0,
-  3), $\le 6\cdot10^{-13}$.
-- **Derivation.** `derive_check.py` also checks the tables of `induction_pol2`, `lorentz_pol2`, read from
-  `operators.py`, against derive.py's rows (l 3–6, m 0–3), to round-off.
-- **Row checks** in a full sphere (`row_check.py` handles the parity-reduced bases and $\Delta l = \pm2$): 'Boussinesq'
-  to $10^{-14}$; 'Wu 2005' needs N 288 (the pole of $(\ln\rho_0)'$ at $r = 1/r_\mathrm{out}$ is nearer to the domain
-  $[-1, 1]$ than to a shell's; $3\cdot10^{-7}$ at N 192).
-- **Energy budgets**, 'Wu 2005', Ek = Em = $10^{-3}$ ('Boussinesq': to $10^{-14}$):
-
-    | case | N 128 | N 192 | N 256 |
-    | --- | --- | --- | --- |
-    | 'Luo_S2', full sphere, m 0 | $10^{-7}$ | $3\cdot10^{-11}$ | |
-    | 'Luo_S2', full sphere, m 1 | $3\cdot10^{-6}$ | $10^{-9}$ | |
-    | 'Luo_S2', insulating or conducting inner core | | $10^{-10}$ | |
-    | FDM $l = 2$, full sphere, `'Schmitt2012'` (its Hartmann layer) | $5\cdot10^{-4}$ | $6\cdot10^{-6}$ | $3\cdot10^{-8}$ |
-
-- **Malkus (1967), ideal.** Inviscid Boussinesq full sphere, $B_\phi = \mathrm{Le}\,s$, Em $10^{-9}$, m 2: for ten
-  inertial modes $\lambda_\mathrm{in}$ of both symmetries and Le 0.1, 0.3, both branches of the Malkus frequency above
-  to $10^{-5}$–$7\cdot10^{-3}$ relative at N 64 (the fast branch to $10^{-4}$ at N 96). The error does not change with
-  Em ($10^{-8}$ to $10^{-10}$) or with Le: it is that of the magnetic boundary layer the insulating wall imposes
-  (Malkus's ideal solution has a tangential $\mathbf b$ there), not resolved at these N. Since 2026-11-07 an inviscid
-  run with this field and an insulating mantle, where the field is not zero, stops
-  ([Current sheets at slipping walls](#current-sheets-at-slipping-walls)).
-- **Torsional modes of Luo & Jackson (2022)** (`conductive_IC`'s `tests/torsional_s2`: 'Luo_S2', inviscid, Lu
-  $2\cdot10^4$, m 0, `timescale = 'Alfven'`). This code converges to their modes as $N^{-3}$:
-
-    | mode | Luo & Jackson | relative difference |
-    | --- | --- | --- |
-    | 1 | −0.0065952461 + 1.0335959942i | $1.3\cdot10^{-5}$ (N 128), $4\cdot10^{-7}$ (N 320) |
-    | 2 | −0.0141833345 + 1.9095123626i | $2\cdot10^{-4}$ (N 128), $7\cdot10^{-6}$ (N 384) |
-
-    `conductive_IC` is within $10^{-6}$ already at N 128 because it mishandles the $D^3$ and $D^2$ Lorentz terms
-    ([Rows and implementation](#rows-and-implementation), inviscid runs), whose effect there is only $10^{-7}$: with its
-    bases set as here it gives this code's eigenvalues to $10^{-9}$. The slow convergence comes from the u rows in
-    $C^{(3)}$, where the unresolved boundary layer of $\mathbf b$ (Em $5\cdot10^{-9}$) enters through $f'''$.
-
-### Differential rotation, confined, general and Ferraro fields (2026-10-30)
-
-The induction by a differential rotation and the fields of any degrees were checked against sympy, against exact
-solutions (a rigid rotation, the uniform axial field, a closed-form wound field), and with the energy budgets; without
-the new features nothing changed.
-
-- **∇×(U0×b) against sympy** (`tests/magnetic/dr_induction_check.py`): the blocks of `diff_rot.induction_block` against
-  `derive.rows_dr` for $n$ = 0–6, $m$ = 0–5, $l$ up to 25, term by term: $\le 10^{-13}$ at low $l$; at $l$ 20–25 the
-  agreement is limited by derive.py's own quadrature ($10^{-10}$).
-- **Rigid rotation, exact** (`rigid_check.py`): a uniform $\Delta\Omega = c$ must give the eigenvalue of Gaspard $1 + c$
-  without rotation, minus $imc$. All eigenvalues agree to $\le 5\cdot10^{-14}$: hydrodynamics, 'axial', 'FDM', 'Luo_S2',
-  'Malkus', 'wall' of degree 2, a conducting inner core, a full sphere.
-- **Budgets with a solar-like $\Delta\Omega = f_0 + f_2P_2 + f_4P_4$** (Ek = Em = $10^{-3}$, $\Lambda$ = 1): 'Malkus',
-  'axial' and 'Luo_S2', shell and full sphere, 'Boussinesq' and 'Wu 2005': residσ, resid𝐛, resid𝐄 $10^{-13}$–$10^{-9}$.
-- **The algebra against the closed forms** (`mag_couplings` 'algebra' against 'closed', same runs): eigenvalues equal to
-  $\le 6\cdot10^{-13}$ for 'axial' (m 0, 1), 'FDM' (degree 2), 'Luo_S2' (shell, full sphere, 'Wu 2005'), 'FDM' with 'Wu
-  2005', 'Malkus' (and 'Wu 2005'), 'wall' of degree 2, 'axial' + 'wall', a conducting inner core, 'confined', and with a
-  differential rotation. **Against sympy** (`algebra_check.py`): every block for poloidal and toroidal fields of degree
-  1–4 (3 and 4 have no closed forms), several $m$, $l$ up to 12; and the angular factors $P_n$, $P_n'$, $P_n''$ of degrees
-  15 to 35 against Gauss–Legendre quadrature, within $10^{-13}$ of their largest entry.
-- **'general'**: $h_1 = r/2$ gives exactly the 'axial' eigenvalues (no-slip walls: at a slipping insulating outer wall
-  `'general'` ends in a sheet, being taken as a field of currents in the fluid), $k_1 = r$ exactly the 'Malkus' ones;
-  fields of degrees 1 + 3 (full sphere), 2 + 4 (shell), toroidal 1 + 3, and a poloidal 1 + 3 with a toroidal 2 and a
-  differential rotation (also 'Wu 2005'): budgets $\le 5\cdot10^{-12}$.
-- **'confined'**: degree 1 and 2, shell layer [0.4, 0.8] and full-sphere layer [0, 0.6]: budgets $10^{-12}$–$10^{-14}$
-  (shell), $4\cdot10^{-10}$ (degree 1, N 192) and $2\cdot10^{-9}$ (degree 2, N 384) in the full sphere; with
-  $\Delta\Omega$ uniform inside the layer, `ferraro_mismatch` = $10^{-29}$ and the budgets close as without rotation.
-- **'ferraro'**: with a cylindrical rotation and $G(w) = w$ the field is the uniform axial one, and the eigenvalues
-  equal those of 'axial' to 10 digits; with $\Delta\Omega \propto s^2(1 - s^2)$ (degrees 0, 2, 4), $\psi$ is rebuilt
-  from degrees 1–7 to $4\cdot10^{-15}$, `ferraro_mismatch` is $5\cdot10^{-14}$, and the budgets close to
-  $\le 2\cdot10^{-11}$ in a shell, a full sphere and 'Wu 2005'.
-- **`diff_rot_type = 'ferraro'`**: the uniform axial field with $F = \psi$ gives the eigenvalues of the cylindrical
-  profile to 10 digits, and so does the round trip through `B0 = 'ferraro'` ($G = 5w$; budgets $4\cdot10^{-14}$).
-  Budgets $\le 10^{-10}$ for all of the following, with `ferraro_mismatch`:
-
-    | field | $F$ | `ferraro_mismatch` |
-    | --- | --- | --- |
-    | 'FDM' | $\psi$ | $3\cdot10^{-12}$ |
-    | 'G21 dipole', 'Luo_S1' | $\psi$ | $6\cdot10^{-12}$ |
-    | full sphere | $\psi$ | $2\cdot10^{-12}$ |
-    | 'general', degrees 1 + 3 | $\psi + \psi^2$ | $2\cdot10^{-11}$ |
-    | 'Luo_S2' | $\psi^2$ | $2\cdot10^{-10}$ |
-    | 'confined', cut at `diff_rot_nmax` 4 | $\psi$ | $7\cdot10^{-9}$ |
-
-    Refused as they should be: an odd $F$ with 'Luo_S2', `B0 = 'ferraro'`, a toroidal field alone, a conducting inner
-    core with $\psi$ not constant on it. With a toroidal part of degree 2: `B0 = 'ferraro'` + 'Malkus' and 'Luo_S1' +
-    'wall' with `diff_rot_type = 'ferraro'` close their budgets to $8\cdot10^{-12}$ and $10^{-9}$.
-
-- **`B0_wound = 1`** (`tests/magnetic/wound_check.py`): a uniform axial $\mathbf B_p$ with $\Delta\Omega = a r^2$ gives
-  one degree, $k_2 = A r^4/14 + C r^2 + D r^{-3}$: the solution matches it to $7\cdot10^{-14}$ (shell), $4\cdot10^{-13}$
-  (conducting inner core) and $3\cdot10^{-12}$ (full sphere). The residual of the steady induction equation, by finite
-  differences in $(r, \theta)$ with $\mathbf B_p$ from its flux function, is $\le 8\cdot10^{-10}$ ('general' 1 + 3,
-  'Luo_S2' in a full sphere, 'FDM' with a conducting inner core), the floor of the differences; the $k_n$ change by
-  $\le 2\cdot10^{-11}$ from 97 to 385 nodes. Budgets with the ratio of the maxima of the wound and the poloidal field
-  from 0.5 to 4.4 ('general', 'FDM' with a conducting inner core, 'Luo_S2' in a full sphere, 'axial' plus a 'Malkus'
-  part of degree 2): $\le 2.4\cdot10^{-10}$.
-- **Unchanged without the new features**: `regress.sh` bitwise, heat_dr, ru_insane identical, and 26 magnetic cases
-  build A and B bitwise equal to the code before.
-
-### Free decay without the flow (2026-11-06)
-
-Without the flow (`hydro = 0`, as `conductive_IC`) a field of uniform conductivity only diffuses, and each mode decays at
-the rate MagnetD $k^2$, where $k$ makes the spherical Bessel functions $j_l(kr)$, $y_l(kr)$ meet the conditions at the
-walls: $j_{l-1}(k)\,y_{l+1}(kr_i) = y_{l-1}(k)\,j_{l+1}(kr_i)$ for a poloidal field between insulators,
-$j_l(k)\,y_l(kr_i) = y_l(k)\,j_l(kr_i)$ for a toroidal one, and a 3 × 3 determinant with $j_l(k\sqrt{\sigma_{i2o}}\,r)$
-inside a conducting inner core. `tests/decay/decay_check.py` finds the roots with scipy and compares (`ricb` = 0.35, N 48,
-`lmax` 15, `m` 0, MagnetD 1):
-
-| case | modes | largest relative error | resid𝐛, resid𝐄 |
-| --- | --- | --- | --- |
-| insulating walls | poloidal $l$ = 1 (two), 3; toroidal $l$ = 2: rates 10.041029, 45.156235, 33.260470, 37.495006 | 4e-15 | ≤ 5e-12 |
-| conducting inner core, `sigma_i2o` 0.3 | the same: 9.993017, 43.759526, 33.248628, 35.942816 | 6e-14 | ≤ 2e-10 |
-| full sphere | $\pi^2$, $4\pi^2$, and 33.217462 (poloidal $l$ = 3 and toroidal $l$ = 2 together) | 9e-15 | ≤ 2e-13 |
-
-With a differential rotation the modes of the field alone equal, to $10^{-15}$, those of the same run with the flow and a
-B0 of $10^{-9}$, where the field and the flow decouple; the entropy of `'Boussinesq'` decays at the exact rates too, and
-the field of `just_induction.py` with `solve_ind.py` is that of a mode without Lorentz force to $10^{-14}$. resid𝐛 takes
-the magnetic diffusion from $\int\mathbf b\cdot\nabla^2\mathbf b\,dV$, whose round-off grows with N and differs
-from one machine to another: with the conducting inner core it is $8\times10^{-11}$ on one and $2\times10^{-10}$ on
-another, and the check holds the budgets to $10^{-9}$.
-
-### Thin conducting layer (2026-11-06)
-
-The thin layers were ported from `conductive_IC` (2d84351) and checked against exact decay rates, against that branch, and
-with the energy budgets (`tests/twa/twa_check.py`).
-
-**Free decay.** Without the flow each mode decays at MagnetD $k^2$, where $k$ makes $j_l(kr)$, $y_l(kr)$ meet the
-thin-wall conditions with $\mathcal D_l F = -k^2 F$ (`ricb` 0.35, N 48, `m` 0, MagnetD 1; poloidal $l$ = 1 (two modes),
-3 and toroidal $l$ = 2):
-
-| walls | largest relative error | resid𝐄 |
-| --- | --- | --- |
-| outer, $c = 0$, $c_1 = 0.1$ | 9e-16 | 8e-14 |
-| outer, $c = 0.05$, $c_1 = 0.1$, $p$ = 1, 3, $\infty$ | 4e-15 | 2e-2 to 3e-2 |
-| inner, $c = 0$, $c_1 = 0.2$ | 2e-15 | 4e-14 |
-| both, $\mu$ = 1.5 | 2e-15 | nan |
-| full sphere, $c = 0.05$, $c_1 = 0.1$, $p$ = 2, 3 | 3e-15 | 2e-2 |
-
-With $c \neq 0$ resid𝐄 scales as $c\,c_1$ (at $c\,c_1 = 5\cdot10^{-5}$: $2\cdot10^{-5}$ to $5\cdot10^{-4}$ whether $c$ or
-$c_1$ is the larger), at or below $\varepsilon_\text{TWA}$; the toroidal modes close to round-off (their condition has no
-$c$).
-
-**Against `conductive_IC`.** Thirteen runs with the flow (`'Boussinesq'`, Ek, Em and Le² $10^{-3}$, N 48, `lmax` 19 to
-21): no-slip and stress-free walls, a thin layer at either or both boundaries, $p$ = 1, 2, 3, 4 and $\infty$, $\mu$ = 1.3,
-the fields `'axial'`, `'G21 dipole'`, `'Luo_S2'` and `'FDM'`, $m$ = 0, 1, 2, both equatorial symmetries, and a full
-sphere. The eigenvalues agree to $3\cdot10^{-14}$, resid𝐄 and εTWA to the printed digits, and the energies and losses of
-the budget (MEic, E_w, MEext, Ohm_w, relative to Ohm_f) to about $10^{-10}$.
-
-**Budgets.** With a slipping fluid and $c = 0$, resid𝐄 closes to about $10^{-10}$ (N 48), and with `'Wu 2005'`
-(`r_out` 0.9, N 96, `lmax` 40) to $2.5\cdot10^{-10}$, as for insulating walls. A rigid rotation offset
-(`diff_rot_type = 'rigid'`, $a$ = 0.3, thin layers with $c \neq 0$ and a slipping fluid) gives the eigenvalues of the frame
-turning with the solids to $6\cdot10^{-15}$, with resid𝐄 and εTWA unchanged. With walls turning at different rates
-(`'shellular_boussinesq'`) resid𝐄 closes to $3\cdot10^{-10}$, and for a conducting inner core turning with the fluid it
-went from $1.5\cdot10^{-4}$ to $5\cdot10^{-10}$ (`INDU_ROT_SOLID`, above).
-
-### Resolved conducting mantle (2026-11-06)
-
-The resolved mantle was ported from `conductive_IC` (2d84351) and checked against exact decay rates, against that branch,
-against the thin layer, and with the energy budgets (`tests/mantle/mantle_check.py`).
-
-**Free decay.** Without the flow each mode decays at MagnetD $k^2$, with $j_l(kr)$, $y_l(kr)$ in the fluid and in the
-layer $j_l(k\sqrt\sigma\,r)$, $y_l(k\sqrt\sigma\,r)$ for a uniform $\sigma$, or the solution of its equations integrated
-from $r_s$ (scipy's DOP853 at rtol $10^{-13}$), matched as above (`ricb` 0.35, N 48, `m` 0, MagnetD 1; poloidal $l$ = 1
-(two modes), 3 and toroidal $l$ = 2):
-
-| layer | rates | largest relative error | resid𝐛, resid𝐄 |
-| --- | --- | --- | --- |
-| $\sigma$ = 0.3, $r_s$ = 1.4 (`conductive_IC`'s test) | 8.220477, 33.204363, 29.002791, 28.121940 | 1e-15 | ≤ 1e-13 |
-| $\sigma = 0.3\,e^{-10(r-1)}$, $r_s$ = 1.4 (`conductive_IC`'s test) | 9.521791, 42.322149, 31.916490, 34.954516 | 7e-15 | ≤ 8e-13 |
-| full sphere, $\sigma$ = 2, $r_s$ = 1.3 | 3.790859, 19.320734, 11.729515, 15.398290 | 1e-15 | ≤ 6e-13 |
-| conducting inner core (`sigma_i2o` 0.3), $\sigma = 0.5\,r^{-6}$, $r_s$ = 1.5 | 8.623323, 36.247125, 29.781714, 29.597419 | 2e-14 | ≤ 1e-12 |
-
-**Against `conductive_IC`.** Five runs with the flow (`'Boussinesq'`, Ek, Em and Le² $10^{-3}$, N 48, `lmax` 19 to 21):
-no-slip walls under a uniform layer, a fluid slipping along both walls with a field of degree 2 under an exponential
-layer, a full sphere with a slipping fluid, a conducting inner core, and $m$ = 2 under a thin layer ($r_s$ = 1.1,
-$\sigma$ = 2) with a slipping fluid. The eigenvalues agree to $7\cdot10^{-15}$, resid𝐄 to the printed digits, and the
-energies and losses of the budget (E_w, Ohm_w, MEext, relative to Ohm_f) to about $10^{-10}$.
-
-**Limits.** A layer of thickness $h$ and conductance $\sigma h$ = 0.01, with a fluid slipping along it, differs from the
-thin layer with $c = h$ and $c_1$ = 0.01 by $1.0\cdot10^{-4}$, $5.2\cdot10^{-5}$ and $2.6\cdot10^{-5}$ for $h$ = 0.01, 0.005
-and 0.0025: at first order in $h$. A layer of $\sigma = 10^{-9}$ gives the eigenvalues of an insulating mantle to
-$3\cdot10^{-12}$.
-
-**Budgets and rotation.** With `'Wu 2005'` (`r_out` 0.9, N 64), a conducting inner core and a fluid slipping along an
-exponential layer, a rigid rotation offset ($a$ = 0.3) gives the eigenvalues of the frame turning with the solids to
-$3\cdot10^{-15}$, with resid𝐄 $2.5\cdot10^{-10}$ in both frames, and with the layer, the inner core and the fluid turning
-at different rates ($\Delta\Omega = 0.4\,(0.5 + r^2)$) resid𝐄 closes to $3\cdot10^{-10}$. The field of `just_induction.py`
-with `solve_ind.py` is that of a mode without Lorentz force to $4\cdot10^{-14}$, in the fluid and in the layer.
-
-### Forced runs (2026-11-06)
-
-The forced runs with a field were ported from `conductive_IC` (2d84351) and checked against that branch, against the
-Chebyshev inner core, with exact identities of the matrices, with the energy budgets, and with the limit of a thin
-resolved mantle (`tests/forced_field/forced_check.py`; `'Boussinesq'`, Ek, Em and Le² $10^{-3}$, N 48 unless stated).
-
-**Against `conductive_IC`.** Eight runs: libration ($m$ = 0) with insulating, conducting (Chebyshev and Bessel) and
-thin-layer inner cores, thin-layer and resolved mantles, and the fields `'axial'` and `'Luo_S2'`; forcing 9 with
-insulating walls, and with thin layers under `'deforming'`. The kinetic energy and the magnetic energies in the fluid and
-in the inner core agree to the 10 digits written, and resid𝐄 closes to $1.4\cdot10^{-14}$ to $6\cdot10^{-10}$. A
-conducting inner core behind a wall that moves radially is not compared: `conductive_IC` follows neither picture there.
-
-**Bessel and Chebyshev.** With the core at rest (`'rigid'`), under forcing 9, also with the core turning with a
-differential rotation (`'shellular_boussinesq'`, N 64) and with a core of conductivity 0.3 times the fluid's, and with
-one of conductivity 0.3 and permeability 1.5 times the fluid's where the forcing moves the outer wall only, and under
-forcing 6, `'conducting, Bessel'` gives the flow and the field of `'conducting, Chebys'` (`N_cic` 32, 40 with the
-rotation) to $4.4\cdot10^{-14}$, and the core's energy and Ohmic loss to the 10 digits written. $x_d$ agrees with mpmath (50 digits) to $5\cdot10^{-13}$ for $l$ up to 300 and
-$\lvert x\rvert$ up to $1.4\cdot10^4$.
-
-**Matrices.** Two forcing frequencies give matrices that differ by $i\,\Delta w\,B$ to $1.4\cdot10^{-16}$, and frequency
-0 gives the eigenproblem's $A$ exactly, with a conducting inner core under the resolved mantle and with a thin layer at
-the outer wall and $\mu_{i2o}$ = 2. A frequency scan of forcing 11 with a conducting inner core gives the same spectrum
-whether $A$ was assembled at 0.3 or 0.5. The couplings of $u_r\hat{\mathbf r}\times\mathbf B_0$ (`assemble.bc_b_radial`)
-agree with a projection on a Gauss grid to $10^{-15}$, for a poloidal field of degrees 1 and 3 and a toroidal one of
-degrees 2 and 4, at both walls, and with half the toroidal part alone.
-
-**Budgets with the solids at rest** (`'rigid'`). resid𝐄 closes where the walls move: with `'Wu 2005'` (`r_out` 0.9,
-N 96) under forcing 9 with the Bessel core ($1.3\cdot10^{-10}$) and forcing 14 with a thin outer layer
-($1.2\cdot10^{-11}$); with a toroidal $\mathbf B_0$ (`'Malkus'`, not zero at the walls) under forcing 9 with thin layers
-($6\cdot10^{-14}$) and under the resolved mantle ($10^{-15}$); forcing 10 with a thin outer layer ($10^{-12}$); a full
-sphere (N 96) under forcing 9 with a thin outer layer ($5\cdot10^{-13}$; $10^{-7}$ at N 48, as a full sphere needs
-about twice the N of a shell); forcing 9 under the resolved mantle with the Chebyshev core ($1.5\cdot10^{-10}$), also
-with a fluid slipping along the mantle ($1.9\cdot10^{-10}$); forcing 7 with $m$ = 2 under the resolved mantle with the
-Bessel core ($10^{-12}$); forcing 6 through a slipping thin inner layer ($2\cdot10^{-17}$), and through a no-slip one
-while a thin outer layer of permeability 2 that does not conduct stays in place ($6\cdot10^{-15}$). Where no wall moves
-radially it closes as well, with `'Wu 2005'`: forcing 13 with the Chebyshev core ($5\cdot10^{-10}$), and libration under
-the resolved mantle ($1.6\cdot10^{-14}$). With `'Wu 2005'` it needs
-the radial resolution: $6\cdot10^{-7}$ at N 64, $1.3\cdot10^{-10}$ at 96 and $2\cdot10^{-14}$ at 128. In eigenvalue
-problems with a free wall (`bco` or `bci` 2) the magnetic pressure took residσ from $7\cdot10^{-4}$ to $10^{-2}$ down to
-below $10^{-10}$, and resid𝐄, not computed there before, closes to $8\cdot10^{-11}$.
-
-**Budgets with deforming solids** (`'deforming'`). resid𝐄 closes under forcing 14 with thin layers
-($2.4\cdot10^{-12}$), and with the resolved mantle and the Chebyshev core deforming: forcings 9 and 14 with `'Wu 2005'`
-($3.4\cdot10^{-12}$, $1.1\cdot10^{-10}$); forcing 9 with `'G21 dipole'` ($1.2\cdot10^{-10}$), also with a fluid slipping
-along the mantle ($2.2\cdot10^{-10}$) and with a core of conductivity 0.3 times the fluid's ($1.4\cdot10^{-10}$), and
-with the mantle alone, of conductivity $0.5\,e^{-5(r-1)}$
-($2\cdot10^{-11}$) and in a full sphere (N 96, $3\cdot10^{-10}$); with `'Malkus'` ($8.5\cdot10^{-14}$, and $3.9\cdot10^{-14}$ with thin layers),
-`'Luo_S2'` ($1.7\cdot10^{-10}$) and a `'general'` field of poloidal degrees 1, 3 and toroidal 2, 4 ($1.6\cdot10^{-12}$,
-and $9\cdot10^{-13}$ with thin layers); forcings 6, 10 and 7 with $m$ = 2 ($6\cdot10^{-14}$, $10^{-14}$,
-$1.1\cdot10^{-10}$); and with the differential rotation (N 64, $2.3\cdot10^{-10}$). Without the work of the solids'
-motion resid𝐄 is $8.6\cdot10^{-2}$ (`'G21 dipole'`), $2.5\cdot10^{-2}$ (`'Wu 2005'`) and $1.4\cdot10^{-2}$
-(`'Malkus'`), and without the half toroidal field of a deforming thin layer $2.1\cdot10^{-2}$ (`'Malkus'`).
-
-**A thin resolved mantle.** A mantle of thickness $h$ and conductivity $0.02/h$ under forcing 9 at the outer wall tends
-to the thin layer of conductance 0.02 at first order in $h$, in both pictures. Its field differs from that of the thin
-layer by $1.1\cdot10^{-2}$ and $5.6\cdot10^{-3}$ for $h$ = 0.01 and 0.005 with `'axial'` at rest, by
-$4.6\cdot10^{-3}$, $2.3\cdot10^{-3}$ and $1.15\cdot10^{-3}$ for $h$ = 0.01, 0.005 and 0.0025 deforming, and with
-`'Malkus'` by $2.0\cdot10^{-2}$ and $1.0\cdot10^{-2}$ at rest, $1.9\cdot10^{-2}$, $9.6\cdot10^{-3}$ and
-$4.8\cdot10^{-3}$ deforming. A deforming mantle moves across the drop of `'Malkus'` to zero at $r_s$: without the half
-toroidal field in the thin layer's conditions (`background.thin_drop`) the difference stayed at 78% for every $h$.
-
-**Kinematic induction.** `just_induction.py` and `solve_ind.py` give back the field of the coupled run from its flow, to
-$4\cdot10^{-15}$, with the Bessel core, under the resolved mantle, and with both solids deforming.
-
-### Dipole and slipping inner core (2026-11-07)
-
-`B0 = 'dipole'` and a fluid slipping along a conducting inner core were ported from `conductive_IC` (2d84351) and checked
-against that branch, between the two cores, and with the energy budgets (`tests/inner_core/core_check.py`;
-`'Boussinesq'`, N 48).
-
-**The dipole.** Seven eigenvalue runs (Ek $10^{-3}$, Em = Le = $10^{-2}$, `cnorm` 1): insulating walls,
-`cnorm = 'mag_energy'`, the antisymmetric modes, a thin layer at the outer wall, the resolved mantle, a thin layer on the
-inner core, and the rotating solids with a conducting inner core. The eigenvalues agree with `conductive_IC` to
-$4\cdot10^{-12}$ (its $r^{-2}$ series of $h$ is cut at `tol_B0`), and resid𝐋 closes to $2\cdot10^{-12}$. The libration of
-the mantle with the Bessel core gives its kinetic energy to the 10 digits written.
-
-**A slipping inner wall.** Five eigenvalue runs with `bci = 0` and `'conducting, Chebys'` (Ek, Em and Le² $10^{-3}$, or
-Em = Le = $10^{-2}$ with the dipole): `'axial'` with the antisymmetric modes of $m$ = 1 and with $m$ = 0, the dipole,
-`'G21 dipole'` with $\mu_{i2o}$ = 2 and $\sigma_{i2o}$ = 0.3, and `'Luo_S2'` with both walls stress-free and
-$\sigma_{i2o}$ = 0.5. The eigenvalues agree with `conductive_IC` to $6\cdot10^{-13}$ ($4\cdot10^{-15}$ without the dipole),
-resid𝐄 closes to $2\cdot10^{-11}$ and resid𝐋 ($m$ = 0) to $3\cdot10^{-15}$. Without the slip's term in the core's row
-resid𝐄 is $7\cdot10^{-5}$ to $4\cdot10^{-2}$, while resid𝐛, the budget of the fluid alone, does not see it. With
-`'Wu 2005'` (`r_out` 0.9, N 96, `N_cic` 48, with buoyancy) resid𝐄 closes to $4\cdot10^{-10}$ ($2\cdot10^{-8}$ in the most
-damped mode with `N_cic` 24); the slip's term in $(\ln\rho_0)'$ acts only where the flow crosses the wall, under forcing 6
-(below). A rigid rotation offset
-(`diff_rot_type = 'rigid'`, $a$ = 0.3, both walls stress-free) gives the eigenvalues of the frame turning with the solids
-to $2\cdot10^{-14}$, with the same resid𝐄, and `just_induction.py` with `solve_ind.py` gives back the field of a mode
-without Lorentz force, in the fluid and in the core, to $6\cdot10^{-15}$.
-
-**Forced runs.** The libration of the mantle with a slipping inner wall, with `'axial'` and with the dipole: both cores
-give `conductive_IC`'s kinetic energy to the 10 digits written, and the same flow and field to $3\cdot10^{-14}$. Forcing
-10 with `'G21 dipole'`, $\sigma_{i2o}$ = 0.3 and $\mu_{i2o}$ = 1.5, which a wrong factor of either would show: the Bessel
-core gives the Chebyshev one to $2\cdot10^{-14}$, as it does under forcing 6, which moves the inner wall past the core at
-rest, and under forcing 10 with a differential rotation (`'shellular_boussinesq'`, N 64). resid𝐄 closes to
-$4\cdot10^{-10}$ in all, and under forcing 6 with the core deforming, with `'axial'` and with the dipole, which the
-deforming core holds as $a\,x + b\,x^3$ ($6\cdot10^{-11}$). Forcing 6 in `'Wu 2005'` closes it to $6\cdot10^{-12}$, and to
-$2\cdot10^{-3}$ only without the slip's term in $(\ln\rho_0)'$.
-
-**Stops.** A toroidal $\mathbf B_0$ that is not zero at the wall of an inviscid full sphere with an insulator beyond
-stops the run ([Current sheets at slipping walls](#current-sheets-at-slipping-walls)), also where it is
-$4\cdot10^{-6}$ of the field under a strong `'axial'` one, and where a profile that is not smooth at the centre misses its zero at the
-wall (the message says so); with `rotdyn = 1` it stops at any wall. At a viscous slipping wall the run goes on, the
-push in its stress rows: stress-free outer and inner walls (`bco` or `bci` 0 or 2) and a thin layer that does not
-conduct, at either wall. So it does with no-slip walls, a conducting inner core, a conducting thin layer, the resolved
-mantle or `'wall'`. `'general'` and `'user'` profiles that are not finite where they are interpolated (`r` = 0 in a full
-sphere) stop too, and so does a field that is zero, which `'mag_energy'` cannot normalise (`'ferraro'` among them), or a
-`'ferraro'` field that is not finite.
-
-### Current sheets at slipping walls (2026-11-07)
-
-`tests/sheet/sheet_check.py` (`run_all.sh`, about 11 min on 2 ranks) checks the push of the sheets
-([Current sheets at slipping walls](#current-sheets-at-slipping-walls)) with Ek = Em = $10^{-2}$, Hendrik 0.1,
-N 160, $m$ = 1, `'Boussinesq'` unless stated.
-
-**Smoothed sheets.** A sheet is the limit of a field that falls to the field beyond across a thin layer in the fluid,
-whose force kore takes in the volume. With layers of width $\delta$ = $2\cdot10^{-3}$, $10^{-3}$ and $5\cdot10^{-4}$, the
-first four eigenvalues of the run with the sheet and its push are approached as $\delta$ (the error halves with
-$\delta$, by 0.49 to 0.53), and the extrapolation to $\delta = 0$ that removes the terms in $\delta$ and $\delta^2$
-meets them to $8\cdot10^{-8}$ to $5\cdot10^{-5}$, against $9\cdot10^{-3}$ to 1.7 for the run without the push. Nine
-cases: a toroidal sheet ($k = r$) at the outer wall and at an inner wall with zero radial stress (`bci = 2`, with
-`cnorm_tor` 2 and Hendrik 0.025, which give the eigenvalues of 1 and 0.1 to $10^{-13}$, so that a push that missed the
-normalisation would show); a poloidal one (`'general'`) at the outer wall (degrees 1 and 3, `cnorm` 2 and Hendrik
-0.025) and at the inner one; at an outer thin layer that does not conduct ($c$ = 0.05, $p$ = 3, $\mu$ = 1.5) and at an
-inner one, with degree 3 ($\mu$ = 0.8), which bring in the terms $e$; the toroidal sheet at the outer wall of
-`'Wu 2005'` (`r_out` 0.9) with a viscosity $1 + r$, where $\rho_0\nu$ is 0.07 at the wall; the outer toroidal sheet
-with a drag at the same wall (`kappa_cmb` 0.01), whose terms share its rows and which moves the eigenvalues by
-$2\cdot10^{-2}$; and a poloidal and a toroidal sheet together at the outer wall with $m$ = 2 and `symm = -1`, whose
-rows and columns are the other sets of degrees.
-
-**Angular momentum.** With $m$ = 0 between insulating stress-free walls nothing outside the fluid exerts a torque on it,
-so a mode with $\lambda \neq 0$ carries no axial angular momentum $L_z$. With a toroidal sheet of degree 2 at the walls
-under `'axial'` (N 64; 96 for `'Wu 2005'`), $\lvert L_z\rvert$ is below $10^{-13}$ in a shell (with
-`cnorm_tor = 'mag_energy'`), a full sphere and `'Wu 2005'` (0.6 to 1.1 without the push), and so is resid𝐋.
-
-**Budgets.** residσ and resid𝐄 close to $2\cdot10^{-10}$ in all these runs (resid𝐄 is nan with $\mu \neq 1$).
-
-**Stops.** The runs stop with their messages: an inviscid full sphere with a poloidal sheet, also behind a layer where
-the permeability jumps, where the message asks for a field that meets the layer's condition (with `B0_cmb = 'wall'`
-the same run goes on); `centrifugal = 1` with a sheet at a slipping wall; and a field that goes on beyond a slipping
-wall where the permeability jumps: `'axial'` with $\mu$ = 1.5 or a thin layer with $p$ = 2, at the outer wall, at the
-inner one and in an inviscid fluid, and `'dipole'` and `'G21 dipole'` with `'frozen currents'` at the inner wall. With
-a no-slip wall or one permeability they go on, and so does a poloidal sheet at a wall with zero radial stress. The
-toroidal sheet's stops and runs are in `tests/inner_core` ([above](#dipole-and-slipping-inner-core-2026-11-07)).
-
-**The walls' conditions.** A poloidal sheet's drop comes from the steady condition of the wall
-(`background._pol_wall_row`), which the smoothed sheets cannot check: a wrong condition would leave a sheet in the
-smoothed runs too, which the push would then follow. Its rows equal the solver's (`assemble.bc_b_spherical`: an
-insulator's, or a thin layer's with $c_1 = 0$) at both walls, degrees 1 to 6, to $2\cdot10^{-16}$, in the runs of the
-outer poloidal sheet and of the two thin layers. `'FDM'` and `'G21 dipole'`, which `B0_cmb = 'wall'` adjusts to an
-outer layer where the permeability jumps, have no sheet there, while `'G21 dipole'` with `B0_cmb = 'plain'` has one.
-
-**Interpolated profiles.** The profiles of `'general'`, `'ferraro'` and `B0_tor = 'user'`, the wound field's
-$\Delta\Omega$ and the resolved mantle's $\ln\sigma$ are Chebyshev interpolants whose coefficients come from a DCT since
-2026-11-07. numpy's interpolation, used before, left round-off that grows with the degree, above the cut at $10^{-13}$
-from N about 450, and the derivatives at the walls amplified it: with a `'general'` field $h_1 = r^2$ (no-slip walls,
-Ek $10^{-3}$) the eigenvalues moved by $3\cdot10^{-5}$ at N 450 and $2\cdot10^{-4}$ at N 800, and the operators filled
-up in $r$. They now agree to $10^{-13}$ from N 160 to 800. A `B0_tor = 'user'` profile also kept the round-off of its
-interpolant, unlike `'general'`: it moved the eigenvalues with N ($10^{-8}$ at N 240) and left residσ at $10^{-4}$
-where the fluid crosses the wall (`bci = 2`). So did the wound field's $\Delta\Omega$, whose slope its source takes (a
-slope of $2\cdot10^{-4}$ of itself at N 800 for the `'conical'` rotation, constant in $r$), and the wound field itself,
-cut at $10^{-14}$ (its second derivative, the highest that the operators take, $2\cdot10^{-7}$ of its largest value off
-at the walls at N 800): both are now cut at $10^{-13}$.
-
-### The steady rotation of the walls (2026-11-08)
-
-Forcing 12 was ported from `conductive_IC` (2d84351, its commit 0780790) and checked against that branch, against exact
-flows, and with the budgets (`tests/couette/couette_check.py`; `'Boussinesq'`, Ek, Em and Le² $10^{-3}$, N 48, `lmax` 31
-unless stated).
-
-**Against `conductive_IC`.** Eight runs with `'axial'` or `'Luo_S2'`: insulating, conducting (Chebyshev and Bessel) and
-thin-layer inner cores, thin-layer and resolved mantles, a conducting inner core of permeability 1.5 and conductivity
-0.3, and a thin outer layer of permeability 2 with a thickness, with the inner core or both walls turning. The kinetic
-energy and the magnetic energies in the fluid and in the inner core agree to the 10 digits written, the fields to
-$7\cdot10^{-14}$, and residσ, resid𝐋 and resid𝐄 close to $6\cdot10^{-14}$ ($2\cdot10^{-10}$ with `'Luo_S2'`).
-
-**Rigid rotation.** With both walls at one rate, in a full sphere, and with an inner core turning under a stress-free outer
-wall at rest, the fluid turns rigidly and the field is not changed ($\mathbf b$ is $10^{-13}$ of the flow in the full
-sphere, $3\cdot10^{-15}$ in the shells), with a conducting inner core, thin layers, a resolved mantle, and solids whose
-permeability differs from the fluid's.
-
-**Budgets.** resid𝐄 closes to $2\cdot10^{-14}$ with `'Wu 2005'` (`r_out` 0.9, N 96, buoyancy, the Chebyshev core and a
-thin outer layer), with a differential rotation, with the toroidal `'wall'` and `'Malkus'`, and with a fluid slipping
-along a thin layer or a resolved mantle at rest. An axisymmetric flow neither shears `'Malkus'`
-($\mathbf B_0 \propto s\,\hat{\boldsymbol\phi}$) nor carries $B_0/s$, uniform, around: its field stays exactly 0.
+The magnetic terms are checked in several independent ways, by the suites in `tests/` (each has a README that lists
+its scripts):
+
+- **Symbolic derivation.** Every coupling of the Lorentz force and the induction is compared, term by term, with a
+  projection computed from the definitions with sympy (`tests/magnetic`, [Derivation tools](derivations.md)).
+- **Exact solutions.** Free-decay rates of the field with insulating walls, a conducting inner core, a thin conducting
+  layer and a resolved mantle (`tests/decay`, `tests/twa`, `tests/mantle`); a uniform offset of the rotation rate.
+- **Published results.** The inertial modes of Wu (2005), the modes of the Malkus (1967) field, and the torsional modes
+  of Luo & Jackson (2022).
+- **Limits.** A thin resolved mantle against the thin-wall approximation; smoothed current sheets against the sheet
+  conditions (`tests/sheet`); the Bessel inner core against the Chebyshev one (`tests/forced_field`); a weakly
+  stratified `'Wu 2005'` against `'Boussinesq'`.
+- **Budgets.** resid𝐛 and resid𝐄 close to round-off for resolved modes, with every combination of walls, inner core,
+  density profile, differential rotation and forcing (`tests/magnetic`, `tests/forced_field`, `tests/inner_core`).
 
 ## References
 

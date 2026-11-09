@@ -1,10 +1,9 @@
 # Drag at the outer wall
 
-A stress-free outer wall lets the fluid slip along it freely, and a no-slip wall holds it. A drag lies between the two:
-the wall pulls back on the slipping fluid in proportion to the slip, and so damps the flow without a viscous layer. kore
-has two drags, as the `conductive_IC` branch: a constant drag coefficient, and the drag of the wall's topography, which
-depends on latitude and on the direction of the flow (Rekier et al. 2025). Either one changes the condition of a
-stress-free outer wall:
+A stress-free outer wall lets the fluid slip freely, and a no-slip wall holds it. A drag lies between the two: the wall
+pulls back on the slipping fluid in proportion to the slip, which damps the flow without a viscous boundary layer. kore
+has two drags: a constant drag coefficient, and the drag of the wall's topography, which depends on latitude and on the
+direction of the flow (Rekier et al. 2025). Either one applies to a stress-free outer wall:
 
 ```python
 par.bco = 0
@@ -23,22 +22,19 @@ par.kappa_cmb = 4.5e-6
 
 ## Constant drag: `kappa_cmb`
 
-`kappa_cmb` sets a drag that is the same everywhere on the wall and in every direction: the wall pulls on the fluid with
-a stress of `kappa_cmb` times the slip, in the units above. The slip is the flow along the wall relative to the mantle,
-which is at rest, or turns with the rotating solids ([Rotating solids](rotating-solids.md)).
+`kappa_cmb` sets a drag that is the same everywhere on the wall and in every direction. The slip is the flow along the
+wall relative to the mantle, which is at rest or, with the [rotating solids](rotating-solids.md), turns.
 
-For the Earth's core-mantle boundary, Rekier et al. (2025) give a drag coefficient of 11.3 kg m⁻² s⁻¹ at the diurnal
-frequency: `kappa_cmb` = 4.5e-6, with a density of 9.9e3 kg m⁻³ at the wall, the Earth's rotation rate and a radius of
-3480 km.
+For the Earth's core-mantle boundary, Rekier et al. (2025) give a drag coefficient that corresponds to
+`kappa_cmb` = 4.5e-6.
 
 ## Drag of the topography: `topo_drag = 'rekier'`
 
-A flow along a wall with topography radiates internal waves into a rotating or stratified fluid, and the waves carry
-momentum away from the flow. The drag this exerts depends on the latitude, through the Coriolis force, on the direction
-of the flow, zonal or meridional, on its frequency, and on the buoyancy frequency at the wall. `topo_drag = 'rekier'`
-uses the drag that Rekier et al. (2025) derive for a topography with a power-law spectrum, described by its rms height,
-the wavelength where the spectrum rolls off, and its Hurst exponent. The Earth's core-mantle boundary (an rms height of
-1.51 km, a roll-off at 1500 km and a Hurst exponent of 0.8, at a radius of 3480 km):
+A flow along a wall with topography radiates internal waves into a rotating or stratified fluid, and these waves carry
+momentum away. The resulting drag depends on latitude, on the direction of the flow (zonal or meridional), on its
+frequency, and on the buoyancy frequency at the wall. `topo_drag = 'rekier'` uses the drag that Rekier et al. (2025)
+derive for a topography described by its rms height, the wavelength where its spectrum rolls off, and its Hurst
+exponent. For the Earth's core-mantle boundary:
 
 ```python
 par.bco = 0
@@ -48,95 +44,75 @@ par.topo_lambda0 = 0.431
 par.topo_H = 0.8
 ```
 
-Without buoyancy these values damp the spin-over mode as `kappa_cmb` = 4.5e-6 does, to 0.3 %.
+Without buoyancy these values damp the spin-over mode about as much as `kappa_cmb` = 4.5e-6.
 
-- **The buoyancy frequency** at the wall is that of the stratification (`thermal = 1`, with the composition's part
-  when `compositional = 1`), or 0 without buoyancy or where the stratification is unstable. `topo_N` sets it instead.
-- **The frequency of the flow.** The drag depends on the frequency of the flow relative to the mantle, which an
-  eigenvalue problem does not know in advance: kore takes the frequency of the solver's target (`itau`), or the forcing
-  frequency in a forced run, unless `topo_omega` sets it. For a mode, solve again until the two agree
-  ([below](#the-frequency-of-the-drag)). The run stops if this frequency is 0.
-- **Coupled degrees.** The drag varies with latitude, so the wall couples each degree of the flow to the others of the
-  same symmetry, and for `m` other than 0 the poloidal flow to the toroidal one. Check the convergence in `lmax` as
-  usual.
+- **Buoyancy frequency.** By default, that of the stratification at the wall (0 without buoyancy or where the
+  stratification is unstable). `topo_N` sets it instead.
+- **Frequency of the flow.** The drag depends on the frequency of the flow, which an eigenvalue problem does not know in
+  advance. kore uses the frequency of the solver's target (`itau`), or the forcing frequency in a forced run, unless
+  `topo_omega` sets it. For a mode, iterate until the two agree ([below](#the-frequency-of-the-drag)).
+- **Coupled degrees.** The drag varies with latitude, so it couples spherical-harmonic degrees. Check the convergence in
+  `lmax` as usual.
 
 ### The frequency of the drag
 
-A mode's drag is that of its own frequency, which the run finds only at the end. `tools/topo_iterate.sh` solves again
-until the frequency that the drag used and the mode's agree: each pass assembles the drag at the solver's target,
-solves, and moves the target to the eigenvalue nearest it, through the file `track_target`
-([Following a mode](output.md#following-a-mode)). The drag changes slowly with the frequency, so a few passes are enough.
-It needs `track_target = 1` and `topo_omega = None`, and a first guess in the file. From kore's top folder:
+`tools/topo_iterate.sh` repeats the solve until the frequency used by the drag matches that of the mode. Each pass
+builds the drag at the solver's target, solves, and moves the target to the nearest eigenvalue through the file
+`track_target` ([Following a mode](output.md#following-a-mode)). A few passes are usually enough. It needs
+`track_target = 1`, `topo_omega = None`, and a first guess in the file. From kore's top folder:
 
 ```bash
-echo "-0.02 0.99" > track_target    # the guess, Re λ and Im λ
-tools/topo_iterate.sh 1e-10         # ends when λ changes by less than 1e-10 (relative); at most 20 passes
+echo "-0.02 0.99" > track_target    # the guess: Re λ and Im λ
+tools/topo_iterate.sh 1e-10         # stops when λ changes by less than 1e-10 (relative); at most 20 passes
 ```
 
-`submatrices.py` runs once. Each pass appends its rows to the `.dat` files, so that their last rows are those of the
-converged mode. The drag holds one frequency, so the iteration follows one mode at a time.
+Each pass appends its results to the `.dat` files, so their last rows belong to the converged mode. The iteration
+follows one mode at a time.
 
 The formulas: [Drag at the outer wall equations](drag-equations.md).
 
 ## Weak and strong drag
 
-kore applies the drag at a stress-free wall, where the fluid slips. As long as `kappa_cmb` is small against the square
-root of the Ekman number (`ViscosD/Gaspard`), the fluid slips nearly freely, and the drag adds a damping of its own that
-does not depend on the Ekman number: the regime of a drag on the flow outside the thin viscous layer of a real wall, the
-one to run in. As `kappa_cmb` approaches the square root of the Ekman number, the drag holds the fluid at the wall, a
-viscous layer forms, and the wall acts more and more as a no-slip wall. The Earth's 4.5e-6 is a weak drag down to an
-Ekman number of about 1e-8. The same holds for each direction of the drag of the topography.
+As long as `kappa_cmb` is small compared with the square root of the Ekman number (`ViscosD/Gaspard`), the fluid slips
+nearly freely and the drag adds a damping of its own that does not depend on the Ekman number. This is the regime the
+drag is meant for. As `kappa_cmb` approaches the square root of the Ekman number, the drag holds the fluid at the wall,
+a viscous layer forms, and the wall behaves more and more like a no-slip wall. The Earth value of 4.5e-6 is a weak drag
+down to Ekman numbers of about 1e-8.
 
 ## With the rotating solids
 
-With `rotdyn = 1` the outer wall may be stress-free, with or without a drag. The drag then acts on the slip relative to
-the turning mantle, and pulls the mantle in return: its torque is the viscous torque on the mantle in `rotdyn.dat`.
-Without a drag the mantle feels only the magnetic torque and gravity. A fluid slipping along a conducting outer wall
-(a thin conducting layer or a resolved mantle, [Magnetic field](magnetic.md#inner-core-and-walls)) induces its field through the
-slip relative to the turning mantle too.
+With `rotdyn = 1` the drag acts on the slip relative to the turning mantle, and pulls the mantle in return; its torque
+appears as the viscous torque on the mantle in `rotdyn.dat`.
 
 ## Output
 
-`spin_doctor` prints two columns for a viscous run with a stress-free outer wall (not with `centrifugal = 1`):
+For a viscous run with a stress-free outer wall, `spin_doctor` prints two columns:
 
-- **Dtopo**, the power the drag dissipates, in the units of the energies;
-- **δσtopo**, minus Dtopo over twice the energy of the mode (its kinetic energy, its magnetic energy inside and outside
-  the fluid, and the energy of the rotating solids): the drag's share of the damping rate.
+- **Dtopo**, the power the drag dissipates;
+- **δσtopo**, the drag's contribution to the damping rate of the mode.
 
-Without a drag both are per unit `kappa_cmb` (the columns Dtopo/κ and δσtopo/κ): the drag a constant `kappa_cmb` of 1
-would exert on the free slip. For a weak drag this estimates the damping it would add, without a run: with the mantle at
-rest, `kappa_cmb` times δσtopo/κ is the change of the damping rate of the spin-over mode to 5e-4 of it (Ek 1e-3). A drag
-also changes the flow, and with it the other losses: with the rotating solids it turns the mantle too, and the damping
-rate of a mode of the solids changed by about half of the estimate. Run with the drag for its effect.
+Without a drag, both are given per unit `kappa_cmb` (columns Dtopo/κ and δσtopo/κ). Multiplied by a small `kappa_cmb`,
+δσtopo/κ estimates the extra damping a weak drag would add, without a new run. To get the full effect of the drag, run
+with it.
 
-`flow.dat` has both (columns 40–41), and `params.dat` the settings, with the buoyancy frequency and the frequency of the
-flow that the drag of the topography used (columns 135–141, [Output files](output.md)).
+`flow.dat` holds both (columns 40–41), and `params.dat` the drag settings ([Output files](output.md)).
 
 ## What is supported
 
-Supported: any `structure` (the density and the viscosity at the wall enter); a full sphere; any `m`; with or without
-buoyancy; with or without a field, with any magnetic walls (but `'axial'` where the permeability jumps at the wall and
-nothing beyond it conducts: [Current sheets at slipping walls](magnetic.md#current-sheets-at-slipping-walls)); the
-rotating solids; a constant drag with a differential rotation or a background flow; eigenvalue problems, and the forced
-runs whose outer wall stays in place and may slip: forcings 6, 8, 9 with `forcing_amplitude_cmb = 0`, 11, 13 (at
-frequency 0 also between stress-free walls with `kappa_cmb`, which holds the rigid rotation that would otherwise solve
-the steady problem too), and 12 with the outer wall at rest.
+Supported: any structure; a full sphere; any `m`; with or without buoyancy; with or without a magnetic field; the
+rotating solids; a constant drag together with differential rotation or a background flow; eigenvalue problems, and
+the forced runs whose outer wall stays in place and may slip (forcings 6, 8, 11, 13, and 9 and 12 with the outer wall
+at rest).
 
-Not supported (the run stops at startup):
+Not supported (kore stops with a message):
 
-- a drag without the flow (`hydro = 0`), without viscosity (`ViscosD = 0`), or at an outer wall that is not stress-free
-  (`bco` other than 0);
-- `Gaspard = 0`, `centrifugal = 1`, or a forcing that moves the outer wall radially: 10, and 9 where
-  `forcing_amplitude_cmb` is not 0 (forcings 2, 7 and 14 need a no-slip outer wall, which takes no drag);
-- forcing 1, the wave-like tide: the drag would act on the slip of the whole tide, its equilibrium part included;
+- a drag without the flow (`hydro = 0`), without viscosity, or at an outer wall that is not stress-free;
+- a non-rotating frame, the centrifugal deformation, or a forcing that moves the outer wall radially;
+- the wave-like tide (forcing 1);
 - `kappa_cmb` and `topo_drag` together;
-- the drag of the topography with a differential rotation or a background flow (`bgflow = 1`), with a frequency of
-  the flow of 0 (`topo_omega`, or without it the run's frequency: forcing 12, and 13 at frequency 0), or in a frequency
-  scan of forcing 11 (`rsf_frequencies`) without `topo_omega`, since it is built for one frequency;
-- `kappa_cmb` negative or not finite, `topo_drag` other than `None` and `'rekier'`, `topo_hrms` or `topo_lambda0` not
-  positive, `topo_H` not above 1/2, `topo_N` or `topo_omega` negative.
+- the drag of the topography with differential rotation or a background flow, with a flow frequency of 0, or in a
+  frequency scan of forcing 11 without `topo_omega`.
 
 ## Reference
 
-- Rekier, J., Triana, S. A., Barik, A., Abdulah, A. & Kang, S. 2025, arXiv:2507.01671 (the drag of the topography,
-  their eqs. 20, 21, B1 and B2).
+- Rekier, J., Triana, S. A., Barik, A., Abdulah, A. & Kang, S. 2025, arXiv:2507.01671.

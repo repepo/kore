@@ -138,7 +138,7 @@ and `Etherm` $= \kappa_{\mathrm{ref}}/(\Omega L^2)$:
 | `'free fall'` | $\sqrt{L/g_{\mathrm{ref}}}$ | 0 | 0 | 0 | 1 |
 
 `set_scales()` resets all four, so set the ones it leaves at 0 after calling it (`Beyonce` with `'rotation'`). The
-parameter files of this branch use `'rotation'`, and `bin/units.py` sets the parameters from physical values for that
+parameter files of the examples use `'rotation'`, and `bin/units.py` sets the parameters from physical values for that
 choice ([Background model](background.md#units)).
 
 Ratios of the parameters do not depend on $\tau$:
@@ -177,7 +177,7 @@ A fluid can also be stratified by its composition, as a star by the helium and h
 convection zone, or a planet's core by its light elements. With `compositional = 1` kore solves for the perturbation
 $c$ of a second scalar, the composition, beside the entropy or without it. The flow carries $c$ across the background
 gradient $dC/dr$, $c$ diffuses with its own diffusivity, and it changes the density, so it has its own buoyancy. Its
-equation is that of the entropy with $ho_0$ in place of $p_0$, the conservation of a mass fraction:
+equation is that of the entropy with $\rho_0$ in place of $p_0$, the conservation of a mass fraction:
 
 $$
 \rho_0\left(\partial_t c + u_r\frac{dC}{dr}\right) = \mathrm{CompoD}\thinspace\nabla\cdot\left(D\thinspace\rho_0\nabla c\right),
@@ -209,9 +209,7 @@ gains the advection $i\thinspace m\thinspace\mathrm{Gaspard}\thinspace\Delta\Ome
 background composition is spherical, so nothing in it plays the part of the thermal wind.
 
 With `'Boussinesq'` and `diffusivity = 'uniform'` the equation is
-$\partial_t c + u_r\thinspace dC/dr = \mathrm{CompoD}\thinspace\nabla^2 c$. This is the composition of the `conductive_IC`
-branch with its $\xi = -c$, `BV2_comp` = `BeyonceC` and `Ecomp` = `CompoD`: its gradient `'internal'` is `'linear'`
-here, and its `'differential'` is `'inverse square'` with `BeyonceC` = `BV2_comp`$\cdot$`ricb`/(1 − `ricb`).
+$\partial_t c + u_r\thinspace dC/dr = \mathrm{CompoD}\thinspace\nabla^2 c$.
 
 ## Differential rotation
 
@@ -275,49 +273,49 @@ with, term by term:
 - **Coriolis.** $\mathbf u^*\cdot(\hat{\mathbf z}\times\mathbf u)$ is imaginary: the Coriolis force does no work.
 - **Pressure.** Since $\nabla\cdot(\rho_0\mathbf u) = 0$, the power of $-\nabla\Pi$ is a flux through the walls,
 
-  $$
-  W_p = -2\thinspace\mathrm{Re}\oint\rho_0\thinspace\Pi\thinspace u_r^*\thinspace(\hat{\mathbf r}\cdot\mathbf n)\thinspace dA ,
-  $$
+    $$
+    W_p = -2\thinspace\mathrm{Re}\oint\rho_0\thinspace\Pi\thinspace u_r^*\thinspace(\hat{\mathbf r}\cdot\mathbf n)\thinspace dA ,
+    $$
 
-  with $\mathbf n$ the outward normal of the fluid ($-\hat{\mathbf r}$ at the inner wall). It is zero when $u_r = 0$ at
-  the walls (`bco`, `bci` = 0 or 1), and not when the walls move radially (the tidal forcing 14) or with `bco = 2`.
+    with $\mathbf n$ the outward normal of the fluid ($-\hat{\mathbf r}$ at the inner wall). It is zero when $u_r = 0$ at
+    the walls (`bco`, `bci` = 0 or 1), and not when the walls move radially (the tidal forcing 14) or with `bco = 2`.
 
 - **Viscosity.** With the stress $\boldsymbol\sigma = \mathrm{ViscosD}\thinspace\rho_0\nu\thinspace\mathsf S$, an
-  integration by parts splits the power of the viscous force into the work of the stress at the walls and the
-  dissipation:
+    integration by parts splits the power of the viscous force into the work of the stress at the walls and the
+    dissipation:
 
-  $$
-  W_\nu = 2\thinspace\mathrm{Re}\int\mathbf u^*\cdot(\nabla\cdot\boldsymbol\sigma)\thinspace dV = W_\nu^{\rm wall} - D_\nu ,
-  \qquad W_\nu^{\rm wall} = 2\thinspace\mathrm{Re}\oint\mathbf u^*\cdot\boldsymbol\sigma\cdot\mathbf n\thinspace dA ,
-  $$
+    $$
+    W_\nu = 2\thinspace\mathrm{Re}\int\mathbf u^*\cdot(\nabla\cdot\boldsymbol\sigma)\thinspace dV = W_\nu^{\rm wall} - D_\nu ,
+    \qquad W_\nu^{\rm wall} = 2\thinspace\mathrm{Re}\oint\mathbf u^*\cdot\boldsymbol\sigma\cdot\mathbf n\thinspace dA ,
+    $$
 
-  $$
-  D_\nu = 2\thinspace\mathrm{Re}\int\boldsymbol\sigma:\nabla\mathbf u^*\thinspace dV = \int 4\thinspace\mathrm{ViscosD}\thinspace\rho_0\nu\thinspace\mathsf e_d:\mathsf e_d^*\thinspace dV \geq 0 ,
-  $$
+    $$
+    D_\nu = 2\thinspace\mathrm{Re}\int\boldsymbol\sigma:\nabla\mathbf u^*\thinspace dV = \int 4\thinspace\mathrm{ViscosD}\thinspace\rho_0\nu\thinspace\mathsf e_d:\mathsf e_d^*\thinspace dV \geq 0 ,
+    $$
 
-  with $\mathsf e = \tfrac12[\nabla\mathbf u + (\nabla\mathbf u)^{\mathsf T}]$ the rate of strain and
-  $\mathsf e_d = \mathsf e - \tfrac13(\nabla\cdot\mathbf u)\thinspace\mathsf I$ its deviatoric part: $\mathsf S = 2\mathsf e_d$,
-  and $\boldsymbol\sigma$ is symmetric and traceless, so that $\boldsymbol\sigma:\nabla\mathbf u^* = \boldsymbol\sigma:\mathsf e_d^*$.
-  The physical dissipation is $\int 2\rho\nu\thinspace\mathsf e_d:\mathsf e_d\thinspace dV$, and the factor 4 is its mean
-  in the convention above. $W_\nu^{\rm wall}$ is zero on a no-slip wall at rest and on an impenetrable stress-free wall,
-unless a force acts on the fluid at that wall: a drag ([Drag at the outer wall](drag.md)) or the push of the background
-field's current sheet ([Magnetic field equations](magnetic-equations.md#current-sheets-at-slipping-walls)).
+    with $\mathsf e = \tfrac12[\nabla\mathbf u + (\nabla\mathbf u)^{\mathsf T}]$ the rate of strain and
+    $\mathsf e_d = \mathsf e - \tfrac13(\nabla\cdot\mathbf u)\thinspace\mathsf I$ its deviatoric part: $\mathsf S = 2\mathsf e_d$,
+    and $\boldsymbol\sigma$ is symmetric and traceless, so that $\boldsymbol\sigma:\nabla\mathbf u^* = \boldsymbol\sigma:\mathsf e_d^*$.
+    The physical dissipation is $\int 2\rho\nu\thinspace\mathsf e_d:\mathsf e_d\thinspace dV$, and the factor 4 is its mean
+    in the convention above. $W_\nu^{\rm wall}$ is zero on a no-slip wall at rest and on an impenetrable stress-free wall,
+    unless a force acts on the fluid at that wall: a drag ([Drag at the outer wall](drag.md)) or the push of the background
+    field's current sheet ([Magnetic field equations](magnetic-equations.md#current-sheets-at-slipping-walls)).
 
 - **Buoyancy.** $W_b = 2\thinspace\mathrm{Beyonce}\thinspace\mathrm{Re}\int\rho_0\thinspace g\thinspace s\thinspace u_r^*\thinspace dV$,
-  the energy exchanged with the entropy perturbation, and with `compositional = 1`
-  $W_c = 2\thinspace\mathrm{BeyonceC}\thinspace\mathrm{Re}\int\rho_0\thinspace g\thinspace c\thinspace u_r^*\thinspace dV$,
-  the energy exchanged with the composition.
+    the energy exchanged with the entropy perturbation, and with `compositional = 1`
+    $W_c = 2\thinspace\mathrm{BeyonceC}\thinspace\mathrm{Re}\int\rho_0\thinspace g\thinspace c\thinspace u_r^*\thinspace dV$,
+    the energy exchanged with the composition.
 
 - **Differential rotation.** Of the terms of [Differential rotation](#differential-rotation), the advection
-  $i m\thinspace\mathrm{Gaspard}\thinspace\Delta\Omega\thinspace\mathbf u$ and the Coriolis force of $\Delta\Omega$ do no
-  work. The last one does:
+    $i m\thinspace\mathrm{Gaspard}\thinspace\Delta\Omega\thinspace\mathbf u$ and the Coriolis force of $\Delta\Omega$ do no
+    work. The last one does:
 
-  $$
-  W_\Omega = -2\thinspace\mathrm{Gaspard}\thinspace\mathrm{Re}\int\rho_0\thinspace r\sin\theta\thinspace u_\phi^*\thinspace(\mathbf u\cdot\nabla\Delta\Omega)\thinspace dV ,
-  $$
+    $$
+    W_\Omega = -2\thinspace\mathrm{Gaspard}\thinspace\mathrm{Re}\int\rho_0\thinspace r\sin\theta\thinspace u_\phi^*\thinspace(\mathbf u\cdot\nabla\Delta\Omega)\thinspace dV ,
+    $$
 
-  the Reynolds stress of the perturbation acting on the shear. $W_\Omega > 0$ is energy that the perturbation takes from
-  the background flow.
+    the Reynolds stress of the perturbation acting on the shear. $W_\Omega > 0$ is energy that the perturbation takes from
+    the background flow.
 
 With a magnetic field the Lorentz force adds its power ([Magnetic field](magnetic-equations.md)). The imaginary part of
 the same equation is the frequency balance: $2\thinspace\mathrm{Im}(\lambda)\thinspace K$ against the imaginary parts of

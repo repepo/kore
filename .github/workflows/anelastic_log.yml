@@ -1,16 +1,27 @@
-# The tests of the anelastic_log branch (tests/ci), run on every push to it. They are separate from those of
-# conductive_IC: on a push, GitHub runs the workflows of the pushed commit.
-# FIX (2026-10-28): keep this same file on every branch that may become the default (as with docs.yml and
-# conductive_IC.yml); a workflow missing from the default branch is marked deleted and its badge 404s.
+# The tests of the default branch, main (tests/ci): run on every push to main, on pull requests into it, and from
+# "Run workflow" in the Actions tab. conductive_IC has its own tests and workflow (conductive_IC.yml).
+# Keep this same file on every branch that may become the default (as with docs.yml and conductive_IC.yml): GitHub
+# lists workflows, and serves their badges, from the default branch, so a workflow missing there is marked deleted
+# and its badge breaks.
 name: anelastic_log tests
 
 on:
   push:
-    branches: [anelastic_log]
+    branches: [main]
     paths-ignore: ['**.md', 'docs/**', 'mkdocs.yml']
+  pull_request:
+    branches: [main]
+    paths-ignore: ['**.md', 'docs/**', 'mkdocs.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
+    # "Run workflow" can be started on any branch: only test main
+    if: github.event_name != 'workflow_dispatch' || github.ref_name == 'main'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:

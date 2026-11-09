@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 '''
-The test GitHub runs on every push to anelastic_log (.github/workflows/anelastic_log.yml). To run it locally:
+The test GitHub runs on every push to main, the default branch (.github/workflows/anelastic_log.yml). To run it locally:
 > cd tests/ci; pytest -v
 
 The smooth Sun example (examples/smooth_sun: full sphere, Model S structure, radiative interior, ν and κ step,

@@ -1,38 +1,30 @@
 # Convective forcing
 
-The inertial modes of the Sun are observed with finite amplitudes because the convection keeps exciting them while it
-also damps them. Forcing 11 adds this excitation to kore's linear equations as a random body force: the fluctuating
-part of the Reynolds stress of the convective eddies. Its strength is tied to kore's viscosity, which in a convection
-zone stands for the same eddies, so that a mode receives from the eddies the energy that their viscosity takes away.
-kore returns the power spectrum of the kinetic energy of the forced flow at the frequencies you choose, and from it the
-energy that each mode reaches. Where the force comes from and why its strength follows from the viscosity is explained
-on [Reynolds-stress forcing](reynolds-stress.md). This page shows how to run it and how to read the result.
+The inertial modes of the Sun are observed with finite amplitudes because convection keeps exciting them while it also
+damps them. Forcing 11 adds this excitation to kore's linear equations as a random force: the fluctuating part of the
+Reynolds stress of the convective eddies. Its strength is tied to kore's viscosity, which in a convection zone
+represents the same eddies, so that the energy a mode receives from the eddies balances the energy their viscosity
+removes. kore returns the power spectrum of the kinetic energy of the forced flow at the frequencies you choose, and from
+it you get the energy of each mode. The physics behind the force is on [Reynolds-stress forcing](reynolds-stress.md).
+This page shows how to run it and how to read the result.
 
 ## What a run computes
 
-The force is random, so a single solution means nothing: only its statistics do. For each forcing frequency $w$, kore
-solves
+The force is random, so only the statistics of the solution are meaningful. For each forcing frequency $w$, kore solves
+the forced problem for `rsf_nsamp` independent random forces and averages their kinetic energies. This average is the
+power spectral density of the kinetic energy at $w$; its uncertainty decreases as one over the square root of the
+number of samples. The matrix is factored once per frequency and reused for all samples, so the cost of a run is set
+mainly by the number of frequencies.
 
-$$
-(A - i\thinspace w\thinspace B)\thinspace\mathbf x_j = \mathbf b_j, \qquad j = 1, \dots, K,
-$$
-
-where $A$ and $B$ are the matrices of the eigenproblem ([Numerical method](numerical-method.md#eigenproblem)) and the
-$K$ = `rsf_nsamp` right-hand sides $\mathbf b_j$ are independent realisations of the random force. The mean of the
-kinetic energies of the $K$ solutions is the power spectral density of the kinetic energy at $w$. It is an estimate,
-whose standard error goes as $1/\sqrt K$. The matrix is factored once per frequency, and each realisation then costs
-only a back-substitution, so the cost of a run is set by the number of frequencies.
-
-The flow goes as $e^{iwt}$, so that $w$ is the frequency $-\omega$ of the [Anelastic equations](anelastic.md#non-dimensionalization)
-in kore's units: negative $w$ is prograde, as for `forcing_frequency`. A mode of eigenvalue $\lambda$ resonates at
-$w = \mathrm{Im}\thinspace\lambda$. Near a damped mode that is well separated from the others, the spectrum is a
-Lorentzian centred there, with a half-width at half maximum of $\lvert\mathrm{Re}\thinspace\lambda\rvert$, and the
-area under it is the kinetic energy of the mode.
+Frequencies follow the convention of `forcing_frequency`: negative $w$ is prograde. A mode with eigenvalue $\lambda$
+resonates at $w = \mathrm{Im}\thinspace\lambda$. Near a well-isolated mode the spectrum is a Lorentzian peak centred
+there, whose half-width is the mode's damping rate $\lvert\mathrm{Re}\thinspace\lambda\rvert$, and whose area is the
+kinetic energy of the mode.
 
 ## Example: a Rossby mode
 
 This example forces the sectoral Rossby mode $l = m = 2$ of an incompressible fluid in a uniformly rotating spherical
-shell, and recovers its resonance. It takes less than a minute on four cores.
+shell, and recovers its resonance. It takes less than a minute.
 
 ### 1. Write the parameter file
 
@@ -62,7 +54,7 @@ par.N = 96
 par.lmax = 49
 par.ncpus = 4
 
-# Random Reynolds-stress forcing, 16 realisations
+# Random Reynolds-stress forcing, 16 samples
 par.forcing = 11
 par.forcing_frequency = 0.0
 par.rsf_nsamp = 16
@@ -75,12 +67,9 @@ par.itau = 0.667
 par.nev = 4
 ```
 
-The viscosity is uniform, so all of it counts as turbulent: the turbulent viscosity is $\nu_t$ = `ViscosD` =
-$10^{-5}$. The strength of the forcing is a turbulent temperature $\Theta$, the energy of one eddy. With the default
-law, $\Theta = 3\rho_0\nu_t^2\ell_c$, and with the default eddy size $\ell_c = 0.25$ it is $7.5\times10^{-11}$ here,
-in kore's units of energy. `rsf_taper` sets the width over which the force goes to zero at the walls. Keep
-`forcing_frequency = 0`: the scan of step 4 sets the frequencies, and $A$ is then the matrix of the eigenproblem,
-which step 3 uses.
+The viscosity is uniform, so all of it counts as turbulent and drives the force. `rsf_taper` sets the width over
+which the force goes to zero at the walls. Keep `forcing_frequency = 0`: the scan of step 4 sets the frequencies, and
+the same matrices are reused for the eigenvalue solve of step 3.
 
 ### 2. Build the matrices
 
@@ -99,9 +88,8 @@ describes the forcing:
  Chebyshev tail of the rows (max over the last 10% / max): 3.5e-07
 ```
 
-The last line checks that `N` resolves the force. Above $10^{-6}$ it ends with "WARNING: under-resolved, raise N or
-l_c": then raise `N`, or widen the sharpest edge of the force (`rsf_taper`, or `rsf_rcut_width` below). With the
-default `rsf_taper` this line reads 0.13 at N = 96.
+The last line checks that `N` resolves the force. If it ends with "WARNING: under-resolved, raise N or l_c", raise `N`
+or widen the sharpest edge of the force (`rsf_taper`, or `rsf_rcut_width` below).
 
 ### 3. Find the mode
 
@@ -118,12 +106,12 @@ mpiexec -n 4 ./bin/solve.py
 cd ..
 ```
 
-The first eigenvalue is the Rossby mode, $\lambda = -6.934\times10^{-5} + 0.66666674\thinspace i$, with residσ about
-$10^{-12}$. Its frequency is close to the inviscid value $\omega = -2/(m+1)$, retrograde.
+The first eigenvalue is the Rossby mode, with a frequency close to the inviscid value $2/(m+1) = 2/3$ and a damping
+rate of about $7\times10^{-5}$.
 
 ### 4. Scan the frequencies
 
-Add the frequencies to `bin/parameters.py`, 21 points over five half-widths on each side of the resonance:
+Add the frequencies to `bin/parameters.py`, 21 points spanning five half-widths on each side of the resonance:
 
 ```python
 import numpy as np
@@ -143,7 +131,7 @@ mpiexec -n 4 ./bin/solve.py
 w = 6.666667400e-01   mean KE 4.442305e-07 +- 1.1e-07   (0.7 s)
 ```
 
-and appends the same numbers to `rsf_spectrum.dat`, and the kinetic energy of each realisation to `rsf_ke.dat`. A scan
+and appends the same numbers to `rsf_spectrum.dat`, and the kinetic energy of each sample to `rsf_ke.dat`. A scan
 writes no fields.
 
 ### 5. Read the spectrum
@@ -162,16 +150,12 @@ writes no fields.
 ...
 ```
 
-The peak is at $w = \mathrm{Im}\thinspace\lambda$, and the spectrum falls to half the peak at
-$w = \mathrm{Im}\thinspace\lambda \pm \lvert\mathrm{Re}\thinspace\lambda\rvert$: the Lorentzian of the mode. The energy
-of the mode is the height of the Lorentzian times $\lvert\mathrm{Re}\thinspace\lambda\rvert/2$, here
-$4.44\times10^{-7}\times6.93\times10^{-5}/2 = 1.5\times10^{-11}$. In the limit of eddies much smaller than the mode
-and of a force that reaches the walls, the mode would reach $\Theta$, since all of its damping is turbulent
-([Reynolds-stress forcing](reynolds-stress.md#energy-of-a-mode)). The finite eddy size and the wide taper lower
-it here to a fifth of $\Theta$.
+The peak is at the frequency of the mode, and the spectrum falls to half the peak one damping rate away on either side:
+the Lorentzian of the mode. The energy of the mode is the peak height times half the damping rate, here about
+$1.5\times10^{-11}$ in kore's units.
 
-The standard error is a quarter of the mean, as expected for 16 realisations. The spectrum is nevertheless smooth,
-because every frequency uses the same realisations: the shape of a spectrum is much better determined than its level.
+The standard error is about a quarter of the mean, as expected for 16 samples. The spectrum is still smooth, because
+every frequency uses the same random samples: the shape of a spectrum is much better determined than its level.
 
 ## Setting up a run
 
@@ -182,11 +166,9 @@ because every frequency uses the same realisations: the shape of a spectrum is m
 - `rsf_taper` > 0, and `rsf_taper_in` > 0 in a full sphere: the force must vanish at the walls (below). With
   `rsf_rcut`, `ricb` ≤ `rsf_rcut` < 1 − `rsf_rcut_width` and `rsf_rcut_width` > 0.
 - `forcing_amplitude_cmb` is not used: the power scales with `rsf_scale` instead.
-- The equations of the entropy and of the composition are not forced: the right-hand side is zero in their rows. Without
-  their diffusion (`ThermaD = 0`, `CompoD = 0`) the fluid must carry them round at every frequency of the run,
-  `forcing_frequency` or each of `rsf_frequencies`: kore stops where $w + m\Omega$ is 0 everywhere or changes sign in
-  the fluid, $\Omega$ the angular velocity of the differential rotation and of the background flow, and with a
-  background flow that has a meridional circulation ([ThermaD = 0](background.md#thermad-0)).
+- Only the momentum equation is forced, not the entropy or composition equations. Without thermal or compositional
+  diffusion (`ThermaD = 0` or `CompoD = 0`), some combinations of frequency and differential rotation have no
+  well-behaved solution; kore stops in those cases ([ThermaD = 0](background.md#thermad-0)).
 - A steady run (a frequency 0) needs walls that stay in place, `bco` and `bci` 0 or 1.
 - With `magnetic = 1` the perturbation of the field is solved with the flow, and a scan needs the inner core
   `'conducting, Chebys'` rather than `'conducting, Bessel'` ([Magnetic field](magnetic.md#forced-runs)).
@@ -198,19 +180,18 @@ kore stops with a message where a requirement is not met.
 
 ### Where the force acts
 
-The force follows the turbulent part of the viscosity,
-$\nu_t$ = `ViscosD` $(\hat\nu - \nu_f)$, clipped at 0, with $\hat\nu$ the viscosity profile of
-[Background model](background.md#diffusivity) and $\nu_f$ the part that is not turbulent. By default $\nu_f$ is `visc0`
-for the diffusivities `'step'` and `'solar_rz'` when `visc0` < 1, the viscosity of the radiative zone, and 0 otherwise.
-Where $\nu_t = 0$ there is no force at all.
+The force acts only where the viscosity is turbulent: the part of the viscosity profile
+([Background model](background.md#diffusivity)) above a floor that represents the non-turbulent viscosity. With the
+diffusivities `'step'` and `'solar_rz'`, the floor is by default `visc0`, the viscosity of the radiative zone, so the
+radiative zone is not forced. Otherwise the floor is 0.
 
 - With a `'user'` viscosity profile, set `rsf_nu_floor` to its radiative-zone value, or the radiative zone is forced
   too.
 - To keep the force out of the tail of a viscosity step, cut it below a radius with `rsf_rcut`. The force is zero below
   `rsf_rcut` and full above `rsf_rcut` + `rsf_rcut_width`, joined smoothly. Do not raise `rsf_nu_floor` for this: the
   clipped $\nu_t$ then has a corner that the Chebyshev expansion cannot resolve.
-- The edges need radial resolution. In a full sphere, an edge near $r = 0.7$ of width 0.04 needs N of about 1280, and
-  one of width 0.08 about 900. The tail line of `log_asm` tells you when an edge is under-resolved.
+- Sharp edges need high radial resolution (in a full sphere, an edge of width 0.04 can need `N` above 1000). The
+  last line of `log_asm` tells you when an edge is under-resolved.
 - The force goes to zero over `rsf_taper` below the outer wall and above an inner core, and over `rsf_taper_in` above
   $r = 0$ in a full sphere, so that it needs no traction at the walls.
 - `rsf_split` = a radius adds the kinetic energy below that radius to the output, for example the energy in a radiative
@@ -218,34 +199,29 @@ Where $\nu_t = 0$ there is no force at all.
 
 ### Strength of the force
 
-The variance of the force is proportional to $\Theta\nu_t$. `rsf_theta` sets the law for $\Theta$:
+The strength of the force is set by a "turbulent temperature" $\Theta$, the kinetic energy of one eddy.
+In the ideal case of eddies much smaller than the mode, a mode whose damping is entirely turbulent reaches an energy
+$\Theta$. `rsf_theta` chooses how $\Theta$ is computed:
 
-| `rsf_theta` | $\Theta$ | depends on $\nu$ |
-| --- | --- | --- |
-| `'nu'` (default) | $3\rho_0\nu_t^2\ell_c$: eddies of size $\ell_c$ whose mixing-length viscosity $u_c\ell_c/3$ is $\nu_t$ | as $\nu_t^2$ |
-| `'mlt'` | $\tfrac13\rho_0u_c^2\ell_c^3$, with the mixing-length velocity $u_c = (\alpha F_c/10\rho_0)^{1/3}$ of the convective flux $F_c$, $\alpha$ = `rsf_alpha` | no |
-| a number | that constant | no |
+| `rsf_theta` | $\Theta$ |
+| --- | --- |
+| `'nu'` (default) | from the turbulent viscosity and the eddy size, by mixing-length theory |
+| `'mlt'` | from the convective flux of the star, by mixing-length theory; needs `rsf_lum` and `visc_pow = 0` |
+| a number | that constant |
 
 - `rsf_scale` multiplies $\Theta$, and with it the whole spectrum.
-- `'mlt'` needs `rsf_lum`, the luminosity $L_\star$ in kore's units, $\rho_u L^5/\tau^3$, with $\rho_u$ the unit of
-  density of the structure (the central density for the Model S structures) and $L$, $\tau$ the units of length and
-  time: $7.0\times10^{-7}$ for the Sun with a Model S structure, `r_out` = 0.985 and $\tau = 1/\Omega$,
-  $\Omega/2\pi$ = 456 nHz. It takes the convective flux as $L_\star/(4\pi r^2)$ times $\nu_t/\max\nu_t$, and needs
-  `visc_pow = 0`.
-- The eddy size $\ell_c$ is a smooth minimum of `rsf_alpha` $H_p$ ($H_p$ the pressure scale height) and `rsf_lc_max`,
-  or the constant `rsf_lc`. With `rsf_angular = 1` (the default) the eddies also have a finite horizontal size, which
-  weakens the force at degrees $l \gtrsim r/\ell_c$.
-- **The Sun.** The observed amplitudes of the solar Rossby modes (Löptien et al. 2018) correspond to
-  $\Theta_{\rm eff} \approx (0.6\text{–}3)\times10^{34}$ erg, $(0.3\text{–}1.6)\times10^{-11}$ in kore's units with
-  the solar values above. That is about $10\thinspace(10^{12}\thinspace\mathrm{cm^2\thinspace s^{-1}}/\nu_t)^2$ times
-  the `'nu'` law, or $1/20$ of the `'mlt'` law, for eddies much smaller than the modes. With the default eddy size and
-  angular factor the same modes are forced a few times less, so `rsf_scale` must be larger by as much. Treat these as
-  starting values for `rsf_scale`.
+- `rsf_lum`, for `'mlt'`, is the luminosity in kore's units. For the Sun with a Model S structure, `r_out` = 0.985 and a
+  frame rotating at 456 nHz, it is $7.0\times10^{-7}$.
+- The eddy size is the smaller of `rsf_alpha` pressure scale heights and `rsf_lc_max`, or the constant `rsf_lc`. With
+  `rsf_angular = 1` (the default) the eddies also have a finite horizontal size, which weakens the force at high
+  harmonic degrees.
+- **The Sun.** The observed amplitudes of the solar Rossby modes (Löptien et al. 2018) correspond to $\Theta$ of about
+  $10^{-11}$ in kore's units, with the solar values above. Use this to choose a starting value of `rsf_scale`.
 
 ### Frequencies
 
-- Around a mode: about 20 points over $\mathrm{Im}\thinspace\lambda \pm 5\thinspace\lvert\mathrm{Re}\thinspace\lambda\rvert$,
-  and one at $\mathrm{Im}\thinspace\lambda$. An eigenvalue solve on the same matrices (step 3) gives the modes.
+- Around a mode: about 20 points spanning five damping rates on each side of its frequency, including one at the
+  frequency itself. An eigenvalue solve on the same matrices (step 3) gives the modes.
 - Between modes, a uniform grid. A mode whose half-width is smaller than the grid step can fall between two points:
   add a point at each resonance you care about.
 - `rsf_frequencies` takes any list or array, for example `np.loadtxt('freqs.txt')` for a file with one frequency per
@@ -256,15 +232,15 @@ The variance of the force is proportional to $\Theta\nu_t$. `rsf_theta` sets the
 
 | parameter | default | meaning |
 | --- | --- | --- |
-| `rsf_nsamp` | 1 | number of realisations; 16 to 30 is usual |
-| `rsf_seed` | 0 | realisation $j$ uses `numpy.random.default_rng([rsf_seed, j])` |
+| `rsf_nsamp` | 1 | number of samples; 16 to 30 is usual |
+| `rsf_seed` | 0 | sample $j$ uses `numpy.random.default_rng([rsf_seed, j])` |
 | `rsf_theta` | `'nu'` | the law of $\Theta$ (above) |
 | `rsf_scale` | 1.0 | multiplies $\Theta$ |
 | `rsf_lum` | None | luminosity in kore's units, for `'mlt'` |
-| `rsf_alpha`, `rsf_lc_max` | 2.0, 0.25 | the eddy size, a smooth minimum of `rsf_alpha` $H_p$ and `rsf_lc_max` |
+| `rsf_alpha`, `rsf_lc_max` | 2.0, 0.25 | the eddy size: the smaller of `rsf_alpha` pressure scale heights and `rsf_lc_max` |
 | `rsf_lc` | None | a constant eddy size instead |
 | `rsf_angular` | 1 | 1: eddies of finite horizontal size; 0: white in angle |
-| `rsf_nu_floor` | None | the part $\nu_f$ of $\hat\nu$ that is not turbulent; None: `visc0` for `'step'` and `'solar_rz'` with `visc0` < 1, else 0 |
+| `rsf_nu_floor` | None | the non-turbulent part of the viscosity profile; None: `visc0` for `'step'` and `'solar_rz'`, else 0 |
 | `rsf_taper` | 0.04 | width over which the force goes to zero at the walls |
 | `rsf_taper_in` | 0.2 | the same above $r = 0$ in a full sphere |
 | `rsf_rcut`, `rsf_rcut_width` | None, 0.04 | no force below `rsf_rcut`, full force above `rsf_rcut` + `rsf_rcut_width` |
@@ -276,31 +252,27 @@ The variance of the force is proportional to $\Theta\nu_t$. `rsf_theta` sets the
 | file | columns |
 | --- | --- |
 | `rsf_spectrum.dat` | $w$, the mean kinetic energy and its standard error; with `rsf_split`, then the mean kinetic energy below `rsf_split` and its standard error |
-| `rsf_ke.dat` | $w$, the kinetic energy of each realisation; with `rsf_split`, then the kinetic energy below `rsf_split` of each realisation |
+| `rsf_ke.dat` | $w$, the kinetic energy of each sample; with `rsf_split`, then the kinetic energy below `rsf_split` of each sample |
 
 Each scan first writes a line starting with `#`, which `np.loadtxt` skips.
 
-- **Power spectral density.** The mean kinetic energy at $w$ is a two-sided power spectral density, in kore's units:
-  for $m \neq 0$, $\int(\text{mean KE})\thinspace dw/2\pi$ is the mean kinetic energy of the forced flow. For $m = 0$ the
-  flow is real, the spectrum is even in $w$, and that integral over all $w$ is twice the energy: integrate over $w > 0$
-  only.
+- **Power spectral density.** The mean kinetic energy is a two-sided power spectral density: integrating it over
+  $w$ (divided by $2\pi$) gives the mean kinetic energy of the forced flow. For $m = 0$ the spectrum is symmetric in
+  $w$; integrate over positive $w$ only.
 - **One symmetry class.** The force drives the two equatorial symmetries independently, and a run solves one of them
   (`symm`). The energy at one $m$ is the sum of a `symm = 1` and a `symm = -1` run.
-- **Noise.** The standard error goes as $1/\sqrt K$, $K$ = `rsf_nsamp`: about a quarter of the mean with 16
-  realisations near a mode, 18 % with 30. Realisation $j$ is the same at every frequency, in every scan and for any
-  `rsf_nsamp`, so the shape of a spectrum is less noisy than its level, and scans of the same configuration can be
-  joined.
+- **Noise.** The standard error is about a quarter of the mean with 16 samples, and decreases as one over the square
+  root of `rsf_nsamp`. Each sample is the same at every frequency and in every scan, so the shape of a spectrum is less
+  noisy than its level, and scans of the same configuration can be joined.
 - **Energy of a mode.** Fit a Lorentzian plus a smooth background to the peak: the energy of the mode is the height
-  of the Lorentzian times $\lvert\mathrm{Re}\thinspace\lambda\rvert/2$. Its half-width should be
-  $\lvert\mathrm{Re}\thinspace\lambda\rvert$. Other modes add a background to the raw peak.
-- **Non-normal operators.** With a differential rotation the modes are not orthogonal, and the forced response can
-  differ from the sum of the modes' Lorentzians, or exceed the energy that the fluctuation–dissipation relation gives a
-  single mode. The forced solve includes this.
+  of the Lorentzian times half the damping rate. The fitted half-width should match the damping rate.
+- **Differential rotation.** The modes are then not independent of each other, and the forced response can differ
+  from the sum of the individual peaks. The forced solve includes this automatically.
 - **Unstable modes** have no stationary response: the spectrum near a growing mode means nothing. Check the eigenvalues
   near the frequencies you scan.
 
 Without `rsf_frequencies`, `solve.py` solves at `forcing_frequency` only and writes the fields of the forced flow,
-one column per realisation, as for the eigenvectors of an eigenvalue run ([Output files](output.md)).
+one column per sample, as for the eigenvectors of an eigenvalue run ([Output files](output.md)).
 
 ## Large runs
 
@@ -309,14 +281,14 @@ one column per realisation, as for the eigenvectors of an eigenvalue run ([Outpu
   `solve.py` there. Split the list of frequencies between such directories and run them at the same time.
 - **Restarts.** A row is appended as soon as its frequency is solved, so a scan can be read while it runs, and a
   stopped scan only needs the remaining frequencies. Rerun in the same directory only with the same `B_forced.npz`:
-  with another number of realisations the rows differ in length and `np.loadtxt` cannot read the file.
-- **Failed frequencies.** A frequency whose realisations are all NaN or Inf prints "Solver crashed at w = …, got
+  with another number of samples the rows differ in length and `np.loadtxt` cannot read the file.
+- **Failed frequencies.** A frequency whose samples are all NaN or Inf prints "Solver crashed at w = …, got
   nan's!", and the scan goes on with the next one. The cause is a MUMPS factorisation that ran out of workspace: set
   `par.petsc_opts['mat_mumps_icntl_14'] = 100` from the start, as in the example, and rerun any frequency that still
   fails with 200 ([Solver](solver.md#bad-solutions)). A forced run reads the `mat_` options, an eigenvalue run the `st_` options:
   use `st_mat_mumps_icntl_14` for the eigenvalue solve of step 3.
-- **Cost.** Each frequency costs one LU factorisation of a matrix of the size of the eigenproblem's, with the same
-  memory, plus one back-substitution per realisation, which is much cheaper than the factorisation.
+- **Cost.** Each frequency costs about as much as one eigenvalue solve (one matrix factorization), with the same
+  memory. Extra samples are cheap.
 - **Several forcings at once.** $A$ and $B$ do not depend on the force, so several configurations of the forcing (other
   `rsf_theta`, `rsf_rcut`, …) can share the factorisations: put their right-hand sides side by side as columns of
   `B_forced.npz`. `rsf_spectrum.dat` then averages over all columns, so read `rsf_ke.dat` by groups of columns.

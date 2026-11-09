@@ -1,11 +1,10 @@
 # Combining features
 
-Most of kore's features work together: a magnetic field with a differential rotation, a stratified fluid in a full
+Most of kore's features work together: a magnetic field with differential rotation, a stratified fluid in a full
 sphere, a resolved conducting mantle with rotating solids. Some combinations work only under a condition, and a few are
-not covered. kore checks the parameters when a run starts, before it builds anything, and stops with a message that says
-what to change on any combination it cannot solve. This page shows, for each pair of features and for each forcing,
-whether a run goes ahead, goes ahead under a condition, or stops, and whether a test suite checks that its solution is
-right.
+not supported. kore checks the parameters when a run starts and, on any combination it cannot solve, stops with a
+message that says what to change. This page shows, for each pair of features and for each forcing, whether a run works,
+works under a condition, or stops, and whether a test checks that its solution is right.
 
 ## How to read the tables
 
@@ -19,10 +18,9 @@ Each cell answers two questions: does kore run the combination, and does a test 
 | ✗ | stops at startup, with a message |
 | – | has no meaning: two values of one parameter, an inner core in a full sphere, a viscosity without a flow |
 
-A suite checks a combination when one of its runs has both features and compares the solution with theory, with an
-independent computation, with the `conductive_IC` branch, or with a budget of spin_doctor that must close. A run that is
-only compared with an earlier run of its own, as those of `regress.sh`, or that only checks that a run starts or stops,
-does not count. The suites are those of `tests/` ([Modifying kore](checking.md)).
+A combination counts as tested when a test run with both features compares the solution with theory, with an
+independent computation, or with an energy budget that must close. The tests are in `tests/`
+([Modifying kore](checking.md)).
 
 Each feature also has requirements of its own, whatever it is combined with
 ([Requirements of each feature](#requirements-of-each-feature)): a ✓ or a ○ means that the pair runs when both features
@@ -52,8 +50,8 @@ The tables name each feature by a short code.
 | Kd | a constant drag at the outer wall | `kappa_cmb > 0` | [Constant drag](drag.md#constant-drag-kappa_cmb) |
 | Kt | the drag of the topography | `topo_drag = 'rekier'` | [Drag of the topography](drag.md#drag-of-the-topography-topo_drag-rekier) |
 
-kore reads `innercore` and `mantle` only with a field: without `magnetic = 1` it leaves them aside. The forcings have a
-table of their own ([Forced runs](#forced-runs)).
+`innercore` and `mantle` are used only with a magnetic field. The forcings have a table of their own
+([Forced runs](#forced-runs)).
 
 ## Pairs of features
 
@@ -115,21 +113,17 @@ conditions are under [Forced runs](#forced-runs). The grid is symmetric: read a 
 
 ## Forced runs
 
-A forcing adds conditions of its own: on `m` and `symm`, on the walls, and on the solids that it moves or turns. Every
-forced run needs the flow (`hydro = 1`) and a spherical body (`centrifugal = 0`), and none takes the rotating solids
-(`rotdyn = 1`), so the table has no columns for them.
+A forcing adds conditions of its own, on `m` and `symm`, on the walls, and on the solids that it moves or turns. Every
+forced run needs the flow (`hydro = 1`) and a spherical body (`centrifugal = 0`), and none works with the rotating
+solids (`rotdyn = 1`), so the table has no columns for them.
 
 Two rules hold for every forcing.
 
-- A steady run (`forcing_frequency = 0`; for forcing 11 with a scan, a frequency 0 among `rsf_frequencies`) of a viscous
-  fluid needs walls that stay in place, `bco` and `bci` 0 or 1: a steady flow through a wall of zero radial stress would
-  move the wall without end.
-- Without diffusion (`ThermaD = 0` with the entropy, `CompoD = 0` with the composition), the fluid must carry the
-  scalar round at a rate of one sign: at the frequency $w$ of the run, $w + m\Omega$ must not vanish in the fluid,
-  $\Omega$ being the angular velocity of the differential rotation and of the background flow. Otherwise the scalar is
-  undetermined (where $w + m\Omega$ is 0 everywhere, as in a steady run with `m = 0` or without a rotation) or has a
-  critical layer that no resolution resolves (where it changes sign). A background flow with a meridional circulation
-  stops too: the scalar resonates on some of its streamlines at any frequency.
+- A steady run (`forcing_frequency = 0`) of a viscous fluid needs walls that stay in place, `bco` and `bci` 0 or 1.
+- Without diffusion (`ThermaD = 0` with the entropy, `CompoD = 0` with the composition), the scalar is only carried by
+  the flow. The forcing frequency, seen from the rotating fluid, must then not be zero anywhere in the fluid, and the
+  background flow must have no meridional circulation; otherwise the problem has no well-behaved solution and kore
+  stops.
 
 <!-- compat_tables.py: forcings -->
 
@@ -188,9 +182,7 @@ What each forcing needs, whatever it is combined with:
 | 13 | (0, 1) | any | steady: `bco`, `bci` 0 or 1, and a no-slip wall or `kappa_cmb > 0` | an inner core; `thermal = 1` with `ThermaD > 0`; `forcing_amplitude_icb` not 0 |
 | 14 | (0, 1), (1, −1), (2, 1) | any | `bco = bci = 1` | |
 
-`bci` means nothing in a full sphere. An inviscid fluid, in a full sphere, takes any `bco`: its one wall row keeps the
-fluid from crossing the wall. A steady run of a viscous fluid, whatever the forcing, also needs `bco` and `bci` 0 or 1
-(above).
+`bci` has no meaning in a full sphere. An inviscid fluid (only possible in a full sphere) accepts any `bco`.
 
 ## Requirements of each feature
 
@@ -210,8 +202,3 @@ Each feature has requirements of its own, whatever it is combined with. kore sto
 | Rot | the flow, `m = 0`, `symm = 1`, an inner core and an eigenvalue problem; a viscous fluid with `bci = 1` and `bco` 0 or 1; `Gaspard > 0` ([What is supported](rotating-solids.md#what-is-supported)) |
 | Kd, Kt | the flow, a viscous fluid, a stress-free outer wall (`bco = 0`), `Gaspard > 0`; one of the two. Kt: a frequency of the flow other than 0 ([What is supported](drag.md#what-is-supported)) |
 | U | a background that is symmetric about the equator and does not cross the walls. Without `bgflow_profiles`, a `bgflow_file` written for the run's `ricb` and, if it has a poloidal flow, for its density; a nonlinear file (`bgflow.py 12 nonlinear`) only at its own `bgflow_Ro`, a linear one at any |
-
-The checks are those of `bin/background.py` (`check` and the functions it calls, and `check_transport`, the rule
-without diffusion), `bin/bgflow.py` (`check`) and `bin/diff_rot.py` (`check`), at startup, and that of `bin/assemble.py`
-on the MPI ranks. `tests/forcing/stops_check.py` runs the stops of the forced runs, `tests/couette` those of forcing 12
-and `tests/cic_forcings` those of the tides. `tools/compat_tables.py` writes the two tables of this page.

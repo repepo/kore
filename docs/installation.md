@@ -2,7 +2,7 @@
 
 To run **`kore`** we need the PETSc/SLEPc packages and their python bindings petsc4py/slepc4py. PETSc needs to be compiled with support for complex scalars. MUMPS and SuperLU_dist are external packages that need to be installed together with PETSc.
 
-If you are interested in problems that involve very large matrices, for instance when considering extremely small viscosities, we recommend doing so with a machine with at least 128 GB of memory. The number of processing cores is not critical, eight are fine, 24 are plenty. Small to moderate size matrices can be solved using a laptop, depending on available memory. 
+Small and moderate problems run on a laptop. Problems with very large matrices, for instance at extremely small viscosities, need a machine with a lot of memory (128 GB or more). The number of cores is less important: eight are fine.
 
 ## Installing PETSc/SLEPc on MacOS
 
@@ -29,7 +29,7 @@ We go now into the newly created `petsc` folder and configure PETSc:
 cd petsc
 ./configure --with-petsc4py --download-mpi4py --download-mpich --with-scalar-type=complex --download-mumps --download-parmetis --download-metis --download-scalapack --download-openblas --download-openblas-make-options='USE_THREAD=0 USE_OPENMP=0 USE_LOCKING=1' --with-debugging=0 --download-superlu_dist --download-ptscotch CXXOPTFLAGS='-O3 -march=native' FOPTFLAGS='-O3 -march=native' COPTFLAGS='-O3 -march=native' --download-bison
 ```
-We recommend OpenBLAS (`--download-openblas`) rather than the reference BLAS/LAPACK (`--download-fblaslapack`). MUMPS spends most of its factorization time in dense BLAS kernels, and with OpenBLAS the LU factorization was 5 to 8 times faster in our tests (Linux, 24-core Threadripper, MUMPS 5.8.2). For example, a torsional-mode run at N = 976 took 4.4 minutes instead of 20. The make options build a single-threaded OpenBLAS, so that it doesn't compete with the MPI processes for cores.
+We recommend OpenBLAS (`--download-openblas`) rather than the reference BLAS/LAPACK (`--download-fblaslapack`): the solver spends most of its time in BLAS routines, and with OpenBLAS it is several times faster. The make options build a single-threaded OpenBLAS, so that it does not compete with the MPI processes for cores.
 
 Then we build PETSc:
 ```Shell
