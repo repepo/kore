@@ -3,7 +3,7 @@
 # Keep this same file on every branch that may become the default (as with docs.yml and conductive_IC.yml): GitHub
 # lists workflows, and serves their badges, from the default branch, so a workflow missing there is marked deleted
 # and its badge breaks.
-name: anelastic_log tests
+name: Tests
 
 on:
   push:
