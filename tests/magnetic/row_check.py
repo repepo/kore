@@ -16,7 +16,8 @@ unweighted, max over r of |kore - derived| / max |derived| for each (row l, colu
 part of the rows. Expected row scales (A sign): induction -r³ (.)/L³, Lorentz -Hendrik r⁵ (.)/L³ (u) and r³ (v).
 In a full sphere (ricb = 0) the columns hold only the Chebyshev polynomials of their vector parity and the rows the Gegenbauer
 ones of the row's parity (after the BC rows, as submatrices.py's remroco and chop leave them; the row parity is taken as the
-one of the two that matches), r in (0, 1]; with Ek = 0 the u rows are in C^(3).
+one of the two that matches), r in (0, 1]; with Ek = 0 the u, v rows are in C^(2), C^(1)
+(C^(3), C^(2) with inviscid_basis 'high').
 usage: python3 row_check.py [lmax_check] [tol]     (lmax_check defaults to m + 4; needs sympy; tol defaults to 1e-8)
 Every block calls derive.py (seconds each), so the row degrees are limited to lmax_check: the check reaches the low degrees,
 not the whole run (the energy budgets, budget_check.py, reach every degree).
@@ -55,8 +56,11 @@ def gegen(lamb):   # C^(lamb) polynomials at x, (len(x), N)
     for k in range(2, N):
         E[:, k] = (2*(k + lamb - 1)*x*E[:, k-1] - (k + 2*lamb - 2)*E[:, k-2])/k
     return E
-gu = 3 if (FS and par.ViscosD == 0) else 4   # as submatrices.py
-GB = {'u': (gu, gegen(gu)), 'v': (2, gegen(2)), 'f': (2, gegen(2)), 'g': (2, gegen(2))}
+inv = FS and par.ViscosD == 0   # as submatrices.py: inviscid rows in C^(2), C^(1), or C^(3), C^(2) with inviscid_basis 'high'
+high = inv and getattr(par, 'inviscid_basis', 'high') == 'high'   # (FIX 2026-11-09; older checkouts: 'high')
+gu = (3 if high else 2) if inv else 4
+gv = (2 if high else 1) if inv else 2
+GB = {'u': (gu, gegen(gu)), 'v': (gv, gegen(gv)), 'f': (2, gegen(2)), 'g': (2, gegen(2))}
 
 def row_vals(y, sec, q0=0):
     '''the function of r represented by a row block y (kore's coefficients of section sec, BC rows first) on the grid; in a
