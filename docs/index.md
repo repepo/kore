@@ -20,4 +20,5 @@ If this code is useful for your research, we invite you to cite the relevant pap
 * **Ankit Barik**, *convection, visualization*
 * **Fleur Seuren**, *buoyancy*
 * **Daoud Laariara**, *differential rotation*
+* **Alexandre Nuyt**, *mantle conductivity*
 * **Antony Trinh**, *tensor calculus (TenGSHui)*
