@@ -57,10 +57,14 @@ adds two torques on the mantle:
     reference space), so p₂ gains the projection of F_H on ∇_H Y₂¹ over its norm 6 ∫|Y₂¹|² dΩ (none in a sphere);
   - Γ_B, the torque of the field on everything beyond the fluid's side of the wall, minus the Maxwell stress through it on the
     fluid, Hendrik ∮ X × [B0 (b⋅n) + b (B0⋅n) - (B0⋅b) n] dS. It acts on the currents of a conducting mantle ('TWA' or
-    'resolved', in a sphere), and on the sources of any part of B0 that the fluid does not carry, which turn with the
+    'resolved'), and on the sources of any part of B0 that the fluid does not carry, which turn with the
     mantle: an external part ('axial', imposed from outside) and the wall currents of a field that does not meet the
     potential field of the spheroid. With an insulating mantle and a field of internal currents that meets it, Γ_B = 0 (the
-    stress through any surface outside the currents is that at infinity), so the field adds only the pressure.
+    stress through any surface outside the currents is that at infinity), so the field adds only the pressure. NEW
+    (2026-11-09): a toroidal B0 that does not vanish at the wall 'leaks' into a conducting mantle, carried there by its
+    steady currents (no sheet at the wall: B0 and b are continuous through it); Γ_B is then the torque on those currents and
+    on the mantle's induced ones, ∫ X × (J0 × b + j × B0) dV over the mantle, whatever B0 does inside it (the stress at its
+    outer surface is that of the potential fields beyond).
 Both are linear forms on f, f', f'' and g, g' at the wall (field_rows), computed on a Gauss-Legendre grid in θ (_wall_fields,
 pure numpy, checked against the divergence theorem in tests/wobble/derive_field.py); ∇×(Q v) = a² ∇×v + (c² - a²) ∇v_z × ẑ.
 The mantle's row gains Γ_P'(Lorentz) + Γ_B, and the budget of the fluid the torque of the field on it, -Γ_B: it then checks
@@ -77,8 +81,8 @@ viscous torque, ∫ α×Lw dV by Green's identity without w = 0 on the wall (∇
 whose terms beyond the no-slip ones (∂z w = x ∂w/∂r there) are _VISCOUS_SLIP: the traction's normal part has a torque on the
 spheroid, and in a stress-free sphere the terms cancel (T₁′ = T₁ at the wall: no torque). slip_weights gathers them.
 
-LEFT OUT (background.check_wobble stops): an inner core (full sphere only), a toroidal B0 that does not vanish at the wall
-(its current sheet), with a slipping fluid also a sheet of the poloidal B0 that pushes it (background.sheet_push), buoyancy
+LEFT OUT (background.check_wobble stops): an inner core (full sphere only), with an insulating mantle a toroidal B0 that
+does not vanish at the wall (its current sheet), with a slipping fluid also a sheet of the poloidal B0 that pushes it (background.sheet_push), buoyancy
 (a moving mass adds gravitational torques), the other shapes of centrifugal = 1 (whose wall is not the sphere of a linear
 map), forcings.
 '''

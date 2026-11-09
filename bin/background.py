@@ -746,9 +746,10 @@ def check_wobble():
     are those of a homogeneous fluid on a wall that is the reference sphere of a linear map: a sphere or the exact
     spheroid; the wall no-slip or (NEW 2026-11-09) stress-free, or the fluid inviscid (wobble.slip_weights), but for B0's
     current sheet pushing a slipping fluid (sheet_push). Left out: an inner core, buoyancy (gravitational torques), the
-    other shapes, the rotating solids, a differential rotation, a background flow and the forcings. NEW (2026-11-09): with a field (magnetic = 1) a toroidal B0
-    must vanish at the wall (the torque on its current sheet there is left out); the mantle may be an insulator, a thin
-    conducting layer or a resolved conducting mantle (check_mantle, check_twa; NEW 2026-11-09: on the spheroid too).
+    other shapes, the rotating solids, a differential rotation, a background flow and the forcings. NEW (2026-11-09): with
+    a field (magnetic = 1) the mantle may be an insulator, a thin conducting layer or a resolved conducting mantle
+    (check_mantle, check_twa; NEW 2026-11-09: on the spheroid too); with an insulator a toroidal B0 must vanish at the wall
+    (the torque on its current sheet there is left out), while a conducting mantle takes it on (FIX 2026-11-09).
     '''
     if not (par.hydro and par.m == 1 and par.symm == -1 and par.forcing == 0 and par.ricb == 0):
         sys.exit('wobble = 1 needs the flow (hydro = 1), m = 1, symm = -1, a full sphere (ricb = 0) and an eigenvalue problem '
@@ -762,13 +763,16 @@ def check_wobble():
     if par.thermal or par.compositional or par.rotdyn or par.diff_rot or par.bgflow:
         sys.exit('wobble = 1 is implemented for a homogeneous fluid without buoyancy, rotating solids, a differential '
                  'rotation or a background flow')
-    if par.magnetic:   # NEW (2026-11-09): the torques of the field (wobble.field_rows)
+    if par.magnetic and wall_bare('outer'):   # NEW (2026-11-09): the torques of the field (wobble.field_rows); FIX
+        # (2026-11-09): only at a wall with an insulator beyond: a conducting mantle takes the toroidal B0 on (it 'leaks' into
+        # it), with no sheet at the wall, and the torque on its currents is the Maxwell stress through the wall
         import background_field as bf
         for n, k in bf.tor_profiles().items():
             kk = np.abs(k(np.linspace(0.0, 1.0, 201), 0))
             if kk[-1] > 1e-10*max(kk.max(), 1e-300):
-                sys.exit("wobble = 1 needs a toroidal B0 that vanishes at the wall (e.g. B0_tor = 'wall'): the torque on its "
-                         "current sheet there is left out (degree %d: %.1e at the wall)" % (n, kk[-1]))
+                sys.exit("wobble = 1 with an insulating mantle needs a toroidal B0 that vanishes at the wall (e.g. B0_tor = "
+                         "'wall'), or a conducting mantle: the torque on its current sheet there is left out (degree %d: %.1e "
+                         "at the wall)" % (n, kk[-1]))
     if par.centrifugal and par.centrifugal_shape != 'spheroid':
         sys.exit("wobble = 1 with centrifugal = 1 needs centrifugal_shape 'spheroid' (the torques are those of its wall)")
     if par.structure != 'Boussinesq':
