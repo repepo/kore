@@ -668,6 +668,14 @@ class default_params():
         self.rtau = 0.0
         self.itau = 1.0
 
+        # NEW (2026-11-08, from conductive_IC): eigenmode tracking, along a parameter ramp (tools/ramp.sh) or to make the drag's
+        # frequency the mode's own (tools/topo_iterate.sh). 1: the target rtau, itau is read from the file track_target (by
+        # utils.py, after parameters.py has set its values), and spin_doctor.py writes the eigenvalue nearest that target back
+        # to it, the target of the next run. 2: spin_doctor.py writes to track_target the eigenvalue of the solution with the
+        # smallest ratio of poloidal to toroidal kinetic energy (to start a track, e.g. of the spin-over mode). 0: no tracking.
+        # Eigenvalue problems only (forcing = 0).
+        self.track_target = 0
+
         self.which_eigenpairs = 'TM'  # Use 'TM' for shift-and-invert
         # L/S/T & M/R/I
         # L largest, S smallest, T target
@@ -720,6 +728,9 @@ class default_params():
             'ksp_type'                     : 'preonly',             # direct solve, no Krylov iterations
             'pc_type'                      : 'lu',                  # (default GMRES/ILU does not converge)
             'pc_factor_mat_solver_type'    : 'mumps',               # LU with MUMPS
+            # 'mat_mumps_icntl_35'         : 2,                     # NEW (2026-11-08, from conductive_IC): BLR, for large N. A forced run
+            # 'mat_mumps_cntl_7'           : 1e-14,                 # at N = 992 (Ek = 1e-9, conductive_IC, with mat_mumps_cntl_1 = 1e-8)
+                                                                    # took 316 s and 165 GB with it; without, 622 s and 200 GB, and NaN
             # 'mat_mumps_icntl_14'         : 100,                   # extra MUMPS workspace (%): a forced LU that runs short returns Inf
                                                                     # (NaN results) instead of stopping (docs/solver.md)
             # 'mat_mumps_cntl_1'           : 1e-6,                  # pivot threshold, if MUMPS reports INFOG(1)=-9
@@ -757,6 +768,14 @@ class default_params():
         # file per operator, <label>.mtx, for outside tools; kore itself no longer reads them.
         self.write_mtx = 0
 
+        # NEW (2026-11-08, from conductive_IC): the format of the solution files that solve.py and solve_ind.py write, one
+        # solution per column. 'npy' (the default): one binary file per field, flow.npy, thermal.npy, composition.npy,
+        # magnetic.npy, ... (complex); 'text': real_flow.field and imag_flow.field, ... (as before; at N = 1008 with nev = 10
+        # the text files take ~1 GB, and writing or reading them tens of seconds). spin_doctor.py, bgflow.py,
+        # just_induction.py, koreviz and the tools read either (utils.load_field); writing one format deletes the other's
+        # files, so that no stale solution is read.
+        self.field_format = 'npy'
+
 
         # ----------------------------------------------------------------------------------------------------------------------
         # ----------------------------------------------------------------------------------------------------------------------
@@ -771,6 +790,85 @@ class default_params():
         unknown = sorted(set(vars(self)) - set(vars(default_params())))
         if unknown:
             print('Warning: parameters.py sets names that kore does not read:', ', '.join(unknown))
+
+
+    # NEW (2026-11-08, from conductive_IC 08c004a): the parameters as a JSON file, to keep a run's exact parameters apart from
+    # its parameters.py, or to start a run from them. Values JSON has no type for are tagged so that load_json gives them back
+    # exactly, with their type: a complex number as {"__complex__": [re, im]}, a tuple as {"__tuple__": [...]}, a dict whose
+    # keys are not all strings (diff_rot_profiles {n: expression}, ...) as {"__dict__": [[key, value], ...]}, a numpy array
+    # as {"__ndarray__": [...], "dtype": "float64"} and a numpy number as {"__numpy__": ["float64", value]}.
+    def export_json(self, filename='parameters.json'):
+        '''
+        Writes every parameter to the JSON file filename. Under MPI only rank 0 writes (the rank is read from mpi4py if it is
+        loaded, else from the launcher's environment), and the file is replaced in one step, so that no rank reads it half
+        written. In parameters.py after the last parameter is set, e.g. par.export_json('parameters.json').
+        '''
+        import json, os, sys
+        def enc(v):
+            if isinstance(v, np.ndarray):
+                return {'__ndarray__': enc(v.tolist()), 'dtype': str(v.dtype)}
+            if isinstance(v, np.generic):
+                return {'__numpy__': [str(v.dtype), enc(v.item())]}
+            if isinstance(v, bool):
+                return v
+            if isinstance(v, complex):
+                return {'__complex__': [v.real, v.imag]}
+            if isinstance(v, tuple):
+                return {'__tuple__': [enc(x) for x in v]}
+            if isinstance(v, list):
+                return [enc(x) for x in v]
+            if isinstance(v, dict):
+                if all(isinstance(k, str) for k in v):
+                    return {k: enc(x) for k, x in v.items()}
+                return {'__dict__': [[enc(k), enc(x)] for k, x in v.items()]}
+            if v is None or isinstance(v, (int, float, str)):
+                return v
+            raise TypeError('export_json: the parameter value %r (%s) has no JSON form' % (v, type(v).__name__))
+        rank = 0
+        if 'mpi4py.MPI' in sys.modules:
+            rank = sys.modules['mpi4py.MPI'].COMM_WORLD.Get_rank()
+        else:
+            for key in ('OMPI_COMM_WORLD_RANK', 'PMI_RANK', 'PMIX_RANK', 'MV2_COMM_WORLD_RANK', 'SLURM_PROCID'):
+                if os.environ.get(key, '').isdigit():
+                    rank = int(os.environ[key])
+                    break
+        text = json.dumps({k: enc(v) for k, v in sorted(vars(self).items()) if not k.startswith('_')}, indent=4) + '\n'
+        if rank == 0:
+            tmp = '%s.tmp%d' % (filename, os.getpid())
+            with open(tmp, 'w') as f:
+                f.write(text)
+            os.replace(tmp, filename)
+
+    def load_json(self, filename='parameters.json'):
+        '''
+        Sets the parameters from a JSON file of export_json (every rank reads it), all of them, as the file holds every
+        value: set_scales is not called again. In parameters.py in place of the parameters, e.g. par = default_params();
+        par.load_json('parameters.json'). Names that kore does not define are set too, as parameters.py set them, and
+        submatrices.py warns about them (check_names).
+        '''
+        import json
+        def dec(o):
+            if isinstance(o, dict):
+                if set(o) == {'__ndarray__', 'dtype'}:
+                    return np.array(dec(o['__ndarray__']), dtype=o['dtype'])
+                if set(o) == {'__numpy__'}:
+                    return np.dtype(o['__numpy__'][0]).type(dec(o['__numpy__'][1]))
+                if set(o) == {'__complex__'}:
+                    return complex(*o['__complex__'])
+                if set(o) == {'__tuple__'}:
+                    return tuple(dec(x) for x in o['__tuple__'])
+                if set(o) == {'__dict__'}:
+                    return {_key(dec(k)): dec(x) for k, x in o['__dict__']}
+                return {k: dec(x) for k, x in o.items()}
+            if isinstance(o, list):
+                return [dec(x) for x in o]
+            return o
+        def _key(k):   # (a key that was a tuple came back as one; a list cannot be a key)
+            return tuple(k) if isinstance(k, list) else k
+        with open(filename) as f:
+            d = json.load(f)
+        for k, v in d.items():
+            setattr(self, k, dec(v))
 
 
     def set_scales(self):

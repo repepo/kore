@@ -364,8 +364,8 @@ With `thermal = 1` the same switch gives the free decay of the entropy. Only eig
 
 **Kinematic induction.** `bin/just_induction.py` and `bin/solve_ind.py` give the field that a given flow induces in B0,
 without the force of that field on the flow. Assemble a magnetic eigenvalue problem (`submatrices.py`, `assemble.py`),
-put the flow in `real_flow.field` and `imag_flow.field` (written by a run with the same `N`, `lmax`, `m`, `symm` and
-`ricb`, a forced run of the flow alone for instance), then run
+put the flow in `flow.npy` or its text files ([Output files](output.md#solution-files)), written by a run with the
+same `N`, `lmax`, `m`, `symm` and `ricb` (a forced run of the flow alone, for instance), then run
 
 ```shell
 ./bin/just_induction.py [lambda]
@@ -374,8 +374,8 @@ mpiexec -n 4 ./bin/solve_ind.py
 
 The flow varies as $e^{\lambda t}$: `lambda` is the optional argument, a complex number such as the eigenvalue of a mode,
 and its default is $i\,$`forcing_frequency`, the time dependence of the forced runs (a steady flow when it is 0). The
-field is written as `real_magnetic.field`, `imag_magnetic.field` (and the files of a conducting inner core or of a
-resolved mantle), one column per column of the flow.
+field is written as `magnetic.npy` (and the files of a conducting inner core or of a resolved mantle), one column per
+column of the flow.
 
 ## Forced runs
 
@@ -520,9 +520,8 @@ Not supported (the run stops at startup):
 A magnetic run writes the perturbation field next to the flow, and spin_doctor checks each mode with the magnetic energy
 budgets.
 
-`solve.py` writes `real_magnetic.field` and `imag_magnetic.field` (and `real_magnetic_ic.field`,
-`imag_magnetic_ic.field` for a conducting inner core, `real_magnetic_mantle.field`, `imag_magnetic_mantle.field` for a
-resolved mantle; `'conducting, Bessel'` writes no inner-core field). Each eigenvector is normalised so that the kinetic
+`solve.py` writes `magnetic.npy` (and `magnetic_ic.npy` for a conducting inner core, `magnetic_mantle.npy` for a
+resolved mantle; `'conducting, Bessel'` writes no inner-core field; [Output files](output.md#solution-files)). Each eigenvector is normalised so that the kinetic
 energy plus `Hendrik` times the magnetic energy is 1 in the fluid (the magnetic energy alone without the flow,
 `hydro = 0`); a forced solution is written as solved.
 

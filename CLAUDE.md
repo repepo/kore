@@ -26,8 +26,8 @@ history. §15 lists what the first threads of the claude.ai project behind this 
   its output to the current directory; `operators.py` loads `submatrices.npz` from the current directory (2026-11-03:
   formerly every `*.mtx` there) and stops if it was built with other parameters. So run from the
   repo root (as `runKore.sh` does) or from a run directory holding its own `bin/` copy (as the test scripts build).
-  `.gitignore` ignores `*.mtx *.npz *.field *.dat` (except `bin/jsoc_hmi_2010_2026.npz`), `__pycache__` and
-  `.pytest_cache`.
+  `.gitignore` ignores `*.mtx *.npz *.field *.npy *.dat` (except `bin/jsoc_hmi_2010_2026.npz` and
+  `tests/bgflow/cic_bgflow_*.npz`), `__pycache__` and `.pytest_cache`.
 - **Before trusting a change**: run `ru_insane.py` (operator symmetry, seconds), then the pipeline and `spin_doctor`
   residuals; for changes to the background, the differential rotation or the heat equation, `tests/diff_rot/regress.sh`
   (bitwise A, B against an older checkout) and `tests/heat_dr/run_all.sh`; before a push, `cd tests/ci; pytest -v`
@@ -52,13 +52,24 @@ copies `params_default.py` and `parameters.py` to `../run` and moves the outputs
 `assemble.py`: `lmax - m + 1` must be a multiple of `2*ncpus` (number of MPI ranks); the default `lmax` formula in
 `params_default.py` satisfies it.
 
-Outputs: `real_flow.field`, `imag_flow.field` (and `*_thermal.field`, `*_magnetic.field`, `*_composition.field`), one
-column per solution, eigenvectors normalised to kinetic energy 1 (KE + Hendrik·ME = 1 with `magnetic = 1`; ME + TE + CE
+Outputs: `flow.npy` (and `thermal.npy`, `magnetic.npy`, `composition.npy`), complex, one column per solution (NEW
+2026-11-08, from conductive_IC: `field_format = 'npy'`, the default; `'text'` writes the former `real_flow.field`,
+`imag_flow.field`, ... with savetxt's %.18e, the same numbers to the last bit; writing one format deletes the other's
+files; `bin/field_io.py`, read by the tests and tools, and `utils.save_field`, `load_field`, `field_exists`), eigenvectors
+normalised to kinetic energy 1 (KE + Hendrik·ME = 1 with `magnetic = 1`; ME + TE + CE
 = 1 without the flow, `hydro = 0`); `eigenvalues0.dat` (this solve: Re λ, Im λ); `timing.dat`. `spin_doctor` appends to
 `eigenvalues.dat`, `params.dat` (156 columns, and a `#` note on rows that need one, §10), `flow.dat` (48), `thermal.dat`
 (8), `composition.dat` (8, with `compositional = 1`), `magnetic.dat` (11; 12 with `centrifugal = 1`, 16 with a thin wall or a resolved mantle). A conducting inner core adds
-`*_magnetic_ic.field`, a resolved mantle `*_magnetic_mantle.field`, `rotdyn = 1` `*_rotdyn.field` (ω_M, ω_IC, φ) and
+`magnetic_ic`, a resolved mantle `magnetic_mantle`, `rotdyn = 1` `rotdyn` (ω_M, ω_IC, φ) and
 `rotdyn.dat` (16). A `params.dat` from an older version has fewer columns: start a new one. `python3 bin/units.py` prints a run's eigenvalues as ω, σ in nHz.
+`solve.py` writes `no_conv_solution` when no eigenpair converged or a forced solution has NaN (NEW 2026-11-08, for
+`tools/ramp.sh`).
+
+Parameter file (NEW 2026-11-08, from conductive_IC 08c004a, Ankit Barik): `par.export_json(file)` at the end of
+`parameters.py` writes every attribute of `par` exactly (tags `__ndarray__` + dtype, `__numpy__` [dtype, value],
+`__complex__`, `__tuple__`, `__dict__` pairs for non-str keys; NaN as JSON NaN), rank 0 only (mpi4py if loaded, else
+the launcher's rank variables), through a temporary file and `os.replace`; `par.load_json(file)` sets every name, unknown
+ones too (check_names warns), and does not call set_scales. docs/output.md#the-parameter-file.
 
 ## 3. File map
 
@@ -84,12 +95,13 @@ column per solution, eigenvectors normalised to kinetic energy 1 (KE + Hendrik·
 | `assemble.py` | MPI over l; places the blocks (the diff-rot Δl from `diff_rot.dl_range`), boundary-condition rows (`bc_u_spherical`, `bc_theta_spherical`, the push of B0's current sheet at a slipping wall `bc_u_sheet`; the field's `bc_b_spherical`, with thin walls `bc_b_twa` and `bc_b_slip`, the resolved mantle `bc_b_mantle`), the background flow's blocks `bgflow_blocks` (and the Doppler term of its rate at a conducting solid), forcings 1, 2, 6, 7, 8, 9, 10, 11, 12 (the walls' steady rotation: T_1 = Ω r/2 at each no-slip wall); `lifted_rhs` (forcings 1, 8: b = −A x on the interior rows); normalises A, B by ‖A‖ (eigen); `gather_csr` |
 | `reynolds_stress.py` | forcing 11: random Reynolds-stress body force f = ρ₀⁻¹∇·(ρ₀ s), the fluctuation-dissipation partner of the viscous force; `rhs(nsamp, seed)` gives one realisation per column of B_forced (docstring: physics, discretisation, normalisation) |
 | `bc_variables.py` | Chebyshev values/derivatives at the walls (`Ta`, `Tb`) and ln ρ₀ and its first two derivatives there (`lha*`, `lhb*`) |
-| `solve.py` | reads its own rows of A, B (memory-mapped), optional Ruiz scaling, SLEPc/KSP, KE normalisation, writes fields |
-| `just_induction.py`, `solve_ind.py` | NEW 2026-11-06 (from conductive_IC): kinematic induction, the field a given flow (real/imag_flow.field) induces: (A_bb − λ B_bb) b = −A_bu u from A.npz, B.npz of a magnetic eigen assembly (λ the argument, default i forcing_frequency; in a forced assembly A holds A − i wf B, so λ = i wf needs no B.npz) → A_ind.npz, u_ind.npz; solve_ind.py (MPI, KSP LU) writes real/imag_magnetic(_ic, _mantle).field |
+| `solve.py` | reads its own rows of A, B (memory-mapped), optional Ruiz scaling, SLEPc/KSP, KE normalisation, writes fields (`utils.save_field`) |
+| `field_io.py` | NEW 2026-11-08 (from conductive_IC): the solution files in either format, `FORMATS`, `files`, `exists`, `save` (deletes the other format's files), `load` (a column, a list of them, or all; None if absent); reads no parameters, so tests and tools use it on any folder |
+| `just_induction.py`, `solve_ind.py` | NEW 2026-11-06 (from conductive_IC): kinematic induction, the field a given flow (flow.npy or the text files) induces: (A_bb − λ B_bb) b = −A_bu u from A.npz, B.npz of a magnetic eigen assembly (λ the argument, default i forcing_frequency; in a forced assembly A holds A − i wf B, so λ = i wf needs no B.npz) → A_ind.npz, u_ind.npz; solve_ind.py (MPI, KSP LU) writes real/imag_magnetic(_ic, _mantle).field |
 | `rotdyn.py` | NEW 2026-11-06 (from conductive_IC): the rotating solids (`rotdyn = 1`, §4): `a_rows`, `b_rows` (the three rows of A, B and the wall entries), `coupling` (K), `relaxation`, `viscous_factor`, `magnetic_factors` (C_l); for spin_doctor `L_case`, `angular_momentum`, `viscous_torques`, `wall_torques` (resid𝐋, axial and equatorial) |
 | `topo.py` | NEW 2026-11-06 (from conductive_IC): the drag at a stress-free outer wall (`kappa_cmb`, `topo_drag = 'rekier'`, §4): `on`, `wall_profiles` (ρ₀, ν at the wall), `ratio` (q = Gaspard/(ViscosD ν(1))), `N_cmb`, `omega0`, `Ik_R`, `kappa` (Rekier et al. 2025 B1 with the 4π², or the test hook `topo_K`), `grid` (the cached Gauss–Legendre wall grid), `couplings` (A_ss, A_st, A_ts, A_tt), `rows` (the drag's entries in the stress rows, the ω_M column with `rotdyn = 1`); for spin_doctor `dissipation` (Dtopo) |
 | `utils4pp.py` | post-processing: solution expansion, velocity/curl l-components, per-l workers (`flow_worker`, `thermal_worker`, `composition_worker`), `diff_rot_setup`, `diagnose_composition`, `composition_energy`, `centrifugal_composition_terms` (2026-11-08), `diagnose`, `kinetic_energy`, `identify`, `centrifugal_terms` (the metric parts of KE, the Coriolis power and TE with `centrifugal = 1`), `centrifugal_magnetic_energy`, `centrifugal_magnetic_terms` (with a field: MEc, the metric Lorentz and induction work, the potential field on the deformed walls), `centrifugal_dissipation_terms` (phase 2: the metric parts of the viscous power, the work of ΔΩ and the thermal dissipation); thin walls `twa_budget`, `slip_lapF`, `twa_error`, `slipping_walls`, the resolved mantle `mantle_budget` (2026-11-06); `body_force_terms` (forcings 1, 8: Wf, its enstrophy term and torque, 2026-11-08); `bgflow_background`, `bgflow_setup` (a background flow: Wbg, Wbg_im, Ensbg in the flow worker, Wbg_thm, Wbg_cmp in the thermal and composition workers, 2026-11-08) |
-| `spin_doctor.py` | runs the diagnostics per solution, prints the table, writes `params.dat` (`param_table`, `row_note`), `flow.dat`, `thermal.dat`, `composition.dat` |
+| `spin_doctor.py` | runs the diagnostics per solution, prints the table, writes `params.dat` (`param_table`, `row_note`), `flow.dat`, `thermal.dat`, `composition.dat` (the names of each table are `tools/get_data.py`'s, which `tests/tools` checks), and `track_target`; stops with the file's name when a solution file is missing |
 | `ru_insane.py` | operator symmetry and diff-rot block tests (see its docstring) |
 | `diff_rot.py` | the differential rotation (§8): the shapes fₙ of every type and their fits, the thermal-wind σₙ, the angular couplings of the momentum and heat terms, the labels, blocks and Δl ranges |
 | `centrifugal.py` | the centrifugal deformation (`centrifugal = 1`, §4): the flattening f(r) of each shape (`SHAPES`, `radau`, `shape_functions`, `flattening`), the profile codes `ce0`–`ce2` (`profile_functions`), `g_monopole`, `to_physical` (plots), `report`, the angular couplings (`primitives`, `momentum_coefficients`, `heat_coefficients`) and the terms (`labels`, `dl_range`, `momentum_block`, `entropy_block`); with a field the metric Lorentz force and induction (`magnetic_build`, `magnetic_labels`, `magnetic_dl_range`, `magnetic_block`) and the insulating walls (`wall_coefficients`, `wall_rows`, `wall_potential`); phase 2 the dissipative terms (`diffusion_build`, `diffusion_labels`, `diffusion_orders`, `diffusion_block`, the walls `wall_dissipative`, the ICB `icb_electric`), the differential rotation (`rotation_build`, `rotation_block`) and `deformed` (whether any of it applies); the exact spheroid (section 8: `exact`, `spheroid_axes`, `spheroid_terms`, `spheroid_build`, `spheroid_walls`, `spheroid_block`, `spheroid_primitives`; with a field `spheroid_magnetic_build`, `spheroid_lambda`, `spheroid_field_walls`, `spheroid_potential`, `spheroid_icb`); only `parameters` and `angular` imported at the top |
@@ -117,8 +129,17 @@ profile, rows, boundary conditions, Ferraro constructions, wound field, budgets,
 (the solids' equations, the torques, resid𝐋, their energy, checks), `drag-equations.md` (the drag's condition, the
 tensor of the topography, the rows, Dtopo and the power through the wall, checks), `bgflow-equations.md` (the background
 flow's terms, their rows and labels, the walls, the budgets Wbg, Newton's method, the file) and `reynolds-stress.md` (forcing 11: origin of the force,
-Landau-Lifshitz stress, mode energy, rows, spectrum)); `examples/smooth_sun/` (the solar example: full sphere, m 8 HFR mode); `tools/` (submission, plotting,
-`kore2sprouts.py`, `m2petsc.py`), `koreviz/`, `koreviz_mod/` (visualisation); `srunKore.sh` (SLURM);
+Landau-Lifshitz stress, mode energy, rows, spectrum)); `examples/smooth_sun/` (the solar example: full sphere, m 8 HFR mode); `tools/` (submission, plotting (they read flow.npy or the
+text files by `utils.load_field`; fixed 2026-11-08: `plot_field.py` draws 'u', 'mf', the forces, the buoyancy of the
+entropy and the composition, their curls and 'b' (utils4pp.worker_4plot); `load_solution.py` the inner core with the
+fluid's degrees and the field's parity; `plot_rad_con_tor_profile.py` ρ0 |u|² with the anelastic consoidal part, in a full
+sphere too, checked against KE), `ell_spectrum.py`, `shear_layer_profile.py`, `plot_poltor.py`,
+`kore2sprouts.py`, `m2petsc.py`; NEW 2026-11-08, from conductive_IC, series of runs, docs/output.md#many-runs: `ramp.sh`
+(one folder, one step per value, `track_target`), `setpar.py` (writes `par.name = value`: in place of each one-target
+assignment, by ast byte spans so comments and other statements stay, else a new last line; warns for Ek, Etherm,
+Ecomp, Le, timescale after the last set_scales call), `dodirs.sh`, `dosubs.sh`, `subramp.sh` (PBS, runs ramp.sh),
+`reap.sh`, `get_data.py` (pandas, named columns, read with float_precision 'round_trip'), `getresults.py`,
+`topo_iterate.sh`), `koreviz/`, `koreviz_mod/` (visualisation); `srunKore.sh` (SLURM);
 `poly.n1_gamma3.h5`, `theprofile.data` (files of the removed file-based models, unused).
 
 ## 4. Formulation
@@ -622,6 +643,15 @@ flow U₀ = Gaspard ΔΩ r sin θ e_φ in the frame Ω_ref. It works with any ba
   force it. Eigenvectors are mapped back before writing. The residual SLEPc prints is for the scaled problem; judge
   accuracy with spin_doctor.
 - `which_eigenpairs` 'TM', `nev` (default 5), `tol` 1e-16, `maxit` 50.
+- Forced runs: MUMPS LU without BLR, as the eigenproblems. conductive_IC turned on BLR with cntl_1 1e-8 for them
+  (1c9ba86: N 992, Ek 1e-9, 316 s and 165 GB, where without them 622 s, 200 GB and NaN); here they are commented in
+  `petsc_opts` (`mat_mumps_icntl_35`, `mat_mumps_cntl_7`), since BLR changes every forced result at round-off and
+  cntl_1 1e-8 cost accuracy in thermal eigen runs (§12).
+- `track_target` (NEW 2026-11-08, from conductive_IC): 1 aims at the eigenvalue in the file `track_target`, which
+  `utils.py` reads into rtau, itau at import, before `radial_profiles` (whose import runs `background.check`; not in
+  set_scales, which parameters.py calls before its values), and spin_doctor writes back the eigenvalue nearest the
+  target; 2 writes that of the smallest KP/KT (needs hydro). Eigenproblems only (`background.check`). `topo.omega0`
+  takes itau, so `tools/topo_iterate.sh` makes the drag's frequency the mode's own by fixed-point iteration.
 - `par.drop_tol` (default 0, off; the smooth Sun example uses 1e-14): cuts the profiles' Chebyshev coefficients at
   max(1e-15, drop_tol) of the largest, removes entries below drop_tol times the largest of each operator submatrix
   (`submatrices.py`) and, after the Ruiz prescaling, entries of A and max(|τ|, 1) B below drop_tol (`solve.py`). About
@@ -734,6 +764,13 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   `derive_check.py` (against conductive_IC's operators and the anelastic closed forms), `row_check.py` (each row block of a
   run against derive.py, unweighted), `budget_check.py` (spin_doctor's residσ, residω, resid𝐛, resid𝐄), `continuity.py`
   ('Wu 2005' with r_out = √ε → 'Boussinesq'), `malkus_check.py` (the Malkus field against Malkus 1967), `mk_run.py`.
+- `tests/tools/` (NEW 2026-11-08, README, `run_all.sh`, 2 min on one rank, needs pandas and matplotlib): `tools_check.py`,
+  the solution files in both formats bitwise (every field, rotdyn, kinematic induction, the bgflow writer), the JSON
+  round trip and a run from it, track_target 1 and 2, ramp.sh (tracking, the stop), reap.sh + get_data.py,
+  topo_iterate.sh (a fixed point), setpar.py, get_data's names against spin_doctor's tables (ast), the stops, and the
+  plotting tools through `plot_check.py` (load_solution against expand_sol and the inner core's continuity at the ICB,
+  plot_rad_con_tor_profile's energy against KE, plot_field's 'b' against its coefficients; shell, full sphere 'Wu 2005',
+  forced, text format).
 - `tools/derive/` (NEW 2026-10-29, README): `fit_rows.py` (fits the magnetic rows of derive.py in l, m: angular factor ×
   (a(l) + b(l) m²), exact rational coefficients; reproduces operators.*_tor, *_tor2, *_pol2) and `gen_table.py` (the fit
   as operator table entries in kore's labels). `docs/derivations.md` explains the couplings of both latitude-dependent
@@ -944,12 +981,15 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
 - Stale upstream leftovers: `tools/submit4.sh` calls the removed `postprocess.py`; `ci.yml` only deploys the mkdocs
   site from main/master; the top-level `README.md` is upstream's, except its test badge.
 - `rvisc`, `hvisc` are not used; they are only echoed to `params.dat`.
+- `Ek`, `Etherm`, `Ecomp`, `Le` and `timescale` are read only by `set_scales`, which `parameters.py` calls before its own
+  values: setting them after it changes nothing (ramp `ViscosD`, `ThermaD`, ...; `tools/setpar.py` warns).
 
 ## 13. Recipes
 
 - **New parameter**: default and comment in `params_default.py` (a name without a default there gets the warning of
   `check_names`); if it should be recorded, append a tuple at the end of `spin_doctor.param_table()` and update the
-  table in `docs/output.md`. A parameter that changes no operator (solver, forcing, boundary conditions, output) goes
+  table in `docs/output.md` and the names of `tools/get_data.py` (`tests/tools` compares them; the same for a new column
+  of `flow.dat` and the other tables). A parameter that changes no operator (solver, forcing, boundary conditions, output) goes
   into `submatrix_io.OPERATOR_INDEPENDENT`, or changing it between `submatrices.py` and `assemble.py` stops the run.
 - **New radial profile in an operator**: a function `f(r, rpower)` and its `fX(r, Dorder)` in `radial_profiles.py`, a
   3-letter code in `proffdir` (and in `ut.odd_profiles` if odd), labels in `submatrices.py` with the vector parity of the
@@ -966,7 +1006,14 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
 
 ## 14. History (this branch, newest first)
 
-The conductive_IC port, phase 9 (2026-11-08): the background flow (`bgflow = 1`, `bin/bgflow.py`): an axisymmetric
+The conductive_IC port, phase 10 (2026-11-08): the solution files as `.npy` by default (`field_format`, `bin/field_io.py`,
+every reader: spin_doctor, bgflow.py, just_induction.py, the tests, the tools, koreviz), the JSON parameter file
+(`export_json`, `load_json`, from conductive_IC 08c004a by Ankit Barik), eigenmode tracking (`track_target`), the run
+tools (`ramp.sh`, `setpar.py`, `dodirs.sh`, `subramp.sh`, `reap.sh`, `get_data.py` with every column named,
+`getresults.py`, `topo_iterate.sh`), the plotting tools that read solutions (`plot_field.py` 'u', 'b', the buoyancy and the
+curls, `load_solution.py`'s inner core, `plot_rad_con_tor_profile.py` with the density), `no_conv_solution` for a forced NaN, the commented BLR options for forced runs,
+`tests/tools/`; every run bitwise as before;
+`1e9880f6` the conductive_IC port, phase 9 (2026-11-08): the background flow (`bgflow = 1`, `bin/bgflow.py`): an axisymmetric
 flow with poloidal and toroidal parts, and the entropy and composition it carries, from expressions or from a file that
 `bin/bgflow.py nmax [nonlinear]` writes from a forcing-12 run (linear, or nonlinear by Newton's method; conductive_IC's
 files are read too), for any density, the full sphere, the entropy, the composition and the field (conducting solids

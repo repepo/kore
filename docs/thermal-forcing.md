@@ -70,8 +70,7 @@ mpiexec -n 2 ./bin/assemble.py
 mpiexec -n 2 ./bin/solve.py
 ```
 
-It takes a few seconds. The solution is in `real_flow.field`, `imag_flow.field`, `real_thermal.field` and
-`imag_thermal.field` ([Output files](output.md)).
+It takes a few seconds. The solution is in `flow.npy` and `thermal.npy` ([Output files](output.md#solution-files)).
 
 ![Hadley cell of the example](assets/thermal-forcing.png)
 

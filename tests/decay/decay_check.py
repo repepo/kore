@@ -30,6 +30,8 @@ from scipy.optimize import brentq
 T = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(T, '..', 'tidal'))
 import mk_run   # noqa: E402  (the run builder of tests/tidal: 'Boussinesq', ricb 0.35, N 96, NCPUS ranks)
+sys.path.append(os.path.join(T, '..', '..', 'bin'))
+import field_io   # noqa: E402  (the solution files, in either format)
 
 W = sys.argv[1] if len(sys.argv) > 1 else os.path.join(T, 'runs')
 os.makedirs(W, exist_ok=True)
@@ -140,7 +142,7 @@ report('diffrot', err, budgets(d0))
 d = os.path.join(W, 'induction')
 mk_run.build(d, "par.magnetic = 1; par.B0 = 'axial'; par.cnorm = 1; par.Hendrik = 1e-30; par.MagnetD = 1e-2; par.m = 1; "
                 "par.symm = 1; par.rtau = 0.0; par.itau = 0.5; par.nev = 2; par.N = 48; g = 0.34")
-b = lambda: np.loadtxt(os.path.join(d, 'real_magnetic.field')) + 1j*np.loadtxt(os.path.join(d, 'imag_magnetic.field'))
+b = lambda: field_io.load('magnetic', folder=d)
 beig, z = b(), eig(d)[0]
 py, n = sys.executable, str(mk_run.NCPUS)
 for cmd in ([py, 'bin/just_induction.py', repr(complex(z))], mk_run.MPIEXEC.split() + ['-n', n, py, 'bin/solve_ind.py']):

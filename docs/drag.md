@@ -54,11 +54,27 @@ Without buoyancy these values damp the spin-over mode as `kappa_cmb` = 4.5e-6 do
   the stratification is unstable. `topo_N` sets it instead.
 - **The frequency of the flow.** The drag depends on the frequency of the flow relative to the mantle, which an
   eigenvalue problem does not know in advance: kore takes the frequency of the solver's target (`itau`), or the forcing
-  frequency in a forced run, unless `topo_omega` sets it. For a mode found away from the target, set `itau` to its
-  frequency and solve again, until the two agree. The run stops if this frequency is 0.
+  frequency in a forced run, unless `topo_omega` sets it. For a mode, solve again until the two agree
+  ([below](#the-frequency-of-the-drag)). The run stops if this frequency is 0.
 - **Coupled degrees.** The drag varies with latitude, so the wall couples each degree of the flow to the others of the
   same symmetry, and for `m` other than 0 the poloidal flow to the toroidal one. Check the convergence in `lmax` as
   usual.
+
+### The frequency of the drag
+
+A mode's drag is that of its own frequency, which the run finds only at the end. `tools/topo_iterate.sh` solves again
+until the frequency that the drag used and the mode's agree: each pass assembles the drag at the solver's target,
+solves, and moves the target to the eigenvalue nearest it, through the file `track_target`
+([Following a mode](output.md#following-a-mode)). The drag changes slowly with the frequency, so a few passes are enough.
+It needs `track_target = 1` and `topo_omega = None`, and a first guess in the file. From kore's top folder:
+
+```bash
+echo "-0.02 0.99" > track_target    # the guess, Re λ and Im λ
+tools/topo_iterate.sh 1e-10         # ends when λ changes by less than 1e-10 (relative); at most 20 passes
+```
+
+`submatrices.py` runs once. Each pass appends its rows to the `.dat` files, so that their last rows are those of the
+converged mode. The drag holds one frequency, so the iteration follows one mode at a time.
 
 The formulas: [Drag at the outer wall equations](drag-equations.md).
 

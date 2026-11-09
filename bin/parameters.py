@@ -1,5 +1,4 @@
 from params_default import default_params
-#import json
 import numpy as np
 
 # ---------------------------------------
@@ -64,13 +63,9 @@ par.rhopower_pp = 4
 # ---------------------------------------
 # -------------- Write parameters to file
 # ---------------------------------------
-# pars_dict = vars(par)
-# with open('params.json', 'w') as f:
-#     json.dump(pars_dict, f, indent=4)
+# Every parameter, exactly, to a JSON file (docs/output.md):
+# par.export_json('parameters.json')
 #
-# To load from a file
-# with open('params.json', 'r') as f:
-#     pars_dict = json.load(f)
-#     for key, value in pars_dict.items():
-#         setattr(par, key, value)
+# To take the parameters from such a file instead of the lines above:
+# par = default_params(); par.load_json('parameters.json')
 # ---------------------------------------

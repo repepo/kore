@@ -144,9 +144,9 @@ if mode == 'pick':
     sys.exit(0)
 
 if mode == 'fields':
-    Xr = np.loadtxt('real_flow.field', ndmin=2) + 1j*np.loadtxt('imag_flow.field', ndmin=2)
+    Xr = ut.load_field('flow')   # flow.npy or the text files
     if par.thermal:
-        Xr = np.vstack([Xr, np.loadtxt('real_thermal.field', ndmin=2) + 1j*np.loadtxt('imag_thermal.field', ndmin=2)])
+        Xr = np.vstack([Xr, ut.load_field('thermal')])
     bf = load('B_forced.npz').toarray()
     res = np.linalg.norm(A @ Xr - bf, axis=0)/np.linalg.norm(bf, axis=0)
     # column 0 from the noise map and the draws of rhs()

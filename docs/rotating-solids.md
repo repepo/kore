@@ -45,7 +45,7 @@ The equations: [Rotating solids equations](rotating-solids-equations.md).
 
 ## Output
 
-- `real_rotdyn.field`, `imag_rotdyn.field`: the two rotation rates and the angle, one column per solution, in the
+- `rotdyn.npy`: the two rotation rates and the angle, one column per solution, in the
   normalisation of the eigenvector (the kinetic energy of the fluid, plus `Hendrik` times its magnetic energy, is 1).
 - `rotdyn.dat`: one row per solution with the same three, the gravitational torque, and the viscous and magnetic torques
   on the mantle and on the inner core ([Output files](output.md#rotdyndat)).

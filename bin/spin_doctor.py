@@ -316,32 +316,35 @@ def main(ncpus):
         if np.size(timing)>1:
             timing = timing[-1]
 
-    fname_ru = 'real_flow.field'
-    fname_iu = 'imag_flow.field'
+    # NEW (2026-11-08, from conductive_IC): the solutions from flow.npy, ... or from real_flow.field, imag_flow.field, ...
+    # (utils.load_field: the two formats give the same numbers); a missing file stops with its name
+    def field(name, rows):
+        x = ut.load_field(name)
+        if x is None:
+            sys.exit('spin_doctor.py: no solution file of the %s (%s.npy, or real_%s.field and imag_%s.field) in %s'
+                     % (name, name, name, name, os.getcwd()))
+        return x.reshape((rows, -1))
 
-    fname_rt = 'real_thermal.field'
-    fname_it = 'imag_thermal.field'
-
-    if os.path.isfile(fname_ru) and os.path.isfile(fname_iu):
-        ru = np.loadtxt(fname_ru).reshape((2*ut.n,-1))
-        iu = np.loadtxt(fname_iu).reshape((2*ut.n,-1))
-    if os.path.isfile(fname_rt) and os.path.isfile(fname_it):
-        rt = np.loadtxt(fname_rt).reshape((ut.n,-1))
-        it = np.loadtxt(fname_it).reshape((ut.n,-1))
+    if par.hydro:
+        u_all = field('flow', 2*ut.n)
+        ru, iu = u_all.real.copy(), u_all.imag.copy()
+    if par.thermal:
+        t_all = field('thermal', ut.n)
+        rt, it = t_all.real.copy(), t_all.imag.copy()
     if par.magnetic:  # NEW (2026-10-28)
-        rb = np.loadtxt('real_magnetic.field').reshape((2*ut.n,-1))
-        ib = np.loadtxt('imag_magnetic.field').reshape((2*ut.n,-1))
+        b_all = field('magnetic', 2*ut.n)
+        rb, ib = b_all.real.copy(), b_all.imag.copy()
     bic = None
     if ut.cic:  # NEW (2026-10-28): the field of a conducting inner core
-        bic = ( np.loadtxt('real_magnetic_ic.field') + 1j*np.loadtxt('imag_magnetic_ic.field') ).reshape((2*ut.nic,-1))
+        bic = field('magnetic_ic', 2*ut.nic)
     bman = None
     if ut.resolved_mantle:  # NEW (2026-11-06): the field of the resolved mantle
-        bman = ( np.loadtxt('real_magnetic_mantle.field') + 1j*np.loadtxt('imag_magnetic_mantle.field') ).reshape((2*ut.nman,-1))
+        bman = field('magnetic_mantle', 2*ut.nman)
     rot = None
     if ut.rotdyn:  # NEW (2026-11-06): omega_M, omega_IC, phi of the rotating solids
-        rot = ( np.loadtxt('real_rotdyn.field') + 1j*np.loadtxt('imag_rotdyn.field') ).reshape((3,-1))
+        rot = field('rotdyn', 3)
     if par.compositional:  # NEW (2026-11-08): the composition
-        rc = ( np.loadtxt('real_composition.field') + 1j*np.loadtxt('imag_composition.field') ).reshape((ut.n,-1))
+        rc = field('composition', ut.n)
 
     # NEW (2026-11-06): without the flow (hydro = 0) the solutions are counted in the field's (or the entropy's) file, and the
     # flow's diagnostics run on a zero flow (upp.zero_flow): they give zeros, and residσ, residω, residens are not computed
@@ -985,6 +988,18 @@ def main(ncpus):
     if par.forcing == 0:
         with open('eigenvalues.dat','ab') as deig:
             np.savetxt(deig, eigval)
+
+    # NEW (2026-11-08, from conductive_IC): eigenmode tracking (track_target, params_default.py): the eigenvalue nearest the
+    # target (track_target = 1), or that of the solution with the smallest KP/KT (2: to start a track, e.g. of the spin-over
+    # mode), is written to the file track_target, the target of the next run (utils.py reads it)
+    if par.forcing == 0 and success > 0 and (par.track_target == 1 or (par.track_target == 2 and par.hydro)):
+        lam = eigval[:success, 0] + 1j*eigval[:success, 1]
+        if par.track_target == 1:
+            j = int(np.argmin(np.abs(lam - (par.rtau + 1j*par.itau))))
+        else:
+            j = int(np.argmin([ KP[k]/KT[k] if KT[k] > 0 else np.inf for k in range(success) ]))
+        np.savetxt('track_target', [[ lam[j].real, lam[j].imag ]])
+        print('Solution %d written to track_target as the next target\n' % j)
 
     print('Total time postprocessing:', timer()-tic, 'seconds')
 

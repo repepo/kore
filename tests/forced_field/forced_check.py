@@ -74,6 +74,8 @@ import numpy as np
 T = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(T, '..', 'tidal'))
 import mk_run   # noqa: E402  (the run builder of tests/tidal: 'Boussinesq', ricb 0.35, NCPUS ranks)
+sys.path.append(os.path.join(T, '..', '..', 'bin'))
+import field_io   # noqa: E402  (the solution files, in either format)
 
 # FIX (2026-11-08): absolute, since check 9 imports utils from a run directory after a chdir (a relative WORKDIR failed)
 W = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else os.path.join(T, 'runs')
@@ -116,8 +118,8 @@ def build(name, extra, lmax=None, steps='savd'):
     run(d, setup(d, extra, lmax), steps)
     return d
 
-def field(d, name):
-    return np.loadtxt(os.path.join(d, 'real_%s.field' % name)) + 1j*np.loadtxt(os.path.join(d, 'imag_%s.field' % name))
+def field(d, name):   # the solutions of field name, from name.npy or the text files
+    return field_io.load(name, folder=d)
 
 def dat(d, f):
     return np.loadtxt(os.path.join(d, f), ndmin=2)
@@ -348,17 +350,18 @@ report('radial_algebra', p.returncode == 0 and worst < 1e-13*max(big, 1.0),
 # 7. kinematic induction in a forced run: the coupled field from the coupled flow
 for name in ('f9_bes', 'lib_man', 'def_g21'):
     d = runs[name]
-    names = [n for n in ('magnetic', 'magnetic_ic', 'magnetic_mantle') if os.path.exists(os.path.join(d, 'real_%s.field' % n))]
+    names = [n for n in ('magnetic', 'magnetic_ic', 'magnetic_mantle') if field_io.exists(n, d)]
     coupled = {n: field(d, n) for n in names}
     for n in names:   # moved aside: a block that solve_ind.py does not write must fail, not compare with itself
-        for part in ('real', 'imag'):
-            os.replace(os.path.join(d, '%s_%s.field' % (part, n)), os.path.join(d, 'coupled_%s_%s.field' % (part, n)))
+        for f in field_io.files(n, 'npy', d) + field_io.files(n, 'text', d):
+            if os.path.exists(f):
+                os.replace(f, os.path.join(d, 'coupled_' + os.path.basename(f)))
     n_ = str(min(mk_run.NCPUS, 2))   # the ranks of the run (setup with lmax)
     for cmd in ([py, 'bin/just_induction.py'], mk_run.MPIEXEC.split() + ['-n', n_, py, 'bin/solve_ind.py']):
         p = subprocess.run(cmd, cwd=d, capture_output=True, text=True)
         if p.returncode:
             sys.exit('%s: %s failed\n%s' % (d, cmd[-1], (p.stdout + p.stderr)[-3000:]))
-    missing = [n for n in names if not os.path.exists(os.path.join(d, 'real_%s.field' % n))]
+    missing = [n for n in names if not field_io.exists(n, d)]
     err = max(rel(field(d, n), coupled[n]) for n in names if n not in missing) if len(missing) < len(names) else np.inf
     report('induction_' + name, not missing and err < 1e-10, 'the field (%s) %.1e from the coupled run%s'
            % (', '.join(names), err, '; not written: ' + ', '.join(missing) if missing else ''))

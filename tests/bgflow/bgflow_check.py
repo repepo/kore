@@ -321,7 +321,8 @@ import os, sys, json; sys.path.insert(0, 'bin')
 import numpy as np
 from parameters import par
 import utils as ut
-load = lambda d: (np.loadtxt(os.path.join(d, 'real_flow.field')) + 1j*np.loadtxt(os.path.join(d, 'imag_flow.field'))).reshape(-1)
+import field_io
+load = lambda d: field_io.load('flow', folder=d).reshape(-1)   # flow.npy or the text files
 x = ut.lifted_flow()[:2*ut.n]
 u8, u7 = load('.'), load(sys.argv[1])
 print(json.dumps({'flow': abs(u8 + x - u7).max()/abs(u7).max()}))

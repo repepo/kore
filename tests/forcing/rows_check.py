@@ -80,11 +80,7 @@ from parameters import par
 import utils as ut
 import radial_profiles as rap
 import utils4pp as upp
-try:
-    x = np.load('flow.npy')
-except OSError:
-    x = np.loadtxt('real_flow.field') + 1j*np.loadtxt('imag_flow.field')
-x = x.reshape(x.shape[0], -1)[:, 0]
+x = ut.load_field('flow', 0)   # the first solution, from flow.npy or the text files
 Plj, Tlj = upp.expand_reshape_sol(x, par.symm)
 lp, lt = ut.ell(par.m, par.lmax, par.symm)[:2]
 dom = [par.ricb, 1.] if par.ricb > 0 else [-1., 1.]

@@ -923,6 +923,14 @@ def worker_4plot( l ):
 
     elif field in ['buo', 'curl_buo','2curl_buo']:
         [ [rad0, rad1, rad2], [con0, con1, con2], [tor0, tor1, tor2] ] = buoyancy(l)
+
+    elif field == 'b':   # NEW (2026-11-08): the magnetic field, from the tables of set_bsolution (diagnose_4plot's bsol)
+        lp_b, lt_b, _ = ut.ell(par.m, par.lmax, ut.bsymm)
+        rad0 = con0 = tor0 = np.zeros_like(rk, dtype='complex128')
+        if l in lp_b:
+            [ [rad0], [con0] ] = bfield_pol(l, 0)
+        elif l in lt_b:
+            tor0 = bfield_tor(l, 0)[0]
  
     if field[:5]=='curl_':
         [out_rad, out_con, out_tor] = curl(l, [rad0, rad1, rad2], [con0, con1, con2], [tor0, tor1, tor2])
@@ -3106,11 +3114,13 @@ def diagnose_composition():
     
 
 
-def diagnose_4plot( ncpus, usol, tsol, radii, field0, csol=0):
+def diagnose_4plot( ncpus, usol, tsol, radii, field0, csol=0, bsol=None):
     '''
-    Returns the [rad,con,tor] components of the field field0 (see worker_4plot), one row per l, at the radii.
+    Returns the [rad,con,tor] components of the field field0 (see worker_4plot), one row per l, at the radii (a curl,
+    'curl_...', with its first r-derivative: [l, component, value 0 or derivative 1, radius], as spin_doctor reads it).
     NEW (2026-10-20): serial, from tables of the radial functions at the radii (set_solution); ncpus is no longer used.
-    NEW (2026-11-08): csol, the composition, whose buoyancy 'buo' includes.
+    NEW (2026-11-08): csol, the composition, whose buoyancy 'buo' includes; bsol, the magnetic field (expand_reshape_sol
+    with ut.bsymm), for field0 = 'b' (usol may then be zero_flow()).
     '''
 
     global field
@@ -3119,6 +3129,8 @@ def diagnose_4plot( ncpus, usol, tsol, radii, field0, csol=0):
     set_radii(radii)  # NEW (2026-11-04): the radii and the background profiles there
 
     set_solution(usol, tsol, csol=csol)  # NEW (2026-10-20): the solution and the tables of its radial functions at the radii
+    if bsol is not None:
+        set_bsolution(bsol, 1)   # NEW (2026-11-08): f, g and their first r-derivatives at the radii
 
     [ lp_u, lt_u, ll ] = ut.ell(par.m, par.lmax, par.symm)  # the l-indices of the flow field
 

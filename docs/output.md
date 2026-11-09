@@ -10,16 +10,19 @@ table.
 | `A.npz`, `B.npz` | `assemble.py` | the matrices of the eigenproblem $A\mathbf x = \lambda B\mathbf x$ |
 | `B_forced.npz` | `assemble.py`, with `forcing` > 0 | the right-hand sides of a forced run, one per column |
 | `eigenvalues0.dat` | `solve.py` | the eigenvalues of the last solve, one per row: $\mathrm{Re}\thinspace\lambda$, $\mathrm{Im}\thinspace\lambda$ |
-| `real_flow.field`, `imag_flow.field` | `solve.py` | the eigenvectors of the flow (or the forced flows), real and imaginary parts of their spectral coefficients, one column per solution; with `thermal = 1` also `real_thermal.field`, `imag_thermal.field` for $s$; with `compositional = 1` also `real_composition.field`, `imag_composition.field` for $c$; with `magnetic = 1` also `real_magnetic.field`, `imag_magnetic.field` for $\mathbf b$, `real_magnetic_ic.field`, `imag_magnetic_ic.field` for the inner core `'conducting, Chebys'`, and `real_magnetic_mantle.field`, `imag_magnetic_mantle.field` for a resolved mantle; with `rotdyn = 1` also `real_rotdyn.field`, `imag_rotdyn.field` for the rotation rates of the mantle and of the inner core and the angle between them ([Rotating solids](rotating-solids.md)). Without the flow (`hydro = 0`) the flow's files are not written |
+| `flow.npy` | `solve.py` | the eigenvectors of the flow (or the forced flows), their spectral coefficients, one column per solution ([below](#solution-files)); with `thermal = 1` also `thermal.npy` for $s$; with `compositional = 1` `composition.npy` for $c$; with `magnetic = 1` `magnetic.npy` for $\mathbf b$, `magnetic_ic.npy` for the inner core `'conducting, Chebys'` and `magnetic_mantle.npy` for a resolved mantle; with `rotdyn = 1` `rotdyn.npy` for the rotation rates of the mantle and of the inner core and the angle between them ([Rotating solids](rotating-solids.md)). With `field_format = 'text'` each is two text files instead, `real_flow.field` and `imag_flow.field`, ... Without the flow (`hydro = 0`) the flow's file is not written |
+| `no_conv_solution` | `solve.py` | written when no eigenvalue converged, or when a forced solution holds NaN ([Solver](solver.md#bad-solutions)); `tools/ramp.sh` stops on it |
 | `rsf_spectrum.dat`, `rsf_ke.dat` | `solve.py`, with `forcing = 11` and `rsf_frequencies` | the power spectrum of the kinetic energy of the forced flow, appended, one row per frequency ([Convective forcing](forcing.md#reading-the-output)) |
 | `timing.dat` | `solve.py` | the run time of the solve, appended |
 | `eigenvalues.dat` | `spin_doctor.py` | the eigenvalues, appended |
+| `track_target` | `spin_doctor.py`, with `track_target` 1 or 2 | the eigenvalue that the next run aims at, $\mathrm{Re}\thinspace\lambda$ and $\mathrm{Im}\thinspace\lambda$ ([below](#following-a-mode)) |
 | `params.dat` | `spin_doctor.py` | the parameters of each solution (below) |
 | `flow.dat` | `spin_doctor.py` | the kinetic energy and the checks of each solution (below) |
 | `thermal.dat` | `spin_doctor.py`, with `thermal = 1` | the entropy budget of each solution (below) |
 | `composition.dat` | `spin_doctor.py`, with `compositional = 1` | the budget of the composition of each solution (below) |
 | `magnetic.dat` | `spin_doctor.py`, with `magnetic = 1` | the magnetic energies and budgets of each solution (below) |
 | `rotdyn.dat` | `spin_doctor.py`, with `rotdyn = 1` | the rotation of the solids and the torques on them, for each solution (below) |
+| `parameters.json` | `parameters.py`, when it calls `par.export_json` | every parameter of the run ([below](#the-parameter-file)) |
 
 `python3 bin/units.py` prints the eigenvalues of `eigenvalues0.dat` as frequency and growth rate in nHz
 ([Background model](background.md#units)). Rows of `params.dat`, `flow.dat`, `thermal.dat`, `composition.dat`,
@@ -173,3 +176,64 @@ The columns follow the order of `spin_doctor.param_table`, counted from 1:
 - A `params.dat` written before the columns 108–112, column 113, the columns 114–122, 123–127, 128–134, 135–141,
   142–154 or 155–156 were added has fewer columns: start a new file. The same holds for `flow.dat` before its columns
   29–39, 40–41, 42–43, 44–45 or 46–48, and for `thermal.dat` and `composition.dat` before their column 8.
+
+## Solution files
+
+The solution files hold what `solve.py` found, for `spin_doctor.py`, the tools and koreviz to read: the spectral
+coefficients of each field, one column per solution ([Numerical method](numerical-method.md)). By default each field is
+one binary numpy file of complex numbers, `flow.npy`, `thermal.npy`, ..., small and quick to write and to read. With
+`field_format = 'text'` each field is two text files, `real_flow.field` and `imag_flow.field` with the real and the
+imaginary parts, as kore wrote before; at N ≈ 1000 with 10 solutions they take about 1 GB, and writing or reading them
+tens of seconds. The two formats hold the same numbers to the last bit, and a run keeps one: writing a field deletes the
+files of the other format.
+
+`spin_doctor.py`, `bgflow.py`, `just_induction.py`, the tools and koreviz read either format. In python,
+`field_io.load('flow', folder='path/to/run')` (with kore's `bin` on the path; `bin/field_io.py` reads no parameters)
+returns the solutions as a complex array, one column per solution, `field_io.load('flow', 2)` solution 2 alone, and
+`None` when the field has no file. A `.npy` file is also read by `np.load('flow.npy')`.
+
+## The parameter file
+
+A run's parameters come from `parameters.py`: the defaults of `bin/params_default.py`, the values that `set_scales`
+derives, and the file's own. `par.export_json('parameters.json')` at the end of `parameters.py` writes all of them to
+one file, exactly: numbers to the last bit, and numpy numbers and arrays, complex numbers, tuples and dictionaries with
+their types. To run the case again, here or in another folder, put in place of the parameters
+
+```python
+from params_default import default_params
+par = default_params()
+par.load_json('parameters.json')
+```
+
+The file holds every value, so `set_scales` is not called again. Names that kore does not define come back too, and
+`submatrices.py` warns about them as it does in `parameters.py`. Under MPI only rank 0 writes the file.
+
+## Many runs
+
+A parameter study runs one case many times with one parameter changed. The scripts of `tools/` run such a series in one
+folder, one step after the other (`ramp.sh`), or in one folder per run on a PBS-managed cluster, and collect the results
+into one table.
+
+| script | what it does |
+| --- | --- |
+| `tools/ramp.sh name value1 value2 ...` | runs the case of `bin/parameters.py` once per value of `par.name` (any python expression, e.g. `tools/ramp.sh ViscosD 1e-4 7e-5 5e-5`), from kore's top folder; without arguments, once as it is. `spin_doctor.py` appends each step's rows to the `.dat` files. The ramp stops when a step finds no solution (`no_conv_solution`). The environment variables `ncpus` (the processes of `submatrices.py` and `spin_doctor.py`, default `par.ncpus`), `ranks` (the MPI ranks of `assemble.py` and `solve.py`, default `ncpus`), `opts` (more solver options, [Solver](solver.md)) and `MPIEXEC` (default `mpiexec`) can be set |
+| `tools/setpar.py name value [file]` | writes `par.name = value` into `bin/parameters.py` in place of each assignment of `par.name` (its comment kept), or as a new last line, after `set_scales` and the other values, so that it holds; `ramp.sh` and `dodirs.sh` use it |
+| `tools/dodirs.sh prefix name mode start step end` | creates one folder per value of `par.name` in `~/data`, named `prefix<value>`, each with a copy of `~/kore` (edit the paths first). With `mode` `e` the values are powers of ten ($10^{start}$, ...), with `d` they are linear. Example: `tools/dodirs.sh run_visc_ ViscosD e -4 -0.1 -5` |
+| `tools/dosubs.sh` (the same arguments) | submits the job of each folder, `tools/subramp.sh`, which runs `tools/ramp.sh` there (edit its PBS header and python environment first) |
+| `tools/reap.sh prefix` | collects the `.dat` files of the folders `prefix*` into `prefix.par` (`params.dat`), `.flo`, `.thm`, `.cmp`, `.mag`, `.rot` and `.eig`, those that exist, with the rows of each folder together |
+| `tools/get_data.py [prefix]` | reads them, or without `prefix` the `.dat` files of the current folder, into one pandas table whose columns have the names of the tables of `spin_doctor.py`, and writes it to `prefix.csv` (`results.csv`); in python, `get_data.load_results(prefix)` and `get_data.load_result(folder)` return the table |
+| `tools/getresults.py [prefix]` | `%run -i tools/getresults.py prefix` in IPython: the same table as `df`, and its most used columns as arrays |
+
+Ramp a parameter that the run reads, such as `ViscosD`: `Ek`, `Etherm`, `Ecomp` and `Le` are read only by
+`set_scales`, which `parameters.py` calls before its own values (`setpar.py` warns).
+
+### Following a mode
+
+Along a ramp the eigenvalues move, and a fixed target can lose the mode of interest or jump to another. With
+`track_target = 1` each run aims at the eigenvalue in the file `track_target` (in place of `rtau`, `itau`), and
+`spin_doctor.py` writes to the file the eigenvalue of that run nearest to it: the next run aims there. Small steps keep
+the same mode. Before the first run, write the starting eigenvalue to the file (`echo "-0.1 1.0" > track_target`: its
+real and imaginary parts), or let a run with `track_target = 2` write the eigenvalue of its solution with the smallest
+ratio of poloidal to toroidal kinetic energy, such as the spin-over mode. Tracking needs an eigenvalue problem
+(`forcing = 0`), and 2 needs the flow (`hydro = 1`). `tools/topo_iterate.sh` uses it for the frequency of a drag at the
+outer wall ([Drag at the outer wall](drag.md#the-frequency-of-the-drag)).

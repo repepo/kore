@@ -70,11 +70,8 @@ for key, expr in sorted(par.bgflow_profiles.items()):
         g[0] += Ro*F[1]*Y; g[1] += Ro*F[0]*dY
 
 # --- the solution (the first one)
-def read(name):
-    f = 'real_%s.field' % name
-    if not os.path.exists(f):
-        return None
-    return np.loadtxt(f, ndmin=2)[:, 0] + 1j*np.loadtxt('imag_%s.field' % name, ndmin=2)[:, 0]
+def read(name):   # name.npy or the text files (utils.load_field)
+    return ut.load_field(name, 0)
 lp, lt, _ = ut.ell(m, par.lmax, par.symm)
 Ys, dYs, Zs = angular.ylm_grid(m, par.lmax + 2, x)          # Z = i m Y/sinθ
 L_ = lambda l: l*(l + 1.)

@@ -25,53 +25,71 @@ nR     : number of points in radius
 ntheta : number of points in the theta direction
 theta0 : starting colatitude
 theta1 : final colatitude
-field  : whether to plot flow velocity or magnetic field ('u' or 'b')
+field  : 'u' (or 'vel') the flow velocity, 'mf' the mass flux, 'vis' the viscous force over the density, 'cor' the Coriolis
+         force, 'buo' the buoyancy force (of the entropy and the composition), 'curl_u', 'curl_vis', 'curl_cor' and
+         'curl_buo' their curls, 'b' the magnetic field
 opt    : 'raw' for real part (phase and phi dependent!), or 'abs' for the magnitude
 nsol   : solution index
+
+FIX (2026-11-08): 'u', 'b', 'buo' and the curls work ('u' was not passed on as 'vel', 'b' had no worker, 'buo' needed a
+flow, 'curl_buo' was spelt 'curlbuo', and a curl came with its r-derivative), the buoyancy includes the composition, and
+forced runs (no eigenvalues0.dat), fewer colatitudes than cores and numpy < 2.1 (no np.unstack) work too.
 '''
 
 plt.rc('text', usetex=True)
 
 solnum = int(sys.argv[7])
 
+csol, bsol = 0, None   # NEW (2026-11-08): the composition (for the buoyancy) and the magnetic field (for 'b')
+
 if sys.argv[5] in ['u', 'vel', 'mf', 'vis', 'vif', 'cor', 'curl_u', 'curl_vel', 'curl_cor', 'curl_vis', 'curl_vif']:
 
-    ru = np.loadtxt('real_flow.field',usecols=solnum)
-    iu = np.loadtxt('imag_flow.field',usecols=solnum)
+    _sol = ut.load_field('flow', solnum)   # NEW (2026-11-08): flow.npy or the text files
+    ru, iu = _sol.real, _sol.imag
     vsymm = par.symm
     usol = upp.expand_reshape_sol( ru + 1j*iu, vsymm)
     tsol = None
     cmap = 'rainbow'
 
-elif sys.argv[5] in ['buo', 'curlbuo']:
+elif sys.argv[5] in ['buo', 'curl_buo']:
 
-    rt = np.loadtxt('real_thermal.field',usecols=solnum)
-    it = np.loadtxt('imag_thermal.field',usecols=solnum)
     vsymm = par.symm
-    tsol = upp.expand_reshape_sol( rt + 1j*it, vsymm)
-    usol = None
+    tsol = None
+    if par.thermal:
+        _sol = ut.load_field('thermal', solnum)   # NEW (2026-11-08): thermal.npy or the text files
+        rt, it = _sol.real, _sol.imag
+        tsol = upp.expand_reshape_sol( rt + 1j*it, vsymm)
+    if par.compositional:   # NEW (2026-11-08): the composition's buoyancy
+        csol = upp.expand_reshape_sol( ut.load_field('composition', solnum), vsymm)
+    usol = upp.zero_flow()   # FIX (2026-11-08): the buoyancy needs no flow (set_solution needs one, None stopped it)
     cmap = 'rainbow'
 
 elif sys.argv[5] in ['test1', 'test2']:
 
-    ru = np.loadtxt('real_flow.field',usecols=solnum)
-    iu = np.loadtxt('imag_flow.field',usecols=solnum)
+    _sol = ut.load_field('flow', solnum)   # NEW (2026-11-08): flow.npy or the text files
+    ru, iu = _sol.real, _sol.imag
     vsymm = par.symm
     usol = upp.expand_reshape_sol( ru + 1j*iu, vsymm)
-    rt = np.loadtxt('real_thermal.field',usecols=solnum)
-    it = np.loadtxt('imag_thermal.field',usecols=solnum)
-    tsol = upp.expand_reshape_sol( rt + 1j*it, vsymm)
+    tsol = None
+    if par.thermal:
+        _sol = ut.load_field('thermal', solnum)   # NEW (2026-11-08): thermal.npy or the text files
+        rt, it = _sol.real, _sol.imag
+        tsol = upp.expand_reshape_sol( rt + 1j*it, vsymm)
+    if par.compositional:   # NEW (2026-11-08): the composition's buoyancy
+        csol = upp.expand_reshape_sol( ut.load_field('composition', solnum), vsymm)
     cmap = 'rainbow'
 
 elif sys.argv[5] == 'b':
-    a0 = np.loadtxt('real_magnetic.field',usecols=solnum)
-    b0 = np.loadtxt('imag_magnetic.field',usecols=solnum)
+    _sol = ut.load_field('magnetic', solnum)   # NEW (2026-11-08): magnetic.npy or the text files
+    a0, b0 = _sol.real, _sol.imag
     vsymm = ut.bsymm
+    bsol = upp.expand_reshape_sol( a0 + 1j*b0, vsymm)   # FIX (2026-11-08): drawn by utils4pp.worker_4plot
+    usol, tsol = upp.zero_flow(), None
     cmap = 'plasma'
     tl0 = r'\mathbf{b}'
 
-eigval = np.loadtxt('eigenvalues0.dat').reshape((-1,2))
-sigma = eigval[solnum,0]
+# FIX (2026-11-08): a forced run writes no eigenvalues0.dat (sigma is used by 'test1' alone)
+sigma = np.loadtxt('eigenvalues0.dat').reshape((-1,2))[solnum,0] if par.forcing == 0 else 0.
 
 if sys.argv[5] in ['u', 'vel']:
     tl0 = r'\mathbf{u}'
@@ -123,7 +141,7 @@ n0   = ut.n0
 nR = int(sys.argv[1]) # number of radial points
 Ntheta = int(sys.argv[2]) # number of points in the theta direction
 
-ncpus   = mp.cpu_count()
+ncpus   = max(1, min(mp.cpu_count(), Ntheta))   # FIX (2026-11-08): at least one theta point per process (none if Ntheta < ncpus/2)
 ntht_pp = int(np.round(Ntheta/ncpus))  # number of theta points per cpu
 totheta = ntht_pp * ncpus     # the actual number of total theta points  
 
@@ -144,15 +162,19 @@ ll    = ll0[2]
 
 # --------------------------------------------------------------
 if sys.argv[5] == 'test2':
-    out10 = upp.diagnose_4plot(ncpus, usol, tsol, r, 'curl_buo')
-    out11 = upp.diagnose_4plot(ncpus, usol, tsol, r, 'curl_vis')
-    out12 = upp.diagnose_4plot(ncpus, usol, tsol, r, 'curl_cor')
+    out10 = upp.diagnose_4plot(ncpus, usol, tsol, r, 'curl_buo', csol=csol)
+    out11 = upp.diagnose_4plot(ncpus, usol, tsol, r, 'curl_vis', csol=csol)
+    out12 = upp.diagnose_4plot(ncpus, usol, tsol, r, 'curl_cor', csol=csol)
     #out13 = upp.diagnose_4plot(ncpus, usol, tsol, r, 'curlvel')
     out1 = out10 + out11 - out12 # - sigma*out13
 elif sys.argv[5] == 'test1':
     out1 = sigma * upp.diagnose_4plot(ncpus, usol, tsol, r, 'curl_vel')
 else:
-    out1 = upp.diagnose_4plot(ncpus, usol, tsol, r, sys.argv[5])
+    # FIX (2026-11-08): the names of utils4pp.worker_4plot ('u' is 'vel', 'vif' is 'vis'), and the composition and the field
+    fld = {'u': 'vel', 'vif': 'vis', 'curl_u': 'curl_vel', 'curl_vif': 'curl_vis'}.get(sys.argv[5], sys.argv[5])
+    out1 = upp.diagnose_4plot(ncpus, usol, tsol, r, fld, csol=csol, bsol=bsol)
+if out1.ndim == 4:   # FIX (2026-11-08): the values of a curl (utils4pp.curl gives their r-derivatives too, as spin_doctor uses)
+    out1 = out1[:, :, 0, :]
 # --------------------------------------------------------------
 
 
@@ -180,7 +202,7 @@ ll    = ll0[2]
 # setup the latitudinal grid
 theta = np.linspace(float(sys.argv[3])*np.pi/180, float(sys.argv[4])*np.pi/180, totheta+2)
 theta = theta[1:-1]
-theta2 = np.reshape(theta,(-1,ncpus),copy=True)
+theta2 = np.reshape(theta,(-1,ncpus)).copy()   # FIX (2026-11-08): reshape(..., copy=True) needs numpy >= 2.1
 
 clm = np.zeros((lmax-m+2,1))
 for i,l in enumerate(ll):
@@ -233,7 +255,7 @@ pool.close()
 pool.join()
 
 out1 = np.vstack(out0)
-(s0,z0,ur,utheta,uphi) = np.unstack(out1, axis=1)
+(s0,z0,ur,utheta,uphi) = out1.T   # FIX (2026-11-08): np.unstack(out1, axis=1), which numpy < 2.1 lacks
 s = np.real(s0)
 z = np.real(z0)
 

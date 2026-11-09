@@ -7,8 +7,9 @@ import matplotlib
 import matplotlib.tri as tri
 import numpy.polynomial.chebyshev as ch
 
+sys.path.insert(1, 'bin/')   # FIX (2026-11-08): run from the run's top folder, as the other tools
 import utils as ut
-import parameters as par
+from parameters import par   # FIX (2026-11-08): par is the object in parameters.py
 
 '''
 
@@ -45,8 +46,8 @@ n    = ut.n
 
 gap = rcmb-ricb
 
-a = np.loadtxt('real_flow.field',usecols=solnum)
-b = np.loadtxt('imag_flow.field',usecols=solnum)
+_sol = ut.load_field('flow', solnum)   # NEW (2026-11-08): flow.npy or the text files
+a, b = _sol.real, _sol.imag
 
 if m > 0 :
 	symm1 = symm

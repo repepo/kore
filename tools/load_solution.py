@@ -44,15 +44,15 @@ chx = ch.chebvander(x0,par.N-1) # this matrix has nr rows and N-1 cols
 
 # read fields from disk
 if field == 'u':
-    a = np.loadtxt('real_flow.field',usecols=solnum)
-    b = np.loadtxt('imag_flow.field',usecols=solnum)
+    _sol = ut.load_field('flow', solnum)   # NEW (2026-11-08): flow.npy or the text files
+    a, b = _sol.real, _sol.imag
     vsymm = par.symm
 elif field == 'b':
-    a = np.loadtxt('real_magnetic.field',usecols=solnum)
-    b = np.loadtxt('imag_magnetic.field',usecols=solnum)
-    if ut.icflag:
-        a_ic = np.loadtxt('real_magnetic_ic.field',usecols=solnum)
-        b_ic = np.loadtxt('imag_magnetic_ic.field',usecols=solnum)
+    _sol = ut.load_field('magnetic', solnum)   # NEW (2026-11-08): magnetic.npy or the text files
+    a, b = _sol.real, _sol.imag
+    if ut.cic:
+        _sol = ut.load_field('magnetic_ic', solnum)   # NEW (2026-11-08): magnetic_ic.npy or the text files
+        a_ic, b_ic = _sol.real, _sol.imag
     vsymm = par.symm * ut.symmB0 
        
 # Rearrange and separate poloidal and toroidal parts
@@ -66,9 +66,13 @@ Tlj0  = np.reshape(Tlj0,(int(lm1/2),ut.N1))
 Plj = np.zeros((int(lm1/2),par.N),dtype=complex)
 Tlj = np.zeros((int(lm1/2),par.N),dtype=complex)
 
+# FIX (2026-11-08): the parity of the Chebyshev coefficients in a full sphere and in the inner core follows the symmetry of
+# the field loaded (symm*symmB0 for 'b'), as in utils4pp.expand_sol; ut.s is the flow's
+s = int(vsymm*0.5+0.5) # s=0 if antisymm, s=1 if symm
+
 if ricb == 0 :
-    iP = (m + 1 - ut.s)%2
-    iT = (m + ut.s)%2
+    iP = (m + 1 - s)%2
+    iT = (m + s)%2
     for k in np.arange(int(lm1/2)) :
         Plj[k,iP::2] = Plj0[k,:]
         Tlj[k,iT::2] = Tlj0[k,:]
@@ -76,7 +80,6 @@ else :
     Plj = Plj0
     Tlj = Tlj0
 
-s = int(vsymm*0.5+0.5) # s=0 if antisymm, s=1 if symm
 if m>0:
     idp = np.arange( 1-s, lm1, 2)
     idt = np.arange( s  , lm1, 2)
@@ -96,7 +99,7 @@ Tlr[idt,:] = np.matmul( Tlj, chx.T)
 
 
 
-if field == 'b' and ut.icflag:  # loads the solution in the inner core. 
+if field == 'b' and ut.cic:  # loads the solution in the inner core.
 
     nic = ut.nic
     nr_ic = par.N_cic
@@ -114,7 +117,7 @@ if field == 'b' and ut.icflag:  # loads the solution in the inner core.
     Plj0_ic = a_ic[offset    :offset+  nic] + 1j*b_ic[offset    :offset+  nic]   # N elements on each l block
     Tlj0_ic = a_ic[offset+nic:offset+2*nic] + 1j*b_ic[offset+nic:offset+2*nic]   # N elements on each l block
 
-    lm1_ic  = par.lmax_cic-m+1    
+    lm1_ic  = lmax-m+1   # FIX (2026-11-08): the inner core has the degrees of the fluid (par.lmax_cic is conductive_IC's)
     Plj0_ic  = np.reshape(Plj0_ic,(int(lm1_ic/2),ut.Nic))
     Tlj0_ic  = np.reshape(Tlj0_ic,(int(lm1_ic/2),ut.Nic))
 
@@ -122,22 +125,21 @@ if field == 'b' and ut.icflag:  # loads the solution in the inner core.
     Tlj_ic = np.zeros((int(lm1_ic/2),par.N_cic),dtype=complex)
 
 
-    iP_ic = (m + 1 - ut.s)%2
-    iT_ic = (m + ut.s)%2
+    iP_ic = (m + 1 - s)%2
+    iT_ic = (m + s)%2
     for k in np.arange(int(lm1_ic/2)) :
         Plj_ic[k,iP_ic::2] = Plj0_ic[k,:]
         Tlj_ic[k,iT_ic::2] = Tlj0_ic[k,:]
  
 
-    s = int(vsymm*0.5+0.5) # s=0 if antisymm, s=1 if symm
     if m>0:
         idp_ic = np.arange( 1-s, lm1_ic, 2)
         idt_ic = np.arange( s  , lm1_ic, 2)
-        ll_ic  = np.arange( m, par.lmax_cic+1 )
+        ll_ic  = np.arange( m, lmax+1 )
     elif m==0:
         idp_ic = np.arange( s  , lm1_ic, 2)
         idt_ic = np.arange( 1-s, lm1_ic, 2)
-        ll_ic  = np.arange( m+1, par.lmax_cic+2 )
+        ll_ic  = np.arange( m+1, lmax+2 )
         
     # init arrays
     Plr_ic  = np.zeros( (lm1_ic, int(nr_ic/2)), dtype=complex )

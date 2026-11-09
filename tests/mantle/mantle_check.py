@@ -38,6 +38,8 @@ from scipy.optimize import brentq
 T = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(T, '..', 'tidal'))
 import mk_run   # noqa: E402  (the run builder of tests/tidal: 'Boussinesq', ricb 0.35, NCPUS ranks)
+sys.path.append(os.path.join(T, '..', '..', 'bin'))
+import field_io   # noqa: E402  (the solution files, in either format)
 
 W = sys.argv[1] if len(sys.argv) > 1 else os.path.join(T, 'runs')
 os.makedirs(W, exist_ok=True)
@@ -78,8 +80,8 @@ def closest(lam, ref):
     '''the largest relative distance from a value of ref to the nearest of lam'''
     return max(np.min(abs(lam - z))/abs(z) for z in ref)
 
-def field(d, name):
-    return np.loadtxt(os.path.join(d, 'real_%s.field' % name)) + 1j*np.loadtxt(os.path.join(d, 'imag_%s.field' % name))
+def field(d, name):   # the solutions, from name.npy or the text files
+    return field_io.load(name, folder=d)
 
 fail = 0
 def report(name, ok, text):

@@ -6,6 +6,21 @@ from glob import glob
 from .plotlib import add_colorbar,default_cmap,radContour,merContour,eqContour
 from .libkoreviz import spec2spat_vec,spec2spat_scal
 import sys
+import os
+
+
+# NEW (2026-11-08, from conductive_IC): the solution files as kore writes them, name.npy (field_format = 'npy', the default)
+# or real_name.field and imag_name.field (field_format = 'text'), in the current folder
+def read_field(names, solnum):
+    '''real and imaginary parts of solution solnum of the first of the fields names whose files exist'''
+    for name in names:
+        if os.path.isfile(name + '.npy'):
+            x = np.load(name + '.npy', mmap_mode='r')[:, solnum]
+            return np.array(x.real), np.array(x.imag)
+        if os.path.isfile('real_' + name + '.field') and os.path.isfile('imag_' + name + '.field'):
+            return (np.loadtxt('real_' + name + '.field', usecols=solnum),
+                    np.loadtxt('imag_' + name + '.field', usecols=solnum))
+    sys.exit('kmode: no solution file of %s (name.npy, or real_name.field and imag_name.field)' % ' or '.join(names))
 
 
 class kmode:
@@ -15,7 +30,7 @@ class kmode:
 
         sys.path.insert(0,datadir+'/bin')
 
-        import parameters as par
+        from parameters import par   # FIX (2026-11-08): par is the object in parameters.py
         import utils as ut
         import utils4pp as upp
         import radial_profiles as rap
@@ -75,28 +90,20 @@ class kmode:
 
         # read fields from disk
         if field == 'u':
-            a = np.loadtxt('real_flow.field',usecols=solnum)
-            b = np.loadtxt('imag_flow.field',usecols=solnum)
+            a, b = read_field(['flow'], solnum)
             vsymm = par.symm
             vec = True
         elif field == 'b':
-            a = np.loadtxt('real_magnetic.field',usecols=solnum)
-            b = np.loadtxt('imag_magnetic.field',usecols=solnum)
+            a, b = read_field(['magnetic'], solnum)
             vsymm = ut.bsymm
             vec = True
         elif field in ['t','temp','temperature']:
-            if len(glob('*_temperature.field')) > 0:
-                a = np.loadtxt('real_temperature.field',usecols=solnum)
-                b = np.loadtxt('imag_temperature.field',usecols=solnum)
-            elif len(glob('*_temp.field')) > 0:
-                a = np.loadtxt('real_temp.field',usecols=solnum)
-                b = np.loadtxt('imag_temp.field',usecols=solnum)
+            a, b = read_field(['thermal', 'temperature', 'temp'], solnum)   # NEW (2026-11-08): kore writes 'thermal'
             field='temperature'
             vsymm = par.symm
             vec = False
         elif field in ['comp','composition']:
-            a = np.loadtxt('real_composition.field',usecols=solnum)
-            b = np.loadtxt('imag_composition.field',usecols=solnum)
+            a, b = read_field(['composition'], solnum)
             field='composition'
             vsymm = par.symm
             vec = False

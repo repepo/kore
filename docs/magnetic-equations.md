@@ -300,7 +300,7 @@ change or extend the code.
   field they stay in $C^{(2)}$ and $C^{(1)}$. `decode_label` gives the u and v labels the row powers of the viscous
   rows. `conductive_IC` keeps $C^{(2)}$ and $C^{(1)}$ and so converts these terms with the wrong matrices; its torsional
   test is barely affected ([Checks](#full-sphere-inviscid-runs-and-degree-2-poloidal-fields)).
-- **Solver.** `solve.py` writes `real_magnetic.field`, `imag_magnetic.field` and normalises the eigenvectors (over the
+- **Solver.** `solve.py` writes `magnetic.npy` and normalises the eigenvectors (over the
   shell, as `conductive_IC`) to
 
     $$
@@ -375,7 +375,7 @@ inside the inner core to the unknowns, as `conductive_IC` does
   $S_l$ of a thin layer (`assemble.bc_b_cic` through `bc_b_slip`). The radial induction of the slip is in the fluid's own
   equation, and the poloidal matching needs nothing more. A toroidal $\mathbf B_0$ adds nothing: $\mathbf u\times\mathbf B_0$
   is then normal to the wall.
-- **Output.** `real_magnetic_ic.field`, `imag_magnetic_ic.field`. The eigenvectors are normalised with the fluid's
+- **Output.** `magnetic_ic.npy`. The eigenvectors are normalised with the fluid's
   energies only (the inner-core field is scaled along), as in `conductive_IC`.
 
 ### Thin conducting layer
@@ -495,7 +495,7 @@ radius.
   $\sigma(1)\,[(rg)' - r\,S_l/\mathrm{MagnetD}] = (rg_m)'$, with the $S_l$ of a thin layer (`assemble.bc_b_slip`, with
   $\sigma(1)$ for $c_1$). The radial induction of the slip is in the fluid's own equation, and the poloidal matching needs
   nothing more.
-- **Output.** `real_magnetic_mantle.field`, `imag_magnetic_mantle.field` (`fm` then `gm`), scaled with the fluid's
+- **Output.** `magnetic_mantle.npy` (`fm` then `gm`), scaled with the fluid's
   field.
 
 As $r_s \to 1$ with $\sigma\,(r_s - 1)$ fixed the layer tends to a thin layer (`'TWA'`) with $c = r_s - 1$ and $c_1 = \sigma(r_s - 1)$, at

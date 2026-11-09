@@ -46,12 +46,12 @@ chx = ch.chebvander(x0,par.N-1) # this matrix has nr rows and N-1 cols
 
 # read fields from disk
 if field == 'u':
-    a = np.loadtxt('real_flow.field',usecols=solnum)
-    b = np.loadtxt('imag_flow.field',usecols=solnum)
+    _sol = ut.load_field('flow', solnum)   # NEW (2026-11-08): flow.npy or the text files
+    a, b = _sol.real, _sol.imag
     vsymm = par.symm
 elif field == 'b':
-    a = np.loadtxt('real_magnetic.field',usecols=solnum)
-    b = np.loadtxt('imag_magnetic.field',usecols=solnum)
+    _sol = ut.load_field('magnetic', solnum)   # NEW (2026-11-08): magnetic.npy or the text files
+    a, b = _sol.real, _sol.imag
     vsymm = par.symm * ut.symmB0 
        
 # Rearrange and separate poloidal and toroidal parts

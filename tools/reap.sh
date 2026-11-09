@@ -1,108 +1,42 @@
 #!/bin/bash
 #
-# Script to collect results from a series of run directories
+# Collects the results of a series of run folders into one file per table. Use as
 #
-# Use as:
-# ./reap.sh somename
+#     tools/reap.sh somename
 #
-# where 'somename' is the prefix used when creating the
-# directories with dodirs.sh. It will produce the files:
-# 
-# somename.par, collecting all parameters, 
-# somename.flo, with flow data,          (if hydro = 1)
-# somename.eig, with the eigenvalues,    (if forcing = 0)
-# somename.mag, with magnetic field data (if magnetic = 1)
-# somename.thm, with thermal data        (if thermal = 1)
+# where somename is the prefix of the folders (the one given to tools/dodirs.sh). It writes, with the rows of every
+# folder in the order ls lists them (one row per solution, as spin_doctor.py writes them):
 #
-# Use the script getresults.py to further
-# process the results.
+# somename.par, the parameters                (params.dat)
+# somename.flo, the flow                      (flow.dat)
+# somename.thm, the entropy                   (thermal.dat, with thermal = 1)
+# somename.cmp, the composition               (composition.dat, with compositional = 1)
+# somename.mag, the magnetic field            (magnetic.dat, with magnetic = 1)
+# somename.rot, the rotating solids           (rotdyn.dat, with rotdyn = 1)
+# somename.eig, the eigenvalues               (eigenvalues.dat, eigenvalue problems)
+#
+# tools/get_data.py somename reads them with named columns, tools/getresults.py into IPython.
+# NEW (2026-11-08, from conductive_IC): the number of rows taken from each folder is that of its params.dat, so that the
+# rows of the files stay aligned; a folder without params.dat (no finished run) is left out, and the files are written
+# anew on each call. composition.dat and rotdyn.dat are collected too.
 
+[ -n "$1" ] || { echo "usage: tools/reap.sh somename"; exit 1; }
+tables=("params.dat .par" "flow.dat .flo" "thermal.dat .thm" "composition.dat .cmp" "magnetic.dat .mag"
+        "rotdyn.dat .rot" "eigenvalues.dat .eig")
+for t in "${tables[@]}"; do rm -f "$1${t#* }"; done
 
-#cd ~/data/
-p=".par"
-f=".flo"
-m=".mag"
-e=".eig"
-s=".sla"
-t=".thm"
-
-for d in $(ls -1d $1*)
+for d in $(ls -1d "$1"*)
 do
-
-	if [ -f $d/flow.dat ]
-	then
-        lines=`grep -c ^ $d/flow.dat`
-        head -n $lines $d/flow.dat >> $1$f   
-		#cat $d/flow.dat >> $1$f
-	fi
-
-	if [ -f $d/eigenvalues.dat ]
-	then
-        head -n $lines $d/eigenvalues.dat >> $1$e
-	fi
-
-	if [ -f $d/params.dat ]
-	then
-		head -n $lines $d/params.dat >> $1$p
-	fi
-	
-	if [ -f $d/magnetic.dat ]
-	then
-		head -n $lines $d/magnetic.dat >> $1$m
-	fi
-    
-	if [ -f $d/thermal.dat ]
-	then
-		head -n $lines $d/thermal.dat >> $1$t
-	fi    
-
-	if [ -f $d/slayer.dat ]
-	then
-		head -n $lines $d/slayer.dat >> $1$s
-	fi
-
-	if [ -f $d/lions.out ]
-	then
-		head -n $lines $d/lions.out >> $1$f
-	fi
-
-	if [ -f $d/params.out ]
-	then
-		head -n $lines $d/params.out >> $1$p
-	fi
-	
+	[ -f "$d/params.dat" ] || continue
+	lines=$(grep -c ^ "$d/params.dat")
+	for t in "${tables[@]}"; do
+		dat=${t% *}; suffix=${t#* }
+		[ -f "$d/$dat" ] && head -n $lines "$d/$dat" >> "$1$suffix"
+	done
 done
 
-
-if [ -f $1$p ]
-then
-	echo "Parameters written to $1$p"
-fi
-
-if [ -f $1$f ]
-then
-	echo "Flow velocity data written to $1$f"
-fi
-
-if [ -f $1$m ]
-then
-	echo "Magnetic field data written to $1$m"
-fi
-
-if [ -f $1$e ]
-then
-	echo "Eigenvalues written to $1$e"
-fi
-
-if [ -f $1$t ]
-then
-	echo "Thermal data written to $1$t"
-fi
-
-if [ -f $1$s ]
-then
-	echo "Shear layer data written to $1$s"
-fi
-
-
-
+for t in "${tables[@]}"; do
+	dat=${t% *}; suffix=${t#* }
+	[ -f "$1$suffix" ] && echo "$dat collected in $1$suffix ($(grep -c ^ "$1$suffix") rows)"
+done
+exit 0

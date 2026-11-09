@@ -92,9 +92,7 @@ def evaluate():
         return P, q, s, dq, ds, Pi
 
     # the run's P_2 and the other degrees
-    ru = np.loadtxt('real_flow.field').reshape((2*ut.n, -1))[:,0]
-    iu = np.loadtxt('imag_flow.field').reshape((2*ut.n, -1))[:,0]
-    u2 = upp.expand_reshape_sol(ru + 1j*iu, par.symm)
+    u2 = upp.expand_reshape_sol(ut.load_field('flow').reshape((2*ut.n, -1))[:, 0], par.symm)   # flow.npy or the text files
     lp = list(ut.ell(par.m, par.lmax, par.symm)[0])
     i2 = lp.index(l)
     r = np.linspace(ri if shell else 1e-3, ro, 400)

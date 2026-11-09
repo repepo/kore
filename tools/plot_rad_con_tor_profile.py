@@ -8,11 +8,17 @@ import numpy.polynomial.chebyshev as ch
 sys.path.insert(1,'bin/')
 
 import utils as ut
-import parameters as par
+import utils4pp as upp
+import radial_profiles as rap
+from parameters import par   # FIX (2026-11-08): par is the object in parameters.py
 
 '''
 Computes the radial profile of kinetic energy, internal energy dissipation,
 and kinetic energy dissipation (theta,phi integrated).
+
+FIX (2026-11-08): the kinetic energy is ρ0 |u|² with the anelastic velocity, as spin_doctor's KE (it left out the
+density), compared with KE (it was KE + KP, from an older flow.dat), in a full sphere too; from conductive_IC (9da232d),
+it runs without %pylab.
 
 Use as 
 %run -i tools/plot_rad_con_tor_profile.py sol nR R1 R2
@@ -34,17 +40,19 @@ symm = par.symm
 N    = par.N
 Ek   = par.Ek
 ricb = par.ricb
-rcmb = 1
+rcmb = ut.rcmb
 n    = ut.n
 
 
 # xk are the colocation points, from -1 to 1
 i = np.arange(0,nR)
 xk = np.cos( (i+0.5)*np.pi/nR )
-x1 = ( (R2-R1)*xk + (R1+R2) - (ricb+rcmb) )/(rcmb-ricb)
 # rk are the radial colocation points, from Ra to Rb
-r = 0.5*(rcmb-ricb)*( x1 + 1 ) + ricb
+r = 0.5*(R2-R1)*xk + 0.5*(R1+R2)
+x1 = ut.xcheb(r, ricb, rcmb)   # FIX (2026-11-08): the Chebyshev variable of the shell, or of [-rcmb, rcmb] in a full sphere
 r2 = r**2
+rho0 = np.exp(rap.logrhoX(r, 0))   # NEW (2026-11-08): the background density, 1 in a uniform fluid, and the derivatives
+lho1, lho2, lho3 = [ rap.logrhoX(r, k) for k in (1, 2, 3) ]   # of its log, as utils4pp.cheb2space_pol uses them
 
 Inv_r = ss.diags(1/r,0)
 
@@ -57,17 +65,17 @@ chx = ch.chebvander(x1,par.N-1) # this matrix has nR rows and N-1 cols
 u = np.loadtxt('flow.dat')          # flow data
 if len(u.shape)==1:   
     u = u.reshape((-1,len(u)))
-KP = u[:,0]                     # Poloidal kinetic energy
-KT = u[:,1]                     # Toroidal kinetic energy
-K  = KP + KT
+K  = u[:,0]                     # FIX (2026-11-08): KE, the kinetic energy (KP and KT are columns 2 and 3)
 
 # w = np.loadtxt('eigenvalues.dat')
 # if len(w.shape)==1:   
 #     w = w.reshape((-1,len(w)))
 
 
-reu = np.loadtxt('real_flow.field',usecols=solnum)
-imu = np.loadtxt('imag_flow.field',usecols=solnum)
+_sol = ut.load_field('flow', solnum)   # NEW (2026-11-08): flow.npy or the text files
+_sol = upp.expand_sol(_sol, symm)      # FIX (2026-11-08): N coefficients per l in a full sphere too (one parity is stored)
+reu, imu = _sol.real, _sol.imag
+n = int(_sol.size/2)                   # the poloidal part, N coefficients per l
 
 
 Plj0 = reu[:n]    + 1j*imu[:n]      #  N elements on each l block
@@ -134,9 +142,10 @@ Q0 = Lup * P0 * Inv_r
 Q1 = ( Lup * P1 -   Q0 ) * Inv_r
 Q2 = ( Lup * P2 - 2*Q1 ) * Inv_r
 
-S0 = P1 + P0 * Inv_r
-S1 = P2 + Inv_Lup * Q1
-S2 = P3 + Inv_Lup * Q2
+# FIX (2026-11-08): the consoidal parts of ρ0𝐮 = ∇×∇×(ρ0 P 𝐫), as utils4pp.cheb2space_pol (they left out the density)
+S0 = P1 + P0*(lho1 + 1/r)
+S1 = P2 + P0*(lho2 - 1/r2) + P1*(lho1 + 1/r)
+S2 = P3 + P0*(lho3 + 2/r**3) + 2*P1*(lho2 - 1/r2) + P2*(lho1 + 1/r)
    
 
 ke_pol = np.zeros((int((lmm+1)/2), nR),dtype=complex)
@@ -167,8 +176,8 @@ for k,l in enumerate(lup):
     f0 = 4*np.pi/(2*l+1)    
         
     # kinetic energy
-    f1 = r2*np.absolute( q0 )**2
-    f2 = r2*L*np.absolute( s0 )**2
+    f1 = rho0*r2*np.absolute( q0 )**2
+    f2 = rho0*r2*L*np.absolute( s0 )**2
     ke_pol[k,:] = f0*(f1+f2)
     ke_rad[k,:] = f0*(f1)
     ke_con[k,:] = f0*(f2)
@@ -201,7 +210,7 @@ for k,l in enumerate(lut):
     f0 = 4*np.pi/(2*l+1)
     
     # kinetic energy
-    f1 = (r2)*L*np.absolute(t0)**2
+    f1 = rho0*(r2)*L*np.absolute(t0)**2
     ke_tor[k,:] = f0*f1
     
     # Dint: Internal energy dissipation
@@ -225,9 +234,12 @@ ktor = np.real(sum(ke_tor,0))
 
 totK = K[solnum]
 
-k = np.argsort(r)
-tmp = ke
-print('Estimated kinetic energy:', np.trapz(tmp[k],r[k]))
+# FIX (2026-11-08): Fejér's first rule on the Chebyshev points, exact for polynomials of degree < nR (np.trapz left out the
+# ends, and numpy 2 renamed it)
+th = (i + 0.5)*np.pi/nR
+jw = np.arange(1, nR//2 + 1)
+wk = (2/nR)*(1 - 2*np.sum(np.cos(2*np.outer(th, jw))/(4*jw**2 - 1), axis=1))
+print('Estimated kinetic energy:', 0.5*(R2-R1)*np.sum(wk*ke))
 print('   Actual kinetic energy:', K[solnum])
 
 
@@ -246,7 +258,7 @@ print('   Actual kinetic energy:', K[solnum])
 # plt.show()
 
 
-fig, ax = subplots(nrows=2,ncols=1,figsize=(5,5))
+fig, ax = plt.subplots(nrows=2,ncols=1,figsize=(5,5))
 
 ax[0].plot(r,ke/totK,'--',lw=1,color='gray', label=r'Total kinetic energy')
 ax[0].plot(r,krad/totK, label=r'Radial')
@@ -277,5 +289,5 @@ ax[1].legend()
 
 
 
-tight_layout()
-show()
+plt.tight_layout()
+plt.show()

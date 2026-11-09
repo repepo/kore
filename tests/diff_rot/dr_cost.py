@@ -164,5 +164,5 @@ for case, thermal, tw, ns in CASES:
             f('size', '%d'), f('nnzA', '%.3e')), flush=True)
         stop = r['status'] == 'killed'
         for fn in os.listdir(d):
-            if fn.endswith(('.mtx', '.npz', '.field')):
+            if fn.endswith(('.mtx', '.npz', '.field', '.npy')):
                 os.remove(d + '/' + fn)

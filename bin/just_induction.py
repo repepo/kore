@@ -7,9 +7,10 @@ problem (forcing = 0) or, NEW 2026-11-06, of a forced problem:
 > ./bin/submatrices.py ncpus
 > mpiexec -n ncpus ./bin/assemble.py          # A.npz and B.npz, with the rows of the field
 > ./bin/just_induction.py [lambda]           # A_ind.npz and u_ind.npz
-> mpiexec -n ncpus ./bin/solve_ind.py         # real_magnetic.field, imag_magnetic.field
+> mpiexec -n ncpus ./bin/solve_ind.py         # magnetic.npy (or real_magnetic.field, imag_magnetic.field)
 
-The flow is read from real_flow.field and imag_flow.field, one solution per column, as another run wrote them with the same
+The flow is read from flow.npy or real_flow.field and imag_flow.field (NEW 2026-11-08, utils.load_field), one solution per
+column, as another run wrote them with the same
 N, lmax, m, symm and ricb: a forced run of the flow alone (magnetic = 0), for instance. For a flow with the time dependence
 exp(lambda t) the rows of the field in A and B (sections f, g, and fic, gic of a conducting inner core, fm, gm of a
 resolved mantle) give
@@ -38,10 +39,12 @@ if not (par.magnetic and par.hydro):
              'in A.npz')
 lam = complex(sys.argv[1]) if len(sys.argv) > 1 else 1j*par.forcing_frequency
 
-u = np.loadtxt('real_flow.field') + 1j*np.loadtxt('imag_flow.field')
+u = ut.load_field('flow')   # NEW (2026-11-08): flow.npy or the text files
+if u is None:
+    sys.exit('just_induction.py: no flow (flow.npy, or real_flow.field and imag_flow.field) in this folder')
 if u.size % (2*ut.n):
-    sys.exit('real_flow.field has %d values, not a multiple of the 2 n = %d of this run: the flow must come from a run with '
-             'the same N, lmax, m, symm and ricb' % (u.size, 2*ut.n))
+    sys.exit('the flow has %d values, not a multiple of the 2 n = %d of this run: it must come from a run with the same N, '
+             'lmax, m, symm and ricb' % (u.size, 2*ut.n))
 u = u.reshape((2*ut.n, -1))
 
 A = ut.load_csr('A.npz')

@@ -6,11 +6,25 @@ import scipy.fftpack as sft
 import scipy.interpolate as si
 import numpy.polynomial.chebyshev as ch
 import numpy as np
+import sys
 from parameters import par
+
+# NEW (2026-11-08, from conductive_IC): eigenmode tracking (track_target = 1, params_default.py): the target rtau, itau of an
+# eigenvalue problem is the eigenvalue that spin_doctor.py wrote to the file track_target after the previous run (of a ramp,
+# tools/ramp.sh, or of the drag's frequency, tools/topo_iterate.sh). It is read here, as every script of a run imports this
+# module, before radial_profiles (whose import runs background.check), and not in set_scales, which parameters.py calls
+# before it sets its own values.
+if par.track_target == 1 and par.forcing == 0:
+    import os as _os
+    if not _os.path.isfile('track_target'):
+        sys.exit('track_target = 1 needs the file track_target with the target rtau itau, in %s (spin_doctor.py writes it '
+                 'after each run; track_target = 2 writes the first one)' % _os.getcwd())
+    par.rtau, par.itau = [float(v) for v in np.loadtxt('track_target').ravel()[:2]]
+
 import radial_profiles as rap
 import angular
 import background_field as bf
-import sys
+import field_io   # NEW (2026-11-08): the solution files
 
 '''
 A library of various function definitions and utilities
@@ -869,3 +883,33 @@ def load_npz_mmap(filename):
             out[info.filename[:-4]] = np.memmap(filename, dtype=dtype, mode='r', shape=shape,
                                                 offset=f.tell(), order='F' if fortran else 'C')
     return out
+
+
+
+# NEW (2026-11-08, from conductive_IC 1c9ba86): the solution files, one solution per column, binary (name.npy, field_format =
+# 'npy', the default) or text (real_name.field and imag_name.field, field_format = 'text'): field_io.py, which tests and tools
+# use without the parameters of a run. The fields are 'flow', 'thermal', 'composition', 'magnetic', 'magnetic_ic',
+# 'magnetic_mantle' and 'rotdyn' (solve.py, solve_ind.py).
+FIELD_FORMATS = field_io.FORMATS
+
+
+def save_field(name, blk):
+    '''writes the solutions blk (one per column) of field name in the format par.field_format, and deletes the files of the
+    other format, so that load_field never reads a stale one (field_io.save)'''
+    if par.field_format not in FIELD_FORMATS:
+        sys.exit('field_format = %r: %s' % (par.field_format, ' or '.join(repr(f) for f in FIELD_FORMATS)))
+    field_io.save(name, blk, par.field_format)
+
+
+def field_exists(name):
+    '''whether the solution files of field name exist, in either format'''
+    return field_io.exists(name)
+
+
+def load_field(name, cols=None):
+    '''
+    The solutions of field name as a complex array, one solution per column, from name.npy or else from the text files;
+    only the column cols if it is an int (a 1-d array), or the columns cols if it is a list. None if neither format's files
+    exist (field_io.load).
+    '''
+    return field_io.load(name, cols)

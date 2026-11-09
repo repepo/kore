@@ -118,11 +118,10 @@ import os, sys, json; sys.path.insert(0, 'bin')
 import numpy as np
 from parameters import par
 import utils as ut
-def load(d, name):
-    f = os.path.join(d, 'real_%s.field' % name)
-    if not os.path.exists(f):
-        return None
-    return (np.loadtxt(f) + 1j*np.loadtxt(os.path.join(d, 'imag_%s.field' % name))).reshape(-1)
+import field_io
+def load(d, name):   # name.npy or the text files
+    x = field_io.load(name, folder=d)
+    return None if x is None else x.reshape(-1)
 x = ut.lifted_flow()[:2*ut.n]
 u8 = load('.', 'flow')
 other = sys.argv[1]
@@ -232,7 +231,7 @@ import numpy as np
 from parameters import par
 import utils as ut
 import utils4pp as upp
-x = (np.loadtxt('real_flow.field') + 1j*np.loadtxt('imag_flow.field')).reshape(-1)
+x = ut.load_field('flow').reshape(-1)
 P, T = upp.expand_reshape_sol(x, par.symm)
 k = list(ut.ell(par.m, par.lmax, par.symm)[1]).index(1)
 a, w, G = par.forcing_amplitude_cmb, par.forcing_frequency, par.Gaspard

@@ -40,9 +40,10 @@ A failure is one of two kinds:
 | symptom | what to try |
 | --- | --- |
 | the mode you want is not among the solutions | put the target on it (`units.set_target(par, omega=..., sigma=...)`, in nHz) and raise `nev`; to look for growing modes, put the target at σ > 0 |
+| along a series of runs, the mode drifts away from a fixed target, or the solver jumps to another | let each run aim at the eigenvalue the run before found: `track_target = 1` ([Following a mode](output.md#following-a-mode)) |
 | in a full sphere without viscosity or with `ThermaD` = 0, modes that move when N or lmax is raised, some of them growing, many with irreg₀ near 1 | spurious modes ([Regularity at the centre](numerical-method.md#regularity-at-the-centre)): target the mode you want and keep the modes that stay put in N and lmax |
 | the run stops with `INFOG(1)=-9` or `-20` | MUMPS's workspace is too small (with -20, its reception buffer): `st_mat_mumps_icntl_14` = 50, then 100–200, or more (extra workspace, in %; the free core nutation of `tests/centrifugal/fcn.sh`, with a field and a conducting inner core, runs with 1000). On several ranks MUMPS does not repeat a run exactly, so a run near the limit can fail once and pass the next time |
-| a forced run returns NaN | the same failure, but PETSc does not stop a forced solve: it returns Inf. Set `mat_mumps_icntl_14` = 100; `mat_mumps_icntl_4` = 1 prints MUMPS's error codes |
+| a forced run returns NaN | the same failure, but PETSc does not stop a forced solve: it returns Inf (`solve.py` then says so and writes the file `no_conv_solution`). Set `mat_mumps_icntl_14` = 100, or turn on BLR (below), which needs less memory; `mat_mumps_icntl_4` = 1 prints MUMPS's error codes |
 | the run stops with `INFOG(1)=-13`, or is killed | out of memory: see below |
 | some modes of a cluster of nearly equal ones, such as the r-mode ladders of a radiative interior, fail `spin_doctor` or move by 0.05–0.5 nHz between identical runs | MUMPS on several ranks is not bitwise reproducible, and nearly parallel eigenvectors amplify its round-off. `st_mat_mumps_cntl_1` = 0.1 (the pivot threshold, default 0.01) makes such failures about half as frequent, at the same cost. Repeat the run and compare each mode with the repeat or with runs at nearby parameters: `spin_doctor` misses some of these failures |
 | two modes at an avoided crossing split differently from run to run (by up to 0.03 nHz) | their eigenvectors are nearly parallel, but the sum of the pair is stable (to 0.002 nHz): quote the sum, or a trend over several runs |
@@ -72,7 +73,9 @@ What to try, cheapest first:
    about 1e-3 nHz. Part of the drop is done after the Ruiz prescaling, and only when that is on.
 3. **Block low-rank factors (BLR)**: `st_mat_mumps_icntl_35` = 2, with the tolerance `st_mat_mumps_cntl_7` = 1e-14 (set
    by default): about 13 % less memory and up to twice as fast. Check the residuals: a tolerance of 1e-12 broke the
-   eigenvectors at N ≥ 640, and with `ThermaD` = 0 BLR and Ruiz together degraded them.
+   eigenvectors at N ≥ 640, and with `ThermaD` = 0 BLR and Ruiz together degraded them. A forced run takes them as
+   `mat_mumps_icntl_35` and `mat_mumps_cntl_7`: a forced run at N 992 and Ek = 1e-9 (with `mat_mumps_cntl_1` = 1e-8
+   as well) then took half the time and 165 GB instead of 200 GB, where without them it returned NaN.
 4. **Out of core**: `st_mat_mumps_icntl_22` = 1 writes the factors to disk, for about half the memory and a slower run.
    Put them on a real disk with `st_mat_mumps_ooc_tmpdir`, not on a `/tmp` held in memory. A full-sphere run at
    N 1024 needed about 90 GB on 8 ranks this way.

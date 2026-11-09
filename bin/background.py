@@ -89,6 +89,15 @@ def check():
                  'composition')
     if par.forcing != 0:   # NEW (2026-11-08)
         check_forcing()
+    if par.field_format not in ('npy', 'text'):   # NEW (2026-11-08): the solution files (field_io.py)
+        sys.exit("field_format %r: 'npy' (flow.npy, ...) or 'text' (real_flow.field, imag_flow.field, ...)" % (par.field_format,))
+    if par.track_target not in (0, 1, 2):   # NEW (2026-11-08): eigenmode tracking (spin_doctor.py, utils.py)
+        sys.exit('track_target %r: 0 (no tracking), 1 (aim at the eigenvalue in the file track_target and write the nearest '
+                 'one back) or 2 (write the eigenvalue of the smallest KP/KT to track_target)' % (par.track_target,))
+    if par.track_target and par.forcing != 0:
+        sys.exit('track_target follows an eigenvalue: it needs an eigenvalue problem (forcing = 0)')
+    if par.track_target == 2 and not par.hydro:
+        sys.exit('track_target = 2 picks the solution by its kinetic energies (smallest KP/KT): it needs the flow (hydro = 1)')
     if par.N % 2:   # NEW (2026-11-04): the operators of submatrices.py assume an even N (an odd one stopped there with a scipy error)
         sys.exit('N must be even, got N = %r (the operators assume it, in a shell too; a full sphere uses N/2 Chebyshev '
                  'polynomials of each parity)' % (par.N,))

@@ -1,75 +1,45 @@
 #!/bin/bash
+# Parameter ramp: runs the problem of bin/parameters.py once for each value of one parameter. Run from the top folder of
+# kore (the one that holds bin/):
+#
+#     tools/ramp.sh name value1 value2 ...     e.g.   tools/ramp.sh ViscosD 1e-4 7e-5 5e-5
+#     tools/ramp.sh                            runs the case as it is, once
+#
+# NEW (2026-11-08, from conductive_IC): each value (any python expression) is written into bin/parameters.py as
+# par.name = value by tools/setpar.py, in place of the statements that set par.name, or at the end of the file if none
+# does (after set_scales and the other values, so that it holds). Every step runs submatrices.py, assemble.py, solve.py and spin_doctor.py, which
+# appends the step's results to the .dat files (docs/output.md; tools/get_data.py reads them). With par.track_target = 1
+# each step aims at the eigenvalue that the step before wrote to the file track_target (the first step at the one the
+# file holds: par.track_target = 2, or one written by hand). The ramp stops when a step finds no eigenvalue, or a forced
+# step gives NaN (solve.py then writes the file no_conv_solution).
+# The environment variables ncpus (the processes of submatrices.py and spin_doctor.py, default par.ncpus), ranks (the MPI
+# ranks of assemble.py and solve.py, default ncpus), opts (more solver options, docs/solver.md) and MPIEXEC (default
+# mpiexec) can be set.
+
+set -e
+[ -f bin/parameters.py ] || { echo "tools/ramp.sh: run it from the top folder of kore (bin/parameters.py)"; exit 1; }
+ncpus=${ncpus:-$(python3 -c "import sys; sys.path.insert(0, 'bin'); from parameters import par; print(par.ncpus)" | tail -n 1)}
+ranks=${ranks:-$ncpus}
+mpi=${MPIEXEC:-mpiexec}
 
 
-ncpus=24
+name=$1
+shift || true
+values=("$@")
+[ -z "$name" ] && values=("")   # no ramp: one run of the case as it is
 
-
-#./bin/submatrices.py $ncpus >> out00
-#mpiexec -n $ncpus ./bin/assemble.py >> out0
-
-
-# For forced problems use:
-
-#export opts='-ksp_type preonly -pc_type lu'
- 
-#export opts='-ksp_type gmres -pc_type lu -pc_factor_mat_solver_type mumps -ksp_monitor_true_residual -ksp_monitor -ksp_converged_reason'
-
-#export opts='-ksp_type preonly -pc_type lu -pc_factor_mat_solver_type superlu_dist -ksp_monitor -ksp_converged_reason'
-
-#export opts='-ksp_type preonly -pc_type lu -pc_factor_mat_solver_type superlu_dist -ksp_monitor -ksp_converged_reason -mat_superlu_dist_iterrefine 1 -mat_superlu_dist_colperm PARMETIS -mat_superlu_dist_parsymbfact 1'
-
-
-# For eigenvalue problems use:
-
-#export opts='-st_type cayley -eps_error_relative ::ascii_info_detail'
-
-#export opts='-st_type sinvert -eps_error_relative ::ascii_info_detail'
-
-export opts='-st_type sinvert -eps_error_relative ::ascii_info_detail -eps_balance twoside -pc_factor_mat_solver_type mumps -mat_mumps_icntl_14 1000'
-
-#export opts='-st_type sinvert -eps_error_relative ::ascii_info_detail -pc_factor_mat_solver_type mumps -mat_mumps_icntl_14 1000 -mat_mumps_icntl_23 8000'
-
-#export opts='-st_type sinvert -st_ksp_type preonly -st_pc_type lu -st_pc_factor_mat_solver_type superlu_dist'
-
-#export opts='-st_type sinvert -st_ksp_type preonly -st_pc_type lu -st_pc_factor_mat_solver_type superlu_dist'
-
-#export opts='-st_type sinvert -st_ksp_type preonly -st_pc_type lu -eps_error_relative ::ascii_info_detail -st_pc_factor_mat_solver_type superlu_dist -mat_superlu_dist_iterrefine 1 -mat_superlu_dist_colperm PARMETIS -mat_superlu_dist_parsymbfact 1'
-
-
-for i in $(seq 1 1 1)
-
-do
-	#sed -i 's,^\(itau[ ]*=\).*,\1'$i',g' bin/parameters.py
-	#sed -i 's,^\(Ek[ ]*=\).*,\1'10**$i',g' bin/parameters.py
-	#sed -i 's,^\(mu[ ]*=\).*,\1'$i',g' bin/parameters.py
-	#sed -i 's,^\(delta[ ]*=\).*,\1'$i',g' bin/parameters.py
-	#sed -i 's,^\(ricb[ ]*=\).*,\1'$i',g' bin/parameters.py
-	
-	#echo $i
-
-	./submatrices.py $ncpus >> out00
-	#mpiexec -n $ncpus ./bin/assemble.py >> out0
-	#mpiexec -n $ncpus ./bin/solve.py $opts >> out1
-
-	#for k in $(seq 0 0.002 0.008)
-	for k in $(seq 1 1 1)
-	do
-		#rnd1=$(echo | awk -v seed=$RANDOM 'srand(seed) {print (2*rand()-1)}')
-		#echo $rnd1
-		#rnd2=$(echo | awk -v seed=$RANDOM 'srand(seed) {print (2*rand()-1)}')
-		#echo $rnd2 
-		#sed -i 's,^\(Em[ ]*=\).*,\1'10**$k',g' bin/parameters.py
-		#sed -i 's,^\(itau[ ]*=\).*,\1'$k',g' bin/parameters.py
-		#sed -i 's,^\(rnd1[ ]*=\).*,\1'$rnd1',g' bin/parameters.py
-		#sed -i 's,^\(rnd2[ ]*=\).*,\1'$rnd2',g' bin/parameters.py	
-		sed -i 's,^\(delta[ ]*=\).*,\1'$k',g' bin/parameters.py
-		#sed -i 's,^\(ricb[ ]*=\).*,\1'$k',g' bin/parameters.py
-		#sed -i 's,^\(Le[ ]*=\).*,\1'10**$k',g' bin/parameters.py
-
-		#echo Solving...
-		#./submatrices.py $ncpus >> out00
-		mpiexec -n $ncpus ./bin/assemble.py >> out0
-		mpiexec -n $ncpus ./bin/solve.py $opts >> out1
-	done
-
+for value in "${values[@]}"; do
+    if [ -n "$name" ]; then
+        python3 tools/setpar.py "$name" "$value"
+        echo "---------------- par.$name = $value"
+    fi
+    python3 ./bin/submatrices.py $ncpus
+    $mpi -n $ranks python3 ./bin/assemble.py
+    rm -f no_conv_solution
+    $mpi -n $ranks python3 ./bin/solve.py $opts
+    if [ -f no_conv_solution ]; then
+        echo "No solution (no eigenvalue converged, or NaN)${name:+ at par.$name = $value}: ramp stopped"
+        exit 1
+    fi
+    python3 ./bin/spin_doctor.py $ncpus
 done

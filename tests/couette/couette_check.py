@@ -123,12 +123,8 @@ import utils as ut
 import radial_profiles as rap
 import utils4pp as upp
 kind = sys.argv[1]
-def load(name):
-    try:
-        x = np.load(name + '.npy')
-    except OSError:
-        x = np.loadtxt('real_%s.field' % name) + 1j*np.loadtxt('imag_%s.field' % name)
-    return x.reshape(x.shape[0], -1)[:, 0]
+def load(name):   # the first solution, from name.npy or the text files
+    return ut.load_field(name, 0)
 Plj, Tlj = upp.expand_reshape_sol(load('flow'), par.symm)
 lp, lt = ut.ell(par.m, par.lmax, par.symm)[:2]
 ri, wo, wi = par.ricb, par.forcing_amplitude_cmb, par.forcing_amplitude_icb
@@ -148,8 +144,7 @@ scale = abs(exact).max()
 others = max(abs(Plj).max(), abs(np.delete(Tlj, list(lt).index(1), axis=0)).max() if len(lt) > 1 else 0.)
 out = {'T1': abs(T1 - exact).max()/scale, 'others': others/scale}
 if par.magnetic:
-    b = [abs(load(n)).max() for n in ('magnetic', 'magnetic_ic', 'magnetic_mantle')
-         if os.path.exists('real_%s.field' % n) or os.path.exists(n + '.npy')]
+    b = [abs(load(n)).max() for n in ('magnetic', 'magnetic_ic', 'magnetic_mantle') if ut.field_exists(n)]
     out['b'] = max(b)/scale
 print(json.dumps(out))
 '''

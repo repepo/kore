@@ -11,7 +11,7 @@
 # It will generate a series of directories with names
 # beginning with 'somename' and ending with a numerical string
 # corresponding to the value assigned to the variable 'var'
-# in the parameters.py file.
+# (par.var) in the parameters.py file.
 #
 # Example:
 #
@@ -56,7 +56,9 @@ do
 	#cp ~/kore/underflow.py .
 
 	# modify variables
-	sed -i 's,^\('$var'[ ]*=\).*,\1'$value',' bin/parameters.py	
+	# FIX (2026-11-08, from conductive_IC): parameters.py sets par.var, so the old sed of 'var = ...' changed nothing;
+	# tools/setpar.py writes par.var = value in place of the lines that set it, or as a new last line
+	python3 tools/setpar.py $var "$value"
 
 	sed -i 's,^\(#PBS -N \).*,\1'$folder',' tools/subramp.sh
 	

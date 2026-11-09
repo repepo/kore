@@ -115,7 +115,7 @@ residuals:
 ```
 
 The first one is the mode of the paper. It writes the eigenvalues to `eigenvalues0.dat` and the eigenvectors to
-`real_flow.field` and `imag_flow.field`. The residuals printed here only say that the solver converged. They do not
+`flow.npy` ([Output files](output.md#solution-files)). The residuals printed here only say that the solver converged. They do not
 say whether the resolution is sufficient.
 
 ## 6. Check the solution

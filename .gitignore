@@ -4,6 +4,7 @@
 !bin/jsoc_hmi_2010_2026.npz
 !tests/bgflow/cic_bgflow_*.npz
 *.field
+*.npy
 *.dat
 *__pycache__*
 .pytest_cache

@@ -2,7 +2,7 @@
 '''
 ebal.py: matrix-level (spectral) energy and entropy budgets for kore anelastic (LBR) runs.
 
-Run from a kore run directory (needs the submatrices.npz of submatrices.py, bin/, and the *.field files
+Run from a kore run directory (needs the submatrices.npz of submatrices.py, bin/, and the solution files
 for the per-mode budget):
 
     python3 ebal.py            # per-mode budget + operator symmetry tests
@@ -399,13 +399,13 @@ def random_fields(rng, kmax, decay=0.):
 # ---------------------------------------------------------------------------------------- drivers
 def budget_modes():
     t0 = time.time()
-    ru = np.loadtxt('real_flow.field').reshape((2*ut.n, -1))
-    iu = np.loadtxt('imag_flow.field').reshape((2*ut.n, -1))
+    u_all = ut.load_field('flow').reshape((2*ut.n, -1))   # flow.npy or the text files
+    ru, iu = u_all.real.copy(), u_all.imag.copy()
     eig = np.loadtxt('eigenvalues0.dat').reshape((-1, 2))
     nev = ru.shape[1]
     if par.thermal:
-        rt = np.loadtxt('real_thermal.field').reshape((ut.n, -1))
-        it = np.loadtxt('imag_thermal.field').reshape((ut.n, -1))
+        t_all = ut.load_field('thermal').reshape((ut.n, -1))
+        rt, it = t_all.real.copy(), t_all.imag.copy()
     flow = np.loadtxt('flow.dat') if os.path.isfile('flow.dat') else None
     thd  = np.loadtxt('thermal.dat') if (par.thermal and os.path.isfile('thermal.dat')) else None
     print('fields loaded in %.1f s' % (time.time() - t0))

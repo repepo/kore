@@ -11,7 +11,7 @@ import cmasher as cmr
 sys.path.insert(1,'bin/')
 
 import utils as ut
-import parameters as par
+from parameters import par   # FIX (2026-11-08): par is the object in parameters.py
 
 from matplotlib import rc
 rc('text', usetex=True) 
@@ -64,8 +64,8 @@ chx = ch.chebvander(x,par.N-1) # this matrix has nR rows and N-1 cols
 phi = 0. # select meridional cut
 #--------------------------------
 
-a = np.loadtxt('real_flow.field',usecols=solnum)
-b = np.loadtxt('imag_flow.field',usecols=solnum)
+_sol = ut.load_field('flow', solnum)   # NEW (2026-11-08): flow.npy or the text files
+a, b = _sol.real, _sol.imag
 
 if m > 0 :
 	symm1 = symm

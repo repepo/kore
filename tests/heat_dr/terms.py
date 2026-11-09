@@ -1,5 +1,6 @@
 # size of each term of the complex energy and entropy balances, per eigenmode
-# modes from real/imag_*.field + eigenvalues0.dat (kore output), or from eig.npz (csolve.py) if present
+# modes from the solution files (flow.npy, ... or real/imag_*.field) + eigenvalues0.dat (kore output), or from eig.npz
+# (csolve.py) if present
 import sys, os, numpy as np
 sys.argv = ['ebal.py', 'none']
 exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ebal.py')).read().split("if __name__")[0])
@@ -11,10 +12,10 @@ if os.path.isfile('eig.npz'):
         S = sol[2*ut.n:3*ut.n].reshape((nl, N1)) if par.thermal else None
         return P, T, S
 else:
-    ru = np.loadtxt('real_flow.field').reshape((2*ut.n, -1)); iu = np.loadtxt('imag_flow.field').reshape((2*ut.n, -1))
+    u_all = ut.load_field('flow').reshape((2*ut.n, -1)); ru, iu = u_all.real.copy(), u_all.imag.copy()
     eig = np.loadtxt('eigenvalues0.dat').reshape((-1, 2)); nev = ru.shape[1]; lams = eig[:, 0] + 1j*eig[:, 1]
     if par.thermal:
-        rt = np.loadtxt('real_thermal.field').reshape((ut.n, -1)); it = np.loadtxt('imag_thermal.field').reshape((ut.n, -1))
+        t_all = ut.load_field('thermal').reshape((ut.n, -1)); rt, it = t_all.real.copy(), t_all.imag.copy()
     def mode(i):
         sol = ru[:, i] + 1j*iu[:, i]
         P = sol[:ut.n].reshape((nl, N1)); T = sol[ut.n:2*ut.n].reshape((nl, N1))

@@ -49,18 +49,11 @@ class kmode:
         chx = ch.chebvander(x0,par.N-1) # this matrix has nr rows and N-1 cols
         
         # read fields from disk
-        if field == 'u':
-            a0 = np.loadtxt('real_flow.field',usecols=solnum)
-            b0 = np.loadtxt('imag_flow.field',usecols=solnum)
-            vsymm = par.symm
-        elif field == 'b':
-            a0 = np.loadtxt('real_magnetic.field',usecols=solnum)
-            b0 = np.loadtxt('imag_magnetic.field',usecols=solnum)
-            vsymm = ut.bsymm
-        elif field == 't':
-            a0 = np.loadtxt('real_thermal.field',usecols=solnum)
-            b0 = np.loadtxt('imag_thermal.field',usecols=solnum)
-            vsymm = par.symm
+        # NEW (2026-11-08): from flow.npy, ... or real_flow.field, imag_flow.field, ... (utils.load_field)
+        name = {'u': 'flow', 'b': 'magnetic', 't': 'thermal'}[field]
+        sol = ut.load_field(name, solnum)
+        a0, b0 = sol.real, sol.imag
+        vsymm = ut.bsymm if field == 'b' else par.symm
         
         # expand solution in case ricb=0, multiply by complex phase factor 
         aib = upp.expand_sol(a0+1j*b0,vsymm)*(np.cos(phase)+1j*np.sin(phase))

@@ -214,8 +214,8 @@ par.forcing_amplitude_cmb = 1.0   # a
 
 and run the same four steps. `spin_doctor` prints residσ $8\times10^{-15}$, and P_in = Dν = 0.019314: the power of the
 body force on the wave-like tide, `flow.dat` column 42, which the viscosity dissipates. The walls do no work, since
-$\mathbf u'$ is at rest there, and $D_\nu$ is the dissipation of $\mathbf u'$ alone. The flow in `real_flow.field` and
-`imag_flow.field` is $\mathbf u'$; add $\mathbf u_e$ for the whole tide.
+$\mathbf u'$ is at rest there, and $D_\nu$ is the dissipation of $\mathbf u'$ alone. The flow in `flow.npy` is
+$\mathbf u'$; add $\mathbf u_e$ for the whole tide.
 
 ## The eccentricity tide of Enceladus (forcing 2)
 

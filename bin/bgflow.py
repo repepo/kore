@@ -704,8 +704,13 @@ def scalar_grid(K, rr, x):
 # ======================================================================================================================
 
 def _read_field(name):
-    '''the real and imaginary parts of the first solution in real_<name>.field, imag_<name>.field (solve.py)'''
-    return np.loadtxt('real_%s.field' % name, ndmin=2)[:, 0] + 1j*np.loadtxt('imag_%s.field' % name, ndmin=2)[:, 0]
+    '''the first solution of field name that solve.py wrote: name.npy or real_name.field, imag_name.field (utils.load_field)'''
+    import utils as ut
+    x = ut.load_field(name, 0)
+    if x is None:
+        sys.exit('bgflow.py: no solution of the %s in this folder (%s.npy, or the text files): run the forcing-12 problem first'
+                 % (name, name))
+    return x
 
 def _full_series(blk, ls):
     '''the rows of Chebyshev coefficients of a block of kore's solution (len(ls) rows of N1), on the full N in a full sphere

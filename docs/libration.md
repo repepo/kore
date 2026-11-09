@@ -98,7 +98,7 @@ proportional to $A$, and every power to $A^2$.
 
 ## Reading the output
 
-The flow is in `real_flow.field` and `imag_flow.field`, relative to the frame of the run: the mean frame for forcing 7,
+The flow is in `flow.npy`, relative to the frame of the run: the mean frame for forcing 7,
 the mantle for forcing 8. For `m = 0` the angular velocity of the fluid relative to that frame is
 
 $$

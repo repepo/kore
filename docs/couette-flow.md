@@ -88,7 +88,7 @@ regions, and it narrows as Ek decreases. Near the axis kore gives 0.484 at Ek $1
 
 ## Reading the output
 
-The flow is in `real_flow.field`; the imaginary part is 0, since the flow is steady. For `m = 0` the angular velocity
+The flow is in `flow.npy` ([Output files](output.md#solution-files)); its imaginary part is 0, since the flow is steady. For `m = 0` the angular velocity
 is
 
 $$
