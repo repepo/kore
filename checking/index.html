@@ -1426,8 +1426,7 @@
 
 <h1 id="modifying-kore">Modifying kore</h1>
 <p>After changing kore, two questions matter: do the runs that worked before still give the same results, and is the new
-part right? kore has a tool for each. Everything below runs from the repository, on one machine; most checks take
-seconds to minutes.</p>
+part right? kore has a tool for each. Everything below runs from the repository; most checks take seconds to minutes.</p>
 <h2 id="which-check-when">Which check, when</h2>
 <table>
 <thead>
@@ -1435,7 +1434,6 @@ seconds to minutes.</p>
 <th>check</th>
 <th>what it tells you</th>
 <th>when to run it</th>
-<th>time (laptop)</th>
 </tr>
 </thead>
 <tbody>
@@ -1443,159 +1441,133 @@ seconds to minutes.</p>
 <td>residuals of <code>spin_doctor.py</code></td>
 <td>each solution satisfies its energy and entropy budgets</td>
 <td>every run (<a href="../solver/#first-check-the-solution">Solver</a>)</td>
-<td>part of the run</td>
 </tr>
 <tr>
 <td><code>bin/ru_insane.py</code></td>
-<td>the operators have the symmetries of the equations (inertia Hermitian and positive, Coriolis anti-Hermitian, viscous force Hermitian and negative, ...)</td>
-<td>after <code>submatrices.py</code>, when an operator changed</td>
-<td>seconds</td>
+<td>the operators have the symmetries of the equations</td>
+<td>after <code>submatrices.py</code>, when an operator changed (seconds)</td>
 </tr>
 <tr>
 <td><code>tests/ci</code> (<code>pytest -v</code>)</td>
-<td>the spin-over mode of the smooth Sun is exact</td>
-<td>before every push; GitHub runs it on every push</td>
-<td>6 s</td>
+<td>a quick end-to-end test; GitHub runs it on every push</td>
+<td>before every push (seconds)</td>
 </tr>
 <tr>
 <td><code>tests/diff_rot/regress.sh</code></td>
-<td>the matrices A and B of 26 small runs are unchanged (<a href="#are-existing-runs-unchanged">below</a>)</td>
-<td>after any change that should not alter results</td>
-<td>3 min</td>
-</tr>
-<tr>
-<td><code>tests/heat_dr/run_all.sh</code></td>
-<td>the rows of the heat equation and of the differential rotation, their assembly and their budgets</td>
-<td>after a change of the background, the rotation or the heat equation</td>
-<td>6 min</td>
-</tr>
-<tr>
-<td><code>tests/magnetic/run_all.sh</code></td>
-<td>the magnetic rows against a symbolic derivation, the budgets, published results</td>
-<td>after a change of the magnetic field</td>
-<td>31 min on 4 cores, its checks side by side (two hours on one)</td>
-</tr>
-<tr>
-<td><code>tests/centrifugal/run_all.sh</code></td>
-<td>the terms of the centrifugal deformation, with and without a field, against a symbolic derivation and quadratures, the rows of the insulating walls against the exact matching, its eigenvalues against exact results (among them the modes of a spheroid, inviscid and damped), the budgets</td>
-<td>after a change of the deformation, of the inertia, the Coriolis force, the viscous force, the heat equation, the Lorentz force, the induction, the diffusion, the differential rotation or the wall rows, or of <code>spin_doctor</code>'s budgets</td>
-<td>55 min of processor time, its checks side by side: 25 min on 4 cores; <code>SKIP_SOLVE=1</code> without PETSc</td>
-</tr>
-<tr>
-<td><code>tests/rsf/run_all.sh</code></td>
-<td>the random Reynolds-stress forcing (forcing 11)</td>
-<td>after a change of the forcing</td>
-<td>3 min</td>
-</tr>
-<tr>
-<td><code>tests/tidal/run_all.sh</code></td>
-<td>the tidal forcing (forcing 14) against an exact solution, and the energy budget with the work at the walls and the viscous dissipation</td>
-<td>after a change of a boundary forcing, of <code>spin_doctor</code>'s budgets or of a force</td>
-<td>2 min on 4 ranks</td>
-</tr>
-<tr>
-<td><code>tests/decay/run_all.sh</code></td>
-<td>the free decay of the field and of the entropy without the flow (<code>hydro = 0</code>) against exact rates, and the kinematic induction (<code>just_induction.py</code>, <code>solve_ind.py</code>)</td>
-<td>after a change of the magnetic diffusion, the magnetic walls, a conducting inner core, the heat diffusion or the layout of the unknowns</td>
-<td>30 s</td>
-</tr>
-<tr>
-<td><code>tests/forcing/run_all.sh</code></td>
-<td>the wall values that the boundary forcings 2, 6, 7, 9, 10 and 12 impose, read back from the solution</td>
-<td>after a change of a boundary forcing or of the wall rows</td>
-<td>40 s</td>
-</tr>
-<tr>
-<td><code>tests/couette/run_all.sh</code></td>
-<td>the steady rotation of the walls (forcing 12): the solutions of the <code>conductive_IC</code> branch, the exact flow without rotation, the rigid rotations with conducting solids, the budgets of the flows that the walls drive (also the libration and the thermal forcing), the stops</td>
-<td>after a change of a boundary forcing, of the magnetic walls or the inner core, or of <code>spin_doctor</code>'s budgets</td>
-<td>1.5 min on 2 ranks</td>
-</tr>
-<tr>
-<td><code>tests/cic_forcings/run_all.sh</code></td>
-<td>the tides and the libration of the <code>conductive_IC</code> branch (forcings 1, 2 and 8): their solutions there, the libration in the frame of the mantle against that of the walls (forcing 7), the wave-like tide against the rigid rotations that solve it in a full sphere, the budgets with the power of the body force, the stops</td>
-<td>after a change of a boundary or body forcing, of the right-hand side of a forced run, or of <code>spin_doctor</code>'s budgets</td>
-<td>2.5 min on 2 ranks</td>
-</tr>
-<tr>
-<td><code>tests/twa/run_all.sh</code></td>
-<td>the thin conducting layer (<code>'TWA'</code>): exact free-decay rates, eigenvalues of the <code>conductive_IC</code> branch, the slipping fluid, solids that turn with the fluid, the budgets</td>
-<td>after a change of the magnetic walls, of the induction by the flow or the rotation, or of <code>spin_doctor</code>'s magnetic budgets</td>
-<td>1 min</td>
-</tr>
-<tr>
-<td><code>tests/mantle/run_all.sh</code></td>
-<td>the resolved conducting mantle (<code>'resolved'</code>): exact free-decay rates, eigenvalues of the <code>conductive_IC</code> branch, the limits of a thin layer and of a vanishing conductivity, a layer that turns with the fluid, the budgets with a variable density, the kinematic induction</td>
-<td>after a change of the magnetic walls, of the magnetic diffusion, of the induction by the flow or the rotation, of the layout of the unknowns, or of <code>spin_doctor</code>'s magnetic budgets</td>
-<td>1.5 min</td>
-</tr>
-<tr>
-<td><code>tests/forced_field/run_all.sh</code></td>
-<td>the forced runs with a field: the solutions of the <code>conductive_IC</code> branch, the Bessel inner core against the Chebyshev one, the forced matrix against the eigenproblem's, the budgets where the forcing moves the walls with the solids at rest and deforming, a thin resolved mantle against the thin layer, the kinematic induction, the stops</td>
-<td>after a change of the forced assembly, a boundary forcing, the magnetic walls or the inner core, or <code>spin_doctor</code>'s budgets</td>
-<td>3 min</td>
-</tr>
-<tr>
-<td><code>tests/inner_core/run_all.sh</code></td>
-<td>the field of a dipole at the centre and a fluid slipping along a conducting inner core: eigenvalues and forced solutions of the <code>conductive_IC</code> branch, the Bessel inner core against the Chebyshev one, the budgets with a variable density, a rigid rotation offset, the stops (among them a toroidal field's current sheet in an inviscid run)</td>
-<td>after a change of the magnetic walls or the inner core, of the induction by the flow, or of <code>spin_doctor</code>'s magnetic budgets</td>
-<td>1.5 min</td>
-</tr>
-<tr>
-<td><code>tests/sheet/run_all.sh</code></td>
-<td>the push of the background field's current sheet on a fluid slipping along a wall: smoothed sheets converge to it (toroidal and poloidal, either wall, zero radial stress, permeable thin layers, a variable density, a drag, other normalisations, <span class="arithmatex">\(m\)</span> = 2 with <code>symm = -1</code>), no axial angular momentum with <span class="arithmatex">\(m\)</span> = 0, the budgets, the stops, the walls' conditions against the solver's rows</td>
-<td>after a change of the stress-free rows, of the magnetic walls or of the background field</td>
-<td>11 min of runs on 2 ranks, side by side: 8 min on 4 cores shared with two other suites</td>
-</tr>
-<tr>
-<td><code>tests/rotdyn/run_all.sh</code></td>
-<td>the rotating solids (<code>rotdyn = 1</code>) and resid𝐋: exact decoupled and heavy solids, eigenvalues and torques of the <code>conductive_IC</code> branch, the conservation of angular momentum and energy with a variable density, the equatorial angular momentum, the stops</td>
-<td>after a change of the walls, of the viscous or magnetic stresses, of the layout of the unknowns, or of <code>spin_doctor</code>'s budgets</td>
-<td>1 min</td>
-</tr>
-<tr>
-<td><code>tests/drag/run_all.sh</code></td>
-<td>the drag at the outer wall (<code>kappa_cmb</code>, <code>topo_drag</code>): eigenvalues and torques of the <code>conductive_IC</code> branch, the conservation of angular momentum and energy with the rotating solids, the limits of a weak and of a stiff drag, a rigid differential rotation, the frequencies of the drag of the topography, the power through the wall, the stops</td>
-<td>after a change of the walls, of the viscous stress, of the rotating solids, or of <code>spin_doctor</code>'s budgets</td>
-<td>2 min</td>
-</tr>
-<tr>
-<td><code>tests/composition/run_all.sh</code></td>
-<td>the composition (<code>compositional = 1</code>) and the <code>'two zone'</code> gradient: eigenvalues of the <code>conductive_IC</code> branch, the composition alone against the entropy alone in every setup (a full sphere, a differential rotation, the deformed body, a field with conducting solids, the rotating solids, the drag, a forced run, diffusivities that vary, the free decay), both scalars against one, the budgets with a variable density, <code>ru_insane.py</code>, the stops</td>
-<td>after a change of the heat equation or of the composition's, of the buoyancy, of the layout of the unknowns, or of <code>spin_doctor</code>'s budgets</td>
-<td>3.5 min on 4 cores</td>
-</tr>
-<tr>
-<td><code>tests/bgflow/run_all.sh</code></td>
-<td>the background flow (<code>bgflow = 1</code>): the files that the writer of the <code>conductive_IC</code> branch writes, linear and nonlinear, and its eigenvalues on them; a toroidal background against the differential rotation; a rigid rotation against the turning frame (a full sphere, an inviscid one, without diffusion, a field with conducting solids and thin walls); the rows against a grid; the budgets and the background's powers against an independent computation, eigenvalue and forced problems; the stops</td>
-<td>after a change of the background flow, of an advection term or the induction, of the layout of the unknowns, or of <code>spin_doctor</code>'s budgets</td>
-<td>8.5 min of runs on 2 ranks, side by side: 9 min on 4 cores shared with two other suites</td>
+<td>the matrices of a set of small runs are unchanged (<a href="#are-existing-runs-unchanged">below</a>)</td>
+<td>after any change that should not alter results (minutes)</td>
 </tr>
 <tr>
 <td><code>tests/rsf/regress_solve.sh</code></td>
-<td>eigenvalues, fields and forced solutions bitwise equal to an older copy</td>
+<td>eigenvalues, fields and forced solutions are unchanged</td>
 <td>after a change of <code>solve.py</code></td>
-<td>15 s</td>
+</tr>
+<tr>
+<td><code>tests/heat_dr/run_all.sh</code></td>
+<td>the heat equation and the differential rotation</td>
+<td>after a change of the background, the rotation or the heat equation</td>
+</tr>
+<tr>
+<td><code>tests/magnetic/run_all.sh</code></td>
+<td>the magnetic field: the terms against a symbolic derivation, the budgets, published results</td>
+<td>after a change of the magnetic field (the longest suite)</td>
+</tr>
+<tr>
+<td><code>tests/centrifugal/run_all.sh</code></td>
+<td>the centrifugal deformation, against exact results</td>
+<td>after a change of the deformation or of any term it modifies (long; <code>SKIP_SOLVE=1</code> runs it without PETSc)</td>
+</tr>
+<tr>
+<td><code>tests/rsf/run_all.sh</code></td>
+<td>the convective forcing (forcing 11)</td>
+<td>after a change of that forcing</td>
+</tr>
+<tr>
+<td><code>tests/tidal/run_all.sh</code></td>
+<td>the tidal forcing (forcing 14) against an exact solution, and its energy budget</td>
+<td>after a change of a boundary forcing, of a force or of <code>spin_doctor</code>'s budgets</td>
+</tr>
+<tr>
+<td><code>tests/forcing/run_all.sh</code></td>
+<td>the wall values imposed by the boundary forcings</td>
+<td>after a change of a boundary forcing or of the wall conditions</td>
+</tr>
+<tr>
+<td><code>tests/couette/run_all.sh</code></td>
+<td>the rotating walls (forcing 12), libration and thermal forcing</td>
+<td>after a change of a boundary forcing or of the magnetic walls</td>
+</tr>
+<tr>
+<td><code>tests/cic_forcings/run_all.sh</code></td>
+<td>the wave-like tide, the Enceladus tide and libration in the mantle frame (forcings 1, 2, 8)</td>
+<td>after a change of a forcing or of <code>spin_doctor</code>'s budgets</td>
+</tr>
+<tr>
+<td><code>tests/decay/run_all.sh</code></td>
+<td>free decay without the flow, against exact rates; kinematic induction</td>
+<td>after a change of the magnetic or thermal diffusion or the magnetic walls</td>
+</tr>
+<tr>
+<td><code>tests/twa/run_all.sh</code></td>
+<td>the thin conducting layer</td>
+<td>after a change of the magnetic walls</td>
+</tr>
+<tr>
+<td><code>tests/mantle/run_all.sh</code></td>
+<td>the resolved conducting mantle</td>
+<td>after a change of the magnetic walls or diffusion</td>
+</tr>
+<tr>
+<td><code>tests/forced_field/run_all.sh</code></td>
+<td>forced runs with a magnetic field</td>
+<td>after a change of the forced assembly or the magnetic walls</td>
+</tr>
+<tr>
+<td><code>tests/inner_core/run_all.sh</code></td>
+<td>the dipole field and a fluid slipping along a conducting inner core</td>
+<td>after a change of the magnetic walls or the inner core</td>
+</tr>
+<tr>
+<td><code>tests/sheet/run_all.sh</code></td>
+<td>the current sheet of the background field at a slipping wall</td>
+<td>after a change of the stress-free conditions, the magnetic walls or the background field</td>
+</tr>
+<tr>
+<td><code>tests/rotdyn/run_all.sh</code></td>
+<td>the rotating solids and the angular momentum check</td>
+<td>after a change of the walls or of the stresses on them</td>
+</tr>
+<tr>
+<td><code>tests/drag/run_all.sh</code></td>
+<td>the drag at the outer wall</td>
+<td>after a change of the walls, the viscous stress or the rotating solids</td>
+</tr>
+<tr>
+<td><code>tests/composition/run_all.sh</code></td>
+<td>the composition</td>
+<td>after a change of the heat or composition equations or the buoyancy</td>
+</tr>
+<tr>
+<td><code>tests/bgflow/run_all.sh</code></td>
+<td>the background flow</td>
+<td>after a change of the background flow or of an advection term</td>
 </tr>
 <tr>
 <td><code>tests/tools/run_all.sh</code></td>
-<td>the solution files in their two formats, the parameter file, the tracking of a mode, the tools that run and collect series of runs (<code>ramp.sh</code>, <code>setpar.py</code>, <code>topo_iterate.sh</code>, <code>reap.sh</code>, <code>get_data.py</code>), with their stops, and the plotting tools that read the solutions</td>
-<td>after a change of the files a run writes or reads, of <code>spin_doctor</code>'s tables, or of the tools</td>
-<td>2 min on one rank</td>
+<td>the output files, the parameter file, mode tracking and the tools for series of runs</td>
+<td>after a change of the files a run writes or reads, or of the tools</td>
 </tr>
 </tbody>
 </table>
-<p><code>tests/diff_rot</code>, <code>tests/heat_dr</code>, <code>tests/magnetic</code>, <code>tests/centrifugal</code>, <code>tests/rsf</code>, <code>tests/tidal</code>, <code>tests/forcing</code>, <code>tests/couette</code>, <code>tests/cic_forcings</code>, <code>tests/decay</code>, <code>tests/twa</code>, <code>tests/mantle</code>, <code>tests/forced_field</code>, <code>tests/inner_core</code>, <code>tests/sheet</code>, <code>tests/rotdyn</code>, <code>tests/drag</code>, <code>tests/composition</code>, <code>tests/bgflow</code> and <code>tests/tools</code> each have a README
-that lists their scripts and what each one checks; the CI test explains itself in <code>tests/ci/test_spinover.py</code>.</p>
+<p>Each folder in <code>tests/</code> has a README that lists its scripts and what each one checks.</p>
 <p><strong>All the suites at once.</strong> <code>tests/run_suites.sh</code> runs every suite side by side, the longest first, each in its own
-folder and with its own log, and ends with the suites that failed. With <code>OLD_KORE</code> set to an older copy it also runs
-the two regression scripts:</p>
+folder with its own log, and ends with the list of suites that failed. With <code>OLD_KORE</code> set to an older copy it also
+runs the two regression scripts:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nv">OLD_KORE</span><span class="o">=</span>/tmp/kore_old<span class="w"> </span>tests/run_suites.sh<span class="w"> </span>/tmp/suites<span class="w">                    </span><span class="c1"># all of them, logs in /tmp/suites/logs</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>tests/run_suites.sh<span class="w"> </span>/tmp/suites<span class="w"> </span>decay<span class="w"> </span>forcing<span class="w"> </span>ci<span class="w">                         </span><span class="c1"># only these</span>
 </span></code></pre></div>
-<p>To share the work between two machines, give each its own list of suites. The magnetic and centrifugal suites run
-their own checks side by side, and the sheet, bgflow and heat_dr suites build their runs side by side: <code>MAG_NPAR</code>,
-<code>CF_NPAR</code> and <code>OTHER_NPAR</code> set how many at a time, and <code>JOBS</code> how many suites.</p>
+<p>You can split the suites between machines by giving each machine its own list. <code>JOBS</code> sets how many suites run at a
+time, and <code>MAG_NPAR</code>, <code>CF_NPAR</code> and <code>OTHER_NPAR</code> how many runs some suites start in parallel.</p>
 <h2 id="are-existing-runs-unchanged">Are existing runs unchanged?</h2>
 <p><code>tests/diff_rot/regress.sh</code> builds the same small runs twice, once with an older copy of kore and once with yours, and
 compares their matrices A and B entry by entry. Equal matrices give equal eigenvalues and eigenvectors, so this is the
@@ -1608,7 +1580,6 @@ off by default. It needs numpy, scipy and mpi4py, not PETSc.</p>
 <p><strong>2. Run the comparison</strong> from the repository (the second argument is where the runs are built):</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>tests/diff_rot/regress.sh<span class="w"> </span>/tmp/kore_old<span class="w"> </span>/tmp/regress_runs
 </span></code></pre></div>
-<p>Each run is built as <code>o_NAME</code> with the older copy and <code>n_NAME</code> with yours, each with its logs.</p>
 <p><strong>3. Read the verdicts.</strong> Each run prints one line:</p>
 <table>
 <thead>
@@ -1624,7 +1595,7 @@ off by default. It needs numpy, scipy and mpi4py, not PETSc.</p>
 </tr>
 <tr>
 <td><code>round-off</code></td>
-<td>they differ only in the last bits: every entry by less than 1e-13 of the largest entry of its row</td>
+<td>they differ only in the last bits</td>
 </tr>
 <tr>
 <td><code>skipped</code></td>
@@ -1636,41 +1607,25 @@ off by default. It needs numpy, scipy and mpi4py, not PETSc.</p>
 </tr>
 </tbody>
 </table>
-<p>The last line is <code>regression ok</code> with the number of runs compared, or <code>regression FAIL</code>. A change that is meant to alter
-results, such as a bug fix, fails in the runs it concerns; check that it fails only there.</p>
-<p><strong>What it covers.</strong> The runs are small (N 48, lmax 20 or 21, one rank, a few seconds each) and start from structure
-'Wu 2005' with stratification 'top hat', the heat equation, an inner core at 0.35, m 1 and a 'conical' rotation. They
-change one aspect each:</p>
-<ul>
-<li>15 runs of the differential rotation and the heat equation: every rotation profile, <code>thermal_wind</code> 0 to 3, a full
-  sphere, <code>ThermaD</code> = 0, a solar structure, <code>Gaspard</code> 3, m 2, and no rotation at all;</li>
-<li>11 runs of the magnetic field: the poloidal fields 'axial', 'FDM', 'Luo_S2', 'confined', 'general' and 'ferraro', a
-  toroidal field, a conducting inner core, a full sphere, the induction by the rotation, the wound field,
-  <code>diff_rot_type = 'ferraro'</code>, and the couplings of <code>mag_couplings = 'algebra'</code>.</li>
-</ul>
-<p>Older copies spell some parameters differently; the script gives each one the names it reads, and skips the magnetic
-runs whose code an older copy does not have.</p>
-<p><strong>What it does not cover.</strong> It compares matrices, so a change in <code>solve.py</code> or <code>spin_doctor.py</code> passes unseen. For
-<code>solve.py</code>, <code>tests/rsf/regress_solve.sh</code> compares the solutions of an eigenvalue run and a forced run with an older copy
-in the same way.</p>
+<p>The last line is <code>regression ok</code> or <code>regression FAIL</code>. A change that is meant to alter results, such as a bug fix,
+fails in the runs it concerns; check that it fails only there.</p>
+<p><strong>What it covers.</strong> The runs are small and cover the differential rotation profiles, the thermal wind options, a full
+sphere, the solar structure, and the main magnetic field options. It compares matrices, so changes in <code>solve.py</code> or
+<code>spin_doctor.py</code> are not seen: use <code>tests/rsf/regress_solve.sh</code> for <code>solve.py</code>.</p>
 <p><strong>Adding a run.</strong> Append a name and its parameter changes to the lists at the top of the script: <code>names</code> and <code>cfgs</code> for
-a run of the rotation, <code>mnames</code>, <code>mcfgs</code> and <code>mneeds</code> (the code the run needs, so that older copies without it skip it)
-for a magnetic run.</p>
+a run of the rotation, <code>mnames</code>, <code>mcfgs</code> and <code>mneeds</code> for a magnetic run.</p>
 <h2 id="is-the-new-part-right">Is the new part right?</h2>
 <p>There is no single tool for this, but the same few checks catch most mistakes:</p>
 <ul>
-<li><strong>Budgets.</strong> Solve a few modes and look at the residuals of <code>spin_doctor.py</code>: a new term that is wrong usually breaks
-  the energy or entropy budget, since <code>spin_doctor</code> computes each term from the fields, independently of the matrices.</li>
+<li><strong>Budgets.</strong> Solve a few modes and look at the residuals of <code>spin_doctor.py</code>. A wrong new term usually breaks the
+  energy or entropy budget, since <code>spin_doctor</code> computes each term from the solution, independently of the matrices.</li>
 <li><strong>Symmetries.</strong> <code>bin/ru_insane.py</code> checks every block of the operators against its expected symmetry.</li>
-<li><strong>Limits and exact cases.</strong> A new term should vanish, or reduce to a known one, in some limit. Two existing checks
-  show the idea: a uniform rotation offset must give the eigenvalues of a faster uniform rotation, shifted in frequency
-  (the CI test, <code>tests/magnetic/rigid_check.py</code>), and 'Wu 2005' must tend to 'Boussinesq' as its density contrast
-  vanishes (<code>tests/magnetic/continuity.py</code>).</li>
-<li><strong>Published results.</strong> <a href="../benchmarks/">Benchmarks</a> lists the ones kore reproduces, with their set-ups.</li>
-<li><strong>Combinations.</strong> A new feature meets every other: run it with each, and stop at startup, with a message, where a pair
-  is not covered. Then add its row and column to <a href="../compatibility/">Combining features</a>: the cells are in
-  <code>tools/compat_tables.py</code>, which writes the tables of that page (<code>--check</code> says whether the page is up to date), and a
-  cell is marked as checked only where a suite compares a run of the pair with theory, another computation or a budget.</li>
+<li><strong>Limits and exact cases.</strong> A new term should vanish, or reduce to a known one, in some limit. For example, a uniform
+  rotation offset must give the eigenvalues of a faster uniform rotation, shifted in frequency.</li>
+<li><strong>Published results.</strong> <a href="../benchmarks/">Benchmarks</a> lists those kore reproduces.</li>
+<li><strong>Combinations.</strong> Run a new feature with each of the others, and make kore stop with a message where a combination
+  is not supported. Then add its row and column to <a href="../compatibility/">Combining features</a>: the cells are in
+  <code>tools/compat_tables.py</code>, which writes the tables of that page (<code>--check</code> says whether the page is up to date).</li>
 </ul>
 
 

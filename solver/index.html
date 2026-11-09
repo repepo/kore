@@ -1454,32 +1454,31 @@
 
 
 <h1 id="solver-bad-solutions-and-memory">Solver: bad solutions and memory</h1>
-<p><code>solve.py</code> finds the eigenvalues λ of <span class="arithmatex">\(A x = \lambda B x\)</span> nearest a target τ = <code>rtau</code> + i <code>itau</code>
-(shift-and-invert): each iteration solves a system with <span class="arithmatex">\(A - \tau B\)</span>, which MUMPS factors once (a sparse LU). That
-factorization takes almost all the memory and causes most of the numerical trouble. This page lists what to try when a
-solution looks wrong or a run runs out of memory.</p>
+<p><code>solve.py</code> finds the eigenvalues nearest a target τ = <code>rtau</code> + i <code>itau</code>. At each iteration it solves a linear system
+with the matrix <span class="arithmatex">\(A - \tau B\)</span>, which the MUMPS library factors once (a sparse LU factorization). This factorization uses
+almost all the memory, and causes most numerical trouble. This page lists what to try when a solution looks wrong or a
+run runs out of memory.</p>
 <p>Solver options go in <code>par.petsc_opts</code> in <code>parameters.py</code>, for example</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">par</span><span class="o">.</span><span class="n">petsc_opts</span><span class="p">[</span><span class="s1">'st_mat_mumps_cntl_1'</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.1</span>
 </span></code></pre></div>
-<p>Eigenvalue runs read the <code>eps_</code> and <code>st_</code> keys, forced runs (<code>forcing</code> &gt; 0) the <code>ksp_</code>, <code>pc_</code> and <code>mat_</code> keys, so the
-same MUMPS option is <code>st_mat_mumps_...</code> in one and <code>mat_mumps_...</code> in the other. An option given on the command line
-(<code>mpiexec -n 4 ./bin/solve.py -st_mat_mumps_icntl_14 100</code>) wins over <code>parameters.py</code>. The defaults, with notes, are in
-<code>bin/params_default.py</code>.</p>
+<p>Eigenvalue runs read the options that start with <code>eps_</code> and <code>st_</code>, forced runs (<code>forcing</code> &gt; 0) those that start with
+<code>ksp_</code>, <code>pc_</code> and <code>mat_</code>. So the same MUMPS option is <code>st_mat_mumps_...</code> in an eigenvalue run and <code>mat_mumps_...</code> in a
+forced run. An option given on the command line (<code>mpiexec -n 4 ./bin/solve.py -st_mat_mumps_icntl_14 100</code>) overrides
+<code>parameters.py</code>. The defaults, with comments, are in <code>bin/params_default.py</code>.</p>
 <h2 id="first-check-the-solution">First, check the solution</h2>
-<p>Judge each solution with <code>spin_doctor.py</code>, not with the residual that <code>solve.py</code> prints: with the Ruiz prescaling (on by
-default) that one is for the rescaled problem. Accept a mode when its energy and entropy residuals (residσ, resid𝑠)
-are below 1e-5 and its ℓ-convergence is below 1e-4. In a full sphere, also check irreg₀: above 1e-6 the mode is not
-smooth at the centre (<a href="../numerical-method/#regularity-at-the-centre">Regularity at the centre</a>). The same residuals judge
-a forced run, where σ = 0. When the walls
-move radially (forcing 14), residσ also tests the pressure at the walls, which needs more radial resolution than the rest
-of the budget (<a href="../tidal-forcing/#interpreting-the-response">Tidal forcing</a>). A forced flow that is a rigid rotation, as
-forcing 12 gives with both walls at one rate, has no budget to judge: every term is zero, and its residuals compare
-round-off with round-off (<a href="../couette-flow/#reading-the-output">Spherical Couette flow</a>).</p>
+<p>Judge each solution with <code>spin_doctor.py</code>, not with the residual that <code>solve.py</code> prints (which refers to a rescaled
+problem). Accept a mode when:</p>
+<ul>
+<li>its energy residual residσ (and the entropy residual resid𝑠, with <code>thermal = 1</code>) is below 1e-5;</li>
+<li>its ℓ-convergence is below 1e-4;</li>
+<li>in a full sphere, irreg₀ is below 1e-6 (<a href="../numerical-method/#regularity-at-the-centre">Regularity at the centre</a>).</li>
+</ul>
+<p>The same checks apply to forced runs. A forced flow that is a rigid rotation has no budget to judge: its residuals
+compare round-off errors and can be ignored (<a href="../couette-flow/#reading-the-output">Spherical Couette flow</a>).</p>
 <p>A failure is one of two kinds:</p>
 <ul>
-<li><strong>Resolution.</strong> It fails every time, and the eigenvalue moves when N or lmax is raised. Raise N for the residuals and
-  lmax for the ℓ-convergence. In a full sphere (ricb = 0) N counts both parities, so it needs about twice the N of a
-  shell. N must be even.</li>
+<li><strong>Resolution.</strong> It fails every time, and the eigenvalue moves when <code>N</code> or <code>lmax</code> is raised. Raise <code>N</code> for the
+  residuals and <code>lmax</code> for the ℓ-convergence. A full sphere needs about twice the <code>N</code> of a shell. <code>N</code> must be even.</li>
 <li><strong>Solver.</strong> It comes and goes between identical runs, or between runs with nearly the same parameters. See below.</li>
 </ul>
 <h2 id="bad-solutions">Bad solutions</h2>
@@ -1493,155 +1492,70 @@ round-off with round-off (<a href="../couette-flow/#reading-the-output">Spherica
 <tbody>
 <tr>
 <td>the mode you want is not among the solutions</td>
-<td>put the target on it (<code>units.set_target(par, omega=..., sigma=...)</code>, in nHz) and raise <code>nev</code>; to look for growing modes, put the target at σ &gt; 0</td>
+<td>put the target on it (in nHz: <code>units.set_target(par, omega=..., sigma=...)</code>) and raise <code>nev</code>; to look for growing modes, put the target at a positive growth rate</td>
 </tr>
 <tr>
-<td>along a series of runs, the mode drifts away from a fixed target, or the solver jumps to another</td>
-<td>let each run aim at the eigenvalue the run before found: <code>track_target = 1</code> (<a href="../output/#following-a-mode">Following a mode</a>)</td>
+<td>along a series of runs, the mode drifts away from a fixed target, or the solver jumps to another mode</td>
+<td>let each run aim at the eigenvalue the previous run found: <code>track_target = 1</code> (<a href="../output/#following-a-mode">Following a mode</a>)</td>
 </tr>
 <tr>
-<td>in a full sphere without viscosity or with <code>ThermaD</code> = 0, modes that move when N or lmax is raised, some of them growing, many with irreg₀ near 1</td>
-<td>spurious modes (<a href="../numerical-method/#regularity-at-the-centre">Regularity at the centre</a>): target the mode you want and keep the modes that stay put in N and lmax</td>
+<td>in a full sphere without viscosity or without thermal diffusion, modes that move when <code>N</code> or <code>lmax</code> is raised, many with irreg₀ near 1</td>
+<td>spurious modes (<a href="../numerical-method/#regularity-at-the-centre">Regularity at the centre</a>): target the mode you want and keep only the modes that stay put</td>
 </tr>
 <tr>
 <td>the run stops with <code>INFOG(1)=-9</code> or <code>-20</code></td>
-<td>MUMPS's workspace is too small (with -20, its reception buffer): <code>st_mat_mumps_icntl_14</code> = 50, then 100–200, or more (extra workspace, in %; the free core nutation of <code>tests/centrifugal/fcn.sh</code>, with a field and a conducting inner core, runs with 1000). On several ranks MUMPS does not repeat a run exactly, so a run near the limit can fail once and pass the next time</td>
+<td>MUMPS's workspace is too small: set <code>st_mat_mumps_icntl_14</code> to 50, then 100–200 or more (extra workspace, in %). A run near the limit can fail once and pass the next time</td>
 </tr>
 <tr>
 <td>a forced run returns NaN</td>
-<td>the same failure, but PETSc does not stop a forced solve: it returns Inf (<code>solve.py</code> then says so and writes the file <code>no_conv_solution</code>). Set <code>mat_mumps_icntl_14</code> = 100, or turn on BLR (below), which needs less memory; <code>mat_mumps_icntl_4</code> = 1 prints MUMPS's error codes</td>
+<td>the same problem: set <code>mat_mumps_icntl_14</code> = 100, or turn on BLR (below); <code>mat_mumps_icntl_4</code> = 1 prints MUMPS's error codes</td>
 </tr>
 <tr>
 <td>the run stops with <code>INFOG(1)=-13</code>, or is killed</td>
 <td>out of memory: see below</td>
 </tr>
 <tr>
-<td>some modes of a cluster of nearly equal ones, such as the r-mode ladders of a radiative interior, fail <code>spin_doctor</code> or move by 0.05–0.5 nHz between identical runs</td>
-<td>MUMPS on several ranks is not bitwise reproducible, and nearly parallel eigenvectors amplify its round-off. <code>st_mat_mumps_cntl_1</code> = 0.1 (the pivot threshold, default 0.01) makes such failures about half as frequent, at the same cost. Repeat the run and compare each mode with the repeat or with runs at nearby parameters: <code>spin_doctor</code> misses some of these failures</td>
+<td>in a cluster of nearly equal modes, some fail <code>spin_doctor</code> or move slightly between identical runs</td>
+<td>round-off in MUMPS on several processes is amplified for nearly parallel eigenvectors. <code>st_mat_mumps_cntl_1</code> = 0.1 (default 0.01) makes this less frequent. Repeat the run and compare each mode with the repeat or with nearby parameters</td>
 </tr>
 <tr>
-<td>two modes at an avoided crossing split differently from run to run (by up to 0.03 nHz)</td>
-<td>their eigenvectors are nearly parallel, but the sum of the pair is stable (to 0.002 nHz): quote the sum, or a trend over several runs</td>
+<td>two modes at an avoided crossing split differently from run to run</td>
+<td>their sum is stable: quote the sum, or a trend over several runs</td>
 </tr>
 </tbody>
 </table>
-<p>A larger <code>maxit</code>, <code>eps_balance twoside</code> or a higher N or lmax do not help with such clusters. Repeated runs on one rank
-are bitwise identical, so a small case can be debugged on one rank.</p>
-<p>Leave MUMPS's own scaling on (<code>st_mat_mumps_icntl_8</code> = 0 fails), and do not lower the pivot threshold (<code>cntl_1</code> = 1e-8
-cost accuracy in thermal runs). <code>par.prescale</code> = None (the default) turns the Ruiz prescaling on, except in
-thermal runs with <code>ThermaD</code> = 0, where it hurts; 0 or 1 force it.</p>
+<p>Runs on a single process are exactly reproducible, so a small case can be debugged on one process.</p>
+<p>Leave MUMPS's own scaling on, and do not lower the pivot threshold <code>cntl_1</code> below its default. <code>par.prescale = None</code>
+(the default) chooses the matrix rescaling automatically.</p>
 <h2 id="out-of-memory">Out of memory</h2>
-<p>As a reference, the smooth Sun example (<code>examples/smooth_sun</code>: m 8, N 640, lmax 79, rotation to degree 4 with
-<code>thermal_wind</code> 2, <code>drop_tol</code> 1e-14) peaks at 21 GB on 4 ranks.</p>
-<p>For the smooth Sun the memory grows roughly as <span class="arithmatex">\(N^2 (l_{\max} - m + 1)^{1.35}\)</span> (within about 15 %, more above
-N ≈ 1800). Wider angular couplings add to it: rotation to degree 12 needed 2.2 times the memory of
-degree 4 at the same N, and <code>thermal_wind</code> 2 about 1.7 times <code>thermal_wind</code> 1 (<a href="#the-cost-of-a-differential-rotation">below</a>,
-how this grows with the degree).</p>
+<p>The memory grows roughly as <span class="arithmatex">\(N^2\)</span> times <code>lmax</code> to a power somewhat above 1, and with the width of the couplings
+(differential rotation, the thermal wind, the magnetic field). As a reference, the smooth Sun example
+(<code>examples/smooth_sun</code>) needs about 21 GB.</p>
 <p>What to try, cheapest first:</p>
 <ol>
-<li><strong>Resolution.</strong> Use the smallest N and lmax that pass the checks above. The eigenvalue usually converges at a lower
-   N than the residuals need.</li>
-<li><strong><code>drop_tol</code> = 1e-14</strong> removes negligible matrix entries: about 30 % less memory, with the eigenvalues unchanged to
-   about 1e-3 nHz. Part of the drop is done after the Ruiz prescaling, and only when that is on.</li>
-<li><strong>Block low-rank factors (BLR)</strong>: <code>st_mat_mumps_icntl_35</code> = 2, with the tolerance <code>st_mat_mumps_cntl_7</code> = 1e-14 (set
-   by default): about 13 % less memory and up to twice as fast. Check the residuals: a tolerance of 1e-12 broke the
-   eigenvectors at N ≥ 640, and with <code>ThermaD</code> = 0 BLR and Ruiz together degraded them. A forced run takes them as
-   <code>mat_mumps_icntl_35</code> and <code>mat_mumps_cntl_7</code>: a forced run at N 992 and Ek = 1e-9 (with <code>mat_mumps_cntl_1</code> = 1e-8
-   as well) then took half the time and 165 GB instead of 200 GB, where without them it returned NaN.</li>
-<li><strong>Out of core</strong>: <code>st_mat_mumps_icntl_22</code> = 1 writes the factors to disk, for about half the memory and a slower run.
-   Put them on a real disk with <code>st_mat_mumps_ooc_tmpdir</code>, not on a <code>/tmp</code> held in memory. A full-sphere run at
-   N 1024 needed about 90 GB on 8 ranks this way.</li>
-<li><strong>More ranks</strong> spread the factors: less memory per rank, a little more in total. <code>lmax − m + 1</code> must be a multiple
-   of 2 <code>ncpus</code>.</li>
+<li><strong>Resolution.</strong> Use the smallest <code>N</code> and <code>lmax</code> that pass the checks above. The eigenvalue usually converges at a
+   lower <code>N</code> than the residuals need.</li>
+<li><strong><code>drop_tol = 1e-14</code></strong> removes negligible matrix entries: about 30 % less memory, with essentially unchanged
+   eigenvalues.</li>
+<li><strong>Block low-rank factors (BLR):</strong> <code>st_mat_mumps_icntl_35 = 2</code> (for forced runs <code>mat_mumps_icntl_35 = 2</code>), with the
+   tolerance <code>st_mat_mumps_cntl_7 = 1e-14</code> (the default). Somewhat less memory, and often faster. Check the residuals:
+   a larger tolerance can spoil the eigenvectors.</li>
+<li><strong>Out of core:</strong> <code>st_mat_mumps_icntl_22 = 1</code> writes the factors to disk, for about half the memory and a slower run.
+   Point <code>st_mat_mumps_ooc_tmpdir</code> to a real disk, not to a <code>/tmp</code> held in memory.</li>
+<li><strong>More processes</strong> spread the factors: less memory per process, a little more in total. <code>lmax − m + 1</code> must be a
+   multiple of twice <code>ncpus</code>.</li>
 </ol>
-<p><code>icntl_14</code> adds workspace, so set it only as high as <code>INFOG(1)=-9</code> requires.</p>
+<p>Set <code>icntl_14</code> only as high as <code>INFOG(1)=-9</code> requires, since it adds memory.</p>
 <h2 id="the-cost-of-a-differential-rotation">The cost of a differential rotation</h2>
-<p>A rotation profile with Legendre terms up to degree n couples each degree l of the solution to the degrees l − n to
-l + n (to l ± (n + 1) between its poloidal and toroidal parts). With the heat equation the thermal wind reaches
-further: to l ± (n + 2) with <code>thermal_wind</code> 1, and to l ± (2n + 2) with <code>thermal_wind</code> 2. The matrices get wider, and
-the factorization in <code>solve.py</code> needs more memory and time. <code>tests/diff_rot/dr_cost.py</code> measures this on one problem:
-N 96, lmax 97, m 2, structure 'Wu 2005' with stratification 'top hat', ricb 0.35, and a 'user' rotation of degree n,
-on 4 ranks of a laptop (Apple M4 Pro). The peak memory and the time of <code>solve.py</code>:</p>
-<table>
-<thead>
-<tr>
-<th>degree n</th>
-<th>momentum only</th>
-<th>with the heat equation, <code>thermal_wind</code> 1</th>
-<th><code>thermal_wind</code> 2</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>no rotation</td>
-<td>0.9 GB, 1 s</td>
-<td>1.0 GB, 2 s</td>
-<td>1.0 GB, 2 s</td>
-</tr>
-<tr>
-<td>0</td>
-<td>0.9 GB, 1 s</td>
-<td>1.4 GB, 2 s</td>
-<td>1.4 GB, 2 s</td>
-</tr>
-<tr>
-<td>2</td>
-<td>1.3 GB, 2 s</td>
-<td>2.3 GB, 4 s</td>
-<td>2.8 GB, 6 s</td>
-</tr>
-<tr>
-<td>4</td>
-<td>1.8 GB, 3 s</td>
-<td>3.1 GB, 7 s</td>
-<td>4.3 GB, 12 s</td>
-</tr>
-<tr>
-<td>8</td>
-<td>2.5 GB, 5 s</td>
-<td>5.0 GB, 17 s</td>
-<td>6.9 GB, 29 s</td>
-</tr>
-<tr>
-<td>12</td>
-<td>3.5 GB, 9 s</td>
-<td>7.1 GB, 31 s</td>
-<td>8.5 GB, 35 s</td>
-</tr>
-<tr>
-<td>16</td>
-<td>4.6 GB, 13 s</td>
-<td>8.4 GB, 49 s</td>
-<td>11.9 GB, 67 s</td>
-</tr>
-<tr>
-<td>24</td>
-<td>6.1 GB, 43 s</td>
-<td>10.4 GB, 63 s</td>
-<td></td>
-</tr>
-<tr>
-<td>32</td>
-<td>8.1 GB, 29 s</td>
-<td>15.3 GB, 95 s</td>
-<td></td>
-</tr>
-</tbody>
-</table>
-<p>How to read it:</p>
-<ul>
-<li>The memory grows about linearly with n, here by 0.2 GB per degree with the momentum equation alone and 0.4 GB per
-  degree with the heat equation. At n 32 the solve needs 9 times the memory of the run without rotation, and 15 times
-  with the heat equation.</li>
-<li><code>thermal_wind</code> 2 costs a little less than <code>thermal_wind</code> 1 at twice the degree: its heat rows reach about twice as far.</li>
-<li><code>submatrices.py</code> (2 s) and <code>assemble.py</code> (7 s at most) stay small: the factorization is what grows.</li>
-<li>The time is noisier than the memory, since it also depends on how many iterations the eigensolver needs: in the
-  momentum case n 24 took longer than n 32.</li>
-</ul>
-<p>The memory also grows with N and lmax (above). To plan a large run, run the script at its resolution:</p>
+<p>A rotation profile with Legendre terms up to degree n couples each harmonic degree of the solution to its neighbours up
+to n away. With the heat equation the thermal wind reaches further (about twice as far with <code>thermal_wind = 2</code>). The
+matrices get wider, and the factorization needs more memory and time. The memory grows roughly linearly with n: at
+degree 32 it can be ten times that of the same run without differential rotation.</p>
+<p>To plan a large run, measure the cost at your resolution with</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python3<span class="w"> </span>tests/diff_rot/dr_cost.py<span class="w"> </span>WORKDIR<span class="w"> </span>N<span class="w"> </span>LMAX<span class="w"> </span>NCPUS<span class="w"> </span><span class="o">[</span>LIMIT_GB<span class="o">]</span>
 </span></code></pre></div>
-<p>It kills any step that goes above <code>LIMIT_GB</code> (default 30) and then skips the larger degrees of that case.</p>
+<p>It runs a test problem for increasing degrees n, stops any step above <code>LIMIT_GB</code> (default 30) and skips the larger
+degrees.</p>
 
 
 

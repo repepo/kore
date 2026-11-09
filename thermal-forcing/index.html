@@ -1432,26 +1432,27 @@
 
 
 <h1 id="thermal-forcing">Thermal forcing</h1>
-<p>Forcing 13 heats the inner wall unevenly in latitude, as the Sun heats the ground of a planet more at the equator
-than at the poles. kore returns the flow that this heating drives: an overturning circulation in the meridional
-plane, like the Hadley cells of the Earth's atmosphere, and the zonal winds that the Coriolis force makes of it.</p>
+<p>Forcing 13 heats the inner wall unevenly in latitude, the way the Sun heats the ground of a planet more at the equator
+than at the poles. kore returns the flow that this heating drives: an overturning circulation in the meridional plane,
+like the Hadley cells of the Earth's atmosphere, together with the zonal winds that the Coriolis force makes of it.</p>
 <h2 id="what-it-imposes">What it imposes</h2>
-<p>The entropy at the inner wall <span class="arithmatex">\(r = r_i\)</span> is</p>
+<p>The entropy at the inner wall varies with latitude as</p>
 <div class="arithmatex">\[
 s(r_i, \theta) = A\thinspace P_2(\cos\theta), \qquad P_2(\cos\theta) = \tfrac12 (3\cos^2\theta - 1),
 \]</div>
-<p>with <span class="arithmatex">\(A\)</span> = <code>forcing_amplitude_icb</code>. With <code>bci_thermal = 1</code> the condition is on the gradient instead,
-<span class="arithmatex">\(\partial_r s(r_i, \theta) = A\thinspace P_2(\cos\theta)\)</span>, a prescribed heat flux. <span class="arithmatex">\(P_2\)</span> is <span class="arithmatex">\(-\tfrac12\)</span> at the equator
-and <span class="arithmatex">\(1\)</span> at the poles, so a negative <span class="arithmatex">\(A\)</span> makes the equator warmer. The pattern is axisymmetric and equatorially
-symmetric, so the run needs <code>m = 0</code> and <code>symm = 1</code>, and also <code>ricb &gt; 0</code>, <code>thermal = 1</code>, <code>ThermaD &gt; 0</code> and <span class="arithmatex">\(A\)</span> not 0.
-The problem is linear: the flow is proportional to <span class="arithmatex">\(A\)</span>. With <code>magnetic = 1</code> the perturbation of the field is solved
-with the flow (<a href="../magnetic/#forced-runs">Magnetic field</a>). Like every forced run it needs a spherical body
-(<code>centrifugal = 0</code>); <a href="../compatibility/#forced-runs">Combining features</a> shows what else it combines with.</p>
-<p>With <code>forcing_frequency = 0</code> the solution is the steady flow. At least one wall must then be no-slip (<code>bci = 1</code> or
-<code>bco = 1</code>), or the outer wall must hold the fluid back with the constant drag (<code>kappa_cmb</code> &gt; 0,
-<a href="../drag/">Drag at the outer wall</a>): between two walls that let the fluid slip freely a rigid rotation also solves the
-equations, and the solution is not unique. Both walls must also stay in place (<code>bci</code> and <code>bco</code> 0 or 1): a steady flow
-through a wall of zero radial stress would move it without end. A non-zero <code>forcing_frequency</code> <span class="arithmatex">\(w\)</span> gives the response to a heating that oscillates as <span class="arithmatex">\(e^{iwt}\)</span>.</p>
+<p>with <span class="arithmatex">\(A\)</span> = <code>forcing_amplitude_icb</code>. With <code>bci_thermal = 1</code> the same pattern is imposed on the heat flux instead. <span class="arithmatex">\(P_2\)</span>
+is <span class="arithmatex">\(-\tfrac12\)</span> at the equator and 1 at the poles, so a negative <span class="arithmatex">\(A\)</span> makes the equator warmer. The flow is proportional
+to <span class="arithmatex">\(A\)</span>.</p>
+<p>Requirements:</p>
+<ul>
+<li><code>m = 0</code> and <code>symm = 1</code> (the pattern is axisymmetric and symmetric about the equator);</li>
+<li>an inner core (<code>ricb &gt; 0</code>), <code>thermal = 1</code> and <code>ThermaD &gt; 0</code>.</li>
+</ul>
+<p>With <code>forcing_frequency = 0</code> the solution is the steady flow. It then needs at least one no-slip wall (<code>bci = 1</code> or
+<code>bco = 1</code>) or a drag at the outer wall (<a href="../drag/">Drag at the outer wall</a>); otherwise a rigid rotation could be added
+to any solution. Both walls must also stay in place (<code>bci</code> and <code>bco</code> 0 or 1). A non-zero <code>forcing_frequency</code> gives the response to a heating that oscillates in time.</p>
+<p>The forcing also works with a magnetic field (<a href="../magnetic/#forced-runs">Magnetic field</a>).
+<a href="../compatibility/#forced-runs">Combining features</a> lists what else it combines with.</p>
 <h2 id="example-a-hadley-cell">Example: a Hadley cell</h2>
 <p>Write in <code>bin/parameters.py</code></p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">params_default</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_params</span>
@@ -1463,7 +1464,7 @@ through a wall of zero radial stress would move it without end. A non-zero <code
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">par</span><span class="o">.</span><span class="n">Etherm</span> <span class="o">=</span> <span class="mf">1e-3</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">par</span><span class="o">.</span><span class="n">set_scales</span><span class="p">()</span>                  <span class="c1"># Gaspard = 1, ViscosD = Ek, ThermaD = Etherm</span>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1"># Boussinesq fluid in a thin rotating shell, conductive and stably stratified: N² = Beyonce/r</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1"># Boussinesq fluid in a thin rotating shell, stably stratified</span>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">par</span><span class="o">.</span><span class="n">structure</span> <span class="o">=</span> <span class="s1">'Boussinesq'</span>
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="n">par</span><span class="o">.</span><span class="n">stratification</span> <span class="o">=</span> <span class="s1">'inverse square'</span>
 </span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="n">par</span><span class="o">.</span><span class="n">thermal</span> <span class="o">=</span> <span class="mi">1</span>
@@ -1495,24 +1496,24 @@ through a wall of zero radial stress would move it without end. A non-zero <code
 <p>It takes a few seconds. The solution is in <code>flow.npy</code> and <code>thermal.npy</code> (<a href="../output/#solution-files">Output files</a>).</p>
 <p><img alt="Hadley cell of the example" src="../assets/thermal-forcing.png" /></p>
 <p>The figure shows the northern hemisphere. The fluid rises over the warm equator, moves poleward aloft, sinks at high
-latitudes and returns to the equator along the ground: one cell per hemisphere. The Coriolis force turns the
-poleward flow aloft into a prograde (westerly) jet, and the return flow near the ground into retrograde (easterly)
-winds at low latitudes. Poleward of about 25° the winds near the ground are prograde, because a steady flow exerts no
-net torque on the ground.</p>
-<p>A linear, axisymmetric flow has no eddies. As a result, the cell reaches from the equator to the pole, and there are no
-Ferrel cells. At lower Ekman numbers the circulation retreats into the Ekman layer at the ground and towards the
-equator. A stress-free top wall then also has a weak reversed cell above it.</p>
+latitudes and returns to the equator along the ground: one cell per hemisphere. The Coriolis force turns the poleward
+flow aloft into a prograde (westerly) jet, and the return flow near the ground into retrograde (easterly) winds at low
+latitudes. At higher latitudes the winds near the ground are prograde, because a steady flow exerts no net torque on
+the ground.</p>
+<p>A linear, axisymmetric flow has no eddies, so the cell reaches from the equator to the pole and there are no Ferrel
+cells. At lower Ekman numbers the circulation retreats into the boundary layer at the ground and towards the equator.</p>
 <h2 id="reading-the-output">Reading the output</h2>
-<p>For <code>m = 0</code> each field is its coefficient times <span class="arithmatex">\(P_l(\cos\theta)\)</span>, plus the complex conjugate. With the poloidal and
-toroidal scalars <span class="arithmatex">\(P_l(r)\)</span>, <span class="arithmatex">\(T_l(r)\)</span> and the entropy <span class="arithmatex">\(s_l(r)\)</span> (Chebyshev series in <span class="arithmatex">\(r\)</span> over <span class="arithmatex">\([r_i, 1]\)</span>, one block
-of <code>N</code> coefficients per <span class="arithmatex">\(l\)</span>; <span class="arithmatex">\(l\)</span> even for <span class="arithmatex">\(P\)</span> and <span class="arithmatex">\(s\)</span>, odd for <span class="arithmatex">\(T\)</span>), and with <span class="arithmatex">\(\rho_0 = 1\)</span> as in the example,</p>
+<p>For <code>m = 0</code>, each field is a sum over Legendre polynomials <span class="arithmatex">\(P_l(\cos\theta)\)</span>. With the poloidal and toroidal
+coefficients <span class="arithmatex">\(P_l(r)\)</span>, <span class="arithmatex">\(T_l(r)\)</span> and the entropy coefficients <span class="arithmatex">\(s_l(r)\)</span> of the solution (<a href="../output/">Output files</a>), and
+uniform density as in the example, the meridional streamfunction <span class="arithmatex">\(\psi\)</span>, the zonal velocity and the entropy are</p>
 <div class="arithmatex">\[
 \psi = -2\thinspace\mathrm{Re} \sum_l r\thinspace P_l(r) \sin\theta\thinspace \partial_\theta P_l(\cos\theta), \qquad
 u_\phi = -2\thinspace\mathrm{Re} \sum_l T_l(r)\thinspace \partial_\theta P_l(\cos\theta), \qquad
-s = 2\thinspace\mathrm{Re} \sum_l s_l(r)\thinspace P_l(\cos\theta),
+s = 2\thinspace\mathrm{Re} \sum_l s_l(r)\thinspace P_l(\cos\theta).
 \]</div>
-<p>where the meridional streamfunction <span class="arithmatex">\(\psi\)</span> gives <span class="arithmatex">\(u_r = \partial_\theta\psi/(r^2\sin\theta)\)</span> and
-<span class="arithmatex">\(u_\theta = -\partial_r\psi/(r\sin\theta)\)</span>. In the northern hemisphere <span class="arithmatex">\(\psi &lt; 0\)</span> is a cell that rises at the equator.</p>
+<p>The streamfunction gives the meridional velocity, <span class="arithmatex">\(u_r = \partial_\theta\psi/(r^2\sin\theta)\)</span> and
+<span class="arithmatex">\(u_\theta = -\partial_r\psi/(r\sin\theta)\)</span>. In the northern hemisphere, negative <span class="arithmatex">\(\psi\)</span> is a cell that rises at the
+equator.</p>
 
 
 

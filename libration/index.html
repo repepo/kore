@@ -1476,49 +1476,50 @@
 
 
 <h1 id="libration">Libration</h1>
-<p>A moon on an eccentric orbit, or a body whose shape is not symmetric about its axis, does not spin at a steady rate: its
-mantle turns back and forth about the rotation axis around the mean rotation, at the frequency of the orbit. This is the
-libration in longitude. The fluid inside does not follow the mantle at once: the walls drag it through the viscosity
-and the field, and a mantle whose equator is not round pushes it as it turns. kore returns the flow that this
-oscillation drives, with its dissipation. Forcing 7 describes the libration in the frame that turns at the mean rate,
-where the walls move. Forcing 8 describes it in the frame of the mantle, where the walls are at rest and the fluid feels
-the acceleration of the frame instead.</p>
+<p>A moon on an eccentric orbit, or a body whose shape is not symmetric about its axis, does not spin at a steady rate:
+its mantle turns back and forth around the mean rotation, at the frequency of the orbit. This is libration in
+longitude. The fluid inside does not follow the mantle at once: the walls drag it through viscosity (and through the
+magnetic field, if there is one), and a mantle whose equator is not round pushes it as it turns. kore returns the flow
+that this oscillation drives, and its dissipation.</p>
+<p>kore offers two equivalent descriptions:</p>
+<ul>
+<li><strong>Forcing 7</strong> works in the frame that turns at the mean rate, where the walls move.</li>
+<li><strong>Forcing 8</strong> works in the frame of the mantle, where the walls are at rest and the fluid feels the acceleration of the
+  frame instead.</li>
+</ul>
 <h2 id="forcing-7-the-walls-librate">Forcing 7: the walls librate</h2>
-<p>The frame turns at the mean rate, and the walls turn back and forth in it. With <code>m = 0</code> the mantle turns by the angle
-<span class="arithmatex">\(A\cos wt\)</span> about the <span class="arithmatex">\(z\)</span> axis and the inner core by <span class="arithmatex">\(A_{IC}\cos wt\)</span>, with <span class="arithmatex">\(A\)</span> = <code>forcing_amplitude_cmb</code>, <span class="arithmatex">\(A_{IC}\)</span> =
-<code>forcing_amplitude_icb</code> (in radians) and <span class="arithmatex">\(w\)</span> = <code>forcing_frequency</code>. A no-slip wall carries the fluid with it,
-<span class="arithmatex">\(u_\phi = -wA\thinspace r\sin\theta\sin wt\)</span> at the outer wall. The outer wall must be no-slip (<code>bco = 1</code>), and the
-fluid viscous: walls that slide along themselves do not move an inviscid fluid, and kore stops. The inner wall may be
-no-slip or stress-free (<code>bci</code> = 1 or 0); a stress-free inner wall does not pass the libration of the inner core to the
-fluid, so <span class="arithmatex">\(A_{IC}\)</span> then has no effect. With a field it would pass it through the field where the inner core, or a thin
-layer on it, conducts: kore stops on that case, <span class="arithmatex">\(A_{IC}\)</span> not 0 behind a stress-free inner wall under a poloidal B0. In a
-full sphere (<code>ricb = 0</code>) only the mantle librates.</p>
-<p>With <code>m = 2</code> forcing 7 stands for a mantle whose equator is elongated, which moves its shape past the sphere as it
-librates. The walls stay spheres, and the forcing imposes the radial velocity of that motion at each wall,
-<span class="arithmatex">\(u_r = -wA\thinspace r_w\thinspace Y_2^2(\theta)\thinspace e^{i(2\phi + wt)}\)</span> + c.c. at the wall of radius <span class="arithmatex">\(r_w\)</span>, with
-<span class="arithmatex">\(A\)</span> at the outer wall and <span class="arithmatex">\(A_{IC}\)</span> at the inner one, and no-slip walls (<code>bco = 1</code>, and <code>bci = 1</code> with an inner core),
-or an inviscid fluid in a full sphere, whose one wall row keeps the fluid from crossing the wall whatever <code>bco</code>. With a field, how a
-conducting solid behind such a wall moves is set by <code>forced_walls</code> (<a href="../magnetic/#a-boundary-that-moves">Magnetic field</a>).</p>
+<p>With <code>m = 0</code>, the mantle turns back and forth by the angle <span class="arithmatex">\(A\cos wt\)</span> about the rotation axis, and the inner core by
+<span class="arithmatex">\(A_{IC}\cos wt\)</span>, with <span class="arithmatex">\(A\)</span> = <code>forcing_amplitude_cmb</code>, <span class="arithmatex">\(A_{IC}\)</span> = <code>forcing_amplitude_icb</code> (in radians) and
+<span class="arithmatex">\(w\)</span> = <code>forcing_frequency</code>. A no-slip wall carries the fluid with it.</p>
+<p>Requirements:</p>
+<ul>
+<li>a no-slip outer wall (<code>bco = 1</code>) and a viscous fluid;</li>
+<li>the inner wall no-slip or stress-free (<code>bci</code> = 1 or 0). A stress-free inner wall does not pass the libration of the
+  inner core to the fluid, so <span class="arithmatex">\(A_{IC}\)</span> then has no effect.</li>
+</ul>
+<p>In a full sphere (<code>ricb = 0</code>) only the mantle librates.</p>
+<p>With <code>m = 2</code>, forcing 7 represents a mantle with an elongated equator, which pushes the fluid as its shape librates.
+The walls stay spherical, and the forcing imposes the corresponding radial velocity at each wall. This needs no-slip
+walls (<code>bco = 1</code>, and <code>bci = 1</code> with an inner core), or an inviscid fluid in a full sphere. With a magnetic field, see
+<a href="../magnetic/#a-boundary-that-moves">A boundary that moves</a>.</p>
 <h2 id="forcing-8-the-frame-of-the-mantle">Forcing 8: the frame of the mantle</h2>
 <p>The frame turns with the mantle, so the outer wall is at rest. The inner core turns with the mantle, or librates
-relative to it by the angle <span class="arithmatex">\(A_{IC}\cos wt\)</span> (<span class="arithmatex">\(A_{IC}\)</span> = <code>forcing_amplitude_icb</code>). The frame's own oscillation puts a body
-force in the fluid, the Poincaré force of its angular acceleration,</p>
+relative to it by the angle <span class="arithmatex">\(A_{IC}\cos wt\)</span>. The oscillation of the frame puts a body force in the fluid, the Poincaré
+force,</p>
 <div class="arithmatex">\[
-\mathbf f = w^2 A\cos wt\thinspace r\sin\theta\thinspace\hat{\boldsymbol\phi} ,
+\mathbf f = w^2 A\cos wt\thinspace r\sin\theta\thinspace\hat{\boldsymbol\phi} .
 \]</div>
-<p>and, with a differential rotation, the Coriolis force of the libration on the background flow. The flow is that of
-forcing 7 seen from the mantle: forcing 7's flow, with the inner core's angle <span class="arithmatex">\(A + A_{IC}\)</span>, minus the rigid libration
-of the mantle, <span class="arithmatex">\(u_\phi = -wA\thinspace r\sin\theta\sin wt\)</span>. The field is the same in both frames, since a rotation
-about the axis leaves the axisymmetric B0 as it is.</p>
-<p>The walls are at rest in this frame, so forcing 8 takes the walls that forcing 7 cannot move: a stress-free outer wall,
-along which the fluid slips relative to the mantle and a drag acts on that slip (<a href="../drag/">Drag at the outer wall</a>),
-with or without a conducting mantle, and an inviscid fluid in a full sphere. It needs <code>m = 0</code>, <code>symm = 1</code>, a frequency
-other than 0, and walls that stay in place (<code>bco</code> and <code>bci</code> 0 or 1; an inviscid fluid takes any <code>bco</code>). In a full
-sphere there is no inner core to librate: <span class="arithmatex">\(A_{IC}\)</span> must be 0. Any <code>structure</code>, buoyancy, a differential rotation and a
-field work as in the other runs (<a href="../magnetic/#forced-runs">Magnetic field</a>), but for the case that stops forcing 7 too:
-an inner core that librates relative to the mantle (<span class="arithmatex">\(A_{IC}\)</span> not 0) behind a stress-free inner wall, where the core or
-a thin layer on it conducts, under a poloidal B0. Use forcing 8 for what an observer on the mantle sees, or where
-forcing 7 does not take the walls.</p>
+<p>The flow is that of forcing 7 seen from the mantle. Because the walls are at rest, forcing 8 accepts walls that
+forcing 7 cannot move: a stress-free outer wall, possibly with a drag (<a href="../drag/">Drag at the outer wall</a>), and an
+inviscid fluid in a full sphere.</p>
+<p>Requirements:</p>
+<ul>
+<li><code>m = 0</code>, <code>symm = 1</code> and a non-zero frequency;</li>
+<li><code>bco</code> and <code>bci</code> 0 or 1 (an inviscid fluid takes any <code>bco</code>);</li>
+<li>in a full sphere, <span class="arithmatex">\(A_{IC} = 0\)</span>.</li>
+</ul>
+<p>Use forcing 8 for what an observer on the mantle sees, or for walls that forcing 7 does not accept. Both forcings work
+with any structure, buoyancy, differential rotation and a magnetic field (<a href="../magnetic/#forced-runs">Magnetic field</a>).</p>
 <h2 id="example-a-librating-shell-in-both-frames">Example: a librating shell in both frames</h2>
 <p>Write in <code>bin/parameters.py</code></p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">params_default</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_params</span>
@@ -1556,28 +1557,21 @@ forcing 7 does not take the walls.</p>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>./bin/spin_doctor.py<span class="w"> </span><span class="m">2</span>
 </span></code></pre></div>
 <p>It takes a few seconds. Then set <code>par.forcing = 8</code> and <code>par.forcing_amplitude_icb = 0.0</code> (the inner core turns with
-the mantle) and run the same four steps. Both runs give the same viscous dissipation, Dν = 0.02848, and the same
-torques on the walls, since a rigid rotation is not sheared. The kinetic energy differs: 0.0283 in the mean frame,
-where most of the fluid stays at rest and only the layers at the walls and the inertial waves they launch move, and
-0.420 in the frame of the mantle, which turns back and forth past that fluid. The problem is linear: the flow is
+the mantle) and run the same four steps. Both runs give the same viscous dissipation and the same torques on the walls,
+since adding a rigid rotation does not change the shear. The kinetic energies differ: in the mean frame most of the
+fluid stays at rest, while in the frame of the mantle it moves back and forth past the walls. The flow is
 proportional to <span class="arithmatex">\(A\)</span>, and every power to <span class="arithmatex">\(A^2\)</span>.</p>
 <h2 id="reading-the-output">Reading the output</h2>
-<p>The flow is in <code>flow.npy</code>, relative to the frame of the run: the mean frame for forcing 7,
-the mantle for forcing 8. For <code>m = 0</code> the angular velocity of the fluid relative to that frame is</p>
+<p>The flow is in <code>flow.npy</code>, relative to the frame of the run: the mean frame for forcing 7, the mantle for forcing 8.
+For <code>m = 0</code> the angular velocity of the fluid relative to that frame is</p>
 <div class="arithmatex">\[
 \omega = \frac{u_\phi}{r\sin\theta} = \frac{2}{r}\thinspace\mathrm{Re}\sum_l T_l(r)\thinspace P_l'(\cos\theta)\thinspace e^{iwt} ,
 \]</div>
-<p>with the toroidal scalars <span class="arithmatex">\(T_l(r)\)</span> of odd <span class="arithmatex">\(l\)</span>, as on <a href="../thermal-forcing/#reading-the-output">Thermal forcing</a>; the
-rigid libration of the mantle is <span class="arithmatex">\(T_1 = iwA\thinspace r/2\)</span>.</p>
-<p><code>spin_doctor</code> checks the budgets. With forcing 7 the walls put in P_in, the power of their viscous stress on the fluid
-(<code>flow.dat</code> columns 24 and 25). With forcing 8 it is the power of the Poincaré force (<code>flow.dat</code> column 42), plus that
-of the inner wall when the inner core librates relative to the mantle. Either way the viscous dissipation Dν uses it up,
-with the Ohmic losses when there is a field and the work against the buoyancy of a stratified fluid (residσ, and
-resid𝐄 with a field). In <code>flow.dat</code>, columns 31 and 33 are the viscous torques on the mantle and on the inner core, and
-35 and 37 the magnetic ones (<a href="../output/#flowdat">Output files</a>); resid𝐋 checks that they and, for forcing 8, the torque
-of the Poincaré force change the angular momentum of the fluid as they should. Where nothing couples the fluid to the
-walls (stress-free walls without a drag or a field, an inviscid fluid), the fluid of forcing 8 stays at rest in the mean
-frame, and its flow is minus the libration of the mantle.</p>
+<p>with the toroidal coefficients <span class="arithmatex">\(T_l(r)\)</span>, as on <a href="../thermal-forcing/#reading-the-output">Thermal forcing</a>.</p>
+<p><code>spin_doctor</code> checks the energy and angular momentum budgets. The input power P_in comes from the viscous stress of the
+walls (forcing 7, <code>flow.dat</code> columns 24 and 25) or from the Poincaré force (forcing 8, column 42). Columns 31 and 33 of
+<code>flow.dat</code> are the viscous torques on the mantle and on the inner core, and 35 and 37 the magnetic ones
+(<a href="../output/#flowdat">Output files</a>).</p>
 <h2 id="parameters">Parameters</h2>
 <table>
 <thead>
@@ -1593,11 +1587,11 @@ frame, and its flow is minus the libration of the mantle.</p>
 </tr>
 <tr>
 <td><code>forcing_frequency</code></td>
-<td><span class="arithmatex">\(w\)</span>, in units of <span class="arithmatex">\(1/\tau\)</span>; not 0</td>
+<td><span class="arithmatex">\(w\)</span>; not 0</td>
 </tr>
 <tr>
 <td><code>forcing_amplitude_cmb</code></td>
-<td><span class="arithmatex">\(A\)</span>, the angle of the mantle's libration (forcing 7 with <code>m</code> 2: the amplitude of the radial velocity at the outer wall over <span class="arithmatex">\(w\)</span>)</td>
+<td><span class="arithmatex">\(A\)</span>, the libration angle of the mantle, in radians</td>
 </tr>
 <tr>
 <td><code>forcing_amplitude_icb</code></td>
@@ -1609,15 +1603,11 @@ frame, and its flow is minus the libration of the mantle.</p>
 </tr>
 <tr>
 <td><code>bci</code>, <code>bco</code></td>
-<td>forcing 7: <code>bco = 1</code>, <code>bci</code> 0 or 1 (<code>m</code> 2: <code>bci = 1</code>); forcing 8: <code>bco</code> 0 or 1, <code>bci</code> 0 or 1. <code>bci</code> only with an inner core; an inviscid fluid (forcing 7 with <code>m</code> 2, forcing 8) takes any <code>bco</code></td>
+<td>forcing 7: <code>bco = 1</code>, <code>bci</code> 0 or 1 (with <code>m = 2</code>: <code>bci = 1</code>); forcing 8: 0 or 1</td>
 </tr>
 </tbody>
 </table>
-<p>Like every forced run, forcings 7 and 8 need a spherical body (<code>centrifugal = 0</code>); <a href="../compatibility/#forced-runs">Combining features</a>
-shows what else they combine with. The solution is written as for any forced run (<a href="../output/">Output files</a>).
-<code>tests/forcing</code> checks the wall values of
-forcing 7, <code>tests/couette</code> its budgets, and <code>tests/cic_forcings</code> forcing 8 against forcing 7 and against the
-<code>conductive_IC</code> branch, its budgets where forcing 7 cannot follow, and its stops.</p>
+<p><a href="../compatibility/#forced-runs">Combining features</a> lists what else these forcings combine with.</p>
 
 
 

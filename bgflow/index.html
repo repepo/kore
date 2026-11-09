@@ -1520,76 +1520,57 @@
 
 
 <h1 id="background-flow">Background flow</h1>
-<p>With <code>bgflow = 1</code> the fluid carries a steady, axisymmetric background flow, and kore solves the waves and instabilities
-of the fluid on top of it. A differential rotation (<code>diff_rot = 1</code>, <a href="../background/#rotation">Background model</a>) is
-the special case of a flow along the azimuth. The flow that turning walls drive also turns in the meridional planes
-(up along the axis and back near the walls, or the reverse), and its rotation has a shape that no rotation profile of
-<code>diff_rot</code> holds. That flow, written by kore from its own run of turning walls (<a href="../couette-flow/">Spherical Couette
-flow</a>), is the main use; a flow given as expressions of <span class="arithmatex">\(r\)</span> is the other.</p>
+<p>With <code>bgflow = 1</code> the fluid carries a steady, axisymmetric background flow, and kore computes the waves and
+instabilities on top of it. Differential rotation (<code>diff_rot = 1</code>, <a href="../background/#rotation">Background model</a>) is the
+special case of a purely azimuthal flow. A background flow can also circulate in the meridional plane (up along the
+axis and back near the walls, or the reverse), and its rotation can have shapes that <code>diff_rot</code> cannot describe.</p>
+<p>The main use is the flow driven by turning walls, computed by kore itself in a <a href="../couette-flow/">Spherical Couette flow</a>
+run. You can also give the flow as expressions of the radius.</p>
 <h2 id="what-it-adds">What it adds</h2>
-<p>The background flow carries the perturbations and is distorted by them. kore adds both effects to each equation it
-solves: to the momentum equation the advection of the flow by the background and of the background by the flow, to the
-heat and composition equations the advection of the entropy and the composition, and to the induction equation the
-field that the background flow induces from the perturbed field. The background may also carry its own entropy and
-composition, the ones that the flow brought about in the run that made it; the flow of the perturbation then carries
-those too.</p>
-<p>The background is</p>
+<p>The background flow carries the perturbations and is distorted by them. kore adds both effects to the momentum, heat,
+composition and induction equations. The background may also have its own entropy and composition, which the
+perturbation flow then carries too.</p>
+<p>The background flow is written as</p>
 <div class="arithmatex">\[
 \mathbf U = \mathrm{Ro}\thinspace\mathrm{Gaspard}\sum_n\left[\rho_0^{-1}\nabla\times\nabla\times(\rho_0 P_n Y_n\thinspace\mathbf r)
 + \nabla\times(T_n Y_n\thinspace\mathbf r)\right],
 \]</div>
-<p>with <span class="arithmatex">\(Y_n\)</span> the Legendre polynomial of degree <span class="arithmatex">\(n\)</span> in <span class="arithmatex">\(\cos\theta\)</span> and <span class="arithmatex">\(\mathrm{Ro}\)</span> = <code>bgflow_Ro</code>, the rate of the flow
-in units of the rotation rate of the frame (with <code>Gaspard = 0</code>, a frame at rest, in units of <span class="arithmatex">\(1/\tau\)</span>). It carries no mass across a sphere:
-<span class="arithmatex">\(\nabla\cdot(\rho_0\mathbf U) = 0\)</span>. Its entropy and composition are <span class="arithmatex">\(\mathrm{Ro}\sum_n\sigma_n Y_n\)</span> and
-<span class="arithmatex">\(\mathrm{Ro}\sum_n\gamma_n Y_n\)</span>, used with <code>thermal = 1</code> and <code>compositional = 1</code>. The radial functions <span class="arithmatex">\(P_n\)</span>, <span class="arithmatex">\(T_n\)</span>,
-<span class="arithmatex">\(\sigma_n\)</span>, <span class="arithmatex">\(\gamma_n\)</span> (per unit Ro) come from a file or from expressions. The terms are in
-<a href="../bgflow-equations/">Background flow equations</a>.</p>
-<p>It works with any <code>structure</code>, in a shell or a full sphere, with or without the diffusion of the entropy and of the
-composition (a forced run without it has a condition of its own, below), without viscosity in a full sphere, with a differential rotation, a magnetic field, conducting solids,
-the constant drag at the outer wall and the forcings, in eigenvalue and forced problems, and in the free decay
-(<code>hydro = 0</code>), where it carries the entropy, the composition and the field. The background must</p>
+<p>where <span class="arithmatex">\(Y_n\)</span> is the Legendre polynomial of degree <span class="arithmatex">\(n\)</span> in <span class="arithmatex">\(\cos\theta\)</span>, <span class="arithmatex">\(P_n(r)\)</span> and <span class="arithmatex">\(T_n(r)\)</span> are the poloidal and
+toroidal radial functions, and Ro = <code>bgflow_Ro</code> is the strength of the flow relative to the rotation rate of the frame.
+The equations are in <a href="../bgflow-equations/">Background flow equations</a>.</p>
+<p>The background flow must:</p>
 <ul>
-<li>be <strong>symmetric about the equator</strong>, as kore's perturbations are (<code>symm</code>): <span class="arithmatex">\(P_n\)</span>, <span class="arithmatex">\(\sigma_n\)</span>, <span class="arithmatex">\(\gamma_n\)</span> of even
-  <span class="arithmatex">\(n\)</span> and <span class="arithmatex">\(T_n\)</span> of odd <span class="arithmatex">\(n\)</span>;</li>
-<li><strong>not cross the walls</strong>: <span class="arithmatex">\(P_n = 0\)</span> there;</li>
-<li><strong>turn rigidly at a conducting solid</strong> (a conducting inner core, a thin layer that conducts, <code>c1_cmb</code> or <code>c1_icb</code>
-  not 0, a resolved mantle): <span class="arithmatex">\(P_n\)</span>, <span class="arithmatex">\(P_n'\)</span> and every <span class="arithmatex">\(T_n\)</span> but <span class="arithmatex">\(T_1\)</span> vanish at its wall, and the solid turns with the
-  fluid there, at <span class="arithmatex">\(\mathrm{Ro}\thinspace\mathrm{Gaspard}\thinspace T_1/r\)</span>, so that its field is carried along.</li>
+<li>be <strong>symmetric about the equator</strong>;</li>
+<li><strong>not cross the walls</strong>;</li>
+<li><strong>turn rigidly at a conducting solid</strong> (a conducting inner core, thin conducting layer or resolved mantle), so that
+  the solid can turn with the fluid.</li>
 </ul>
-<p>With a background field (<code>magnetic = 1</code>), <code>submatrices.py</code> prints how far the field is from steady under the
-background flow, <span class="arithmatex">\(\lvert\nabla\times(\mathbf U\times\mathbf B_0)\rvert\thinspace r\)</span> relative to
-<span class="arithmatex">\(\lvert\mathbf U\rvert\lvert\mathbf B_0\rvert\)</span>, and warns above <span class="arithmatex">\(10^{-7}\)</span> (it stops with <code>ferraro_policy = 'refuse'</code>):
-the linear problem assumes that something maintains the background. A uniform axial field under a rotation about the
-axis is steady; most other pairs are not. kore stops with <code>centrifugal = 1</code>, <code>rotdyn = 1</code> and <code>topo_drag = 'rekier'</code>.</p>
+<p>It works with any structure, in a shell or a full sphere, with differential rotation, a magnetic field, conducting
+solids, the constant drag at the outer wall, the forcings and the free decay. It does not work with the centrifugal
+deformation, the rotating solids or the topographic drag.</p>
+<p>With a magnetic field, the background field is in general not steady under the background flow. <code>submatrices.py</code>
+prints how far it is from steady and warns when the mismatch is significant: the linear problem assumes that something
+maintains the background.</p>
 <h2 id="a-background-from-turning-walls">A background from turning walls</h2>
-<p>A forcing-12 run of kore gives the steady flow of walls that turn about the axis at their own rates. In its folder,</p>
+<p>Run a <a href="../couette-flow/">Spherical Couette flow</a> (forcing 12), then, in its folder,</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>python3<span class="w"> </span>bin/bgflow.py<span class="w"> </span><span class="m">12</span>
 </span></code></pre></div>
-<p>writes <code>bgflow.npz</code> with the degrees <span class="arithmatex">\(n \le 12\)</span> of that flow, per unit Ro: the flow of the linear equations, which is
-proportional to the rates. Ro is the rate of the inner wall over <code>Gaspard</code> (of the outer wall when the inner one is at
-rest), and the other wall turns at the same fraction of it as in the run. Copy the file to the folder of the run that
-uses it, with <code>bgflow = 1</code> and the Ro you want: any Ro gives the linear flow at that rate. The degrees of the run that
-wrote it go up to its <code>lmax</code> and fall off quickly: in the example below the degrees above 12 move the eigenvalues by
-about <span class="arithmatex">\(10^{-4}\)</span>, those above 6 by <span class="arithmatex">\(5\times10^{-3}\)</span>. Thinner layers, at lower Ek, need more.</p>
-<p>The linear flow holds for small Ro. At larger Ro the flow carries itself along: it moves its own momentum, which the
-linear equations leave out. With</p>
+<p>This writes <code>bgflow.npz</code>, holding the flow up to Legendre degree 12, normalized to Ro = 1. Copy it to the folder of
+the run that uses it, and set <code>bgflow = 1</code> and the Ro you want. A maximum degree of about 12 is usually enough; thinner
+boundary layers, at lower Ekman numbers, need more.</p>
+<p>This <em>linear</em> flow is accurate only for small Ro. At larger Ro the flow carries its own momentum, which the linear
+equations leave out. With</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python3<span class="w"> </span>bin/bgflow.py<span class="w"> </span><span class="m">12</span><span class="w"> </span>nonlinear
 </span></code></pre></div>
 <p>kore solves the full steady equations of the axisymmetric flow at the Ro of the run (<code>forcing_amplitude_icb</code> over
-<code>Gaspard</code>) by Newton's method, starting from the linear flow and raising Ro in steps of 0.15. The file then holds that
-Ro, and a run that reads it needs <code>bgflow_Ro</code> at that value: the flow at another Ro is not this one scaled. Each step
-prints how far the iteration still moves, and it converges in a few iterations, the error squaring at each. The method
-is on <a href="../bgflow-equations/#newtons-method">Background flow equations</a>.</p>
-<p>The file also holds the density of the run (the poloidal flow is that density's), the <code>ricb</code>, and which wall turned.
-kore stops when a run reads it with another <code>ricb</code>, with another density where it has a poloidal flow, or, for a
-nonlinear file, with another <code>bgflow_Ro</code>.
-With entropy or composition (<code>thermal</code>, <code>compositional</code> = 1), the file holds the parts of the entropy and of the
-composition that the flow brought about, <span class="arithmatex">\(\sigma_n\)</span> and <span class="arithmatex">\(\gamma_n\)</span>. <code>bgflow.py</code> does not write the flow of a run with a
-background field: the steady state of such a run has a field that the flow induces from <span class="arithmatex">\(\mathbf B_0\)</span>, which the file
-would leave out. The files that the <code>conductive_IC</code> branch writes are read as they are.</p>
+<code>Gaspard</code>) by Newton's method (<a href="../bgflow-equations/#newtons-method">Background flow equations</a>). The file is then valid
+only at that Ro, and a run that reads it must set <code>bgflow_Ro</code> to that value.</p>
+<p>The file also records the density, <code>ricb</code> and which wall turned, and kore stops if a run reads it with incompatible
+parameters. With <code>thermal = 1</code> or <code>compositional = 1</code> it also holds the background entropy and composition that the
+flow produced. <code>bgflow.py</code> does not support runs with a magnetic field.</p>
 <h2 id="example-waves-on-the-flow-of-an-inner-core-that-turns">Example: waves on the flow of an inner core that turns</h2>
-<p>The flow of <a href="../couette-flow/#example-an-inner-core-that-turns">Spherical Couette flow</a> at Ek <span class="arithmatex">\(10^{-3}\)</span>, nonlinear at Ro
-= 1 (the inner core turning at twice the rate of the frame), and the waves of <span class="arithmatex">\(m = 2\)</span> on it. First the flow: write in
+<p>The flow of <a href="../couette-flow/#example-an-inner-core-that-turns">Spherical Couette flow</a> at Ek <span class="arithmatex">\(10^{-3}\)</span>, nonlinear at
+Ro = 1 (the inner core turning at twice the rate of the frame), and the waves of <span class="arithmatex">\(m = 2\)</span> on it. First the flow: write in
 <code>bin/parameters.py</code></p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">params_default</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_params</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
@@ -1621,7 +1602,7 @@ would leave out. The files that the <code>conductive_IC</code> branch writes are
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>mpiexec<span class="w"> </span>-n<span class="w"> </span><span class="m">2</span><span class="w"> </span>./bin/solve.py
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>python3<span class="w"> </span>bin/bgflow.py<span class="w"> </span><span class="m">12</span><span class="w"> </span>nonlinear
 </span></code></pre></div>
-<p>Then, in a new folder with that <code>bgflow.npz</code>, the same parameters with</p>
+<p>Then, in a new folder with that <code>bgflow.npz</code>, use the same parameters with</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">par</span><span class="o">.</span><span class="n">m</span> <span class="o">=</span> <span class="mi">2</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">par</span><span class="o">.</span><span class="n">lmax</span> <span class="o">=</span> <span class="mi">29</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">par</span><span class="o">.</span><span class="n">forcing</span> <span class="o">=</span> <span class="mi">0</span>
@@ -1631,14 +1612,11 @@ would leave out. The files that the <code>conductive_IC</code> branch writes are
 </span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">par</span><span class="o">.</span><span class="n">bgflow_Ro</span> <span class="o">=</span> <span class="mf">1.0</span>
 </span></code></pre></div>
 <p>and run <code>submatrices.py</code>, <code>assemble.py</code>, <code>solve.py</code> and <code>spin_doctor.py</code>. The eigenvalue nearest <span class="arithmatex">\(1i\)</span> is
-<span class="arithmatex">\(-0.1818 + 1.1437i\)</span> on the flow, and <span class="arithmatex">\(-0.2687 + 0.9803i\)</span> without it. The nonlinear flow differs from the linear flow at
-Ro = 1 by 6%, and the linear flow gives <span class="arithmatex">\(-0.1811 + 1.1491i\)</span>: at this rate the nonlinear part moves the eigenvalues by
-about 0.005. The eigenvalues hold to 8 digits at N 64 and <code>lmax</code> 41, and the <code>conductive_IC</code> branch gives the same ones
-from its own matrices (<code>tests/bgflow</code>). The whole example takes about two minutes on two cores, most of it in Newton's
-method.</p>
+<span class="arithmatex">\(-0.1818 + 1.1437i\)</span> with the flow, compared with <span class="arithmatex">\(-0.2687 + 0.9803i\)</span> without it. The example takes a couple of
+minutes, most of it in Newton's method.</p>
 <h2 id="a-background-from-expressions">A background from expressions</h2>
-<p>With <code>bgflow_profiles</code> the background is given as numpy expressions of <span class="arithmatex">\(r\)</span> (and <code>ricb</code>, with the functions of
-<code>diff_rot_profiles</code>), one per radial function and degree, per unit Ro:</p>
+<p>With <code>bgflow_profiles</code> the background is given as numpy expressions of <code>r</code> (and <code>ricb</code>), one per radial function and
+degree, normalized to Ro = 1:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">par</span><span class="o">.</span><span class="n">bgflow</span> <span class="o">=</span> <span class="mi">1</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">par</span><span class="o">.</span><span class="n">bgflow_Ro</span> <span class="o">=</span> <span class="mf">0.3</span>
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">par</span><span class="o">.</span><span class="n">bgflow_profiles</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'P2'</span><span class="p">:</span> <span class="s1">'0.2*(r-ricb)**2*(1-r)**2'</span><span class="p">,</span>   <span class="c1"># a meridional cell in each hemisphere</span>
@@ -1646,39 +1624,28 @@ method.</p>
 </span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>                       <span class="s1">'T3'</span><span class="p">:</span> <span class="s1">'(r-ricb)*(1-r)*r'</span><span class="p">,</span>            <span class="c1"># and its shear</span>
 </span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>                       <span class="s1">'S2'</span><span class="p">:</span> <span class="s1">'0.05*(r-ricb)*(1-r)'</span><span class="p">}</span>         <span class="c1"># an entropy of degree 2 (thermal = 1)</span>
 </span></code></pre></div>
-<p>The keys are the kind (<code>P</code>, <code>T</code>, <code>S</code> for <span class="arithmatex">\(\sigma_n\)</span>, <code>C</code> for <span class="arithmatex">\(\gamma_n\)</span>) and the degree. <code>bgflow_file</code> is then not
-read. This <span class="arithmatex">\(P_2\)</span> vanishes at both walls with its derivative, and <span class="arithmatex">\(T_3\)</span> vanishes there, so the flow is a rigid rotation
-at each wall and the walls may be conducting. In a full sphere an expression is evaluated at <span class="arithmatex">\(\lvert r\rvert\)</span> with the
-parity <span class="arithmatex">\((-1)^n\)</span> of its degree; a smooth flow goes as <span class="arithmatex">\(r^n\)</span> times a series in <span class="arithmatex">\(r^2\)</span>, as
-<code>'P2': 'r**2*(1-r**2)**2'</code> (<a href="../numerical-method/#regularity-at-the-centre">Regularity at the centre</a>).</p>
+<p>Each key is a letter and a degree: <code>P</code> and <code>T</code> for the poloidal and toroidal flow, <code>S</code> for the entropy, <code>C</code> for the
+composition. Poloidal, entropy and composition terms take even degrees, toroidal terms odd degrees. In this example the
+flow does not cross the walls and turns rigidly there, so the walls may be conducting. In a full sphere the
+expressions must be smooth at the centre (<a href="../numerical-method/#regularity-at-the-centre">Regularity at the centre</a>).</p>
 <h2 id="resolution">Resolution</h2>
-<p>A background flow can make the waves much harder to resolve than the same waves in a fluid at rest, in two ways.</p>
+<p>A background flow can make the waves much harder to resolve than in a fluid at rest:</p>
 <ul>
-<li><strong>The flow strains the waves.</strong> In a full sphere a meridional circulation of degree 2 is a straining flow at the
-  centre, which presses the waves into thin layers there, where the Chebyshev points are furthest apart. The budgets
-  and irreg₀ then fail, and they converge as N grows: with the circulation <span class="arithmatex">\(P_2 = 2r^2(1-r^2)^2\)</span> at Ro = 0.1 and Ek
-  <span class="arithmatex">\(10^{-3}\)</span>, residσ is <span class="arithmatex">\(3\times10^{-1}\)</span> at N 64, <span class="arithmatex">\(3\times10^{-4}\)</span> at N 96, <span class="arithmatex">\(10^{-8}\)</span> at N 128 and <span class="arithmatex">\(10^{-12}\)</span> at N
-  160.</li>
-<li><strong>The flow carries what nothing smooths.</strong> Without the diffusion of the entropy or of the composition, or without
-  viscosity, the background carries the perturbation along its streamlines with nothing to limit how fine it gets.
-  The frequencies of that transport, <span class="arithmatex">\(m\)</span> times the angular velocities of the flow and the rates of its meridional
-  circulation, form a continuous band, and a target in that band gives modes that do not converge. Target outside it,
-  and keep the modes that stay put when N and lmax are raised. A forced run has no target to move: without the
-  diffusion of the entropy or of the composition kore stops it if the background has a meridional circulation, on
-  whose closed streamlines the scalar resonates, or if <span class="arithmatex">\(w + m\Omega\)</span> vanishes somewhere in the fluid, <span class="arithmatex">\(w\)</span> being the
-  frequency of the run and <span class="arithmatex">\(\Omega\)</span> the angular velocity of the background and of a differential rotation
+<li><strong>The flow strains the waves.</strong> A meridional circulation can squeeze the waves into thin layers, for instance at
+  the centre of a full sphere, and the radial resolution <code>N</code> must be raised until the <code>spin_doctor</code> residuals are small.</li>
+<li><strong>Without diffusion, the flow creates ever finer structure.</strong> Without thermal or compositional diffusion, or without
+  viscosity, the background carries the perturbation along its streamlines with nothing to smooth it. This gives a band
+  of frequencies where modes do not converge. Put the target outside that band, and keep only the modes that stay
+  put when <code>N</code> and <code>lmax</code> are raised. For forced runs without diffusion kore stops in such cases
   (<a href="../compatibility/#forced-runs">Combining features</a>).</li>
 </ul>
-<p>As with any run, compare two resolutions; <code>spin_doctor</code>'s residuals tell when the budget, and so the mode, is resolved
+<p>As with any run, compare two resolutions and check <code>spin_doctor</code>'s residuals
 (<a href="../numerical-method/#checks">Numerical method</a>).</p>
 <h2 id="output">Output</h2>
-<p><code>spin_doctor.py</code> adds the power of the background's terms to the budgets: in <code>flow.dat</code> the power of its force on the
-flow, Wbg, its imaginary part and its enstrophy term (columns 46–48), in <code>thermal.dat</code> and <code>composition.dat</code> the work
-of its advection (column 8). They enter residσ, residω, residens, resid𝑠, resid𝑐 and resid𝐄. The power Wbg is what
-the perturbation draws from the shear of the background: a growing mode takes its energy from there. The background
-puts no torque in the fluid, so resid𝐋 holds as without it, axial and equatorial. <code>params.dat</code> gets <code>bgflow</code> and
-<code>bgflow_Ro</code> (columns 155–156), and after the <code>#</code> the expressions of the background or the name of its file with the
-first 12 hexadecimal digits of its sha256 (<a href="../output/">Output files</a>).</p>
+<p><code>spin_doctor.py</code> adds the power exchanged with the background flow to the budgets: in <code>flow.dat</code> the power that the
+perturbation draws from the background, Wbg (columns 46–48), and in <code>thermal.dat</code> and <code>composition.dat</code> the work of its
+advection (column 8). A growing mode takes its energy from there. <code>params.dat</code> records <code>bgflow</code> and <code>bgflow_Ro</code>, and the
+expressions or the name of the file (<a href="../output/">Output files</a>).</p>
 <h2 id="parameters">Parameters</h2>
 <table>
 <thead>
@@ -1694,7 +1661,7 @@ first 12 hexadecimal digits of its sha256 (<a href="../output/">Output files</a>
 </tr>
 <tr>
 <td><code>bgflow_Ro</code></td>
-<td>its rate Ro, in units of the frame's rotation rate (of <span class="arithmatex">\(1/\tau\)</span> with <code>Gaspard = 0</code>); a nonlinear file holds at its own Ro only</td>
+<td>its strength Ro, relative to the rotation rate of the frame; a nonlinear file is valid only at its own Ro</td>
 </tr>
 <tr>
 <td><code>bgflow_file</code></td>
@@ -1702,12 +1669,10 @@ first 12 hexadecimal digits of its sha256 (<a href="../output/">Output files</a>
 </tr>
 <tr>
 <td><code>bgflow_profiles</code></td>
-<td>the background as expressions, <code>{'P2': '...', 'T1': '...', ...}</code>, per unit Ro; no <code>#</code> in them (they are written to <code>params.dat</code>)</td>
+<td>the background as expressions, <code>{'P2': '...', 'T1': '...', ...}</code>, normalized to Ro = 1; no <code>#</code> in them</td>
 </tr>
 </tbody>
 </table>
-<p><code>tests/bgflow</code> checks the background against the <code>conductive_IC</code> branch, its terms against a differential rotation, a
-change of frame and a computation on a grid, and the budgets (<a href="../checking/">Modifying kore</a>).</p>
 
 
 

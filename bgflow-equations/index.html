@@ -1522,9 +1522,8 @@
 <h1 id="background-flow-equations">Background flow equations</h1>
 <p>This page gives the background flow of <code>bgflow = 1</code> (<a href="../bgflow/">Background flow</a>), the terms it adds to the
 perturbation equations, how they become rows, what happens at the walls, the powers that <code>spin_doctor</code> reports, and the
-Newton's method that gives the nonlinear flow of turning walls. They are the terms of the <code>conductive_IC</code> branch's
-<code>bgflow.py</code>, written in <code>bin/bgflow.py</code> for any density, in a shell or a full sphere, with the entropy, the composition
-and the magnetic field.</p>
+Newton's method that gives the nonlinear flow of turning walls. They hold for any density, in a shell or a full sphere, with the entropy, the composition and the magnetic field
+(<code>bin/bgflow.py</code>).</p>
 <h2 id="the-background">The background</h2>
 <p>The background is written as the perturbations are (<a href="../numerical-method/#unknowns">Numerical method</a>), with a poloidal
 and a toroidal scalar for each degree, so that it carries no mass across a sphere whatever its scalars:</p>
@@ -1734,8 +1733,7 @@ iterations, the change squaring at each, and the flow differs from Ro times the 
 </tbody>
 </table>
 <p>P and T are the scalars of the run's flow divided by the rate of the wall in units of <span class="arithmatex">\(1/\tau\)</span>, and <span class="arithmatex">\(\sigma_n\)</span>,
-<span class="arithmatex">\(\gamma_n\)</span> those of its entropy and composition divided by that rate over <span class="arithmatex">\(G\)</span>. The files of <code>conductive_IC</code> hold <code>nP</code>, <code>P</code>, <code>nT</code>, <code>T</code>, <code>ricb</code> (and <code>Ro</code>), and are read as they are,
-for a uniform density.</p>
+<span class="arithmatex">\(\gamma_n\)</span> those of its entropy and composition divided by that rate over <span class="arithmatex">\(G\)</span>.</p>
 
 
 

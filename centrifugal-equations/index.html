@@ -1867,17 +1867,19 @@ The map commutes with the rotations about the axis, so the flux of this flow is 
 <span class="arithmatex">\(\mathbf U_{00} = \mathrm{Gaspard}\thinspace\Delta\Omega\thinspace\hat{\mathbf z}\times\boldsymbol\alpha\)</span>, and its terms
 change as follows.</p>
 <ul>
-<li><strong>Momentum.</strong> The force <span class="arithmatex">\((\mathbf U_0\cdot\nabla)\mathbf u + (\mathbf u\cdot\nabla)\mathbf U_0\)</span> gains, up to a
-  gradient, with <span class="arithmatex">\(\boldsymbol\omega_0 = \nabla\times\mathbf U_{00}\)</span>,</li>
-</ul>
-<p>$$
-  \delta\mathbf W = -\mathbf U_{00}\times\nabla\times\left((\mathsf M - \mathsf I)\thinspace\mathbf w\right)
-  + (\varepsilon + \eta P_2)\thinspace\mathbf w\times\boldsymbol\omega_0
-  - \eta\thinspace\mathrm{Gaspard}\thinspace\Delta\Omega\left(\hat{\mathbf z}\times\mathbf w - \cos\theta\thinspace\hat{\mathbf r}\times\mathbf w\right).
-  $$</p>
-<ul>
-<li><strong>Heat.</strong> The advection of the entropy times <span class="arithmatex">\(J\)</span> is <span class="arithmatex">\((1 + \eta P_2)\thinspace\mathbf U_{00}\cdot\nabla s\)</span>: the heat
-  rows gain <span class="arithmatex">\(i m\thinspace\mathrm{Gaspard}\thinspace\eta P_2\thinspace\Delta\Omega\thinspace s\)</span>.</li>
+<li>
+<p><strong>Momentum.</strong> The force <span class="arithmatex">\((\mathbf U_0\cdot\nabla)\mathbf u + (\mathbf u\cdot\nabla)\mathbf U_0\)</span> gains, up to a
+    gradient, with <span class="arithmatex">\(\boldsymbol\omega_0 = \nabla\times\mathbf U_{00}\)</span>,</p>
+<div class="arithmatex">\[
+\delta\mathbf W = -\mathbf U_{00}\times\nabla\times\left((\mathsf M - \mathsf I)\thinspace\mathbf w\right)
++ (\varepsilon + \eta P_2)\thinspace\mathbf w\times\boldsymbol\omega_0
+- \eta\thinspace\mathrm{Gaspard}\thinspace\Delta\Omega\left(\hat{\mathbf z}\times\mathbf w - \cos\theta\thinspace\hat{\mathbf r}\times\mathbf w\right).
+\]</div>
+</li>
+<li>
+<p><strong>Heat.</strong> The advection of the entropy times <span class="arithmatex">\(J\)</span> is <span class="arithmatex">\((1 + \eta P_2)\thinspace\mathbf U_{00}\cdot\nabla s\)</span>: the heat
+    rows gain <span class="arithmatex">\(i m\thinspace\mathrm{Gaspard}\thinspace\eta P_2\thinspace\Delta\Omega\thinspace s\)</span>.</p>
+</li>
 <li><strong>Induction.</strong> The electric field of the flow carries back exactly,
   <span class="arithmatex">\(\mathsf F^{\mathsf T}(\mathbf U_0\times\mathbf b) = \mathbf U_{00}\times\tilde{\mathbf b}\)</span>: no new term.</li>
 </ul>
@@ -2176,136 +2178,18 @@ for the exact spheroid (<a href="#the-exact-spheroid">The exact spheroid</a>), w
 </tbody>
 </table>
 <h2 id="checks">Checks</h2>
-<p>The deformation was checked in four ways: its closed forms against a symbolic derivation from the definitions, its
-couplings, blocks and wall rows against direct quadratures, its eigenvalues against exact results (among them the modes
-of a spheroid, computed without the map), and the energy budgets. The scripts are in <code>tests/centrifugal/</code> (README;
-<code>run_all.sh</code>, about 17 minutes on 16 cores). Results of 2026-11-06:</p>
-<table>
-<thead>
-<tr>
-<th>check</th>
-<th>script</th>
-<th>result</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>every closed form above, from the map and <span class="arithmatex">\(\mathbf w = J\mathsf F^{-1}\mathbf u\)</span> in Cartesian components (sympy): the level surfaces, the exact identities of the covariant equations, the first-order terms, the plot map, the effective potential</td>
-<td><code>derive.py</code></td>
-<td>exact</td>
-</tr>
-<tr>
-<td>the magnetic terms, from <span class="arithmatex">\(\mathbf b = \mathsf F\tilde{\mathbf b}/J\)</span> alone (sympy): the covariant Lorentz force and induction, their first-order parts <span class="arithmatex">\(\delta\mathbf G\)</span> and <span class="arithmatex">\(\delta\mathbf E\)</span>, a potential field on the deformed wall; then kore's couplings against the projections of <span class="arithmatex">\(\delta\mathbf G\)</span> and <span class="arithmatex">\(\delta\mathbf E\)</span> on its rows, block by block, and the wall terms against closed forms</td>
-<td><code>derive_mag.py</code></td>
-<td>exact; blocks 1e-14</td>
-</tr>
-<tr>
-<td>the dissipative terms and the differential rotation, from the map alone (sympy): the covariant viscous force, the stress on the level surface, the thermal diffusion and the flux through the level surface, the magnetic diffusion, the force of a differential rotation; then kore's couplings, the stress-free and fixed-flux rows and the row of the electric field at a conducting inner core against their projections on kore's rows</td>
-<td><code>derive_diff.py</code></td>
-<td>exact; 239 blocks to 1e-13, the wall rows to 3e-13</td>
-</tr>
-<tr>
-<td>the angular couplings against Gauss–Legendre projections of the closed forms, <span class="arithmatex">\(m\)</span> = 0–6, <span class="arithmatex">\(l \le 36\)</span></td>
-<td><code>algebra_check.py</code></td>
-<td>5e-14</td>
-</tr>
-<tr>
-<td>the rows of an insulating wall (outer wall and inner core, <span class="arithmatex">\(m\)</span> = 0, 1, 2, 5) against the exact matching of a potential field on the deformed wall, computed on the wall by quadrature</td>
-<td><code>bc_check.py</code></td>
-<td>of second order: the residual falls by 4.0 when <span class="arithmatex">\(f\)</span> is halved, by 2.0 with the rows of the sphere</td>
-</tr>
-<tr>
-<td>the metric blocks against <span class="arithmatex">\((r, \theta)\)</span> quadratures, in shells and full spheres; inertia and entropy Hermitian and positive, Coriolis anti-Hermitian, the viscous force Hermitian and negative</td>
-<td><code>bin/ru_insane.py</code></td>
-<td>6e-14; the viscous force 6e-11 with the profiles of <code>'Wu 2005'</code>, as in the sphere</td>
-</tr>
-<tr>
-<td><span class="arithmatex">\(f = 0\)</span> gives the matrices of <code>centrifugal = 0</code>, also with a field (a conducting inner core; a poloidal and toroidal background); <code>centrifugal = 0</code> leaves the 26 runs of <code>tests/diff_rot/regress.sh</code> unchanged</td>
-<td><code>eig_check.py</code>, <code>regress.sh</code></td>
-<td>bitwise</td>
-</tr>
-<tr>
-<td>the spin-over of a Maclaurin spheroid (inviscid, uniform <span class="arithmatex">\(f\)</span>): <span class="arithmatex">\(\mathrm{Im}\thinspace\lambda = 1 + f + f^2/3\)</span>, against the exact <span class="arithmatex">\(2a^2/(a^2 + c^2) = 1 + f + f^2/2\)</span></td>
-<td><code>eig_check.py</code></td>
-<td><span class="arithmatex">\(f/3\)</span> in <span class="arithmatex">\((\mathrm{Im}\thinspace\lambda - 1)/f - 1\)</span> for <span class="arithmatex">\(f = \pm10^{-3}, \pm10^{-2}\)</span></td>
-</tr>
-<tr>
-<td>a sphere labelled as a deformed one (<span class="arithmatex">\(f = c(1 - r^2)^2\)</span>, zero at the wall): 13 resolved modes move as <span class="arithmatex">\(c^2\)</span>, with no part odd in <span class="arithmatex">\(c\)</span></td>
-<td><code>eig_check.py</code></td>
-<td>odd part 1.6e-4 <span class="arithmatex">\(c^2\)</span></td>
-</tr>
-<tr>
-<td>the same with a field, in a viscous fluid (Ek = Em = 1e-3): the axial and the Malkus field carried by the relabelling, against the same physical field written on the sphere (<code>'general'</code> profiles); the parts of the shifts odd in <span class="arithmatex">\(c\)</span></td>
-<td><code>eig_check.py</code></td>
-<td>4e-6 (axial) and 3e-5 (Malkus); 3 % to 60 % without the metric part of the magnetic diffusion, 4 % up to 160 times the shift without that of the viscous force</td>
-</tr>
-<tr>
-<td>the free decay of a field in a sphere labelled as deformed inside: a full sphere, and a conducting inner core of the fluid's conductivity (the relabelling moves its boundary, which a uniform conductor does not see) and of another conductivity</td>
-<td><code>eig_check.py</code></td>
-<td>their part odd in <span class="arithmatex">\(c\)</span> is 2e-13 to 4e-11 of <span class="arithmatex">\(\lambda\)</span> at <span class="arithmatex">\(c\)</span> = 1e-3, of order <span class="arithmatex">\(c^3\)</span></td>
-</tr>
-<tr>
-<td>the inertial modes of an inviscid homogeneous fluid in a spheroid, computed exactly without the map (the polynomial method, in Cartesian components): <span class="arithmatex">\(d\omega/df\)</span> of the 73 modes of degree <span class="arithmatex">\(\le 7\)</span> with <span class="arithmatex">\(m\)</span> = 0, 1, 2 against kore's</td>
-<td><code>spheroid_modes.py</code></td>
-<td>1.4e-11</td>
-</tr>
-<tr>
-<td>damped modes when the walls are deformed (Ek = 1e-3): kore's <span class="arithmatex">\(d\lambda/df\)</span> against the exact first-order shift computed from the sphere's mode alone (Hadamard's formula and a volume formula), with no-slip and stress-free walls, fixed entropy and fixed flux, in full spheres and shells</td>
-<td><code>shape_check.py</code></td>
-<td>1e-10 to 3e-8; kore is 5e-2 off without the metric viscous terms</td>
-</tr>
-<tr>
-<td>the exact spheroid (<span class="arithmatex">\(f\)</span> = 0.3 and −0.2): its terms from the map (sympy); kore's couplings and wall rows against their projections on kore's rows; 176 inertial modes (degree <span class="arithmatex">\(\le 7\)</span>, <span class="arithmatex">\(m\)</span> = 0–3) against the polynomial method; 20 viscous modes at Ek 0.1 (no-slip and stress-free) and 16 diffusion modes against exact Galerkin solutions (polynomial fields, rational integrals); the rigid rotation of a stress-free shell</td>
-<td><code>spheroid_check.py</code></td>
-<td>exact; 448 blocks to 4e-14, the wall rows to 9e-14; the modes to 3e-13, 6e-13 and 1e-13; <span class="arithmatex">\(\lvert\lambda\rvert\)</span> 8e-19</td>
-</tr>
-<tr>
-<td>the exact spheroid with a field: its terms from the map (sympy); kore's couplings of the Lorentz force and the diffusion and the row of a conducting inner core against their projections on kore's rows; <span class="arithmatex">\(\lambda_l\)</span> against mpmath and the rows of an insulating wall on exact potential fields of the spheroid; the free decay of an axisymmetric field (32 rates, <span class="arithmatex">\(f\)</span> = 0.3 and −0.2) against an exact Galerkin solution; a conducting inner core of the fluid's conductivity against the full spheroid, and an insulating one as the limit of a conducting one; magnetic modes against those of <code>'uniform'</code></td>
-<td><code>spheroid_check.py</code></td>
-<td>exact; 339 blocks to 1e-13, the row at the inner core to 5e-14; <span class="arithmatex">\(\lambda_l\)</span> to 4e-15, the wall rows to 6e-14 (the sphere's rows leave 0.2); the decay rates to 8e-13; the cores to 3e-12, the limit to 8e-10; the two part as <span class="arithmatex">\(f^2\)</span> (orders 1.96 to 2.02, 10 modes)</td>
-</tr>
-<tr>
-<td><code>'clairaut'</code> of a homogeneous body against <code>'uniform'</code> with <span class="arithmatex">\(f = 5q/4\)</span></td>
-<td><code>eig_check.py</code></td>
-<td>exact: the same matrices</td>
-</tr>
-<tr>
-<td>the effective gravity with <span class="arithmatex">\(g = r\)</span>: <span class="arithmatex">\(q = 0.1\)</span> against <code>Beyonce</code> <span class="arithmatex">\((1 - 2q/3)\)</span></td>
-<td><code>eig_check.py</code></td>
-<td>below 1e-14</td>
-</tr>
-<tr>
-<td>a deformed, stratified ideal fluid has real frequencies</td>
-<td><code>eig_check.py</code></td>
-<td><span class="arithmatex">\(\lvert\mathrm{Re}\thinspace\lambda\rvert\)</span> 2e-16</td>
-</tr>
-<tr>
-<td><code>'clairaut'</code>: a homogeneous body (5/4), the polytrope of index 1 (<span class="arithmatex">\(15/(2\pi^2)\)</span>), <code>'Wu 2005'</code> against Clairaut's second-order equation integrated from <span class="arithmatex">\(\rho\)</span>; <code>'model S hydrostatic'</code> gives <span class="arithmatex">\(f/q\)</span> = 0.519 at its wall</td>
-<td><code>clairaut_check.py</code></td>
-<td>exact (homogeneous), 3e-11 (polytrope), 5e-13 (<code>'Wu 2005'</code>)</td>
-</tr>
-<tr>
-<td>the budgets residσ, residω, resid𝑠 of <code>spin_doctor</code> (<code>solve.py</code>, 2 ranks; <code>'Wu 2005'</code> with an inner core, with and without a differential rotation, and a <code>'Boussinesq'</code> full sphere)</td>
-<td><code>budget_check.py</code></td>
-<td>below 1e-9, as in the sphere (9e-10); 1e-3 to 3e-2 without the metric weights</td>
-</tr>
-<tr>
-<td>the budgets with a field (<code>solve.py</code>, 2 ranks): the axial field, a conducting inner core, a full sphere, the Malkus field, a poloidal and toroidal background with a differential rotation, each at two flattenings <span class="arithmatex">\(f\)</span> and <span class="arithmatex">\(f/2\)</span>; <code>'Wu 2005'</code> with an inner core</td>
-<td><code>budget_check.py</code></td>
-<td>residσ and residω below 2e-13, resid𝐛 below 1e-12 (2e-8 for <code>'Wu 2005'</code>, set by its resolution as in the sphere); resid𝐄 of second order (orders 1.7 to 2.2 from the two flattenings)</td>
-</tr>
-<tr>
-<td>the budgets of the exact spheroid (<code>solve.py</code>, 2 ranks, <span class="arithmatex">\(f\)</span> = 0.3 or −0.2): a no-slip shell with buoyancy, a stress-free and fixed-flux shell, a full sphere; with a field an insulating and a conducting inner core, a full sphere, the Malkus field, a poloidal and toroidal background</td>
-<td><code>budget_check.py</code></td>
-<td>without a field below 5e-10 (the stress-free shell; the others below 6e-12); with a field residσ and residω below 5e-14, resid𝐛 and resid𝐄 below 3e-13</td>
-</tr>
-<tr>
-<td>the free core nutation, the spin-over of a fixed mantle, with a field (Ek 1e-7, Em 1e-5, Le 3e-3, the axial field, a conducting inner core) at <span class="arithmatex">\(f\)</span> = ±2.5e-3 and <span class="arithmatex">\(f/2\)</span>, and without the field; the shift is taken between the deformed runs (<a href="#accuracy">Accuracy</a>)</td>
-<td><code>fcn.sh</code></td>
-<td><span class="arithmatex">\(\mathrm{Im}\thinspace\lambda\)</span> moves by <span class="arithmatex">\(f(1 + f/3)\)</span>, with the coefficient of <span class="arithmatex">\(f^2\)</span> 1/3 to 7e-4, plus 5.8e-4 of <span class="arithmatex">\(f\)</span> from the Ekman layers (Greenspan's boundary-layer theory gives 4.6e-4, which kore approaches slowly); the field changes the shift by 3.6e-5 of <span class="arithmatex">\(f\)</span>, N 200 against N 160 by 5e-6</td>
-</tr>
-</tbody>
-</table>
+<p>The deformation is checked in four ways, by the scripts in <code>tests/centrifugal/</code> (see its README):</p>
+<ul>
+<li><strong>Symbolic derivation.</strong> Every closed form on this page, including the magnetic and dissipative terms, is derived
+  again from the map with sympy, and kore's couplings and wall rows are compared with their projections.</li>
+<li><strong>Quadratures.</strong> The angular couplings, the metric blocks and the rows of an insulating wall are compared with direct
+  numerical integration.</li>
+<li><strong>Exact results.</strong> The spin-over mode of a Maclaurin spheroid; the inertial modes of a homogeneous spheroid computed
+  without the map; the first-order shift of damped modes computed from the sphere alone; a sphere relabelled as a
+  deformed body, whose modes must not change at first order; the flattening of Clairaut's equation for known
+  structures; and, for the exact spheroid, viscous and diffusive modes against exact Galerkin solutions.</li>
+<li><strong>Budgets.</strong> residσ, residω, resid𝑠 and, with a field, resid𝐛 and resid𝐄 close for resolved modes, as in the sphere.</li>
+</ul>
 
 
 

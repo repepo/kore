@@ -1240,10 +1240,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#checks-2026-11-06" class="md-nav__link">
+  <a href="#checks" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Checks (2026-11-06)
+        Checks
       
     </span>
   </a>
@@ -1448,10 +1448,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#checks-2026-11-06" class="md-nav__link">
+  <a href="#checks" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Checks (2026-11-06)
+        Checks
       
     </span>
   </a>
@@ -1477,9 +1477,7 @@
 
 <h1 id="rotating-solids-equations">Rotating solids equations</h1>
 <p>This page gives the equations of the rotating solids (<code>rotdyn = 1</code>, <a href="../rotating-solids/">Rotating solids</a>), the torques
-that couple them to the fluid, and the angular momentum balance that <code>spin_doctor</code> checks (resid𝐋). They are those of
-the <code>conductive_IC</code> branch (its rows in <code>assemble.py</code>, <code>utils.gamma_visc</code>, <code>gamma_magnetic</code>, <code>utils4pp.angrymom</code> and
-<code>torque_walls</code>), written for any density profile and any poloidal background field in <code>bin/rotdyn.py</code>.</p>
+that couple them to the fluid, and the angular momentum balance that <code>spin_doctor</code> checks (resid𝐋). They hold for any density profile and any poloidal background field (<code>bin/rotdyn.py</code>).</p>
 <h2 id="equations">Equations</h2>
 <p>The mantle and the inner core turn about the rotation axis at the rates <span class="arithmatex">\(\omega_M\)</span> and <span class="arithmatex">\(\omega_{IC}\)</span> relative to the
 frame, and <span class="arithmatex">\(\varphi\)</span> is the angle of the inner core relative to the mantle. Each solid's angular momentum changes by the
@@ -1530,7 +1528,7 @@ of the poloidal background, <code>cnorm</code> included),</p>
 \oint s\,B_{0r}\,b_\phi\,dS = \sum_l C_l\,g_l, \qquad
 C_l = 2\pi r^2\sum_n n(n+1)\,h_n\,\frac{2l(l+1)}{(2l+1)(2n+1)}\left(\delta_{n,l-1} - \delta_{n,l+1}\right),
 \]</div>
-<p>which is <span class="arithmatex">\(\tfrac{16\pi}{5}\,r^2 h_1 g_2\)</span> for a dipole (<code>conductive_IC</code>'s <code>gamma_magnetic</code>).</p>
+<p>which is <span class="arithmatex">\(\tfrac{16\pi}{5}\,r^2 h_1 g_2\)</span> for a dipole.</p>
 <p><strong>Gravitational.</strong> <span class="arithmatex">\(K\varphi\)</span> on the mantle and <span class="arithmatex">\(-K\varphi\)</span> on the inner core, which also relaxes towards alignment at
 the rate <span class="arithmatex">\(c\)</span>.</p>
 <h2 id="the-angular-momentum-balance-residl">The angular momentum balance: resid𝐋</h2>
@@ -1589,32 +1587,11 @@ their velocity), which resid𝐄 leaves out of the induction work with the rest 
 through the walls (<code>utils4pp.INDU_WALLS</code>). So resid𝐄 adds the energy of the solids to the left-hand side, and the power
 of the viscous torques and the loss <span class="arithmatex">\(-2Kc\lvert\varphi\rvert^2\)</span> to the right. It does so when both torques act on the
 solids (<code>vtrq</code> and <code>mtrq</code> 1).</p>
-<h2 id="checks-2026-11-06">Checks (2026-11-06)</h2>
-<p><code>tests/rotdyn/rotdyn_check.py</code> (<code>run_all.sh</code>, about 1 min on 2 ranks):</p>
-<ul>
-<li><strong>Decoupled solids.</strong> With <code>vtrq = 0</code> and no field the solids feel only each other: two modes are the roots of
-  <span class="arithmatex">\(\lambda^2 + c\lambda + K(1/I_M + 1/I_{IC}) = 0\)</span> (<span class="arithmatex">\(3\times10^{-15}\)</span>), the others those of fixed walls
-  (<span class="arithmatex">\(10^{-14}\)</span>).</li>
-<li><strong>Heavy solids.</strong> Moments of inertia of <span class="arithmatex">\(10^{12}\)</span> give the eigenvalues of fixed walls (<span class="arithmatex">\(10^{-12}\)</span>).</li>
-<li><strong>Against <code>conductive_IC</code></strong> (2d84351), five runs: without a field (two sets of solids, one of them Earth-like), thin
-  conducting layers with a dipole, a conducting inner core and a resolved mantle with a field of degree 2, an axial field with an
-  exponential resolved mantle and a thin layer on the inner core. Eigenvalues to <span class="arithmatex">\(10^{-14}\)</span>, and the rotation of the
-  solids and the torques on the mantle in <code>rotdyn.dat</code> to <span class="arithmatex">\(10^{-10}\)</span>, its precision.</li>
-<li><strong>Conservation</strong> with <code>'Wu 2005'</code> (<code>r_out</code> 0.9, N 64): every mode but <span class="arithmatex">\(\lambda = 0\)</span> carries no total angular
-  momentum (<span class="arithmatex">\(10^{-9}\)</span>) and closes resid𝐋 (<span class="arithmatex">\(10^{-9}\)</span>); without a field the energy budget of the fluid and the solids
-  closes (<span class="arithmatex">\(10^{-10}\)</span>), with a dipole, a conducting inner core and a resolved mantle resid𝐄 does (<span class="arithmatex">\(10^{-10}\)</span>).</li>
-<li><strong>Equatorial resid𝐋</strong> without the solids: <span class="arithmatex">\(10^{-15}\)</span> without a field, <span class="arithmatex">\(10^{-14}\)</span> to <span class="arithmatex">\(10^{-11}\)</span> with a field (a
-  conducting inner core and a resolved mantle, thin layers, a toroidal field that does not vanish at the walls), and
-  <span class="arithmatex">\(10^{-9}\)</span> in a full sphere.</li>
-<li><strong>Stops</strong> of <code>background.check_rotdyn</code>.</li>
-</ul>
-<p>Also checked once: the equatorial balance with the opposite sign of the Coriolis torque fails by O(1); the axial resid𝐋
-is <span class="arithmatex">\(10^{-14}\)</span> with a differential rotation (<code>'conical'</code>, <code>'Wu 2005'</code>); the solids work with buoyancy (<code>thermal = 1</code>,
-resid𝐋 <span class="arithmatex">\(10^{-13}\)</span>, total angular momentum <span class="arithmatex">\(10^{-10}\)</span>).</p>
-<p><strong>Forced runs</strong> (2026-11-08, <code>tests/couette</code>): resid𝐋 closes to <span class="arithmatex">\(2\cdot10^{-13}\)</span> or better for the steady rotation of
-the walls without and with a field (any of the walls and inner cores, a variable density, buoyancy, a differential
-rotation, a fluid slipping along a wall at rest, with a drag), <span class="arithmatex">\(10^{-11}\)</span> with the field <code>'Luo_S2'</code> over the Bessel
-core, and to <span class="arithmatex">\(3\cdot10^{-13}\)</span> for the libration and the thermal forcing.</p>
+<h2 id="checks">Checks</h2>
+<p><code>tests/rotdyn</code> checks the rotating solids against exact results (solids coupled only to each other; very heavy solids,
+which behave as fixed walls), the conservation of total angular momentum and energy with a variable density and a
+magnetic field, and the equatorial angular momentum balance. <code>tests/couette</code> checks resid𝐋 in the forced runs with
+turning walls, libration and thermal forcing.</p>
 
 
 

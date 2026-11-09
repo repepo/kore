@@ -673,17 +673,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#frame-and-units" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Frame and units
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#parameters" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -756,21 +745,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#what-it-covers" class="md-nav__link">
+  <a href="#limitations" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What it covers
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#output" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Output
+        Limitations
       
     </span>
   </a>
@@ -786,7 +764,7 @@
   <a href="#user-profiles" class="md-nav__link">
     <span class="md-ellipsis">
       
-        'user' profiles
+        User profiles
       
     </span>
   </a>
@@ -1671,17 +1649,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#frame-and-units" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Frame and units
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#parameters" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1754,21 +1721,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#what-it-covers" class="md-nav__link">
+  <a href="#limitations" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What it covers
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#output" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Output
+        Limitations
       
     </span>
   </a>
@@ -1784,7 +1740,7 @@
   <a href="#user-profiles" class="md-nav__link">
     <span class="md-ellipsis">
       
-        'user' profiles
+        User profiles
       
     </span>
   </a>
@@ -1820,8 +1776,8 @@
 
 
 <h1 id="background-model">Background model</h1>
-<p>kore solves for small perturbations of a background. The background has seven parts, each chosen by name in the
-parameter file:</p>
+<p>kore computes small perturbations of a steady background state. You describe that background in the parameter file,
+in seven independent parts:</p>
 <table>
 <thead>
 <tr>
@@ -1834,27 +1790,27 @@ parameter file:</p>
 <tr>
 <td>structure</td>
 <td><code>structure</code></td>
-<td>the density <span class="arithmatex">\(\rho_0\)</span>, <span class="arithmatex">\(p_0 = \rho_0 T_0\)</span> and gravity <span class="arithmatex">\(g\)</span>, functions of <span class="arithmatex">\(r\)</span></td>
+<td>density, pressure and gravity as functions of radius</td>
 </tr>
 <tr>
 <td>stratification</td>
 <td><code>stratification</code></td>
-<td>the entropy gradient <span class="arithmatex">\(dS/dr\)</span>, with <span class="arithmatex">\(S = \delta s/c_p\)</span> (only with <code>thermal = 1</code>)</td>
+<td>the radial entropy gradient (only with <code>thermal = 1</code>)</td>
 </tr>
 <tr>
 <td>diffusivity</td>
 <td><code>diffusivity</code></td>
-<td>the radial profiles of the viscosity <span class="arithmatex">\(\nu\)</span> and the thermal diffusivity <span class="arithmatex">\(\kappa\)</span> (and of <span class="arithmatex">\(D\)</span>, the composition's)</td>
+<td>how viscosity and thermal diffusivity vary with radius</td>
 </tr>
 <tr>
 <td>composition</td>
 <td><code>comp_stratification</code></td>
-<td>the gradient <span class="arithmatex">\(dC/dr\)</span> of a second scalar, the composition (only with <code>compositional = 1</code>)</td>
+<td>the gradient of a second scalar, the composition (only with <code>compositional = 1</code>)</td>
 </tr>
 <tr>
 <td>rotation</td>
 <td><code>diff_rot</code>, <code>diff_rot_type</code></td>
-<td>a uniform or a differential rotation <span class="arithmatex">\(\Omega(r,\theta)\)</span>, and the latitudinal entropy that balances it</td>
+<td>uniform or differential rotation</td>
 </tr>
 <tr>
 <td>shape</td>
@@ -1864,30 +1820,24 @@ parameter file:</p>
 <tr>
 <td>flow</td>
 <td><code>bgflow</code></td>
-<td>a steady axisymmetric flow with a meridional circulation, such as the flow of turning walls (<a href="../bgflow/">Background flow</a>)</td>
+<td>a steady axisymmetric flow, see <a href="../bgflow/">Background flow</a></td>
 </tr>
 </tbody>
 </table>
-<p>The equations in which they enter are on the page <a href="../anelastic/">Anelastic equations</a>. The code is in
-<code>bin/background.py</code> (the choice, the checks, the stratification and diffusivity types), <code>bin/radial_profiles.py</code> (one
-class per structure), <code>bin/diff_rot.py</code> (the rotation), <code>bin/centrifugal.py</code> (the flattening) and <code>bin/bgflow.py</code> (the
-flow).</p>
+<p>The equations where these enter are on <a href="../anelastic/">Anelastic equations</a>.</p>
 <h2 id="units">Units</h2>
-<p>kore is dimensionless (<a href="../anelastic/#non-dimensionalization">Non-dimensionalization</a>). The unit of length is the radius
-of the outer wall, <span class="arithmatex">\(r = 1\)</span>. <code>r_out</code> is that radius in star radii (1 by default), so <span class="arithmatex">\(x = r\cdot\)</span><code>r_out</code> is the radius
-in star radii, the coordinate of the solar profiles below. The only physical unit kore reads is that of the solar
-rotation data, in nHz.</p>
-<p><code>bin/units.py</code> turns physical values into the parameters, with the time unit <span class="arithmatex">\(1/\Omega\)</span>; kore itself never imports it. In
-a parameter file, after <code>r_out</code> is set:</p>
+<p>kore works with dimensionless quantities (<a href="../anelastic/#non-dimensionalization">Non-dimensionalization</a>). The unit of
+length is the radius of the outer wall. The parameter <code>r_out</code> (default 1) gives that radius as a fraction of the stellar
+radius; the solar profiles below are written in terms of this fractional stellar radius, called <span class="arithmatex">\(x\)</span>.</p>
+<p>The helper module <code>bin/units.py</code> converts physical values into kore's parameters, using <span class="arithmatex">\(1/\Omega\)</span> as the time unit.
+In a parameter file, after setting <code>r_out</code>:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">units</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">units</span><span class="o">.</span><span class="n">set_physical</span><span class="p">(</span><span class="n">par</span><span class="p">,</span> <span class="n">frame_nHz</span><span class="o">=</span><span class="mf">456.0</span><span class="p">,</span> <span class="n">nu</span><span class="o">=</span><span class="mf">1e12</span><span class="p">,</span> <span class="n">kappa</span><span class="o">=</span><span class="mf">1e12</span><span class="p">)</span>   <span class="c1"># Gaspard, Beyonce, ViscosD, ThermaD, diff_rot_frame</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">units</span><span class="o">.</span><span class="n">set_target</span><span class="p">(</span><span class="n">par</span><span class="p">,</span> <span class="n">omega</span><span class="o">=-</span><span class="mf">271.2</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=-</span><span class="mf">33.2</span><span class="p">)</span>                 <span class="c1"># itau, rtau from ω, σ in nHz</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">units</span><span class="o">.</span><span class="n">set_physical</span><span class="p">(</span><span class="n">par</span><span class="p">,</span> <span class="n">frame_nHz</span><span class="o">=</span><span class="mf">456.0</span><span class="p">,</span> <span class="n">nu</span><span class="o">=</span><span class="mf">1e12</span><span class="p">,</span> <span class="n">kappa</span><span class="o">=</span><span class="mf">1e12</span><span class="p">)</span>   <span class="c1"># sets Gaspard, Beyonce, ViscosD, ThermaD, diff_rot_frame</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">units</span><span class="o">.</span><span class="n">set_target</span><span class="p">(</span><span class="n">par</span><span class="p">,</span> <span class="n">omega</span><span class="o">=-</span><span class="mf">271.2</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=-</span><span class="mf">33.2</span><span class="p">)</span>                 <span class="c1"># sets the solver target from a frequency and a damping rate in nHz</span>
 </span></code></pre></div>
-<p><code>set_physical</code> takes <span class="arithmatex">\(\nu\)</span> and <span class="arithmatex">\(\kappa\)</span> in cm²/s and uses the solar radius and surface gravity unless <code>radius</code> and
-<code>gsurf</code> (cgs) are given. For the Sun with <code>r_out</code> = 0.985 in a frame rotating at 456 nHz it gives
-<code>Beyonce</code> <span class="arithmatex">\(= 4.86\times10^4\)</span> and, for <span class="arithmatex">\(\nu = 10^{12}\)</span> cm²/s, <code>ViscosD</code> <span class="arithmatex">\(= 7.4\times10^{-5}\)</span>. In a run directory,
-<code>python3 bin/units.py</code> prints the eigenvalues as <span class="arithmatex">\(\omega\)</span> and <span class="arithmatex">\(\sigma\)</span> in nHz, <span class="arithmatex">\(\omega = -\mathrm{Im}\thinspace\lambda\cdot F/\mathrm{Gaspard}\)</span>
-and <span class="arithmatex">\(\sigma = \mathrm{Re}\thinspace\lambda\cdot F/\mathrm{Gaspard}\)</span>, with <span class="arithmatex">\(F\)</span> = <code>diff_rot_frame</code> the frame rate in nHz.</p>
+<p><code>set_physical</code> takes the viscosity and thermal diffusivity in cm²/s, and uses the solar radius and surface gravity
+unless you pass <code>radius</code> and <code>gsurf</code> (in cgs units). Running <code>python3 bin/units.py</code> in a run directory prints the
+computed eigenvalues as frequency and damping rate in nHz.</p>
 <h2 id="quick-start">Quick start</h2>
 <p>The background of the smooth Sun example (<code>examples/smooth_sun/parameters.py</code>), a full sphere with the observed solar
 rotation:</p>
@@ -1896,306 +1846,257 @@ rotation:</p>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">par</span><span class="o">.</span><span class="n">structure</span>      <span class="o">=</span> <span class="s1">'model S hydrostatic'</span>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">par</span><span class="o">.</span><span class="n">stratification</span> <span class="o">=</span> <span class="s1">'solar_rz'</span>            <span class="c1"># a radiative interior below a slightly subadiabatic convection zone</span>
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">par</span><span class="o">.</span><span class="n">solar_rz_delta_cz</span> <span class="o">=</span> <span class="o">-</span><span class="mf">4e-7</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">par</span><span class="o">.</span><span class="n">diffusivity</span>    <span class="o">=</span> <span class="s1">'solar_rz'</span>            <span class="c1"># ν, κ drop to visc0, therm0 below 0.70 R☉</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">par</span><span class="o">.</span><span class="n">diffusivity</span>    <span class="o">=</span> <span class="s1">'solar_rz'</span>            <span class="c1"># viscosity and diffusivity drop to visc0, therm0 below 0.70 R☉</span>
 </span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">par</span><span class="o">.</span><span class="n">visc0</span><span class="p">,</span> <span class="n">par</span><span class="o">.</span><span class="n">therm0</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.04</span>
 </span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">par</span><span class="o">.</span><span class="n">diff_rot</span>       <span class="o">=</span> <span class="mi">1</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">par</span><span class="o">.</span><span class="n">diff_rot_type</span>  <span class="o">=</span> <span class="s1">'tabulated'</span>           <span class="c1"># Ω(r, θ) from a table</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">par</span><span class="o">.</span><span class="n">diff_rot_type</span>  <span class="o">=</span> <span class="s1">'tabulated'</span>           <span class="c1"># rotation rate read from a table</span>
 </span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">par</span><span class="o">.</span><span class="n">diff_rot_file</span>  <span class="o">=</span> <span class="s1">'bin/jsoc_hmi_2010_2026.npz'</span>
 </span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="n">par</span><span class="o">.</span><span class="n">diff_rot_nmax</span>  <span class="o">=</span> <span class="mi">4</span>
 </span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="n">par</span><span class="o">.</span><span class="n">thermal_wind</span>   <span class="o">=</span> <span class="mi">2</span>                     <span class="c1"># with its exact thermal wind</span>
 </span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="n">par</span><span class="o">.</span><span class="n">thermal_wind_radial</span> <span class="o">=</span> <span class="mi">0</span>
 </span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="n">units</span><span class="o">.</span><span class="n">set_physical</span><span class="p">(</span><span class="n">par</span><span class="p">,</span> <span class="n">frame_nHz</span><span class="o">=</span><span class="mf">456.0</span><span class="p">,</span> <span class="n">nu</span><span class="o">=</span><span class="mf">1e12</span><span class="p">,</span> <span class="n">kappa</span><span class="o">=</span><span class="mf">1e12</span><span class="p">)</span>
 </span></code></pre></div>
-<p>The checked-in <code>bin/parameters.py</code>, a gravito-inertial mode, uses <code>structure = 'Wu 2005'</code> with <code>r_out = 0.99</code> and
-<code>stratification = 'top hat'</code>, with uniform rotation. <a href="../getting-started/">Getting started</a> uses an incompressible fluid
-(<code>'Boussinesq'</code>, <code>thermal = 0</code>) with a shellular rotation.</p>
+<p>The default <code>bin/parameters.py</code> uses <code>structure = 'Wu 2005'</code> and <code>stratification = 'top hat'</code> with uniform rotation.
+<a href="../getting-started/">Getting started</a> uses an incompressible fluid (<code>'Boussinesq'</code>, <code>thermal = 0</code>).</p>
 <h2 id="structure">Structure</h2>
-<p><code>structure</code> has no default.</p>
+<p><code>structure</code> sets the density, pressure and gravity. It has no default.</p>
 <table>
 <thead>
 <tr>
 <th><code>structure</code></th>
-<th><span class="arithmatex">\(\rho_0\)</span>, <span class="arithmatex">\(p_0\)</span>, <span class="arithmatex">\(g\)</span></th>
+<th>description</th>
 <th>parameters</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>'model S hydrostatic'</code></td>
-<td>the Sun, for new runs: an even polynomial fit of <span class="arithmatex">\(\ln\rho\)</span> of Model S (<code>bin/model_s.at</code>) over the whole Sun, <span class="arithmatex">\(g\)</span> from its mass, <span class="arithmatex">\(p_0\)</span> from hydrostatic balance</td>
+<td>the Sun: a smooth fit to the density of solar Model S, with gravity and pressure consistent with it. Recommended for solar work</td>
 <td><code>structure_deg</code> (30)</td>
 </tr>
 <tr>
 <td><code>'Wu 2005'</code></td>
-<td><span class="arithmatex">\(\rho_0 = (1 - x^2)^2\)</span> (Wu 2005, <span class="arithmatex">\(\beta = 2\)</span>) with its <span class="arithmatex">\(g\)</span> and <span class="arithmatex">\(p_0\)</span></td>
-<td><code>r_out</code> &lt; 1, so that <span class="arithmatex">\(\rho_0 &gt; 0\)</span> at the wall</td>
+<td>a polytrope-like density <span class="arithmatex">\(\rho_0 = (1 - x^2)^2\)</span> (Wu 2005)</td>
+<td>needs <code>r_out</code> &lt; 1, so that the density is not zero at the wall</td>
 </tr>
 <tr>
 <td><code>'Boussinesq'</code></td>
-<td><span class="arithmatex">\(\rho_0 = p_0 = 1\)</span>, <span class="arithmatex">\(g = r\)</span>: the Boussinesq equations</td>
+<td>uniform density: the Boussinesq (incompressible) equations</td>
 <td>–</td>
 </tr>
 <tr>
-<td><code>'8-term fit'</code> (legacy)</td>
-<td>the smooth fit of <code>bin/smoothed_sun.py</code>, up to 48 % off Model S in <span class="arithmatex">\(\rho\)</span> near the surface, which moves solar inertial modes by 1.5–8 nHz</td>
+<td><code>'8-term fit'</code></td>
+<td>legacy solar fit, kept to reproduce old runs</td>
 <td>–</td>
 </tr>
 <tr>
-<td><code>'old model S prototype'</code> (legacy)</td>
-<td>Chebyshev fits of <span class="arithmatex">\(\ln\rho\)</span> and <span class="arithmatex">\(\ln p\)</span> of Model S, with the <span class="arithmatex">\(g\)</span> of the 8-term fit (not hydrostatic)</td>
+<td><code>'old model S prototype'</code></td>
+<td>legacy solar fit, kept to reproduce old runs</td>
 <td><code>solar_density_deg</code>, <code>solar_density_window</code>, <code>solar_density_sun_deg</code></td>
 </tr>
 </tbody>
 </table>
 <ul>
-<li>Only ratios of <span class="arithmatex">\(\rho_0\)</span> and of <span class="arithmatex">\(p_0\)</span> enter the equations, so their scale does not matter. <span class="arithmatex">\(g\)</span> is 1 at the surface
-  (<span class="arithmatex">\(x = 1\)</span>) in the solar structures and in <code>'Wu 2005'</code>.</li>
-<li>The three solar structures (the first and the last two rows) also make <span class="arithmatex">\(x = r\cdot\)</span><code>r_out</code> the radius of the solar
-  rotation profiles (<code>diff_rot.solar_x</code>).</li>
-<li><code>'model S hydrostatic'</code> is within 1.0 %, 0.5 % and 0.75 % of Model S in <span class="arithmatex">\(\rho\)</span>, <span class="arithmatex">\(p\)</span> and <span class="arithmatex">\(g\)</span> at degree 30, and within
-  0.14 %, 0.06 % and 0.10 % at degree 50. Use 50 to compare with papers that use Model S itself; degrees of 40 and above
-  need about 16 more <code>lmax</code> for the same <span class="arithmatex">\(\ell\)</span>-convergence of the HFR modes.</li>
-<li>The two legacy structures are kept so that runs made before <code>'model S hydrostatic'</code> give the same results. For
-  <code>'old model S prototype'</code>, <code>solar_density_window</code> None fits the shell <span class="arithmatex">\([\)</span><code>ricb</code><span class="arithmatex">\(\cdot\)</span><code>r_out</code> <span class="arithmatex">\(- 0.01\)</span>,
-  <code>r_out</code> <span class="arithmatex">\(+ 0.005]\)</span> when <code>ricb</code> &gt; 0, and is <code>'sun'</code> when <code>ricb</code> = 0: one even fit over the whole Sun of degree
-  <code>solar_density_sun_deg</code> (60).</li>
+<li>Only the shape of the density and pressure profiles matters, not their overall scale.</li>
+<li><code>'model S hydrostatic'</code> matches Model S to within about 1 % at the default degree 30. Use <code>structure_deg = 50</code> to
+  compare closely with work that uses Model S itself; this needs a slightly higher <code>lmax</code>.</li>
 </ul>
 <h2 id="stratification">Stratification</h2>
-<p>With <code>thermal = 1</code>, <code>stratification</code> sets <span class="arithmatex">\(dS/dr\)</span> for <span class="arithmatex">\(r \ge 0\)</span>, in units of <span class="arithmatex">\(1/L\)</span>; it has no default then. In a full
-sphere (<code>ricb = 0</code>) kore uses it as an odd function of <span class="arithmatex">\(r\)</span>, so it should go to zero smoothly at the centre.</p>
+<p>With <code>thermal = 1</code>, <code>stratification</code> sets the background entropy gradient <span class="arithmatex">\(dS/dr\)</span>, which controls buoyancy. A positive
+gradient is stable (radiative), zero is neutral (convective). There is no default.</p>
 <table>
 <thead>
 <tr>
 <th><code>stratification</code></th>
-<th><span class="arithmatex">\(dS/dr\)</span></th>
+<th>profile</th>
 <th>parameters</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>'top hat'</code></td>
-<td><span class="arithmatex">\(\tfrac{A}{2}\left[\mathrm{erf}\frac{r - x_1}{w_1} - \mathrm{erf}\frac{r - x_2}{w_2}\right]\)</span></td>
-<td><code>aux1</code>…<code>aux5</code> = <span class="arithmatex">\(x_1\)</span>, <span class="arithmatex">\(w_1\)</span>, <span class="arithmatex">\(x_2\)</span>, <span class="arithmatex">\(w_2\)</span>, <span class="arithmatex">\(A\)</span></td>
+<td>a stable layer between two smooth steps</td>
+<td><code>aux1</code>…<code>aux5</code>: position and width of each step, then the amplitude</td>
 </tr>
 <tr>
 <td><code>'odd top hat'</code></td>
-<td>the same made odd in <span class="arithmatex">\(r\)</span>: with <span class="arithmatex">\(x_1 = 0\)</span> it rises as <span class="arithmatex">\(A\thinspace\mathrm{erf}(r/w_1)\)</span> from the centre</td>
+<td>the same, but well behaved at the centre of a full sphere</td>
 <td><code>aux1</code>…<code>aux5</code></td>
 </tr>
 <tr>
 <td><code>'solar_rz'</code></td>
-<td>the radiative interior of Mukhopadhyay et al. 2025b, below</td>
-<td><code>solar_rz_dSdr</code>, <code>solar_rz_steps</code>, <code>solar_rz_core</code>, <code>solar_rz_delta_cz</code>, <code>solar_rz_delta_sf</code>, <code>solar_rz_os</code></td>
+<td>the solar radiative interior of Mukhopadhyay et al. 2025b (below)</td>
+<td><code>solar_rz_*</code></td>
 </tr>
 <tr>
 <td><code>'linear'</code></td>
-<td><span class="arithmatex">\(r\)</span>; with <code>'Boussinesq'</code>, <span class="arithmatex">\(N^2\)</span> = <code>Beyonce</code> <span class="arithmatex">\(r^2\)</span> (Rieutord 2006, Mirouh et al. 2016)</td>
+<td>proportional to <span class="arithmatex">\(r\)</span></td>
 <td>–</td>
 </tr>
 <tr>
 <td><code>'inverse square'</code></td>
-<td><span class="arithmatex">\(1/r^2\)</span>, conduction between the walls</td>
+<td>proportional to <span class="arithmatex">\(1/r^2\)</span> (conduction between the walls)</td>
 <td>needs <code>ricb</code> &gt; 0</td>
 </tr>
 <tr>
 <td><code>'two zone'</code></td>
-<td><span class="arithmatex">\(\tfrac12\left[1 + \tanh\frac{2(r - r_c)}{h}\right]\)</span>: a nearly neutral inner zone under a stratified outer one</td>
-<td><code>two_zone</code> = <span class="arithmatex">\([r_c, h]\)</span> ([0.7, 0.1])</td>
+<td>a nearly neutral inner zone below a stable outer zone</td>
+<td><code>two_zone</code> = [transition radius, width] ([0.7, 0.1])</td>
 </tr>
 <tr>
 <td><code>'user'</code></td>
-<td><code>stratification_profile</code>, a numpy expression (<a href="#user-profiles">below</a>)</td>
-<td><code>stratification_param</code> (<span class="arithmatex">\(p\)</span>)</td>
+<td>your own expression (<a href="#user-profiles">below</a>)</td>
+<td><code>stratification_profile</code>, <code>stratification_param</code></td>
 </tr>
 </tbody>
 </table>
 <ul>
-<li><code>'top hat'</code> in a full sphere needs <span class="arithmatex">\(x_1 \gtrsim 6 w_1\)</span>, so that <span class="arithmatex">\(dS/dr \to 0\)</span> at the centre; otherwise use
-  <code>'odd top hat'</code>. With <code>ricb</code> &gt; 0 and <code>ThermaD = 0</code>, a <span class="arithmatex">\(dS/dr \neq 0\)</span> at the inner wall gives spurious modes trapped
-  there (<a href="#thermad-0">below</a>).</li>
-<li><code>'odd top hat'</code> with <code>aux1</code>…<code>aux5</code> = 0, 0.03, 0.68, 0.06, 2.6 fits the <span class="arithmatex">\(dS/dr\)</span> of Model S to 10 % rms.</li>
+<li>In a full sphere the gradient must go to zero smoothly at the centre. Use <code>'odd top hat'</code> rather than <code>'top hat'</code>
+  unless the first step is far from the centre.</li>
+<li>In a shell without thermal diffusion, keep the gradient zero at the inner wall (see <a href="#thermad-0">ThermaD = 0</a>).</li>
+<li><code>'odd top hat'</code> with <code>aux1</code>…<code>aux5</code> = 0, 0.03, 0.68, 0.06, 2.6 approximates the entropy gradient of solar Model S.</li>
 </ul>
-<p><strong><code>'solar_rz'</code>.</strong> With <span class="arithmatex">\(x = r\cdot\)</span><code>r_out</code> in solar radii (their eq. 10, plus the convection zone of Bekki et al.
-2024, eq. 2):</p>
+<p><strong><code>'solar_rz'</code>.</strong> A stable radiative interior joined to a convection zone at about 0.7 solar radii, following
+Mukhopadhyay et al. (2025b) and Bekki et al. (2024):</p>
 <div class="arithmatex">\[
-\begin{aligned}
-\frac{dS}{dr} &amp;= \frac{A}{4}\left[1 - \mathrm{erf}\frac{x - x_1}{d}\right]\left[1 - \mathrm{erf}\frac{x - x_2}{d}\right]\mathrm{erf}\frac{x}{w_0}\cr
-&amp;\quad + \delta(x)\thinspace \frac{d\ln p_0}{dr}\thinspace \frac{1}{2}\left[1 + \mathrm{erf}\frac{x - x_{OS}}{d_{OS}}\right],
-\end{aligned}
+\frac{dS}{dr} = \frac{A}{4}\left[1 - \mathrm{erf}\frac{x - x_1}{d}\right]\left[1 - \mathrm{erf}\frac{x - x_2}{d}\right]\mathrm{erf}\frac{x}{w_0}
++ \delta(x)\thinspace \frac{d\ln p_0}{dr}\thinspace \frac{1}{2}\left[1 + \mathrm{erf}\frac{x - x_{OS}}{d_{OS}}\right].
 \]</div>
-<div class="arithmatex">\[
-\delta(x) = \delta_{cz} + (\delta_{sf} - \delta_{cz})\thinspace e^{-((x - 0.985)/0.015)^2},
-\]</div>
-<p>with <span class="arithmatex">\(A\)</span> = <code>solar_rz_dSdr</code> (2.615), <span class="arithmatex">\([x_1, x_2, d]\)</span> = <code>solar_rz_steps</code> ([0.61, 0.68, 0.04]), <span class="arithmatex">\(w_0\)</span> = <code>solar_rz_core</code>
-(0.05: makes <span class="arithmatex">\(dS/dr\)</span> odd and smooth at <span class="arithmatex">\(r = 0\)</span>, no effect above <span class="arithmatex">\(x \approx 3w_0\)</span>), <span class="arithmatex">\([x_{OS}, d_{OS}]\)</span> = <code>solar_rz_os</code>
-([0.70, 0.04]) and <span class="arithmatex">\(\delta_{cz}\)</span>, <span class="arithmatex">\(\delta_{sf}\)</span> = <code>solar_rz_delta_cz</code>, <code>solar_rz_delta_sf</code> (0). <span class="arithmatex">\(A\)</span> is their
-<span class="arithmatex">\((\partial s_0/\partial r)_{RZ}\)</span> = 1.32e-2 erg g⁻¹ K⁻¹ cm⁻¹ times <span class="arithmatex">\(L/c_p\)</span>, with <span class="arithmatex">\(c_p\)</span> = 3.46e8 and <code>r_out</code> = 0.985, so
-it scales with <code>r_out</code>. <span class="arithmatex">\(\delta &lt; 0\)</span> is subadiabatic; kore stops if <span class="arithmatex">\(\delta\)</span> is set with another stratification. In the
-smooth Sun example, <span class="arithmatex">\(\delta_{cz} = -4\times10^{-7}\)</span> makes the HFR <span class="arithmatex">\(m = 8\)</span> mode 34 nHz more retrograde than
-<span class="arithmatex">\(\delta_{cz} = 0\)</span>.</p>
+<p>The first term is the radiative interior, the second the convection zone. The parameters and their defaults:</p>
+<table>
+<thead>
+<tr>
+<th>parameter</th>
+<th>meaning</th>
+<th>default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>solar_rz_dSdr</code></td>
+<td>amplitude <span class="arithmatex">\(A\)</span> of the radiative gradient</td>
+<td>2.615</td>
+</tr>
+<tr>
+<td><code>solar_rz_steps</code></td>
+<td><span class="arithmatex">\([x_1, x_2, d]\)</span>, the steps that shape it</td>
+<td>[0.61, 0.68, 0.04]</td>
+</tr>
+<tr>
+<td><code>solar_rz_core</code></td>
+<td><span class="arithmatex">\(w_0\)</span>, makes the profile smooth at the centre</td>
+<td>0.05</td>
+</tr>
+<tr>
+<td><code>solar_rz_os</code></td>
+<td><span class="arithmatex">\([x_{OS}, d_{OS}]\)</span>, base and width of the convection zone</td>
+<td>[0.70, 0.04]</td>
+</tr>
+<tr>
+<td><code>solar_rz_delta_cz</code></td>
+<td>superadiabaticity <span class="arithmatex">\(\delta\)</span> of the convection zone (negative is stable)</td>
+<td>0</td>
+</tr>
+<tr>
+<td><code>solar_rz_delta_sf</code></td>
+<td><span class="arithmatex">\(\delta\)</span> just below the surface</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p>A slightly negative <code>solar_rz_delta_cz</code>, such as the <span class="arithmatex">\(-4\times10^{-7}\)</span> of the smooth Sun example, noticeably changes
+the frequencies of the high-frequency retrograde modes.</p>
 <h2 id="diffusivity">Diffusivity</h2>
-<p><span class="arithmatex">\(\nu\)</span> = <code>ViscosD</code> <span class="arithmatex">\(\hat\nu(r)\)</span> and <span class="arithmatex">\(\kappa\)</span> = <code>ThermaD</code> <span class="arithmatex">\(\hat\kappa(r)\)</span>; <code>diffusivity</code> sets <span class="arithmatex">\(\hat\nu\)</span> and <span class="arithmatex">\(\hat\kappa\)</span>, and
-<span class="arithmatex">\(\hat D\)</span> of the composition's <span class="arithmatex">\(D\)</span> = <code>CompoD</code> <span class="arithmatex">\(\hat D(r)\)</span> (<a href="#composition">Composition</a>) as it sets <span class="arithmatex">\(\hat\kappa\)</span>, with <code>comp0</code>
-in place of <code>therm0</code>.</p>
+<p>The viscosity is <code>ViscosD</code> times a radial profile, and the thermal diffusivity is <code>ThermaD</code> times another.
+<code>diffusivity</code> chooses those profiles (and the composition's, with <code>comp0</code> in place of <code>therm0</code>).</p>
 <table>
 <thead>
 <tr>
 <th><code>diffusivity</code></th>
-<th><span class="arithmatex">\(\hat\nu\)</span>, <span class="arithmatex">\(\hat\kappa\)</span></th>
+<th>profile</th>
 <th>parameters</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>'uniform'</code> (default)</td>
-<td>1</td>
+<td>constant</td>
 <td>–</td>
 </tr>
 <tr>
 <td><code>'step'</code></td>
-<td><code>visc0</code>, <code>therm0</code> below <span class="arithmatex">\(r\)</span> = <code>aux3</code>, 1 above, joined by an erf of width <code>aux4</code></td>
+<td><code>visc0</code>, <code>therm0</code> below radius <code>aux3</code>, 1 above, joined by a smooth step of width <code>aux4</code></td>
 <td><code>visc0</code>, <code>therm0</code>, <code>aux3</code>, <code>aux4</code></td>
 </tr>
 <tr>
 <td><code>'solar_rz'</code></td>
-<td><code>visc0</code>, <code>therm0</code> below <span class="arithmatex">\(x_{OS}\)</span>, 1 above, as <span class="arithmatex">\(\tfrac12[1 + \mathrm{erf}((x - x_{OS})/d_{OS})]\)</span> (Mukhopadhyay et al. 2025b, eqs. 8–9)</td>
+<td><code>visc0</code>, <code>therm0</code> in the radiative interior, 1 in the convection zone (Mukhopadhyay et al. 2025b)</td>
 <td><code>visc0</code>, <code>therm0</code>, <code>solar_rz_os</code></td>
 </tr>
 <tr>
 <td><code>'user'</code></td>
-<td><code>diffusivity_profiles = {'nu': '...', 'kappa': '...'}</code>, numpy expressions (<a href="#user-profiles">below</a>), and <code>'D': '...'</code> with <code>compositional = 1</code></td>
-<td><code>diffusivity_param</code> (<span class="arithmatex">\(p\)</span>)</td>
+<td>your own expressions (<a href="#user-profiles">below</a>)</td>
+<td><code>diffusivity_profiles</code>, <code>diffusivity_param</code></td>
 </tr>
 </tbody>
 </table>
 <ul>
-<li>With <code>'step'</code> and <code>'solar_rz'</code>, <code>ViscosD</code> and <code>ThermaD</code> are the values above the step (the convection zone of the
-  Sun). Mukhopadhyay et al. 2025b use <code>visc0</code> = 0.01 and <code>therm0</code> = 0.04.</li>
-<li>Any type is multiplied by <span class="arithmatex">\((\rho_0(x_2)/\rho_0)^p\)</span>, <span class="arithmatex">\(x_2\)</span> = <code>aux3</code>, with <span class="arithmatex">\(p\)</span> = <code>visc_pow</code> for <span class="arithmatex">\(\hat\nu\)</span> and <code>therm_pow</code>
-  for <span class="arithmatex">\(\hat\kappa\)</span> (and <code>comp_pow</code> for <span class="arithmatex">\(\hat D\)</span>): 0 (the default) keeps the kinematic diffusivities as set, 1 makes
-  <span class="arithmatex">\(\rho_0\nu\)</span> and <span class="arithmatex">\(\rho_0\kappa\)</span> follow the profile instead.</li>
-<li><a href="../forcing/">Forcing 11</a> (random Reynolds stresses) uses the turbulent part of the viscosity, <code>ViscosD</code> <span class="arithmatex">\((\hat\nu - \nu_f)\)</span>: the
-  floor <span class="arithmatex">\(\nu_f\)</span> is <code>visc0</code> with <code>'step'</code> and <code>'solar_rz'</code> when <code>visc0</code> &lt; 1 and 0 otherwise, unless <code>rsf_nu_floor</code> is
-  set.</li>
+<li>With <code>'step'</code> and <code>'solar_rz'</code>, <code>ViscosD</code> and <code>ThermaD</code> are the values in the outer (convective) layer.</li>
+<li><code>visc_pow</code>, <code>therm_pow</code> and <code>comp_pow</code> (default 0) multiply the profile by a power of the density. With 1, the
+  dynamic diffusivities (density times diffusivity) follow the profile instead of the kinematic ones.</li>
+<li><a href="../forcing/">Convective forcing</a> uses only the turbulent part of the viscosity, above a floor <code>rsf_nu_floor</code>.</li>
 </ul>
 <h3 id="thermad-0">ThermaD = 0</h3>
-<p><code>ThermaD = 0</code> removes the thermal diffusion: the motion is adiabatic, and <code>bci_thermal</code>, <code>bco_thermal</code> are not used
-(<a href="../anelastic/#without-thermal-diffusion">Without thermal diffusion</a>). It works with every structure, stratification and
-rotation option. What to watch for:</p>
+<p><code>ThermaD = 0</code> turns thermal diffusion off: the motion is adiabatic and the thermal boundary conditions are not used.
+It works with every structure, stratification and rotation profile. Things to know:</p>
 <ul>
-<li><strong>Prefer <code>ThermaD = 0</code> to a very small <code>ThermaD</code>.</strong> As <code>ThermaD</code> → 0 the eigenvalues of a resolved diffusive run
-  approach the <code>ThermaD = 0</code> ones linearly. With the thermal wind and walls that are both stress-free and at fixed
-  entropy (<code>bci_thermal = bco_thermal = 0</code>), a small <code>ThermaD</code> forms a thermal boundary layer of width about
-  <span class="arithmatex">\((\mathrm{ThermaD}/\lvert\lambda\rvert)^{1/2}\)</span> at the walls, which below <code>ThermaD</code> ≈ <span class="arithmatex">\(10^{-7}\)</span> needs far more radial
-  resolution than the bulk. The <code>ThermaD = 0</code> run has no such layer, and neither have zero-flux or no-slip walls.</li>
-<li><strong>Let <span class="arithmatex">\(dS/dr\)</span> vanish at the inner wall.</strong> In a shell, a <span class="arithmatex">\(dS/dr \neq 0\)</span> at the inner wall gives spurious modes trapped
-  there. Their eigenvalues move with N, and <code>spin_doctor</code> flags them (residσ ≈ 1). For an erf top hat, take
-  <span class="arithmatex">\(x_1 \ge\)</span> <code>ricb</code> <span class="arithmatex">\(+ 3w_1\)</span>. If the gradient must reach the wall, raise <code>nev</code> by one or two, because the spurious modes
-  take some of the slots.</li>
-<li><strong>With a differential rotation, expect a band of eigenvalues near <span class="arithmatex">\(\sigma = 0\)</span>.</strong> Without diffusion, the advection of
-  <span class="arithmatex">\(s\)</span> by the rotation has a continuous spectrum, <span class="arithmatex">\(\lambda = -i\thinspace m\thinspace\mathrm{Gaspard}\thinspace\Delta\Omega(r,\theta)\)</span>,
-  which the discretization shows as many eigenvalues near <span class="arithmatex">\(\sigma = 0\)</span> with frequencies in the range of
-  <span class="arithmatex">\(m\thinspace\mathrm{Gaspard}\thinspace\Delta\Omega\)</span>. With the thermal wind some of them grow slowly. They peak at
-  <span class="arithmatex">\(l \approx\)</span> <code>lmax</code> and change with <code>lmax</code>: discard any mode that fails the ℓ-convergence check of <code>spin_doctor</code>. They
-  disappear with <code>thermal_wind = 0</code> or with a moderate diffusivity (<code>ThermaD</code> ≈ <span class="arithmatex">\(10^{-3}\)</span>). Put the target away from
-  the band, where the solver converges slowly.</li>
-<li><strong>Check the convergence in N.</strong> In a full sphere, eigenfunctions with <code>ThermaD = 0</code> need more radial resolution than
-  diffusive ones (N = 200 instead of 120 for a smooth solar model). Where <span class="arithmatex">\(\rho_0\)</span> nearly vanishes at the outer wall
-  (structure <code>'Wu 2005'</code> with <code>r_out</code> close to 1), the thermal-wind rows converge slowly in N.</li>
-<li><strong>A forced run needs the fluid to carry the entropy round.</strong> Without diffusion the rows of the entropy hold only
-  its transport, <span class="arithmatex">\(i(w + m\Omega)\thinspace s\)</span> and <span class="arithmatex">\(u_r\thinspace dS/dr\)</span>, at the frequency <span class="arithmatex">\(w\)</span> of the run
-  (<code>forcing_frequency</code>, or each of <code>rsf_frequencies</code> for forcing 11 with a scan), <span class="arithmatex">\(\Omega\)</span> being the angular velocity
-  of the differential rotation and of the background flow. Where <span class="arithmatex">\(w + m\Omega\)</span> is 0 everywhere (a steady run with
-  <span class="arithmatex">\(m = 0\)</span>, or with no rotation) the entropy is undetermined; where it changes sign in the fluid (a <code>'Y20'</code> rotation in
-  a steady run) the entropy has a critical layer that no resolution resolves; and a background flow with a meridional
-  circulation makes it resonate on some streamlines at any frequency. kore stops in these cases
-  (<a href="../compatibility/#forced-runs">Combining features</a>). A rotation of one sign, as a <code>'rigid'</code> offset or a
-  <code>'conical'</code> one in a steady run, runs.</li>
+<li><strong>Prefer <code>ThermaD = 0</code> to a very small <code>ThermaD</code>.</strong> A very small diffusivity creates thin thermal boundary layers at
+  the walls that need much more radial resolution. The eigenvalues approach the <code>ThermaD = 0</code> ones smoothly anyway.</li>
+<li><strong>Keep the entropy gradient zero at the inner wall.</strong> Otherwise spurious modes appear there. They move when you change
+  <code>N</code>, and <code>spin_doctor</code> flags them. If the gradient must reach the wall, ask for one or two more eigenvalues (<code>nev</code>),
+  since the spurious modes take some of the slots.</li>
+<li><strong>With differential rotation, expect many spurious eigenvalues with near-zero damping.</strong> They come from the entropy
+  being carried by the rotation without diffusion. They change with <code>lmax</code> and fail the ℓ-convergence check of
+  <code>spin_doctor</code>; discard them. Keep the solver target away from that band.</li>
+<li><strong>Check convergence in <code>N</code>.</strong> Runs without diffusion usually need more radial resolution.</li>
+<li><strong>Forced runs.</strong> Without diffusion, the entropy is only carried by the flow. If the forcing frequency, seen from the
+  rotating fluid, is zero somewhere in the domain, the problem has no well-behaved solution and kore stops
+  (<a href="../compatibility/#forced-runs">Combining features</a>).</li>
 </ul>
 <h2 id="composition">Composition</h2>
-<p>A fluid can be stratified by its composition as well as by its entropy: the helium and heavier elements below the
-convection zone of a star, or the light elements in a planet's core. With <code>compositional = 1</code> kore solves for a second
-scalar, the composition <span class="arithmatex">\(c\)</span>, which the flow carries across a background gradient, which diffuses, and which has its own
-buoyancy. It can be alone (<code>thermal = 0</code>) or beside the entropy, which makes a double-diffusive fluid. Its equation and
-its energy budget are on <a href="../anelastic/#composition">Anelastic equations</a>.</p>
+<p>A fluid can be stratified by composition as well as by entropy: helium below the convection zone of a star, or light
+elements in a planet's core. With <code>compositional = 1</code> kore adds a second scalar, the composition, that is carried by
+the flow, diffuses, and adds its own buoyancy. It can be used alone (<code>thermal = 0</code>) or together with the entropy, for a
+double-diffusive fluid. Its equation is on <a href="../anelastic/#composition">Anelastic equations</a>.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">par</span><span class="o">.</span><span class="n">compositional</span> <span class="o">=</span> <span class="mi">1</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">par</span><span class="o">.</span><span class="n">comp_stratification</span> <span class="o">=</span> <span class="s1">'linear'</span>      <span class="c1"># dC/dr = r</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">par</span><span class="o">.</span><span class="n">BeyonceC</span> <span class="o">=</span> <span class="mf">10.</span>                      <span class="c1"># N_c^2 = BeyonceC g dC/dr, set after set_scales()</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">par</span><span class="o">.</span><span class="n">CompoD</span> <span class="o">=</span> <span class="mf">1e-3</span>                       <span class="c1"># its diffusivity factor (set_scales() takes it from Ecomp)</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">par</span><span class="o">.</span><span class="n">bci_compositional</span> <span class="o">=</span> <span class="mi">0</span>               <span class="c1"># at each wall, 0: c = 0, 1: no flux</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">par</span><span class="o">.</span><span class="n">comp_stratification</span> <span class="o">=</span> <span class="s1">'linear'</span>      <span class="c1"># background gradient proportional to r</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">par</span><span class="o">.</span><span class="n">BeyonceC</span> <span class="o">=</span> <span class="mf">10.</span>                      <span class="c1"># strength of its buoyancy; set after set_scales()</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">par</span><span class="o">.</span><span class="n">CompoD</span> <span class="o">=</span> <span class="mf">1e-3</span>                       <span class="c1"># its diffusivity</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">par</span><span class="o">.</span><span class="n">bci_compositional</span> <span class="o">=</span> <span class="mi">0</span>               <span class="c1"># at each wall, 0: fixed composition, 1: no flux</span>
 </span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">par</span><span class="o">.</span><span class="n">bco_compositional</span> <span class="o">=</span> <span class="mi">0</span>
 </span></code></pre></div>
-<p><code>comp_stratification</code> sets <span class="arithmatex">\(dC/dr\)</span> for <span class="arithmatex">\(r \ge 0\)</span>, of amplitude 1: <code>BeyonceC</code> sets the size of <span class="arithmatex">\(N_c^2\)</span>. It has no default
-with <code>compositional = 1</code>. As with the entropy, a full sphere uses it as an odd function of <span class="arithmatex">\(r\)</span>.</p>
-<table>
-<thead>
-<tr>
-<th><code>comp_stratification</code></th>
-<th><span class="arithmatex">\(dC/dr\)</span></th>
-<th>parameters</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>'linear'</code></td>
-<td><span class="arithmatex">\(r\)</span>; with <code>'Boussinesq'</code>, <span class="arithmatex">\(N_c^2\)</span> = <code>BeyonceC</code> <span class="arithmatex">\(r^2\)</span></td>
-<td>–</td>
-</tr>
-<tr>
-<td><code>'inverse square'</code></td>
-<td><span class="arithmatex">\(1/r^2\)</span>, diffusion between the walls</td>
-<td>needs <code>ricb</code> &gt; 0</td>
-</tr>
-<tr>
-<td><code>'two zone'</code></td>
-<td><span class="arithmatex">\(\tfrac12\left[1 + \tanh\frac{2(r - r_c)}{h}\right]\)</span>, as the entropy's</td>
-<td><code>comp_two_zone</code> = <span class="arithmatex">\([r_c, h]\)</span> ([0.7, 0.1])</td>
-</tr>
-<tr>
-<td><code>'user'</code></td>
-<td><code>comp_stratification_profile</code>, a numpy expression (<a href="#user-profiles">below</a>)</td>
-<td><code>comp_stratification_param</code> (<span class="arithmatex">\(p\)</span>)</td>
-</tr>
-</tbody>
-</table>
+<p><code>comp_stratification</code> takes the values <code>'linear'</code>, <code>'inverse square'</code>, <code>'two zone'</code> (with <code>comp_two_zone</code>) and <code>'user'</code>
+(with <code>comp_stratification_profile</code>), as for the entropy. It has no default. <code>BeyonceC</code> sets the strength of the
+compositional buoyancy.</p>
 <ul>
-<li><strong>Sign.</strong> A larger <span class="arithmatex">\(c\)</span> is lighter, as a larger <span class="arithmatex">\(s\)</span>: the composition is stable where <code>BeyonceC</code> <span class="arithmatex">\(dC/dr &gt; 0\)</span>.</li>
-<li><strong>Diffusivity.</strong> <span class="arithmatex">\(D\)</span> = <code>CompoD</code> <span class="arithmatex">\(\hat D(r)\)</span>, with <span class="arithmatex">\(\hat D\)</span> from <code>diffusivity</code> (<a href="#diffusivity">Diffusivity</a>).
-  <code>CompoD = 0</code> removes the diffusion: the composition is then only carried, it takes no wall conditions, and the
-  advice of <a href="#thermad-0">ThermaD = 0</a> applies to it.</li>
-<li><strong>What it works with.</strong> Every structure, a full sphere, a differential rotation (which only advects <span class="arithmatex">\(c\)</span>), the
-  deformed body, a magnetic field with conducting solids, the rotating solids, the drag at the outer wall (whose
-  buoyancy frequency includes <span class="arithmatex">\(N_c^2\)</span>), forced runs and the free decay (<code>hydro = 0</code>). The wave-like tide (forcing 1)
-  needs <code>compositional = 0</code>, and a forced run with <code>CompoD = 0</code> has the condition of one with <code>ThermaD = 0</code>
-  (<a href="#thermad-0">ThermaD = 0</a>): the steady rotation of the walls (forcing 12), for one, needs <code>CompoD</code> &gt; 0.</li>
-<li><strong>Physical units.</strong> <code>units.set_physical(par, ..., D=...)</code>, with <span class="arithmatex">\(D\)</span> in cm²/s, also sets <code>CompoD</code> and
-  <code>BeyonceC</code> = <code>Beyonce</code>; <span class="arithmatex">\(c\)</span> is then the relative deficit of density that the composition makes.</li>
-<li><strong>Output.</strong> <code>composition.dat</code>, the power of its buoyancy in <code>flow.dat</code> and the column resid𝑐 of the <code>spin_doctor</code>
-  table (<a href="../output/#compositiondat">Output files</a>).</li>
+<li>A higher composition is lighter, as for the entropy: the layer is stable where <code>BeyonceC</code> times the gradient is positive.</li>
+<li><code>CompoD = 0</code> turns its diffusion off; the advice of <a href="#thermad-0">ThermaD = 0</a> then applies to it.</li>
+<li><code>units.set_physical(par, ..., D=...)</code>, with <span class="arithmatex">\(D\)</span> in cm²/s, also sets <code>CompoD</code> and <code>BeyonceC</code>.</li>
+<li>The composition works with nearly every other feature. The tidal forcing 1 needs <code>compositional = 0</code>
+  (<a href="../compatibility/">Combining features</a>).</li>
+<li>Its results are in <code>composition.dat</code> (<a href="../output/#compositiondat">Output files</a>).</li>
 </ul>
 <h2 id="rotation">Rotation</h2>
-<p>With <code>diff_rot = 0</code> (the default) the background rotates uniformly at the rate of the frame. With <code>diff_rot = 1</code> it
-rotates at</p>
+<p>With <code>diff_rot = 0</code> (the default) the fluid rotates uniformly with the frame. With <code>diff_rot = 1</code> it rotates
+differentially, at</p>
 <div class="arithmatex">\[
-\Omega(r,\theta) = \Omega_{\rm ref}\left[1 + \Delta\Omega(r,\theta)\right], \qquad \Delta\Omega = \sum_n f_n(r)\thinspace P_n(\cos\theta), \quad n = 0, 2, 4, \dots
+\Omega(r,\theta) = \Omega_{\rm ref}\left[1 + \Delta\Omega(r,\theta)\right],
 \]</div>
-<p>where <span class="arithmatex">\(\Omega_{\rm ref}\)</span> is the rotation rate of the frame in which kore solves, and <span class="arithmatex">\(\Delta\Omega\)</span> the relative
-departure from it, a sum of Legendre polynomials in <span class="arithmatex">\(\cos\theta\)</span> with radial coefficients <span class="arithmatex">\(f_n(r)\)</span>. Only even <span class="arithmatex">\(n\)</span>
-appear, so the rotation is symmetric about the equator. The profiles do not depend on the structure. With
-<code>thermal = 1</code>, the latitudinal entropy that balances the rotation, the thermal wind, is part of the background too
-(<code>thermal_wind</code>, below). The terms this adds to the equations are in
-<a href="../anelastic/#differential-rotation">Anelastic equations</a>.</p>
-<h3 id="frame-and-units">Frame and units</h3>
-<p><span class="arithmatex">\(\Delta\Omega\)</span> is relative to the frame, and <code>Gaspard</code> converts it to the time unit, so any <code>timescale</code> works. Two
-things follow:</p>
-<ul>
-<li><code>ViscosD</code>, <code>ThermaD</code> and <code>Beyonce</code> must be computed for <span class="arithmatex">\(\Omega_{\rm ref}\)</span>. For <code>'solar'</code> the frame must rotate at
-  435 nHz; for <code>'solar_P4'</code> and <code>'tabulated'</code> at <code>diff_rot_frame</code> (456 nHz by default). The other types are
-  dimensionless.</li>
-<li>With <code>thermal_wind = 2</code> the eigenvalues do not depend on the choice of frame. With <code>thermal_wind = 1</code> (linear in
-  <span class="arithmatex">\(\Delta\Omega\)</span>) they do, at second order in <span class="arithmatex">\(\Delta\Omega\)</span>: by 0.1–0.9 nHz for solar inertial modes.</li>
-</ul>
-<p>Eigenvalues are in the frame rotating at <span class="arithmatex">\(\Omega_{\rm ref}\)</span>, as for uniform rotation.</p>
+<p>where <span class="arithmatex">\(\Omega_{\rm ref}\)</span> is the rotation rate of the frame and <span class="arithmatex">\(\Delta\Omega\)</span> the relative departure from it. kore
+expands <span class="arithmatex">\(\Delta\Omega\)</span> in even Legendre polynomials in latitude, so the rotation is always symmetric about the equator.
+Eigenvalues are given in the frame rotating at <span class="arithmatex">\(\Omega_{\rm ref}\)</span>.</p>
+<p>With <code>thermal = 1</code>, the background also includes the latitudinal entropy variation that balances the differential
+rotation, the <em>thermal wind</em> (see <a href="#thermal-wind">below</a>).</p>
 <h3 id="parameters">Parameters</h3>
 <table>
 <thead>
@@ -2209,7 +2110,7 @@ things follow:</p>
 <tr>
 <td><code>diff_rot</code></td>
 <td>0</td>
-<td>1 adds the differential rotation</td>
+<td>1 turns on differential rotation</td>
 </tr>
 <tr>
 <td><code>diff_rot_type</code></td>
@@ -2219,291 +2120,224 @@ things follow:</p>
 <tr>
 <td><code>diff_rot_ampl</code></td>
 <td>1.0</td>
-<td>the factor of <span class="arithmatex">\(\Delta\Omega\)</span>, for every type (table below)</td>
+<td>a factor that multiplies <span class="arithmatex">\(\Delta\Omega\)</span></td>
 </tr>
 <tr>
 <td><code>diff_rot_param</code></td>
 <td>0.0</td>
-<td>the shape parameter: <span class="arithmatex">\(\sigma\)</span> of <code>'shellular'</code>, <code>p</code> in <code>'user'</code> and <code>'ferraro'</code> expressions</td>
+<td>shape parameter of some profiles</td>
 </tr>
 <tr>
 <td><code>diff_rot_term_amp</code></td>
 <td><code>[1.0]*9</code></td>
-<td><span class="arithmatex">\(a_0, a_2, \dots, a_{16}\)</span>: factors of the <span class="arithmatex">\(P_0, P_2, \dots, P_{16}\)</span> terms of <span class="arithmatex">\(\Delta\Omega\)</span>, any type, after <code>diff_rot_ampl</code> (missing entries are 1); e.g. <code>[1, 1, 0]</code> drops the <span class="arithmatex">\(P_4\)</span> part of <code>'solar_P4'</code></td>
+<td>factors on each Legendre term; e.g. <code>[1, 1, 0]</code> drops the third term</td>
 </tr>
 <tr>
 <td><code>diff_rot_profiles</code></td>
 <td><code>{}</code></td>
-<td><code>'user'</code>: <code>{n: 'numpy expression'}</code>, the shape <span class="arithmatex">\(f_n\)</span> of each even degree (below)</td>
+<td><code>'user'</code>: one expression per Legendre degree (below)</td>
 </tr>
 <tr>
 <td><code>diff_rot_frame</code></td>
 <td>456.0</td>
-<td><code>'solar_P4'</code>, <code>'tabulated'</code>: <span class="arithmatex">\(\Omega_{\rm ref}/2\pi\)</span> in nHz</td>
+<td><code>'solar_P4'</code>, <code>'tabulated'</code>: frame rotation rate in nHz</td>
 </tr>
 <tr>
 <td><code>diff_rot_solar</code></td>
 <td><code>[464, -76, -50, 433.5, 0.71, 0.045]</code></td>
-<td><code>'solar_P4'</code>: <span class="arithmatex">\(c_0\)</span>, <span class="arithmatex">\(c_2\)</span>, <span class="arithmatex">\(c_4\)</span>, <span class="arithmatex">\(\Omega_{RZ}\)</span> (nHz), <span class="arithmatex">\(r_{tc}\)</span>, <span class="arithmatex">\(d_{tc}\)</span></td>
+<td><code>'solar_P4'</code>: coefficients of the fit below</td>
 </tr>
 <tr>
 <td><code>diff_rot_file</code></td>
 <td><code>''</code></td>
-<td><code>'tabulated'</code>: the .npz file, absolute or relative to the run directory</td>
+<td><code>'tabulated'</code>: the table file, absolute or relative to the run directory</td>
 </tr>
 <tr>
 <td><code>diff_rot_nmax</code></td>
 <td>8</td>
-<td><code>'tabulated'</code>, <code>'ferraro'</code>: highest degree kept, even (up to 16 with <code>thermal_wind = 2</code>)</td>
+<td><code>'tabulated'</code>, <code>'ferraro'</code>: highest Legendre degree kept (even)</td>
 </tr>
 <tr>
 <td><code>diff_rot_F</code></td>
 <td><code>'psi'</code></td>
-<td><code>'ferraro'</code>: <span class="arithmatex">\(\Delta\Omega = F(\psi)\)</span>, a numpy expression of <code>psi</code> and <code>p</code></td>
+<td><code>'ferraro'</code>: the rotation as a function of the magnetic flux function</td>
 </tr>
 <tr>
-<td><code>diff_rot_rdeg</code></td>
-<td>24</td>
-<td><code>'tabulated'</code>: degree of the Chebyshev fit of each <span class="arithmatex">\(f_n\)</span> in <span class="arithmatex">\(r\)</span></td>
-</tr>
-<tr>
-<td><code>diff_rot_window</code></td>
-<td>None</td>
-<td><code>'tabulated'</code>: None fits over the shell if ricb &gt; 0 and is <code>'sun'</code> if ricb = 0; <code>'sun'</code>: one fit over the whole Sun, even in <span class="arithmatex">\(r\)</span>, the same for any ricb</td>
-</tr>
-<tr>
-<td><code>diff_rot_sun_deg</code></td>
-<td>60</td>
-<td><code>'sun'</code>: degree of that fit</td>
+<td><code>diff_rot_rdeg</code>, <code>diff_rot_window</code>, <code>diff_rot_sun_deg</code></td>
+<td>24, None, 60</td>
+<td><code>'tabulated'</code>: settings of the radial fit</td>
 </tr>
 <tr>
 <td><code>thermal_wind</code></td>
 <td>1</td>
-<td>the latitudinal background entropy, see below</td>
+<td>the thermal wind, see below</td>
 </tr>
 <tr>
 <td><code>thermal_wind_radial</code></td>
 <td>1</td>
-<td>0 drops <span class="arithmatex">\(u_r\thinspace \partial_r S_{tw}\)</span></td>
+<td>0 drops the radial advection of the thermal-wind entropy</td>
 </tr>
 <tr>
 <td><code>thermal_wind_amplitude</code></td>
 <td>1.0</td>
-<td>factor on <span class="arithmatex">\(S_{tw}\)</span> (<code>thermal_wind</code> 1, 2)</td>
+<td>a factor on the thermal-wind entropy</td>
 </tr>
 <tr>
 <td><code>dSdtheta</code></td>
 <td>0.0</td>
-<td><code>thermal_wind = 3</code>: <span class="arithmatex">\(\partial_\theta S_{tw}\)</span> = <code>dSdtheta</code> <span class="arithmatex">\(\sin 2\theta\)</span></td>
+<td><code>thermal_wind = 3</code>: the prescribed latitudinal entropy gradient</td>
 </tr>
 </tbody>
 </table>
+<p>If <code>diff_rot</code> is used with physical units (<code>'solar'</code>, <code>'solar_P4'</code>, <code>'tabulated'</code>), compute <code>ViscosD</code>, <code>ThermaD</code> and
+<code>Beyonce</code> for the frame rate: 435 nHz for <code>'solar'</code>, <code>diff_rot_frame</code> for the other two. <code>units.set_physical</code> does this.</p>
 <h3 id="profiles">Profiles</h3>
-<p><span class="arithmatex">\(a\)</span> = <code>diff_rot_ampl</code>, <span class="arithmatex">\(p\)</span> = <code>diff_rot_param</code>. For the solar types <span class="arithmatex">\(x\)</span> is the fractional solar radius: <span class="arithmatex">\(x = r\times\)</span><code>r_out</code>
-with a solar structure, <span class="arithmatex">\(x = r\)</span> otherwise.</p>
+<p>Below, <span class="arithmatex">\(a\)</span> is <code>diff_rot_ampl</code> and <span class="arithmatex">\(p\)</span> is <code>diff_rot_param</code>.</p>
 <table>
 <thead>
 <tr>
 <th><code>diff_rot_type</code></th>
-<th><span class="arithmatex">\(\Delta\Omega(r,\theta)\)</span></th>
-<th>degrees</th>
+<th>rotation</th>
 <th>notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>'rigid'</code></td>
-<td><span class="arithmatex">\(a\)</span></td>
-<td><span class="arithmatex">\(P_0\)</span></td>
-<td>test profile: a uniform offset of the rotation rate, with an exact answer (below); <span class="arithmatex">\(a = 0\)</span> gives uniform rotation with the diff-rot machinery on (needed for <code>thermal_wind = 3</code>)</td>
+<td>uniform offset <span class="arithmatex">\(a\)</span></td>
+<td>for tests: the exact answer is known</td>
 </tr>
 <tr>
 <td><code>'Y20'</code></td>
-<td><span class="arithmatex">\(a\thinspace P_2(\cos\theta)\)</span></td>
-<td><span class="arithmatex">\(P_2\)</span></td>
-<td><span class="arithmatex">\(P_2\)</span> unnormalised, despite the name; not regular at <span class="arithmatex">\(r = 0\)</span>: use ricb &gt; 0</td>
+<td><span class="arithmatex">\(a\thinspace P_2(\cos\theta)\)</span>, latitudinal only</td>
+<td>use <code>ricb</code> &gt; 0</td>
 </tr>
 <tr>
 <td><code>'Y20-wall-bounded'</code></td>
-<td><span class="arithmatex">\(a\thinspace (1 - r)(r - r_i)\thinspace P_2(\cos\theta)\)</span>, <span class="arithmatex">\(r_i\)</span> = <code>ricb</code></td>
-<td><span class="arithmatex">\(P_2\)</span></td>
-<td>not smooth at <span class="arithmatex">\(r = 0\)</span>: use ricb &gt; 0</td>
+<td>the same, vanishing at both walls</td>
+<td>use <code>ricb</code> &gt; 0</td>
 </tr>
 <tr>
 <td><code>'shellular'</code></td>
-<td><span class="arithmatex">\(a\thinspace (r^\sigma - 1)\)</span>, <span class="arithmatex">\(\sigma = p\)</span></td>
-<td><span class="arithmatex">\(P_0\)</span></td>
-<td>Baruteau &amp; Rieutord 2013 (<span class="arithmatex">\(a = 1\)</span>); not smooth at <span class="arithmatex">\(r = 0\)</span> unless <span class="arithmatex">\(\sigma\)</span> is even and positive</td>
+<td><span class="arithmatex">\(a\thinspace (r^p - 1)\)</span>, radial only</td>
+<td>Baruteau &amp; Rieutord 2013</td>
 </tr>
 <tr>
 <td><code>'shellular_boussinesq'</code></td>
-<td><span class="arithmatex">\(\tfrac12 N_0^2\thinspace (1 - r^2)\)</span>, <span class="arithmatex">\(N_0^2 = a\)</span></td>
-<td><span class="arithmatex">\(P_0\)</span></td>
-<td>Mirouh et al. 2016; use <code>thermal_wind = 0</code> (their background has no thermal wind), structure <code>'Boussinesq'</code> and stratification <code>'linear'</code></td>
+<td>radial only, proportional to <span class="arithmatex">\(1 - r^2\)</span></td>
+<td>Mirouh et al. 2016; use with <code>thermal_wind = 0</code>, <code>'Boussinesq'</code> and <code>'linear'</code></td>
 </tr>
 <tr>
 <td><code>'cylindrical'</code></td>
-<td><span class="arithmatex">\(\varepsilon\thinspace r^2\sin^2\theta\)</span>, <span class="arithmatex">\(\varepsilon = a\)</span></td>
-<td><span class="arithmatex">\(P_0\)</span>, <span class="arithmatex">\(P_2\)</span></td>
-<td>Baruteau &amp; Rieutord 2013; barotropic, <span class="arithmatex">\(S_{tw} = 0\)</span></td>
+<td><span class="arithmatex">\(a\thinspace r^2\sin^2\theta\)</span>, constant on cylinders</td>
+<td>Baruteau &amp; Rieutord 2013</td>
 </tr>
 <tr>
 <td><code>'conical'</code></td>
-<td><span class="arithmatex">\(\varepsilon\sin^2\theta\)</span>, <span class="arithmatex">\(\varepsilon = a\)</span></td>
-<td><span class="arithmatex">\(P_0\)</span>, <span class="arithmatex">\(P_2\)</span></td>
-<td>Guenel et al. 2016; not regular at <span class="arithmatex">\(r = 0\)</span>: use ricb &gt; 0</td>
+<td><span class="arithmatex">\(a\sin^2\theta\)</span>, constant on cones</td>
+<td>Guenel et al. 2016; use <code>ricb</code> &gt; 0</td>
 </tr>
 <tr>
 <td><code>'solar'</code></td>
-<td><span class="arithmatex">\(a\thinspace \times\)</span> helioseismic fit, <span class="arithmatex">\(P_0 + P_2\)</span>, tanh step at <span class="arithmatex">\(x = 0.71\)</span> of width 0.1</td>
-<td><span class="arithmatex">\(P_0\)</span>, <span class="arithmatex">\(P_2\)</span></td>
-<td>relative to 435 nHz; 4.5 nHz too fast at the equator and 12 nHz at the pole compared with the observations</td>
+<td>an older helioseismic fit, relative to 435 nHz</td>
+<td>less accurate than <code>'solar_P4'</code> or <code>'tabulated'</code></td>
 </tr>
 <tr>
 <td><code>'solar_P4'</code></td>
-<td><span class="arithmatex">\(a\thinspace (\Omega/\Omega_{\rm ref} - 1)\)</span>, <span class="arithmatex">\(\Omega\)</span> the fit below</td>
-<td><span class="arithmatex">\(P_0\)</span>, <span class="arithmatex">\(P_2\)</span>, <span class="arithmatex">\(P_4\)</span></td>
-<td><code>diff_rot_solar</code>, <code>diff_rot_frame</code>; defaults from Mukhopadhyay et al. 2026</td>
+<td>a fit of the solar rotation, see below</td>
+<td>Mukhopadhyay et al. 2026</td>
 </tr>
 <tr>
 <td><code>'tabulated'</code></td>
-<td><span class="arithmatex">\(a\thinspace (\Omega/\Omega_{\rm ref} - 1)\)</span>, <span class="arithmatex">\(\Omega\)</span> from <code>diff_rot_file</code></td>
-<td><span class="arithmatex">\(P_0 \dots P_{n_{\max}}\)</span></td>
-<td>below</td>
+<td>read from a table of observations</td>
+<td>see below</td>
 </tr>
 <tr>
 <td><code>'user'</code></td>
-<td><span class="arithmatex">\(a\sum_n f_n(r) P_n(\cos\theta)\)</span>, <span class="arithmatex">\(f_n\)</span> from <code>diff_rot_profiles</code></td>
-<td>the keys of <code>diff_rot_profiles</code></td>
-<td>below</td>
+<td>your own expressions</td>
+<td>see below</td>
 </tr>
 <tr>
 <td><code>'ferraro'</code></td>
-<td><span class="arithmatex">\(a\thinspace F(\psi)\)</span>, <span class="arithmatex">\(\psi\)</span> the flux function of the poloidal magnetic field</td>
-<td><span class="arithmatex">\(P_0 \dots P_{n_{\max}}\)</span></td>
-<td><code>magnetic = 1</code> only: constant along the field lines, so a steady background with the field (<a href="../magnetic/#with-a-differential-rotation">Magnetic field</a>)</td>
+<td>constant along the field lines of a poloidal magnetic field</td>
+<td>needs <code>magnetic = 1</code> (<a href="../magnetic/#with-a-differential-rotation">Magnetic field</a>)</td>
 </tr>
 </tbody>
 </table>
-<p><strong><code>'rigid'</code>.</strong> The eigenvalues are known exactly: with <span class="arithmatex">\(\lambda_0\)</span> the <code>diff_rot = 0</code> eigenvalue,</p>
-<div class="arithmatex">\[
-\lambda(a, G) = \lambda_0\big(G(1 + a)\big) - i\thinspace m G a ,
-\]</div>
-<p>with <span class="arithmatex">\(G\)</span> = <code>Gaspard</code>.</p>
-<p><strong><code>'solar_P4'</code>.</strong> A rigid radiative zone joined by an erf step at the tachocline <span class="arithmatex">\(r_{tc}\)</span> (width <span class="arithmatex">\(d_{tc}\)</span>) to a
-convection zone whose rotation depends on latitude only:</p>
+<p><strong><code>'solar_P4'</code>.</strong> A uniformly rotating radiative zone, joined at the tachocline (radius <span class="arithmatex">\(r_{tc}\)</span>, width <span class="arithmatex">\(d_{tc}\)</span>) to a
+convection zone whose rotation depends only on latitude:</p>
 <div class="arithmatex">\[
 \frac{\Omega}{2\pi} = \Omega_{RZ} + \tfrac12\left[\Omega_{CZ}(\theta) - \Omega_{RZ}\right]\left[1 + \mathrm{erf}\thinspace \frac{x - r_{tc}}{d_{tc}}\right],
-\]</div>
-<div class="arithmatex">\[
+\qquad
 \Omega_{CZ} = c_0 + c_2\cos^2\theta + c_4\cos^4\theta ,
 \]</div>
-<p>with <code>diff_rot_solar</code> = [<span class="arithmatex">\(c_0\)</span>, <span class="arithmatex">\(c_2\)</span>, <span class="arithmatex">\(c_4\)</span>, <span class="arithmatex">\(\Omega_{RZ}\)</span>, <span class="arithmatex">\(r_{tc}\)</span>, <span class="arithmatex">\(d_{tc}\)</span>] (nHz, and fractions of R☉).</p>
-<p><strong><code>'user'</code>.</strong> <code>diff_rot_profiles</code> gives the shape of each even degree as a numpy expression (<a href="#user-profiles">below</a>).
-For example, the cylindrical rotation as a <code>'user'</code> profile (it gives the same matrices as <code>'cylindrical'</code>):</p>
+<p>with <code>diff_rot_solar</code> = [<span class="arithmatex">\(c_0\)</span>, <span class="arithmatex">\(c_2\)</span>, <span class="arithmatex">\(c_4\)</span>, <span class="arithmatex">\(\Omega_{RZ}\)</span>, <span class="arithmatex">\(r_{tc}\)</span>, <span class="arithmatex">\(d_{tc}\)</span>], rates in nHz and radii in solar radii.</p>
+<p><strong><code>'tabulated'</code>.</strong> The rotation rate comes from an <code>.npz</code> file with the arrays <code>ome[θ, r]</code> (nHz), <code>r</code> (solar radii)
+and <code>theta</code> (radians). <code>bin/jsoc_hmi_2010_2026.npz</code> is the mean solar rotation measured by HMI from 2010 to 2026, and
+<code>tests/diff_rot/ls_to_tabulated.py</code> converts the Larson &amp; Schou (2018) table to this format. kore expands the table up
+to Legendre degree <code>diff_rot_nmax</code> and prints how well the expansion fits the table: check that line. Near the
+surface at high latitude the solar profile needs a degree of about 12 for good accuracy.</p>
+<p><strong><code>'user'</code>.</strong> <code>diff_rot_profiles</code> gives the radial shape of each even Legendre degree as an expression
+(<a href="#user-profiles">below</a>). For example, the cylindrical profile written by hand:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">par</span><span class="o">.</span><span class="n">diff_rot_type</span>     <span class="o">=</span> <span class="s1">'user'</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">par</span><span class="o">.</span><span class="n">diff_rot_profiles</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="s1">'(2/3)*r**2'</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="s1">'-(2/3)*r**2'</span><span class="p">}</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">par</span><span class="o">.</span><span class="n">diff_rot_ampl</span>     <span class="o">=</span> <span class="o">-</span><span class="mf">0.25</span>
 </span></code></pre></div>
-<p>The degrees must be even. Any degree up to 16 works with <code>thermal_wind = 2</code> (32 with <code>thermal_wind = 1</code>).</p>
-<p><strong><code>'tabulated'</code>.</strong> The file holds <code>ome[θ, r]</code> (nHz), <code>r</code> (R☉) and <code>theta</code> (rad), the layout of <code>data/diff_rot.npz</code>
-of the Mukhopadhyay et al. 2025 data set. <code>tests/diff_rot/ls_to_tabulated.py</code> converts the Larson &amp;
-Schou 2018 table to it; <code>bin/jsoc_hmi_2010_2026.npz</code> is the mean of the 83 JSOC HMI 72-day inversions
-(<code>hmi.V_sht_2drls</code>, NACOEFF 36) from 2010-04-30 to 2026-06-29 in this layout, on the 151 table radii. kore projects
-<span class="arithmatex">\(\Omega\)</span> on <span class="arithmatex">\(P_0 \dots P_{n_{\max}}\)</span> at each table radius, fits each <span class="arithmatex">\(f_n\)</span> in <span class="arithmatex">\(r\)</span> over the table radii within 0.01 of
-the shell, and prints the fit residuals and the truncation error in nHz (the largest difference between the table and
-its expansion up to <span class="arithmatex">\(P_{n_{\max}}\)</span>); check that line. For the Mukhopadhyay et al. 2025 profile the truncation error near
-the poles at the surface is up to 17 nHz at <code>diff_rot_nmax = 8</code>; 12 is the working choice.</p>
 <h3 id="thermal-wind">Thermal wind</h3>
-<p>With <code>thermal = 1</code>, <code>thermal_wind</code> chooses the latitudinal background entropy <span class="arithmatex">\(S_{tw}(r,\theta)\)</span> and the terms the
-differential rotation adds to the heat equation. The advection of <span class="arithmatex">\(s\)</span> by the rotation is always included.</p>
+<p>In a stratified fluid, differential rotation must be balanced by a latitudinal variation of the background entropy, the
+thermal wind. With <code>thermal = 1</code>, <code>thermal_wind</code> chooses how kore treats it:</p>
 <table>
 <thead>
 <tr>
 <th><code>thermal_wind</code></th>
-<th>heat-equation terms</th>
-<th><span class="arithmatex">\(S_{tw}\)</span></th>
+<th>background entropy</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>0</td>
-<td>the advection of <span class="arithmatex">\(s\)</span> only</td>
-<td>none (e.g. Mirouh et al. 2016)</td>
+<td>no thermal wind; the rotation only carries the entropy perturbation (as in Mirouh et al. 2016)</td>
 </tr>
 <tr>
 <td>1 (default)</td>
-<td>and the advection of <span class="arithmatex">\(S_{tw}\)</span> by the perturbation</td>
-<td>thermal wind of <span class="arithmatex">\(\Omega\)</span> to first order in <span class="arithmatex">\(\Delta\Omega\)</span> (<span class="arithmatex">\(S_{tw} \propto G^2/\)</span><code>Beyonce</code>)</td>
+<td>the thermal wind to first order in the differential rotation</td>
 </tr>
 <tr>
 <td>2</td>
-<td>the same</td>
-<td>thermal wind of the full <span class="arithmatex">\((1 + \Delta\Omega)^2\)</span> balance; frame independent</td>
+<td>the exact thermal wind; the eigenvalues then do not depend on the choice of frame</td>
 </tr>
 <tr>
 <td>3</td>
-<td>the same</td>
-<td>prescribed: <span class="arithmatex">\(\partial_\theta S_{tw}\)</span> = <code>dSdtheta</code> <span class="arithmatex">\(\sin 2\theta\)</span>, uniform in <span class="arithmatex">\(r\)</span> (Bekki et al. 2024)</td>
+<td>a prescribed latitudinal entropy gradient, <code>dSdtheta</code> (as in Bekki et al. 2024)</td>
 </tr>
 </tbody>
 </table>
 <ul>
-<li><code>thermal_wind</code> 1 and 2 need <code>Beyonce</code> other than 0. With <code>timescale = 'rotation'</code>, <code>set_scales()</code> sets <code>Beyonce = 0</code>, so set
-  it after calling <code>set_scales()</code>.</li>
-<li><code>dSdtheta</code> is in the units of <span class="arithmatex">\(s\)</span> (<span class="arithmatex">\(\delta s/c_p\)</span>): <code>dSdtheta</code> <span class="arithmatex">\(= \Delta_\theta s/c_p\)</span>, with <span class="arithmatex">\(\Delta_\theta s\)</span> in erg g⁻¹ K⁻¹. Bekki et al. use
-  <span class="arithmatex">\(c_p\)</span> = 4.17e8, Model S has about 3.46e8. Negative values give warm poles. The thermal-wind amplitude does not apply.</li>
-<li><code>thermal_wind_radial = 0</code> drops <span class="arithmatex">\(u_r\thinspace \partial_r S_{tw}\)</span>, as Bekki et al. 2022 and Mukhopadhyay et al. 2025 do. Keeping it is
-  the consistent choice, but it moves the solar columnar and high-frequency retrograde modes by 5–15 nHz.</li>
-<li>With the thermal wind <span class="arithmatex">\(S_{tw}\)</span> is the only latitudinal entropy gradient; in a convection zone with <span class="arithmatex">\(dS_0/dr = 0\)</span> it is
-  also the only background entropy gradient, and its effect on the modes is of the same order as the momentum terms.</li>
-<li>With <code>diff_rot = 1</code> the default <code>thermal_wind = 1</code> includes the thermal wind. For the advection of <span class="arithmatex">\(s\)</span> by the
-  rotation alone, set <code>thermal_wind = 0</code>.</li>
-<li>With <code>magnetic = 1</code>, <span class="arithmatex">\(S_{tw}\)</span> leaves out the force of the background field: it is the same as in a run without a field
-  (<a href="../magnetic/">Magnetic field</a>).</li>
-<li><code>thermal_wind</code> 3 is uniform in <span class="arithmatex">\(r\)</span>, so in a full sphere it is not regular at the centre and <code>submatrices.py</code> warns.</li>
+<li>Options 1 and 2 need a non-zero <code>Beyonce</code>. <code>set_scales()</code> with <code>timescale = 'rotation'</code> sets <code>Beyonce = 0</code>, so set it
+  after calling <code>set_scales()</code>.</li>
+<li><code>thermal_wind_radial = 0</code> drops one term of the thermal wind, as Bekki et al. 2022 and Mukhopadhyay et al. 2025 do.
+  Keeping it is more consistent, but use 0 to compare with those papers.</li>
+<li>With a magnetic field, the thermal wind ignores the force of the background field (<a href="../magnetic/">Magnetic field</a>).</li>
 </ul>
 <h3 id="resolution-and-cost">Resolution and cost</h3>
 <ul>
-<li>A differential rotation couples harmonic degrees <span class="arithmatex">\(l\)</span> that uniform rotation keeps apart, so the matrices get wider.
-  Let <span class="arithmatex">\(n_{\max}\)</span> be the highest degree of <span class="arithmatex">\(\Delta\Omega\)</span>. The momentum rows then couple degrees that differ by up to
-  <span class="arithmatex">\(n_{\max}\)</span> (<span class="arithmatex">\(P \to P\)</span>, <span class="arithmatex">\(T \to T\)</span>) or <span class="arithmatex">\(n_{\max} + 1\)</span> (<span class="arithmatex">\(P \leftrightarrow T\)</span>).</li>
-<li><span class="arithmatex">\(S_{tw}\)</span> has degrees up to <span class="arithmatex">\(n_{\max} + 2\)</span> (<code>thermal_wind</code> 1) or <span class="arithmatex">\(2n_{\max} + 2\)</span> (<code>thermal_wind</code> 2), and the heat rows
-  couple degrees that far apart. Matrices are therefore widest with <code>'tabulated'</code> and a large <code>diff_rot_nmax</code>.</li>
-<li>With <code>ricb = 0</code> (a full sphere) each <span class="arithmatex">\(f_n\)</span> is evaluated at <span class="arithmatex">\(\lvert r\rvert\)</span>, and it is smooth at the centre only if
-  it goes as <span class="arithmatex">\(r^n\)</span> there (<a href="../numerical-method/#regularity-at-the-centre">Regularity at the centre</a>). <code>'Y20'</code> and
-  <code>'conical'</code> keep their <span class="arithmatex">\(P_2\)</span> term at the centre, <code>'Y20-wall-bounded'</code> and <code>'shellular'</code> (except even <span class="arithmatex">\(\sigma &gt; 0\)</span>)
-  have a kink there, and the fit of a <code>'tabulated'</code> rotation leaves its <span class="arithmatex">\(f_n\)</span> a small value there (about <span class="arithmatex">\(10^{-5}\)</span> of the
-  largest for the HMI table); <code>submatrices.py</code> prints a WARNING for each. The <code>'solar'</code> tachocline step needs N ≈ 400 at
-  <code>ricb = 0</code>.</li>
-<li>Modes that reach into a radiative interior have short radial wavelengths. In a full sphere with the radiative
-  interior of stratification <code>'solar_rz'</code>, solar inertial modes needed N = 768 to 1024 for the <code>spin_doctor</code>
-  residuals, although their eigenvalues converge at a lower N. <a href="../solver/">Solver</a> has the memory this takes.</li>
-<li>Check convergence with <code>spin_doctor</code> as for any run; its residuals include the terms of the differential rotation.</li>
+<li>Differential rotation couples spherical-harmonic degrees that uniform rotation keeps separate, so the matrices are
+  larger and the runs slower. The cost grows with the highest Legendre degree of the rotation, so keep
+  <code>diff_rot_nmax</code> as low as the problem allows.</li>
+<li>In a full sphere, some profiles are not smooth at the centre (<code>'Y20'</code>, <code>'conical'</code>, most <code>'shellular'</code>).
+  <code>submatrices.py</code> prints a warning for each.</li>
+<li>Modes that reach into a radiative interior have short radial wavelengths and can need <code>N</code> of 700 or more. See
+  <a href="../solver/">Solver</a> for the memory this takes.</li>
+<li>Check every solution with <code>spin_doctor</code>, as for any run.</li>
 </ul>
 <h2 id="centrifugal-deformation">Centrifugal deformation</h2>
-<p>A rotating star or planet is flattened at the poles: its surfaces of constant density, pressure and entropy, its level
-surfaces, are oblate spheroids rather than spheres. <code>centrifugal = 1</code> gives the background this shape, at first order
-in the flattening (exactly, for a homogeneous fluid, with <code>'spheroid'</code>): the walls and the level surfaces become
-spheroids, and the flow feels them through every term of its equations, the inertia, the Coriolis force, the buoyancy,
-the viscous force and the diffusion, the walls and a differential rotation, and with a magnetic field the Lorentz force,
-the induction and the matching at the walls. The equations are on <a href="../centrifugal-equations/">Centrifugal deformation</a>.</p>
-<p><strong>How kore does it.</strong> kore keeps its spherical grid and its radial profiles, and solves in coordinates that follow the
-level surfaces. The radius <span class="arithmatex">\(r\)</span> labels the level surface that encloses the volume of the sphere of radius <span class="arithmatex">\(r\)</span>; every
-background profile is a function of it, and the walls are the level surfaces <code>ricb</code> and 1. A differential rotation is
-such a profile too: a <span class="arithmatex">\(\Delta\Omega\)</span> that depends on <span class="arithmatex">\(r\)</span> alone is constant on the level surfaces. In these coordinates
-each term of the equations gains a part proportional to the flattening, and the buoyancy takes the effective gravity: the
-gravity less the mean centrifugal acceleration. The new terms couple the degrees as a differential rotation of degree 2
-does, so the matrices are as wide as with one (<a href="#resolution-and-cost">Resolution and cost</a>); with a differential rotation
-of degree <span class="arithmatex">\(n_{\max}\)</span>, as wide as with one of degree <span class="arithmatex">\(n_{\max} + 2\)</span>.</p>
-<p><strong>With a magnetic field.</strong> The background field follows the level surfaces too: kore's formula for <code>B0</code> and <code>B0_tor</code>
-gives the field on the level surfaces, and the deformation carries it into the body, so its field lines are those of the
-sphere stretched with the level surfaces. It differs from the spherical formula by a fraction of order <span class="arithmatex">\(f\)</span>:
-<code>submatrices.py</code> says so. At an insulating wall the field is matched to the potential field outside the deformed wall.
-The field diffuses in the deformed fluid, and in a conducting inner core, which is deformed with the fluid.</p>
+<p>A rotating star or planet is flattened at the poles. With <code>centrifugal = 1</code>, kore gives the background this shape: the
+walls and the surfaces of constant density become oblate spheroids, and every term of the equations feels it. kore
+keeps its spherical grid and solves in coordinates that follow the flattened surfaces. The equations are on
+<a href="../centrifugal-equations/">Centrifugal deformation</a>.</p>
+<p>The deformation is accurate to first order in the flattening, which is enough for most stars and planets.
+<code>'spheroid'</code> treats a uniform-density body exactly, at any flattening.</p>
 <h3 id="flattening">Flattening</h3>
-<p><code>centrifugal_q</code> or <code>centrifugal_f</code> sets how flat the body is, and <code>centrifugal_shape</code> how the flattening varies inside
-it.</p>
 <table>
 <thead>
 <tr>
@@ -2521,27 +2355,22 @@ it.</p>
 <tr>
 <td><code>centrifugal_shape</code></td>
 <td><code>'clairaut'</code></td>
-<td>how the flattening varies with the radius (below)</td>
+<td>how the flattening varies with radius (below)</td>
 </tr>
 <tr>
 <td><code>centrifugal_q</code></td>
 <td>0.0</td>
-<td><span class="arithmatex">\(q = \Omega^2R^3/GM\)</span> of the surface: the centrifugal over the gravitational acceleration at its equator. With any shape it also sets the effective gravity of the buoyancy</td>
+<td>the ratio of centrifugal to gravitational acceleration at the equator</td>
 </tr>
 <tr>
 <td><code>centrifugal_f</code></td>
 <td>None</td>
-<td>the flattening of the outer wall, (equatorial − polar radius)/equatorial radius: the value of <code>'uniform'</code> and <code>'spheroid'</code>, and for <code>'clairaut'</code> the scale of its shape in place of <code>centrifugal_q</code></td>
+<td>the flattening of the outer wall, (equatorial − polar radius) / equatorial radius</td>
 </tr>
 <tr>
-<td><code>centrifugal_profile</code></td>
-<td><code>''</code></td>
-<td><code>'user'</code>: the flattening <span class="arithmatex">\(f(r)\)</span> as a numpy expression (<a href="#user-profiles">below</a>)</td>
-</tr>
-<tr>
-<td><code>centrifugal_param</code></td>
-<td>0.0</td>
-<td><code>'user'</code>: <code>p</code> in <code>centrifugal_profile</code></td>
+<td><code>centrifugal_profile</code>, <code>centrifugal_param</code></td>
+<td></td>
+<td><code>'user'</code>: the flattening as an expression (<a href="#user-profiles">below</a>)</td>
 </tr>
 </tbody>
 </table>
@@ -2549,46 +2378,39 @@ it.</p>
 <thead>
 <tr>
 <th><code>centrifugal_shape</code></th>
-<th>the flattening <span class="arithmatex">\(f(r)\)</span></th>
+<th>flattening</th>
 <th>set by</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>'clairaut'</code></td>
-<td>the hydrostatic shape of the structure: Clairaut's equation with its gravity</td>
-<td><code>centrifugal_q</code>, or <code>centrifugal_f</code></td>
+<td>the hydrostatic shape of the chosen structure</td>
+<td><code>centrifugal_q</code> or <code>centrifugal_f</code></td>
 </tr>
 <tr>
 <td><code>'uniform'</code></td>
-<td>the same at every radius, as in a homogeneous body</td>
+<td>the same at every radius</td>
 <td><code>centrifugal_f</code></td>
 </tr>
 <tr>
 <td><code>'user'</code></td>
 <td>any profile</td>
-<td><code>centrifugal_profile</code>, <code>centrifugal_param</code></td>
+<td><code>centrifugal_profile</code></td>
 </tr>
 <tr>
 <td><code>'spheroid'</code></td>
-<td>the same at every radius, kept exactly at any flattening</td>
+<td>the same at every radius, exact at any flattening</td>
 <td><code>centrifugal_f</code></td>
 </tr>
 </tbody>
 </table>
 <ul>
-<li><code>'clairaut'</code> derives the density from the gravity, so <span class="arithmatex">\(g\)</span> must be the gravity of the structure's own mass, as it is in
-  <code>'model S hydrostatic'</code>, <code>'Wu 2005'</code> and <code>'Boussinesq'</code>. For <code>'Boussinesq'</code>, a homogeneous body, it gives
-  <span class="arithmatex">\(f = 5q/4\)</span> at every radius (the Maclaurin spheroid). The gravity of <code>'model S hydrostatic'</code> ends at the outer wall,
-  so for it kore applies the surface condition of Clairaut's equation at the wall, neglecting the mass above.</li>
-<li><code>submatrices.py</code> prints the flattening at the walls and, for <code>'clairaut'</code>, its ratio <span class="arithmatex">\(f/q\)</span> at the surface.</li>
-<li><code>'spheroid'</code> is the body of <code>'uniform'</code> without the first-order approximation: the walls and the level surfaces are
-  exact spheroids, for strong flattenings, or with <span class="arithmatex">\(f &lt; 0\)</span> elongated bodies. It suits a homogeneous fluid in a
-  fast-rotating body or in a rigid container, such as a planet with a rigid mantle. It needs <code>'Boussinesq'</code> with uniform
-  diffusivities and <code>centrifugal_q</code> = 0, and kore stops with a differential rotation; the buoyancy is that of a
-  homogeneous body in hydrostatic equilibrium. With a field, the potential field beyond an insulating wall is the exact
-  one of the spheroid. Its viscous terms and its magnetic diffusion couple degrees four apart
-  (<a href="../centrifugal-equations/#the-exact-spheroid">The exact spheroid</a>).</li>
+<li><code>'spheroid'</code> suits a uniform-density fluid in a fast-rotating or rigid container, such as a planetary core inside a
+  rigid mantle. It needs <code>'Boussinesq'</code>, uniform diffusivities and no differential rotation. A negative flattening
+  gives an elongated body.</li>
+<li><code>submatrices.py</code> prints the flattening at the walls, and warns above 0.1, where the first-order treatment becomes
+  inaccurate.</li>
 </ul>
 <p>Typical values:</p>
 <table>
@@ -2596,14 +2418,14 @@ it.</p>
 <tr>
 <th>body</th>
 <th><code>centrifugal_q</code></th>
-<th>flattening of the surface</th>
+<th>surface flattening</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>Earth</td>
 <td>3.5e-3</td>
-<td>3.4e-3; the core-mantle boundary 2.5e-3</td>
+<td>3.4e-3 (core-mantle boundary: 2.5e-3)</td>
 </tr>
 <tr>
 <td>Jupiter</td>
@@ -2622,78 +2444,48 @@ it.</p>
 </tr>
 </tbody>
 </table>
-<p>A Jupiter-like body, with the flattening of its structure:</p>
+<p>A Jupiter-like body:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">par</span><span class="o">.</span><span class="n">structure</span>         <span class="o">=</span> <span class="s1">'Wu 2005'</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">par</span><span class="o">.</span><span class="n">r_out</span>             <span class="o">=</span> <span class="mf">0.99</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">par</span><span class="o">.</span><span class="n">centrifugal</span>       <span class="o">=</span> <span class="mi">1</span>
 </span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">par</span><span class="o">.</span><span class="n">centrifugal_shape</span> <span class="o">=</span> <span class="s1">'clairaut'</span>
 </span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">par</span><span class="o">.</span><span class="n">centrifugal_q</span>     <span class="o">=</span> <span class="mf">0.089</span>
 </span></code></pre></div>
-<p>The level surfaces of the Earth's core are set by the whole planet, so give the flattening of the core-mantle boundary
-instead (and, with <code>thermal = 1</code>, <code>centrifugal_q</code> = 1.7e-3, its value at that boundary, for the effective gravity):</p>
+<p>The Earth's core, whose shape is set by the whole planet, so give the flattening of the core-mantle boundary directly:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">par</span><span class="o">.</span><span class="n">structure</span>         <span class="o">=</span> <span class="s1">'Boussinesq'</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">par</span><span class="o">.</span><span class="n">centrifugal</span>       <span class="o">=</span> <span class="mi">1</span>
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">par</span><span class="o">.</span><span class="n">centrifugal_shape</span> <span class="o">=</span> <span class="s1">'uniform'</span>
 </span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">par</span><span class="o">.</span><span class="n">centrifugal_f</span>     <span class="o">=</span> <span class="mf">2.5e-3</span>
 </span></code></pre></div>
-<h3 id="what-it-covers">What it covers</h3>
-<p>The deformation is complete at first order in <span class="arithmatex">\(f\)</span>: the inertia, the Coriolis force and the buoyancy, the viscous force
-with no-slip or stress-free walls, the thermal diffusion with fixed-entropy or fixed-flux walls and that of the
-composition with its walls, a differential rotation, and with a field the Lorentz force, the induction and the magnetic
-diffusion, insulating walls and a conducting inner core, with any background field, poloidal or toroidal, in shells and
-in full spheres. <code>'spheroid'</code> keeps the inertia, the Coriolis force, the buoyancy, the viscous force, the diffusion of
-the entropy and of the composition and, with a field, the Lorentz force, the induction and the magnetic diffusion, with
-all their walls and a conducting inner core, exactly.</p>
+<h3 id="limitations">Limitations</h3>
 <ul>
-<li><code>submatrices.py</code> warns about a flattening above 0.1, where the first order loses accuracy (not with <code>'spheroid'</code>),
-  and with <code>thermal_wind</code> 1 or 2: the thermal-wind entropy keeps the balance of the sphere, so that balance misses its terms of order
-  <span class="arithmatex">\(f\thinspace\Delta\Omega\)</span>.</li>
-<li>A viscous flow in a full sphere with <span class="arithmatex">\(m \neq 0\)</span> needs <code>rpower_v</code> of at least 4: the deformation gives its toroidal rows a term
-  that is a polynomial in <span class="arithmatex">\(r\)</span> only once multiplied by <span class="arithmatex">\(r^4\)</span>. kore stops and says so.</li>
-<li>kore stops with a forcing, and with walls of zero radial stress (<code>bco</code> or <code>bci</code> = 2) for a viscous flow; with
-  <code>hydro = 0</code> there are no rows of the flow, and the walls take any value. With a field it stops with a conducting
-  inner core whose permeability differs from the fluid's (<code>mu_i2o</code> must be 1) or, under a poloidal B0, behind a
-  stress-free inner wall (<code>bci</code> must be 1), and where B0 ends in a current sheet at a wall the fluid slips along. The
-  rotating solids, the drag at the outer wall, thin conducting layers, the resolved mantle and a background flow need a
-  spherical body (<a href="../compatibility/">Combining features</a>).</li>
+<li>The deformation works with buoyancy, viscosity, thermal and compositional diffusion, differential rotation and a
+  magnetic field (insulating walls or a conducting inner core), in shells and full spheres.</li>
+<li>It does not work with forced runs, walls of zero radial stress (<code>bci</code> or <code>bco</code> = 2), the rotating solids, the drag at
+  the outer wall, thin conducting layers, a resolved mantle or a background flow. kore stops and says why
+  (<a href="../compatibility/">Combining features</a>).</li>
+<li>A viscous flow in a full sphere with <code>m</code> ≠ 0 needs <code>rpower_v</code> of at least 4; kore stops and says so.</li>
+<li>With the thermal wind, the background entropy ignores the flattening. <code>submatrices.py</code> warns about this.</li>
+<li>In <code>spin_doctor</code>, the total energy budget closes only approximately (to second order in the flattening), except with
+  <code>'spheroid'</code>.</li>
 </ul>
-<h3 id="output">Output</h3>
-<ul>
-<li>The eigenvectors are normalised to the kinetic energy of the deformed body (plus its magnetic energy with a field),
-  and the budgets of <code>spin_doctor</code> (residσ, residω, resid𝑠, resid𝐛) include the terms of the deformation. The full
-  energy budget resid𝐄 closes only at second order in <span class="arithmatex">\(f\)</span>, so it is of order <span class="arithmatex">\(f^2\)</span> rather than round-off; with
-  <code>'spheroid'</code> it closes to round-off too. The enstrophy and viscous residuals (residens, residD) are not computed.</li>
-<li>The field files hold the flow and the field in the coordinates of the level surfaces. <code>tools/plot_field.py</code> draws the
-  flow, the field and the entropy where they are in the body.</li>
-<li><code>magnetic.dat</code> gains a column with the part of the magnetic energy that the deformation adds
-  (<a href="../output/#magneticdat">Output files</a>).</li>
-<li><code>params.dat</code> records the deformation in its columns 108–112 (<a href="../output/#paramsdat">Output files</a>).</li>
-</ul>
-<h2 id="user-profiles"><code>'user'</code> profiles</h2>
-<p><code>stratification_profile</code>, <code>comp_stratification_profile</code>, the <code>diffusivity_profiles</code>, the <code>diff_rot_profiles</code> and
-<code>centrifugal_profile</code> are numpy expressions of <code>r</code> (the kore radius), <code>x</code> (<span class="arithmatex">\(r\cdot\)</span><code>r_out</code> with a solar structure, <span class="arithmatex">\(r\)</span>
-otherwise) and <code>p</code> (<code>stratification_param</code>, <code>comp_stratification_param</code>, <code>diffusivity_param</code>, <code>diff_rot_param</code> or
-<code>centrifugal_param</code>), with <code>sin</code>, <code>cos</code>, <code>tan</code>, <code>arcsin</code>, <code>arccos</code>, <code>arctan</code>, <code>sinh</code>, <code>cosh</code>,
-<code>tanh</code>, <code>exp</code>, <code>log</code>, <code>log10</code>, <code>sqrt</code>, <code>abs</code>, <code>sign</code>, <code>pi</code>, <code>where</code>, <code>minimum</code>, <code>maximum</code>, <code>erf</code>, <code>erfc</code>. For example:</p>
+<h2 id="user-profiles">User profiles</h2>
+<p>The <code>'user'</code> options take a numpy expression as a string. It may use <code>r</code> (kore's radius), <code>x</code> (the stellar radius with
+a solar structure, otherwise equal to <code>r</code>), <code>p</code> (the matching <code>..._param</code> parameter), and the usual functions: <code>sin</code>,
+<code>cos</code>, <code>tan</code>, <code>arcsin</code>, <code>arccos</code>, <code>arctan</code>, <code>sinh</code>, <code>cosh</code>, <code>tanh</code>, <code>exp</code>, <code>log</code>, <code>log10</code>, <code>sqrt</code>, <code>abs</code>, <code>sign</code>,
+<code>pi</code>, <code>where</code>, <code>minimum</code>, <code>maximum</code>, <code>erf</code>, <code>erfc</code>. For example:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">par</span><span class="o">.</span><span class="n">stratification</span> <span class="o">=</span> <span class="s1">'user'</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">par</span><span class="o">.</span><span class="n">stratification_profile</span> <span class="o">=</span> <span class="s1">'2.5*exp(-((r - 0.75)/0.06)**2)'</span>      <span class="c1"># dS/dr in 1/L for r &gt;= 0</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">par</span><span class="o">.</span><span class="n">stratification_profile</span> <span class="o">=</span> <span class="s1">'2.5*exp(-((r - 0.75)/0.06)**2)'</span>
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">par</span><span class="o">.</span><span class="n">diffusivity</span> <span class="o">=</span> <span class="s1">'user'</span>
 </span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">par</span><span class="o">.</span><span class="n">diffusivity_profiles</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'nu'</span><span class="p">:</span> <span class="s1">'0.01 + 0.99*0.5*(1 + tanh((x - 0.70)/0.015))'</span><span class="p">,</span> <span class="s1">'kappa'</span><span class="p">:</span> <span class="s1">'1'</span><span class="p">}</span>
 </span></code></pre></div>
-<p>kore evaluates them at <span class="arithmatex">\(\lvert r\rvert\)</span>, so in a full sphere <span class="arithmatex">\(dS/dr\)</span> and <span class="arithmatex">\(dC/dr\)</span> are odd and <span class="arithmatex">\(\hat\nu\)</span>, <span class="arithmatex">\(\hat\kappa\)</span>,
-<span class="arithmatex">\(\hat D\)</span>, the <span class="arithmatex">\(f_n\)</span> and the flattening are even whatever the expression. They are smooth at the centre only if the expression is: an odd power of <span class="arithmatex">\(r\)</span> in an even
-profile, or an even one in <span class="arithmatex">\(dS/dr\)</span>, makes a kink, and <span class="arithmatex">\(dS/dr\)</span> must vanish there as <span class="arithmatex">\(r\)</span>, <span class="arithmatex">\(f_n\)</span> as <span class="arithmatex">\(r^n\)</span>. <code>submatrices.py</code>
-warns about both (<a href="../numerical-method/#regularity-at-the-centre">Regularity at the centre</a>). The
-expressions must not contain <code>#</code>: <code>spin_doctor</code> writes them at the end of each <code>params.dat</code> row, after a <code>#</code>.</p>
+<p>In a full sphere, profiles must be smooth at the centre; <code>submatrices.py</code> warns if they are not
+(<a href="../numerical-method/#regularity-at-the-centre">Regularity at the centre</a>). Expressions must not contain <code>#</code>.</p>
 <h2 id="checks">Checks</h2>
-<p>Before anything is built, kore stops on a background that cannot work: an unknown type, a parameter name of an older
-version of kore (the message gives the replacement), <code>'Wu 2005'</code> without <span class="arithmatex">\(0 &lt;\)</span> <code>r_out</code> <span class="arithmatex">\(&lt; 1\)</span>, <code>'inverse square'</code> with
-<code>ricb = 0</code>, <span class="arithmatex">\(\delta\)</span> without <code>'solar_rz'</code>, a centrifugal deformation with what it does not cover
-(<a href="#what-it-covers">above</a>) or without its flattening, or a <code>'user'</code> expression that does not evaluate. <code>submatrices.py</code> also warns
-about any name in the parameter file that kore does not define, so a misspelt name is not ignored without notice, and
-in a full sphere about each profile that is not smooth at the centre
-(<a href="../numerical-method/#regularity-at-the-centre">Regularity at the centre</a>).
-<code>spin_doctor</code> records the background of every solution in <code>params.dat</code> (<a href="../output/">Output files</a>).</p>
+<p>kore checks the background before building anything, and stops with an explanation if something cannot work: an
+unknown type, a parameter name from an older version of kore (the message gives the new name), or a combination that is
+not supported. <code>submatrices.py</code> also warns about any parameter name it does not recognize, so a misspelled name is not
+silently ignored.</p>
 
 
 

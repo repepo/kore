@@ -1903,7 +1903,7 @@ and <code>Etherm</code> <span class="arithmatex">\(= \kappa_{\mathrm{ref}}/(\Ome
 </tbody>
 </table>
 <p><code>set_scales()</code> resets all four, so set the ones it leaves at 0 after calling it (<code>Beyonce</code> with <code>'rotation'</code>). The
-parameter files of this branch use <code>'rotation'</code>, and <code>bin/units.py</code> sets the parameters from physical values for that
+parameter files of the examples use <code>'rotation'</code>, and <code>bin/units.py</code> sets the parameters from physical values for that
 choice (<a href="../background/#units">Background model</a>).</p>
 <p>Ratios of the parameters do not depend on <span class="arithmatex">\(\tau\)</span>:</p>
 <ul>
@@ -1934,8 +1934,7 @@ thermal boundary conditions: <code>bci_thermal</code> and <code>bco_thermal</cod
 convection zone, or a planet's core by its light elements. With <code>compositional = 1</code> kore solves for the perturbation
 <span class="arithmatex">\(c\)</span> of a second scalar, the composition, beside the entropy or without it. The flow carries <span class="arithmatex">\(c\)</span> across the background
 gradient <span class="arithmatex">\(dC/dr\)</span>, <span class="arithmatex">\(c\)</span> diffuses with its own diffusivity, and it changes the density, so it has its own buoyancy. Its
-equation is that of the entropy with $
-ho_0$ in place of <span class="arithmatex">\(p_0\)</span>, the conservation of a mass fraction:</p>
+equation is that of the entropy with <span class="arithmatex">\(\rho_0\)</span> in place of <span class="arithmatex">\(p_0\)</span>, the conservation of a mass fraction:</p>
 <div class="arithmatex">\[
 \rho_0\left(\partial_t c + u_r\frac{dC}{dr}\right) = \mathrm{CompoD}\thinspace\nabla\cdot\left(D\thinspace\rho_0\nabla c\right),
 \]</div>
@@ -1977,9 +1976,7 @@ with <code>ThermaD = 0</code>: its equation is then of first order and takes no 
 gains the advection <span class="arithmatex">\(i\thinspace m\thinspace\mathrm{Gaspard}\thinspace\Delta\Omega\thinspace c\)</span> inside the bracket; the
 background composition is spherical, so nothing in it plays the part of the thermal wind.</p>
 <p>With <code>'Boussinesq'</code> and <code>diffusivity = 'uniform'</code> the equation is
-<span class="arithmatex">\(\partial_t c + u_r\thinspace dC/dr = \mathrm{CompoD}\thinspace\nabla^2 c\)</span>. This is the composition of the <code>conductive_IC</code>
-branch with its <span class="arithmatex">\(\xi = -c\)</span>, <code>BV2_comp</code> = <code>BeyonceC</code> and <code>Ecomp</code> = <code>CompoD</code>: its gradient <code>'internal'</code> is <code>'linear'</code>
-here, and its <code>'differential'</code> is <code>'inverse square'</code> with <code>BeyonceC</code> = <code>BV2_comp</code><span class="arithmatex">\(\cdot\)</span><code>ricb</code>/(1 − <code>ricb</code>).</p>
+<span class="arithmatex">\(\partial_t c + u_r\thinspace dC/dr = \mathrm{CompoD}\thinspace\nabla^2 c\)</span>.</p>
 <h2 id="differential-rotation">Differential rotation</h2>
 <p>With a differential rotation <span class="arithmatex">\(\Omega(r,\theta) = \Omega_{\rm ref}\left[1 + \Delta\Omega(r,\theta)\right]\)</span>, kore solves in
 the frame rotating at <span class="arithmatex">\(\Omega_{\rm ref}\)</span>, where the background is a steady azimuthal flow,</p>
@@ -2024,50 +2021,50 @@ over the fluid and keep the real part:</p>
 <p>with, term by term:</p>
 <ul>
 <li><strong>Coriolis.</strong> <span class="arithmatex">\(\mathbf u^*\cdot(\hat{\mathbf z}\times\mathbf u)\)</span> is imaginary: the Coriolis force does no work.</li>
-<li><strong>Pressure.</strong> Since <span class="arithmatex">\(\nabla\cdot(\rho_0\mathbf u) = 0\)</span>, the power of <span class="arithmatex">\(-\nabla\Pi\)</span> is a flux through the walls,</li>
-</ul>
-<p>$$
-  W_p = -2\thinspace\mathrm{Re}\oint\rho_0\thinspace\Pi\thinspace u_r^*\thinspace(\hat{\mathbf r}\cdot\mathbf n)\thinspace dA ,
-  $$</p>
+<li>
+<p><strong>Pressure.</strong> Since <span class="arithmatex">\(\nabla\cdot(\rho_0\mathbf u) = 0\)</span>, the power of <span class="arithmatex">\(-\nabla\Pi\)</span> is a flux through the walls,</p>
+<div class="arithmatex">\[
+W_p = -2\thinspace\mathrm{Re}\oint\rho_0\thinspace\Pi\thinspace u_r^*\thinspace(\hat{\mathbf r}\cdot\mathbf n)\thinspace dA ,
+\]</div>
 <p>with <span class="arithmatex">\(\mathbf n\)</span> the outward normal of the fluid (<span class="arithmatex">\(-\hat{\mathbf r}\)</span> at the inner wall). It is zero when <span class="arithmatex">\(u_r = 0\)</span> at
-  the walls (<code>bco</code>, <code>bci</code> = 0 or 1), and not when the walls move radially (the tidal forcing 14) or with <code>bco = 2</code>.</p>
-<ul>
-<li><strong>Viscosity.</strong> With the stress <span class="arithmatex">\(\boldsymbol\sigma = \mathrm{ViscosD}\thinspace\rho_0\nu\thinspace\mathsf S\)</span>, an
-  integration by parts splits the power of the viscous force into the work of the stress at the walls and the
-  dissipation:</li>
-</ul>
-<p>$$
-  W_\nu = 2\thinspace\mathrm{Re}\int\mathbf u^<em>\cdot(\nabla\cdot\boldsymbol\sigma)\thinspace dV = W_\nu^{\rm wall} - D_\nu ,
-  \qquad W_\nu^{\rm wall} = 2\thinspace\mathrm{Re}\oint\mathbf u^</em>\cdot\boldsymbol\sigma\cdot\mathbf n\thinspace dA ,
-  $$</p>
-<p>$$
-  D_\nu = 2\thinspace\mathrm{Re}\int\boldsymbol\sigma:\nabla\mathbf u^<em>\thinspace dV = \int 4\thinspace\mathrm{ViscosD}\thinspace\rho_0\nu\thinspace\mathsf e_d:\mathsf e_d^</em>\thinspace dV \geq 0 ,
-  $$</p>
+the walls (<code>bco</code>, <code>bci</code> = 0 or 1), and not when the walls move radially (the tidal forcing 14) or with <code>bco = 2</code>.</p>
+</li>
+<li>
+<p><strong>Viscosity.</strong> With the stress <span class="arithmatex">\(\boldsymbol\sigma = \mathrm{ViscosD}\thinspace\rho_0\nu\thinspace\mathsf S\)</span>, an
+    integration by parts splits the power of the viscous force into the work of the stress at the walls and the
+    dissipation:</p>
+<div class="arithmatex">\[
+W_\nu = 2\thinspace\mathrm{Re}\int\mathbf u^*\cdot(\nabla\cdot\boldsymbol\sigma)\thinspace dV = W_\nu^{\rm wall} - D_\nu ,
+\qquad W_\nu^{\rm wall} = 2\thinspace\mathrm{Re}\oint\mathbf u^*\cdot\boldsymbol\sigma\cdot\mathbf n\thinspace dA ,
+\]</div>
+<div class="arithmatex">\[
+D_\nu = 2\thinspace\mathrm{Re}\int\boldsymbol\sigma:\nabla\mathbf u^*\thinspace dV = \int 4\thinspace\mathrm{ViscosD}\thinspace\rho_0\nu\thinspace\mathsf e_d:\mathsf e_d^*\thinspace dV \geq 0 ,
+\]</div>
 <p>with <span class="arithmatex">\(\mathsf e = \tfrac12[\nabla\mathbf u + (\nabla\mathbf u)^{\mathsf T}]\)</span> the rate of strain and
-  <span class="arithmatex">\(\mathsf e_d = \mathsf e - \tfrac13(\nabla\cdot\mathbf u)\thinspace\mathsf I\)</span> its deviatoric part: <span class="arithmatex">\(\mathsf S = 2\mathsf e_d\)</span>,
-  and <span class="arithmatex">\(\boldsymbol\sigma\)</span> is symmetric and traceless, so that <span class="arithmatex">\(\boldsymbol\sigma:\nabla\mathbf u^* = \boldsymbol\sigma:\mathsf e_d^*\)</span>.
-  The physical dissipation is <span class="arithmatex">\(\int 2\rho\nu\thinspace\mathsf e_d:\mathsf e_d\thinspace dV\)</span>, and the factor 4 is its mean
-  in the convention above. <span class="arithmatex">\(W_\nu^{\rm wall}\)</span> is zero on a no-slip wall at rest and on an impenetrable stress-free wall,
+<span class="arithmatex">\(\mathsf e_d = \mathsf e - \tfrac13(\nabla\cdot\mathbf u)\thinspace\mathsf I\)</span> its deviatoric part: <span class="arithmatex">\(\mathsf S = 2\mathsf e_d\)</span>,
+and <span class="arithmatex">\(\boldsymbol\sigma\)</span> is symmetric and traceless, so that <span class="arithmatex">\(\boldsymbol\sigma:\nabla\mathbf u^* = \boldsymbol\sigma:\mathsf e_d^*\)</span>.
+The physical dissipation is <span class="arithmatex">\(\int 2\rho\nu\thinspace\mathsf e_d:\mathsf e_d\thinspace dV\)</span>, and the factor 4 is its mean
+in the convention above. <span class="arithmatex">\(W_\nu^{\rm wall}\)</span> is zero on a no-slip wall at rest and on an impenetrable stress-free wall,
 unless a force acts on the fluid at that wall: a drag (<a href="../drag/">Drag at the outer wall</a>) or the push of the background
 field's current sheet (<a href="../magnetic-equations/#current-sheets-at-slipping-walls">Magnetic field equations</a>).</p>
-<ul>
+</li>
 <li>
 <p><strong>Buoyancy.</strong> <span class="arithmatex">\(W_b = 2\thinspace\mathrm{Beyonce}\thinspace\mathrm{Re}\int\rho_0\thinspace g\thinspace s\thinspace u_r^*\thinspace dV\)</span>,
-  the energy exchanged with the entropy perturbation, and with <code>compositional = 1</code>
-  <span class="arithmatex">\(W_c = 2\thinspace\mathrm{BeyonceC}\thinspace\mathrm{Re}\int\rho_0\thinspace g\thinspace c\thinspace u_r^*\thinspace dV\)</span>,
-  the energy exchanged with the composition.</p>
+    the energy exchanged with the entropy perturbation, and with <code>compositional = 1</code>
+    <span class="arithmatex">\(W_c = 2\thinspace\mathrm{BeyonceC}\thinspace\mathrm{Re}\int\rho_0\thinspace g\thinspace c\thinspace u_r^*\thinspace dV\)</span>,
+    the energy exchanged with the composition.</p>
 </li>
 <li>
 <p><strong>Differential rotation.</strong> Of the terms of <a href="#differential-rotation">Differential rotation</a>, the advection
-  <span class="arithmatex">\(i m\thinspace\mathrm{Gaspard}\thinspace\Delta\Omega\thinspace\mathbf u\)</span> and the Coriolis force of <span class="arithmatex">\(\Delta\Omega\)</span> do no
-  work. The last one does:</p>
+    <span class="arithmatex">\(i m\thinspace\mathrm{Gaspard}\thinspace\Delta\Omega\thinspace\mathbf u\)</span> and the Coriolis force of <span class="arithmatex">\(\Delta\Omega\)</span> do no
+    work. The last one does:</p>
+<div class="arithmatex">\[
+W_\Omega = -2\thinspace\mathrm{Gaspard}\thinspace\mathrm{Re}\int\rho_0\thinspace r\sin\theta\thinspace u_\phi^*\thinspace(\mathbf u\cdot\nabla\Delta\Omega)\thinspace dV ,
+\]</div>
+<p>the Reynolds stress of the perturbation acting on the shear. <span class="arithmatex">\(W_\Omega &gt; 0\)</span> is energy that the perturbation takes from
+the background flow.</p>
 </li>
 </ul>
-<p>$$
-  W_\Omega = -2\thinspace\mathrm{Gaspard}\thinspace\mathrm{Re}\int\rho_0\thinspace r\sin\theta\thinspace u_\phi^*\thinspace(\mathbf u\cdot\nabla\Delta\Omega)\thinspace dV ,
-  $$</p>
-<p>the Reynolds stress of the perturbation acting on the shear. <span class="arithmatex">\(W_\Omega &gt; 0\)</span> is energy that the perturbation takes from
-  the background flow.</p>
 <p>With a magnetic field the Lorentz force adds its power (<a href="../magnetic-equations/">Magnetic field</a>). The imaginary part of
 the same equation is the frequency balance: <span class="arithmatex">\(2\thinspace\mathrm{Im}(\lambda)\thinspace K\)</span> against the imaginary parts of
 the same integrals, where the Coriolis force now enters.</p>

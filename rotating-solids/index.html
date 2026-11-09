@@ -1455,8 +1455,8 @@
 
 <h1 id="rotating-solids">Rotating solids</h1>
 <p>An axisymmetric mode of the fluid pulls on the mantle and on the inner core, and their rotation changes in return.
-<code>rotdyn = 1</code> lets both solids turn as rigid bodies about the rotation axis, coupled to the fluid by the viscous and
-magnetic torques at the walls and to each other by gravity, as in the <code>conductive_IC</code> branch.</p>
+<code>rotdyn = 1</code> lets both solids turn as rigid bodies about the rotation axis. They are coupled to the fluid by the viscous
+and magnetic torques at the walls, and to each other by gravity.</p>
 <table>
 <thead>
 <tr>
@@ -1474,12 +1474,12 @@ magnetic torques at the walls and to each other by gravity, as in the <code>cond
 <tr>
 <td><code>MoIZ_M</code>, <code>MoIZ_IC</code></td>
 <td>11.16, 9.2e-3</td>
-<td>axial moments of inertia of the mantle and of the inner core, in units of the run's density unit times the outer radius of the fluid to the fifth power</td>
+<td>axial moments of inertia of the mantle and of the inner core, in units of the density unit times the outer radius of the fluid to the fifth power</td>
 </tr>
 <tr>
 <td><code>gTorque</code></td>
 <td>5e-8</td>
-<td>gravitational coupling: the torque between the inner core and the mantle per radian of misalignment, divided by that unit and by the rotation rate squared</td>
+<td>gravitational coupling: the torque between inner core and mantle per radian of misalignment (dimensionless)</td>
 </tr>
 <tr>
 <td><code>OmgtauIC</code></td>
@@ -1489,13 +1489,13 @@ magnetic torques at the walls and to each other by gravity, as in the <code>cond
 <tr>
 <td><code>vtrq</code>, <code>mtrq</code></td>
 <td>1, 1</td>
-<td>0 switches off the viscous or the magnetic torque on the solids; the fluid still follows the walls</td>
+<td>0 switches off the viscous or the magnetic torque on the solids</td>
 </tr>
 </tbody>
 </table>
-<p>The defaults are those of the <code>conductive_IC</code> branch for the Earth (2.3e3 is a relaxation time of one year). A run needs
-an axisymmetric, equatorially symmetric eigenvalue problem with a no-slip inner wall; the outer wall is no-slip, as
-here, or stress-free, with or without a drag (<a href="../drag/">Drag at the outer wall</a>):</p>
+<p>The defaults are Earth-like (2.3e3 corresponds to a relaxation time of one year). A run needs an axisymmetric,
+equatorially symmetric eigenvalue problem with an inner core and a no-slip inner wall. The outer wall is no-slip, or
+stress-free with or without a drag (<a href="../drag/">Drag at the outer wall</a>):</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">par</span><span class="o">.</span><span class="n">m</span> <span class="o">=</span> <span class="mi">0</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">par</span><span class="o">.</span><span class="n">symm</span> <span class="o">=</span> <span class="mi">1</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">par</span><span class="o">.</span><span class="n">bci</span> <span class="o">=</span> <span class="mi">1</span>
@@ -1507,55 +1507,46 @@ here, or stress-free, with or without a drag (<a href="../drag/">Drag at the out
 angle of the inner core relative to the mantle.</p>
 <ul>
 <li><strong>The walls move with the solids.</strong> The fluid at each no-slip wall turns with the solid beyond it. At a stress-free
-  outer wall the fluid slips along the mantle; a drag pulls it towards the mantle's rotation.</li>
-<li><strong>Viscous torque.</strong> The stress of the fluid on each wall: at a stress-free outer wall, that of the drag, or none.</li>
-<li><strong>Magnetic torque.</strong> The magnetic stress through each wall, which acts on whatever conducts beyond it: a thin
-  conducting wall, a resolved mantle or a conducting inner core. An insulating solid feels none.</li>
-<li><strong>Gravitational torque.</strong> It pulls the inner core and the mantle back into alignment, in proportion to the angle
-  between them, while the inner core relaxes viscously towards alignment over <code>OmgtauIC</code>.</li>
+  outer wall the fluid slips along the mantle, and a drag (if any) pulls it towards the mantle's rotation.</li>
+<li><strong>Viscous torque.</strong> The stress of the fluid on each wall (at a stress-free outer wall, only that of the drag).</li>
+<li><strong>Magnetic torque.</strong> The magnetic stress on whatever conducts beyond each wall: a thin conducting layer, a resolved
+  mantle or a conducting inner core. An insulating solid feels none.</li>
+<li><strong>Gravitational torque.</strong> It pulls the inner core and the mantle back into alignment, while the inner core relaxes
+  viscously towards alignment over <code>OmgtauIC</code>.</li>
 </ul>
-<p>No torque comes from outside, so the fluid and the solids together conserve their angular momentum: every mode with a
-nonzero eigenvalue carries none in total. The eigenvalue 0 is the rigid rotation of everything, whose residuals mean
-nothing.</p>
+<p>No torque comes from outside, so fluid and solids together conserve their angular momentum. The eigenvalue 0 is the
+rigid rotation of everything; ignore its residuals.</p>
 <p>The equations: <a href="../rotating-solids-equations/">Rotating solids equations</a>.</p>
 <h2 id="output">Output</h2>
 <ul>
-<li><code>rotdyn.npy</code>: the two rotation rates and the angle, one column per solution, in the
-  normalisation of the eigenvector (the kinetic energy of the fluid, plus <code>Hendrik</code> times its magnetic energy, is 1).</li>
-<li><code>rotdyn.dat</code>: one row per solution with the same three, the gravitational torque, and the viscous and magnetic torques
-  on the mantle and on the inner core (<a href="../output/#rotdyndat">Output files</a>).</li>
-<li>With a field, resid𝐄 also counts the rotational energy of the solids, their gravitational energy and the power of
-  the torques on them (<a href="../magnetic/#output">Magnetic field</a>), when both torques act (<code>vtrq</code> and <code>mtrq</code> 1).</li>
+<li><code>rotdyn.npy</code>: the two rotation rates and the angle, one column per solution, normalized as the eigenvector.</li>
+<li><code>rotdyn.dat</code>: one row per solution with the same three quantities, the gravitational torque, and the viscous and
+  magnetic torques on the mantle and on the inner core (<a href="../output/#rotdyndat">Output files</a>).</li>
+<li>With a field, resid𝐄 also counts the energy of the solids (<a href="../magnetic/#output">Magnetic field</a>).</li>
 </ul>
 <h2 id="the-angular-momentum-check-residl">The angular momentum check: resid𝐋</h2>
-<p>The angular momentum of the fluid changes only through the torques on it, which <code>spin_doctor</code> computes from the fields,
-apart from the matrices. It prints resid𝐋, the relative residual of that balance, for eigenvalue problems with the flow
-and either <code>m = 0</code>, <code>symm = 1</code> (the axial angular momentum) or <code>m = 1</code>, <code>symm = -1</code> (the equatorial one, which the
-Coriolis force turns; the spin-over mode is one of these), with or without the rotating solids. It also prints it for
-the forced runs with <code>m = 0</code>, <code>symm = 1</code> whose walls move only along themselves and that put no force in the fluid: the
-libration (forcing 7), the steady rotation of the walls (forcing 12, <a href="../couette-flow/">Spherical Couette flow</a>) and the
-thermal forcing (forcing 13), and for those whose body force it knows, with the torque of that force: the libration in
-the frame of the mantle (forcing 8, <a href="../libration/">Libration</a>) and the wave-like tide (forcing 1, <code>m = 0</code> or <code>m = 1</code>,
-<a href="../tidal-forcing/#the-wave-like-tide-forcing-1">Tidal forcing</a>). It is not computed with <code>centrifugal = 1</code>, nor for
-<code>m = 1</code> with a differential rotation, nor with a wall of zero radial stress (<code>bco</code> or <code>bci</code> = 2) of a viscous fluid,
-which the fluid crosses.
-Like residσ, it should be small for a resolved mode.
-<code>flow.dat</code> has the angular momentum, the torques and resid𝐋 (<a href="../output/#flowdat">Output files</a>).</p>
-<h2 id="what-is-supported">What is supported</h2>
-<p>Supported: any <code>structure</code>; with or without buoyancy; a no-slip or a stress-free outer wall, with or without a drag
-(<a href="../drag/">Drag at the outer wall</a>); with or without a field, with any poloidal <code>B0</code> and a toroidal <code>B0_tor</code> that
-vanishes at both walls; insulating walls, a thin conducting layer, a resolved mantle or a conducting inner core
-(<code>'conducting, Chebys'</code>: <code>'conducting, Bessel'</code> serves forced runs only).</p>
-<p>Not supported (the run stops at startup):</p>
+<p>The angular momentum of the fluid changes only through the torques on it. <code>spin_doctor</code> computes both from the
+solution and prints resid𝐋, the relative mismatch of this balance. Like residσ, it should be small for a resolved
+mode. It is computed:</p>
 <ul>
-<li><code>m</code> other than 0, <code>symm</code> other than 1, a full sphere (<code>ricb = 0</code>), forced runs, or no flow (<code>hydro = 0</code>);</li>
-<li><code>ViscosD = 0</code>, an inner wall that is not no-slip (<code>bci</code> other than 1), or an outer wall that is neither no-slip nor
-  stress-free (<code>bco = 2</code>);</li>
-<li><code>Gaspard = 0</code>;</li>
-<li>a differential rotation (<code>diff_rot = 1</code>), a background flow (<code>bgflow = 1</code>) or <code>centrifugal = 1</code>;</li>
-<li>a toroidal <code>B0_tor</code> that does not vanish at a wall;</li>
-<li><code>MoIZ_M</code> or <code>MoIZ_IC</code> not positive and finite, <code>gTorque</code> negative or infinite, <code>OmgtauIC</code> not positive, <code>vtrq</code> or
-  <code>mtrq</code> other than 0 or 1, <code>rotdyn</code> other than 0 or 1.</li>
+<li>for eigenvalue problems with <code>m = 0</code>, <code>symm = 1</code> (axial angular momentum) or <code>m = 1</code>, <code>symm = -1</code> (equatorial angular
+  momentum, which includes the spin-over mode), with or without the rotating solids;</li>
+<li>for forced runs with <code>m = 0</code>, <code>symm = 1</code> whose force on the fluid is known: libration (forcings 7 and 8), rotating
+  walls (forcing 12), thermal forcing (forcing 13), and the wave-like tide (forcing 1).</li>
+</ul>
+<p>It is not computed with <code>centrifugal = 1</code>, for <code>m = 1</code> with differential rotation, or with walls of zero radial stress.
+<code>flow.dat</code> holds the angular momentum, the torques and resid𝐋 (<a href="../output/#flowdat">Output files</a>).</p>
+<h2 id="what-is-supported">What is supported</h2>
+<p>Supported: any <code>structure</code>; with or without buoyancy; a no-slip or a stress-free outer wall, with or without a drag;
+with or without a magnetic field (with any poloidal <code>B0</code>, and a toroidal <code>B0_tor</code> that vanishes at both walls);
+insulating walls, a thin conducting layer, a resolved mantle or a conducting inner core (<code>'conducting, Chebys'</code>).</p>
+<p>Not supported (kore stops with a message):</p>
+<ul>
+<li><code>m</code> other than 0, <code>symm</code> other than 1, a full sphere, forced runs, or no flow (<code>hydro = 0</code>);</li>
+<li>an inviscid fluid, an inner wall that is not no-slip, or an outer wall with zero radial stress (<code>bco = 2</code>);</li>
+<li>a non-rotating frame (<code>Gaspard = 0</code>);</li>
+<li>differential rotation, a background flow or the centrifugal deformation;</li>
+<li>a toroidal <code>B0_tor</code> that does not vanish at both walls.</li>
 </ul>
 
 

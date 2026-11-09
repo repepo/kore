@@ -1608,12 +1608,11 @@ the result.</p>
 <p>The scripts are in <code>tests/diff_rot/</code>. Each one builds a run directory with a copy of <code>bin/</code> and its own
 <code>parameters.py</code>, runs <code>submatrices.py</code> and <code>assemble.py</code>, and solves near the published eigenvalue.
 <a href="../getting-started/">Getting started</a> runs one of these benchmarks, fig. 10 of Baruteau &amp; Rieutord, step by step.</p>
-<p><strong>Conventions.</strong> kore's eigenvalue is <span class="arithmatex">\(\lambda = \sigma - i\omega\)</span> for fields <span class="arithmatex">\(\propto e^{\lambda t + im\phi}\)</span> in the
-frame rotating at <span class="arithmatex">\(\Omega_{\rm ref}\)</span> (<a href="../anelastic/">Anelastic equations</a>). The three fluid-dynamics papers work in the
-inertial frame, with fields <span class="arithmatex">\(\propto e^{i\Omega_p t + im\phi}\)</span> (Baruteau &amp; Rieutord, Guenel et al.) or
-<span class="arithmatex">\(e^{(\tau + i\omega)t + im\phi}\)</span> (Mirouh et al.), so their frequency is <span class="arithmatex">\(\mathrm{Im}\thinspace\lambda - m\)</span> and their
-damping rate <span class="arithmatex">\(\tau = \mathrm{Re}\thinspace\lambda\)</span>, in units of <span class="arithmatex">\(\Omega_{\rm ref}\)</span>. The solar papers give frequencies
-in nHz in the frame rotating at 456 nHz, negative for retrograde modes, and growth rates in nHz.</p>
+<p><strong>Conventions.</strong> kore's eigenvalue is <span class="arithmatex">\(\lambda = \sigma - i\omega\)</span>, with <span class="arithmatex">\(\sigma\)</span> the growth rate and <span class="arithmatex">\(\omega\)</span> the
+frequency in the frame rotating at <span class="arithmatex">\(\Omega_{\rm ref}\)</span> (<a href="../anelastic/">Anelastic equations</a>). The three fluid-dynamics
+papers give frequencies in the inertial frame, which are <span class="arithmatex">\(\mathrm{Im}\thinspace\lambda - m\)</span> in kore's units. The solar
+papers give frequencies and growth rates in nHz, in the frame rotating at 456 nHz, with negative frequencies for
+retrograde modes.</p>
 <h2 id="incompressible-and-boussinesq-fluids">Incompressible and Boussinesq fluids</h2>
 <p>These three papers use a viscous fluid in a spherical shell with stress-free walls. Their Ekman number is
 <span class="arithmatex">\(E = \nu/(\Omega_{\rm ref}R^2)\)</span>, which is <code>ViscosD</code> with <code>timescale = 'rotation'</code>. The common settings are</p>
@@ -1625,7 +1624,7 @@ in nHz in the frame rotating at 456 nHz, negative for retrograde modes, and grow
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">par</span><span class="o">.</span><span class="n">ViscosD</span> <span class="o">=</span> <span class="mf">1e-8</span>                           <span class="c1"># their E</span>
 </span></code></pre></div>
 <p><code>tests/diff_rot/lit_bench.py WORKDIR CASE</code> builds and solves one published mode; <code>lit_bench.py WORKDIR list</code> prints the
-cases (<code>br*</code>, <code>gu*</code>, <code>mi*</code>). The runs take minutes on 8 ranks; the largest needs 26 GB.</p>
+cases (<code>br*</code>, <code>gu*</code>, <code>mi*</code>). The runs take minutes; the largest needs about 26 GB of memory.</p>
 <h3 id="baruteau-rieutord-2013">Baruteau &amp; Rieutord 2013</h3>
 <p>JFM 719, 47. Shellular rotation <span class="arithmatex">\(\Omega = \Omega_{\rm ref}(r/R)^\sigma\)</span>, with <span class="arithmatex">\(\Omega_{\rm ref}\)</span> the surface rate, and
 cylindrical rotation <span class="arithmatex">\(\Omega = \Omega_{\rm ref}(1 + \varepsilon s^2)\)</span>, with <span class="arithmatex">\(\Omega_{\rm ref}\)</span> the rate on the axis:</p>
@@ -1633,11 +1632,10 @@ cylindrical rotation <span class="arithmatex">\(\Omega = \Omega_{\rm ref}(1 + \v
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">par</span><span class="o">.</span><span class="n">diff_rot_type</span> <span class="o">=</span> <span class="s1">'shellular'</span><span class="p">;</span>   <span class="n">par</span><span class="o">.</span><span class="n">diff_rot_param</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span>   <span class="c1"># σ: ΔΩ = r^σ - 1</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">par</span><span class="o">.</span><span class="n">diff_rot_type</span> <span class="o">=</span> <span class="s1">'cylindrical'</span><span class="p">;</span> <span class="n">par</span><span class="o">.</span><span class="n">diff_rot_ampl</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.4</span>    <span class="c1"># ε: ΔΩ = ε r² sin²θ</span>
 </span></code></pre></div>
-<p><strong>Result.</strong> For the 12 modes compared, the frequencies agree to <span class="arithmatex">\(2\times10^{-4}\thinspace\Omega_{\rm ref}\)</span> and the
-damping rates to 1 %, once kore is resolved (some modes need more resolution than the paper used). Two modes differ in
-the damping rate: an <span class="arithmatex">\(m = 3\)</span> mode in a cluster that does not settle with resolution, and the growing <span class="arithmatex">\(m = -6\)</span> mode,
-whose growth rate is 6 % lower, a shift of 0.4 % in its critical Ekman number. Two modes at <span class="arithmatex">\(E \le 5\times10^{-9}\)</span> need
-about 190 GB and were not computed.</p>
+<p><strong>Result.</strong> For the 12 modes compared, the frequencies agree to about <span class="arithmatex">\(10^{-4}\)</span> and the damping rates to about 1 %,
+once kore's resolution is sufficient. Two modes differ more: one in a cluster of modes that does not settle with
+resolution, and an unstable mode whose growth rate is a few percent lower. Two modes at the smallest Ekman numbers need
+too much memory and were not computed.</p>
 <h3 id="guenel-et-al-2016">Guenel et al. 2016</h3>
 <p>A&amp;A 589, A22. Conical rotation <span class="arithmatex">\(\Omega = \Omega_{\rm ref}(1 + \varepsilon\sin^2\theta)\)</span>, in the frame rotating at the
 pole:</p>
@@ -1645,9 +1643,9 @@ pole:</p>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">par</span><span class="o">.</span><span class="n">diff_rot_type</span> <span class="o">=</span> <span class="s1">'conical'</span><span class="p">;</span> <span class="n">par</span><span class="o">.</span><span class="n">diff_rot_ampl</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.25</span>      <span class="c1"># ε</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">par</span><span class="o">.</span><span class="n">ricb</span> <span class="o">=</span> <span class="mf">0.71</span>
 </span></code></pre></div>
-<p><strong>Result.</strong> For the 7 modes compared, the frequencies agree to <span class="arithmatex">\(10^{-4}\thinspace\Omega_{\rm ref}\)</span>
-(<span class="arithmatex">\(5\times10^{-4}\)</span> for one) and six damping or growth rates to 1 %, including the unstable mode with a corotation layer.
-The seventh, at <span class="arithmatex">\(\eta = 0.10\)</span>, sits in a cluster and is 6 % off in damping rate.</p>
+<p><strong>Result.</strong> For the 7 modes compared, the frequencies agree to about <span class="arithmatex">\(10^{-4}\)</span> and six damping or growth rates to
+about 1 %, including an unstable mode with a corotation layer. The seventh sits in a cluster of modes and is a few
+percent off in damping rate.</p>
 <h3 id="mirouh-et-al-2016">Mirouh et al. 2016</h3>
 <p>JFM 800, 213. A stably stratified Boussinesq fluid with <span class="arithmatex">\(N^2\)</span> uniform, <span class="arithmatex">\(g = r\)</span>, the temperature fixed at both walls,
 and the rotation <span class="arithmatex">\(\Omega = \Omega_{\rm ref}\left[1 + \tfrac{N^2}{2}(1 - r^2)\right]\)</span>:</p>
@@ -1658,14 +1656,14 @@ and the rotation <span class="arithmatex">\(\Omega = \Omega_{\rm ref}\left[1 + \
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">par</span><span class="o">.</span><span class="n">diff_rot_type</span> <span class="o">=</span> <span class="s1">'shellular_boussinesq'</span><span class="p">;</span> <span class="n">par</span><span class="o">.</span><span class="n">diff_rot_ampl</span> <span class="o">=</span> <span class="mf">1.5</span>   <span class="c1"># N² again</span>
 </span></code></pre></div>
 <p><code>thermal_wind = 0</code> is required: their background is balanced by centrifugal buoyancy, which kore does not carry.</p>
-<p><strong>Result.</strong> Of the 14 modes, 13 are identified. Their frequencies agree to <span class="arithmatex">\(2\times10^{-4}\thinspace\Omega_{\rm ref}\)</span>,
-and the damping or growth rates of 9 to 1 % and of 3 more to 2–4 %. One mode at <span class="arithmatex">\(E = 10^{-10}\)</span> needs more resolution
-than fits in memory. A growing mode in a dense cluster of corotation modes is not identified.</p>
+<p><strong>Result.</strong> Of the 14 modes, 13 are identified. Their frequencies agree to about <span class="arithmatex">\(10^{-4}\)</span>, and most damping or growth
+rates to about 1 %. One mode at the smallest Ekman number needs more memory than was available, and a growing mode in
+a dense cluster of modes is not identified.</p>
 <h2 id="the-sun">The Sun</h2>
-<p>These papers solve the fully compressible equations about Model S; kore is anelastic. The common set-up: the Model S
-density, <span class="arithmatex">\(\nu = \kappa = 10^{12}\)</span> cm² s⁻¹, an adiabatic convection zone, stress-free walls, the frame rotating at
-456 nHz and their rotation profile. "With the thermal wind" means <code>thermal_wind = 2</code> without
-<span class="arithmatex">\(u_r\thinspace\partial_r S_{tw}\)</span> (<code>thermal_wind_radial = 0</code>), as in the papers.</p>
+<p>These papers solve the fully compressible equations about solar Model S, whereas kore is anelastic. The common
+set-up: the Model S density, viscosity and thermal diffusivity of <span class="arithmatex">\(10^{12}\)</span> cm² s⁻¹, an adiabatic convection zone,
+stress-free walls, a frame rotating at 456 nHz, and their rotation profile. "With the thermal wind" means
+<code>thermal_wind = 2</code> with <code>thermal_wind_radial = 0</code>, as in the papers.</p>
 <h3 id="mukhopadhyay-et-al-2025a">Mukhopadhyay et al. 2025a</h3>
 <p>A&amp;A, arXiv 2501.16797. The convection zone, 0.71–0.985 R☉, with their tabulated rotation, the file <code>data/diff_rot.npz</code>
 of their data set (doi:10.17617/3.NP26AI):</p>
@@ -1686,11 +1684,10 @@ of their data set (doi:10.17617/3.NP26AI):</p>
 <p><code>tests/diff_rot/mk_bekki.py NAME m=… symm=… file=…</code> builds this run for any <span class="arithmatex">\(m\)</span> and symmetry, and <code>solve_bekki.py NAME
 FREQ GROWTH</code> solves it near a frequency and growth rate in nHz. <code>run_bekki.py DIFF_ROT_NPZ</code> runs the five modes below
 (about a minute each, one core).</p>
-<p><strong>Result.</strong> For the <span class="arithmatex">\(m = 3\)</span> Rossby modes (<span class="arithmatex">\(n = 0, 1\)</span>), the <span class="arithmatex">\(m = 3\)</span> columnar mode, the <span class="arithmatex">\(m = 10\)</span> high-frequency
-retrograde mode and the unstable <span class="arithmatex">\(m = 1\)</span> high-latitude mode, kore agrees with their compressible values to 0.2 nHz in
-frequency and 0.4 nHz in growth rate. The high-latitude mode is at −95.76 nHz with growth rate +11.30 nHz (theirs:
-−95.70, +11.69). This needs the thermal wind: without it the frequencies are off by up to 11 nHz and the high-latitude
-mode is stable.</p>
+<p><strong>Result.</strong> For the <span class="arithmatex">\(m = 3\)</span> Rossby modes, the <span class="arithmatex">\(m = 3\)</span> columnar mode, the <span class="arithmatex">\(m = 10\)</span> high-frequency retrograde mode and
+the unstable <span class="arithmatex">\(m = 1\)</span> high-latitude mode, kore agrees with the compressible results to within 0.2 nHz in frequency and
+0.4 nHz in growth rate. This needs the thermal wind: without it, the frequencies are off by up to about 10 nHz and the
+high-latitude mode is stable.</p>
 <h3 id="bekki-et-al-2024">Bekki et al. 2024</h3>
 <p>The high-latitude mode of the previous set-up becomes baroclinically unstable when the poles are warm enough. With
 <code>thermal_wind = 3</code> the latitudinal entropy gradient is prescribed, <span class="arithmatex">\(\partial_\theta S_{tw}\)</span> = <code>dSdtheta</code>
@@ -1699,10 +1696,9 @@ mode is stable.</p>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>tests/diff_rot/solve_bekki.py RUN -93 5
 </span></code></pre></div>
 <p>with <code>ds</code> = <span class="arithmatex">\(\Delta_\theta s\)</span> in erg g⁻¹ K⁻¹.</p>
-<p><strong>Result.</strong> The <span class="arithmatex">\(m = 1\)</span> high-latitude mode becomes unstable at <span class="arithmatex">\(\lvert\Delta_\theta s\rvert\)</span> = 425 erg g⁻¹ K⁻¹ with
-the rotation of Mukhopadhyay et al. 2025, and at 546 with the Larson &amp; Schou 2018 table, for <span class="arithmatex">\(c_p = 3.46\times10^{8}\)</span>.
-The published value is about 500. The radial shear of the rotation in the lower convection zone sets the onset: a
-rotation profile uniform in radius needs about four times more.</p>
+<p><strong>Result.</strong> The <span class="arithmatex">\(m = 1\)</span> high-latitude mode becomes unstable at a latitudinal entropy difference of about 400 to 550
+erg g⁻¹ K⁻¹, depending on the rotation profile used; the published value is about 500. The radial shear in the lower
+convection zone sets the onset.</p>
 <h3 id="mukhopadhyay-et-al-2025b">Mukhopadhyay et al. 2025b</h3>
 <p>A&amp;A 708, A253. The convection zone extended down to 0.5 R☉ with their stably stratified, rigidly rotating radiative
 interior:</p>
@@ -1717,11 +1713,9 @@ interior:</p>
 <p>the rest as above. <code>tests/diff_rot/mk_rz.py NAME rin=0.5 m=… symm=…</code> builds it for any inner radius <code>rin</code> (in R☉, 0 for
 the full sphere). <code>tests/diff_rot/solar_checks.py DIFF_ROT_NPZ</code> runs the modes of both Mukhopadhyay papers, with and
 without the thermal wind (about 40 minutes on one core).</p>
-<p><strong>Result.</strong> Without the thermal wind, every convection-zone and mixed mode whose counterpart can be identified (8 modes)
-agrees with theirs to 0.13 nHz, and the two published growth rates to 0.006 nHz. With the thermal wind the
-convection-zone modes are 2–10 nHz off, so their radiative-interior runs appear to have no latitudinal entropy gradient,
-unlike those of 2025a. Their two high-latitude convection-zone modes (<span class="arithmatex">\(m = 1\)</span> and 2) are not matched: without the
-thermal wind kore's nearest convection-zone modes are strongly damped, and the paper gives no growth rates to compare.</p>
+<p><strong>Result.</strong> Without the thermal wind, all the convection-zone and mixed modes that can be identified agree with the
+paper to about 0.1 nHz. With the thermal wind they are a few nHz off, which suggests that the paper's runs with a
+radiative interior had no latitudinal entropy gradient. The paper's two high-latitude modes are not matched.</p>
 
 
 

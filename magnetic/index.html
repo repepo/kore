@@ -1976,20 +1976,18 @@
 
 
 <h1 id="magnetic-field">Magnetic field</h1>
-<p>With <code>magnetic = 1</code>, kore adds a background magnetic field that you choose, and solves for small perturbations of the
-flow and of the field together: the field's Lorentz force acts on the flow, and the flow induces a perturbation of the
-field. The background field is fixed, steady and axisymmetric. It is imposed, not computed: there is no dynamo, and the
+<p>With <code>magnetic = 1</code>, kore adds a background magnetic field of your choice and solves for small perturbations of the
+flow and of the field together: the Lorentz force acts on the flow, and the flow induces a perturbation of the field.
+The background field is fixed, steady and axisymmetric. It is imposed, not computed: there is no dynamo, and the
 background flow does not react to it.</p>
-<p><strong>kore does not include the field in the thermal-wind balance.</strong> The <a href="../background/#thermal-wind">thermal-wind entropy</a>
-is computed from the imposed rotation alone, as without a field, and the field's force acts only on the perturbations.
-This is exact for a field that carries no current, such as <code>B0 = 'axial'</code> or <code>'dipole'</code>, and a good approximation when
-the field's force is weak compared with the Coriolis force of the differential rotation
-(<a href="#validity-and-caveats">Validity and caveats</a>).</p>
-<p>This page shows how to set up a run and how to choose the background field. The equations, the formula of every field
-and the checks of the code are on <a href="../magnetic-equations/">Magnetic field equations</a>.</p>
+<p><strong>The field does not enter the thermal-wind balance.</strong> The <a href="../background/#thermal-wind">thermal-wind entropy</a> is
+computed from the rotation alone, as without a field, and the Lorentz force acts only on the perturbations. This is
+exact for a current-free field, such as <code>B0 = 'axial'</code> or <code>'dipole'</code>, and a good approximation when the magnetic force
+is weak compared with the Coriolis force of the differential rotation (<a href="#validity-and-caveats">Validity and caveats</a>).</p>
+<p>This page shows how to set up a run and choose the background field. The equations and the formula of every field are
+on <a href="../magnetic-equations/">Magnetic field equations</a>.</p>
 <h2 id="parameters-and-a-first-run">Parameters and a first run</h2>
-<p>Two dimensionless numbers set how strong the field is and how fast it diffuses. Both are measured against the rotation,
-as the Ekman number <code>Ek</code> is:</p>
+<p>Two dimensionless numbers set how strong the field is and how fast it diffuses, both measured against the rotation:</p>
 <table>
 <thead>
 <tr>
@@ -2011,8 +2009,8 @@ as the Ekman number <code>Ek</code> is:</p>
 <p>Two combinations are common: the magnetic Prandtl number <code>Ek/Em</code> and the Elsasser number <code>Le**2/Em</code>. The exact
 definitions are on <a href="../magnetic-equations/#equations">Magnetic field equations</a>.</p>
 <p><strong>A first run.</strong> A uniform field along the rotation axis, in a shell with insulating walls, with Elsasser and magnetic
-Prandtl numbers both equal to one. Add these lines at the end of a <code>bin/parameters.py</code> like the checked-in one (which
-already imports numpy and sets <code>m</code>, <code>symm</code>, <code>N</code>, <code>lmax</code> and the target), so that no later line overrides them:</p>
+Prandtl numbers both equal to one. Add these lines at the end of a <code>bin/parameters.py</code> like the default one (which
+already imports numpy and sets <code>m</code>, <code>symm</code>, <code>N</code>, <code>lmax</code> and the target):</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">par</span><span class="o">.</span><span class="n">Ek</span> <span class="o">=</span> <span class="mf">1e-3</span>                <span class="c1"># Ekman number</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">par</span><span class="o">.</span><span class="n">Em</span> <span class="o">=</span> <span class="mf">1e-3</span>                <span class="c1"># magnetic Ekman number: Pm = Ek/Em = 1</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">par</span><span class="o">.</span><span class="n">Le</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">1e-3</span><span class="p">)</span>       <span class="c1"># Lehnert number: Elsasser number Le**2/Em = 1</span>
@@ -2028,27 +2026,23 @@ already imports numpy and sets <code>m</code>, <code>symm</code>, <code>N</code>
 </span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="n">par</span><span class="o">.</span><span class="n">mantle</span> <span class="o">=</span> <span class="s1">'insulator'</span>
 </span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="n">par</span><span class="o">.</span><span class="n">ricb</span> <span class="o">=</span> <span class="mf">0.35</span><span class="p">;</span> <span class="n">par</span><span class="o">.</span><span class="n">bci</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">par</span><span class="o">.</span><span class="n">bco</span> <span class="o">=</span> <span class="mi">1</span>   <span class="c1"># no-slip walls</span>
 </span></code></pre></div>
-<p><code>set_scales()</code> turns <code>Le</code> and <code>Em</code> into the factors of the equations, <code>Hendrik</code> (Lorentz force) and <code>MagnetD</code> (magnetic
-diffusion), so call it after setting them. Two values of <code>timescale</code> are magnetic: <code>'Alfven'</code> (the Alfvén time) and
-<code>'magnetic'</code> (the magnetic diffusion time). A run stops if <code>Le</code> or <code>Em</code> is zero.</p>
+<p><code>set_scales()</code> converts <code>Le</code> and <code>Em</code> into the factors that multiply the Lorentz force (<code>Hendrik</code>) and the magnetic
+diffusion (<code>MagnetD</code>), so call it after setting them. Two values of <code>timescale</code> are magnetic: <code>'Alfven'</code> (the Alfvén
+time) and <code>'magnetic'</code> (the magnetic diffusion time).</p>
 <h2 id="choosing-the-background-field">Choosing the background field</h2>
-<p>The background field is one axisymmetric field for the whole domain. It is the sum of two parts: a <em>poloidal</em> part,
-whose field lines lie in meridional planes like those of a dipole, and a <em>toroidal</em> part, whose field lines are circles
-around the rotation axis. Choose a shape for each, with <code>B0</code> and <code>B0_tor</code>, then set their amplitude. <code>B0</code> defaults to
-<code>'axial'</code> and <code>B0_tor</code> to <code>None</code>; for a toroidal field alone, set <code>B0 = None</code>.</p>
+<p>The background field is the sum of two parts: a <em>poloidal</em> part, whose field lines lie in meridional planes like those
+of a dipole, and a <em>toroidal</em> part, whose field lines are circles around the rotation axis. Choose a shape for each
+with <code>B0</code> and <code>B0_tor</code>, then set their amplitude. <code>B0</code> defaults to <code>'axial'</code> and <code>B0_tor</code> to <code>None</code>; for a toroidal
+field alone, set <code>B0 = None</code>.</p>
 <h3 id="equatorial-symmetry">Equatorial symmetry</h3>
-<p>The symmetry of the field about the equator decides which parts can be combined, and how the perturbations are paired.</p>
 <ul>
 <li>A poloidal field of odd degree is <em>dipolar</em> (antisymmetric about the equator), one of even degree <em>quadrupolar</em>
   (symmetric). For a toroidal field it is the other way round: degree 1 is symmetric, degree 2 antisymmetric.</li>
-<li>The two parts must have the same symmetry, or the run stops. A dipole therefore combines with a toroidal field of
-  degree 2, not of degree 1.</li>
-<li><code>symm</code> still selects the symmetry of the flow. A symmetric background field gives the perturbation field the flow's
-  symmetry; an antisymmetric one gives it the opposite.</li>
+<li>The two parts must have the same symmetry. A dipole therefore combines with a toroidal field of degree 2, not 1.</li>
+<li><code>symm</code> still selects the symmetry of the flow.</li>
 </ul>
 <h3 id="poloidal-field-b0">Poloidal field: <code>B0</code></h3>
-<p>Each option is a fixed radial shape (several for <code>'general'</code>), multiplied by <code>cnorm</code> (<a href="#amplitude">Amplitude</a>). The
-formulas are on <a href="../magnetic-equations/#poloidal-fields">Magnetic field equations</a>.</p>
+<p>The formulas are on <a href="../magnetic-equations/#poloidal-fields">Magnetic field equations</a>.</p>
 <table>
 <thead>
 <tr>
@@ -2056,126 +2050,100 @@ formulas are on <a href="../magnetic-equations/#poloidal-fields">Magnetic field 
 <th>the field</th>
 <th>extra parameters (default)</th>
 <th>geometry</th>
-<th>degree</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>'axial'</code> (default)</td>
 <td>uniform, along the rotation axis</td>
-<td>none</td>
+<td>–</td>
 <td>shell or full sphere</td>
-<td>1</td>
 </tr>
 <tr>
 <td><code>'dipole'</code></td>
 <td>the field of a dipole at the centre</td>
-<td>none</td>
+<td>–</td>
 <td>shell only</td>
-<td>1</td>
 </tr>
 <tr>
 <td><code>'FDM'</code></td>
-<td>the slowest free decay mode of the given degree, for insulating walls</td>
-<td><code>B0_l</code> (1); <code>beta</code>, the first guess of the root finder</td>
+<td>the slowest free-decay mode of degree <code>B0_l</code> (1 or 2)</td>
+<td><code>B0_l</code> (1)</td>
 <td>shell or full sphere</td>
-<td><code>B0_l</code> = 1 or 2</td>
 </tr>
 <tr>
 <td><code>'G21 dipole'</code></td>
 <td>a full-sphere dipole (Gerick et al. 2021)</td>
 <td><code>B0_ic</code></td>
 <td>shell or full sphere</td>
-<td>1</td>
 </tr>
 <tr>
 <td><code>'Luo_S1'</code></td>
-<td>the shape of <code>'G21 dipole'</code> (Luo &amp; Jackson 2022), at a larger scale</td>
+<td>the same shape (Luo &amp; Jackson 2022)</td>
 <td><code>B0_ic</code></td>
 <td>shell or full sphere</td>
-<td>1</td>
 </tr>
 <tr>
 <td><code>'Luo_S2'</code></td>
 <td>a full-sphere quadrupole (Luo &amp; Jackson 2022)</td>
 <td><code>B0_ic</code></td>
 <td>shell or full sphere</td>
-<td>2</td>
 </tr>
 <tr>
 <td><code>'confined'</code></td>
-<td>zero outside a spherical layer, going smoothly to zero at its edges</td>
+<td>a field that is zero outside a spherical layer</td>
 <td><code>B0_l</code> (1), <code>B0_conf_r1</code> (0.0), <code>B0_conf_r2</code> (0.6), <code>B0_conf_p</code> (12)</td>
 <td>the layer must lie in the fluid</td>
-<td><code>B0_l</code> = 1 or 2</td>
 </tr>
 <tr>
 <td><code>'general'</code></td>
 <td>your own radial profile for each degree</td>
-<td><code>B0_profiles</code> = {degree: 'expression of r, p'}, <code>B0_param</code> (p)</td>
+<td><code>B0_profiles</code>, <code>B0_param</code></td>
 <td>shell or full sphere</td>
-<td>any, of one parity</td>
 </tr>
 <tr>
 <td><code>'ferraro'</code></td>
-<td>field lines on the surfaces of constant rotation, so that the rotation does not wind it up (<a href="#four-ways-to-a-steady-background">below</a>)</td>
-<td><code>B0_ferraro_G</code> ('w'), <code>B0_ferraro_nmax</code> (15, odd), <code>B0_param</code></td>
+<td>field lines along the surfaces of constant rotation (<a href="#four-ways-to-a-steady-background">below</a>)</td>
+<td><code>B0_ferraro_G</code> ('w'), <code>B0_ferraro_nmax</code> (15)</td>
 <td>needs <code>diff_rot = 1</code></td>
-<td>odd, up to <code>B0_ferraro_nmax</code></td>
 </tr>
 <tr>
 <td><code>None</code></td>
 <td>no poloidal field</td>
 <td></td>
 <td></td>
-<td></td>
 </tr>
 </tbody>
 </table>
-<p>Notes:</p>
 <ul>
 <li><strong>Full-sphere shapes with an inner core.</strong> <code>'G21 dipole'</code>, <code>'Luo_S1'</code> and <code>'Luo_S2'</code> are defined for a full sphere.
-  With an inner core, <code>B0_ic = 'potential'</code> (default) continues the field into the core as a potential field;
-  <code>B0_ic = 'frozen currents'</code> keeps the full-sphere formula, whose currents below the inner boundary then stay in the
-  core (fitting only when the core's magnetic decay time is much longer than the periods sought; the name was
-  <code>'full sphere'</code> before 2026-11-06).</li>
-<li><strong><code>'dipole'</code></strong> is the field of a dipole at the centre, seen from outside its source: it carries no current in the
-  fluid and meets an insulating mantle as it is. Its source is in the inner core, so it needs one, and <code>B0_ic</code> does not
-  apply to it. A conducting inner core that moves with a forced boundary holds it as a regular field instead
-  (<a href="#a-boundary-that-moves">A boundary that moves</a>).</li>
-<li><strong><code>'Luo_S1'</code> and <code>'G21 dipole'</code></strong> give the same run when <code>cnorm</code> is a name (<code>'mag_energy'</code>, <code>'Schmitt2012'</code>,
-  <code>'rms_cmb'</code>). With a numerical <code>cnorm</code> the <code>'Luo_S1'</code> field is 30 times stronger.</li>
-<li><strong><code>'confined'</code></strong> puts the field in the layer from <code>B0_conf_r1</code> to <code>B0_conf_r2</code> and nowhere else. The defaults reach
-  the centre, which suits a full sphere; with an inner core, set <code>B0_conf_r1</code> at or above <code>ricb</code>. <code>B0_conf_p</code> (at least
-  3) sets how smoothly the field vanishes at the edges, so that no current sheet forms there.</li>
+  With an inner core, <code>B0_ic = 'potential'</code> (default) continues the field into the core as a current-free field;
+  <code>B0_ic = 'frozen currents'</code> keeps the full-sphere formula.</li>
+<li><strong><code>'confined'</code></strong> fills the layer from <code>B0_conf_r1</code> to <code>B0_conf_r2</code>. The defaults reach the centre, which suits a full
+  sphere; with an inner core, set <code>B0_conf_r1</code> at or above <code>ricb</code>. <code>B0_conf_p</code> (at least 3) sets how smoothly the field
+  vanishes at the edges.</li>
 <li>
-<p><strong><code>'general'</code></strong> takes numpy expressions of <code>r</code> and <code>p</code> (<code>sin</code>, <code>cos</code>, <code>exp</code>, <code>sqrt</code>, <code>where</code>, <code>erf</code>, <code>pi</code>, ...). In a
-  full sphere the profile of degree n should go as <code>r**n</code> at the centre. Example:</p>
+<p><strong><code>'general'</code></strong> takes a numpy expression of <code>r</code> and <code>p</code> for each degree. In a full sphere the profile of degree n
+  should behave as <code>r**n</code> near the centre. Example:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">par</span><span class="o">.</span><span class="n">B0_profiles</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="s1">'r/6 - r**3/10'</span><span class="p">,</span> <span class="mi">3</span><span class="p">:</span> <span class="s1">'0.3*r**3*(1 - r**2)'</span><span class="p">}</span>
 </span></code></pre></div>
 </li>
 <li>
-<p><strong><code>'ferraro'</code></strong> takes <code>B0_ferraro_G</code>, a numpy expression of <code>w</code> (the differential rotation) and <code>p</code>: see
-  <a href="#four-ways-to-a-steady-background">Four ways to a steady background</a>.</p>
+<p><strong>At the walls.</strong> <code>'general'</code> and <code>'ferraro'</code> are treated as fields produced by currents inside the fluid. If they
+  do not match a current-free field at an insulating wall, a current sheet forms there
+  (<a href="#current-sheets-at-slipping-walls">Current sheets at slipping walls</a>). Use <code>'axial'</code> for a uniform field and
+  <code>'dipole'</code> for a dipole at the centre, rather than writing them as <code>'general'</code>.</p>
 </li>
-<li><strong>At the walls.</strong> kore takes <code>'general'</code> and <code>'ferraro'</code> as fields of currents in the fluid. Where they do not meet
-  the potential field of those currents beyond an insulating wall, they end there in a sheet of current, which pushes
-  the fluid along the wall (<a href="#current-sheets-at-slipping-walls">Current sheets at slipping walls</a>). So does a part
-  written into them whose sources lie beyond the wall, such as the uniform field <code>{1: 'r/2'}</code>: use <code>'axial'</code> for a
-  uniform field and <code>'dipole'</code> for a dipole at the centre.</li>
 </ul>
 <h3 id="toroidal-field-b0_tor">Toroidal field: <code>B0_tor</code></h3>
-<p>The toroidal part is purely azimuthal. A differential rotation does not wind it up, so it suits any rotation. Each
-option is one radial shape times <code>cnorm_tor</code>; the formulas are on
-<a href="../magnetic-equations/#toroidal-fields">Magnetic field equations</a>.</p>
+<p>A toroidal field is purely azimuthal, so differential rotation does not wind it up; it suits any rotation. The
+formulas are on <a href="../magnetic-equations/#toroidal-fields">Magnetic field equations</a>.</p>
 <table>
 <thead>
 <tr>
 <th><code>B0_tor</code></th>
 <th>the field</th>
 <th>extra parameters (default)</th>
-<th>geometry</th>
-<th>degree</th>
 </tr>
 </thead>
 <tbody>
@@ -2183,113 +2151,84 @@ option is one radial shape times <code>cnorm_tor</code>; the formulas are on
 <td><code>None</code> (default)</td>
 <td>no toroidal field</td>
 <td></td>
-<td></td>
-<td></td>
 </tr>
 <tr>
 <td><code>'Malkus'</code></td>
-<td>grows linearly with the distance to the axis (degree 1), the field of Malkus (1967)</td>
+<td>grows linearly with distance from the axis (Malkus 1967)</td>
 <td><code>B0_tor_l</code> (1)</td>
-<td>shell or full sphere; degree 2 shell only</td>
-<td><code>B0_tor_l</code> = 1 or 2</td>
 </tr>
 <tr>
 <td><code>'wall'</code></td>
 <td>zero at both walls</td>
 <td><code>B0_tor_l</code> (1)</td>
-<td>shell or full sphere</td>
-<td><code>B0_tor_l</code> = 1 or 2</td>
 </tr>
 <tr>
 <td><code>'user'</code></td>
 <td>a radial shape given as an expression of <code>r</code> and <code>p</code></td>
-<td><code>B0_tor_profile</code>, <code>B0_tor_param</code> (p), <code>B0_tor_l</code> (1)</td>
-<td>shell or full sphere</td>
-<td><code>B0_tor_l</code> = 1 or 2</td>
+<td><code>B0_tor_profile</code>, <code>B0_tor_param</code>, <code>B0_tor_l</code> (1)</td>
 </tr>
 <tr>
 <td><code>'general'</code></td>
 <td>your own radial profile for each degree</td>
-<td><code>B0_tor_profiles</code> = {degree: 'expression of r, p'}, <code>B0_tor_param</code> (p)</td>
-<td>shell or full sphere</td>
-<td>any, of one parity</td>
+<td><code>B0_tor_profiles</code>, <code>B0_tor_param</code></td>
 </tr>
 </tbody>
 </table>
-<p>A <code>'user'</code> profile must be smooth, since its second derivative enters the equations. The expressions of <code>'user'</code>,
-<code>'general'</code> (poloidal or toroidal) and <code>'ferraro'</code> are written to <code>params.dat</code> after <code>#</code>, so they must not contain <code>#</code>.</p>
-<p><strong>At the walls.</strong> A toroidal field that is not zero at a wall ends there in a sheet of current, unless a conductor
-beyond the wall carries the field on: a conducting inner core, the resolved mantle or a conducting thin layer. The sheet
-pushes the fluid along the wall (<a href="#current-sheets-at-slipping-walls">Current sheets at slipping walls</a>). With the
-rotating solids the field must vanish at both walls, whatever they are (<a href="../rotating-solids/">Rotating solids</a>).</p>
+<p><code>B0_tor_l</code> is 1 or 2. A <code>'user'</code> profile must be smooth, since its second derivative enters the equations. Expressions
+must not contain <code>#</code>.</p>
+<p>A toroidal field that is not zero at a wall ends there in a current sheet, unless a conductor beyond the wall carries
+it on (<a href="#current-sheets-at-slipping-walls">Current sheets at slipping walls</a>). With the
+<a href="../rotating-solids/">rotating solids</a> it must vanish at both walls.</p>
 <h3 id="amplitude">Amplitude</h3>
-<p>The shapes above have arbitrary scales, so the size of the field is set separately. The field in the equations is <code>Le</code>
-times a dimensionless field, whose size is fixed by <code>cnorm</code> (poloidal part) and <code>cnorm_tor</code> (toroidal part). The Lorentz
-force goes as <code>Le</code> squared.</p>
+<p>The shapes above have arbitrary scales, so the size of the field is set separately: the field is <code>Le</code> times a
+dimensionless field whose size is set by <code>cnorm</code> (poloidal part) and <code>cnorm_tor</code> (toroidal part).</p>
 <table>
 <thead>
 <tr>
 <th>value</th>
 <th>meaning</th>
-<th>for</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>a number (default 1)</td>
-<td>multiplies the formula of the shape as it is</td>
-<td>all types</td>
+<td>multiplies the formula as it is</td>
 </tr>
 <tr>
 <td><code>'mag_energy'</code></td>
-<td>the integral of the squared field over the fluid is 1 (Luo &amp; Jackson 2022)</td>
-<td>all types</td>
+<td>the integral of the squared field over the fluid is 1 (Luo &amp; Jackson 2022). Recommended</td>
 </tr>
 <tr>
 <td><code>'Schmitt2012'</code></td>
 <td>the integral of the squared field over the fluid is 4</td>
-<td>all types</td>
 </tr>
 <tr>
 <td><code>'rms_cmb'</code></td>
-<td>the rms radial field over the outer wall is 1</td>
-<td><code>cnorm</code> with <code>'axial'</code>, <code>'dipole'</code>, <code>'FDM'</code>, <code>'G21 dipole'</code>, <code>'Luo_S1'</code>, <code>'Luo_S2'</code> only</td>
+<td>the rms radial field at the outer wall is 1 (<code>cnorm</code> only, not for <code>'confined'</code>, <code>'general'</code>, <code>'ferraro'</code>)</td>
 </tr>
 </tbody>
 </table>
-<p>Use <code>'mag_energy'</code>, as in the example: <code>Le</code> and the Elsasser number then refer to a field of fixed energy, whatever its
-shape. With a number, the field's size depends on the arbitrary scale of the formula, and <code>Le</code> alone does not say how
-strong the field is. <code>'confined'</code>, <code>'general'</code> and <code>'ferraro'</code> stop with <code>'rms_cmb'</code>. Formulas:
-<a href="../magnetic-equations/#normalisation">Magnetic field equations</a>.</p>
+<p>With <code>'mag_energy'</code>, <code>Le</code> and the Elsasser number refer to a field of fixed energy, whatever its shape. With a number,
+the strength of the field depends on the arbitrary scale of the formula.</p>
 <h2 id="with-a-differential-rotation">With a differential rotation</h2>
-<p>With <code>diff_rot = 1</code> the fluid rotates differentially (<a href="../background/#rotation">Background model</a>), and the shear acts on
-magnetic field lines in two ways:</p>
+<p>With <code>diff_rot = 1</code> (<a href="../background/#rotation">Background model</a>), the shear acts on the field in two ways:</p>
 <ul>
-<li>It shears the <strong>perturbation</strong> field. kore includes this in the linear problem, for any rotation profile.</li>
-<li>It <strong>winds up the background</strong> poloidal field: it stretches poloidal field lines around the axis into an azimuthal
-  field, which grows until magnetic diffusion balances the winding. kore holds the background fixed and does not follow
-  this growth. So the background is steady only if nothing is wound up, or if it already holds the azimuthal field at
-  which the winding is balanced; otherwise kore can only assume that something outside the model keeps it steady.</li>
+<li>It shears the <strong>perturbation</strong> field. kore includes this for any rotation profile.</li>
+<li>It <strong>winds up the background</strong> poloidal field into an azimuthal field, which grows until magnetic diffusion balances
+  it. kore keeps the background fixed and does not follow this growth. The background is therefore steady only if
+  nothing is wound up, or if it already contains the balanced azimuthal field.</li>
 </ul>
-<p>This section says when the background is steady, and gives four set-ups that make it so.</p>
 <h3 id="the-ferraro-condition">The Ferraro condition</h3>
-<p>A differential rotation winds up a poloidal field line unless the rotation rate is the same all along it. So nothing is
-wound up when the rotation rate is constant along every poloidal field line: this is Ferraro's law of isorotation. A
-toroidal field always satisfies it; a poloidal field usually does not.</p>
+<p>Differential rotation does not wind up a poloidal field line if the rotation rate is the same all along it (Ferraro's
+law of isorotation). A toroidal field always satisfies it; a poloidal field usually does not.</p>
 <p>At the start of a run with a poloidal field and <code>diff_rot = 1</code>, kore prints how far the field and the rotation are from
-this condition, as a relative number (<a href="../magnetic-equations/#the-ferraro-condition">definition</a>). Above <code>1e-7</code> it prints
-a warning and carries on; to make it stop instead, set <code>ferraro_policy = 'refuse'</code> (default <code>'warn'</code>). With
-<code>B0_wound = 1</code> it prints the residual of the wound field's balance instead.</p>
+this condition (<a href="../magnetic-equations/#the-ferraro-condition">definition</a>) and warns if the mismatch is significant.
+Set <code>ferraro_policy = 'refuse'</code> to make it stop instead.</p>
 <h3 id="four-ways-to-a-steady-background">Four ways to a steady background</h3>
-<p>Three set-ups avoid the winding by making the rotation rate the same along every field line: kore fits the field to the
-rotation (<code>B0 = 'ferraro'</code>) or the rotation to the field (<code>diff_rot_type = 'ferraro'</code>), or you place the field where the
-rotation is uniform (<code>B0 = 'confined'</code>). The fourth, <code>B0_wound = 1</code>, accepts the winding: it keeps a field that the
-shear crosses, and adds the azimuthal field that the shear winds up from it.</p>
 <table>
 <thead>
 <tr>
 <th>set-up</th>
-<th>the winding</th>
 <th>what kore does</th>
 <th>other parameters (default)</th>
 <th>use it when</th>
@@ -2298,73 +2237,54 @@ shear crosses, and adds the azimuthal field that the shear winds up from it.</p>
 <tbody>
 <tr>
 <td><code>B0 = 'ferraro'</code></td>
-<td>avoided</td>
-<td>uses a poloidal field whose field lines lie on the surfaces of constant rotation, and keeps the rotation</td>
+<td>keeps the rotation, and uses a poloidal field whose lines lie along the surfaces of constant rotation</td>
 <td><code>B0_ferraro_G</code> ('w'), <code>B0_ferraro_nmax</code> (15, odd)</td>
 <td>the rotation is given, and any field that it does not wind up will do</td>
 </tr>
 <tr>
 <td><code>diff_rot_type = 'ferraro'</code></td>
-<td>avoided</td>
-<td>keeps the field, and replaces the rotation by one that is constant along each field line</td>
-<td><code>diff_rot_F</code> ('psi'), <code>diff_rot_param</code>, <code>diff_rot_nmax</code> (8, even)</td>
-<td>the field is given (e.g. a model of an observed or a dynamo field), and the rotation only has to fit it</td>
+<td>keeps the field, and uses a rotation that is constant along each field line</td>
+<td><code>diff_rot_F</code> ('psi'), <code>diff_rot_nmax</code> (8)</td>
+<td>the field is given, and the rotation only has to fit it</td>
 </tr>
 <tr>
 <td><code>B0 = 'confined'</code></td>
-<td>avoided</td>
-<td>nothing: the field sits in a layer where the rotation is uniform</td>
-<td><code>B0_conf_r1</code> (0.0), <code>B0_conf_r2</code> (0.6)</td>
+<td>nothing: you put the field in a layer where the rotation is uniform</td>
+<td><code>B0_conf_r1</code>, <code>B0_conf_r2</code></td>
 <td>the field lives away from the shear (e.g. below the tachocline)</td>
 </tr>
 <tr>
 <td><code>B0_wound = 1</code></td>
-<td>balanced by diffusion</td>
-<td>keeps the field and the rotation, and adds the azimuthal field that the shear winds up from the poloidal field</td>
+<td>keeps both, and adds the azimuthal field that the shear winds up, balanced by diffusion</td>
 <td><code>B0_wound_eta</code> (1.0)</td>
-<td>both are given and do not match (e.g. a tachocline)</td>
+<td>both are given and do not match</td>
 </tr>
 </tbody>
 </table>
-<p><strong><code>B0 = 'ferraro'</code>: field lines on the surfaces of constant rotation.</strong> This set-up avoids the winding. The rotation
-winds up any poloidal field line that crosses its surfaces of constant rotation, so kore uses a poloidal field whose
-field lines lie on these surfaces. Nothing is wound up, no azimuthal field is created, and by itself the field puts no
-torque on the rotation. The rotation is kept as given. The field lines are set by the rotation, and <code>B0_ferraro_G</code>, a
-function of the rotation rate <code>w</code>, sets the magnetic flux that passes between the axis and each of these surfaces. Where
-the rotation is uniform the field vanishes, so this field lives only where the rotation varies. <code>B0_ferraro_G</code> should
-vanish on the values the rotation takes on the axis and, for a field that stays inside the fluid, at the outer wall;
-kore prints how well these hold. A toroidal part of even degree can be added. <code>cnorm</code> must be a number, <code>'mag_energy'</code>
-or <code>'Schmitt2012'</code>.</p>
-<p><strong><code>diff_rot_type = 'ferraro'</code>: rotation constant along the field lines.</strong> This set-up also avoids the winding, the other
-way round: kore keeps the poloidal field (any <code>B0</code> type) and replaces the rotation profile by one that is constant along
-each of its field lines. <code>diff_rot_F</code> gives the rotation rate of each field line (times <code>diff_rot_ampl</code>, as for every
-profile), as a function of the field's flux function <code>psi</code>, which labels the field lines (and of <code>p</code> =
-<code>diff_rot_param</code>); the default <code>'psi'</code> is the simplest. It needs a poloidal field and cannot be combined with
-<code>B0 = 'ferraro'</code>. kore's rotation is symmetric about the equator, so with a quadrupolar field <code>diff_rot_F</code> must be even
-(e.g. a function of <code>psi**2</code>); the run stops otherwise.</p>
-<p><strong><code>B0 = 'confined'</code>: a field where the rotation is uniform.</strong> The poloidal field fills a spherical layer and nothing
-else. If the rotation is uniform in that layer, as below the solar tachocline, nothing is wound up.</p>
-<p><strong><code>B0_wound = 1</code>: the field wound up by the shear.</strong> This set-up accepts the winding. kore keeps the poloidal field (any
-type) and the rotation as given, although the shear crosses the field lines. It adds to the background the azimuthal
-field that the shear winds up from the poloidal field, at the strength where magnetic diffusion balances the winding.
-This <em>wound field</em> is computed at the start of the run and added to any <code>B0_tor</code>. Its strength follows from the physics,
-not from <code>cnorm</code>, which normalises the poloidal part alone: it grows with the shear, is inversely proportional to the
-diffusivity, and can exceed the poloidal field many times. <code>B0_wound_eta</code> (positive, default 1) is that diffusivity in
-units of <code>MagnetD</code>; the perturbation still diffuses with <code>MagnetD</code>. The wound field's torque would brake the shear; kore
-leaves it out, so this background holds only while something maintains the rotation. It needs a poloidal <code>B0</code> and
-<code>diff_rot = 1</code>. Read <a href="#validity-and-caveats">Validity and caveats</a> before using it.</p>
-<p><strong><code>B0 = 'ferraro'</code> or <code>B0_wound = 1</code>?</strong> They describe different states. <code>B0 = 'ferraro'</code>, like
-<code>diff_rot_type = 'ferraro'</code>, describes a field and a rotation that have reached isorotation: the rotation rate is the
-same along every field line, and nothing is wound up. <code>B0_wound = 1</code> describes a shear that something maintains across
-the field lines: the shear keeps winding them up, and diffusion keeps the wound field steady.</p>
-<p><strong>A conducting inner core</strong> must rotate rigidly with the fluid at its surface: the rotation at <code>ricb</code> must not depend on
-latitude, or the run stops. The method of each set-up is on
-<a href="../magnetic-equations/#with-a-differential-rotation">Magnetic field equations</a>.</p>
+<p><strong><code>B0 = 'ferraro'</code>.</strong> The field lines follow the surfaces of constant rotation, so nothing is wound up. <code>B0_ferraro_G</code>,
+a function of the rotation rate <code>w</code>, sets how much magnetic flux passes between the axis and each surface. Where the
+rotation is uniform the field vanishes. kore prints how well the field stays inside the fluid. <code>cnorm</code> must be a number,
+<code>'mag_energy'</code> or <code>'Schmitt2012'</code>.</p>
+<p><strong><code>diff_rot_type = 'ferraro'</code>.</strong> kore keeps the poloidal field and replaces the rotation by one that is constant along
+each field line. <code>diff_rot_F</code> gives the rotation rate of each field line as a function of the flux function <code>psi</code>. With
+a quadrupolar field, <code>diff_rot_F</code> must be even in <code>psi</code>.</p>
+<p><strong><code>B0 = 'confined'</code>.</strong> If the rotation is uniform in the layer of the field, as below the solar tachocline, nothing is
+wound up.</p>
+<p><strong><code>B0_wound = 1</code>.</strong> kore keeps the poloidal field and the rotation as given, and adds the azimuthal field that the
+shear winds up, at the strength where diffusion balances the winding. Its strength follows from the physics, not from
+<code>cnorm</code>: it grows with the shear and with the inverse of the diffusivity, and can be many times stronger than the
+poloidal field. <code>B0_wound_eta</code> is the diffusivity used for this balance, in units of <code>MagnetD</code>. This background holds
+only while something maintains the rotation against the magnetic braking. Read <a href="#validity-and-caveats">Validity and caveats</a>
+before using it.</p>
+<p><code>B0 = 'ferraro'</code> and <code>diff_rot_type = 'ferraro'</code> describe a field and a rotation that have reached isorotation.
+<code>B0_wound = 1</code> describes a shear that something maintains across the field lines.</p>
+<p>A conducting inner core must rotate rigidly with the fluid at its surface, so the rotation at <code>ricb</code> must not depend on
+latitude.</p>
 <h2 id="inner-core-and-walls">Inner core and walls</h2>
-<p>The perturbation field is matched at each wall to the field beyond it. The mantle is an electrical insulator, possibly
-with a conducting layer at its base: a thin one, described by conditions at the wall alone, or one of any thickness whose
-field kore solves for. Beyond the conducting parts the field is a potential field. The inner core is an insulator (again
-with or without a thin conducting layer), or a conductor whose field kore then solves for together with the rest.</p>
+<p>The perturbation field is matched at each wall to the field beyond it. The mantle is an insulator, possibly with a
+conducting layer at its base: either a thin one, described by boundary conditions alone, or one of any thickness whose
+field kore solves for. The inner core is an insulator (again possibly with a thin conducting layer), or a conductor
+whose field kore solves for.</p>
 <table>
 <thead>
 <tr>
@@ -2377,17 +2297,17 @@ with or without a thin conducting layer), or a conductor whose field kore then s
 <tr>
 <td><code>mantle</code></td>
 <td><code>'insulator'</code> (default), <code>'TWA'</code> or <code>'resolved'</code></td>
-<td><code>'TWA'</code>: a thin conducting layer at the base of the mantle; <code>'resolved'</code>: a conducting layer of any thickness (both below)</td>
+<td><code>'TWA'</code>: a thin conducting layer; <code>'resolved'</code>: a conducting layer of any thickness (both below)</td>
 </tr>
 <tr>
 <td><code>innercore</code></td>
 <td><code>'insulator'</code> (default), <code>'conducting, Chebys'</code>, <code>'conducting, Bessel'</code> or <code>'TWA'</code></td>
-<td>need <code>ricb &gt; 0</code>; <code>'conducting, Bessel'</code> in forced runs only (<a href="#forced-runs">Forced runs</a>); <code>'TWA'</code>: a thin conducting layer on an insulating inner core</td>
+<td>need <code>ricb &gt; 0</code>; <code>'conducting, Bessel'</code> in forced runs only (<a href="#forced-runs">Forced runs</a>)</td>
 </tr>
 <tr>
 <td><code>N_cic</code></td>
 <td>64</td>
-<td>Chebyshev polynomials of the inner-core field with <code>'conducting, Chebys'</code> (even, at least 4)</td>
+<td>number of Chebyshev polynomials for the inner-core field with <code>'conducting, Chebys'</code> (even, at least 4)</td>
 </tr>
 <tr>
 <td><code>mu_i2o</code></td>
@@ -2406,17 +2326,11 @@ with or without a thin conducting layer), or a conductor whose field kore then s
 </tr>
 </tbody>
 </table>
-<p>The magnetic diffusivity of the inner core is <code>MagnetD</code> divided by <code>mu_i2o</code> and <code>sigma_i2o</code>. Where the fluid slips
-along a conducting inner core (a stress-free inner wall, <code>bci = 0</code>), its tangential electric field, that of its flow
-across the background field included, is continued into the core, as along a
-<a href="#thin-conducting-layer">thin conducting layer</a>. Matching conditions:
-<a href="../magnetic-equations/#boundary-conditions">Magnetic field equations</a>.</p>
+<p>Matching conditions: <a href="../magnetic-equations/#boundary-conditions">Magnetic field equations</a>.</p>
 <h3 id="thin-conducting-layer">Thin conducting layer</h3>
-<p>A thin layer that conducts, such as the base of the Earth's mantle, carries currents that couple the field across it.
-<code>'TWA'</code> (the thin-wall approximation of Roberts, Glatzmaier &amp; Clune 2010, as in the <code>conductive_IC</code> branch) models such
-a layer, at the base of an insulating mantle or on an insulating inner core, through the boundary conditions of the field
-alone: the layer is not resolved and adds no unknowns. It is described by its thickness, conductivity and permeability,
-through three numbers per wall:</p>
+<p>A thin conducting layer, such as the base of the Earth's mantle, carries currents that couple the field across it.
+<code>'TWA'</code> (the thin-wall approximation of Roberts, Glatzmaier &amp; Clune 2010) models such a layer, at the base of the mantle
+or on an insulating inner core, through boundary conditions alone, without extra unknowns.</p>
 <table>
 <thead>
 <tr>
@@ -2429,59 +2343,42 @@ through three numbers per wall:</p>
 <tr>
 <td><code>c_cmb</code>, <code>c_icb</code></td>
 <td><code>1e-5</code>, 0</td>
-<td>thickness times permeability of the layer, relative to the radius of the wall and to the fluid's permeability</td>
+<td>thickness times permeability of the layer, relative to the wall radius and to the fluid's permeability</td>
 </tr>
 <tr>
 <td><code>c1_cmb</code>, <code>c1_icb</code></td>
 <td><code>1e-5</code>, 0</td>
-<td>conductance of the layer: thickness times conductivity, relative to the radius and to the fluid's conductivity</td>
+<td>conductance of the layer: thickness times conductivity, relative to the wall radius and to the fluid's conductivity</td>
 </tr>
 <tr>
 <td><code>muw_cmb</code>, <code>muw_icb</code></td>
 <td>1.0</td>
-<td>permeability of the layer relative to vacuum; <code>np.inf</code> drops the terms of first order in the thickness</td>
+<td>permeability of the layer relative to vacuum</td>
 </tr>
 <tr>
 <td><code>mu</code></td>
 <td>1.0</td>
-<td>permeability of the fluid relative to vacuum; it enters the thin-wall conditions only</td>
+<td>permeability of the fluid relative to vacuum (used only by the thin-wall conditions)</td>
 </tr>
 <tr>
 <td><code>B0_cmb</code></td>
 <td><code>'wall'</code></td>
-<td>how the background field meets a thin layer at the outer wall: <code>'wall'</code> or <code>'plain'</code> (below)</td>
+<td>how the background field meets a thin layer at the outer wall: <code>'wall'</code> adjusts it to the layer, <code>'plain'</code> keeps it as given</td>
 </tr>
 </tbody>
 </table>
-<p>With <code>c</code> and <code>c1</code> zero and <code>mu = 1</code> the layer is an insulator. A layer with the permeability of vacuum (<code>muw</code> 1, the
-default, as at the Earth's mantle) lets a steady field through unchanged, and its conductance <code>c1</code> then sets nearly all
-of its effect.
-<code>mu</code> other than 1 needs a thin layer or a conducting inner core at every wall of the fluid.</p>
 <ul>
-<li><strong>Validity.</strong> The approximation holds while the layer is thin against its magnetic skin depth at the frequency of the
-  mode. spin_doctor prints the estimated relative error of the layer's effect, εTWA (the larger of the two walls), and
-  writes both to <code>magnetic.dat</code>; keep it small, say below 1%.</li>
-<li><strong>A fluid slipping along the wall</strong> (<code>bco = 0</code>, <code>bci = 0</code> or <code>ViscosD = 0</code>). The fluid's tangential electric field,
-  including that of the flow across the background field, is continued into the layer in the frame of the solid
-  (condition C.I of Rekier et al. 2023), which turns with the mantle with the <a href="../rotating-solids/">rotating solids</a>. The slip stands
-  for a thin viscous layer that is not resolved, which must be thin against the magnetic skin depth: <code>assemble.py</code>
-  prints Pm times the frequency in rotation units (that of the target, or <code>forcing_frequency</code> in a forced run), which
-  should be small. A <a href="../drag/">drag</a> at the outer wall changes nothing here.</li>
-<li><strong>With a differential rotation</strong> a layer that conducts (<code>c1_cmb</code> or <code>c1_icb</code> not 0) turns with the fluid next to it,
-  so the rotation must be uniform in latitude at its wall: the run stops otherwise. A layer that does not conduct
-  (<code>c1</code> = 0) takes any rotation.</li>
-<li><strong><code>B0_cmb</code>.</strong> A steady background field drives no current in the layer, but it must meet the layer's condition at the
-  outer wall. <code>'wall'</code> (default) adds a potential field to the fields of internal currents (<code>'dipole'</code>, <code>'G21 dipole'</code>,
-  <code>'Luo_S1'</code>, <code>'Luo_S2'</code>, <code>'FDM'</code>) so that they do; it changes nothing for <code>muw_cmb</code> 1 and <code>mu</code> 1. <code>'plain'</code> keeps them as
-  they are. The other fields are used as given.</li>
+<li>With the default permeabilities the conductance <code>c1</code> sets nearly all of the effect of the layer.</li>
+<li><strong>Validity.</strong> The layer must be thin compared with its magnetic skin depth at the frequency of the mode. <code>spin_doctor</code>
+  prints the estimated relative error, εTWA; keep it below about 1 %.</li>
+<li><strong>With differential rotation</strong>, a conducting layer turns with the fluid next to it, so the rotation must be uniform in
+  latitude at that wall.</li>
 </ul>
-<p>The conditions and their checks: <a href="../magnetic-equations/#thin-conducting-layer">Magnetic field equations</a>.</p>
+<p>The conditions: <a href="../magnetic-equations/#thin-conducting-layer">Magnetic field equations</a>.</p>
 <h3 id="resolved-conducting-mantle">Resolved conducting mantle</h3>
-<p><code>'TWA'</code> stands for a layer much thinner than the depth to which the field of a mode enters it, its magnetic skin
-depth. A thicker or better conducting layer, or a slower mode, needs the field inside the layer itself:
-<code>mantle = 'resolved'</code> puts a conducting layer between the outer wall and <code>r_surface</code>, with an insulator beyond, and solves
-for its field together with the rest. The layer is solid and at rest (unless a forcing moves the outer boundary:
-<a href="#a-boundary-that-moves">A boundary that moves</a>), and its conductivity may vary with radius.</p>
+<p>When the conducting layer is too thick, too conducting, or the mode too slow for the thin-wall approximation, use
+<code>mantle = 'resolved'</code>. kore then puts a conducting layer between the outer wall and <code>r_surface</code>, with an insulator
+beyond, and solves for the field inside it. The layer is solid and at rest, and its conductivity may vary with radius.</p>
 <table>
 <thead>
 <tr>
@@ -2499,12 +2396,12 @@ for its field together with the rest. The layer is solid and at rest (unless a f
 <tr>
 <td><code>N_mantle</code></td>
 <td>64</td>
-<td>Chebyshev polynomials of the layer's field (at least 4)</td>
+<td>number of Chebyshev polynomials for the field in the layer (at least 4)</td>
 </tr>
 <tr>
 <td><code>sigma_mantle</code></td>
 <td>1.0</td>
-<td>conductivity of the layer relative to the fluid's: a number, or a numpy expression of <code>r</code> and <code>p</code> such as <code>'1e-2*exp(-p*(r - 1))'</code></td>
+<td>conductivity of the layer relative to the fluid's: a number, or an expression of <code>r</code> and <code>p</code> such as <code>'1e-2*exp(-p*(r - 1))'</code></td>
 </tr>
 <tr>
 <td><code>sigma_mantle_param</code></td>
@@ -2514,92 +2411,52 @@ for its field together with the rest. The layer is solid and at rest (unless a f
 </tbody>
 </table>
 <ul>
-<li><strong>Resolution.</strong> The run stops if <code>N_mantle</code> polynomials do not resolve the conductivity profile; a step or a kink is
-  never resolved, so smooth it. The field in the layer needs enough of them too, which a second run with a larger
-  <code>N_mantle</code> shows.</li>
-<li><strong>A fluid slipping along the layer</strong> (<code>bco = 0</code> or <code>ViscosD = 0</code>) gets the same terms as along a thin layer, with the
-  layer's conductivity at the wall.</li>
-<li><strong>With a differential rotation</strong> the mantle turns with the fluid at the outer wall, so the rotation must be uniform in
-  latitude there: the run stops otherwise.</li>
-<li><strong>A thin layer</strong> of thickness h and conductivity σ tends to <code>mantle = 'TWA'</code> with <code>c_cmb</code> = h and <code>c1_cmb</code> = σh as h
-  decreases, also under a forcing that moves the outer boundary, in both pictures of
-  <a href="#a-boundary-that-moves">A boundary that moves</a>.</li>
+<li><strong>Resolution.</strong> The conductivity profile must be smooth; kore stops if <code>N_mantle</code> does not resolve it. Check the
+  field in the layer with a second run at a larger <code>N_mantle</code>.</li>
+<li><strong>With differential rotation</strong> the rotation must be uniform in latitude at the outer wall.</li>
 <li>The layer and the fluid have the permeability of vacuum (<code>mu = 1</code>).</li>
 </ul>
-<p>The equations and their checks: <a href="../magnetic-equations/#resolved-conducting-mantle">Magnetic field equations</a>.</p>
+<p>The equations: <a href="../magnetic-equations/#resolved-conducting-mantle">Magnetic field equations</a>.</p>
 <h3 id="current-sheets-at-slipping-walls">Current sheets at slipping walls</h3>
-<p>A background field that does not meet the field beyond an insulating wall ends there in a sheet of current: a toroidal
-field that is not zero at the wall, or a poloidal one that does not meet the field beyond. <code>'general'</code> and <code>'ferraro'</code>
-need not; where the permeability jumps at the wall (<code>mu</code> other than 1, or a thin layer with <code>c</code> other than 0 and <code>muw</code>
-other than 1), the other fields of sources inside the wall meet it only at the outer wall, where <code>B0_cmb = 'wall'</code>
-adjusts them. A conducting inner core, the resolved mantle or a conducting thin layer carries the field on,
-with no sheet in the fluid. The sheet pushes the fluid along the wall wherever the perturbation's field crosses the
-wall. A no-slip wall takes that push. Along a stress-free wall (<code>bco</code> or <code>bci</code> 0 or 2) the fluid's viscous stress takes
-it, and kore includes it in the conditions there
+<p>A background field that does not match the field beyond an insulating wall ends there in a sheet of electric current.
+This happens for a toroidal field that is not zero at the wall, or a poloidal field that does not match the
+current-free field outside. A conductor beyond the wall (a conducting inner core, a resolved mantle or a conducting thin
+layer) carries the field on, with no sheet. The sheet pushes the fluid along the wall. A no-slip wall takes that push;
+along a stress-free wall, kore includes it in the boundary conditions
 (<a href="../magnetic-equations/#current-sheets-at-slipping-walls">Magnetic field equations</a>).</p>
-<ul>
-<li><strong>Inviscid fluid.</strong> It has no stress to take the push, so a sheet stops an inviscid run. Use a field that meets the
-  wall (<code>B0_tor = 'wall'</code>, a poloidal field that matches the potential field or, where the permeability jumps, one that
-  <code>B0_cmb = 'wall'</code> adjusts), a viscous fluid, or a conductor beyond.</li>
-<li><strong><code>centrifugal = 1</code>.</strong> A sheet at a slipping wall stops the run.</li>
-<li><strong>Fields that go on through the wall.</strong> <code>'axial'</code>, imposed from beyond the outer wall, and at the inner wall
-  <code>'dipole'</code> and the fields of <code>B0_ic = 'frozen currents'</code>, whose sources lie in the core, go on through the wall with
-  no sheet. Where the permeability jumps at a slipping wall they stop: the field beyond then depends on how the jump
-  bends the imposed field or meets the sources, which kore does not model.</li>
-</ul>
+<p>An inviscid fluid cannot take this push, so a current sheet stops an inviscid run. Use a field that matches at the wall
+(such as <code>B0_tor = 'wall'</code>), a viscous fluid, or a conductor beyond the wall.</p>
 <h2 id="the-field-without-the-flow">The field without the flow</h2>
-<p>Two tools leave the flow out: one checks the walls and the inner core against exact results, the other gives the field
-that a known flow induces.</p>
-<p><strong>Free decay: <code>hydro = 0</code>.</strong> Without the momentum equation the field only diffuses, and is carried by the differential
-rotation with <code>diff_rot = 1</code>. Each mode then decays at a rate that the conductivity, the walls and the inner core alone
-set, which for a uniform conductivity is known exactly (<a href="../magnetic-equations/#free-decay-without-the-flow-2026-11-06">Checks</a>).
-The background field does no work, but <code>B0</code> still sets the equatorial symmetry of the perturbation, as with the flow.
-With <code>thermal = 1</code> the same switch gives the free decay of the entropy. Only eigenvalue problems can leave the flow out.
-<code>solve.py</code> writes no flow files and normalises each eigenvector to a magnetic energy of 1 (plus the entropy's with
-<code>thermal = 1</code>), without <code>Hendrik</code>;
-<code>spin_doctor</code> prints resid𝐛 and resid𝐄, for any walls, and none of the flow's columns.</p>
-<p><strong>Kinematic induction.</strong> <code>bin/just_induction.py</code> and <code>bin/solve_ind.py</code> give the field that a given flow induces in B0,
-without the force of that field on the flow. Assemble a magnetic eigenvalue problem (<code>submatrices.py</code>, <code>assemble.py</code>),
-put the flow in <code>flow.npy</code> or its text files (<a href="../output/#solution-files">Output files</a>), written by a run with the
-same <code>N</code>, <code>lmax</code>, <code>m</code>, <code>symm</code> and <code>ricb</code> (a forced run of the flow alone, for instance), then run</p>
+<p><strong>Free decay: <code>hydro = 0</code>.</strong> Without the momentum equation the field only diffuses (and is carried by the differential
+rotation, if any). Each mode decays at a rate set by the conductivity, the walls and the inner core, which for uniform
+conductivity is known exactly: a useful check of the boundary conditions. <code>B0</code> still sets the equatorial symmetry of the
+perturbation. With <code>thermal = 1</code> the same switch gives the free decay of the entropy. This works for eigenvalue problems
+only.</p>
+<p><strong>Kinematic induction.</strong> <code>bin/just_induction.py</code> and <code>bin/solve_ind.py</code> give the field that a given flow induces,
+without the force of that field on the flow. Build a magnetic eigenvalue problem (<code>submatrices.py</code>, <code>assemble.py</code>), put
+the flow in <code>flow.npy</code> (<a href="../output/#solution-files">Output files</a>) from a run with the same <code>N</code>, <code>lmax</code>, <code>m</code>, <code>symm</code> and
+<code>ricb</code>, then run</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>./bin/just_induction.py<span class="w"> </span><span class="o">[</span>lambda<span class="o">]</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>mpiexec<span class="w"> </span>-n<span class="w"> </span><span class="m">4</span><span class="w"> </span>./bin/solve_ind.py
 </span></code></pre></div>
-<p>The flow varies as <span class="arithmatex">\(e^{\lambda t}\)</span>: <code>lambda</code> is the optional argument, a complex number such as the eigenvalue of a mode,
-and its default is <span class="arithmatex">\(i\,\)</span><code>forcing_frequency</code>, the time dependence of the forced runs (a steady flow when it is 0). The
-field is written as <code>magnetic.npy</code> (and the files of a conducting inner core or of a resolved mantle), one column per
-column of the flow.</p>
+<p>The optional <code>lambda</code> is the time dependence of the flow, a complex number such as the eigenvalue of a mode; by default
+it is <span class="arithmatex">\(i\)</span> times <code>forcing_frequency</code>. The field is written to <code>magnetic.npy</code>.</p>
 <h2 id="forced-runs">Forced runs</h2>
-<p>A forced run gives the response of the flow and the field to a forcing at one frequency, such as a tide, a libration of
-the walls or their steady rotation (<code>forcing</code> other than 0; <a href="../tidal-forcing/">Tidal forcing</a>, <a href="../libration/">Libration</a>,
-<a href="../thermal-forcing/">Thermal forcing</a>, <a href="../couette-flow/">Spherical Couette flow</a>, <a href="../forcing/">Convective forcing</a>).
-With a field every forcing but the wave-like tide (forcing 1, whose equilibrium tide is that of a fluid without a field)
-runs as without one: the field is solved with the flow at the forcing frequency, with the walls and inner cores above
-(insulating walls for the eccentricity tide, forcing 2; the other limits are under <a href="#what-is-supported">What is supported</a>),
-and spin_doctor checks the budgets of the solution. The
-solution is written as solved, with the amplitude that the forcing sets.</p>
+<p>With a field, every forcing except the wave-like tide (forcing 1) works as without one: the field is solved together
+with the flow at the forcing frequency, and <code>spin_doctor</code> checks the budgets (<a href="../tidal-forcing/">Tidal forcing</a>,
+<a href="../libration/">Libration</a>, <a href="../thermal-forcing/">Thermal forcing</a>, <a href="../couette-flow/">Spherical Couette flow</a>,
+<a href="../forcing/">Convective forcing</a>).</p>
 <ul>
-<li><strong>A conducting inner core at one frequency.</strong> At a single frequency the field inside a uniform conducting inner core
-  is a spherical Bessel function of the radius. <code>innercore = 'conducting, Bessel'</code> uses it, so the core adds conditions
-  at the inner wall but no unknowns, and gives the solution of <code>'conducting, Chebys'</code> without <code>N_cic</code>. Since that field
-  depends on the frequency, it serves the forced runs at <code>forcing_frequency</code> only. With a differential rotation the core
-  turns with the fluid at the inner wall, and the frequency is that in its frame.</li>
-<li><strong>Budgets.</strong> resid𝐄 includes the work of the pressure, with its magnetic part, where the forcing moves a boundary,
-  and the work of a conducting solid that the boundary moves on the field
-  (<a href="../magnetic-equations/#energy-budgets">Energy budgets</a>).</li>
-<li><strong>Walls that turn.</strong> Where the forcing turns a no-slip wall about the axis, in the libration (forcing 7, <code>m</code> 0) and the
-  steady rotation of the walls (forcing 12), a conducting solid behind the wall turns with it. A rotation about the axis
-  leaves the axisymmetric B0 as it is, so the solid induces no field itself: the field comes from the shear and the
-  circulation of the fluid, and diffuses into the solid. In the frame of the mantle (forcing 8) the mantle is at rest,
-  and the field is that of forcing 7.</li>
-<li><strong>Kinematic induction</strong> works in the directory of a forced run too: <code>just_induction.py</code> without <code>lambda</code> takes the
-  forced matrix as it is, at <code>forcing_frequency</code>. Another <code>lambda</code> needs <code>B.npz</code>, which forcing 11 alone writes.</li>
+<li><strong>A conducting inner core at one frequency.</strong> <code>innercore = 'conducting, Bessel'</code> uses the exact solution inside a
+  uniform conducting core at the forcing frequency, so it adds no unknowns. It gives the same result as
+  <code>'conducting, Chebys'</code>, but only for forced runs at <code>forcing_frequency</code> (not for frequency scans).</li>
+<li><strong>Walls that turn.</strong> In the libration (forcing 7 with <code>m = 0</code>) and the rotating walls (forcing 12), a conducting
+  solid behind a turning wall turns with it.</li>
 </ul>
-<p>The checks: <a href="../magnetic-equations/#forced-runs-2026-11-06">Magnetic field equations</a>.</p>
 <h3 id="a-boundary-that-moves">A boundary that moves</h3>
-<p>Forcings 6, 9, 10 and 14, and 7 with <code>m</code> 2, stand for a boundary that moves or is not spherical. The walls stay spheres,
-and the forcing prescribes the radial flow at the wall instead. A conducting solid behind such a wall moves too, and the
-currents in it depend on how it moves across B0. <code>forced_walls</code> sets that motion:</p>
+<p>Forcings 6, 9, 10 and 14, and forcing 7 with <code>m = 2</code>, represent a boundary that moves or is not spherical. The walls
+stay spherical and the forcing prescribes the radial flow at the wall. A conducting solid behind the wall moves too, and
+<code>forced_walls</code> sets how:</p>
 <table>
 <thead>
 <tr>
@@ -2611,12 +2468,12 @@ currents in it depend on how it moves across B0. <code>forced_walls</code> sets 
 <tbody>
 <tr>
 <td><code>'rigid'</code></td>
-<td>is at rest, and only its shape moves past the sphere: the flow passes through the wall</td>
-<td>a triaxial mantle that librates (7 with <code>m</code> 2), the flattened inner core of forcing 6</td>
+<td>stays at rest; only its shape moves past the sphere</td>
+<td>a triaxial mantle that librates (7 with <code>m = 2</code>), the flattened inner core of forcing 6</td>
 </tr>
 <tr>
 <td><code>'deforming'</code></td>
-<td>deforms with the boundary: its surface moves with the fluid across the wall, and its inside moves with it</td>
+<td>deforms with the boundary</td>
 <td>a boundary that moves (9, 10), a tide (14)</td>
 </tr>
 <tr>
@@ -2626,303 +2483,120 @@ currents in it depend on how it moves across B0. <code>forced_walls</code> sets 
 </tr>
 </tbody>
 </table>
-<p>A deforming solid moves in the simplest way that matches the wall:</p>
-<ul>
-<li>a resolved mantle moves radially only, with a speed that falls as <span class="arithmatex">\(1/r^2\)</span> from that of the wall, which keeps the
-  volume of every shell;</li>
-<li>a conducting inner core (<code>'conducting, Chebys'</code>) moves with the simplest flow that is regular at its centre and has no
-  motion along the wall;</li>
-<li>with <code>'TWA'</code> the solid moves with the fluid across the wall (and along it where the wall is no-slip), and so does the
-  thin conducting layer at its surface, the only part of it that conducts.</li>
-</ul>
-<p>Its motion across the background field, continued into the solid from the wall, induces a field there, which kore
-solves for with the rest, and spin_doctor adds its work to resid𝐄. In a conducting inner core the background is continued
-as the simplest field that is regular at the centre, so <code>'dipole'</code>, whose source is at the centre, becomes there a field
-with currents. With a poloidal field and <code>'TWA'</code>, <code>'deforming'</code> gives the solutions of the <code>conductive_IC</code> branch. Where
-a no-slip wall also moves along itself, as in a libration, the solid turns with it in both pictures. With insulating
-solids <code>forced_walls</code> changes nothing. <code>'deforming'</code> does not take <code>'conducting, Bessel'</code> behind a wall that moves, since
-the core's field is then no longer a Bessel function. The eccentricity tide (forcing 2) also moves its walls along
-themselves, which a conducting solid behind them would follow by deforming: it needs insulating walls.</p>
-<p>In both pictures, and at the walls of the eccentricity tide, a wall that moves, where B0 reaches it, needs the same
-permeability on both sides: a surface where the permeability jumps would carry magnetized matter through B0 as it moves.
-So <code>mu_i2o</code> must be 1 at an inner wall with a conducting inner core behind it, and <code>mu</code> 1 at any other. A thin layer's <code>muw_cmb</code> or <code>muw_icb</code> must be 1 where the poloidal part of B0 reaches the wall if
-the layer has a thickness (<code>c</code> not 0) or conducts at rest (<code>'rigid'</code>), and where the toroidal part reaches it if the
-layer conducts (<code>c1</code> not 0). Otherwise it takes any value, as in an insulating layer (<code>c</code> and <code>c1</code> both 0) or a
-conducting layer without a thickness (<code>c</code> 0) that deforms with the boundary under a poloidal B0. Walls that stay in
-place take any permeability.</p>
+<p>With insulating solids <code>forced_walls</code> changes nothing. A moving wall that the background field reaches needs the same
+magnetic permeability on both sides (<code>mu</code>, <code>mu_i2o</code> and the thin layer's <code>muw</code> equal to 1); kore stops otherwise. The
+eccentricity tide (forcing 2) needs insulating walls.</p>
 <p>The equations: <a href="../magnetic-equations/#forced-runs">Magnetic field equations</a>.</p>
 <h2 id="what-is-supported">What is supported</h2>
-<p>kore checks the combination of options at startup and stops on any it cannot handle.</p>
-<p>Supported: a shell or a full sphere (<code>ricb = 0</code>); any <code>structure</code>; eigenvalue problems and forced runs; with or without a differential
-rotation; <code>ViscosD &gt; 0</code>, or <code>ViscosD = 0</code> in a full sphere; with or without the flow (<code>hydro = 0</code>, above); insulating
-walls, a thin conducting layer, a resolved conducting mantle or a conducting inner core; with rotating solids
-(<code>rotdyn = 1</code>, <a href="../rotating-solids/">Rotating solids</a>). The magnetic diffusivity of the fluid is uniform.</p>
-<p>Not supported (the run stops at startup):</p>
+<p>kore checks the combination of options at startup and stops, with a message, on any it cannot handle.</p>
+<p>Supported: a shell or a full sphere; any <code>structure</code>; eigenvalue problems and forced runs; with or without
+differential rotation; a viscous fluid, or an inviscid one in a full sphere; with or without the flow (<code>hydro = 0</code>);
+insulating walls, a thin conducting layer, a resolved conducting mantle or a conducting inner core; rotating solids
+(<a href="../rotating-solids/">Rotating solids</a>). The magnetic diffusivity of the fluid is uniform.</p>
+<p>The main restrictions:</p>
 <ul>
-<li>no background field at all (<code>B0 = None</code> and <code>B0_tor = None</code>), or <code>Le</code> or <code>Em</code> zero;</li>
-<li><code>ViscosD = 0</code> with an inner core (<code>ricb &gt; 0</code>) and the flow (<code>hydro = 1</code>), as without a field;</li>
-<li>a conducting inner core in a full sphere, with zero radial stress at the inner wall of the flow (<code>bci = 2</code>, with
-  <code>hydro = 1</code>), with an <code>mu_i2o</code> or
-  a <code>sigma_i2o</code> that is not a positive number, with an odd <code>N_cic</code> or one below 4 (<code>'conducting, Chebys'</code>), with a
-  rotation that varies with latitude at its surface, or with <code>centrifugal = 1</code> and an <code>mu_i2o</code> other than 1 or a fluid
-  slipping along it (<code>bci = 0</code>) across a poloidal field;</li>
-<li><code>'conducting, Bessel'</code> in an eigenvalue problem, in a frequency scan of forcing 11 (<code>rsf_frequencies</code>), or in
-  <code>just_induction.py</code> with a <code>lambda</code> other than <span class="arithmatex">\(i\,\)</span><code>forcing_frequency</code>; <code>just_induction.py</code> with such a <code>lambda</code> in a
-  forced run other than forcing 11;</li>
-<li>a thin conducting layer on the inner core in a full sphere, with <code>centrifugal = 1</code>, with zero radial stress at the wall
-  of a viscous fluid's flow (<code>bco = 2</code> or <code>bci = 2</code>, with <code>hydro = 1</code>), or, where it conducts (<code>c1_cmb</code> or <code>c1_icb</code> not 0), with a rotation
-  that varies with latitude at the wall;</li>
-<li>negative <code>c_cmb</code>, <code>c1_cmb</code>, <code>c_icb</code> or <code>c1_icb</code>, a <code>muw_cmb</code>, <code>muw_icb</code> or <code>mu</code> that is not positive, or <code>mu</code> other
-  than 1 without a thin layer or a conducting inner core at every wall;</li>
-<li>a resolved mantle with <code>mu</code> other than 1, with <code>centrifugal = 1</code>, with zero radial stress at the outer wall of a
-  viscous fluid's flow (<code>bco = 2</code>, with <code>hydro = 1</code>), or with a rotation that varies with latitude at the outer wall; an <code>r_surface</code> that is not
-  above 1, an <code>N_mantle</code> that is not an integer of at least 4, or a <code>sigma_mantle</code> that is not positive everywhere in
-  the layer or that <code>N_mantle</code> polynomials do not resolve;</li>
-<li>with <code>forced_walls = 'deforming'</code> (the default of forcings 9, 10 and 14), <code>'conducting, Bessel'</code> behind an inner wall
-  that the forcing moves radially (forcing 6, and 9, 14 and 7 with <code>m</code> 2 where <code>forcing_amplitude_icb</code> is not 0);</li>
-<li>the libration of the inner core (forcing 7 with <code>m</code> 0, or forcing 8, and <code>forcing_amplitude_icb</code> not 0) behind a
-  stress-free inner wall (<code>bci = 0</code>) along a conducting inner core or a conducting thin layer on it, across a poloidal
-  field;</li>
-<li>the eccentricity tide (forcing 2) with a conducting solid behind a wall: a resolved mantle, a thin layer that conducts
-  (<code>c1_cmb</code> or <code>c1_icb</code> not 0), a conducting inner core; and the wave-like tide (forcing 1) with a field;</li>
-<li>a current sheet of the field (a toroidal field that is not zero at the wall, or a poloidal one that does not meet the
-  field beyond) at the wall of an inviscid full sphere, or at a slipping wall with <code>centrifugal = 1</code>, with an insulator
-  or a thin layer that does not conduct (<code>c1_cmb</code> or <code>c1_icb</code> 0) beyond
-  (<a href="#current-sheets-at-slipping-walls">Current sheets at slipping walls</a>);</li>
-<li><code>'axial'</code> at a slipping wall, or <code>'dipole'</code> or <code>B0_ic = 'frozen currents'</code> at a slipping inner wall, where the
-  permeability jumps (<code>mu</code> other than 1, or a thin layer whose <code>c_cmb</code> or <code>c_icb</code> is not 0 and whose <code>muw_cmb</code> or
-  <code>muw_icb</code> is not 1), with an insulator or a thin layer that does not conduct beyond;</li>
-<li>a permeability other than 1 at a wall that the forcing moves radially and that B0 reaches: <code>mu_i2o</code> at an inner wall
-  with a conducting inner core behind it, <code>mu</code> at any other, and a thin layer's <code>muw_cmb</code> or <code>muw_icb</code> where the part of
-  B0 that it acts on reaches the wall (<a href="#a-boundary-that-moves">A boundary that moves</a>); the outer wall moves under
-  forcing 10, and under 9, 14 and 7 with <code>m</code> 2 where <code>forcing_amplitude_cmb</code> is not 0, the inner wall under 6, 9, 14 and
-  7 with <code>m</code> 2 where <code>forcing_amplitude_icb</code> is not 0, and both walls under forcing 2 where <code>forcing_amplitude_cmb</code> is
-  not 0;</li>
-<li>a poloidal and a toroidal part of opposite equatorial symmetry;</li>
-<li>the limits of the options above:<ul>
-<li><code>'dipole'</code> in a full sphere;</li>
-<li>degrees other than 1 or 2 for <code>'FDM'</code>, <code>'confined'</code> and <code>B0_tor_l</code>, and <code>'Malkus'</code> of degree 2 in a full sphere;</li>
-<li>a <code>'confined'</code> layer that is empty or does not lie in the fluid, or <code>B0_conf_p</code> below 3;</li>
-<li><code>B0_tor = 'user'</code> without <code>B0_tor_profile</code>, or <code>'general'</code> without profiles or with degrees that are not positive
-  integers of one parity; a <code>'user'</code> or <code>'general'</code> profile that is not finite at a point where it is interpolated
-  (<code>r</code> = 0 among them in a full sphere, where an expression that is 0/0 needs another form);</li>
-<li>an expression (<code>B0_tor_profile</code>, <code>B0_profiles</code>, <code>B0_tor_profiles</code>, <code>B0_ferraro_G</code>, <code>diff_rot_F</code>,
-  <code>sigma_mantle</code>) that is empty or contains <code>#</code>;</li>
-<li>a <code>cnorm</code> other than a number, <code>'rms_cmb'</code>, <code>'mag_energy'</code> or <code>'Schmitt2012'</code>, or <code>'rms_cmb'</code> with <code>'confined'</code>,
-  <code>'general'</code> or <code>'ferraro'</code>; a <code>cnorm_tor</code> other than a number, <code>'mag_energy'</code> or <code>'Schmitt2012'</code>; a field that is
-  zero with <code>'mag_energy'</code> or <code>'Schmitt2012'</code>;</li>
-<li><code>B0 = 'ferraro'</code> without <code>diff_rot = 1</code>, with <code>diff_rot_type = 'ferraro'</code>, with a <code>B0_ferraro_G</code> that is not
-  finite on the values the rotation takes, or with <code>B0_ferraro_nmax</code> even or below 1;</li>
-<li><code>diff_rot_type = 'ferraro'</code> without a poloidal field, with a <code>diff_rot_F</code> of the wrong equatorial symmetry, or with
-  a negative or odd <code>diff_rot_nmax</code>;</li>
-<li><code>B0_wound = 1</code> without a poloidal field or without <code>diff_rot = 1</code>, with <code>B0_wound_eta</code> not positive, or with a
-  mantle other than <code>'insulator'</code> or a thin layer on the inner core;</li>
+<li>a background field is required, and <code>Le</code> and <code>Em</code> must not be zero;</li>
+<li>a conducting inner core, or a conducting layer at a wall, needs the rotation to be uniform in latitude at that wall;</li>
+<li>walls with zero radial stress (<code>bci</code> or <code>bco</code> = 2) do not work with a conducting solid behind them;</li>
+<li>the poloidal and toroidal parts must have the same equatorial symmetry;</li>
+<li><code>'conducting, Bessel'</code> works only in forced runs at a single frequency;</li>
+<li>a current sheet at the wall of an inviscid fluid stops the run;</li>
+<li>the wave-like tide (forcing 1) does not work with a field.</li>
 </ul>
-</li>
-<li>a background flow (<code>bgflow = 1</code>, <a href="../bgflow/">Background flow</a>) that does not turn rigidly at the wall of a conducting
-  solid (a conducting inner core, a thin layer that conducts, the resolved mantle);</li>
-<li>with <code>ferraro_policy = 'refuse'</code>, a field and a rotation further than <code>1e-7</code> from the Ferraro condition, or a field
-  that the background flow does not leave steady to <code>1e-7</code>;</li>
-<li>a value of <code>B0</code>, <code>B0_tor</code>, <code>mantle</code>, <code>innercore</code>, <code>mag_couplings</code>, <code>B0_ic</code>, <code>B0_cmb</code>, <code>forced_walls</code> or
-  <code>ferraro_policy</code> other than those listed on this page.</li>
-</ul>
+<p><a href="../compatibility/">Combining features</a> shows how the field combines with the other features.</p>
 <h2 id="output">Output</h2>
-<p>A magnetic run writes the perturbation field next to the flow, and spin_doctor checks each mode with the magnetic energy
-budgets.</p>
-<p><code>solve.py</code> writes <code>magnetic.npy</code> (and <code>magnetic_ic.npy</code> for a conducting inner core, <code>magnetic_mantle.npy</code> for a
-resolved mantle; <code>'conducting, Bessel'</code> writes no inner-core field; <a href="../output/#solution-files">Output files</a>). Each eigenvector is normalised so that the kinetic
-energy plus <code>Hendrik</code> times the magnetic energy is 1 in the fluid (the magnetic energy alone without the flow,
-<code>hydro = 0</code>); a forced solution is written as solved.</p>
-<p><code>spin_doctor</code> adds the Lorentz work to residσ and residω, and prints two more residuals: resid𝐛, the energy budget of
-the induction equation in the fluid, and resid𝐄, the full energy budget including the field outside the fluid, in thin
-layers, in a resolved mantle and in rotating solids (not with thin layers and <code>mu</code> other than 1, with stress-free walls
-and <code>centrifugal = 1</code>, or with rotating solids unless <code>vtrq</code> and <code>mtrq</code> are 1). Like residσ (<a href="../solver/">Solver</a>), they
-should be small for a resolved mode; with a thin layer whose <code>c</code> is not zero resid𝐄 closes only to the order of the
-approximation, about εTWA.
-It also prints Mag/Kin, the ratio of magnetic to kinetic energy (<code>Hendrik</code> ME/KE, both in the units of the kinetic
-energy), εTWA with a thin layer, and writes <code>magnetic.dat</code> and the magnetic columns of <code>params.dat</code>
-(<a href="../output/#magneticdat">Output files</a>).</p>
+<p><code>solve.py</code> writes the perturbation field to <code>magnetic.npy</code>, plus <code>magnetic_ic.npy</code> for a conducting inner core and
+<code>magnetic_mantle.npy</code> for a resolved mantle (<a href="../output/#solution-files">Output files</a>). Each eigenvector is normalised so
+that its total (kinetic plus magnetic) energy is 1.</p>
+<p><code>spin_doctor</code> includes the Lorentz force in its budgets and prints two more residuals: resid𝐛, the energy budget of the
+induction equation, and resid𝐄, the full energy budget including the field outside the fluid. Like residσ
+(<a href="../solver/">Solver</a>), they should be small for a resolved mode; with a thin conducting layer of non-zero thickness,
+resid𝐄 is only as small as the approximation error εTWA. It also prints Mag/Kin, the ratio of magnetic to kinetic
+energy, and writes <code>magnetic.dat</code> (<a href="../output/#magneticdat">Output files</a>).</p>
 <h2 id="practical-tips">Practical tips</h2>
-<p>The field, more than the flow, usually sets the resolution and the memory a run needs.</p>
+<p>The field, more than the flow, usually sets the resolution and memory a run needs.</p>
 <ul>
 <li><strong>Resolution.</strong> Where a poloidal field crosses a no-slip wall, a thin magnetic boundary layer (a <em>Hartmann layer</em>)
-  forms. It, not the bulk flow, usually sets N, and it gets thinner at lower Ekman numbers. A toroidal field alone has
-  no Hartmann layer and converges faster. A full sphere needs about twice the N of a shell. Always compare the residuals
-  at two values of N; examples are in the <a href="../magnetic-equations/#checks">checks</a>.</li>
-<li><strong><code>'confined'</code></strong> converges more slowly than the other fields, since it is smooth only to a finite order at its edges,
-  and most slowly when its layer reaches the centre of a full sphere.</li>
-<li><strong><code>tol_B0</code></strong> (default <code>1e-8</code>) is the relative cut of the radial series of the background field. It sets the band width
-  of the magnetic blocks and the fill-in of the LU factors. Lower it for more accurate operators.</li>
-<li><strong><code>mag_couplings</code></strong> chooses how the couplings are built. <code>'closed'</code> (default) uses closed formulas, which exist for
-  fields of degree 1 and 2. <code>'algebra'</code> builds them for any degree (<code>bin/mag_algebra.py</code>); it is used automatically for
-  <code>'general'</code> (poloidal or toroidal), <code>'ferraro'</code> and <code>B0_wound = 1</code>. Both give the same eigenvalues to round-off.</li>
-<li><strong>Memory.</strong> Fields of high degree, and wound fields with a high-degree rotation, couple more degrees and need more LU
-  memory. If MUMPS stops with INFOG(1) = −9, raise <code>st_mat_mumps_icntl_14</code> in <code>petsc_opts</code> (<a href="../solver/">Solver</a>).</li>
+  forms. It usually sets <code>N</code>, and it gets thinner at lower Ekman numbers. A toroidal field alone has no Hartmann layer
+  and converges faster. A full sphere needs about twice the <code>N</code> of a shell. Always compare the residuals at two values
+  of <code>N</code>.</li>
+<li><strong><code>'confined'</code></strong> converges more slowly than the other fields.</li>
+<li><strong><code>tol_B0</code></strong> (default <code>1e-8</code>) is the relative truncation of the background field's radial series. Lower it for more
+  accurate operators, at some cost in memory.</li>
+<li><strong><code>mag_couplings</code>.</strong> <code>'closed'</code> (default) uses closed formulas, which exist for fields of degree 1 and 2.
+  <code>'algebra'</code> works for any degree and is used automatically for <code>'general'</code>, <code>'ferraro'</code> and <code>B0_wound = 1</code>. Both give
+  the same eigenvalues.</li>
+<li><strong>Memory.</strong> Fields of high degree couple more harmonics and need more memory. If MUMPS stops with
+  INFOG(1) = −9, raise <code>st_mat_mumps_icntl_14</code> in <code>petsc_opts</code> (<a href="../solver/">Solver</a>).</li>
 </ul>
 <h2 id="validity-and-caveats">Validity and caveats</h2>
-<p>kore holds the background field and the background flow fixed. This section says what that leaves out and when it
-matters. Two effects that would change the background are left out:</p>
+<p>kore holds the background field and the background flow fixed. This leaves out two effects:</p>
 <ul>
-<li><strong>Ohmic decay.</strong> A field that carries electric current would decay by diffusion; kore holds it fixed, with or without
-  rotation. Only the wound field is steady by itself, since the winding balances its diffusion.</li>
-<li><strong>The Lorentz force of the background field on the background flow.</strong> The rotation is imposed and is not changed by
-  the field, and the thermal-wind entropy is computed from the rotation alone. With <code>B0_wound = 1</code> this force is
-  dominated by the wound field, which can be large.</li>
+<li><strong>Ohmic decay.</strong> A field that carries electric current would slowly decay. Only the wound field is steady by itself.</li>
+<li><strong>The Lorentz force of the background field on the background flow.</strong> The rotation is imposed, and the thermal wind
+  is computed from the rotation alone.</li>
 </ul>
 <h3 id="when-the-field-leaves-the-thermal-wind-unchanged">When the field leaves the thermal wind unchanged</h3>
-<p>With <code>thermal_wind</code> 1 or 2, the latitudinal entropy of the background balances the differential rotation alone
-(<a href="../background/#thermal-wind">Background model</a>). The force of the background field would enter the same balance. The
-derivations and the estimates are in
-<a href="../magnetic-equations/#when-the-ignored-lorentz-force-matters">Magnetic field equations</a>.</p>
-<p><strong>Exact: a field without current.</strong> A poloidal field that carries no electric current in the fluid, with no toroidal
-part, exerts no force, so the thermal wind is exact. If the rotation also satisfies the Ferraro condition, the field
-does not wind up or decay, and the whole background is steady. <code>B0 = 'axial'</code> and <code>'dipole'</code> are such fields, and so is
-a <code>'general'</code> field whose profile of each degree n combines <code>r**n</code> and, in a shell, <code>r**-(n+1)</code>.</p>
-<p><strong>Approximate: any other field.</strong> All other fields carry current: the other poloidal types, any <code>B0_tor</code>, and the wound
-field. The background is then a good approximation under three conditions.</p>
+<p><strong>Exactly, for a current-free field.</strong> A poloidal field that carries no current in the fluid exerts no force, so the
+thermal wind is exact. <code>B0 = 'axial'</code> and <code>'dipole'</code> are such fields.</p>
+<p><strong>Approximately, for any other field</strong>, under three conditions (the derivations are in
+<a href="../magnetic-equations/#when-the-ignored-lorentz-force-matters">Magnetic field equations</a>):</p>
 <ol>
 <li>
-<p><em>The meridional force is weak.</em> The field's force in the meridional planes (magnetic pressure, the hoop stress of the
-   azimuthal field, the tension of curved poloidal lines) adds to the thermal-wind balance. It is negligible when</p>
+<p><em>The magnetic force in the meridional plane is weak</em> compared with the Coriolis force of the differential rotation:</p>
 <div class="arithmatex">\[
 \frac{\mathrm{Le}^2\,\lvert\mathbf B_0\rvert^2}{\rho_0} \ll 2\,\lvert\Delta\Omega\rvert ,
 \]</div>
-<p>with <span class="arithmatex">\(\rho_0\)</span> the background density and <span class="arithmatex">\(\mathbf B_0\)</span> the whole dimensionless field, wound part included. A field
-that varies on a shorter scale than the rotation makes this stricter. Where it fails, the thermal-wind entropy is
-wrong by about the ratio of the two sides.</p>
+<p>with <span class="arithmatex">\(\rho_0\)</span> the background density, <span class="arithmatex">\(\mathbf B_0\)</span> the whole dimensionless field (wound part included) and
+<span class="arithmatex">\(\Delta\Omega\)</span> the relative differential rotation.</p>
 </li>
 <li>
-<p><em>The torque is slow.</em> A poloidal field crossed by the shear brakes it (Ferraro's mechanism), at a rate set by the
-   Elsasser number of the poloidal field built on the background diffusivity:</p>
-<div class="arithmatex">\[
-\Lambda_p = \frac{\mathrm{Le}^2}{\rho_0\,\mathrm{Em}\,\eta_w},
-\]</div>
-<p>with <span class="arithmatex">\(\eta_w\)</span> = <code>B0_wound_eta</code>. The thermal wind follows the imposed rotation, so the torque does not change it
-directly, but the rotation must be maintained against it. The torque is negligible when this rate is small compared
-with the mode frequencies, their damping rates, and the rate of whatever maintains the rotation. If viscous or
-turbulent stresses hold the rotation, it is tenable only for a Hartmann number of order one or less:</p>
-<div class="arithmatex">\[
-Ha = \frac{\mathrm{Le}}{\sqrt{\rho_0\,\mathrm{Ek}\,\mathrm{Em}\,\eta_w}} \lesssim 1 .
-\]</div>
+<p><em>The magnetic braking is slow.</em> A poloidal field crossed by the shear brakes it. The braking must be slow compared
+   with the mode frequencies and damping rates, and with whatever maintains the rotation.</p>
 </li>
 <li>
-<p><em>The field is steady.</em> The Ferraro condition holds, or <code>B0_wound = 1</code> balances the winding. The wound field can be
-   much stronger than the poloidal field that makes it, so it must meet condition 1 too. The Ohmic decay of the field
-   must be slow compared with the modes.</p>
+<p><em>The field is steady</em>: the Ferraro condition holds, or <code>B0_wound = 1</code> balances the winding.</p>
 </li>
 </ol>
-<p>Where the rotation is uniform there is no thermal wind. In a stably stratified region the field's force is then balanced
-by a small change of the stratification, which kore leaves out. It is negligible when the Alfvén frequency is far below
-the buoyancy frequency.</p>
-<p><strong>What condition 1 means for the modes.</strong> The error it leaves in the frequencies is about half the left side of
-condition 1, in units of the rotation rate, for modes that feel the baroclinicity (more for slower modes). The field's
-direct effect on a mode, which kore includes in full, is larger by a factor that grows as the square of the number of
-the mode's wavelengths along the field lines. So a field can change the modes while leaving the thermal wind unchanged.</p>
+<p>The direct effect of the field on a mode, which kore includes in full, can be much larger than its effect on the
+thermal wind. So a field can change the modes noticeably while leaving the thermal wind unchanged.</p>
 <h3 id="wound-fields-and-the-tachocline">Wound fields and the tachocline</h3>
-<p>A <code>B0_wound</code> background is a snapshot: it holds only for modes faster than the braking and the decay above. This is the
-tachocline confinement problem (Gough &amp; McIntyre 1998; MacGregor &amp; Charbonneau 1999). With molecular diffusivities, even
-a weak poloidal field in the radiative interior has a large Hartmann number, and its torque would impose isorotation
-along its field lines and spread the shear of the convection zone inward. A wound field that strong would brake the
-shear that makes it, as self-consistent tachocline models include.</p>
-<p>A field below the tachocline is better represented by a <code>'confined'</code> field whose layer lies there (<code>B0_conf_r2</code> below
-the tachocline): the rotation is uniform there, so the Ferraro condition holds. A <code>B0 = 'ferraro'</code> field cannot be put
-there, since it follows the surfaces of constant rotation and vanishes where the rotation is uniform. A toroidal
-<code>B0_tor</code> can be added for the tachocline and the convection zone, since a toroidal field is never wound up.</p>
-<p>The checks of this code, with a Hartmann number near 30 and a braking time shorter than a rotation period, test the
-mathematics (closed form, residuals, budgets), not the physical validity of such a background.</p>
+<p>A <code>B0_wound</code> background is a snapshot: it holds only for modes faster than the magnetic braking and the Ohmic decay.
+With molecular diffusivities, even a weak poloidal field in the solar radiative interior would quickly enforce
+isorotation along its field lines (the tachocline confinement problem: Gough &amp; McIntyre 1998). A field below the
+tachocline is better represented by a <code>'confined'</code> field whose layer lies there, where the rotation is uniform. A
+toroidal <code>B0_tor</code> can be added in the tachocline and the convection zone, since a toroidal field is never wound up.</p>
 <h3 id="the-sun-jupiter-and-saturn">The Sun, Jupiter and Saturn</h3>
-<p>Orders of magnitude with published values, where the field and the shear meet. The numbers and references are on
-<a href="../magnetic-equations/#the-sun-jupiter-and-saturn">Magnetic field equations</a>.</p>
-<table>
-<thead>
-<tr>
-<th>region</th>
-<th>condition 1: meridional force</th>
-<th>condition 2: torque</th>
-<th>the background</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Sun, convection zone</td>
-<td>holds: a mean field of a few thousand G in the lower half gives a ratio of 10⁻³ or less, and the mean field is weaker higher up</td>
-<td>the weak mean poloidal field (about 10 G) brakes the rotation over a century or more; Hartmann number of order one with turbulent values</td>
-<td>consistent; the rotation does not follow poloidal field lines, so use a toroidal <code>B0_tor</code>, or <code>B0_wound</code> from a weak poloidal field</td>
-</tr>
-<tr>
-<td>Sun, tachocline</td>
-<td>holds for 10⁴ G (ratio about 0.005); fails near 10⁵ G (ratio about 0.5)</td>
-<td>set by the poloidal field and the diffusivity (<a href="#wound-fields-and-the-tachocline">above</a>)</td>
-<td>consistent up to about 2×10⁴ G</td>
-</tr>
-<tr>
-<td>Sun, radiative interior</td>
-<td>no thermal wind: the rotation is uniform</td>
-<td>the Ferraro condition holds</td>
-<td>consistent with a <code>'confined'</code> field whose layer lies below the tachocline</td>
-</tr>
-<tr>
-<td>Jupiter, winds (above 0.96 R)</td>
-<td>holds: ratio about 10⁻⁹</td>
-<td>about a century</td>
-<td>consistent</td>
-</tr>
-<tr>
-<td>Saturn, winds (above 0.86 R)</td>
-<td>holds: ratio about 10⁻¹²</td>
-<td>about 10⁴ years</td>
-<td>consistent</td>
-</tr>
-</tbody>
-</table>
-<p>The Sun is the case for magnetic effects on inertial modes. At the base of its convection zone a 10⁴ G field has a
-Lehnert number of a few hundredths: enough to matter for modes with several wavelengths along the field, while condition
-1 still holds. In Jupiter and Saturn the Lehnert number is 10⁻⁵ to 10⁻⁷. Their fields change neither the thermal wind
-nor the large-scale inertial modes measurably: kore's background is consistent there, and the field's effect on the
-modes is negligible.</p>
-<h3 id="checklist-for-solar-inertial-modes">Checklist for solar inertial modes</h3>
-<p>Solar inertial modes have periods longer than a rotation (Löptien et al. 2018; Gizon et al. 2021). This makes the
-criteria above stricter: the effect of the field on a mode grows as its frequency falls, and the background must stay
-steady over the lifetime of the modes.</p>
+<p>Estimates with published values (<a href="../magnetic-equations/#the-sun-jupiter-and-saturn">details</a>):</p>
 <ul>
-<li><strong>Time scales.</strong> The braking rate and the Ohmic decay rate of the poloidal field must be small compared with the
-  damping rate of the modes, not only with their frequency. The wound field needs a diffusion time across its layer to
-  build up (months to years for a thin tachocline with a turbulent diffusivity): on solar-cycle time scales it is a
-  snapshot.</li>
-<li><strong>Sensitivity.</strong> The effect of the field grows roughly as the square of the Alfvén frequency over the mode frequency,
-  so low-frequency modes feel it most. Scan <code>B0_wound_eta</code> and <code>Le</code> rather than trusting one value.</li>
-<li><strong>Critical layers and continua.</strong> Where the mode frequency matches the local advection by the rotation (the critical
-  latitudes) and at Alfvén resonances, the spectrum has continuous parts and the eigenfunctions thin layers. Check
-  convergence in N and lmax, and tell discrete modes from the continuum.</li>
-<li><strong>Thermal wind.</strong> Keep the thermal-wind entropy on (<code>thermal_wind</code> 1 or 2) and check condition 1 above: the background
-  baroclinicity does not include the forces of the field.</li>
-<li><strong>Consistent diffusivities.</strong> The observed line widths constrain the turbulent viscosity (<code>Ek</code>). Take a turbulent
-  magnetic Prandtl number near one (<code>Em</code> close to <code>Ek</code>), and build the wound field with the same turbulent diffusivity
-  (<code>B0_wound_eta = 1</code>). A wound field built with a molecular diffusivity under modes damped by turbulence is
-  inconsistent.</li>
-<li><strong>Radiative interior.</strong> With molecular values the Hartmann number there is huge, so a field there must not cross a
-  shear: its torque would remove the shear (Ferraro's mechanism). Keep the field below the tachocline, where the
-  rotation is uniform: use <code>'confined'</code> with its layer there, not <code>B0_wound</code>.</li>
-<li><strong>Where the modes live.</strong> Most observed modes are concentrated in the convection zone (many near the surface or the
-  equator), so a tachocline field reaches them only through their tails. Test the high-latitude and deep modes first.</li>
-<li><strong>Measurability.</strong> A frequency shift matters only above about 1 nHz, a few thousandths of the rotation rate.</li>
-<li><strong>Symmetry.</strong> A dipolar poloidal field with kore's equatorially symmetric rotation gives a wound field of the same
-  family, so the two mode classes stay separate, as without the field.</li>
-<li><strong>Practical.</strong> The wound field has degrees up to the sum of those of the rotation and of the poloidal field, plus one,
-  so a high-degree <code>'tabulated'</code> rotation means wide couplings and more memory (see <a href="#practical-tips">Practical tips</a>).
-  In each run read the printed residual of the induction balance.</li>
-<li><strong>Field geometry.</strong> The field inside the Sun is not known, and each set-up imposes its own geometry. Compute the same
-  modes with more than one (for example a toroidal <code>B0_tor</code>, and <code>B0_wound</code> from a weak poloidal field) at a similar
-  field strength: the spread shows how much the results depend on the field assumed.</li>
+<li><strong>Sun, convection zone and tachocline.</strong> The approximation holds for fields up to about <span class="arithmatex">\(2\times10^4\)</span> G. At the
+  base of the convection zone a <span class="arithmatex">\(10^4\)</span> G field can noticeably affect modes with several wavelengths along the field.</li>
+<li><strong>Sun, radiative interior.</strong> The rotation is uniform; use a <code>'confined'</code> field there.</li>
+<li><strong>Jupiter and Saturn.</strong> The approximation holds easily, and the fields have a negligible effect on the large-scale
+  inertial modes.</li>
+</ul>
+<h3 id="checklist-for-solar-inertial-modes">Checklist for solar inertial modes</h3>
+<p>Solar inertial modes have periods longer than a rotation, so the field's effect on them is relatively large and the
+background must stay steady over their lifetime.</p>
+<ul>
+<li><strong>Time scales.</strong> The magnetic braking and decay must be slow compared with the damping of the modes.</li>
+<li><strong>Sensitivity.</strong> Low-frequency modes feel the field most. Scan <code>Le</code> and <code>B0_wound_eta</code> rather than trusting one value.</li>
+<li><strong>Critical layers and continua.</strong> Check convergence in <code>N</code> and <code>lmax</code>, and distinguish discrete modes from continuous
+  parts of the spectrum.</li>
+<li><strong>Thermal wind.</strong> Keep it on (<code>thermal_wind</code> 1 or 2) and check condition 1 above.</li>
+<li><strong>Consistent diffusivities.</strong> Take a turbulent magnetic Prandtl number near one (<code>Em</code> close to <code>Ek</code>), and build the
+  wound field with the same diffusivity (<code>B0_wound_eta = 1</code>).</li>
+<li><strong>Radiative interior.</strong> Keep the field where the rotation is uniform: use <code>'confined'</code>, not <code>B0_wound</code>.</li>
+<li><strong>Measurability.</strong> A frequency shift matters only above about 1 nHz.</li>
+<li><strong>Field geometry.</strong> The field inside the Sun is not known. Compute the same modes with more than one geometry at a
+  similar strength; the spread shows how much the results depend on the assumed field.</li>
 </ul>
 <h2 id="further-reading">Further reading</h2>
 <ul>
-<li><a href="../magnetic-equations/">Magnetic field equations</a>: the equations, every field profile, the rows, the boundary
-  conditions, the four steady set-ups with a differential rotation, the energy budgets, and the checks against
-  <code>conductive_IC</code> and published results.</li>
-<li><a href="../derivations/">Derivation tools</a>, part A: how the magnetic rows are derived (<code>tests/magnetic/derive.py</code>), fitted
-  (<code>tools/derive/</code>) and built for any degree (<code>bin/mag_algebra.py</code>).</li>
-<li><a href="../output/#magneticdat">Output files</a>: the columns of <code>magnetic.dat</code> and the magnetic columns of <code>params.dat</code>.</li>
+<li><a href="../magnetic-equations/">Magnetic field equations</a>: the equations, every field profile, the boundary conditions and
+  the energy budgets.</li>
+<li><a href="../derivations/">Derivation tools</a>: how the magnetic terms are derived and checked.</li>
+<li><a href="../output/#magneticdat">Output files</a>: the columns of <code>magnetic.dat</code>.</li>
 </ul>
 
 

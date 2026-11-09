@@ -1455,26 +1455,23 @@
 
 <h1 id="spherical-couette-flow">Spherical Couette flow</h1>
 <p>Forcing 12 turns the walls steadily about the rotation axis, each at its own rate, and kore returns the steady flow
-that they drive through the viscosity of the fluid: the spherical Couette flow. An inner core that turns a little faster
-or slower than the mantle drives such a flow, as do the spheres of a spherical Couette experiment.</p>
+they drive through the viscosity of the fluid: the spherical Couette flow. An inner core that turns slightly faster or
+slower than the mantle drives such a flow, as do the spheres of a laboratory experiment.</p>
 <h2 id="what-it-imposes">What it imposes</h2>
-<p>The outer wall turns at <code>forcing_amplitude_cmb</code> and the inner wall at <code>forcing_amplitude_icb</code>, about the <span class="arithmatex">\(z\)</span> axis and
-relative to the rotating frame, in units of <span class="arithmatex">\(1/\tau\)</span> (the rotation rate of the frame with <code>timescale = 'rotation'</code>). A
-wall that turns must be no-slip (<code>bco</code> or <code>bci</code> = 1), so the fluid there turns with it:
-<span class="arithmatex">\(u_\phi = \Omega_w\thinspace r\sin\theta\)</span>, with <span class="arithmatex">\(\Omega_w\)</span> the rate of the wall. A wall at rest may also be
-stress-free (<code>bco</code> or <code>bci</code> = 0): the fluid then slips along it, and only a drag holds it back
-(<a href="../drag/">Drag at the outer wall</a>). Without one, an inner core that turns under a stress-free outer wall takes the whole
-fluid with it in a rigid rotation. The equations are linear, so the flow is proportional to the rates: it is the limit
-of small differences of rotation, whose flow is too weak to carry itself along.</p>
-<p>The flow is steady, axisymmetric and equatorially symmetric, so the run needs <code>forcing_frequency = 0</code> (walls that turn
-back and forth are the libration, forcing 7), <code>m = 0</code> and <code>symm = 1</code>, and a viscous fluid (<code>ViscosD &gt; 0</code>). In a full
-sphere (<code>ricb = 0</code>) only the outer wall can turn, and the fluid turns rigidly with it. With buoyancy the run needs its
-diffusion, <code>ThermaD &gt; 0</code> with <code>thermal = 1</code> and <code>CompoD &gt; 0</code> with <code>compositional = 1</code>: without it nothing sets the
-steady entropy or composition. Any <code>structure</code>, a differential rotation, a background flow and a field work as in the
-other runs. With <code>magnetic = 1</code> a conducting inner core or mantle turns with its wall, and the field that the flow
-induces in the fluid and in the solids is solved with it (<a href="../magnetic/#forced-runs">Magnetic field</a>). Like every forced
-run it needs a spherical body (<code>centrifugal = 0</code>); <a href="../compatibility/#forced-runs">Combining features</a> shows what else it
-combines with.</p>
+<p>The outer wall turns at the rate <code>forcing_amplitude_cmb</code> and the inner wall at <code>forcing_amplitude_icb</code>, relative to the
+rotating frame. A wall that turns must be no-slip (<code>bco</code> or <code>bci</code> = 1), so that the fluid next to it turns with it. A
+wall at rest may also be stress-free (<code>bco</code> or <code>bci</code> = 0); the fluid then slips along it, held back only by a drag if
+there is one (<a href="../drag/">Drag at the outer wall</a>).</p>
+<p>The equations are linear, so the flow is proportional to the rates. This is the limit of small differences in rotation.</p>
+<p>Requirements:</p>
+<ul>
+<li><code>forcing_frequency = 0</code>, <code>m = 0</code> and <code>symm = 1</code> (for walls that turn back and forth, see <a href="../libration/">Libration</a>);</li>
+<li>a viscous fluid (<code>ViscosD &gt; 0</code>);</li>
+<li>with buoyancy, its diffusion (<code>ThermaD &gt; 0</code> with <code>thermal = 1</code>, <code>CompoD &gt; 0</code> with <code>compositional = 1</code>).</li>
+</ul>
+<p>In a full sphere (<code>ricb = 0</code>) only the outer wall can turn, and the fluid simply turns with it. Any structure,
+differential rotation, a background flow and a magnetic field work; with a field, a conducting inner core or mantle
+turns with its wall (<a href="../magnetic/#forced-runs">Magnetic field</a>).</p>
 <h2 id="example-an-inner-core-that-turns">Example: an inner core that turns</h2>
 <p>Write in <code>bin/parameters.py</code></p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">params_default</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_params</span>
@@ -1513,34 +1510,31 @@ combines with.</p>
 </span></code></pre></div>
 <p>It takes a few seconds.</p>
 <p><img alt="Angular velocity of the example" src="../assets/couette-flow.png" /></p>
-<p>The figure shows the angular velocity of the fluid, <span class="arithmatex">\(\omega = u_\phi/s\)</span>, relative to the rate <span class="arithmatex">\(\Omega_{IC}\)</span> of the inner
-core, in the northern hemisphere (<span class="arithmatex">\(s\)</span> is the distance from the axis). The rotation of the frame makes the flow nearly
-the same all along the axis, so away from the walls the fluid turns in coaxial cylinders. Outside the tangent cylinder,
-the cylinder that touches the equator of the inner core, each cylinder of fluid meets only the mantle, and turns with
-it: here, not at all. Inside, each one is held between the thin viscous layers on the inner core and on the mantle
-(the Ekman layers), which pull it towards their own rates, and it turns in between: at about half the rate of the inner
-core near the axis, and faster towards the tangent cylinder. As Ek tends to 0 this is the solution of Proudman (1956),</p>
+<p>The figure shows the angular velocity of the fluid relative to that of the inner core, in the northern hemisphere. Fast
+rotation makes the flow nearly uniform along the rotation axis, so away from the walls the fluid turns in coaxial
+cylinders. Outside the <em>tangent cylinder</em> (the cylinder that touches the equator of the inner core) each cylinder of
+fluid meets only the mantle, and turns with it: here, not at all. Inside, each cylinder is held between the thin
+boundary layers on the inner core and on the mantle, and turns at a rate in between: about half the rate of the inner
+core near the axis, faster towards the tangent cylinder. At very small Ekman numbers this approaches the solution of
+Proudman (1956),</p>
 <div class="arithmatex">\[
 \frac{\omega}{\Omega_{IC}} = \frac{(1 - s^2)^{1/4}}{(1 - s^2)^{1/4} + (1 - s^2/r_i^2)^{1/4}}, \qquad s &lt; r_i ,
 \]</div>
-<p>and <span class="arithmatex">\(\omega = 0\)</span> outside. A shear layer on the tangent cylinder, the Stewartson layer, spreads the jump between the two
-regions, and it narrows as Ek decreases. Near the axis kore gives 0.484 at Ek <span class="arithmatex">\(10^{-4}\)</span> and 0.498 at Ek <span class="arithmatex">\(10^{-5}\)</span>
-(N 160, <code>lmax</code> 383), where the formula gives 0.5.</p>
+<p>with <span class="arithmatex">\(s\)</span> the distance from the axis and <span class="arithmatex">\(r_i\)</span> the inner radius, and zero outside the tangent cylinder. A thin shear
+layer on the tangent cylinder, the Stewartson layer, smooths the jump between the two regions.</p>
 <h2 id="reading-the-output">Reading the output</h2>
-<p>The flow is in <code>flow.npy</code> (<a href="../output/#solution-files">Output files</a>); its imaginary part is 0, since the flow is steady. For <code>m = 0</code> the angular velocity
-is</p>
+<p>The flow is in <code>flow.npy</code> (<a href="../output/#solution-files">Output files</a>); its imaginary part is zero, since the flow is
+steady. For <code>m = 0</code> the angular velocity is</p>
 <div class="arithmatex">\[
 \omega = \frac{u_\phi}{r\sin\theta} = \frac{2}{r}\sum_l T_l(r)\thinspace P_l'(\cos\theta) ,
 \]</div>
-<p>with the toroidal scalars <span class="arithmatex">\(T_l(r)\)</span> of odd <span class="arithmatex">\(l\)</span>, as on <a href="../thermal-forcing/#reading-the-output">Thermal forcing</a>.</p>
-<p><code>spin_doctor</code> checks the budgets. The turning walls put in P_in, the power of their viscous stress on the fluid, and the
-viscous dissipation Dν uses it up, with the Ohmic losses when there is a field and the work against the buoyancy of a
-stratified fluid (residσ, and resid𝐄 with a field). In <code>flow.dat</code>, columns 31 and 33 are the viscous torques on the
-mantle and on the inner core, and 35 and 37 the magnetic ones (<a href="../output/#flowdat">Output files</a>). P_in is minus the
-sum of each rate times the viscous torque on its wall. In the steady state the torques on the two solids cancel: the
-fluid passes the torque of the inner core on to the mantle, which resid𝐋 checks. Where the fluid turns rigidly (both
-walls at one rate, a full sphere, an inner core under a stress-free outer wall at rest), nothing is sheared and every
-term of the budgets is zero: the residuals then compare round-off with round-off, and can be near 1.</p>
+<p>with the toroidal coefficients <span class="arithmatex">\(T_l(r)\)</span>, as on <a href="../thermal-forcing/#reading-the-output">Thermal forcing</a>.</p>
+<p><code>spin_doctor</code> checks the energy and angular momentum budgets. The power that the turning walls put in (P_in) is
+dissipated by viscosity, and by Ohmic losses with a field. Columns 31 and 33 of <code>flow.dat</code> are the viscous torques on
+the mantle and on the inner core, and 35 and 37 the magnetic ones (<a href="../output/#flowdat">Output files</a>). In the steady
+state the torques on the two solids cancel. When the fluid turns rigidly (both walls at the same rate, or a full
+sphere), nothing is sheared and the budget residuals compare round-off errors; they can then be close to 1 and should
+be ignored.</p>
 <h2 id="parameters">Parameters</h2>
 <table>
 <thead>
@@ -1560,11 +1554,11 @@ term of the budgets is zero: the residuals then compare round-off with round-off
 </tr>
 <tr>
 <td><code>forcing_amplitude_cmb</code></td>
-<td>the rate of the outer wall, in units of <span class="arithmatex">\(1/\tau\)</span></td>
+<td>the rotation rate of the outer wall, relative to the frame</td>
 </tr>
 <tr>
 <td><code>forcing_amplitude_icb</code></td>
-<td>the rate of the inner wall (0 in a full sphere)</td>
+<td>the rotation rate of the inner wall (0 in a full sphere)</td>
 </tr>
 <tr>
 <td><code>m</code>, <code>symm</code></td>
@@ -1576,10 +1570,8 @@ term of the budgets is zero: the residuals then compare round-off with round-off
 </tr>
 </tbody>
 </table>
-<p>The solution is written as for any forced run (<a href="../output/">Output files</a>), and <code>tests/couette</code> checks it against the
-<code>conductive_IC</code> branch, the exact flow without rotation and the rigid rotations, and checks its budgets
-(<a href="../checking/">Modifying kore</a>). <code>bin/bgflow.py</code> turns the flow, linear or nonlinear, into the background of other runs,
-whose waves and instabilities it carries (<a href="../bgflow/#a-background-from-turning-walls">Background flow</a>).</p>
+<p>The flow can also be used as the background of other runs, to study its waves and instabilities
+(<a href="../bgflow/#a-background-from-turning-walls">Background flow</a>).</p>
 
 
 

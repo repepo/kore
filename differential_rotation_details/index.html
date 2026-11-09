@@ -3653,16 +3653,9 @@ poloidal one, which depends on the symmetry (<code>utils.dr_offd</code>).</p>
 rotation, the terms couple different degrees, so a per-degree worker cannot evaluate them from its own degree alone.
 <code>utils4pp.diff_rot_setup</code>, called once per solution by <code>utils4pp.diagnose</code>, therefore:</p>
 <ol>
-<li>builds <span class="arithmatex">\(\mathbf u\)</span> and <span class="arithmatex">\(\partial_r\mathbf u\)</span> on the <span class="arithmatex">\((r_k, \cos\theta)\)</span> grid from the per-degree components (<code>velocity</code>), with
-   <code>lmax</code> + 10 + max(<span class="arithmatex">\(n_{tw}\)</span>, <span class="arithmatex">\(n_{\max}\)</span>) Gauss–Legendre nodes in <span class="arithmatex">\(\cos\theta\)</span>. The harmonics
-   <span class="arithmatex">\(Y_l\)</span>, <span class="arithmatex">\(\partial_\theta Y_l\)</span> and <span class="arithmatex">\(Z_l\)</span> come from <code>angular.ylm_grid</code>: the recurrence of <span class="arithmatex">\(X\)</span> started at
-   <span class="arithmatex">\(Y_m \propto \sin^m\theta\)</span>, differentiated in <span class="arithmatex">\(\theta\)</span> for <span class="arithmatex">\(\partial_\theta Y_l\)</span>, and started at <span class="arithmatex">\(\sin^{m-1}\theta\)</span> for
-   <span class="arithmatex">\(Y_l/\sin\theta\)</span>, so that nothing is divided by <span class="arithmatex">\(\sin\theta\)</span>. The recurrence is linear, so it is carried as a
-   mantissa times a power of two per node: for large <span class="arithmatex">\(m\)</span> the start <span class="arithmatex">\(\sin^{m-1}\theta\)</span> would underflow near the poles
-   (from <span class="arithmatex">\(m \approx 330\)</span> at <span class="arithmatex">\(l\)</span> of a few thousand), and the mantissas are rescaled by <span class="arithmatex">\(2^{-600}\)</span> when they grow past
-   <span class="arithmatex">\(2^{600}\)</span>, which is exact. It is valid at any <span class="arithmatex">\(l\)</span> and <span class="arithmatex">\(m\)</span> (it matches exact rational values of <span class="arithmatex">\(P_l\)</span> to
-   <span class="arithmatex">\(\sim 10^{-13}\)</span> up to <span class="arithmatex">\(l = 2000\)</span>, and keeps the norms to <span class="arithmatex">\(\sim 10^{-13}\)</span> at <span class="arithmatex">\(m = 1425\)</span>, <span class="arithmatex">\(l = 3000\)</span>), where
-   <code>scipy.special.sph_harm_y</code> is NaN from <span class="arithmatex">\(l = 646\)</span> on; <code>utils.Ylm</code> and <code>utils.Ylm_full</code> use it too;</li>
+<li>builds <span class="arithmatex">\(\mathbf u\)</span> and <span class="arithmatex">\(\partial_r\mathbf u\)</span> on an <span class="arithmatex">\((r_k, \cos\theta)\)</span> grid from the per-degree components
+   (<code>velocity</code>), with <code>lmax</code> + 10 + max(<span class="arithmatex">\(n_{tw}\)</span>, <span class="arithmatex">\(n_{\max}\)</span>) Gauss–Legendre nodes in <span class="arithmatex">\(\cos\theta\)</span>. The harmonics come
+   from <code>angular.ylm_grid</code>, a recurrence that avoids dividing by <span class="arithmatex">\(\sin\theta\)</span> and stays accurate at any degree and order;</li>
 <li>evaluates <span class="arithmatex">\(\Delta\Omega\)</span>, <span class="arithmatex">\(\partial_r\Delta\Omega\)</span>, <span class="arithmatex">\(\partial_r^2\Delta\Omega\)</span>, <span class="arithmatex">\(\partial_\theta\Delta\Omega\)</span> there, as numpy Legendre series of the <span class="arithmatex">\(f_n\)</span> (<code>diff_rot.fX</code>);</li>
 <li>forms the force <span class="arithmatex">\(\mathbf F = -\mathbf W\)</span> of (2.6) and its radial derivative (the <code>force</code> closure), and projects
    them back on <span class="arithmatex">\((q, s, t)\)</span> with (3.4): <code>drforce[l]</code>;</li>

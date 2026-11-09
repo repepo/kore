@@ -1599,8 +1599,8 @@
 
 <h1 id="output-files">Output files</h1>
 <p>A run writes all its files into the run directory (<a href="../getting-started/">Getting started</a>). <code>solve.py</code> overwrites its
-files on every run, and <code>spin_doctor.py</code> appends one row per solution to its own, so that a series of runs builds up a
-table.</p>
+files on every run, while <code>spin_doctor.py</code> appends one row per solution to its own, so that a series of runs builds up
+a table.</p>
 <table>
 <thead>
 <tr>
@@ -1613,12 +1613,12 @@ table.</p>
 <tr>
 <td><code>submatrices.npz</code></td>
 <td><code>submatrices.py</code></td>
-<td>every radial operator (one sparse matrix per label) and the parameters they were built from; <code>operators.py</code> stops if a run's parameters differ. With <code>write_mtx = 1</code> also one <code>&lt;label&gt;.mtx</code> (Matrix Market) per operator, for outside tools</td>
+<td>the radial operators and the parameters they were built with; later steps stop if the parameters have changed. With <code>write_mtx = 1</code>, also one Matrix Market file per operator</td>
 </tr>
 <tr>
 <td><code>A.npz</code>, <code>B.npz</code></td>
 <td><code>assemble.py</code></td>
-<td>the matrices of the eigenproblem <span class="arithmatex">\(A\mathbf x = \lambda B\mathbf x\)</span></td>
+<td>the matrices of the eigenvalue problem <span class="arithmatex">\(A\mathbf x = \lambda B\mathbf x\)</span></td>
 </tr>
 <tr>
 <td><code>B_forced.npz</code></td>
@@ -1628,22 +1628,22 @@ table.</p>
 <tr>
 <td><code>eigenvalues0.dat</code></td>
 <td><code>solve.py</code></td>
-<td>the eigenvalues of the last solve, one per row: <span class="arithmatex">\(\mathrm{Re}\thinspace\lambda\)</span>, <span class="arithmatex">\(\mathrm{Im}\thinspace\lambda\)</span></td>
+<td>the eigenvalues of the last solve, one per row: real and imaginary parts</td>
 </tr>
 <tr>
 <td><code>flow.npy</code></td>
 <td><code>solve.py</code></td>
-<td>the eigenvectors of the flow (or the forced flows), their spectral coefficients, one column per solution (<a href="#solution-files">below</a>); with <code>thermal = 1</code> also <code>thermal.npy</code> for <span class="arithmatex">\(s\)</span>; with <code>compositional = 1</code> <code>composition.npy</code> for <span class="arithmatex">\(c\)</span>; with <code>magnetic = 1</code> <code>magnetic.npy</code> for <span class="arithmatex">\(\mathbf b\)</span>, <code>magnetic_ic.npy</code> for the inner core <code>'conducting, Chebys'</code> and <code>magnetic_mantle.npy</code> for a resolved mantle; with <code>rotdyn = 1</code> <code>rotdyn.npy</code> for the rotation rates of the mantle and of the inner core and the angle between them (<a href="../rotating-solids/">Rotating solids</a>). With <code>field_format = 'text'</code> each is two text files instead, <code>real_flow.field</code> and <code>imag_flow.field</code>, ... Without the flow (<code>hydro = 0</code>) the flow's file is not written</td>
+<td>the solutions for the flow, one column per solution (<a href="#solution-files">below</a>); also <code>thermal.npy</code> (entropy), <code>composition.npy</code>, <code>magnetic.npy</code>, <code>magnetic_ic.npy</code>, <code>magnetic_mantle.npy</code> and <code>rotdyn.npy</code> when those features are on</td>
 </tr>
 <tr>
 <td><code>no_conv_solution</code></td>
 <td><code>solve.py</code></td>
-<td>written when no eigenvalue converged, or when a forced solution holds NaN (<a href="../solver/#bad-solutions">Solver</a>); <code>tools/ramp.sh</code> stops on it</td>
+<td>written when no eigenvalue converged, or when a forced solution contains NaN (<a href="../solver/#bad-solutions">Solver</a>)</td>
 </tr>
 <tr>
 <td><code>rsf_spectrum.dat</code>, <code>rsf_ke.dat</code></td>
-<td><code>solve.py</code>, with <code>forcing = 11</code> and <code>rsf_frequencies</code></td>
-<td>the power spectrum of the kinetic energy of the forced flow, appended, one row per frequency (<a href="../forcing/#reading-the-output">Convective forcing</a>)</td>
+<td><code>solve.py</code>, with <code>forcing = 11</code></td>
+<td>the power spectrum of the forced kinetic energy (<a href="../forcing/#reading-the-output">Convective forcing</a>)</td>
 </tr>
 <tr>
 <td><code>timing.dat</code></td>
@@ -1658,7 +1658,7 @@ table.</p>
 <tr>
 <td><code>track_target</code></td>
 <td><code>spin_doctor.py</code>, with <code>track_target</code> 1 or 2</td>
-<td>the eigenvalue that the next run aims at, <span class="arithmatex">\(\mathrm{Re}\thinspace\lambda\)</span> and <span class="arithmatex">\(\mathrm{Im}\thinspace\lambda\)</span> (<a href="#following-a-mode">below</a>)</td>
+<td>the eigenvalue that the next run aims at (<a href="#following-a-mode">below</a>)</td>
 </tr>
 <tr>
 <td><code>params.dat</code></td>
@@ -1678,7 +1678,7 @@ table.</p>
 <tr>
 <td><code>composition.dat</code></td>
 <td><code>spin_doctor.py</code>, with <code>compositional = 1</code></td>
-<td>the budget of the composition of each solution (below)</td>
+<td>the composition budget of each solution (below)</td>
 </tr>
 <tr>
 <td><code>magnetic.dat</code></td>
@@ -1688,7 +1688,7 @@ table.</p>
 <tr>
 <td><code>rotdyn.dat</code></td>
 <td><code>spin_doctor.py</code>, with <code>rotdyn = 1</code></td>
-<td>the rotation of the solids and the torques on them, for each solution (below)</td>
+<td>the rotation of the solids and the torques on them (below)</td>
 </tr>
 <tr>
 <td><code>parameters.json</code></td>
@@ -1698,9 +1698,9 @@ table.</p>
 </tbody>
 </table>
 <p><code>python3 bin/units.py</code> prints the eigenvalues of <code>eigenvalues0.dat</code> as frequency and growth rate in nHz
-(<a href="../background/#units">Background model</a>). Rows of <code>params.dat</code>, <code>flow.dat</code>, <code>thermal.dat</code>, <code>composition.dat</code>,
-<code>magnetic.dat</code> and <code>rotdyn.dat</code> with the same index belong to the same solution. Start a new <code>params.dat</code> rather than append to one written by another version of kore,
-which may have other columns.</p>
+(<a href="../background/#units">Background model</a>). Rows with the same index in <code>params.dat</code>, <code>flow.dat</code>, <code>thermal.dat</code>,
+<code>composition.dat</code>, <code>magnetic.dat</code> and <code>rotdyn.dat</code> belong to the same solution. Start a new <code>params.dat</code> rather than
+append to one written by another version of kore, which may have different columns.</p>
 <h2 id="flowdat"><code>flow.dat</code></h2>
 <p>Columns, counted from 1:</p>
 <table>
@@ -1713,15 +1713,15 @@ which may have other columns.</p>
 <tbody>
 <tr>
 <td>1–3</td>
-<td>kinetic energy, and its poloidal and toroidal parts (the eigenvectors are normalised to kinetic energy 1); with <code>centrifugal = 1</code> column 1 is the kinetic energy of the deformed body, and columns 2–3 are its parts without the terms of the deformation. Without the flow (<code>hydro = 0</code>) the flow's columns are 0 or nan, the eigenvectors are normalised to a magnetic energy (<code>magnetic.dat</code>, column 1) plus the "energies" of the entropy and of the composition (<code>thermal.dat</code>, <code>composition.dat</code>, column 1) of 1, and columns 5–7 and 28 describe the field, or the entropy without a field</td>
+<td>kinetic energy, and its poloidal and toroidal parts (eigenvectors are normalised to kinetic energy 1). Without the flow (<code>hydro = 0</code>), the eigenvectors are normalised to the magnetic energy plus the entropy and composition "energies" instead</td>
 </tr>
 <tr>
 <td>4</td>
-<td>the power of the viscous force <span class="arithmatex">\(\int\mathbf u\cdot(\nabla\cdot\boldsymbol\sigma)\thinspace dV\)</span>: minus the viscous dissipation when <span class="arithmatex">\(\mathbf u = 0\)</span> at the walls (column 26 otherwise); with <code>centrifugal = 1</code> that of the deformed body</td>
+<td>the power of the viscous force</td>
 </tr>
 <tr>
 <td>5–7</td>
-<td>the degree <span class="arithmatex">\(l\)</span> of the largest kinetic energy, the width of the <span class="arithmatex">\(l\)</span> spectrum, and the ℓ-convergence (the columns Peak ℓ, ℓ-Width and ℓ-Convergence of the <code>spin_doctor</code> table)</td>
+<td>Peak ℓ, ℓ-Width and ℓ-Convergence: the degree with the largest kinetic energy, the width of the spectrum, and how fast it falls off</td>
 </tr>
 <tr>
 <td>8–11</td>
@@ -1729,62 +1729,63 @@ which may have other columns.</p>
 </tr>
 <tr>
 <td>12–14</td>
-<td>the radius, the degree and the value of the largest toroidal component of the curl of the viscous force (cvf_r, cvf_l, cvfmax)</td>
+<td>position and value of the largest toroidal component of the curl of the viscous force</td>
 </tr>
 <tr>
 <td>15–17</td>
-<td>the relative residuals of the enstrophy balance (residens; NaN with <code>centrifugal = 1</code>), of the imaginary part of the power balance (residω) and of its real part, the energy residual (residσ)</td>
+<td>residens, residω, residσ: the relative residuals of the enstrophy balance and of the imaginary and real parts of the energy balance</td>
 </tr>
 <tr>
 <td>18–20</td>
-<td>the power of the differential rotation, its imaginary part, and its enstrophy term (0 without it); with <code>centrifugal = 1</code> the powers are those of the deformed body</td>
+<td>the power exchanged with the differential rotation, its imaginary part, and its enstrophy term</td>
 </tr>
 <tr>
 <td>21–23</td>
-<td>the power of the pressure on the fluid at the inner and at the outer wall, <span class="arithmatex">\(-2\,\mathrm{Re}\oint\rho_0\Pi\thinspace u_r^*\thinspace dA\)</span> with <span class="arithmatex">\(\Pi = p'/\rho_0\)</span>, and the imaginary part of their sum; zero unless <span class="arithmatex">\(u_r \neq 0\)</span> at a wall (forced boundary flows, <code>bco = 2</code>); in residσ and residω</td>
+<td>the power of the pressure at the inner and outer walls, and the imaginary part of their sum (non-zero only where the walls move)</td>
 </tr>
 <tr>
 <td>24–25</td>
-<td>the power of the viscous stress on the fluid at the inner and at the outer wall, <span class="arithmatex">\(2\,\mathrm{Re}\oint\mathbf u^*\cdot\boldsymbol\sigma\cdot\mathbf n\thinspace dA\)</span> (at a stress-free wall, that of a drag or of the push of a current sheet of the background field, which the stress balances)</td>
+<td>the power of the viscous stress at the inner and outer walls</td>
 </tr>
 <tr>
 <td>26</td>
-<td>the viscous dissipation <span class="arithmatex">\(\int\boldsymbol\sigma:\nabla\mathbf u\thinspace dV = \int 2\rho_0\nu\thinspace\mathsf e_d:\mathsf e_d\thinspace dV \geq 0\)</span> (<span class="arithmatex">\(\mathsf e_d\)</span> the deviatoric rate of strain), from an <span class="arithmatex">\((r, \theta)\)</span> grid; column 4 is <span class="arithmatex">\(\int\mathbf u\cdot(\nabla\cdot\boldsymbol\sigma)\thinspace dV\)</span> = columns 24 + 25 − 26</td>
+<td>the viscous dissipation</td>
 </tr>
 <tr>
 <td>27</td>
-<td>the relative residual of that identity (NaN with <code>centrifugal = 1</code>, where columns 24–26 keep their spherical form)</td>
+<td>the relative residual of the identity 4 = 24 + 25 − 26</td>
 </tr>
 <tr>
 <td>28</td>
-<td>in a full sphere, irreg₀: how far the solution is from smooth at the centre (<a href="../numerical-method/#regularity-at-the-centre">Regularity at the centre</a>); NaN with an inner core</td>
+<td>irreg₀, in a full sphere: how far the solution is from smooth at the centre (<a href="../numerical-method/#regularity-at-the-centre">Regularity at the centre</a>)</td>
 </tr>
 <tr>
 <td>29–38</td>
-<td>for <code>m = 0</code>, <code>symm = 1</code> and <code>m = 1</code>, <code>symm = -1</code> (0 otherwise, and with <code>centrifugal = 1</code>), real and imaginary parts of: the angular momentum of the fluid, axial or equatorial, and the viscous torques on the mantle and on the inner core, then the magnetic ones (<a href="../rotating-solids-equations/#torques">Rotating solids equations</a>); both are taken on the fluid's side of the wall, so where the background field ends there in a current sheet the magnetic one holds the torque on the sheet's currents and only their sum is the torque through the wall</td>
+<td>for <code>m = 0</code>, <code>symm = 1</code> and <code>m = 1</code>, <code>symm = -1</code>: real and imaginary parts of the angular momentum of the fluid, of the viscous torques on the mantle and the inner core, and of the magnetic torques (<a href="../rotating-solids-equations/#torques">Rotating solids equations</a>)</td>
 </tr>
 <tr>
 <td>39</td>
-<td>resid𝐋, the relative residual of the fluid's angular momentum balance (NaN where it is not computed, <a href="../rotating-solids/#the-angular-momentum-check-residl">Rotating solids</a>)</td>
+<td>resid𝐋, the relative residual of the angular momentum balance (<a href="../rotating-solids/#the-angular-momentum-check-residl">Rotating solids</a>)</td>
 </tr>
 <tr>
 <td>40–41</td>
-<td>with a viscous fluid at a stress-free outer wall (not with <code>centrifugal = 1</code>), the power the drag at the wall dissipates and the damping rate it implies, Dtopo and δσtopo, per unit <code>kappa_cmb</code> without a drag (<a href="../drag/#output">Drag at the outer wall</a>); 0 otherwise</td>
+<td>Dtopo and δσtopo: the power dissipated by a drag at the outer wall and its share of the damping rate (<a href="../drag/#output">Drag at the outer wall</a>)</td>
 </tr>
 <tr>
 <td>42–43</td>
-<td>for the forcings that drive the flow by a body force, 1 (<a href="../tidal-forcing/#the-wave-like-tide-forcing-1">Tidal forcing</a>) and 8 (<a href="../libration/">Libration</a>): the power of that force on the fluid, <span class="arithmatex">\(2\thinspace\mathrm{Re}\int\rho_0\thinspace\mathbf u^*\cdot\mathbf f\thinspace dV\)</span>, and its imaginary part, in residσ and residω; the column P_in of the <code>spin_doctor</code> table adds it to the powers of the walls (columns 21, 22, 24, 25); 0 otherwise</td>
+<td>the power of the body force of forcings 1 and 8, and its imaginary part</td>
 </tr>
 <tr>
 <td>44–45</td>
-<td>with <code>compositional = 1</code>, the power of the buoyancy of the composition, <span class="arithmatex">\(2\thinspace\mathrm{BeyonceC}\thinspace\mathrm{Re}\int\rho_0\thinspace g\thinspace c\thinspace u_r^*\thinspace dV\)</span>, and its imaginary part, in residσ and residω (the entropy's is in <code>thermal.dat</code>); 0 otherwise</td>
+<td>with <code>compositional = 1</code>, the power of the compositional buoyancy, and its imaginary part</td>
 </tr>
 <tr>
 <td>46–48</td>
-<td>with a background flow <span class="arithmatex">\(\mathbf U\)</span> (<code>bgflow = 1</code>, <a href="../bgflow/#output">Background flow</a>), the power of its force on the flow, <span class="arithmatex">\(-2\thinspace\mathrm{Re}\int\rho_0\thinspace\mathbf u^*\cdot\left[(\mathbf U\cdot\nabla)\mathbf u + (\mathbf u\cdot\nabla)\mathbf U\right] dV\)</span>, its imaginary part and its enstrophy term, in residσ, resid𝐄, residω and residens; 0 otherwise</td>
+<td>with a background flow, the power the perturbation draws from it, its imaginary part, and its enstrophy term (<a href="../bgflow/#output">Background flow</a>)</td>
 </tr>
 </tbody>
 </table>
+<p>Columns that do not apply to a run are 0 or NaN.</p>
 <h2 id="thermaldat"><code>thermal.dat</code></h2>
 <table>
 <thead>
@@ -1796,19 +1797,19 @@ which may have other columns.</p>
 <tbody>
 <tr>
 <td>1</td>
-<td>the entropy "energy" <span class="arithmatex">\(\tfrac12\int p_0\lvert s\rvert^2\thinspace dV\)</span> (of the deformed body with <code>centrifugal = 1</code>)</td>
+<td>the entropy "energy"</td>
 </tr>
 <tr>
 <td>2</td>
-<td>the entropy advection by the background gradient</td>
+<td>the advection by the background entropy gradient</td>
 </tr>
 <tr>
 <td>3</td>
-<td>the thermal diffusion (of the deformed body with <code>centrifugal = 1</code>)</td>
+<td>the thermal diffusion</td>
 </tr>
 <tr>
 <td>4</td>
-<td>the relative residual of the entropy balance (resid𝑠)</td>
+<td>resid𝑠, the relative residual of the entropy balance</td>
 </tr>
 <tr>
 <td>5</td>
@@ -1816,66 +1817,24 @@ which may have other columns.</p>
 </tr>
 <tr>
 <td>6</td>
-<td>the energy residual (residσ)</td>
+<td>residσ, the energy residual</td>
 </tr>
 <tr>
 <td>7</td>
-<td>the terms of the differential rotation in the heat equation</td>
+<td>the terms of the differential rotation</td>
 </tr>
 <tr>
 <td>8</td>
-<td>with a background flow, the work of its terms in the heat equation, <span class="arithmatex">\(-2\thinspace\mathrm{Re}\int p_0\thinspace s^*(\mathbf U\cdot\nabla s + \mathbf u\cdot\nabla S_U)\thinspace dV\)</span> (<span class="arithmatex">\(S_U\)</span> the background's entropy), in resid𝑠; 0 otherwise</td>
+<td>the work of the background flow terms (0 without one)</td>
 </tr>
 </tbody>
 </table>
 <h2 id="compositiondat"><code>composition.dat</code></h2>
-<p>With <code>compositional = 1</code> (<a href="../background/#composition">Composition</a>), the budget of the composition, as <code>thermal.dat</code>
-with <span class="arithmatex">\(\rho_0\)</span> in place of <span class="arithmatex">\(p_0\)</span> (<a href="../anelastic/#entropy">Anelastic equations</a>):</p>
-<table>
-<thead>
-<tr>
-<th>columns</th>
-<th>content</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>1</td>
-<td>the composition's "energy" <span class="arithmatex">\(\tfrac12\int\rho_0\lvert c\rvert^2\thinspace dV\)</span> (of the deformed body with <code>centrifugal = 1</code>)</td>
-</tr>
-<tr>
-<td>2</td>
-<td>the advection by the background gradient</td>
-</tr>
-<tr>
-<td>3</td>
-<td>the diffusion (of the deformed body with <code>centrifugal = 1</code>)</td>
-</tr>
-<tr>
-<td>4</td>
-<td>the relative residual of the balance of the composition (resid𝑐)</td>
-</tr>
-<tr>
-<td>5</td>
-<td>the work of its buoyancy force (<code>flow.dat</code>, column 44)</td>
-</tr>
-<tr>
-<td>6</td>
-<td>the energy residual (residσ)</td>
-</tr>
-<tr>
-<td>7</td>
-<td>the advection by the differential rotation; it only moves the frequency, so this real part is 0 to round-off</td>
-</tr>
-<tr>
-<td>8</td>
-<td>with a background flow, the work of its terms, <span class="arithmatex">\(-2\thinspace\mathrm{Re}\int\rho_0\thinspace c^*(\mathbf U\cdot\nabla c + \mathbf u\cdot\nabla C_U)\thinspace dV\)</span> (<span class="arithmatex">\(C_U\)</span> the background's composition), in resid𝑐; 0 otherwise</td>
-</tr>
-</tbody>
-</table>
+<p>With <code>compositional = 1</code> (<a href="../background/#composition">Composition</a>), the same columns as <code>thermal.dat</code>, for the
+composition; column 4 is resid𝑐.</p>
 <h2 id="magneticdat"><code>magnetic.dat</code></h2>
-<p>With <code>magnetic = 1</code> (<a href="../magnetic/">Magnetic field</a>). The energies are without the factor Hendrik, as in <code>conductive_IC</code>;
-the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic field equations</a>.</p>
+<p>With <code>magnetic = 1</code> (<a href="../magnetic/">Magnetic field</a>). The energies are defined on
+<a href="../magnetic-equations/#energy-budgets">Magnetic field equations</a>.</p>
 <table>
 <thead>
 <tr>
@@ -1886,11 +1845,11 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 <tbody>
 <tr>
 <td>1</td>
-<td>ME, the magnetic energy <span class="arithmatex">\(\int\tfrac12\lvert\mathbf b\rvert^2 dV\)</span> in the fluid (the column Mag/Kin of the <code>spin_doctor</code> table is Hendrik ME/KE, in the units of KE)</td>
+<td>ME, the magnetic energy in the fluid</td>
 </tr>
 <tr>
 <td>2</td>
-<td>Mdfs, the magnetic diffusion term (of the deformed fluid with <code>centrifugal = 1</code>)</td>
+<td>Mdfs, the magnetic diffusion term</td>
 </tr>
 <tr>
 <td>3</td>
@@ -1898,11 +1857,11 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 </tr>
 <tr>
 <td>4</td>
-<td>the relative residual of the induction budget in the fluid (resid𝐛)</td>
+<td>resid𝐛, the relative residual of the induction budget</td>
 </tr>
 <tr>
 <td>5, 6</td>
-<td>Wlor, Wlor_im: the power of the Lorentz force, real and imaginary parts (in residσ and residω)</td>
+<td>Wlor, Wlor_im: the power of the Lorentz force, real and imaginary parts</td>
 </tr>
 <tr>
 <td>7</td>
@@ -1910,7 +1869,7 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 </tr>
 <tr>
 <td>8</td>
-<td>MEext, the energy of the potential field outside the outer wall (beyond <code>r_surface</code> with a resolved mantle)</td>
+<td>MEext, the energy of the field outside</td>
 </tr>
 <tr>
 <td>9, 10</td>
@@ -1918,24 +1877,25 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 </tr>
 <tr>
 <td>11</td>
-<td>the relative residual of the full energy budget (resid𝐄; nan for a viscous fluid along a wall that is not no-slip with <code>centrifugal = 1</code>, with thin conducting layers and <code>mu</code> other than 1, and with rotating solids unless <code>vtrq</code> and <code>mtrq</code> are 1)</td>
+<td>resid𝐄, the relative residual of the full energy budget</td>
 </tr>
 <tr>
 <td>12</td>
-<td>with <code>centrifugal = 1</code>, a thin conducting layer or a resolved mantle: MEc, the part of the magnetic energy that the deformation adds, so that ME + MEc is the energy of the field in the deformed fluid (the column Mag/Kin of the <code>spin_doctor</code> table is Hendrik (ME + MEc)/KE; <a href="../centrifugal-equations/#energy-budgets">Centrifugal deformation</a>); 0 without the deformation</td>
+<td>MEc, the part of the magnetic energy added by the centrifugal deformation or a thin layer</td>
 </tr>
 <tr>
 <td>13, 14</td>
-<td>with a thin conducting layer (<code>mantle</code> or <code>innercore</code> <code>'TWA'</code>) or a resolved mantle (<code>mantle = 'resolved'</code>) only: E_w, the magnetic energy stored in the thin layers or in the mantle, and Ohm_w, their Ohmic loss</td>
+<td>E_w, Ohm_w: the magnetic energy and Ohmic loss in a thin conducting layer or a resolved mantle</td>
 </tr>
 <tr>
 <td>15, 16</td>
-<td>with a thin conducting layer or a resolved mantle only: εTWA, the estimated relative error of the outer and of the inner thin layer (0 where there is none; the <code>spin_doctor</code> table shows the larger)</td>
+<td>εTWA, the estimated relative error of the outer and inner thin layers</td>
 </tr>
 </tbody>
 </table>
+<p>The column Mag/Kin of the <code>spin_doctor</code> table is the magnetic energy over the kinetic energy, in the same units.</p>
 <h2 id="rotdyndat"><code>rotdyn.dat</code></h2>
-<p>With <code>rotdyn = 1</code> (<a href="../rotating-solids/">Rotating solids</a>), the real and imaginary parts (columns 1–2, 3–4, ...) of</p>
+<p>With <code>rotdyn = 1</code> (<a href="../rotating-solids/">Rotating solids</a>), real and imaginary parts (columns 1–2, 3–4, ...) of:</p>
 <table>
 <thead>
 <tr>
@@ -1950,20 +1910,20 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 </tr>
 <tr>
 <td>7–8</td>
-<td>the gravitational torque on the mantle (minus that on the inner core)</td>
+<td>the gravitational torque on the mantle</td>
 </tr>
 <tr>
 <td>9–12</td>
-<td>the viscous and the magnetic torques on the mantle</td>
+<td>the viscous and magnetic torques on the mantle</td>
 </tr>
 <tr>
 <td>13–16</td>
-<td>the viscous and the magnetic torques on the inner core</td>
+<td>the viscous and magnetic torques on the inner core</td>
 </tr>
 </tbody>
 </table>
 <h2 id="paramsdat"><code>params.dat</code></h2>
-<p>The columns follow the order of <code>spin_doctor.param_table</code>, counted from 1:</p>
+<p>Columns, counted from 1:</p>
 <table>
 <thead>
 <tr>
@@ -1978,7 +1938,7 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 </tr>
 <tr>
 <td>11–18</td>
-<td><code>Gaspard</code>, <code>Beyonce</code>, <code>ViscosD</code>, <code>ThermaD</code>, <code>ncpus</code>, <code>N</code>, <code>lmax</code>, the run time (solve and post-processing, in seconds)</td>
+<td><code>Gaspard</code>, <code>Beyonce</code>, <code>ViscosD</code>, <code>ThermaD</code>, <code>ncpus</code>, <code>N</code>, <code>lmax</code>, the run time in seconds</td>
 </tr>
 <tr>
 <td>19–36</td>
@@ -1990,11 +1950,11 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 </tr>
 <tr>
 <td>42–50</td>
-<td><code>diff_rot_term_amp</code> <span class="arithmatex">\(a_0, a_2, \dots, a_{16}\)</span></td>
+<td><code>diff_rot_term_amp</code></td>
 </tr>
 <tr>
 <td>51–56</td>
-<td><code>thermal_wind_amplitude</code>, <code>thermal_wind_radial</code>, <code>diff_rot_frame</code>, <code>diff_rot_nmax</code>, <code>diff_rot_rdeg</code>, <code>diff_rot_generic</code></td>
+<td><code>thermal_wind_amplitude</code>, <code>thermal_wind_radial</code>, <code>diff_rot_frame</code>, <code>diff_rot_nmax</code>, <code>diff_rot_rdeg</code>, (unused)</td>
 </tr>
 <tr>
 <td>57–62</td>
@@ -2002,15 +1962,15 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 </tr>
 <tr>
 <td>63–66</td>
-<td><code>structure</code>, the degree of the Model S fit, the window of the <code>'old model S prototype'</code> fits</td>
+<td><code>structure</code>, the degree of the Model S fit, the fit window of <code>'old model S prototype'</code></td>
 </tr>
 <tr>
 <td>67–74</td>
-<td><code>solar_rz</code> (1 when the stratification is <code>'solar_rz'</code>), <code>solar_rz_dSdr</code>, <code>solar_rz_steps</code>, <code>solar_rz_core</code>, <code>solar_rz_os</code></td>
+<td><code>solar_rz</code> (1 with stratification <code>'solar_rz'</code>), <code>solar_rz_dSdr</code>, <code>solar_rz_steps</code>, <code>solar_rz_core</code>, <code>solar_rz_os</code></td>
 </tr>
 <tr>
 <td>75–80</td>
-<td><code>diff_rot_window</code>, <code>diff_rot_hold</code>, <code>solar_rz_delta_cz</code>, <code>solar_rz_delta_sf</code>, <code>drop_tol</code>, <code>diff_rot_param</code></td>
+<td><code>diff_rot_window</code>, (unused), <code>solar_rz_delta_cz</code>, <code>solar_rz_delta_sf</code>, <code>drop_tol</code>, <code>diff_rot_param</code></td>
 </tr>
 <tr>
 <td>81–82</td>
@@ -2022,15 +1982,15 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 </tr>
 <tr>
 <td>96–107</td>
-<td><code>B0_wound</code> (1 if the wound field was added), <code>B0_wound_eta</code>, <code>B0_conf_r1</code>, <code>B0_conf_r2</code>, <code>B0_conf_p</code>, <code>B0_param</code>, <code>B0_tor_param</code>, <code>B0_ferraro_nmax</code>, <code>mag_couplings</code> (as used: 0 the closed forms, 1 <code>mag_algebra.py</code>), <code>tol_B0</code>, <code>B0_ic</code>, <code>ferraro_policy</code></td>
+<td><code>B0_wound</code>, <code>B0_wound_eta</code>, <code>B0_conf_r1</code>, <code>B0_conf_r2</code>, <code>B0_conf_p</code>, <code>B0_param</code>, <code>B0_tor_param</code>, <code>B0_ferraro_nmax</code>, <code>mag_couplings</code> (0 closed forms, 1 algebra), <code>tol_B0</code>, <code>B0_ic</code>, <code>ferraro_policy</code></td>
 </tr>
 <tr>
 <td>108–112</td>
-<td><code>centrifugal</code>, <code>centrifugal_shape</code>, <code>centrifugal_q</code>, <code>centrifugal_f</code> (the flattening of the outer wall, as used), <code>centrifugal_param</code></td>
+<td><code>centrifugal</code>, <code>centrifugal_shape</code>, <code>centrifugal_q</code>, <code>centrifugal_f</code> (as used), <code>centrifugal_param</code></td>
 </tr>
 <tr>
 <td>113</td>
-<td><code>hydro</code> (0: no flow)</td>
+<td><code>hydro</code></td>
 </tr>
 <tr>
 <td>114–122</td>
@@ -2038,7 +1998,7 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 </tr>
 <tr>
 <td>123–127</td>
-<td><code>r_surface</code>, <code>N_mantle</code>, the conductivity of a resolved mantle at the outer wall (as used), <code>sigma_mantle_param</code>, its conductance <span class="arithmatex">\(\int\sigma\,dr\)</span> (the <code>c1_cmb</code> of a thin conducting layer of the same conductance)</td>
+<td><code>r_surface</code>, <code>N_mantle</code>, the conductivity of a resolved mantle at the outer wall, <code>sigma_mantle_param</code>, the conductance of the mantle</td>
 </tr>
 <tr>
 <td>128–134</td>
@@ -2046,7 +2006,7 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 </tr>
 <tr>
 <td>135–141</td>
-<td><code>kappa_cmb</code>, <code>topo_drag</code> (1 for <code>'rekier'</code>, 0 for <code>None</code>), and with <code>'rekier'</code> (0 otherwise) <code>topo_hrms</code>, <code>topo_lambda0</code>, <code>topo_H</code>, and the buoyancy frequency and the frequency of the flow that the drag used, over the rotation rate (<a href="../drag/">Drag at the outer wall</a>)</td>
+<td><code>kappa_cmb</code>, <code>topo_drag</code> (1 for <code>'rekier'</code>), <code>topo_hrms</code>, <code>topo_lambda0</code>, <code>topo_H</code>, and the buoyancy frequency and flow frequency that the topographic drag used</td>
 </tr>
 <tr>
 <td>142–150</td>
@@ -2054,76 +2014,44 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
 </tr>
 <tr>
 <td>151–154</td>
-<td><code>comp_two_zone</code> (<span class="arithmatex">\(r_c\)</span>, <span class="arithmatex">\(h\)</span>) and <code>two_zone</code> (<span class="arithmatex">\(r_c\)</span>, <span class="arithmatex">\(h\)</span>)</td>
+<td><code>comp_two_zone</code> and <code>two_zone</code></td>
 </tr>
 <tr>
 <td>155–156</td>
-<td><code>bgflow</code>, <code>bgflow_Ro</code> (0 without a background flow)</td>
+<td><code>bgflow</code>, <code>bgflow_Ro</code></td>
 </tr>
 </tbody>
 </table>
 <ul>
-<li>Names are written as their index in the lists of the code: <code>structure</code> in <code>background.STRUCTURES</code> (<code>'8-term fit'</code> 0,
-  <code>'old model S prototype'</code> 1, <code>'model S hydrostatic'</code> 2, <code>'Wu 2005'</code> 3, <code>'Boussinesq'</code> 4), <code>stratification</code> in
-  <code>background.STRATIFICATIONS</code> (<code>'top hat'</code> 0, <code>'odd top hat'</code> 1, <code>'solar_rz'</code> 2, <code>'linear'</code> 3, <code>'inverse square'</code> 4,
-  <code>'user'</code> 5, <code>'two zone'</code> 6; −1 without a stratification), <code>comp_stratification</code> in <code>background.COMP_STRATIFICATIONS</code>
-  (<code>'linear'</code> 0, <code>'inverse square'</code> 1, <code>'two zone'</code> 2, <code>'user'</code> 3; −1 with <code>compositional = 0</code>), <code>diffusivity</code> in <code>background.DIFFUSIVITIES</code> (<code>'uniform'</code> 0, <code>'step'</code> 1,
-  <code>'solar_rz'</code> 2, <code>'user'</code> 3) and <code>diff_rot_type</code> in <code>diff_rot.TYPES</code> (<code>'Y20'</code> 0, …, <code>'rigid'</code> 7, <code>'solar_P4'</code> 8,
-  <code>'tabulated'</code> 9, <code>'user'</code> 10, <code>'ferraro'</code> 11).</li>
-<li>Column 64 is <code>structure_deg</code> for <code>'model S hydrostatic'</code>. Columns 65–66 are nan for the default window and
-  ∓(<code>r_out</code> + 0.005) for <code>'sun'</code>.</li>
-<li><code>diff_rot_window</code> is 0 for the shell fit and 1 for the whole-Sun fit, with <code>diff_rot_rdeg</code> then the degree used,
-  <code>diff_rot_sun_deg</code>.</li>
-<li>The magnetic columns: <code>B0</code> is the index in <code>background_field.B0_TYPES</code> (<code>'axial'</code> 0, <code>'FDM'</code> 1, <code>'G21 dipole'</code> 2,
-  <code>'Luo_S1'</code> 3, <code>'Luo_S2'</code> 4, <code>'confined'</code> 5, <code>'general'</code> 6, <code>'ferraro'</code> 7, <code>'dipole'</code> 8; −1 without a poloidal field), <code>B0_tor</code> in
-  <code>background_field.B0_TOR_TYPES</code> (<code>'Malkus'</code> 0, <code>'wall'</code> 1, <code>'user'</code> 2, <code>'general'</code> 3; −1 without), <code>innercore</code> in
-  <code>background.INNER_CORES</code> (<code>'insulator'</code> 0, <code>'conducting, Chebys'</code> 1, <code>'TWA'</code> 2, <code>'conducting, Bessel'</code> 3), <code>mantle</code> in <code>background.MAGNETIC_WALLS</code>
-  (<code>'insulator'</code> 0, <code>'TWA'</code> 1, <code>'resolved'</code> 2), <code>B0_ic</code> in <code>background.B0_ICS</code> (<code>'potential'</code> 0, <code>'frozen currents'</code> 1, formerly
-  <code>'full sphere'</code>), <code>B0_cmb</code> in <code>background.B0_CMBS</code> (<code>'wall'</code> 0, <code>'plain'</code> 1) and <code>ferraro_policy</code> in
-  <code>background.FERRARO_POLICIES</code> (<code>'warn'</code> 0, <code>'refuse'</code> 1). <code>muw_cmb</code> and <code>muw_icb</code> may be <code>inf</code>. <code>cnorm</code> and
-  <code>cnorm_tor</code> are the numbers used. <code>B0_l</code> is the lowest degree for <code>'general'</code> and 1 for <code>'ferraro'</code>; <code>B0_tor_l</code> is the
-  parameter, which <code>B0_tor = 'general'</code> ignores. The expressions of <code>'general'</code> (<code>B0_profiles</code>, <code>B0_tor_profiles</code>), of
-  <code>'ferraro'</code> (<code>B0_ferraro_G</code>), of <code>diff_rot_type = 'ferraro'</code> (<code>diff_rot_F</code>) and of a resolved mantle (<code>sigma_mantle</code>)
-  go into the note after <code>#</code>. Columns 125 and 127 are 0 without a resolved mantle.</li>
-<li><code>centrifugal_shape</code> is the index in <code>centrifugal.SHAPES</code> (<code>'clairaut'</code> 0, <code>'uniform'</code> 1, <code>'user'</code> 2, <code>'spheroid'</code> 3).
-  Column 111 is the flattening of the outer wall that the run used, with any shape (0 with <code>centrifugal = 0</code>).</li>
-<li><code>diff_rot_generic</code> and <code>diff_rot_hold</code> are not used (always 0 and nan); they keep the positions of the columns after
-  them.</li>
-<li>A row ends, after a <code>#</code> that <code>np.loadtxt</code> skips, with the <code>'user'</code> (the composition's too), <code>'general'</code> and <code>'ferraro'</code> expressions, that of
-  <code>sigma_mantle</code> and, for <code>'tabulated'</code>, <code>diff_rot_file</code> with the first 12 hex digits of its sha256; with a background
-  flow, its expressions (<code>bgflow_profiles</code>) or <code>bgflow_file</code> with the first 12 hex digits of its sha256. A row with none
-  of these has no <code>#</code>.</li>
-<li>A <code>params.dat</code> written before the columns 108–112, column 113, the columns 114–122, 123–127, 128–134, 135–141,
-  142–154 or 155–156 were added has fewer columns: start a new file. The same holds for <code>flow.dat</code> before its columns
-  29–39, 40–41, 42–43, 44–45 or 46–48, and for <code>thermal.dat</code> and <code>composition.dat</code> before their column 8.</li>
+<li>Options given by name are written as their position in the list of choices, counting from 0, in the order of the
+  tables on the corresponding pages; −1 means "none". For example <code>structure</code>: <code>'8-term fit'</code> 0,
+  <code>'old model S prototype'</code> 1, <code>'model S hydrostatic'</code> 2, <code>'Wu 2005'</code> 3, <code>'Boussinesq'</code> 4. <code>tools/get_data.py</code>
+  (below) reads the file with named columns.</li>
+<li>A row ends, after a <code>#</code> that <code>np.loadtxt</code> skips, with any expressions of the run (<code>'user'</code>, <code>'general'</code>,
+  <code>'ferraro'</code>, <code>sigma_mantle</code>, <code>bgflow_profiles</code>) and the names of the data files it read, with a short checksum.</li>
 </ul>
 <h2 id="solution-files">Solution files</h2>
-<p>The solution files hold what <code>solve.py</code> found, for <code>spin_doctor.py</code>, the tools and koreviz to read: the spectral
-coefficients of each field, one column per solution (<a href="../numerical-method/">Numerical method</a>). By default each field is
-one binary numpy file of complex numbers, <code>flow.npy</code>, <code>thermal.npy</code>, ..., small and quick to write and to read. With
-<code>field_format = 'text'</code> each field is two text files, <code>real_flow.field</code> and <code>imag_flow.field</code> with the real and the
-imaginary parts, as kore wrote before; at N ≈ 1000 with 10 solutions they take about 1 GB, and writing or reading them
-tens of seconds. The two formats hold the same numbers to the last bit, and a run keeps one: writing a field deletes the
-files of the other format.</p>
-<p><code>spin_doctor.py</code>, <code>bgflow.py</code>, <code>just_induction.py</code>, the tools and koreviz read either format. In python,
-<code>field_io.load('flow', folder='path/to/run')</code> (with kore's <code>bin</code> on the path; <code>bin/field_io.py</code> reads no parameters)
-returns the solutions as a complex array, one column per solution, <code>field_io.load('flow', 2)</code> solution 2 alone, and
-<code>None</code> when the field has no file. A <code>.npy</code> file is also read by <code>np.load('flow.npy')</code>.</p>
-<h2 id="the-parameter-file">The parameter file</h2>
-<p>A run's parameters come from <code>parameters.py</code>: the defaults of <code>bin/params_default.py</code>, the values that <code>set_scales</code>
-derives, and the file's own. <code>par.export_json('parameters.json')</code> at the end of <code>parameters.py</code> writes all of them to
-one file, exactly: numbers to the last bit, and numpy numbers and arrays, complex numbers, tuples and dictionaries with
-their types. To run the case again, here or in another folder, put in place of the parameters</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">params_default</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_params</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">par</span> <span class="o">=</span> <span class="n">default_params</span><span class="p">()</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">par</span><span class="o">.</span><span class="n">load_json</span><span class="p">(</span><span class="s1">'parameters.json'</span><span class="p">)</span>
+<p>The solution files hold the spectral coefficients of each field, one column per solution
+(<a href="../numerical-method/">Numerical method</a>). By default each field is one binary numpy file of complex numbers:
+<code>flow.npy</code>, <code>thermal.npy</code>, and so on. With <code>field_format = 'text'</code> each field is instead two text files,
+<code>real_flow.field</code> and <code>imag_flow.field</code>. Text files are much larger and slower to read and write.</p>
+<p><code>spin_doctor.py</code>, the tools and koreviz read either format. In python,</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">field_io</span>                            <span class="c1"># with kore's bin/ on the path</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">x</span> <span class="o">=</span> <span class="n">field_io</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">'flow'</span><span class="p">,</span> <span class="n">folder</span><span class="o">=</span><span class="s1">'path/to/run'</span><span class="p">)</span>   <span class="c1"># all solutions, one per column</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">x2</span> <span class="o">=</span> <span class="n">field_io</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">'flow'</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>                     <span class="c1"># solution 2 alone</span>
 </span></code></pre></div>
-<p>The file holds every value, so <code>set_scales</code> is not called again. Names that kore does not define come back too, and
-<code>submatrices.py</code> warns about them as it does in <code>parameters.py</code>. Under MPI only rank 0 writes the file.</p>
+<p>returns <code>None</code> when the field has no file. A <code>.npy</code> file can also be read directly with <code>np.load('flow.npy')</code>.</p>
+<h2 id="the-parameter-file">The parameter file</h2>
+<p><code>par.export_json('parameters.json')</code> at the end of <code>parameters.py</code> writes every parameter of the run to one file,
+exactly. To run the same case again, here or elsewhere, use as parameter file</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">params_default</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_params</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">par</span> <span class="o">=</span> <span class="n">default_params</span><span class="p">()</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">par</span><span class="o">.</span><span class="n">load_json</span><span class="p">(</span><span class="s1">'parameters.json'</span><span class="p">)</span>
+</span></code></pre></div>
 <h2 id="many-runs">Many runs</h2>
-<p>A parameter study runs one case many times with one parameter changed. The scripts of <code>tools/</code> run such a series in one
-folder, one step after the other (<code>ramp.sh</code>), or in one folder per run on a PBS-managed cluster, and collect the results
-into one table.</p>
+<p>A parameter study runs one case many times with one parameter changed. The scripts in <code>tools/</code> run such a series in
+one folder, one step after the other (<code>ramp.sh</code>), or in one folder per run on a cluster, and collect the results into
+one table.</p>
 <table>
 <thead>
 <tr>
@@ -2134,45 +2062,43 @@ into one table.</p>
 <tbody>
 <tr>
 <td><code>tools/ramp.sh name value1 value2 ...</code></td>
-<td>runs the case of <code>bin/parameters.py</code> once per value of <code>par.name</code> (any python expression, e.g. <code>tools/ramp.sh ViscosD 1e-4 7e-5 5e-5</code>), from kore's top folder; without arguments, once as it is. <code>spin_doctor.py</code> appends each step's rows to the <code>.dat</code> files. The ramp stops when a step finds no solution (<code>no_conv_solution</code>). The environment variables <code>ncpus</code> (the processes of <code>submatrices.py</code> and <code>spin_doctor.py</code>, default <code>par.ncpus</code>), <code>ranks</code> (the MPI ranks of <code>assemble.py</code> and <code>solve.py</code>, default <code>ncpus</code>), <code>opts</code> (more solver options, <a href="../solver/">Solver</a>) and <code>MPIEXEC</code> (default <code>mpiexec</code>) can be set</td>
+<td>runs the case once per value of <code>par.name</code> (e.g. <code>tools/ramp.sh ViscosD 1e-4 7e-5 5e-5</code>), from kore's top folder. The results accumulate in the <code>.dat</code> files. It stops when a step finds no solution. The environment variables <code>ncpus</code>, <code>ranks</code> (MPI processes), <code>opts</code> (extra solver options) and <code>MPIEXEC</code> can be set</td>
 </tr>
 <tr>
 <td><code>tools/setpar.py name value [file]</code></td>
-<td>writes <code>par.name = value</code> into <code>bin/parameters.py</code> in place of each assignment of <code>par.name</code> (its comment kept), or as a new last line, after <code>set_scales</code> and the other values, so that it holds; <code>ramp.sh</code> and <code>dodirs.sh</code> use it</td>
+<td>sets <code>par.name = value</code> in <code>bin/parameters.py</code>, so that it takes effect after everything else</td>
 </tr>
 <tr>
 <td><code>tools/dodirs.sh prefix name mode start step end</code></td>
-<td>creates one folder per value of <code>par.name</code> in <code>~/data</code>, named <code>prefix&lt;value&gt;</code>, each with a copy of <code>~/kore</code> (edit the paths first). With <code>mode</code> <code>e</code> the values are powers of ten (<span class="arithmatex">\(10^{start}\)</span>, ...), with <code>d</code> they are linear. Example: <code>tools/dodirs.sh run_visc_ ViscosD e -4 -0.1 -5</code></td>
+<td>creates one folder per value of <code>par.name</code>, each with a copy of kore. With <code>mode</code> <code>e</code> the values are powers of ten, with <code>d</code> they are linear. Edit the paths at the top of the script first</td>
 </tr>
 <tr>
-<td><code>tools/dosubs.sh</code> (the same arguments)</td>
-<td>submits the job of each folder, <code>tools/subramp.sh</code>, which runs <code>tools/ramp.sh</code> there (edit its PBS header and python environment first)</td>
+<td><code>tools/dosubs.sh</code> (same arguments)</td>
+<td>submits a batch job in each folder that runs <code>ramp.sh</code> there. Edit the job header in <code>tools/subramp.sh</code> for your cluster first</td>
 </tr>
 <tr>
 <td><code>tools/reap.sh prefix</code></td>
-<td>collects the <code>.dat</code> files of the folders <code>prefix*</code> into <code>prefix.par</code> (<code>params.dat</code>), <code>.flo</code>, <code>.thm</code>, <code>.cmp</code>, <code>.mag</code>, <code>.rot</code> and <code>.eig</code>, those that exist, with the rows of each folder together</td>
+<td>collects the <code>.dat</code> files of the folders <code>prefix*</code> into <code>prefix.par</code>, <code>.flo</code>, <code>.thm</code>, <code>.cmp</code>, <code>.mag</code>, <code>.rot</code> and <code>.eig</code></td>
 </tr>
 <tr>
 <td><code>tools/get_data.py [prefix]</code></td>
-<td>reads them, or without <code>prefix</code> the <code>.dat</code> files of the current folder, into one pandas table whose columns have the names of the tables of <code>spin_doctor.py</code>, and writes it to <code>prefix.csv</code> (<code>results.csv</code>); in python, <code>get_data.load_results(prefix)</code> and <code>get_data.load_result(folder)</code> return the table</td>
+<td>reads them (or the <code>.dat</code> files of the current folder) into one pandas table with named columns, and writes it to <code>prefix.csv</code> (or <code>results.csv</code>)</td>
 </tr>
 <tr>
 <td><code>tools/getresults.py [prefix]</code></td>
-<td><code>%run -i tools/getresults.py prefix</code> in IPython: the same table as <code>df</code>, and its most used columns as arrays</td>
+<td>in IPython, <code>%run -i tools/getresults.py prefix</code> gives the same table as <code>df</code>, and its most used columns as arrays</td>
 </tr>
 </tbody>
 </table>
-<p>Ramp a parameter that the run reads, such as <code>ViscosD</code>: <code>Ek</code>, <code>Etherm</code>, <code>Ecomp</code> and <code>Le</code> are read only by
-<code>set_scales</code>, which <code>parameters.py</code> calls before its own values (<code>setpar.py</code> warns).</p>
+<p>Ramp a parameter that the run actually reads, such as <code>ViscosD</code>, not <code>Ek</code>: <code>Ek</code>, <code>Etherm</code>, <code>Ecomp</code> and <code>Le</code> are only
+used by <code>set_scales()</code>.</p>
 <h3 id="following-a-mode">Following a mode</h3>
-<p>Along a ramp the eigenvalues move, and a fixed target can lose the mode of interest or jump to another. With
-<code>track_target = 1</code> each run aims at the eigenvalue in the file <code>track_target</code> (in place of <code>rtau</code>, <code>itau</code>), and
-<code>spin_doctor.py</code> writes to the file the eigenvalue of that run nearest to it: the next run aims there. Small steps keep
-the same mode. Before the first run, write the starting eigenvalue to the file (<code>echo "-0.1 1.0" &gt; track_target</code>: its
-real and imaginary parts), or let a run with <code>track_target = 2</code> write the eigenvalue of its solution with the smallest
-ratio of poloidal to toroidal kinetic energy, such as the spin-over mode. Tracking needs an eigenvalue problem
-(<code>forcing = 0</code>), and 2 needs the flow (<code>hydro = 1</code>). <code>tools/topo_iterate.sh</code> uses it for the frequency of a drag at the
-outer wall (<a href="../drag/#the-frequency-of-the-drag">Drag at the outer wall</a>).</p>
+<p>Along a ramp the eigenvalues move, and a fixed target can lose the mode of interest. With <code>track_target = 1</code> each run
+aims at the eigenvalue stored in the file <code>track_target</code> (instead of <code>rtau</code>, <code>itau</code>), and <code>spin_doctor.py</code> replaces it
+with the eigenvalue it found nearest to it, so the next run aims there. Small steps keep the same mode. Before the first
+run, write the starting eigenvalue to the file (<code>echo "-0.1 1.0" &gt; track_target</code>: real and imaginary parts), or let a
+first run with <code>track_target = 2</code> pick its solution with the smallest ratio of poloidal to toroidal kinetic energy,
+such as the spin-over mode. Tracking works for eigenvalue problems only.</p>
 
 
 

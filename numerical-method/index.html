@@ -1848,10 +1848,8 @@ W_p = -2\thinspace\mathrm{Re}\sum_l \frac{4\pi}{2l+1}\Big[\rho_0\thinspace r^2\t
 (<a href="../output/">Output files</a>).</p>
 <p><span class="arithmatex">\(\Pi_l\)</span> needs the radial derivatives of <span class="arithmatex">\(P_l\)</span> up to the third at the walls. That is where the truncation error of the
 tau method is largest, and near a surface of low density the <span class="arithmatex">\((\ln\rho_0)'\)</span> terms of the viscous force amplify it. The
-wall pressure therefore converges with N more slowly than the volume integrals. For <code>'Wu 2005'</code> (<code>r_out</code> 0.99) at
-Ek <span class="arithmatex">\(10^{-3}\)</span>, residσ of a forced run is <span class="arithmatex">\(5\times10^{-2}\)</span> at N 96 and <span class="arithmatex">\(2\times10^{-10}\)</span> at N 192 in a shell, and 0.36,
-<span class="arithmatex">\(6\times10^{-6}\)</span> and <span class="arithmatex">\(10^{-8}\)</span> at N 192, 288 and 384 in a full sphere, while the kinetic energy and the dissipation have
-converged at the lowest N. Where <span class="arithmatex">\(u_r = 0\)</span> at the walls, <span class="arithmatex">\(W_p = 0\)</span> whatever the resolution.</p>
+wall pressure therefore converges with N more slowly than the volume integrals: residσ of a forced run with moving
+walls can need two to four times the N at which the kinetic energy and the dissipation have converged. Where <span class="arithmatex">\(u_r = 0\)</span> at the walls, <span class="arithmatex">\(W_p = 0\)</span> whatever the resolution.</p>
 <p><code>ru_insane.py</code> checks the same pairings on the operators themselves: inertia Hermitian and positive, Coriolis
 anti-Hermitian, viscous Hermitian and negative, the entropy and diffusion blocks, the buoyancy and the advection against
 quadratures, and the differential-rotation blocks against an <span class="arithmatex">\((r, \theta)\)</span> grid. <code>tests/tidal</code> checks the budgets with
