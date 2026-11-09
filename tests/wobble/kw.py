@@ -5,9 +5,12 @@ timescale 'rotation', with or without the wobble of the mantle (bin/wobble.py).
 
   setup(d, **p)    builds the run directory d (a copy of kore's bin and a parameters.py: BASE, then p) and runs
                    submatrices.py there; p holds Ek, f (the flattening, 0: a sphere), N, lmax, ncpus and anything else
+                   (NEW 2026-11-09: with magnetic = 1, also Le and Em, from which Hendrik and MagnetD are set as in
+                   set_scales, and B0, mantle, ...)
   solve(d, **p)    rewrites parameters.py with p (the parameters that change no operator: wobble, MoIX_M, dynflat_M,
                    itau, rtau, nev), runs assemble.py and solve.py on ncpus ranks, and returns one dict per eigenpair:
-                   'lam' (complex) and, with wobble = 1, wobble.energies (torques, budget residual, energies)
+                   'lam' (complex) and, with wobble = 1, wobble.energies (torques, budget residual, energies; with the
+                   field's torques when magnetic = 1)
   paper(q, alpha)  (MoIX_M, dynflat_M) of the mantle of Triana et al. (2019): a homogeneous shell whose two surfaces have
                    the flattening alpha, with q = rho_f/(rho_m (r0⁵ - 1)), in kore's units (the mean radius of the wall)
   ek_kore(E, alpha) kore's Ek for the paper's E = nu/(Omega a²) (a the equatorial radius of the wall)
@@ -44,6 +47,8 @@ def _write(d, p):
     for k, v in q.items():
         if k not in ('Ek', 'f'):
             lines.append('par.%s = %r' % (k, v.item() if isinstance(v, np.generic) else v))
+    if q.get('magnetic'):   # NEW (2026-11-09): the magnetic factors of set_scales, from the Le and Em above
+        lines.append('par.Hendrik = (par.Gaspard*par.Le)**2; par.MagnetD = par.Gaspard*par.Em')
     open(os.path.join(d, 'bin', 'parameters.py'), 'w').write('\n'.join(lines) + '\n')
     json.dump(q, open(os.path.join(d, 'run.json'), 'w'))
 
@@ -79,10 +84,11 @@ out = []
 if par.wobble:
     import wobble as wb
     flow, M = ut.load_field('flow'), ut.load_field('wobble')
+    field = ut.load_field('magnetic') if par.magnetic else None
 for i, l in enumerate(lam):
     rec = {'lam': [l.real, l.imag]}
     if par.wobble:
-        e = wb.energies(flow[:, i], M[0, i], l)
+        e = wb.energies(flow[:, i], M[0, i], l, None if field is None else field[:, i])
         rec.update({k: ([v.real, v.imag] if isinstance(v, complex) else float(v)) for k, v in e.items()})
         rec['Mc'] = [M[0, i].real, M[0, i].imag]
     out.append(rec)

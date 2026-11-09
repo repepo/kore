@@ -48,9 +48,28 @@ mantle alone is λ = -i G e (prograde, Im λ < 0 in kore's convention, where the
 Budget (budget): the angular momentum of the fluid, H_f = I_f(Gẑ + M) + L, L = ∫X×u dV = D⁻¹∫α×w dV, in the frame of the
 mantle: λ(A_f M + L) + G(C_f - A_f) M×ẑ + G ẑ×L = -Γ; its residual checks the two torques together.
 
-LEFT OUT (background.check_wobble stops): an inner core (full sphere only), a field (its Lorentz force at the wall and the
-Maxwell stress on a conducting mantle would add torques), buoyancy (a moving mass adds gravitational torques), the other
-shapes of centrifugal = 1 (whose wall is not the sphere of a linear map), stress-free walls, forcings.
+NEW (2026-11-09): THE FIELD (magnetic = 1). B0 is steady in the frame of the mantle (it turns with the mantle's axis), and
+the fluid's flow relative to that frame induces b; the induction, the Lorentz force and the wall rows are kore's. The field
+adds two torques on the mantle:
+  - the Lorentz part of the pressure on the wall, Γ_P'(Lorentz) = pressure_factor() p₂(Lorentz): on the no-slip wall the
+    horizontal balance becomes ∇_H p = [ν V + F - ∂ₜ(D⁻¹M) × α]_H with F = Hendrik [∇×(Q b̃) × B̃0 + ∇×(Q B̃0) × b̃] the
+    covariant Lorentz force of the exact spheroid (centrifugal.py, section 8; Q = D², b̃ = D⁻¹b, B̃0 = D⁻¹B0 the fluxes of the
+    reference space), so p₂ gains the projection of F_H on ∇_H Y₂¹ over its norm 6 ∫|Y₂¹|² dΩ (none in a sphere);
+  - Γ_B, the torque of the field on everything beyond the fluid's side of the wall, minus the Maxwell stress through it on the
+    fluid, Hendrik ∮ X × [B0 (b⋅n) + b (B0⋅n) - (B0⋅b) n] dS. It acts on the currents of a conducting mantle ('TWA' or
+    'resolved', in a sphere), and on the sources of any part of B0 that the fluid does not carry, which turn with the
+    mantle: an external part ('axial', imposed from outside) and the wall currents of a field that does not meet the
+    potential field of the spheroid. With an insulating mantle and a field of internal currents that meets it, Γ_B = 0 (the
+    stress through any surface outside the currents is that at infinity), so the field adds only the pressure.
+Both are linear forms on f, f', f'' and g, g' at the wall (field_rows), computed on a Gauss-Legendre grid in θ (_wall_fields,
+pure numpy, checked against the divergence theorem in tests/wobble/derive_field.py); ∇×(Q v) = a² ∇×v + (c² - a²) ∇v_z × ẑ.
+The mantle's row gains Γ_P'(Lorentz) + Γ_B, and the budget of the fluid the torque of the field on it, -Γ_B: it then checks
+the Lorentz part of the pressure (from the force at the wall) against the Maxwell stress (from the fields at the wall).
+
+LEFT OUT (background.check_wobble stops): an inner core (full sphere only), a toroidal B0 that does not vanish at the wall
+(its current sheet), buoyancy (a moving mass adds gravitational torques), the other shapes of centrifugal = 1 (whose wall is
+not the sphere of a linear map), stress-free walls, forcings; a conducting mantle on the spheroid (kore's thin and resolved
+layers are spherical).
 '''
 import numpy as np
 from parameters import par
@@ -176,10 +195,197 @@ def torque_rows():
     return out
 
 
+# ------------------------------------------------------------------------------------- the field (magnetic = 1, NEW 2026-11-09)
+# The fields on the sphere r = R of the reference space at the Gauss-Legendre points x = cos θ, in kore's conventions: the
+# perturbation b̃ = Σ ∇×∇×(f_l Y_l r) + ∇×(g_l Y_l r) (Y_l the Schmidt harmonic of m = 1 times e^{iφ}; b_r = L f/r Y,
+# b_θ = (f' + f/r) ∂θY + g i Y/sinθ, b_φ = (f' + f/r) i Y/sinθ - g ∂θY), the background B̃0 = Σ ∇×∇×(h_n P_n r) + ∇×(k_n P_n r).
+# Pure functions of numpy arrays (angular.py only), which tests/wobble/derive_field.py checks without a run.
+
+def _field_grid(lmax, nb, npts):
+    '''Gauss-Legendre points and weights in x = cos θ, and on them Y_l, ∂θY_l, Y_l/sinθ (m = 1, l <= lmax) and P_n, ∂θP_n
+    (m = 0, n <= nb)'''
+    import angular
+    x, w = np.polynomial.legendre.leggauss(npts)
+    Y, dY, Z = angular.ylm_grid(1, lmax, x)
+    P, dP, _ = angular.ylm_grid(0, nb, x)
+    return {'x': x, 'w': w, 's': np.sqrt(1 - x*x), 'Y': Y, 'dY': dY, 'V': Z.imag, 'P': P, 'dP': dP}
+
+
+def _zcross(x, s, R, v, vs, sdt, m):
+    '''∇v_z × ẑ = (s g_φ, x g_φ, -s g_r - x g_θ), components (r, θ, φ), for g = ∇v_z, v_z = x v_r - s v_θ (s = sinθ), from
+    v = (v_r, v_θ, ∂r v_r, ∂r v_θ, ∂θ v_r), vs = v_r/sinθ (m = 1 only) and sdt = sinθ ∂θ v_θ on the sphere R; m 1 or 0'''
+    vr, vt, dvr, dvt, tvr = v
+    vz = x*vr - s*vt
+    gr = x*dvr - s*dvt
+    gt = (-s*vr + x*tvr - x*vt - sdt)/R
+    if m == 0:
+        return 0*gr, 0*gr, -s*gr - x*gt
+    vzs = x*vs - vt                                       # v_z/sinθ (v_r/sinθ is regular for m = 1)
+    return 1j*vz/R, 1j*x*vzs/R, -s*gr - x*gt
+
+
+def _wall_fields(gr, R, a, c, lf, Fj, lg, Gj, B0):
+    '''
+    The perturbation and the background on the sphere R, for the field of degrees lf (poloidal, jets Fj[..., k, :] = f, f', f''
+    at R of the degree lf[k]) and lg (toroidal, Gj[..., k, :] = g, g'), batched over the leading axis of Fj, Gj, and the
+    background B0 = {'h': {n: (h, h', h'')}, 'k': {n: (k, k')}} at R: {'b': (b_r, b_θ, b_φ), 'J': ∇×(Q b̃), 'B': B̃0,
+    'J0': ∇×(Q B̃0), 'Bz': B̃0_z, 'bz': b̃_z}, components (r, θ, φ) of the reference space, Q = diag(a², a², c²) (a = c = 1:
+    the sphere). ∇×(Q v) = a² ∇×v + (c² - a²) ∇v_z × ẑ.
+    '''
+    x, s = gr['x'], gr['s']
+    dl = c*c - a*a
+    E = lambda u, A: u @ A
+    lf, lg = np.asarray(lf, dtype=int), np.asarray(lg, dtype=int)
+    Lf, Lg = lf*(lf + 1.), lg*(lg + 1.)
+    F0, F1, F2 = Fj[..., 0], Fj[..., 1], Fj[..., 2]
+    G0, G1 = Gj[..., 0], Gj[..., 1]
+    Yf, dYf, Vf = gr['Y'][lf], gr['dY'][lf], gr['V'][lf]
+    Yg, dYg, Vg = gr['Y'][lg], gr['dY'][lg], gr['V'][lg]
+    S0 = F1 + F0/R                          # f' + f/r
+    S1 = F2 + F1/R - F0/R**2                # its r-derivative
+    Df = F2 + 2*F1/R - Lf*F0/R**2           # ∇²f, minus the toroidal scalar of ∇×b
+    q = Lf*F0/R
+    br, brs = E(q, Yf), E(q, Vf)
+    bt = E(S0, dYf) + 1j*E(G0, Vg)
+    bp = 1j*E(S0, Vf) - E(G0, dYg)
+    dbr = E(Lf*(F1/R - F0/R**2), Yf)
+    dbt = E(S1, dYf) + 1j*E(G1, Vg)
+    tbr = E(q, dYf)
+    sdt = E(S0, -x*dYf - Lf[:, None]*s*Yf + Vf) + 1j*E(G0, dYg - x*Vg)   # sinθ ∂θ b_θ (Legendre's equation, m = 1)
+    zc = _zcross(x, s, R, (br, bt, dbr, dbt, tbr), brs, sdt, 1)
+    Gp = G1 + G0/R
+    J = (a*a*E(Lg*G0/R, Yg) + dl*zc[0],
+         a*a*(E(Gp, dYg) - 1j*E(Df, Vf)) + dl*zc[1],
+         a*a*(1j*E(Gp, Vg) + E(Df, dYf)) + dl*zc[2])
+    z = 0*x
+    Br, Bt, Bp, dBr, dBt, tBr, sdB, J0r, J0t, J0p = (z.copy() for _ in range(10))
+    for n, (h0, h1, h2) in B0.get('h', {}).items():
+        Ln, P, dP = n*(n + 1.), gr['P'][n], gr['dP'][n]
+        Br = Br + Ln*h0/R*P
+        Bt = Bt + (h1 + h0/R)*dP
+        dBr = dBr + Ln*(h1/R - h0/R**2)*P
+        dBt = dBt + (h2 + h1/R - h0/R**2)*dP
+        tBr = tBr + Ln*h0/R*dP
+        sdB = sdB + (h1 + h0/R)*(-x*dP - Ln*s*P)
+        J0p = J0p + (h2 + 2*h1/R - Ln*h0/R**2)*dP
+    for n, (k0, k1) in B0.get('k', {}).items():
+        Ln, P, dP = n*(n + 1.), gr['P'][n], gr['dP'][n]
+        Bp = Bp - k0*dP
+        J0r = J0r + Ln*k0/R*P
+        J0t = J0t + (k1 + k0/R)*dP
+    zc0 = _zcross(x, s, R, (Br, Bt, dBr, dBt, tBr), None, sdB, 0)
+    J0 = (a*a*J0r + dl*zc0[0], a*a*J0t + dl*zc0[1], a*a*J0p + dl*zc0[2])
+    return {'b': (br, bt, bp), 'J': J, 'B': (Br, Bt, Bp), 'J0': J0, 'Bz': x*Br - s*Bt, 'bz': x*br - s*bt}
+
+
+def _lorentz(fl):
+    '''the covariant Lorentz force ∇×(Q b̃) × B̃0 + ∇×(Q B̃0) × b̃ (without Hendrik), components (r, θ, φ)'''
+    (Jr, Jt, Jp), (Br, Bt, Bp) = fl['J'], fl['B']
+    (Kr, Kt, Kp), (br, bt, bp) = fl['J0'], fl['b']
+    return (Jt*Bp - Jp*Bt + Kt*bp - Kp*bt,
+            Jp*Br - Jr*Bp + Kp*br - Kr*bp,
+            Jr*Bt - Jt*Br + Kr*bt - Kt*br)
+
+
+def _pressure_lorentz(gr, fl):
+    '''p₂ of the Lorentz force on the wall (without Hendrik): the coefficient of Y₂¹ of p with ∇_H p = F_H, the projection of
+    the horizontal force on ∇_H(Y₂ e^{iφ}) over its norm 6 ∫Y₂² dΩ'''
+    _, Ft, Fp = _lorentz(fl)
+    w = gr['w']
+    return (Ft*gr['dY'][2] - 1j*Fp*gr['V'][2]) @ w/(6*np.sum(w*gr['Y'][2]**2))
+
+
+def _maxwell(gr, fl, R, a, c):
+    '''
+    The torque of the field on the fluid inside the wall r = R (without Hendrik), the Maxwell stress through it,
+    ∮ X × [B0 (b⋅n) + b (B0⋅n) - (B0⋅b) n] dS, in the body X = D R r̂, n dS = R² D⁻ᵀ r̂ dΩ, B = D B̃ (D = diag(a, a, c), det 1):
+        R³ ∮ { D⁻ᵀ(r̂×B̃0) b̃_r + D⁻ᵀ(r̂×b̃) B̃0_r - (B̃0⋅Q b̃) (a/c - c/a) z (y, -x, 0) } dΩ,
+    as L_x - i L_y divided by Y₁¹ at the equator (conv.); in the sphere that of rotdyn.wall_torques
+    '''
+    x, s, w = gr['x'], gr['s'], gr['w']
+    (br, bt, bp), (Br, Bt, Bp) = fl['b'], fl['B']
+    dot = a*a*(Br*br + Bt*bt + Bp*bp) + (c*c - a*a)*fl['Bz']*fl['bz']
+    dens = ((-x*Bp - 1j*Bt)*br + (-x*bp - 1j*bt)*Br)/a - 1j*(a/c - c/a)*x*s*dot
+    return 2*np.pi*R**3/_N1*(dens @ w)
+
+
+def field_background(R):
+    '''B0 at r = R for _wall_fields: {'h': {n: (h, h', h'')}, 'k': {n: (k, k')}} (cnorm included), and the largest degree'''
+    import background_field as bf
+    rr = np.array([R], dtype=float)
+    val = lambda f, d: float(np.ravel(f(rr, d))[0])
+    B0 = {'h': {n: tuple(val(f, d) for d in range(3)) for n, f in bf.pol_profiles().items()},
+          'k': {n: tuple(val(f, d) for d in range(2)) for n, f in bf.tor_profiles().items()}}
+    return B0, max([1] + list(B0['h']) + list(B0['k']))
+
+
+_FIELD = {}
+
+def field_weights():
+    '''
+    {(sec, l): (cP, cM)}: the Lorentz part of p₂ (cP, with Hendrik) and the torque of the field on the fluid (cM, with Hendrik,
+    conv.), as linear forms on (f, f', f'') (sec 'f') or (g, g') ('g') of the degree l at the wall; only the degrees that
+    couple (|Δl| <= nb + 6 about the degrees 2 and 1), and the coefficients above round-off (cached)
+    '''
+    if 'w' in _FIELD:
+        return _FIELD['w']
+    a, c = axes()
+    R = ut.rcmb
+    B0, nb = field_background(R)
+    lp, lt, _ = ut.ell(par.m, par.lmax, ut.bsymm)
+    top = min(par.lmax, 2 + nb + 6)
+    lf, lg = lp[lp <= top], lt[lt <= top]
+    gr = _field_grid(top + 1, nb, top + 2*nb + 16)
+    out = {}
+    for sec, ls, nd in (('f', lf, 3), ('g', lg, 2)):
+        K = len(ls)*nd
+        Fj = np.zeros((K, len(lf), 3), dtype=complex)
+        Gj = np.zeros((K, len(lg), 2), dtype=complex)
+        for k in range(len(ls)):
+            for d in range(nd):
+                (Fj if sec == 'f' else Gj)[k*nd + d, k, d] = 1.
+        fl = _wall_fields(gr, R, a, c, lf, Fj, lg, Gj, B0)
+        cP = par.Hendrik*_pressure_lorentz(gr, fl).reshape(len(ls), nd)
+        cM = par.Hendrik*_maxwell(gr, fl, R, a, c).reshape(len(ls), nd)
+        for C in (cP, cM):   # the degrees outside the couplings: round-off, which the derivatives at the wall would amplify
+            C[np.abs(C) < 1e-11*np.maximum(np.abs(C).max(axis=0), 1e-300)] = 0
+        for k, l in enumerate(ls):
+            out[(sec, int(l))] = (cP[k], cM[k])
+    _FIELD['w'] = out
+    return out
+
+
+def _field_column(sec, l):
+    '''first column of the Chebyshev block of f (sec 'f') or g ('g') of degree l, and the Chebyshev polynomials of its parity
+    and their r-derivatives at r = 1 (as assemble.bc_b_spherical)'''
+    import bc_variables as bv
+    lfirst = ut.m_bot if (sec == 'f') == (ut.symmB0 == -1) else ut.m_top
+    col = ut.offset[sec] + int(ut.N1*(l - lfirst)/2)
+    Tb = bv.Tb if par.ricb > 0 else bv.Tb[l % 2::2, :]
+    return col, Tb
+
+
+def field_rows():
+    '''[(column array, coefficient array)]: the torques of the field on the mantle, Γ_P'(Lorentz) + Γ_B, with Γ_P'(Lorentz)
+    = pressure_factor() p₂(Lorentz) and Γ_B = -(the torque of the field on the fluid), as a linear form on the Chebyshev
+    coefficients of f and g'''
+    if not par.magnetic:
+        return []
+    pf = pressure_factor()
+    out = []
+    for (sec, l), (cP, cM) in field_weights().items():
+        cw = pf*cP - cM
+        if not np.any(cw):
+            continue
+        col, Tb = _field_column(sec, l)
+        out.append((col + np.arange(ut.N1), Tb[:, :cw.size] @ cw))
+    return out
+
+
 def a_rows(rank0):
     '''
     The row of A for Mc (A = -(the right-hand side), as everywhere in assemble.py): i G [e A_M + (4π/15)(a² - c²)] on Mc
-    and minus the torques of the flow; empty on the ranks other than rank0
+    and minus the torques of the flow and (NEW 2026-11-09) of the field; empty on the ranks other than rank0
     '''
     if not (ut.wobble and rank0):
         return [np.array([], dtype=complex), np.array([], dtype=int), np.array([], dtype=int)]
@@ -187,7 +393,7 @@ def a_rows(rank0):
     data = [np.array([1j*par.Gaspard*par.dynflat_M*par.MoIX_M - centrifugal_coefficient()])]
     rows = [np.array([iW])]
     cols = [np.array([iW])]
-    for c, v in torque_rows():
+    for c, v in torque_rows() + field_rows():
         data.append(-v); rows.append(np.full(c.size, iW)); cols.append(c)
     return [np.concatenate(data), np.concatenate(rows), np.concatenate(cols)]
 
@@ -212,15 +418,21 @@ def b_rows(rank0, inertia_v1):
 
 
 # ------------------------------------------------------------------------------------------------- post-processing
-def budget(flow, Mc, lam):
+def budget(flow, Mc, lam, field=None):
     '''
     The torques on the mantle and the angular momentum budget of the fluid for one solution: flow, the flow's unknowns (2n),
-    Mc, the eigenvalue lam. Returns a dict: 'pressure' (Γ_P', reduced), 'centrifugal' (Γ_cent), 'viscous' (Γ_ν), 'total',
-    'L' (the fluid's, conv.), 'resid' |λ(A_f Mc + L) + iG(C_f - A_f)Mc - iG L + Γ| / (|λ| |L| + |Γ|).
+    Mc, the eigenvalue lam, and (NEW 2026-11-09, magnetic = 1) field, the field's (f, g: 2n). Returns a dict: 'pressure'
+    (Γ_P', reduced, with the Lorentz part), 'centrifugal' (Γ_cent), 'viscous' (Γ_ν), 'total', 'L' (the fluid's, conv.),
+    'resid' |λ(A_f Mc + L) + iG(C_f - A_f)Mc - iG L + Γ| / (|λ| |L| + |Γ|), and with a field 'pressure_lorentz' (the Lorentz
+    part of Γ_P') and 'magnetic' (Γ_B, minus the torque of the field on the fluid, from the Maxwell stress through the wall;
+    in 'total'): the budget then holds with the torque of the field on the fluid, -Γ_B, and checks Γ_P' (from the force on
+    the wall) against it (from the stress through the wall).
     '''
     x = np.zeros(ut.sizmat, dtype=complex)
     x[:2*ut.n] = flow
     x[ut.offset['wob']] = Mc
+    if field is not None:
+        x[ut.offset['f']:ut.offset['f'] + 2*ut.n] = field
     pw, vw, pf = pressure_weights(), viscous_weights(), pressure_factor()
     lp, lt, _ = ut.ell(par.m, par.lmax, par.symm)
     gp = gv = 0j
@@ -246,13 +458,24 @@ def budget(flow, Mc, lam):
     L = (16*np.pi/3)/a*0.5*(ut.rcmb - par.ricb)*np.sum(wg*r**3*T)
     Af, Cf = fluid_inertia()
     G = par.Gaspard
-    tot = gp + gc + gv
+    extra = {}
+    gb = 0j
+    if field is not None and par.magnetic:
+        gl = 0j
+        for (sec, l), (cP, cM) in field_weights().items():
+            col, Tb = _field_column(sec, l)
+            jets = Tb.T[:cP.size] @ x[col:col + ut.N1]
+            gl += pf*np.dot(cP, jets)
+            gb -= np.dot(cM, jets)
+        gp += gl
+        extra = {'pressure_lorentz': gl, 'magnetic': gb}
+    tot = gp + gc + gv + gb
     lhs = lam*(Af*Mc + L) + 1j*G*(Cf - Af)*Mc - 1j*G*L
     return {'pressure': gp, 'centrifugal': gc, 'viscous': gv, 'total': tot, 'L': L,
-            'resid': abs(lhs + tot)/(abs(lam)*abs(L) + abs(tot) + 1e-300)}
+            'resid': abs(lhs + tot)/(abs(lam)*abs(L) + abs(tot) + abs(gb) + 1e-300), **extra}
 
 
-def energies(flow, Mc, lam):
+def energies(flow, Mc, lam, field=None):
     '''
     Energies and powers of one solution for the comparison with Triana et al. (2019), with the sphere's metric (their error
     is of order f): all are ∫|.|² of the complex amplitudes (no factor 1/2), so that only their ratios are meant.
@@ -263,6 +486,7 @@ def energies(flow, Mc, lam):
       KM_srf  the kinetic energy of the mantle in that frame, A_M |Ms|²/4 (its rigid rotation's on the same scale);
       Dkin    the viscous dissipation ν ∫|∇×u|² (no-slip wall);
       DP      the power of the Poincaré force on the flow, |λ Mc* L|/4 (L the angular momentum of the flow, conv.).
+    With the torques of budget (field: the field's unknowns with magnetic = 1, NEW 2026-11-09).
     '''
     import numpy.polynomial.chebyshev as ch
     lp, lt, _ = ut.ell(par.m, par.lmax, par.symm)
@@ -296,6 +520,6 @@ def energies(flow, Mc, lam):
             KE_srf += L*nl*np.sum(wr*abs(T + r*Ms/2)**2*r**2)
         else:
             KE_srf += e
-    b = budget(flow, Mc, lam)
+    b = budget(flow, Mc, lam, field)
     return {'KE': KE, 'KE_T11': KE_T11, 'KE_srf': KE_srf, 'KM_srf': par.MoIX_M*abs(Ms)**2/4,
             'Dkin': par.ViscosD*Dkin, 'DP': abs(lam*np.conj(Mc)*b['L'])/4, **b}

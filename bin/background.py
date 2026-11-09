@@ -719,17 +719,26 @@ def check_wobble():
     '''
     NEW (2026-11-09): stops on the settings that the wobble of the mantle (wobble = 1, wobble.py) does not cover. Its torques
     are those of a homogeneous fluid on a no-slip wall that is the reference sphere of a linear map: a sphere or the exact
-    spheroid. Left out: an inner core, a field, buoyancy (gravitational torques), the other shapes, the rotating solids,
-    a differential rotation, a background flow and the forcings.
+    spheroid. Left out: an inner core, buoyancy (gravitational torques), the other shapes, the rotating solids, a
+    differential rotation, a background flow and the forcings. NEW (2026-11-09): with a field (magnetic = 1) a toroidal B0
+    must vanish at the wall (the torque on its current sheet there is left out); the mantle may be an insulator or, in a
+    sphere (check_magnetic), a thin conducting layer or a resolved conducting mantle.
     '''
     if not (par.hydro and par.m == 1 and par.symm == -1 and par.forcing == 0 and par.ricb == 0):
         sys.exit('wobble = 1 needs the flow (hydro = 1), m = 1, symm = -1, a full sphere (ricb = 0) and an eigenvalue problem '
                  '(forcing = 0)')
     if not (par.ViscosD > 0 and par.bco == 1 and par.Gaspard > 0):
         sys.exit('wobble = 1 needs a viscous fluid (ViscosD > 0), a no-slip wall (bco = 1) and a rotating frame (Gaspard > 0)')
-    if par.magnetic or par.thermal or par.compositional or par.rotdyn or par.diff_rot or par.bgflow:
-        sys.exit('wobble = 1 is implemented for a homogeneous fluid without a field, buoyancy, rotating solids, a differential '
+    if par.thermal or par.compositional or par.rotdyn or par.diff_rot or par.bgflow:
+        sys.exit('wobble = 1 is implemented for a homogeneous fluid without buoyancy, rotating solids, a differential '
                  'rotation or a background flow')
+    if par.magnetic:   # NEW (2026-11-09): the torques of the field (wobble.field_rows)
+        import background_field as bf
+        for n, k in bf.tor_profiles().items():
+            kk = np.abs(k(np.linspace(0.0, 1.0, 201), 0))
+            if kk[-1] > 1e-10*max(kk.max(), 1e-300):
+                sys.exit("wobble = 1 needs a toroidal B0 that vanishes at the wall (e.g. B0_tor = 'wall'): the torque on its "
+                         "current sheet there is left out (degree %d: %.1e at the wall)" % (n, kk[-1]))
     if par.centrifugal and par.centrifugal_shape != 'spheroid':
         sys.exit("wobble = 1 with centrifugal = 1 needs centrifugal_shape 'spheroid' (the torques are those of its wall)")
     if par.structure != 'Boussinesq':
