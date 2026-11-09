@@ -743,17 +743,22 @@ def check_twa():
 def check_wobble():
     '''
     NEW (2026-11-09): stops on the settings that the wobble of the mantle (wobble = 1, wobble.py) does not cover. Its torques
-    are those of a homogeneous fluid on a no-slip wall that is the reference sphere of a linear map: a sphere or the exact
-    spheroid. Left out: an inner core, buoyancy (gravitational torques), the other shapes, the rotating solids, a
-    differential rotation, a background flow and the forcings. NEW (2026-11-09): with a field (magnetic = 1) a toroidal B0
+    are those of a homogeneous fluid on a wall that is the reference sphere of a linear map: a sphere or the exact
+    spheroid; the wall no-slip or (NEW 2026-11-09) stress-free, or the fluid inviscid (wobble.slip_weights), but for B0's
+    current sheet pushing a slipping fluid (sheet_push). Left out: an inner core, buoyancy (gravitational torques), the
+    other shapes, the rotating solids, a differential rotation, a background flow and the forcings. NEW (2026-11-09): with a field (magnetic = 1) a toroidal B0
     must vanish at the wall (the torque on its current sheet there is left out); the mantle may be an insulator, a thin
     conducting layer or a resolved conducting mantle (check_mantle, check_twa; NEW 2026-11-09: on the spheroid too).
     '''
     if not (par.hydro and par.m == 1 and par.symm == -1 and par.forcing == 0 and par.ricb == 0):
         sys.exit('wobble = 1 needs the flow (hydro = 1), m = 1, symm = -1, a full sphere (ricb = 0) and an eigenvalue problem '
                  '(forcing = 0)')
-    if not (par.ViscosD > 0 and par.bco == 1 and par.Gaspard > 0):
-        sys.exit('wobble = 1 needs a viscous fluid (ViscosD > 0), a no-slip wall (bco = 1) and a rotating frame (Gaspard > 0)')
+    if not ((par.ViscosD == 0 or par.bco in (0, 1)) and par.Gaspard > 0):   # (NEW 2026-11-09: a slipping fluid too)
+        sys.exit('wobble = 1 needs a no-slip or a stress-free wall (bco = 1 or 0) or an inviscid fluid, and a rotating frame '
+                 '(Gaspard > 0)')
+    if sheet_push('outer'):   # NEW (2026-11-09)
+        sys.exit("wobble = 1 leaves out the torque of B0's current sheet at the wall, which a slipping fluid feels "
+                 "(background.sheet_push): use a no-slip wall or a field that meets the wall")
     if par.thermal or par.compositional or par.rotdyn or par.diff_rot or par.bgflow:
         sys.exit('wobble = 1 is implemented for a homogeneous fluid without buoyancy, rotating solids, a differential '
                  'rotation or a background flow')

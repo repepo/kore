@@ -10,6 +10,11 @@ Condon-Shortley phase, times e^{iφ}), with f, f′, f″, f‴ its radial funct
   _PRESSURE[(kind, l)][name]   (P2, P4, P6, T1, T3, T5; the higher degrees give nothing) the coefficient of Y₂¹ (Schmidt norm 4π/5) in the horizontal divergence on the sphere r = 1 of
                                ∇²w ('lap'), ∂z²w ('dzz'), ẑ (ẑ⋅∇²w) ('zlapz') and ẑ ∂z²w_z ('zdzzz');
   _VISCOUS[(kind, l)][name]    ∮ sin²θ (r̂ × ∂w/∂r)₋ dΩ ('sin2') and ∮ cos²θ (...)₋ dΩ ('cos2'), V₋ = V_x - i V_y.
+NEW (2026-11-09), a fluid slipping along the wall (coefficients of f, f′):
+  _PRESSURE_SLIP[(kind, l)]    the coefficient of Y₂¹ in the horizontal divergence on r = 1 of w ('w'), ẑ w_z ('zwz') and
+                               ẑ × w ('zxw');
+  _VISCOUS_SLIP[(kind, l)]     ∮ (-r̂ × w)₋ dΩ ('lapw') and ∮ cos θ (r̂ × (∂z w - cos θ ∂w/∂r) - ẑ × w)₋ dΩ ('dzzw'). A
+                               (kind, l) left out of a table gives zero there (checked for P2 to P6, T1 to T5).
 '''
 import os, re
 import numpy as np
@@ -78,6 +83,28 @@ for (kind, l) in tables['_PRESSURE']:
     for name, q in (('sin2', st**2), ('cos2', ct**2)):
         v = sphere_int(at_wall(q*Gm), 3)
         err = np.max(abs(v - np.array(tables['_VISCOUS'][(kind, l)][name], dtype=complex)))
+        worst = max(worst, err)
+        print('  %s%d %-6s %s   (table off by %.1e)' % (kind, l, name, np.round(v, 10), err), flush=True)
+def cross(u, v):
+    return (u[1]*v[2] - u[2]*v[1], u[2]*v[0] - u[0]*v[2], u[0]*v[1] - u[1]*v[0])
+
+zh, rh = (0, 0, 1), (st*cph, st*sph, ct)
+for (kind, l) in tables['_PRESSURE']:   # NEW (2026-11-09): the slip tables
+    w = to_cart(field(kind, l))
+    for name, Vc in (('w', w), ('zwz', [0, 0, w[2]]), ('zxw', cross(zh, w))):
+        Vr, Vt, Vp = to_sph(Vc)
+        div = sp.diff(st*Vt, th)/(r*st) + sp.diff(Vp, ph)/(r*st)
+        v = sphere_int(at_wall(div*sp.conjugate(Y(2))), 2)/(4*np.pi/5)
+        ref = tables['_PRESSURE_SLIP'].get((kind, l), {}).get(name, [0, 0])
+        err = np.max(abs(v - np.array(ref, dtype=complex)))
+        worst = max(worst, err)
+        print('  %s%d %-6s %s   (table off by %.1e)' % (kind, l, name, np.round(v, 10), err), flush=True)
+    dzw = [dz(g) - ct*sp.diff(g, r) for g in w]
+    for name, Bc in (('lapw', [-c for c in cross(rh, w)]),
+                     ('dzzw', [ct*(p - q) for p, q in zip(cross(rh, dzw), cross(zh, w))])):
+        v = sphere_int(at_wall(Bc[0] - sp.I*Bc[1]), 2)
+        ref = tables['_VISCOUS_SLIP'].get((kind, l), {}).get(name, [0, 0])
+        err = np.max(abs(v - np.array(ref, dtype=complex)))
         worst = max(worst, err)
         print('  %s%d %-6s %s   (table off by %.1e)' % (kind, l, name, np.round(v, 10), err), flush=True)
 print('derive.py: ' + ('ok' if worst < 1e-10 else 'FAIL') + ' (largest difference %.1e)' % worst)

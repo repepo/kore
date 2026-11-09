@@ -527,9 +527,9 @@ class default_params():
         # the fluid (bin/wobble.py; Triana, Rekier, Trinh & Dehant 2019): the m = 1 coupling of the free core nutation, the
         # Chandler wobble and the inertial modes. The flow is solved in the frame of the mantle, with the Poincaré force; one
         # more unknown, Mc, the mantle's equatorial rotation (its rigid rotation is T_1 = r Mc/2). m = 1, symm = -1, full
-        # sphere, no-slip wall, a homogeneous fluid, in a sphere (centrifugal = 0) or in the exact spheroid (centrifugal = 1,
-        # centrifugal_shape 'spheroid'), whose flattened wall gives the pressure torque (background.check_wobble stops
-        # otherwise). With a field (magnetic = 1) also the torques of the field on the mantle: the Lorentz part of the wall
+        # sphere, a no-slip wall or (NEW 2026-11-09) a stress-free one or an inviscid fluid, a homogeneous fluid, in a
+        # sphere (centrifugal = 0) or in the exact spheroid (centrifugal = 1, centrifugal_shape 'spheroid'), whose
+        # flattened wall gives the pressure torque (background.check_wobble stops otherwise). With a field (magnetic = 1) also the torques of the field on the mantle: the Lorentz part of the wall
         # pressure and the Maxwell stress through the wall, with an insulating or a conducting mantle ('TWA', 'resolved').
         self.wobble = 0
         # the mantle's moment of inertia about an equatorial axis, A_M, in units of rho r0^5 (r0 the mean radius of the wall,

@@ -66,10 +66,21 @@ pure numpy, checked against the divergence theorem in tests/wobble/derive_field.
 The mantle's row gains Γ_P'(Lorentz) + Γ_B, and the budget of the fluid the torque of the field on it, -Γ_B: it then checks
 the Lorentz part of the pressure (from the force at the wall) against the Maxwell stress (from the fields at the wall).
 
+NEW (2026-11-09): A FLUID THAT SLIPS ALONG THE WALL (a stress-free wall, bco = 0, or an inviscid fluid, ViscosD = 0; slips()).
+The flow along the wall, w_H ≠ 0, adds to the horizontal balance there its inertia and its Coriolis force, in the covariant
+form of the exact spheroid (Fᵀ∂ₜu = M ∂ₜw, M = D², and Fᵀ(2G ẑ×u) = (2G/c) ẑ×w at det D = 1):
+    ∇_H p = [ν V + F - λ M w - (2G/c) ẑ×w - ∂ₜ(D⁻¹M) × α]_H,
+so that p₂ gains (λ/6)(a² [w] + (c² - a²) [zwz]) + (G/(3c)) [zxw], the degree-2 parts of the horizontal divergence of w, ẑ w_z
+and ẑ×w on the wall (_PRESSURE_SLIP, coefficients of f, f′; the part in λ goes to the row of Mc in B, inertia_rows). The
+viscous torque, ∫ α×Lw dV by Green's identity without w = 0 on the wall (∇²α = 0, ∂z²α = 0):
+    ∫ α×∇²w dV = ∮ (r̂×∂w/∂r - r̂×w) dΩ,     ∫ α×∂z²w dV = ∮ x (r̂×∂z w - ẑ×w) dΩ,
+whose terms beyond the no-slip ones (∂z w = x ∂w/∂r there) are _VISCOUS_SLIP: the traction's normal part has a torque on the
+spheroid, and in a stress-free sphere the terms cancel (T₁′ = T₁ at the wall: no torque). slip_weights gathers them.
+
 LEFT OUT (background.check_wobble stops): an inner core (full sphere only), a toroidal B0 that does not vanish at the wall
-(its current sheet), buoyancy (a moving mass adds gravitational torques), the other shapes of centrifugal = 1 (whose wall is
-not the sphere of a linear map), stress-free walls, forcings; a conducting mantle on the spheroid (kore's thin and resolved
-layers are spherical).
+(its current sheet), with a slipping fluid also a sheet of the poloidal B0 that pushes it (background.sheet_push), buoyancy
+(a moving mass adds gravitational torques), the other shapes of centrifugal = 1 (whose wall is not the sphere of a linear
+map), forcings.
 '''
 import numpy as np
 from parameters import par
@@ -114,6 +125,23 @@ _VISCOUS = {
     ('T', 5): {'sin2': [0, 0, 0], 'cos2': [0, 0, 0]},
 }
 
+# NEW (2026-11-09): a fluid that slips along the wall (bco = 0, or ViscosD = 0; slips()). The degree-2 parts on the wall of the
+# horizontal divergence of w ('w'), ẑ w_z ('zwz') and ẑ × w ('zxw'), as coefficients of (f, f′) at r = 1, for the inertia and
+# the Coriolis force in the reduced pressure; and the terms in w of the viscous torque's boundary integrals (zero on a no-slip
+# wall), ∮(-r̂ × w)₋ dΩ ('lapw', of ∇²) and ∮ x (r̂ × (∂z w - x ∂r w) - ẑ × w)₋ dΩ ('dzzw', of ∂z²), coefficients of (f, f′).
+# From tests/wobble/derive.py.
+_PRESSURE_SLIP = {
+    ('P', 2): {'w': [-6, -6], 'zwz': [-25/7, -19/7], 'zxw': [7j, 1j]},
+    ('P', 4): {'w': [0, 0], 'zwz': [100*_S30/63, 20*_S30/63], 'zxw': [0, 0]},
+    ('T', 1): {'w': [0, 0], 'zwz': [1j*np.sqrt(3), 0], 'zxw': [-np.sqrt(3), 0]},
+    ('T', 3): {'w': [0, 0], 'zwz': [-4j*np.sqrt(2)/7, 0], 'zxw': [-16*np.sqrt(2)/7, 0]},
+}
+_VISCOUS_SLIP = {
+    ('P', 2): {'lapw': [0, 0], 'dzzw': [-8j*np.sqrt(6)*_PI/3, 8j*np.sqrt(6)*_PI/15]},
+    ('T', 1): {'lapw': [8*np.sqrt(2)*_PI/3, 0], 'dzzw': [16*np.sqrt(2)*_PI/15, 0]},
+    ('T', 3): {'lapw': [0, 0], 'dzzw': [-256*np.sqrt(3)*_PI/105, 0]},
+}
+
 
 def axes():
     '''(a, c) of the wall: the exact spheroid's (centrifugal.spheroid_axes), or (1, 1) for a spherical body'''
@@ -156,6 +184,37 @@ def viscous_weights():
     return out
 
 
+def slips():
+    '''NEW (2026-11-09): whether the fluid slips along the wall: a stress-free wall (bco = 0) or an inviscid fluid'''
+    return bool(par.bco == 0 or par.ViscosD == 0)
+
+
+def slip_weights():
+    '''
+    NEW (2026-11-09): {(kind, l): (cA, cB)}, the torques on the mantle of a flow that slips along the wall (slips()), conv.,
+    as coefficients of (f, f′) at r = 1: cA, the Coriolis force's part of Γ_P', pressure_factor() (G/(3c)) [zxw], plus the
+    terms in w of Γ_ν, -(ν/a)([lapw]/a² + β [dzzw]); cB, the factor of λ, the inertia's part of Γ_P', pressure_factor()
+    (1/6)(a² [w] + (c² - a²) [zwz]) (the header of this file). Empty on a no-slip wall, where these vanish.
+    '''
+    if not slips():
+        return {}
+    a, c = axes()
+    beta = 1/c**2 - 1/a**2
+    pf, G = pressure_factor(), par.Gaspard
+    out = {}
+    for key in set(_PRESSURE_SLIP) | set(_VISCOUS_SLIP):
+        cA, cB = np.zeros(2, dtype=complex), np.zeros(2, dtype=complex)
+        if key in _PRESSURE_SLIP:
+            t = {k: np.array(v, dtype=complex) for k, v in _PRESSURE_SLIP[key].items()}
+            cA += pf*(G/(3*c))*t['zxw']
+            cB += pf*(a*a*t['w'] + (c*c - a*a)*t['zwz'])/6
+        if key in _VISCOUS_SLIP:
+            t = {k: np.array(v, dtype=complex) for k, v in _VISCOUS_SLIP[key].items()}
+            cA += -(par.ViscosD/a)*(t['lapw']/a**2 + beta*t['dzzw'])/_N1
+        out[key] = (cA, cB)
+    return out
+
+
 def centrifugal_coefficient():
     '''Γ_cent (conv.) = centrifugal_coefficient() Mc'''
     a, c = axes()
@@ -181,6 +240,7 @@ def torque_rows():
     linear form on the Chebyshev coefficients of P₂ to P₆ and T₁ to T₅ (only the degrees within lmax)'''
     lp, lt, _ = ut.ell(par.m, par.lmax, par.symm)
     pw, vw, pf = pressure_weights(), viscous_weights(), pressure_factor()
+    sw = slip_weights()
     out = []
     for (kind, l) in _PRESSURE:
         if l not in (lp if kind == 'P' else lt):
@@ -191,7 +251,22 @@ def torque_rows():
             coef += pf*wk*Tb[:, k]
         for k, wk in enumerate(vw[(kind, l)]):
             coef += wk*Tb[:, k]
+        if (kind, l) in sw:   # NEW (2026-11-09): a slipping fluid's Coriolis force and viscous wall terms
+            coef += Tb[:, :2] @ sw[(kind, l)][0]
         out.append((col + np.arange(ut.N1), coef))
+    return out
+
+
+def inertia_rows():
+    '''NEW (2026-11-09): [(column array, coefficient array)]: the factor of λ in the torque of a slipping fluid (slip_weights,
+    cB), the inertia of its flow along the wall in the reduced pressure, on the Chebyshev coefficients of P₂, P₄, T₁, T₃'''
+    lp, lt, _ = ut.ell(par.m, par.lmax, par.symm)
+    out = []
+    for (kind, l), (_, cB) in slip_weights().items():
+        if l not in (lp if kind == 'P' else lt) or not np.any(cB):
+            continue
+        col, Tb = _column(kind, l)
+        out.append((col + np.arange(ut.N1), Tb[:, :2] @ cB))
     return out
 
 
@@ -413,8 +488,10 @@ def b_rows(rank0, inertia_v1):
     col = np.asarray(-(inertia_v1 @ cT)).ravel()
     row0 = ut.offset['v'] + int(ut.N1*(1 - ut.m_bot)/2)
     nz = np.nonzero(col)[0]
-    return [np.concatenate([[-par.MoIX_M], col[nz]]), np.concatenate([[iW], row0 + nz]),
-            np.concatenate([[iW], np.full(nz.size, iW)])]
+    data, rows, cols = [[-par.MoIX_M], col[nz]], [[iW], row0 + nz], [[iW], np.full(nz.size, iW)]
+    for c, v in inertia_rows():   # NEW (2026-11-09): λ times the inertia's torque of a slipping fluid, on the row of Mc
+        data.append(v); rows.append(np.full(c.size, iW)); cols.append(c)
+    return [np.concatenate(data), np.concatenate(rows), np.concatenate(cols)]
 
 
 # ------------------------------------------------------------------------------------------------- post-processing
@@ -444,6 +521,15 @@ def budget(flow, Mc, lam, field=None):
         jets = Tb.T @ coefs
         gp += pf*np.dot(pw[(kind, l)], jets[:4])
         gv += np.dot(vw[(kind, l)], jets[:3])
+    for (kind, l), (cA, cB) in slip_weights().items():   # NEW (2026-11-09): a slipping fluid (Coriolis and inertia in Γ_P',
+        if l not in (lp if kind == 'P' else lt):         # the wall terms of Γ_ν: those of cA that are not pressure)
+            continue
+        col, Tb = _column(kind, l)
+        jets = Tb.T[:2] @ x[col:col + ut.N1]
+        cP = pf*(par.Gaspard/(3*axes()[1]))*np.array(_PRESSURE_SLIP[(kind, l)]['zxw'], dtype=complex) \
+            if (kind, l) in _PRESSURE_SLIP else np.zeros(2, dtype=complex)
+        gp += np.dot(cP, jets) + lam*np.dot(cB, jets)
+        gv += np.dot(cA - cP, jets)
     gc = centrifugal_coefficient()*Mc
     a, c = axes()
     col, _ = _column('T', 1)
@@ -484,7 +570,7 @@ def energies(flow, Mc, lam, field=None):
       KE_srf  that of the flow in the steadily rotating frame (the frame turning at Gaspard about the axis fixed in space):
               the flow plus the rigid rotation Ms of the mantle relative to it, Ms = Mc λ/(λ - i G) (T₁ + r Ms/2);
       KM_srf  the kinetic energy of the mantle in that frame, A_M |Ms|²/4 (its rigid rotation's on the same scale);
-      Dkin    the viscous dissipation ν ∫|∇×u|² (no-slip wall);
+      Dkin    ν ∫|∇×u|², the viscous dissipation on a no-slip wall (not with a slipping fluid);
       DP      the power of the Poincaré force on the flow, |λ Mc* L|/4 (L the angular momentum of the flow, conv.).
     With the torques of budget (field: the field's unknowns with magnetic = 1, NEW 2026-11-09).
     '''
