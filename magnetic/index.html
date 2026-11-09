@@ -2529,15 +2529,15 @@ With <code>thermal = 1</code> the same switch gives the free decay of the entrop
 <code>spin_doctor</code> prints resid𝐛 and resid𝐄, for any walls, and none of the flow's columns.</p>
 <p><strong>Kinematic induction.</strong> <code>bin/just_induction.py</code> and <code>bin/solve_ind.py</code> give the field that a given flow induces in B0,
 without the force of that field on the flow. Assemble a magnetic eigenvalue problem (<code>submatrices.py</code>, <code>assemble.py</code>),
-put the flow in <code>real_flow.field</code> and <code>imag_flow.field</code> (written by a run with the same <code>N</code>, <code>lmax</code>, <code>m</code>, <code>symm</code> and
-<code>ricb</code>, a forced run of the flow alone for instance), then run</p>
+put the flow in <code>flow.npy</code> or its text files (<a href="../output/#solution-files">Output files</a>), written by a run with the
+same <code>N</code>, <code>lmax</code>, <code>m</code>, <code>symm</code> and <code>ricb</code> (a forced run of the flow alone, for instance), then run</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>./bin/just_induction.py<span class="w"> </span><span class="o">[</span>lambda<span class="o">]</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>mpiexec<span class="w"> </span>-n<span class="w"> </span><span class="m">4</span><span class="w"> </span>./bin/solve_ind.py
 </span></code></pre></div>
 <p>The flow varies as <span class="arithmatex">\(e^{\lambda t}\)</span>: <code>lambda</code> is the optional argument, a complex number such as the eigenvalue of a mode,
 and its default is <span class="arithmatex">\(i\,\)</span><code>forcing_frequency</code>, the time dependence of the forced runs (a steady flow when it is 0). The
-field is written as <code>real_magnetic.field</code>, <code>imag_magnetic.field</code> (and the files of a conducting inner core or of a
-resolved mantle), one column per column of the flow.</p>
+field is written as <code>magnetic.npy</code> (and the files of a conducting inner core or of a resolved mantle), one column per
+column of the flow.</p>
 <h2 id="forced-runs">Forced runs</h2>
 <p>A forced run gives the response of the flow and the field to a forcing at one frequency, such as a tide, a libration of
 the walls or their steady rotation (<code>forcing</code> other than 0; <a href="../tidal-forcing/">Tidal forcing</a>, <a href="../libration/">Libration</a>,
@@ -2691,9 +2691,8 @@ walls, a thin conducting layer, a resolved conducting mantle or a conducting inn
 <h2 id="output">Output</h2>
 <p>A magnetic run writes the perturbation field next to the flow, and spin_doctor checks each mode with the magnetic energy
 budgets.</p>
-<p><code>solve.py</code> writes <code>real_magnetic.field</code> and <code>imag_magnetic.field</code> (and <code>real_magnetic_ic.field</code>,
-<code>imag_magnetic_ic.field</code> for a conducting inner core, <code>real_magnetic_mantle.field</code>, <code>imag_magnetic_mantle.field</code> for a
-resolved mantle; <code>'conducting, Bessel'</code> writes no inner-core field). Each eigenvector is normalised so that the kinetic
+<p><code>solve.py</code> writes <code>magnetic.npy</code> (and <code>magnetic_ic.npy</code> for a conducting inner core, <code>magnetic_mantle.npy</code> for a
+resolved mantle; <code>'conducting, Bessel'</code> writes no inner-core field; <a href="../output/#solution-files">Output files</a>). Each eigenvector is normalised so that the kinetic
 energy plus <code>Hendrik</code> times the magnetic energy is 1 in the fluid (the magnetic energy alone without the flow,
 <code>hydro = 0</code>); a forced solution is written as solved.</p>
 <p><code>spin_doctor</code> adds the Lorentz work to residσ and residω, and prints two more residuals: resid𝐛, the energy budget of

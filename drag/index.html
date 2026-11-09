@@ -847,6 +847,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Drag of the topography: topo_drag = &#39;rekier&#39;">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-frequency-of-the-drag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The frequency of the drag
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1415,6 +1432,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Drag of the topography: topo_drag = &#39;rekier&#39;">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-frequency-of-the-drag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The frequency of the drag
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1570,12 +1604,23 @@ the wavelength where the spectrum rolls off, and its Hurst exponent. The Earth's
   the stratification is unstable. <code>topo_N</code> sets it instead.</li>
 <li><strong>The frequency of the flow.</strong> The drag depends on the frequency of the flow relative to the mantle, which an
   eigenvalue problem does not know in advance: kore takes the frequency of the solver's target (<code>itau</code>), or the forcing
-  frequency in a forced run, unless <code>topo_omega</code> sets it. For a mode found away from the target, set <code>itau</code> to its
-  frequency and solve again, until the two agree. The run stops if this frequency is 0.</li>
+  frequency in a forced run, unless <code>topo_omega</code> sets it. For a mode, solve again until the two agree
+  (<a href="#the-frequency-of-the-drag">below</a>). The run stops if this frequency is 0.</li>
 <li><strong>Coupled degrees.</strong> The drag varies with latitude, so the wall couples each degree of the flow to the others of the
   same symmetry, and for <code>m</code> other than 0 the poloidal flow to the toroidal one. Check the convergence in <code>lmax</code> as
   usual.</li>
 </ul>
+<h3 id="the-frequency-of-the-drag">The frequency of the drag</h3>
+<p>A mode's drag is that of its own frequency, which the run finds only at the end. <code>tools/topo_iterate.sh</code> solves again
+until the frequency that the drag used and the mode's agree: each pass assembles the drag at the solver's target,
+solves, and moves the target to the eigenvalue nearest it, through the file <code>track_target</code>
+(<a href="../output/#following-a-mode">Following a mode</a>). The drag changes slowly with the frequency, so a few passes are enough.
+It needs <code>track_target = 1</code> and <code>topo_omega = None</code>, and a first guess in the file. From kore's top folder:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">"-0.02 0.99"</span><span class="w"> </span>&gt;<span class="w"> </span>track_target<span class="w">    </span><span class="c1"># the guess, Re λ and Im λ</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>tools/topo_iterate.sh<span class="w"> </span>1e-10<span class="w">         </span><span class="c1"># ends when λ changes by less than 1e-10 (relative); at most 20 passes</span>
+</span></code></pre></div>
+<p><code>submatrices.py</code> runs once. Each pass appends its rows to the <code>.dat</code> files, so that their last rows are those of the
+converged mode. The drag holds one frequency, so the iteration follows one mode at a time.</p>
 <p>The formulas: <a href="../drag-equations/">Drag at the outer wall equations</a>.</p>
 <h2 id="weak-and-strong-drag">Weak and strong drag</h2>
 <p>kore applies the drag at a stress-free wall, where the fluid slips. As long as <code>kappa_cmb</code> is small against the square

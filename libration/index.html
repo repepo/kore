@@ -1526,7 +1526,7 @@ where most of the fluid stays at rest and only the layers at the walls and the i
 0.420 in the frame of the mantle, which turns back and forth past that fluid. The problem is linear: the flow is
 proportional to <span class="arithmatex">\(A\)</span>, and every power to <span class="arithmatex">\(A^2\)</span>.</p>
 <h2 id="reading-the-output">Reading the output</h2>
-<p>The flow is in <code>real_flow.field</code> and <code>imag_flow.field</code>, relative to the frame of the run: the mean frame for forcing 7,
+<p>The flow is in <code>flow.npy</code>, relative to the frame of the run: the mean frame for forcing 7,
 the mantle for forcing 8. For <code>m = 0</code> the angular velocity of the fluid relative to that frame is</p>
 <div class="arithmatex">\[
 \omega = \frac{u_\phi}{r\sin\theta} = \frac{2}{r}\thinspace\mathrm{Re}\sum_l T_l(r)\thinspace P_l'(\cos\theta)\thinspace e^{iwt} ,

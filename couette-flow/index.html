@@ -1495,7 +1495,7 @@ core near the axis, and faster towards the tangent cylinder. As Ek tends to 0 th
 regions, and it narrows as Ek decreases. Near the axis kore gives 0.484 at Ek <span class="arithmatex">\(10^{-4}\)</span> and 0.498 at Ek <span class="arithmatex">\(10^{-5}\)</span>
 (N 160, <code>lmax</code> 383), where the formula gives 0.5.</p>
 <h2 id="reading-the-output">Reading the output</h2>
-<p>The flow is in <code>real_flow.field</code>; the imaginary part is 0, since the flow is steady. For <code>m = 0</code> the angular velocity
+<p>The flow is in <code>flow.npy</code> (<a href="../output/#solution-files">Output files</a>); its imaginary part is 0, since the flow is steady. For <code>m = 0</code> the angular velocity
 is</p>
 <div class="arithmatex">\[
 \omega = \frac{u_\phi}{r\sin\theta} = \frac{2}{r}\sum_l T_l(r)\thinspace P_l'(\cos\theta) ,

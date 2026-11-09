@@ -2540,7 +2540,7 @@ change or extend the code.</p>
   rows. <code>conductive_IC</code> keeps <span class="arithmatex">\(C^{(2)}\)</span> and <span class="arithmatex">\(C^{(1)}\)</span> and so converts these terms with the wrong matrices; its torsional
   test is barely affected (<a href="#full-sphere-inviscid-runs-and-degree-2-poloidal-fields">Checks</a>).</li>
 <li>
-<p><strong>Solver.</strong> <code>solve.py</code> writes <code>real_magnetic.field</code>, <code>imag_magnetic.field</code> and normalises the eigenvectors (over the
+<p><strong>Solver.</strong> <code>solve.py</code> writes <code>magnetic.npy</code> and normalises the eigenvectors (over the
   shell, as <code>conductive_IC</code>) to</p>
 <div class="arithmatex">\[
 \mathrm{KE} + \mathrm{Hendrik}\int\tfrac12\lvert\mathbf b\rvert^2dV = 1 ,
@@ -2607,7 +2607,7 @@ optional domain arguments).</p>
   <span class="arithmatex">\(S_l\)</span> of a thin layer (<code>assemble.bc_b_cic</code> through <code>bc_b_slip</code>). The radial induction of the slip is in the fluid's own
   equation, and the poloidal matching needs nothing more. A toroidal <span class="arithmatex">\(\mathbf B_0\)</span> adds nothing: <span class="arithmatex">\(\mathbf u\times\mathbf B_0\)</span>
   is then normal to the wall.</li>
-<li><strong>Output.</strong> <code>real_magnetic_ic.field</code>, <code>imag_magnetic_ic.field</code>. The eigenvectors are normalised with the fluid's
+<li><strong>Output.</strong> <code>magnetic_ic.npy</code>. The eigenvectors are normalised with the fluid's
   energies only (the inner-core field is scaled along), as in <code>conductive_IC</code>.</li>
 </ul>
 <h3 id="thin-conducting-layer">Thin conducting layer</h3>
@@ -2716,7 +2716,7 @@ stops the run if <code>N_mantle</code> polynomials do not resolve <span class="a
   <span class="arithmatex">\(\sigma(1)\,[(rg)' - r\,S_l/\mathrm{MagnetD}] = (rg_m)'\)</span>, with the <span class="arithmatex">\(S_l\)</span> of a thin layer (<code>assemble.bc_b_slip</code>, with
   <span class="arithmatex">\(\sigma(1)\)</span> for <span class="arithmatex">\(c_1\)</span>). The radial induction of the slip is in the fluid's own equation, and the poloidal matching needs
   nothing more.</li>
-<li><strong>Output.</strong> <code>real_magnetic_mantle.field</code>, <code>imag_magnetic_mantle.field</code> (<code>fm</code> then <code>gm</code>), scaled with the fluid's
+<li><strong>Output.</strong> <code>magnetic_mantle.npy</code> (<code>fm</code> then <code>gm</code>), scaled with the fluid's
   field.</li>
 </ul>
 <p>As <span class="arithmatex">\(r_s \to 1\)</span> with <span class="arithmatex">\(\sigma\,(r_s - 1)\)</span> fixed the layer tends to a thin layer (<code>'TWA'</code>) with <span class="arithmatex">\(c = r_s - 1\)</span> and <span class="arithmatex">\(c_1 = \sigma(r_s - 1)\)</span>, at

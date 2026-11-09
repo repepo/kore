@@ -1459,8 +1459,7 @@ not unique. A non-zero <code>forcing_frequency</code> <span class="arithmatex">\
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>mpiexec<span class="w"> </span>-n<span class="w"> </span><span class="m">2</span><span class="w"> </span>./bin/assemble.py
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>mpiexec<span class="w"> </span>-n<span class="w"> </span><span class="m">2</span><span class="w"> </span>./bin/solve.py
 </span></code></pre></div>
-<p>It takes a few seconds. The solution is in <code>real_flow.field</code>, <code>imag_flow.field</code>, <code>real_thermal.field</code> and
-<code>imag_thermal.field</code> (<a href="../output/">Output files</a>).</p>
+<p>It takes a few seconds. The solution is in <code>flow.npy</code> and <code>thermal.npy</code> (<a href="../output/#solution-files">Output files</a>).</p>
 <p><img alt="Hadley cell of the example" src="../assets/thermal-forcing.png" /></p>
 <p>The figure shows the northern hemisphere. The fluid rises over the warm equator, moves poleward aloft, sinks at high
 latitudes and returns to the equator along the ground: one cell per hemisphere. The Coriolis force turns the

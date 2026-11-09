@@ -1547,9 +1547,15 @@ seconds to minutes.</p>
 <td>after a change of <code>solve.py</code></td>
 <td>15 s</td>
 </tr>
+<tr>
+<td><code>tests/tools/run_all.sh</code></td>
+<td>the solution files in their two formats, the parameter file, the tracking of a mode, the tools that run and collect series of runs (<code>ramp.sh</code>, <code>setpar.py</code>, <code>topo_iterate.sh</code>, <code>reap.sh</code>, <code>get_data.py</code>), with their stops, and the plotting tools that read the solutions</td>
+<td>after a change of the files a run writes or reads, of <code>spin_doctor</code>'s tables, or of the tools</td>
+<td>2 min on one rank</td>
+</tr>
 </tbody>
 </table>
-<p><code>tests/diff_rot</code>, <code>tests/heat_dr</code>, <code>tests/magnetic</code>, <code>tests/centrifugal</code>, <code>tests/rsf</code>, <code>tests/tidal</code>, <code>tests/forcing</code>, <code>tests/couette</code>, <code>tests/cic_forcings</code>, <code>tests/decay</code>, <code>tests/twa</code>, <code>tests/mantle</code>, <code>tests/forced_field</code>, <code>tests/inner_core</code>, <code>tests/sheet</code>, <code>tests/rotdyn</code>, <code>tests/drag</code>, <code>tests/composition</code> and <code>tests/bgflow</code> each have a README
+<p><code>tests/diff_rot</code>, <code>tests/heat_dr</code>, <code>tests/magnetic</code>, <code>tests/centrifugal</code>, <code>tests/rsf</code>, <code>tests/tidal</code>, <code>tests/forcing</code>, <code>tests/couette</code>, <code>tests/cic_forcings</code>, <code>tests/decay</code>, <code>tests/twa</code>, <code>tests/mantle</code>, <code>tests/forced_field</code>, <code>tests/inner_core</code>, <code>tests/sheet</code>, <code>tests/rotdyn</code>, <code>tests/drag</code>, <code>tests/composition</code>, <code>tests/bgflow</code> and <code>tests/tools</code> each have a README
 that lists their scripts and what each one checks; the CI test explains itself in <code>tests/ci/test_spinover.py</code>.</p>
 <h2 id="are-existing-runs-unchanged">Are existing runs unchanged?</h2>
 <p><code>tests/diff_rot/regress.sh</code> builds the same small runs twice, once with an older copy of kore and once with yours, and

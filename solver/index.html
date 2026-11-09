@@ -1466,6 +1466,10 @@ round-off with round-off (<a href="../couette-flow/#reading-the-output">Spherica
 <td>put the target on it (<code>units.set_target(par, omega=..., sigma=...)</code>, in nHz) and raise <code>nev</code>; to look for growing modes, put the target at σ &gt; 0</td>
 </tr>
 <tr>
+<td>along a series of runs, the mode drifts away from a fixed target, or the solver jumps to another</td>
+<td>let each run aim at the eigenvalue the run before found: <code>track_target = 1</code> (<a href="../output/#following-a-mode">Following a mode</a>)</td>
+</tr>
+<tr>
 <td>in a full sphere without viscosity or with <code>ThermaD</code> = 0, modes that move when N or lmax is raised, some of them growing, many with irreg₀ near 1</td>
 <td>spurious modes (<a href="../numerical-method/#regularity-at-the-centre">Regularity at the centre</a>): target the mode you want and keep the modes that stay put in N and lmax</td>
 </tr>
@@ -1475,7 +1479,7 @@ round-off with round-off (<a href="../couette-flow/#reading-the-output">Spherica
 </tr>
 <tr>
 <td>a forced run returns NaN</td>
-<td>the same failure, but PETSc does not stop a forced solve: it returns Inf. Set <code>mat_mumps_icntl_14</code> = 100; <code>mat_mumps_icntl_4</code> = 1 prints MUMPS's error codes</td>
+<td>the same failure, but PETSc does not stop a forced solve: it returns Inf (<code>solve.py</code> then says so and writes the file <code>no_conv_solution</code>). Set <code>mat_mumps_icntl_14</code> = 100, or turn on BLR (below), which needs less memory; <code>mat_mumps_icntl_4</code> = 1 prints MUMPS's error codes</td>
 </tr>
 <tr>
 <td>the run stops with <code>INFOG(1)=-13</code>, or is killed</td>
@@ -1511,7 +1515,9 @@ how this grows with the degree).</p>
    about 1e-3 nHz. Part of the drop is done after the Ruiz prescaling, and only when that is on.</li>
 <li><strong>Block low-rank factors (BLR)</strong>: <code>st_mat_mumps_icntl_35</code> = 2, with the tolerance <code>st_mat_mumps_cntl_7</code> = 1e-14 (set
    by default): about 13 % less memory and up to twice as fast. Check the residuals: a tolerance of 1e-12 broke the
-   eigenvectors at N ≥ 640, and with <code>ThermaD</code> = 0 BLR and Ruiz together degraded them.</li>
+   eigenvectors at N ≥ 640, and with <code>ThermaD</code> = 0 BLR and Ruiz together degraded them. A forced run takes them as
+   <code>mat_mumps_icntl_35</code> and <code>mat_mumps_cntl_7</code>: a forced run at N 992 and Ek = 1e-9 (with <code>mat_mumps_cntl_1</code> = 1e-8
+   as well) then took half the time and 165 GB instead of 200 GB, where without them it returned NaN.</li>
 <li><strong>Out of core</strong>: <code>st_mat_mumps_icntl_22</code> = 1 writes the factors to disk, for about half the memory and a slower run.
    Put them on a real disk with <code>st_mat_mumps_ooc_tmpdir</code>, not on a <code>/tmp</code> held in memory. A full-sphere run at
    N 1024 needed about 90 GB on 8 ranks this way.</li>

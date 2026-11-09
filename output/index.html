@@ -949,6 +949,56 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#solution-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solution files
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-parameter-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The parameter file
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#many-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Many runs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Many runs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#following-a-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Following a mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1450,6 +1500,56 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#solution-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Solution files
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-parameter-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The parameter file
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#many-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Many runs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Many runs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#following-a-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Following a mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1501,9 +1601,14 @@ table.</p>
 <td>the eigenvalues of the last solve, one per row: <span class="arithmatex">\(\mathrm{Re}\thinspace\lambda\)</span>, <span class="arithmatex">\(\mathrm{Im}\thinspace\lambda\)</span></td>
 </tr>
 <tr>
-<td><code>real_flow.field</code>, <code>imag_flow.field</code></td>
+<td><code>flow.npy</code></td>
 <td><code>solve.py</code></td>
-<td>the eigenvectors of the flow (or the forced flows), real and imaginary parts of their spectral coefficients, one column per solution; with <code>thermal = 1</code> also <code>real_thermal.field</code>, <code>imag_thermal.field</code> for <span class="arithmatex">\(s\)</span>; with <code>compositional = 1</code> also <code>real_composition.field</code>, <code>imag_composition.field</code> for <span class="arithmatex">\(c\)</span>; with <code>magnetic = 1</code> also <code>real_magnetic.field</code>, <code>imag_magnetic.field</code> for <span class="arithmatex">\(\mathbf b\)</span>, <code>real_magnetic_ic.field</code>, <code>imag_magnetic_ic.field</code> for the inner core <code>'conducting, Chebys'</code>, and <code>real_magnetic_mantle.field</code>, <code>imag_magnetic_mantle.field</code> for a resolved mantle; with <code>rotdyn = 1</code> also <code>real_rotdyn.field</code>, <code>imag_rotdyn.field</code> for the rotation rates of the mantle and of the inner core and the angle between them (<a href="../rotating-solids/">Rotating solids</a>). Without the flow (<code>hydro = 0</code>) the flow's files are not written</td>
+<td>the eigenvectors of the flow (or the forced flows), their spectral coefficients, one column per solution (<a href="#solution-files">below</a>); with <code>thermal = 1</code> also <code>thermal.npy</code> for <span class="arithmatex">\(s\)</span>; with <code>compositional = 1</code> <code>composition.npy</code> for <span class="arithmatex">\(c\)</span>; with <code>magnetic = 1</code> <code>magnetic.npy</code> for <span class="arithmatex">\(\mathbf b\)</span>, <code>magnetic_ic.npy</code> for the inner core <code>'conducting, Chebys'</code> and <code>magnetic_mantle.npy</code> for a resolved mantle; with <code>rotdyn = 1</code> <code>rotdyn.npy</code> for the rotation rates of the mantle and of the inner core and the angle between them (<a href="../rotating-solids/">Rotating solids</a>). With <code>field_format = 'text'</code> each is two text files instead, <code>real_flow.field</code> and <code>imag_flow.field</code>, ... Without the flow (<code>hydro = 0</code>) the flow's file is not written</td>
+</tr>
+<tr>
+<td><code>no_conv_solution</code></td>
+<td><code>solve.py</code></td>
+<td>written when no eigenvalue converged, or when a forced solution holds NaN (<a href="../solver/#bad-solutions">Solver</a>); <code>tools/ramp.sh</code> stops on it</td>
 </tr>
 <tr>
 <td><code>rsf_spectrum.dat</code>, <code>rsf_ke.dat</code></td>
@@ -1519,6 +1624,11 @@ table.</p>
 <td><code>eigenvalues.dat</code></td>
 <td><code>spin_doctor.py</code></td>
 <td>the eigenvalues, appended</td>
+</tr>
+<tr>
+<td><code>track_target</code></td>
+<td><code>spin_doctor.py</code>, with <code>track_target</code> 1 or 2</td>
+<td>the eigenvalue that the next run aims at, <span class="arithmatex">\(\mathrm{Re}\thinspace\lambda\)</span> and <span class="arithmatex">\(\mathrm{Im}\thinspace\lambda\)</span> (<a href="#following-a-mode">below</a>)</td>
 </tr>
 <tr>
 <td><code>params.dat</code></td>
@@ -1549,6 +1659,11 @@ table.</p>
 <td><code>rotdyn.dat</code></td>
 <td><code>spin_doctor.py</code>, with <code>rotdyn = 1</code></td>
 <td>the rotation of the solids and the torques on them, for each solution (below)</td>
+</tr>
+<tr>
+<td><code>parameters.json</code></td>
+<td><code>parameters.py</code>, when it calls <code>par.export_json</code></td>
+<td>every parameter of the run (<a href="#the-parameter-file">below</a>)</td>
 </tr>
 </tbody>
 </table>
@@ -1952,6 +2067,82 @@ the definitions are on <a href="../magnetic-equations/#energy-budgets">Magnetic 
   142–154 or 155–156 were added has fewer columns: start a new file. The same holds for <code>flow.dat</code> before its columns
   29–39, 40–41, 42–43, 44–45 or 46–48, and for <code>thermal.dat</code> and <code>composition.dat</code> before their column 8.</li>
 </ul>
+<h2 id="solution-files">Solution files</h2>
+<p>The solution files hold what <code>solve.py</code> found, for <code>spin_doctor.py</code>, the tools and koreviz to read: the spectral
+coefficients of each field, one column per solution (<a href="../numerical-method/">Numerical method</a>). By default each field is
+one binary numpy file of complex numbers, <code>flow.npy</code>, <code>thermal.npy</code>, ..., small and quick to write and to read. With
+<code>field_format = 'text'</code> each field is two text files, <code>real_flow.field</code> and <code>imag_flow.field</code> with the real and the
+imaginary parts, as kore wrote before; at N ≈ 1000 with 10 solutions they take about 1 GB, and writing or reading them
+tens of seconds. The two formats hold the same numbers to the last bit, and a run keeps one: writing a field deletes the
+files of the other format.</p>
+<p><code>spin_doctor.py</code>, <code>bgflow.py</code>, <code>just_induction.py</code>, the tools and koreviz read either format. In python,
+<code>field_io.load('flow', folder='path/to/run')</code> (with kore's <code>bin</code> on the path; <code>bin/field_io.py</code> reads no parameters)
+returns the solutions as a complex array, one column per solution, <code>field_io.load('flow', 2)</code> solution 2 alone, and
+<code>None</code> when the field has no file. A <code>.npy</code> file is also read by <code>np.load('flow.npy')</code>.</p>
+<h2 id="the-parameter-file">The parameter file</h2>
+<p>A run's parameters come from <code>parameters.py</code>: the defaults of <code>bin/params_default.py</code>, the values that <code>set_scales</code>
+derives, and the file's own. <code>par.export_json('parameters.json')</code> at the end of <code>parameters.py</code> writes all of them to
+one file, exactly: numbers to the last bit, and numpy numbers and arrays, complex numbers, tuples and dictionaries with
+their types. To run the case again, here or in another folder, put in place of the parameters</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">params_default</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_params</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">par</span> <span class="o">=</span> <span class="n">default_params</span><span class="p">()</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">par</span><span class="o">.</span><span class="n">load_json</span><span class="p">(</span><span class="s1">'parameters.json'</span><span class="p">)</span>
+</span></code></pre></div>
+<p>The file holds every value, so <code>set_scales</code> is not called again. Names that kore does not define come back too, and
+<code>submatrices.py</code> warns about them as it does in <code>parameters.py</code>. Under MPI only rank 0 writes the file.</p>
+<h2 id="many-runs">Many runs</h2>
+<p>A parameter study runs one case many times with one parameter changed. The scripts of <code>tools/</code> run such a series in one
+folder, one step after the other (<code>ramp.sh</code>), or in one folder per run on a PBS-managed cluster, and collect the results
+into one table.</p>
+<table>
+<thead>
+<tr>
+<th>script</th>
+<th>what it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tools/ramp.sh name value1 value2 ...</code></td>
+<td>runs the case of <code>bin/parameters.py</code> once per value of <code>par.name</code> (any python expression, e.g. <code>tools/ramp.sh ViscosD 1e-4 7e-5 5e-5</code>), from kore's top folder; without arguments, once as it is. <code>spin_doctor.py</code> appends each step's rows to the <code>.dat</code> files. The ramp stops when a step finds no solution (<code>no_conv_solution</code>). The environment variables <code>ncpus</code> (the processes of <code>submatrices.py</code> and <code>spin_doctor.py</code>, default <code>par.ncpus</code>), <code>ranks</code> (the MPI ranks of <code>assemble.py</code> and <code>solve.py</code>, default <code>ncpus</code>), <code>opts</code> (more solver options, <a href="../solver/">Solver</a>) and <code>MPIEXEC</code> (default <code>mpiexec</code>) can be set</td>
+</tr>
+<tr>
+<td><code>tools/setpar.py name value [file]</code></td>
+<td>writes <code>par.name = value</code> into <code>bin/parameters.py</code> in place of each assignment of <code>par.name</code> (its comment kept), or as a new last line, after <code>set_scales</code> and the other values, so that it holds; <code>ramp.sh</code> and <code>dodirs.sh</code> use it</td>
+</tr>
+<tr>
+<td><code>tools/dodirs.sh prefix name mode start step end</code></td>
+<td>creates one folder per value of <code>par.name</code> in <code>~/data</code>, named <code>prefix&lt;value&gt;</code>, each with a copy of <code>~/kore</code> (edit the paths first). With <code>mode</code> <code>e</code> the values are powers of ten (<span class="arithmatex">\(10^{start}\)</span>, ...), with <code>d</code> they are linear. Example: <code>tools/dodirs.sh run_visc_ ViscosD e -4 -0.1 -5</code></td>
+</tr>
+<tr>
+<td><code>tools/dosubs.sh</code> (the same arguments)</td>
+<td>submits the job of each folder, <code>tools/subramp.sh</code>, which runs <code>tools/ramp.sh</code> there (edit its PBS header and python environment first)</td>
+</tr>
+<tr>
+<td><code>tools/reap.sh prefix</code></td>
+<td>collects the <code>.dat</code> files of the folders <code>prefix*</code> into <code>prefix.par</code> (<code>params.dat</code>), <code>.flo</code>, <code>.thm</code>, <code>.cmp</code>, <code>.mag</code>, <code>.rot</code> and <code>.eig</code>, those that exist, with the rows of each folder together</td>
+</tr>
+<tr>
+<td><code>tools/get_data.py [prefix]</code></td>
+<td>reads them, or without <code>prefix</code> the <code>.dat</code> files of the current folder, into one pandas table whose columns have the names of the tables of <code>spin_doctor.py</code>, and writes it to <code>prefix.csv</code> (<code>results.csv</code>); in python, <code>get_data.load_results(prefix)</code> and <code>get_data.load_result(folder)</code> return the table</td>
+</tr>
+<tr>
+<td><code>tools/getresults.py [prefix]</code></td>
+<td><code>%run -i tools/getresults.py prefix</code> in IPython: the same table as <code>df</code>, and its most used columns as arrays</td>
+</tr>
+</tbody>
+</table>
+<p>Ramp a parameter that the run reads, such as <code>ViscosD</code>: <code>Ek</code>, <code>Etherm</code>, <code>Ecomp</code> and <code>Le</code> are read only by
+<code>set_scales</code>, which <code>parameters.py</code> calls before its own values (<code>setpar.py</code> warns).</p>
+<h3 id="following-a-mode">Following a mode</h3>
+<p>Along a ramp the eigenvalues move, and a fixed target can lose the mode of interest or jump to another. With
+<code>track_target = 1</code> each run aims at the eigenvalue in the file <code>track_target</code> (in place of <code>rtau</code>, <code>itau</code>), and
+<code>spin_doctor.py</code> writes to the file the eigenvalue of that run nearest to it: the next run aims there. Small steps keep
+the same mode. Before the first run, write the starting eigenvalue to the file (<code>echo "-0.1 1.0" &gt; track_target</code>: its
+real and imaginary parts), or let a run with <code>track_target = 2</code> write the eigenvalue of its solution with the smallest
+ratio of poloidal to toroidal kinetic energy, such as the spin-over mode. Tracking needs an eigenvalue problem
+(<code>forcing = 0</code>), and 2 needs the flow (<code>hydro = 1</code>). <code>tools/topo_iterate.sh</code> uses it for the frequency of a drag at the
+outer wall (<a href="../drag/#the-frequency-of-the-drag">Drag at the outer wall</a>).</p>
 
 
 
