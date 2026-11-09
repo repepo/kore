@@ -36,7 +36,8 @@ import angular
 
 # diff_rot_type as written to params.dat (spin_doctor): its index in this tuple. Append new types at the end.
 TYPES = ('Y20', 'Y20-wall-bounded', 'shellular', 'shellular_boussinesq', 'cylindrical', 'conical', 'solar', 'rigid',
-         'solar_P4', 'tabulated', 'user', 'ferraro')
+         'solar_P4', 'tabulated', 'user', 'ferraro', 'outer_zonal_flow', 'inner_zonal_flow',
+         'double_jets_thin_shell')
 DIGITS = '0123456789abcdefghijklmnopqrstuvwxyz'   # the degree character of the profile codes
 
 
@@ -152,6 +153,119 @@ def _ferraro_shapes():
         return f
     return {n: fn(n) for n in range(0, nmax + 1, 2)}, F_on_grid
 
+_cyl = {}
+def cylindrical_shapes(N, U, window=None, F=None, K=None, nquad=2000):
+    '''{0: f_0, 2: f_2, ..., 2N - 2: f_(2N-2)}: the shapes of a differential rotation ΔΩ = U_N(s) F_K(z)/s, s = r sinθ,
+    z = r cosθ (kore's r), times an optional window(r), for an entry of shapes(): cylindrical without F, a product of a
+    function of s and one of z with F. NEW (2026-11-05)
+
+    N is the number of even Legendre degrees (N = 9: P0 .. P16), U(s) the target velocity on 0 <= s <= 1 (a numpy function
+    of an array, extended oddly to s < 0), window(r) an optional radial factor applied to every f_n, e.g. to make ΔΩ vanish at
+    no-slip walls (it then breaks the cylindrical or product form near them), F(z) an optional factor of the velocity,
+    U(s) F(z), even in z (kore's ΔΩ has only even degrees: an odd F stops the run). Method (polynomial first):
+      1. U_N(s) = s Σ_j q_j T_j(2s² - 1), j = 0 .. J - 1, the least-squares fit of U in ds on [0, 1] (Gauss-Legendre, nquad
+         nodes; no condition at s = 1). It is odd in s, so U_N/s is an even polynomial of degree J - 1 in s². With F,
+         F_K(z) = Σ_k p_k T_k(2z² - 1), k = 0 .. K - 1, the least-squares fit of F in dz on [0, 1], degree K - 1 in z².
+         The product of the two fits is the least-squares fit of U(s) F(z) in ds dz on the square [0, 1]², not on the shell.
+      2. Degrees: without F, J = N (K = 1); with F, J + K - 1 = N, K = (N + 1)//2 unless given (J ≈ K: N = 9 gives 5, 5),
+         since ΔΩ is then of degree (J - 1) + (K - 1) = N - 1 in (s², z²).
+      3. U_N F_K is normalised to max |U_N F_K| = 1, over s in [0, 1] without F and over the shell ricb <= r <= 1 with F:
+         diff_rot_ampl is then the peak velocity in units of Ω_ref r_out.
+      4. ΔΩ(r sinθ, r cosθ) = Σ_l f_2l(r) P_2l(cosθ) exactly (degree 2N - 2 in cosθ), f_2l(r) = (4l + 1)/2 ∫ ΔΩ P_2l dcosθ
+         by Gauss-Legendre with 2N nodes in cosθ, exact for these polynomials. The f_2l are even polynomials of degree
+         2N - 2 in r (regular at r = 0). Not through the monomials of s²: their coefficients reach ~1e9 at N = 9.
+    The only approximation is step 1 (printed: relative L² errors of the fits). A global polynomial cannot vanish inside the
+    tangent cylinder, so a band confined to s > η leaves interior oscillations that decrease with J; thin bands need large N.
+    With F, ∂ΔΩ/∂z ≠ 0: the background is baroclinic and thermal_wind 1, 2 give a nonzero S_tw.
+
+    Limits on N: the profile codes allow degrees up to 35 (codes()), so N <= 18; with the thermal wind S_tw goes up to degree
+    2N (thermal_wind = 1, N <= 17) or 4N - 2 (thermal_wind = 2, N <= 9), and check() stops above. The momentum rows couple
+    Δl up to 2N - 1 and the heat rows up to 4N - 2 (thermal_wind = 2): the cost grows about linearly with the degree
+    (docs/solver.md). Structure in z takes from the same N as structure in s.
+
+    Use: a branch of shapes() (and its name appended to TYPES), e.g.
+        if t == 'my_bands':
+            eta = 0.8
+            U = lambda s: 0.5*(1 + scsp.erf((s - eta)/0.02))*np.sin(2*np.pi*(1 - s)/(1 - eta))
+            w = lambda r: np.tanh((1 - r)/0.02)*np.tanh((r - par.ricb)/0.02)
+            return cylindrical_shapes(9, U, w)                                  # or, with a z dependence:
+            return cylindrical_shapes(13, U, w, F=lambda z: np.exp(-(z/0.5)**2))  # J = 7 in s², K = 7 in z²
+    '''
+    if not (isinstance(N, (int, np.integer)) and N >= 1):
+        sys.exit('cylindrical_shapes: N must be an integer >= 1, got %r' % (N,))
+    if F is None:
+        J, K = N, 1
+    else:
+        K = (N + 1)//2 if K is None else K
+        if not (isinstance(K, (int, np.integer)) and 1 <= K <= N):
+            sys.exit('cylindrical_shapes: K must be an integer in [1, N], got %r' % (K,))
+        J = N + 1 - K
+    if nquad not in _cyl:   # the nodes too: leggauss is O(nquad³)
+        xq, wq = np.polynomial.legendre.leggauss(nquad)
+        _cyl[nquad] = ((xq + 1)/2, wq/2)
+    s, ws = _cyl[nquad]                                  # also the z nodes
+    Us = np.broadcast_to(np.asarray(U(s), dtype=float), s.shape)
+    if not np.all(np.isfinite(Us)):
+        sys.exit('cylindrical_shapes: U(s) is not finite on [0, 1]')
+    Fz = b''
+    if F is not None:
+        Fz = np.broadcast_to(np.asarray(F(s), dtype=float), s.shape)
+        if not np.all(np.isfinite(Fz)):
+            sys.exit('cylindrical_shapes: F(z) is not finite on [0, 1]')
+        zt = np.linspace(0.05, 1, 20)
+        Fp, Fm = (np.broadcast_to(np.asarray(F(z), dtype=float), zt.shape) for z in (zt, -zt))
+        if np.abs(Fp - Fm).max() > 1e-10*max(np.abs(Fp).max(), 1e-300):
+            sys.exit('cylindrical_shapes: F(z) must be even in z (kore\'s ΔΩ has only even Legendre degrees)')
+        Fz = Fz.tobytes()
+    key = (int(J), int(K), nquad, Us.tobytes(), Fz)   # the fit depends on U, F only through these values (shapes() is called often)
+    if key not in _cyl:
+        cheb = np.polynomial.chebyshev
+        V = s[:, None]*cheb.chebvander(2*s**2 - 1, J - 1)
+        sw = np.sqrt(ws)
+        q = np.linalg.lstsq(sw[:, None]*V, sw*Us, rcond=None)[0]
+        err = np.linalg.norm(sw*(Us - V @ q))/max(np.linalg.norm(sw*Us), 1e-300)
+        if F is None:
+            p = None
+            sg = np.linspace(0, 1, 20001)
+            peak = np.abs(sg*cheb.chebval(2*sg**2 - 1, q)).max()
+        else:
+            Fv = np.frombuffer(Fz)
+            W = cheb.chebvander(2*s**2 - 1, K - 1)
+            p = np.linalg.lstsq(sw[:, None]*W, sw*Fv, rcond=None)[0]
+            errF = np.linalg.norm(sw*(Fv - W @ p))/max(np.linalg.norm(sw*Fv), 1e-300)
+            # the peak over the shell (z >= 0): an (s, z) grid inside it and its two spheres
+            sg = np.linspace(0, 1, 2001)
+            Pg = np.abs(np.outer(sg*cheb.chebval(2*sg**2 - 1, q), cheb.chebval(2*sg**2 - 1, p)))
+            R2 = sg[:, None]**2 + sg[None, :]**2
+            peak = Pg[(R2 <= 1) & (R2 >= par.ricb**2)].max()
+            tg = np.linspace(0, np.pi/2, 20001)
+            for rw in {par.ricb, 1.0} - {0}:
+                ss, zz = rw*np.sin(tg), rw*np.cos(tg)
+                peak = max(peak, np.abs(ss*cheb.chebval(2*ss**2 - 1, q)*cheb.chebval(2*zz**2 - 1, p)).max())
+        if peak == 0:
+            sys.exit('cylindrical_shapes: the fit of U is zero')
+        mu, wmu = np.polynomial.legendre.leggauss(2*N)
+        ls = np.arange(N)
+        M = ((4*ls + 1)/2)*wmu[:, None]*np.array([np.polynomial.legendre.Legendre.basis(2*l)(mu) for l in ls]).T
+        _cyl[key] = (q/peak, p, mu, M)
+        if F is None:
+            print('cylindrical_shapes: N = %d (P0 .. P%d), relative L2(ds) error of the fit of U: %.3e, U scaled by %.6e'
+                  % (N, 2*N - 2, err, 1/peak))
+        else:
+            print('cylindrical_shapes: N = %d (P0 .. P%d) = J %d in s² + K %d in z² - 1, relative L2 errors of the fits: '
+                  'U %.3e (ds), F %.3e (dz); U F scaled by %.6e' % (N, 2*N - 2, J, K, err, errF, 1/peak))
+    q, p, mu, M = _cyl[key]
+    def f(r, l):
+        '''f_2l(r) = (4l + 1)/2 ∫ ΔΩ(r sinθ, r cosθ) P_2l(cosθ) dcosθ, times window(r)'''
+        r = np.asarray(r, dtype=float)
+        r2 = r[..., None]**2
+        dO = np.polynomial.chebyshev.chebval(2*r2*(1 - mu**2) - 1, q)
+        if p is not None:
+            dO = dO*np.polynomial.chebyshev.chebval(2*r2*mu**2 - 1, p)
+        out = dO @ M[:, l]
+        return out*window(r) if window is not None else out
+    return {2*l: (lambda r, l=l: f(r, l)) for l in range(N)}
+
 def shapes():
     '''{n: f_n(r)}: the shape of each Legendre degree of ΔΩ for par.diff_rot_type, before the factor diff_rot_ampl'''
     t, p = par.diff_rot_type, par.diff_rot_param
@@ -188,6 +302,71 @@ def shapes():
         return {n: (lambda r, n=n: fits[n](solar_x(r))) for n in sorted(fits)}
     if t == 'ferraro':                 # NEW (2026-10-30): ΔΩ = F(ψ) from the poloidal B0 (_ferraro_shapes)
         return _ferraro_shapes()[0]
+    if t == 'outer_zonal_flow':        # NEW (2026-11-05): U = (1 + erf((s - η)/δ))/2 sin(2π(1 - s)/(1 - η)), η = ricb, δ = 0.02:
+        # a retrograde band on η < s < (1 + η)/2 and a prograde one out to s = 1, outside the tangent cylinder; U_N fitted with
+        # P0 .. P_diff_rot_nmax and normalised to max |U_N| = 1 (cylindrical_shapes), times tanh(d/δ) at no-slip walls (d: distance)
+        eta, d = par.ricb, 0.02
+        if eta <= 0:
+            sys.exit("diff_rot_type 'outer_zonal_flow' needs ricb > 0 (its tangent cylinder is s = ricb)")
+        if par.diff_rot_nmax < 0 or par.diff_rot_nmax % 2:
+            sys.exit('diff_rot_nmax must be even and >= 0')
+        U = lambda s: 0.5*(1 + scsp.erf((s - eta)/d))*np.sin(2*np.pi*(1 - s)/(1 - eta))
+        win = None
+        if par.bco == 1 or par.bci == 1:
+            win = lambda r: (np.tanh((1 - r)/d) if par.bco == 1 else 1)*(np.tanh((r - eta)/d) if par.bci == 1 else 1)
+        # if par.bco == 1 and par.bci == 1:
+        #     win = lambda r: 0.5 * (scsp.erf((r - eta) / d) - scsp.erf((r - 1) / d))
+        return cylindrical_shapes(par.diff_rot_nmax//2 + 1, U, win)
+    if t == 'inner_zonal_flow':        # NEW (2026-11-05): Ω = (erf((s - X δ)/δ) - erf((s - η)/δ))/2 sin(2π(1 - |z|)/(1 - η)),
+        # η = ricb, δ = 0.02, X = diff_rot_param: a band inside the tangent cylinder, X δ < s < η, with one sine period along the
+        # axis between the inner core (z = η) and the surface (z = 1), mirrored at the equator (|z|: ΔΩ is even in z); U = s Ω(s)
+        # and F(z) fitted separately (cylindrical_shapes, J ≈ K, N = diff_rot_nmax/2 + 1), the velocity normalised to max 1 on
+        # the shell, times tanh(d/δ) at no-slip walls. F converges slowly (1/(1 - η) periods on [0, 1], and the kink at z = 0,
+        # where the shell meets the band only at s = η): read the printed fit errors (at ricb 0.35 K = 9 leaves 11 %; at
+        # ricb 0.8, five periods, it cannot be resolved for N <= 18)
+        eta, d, X = par.ricb, 0.02, par.diff_rot_param
+        if eta <= 0:
+            sys.exit("diff_rot_type 'inner_zonal_flow' needs ricb > 0 (its tangent cylinder is s = ricb)")
+        if par.diff_rot_nmax < 0 or par.diff_rot_nmax % 2:
+            sys.exit('diff_rot_nmax must be even and >= 0')
+        U = lambda s: s*0.5*(scsp.erf((s - X*d)/d) - scsp.erf((s - eta)/d))
+        F = lambda z: np.sin(2*np.pi*(1 - np.abs(z))/(1 - eta))
+        win = None
+        if par.bco == 1 and par.bci == 1:
+            win = lambda r: 0.5 * (scsp.erf((r - eta) / d) - scsp.erf((r - 1) / d))
+        return cylindrical_shapes(par.diff_rot_nmax//2 + 1, U, win, F=F)
+    if t == 'double_jets_thin_shell':   # NEW (2026-11-09): U = A s (η² - s²)(1 - c s²), η = ricb: a prograde jet inside the tangent
+        # cylinder (peak at s1) and a retrograde one outside, of equal peaks |U| = 1. U'(s1) = 0 gives
+        # c = (η² - 3 s1²)/(s1² (3η² - 5 s1²)) and U(s1) = 2 s1 (η² - s1²)²/(3η² - 5 s1²) (without A), so A = 1/U(s1).
+        # For 1/φ <= η <= η_w = sqrt((5 + √5)/2)/φ² = 0.7265 (φ the golden ratio) the retrograde peak is interior, at s2 = φ² s1:
+        # s1 = η/sqrt((5 + √5)/2), c = 1/(φη)². Above η_w it is at the wall, |U(1)| = (1 - η²)(1 - c), and U(s1) = |U(1)| is
+        # P(s1) = 2 s1⁷ - 4η² s1⁵ + 5(1 - η²) s1⁴ + 2η⁴ s1³ - 3(1 - η⁴) s1² + η²(1 - η²) = 0, one root in (0, η sqrt(3/5)).
+        # At η = 0.9322528, c -> -∞ ((2/5)(3/5)^(3/2) η⁵ = 1 - η²): no c balances the jets beyond.
+        # ΔΩ = U/s = A [η² - (1 + c η²) s² + c s⁴], exactly P0 + P2 + P4 with s² = r² (2/3)(P0 - P2),
+        # s⁴ = r⁴ (8/15 P0 - 16/21 P2 + 8/35 P4). Times tanh(d/w) at no-slip walls, d the distance to the wall and w = (1 - η)/10,
+        # a tenth of the shell (the window takes the retrograde peak off the wall: the peaks are then unequal)
+        eta, phi = par.ricb, (1 + 5**0.5)/2
+        if not 1/phi <= eta < 0.932252:
+            sys.exit("diff_rot_type 'double_jets_thin_shell' needs %.4f <= ricb < 0.9323 (equal jets impossible outside), got %r"
+                     % (1/phi, eta))
+        e2 = eta**2
+        if eta <= ((5 + 5**0.5)/2)**0.5/phi**2:
+            s1, c = eta/((5 + 5**0.5)/2)**0.5, 1/(phi*eta)**2
+        else:
+            from scipy.optimize import brentq
+            s1 = brentq(lambda x: 2*x**7 - 4*e2*x**5 + 5*(1 - e2)*x**4 + 2*e2**2*x**3 - 3*(1 - e2**2)*x**2 + e2*(1 - e2),
+                        0, eta*0.6**0.5, xtol=1e-15, rtol=1e-15)
+            c = (e2 - 3*s1**2)/(s1**2*(3*e2 - 5*s1**2))
+        A, b = (3*e2 - 5*s1**2)/(2*s1*(e2 - s1**2)**2), 1 + c*e2
+        f = {0: lambda r: A*(e2 - (2/3)*b*r**2 + (8/15)*c*r**4),
+             2: lambda r: A*((2/3)*b*r**2 - (16/21)*c*r**4),
+             4: lambda r: A*(8/35)*c*r**4}
+        if par.bco != 1 and par.bci != 1:
+            return f
+        # w = (1 - eta)/10
+        w = 0.02
+        win = lambda r: (np.tanh((1 - r)/w) if par.bco == 1 else 1)*(np.tanh((r - eta)/w) if par.bci == 1 else 1)
+        return {n: (lambda r, fn=fn: fn(r)*win(r)) for n, fn in f.items()}
     if t == 'user':                    # numpy expressions of r, x, p for each even degree
         prof = par.diff_rot_profiles
         if not prof:

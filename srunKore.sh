@@ -1,131 +1,125 @@
 #!/bin/bash
 #
 # Script to run Kore simulations on a SLURM-managed cluster
-# with a variable parameter.
 #
-# Call : sbatch --array 0-<num> ./srunKore.sh somename var d startvalue step
-# 
-# Example calls: 
+# Calls:
+#   sbatch ./srunKore.sh run_name                         one run with the current bin/parameters.py
+#   sbatch --array 0-10 ./srunKore.sh name var d start step   a scan: var = start + i*step for task i
+#   sbatch --array 0-10 ./srunKore.sh name var e start step   a scan: var = 10**(start + i*step)
+# Examples:
 #   sbatch --array 0-10 ./srunKore.sh run_ricb_ ricb d 0.3 0.1
-#   sbatch --array 0-10 ./srunKore.sh run_Ek_ Ek e -5 -0.1
+#   sbatch --array 0-10 ./srunKore.sh run_Ek_ ViscosD e -5 -0.1
+# The resources below can be overridden on the command line, e.g. sbatch --ntasks 8 --mem 60G ./srunKore.sh run_name
 #
-# Where --array can be specified in the sbatch or change in the file
+# Resources:
+# - ntasks: the MPI ranks of assemble.py and solve.py, and the processes of submatrices.py's pool. It is written
+#   to par.ncpus, and lmax - m + 1 must be a multiple of 2*ntasks (assemble.py stops otherwise).
+# - mem: per node, for the whole job.
+# - time: the sum of the stages. 
 #
-# Also possible to make a simple run : sbatch ./srunKore.sh run_name, with the current parameter file
 #SBATCH --job-name=kore
-#SBATCH --time=00:10:00
-#SBATCH --ntasks=1
+#SBATCH --nodes=1
+#SBATCH --ntasks=4
 #SBATCH --cpus-per-task=1
-#SBATCH --mem-per-cpu=100
+#SBATCH --mem=8G
+#SBATCH --time=01:00:00
 
-#---------- Ressource allocation ----------------------------------------------------------------------
-export time_run=00:10:00
-export mem_per_cpu_run=2000
-# Number of OpenMP threads for submatrices and postprocess and MPI processes for assemble and solve
-export ncpus=4
-# Solve mode (Single mode (0) or map of modes (1))
-export solve_mode=0
-# For maps of modes
-export nModes=2
-#------------------------------------------------------------------------------------------------------  
+#---------- Solve options -----------------------------------------------------------------------------
+# Solver options are taken from petsc_opts in bin/params_default.py (override them in bin/parameters.py).
+# Anything put in opts is added on the command line and takes precedence, e.g.:
+#opts='-eps_balance twoside'
+opts=''
 
-#---------- Solve Options -----------------------------------------------------------------------------
-### For eigenvalue problems use:
-#export opts='-st_type sinvert -eps_error_relative ::ascii_info_detail'
-export opts='-st_type sinvert -eps_error_relative ::ascii_info_detail -st_pc_factor_mat_solver_type mumps -st_mat_mumps_icntl_14 3000 -st_mat_mumps_icntl_23 14000 -eps_balance twoside'
-#export opts='-st_type cayley -eps_error_relative ::ascii_info_detail'
+#------------------------------------------------------------------------------------------------------
 
-### For forced problems use:
-### use for simple test problems
-#export opts='-ksp_type preonly -pc_type lu'
-#export opts='-ksp_type preonly -pc_type lu -pc_factor_mat_solver_type superlu_dist -ksp_monitor -ksp_converged_reason'
-### use for standard problems with mumps (fast but requires more memory) amd an iterative solver (less memory but no guaranteed convergence)
-#export opts='-ksp_type gmres -pc_type lu -pc_factor_mat_solver_type mumps -ksp_monitor_true_residual -ksp_monitor -ksp_converged_reason'
-### use for standard problems with mumps (fast but requires more memory) and a direct solver (more memory)
-#export opts='-ksp_type preonly -pc_type lu -pc_factor_mat_solver_type mumps -ksp_monitor_true_residual -ksp_monitor -ksp_converged_reason'
-### use for standard problems with superlu dist (should always work)
-#export opts='-ksp_type preonly -pc_type lu -pc_factor_mat_solver_type superlu_dist -ksp_monitor -ksp_converged_reason -mat_superlu_dist_iterrefine 1 -mat_superlu_dist_colperm PARMETIS -mat_superlu_dist_parsymbfact 1'
-#------------------------------------------------------------------------------------------------------ 
-
-#---------- Parameters and run directories ------------------------------------------------------------
 # Load modules (foss release), python environment, PETSc/SLEPc variables and $KORE_HOME directory
 source ./tools/load_env.sh
 
-# Check number of arguments
+ncpus=$SLURM_NTASKS
+stage() { echo "$(date '+%F %T')  $*"; }
+
+#---------- Run directory and parameters --------------------------------------------------------------
 if [ $# -eq 1 ]; then
     folder='.'
-    # Create the run directory
-    # run_folder=$folder
-    # run_folder=$LOCALSCRATCH/$folder
-    run_folder=$GLOBALSCRATCH/runs/kore/$1/$folder
-    mkdir -p $run_folder
-    cd $run_folder
-    cp -r $KORE_HOME/* . # copies the source files
-    # Create the directory to store the results
-    result_folder=$GLOBALSCRATCH/results/kore/$1/$folder
-    mkdir -p $result_folder/
-    # Change parameters
-    sed -i 's,^\([A-Za-z0-9_.]*'ncpus'[ ]*=\).*,\1'$ncpus',' bin/parameters.py
-    srun sleep 0.2	
-
 elif [ $# -eq 5 ]; then
     var=$2
     exp=$3
     startvalue=$4
     step=$5
-
+    if [ -z "$SLURM_ARRAY_TASK_ID" ]; then
+        echo "A scan needs a job array: sbatch --array 0-<num> ./srunKore.sh $*"
+        exit 1
+    fi
     k=$(echo "$startvalue + ($SLURM_ARRAY_TASK_ID * $step)" | bc | awk '{printf "%f", $0}')
     if [ "$exp" = 'e' ]; then
         value='10**'$k # powers of ten
     else
         value=$k # linear
     fi
-
-    # Create the run directories
     folder=${var}_${value}
-    echo $folder $var=$value
-    #run_folder=$LOCALSCRATCH/$folder
-    run_folder=$GLOBALSCRATCH/runs/kore/$1/$folder
-    mkdir -p $run_folder
-    cd $run_folder
-    cp -r $KORE_HOME/* . # copies the source files
-
-    # Create the directories to store the results
-    result_folder=$GLOBALSCRATCH/results/kore/$1/$folder
-    mkdir -p $result_folder/ 
-
-    # Change parameters
-    sed -i 's,^\([A-Za-z0-9_.]*'$var'[ ]*=\).*,\1'$value',' bin/parameters.py
-    sed -i 's,^\([A-Za-z0-9_.]*'ncpus'[ ]*=\).*,\1'$ncpus',' bin/parameters.py   
-
-    srun sleep 0.2
 else
     echo "Wrong number of arguments. Either one or five arguments are required."
     exit 1
 fi
 
-#------------------------------------------------------------------------------------------------------  
-#---------- Run Kore ---------------------------------------------------------------------------------- 
+run_folder=$GLOBALSCRATCH/runs/kore/$1/$folder
+result_folder=$GLOBALSCRATCH/results/kore/$1/$folder
+mkdir -p $run_folder $result_folder
+cd $run_folder
+cp -r $KORE_HOME/* . # copies the source files
 
-# Submatrices
-ID1=$(sbatch --parsable --time=$time_run --ntasks=1 --cpus-per-task=$ncpus --mem-per-cpu=$mem_per_cpu_run ./tools/submit1.sh)
-# Assemble 
-ID2=$(sbatch --parsable --time=$time_run --ntasks=$ncpus --cpus-per-task=1 --mem-per-cpu=$mem_per_cpu_run --dependency=afterok:${ID1} ./tools/submit2.sh)
-
-# Single mode
-if [ "$solve_mode" -eq 0 ]; then
-    # Solve 
-    ID3=$(sbatch --parsable --time=$time_run --ntasks=$ncpus --cpus-per-task=1 --mem-per-cpu=$mem_per_cpu_run --dependency=afterok:${ID2} ./tools/submit3.sh $opts)
-    # Results and Postprocessing
-    ID4=$(sbatch --parsable --time=$time_run --ntasks=1 --cpus-per-task=$ncpus --mem-per-cpu=$mem_per_cpu_run --dependency=afterok:${ID3} ./tools/submit4.sh $result_folder)
-
-elif [ "$solve_mode" -eq 1 ]; then
-    # Map of modes
-    ID3=$(sbatch --parsable --dependency=afterok:${ID2} --array=1-$nModes ./tools/submit_modes.sh $ncpus $time_run $mem_per_cpu_run $run_folder $result_folder)
-
-else
-    echo "Wrong solve mode (Should be 0 or 1)."
-    exit 1
+# tools/setpar.py replaces the statement par.<name> = ... of bin/parameters.py (or adds one at the end)
+if [ $# -eq 5 ]; then
+    echo "$folder: $var = $value"
+    python3 tools/setpar.py $var "$value" || exit 1
 fi
-#------------------------------------------------------------------------------------------------------ 
-#------------------------------------------------------------------------------------------------------ 
+python3 tools/setpar.py ncpus $ncpus || exit 1
+
+#---------- Run Kore ----------------------------------------------------------------------------------
+# Each stage runs only if the ones before it succeeded; status is the number of the stage that failed (0: none)
+status=0
+
+# One BLAS thread per process: the pool of submatrices.py and the MPI ranks already use every CPU
+export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
+
+# submatrices.py: a pool of ncpus processes (python multiprocessing), run here in the batch step, which has
+# every CPU of the job on this node
+stage "submatrices.py"
+python3 ./bin/submatrices.py $ncpus > out1 2>&1 || status=1
+
+if [ $status -eq 0 ]; then
+    stage "assemble.py"
+    mpiexec -n $ncpus python3 ./bin/assemble.py > out2 2>&1 || status=2
+fi
+
+if [ $status -eq 0 ]; then
+    stage "solve.py"
+    mpiexec -n $ncpus python3 ./bin/solve.py $opts > out3 2>&1 || status=3
+fi
+
+if [ $status -eq 0 ] && [ -f no_conv_solution ]; then
+    echo "No converged solution"
+elif [ $status -eq 0 ]; then
+    stage "spin_doctor.py"
+    # spin_doctor.py is serial (its ncpus argument is no longer used): its only parallelism is numpy's BLAS threads
+    OMP_NUM_THREADS=$ncpus OPENBLAS_NUM_THREADS=$ncpus MKL_NUM_THREADS=$ncpus \
+        python3 ./bin/spin_doctor.py $ncpus > out4 2>&1 || status=4
+fi
+
+if [ $status -ne 0 ]; then
+    echo "stage $status failed: see $run_folder/out$status"
+fi
+
+#---------- Copy the results --------------------------------------------------------------------------
+# the parameters, the logs, the tables and the solutions: flow.npy, thermal.npy, ... (field_format 'npy', the
+# default) or *.field ('text')
+stage "copying the results to $result_folder"
+cp bin/parameters.py bin/params_default.py $result_folder/
+shopt -s nullglob
+cp out* *.dat *.npy *.field $result_folder/
+if [ -f no_conv_solution ]; then
+    cp no_conv_solution $result_folder/
+fi
+
+stage "done"
+exit $status

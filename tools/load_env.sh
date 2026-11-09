@@ -1,4 +1,4 @@
-# Setup the environment to use Kore - Polytropic branch
+# Setup the environment to use Kore
 
 # Load pyenv
 export PYENV_ROOT="$HOME/.pyenv"
