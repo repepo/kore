@@ -15,10 +15,21 @@ T=$(cd "$(dirname "$0")" && pwd)
 W=${1:-$T/runs}; mkdir -p "$W"
 fail=0
 # NEW (2026-11-09): the check runs in the background, so that an INT or TERM of this script reaches it at once (it then
-# stops its runs); bash would run the trap of a command in the foreground only once that command had ended
+# stops its runs); bash would run the trap of a command in the foreground only once that command had ended. FIX
+# (2026-11-09): the script waits until the check has ended (a trapped signal ends a wait at once), passing it a TERM
+# (it ignores an INT until its handler is set), then ends by the signal it received, as a caller expects; so too when
+# only the check got one (it then ends with 128 + the signal), as when this script was started in the background by
+# another one, which makes it ignore INT
 python3 "$T/sheet_check.py" "$W" & p=$!
-trap 'kill -TERM $p 2> /dev/null; exit 130' INT TERM
-wait $p || fail=1
+sig=
+trap 'sig=${sig:-INT}; kill -TERM $p 2> /dev/null' INT
+trap 'sig=${sig:-TERM}; kill -TERM $p 2> /dev/null' TERM
+trap 'sig=${sig:-HUP}; kill -TERM $p 2> /dev/null' HUP
+wait $p; rc=$?
+while kill -0 $p 2> /dev/null; do wait $p; rc=$?; done
+case $rc in 129|130|143) [ -z "$sig" ] && sig=$(kill -l $((rc - 128)));; esac
+[ -n "$sig" ] && { trap - INT TERM HUP; kill -$sig $$; exit $((128 + $(kill -l $sig))); }
+[ $rc = 0 ] || fail=1
 echo
 [ $fail = 0 ] && echo "tests/sheet: all checks passed" || echo "tests/sheet: FAILED"
 exit $fail

@@ -45,7 +45,7 @@ one form at both walls. Exit code 1 if a check fails.
    outer layer's condition (background_field.B0_alpha_cmb, a third copy), have no sheet there (c 0.05, muw 3, mu 1.5),
    while 'G21 dipole' with B0_cmb = 'plain' has one.
 '''
-import os, sys, shutil, subprocess, signal, threading
+import os, sys, shutil, subprocess, signal, threading, time
 from concurrent.futures import ThreadPoolExecutor, wait
 import numpy as np
 
@@ -79,16 +79,28 @@ def npar():
 POOL = ThreadPoolExecutor(npar())
 RUNS = {}   # name: (settings, future)
 
-# NEW (2026-11-09): an interrupt (INT, or TERM) passes a Ctrl-C to the steps that run, no step starts after it, and the
-# check ends, with 128 + the signal: the pool's threads would otherwise go on with their runs, and then with the runs
-# not yet started, before the process ends. Every process of the check is a step (step()): it starts, and joins LIVE,
-# only under LOCK and while STOP is empty, and the handler, under LOCK, fills STOP and interrupts the steps of LIVE, so
-# that none escapes it. The handler raises nothing, and takes no lock but LOCK (reentrant: the main thread, which runs
-# it, may hold it), with os.kill, not Popen.send_signal, which takes a lock of the process: an exception raised at any
-# point of the main thread can leave a lock of the pool, of a future or of a process taken, on which a thread then waits
-# forever. Each thread ends at its next look at STOP instead (halt_if_stopped()): the main thread waits in steps of
-# 0.2 s (step(), result()), and a thread of the pool ends its run at its next step.
+# NEW (2026-11-09): an interrupt (INT, TERM, or HUP) passes one Ctrl-C to each step that runs, no step starts after it,
+# and the check ends, with 128 + the signal: the pool's threads would otherwise go on with their runs, and then with the
+# runs not yet started, before the process ends. Every process of the check is a step (step()): its launch begins only
+# under LOCK and while STOP is empty, it joins LIVE under LOCK, and the handler, under LOCK, fills STOP and interrupts
+# the steps of LIVE; a step whose launch had begun when the signal came (the main thread may run the handler inside
+# Popen) is interrupted as soon as it has started. The handler raises nothing, and takes no lock but LOCK (reentrant:
+# the main thread, which runs it, may hold it), with os.kill, not Popen.send_signal, which takes a lock of the process:
+# an exception raised at any point of the main thread can leave a lock of the pool, of a future or of a process taken,
+# on which a thread then waits forever. Each thread ends at its next look at STOP instead (halt_if_stopped()): the main
+# thread waits in steps of 0.2 s (step(), result()), and a thread of the pool ends its run at its next step.
+# FIX (2026-11-09, review of the above): each step runs in a session of its own, so that a Ctrl-C or a hangup at the
+# terminal reaches it only through the handler, and gets one SIGINT, never two (HIT): a second one makes Open MPI's
+# mpiexec quit at once without stopping its ranks, and can leave the workers of submatrices.py's Pool running for good.
+# With odls_base_sigkill_timeout 0 mpiexec stops its ranks at once after the one. A step that has not ended GRACE s
+# after its SIGINT (MPI_GRACE for mpiexec) gets a SIGKILL to its process group: a Pool can hang in its own clean-up,
+# and its orphaned workers hold the step's output open; so does the group of an interrupted step once the step has
+# ended, for the workers it may have left. Any other end of the main thread (an error, a run that failed, the end of
+# the check) stops the runs too (_abort), instead of building every run still queued before the process ends.
+os.environ.setdefault('OMPI_MCA_odls_base_sigkill_timeout', '0')
 STOP, LIVE, LOCK = [], set(), threading.RLock()   # STOP: the signals received
+HIT, ABORT = {}, []   # HIT: the steps interrupted, with the time; ABORT: the main thread ended otherwise
+GRACE, MPI_GRACE = 0.5, 3.0
 
 def _interrupted(signum, frame):
     with LOCK:
@@ -96,45 +108,74 @@ def _interrupted(signum, frame):
         for p in LIVE:
             _ctrl_c(p)
 
-signal.signal(signal.SIGINT, _interrupted)
-signal.signal(signal.SIGTERM, _interrupted)
+for _s in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
+    signal.signal(_s, _interrupted)
 
 def _ctrl_c(p):
-    if p.returncode is None:   # (not yet waited for)
+    '''one SIGINT to the step p, the first time only (setdefault is one call, which the handler cannot split)'''
+    t = [time.monotonic()]
+    if HIT.setdefault(p, t) is t and p.returncode is None:   # (not yet waited for)
         try:
             os.kill(p.pid, signal.SIGINT)
         except ProcessLookupError:
             pass
 
+def _kill_group(p):
+    try:
+        os.killpg(p.pid, signal.SIGKILL)
+    except (ProcessLookupError, PermissionError):
+        pass
+
+def _abort():
+    '''when the main thread ends but by an interrupt (before the threads of the pool are joined): the runs stop at their
+    next step, the steps that run get their Ctrl-C, and the runs not yet started are dropped'''
+    with LOCK:
+        if STOP:
+            return
+        ABORT.append(True)
+        for p in LIVE:
+            _ctrl_c(p)
+    POOL.shutdown(wait=False, cancel_futures=True)
+
+if hasattr(threading, '_register_atexit'):   # (CPython: its hooks run in reverse order, so before concurrent.futures')
+    threading._register_atexit(_abort)
+
 def halt_if_stopped(d):
     '''after an interrupt, ends the thread: the main thread (the check) with 128 + the signal, another (its run in d)
-    as a run that failed'''
-    if STOP:
+    as a run that failed; so too once the main thread has ended (ABORT)'''
+    if STOP or ABORT:
         if threading.current_thread() is threading.main_thread():
             print('%s: interrupted' % os.path.basename(sys.argv[0]), file=sys.stderr, flush=True)
-            raise SystemExit(128 + STOP[0])
-        sys.exit('%s: interrupted' % d)
+            raise SystemExit(128 + STOP[0] if STOP else 1)
+        sys.exit('%s: %s' % (d, 'interrupted' if STOP else 'stopped'))
 
 def step(cmd, d, **kw):
-    '''subprocess.run(cmd, cwd=d, **kw) for every process of the check: none starts after an interrupt, which ends the
-    one that runs'''
+    '''subprocess.run(cmd, cwd=d, **kw) for every process of the check, in a session of its own: none starts after an
+    interrupt, which ends the one that runs'''
+    kw.setdefault('stdin', subprocess.DEVNULL)   # (outside the terminal's session a step must not read it)
+    grace = MPI_GRACE if os.path.basename(cmd[0]) in ('mpiexec', 'mpirun', 'orterun') else GRACE
     with LOCK:
         halt_if_stopped(d)
-        p = subprocess.Popen(cmd, cwd=d, **kw)
+        p = subprocess.Popen(cmd, cwd=d, start_new_session=True, **kw)
         LIVE.add(p)
-    hit = False
+        if STOP or ABORT:   # (the handler ran inside Popen, in the main thread)
+            _ctrl_c(p)
+    killed = False
     try:
         while True:
             try:
                 out, err = p.communicate(timeout=0.2)   # (a timeout loses no output)
                 break
-            except subprocess.TimeoutExpired:
-                if STOP and not hit:   # (started by the main thread while it ran the handler: not yet in LIVE then)
-                    _ctrl_c(p)
-                    hit = True
+            except subprocess.TimeoutExpired:   # (keyed on the output, not on p: its workers may hold it open)
+                t = HIT.get(p)
+                if t and not killed and time.monotonic() - t[0] > grace:
+                    _kill_group(p)
+                    killed = True
     finally:
         with LOCK:
             LIVE.discard(p)
+        if p in HIT:
+            _kill_group(p)
     halt_if_stopped(d)
     return subprocess.CompletedProcess(cmd, p.returncode, out, err)
 

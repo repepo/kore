@@ -1062,7 +1062,17 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
 
 ## 14. History (this branch, newest first)
 
-The drag at the outer wall on a deformed body (2026-11-09): `kappa_cmb` and `topo_drag = 'rekier'` with
+Interrupts of tests/sheet and tests/bgflow (2026-11-09): every process of `sheet_check.py` and `bgflow_check.py` runs
+through `step()`, in a session of its own with stdin from /dev/null; an INT, TERM or HUP gives each step that runs one
+SIGINT (two make Open MPI's mpiexec quit without stopping its ranks; `OMPI_MCA_odls_base_sigkill_timeout` 0 unless
+set), a SIGKILL to its process group 0.5 s later (3 s for mpiexec) if it has not ended and again once it has (the
+workers of submatrices.py's Pool), starts no step after it, and ends the check with 128 + the signal; any other end of
+the main thread (an error, the end of the check) stops the runs too (`_abort`, before concurrent.futures joins the
+pool); bgflow's `eigs` looks for an interrupt between its long steps; the two `run_all.sh` (INT, TERM, HUP) wait for
+the check to end and then end by the signal they received, or that the check alone received (its exit 129, 130, 143:
+a run_all.sh started in the background by a script ignores INT); an interrupt takes up to about 3 s (mpiexec's grace:
+on chandler, MPICH's hydra, the ranks ended at the SIGKILL);
+`6f6f2ba` the drag at the outer wall on a deformed body (2026-11-09): `kappa_cmb` and `topo_drag = 'rekier'` with
 `centrifugal = 1`, any shape (check_drag's stop removed): the drag acts on the slip along the body's wall through
 K_eff (`topo.wall_metric`, `wall_tensor`; §4), Dtopo and δσtopo in spin_doctor too; `tests/drag/deformed_check.py`
 (run_all.sh runs it beside drag_check.py), drag_check's stop case removed; docs: drag.md 'On a deformed body',
