@@ -29,6 +29,7 @@ To read the manual of another branch, run `mkdocs serve` in its folder (after `p
 * **Ankit Barik** - *Convection, visualization*
 * **Fleur Seuren** - *Buoyancy*
 * **Daoud Laariara** - *Differential rotation*
+* **Alexandre Nuyt** - *Mantle conductivity*
 * **Antony Trinh** - *Tensor calculus (TenGSHui)*
 
 ## License
