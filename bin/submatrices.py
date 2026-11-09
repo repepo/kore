@@ -576,6 +576,28 @@ def main(ncpus):
                 'r1d_D0_man': S1m * S0m * ut.Mlam(r1dm, 0, 0),          # r (ln sigma)'
                 'r2d_D1_man': S1m * ut.Mlam(S0m * r2dm, 1, 0) * D1m }   # r² (ln sigma)' d/dr
         z2m = ss.csr_matrix((2, Nm))
+        if cf.mantle_metric_on():
+            # NEW (2026-11-09): on the exact spheroid the metric diffusion of the mantle (centrifugal.py, section 8: its
+            # operators r^p X^(d), times (ln sigma)' for the profile 'dls', as label + '_man'), whose rows gm have third
+            # derivatives of F: those rows in the C^(3) basis, with the sphere's operators of gm rebuilt there (name + '3')
+            S2m = ut.Slam(2, Nm)
+            for name in list(ops):
+                ops[name + '3'] = S2m * ops[name]
+            labs = cf.mantle_labels()
+            gbm = {'f': 2, 'g': max([3] + [d for _, row, _, _, _, d in labs if row == 'g'])}
+            if max([d for _, row, _, _, _, d in labs if row == 'f'] + [0]) > 2 or gbm['g'] > 3:
+                sys.exit('submatrices: the metric diffusion of the mantle has derivatives beyond the bases of its rows')
+            prof = {None: lambda r: 1.0 + 0*r, 'dls': bg.dlnsigma_mantle}
+            for lab, row, X, rp, pf, d in labs:
+                c = chebco_m(lambda r, rp=rp, pf=pf: r**rp*prof[pf](r))
+                for k_ in range(d):
+                    c = ut.Slam(k_, Nm) * c
+                mat = ut.Mlam(c, d, 0)
+                if d > 0:
+                    mat = mat * ut.Dlam(d, Nm, R1, R2)
+                for k_ in range(d, gbm[row]):
+                    mat = ut.Slam(k_, Nm) * mat
+                ops[lab + '_man'] = mat
         for name, mat in ops.items():
             mat = ss.vstack( [ z2m, ss.csr_matrix(mat)[:-2,:] ], format='csr' )  # room for the bc rows at the top
             mat.eliminate_zeros()

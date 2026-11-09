@@ -206,6 +206,15 @@ def centrifugal_diffusion_ic(l, section, component, offdiag):  # --- NEW (2026-1
     return cf.diffusion_block_ic(l, section, component, offdiag, globals())
 
 
+def centrifugal_diffusion_m(l, section, component, offdiag):  # -- NEW (2026-11-09): diffusion of the resolved mantle on the spheroid
+    '''
+    The metric part of the magnetic diffusion inside the resolved mantle on the exact spheroid (section 'fm', 'gm';
+    component 'bpol_m', 'btor_m'; the A sign, the rows divided by η as the sphere's) (centrifugal.diffusion_block_m), times
+    MagnetD. Returns [matrix, offd] or [0, 0].
+    '''
+    return cf.diffusion_block_m(l, section, component, offdiag, globals())
+
+
 def viscous_diffusion(l, section, component, offdiag):  # ------------------------------------------------ viscous force
 
     out = 0
@@ -513,7 +522,8 @@ def b(l, section, component, offdiag):  # --------------------------------------
 
         elif section in ('fm', 'gm'):   # NEW (2026-11-06): the resolved mantle, sigma r² r̂⋅b (fm) and sigma r² r̂⋅∇×b (gm), the
                                         # rows divided by the layer's η = 1/sigma (submatrices.py)
-            out = L*r2s_D0_man
+            out = L*(r2s_D0_man3 if (section == 'gm' and cf.mantle_metric_on()) else r2s_D0_man)   # (NEW 2026-11-09: the
+            # rows gm in the C^(3) basis on the exact spheroid, '_man3')
 
     return out/L**3
 
@@ -628,7 +638,10 @@ def magnetic_diffusion(l, section, component, offdiag):  # ---------------------
 
         elif section == 'gm' and component == 'btor_m':   # r² ∇²_l g - (ln sigma)'(r² g' + r g)
 
-            out = L*( -L*r0_D0_man + 2*r1_D1_man + r2_D2_man - r2d_D1_man - r1d_D0_man )
+            if cf.mantle_metric_on():   # NEW (2026-11-09): in the C^(3) basis on the exact spheroid (submatrices.py, '_man3')
+                out = L*( -L*r0_D0_man3 + 2*r1_D1_man3 + r2_D2_man3 - r2d_D1_man3 - r1d_D0_man3 )
+            else:
+                out = L*( -L*r0_D0_man + 2*r1_D1_man + r2_D2_man - r2d_D1_man - r1d_D0_man )
 
     return par.MagnetD * out/L**3
 

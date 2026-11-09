@@ -11,7 +11,7 @@ tests/mantle/run_all.sh [WORKDIR]
 ```
 
 builds the test runs (in `tests/mantle/runs/` by default), runs every check and exits with 1 if one failed. It needs
-numpy, scipy, mpi4py, and petsc4py and slepc4py with MUMPS; `NCPUS` sets the number of ranks (default 2), `MPIEXEC`
+numpy, scipy, sympy, mpi4py, and petsc4py and slepc4py with MUMPS; `NCPUS` sets the number of ranks (default 2), `MPIEXEC`
 replaces `mpiexec`. The runs are built with `tests/tidal/mk_run.py` (an incompressible fluid in a shell, ricb 0.35,
 N 48).
 
@@ -41,3 +41,22 @@ N 48).
   (`Hendrik` $10^{-30}$), in the fluid and in the layer, from its flow and eigenvalue ($10^{-10}$).
 
 About 1.5 min on 2 ranks.
+
+**`derive_spheroid.py`** (NEW 2026-11-09; sympy and numpy, about a minute, no run). The thin layer on the exact spheroid
+(`mantle = 'TWA'` with `centrifugal_shape = 'spheroid'`, `centrifugal.spheroid_twa`): the Legendre series of the weight
+$V(x)$ of its sheet current ($10^{-14}$), and its rows on polynomial fields against the sheet built point by point from
+the covariant electric field, whose radial part is set so that no current crosses the layer (m 1 and 2, f ±0.1, the wall
+at 1 and 0.8; $10^{-11}$ of the largest row, in practice $3\times10^{-14}$). With `c1` = 0 the rows are those of the
+insulating spheroid.
+
+**`spheroid_mantle_check.py`** (NEW 2026-11-09; runs, `[WORKDIR] [NCPUS]`, about 1 min on 4 ranks). The conducting
+mantles on the exact spheroid:
+
+- **A larger spheroid.** A resolved mantle of the fluid's conductivity without the flow decays as a uniform spheroid of
+  the size `r_surface`: the rates of the insulated unit spheroid divided by `r_surface`², f = 0.1 and -0.1
+  ($10^{-9}$; in practice $3\times10^{-15}$).
+- **Thin layers.** Resolved layers of thickness h = 0.02, 0.01, 0.005 and conductance c1 = 0.05 (uniform, and falling
+  by $e^3$ across the layer) tend to the thin layer at first order in h, with and without the flow (ratios between 0.4
+  and 0.6; in practice 0.50 to 0.55).
+- **A small flattening.** At f = $10^{-7}$ the thin layer and a resolved mantle whose conductivity varies give the
+  sphere's eigenvalues ($10^{-6}$; in practice $10^{-7}$).

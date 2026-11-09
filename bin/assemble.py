@@ -968,9 +968,18 @@ def main():
                     if par.forcing != 0:   # NEW (2026-11-06, as conductive_IC): the forced problem, + i wf b
                         mtx = mtx + 1j*ut.wf*op.b(l, sec, comp, 0)
                     loc_list = ut.packit( loc_list, mtx, row, row)
+                    if cf.mantle_metric_on():   # NEW (2026-11-09): the metric part of its diffusion on the exact spheroid
+                        for bcomp, bsec, lls in [ ('bpol_m', 'fm', ll_mag[0]), ('btor_m', 'gm', ll_mag[1]) ]:
+                            loc_list = centrifugal_blocks(loc_list, op.centrifugal_diffusion_m, l, sec, bcomp, lls, row,
+                                                          ut.offset[bsec] + ( rank*bpp + k )* par.N_mantle,
+                                                          nblk=par.N_mantle, dls=range(-4, 5))
                     bc_b_list = bc_b_mantle(l, sec)
                     for q in [0,1,2]:
                         loc_list[q].append( bc_b_list[q] )
+                    if cf.mantle_metric_on():   # NEW (2026-11-09): and of its rows at r = 1 and r_surface
+                        bc_b_list = bc_b_mantle_centrifugal(l, sec, ll_mag)
+                        for q in [0,1,2]:
+                            loc_list[q].append( bc_b_list[q] )
                     if bg.deforms('outer'):   # NEW (2026-11-06): the induction by the mantle's own motion (forced_walls 'deforming')
                         bc_b_list = deform_rows(l, sec, row)
                         for q in [0,1,2]:
@@ -1926,17 +1935,20 @@ def bc_b_centrifugal(l, sec, ll_mag):
     rows (row 0 at the outer wall, row 1 at the inner one), entries on F, F' and G of the degrees l ± 1 to l ± 3 (f and g
     columns, each with its Chebyshev parity in a full sphere). A conducting inner core: its rows that match the field stay
     exact (bc_b_cic); FIX (2026-11-06, phase 2): the row of the electric field gains a metric part (bc_b_cic_centrifugal).
+    NEW (2026-11-09): on the exact spheroid a thin conducting layer at the outer wall (mantle = 'TWA') has the rows of
+    centrifugal.spheroid_twa there instead (entries on F, F', F'', G, G', over the degree of its weight V), and the resolved
+    mantle none (its rows at r = 1 match b̃, which stays exact; the metric parts of its own rows are bc_b_mantle_centrifugal's).
     '''
-    walls = [('outer', 0)] + ([('inner', 1)] if (par.ricb > 0 and not ut.cic) else [])
+    walls = ([] if ut.resolved_mantle else [('outer', 0)]) + ([('inner', 1)] if (par.ricb > 0 and not ut.cic) else [])
     lfirst = lambda s: ut.m_bot if (s == 'f') == (ut.symmB0 == -1) else ut.m_top   # as in bc_b_spherical
     lls = {'f': ll_mag[0], 'g': ll_mag[1]}
     ixf = ( par.m + ut.s )%2 if ut.symmB0 == -1 else ( par.m + 1 - ut.s )%2
     data, rows, cols = [], [], []
     for wall, rr in walls:
-        B, W = cf.wall_rows(wall)
+        B, W = cf.twa_rows() if (wall == 'outer' and cf.twa_metric_on()) else cf.wall_rows(wall)   # (NEW 2026-11-09: TWA)
         T = bv.Tb if wall == 'outer' else bv.Ta
         row = ut.offset[sec] + int( ut.N1*(l - lfirst(sec))/2 ) + rr
-        for csec, kinds in (('f', ('F0', 'F1')), ('g', ('G0',))):
+        for csec, kinds in (('f', ('F0', 'F1', 'F2')), ('g', ('G0', 'G1'))):
             Tc = T if par.ricb > 0 else T[(ixf if csec == 'f' else 1 - ixf)::2, :]
             for dl in range(-B, B + 1):
                 k = l + dl
@@ -1944,9 +1956,11 @@ def bc_b_centrifugal(l, sec, ll_mag):
                     continue
                 vec = 0
                 for kind in kinds:
+                    if (sec, kind) not in W:
+                        continue
                     c = cf._lookup(W[(sec, kind)], l, par.m, dl)
                     if c != 0:
-                        vec = vec + c*Tc[:, 1 if kind == 'F1' else 0]
+                        vec = vec + c*Tc[:, int(kind[1])]
                 if np.isscalar(vec):
                     continue
                 nz = np.nonzero(vec)[0]
@@ -2012,6 +2026,64 @@ def bc_b_mantle(l, sec):
         rad = bc_b_radial(l, 'g', 'outer', rowm, sig)
         out = [np.concatenate([out[q], rad[q]]) for q in range(3)]
     return out
+
+
+
+def bc_b_mantle_centrifugal(l, sec, ll_mag):
+    '''
+    NEW (2026-11-09): on the exact spheroid, the metric parts of the resolved mantle's rows of degree l in section sec ('fm' or
+    'gm'; centrifugal.mantle_rows): in gm, row 0 (the electric field at r = 1), sigma(1) R [S part of δ𝐄] of the fluid minus
+    R [S part of δ𝐄] of the mantle, with entries on F, F', F'' and G, G' there (as bc_b_cic_centrifugal); in fm and gm, row 1
+    (r_surface), the insulating spheroid's parts beyond r fm' + (l+1) fm and gm, on fm, fm' and gm there. The rows of f - fm,
+    (r f)' - (r fm)' and g - gm stay as they are (b̃ is continuous).
+    '''
+    Nm = par.N_mantle
+    lfirst = lambda s: ut.m_bot if ((s in ['f', 'fm']) == (ut.symmB0 == -1)) else ut.m_top   # as in bc_b_mantle
+    lls = {'F': ll_mag[0], 'G': ll_mag[1]}
+    ixf = ( par.m + ut.s )%2 if ut.symmB0 == -1 else ( par.m + 1 - ut.s )%2
+    Tf = {'F': bv.Tb if par.ricb > 0 else bv.Tb[ixf::2, :], 'G': bv.Tb if par.ricb > 0 else bv.Tb[1 - ixf::2, :]}
+    W = cf.mantle_rows()
+    sig = float(bg.sigma_mantle(ut.rcmb))
+    rowm = ut.offset[sec] + int( (l - lfirst(sec))/2 )*Nm
+    data, rows, cols = [], [], []
+    def put(vec, row, sec_, k, nb):
+        if np.isscalar(vec):
+            return
+        nz = np.nonzero(vec)[0]
+        data.append(vec[nz]); rows.append(np.full(nz.size, row)); cols.append(ut.offset[sec_] + int( (k - lfirst(sec_))/2 )*nb + nz)
+    if sec == 'gm':   # row 0: the electric field at r = 1
+        B, C = W['cmb']
+        for X, (so, sm) in (('F', ('f', 'fm')), ('G', ('g', 'gm'))):
+            for dl in range(-B, B + 1):
+                k = l + dl
+                if k not in lls[X]:
+                    continue
+                vo, vm = 0, 0
+                for d in range(3):
+                    if (X, d) in C:
+                        c = cf._lookup(C[(X, d)], l, par.m, dl)
+                        if c != 0:
+                            vo = vo + sig*c*Tf[X][:, d]
+                            vm = vm - c*bv.Tm_cmb[:, d]
+                put(vo, rowm, so, k, ut.N1)
+                put(vm, rowm, sm, k, Nm)
+    B, C = W['surface']   # row 1: the insulating spheroid at r_surface
+    rr = 'f' if sec == 'fm' else 'g'
+    for X, sm, kinds in (('F', 'fm', ('F0', 'F1')), ('G', 'gm', ('G0',))):
+        for dl in range(-B, B + 1):
+            k = l + dl
+            if k not in lls[X]:
+                continue
+            vec = 0
+            for kind in kinds:
+                if (rr, kind) in C:
+                    c = cf._lookup(C[(rr, kind)], l, par.m, dl)
+                    if c != 0:
+                        vec = vec + c*bv.Tm_surf[:, int(kind[1])]
+            put(vec, rowm + 1, sm, k, Nm)
+    if not data:
+        return [np.zeros(0), np.zeros(0, dtype=int), np.zeros(0, dtype=int)]
+    return [np.concatenate(data), np.concatenate(rows), np.concatenate(cols)]
 
 
 

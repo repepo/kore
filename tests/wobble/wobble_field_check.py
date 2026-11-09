@@ -14,6 +14,8 @@ field terms themselves without a run.
    stress through the wall (Γ_B = -(the torque on the fluid)):
      a. spheroid of flattening 0.1, insulating mantle, B0 'axial' (imposed from outside: Γ_B is the torque on its sources)
         and 'G21 dipole' (internal currents; Γ_B of the order of the flattening, from its wall currents on the spheroid);
+        NEW (2026-11-09) with 'G21 dipole' also a thin conducting layer (c1_cmb 1e-2, its thin limit c_cmb = 0) and a
+        resolved conducting mantle (r_surface 1.1, sigma_mantle 0.1) on the spheroid, where Γ_B is the torque on their currents;
      b. sphere, B0 'G21 dipole': an insulating mantle (Γ_B = 0 to round-off: the stress through the wall is that at infinity),
         a thin conducting layer ('TWA', c1_cmb 1e-2) and a resolved conducting mantle (r_surface 1.1, sigma_mantle 0.1), where
         Γ_B is the torque on the mantle's currents.
@@ -55,6 +57,8 @@ check('f = %g, B0 axial: the fixed wall\'s modes near the spin-over' % f, max(mi
 
 print('2. the angular momentum budget with a field')
 cases = [('a', 0.1, 'axial', {}), ('a', 0.1, 'G21 dipole', {}),
+         ('a', 0.1, 'G21 dipole', {'mantle': 'TWA', 'c_cmb': 0.0, 'c1_cmb': 1e-2}),          # (NEW 2026-11-09)
+         ('a', 0.1, 'G21 dipole', {'mantle': 'resolved', 'r_surface': 1.1, 'N_mantle': 24, 'sigma_mantle': 0.1}),
          ('b', 0.0, 'G21 dipole', {'mantle': 'insulator'}),
          ('b', 0.0, 'G21 dipole', {'mantle': 'TWA', 'c_cmb': 1e-5, 'c1_cmb': 1e-2}),
          ('b', 0.0, 'G21 dipole', {'mantle': 'resolved', 'r_surface': 1.1, 'N_mantle': 24, 'sigma_mantle': 0.1})]
@@ -77,7 +81,7 @@ for part, f, B0, extra in cases:
     if f == 0 and extra.get('mantle') == 'insulator':
         check('%s: no torque of the field on an insulating mantle, |Γ_B|/(|Γ_ν| + |Γ_P\'|)' % tag,
               max(np.array(gb)/np.array(gnu)), 1e-10)
-    elif f == 0:
+    elif extra.get('mantle') in ('TWA', 'resolved'):   # (NEW 2026-11-09: on the spheroid too)
         check('%s: the conducting mantle feels the field, (|Γ_ν| + |Γ_P\'|)/|Γ_B| < 1e3' % tag,
               min(np.array(gnu)/np.array(gb))/1e3, 1)
 

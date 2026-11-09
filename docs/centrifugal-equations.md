@@ -357,11 +357,32 @@ backward for $Q_l^m$ (`centrifugal.spheroid_lambda`, `spheroid_field_walls`).
 row of the tangential electric field gains the part of the diffusion above on each side, with the conductivity of each
 (`centrifugal.spheroid_icb`).
 
+**Conducting mantles.** A resolved mantle (`mantle = 'resolved'`) fills the level surfaces between the wall and
+$r$ = `r_surface`, spheroids of the same flattening. Its field diffuses with the metric of the fluid's, and with
+$\sigma(r)$ it gains the part of $(\ln\sigma)'\,\hat{\mathbf r}\times\mathbf E$ beyond the sphere's. At the wall the
+tangential electric field is continuous, as at a conducting inner core, and at `r_surface` kore matches the potential
+field of the spheroid. The thin layer (`mantle = 'TWA'`) is the limit of that mantle as its thickness $h$ goes to zero
+with $\sigma h = c_1 R$ fixed, so `c_cmb` = 0 and `mu` = 1. It carries a sheet of current along the wall,
+
+$$
+\tilde{\mathbf K} = \frac{c_1 R}{a^2}\left[\mathbf E_H + V(x)\thinspace\hat{\mathbf z}_H\left(\hat{\mathbf z}_H\cdot\mathbf E_H\right)\right],
+\qquad V(x) = \frac{a^2 - c^2}{c^2 + (a^2 - c^2)\thinspace x^2} ,
+$$
+
+where $\mathbf E_H$ is the tangential electric field of the fluid at the wall, $\hat{\mathbf z}_H$ the tangential part of
+$\hat{\mathbf z}$ and $x = \cos\theta$; the term in $V$ makes the current along the radius vanish inside the layer. The
+sheet makes the tangential field jump to the potential field outside, and kore adds its spheroidal and toroidal parts
+to the rows of the insulating wall. $V$ is not a polynomial: its Legendre series, of degree 28 at $f$ = 0.1, couples
+the rows of the wall over that many degrees. The layer lies between level surfaces, so its thickness in the body is $ah$ at the equator and
+$ch$ at the poles. Both mantles need a fluid at rest at the wall: a no-slip wall (`bco` = 1) or no flow
+(`centrifugal.spheroid_twa`, `mantle_rows`).
+
 **Scope.** The fluid is homogeneous (`structure = 'Boussinesq'`, `diffusivity = 'uniform'`), with `centrifugal_q` = 0 (the
-effective gravity is already kore's $g$), and any $f < 1$; with a field, any background, insulating walls and an inner
-core that is insulating or conducting with `mu_i2o` = 1. kore stops with a differential rotation. The budgets of
-`spin_doctor` and the plots use the exact metric and map, and every budget closes to round-off
-([Energy budgets](#energy-budgets)).
+effective gravity is already kore's $g$), and any $f < 1$; with a field, any background, insulating walls, an inner
+core that is insulating or conducting with `mu_i2o` = 1, and a resolved mantle or a thin layer at the outer wall. kore
+stops with a differential rotation. The budgets of `spin_doctor` and the plots use the exact metric and map, and every
+budget closes to round-off ([Energy budgets](#energy-budgets)), except the energy budget resid𝐄 with a conducting
+mantle, which kore does not compute.
 
 ## The flattening
 
@@ -517,7 +538,7 @@ Where each piece is in the code:
 | stops and warnings | `background.check_centrifugal`, `centrifugal.report` (`submatrices.py`), the centre check of the flattening; `centrifugal.deformed` (without a deformation kore keeps the bases and rows of the sphere) |
 | energies | `utils4pp.centrifugal_terms` (`solve.py`, `spin_doctor.py`) and `centrifugal_dissipation_terms` (`spin_doctor.py`); with a field `centrifugal_magnetic_energy` (`solve.py`) and `centrifugal_magnetic_terms` (`spin_doctor.py`, with `centrifugal.wall_potential` and `amplitudes`) |
 | plots | `centrifugal.to_physical` (`tools/plot_field.py`, the flow and the field) |
-| the exact spheroid | `centrifugal.exact`, `spheroid_axes`, `spheroid_terms`, `spheroid_build`, `spheroid_walls`, `spheroid_block` (through `momentum_block` and `diffusion_block`), `spheroid_primitives` (`utils4pp.centrifugal_terms`); with a field `spheroid_magnetic_build` (through `magnetic_coefficients`), the insulating walls `spheroid_lambda`, `spheroid_field_walls` (through `wall_rows`), a conducting inner core `spheroid_icb` (through `icb_rows`), the energy of the potential fields `spheroid_potential` (`utils4pp.centrifugal_magnetic_terms`) |
+| the exact spheroid | `centrifugal.exact`, `spheroid_axes`, `spheroid_terms`, `spheroid_build`, `spheroid_walls`, `spheroid_block` (through `momentum_block` and `diffusion_block`), `spheroid_primitives` (`utils4pp.centrifugal_terms`); with a field `spheroid_magnetic_build` (through `magnetic_coefficients`), the insulating walls `spheroid_lambda`, `spheroid_field_walls` (through `wall_rows`), a conducting inner core `spheroid_icb` (through `icb_rows`), the energy of the potential fields `spheroid_potential` (`utils4pp.centrifugal_magnetic_terms`); the resolved mantle `spheroid_mantle_build`, `mantle_labels`, `diffusion_block_m` (`operators.centrifugal_diffusion_m`), `mantle_rows` (`assemble.bc_b_mantle_centrifugal`), the thin layer `twa_weight`, `spheroid_twa` (through `twa_rows`) |
 
 ## Checks
 
@@ -532,6 +553,11 @@ The deformation is checked in four ways, by the scripts in `tests/centrifugal/` 
   deformed body, whose modes must not change at first order; the flattening of Clairaut's equation for known
   structures; and, for the exact spheroid, viscous and diffusive modes against exact Galerkin solutions.
 - **Budgets.** residσ, residω, resid𝑠 and, with a field, resid𝐛 and resid𝐄 close for resolved modes, as in the sphere.
+
+The conducting mantles on the exact spheroid are checked by `tests/mantle/derive_spheroid.py` (the rows of the thin
+layer against its sheet built point by point) and `tests/mantle/spheroid_mantle_check.py`: a mantle of the fluid's
+conductivity decays as a larger spheroid, thin resolved layers tend to the thin layer, and a small flattening gives the
+sphere.
 
 The drag at the outer wall on the deformed body is checked by `tests/drag/deformed_check.py`
 ([Drag at the outer wall equations](drag-equations.md#checks)).

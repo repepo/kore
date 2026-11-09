@@ -2119,3 +2119,190 @@ def spheroid_icb(m, lw, R, f=None):
         for (Xn, d), F in _at(_sc(spheroid_terms(A, X, 'mag', f), -1.), R, {}).items():
             _add(out, (Xn, d), R*F.s)
     return {k: sp_csr(v) for k, v in out.items()}
+
+
+# --- NEW (2026-11-09): conducting mantles on the exact spheroid: the resolved mantle and the thin conducting layer
+# The resolved mantle (mantle = 'resolved') fills the level surfaces 1 <= r <= r_surface, spheroids of the fluid's flattening.
+# At rest (the wall is no-slip) its field only diffuses, σ ∂ₜb̃ = -∇×E + (ln σ)' r̂ × E per MagnetD, E = Q ∇×(Q b̃) the
+# covariant electric field (Fᵀ times the body's, per unit η) and σ = σ(r) constant on the level surfaces. Its rows are those
+# of the sphere (assemble.bc_b_mantle, divided by η) plus the metric parts:
+#     diffusion   the fluid's (spheroid_build 'mag': -∇×δE, δE = Q ∇×(Q b̃) - ∇×b̃) and, in the rows gm, the part of
+#                 (ln σ)' r̂ × δE, -r² (ln σ)' s(V) with V = -δE (A sign; its sphere part is the -(ln σ)'(r² g' + r g) of
+#                 operators.magnetic_diffusion): labels 'f{rx}eta0_D{d}', 'g{rx}eta0_D{d}', 'g{rx}dls0_D{d}' (r^(2 - rx),
+#                 times (ln σ)' for dls, the mantle's rows being at r² like the fluid's in a shell), built on the mantle's
+#                 Chebyshev series (submatrices.py, + '_man'); with F''' terms the rows gm are in the C^(3) basis;
+#     at r = 1    b̃ is continuous (the rows f - fm, (r f)' - (r fm)', g - gm keep their form) and so is the tangential E: the
+#                 row σ(1) (r g)' - (r gm)' gains σ(1) R s(δE) of the fluid minus R s(δE) of the mantle (spheroid_icb), as
+#                 at a conducting inner core;
+#     at r_surface the insulating wall rows of the spheroid (spheroid_field_walls at R = r_surface: the level surface r_surface
+#                 is homothetic to the wall, so λ_l is the same).
+# The thin conducting layer (mantle = 'TWA', c_cmb = 0, mu = 1) is the thin limit of that mantle: the layer 1 <= r <= 1 + h,
+# whose thickness in the body is a h at the equator and c h at the poles, with σ_w h = c1 R fixed as h -> 0 (c1 = c1_cmb).
+# There its current is a sheet K̃ = ∫ J̃ dr along the wall, J̃ = σ_w Q⁻¹ E (the flux of the current, J̃ = ∇×(Q b̃)), with the
+# tangential E of the fluid next to it (no-slip) and its radial part set by J̃_r = 0 inside the layer: (Q⁻¹ E)_r = 0 gives,
+# with x = cos θ and ẑ_H = ẑ - x r̂,
+#     K̃ = (c1 R/a²) [E_H + V(x) ẑ_H (ẑ_H⋅E_H)],     V(x) = (a² - c²)/(c² + (a² - c²) x²)
+# (V = 0 in the sphere: K̃ = c1 R (∇×b̃)_H). V is not a polynomial: its Legendre series (to 1e-17 of its first coefficient,
+# degree 46 at f = 0.3, 28 at f = 0.1, 12 at f = 1/300) widens the coupling of the wall rows to that degree. The
+# sheet makes the tangential H = Q b̃ jump to the potential field ∇Φ outside, ∇Φ_H - H_H = K̃ × r̂, and b̃_r is continuous:
+#     f:  (l - μ) F - μ R (F' + m_s - k_t) = 0,     g:  G + m_t + k_s = 0
+# with μ, m_s, m_t of the insulating wall (spheroid_field_walls) and k_s, k_t the S and T parts of K̃ (in the sphere,
+# μ = -1: (l + 1) F + R F' + c1 R² ∇²_l F = 0 and G + c1 (G + R G') = 0, assemble.bc_b_twa with c = 0, mu = 1). Checks:
+# tests/mantle/derive_spheroid.py (the sheet against Q⁻¹E pointwise) and tests/mantle/spheroid_mantle_check.py (runs).
+
+def twa_weight(f=None):
+    '''
+    V(x) = (a² - c²)/(c² + (a² - c²) x²) of the thin layer's sheet current as a numpy Legendre series (0 in the sphere), its
+    coefficients below 1e-17 of the first dropped. V = 1/(x² ± x0²) with x0 = c/k (k² = |a² - c²|; + oblate, - prolate),
+    and from 1/(t - x) = Σ (2n + 1) P_n(x) Q_n(t) (t off [-1, 1]) its even coefficients are V_n = -(2n + 1) Q_n(t)/t at
+    t = i x0 (oblate) or x0 (prolate): Q_n by the ratios Q_n/Q_(n-1) = n/((2n + 1) t - (n + 1) Q_(n+1)/Q_n) from far above
+    (Q is the minimal solution, as in spheroid_lambda) and Q_0(t) = ½ ln((t + 1)/(t - 1)). (A quadrature of V by numpy's
+    Gauss-Legendre nodes left the coefficients 5e-14 off.)
+    '''
+    a, c = spheroid_axes(f)
+    k2 = a*a - c*c
+    if k2 == 0:
+        return np.polynomial.Legendre([0.])
+    x0 = c/np.sqrt(abs(k2))
+    t = 1j*x0 if k2 > 0 else x0 + 0j
+    rho = abs(t + np.sqrt(t*t - 1))                       # the coefficients fall as rho^-n
+    top = int(min(2000, np.ceil(45/np.log(rho)) + 20))
+    ratio, s = np.zeros(top + 1, dtype=complex), 0j
+    for n in range(top, 0, -1):                           # ratio[n] = Q_n/Q_(n-1)
+        s = n/((2*n + 1)*t - (n + 1)*s)
+        ratio[n] = s
+    Qn = 0.5*np.log((t + 1)/(t - 1))
+    co = np.zeros(top + 1)
+    for n in range(top + 1):
+        if n > 0:
+            Qn = Qn*ratio[n]
+        if n % 2 == 0:
+            co[n] = (-(2*n + 1)*Qn/t).real
+    co[np.abs(co) < 1e-17*abs(co[0])] = 0.
+    return np.polynomial.Legendre(np.trim_zeros(co, 'b'))
+
+def spheroid_twa(m, lw, R, c1, f=None):
+    '''
+    The rows of the thin conducting layer (c = 0, mu = 1) on the exact spheroid at the wall r = R as their parts beyond the
+    sphere's thin-wall rows (assemble.bc_b_twa: f, (l + 1) F + R F' + c1 R² ∇²_l F; g, G + c1 (G + R G')), in the format of
+    spheroid_field_walls with the sources 'F0', 'F1', 'F2', 'G0', 'G1': those of the insulating spheroid plus μ R k_t + R k_t°
+    (f) and k_s - k_s° (g), k_s, k_t the S and T parts of the sheet K̃ of the header and k_s°, k_t° those of the sphere's
+    c1 R (∇×b̃)_H. lw: build the algebra with a margin above the largest degree used (the weight V has its own degree).
+    '''
+    a, c = spheroid_axes(f)
+    A = angular.Algebra.get(m, lw)
+    lv = np.arange(lw + 1, dtype=float)
+    mu = spheroid_lambda('outer', m, lw, f)/(lv + 1)
+    out = dict(spheroid_field_walls('outer', m, lw, R, f))
+    V = twa_weight(f)
+    tang = lambda e: _map(e, lambda F: angular.Field(0*F.q, F.s, F.t))
+    for X in 'FG':
+        j = _curl(A, _field(A, X))
+        E = _sum(j, _sc(spheroid_terms(A, X, 'mag', f), -1.))                        # Q ∇×(Q b̃)
+        EH = tang(E)
+        K = _sc(_sum(EH, _poly(A, tang(_zhat(A, _zdot(A, EH))), V)), c1*R/(a*a))      # K̃
+        K0 = _sc(tang(j), c1*R)                                                       # the sphere's
+        for (Xn, d), F in _at(K, R, {}).items():
+            _add(out, ('f', '%s%d' % (Xn, d)), sp_diags(R*mu) @ F.t)
+            _add(out, ('g', '%s%d' % (Xn, d)), F.s)
+        for (Xn, d), F in _at(K0, R, {}).items():
+            _add(out, ('f', '%s%d' % (Xn, d)), R*F.t)
+            _add(out, ('g', '%s%d' % (Xn, d)), -F.s)
+    return {k: sp_csr(v) for k, v in out.items()}
+
+def mantle_metric_on():
+    '''the metric parts of the resolved mantle: the exact spheroid with a field, diffusion and mantle = 'resolved' '''
+    return bool(exact() and par.magnetic and par.MagnetD > 0 and par.mantle == 'resolved')
+
+def twa_metric_on():
+    '''the rows of the thin conducting layer on the exact spheroid (spheroid_twa): mantle = 'TWA' there'''
+    return bool(exact() and par.magnetic and par.mantle == 'TWA')
+
+LABEL_MAN = re.compile(r'([fg])(\d)(eta|dls)0_D(\d)$')
+
+def spheroid_mantle_build(m, lw, sigma_varies=True, f=None):
+    '''
+    {(row, column): {label: sparse matrix [target l', source l]}} of the metric diffusion of the resolved mantle on the
+    degrees 0..lw (the header): the fluid's 'mag' terms of spheroid_build and, if sigma_varies, the (ln σ)' part of the rows
+    g ('g{rx}dls0_D{d}'), in kore's A sign, without MagnetD and the 1/L'^3 of the row. Also used by
+    tests/mantle/derive_spheroid.py.
+    '''
+    import mag_algebra as ma
+    out = {k: dict(v) for k, v in spheroid_build(m, lw, ('mag',), f)['mag'].items()}
+    if sigma_varies:
+        A = angular.Algebra.get(m, lw)
+        o = {}
+        for X in 'FG':
+            s = _parts(spheroid_terms(A, X, 'mag', f))[1]                 # s(V), V = -δE
+            _store_sph(o, 'g', X, _shift(s, -1., 2), lambda M: A.L @ M, 'dls')
+        for k, d in ma._prune(o).items():
+            out.setdefault(k, {}).update(d)
+    _check_orders(out)
+    return out
+
+_man = {}
+def mantle_coefficients():
+    '''spheroid_mantle_build for this run (cached, the (ln σ)' part only for a sigma_mantle that is an expression):
+    (out, {(row, column): {label: bands}}), |Δl| <= 4'''
+    if not _man:
+        out = spheroid_mantle_build(par.m, par.lmax + 16, isinstance(par.sigma_mantle, str))
+        if _bandwidth(out) > 4:
+            sys.exit('centrifugal: the metric diffusion of the mantle couples degrees more than 4 apart')
+        _man.update({'out': out, 'bands': {rc: {lab: angular.band(M, 4) for lab, M in d.items()} for rc, d in out.items()}})
+    return _man['out'], _man['bands']
+
+def mantle_labels():
+    '''[(label, row 'f' or 'g', column 'F' or 'G', power of r, profile None or 'dls', derivative order)]: the operators of the
+    metric diffusion in the resolved mantle, for submatrices.py (as label + '_man')'''
+    out = []
+    for (row, X), d in mantle_coefficients()[0].items():
+        for lab in d:
+            mt = LABEL_MAN.match(lab)
+            if mt is None or mt.group(1) != row:
+                sys.exit('centrifugal: the mantle label %s has no operator' % lab)
+            out.append((lab, row, X, 2 - int(mt.group(2)), None if mt.group(3) == 'eta' else 'dls', int(mt.group(4))))
+    return out
+
+def diffusion_block_m(l, section, component, offdiag, M):
+    '''
+    The block of the metric diffusion inside the resolved mantle for the row degree l of section 'fm' or 'gm', the column
+    'bpol_m' or 'btor_m' and the source degree l + offdiag (the A sign; the rows divided by η, as the sphere's): [MagnetD Σ
+    coefficient × the mantle's operator (label + '_man') / L'^3, the column block offset in units of N_mantle], or [0, 0].
+    '''
+    import utils as ut
+    row = {'fm': 'f', 'gm': 'g'}[section]
+    X = {'bpol_m': 'F', 'btor_m': 'G'}[component]
+    out = 0
+    for lab, bnd in mantle_coefficients()[1].get((row, X), {}).items():
+        v = _lookup(bnd, l, par.m, offdiag)
+        if v != 0:
+            out = out + v*M[lab + '_man']
+    if np.isscalar(out):
+        return [0, 0]
+    lF, lG = ut.ell(par.m, par.lmax, ut.bsymm)[:2]
+    rows, cols = {'f': lF, 'g': lG}[row], {'F': lF, 'G': lG}[X]
+    offd = int(np.where(cols == l + offdiag)[0][0] - np.where(rows == l)[0][0])
+    return [par.MagnetD*out/(l*(l + 1.))**3, offd]
+
+_mwall = {}
+def mantle_rows():
+    '''the metric parts of the resolved mantle's wall rows (cached, by diagonal): 'cmb', the electric-field row at r = 1
+    (spheroid_icb: {(X, d): bands}, R s(δE)), and 'surface', the insulating rows at r_surface (spheroid_field_walls:
+    {(row, source): bands}); each as (B, bands)'''
+    import utils as ut
+    if not _mwall:
+        for key, W in (('cmb', spheroid_icb(par.m, par.lmax + 12, ut.rcmb)),
+                       ('surface', spheroid_field_walls('outer', par.m, par.lmax + 12, par.r_surface))):
+            B = _bandwidth({0: W})
+            _mwall[key] = (B, {k: angular.band(M, B) for k, M in W.items()})
+    return _mwall
+
+_twa = {}
+def twa_rows():
+    '''spheroid_twa for this run at the outer wall (c1_cmb), cached, by diagonal: (B, {(row, source): bands})'''
+    import utils as ut
+    if not _twa:
+        W = spheroid_twa(par.m, par.lmax + len(twa_weight().coef) + 12, ut.rcmb, par.c1_cmb)
+        B = _bandwidth({0: W})
+        _twa['rows'] = (B, {k: angular.band(M, B) for k, M in W.items()})
+    return _twa['rows']

@@ -451,6 +451,9 @@ class default_params():
         # Glatzmaier & Clune 2010; docs/magnetic.md, Thin conducting layer): a layer of thickness h, conductivity sigma_w and
         # permeability mu_w between the fluid and an insulator, described by c = h mu_w/(r mu_f) and c1 = h sigma_w/(r sigma_f)
         # at the wall's radius r (assemble.bc_b_spherical). With c = c1 = 0 and mu = 1 the layer is an insulator.
+        # NEW (2026-11-09): on the exact spheroid (centrifugal_shape 'spheroid') too, at the outer wall, as the thin limit
+        # (c_cmb = 0, mu = 1) of the layer between the level surfaces r = 1 and 1 + h, with a no-slip wall
+        # (centrifugal.spheroid_twa; its thickness is a h at the equator and c h at the poles, c1 = h sigma_w/sigma_f)
         self.c_cmb   = 1e-5    # c of a thin conducting layer at the outer wall (mantle = 'TWA')
         self.c1_cmb  = 1e-5    # c1, the layer's conductance relative to the fluid's
         # the layer's permeability relative to vacuum, p = mu_w/mu0. With c it sets the thickness h/r = c mu/p and the O(h)
@@ -478,6 +481,8 @@ class default_params():
         # whose field is expanded in N_mantle Chebyshev polynomials on [1, r_surface] (docs/magnetic.md, Resolved conducting
         # mantle). Unlike 'TWA' it holds for any thickness and frequency, and
         # for any smooth conductivity profile that N_mantle resolves (background.check_mantle stops otherwise). Needs mu = 1.
+        # NEW (2026-11-09): on the exact spheroid (centrifugal_shape 'spheroid') too, between the level surfaces r = 1 and
+        # r_surface, with a no-slip wall (centrifugal.py, section 8)
         self.r_surface = 1.83   # outer radius of the layer; 1.83 is the whole mantle of the Earth
         self.N_mantle  = 64     # Chebyshev polynomials in the layer
         # the layer's conductivity relative to the fluid's: a number (a uniform layer), or a numpy expression of r and
@@ -522,9 +527,10 @@ class default_params():
         # the fluid (bin/wobble.py; Triana, Rekier, Trinh & Dehant 2019): the m = 1 coupling of the free core nutation, the
         # Chandler wobble and the inertial modes. The flow is solved in the frame of the mantle, with the Poincaré force; one
         # more unknown, Mc, the mantle's equatorial rotation (its rigid rotation is T_1 = r Mc/2). m = 1, symm = -1, full
-        # sphere, no-slip wall, a homogeneous fluid without a field, in a sphere (centrifugal = 0) or in the exact spheroid
-        # (centrifugal = 1, centrifugal_shape 'spheroid'), whose flattened wall gives the pressure torque
-        # (background.check_wobble stops otherwise).
+        # sphere, no-slip wall, a homogeneous fluid, in a sphere (centrifugal = 0) or in the exact spheroid (centrifugal = 1,
+        # centrifugal_shape 'spheroid'), whose flattened wall gives the pressure torque (background.check_wobble stops
+        # otherwise). With a field (magnetic = 1) also the torques of the field on the mantle: the Lorentz part of the wall
+        # pressure and the Maxwell stress through the wall, with an insulating or a conducting mantle ('TWA', 'resolved').
         self.wobble = 0
         # the mantle's moment of inertia about an equatorial axis, A_M, in units of rho r0^5 (r0 the mean radius of the wall,
         # kore's unit of length), and its dynamical flattening (C_M - A_M)/A_M

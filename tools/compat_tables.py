@@ -139,8 +139,10 @@ c('Cf', 'Kd', Y, (), 'drag: deformed_check (axial, first, relabelled)')   # NEW 
 c('Cf', 'Kt', Y, (), 'drag: deformed_check (first, relabelled)')
 c('Sph', 'B', Y, (9,), 'centrifugal: bms_ins, bms_tor, spheroid_check')
 c('Sph', 'cIC', Y, (10,), 'centrifugal: bms_cic, spheroid_check')
-for b in ('Bes', 'TWA', 'Man', 'Rot'):
-    c('Sph', b, X)
+c('Sph', 'Bes', X)
+c('Sph', 'TWA', Y, (15,), 'mantle: spheroid_mantle_check (thin layers, f → 0), derive_spheroid; wobble: wobble_field_check')   # NEW (2026-11-09)
+c('Sph', 'Man', Y, (16,), 'mantle: spheroid_mantle_check (a larger spheroid, thin layers, f → 0); wobble: wobble_field_check')
+c('Sph', 'Rot', X)
 c('Sph', 'Kd', Y, (), 'drag: deformed_check (axial, spin-over, weak, stiff)')   # NEW (2026-11-09)
 c('Sph', 'Kt', Y, (), 'drag: deformed_check (spin-over, weak)')
 # the field and its solids

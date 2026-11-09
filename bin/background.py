@@ -637,6 +637,7 @@ def check_mantle():
     toroidal modes); a step or a kink is never resolved. Also mu = 1 (a magnetic mantle or fluid would change the background
     field at the wall), a spherical body (centrifugal = 0) and bco = 0 or 1 (with bco = 2 the fluid crosses the wall, and the
     rows follow a radial flow there only where a forcing moves the wall: forced_walls).
+    NEW (2026-11-09): or the exact spheroid (centrifugal_shape 'spheroid', check_spheroid_mantle).
     '''
     num = (int, float, np.integer, np.floating)
     if not (isinstance(par.r_surface, num) and np.isfinite(par.r_surface) and par.r_surface > 1):
@@ -669,13 +670,32 @@ def check_mantle():
                      % (par.sigma_mantle, par.N_mantle, tail[0], tail[1]))
     if par.mu != 1:
         sys.exit("mantle = 'resolved' assumes the permeability of vacuum in the fluid and in the layer (mu = 1)")
-    if par.centrifugal:
-        sys.exit("mantle = 'resolved' needs a spherical body (centrifugal = 0)")
+    if par.centrifugal:   # NEW (2026-11-09): the exact spheroid too
+        check_spheroid_mantle("mantle = 'resolved'")
     if par.hydro and par.ViscosD > 0 and par.bco == 2:   # (NEW 2026-11-09: an inviscid fluid takes any bco, its one wall row
         # being no penetration)
         sys.exit("mantle = 'resolved' needs bco = 0 or 1: with zero radial stress at the outer wall (bco = 2) the fluid "
                  "crosses it, and the mantle's rows follow a radial flow there only where a forcing moves the wall "
                  "(forced_walls)")
+
+
+def check_spheroid_mantle(what):
+    '''
+    NEW (2026-11-09): a conducting mantle (what: "mantle = 'resolved'" or "mantle = 'TWA'") in a deformed body: only the exact
+    spheroid (centrifugal_shape 'spheroid'; centrifugal.py, section 8), whose level surfaces are homothetic, so that the
+    mantle's rows take the metric of the fluid's, and a fluid at rest at the wall (a viscous no-slip wall, bco = 1, or no
+    flow): a fluid that slips along it would add its u×B0 to the mantle's rows (assemble.bc_b_slip), which the spheroid's
+    rows leave out. An undeformed body (deformed() false) takes the sphere's rows.
+    '''
+    import centrifugal as cf
+    if not cf.deformed():
+        return
+    if par.centrifugal_shape != 'spheroid':
+        sys.exit("%s in a deformed body needs the exact spheroid (centrifugal_shape 'spheroid'), not %r"
+                 % (what, par.centrifugal_shape))
+    if par.hydro and not (par.ViscosD > 0 and par.bco == 1):
+        sys.exit("%s on the spheroid needs a fluid at rest at the wall: a viscous fluid (ViscosD > 0) and a no-slip outer "
+                 "wall (bco = 1), or no flow (hydro = 0)" % what)
 
 
 def check_twa():
@@ -685,7 +705,8 @@ def check_twa():
     permeability mu enters the thin-wall conditions only, so mu != 1 needs a thin wall (or a conducting inner core) at every
     wall of the fluid: an insulating wall with mu != 1 is a thin wall with c = c1 = 0. A thin wall needs bco, bci = 0 or 1
     (with 2 the fluid crosses the wall, and the rows follow a radial flow there only where a forcing moves the wall:
-    forced_walls; NEW 2026-11-09: a viscous fluid's, an inviscid one has no such row) and a spherical body (centrifugal = 0).
+    forced_walls; NEW 2026-11-09: a viscous fluid's, an inviscid one has no such row) and a spherical body (centrifugal = 0;
+    NEW 2026-11-09: or, at the outer wall in the thin limit c_cmb = 0, mu = 1, the exact spheroid, check_spheroid_mantle).
     With a differential rotation, ΔΩ must be uniform in latitude at a thin wall that conducts, c1 != 0
     (background.magnetic_diffrot): the wall co-rotates with it, as a conducting inner core does. One that does not (c1 = 0)
     takes any rotation.
@@ -706,8 +727,14 @@ def check_twa():
                  % (par.mu,))
     if not (twa_o or twa_i):
         return
-    if par.centrifugal:
-        sys.exit("a thin conducting layer ('TWA') needs a spherical body (centrifugal = 0)")
+    if par.centrifugal:   # NEW (2026-11-09): the exact spheroid too, at the outer wall, in the thin limit (c = 0, mu = 1)
+        import centrifugal as cf
+        if twa_i and cf.deformed():
+            sys.exit("a thin conducting layer at the inner wall (innercore 'TWA') needs a spherical body (centrifugal = 0)")
+        check_spheroid_mantle("mantle = 'TWA'")
+        if cf.deformed() and (par.c_cmb != 0 or par.mu != 1):
+            sys.exit("mantle = 'TWA' on the spheroid is the thin limit of a conducting layer: it needs c_cmb = 0 and mu = 1 "
+                     "(centrifugal.spheroid_twa); a layer of some thickness is mantle = 'resolved' with r_surface = 1 + h")
     if par.hydro and par.ViscosD > 0 and ((twa_o and par.bco == 2) or (twa_i and par.bci == 2)):   # (NEW 2026-11-09: an
         # inviscid fluid takes any bco, its one wall row being no penetration)
         sys.exit("a thin conducting layer ('TWA') needs bco, bci = 0 or 1 at its wall: with zero radial stress (2) the fluid "
@@ -721,8 +748,8 @@ def check_wobble():
     are those of a homogeneous fluid on a no-slip wall that is the reference sphere of a linear map: a sphere or the exact
     spheroid. Left out: an inner core, buoyancy (gravitational torques), the other shapes, the rotating solids, a
     differential rotation, a background flow and the forcings. NEW (2026-11-09): with a field (magnetic = 1) a toroidal B0
-    must vanish at the wall (the torque on its current sheet there is left out); the mantle may be an insulator or, in a
-    sphere (check_magnetic), a thin conducting layer or a resolved conducting mantle.
+    must vanish at the wall (the torque on its current sheet there is left out); the mantle may be an insulator, a thin
+    conducting layer or a resolved conducting mantle (check_mantle, check_twa; NEW 2026-11-09: on the spheroid too).
     '''
     if not (par.hydro and par.m == 1 and par.symm == -1 and par.forcing == 0 and par.ricb == 0):
         sys.exit('wobble = 1 needs the flow (hydro = 1), m = 1, symm = -1, a full sphere (ricb = 0) and an eigenvalue problem '

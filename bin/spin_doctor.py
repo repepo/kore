@@ -617,6 +617,8 @@ def main(ncpus):
                 Mdfs[i]   += par.MagnetD * cm['Mdfs']         # NEW (2026-11-06, phase 2): the metric diffusion
                 MEic[i], MEext[i] = cm['MEic'], cm['MEext']   # the potential fields of the deformed exterior and inner core,
                 Ohm_ic[i]  = par.MagnetD * cm['Ohm_ic']       # and a conducting inner core with its metric part
+                if use_walls and cf.deformed():   # NEW (2026-11-09): a conducting mantle on the spheroid: its energy, Ohmic
+                    E_w[i] = Ohm_w[i] = MEext[i] = np.nan    # loss and the field beyond are not computed there (resid𝐄 nan)
 
         # NEW (2026-11-04): the viscous dissipation at the grid of diagnose, then the work of the wall stresses
         # (wall_powers moves the grid globals to the walls). NEW (2026-11-06): none without the flow
@@ -790,7 +792,10 @@ def main(ncpus):
             # NEW (2026-11-06): walls that move radially too (forced problems, a free wall bco or bci = 2), with the work of the
             # pressure there (Wpe below)
             moving = upp.walls_move()
-            if (noslip or not par.hydro or ((imperm or moving) and not par.centrifugal)) and not (use_twa and par.mu != 1) and rotok:
+            # NEW (2026-11-09): not with a conducting mantle on the spheroid (its energy and Ohmic loss are those of the sphere)
+            sphwall = use_walls and par.centrifugal and cf.deformed()
+            if (noslip or not par.hydro or ((imperm or moving) and not par.centrifugal)) and not (use_twa and par.mu != 1) and rotok \
+                    and not sphwall:
                 H = par.Hendrik if par.hydro else 1.0
                 # NEW (2026-11-05): with centrifugal = 1 the energy of the deformed body, ∫ 𝐛̃*⋅M 𝐛̃ dV in the fluid (MEc), whose
                 # rate is the work 2 Re ∫ 𝐄⋅(∇×M 𝐛̃)* dV (InduM) minus the Ohmic loss (Ohmc); closes at second order in f

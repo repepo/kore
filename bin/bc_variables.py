@@ -65,5 +65,5 @@ if ut.cic:  # NEW (2026-10-28): the inner-core field at r = ricb, its Chebyshev 
     Tbgic = Tb_cic[ixg::2,:]
 
 if ut.resolved_mantle:  # NEW (2026-11-06): the polynomials of the resolved mantle at its bottom (r = 1) and top (r_surface)
-    Tm_cmb  = Tk(-1, par.N_mantle-1, 1, ut.rcmb, par.r_surface)
+    Tm_cmb  = Tk(-1, par.N_mantle-1, 2, ut.rcmb, par.r_surface)   # (NEW 2026-11-09: to F'', the spheroid's electric-field row)
     Tm_surf = Tk( 1, par.N_mantle-1, 1, ut.rcmb, par.r_surface)
