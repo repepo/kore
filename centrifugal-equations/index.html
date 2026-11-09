@@ -2017,8 +2017,12 @@ with <span class="arithmatex">\(\sigma h = c_1 R\)</span> fixed, so <code>c_cmb<
 sheet makes the tangential field jump to the potential field outside, and kore adds its spheroidal and toroidal parts
 to the rows of the insulating wall. <span class="arithmatex">\(V\)</span> is not a polynomial: its Legendre series, of degree 28 at <span class="arithmatex">\(f\)</span> = 0.1, couples
 the rows of the wall over that many degrees. The layer lies between level surfaces, so its thickness in the body is <span class="arithmatex">\(ah\)</span> at the equator and
-<span class="arithmatex">\(ch\)</span> at the poles. Both mantles need a fluid at rest at the wall: a no-slip wall (<code>bco</code> = 1) or no flow
-(<code>centrifugal.spheroid_twa</code>, <code>mantle_rows</code>).</p>
+<span class="arithmatex">\(ch\)</span> at the poles (<code>centrifugal.spheroid_twa</code>, <code>mantle_rows</code>).</p>
+<p>A fluid may also slip along either mantle (<code>bco</code> = 0, or an inviscid fluid). Its <span class="arithmatex">\(\mathbf E_H\)</span> then includes
+<span class="arithmatex">\(-(\mathbf w\times\tilde{\mathbf B}_0)_H\)</span>, which is the body's <span class="arithmatex">\(-\mathbf u\times\mathbf B_0\)</span> in the reference variables
+(with <span class="arithmatex">\(J\)</span> = 1), and the layer at rest takes it on, as in the sphere (condition C.I). For the resolved mantle this is the
+sphere's slip term in the row of the electric field at the wall. For the thin layer it goes through the sheet, weight
+<span class="arithmatex">\(V\)</span> included (<code>centrifugal.spheroid_twa_slip</code>).</p>
 <p><strong>Scope.</strong> The fluid is homogeneous (<code>structure = 'Boussinesq'</code>, <code>diffusivity = 'uniform'</code>), with <code>centrifugal_q</code> = 0 (the
 effective gravity is already kore's <span class="arithmatex">\(g\)</span>), and any <span class="arithmatex">\(f &lt; 1\)</span>; with a field, any background, insulating walls, an inner
 core that is insulating or conducting with <code>mu_i2o</code> = 1, and a resolved mantle or a thin layer at the outer wall. kore

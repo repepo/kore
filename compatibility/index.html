@@ -1841,8 +1841,8 @@ conditions are under <a href="#forced-runs">Forced runs</a>. The grid is symmetr
 <td><span class="y" title="tested by tests/centrifugal: bms_ins, bms_tor, spheroid_check">✓</span><sup>9</sup></td>
 <td><span class="y" title="tested by tests/centrifugal: bms_cic, spheroid_check">✓</span><sup>10</sup></td>
 <td><span class="x">✗</span></td>
-<td><span class="y" title="tested by tests/mantle: spheroid_mantle_check (thin layers, f → 0), derive_spheroid; tests/wobble: wobble_field_check">✓</span><sup>15</sup></td>
-<td><span class="y" title="tested by tests/mantle: spheroid_mantle_check (a larger spheroid, thin layers, f → 0); tests/wobble: wobble_field_check">✓</span><sup>16</sup></td>
+<td><span class="y" title="tested by tests/mantle: spheroid_mantle_check (thin layers, f → 0, slip), derive_spheroid; tests/wobble: wobble_field_check">✓</span><sup>15</sup></td>
+<td><span class="y" title="tested by tests/mantle: spheroid_mantle_check (a larger spheroid, thin layers, f → 0, slip); tests/wobble: wobble_field_check">✓</span></td>
 <td><span class="x">✗</span></td>
 <td><span class="y" title="tested by tests/drag: deformed_check (axial, spin-over, weak, stiff)">✓</span></td>
 <td><span class="y" title="tested by tests/drag: deformed_check (spin-over, weak)">✓</span></td>
@@ -1917,7 +1917,7 @@ conditions are under <a href="#forced-runs">Forced runs</a>. The grid is symmetr
 <td><span class="y" title="tested by tests/twa: rigid_offset, sheared_walls">✓</span><sup>8</sup></td>
 <td><span class="y" title="tested by tests/bgflow: frame_field_twa, twa, f8_twa">✓</span><sup>8</sup></td>
 <td><span class="x">✗</span></td>
-<td><span class="y" title="tested by tests/mantle: spheroid_mantle_check (thin layers, f → 0), derive_spheroid; tests/wobble: wobble_field_check">✓</span><sup>15</sup></td>
+<td><span class="y" title="tested by tests/mantle: spheroid_mantle_check (thin layers, f → 0, slip), derive_spheroid; tests/wobble: wobble_field_check">✓</span><sup>15</sup></td>
 <td><span class="y" title="tested by tests/inner_core: dip_twa_mantle, dip_twa_core; tests/twa: cic_noslip_both; tests/sheet: pol_layer_out; tests/rotdyn: eq_twa">✓</span></td>
 <td><span class="y" title="tested by tests/couette: rigid_mu, wu_field; tests/forced_field: wu_f14_twa, f10_twa">✓</span><sup>12</sup></td>
 <td><span class="y" title="tested by tests/cic_forcings: lib7_field">✓</span><sup>12</sup></td>
@@ -1937,7 +1937,7 @@ conditions are under <a href="#forced-runs">Forced runs</a>. The grid is symmetr
 <td><span class="y" title="tested by tests/mantle: rigid_offset, sheared; tests/forced_field: def_dr">✓</span><sup>8</sup></td>
 <td><span class="y" title="tested by tests/bgflow: frame_field_solids, wu_all">✓</span><sup>8</sup></td>
 <td><span class="x">✗</span></td>
-<td><span class="y" title="tested by tests/mantle: spheroid_mantle_check (a larger spheroid, thin layers, f → 0); tests/wobble: wobble_field_check">✓</span><sup>16</sup></td>
+<td><span class="y" title="tested by tests/mantle: spheroid_mantle_check (a larger spheroid, thin layers, f → 0, slip); tests/wobble: wobble_field_check">✓</span></td>
 <td><span class="y" title="tested by tests/inner_core: dip_resolved_mantle; tests/mantle: cic_noslip, sigma_zero, induction">✓</span></td>
 <td><span class="y" title="tested by tests/mantle: cic_innercore, decay_cic, rigid_offset; tests/forced_field: lib_man; tests/couette: c_man; tests/rotdyn: cic_s2">✓</span></td>
 <td><span class="y" title="tested by tests/forced_field: wu_lib_man, f7m2_man">✓</span></td>
@@ -2037,9 +2037,7 @@ conditions are under <a href="#forced-runs">Forced runs</a>. The grid is symmetr
 <li><strong>12.</strong> The thin layer at the outer wall.</li>
 <li><strong>13.</strong> With the forcings that take the drag (<a href="#forced-runs">Forced runs</a>).</li>
 <li><strong>14.</strong> The thin layer on the inner core, the resolved mantle at the outer wall.</li>
-<li><strong>15.</strong> The thin layer at the outer wall in its thin limit (<code>c_cmb = 0</code>, <code>mu = 1</code>); with the flow, a no-slip outer
-  wall (<code>bco = 1</code>).</li>
-<li><strong>16.</strong> With the flow, a no-slip outer wall (<code>bco = 1</code>).</li>
+<li><strong>15.</strong> The thin layer at the outer wall in its thin limit (<code>c_cmb = 0</code>, <code>mu = 1</code>).</li>
 </ul>
 <h2 id="forced-runs">Forced runs</h2>
 <p>A forcing adds conditions of its own, on <code>m</code> and <code>symm</code>, on the walls, and on the solids that it moves or turns. Every
