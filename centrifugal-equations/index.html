@@ -49,6 +49,8 @@
       
     
     
+      <link rel="stylesheet" href="../stylesheets/compat.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -771,6 +773,34 @@
     
   
     Drag at the outer wall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compatibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Combining features
   
 
     
@@ -1827,7 +1857,7 @@ most, so they couple the degrees as the inertia does: <span class="arithmatex">\
 derivatives, and of the derivatives of <span class="arithmatex">\(\ln\rho_0\)</span> (<code>centrifugal.diffusion_build</code>). When <span class="arithmatex">\(m \neq 0\)</span> the toroidal rows of
 the viscous force and of the induction reach the third derivative of <span class="arithmatex">\(P\)</span> and of <span class="arithmatex">\(F\)</span>, and kore builds those sections in the
 basis that has it. In a full sphere these rows have terms in <span class="arithmatex">\(P/r\)</span> and <span class="arithmatex">\(F/r\)</span>, polynomials only once the rows are
-multiplied by <span class="arithmatex">\(r^4\)</span> and <span class="arithmatex">\(r^3\)</span>: kore does it for the field (in a conducting inner core too), and asks for <code>rpower_v</code> = 4
+multiplied by <span class="arithmatex">\(r^4\)</span> and <span class="arithmatex">\(r^3\)</span>: kore does it for the field (in a conducting inner core too), and asks for <code>rpower_v</code> ≥ 4
 for the flow.</p>
 <h2 id="differential-rotation">Differential rotation</h2>
 <p>A differential rotation is a profile like the others: <span class="arithmatex">\(\Delta\Omega(r, \theta)\)</span> is given in the reference space, so the
@@ -2062,9 +2092,12 @@ for the exact spheroid (<a href="#the-exact-spheroid">The exact spheroid</a>), w
   of order <span class="arithmatex">\(f\thinspace\Delta\Omega\)</span> of that balance are missing, while its advection and the other terms of
   <span class="arithmatex">\(\Delta\Omega\)</span> are those of the deformed body. <code>submatrices.py</code> warns.</li>
 <li><strong>What stops the run.</strong> The rows of a wall of zero radial stress (<code>bco</code> or <code>bci</code> = 2) would change on a deformed wall,
-  so kore stops with them in a viscous run. The matching rows of a conducting inner core change too when its permeability
-  differs from the fluid's, so kore stops unless <code>mu_i2o</code> = 1. It also stops with a forcing, and in a viscous full
-  sphere with <span class="arithmatex">\(m \neq 0\)</span> unless <code>rpower_v</code> = 4 (<a href="#dissipative-terms">Dissipative terms</a>).</li>
+  so kore stops with them for a viscous flow. The matching rows of a conducting inner core change too when its
+  permeability differs from the fluid's, so kore stops unless <code>mu_i2o</code> = 1, and so does the <span class="arithmatex">\(\mathbf u\times\mathbf B_0\)</span>
+  of a fluid that slips along it under a poloidal B0, so kore stops unless <code>bci</code> = 1. The push of a current sheet on a
+  wall the fluid slips along would change on a deformed wall too: kore stops where B0 ends in a sheet at such a wall.
+  It also stops with a forcing, and for a viscous flow in a full sphere with <span class="arithmatex">\(m \neq 0\)</span> unless <code>rpower_v</code> ≥ 4
+  (<a href="#dissipative-terms">Dissipative terms</a>).</li>
 <li><strong>Shifts measured from a sphere.</strong> A body that is not deformed keeps the bases and rows of the sphere
   (<code>centrifugal.deformed</code>), so that its matrices are those of <code>centrifugal = 0</code>. A deformed body with <span class="arithmatex">\(m \neq 0\)</span> writes
   the rows of the toroidal flow in <span class="arithmatex">\(C^{(3)}\)</span> when it is viscous, and those of the toroidal field when the field diffuses

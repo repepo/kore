@@ -49,6 +49,8 @@
       
     
     
+      <link rel="stylesheet" href="../stylesheets/compat.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -876,6 +878,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../compatibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Combining features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../solver/" class="md-nav__link">
         
   
@@ -1413,12 +1443,15 @@ s(r_i, \theta) = A\thinspace P_2(\cos\theta), \qquad P_2(\cos\theta) = \tfrac12 
 <p>with <span class="arithmatex">\(A\)</span> = <code>forcing_amplitude_icb</code>. With <code>bci_thermal = 1</code> the condition is on the gradient instead,
 <span class="arithmatex">\(\partial_r s(r_i, \theta) = A\thinspace P_2(\cos\theta)\)</span>, a prescribed heat flux. <span class="arithmatex">\(P_2\)</span> is <span class="arithmatex">\(-\tfrac12\)</span> at the equator
 and <span class="arithmatex">\(1\)</span> at the poles, so a negative <span class="arithmatex">\(A\)</span> makes the equator warmer. The pattern is axisymmetric and equatorially
-symmetric, so the run needs <code>m = 0</code> and <code>symm = 1</code>, and also <code>ricb &gt; 0</code>, <code>thermal = 1</code> and <code>ThermaD &gt; 0</code>. The problem
-is linear: the flow is proportional to <span class="arithmatex">\(A\)</span>. With <code>magnetic = 1</code> the perturbation of the field is solved with the flow
-(<a href="../magnetic/#forced-runs">Magnetic field</a>).</p>
+symmetric, so the run needs <code>m = 0</code> and <code>symm = 1</code>, and also <code>ricb &gt; 0</code>, <code>thermal = 1</code>, <code>ThermaD &gt; 0</code> and <span class="arithmatex">\(A\)</span> not 0.
+The problem is linear: the flow is proportional to <span class="arithmatex">\(A\)</span>. With <code>magnetic = 1</code> the perturbation of the field is solved
+with the flow (<a href="../magnetic/#forced-runs">Magnetic field</a>). Like every forced run it needs a spherical body
+(<code>centrifugal = 0</code>); <a href="../compatibility/#forced-runs">Combining features</a> shows what else it combines with.</p>
 <p>With <code>forcing_frequency = 0</code> the solution is the steady flow. At least one wall must then be no-slip (<code>bci = 1</code> or
-<code>bco = 1</code>): with two stress-free walls a rigid rotation of the fluid also solves the equations, and the solution is
-not unique. A non-zero <code>forcing_frequency</code> <span class="arithmatex">\(w\)</span> gives the response to a heating that oscillates as <span class="arithmatex">\(e^{iwt}\)</span>.</p>
+<code>bco = 1</code>), or the outer wall must hold the fluid back with the constant drag (<code>kappa_cmb</code> &gt; 0,
+<a href="../drag/">Drag at the outer wall</a>): between two walls that let the fluid slip freely a rigid rotation also solves the
+equations, and the solution is not unique. Both walls must also stay in place (<code>bci</code> and <code>bco</code> 0 or 1): a steady flow
+through a wall of zero radial stress would move it without end. A non-zero <code>forcing_frequency</code> <span class="arithmatex">\(w\)</span> gives the response to a heating that oscillates as <span class="arithmatex">\(e^{iwt}\)</span>.</p>
 <h2 id="example-a-hadley-cell">Example: a Hadley cell</h2>
 <p>Write in <code>bin/parameters.py</code></p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">params_default</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_params</span>

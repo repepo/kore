@@ -49,6 +49,8 @@
       
     
     
+      <link rel="stylesheet" href="../stylesheets/compat.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -1128,6 +1130,34 @@
     
   
     Drag at the outer wall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compatibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Combining features
   
 
     
@@ -2437,8 +2467,9 @@ of its effect.
   for a thin viscous layer that is not resolved, which must be thin against the magnetic skin depth: <code>assemble.py</code>
   prints Pm times the frequency in rotation units (that of the target, or <code>forcing_frequency</code> in a forced run), which
   should be small. A <a href="../drag/">drag</a> at the outer wall changes nothing here.</li>
-<li><strong>With a differential rotation</strong> the solid turns with the fluid next to it, so the rotation must be uniform in
-  latitude at the wall: the run stops otherwise.</li>
+<li><strong>With a differential rotation</strong> a layer that conducts (<code>c1_cmb</code> or <code>c1_icb</code> not 0) turns with the fluid next to it,
+  so the rotation must be uniform in latitude at its wall: the run stops otherwise. A layer that does not conduct
+  (<code>c1</code> = 0) takes any rotation.</li>
 <li><strong><code>B0_cmb</code>.</strong> A steady background field drives no current in the layer, but it must meet the layer's condition at the
   outer wall. <code>'wall'</code> (default) adds a potential field to the fields of internal currents (<code>'dipole'</code>, <code>'G21 dipole'</code>,
   <code>'Luo_S1'</code>, <code>'Luo_S2'</code>, <code>'FDM'</code>) so that they do; it changes nothing for <code>muw_cmb</code> 1 and <code>mu</code> 1. <code>'plain'</code> keeps them as
@@ -2543,8 +2574,9 @@ column of the flow.</p>
 the walls or their steady rotation (<code>forcing</code> other than 0; <a href="../tidal-forcing/">Tidal forcing</a>, <a href="../libration/">Libration</a>,
 <a href="../thermal-forcing/">Thermal forcing</a>, <a href="../couette-flow/">Spherical Couette flow</a>, <a href="../forcing/">Convective forcing</a>).
 With a field every forcing but the wave-like tide (forcing 1, whose equilibrium tide is that of a fluid without a field)
-runs as without one: the field is solved with the flow at the forcing frequency, with any of the walls and inner cores
-above (insulating walls for the eccentricity tide, forcing 2), and spin_doctor checks the budgets of the solution. The
+runs as without one: the field is solved with the flow at the forcing frequency, with the walls and inner cores above
+(insulating walls for the eccentricity tide, forcing 2; the other limits are under <a href="#what-is-supported">What is supported</a>),
+and spin_doctor checks the budgets of the solution. The
 solution is written as solved, with the amplitude that the forcing sets.</p>
 <ul>
 <li><strong>A conducting inner core at one frequency.</strong> At a single frequency the field inside a uniform conducting inner core
@@ -2611,9 +2643,9 @@ a no-slip wall also moves along itself, as in a libration, the solid turns with 
 solids <code>forced_walls</code> changes nothing. <code>'deforming'</code> does not take <code>'conducting, Bessel'</code> behind a wall that moves, since
 the core's field is then no longer a Bessel function. The eccentricity tide (forcing 2) also moves its walls along
 themselves, which a conducting solid behind them would follow by deforming: it needs insulating walls.</p>
-<p>In both pictures a wall that moves, where B0 reaches it, needs the same permeability on both sides: a surface where the
-permeability jumps would carry magnetized matter through B0 as it moves. So <code>mu</code> must be 1, and <code>mu_i2o</code> 1 with a
-conducting inner core. A thin layer's <code>muw_cmb</code> or <code>muw_icb</code> must be 1 where the poloidal part of B0 reaches the wall if
+<p>In both pictures, and at the walls of the eccentricity tide, a wall that moves, where B0 reaches it, needs the same
+permeability on both sides: a surface where the permeability jumps would carry magnetized matter through B0 as it moves.
+So <code>mu_i2o</code> must be 1 at an inner wall with a conducting inner core behind it, and <code>mu</code> 1 at any other. A thin layer's <code>muw_cmb</code> or <code>muw_icb</code> must be 1 where the poloidal part of B0 reaches the wall if
 the layer has a thickness (<code>c</code> not 0) or conducts at rest (<code>'rigid'</code>), and where the toroidal part reaches it if the
 layer conducts (<code>c1</code> not 0). Otherwise it takes any value, as in an insulating layer (<code>c</code> and <code>c1</code> both 0) or a
 conducting layer without a thickness (<code>c</code> 0) that deforms with the boundary under a poloidal B0. Walls that stay in
@@ -2628,8 +2660,9 @@ walls, a thin conducting layer, a resolved conducting mantle or a conducting inn
 <p>Not supported (the run stops at startup):</p>
 <ul>
 <li>no background field at all (<code>B0 = None</code> and <code>B0_tor = None</code>), or <code>Le</code> or <code>Em</code> zero;</li>
-<li><code>ViscosD = 0</code> with an inner core (<code>ricb &gt; 0</code>);</li>
-<li>a conducting inner core in a full sphere, with zero radial stress at the inner wall (<code>bci = 2</code>), with an <code>mu_i2o</code> or
+<li><code>ViscosD = 0</code> with an inner core (<code>ricb &gt; 0</code>) and the flow (<code>hydro = 1</code>), as without a field;</li>
+<li>a conducting inner core in a full sphere, with zero radial stress at the inner wall of the flow (<code>bci = 2</code>, with
+  <code>hydro = 1</code>), with an <code>mu_i2o</code> or
   a <code>sigma_i2o</code> that is not a positive number, with an odd <code>N_cic</code> or one below 4 (<code>'conducting, Chebys'</code>), with a
   rotation that varies with latitude at its surface, or with <code>centrifugal = 1</code> and an <code>mu_i2o</code> other than 1 or a fluid
   slipping along it (<code>bci = 0</code>) across a poloidal field;</li>
@@ -2637,13 +2670,14 @@ walls, a thin conducting layer, a resolved conducting mantle or a conducting inn
   <code>just_induction.py</code> with a <code>lambda</code> other than <span class="arithmatex">\(i\,\)</span><code>forcing_frequency</code>; <code>just_induction.py</code> with such a <code>lambda</code> in a
   forced run other than forcing 11;</li>
 <li>a thin conducting layer on the inner core in a full sphere, with <code>centrifugal = 1</code>, with zero radial stress at the wall
-  (<code>bco = 2</code> or <code>bci = 2</code>), or with a rotation that varies with latitude at the wall;</li>
+  of a viscous fluid's flow (<code>bco = 2</code> or <code>bci = 2</code>, with <code>hydro = 1</code>), or, where it conducts (<code>c1_cmb</code> or <code>c1_icb</code> not 0), with a rotation
+  that varies with latitude at the wall;</li>
 <li>negative <code>c_cmb</code>, <code>c1_cmb</code>, <code>c_icb</code> or <code>c1_icb</code>, a <code>muw_cmb</code>, <code>muw_icb</code> or <code>mu</code> that is not positive, or <code>mu</code> other
   than 1 without a thin layer or a conducting inner core at every wall;</li>
-<li>a resolved mantle with <code>mu</code> other than 1, with <code>centrifugal = 1</code>, with zero radial stress at the outer wall
-  (<code>bco = 2</code>), or with a rotation that varies with latitude at the outer wall; an <code>r_surface</code> that is not above 1, an
-  <code>N_mantle</code> that is not an integer of at least 4, or a <code>sigma_mantle</code> that is not positive everywhere in the layer or
-  that <code>N_mantle</code> polynomials do not resolve;</li>
+<li>a resolved mantle with <code>mu</code> other than 1, with <code>centrifugal = 1</code>, with zero radial stress at the outer wall of a
+  viscous fluid's flow (<code>bco = 2</code>, with <code>hydro = 1</code>), or with a rotation that varies with latitude at the outer wall; an <code>r_surface</code> that is not
+  above 1, an <code>N_mantle</code> that is not an integer of at least 4, or a <code>sigma_mantle</code> that is not positive everywhere in
+  the layer or that <code>N_mantle</code> polynomials do not resolve;</li>
 <li>with <code>forced_walls = 'deforming'</code> (the default of forcings 9, 10 and 14), <code>'conducting, Bessel'</code> behind an inner wall
   that the forcing moves radially (forcing 6, and 9, 14 and 7 with <code>m</code> 2 where <code>forcing_amplitude_icb</code> is not 0);</li>
 <li>the libration of the inner core (forcing 7 with <code>m</code> 0, or forcing 8, and <code>forcing_amplitude_icb</code> not 0) behind a
@@ -2658,11 +2692,12 @@ walls, a thin conducting layer, a resolved conducting mantle or a conducting inn
 <li><code>'axial'</code> at a slipping wall, or <code>'dipole'</code> or <code>B0_ic = 'frozen currents'</code> at a slipping inner wall, where the
   permeability jumps (<code>mu</code> other than 1, or a thin layer whose <code>c_cmb</code> or <code>c_icb</code> is not 0 and whose <code>muw_cmb</code> or
   <code>muw_icb</code> is not 1), with an insulator or a thin layer that does not conduct beyond;</li>
-<li>a permeability other than 1 at a wall that the forcing moves radially and that B0 reaches: <code>mu</code>, <code>mu_i2o</code> with a
-  conducting inner core, and a thin layer's <code>muw_cmb</code> or <code>muw_icb</code> where the part of B0 that it acts on reaches the wall
-  (<a href="#a-boundary-that-moves">A boundary that moves</a>); the outer wall moves under forcing 10, and under 9, 14 and 7 with
-  <code>m</code> 2 where <code>forcing_amplitude_cmb</code> is not 0, the inner wall under 6, 9, 14 and 7 with <code>m</code> 2 where
-  <code>forcing_amplitude_icb</code> is not 0;</li>
+<li>a permeability other than 1 at a wall that the forcing moves radially and that B0 reaches: <code>mu_i2o</code> at an inner wall
+  with a conducting inner core behind it, <code>mu</code> at any other, and a thin layer's <code>muw_cmb</code> or <code>muw_icb</code> where the part of
+  B0 that it acts on reaches the wall (<a href="#a-boundary-that-moves">A boundary that moves</a>); the outer wall moves under
+  forcing 10, and under 9, 14 and 7 with <code>m</code> 2 where <code>forcing_amplitude_cmb</code> is not 0, the inner wall under 6, 9, 14 and
+  7 with <code>m</code> 2 where <code>forcing_amplitude_icb</code> is not 0, and both walls under forcing 2 where <code>forcing_amplitude_cmb</code> is
+  not 0;</li>
 <li>a poloidal and a toroidal part of opposite equatorial symmetry;</li>
 <li>the limits of the options above:<ul>
 <li><code>'dipole'</code> in a full sphere;</li>
@@ -2684,7 +2719,10 @@ walls, a thin conducting layer, a resolved conducting mantle or a conducting inn
   mantle other than <code>'insulator'</code> or a thin layer on the inner core;</li>
 </ul>
 </li>
-<li>with <code>ferraro_policy = 'refuse'</code>, a field and a rotation further than <code>1e-7</code> from the Ferraro condition;</li>
+<li>a background flow (<code>bgflow = 1</code>, <a href="../bgflow/">Background flow</a>) that does not turn rigidly at the wall of a conducting
+  solid (a conducting inner core, a thin layer that conducts, the resolved mantle);</li>
+<li>with <code>ferraro_policy = 'refuse'</code>, a field and a rotation further than <code>1e-7</code> from the Ferraro condition, or a field
+  that the background flow does not leave steady to <code>1e-7</code>;</li>
 <li>a value of <code>B0</code>, <code>B0_tor</code>, <code>mantle</code>, <code>innercore</code>, <code>mag_couplings</code>, <code>B0_ic</code>, <code>B0_cmb</code>, <code>forced_walls</code> or
   <code>ferraro_policy</code> other than those listed on this page.</li>
 </ul>

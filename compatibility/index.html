@@ -1,0 +1,2507 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../drag/">
+      
+      
+        <link rel="next" href="../solver/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+    
+    
+      
+        <title>Combining features - User Manual</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/compat.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#combining-features" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="User Manual" class="md-header__button md-logo" aria-label="User Manual" data-md-component="logo">
+      
+  <img src="../assets/test1.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            User Manual
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Combining features
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Introduction
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../installation/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Installation
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../getting-started/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../background/" class="md-tabs__link">
+          
+  
+  
+  User guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../benchmarks/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Benchmarks
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../anelastic/" class="md-tabs__link">
+          
+  
+  
+  Mathematical framework
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../checking/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Modifying kore
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="User Manual" class="md-nav__button md-logo" aria-label="User Manual" data-md-component="logo">
+      
+  <img src="../assets/test1.png" alt="logo">
+
+    </a>
+    User Manual
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../background/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../forcing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Convective forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../thermal-forcing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Thermal forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tidal-forcing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tidal forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../libration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Libration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../couette-flow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spherical Couette flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bgflow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../magnetic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Magnetic field
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rotating-solids/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rotating solids
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../drag/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Drag at the outer wall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Combining features
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Combining features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-read-the-tables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to read the tables
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The features
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pairs-of-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pairs of features
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#forced-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Forced runs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#requirements-of-each-feature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Requirements of each feature
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../solver/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Solver
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Output files
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../benchmarks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmarks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Mathematical framework
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Mathematical framework
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../anelastic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Anelastic equations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../numerical-method/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical method
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../differential_rotation_details/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Differential rotation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bgflow-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background flow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../centrifugal-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Centrifugal deformation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../magnetic-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Magnetic field
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rotating-solids-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rotating solids
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../drag-equations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Drag at the outer wall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reynolds-stress/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reynolds-stress forcing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../derivations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Derivation tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../checking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modifying kore
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-read-the-tables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to read the tables
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The features
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pairs-of-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pairs of features
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#forced-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Forced runs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#requirements-of-each-feature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Requirements of each feature
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="combining-features">Combining features</h1>
+<p>Most of kore's features work together: a magnetic field with a differential rotation, a stratified fluid in a full
+sphere, a resolved conducting mantle with rotating solids. Some combinations work only under a condition, and a few are
+not covered. kore checks the parameters when a run starts, before it builds anything, and stops with a message that says
+what to change on any combination it cannot solve. This page shows, for each pair of features and for each forcing,
+whether a run goes ahead, goes ahead under a condition, or stops, and whether a test suite checks that its solution is
+right.</p>
+<h2 id="how-to-read-the-tables">How to read the tables</h2>
+<p>Each cell answers two questions: does kore run the combination, and does a test show that its solution is right?</p>
+<table>
+<thead>
+<tr>
+<th>mark</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>✓</td>
+<td>runs, and a test suite checks it: with the pointer on the mark, the suites and the runs that do (and on a code, the name of its feature)</td>
+</tr>
+<tr>
+<td>○</td>
+<td>runs, and no suite checks it</td>
+</tr>
+<tr>
+<td>✓<sup>1</sup>, ○<sup>a</sup></td>
+<td>runs under the condition of the note, and stops otherwise (note 7: kore warns, and stops only with <code>ferraro_policy = 'refuse'</code>)</td>
+</tr>
+<tr>
+<td>✗</td>
+<td>stops at startup, with a message</td>
+</tr>
+<tr>
+<td>–</td>
+<td>has no meaning: two values of one parameter, an inner core in a full sphere, a viscosity without a flow</td>
+</tr>
+</tbody>
+</table>
+<p>A suite checks a combination when one of its runs has both features and compares the solution with theory, with an
+independent computation, with the <code>conductive_IC</code> branch, or with a budget of spin_doctor that must close. A run that is
+only compared with an earlier run of its own, as those of <code>regress.sh</code>, or that only checks that a run starts or stops,
+does not count. The suites are those of <code>tests/</code> (<a href="../checking/">Modifying kore</a>).</p>
+<p>Each feature also has requirements of its own, whatever it is combined with
+(<a href="#requirements-of-each-feature">Requirements of each feature</a>): a ✓ or a ○ means that the pair runs when both features
+meet theirs.</p>
+<h2 id="the-features">The features</h2>
+<p>The tables name each feature by a short code.</p>
+<table>
+<thead>
+<tr>
+<th>code</th>
+<th>feature</th>
+<th>switched on by</th>
+<th>page</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FS</td>
+<td>a full sphere, without an inner core</td>
+<td><code>ricb = 0</code></td>
+<td><a href="../numerical-method/#regularity-at-the-centre">Regularity at the centre</a></td>
+</tr>
+<tr>
+<td>Inv</td>
+<td>an inviscid fluid</td>
+<td><code>ViscosD = 0</code> (<code>Ek = 0</code>)</td>
+<td><a href="../numerical-method/#boundary-conditions">Boundary conditions</a></td>
+</tr>
+<tr>
+<td>H0</td>
+<td>no flow: the field, the entropy or the composition alone</td>
+<td><code>hydro = 0</code></td>
+<td><a href="../magnetic/#the-field-without-the-flow">The field without the flow</a></td>
+</tr>
+<tr>
+<td>S</td>
+<td>the entropy and its stratification</td>
+<td><code>thermal = 1</code></td>
+<td><a href="../background/#stratification">Stratification</a></td>
+</tr>
+<tr>
+<td>C</td>
+<td>the composition</td>
+<td><code>compositional = 1</code></td>
+<td><a href="../background/#composition">Composition</a></td>
+</tr>
+<tr>
+<td>DR</td>
+<td>a differential rotation</td>
+<td><code>diff_rot = 1</code></td>
+<td><a href="../background/#rotation">Rotation</a></td>
+</tr>
+<tr>
+<td>U</td>
+<td>a background flow</td>
+<td><code>bgflow = 1</code></td>
+<td><a href="../bgflow/">Background flow</a></td>
+</tr>
+<tr>
+<td>Cf</td>
+<td>the centrifugal deformation, at first order in the flattening</td>
+<td><code>centrifugal = 1</code></td>
+<td><a href="../background/#centrifugal-deformation">Centrifugal deformation</a></td>
+</tr>
+<tr>
+<td>Sph</td>
+<td>the exact spheroid</td>
+<td><code>centrifugal = 1</code> with <code>centrifugal_shape = 'spheroid'</code></td>
+<td><a href="../background/#flattening">Flattening</a></td>
+</tr>
+<tr>
+<td>B</td>
+<td>a magnetic field</td>
+<td><code>magnetic = 1</code></td>
+<td><a href="../magnetic/">Magnetic field</a></td>
+</tr>
+<tr>
+<td>cIC</td>
+<td>a conducting inner core</td>
+<td><code>magnetic = 1</code> and <code>innercore = 'conducting, Chebys'</code></td>
+<td><a href="../magnetic/#inner-core-and-walls">Inner core and walls</a></td>
+</tr>
+<tr>
+<td>Bes</td>
+<td>a conducting inner core at one frequency</td>
+<td><code>magnetic = 1</code> and <code>innercore = 'conducting, Bessel'</code></td>
+<td><a href="../magnetic/#forced-runs">Forced runs</a></td>
+</tr>
+<tr>
+<td>TWA</td>
+<td>a thin conducting layer</td>
+<td><code>magnetic = 1</code>, and <code>mantle = 'TWA'</code> or <code>innercore = 'TWA'</code></td>
+<td><a href="../magnetic/#thin-conducting-layer">Thin conducting layer</a></td>
+</tr>
+<tr>
+<td>Man</td>
+<td>a resolved conducting mantle</td>
+<td><code>magnetic = 1</code> and <code>mantle = 'resolved'</code></td>
+<td><a href="../magnetic/#resolved-conducting-mantle">Resolved conducting mantle</a></td>
+</tr>
+<tr>
+<td>Rot</td>
+<td>the rotating solids</td>
+<td><code>rotdyn = 1</code></td>
+<td><a href="../rotating-solids/">Rotating solids</a></td>
+</tr>
+<tr>
+<td>Kd</td>
+<td>a constant drag at the outer wall</td>
+<td><code>kappa_cmb &gt; 0</code></td>
+<td><a href="../drag/#constant-drag-kappa_cmb">Constant drag</a></td>
+</tr>
+<tr>
+<td>Kt</td>
+<td>the drag of the topography</td>
+<td><code>topo_drag = 'rekier'</code></td>
+<td><a href="../drag/#drag-of-the-topography-topo_drag-rekier">Drag of the topography</a></td>
+</tr>
+</tbody>
+</table>
+<p>kore reads <code>innercore</code> and <code>mantle</code> only with a field: without <code>magnetic = 1</code> it leaves them aside. The forcings have a
+table of their own (<a href="#forced-runs">Forced runs</a>).</p>
+<h2 id="pairs-of-features">Pairs of features</h2>
+<p>The grid crosses every pair of features. A pair runs if it runs in an eigenvalue problem or in a forced run, whose own
+conditions are under <a href="#forced-runs">Forced runs</a>. The grid is symmetric: read a row against a column.</p>
+<!-- compat_tables.py: grid -->
+
+<div class="compat">
+<table>
+<thead>
+<tr>
+<th></th>
+<th><abbr title="a full sphere">FS</abbr></th>
+<th><abbr title="an inviscid fluid">Inv</abbr></th>
+<th><abbr title="no flow">H0</abbr></th>
+<th><abbr title="the entropy">S</abbr></th>
+<th><abbr title="the composition">C</abbr></th>
+<th><abbr title="a differential rotation">DR</abbr></th>
+<th><abbr title="a background flow">U</abbr></th>
+<th><abbr title="the centrifugal deformation">Cf</abbr></th>
+<th><abbr title="the exact spheroid">Sph</abbr></th>
+<th><abbr title="a magnetic field">B</abbr></th>
+<th><abbr title="a conducting inner core">cIC</abbr></th>
+<th><abbr title="a conducting inner core at one frequency">Bes</abbr></th>
+<th><abbr title="a thin conducting layer">TWA</abbr></th>
+<th><abbr title="a resolved conducting mantle">Man</abbr></th>
+<th><abbr title="the rotating solids">Rot</abbr></th>
+<th><abbr title="a constant drag">Kd</abbr></th>
+<th><abbr title="the drag of the topography">Kt</abbr></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><abbr title="a full sphere">FS</abbr></td>
+<td><span class="d"></span></td>
+<td><span class="y" title="tested by tests/centrifugal: spin-over, spheroid_check; tests/magnetic: rcf_inv_s2; tests/bgflow: frame_sphere_inviscid; tests/cic_forcings: lib_inviscid">✓</span></td>
+<td><span class="y" title="tested by tests/decay: full_sphere; tests/mantle: decay_sphere; tests/twa: decay_sphere_p3">✓</span></td>
+<td><span class="y" title="tested by tests/ci: test_spinover; tests/heat_dr: sun; tests/bgflow: tor_sphere; tests/composition: th_sphere; tests/tidal: f14_sphere_wu">✓</span><sup>1</sup></td>
+<td><span class="y" title="tested by tests/composition: co_sphere, co_sphere_flux, co_sphere_nodiff; tests/bgflow: frame_sphere_inviscid">✓</span><sup>1</sup></td>
+<td><span class="y" title="tested by tests/ci: test_spinover; tests/heat_dr: sun; tests/bgflow: dr_sphere; tests/magnetic: rg_fs, bdr_fs">✓</span></td>
+<td><span class="y" title="tested by tests/bgflow: frame_sphere, tor_sphere, sphere, inviscid">✓</span></td>
+<td><span class="y" title="tested by tests/centrifugal: spin-over, ru_bq_fs1, bud_bq_fs, bm_fs, spheroid_modes">✓</span><sup>2</sup></td>
+<td><span class="y" title="tested by tests/centrifugal: spheroid_check, bud_sph_fs, bms_fs">✓</span><sup>2</sup></td>
+<td><span class="y" title="tested by tests/decay: full_sphere; tests/magnetic: rcf_ax_m1, bf_s2_m1, rg_fs; tests/couette: rigid_sphere; tests/sheet: lz_sphere; tests/bgflow: sphere">✓</span><sup>3</sup></td>
+<td><span class="n">–</span></td>
+<td><span class="n">–</span></td>
+<td><span class="y" title="tested by tests/twa: decay_sphere_p3, cic_sphere_slip; tests/forced_field: fs_f9_twa">✓</span><sup>4</sup></td>
+<td><span class="y" title="tested by tests/mantle: decay_sphere, cic_sphere_slip; tests/forced_field: def_fs_man">✓</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="y" title="tested by tests/drag: k_sphere">✓</span></td>
+<td><span class="y" title="tested by tests/drag: t_sphere">✓</span></td>
+</tr>
+<tr>
+<td><abbr title="an inviscid fluid">Inv</abbr></td>
+<td><span class="y" title="tested by tests/centrifugal: spin-over, spheroid_check; tests/magnetic: rcf_inv_s2; tests/bgflow: frame_sphere_inviscid; tests/cic_forcings: lib_inviscid">✓</span></td>
+<td><span class="d"></span></td>
+<td><span class="n">–</span></td>
+<td><span class="y" title="tested by tests/centrifugal: monopole, ideal, shape_check; tests/bgflow: frame_sphere_inviscid">✓</span><sup>1</sup></td>
+<td><span class="y" title="tested by tests/bgflow: frame_sphere_inviscid">✓</span><sup>1</sup></td>
+<td><span class="o">○</span></td>
+<td><span class="y" title="tested by tests/bgflow: frame_sphere_inviscid, inviscid">✓</span></td>
+<td><span class="y" title="tested by tests/centrifugal: spin-over, relabelling, clairaut, ideal, spheroid_modes, shape_check">✓</span></td>
+<td><span class="y" title="tested by tests/centrifugal: spheroid_check">✓</span></td>
+<td><span class="y" title="tested by tests/magnetic: rcf_inv_s2; tests/bgflow: frame_sphere_inviscid">✓</span><sup>3,5</sup></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="o">○</span><sup>4,5</sup></td>
+<td><span class="o">○</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+</tr>
+<tr>
+<td><abbr title="no flow">H0</abbr></td>
+<td><span class="y" title="tested by tests/decay: full_sphere; tests/mantle: decay_sphere; tests/twa: decay_sphere_p3">✓</span></td>
+<td><span class="n">–</span></td>
+<td><span class="d"></span></td>
+<td><span class="y" title="tested by tests/decay: entropy, entropy_flux; tests/composition: th_decay">✓</span></td>
+<td><span class="y" title="tested by tests/composition: co_decay">✓</span></td>
+<td><span class="y" title="tested by tests/decay: diffrot_hydro0">✓</span></td>
+<td><span class="o">○</span></td>
+<td><span class="o">○</span></td>
+<td><span class="o">○</span></td>
+<td><span class="y" title="tested by tests/decay: insulating, full_sphere; tests/twa: decay_cmb_*; tests/mantle: decay_uniform, decay_exp">✓</span></td>
+<td><span class="y" title="tested by tests/decay: conducting_ic; tests/mantle: decay_cic">✓</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="y" title="tested by tests/twa: decay_cmb_*, decay_sphere_p3">✓</span></td>
+<td><span class="y" title="tested by tests/mantle: decay_uniform, decay_exp, decay_sphere, decay_cic">✓</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+</tr>
+<tr>
+<td><abbr title="the entropy">S</abbr></td>
+<td><span class="y" title="tested by tests/ci: test_spinover; tests/heat_dr: sun; tests/bgflow: tor_sphere; tests/composition: th_sphere; tests/tidal: f14_sphere_wu">✓</span><sup>1</sup></td>
+<td><span class="y" title="tested by tests/centrifugal: monopole, ideal, shape_check; tests/bgflow: frame_sphere_inviscid">✓</span><sup>1</sup></td>
+<td><span class="y" title="tested by tests/decay: entropy, entropy_flux; tests/composition: th_decay">✓</span></td>
+<td><span class="d"></span></td>
+<td><span class="y" title="tested by tests/composition: cic_two_zone, both, wu_both; tests/bgflow: wu_all">✓</span></td>
+<td><span class="y" title="tested by tests/heat_dr: sun, rfix1, s96; tests/ci: test_spinover; tests/composition: th_diff_rot; tests/tidal: f14_m1_diffrot; tests/bgflow: dr_shell">✓</span><sup>6</sup></td>
+<td><span class="y" title="tested by tests/bgflow: tor_shell, frame_adiabatic, wu_all">✓</span></td>
+<td><span class="y" title="tested by tests/centrifugal: ru_wu_m1, bud_wu_cl, ideal, shape_check; tests/composition: th_deformed">✓</span></td>
+<td><span class="y" title="tested by tests/centrifugal: ru_sph_m1, bud_sph_ns, spheroid_check; tests/composition: th_spheroid">✓</span></td>
+<td><span class="y" title="tested by tests/sheet: wu_tor_out; tests/composition: th_field; tests/inner_core: slip_wu; tests/forced_field: wu_f9_bes; tests/couette: wu_field">✓</span></td>
+<td><span class="y" title="tested by tests/composition: th_field; tests/bgflow: wu_all; tests/inner_core: slip_wu, f6_wu; tests/couette: wu_field">✓</span></td>
+<td><span class="y" title="tested by tests/forced_field: wu_f9_bes, wu_lib_man">✓</span></td>
+<td><span class="y" title="tested by tests/composition: th_solids_field; tests/forced_field: wu_f14_twa; tests/couette: wu_field">✓</span></td>
+<td><span class="y" title="tested by tests/composition: th_field; tests/bgflow: wu_all; tests/forced_field: wu_lib_man">✓</span></td>
+<td><span class="y" title="tested by tests/composition: th_solids, th_solids_field">✓</span></td>
+<td><span class="y" title="tested by tests/drag: forced13; tests/couette: f13_drag">✓</span></td>
+<td><span class="y" title="tested by tests/drag: th, th2; tests/composition: th_drag">✓</span></td>
+</tr>
+<tr>
+<td><abbr title="the composition">C</abbr></td>
+<td><span class="y" title="tested by tests/composition: co_sphere, co_sphere_flux, co_sphere_nodiff; tests/bgflow: frame_sphere_inviscid">✓</span><sup>1</sup></td>
+<td><span class="y" title="tested by tests/bgflow: frame_sphere_inviscid">✓</span><sup>1</sup></td>
+<td><span class="y" title="tested by tests/composition: co_decay">✓</span></td>
+<td><span class="y" title="tested by tests/composition: cic_two_zone, both, wu_both; tests/bgflow: wu_all">✓</span></td>
+<td><span class="d"></span></td>
+<td><span class="y" title="tested by tests/composition: co_diff_rot, wu_both; tests/bgflow: dr_shell">✓</span></td>
+<td><span class="y" title="tested by tests/bgflow: tor_shell, frame_adiabatic, wu_all">✓</span></td>
+<td><span class="y" title="tested by tests/composition: co_deformed">✓</span></td>
+<td><span class="y" title="tested by tests/composition: co_spheroid">✓</span></td>
+<td><span class="y" title="tested by tests/composition: co_field, co_solids_field; tests/bgflow: wu_all">✓</span></td>
+<td><span class="y" title="tested by tests/composition: co_field; tests/bgflow: wu_all">✓</span></td>
+<td><span class="o">○</span></td>
+<td><span class="y" title="tested by tests/composition: co_solids_field">✓</span></td>
+<td><span class="y" title="tested by tests/composition: co_field; tests/bgflow: wu_all">✓</span></td>
+<td><span class="y" title="tested by tests/composition: co_solids, co_solids_field">✓</span></td>
+<td><span class="o">○</span></td>
+<td><span class="y" title="tested by tests/composition: co_drag">✓</span></td>
+</tr>
+<tr>
+<td><abbr title="a differential rotation">DR</abbr></td>
+<td><span class="y" title="tested by tests/ci: test_spinover; tests/heat_dr: sun; tests/bgflow: dr_sphere; tests/magnetic: rg_fs, bdr_fs">✓</span></td>
+<td><span class="o">○</span></td>
+<td><span class="y" title="tested by tests/decay: diffrot_hydro0">✓</span></td>
+<td><span class="y" title="tested by tests/heat_dr: sun, rfix1, s96; tests/ci: test_spinover; tests/composition: th_diff_rot; tests/tidal: f14_m1_diffrot; tests/bgflow: dr_shell">✓</span><sup>6</sup></td>
+<td><span class="y" title="tested by tests/composition: co_diff_rot, wu_both; tests/bgflow: dr_shell">✓</span></td>
+<td><span class="d"></span></td>
+<td><span class="o">○</span></td>
+<td><span class="y" title="tested by tests/centrifugal: ru_wu_dr, bud_wu_dr, bm_gen">✓</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="y" title="tested by tests/decay: diffrot_hydro1; tests/magnetic: rg_axial, bdr_pol, bgen, bfer, bfdr; tests/bgflow: dr_shell">✓</span><sup>7</sup></td>
+<td><span class="y" title="tested by tests/inner_core: slip_offset, f10_diffrot_cheb; tests/magnetic: rg_cic; tests/mantle: rigid_offset; tests/couette: diffrot">✓</span><sup>8</sup></td>
+<td><span class="y" title="tested by tests/inner_core: f10_diffrot_bes; tests/forced_field: bessel_chebys_dr">✓</span><sup>8</sup></td>
+<td><span class="y" title="tested by tests/twa: rigid_offset, sheared_walls">✓</span><sup>8</sup></td>
+<td><span class="y" title="tested by tests/mantle: rigid_offset, sheared; tests/forced_field: def_dr">✓</span><sup>8</sup></td>
+<td><span class="x">✗</span></td>
+<td><span class="y" title="tested by tests/drag: k_rigid">✓</span></td>
+<td><span class="x">✗</span></td>
+</tr>
+<tr>
+<td><abbr title="a background flow">U</abbr></td>
+<td><span class="y" title="tested by tests/bgflow: frame_sphere, tor_sphere, sphere, inviscid">✓</span></td>
+<td><span class="y" title="tested by tests/bgflow: frame_sphere_inviscid, inviscid">✓</span></td>
+<td><span class="o">○</span></td>
+<td><span class="y" title="tested by tests/bgflow: tor_shell, frame_adiabatic, wu_all">✓</span></td>
+<td><span class="y" title="tested by tests/bgflow: tor_shell, frame_adiabatic, wu_all">✓</span></td>
+<td><span class="o">○</span></td>
+<td><span class="d"></span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="y" title="tested by tests/bgflow: tor_shell, frame_field_solids, wu_all, sphere, twa, f12_field">✓</span><sup>7</sup></td>
+<td><span class="y" title="tested by tests/bgflow: frame_field_solids, wu_all, f12_field">✓</span><sup>8</sup></td>
+<td><span class="o">○</span><sup>8</sup></td>
+<td><span class="y" title="tested by tests/bgflow: frame_field_twa, twa, f8_twa">✓</span><sup>8</sup></td>
+<td><span class="y" title="tested by tests/bgflow: frame_field_solids, wu_all">✓</span><sup>8</sup></td>
+<td><span class="x">✗</span></td>
+<td><span class="o">○</span></td>
+<td><span class="x">✗</span></td>
+</tr>
+<tr>
+<td><abbr title="the centrifugal deformation">Cf</abbr></td>
+<td><span class="y" title="tested by tests/centrifugal: spin-over, ru_bq_fs1, bud_bq_fs, bm_fs, spheroid_modes">✓</span><sup>2</sup></td>
+<td><span class="y" title="tested by tests/centrifugal: spin-over, relabelling, clairaut, ideal, spheroid_modes, shape_check">✓</span></td>
+<td><span class="o">○</span></td>
+<td><span class="y" title="tested by tests/centrifugal: ru_wu_m1, bud_wu_cl, ideal, shape_check; tests/composition: th_deformed">✓</span></td>
+<td><span class="y" title="tested by tests/composition: co_deformed">✓</span></td>
+<td><span class="y" title="tested by tests/centrifugal: ru_wu_dr, bud_wu_dr, bm_gen">✓</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="d"></span></td>
+<td><span class="n">–</span></td>
+<td><span class="y" title="tested by tests/centrifugal: bm_uniform, bm_tor, eig_check (with a field), spheroid_check (first order)">✓</span><sup>9</sup></td>
+<td><span class="y" title="tested by tests/centrifugal: bm_cic, eig_check (decay with a core), spheroid_check (first order), fcn.sh">✓</span><sup>10</sup></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+</tr>
+<tr>
+<td><abbr title="the exact spheroid">Sph</abbr></td>
+<td><span class="y" title="tested by tests/centrifugal: spheroid_check, bud_sph_fs, bms_fs">✓</span><sup>2</sup></td>
+<td><span class="y" title="tested by tests/centrifugal: spheroid_check">✓</span></td>
+<td><span class="o">○</span></td>
+<td><span class="y" title="tested by tests/centrifugal: ru_sph_m1, bud_sph_ns, spheroid_check; tests/composition: th_spheroid">✓</span></td>
+<td><span class="y" title="tested by tests/composition: co_spheroid">✓</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="n">–</span></td>
+<td><span class="d"></span></td>
+<td><span class="y" title="tested by tests/centrifugal: bms_ins, bms_tor, spheroid_check">✓</span><sup>9</sup></td>
+<td><span class="y" title="tested by tests/centrifugal: bms_cic, spheroid_check">✓</span><sup>10</sup></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+</tr>
+<tr>
+<td><abbr title="a magnetic field">B</abbr></td>
+<td><span class="y" title="tested by tests/decay: full_sphere; tests/magnetic: rcf_ax_m1, bf_s2_m1, rg_fs; tests/couette: rigid_sphere; tests/sheet: lz_sphere; tests/bgflow: sphere">✓</span><sup>3</sup></td>
+<td><span class="y" title="tested by tests/magnetic: rcf_inv_s2; tests/bgflow: frame_sphere_inviscid">✓</span><sup>3,5</sup></td>
+<td><span class="y" title="tested by tests/decay: insulating, full_sphere; tests/twa: decay_cmb_*; tests/mantle: decay_uniform, decay_exp">✓</span></td>
+<td><span class="y" title="tested by tests/sheet: wu_tor_out; tests/composition: th_field; tests/inner_core: slip_wu; tests/forced_field: wu_f9_bes; tests/couette: wu_field">✓</span></td>
+<td><span class="y" title="tested by tests/composition: co_field, co_solids_field; tests/bgflow: wu_all">✓</span></td>
+<td><span class="y" title="tested by tests/decay: diffrot_hydro1; tests/magnetic: rg_axial, bdr_pol, bgen, bfer, bfdr; tests/bgflow: dr_shell">✓</span><sup>7</sup></td>
+<td><span class="y" title="tested by tests/bgflow: tor_shell, frame_field_solids, wu_all, sphere, twa, f12_field">✓</span><sup>7</sup></td>
+<td><span class="y" title="tested by tests/centrifugal: bm_uniform, bm_tor, eig_check (with a field), spheroid_check (first order)">✓</span><sup>9</sup></td>
+<td><span class="y" title="tested by tests/centrifugal: bms_ins, bms_tor, spheroid_check">✓</span><sup>9</sup></td>
+<td><span class="d"></span></td>
+<td><span class="y" title="tested by tests/inner_core: slip_axial_m0, slip_dipole; tests/decay: conducting_ic; tests/magnetic: bud_m1, tb_mal_m1, b_s2_cic">✓</span></td>
+<td><span class="y" title="tested by tests/inner_core: dip_libration; tests/forced_field: lib_bes, bessel_chebys_f9; tests/couette: c_bes">✓</span></td>
+<td><span class="y" title="tested by tests/inner_core: dip_twa_mantle, dip_twa_core; tests/twa: cic_noslip_both; tests/sheet: pol_layer_out; tests/rotdyn: eq_twa">✓</span></td>
+<td><span class="y" title="tested by tests/inner_core: dip_resolved_mantle; tests/mantle: cic_noslip, sigma_zero, induction">✓</span></td>
+<td><span class="y" title="tested by tests/rotdyn: cic_twa, cic_s2, cic_axial, wu_field; tests/inner_core: dip_rotdyn; tests/drag: r_twa_k">✓</span><sup>11</sup></td>
+<td><span class="y" title="tested by tests/drag: r_twa_k, r_res_k; tests/sheet: tor_out_drag">✓</span></td>
+<td><span class="y" title="tested by tests/drag: m_twa_t, wu_t_field">✓</span></td>
+</tr>
+<tr>
+<td><abbr title="a conducting inner core">cIC</abbr></td>
+<td><span class="n">–</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="y" title="tested by tests/decay: conducting_ic; tests/mantle: decay_cic">✓</span></td>
+<td><span class="y" title="tested by tests/composition: th_field; tests/bgflow: wu_all; tests/inner_core: slip_wu, f6_wu; tests/couette: wu_field">✓</span></td>
+<td><span class="y" title="tested by tests/composition: co_field; tests/bgflow: wu_all">✓</span></td>
+<td><span class="y" title="tested by tests/inner_core: slip_offset, f10_diffrot_cheb; tests/magnetic: rg_cic; tests/mantle: rigid_offset; tests/couette: diffrot">✓</span><sup>8</sup></td>
+<td><span class="y" title="tested by tests/bgflow: frame_field_solids, wu_all, f12_field">✓</span><sup>8</sup></td>
+<td><span class="y" title="tested by tests/centrifugal: bm_cic, eig_check (decay with a core), spheroid_check (first order), fcn.sh">✓</span><sup>10</sup></td>
+<td><span class="y" title="tested by tests/centrifugal: bms_cic, spheroid_check">✓</span><sup>10</sup></td>
+<td><span class="y" title="tested by tests/inner_core: slip_axial_m0, slip_dipole; tests/decay: conducting_ic; tests/magnetic: bud_m1, tb_mal_m1, b_s2_cic">✓</span></td>
+<td><span class="d"></span></td>
+<td><span class="n">–</span></td>
+<td><span class="y" title="tested by tests/couette: rigid_mu, wu_field; tests/forced_field: wu_f14_twa, f10_twa">✓</span><sup>12</sup></td>
+<td><span class="y" title="tested by tests/mantle: cic_innercore, decay_cic, rigid_offset; tests/forced_field: lib_man; tests/couette: c_man; tests/rotdyn: cic_s2">✓</span></td>
+<td><span class="y" title="tested by tests/rotdyn: cic_s2, wu_field; tests/inner_core: dip_rotdyn; tests/drag: r_res_k">✓</span></td>
+<td><span class="y" title="tested by tests/drag: r_res_k">✓</span></td>
+<td><span class="y" title="tested by tests/drag: wu_t_field">✓</span></td>
+</tr>
+<tr>
+<td><abbr title="a conducting inner core at one frequency">Bes</abbr></td>
+<td><span class="n">–</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="y" title="tested by tests/forced_field: wu_f9_bes, wu_lib_man">✓</span></td>
+<td><span class="o">○</span></td>
+<td><span class="y" title="tested by tests/inner_core: f10_diffrot_bes; tests/forced_field: bessel_chebys_dr">✓</span><sup>8</sup></td>
+<td><span class="o">○</span><sup>8</sup></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="y" title="tested by tests/inner_core: dip_libration; tests/forced_field: lib_bes, bessel_chebys_f9; tests/couette: c_bes">✓</span></td>
+<td><span class="n">–</span></td>
+<td><span class="d"></span></td>
+<td><span class="y" title="tested by tests/cic_forcings: lib7_field">✓</span><sup>12</sup></td>
+<td><span class="y" title="tested by tests/forced_field: wu_lib_man, f7m2_man">✓</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="o">○</span><sup>13</sup></td>
+<td><span class="o">○</span><sup>13</sup></td>
+</tr>
+<tr>
+<td><abbr title="a thin conducting layer">TWA</abbr></td>
+<td><span class="y" title="tested by tests/twa: decay_sphere_p3, cic_sphere_slip; tests/forced_field: fs_f9_twa">✓</span><sup>4</sup></td>
+<td><span class="o">○</span><sup>4,5</sup></td>
+<td><span class="y" title="tested by tests/twa: decay_cmb_*, decay_sphere_p3">✓</span></td>
+<td><span class="y" title="tested by tests/composition: th_solids_field; tests/forced_field: wu_f14_twa; tests/couette: wu_field">✓</span></td>
+<td><span class="y" title="tested by tests/composition: co_solids_field">✓</span></td>
+<td><span class="y" title="tested by tests/twa: rigid_offset, sheared_walls">✓</span><sup>8</sup></td>
+<td><span class="y" title="tested by tests/bgflow: frame_field_twa, twa, f8_twa">✓</span><sup>8</sup></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="y" title="tested by tests/inner_core: dip_twa_mantle, dip_twa_core; tests/twa: cic_noslip_both; tests/sheet: pol_layer_out; tests/rotdyn: eq_twa">✓</span></td>
+<td><span class="y" title="tested by tests/couette: rigid_mu, wu_field; tests/forced_field: wu_f14_twa, f10_twa">✓</span><sup>12</sup></td>
+<td><span class="y" title="tested by tests/cic_forcings: lib7_field">✓</span><sup>12</sup></td>
+<td><span class="d"></span></td>
+<td><span class="y" title="tested by tests/rotdyn: cic_axial">✓</span><sup>14</sup></td>
+<td><span class="y" title="tested by tests/rotdyn: cic_twa, cic_axial; tests/drag: r_twa_k">✓</span></td>
+<td><span class="y" title="tested by tests/drag: r_twa_k">✓</span></td>
+<td><span class="y" title="tested by tests/drag: m_twa_t">✓</span></td>
+</tr>
+<tr>
+<td><abbr title="a resolved conducting mantle">Man</abbr></td>
+<td><span class="y" title="tested by tests/mantle: decay_sphere, cic_sphere_slip; tests/forced_field: def_fs_man">✓</span></td>
+<td><span class="o">○</span></td>
+<td><span class="y" title="tested by tests/mantle: decay_uniform, decay_exp, decay_sphere, decay_cic">✓</span></td>
+<td><span class="y" title="tested by tests/composition: th_field; tests/bgflow: wu_all; tests/forced_field: wu_lib_man">✓</span></td>
+<td><span class="y" title="tested by tests/composition: co_field; tests/bgflow: wu_all">✓</span></td>
+<td><span class="y" title="tested by tests/mantle: rigid_offset, sheared; tests/forced_field: def_dr">✓</span><sup>8</sup></td>
+<td><span class="y" title="tested by tests/bgflow: frame_field_solids, wu_all">✓</span><sup>8</sup></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="y" title="tested by tests/inner_core: dip_resolved_mantle; tests/mantle: cic_noslip, sigma_zero, induction">✓</span></td>
+<td><span class="y" title="tested by tests/mantle: cic_innercore, decay_cic, rigid_offset; tests/forced_field: lib_man; tests/couette: c_man; tests/rotdyn: cic_s2">✓</span></td>
+<td><span class="y" title="tested by tests/forced_field: wu_lib_man, f7m2_man">✓</span></td>
+<td><span class="y" title="tested by tests/rotdyn: cic_axial">✓</span><sup>14</sup></td>
+<td><span class="d"></span></td>
+<td><span class="y" title="tested by tests/rotdyn: cic_s2, cic_axial; tests/drag: r_res_k">✓</span></td>
+<td><span class="y" title="tested by tests/drag: r_res_k">✓</span></td>
+<td><span class="y" title="tested by tests/drag: wu_t_field">✓</span></td>
+</tr>
+<tr>
+<td><abbr title="the rotating solids">Rot</abbr></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="y" title="tested by tests/composition: th_solids, th_solids_field">✓</span></td>
+<td><span class="y" title="tested by tests/composition: co_solids, co_solids_field">✓</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="y" title="tested by tests/rotdyn: cic_twa, cic_s2, cic_axial, wu_field; tests/inner_core: dip_rotdyn; tests/drag: r_twa_k">✓</span><sup>11</sup></td>
+<td><span class="y" title="tested by tests/rotdyn: cic_s2, wu_field; tests/inner_core: dip_rotdyn; tests/drag: r_res_k">✓</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="y" title="tested by tests/rotdyn: cic_twa, cic_axial; tests/drag: r_twa_k">✓</span></td>
+<td><span class="y" title="tested by tests/rotdyn: cic_s2, cic_axial; tests/drag: r_res_k">✓</span></td>
+<td><span class="d"></span></td>
+<td><span class="y" title="tested by tests/drag: r_k, r_twa_k, r_res_k, r_stiff, r_weak">✓</span></td>
+<td><span class="y" title="tested by tests/drag: r_t, wu_t_field">✓</span></td>
+</tr>
+<tr>
+<td><abbr title="a constant drag">Kd</abbr></td>
+<td><span class="y" title="tested by tests/drag: k_sphere">✓</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="y" title="tested by tests/drag: forced13; tests/couette: f13_drag">✓</span></td>
+<td><span class="o">○</span></td>
+<td><span class="y" title="tested by tests/drag: k_rigid">✓</span></td>
+<td><span class="o">○</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="y" title="tested by tests/drag: r_twa_k, r_res_k; tests/sheet: tor_out_drag">✓</span></td>
+<td><span class="y" title="tested by tests/drag: r_res_k">✓</span></td>
+<td><span class="o">○</span><sup>13</sup></td>
+<td><span class="y" title="tested by tests/drag: r_twa_k">✓</span></td>
+<td><span class="y" title="tested by tests/drag: r_res_k">✓</span></td>
+<td><span class="y" title="tested by tests/drag: r_k, r_twa_k, r_res_k, r_stiff, r_weak">✓</span></td>
+<td><span class="d"></span></td>
+<td><span class="x">✗</span></td>
+</tr>
+<tr>
+<td><abbr title="the drag of the topography">Kt</abbr></td>
+<td><span class="y" title="tested by tests/drag: t_sphere">✓</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="y" title="tested by tests/drag: th, th2; tests/composition: th_drag">✓</span></td>
+<td><span class="y" title="tested by tests/composition: co_drag">✓</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="y" title="tested by tests/drag: m_twa_t, wu_t_field">✓</span></td>
+<td><span class="y" title="tested by tests/drag: wu_t_field">✓</span></td>
+<td><span class="o">○</span><sup>13</sup></td>
+<td><span class="y" title="tested by tests/drag: m_twa_t">✓</span></td>
+<td><span class="y" title="tested by tests/drag: wu_t_field">✓</span></td>
+<td><span class="y" title="tested by tests/drag: r_t, wu_t_field">✓</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="d"></span></td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- end of grid -->
+
+<ul>
+<li><strong>1.</strong> <code>'inverse square'</code> (<code>stratification</code>, <code>comp_stratification</code>) needs an inner core.</li>
+<li><strong>2.</strong> With the flow, a viscous fluid and <code>m</code> other than 0, a deformed full sphere needs <code>rpower_v</code> ≥ 4 (the default
+  is 3).</li>
+<li><strong>3.</strong> <code>B0 = 'dipole'</code>, whose source is at the centre, and <code>B0_tor = 'Malkus'</code> of degree 2, which is not regular
+  there, need an inner core. A <code>'user'</code> or <code>'general'</code> profile must be finite at the centre.</li>
+<li><strong>4.</strong> The thin layer at the outer wall (<code>mantle = 'TWA'</code>).</li>
+<li><strong>5.</strong> An inviscid fluid cannot take the push of a current sheet at its wall. B0 must meet the wall (a toroidal B0
+  that vanishes there, a poloidal one that matches the field beyond), unless a conductor beyond holds the sheet: a thin
+  layer that conducts (<code>c1_cmb</code> not 0) or the resolved mantle.</li>
+<li><strong>6.</strong> <code>thermal_wind</code> 1 or 2 needs <code>Beyonce</code> other than 0 (set it after <code>set_scales()</code>).</li>
+<li><strong>7.</strong> B0 is a steady background only if the rotation or the flow leaves it steady: the rotation must not wind it up
+  (Ferraro's law), and the flow must not induce a field from it (<a href="../bgflow/#what-it-adds">Background flow</a>). kore
+  prints how far it is from that, warns, and with <code>ferraro_policy = 'refuse'</code> stops above <span class="arithmatex">\(10^{-7}\)</span>. <code>bin/bgflow.py</code>
+  does not write the flow of a forcing-12 run that has a field.</li>
+<li><strong>8.</strong> A conducting solid (a conducting inner core, a thin layer that conducts, <code>c1</code> not 0, or the resolved mantle)
+  turns rigidly: the differential rotation must be uniform in latitude at its wall, and the background flow a rigid
+  rotation there.</li>
+<li><strong>9.</strong> A current sheet at a slipping wall with an insulator beyond stops a deformed body: use a no-slip wall, or a
+  field that meets the wall.</li>
+<li><strong>10.</strong> <code>mu_i2o = 1</code>, and with the flow and a poloidal B0, a no-slip inner wall (<code>bci = 1</code>).</li>
+<li><strong>11.</strong> A toroidal B0 must vanish at both walls.</li>
+<li><strong>12.</strong> The thin layer at the outer wall.</li>
+<li><strong>13.</strong> With the forcings that take the drag (<a href="#forced-runs">Forced runs</a>).</li>
+<li><strong>14.</strong> The thin layer on the inner core, the resolved mantle at the outer wall.</li>
+</ul>
+<h2 id="forced-runs">Forced runs</h2>
+<p>A forcing adds conditions of its own: on <code>m</code> and <code>symm</code>, on the walls, and on the solids that it moves or turns. Every
+forced run needs the flow (<code>hydro = 1</code>) and a spherical body (<code>centrifugal = 0</code>), and none takes the rotating solids
+(<code>rotdyn = 1</code>), so the table has no columns for them.</p>
+<p>Two rules hold for every forcing.</p>
+<ul>
+<li>A steady run (<code>forcing_frequency = 0</code>; for forcing 11 with a scan, a frequency 0 among <code>rsf_frequencies</code>) of a viscous
+  fluid needs walls that stay in place, <code>bco</code> and <code>bci</code> 0 or 1: a steady flow through a wall of zero radial stress would
+  move the wall without end.</li>
+<li>Without diffusion (<code>ThermaD = 0</code> with the entropy, <code>CompoD = 0</code> with the composition), the fluid must carry the
+  scalar round at a rate of one sign: at the frequency <span class="arithmatex">\(w\)</span> of the run, <span class="arithmatex">\(w + m\Omega\)</span> must not vanish in the fluid,
+  <span class="arithmatex">\(\Omega\)</span> being the angular velocity of the differential rotation and of the background flow. Otherwise the scalar is
+  undetermined (where <span class="arithmatex">\(w + m\Omega\)</span> is 0 everywhere, as in a steady run with <code>m = 0</code> or without a rotation) or has a
+  critical layer that no resolution resolves (where it changes sign). A background flow with a meridional circulation
+  stops too: the scalar resonates on some of its streamlines at any frequency.</li>
+</ul>
+<!-- compat_tables.py: forcings -->
+
+<div class="compat">
+<table>
+<thead>
+<tr>
+<th>forcing</th>
+<th><abbr title="a full sphere">FS</abbr></th>
+<th><abbr title="an inviscid fluid">Inv</abbr></th>
+<th><abbr title="the entropy">S</abbr></th>
+<th><abbr title="the composition">C</abbr></th>
+<th><abbr title="a differential rotation">DR</abbr></th>
+<th><abbr title="a background flow">U</abbr></th>
+<th><abbr title="a magnetic field">B</abbr></th>
+<th><abbr title="a conducting inner core">cIC</abbr></th>
+<th><abbr title="a conducting inner core at one frequency">Bes</abbr></th>
+<th><abbr title="a thin conducting layer">TWA</abbr></th>
+<th><abbr title="a resolved conducting mantle">Man</abbr></th>
+<th><abbr title="a constant drag">Kd</abbr></th>
+<th><abbr title="the drag of the topography">Kt</abbr></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../tidal-forcing/#the-wave-like-tide-forcing-1">1, wave-like tide</a></td>
+<td><span class="y" title="tested by tests/cic_forcings: f1_m0_sphere, f1_m1_sphere, f1_m0_rigid, f1_m1_rigid">✓</span><sup>a</sup></td>
+<td><span class="y" title="tested by tests/cic_forcings: f1_m1_inviscid">✓</span><sup>a</sup></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="y" title="tested by tests/cic_forcings: f1_m2_dr">✓</span></td>
+<td><span class="y" title="tested by tests/bgflow: f1">✓</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+</tr>
+<tr>
+<td><a href="../tidal-forcing/#the-eccentricity-tide-of-enceladus-forcing-2">2, eccentricity tide of Enceladus</a></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="y" title="tested by tests/cic_forcings: f2_wu">✓</span></td>
+<td><span class="o">○</span></td>
+<td><span class="y" title="tested by tests/cic_forcings: f2_dr">✓</span></td>
+<td><span class="o">○</span></td>
+<td><span class="y" title="tested by tests/cic_forcings: f2_field">✓</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="o">○</span><sup>b,c</sup></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+</tr>
+<tr>
+<td>6, radial flow at the inner wall</td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="y" title="tested by tests/inner_core: f6_wu">✓</span></td>
+<td><span class="o">○</span></td>
+<td><span class="o">○</span></td>
+<td><span class="o">○</span></td>
+<td><span class="y" title="tested by tests/inner_core: f6_axial, f6_deforming; tests/forced_field: bessel_chebys_f6, slip_f6_twa, def_f6">✓</span></td>
+<td><span class="y" title="tested by tests/inner_core: f6_axial_cheb, f6_deforming, f6_wu; tests/forced_field: def_f6">✓</span><sup>c</sup></td>
+<td><span class="y" title="tested by tests/inner_core: f6_axial_bes; tests/forced_field: bessel_chebys_f6">✓</span><sup>c,f</sup></td>
+<td><span class="y" title="tested by tests/forced_field: slip_f6_twa, f6_muw_fixed">✓</span><sup>c</sup></td>
+<td><span class="o">○</span></td>
+<td><span class="o">○</span></td>
+<td><span class="y" title="tested by tests/drag: forced">✓</span><sup>i</sup></td>
+</tr>
+<tr>
+<td><a href="../libration/#forcing-7-the-walls-librate">7, libration of the walls</a></td>
+<td><span class="y" title="tested by tests/cic_forcings: lib7_sphere">✓</span></td>
+<td><span class="y" title="tested by tests/forcing: rows_check (f7_m2_inviscid)">✓</span><sup>d</sup></td>
+<td><span class="y" title="tested by tests/cic_forcings: lib7_wu_dr; tests/forced_field: wu_lib_man">✓</span></td>
+<td><span class="y" title="tested by tests/composition: co_libration">✓</span></td>
+<td><span class="y" title="tested by tests/cic_forcings: lib7_wu_dr">✓</span></td>
+<td><span class="y" title="tested by tests/bgflow: f7">✓</span></td>
+<td><span class="y" title="tested by tests/forced_field: lib_ins, lib_cheb; tests/inner_core: dip_libration, f7_axial_cheb; tests/cic_forcings: lib7_field">✓</span></td>
+<td><span class="y" title="tested by tests/forced_field: lib_cheb, lib_man; tests/inner_core: f7_axial_cheb, f7_dipole_cheb">✓</span><sup>c,e</sup></td>
+<td><span class="y" title="tested by tests/forced_field: lib_bes, lib_s2_bes; tests/inner_core: dip_libration, f7_axial_bes; tests/cic_forcings: lib7_field">✓</span><sup>c,e,f</sup></td>
+<td><span class="y" title="tested by tests/forced_field: lib_twa; tests/cic_forcings: lib7_field">✓</span><sup>c,e</sup></td>
+<td><span class="y" title="tested by tests/forced_field: lib_man, wu_lib_man, f7m2_man">✓</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+</tr>
+<tr>
+<td><a href="../libration/#forcing-8-the-frame-of-the-mantle">8, libration in the frame of the mantle</a></td>
+<td><span class="y" title="tested by tests/cic_forcings: lib_sphere, lib_inviscid">✓</span></td>
+<td><span class="y" title="tested by tests/cic_forcings: lib_inviscid">✓</span></td>
+<td><span class="y" title="tested by tests/cic_forcings: lib_wu_dr">✓</span></td>
+<td><span class="o">○</span></td>
+<td><span class="y" title="tested by tests/cic_forcings: lib_wu_dr">✓</span></td>
+<td><span class="y" title="tested by tests/bgflow: f8, f8_twa">✓</span></td>
+<td><span class="y" title="tested by tests/cic_forcings: c_f8_field, lib_field, lib_twa, lib_man">✓</span></td>
+<td><span class="y" title="tested by tests/cic_forcings: c_f8_field, lib_cheb_slip">✓</span><sup>e</sup></td>
+<td><span class="y" title="tested by tests/cic_forcings: lib_field">✓</span><sup>e</sup></td>
+<td><span class="y" title="tested by tests/cic_forcings: lib_twa; tests/bgflow: f8_twa">✓</span><sup>e</sup></td>
+<td><span class="y" title="tested by tests/cic_forcings: lib_man">✓</span></td>
+<td><span class="y" title="tested by tests/cic_forcings: lib_drag">✓</span></td>
+<td><span class="o">○</span></td>
+</tr>
+<tr>
+<td>9, radial flow at the walls</td>
+<td><span class="y" title="tested by tests/forcing: rows_check (f9_sphere, f9_sphere_bci0); tests/forced_field: fs_f9_twa, def_fs_man">✓</span></td>
+<td><span class="o">○</span></td>
+<td><span class="y" title="tested by tests/forced_field: wu_f9_bes, def_wu_f9">✓</span></td>
+<td><span class="o">○</span></td>
+<td><span class="y" title="tested by tests/forced_field: dr_bes, dr_cheb, def_dr">✓</span></td>
+<td><span class="o">○</span></td>
+<td><span class="y" title="tested by tests/forced_field: f9_ins, f9_bes, f9_cheb, malkus_twa, malkus_man">✓</span></td>
+<td><span class="y" title="tested by tests/forced_field: f9_cheb, f9_man_cheb, def_g21, def_wu_f9">✓</span><sup>c</sup></td>
+<td><span class="y" title="tested by tests/forced_field: f9_bes, wu_f9_bes">✓</span><sup>c,f</sup></td>
+<td><span class="y" title="tested by tests/forced_field: f9_twa, malkus_twa, layer_*_rigid_*, layer_*_deforming_*">✓</span><sup>c</sup></td>
+<td><span class="y" title="tested by tests/forced_field: malkus_man, f9_man_cheb, layer_*_rigid_*, layer_*_deforming_*">✓</span></td>
+<td><span class="y" title="tested by tests/forcing: rows_check (f9_drag); tests/drag: forced9">✓</span><sup>g</sup></td>
+<td><span class="o">○</span><sup>g,i</sup></td>
+</tr>
+<tr>
+<td>10, radial flow at the outer wall</td>
+<td><span class="y" title="tested by tests/forcing: rows_check (f10_inviscid)">✓</span></td>
+<td><span class="y" title="tested by tests/forcing: rows_check (f10_inviscid)">✓</span></td>
+<td><span class="o">○</span></td>
+<td><span class="o">○</span></td>
+<td><span class="y" title="tested by tests/inner_core: f10_diffrot_cheb, f10_diffrot_bes">✓</span></td>
+<td><span class="o">○</span></td>
+<td><span class="y" title="tested by tests/forced_field: f10_twa, def_f10; tests/inner_core: f10_mu_sigma_cheb">✓</span></td>
+<td><span class="y" title="tested by tests/inner_core: f10_mu_sigma_cheb; tests/forced_field: f10_twa">✓</span></td>
+<td><span class="y" title="tested by tests/inner_core: f10_mu_sigma_bes, f10_diffrot_bes">✓</span></td>
+<td><span class="y" title="tested by tests/forced_field: f10_twa">✓</span><sup>c</sup></td>
+<td><span class="y" title="tested by tests/forced_field: def_f10">✓</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+</tr>
+<tr>
+<td><a href="../forcing/">11, random Reynolds stresses</a></td>
+<td><span class="y" title="tested by tests/rsf: sp_fs (spectrum_check)">✓</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="o">○</span></td>
+<td><span class="o">○</span></td>
+<td><span class="o">○</span></td>
+<td><span class="o">○</span></td>
+<td><span class="y" title="tested by tests/rsf: sp_mag (spectrum_check)">✓</span></td>
+<td><span class="y" title="tested by tests/rsf: sp_mag (spectrum_check)">✓</span></td>
+<td><span class="o">○</span><sup>h</sup></td>
+<td><span class="o">○</span></td>
+<td><span class="o">○</span></td>
+<td><span class="o">○</span></td>
+<td><span class="o">○</span><sup>i</sup></td>
+</tr>
+<tr>
+<td><a href="../couette-flow/">12, walls that turn steadily</a></td>
+<td><span class="y" title="tested by tests/couette: rigid_sphere; tests/forcing: rows_check (f12_sphere)">✓</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="y" title="tested by tests/couette: wu_thermal, wu_field">✓</span></td>
+<td><span class="o">○</span></td>
+<td><span class="y" title="tested by tests/couette: diffrot">✓</span></td>
+<td><span class="y" title="tested by tests/bgflow: f12, f12_field">✓</span></td>
+<td><span class="y" title="tested by tests/couette: c_ins, rigid_shell, wu_field, malkus">✓</span></td>
+<td><span class="y" title="tested by tests/couette: c_cheb, c_mu, rigid_shell, rigid_mu">✓</span></td>
+<td><span class="y" title="tested by tests/couette: c_bes, c_s2_bes">✓</span></td>
+<td><span class="y" title="tested by tests/couette: c_twa, c_muw, rigid_twa, slip_twa">✓</span></td>
+<td><span class="y" title="tested by tests/couette: c_man, rigid_shell, slip_man">✓</span></td>
+<td><span class="y" title="tested by tests/couette: slip_drag">✓</span><sup>j</sup></td>
+<td><span class="o">○</span><sup>i,j</sup></td>
+</tr>
+<tr>
+<td><a href="../thermal-forcing/">13, entropy at the inner wall</a></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="y" title="tested by tests/couette: f13; tests/forced_field: wu_f13_cheb">✓</span></td>
+<td><span class="o">○</span></td>
+<td><span class="o">○</span></td>
+<td><span class="o">○</span></td>
+<td><span class="y" title="tested by tests/forced_field: wu_f13_cheb">✓</span></td>
+<td><span class="y" title="tested by tests/forced_field: wu_f13_cheb">✓</span></td>
+<td><span class="o">○</span></td>
+<td><span class="o">○</span></td>
+<td><span class="o">○</span></td>
+<td><span class="y" title="tested by tests/drag: forced13; tests/couette: f13_drag">✓</span></td>
+<td><span class="o">○</span><sup>i,k</sup></td>
+</tr>
+<tr>
+<td><a href="../tidal-forcing/">14, tide that moves the walls</a></td>
+<td><span class="y" title="tested by tests/tidal: sphere_m2, f14_sphere_wu">✓</span></td>
+<td><span class="y" title="tested by tests/forcing: rows_check (f14_inviscid)">✓</span></td>
+<td><span class="y" title="tested by tests/tidal: f14_m2_thermal; tests/forced_field: wu_f14_twa">✓</span></td>
+<td><span class="o">○</span></td>
+<td><span class="y" title="tested by tests/tidal: f14_m1_diffrot, f14_m2_wu_conical">✓</span></td>
+<td><span class="o">○</span></td>
+<td><span class="y" title="tested by tests/forced_field: wu_f14_twa, f14_twa_def, def_wu_f14">✓</span></td>
+<td><span class="y" title="tested by tests/forced_field: wu_f14_twa, def_wu_f14">✓</span><sup>c</sup></td>
+<td><span class="o">○</span><sup>c,f</sup></td>
+<td><span class="y" title="tested by tests/forced_field: wu_f14_twa, f14_twa_def">✓</span><sup>c</sup></td>
+<td><span class="y" title="tested by tests/forced_field: def_wu_f14">✓</span></td>
+<td><span class="x">✗</span></td>
+<td><span class="x">✗</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- end of forcings -->
+
+<ul>
+<li><strong>a.</strong> With <code>m = 2</code>, an inner core.</li>
+<li><strong>b.</strong> A thin layer that does not conduct (<code>c1_cmb</code> and <code>c1_icb</code> 0).</li>
+<li><strong>c.</strong> A wall that the forcing moves radially, where B0 reaches it, needs one permeability on both sides:
+  <code>mu_i2o = 1</code> where a conducting inner core is behind it, <code>mu = 1</code> at any other wall, and <code>muw = 1</code> of a thin layer
+  where it acts on B0
+  (<a href="../magnetic/#a-boundary-that-moves">A boundary that moves</a>). The forcing moves the inner wall (6), the outer wall
+  (10), or each wall whose amplitude is not 0 (2, with one amplitude for both; 9, 14, and 7 with <code>m = 2</code>).</li>
+<li><strong>d.</strong> With <code>m = 2</code>: the libration with <code>m = 0</code> slides the walls along themselves, which an inviscid fluid does not
+  feel.</li>
+<li><strong>e.</strong> With <code>m = 0</code>, the libration of the inner core (<code>forcing_amplitude_icb</code> not 0) behind a stress-free inner wall
+  (<code>bci = 0</code>), along a conducting core or a thin layer that conducts, under a poloidal B0, stops.</li>
+<li><strong>f.</strong> Not with <code>forced_walls = 'deforming'</code> where the forcing moves the inner wall: the default for 9 and 14, which
+  then need <code>forced_walls = 'rigid'</code> or <code>forcing_amplitude_icb = 0</code>.</li>
+<li><strong>g.</strong> With the outer wall in place (<code>forcing_amplitude_cmb = 0</code>).</li>
+<li><strong>h.</strong> Not in a frequency scan (<code>rsf_frequencies</code>).</li>
+<li><strong>i.</strong> The drag of the topography needs <code>topo_omega</code> in a steady run and in a frequency scan.</li>
+<li><strong>j.</strong> The outer wall at rest and stress-free, the inner wall turning.</li>
+<li><strong>k.</strong> A steady run needs a no-slip inner wall (<code>bci = 1</code>).</li>
+</ul>
+<p>What each forcing needs, whatever it is combined with:</p>
+<table>
+<thead>
+<tr>
+<th>forcing</th>
+<th><code>m</code>, <code>symm</code></th>
+<th>frequency</th>
+<th>walls</th>
+<th>also</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>(0, 1), (1, −1), (2, 1)</td>
+<td>not 0</td>
+<td><code>bco</code>, <code>bci</code> 0 or 1</td>
+<td><code>structure = 'Boussinesq'</code>, <code>thermal = 0</code>, <code>compositional = 0</code>, <code>magnetic = 0</code>, no drag; with <code>m = 2</code> an inner core</td>
+</tr>
+<tr>
+<td>2</td>
+<td>(0, 1), (2, 1)</td>
+<td>not 0</td>
+<td><code>bco = bci = 1</code></td>
+<td>a viscous fluid; <code>ricb</code> from 16/21 to 1; no conducting solid behind a wall</td>
+</tr>
+<tr>
+<td>6</td>
+<td>(1, −1)</td>
+<td>any</td>
+<td><code>bci</code> 0 or 1</td>
+<td>an inner core</td>
+</tr>
+<tr>
+<td>7</td>
+<td>(0, 1) or (2, 1)</td>
+<td>any</td>
+<td><code>m = 0</code>: <code>bco = 1</code> and <code>bci</code> 0 or 1; <code>m = 2</code>: <code>bco = bci = 1</code></td>
+<td>with <code>m = 0</code>, a viscous fluid</td>
+</tr>
+<tr>
+<td>8</td>
+<td>(0, 1)</td>
+<td>not 0</td>
+<td><code>bco</code>, <code>bci</code> 0 or 1</td>
+<td>in a full sphere <code>forcing_amplitude_icb = 0</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td>(2, 1)</td>
+<td>any</td>
+<td><code>bco</code> 0 or 1 where it moves the outer wall, <code>bci = 1</code></td>
+<td>the drag only with <code>forcing_amplitude_cmb = 0</code></td>
+</tr>
+<tr>
+<td>10</td>
+<td><code>m</code> ≥ 1, <code>symm = 1</code></td>
+<td>any</td>
+<td><code>bco</code> 0 or 1</td>
+<td>no drag: it always moves the outer wall</td>
+</tr>
+<tr>
+<td>11</td>
+<td>any</td>
+<td>any, or a scan (<code>rsf_frequencies</code>)</td>
+<td>any</td>
+<td>a viscous fluid; <code>rsf_taper &gt; 0</code>; with <code>rsf_rcut</code>, <code>ricb</code> ≤ <code>rsf_rcut</code> &lt; 1 − <code>rsf_rcut_width</code> and <code>rsf_rcut_width &gt; 0</code>; <code>rsf_theta = 'mlt'</code> with <code>rsf_lum</code> and <code>visc_pow = 0</code>; in a full sphere <code>rpower_u</code> ≥ 5, <code>rpower_v</code> ≥ 3 and <code>rsf_taper_in &gt; 0</code></td>
+</tr>
+<tr>
+<td>12</td>
+<td>(0, 1)</td>
+<td>0</td>
+<td><code>bco</code>, <code>bci</code> 0 or 1; a wall that turns is no-slip</td>
+<td>a viscous fluid; a wall that turns; in a full sphere <code>forcing_amplitude_icb = 0</code></td>
+</tr>
+<tr>
+<td>13</td>
+<td>(0, 1)</td>
+<td>any</td>
+<td>steady: <code>bco</code>, <code>bci</code> 0 or 1, and a no-slip wall or <code>kappa_cmb &gt; 0</code></td>
+<td>an inner core; <code>thermal = 1</code> with <code>ThermaD &gt; 0</code>; <code>forcing_amplitude_icb</code> not 0</td>
+</tr>
+<tr>
+<td>14</td>
+<td>(0, 1), (1, −1), (2, 1)</td>
+<td>any</td>
+<td><code>bco = bci = 1</code></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><code>bci</code> means nothing in a full sphere. An inviscid fluid, in a full sphere, takes any <code>bco</code>: its one wall row keeps the
+fluid from crossing the wall. A steady run of a viscous fluid, whatever the forcing, also needs <code>bco</code> and <code>bci</code> 0 or 1
+(above).</p>
+<h2 id="requirements-of-each-feature">Requirements of each feature</h2>
+<p>Each feature has requirements of its own, whatever it is combined with. kore stops on any that a run does not meet.</p>
+<table>
+<thead>
+<tr>
+<th>feature</th>
+<th>needs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>every run</td>
+<td>an even <code>N</code>; <code>lmax − m + 1</code> a multiple of twice the number of MPI ranks (<code>assemble.py</code> checks it); <code>structure = 'Wu 2005'</code> needs <code>r_out</code> between 0 and 1. In a full sphere kore warns where a background profile is not regular at the centre</td>
+</tr>
+<tr>
+<td>Inv</td>
+<td>a full sphere (<code>ricb = 0</code>)</td>
+</tr>
+<tr>
+<td>H0</td>
+<td><code>magnetic</code>, <code>thermal</code> or <code>compositional</code> = 1, and an eigenvalue problem; not <code>track_target = 2</code>, which picks the mode by its kinetic energies (<a href="../output/#following-a-mode">Following a mode</a>)</td>
+</tr>
+<tr>
+<td>DR</td>
+<td>with the entropy, <code>thermal_wind</code> 1 or 2 needs <code>Beyonce</code> other than 0; <code>diff_rot_type = 'ferraro'</code> needs a poloidal B0</td>
+</tr>
+<tr>
+<td>Cf, Sph</td>
+<td>an eigenvalue problem; with the flow and a viscous fluid, <code>bco</code> and <code>bci</code> 0 or 1. The spheroid: <code>structure = 'Boussinesq'</code>, <code>diffusivity = 'uniform'</code>, <code>centrifugal_q = 0</code> and a flattening below 1</td>
+</tr>
+<tr>
+<td>B</td>
+<td><code>Le &gt; 0</code> and <code>Em &gt; 0</code>, and the limits of <a href="../magnetic/#what-is-supported">What is supported</a></td>
+</tr>
+<tr>
+<td>cIC, Bes</td>
+<td>an inner core; <code>bci</code> 0 or 1; <code>mu_i2o</code> and <code>sigma_i2o</code> positive. <code>'conducting, Bessel'</code> in a forced run only, and not in a frequency scan</td>
+</tr>
+<tr>
+<td>TWA</td>
+<td>with a viscous fluid, <code>bco</code> (or <code>bci</code>) 0 or 1 at its wall; <code>mu</code> other than 1 needs a thin layer or a conducting inner core at every wall</td>
+</tr>
+<tr>
+<td>Man</td>
+<td><code>mu = 1</code>; with a viscous fluid, <code>bco</code> 0 or 1; <code>r_surface &gt; 1</code>; a <code>sigma_mantle</code> that <code>N_mantle</code> resolves</td>
+</tr>
+<tr>
+<td>Rot</td>
+<td>the flow, <code>m = 0</code>, <code>symm = 1</code>, an inner core and an eigenvalue problem; a viscous fluid with <code>bci = 1</code> and <code>bco</code> 0 or 1; <code>Gaspard &gt; 0</code> (<a href="../rotating-solids/#what-is-supported">What is supported</a>)</td>
+</tr>
+<tr>
+<td>Kd, Kt</td>
+<td>the flow, a viscous fluid, a stress-free outer wall (<code>bco = 0</code>), <code>Gaspard &gt; 0</code>; one of the two. Kt: a frequency of the flow other than 0 (<a href="../drag/#what-is-supported">What is supported</a>)</td>
+</tr>
+<tr>
+<td>U</td>
+<td>a background that is symmetric about the equator and does not cross the walls. Without <code>bgflow_profiles</code>, a <code>bgflow_file</code> written for the run's <code>ricb</code> and, if it has a poloidal flow, for its density; a nonlinear file (<code>bgflow.py 12 nonlinear</code>) only at its own <code>bgflow_Ro</code>, a linear one at any</td>
+</tr>
+</tbody>
+</table>
+<p>The checks are those of <code>bin/background.py</code> (<code>check</code> and the functions it calls, and <code>check_transport</code>, the rule
+without diffusion), <code>bin/bgflow.py</code> (<code>check</code>) and <code>bin/diff_rot.py</code> (<code>check</code>), at startup, and that of <code>bin/assemble.py</code>
+on the MPI ranks. <code>tests/forcing/stops_check.py</code> runs the stops of the forced runs, <code>tests/couette</code> those of forcing 12
+and <code>tests/cic_forcings</code> those of the tides. <code>tools/compat_tables.py</code> writes the two tables of this page.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "content.code.copy"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

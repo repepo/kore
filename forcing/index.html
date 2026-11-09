@@ -49,6 +49,8 @@
       
     
     
+      <link rel="stylesheet" href="../stylesheets/compat.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -1020,6 +1022,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../compatibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Combining features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../solver/" class="md-nav__link">
         
   
@@ -1826,12 +1856,22 @@ because every frequency uses the same realisations: the shape of a spectrum is m
 <ul>
 <li><code>ViscosD</code> &gt; 0: the force is the partner of the viscous force.</li>
 <li>In a full sphere (<code>ricb = 0</code>), <code>N</code> must be even, and <code>rpower_u</code> ≥ 5, <code>rpower_v</code> ≥ 3 (the defaults).</li>
+<li><code>rsf_taper</code> &gt; 0, and <code>rsf_taper_in</code> &gt; 0 in a full sphere: the force must vanish at the walls (below). With
+  <code>rsf_rcut</code>, <code>ricb</code> ≤ <code>rsf_rcut</code> &lt; 1 − <code>rsf_rcut_width</code> and <code>rsf_rcut_width</code> &gt; 0.</li>
 <li><code>forcing_amplitude_cmb</code> is not used: the power scales with <code>rsf_scale</code> instead.</li>
-<li>The heat equation is not forced: the right-hand side is zero in its rows, also with <code>thermal = 1</code>.</li>
+<li>The equations of the entropy and of the composition are not forced: the right-hand side is zero in their rows. Without
+  their diffusion (<code>ThermaD = 0</code>, <code>CompoD = 0</code>) the fluid must carry them round at every frequency of the run,
+  <code>forcing_frequency</code> or each of <code>rsf_frequencies</code>: kore stops where <span class="arithmatex">\(w + m\Omega\)</span> is 0 everywhere or changes sign in
+  the fluid, <span class="arithmatex">\(\Omega\)</span> the angular velocity of the differential rotation and of the background flow, and with a
+  background flow that has a meridional circulation (<a href="../background/#thermad-0">ThermaD = 0</a>).</li>
+<li>A steady run (a frequency 0) needs walls that stay in place, <code>bco</code> and <code>bci</code> 0 or 1.</li>
 <li>With <code>magnetic = 1</code> the perturbation of the field is solved with the flow, and a scan needs the inner core
   <code>'conducting, Chebys'</code> rather than <code>'conducting, Bessel'</code> (<a href="../magnetic/#forced-runs">Magnetic field</a>).</li>
+<li>With the topographic drag (<code>topo_drag = 'rekier'</code>) a scan needs <code>topo_omega</code> (<a href="../drag/#drag-of-the-topography-topo_drag-rekier">Drag at the outer wall</a>).</li>
+<li>Like every forced run it needs a spherical body (<code>centrifugal = 0</code>); <a href="../compatibility/#forced-runs">Combining features</a>
+  shows what else it combines with.</li>
 </ul>
-<p><code>assemble.py</code> stops with a message if one of the first two is not met.</p>
+<p>kore stops with a message where a requirement is not met.</p>
 <h3 id="where-the-force-acts">Where the force acts</h3>
 <p>The force follows the turbulent part of the viscosity,
 <span class="arithmatex">\(\nu_t\)</span> = <code>ViscosD</code> <span class="arithmatex">\((\hat\nu - \nu_f)\)</span>, clipped at 0, with <span class="arithmatex">\(\hat\nu\)</span> the viscosity profile of

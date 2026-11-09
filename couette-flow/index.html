@@ -49,6 +49,8 @@
       
     
     
+      <link rel="stylesheet" href="../stylesheets/compat.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -887,6 +889,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../compatibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Combining features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../solver/" class="md-nav__link">
         
   
@@ -1438,11 +1468,13 @@ fluid with it in a rigid rotation. The equations are linear, so the flow is prop
 of small differences of rotation, whose flow is too weak to carry itself along.</p>
 <p>The flow is steady, axisymmetric and equatorially symmetric, so the run needs <code>forcing_frequency = 0</code> (walls that turn
 back and forth are the libration, forcing 7), <code>m = 0</code> and <code>symm = 1</code>, and a viscous fluid (<code>ViscosD &gt; 0</code>). In a full
-sphere (<code>ricb = 0</code>) only the outer wall can turn, and the fluid turns rigidly with it. With buoyancy (<code>thermal = 1</code>) the
-run needs <code>ThermaD &gt; 0</code>: without thermal diffusion nothing sets the steady entropy. Any <code>structure</code>, a differential
-rotation and a field work as in the other runs. With <code>magnetic = 1</code> a conducting inner core or mantle turns with its
-wall, and the field that the flow induces in the fluid and in the solids is solved with it
-(<a href="../magnetic/#forced-runs">Magnetic field</a>).</p>
+sphere (<code>ricb = 0</code>) only the outer wall can turn, and the fluid turns rigidly with it. With buoyancy the run needs its
+diffusion, <code>ThermaD &gt; 0</code> with <code>thermal = 1</code> and <code>CompoD &gt; 0</code> with <code>compositional = 1</code>: without it nothing sets the
+steady entropy or composition. Any <code>structure</code>, a differential rotation, a background flow and a field work as in the
+other runs. With <code>magnetic = 1</code> a conducting inner core or mantle turns with its wall, and the field that the flow
+induces in the fluid and in the solids is solved with it (<a href="../magnetic/#forced-runs">Magnetic field</a>). Like every forced
+run it needs a spherical body (<code>centrifugal = 0</code>); <a href="../compatibility/#forced-runs">Combining features</a> shows what else it
+combines with.</p>
 <h2 id="example-an-inner-core-that-turns">Example: an inner core that turns</h2>
 <p>Write in <code>bin/parameters.py</code></p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">params_default</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_params</span>

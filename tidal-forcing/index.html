@@ -49,6 +49,8 @@
       
     
     
+      <link rel="stylesheet" href="../stylesheets/compat.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -920,6 +922,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../compatibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Combining features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../solver/" class="md-nav__link">
         
   
@@ -1531,17 +1561,19 @@ u_r(r_w, \theta, \phi, t) = A_w\thinspace Y_2^m(\theta)\thinspace e^{i(m\phi + w
 </tr>
 </tbody>
 </table>
-<p>The tangential velocity at the walls is zero: forcing 14 keeps the no-slip conditions and replaces only <span class="arithmatex">\(u_r = 0\)</span> by
-the imposed value. The pattern turns at the angular velocity <span class="arithmatex">\(-w/m\)</span> in the frame, so a negative <span class="arithmatex">\(w\)</span> is prograde, as
+<p>With a viscous fluid the tangential velocity at the walls is zero: forcing 14 keeps the no-slip conditions and replaces
+only <span class="arithmatex">\(u_r = 0\)</span> by the imposed value; an inviscid fluid (in a full sphere) slips along them. The pattern turns at the angular velocity <span class="arithmatex">\(-w/m\)</span> in the frame, so a negative <span class="arithmatex">\(w\)</span> is prograde, as
 everywhere in kore. For a body spinning at the frame rate <span class="arithmatex">\(\Omega\)</span> and a companion on a circular orbit of angular velocity
 <span class="arithmatex">\(n\)</span>, the <span class="arithmatex">\((2, 2)\)</span> tide has <span class="arithmatex">\(w = 2(\Omega - n)\tau\)</span> in kore's units (<a href="../anelastic/#the-time-scale">Anelastic equations</a>).
 If the wall follows a tidal displacement <span class="arithmatex">\(\xi\thinspace Y_2^m e^{i(m\phi + wt)}\)</span> + c.c., its velocity is <span class="arithmatex">\(iw\xi\)</span>: set the
 amplitude to <span class="arithmatex">\(w\xi\)</span> (the factor <span class="arithmatex">\(i\)</span> shifts the phase and changes no power). The problem is linear: the flow is
 proportional to the amplitudes, and every power to their square.</p>
-<p>Requirements: <code>bco = 1</code> and <code>bci = 1</code> (also in a full sphere, where <code>bci</code> is otherwise ignored), and one of the three
-pairs (<code>m</code>, <code>symm</code>) above. In a full sphere (<code>ricb = 0</code>) only the outer wall moves. <code>assemble.py</code> stops with a message
-when a requirement is not met. The forcing works with any <code>structure</code>, with <code>thermal = 1</code>, with a differential
-rotation and with a field (<a href="../magnetic/#forced-runs">Magnetic field</a>).</p>
+<p>Requirements: no-slip walls (<code>bco = 1</code>, and <code>bci = 1</code> with an inner core), or an inviscid fluid in a full sphere,
+whose one wall row keeps the fluid from crossing the wall whatever <code>bco</code>; and one of the three pairs (<code>m</code>, <code>symm</code>)
+above. In a full sphere (<code>ricb = 0</code>) only the outer wall moves. kore stops with a message when a requirement is not
+met. The forcing works with any <code>structure</code>, with buoyancy, a differential rotation, a background flow and a field
+(<a href="../magnetic/#forced-runs">Magnetic field</a>); like every forced run it needs a spherical body (<code>centrifugal = 0</code>), and
+<a href="../compatibility/#forced-runs">Combining features</a> shows what else it combines with.</p>
 <h2 id="example-the-2-2-tide-in-a-rotating-shell">Example: the (2, 2) tide in a rotating shell</h2>
 <p>Write in <code>bin/parameters.py</code></p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">params_default</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_params</span>
@@ -1709,7 +1741,7 @@ physical flow.</p>
 </tr>
 <tr>
 <td><code>bci</code>, <code>bco</code></td>
-<td>1</td>
+<td><code>bco = 1</code>, and <code>bci = 1</code> with an inner core (an inviscid fluid in a full sphere: any)</td>
 </tr>
 </tbody>
 </table>
@@ -1732,12 +1764,13 @@ pressure takes up. What remains is the Coriolis force on it, <span class="arithm
 a body force on the wave-like tide <span class="arithmatex">\(\mathbf u'\)</span>. kore solves for <span class="arithmatex">\(\mathbf u'\)</span>, whose walls are at rest: impenetrable, and
 no-slip or stress-free as <code>bci</code> and <code>bco</code> say. The whole tide is <span class="arithmatex">\(\mathbf u_e + \mathbf u'\)</span>. The conditions at the walls
 hold for <span class="arithmatex">\(\mathbf u'\)</span> alone, so at a no-slip wall the whole tide slips with the tangential velocity of <span class="arithmatex">\(\mathbf u_e\)</span>.</p>
-<p>Requirements: <code>structure = 'Boussinesq'</code>, <code>thermal = 0</code> and <code>magnetic = 0</code>, since the equilibrium tide above is that of
-a uniform fluid, with no stratification to displace and no field to induce; (<code>m</code>, <code>symm</code>) = (0, 1), (1, −1) or (2, 1);
-<code>bci</code> and <code>bco</code> 0 or 1, and no drag at the outer wall (<code>kappa_cmb</code> 0, <code>topo_drag</code> <code>None</code>), which would act on the slip
-of the whole tide. With <code>m = 2</code> the run needs an inner core: in a full sphere the Coriolis force on the equilibrium tide
-is a gradient and drives nothing. With <code>m</code> = 0 or 1 a full sphere works, and there alone the fluid may be inviscid
-(<code>ViscosD = 0</code>).</p>
+<p>Requirements: <code>structure = 'Boussinesq'</code>, <code>thermal = 0</code>, <code>compositional = 0</code> and <code>magnetic = 0</code>, since the
+equilibrium tide above is that of a uniform fluid, with no stratification to displace and no field to induce; (<code>m</code>,
+<code>symm</code>) = (0, 1), (1, −1) or (2, 1); <code>bco</code> 0 or 1, and <code>bci</code> 0 or 1 with an inner core; and no drag at the outer wall (<code>kappa_cmb</code> 0, <code>topo_drag</code>
+<code>None</code>), which would act on the slip of the whole tide. With <code>m = 2</code> the run needs an inner core: in a full sphere the
+Coriolis force on the equilibrium tide is a gradient and drives nothing. With <code>m</code> = 0 or 1 a full sphere works, and
+there alone the fluid may be inviscid (<code>ViscosD = 0</code>), with any <code>bco</code>. A differential rotation and a background flow
+work.</p>
 <p><strong>Example.</strong> In the example of forcing 14 above, set</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">par</span><span class="o">.</span><span class="n">forcing</span> <span class="o">=</span> <span class="mi">1</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">par</span><span class="o">.</span><span class="n">forcing_frequency</span> <span class="o">=</span> <span class="mf">1.0</span>
@@ -1759,9 +1792,11 @@ fits at both walls (1: the fits as they are). The tide of a moon that turns once
 the tide at the orbital frequency, <span class="arithmatex">\(|w|\)</span> = <code>Gaspard</code>; at another frequency <code>assemble.py</code> prints a note and keeps the
 same displacement.</p>
 <p>Requirements: <code>ricb</code> from 16/21 to 1, where the fits hold (Enceladus has about 0.88); (<code>m</code>, <code>symm</code>) = (0, 1) or (2, 1);
-no-slip walls (<code>bci = bco = 1</code>, <code>ViscosD &gt; 0</code>), which the tide moves along themselves. Any <code>structure</code>, buoyancy and a
-differential rotation work, and a field with insulating walls (<code>'insulator'</code>, or <code>'TWA'</code> with <code>c1</code> 0): a conducting
-solid behind a wall would deform along it, which is not covered (<a href="../magnetic/#a-boundary-that-moves">Magnetic field</a>).
+no-slip walls (<code>bci = bco = 1</code>, <code>ViscosD &gt; 0</code>), which the tide moves along themselves. Any <code>structure</code>, buoyancy, a
+differential rotation and a background flow work, and a field with insulating walls (<code>'insulator'</code>, or <code>'TWA'</code> with
+<code>c1</code> 0), whose permeability is the fluid's where B0 reaches the wall (<code>mu</code> = 1, and <code>muw</code> = 1 in a layer with a
+thickness, <code>c</code> not 0, under a poloidal B0). kore stops with a conducting solid behind a wall, which the tide would
+deform along the wall (<a href="../magnetic/#a-boundary-that-moves">Magnetic field</a>).
 The power is read as for forcing 14 (<a href="#the-energy-of-the-response">The energy of the response</a>): P_in is the work of the
 moving walls, <code>flow.dat</code> columns 21, 22, 24 and 25. For example, the prograde part with <code>ricb = 37/42</code>, Ek <span class="arithmatex">\(10^{-3}\)</span>, N
 48 and <code>lmax</code> 61 gives P_in = Dν = <span class="arithmatex">\(2.17\times10^{-11}\)</span> at <code>forcing_amplitude_cmb = 1</code>.</p>
@@ -1796,7 +1831,7 @@ moving walls, <code>flow.dat</code> columns 21, 22, 24 and 25. For example, the 
 </tr>
 <tr>
 <td><code>bci</code>, <code>bco</code></td>
-<td>0 or 1</td>
+<td><code>bco</code> 0 or 1, and <code>bci</code> 0 or 1 with an inner core (an inviscid fluid: any <code>bco</code>)</td>
 <td>1</td>
 </tr>
 </tbody>

@@ -47,6 +47,8 @@
       
     
     
+      <link rel="stylesheet" href="../stylesheets/compat.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -789,6 +791,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../compatibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Combining features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../solver/" class="md-nav__link">
         
   
@@ -1443,13 +1473,13 @@ seconds to minutes.</p>
 <td><code>tests/magnetic/run_all.sh</code></td>
 <td>the magnetic rows against a symbolic derivation, the budgets, published results</td>
 <td>after a change of the magnetic field</td>
-<td>30 min with <code>SKIP_DERIVE=1</code>, 60 min in full</td>
+<td>31 min on 4 cores, its checks side by side (two hours on one)</td>
 </tr>
 <tr>
 <td><code>tests/centrifugal/run_all.sh</code></td>
 <td>the terms of the centrifugal deformation, with and without a field, against a symbolic derivation and quadratures, the rows of the insulating walls against the exact matching, its eigenvalues against exact results (among them the modes of a spheroid, inviscid and damped), the budgets</td>
 <td>after a change of the deformation, of the inertia, the Coriolis force, the viscous force, the heat equation, the Lorentz force, the induction, the diffusion, the differential rotation or the wall rows, or of <code>spin_doctor</code>'s budgets</td>
-<td>17 min on 16 cores, 13 min with <code>SKIP_SOLVE=1</code> (no PETSc)</td>
+<td>55 min of processor time, its checks side by side: 25 min on 4 cores; <code>SKIP_SOLVE=1</code> without PETSc</td>
 </tr>
 <tr>
 <td><code>tests/rsf/run_all.sh</code></td>
@@ -1515,7 +1545,7 @@ seconds to minutes.</p>
 <td><code>tests/sheet/run_all.sh</code></td>
 <td>the push of the background field's current sheet on a fluid slipping along a wall: smoothed sheets converge to it (toroidal and poloidal, either wall, zero radial stress, permeable thin layers, a variable density, a drag, other normalisations, <span class="arithmatex">\(m\)</span> = 2 with <code>symm = -1</code>), no axial angular momentum with <span class="arithmatex">\(m\)</span> = 0, the budgets, the stops, the walls' conditions against the solver's rows</td>
 <td>after a change of the stress-free rows, of the magnetic walls or of the background field</td>
-<td>11 min on 2 ranks</td>
+<td>11 min of runs on 2 ranks, side by side: 8 min on 4 cores shared with two other suites</td>
 </tr>
 <tr>
 <td><code>tests/rotdyn/run_all.sh</code></td>
@@ -1539,7 +1569,7 @@ seconds to minutes.</p>
 <td><code>tests/bgflow/run_all.sh</code></td>
 <td>the background flow (<code>bgflow = 1</code>): the files that the writer of the <code>conductive_IC</code> branch writes, linear and nonlinear, and its eigenvalues on them; a toroidal background against the differential rotation; a rigid rotation against the turning frame (a full sphere, an inviscid one, without diffusion, a field with conducting solids and thin walls); the rows against a grid; the budgets and the background's powers against an independent computation, eigenvalue and forced problems; the stops</td>
 <td>after a change of the background flow, of an advection term or the induction, of the layout of the unknowns, or of <code>spin_doctor</code>'s budgets</td>
-<td>8.5 min on 2 ranks</td>
+<td>8.5 min of runs on 2 ranks, side by side: 9 min on 4 cores shared with two other suites</td>
 </tr>
 <tr>
 <td><code>tests/rsf/regress_solve.sh</code></td>
@@ -1557,17 +1587,26 @@ seconds to minutes.</p>
 </table>
 <p><code>tests/diff_rot</code>, <code>tests/heat_dr</code>, <code>tests/magnetic</code>, <code>tests/centrifugal</code>, <code>tests/rsf</code>, <code>tests/tidal</code>, <code>tests/forcing</code>, <code>tests/couette</code>, <code>tests/cic_forcings</code>, <code>tests/decay</code>, <code>tests/twa</code>, <code>tests/mantle</code>, <code>tests/forced_field</code>, <code>tests/inner_core</code>, <code>tests/sheet</code>, <code>tests/rotdyn</code>, <code>tests/drag</code>, <code>tests/composition</code>, <code>tests/bgflow</code> and <code>tests/tools</code> each have a README
 that lists their scripts and what each one checks; the CI test explains itself in <code>tests/ci/test_spinover.py</code>.</p>
+<p><strong>All the suites at once.</strong> <code>tests/run_suites.sh</code> runs every suite side by side, the longest first, each in its own
+folder and with its own log, and ends with the suites that failed. With <code>OLD_KORE</code> set to an older copy it also runs
+the two regression scripts:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nv">OLD_KORE</span><span class="o">=</span>/tmp/kore_old<span class="w"> </span>tests/run_suites.sh<span class="w"> </span>/tmp/suites<span class="w">                    </span><span class="c1"># all of them, logs in /tmp/suites/logs</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>tests/run_suites.sh<span class="w"> </span>/tmp/suites<span class="w"> </span>decay<span class="w"> </span>forcing<span class="w"> </span>ci<span class="w">                         </span><span class="c1"># only these</span>
+</span></code></pre></div>
+<p>To share the work between two machines, give each its own list of suites. The magnetic and centrifugal suites run
+their own checks side by side, and the sheet, bgflow and heat_dr suites build their runs side by side: <code>MAG_NPAR</code>,
+<code>CF_NPAR</code> and <code>OTHER_NPAR</code> set how many at a time, and <code>JOBS</code> how many suites.</p>
 <h2 id="are-existing-runs-unchanged">Are existing runs unchanged?</h2>
 <p><code>tests/diff_rot/regress.sh</code> builds the same small runs twice, once with an older copy of kore and once with yours, and
 compares their matrices A and B entry by entry. Equal matrices give equal eigenvalues and eigenvectors, so this is the
 check to run after a change that should leave every existing run alone: a cleanup, a speed-up, a new option that is
 off by default. It needs numpy, scipy and mpi4py, not PETSc.</p>
 <p><strong>1. Make an older copy.</strong> Usually the last commit, which does not contain your uncommitted changes:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>mkdir<span class="w"> </span>-p<span class="w"> </span>/tmp/kore_old<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>git<span class="w"> </span>archive<span class="w"> </span>HEAD<span class="w"> </span><span class="p">|</span><span class="w"> </span>tar<span class="w"> </span>-x<span class="w"> </span>-C<span class="w"> </span>/tmp/kore_old
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>mkdir<span class="w"> </span>-p<span class="w"> </span>/tmp/kore_old<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>git<span class="w"> </span>archive<span class="w"> </span>HEAD<span class="w"> </span><span class="p">|</span><span class="w"> </span>tar<span class="w"> </span>-x<span class="w"> </span>-C<span class="w"> </span>/tmp/kore_old
 </span></code></pre></div>
 <p>For another version, put its commit in place of <code>HEAD</code>.</p>
 <p><strong>2. Run the comparison</strong> from the repository (the second argument is where the runs are built):</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>tests/diff_rot/regress.sh<span class="w"> </span>/tmp/kore_old<span class="w"> </span>/tmp/regress_runs
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>tests/diff_rot/regress.sh<span class="w"> </span>/tmp/kore_old<span class="w"> </span>/tmp/regress_runs
 </span></code></pre></div>
 <p>Each run is built as <code>o_NAME</code> with the older copy and <code>n_NAME</code> with yours, each with its logs.</p>
 <p><strong>3. Read the verdicts.</strong> Each run prints one line:</p>
@@ -1628,6 +1667,10 @@ for a magnetic run.</p>
   (the CI test, <code>tests/magnetic/rigid_check.py</code>), and 'Wu 2005' must tend to 'Boussinesq' as its density contrast
   vanishes (<code>tests/magnetic/continuity.py</code>).</li>
 <li><strong>Published results.</strong> <a href="../benchmarks/">Benchmarks</a> lists the ones kore reproduces, with their set-ups.</li>
+<li><strong>Combinations.</strong> A new feature meets every other: run it with each, and stop at startup, with a message, where a pair
+  is not covered. Then add its row and column to <a href="../compatibility/">Combining features</a>: the cells are in
+  <code>tools/compat_tables.py</code>, which writes the tables of that page (<code>--check</code> says whether the page is up to date), and a
+  cell is marked as checked only where a suite compares a run of the pair with theory, another computation or a budget.</li>
 </ul>
 
 

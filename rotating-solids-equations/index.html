@@ -49,6 +49,8 @@
       
     
     
+      <link rel="stylesheet" href="../stylesheets/compat.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -771,6 +773,34 @@
     
   
     Drag at the outer wall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compatibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Combining features
   
 
     
@@ -1536,10 +1566,13 @@ thermal forcing (forcing 13). A flow through a wall would add the Coriolis torqu
 body force its own torque. For the body forces <span class="arithmatex">\(\mathbf f\)</span> that <code>spin_doctor</code> knows, the Poincaré force of the libration
 in the frame of the mantle (forcing 8) and the force of the wave-like tide (forcing 1, axial for <span class="arithmatex">\(m\)</span> = 0 and equatorial
 for <span class="arithmatex">\(m\)</span> = 1), the balance includes that torque, the same integral as <span class="arithmatex">\(L\)</span> over the toroidal part of <span class="arithmatex">\(\mathbf f\)</span> of degree 1
-(<code>utils4pp.body_force_terms</code>). resid𝐋 is not computed for the other forcings.</p>
-<p>resid𝐋 is the residual of the balance relative to the largest of <span class="arithmatex">\(\lvert\lambda\rvert L_{\rm abs}\)</span>, the torques, and
-Gaspard <span class="arithmatex">\(L_{\rm abs}\)</span> for <span class="arithmatex">\(m = 1\)</span>, with <span class="arithmatex">\(L_{\rm abs}\)</span> the same integral of <span class="arithmatex">\(\lvert T\rvert\)</span>: a mode on which no torque
-acts (stress-free walls) is then checked to carry no angular momentum.</p>
+(<code>utils4pp.body_force_terms</code>). resid𝐋 is not computed for the other forcings, nor with a wall of zero radial stress
+(<code>bco</code> or <code>bci</code> = 2) of a viscous fluid: the fluid crosses it, carrying angular momentum through it.</p>
+<p>resid𝐋 is the residual of the balance relative to the largest of <span class="arithmatex">\(\lvert\lambda\rvert L_{\rm abs}\)</span>, the torques,
+ViscosD <span class="arithmatex">\(L_{\rm abs}\)</span>, and Gaspard <span class="arithmatex">\(L_{\rm abs}\)</span> for <span class="arithmatex">\(m = 1\)</span>, with <span class="arithmatex">\(L_{\rm abs}\)</span> the same integral of <span class="arithmatex">\(\lvert T\rvert\)</span>:
+a mode on which no torque acts (stress-free walls) is then checked to carry no angular momentum, and a steady flow
+(<span class="arithmatex">\(\lambda = 0\)</span>) on which none acts, such as the thermal forcing between stress-free walls with a drag, to feel no torque
+on the scale of the viscous one.</p>
 <h2 id="energy">Energy</h2>
 <p>With a field, resid𝐄 (<a href="../magnetic-equations/#energy-budgets">Magnetic field equations</a>) counts the solids too. In the
 units of <code>spin_doctor</code>'s kinetic energy a rigid rotation <span class="arithmatex">\(\omega\)</span> of a body of moment of inertia <span class="arithmatex">\(I\)</span> has the energy

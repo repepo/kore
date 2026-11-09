@@ -49,6 +49,8 @@
       
     
     
+      <link rel="stylesheet" href="../stylesheets/compat.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -887,6 +889,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../compatibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Combining features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../solver/" class="md-nav__link">
         
   
@@ -1507,20 +1537,22 @@ libration (forcing 7), the steady rotation of the walls (forcing 12, <a href="..
 thermal forcing (forcing 13), and for those whose body force it knows, with the torque of that force: the libration in
 the frame of the mantle (forcing 8, <a href="../libration/">Libration</a>) and the wave-like tide (forcing 1, <code>m = 0</code> or <code>m = 1</code>,
 <a href="../tidal-forcing/#the-wave-like-tide-forcing-1">Tidal forcing</a>). It is not computed with <code>centrifugal = 1</code>, nor for
-<code>m = 1</code> with a differential rotation.
+<code>m = 1</code> with a differential rotation, nor with a wall of zero radial stress (<code>bco</code> or <code>bci</code> = 2) of a viscous fluid,
+which the fluid crosses.
 Like residσ, it should be small for a resolved mode.
 <code>flow.dat</code> has the angular momentum, the torques and resid𝐋 (<a href="../output/#flowdat">Output files</a>).</p>
 <h2 id="what-is-supported">What is supported</h2>
-<p>Supported: any <code>structure</code>; with or without buoyancy; with or without a field, with any poloidal <code>B0</code> and a toroidal
-<code>B0_tor</code> that vanishes at both walls; insulating walls, a thin conducting layer, a resolved mantle or a conducting inner
-core.</p>
+<p>Supported: any <code>structure</code>; with or without buoyancy; a no-slip or a stress-free outer wall, with or without a drag
+(<a href="../drag/">Drag at the outer wall</a>); with or without a field, with any poloidal <code>B0</code> and a toroidal <code>B0_tor</code> that
+vanishes at both walls; insulating walls, a thin conducting layer, a resolved mantle or a conducting inner core
+(<code>'conducting, Chebys'</code>: <code>'conducting, Bessel'</code> serves forced runs only).</p>
 <p>Not supported (the run stops at startup):</p>
 <ul>
 <li><code>m</code> other than 0, <code>symm</code> other than 1, a full sphere (<code>ricb = 0</code>), forced runs, or no flow (<code>hydro = 0</code>);</li>
 <li><code>ViscosD = 0</code>, an inner wall that is not no-slip (<code>bci</code> other than 1), or an outer wall that is neither no-slip nor
   stress-free (<code>bco = 2</code>);</li>
 <li><code>Gaspard = 0</code>;</li>
-<li>a differential rotation (<code>diff_rot = 1</code>) or <code>centrifugal = 1</code>;</li>
+<li>a differential rotation (<code>diff_rot = 1</code>), a background flow (<code>bgflow = 1</code>) or <code>centrifugal = 1</code>;</li>
 <li>a toroidal <code>B0_tor</code> that does not vanish at a wall;</li>
 <li><code>MoIZ_M</code> or <code>MoIZ_IC</code> not positive and finite, <code>gTorque</code> negative or infinite, <code>OmgtauIC</code> not positive, <code>vtrq</code> or
   <code>mtrq</code> other than 0 or 1, <code>rotdyn</code> other than 0 or 1.</li>

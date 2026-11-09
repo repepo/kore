@@ -12,7 +12,7 @@
         <link rel="prev" href="../rotating-solids/">
       
       
-        <link rel="next" href="../solver/">
+        <link rel="next" href="../compatibility/">
       
       
         
@@ -48,6 +48,8 @@
         <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
       
     
+    
+      <link rel="stylesheet" href="../stylesheets/compat.css">
     
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -937,6 +939,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../compatibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Combining features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../solver/" class="md-nav__link">
         
   
@@ -1600,8 +1630,8 @@ the wavelength where the spectrum rolls off, and its Hurst exponent. The Earth's
 </span></code></pre></div>
 <p>Without buoyancy these values damp the spin-over mode as <code>kappa_cmb</code> = 4.5e-6 does, to 0.3 %.</p>
 <ul>
-<li><strong>The buoyancy frequency</strong> at the wall is that of the stratification (<code>thermal = 1</code>), or 0 without buoyancy or where
-  the stratification is unstable. <code>topo_N</code> sets it instead.</li>
+<li><strong>The buoyancy frequency</strong> at the wall is that of the stratification (<code>thermal = 1</code>, with the composition's part
+  when <code>compositional = 1</code>), or 0 without buoyancy or where the stratification is unstable. <code>topo_N</code> sets it instead.</li>
 <li><strong>The frequency of the flow.</strong> The drag depends on the frequency of the flow relative to the mantle, which an
   eigenvalue problem does not know in advance: kore takes the frequency of the solver's target (<code>itau</code>), or the forcing
   frequency in a forced run, unless <code>topo_omega</code> sets it. For a mode, solve again until the two agree
@@ -1651,17 +1681,23 @@ rate of a mode of the solids changed by about half of the estimate. Run with the
 flow that the drag of the topography used (columns 135–141, <a href="../output/">Output files</a>).</p>
 <h2 id="what-is-supported">What is supported</h2>
 <p>Supported: any <code>structure</code> (the density and the viscosity at the wall enter); a full sphere; any <code>m</code>; with or without
-buoyancy; with or without a field, with any magnetic walls; the rotating solids; a constant drag with a differential
-rotation; eigenvalue problems, and the forced runs whose outer wall does not move (forcings 6, 11 and 13, and 12 with
-the outer wall at rest).</p>
+buoyancy; with or without a field, with any magnetic walls (but <code>'axial'</code> where the permeability jumps at the wall and
+nothing beyond it conducts: <a href="../magnetic/#current-sheets-at-slipping-walls">Current sheets at slipping walls</a>); the
+rotating solids; a constant drag with a differential rotation or a background flow; eigenvalue problems, and the forced
+runs whose outer wall stays in place and may slip: forcings 6, 8, 9 with <code>forcing_amplitude_cmb = 0</code>, 11, 13 (at
+frequency 0 also between stress-free walls with <code>kappa_cmb</code>, which holds the rigid rotation that would otherwise solve
+the steady problem too), and 12 with the outer wall at rest.</p>
 <p>Not supported (the run stops at startup):</p>
 <ul>
 <li>a drag without the flow (<code>hydro = 0</code>), without viscosity (<code>ViscosD = 0</code>), or at an outer wall that is not stress-free
   (<code>bco</code> other than 0);</li>
-<li><code>Gaspard = 0</code>, <code>centrifugal = 1</code>, or forcings 9 and 10, which move the outer wall;</li>
+<li><code>Gaspard = 0</code>, <code>centrifugal = 1</code>, or a forcing that moves the outer wall radially: 10, and 9 where
+  <code>forcing_amplitude_cmb</code> is not 0 (forcings 2, 7 and 14 need a no-slip outer wall, which takes no drag);</li>
+<li>forcing 1, the wave-like tide: the drag would act on the slip of the whole tide, its equilibrium part included;</li>
 <li><code>kappa_cmb</code> and <code>topo_drag</code> together;</li>
-<li>the drag of the topography with a differential rotation, with a frequency of the flow of 0, or in a frequency scan of
-  forcing 11 (<code>rsf_frequencies</code>) without <code>topo_omega</code>, since it is built for one frequency;</li>
+<li>the drag of the topography with a differential rotation or a background flow (<code>bgflow = 1</code>), with a frequency of
+  the flow of 0 (<code>topo_omega</code>, or without it the run's frequency: forcing 12, and 13 at frequency 0), or in a frequency
+  scan of forcing 11 (<code>rsf_frequencies</code>) without <code>topo_omega</code>, since it is built for one frequency;</li>
 <li><code>kappa_cmb</code> negative or not finite, <code>topo_drag</code> other than <code>None</code> and <code>'rekier'</code>, <code>topo_hrms</code> or <code>topo_lambda0</code> not
   positive, <code>topo_H</code> not above 1/2, <code>topo_N</code> or <code>topo_omega</code> negative.</li>
 </ul>

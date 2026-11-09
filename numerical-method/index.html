@@ -49,6 +49,8 @@
       
     
     
+      <link rel="stylesheet" href="../stylesheets/compat.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -771,6 +773,34 @@
     
   
     Drag at the outer wall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compatibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Combining features
   
 
     
@@ -1555,8 +1585,8 @@ equation; <span class="arithmatex">\(\nabla\Pi\)</span> drops out of both becaus
 <p>All rows are projected on <span class="arithmatex">\(Y_l^m\)</span> and divided by <span class="arithmatex">\(\mathcal L^3\)</span>, with <span class="arithmatex">\(l\)</span> the degree of the row. The powers of <span class="arithmatex">\(r\)</span> are
 <code>rpower_u</code> (5) and <code>rpower_v</code> (3), the smallest that keep every operator a polynomial in <span class="arithmatex">\(r\)</span>. The
 factor <span class="arithmatex">\(\rho_0\)</span> (<code>rhopower_u = rhopower_v = 1</code>) improves the accuracy of the viscous rows near a surface where
-<span class="arithmatex">\(\rho_0\)</span> is small. Without viscosity (<code>ViscosD = 0</code>) the momentum rows are <span class="arithmatex">\(r^3\rho_0^2\)</span> and <span class="arithmatex">\(r^2\rho_0\)</span> times the
-equations. With <code>ThermaD = 0</code> the heat rows are divided by <span class="arithmatex">\(p_0\)</span>, <span class="arithmatex">\(r\thinspace(\partial_t s + u_r\thinspace dS/dr)/\mathcal L^3\)</span>,
+<span class="arithmatex">\(\rho_0\)</span> is small. Without viscosity (<code>ViscosD = 0</code>), which kore takes in a full sphere only (it stops an inviscid fluid
+in a shell), the momentum rows are <span class="arithmatex">\(r^3\rho_0^2\)</span> and <span class="arithmatex">\(r^2\rho_0\)</span> times the equations. With <code>ThermaD = 0</code> the heat rows are divided by <span class="arithmatex">\(p_0\)</span>, <span class="arithmatex">\(r\thinspace(\partial_t s + u_r\thinspace dS/dr)/\mathcal L^3\)</span>,
 which is better conditioned where <span class="arithmatex">\(p_0\)</span> is small (and <span class="arithmatex">\(r^2/p_0\)</span> times the equation with the thermal wind or a background
 flow); with
 <code>CompoD = 0</code> those of the composition are divided by <span class="arithmatex">\(\rho_0\)</span> in the same way. The Coriolis force couples <span class="arithmatex">\(l\)</span> to
@@ -1703,7 +1733,7 @@ one (<code>bci</code>, when <code>ricb &gt; 0</code>); the full sphere has no co
 </tbody>
 </table>
 <p>The density enters the stress-free and no-slip rows through <span class="arithmatex">\(u_\theta\)</span> and <span class="arithmatex">\(u_\phi\)</span>. The thermal conditions are used
-only when <code>ThermaD &gt; 0</code>, those of the composition only when <code>CompoD &gt; 0</code>. Without viscosity only <span class="arithmatex">\(P_l = 0\)</span> is imposed. <code>bco = 2</code> (and <code>bci = 2</code>) replaces <span class="arithmatex">\(u_r = 0\)</span> by a
+only when <code>ThermaD &gt; 0</code>, those of the composition only when <code>CompoD &gt; 0</code>. Without viscosity only <span class="arithmatex">\(P_l = 0\)</span> is imposed at the outer wall, whatever <code>bco</code>. <code>bco = 2</code> (and <code>bci = 2</code>) replaces <span class="arithmatex">\(u_r = 0\)</span> by a
 zero viscous radial stress, <span class="arithmatex">\(\left[r(\ln\rho_0)' - 3\right]P_l + 3rP_l' = 0\)</span>, which does not contain the pressure.</p>
 <h2 id="regularity-at-the-centre">Regularity at the centre</h2>
 <p>The centre of a full sphere is not a boundary, but the fields must be smooth there, and kore imposes no condition to

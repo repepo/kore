@@ -49,6 +49,8 @@
       
     
     
+      <link rel="stylesheet" href="../stylesheets/compat.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -771,6 +773,34 @@
     
   
     Drag at the outer wall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compatibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Combining features
   
 
     
@@ -2866,7 +2896,8 @@ moves or is not spherical: the wall stays at the sphere, and the forcing imposes
 solid's material, so the matching depends on how the solid moves. Where a no-slip wall moves along itself, as in a
 libration, the solid turns with it, which induces nothing in the axisymmetric <span class="arithmatex">\(\mathbf B_0\)</span>. For the radial motion
 <code>forced_walls</code> chooses between two consistent pictures; <code>None</code>, the default, takes <code>'rigid'</code> for forcings 6 and 7 and
-<code>'deforming'</code> for 9, 10 and 14 (<code>background.forced_walls</code>).</p>
+<code>'deforming'</code> for 9, 10 and 14 (<code>background.forced_walls</code>). The eccentricity tide (forcing 2) moves both walls, radially
+and along themselves; it needs insulating walls, so of this section only the permeability below applies to it.</p>
 <ul>
 <li>
 <p><strong><code>'rigid'</code></strong>: the solid is at rest and only its shape moves past the sphere, so the flow passes through the
@@ -2936,7 +2967,8 @@ changes by <span class="arithmatex">\(O(h)\)</span> across the layer and needs n
 <p><strong>Permeability at a wall that moves.</strong> A surface where the permeability jumps separates matter that <span class="arithmatex">\(\mathbf B_0\)</span>
 magnetizes differently, so moving it moves magnetization through <span class="arithmatex">\(\mathbf B_0\)</span>, which changes the field. The rows above
 hold with the same permeability on both sides of every surface that moves. A wall that the forcing moves, where
-<span class="arithmatex">\(\mathbf B_0\)</span> reaches it, therefore needs <span class="arithmatex">\(\mu = 1\)</span>, and <span class="arithmatex">\(\mu_{i2o} = 1\)</span> with a conducting inner core, in both pictures.
+<span class="arithmatex">\(\mathbf B_0\)</span> reaches it, therefore needs <span class="arithmatex">\(\mu_{i2o} = 1\)</span> at an inner wall with a conducting inner core behind it, and
+<span class="arithmatex">\(\mu = 1\)</span> at any other, in both pictures.
 A thin layer holds <span class="arithmatex">\((p/\mu)\,\mathbf B_{0t}\)</span> of the part of <span class="arithmatex">\(\mathbf B_0\)</span> that enters it (<span class="arithmatex">\(\mathbf H_t\)</span> is continuous),
 and its <span class="arithmatex">\(p\)</span> must be 1 where that part reaches the wall:</p>
 <ul>
@@ -2980,8 +3012,9 @@ and G→g couple at even <span class="arithmatex">\(\Delta l\)</span> up to <spa
 <span class="arithmatex">\(\Delta\Omega(r_i, \theta) = c\)</span> (<span class="arithmatex">\(f_n(r_i) = 0\)</span> for <span class="arithmatex">\(n &gt; 0\)</span>, <code>diff_rot.rigid_ricb</code>), or the run stops. Its field then
 gains <span class="arithmatex">\(-imGc\,\mathbf b\)</span>. The matching conditions are unchanged, because only <span class="arithmatex">\(b_r\)</span>, which is continuous, enters the
 tangential part of <span class="arithmatex">\(\mathbf U_0\times\mathbf b\)</span>.</p>
-<p><strong>A solid with a thin conducting layer</strong> turns with the fluid next to it in the same way, so <span class="arithmatex">\(\Delta\Omega\)</span> must be
-uniform in latitude at each such wall (<code>diff_rot.rigid_at</code>), or the run stops. In the frame of the solid the layer's
+<p><strong>A solid with a thin layer that conducts</strong> (<span class="arithmatex">\(c_1 \neq 0\)</span>) turns with the fluid next to it in the same way, so
+<span class="arithmatex">\(\Delta\Omega\)</span> must be uniform in latitude at each such wall (<code>diff_rot.rigid_at</code>), or the run stops; a layer that
+does not conduct (<span class="arithmatex">\(c_1 = 0\)</span>) takes any rotation. In the frame of the solid the layer's
 conditions are those above, and <span class="arithmatex">\(\mathbf U_0\times\mathbf b\)</span> cancels there with the solid's own rotation. The <strong>resolved mantle</strong> turns with
 <span class="arithmatex">\(\Delta\Omega(1) = c\)</span>, uniform in latitude, and its field gains <span class="arithmatex">\(-imGc\,\mathbf b\)</span> like a conducting inner core.</p>
 <h3 id="the-ferraro-condition">The Ferraro condition</h3>
@@ -3337,7 +3370,7 @@ Mag/Kin and writes <code>magnetic.dat</code>:</p>
 <tr>
 <td>11</td>
 <td>residE</td>
-<td>resid𝐄, the full energy budget (nan with stress-free walls and <code>centrifugal = 1</code>, with thin layers and <code>mu</code> ≠ 1, and with rotating solids unless <code>vtrq</code> and <code>mtrq</code> are 1)</td>
+<td>resid𝐄, the full energy budget (nan for a viscous fluid along a wall that is not no-slip with <code>centrifugal = 1</code>, with thin layers and <code>mu</code> ≠ 1, and with rotating solids unless <code>vtrq</code> and <code>mtrq</code> are 1)</td>
 </tr>
 <tr>
 <td>12</td>

@@ -49,6 +49,8 @@
       
     
     
+      <link rel="stylesheet" href="../stylesheets/compat.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -920,6 +922,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../compatibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Combining features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../solver/" class="md-nav__link">
         
   
@@ -1515,15 +1545,16 @@ in units of the rotation rate of the frame (with <code>Gaspard = 0</code>, a fra
 <span class="arithmatex">\(\sigma_n\)</span>, <span class="arithmatex">\(\gamma_n\)</span> (per unit Ro) come from a file or from expressions. The terms are in
 <a href="../bgflow-equations/">Background flow equations</a>.</p>
 <p>It works with any <code>structure</code>, in a shell or a full sphere, with or without the diffusion of the entropy and of the
-composition, without viscosity in a full sphere, with a differential rotation, a magnetic field, conducting solids,
-the forcings, and in eigenvalue and forced problems. The background must</p>
+composition (a forced run without it has a condition of its own, below), without viscosity in a full sphere, with a differential rotation, a magnetic field, conducting solids,
+the constant drag at the outer wall and the forcings, in eigenvalue and forced problems, and in the free decay
+(<code>hydro = 0</code>), where it carries the entropy, the composition and the field. The background must</p>
 <ul>
 <li>be <strong>symmetric about the equator</strong>, as kore's perturbations are (<code>symm</code>): <span class="arithmatex">\(P_n\)</span>, <span class="arithmatex">\(\sigma_n\)</span>, <span class="arithmatex">\(\gamma_n\)</span> of even
   <span class="arithmatex">\(n\)</span> and <span class="arithmatex">\(T_n\)</span> of odd <span class="arithmatex">\(n\)</span>;</li>
 <li><strong>not cross the walls</strong>: <span class="arithmatex">\(P_n = 0\)</span> there;</li>
-<li><strong>turn rigidly at a conducting solid</strong> (a conducting inner core, a thin conducting layer, a resolved mantle): <span class="arithmatex">\(P_n\)</span>,
-  <span class="arithmatex">\(P_n'\)</span> and every <span class="arithmatex">\(T_n\)</span> but <span class="arithmatex">\(T_1\)</span> vanish at its wall, and the solid turns with the fluid there, at
-  <span class="arithmatex">\(\mathrm{Ro}\thinspace\mathrm{Gaspard}\thinspace T_1/r\)</span>, so that its field is carried along.</li>
+<li><strong>turn rigidly at a conducting solid</strong> (a conducting inner core, a thin layer that conducts, <code>c1_cmb</code> or <code>c1_icb</code>
+  not 0, a resolved mantle): <span class="arithmatex">\(P_n\)</span>, <span class="arithmatex">\(P_n'\)</span> and every <span class="arithmatex">\(T_n\)</span> but <span class="arithmatex">\(T_1\)</span> vanish at its wall, and the solid turns with the
+  fluid there, at <span class="arithmatex">\(\mathrm{Ro}\thinspace\mathrm{Gaspard}\thinspace T_1/r\)</span>, so that its field is carried along.</li>
 </ul>
 <p>With a background field (<code>magnetic = 1</code>), <code>submatrices.py</code> prints how far the field is from steady under the
 background flow, <span class="arithmatex">\(\lvert\nabla\times(\mathbf U\times\mathbf B_0)\rvert\thinspace r\)</span> relative to
@@ -1550,7 +1581,8 @@ Ro, and a run that reads it needs <code>bgflow_Ro</code> at that value: the flow
 prints how far the iteration still moves, and it converges in a few iterations, the error squaring at each. The method
 is on <a href="../bgflow-equations/#newtons-method">Background flow equations</a>.</p>
 <p>The file also holds the density of the run (the poloidal flow is that density's), the <code>ricb</code>, and which wall turned.
-kore stops when a run reads it with another <code>ricb</code>, another density, or (for a nonlinear file) another <code>bgflow_Ro</code>.
+kore stops when a run reads it with another <code>ricb</code>, with another density where it has a poloidal flow, or, for a
+nonlinear file, with another <code>bgflow_Ro</code>.
 With entropy or composition (<code>thermal</code>, <code>compositional</code> = 1), the file holds the parts of the entropy and of the
 composition that the flow brought about, <span class="arithmatex">\(\sigma_n\)</span> and <span class="arithmatex">\(\gamma_n\)</span>. <code>bgflow.py</code> does not write the flow of a run with a
 background field: the steady state of such a run has a field that the flow induces from <span class="arithmatex">\(\mathbf B_0\)</span>, which the file
@@ -1631,7 +1663,11 @@ parity <span class="arithmatex">\((-1)^n\)</span> of its degree; a smooth flow g
   viscosity, the background carries the perturbation along its streamlines with nothing to limit how fine it gets.
   The frequencies of that transport, <span class="arithmatex">\(m\)</span> times the angular velocities of the flow and the rates of its meridional
   circulation, form a continuous band, and a target in that band gives modes that do not converge. Target outside it,
-  and keep the modes that stay put when N and lmax are raised.</li>
+  and keep the modes that stay put when N and lmax are raised. A forced run has no target to move: without the
+  diffusion of the entropy or of the composition kore stops it if the background has a meridional circulation, on
+  whose closed streamlines the scalar resonates, or if <span class="arithmatex">\(w + m\Omega\)</span> vanishes somewhere in the fluid, <span class="arithmatex">\(w\)</span> being the
+  frequency of the run and <span class="arithmatex">\(\Omega\)</span> the angular velocity of the background and of a differential rotation
+  (<a href="../compatibility/#forced-runs">Combining features</a>).</li>
 </ul>
 <p>As with any run, compare two resolutions; <code>spin_doctor</code>'s residuals tell when the budget, and so the mode, is resolved
 (<a href="../numerical-method/#checks">Numerical method</a>).</p>

@@ -49,6 +49,8 @@
       
     
     
+      <link rel="stylesheet" href="../stylesheets/compat.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -898,6 +900,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../compatibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Combining features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../solver/" class="md-nav__link">
         
   
@@ -1457,13 +1487,17 @@ the acceleration of the frame instead.</p>
 <p>The frame turns at the mean rate, and the walls turn back and forth in it. With <code>m = 0</code> the mantle turns by the angle
 <span class="arithmatex">\(A\cos wt\)</span> about the <span class="arithmatex">\(z\)</span> axis and the inner core by <span class="arithmatex">\(A_{IC}\cos wt\)</span>, with <span class="arithmatex">\(A\)</span> = <code>forcing_amplitude_cmb</code>, <span class="arithmatex">\(A_{IC}\)</span> =
 <code>forcing_amplitude_icb</code> (in radians) and <span class="arithmatex">\(w\)</span> = <code>forcing_frequency</code>. A no-slip wall carries the fluid with it,
-<span class="arithmatex">\(u_\phi = -wA\thinspace r\sin\theta\sin wt\)</span> at the outer wall. The outer wall must be no-slip (<code>bco = 1</code>). The inner
-wall may be no-slip or stress-free (<code>bci</code> = 1 or 0); a stress-free inner wall does not pass the libration of the inner
-core to the fluid, so <span class="arithmatex">\(A_{IC}\)</span> then has no effect. In a full sphere (<code>ricb = 0</code>) only the mantle librates.</p>
+<span class="arithmatex">\(u_\phi = -wA\thinspace r\sin\theta\sin wt\)</span> at the outer wall. The outer wall must be no-slip (<code>bco = 1</code>), and the
+fluid viscous: walls that slide along themselves do not move an inviscid fluid, and kore stops. The inner wall may be
+no-slip or stress-free (<code>bci</code> = 1 or 0); a stress-free inner wall does not pass the libration of the inner core to the
+fluid, so <span class="arithmatex">\(A_{IC}\)</span> then has no effect. With a field it would pass it through the field where the inner core, or a thin
+layer on it, conducts: kore stops on that case, <span class="arithmatex">\(A_{IC}\)</span> not 0 behind a stress-free inner wall under a poloidal B0. In a
+full sphere (<code>ricb = 0</code>) only the mantle librates.</p>
 <p>With <code>m = 2</code> forcing 7 stands for a mantle whose equator is elongated, which moves its shape past the sphere as it
 librates. The walls stay spheres, and the forcing imposes the radial velocity of that motion at each wall,
 <span class="arithmatex">\(u_r = -wA\thinspace r_w\thinspace Y_2^2(\theta)\thinspace e^{i(2\phi + wt)}\)</span> + c.c. at the wall of radius <span class="arithmatex">\(r_w\)</span>, with
-<span class="arithmatex">\(A\)</span> at the outer wall and <span class="arithmatex">\(A_{IC}\)</span> at the inner one, and no-slip walls (<code>bci = bco = 1</code>). With a field, how a
+<span class="arithmatex">\(A\)</span> at the outer wall and <span class="arithmatex">\(A_{IC}\)</span> at the inner one, and no-slip walls (<code>bco = 1</code>, and <code>bci = 1</code> with an inner core),
+or an inviscid fluid in a full sphere, whose one wall row keeps the fluid from crossing the wall whatever <code>bco</code>. With a field, how a
 conducting solid behind such a wall moves is set by <code>forced_walls</code> (<a href="../magnetic/#a-boundary-that-moves">Magnetic field</a>).</p>
 <h2 id="forcing-8-the-frame-of-the-mantle">Forcing 8: the frame of the mantle</h2>
 <p>The frame turns with the mantle, so the outer wall is at rest. The inner core turns with the mantle, or librates
@@ -1479,10 +1513,12 @@ about the axis leaves the axisymmetric B0 as it is.</p>
 <p>The walls are at rest in this frame, so forcing 8 takes the walls that forcing 7 cannot move: a stress-free outer wall,
 along which the fluid slips relative to the mantle and a drag acts on that slip (<a href="../drag/">Drag at the outer wall</a>),
 with or without a conducting mantle, and an inviscid fluid in a full sphere. It needs <code>m = 0</code>, <code>symm = 1</code>, a frequency
-other than 0, and walls that stay in place (<code>bco</code> and <code>bci</code> 0 or 1). In a full sphere there is no inner core to
-librate: <span class="arithmatex">\(A_{IC}\)</span> must be 0. Any <code>structure</code>, buoyancy, a differential rotation and a field work as in the other runs
-(<a href="../magnetic/#forced-runs">Magnetic field</a>). Use forcing 8 for what an observer on the mantle sees, or where forcing 7
-does not take the walls.</p>
+other than 0, and walls that stay in place (<code>bco</code> and <code>bci</code> 0 or 1; an inviscid fluid takes any <code>bco</code>). In a full
+sphere there is no inner core to librate: <span class="arithmatex">\(A_{IC}\)</span> must be 0. Any <code>structure</code>, buoyancy, a differential rotation and a
+field work as in the other runs (<a href="../magnetic/#forced-runs">Magnetic field</a>), but for the case that stops forcing 7 too:
+an inner core that librates relative to the mantle (<span class="arithmatex">\(A_{IC}\)</span> not 0) behind a stress-free inner wall, where the core or
+a thin layer on it conducts, under a poloidal B0. Use forcing 8 for what an observer on the mantle sees, or where
+forcing 7 does not take the walls.</p>
 <h2 id="example-a-librating-shell-in-both-frames">Example: a librating shell in both frames</h2>
 <p>Write in <code>bin/parameters.py</code></p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">params_default</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_params</span>
@@ -1573,11 +1609,13 @@ frame, and its flow is minus the libration of the mantle.</p>
 </tr>
 <tr>
 <td><code>bci</code>, <code>bco</code></td>
-<td>forcing 7: <code>bco = 1</code>, <code>bci</code> 0 or 1 (<code>m</code> 2: both 1); forcing 8: 0 or 1</td>
+<td>forcing 7: <code>bco = 1</code>, <code>bci</code> 0 or 1 (<code>m</code> 2: <code>bci = 1</code>); forcing 8: <code>bco</code> 0 or 1, <code>bci</code> 0 or 1. <code>bci</code> only with an inner core; an inviscid fluid (forcing 7 with <code>m</code> 2, forcing 8) takes any <code>bco</code></td>
 </tr>
 </tbody>
 </table>
-<p>The solution is written as for any forced run (<a href="../output/">Output files</a>). <code>tests/forcing</code> checks the wall values of
+<p>Like every forced run, forcings 7 and 8 need a spherical body (<code>centrifugal = 0</code>); <a href="../compatibility/#forced-runs">Combining features</a>
+shows what else they combine with. The solution is written as for any forced run (<a href="../output/">Output files</a>).
+<code>tests/forcing</code> checks the wall values of
 forcing 7, <code>tests/couette</code> its budgets, and <code>tests/cic_forcings</code> forcing 8 against forcing 7 and against the
 <code>conductive_IC</code> branch, its budgets where forcing 7 cannot follow, and its stops.</p>
 
