@@ -225,6 +225,10 @@ level surface are $\mathbf u = 0$, $\mathbf u\cdot\mathbf n = 0$ and $s = 0$ in 
   the components along its tangents;
 - a fixed-flux wall has no flux through the deformed wall: $\hat{\mathbf r}\cdot\mathsf M^{-1}\nabla s = 0$.
 
+A drag at a stress-free outer wall acts on the slip along the deformed wall, per unit of its area; carried back to the
+reference sphere, its tensor joins the stress-free rows ([Drag at the outer wall
+equations](drag-equations.md#on-a-deformed-body)).
+
 **Rows.** The first-order parts multiply the fields and their derivatives by polynomials in $\cos\theta$ of degree 2 at
 most, so they couple the degrees as the inertia does: $l$ to $l$ and $l \pm 2$ of the same kind, and to $l \pm 1$ and
 $l \pm 3$ of the other. Their radial factors are products of the amplitudes of the map, of the diffusivity and its
@@ -506,6 +510,7 @@ Where each piece is in the code:
 | the insulating walls | `centrifugal.wall_coefficients`, `wall_rows` (`assemble.bc_b_centrifugal`) |
 | the dissipative terms | `centrifugal.diffusion_build` (`viscous_force`, `thermal_diffusion_metric`, `magnetic_diffusion_metric`) with the product codes of `diffusion_profile_functions`, `diffusion_labels` (`submatrices.py`, with the bases of `diffusion_orders`), `diffusion_block` (`operators.centrifugal_diffusion`) |
 | the stress-free and fixed-flux walls | `centrifugal.wall_dissipative`, `wall_dissipative_rows` (`assemble.bc_u_centrifugal`, `bc_theta_centrifugal`) |
+| the drag at the outer wall | `topo.wall_metric`, `wall_tensor` (`topo.grid`, for the rows and `topo.dissipation`) |
 | a conducting inner core | `centrifugal.ic_labels`, `diffusion_block_ic` (`operators.centrifugal_diffusion_ic`), `icb_electric`, `icb_rows` (`assemble.bc_b_cic_centrifugal`); the rows $r^3$ of `utils.rpower_g`, `rpower_gic` |
 | the differential rotation | `centrifugal.rotation_force`, `rotation_build`, `rotation_heat_coefficients`, `rotation_labels`, `rotation_block` (`operators.centrifugal_rotation`) |
 | effective gravity | `centrifugal.g_monopole` in `radial_profiles.graviX` |
@@ -527,3 +532,6 @@ The deformation is checked in four ways, by the scripts in `tests/centrifugal/` 
   deformed body, whose modes must not change at first order; the flattening of Clairaut's equation for known
   structures; and, for the exact spheroid, viscous and diffusive modes against exact Galerkin solutions.
 - **Budgets.** residσ, residω, resid𝑠 and, with a field, resid𝐛 and resid𝐄 close for resolved modes, as in the sphere.
+
+The drag at the outer wall on the deformed body is checked by `tests/drag/deformed_check.py`
+([Drag at the outer wall equations](drag-equations.md#checks)).

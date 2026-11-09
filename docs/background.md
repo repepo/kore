@@ -356,10 +356,10 @@ par.centrifugal_f     = 2.5e-3
 
 ### Limitations
 
-- The deformation works with buoyancy, viscosity, thermal and compositional diffusion, differential rotation and a
-  magnetic field (insulating walls or a conducting inner core), in shells and full spheres.
-- It does not work with forced runs, walls of zero radial stress (`bci` or `bco` = 2), the rotating solids, the drag at
-  the outer wall, thin conducting layers, a resolved mantle or a background flow. kore stops and says why
+- The deformation works with buoyancy, viscosity, thermal and compositional diffusion, differential rotation, the drag
+  at the outer wall and a magnetic field (insulating walls or a conducting inner core), in shells and full spheres.
+- It does not work with forced runs, walls of zero radial stress (`bci` or `bco` = 2), the rotating solids, thin
+  conducting layers, a resolved mantle or a background flow. kore stops and says why
   ([Combining features](compatibility.md)).
 - A viscous flow in a full sphere with `m` ≠ 0 needs `rpower_v` of at least 4; kore stops and says so.
 - With the thermal wind, the background entropy ignores the flattening. `submatrices.py` warns about this.

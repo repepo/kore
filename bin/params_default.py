@@ -170,7 +170,9 @@ class default_params():
         # 1500 km at r0 = 3480 km) is topo_hrms = 4.35e-4, topo_lambda0 = 0.431, topo_H = 0.8. N, the buoyancy frequency at the
         # wall, is that of the stratification (0 without buoyancy or where it is unstable) unless topo_N (N/Omega) is set; the
         # frequency of the flow is |itau|/Gaspard, the solver's target (forced problems: |forcing_frequency|/Gaspard), unless
-        # topo_omega (w0/Omega) is set.
+        # topo_omega (w0/Omega) is set. NEW (2026-11-09): on a deformed body (centrifugal = 1) the drag acts along its wall at
+        # the latitude of the wall's normal (topo.wall_tensor); r0 is then the mean radius, and N (topo_N too) that of the
+        # reference sphere, which kore multiplies by |grad r| along the wall.
         self.topo_drag    = None
         self.topo_hrms    = 0.0
         self.topo_lambda0 = 0.431
@@ -178,6 +180,7 @@ class default_params():
         self.topo_N       = None
         self.topo_omega   = None
         self.topo_K       = ''   # test hook: a numpy expression of x = cos(theta) giving (kappa_tt, kappa_pp) instead of B1
+                                 # (on a deformed body x is the cosine of the colatitude of the wall's normal)
 
         # Differential rotation parameters. Set to 0 for solid body rotation. Ω_ref is the frame rotation rate (Gaspard in units of
         # the time scale) and ΔΩ is relative to it, so any timescale works: U0 = Gaspard ΔΩ r sinθ e_φ. User guide: docs/background.md (Rotation).

@@ -84,6 +84,22 @@ down to Ekman numbers of about 1e-8.
 With `rotdyn = 1` the drag acts on the slip relative to the turning mantle, and pulls the mantle in return; its torque
 appears as the viscous torque on the mantle in `rotdyn.dat`.
 
+## On a deformed body
+
+With the centrifugal deformation (`centrifugal = 1`, [Centrifugal deformation](background.md#centrifugal-deformation))
+the outer wall is a spheroid, and the drag acts on the slip along it. Each point of the wall takes the drag of the
+latitude of its local vertical, and the drag of the topography takes the buoyancy frequency of the deformed wall, which
+is larger where the wall is nearer the centre. This is exact for `centrifugal_shape = 'spheroid'` and first order in the
+flattening for the other shapes. `topo_N` is then the buoyancy frequency on the reference sphere, and `topo_hrms` and
+`topo_lambda0` are relative to the mean radius.
+
+On a deformed wall even a constant drag couples degrees: check the convergence in `lmax`. The rotating solids still
+need a spherical body.
+
+For the Earth (a flattening of 1/400) the deformation changes the damping of the spin-over mode by 0.02 % with
+`kappa_cmb`, and by up to 0.4 % with the drag of the topography. At a flattening of 0.3 the changes are 8 % and 8 % to
+30 %.
+
 ## Output
 
 For a viscous run with a stress-free outer wall, `spin_doctor` prints two columns:
@@ -100,14 +116,14 @@ with it.
 ## What is supported
 
 Supported: any structure; a full sphere; any `m`; with or without buoyancy; with or without a magnetic field; the
-rotating solids; a constant drag together with differential rotation or a background flow; eigenvalue problems, and
-the forced runs whose outer wall stays in place and may slip (forcings 6, 8, 11, 13, and 9 and 12 with the outer wall
-at rest).
+rotating solids; a deformed body ([above](#on-a-deformed-body)); a constant drag together with differential rotation
+or a background flow; eigenvalue problems, and the forced runs whose outer wall stays in place and may slip (forcings
+6, 8, 11, 13, and 9 and 12 with the outer wall at rest).
 
 Not supported (kore stops with a message):
 
 - a drag without the flow (`hydro = 0`), without viscosity, or at an outer wall that is not stress-free;
-- a non-rotating frame, the centrifugal deformation, or a forcing that moves the outer wall radially;
+- a non-rotating frame, or a forcing that moves the outer wall radially;
 - the wave-like tide (forcing 1);
 - `kappa_cmb` and `topo_drag` together;
 - the drag of the topography with differential rotation or a background flow, with a flow frequency of 0, or in a

@@ -39,6 +39,29 @@ spin_doctor: Dtopo = 2 Gaspard rho_w oint (u_t - v_m)*.K.(u_t - v_m) dS, the pow
 energies (the complex amplitude's int rho0 |u|^2, whose rate is 2 sigma times it), and dsig = -Dtopo/(2 E) the damping rate
 it implies (E the energy of the mode). For a stress-free outer wall without a drag both are per unit kappa_cmb (K = 1): the
 damping a weak drag would add, to first order.
+
+NEW (2026-11-09): a deformed body (centrifugal = 1). The wall is then the level surface r = 1 of the map X(alpha), the
+unknown the reference flux w = J F^-1 u (centrifugal.py), and the stress rows hold the traction of that surface,
+[F^T sigma_X N]_t with N = F^-T r_hat = grad r (not normalised; centrifugal.wall_dissipative_rows). Times |N|, the drag
+of the body, -K (u_t - v_m) per unit area of the surface, adds to them t.K_eff.w with
+    K_eff = (|N|/J) F^T K F = diag(h_t kappa_tt(x_n), h_p kappa_pp(x_n))  on (w_theta, w_phi),
+    h_t = |N| |F theta_hat|^2/J,  h_p = |N| |F phi_hat|^2/J,
+exact for the axisymmetric map: F takes theta_hat to the meridian of the surface and phi_hat to phi_hat, so that K_eff is
+diagonal in the reference theta, phi too, and the couplings above take it as they take K(theta). By Nanson's formula
+(dS_X = J |N| dS) the same K_eff gives the power the drag dissipates on the body's wall. x_n is the cosine of the
+colatitude of the wall's normal, where the drag of the topography takes its local vertical (f = 2 Omega x_n,
+ft = 2 Omega sqrt(1 - x_n^2)), and the buoyancy frequency there is N_cmb |N| (the effective gravity and dS/dn both scale
+with |grad r|). wall_metric gives h_t, h_p, x_n and |N|:
+    first order (eps, eta the shape's amplitudes ce0, ce1 at the wall; P2 = (3x^2 - 1)/2):
+        h_t = 1 + eps - (3 eps + 2 eta) P2,  h_p = 1 - eps - (eps + 2 eta) P2,  |N| = 1 - (eps + eta) P2,
+        x_n = x - (3/2) eps x (1 - x^2);
+    the exact spheroid (semi-axes a, a, c, a^2 c = 1; Q = a^2 x^2 + c^2 (1 - x^2)):
+        h_t = a Q^(3/2),  h_p = a^3 Q^(1/2),  |N| = a Q^(1/2),  x_n = a x/Q^(1/2).
+K is taken at x_n node by node, never expanded about x: the drag of the topography has kinks at the critical latitudes.
+A constant kappa_cmb then couples the degrees too (K_eff depends on theta): l to l +- 2 and, for m != 0, P_l to T_(l+-1)
+at first order, every degree of the parity for the exact spheroid. topo_hrms and topo_lambda0 are relative to the mean
+radius, and the test hook topo_K is a function of x_n. The rotating solids stay spherical (rotdyn = 1 stops with
+centrifugal = 1), so v_m = 0 here.
 '''
 import numpy as np
 from scipy.special import gamma
@@ -69,7 +92,9 @@ def N_cmb():
     '''
     N/Omega at the outer wall: topo_N if set, else sqrt(Beyonce g dS/dr)/Gaspard of the stratification (N^2 = Beyonce g dS/dr,
     docs/anelastic.md), 0 without buoyancy (thermal = 0) and where the stratification is unstable (N^2 < 0). NEW (2026-11-08):
-    with the composition (compositional = 1) N^2 has its part too, BeyonceC g dC/dr
+    with the composition (compositional = 1) N^2 has its part too, BeyonceC g dC/dr. NEW (2026-11-09): on a deformed body
+    (centrifugal = 1) this is N of the reference sphere (with the effective gravity of the buoyancy, radial_profiles.graviX),
+    which wall_tensor multiplies by |grad r| along the wall
     '''
     if par.topo_N is not None:
         return float(par.topo_N)
@@ -78,6 +103,9 @@ def N_cmb():
     import radial_profiles as rap
     rr = np.array([float(ut.rcmb)])
     g = float(np.ravel(rap.prf.gravity(rr, 0))[0])
+    if par.centrifugal and par.centrifugal_q != 0:   # NEW (2026-11-09): the effective gravity of the buoyancy (graviX)
+        import centrifugal as cf
+        g += float(np.ravel(cf.g_monopole(rr))[0])
     n2 = par.Beyonce*g*float(np.ravel(rap.prf.gradS(rr))[0]) if par.thermal else 0.0
     if par.compositional:
         n2 += par.BeyonceC*g*float(np.ravel(rap.prf.gradC(rr))[0])
@@ -109,11 +137,12 @@ def hook(x):
             np.broadcast_to(np.asarray(kp, dtype=float), x.shape).copy())
 
 
-def kappa(x, na=2048):
+def kappa(x, na=2048, n=None):
     '''
     [kappa_tt, kappa_pp] (meridional, zonal; units rho_w Omega r0) at x = cos(colatitude): kappa_cmb in every direction, or
     eq. (B1) with the factor 4 pi^2 (topo_drag = 'rekier'; the a-integral by the midpoint rule, exact to round-off for the
-    trigonometric polynomial under the root where it does not vanish), or the test hook topo_K
+    trigonometric polynomial under the root where it does not vanish), or the test hook topo_K. NEW (2026-11-09): n, the
+    buoyancy frequency N/Omega at each x (default N_cmb(); a deformed wall's varies, wall_tensor)
     '''
     x = np.atleast_1d(np.asarray(x, dtype=float))
     if par.topo_drag is None:
@@ -121,7 +150,8 @@ def kappa(x, na=2048):
         return k + 0*x, k + 0*x
     if par.topo_K:
         return hook(x)
-    w0, n = omega0(), N_cmb()
+    w0 = omega0()
+    n = np.broadcast_to(np.asarray(N_cmb() if n is None else n, dtype=float), x.shape)[:, None]
     a = (np.arange(na) + 0.5)*2*np.pi/na
     f2, ft2 = 4*x**2, 4*(1 - x**2)
     g = np.sqrt(np.maximum(0.0, (w0**2 - n**2)*(f2[:, None] - w0**2) + w0**2*ft2[:, None]*np.sin(a)**2))
@@ -129,10 +159,54 @@ def kappa(x, na=2048):
     return c*np.sum(np.sin(a)**2*g, axis=1), c*np.sum(np.cos(a)**2*g, axis=1)
 
 
+def deformed():
+    '''NEW (2026-11-09): whether the outer wall is that of a deformed body (centrifugal = 1 with a deformation)'''
+    if not par.centrifugal:
+        return False
+    import centrifugal as cf
+    return bool(cf.deformed())
+
+
+def wall_metric(x):
+    '''
+    NEW (2026-11-09): the deformed outer wall at the reference nodes x = cos(theta): [h_t, h_p, x_n, |N|] of the module
+    docstring (K_eff = diag(h_t kappa_tt(x_n), h_p kappa_pp(x_n)), x_n the cosine of the colatitude of the wall's normal,
+    |N| = |grad r|), exactly for the spheroid (centrifugal_shape 'spheroid'), to first order in the shape otherwise; [1, 1, x, 1]
+    for a sphere
+    '''
+    x = np.atleast_1d(np.asarray(x, dtype=float))
+    one = np.ones_like(x)
+    if not deformed():
+        return one, one, x, one
+    import centrifugal as cf
+    if cf.exact():
+        a, c = cf.spheroid_axes()
+        Q = a*a*x*x + c*c*(1 - x*x)
+        return a*Q**1.5, a**3*np.sqrt(Q), a*x/np.sqrt(Q), a*np.sqrt(Q)
+    v = cf.wall_values(float(ut.rcmb))
+    e, h = v['E'], v['N']
+    P2 = 1.5*x*x - 0.5
+    return (1 + e - (3*e + 2*h)*P2, 1 - e - (e + 2*h)*P2, x - 1.5*e*x*(1 - x*x), 1 - (e + h)*P2)
+
+
+def wall_tensor(x):
+    '''
+    [K_tt, K_pp] at the reference nodes x: kappa(x) on a sphere; NEW (2026-11-09) on a deformed body the effective tensor
+    h_t kappa_tt(x_n), h_p kappa_pp(x_n), with the buoyancy frequency N_cmb |N| of each node (module docstring)
+    '''
+    if not deformed():
+        return kappa(x)
+    ht, hp, xn, gr = wall_metric(x)
+    n = N_cmb()*gr if (par.topo_drag is not None and not par.topo_K) else None
+    kt, kp = kappa(xn, n=n)
+    return ht*kt, hp*kp
+
+
 def grid():
     '''
     The outer wall on Gauss-Legendre nodes in x = cos(theta), cached: the nodes x, the weights, dY_l/dtheta and
-    Z_l = i m Y_l/sin(theta) there (l = 0..lmax + 1, angular.ylm_grid), and kappa_tt, kappa_pp. Many nodes,
+    Z_l = i m Y_l/sin(theta) there (l = 0..lmax + 1, angular.ylm_grid), and kappa_tt, kappa_pp (NEW 2026-11-09: those of
+    K_eff on a deformed body, wall_tensor). Many nodes,
     max(4 (lmax + 2), 2000), since K has kinks where the root of (B1) vanishes (the critical latitudes). The rule of
     conductive_IC (numpy's leggauss), from scipy's roots_legendre: the couplings agree to 5e-12, ten times faster
     '''
@@ -141,7 +215,7 @@ def grid():
         from scipy.special import roots_legendre
         x, w = roots_legendre(max(4*(par.lmax + 2), 2000))
         Y, dY, Z = angular.ylm_grid(par.m, par.lmax + 1, x)
-        _cache['grid'] = (x, w, dY, Z) + tuple(kappa(x))
+        _cache['grid'] = (x, w, dY, Z) + tuple(wall_tensor(x))
     return _cache['grid']
 
 
@@ -189,7 +263,7 @@ def rows(l, sec):
     else:
         row = ut.offset['v'] + int(ut.N1*(l - ut.m_bot)/2)
         fac = r*ratio()
-    if par.topo_drag is None:   # a constant K: the degree itself, A_ss = A_tt = kappa_cmb
+    if par.topo_drag is None and not deformed():   # a constant K on a sphere: the degree itself, A_ss = A_tt = kappa_cmb
         Cs = {l: par.kappa_cmb} if sec == 'u' else {}
         Ct = {l: par.kappa_cmb} if sec == 'v' else {}
     else:
@@ -218,7 +292,8 @@ def rows(l, sec):
 def dissipation(usol2, omega_M=0):
     '''
     Dtopo = 2 Gaspard rho_w oint (u_t - v_m)*.K.(u_t - v_m) dS over the outer wall for the flow usol2 (utils4pp.expand_reshape_sol),
-    v_m = omega_M z x r; K = 1 in every direction (per unit kappa_cmb) for a stress-free wall without a drag
+    v_m = omega_M z x r; K = 1 in every direction (per unit kappa_cmb) for a stress-free wall without a drag. NEW (2026-11-09):
+    on a deformed body the integral over the body's wall, by K_eff over the reference sphere (module docstring)
     '''
     import numpy.polynomial.chebyshev as ch
     import bc_variables as bv

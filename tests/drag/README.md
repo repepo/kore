@@ -13,8 +13,11 @@ tests/drag/run_all.sh [WORKDIR]
 
 builds the test runs (in `tests/drag/runs/` by default), runs every check and exits with 1 if one failed. It needs
 numpy, scipy, mpi4py, and petsc4py and slepc4py with MUMPS; `NCPUS` sets the number of ranks (default 2, and at most 2
-are used, as the reference runs), `MPIEXEC` replaces `mpiexec`. The runs are built with `tests/tidal/mk_run.py` (an
-incompressible fluid in a shell, ricb 0.35, Ek $10^{-3}$, N 48 or 64, `lmax` 19 to 21).
+are used, as the reference runs), `MPIEXEC` replaces `mpiexec`. The runs of `drag_check.py` are built with
+`tests/tidal/mk_run.py` (an incompressible fluid in a shell, ricb 0.35, Ek $10^{-3}$, N 48 or 64, `lmax` 19 to 21),
+those of `deformed_check.py` with `tests/centrifugal/mk_run.py` (one rank each, `NPAR` at a time: by default the
+processors, at most one per 2 GB of available memory). The two scripts run side by side, each with its log in
+`WORKDIR/logs`, printed once both have ended.
 
 ## The checks
 
@@ -54,3 +57,32 @@ incompressible fluid in a shell, ricb 0.35, Ek $10^{-3}$, N 48 or 64, `lmax` 19 
 - **Stops.** The settings `background.check_drag` does not cover stop in `submatrices.py` with their message.
 
 About 2 min on 2 ranks.
+
+**`deformed_check.py`.** The drag on a body flattened by its rotation (`centrifugal = 1`), where it acts on the slip
+along the spheroidal wall, per unit of its area, at the latitude of the wall's normal. Eight groups:
+
+- **Axial.** The rigid rotation of a stress-free fluid decays, per unit `kappa_cmb`, at the rate of its integral over
+  the wall of the body: the exact spheroid (`'spheroid'`, $f$ = 0.3 and −0.2, a full body and a shell) and the
+  first-order `'uniform'` body ($f = \pm0.01$, against the first-order rate). Expected $10^{-6}$ (in practice
+  $2\cdot10^{-8}$, the extrapolation in `kappa_cmb`).
+- **Spin-over.** The power the drag would dissipate on the inviscid spin-over of the exact spheroid, whose flow is
+  known, against its integral over the wall: `kappa_cmb`, each direction alone and a tensor that varies with latitude
+  (the test hook `topo_K`), and the drag of the topography, with its buoyancy frequency along the wall. Expected
+  $10^{-10}$ (in practice $5\cdot10^{-11}$), and $3\cdot10^{-6}$ for the drag of the topography, whose kinks limit
+  kore's quadrature (in practice $4\cdot10^{-8}$).
+- **First order.** The same in the `'uniform'` body ($f = \pm0.02, \pm0.01$) against the exact spheroid of the same
+  flattening: the difference is of second order in $f$, for `kappa_cmb` and for the drag of the topography. Expected:
+  an order between 1.7 and 2.3 (in practice 1.98 to 2.02).
+- **Relabelled.** A sphere labelled as deformed inside, with a flattening $c(1 - r^2)$ that vanishes at the wall but
+  not its derivative: the drag on its spin-over must stay that of the sphere. Its part odd in $c$, over $c$ and the
+  sphere's value, is $6\cdot10^{-7}$ at most (expected $10^{-4}$); without the terms of the wall's metric in the
+  derivative of the shape it is 0.27.
+- **Weak.** In a viscous spheroidal shell ($f$ = 0.3, Ek $10^{-3}$) a weak drag changes the damping rate of the
+  spin-over mode by the δσtopo the run reports: `kappa_cmb`, each direction and the drag of the topography. Expected
+  $5\cdot10^{-3}$ (in practice $4\cdot10^{-4}$).
+- **Stiff.** `kappa_cmb` = $10^8$ on that shell gives the eigenvalues of a no-slip wall. Expected $10^{-8}$ (in
+  practice $4\cdot10^{-12}$).
+- **Sphere.** $f = 0$ with the drag of the topography builds the matrices of `centrifugal = 0`, bitwise.
+- **Stops.** The rotating solids still stop with a deformed body.
+
+About 1 min on 4 processors.

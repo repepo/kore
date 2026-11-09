@@ -453,11 +453,11 @@ def check_drag():
     NEW (2026-11-06, conductive_IC's check_drag): stops on the settings that the drag at the outer wall (kappa_cmb, topo_drag;
     topo.py) does not cover. The drag replaces the stress-free condition (bco = 0) by a Robin condition on the viscous stress,
     in units of the rotation rate (K/(rho_w Omega r0)). Left out: a wall that moves radially (forcing 10, and NEW 2026-11-09
-    forcing 9 only where forcing_amplitude_cmb != 0: moves_radially), a deformed
-    body (the drag on the metric of the walls), and for topo_drag = 'rekier' a differential rotation (the frequency of the
-    flow relative to the wall would depend on latitude) and a frequency scan of forcing 11 without topo_omega (the drag is
-    built for one frequency). Only parameters are read here (radial_profiles.py calls check() before it builds its
-    profiles).
+    forcing 9 only where forcing_amplitude_cmb != 0: moves_radially), and for topo_drag = 'rekier' a differential rotation
+    (the frequency of the flow relative to the wall would depend on latitude) and a frequency scan of forcing 11 without
+    topo_omega (the drag is built for one frequency). NEW (2026-11-09): a deformed body (centrifugal = 1) runs: the drag acts
+    on the slip along its wall (topo.wall_tensor); rotdyn = 1 still stops with it (check_rotdyn). Only parameters are read
+    here (radial_profiles.py calls check() before it builds its profiles).
     '''
     num = (int, float, np.integer, np.floating)
     def number(v, ok=lambda v: True):
@@ -475,8 +475,6 @@ def check_drag():
                  'and a stress-free outer wall (bco = 0), whose condition it changes')
     if not par.Gaspard > 0:
         sys.exit('the drag at the outer wall needs a rotating frame (Gaspard > 0): it is in units of the rotation rate')
-    if par.centrifugal:
-        sys.exit('the drag at the outer wall needs a spherical body (centrifugal = 0)')
     if par.forcing in (9, 10) and moves_radially('outer'):   # (NEW 2026-11-09: forcing 9 with the outer wall in place runs)
         sys.exit('the drag at the outer wall with forcing %d is not covered: the wall moves radially%s' % (par.forcing,
                  ' (forcing_amplitude_cmb != 0)' if par.forcing == 9 else ''))

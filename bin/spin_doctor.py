@@ -437,8 +437,9 @@ def main(ncpus):
     mtorq_ic    = np.zeros(success, dtype=complex)  #   and on the inner core
     residL      = np.full(success, np.nan)
     # NEW (2026-11-06, from conductive_IC): the drag at a stress-free outer wall (topo.py): Dtopo, the power it dissipates, and
-    # dsig = -Dtopo/(2 E), the damping rate it implies (E the energy of the mode); per unit kappa_cmb without a drag
-    do_drag     = bool(par.hydro and par.ViscosD > 0 and par.bco == 0 and par.Gaspard > 0 and not par.centrifugal)
+    # dsig = -Dtopo/(2 E), the damping rate it implies (E the energy of the mode); per unit kappa_cmb without a drag. NEW
+    # (2026-11-09): with centrifugal = 1 too (the body's wall and energy: topo.wall_tensor, KE + KEc)
+    do_drag     = bool(par.hydro and par.ViscosD > 0 and par.bco == 0 and par.Gaspard > 0)
     Dtopo       = np.zeros(success)
     dsig        = np.zeros(success)
     MEc         = np.zeros(success)  # NEW (2026-11-05): centrifugal = 1, ∫ 𝐛̃*⋅(M - I) 𝐛̃ dV: ME + MEc is the field's energy in the

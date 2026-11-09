@@ -104,7 +104,7 @@ ones too (check_names warns), and does not call set_scales. docs/output.md#the-p
 | `field_io.py` | NEW 2026-11-08 (from conductive_IC): the solution files in either format, `FORMATS`, `files`, `exists`, `save` (deletes the other format's files), `load` (a column, a list of them, or all; None if absent); reads no parameters, so tests and tools use it on any folder |
 | `just_induction.py`, `solve_ind.py` | NEW 2026-11-06 (from conductive_IC): kinematic induction, the field a given flow (flow.npy or the text files) induces: (A_bb − λ B_bb) b = −A_bu u from A.npz, B.npz of a magnetic eigen assembly (λ the argument, default i forcing_frequency; in a forced assembly A holds A − i wf B, so λ = i wf needs no B.npz) → A_ind.npz, u_ind.npz; solve_ind.py (MPI, KSP LU) writes real/imag_magnetic(_ic, _mantle).field |
 | `rotdyn.py` | NEW 2026-11-06 (from conductive_IC): the rotating solids (`rotdyn = 1`, §4): `a_rows`, `b_rows` (the three rows of A, B and the wall entries), `coupling` (K), `relaxation`, `viscous_factor`, `magnetic_factors` (C_l); for spin_doctor `L_case`, `angular_momentum`, `viscous_torques`, `wall_torques` (resid𝐋, axial and equatorial) |
-| `topo.py` | NEW 2026-11-06 (from conductive_IC): the drag at a stress-free outer wall (`kappa_cmb`, `topo_drag = 'rekier'`, §4): `on`, `wall_profiles` (ρ₀, ν at the wall), `ratio` (q = Gaspard/(ViscosD ν(1))), `N_cmb`, `omega0`, `Ik_R`, `kappa` (Rekier et al. 2025 B1 with the 4π², or the test hook `topo_K`), `grid` (the cached Gauss–Legendre wall grid), `couplings` (A_ss, A_st, A_ts, A_tt), `rows` (the drag's entries in the stress rows, the ω_M column with `rotdyn = 1`); for spin_doctor `dissipation` (Dtopo) |
+| `topo.py` | NEW 2026-11-06 (from conductive_IC): the drag at a stress-free outer wall (`kappa_cmb`, `topo_drag = 'rekier'`, §4): `on`, `wall_profiles` (ρ₀, ν at the wall), `ratio` (q = Gaspard/(ViscosD ν(1))), `N_cmb`, `omega0`, `Ik_R`, `kappa` (Rekier et al. 2025 B1 with the 4π², or the test hook `topo_K`), `grid` (the cached Gauss–Legendre wall grid), `couplings` (A_ss, A_st, A_ts, A_tt), `rows` (the drag's entries in the stress rows, the ω_M column with `rotdyn = 1`); for spin_doctor `dissipation` (Dtopo); NEW 2026-11-09 the deformed body: `deformed`, `wall_metric` (h_θ, h_φ, x_n, |N| of the wall), `wall_tensor` (K_eff, which `grid` caches) |
 | `utils4pp.py` | post-processing: solution expansion, velocity/curl l-components, per-l workers (`flow_worker`, `thermal_worker`, `composition_worker`), `diff_rot_setup`, `diagnose_composition`, `composition_energy`, `centrifugal_composition_terms` (2026-11-08), `diagnose`, `kinetic_energy`, `identify`, `centrifugal_terms` (the metric parts of KE, the Coriolis power and TE with `centrifugal = 1`), `centrifugal_magnetic_energy`, `centrifugal_magnetic_terms` (with a field: MEc, the metric Lorentz and induction work, the potential field on the deformed walls), `centrifugal_dissipation_terms` (phase 2: the metric parts of the viscous power, the work of ΔΩ and the thermal dissipation); thin walls `twa_budget`, `slip_lapF`, `twa_error`, `slipping_walls`, the resolved mantle `mantle_budget` (2026-11-06); `body_force_terms` (forcings 1, 8: Wf, its enstrophy term and torque, 2026-11-08); `bgflow_background`, `bgflow_setup` (a background flow: Wbg, Wbg_im, Ensbg in the flow worker, Wbg_thm, Wbg_cmp in the thermal and composition workers, 2026-11-08) |
 | `spin_doctor.py` | runs the diagnostics per solution, prints the table, writes `params.dat` (`param_table`, `row_note`), `flow.dat`, `thermal.dat`, `composition.dat` (the names of each table are `tools/get_data.py`'s, which `tests/tools` checks), and `track_target`; stops with the file's name when a solution file is missing |
 | `ru_insane.py` | operator symmetry and diff-rot block tests (see its docstring) |
@@ -209,7 +209,14 @@ A_tt t) to that of section v (s = P′ + P/r + (ln ρ0)′P, t = T; `topo.coupli
 `topo.grid`, max(4(lmax + 2), 2000) nodes, scipy's roots_legendre): a constant K couples nothing, K(θ) couples l to l ± 2
 within P and within T and, for m ≠ 0, P_l to T_(l±1). With rotdyn = 1 t_1 = T_1 − rω_M (the column `ut.offset['rot']`); the
 drag's stress is then the viscous torque on the mantle (rotdyn's torque from T at the wall; none without a drag).
-`background.check_drag`: hydro, ViscosD > 0, bco = 0, Gaspard > 0, no centrifugal, not forcings 9, 10, not kappa_cmb with
+NEW 2026-11-09, a deformed body (centrifugal = 1): the stress rows hold [Fᵀσ_X N]_t (N = F⁻ᵀr̂ = ∇r), so the drag of the
+body's wall enters them and Dtopo through K_eff = (|N|/J)FᵀKF = diag(h_θ κ_θθ(x_n), h_φ κ_φφ(x_n)) on (w_θ, w_φ), exact
+for the axisymmetric map; x_n the cosine of the normal's colatitude, N_cmb|N| the buoyancy frequency there (N_cmb with
+graviX's monopole when centrifugal_q ≠ 0); first order h_θ = 1 + ε − (3ε + 2η)P2, h_φ = 1 − ε − (ε + 2η)P2,
+|N| = 1 − (ε + η)P2, x_n = x − 1.5εx(1 − x²) (ε, η = ce0, ce1 at the wall); spheroid Q = a²x² + c²(1 − x²),
+h_θ = aQ^1.5, h_φ = a³Q^0.5, |N| = aQ^0.5, x_n = ax/√Q. κ at x_n per node, never expanded (kinks). A constant K then
+couples degrees too (`topo.rows` takes the couplings when `deformed()`). rotdyn still stops with centrifugal.
+`background.check_drag`: hydro, ViscosD > 0, bco = 0, Gaspard > 0, not forcings 9, 10, not kappa_cmb with
 topo_drag; for 'rekier' no diff_rot, w0 ≠ 0, and topo_omega with a forcing 11 scan (`rsf_frequencies`). The drag and the
 solids' parameters are in `submatrix_io.OPERATOR_INDEPENDENT` (rows of assemble.py only).
 Forcing 12 (2026-11-08, conductive_IC 0780790; `docs/couette-flow.md`, `tests/couette`): the walls turn steadily about z
@@ -710,7 +717,8 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   with λ = i wf and the body force's torque, and with a background flow, which has no torque): λL = −(torques on the walls) (+ i Gaspard L for m = 1, L = (L_x − i L_y)/N, N = −1/√2), viscous from T of
   degree 1, magnetic from the Maxwell stress on a θ grid (`rotdyn.wall_torques`, any B0); relative to |λ|∫|T| and the
   torques. 1e-15 hydro, 1e-11 with fields, 1e-9 full sphere. flow.dat columns 29–39 (L, torques, resid𝐋); rotdyn.dat.
-- Dtopo, δσtopo (NEW 2026-11-06, `topo.dissipation`; viscous runs with bco = 0, Gaspard > 0, no centrifugal): the power
+- Dtopo, δσtopo (NEW 2026-11-06, `topo.dissipation`; viscous runs with bco = 0, Gaspard > 0; with centrifugal = 1 since
+  2026-11-09, on the body's wall through K_eff and with KE + KEc): the power
   the drag dissipates, Dtopo = 2 Gaspard ρ_w ∮(u_t − v_m)*·K·(u_t − v_m) dS on the wall grid, and δσtopo = −Dtopo/(2E), E =
   KE + Hendrik (ME + MEc + MEic + MEext + E_w) + I_M|ω_M|² + I_IC|ω_IC|² + K|φ|². Without a drag both are per unit κ
   (K = 1, columns 'Dtopo/κ', 'δσtopo/κ'): the first-order damping of a weak drag, which leaves out the change of the other
@@ -861,7 +869,15 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   solids: total angular momentum, resid𝐋, energy and resid𝐄; topo_K constant = kappa_cmb; a rigid diff_rot a with
   kappa_cmb = a frame 1 + a times faster with kappa_cmb/(1 + a), shifted by −i m Gaspard a; kappa_cmb 1e8 = no-slip;
   a weak drag against Dtopo/κ and δσtopo/κ; the N/Ω and w0/Ω in params.dat, a doubled time unit, a forced run;
-  Dtopo = −Wv_cmb − 2 Re(ω_M* Γ_M) in every run with a drag; the stops of check_drag).
+  Dtopo = −Wv_cmb − 2 Re(ω_M* Γ_M) in every run with a drag; the stops of check_drag). `deformed_check.py` (NEW
+  2026-11-09, ~1 min on 4 processors, side by side with drag_check.py; runs by tests/centrifugal/mk_run.py, one rank,
+  NPAR at a time): the rigid rotation of 'spheroid' f 0.3, −0.2 (full, shell) and 'uniform' ±0.01 decays per unit
+  kappa_cmb as on the body's wall (2e-8); the inviscid spin-over of the exact spheroid: −Dtopo/(2E) of its eigenvector
+  (the drag set in memory by a helper, after the imports) against the closed-form wall integral (kappa_cmb, topo_K hooks
+  5e-11; 'rekier' with N|∇r| 4e-8); 'uniform' ±0.02, ±0.01 off the spheroid as f² (orders 1.98-2.02); a relabelled
+  sphere 'user' f = c(1 − r²), c = ±1e-3: odd part/(c R) 6e-7 (0.27 without the η terms); weak drag vs dsig_topo
+  (f 0.3, Ek 1e-3) 4e-4; kappa_cmb 1e8 = no-slip 4e-12 (by solve.py: scipy's splu fails on the stiff deformed rows);
+  f = 0 bitwise; rotdyn + centrifugal stops.
 - `tests/forced_field/` (README, `run_all.sh`, ~3 min; NEW 2026-11-06): `forced_check.py` (8 forced runs with a field
   against conductive_IC 2d84351, KE, ME, MEic hard-coded for N 48, lmax 19-21 on 2 ranks: libration, forcing 9 insulating
   and TWA 'deforming'; Bessel = Chebys ('rigid') under forcing 9, also with diff_rot and with sigma_i2o 0.3, and with
@@ -1046,7 +1062,15 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
 
 ## 14. History (this branch, newest first)
 
-The conductive_IC port, phase 11 (2026-11-09): `docs/compatibility.md` ('Combining features'), which features combine,
+The drag at the outer wall on a deformed body (2026-11-09): `kappa_cmb` and `topo_drag = 'rekier'` with
+`centrifugal = 1`, any shape (check_drag's stop removed): the drag acts on the slip along the body's wall through
+K_eff (`topo.wall_metric`, `wall_tensor`; §4), Dtopo and δσtopo in spin_doctor too; `tests/drag/deformed_check.py`
+(run_all.sh runs it beside drag_check.py), drag_check's stop case removed; docs: drag.md 'On a deformed body',
+drag-equations.md 'On a deformed body' and its checks, centrifugal-equations.md, background.md, checking.md,
+compatibility.md (Kd and Kt with Cf and Sph tested); the rotating solids still stop with a deformed body;
+`9d2d3355` to `d45ac19b` (2026-11-09): the docs rewritten and simplified; `main` is the default branch (the GitHub test
+runs on pushes to it);
+`7af05852` the conductive_IC port, phase 11 (2026-11-09): `docs/compatibility.md` ('Combining features'), which features combine,
 which stop and which a suite checks: a grid of feature pairs and a table of the forcings, with the conditions of each
 forcing under it, written by `tools/compat_tables.py` (`--check`); the audit behind it: an inviscid fluid in a shell
 stops in `background.check` whatever the features (its wall rows left A − λB singular), forcing 7 with m = 0 and an

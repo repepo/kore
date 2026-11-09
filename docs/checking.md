@@ -27,7 +27,7 @@ part right? kore has a tool for each. Everything below runs from the repository;
 | `tests/inner_core/run_all.sh` | the dipole field and a fluid slipping along a conducting inner core | after a change of the magnetic walls or the inner core |
 | `tests/sheet/run_all.sh` | the current sheet of the background field at a slipping wall | after a change of the stress-free conditions, the magnetic walls or the background field |
 | `tests/rotdyn/run_all.sh` | the rotating solids and the angular momentum check | after a change of the walls or of the stresses on them |
-| `tests/drag/run_all.sh` | the drag at the outer wall | after a change of the walls, the viscous stress or the rotating solids |
+| `tests/drag/run_all.sh` | the drag at the outer wall, also on a deformed body | after a change of the walls, the viscous stress, the rotating solids or the centrifugal deformation |
 | `tests/composition/run_all.sh` | the composition | after a change of the heat or composition equations or the buoyancy |
 | `tests/bgflow/run_all.sh` | the background flow | after a change of the background flow or of an advection term |
 | `tests/tools/run_all.sh` | the output files, the parameter file, mode tracking and the tools for series of runs | after a change of the files a run writes or reads, or of the tools |

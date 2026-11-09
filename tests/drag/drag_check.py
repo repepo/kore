@@ -302,7 +302,6 @@ cases = [('topo_drag', "par.topo_drag = 'Rekier'", "None (no topographic drag) o
          ('both drags', KR + "; par.kappa_cmb = 0.01", 'topo_drag and kappa_cmb cannot be combined'),
          ('no-slip wall', "par.kappa_cmb = 0.01; par.bco = 1", 'and a stress-free outer wall (bco = 0)'),
          ('inviscid', "par.kappa_cmb = 0.01; par.ViscosD = 0.0; par.ricb = 0", 'a viscous fluid (ViscosD > 0)'),
-         ('centrifugal', "par.kappa_cmb = 0.01; par.centrifugal = 1", 'needs a spherical body (centrifugal = 0)'),
          ('forcing 9', "par.kappa_cmb = 0.01; par.m = 2; par.symm = 1; par.forcing = 9", 'with forcing 9 is not covered'),
          ('diff_rot', KR + "; par.diff_rot = 1", 'with a differential rotation (diff_rot = 1) is not covered'),
          ('topo_hrms = 0', "par.topo_drag = 'rekier'", 'needs topo_hrms > 0, topo_lambda0 > 0 and topo_H > 1/2'),

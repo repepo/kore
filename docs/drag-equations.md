@@ -89,8 +89,8 @@ A_{xy}^{ll'} = \frac{\oint x_l^*\cdot\mathsf K\,y_{l'}\,dS}{\oint\lvert x_l\rver
 x, y \in \{\,s: \nabla_1 Y,\ \ t: \nabla_1 Y\times\hat{\mathbf r}\,\} ,
 $$
 
-on the unit sphere (`topo.couplings`, `topo.rows`). A constant drag gives $A_{ss} = A_{tt}$ equal to `kappa_cmb` and no
-coupling between degrees. The drag of the topography is even about the equator, so it couples degrees of the same
+on the unit sphere (`topo.couplings`, `topo.rows`). On a sphere a constant drag gives $A_{ss} = A_{tt}$ equal to
+`kappa_cmb` and no coupling between degrees. The drag of the topography is even about the equator, so it couples degrees of the same
 symmetry: $l$ to $l\pm2, \dots$ within $P$ and within $T$, and for $m \neq 0$ $P_l$ to $T_{l\pm1}, \dots$. The integrals
 are Gauss–Legendre quadratures in $\cos\theta$ with $\max(4(l_\text{max} + 2), 2000)$ nodes, many since $\mathsf K$ has
 kinks where $g$ starts to vanish. With the rotating mantle the toroidal flow of degree 1 slips by
@@ -125,6 +125,63 @@ power too, which then adds to the right-hand side. So the budgets need no new te
 power of the stress at the walls, and the energy budget of the rotating solids the power of their torques. $\delta\sigma_\text{topo}$ is the drag's share of the damping
 rate, one term of that budget.
 
+## On a deformed body
+
+On a body flattened by its rotation (`centrifugal = 1`) the outer wall is the level surface $r = 1$ of the map that
+carries the reference sphere into the body, and kore solves for the flux $\mathbf w = J\mathsf F^{-1}\mathbf u$ of the
+reference space ([Centrifugal deformation equations](centrifugal-equations.md)). The drag acts on the slip along the
+body's wall, per unit of its area. Carried back to the reference sphere, it becomes a drag on $\mathbf w$ with an
+effective tensor, which the rows and the power above take in place of $\mathsf K$.
+
+**The condition.** With $\mathsf F$ the gradient of the map, $J$ its determinant and $\mathbf N = \mathsf F^{-\mathsf T}
+\hat{\mathbf r}$ the normal to the level surface (not normalised), the rows of a stress-free wall hold the tangential
+components of $\mathsf F^{\mathsf T}\mathsf S_X\mathbf N$, with $\mathsf S_X$ the rate of strain of the body
+([Dissipative terms](centrifugal-equations.md#dissipative-terms)). The drag's condition on the body's wall,
+$2\mathsf S_X\hat{\mathbf n} + q\,\mathsf K\,\mathbf u_t = 0$, times $\lvert\mathbf N\rvert\,\mathsf F^{\mathsf T}$, is
+
+$$
+2\left[\mathsf F^{\mathsf T}\mathsf S_X\mathbf N\right]_t + q\,\mathsf K_\text{eff}\,\mathbf w_t = 0, \qquad
+\mathsf K_\text{eff} = \frac{\lvert\mathbf N\rvert}{J}\,\mathsf F^{\mathsf T}\mathsf K\,\mathsf F .
+$$
+
+The map is axisymmetric, so $\mathsf K_\text{eff}$ is diagonal on $(w_\theta, w_\phi)$, as $\mathsf K$ is on
+$(u_\theta, u_\phi)$:
+
+$$
+\mathsf K_\text{eff} = \mathrm{diag}\left(h_\theta\,\mathsf K_{\theta\theta}(x_n),\ h_\phi\,\mathsf K_{\phi\phi}(x_n)\right),
+\qquad
+h_\theta = \frac{\lvert\mathbf N\rvert\,\lvert\mathsf F\hat{\boldsymbol\theta}\rvert^2}{J}, \qquad
+h_\phi = \frac{\lvert\mathbf N\rvert\,\lvert\mathsf F\hat{\boldsymbol\phi}\rvert^2}{J},
+$$
+
+with $x_n$ the cosine of the colatitude of the wall's normal. The drag of the topography takes there the local vertical,
+$f = 2\Omega x_n$ and $\tilde f = 2\Omega\sqrt{1 - x_n^2}$, and the buoyancy frequency $N\lvert\mathbf N\rvert$: the
+effective gravity and the gradient of the entropy across the wall both grow as $\lvert\mathbf N\rvert =
+\lvert\nabla r\rvert$ ($N$ that of the reference sphere, `topo_N` when set). With $x = \cos\theta$ and $P_2 = (3x^2 -
+1)/2$:
+
+- **first order** (`'clairaut'`, `'uniform'`, `'user'`; $\varepsilon$ and $\eta$ the amplitudes of the map at the wall):
+  $h_\theta = 1 + \varepsilon - (3\varepsilon + 2\eta)P_2$, $h_\phi = 1 - \varepsilon - (\varepsilon + 2\eta)P_2$,
+  $\lvert\mathbf N\rvert = 1 - (\varepsilon + \eta)P_2$, $x_n = x - \tfrac32\varepsilon x(1 - x^2)$;
+- **the exact spheroid** (semi-axes $a$, $a$, $c$ with $a^2c = 1$, $Q = a^2x^2 + c^2(1 - x^2)$):
+  $h_\theta = aQ^{3/2}$, $h_\phi = a^3Q^{1/2}$, $\lvert\mathbf N\rvert = aQ^{1/2}$, $x_n = ax/Q^{1/2}$.
+
+kore takes $\mathsf K$ at $x_n$ node by node, without expanding it about $x$, since the drag of the topography has kinks
+(`topo.wall_metric`, `topo.wall_tensor`). $\mathsf K_\text{eff}$ varies with latitude even for a constant `kappa_cmb`,
+so the couplings $A_{xy}^{ll'}$ join the degrees: $l$ to $l \pm 2$ and, for $m \neq 0$, $P_l$ to $T_{l\pm1}$ at first
+order, every degree of the same symmetry for the exact spheroid.
+
+**Power.** The area of the body's wall is $dS_X = J\lvert\mathbf N\rvert\,dS$ (Nanson's formula), so the same tensor
+gives the power the drag dissipates on the body's wall,
+
+$$
+D_\text{topo} = 2\,\mathrm{Gaspard}\;\rho_w\oint\mathbf w_t^*\cdot\mathsf K_\text{eff}\,\mathbf w_t\,dS
+$$
+
+on the reference sphere, and $\delta\sigma_\text{topo} = -D_\text{topo}/(2E)$ with $E$ the energy of the deformed body
+([Energy budgets](centrifugal-equations.md#energy-budgets)). kore stops with the rotating solids on a deformed body, so
+$\mathbf v_m = 0$ here.
+
 ## Checks
 
 `tests/drag` checks the drag against exact limits (a very stiff drag gives a no-slip wall; a weak drag adds the damping
@@ -132,6 +189,11 @@ that Dtopo/κ and δσtopo/κ predict), against equivalences (a constant drag te
 rotation offset gives a faster frame), the conservation of angular momentum and energy with the rotating solids, and
 the power through the wall. With the Earth's topography and no stratification, the drag of the topography damps the
 spin-over mode as much as `kappa_cmb` = 4.5e-6, to within 0.3 %.
+
+On a deformed body, `tests/drag/deformed_check.py` checks the drag against the exact decay of a rigid rotation and the
+exact spin-over flow of a spheroid, at flattenings up to 0.3 (to $2\cdot10^{-8}$), the first-order shapes against the
+exact spheroid (they differ at second order in the flattening), a sphere relabelled as deformed (its drag is the
+sphere's), and the weak and stiff limits in a viscous spheroidal shell.
 
 ## Reference
 

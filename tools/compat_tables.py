@@ -133,12 +133,16 @@ c('U', 'Kt', X)
 c('Cf', 'Sph', N)
 c('Cf', 'B', Y, (9,), 'centrifugal: bm_uniform, bm_tor, eig_check (with a field), spheroid_check (first order)')
 c('Cf', 'cIC', Y, (10,), 'centrifugal: bm_cic, eig_check (decay with a core), spheroid_check (first order), fcn.sh')
-for b in ('Bes', 'TWA', 'Man', 'Rot', 'Kd', 'Kt'):
+for b in ('Bes', 'TWA', 'Man', 'Rot'):
     c('Cf', b, X)
+c('Cf', 'Kd', Y, (), 'drag: deformed_check (axial, first, relabelled)')   # NEW (2026-11-09)
+c('Cf', 'Kt', Y, (), 'drag: deformed_check (first, relabelled)')
 c('Sph', 'B', Y, (9,), 'centrifugal: bms_ins, bms_tor, spheroid_check')
 c('Sph', 'cIC', Y, (10,), 'centrifugal: bms_cic, spheroid_check')
-for b in ('Bes', 'TWA', 'Man', 'Rot', 'Kd', 'Kt'):
+for b in ('Bes', 'TWA', 'Man', 'Rot'):
     c('Sph', b, X)
+c('Sph', 'Kd', Y, (), 'drag: deformed_check (axial, spin-over, weak, stiff)')   # NEW (2026-11-09)
+c('Sph', 'Kt', Y, (), 'drag: deformed_check (spin-over, weak)')
 # the field and its solids
 c('B', 'cIC', Y, (), 'inner_core: slip_axial_m0, slip_dipole; decay: conducting_ic; magnetic: bud_m1, tb_mal_m1, b_s2_cic')
 c('B', 'Bes', Y, (), 'inner_core: dip_libration; forced_field: lib_bes, bessel_chebys_f9; couette: c_bes')
