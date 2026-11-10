@@ -897,6 +897,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#choosing-n-and-lmax" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Choosing N and lmax
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#bad-solutions" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1404,6 +1415,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#choosing-n-and-lmax" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Choosing N and lmax
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#bad-solutions" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1481,6 +1503,60 @@ compare round-off errors and can be ignored (<a href="../couette-flow/#reading-t
   residuals and <code>lmax</code> for the ℓ-convergence. A full sphere needs about twice the <code>N</code> of a shell. <code>N</code> must be even.</li>
 <li><strong>Solver.</strong> It comes and goes between identical runs, or between runs with nearly the same parameters. See below.</li>
 </ul>
+<h2 id="choosing-n-and-lmax">Choosing N and lmax</h2>
+<p>The resolution a mode needs depends on the problem: on its boundary and internal shear layers, the background field,
+the stratification, and on the mode itself. <code>par.Ncheb(Ek, rule)</code> gives a starting <code>N</code> from the Ekman number,
+N = a Ek<sup>−p</sup>, rounded up to a multiple of 8; each rule comes from a resolution study:</p>
+<table>
+<thead>
+<tr>
+<th>rule</th>
+<th>a, p</th>
+<th>from</th>
+<th>N at Ek 1e-5, 1e-7, 1e-9</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>'default'</code></td>
+<td>17, 0.2</td>
+<td>the long-standing rule, shells</td>
+<td>170, 428, 1072</td>
+</tr>
+<tr>
+<td><code>'magnetic'</code></td>
+<td>4.55, 0.242</td>
+<td>torsional modes in a shell (Pm 0.1, Elsasser 10, thin conducting mantle): every residual below 1e-4, plus 15 %</td>
+<td>80, 232, 688</td>
+</tr>
+<tr>
+<td><code>'ekman'</code></td>
+<td>10.12, 0.25</td>
+<td>the Ekman layer of a viscous full sphere (spin-over, inertial modes): damping rate to 2e-8</td>
+<td>184, 576, 1800</td>
+</tr>
+<tr>
+<td><code>(a, p)</code></td>
+<td>your own</td>
+<td>a fit of your own study</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">par</span><span class="o">.</span><span class="n">N</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">Ncheb</span><span class="p">(</span><span class="n">par</span><span class="o">.</span><span class="n">Ek</span><span class="p">,</span> <span class="s1">'magnetic'</span><span class="p">)</span>        <span class="c1"># or par.Ncheb(par.Ek, (4.0, 0.25))</span>
+</span></code></pre></div>
+<p>Notes from the studies behind them:</p>
+<ul>
+<li>A full sphere uses N/2 polynomials of one parity: double <code>N</code> for the shell rules.</li>
+<li>Below Ek 3e-8 the induction budget resid𝐛 of torsional modes needed up to 1.44 times the <code>'magnetic'</code> N; their
+  eigenvalues had converged to 1e-6 already at it.</li>
+<li>The residuals do not see a too small <code>lmax</code>: judge <code>lmax</code> by the change of the eigenvalue and by the ℓ-convergence.
+  With a field, <code>lmax</code> near <code>N</code> is safe; the torsional modes kept their eigenvalues to 1e-6 with lmax ≈ 425
+  (Ek/1e-9)<sup>−0.145</sup>, far below <code>N</code> at low Ek. Solar inertial modes in a full sphere needed lmax 30–80 at N
+  600–900, set by their ℓ-convergence.</li>
+<li>Thermal runs: the entropy can be unresolved while P and T look converged; check residσ and resid𝑠 against a run at
+  higher <code>N</code>.</li>
+</ul>
 <h2 id="bad-solutions">Bad solutions</h2>
 <table>
 <thead>
@@ -1552,7 +1628,7 @@ to n away. With the heat equation the thermal wind reaches further (about twice 
 matrices get wider, and the factorization needs more memory and time. The memory grows roughly linearly with n: at
 degree 32 it can be ten times that of the same run without differential rotation.</p>
 <p>To plan a large run, measure the cost at your resolution with</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python3<span class="w"> </span>tests/diff_rot/dr_cost.py<span class="w"> </span>WORKDIR<span class="w"> </span>N<span class="w"> </span>LMAX<span class="w"> </span>NCPUS<span class="w"> </span><span class="o">[</span>LIMIT_GB<span class="o">]</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>python3<span class="w"> </span>tests/diff_rot/dr_cost.py<span class="w"> </span>WORKDIR<span class="w"> </span>N<span class="w"> </span>LMAX<span class="w"> </span>NCPUS<span class="w"> </span><span class="o">[</span>LIMIT_GB<span class="o">]</span>
 </span></code></pre></div>
 <p>It runs a test problem for increasing degrees n, stops any step above <code>LIMIT_GB</code> (default 30) and skips the larger
 degrees.</p>
