@@ -657,7 +657,9 @@ class default_params():
         # Number of cpus
         self.ncpus = 2
 
-        # Chebyshev polynomial truncation level. Use function def at top or set manually. N must be even (kore stops otherwise).
+        # Chebyshev polynomial truncation level, set by hand or by a rule of Ncheb (NEW 2026-11-10: par.N = par.Ncheb(par.Ek,
+        # 'magnetic'), rules 'default', 'magnetic', 'ekman' or a pair (a, p) for a Ek**-p; see Ncheb and docs/solver.md).
+        # N must be even (kore stops otherwise).
         # With ricb = 0 only N/2 polynomials of one parity are used, so use about twice the N of a shell run.
         # Thermal runs: on the anel10 thermal setup (ricb 0.02, layer edges 0.03 wide), N = 480 under-resolves the more
         # damped modes at ThermaD 0 and 1e-9 (residσ up to 1e-4); N = 560 gives residσ <= 3.4e-8 and N = 640 <= 3.4e-11.
@@ -966,17 +968,33 @@ class default_params():
         self.MagnetD = self.Gaspard*self.Em       # eta0 * Tau / r0**2
 
 
-    def Ncheb(self, Ek):
-        '''
-        Returns the truncation level N for the Chebyshev expansion according to the Ekman number
-        Please EXPERIMENT AND ADAPT to your particular problem. N must be even.
-        '''
-        if Ek !=0 :
-            out = int(17*Ek**-0.2)
-        else:
-            out = 48  #
+    # NEW (2026-11-10): the rules of Ncheb, N = a Ek**-p, each from a resolution study (docs/solver.md, Choosing N and lmax)
+    NCHEB_RULES = {
+        'default':   (17.0,  0.2),    # the long-standing rule: shells, hydrodynamic or thermal modes at moderate Ek
+        'magnetic':  (4.55,  0.242),  # conductive_IC's (94919dd2): torsional modes in a shell, Pm 0.1, Λ 10, thin conducting
+                                      # mantle, insulating IC; the smallest N with every spin_doctor residual below 1e-4 was
+                                      # 3.96 Ek**-0.242 (64, 112, 192, 368, 592 at Ek 1e-5 ... 1e-9), plus 15 %; resid𝐛 of
+                                      # the torsional modes needed up to 1.44 times it below Ek 3e-8 (insulating walls, Λ 1)
+        'ekman':     (10.12, 0.25),   # the Ekman layer of a viscous full sphere (spin-over and inertial modes of a
+                                      # spheroid): 320 (Ek/1e-6)**-1/4, damping to 2e-8 (224 at 1e-6 was 2e-8 off)
+    }
 
-        return max(48, out + out%2)
+    def Ncheb(self, Ek, rule='default'):
+        '''
+        Returns the truncation level N of the Chebyshev expansion for the Ekman number Ek, N = a Ek**-p rounded up to a
+        multiple of 8 (at least 48), with (a, p) = NCHEB_RULES[rule] or rule itself given as a pair (a, p). The right N
+        depends on the problem (boundary layers, internal shear layers, the field, the stratification, the mode): take
+        the rule nearest to it as a start and check with a run at a higher N (docs/solver.md). A full sphere (ricb = 0)
+        uses N/2 polynomials of one parity: double N for the shell rules ('default', 'magnetic'). 'default' keeps its
+        former rounding (to even), so existing parameter files give the same N.
+        '''
+        if Ek == 0:
+            return 48
+        a, p = self.NCHEB_RULES[rule] if isinstance(rule, str) else rule
+        if isinstance(rule, str) and rule == 'default':
+            out = int(a*Ek**-p)
+            return max(48, out + out%2)
+        return max(48, 8*int(np.ceil(a*Ek**-p/8)))
 
 
     def ellmax(self, ncpus, g, m, N):

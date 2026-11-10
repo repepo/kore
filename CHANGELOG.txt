@@ -1,0 +1,152 @@
+CHANGELOG - kore, main branch
+=============================
+
+Newest first. Each entry names the commit; `git show <commit>` gives the full message. The branch grew out of
+anelastic_log (variable density, entropy, solar background, differential rotation), merged with anelastic_mag (the
+magnetic field), centrifugal (the deformed body) and, in phases, everything of conductive_IC.
+
+
+2026-11-11
+----------
+New: Ncheb(Ek, rule) with named resolution rules: 'default' (17 Ek^-0.2, as before, so existing parameter files give
+the same N), 'magnetic' (4.55 Ek^-0.242, conductive_IC's fit for torsional modes in a shell) and 'ekman' (the Ekman
+layer of a viscous full sphere, 320 (Ek/1e-6)^-1/4), or a pair (a, p) for a Ek^-p; the solver guide has a section on
+choosing N and lmax with the findings behind each rule.
+New: this CHANGELOG.
+
+2026-11-11  f769e459
+--------------------
+From conductive_IC:
+- magnetic.dat has 21 columns in every run (the conditional ones written as 0): 17-20 the magnetic torques on the
+  mantle and the inner core, 21 brms, the r.m.s. of the physical radial field on the outer wall (over the sphere and a
+  period, in the unit of B0). spin_doctor prints |Γ|mag and |Γ|magIC again.
+- tests/ci: the thermo-compositional onset of Silva, Mather & Simitev 2019 (Pr = Sc) and the gravito-inertial modes of
+  Dintrans, Rieutord & Valdettaro 1999.
+- koreviz: kmode(field='b', ic=True, mantle=True) gives the field inside the inner core (conducting, Bessel, or the
+  potential field of an insulating core) and beyond the outer wall (resolved mantle, then the potential field), drawn
+  with the fluid by merid, equat and surf.
+Fixes in koreviz: a full-sphere solution was expanded twice and took the flow's parity for b; plots run on
+matplotlib 3.10.
+
+2026-11-10
+----------
+- 5cd050fc  spin_doctor: the geostrophic fraction Geo (from conductive_IC) in the table and flow.dat; a fix in get_data.py.
+- c06fe089  The Lorentz force in the enstrophy residual residens.
+- 9286638a  cnorm = 'rms_Bs': the background field normalised to a unit volume r.m.s. of B_s.
+
+2026-11-09
+----------
+- 09b5bed1, a1ef5327, cbe9775d, 8b92c945  Mantle wobble (wobble = 1, after Triana et al. 2019): the FCN, the Chandler
+  wobble and inertial modes with a mantle free to turn about an equatorial axis (m = 1, full sphere, sphere or exact
+  spheroid), with the magnetic torques, a slipping fluid (stress-free or inviscid) and a toroidal B0 leaking into a
+  conducting mantle. New parameters wobble, MoIX_M, dynflat_M. tests/wobble.
+- 74057836, bd7c1053  Conducting mantles (thin layer, resolved) on the exact spheroid, also with a slipping fluid.
+- d4fe5c50, 3890f9c3  inviscid_basis 'low' (default, as conductive_IC) for inviscid full spheres with a field: Luo &
+  Jackson's torsional modes now match conductive_IC's to 3e-10. GitHub Actions runs tests/ci and six suites side by
+  side; tests/ci gains the convection onsets of Jones 2000 and Dormy 2004, the torsional modes and the toroidal decay.
+- 6f6f2ba6  The drag at the outer wall (kappa_cmb, topo_drag = 'rekier') on a deformed body.
+- 7af05852  conductive_IC port, phase 11: which features combine, and the stops at startup for the combinations that
+  cannot run (a table in the docs, written by tools/compat_tables.py); faster tests (tests/run_suites.sh, suites side by
+  side).
+- 6349f974  Phase 10: solution files as .npy by default (field_format), the JSON parameter file (export_json,
+  load_json), mode tracking (track_target), the run tools (ramp.sh, setpar.py, reap.sh, get_data.py, ...).
+- 5570fca0  tests/sheet, tests/bgflow stop their runs on an interrupt.
+- 94327e43  SLURM run script; two differential rotation profiles.
+- 9d2d3355  Docs rewritten and simplified; main is the default branch.
+
+2026-11-08
+----------
+conductive_IC port, phases 6c to 9:
+- 1e9880f6  The background flow (bgflow = 1): an axisymmetric flow with its entropy and composition, from expressions or
+  from a forcing-12 run (bin/bgflow.py, linear or nonlinear), with exact angular couplings.
+- 93a87894  The composition (compositional = 1), a second buoyant scalar, and the stratification 'two zone'.
+- cdda756e  Forcings 1 (wave-like tide), 2 (Enceladus eccentricity tide) and 8 (libration in the mantle frame);
+  forcings 3, 4, 5 stop (not ported).
+- dde6f94d  Forcing 12: steady rotation of the walls (spherical Couette flow).
+- 893bc76b, 52fc122a  Background angular factors as Legendre series; Chebyshev interpolants and fits by DCTs (numpy's
+  lost accuracy at large N).
+- 8b841edb  The push of B0's current sheets on a fluid slipping along a wall.
+
+2026-11-07
+----------
+- 4b44eb00  B0 'dipole'; a fluid slipping along a conducting inner core (interface condition C.I).
+- ddd59a2a  Forced runs with a field: every field row, the inner core 'conducting, Bessel', walls that the forcing moves
+  (forced_walls 'rigid' or 'deforming').
+
+2026-11-06
+----------
+conductive_IC port, phases 1 to 5b:
+- ad16ce40  Drag at a stress-free outer wall: constant kappa_cmb, or the latitude-dependent tensor of Rekier et al.
+  (topo_drag = 'rekier'); Dtopo in spin_doctor.
+- 829dd49c  Rotating solids (rotdyn = 1): mantle and inner core turning under the viscous, magnetic and gravitational
+  torques; resid𝐋, the angular momentum balance.
+- 9d205cad  Resolved conducting mantle (mantle = 'resolved', any smooth σ(r)).
+- e23afcb3  Thin conducting walls (mantle and inner core 'TWA') with a slipping fluid; resid𝐄 with the walls.
+- be668dd8  hydro = 0 (the field or the entropy without the flow); kinematic induction (just_induction.py, solve_ind.py).
+- 342c18ae  Shared fixes (Mag/Kin in KE units, the wall rows of forcings 6, 7, 9); B0_ic 'full sphere' renamed 'frozen
+  currents'.
+- 7c546972, 66a97b50, 06256694, 25fd581f  Centrifugal deformation merged: dissipative terms (phase 2) and the exact
+  spheroid (centrifugal_shape = 'spheroid', with a field).
+
+2026-11-05
+----------
+- 9d245cd2, 57970a41  Centrifugal deformation (centrifugal = 1): the body flattened at first order in f(r), with
+  Clairaut's equation, also with a field.
+
+2026-11-04
+----------
+- 85c5b22f  Full sphere: warnings for profiles not regular at r = 0; irreg₀ per mode in spin_doctor; an odd N stops.
+- b89e05d8  Forcing 14 (eccentricity and obliquity tides at the walls); the work at the walls and the viscous
+  dissipation in spin_doctor for forced runs.
+- 36028705, 27ea9a87  Docs on the magnetic field and the thermal wind.
+
+2026-11-03
+----------
+- d39517b7  The operators in one binary file, submatrices.npz, checked against the run's parameters (2.4 times smaller,
+  10 times faster to read).
+- 36d31255  Magnetic review fixes: 'confined' B0 in a full sphere, ferraro_policy, clean stops for bad settings.
+- 410c2fe2  How to check a change (regress.sh against an older copy).
+
+2026-10-31 to 2026-10-29
+------------------------
+- ab2c9201  B0_wound: the toroidal field a differential rotation winds from the poloidal B0.
+- 71259d5c  diff_rot_type 'ferraro': the rotation deduced from the poloidal B0.
+- 5c9127f7, b2d01e55  Induction by the differential rotation; B0 'confined', 'general', 'ferraro'; mag_algebra (couplings
+  for any degree).
+- 43113392  PETSc.COMM_WORLD in solve.py (slepc4py 3.26).
+- 512fb493, 71b0b0ff  anelastic_mag merged: the magnetic field in a full sphere, inviscid runs, 'G21 dipole', 'Luo_S1',
+  'Luo_S2', FDM of degree 2.
+- 713b4c2c, dfb9c2fd  Derivations of the couplings, with the symbolic scripts.
+
+2026-10-28
+----------
+- c457a282, c55a8d99, 683efac8  The magnetic field: induction and Lorentz force, insulating or conducting inner core,
+  any density; a toroidal background field (B0_tor).
+- 8b67974f  Forcing 13: entropy forcing at the inner wall.
+- 4a571633  structure 'uniform' renamed 'Boussinesq'. Docs: getting started, installation, anelastic scaling.
+
+2026-10-26
+----------
+- 60194250, 1aca07b2, 4b8e3c81  Differential rotation and thermal wind on a new angular algebra (any degree, 'user'
+  profiles).
+- 49a45753, 1e808d84, b0dd868f  The background chosen by structure, stratification and diffusivity (bin/background.py),
+  r_out; bin/units.py; old names stop with their replacement.
+- 3402fbf4  diff_rot_hold removed (it copied inversion artefacts into the core).
+- a2abc058  The spin-over test GitHub runs on every push.
+
+2026-10-24 to 2026-10-08
+------------------------
+- 73c64a1f  Forcing 11: random Reynolds-stress body force (convective forcing of modes).
+- 2e61b3ef  Smooth Sun: 'model S hydrostatic', delta_cz/delta_sf, drop_tol, the HMI 2010-2026 mean rotation.
+- 9aff8bf1  Faster spin_doctor (from conductive_IC).
+- b4598010  Radiative interior of Mukhopadhyay et al. 2025b; whole-Sun fits; ricb = 0 for 'model S'.
+- 92a0d020, 18641206, be2a4db5, 26d595eb  Differential rotation with any P_n, exact and prescribed thermal wind, its
+  heat-equation terms; the 1/L^3 scaling of its operator (every earlier diff_rot run was wrong).
+- 652e1490  A solar background.
+- 6799c90e, 8d44f177, 42f4ccca, 357f83b7  Solver defaults (Ruiz prescale automatic, BLR off), r and rho powers of the
+  rows, residω, the spin_doctor tables.
+- 2cd8f2be  The thermal path fixed (several bugs); buoyancy-work and entropy budgets.
+- 8eb16917, d0da30dc, 2e64687c  Unused code removed (it came back later in the ports above).
+- 00bc67e3  ru_insane.py, the operator symmetry checks.
+- 6490a1b3, ec94dd6a  conductive_IC's solver optimisations, unit kinetic energy; the anelastic energy budget with
+  Gauss-Legendre quadrature.

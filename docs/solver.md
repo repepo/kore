@@ -34,6 +34,35 @@ A failure is one of two kinds:
   residuals and `lmax` for the ℓ-convergence. A full sphere needs about twice the `N` of a shell. `N` must be even.
 - **Solver.** It comes and goes between identical runs, or between runs with nearly the same parameters. See below.
 
+## Choosing N and lmax
+
+The resolution a mode needs depends on the problem: on its boundary and internal shear layers, the background field,
+the stratification, and on the mode itself. `par.Ncheb(Ek, rule)` gives a starting `N` from the Ekman number,
+N = a Ek<sup>−p</sup>, rounded up to a multiple of 8; each rule comes from a resolution study:
+
+| rule | a, p | from | N at Ek 1e-5, 1e-7, 1e-9 |
+| --- | --- | --- | --- |
+| `'default'` | 17, 0.2 | the long-standing rule, shells | 170, 428, 1072 |
+| `'magnetic'` | 4.55, 0.242 | torsional modes in a shell (Pm 0.1, Elsasser 10, thin conducting mantle): every residual below 1e-4, plus 15 % | 80, 232, 688 |
+| `'ekman'` | 10.12, 0.25 | the Ekman layer of a viscous full sphere (spin-over, inertial modes): damping rate to 2e-8 | 184, 576, 1800 |
+| `(a, p)` | your own | a fit of your own study | |
+
+```python
+par.N = par.Ncheb(par.Ek, 'magnetic')        # or par.Ncheb(par.Ek, (4.0, 0.25))
+```
+
+Notes from the studies behind them:
+
+- A full sphere uses N/2 polynomials of one parity: double `N` for the shell rules.
+- Below Ek 3e-8 the induction budget resid𝐛 of torsional modes needed up to 1.44 times the `'magnetic'` N; their
+  eigenvalues had converged to 1e-6 already at it.
+- The residuals do not see a too small `lmax`: judge `lmax` by the change of the eigenvalue and by the ℓ-convergence.
+  With a field, `lmax` near `N` is safe; the torsional modes kept their eigenvalues to 1e-6 with lmax ≈ 425
+  (Ek/1e-9)<sup>−0.145</sup>, far below `N` at low Ek. Solar inertial modes in a full sphere needed lmax 30–80 at N
+  600–900, set by their ℓ-convergence.
+- Thermal runs: the entropy can be unresolved while P and T look converged; check residσ and resid𝑠 against a run at
+  higher `N`.
+
 ## Bad solutions
 
 | symptom | what to try |
