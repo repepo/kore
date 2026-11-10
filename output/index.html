@@ -991,6 +991,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#plotting-a-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plotting a mode
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#the-parameter-file" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1542,6 +1553,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#plotting-a-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plotting a mode
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#the-parameter-file" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1899,8 +1921,27 @@ composition; column 4 is resid𝑐.</p>
 <td>15, 16</td>
 <td>εTWA, the estimated relative error of the outer and inner thin layers</td>
 </tr>
+<tr>
+<td>17, 18</td>
+<td>the magnetic torque on the mantle, real and imaginary parts (with m = 0, symm = 1 the axial torque; with m = 1, symm = −1 the equatorial one; 0 otherwise, as in <code>flow.dat</code>)</td>
+</tr>
+<tr>
+<td>19, 20</td>
+<td>the magnetic torque on the inner core, real and imaginary parts</td>
+</tr>
+<tr>
+<td>21</td>
+<td>brms, the r.m.s. of the radial field b<sub>r</sub> on the outer wall, over the sphere and over a period</td>
+</tr>
 </tbody>
 </table>
+<p>Every run writes all 21 columns: those of a feature the run does not use are 0. Before 2026-11-10 the file had 11
+columns, 12 with the centrifugal deformation and 16 with a conducting wall.</p>
+<p>The <code>spin_doctor</code> table shows the size of the two magnetic torques, |𝚪|mag and |𝚪|magIC, where it computes them
+(m = 0, symm = 1 or m = 1, symm = −1, with the flow and without the centrifugal deformation). brms is that of the
+physical field Re(b<sub>r</sub> e<sup>λt</sup>), averaged over the sphere and over a period (1/√2 of the r.m.s. of the
+complex amplitude), in the unit of b, which is that of B0. As the mode's amplitude is arbitrary (KE + Hendrik ME = 1),
+compare ratios, for example brms over the r.m.s. of the radial background field on the wall.</p>
 <p>The column Mag/Kin of the <code>spin_doctor</code> table is the magnetic energy over the kinetic energy, in the same units.</p>
 <h2 id="rotdyndat"><code>rotdyn.dat</code></h2>
 <p>With <code>rotdyn = 1</code> (<a href="../rotating-solids/">Rotating solids</a>), real and imaginary parts (columns 1–2, 3–4, ...) of:</p>
@@ -2049,12 +2090,61 @@ composition; column 4 is resid𝑐.</p>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">x2</span> <span class="o">=</span> <span class="n">field_io</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">'flow'</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>                     <span class="c1"># solution 2 alone</span>
 </span></code></pre></div>
 <p>returns <code>None</code> when the field has no file. A <code>.npy</code> file can also be read directly with <code>np.load('flow.npy')</code>.</p>
+<h2 id="plotting-a-mode">Plotting a mode</h2>
+<p>The package <code>koreviz</code> (needs <a href="../installation/">SHTns</a>) puts a solution on a grid in r, θ, φ and draws it. In a run
+folder, with kore's top folder on the python path:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">koreviz</span><span class="w"> </span><span class="kn">import</span> <span class="n">kmode</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">k</span> <span class="o">=</span> <span class="n">kmode</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s1">'b'</span><span class="p">,</span> <span class="n">solnum</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ic</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">mantle</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>   <span class="c1"># field 'u', 'b', 'temperature' or 'composition'</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">k</span><span class="o">.</span><span class="n">merid</span><span class="p">(</span><span class="s1">'br'</span><span class="p">,</span> <span class="n">ic</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">mantle</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>                     <span class="c1"># meridional section, also inside the inner core and the mantle</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">k</span><span class="o">.</span><span class="n">equat</span><span class="p">(</span><span class="s1">'bphi'</span><span class="p">,</span> <span class="n">ic</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">mantle</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>                   <span class="c1"># equatorial section</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">k</span><span class="o">.</span><span class="n">surf</span><span class="p">(</span><span class="s1">'br'</span><span class="p">,</span> <span class="n">r</span><span class="o">=</span><span class="mf">1.1</span><span class="p">)</span>                                     <span class="c1"># a sphere of radius r: in the mantle beyond the CMB</span>
+</span></code></pre></div>
+<p>With <code>field='b'</code>, <code>ic=True</code> adds the field inside the inner core (<code>k.br_ic</code>, <code>k.btheta_ic</code>, <code>k.bphi_ic</code> on the radii
+<code>k.r_ic</code>) and <code>mantle=True</code> the field beyond the outer wall (<code>k.br_m</code>, ... on <code>k.r_m</code>, up to <code>rmax</code>):</p>
+<table>
+<thead>
+<tr>
+<th>region</th>
+<th><code>innercore</code> or <code>mantle</code></th>
+<th>field there</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>inner core</td>
+<td><code>'conducting, Chebys'</code></td>
+<td>the core's own solution</td>
+</tr>
+<tr>
+<td>inner core</td>
+<td><code>'conducting, Bessel'</code> (forced runs)</td>
+<td>the core's field in closed form, j<sub>l</sub>(kr)</td>
+</tr>
+<tr>
+<td>inner core</td>
+<td><code>'insulator'</code>, <code>'TWA'</code></td>
+<td>the potential field that matches b<sub>r</sub> at the inner wall</td>
+</tr>
+<tr>
+<td>mantle</td>
+<td><code>'resolved'</code></td>
+<td>the layer's own solution up to <code>r_surface</code>, the potential field beyond (<code>rmax</code> &gt; <code>r_surface</code>)</td>
+</tr>
+<tr>
+<td>mantle</td>
+<td><code>'insulator'</code>, <code>'TWA'</code></td>
+<td>the potential field that matches b<sub>r</sub> at the outer wall (<code>rmax</code> default 1.5)</td>
+</tr>
+</tbody>
+</table>
+<p>The field is continuous through the walls but for the tangential components at a thin conducting layer (<code>'TWA'</code>),
+whose sheet currents make them jump.</p>
 <h2 id="the-parameter-file">The parameter file</h2>
 <p><code>par.export_json('parameters.json')</code> at the end of <code>parameters.py</code> writes every parameter of the run to one file,
 exactly. To run the same case again, here or elsewhere, use as parameter file</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">params_default</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_params</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">par</span> <span class="o">=</span> <span class="n">default_params</span><span class="p">()</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">par</span><span class="o">.</span><span class="n">load_json</span><span class="p">(</span><span class="s1">'parameters.json'</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">params_default</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_params</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">par</span> <span class="o">=</span> <span class="n">default_params</span><span class="p">()</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">par</span><span class="o">.</span><span class="n">load_json</span><span class="p">(</span><span class="s1">'parameters.json'</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="many-runs">Many runs</h2>
 <p>A parameter study runs one case many times with one parameter changed. The scripts in <code>tools/</code> run such a series in
