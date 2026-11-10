@@ -1319,6 +1319,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#is-it-the-mode-you-want" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Is it the mode you want?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#are-existing-runs-unchanged" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1379,6 +1390,17 @@
     <span class="md-ellipsis">
       
         Which check, when
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#is-it-the-mode-you-want" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Is it the mode you want?
       
     </span>
   </a>
@@ -1568,6 +1590,12 @@ runs the two regression scripts:</p>
 </span></code></pre></div>
 <p>You can split the suites between machines by giving each machine its own list. <code>JOBS</code> sets how many suites run at a
 time, and <code>MAG_NPAR</code>, <code>CF_NPAR</code> and <code>OTHER_NPAR</code> how many runs some suites start in parallel.</p>
+<h2 id="is-it-the-mode-you-want">Is it the mode you want?</h2>
+<p>Besides the residuals, <code>spin_doctor.py</code> prints what a mode looks like: 𝒯/𝒫, the ratio of toroidal to poloidal kinetic
+energy, Peak ℓ and ℓ-Width, Mag/Kin with a field, and, for <code>m = 0</code>, <code>symm = 1</code>, Geo (NEW 2026-11-10, from conductive_IC):
+the fraction of the energy of <span class="arithmatex">\(u_\phi\)</span> held by its average along the rotation axis, <span class="arithmatex">\(\int\lvert\langle u_\phi\rangle\rvert^2dV
+/\int\lvert u_\phi\rvert^2dV\)</span>, with <span class="arithmatex">\(\langle u_\phi\rangle(s)\)</span> the mean over each fluid column (<code>flow.dat</code> column 50). A torsional
+mode has Geo close to 1. The column average does not resolve the Ekman layers, so Geo measures the interior.</p>
 <h2 id="are-existing-runs-unchanged">Are existing runs unchanged?</h2>
 <p><code>tests/diff_rot/regress.sh</code> builds the same small runs twice, once with an older copy of kore and once with yours, and
 compares their matrices A and B entry by entry. Equal matrices give equal eigenvalues and eigenvectors, so this is the
