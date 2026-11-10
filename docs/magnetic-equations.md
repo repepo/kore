@@ -1127,6 +1127,19 @@ force of the libration in the frame of the mantle (forcing 8), adds its power Wf
 $2\sigma(\mathrm{ME} + \mathrm{MEic} + \mathrm{MEext}) = \mathrm{Indu} - \mathrm{Ohm\_f} - \mathrm{Ohm\_ic}$, without
 Hendrik and for any walls (Indu is then the induction by a differential rotation, or 0).
 
+**The enstrophy budget.** NEW (2026-11-10): residens includes the Lorentz force, through its enstrophy term
+(`utils4pp.lorentz_enstrophy`, `flow.dat` column 49)
+
+$$
+\mathrm{Enslor} = \mathrm{Hendrik}\cdot 2\,\mathrm{Re}\int w\,\boldsymbol\omega^*\cdot\nabla\times(\rho_0^{-1}\mathbf G)\,dV
+= \mathrm{Hendrik}\cdot 2\,\mathrm{Re}\left[\int\rho_0^{-1}\mathbf G\cdot\left(w\nabla\times\boldsymbol\omega + w'\,\hat{\mathbf r}\times\boldsymbol\omega\right)^*dV
++ \oint w\,\rho_0^{-1}(\mathbf G\times\boldsymbol\omega^*)\cdot\hat{\mathbf r}\,dS\right] ,
+$$
+
+$\boldsymbol\omega = \nabla\times\mathbf u$, with the weight $w = (r^{p}\rho_0^{q})^2$ of the other enstrophy terms (`rpower_pp`,
+`rhopower_pp`) and the wall term taken at the outer wall minus the inner one. The second form avoids the third
+derivative of $\mathbf b$ in $\nabla\times\mathbf G$. Without it residens was about 1 for every mode with a field.
+
 **Slipping walls.** Where the fluid slips along an impenetrable wall (`bco` or `bci` 0, or `ViscosD = 0`),
 $\mathbf u\times\mathbf B_0$ carries magnetic energy through the wall, into the field beyond it (a conducting inner core
 or mantle, a thin layer, or the potential field of an insulator).

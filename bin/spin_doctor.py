@@ -384,6 +384,7 @@ def main(ncpus):
     Wbg         = np.zeros(success)  # NEW (2026-11-08): a background flow (bgflow = 1), the power of its force on the flow,
     Wbg_im      = np.zeros(success)  #   its imaginary part and its enstrophy term (upp.bgflow_setup)
     Ensbg       = np.zeros(success)
+    Enslor      = np.zeros(success)  # NEW (2026-11-10): the enstrophy term of the Lorentz force (upp.lorentz_enstrophy)
     residD      = np.full(success, np.nan)  # relative residual of Dkin = Wv_icb + Wv_cmb - Dvisc
     ldom        = np.zeros(success,dtype=int)
     lwidth      = np.zeros(success,dtype=int)
@@ -594,6 +595,8 @@ def main(ncpus):
             Mdfs[i]    = par.MagnetD * Mdfs0
             Wlor[i]    = par.Hendrik * Wlor0
             Wlor_im[i] = par.Hendrik * Wlor_im0
+            if par.hydro and not par.centrifugal:   # NEW (2026-11-10): the Lorentz force in the enstrophy balance (resens)
+                Enslor[i] = par.Hendrik * upp.lorentz_enstrophy( b_sol2 )
             # the parts of the magnetic energy budget outside the fluid, and the Ohmic losses (upp.em_budget, conductive_IC's)
             Ohm_f0, MEic[i], Ohm_ic0, MEext[i], E_w[i], Ohm_w0 = upp.em_budget( b_sol2, None if bic is None else bic[:,i],
                                                                                 u_sol2 if par.hydro else None,
@@ -666,7 +669,8 @@ def main(ncpus):
           Wcor_im[i], Dkin_im[i], Wthm_im[i], Wdr_im[i], Ensdr[i], Wcmp[i], Wcmp_im[i], Wbg[i], Wbg_im[i], Ensbg[i] ] = np.sum( udgn, 0)
         Dkin[i] = Dkin0
         # (NEW 2026-11-08: Ensbg, the enstrophy term of a background flow)
-        resens[i] = abs(Ensvel[i]*sigma+Enscor[i]-Ensbuo[i]-Ensvif[i]-Ensdr[i]-Ensf[i]-Ensbg[i]) / max((abs(Ensvel[i]*sigma),abs(Enscor[i]),abs(Ensbuo[i]),abs(Ensvif[i]),abs(Ensdr[i]),abs(Ensf[i]),abs(Ensbg[i]))) \
+        # (NEW 2026-11-10: Enslor, the enstrophy term of the Lorentz force; without it resens was ~1 for every mode with a field)
+        resens[i] = abs(Ensvel[i]*sigma+Enscor[i]-Ensbuo[i]-Ensvif[i]-Ensdr[i]-Ensf[i]-Ensbg[i]-Enslor[i]) / max((abs(Ensvel[i]*sigma),abs(Enscor[i]),abs(Ensbuo[i]),abs(Ensvif[i]),abs(Ensdr[i]),abs(Ensf[i]),abs(Ensbg[i]),abs(Enslor[i]))) \
                     if par.hydro else np.nan   # NEW (2026-11-06): no flow, no enstrophy budget
         if par.centrifugal:  # NEW (2026-11-05): KE of the deformed body (∫ ρ0 w*⋅M w dV), Coriolis power with z̃ = F⁻¹ẑ
             KE[i] += KEc
@@ -915,6 +919,7 @@ def main(ncpus):
         ( 'Wbg',        Wbg,        '%.9e' ),  # NEW (2026-11-08): the power of the force of a background flow (in residσ),
         ( 'Wbg_im',     Wbg_im,     '%.9e' ),  #   its imaginary part (in residω)
         ( 'Ensbg',      Ensbg,      '%.9e' ),  #   and its enstrophy term (in resens; 0 without bgflow)
+        ( 'Enslor',     Enslor,     '%.9e' ),  # NEW (2026-11-10): the enstrophy term of the Lorentz force (in resens; 0 without a field)
     ]
     with open('flow.dat','ab') as dflo:
         np.savetxt(dflo, np.column_stack([ v for _, v, _ in flow_cols ]),

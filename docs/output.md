@@ -53,6 +53,7 @@ Columns, counted from 1:
 | 42–43 | the power of the body force of forcings 1 and 8, and its imaginary part |
 | 44–45 | with `compositional = 1`, the power of the compositional buoyancy, and its imaginary part |
 | 46–48 | with a background flow, the power the perturbation draws from it, its imaginary part, and its enstrophy term ([Background flow](bgflow.md#output)) |
+| 49 | with `magnetic = 1`, the enstrophy term of the Lorentz force, in residens ([Magnetic field equations](magnetic-equations.md#energy-budgets)) |
 
 Columns that do not apply to a run are 0 or NaN.
 

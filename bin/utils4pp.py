@@ -2880,6 +2880,97 @@ def diagnose_magnetic( bsol ):
 
 
 
+def lorentz_enstrophy(bsol):
+    '''
+    NEW (2026-11-10): the enstrophy term of the Lorentz force, 2 Re ∫ w (∇×𝐮)*⋅∇×𝐆 dV over the fluid (no Hendrik), with the
+    weight w = const0² of the other enstrophy terms (flow_worker) and 𝐆 = (∇×𝐛)×𝐁₀ + (∇×𝐁₀)×𝐛 as in magnetic_powers_grid
+    (the force per unit mass is ρ0⁻¹ Hendrik 𝐆, and the enstrophy terms take the curl of the force per unit mass, so 𝐆 is
+    divided by ρ0 here). 𝐆 holds ∇×𝐛, so ∇×𝐆 would need a third derivative of 𝐛; instead,
+    with ∇⋅(𝐆×w𝛚*) = w𝛚*⋅∇×𝐆 - 𝐆⋅∇×(w𝛚*),
+        ∫ w 𝛚*⋅∇×𝐆 dV = ∫ 𝐆⋅[w ∇×𝛚 + w' r̂×𝛚]* dV + [∮ w (𝐆×𝛚*)⋅r̂ dS] (outer wall minus inner wall),
+    on the radial grid of diagnose (call it right after diagnose_magnetic, which sets the tables) and Gauss-Legendre nodes
+    in cos θ. In resens it enters as the other forces: σ Ensvel + Enscor - Ensbuo - Ensvif - ... - Hendrik Enslor.
+    '''
+    m = par.m
+    lmx = par.lmax + 1
+    nB = max([3] + list(bf.pol_profiles()) + list(bf.tor_profiles()))
+    xg, wx = np.polynomial.legendre.leggauss(lmx + 12 + max(0, nB - 22))
+    Yg, dYg, Zg = angular.ylm_grid(m, lmx, xg)
+    Y0, dY0, _ = angular.ylm_grid(0, nB, xg)
+    lp_u, lt_u, lu = ut.ell(m, par.lmax, par.symm)
+    lp_b, lt_b, lb = ut.ell(m, par.lmax, ut.bsymm)
+
+    def synth(qs):   # {l: (q, s, t)} -> (F_r, F_θ, F_φ) on the (r, x) grid
+        Fr = Ft = Fp = 0
+        for l, (q, s, t) in qs.items():
+            Fr = Fr + np.outer(q, Yg[l]); Ft = Ft + np.outer(s, dYg[l]) + np.outer(t, Zg[l]); Fp = Fp + np.outer(s, Zg[l]) - np.outer(t, dYg[l])
+        return Fr, Ft, Fp
+
+    def cross(a, c):
+        return [ a[1]*c[2] - a[2]*c[1], a[2]*c[0] - a[0]*c[2], a[0]*c[1] - a[1]*c[0] ]
+
+    def background(rr):   # B0 and ∇×B0 at the radii rr (as magnetic_powers_grid)
+        Bv = [0*np.outer(rr, xg)]*3; Jv = [0*np.outer(rr, xg)]*3
+        for n, f in bf.pol_profiles().items():
+            L0 = n*(n + 1.); hh = [ f(rr, d) for d in (0, 1, 2) ]
+            Dh = hh[2] + 2*hh[1]/rr - L0*hh[0]/rr**2
+            Bv = [ Bv[0] + np.outer(L0*hh[0]/rr, Y0[n]), Bv[1] + np.outer(hh[1] + hh[0]/rr, dY0[n]), Bv[2] ]
+            Jv = [ Jv[0], Jv[1], Jv[2] + np.outer(Dh, dY0[n]) ]
+        for n, f in bf.tor_profiles().items():
+            L0 = n*(n + 1.); kk = [ f(rr, d) for d in (0, 1) ]
+            Bv = [ Bv[0], Bv[1], Bv[2] - np.outer(kk[0], dY0[n]) ]
+            Jv = [ Jv[0] + np.outer(L0*kk[0]/rr, Y0[n]), Jv[1] + np.outer(kk[1] + kk[0]/rr, dY0[n]), Jv[2] ]
+        return Bv, Jv
+
+    def fields(curl_w):   # at the current radii rk (tables utab, btab): ω, ∇×ω (if curl_w) and G
+        W, CW, B, J = {}, {}, {}, {}
+        z = np.zeros_like(rk, dtype=complex)
+        for l in lu:
+            vq, vs, vt = velocity(l)
+            if curl_w:
+                cq, cs, ct = curl(l, vq, vs, vt)   # ω and ω'
+                W[l] = (cq[0], cs[0], ct[0])
+                CW[l] = tuple(curl2(l, vq, vs, vt))
+            else:
+                cq, cs, ct = curl(l, vq[:2], vs[:2], vt[:2]); W[l] = (cq[0], cs[0], ct[0])
+        for l in lb:
+            if l in lp_b:
+                [ [q, q1], [s, s1] ] = bfield_pol(l, 1); B[l] = (q, s, z)
+                [ cr, cc, ct ] = curl(l, [q, q1], [s, s1], [z, z]); J[l] = (cr[0], cc[0], ct[0])
+            else:
+                [ t, t1 ] = bfield_tor(l, 1); B[l] = (z, z, t)
+                [ cr, cc, ct ] = curl(l, [z, z], [z, z], [t, t1]); J[l] = (cr[0], cc[0], ct[0])
+        B0v, J0v = background(rk)
+        b, j = synth(B), synth(J)
+        G = [ (a + c)/rho0[:, None] for a, c in zip(cross(j, B0v), cross(J0v, b)) ]
+        return synth(W), (synth(CW) if curl_w else None), G
+
+    # volume term on the quadrature grid of diagnose
+    w = const0**2
+    dw = w*2*(par.rpower_pp/rk + par.rhopower_pp*lho1)   # w' (const0 = r^rpower_pp ρ0^rhopower_pp)
+    om, com, G = fields(True)
+    cw = [ w[:, None]*com[0], w[:, None]*com[1] - dw[:, None]*om[2], w[:, None]*com[2] + dw[:, None]*om[1] ]   # ∇×(wω)
+    vol = 2*np.pi*np.sum((wk*rk**2)[:, None]*wx[None, :]*sum(g*np.conj(c) for g, c in zip(G, cw)))*(ut.rcmb - par.ricb)/2
+    # wall terms, at the walls (the tables and radii of diagnose are restored after)
+    saved = (rk, wk, utab, btab)
+    walls = 0.
+    try:
+        for rw, sgn in ((ut.rcmb, 1.), (par.ricb, -1.)):
+            if rw == 0:
+                continue
+            set_radii(np.array([rw], dtype=float))
+            globals()['utab'] = [ cheb2space_table(usol2[0], 3, rk), cheb2space_table(usol2[1], 2, rk) ]
+            globals()['btab'] = [ cheb2space_table(bsol2[0], 3, rk), cheb2space_table(bsol2[1], 3, rk) ]
+            omw, _, Gw = fields(False)
+            flux = (Gw[1]*np.conj(omw[2]) - Gw[2]*np.conj(omw[1]))[0]   # (G×ω*)⋅r̂
+            walls += sgn*(const0[0]**2)*2*np.pi*rw**2*np.sum(wx*flux)
+    finally:
+        rk_, wk_, ut_, bt_ = saved
+        set_radii(rk_)
+        globals()['wk'] = wk_; globals()['utab'] = ut_; globals()['btab'] = bt_
+    return 2*np.real(vol + walls)
+
+
 def slipping_walls():
     '''
     NEW (2026-11-06): whether the fluid slips along a wall (bco = 0, or bci = 0 with an inner core, or ViscosD = 0), where u×B0
