@@ -26,7 +26,16 @@ def read_field(names, solnum):
 class kmode:
 
     def __init__(self, vort=False,datadir='.',field='u', solnum=0,
-                 nr=None, nphi=None, nthreads=4, phase=0, transform=True):
+                 nr=None, nphi=None, nthreads=4, phase=0, transform=True,
+                 ic=False, nr_ic=None, mantle=False, nr_m=None, rmax=None):
+        '''
+        NEW (2026-11-10, after conductive_IC's ic option): with field = 'b',
+        ic     : also the field inside the inner core (inner_core_field): br_ic, btheta_ic, bphi_ic on the radii r_ic
+        nr_ic  : number of radii in the inner core (default nr)
+        mantle : also the field beyond the outer wall (mantle_field): br_m, btheta_m, bphi_m on the radii r_m
+        nr_m   : number of radii there (default nr), up to rmax (default r_surface with a resolved mantle, else 1.5 rcmb)
+        The plots surf, merid and equat then take ic=True, mantle=True.
+        '''
 
         sys.path.insert(0,datadir+'/bin')
 
@@ -108,8 +117,11 @@ class kmode:
             vsymm = par.symm
             vec = False
 
-        # expand solution in case ricb=0, multiply by complex phase factor
-        aib = upp.expand_sol(a+1j*b,vsymm)*(np.cos(phase)+1j*np.sin(phase))
+        # multiply by the complex phase factor. FIX (2026-11-10): spec2spat_vec and spec2spat_scal expand a full-sphere solution
+        # (ricb = 0) from N1 to N coefficients themselves; expanded here too, it was cut and expanded twice
+        aib = (a+1j*b)*(np.cos(phase)+1j*np.sin(phase))
+        self.phase = phase
+        self._sol, self._vsymm, self.upp = aib, vsymm, upp   # NEW (2026-11-10): for inner_core_field, mantle_field
         a = np.real(aib)
         b = np.imag(aib)
 
@@ -132,6 +144,10 @@ class kmode:
                                 self.uphi[irho,...]   /= self.rho[irho]
                     elif field == 'b':
                         self.br, self.btheta, self.bphi = sol[3:]
+                        if ic:
+                            self.inner_core_field(nr_ic)
+                        if mantle:
+                            self.mantle_field(nr_m, rmax)
                 else:
                     if field == 'u':
                         self.vort_r, self.vort_t, self.vort_p = sol[3:]
@@ -150,9 +166,17 @@ class kmode:
             del sol
 
 
-    def get_data(self,field):
+    def get_data(self,field,region=''):
+        '''region '' (the fluid), '_ic' (the inner core) or '_m' (beyond the outer wall): the magnetic field only'''
 
         field = field.lower()
+        if region:
+            comp = {'br':'br', 'brad':'br', 'bt':'btheta', 'btheta':'btheta', 'bp':'bphi', 'bphi':'bphi'}
+            if field not in comp or not hasattr(self, 'br' + region):
+                raise ValueError("%s: only br, btheta, bphi, with kmode(field='b', %s=True)" %
+                                 (field, 'ic' if region == '_ic' else 'mantle'))
+            titl = self.get_data(field)[1]
+            return getattr(self, comp[field] + region), titl
 
         if field in ['ur','vr','urad','vrad']:
             data = self.ur
@@ -203,20 +227,19 @@ class kmode:
 
     def surf(self, field='ur', r=0.5, levels=48, cmap=None,
              colbar=True, titl=True, clim=[0,0]):
-        # Surface plot at constant radius
+        # Surface plot at constant radius. NEW (2026-11-10): below the ICB the inner core's field, beyond the CMB the
+        # field there, where kmode computed them (ic, mantle)
 
-        if self.m == 0:
-            data = np.zeros([ self.ntheta, self.nphi + 1])
-            ir = np.argmin(abs(self.r-r))
-            dat_tmp,titl = self.get_data(field=field)
-            data[:,:-1] = dat_tmp[ir,...]
-            data[:, -1] = data[:,0]
-        else:
-            data = np.zeros([ self.ntheta, self.nphi*self.m + 1])
-            ir = np.argmin(abs(self.r-r))
-            dat_tmp,titl = self.get_data(field=field)
-            data[:,:-1] = np.tile( dat_tmp[ir,...], self.m )
-            data[:, -1] = data[:,0]
+        rgrid, reg = self.r, ''
+        if r < self.ricb and hasattr(self, 'br_ic'):
+            rgrid, reg = self.r_ic, '_ic'
+        elif r > self.rcmb and hasattr(self, 'br_m'):
+            rgrid, reg = self.r_m, '_m'
+        ir = np.argmin(abs(rgrid-r))
+        dat_tmp,titl = self.get_data(field, reg)
+        data = np.zeros([ self.ntheta, self.nphi*max(1,self.m) + 1])
+        data[:,:-1] = np.tile( dat_tmp[ir,...], max(1,self.m) )
+        data[:, -1] = data[:,0]
 
         plt.figure(figsize=(12,6))
 
@@ -227,7 +250,7 @@ class kmode:
                           levels=levels, cmap=cmap, clim=clim)
 
         if titl:
-            titl = titl + r' at $r/r_o = %.2f$' %(self.r[ir]/self.rcmb)
+            titl = titl + r' at $r/r_o = %.2f$' %(rgrid[ir]/self.rcmb)
             plt.title(titl,fontsize=30)
         plt.axis('equal')
         plt.axis('off')
@@ -238,12 +261,19 @@ class kmode:
         plt.show()
 
 
+    def _walls(self, ic, mantle, curve):
+        '''NEW (2026-11-10): the walls between the regions drawn, as thin lines'''
+        for rw in ([self.ricb] if ic else []) + ([self.rcmb] if mantle else []):
+            curve(rw)
+
+
     def merid(self, field='ur', azim=0, levels=48, cmap=None,
-              colbar=True, titl=True, clim=[0,0]):
-        # Meridional cross section
+              colbar=True, titl=True, clim=[0,0], ic=False, mantle=False):
+        # Meridional cross section. NEW (2026-11-10): ic=True, mantle=True add the field inside the inner core and beyond
+        # the outer wall (kmode(field='b', ic=True, mantle=True))
 
         iphi = np.argmin(abs( self.phi - (azim*np.pi/180) )) % self.nphi
-        dat_tmp,titl = self.get_data(field)
+        dat_tmp, r, titl = self._regions(field, ic, mantle)
         data = dat_tmp[:,:,iphi]
 
         if field in ['energy','ener','e','ke']:
@@ -255,8 +285,9 @@ class kmode:
         if cmap is None:
             cmap = default_cmap(field)
 
-        cont = merContour( self.r, self.theta, data.T,
+        cont = merContour( r, self.theta, data.T,
                            levels=levels, cmap=cmap, clim=clim)
+        self._walls(ic, mantle, lambda rw: plt.plot(rw*np.sin(self.theta), rw*np.cos(self.theta), 'k', lw=0.6))
 
         if titl:
             titl = titl + r' at $\phi=%.1f^\circ$' %(self.phi[iphi] * 180/np.pi)
@@ -270,30 +301,23 @@ class kmode:
 
 
     def equat(self, field='ur', levels=48, cmap=None,
-              colbar=True, titl=True, clim=[0,0]):
-        # Equatorial cross section
+              colbar=True, titl=True, clim=[0,0], ic=False, mantle=False):
+        # Equatorial cross section. NEW (2026-11-10): ic=True, mantle=True as in merid
 
-        if self.m == 0:
-            data = np.zeros([ self.nr, self.nphi + 1])
-            itheta = np.argmin( abs( self.theta - np.pi/2 ) )
-            dat_tmp,titl = self.get_data(field)
-            data[:,:-1] = dat_tmp[:,itheta,:]
-            data[:, -1] = data[:,0]
-        else:
-            data = np.zeros([ self.nr, self.nphi*self.m + 1])
-            itheta = np.argmin( abs( self.theta - np.pi/2 ) )
-            dat_tmp,titl = self.get_data(field)
-            print(np.shape(data),np.shape(dat_tmp))
-            data[:,:-1] = np.tile( dat_tmp[:,itheta,:], self.m )
-            data[:, -1] = data[:,0]
+        itheta = np.argmin( abs( self.theta - np.pi/2 ) )
+        dat_tmp, r, titl = self._regions(field, ic, mantle)
+        data = np.zeros([ len(r), self.nphi*max(1,self.m) + 1])
+        data[:,:-1] = np.tile( dat_tmp[:,itheta,:], max(1,self.m) )
+        data[:, -1] = data[:,0]
 
         plt.figure(figsize=(11,9))
 
         if cmap is None:
             cmap = default_cmap(field)
 
-        cont = eqContour(self.r, self.phi, data.T,
+        cont = eqContour(r, self.phi, data.T,
                          levels=levels, cmap=cmap, clim=clim)
+        self._walls(ic, mantle, lambda rw: plt.plot(rw*np.cos(self.phi), rw*np.sin(self.phi), 'k', lw=0.6))
 
         if titl:
             titl = titl + ' at equator'
@@ -305,6 +329,159 @@ class kmode:
             cbar = add_colorbar(cont,aspect=60)
         plt.tight_layout()
         plt.show()
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # NEW (2026-11-10, after conductive_IC's inner_core_field and potential_field): the magnetic field inside the inner core
+    # and beyond the outer wall, on the angular grid of the fluid's field (the same SHTns synthesis), so that the plots can
+    # join them. Each region's field is l(l+1) f/r, f' + f/r and g per degree, as in the fluid (b = ∇×∇×(f r) + ∇×(g r)).
+
+    def _lsets(self):
+        '''the poloidal and toroidal degrees of b, with their rows in spec2spat's (l, r) arrays'''
+        sb = int(self._vsymm*0.5 + 0.5)
+        lm1 = self.lmax - self.m + 1
+        if self.m > 0:
+            idp, idt, ll = np.arange(1-sb, lm1, 2), np.arange(sb, lm1, 2), np.arange(self.m, self.lmax+1)
+        else:
+            idp, idt, ll = np.arange(sb, lm1, 2), np.arange(1-sb, lm1, 2), np.arange(1, self.lmax+2)
+        return ll, idp, idt
+
+    def _synth_b(self, r, f, f1, g):
+        '''br, btheta, bphi (len(r), ntheta, nphi) from f, f' (poloidal degrees) and g (toroidal degrees), each (degrees, len(r))'''
+        ll, idp, idt = self._lsets()
+        lm1 = self.lmax - self.m + 1
+        Q = np.zeros((lm1, len(r)), complex); S = np.zeros_like(Q); T = np.zeros_like(Q)
+        L = (ll*(ll + 1))[idp, None]
+        Q[idp] = L*f/r
+        S[idp] = f1 + f/r
+        T[idt] = g
+        lmax2 = int(self.lmax + 1 - np.sign(self.m))
+        nlm = (np.sign(self.m) + 1)*(lmax2 + 1) - self.m
+        pad = (lambda a: np.r_[np.zeros((1, len(r))), a]) if self.m == 0 else (lambda a: a)
+        out = np.zeros((3, len(r), self.ntheta, self.nphi))
+        for ir in range(len(r)):
+            q, sl, t = (np.zeros(nlm, complex) for _ in range(3))
+            q[np.sign(self.m)*(lmax2+1):]  = pad(Q)[:, ir]
+            sl[np.sign(self.m)*(lmax2+1):] = pad(S)[:, ir]
+            t[np.sign(self.m)*(lmax2+1):]  = pad(T)[:, ir]
+            out[:, ir] = self.sh.synth(q, sl, t)
+        return out[0], out[1], out[2]
+
+    def _wall_values(self):
+        '''f, f' and g of the fluid's field at the outer wall and at the inner wall (per degree)'''
+        Plj, Tlj = self.upp.expand_reshape_sol(self._sol, self._vsymm)
+        out = {}
+        for side, x in (('o', 1.0), ('i', -1.0)):
+            v = ch.chebvander(x, self.N - 1).ravel()
+            dP = np.array([self.ut.Dcheb(Plj[k], self.ricb, self.rcmb) for k in range(Plj.shape[0])])
+            out[side] = (Plj @ v, dP @ v, Tlj @ v)
+        return out
+
+    def inner_core_field(self, nr_ic=None):
+        '''
+        The field inside the inner core (field = 'b', ricb > 0) on the radii r_ic, from the ICB down to (not including) the
+        centre: br_ic, btheta_ic, bphi_ic. innercore 'conducting, Chebys': the core's own solution (magnetic_ic);
+        'conducting, Bessel' (forced runs): f(R) j_l(kr)/j_l(kR) and mu_i2o g(R) j_l(kr)/j_l(kR) (utils.bessel_ic);
+        'insulator' and 'TWA' (insulating beneath the layer): the potential field f(R) (r/R)^l.
+        '''
+        par, ut = self.par, self.ut
+        if self.field != 'b' or self.ricb == 0:
+            raise ValueError("the inner core field needs field='b' and ricb > 0")
+        nr_ic = self.nr if nr_ic is None else nr_ic
+        R = self.ricb
+        i = np.arange(0, nr_ic - 1)
+        r = 0.5*R*(np.r_[1, np.cos((i + 0.5)*np.pi/nr_ic)] + 1)   # the ICB first, not the centre
+        ll, idp, idt = self._lsets()
+        lp, lt = ll[idp], ll[idt]
+        if par.innercore == 'conducting, Chebys':
+            a, b = read_field(['magnetic_ic'], self.solnum)
+            sol = (a + 1j*b)*np.exp(1j*self.phase)
+            nb, Nic = len(lp), ut.Nic
+            sb = int(self._vsymm*0.5 + 0.5)
+            ixf, ixg = (self.m + 1 - sb) % 2, (self.m + sb) % 2   # the parities in x = r/R (as utils4pp.em_budget)
+            Fc = np.zeros((nb, par.N_cic), complex); Gc = np.zeros_like(Fc)
+            Fc[:, ixf::2] = sol[:nb*Nic].reshape(nb, Nic)
+            Gc[:, ixg::2] = sol[nb*Nic:2*nb*Nic].reshape(nb, Nic)
+            V = ch.chebvander(r/R, par.N_cic - 1)
+            f = Fc @ V.T
+            f1 = np.array([ch.chebder(c) for c in Fc]) @ ch.chebvander(r/R, par.N_cic - 2).T/R
+            g = Gc @ V.T
+        else:
+            fR, _, gR = self._wall_values()['i']
+            if par.innercore in ('insulator', 'TWA'):
+                f  = fR[:, None]*(r/R)**lp[:, None]
+                f1 = fR[:, None]*lp[:, None]*r**(lp[:, None] - 1)/R**lp[:, None]
+                g  = np.zeros((len(lt), len(r)))
+            elif par.innercore == 'conducting, Bessel':
+                from scipy.special import spherical_jn
+                kf = [ut.bessel_ic(l)[0] for l in lp]
+                kg = [ut.bessel_ic(l)[0] for l in lt]
+                f  = np.array([fR[c]*spherical_jn(l, k*r)/spherical_jn(l, k*R) for c, (l, k) in enumerate(zip(lp, kf))])
+                f1 = np.array([fR[c]*k*spherical_jn(l, k*r, derivative=True)/spherical_jn(l, k*R)
+                               for c, (l, k) in enumerate(zip(lp, kf))])
+                g  = np.array([par.mu_i2o*gR[c]*spherical_jn(l, k*r)/spherical_jn(l, k*R) for c, (l, k) in enumerate(zip(lt, kg))])
+            else:
+                raise ValueError("innercore = '%s': no field inside the inner core" % par.innercore)
+        self.r_ic = r
+        self.br_ic, self.btheta_ic, self.bphi_ic = self._synth_b(r, f, f1, g)
+
+    def mantle_field(self, nr_m=None, rmax=None):
+        '''
+        The field beyond the outer wall (field = 'b') on the radii r_m, from rmax down to (not including) the CMB:
+        br_m, btheta_m, bphi_m. mantle 'resolved': the layer's own solution (magnetic_mantle) up to r_surface, and beyond
+        it the potential field f(r_surface) (r_surface/r)^(l+1); 'insulator' and 'TWA': the potential field
+        f(rcmb) (rcmb/r)^(l+1) (b_r is continuous through a thin layer). rmax defaults to r_surface with a resolved
+        mantle and to 1.5 rcmb otherwise.
+        '''
+        par, ut = self.par, self.ut
+        if self.field != 'b':
+            raise ValueError("the field beyond the outer wall needs field='b'")
+        nr_m = self.nr if nr_m is None else nr_m
+        R1 = self.rcmb
+        resolved = par.mantle == 'resolved'
+        R2 = par.r_surface if resolved else R1
+        rmax = (R2 if resolved else 1.5*R1) if rmax is None else rmax
+        ll, idp, idt = self._lsets()
+        lp, lt = ll[idp], ll[idt]
+        i = np.arange(0, nr_m)
+        r = R1 + (rmax - R1)*0.5*(np.cos((i + 0.5)*np.pi/nr_m) + 1)   # rmax side first, the CMB excluded
+        r = np.r_[rmax, r] if rmax > R1 else r
+        f = np.zeros((len(lp), len(r)), complex); f1 = np.zeros_like(f); g = np.zeros((len(lt), len(r)), complex)
+        if resolved:
+            a, b = read_field(['magnetic_mantle'], self.solnum)
+            sol = (a + 1j*b)*np.exp(1j*self.phase)
+            nb, Nm = len(lp), par.N_mantle
+            Fc, Gc = sol[:nb*Nm].reshape(nb, Nm), sol[nb*Nm:2*nb*Nm].reshape(nb, Nm)
+            inside = r <= R2*(1 + 1e-12)
+            x = 2*(r[inside] - R1)/(R2 - R1) - 1
+            f[:, inside]  = Fc @ ch.chebvander(x, Nm - 1).T
+            f1[:, inside] = np.array([ch.chebder(c) for c in Fc]) @ ch.chebvander(x, Nm - 2).T*2/(R2 - R1)
+            g[:, inside]  = Gc @ ch.chebvander(x, Nm - 1).T
+            fo = Fc.sum(axis=1)   # f(r_surface)
+        elif par.mantle in ('insulator', 'TWA'):
+            fo = self._wall_values()['o'][0]
+        else:
+            raise ValueError("mantle = '%s': no field beyond the outer wall" % par.mantle)
+        out = r > R2*(1 + 1e-12)
+        if np.any(out):
+            ro = r[out]
+            f[:, out]  = fo[:, None]*(R2/ro)**(lp[:, None] + 1)
+            f1[:, out] = -fo[:, None]*(lp[:, None] + 1)*R2**(lp[:, None] + 1)*ro**(-lp[:, None] - 2)
+        self.r_m = r
+        self.br_m, self.btheta_m, self.bphi_m = self._synth_b(r, f, f1, g)
+
+    def _regions(self, field, ic, mantle):
+        '''the data and radii of the regions asked for, outermost first'''
+        parts = [('_m', 'r_m')] if mantle else []
+        parts += [('', 'r')] + ([('_ic', 'r_ic')] if ic else [])
+        data, rr = [], []
+        for reg, rname in parts:
+            d = self.get_data(field, reg)[0]
+            r = getattr(self, rname)
+            if reg == '_ic':   # the ICB is the fluid's last radius
+                d, r = d[1:], r[1:]
+            data.append(d); rr.append(r)
+        return np.concatenate(data, axis=0), np.concatenate(rr), self.get_data(field)[1]
+
 
     def potextra(self,brcmb,rcmb,rout):
 

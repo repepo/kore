@@ -437,6 +437,7 @@ def main(ncpus):
     vtorq_ic    = np.zeros(success, dtype=complex)  #   and on the inner core
     mtorq       = np.zeros(success, dtype=complex)  # magnetic torque on the mantle (the Maxwell stress on the fluid's side)
     mtorq_ic    = np.zeros(success, dtype=complex)  #   and on the inner core
+    brms        = np.zeros(success)  # NEW (2026-11-10, from conductive_IC): the r.m.s. of b_r on the outer wall (upp.br_rms_cmb)
     residL      = np.full(success, np.nan)
     # NEW (2026-11-06, from conductive_IC): the drag at a stress-free outer wall (topo.py): Dtopo, the power it dissipates, and
     # dsig = -Dtopo/(2 E), the damping rate it implies (E the energy of the mode); per unit kappa_cmb without a drag. NEW
@@ -492,7 +493,12 @@ def main(ncpus):
         # FIX (2026-11-06): in the units of KE, Hendrik (ME + MEc)/KE, as resid𝐄 and the normalisation KE + Hendrik ME = 1
         # (as conductive_IC 7660861; it was ME/KE, off by the factor Hendrik). Not without the flow (hydro = 0)
         ( 'Mag/Kin',       '{:8.2e}',   lambda i: ratio(par.Hendrik*(ME[i] + MEc[i]), KE[i]) ),
-    ] if par.magnetic and par.hydro else []) + [
+    ] if par.magnetic and par.hydro else []) + ([
+        # NEW (2026-11-10, as conductive_IC): the magnetic torques on the mantle and on the inner core (rotdyn.wall_torques,
+        # Hendrik included), where resid𝐋 takes them: m = 0, symm = 1 axial; m = 1, symm = -1 equatorial
+        ( '|𝚪|mag',        '{:8.2e}',   lambda i: abs(mtorq[i]) ),
+        ( '|𝚪|magIC',      '{:8.2e}',   lambda i: abs(mtorq_ic[i]) ),
+    ] if par.magnetic and do_torques else []) + [
         ( 'Peak ℓ',        '{:d}',      lambda i: ldom[i] ),
         ( 'ℓ-Width',       '{:d}',      lambda i: lwidth[i] ),
         ( 'ℓ-Convergence', '{:8.2e}',   lambda i: lconv[i] ),
@@ -598,6 +604,7 @@ def main(ncpus):
             Mdfs[i]    = par.MagnetD * Mdfs0
             Wlor[i]    = par.Hendrik * Wlor0
             Wlor_im[i] = par.Hendrik * Wlor_im0
+            brms[i]    = upp.br_rms_cmb( b_sol2 )
             if par.hydro and not par.centrifugal:   # NEW (2026-11-10): the Lorentz force in the enstrophy balance (resens)
                 Enslor[i] = par.Hendrik * upp.lorentz_enstrophy( b_sol2 )
             # the parts of the magnetic energy budget outside the fluid, and the Ohmic losses (upp.em_budget, conductive_IC's)
@@ -982,14 +989,23 @@ def main(ncpus):
             ( 'Ohm_f',      Ohm_f,      '%.9e' ),  # MagnetD ∫ |∇×𝐛|² over the fluid
             ( 'Ohm_ic',     Ohm_ic,     '%.9e' ),  # MagnetD η_i ∫ |∇×𝐛|² over a conducting inner core
             ( 'residE',     residE,     '%.9e' ),  # full energy budget, resid𝐄 (nan where it does not apply)
-        ] + ([
-            ( 'MEc',        MEc,        '%.9e' ),  # NEW (2026-11-05): centrifugal = 1, the metric part of ME (ME + MEc: the
-        ] if (par.centrifugal or use_walls) else []) + ([   # energy of the field in the deformed fluid; 0 with a wall)
+            # FIX (2026-11-10): the columns below are written in every run (0 where they do not apply), so that each column
+            # keeps its number; they were written only with centrifugal = 1 or a conducting wall
+            ( 'MEc',        MEc,        '%.9e' ),  # centrifugal = 1, the metric part of ME (ME + MEc: the energy of the field
+                                                   #   in the deformed fluid; 0 with a wall)
             ( 'E_w',        E_w,        '%.9e' ),  # NEW (2026-11-06): thin walls (or the resolved mantle), the energy stored
             ( 'Ohm_w',      Ohm_w,      '%.9e' ),  #   in them, without Hendrik, their Ohmic loss (MagnetD), and the estimated
             ( 'eps_twa_o',  twaerr[:,1], '%.9e' ), #   error ε_TWA of the outer and of the inner thin wall (0 where there is
             ( 'eps_twa_i',  twaerr[:,3], '%.9e' ), #   none)
-        ] if use_walls else [])
+            # NEW (2026-11-10, as conductive_IC): the magnetic torques on the mantle and on the inner core (rotdyn.wall_torques,
+            # Hendrik included, also in flow.dat; 0 where they are not computed, see do_torques), and the r.m.s. of b_r on
+            # the outer wall, without Hendrik (upp.br_rms_cmb)
+            ( 'mtorq_re',    np.real(mtorq),    '%.9e' ),
+            ( 'mtorq_im',    np.imag(mtorq),    '%.9e' ),
+            ( 'mtorq_ic_re', np.real(mtorq_ic), '%.9e' ),
+            ( 'mtorq_ic_im', np.imag(mtorq_ic), '%.9e' ),
+            ( 'brms',        brms,              '%.9e' ),
+        ]
         with open('magnetic.dat','ab') as dmag:
             np.savetxt(dmag, np.column_stack([ v for _, v, _ in magnetic_cols ]),
             fmt=[ f for _, _, f in magnetic_cols ])

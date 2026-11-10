@@ -2635,6 +2635,25 @@ def radial_lapF(usol, wall, tor_only=False):
 
 
 
+def br_rms_cmb(bsol2):
+    '''
+    NEW (2026-11-10, from conductive_IC's brms): the r.m.s. of the radial field on the outer wall, that of the physical
+    field Re(b_r e^{λt}) over the sphere r = rcmb (of the reference sphere with centrifugal = 1) and over a period,
+    √(⟨|b_r|²⟩/2), b_r = l(l+1) f/r Y_l^m the complex amplitude from the Chebyshev series of each degree at the wall, the
+    mean on a Gauss-Legendre grid in cos(theta) (Andres 2026-11-10: the physical value, to compare with observations). In
+    the unit of b, that of B0 (Hendrik = (τB0/r0)²/(ρ0μ0)). conductive_IC added the r.m.s. of each degree, at the outermost
+    radial node, instead.
+    '''
+    lp = ut.ell(par.m, par.lmax, ut.bsymm)[0]
+    x, w = np.polynomial.legendre.leggauss(par.lmax + 4)
+    Y = angular.ylm_grid(par.m, par.lmax + 1, x)[0]
+    xr = ut.xcheb(np.array([ut.rcmb], dtype=float), par.ricb, ut.rcmb)
+    f = ch.chebval(xr, bsol2[0].T)[:, 0]   # each degree's f at r = rcmb (as rotdyn.wall_torques)
+    br = (lp*(lp + 1)*f/ut.rcmb) @ Y[lp]
+    return np.sqrt(0.25*np.sum(w*np.abs(br)**2))   # ½ Σ w = 1: the mean over the sphere, and ½ that over a period
+
+
+
 def twa_error(lam):
     '''
     NEW (2026-11-06, conductive_IC's twa_error): how far a solution of eigenvalue lam (in the run's time unit) is from the thin

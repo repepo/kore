@@ -95,6 +95,18 @@ With `magnetic = 1` ([Magnetic field](magnetic.md)). The energies are defined on
 | 12 | MEc, the part of the magnetic energy added by the centrifugal deformation or a thin layer |
 | 13, 14 | E_w, Ohm_w: the magnetic energy and Ohmic loss in a thin conducting layer or a resolved mantle |
 | 15, 16 | εTWA, the estimated relative error of the outer and inner thin layers |
+| 17, 18 | the magnetic torque on the mantle, real and imaginary parts (with m = 0, symm = 1 the axial torque; with m = 1, symm = −1 the equatorial one; 0 otherwise, as in `flow.dat`) |
+| 19, 20 | the magnetic torque on the inner core, real and imaginary parts |
+| 21 | brms, the r.m.s. of the radial field b<sub>r</sub> on the outer wall, over the sphere and over a period |
+
+Every run writes all 21 columns: those of a feature the run does not use are 0. Before 2026-11-10 the file had 11
+columns, 12 with the centrifugal deformation and 16 with a conducting wall.
+
+The `spin_doctor` table shows the size of the two magnetic torques, \|𝚪\|mag and \|𝚪\|magIC, where it computes them
+(m = 0, symm = 1 or m = 1, symm = −1, with the flow and without the centrifugal deformation). brms is that of the
+physical field Re(b<sub>r</sub> e<sup>λt</sup>), averaged over the sphere and over a period (1/√2 of the r.m.s. of the
+complex amplitude), in the unit of b, which is that of B0. As the mode's amplitude is arbitrary (KE + Hendrik ME = 1),
+compare ratios, for example brms over the r.m.s. of the radial background field on the wall.
 
 The column Mag/Kin of the `spin_doctor` table is the magnetic energy over the kinetic energy, in the same units.
 
@@ -161,6 +173,33 @@ x2 = field_io.load('flow', 2)                     # solution 2 alone
 ```
 
 returns `None` when the field has no file. A `.npy` file can also be read directly with `np.load('flow.npy')`.
+
+## Plotting a mode
+
+The package `koreviz` (needs [SHTns](installation.md)) puts a solution on a grid in r, θ, φ and draws it. In a run
+folder, with kore's top folder on the python path:
+
+```python
+from koreviz import kmode
+k = kmode(field='b', solnum=0, ic=True, mantle=True)   # field 'u', 'b', 'temperature' or 'composition'
+k.merid('br', ic=True, mantle=True)                     # meridional section, also inside the inner core and the mantle
+k.equat('bphi', ic=True, mantle=True)                   # equatorial section
+k.surf('br', r=1.1)                                     # a sphere of radius r: in the mantle beyond the CMB
+```
+
+With `field='b'`, `ic=True` adds the field inside the inner core (`k.br_ic`, `k.btheta_ic`, `k.bphi_ic` on the radii
+`k.r_ic`) and `mantle=True` the field beyond the outer wall (`k.br_m`, ... on `k.r_m`, up to `rmax`):
+
+| region | `innercore` or `mantle` | field there |
+| --- | --- | --- |
+| inner core | `'conducting, Chebys'` | the core's own solution |
+| inner core | `'conducting, Bessel'` (forced runs) | the core's field in closed form, j<sub>l</sub>(kr) |
+| inner core | `'insulator'`, `'TWA'` | the potential field that matches b<sub>r</sub> at the inner wall |
+| mantle | `'resolved'` | the layer's own solution up to `r_surface`, the potential field beyond (`rmax` > `r_surface`) |
+| mantle | `'insulator'`, `'TWA'` | the potential field that matches b<sub>r</sub> at the outer wall (`rmax` default 1.5) |
+
+The field is continuous through the walls but for the tangential components at a thin conducting layer (`'TWA'`),
+whose sheet currents make them jump.
 
 ## The parameter file
 

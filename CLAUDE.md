@@ -64,7 +64,7 @@ files; `bin/field_io.py`, read by the tests and tools, and `utils.save_field`, `
 normalised to kinetic energy 1 (KE + Hendrik·ME = 1 with `magnetic = 1`; ME + TE + CE
 = 1 without the flow, `hydro = 0`); `eigenvalues0.dat` (this solve: Re λ, Im λ); `timing.dat`. `spin_doctor` appends to
 `eigenvalues.dat`, `params.dat` (156 columns, and a `#` note on rows that need one, §10), `flow.dat` (48), `thermal.dat`
-(8), `composition.dat` (8, with `compositional = 1`), `magnetic.dat` (11; 12 with `centrifugal = 1`, 16 with a thin wall or a resolved mantle). A conducting inner core adds
+(8), `composition.dat` (8, with `compositional = 1`), `magnetic.dat` (21 in every run since 2026-11-10: 17–20 the magnetic torques on the mantle and the inner core, 21 brms, the r.m.s. of b_r on the outer wall, `upp.br_rms_cmb`; before, 11, 12 with `centrifugal = 1`, 16 with a thin wall or a resolved mantle). A conducting inner core adds
 `magnetic_ic`, a resolved mantle `magnetic_mantle`, `rotdyn = 1` `rotdyn` (ω_M, ω_IC, φ) and
 `rotdyn.dat` (16). A `params.dat` from an older version has fewer columns: start a new one. `python3 bin/units.py` prints a run's eigenvalues as ω, σ in nHz.
 `solve.py` writes `no_conv_solution` when no eigenpair converged or a forced solution has NaN (NEW 2026-11-08, for
@@ -146,7 +146,7 @@ Ecomp, Le, timescale after the last set_scales call), `dodirs.sh`, `dosubs.sh`, 
 `reap.sh`, `get_data.py` (pandas, named columns, read with float_precision 'round_trip'), `getresults.py`,
 `topo_iterate.sh`; NEW 2026-11-09 `compat_tables.py`: the cells of the two tables of `docs/compatibility.md`, the grid of
 feature pairs and the forcings, with their marks, notes and tests, which it writes between the page's markers;
-`--check` exits 1 if the page differs), `koreviz/`, `koreviz_mod/` (visualisation); `srunKore.sh` (SLURM).
+`--check` exits 1 if the page differs), `koreviz/`, `koreviz_mod/` (visualisation; NEW 2026-11-10 `kmode(field='b', ic=True, mantle=True)`: the field inside the inner core (Chebys, Bessel, or the potential field of an insulating/TWA core) and beyond the CMB (resolved mantle, then the potential field), on the fluid's SHTns grid, joined in merid/equat/surf, docs/output.md#plotting-a-mode; FIX the full-sphere parity of b in spec2spat (ut.s was the flow's) and a double expansion of a full-sphere solution in kmode, plotlib for matplotlib 3.10); `srunKore.sh` (SLURM).
 
 ## 4. Formulation
 
@@ -990,7 +990,11 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   0.999 and 1.001 of conductive_IC's Ra_c, the interpolated root and ω_c to 1e-5 (conductive_IC's BV2 = -Ra Ek²/Pr is
   Beyonce, times ricb/(1 - ricb) for 'differential'); the torsional modes of Luo & Jackson 2022 (B0 'Luo_S2', inviscid
   full sphere, N 128: conductive_IC's eigenvalues to 5e-7, in practice 3e-10, and Luo & Jackson's to 2e-6, 1e-5; it fails
-  with inviscid_basis 'high', 2e-5 and 1.2e-4 from theirs); the toroidal viscous decay without rotation against Bessel roots.
+  with inviscid_basis 'high', 2e-5 and 1.2e-4 from theirs); the toroidal viscous decay without rotation against Bessel roots; NEW 2026-11-10 (from conductive_IC's
+  test_thermocompositional, test_gravitoinertial): the thermo-compositional onset of Silva et al. 2019 with Pr = Sc (α 0,
+  π/2, π/4 on the line Rt + Rc = Ra0; Ra0 and ω_c to 1e-5 of conductive_IC's, found to 1e-12 with its code, N 64), and the
+  gravito-inertial modes of Dintrans et al. 1999 (fig. 4, N/2Ω 0.2, 1, 2.5; conductive_IC's eigenvalues to 1e-6, theirs to
+  3e-3, 3e-3, 6e-4; N 150, lmax 311).
   `test_operators.py` (NEW 2026-11-09): ru_insane.py on the heat_dr 'Wu 2005' conical run (N 96) and the magnetic 'axial'
   run, gen_check.py on the first. `test_spinover.py` (about 6 s) runs the smooth Sun
   example with m 1, N 32, lmax 16 on 2 ranks, and a rigid rotation offset ('rigid', 0.1): its spin-over is exact, λ = i

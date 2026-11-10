@@ -17,6 +17,19 @@ the tests of the conductive_IC branch. To run them locally:
   conductive_IC's own test allows 5e-7 for GitHub's MUMPS) and Luo & Jackson's converged values to 2e-6 and 1e-5 (kore is
   8e-7 and 5e-6 from them). With inviscid_basis 'high' (the rows in C^(3), C^(2), main's only basis before 2026-11-09) the
   modes are 2e-5 and 1.2e-4 from Luo & Jackson's, and this test fails.
+- The onset of thermo-compositional convection with equal Prandtl and Schmidt numbers (Silva, Mather & Simitev 2019, GAFD
+  113, section 5.1; from conductive_IC's test_thermocompositional): the two scalars then act as one co-density, and the
+  critical curve is the straight line Rt + Rc = Ra0, Rt = Ra cos α, Rc = Ra sin α (their eq. 18). For α = 0 (heat only),
+  π/2 (composition only) and π/4 (both) the leading growth rate at 0.999 and 1.001 times Ra0/(cos α + sin α) must change
+  sign, the root interpolated linearly must give Ra0, and the drift frequency there ω_c, both conductive_IC's (2d84351,
+  root found to 1e-12 at the same resolution) to 1e-5. Stress-free walls, fixed temperature and composition, sources
+  inside (stratification and comp_stratification 'linear', Beyonce = -Rt Ek²/Pr/(1 - ricb)⁶, BeyonceC the same with Rc,
+  Sc: conductive_IC's BV2 and BV2_comp), ricb 0.35, τ = 1e4 (Ek = 2(1 - ricb)²/τ), m 7, N 64.
+- Gravito-inertial modes of a stably stratified shell (Dintrans, Rieutord & Valdettaro 1999, J. Fluid Mech. 398, 271,
+  fig. 4; from conductive_IC's test_gravitoinertial): ricb 0.35, stress-free, fixed temperatures, Ek 2e-7, Pr 1, m 0,
+  N² = Beyonce r² with N/2Ω = 0.2, 1, 2.5 (Beyonce = 0.16, 4, 25), N 150, lmax 311. Each eigenvalue must equal
+  conductive_IC's (2d84351, tests/dintrans1999/reference.dintrans99) to 1e-6 and Dintrans et al.'s to 3e-3, 3e-3 and
+  6e-4 (conductive_IC is 2.0e-3, 8e-5 and 5.7e-4 from them at this resolution).
 - The viscous decay of the toroidal flow without rotation in a full sphere (from conductive_IC's norotation test): the
   rate of degree l is -k², k the first root of j_l(k) (no-slip) or of k j_l'(k) = j_l(k) (stress-free), the same for
   m = 0, 1, 2.
@@ -111,6 +124,62 @@ par.petsc_opts['st_mat_mumps_icntl_14'] = 100   # extra MUMPS workspace in per c
         z = lam[np.argmin(abs(lam - cic))]
         assert abs(z - cic)/abs(cic) < 5e-7, 'torsional mode %r, conductive_IC %r' % (z, cic)
         assert abs(z - lj)/abs(lj) < tol, 'torsional mode %r, Luo & Jackson %r' % (z, lj)
+
+
+# ---------------------------------------------------------------------- thermo-compositional onset of Silva et al. 2019
+SILVA_EK = 2*0.65**2/1e4   # τ = 1e4
+SILVA = '''par.structure = 'Boussinesq'; par.ricb = 0.35; par.m = 7; par.symm = 1
+par.Ek = %r; par.Etherm = par.Ek; par.Ecomp = par.Ek; par.timescale = 'rotation'   # Pr = Sc = 1
+par.bci = 0; par.bco = 0   # stress-free
+par.thermal = 1; par.stratification = 'linear'; par.bci_thermal = 0; par.bco_thermal = 0
+par.compositional = 1; par.comp_stratification = 'linear'; par.bci_compositional = 0; par.bco_compositional = 0
+par.N = 64; par.lmax = 70
+par.set_scales()
+par.Beyonce = %r; par.BeyonceC = %r
+'''
+SILVA_RA0, SILVA_WC = 2.580076883e5, -3.005663056e-2   # conductive_IC 2d84351, α = 0 and π/2 alike
+
+
+@pytest.mark.parametrize('alpha', (0, np.pi/2, np.pi/4), ids=('heat', 'composition', 'both'))
+def test_silva_codensity(tmp_path, alpha):
+    lead = []
+    for f in (0.999, 1.001):
+        Ra = f*SILVA_RA0/(np.cos(alpha) + np.sin(alpha))
+        by = [-Ra*np.cos(alpha)/0.65**6*SILVA_EK**2, -Ra*np.sin(alpha)/0.65**6*SILVA_EK**2]
+        eig = run(tmp_path / ('silva_%g' % f), SILVA % (SILVA_EK, by[0], by[1]) + SOLVER)[0]
+        lead.append(eig[np.argmax(eig.real)])
+    s0, s1 = lead[0].real, lead[1].real
+    assert s0 < 0 < s1, 'α %.4f: growth rates %r, %r at 0.999 and 1.001 Ra_c: no onset between them' % (alpha, s0, s1)
+    t = -s0/(s1 - s0)
+    ra0 = SILVA_RA0*(0.999 + 0.002*t)
+    w = lead[0].imag + t*(lead[1].imag - lead[0].imag)
+    assert abs(ra0/SILVA_RA0 - 1) < 1e-5, 'α %.4f: Ra0 %.9e, conductive_IC %.9e' % (alpha, ra0, SILVA_RA0)
+    assert abs(w/SILVA_WC - 1) < 1e-5, 'α %.4f: ω_c %.9e, conductive_IC %.9e' % (alpha, w, SILVA_WC)
+
+
+# ------------------------------------------------------------------- gravito-inertial modes of Dintrans et al. 1999
+DINTRANS = [   # Beyonce = (N/Ω)², Dintrans et al.'s eigenvalue (fig. 4, in units of 2Ω, doubled to kore's 1/Ω), its tolerance,
+               # and conductive_IC's at this resolution (2d84351, tests/dintrans1999/reference.dintrans99)
+    ((2*0.2)**2, 2*-6.088e-3 + 2j*0.550, 3e-3, -1.438150177613099073e-02 + 1.100404695070275496e+00j),
+    ((2*1.0)**2, 2*-3.854e-3 + 2j*0.755, 3e-3, -7.708280904927911764e-03 + 1.509875820573002958e+00j),
+    ((2*2.5)**2, 2*-5.190e-3 + 2j*1.130, 6e-4, -9.316411720512379063e-03 + 2.260706561532888959e+00j)]
+
+
+@pytest.mark.parametrize('k', range(len(DINTRANS)), ids=('N0.2', 'N1', 'N2.5'))
+def test_dintrans_gravitoinertial(tmp_path, k):
+    beyonce, din, tol, cic = DINTRANS[k]
+    params = '''par.structure = 'Boussinesq'; par.ricb = 0.35; par.m = 0; par.symm = 1
+par.Ek = 2e-7; par.Etherm = par.Ek; par.timescale = 'rotation'; par.bci = 0; par.bco = 0   # stress-free, Pr = 1
+par.thermal = 1; par.stratification = 'linear'; par.bci_thermal = 0; par.bco_thermal = 0   # fixed temperatures
+par.N = 150; par.lmax = 311
+par.set_scales()
+par.Beyonce = %r
+par.rtau = %r; par.itau = %r; par.nev = 3; par.prescale = 1
+''' % (beyonce, din.real, din.imag)
+    lam = run(tmp_path, params)[0]
+    z = lam[np.argmin(abs(lam - cic))]
+    assert abs(z - cic)/abs(cic) < 1e-6, 'N/Ω %g: %r, conductive_IC %r' % (np.sqrt(beyonce), z, cic)
+    assert abs(z - din)/abs(din) < tol, 'N/Ω %g: %r, Dintrans et al. %r' % (np.sqrt(beyonce), z, din)
 
 
 # ---------------------------------------------------------------------------------------- toroidal decay, no rotation

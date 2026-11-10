@@ -18,9 +18,10 @@ def spec2spat_vec(M,ut,par,chx,a,b,vsymm,nthreads,
     Plj = np.zeros((int(lm1/2),par.N),dtype=complex)
     Tlj = np.zeros((int(lm1/2),par.N),dtype=complex)
 
-    if M.ricb == 0 :
-        iP = (M.m + 1 - ut.s)%2
-        iT = (M.m + ut.s)%2
+    if M.ricb == 0 :   # FIX (2026-11-10): the parity of the field's own symmetry vsymm (ut.s is the flow's; b has symm*symmB0)
+        sv = int(vsymm*0.5+0.5)
+        iP = (M.m + 1 - sv)%2
+        iT = (M.m + sv)%2
         for k in np.arange(int(lm1/2)) :
             Plj[k,iP::2] = Plj0[k,:]
             Tlj[k,iT::2] = Tlj0[k,:]
@@ -151,9 +152,10 @@ def spec2spat_scal(M,ut,par,chx,a,b,vsymm,nthreads,transform=True):
 
     Plj = np.zeros((int(lm1/2),par.N),dtype=complex)
 
-    if M.ricb == 0 :
-        iP = (M.m + 1 - ut.s)%2
-        iT = (M.m + ut.s)%2
+    if M.ricb == 0 :   # FIX (2026-11-10): the parity of the field's own symmetry vsymm (ut.s is the flow's; b has symm*symmB0)
+        sv = int(vsymm*0.5+0.5)
+        iP = (M.m + 1 - sv)%2
+        iT = (M.m + sv)%2
         for k in np.arange(int(lm1/2)) :
             Plj[k,iP::2] = Plj0[k,:]
     else :
