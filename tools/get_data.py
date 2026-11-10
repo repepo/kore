@@ -49,7 +49,7 @@ FLOW = ['KE', 'KP', 'KT', 'Dkin', 'ldom', 'lwidth', 'lconv', 'Ensvel', 'Enscor',
         'cuvismax_l', 'cuvismax', 'resens', 'resid2', 'resid1', 'Wdr', 'Wdr_im', 'Ensdr', 'Wp_icb', 'Wp_cmb', 'Wp_im',
         'Wv_icb', 'Wv_cmb', 'Dvisc', 'residD', 'irreg0', 'angmom_re', 'angmom_im', 'vtorq_re', 'vtorq_im', 'vtorq_ic_re',
         'vtorq_ic_im', 'mtorq_re', 'mtorq_im', 'mtorq_ic_re', 'mtorq_ic_im', 'residL', 'Dtopo', 'dsig', 'Wf', 'Wf_im',
-        'Wcmp', 'Wcmp_im', 'Wbg', 'Wbg_im', 'Ensbg']
+        'Wcmp', 'Wcmp_im', 'Wbg', 'Wbg_im', 'Ensbg', 'Enslor', 'geo']
 THERMAL = ['TE', 'Wadv_thm', 'Dthm', 'resid3', 'Wthm', 'resid1', 'Wdr_thm', 'Wbg_thm']
 COMPOSITION = ['CE', 'Wadv_cmp', 'Dcmp', 'resid4', 'Wcmp', 'resid1', 'Wdr_cmp', 'Wbg_cmp']
 MAGNETIC = ['ME', 'Mdfs', 'Indu', 'residb', 'Wlor', 'Wlor_im', 'MEic', 'MEext', 'Ohm_f', 'Ohm_ic', 'residE',

@@ -385,6 +385,7 @@ def main(ncpus):
     Wbg_im      = np.zeros(success)  #   its imaginary part and its enstrophy term (upp.bgflow_setup)
     Ensbg       = np.zeros(success)
     Enslor      = np.zeros(success)  # NEW (2026-11-10): the enstrophy term of the Lorentz force (upp.lorentz_enstrophy)
+    geo         = np.full(success, np.nan)  # NEW (2026-11-10, from conductive_IC): geostrophic fraction of u_phi (m = 0, symm = 1)
     residD      = np.full(success, np.nan)  # relative residual of Dkin = Wv_icb + Wv_cmb - Dvisc
     ldom        = np.zeros(success,dtype=int)
     lwidth      = np.zeros(success,dtype=int)
@@ -495,7 +496,9 @@ def main(ncpus):
         ( 'Peak ℓ',        '{:d}',      lambda i: ldom[i] ),
         ( 'ℓ-Width',       '{:d}',      lambda i: lwidth[i] ),
         ( 'ℓ-Convergence', '{:8.2e}',   lambda i: lconv[i] ),
-    ] + ([
+    ] + ([   # NEW (2026-11-10, from conductive_IC): 1 for a z-invariant u_phi (upp.geostrophic_fraction)
+        ( 'Geo',           '{:.4f}',    lambda i: geo[i] ),
+    ] if (par.hydro and par.m == 0 and par.symm == 1 and not par.centrifugal) else []) + ([
         ( 'cvf_r',         '{:5.3f}',   lambda i: cuvismax_r[i] ),
         ( 'cvf_l',         '{:d}',      lambda i: cuvismax_l[i] ),
         ( 'cvfmax',        '{:8.2e}',   lambda i: cuvismax[i] ),
@@ -635,6 +638,9 @@ def main(ncpus):
         if body_force:   # NEW (2026-11-08): forcings 1 and 8 (after wall_powers: it resets the grid and the tables)
             [ Wf0, Ensf[i], Tf[i] ] = upp.body_force_terms(u_sol2, sigma + 1j*w, t_sol2, c_sol2)
             Wf[i], Wf_im[i] = np.real(Wf0), np.imag(Wf0)
+
+        if par.hydro:   # NEW (2026-11-10, from conductive_IC): the fraction of the energy of u_phi in its z-average
+            geo[i] = upp.geostrophic_fraction(u_sol2)
 
         if do_torques:   # NEW (2026-11-06): the angular momentum of the fluid and the torques on its walls (rotdyn.py)
             angmom[i] = rd.angular_momentum(u_sol2)
@@ -920,6 +926,7 @@ def main(ncpus):
         ( 'Wbg_im',     Wbg_im,     '%.9e' ),  #   its imaginary part (in residω)
         ( 'Ensbg',      Ensbg,      '%.9e' ),  #   and its enstrophy term (in resens; 0 without bgflow)
         ( 'Enslor',     Enslor,     '%.9e' ),  # NEW (2026-11-10): the enstrophy term of the Lorentz force (in resens; 0 without a field)
+        ( 'geo',        geo,        '%.9e' ),  # NEW (2026-11-10, from conductive_IC): geostrophic fraction of u_phi (nan unless m = 0, symm = 1)
     ]
     with open('flow.dat','ab') as dflo:
         np.savetxt(dflo, np.column_stack([ v for _, v, _ in flow_cols ]),

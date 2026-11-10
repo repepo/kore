@@ -46,6 +46,14 @@ tests/run_suites.sh /tmp/suites decay forcing ci                         # only 
 You can split the suites between machines by giving each machine its own list. `JOBS` sets how many suites run at a
 time, and `MAG_NPAR`, `CF_NPAR` and `OTHER_NPAR` how many runs some suites start in parallel.
 
+## Is it the mode you want?
+
+Besides the residuals, `spin_doctor.py` prints what a mode looks like: 𝒯/𝒫, the ratio of toroidal to poloidal kinetic
+energy, Peak ℓ and ℓ-Width, Mag/Kin with a field, and, for `m = 0`, `symm = 1`, Geo (NEW 2026-11-10, from conductive_IC):
+the fraction of the energy of $u_\phi$ held by its average along the rotation axis, $\int\lvert\langle u_\phi\rangle\rvert^2dV
+/\int\lvert u_\phi\rvert^2dV$, with $\langle u_\phi\rangle(s)$ the mean over each fluid column (`flow.dat` column 50). A torsional
+mode has Geo close to 1. The column average does not resolve the Ekman layers, so Geo measures the interior.
+
 ## Are existing runs unchanged?
 
 `tests/diff_rot/regress.sh` builds the same small runs twice, once with an older copy of kore and once with yours, and

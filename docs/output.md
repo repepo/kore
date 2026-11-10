@@ -54,6 +54,7 @@ Columns, counted from 1:
 | 44–45 | with `compositional = 1`, the power of the compositional buoyancy, and its imaginary part |
 | 46–48 | with a background flow, the power the perturbation draws from it, its imaginary part, and its enstrophy term ([Background flow](bgflow.md#output)) |
 | 49 | with `magnetic = 1`, the enstrophy term of the Lorentz force, in residens ([Magnetic field equations](magnetic-equations.md#energy-budgets)) |
+| 50 | Geo, for `m = 0`, `symm = 1`: the fraction of the energy of $u_\phi$ in its average along the rotation axis, $\int\lvert\langle u_\phi\rangle\rvert^2dV/\int\lvert u_\phi\rvert^2dV$ with $\langle u_\phi\rangle(s)$ the mean over each fluid column; 1 for a $z$-invariant (geostrophic) $u_\phi$, as in a torsional mode ([Checking results](checking.md)); NaN otherwise |
 
 Columns that do not apply to a run are 0 or NaN.
 
