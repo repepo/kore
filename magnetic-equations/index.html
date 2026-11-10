@@ -3110,6 +3110,16 @@ Mag/Kin and writes <code>magnetic.dat</code>:</p>
 force of the libration in the frame of the mantle (forcing 8), adds its power Wf (<code>flow.dat</code> column 42) on the right. Without the flow (<code>hydro = 0</code>) it is
 <span class="arithmatex">\(2\sigma(\mathrm{ME} + \mathrm{MEic} + \mathrm{MEext}) = \mathrm{Indu} - \mathrm{Ohm\_f} - \mathrm{Ohm\_ic}\)</span>, without
 Hendrik and for any walls (Indu is then the induction by a differential rotation, or 0).</p>
+<p><strong>The enstrophy budget.</strong> NEW (2026-11-10): residens includes the Lorentz force, through its enstrophy term
+(<code>utils4pp.lorentz_enstrophy</code>, <code>flow.dat</code> column 49)</p>
+<div class="arithmatex">\[
+\mathrm{Enslor} = \mathrm{Hendrik}\cdot 2\,\mathrm{Re}\int w\,\boldsymbol\omega^*\cdot\nabla\times(\rho_0^{-1}\mathbf G)\,dV
+= \mathrm{Hendrik}\cdot 2\,\mathrm{Re}\left[\int\rho_0^{-1}\mathbf G\cdot\left(w\nabla\times\boldsymbol\omega + w'\,\hat{\mathbf r}\times\boldsymbol\omega\right)^*dV
++ \oint w\,\rho_0^{-1}(\mathbf G\times\boldsymbol\omega^*)\cdot\hat{\mathbf r}\,dS\right] ,
+\]</div>
+<p><span class="arithmatex">\(\boldsymbol\omega = \nabla\times\mathbf u\)</span>, with the weight <span class="arithmatex">\(w = (r^{p}\rho_0^{q})^2\)</span> of the other enstrophy terms (<code>rpower_pp</code>,
+<code>rhopower_pp</code>) and the wall term taken at the outer wall minus the inner one. The second form avoids the third
+derivative of <span class="arithmatex">\(\mathbf b\)</span> in <span class="arithmatex">\(\nabla\times\mathbf G\)</span>. Without it residens was about 1 for every mode with a field.</p>
 <p><strong>Slipping walls.</strong> Where the fluid slips along an impenetrable wall (<code>bco</code> or <code>bci</code> 0, or <code>ViscosD = 0</code>),
 <span class="arithmatex">\(\mathbf u\times\mathbf B_0\)</span> carries magnetic energy through the wall, into the field beyond it (a conducting inner core
 or mantle, a thin layer, or the potential field of an insulator).
