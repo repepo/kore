@@ -130,6 +130,7 @@ dimensionless field whose size is set by `cnorm` (poloidal part) and `cnorm_tor`
 | `'mag_energy'` | the integral of the squared field over the fluid is 1 (Luo & Jackson 2022). Recommended |
 | `'Schmitt2012'` | the integral of the squared field over the fluid is 4 |
 | `'rms_cmb'` | the rms radial field at the outer wall is 1 (`cnorm` only, not for `'confined'`, `'general'`, `'ferraro'`) |
+| `'rms_Bs'` | the volume rms of the cylindrical radial field $B_s$ over the fluid is 1 (`cnorm` only, not for `'axial'`, whose $B_s$ is zero). The field of torsional oscillations |
 
 With `'mag_energy'`, `Le` and the Elsasser number refer to a field of fixed energy, whatever its shape. With a number,
 the strength of the field depends on the arbitrary scale of the formula.

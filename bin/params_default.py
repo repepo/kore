@@ -411,6 +411,8 @@ class default_params():
         # self.cnorm = 'rms_cmb'     # the rms of the radial B0 over the CMB is 1
         # self.cnorm = 'mag_energy'  # ∫ B0² dV over the fluid shell is 1 (Luo & Jackson 2022)
         # self.cnorm = 'Schmitt2012' # ∫ B0² dV over the fluid shell is 4
+        # self.cnorm = 'rms_Bs'      # NEW (2026-11-10): the volume rms of B_s = B_r sinθ + B_θ cosθ over the fluid shell is 1
+        #                            # (of the field used: B0_ic and B0_cmb included; conductive_IC's 'rms_Bs=1' constants)
 
         # relative cut of the Chebyshev series of r^p h^(k) (coefficients below tol_B0 times the largest of each series are
         # dropped): it sets the band width of the magnetic blocks and the fill-in of the LU factors (as conductive_IC)

@@ -185,6 +185,11 @@ the toroidal part. Each is a number, or a name that kore turns into a number (`b
   with a message, and so does `'confined'`, which is zero at the wall.
 - `'mag_energy'`: $\int B_0^2\,dV = 1$ over the fluid (Luo & Jackson 2022).
 - `'Schmitt2012'`: $\int B_0^2\,dV = 4$.
+- `'rms_Bs'` (`cnorm` only): the volume rms of the cylindrical radial field over the fluid is 1,
+  $\int B_s^2\,dV = V = \tfrac{4\pi}{3}(1 - r_i^3)$, with $B_s = B_r\sin\theta + B_\theta\cos\theta =
+  \sin\theta\,\sum_n\left[L h_n P_n/r - \cos\theta\,(h_n' + h_n/r)P_n'\right]$, $L = n(n+1)$. The degrees are summed
+  before squaring (they are not orthogonal in $B_s$), the field includes the `B0_ic` and `B0_cmb` terms, and the integral
+  is by Gauss–Legendre quadrature in $r$ and $\cos\theta$ (`background_field.rms_Bs`). `'axial'` stops: its $B_s$ is zero.
 
 For a poloidal field of one degree the integral is
 

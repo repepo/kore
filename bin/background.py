@@ -1172,6 +1172,8 @@ def check_forced_magnetic():
                  'forcing_amplitude_icb = 0' % par.forcing)
 
 
+BS_ZERO = " (cnorm 'rms_Bs': B_s is zero, a field along the axis, e.g. ψ a function of s alone)"   # NEW (2026-11-10)
+
 def check_magnetic():
     '''
     NEW (2026-10-28): stops on magnetic settings that are not implemented (yet).
@@ -1207,7 +1209,7 @@ def check_magnetic():
     if par.B0 == 'general':   # NEW (2026-10-30)
         _check_general(par.B0_profiles, 'B0_profiles')
         if par.cnorm == 'rms_cmb':   # FIX (2026-11-03): stopped here instead of crashing in background_field.B0_norm
-            sys.exit("B0 'general': use cnorm 'mag_energy' or a number")
+            sys.exit("B0 'general': use cnorm 'mag_energy', 'rms_Bs' or a number")
     if par.B0 == 'ferraro':   # NEW (2026-10-30)
         if not par.diff_rot:
             sys.exit("B0 'ferraro' needs a differential rotation (diff_rot = 1): its flux function is G(ΔΩ)")
@@ -1219,7 +1221,7 @@ def check_magnetic():
             sys.exit("B0_ferraro_G: a numpy expression of w and p as a string without '#' (it is written to params.dat), got %r"
                      % (par.B0_ferraro_G,))
         if par.cnorm == 'rms_cmb':
-            sys.exit("B0 'ferraro': use cnorm 'mag_energy' or a number")
+            sys.exit("B0 'ferraro': use cnorm 'mag_energy', 'rms_Bs' or a number")
     if getattr(par, 'B0_wound', 0):   # NEW (2026-10-30): the wound toroidal field (background_field.wound_profiles)
         if par.B0 is None or not par.diff_rot:
             sys.exit('B0_wound = 1 winds a toroidal field from the poloidal B0 with the differential rotation: it needs a poloidal B0 and diff_rot = 1')
@@ -1239,11 +1241,14 @@ def check_magnetic():
         if par.ricb > 0 and r1 < par.ricb:
             sys.exit("B0 'confined' with an inner core: the region must lie in the fluid, B0_conf_r1 >= ricb")
         if par.cnorm == 'rms_cmb':
-            sys.exit("B0 'confined': cnorm 'rms_cmb' is not defined (B0 is zero at the CMB); use 'mag_energy' or a number")
+            sys.exit("B0 'confined': cnorm 'rms_cmb' is not defined (B0 is zero at the CMB); use 'mag_energy', 'rms_Bs' or a number")
     if par.B0 == 'FDM' and par.B0_l not in (1, 2):   # FIX (2026-10-28): the quadrupole couplings are implemented (operators.lorentz_pol2)
         sys.exit("B0 'FDM' with B0_l = %r: only B0_l = 1 or 2 is implemented" % par.B0_l)
-    if not (isinstance(par.cnorm, (int, float, np.integer, np.floating)) or par.cnorm in ('rms_cmb', 'mag_energy', 'Schmitt2012')):
-        sys.exit("cnorm %r: a number, 'rms_cmb', 'mag_energy' or 'Schmitt2012'" % (par.cnorm,))
+    if not (isinstance(par.cnorm, (int, float, np.integer, np.floating))
+            or par.cnorm in ('rms_cmb', 'mag_energy', 'Schmitt2012', 'rms_Bs')):   # NEW (2026-11-10): 'rms_Bs'
+        sys.exit("cnorm %r: a number, 'rms_cmb', 'mag_energy', 'Schmitt2012' or 'rms_Bs'" % (par.cnorm,))
+    if par.cnorm == 'rms_Bs' and par.B0 == 'axial':   # NEW (2026-11-10)
+        sys.exit("B0 'axial' with cnorm 'rms_Bs': the uniform axial field has B_s = 0; use another cnorm")
     # FIX (2026-11-03): these two were not checked, and a misspelt value silently meant 'closed' or 'full sphere'
     if getattr(par, 'mag_couplings', 'closed') not in MAG_COUPLINGS:
         sys.exit('mag_couplings %r: set one of %s' % (par.mag_couplings, _names(MAG_COUPLINGS)))
@@ -1300,8 +1305,8 @@ def check_magnetic():
         if err is not None:
             sys.exit('%s could not be computed: %s: %s' % (name, type(err).__name__, err))
     if par.B0 is not None and not np.isfinite(bf.cnorm):   # FIX (2026-11-07): a field that is zero or not finite
-        sys.exit('cnorm = %r for B0 %r: the field is zero, or not finite, over the fluid, so it cannot be normalised'
-                 % (bf.cnorm, par.B0))
+        sys.exit('cnorm = %r for B0 %r: the field is zero, or not finite, over the fluid, so it cannot be normalised%s'
+                 % (bf.cnorm, par.B0, BS_ZERO if par.cnorm == 'rms_Bs' else ''))
     if par.B0_tor is not None and not np.isfinite(bf.cnorm_tor):   # FIX (2026-11-07): the same for the toroidal part
         sys.exit('cnorm_tor = %r for B0_tor %r: the field is zero, or not finite, over the fluid, so it cannot be '
                  'normalised' % (bf.cnorm_tor, par.B0_tor))
@@ -1512,7 +1517,7 @@ def magnetic_diffrot():
                      "there" % (par.B0_ferraro_G,))
         if not np.isfinite(cf):
             sys.exit("cnorm = %r for B0 'ferraro' (G = %r): the field is zero, or not finite, over the fluid, so it cannot "
-                     "be normalised" % (cf, par.B0_ferraro_G))
+                     "be normalised%s" % (cf, par.B0_ferraro_G, BS_ZERO if par.cnorm == 'rms_Bs' else ''))
     mis = ferraro_mismatch()
     if par.B0 == 'ferraro' and not _warned:
         ferraro_report()

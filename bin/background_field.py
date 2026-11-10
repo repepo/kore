@@ -376,7 +376,9 @@ _cnf = []
 def ferraro_cnorm():
     '''cnorm of 'ferraro' (a number, or from ∫ B0² dV summed over the degrees), computed on first use (it needs diff_rot)'''
     if not _cnf:
-        if par.cnorm not in ['mag_energy', 'Schmitt2012']:
+        if par.cnorm == 'rms_Bs':   # NEW (2026-11-10)
+            _cnf.append(1/rms_Bs(ferraro_degrees(), ferraro_profile, max(par.ricb, 0.)))
+        elif par.cnorm not in ['mag_energy', 'Schmitt2012']:
             _cnf.append(float(par.cnorm))
         else:
             xk, wk = np.polynomial.legendre.leggauss(240)
@@ -388,14 +390,46 @@ def ferraro_cnorm():
             _cnf.append((1 if par.cnorm == 'mag_energy' else 2)/np.sqrt(integ))
     return _cnf[0]
 
+def rms_Bs(degrees, hfun, r_lo=None, r_hi=1.0, nr=240):
+    '''
+    NEW (2026-11-10): the volume rms of the cylindrical radial component B_s = B_r sinθ + B_θ cosθ of the poloidal field
+    Σ_n ∇×∇×(h_n Y_n0 r) over the fluid, sqrt(∫ B_s² dV / V), V = 4π/3 (1 - ricb³), without cnorm (cnorm = 'rms_Bs' is 1 over
+    it). hfun(n, r, d) is the d-th derivative of h_n. With x = cos θ, B_s = sinθ [L h P_n/r - x (h' + h/r) P_n'], L = n(n+1):
+    the degrees are not orthogonal in B_s, so the field is summed before it is squared. Gauss-Legendre in x (B_s² is a
+    polynomial in x, so the x quadrature is exact) and in r over [r_lo, r_hi] (default the fluid, [ricb, 1]; 'confined':
+    its layer, B0 being zero outside it).
+    '''
+    r_lo = par.ricb if r_lo is None else r_lo
+    xr, wr = np.polynomial.legendre.leggauss(nr)
+    rk = 0.5*(r_hi - r_lo)*(xr + 1) + r_lo
+    wr = 0.5*(r_hi - r_lo)*wr
+    nx = max(degrees) + 4
+    x, wx = np.polynomial.legendre.leggauss(nx)
+    s = np.sqrt(1 - x**2)
+    Bs, B2 = np.zeros((nr, nx)), np.zeros((nr, nx))
+    for n in degrees:
+        L = n*(n + 1.)
+        Pn = np.polynomial.legendre.Legendre.basis(n)
+        h0, h1 = hfun(n, rk, 0)[:, None], hfun(n, rk, 1)[:, None]
+        br, bt = L*h0*Pn(x)/rk[:, None], -s*(h1 + h0/rk[:, None])*Pn.deriv()(x)
+        Bs += br*s + bt*x
+        B2 += br**2 + bt**2   # (of each degree: only to tell a zero B_s from round-off)
+    w2 = (wr*rk**2)[:, None]*wx
+    integ = 2*np.pi*np.sum(w2*Bs**2)
+    if integ <= 1e-24*2*np.pi*np.sum(w2*B2):   # B_s = 0 to round-off (a field along the axis): 0, so that cnorm is inf
+        return np.float64(0.)                  # and background.check_magnetic stops
+    return np.sqrt(integ/(4*np.pi/3*(1 - par.ricb**3)))
+
 def B0_norm():
     '''
-    cnorm as a number (par.cnorm: a number, 'rms_cmb', 'mag_energy' or 'Schmitt2012'), as conductive_IC's B0_norm:
-    ∫ B0² dV over the shell from Gauss-Legendre quadrature with 240 nodes.
+    cnorm as a number (par.cnorm: a number, 'rms_cmb', 'mag_energy', 'Schmitt2012' or, NEW 2026-11-10, 'rms_Bs'), as
+    conductive_IC's B0_norm: ∫ B0² dV over the shell from Gauss-Legendre quadrature with 240 nodes.
     '''
     if par.B0 == 'ferraro':   # NEW (2026-10-30): computed on first use (ferraro_cnorm)
         return 1.0
     if par.B0 == 'general':   # NEW (2026-10-30): ∫ B0² dV is the sum over the degrees (they are orthogonal)
+        if par.cnorm == 'rms_Bs':   # NEW (2026-11-10)
+            return 1/rms_Bs([n for n in par.B0_profiles if isinstance(n, (int, np.integer))], lambda n, r, d: gen_profile('h', n, r, d))
         if par.cnorm not in ['mag_energy', 'Schmitt2012']:
             return float(par.cnorm)
         xk, wk = np.polynomial.legendre.leggauss(240)
@@ -409,6 +443,10 @@ def B0_norm():
     L = l*(l+1)
     if par.cnorm == 'rms_cmb':  # rms of the radial B0 over the CMB is 1
         return np.sqrt(2*l+1) / ( L * h(np.array([1.0]), 0)[0] )
+    if par.cnorm == 'rms_Bs':   # NEW (2026-11-10): the volume rms of B_s over the fluid is 1, for h with beta_ic and alpha_cmb
+        if par.B0 == 'confined':
+            return 1/rms_Bs([l], lambda n, r, d: h(r, d), max(par.B0_conf_r1, par.ricb), par.B0_conf_r2)
+        return 1/rms_Bs([l], lambda n, r, d: h(r, d))
     if par.cnorm in ['mag_energy', 'Schmitt2012']:  # ∫ B0² dV = 1 or 4
         ricb = par.ricb
         N = 240

@@ -111,6 +111,8 @@ job bfer_tor bud bfer_tor "par.N = 192; par.diff_rot = 1; par.diff_rot_type = 'u
 say "--- NEW (2026-10-30): B0_wound, the toroidal field wound by the differential rotation and balanced by diffusion"
 job wound python3 "$T/wound_check.py"
 job bwnd bud bwnd "par.N = 96; par.structure = 'Boussinesq'; par.diff_rot = 1; par.diff_rot_type = 'user'; par.diff_rot_profiles = {0: '0.05*r**2', 2: '-0.1*r**2', 4: '-0.03*r**4'}; par.B0_wound = 1; par.B0_tor = 'Malkus'; par.B0_tor_l = 2; par.cnorm_tor = 'mag_energy'; par.lmax = 32"   # max |B_phi| ~ 0.8 max |B_p|
+say "--- NEW (2026-11-10): cnorm 'rms_Bs', the volume rms of B_s over the fluid is 1 (conductive_IC's constants, B0_ic and B0_cmb included)"
+job rms_bs python3 "$T/rms_bs_check.py" rms_bs
 say "--- continuity.py: 'Wu 2005' with r_out = sqrt(eps) -> 'Boussinesq' as eps -> 0"
 job continuity python3 "$T/continuity.py" 1e-4 1e-3 1e-2 1e-1
 }
