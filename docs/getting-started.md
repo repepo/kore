@@ -124,8 +124,8 @@ say whether the resolution is sufficient.
 ./bin/spin_doctor.py 4
 ```
 
-`spin_doctor.py` rebuilds each solution in physical space and checks the balances it must satisfy. The first columns of
-its table are
+`spin_doctor.py` rebuilds each solution in physical space and checks the balances it must satisfy. Some of the columns
+of its table are
 
 ```
   ★          Re λ              Im λ          𝒯/𝒫       residσ     residω    Peak ℓ   ℓ-Width   ℓ-Convergence
@@ -136,6 +136,9 @@ its table are
 A mode is resolved when its energy residual residσ is below $10^{-5}$ and its ℓ-convergence below $10^{-4}$ (with
 `thermal = 1`, the entropy residual resid𝑠 must also be below $10^{-5}$). The ℓ-convergence is fine, but residσ is
 $1.8\times10^{-5}$ for the first mode and $3\times10^{-4}$ for the others: the radial resolution is not enough.
+(The ℓ-Convergence values on this page come from a `spin_doctor.py` older than 2026-11-16, which measured only the
+highest degree, here a degree of the poloidal scalar alone. It now takes the highest degree of the toroidal scalar too
+([Output files](output.md#flowdat)) and prints larger values for these modes, still far below $10^{-4}$.)
 `spin_doctor.py` also appends one row per mode to `params.dat`, `flow.dat` and `eigenvalues.dat`
 ([Output files](output.md)).
 

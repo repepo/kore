@@ -55,7 +55,8 @@ COMPOSITION = ['CE', 'Wadv_cmp', 'Dcmp', 'resid4', 'Wcmp', 'resid1', 'Wdr_cmp', 
 MAGNETIC = ['ME', 'Mdfs', 'Indu', 'residb', 'Wlor', 'Wlor_im', 'MEic', 'MEext', 'Ohm_f', 'Ohm_ic', 'residE',
             'MEc', 'E_w', 'Ohm_w', 'eps_twa_o', 'eps_twa_i',  # in every run since 2026-11-10 (before, with centrifugal = 1
                                                               # (MEc) or a conducting wall only)
-            'mtorq_re', 'mtorq_im', 'mtorq_ic_re', 'mtorq_ic_im', 'brms']   # NEW 2026-11-10
+            'mtorq_re', 'mtorq_im', 'mtorq_ic_re', 'mtorq_ic_im', 'brms',   # NEW 2026-11-10
+            'lconv_b']   # NEW 2026-11-16: the field's ℓ-convergence
 ROTDYN = [name + part for name in ('omega_M', 'omega_IC', 'phi', 'Kphi', 'vtorq', 'mtorq', 'vtorq_ic', 'mtorq_ic')
           for part in ('_re', '_im')]
 EIGENVALUES = ['Re_lambda', 'Im_lambda']

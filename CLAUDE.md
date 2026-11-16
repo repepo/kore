@@ -64,10 +64,12 @@ Outputs: `flow.npy` (and `thermal.npy`, `magnetic.npy`, `composition.npy`), comp
 files; `bin/field_io.py`, read by the tests and tools, and `utils.save_field`, `load_field`, `field_exists`), eigenvectors
 normalised to kinetic energy 1 (KE + Hendrik·ME = 1 with `magnetic = 1`; ME + TE + CE
 = 1 without the flow, `hydro = 0`); `eigenvalues0.dat` (this solve: Re λ, Im λ); `timing.dat`. `spin_doctor` appends to
-`eigenvalues.dat`, `params.dat` (156 columns, and a `#` note on rows that need one, §10), `flow.dat` (48), `thermal.dat`
-(8), `composition.dat` (8, with `compositional = 1`), `magnetic.dat` (21 in every run since 2026-11-10: 17–20 the magnetic torques on the mantle and the inner core, 21 brms, the r.m.s. of b_r on the outer wall, `upp.br_rms_cmb`; before, 11, 12 with `centrifugal = 1`, 16 with a thin wall or a resolved mantle). A conducting inner core adds
+`eigenvalues.dat`, `params.dat` (156 columns, and a `#` note on rows that need one, §10), `flow.dat` (50), `thermal.dat`
+(8), `composition.dat` (8, with `compositional = 1`), `magnetic.dat` (22 since 2026-11-16: 22 `lconv_b`, the field's ℓ-convergence; 21 in every run since 2026-11-10: 17–20 the magnetic torques on the mantle and the inner core, 21 brms, the r.m.s. of b_r on the outer wall, `upp.br_rms_cmb`; before, 11, 12 with `centrifugal = 1`, 16 with a thin wall or a resolved mantle). A conducting inner core adds
 `magnetic_ic`, a resolved mantle `magnetic_mantle`, `rotdyn = 1` `rotdyn` (ω_M, ω_IC, φ) and
-`rotdyn.dat` (16). A `params.dat` from an older version has fewer columns: start a new one. `python3 bin/units.py` prints a run's eigenvalues as ω, σ in nHz.
+`rotdyn.dat` (16). A `params.dat` or `magnetic.dat` from an older version has fewer columns: start a new one, and do
+not `tools/reap.sh` run folders of two versions together (np.loadtxt and get_data stop at a row longer than the rows
+before it). `python3 bin/units.py` prints a run's eigenvalues as ω, σ in nHz.
 `solve.py` writes `no_conv_solution` when no eigenpair converged or a forced solution has NaN (NEW 2026-11-08, for
 `tools/ramp.sh`).
 
@@ -694,8 +696,17 @@ flow U₀ = Gaspard ΔΩ r sin θ e_φ in the frame Ω_ref. It works with any ba
 ## 10. Post-processing (`spin_doctor.py`, `utils4pp.py`)
 
 Radial integrals use Gauss–Legendre with 3N/2 nodes (`upp.setup_grid`); energies are ρ₀-weighted. Per solution the
-table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-convergence, max of the curl of the viscous force
-(cvf_r, cvf_l, cvfmax; r < 0.01 skipped at ricb = 0), residens and, at ricb = 0, irreg₀ (§5).
+table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-convergence, with the flow and a field ℓ-Conv 𝐛 (the
+field's, `lconv_b`, magnetic.dat 22, 0 for b ≡ 0; NEW 2026-11-16), max of the curl of the viscous force (cvf_r, cvf_l,
+cvfmax; r < 0.01 skipped at ricb = 0), residens and, at ricb = 0, irreg₀ (§5). ℓ-convergence (`upp.identify`, FIX
+2026-11-16): the amplitude of a degree is Σ|Chebyshev coefficients|; for a vector field the larger of the two highest
+degrees (one of P, one of T: they interleave) over the dominant degree's; for a scalar (s, c with hydro = 0) its
+highest degree's. Before, the highest degree alone, which is P's for m = 0, symm = 1 and m > 0, symm = −1 (for b, by
+ut.bsymm); P's coefficients are ~l times smaller than T's at equal energy, so lconv was 60–600 times too small there
+in the runs checked (inertial modes as well as torsional ones); unchanged where T is on top. The table column ℓ-Conv 𝐛
+moved the columns after ℓ-Convergence one place right: a script that reads the table by its number of columns or by
+position (none in the repo) needs updating. A new per-solution array of `spin_doctor.main` must be allocated with the
+others, before the MPI gather lists them by `locals()`, or rank 0 keeps zeros for the other ranks' solutions.
 
 - residσ (`resid1`): 2σKE − Dkin − Wthm − Wcmp − Wdr − Wlor = 0; residω (`resid2`): the imaginary part with Coriolis;
   resid𝑠 (`resid3`): 2σTE − Dthm − Wadv − Wdr_thm = 0 (TE = ½∫p₀|s|²); with `compositional = 1` (2026-11-08) resid𝑐
@@ -736,7 +747,8 @@ table prints Re λ, Im λ, 𝒯/𝒫, the residuals, peak ℓ, ℓ-width, ℓ-co
   topo_drag 1 for 'rekier', topo_hrms, topo_lambda0, topo_H and the N/Ω, w0/Ω used, 0 without 'rekier').
 - These residuals, not the eigenvalue alone, judge resolution: compare with a higher-N run; for thermal runs the
   entropy can be unresolved while P, T look converged. The docs report 1e-7 to 1e-12 for converged runs.
-  `docs/solver.md` accepts a mode when residσ and resid𝑠 are below 1e-5 and its ℓ-convergence below 1e-4; spin_doctor
+  `docs/solver.md` accepts a mode when residσ and resid𝑠 are below 1e-5 and its ℓ-convergence (with a field, the
+  field's too: ℓ-Convergence and ℓ-Conv 𝐛) below 1e-4; spin_doctor
   itself only prints the values (no pass/fail flag), and it misses some solver failures in clusters of nearly equal
   modes (§12).
 - `params.dat` columns are `spin_doctor.param_table()` in order (append new ones at the end); `diff_rot_type`,

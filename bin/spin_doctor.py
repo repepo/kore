@@ -442,6 +442,7 @@ def main(ncpus):
     ldom        = np.zeros(success,dtype=int)
     lwidth      = np.zeros(success,dtype=int)
     lconv       = np.zeros(success)
+    lconv_b     = np.zeros(success)  # NEW (2026-11-16): magnetic = 1, the ℓ-convergence of the field (upp.identify on b)
     irreg0      = np.full(success, np.nan)  # NEW (2026-11-04): ricb = 0, the part of the flow and field not regular at r = 0
 
     # thermal variables to be processed
@@ -554,7 +555,10 @@ def main(ncpus):
         ( 'Peak ℓ',        '{:d}',      lambda i: ldom[i] ),
         ( 'ℓ-Width',       '{:d}',      lambda i: lwidth[i] ),
         ( 'ℓ-Convergence', '{:8.2e}',   lambda i: lconv[i] ),
-    ] + ([   # NEW (2026-11-10, from conductive_IC): 1 for a z-invariant u_phi (upp.geostrophic_fraction)
+    ] + ([   # NEW (2026-11-16): the field's ℓ-convergence (without the flow, hydro = 0, the column before is the field's)
+        ( 'ℓ-Conv 𝐛',      '{:8.2e}',   lambda i: lconv_b[i] ),
+    ] if par.magnetic and par.hydro else []) + ([
+        # NEW (2026-11-10, from conductive_IC): 1 for a z-invariant u_phi (upp.geostrophic_fraction)
         ( 'Geo',           '{:.4f}',    lambda i: geo[i] ),
     ] if (par.hydro and par.m == 0 and par.symm == 1 and not par.centrifugal) else []) + ([
         ( 'cvf_r',         '{:5.3f}',   lambda i: cuvismax_r[i] ),
@@ -634,6 +638,9 @@ def main(ncpus):
             [ ldom[i], lwidth[i], lconv[i] ] = upp.identify( b_sol2, ut.bsymm ) if par.magnetic else upp.identify( t_sol2 )
         else:
             [ ldom[i], lwidth[i], lconv[i] ] = upp.identify( c_sol2 )
+        if par.magnetic:   # NEW (2026-11-16): the field's ℓ-convergence, with the flow too (magnetic.dat, the column ℓ-Conv 𝐛);
+            # 0 for a field that is zero, which has no dominant degree (a 'Malkus' B0 under an axisymmetric flow, forcing 12)
+            lconv_b[i] = upp.identify( b_sol2, ut.bsymm )[2] if (np.any(b_sol2[0]) or np.any(b_sol2[1])) else 0.0
 
         if par.ricb == 0:  # NEW (2026-11-04): how far the flow (and the field) is from regular at r = 0
             groups = [ [ (u_sol2[0], lp), (u_sol2[1], lt) ] ] if par.hydro else []
@@ -1089,6 +1096,8 @@ def main(ncpus):
             ( 'mtorq_ic_re', np.real(mtorq_ic), '%.9e' ),
             ( 'mtorq_ic_im', np.imag(mtorq_ic), '%.9e' ),
             ( 'brms',        brms,              '%.9e' ),
+            # NEW (2026-11-16): the ℓ-convergence of the field, as flow.dat's lconv for the flow (upp.identify on f, g)
+            ( 'lconv_b',     lconv_b,           '%.3e' ),
         ]
         with open('magnetic.dat','ab') as dmag:
             np.savetxt(dmag, np.column_stack([ v for _, v, _ in magnetic_cols ]),

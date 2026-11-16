@@ -8,6 +8,23 @@ magnetic field), centrifugal (the deformed body) and, in phases, everything of c
 
 2026-11-16
 ----------
+The ℓ-convergence now includes the highest toroidal degree, and the field has its own. For a vector field,
+utils4pp.identify takes the larger amplitude (the sum of the moduli of the Chebyshev coefficients) of the two highest
+degrees, one of P and one of T, relative to the dominant degree. It used to take the highest degree alone, which has
+only P for m = 0, symm = 1 and for m > 0, symm = -1 (for the field, by its own symmetry). P's coefficients are about l
+times smaller than T's at the same energy, so the value was too small there: 60-600 times in the runs checked, for
+inertial and torsional modes alike. Where the highest degree is T's (m = 0, symm = -1; m > 0, symm = 1), and for a
+scalar (the entropy or the composition with hydro = 0), the value is unchanged. With magnetic = 1, spin_doctor also
+gives the field's ℓ-convergence: magnetic.dat column 22 (lconv_b; 0 for a field that is zero) and, with the flow, the
+table column ℓ-Conv 𝐛, right after ℓ-Convergence (the columns after it move one place right). Accept a mode when both
+values are below 1e-4. On 13 torsional modes (Ek 1e-10, Em 1e-9, lmax 127-255, conducting inner core, thin wall), the
+relative error of the eigenvalue was 0.01-0.1 times the field's ℓ-convergence. magnetic.dat had 21 columns before:
+start a new one rather than append to an older one, as for params.dat (np.loadtxt and tools/get_data.py stop at the
+first longer row). Apart from the ℓ-convergence values and the new columns, every output is the same to the last bit,
+and a run under MPI writes what a serial run writes.
+
+2026-11-16
+----------
 spin_doctor.py shares the solutions among MPI ranks: `mpiexec -n NP python3 bin/spin_doctor.py NP` (mpi4py). Rank k takes
 the solutions k, k + NP, ... and reads only their columns of the solution files (field_io.count gives their number);
 rank 0 gathers the results, prints the table and writes the files, the same to the last bit as a serial run's but for

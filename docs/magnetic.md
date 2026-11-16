@@ -349,7 +349,9 @@ that its total (kinetic plus magnetic) energy is 1.
 induction equation, and resid𝐄, the full energy budget including the field outside the fluid. Like residσ
 ([Solver](solver.md)), they should be small for a resolved mode; with a thin conducting layer of non-zero thickness,
 resid𝐄 is only as small as the approximation error εTWA. It also prints Mag/Kin, the ratio of magnetic to kinetic
-energy, and writes `magnetic.dat` ([Output files](output.md#magneticdat)).
+energy, and, with the flow, ℓ-Conv 𝐛, the ℓ-convergence of the field, which can have a longer tail in ℓ than the flow:
+judge `lmax` by both ([Solver](solver.md#first-check-the-solution)). It writes `magnetic.dat`
+([Output files](output.md#magneticdat)).
 
 ## Practical tips
 

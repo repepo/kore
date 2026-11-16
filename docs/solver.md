@@ -22,7 +22,10 @@ Judge each solution with `spin_doctor.py`, not with the residual that `solve.py`
 problem). Accept a mode when:
 
 - its energy residual residσ (and the entropy residual resid𝑠, with `thermal = 1`) is below 1e-5;
-- its ℓ-convergence is below 1e-4;
+- its ℓ-convergence is below 1e-4, and with a field the field's too: the columns ℓ-Convergence and ℓ-Conv 𝐛 of the
+  table must both be below it. Since 2026-11-16 the ℓ-convergence includes the highest degree of the toroidal scalar,
+  which it missed for m = 0, symm = 1 and for m > 0, symm = −1 (60 to 600 times too small a value in the runs
+  checked), and the field has its own column ([Output files](output.md#flowdat));
 - in a full sphere, irreg₀ is below 1e-6 ([Regularity at the centre](numerical-method.md#regularity-at-the-centre)).
 
 The same checks apply to forced runs. A forced flow that is a rigid rotation has no budget to judge: its residuals
@@ -56,7 +59,9 @@ Notes from the studies behind them:
 - A full sphere uses N/2 polynomials of one parity: double `N` for the shell rules.
 - Below Ek 3e-8 the induction budget resid𝐛 of torsional modes needed up to 1.44 times the `'magnetic'` N; their
   eigenvalues had converged to 1e-6 already at it.
-- The residuals do not see a too small `lmax`: judge `lmax` by the change of the eigenvalue and by the ℓ-convergence.
+- The residuals do not see a too small `lmax`: judge `lmax` by the change of the eigenvalue and by the ℓ-convergence,
+  with a field by the field's too. For torsional modes (Ek 1e-10, Em 1e-9, lmax 127–255) the relative error of the
+  eigenvalue was 0.01–0.1 times the field's ℓ-convergence.
   With a field, `lmax` near `N` is safe; the torsional modes kept their eigenvalues to 1e-6 with lmax ≈ 425
   (Ek/1e-9)<sup>−0.145</sup>, far below `N` at low Ek. Solar inertial modes in a full sphere needed lmax 30–80 at N
   600–900, set by their ℓ-convergence.

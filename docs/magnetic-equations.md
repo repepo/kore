@@ -1094,6 +1094,10 @@ Mag/Kin and writes `magnetic.dat`:
 | 12 | MEc | with `centrifugal = 1`, a thin layer or a resolved mantle: the energy that the deformation adds (0 without it) |
 | 13, 14 | E_w, Ohm_w | with a thin layer or a resolved mantle: the magnetic energy stored in the thin layers or in the mantle, and their Ohmic loss |
 | 15, 16 | eps_twa_o, eps_twa_i | with a thin layer or a resolved mantle: $\varepsilon_\text{TWA}$ of the outer and of the inner thin layer (0 where there is none) |
+| 17, 18 | mtorq_re, mtorq_im | magnetic torque on the mantle, real and imaginary parts (with m = 0, symm = 1 the axial torque; with m = 1, symm = −1 the equatorial one; 0 otherwise) |
+| 19, 20 | mtorq_ic_re, mtorq_ic_im | magnetic torque on the inner core, real and imaginary parts |
+| 21 | brms | r.m.s. of the radial field on the outer wall, over the sphere and over a period |
+| 22 | lconv_b | ℓ-convergence of the field ([Output files](output.md#flowdat)); 0 for a field that is zero |
 
 with the integrals over the fluid unless stated, and with the Lorentz force per volume without `Hendrik`
 $\mathbf G = (\nabla\times\mathbf b)\times\mathbf B_0 + (\nabla\times\mathbf B_0)\times\mathbf b$,

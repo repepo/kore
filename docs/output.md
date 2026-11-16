@@ -26,8 +26,10 @@ a table.
 
 `python3 bin/units.py` prints the eigenvalues of `eigenvalues0.dat` as frequency and growth rate in nHz
 ([Background model](background.md#units)). Rows with the same index in `params.dat`, `flow.dat`, `thermal.dat`,
-`composition.dat`, `magnetic.dat` and `rotdyn.dat` belong to the same solution. Start a new `params.dat` rather than
-append to one written by another version of kore, which may have different columns.
+`composition.dat`, `magnetic.dat` and `rotdyn.dat` belong to the same solution. Start new `params.dat` and
+`magnetic.dat` files rather than append to ones written by another version of kore, which may have different columns
+(`magnetic.dat` has 22 since 2026-11-16, 21 before), and do not collect the run folders of two versions with
+`tools/reap.sh`: `np.loadtxt` and `tools/get_data.py` stop at a row with more columns than the rows before it.
 
 `spin_doctor.py` takes the solutions one after the other. To process many of them at once, run it under MPI (it needs
 `mpi4py`):
@@ -50,7 +52,7 @@ Columns, counted from 1:
 | --- | --- |
 | 1–3 | kinetic energy, and its poloidal and toroidal parts (eigenvectors are normalised to kinetic energy 1). Without the flow (`hydro = 0`), the eigenvectors are normalised to the magnetic energy plus the entropy and composition "energies" instead |
 | 4 | the power of the viscous force |
-| 5–7 | Peak ℓ, ℓ-Width and ℓ-Convergence: the degree with the largest kinetic energy, the width of the spectrum, and how fast it falls off |
+| 5–7 | Peak ℓ, ℓ-Width and ℓ-Convergence: the dominant degree, the width of the band of degrees above a tenth of its amplitude, and the truncation in ℓ (below the table) |
 | 8–11 | the enstrophy, and the Coriolis, viscous and buoyancy terms of its balance |
 | 12–14 | position and value of the largest toroidal component of the curl of the viscous force |
 | 15–17 | residens, residω, residσ: the relative residuals of the enstrophy balance and of the imaginary and real parts of the energy balance |
@@ -70,6 +72,18 @@ Columns, counted from 1:
 | 50 | Geo, for `m = 0`, `symm = 1`: the fraction of the energy of $u_\phi$ in its average along the rotation axis, $\int\lvert\langle u_\phi\rangle\rvert^2dV/\int\lvert u_\phi\rvert^2dV$ with $\langle u_\phi\rangle(s)$ the mean over each fluid column; 1 for a $z$-invariant (geostrophic) $u_\phi$, as in a torsional mode ([Checking results](checking.md)); NaN otherwise |
 
 Columns that do not apply to a run are 0 or NaN.
+
+ℓ-Convergence (column 7) measures the truncation in ℓ. The amplitude of a degree is the sum of the moduli of its
+Chebyshev coefficients, and ℓ-Convergence is the larger amplitude of the two highest degrees, relative to that of the
+dominant degree (Peak ℓ). The degrees of the poloidal and the toroidal scalar alternate, so the two highest degrees are
+one of each, for any m and symmetry. Before 2026-11-16 it was the amplitude of the highest degree alone. For m = 0,
+symm = 1 (degree lmax + 1) and for m > 0, symm = −1 (degree lmax), that degree has only the poloidal scalar, which is
+much smaller there than the toroidal one, so modes looked better converged than they were: 60 to 600 times in the runs
+checked, inertial and torsional modes alike. For m = 0, symm = −1 and m > 0, symm = 1 the highest degree is the
+toroidal scalar's, and the value has not changed. With a field, `magnetic.dat` column 22 gives the same measure for the
+field (with the field's own symmetry). Without the flow (`hydro = 0`), columns 5–7 describe the field, or, without a
+field, the entropy (or the composition). The field's ℓ-Convergence then takes its two highest degrees, as the flow's
+does; the entropy and the composition have no toroidal part, so theirs is the amplitude of their highest degree.
 
 ## `thermal.dat`
 
@@ -111,9 +125,11 @@ With `magnetic = 1` ([Magnetic field](magnetic.md)). The energies are defined on
 | 17, 18 | the magnetic torque on the mantle, real and imaginary parts (with m = 0, symm = 1 the axial torque; with m = 1, symm = −1 the equatorial one; 0 otherwise, as in `flow.dat`) |
 | 19, 20 | the magnetic torque on the inner core, real and imaginary parts |
 | 21 | brms, the r.m.s. of the radial field b<sub>r</sub> on the outer wall, over the sphere and over a period |
+| 22 | lconv_b, the ℓ-convergence of the field: the measure of `flow.dat` column 7, applied to the poloidal and toroidal scalars of the field ([`flow.dat`](#flowdat)); 0 where the field is zero |
 
-Every run writes all 21 columns: those of a feature the run does not use are 0. Before 2026-11-10 the file had 11
-columns, 12 with the centrifugal deformation and 16 with a conducting wall.
+Every run writes all 22 columns: those of a feature the run does not use are 0. Column 22 was added on 2026-11-16
+(21 columns before: start a new file rather than append to an older one). Before 2026-11-10 the file had 11 columns,
+12 with the centrifugal deformation and 16 with a conducting wall.
 
 The `spin_doctor` table shows the size of the two magnetic torques, \|𝚪\|mag and \|𝚪\|magIC, where it computes them
 (m = 0, symm = 1 or m = 1, symm = −1, with the flow and without the centrifugal deformation). brms is that of the
@@ -122,6 +138,11 @@ complex amplitude), in the unit of b, which is that of B0. As the mode's amplitu
 compare ratios, for example brms over the r.m.s. of the radial background field on the wall.
 
 The column Mag/Kin of the `spin_doctor` table is the magnetic energy over the kinetic energy, in the same units.
+
+The column ℓ-Conv 𝐛 of the `spin_doctor` table, printed when a run has both the flow and a field, shows column 22: the
+ℓ-convergence of the field, next to that of the flow (ℓ-Convergence). The field can have the longer tail in ℓ (it did
+in torsional modes), so judge `lmax` by both ([Solver](solver.md#first-check-the-solution)). Without the flow, the
+column ℓ-Convergence is already the field's, and the table has no ℓ-Conv 𝐛.
 
 ## `rotdyn.dat`
 

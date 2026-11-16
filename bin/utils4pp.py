@@ -3341,10 +3341,17 @@ def diagnose_4plot( ncpus, usol, tsol, radii, field0, csol=0, bsol=None):
 
 def identify(sol2, vsymm=None):
     '''
-    [the dominant degree, the width of the band of degrees above 0.1 of its amplitude, the amplitude of the highest degree
-    relative to the dominant one] of the solution sol2 (expand_reshape_sol). NEW (2026-11-06): vsymm, the equatorial symmetry
-    of sol2 (default par.symm, the flow's; ut.bsymm for the magnetic field), and a scalar field (the entropy, one array with the
-    degrees of P), for the runs without the flow (hydro = 0)
+    [the dominant degree, the width of the band of degrees above 0.1 of its amplitude, the ℓ-convergence] of the solution
+    sol2 (expand_reshape_sol), the amplitude of a degree being the sum of the moduli of its Chebyshev coefficients. NEW
+    (2026-11-06): vsymm, the equatorial symmetry of sol2 (default par.symm, the flow's; ut.bsymm for the magnetic field),
+    and a scalar field (the entropy, one array with the degrees of P), for the runs without the flow (hydro = 0).
+    FIX (2026-11-16): the ℓ-convergence of a vector field (P, T or f, g) is the larger amplitude of its two highest degrees
+    relative to the dominant one. The degrees of P and T interleave, so that these two are one of P and one of T for any m
+    and symmetry (m = 0: lmax + 1 and lmax; m > 0: lmax and lmax - 1). It was the highest degree alone, which is P's for
+    m = 0, vsymm = 1 and for m > 0, vsymm = -1: P's coefficients are about l times smaller than T's at the same energy, so
+    that it understated the truncation there, 60-600 times in the runs checked (inertial and torsional modes). Where the
+    highest degree is T's (m = 0, vsymm = -1; m > 0, vsymm = 1) the value is unchanged. A scalar's is the amplitude of its
+    highest degree, as before
     '''
 
     threshold = 0.1
@@ -3368,7 +3375,9 @@ def identify(sol2, vsymm=None):
     max_ell     = ll[ maxid1 ]
     maxids      = amps > threshold * amps[ maxid1 ]
     spread      = ll[maxids][-1] - ll[maxids][0]
-    convergence = amps[ idp[-1] if scalar else -1 ] / amps[ maxid1 ]   # (a scalar has no toroidal degrees)
+    # FIX (2026-11-16): a vector field's two highest degrees, one of P and one of T; a scalar's highest (it has no T)
+    top         = amps[ idp[-1] ] if scalar else np.max( amps[-2:] )
+    convergence = top / amps[ maxid1 ]
 
     return max_ell, spread, convergence
 
