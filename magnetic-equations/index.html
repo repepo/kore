@@ -3083,6 +3083,26 @@ Mag/Kin and writes <code>magnetic.dat</code>:</p>
 <td>eps_twa_o, eps_twa_i</td>
 <td>with a thin layer or a resolved mantle: <span class="arithmatex">\(\varepsilon_\text{TWA}\)</span> of the outer and of the inner thin layer (0 where there is none)</td>
 </tr>
+<tr>
+<td>17, 18</td>
+<td>mtorq_re, mtorq_im</td>
+<td>magnetic torque on the mantle, real and imaginary parts (with m = 0, symm = 1 the axial torque; with m = 1, symm = −1 the equatorial one; 0 otherwise)</td>
+</tr>
+<tr>
+<td>19, 20</td>
+<td>mtorq_ic_re, mtorq_ic_im</td>
+<td>magnetic torque on the inner core, real and imaginary parts</td>
+</tr>
+<tr>
+<td>21</td>
+<td>brms</td>
+<td>r.m.s. of the radial field on the outer wall, over the sphere and over a period</td>
+</tr>
+<tr>
+<td>22</td>
+<td>lconv_b</td>
+<td>ℓ-convergence of the field (<a href="../output/#flowdat">Output files</a>); 0 for a field that is zero</td>
+</tr>
 </tbody>
 </table>
 <p>with the integrals over the fluid unless stated, and with the Lorentz force per volume without <code>Hendrik</code>

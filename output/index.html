@@ -1721,8 +1721,10 @@ a table.</p>
 </table>
 <p><code>python3 bin/units.py</code> prints the eigenvalues of <code>eigenvalues0.dat</code> as frequency and growth rate in nHz
 (<a href="../background/#units">Background model</a>). Rows with the same index in <code>params.dat</code>, <code>flow.dat</code>, <code>thermal.dat</code>,
-<code>composition.dat</code>, <code>magnetic.dat</code> and <code>rotdyn.dat</code> belong to the same solution. Start a new <code>params.dat</code> rather than
-append to one written by another version of kore, which may have different columns.</p>
+<code>composition.dat</code>, <code>magnetic.dat</code> and <code>rotdyn.dat</code> belong to the same solution. Start new <code>params.dat</code> and
+<code>magnetic.dat</code> files rather than append to ones written by another version of kore, which may have different columns
+(<code>magnetic.dat</code> has 22 since 2026-11-16, 21 before), and do not collect the run folders of two versions with
+<code>tools/reap.sh</code>: <code>np.loadtxt</code> and <code>tools/get_data.py</code> stop at a row with more columns than the rows before it.</p>
 <p><code>spin_doctor.py</code> takes the solutions one after the other. To process many of them at once, run it under MPI (it needs
 <code>mpi4py</code>):</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>mpiexec<span class="w"> </span>-n<span class="w"> </span><span class="m">8</span><span class="w"> </span>python3<span class="w"> </span>./bin/spin_doctor.py<span class="w"> </span><span class="m">8</span>
@@ -1752,7 +1754,7 @@ such as <code>srun</code>, set <code>SD_MPI=1</code>, and <code>SD_MPI=0</code> 
 </tr>
 <tr>
 <td>5–7</td>
-<td>Peak ℓ, ℓ-Width and ℓ-Convergence: the degree with the largest kinetic energy, the width of the spectrum, and how fast it falls off</td>
+<td>Peak ℓ, ℓ-Width and ℓ-Convergence: the dominant degree, the width of the band of degrees above a tenth of its amplitude, and the truncation in ℓ (below the table)</td>
 </tr>
 <tr>
 <td>8–11</td>
@@ -1825,6 +1827,17 @@ such as <code>srun</code>, set <code>SD_MPI=1</code>, and <code>SD_MPI=0</code> 
 </tbody>
 </table>
 <p>Columns that do not apply to a run are 0 or NaN.</p>
+<p>ℓ-Convergence (column 7) measures the truncation in ℓ. The amplitude of a degree is the sum of the moduli of its
+Chebyshev coefficients, and ℓ-Convergence is the larger amplitude of the two highest degrees, relative to that of the
+dominant degree (Peak ℓ). The degrees of the poloidal and the toroidal scalar alternate, so the two highest degrees are
+one of each, for any m and symmetry. Before 2026-11-16 it was the amplitude of the highest degree alone. For m = 0,
+symm = 1 (degree lmax + 1) and for m &gt; 0, symm = −1 (degree lmax), that degree has only the poloidal scalar, which is
+much smaller there than the toroidal one, so modes looked better converged than they were: 60 to 600 times in the runs
+checked, inertial and torsional modes alike. For m = 0, symm = −1 and m &gt; 0, symm = 1 the highest degree is the
+toroidal scalar's, and the value has not changed. With a field, <code>magnetic.dat</code> column 22 gives the same measure for the
+field (with the field's own symmetry). Without the flow (<code>hydro = 0</code>), columns 5–7 describe the field, or, without a
+field, the entropy (or the composition). The field's ℓ-Convergence then takes its two highest degrees, as the flow's
+does; the entropy and the composition have no toroidal part, so theirs is the amplitude of their highest degree.</p>
 <h2 id="thermaldat"><code>thermal.dat</code></h2>
 <table>
 <thead>
@@ -1942,16 +1955,25 @@ composition; column 4 is resid𝑐.</p>
 <td>21</td>
 <td>brms, the r.m.s. of the radial field b<sub>r</sub> on the outer wall, over the sphere and over a period</td>
 </tr>
+<tr>
+<td>22</td>
+<td>lconv_b, the ℓ-convergence of the field: the measure of <code>flow.dat</code> column 7, applied to the poloidal and toroidal scalars of the field (<a href="#flowdat"><code>flow.dat</code></a>); 0 where the field is zero</td>
+</tr>
 </tbody>
 </table>
-<p>Every run writes all 21 columns: those of a feature the run does not use are 0. Before 2026-11-10 the file had 11
-columns, 12 with the centrifugal deformation and 16 with a conducting wall.</p>
+<p>Every run writes all 22 columns: those of a feature the run does not use are 0. Column 22 was added on 2026-11-16
+(21 columns before: start a new file rather than append to an older one). Before 2026-11-10 the file had 11 columns,
+12 with the centrifugal deformation and 16 with a conducting wall.</p>
 <p>The <code>spin_doctor</code> table shows the size of the two magnetic torques, |𝚪|mag and |𝚪|magIC, where it computes them
 (m = 0, symm = 1 or m = 1, symm = −1, with the flow and without the centrifugal deformation). brms is that of the
 physical field Re(b<sub>r</sub> e<sup>λt</sup>), averaged over the sphere and over a period (1/√2 of the r.m.s. of the
 complex amplitude), in the unit of b, which is that of B0. As the mode's amplitude is arbitrary (KE + Hendrik ME = 1),
 compare ratios, for example brms over the r.m.s. of the radial background field on the wall.</p>
 <p>The column Mag/Kin of the <code>spin_doctor</code> table is the magnetic energy over the kinetic energy, in the same units.</p>
+<p>The column ℓ-Conv 𝐛 of the <code>spin_doctor</code> table, printed when a run has both the flow and a field, shows column 22: the
+ℓ-convergence of the field, next to that of the flow (ℓ-Convergence). The field can have the longer tail in ℓ (it did
+in torsional modes), so judge <code>lmax</code> by both (<a href="../solver/#first-check-the-solution">Solver</a>). Without the flow, the
+column ℓ-Convergence is already the field's, and the table has no ℓ-Conv 𝐛.</p>
 <h2 id="rotdyndat"><code>rotdyn.dat</code></h2>
 <p>With <code>rotdyn = 1</code> (<a href="../rotating-solids/">Rotating solids</a>), real and imaginary parts (columns 1–2, 3–4, ...) of:</p>
 <table>

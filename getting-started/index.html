@@ -1677,8 +1677,8 @@ say whether the resolution is sufficient.</p>
 <h2 id="6-check-the-solution">6. Check the solution</h2>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>./bin/spin_doctor.py<span class="w"> </span><span class="m">4</span>
 </span></code></pre></div>
-<p><code>spin_doctor.py</code> rebuilds each solution in physical space and checks the balances it must satisfy. The first columns of
-its table are</p>
+<p><code>spin_doctor.py</code> rebuilds each solution in physical space and checks the balances it must satisfy. Some of the columns
+of its table are</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>  ★          Re λ              Im λ          𝒯/𝒫       residσ     residω    Peak ℓ   ℓ-Width   ℓ-Convergence
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>  0      -0.007855111       1.227914453    1.12e+00   1.75e-05   1.01e-08     3         44        4.68e-12
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>  1      -0.018999641       1.231246928    1.14e+00   3.12e-04   2.23e-06     5         74        2.71e-10
@@ -1686,6 +1686,9 @@ its table are</p>
 <p>A mode is resolved when its energy residual residσ is below <span class="arithmatex">\(10^{-5}\)</span> and its ℓ-convergence below <span class="arithmatex">\(10^{-4}\)</span> (with
 <code>thermal = 1</code>, the entropy residual resid𝑠 must also be below <span class="arithmatex">\(10^{-5}\)</span>). The ℓ-convergence is fine, but residσ is
 <span class="arithmatex">\(1.8\times10^{-5}\)</span> for the first mode and <span class="arithmatex">\(3\times10^{-4}\)</span> for the others: the radial resolution is not enough.
+(The ℓ-Convergence values on this page come from a <code>spin_doctor.py</code> older than 2026-11-16, which measured only the
+highest degree, here a degree of the poloidal scalar alone. It now takes the highest degree of the toroidal scalar too
+(<a href="../output/#flowdat">Output files</a>) and prints larger values for these modes, still far below <span class="arithmatex">\(10^{-4}\)</span>.)
 <code>spin_doctor.py</code> also appends one row per mode to <code>params.dat</code>, <code>flow.dat</code> and <code>eigenvalues.dat</code>
 (<a href="../output/">Output files</a>).</p>
 <h2 id="7-raise-the-resolution">7. Raise the resolution</h2>
