@@ -50,6 +50,7 @@ history. §15 lists what the first threads of the claude.ai project behind this 
 mpiexec -n ncpus ./bin/assemble.py  # A.npz, and B.npz (forcing = 0) or B_forced.npz (forcing > 0; both for 11)
 mpiexec -n ncpus ./bin/solve.py [petsc opts]   # SLEPc shift-invert (forcing = 0) or KSP LU (forcing > 0)
 ./bin/spin_doctor.py ncpus | tee out2          # energy/entropy budgets, residuals, tables
+mpiexec -n NP python3 ./bin/spin_doctor.py NP  # the same, the solutions shared among NP MPI ranks (2026-11-16)
 ```
 
 `runKore.sh` sets its own `ncpus` (10), which must match `par.ncpus`, and passes its `opts` to `solve.py`. It then

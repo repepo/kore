@@ -431,8 +431,15 @@ def Dcheb(ck, ricb, rcmb):
     s =  len(c)  # NEW (2026-10-20): len instead of np.size, so a 2D ck (one expansion per column) works too
     out = np.zeros_like(c)  #,dtype=np.complex128)
     out[-2] = 2.*(s-1.)*c[-1]
-    for k in range(s-3,-1,-1):
-        out[k] = out[k+2] + 2.*(k+1)*ck[k+1]
+    # out[k] = out[k+2] + 2(k+1) ck[k+1] for k = s-3 ... 0. NEW (2026-11-16): as two running sums, k = s-3, s-5, ... (from
+    # out[s-1] = 0) and k = s-4, s-6, ... (from out[s-2]); np.cumsum adds in the order of the former loop over k, so the
+    # numbers are the same, without a Python loop over the N coefficients
+    k = np.arange(s-3, -1, -1)
+    t = (2.*(k+1)).reshape((-1,) + (1,)*(np.ndim(c)-1)) * ck[k+1]
+    for p in (0, 1):
+        kk = k[p::2]
+        if len(kk):
+            out[kk] = np.cumsum(np.concatenate((out[kk[0]+2][None], t[p::2])), axis=0)[1:]
     out[0] = out[0]/2.
 
     if ricb == 0 :
@@ -918,3 +925,17 @@ def load_field(name, cols=None):
     exist (field_io.load).
     '''
     return field_io.load(name, cols)
+
+
+_LEGGAUSS = {}
+
+def leggauss(n):
+    '''
+    NEW (2026-11-16): the Gauss-Legendre nodes and weights np.polynomial.legendre.leggauss(n), computed once per n (an
+    eigenvalue problem of size n, which spin_doctor's diagnostics asked for again for every solution) and returned as copies
+    '''
+    n = int(n)
+    if n not in _LEGGAUSS:
+        _LEGGAUSS[n] = np.polynomial.legendre.leggauss(n)
+    x, w = _LEGGAUSS[n]
+    return x.copy(), w.copy()

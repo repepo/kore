@@ -29,6 +29,19 @@ a table.
 `composition.dat`, `magnetic.dat` and `rotdyn.dat` belong to the same solution. Start a new `params.dat` rather than
 append to one written by another version of kore, which may have different columns.
 
+`spin_doctor.py` takes the solutions one after the other. To process many of them at once, run it under MPI (it needs
+`mpi4py`):
+
+```shell
+mpiexec -n 8 python3 ./bin/spin_doctor.py 8
+```
+
+Rank k takes the solutions k, k + 8, k + 16, ... and reads only their columns of the solution files; rank 0 then prints
+the table and writes the files, the same to the last bit as those of a serial run, but for the run time in
+`params.dat`. More ranks than solutions do not help, and each rank should use one BLAS thread
+(`OPENBLAS_NUM_THREADS=1`). MPI is used when `mpiexec` (or `mpirun`) starts more than one rank; with another launcher,
+such as `srun`, set `SD_MPI=1`, and `SD_MPI=0` runs serially under any launcher.
+
 ## `flow.dat`
 
 Columns, counted from 1:

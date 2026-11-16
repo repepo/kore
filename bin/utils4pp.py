@@ -67,6 +67,20 @@ def funcheb(ck0, r, ricb, rcmb, n):
 
 
 
+_vander = {}   # NEW (2026-11-16): chebvander at the radii spin_doctor uses for every solution (the last 8 sets)
+
+def _chebvander(r, n):
+    '''the Chebyshev polynomials T_0 .. T_(n-1) at the radii r, (radii, n), computed once per set of radii (NEW 2026-11-16)'''
+    r = np.asarray(r, dtype=float)
+    key = (r.shape, r.tobytes(), n, par.ricb, ut.rcmb)
+    if key not in _vander:
+        if len(_vander) >= 8:
+            _vander.pop(next(iter(_vander)))   # the oldest
+        _vander[key] = ch.chebvander(xcheb(r, par.ricb, ut.rcmb), n-1)
+    return _vander[key]
+
+
+
 # NEW (2026-10-20): all radial functions of a solution at once, ported from the conductive_IC branch (2026-10-16).
 def cheb2space_table(C, nd, r):
     '''
@@ -78,7 +92,7 @@ def cheb2space_table(C, nd, r):
     of one chebval (a Python loop over N) per row. The workers need each row several times (coriolis
     also uses the neighbouring l's), so they take these tables in place of the coefficients (see radial).
     '''
-    V   = ch.chebvander(xcheb(r, par.ricb, ut.rcmb), np.shape(C)[1]-1)  # (radii, N): T_k at the radii
+    V   = _chebvander(r, np.shape(C)[1])  # (radii, N): T_k at the radii
     dk  = np.ascontiguousarray(np.transpose(C))  # (N, rows): one expansion per column, as ut.Dcheb takes them
     out = np.zeros((nd+1, np.shape(C)[0], np.size(r)), dtype=complex)
     for j in range(nd+1):
@@ -102,6 +116,34 @@ def radial(F, idx, n, radii):
             raise ValueError('radial: the table has only %d derivatives' % (np.shape(F)[0]-1))
         return F[:n+1, idx, :]
     return funcheb(F[idx,:], r=radii, ricb=par.ricb, rcmb=ut.rcmb, n=n).T
+
+
+
+def _mm(A, B):
+    '''NEW (2026-11-16): the matrix product A @ B of a complex A by B, a real B as two real products (half the work)'''
+    if np.iscomplexobj(B):
+        return A @ B
+    out = np.empty((np.shape(A)[0], np.shape(B)[1]), dtype=complex)
+    out.real = np.ascontiguousarray(np.real(A)) @ B
+    out.imag = np.ascontiguousarray(np.imag(A)) @ B
+    return out
+
+
+
+def synth_grid(qs, Yg, dYg, Zg):
+    '''
+    NEW (2026-11-16): {l: (q, s, t)}, the l-components of a vector field at some radii, -> (F_r, F_θ, F_φ) on the grid (rows
+    the radii, columns the nodes x = cos θ), F = Σ_l q Y_l r̂ + s r∇Y_l + t r∇Y_l×r̂, from Yg, dYg, Zg: Y_l, ∂θY_l and
+    i m Y_l/sinθ at the nodes (rows l, angular.ylm_grid), or any three tables combined in the same way. The sums over l are
+    matrix products (rows the radii, columns l) @ (rows l, columns x), as in diff_rot_setup; the functions that called it
+    summed np.outer over l, the same to rounding and many times slower. (0, 0, 0) for no components, as they gave.
+    '''
+    if not qs:
+        return 0, 0, 0
+    ls = list(qs)
+    Q, S, T = ( np.stack([ np.asarray(qs[l][k], dtype=complex) for l in ls ], axis=1) for k in (0, 1, 2) )
+    Y, dY, Z = Yg[ls], dYg[ls], Zg[ls]
+    return _mm(Q, Y), _mm(S, dY) + _mm(T, Z), _mm(S, Z) - _mm(T, dY)
 
 
 
@@ -545,7 +587,7 @@ def diff_rot_background(ll):
     the (n, σₙ, σₙ′) of S_tw (thermal_wind_entropy). diagnose computes them once per grid, not per solution.
     '''
     m = par.m
-    x, wx = np.polynomial.legendre.leggauss( par.lmax + 10 + max(dr.tw_nmax(), dr.n_max()) )
+    x, wx = ut.leggauss( par.lmax + 10 + max(dr.tw_nmax(), dr.n_max()) )
     sth = np.sqrt(1 - x**2)  # sinθ
     # as ut.Ylm, its θ derivative and i m Y/sinθ, by the recurrence of angular.ylm_grid (any l; scipy is NaN from l = 646)
     [ Yg, dYg, Zg ] = angular.ylm_grid(m, int(ll.max()), x)
@@ -667,7 +709,7 @@ def bgflow_background(ll):
     flow 𝐔, ∂ᵣ𝐔, ∂ᵣ²𝐔 and its vorticity 𝛀_U, ∂ᵣ𝛀_U on the (rk, cosθ) grid (bgflow.flow_grid), and the gradients ∇S, ∇C of
     the background's entropy and composition (bgflow.scalar_grid; None without thermal, compositional).
     '''
-    x, wx = np.polynomial.legendre.leggauss( par.lmax + 12 + bgf.nmax() )   # exact for the products of 𝐔 (degree <= nmax + 1)
+    x, wx = ut.leggauss( par.lmax + 12 + bgf.nmax() )   # exact for the products of 𝐔 (degree <= nmax + 1)
     [ Yg, dYg, Zg ] = angular.ylm_grid(par.m, int(ll.max()), x)             # with 𝐮 and Y* (degree <= lmax + 1 each)
     Ug = bgf.flow_grid(rk, x, nd=2)
     gS = bgf.scalar_grid('S', rk, x) if par.thermal else None
@@ -1084,7 +1126,7 @@ def geostrophic_fraction(u_sol2, ns=240, nz=48):
         s  = ut.rcmb*(np.arange(ns) + 0.5)/ns                           # cell centres in s
         z0 = np.sqrt(np.maximum(par.ricb**2 - s**2, 0))                 # column bottom: ICB inside the TC, else z = 0
         H  = np.sqrt(ut.rcmb**2 - s**2) - z0                            # column height (northern half)
-        zg, wg = np.polynomial.legendre.leggauss(nz)
+        zg, wg = ut.leggauss(nz)
         Z  = z0[:,None] + H[:,None]*(zg[None,:] + 1)/2
         W  = H[:,None]*wg[None,:]/2                                     # dz weights
         R  = np.sqrt(s[:,None]**2 + Z**2)
@@ -1391,7 +1433,7 @@ def lorentz_walls(bsol):
     m = par.m
     lmx = par.lmax + 1
     nB = max([3] + list(bf.pol_profiles()) + list(bf.tor_profiles()))
-    xg, wx = np.polynomial.legendre.leggauss(lmx + nB + 12)
+    xg, wx = ut.leggauss(lmx + nB + 12)
     Yg, dYg, Zg = angular.ylm_grid(m, lmx, xg)
     Y0, dY0, _ = angular.ylm_grid(0, nB, xg)
     lp_u = ut.ell(m, par.lmax, par.symm)[0]
@@ -1483,7 +1525,7 @@ def viscous_dissipation():
     '''
     m = par.m
     [ lp, lt, ll ] = ut.ell(par.m, par.lmax, par.symm)
-    x, wx = np.polynomial.legendre.leggauss( par.lmax + 12 )
+    x, wx = ut.leggauss( par.lmax + 12 )
     sth = np.sqrt(1 - x**2)
     [ Yg, dYg, Zg ] = angular.ylm_grid(m, int(max(ll)), x)    # Y, ∂θY, i m Y/sinθ, rows l
     Vg = Zg/(1j*m) if m else 0*Yg                             # Y/sinθ (only used multiplied by m)
@@ -1492,17 +1534,10 @@ def viscous_dissipation():
     dZg  = 1j*m*( dYg - x*Vg )/sth                             # ∂θ(i m Y/sinθ)
 
     # u and its r- and θ-derivatives on the grid (rows rk, columns cosθ): u_r, u_θ, u_φ = Σ q Y, s ∂θY + t Z, s Z - t ∂θY
-    u, ur, ut_ = [ np.zeros((3, len(rk), len(x)), dtype=complex) for k in (0,1,2) ]
-    for l in ll:
-        [ q, s, t ] = velocity(l)
-        Y, dY, Z, d2Y, dZ = Yg[l], dYg[l], Zg[l], d2Yg[l], dZg[l]
-        for d, A in ((0, u), (1, ur)):
-            A[0] += np.outer(q[d], Y)
-            A[1] += np.outer(s[d], dY) + np.outer(t[d], Z)
-            A[2] += np.outer(s[d], Z) - np.outer(t[d], dY)
-        ut_[0] += np.outer(q[0], dY)
-        ut_[1] += np.outer(s[0], d2Y) + np.outer(t[0], dZ)
-        ut_[2] += np.outer(s[0], dZ) - np.outer(t[0], d2Y)
+    # (NEW 2026-11-16: the sums over l as matrix products, synth_grid, not np.outer per l)
+    vel = { l: velocity(l) for l in ll }
+    u, ur = ( synth_grid({ l: (q[d], s[d], t[d]) for l, (q, s, t) in vel.items() }, Yg, dYg, Zg) for d in (0, 1) )
+    ut_ = synth_grid({ l: (q[0], s[0], t[0]) for l, (q, s, t) in vel.items() }, dYg, d2Yg, dZg)   # ∂θ of u_r, u_θ, u_φ
 
     r, st, ct, im = rk[:,None], sth[None,:], x[None,:], 1j*m
     err = ur[0]
@@ -1641,80 +1676,77 @@ def setup_grid(Ra, Rb):
     # any radius by funcheb. Nq = 3N/2 integrates exactly polynomials of degree < 3N.
     global wk
     Nq = (3*par.N + 1)//2
-    xk, wk = np.polynomial.legendre.leggauss(Nq)
+    xk, wk = ut.leggauss(Nq)
 
     # rk are the corresponding radial points in the desired integration interval: from Ra to Rb
     set_radii( 0.5*(Rb-Ra)*( xk + 1 ) + Ra )
 
 
 
+_radii_profiles = {}   # NEW (2026-11-16): set_radii's profiles, per set of radii and parameters
+
+def _copy(v):
+    return v.copy() if isinstance(v, np.ndarray) else v
+
 def set_radii(radii):
     '''
     NEW (2026-11-04): sets the radii rk and the background profiles sampled there (rho0, lho1..lho5, vsc0..vsc3, const0,
     pss0, ...) as module globals, for the workers below. setup_grid calls it at the quadrature nodes, diagnose_4plot at
     the plot radii and wall_powers at the walls.
+    NEW (2026-11-16): the profiles are kept per set of radii and parameters (the last 8) and copied from there on later calls:
+    the same numbers, computed once (logrhoX and viscoX of order > 0 take a Chebyshev transform of the profile, which
+    spin_doctor repeated six times for every solution)
     '''
-    global rk
+    global rk, x0
     rk = radii
 
     # x0 are the points in the appropriate domain of the Chebyshev polynomial solutions
-    global x0
     x0 = xcheb(rk, par.ricb, 1)
 
+    a = np.asarray(radii)
+    key = ( a.dtype.str, a.shape, a.tobytes(), repr(sorted(vars(par).items())) )   # the radii and every parameter
+    if key in _radii_profiles:
+        globals().update({ k: _copy(v) for k, v in _radii_profiles[key].items() })
+        return
+
+    prof = {}
     # the following are needed to compute the integrals (i.e. the quadratures)
-    global r2
-    r2 = rk**2
-    global r3
-    r3 = rk**3
-    global r4
-    r4 = rk**4
+    prof['r2'] = rk**2
+    prof['r3'] = rk**3
+    prof['r4'] = rk**4
 
-    global rho0
-    rho0 = np.exp(rap.logrhoX(rk, 0))
+    prof['rho0'] = rho0 = np.exp(rap.logrhoX(rk, 0))
 
-    global lho1
-    lho1 = rap.logrhoX(rk,1)
-    global lho2
-    lho2 = rap.logrhoX(rk,2)
-    global lho3
-    lho3 = rap.logrhoX(rk,3)
-    global lho4
-    lho4 = rap.logrhoX(rk,4)
-    global lho5
-    lho5 = rap.logrhoX(rk,5)
+    prof['lho1'] = rap.logrhoX(rk,1)
+    prof['lho2'] = rap.logrhoX(rk,2)
+    prof['lho3'] = rap.logrhoX(rk,3)
+    prof['lho4'] = rap.logrhoX(rk,4)
+    prof['lho5'] = rap.logrhoX(rk,5)
 
-
-    global lh12
-    lh12 = lho1*lho2
-
+    prof['lh12'] = prof['lho1']*prof['lho2']
 
     [ rpower, rhopower ] = [ par.rpower_pp, par.rhopower_pp ]
-    global const0
-    const0 = (rk**rpower)*(rho0**rhopower)
-    global vsc0
-    vsc0 = rap.viscoX( rk, 0)
-    global vsc1
-    vsc1 = rap.viscoX( rk, 1)
-    global vsc2
-    vsc2 = rap.viscoX( rk, 2)
-    global vsc3
-    vsc3 = rap.viscoX( rk, 3)
+    prof['const0'] = (rk**rpower)*(rho0**rhopower)
+    prof['vsc0'] = rap.viscoX( rk, 0)
+    prof['vsc1'] = rap.viscoX( rk, 1)
+    prof['vsc2'] = rap.viscoX( rk, 2)
+    prof['vsc3'] = rap.viscoX( rk, 3)
 
     if par.thermal:
         # background profiles for the entropy budget (thermal_worker)
-        global pss0
-        pss0 = rap.pressX( rk, 0)                                 # p₀
-        global pdS0
-        pdS0 = rap.pdSdrX( rk, 0)                                 # p₀ dS/dr
-        global kps0
-        kps0 = rap.prf.thermal_diffusivity( rk, 0) * pss0         # κ p₀ (equal to rap.kappressX( rk, 0))
+        prof['pss0'] = pss0 = rap.pressX( rk, 0)                  # p₀
+        prof['pdS0'] = rap.pdSdrX( rk, 0)                         # p₀ dS/dr
+        prof['kps0'] = rap.prf.thermal_diffusivity( rk, 0) * pss0  # κ p₀ (equal to rap.kappressX( rk, 0))
 
     if par.compositional:
         # NEW (2026-11-08): background profiles for the budget of the composition (composition_worker), ρ₀ is rho0
-        global rdC0
-        rdC0 = rap.rdCdrX( rk, 0)                                 # ρ₀ dC/dr
-        global Drh0
-        Drh0 = rap.prf.comp_diffusivity( rk, 0) * rho0            # D ρ₀ (equal to rap.DrhoX( rk, 0))
+        prof['rdC0'] = rap.rdCdrX( rk, 0)                         # ρ₀ dC/dr
+        prof['Drh0'] = rap.prf.comp_diffusivity( rk, 0) * rho0    # D ρ₀ (equal to rap.DrhoX( rk, 0))
+
+    globals().update(prof)
+    if len(_radii_profiles) >= 8:
+        _radii_profiles.pop(next(iter(_radii_profiles)))   # the oldest
+    _radii_profiles[key] = { k: _copy(v) for k, v in prof.items() }
 
 
 
@@ -2348,7 +2380,7 @@ def em_budget(bsol, bic=None, usol=None, bman=None):
         Nic = ut.Nic; nb = int((par.lmax - par.m + 1)/2)
         if ut.symmB0 == -1: ixf, ixg = (par.m + ut.s)%2, (par.m + 1 - ut.s)%2
         else:               ixf, ixg = (par.m + 1 - ut.s)%2, (par.m + ut.s)%2
-        xg, wg = np.polynomial.legendre.leggauss(max(2*par.N_cic, 64))
+        xg, wg = ut.leggauss(max(2*par.N_cic, 64))
         ri = 0.5*r_i*(xg + 1); wi = 0.5*r_i*wg
         def icfun(a, ix, nd):
             cc = np.zeros(par.N_cic, complex); cc[ix::2] = a; out = []
@@ -2424,7 +2456,7 @@ def mantle_budget(bman):
     Nm = par.N_mantle; nb = int((par.lmax - par.m + 1)/2)
     R1, R2 = ut.rcmb, par.r_surface
     lpm, ltm = ut.ell(par.m, par.lmax, ut.bsymm)[:2]
-    xg, wg = np.polynomial.legendre.leggauss(max(2*Nm, 64))
+    xg, wg = ut.leggauss(max(2*Nm, 64))
     rm = R1 + 0.5*(R2 - R1)*(xg + 1); wm = 0.5*(R2 - R1)*wg
     eta = 1/bg.sigma_mantle(rm)
     def mfun(a, nd):   # the radial function and its first nd r-derivatives on rm
@@ -2475,12 +2507,12 @@ def deform_work(usol, bic=None, bman=None):
             return np.nan
         pol, tor = bf.solid_profiles(wall)
         nB = max([1] + list(pol) + list(tor))
-        xg, wx = np.polynomial.legendre.leggauss(lmx + nB + 12)
+        xg, wx = ut.leggauss(lmx + nB + 12)
         Yg, dYg, Zg = angular.ylm_grid(m, lmx, xg)
         Y0, dY0, _ = angular.ylm_grid(0, nB, xg)
         if wall == 'inner':   # the core's series in x = r/ricb on [-1, 1], one parity per section (as em_budget)
             rw, Nb, Nc = par.ricb, ut.Nic, par.N_cic
-            xr, wr = np.polynomial.legendre.leggauss(max(2*Nc, par.lmax + 2*nB + 20, 64))
+            xr, wr = ut.leggauss(max(2*Nc, par.lmax + 2*nB + 20, 64))
             rr, wrr = 0.5*rw*(xr + 1), 0.5*rw*wr
             if ut.symmB0 == -1: ixf, ixg = (m + ut.s)%2, (m + 1 - ut.s)%2
             else:               ixf, ixg = (m + 1 - ut.s)%2, (m + ut.s)%2
@@ -2491,7 +2523,7 @@ def deform_work(usol, bic=None, bman=None):
                 return out
         else:   # the mantle's series on [1, r_surface], all the polynomials (as mantle_budget)
             rw, Nb, Rs = ut.rcmb, par.N_mantle, par.r_surface
-            xr, wr = np.polynomial.legendre.leggauss(max(2*Nb, 64))
+            xr, wr = ut.leggauss(max(2*Nb, 64))
             rr, wrr = rw + 0.5*(Rs - rw)*(xr + 1), 0.5*(Rs - rw)*wr
             ixf = ixg = None
             def sfun(a, ix, nd):
@@ -2587,7 +2619,7 @@ def slip_lapF(usol, wall):
     r = ut.rcmb if wall == 'outer' else par.ricb
     prof = bf.pol_profiles()
     nB = max(prof)
-    x, w = np.polynomial.legendre.leggauss(par.lmax + nB + 9)
+    x, w = ut.leggauss(par.lmax + nB + 9)
     Y, dY, Z = angular.ylm_grid(par.m, par.lmax + 1, x)
     Y0, dY0, _ = angular.ylm_grid(0, nB, x)
     rr = np.array([r], dtype=float)
@@ -2619,7 +2651,7 @@ def radial_lapF(usol, wall, tor_only=False):
     r = ut.rcmb if wall == 'outer' else par.ricb
     pol, tor = ({} if tor_only else bf.pol_profiles()), bf.tor_profiles()
     nB = max([1] + list(pol) + list(tor))
-    x, w = np.polynomial.legendre.leggauss(par.lmax + nB + 9)
+    x, w = ut.leggauss(par.lmax + nB + 9)
     Y, dY, Z = angular.ylm_grid(par.m, par.lmax + 1, x)
     Y0, dY0, _ = angular.ylm_grid(0, nB, x)
     rr = np.array([r], dtype=float)
@@ -2645,7 +2677,7 @@ def br_rms_cmb(bsol2):
     radial node, instead.
     '''
     lp = ut.ell(par.m, par.lmax, ut.bsymm)[0]
-    x, w = np.polynomial.legendre.leggauss(par.lmax + 4)
+    x, w = ut.leggauss(par.lmax + 4)
     Y = angular.ylm_grid(par.m, par.lmax + 1, x)[0]
     xr = ut.xcheb(np.array([ut.rcmb], dtype=float), par.ricb, ut.rcmb)
     f = ch.chebval(xr, bsol2[0].T)[:, 0]   # each degree's f at r = rcmb (as rotdyn.wall_torques)
@@ -2775,7 +2807,7 @@ def centrifugal_magnetic_terms(bsol, bic=None):
     nB = max([3] + list(bf.pol_profiles()) + list(bf.tor_profiles()))
     lw0 = nB + 4                                       # the degrees of B0 and of (M - I) B0, m = 0
     D = max(nB, dr.n_max() + 1 if par.diff_rot else 0)
-    xg, wx = np.polynomial.legendre.leggauss(lw + 16 + max(0, D - 22))
+    xg, wx = ut.leggauss(lw + 16 + max(0, D - 22))
     Ym, Y0 = angular.ylm_grid(m, lw, xg), angular.ylm_grid(0, lw0, xg)
     P2x = 1.5*xg**2 - 0.5
 
@@ -2890,7 +2922,7 @@ def centrifugal_magnetic_terms(bsol, bic=None):
         Nic = ut.Nic; nb = int((par.lmax - par.m + 1)/2)
         if ut.symmB0 == -1: ixf, ixg = (par.m + ut.s)%2, (par.m + 1 - ut.s)%2
         else:               ixf, ixg = (par.m + 1 - ut.s)%2, (par.m + ut.s)%2
-        xi, wi = np.polynomial.legendre.leggauss(max(2*par.N_cic, 64))
+        xi, wi = ut.leggauss(max(2*par.N_cic, 64))
         ri = 0.5*Ra*(xi + 1); wi = 0.5*Ra*wi
         def icfun(a, ix, nd):
             cc = np.zeros(par.N_cic, complex); cc[ix::2] = a; res = []
@@ -2970,17 +3002,14 @@ def lorentz_enstrophy(bsol):
     m = par.m
     lmx = par.lmax + 1
     nB = max([3] + list(bf.pol_profiles()) + list(bf.tor_profiles()))
-    xg, wx = np.polynomial.legendre.leggauss(lmx + 12 + max(0, nB - 22))
+    xg, wx = ut.leggauss(lmx + 12 + max(0, nB - 22))
     Yg, dYg, Zg = angular.ylm_grid(m, lmx, xg)
     Y0, dY0, _ = angular.ylm_grid(0, nB, xg)
     lp_u, lt_u, lu = ut.ell(m, par.lmax, par.symm)
     lp_b, lt_b, lb = ut.ell(m, par.lmax, ut.bsymm)
 
-    def synth(qs):   # {l: (q, s, t)} -> (F_r, F_θ, F_φ) on the (r, x) grid
-        Fr = Ft = Fp = 0
-        for l, (q, s, t) in qs.items():
-            Fr = Fr + np.outer(q, Yg[l]); Ft = Ft + np.outer(s, dYg[l]) + np.outer(t, Zg[l]); Fp = Fp + np.outer(s, Zg[l]) - np.outer(t, dYg[l])
-        return Fr, Ft, Fp
+    def synth(qs):   # {l: (q, s, t)} -> (F_r, F_θ, F_φ) on the (r, x) grid (NEW 2026-11-16: synth_grid)
+        return synth_grid(qs, Yg, dYg, Zg)
 
     def cross(a, c):
         return [ a[1]*c[2] - a[2]*c[1], a[2]*c[0] - a[0]*c[2], a[0]*c[1] - a[1]*c[0] ]
@@ -3103,7 +3132,7 @@ def magnetic_powers_grid(walls_only=False):
     # FIX (2026-11-03): the products u*⋅(J0×b), E⋅J* have degree in cos θ up to 2 lmx + the degree D of the background (B0, or
     # U0 = ΔΩ r sinθ e_φ of degree n_max + 1); lmx + 12 Gauss nodes integrate them exactly up to D = 22, more nodes beyond
     D = max(nB, dr.n_max() + 1 if par.diff_rot else 0, bgf.nmax() + 1 if par.bgflow else 0)   # (NEW 2026-11-08: U of bgflow)
-    xg, wx = np.polynomial.legendre.leggauss(lmx + 12 + max(0, D - 22))
+    xg, wx = ut.leggauss(lmx + 12 + max(0, D - 22))
     sg = np.sqrt(1 - xg**2)
     Yg, dYg, Zg = angular.ylm_grid(m, lmx, xg)       # Y_l, ∂θY_l, i m Y_l/sinθ at the nodes, rows l
     Y0, dY0, _ = angular.ylm_grid(0, nB, xg)         # m = 0, for B0
@@ -3111,10 +3140,7 @@ def magnetic_powers_grid(walls_only=False):
     lp_b, lt_b, ll = ut.ell(m, par.lmax, ut.bsymm)
 
     def synth(qs):   # {l: (q, s, t)} at the radii -> (F_r, F_θ, F_φ) on the (r, x) grid: F = q Y r̂ + s r∇Y + t r∇Y×r̂
-        Fr = Ft = Fp = 0
-        for l, (q, s, t) in qs.items():
-            Fr = Fr + np.outer(q, Yg[l]); Ft = Ft + np.outer(s, dYg[l]) + np.outer(t, Zg[l]); Fp = Fp + np.outer(s, Zg[l]) - np.outer(t, dYg[l])
-        return Fr, Ft, Fp
+        return synth_grid(qs, Yg, dYg, Zg)   # (NEW 2026-11-16: matrix products, not np.outer per l)
 
     z = np.zeros_like(rk, dtype=complex)
     U, B, J = {}, {}, {}

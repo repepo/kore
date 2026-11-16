@@ -6,6 +6,21 @@ anelastic_log (variable density, entropy, solar background, differential rotatio
 magnetic field), centrifugal (the deformed body) and, in phases, everything of conductive_IC.
 
 
+2026-11-16
+----------
+spin_doctor.py shares the solutions among MPI ranks: `mpiexec -n NP python3 bin/spin_doctor.py NP` (mpi4py). Rank k takes
+the solutions k, k + NP, ... and reads only their columns of the solution files (field_io.count gives their number);
+rank 0 gathers the results, prints the table and writes the files, the same to the last bit as a serial run's but for
+the run time in params.dat. MPI is used when mpiexec starts more than one rank, or with SD_MPI=1 (srun); SD_MPI=0 runs
+serially. An error on one rank stops them all.
+Faster post-processing, serial too. 20 torsional modes at N 1000, lmax 127 (conducting inner core, thin wall) on mongo:
+147 s before, 42 s now, 17 s on 4 ranks and 9 s on 20. The sums over the degrees onto the (r, θ) grids of
+viscous_dissipation, lorentz_enstrophy and magnetic_powers_grid are matrix products (utils4pp.synth_grid), which moves
+their results at round-off: of the printed columns only residuals change, by about 1e-15 of their scale or less. What
+does not depend on the solution is computed once, with the same numbers: the profiles of set_radii for each set of
+radii, the Gauss-Legendre nodes (utils.leggauss), the Chebyshev polynomials of cheb2space_table at its radii; and
+utils.Dcheb's recurrence runs as two cumulative sums instead of a loop over the coefficients (bitwise the same).
+
 2026-11-11
 ----------
 New: Ncheb(Ek, rule) with named resolution rules: 'default' (17 Ek^-0.2, as before, so existing parameter files give

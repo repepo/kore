@@ -56,3 +56,18 @@ def load(name, cols=None, folder='.'):
         return None
     x = np.loadtxt(re_, usecols=cols, ndmin=2) + 1j*np.loadtxt(im_, usecols=cols, ndmin=2)
     return x.ravel() if cols is not None and np.ndim(cols) == 0 else x
+
+
+def count(name, folder='.'):
+    '''
+    NEW (2026-11-16): the number of solutions (columns) of field name in folder, without reading them (the header of the
+    .npy file, or the first row of the text files); None if neither format's files are there
+    '''
+    npy, (re_, im_) = files(name, 'npy', folder)[0], files(name, 'text', folder)
+    if os.path.isfile(npy):
+        x = np.load(npy, mmap_mode='r')
+        return 1 if x.ndim < 2 else x.shape[1]
+    if not (os.path.isfile(re_) and os.path.isfile(im_)):
+        return None
+    with open(re_) as f:
+        return len(f.readline().split())

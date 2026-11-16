@@ -4,9 +4,19 @@ kore postprocessing script
 
 Usage:
 > python3 ./bin/spin_doctor.py ncpus
+> mpiexec -n NP python3 ./bin/spin_doctor.py NP
+
+NEW (2026-11-16): under mpiexec the solutions are shared among the NP MPI ranks (mpi4py): rank k processes the solutions
+k, k + NP, k + 2 NP, ... and reads only their columns of the solution files; rank 0 then gathers the results, prints the
+table and writes the files, the same to the last bit as those of a serial run (but for the time column of params.dat).
+MPI is used where the launcher starts more than one rank (OMPI_COMM_WORLD_SIZE or PMI_SIZE above 1: Open MPI's mpiexec,
+MPICH's and Intel's) or with SD_MPI=1 (srun, other launchers); SD_MPI=0 runs serially whatever the launcher, and a
+serial run imports no MPI. Each rank needs about the memory of a serial run on one solution. Give each rank one BLAS
+thread (OPENBLAS_NUM_THREADS=1): the products are small, and more threads made a serial run slower. ncpus is not used.
 '''
 
 import sys
+import io
 sys.path.insert(1,'bin/')
 from timeit import default_timer as timer
 import os.path
@@ -22,6 +32,7 @@ import centrifugal as cf   # NEW (2026-11-05)
 import rotdyn as rd   # NEW (2026-11-06): the rotating solids and the angular momentum budget
 import topo   # NEW (2026-11-06): the drag at the outer wall
 import bgflow as bgf   # NEW (2026-11-08): a background flow (bgflow = 1)
+import field_io   # NEW (2026-11-16): the number of solutions in a file (field_io.count)
 
 
 
@@ -299,10 +310,38 @@ def table_row(cols, widths, i):
 
 
 
+def mpi_world():
+    '''
+    NEW (2026-11-16): (comm, rank, size) of the MPI ranks that share the solutions, or (None, 0, 1) for a serial run: MPI with
+    SD_MPI=1, or, unless SD_MPI=0, where the launcher started more than one rank (OMPI_COMM_WORLD_SIZE, PMI_SIZE)
+    '''
+    flag = os.environ.get('SD_MPI', '').strip()
+    if flag == '0':
+        return None, 0, 1
+    if flag != '1' and max([ int(os.environ.get(v) or 1) for v in ('OMPI_COMM_WORLD_SIZE', 'PMI_SIZE') ]) < 2:
+        return None, 0, 1
+    from mpi4py import MPI
+    comm = MPI.COMM_WORLD
+    return comm, comm.Get_rank(), comm.Get_size()
+
+
 def main(ncpus):
 
     # ------------------------------------------------------------------ Postprocessing: compute energy, dissipation, etc.
     tic = timer()
+
+    # NEW (2026-11-16): the solutions shared among MPI ranks (module docstring); rank 0 prints, and an error on any rank stops
+    # them all (the others would wait for it)
+    comm, rank, nranks = mpi_world()
+    stdout = sys.stdout
+    if rank > 0:
+        sys.stdout = quiet = open(os.devnull, 'w')
+    if nranks > 1:
+        def abort(*exc):
+            sys.__excepthook__(*exc)
+            sys.stderr.flush()
+            comm.Abort(1)
+        sys.excepthook = abort
 
     fname_ev = 'eigenvalues0.dat'
     fname_tm = 'timing.dat'
@@ -318,21 +357,36 @@ def main(ncpus):
 
     # NEW (2026-11-08, from conductive_IC): the solutions from flow.npy, ... or from real_flow.field, imag_flow.field, ...
     # (utils.load_field: the two formats give the same numbers); a missing file stops with its name
-    def field(name, rows):
-        x = ut.load_field(name)
+    # NEW (2026-11-16): only the solutions cols if given (the flow, the entropy, the field and the composition, those of this
+    # rank; an empty list reads one column, for the file's check, and returns none)
+    def field(name, rows, cols=None):
+        x = ut.load_field(name, None if cols is None else (list(cols) or [0]))
         if x is None:
             sys.exit('spin_doctor.py: no solution file of the %s (%s.npy, or real_%s.field and imag_%s.field) in %s'
                      % (name, name, name, name, os.getcwd()))
-        return x.reshape((rows, -1))
+        x = x.reshape((rows, -1))
+        return x if cols is None or len(cols) else x[:, :0]
+
+    # NEW (2026-11-16): the number of solutions, from the files of the flow without reading them (NEW 2026-11-06: without the
+    # flow, hydro = 0, of the field, or the entropy; NEW 2026-11-08: or the composition), and those of this rank, i = rank,
+    # rank + nranks, ..., whose columns alone are read (sel; all of them in a serial run): the column col[i] of ru, iu, rt,
+    # it, rb, ib, rc
+    first = 'flow' if par.hydro else ('magnetic' if par.magnetic else ('thermal' if par.thermal else 'composition'))
+    success = field_io.count(first)
+    if success is None:
+        field(first, 1)   # stops with the name of the missing file
+    mine = list(range(rank, success, nranks))
+    col  = { i: k for k, i in enumerate(mine) }
+    sel  = mine if nranks > 1 else None
 
     if par.hydro:
-        u_all = field('flow', 2*ut.n)
+        u_all = field('flow', 2*ut.n, sel)
         ru, iu = u_all.real.copy(), u_all.imag.copy()
     if par.thermal:
-        t_all = field('thermal', ut.n)
+        t_all = field('thermal', ut.n, sel)
         rt, it = t_all.real.copy(), t_all.imag.copy()
     if par.magnetic:  # NEW (2026-10-28)
-        b_all = field('magnetic', 2*ut.n)
+        b_all = field('magnetic', 2*ut.n, sel)
         rb, ib = b_all.real.copy(), b_all.imag.copy()
     bic = None
     if ut.cic:  # NEW (2026-10-28): the field of a conducting inner core
@@ -344,12 +398,10 @@ def main(ncpus):
     if ut.rotdyn:  # NEW (2026-11-06): omega_M, omega_IC, phi of the rotating solids
         rot = field('rotdyn', 3)
     if par.compositional:  # NEW (2026-11-08): the composition
-        rc = field('composition', ut.n)
+        rc = field('composition', ut.n, sel)
 
-    # NEW (2026-11-06): without the flow (hydro = 0) the solutions are counted in the field's (or the entropy's) file, and the
-    # flow's diagnostics run on a zero flow (upp.zero_flow): they give zeros, and residσ, residω, residens are not computed
-    # (NEW 2026-11-08: or the composition's)
-    success = np.shape(ru if par.hydro else (rb if par.magnetic else (rt if par.thermal else rc)))[1]
+    # NEW (2026-11-06): without the flow (hydro = 0) the flow's diagnostics run on a zero flow (upp.zero_flow): they give
+    # zeros, and residσ, residω, residens are not computed
 
     # ------------------------------------------------------------------------------------------------------------------
     # hydrodynamical variables to be processed
@@ -527,8 +579,18 @@ def main(ncpus):
     # torque (upp.body_force_terms) enter residσ, residω, residens, resid𝐄 and resid𝐋, and P_in
     body_force = par.forcing in (1, 8)
 
-    # Begin processing all solutions
-    for i in range(success):
+    # NEW (2026-11-16): with MPI, the arrays of one value (or row) per solution, which the loop fills (gathered on rank 0 after it),
+    # and what each solution prints
+    if nranks > 1:
+        inputs  = ('eigval', 'ru', 'iu', 'rt', 'it', 'rb', 'ib', 'rc', 'u_all', 't_all', 'b_all', 'bic', 'bman', 'rot')
+        per_sol = [ k for k, v in locals().items() if isinstance(v, np.ndarray) and v.ndim > 0 and len(v) == success
+                    and k not in inputs ]
+        printed = []
+
+    # Begin processing all solutions (NEW 2026-11-16: those of this rank)
+    for i in mine:
+        if nranks > 1:
+            sys.stdout = io.StringIO()
 
         if par.forcing == 0:
             w = eigval[i,1]
@@ -541,8 +603,8 @@ def main(ncpus):
         t_sol2 = 0
 
         if par.hydro:
-            rflow = np.copy(ru[:,i])
-            iflow = np.copy(iu[:,i])
+            rflow = np.copy(ru[:,col[i]])
+            iflow = np.copy(iu[:,col[i]])
             # Expand solution
             u_sol2 = upp.expand_reshape_sol( rflow + 1j*iflow, par.symm)
         else:
@@ -553,16 +615,16 @@ def main(ncpus):
 
 
         if par.thermal:
-            rthm = np.copy(rt[:,i])
-            ithm = np.copy(it[:,i])
+            rthm = np.copy(rt[:,col[i]])
+            ithm = np.copy(it[:,col[i]])
             # Expand solution
             t_sol2  = upp.expand_reshape_sol( rthm + 1j*ithm, par.symm)
 
 
         if par.magnetic:  # NEW (2026-10-28)
-            b_sol2 = upp.expand_reshape_sol( np.copy(rb[:,i]) + 1j*np.copy(ib[:,i]), ut.bsymm)
+            b_sol2 = upp.expand_reshape_sol( np.copy(rb[:,col[i]]) + 1j*np.copy(ib[:,col[i]]), ut.bsymm)
 
-        c_sol2 = upp.expand_reshape_sol( np.copy(rc[:,i]), par.symm ) if par.compositional else 0   # NEW (2026-11-08)
+        c_sol2 = upp.expand_reshape_sol( np.copy(rc[:,col[i]]), par.symm ) if par.compositional else 0   # NEW (2026-11-08)
 
 
         # identify solutions (NEW 2026-11-06: without the flow, the field, or the entropy; NEW 2026-11-08: or the composition)
@@ -866,6 +928,28 @@ def main(ncpus):
         # ------------------------------------------------------------------------------------------------------------------
 
         params.append( [ v for _, v, _ in param_table(timing + timer() - tic) ] )
+        if nranks > 1:
+            printed.append( (i, sys.stdout.getvalue()) )
+
+    # NEW (2026-11-16): with MPI, every rank's results to rank 0, which prints what each solution printed, in their order, and
+    # goes on alone
+    if nranks > 1:
+        loc = locals()
+        gathered = comm.gather( (mine, { k: loc[k][mine] for k in per_sol }, printed, params), root=0 )
+        if rank > 0:
+            sys.stdout = stdout
+            quiet.close()
+            return 0
+        sys.stdout = stdout
+        text, rows = {}, {}
+        for m_, values, printed_, params_ in gathered:
+            for k, v in values.items():
+                loc[k][m_] = v
+            text.update(printed_)
+            rows.update(zip(m_, params_))
+        for i in range(success):
+            sys.stdout.write(text[i])
+        params = [ rows[i] for i in range(success) ]
 
     # ------------------------------------------------------------------------------------------------------------------------
     print(table_line + '\n')

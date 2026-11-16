@@ -167,7 +167,7 @@ def angular_momentum(usol2, absval=False):
     L = factor ∫ rho0 r³ T dr of the flow usol2 (utils4pp.expand_reshape_sol), by Gauss-Legendre quadrature in r from ricb to
     1; with absval = True, factor ∫ rho0 r³ |T| dr >= |L|, the scale of resid𝐋 (a flow can carry no net angular momentum)
     '''
-    x, w = np.polynomial.legendre.leggauss(par.N + 24)
+    x, w = ut.leggauss(par.N + 24)
     r = 0.5*(ut.rcmb - par.ricb)*(x + 1) + par.ricb
     T = ut.funcheb(_t1(usol2), r, par.ricb, ut.rcmb, 0)[:, 0]
     rho = np.exp(np.ravel(rap.logrhoX(r, 0)))
@@ -200,7 +200,7 @@ def wall_torques(bsol2):
     lp, lt, _ = ut.ell(par.m, par.lmax, ut.bsymm)
     pol, tor = bf.pol_profiles(), bf.tor_profiles()
     n0 = max([1] + list(pol) + list(tor))
-    x, w = np.polynomial.legendre.leggauss(par.lmax + n0 + 8)
+    x, w = ut.leggauss(par.lmax + n0 + 8)
     Y, dY, Z = angular.ylm_grid(par.m, par.lmax + 1, x)
     Y0, dY0, _ = angular.ylm_grid(0, n0, x)
     norm = float(angular.ylm_grid(1, 1, np.array([0.0]))[0][1][0]) if par.m == 1 else 1.0   # Y_1^1 at the equator
