@@ -25,19 +25,25 @@ RUNS = {   # name: (builder, its extra parameters)
 }
 
 
-def build(tmp_path, name):
-    mk, extra = RUNS[name]
-    # (heat_dr's builder also runs assemble.py, which ru_insane does not need)
-    subprocess.run([sys.executable, str(mk), name, extra], check=True, cwd=tmp_path)
-    return tmp_path / name
+@pytest.fixture(scope='module')
+def built(tmp_path_factory):
+    '''builds each run once for the whole module (test_ru_insane and test_diff_rot_couplings share heat_diff_rot)'''
+    root, done = tmp_path_factory.mktemp('runs'), {}
+
+    def build(name):
+        if name not in done:
+            mk, extra = RUNS[name]
+            # (heat_dr's builder also runs assemble.py, which ru_insane does not need)
+            subprocess.run([sys.executable, str(mk), name, extra], check=True, cwd=root)
+            done[name] = root / name
+        return done[name]
+    return build
 
 
 @pytest.mark.parametrize('name', RUNS)
-def test_ru_insane(tmp_path, name):
-    d = build(tmp_path, name)
-    subprocess.run([sys.executable, 'bin/ru_insane.py'], check=True, cwd=d)
+def test_ru_insane(built, name):
+    subprocess.run([sys.executable, 'bin/ru_insane.py'], check=True, cwd=built(name))
 
 
-def test_diff_rot_couplings(tmp_path):
-    d = build(tmp_path, 'heat_diff_rot')
-    subprocess.run([sys.executable, str(TESTS / 'diff_rot' / 'gen_check.py')], check=True, cwd=d)
+def test_diff_rot_couplings(built):
+    subprocess.run([sys.executable, str(TESTS / 'diff_rot' / 'gen_check.py')], check=True, cwd=built('heat_diff_rot'))

@@ -4,9 +4,11 @@
 # lists workflows, and serves their badges, from the default branch, so a workflow missing there is marked deleted
 # and its badge breaks.
 #
-# One job per entry of the matrix, side by side: 'ci' is tests/ci (pytest: the spin-over, the literature benchmarks, the
-# operator checks), the others are suites of tests/ run by their run_all.sh, a few minutes each, chosen to reach
-# different parts of the code. The other suites (docs/checking.md) take longer, or need sympy, pandas or matplotlib.
+# One job: PETSc/SLEPc are installed once, then tests/ci (pytest: the spin-over, the literature benchmarks, the operator
+# checks) and six suites of tests/ by their run_all.sh run back to back, one step each (about 9 min of tests in all).
+# Until 2026-11-18 each suite was its own job: seven apt installs per push, each a chance for a stalled mirror to hang
+# a job until its time limit (as on 69dfb38a). The other suites (docs/checking.md) take longer, or need sympy, pandas
+# or matplotlib.
 name: Tests
 
 on:
@@ -27,42 +29,59 @@ jobs:
     # "Run workflow" can be started on any branch: only test main
     if: github.event_name != 'workflow_dispatch' || github.ref_name == 'main'
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    strategy:
-      fail-fast: false   # one failing suite does not cancel the others
-      matrix:
-        suite:
-          - ci            # tests/ci: spin-over of the smooth Sun, convection onset, torsional modes, operator symmetries
-          - decay         # the field and the entropy without the flow (Bessel roots), kinematic induction
-          - tidal         # forcing 14 against the Stokes solution, the energy budget at the walls
-          - forcing       # the boundary forcings' wall values, and the stops at startup
-          - rotdyn        # the rotating solids and the angular momentum
-          - inner_core    # B0 'dipole', a conducting inner core, a fluid slipping along it
-          - composition   # the composition, against conductive_IC and against the entropy
-    name: test (${{ matrix.suite }})
+    timeout-minutes: 25
     env:
       PETSC_DIR: /usr/lib/petscdir/petsc-complex
       SLEPC_DIR: /usr/lib/slepcdir/slepc-complex
     steps:
       - uses: actions/checkout@v5
 
+      # A hung apt (stalled mirror, slow man-db trigger) is cut after a few minutes and retried once, instead of
+      # holding the job until its time limit. --no-install-recommends skips ~30 packages the tests do not use
+      # (sphinx, coarrays, PETSc examples); python3-petsc4py/slepc4py, only recommended, hold the .pth files that
+      # make "import petsc4py" pick the complex build from PETSC_DIR, so they are named explicitly.
       - name: Install dependencies
+        id: deps
+        timeout-minutes: 12
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            python3-scipy python3-mpi4py python3-pytest \
-            libpetsc-complex-dev libslepc-complex-dev \
-            python3-petsc4py-complex python3-slepc4py-complex
+          pkgs="python3-scipy python3-mpi4py python3-pytest
+                libpetsc-complex-dev libslepc-complex-dev
+                python3-petsc4py python3-slepc4py python3-petsc4py-complex python3-slepc4py-complex"
+          apt="sudo DEBIAN_FRONTEND=noninteractive apt-get -q -o Acquire::Retries=3 -o Acquire::http::Timeout=30"
+          echo 'man-db man-db/auto-update boolean false' | sudo debconf-set-selections
+          sudo rm -f /var/lib/man-db/auto-update
+          for attempt in 1 2; do
+            if timeout 240 $apt update && timeout 300 $apt install -y --no-install-recommends $pkgs; then
+              exit 0
+            fi
+            echo "::warning::apt-get attempt $attempt stalled or failed"
+            sudo dpkg --configure -a || true
+          done
+          exit 1
 
+      # One step per suite, so the summary shows which one failed; every suite runs even after another one fails
       - name: Run tests/ci
-        if: matrix.suite == 'ci'
+        if: ${{ !cancelled() && steps.deps.outcome == 'success' }}
         working-directory: tests/ci
         run: |
           ulimit -s unlimited
           pytest -v
 
-      - name: Run tests/${{ matrix.suite }}
-        if: matrix.suite != 'ci'
-        run: |
-          ulimit -s unlimited
-          bash tests/${{ matrix.suite }}/run_all.sh "$RUNNER_TEMP/${{ matrix.suite }}"
+      - name: Run tests/decay        # the field and the entropy without the flow (Bessel roots), kinematic induction
+        if: ${{ !cancelled() && steps.deps.outcome == 'success' }}
+        run: ulimit -s unlimited; bash tests/decay/run_all.sh "$RUNNER_TEMP/decay"
+      - name: Run tests/tidal        # forcing 14 against the Stokes solution, the energy budget at the walls
+        if: ${{ !cancelled() && steps.deps.outcome == 'success' }}
+        run: ulimit -s unlimited; bash tests/tidal/run_all.sh "$RUNNER_TEMP/tidal"
+      - name: Run tests/forcing      # the boundary forcings' wall values, and the stops at startup
+        if: ${{ !cancelled() && steps.deps.outcome == 'success' }}
+        run: ulimit -s unlimited; bash tests/forcing/run_all.sh "$RUNNER_TEMP/forcing"
+      - name: Run tests/rotdyn       # the rotating solids and the angular momentum
+        if: ${{ !cancelled() && steps.deps.outcome == 'success' }}
+        run: ulimit -s unlimited; bash tests/rotdyn/run_all.sh "$RUNNER_TEMP/rotdyn"
+      - name: Run tests/inner_core   # B0 'dipole', a conducting inner core, a fluid slipping along it
+        if: ${{ !cancelled() && steps.deps.outcome == 'success' }}
+        run: ulimit -s unlimited; bash tests/inner_core/run_all.sh "$RUNNER_TEMP/inner_core"
+      - name: Run tests/composition  # the composition, against conductive_IC and against the entropy
+        if: ${{ !cancelled() && steps.deps.outcome == 'success' }}
+        run: ulimit -s unlimited; bash tests/composition/run_all.sh "$RUNNER_TEMP/composition"
