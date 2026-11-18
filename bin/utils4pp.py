@@ -1102,53 +1102,54 @@ def composition_worker( l ):
 _geo_grid = None  # (key, grid) of the cylindrical grid of geostrophic_fraction, built once per resolution
 
 
-def geostrophic_fraction(u_sol2, ns=240, nz=48):
+def geostrophic_fraction(u_sol2, ns=96, nz=96):
     '''
     Returns the fraction of the energy of u_phi held by its average along the rotation axis:
         geo = ∫|<u_phi>|² dV / ∫|u_phi|² dV,   <u_phi>(s) = (1/H) ∫ u_phi dz along each fluid column of height H.
-    The column average and the rest are orthogonal, so 1-geo is the energy fraction of the z-dependent part
-    of u_phi; geo = 1 for a z-invariant (geostrophic) u_phi, as in a torsional mode.
-    Only for m=0, symm=1, where u_phi = -sum_l t_l(r) dP_l(cos θ)/dθ comes from the toroidal scalars alone
-    and is equatorially symmetric; returns nan otherwise. Integrated over the northern half of the fluid,
-    on ns midpoint cells in s and nz Gauss-Legendre points in z along each column, from the inner core
-    (or the equator, outside the tangent cylinder) up to the CMB. The z-points do not resolve the Ekman
-    layers, so geo measures the interior; doubling ns and nz changes it by less than 1e-4 (torsional modes,
-    Ek = 1e-7 to 1e-9). u_sol2 comes from expand_reshape_sol.
+    The column average and the rest are orthogonal (also discretely), so 0 <= geo <= 1 and 1-geo is the energy fraction
+    of the z-dependent part of u_phi. Only for m=0, symm=1 (nan otherwise). Northern half of the fluid.
+    NEW (2026-11-18, pm01 ramps): Gauss-Legendre in angle-like variables across s, ns points in each of the two regions:
+    outside the tangent cylinder s = sin(a), a in [asin(ricb), pi/2] (column height cos a); inside s = ricb sin(b),
+    b in [0, pi/2]; nz Gauss-Legendre points in z per column. This removes the square-root behaviour of the column
+    heights at s = 1 and s = ricb that limited the old midpoint rule in s (240 cells) to ~1e-5; converged to ~1e-9
+    (TO2, Em 1.3e-6, N 464: 96x96 and 192x192 agree to 3e-9). The z-points do not resolve the Ekman layers.
     '''
     global _geo_grid
 
-    if not (par.m == 0 and par.symm == 1) or par.centrifugal:   # (the column average of the sphere: not for a deformed body)
+    if not (par.m == 0 and par.symm == 1) or par.centrifugal:
         return np.nan
 
-    key = (par.N, par.lmax, par.ricb, ns, nz)
+    key = (par.N, par.lmax, par.ricb, ns, nz, 'gl2')
     if _geo_grid is None or _geo_grid[0] != key:
-        lt = ut.ell( par.m, par.lmax, par.symm)[1]                     # toroidal l's, in the order of u_sol2[1]
-        s  = ut.rcmb*(np.arange(ns) + 0.5)/ns                           # cell centres in s
-        z0 = np.sqrt(np.maximum(par.ricb**2 - s**2, 0))                 # column bottom: ICB inside the TC, else z = 0
-        H  = np.sqrt(ut.rcmb**2 - s**2) - z0                            # column height (northern half)
+        lt = ut.ell( par.m, par.lmax, par.symm)[1]
+        ga, wa = np.polynomial.legendre.leggauss(ns)
+        a0 = np.arcsin(par.ricb/ut.rcmb); a = a0 + (np.pi/2 - a0)*(ga + 1)/2
+        s_out = ut.rcmb*np.sin(a); ds_out = ut.rcmb*np.cos(a)*(np.pi/2 - a0)/2*wa
+        b = np.pi/4*(ga + 1)
+        s_in = par.ricb*np.sin(b); ds_in = par.ricb*np.cos(b)*np.pi/4*wa
+        s  = np.concatenate([s_in, s_out]); ds = np.concatenate([ds_in, ds_out])
+        z0 = np.sqrt(np.maximum(par.ricb**2 - s**2, 0))
+        H  = np.sqrt(np.maximum(ut.rcmb**2 - s**2, 0)) - z0
         zg, wg = ut.leggauss(nz)
         Z  = z0[:,None] + H[:,None]*(zg[None,:] + 1)/2
-        W  = H[:,None]*wg[None,:]/2                                     # dz weights
+        W  = H[:,None]*wg[None,:]/2
         R  = np.sqrt(s[:,None]**2 + Z**2)
-        chx = ch.chebvander( xcheb(R, par.ricb, ut.rcmb).ravel(), par.N-1 )        # Chebyshev T_k at the points
-        # dP_l(cos θ)/dθ = P_l^1(cos θ). NEW (2026-10-16): by the upward recurrence in l, for all l at once,
-        # instead of scipy.special.lpmv(1, l, cos θ) l by l (17 s at lmax = 1007); same values to 2e-12 relative.
-        x   = (Z/R).ravel()                                                       # cos θ
+        chx = ch.chebvander( xcheb(R, par.ricb, ut.rcmb).ravel(), par.N-1 )
+        x   = (Z/R).ravel()
         P1  = np.zeros((max(par.lmax, 1)+1, x.size))
-        P1[1] = -np.sqrt(1 - x**2)                                                # P_1^1, Condon-Shortley phase as lpmv
+        P1[1] = -np.sqrt(1 - x**2)
         for l in range(1, par.lmax):
-            P1[l+1] = ( (2*l+1)*x*P1[l] - (l+1)*P1[l-1] )/l                       # l P_{l+1}^1 = (2l+1) x P_l^1 - (l+1) P_{l-1}^1
+            P1[l+1] = ( (2*l+1)*x*P1[l] - (l+1)*P1[l-1] )/l
         dP  = P1[lt]
-        _geo_grid = ( key, (s, H, W, chx, dP) )
-    s, H, W, chx, dP = _geo_grid[1]
+        _geo_grid = ( key, (s, ds, H, W, chx, dP) )
+    s, ds, H, W, chx, dP = _geo_grid[1]
 
-    T = u_sol2[1]  # toroidal Chebyshev coefficients, one row per l
-    # NEW (2026-10-16): real and imaginary parts as two real products (T @ chx.T made a complex copy of chx)
+    T = u_sol2[1]
     Tx    = np.ascontiguousarray(np.real(T)) @ chx.T + 1j*( np.ascontiguousarray(np.imag(T)) @ chx.T )
     uphi  = -np.sum( Tx*dP, axis=0 ).reshape(W.shape)
-    ubar  = np.sum( uphi*W, axis=1 )/H                                  # z-average along each column
-    e_tot = np.sum( np.abs(uphi)**2 * W * s[:,None] )                   # volume element ∝ s ds dz
-    e_geo = np.sum( np.abs(ubar)**2 * H * s )
+    ubar  = np.sum( uphi*W, axis=1 )/H
+    e_tot = np.sum( np.abs(uphi)**2 * W * (s*ds)[:,None] )
+    e_geo = np.sum( np.abs(ubar)**2 * H * s * ds )
 
     return e_geo/e_tot if e_tot > 0 else np.nan
 

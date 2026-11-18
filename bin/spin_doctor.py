@@ -559,7 +559,7 @@ def main(ncpus):
         ( 'ℓ-Conv 𝐛',      '{:8.2e}',   lambda i: lconv_b[i] ),
     ] if par.magnetic and par.hydro else []) + ([
         # NEW (2026-11-10, from conductive_IC): 1 for a z-invariant u_phi (upp.geostrophic_fraction)
-        ( 'Geo',           '{:.4f}',    lambda i: geo[i] ),
+        ( 'Geo',           '{:.6f}',    lambda i: geo[i] ),   # 6 decimals (2026-11-18): Gauss-Legendre quadrature, accurate to ~1e-8
     ] if (par.hydro and par.m == 0 and par.symm == 1 and not par.centrifugal) else []) + ([
         ( 'cvf_r',         '{:5.3f}',   lambda i: cuvismax_r[i] ),
         ( 'cvf_l',         '{:d}',      lambda i: cuvismax_l[i] ),
