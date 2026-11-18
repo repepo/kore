@@ -751,6 +751,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#the-nonlinear-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The nonlinear flow
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The nonlinear flow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-the-onset-of-the-stewartson-layer-instability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example: the onset of the Stewartson-layer instability
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#parameters" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1426,6 +1454,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#the-nonlinear-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The nonlinear flow
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The nonlinear flow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-the-onset-of-the-stewartson-layer-instability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example: the onset of the Stewartson-layer instability
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#parameters" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1462,7 +1518,8 @@ slower than the mantle drives such a flow, as do the spheres of a laboratory exp
 rotating frame. A wall that turns must be no-slip (<code>bco</code> or <code>bci</code> = 1), so that the fluid next to it turns with it. A
 wall at rest may also be stress-free (<code>bco</code> or <code>bci</code> = 0); the fluid then slips along it, held back only by a drag if
 there is one (<a href="../drag/">Drag at the outer wall</a>).</p>
-<p>The equations are linear, so the flow is proportional to the rates. This is the limit of small differences in rotation.</p>
+<p>The equations are linear, so the flow is proportional to the rates. This is the limit of small differences in rotation;
+for larger ones, see <a href="#the-nonlinear-flow">The nonlinear flow</a>.</p>
 <p>Requirements:</p>
 <ul>
 <li><code>forcing_frequency = 0</code>, <code>m = 0</code> and <code>symm = 1</code> (for walls that turn back and forth, see <a href="../libration/">Libration</a>);</li>
@@ -1535,6 +1592,55 @@ the mantle and on the inner core, and 35 and 37 the magnetic ones (<a href="../o
 state the torques on the two solids cancel. When the fluid turns rigidly (both walls at the same rate, or a full
 sphere), nothing is sheared and the budget residuals compare round-off errors; they can then be close to 1 and should
 be ignored.</p>
+<h2 id="the-nonlinear-flow">The nonlinear flow</h2>
+<p>The flow above leaves out the momentum that the flow itself carries, which is right only while the walls turn slightly
+faster or slower than the frame. At larger rates the flow's own inertia changes it, and with it the waves and
+instabilities it carries. After the forced run, in its folder,</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>python3<span class="w"> </span>bin/bgflow.py<span class="w"> </span><span class="m">40</span><span class="w"> </span>nonlinear
+</span></code></pre></div>
+<p>solves the full steady equations of the axisymmetric flow by Newton's method, at the rate of the run: Ro =
+<code>forcing_amplitude_icb</code>/<code>Gaspard</code>, or <code>forcing_amplitude_cmb</code>/<code>Gaspard</code> if the inner wall is at rest. It writes the
+flow, with its Legendre degrees up to 40, to <code>bgflow.npz</code>, ready to be the background of other runs
+(<a href="../bgflow/#a-background-from-turning-walls">Background flow</a>). The file holds at that Ro only: a run that reads it must
+set <code>bgflow_Ro</code> to the same value, and kore stops otherwise. It works with buoyancy, but not with a magnetic field.</p>
+<p>Newton's method starts from the linear flow and raises Ro in steps of at most 0.15. Each iteration solves the whole
+axisymmetric problem as one dense system in a single process, so keep <code>N</code> and <code>lmax</code> to what the flow needs. It stops
+when the update falls below <span class="arithmatex">\(10^{-9}\)</span>, or, with a warning, when round-off keeps the update from shrinking further.</p>
+<p>To scan Ro, start each flow from the last one. In the folder of the next run (the same parameters, another
+<code>forcing_amplitude_icb</code>),</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>python3<span class="w"> </span>bin/bgflow.py<span class="w"> </span><span class="m">40</span><span class="w"> </span>nonlinear<span class="w"> </span>../Ro0.40/bgflow.npz
+</span></code></pre></div>
+<p>continues from the flow at Ro 0.40 and needs only a few iterations. kore stops if that file was written with other
+parameters.</p>
+<h3 id="example-the-onset-of-the-stewartson-layer-instability">Example: the onset of the Stewartson-layer instability</h3>
+<p>Hollerbach (2003) computed when the flow driven by an inner core of radius 1/3 becomes unstable. At Ek <span class="arithmatex">\(10^{-4}\)</span> (his
+Ekman number, defined with the gap, is <span class="arithmatex">\(2.25\times10^{-4}\)</span>) and with an inner core that turns faster than the mantle,
+the first unstable modes have <span class="arithmatex">\(m = 3\)</span>, from Ro <span class="arithmatex">\(\approx 0.414\)</span>.</p>
+<p>The flow at Ro 0.42 is that of the <a href="#example-an-inner-core-that-turns">example above</a> with</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">par</span><span class="o">.</span><span class="n">ricb</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="mi">3</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">par</span><span class="o">.</span><span class="n">N</span> <span class="o">=</span> <span class="mi">48</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">par</span><span class="o">.</span><span class="n">lmax</span> <span class="o">=</span> <span class="mi">95</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">par</span><span class="o">.</span><span class="n">forcing_amplitude_icb</span> <span class="o">=</span> <span class="mf">0.42</span>
+</span></code></pre></div>
+<p>run in the same way, then <code>python3 bin/bgflow.py 40 nonlinear</code>. Then, in a new folder with that <code>bgflow.npz</code>, use the
+same parameters with</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">par</span><span class="o">.</span><span class="n">m</span> <span class="o">=</span> <span class="mi">3</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">par</span><span class="o">.</span><span class="n">N</span> <span class="o">=</span> <span class="mi">128</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">par</span><span class="o">.</span><span class="n">lmax</span> <span class="o">=</span> <span class="mi">98</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">par</span><span class="o">.</span><span class="n">forcing</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">par</span><span class="o">.</span><span class="n">rtau</span> <span class="o">=</span> <span class="mf">0.0</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">par</span><span class="o">.</span><span class="n">itau</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.213</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">par</span><span class="o">.</span><span class="n">nev</span> <span class="o">=</span> <span class="mi">6</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="n">par</span><span class="o">.</span><span class="n">bgflow</span> <span class="o">=</span> <span class="mi">1</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="n">par</span><span class="o">.</span><span class="n">bgflow_Ro</span> <span class="o">=</span> <span class="mf">0.42</span>
+</span></code></pre></div>
+<p>and run <code>submatrices.py</code>, <code>assemble.py</code>, <code>solve.py</code> and <code>spin_doctor.py</code>. It takes several minutes, most of them in
+Newton's method. The least damped mode is <span class="arithmatex">\(\lambda = 6.53\times10^{-5} - 0.2132\thinspace i\)</span>: it grows slowly and
+drifts in the direction of rotation. Its growth rate changes sign between Ro 0.40 and 0.42, at Ro <span class="arithmatex">\(\approx 0.419\)</span>,
+within the 2 % to which Hollerbach's figure can be read. On the linear flow (<code>bgflow.py 40</code> without <code>nonlinear</code>) the
+onset is at Ro <span class="arithmatex">\(\approx 0.45\)</span>: at these rates the flow's own inertia matters. With <code>N</code> 48 for the modes the
+eigenvalue is already right to <span class="arithmatex">\(4\times10^{-5}\)</span>, but the budgets of <code>spin_doctor</code> close only from about <code>N</code> 128.</p>
 <h2 id="parameters">Parameters</h2>
 <table>
 <thead>
