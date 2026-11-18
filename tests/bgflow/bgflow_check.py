@@ -418,6 +418,17 @@ for args, ref, tag, tol in ((['12'], LIN, 'writer_lin', 1e-12), (['12', 'nonline
            'the degrees or the Ro of the file differ from conductive_IC\'s')
 dA = abs(load_csr(d + '/A.npz') - A0).max()/abs(A0).max()
 report('writer_restores', dA < 1e-14, 'max |A after - A before| = %.1e of the largest entry' % dA)
+# NEW (2026-11-18): Newton's method continued from a converged flow (bgflow.py 12 nonlinear START.npz): Ro 1 from Ro 0.9
+# gives the flow of Ro 1 from 0
+shutil.copy(d + '/bgflow.npz', d + '/from0.npz')
+d9 = build('cic_f12_09', F12 + "; par.forcing_amplitude_icb = 0.9; par.forcing_amplitude_cmb = 0.0", 31, steps='sav')
+script(d9, ['bin/bgflow.py', '12', 'nonlinear'])
+shutil.copy(d9 + '/bgflow.npz', d + '/start09.npz')
+rc, out = script(d, ['bin/bgflow.py', '12', 'nonlinear', 'start09.npz'])
+with np.load(d + '/bgflow.npz') as a, np.load(d + '/from0.npz') as c:
+    e = abs(a['newton_x'] - c['newton_x']).max()/abs(c['newton_x']).max()
+nsteps = sum(1 for line in out.splitlines() if line.startswith('Ro = '))
+report('newton_start', e < 1e-10, 'Ro 1 from 0.9 against from 0: %.1e of the largest coefficient, %d Newton steps' % (e, nsteps))
 
 REF = {   # conductive_IC's eigenvalues near 1i, 0.5i, -0.5i, 1.5i (its matrices, dense and balanced)
     'lin': [complex(-0.1667533005673, 1.2258193669855), complex(-0.2795147978667, 0.918941463754),
@@ -527,7 +538,6 @@ STOPS = [
     ('stop_bgflow2', ST + "par.bgflow = 2", '0 (no background flow) or 1', ()),
     ('stop_nofile', ST + "par.bgflow = 1; par.bgflow_Ro = 0.3", 'no background file', ()),
     ('stop_key', ST + BG({'X2': 'r'}), 'the keys are the kind', ()),
-    ('stop_degree', ST + BG({'T37': 'r**37*(1-r)'}), 'above the largest the profile codes allow', ()),
     ('stop_S', ST + BG({'T1': 'r', 'S2': 'r'}), 'needs thermal = 1', ()),
     ('stop_C', ST + BG({'T1': 'r', 'C2': 'r'}), 'needs compositional = 1', ()),
     ('stop_antisym', ST + BG({'T2': '(r-ricb)*(1-r)'}), 'must be symmetric about the equator', ()),
@@ -554,6 +564,12 @@ stopped = [POOL.submit(stop_run, name, extra, files) for name, extra, msg, files
 for (name, extra, msg, files), f in zip(STOPS, stopped):
     rc, out = result(f)
     report(name, rc != 0 and msg in out, (out.strip().splitlines() or ['(no output)'])[-1][:110])
+d = os.path.join(W, 'degree37')   # NEW (2026-11-18): a degree above 35 (codes 'W' + letter + three digits) is built and assembled
+setup(d, ST + BG({'T1': 'r', 'T37': 'r**37*(1-r)'}), 13)
+rc, out = run(d, 'sa', check=False)
+labs = list(np.load(os.path.join(d, 'submatrices.npz')).keys()) if rc == 0 else []
+report('degree37', rc == 0 and any('Wt037' in k for k in labs), 'its labels built and assembled' if rc == 0 else
+       (out.strip().splitlines() or ['(no output)'])[-1][:110])
 d = os.path.join(W, 'warn_centre')   # (a warning, not a stop: P_2 must go as r² at the centre of a full sphere)
 setup(d, ST + "par.ricb = 0.0; " + BG({'P2': '0.1*(1-r**2)', 'T1': 'r'}), 13)
 rc, out = run(d, 's', check=False)

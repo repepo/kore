@@ -63,6 +63,17 @@ kore solves the full steady equations of the axisymmetric flow at the Ro of the 
 `Gaspard`) by Newton's method ([Background flow equations](bgflow-equations.md#newtons-method)). The file is then valid
 only at that Ro, and a run that reads it must set `bgflow_Ro` to that value.
 
+To scan Ro, continue from a flow already found instead of starting from Ro = 0 each time. The file of a nonlinear run
+also holds Newton's converged flow with all its degrees, so in the folder of the next run (same parameters, another
+`forcing_amplitude_icb`)
+
+```shell
+python3 bin/bgflow.py 12 nonlinear ../Ro0.40/bgflow.npz
+```
+
+reaches its Ro from 0.40 (above or below it) in steps of at most 0.15 in Ro. kore stops if the start file was written
+with other parameters.
+
 The file also records the density, `ricb` and which wall turned, and kore stops if a run reads it with incompatible
 parameters. With `thermal = 1` or `compositional = 1` it also holds the background entropy and composition that the
 flow produced. `bgflow.py` does not support runs with a magnetic field.

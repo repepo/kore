@@ -11,7 +11,8 @@ rotating frame. A wall that turns must be no-slip (`bco` or `bci` = 1), so that 
 wall at rest may also be stress-free (`bco` or `bci` = 0); the fluid then slips along it, held back only by a drag if
 there is one ([Drag at the outer wall](drag.md)).
 
-The equations are linear, so the flow is proportional to the rates. This is the limit of small differences in rotation.
+The equations are linear, so the flow is proportional to the rates. This is the limit of small differences in rotation;
+for larger ones, see [The nonlinear flow](#the-nonlinear-flow).
 
 Requirements:
 
@@ -102,6 +103,74 @@ the mantle and on the inner core, and 35 and 37 the magnetic ones ([Output files
 state the torques on the two solids cancel. When the fluid turns rigidly (both walls at the same rate, or a full
 sphere), nothing is sheared and the budget residuals compare round-off errors; they can then be close to 1 and should
 be ignored.
+
+## The nonlinear flow
+
+The flow above leaves out the momentum that the flow itself carries, which is right only while the walls turn slightly
+faster or slower than the frame. At larger rates the flow's own inertia changes it, and with it the waves and
+instabilities it carries. After the forced run, in its folder,
+
+```shell
+python3 bin/bgflow.py 40 nonlinear
+```
+
+solves the full steady equations of the axisymmetric flow by Newton's method, at the rate of the run: Ro =
+`forcing_amplitude_icb`/`Gaspard`, or `forcing_amplitude_cmb`/`Gaspard` if the inner wall is at rest. It writes the
+flow, with its Legendre degrees up to 40, to `bgflow.npz`, ready to be the background of other runs
+([Background flow](bgflow.md#a-background-from-turning-walls)). The file holds at that Ro only: a run that reads it must
+set `bgflow_Ro` to the same value, and kore stops otherwise. It works with buoyancy, but not with a magnetic field.
+
+Newton's method starts from the linear flow and raises Ro in steps of at most 0.15. Each iteration solves the whole
+axisymmetric problem as one dense system in a single process, so keep `N` and `lmax` to what the flow needs. It stops
+when the update falls below $10^{-9}$, or, with a warning, when round-off keeps the update from shrinking further.
+
+To scan Ro, start each flow from the last one. In the folder of the next run (the same parameters, another
+`forcing_amplitude_icb`),
+
+```shell
+python3 bin/bgflow.py 40 nonlinear ../Ro0.40/bgflow.npz
+```
+
+continues from the flow at Ro 0.40 and needs only a few iterations. kore stops if that file was written with other
+parameters.
+
+### Example: the onset of the Stewartson-layer instability
+
+Hollerbach (2003) computed when the flow driven by an inner core of radius 1/3 becomes unstable. At Ek $10^{-4}$ (his
+Ekman number, defined with the gap, is $2.25\times10^{-4}$) and with an inner core that turns faster than the mantle,
+the first unstable modes have $m = 3$, from Ro $\approx 0.414$.
+
+The flow at Ro 0.42 is that of the [example above](#example-an-inner-core-that-turns) with
+
+```python
+par.ricb = 1/3
+par.N = 48
+par.lmax = 95
+par.forcing_amplitude_icb = 0.42
+```
+
+run in the same way, then `python3 bin/bgflow.py 40 nonlinear`. Then, in a new folder with that `bgflow.npz`, use the
+same parameters with
+
+```python
+par.m = 3
+par.N = 128
+par.lmax = 98
+par.forcing = 0
+par.rtau = 0.0
+par.itau = -0.213
+par.nev = 6
+
+par.bgflow = 1
+par.bgflow_Ro = 0.42
+```
+
+and run `submatrices.py`, `assemble.py`, `solve.py` and `spin_doctor.py`. It takes several minutes, most of them in
+Newton's method. The least damped mode is $\lambda = 6.53\times10^{-5} - 0.2132\thinspace i$: it grows slowly and
+drifts in the direction of rotation. Its growth rate changes sign between Ro 0.40 and 0.42, at Ro $\approx 0.419$,
+within the 2 % to which Hollerbach's figure can be read. On the linear flow (`bgflow.py 40` without `nonlinear`) the
+onset is at Ro $\approx 0.45$: at these rates the flow's own inertia matters. With `N` 48 for the modes the
+eigenvalue is already right to $4\times10^{-5}$, but the budgets of `spin_doctor` close only from about `N` 128.
 
 ## Parameters
 

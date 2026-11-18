@@ -23,7 +23,10 @@ vorticity Ω_U = ∇×U are, degree by degree,
     from T_n:  U: t = T_n                                          Ω_U: q = L0 T_n/r, s = T_n' + T_n/r
 (L0 = n(n+1), λ1 = (ln ρ0)'). These radial functions times Ro G are the profile codes wq, ws, wt (+ the degree character
 of mag_algebra.DIGITS); p0 σ_n, p0 σ_n', ρ0 γ_n, ρ0 γ_n' times Ro are wh, wd, wc, we (without p0 or ρ0 where the rows are
-divided by it: utils.adiab_tw, adiab_c).
+divided by it: utils.adiab_tw, adiab_c). NEW (2026-11-18): above degree 35 (no DIGITS character left) the code is
+'W' + B + the degree in three digits, Wq036, Wt095, ... (code(); utils.decode_label reads a code that starts with 'W' as
+five characters), so that any degree up to 999 is allowed, as on conductive_IC: Newton's method (newton) assembles its
+iterates with all the degrees, lmax + 1, whatever nmax.
 
 THE TERMS, the perturbation equations linearised about U, S and C:
     momentum   (U⋅∇)u + (u⋅∇)U = ∇(U⋅u) - U×ω - u×Ω_U   (ω = ∇×u; the gradient leaves the rows, which take the curl)
@@ -43,6 +46,8 @@ the degrees n <= nmax:
     python3 bin/bgflow.py nmax              the linear flow, from the solution in the folder, per unit Ro
     python3 bin/bgflow.py nmax nonlinear    the nonlinear flow at Ro = forcing amplitude/Gaspard, by Newton's method
                                             (newton(); it holds at bgflow_Ro = Ro only)
+    python3 bin/bgflow.py nmax nonlinear START.npz    the same, continued from the flow of START (NEW 2026-11-18: a file
+                                            of this command at another Ro, same parameters otherwise)
 The amplitude is forcing_amplitude_icb, or forcing_amplitude_cmb when the inner wall is at rest. Not from a run with a
 background field (magnetic = 1 and a B0): its steady state has a field induced by the flow, which the file would leave out.
 Only parameters, angular and mag_algebra are imported at the top (utils imports this module for odd_codes).
@@ -58,7 +63,7 @@ DIGITS = ma.DIGITS
 KINDS = 'PTSC'   # the background's scalars: P_n, T_n (the flow), σ_n (the entropy), γ_n (the composition)
 ROWPOW = {'u': 5, 'v': 3, 'h': 2, 'c': 2, 'f': 2, 'g': 2}
 COLUMN = {'upol': 'P', 'utor': 'T', 'temp': 'S', 'comp': 'C', 'bpol': 'F', 'btor': 'G'}   # assemble's names
-NMAX = len(DIGITS) - 1   # the largest degree the profile codes allow
+NMAX = 999   # the largest degree the profile codes allow (NEW 2026-11-18: was 35, len(DIGITS) - 1; see code())
 
 
 # ======================================================================================================================
@@ -189,10 +194,11 @@ def nmax():
 # B: q, s, t (U from P_n: q, s; from T_n: t, times Ro G), h, d (p0 σ_n, p0 σ_n'), c, e (ρ0 γ_n, ρ0 γ_n'), times Ro
 
 def code(B, n):
-    '''the profile code of (B, n): 'w' B and the degree character'''
+    '''the profile code of (B, n): 'w' B and the degree character, or 'W' B and the degree in three digits above 35'''
     if not 0 <= n <= NMAX:
         sys.exit('bgflow: degree %d of the background above the largest the profile codes allow (%d)' % (n, NMAX))
-    return 'w' + B + DIGITS[n]
+    # NEW (2026-11-18): one DIGITS character up to degree 35 (the labels of these are unchanged), then 'W', B and three digits
+    return 'w' + B + DIGITS[n] if n < len(DIGITS) else 'W%s%03d' % (B, n)
 
 def _codes():
     '''[(B, n)] of every profile code in use'''
@@ -727,13 +733,16 @@ def _full_series(blk, ls):
         out[k, int(l) % 2::2] = c[k]
     return out
 
-def write(x, amp, nmax, Ro=None, fname='bgflow.npz'):
+def write(x, amp, nmax, Ro=None, fname='bgflow.npz', keep_x=False):
     '''
     Writes fname from kore's solution vector x of a forcing-12 run (the fields are x + c.c., m = 0), with the degrees n <=
     nmax: P_n, T_n per unit Ro (divided by amp, the forcing amplitude in the run's units, so that Ro G P_n is the flow of rate
     Ro), σ_n and γ_n per unit Ro (divided by amp/G), the density at 8 radii (the poloidal flow belongs with it), ricb, which
-    wall turns and the other's rate relative to it; Ro marks a nonlinear flow (it holds at bgflow_Ro = Ro only).
+    wall turns and the other's rate relative to it; Ro marks a nonlinear flow (it holds at bgflow_Ro = Ro only). NEW
+    (2026-11-18): keep_x (newton) also stores x itself, all its degrees, as newton_x, with the parameters it depends on
+    (newton_par), so that newton(start=fname) can continue from it.
     '''
+    import json
     import utils as ut
     import radial_profiles as rap
     lp, lt = ut.ell(0, par.lmax, 1)[:2]
@@ -755,6 +764,8 @@ def write(x, amp, nmax, Ro=None, fname='bgflow.npz'):
     out['ratio'] = other/amp
     if Ro is not None:
         out['Ro'] = Ro
+    if keep_x:
+        out['newton_x'], out['newton_par'] = np.real(x), json.dumps(_newton_par())
     np.savez(fname, **out)
 
 def _forced_solution():
@@ -776,7 +787,7 @@ def _assemble():
     import utils as ut
     import submatrices
     import radial_profiles as rap
-    for k in [k for k in rap.proffdir if k[0] == 'w']:   # the background's codes, rebuilt from the new background
+    for k in [k for k in rap.proffdir if k[0] in 'wW']:   # the background's codes, rebuilt from the new background
         del rap.proffdir[k]
     ut.adiab_tw, ut.adiab_c = ut.adiabatic_rows()   # (they depend on bgflow, which newton() changes)
     if par.bgflow and par.ricb == 0:   # the parities of the background's codes (utils adds them at import with bgflow = 1)
@@ -796,7 +807,7 @@ def _load_npz(f):
     with np.load(f) as z:
         return sp.csr_matrix((z['data'], z['indices'], z['indptr']), shape=tuple(z['shape']))
 
-def newton(nmax, dRo=0.15, tol=1e-9, fname='bgflow.npz'):
+def newton(nmax, dRo=0.15, tol=1e-9, fname='bgflow.npz', start=None):
     '''
     The nonlinear steady flow of a forcing-12 problem at Ro = amp/G (amp the forcing amplitude). kore's x (the fields are
     U = 2x, with the entropy and the composition) solves A x + ½ B(2x) x = b, with A x = b the linear problem and B(V) the
@@ -805,8 +816,12 @@ def newton(nmax, dRo=0.15, tol=1e-9, fname='bgflow.npz'):
         (A + B_k) x_k+1 = b + ½ B_k x_k,    B_k = B(2 x_k),
     with every degree of x_k in B_k. B_k is kore's own background matrix: A assembled with bgflow = 1 and the background
     x_k (written to fname at Ro = R, the step's), minus A assembled with bgflow_Ro = 0 (the same rows and bases). Ro is
-    reached from 0 in steps of at most dRo; the matrices are nearly dense, so the solves are dense. Writes fname with the
-    degrees n <= nmax. The folder's submatrices.npz, A.npz and B_forced.npz are those of the run again at the end.
+    reached from 0 in steps of at most dRo; the matrices are nearly dense, so the solves are dense. A step is accepted when the
+    update is below tol or, NEW (2026-11-18), when it shrinks less than twice within 1000 tol (round-off; with a warning). Writes fname
+    with the degrees n <= nmax. The folder's submatrices.npz, A.npz and B_forced.npz are those of the run again at the end.
+    NEW (2026-11-18): fname also holds the converged x, all its degrees (write, keep_x). With start, a file that newton wrote
+    at Ro_s for the same parameters but the forcing amplitude, Ro is reached from Ro_s instead of from 0 (either side of it):
+    an exact continuation, as the iterate is not cut at nmax.
     '''
     import scipy.linalg as sl
     amp = _amplitude()
@@ -822,10 +837,14 @@ def newton(nmax, dRo=0.15, tol=1e-9, fname='bgflow.npz'):
         sys.exit('bgflow.newton: the forced problem of m = 0 is expected to be real')
     A0d, b = A0.real.toarray(), b.real
     x1 = sl.solve(A0d, b)/Ro                            # the linear flow per unit Ro
-    x, R0 = x1.copy(), 1.0
-    nstep = max(1, int(np.ceil(abs(Ro)/dRo)))
-    for R in Ro*np.arange(1, nstep + 1)/nstep:
+    x, R0, Rs = x1.copy(), 1.0, 0.0                    # from Ro = 0: the first guess is R x1
+    if start is not None:                               # NEW (2026-11-18): from the flow at Ro_s = Rs
+        x, Rs = _start(start)
+        R0 = Rs
+    nstep = max(1, int(np.ceil(abs(Ro - Rs)/dRo)))
+    for R in Rs + (Ro - Rs)*np.arange(1, nstep + 1)/nstep:
         x = R*x1 + (R/R0)**2*(x - R0*x1)                # first guess, with the O(Ro²) part of the last step
+        dx_last = np.inf
         for k in range(30):
             par.bgflow_Ro = R
             write(x, R*rate_unit(), par.lmax + 1, R, fname)   # U_k = 2 x_k, every degree
@@ -837,15 +856,48 @@ def newton(nmax, dRo=0.15, tol=1e-9, fname='bgflow.npz'):
             print('Ro = %.6g, step %d: |x_k+1 - x_k|/|x_k+1| = %.1e' % (R, k, dx), flush=True)
             if dx < tol:
                 break
+            # NEW (2026-11-18): the round-off floor. At lmax 95 the update stops at 1-2e-9 after three steps (tol 1e-9) at N 48,
+            # and creeps down at 1e-8 to 7e-8 at N 128; in the quadratic phase each step shrinks it far more than twice, so
+            # once a step shrinks it less than twice, within 1000 tol, the iterate is as good as it gets: accept it
+            if dx > 0.5*dx_last and dx < 1000*tol:
+                print('WARNING: bgflow.newton at Ro = %.6g: the update stopped shrinking at %.1e, above tol = %.0e (round-off): '
+                      'accepted' % (R, dx, tol), flush=True)
+                break
+            dx_last = dx
         else:
             sys.exit('bgflow.newton: no convergence at Ro = %g (smaller steps dRo?)' % R)
         R0 = R
     print('|U - Ro U_lin|/|Ro U_lin| = %.4f' % (np.linalg.norm(x - Ro*x1)/np.linalg.norm(Ro*x1)))
-    write(x, amp, nmax, Ro, fname)
+    write(x, amp, nmax, Ro, fname, keep_x=True)
     par.bgflow, par.bgflow_file, par.bgflow_profiles, par.bgflow_Ro = own
     reset()
     _assemble()   # the folder's operators and matrices, of the run itself again
     return x
+
+# NEW (2026-11-18): the parameters a continuation may change (newton, start): the forcing amplitude, the background of the
+# steps and those of the solver; the converged x depends on all the others (_newton_par)
+FREE = ('forcing_amplitude_icb', 'forcing_amplitude_cmb', 'bgflow', 'bgflow_file', 'bgflow_profiles', 'bgflow_Ro', 'ncpus',
+        'petsc_opts', 'prescale', 'which_eigenpairs', 'nev', 'tol', 'maxit', 'rtau', 'itau', 'track_target', 'field_format',
+        'write_mtx')
+
+def _newton_par():
+    '''{name: repr(value)} of the parameters but FREE: those the converged x of newton() depends on'''
+    return {k: repr(v.tolist() if isinstance(v, np.ndarray) else v) for k, v in sorted(vars(par).items()) if k not in FREE}
+
+def _start(f):
+    '''(x, Ro_s): the converged x of a file that newton() wrote at Ro_s, with this run's parameters (but FREE)'''
+    import json
+    if not os.path.isfile(f):
+        sys.exit('bgflow.newton: no start file %r in %s' % (f, os.getcwd()))
+    with np.load(f) as z:
+        if 'newton_x' not in z.files:
+            sys.exit('bgflow.newton: %r holds no converged iterate (newton_x): only `bgflow.py nmax nonlinear` writes it' % f)
+        x, Rs, old = z['newton_x'], float(z['Ro']), json.loads(str(z['newton_par']))
+    new = _newton_par()
+    diff = sorted(k for k in set(old) | set(new) if old.get(k) != new.get(k))
+    if diff:
+        sys.exit('bgflow.newton: %r is the flow of other parameters, it differs in %s: start from Ro = 0' % (f, ', '.join(diff)))
+    return x, Rs
 
 def _amplitude():
     '''the forcing amplitude of the wall the file is per unit of: the inner wall's, or the outer wall's when it is at rest'''
@@ -866,15 +918,16 @@ def _check_writer():
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2 or sys.argv[2:] not in ([], ['nonlinear']):
-        sys.exit('usage: python3 bin/bgflow.py nmax [nonlinear]   (in the folder of a forcing-12 run)')
+    if len(sys.argv) < 2 or not (sys.argv[2:] == [] or (sys.argv[2] == 'nonlinear' and len(sys.argv) <= 4)):
+        sys.exit('usage: python3 bin/bgflow.py nmax [nonlinear [START.npz]]   (in the folder of a forcing-12 run; START, a '
+                 'file of a nonlinear flow at another Ro, to continue from it)')
     nmax_ = int(sys.argv[1])
     # the module itself, not this script's copy (__main__): submatrices.py, operators.py and assemble.py import it, and
     # Newton's method must reset the background they read (reset), not a copy of it
     import bgflow
     bgflow._check_writer()
-    if sys.argv[2:] == ['nonlinear']:
-        bgflow.newton(nmax_)
+    if sys.argv[2:3] == ['nonlinear']:
+        bgflow.newton(nmax_, start=sys.argv[3] if len(sys.argv) > 3 else None)
     else:
         bgflow.write(bgflow._forced_solution(), bgflow._amplitude(), nmax_)
     print('%s written, with the degrees n <= %d' % ('bgflow.npz', nmax_))

@@ -6,6 +6,21 @@ anelastic_log (variable density, entropy, solar background, differential rotatio
 magnetic field), centrifugal (the deformed body) and, in phases, everything of conductive_IC.
 
 
+2026-11-18
+----------
+The nonlinear background flow at any lmax, and continued in Ro (bin/bgflow.py). Newton's method passes all lmax + 1
+degrees of its iterate into each step, but the profile codes of the background allowed degrees up to 35 only, so
+`bgflow.py nmax nonlinear` stopped at once for lmax >= 35. Above degree 35 the code is now 'W', the letter and the
+degree in three digits (Wt037), up to degree 999; every label up to degree 35 is unchanged (utils.decode_label,
+radial_profiles). A Newton step is also accepted, with a warning, once an iteration shrinks the update less than twice
+while it is below 1000 tol: the round-off floor of the dense solves, 1e-9 to 7e-8 at lmax 95 (N 48 to 128), sat above
+tol = 1e-9 and the run ended at the 30-iteration exit. The file of a nonlinear run also holds Newton's converged
+iterate and the parameters it depends on, and `bgflow.py nmax nonlinear START.npz` continues from it to the run's Ro
+(5 iterations instead of 15 from Ro 0.42 to 0.40 at N 128); it stops if the other parameters differ. Tests:
+tests/bgflow degree37 (replacing stop_degree) and newton_start. Docs: docs/couette-flow.md, The nonlinear flow, with
+the m = 3 onset of Hollerbach (2003) at Ek 1e-4, ricb 1/3 (Ro_c 0.4195 at N 128, his 0.414; 0.45 on the linear flow).
+
+
 2026-11-16
 ----------
 The ℓ-convergence now includes the highest toroidal degree, and the field has its own. For a vector field,

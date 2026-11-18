@@ -77,8 +77,8 @@ or extend the code.
   `{row}{q}w{B}{n}{j}[lho{k} | pss0 | dns0]_D{d}`, with $q$ the power of the row minus $p$, $w_B$ a profile code of
   degree $n$ and its $j$-th derivative, `lho{k}` a factor $(\ln\rho_0)^{(k)}$, `pss0` and `dns0` a factor $p_0$ or
   $\rho_0$, and $X^{(d)}$ the $d$-th derivative of the unknown. For example `v2wt10_D1` is
-  $r\thinspace\mathrm{Ro}\thinspace G\thinspace T_1 P_l'$ in the rows of $T_l$, times its angular coefficient. The profile codes, per degree $n$ (one character, 0–9 then a–z: degrees
-  up to 35), are
+  $r\thinspace\mathrm{Ro}\thinspace G\thinspace T_1 P_l'$ in the rows of $T_l$, times its angular coefficient. The profile codes, per degree $n$ (one character, 0–9 then a–z, up to
+  degree 35; above it `W`, the letter and the degree in three digits, as `Wt037`, up to degree 999), are
 
     | code | profile |
     | --- | --- |

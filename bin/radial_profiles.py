@@ -473,7 +473,8 @@ def _more_codes(c):
     elif c[0] in 'ENCQK' and c[1] == 'z':   # NEW (2026-11-06, phase 2): products of the map's amplitudes and the shapes of ΔΩ
         import centrifugal
         proffdir.update(centrifugal.rotation_profile_functions())
-    elif c[0] == 'w':   # NEW (2026-11-08): the background flow degree by degree, wq?, ws?, wt?, wh?, wd?, wc?, we? (bgflow.py)
+    elif c[0] in 'wW':   # NEW (2026-11-08): the background flow degree by degree, wq?, ws?, wt?, wh?, wd?, wc?, we? (bgflow.py;
+        # NEW 2026-11-18: Wq036, Wt095, ... above degree 35)
         import bgflow
         proffdir.update(bgflow.profile_functions())
     else:

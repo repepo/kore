@@ -255,6 +255,13 @@ def decode_label(labl):
 
     (section, rpower, rhopower, func1, dorder1, func2, dorder2, dx) = (None, None, None, None, None, None, None, None)
 
+    # NEW (2026-11-18): a profile code that starts with 'W' (a background flow's degree above 35, bgflow.code) has five
+    # characters; it is read as one code: the label is decoded with '#' in its place, then the code is put back
+    wide = {}
+    for k in (2, 6):
+        if len(labl) > k + 4 and labl[k] == 'W':
+            wide[k], labl = labl[k:k + 5], labl[:k] + '###' + labl[k + 5:]
+
     howlong = len(labl)
     section = labl[0]        # this is 'u' or 'v' or 'h' (or 'f', 'g' with magnetic = 1, 'c' with compositional = 1)
     rx      = int(labl[1])   # related to rpower
@@ -308,6 +315,8 @@ def decode_label(labl):
             if labl[10:14] == 'ohr1':
                 rhopower = rhopower - 1
 
+    func1 = wide.get(2, func1)
+    func2 = wide.get(6, func2)
     return (section, rpower, rhopower, func1, dorder1, func2, dorder2, dx)
 
 

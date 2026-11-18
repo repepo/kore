@@ -32,7 +32,9 @@ for Ctrl-C).
   `conductive_IC`'s own matrices. Expected: the linear file to $10^{-12}$ of the flow's largest coefficient (in practice
   $2.5\times10^{-15}$), the nonlinear one to $10^{-10}$, since its Newton's method solves about 25 systems that the two
   branches assemble with different round-off (in practice $2.7\times10^{-12}$), A unchanged, the eigenvalues to
-  $10^{-9}$ (in practice $4.5\times10^{-12}$), all dense and balanced.
+  $10^{-9}$ (in practice $4.5\times10^{-12}$), all dense and balanced. Continued from the converged flow at Ro 0.9
+  (`bin/bgflow.py 12 nonlinear START.npz`), Newton's method gives the flow at Ro 1 from 0 again, to $10^{-10}$ of its
+  largest coefficient.
 - **Operators.** A toroidal background $T_1 = 0.34\thinspace r^3$, $T_3 = -0.04\thinspace r^3$ is the differential
   rotation $\Delta\Omega = 0.3\thinspace r^2 - 0.2\thinspace r^2 Y_2$ of `diff_rot_type = 'user'`: the matrices A and B
   agree to $10^{-14}$ of their largest entry (in practice $4\times10^{-20}$), in a shell with entropy, composition, a
