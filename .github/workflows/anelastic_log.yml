@@ -7,7 +7,7 @@
 # One job: PETSc/SLEPc are installed once, then tests/ci (pytest: the spin-over, the literature benchmarks, the operator
 # checks) and six suites of tests/ by their run_all.sh run back to back, one step each (about 9 min of tests in all).
 # Until 2026-11-18 each suite was its own job: seven apt installs per push, each a chance for a stalled mirror to hang
-# a job until its time limit (as on 69dfb38a). The other suites (docs/checking.md) take longer, or need sympy, pandas
+# a job until its time limit (as on 69dfb38a). The packages now come from the Actions cache when it has them. The other suites (docs/checking.md) take longer, or need sympy, pandas
 # or matplotlib.
 name: Tests
 
@@ -36,13 +36,24 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      # A hung apt (stalled mirror, slow man-db trigger) is cut after a few minutes and retried once, instead of
-      # holding the job until its time limit. --no-install-recommends skips ~30 packages the tests do not use
-      # (sphinx, coarrays, PETSc examples); python3-petsc4py/slepc4py, only recommended, hold the .pth files that
-      # make "import petsc4py" pick the complex build from PETSC_DIR, so they are named explicitly.
+      # The .deb files and apt's package lists of the last good install, kept in the Actions cache: a run then installs
+      # without the network, so a stalled Ubuntu mirror (as on d0c4d3d3, 2026-11-18) no longer stops the tests. The key
+      # follows this file, so a change of the package list starts a new cache.
+      - name: Restore the cached packages
+        id: debcache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/aptcache
+          key: apt-ubuntu-24.04-${{ hashFiles('.github/workflows/anelastic_log.yml') }}
+          restore-keys: apt-ubuntu-24.04-
+
+      # Without the cache, or if installing from it fails: from the network, with time limits, so that a hung apt is cut
+      # and retried once, from archive.ubuntu.com in place of the runners' own mirror. --no-install-recommends skips ~30
+      # packages the tests do not use (sphinx, coarrays, PETSc examples); python3-petsc4py/slepc4py, only recommended,
+      # hold the .pth files that make "import petsc4py" pick the complex build from PETSC_DIR, so they are named.
       - name: Install dependencies
         id: deps
-        timeout-minutes: 12
+        timeout-minutes: 14
         run: |
           pkgs="python3-scipy python3-mpi4py python3-pytest
                 libpetsc-complex-dev libslepc-complex-dev
@@ -50,14 +61,41 @@ jobs:
           apt="sudo DEBIAN_FRONTEND=noninteractive apt-get -q -o Acquire::Retries=3 -o Acquire::http::Timeout=30"
           echo 'man-db man-db/auto-update boolean false' | sudo debconf-set-selections
           sudo rm -f /var/lib/man-db/auto-update
+          if compgen -G "$HOME/aptcache/archives/*.deb" > /dev/null; then
+            sudo cp -r ~/aptcache/lists/. /var/lib/apt/lists/
+            sudo cp ~/aptcache/archives/*.deb /var/cache/apt/archives/
+            if timeout 300 $apt install -y --no-install-recommends --no-download $pkgs; then
+              echo "installed from the cache"; exit 0
+            fi
+            echo "::warning::installing from the cache failed, trying the network"
+          fi
           for attempt in 1 2; do
-            if timeout 240 $apt update && timeout 300 $apt install -y --no-install-recommends $pkgs; then
-              exit 0
+            # download first, then install from the download: what the cache keeps (saved below) is then the .deb
+            # files themselves, whatever apt's clean-up hooks do after an install
+            if timeout 150 $apt update && timeout 300 $apt install -y --no-install-recommends --download-only $pkgs; then
+              rm -rf ~/aptcache; mkdir -p ~/aptcache/archives ~/aptcache/lists
+              if compgen -G "/var/cache/apt/archives/*.deb" > /dev/null; then
+                cp /var/cache/apt/archives/*.deb ~/aptcache/archives/
+                sudo cp -r /var/lib/apt/lists/. ~/aptcache/lists/
+                sudo rm -rf ~/aptcache/lists/partial ~/aptcache/lists/lock
+                sudo chown -R "$(id -u):$(id -g)" ~/aptcache
+                echo "network=1" >> "$GITHUB_OUTPUT"
+              fi
+              timeout 300 $apt install -y --no-install-recommends --no-download $pkgs && exit 0
             fi
             echo "::warning::apt-get attempt $attempt stalled or failed"
             sudo dpkg --configure -a || true
+            sudo sed -i 's|http://azure.archive.ubuntu.com|http://archive.ubuntu.com|' \
+              /etc/apt/sources.list.d/*.sources /etc/apt/sources.list 2>/dev/null || true
           done
           exit 1
+
+      - name: Save the packages to the cache
+        if: steps.deps.outputs.network == '1' && steps.debcache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/aptcache
+          key: apt-ubuntu-24.04-${{ hashFiles('.github/workflows/anelastic_log.yml') }}
 
       # One step per suite, so the summary shows which one failed; every suite runs even after another one fails
       - name: Run tests/ci
