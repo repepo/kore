@@ -1,0 +1,731 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>kore Mode Viewer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: full-height 3D stage on the left, an instrument panel on the right (a bottom sheet on phones). */
+:root {
+  --stage: #eef1f4;
+  --panel: #ffffff;
+  --ink: #17202a;
+  --muted: #5b6876;
+  --rule: #d8dee5;
+  --accent: #0b6e8a;
+  --accent-ink: #ffffff;
+  --track: #dfe5ea;
+  --font-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --stage: #0d1217; --panel: #151c23; --ink: #e4e9ee; --muted: #93a1af; --rule: #26313b;
+    --accent: #4fb6d3; --accent-ink: #06232c; --track: #2a3540; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --stage: #0d1217; --panel: #151c23; --ink: #e4e9ee; --muted: #93a1af; --rule: #26313b;
+  --accent: #4fb6d3; --accent-ink: #06232c; --track: #2a3540; color-scheme: dark;
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--stage); color: var(--ink); font-family: var(--font-ui); font-size: 14px;
+  display: grid; grid-template-columns: minmax(0, 1fr) 320px; overflow: hidden;
+}
+#stage { position: relative; min-width: 0; min-height: 0; }
+#stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+#panel {
+  background: var(--panel); border-left: 1px solid var(--rule); overflow-y: auto;
+  padding-block: 16px 24px; padding-left: 18px; padding-right: max(18px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 18px;
+}
+h1 { font-size: 15px; font-weight: 600; margin: 0; letter-spacing: .01em; text-wrap: balance; }
+.sub { color: var(--muted); font-size: 12px; margin-top: 4px; line-height: 1.45; }
+.mono { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+section { display: flex; flex-direction: column; gap: 10px; }
+.label {
+  font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 500;
+  display: flex; justify-content: space-between; align-items: baseline;
+}
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.seg { display: flex; flex-wrap: wrap; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
+.seg button {
+  flex: 1 1 auto; border: 0; background: transparent; color: var(--ink); font: inherit; padding: 6px 9px;
+  cursor: pointer; border-right: 1px solid var(--rule); min-width: 38px;
+}
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.seg button:focus-visible, .btn:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn {
+  border: 1px solid var(--rule); background: transparent; color: var(--ink); font: inherit; border-radius: 6px;
+  padding: 6px 10px; cursor: pointer;
+}
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.slide { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; }
+.slide label { font-size: 13px; }
+.slide output { font-family: var(--font-data); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.slide input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+.check { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+.check input { accent-color: var(--accent); }
+select { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 5px 8px; }
+hr { border: 0; border-top: 1px solid var(--rule); margin: 0; }
+#cbar { display: flex; flex-direction: column; gap: 4px; }
+#cbar canvas { width: 100%; height: 12px; border-radius: 3px; display: block; }
+#cbar .ticks { display: flex; justify-content: space-between; font-family: var(--font-data); font-size: 11px; color: var(--muted); }
+#hud, #probe { white-space: pre; font-variant-numeric: tabular-nums; }
+#hud {
+  position: absolute; left: max(12px, env(safe-area-inset-left, 0px)); top: 12px; pointer-events: none;
+  font-family: var(--font-data); font-size: 12px; line-height: 1.5; color: var(--ink);
+  background: color-mix(in srgb, var(--panel) 82%, transparent); border: 1px solid var(--rule); border-radius: 6px; padding: 6px 9px;
+}
+#probe { position: absolute; right: 12px; bottom: 12px; pointer-events: none; font-family: var(--font-data); font-size: 12px;
+  background: color-mix(in srgb, var(--panel) 88%, transparent); border: 1px solid var(--rule); border-radius: 6px; padding: 6px 9px; }
+#drop { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none;
+  background: color-mix(in srgb, var(--accent) 16%, transparent); border: 2px dashed var(--accent); font-size: 15px; }
+#msg { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--muted); }
+#msg p { max-width: 38ch; line-height: 1.5; }
+.views { display: flex; gap: 6px; flex-wrap: wrap; }
+.note { font-size: 12px; color: var(--muted); line-height: 1.45; }
+code { font-family: var(--font-data); font-size: 12px; }
+@media (max-width: 760px) {
+  body { grid-template-columns: 1fr; grid-template-rows: minmax(0, 58%) minmax(0, 42%); }
+  #panel { border-left: 0; border-top: 1px solid var(--rule); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+}
+</style>
+
+<div id="stage">
+  <div id="msg"><p>Loading the sample solution…</p></div>
+  <div id="hud" hidden></div>
+  <div id="probe" hidden></div>
+  <div id="drop" hidden>Drop a kore solution file (.json) to view it</div>
+</div>
+
+<aside id="panel">
+  <div>
+    <h1 id="title">kore mode viewer</h1>
+    <div class="sub mono" id="meta"></div>
+  </div>
+
+  <section>
+    <div class="label">Field</div>
+    <div class="seg" id="fieldSeg" role="group" aria-label="Field"></div>
+    <div class="seg" id="compSeg" role="group" aria-label="Component"></div>
+  </section>
+
+  <section>
+    <div class="label"><span>Time</span><span class="mono" id="phaseOut" style="text-transform:none;letter-spacing:0">ωt = 0°</span></div>
+    <div class="row">
+      <button class="btn primary" id="play" aria-pressed="false">Play</button>
+      <input type="range" id="phase" min="0" max="360" step="1" value="0" aria-label="Phase ωt in degrees" style="flex:1;accent-color:var(--accent)">
+    </div>
+    <div class="slide">
+      <label for="speed">Speed</label><output id="speedOut">1 period / 6 s</output>
+      <input type="range" id="speed" min="2" max="30" step="1" value="6">
+    </div>
+  </section>
+
+  <hr>
+
+  <section>
+    <label class="check"><input type="checkbox" id="shellOn" checked> Spherical surface</label>
+    <div class="slide">
+      <label for="shellR">Radius r</label><output id="shellROut"></output>
+      <input type="range" id="shellR" min="0" max="1000" step="1" value="960">
+    </div>
+    <div class="slide">
+      <label for="wedge">Cut-away wedge</label><output id="wedgeOut"></output>
+      <input type="range" id="wedge" min="0" max="270" step="5" value="90">
+    </div>
+    <div class="slide">
+      <label for="opacity">Opacity</label><output id="opacityOut"></output>
+      <input type="range" id="opacity" min="10" max="100" step="5" value="100">
+    </div>
+  </section>
+
+  <section>
+    <label class="check"><input type="checkbox" id="merOn" checked> Meridional plane</label>
+    <div class="slide">
+      <label for="merPhi">Longitude φ</label><output id="merPhiOut"></output>
+      <input type="range" id="merPhi" min="0" max="180" step="1" value="0">
+    </div>
+    <label class="check"><input type="checkbox" id="eqOn" checked> Equatorial plane</label>
+    <label class="check" id="icRow"><input type="checkbox" id="icOn" checked> Inner-core surface</label>
+  </section>
+
+  <hr>
+
+  <section>
+    <div class="label">Colour</div>
+    <div class="row">
+      <select id="cmap" aria-label="Colour map">
+        <option value="auto">Automatic</option>
+        <option value="rdbu">Blue–white–red</option>
+        <option value="puor">Purple–orange</option>
+        <option value="magma">Magma</option>
+        <option value="viridis">Viridis</option>
+      </select>
+      <label class="check"><input type="checkbox" id="scaleVis"> Scale to visible cuts</label>
+    </div>
+    <div class="slide">
+      <label for="gain">Saturation</label><output id="gainOut"></output>
+      <input type="range" id="gain" min="0" max="100" step="1" value="0">
+    </div>
+    <div id="cbar"><canvas id="cbarCanvas" width="256" height="12"></canvas><div class="ticks"><span id="cmin"></span><span id="cmid"></span><span id="cmax"></span></div></div>
+  </section>
+
+  <section>
+    <div class="label">View</div>
+    <div class="views">
+      <button class="btn" data-view="oblique">Oblique</button>
+      <button class="btn" data-view="pole">From the pole</button>
+      <button class="btn" data-view="equator">From the equator</button>
+    </div>
+    <label class="check"><input type="checkbox" id="axisOn" checked> Rotation axis and boundaries</label>
+  </section>
+
+  <hr>
+
+  <section>
+    <div class="label">Solution file</div>
+    <select id="samples" aria-label="Example solutions" hidden></select>
+    <div class="row">
+      <label class="btn" for="file" style="display:inline-block">Open a file…</label>
+      <input type="file" id="file" accept=".json,.gz,application/json" hidden>
+    </div>
+    <p class="note">Write one from a kore run folder with <code>python3 koreviz/export_web.py --solnum 0</code>, then open it here or drop it on the view. Drag to rotate, scroll or pinch to zoom, right-drag to pan.</p>
+  </section>
+</aside>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const $ = id => document.getElementById(id);
+const DEG = Math.PI / 180;
+
+// ---------------------------------------------------------------- colour maps (anchor colours, linear in sRGB)
+const MAPS = {
+  rdbu:    { div: true, c: ['#053061','#2166ac','#4393c3','#92c5de','#d1e5f0','#f7f7f7','#fddbc7','#f4a582','#d6604d','#b2182b','#67001f'] },
+  puor:    { div: true, c: ['#2d004b','#542788','#8073ac','#b2abd2','#d8daeb','#f7f7f7','#fee0b6','#fdb863','#e08214','#b35806','#7f3b08'] },
+  magma:   { div: false, c: ['#000004','#1c1044','#4f127b','#812581','#b5367a','#e55064','#fb8761','#fec287','#fcfdbf'] },
+  viridis: { div: false, c: ['#440154','#482878','#3e4989','#31688e','#26828e','#1f9e89','#35b779','#6ece58','#b5de2b','#fde725'] },
+};
+function buildLUT(name) {
+  const anchors = MAPS[name].c.map(h => new THREE.Color(h));
+  const lut = new Float32Array(256 * 3);
+  for (let i = 0; i < 256; i++) {
+    const x = i / 255 * (anchors.length - 1), k = Math.min(Math.floor(x), anchors.length - 2), f = x - k;
+    const a = anchors[k], b = anchors[k + 1];
+    lut[3*i] = a.r + (b.r - a.r) * f; lut[3*i+1] = a.g + (b.g - a.g) * f; lut[3*i+2] = a.b + (b.b - a.b) * f;
+  }
+  return lut;
+}
+
+// ---------------------------------------------------------------- data
+let D = null;            // the loaded solution
+const state = { field: 0, comp: 'p', phase: 0, playing: false, speed: 6 };
+
+function f32(b64) {
+  const bin = atob(b64), n = bin.length, u8 = new Uint8Array(n);
+  for (let i = 0; i < n; i++) u8[i] = bin.charCodeAt(i);
+  return new Float32Array(u8.buffer);
+}
+function prepare(doc) {
+  if (doc.format !== 'kore-web-1') throw new Error('This file is not a kore solution export (format kore-web-1).');
+  const theta = f32(doc.theta);
+  const fields = doc.fields.map(f => {
+    const r = f32(f.r), comps = {};
+    for (const [k, v] of Object.entries(f.comps)) comps[k] = { re: f32(v.re), im: f32(v.im) };
+    // the largest amplitude of each component and of the vector, for the colour scale
+    const nt = theta.length, max = {};
+    const names = f.vector ? ['r', 't', 'p', 's', 'z', 'mag'] : ['v'];
+    names.forEach(n => max[n] = 0);
+    for (let i = 0; i < r.length; i++) for (let j = 0; j < nt; j++) {
+      const k = i * nt + j;
+      if (f.vector) {
+        const st = Math.sin(theta[j]), ct = Math.cos(theta[j]);
+        const ar = Math.hypot(comps.r.re[k], comps.r.im[k]), at = Math.hypot(comps.t.re[k], comps.t.im[k]), ap = Math.hypot(comps.p.re[k], comps.p.im[k]);
+        const sre = comps.r.re[k]*st + comps.t.re[k]*ct, sim = comps.r.im[k]*st + comps.t.im[k]*ct;
+        const zre = comps.r.re[k]*ct - comps.t.re[k]*st, zim = comps.r.im[k]*ct - comps.t.im[k]*st;
+        max.r = Math.max(max.r, ar); max.t = Math.max(max.t, at); max.p = Math.max(max.p, ap);
+        max.s = Math.max(max.s, Math.hypot(sre, sim)); max.z = Math.max(max.z, Math.hypot(zre, zim));
+        max.mag = Math.max(max.mag, Math.hypot(ar, at, ap));
+      } else {
+        const s = comps.s; max.v = Math.max(max.v, Math.hypot(s.re[k], s.im[k]));
+      }
+    }
+    return { key: f.key, label: f.label, vector: f.vector, r, comps, max };
+  });
+  return { title: doc.title, meta: doc.meta, theta, fields, m: doc.meta.m | 0 };
+}
+
+// index i and weight w with x between a[i] and a[i+1] (a ascending); out of range -> clamp, flagged
+function locate(a, x) {
+  const n = a.length;
+  // a small tolerance: the flat facets of the drawn surfaces sit slightly inside the true radii
+  if (x <= a[0]) return [0, 0, x < a[0] - 2e-3];
+  if (x >= a[n-1]) return [n-2, 1, x > a[n-1] + 2e-3];
+  let lo = 0, hi = n - 1;
+  while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (a[mid] <= x) lo = mid; else hi = mid; }
+  return [lo, (x - a[lo]) / (a[hi] - a[lo]), false];
+}
+
+// complex amplitudes of the needed components at (r, θ), times e^{imφ}; null outside the field's radii
+function sampler(fld) {
+  const th = D.theta, nt = th.length, m = D.m;
+  return function (r, theta, phi, comp) {
+    const [i, wr, outR] = locate(fld.r, r);
+    if (outR) return null;
+    const [j, wt] = locate(th, Math.min(Math.max(theta, th[0]), th[nt-1]));
+    const k00 = i*nt + j, k01 = k00 + 1, k10 = k00 + nt, k11 = k10 + 1;
+    const w00 = (1-wr)*(1-wt), w01 = (1-wr)*wt, w10 = wr*(1-wt), w11 = wr*wt;
+    const g = c => {
+      const A = fld.comps[c];
+      return [A.re[k00]*w00 + A.re[k01]*w01 + A.re[k10]*w10 + A.re[k11]*w11,
+              A.im[k00]*w00 + A.im[k01]*w01 + A.im[k10]*w10 + A.im[k11]*w11];
+    };
+    const cm = Math.cos(m*phi), sm = Math.sin(m*phi);
+    const rot = ([a, b]) => [a*cm - b*sm, a*sm + b*cm];
+    if (!fld.vector) return [rot(g('s'))];
+    if (comp === 'r' || comp === 't' || comp === 'p') return [rot(g(comp))];
+    const R = g('r'), T = g('t');
+    const st = Math.sin(theta), ct = Math.cos(theta);
+    if (comp === 's') return [rot([R[0]*st + T[0]*ct, R[1]*st + T[1]*ct])];
+    if (comp === 'z') return [rot([R[0]*ct - T[0]*st, R[1]*ct - T[1]*st])];
+    return [rot(R), rot(T), rot(g('p'))];   // magnitude
+  };
+}
+
+// ---------------------------------------------------------------- scene
+const stage = $('stage');
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+stage.prepend(renderer.domElement);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(35, 1, 0.01, 100);
+camera.up.set(0, 0, 1);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = 0.12; controls.minDistance = 1.3; controls.maxDistance = 12;
+
+function setView(v) {
+  // face the cut-away wedge, which spans φ = 0 .. wedge
+  const d = 5.2, az = Math.max(+$('wedge').value, 60) / 2 * DEG;
+  if (v === 'pole') camera.position.set(0.001*Math.cos(az), 0.001*Math.sin(az), d);
+  else if (v === 'equator') camera.position.set(d*Math.cos(az), d*Math.sin(az), 0.0);
+  else camera.position.set(d*0.78*Math.cos(az), d*0.78*Math.sin(az), d*0.62);
+  controls.target.set(0, 0, 0); controls.update();
+}
+setView('oblique');
+
+function themeColors() {
+  const cs = getComputedStyle(document.documentElement);
+  return { stage: cs.getPropertyValue('--stage').trim(), ink: cs.getPropertyValue('--ink').trim(), muted: cs.getPropertyValue('--muted').trim() };
+}
+function applyTheme() {
+  const t = themeColors();
+  scene.background = new THREE.Color(t.stage);
+  guideMat.color.set(t.muted);
+  axisMat.color.set(t.ink);
+  draw();
+}
+const guideMat = new THREE.LineBasicMaterial({ transparent: true, opacity: 0.55 });
+const axisMat = new THREE.LineBasicMaterial();
+const coreMat = new THREE.MeshBasicMaterial({ color: 0x8a949e, transparent: true, opacity: 0.35, depthWrite: false });
+
+// soft light for the curved surface only (the flat cuts use unlit colours, which read exactly against the colour bar)
+scene.add(new THREE.AmbientLight(0xffffff, 1.9));
+const sun = new THREE.DirectionalLight(0xffffff, 1.1); scene.add(sun);
+const guides = new THREE.Group(); scene.add(guides);
+function circle(R, plane) {
+  const pts = [];
+  for (let k = 0; k <= 256; k++) {
+    const a = k / 256 * 2 * Math.PI;
+    pts.push(plane === 'xy' ? new THREE.Vector3(R*Math.cos(a), R*Math.sin(a), 0) : new THREE.Vector3(R*Math.cos(a), 0, R*Math.sin(a)));
+  }
+  return new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), guideMat);
+}
+let coreMesh = null;
+function buildGuides() {
+  guides.clear();
+  const ri = D.meta.ricb, ro = D.meta.rcmb || 1;
+  guides.add(circle(ro, 'xy'));
+  if (ri > 0) guides.add(circle(ri, 'xy'));
+  const ax = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, -1.35*ro), new THREE.Vector3(0, 0, 1.35*ro)]);
+  guides.add(new THREE.Line(ax, axisMat));
+  const cone = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.1, 16), new THREE.MeshBasicMaterial({ color: axisMat.color }));
+  cone.rotation.x = Math.PI / 2; cone.position.z = 1.38*ro; guides.add(cone);
+  coreMesh = null;
+  if (ri > 0) { coreMesh = new THREE.Mesh(new THREE.SphereGeometry(ri, 64, 32), coreMat); scene.add(coreMesh); }
+}
+
+// a surface: vertices from a (u, v) grid with position(u, v) -> [r, θ, φ]
+function gridMesh(nu, nv, pos, material) {
+  const n = nu * nv, P = new Float32Array(3*n), C = new Float32Array(3*n), sph = new Float32Array(3*n);
+  for (let a = 0; a < nu; a++) for (let b = 0; b < nv; b++) {
+    const k = a*nv + b, [r, th, ph] = pos(a, b);
+    sph[3*k] = r; sph[3*k+1] = th; sph[3*k+2] = ph;
+    P[3*k] = r*Math.sin(th)*Math.cos(ph); P[3*k+1] = r*Math.sin(th)*Math.sin(ph); P[3*k+2] = r*Math.cos(th);
+  }
+  const idx = [];
+  for (let a = 0; a < nu - 1; a++) for (let b = 0; b < nv - 1; b++) {
+    const k = a*nv + b; idx.push(k, k+nv, k+1, k+1, k+nv, k+nv+1);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(P, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(C, 3));
+  geo.setIndex(n > 65535 ? new THREE.Uint32BufferAttribute(idx, 1) : new THREE.Uint16BufferAttribute(idx, 1));
+  if (material.isMeshLambertMaterial) geo.computeVertexNormals();
+  const mesh = new THREE.Mesh(geo, material);
+  mesh.userData.sph = sph;
+  return mesh;
+}
+const surfMats = { shell: new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, transparent: true }),
+                   mer:   new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide }),
+                   eq:    new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide }),
+                   ic:    new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }) };
+const meshes = { shell: null, mer: null, eq: null, ic: null };
+
+function nphi() { return Math.min(720, Math.max(192, 24 * Math.max(D.m, 1))); }
+function radialNodes(fld) {   // the field's radii, thinned to at most ~240 rows
+  const r = fld.r, step = Math.max(1, Math.ceil(r.length / 240)), out = [];
+  for (let i = 0; i < r.length; i += step) out.push(r[i]);
+  if (out[out.length-1] !== r[r.length-1]) out.push(r[r.length-1]);
+  return out;
+}
+function thetaNodes() { return [0, ...D.theta, Math.PI]; }
+
+function shellRadius() {
+  const fld = D.fields[state.field], r0 = fld.r[0], r1 = fld.r[fld.r.length-1];
+  return r0 + (r1 - r0) * (+$('shellR').value / 1000);
+}
+function buildShell() {
+  if (meshes.shell) { scene.remove(meshes.shell); meshes.shell.geometry.dispose(); }
+  const R = shellRadius(), cut = +$('wedge').value * DEG, np = nphi(), nth = 181;
+  const phi0 = cut, span = 2*Math.PI - cut, nv = Math.max(8, Math.round(np * span / (2*Math.PI)) + 1);
+  meshes.shell = gridMesh(nth, nv, (a, b) => [R, a / (nth-1) * Math.PI, phi0 + span * b / (nv-1)], surfMats.shell);
+  meshes.shell.visible = $('shellOn').checked;
+  meshes.shell.renderOrder = 2;
+  scene.add(meshes.shell);
+}
+function buildMer() {
+  if (meshes.mer) { scene.remove(meshes.mer); meshes.mer.geometry.dispose(); }
+  const fld = D.fields[state.field], rs = radialNodes(fld), ths = thetaNodes(), phi = +$('merPhi').value * DEG;
+  // one sheet from θ = 0 down to π at φ, then back up at φ + π: a full meridional plane
+  const nt = ths.length, cols = 2*nt;
+  meshes.mer = gridMesh(rs.length, cols, (a, b) => b < nt ? [rs[a], ths[b], phi] : [rs[a], ths[cols-1-b], phi + Math.PI], surfMats.mer);
+  meshes.mer.visible = $('merOn').checked;
+  scene.add(meshes.mer);
+}
+function buildEq() {
+  if (meshes.eq) { scene.remove(meshes.eq); meshes.eq.geometry.dispose(); }
+  const fld = D.fields[state.field], rs = radialNodes(fld), np = nphi();
+  meshes.eq = gridMesh(rs.length, np + 1, (a, b) => [rs[a], Math.PI/2, b / np * 2*Math.PI], surfMats.eq);
+  meshes.eq.visible = $('eqOn').checked;
+  scene.add(meshes.eq);
+}
+
+function buildIC() {   // the field on the inner-core boundary r = ricb, a full sphere
+  if (meshes.ic) { scene.remove(meshes.ic); meshes.ic.geometry.dispose(); meshes.ic = null; }
+  const R = D.meta.ricb;
+  $('icRow').hidden = !(R > 0);
+  if (!(R > 0)) return;
+  const nth = 121, np = nphi();
+  meshes.ic = gridMesh(nth, np + 1, (a, b) => [R, a / (nth-1) * Math.PI, b / np * 2*Math.PI], surfMats.ic);
+  meshes.ic.visible = $('icOn').checked;
+  scene.add(meshes.ic);
+}
+function coreVisible() {   // the grey inner core only where nothing is drawn on or inside it
+  if (!coreMesh) return;
+  coreMesh.visible = $('axisOn').checked && !$('icOn').checked && D.fields[state.field].r[0] >= D.meta.ricb - 1e-6;
+}
+
+// complex amplitudes per vertex for the current field/component
+function fillAmplitudes(mesh) {
+  if (!mesh) return;
+  const fld = D.fields[state.field], S = sampler(fld), sph = mesh.userData.sph, n = sph.length / 3;
+  const comp = fld.vector ? state.comp : 'v', nc = comp === 'mag' ? 3 : 1;
+  const A = new Float32Array(2*nc*n), ok = new Uint8Array(n);
+  for (let k = 0; k < n; k++) {
+    const v = S(sph[3*k], sph[3*k+1], sph[3*k+2], comp);
+    if (!v) continue;
+    ok[k] = 1;
+    for (let c = 0; c < nc; c++) { A[2*(nc*k + c)] = v[c][0]; A[2*(nc*k + c)+1] = v[c][1]; }
+  }
+  mesh.userData.amp = A; mesh.userData.nc = nc; mesh.userData.ok = ok;
+}
+
+// ---------------------------------------------------------------- colouring
+let lut = null, lutDiv = true, range = 1;
+function compKey() { const f = D.fields[state.field]; return f.vector ? state.comp : 'v'; }
+function currentMap() {
+  const sel = $('cmap').value;
+  if (sel !== 'auto') return sel;
+  return compKey() === 'mag' ? 'magma' : 'rdbu';
+}
+function values(mesh) {
+  const { amp, nc, ok } = mesh.userData, n = ok.length, out = new Float32Array(n);
+  const c = Math.cos(state.phase), s = Math.sin(state.phase);
+  for (let k = 0; k < n; k++) {
+    if (!ok[k]) { out[k] = NaN; continue; }
+    if (nc === 1) out[k] = amp[2*k]*c - amp[2*k+1]*s;
+    else {
+      let q = 0;
+      for (let j = 0; j < 3; j++) { const v = amp[2*(3*k+j)]*c - amp[2*(3*k+j)+1]*s; q += v*v; }
+      out[k] = Math.sqrt(q);
+    }
+  }
+  return out;
+}
+function paint() {
+  if (!D) return;
+  const name = currentMap(); lut = buildLUT(name); lutDiv = MAPS[name].div;
+  const fld = D.fields[state.field], key = compKey(), mag = key === 'mag';
+  const vis = Object.values(meshes).filter(m => m && m.visible);
+  const vals = vis.map(values);
+  let top = fld.max[key] || 1;
+  if ($('scaleVis').checked) {
+    top = 0;
+    vals.forEach(v => { for (const x of v) if (x === x) top = Math.max(top, Math.abs(x)); });
+    top = top || 1;
+  }
+  const gain = Math.pow(10, +$('gain').value / 50);   // 1 .. 100
+  range = top / gain;
+  const lo = mag ? 0 : -range, hi = range;
+  vis.forEach((mesh, i) => {
+    const v = vals[i], col = mesh.geometry.attributes.color.array;
+    for (let k = 0; k < v.length; k++) {
+      if (v[k] !== v[k]) { col[3*k] = col[3*k+1] = col[3*k+2] = 0.55; continue; }
+      let t = (v[k] - lo) / (hi - lo); t = t < 0 ? 0 : t > 1 ? 1 : t;
+      const L = Math.round(t * 255) * 3;
+      col[3*k] = lut[L]; col[3*k+1] = lut[L+1]; col[3*k+2] = lut[L+2];
+    }
+    mesh.geometry.attributes.color.needsUpdate = true;
+  });
+  drawColorbar(lo, hi);
+  draw();
+}
+function fmt(x) {
+  if (x === 0) return '0';
+  const a = Math.abs(x);
+  return (a >= 1e-2 && a < 1e3) ? x.toPrecision(3) : x.toExponential(2);
+}
+function drawColorbar(lo, hi) {
+  const cv = $('cbarCanvas'), ctx = cv.getContext('2d'), img = ctx.createImageData(256, 12);
+  for (let i = 0; i < 256; i++) for (let j = 0; j < 12; j++) {
+    const p = 4*(j*256 + i);
+    img.data[p] = Math.round(255*lut[3*i]); img.data[p+1] = Math.round(255*lut[3*i+1]); img.data[p+2] = Math.round(255*lut[3*i+2]); img.data[p+3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  $('cmin').textContent = fmt(lo); $('cmid').textContent = fmt((lo + hi) / 2); $('cmax').textContent = fmt(hi);
+}
+
+// ---------------------------------------------------------------- labels and HUD
+const COMP_LABEL = { r: 'r', t: 'θ', p: 'φ', s: 's', z: 'z', mag: '|·|' };
+function compName() {
+  const f = D.fields[state.field], sym = f.key === 'b' ? 'b' : f.key === 'u' ? 'u' : f.key === 't' ? 'Θ' : 'C';
+  if (!f.vector) return f.label;
+  return state.comp === 'mag' ? `|${sym}|` : `${sym}_${COMP_LABEL[state.comp]}`;
+}
+function hud() {
+  const deg = (state.phase / DEG) % 360;
+  $('phaseOut').textContent = `ωt = ${deg.toFixed(0)}°`;
+  $('hud').hidden = false;
+  $('hud').textContent = `${compName()}  ·  m = ${D.m}\nωt = ${deg.toFixed(0).padStart(3, ' ')}°`;
+}
+function metaLine() {
+  const M = D.meta, parts = [];
+  if (M.eigenvalue) {
+    const [s, w] = M.eigenvalue;
+    parts.push(`λ = ${s.toPrecision(5)} ${w < 0 ? '−' : '+'} ${Math.abs(w).toPrecision(6)}i`);
+    if (w !== 0) parts.push(`period ${(2*Math.PI/Math.abs(w)).toPrecision(4)}${M.timescale ? ' (' + M.timescale + ' units)' : ''}`);
+  } else if (M.forcing_frequency) parts.push(`forced, ω = ${M.forcing_frequency}`);
+  const p = [`m ${M.m}`, `lmax ${M.lmax}`, `N ${M.N}`, `r_i ${M.ricb}`];
+  for (const k of ['Ek', 'Le', 'Em']) if (M[k]) p.push(`${k} ${(+M[k]).toExponential(2).replace('e', 'e')}`);
+  if (M.B0) p.push(`B0 ${M.B0}`);
+  if (M.innercore) p.push(`IC ${M.innercore}`);
+  return parts.join(' · ') + '<br>' + p.join(' · ');
+}
+
+// ---------------------------------------------------------------- UI wiring
+function segButtons(el, items, current, onPick) {
+  el.innerHTML = '';
+  items.forEach(([val, text]) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = text; b.setAttribute('aria-pressed', String(val === current));
+    b.addEventListener('click', () => { onPick(val); [...el.children].forEach(c => c.setAttribute('aria-pressed', String(c === b))); });
+    el.appendChild(b);
+  });
+}
+function compItems() {
+  const f = D.fields[state.field];
+  return f.vector ? [['r', 'r'], ['t', 'θ'], ['p', 'φ'], ['s', 's'], ['z', 'z'], ['mag', '|·|']] : [['v', 'value']];
+}
+function rebuildAll() {
+  buildShell(); buildMer(); buildEq(); buildIC();
+  coreVisible();
+  Object.values(meshes).forEach(fillAmplitudes);
+  outputs(); hud(); paint();
+}
+function refill() { Object.values(meshes).forEach(fillAmplitudes); hud(); paint(); }
+function outputs() {
+  $('shellROut').textContent = `${shellRadius().toFixed(3)}`;
+  $('wedgeOut').textContent = `${$('wedge').value}°`;
+  $('opacityOut').textContent = `${$('opacity').value} %`;
+  $('merPhiOut').textContent = `${$('merPhi').value}°`;
+  $('gainOut').textContent = `×${Math.pow(10, +$('gain').value / 50).toPrecision(2)}`;
+  $('speedOut').textContent = `1 period / ${$('speed').value} s`;
+  surfMats.shell.opacity = +$('opacity').value / 100;
+  surfMats.shell.depthWrite = surfMats.shell.opacity > 0.99;
+}
+
+function show(doc) {
+  D = prepare(doc);
+  state.field = 0;
+  state.comp = D.fields[0].vector ? (D.m === 0 && D.fields[0].key === 'u' ? 'p' : 'r') : 'v';
+  $('title').textContent = D.title || 'kore solution';
+  $('meta').innerHTML = metaLine();
+  segButtons($('fieldSeg'), D.fields.map((f, i) => [i, f.label]), 0, i => {
+    state.field = i;
+    if (!D.fields[i].vector) state.comp = 'v'; else if (state.comp === 'v') state.comp = 'r';
+    segButtons($('compSeg'), compItems(), state.comp, c => { state.comp = c; refill(); });
+    rebuildAll();
+  });
+  segButtons($('compSeg'), compItems(), state.comp, c => { state.comp = c; refill(); });
+  if (coreMesh) { scene.remove(coreMesh); coreMesh = null; }
+  buildGuides();
+  $('msg').hidden = true;
+  rebuildAll();
+}
+
+['shellR', 'wedge'].forEach(id => $(id).addEventListener('input', () => { if (!D) return; buildShell(); fillAmplitudes(meshes.shell); outputs(); paint(); }));
+$('merPhi').addEventListener('input', () => { if (!D) return; buildMer(); fillAmplitudes(meshes.mer); outputs(); paint(); });
+$('opacity').addEventListener('input', () => { outputs(); draw(); });
+['shellOn', 'merOn', 'eqOn', 'icOn'].forEach(id => $(id).addEventListener('change', () => {
+  const key = { shellOn: 'shell', merOn: 'mer', eqOn: 'eq', icOn: 'ic' }[id];
+  if (meshes[key]) meshes[key].visible = $(id).checked;
+  if (D) coreVisible();
+  paint();
+}));
+$('axisOn').addEventListener('change', () => { guides.visible = $('axisOn').checked; if (D) coreVisible(); draw(); });
+['cmap', 'scaleVis'].forEach(id => $(id).addEventListener('change', paint));
+$('gain').addEventListener('input', () => { outputs(); paint(); });
+$('speed').addEventListener('input', outputs);
+$('phase').addEventListener('input', () => { state.phase = +$('phase').value * DEG; hud(); paint(); });
+$('play').addEventListener('click', () => {
+  state.playing = !state.playing;
+  $('play').textContent = state.playing ? 'Pause' : 'Play';
+  $('play').setAttribute('aria-pressed', String(state.playing));
+  last = performance.now();
+});
+document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => { setView(b.dataset.view); draw(); }));
+
+// ---------------------------------------------------------------- loading
+async function readBlob(blob, name) {
+  let stream = blob.stream();
+  if (/\.gz$/i.test(name)) stream = stream.pipeThrough(new DecompressionStream('gzip'));
+  return JSON.parse(await new Response(stream).text());
+}
+async function loadURL(url) {
+  $('msg').hidden = false; $('msg').innerHTML = `<p>Loading ${url}…</p>`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Could not load ${url} (HTTP ${res.status}).`);
+  show(await readBlob(await res.blob(), url));
+}
+function fail(e) {
+  $('msg').hidden = false;
+  $('msg').innerHTML = `<p>${e.message || e}<br><br>Open a file written by <code>koreviz/export_web.py</code> with the button in the panel, or drop it here.</p>`;
+}
+$('file').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try { show(await readBlob(f, f.name)); } catch (err) { fail(err); }
+});
+stage.addEventListener('dragover', e => { e.preventDefault(); $('drop').hidden = false; });
+stage.addEventListener('dragleave', () => { $('drop').hidden = true; });
+stage.addEventListener('drop', async e => {
+  e.preventDefault(); $('drop').hidden = true;
+  const f = e.dataTransfer.files[0]; if (!f) return;
+  try { show(await readBlob(f, f.name)); } catch (err) { fail(err); }
+});
+
+// ---------------------------------------------------------------- probe: value under the pointer
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+let probeAt = null;
+renderer.domElement.addEventListener('pointermove', e => {
+  const r = renderer.domElement.getBoundingClientRect();
+  ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
+  probeAt = true;
+});
+renderer.domElement.addEventListener('pointerleave', () => { probeAt = null; $('probe').hidden = true; });
+function probe() {
+  if (!probeAt || !D) return;
+  ray.setFromCamera(ndc, camera);
+  const hit = ray.intersectObjects(Object.values(meshes).filter(m => m && m.visible), false)[0];
+  if (!hit) { $('probe').hidden = true; return; }
+  const p = hit.point, r = p.length(), th = Math.acos(Math.max(-1, Math.min(1, p.z / r)));
+  let ph = Math.atan2(p.y, p.x); if (ph < 0) ph += 2*Math.PI;
+  const v = sampler(D.fields[state.field])(r, th, ph, compKey());
+  if (!v) { $('probe').hidden = true; return; }
+  const c = Math.cos(state.phase), s = Math.sin(state.phase);
+  const val = v.length === 1 ? v[0][0]*c - v[0][1]*s : Math.hypot(...v.map(q => q[0]*c - q[1]*s));
+  $('probe').hidden = false;
+  // fixed-width fields, so the box keeps its size while the numbers change
+  const pad = (x, w) => x.padStart(w, ' ');
+  const sci = x => (x < 0 ? '−' : ' ') + Math.abs(x).toExponential(3);
+  $('probe').textContent = `r ${r.toFixed(4)}  θ ${pad((th/DEG).toFixed(1), 5)}°  φ ${pad((ph/DEG).toFixed(1), 5)}°\n${compName()} = ${sci(val)}`;
+}
+
+// ---------------------------------------------------------------- render loop
+let last = performance.now(), dirty = true;
+function draw() { dirty = true; }
+controls.addEventListener('change', draw);
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false); camera.aspect = w / Math.max(h, 1); camera.updateProjectionMatrix(); draw();
+}
+new ResizeObserver(resize).observe(stage);
+const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+function tick(now) {
+  requestAnimationFrame(tick);
+  if (state.playing && D) {
+    const dt = (now - last) / 1000;
+    state.phase = (state.phase + 2*Math.PI * dt / +$('speed').value) % (2*Math.PI);
+    $('phase').value = Math.round(state.phase / DEG);
+    hud(); paint();
+  }
+  last = now;
+  controls.update();
+  sun.position.copy(camera.position).add(new THREE.Vector3(0.8, -0.6, 1.2));
+  if (dirty) { probe(); renderer.render(scene, camera); dirty = false; }
+}
+renderer.domElement.addEventListener('pointermove', draw);
+
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+new MutationObserver(applyTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+applyTheme();
+resize();
+requestAnimationFrame(tick);
+if (reduce.matches) state.playing = false;
+
+// optional list of example files next to the page (samples.json: [{file, name}, ...])
+async function start() {
+  const qs = new URLSearchParams(location.search).get('data');
+  let samples = [];
+  try { const r = await fetch('samples.json'); if (r.ok) samples = await r.json(); } catch (e) { /* none */ }
+  if (samples.length) {
+    const sel = $('samples');
+    sel.innerHTML = samples.map((x, i) => `<option value="${i}">${x.name}</option>`).join('');
+    sel.hidden = false;
+    sel.addEventListener('change', () => loadURL(samples[+sel.value].file).catch(fail));
+  }
+  await loadURL(qs || (samples.length ? samples[0].file : 'demo.json'));
+}
+start().catch(fail);
+</script>
