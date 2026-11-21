@@ -18,6 +18,7 @@ nav:
       - Combining features: compatibility.md
       - Solver: solver.md
       - Output files: output.md
+      - 3D viewer: 3d-viewer.md
   - Benchmarks: benchmarks.md
   - Mathematical framework:
       - Anelastic equations: anelastic.md

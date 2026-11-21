@@ -1,6 +1,6 @@
 # Kore
 
-[![Tests](https://github.com/repepo/kore/actions/workflows/anelastic_log.yml/badge.svg?branch=main)](https://github.com/repepo/kore/actions/workflows/anelastic_log.yml)  [![Docs](https://img.shields.io/badge/docs-online-blue)](https://repepo.github.io/kore/)  [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Tests](https://github.com/repepo/kore/actions/workflows/anelastic_log.yml/badge.svg?branch=main)](https://github.com/repepo/kore/actions/workflows/anelastic_log.yml)  [![Docs](https://img.shields.io/badge/docs-online-blue)](https://repepo.github.io/kore/)  [![3D viewer](https://img.shields.io/badge/3D%20viewer-online-orange)](https://repepo.github.io/kore/viewer/)  [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 *KOR-ee*, from the greek **Κόρη**, the queen of the underworld, daughter of Zeus and Demeter. Kore is a numerical tool to study the core flow within rapidly rotating planets or other rotating fluids contained within near-spherical boundaries. The current version solves the *linear* Navier-Stokes equation and optionally the induction and thermal/compositional (Boussinesq) equations for a viscous, incompressible and conductive fluid with an externally imposed magnetic field, and enclosed within a near-spherical boundary. A solid inner core can be included optionally.
 
@@ -19,6 +19,7 @@ The user manual is online at [repepo.github.io/kore](https://repepo.github.io/ko
 * [Installation](https://repepo.github.io/kore/installation/): PETSc, SLEPc and the python packages that kore needs.
 * [Getting started](https://repepo.github.io/kore/getting-started/): one complete run, from the parameter file to a checked eigenvalue.
 * [Combining features](https://repepo.github.io/kore/compatibility/): which features work together, which combinations kore stops on, and which ones the tests check.
+* [3D viewer](https://repepo.github.io/kore/viewer/): look at a solution in your web browser, rotate it, cut it and play the oscillation. The [guide](https://repepo.github.io/kore/3d-viewer/) shows how to write the file it reads (`koreviz/export_web.py`).
 
 To read the manual of another branch, run `mkdocs serve` in its folder (after `pip install mkdocs-material`).
 

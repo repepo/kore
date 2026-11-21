@@ -74,7 +74,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--solnum', type=int, default=0, help='solution number (column of the solution files), default 0')
     ap.add_argument('--fields', default='all', help="comma list of u, b, t (temperature/entropy), c (composition); "
-                                                    "default all present")
+                                                    "default every field the run solves for")
     ap.add_argument('--nr', type=int, default=None, help='radial points in the fluid (default min(N, 200))')
     ap.add_argument('--ntheta', type=int, default=None, help='colatitudes (default ~1.6 lmax, at least 97, odd)')
     ap.add_argument('--nr_ic', type=int, default=48, help='radial points in a conducting inner core (b), default 48')
@@ -89,6 +89,7 @@ def main():
     import utils as ut
     import utils4pp as upp
     import radial_profiles as rap
+    import field_io
 
     m, lmax, ricb, rcmb = par.m, par.lmax, par.ricb, ut.rcmb
     fac = 1.0 if m == 0 else 2.0   # the real field: Re[...] for m = 0, 2 Re[...] for m > 0 (SHTns, as kmode)
@@ -99,8 +100,17 @@ def main():
     theta = (np.arange(nth) + 0.5)*np.pi/nth
     r = chebyshev_radii(nr, ricb if ricb > 0 else 1e-3*rcmb, rcmb)
 
-    want = ['u', 'b', 't', 'c'] if args.fields == 'all' else [f.strip() for f in args.fields.split(',')]
     files = {'u': 'flow', 'b': 'magnetic', 't': 'thermal', 'c': 'composition'}
+    # the fields this run solves for (parameters.py), so that solution files left by an earlier run in the same folder are
+    # never read
+    active = {'u': getattr(par, 'hydro', 1), 'b': par.magnetic, 't': par.thermal, 'c': getattr(ut, 'compositional', 0)}
+    if args.fields == 'all':
+        want = [f for f in 'ubtc' if active[f]]
+    else:
+        want = [f.strip() for f in args.fields.split(',')]
+        for f in want:
+            if f in active and not active[f]:
+                sys.exit('export_web: this run does not solve for %s (parameters.py)' % files[f])
 
     Pl = {}   # Schmidt functions per m, cached
 
@@ -138,9 +148,11 @@ def main():
         if name is None:
             sys.exit('export_web: unknown field %r (u, b, t, c)' % f)
         if not ut.field_exists(name):
-            if args.fields != 'all':
-                sys.exit('export_web: no solution files of %s here' % name)
-            continue
+            sys.exit('export_web: no solution files of %s here' % name)
+        nsol = field_io.count(name)
+        if args.solnum >= nsol:
+            sys.exit('export_web: %s has %d solutions (0..%d), not %d: are the files from this run?'
+                     % (name, nsol, nsol - 1, args.solnum))
         sol = np.asarray(ut.load_field(name, args.solnum))
         rr = r.copy()
         if f in ('u', 'b'):
