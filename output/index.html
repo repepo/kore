@@ -2128,13 +2128,19 @@ column ℓ-Convergence is already the field's, and the table has no ℓ-Conv �
 <td>155–156</td>
 <td><code>bgflow</code>, <code>bgflow_Ro</code></td>
 </tr>
+<tr>
+<td>157–159</td>
+<td><code>polytrope_n</code>, <code>polytrope_gamma</code>, <code>polytrope_Nrho</code> (0 where the structure does not use them)</td>
+</tr>
 </tbody>
 </table>
 <ul>
 <li>Options given by name are written as their position in the list of choices, counting from 0, in the order of the
   tables on the corresponding pages; −1 means "none". For example <code>structure</code>: <code>'8-term fit'</code> 0,
-  <code>'old model S prototype'</code> 1, <code>'model S hydrostatic'</code> 2, <code>'Wu 2005'</code> 3, <code>'Boussinesq'</code> 4. <code>tools/get_data.py</code>
-  (below) reads the file with named columns.</li>
+  <code>'old model S prototype'</code> 1, <code>'model S hydrostatic'</code> 2, <code>'Wu 2005'</code> 3, <code>'Boussinesq'</code> 4, <code>'polytrope'</code> 5,
+  <code>'Jones 2011'</code> 6; <code>stratification</code> (not in the order of its table): <code>'top hat'</code> 0, <code>'odd top hat'</code> 1, <code>'solar_rz'</code> 2,
+  <code>'linear'</code> 3, <code>'inverse square'</code> 4, <code>'user'</code> 5, <code>'two zone'</code> 6, <code>'polytrope'</code> 7, <code>'conduction'</code> 8.
+  <code>tools/get_data.py</code> (below) reads the file with named columns.</li>
 <li>A row ends, after a <code>#</code> that <code>np.loadtxt</code> skips, with any expressions of the run (<code>'user'</code>, <code>'general'</code>,
   <code>'ferraro'</code>, <code>sigma_mantle</code>, <code>bgflow_profiles</code>) and the names of the data files it read, with a short checksum.</li>
 </ul>

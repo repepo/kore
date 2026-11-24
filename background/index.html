@@ -1913,6 +1913,16 @@ rotation:</p>
 <td>–</td>
 </tr>
 <tr>
+<td><code>'polytrope'</code></td>
+<td>the self-gravitating polytrope of index <span class="arithmatex">\(n\)</span> from the Lane–Emden equation (below)</td>
+<td><code>polytrope_n</code> (1.5), <code>polytrope_gamma</code> (5/3); needs <code>r_out</code> &lt; 1</td>
+</tr>
+<tr>
+<td><code>'Jones 2011'</code></td>
+<td>the polytrope of the anelastic dynamo benchmark (Jones et al. 2011), gravity of a central mass, shell only (below)</td>
+<td><code>polytrope_n</code>, <code>polytrope_Nrho</code> (5); needs <code>ricb</code> &gt; 0, <code>r_out</code> = 1</td>
+</tr>
+<tr>
 <td><code>'8-term fit'</code></td>
 <td>legacy solar fit, kept to reproduce old runs</td>
 <td>–</td>
@@ -1929,9 +1939,42 @@ rotation:</p>
 <li><code>'model S hydrostatic'</code> matches Model S to within about 1 % at the default degree 30. Use <code>structure_deg = 50</code> to
   compare closely with work that uses Model S itself; this needs a slightly higher <code>lmax</code>.</li>
 </ul>
+<p><strong><code>'polytrope'</code>.</strong> The density and pressure follow the Lane–Emden function <span class="arithmatex">\(\theta(\xi)\)</span> of index <span class="arithmatex">\(n\)</span>,</p>
+<div class="arithmatex">\[
+\theta'' + \frac{2}{\xi}\theta' + \theta^n = 0,\qquad \theta(0) = 1,\quad \theta'(0) = 0,
+\]</div>
+<p>with <span class="arithmatex">\(\xi = \xi_1 x\)</span> and <span class="arithmatex">\(\xi_1\)</span> its first zero, the stellar surface <span class="arithmatex">\(x = 1\)</span>: <span class="arithmatex">\(\rho_0 = \theta^n\)</span> and
+<span class="arithmatex">\(p_0 = \theta^{n+1}\)</span> (both 1 at the centre) and <span class="arithmatex">\(g = \theta'(\xi_1 x)/\theta'(\xi_1)\)</span> (1 at the surface), the gravity of
+the polytrope's own mass. Any <span class="arithmatex">\(0 \le n \le 4.9\)</span> is accepted, in a shell or a full sphere; <span class="arithmatex">\(n = 1\)</span> is
+<span class="arithmatex">\(\rho_0 = \sin(\pi x)/(\pi x)\)</span>, <span class="arithmatex">\(n = 0\)</span> a uniform density, <span class="arithmatex">\(n = 3\)</span> Eddington's standard model. As with <code>'Wu 2005'</code>,
+<code>r_out</code> &lt; 1 keeps the density positive at the outer wall. kore integrates the Lane–Emden equation when it starts and
+interpolates <span class="arithmatex">\(\ln\theta\)</span> and <span class="arithmatex">\(\ln(-\theta')\)</span>, so that <span class="arithmatex">\(\rho_0\)</span> and <span class="arithmatex">\(p_0\)</span> are within <span class="arithmatex">\(2\times10^{-13}\)</span> (relative, also
+where they are small) up to <code>r_out</code> = 0.99, and within about <span class="arithmatex">\(10^{-15}/(1 - r_\mathrm{out})\)</span> beyond; strongly condensed
+polytropes (<span class="arithmatex">\(n \gtrsim 4\)</span>) need more radial resolution near the centre. With <code>centrifugal_shape = 'clairaut'</code>, Radau's
+equation takes the polytrope's own <span class="arithmatex">\(\rho/\bar\rho = -\xi\theta^n/(3\theta')\)</span>.</p>
+<p><strong><code>'Jones 2011'</code>.</strong> The reference state of the anelastic convection and dynamo benchmark of Jones et al. (2011), also
+used by MagIC and Rayleigh. It is defined in a shell (<code>ricb</code> = <span class="arithmatex">\(\beta\)</span> &gt; 0, the outer wall at <span class="arithmatex">\(r = 1\)</span>), with the gravity
+of a central mass, <span class="arithmatex">\(g = 1/r^2\)</span>, and</p>
+<div class="arithmatex">\[
+\zeta = c_0 + \frac{c_1 d}{r},\quad \rho_0 = \zeta^n,\quad p_0 = \zeta^{n+1},\qquad
+\zeta_o = \frac{\beta + 1}{\beta e^{N_\rho/n} + 1},\quad c_0 = \frac{2\zeta_o - \beta - 1}{1 - \beta},\quad
+c_1 = \frac{(1 + \beta)(1 - \zeta_o)}{(1 - \beta)^2},
+\]</div>
+<p><span class="arithmatex">\(d = 1 - \beta\)</span>, so that <span class="arithmatex">\(\zeta = 1\)</span> at mid-depth and the density drops by <span class="arithmatex">\(e^{N_\rho}\)</span> across the shell
+(<span class="arithmatex">\(N_\rho\)</span> = <code>polytrope_Nrho</code>). The benchmark uses <span class="arithmatex">\(n = 2\)</span>, <span class="arithmatex">\(N_\rho = 5\)</span>, <span class="arithmatex">\(\beta = 0.35\)</span>. Its reference state is
+adiabatic; convection is driven by the conduction state between the walls, stratification <code>'conduction'</code> with a
+negative <code>Beyonce</code>. The benchmark's numbers are on the gap <span class="arithmatex">\(d = 1 - \beta\)</span> (<span class="arithmatex">\(Ra = GMd\Delta S/(\nu\kappa c_p)\)</span>,
+<span class="arithmatex">\(E = \nu/(\Omega d^2)\)</span>, <span class="arithmatex">\(Pr = \nu/\kappa\)</span>); with <code>timescale = 'rotation'</code> they are <code>ViscosD</code> <span class="arithmatex">\(= E(1 - \beta)^2\)</span>,
+<code>ThermaD</code> = <code>ViscosD</code><span class="arithmatex">\(/Pr\)</span> and <code>Beyonce</code> <span class="arithmatex">\(= -Ra\thinspace E^2(1 - \beta)^3/Pr\)</span>, and a frequency <span class="arithmatex">\(\omega\)</span> of the paper (in
+units of <span class="arithmatex">\(\nu/d^2\)</span>) is <span class="arithmatex">\(\mathrm{Im}\thinspace\lambda = -E\omega\)</span>. kore reproduces the paper's onset of convection
+(<span class="arithmatex">\(m = 20\)</span>, <span class="arithmatex">\(Ra_c = 283175\)</span>, <span class="arithmatex">\(\omega_c = 269.56\)</span> at <span class="arithmatex">\(E = 10^{-3}\)</span>, <span class="arithmatex">\(Pr = 1\)</span>, stress-free) within <span class="arithmatex">\(2\times10^{-4}\)</span>. It
+needs <code>r_out</code> = 1 and refuses <code>centrifugal_shape = 'clairaut'</code> (no self-gravity). As it has no centre, <code>visc_pow</code>,
+<code>therm_pow</code> or <code>comp_pow</code> other than 0 need <code>aux3</code>, the radius where the diffusivities are <code>ViscosD</code>, <code>ThermaD</code> and
+<code>CompoD</code>, in the shell (its default 0 is the centre).</p>
 <h2 id="stratification">Stratification</h2>
 <p>With <code>thermal = 1</code>, <code>stratification</code> sets the background entropy gradient <span class="arithmatex">\(dS/dr\)</span>, which controls buoyancy. A positive
-gradient is stable (radiative), zero is neutral (convective). There is no default.</p>
+gradient is stable (radiative), zero is neutral (convective). There is no default, except <code>'polytrope'</code> with structure
+<code>'polytrope'</code>.</p>
 <table>
 <thead>
 <tr>
@@ -1972,6 +2015,16 @@ gradient is stable (radiative), zero is neutral (convective). There is no defaul
 <td><code>two_zone</code> = [transition radius, width] ([0.7, 0.1])</td>
 </tr>
 <tr>
+<td><code>'polytrope'</code></td>
+<td>the polytrope's own entropy, <span class="arithmatex">\(((n + 1)/\gamma - n)\thinspace d\ln\theta/dr\)</span>; the default with structure <code>'polytrope'</code></td>
+<td><code>polytrope_gamma</code></td>
+</tr>
+<tr>
+<td><code>'conduction'</code></td>
+<td>the conduction state between the walls, <span class="arithmatex">\(C/(r^2\kappa p_0)\)</span>, with <span class="arithmatex">\(S(1) - S(r_i) = 1\)</span></td>
+<td>needs <code>ricb</code> &gt; 0</td>
+</tr>
+<tr>
 <td><code>'user'</code></td>
 <td>your own expression (<a href="#user-profiles">below</a>)</td>
 <td><code>stratification_profile</code>, <code>stratification_param</code></td>
@@ -1983,6 +2036,21 @@ gradient is stable (radiative), zero is neutral (convective). There is no defaul
   unless the first step is far from the centre.</li>
 <li>In a shell without thermal diffusion, keep the gradient zero at the inner wall (see <a href="#thermad-0">ThermaD = 0</a>).</li>
 <li><code>'odd top hat'</code> with <code>aux1</code>…<code>aux5</code> = 0, 0.03, 0.68, 0.06, 2.6 approximates the entropy gradient of solar Model S.</li>
+<li><code>'polytrope'</code> is the entropy <span class="arithmatex">\(S = s/c_p = \gamma^{-1}\ln p_0 - \ln\rho_0\)</span> of structure <code>'polytrope'</code>. It is stable for
+  <span class="arithmatex">\(n &gt; 1/(\gamma - 1)\)</span> (e.g. <span class="arithmatex">\(n = 3\)</span> with <span class="arithmatex">\(\gamma = 5/3\)</span>), exactly neutral for <span class="arithmatex">\(n = 1/(\gamma - 1)\)</span> (1.5 with
+  <span class="arithmatex">\(\gamma = 5/3\)</span>) and unstable below. The buoyancy frequency <span class="arithmatex">\(N^2 = \mathrm{Beyonce}\thinspace g\thinspace dS/dr\)</span> is
+  then the polytrope's own when <code>Beyonce</code> <span class="arithmatex">\(= g_s\tau^2/r_0\)</span>, with <span class="arithmatex">\(g_s\)</span> the surface gravity and <span class="arithmatex">\(r_0\)</span> = <code>r_out</code> <span class="arithmatex">\(R\)</span> the
+  unit of length: 1 for the free-fall time scale (<span class="arithmatex">\(\tau^2 = r_0/g_s\)</span>) and <span class="arithmatex">\(1/(q\thinspace\)</span><code>r_out</code><span class="arithmatex">\()\)</span> with
+  <span class="arithmatex">\(\tau = 1/\Omega\)</span>, where <span class="arithmatex">\(q = \Omega^2R^3/GM\)</span>.</li>
+<li><code>'conduction'</code> solves <span class="arithmatex">\(\nabla\cdot(\kappa p_0\nabla S) = 0\)</span> with the chosen structure and diffusivity, normalised so
+  that the entropy rises by 1 from the inner to the outer wall. For <code>'Boussinesq'</code> with a uniform <span class="arithmatex">\(\kappa\)</span> it is
+  <code>'inverse square'</code> times <code>ricb</code>/(1 − <code>ricb</code>). As with <code>'inverse square'</code>, a negative <code>Beyonce</code> makes it convectively
+  unstable. kore stops if <span class="arithmatex">\(\kappa p_0\)</span> is not finite and positive at a wall or at a node of its quadrature, or if the
+  integral of <span class="arithmatex">\(1/(r^2\kappa p_0)\)</span> does not converge, as for <code>'8-term fit'</code> from <code>r_out</code> of about 0.9993 on (with a
+  uniform <span class="arithmatex">\(\kappa\)</span>), whose <span class="arithmatex">\(p_0\)</span> is too noisy near its surface. The transition of a <code>'step'</code> or <code>'solar_rz'</code> diffusivity
+  gets quadrature panels of its own, so that it is integrated however narrow it is. A feature of a <code>'user'</code> <span class="arithmatex">\(\kappa\)</span>
+  that falls between the nodes goes unseen: a dip below zero up to about 0.003 (1 − <code>ricb</code>) wide if its edges are
+  sharp, a few <span class="arithmatex">\(10^{-4}\)</span> if it is smooth, or a step narrower than about <span class="arithmatex">\(5\times10^{-5}\)</span> next to a panel end.</li>
 </ul>
 <p><strong><code>'solar_rz'</code>.</strong> A stable radiative interior joined to a convection zone at about 0.7 solar radii, following
 Mukhopadhyay et al. (2025b) and Bekki et al. (2024):</p>

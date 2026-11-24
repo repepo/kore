@@ -2407,7 +2407,7 @@ solids (<code>rotdyn = 1</code>), so the table has no columns for them.</p>
 <tbody>
 <tr>
 <td>every run</td>
-<td>an even <code>N</code>; <code>lmax − m + 1</code> a multiple of twice the number of MPI ranks (<code>assemble.py</code> checks it); <code>structure = 'Wu 2005'</code> needs <code>r_out</code> between 0 and 1. In a full sphere kore warns where a background profile is not regular at the centre</td>
+<td>an even <code>N</code>; <code>lmax − m + 1</code> a multiple of twice the number of MPI ranks (<code>assemble.py</code> checks it); <code>structure = 'Wu 2005'</code> and <code>'polytrope'</code> need <code>r_out</code> between 0 and 1; <code>'Jones 2011'</code> and stratification <code>'conduction'</code> need <code>ricb</code> &gt; 0, and <code>'Jones 2011'</code> needs <code>r_out</code> = 1 and refuses <code>centrifugal_shape = 'clairaut'</code>, which <code>'polytrope'</code> takes. In a full sphere kore warns where a background profile is not regular at the centre</td>
 </tr>
 <tr>
 <td>Inv</td>
