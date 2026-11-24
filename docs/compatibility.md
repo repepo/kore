@@ -191,7 +191,7 @@ Each feature has requirements of its own, whatever it is combined with. kore sto
 
 | feature | needs |
 | --- | --- |
-| every run | an even `N`; `lmax − m + 1` a multiple of twice the number of MPI ranks (`assemble.py` checks it); `structure = 'Wu 2005'` needs `r_out` between 0 and 1. In a full sphere kore warns where a background profile is not regular at the centre |
+| every run | an even `N`; `lmax − m + 1` a multiple of twice the number of MPI ranks (`assemble.py` checks it); `structure = 'Wu 2005'` and `'polytrope'` need `r_out` between 0 and 1; `'Jones 2011'` and stratification `'conduction'` need `ricb` > 0, and `'Jones 2011'` needs `r_out` = 1 and refuses `centrifugal_shape = 'clairaut'`, which `'polytrope'` takes. In a full sphere kore warns where a background profile is not regular at the centre |
 | Inv | a full sphere (`ricb = 0`) |
 | H0 | `magnetic`, `thermal` or `compositional` = 1, and an eigenvalue problem; not `track_target = 2`, which picks the mode by its kinetic energies ([Following a mode](output.md#following-a-mode)) |
 | DR | with the entropy, `thermal_wind` 1 or 2 needs `Beyonce` other than 0; `diff_rot_type = 'ferraro'` needs a poloidal B0 |

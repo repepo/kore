@@ -44,7 +44,8 @@ PARAMS = ['thermal', 'm', 'symm', 'ricb', 'bci', 'bco', 'forcing', 'forcing_freq
           'OmgtauIC', 'vtrq', 'mtrq', 'kappa_cmb', 'topo_drag', 'topo_hrms', 'topo_lambda0', 'topo_H', 'topo_N_cmb',
           'topo_omega', 'compositional', 'comp_stratification', 'comp_stratification_param', 'BeyonceC', 'CompoD',
           'comp0', 'comp_pow', 'bci_compositional', 'bco_compositional', 'comp_two_zone_rc', 'comp_two_zone_h',
-          'two_zone_rc', 'two_zone_h', 'bgflow', 'bgflow_Ro']
+          'two_zone_rc', 'two_zone_h', 'bgflow', 'bgflow_Ro',
+          'polytrope_n', 'polytrope_gamma', 'polytrope_Nrho']
 FLOW = ['KE', 'KP', 'KT', 'Dkin', 'ldom', 'lwidth', 'lconv', 'Ensvel', 'Enscor', 'Ensvif', 'Ensbuo', 'cuvismax_r',
         'cuvismax_l', 'cuvismax', 'resens', 'resid2', 'resid1', 'Wdr', 'Wdr_im', 'Ensdr', 'Wp_icb', 'Wp_cmb', 'Wp_im',
         'Wv_icb', 'Wv_cmb', 'Dvisc', 'residD', 'irreg0', 'angmom_re', 'angmom_im', 'vtorq_re', 'vtorq_im', 'vtorq_ic_re',

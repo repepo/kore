@@ -116,6 +116,185 @@ class wu2005_profiles(structure):  # -------------------------------------------
         return par.r_out*out
 
 
+class polytrope_profiles(structure):  # ------------------------------------------------ structure = 'polytrope'
+    '''
+    NEW (2026-11-23): the self-gravitating polytrope of index n = polytrope_n (0 <= n <= 4.9): ρ = θⁿ, p = θⁿ⁺¹ (p = ρ0 T0, both
+    1 at the centre) and g = θ'(ξ₁x)/θ'(ξ₁) (1 at the surface), θ(ξ) the Lane-Emden function, θ'' + 2θ'/ξ + θⁿ = 0,
+    θ(0) = 1, θ'(0) = 0, ξ = ξ₁ x, x = r r_out, ξ₁ its first zero (the surface, x = 1). Then dp/dx = -K ρ g with
+    K = -(n + 1) ξ₁ θ'(ξ₁). r_out < 1 keeps ρ > 0 at the outer wall, as with 'Wu 2005'. n = 1 is θ = sin ξ/ξ, ξ₁ = π: the
+    commented lines of wu2005_profiles. θ and ξ₁ θ'(ξ₁ x) come from an integration of the Lane-Emden equation (DOP853, from
+    its series at ξ = 1e-3, to its zero) and, on |x| <= W = r_out + 0.001 (halfway to the surface for r_out > 0.998), from
+    even Chebyshev interpolants of ln(θ/(1 - x²)) and ln(-ξ₁θ'(ξ₁x)/x), which keep θ and θ' to a relative accuracy where
+    they are small (a DCT of degree 511, doubled up to 8191: at r_out 0.99, 511 or 1023 up to n = 4.5, 4095 for n = 4.9).
+    Against mpmath, p and ρ are within 2e-13 (relative) up to r_out 0.99 (1e-13 up to n = 4.5) and g within 3e-13 of its
+    maximum (θ'(ξ₁), read at the event, sets it); beyond, all three within about 1e-15/(1 - r_out), the round-off of θ near
+    its zero (for g, from r_out about 0.9999995, the truncation of its interpolant at degree 8191: 1.5e-10 at r_out
+    0.9999999). The integration itself is used beyond W (g and ρ* up to x = 1 for Clairaut's equation, centrifugal.py,
+    which takes the exact ρ* = ρ/ρ̄ of rho_star).
+    '''
+    def __init__(self):
+        from scipy.integrate import solve_ivp
+        import scipy.fft as sft
+        n = float(par.polytrope_n)
+        self.n = n
+        def rhs(xi, v):
+            return [v[1], -np.maximum(v[0], 0.)**n - 2*v[1]/xi]
+        def zero(xi, v):
+            return v[0]
+        zero.terminal, zero.direction = True, -1
+        x0 = 1e-3   # θ = 1 - ξ²/6 + n ξ⁴/120 - n(8n - 5) ξ⁶/15120 + ...: the next term is below 3e-27 there (3e-23 in θ')
+        # max_step 0.02: interp samples the dense output, which with DOP853's own step sizes is 10 to 100 times less accurate
+        # than the steps (θ' off by up to 3e-13 of its maximum near ξ ~ 1 for n = 1.5 to 4.9, a noise in the Chebyshev
+        # coefficients above kore's cuts). With it θ is within 1e-14 and θ' within 3e-14 of its maximum on |x| <= W (against
+        # mpmath; 5e-13 within 1e-9 of the zero, where the event's θ'(ξ₁) and so g are off by up to 3e-13), in 130 to 8600
+        # steps (0.01 to 0.7 s, n = 4.9)
+        sol = solve_ivp(rhs, (x0, 1e4), [self._series(x0, n, 0), self._series(x0, n, 1)], method='DOP853', rtol=2.5e-14,
+                        atol=1e-18, events=zero, dense_output=True, max_step=0.02)
+        if not sol.success or sol.t_events[0].size == 0:
+            sys.exit("structure 'polytrope': the Lane-Emden integration for n = %r failed (%s)" % (n, sol.message))
+        self.xi1, self.dth1 = sol.t_events[0][0], sol.y_events[0][0][1]       # ξ₁ and θ'(ξ₁)
+        self.sol, self.x0 = sol, x0
+        # W < 1: L and L2 below have a term (1 - x)ⁿ⁺¹ at the surface (θ one in (1 - x)ⁿ⁺²), singular for a non-integer n:
+        # with W = 1 their coefficients fall only algebraically (those of L2 still 1e-15 to 2e-14 at degree 8191 for n of
+        # about 0.005 to 0.35)
+        self.W = W = par.r_out + min(0.001, (1 - par.r_out)/2)
+        def interp(func):
+            # an even function on |x| <= W, sampled at bf.cheb_interp's points taken at W y: degree 511, doubled up to 8191
+            # until the largest of its last 64 coefficients is below 1e-15 of the largest (or of 1), or below 1e-12 and no
+            # longer falls by 4 from one degree to the next (the samples' round-off, about 1e-16/(1 - x) relative near the
+            # surface: from r_out about 0.998), or is below 1e-12 at 8191 (for L from r_out about 0.99999, the larger
+            # round-off there; for L2, whose samples have none, from about 0.9999995 and for small n only, a truncation,
+            # which leaves g within about 1e-15/(1 - r_out), as p)
+            prev = np.inf
+            for deg in (511, 1023, 2047, 4095, 8191):
+                m = deg + 1
+                y = np.sin(0.5*np.pi*(m - 1 - 2*np.arange(m))/m)
+                c = sft.dct(func(W*y))/m
+                c[0] /= 2
+                c[1::2] = 0.                                        # even, exactly
+                a = np.abs(c)
+                tail = a[-64:].max()/max(a.max(), 1.)
+                if tail < 1e-15 or prev/4 < tail < 1e-12 or (deg == 8191 and tail < 1e-12):
+                    break
+                prev = tail
+            else:
+                sys.exit("structure 'polytrope': θ of n = %r is not resolved by 8192 Chebyshev polynomials on |x| <= %g "
+                         "(r_out too close to 1 for this n)" % (n, W))
+            # no cut: the coefficients end in round-off. A cut at 1e-14 (of θ, in a first version) left a ripple of that
+            # size, above kore's own 1e-15 cuts, which filled the operators (1.7 times the nonzeros for n = 4.5, r_out 0.99,
+            # ricb 0.35 at N = 256)
+            return np.polynomial.chebyshev.Chebyshev(c, domain=[-W, W])
+        # Interpolants of ln(θ/(1 - x²)) and ln(-ξ₁θ'(ξ₁x)/x), both even and finite up to the surface, carry θ and θ' with
+        # the relative accuracy of the integration where they are small (the envelope of a condensed polytrope, near the
+        # wall). Interpolants of θ and θ' themselves are accurate only in absolute terms; their round-off, relative to a
+        # small θ, passed kore's cuts of ln ρ, d ln ρ/dr, ... and filled the operators: 2.4 times the nonzeros of an exact θ
+        # for n = 4.9, r_out 0.9, ricb 0.35 at N = 256, against 1.18 times with these
+        self.L = interp(lambda y: np.log(self._ode(np.abs(y), 0)/((1 - np.abs(y))*(1 + np.abs(y)))))
+        self.L2 = interp(lambda y: np.log(-self._ode(np.abs(y), 1)/np.abs(y)))
+
+    @staticmethod
+    def _series(s, n, k):   # θ (k = 0) or θ' (k = 1) near ξ = 0
+        if k == 0:
+            return 1 - s**2/6 + n*s**4/120 - n*(8*n - 5)*s**6/15120
+        return -s/3 + n*s**3/30 - n*(8*n - 5)*s**5/2520
+
+    def _ode(self, x, k):
+        '''θ(ξ₁ x) (k = 0) or ξ₁ θ'(ξ₁ x) (k = 1) at x >= 0 from the integration (its series below ξ = 1e-3)'''
+        xi = self.xi1*np.asarray(x, dtype=float)
+        lo = xi < self.x0
+        out = np.empty(np.shape(xi))
+        if not lo.all():   # (OdeSolution fails on no points at all)
+            out[~lo] = self.sol.sol(np.clip(xi[~lo], self.x0, self.xi1))[k]
+        out[lo] = self._series(xi[lo], self.n, k)
+        return out if k == 0 else self.xi1*out
+
+    def _theta(self, x):   # ln θ and ξ₁ θ' at x = r r_out: the interpolants up to W, the integration beyond
+        x = np.asarray(x, dtype=float)
+        ax = np.abs(x)
+        a = ax <= self.W
+        lt, d = np.empty(np.shape(x)), np.empty(np.shape(x))
+        lt[a] = np.log((1 - ax[a])*(1 + ax[a])) + self.L(x[a])
+        d[a] = -x[a]*np.exp(self.L2(x[a]))
+        if not a.all():
+            with np.errstate(divide='ignore'):
+                lt[~a] = np.log(np.maximum(self._ode(ax[~a], 0), 0.))   # -inf at the surface (θ there is ±1e-16)
+            d[~a] = np.sign(x[~a])*self._ode(ax[~a], 1)
+        return lt, d
+
+    def dlog_theta(self, r):   # ------------------------------------------- d(ln θ)/dr = r_out ξ₁ θ'/θ, odd in r
+        lt, d = self._theta(r*par.r_out)
+        return par.r_out*d*np.exp(-lt)
+
+    def logrho(self, r, rpower):   # ------------------------------------------------ ln ρ = n ln θ, even in r
+        return (r**rpower)*self.n*self._theta(r*par.r_out)[0]
+
+    def pressure(self, r, rpower):   # ---------------------------------------------- p = θⁿ⁺¹, 1 at r = 0
+        return (r**rpower)*np.exp((self.n + 1)*self._theta(r*par.r_out)[0])
+
+    def gravity(self, r, rpower):   # ----------------------------------- g = θ'(ξ₁ x)/θ'(ξ₁), 1 at x = 1, odd in r
+        return (r**rpower)*self._theta(r*par.r_out)[1]/(self.xi1*self.dth1)
+
+    def rho_star(self, x):
+        '''
+        NEW (2026-11-24): ρ* = ρ/ρ̄ = -ξθⁿ/(3θ') at x (ρ̄ the mean density inside x; 1 at the centre, 0 at the surface for
+        n > 0), for Radau's equation (centrifugal.radau), in place of its ρ* from g/x at degree 511, which is off at the
+        surface for a non-integer n below 1 (the (1 - x)ⁿ⁺¹ term of g) and in the core of n above 4.5. From the integration
+        (radau calls it at one x at a time, too often for the interpolants of degree up to 8191)
+        '''
+        x = np.abs(np.asarray(x, dtype=float))
+        out = np.ones(x.shape)
+        z = x > 0
+        th = np.where(x[z] < 1, np.maximum(self._ode(x[z], 0), 0.), 0.)   # θ(ξ₁) = 0 (the integration's is ±1e-16, whose
+        out[z] = -self.xi1**2*x[z]*th**self.n/(3*self._ode(x[z], 1))      # n-th power is not small for a small n)
+        return out
+
+    def dlog_p(self, r):   # --------------------------------------------------- d(ln p)/dr = (n + 1) d(ln θ)/dr
+        return (self.n + 1)*self.dlog_theta(r)
+
+    def dlog_rho(self, r):   # ------------------------------------------------- d(ln ρ)/dr = n d(ln θ)/dr
+        return self.n*self.dlog_theta(r)
+
+
+class jones2011_profiles(structure):  # -------------------------------------------- structure = 'Jones 2011'
+    '''
+    NEW (2026-11-23): the polytrope of the anelastic dynamo benchmark (Jones et al. 2011, Icarus 216, 120; MagIC, Rayleigh),
+    a shell only (ricb > 0): gravity of a central mass, g = 1/r² (1 at the outer wall r = 1), and ζ = c0 + c1 d/r,
+    ρ0 = ζⁿ, p0 = ζⁿ⁺¹ (= ρ0 T0), n = polytrope_n, with β = ricb, d = 1 - β, ζ_o = (β + 1)/(β exp(N_ρ/n) + 1),
+    c0 = (2ζ_o - β - 1)/(1 - β), c1 = (1 + β)(1 - ζ_o)/(1 - β)², N_ρ = polytrope_Nrho = ln(ρ_i/ρ_o) the number of density
+    scale heights across the shell: ζ = 1 at mid-depth, ζ_o at the outer wall. Hydrostatic:
+    dp/dr = -K ρ g with K = (n + 1) c1 d. The reference state is adiabatic; the benchmark's convection is driven by the
+    conduction state between the walls (stratification 'conduction').
+    '''
+    def __init__(self):
+        n, b = float(par.polytrope_n), par.ricb
+        self.n = n
+        zo = (b + 1)/(b*np.exp(par.polytrope_Nrho/n) + 1)
+        self.c0 = (2*zo - b - 1)/(1 - b)
+        self.c1d = (1 + b)*(1 - zo)/(1 - b)        # c1 d
+        self.zo, self.zi = zo, self.c0 + self.c1d/b  # ζ at the outer and the inner wall
+
+    def zeta(self, r):   # c0 + c1 d/r as ζ_o + c1 d (1 - r)/r, free of cancellation near r = 1 when ζ_o is small
+        return self.zo + self.c1d*(1 - r)/r
+
+    def dlog_zeta(self, r):   # ----------------------------------------- d(ln ζ)/dr = -c1 d/(r² ζ)
+        return -self.c1d/(r**2*self.zeta(r))
+
+    def logrho(self, r, rpower):
+        return (r**rpower)*self.n*np.log(self.zeta(r))
+
+    def pressure(self, r, rpower):
+        return (r**rpower)*self.zeta(r)**(self.n + 1)
+
+    def gravity(self, r, rpower):
+        return (r**rpower)/r**2
+
+    def dlog_p(self, r):
+        return (self.n + 1)*self.dlog_zeta(r)
+
+    def dlog_rho(self, r):
+        return self.n*self.dlog_zeta(r)
+
+
 class eight_term_profiles(structure):  # -------------------------------- structure = '8-term fit' (legacy)
     '''
     ρ, p and g of the smooth Model S fit in smoothed_sun.py: 8 even terms in ln ρ, g and p from hydrostatic balance (x = r r_out;
@@ -315,7 +494,8 @@ class boussinesq_profiles(structure):  # ---------------------------------------
 # -------------------------------------------------------------------------------------------------------------
 # par.structure and its class (background.STRUCTURES gives the order of the index written to params.dat)
 structures = { '8-term fit': eight_term_profiles, 'old model S prototype': modelS_profiles,
-               'model S hydrostatic': modelS_hydrostatic_profiles, 'Wu 2005': wu2005_profiles, 'Boussinesq': boussinesq_profiles }
+               'model S hydrostatic': modelS_hydrostatic_profiles, 'Wu 2005': wu2005_profiles, 'Boussinesq': boussinesq_profiles,
+               'polytrope': polytrope_profiles, 'Jones 2011': jones2011_profiles }
 
 bg.check()
 prf = structures[par.structure]()

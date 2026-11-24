@@ -46,7 +46,8 @@ def structure_code():
     return bg.STRUCTURES.index(par.structure)
 
 def stratification_code():
-    return bg.STRATIFICATIONS.index(par.stratification) if par.stratification in bg.STRATIFICATIONS else -1
+    t = bg.stratification()   # NEW (2026-11-23): 'polytrope' when it is None with structure 'polytrope'
+    return bg.STRATIFICATIONS.index(t) if t in bg.STRATIFICATIONS else -1
 
 def diffusivity_code():
     return bg.DIFFUSIVITIES.index(par.diffusivity)
@@ -267,6 +268,11 @@ def param_table(elapsed):
         # NEW (2026-11-08, from conductive_IC): a background flow (bgflow.py; its expressions or its file in the # note)
         ( 'bgflow',                   par.bgflow,                  '%d' ),
         ( 'bgflow_Ro',                par.bgflow_Ro if par.bgflow else 0.0, '%.9e' ),
+        # NEW (2026-11-23): structures 'polytrope' and 'Jones 2011' (the index n, the γ of stratification 'polytrope' and the
+        # N_ρ of 'Jones 2011'; 0 for the other structures)
+        ( 'polytrope_n',              par.polytrope_n if par.structure in ('polytrope', 'Jones 2011') else 0.0, '%.9e' ),
+        ( 'polytrope_gamma',          par.polytrope_gamma if par.structure == 'polytrope' else 0.0, '%.9e' ),
+        ( 'polytrope_Nrho',           par.polytrope_Nrho if par.structure == 'Jones 2011' else 0.0, '%.9e' ),
     ]
 
 

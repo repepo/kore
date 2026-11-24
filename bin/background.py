@@ -14,10 +14,12 @@ import scipy.special as ss
 from parameters import par
 
 # As written to params.dat (spin_doctor): the index in each tuple. Append new types at the end.
-STRUCTURES = ('8-term fit', 'old model S prototype', 'model S hydrostatic', 'Wu 2005', 'Boussinesq')
+STRUCTURES = ('8-term fit', 'old model S prototype', 'model S hydrostatic', 'Wu 2005', 'Boussinesq', 'polytrope',
+              'Jones 2011')   # ('polytrope', 'Jones 2011': NEW 2026-11-23)
 SOLAR = STRUCTURES[:3]   # the solar structures: the rotation also uses x = r r_out (diff_rot.solar_x)
-STRATIFICATIONS = ('top hat', 'odd top hat', 'solar_rz', 'linear', 'inverse square', 'user', 'two zone')   # ('two zone': NEW
-# 2026-11-08, conductive_IC's)
+STRATIFICATIONS = ('top hat', 'odd top hat', 'solar_rz', 'linear', 'inverse square', 'user', 'two zone', 'polytrope',
+                   'conduction')   # ('two zone': NEW 2026-11-08, conductive_IC's; 'polytrope', the entropy of structure
+# 'polytrope', and 'conduction', NEW 2026-11-23)
 COMP_STRATIFICATIONS = ('linear', 'inverse square', 'two zone', 'user')   # NEW (2026-11-08): comp_stratification, dC/dr
 DIFFUSIVITIES = ('uniform', 'step', 'solar_rz', 'user')
 MAGNETIC_WALLS = ('insulator', 'TWA', 'resolved')   # NEW (2026-10-28): mantle (magnetic = 1); B0 types: background_field.B0_TYPES
@@ -113,9 +115,39 @@ def check():
         sys.exit('structure %r: set one of %s' % (par.structure, _names(STRUCTURES)))
     if par.structure == 'Wu 2005' and not 0 < par.r_out < 1:
         sys.exit("structure 'Wu 2005' needs 0 < r_out < 1: its density vanishes at x = 1")
+    if par.structure == 'polytrope':   # NEW (2026-11-23)
+        if not 0 < par.r_out < 1:
+            sys.exit("structure 'polytrope' needs 0 < r_out < 1: its density vanishes at x = 1")
+        if not 0 <= par.polytrope_n <= 4.9:
+            sys.exit('polytrope_n %r: 0 <= n <= 4.9 (the central condensation grows quickly with n: at r_out 0.99, 4.9 needs '
+                     '4096 Chebyshev polynomials and 4.98 more than the 8192 of its interpolants; from n = 5 on the polytrope '
+                     'has no surface)' % (par.polytrope_n,))
+    if par.structure == 'Jones 2011':   # NEW (2026-11-23)
+        if not 0 < par.ricb < 1:
+            sys.exit("structure 'Jones 2011' is a shell (0 < ricb < 1): its gravity is that of a central mass, g = 1/r²")
+        if not (par.polytrope_n > 0 and par.polytrope_Nrho > 0):
+            sys.exit("structure 'Jones 2011' needs polytrope_n > 0 and polytrope_Nrho > 0 (got %r, %r)"
+                     % (par.polytrope_n, par.polytrope_Nrho))
+        if par.r_out != 1:
+            sys.exit("structure 'Jones 2011' is defined in units of the outer radius: set r_out = 1 (got %r)" % (par.r_out,))
+        if par.centrifugal and par.centrifugal_shape == 'clairaut':
+            sys.exit("structure 'Jones 2011' has the gravity of a central mass, not its own: centrifugal_shape 'clairaut' "
+                     "(Clairaut's equation for a self-gravitating body) cannot use it; 'uniform' or 'user' can")
+        pows = [k for k, used in (('visc_pow', 1), ('therm_pow', par.thermal), ('comp_pow', getattr(par, 'compositional', 0)))
+                if used and getattr(par, k) != 0]
+        if pows and not par.ricb <= par.aux3 <= 1:
+            sys.exit("structure 'Jones 2011' has no centre: with %s other than 0 set aux3, the radius where ν, κ and D are "
+                     "ViscosD, ThermaD and CompoD, between ricb and 1 (got %r)" % (' and '.join(pows), par.aux3))
     if par.thermal:
-        if par.stratification not in STRATIFICATIONS:
+        if stratification() not in STRATIFICATIONS:
             sys.exit('stratification %r: set one of %s' % (par.stratification, _names(STRATIFICATIONS)))
+        if stratification() == 'polytrope':   # NEW (2026-11-23)
+            if par.structure != 'polytrope':
+                sys.exit("stratification 'polytrope' is the entropy of structure 'polytrope' (got structure %r)" % (par.structure,))
+            if not par.polytrope_gamma > 1:
+                sys.exit('polytrope_gamma %r: the adiabatic exponent γ = c_p/c_v, > 1' % (par.polytrope_gamma,))
+        if stratification() == 'conduction' and par.ricb == 0:   # NEW (2026-11-23)
+            sys.exit("stratification 'conduction' needs ricb > 0 (the conduction state between two walls)")
         if par.stratification == 'inverse square' and par.ricb == 0:
             sys.exit("stratification 'inverse square' needs ricb > 0")
         if (par.solar_rz_delta_cz != 0 or par.solar_rz_delta_sf != 0) and par.stratification != 'solar_rz':
@@ -1568,13 +1600,97 @@ def description():
 
 # ----------------------------------------------------------------------------------------------------- stratification
 
+def stratification():
+    '''
+    NEW (2026-11-23): the stratification in use: par.stratification, or 'polytrope' when it is None with structure
+    'polytrope' (the entropy of the polytrope itself)
+    '''
+    if par.stratification is None and par.structure == 'polytrope':
+        return 'polytrope'
+    return par.stratification
+
+
+def polytrope_entropy_factor():
+    '''
+    NEW (2026-11-23): c = (n + 1)/γ - n of stratification 'polytrope', dS/dr = c d(ln θ)/dr; exactly 0 for the adiabatic
+    n = 1/(γ - 1) (below 1e-14 is taken as 0, the round-off of n and γ)
+    '''
+    n, gam = float(par.polytrope_n), float(par.polytrope_gamma)
+    c = ((n + 1) - n*gam)/gam
+    return 0. if abs(c) < 1e-14*max(1., n) else c
+
+
+_cond = {}
+def conduction_constant(prf):
+    '''
+    NEW (2026-11-23): C = 1/∫_ricb^1 dr/(r² κ p0) of stratification 'conduction'. Adaptive: Gauss-Legendre rules of 20 and
+    40 nodes on 16 panels (two more around the transition of a 'step' or 'solar_rz' κ), a panel halved until the two agree
+    to 1e-12 of it or 1e-14 of the integral. A κ p0 with a round-off above that (the legacy '8-term fit' near its surface:
+    up to 1e-8 of it at r_out 0.99, 4e-7 at 0.999) leaves panels that never agree: once more than 2048 are left, or after
+    40 halvings, they are taken if their differences add up to less than 1e-8 of the integral. kore stops if κ p0 is not
+    finite and positive at a wall or a node. A feature of a 'user' κ that falls between the nodes goes unseen: a dip below
+    0 up to about 3e-3 (1 - ricb) wide if its edges are sharp, a few 1e-4 if smooth, or a step narrower than about 5e-5
+    next to a panel end (C is then that of a sharp step there).
+    '''
+    if 'C' not in _cond:
+        f = lambda r: 1/(r**2*prf.thermal_diffusivity(r, 0)*prf.pressure(r, 0))
+        msg = "stratification 'conduction': "
+        def check_f(v):
+            if not (np.isfinite(v).all() and (v > 0).all()):
+                sys.exit(msg + 'κ p0 must be finite and positive between ricb and 1, walls included')
+            return v
+        check_f(f(np.array([par.ricb, 1.])))
+        rules = [np.polynomial.legendre.leggauss(k) for k in (20, 40)]
+        # Neither rule has a node within 0.0018 of a half-panel of a panel end (up to 8e-5 here): a step narrower than
+        # about 5e-5 there is seen by neither, and C is that of a sharp step at the end (off by up to about 1e-3 for a
+        # 'step' of width 1e-6 next to an inner end; next to the outer wall too large by a factor that grows with the
+        # contrast: up to 1.04 for 1e3, 20 to 40 for 1e6 with ricb 0.35 to 0.7). So the transition of a 'step' or
+        # 'solar_rz' κ gets panels of its own, from its centre - 8 widths to its centre + 8 widths, whose nodes see it
+        # however narrow it is; the inner ends sit at k - 0.382 sixteenths of the shell (2 minus the golden ratio), off
+        # round radii (a 'step' at aux3 0.7 with ricb 0.2 sat on one)
+        a = par.ricb + (1 - par.ricb)*np.r_[0., np.arange(1, 16) - 0.3819660112501051]/16
+        if par.diffusivity in ('step', 'solar_rz') and par.therm0 != 1:
+            c, w = (par.aux3, par.aux4) if par.diffusivity == 'step' else np.asarray(par.solar_rz_os, dtype=float)/par.r_out
+            ends = c + 8*abs(w)*np.array([-1., 1.])
+            a = np.unique(np.r_[a, ends[(ends > par.ricb) & (ends < 1)]])
+        b = np.r_[a[1:], 1.]
+        total = 0.
+        for halvings in range(41):
+            h = (b - a)/2
+            # the nodes from a, not from the midpoint: fl((a + b)/2), half an ulp off, shifted a whole panel unseen by
+            # |I2 - I1|, 1e-3 of its width for the deepest (C off by up to 7e-7 for 'Jones 2011' near its limit)
+            I1, I2 = (h*(check_f(f((a[:, None] + h[:, None]*(1 + x)).ravel())).reshape(a.size, -1) @ w) for x, w in rules)
+            e = np.abs(I2 - I1)
+            ok = e <= np.maximum(1e-12*I2, 1e-14*(total + I2.sum()))
+            total += I2[ok].sum()
+            if ok.all():
+                break
+            a, b, h, I2, e = a[~ok], b[~ok], h[~ok], I2[~ok], e[~ok]
+            if a.size > 2048 or halvings == 40:
+                if e.sum() > 1e-8*(total + I2.sum()):
+                    sys.exit(msg + 'the integral of 1/(r² κ p0) over the shell does not converge (κ p0 near zero, not '
+                             'smooth or too noisy between ricb and 1: the two rules still differ by more than 1e-8 of it)')
+                total += I2.sum()
+                break
+            a, b = np.r_[a, a + h], np.r_[a + h, b]
+        _cond['C'] = 1/total
+    return _cond['C']
+
+
 def gradS(prf, r):
     '''
     dS/dr at r >= 0 (kore uses it as an odd function of r: radial_profiles.pdSdr, gradSX); prf, the structure, gives
     d(ln p0)/dr for the δ of 'solar_rz'.
     '''
     import utils as ut
-    t = par.stratification
+    t = stratification()
+    if t == 'polytrope':        # NEW (2026-11-23): S = s/c_p = (1/γ) ln p0 - ln ρ0 of the polytrope, p0 = θⁿ⁺¹, ρ0 = θⁿ:
+        # dS/dr = ((n + 1)/γ - n) d(ln θ)/dr, > 0 (stable) for n > 1/(γ - 1), 0 for the adiabatic n = 1/(γ - 1)
+        return polytrope_entropy_factor()*prf.dlog_theta(r)
+    if t == 'conduction':       # NEW (2026-11-23): the conduction state ∇·(κ p0 ∇S) = 0 between the walls, dS/dr = C/(r² κ p0)
+        # with C > 0 such that S(1) - S(ricb) = 1; 'inverse square' times ricb/(1 - ricb) for 'Boussinesq' and a uniform κ
+        r = np.asarray(r, dtype=float)
+        return conduction_constant(prf)/(r**2*prf.thermal_diffusivity(r, 0)*prf.pressure(r, 0))
     if t == 'top hat':          # erf top hat between x1 and x2, aux1..aux5 = x1, w1, x2, w2, A (in r)
         # With ricb = 0 its odd extension is smooth only if dS/dr -> 0 at r = 0: keep x1 >= ~6 w1 (e.g. x1 = 0.2, w1 = 0.03)
         # or use 'odd top hat'. With x1 = w1 = 0.03 (dS/dr(0) = 0.2) the jump at r = 0 spoiled all ricb = 0 thermal runs

@@ -94,14 +94,16 @@ def x_top():
     g is defined only up to r_out (the mass above the wall is then neglected, as it is in kore's q there)'''
     return par.r_out if par.structure == 'model S hydrostatic' else 1.0
 
-def radau(g, xt, n=256):
+def radau(g, xt, n=256, rho_star=None):
     '''
     Clairaut's equation for a body whose gravity is g(x) (any normalisation, odd in x), up to its surface xt, in Radau's form:
         x η' = 6 - 6 ρ*(η + 1) - η² + η,   η = x f'/f,   ρ* = ρ/ρ̄ = (x g' + 2g)/(3g),   η(0) = 0
     (ρ̄ the mean density inside x; ρ* from g alone, by Poisson's equation, so the structure's g must be its self-gravity),
     integrated from the centre (series η = -(6/7)(ρ* - 1) near it) with ln(f/f_c)' = η/x alongside. ρ* = 1 + x h'/(3h)
     with h = g/x from an even Chebyshev interpolant of degree 2n - 1 (FIX 2026-11-08: by a DCT, its coefficients below
-    1e-15 of the largest dropped). Returns (eta, lnf, rho_s): callables of x in [0, xt] (at |x|) for η, ln(f/f_c) and ρ*.
+    1e-15 of the largest dropped). NEW (2026-11-24): rho_star, ρ* itself as a callable of x >= 0, replaces that ρ* when the
+    structure has it exactly (polytrope_profiles.rho_star). Returns (eta, lnf, rho_s): callables of x in [0, xt] (at |x|)
+    for η, ln(f/f_c) and ρ*.
     The surface condition x f' + 2f = (5/2) q at xt then gives f_c (shape_functions).
     A homogeneous body (g ∝ x) has η = 0 (the Maclaurin f = 5q/4); a polytrope of index 1 has f(xt)/q = 7.5/π².
     '''
@@ -119,6 +121,8 @@ def radau(g, xt, n=256):
     h.coef[np.abs(h.coef) < 1e-15*np.abs(h.coef).max()] = 0.
     hd = h.deriv()
     rho_s = lambda y: 1 + np.abs(y)*hd(np.abs(y))/(3*h(np.abs(y)))
+    if rho_star is not None:   # NEW (2026-11-24): the structure's exact ρ*
+        rho_s = lambda y: rho_star(np.abs(np.asarray(y, dtype=float)))
     def rhs(y, v):
         e = v[0]
         return [(6 - 6*rho_s(y)*(e + 1) - e*e + e)/y, e/y]
@@ -160,7 +164,7 @@ def shape_functions():
     if t == 'clairaut':
         import radial_profiles as rap
         xs, xt = x_scale(), x_top()
-        eta, lnf, rho_s = radau(lambda x: rap.prf.gravity(x/xs, 0), xt)
+        eta, lnf, rho_s = radau(lambda x: rap.prf.gravity(x/xs, 0), xt, rho_star=getattr(rap.prf, 'rho_star', None))
         eta_t = float(eta(np.array([xt]))[0])
         if par.centrifugal_f is None:
             f_ref, x_ref = 2.5*par.centrifugal_q*xt**3/(eta_t + 2), xt

@@ -183,11 +183,14 @@ Columns, counted from 1:
 | 142–150 | `compositional`, `comp_stratification`, `comp_stratification_param`, `BeyonceC`, `CompoD`, `comp0`, `comp_pow`, `bci_compositional`, `bco_compositional` |
 | 151–154 | `comp_two_zone` and `two_zone` |
 | 155–156 | `bgflow`, `bgflow_Ro` |
+| 157–159 | `polytrope_n`, `polytrope_gamma`, `polytrope_Nrho` (0 where the structure does not use them) |
 
 - Options given by name are written as their position in the list of choices, counting from 0, in the order of the
   tables on the corresponding pages; −1 means "none". For example `structure`: `'8-term fit'` 0,
-  `'old model S prototype'` 1, `'model S hydrostatic'` 2, `'Wu 2005'` 3, `'Boussinesq'` 4. `tools/get_data.py`
-  (below) reads the file with named columns.
+  `'old model S prototype'` 1, `'model S hydrostatic'` 2, `'Wu 2005'` 3, `'Boussinesq'` 4, `'polytrope'` 5,
+  `'Jones 2011'` 6; `stratification` (not in the order of its table): `'top hat'` 0, `'odd top hat'` 1, `'solar_rz'` 2,
+  `'linear'` 3, `'inverse square'` 4, `'user'` 5, `'two zone'` 6, `'polytrope'` 7, `'conduction'` 8.
+  `tools/get_data.py` (below) reads the file with named columns.
 - A row ends, after a `#` that `np.loadtxt` skips, with any expressions of the run (`'user'`, `'general'`,
   `'ferraro'`, `sigma_mantle`, `bgflow_profiles`) and the names of the data files it read, with a short checksum.
 

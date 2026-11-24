@@ -64,7 +64,7 @@ Outputs: `flow.npy` (and `thermal.npy`, `magnetic.npy`, `composition.npy`), comp
 files; `bin/field_io.py`, read by the tests and tools, and `utils.save_field`, `load_field`, `field_exists`), eigenvectors
 normalised to kinetic energy 1 (KE + Hendrik·ME = 1 with `magnetic = 1`; ME + TE + CE
 = 1 without the flow, `hydro = 0`); `eigenvalues0.dat` (this solve: Re λ, Im λ); `timing.dat`. `spin_doctor` appends to
-`eigenvalues.dat`, `params.dat` (156 columns, and a `#` note on rows that need one, §10), `flow.dat` (50), `thermal.dat`
+`eigenvalues.dat`, `params.dat` (159 columns, and a `#` note on rows that need one, §10), `flow.dat` (50), `thermal.dat`
 (8), `composition.dat` (8, with `compositional = 1`), `magnetic.dat` (22 since 2026-11-16: 22 `lconv_b`, the field's ℓ-convergence; 21 in every run since 2026-11-10: 17–20 the magnetic torques on the mantle and the inner core, 21 brms, the r.m.s. of b_r on the outer wall, `upp.br_rms_cmb`; before, 11, 12 with `centrifugal = 1`, 16 with a thin wall or a resolved mantle). A conducting inner core adds
 `magnetic_ic`, a resolved mantle `magnetic_mantle`, `rotdyn = 1` `rotdyn` (ω_M, ω_IC, φ) and
 `rotdyn.dat` (16). A `params.dat` or `magnetic.dat` from an older version has fewer columns: start a new one, and do
@@ -93,7 +93,7 @@ ones too (check_names warns), and does not call set_scales. docs/output.md#the-p
 | `background_field.py` | the imposed magnetic field B0 (`magnetic = 1`, §4): `B0_TYPES` ('axial', 'FDM', 'G21 dipole', 'Luo_S1', 'Luo_S2', 'confined', 'general', 'ferraro', 'dipole'; the polynomial ones in `POLY`, `B0_beta_ic`), `B0_TOR_TYPES`, `symmB0`, `B0_l`, the FDM root `findbeta`, h and its derivatives `h(r, k)` (`jl_k` at ricb = 0), k(r, d), the 'general' interpolants (`gen_profile`), the 'ferraro' projection (`ferraro_profile`, `ferraro_cnorm`), the wound field (`wound_profiles`, `wound_residual`), `cnorm` (`B0_norm`), `cnorm_tor` (with `cnorm_error`, `cnorm_tor_error` for check_magnetic), the profiles `bpoX`, `btoX` and, degree by degree, `pol_profiles`, `tor_profiles`; numpy and scipy only |
 | `mag_algebra.py` | the Lorentz and induction couplings for any background degree from the recurrence algebra of `angular.py` (`mag_couplings = 'algebra'`, forced for 'general', 'ferraro' and `B0_wound`): `coefficients`, `labels` (profile codes `hp`/`kt` + degree), `block`, `dl_range` |
 | `bgflow.py` | NEW 2026-11-08 (from conductive_IC): the background flow (`bgflow = 1`, §4): U, S, C from `bgflow_file` (an .npz of Chebyshev series) or `bgflow_profiles` (expressions; `load`, `source`, `raw`, `degrees`, `nmax`), the profile codes `wq`, `ws`, `wt`, `wh`, `wd`, `wc`, `we` + degree (`profile_functions`, `odd_codes`), the couplings from the algebra of `angular.py` and `mag_algebra` (`build`, `coefficients` cached per m, `labels`, `dl_range`, `block`), `check` (the stops), `rigid_rate` (the rate of a conducting solid at a wall), `steadiness` (B0 under U), `description` (params.dat); for spin_doctor `flow_grid`, `scalar_grid`; as a script (`bgflow.py nmax [nonlinear]`) the writer of `bgflow_file` from a forcing-12 run (`write`, `newton`) |
-| `radial_profiles.py` | one class per structure (`wu2005_profiles`, `eight_term_profiles`, `modelS_profiles`, `modelS_hydrostatic_profiles`, `boussinesq_profiles`, on a base class `structure` that takes dS/dr, ν and κ from `background.py`), the dict `structures` and the instance `prf`; the `*X(r, Dorder)` derivative helpers; `proffdir` (label code → function, the background flow's `w` codes from `bgflow.profile_functions`); `burrito` (the integrand of one operator) |
+| `radial_profiles.py` | one class per structure (`wu2005_profiles`, `eight_term_profiles`, `modelS_profiles`, `modelS_hydrostatic_profiles`, `boussinesq_profiles`, `polytrope_profiles`, `jones2011_profiles`, on a base class `structure` that takes dS/dr, ν and κ from `background.py`), the dict `structures` and the instance `prf`; the `*X(r, Dorder)` derivative helpers; `proffdir` (label code → function, the background flow's `w` codes from `bgflow.profile_functions`); `burrito` (the integrand of one operator) |
 | `smoothed_sun.py` | analytic even fit of the Model S ln ρ, with g, p, d ln ρ/dr, d ln p/dr (structure '8-term fit'; its g also serves 'old model S prototype') |
 | `model_s.at` | Model S table (columns As, c₁, ρ/ρ_c, p/p_c, x) for 'model S hydrostatic' and 'old model S prototype' |
 | `jsoc_hmi_2010_2026.npz` | the observed rotation Ω(r, θ), the mean of 83 HMI 72-day inversions (2010–2026), in the layout of `diff_rot_type = 'tabulated'` (`examples/smooth_sun`) |
@@ -384,7 +384,8 @@ impenetrable and no-slip rows exact). Covariant momentum: M∂ₜw, M = FᵀF/J 
 algebra of angular.py and projected like the diff-rot force: Δl = 0, ±2 (same kind), ±1, ±3 (P↔T) (`centrifugal.dl_range`,
 `assemble.centrifugal_blocks`). B is complex with centrifugal = 1 (real otherwise, so existing runs stay bitwise equal).
 Profile codes `ce0` = ε, `ce1` = rε′ = η, `ce2` = r(rε′)′, even in r. `centrifugal_shape`: 'clairaut' (Radau's form of
-Clairaut's equation from the structure's g, `centrifugal.radau`; f_top = 5q_top/(2(η_top + 2)), q_top = q x_top³, x_top =
+Clairaut's equation from the structure's g, `centrifugal.radau`, or from its exact ρ/ρ̄ where it has one, `rho_star`
+of 'polytrope'; f_top = 5q_top/(2(η_top + 2)), q_top = q x_top³, x_top =
 r_out for 'model S hydrostatic', else 1; `centrifugal_f` rescales it to f at the outer wall), 'uniform' (`centrifugal_f`),
 'user' (`centrifugal_profile` in r, x, p, as the other 'user' expressions). `centrifugal_q` > 0 adds the monopole
 −(2/3)Ω²r to g in `radial_profiles.graviX` (the buoyancy); `graviX(r, D, False)` is the structure's g, which the thermal
@@ -571,11 +572,17 @@ before it builds `prf`) stops on an unknown type and on settings that cannot wor
   `'model S hydrostatic'` (for new solar runs: an even fit of ln ρ of `model_s.at` of degree `structure_deg` over the
   whole Sun, g from its mass, p from dp/dr = −ρg; degree 30 is within 1 % of Model S, 50 within 0.14 %); `'Wu 2005'`
   (ρ₀ = (1 − x²)², β = 2, analytic g and p; r_out < 1 is the "peel" that keeps ρ₀(1) > 0: keep it ≥ 0.99, never below
-  0.985); `'Boussinesq'` (ρ₀ = p₀ = 1, g = r: the Boussinesq equations). Legacy, kept so that older parameter files give the same
+  0.985); `'Boussinesq'` (ρ₀ = p₀ = 1, g = r: the Boussinesq equations); `'polytrope'` (2026-11-23: the Lane–Emden polytrope
+  of index `polytrope_n`, 0 ≤ n ≤ 4.9, ρ₀ = θⁿ and p₀ = θⁿ⁺¹ (1 at the centre), its own gravity g = θ'(ξ₁x)/θ'(ξ₁) (1 at
+  the surface), r_out < 1; θ integrated (DOP853) when the class is built and interpolated as ln θ and ln(−θ') (relative
+  accuracy where θ is small); Clairaut's equation takes its exact ρ/ρ̄, `rho_star`); `'Jones 2011'` (2026-11-23:
+  the anelastic benchmark's polytrope, ζ = c0 + c1 d/r, g = 1/r², a shell with r_out = 1, refuses centrifugal_shape
+  'clairaut'; `polytrope_n`, `polytrope_Nrho`). Legacy, kept so that older parameter files give the same
   results: `'8-term fit'` (`smoothed_sun.py`, ρ up to 48 % off Model S near the surface) and `'old model S prototype'`
   (Chebyshev fits of ln ρ, ln p of `model_s.at` controlled by `solar_density_deg`, `solar_density_window`,
   `solar_density_sun_deg`, with the g of the 8-term fit, so not hydrostatic).
-- **`stratification`** (dS/dr for r ≥ 0, used as an odd function of r; no default when `thermal = 1`): `'top hat'`
+- **`stratification`** (dS/dr for r ≥ 0, used as an odd function of r; no default when `thermal = 1`, except
+  `'polytrope'` with structure `'polytrope'`: `background.stratification()`): `'top hat'`
   (`ut.erf_top_hat`, aux1..aux5 = x1, w1, x2, w2, A in r; at ricb = 0 it needs x1 ≳ 6 w1), `'odd top hat'`
   (`ut.erf_top_hat_odd`, x1 = 0 is fine at ricb = 0; 0, 0.03, 0.68, 0.06, 2.6 fits Model S to 10 % rms), `'solar_rz'`
   (the radiative interior of Mukhopadhyay et al. 2025b, their eq. 10: `solar_rz_dSdr`, `solar_rz_steps`, `solar_rz_core`;
@@ -583,7 +590,11 @@ before it builds `prf`) stops on an unknown type and on settings that cannot wor
   `solar_rz_delta_sf`, which kore accepts with this stratification only), `'linear'` (r: with 'Boussinesq',
   N² = Beyonce r²), `'inverse square'` (1/r², needs ricb > 0), `'user'` (`stratification_profile`,
   `stratification_param`), `'two zone'` (2026-11-08, conductive_IC's 'two zone' heating: (1 + tanh(2(r − rc)/h))/2,
-  [rc, h] = `two_zone`, default [0.7, 0.1]).
+  [rc, h] = `two_zone`, default [0.7, 0.1]), `'polytrope'` (2026-11-23: the entropy of structure
+  'polytrope', ((n + 1)/γ − n) d ln θ/dr, γ = `polytrope_gamma`), `'conduction'` (2026-11-23: the conduction state
+  C/(r² κ p₀), S(1) − S(ricb) = 1, needs ricb > 0 and κ p₀ > 0, convects with Beyonce < 0; `background.conduction_constant`; with
+  'Jones 2011' it gives the benchmark's onset at m = 20 within 2e-4 (Ra_c 1.6e-4, ω_c 1.9e-4), docs/background.md;
+  submatrices.main computes C before its Pools, so that a refusal stops kore).
 - **`comp_stratification`** (dC/dr for r ≥ 0, odd in r, amplitude 1; `compositional = 1`, no default; 2026-11-08,
   `background.gradC`): `'linear'`, `'inverse square'` (needs ricb > 0), `'two zone'` ([rc, h] = `comp_two_zone`),
   `'user'` (`comp_stratification_profile`, `comp_stratification_param`); its index in `background.COMP_STRATIFICATIONS`.
@@ -760,7 +771,8 @@ others, before the MPI gather lists them by `locals()`, or rank 0 keeps zeros fo
   `composition_cols` lists. params.dat 142–154 (2026-11-08): compositional, comp_stratification (its index in
   `background.COMP_STRATIFICATIONS`, −1 without the composition), comp_stratification_param, BeyonceC, CompoD, comp0,
   comp_pow, bci/bco_compositional, comp_two_zone and two_zone (rc, h each); 155–156 (2026-11-08) bgflow, bgflow_Ro (its
-  expressions, or its file and sha256, in the row's note, `bgflow.description`).
+  expressions, or its file and sha256, in the row's note, `bgflow.description`); 157–159 (2026-11-23) polytrope_n,
+  polytrope_gamma, polytrope_Nrho (0 for the other structures).
 - With diff rot, `upp.diff_rot_setup` computes the force and heat terms on an (r, cos θ) grid and projects them back.
 - With `centrifugal = 1` (2026-11-05) KE (also solve.py's normalisation), the Coriolis power and TE include the metric
   parts (`upp.centrifugal_terms`, from the fields on the grid, apart from the matrices; CE and Dcmp

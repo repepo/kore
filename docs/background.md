@@ -68,6 +68,8 @@ The default `bin/parameters.py` uses `structure = 'Wu 2005'` and `stratification
 | `'model S hydrostatic'` | the Sun: a smooth fit to the density of solar Model S, with gravity and pressure consistent with it. Recommended for solar work | `structure_deg` (30) |
 | `'Wu 2005'` | a polytrope-like density $\rho_0 = (1 - x^2)^2$ (Wu 2005) | needs `r_out` < 1, so that the density is not zero at the wall |
 | `'Boussinesq'` | uniform density: the Boussinesq (incompressible) equations | – |
+| `'polytrope'` | the self-gravitating polytrope of index $n$ from the Lane–Emden equation (below) | `polytrope_n` (1.5), `polytrope_gamma` (5/3); needs `r_out` < 1 |
+| `'Jones 2011'` | the polytrope of the anelastic dynamo benchmark (Jones et al. 2011), gravity of a central mass, shell only (below) | `polytrope_n`, `polytrope_Nrho` (5); needs `ricb` > 0, `r_out` = 1 |
 | `'8-term fit'` | legacy solar fit, kept to reproduce old runs | – |
 | `'old model S prototype'` | legacy solar fit, kept to reproduce old runs | `solar_density_deg`, `solar_density_window`, `solar_density_sun_deg` |
 
@@ -75,10 +77,49 @@ The default `bin/parameters.py` uses `structure = 'Wu 2005'` and `stratification
 - `'model S hydrostatic'` matches Model S to within about 1 % at the default degree 30. Use `structure_deg = 50` to
   compare closely with work that uses Model S itself; this needs a slightly higher `lmax`.
 
+**`'polytrope'`.** The density and pressure follow the Lane–Emden function $\theta(\xi)$ of index $n$,
+
+$$
+\theta'' + \frac{2}{\xi}\theta' + \theta^n = 0,\qquad \theta(0) = 1,\quad \theta'(0) = 0,
+$$
+
+with $\xi = \xi_1 x$ and $\xi_1$ its first zero, the stellar surface $x = 1$: $\rho_0 = \theta^n$ and
+$p_0 = \theta^{n+1}$ (both 1 at the centre) and $g = \theta'(\xi_1 x)/\theta'(\xi_1)$ (1 at the surface), the gravity of
+the polytrope's own mass. Any $0 \le n \le 4.9$ is accepted, in a shell or a full sphere; $n = 1$ is
+$\rho_0 = \sin(\pi x)/(\pi x)$, $n = 0$ a uniform density, $n = 3$ Eddington's standard model. As with `'Wu 2005'`,
+`r_out` < 1 keeps the density positive at the outer wall. kore integrates the Lane–Emden equation when it starts and
+interpolates $\ln\theta$ and $\ln(-\theta')$, so that $\rho_0$ and $p_0$ are within $2\times10^{-13}$ (relative, also
+where they are small) up to `r_out` = 0.99, and within about $10^{-15}/(1 - r_\mathrm{out})$ beyond; strongly condensed
+polytropes ($n \gtrsim 4$) need more radial resolution near the centre. With `centrifugal_shape = 'clairaut'`, Radau's
+equation takes the polytrope's own $\rho/\bar\rho = -\xi\theta^n/(3\theta')$.
+
+**`'Jones 2011'`.** The reference state of the anelastic convection and dynamo benchmark of Jones et al. (2011), also
+used by MagIC and Rayleigh. It is defined in a shell (`ricb` = $\beta$ > 0, the outer wall at $r = 1$), with the gravity
+of a central mass, $g = 1/r^2$, and
+
+$$
+\zeta = c_0 + \frac{c_1 d}{r},\quad \rho_0 = \zeta^n,\quad p_0 = \zeta^{n+1},\qquad
+\zeta_o = \frac{\beta + 1}{\beta e^{N_\rho/n} + 1},\quad c_0 = \frac{2\zeta_o - \beta - 1}{1 - \beta},\quad
+c_1 = \frac{(1 + \beta)(1 - \zeta_o)}{(1 - \beta)^2},
+$$
+
+$d = 1 - \beta$, so that $\zeta = 1$ at mid-depth and the density drops by $e^{N_\rho}$ across the shell
+($N_\rho$ = `polytrope_Nrho`). The benchmark uses $n = 2$, $N_\rho = 5$, $\beta = 0.35$. Its reference state is
+adiabatic; convection is driven by the conduction state between the walls, stratification `'conduction'` with a
+negative `Beyonce`. The benchmark's numbers are on the gap $d = 1 - \beta$ ($Ra = GMd\Delta S/(\nu\kappa c_p)$,
+$E = \nu/(\Omega d^2)$, $Pr = \nu/\kappa$); with `timescale = 'rotation'` they are `ViscosD` $= E(1 - \beta)^2$,
+`ThermaD` = `ViscosD`$/Pr$ and `Beyonce` $= -Ra\thinspace E^2(1 - \beta)^3/Pr$, and a frequency $\omega$ of the paper (in
+units of $\nu/d^2$) is $\mathrm{Im}\thinspace\lambda = -E\omega$. kore reproduces the paper's onset of convection
+($m = 20$, $Ra_c = 283175$, $\omega_c = 269.56$ at $E = 10^{-3}$, $Pr = 1$, stress-free) within $2\times10^{-4}$. It
+needs `r_out` = 1 and refuses `centrifugal_shape = 'clairaut'` (no self-gravity). As it has no centre, `visc_pow`,
+`therm_pow` or `comp_pow` other than 0 need `aux3`, the radius where the diffusivities are `ViscosD`, `ThermaD` and
+`CompoD`, in the shell (its default 0 is the centre).
+
 ## Stratification
 
 With `thermal = 1`, `stratification` sets the background entropy gradient $dS/dr$, which controls buoyancy. A positive
-gradient is stable (radiative), zero is neutral (convective). There is no default.
+gradient is stable (radiative), zero is neutral (convective). There is no default, except `'polytrope'` with structure
+`'polytrope'`.
 
 | `stratification` | profile | parameters |
 | --- | --- | --- |
@@ -88,12 +129,29 @@ gradient is stable (radiative), zero is neutral (convective). There is no defaul
 | `'linear'` | proportional to $r$ | – |
 | `'inverse square'` | proportional to $1/r^2$ (conduction between the walls) | needs `ricb` > 0 |
 | `'two zone'` | a nearly neutral inner zone below a stable outer zone | `two_zone` = [transition radius, width] ([0.7, 0.1]) |
+| `'polytrope'` | the polytrope's own entropy, $((n + 1)/\gamma - n)\thinspace d\ln\theta/dr$; the default with structure `'polytrope'` | `polytrope_gamma` |
+| `'conduction'` | the conduction state between the walls, $C/(r^2\kappa p_0)$, with $S(1) - S(r_i) = 1$ | needs `ricb` > 0 |
 | `'user'` | your own expression ([below](#user-profiles)) | `stratification_profile`, `stratification_param` |
 
 - In a full sphere the gradient must go to zero smoothly at the centre. Use `'odd top hat'` rather than `'top hat'`
   unless the first step is far from the centre.
 - In a shell without thermal diffusion, keep the gradient zero at the inner wall (see [ThermaD = 0](#thermad-0)).
 - `'odd top hat'` with `aux1`…`aux5` = 0, 0.03, 0.68, 0.06, 2.6 approximates the entropy gradient of solar Model S.
+- `'polytrope'` is the entropy $S = s/c_p = \gamma^{-1}\ln p_0 - \ln\rho_0$ of structure `'polytrope'`. It is stable for
+  $n > 1/(\gamma - 1)$ (e.g. $n = 3$ with $\gamma = 5/3$), exactly neutral for $n = 1/(\gamma - 1)$ (1.5 with
+  $\gamma = 5/3$) and unstable below. The buoyancy frequency $N^2 = \mathrm{Beyonce}\thinspace g\thinspace dS/dr$ is
+  then the polytrope's own when `Beyonce` $= g_s\tau^2/r_0$, with $g_s$ the surface gravity and $r_0$ = `r_out` $R$ the
+  unit of length: 1 for the free-fall time scale ($\tau^2 = r_0/g_s$) and $1/(q\thinspace$`r_out`$)$ with
+  $\tau = 1/\Omega$, where $q = \Omega^2R^3/GM$.
+- `'conduction'` solves $\nabla\cdot(\kappa p_0\nabla S) = 0$ with the chosen structure and diffusivity, normalised so
+  that the entropy rises by 1 from the inner to the outer wall. For `'Boussinesq'` with a uniform $\kappa$ it is
+  `'inverse square'` times `ricb`/(1 − `ricb`). As with `'inverse square'`, a negative `Beyonce` makes it convectively
+  unstable. kore stops if $\kappa p_0$ is not finite and positive at a wall or at a node of its quadrature, or if the
+  integral of $1/(r^2\kappa p_0)$ does not converge, as for `'8-term fit'` from `r_out` of about 0.9993 on (with a
+  uniform $\kappa$), whose $p_0$ is too noisy near its surface. The transition of a `'step'` or `'solar_rz'` diffusivity
+  gets quadrature panels of its own, so that it is integrated however narrow it is. A feature of a `'user'` $\kappa$
+  that falls between the nodes goes unseen: a dip below zero up to about 0.003 (1 − `ricb`) wide if its edges are
+  sharp, a few $10^{-4}$ if it is smooth, or a step narrower than about $5\times10^{-5}$ next to a panel end.
 
 **`'solar_rz'`.** A stable radiative interior joined to a convection zone at about 0.7 solar radii, following
 Mukhopadhyay et al. (2025b) and Bekki et al. (2024):

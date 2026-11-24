@@ -407,7 +407,8 @@ $$
 \frac{\rho}{\bar\rho} = \frac{x g' + 2g}{3g},
 $$
 
-so the structure's $g$ must be its self-gravity. kore integrates from the centre and fixes the scale of $f$ by the
+so the structure's $g$ must be its self-gravity. Structure `'polytrope'` gives it exactly instead,
+$-\xi\theta^n/(3\theta')$. kore integrates from the centre and fixes the scale of $f$ by the
 surface condition $x f' + 2f = \tfrac52 q$, that is
 
 $$

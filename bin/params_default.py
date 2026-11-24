@@ -49,6 +49,17 @@ class default_params():
         #                            use Model S itself.
         #   'Wu 2005'                ρ = (1 - x²)² (Wu 2005, β = 2) with its g and p; r_out < 1 (e.g. 0.99) keeps ρ > 0 at the wall
         #   'Boussinesq'             ρ0 = p0 = 1, g = r: the Boussinesq equations ('uniform' until 2026-10-28)
+        #   'polytrope'              NEW (2026-11-23): the self-gravitating polytrope of index polytrope_n (0 <= n <= 4.9), from the
+        #                            Lane-Emden equation: ρ0 = θⁿ, p0 = θⁿ⁺¹ (1 at the centre), g = θ'(ξ₁x)/θ'(ξ₁) (1 at the
+        #                            surface x = 1); r_out < 1 (e.g. 0.99) keeps ρ > 0 at the wall. n = 1 is ρ = sin(πx)/(πx).
+        #                            With thermal = 1 and stratification None its entropy is the polytrope's (stratification
+        #                            'polytrope', below). With centrifugal_shape 'clairaut' Radau's equation takes its exact ρ/ρ̄
+        #   'Jones 2011'             NEW (2026-11-23): the polytrope of the anelastic dynamo benchmark (Jones et al. 2011), a shell
+        #                            only (ricb > 0, r_out = 1): g = 1/r² (a central mass, 1 at the wall), ζ = c0 + c1 d/r,
+        #                            ρ0 = ζⁿ, p0 = ζⁿ⁺¹ (1 at mid-depth), n = polytrope_n, N_ρ = polytrope_Nrho density scale
+        #                            heights across the shell (n = 2, N_ρ = 5, ricb = 0.35 in the benchmark); adiabatic, the
+        #                            convection driven by the conduction state (stratification 'conduction'). With visc_pow,
+        #                            therm_pow or comp_pow other than 0, aux3 (below) must be in the shell: it has no centre
         #   legacy, kept so that older parameter files reproduce their results:
         #   '8-term fit'             smoothed_sun.py: rough but hydrostatic; ρ is up to 48 % off near the surface, which moves
         #                            n = 1 Rossby, HFR and columnar modes by 1.5-8 nHz (docs/background.md)
@@ -61,11 +72,15 @@ class default_params():
         #                            hydrostatic. To be removed, with solar_density_*, once 'model S hydrostatic' is validated.
         self.structure = None
         self.structure_deg = 30
+        self.polytrope_n = 1.5       # NEW (2026-11-23): the index n of structure 'polytrope'
+        self.polytrope_gamma = 5/3   # NEW (2026-11-23): the adiabatic exponent γ = c_p/c_v of stratification 'polytrope'
+        self.polytrope_Nrho = 5.0    # NEW (2026-11-23): N_ρ = ln(ρ_i/ρ_o) of structure 'Jones 2011' (its n: polytrope_n)
         self.solar_density_deg = 30
         self.solar_density_window = None
         self.solar_density_sun_deg = 60
 
-        # stratification: dS/dr, S = δs/c_p, for r >= 0 (kore makes it odd in r); needed with thermal = 1, no default:
+        # stratification: dS/dr, S = δs/c_p, for r >= 0 (kore makes it odd in r); needed with thermal = 1, no default (but
+        # 'polytrope' with structure 'polytrope'):
         #   'top hat'         erf top hat between x1 and x2 (in r), aux1..aux5 = x1, w1, x2, w2, A (utils.erf_top_hat)
         #   'odd top hat'     the same made odd in r (utils.erf_top_hat_odd): with x1 = 0 it rises as A erf(r/w1) from the
         #                     centre, for ricb = 0 (Model S's dS/dr to 10 % rms: aux1..aux5 = 0, 0.03, 0.68, 0.06, 2.6)
@@ -84,6 +99,18 @@ class default_params():
         #                     (the names and the x of diff_rot_profiles), e.g. '2.5*exp(-((r - 0.75)/0.06)**2)'
         #   'two zone'        NEW (2026-11-08, conductive_IC's 'two zone' heating): (1 + tanh(2(r - rc)/h))/2, [rc, h] =
         #                     two_zone, a neutral inner zone below a stratified outer one, the step of width h at r = rc
+        #   'polytrope'       NEW (2026-11-23): the entropy of structure 'polytrope' itself (the default there when
+        #                     stratification is None): S = (1/γ) ln p0 - ln ρ0, dS/dr = ((n + 1)/γ - n) d(ln θ)/dr with
+        #                     γ = polytrope_gamma; stable (N² > 0) for n > 1/(γ - 1), exactly neutral for n = 1/(γ - 1)
+        #                     (1.5 with γ = 5/3), unstable below. N² = Beyonce g dS/dr is then the polytrope's own when
+        #                     Beyonce = g_s τ²/r0, g_s the surface gravity and r0 = r_out R the unit of length (R the
+        #                     star's radius): 1 for timescale 'free fall' (τ² = r0/g_s), and 1/(q r_out) for 'rotation'
+        #                     (τ = 1/Ω), q = Ω²R³/(GM)
+        #   'conduction'      NEW (2026-11-23): the conduction state between the walls, ∇·(κ p0 ∇S) = 0: dS/dr = C/(r² κ p0)
+        #                     with C > 0 such that S(1) - S(ricb) = 1 (needs ricb > 0), any structure and diffusivity with
+        #                     κ p0 > 0 between the walls that its quadrature resolves ('8-term fit' up to r_out 0.999); for
+        #                     'Boussinesq' with a uniform κ it is 'inverse square' times ricb/(1 - ricb). Beyonce < 0 is
+        #                     convectively unstable, as with 'inverse square'
         self.stratification = None
         self.stratification_profile = ''
         self.stratification_param = 0.0

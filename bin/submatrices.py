@@ -43,6 +43,8 @@ def main(ncpus):
     if par.diff_rot == 1:
         dr.check()   # (again below: here for check_transport, which reads the profiles)
     bg.check_transport()   # NEW (2026-11-09): a forced run of an entropy or a composition without diffusion
+    if par.thermal and bg.stratification() == 'conduction':   # NEW (2026-11-24): its C here, before the Pools below, so
+        bg.conduction_constant(rap.prf)   # that a refusal stops kore (in a worker, its sys.exit ended the worker: kore hung)
     mats = {}   # NEW (2026-11-03): {label: matrix}, written to smio.FILE at the end
 
     inviscid   = ((par.ViscosD == 0) and (par.ricb == 0))        # boolean

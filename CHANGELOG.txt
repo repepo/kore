@@ -6,6 +6,23 @@ anelastic_log (variable density, entropy, solar background, differential rotatio
 magnetic field), centrifugal (the deformed body) and, in phases, everything of conductive_IC.
 
 
+2026-11-23
+----------
+Polytropes (bin/radial_profiles.py, bin/background.py, bin/centrifugal.py). Structure 'polytrope': the self-gravitating
+polytrope of index polytrope_n (0 <= n <= 4.9) from the Lane-Emden equation, ρ0 = θⁿ, p0 = θⁿ⁺¹, g = θ'(ξ₁x)/θ'(ξ₁), in
+a shell or a full sphere with r_out < 1; θ is integrated when kore starts and interpolated as ln θ and ln(-θ'), so that
+ρ0 and p0 are within 2e-13 (relative) up to r_out 0.99. With centrifugal_shape 'clairaut', Radau's equation takes its
+exact ρ/ρ̄ (centrifugal.radau, rho_star). Its entropy, stratification 'polytrope' (the default with this structure), is
+dS/dr = ((n + 1)/γ - n) d(ln θ)/dr with γ = polytrope_gamma (5/3): stable for n > 1/(γ - 1), exactly neutral at
+n = 1/(γ - 1). Structure 'Jones 2011': the reference state of the anelastic dynamo benchmark of Jones et al. 2011
+(ζ = c0 + c1 d/r, g = 1/r², polytrope_n and polytrope_Nrho), a shell with r_out = 1. Stratification 'conduction': the
+conduction state ∇·(κ p0 ∇S) = 0 between the walls for any structure and diffusivity with κ p0 > 0 that its quadrature
+resolves, S(1) - S(ricb) = 1 ('inverse square' times ricb/(1 - ricb) for 'Boussinesq' with a uniform κ). With
+'Jones 2011', 'conduction' and timescale 'rotation', Beyonce = -Ra E²(1 - β)³/Pr, ViscosD = E(1 - β)² and ThermaD =
+ViscosD/Pr give the benchmark's onset at m = 20 within 1.6e-4 in Ra_c and 1.9e-4 in ω_c. params.dat gains columns
+157-159 (polytrope_n, polytrope_gamma, polytrope_Nrho). Docs: docs/background.md (Structure, Stratification),
+docs/output.md, docs/compatibility.md, docs/centrifugal-equations.md.
+
 2026-11-18
 ----------
 The nonlinear background flow at any lmax, and continued in Ro (bin/bgflow.py). Newton's method passes all lmax + 1
