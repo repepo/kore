@@ -194,7 +194,7 @@ offset['rot'] = sizmat - wobble - 3*rotdyn   # NEW (2026-11-06): omega_M, omega_
 offset['wob'] = sizmat - wobble   # NEW (2026-11-09): Mc, the wobble of the mantle (wobble = 1), last
 
 # ThermaD = 0 with the thermal-wind advection (docs/differential_rotation_details.md §7.2): the section-h rows are r² (eq)/p instead of
-# r (eq)/p, in the C^(1) basis (u_θ has P'), still without thermal bc rows; the thermal-wind profiles are then σn, σn'.
+# r (eq)/p, in the C^(1) basis (u_θ has P'), still without thermal bc rows.
 # NEW (2026-11-08): also with a background flow (bgflow = 1), whose advection u⋅∇S and U⋅∇s have P'/r, s/r (bgflow.py)
 # NEW (2026-11-08): the same for the composition without diffusion (CompoD = 0) under a background flow: rows r² (eq)/ρ in C^(1)
 def adiabatic_rows():
@@ -203,9 +203,10 @@ def adiabatic_rows():
             bool(par.compositional == 1 and par.CompoD == 0 and par.bgflow))
 adiab_tw, adiab_c = adiabatic_rows()
 
-# profiles that are odd in r (parity of the operators with ricb = 0): g, p dS/dr, (ln ρ)'^2-type products, dS/dr and the
-# derivatives σn' of the thermal-wind entropy (codes tp + degree character, diff_rot.codes); NEW (2026-11-08) ρ dC/dr and dC/dr
-odd_profiles = ['gra', 'pdS', 'lh1', 'dSd'] + ['tp' + c for c in '0123456789abcdefghijklmnopqrstuvwxyz'] + ['rdC', 'dCd']
+# profiles that are odd in r (parity of the operators with ricb = 0): g, (ln ρ)'^2-type products, dS/dr and the
+# derivatives σn' of the thermal-wind entropy (codes tp + degree character, diff_rot.codes); NEW (2026-11-08) ρ dC/dr and dC/dr;
+# NEW (2026-11-27) (κp)'/p of the heat diffusion
+odd_profiles = ['gra', 'lh1', 'dSd', 'kpl'] + ['tp' + c for c in '0123456789abcdefghijklmnopqrstuvwxyz'] + ['rdC', 'dCd']
 # NEW (2026-10-28): the background field's h (k) of degree n has the parity (-1)^n at ricb = 0
 if par.magnetic:
     if par.B0 is not None and bf.B0_l % 2:

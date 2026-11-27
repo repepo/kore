@@ -136,7 +136,7 @@ def background_flow(l, section, component, offdiag):  # ------------------------
     '''
     The terms of the background flow U, S, C (bgflow.py) in the A sign, source degree l + offdiag (bgflow.block): the force
     (U⋅∇)u + (u⋅∇)U in the rows of section 'u', 'v' (column 'upol', 'utor'; with the sign of coriolis()), the advection
-    -p0 (U⋅∇s + u⋅∇S) in section 'h' (column 'temp', 'upol', 'utor'; the sign of thermal_advection), -ρ0 (U⋅∇c + u⋅∇C) in
+    -(U⋅∇s + u⋅∇S) in section 'h' (column 'temp', 'upol', 'utor'; the sign of thermal_advection), -ρ0 (U⋅∇c + u⋅∇C) in
     section 'c' (column 'comp', 'upol', 'utor') and the induction ∇×(U×b) in section 'f', 'g' (column 'bpol', 'btor'; the A sign
     of induction()). Returns [matrix, offd] (offd in units of N1) or [0, 0].
     '''
@@ -258,27 +258,27 @@ def buoyancy(l, section, component, offdiag):
 
 
 
-def entropy(l, section, component, offdiag):  # rʰ p s  (rʰ s if ThermaD=0: divided by p; h = 1, or 2 with the thermal wind)
+def entropy(l, section, component, offdiag):  # rʰ s (rows divided by p; h = 2 with diffusion or the thermal wind, else 1)
 
     out = 0
     L = l*(l+1.)
     
     if (section == 'h') and (offdiag == 0) :
 
-        out = h0pss0_D0 if par.ThermaD > 0 else h0_D0
+        out = h0_D0   # rʰ s: the heat rows are divided by p (NEW 2026-11-27 also with ThermaD > 0)
 
     return out/L**3
 
 
 
-def thermal_advection(l, section, component, offdiag):  # −rʰ p(v⋅∇) S = −rʰ p vᵣ dS/dr  (−rʰ vᵣ dS/dr if ThermaD=0)
+def thermal_advection(l, section, component, offdiag):  # −rʰ (v⋅∇) S = −rʰ vᵣ dS/dr (rows divided by p)
 
     out = 0
     L = l*(l+1.)
 
     if (section == 'h') and (component == 'upol') and (offdiag == 0) :
 
-        out = -1.0 * ( h1pdS0_D0 if par.ThermaD > 0 else h1dSd0_D0 )
+        out = -1.0 * h1dSd0_D0   # -rʰ uᵣ dS/dr (rows divided by p)
     
     return out/L**2
 
@@ -286,7 +286,7 @@ def thermal_advection(l, section, component, offdiag):  # −rʰ p(v⋅∇) S = 
 
 def thermal_diffrot(l, section, component, offdiag):  # ------------------- Differential rotation terms of the heat equation
     """
-        p0 [i m Gaspard ΔΩ s + u_r ∂ᵣS_tw + (u_θ/r) ∂_θS_tw] in the heat rows (diff_rot.heat_block): column 'temp' (s),
+        i m Gaspard ΔΩ s + u_r ∂ᵣS_tw + (u_θ/r) ∂_θS_tw in the heat rows (diff_rot.heat_block): column 'temp' (s),
         'upol' (P) or 'utor' (T), source degree l + offdiag. Returns [matrix, offd]; the matrix already has the sign of the
         A-matrix right-hand side (the heat rows of A hold -(left-hand-side terms)), so add it with +.
     """
@@ -294,16 +294,17 @@ def thermal_diffrot(l, section, component, offdiag):  # ------------------- Diff
 
 
 
-def thermal_diffusion(l, section, component, offdiag):  # rʰ  ∇⋅(κ p ∇s)
+def thermal_diffusion(l, section, component, offdiag):  # r² ∇⋅(κ p ∇s)/p (rows divided by p)
 
     out = 0
     L = l*(l+1.)
     
     if (section == 'h') and (offdiag == 0) :
 
-        out = - L * h2kps0_D0                   \
-              + 2 * h1kps0_D1 +     h0kps1_D1   \
-              +     h0kps0_D2 
+        # NEW (2026-11-27): the rows divided by p, r² ∇⋅(κ p ∇s)/p = r² κ s'' + (2 r κ + r² (κp)'/p) s' - L κ s
+        out = - L * h2kap0_D0                   \
+              + 2 * h1kap0_D1 +     h0kpl0_D1   \
+              +     h0kap0_D2 
 
     return par.ThermaD * out/L**3
 
@@ -313,7 +314,7 @@ def thermal_diffusion(l, section, component, offdiag):  # rʰ  ∇⋅(κ p ∇s)
 # ----------------------------------------------------------------------------------------------------------------------
 # A second scalar as the entropy: ρ0 (∂c/∂t + uᵣ dC/dr) = CompoD ∇⋅(D ρ0 ∇c) in the rows of section c, r² times the equation
 # (r times it over ρ0 with CompoD = 0), and the buoyancy BeyonceC g c r̂ in the momentum equation. The operators are those of
-# the entropy with ρ0 in place of p0 ('dns', 'rdC', 'dCd', 'Drh' for 'pss', 'pdS', 'dSd', 'kps').
+# the entropy's p-weighted rows (before 2026-11-27) with ρ0 in place of p0 ('dns', 'rdC', 'dCd', 'Drh').
 
 def comp_buoyancy(l, section, component, offdiag):  # BeyonceC g c r̂, rows r⁵ ρ0 r̂⋅∇×∇× (as buoyancy)
 

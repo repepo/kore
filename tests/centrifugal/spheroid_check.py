@@ -313,7 +313,7 @@ def icb_column(task):
 def run_task(t):
     return (t[0],) + {'B': coupling_column, 'W': wall_column, 'F': field_column, 'I': icb_column}[t[0]](t[1])
 
-LABEL = re.compile(r'^([uvhfg])(\d)(?:vsc0|kps0|eta0)?_D(\d)$')
+LABEL = re.compile(r'^([uvhfg])(\d)(?:vsc0|kap0|eta0)?_D(\d)$')   # (kap0: the heat rows divided by p0, NEW 2026-11-27)
 LABEL_MA = re.compile(r'^([uv])(\d)(hp|kt)(\w)(\d)ohr1_D(\d)$')   # NEW (2026-11-06, step 2): mag_algebra's (B̃0's profile)
 
 def part_couplings():

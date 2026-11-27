@@ -29,7 +29,8 @@ class structure():  # ------------------------------------------------ What ever
         # ------------------------ p(r) dS/dr
         out = np.zeros_like(r)
         x = abs(r)<1
-        # odd extension to r<0 (only used when ricb=0, where submatrices treats 'pdS' as odd)
+        # odd extension to r<0 (ricb=0: pdSdrX's Chebyshev fit spans [-1, 1]); no longer a row profile (NEW 2026-11-27), used by
+        # utils4pp's entropy budget (prof['pdS0'], the advection work Wadv)
         out[x] = self.pressure(r[x],0)*np.sign(r[x])*self.gradS(np.abs(r[x]))
         # -----------------------------------
         return (r**rpower)*out
@@ -531,6 +532,35 @@ def kappressX(r, Dorder):   # κ(r)p(r), p stands for ρ(r)T(r)
     return out
 
 
+def kapX(r, Dorder):   # NEW (2026-11-27): κ(r)/ThermaD, for the heat rows divided by p0
+
+    tol = 1e-14
+    out = ut.angine( prf.thermal_diffusivity, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)
+
+    return out
+
+
+def kplX(r, Dorder):   # NEW (2026-11-27): (κp)'/p = κ' + κ (ln p)', odd extension to r<0, the heat rows divided by p0
+
+    tol = 1e-14
+    def kpl(rr, rpower):
+        ra = np.abs(rr)
+        k1 = ut.angine( prf.thermal_diffusivity, ra, par.N, par.ricb, ut.rcmb, 1, tol, 0)
+        return (rr**rpower)*np.sign(rr)*( k1 + prf.thermal_diffusivity(ra, 0)*prf.dlog_p(ra) )
+    out = ut.angine( kpl, r, par.N, par.ricb, ut.rcmb, Dorder, tol, 0)
+
+    return out
+
+
+def kdpX(r, Dorder):   # NEW (2026-11-27): (κp)^(Dorder)/p: κ, (κp)'/p, the coefficient c and c' of the deformed body's heat
+                      # diffusion -∇⋅(κp (M - I) ∇s) divided by p (centrifugal.DIFF_CODES 'kp')
+    if Dorder == 0:
+        return kapX(r, 0)
+    if Dorder == 1:
+        return kplX(r, 0)
+    sys.exit('kdpX: (κp)^(%d)/p is not defined (the heat diffusion has κp and its first derivative only)' % Dorder)
+
+
 def pdSdrX(r, Dorder):   # ρ(r)T(r)dS/dr
 
     tol = 1e-14
@@ -539,7 +569,7 @@ def pdSdrX(r, Dorder):   # ρ(r)T(r)dS/dr
     return out
 
 
-def gradSX(r, Dorder):   # dS/dr, odd extension to r<0 (used when ThermaD=0)
+def gradSX(r, Dorder):   # dS/dr, odd extension to r<0 (the heat rows, divided by p0)
 
     tol = 1e-14
     dS  = lambda rr, rpower: (rr**rpower)*np.sign(rr)*prf.gradS(np.abs(rr))
@@ -615,10 +645,12 @@ def pressX(r, Dorder):   # ρ(r)T(r)
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-proffdir = { 'lho':logrhoX, 'vsc':viscoX, 'gra':graviX, 'pss':pressX, 'pdS':pdSdrX, 'dSd':gradSX, 'kps':kappressX }
+proffdir = { 'lho':logrhoX, 'vsc':viscoX, 'gra':graviX, 'dSd':gradSX,
+             'kap':kapX, 'kpl':kplX, 'kdp':kdpX }   # NEW (2026-11-27): the heat rows are divided by p0: kap κ, kpl (κp)'/p
+# (kdp: κ, (κp)'/p as c, c' of the deformed body); the p-weighted codes pss, pdS, kps are gone
 # NEW (2026-10-28): magnetic = 1: 'eta' the magnetic diffusivity, 'bpo' cnorm h(r) of the background field (background_field.py)
 proffdir.update({ 'eta':etaX, 'bpo':bf.bpoX, 'bto':bf.btoX })   # bto: cnorm_tor k(r), toroidal B0
-# NEW (2026-11-08): compositional = 1: 'dns' ρ, 'rdC' ρ dC/dr, 'dCd' dC/dr, 'Drh' D ρ (as 'pss', 'pdS', 'dSd', 'kps' for s)
+# NEW (2026-11-08): compositional = 1: 'dns' ρ, 'rdC' ρ dC/dr, 'dCd' dC/dr, 'Drh' D ρ (the rows of c are ρ-weighted)
 proffdir.update({ 'dns':densX, 'rdC':rdCdrX, 'dCd':gradCX, 'Drh':DrhoX })
 # added by burrito on first use (_more_codes): the differential-rotation codes (zf, zd, zs, tw, tp + degree) from
 # diff_rot.profile_functions(), the background field degree by degree (hp, kt + degree) from mag_algebra.profile_functions()
@@ -648,7 +680,7 @@ def _more_codes(c):
         import centrifugal
         proffdir.update(centrifugal.magnetic_profile_functions())
     elif c[0] in 'ENCQK' and c[1:] in ('vs', 'kp', 'et', 'Dr'):   # NEW (2026-11-05, phase 2): products of the map's amplitudes
-        import centrifugal                       # and the profiles of the diffusion, ν, κ p, η, D ρ (Evs, Nkp, ...; Dr NEW 2026-11-08)
+        import centrifugal                       # and the profiles of the diffusion, ν, κ (kdp), η, D ρ (Evs, Nkp, ...; Dr NEW 2026-11-08)
         proffdir.update(centrifugal.diffusion_profile_functions())
     elif c[0] in 'ENCQK' and c[1] == 'z':   # NEW (2026-11-06, phase 2): products of the map's amplitudes and the shapes of ΔΩ
         import centrifugal

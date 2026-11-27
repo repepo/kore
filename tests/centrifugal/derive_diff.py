@@ -400,8 +400,10 @@ def label_value(lab, X):
     rpow, rhop = {'u': (5, 1), 'v': (3, 1), 'h': (2, 0), 'f': (2, 0), 'g': (2, 0)}[sec]
     val = RADII**(rpow - rx)*np.exp(FUNS['lr'][0](RADII))**rhop*FUNS[X][dx](RADII)
     for code, k in re.findall(r'([a-z]{2}[a-z0-9])(\d)', lab[2:-3]):
-        if code in ('vsc', 'kps', 'eta'):
+        if code in ('vsc', 'kap', 'eta'):   # (kap: the spheroid's heat diffusion, rows divided by p0, NEW 2026-11-27)
             val = val*FUNS['nu'][int(k)](RADII)
+        elif code == 'kpl':   # NEW (2026-11-27): (κp0)'/p0 of the heat rows divided by p0; this check's c (FUNS 'nu') is κ with
+            val = val*FUNS['nu'][int(k) + 1](RADII)   # p0 = 1, so (κp0)'/p0 = c' (the (ln p0)' part: tests/heat_dr/row_check.py)
         elif code == 'lho':
             val = val*FUNS['lr'][int(k)](RADII)
         elif code in ('lh1', 'lh2'):

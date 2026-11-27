@@ -453,7 +453,7 @@ its own primitives (`_induction_primitives`, the shapes $f\,LF/r$, $f(F' + F/r)$
 the $\Omega$-effect from F (`induction_coefficients`, `induction_block`, `induction_dl_range`).
 
 **Step 8: into kore.** Each radial operator is a label with the profile codes `zf`, `zd`, `zs` + degree for $f_n$,
-$rf_n'$, $r^2f_n''$ (and `tw`, `tp` for $p_0\sigma_n$, $p_0\sigma_n'$). `submatrices.py` builds its matrix. A block is then
+$rf_n'$, $r^2f_n''$ (and `tw`, `tp` for $\sigma_n$, $\sigma_n'$). `submatrices.py` builds its matrix. A block is then
 $G$ times the sum, over the degrees $n$ and the terms, of coefficient × radial operator, divided by $L'^3$; `assemble.py`
 places it at the $\Delta l$ of the selection rules.
 

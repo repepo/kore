@@ -54,17 +54,19 @@ $T_l$ or $s_l$:
 | --- | --- | --- |
 | `u` | of $P_l$ | $r^5\rho_0\thinspace\hat{\mathbf r}\cdot\nabla\times\nabla\times(\text{momentum})/\mathcal L^3$ |
 | `v` | of $T_l$ | $r^3\rho_0\thinspace\hat{\mathbf r}\cdot\nabla\times(\text{momentum})/\mathcal L^3$ |
-| `h` | of $s_l$ | $r^2\thinspace(\text{heat equation})/\mathcal L^3$ |
+| `h` | of $s_l$ | $r^2\thinspace(\text{heat equation})/(p_0\mathcal L^3)$ |
 | `c` | of $c_l$ | $r^2\thinspace(\text{equation of the composition})/\mathcal L^3$ |
 
 All rows are projected on $Y_l^m$ and divided by $\mathcal L^3$, with $l$ the degree of the row. The powers of $r$ are
 `rpower_u` (5) and `rpower_v` (3), the smallest that keep every operator a polynomial in $r$. The
 factor $\rho_0$ (`rhopower_u = rhopower_v = 1`) improves the accuracy of the viscous rows near a surface where
 $\rho_0$ is small. Without viscosity (`ViscosD = 0`), which kore takes in a full sphere only (it stops an inviscid fluid
-in a shell), the momentum rows are $r^3\rho_0^2$ and $r^2\rho_0$ times the equations. With `ThermaD = 0` the heat rows are divided by $p_0$, $r\thinspace(\partial_t s + u_r\thinspace dS/dr)/\mathcal L^3$,
-which is better conditioned where $p_0$ is small (and $r^2/p_0$ times the equation with the thermal wind or a background
-flow); with
-`CompoD = 0` those of the composition are divided by $\rho_0$ in the same way. The Coriolis force couples $l$ to
+in a shell), the momentum rows are $r^3\rho_0^2$ and $r^2\rho_0$ times the equations. The heat rows are divided by
+$p_0$, which keeps them accurate where $p_0$ is small, near the surface of a star. With thermal diffusion this needs
+$p_0 > 0$ at the walls, and kore stops otherwise. Use the legacy `'8-term fit'`, whose $p_0$ vanishes at $x = 1$ while
+its density does not, with `r_out` 0.99 when there is thermal diffusion: closer to $x = 1$ its heat rows converge slowly in `N`.
+With `ThermaD = 0` the heat rows are $r\thinspace(\partial_t s + u_r\thinspace dS/dr)/\mathcal L^3$ ($r^2$ in place of $r$ with the thermal wind or a
+background flow), and with `CompoD = 0` those of the composition are divided by $\rho_0$ in the same way. The Coriolis force couples $l$ to
 $l\pm1$; the other terms keep $l$.
 
 | term | function in `bin/operators.py` | profiles |
@@ -73,9 +75,9 @@ $l\pm1$; the other terms keep $l$.
 | $2\thinspace\mathrm{Gaspard}\thinspace\hat{\mathbf z}\times\mathbf u$ | `coriolis` | $\ln\rho_0$ |
 | $\mathrm{ViscosD}\thinspace\rho_0^{-1}\nabla\cdot(\rho_0\nu\mathsf S)$ | `viscous_diffusion` | $\ln\rho_0$ (up to its 4th derivative), $\nu$ (up to its 2nd) |
 | $\mathrm{Beyonce}\thinspace g\thinspace s\thinspace\hat{\mathbf r}$ | `buoyancy` | $g$ |
-| $p_0\thinspace\partial_t s$ | `entropy` | $p_0$ |
-| $p_0\thinspace u_r\thinspace dS/dr$ | `thermal_advection` | $p_0\thinspace dS/dr$ ($dS/dr$ if `ThermaD = 0`) |
-| $\mathrm{ThermaD}\thinspace\nabla\cdot(\kappa p_0\nabla s)$ | `thermal_diffusion` | $\kappa p_0$ |
+| $\partial_t s$ | `entropy` | – |
+| $u_r\thinspace dS/dr$ | `thermal_advection` | $dS/dr$ |
+| $\mathrm{ThermaD}\thinspace p_0^{-1}\nabla\cdot(\kappa p_0\nabla s)$ | `thermal_diffusion` | $\kappa$, $\kappa' + \kappa\thinspace(\ln p_0)'$ |
 | $\mathrm{BeyonceC}\thinspace g\thinspace c\thinspace\hat{\mathbf r}$ | `comp_buoyancy` | $g$ |
 | $\rho_0\thinspace\partial_t c$ | `composition` | $\rho_0$ |
 | $\rho_0\thinspace u_r\thinspace dC/dr$ | `comp_advection` | $\rho_0\thinspace dC/dr$ ($dC/dr$ if `CompoD = 0`) |
@@ -86,7 +88,7 @@ times the unknown (the label grammar and the profile codes are in `utils.decode_
 For the section `h` row with `ThermaD > 0`, for example, the diffusion term is
 
 $$
-r^2\nabla\cdot(\kappa p_0\nabla s) = \left[r^2\kappa p_0\thinspace s_l'' + \left(2r\kappa p_0 + r^2(\kappa p_0)'\right)s_l' - \mathcal L\thinspace\kappa p_0\thinspace s_l\right] Y.
+\frac{r^2}{p_0}\nabla\cdot(\kappa p_0\nabla s) = \left[r^2\kappa\thinspace s_l'' + \left(2r\kappa + r^2\left(\kappa' + \kappa\thinspace(\ln p_0)'\right)\right)s_l' - \mathcal L\thinspace\kappa\thinspace s_l\right] Y.
 $$
 
 ## Eigenproblem
@@ -100,7 +102,7 @@ $$
 $$
 
 $$
-\lambda\thinspace p_0 s = -p_0 u_r\frac{dS}{dr} + \mathrm{ThermaD}\thinspace\nabla\cdot(\kappa p_0\nabla s),
+\lambda\thinspace s = -u_r\frac{dS}{dr} + \mathrm{ThermaD}\thinspace p_0^{-1}\nabla\cdot(\kappa p_0\nabla s),
 $$
 
 projected as in the table above. The composition enters in the same way: `composition` in $B$, $-$`comp_buoyancy` in

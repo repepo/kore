@@ -72,11 +72,12 @@ or extend the code.
   $n$ of $\mathbf U$ couples the degree $l$ of a row to $l'$ with $\lvert l - l'\rvert \le n + 1$. `bgflow.build`
   writes each term as a sum of radial monomials times these matrices, in kore's rows: $r^5\rho_0$ and $r^3\rho_0$ times
   $\hat{\mathbf r}\cdot\nabla\times\nabla\times$ and $\hat{\mathbf r}\cdot\nabla\times$ of the momentum equation
-  (sections `u`, `v`), $r^2$ times the heat and composition equations (`h`, `c`), and the rows `f`, `g` of the induction.
+  (sections `u`, `v`), $r^2/p_0$ times the heat equation and $r^2$ times that of the composition (`h`, `c`), and the
+  rows `f`, `g` of the induction.
 - **Labels and profile codes.** A monomial $r^p\thinspace w_B^{(j)}\thinspace X^{(d)}$ of a row is the label
-  `{row}{q}w{B}{n}{j}[lho{k} | pss0 | dns0]_D{d}`, with $q$ the power of the row minus $p$, $w_B$ a profile code of
-  degree $n$ and its $j$-th derivative, `lho{k}` a factor $(\ln\rho_0)^{(k)}$, `pss0` and `dns0` a factor $p_0$ or
-  $\rho_0$, and $X^{(d)}$ the $d$-th derivative of the unknown. For example `v2wt10_D1` is
+  `{row}{q}w{B}{n}{j}[lho{k} | dns0]_D{d}`, with $q$ the power of the row minus $p$, $w_B$ a profile code of
+  degree $n$ and its $j$-th derivative, `lho{k}` a factor $(\ln\rho_0)^{(k)}$, `dns0` a factor $\rho_0$, and $X^{(d)}$
+  the $d$-th derivative of the unknown. For example `v2wt10_D1` is
   $r\thinspace\mathrm{Ro}\thinspace G\thinspace T_1 P_l'$ in the rows of $T_l$, times its angular coefficient. The profile codes, per degree $n$ (one character, 0–9 then a–z, up to
   degree 35; above it `W`, the letter and the degree in three digits, as `Wt037`, up to degree 999), are
 
@@ -85,7 +86,7 @@ or extend the code.
     | `wq` | $\mathrm{Ro}\thinspace G\thinspace n(n+1)P_n/r$ |
     | `ws` | $\mathrm{Ro}\thinspace G\left(P_n' + P_n/r + \lambda_1 P_n\right)$ |
     | `wt` | $\mathrm{Ro}\thinspace G\thinspace T_n$ |
-    | `wh`, `wd` | $\mathrm{Ro}\thinspace p_0\sigma_n$, $\mathrm{Ro}\thinspace p_0\sigma_n'$ (without $p_0$ where the heat rows are divided by it) |
+    | `wh`, `wd` | $\mathrm{Ro}\thinspace\sigma_n$, $\mathrm{Ro}\thinspace\sigma_n'$ (the heat rows are divided by $p_0$) |
     | `wc`, `we` | $\mathrm{Ro}\thinspace\rho_0\gamma_n$, $\mathrm{Ro}\thinspace\rho_0\gamma_n'$ (without $\rho_0$ where the rows of the composition are divided by it) |
 
 - **Assembly.** `assemble.bgflow_blocks` places the blocks of each row degree for every $\Delta l$ up to the largest

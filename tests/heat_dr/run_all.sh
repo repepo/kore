@@ -94,9 +94,14 @@ mk m0_tw3  "par.N=96; par.m=0; par.lmax=21; $TW3"
 mk rig_tw3 "par.N=96; par.diff_rot_type='rigid'; par.diff_rot_ampl=0; $TW3"
 mk sun_tw3 "$SUN; $TW3"
 mk k1_tw3  "par.N=96; par.ThermaD=0; $TW3"
+# ThermaD > 0: heat rows r² (eq)/p0 in C^(2), checked unweighted by row_check at an N that resolves them; truncation
+# leaves 2e-8 for s96 at N 96 and 5e-6 for the full-sphere polytrope n = 3 (r_out 0.99, p0 ~ 8e-11 at the wall) at N 120
+# (not '8-term fit', whose pressure has a round-off of about 3e-9 relative near the surface: ~1e-8 in these rows)
+mk rc_s96_tw2 'par.N=192; par.thermal_wind=2'
+mk rc_poly_tw2 "$SUN; par.structure='polytrope'; par.polytrope_n=3.0; par.N=320; par.thermal_wind=2"
 # the runs of the limit thermal_wind 2 -> 1, of the rigid offset and of the parity warnings (sections below)
 for ty in conical Y20-wall-bounded; do for a in 0.1 0.01 0.001; do for w in 1 2; do
-    mk lim_${ty}_${a}_$w "par.N=64; par.diff_rot_type='$ty'; par.diff_rot_ampl=$a; par.thermal_wind=$w" quiet
+    mk lim_${ty}_${a}_$w "par.N=96; par.diff_rot_type='$ty'; par.diff_rot_ampl=$a; par.thermal_wind=$w" quiet
 done; done; done
 R='par.N=64; par.lmax=25; par.m=2'
 V="$R; par.ViscosD=1.; par.ThermaD=1.; par.Beyonce=1e7"   # 'viscous'-like units: G = 1/E = 1e3
@@ -126,9 +131,11 @@ for k in $KTW; do for d in $k ${k}_tw2; do (cd $d && python3 "$T/asm_check.py" .
 for p in s96_tw3:nodr96 m0_tw3:nodr_m0 rig_tw3:nodr96 sun_tw3:nodr_sun k1_tw3:z_k1; do
     d=${p%%:*}; b=${p##*:}; (cd $d && python3 "$T/asm_check.py" ../$b/A.npz 3 | tail -1 | sed "s/^/$d: /"); done
 echo "--- row_check: section-h rows of the ThermaD = 0 runs, unweighted, vs (r, theta) physics (C^(1) basis and r^2 rows with the thermal wind)"
-# heat_check/asm_check/ru_insane pair these rows with p0 s* (p0 ~ 1e-6 at the wall) and cannot see their near-surface part,
-# where sigma_n (ln rho)' (term (c), no p0 in this mode) converges slowest
+# heat_check/asm_check/ru_insane pair these rows with p0 s* (p0 ~ 6e-9 at the wall) and cannot see their near-surface part,
+# where sigma_n (ln rho)' (term (c)) converges slowest
 for d in k0 k1 k1_tw2 km0_tw2 km2b_tw2 kg3_tw2 ksun ksun_a_tw2 k1_tw3; do (cd $d && python3 "$T/row_check.py" 1e-8 1 | tail -1 | sed "s/^/$d: /"); done
+echo "--- row_check: section-h rows of ThermaD > 0 runs (with diffusion), unweighted, vs (r, theta) physics"
+for d in rc_s96_tw2 rc_poly_tw2; do (cd $d && python3 "$T/row_check.py" 1e-8 1 | tail -1 | sed "s/^/$d: /"); done
 echo "--- thermal_wind = 2 -> 1 as the amplitude -> 0: max|H2 - H1|/max|H1| / amplitude must tend to a constant"
 for ty in conical Y20-wall-bounded; do
     args=""

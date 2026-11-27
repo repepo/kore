@@ -46,12 +46,12 @@ is $\tau$, chosen by `par.timescale` (`'rotation'` gives $\tau = 1/\Omega_{\rm r
 | $\mathbf U_0$ | the background flow seen in the rotating frame | |
 | $\rho_0, T_0$ | background density and temperature | `prf.density` |
 | $h$ | $\ln\rho_0$ | profile code `lho` |
-| $p_0$ | $\rho_0 T_0$ (not the pressure) | `pss` |
+| $p_0$ | $\rho_0 T_0$ (not the pressure) | `prf.pressure` |
 | $g(r)$ | gravity | `gra` |
-| $S_0(r)$ | spherical background entropy, in units of $c_p$; $S_0'$ its gradient | `dSd` ($S_0'$), `pdS` ($p_0 S_0'$) |
+| $S_0(r)$ | spherical background entropy, in units of $c_p$; $S_0'$ its gradient | `dSd` ($S_0'$) |
 | $S_{tw}(r,\theta)$ | latitudinal background entropy (thermal wind, or prescribed) | |
-| $\sigma_n(r)$ | Legendre coefficients of $S_{tw}$ | `tw2` = $p_0\sigma_2$, `tp2` = $p_0\sigma_2'$, … |
-| $\nu, \kappa$ | viscosity and thermal diffusivity profiles | `vsc`, `kps` = $\kappa p_0$ |
+| $\sigma_n(r)$ | Legendre coefficients of $S_{tw}$ | `tw2` = $\sigma_2$, `tp2` = $\sigma_2'$, … |
+| $\nu, \kappa$ | viscosity and thermal diffusivity profiles | `vsc`, `kap` = $\kappa$, `kpl` = $\kappa' + \kappa(\ln p_0)'$ |
 | Beyonce | $(N_0\tau)^2$: the buoyancy force is $\mathrm{Beyonce}\thinspace g s \hat{\mathbf r}$ | `par.Beyonce` |
 | ViscosD, ThermaD | $\nu_0\tau/r_0^2$, $\kappa_0\tau/r_0^2$ | `par.ViscosD`, `par.ThermaD` |
 | $\mathbf u$, $s$ | velocity and entropy perturbation ($s = \delta s/c_p$) | |
@@ -68,7 +68,7 @@ Two code conventions recur everywhere:
   component of the double curl of the momentum equation (one row block per poloidal degree), section `v` the rows of the
   radial component of its curl (one per toroidal degree), and section `h` the heat equation (one per degree of $s$,
   which follows the poloidal degrees).
-- **Row weights.** Each row is multiplied by a power of $r$ and of $\rho_0$, chosen so that every radial coefficient
+- **Row weights.** Each row is multiplied by a power of $r$ and of $\rho_0$ (the heat rows are divided by $p_0$, §7.2), chosen so that every radial coefficient
   is a polynomial, and divided by $L'^3$, where $l'$ is the row degree.
 
 ## 1. Physics
@@ -613,7 +613,7 @@ by the momentum and heat terms.
 
 For one source degree, $\partial_\theta S_{tw} = -\sin\theta\sum_n\sigma_n P_n'(x)$, and
 $\sin\theta\thinspace \partial_\theta Y = -(1 - x^2)\thinspace dY/dx = -DY$. With (3.2), the three terms of (2.11) projected on degree
-$l'$ are, before the row weight and the $p_0$ factor,
+$l'$ are, before the row weight (the heat rows are divided by $p_0$, §7.2),
 
 $$
 \begin{aligned}
@@ -759,13 +759,11 @@ Each profile used in an operator has a three-letter code: two letters and the de
 | `zf0`, `zf2`, … | $f_n$ (zonal flow) | `fX(n, r, Dorder)` |
 | `zd0`, `zd2`, … | $r f_n'$ | Chebyshev fit of $r\thinspace$`fX(n, r, 1)` |
 | `zs0`, `zs2`, … | $r^2 f_n''$ | Chebyshev fit of $r^2\thinspace$`fX(n, r, 2)` |
-| `tw2`, `tw4`, … | $p_0\sigma_n$ | Chebyshev fit of $p_0\thinspace$`sigmaX(n, r, 0)` |
-| `tp2`, `tp4`, … | $p_0\sigma_n'$ (odd in $r$, in `utils.odd_profiles`) | Chebyshev fit of $p_0\thinspace$`sigmaX(n, r, 1)` |
+| `tw2`, `tw4`, … | $\sigma_n$ | Chebyshev fit of `sigmaX(n, r, 0)` |
+| `tp2`, `tp4`, … | $\sigma_n'$ (odd in $r$, in `utils.odd_profiles`) | Chebyshev fit of `sigmaX(n, r, 1)` |
 
 They are not in `radial_profiles.proffdir` until `burrito` first meets one and adds `diff_rot.profile_functions()`.
-With `adiab_tw` (`ThermaD = 0` with the thermal wind) the `tw`, `tp` profiles are $\sigma_n$, $\sigma_n'$ without $p_0$
-(`diff_rot._ptw`), because those heat rows are divided by $p_0$ (§7.2). A separate `tp` code is needed: a label such as
-`h1tw21_D0` would mean $r(p_0\sigma_2)'P$, the derivative of the product, not $r p_0\sigma_2' P$.
+The `tw`, `tp` profiles carry no $p_0$, because the heat rows are divided by $p_0$ (§7.2).
 
 ### 5.4 The thermal-wind coefficients $\sigma_n$
 
@@ -800,7 +798,7 @@ A label names one radial operator: `sX[fu1D1][fu2D2]_DY` (`utils.decode_label`).
 - `_DY`: the radial derivative order applied to the unknown.
 
 For example, with the defaults, `u2zd20lho1_D0` is $r^3\rho_0\thinspace (r f_2')\thinspace h'$ acting on $P$, and `h1tw20lho1_D0` is
-$r\thinspace p_0\sigma_2\thinspace h'$ acting on $P$. `rap.burrito` evaluates $r^{\rm rpower}\rho_0^{\rm rhopower} f_1 f_2$ on the
+$r\thinspace\sigma_2\thinspace h'$ acting on $P$. `rap.burrito` evaluates $r^{\rm rpower}\rho_0^{\rm rhopower} f_1 f_2$ on the
 Chebyshev nodes, `utils.chebco_f` transforms it, and `utils.Mlam` builds the multiplication matrix in the Gegenbauer
 basis $C^{(\lambda)}$ of the section; `submatrices.py` then multiplies on the right by the derivative matrix and changes
 the basis: `u` is $C^{(4)}$, `v` $C^{(2)}$, `h` $C^{(2)}$ ($C^{(0)}$ if `ThermaD = 0`, $C^{(1)}$ with `adiab_tw`). The
@@ -814,10 +812,10 @@ the vector parity of their column (`vP` for $P$ and $s$, `vT` for $T$), after `d
 
 - for each degree $n$ of $\Delta\Omega$, the 18 momentum labels of the table of §3.4 (`diff_rot.MOMENTUM` with the codes
   of $n$);
-- with `thermal = 1` (`_heat_labels`): (a) `h0pss0zf{n}0_D0` ($r^2 p_0 f_n$; `h0zf{n}0_D0` without `pss` if
-  `ThermaD = 0`) for each degree of $\Delta\Omega$; and for each degree $n$ of $S_{tw}$: (b) `h1tp{n}0_D0`
-  ($r p_0\sigma_n'$, only if `thermal_wind_radial = 1`), (c) `h2tw{n}0_D0`, `h1tw{n}0_D1`, `h1tw{n}0lho1_D0`
-  ($p_0\sigma_n$ times $P$, $rP'$, $rh'P$), (c′) `h1tw{n}0_D0` ($r p_0\sigma_n$ acting on $T$, parity `vT`).
+- with `thermal = 1` (`_heat_labels`): (a) `h0zf{n}0_D0` ($r^2 f_n$, or $r f_n$ with `ThermaD = 0` without
+  `adiab_tw`) for each degree of $\Delta\Omega$; and for each degree $n$ of $S_{tw}$: (b) `h1tp{n}0_D0`
+  ($r\sigma_n'$, only if `thermal_wind_radial = 1`), (c) `h2tw{n}0_D0`, `h1tw{n}0_D1`, `h1tw{n}0lho1_D0`
+  ($\sigma_n$ times $P$, $rP'$, $rh'P$), (c′) `h1tw{n}0_D0` ($r\sigma_n$ acting on $T$, parity `vT`).
 
 Like every other operator, each diff-rot matrix has its last `chop` rows dropped and that many zero rows added at the
 top, to make room for the boundary-condition rows of its row block, so the boundary conditions are unchanged by the
@@ -860,14 +858,14 @@ whole set takes milliseconds at `lmax` 1025.
 ### 7.2 Heat: `diff_rot.heat_block`
 
 `operators.thermal_diffrot` calls `diff_rot.heat_block(l, component, offdiag, M)`, which returns
-the section-`h` blocks of (3.9) times the row weight. With `ThermaD > 0` the rows are $r^2 p_0\times$(eq)$/L'^3$:
+the section-`h` blocks of (3.9) times the row weight. With `ThermaD > 0` the rows are $r^2\times$(eq)$/(p_0 L'^3)$:
 
 | term | component, $\Delta l$ | expression | radial operator |
 | --- | --- | --- | --- |
-| (a) | `'temp'`, even, $\lvert\Delta l\rvert \le n$ | `1j*m*heat_coef('Pn')*M['h0pss0zf{n}0_D0']`, times `Gaspard` | $i m G\thinspace r^2 p_0 f_n\thinspace s$ |
-| (b) | `'upol'`, even, $\le$ `tw_nmax` | `Ls*heat_coef('Pn')*M['h1tp{n}0_D0']` | $L_l\thinspace r p_0\sigma_n'\thinspace P$ |
-| (c) | `'upol'`, even, $\le$ `tw_nmax` | `heat_coef('dPnD')*(M['h2tw{n}0_D0'] + M['h1tw{n}0_D1'] + M['h1tw{n}0lho1_D0'])` | $p_0\sigma_n(P + rP' + rh'P)$ |
-| (c′) | `'utor'`, odd, $<$ `tw_nmax` | `-1j*m*heat_coef('dPn')*M['h1tw{n}0_D0']` | $-i m\thinspace r p_0\sigma_n\thinspace T$ |
+| (a) | `'temp'`, even, $\lvert\Delta l\rvert \le n$ | `1j*m*heat_coef('Pn')*M['h0zf{n}0_D0']`, times `Gaspard` | $i m G\thinspace r^2 f_n\thinspace s$ |
+| (b) | `'upol'`, even, $\le$ `tw_nmax` | `Ls*heat_coef('Pn')*M['h1tp{n}0_D0']` | $L_l\thinspace r\sigma_n'\thinspace P$ |
+| (c) | `'upol'`, even, $\le$ `tw_nmax` | `heat_coef('dPnD')*(M['h2tw{n}0_D0'] + M['h1tw{n}0_D1'] + M['h1tw{n}0lho1_D0'])` | $\sigma_n(P + rP' + rh'P)$ |
+| (c′) | `'utor'`, odd, $<$ `tw_nmax` | `-1j*m*heat_coef('dPn')*M['h1tw{n}0_D0']` | $-i m\thinspace r\sigma_n\thinspace T$ |
 
 with the sums over the degrees of $\Delta\Omega$ for (a) and of $S_{tw}$ for (b), (c), (c′). `Ls` is $L_l$ of the source
 degree (from $u_r = L_l P/r$). The angular coefficients come from `heat_coefficients(m)`: $X$, $D$ from
@@ -876,21 +874,21 @@ the highest degree of $\Delta\Omega$ and $S_{tw}$, stored by diagonal. The colum
 `utils.ell`.
 
 **Sign.** The block is $-\text{out}/L'^3$. The section-`h` rows of $A$ hold the right-hand side of the heat equation
-($B$ = +`entropy`, `thermal_advection` = $-r p_0 S_0' u_r$), so the left-hand-side terms (2.11) enter $A$ with a minus
+($B$ = +`entropy`, `thermal_advection` = $-r^2 S_0' u_r$), so the left-hand-side terms (2.11) enter $A$ with a minus
 sign. In the momentum rows it is the opposite: $B$ = −`inertia`, so the left-hand-side term $\mathbf W$ enters $A$ with
 a plus sign, as the Coriolis force does.
 
 **Factors of $G$.** (a) carries `Gaspard` explicitly; (b), (c), (c′) carry $G^2$ through $\sigma_n$, except with
 `thermal_wind = 3`.
 
-**Without thermal diffusion.** With `ThermaD = 0` the heat rows are divided by $p_0$, which is about $10^{-7}$ near the
-surface of a solar model and spoils the conditioning otherwise.
+**Division by $p_0$.** The heat rows are divided by $p_0$, which is a few times $10^{-8}$ at the outer wall of a solar
+model: rows weighted by $p_0$ lose their precision there. With thermal diffusion, $p_0$ must not vanish at a wall
+(kore stops if it does). Without thermal diffusion (`ThermaD = 0`):
 
 - With `thermal_wind = 0` the rows are $r\times$(eq)$/p_0$ in $C^{(0)}$, and (a) is `h0zf{n}0_D0` ($r f_n s$).
 - With `thermal_wind ≥ 1` (`adiab_tw`), (b) and (c) do not fit there: the weight $r$ leaves $P/r$ in (c), and
   $C^{(0)}$ cannot hold $P'$. The rows are then $r^2\times$(eq)$/p_0$ in $C^{(1)}$ (`decode_label`,
-  `submatrices.py`), with the same labels, the `tw`, `tp` profiles without $p_0$ (§5.3), and still no
-  thermal boundary rows.
+  `submatrices.py`), with the same labels as with diffusion, and still no thermal boundary rows.
 
 ### 7.3 Assembly: `assemble.py`
 

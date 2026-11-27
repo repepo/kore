@@ -22,8 +22,8 @@ vorticity Ω_U = ∇×U are, degree by degree,
     from P_n:  U: q = L0 P_n/r, s = P_n' + P_n/r + λ1 P_n          Ω_U: t = q/r - s' - s/r
     from T_n:  U: t = T_n                                          Ω_U: q = L0 T_n/r, s = T_n' + T_n/r
 (L0 = n(n+1), λ1 = (ln ρ0)'). These radial functions times Ro G are the profile codes wq, ws, wt (+ the degree character
-of mag_algebra.DIGITS); p0 σ_n, p0 σ_n', ρ0 γ_n, ρ0 γ_n' times Ro are wh, wd, wc, we (without p0 or ρ0 where the rows are
-divided by it: utils.adiab_tw, adiab_c). NEW (2026-11-18): above degree 35 (no DIGITS character left) the code is
+of mag_algebra.DIGITS); σ_n, σ_n', ρ0 γ_n, ρ0 γ_n' times Ro are wh, wd, wc, we (the heat rows are divided by p0, NEW
+2026-11-27; ρ0 is left out where the composition's rows are divided by it, utils.adiab_c). NEW (2026-11-18): above degree 35 (no DIGITS character left) the code is
 'W' + B + the degree in three digits, Wq036, Wt095, ... (code(); utils.decode_label reads a code that starts with 'W' as
 five characters), so that any degree up to 999 is allowed, as on conductive_IC: Newton's method (newton) assembles its
 iterates with all the degrees, lmax + 1, whatever nmax.
@@ -34,8 +34,8 @@ THE TERMS, the perturbation equations linearised about U, S and C:
 Each is a sum of (radial monomial) × (Field of sparse matrices [target degree, source degree]), built with the operations
 of mag_algebra (V × F, and here V⋅F for the scalars), in kore's rows: r⁵ r̂⋅∇×∇× (u), r³ r̂⋅∇× (v), r² (h, c), and those of
 the induction (f, g, as mag_algebra). A monomial r^p X^(d) B_n^(j) [λ_k] of a row is the label
-    {row}{ROWPOW[row] - p}w{B}{n}{j}[lho{k} | pss0 | dns0]_D{d}
-(pss0, dns0: the p0 or ρ0 of U⋅∇s, U⋅∇c in rows that are not divided by it). Its coefficient is a sparse matrix [target l',
+    {row}{ROWPOW[row] - p}w{B}{n}{j}[lho{k} | dns0]_D{d}
+(dns0: the ρ0 of U⋅∇c in rows that are not divided by it; the heat rows are divided by p0, NEW 2026-11-27). Its coefficient is a sparse matrix [target l',
 source l] stored by diagonal; a degree n of U couples l to |Δl| <= n + 1.
 The assembly (assemble.bgflow_blocks) places the blocks in the rows u, v, h, c, f, g. A conducting solid at a wall (an
 inner core, a thin layer, the resolved mantle) turns with U there, which must be a rigid rotation (check()): its field
@@ -191,7 +191,7 @@ def nmax():
 # ======================================================================================================================
 # 2. The profile codes
 # ======================================================================================================================
-# B: q, s, t (U from P_n: q, s; from T_n: t, times Ro G), h, d (p0 σ_n, p0 σ_n'), c, e (ρ0 γ_n, ρ0 γ_n'), times Ro
+# B: q, s, t (U from P_n: q, s; from T_n: t, times Ro G), h, d (σ_n, σ_n'), c, e (ρ0 γ_n, ρ0 γ_n'), times Ro
 
 def code(B, n):
     '''the profile code of (B, n): 'w' B and the degree character, or 'W' B and the degree in three digits above 35'''
@@ -223,7 +223,7 @@ def _value(B, n, r):
     k = 'S' if B in 'hd' else 'C'
     f = src[k][n] if B in 'hc' else src[k][n].deriv()
     if k == 'S':
-        w = 1.0 if ut.adiab_tw else rap.prf.pressure(r, 0)
+        w = 1.0   # the heat rows are divided by p0 (NEW 2026-11-27 also with ThermaD > 0)
     else:
         w = 1.0 if ut.adiab_c else rap.prf.density(r, 0)
     return par.bgflow_Ro*w*f(r)
@@ -322,7 +322,7 @@ def build(m, degs, lw, phys):
     '''
     {(row, column): {label: sparse matrix [target l', source l]}} of the background of degrees degs = {kind: [n, ...]} on the
     degrees 0..lw, in kore's A sign, times L' of the target in the rows u, v, f, g, without the 1/L'^3 of the row (added by
-    block()). phys: {'hydro', 'thermal', 'compositional', 'magnetic': bool, 'heat': 'pss0' or '', 'comp': 'dns0' or ''}
+    block()). phys: {'hydro', 'thermal', 'compositional', 'magnetic': bool, 'heat': '', 'comp': 'dns0' or ''}
     (the p0, ρ0 of U⋅∇s, U⋅∇c, '' where the rows are divided by it). Also used by tests/bgflow without a run.
     '''
     A = angular.Algebra.get(m, lw)
@@ -354,13 +354,13 @@ def build(m, degs, lw, phys):
         if on and phys['hydro']:
             for n in degs.get(K, []):
                 G = _vectors(K, n)['G']
-                for X in 'PT':   # -r² u⋅∇S (S with its p0 in the codes h, d)
+                for X in 'PT':   # -r² u⋅∇S (S, C as in the codes h, d and c, e)
                     _store(out, sec, X, ma._shift(_dot(A, G, pu[X], -1.), 1., 2), None)
     return ma._prune(out)
 
 def _store(out, row, X, e, Lt, extra=''):
     '''the row's monomials as labels (times L' of the target with Lt), added to out[(row, X)]; extra: the second profile
-    (pss0, dns0) of the monomials without a λ'''
+    (dns0) of the monomials without a λ'''
     d = out.setdefault((row, X), {})
     for (p, Xn, dd, B, n, j, lam), M in e.items():
         if M.nnz == 0 or abs(M).max() == 0:
@@ -375,7 +375,7 @@ def physics():
     '''the phys argument of build() for this run'''
     import utils as ut
     return {'hydro': bool(par.hydro), 'thermal': bool(par.thermal), 'compositional': bool(par.compositional),
-            'magnetic': bool(par.magnetic), 'heat': '' if ut.adiab_tw else 'pss0', 'comp': '' if ut.adiab_c else 'dns0'}
+            'magnetic': bool(par.magnetic), 'heat': '', 'comp': '' if ut.adiab_c else 'dns0'}
 
 _coef, _band, _stack = {}, {}, {}
 def _ckey(m):

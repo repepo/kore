@@ -18,7 +18,7 @@ What is tested
 With u = rho0^-1 curl curl (rho0 P r) + curl (T r), kore's rows are, per l and section,
   row_u(F) = r^rpower_u rho0^rhopower_u (r.curl curl F)_l / L^3   (section u, rows for P_l)
   row_v(F) = r^rpower_v rho0^rhopower_v (r.curl F)_l / L^3        (section v, rows for T_l)
-  row_h(.) = r^h (entropy equation)_l / L^3       (section h, rows for s_l)
+  row_h(.) = r^h (entropy equation)_l / (p0 L^3)  (section h, rows for s_l)
 and for any force F per unit mass, with P = 0 on the walls,
   int (rho0 u)*.F dV = sum_l n_l L^3 [ int rho0^(1-rhopower_u) P_l* r^(3-rpower_u) row_u(F)_l dr
                                       + int rho0^(1-rhopower_v) T_l* r^(3-rpower_v) row_v(F)_l dr ],
@@ -27,7 +27,7 @@ n_l = 4 pi/(2l+1), L = l(l+1).  Under this pairing the LBR energy equation requi
   Coriolis  <x,Cy> = -conj<y,Cx>              (does no work; its (ln rho0)' terms come from div u != 0)
   viscous   <x,Vy> =  conj<y,Vx>, <x,Vx> < 0  (rho0^-1 div(rho0 nu S) with its derivatives of ln rho0 up to fourth order,
                                                together with the stress-free rows)
-and, with the s* weight on the heat rows, the entropy block Hermitian positive and the diffusion
+and, with the p0 s* weight on the heat rows, the entropy block Hermitian positive and the diffusion
 block Hermitian negative (divergence form, thermal bc rows).  The buoyancy, advection and
 entropy pairings are also compared with direct quadratures of the same fields, which checks
 the r-powers and L-factors of those rows, and KE with utils4pp.kinetic_energy.
@@ -80,6 +80,9 @@ direct (r, cos θ) quadratures of formulas written out independently of the recu
 symmetry: Ic and Ec Hermitian, Cc anti-Hermitian (it does no work), I + Ic and E + Ec positive. KE + Ic of field 0 is also
 compared with utils4pp.centrifugal_terms (the metric part of spin_doctor's KE). NEW (2026-11-06): for the exact spheroid
 (centrifugal_shape 'spheroid') the formulas are (M - I)y = (a² - 1) y + (c² - a²) y_z ẑ, (z̃ - ẑ)×y = (1/c - 1) ẑ×y, Ec = 0.
+NEW (2026-11-27): with ThermaD > 0 and s = 0 at the walls, the metric part of the heat diffusion (Dc, the blocks of
+operators.centrifugal_diffusion in section h, whose profile kdp carries the (ln p0)' of the rows divided by p0) is
+Hermitian too, and D + Dc negative.
 
 NEW (2026-10-28): with magnetic = 1 (insulating walls or a conducting inner core), on random fields that satisfy the field's
 wall conditions (insulating walls: (l+1)f + rf' = 0 outside, lf - rf' = 0 inside, g = 0), with b = curl curl(f r) + curl(g r):
@@ -134,7 +137,6 @@ if par.ViscosD == 0:
     print('ru_insane.py: SKIPPED, the inviscid formulation (rows multiplied by rho0^2) is not handled')
     sys.exit(0)
 
-divp0 = hasattr(op, 'h0_D0')   # ThermaD=0 heat rows divided by p0
 
 gb   = {'u': 4, 'v': 2, 'h': 2 if par.ThermaD > 0 else int(ut.adiab_tw), 'f': 2, 'g': 2}   # Gegenbauer basis of each section (C^(1) for ThermaD = 0 with the thermal wind)
 if par.centrifugal and par.ViscosD > 0 and cf.deformed():   # NEW (2026-11-06): the metric viscous force puts v in C^(3) for m != 0, as submatrices.py
@@ -165,7 +167,7 @@ def row_parity(label, vpar):
     opp = 1 - ((rpower + (d1 or 0) + (d2 or 0) + dx + adj) % 2)*2
     return vpar*opp
 
-hlab = 'h0_D0' if divp0 else 'h0pss0_D0'
+hlab = 'h0_D0'   # the heat rows are divided by p0 (NEW 2026-11-27 also with ThermaD > 0)
 idj = {'u': (1 - row_parity('u3_D0', vP))//2,
        'v': (1 - row_parity('v1_D0', vT))//2,
        'h': (1 - row_parity(hlab, vS))//2}
@@ -195,12 +197,9 @@ if comp_on:   # NEW (2026-11-08): dC/dr, odd in r as dS/dr
 wgt = {'u': rho0**(1 - par.rhopower_u) * rk**(3 - par.rpower_u),
        'v': rho0**(1 - par.rhopower_v) * rk**(3 - par.rpower_v)}
 if par.thermal:
-    if par.ThermaD > 0:
-        wgt['h'] = np.ones_like(rk)            # rows are r^2 (eq)/L^3
-    elif divp0:
-        wgt['h'] = pss0 if ut.adiab_tw else pss0*rk   # rows are r (eq/p0)/L^3, r^2 (eq/p0)/L^3 with the thermal wind
-    else:
-        wgt['h'] = rk                          # rows are r (eq)/L^3
+    # rows r^2 (eq/p0)/L^3 (ThermaD > 0, NEW 2026-11-27, or ThermaD = 0 with the thermal wind), r (eq/p0)/L^3 (ThermaD = 0):
+    # p0 r^(2 - h) gives the pairing ∫ p0 s* (eq) dV of the p-weighted equation
+    wgt['h'] = pss0 if (par.ThermaD > 0 or ut.adiab_tw) else pss0*rk
 if comp_on:   # NEW (2026-11-08): rows r^2 (eq)/L^3, or r (eq/rho0)/L^3 with CompoD = 0 (r^2 (eq/rho0)/L^3 under a
     wgt['c'] = np.ones_like(rk) if par.CompoD > 0 else (rho0 if ut.adiab_c else rho0*rk)   # background flow, ut.adiab_c)
 
@@ -250,7 +249,7 @@ def pair(sec, l, left_vals, y):
 
 
 # ---------------------------------------------------------------------------- operator applications
-KEYS = ['I', 'C', 'V', 'B', 'E', 'A', 'D', 'R', 'Ht', 'Hw', 'Ic', 'Cc', 'Ec', 'Vc']   # NEW (2026-11-05): Ic, Cc, Ec; (2026-11-06) Vc
+KEYS = ['I', 'C', 'V', 'B', 'E', 'A', 'D', 'R', 'Ht', 'Hw', 'Ic', 'Cc', 'Ec', 'Vc', 'Dc']   # NEW (2026-11-05): Ic, Cc, Ec; (2026-11-06) Vc; (2026-11-27) Dc
 
 def dr_blocks(l, sec):
     '''
@@ -273,6 +272,7 @@ def cf_blocks(l, sec, fun):
     '''
     NEW (2026-11-05): the centrifugal blocks of row l in section sec (centrifugal = 1), as assemble.py packs them: list of
     (mtx, offd, kind). fun: operators.centrifugal_inertia or centrifugal_coriolis (sections u, v), centrifugal_entropy (h)
+    or centrifugal_diffusion (u, v, h)
     '''
     if not par.centrifugal:
         return []
@@ -293,7 +293,7 @@ def cross_pairings(left, right):
     left, right: lists of fields (P, T, S), each an (nl, N1) raw coefficient array.
     out[a][b] = dict of pairings <left_a, Op right_b> summed over l:
       I = int (rho0 u)*.u (= KE),  C = int (rho0 u)*.(2 z x u),  V = int (rho0 u)*.F_visc,
-      B = int (rho0 u)*.(Beyonce g s r^),  and with the s* weight on the heat rows:
+      B = int (rho0 u)*.(Beyonce g s r^),  and with the p0 s* weight on the heat rows:
       E = int p0 |s|^2,  A = -int p0 S' u_r s*,  D = ThermaD int s* div(kappa p0 grad s);
     with diff_rot = 1 also R = int (rho0 u)*.G[(U0'.grad)u + (u.grad)U0'] (momentum diff-rot blocks) and the heat
     diff-rot blocks Ht = -int p0 s* i m G dOmega s ('temp') and Hw = -int p0 s* u.grad S_tw ('upol', 'utor');
@@ -363,10 +363,12 @@ def cross_pairings(left, right):
             Hb = dr_blocks(l, 'h')
             Ht = [b for b in Hb if b[2] == 'S']; Hw = [b for b in Hb if b[2] != 'S']
             Eb = cf_blocks(l, 'h', op.centrifugal_entropy)   # NEW (2026-11-05)
+            Db = cf_blocks(l, 'h', op.centrifugal_diffusion) if par.ThermaD > 0 else []   # NEW (2026-11-27)
             ys = []
             for (P, T, S) in right:
                 ys.append((E @ S[k], A @ P[k], D @ S[k] if par.ThermaD > 0 else None,
-                           apply_blocks(Ht, (P, T, S), k), apply_blocks(Hw, (P, T, S), k), apply_blocks(Eb, (P, T, S), k)))
+                           apply_blocks(Ht, (P, T, S), k), apply_blocks(Hw, (P, T, S), k), apply_blocks(Eb, (P, T, S), k),
+                           apply_blocks(Db, (P, T, S), k)))
             for a, (P, T, S) in enumerate(left):
                 Sv = vals_unknown(S[k], 'S')
                 for b in range(nb):
@@ -377,6 +379,7 @@ def cross_pairings(left, right):
                     out[a][b]['Ht'] += pair('h', l, Sv, ys[b][3])
                     out[a][b]['Hw'] += pair('h', l, Sv, ys[b][4])
                     out[a][b]['Ec'] += pair('h', l, Sv, ys[b][5])
+                    out[a][b]['Dc'] += pair('h', l, Sv, ys[b][6])
     return out
 
 
@@ -848,8 +851,8 @@ def main():
     kmax  = args.kmax if args.kmax > 0 else N1//4
     decay = args.decay if args.decay > 0 else kmax/8
     rng   = np.random.default_rng(args.seed)
-    print('ru_insane.py: N=%d, lmax=%d, m=%d, symm=%d, ricb=%g, bci=%d, bco=%d, thermal=%d, ThermaD=%g, divp0=%s%s'
-          % (N, par.lmax, par.m, par.symm, ricb, par.bci, par.bco, par.thermal, par.ThermaD, divp0,
+    print('ru_insane.py: N=%d, lmax=%d, m=%d, symm=%d, ricb=%g, bci=%d, bco=%d, thermal=%d, ThermaD=%g%s'
+          % (N, par.lmax, par.m, par.symm, ricb, par.bci, par.bco, par.thermal, par.ThermaD,
              ', compositional=1, CompoD=%g' % par.CompoD if comp_on else ''))
     fields = [random_fields(rng, kmax, decay, args.lmax_test) for _ in range(nvec)]
     t0 = time.time()
@@ -932,6 +935,7 @@ def main():
     if par.centrifugal:   # NEW (2026-11-05): the metric blocks of the deformed body
         cs = (abs(ceps).max() + abs(ceta).max()) or 1.
         vc_on = par.ViscosD > 0 and par.bco == 1 and (ricb == 0 or par.bci == 1)   # NEW (2026-11-06)
+        dc_on = par.thermal and par.ThermaD > 0 and par.bco_thermal == 0 and (ricb == 0 or par.bci_thermal == 0)   # (2026-11-27)
         if vc_on and ricb == 0:        # the metric viscous force in a full sphere: on fields regular at the centre
             Xv = cross_pairings(*(2*([regular_fields(rng) for _ in range(nvec)],)))
         else:
@@ -955,6 +959,11 @@ def main():
                     note('centrifugal entropy Hermitian', abs(xy['Ec'] - np.conj(yx['Ec']))/(cs*sE))
                     if a == b:
                         note('centrifugal entropy positive', float((xy['E'] + xy['Ec']).real <= 0))
+                if dc_on:   # NEW (2026-11-27): the metric heat diffusion, Hermitian (s = 0 at the walls: no wall term), D + Dc negative
+                    sD = np.sqrt(abs(X[a][a]['D'].real*X[b][b]['D'].real))
+                    note('centrifugal heat diffusion Hermitian', abs(xy['Dc'] - np.conj(yx['Dc']))/(cs*sD))
+                    if a == b:
+                        note('centrifugal heat diffusion negative', float((xy['D'] + xy['Dc']).real >= 0))
         cparts = [p for (P, T, S) in fields for p in ((P, 0*T, S), (0*P, T, 0*S))]
         Xc = cross_pairings(cparts, cparts)
         gc = [grid_fields(f) for f in cparts]
@@ -976,6 +985,12 @@ def main():
               worst['centrifugal inertia Hermitian'], 'yes' if worst['centrifugal KE positive'] == 0 else 'NO',
               worst['centrifugal Coriolis anti-Hermitian'], '   entropy Hermitian %.2e (E + Ec positive: %s)' % (
               worst['centrifugal entropy Hermitian'], 'yes' if worst['centrifugal entropy positive'] == 0 else 'NO') if par.thermal else ''))
+        if dc_on:   # NEW (2026-11-27)
+            print('centrifugal: heat diffusion Hermitian %.2e (D + Dc negative: %s), relative to max|ε| + max|η| times the '
+                  'Cauchy-Schwarz bound of D' % (worst['centrifugal heat diffusion Hermitian'],
+                  'yes' if worst['centrifugal heat diffusion negative'] == 0 else 'NO'))
+        elif par.thermal and par.ThermaD > 0:
+            print('centrifugal: heat diffusion symmetry not tested (needs s = 0 at the walls)')
         if vc_on:   # NEW (2026-11-06)
             print('centrifugal: viscous force Hermitian %.2e (V + Vc negative: %s), relative to max|ε| + max|η| times the '
                   'Cauchy-Schwarz bound of V%s' % (worst['centrifugal viscous Hermitian'],

@@ -15,13 +15,13 @@ The background rotates at Ω = Ω_ref [1 + ΔΩ(r, θ)] with
 seen in the frame of Ω_ref as the flow U0 = Gaspard ΔΩ r sinθ e_φ, together with the latitudinal entropy
 S_tw = Σ_n σ_n(r) P_n(cos θ) of thermal-wind balance (or prescribed). They add
     momentum rows (sections u, v):  W = Gaspard [ΔΩ (i m u + 2 ẑ×u) + sinθ (r ∂ᵣΔΩ u_r + ∂_θΔΩ u_θ) e_φ]
-    heat rows (section h):          p0 [i m Gaspard ΔΩ s + u_r ∂ᵣS_tw + (u_θ/r) ∂_θS_tw]
+    heat rows (section h):          i m Gaspard ΔΩ s + u_r ∂ᵣS_tw + (u_θ/r) ∂_θS_tw   (the rows are divided by p0)
     composition rows (section c):   ρ0 i m Gaspard ΔΩ c   (NEW 2026-11-08, compositional = 1)
 Sections of this module:
   1. profiles: the shapes f_n of the predefined types, of 'tabulated' (a table of Ω(r, θ)) and of 'user' (numpy
      expressions in par.diff_rot_profiles), and their Chebyshev fits for submatrices.py (profile codes zf, zd, zs:
      f_n, r f_n', r² f_n'');
-  2. thermal wind: the σ_n by the Legendre-series algebra of angular.py (profile codes tw, tp: p0 σ_n, p0 σ_n');
+  2. thermal wind: the σ_n by the Legendre-series algebra of angular.py (profile codes tw, tp: σ_n, σ_n'; NEW 2026-11-27 the heat rows are divided by p0);
   3. angular couplings: of the momentum force (the 12 primitives and the coefficients of the radial operators) and of
      the heat terms (P_n(X), P_n'(X), P_n'(X) D), all from the recurrence matrices of angular.py;
   4. the terms: the labels for submatrices.py, the blocks for operators.py and the Δl ranges for assemble.py.
@@ -400,7 +400,7 @@ def tw_nmax():
     return max(d) if d else 0
 
 def codes(n):
-    '''profile codes of f_n, r f_n', r² f_n'' (zf, zd, zs) and of p0 σ_n, p0 σ_n' (tw, tp) for the degree n'''
+    '''profile codes of f_n, r f_n', r² f_n'' (zf, zd, zs) and of σ_n, σ_n' (tw, tp) for the degree n'''
     if n >= len(DIGITS):
         sys.exit('differential rotation: degree %d above the largest one the profile codes allow (%d)' % (n, len(DIGITS) - 1))
     c = DIGITS[n]
@@ -542,12 +542,6 @@ def sigmaX(n, r, Dorder):
     '''σ_n and its radial derivatives from its Chebyshev fit on kore's radial grid'''
     return _eval(_fit(('sigma', n), lambda rr, rpower: sigma(n, rr, rpower)), r, Dorder)
 
-def _ptw(r):
-    '''the p0 of the tw, tp profiles; 1 if ThermaD = 0 with the thermal wind (utils.adiab_tw: the heat rows divided by p0)'''
-    import utils as ut
-    import radial_profiles as rap
-    return np.ones_like(r) if ut.adiab_tw else rap.prf.pressure(r, 0)
-
 def profile_functions():
     '''{code: f(r, Dorder)} of every differential-rotation profile code, for radial_profiles.burrito'''
     import utils as ut
@@ -560,8 +554,8 @@ def profile_functions():
         out[c['s']] = fit(('s', n), lambda r, rpower, n=n: (r**rpower)*r**2*fX(n, r, 2))
     for n in tw_degrees():
         c = codes(n)
-        out[c['tw']] = fit(('tw', n), lambda r, rpower, n=n: (r**rpower)*_ptw(r)*sigmaX(n, r, 0))
-        out[c['tp']] = fit(('tp', n), lambda r, rpower, n=n: (r**rpower)*_ptw(r)*sigmaX(n, r, 1))
+        out[c['tw']] = fit(('tw', n), lambda r, rpower, n=n: (r**rpower)*sigmaX(n, r, 0))   # (the heat rows are divided by p0)
+        out[c['tp']] = fit(('tp', n), lambda r, rpower, n=n: (r**rpower)*sigmaX(n, r, 1))
     return out
 
 
@@ -678,16 +672,16 @@ def max_dl(n, section, component):
 
 def _heat_labels():
     '''the section-h terms (§7.2): {'temp': [(n, label)], 'tp': [(n, label)], 'tw': [(n, (h2, h1_D1, h1lho1))], 'tor': [(n, label)]}
-    rows r² p0 (eq) (ThermaD > 0), r (eq)/p0 or r² (eq)/p0 (ThermaD = 0 without / with the thermal wind, utils.adiab_tw)'''
+    rows r² (eq)/p0 (ThermaD > 0, NEW 2026-11-27, or ThermaD = 0 with the thermal wind, utils.adiab_tw), r (eq)/p0 (ThermaD = 0 without)'''
     out = {'temp': [], 'tp': [], 'tw': [], 'tor': []}
     for n in degrees():                                   # (a) i m G ΔΩ s
-        out['temp'].append((n, ('h0pss0%s0_D0' if par.ThermaD > 0 else 'h0%s0_D0') % codes(n)['f']))
+        out['temp'].append((n, 'h0%s0_D0' % codes(n)['f']))
     for n in tw_degrees():                                # u.grad S_tw
         c = codes(n)
-        if par.thermal_wind_radial:                       # (b) u_r ∂ᵣS_tw -> L r p0 σn' P
+        if par.thermal_wind_radial:                       # (b) u_r ∂ᵣS_tw -> L r σn' P
             out['tp'].append((n, 'h1%s0_D0' % c['tp']))
-        out['tw'].append((n, ('h2%s0_D0' % c['tw'], 'h1%s0_D1' % c['tw'], 'h1%s0lho1_D0' % c['tw'])))   # (c) p0 σn (P + rP' + r h'P)
-        out['tor'].append((n, 'h1%s0_D0' % c['tw']))      # (c') -i m r p0 σn T
+        out['tw'].append((n, ('h2%s0_D0' % c['tw'], 'h1%s0_D1' % c['tw'], 'h1%s0lho1_D0' % c['tw'])))   # (c) σn (P + rP' + r h'P)
+        out['tor'].append((n, 'h1%s0_D0' % c['tw']))      # (c') -i m r σn T
     return out
 
 def _comp_labels():
@@ -754,8 +748,8 @@ def momentum_block(l, section, component, offdiag, M):
 def heat_block(l, component, offdiag, M):
     '''
     The block of the heat-equation terms for the row degree l, the column 'temp' (s), 'upol' (P) or 'utor' (T) and the
-    source degree l + offdiag (§7.2): (a) i m G Σ_n P_n(X) [rʰ p0 f_n] s; (b) L_s Σ_n P_n(X) [r p0 σ_n'] P;
-    (c) Σ_n P_n'(X) D [p0 σ_n (P + r P' + r h' P)]; (c') -i m Σ_n P_n'(X) [r p0 σ_n] T. Divided by L^3 and with the sign of
+    source degree l + offdiag (§7.2): (a) i m G Σ_n P_n(X) [rʰ f_n] s; (b) L_s Σ_n P_n(X) [r σ_n'] P;
+    (c) Σ_n P_n'(X) D [σ_n (P + r P' + r h' P)]; (c') -i m Σ_n P_n'(X) [r σ_n] T (rows divided by p0, NEW 2026-11-27). Divided by L^3 and with the sign of
     the A-matrix right-hand side (the heat rows of A hold -(left-hand-side terms)). Returns [matrix, offd] or [0, 0].
     '''
     import utils as ut

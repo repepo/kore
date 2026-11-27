@@ -65,12 +65,12 @@ The default `bin/parameters.py` uses `structure = 'Wu 2005'` and `stratification
 
 | `structure` | description | parameters |
 | --- | --- | --- |
-| `'model S hydrostatic'` | the Sun: a smooth fit to the density of solar Model S, with gravity and pressure consistent with it. Recommended for solar work | `structure_deg` (30) |
+| `'model S hydrostatic'` | the Sun: a smooth fit to the density of solar Model S, with gravity and pressure consistent with it. Recommended for solar work | `structure_deg` (30); `r_out` below about 0.998 at `structure_deg` 30: beyond, its $p_0$ is not defined (kore stops there with `ThermaD` > 0) |
 | `'Wu 2005'` | a polytrope-like density $\rho_0 = (1 - x^2)^2$ (Wu 2005) | needs `r_out` < 1, so that the density is not zero at the wall |
 | `'Boussinesq'` | uniform density: the Boussinesq (incompressible) equations | – |
 | `'polytrope'` | the self-gravitating polytrope of index $n$ from the Lane–Emden equation (below) | `polytrope_n` (1.5), `polytrope_gamma` (5/3); needs `r_out` < 1 |
 | `'Jones 2011'` | the polytrope of the anelastic dynamo benchmark (Jones et al. 2011), gravity of a central mass, shell only (below) | `polytrope_n`, `polytrope_Nrho` (5); needs `ricb` > 0, `r_out` = 1 |
-| `'8-term fit'` | legacy solar fit, kept to reproduce old runs | – |
+| `'8-term fit'` | legacy solar fit, kept to reproduce old runs | with `ThermaD` > 0 use `r_out` 0.99: its $p_0$ vanishes at $x = 1$ while its density does not, and closer to that point the heat rows converge slowly in `N` |
 | `'old model S prototype'` | legacy solar fit, kept to reproduce old runs | `solar_density_deg`, `solar_density_window`, `solar_density_sun_deg` |
 
 - Only the shape of the density and pressure profiles matters, not their overall scale.

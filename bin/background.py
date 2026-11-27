@@ -1620,6 +1620,28 @@ def polytrope_entropy_factor():
     return 0. if abs(c) < 1e-14*max(1., n) else c
 
 
+def heat_wall_check(prf):
+    '''
+    NEW (2026-11-27): the heat rows with diffusion (thermal = 1, ThermaD > 0) are r² (eq)/p0, whose profile (κp0)'/p0 =
+    κ' + κ (ln p0)' (radial_profiles.kplX) has a pole where p0 vanishes. kore stops if, at a wall (r = 1, and ricb when
+    ricb > 0), p0 or d(ln p0)/dr is not finite, p0 <= 0, or the zero of p0 that its slope there predicts,
+    1/|d(ln p0)/dr|, is within 1e-6 of the wall: 'model S hydrostatic' from r_out of about 0.998 at structure_deg 30 (its
+    hydrostatic p0 is NaN there), '8-term fit' at r_out = 1 (its p0 vanishes at x = 1; use it with r_out 0.99, since
+    closer to x = 1 its heat rows converge slowly in N). Runs without diffusion (ThermaD = 0) take no 1/p0 profile and are
+    not stopped.
+    '''
+    if not (par.thermal and par.ThermaD > 0):
+        return
+    walls = [1.] + ([float(par.ricb)] if par.ricb > 0 else [])
+    with np.errstate(all='ignore'):
+        for rw in walls:
+            pw = float(prf.pressure(np.array([rw]), 0)[0])
+            dw = float(prf.dlog_p(np.array([rw]))[0])
+            if not (np.isfinite(pw) and np.isfinite(dw) and pw > 0 and abs(dw) < 1e6):
+                sys.exit("structure %r: p0 = %.3g, d(ln p0)/dr = %.3g at the wall r = %g. The heat rows are divided by p0, "
+                         "which must be finite and positive there: lower r_out (e.g. 0.99)" % (par.structure, pw, dw, rw))
+
+
 _cond = {}
 def conduction_constant(prf):
     '''

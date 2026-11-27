@@ -202,13 +202,13 @@ $$
 The second and third terms carry the force of the sphere along the displacement $\boldsymbol\xi$; the last two come from
 $\nu$ and $\rho_0$, which are constant on the level surfaces rather than on the spheres.
 
-**Thermal diffusion.** The heat rows are the equation times $J$, and the diffusion becomes
+**Thermal diffusion.** The heat rows are the equation times $J/p_0$, and the diffusion becomes
 
 $$
-J\thinspace\nabla_X\cdot\left(\kappa p_0\nabla_X s\right) = \nabla\cdot\left(\kappa p_0\thinspace\mathsf M^{-1}\nabla s\right),
+\frac{J}{p_0}\nabla_X\cdot\left(\kappa p_0\nabla_X s\right) = \frac{1}{p_0}\nabla\cdot\left(\kappa p_0\thinspace\mathsf M^{-1}\nabla s\right),
 $$
 
-whose first-order part is $-\nabla\cdot(\kappa p_0(\mathsf M - \mathsf I)\nabla s)$.
+whose first-order part is $-p_0^{-1}\nabla\cdot(\kappa p_0(\mathsf M - \mathsf I)\nabla s)$.
 
 **Magnetic diffusion.** The current of the body, carried back as a flux, is $\nabla\times(\mathsf M\tilde{\mathbf b})$,
 and the covariant components of the electric field of the diffusion are MagnetD times

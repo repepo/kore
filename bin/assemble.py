@@ -766,7 +766,7 @@ def main():
             col0 = (rank*bpp + k )* ut.N1
             row = ut.offset['h'] + col0   # NEW (2026-11-06): ut.offset (2*nb*ut.N1, or 0 with hydro = 0)
 
-            # Poloidal velocity terms: -rʰ p uᵣ dS/dr -------------------------------------------------------------------
+            # Poloidal velocity terms: -rʰ uᵣ dS/dr (the rows are divided by p) ---------------------------------------
             # ----------------------------------------------------------------------- A, heat equation (section h), upol
             # ----------------------------------------------------------------------------------------------------------
             basecol = 0
@@ -789,7 +789,7 @@ def main():
                         if np.isscalar(mtx[0]): continue
                         col = basecol + col0 + mtx[1] * ut.N1
                         loc_list = ut.packit( loc_list, mtx[0], row, col)
-                if par.centrifugal:  # NEW (2026-11-06, phase 2): its metric part i m G η P2 ΔΩ s (the heat rows are times J)
+                if par.centrifugal:  # NEW (2026-11-06, phase 2): its metric part i m G η P2 ΔΩ s (the heat rows are times J/p)
                     loc_list = centrifugal_blocks( loc_list, op.centrifugal_rotation, l, 'h', 'temp', ll_flo[0], row, basecol + col0,
                                                    dls=cf.rotation_dl_range('h', 'temp'))
 
@@ -812,14 +812,14 @@ def main():
                             loc_list = ut.packit( loc_list, mtx[0], row, col)
 
 
-            if par.bgflow :  # NEW (2026-11-08): the advection by a background flow and of its entropy, -p0 (U⋅∇s + u⋅∇S)
+            if par.bgflow :  # NEW (2026-11-08): the advection by a background flow and of its entropy, -(U⋅∇s + u⋅∇S)
                 loc_list = bgflow_blocks( loc_list, l, 'h', 'temp', ll_flo[0], row, ut.offset['h'] + col0)
                 if par.hydro:
                     loc_list = bgflow_blocks( loc_list, l, 'h', 'upol', ll_flo[0], row, col0)
                     loc_list = bgflow_blocks( loc_list, l, 'h', 'utor', ll_flo[1], row, nb*ut.N1 + col0)
 
 
-            # entropy (s) terms: ThermaD rʰ ∇⋅(κ p ∇s) -----------------------------------------------------------------
+            # entropy (s) terms: ThermaD r² ∇⋅(κ p ∇s)/p ---------------------------------------------------------------
             # ----------------------------------------------------------------------- A, heat equation (section h), temp
             # ----------------------------------------------------------------------------------------------------------
             if par.ThermaD > 0:
@@ -832,7 +832,7 @@ def main():
 
                 loc_list = ut.packit(loc_list, mtx, row, col)
 
-                if par.centrifugal:  # NEW (2026-11-05, phase 2): the metric part of the thermal diffusion, -∇⋅(κp (M - I)∇s), Δl = 0, ±2
+                if par.centrifugal:  # NEW (2026-11-05, phase 2): the metric part of the thermal diffusion, -∇⋅(κp (M - I)∇s)/p, Δl = 0, ±2
                     loc_list = centrifugal_blocks(loc_list, op.centrifugal_diffusion, l, 'h', 'temp', ll_flo[0], row, basecol + col0)
 
             # time derivative for forced problems: A - i wf B with B = +entropy here (B = -inertia in the momentum rows)
@@ -1132,7 +1132,7 @@ def main():
 
 
 
-        if par.thermal == 1: # adds rʰ p (d/dt) s in the heat (entropy) equation to matrix B
+        if par.thermal == 1: # adds rʰ (d/dt) s in the heat (entropy) rows, divided by p, to matrix B
 
             # ------------------------------------------------------------------- B, theta_pol, nocurl (heat), section h
             for k,l in enumerate(loc_top):  # loc_top here because theta
@@ -1175,7 +1175,7 @@ def main():
                         mtx = -op.b(l, sec, comp, 0)
                         loc_list = ut.packit(loc_list, mtx, row, row)
 
-        if par.compositional == 1:  # NEW (2026-11-08): rʰ ρ (d/dt) c in the rows of the composition (section c), as the entropy
+        if par.compositional == 1:  # NEW (2026-11-08): rʰ ρ (d/dt) c in the rows of the composition (section c)
 
             for k,l in enumerate(loc_top):
                 row = ut.offset['c'] + ( rank*bpp + k )* ut.N1

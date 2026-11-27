@@ -380,7 +380,7 @@ f(r), the flattening of the level surfaces. Map X = α + ξ, ξ = ε(r)∇(r²P�
 and every background profile live on the level surfaces r, and P, T describe w = J F⁻¹u (mass conservation, the
 impenetrable and no-slip rows exact). Covariant momentum: M∂ₜw, M = FᵀF/J (B, `operators.centrifugal_inertia`),
 2 Gaspard z̃×w, z̃ = F⁻¹ẑ (A, `centrifugal_coriolis`); heat J∂ₜs, J − 1 = ηP₂ (B, `centrifugal_entropy`, label
-`h0pss0ce10_D0` or `h0ce10_D0`); the first-order closed forms are in the module docstring. Built with the recurrence
+`h0ce10_D0`); the first-order closed forms are in the module docstring. Built with the recurrence
 algebra of angular.py and projected like the diff-rot force: Δl = 0, ±2 (same kind), ±1, ±3 (P↔T) (`centrifugal.dl_range`,
 `assemble.centrifugal_blocks`). B is complex with centrifugal = 1 (real otherwise, so existing runs stay bitwise equal).
 Profile codes `ce0` = ε, `ce1` = rε′ = η, `ce2` = r(rε′)′, even in r. `centrifugal_shape`: 'clairaut' (Radau's form of
@@ -409,7 +409,7 @@ The exact spheroid ('spheroid', NEW 2026-11-06, `centrifugal.py` section 8): one
 X = diag(a, a, c)α (c/a = 1 − f, a²c = 1) kept exactly at any f < 1: J = 1, M = diag(a², a², c²), z̃ = ẑ/c, the body's
 Laplacian D = ∇²/a² + (1/c² − 1/a²)∂z²; exact inertia, Coriolis, viscous and heat terms and stress-free and fixed-flux rows
 (`spheroid_terms`, `spheroid_build`, `spheroid_walls`; kore's own labels without profile, e.g. `u3_D2`, `u3vsc0_D4`,
-`h0kps0_D2`; Δl up to ±4 same kind, ±3 P↔T; `spheroid_block` behind `momentum_block`, `diffusion_block`; `exact()` gates
+`h0kap0_D2`; Δl up to ±4 same kind, ±3 P↔T; `spheroid_block` behind `momentum_block`, `diffusion_block`; `exact()` gates
 it). Homogeneous only ('Boussinesq', diffusivity 'uniform', centrifugal_q = 0; no ΔΩ: check_centrifugal stops);
 the buoyancy g = r is then normal to the level surfaces (Maclaurin). Budgets exact too (`spheroid_primitives` in
 `utils4pp.centrifugal_terms`). With a field (step 2, NEW 2026-11-06): b̃ = F⁻¹b, the induction is the sphere's (J = 1);
@@ -446,15 +446,21 @@ Coriolis 2 Gaspard ẑ×u, viscous ViscosD ρ₀⁻¹∇·(ρ₀ν S) (derivativ
 Beyonce g s r̂ (`u2gra0_D0`), differential rotation (§8).
 
 **Heat equation** (section `h`), with p₀ standing for ρ₀T₀:
-p₀(∂ₜs + u_r dS/dr) = ThermaD ∇·(κ p₀ ∇s) [+ diff-rot terms, §8]. Rows are r² × equation. With `ThermaD = 0` the rows
-are divided by p₀ (r s and −r u_r dS/dr, profile `dSd`), better conditioned where p₀ ~ 1e-7 at the surface; with
+p₀(∂ₜs + u_r dS/dr) = ThermaD ∇·(κ p₀ ∇s) [+ diff-rot terms, §8]. Rows are r² × equation / p₀ (NEW 2026-11-27 also
+with ThermaD > 0: r² s, −r² u_r dS/dr and ThermaD (r²κ s″ + (2rκ + r² kpl) s′ − Lκ s), profiles `dSd`, `kap` κ, `kpl`
+κ′ + κ(ln p₀)′; the p₀-weighted rows lost precision near the surface, where p₀ ~ 3e-8: spin_doctor resid_s floors of
+1e-5 to 1e-2, flat in N, on solar runs).
+With ThermaD > 0, `bg.heat_wall_check` (called by submatrices.py) stops if p₀ vanishes or is not finite at a wall
+('model S hydrostatic' close to r_out = 1, from ≈ 0.998 at structure_deg 30, where its p₀ is NaN and the p₀-weighted
+heat operators came out empty) and '8-term fit' at r_out 1. Use '8-term fit' with r_out 0.99 (p₀ = 0 at x = 1 with ρ₀ > 0, so
+kpl has a pole just beyond the wall that only the heat rows carry: above r_out ≈ 0.995 they need much more N). With `ThermaD = 0` the rows are r s and −r u_r dS/dr; with
 `ThermaD = 0` plus diff rot and `thermal_wind ≥ 1` (`ut.adiab_tw`) they are r² × eq / p₀ in a C^(1) basis. No thermal
 BC rows without diffusion.
 
 **Composition** (`compositional = 1`, section `c`; NEW 2026-11-08, conductive_IC port phase 8; `docs/anelastic.md`,
 `docs/background.md`, Composition): a second scalar carried as s is, ρ₀(∂ₜc + u_r dC/dr) = CompoD ∇·(D ρ₀ ∇c), with its own
 buoyancy BeyonceC g c r̂ in the u rows (`operators.comp_buoyancy`), so N² = Beyonce g dS/dr + BeyonceC g dC/dr; a larger c
-is lighter, as s. Its rows are weighted by ρ₀ where the entropy's are by p₀ (so 'Boussinesq' runs of c alone and s alone
+is lighter, as s. Its rows are weighted by ρ₀ where the heat rows are divided by p₀ (so 'Boussinesq' runs of c alone and s alone
 with the same numbers are identical; anelastic ones only without diffusion). Rows r² × eq in C^(2), bc rows
 `b*_compositional` (§7); with CompoD = 0 r × eq / ρ₀ in C^(0), no bc rows, prescale off (as ThermaD = 0). dC/dr is
 `comp_stratification` of amplitude 1 (§6), D/CompoD from `diffusivity` (D, `comp0`, `comp_pow`); `set_scales` sets CompoD
@@ -477,10 +483,10 @@ exact) or the Chebyshev series of `bgflow_file`, which `python3 bin/bgflow.py nm
 forcing-12 run (m = 0): the linear flow per unit Ro, or the nonlinear one at Ro = amplitude/G by Newton's method
 (continuation in steps dRo 0.15, the Jacobian is kore's own background matrix; it then holds at that Ro only).
 conductive_IC's files are read as they are (uniform density). The terms: (U·∇)u + (u·∇)U = ∇(U·u) − U×ω − u×Ω_U in the
-u, v rows, −p₀(U·∇s + u·∇S) in h, −ρ₀(U·∇c + u·∇C) in c, ∇×(U×b) in f, g; each is a radial monomial times an angular
+u, v rows, −(U·∇s + u·∇S) in h (divided by p₀), −ρ₀(U·∇c + u·∇C) in c, ∇×(U×b) in f, g; each is a radial monomial times an angular
 coupling [l′, l] computed exactly with the recurrence algebra (`angular.py`, mag_algebra's vector products), a degree n
-reaching |Δl| ≤ n + 1, placed by `assemble.bgflow_blocks`. Labels `{row}{q}w{B}{n}{j}[lho{k}|pss0|dns0]_D{d}`, profile
-codes wq, ws, wt (U's components, and Ω_U from them), wh, wd (p₀σₙ, p₀σₙ′), wc, we (ρ₀γₙ, ρ₀γₙ′) + the degree character
+reaching |Δl| ≤ n + 1, placed by `assemble.bgflow_blocks`. Labels `{row}{q}w{B}{n}{j}[lho{k}|dns0]_D{d}`, profile
+codes wq, ws, wt (U's components, and Ω_U from them), wh, wd (σₙ, σₙ′: the heat rows are divided by p₀), wc, we (ρ₀γₙ, ρ₀γₙ′) + the degree character
 (mag_algebra.DIGITS, n ≤ 35); lho{k} is (ln ρ₀)^(k), a derivative. P‴ enters the u rows, so gebasis 3, 2 as with a field
 (inviscid r⁵ρ₀², r³ρ₀); without diffusion of s (c) the h (c) rows are r² eq/p₀ (ρ₀) in C^(1) (`ut.adiabatic_rows`). The
 background must be symmetric about the equator, must not cross a wall, and must turn rigidly at a conducting solid (an
@@ -534,7 +540,7 @@ the only physical unit it reads is the nHz of the solar rotation data.
 - **Full-sphere parity.** At ricb = 0, `submatrices` keeps one parity of rows and columns (`ut.remroco`) from the
   vector parity (vP = (−1)^m symm for P and s, −vP for T) and each operator's parity (r power, derivative orders,
   odd profiles in `ut.odd_profiles`, counted in both profile slots of a label since 2026-10-28). It prints a WARNING if a profile has wrong-parity coefficients: those parts are
-  silently dropped. Profiles are therefore built even or odd: `pdS`, `dSd` as sign(r)·f(|r|), diff-rot profiles and
+  silently dropped. Profiles are therefore built even or odd: `dSd`, `kpl` as sign(r)·f(|r|), diff-rot profiles and
   'user' diffusivities at |r|. Parity is not regularity (2026-11-04): a degree-n profile must also be r^n times a series
   in r². At ricb = 0 `background.centre_check` (called by `submatrices.py`) warns about missing powers (the modes then
   converge to irregular solutions: 'Y20', 'conical', thermal_wind 3, a 'tabulated' f_n(0) ~ 1e-5 with HMI) and about
@@ -548,11 +554,13 @@ the only physical unit it reads is the nHz of the solar rotation data.
   the unknown. `lh1`, `lh2` with order k mean (ln ρ₀)′·(ln ρ₀)^(k) and (ln ρ₀)″·(ln ρ₀)^(k). `rap.burrito` evaluates
   r^rpower ρ₀^rhopower f₁ f₂ on the Chebyshev nodes; `ut.chebco_f` transforms it (`ut.gimmedachebs`: coefficients
   below max(1e-15, `drop_tol`) of the largest are zeroed).
-- **Profile codes** (`rap.proffdir`): `lho` ln ρ₀, `vsc` ν, `gra` g, `pss` p₀, `pdS` p₀ dS/dr, `dSd` dS/dr, `kps` κp₀,
+- **Profile codes** (`rap.proffdir`): `lho` ln ρ₀, `vsc` ν, `gra` g, `dSd` dS/dr, `kap` κ, `kpl` κ′ + κ(ln p₀)′ (odd),
+  `kdp` (κ, (κp₀)′/p₀ as c, c′ of the deformed body's diffusion; NEW 2026-11-27, they replace `pss`, `pdS`, `kps`),
   `eta` η, `bpo` cnorm h (B0; its series are cut at `tol_B0` relative, `ut.gimmedachebs`); the composition's (2026-11-08)
-  `dns` ρ₀, `rdC` ρ₀ dC/dr, `dCd` dC/dr, `Drh` Dρ₀ (as `pss`, `pdS`, `dSd`, `kps` for s; `rdC`, `dCd` odd);
+  `dns` ρ₀, `rdC` ρ₀ dC/dr, `dCd` dC/dr, `Drh` Dρ₀ (the ρ₀-weighted rows of c, as the heat rows were weighted by p₀
+  before 2026-11-27; `rdC`, `dCd` odd);
   differential rotation `zf`/`zd`/`zs` + degree = aₙfₙ, r(aₙfₙ)′, r²(aₙfₙ)″ (with `diff_rot_ampl`) and thermal wind
-  `tw`/`tp` + degree = p₀σₙ, p₀σₙ′, the degree n as one character of 0–9a–z (`diff_rot.codes`, so n ≤ 35). `burrito`
+  `tw`/`tp` + degree = σₙ, σₙ′, the degree n as one character of 0–9a–z (`diff_rot.codes`, so n ≤ 35). `burrito`
   adds these to `proffdir` from `diff_rot.profile_functions()` on first use.
 - **Row scaling.** Every operator in `operators.py` is divided by L² or L³ (L of the row) so that all rows are
   (equation)·r^power/L³; terms with an explicit L from u_r = LP/r use L². `differential_rotation` was missing this until

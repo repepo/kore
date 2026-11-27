@@ -45,6 +45,7 @@ def main(ncpus):
     bg.check_transport()   # NEW (2026-11-09): a forced run of an entropy or a composition without diffusion
     if par.thermal and bg.stratification() == 'conduction':   # NEW (2026-11-24): its C here, before the Pools below, so
         bg.conduction_constant(rap.prf)   # that a refusal stops kore (in a worker, its sys.exit ended the worker: kore hung)
+    bg.heat_wall_check(rap.prf)   # NEW (2026-11-27): the heat rows are divided by p0: stop where it vanishes at a wall
     mats = {}   # NEW (2026-11-03): {label: matrix}, written to smio.FILE at the end
 
     inviscid   = ((par.ViscosD == 0) and (par.ricb == 0))        # boolean
@@ -209,20 +210,16 @@ def main(ncpus):
         # Matrix labels needed for the thermal equation ---------------------------------------------------------------------------- Heat - section h
         # -------------------------------------------------------------------------------------------------------------------------------------------
 
-        if par.ThermaD > 0:
-            # entropy perturbation rʰ p s and thermal advection -rʰ p uᵣ dS/dr
-            arg2 += [ vP ]*2
-            labl += [ 'h0pss0_D0', 'h1pdS0_D0' ]
-        else:
-            # no diffusion: p cancels, so the heat equation is used divided by p: r s and -r uᵣ dS/dr
-            # (p ~ 1e-7 near the surface makes the p-weighted rows ill-conditioned there); r² s and -r² uᵣ dS/dr with the thermal wind (ut.adiab_tw)
-            arg2 += [ vP ]*2
-            labl += [ 'h0_D0', 'h1dSd0_D0' ]
+        # the heat equation divided by p: rʰ s and -rʰ uᵣ dS/dr (h = 2 with diffusion or the thermal wind, ut.adiab_tw; else 1).
+        # NEW (2026-11-27): also with ThermaD > 0. p ~ 3e-8 near the surface of the Sun, and the p-weighted rows held the
+        # entropy there only to ~1e-4 (resid𝑠 floor, independent of N)
+        arg2 += [ vP ]*2
+        labl += [ 'h0_D0', 'h1dSd0_D0' ]
 
         # thermal diffusion
-        if par.ThermaD > 0:
+        if par.ThermaD > 0:   # NEW (2026-11-27): rows r² (eq)/p: κ∇²s + ((κp)'/p) ∂s/∂r
             arg2 += [ vP ]*4
-            labl += [ 'h2kps0_D0', 'h1kps0_D1', 'h0kps1_D1', 'h0kps0_D2' ]
+            labl += [ 'h2kap0_D0', 'h1kap0_D1', 'h0kpl0_D1', 'h0kap0_D2' ]
 
     if par.compositional == 1:
         # -------------------------------------------------------------------------------------------------------------------------------------------
@@ -387,7 +384,7 @@ def main(ncpus):
             pkey  += [ key1 ]
             parg1 += [ dx ]             # dx is derivative order
             parg2 += [ arg2[k] ]        # vector_parity
-            adj = int(func1 in ut.odd_profiles) + int(func2 in ut.odd_profiles)   # odd profiles (g, p dS/dr, ..., the σn'); FIX (2026-10-28): both slots
+            adj = int(func1 in ut.odd_profiles) + int(func2 in ut.odd_profiles)   # odd profiles (g, dS/dr, (κp)'/p, ..., the σn'); FIX (2026-10-28): both slots
             parg3 += [ 1-(( rpower + (dorder1 or 0) + (dorder2 or 0) + adj )%2)*2 ]
 
     # For each of the unique operator id's we generate in parallel the Chebyshev

@@ -24,7 +24,8 @@ L = l(l+1).  So the power of every force in the energy equation is a sparse matr
 product followed by one radial quadrature; no reconstruction of the fields in physical
 space is needed, and every term that enters A or B gets a budget line automatically.
 
-Section h (heat) rows are r^h (entropy equation) / L^3; pairing them with s_l* gives
+Section h (heat) rows are r^h (entropy equation) / (p0 L^3) (NEW 2026-11-27 also with ThermaD > 0); pairing them with
+p0 s_l* gives
 the entropy budget 2 sigma TE = W_adv + ThermaD D_thm.
 
 Conventions: KE = int rho0 |u|^2 dV and Dkin = 2 Re int rho0 u*.F_visc dV etc., i.e. the same
@@ -56,7 +57,6 @@ inviscid = (par.ViscosD == 0)
 if inviscid:
     sys.exit('ebal.py: the inviscid formulation (rows multiplied by rho^2) is not handled')
 
-divp0 = hasattr(op, 'h0_D0')   # ThermaD=0 heat rows divided by p0 (divp0 patch)
 
 gb   = {'u': 4, 'v': 2, 'h': 2 if par.ThermaD > 0 else int(ut.adiab_tw)}   # Gegenbauer basis of each section (C^(1) for ThermaD = 0 with the thermal wind)
 chop = {s: (gb[s] if ricb > 0 else gb[s]//2) for s in gb}         # rows reserved for bc's
@@ -79,7 +79,7 @@ def row_parity(label, vpar):
     opp = 1 - ((rpower + (d1 or 0) + (d2 or 0) + dx + adj) % 2)*2
     return vpar*opp
 
-hlab = 'h0_D0' if divp0 else 'h0pss0_D0'
+hlab = 'h0_D0'   # the heat rows are divided by p0 (NEW 2026-11-27 also with ThermaD > 0)
 idj = {'u': (1 - row_parity('u3_D0', vP))//2,
        'v': (1 - row_parity('v1_D0', vT))//2,
        'h': (1 - row_parity(hlab, vS))//2}
@@ -104,12 +104,9 @@ if par.thermal:
 wgt = {'u': rho0**(1 - par.rhopower_u) * rk**(3 - par.rpower_u),
        'v': rho0**(1 - par.rhopower_v) * rk**(3 - par.rpower_v)}
 if par.thermal:
-    if par.ThermaD > 0:
-        wgt['h'] = np.ones_like(rk)            # rows are r^2 (eq)/L^3
-    elif divp0:
-        wgt['h'] = pss0 if ut.adiab_tw else pss0*rk   # rows are r (eq/p0)/L^3, r^2 (eq/p0)/L^3 with the thermal wind
-    else:
-        wgt['h'] = rk                          # rows are r (eq)/L^3
+    # rows r^2 (eq/p0)/L^3 (ThermaD > 0, NEW 2026-11-27, or ThermaD = 0 with the thermal wind), r (eq/p0)/L^3 (ThermaD = 0):
+    # p0 r^(2 - h) restores the pairing int p0 s* (eq) dV of the p-weighted equation
+    wgt['h'] = pss0 if (par.ThermaD > 0 or ut.adiab_tw) else pss0*rk
 
 # Chebyshev values at the nodes, and C^(lamb) -> values maps
 Tmat = ch.chebvander(xk, N - 1)                # (Nq, N)
@@ -519,7 +516,7 @@ def symmetry_tests(nvec=3, seed=0):
 
 if __name__ == '__main__':
     what = sys.argv[1] if len(sys.argv) > 1 else 'all'
-    print('ebal.py: N=%d, lmax=%d, m=%d, ricb=%g, thermal=%d, ThermaD=%g, divp0=%s, Nq=%d' % (N, par.lmax, m, ricb, par.thermal, par.ThermaD, divp0, Nq))
+    print('ebal.py: N=%d, lmax=%d, m=%d, ricb=%g, thermal=%d, ThermaD=%g, Nq=%d' % (N, par.lmax, m, ricb, par.thermal, par.ThermaD, Nq))
     if what in ['all', 'modes']:
         budget_modes()
     if what in ['all', 'symm']:

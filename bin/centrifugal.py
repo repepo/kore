@@ -454,7 +454,7 @@ def heat_label(section='h'):
     'c', that of η c in the rows of the composition (operators.composition times ce1)'''
     if section == 'c':
         return ('c0dns0%s0_D0' if par.CompoD > 0 else 'c0%s0_D0') % CODES['h'][0]
-    return ('h0pss0%s0_D0' if par.ThermaD > 0 else 'h0%s0_D0') % CODES['h'][0]
+    return 'h0%s0_D0' % CODES['h'][0]   # (the heat rows are divided by p0, NEW 2026-11-27 also with ThermaD > 0)
 
 def labels():
     '''[(label, 'P' or 'T')]: every radial operator of the centrifugal terms and the parity class of its column, for
@@ -1000,8 +1000,8 @@ def wall_rows(wall):
 #       δV = -ξ×(∇×V(w)) + V(∇×(ξ×w) + λ1 w_r ξ) - ξ_r ν' ∇⋅σ(w) - ∇(ξ_r κ)⋅σ(w),      κ = ν' + ν λ1:
 #   the first two terms are the change of coordinates (the Lie derivative of the force along ξ, with ∇⋅w = -λ1 w_r), the last
 #   two that of the profiles, which are constant on the level surfaces and not on the spheres;
-#   heat rows (the equation times J): J ∇_X⋅(κp ∇_X s) = ∇⋅(κp M⁻¹ ∇s), first order δ = -∇⋅(κp (M - I) ∇s); NEW (2026-11-08)
-#   the rows of the composition the same with D ρ0 and c;
+#   heat rows (the equation times J/p, NEW 2026-11-27): (J/p) ∇_X⋅(κp ∇_X s) = ∇⋅(κp M⁻¹ ∇s)/p, first order
+#   δ = -∇⋅(κp (M - I) ∇s)/p; NEW (2026-11-08) the rows of the composition, times J only, with D ρ0 and c;
 #   induction: the electric field of the diffusion is Fᵀ(η ∇_X×b) = η M ∇×(M b̃), first order δ = η [(M - I) ∇×b̃ + ∇×((M - I) b̃)];
 #   walls: stress-free, the tangential part of Fᵀ σ_X F⁻ᵀ r̂ (the traction on the level surface, in the tangent vectors F t);
 #   fixed flux, r̂⋅M⁻¹∇s = 0 (the flux through the level surface).
@@ -1015,13 +1015,14 @@ def wall_rows(wall):
 # to round-off (dropped by mag_algebra._prune, and checked: _check_orders). The toroidal rows (v, g) keep third derivatives of
 # P (F) for m ≠ 0, the part of ∂ᵣ² of the poloidal flow that the P2 factors turn toroidal: submatrices.py then builds those
 # sections in the C^(3) basis (orders()).
-DIFF_CODES = {'vs': 'vsc', 'kp': 'kps', 'et': 'eta', 'Dr': 'Drh'}   # the product code's suffix: the code of the profile it
-# multiplies (NEW 2026-11-08: 'Dr', D ρ0 of the composition)
+DIFF_CODES = {'vs': 'vsc', 'kp': 'kdp', 'et': 'eta', 'Dr': 'Drh'}   # the product code's suffix: the code of the profile it
+# multiplies (NEW 2026-11-08: 'Dr', D ρ0 of the composition; NEW 2026-11-27: 'kp' the heat diffusion in rows divided by p0,
+# kdp = κ, (κp)'/p for c, c' of κp)
 ROWPOW2 = {'u': 5, 'v': 3, 'h': 2, 'f': 2, 'g': 2, 'c': 2}     # the power of r of the rows (decode_label: rpower = ROWPOW2 - rx)
 
 def diffusion_profile_functions():
     '''{product code: f(r, Dorder)} for radial_profiles.burrito: a(r) c^(Dorder)(r), the amplitude a (AMPS, from
-    profile_functions) and the coefficient profile c of radial_profiles (vsc: ν, kps: κ p, eta: η, NEW 2026-11-08 Drh: D ρ0)'''
+    profile_functions) and the coefficient profile c of radial_profiles (vsc: ν, kdp: κ p divided by p, eta: η, NEW 2026-11-08 Drh: D ρ0)'''
     import radial_profiles as rap
     amp = profile_functions()
     out = {}
@@ -1210,10 +1211,10 @@ def viscous_force(A, X):
                 _rmul(_shift(g, -3., -1), _poly(A, _zsig(A, w), _xp)))
 
 def thermal_diffusion_metric(A, lw, X='S'):
-    '''-∇⋅(κp (M - I) ∇s), the first-order part of J ∇⋅(κp ∇s) (scalar expression; ∇s: q = s', s/r on S); NEW (2026-11-08)
-    X = 'C', the same for the composition c (κp is then D ρ0)'''
+    '''-∇⋅(κp (M - I) ∇s)/p, the first-order part of (J/p) ∇⋅(κp ∇s) (scalar expression; ∇s: q = s', s/r on S); NEW
+    (2026-11-08) X = 'C', the same for the composition c, with D ρ0 in place of κp and no division'''
     gs = _vec(A, q={(0, X, 1, None, None, ()): A.I}, s={(-1, X, 0, None, None, ()): A.I})
-    return _sc(_div(A, _rmul(NU, _metric(A, gs, lw))), -1.)      # NU: the profile slot, here κ p (D ρ0)
+    return _sc(_div(A, _rmul(NU, _metric(A, gs, lw))), -1.)      # NU: the profile slot: kdp in the rows (/p), κp in utils4pp (Drh for c)
 
 def magnetic_diffusion_metric(A, X, lw):
     '''the first-order part of the electric field of the diffusion, -η [(M - I) ∇×b̃ + ∇×((M - I) b̃)], b̃ of the unknown X'''
@@ -1263,7 +1264,7 @@ def diffusion_build(m, lw, kinds=('visc', 'heat', 'mag')):
     '''
     {(row, column): {label: sparse matrix [target l', source l]}} of the first-order dissipative terms on the degrees 0..lw:
     'visc' the viscous force δV in the rows u, v (columns P, T; the sign of operators.viscous_diffusion, without ViscosD and
-    the 1/L'^3), 'heat' -∇⋅(κp (M - I) ∇s) in the rows h (column S; the sign of operators.thermal_diffusion, without ThermaD
+    the 1/L'^3), 'heat' -∇⋅(κp (M - I) ∇s)/p in the rows h (column S; the sign of operators.thermal_diffusion, without ThermaD
     and 1/L^3), 'mag' the field of the diffusion in the rows f, g (columns F, G; kore's A sign, as magnetic_build, without
     MagnetD and the 1/L'^3), NEW (2026-11-08) 'comp' -∇⋅(D ρ0 (M - I) ∇c) in the rows c (column C; the sign of
     operators.comp_diffusion, without CompoD and 1/L^3); pruned (mag_algebra._prune). Also used by
@@ -1660,7 +1661,7 @@ def rotation_heat_label(n, section='h'):
     section 'c', that of η f_n c in the rows of the composition'''
     if section == 'c':
         return ('c0dns0%s0_D0' if par.CompoD > 0 else 'c0%s0_D0') % rot_code('N', n)
-    return ('h0pss0%s0_D0' if par.ThermaD > 0 else 'h0%s0_D0') % rot_code('N', n)
+    return 'h0%s0_D0' % rot_code('N', n)   # (rows divided by p0)
 
 _rheat = {}
 def rotation_heat_coefficients(m):
@@ -1752,7 +1753,7 @@ def rotation_block(l, section, component, offdiag, M):
 # kore's g = r it acts along F⁻ᵀ𝐫 = ∇_X(r²/2) in the body, normal to the level surfaces, as the effective gravity of a
 # homogeneous body in hydrostatic equilibrium (a Maclaurin spheroid: its effective potential depends on r alone). The
 # couplings are built with the algebra of section 6 on expressions of constant coefficients and take kore's own labels (no
-# profile, or the uniform ν, κ p, η and D ρ0: 'vsc0', 'kps0', 'eta0', 'Drh0'). The products of Z and ∂z² couple a degree l
+# profile, or the uniform ν, κ, η and D ρ0: 'vsc0', 'kap0', 'eta0', 'Drh0'). The products of Z and ∂z² couple a degree l
 # to l ± 4 of the same kind and to l ± 3 of the other. The fluid is homogeneous (structure 'Boussinesq', diffusivity 'uniform'): its
 # expressions have no (ln ρ0) terms, and no profile derivatives. Checks: tests/centrifugal/spheroid_check.py.
 # NEW (2026-11-06, step 2) the field. b̃ = J F⁻¹ b = F⁻¹ b and the background B̃0 (kore's formula; F B̃0 in the body) are fluxes
@@ -1871,7 +1872,7 @@ def spheroid_build(m, lw, kinds=SPHEROID_KINDS, f=None):
     for kind in kinds:
         o = {}
         if kind == 'heat':
-            _store_sph(o, 'h', 'S', _shift(spheroid_terms(A, 'S', 'heat', f), 1., 2), lambda M: M, 'kps')   # r² (the row)
+            _store_sph(o, 'h', 'S', _shift(spheroid_terms(A, 'S', 'heat', f), 1., 2), lambda M: M, 'kap')   # r² (the row; uniform κ, p0 = 1)
         elif kind == 'comp':   # NEW (2026-11-08)
             _store_sph(o, 'c', 'C', _shift(spheroid_terms(A, 'C', 'heat', f), 1., 2), lambda M: M, 'Drh')  # r² (the row)
         elif kind == 'mag':   # NEW (2026-11-06, step 2): f: -r² t, g: -r [q - (r s)'] (as diffusion_build)

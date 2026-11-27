@@ -6,6 +6,28 @@ anelastic_log (variable density, entropy, solar background, differential rotatio
 magnetic field), centrifugal (the deformed body) and, in phases, everything of conductive_IC.
 
 
+2026-11-27
+----------
+The heat rows are divided by p0 with thermal diffusion too (bin/operators.py, bin/submatrices.py,
+bin/radial_profiles.py, bin/diff_rot.py, bin/bgflow.py, bin/centrifugal.py, bin/background.py, bin/utils.py,
+bin/ru_insane.py). With ThermaD > 0 they were r² times p0 ∂s/∂t = -p0 u_r dS/dr + ThermaD ∇·(κ p0 ∇s); p0 is a few
+times 1e-8 at the outer wall of a solar model, so near the surface these rows were small differences of terms of order
+one, and spin_doctor's resid_s stopped at 1e-5 to 1e-2 whatever N in solar runs. They are now r² times the equation
+over p0, as the rows without diffusion already were: r² s, -r² u_r dS/dr and ThermaD (r²κ s'' + (2rκ + r²(κ' + κ
+(ln p0)')) s' - Lκ s), with the profile codes kap (κ), kpl (κ' + κ (ln p0)', odd) and, for the deformed body, kdp; pss,
+pdS and kps are no longer used in the rows. The tw, tp profiles of the differential rotation and wh, wd of the
+background flow are σ_n, σ_n' without p0. The eigenvalues are unchanged within the truncation error, and resid_s of
+resolved solar modes falls to about 1e-8. With ThermaD > 0, kore stops if p0 vanishes or is not finite at a wall:
+'model S hydrostatic' close to r_out = 1 (from about 0.998 at structure_deg 30), whose p0 is NaN there (its heat
+operators used to come out empty, without a warning); lower r_out then, e.g. to 0.99. Use the legacy '8-term fit',
+whose p0 vanishes at x = 1 while its density does not, with r_out 0.99 when ThermaD > 0: closer to x = 1 its heat
+rows converge much more slowly in N. Run submatrices.py again for a run built before this change. Tests:
+tests/heat_dr/row_check.py also checks the rows with diffusion, without the p0 weight, among them a full-sphere
+polytrope (n = 3, r_out 0.99) with p0 of 8e-11 at the wall; ebal.py and ru_insane pair the rows with p0 s*, and
+ru_insane checks that the heat diffusion of the deformed body is Hermitian. Docs: docs/numerical-method.md,
+docs/differential_rotation_details.md, docs/bgflow-equations.md, docs/centrifugal-equations.md, docs/background.md,
+docs/compatibility.md, docs/derivations.md.
+
 2026-11-23
 ----------
 Polytropes (bin/radial_profiles.py, bin/background.py, bin/centrifugal.py). Structure 'polytrope': the self-gravitating

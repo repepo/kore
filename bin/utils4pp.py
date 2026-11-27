@@ -991,7 +991,7 @@ def worker_4plot( l ):
 def thermal_worker( l ):
     '''
     Entropy budget, l-component (l a poloidal l). The heat equation solved in section h (its rows are
-    this equation times rʰ, see operators.entropy, thermal_advection, thermal_diffusion) is
+    this equation times rʰ/p₀, see operators.entropy, thermal_advection, thermal_diffusion) is
         p₀ ∂s/∂t = -p₀ uᵣ dS/dr + ThermaD ∇⋅(κ p₀ ∇s)
     Multiplied by s* (weight 1, p₀ is already in the equation) and integrated over the fluid volume it gives,
     for an eigenmode ∝ exp((σ+iω)t),

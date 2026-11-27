@@ -194,6 +194,7 @@ Each feature has requirements of its own, whatever it is combined with. kore sto
 | every run | an even `N`; `lmax − m + 1` a multiple of twice the number of MPI ranks (`assemble.py` checks it); `structure = 'Wu 2005'` and `'polytrope'` need `r_out` between 0 and 1; `'Jones 2011'` and stratification `'conduction'` need `ricb` > 0, and `'Jones 2011'` needs `r_out` = 1 and refuses `centrifugal_shape = 'clairaut'`, which `'polytrope'` takes. In a full sphere kore warns where a background profile is not regular at the centre |
 | Inv | a full sphere (`ricb = 0`) |
 | H0 | `magnetic`, `thermal` or `compositional` = 1, and an eigenvalue problem; not `track_target = 2`, which picks the mode by its kinetic energies ([Following a mode](output.md#following-a-mode)) |
+| S | with thermal diffusion (`ThermaD` > 0), $p_0 > 0$ at the walls, which `'model S hydrostatic'` does not have from `r_out` of about 0.998 on (at `structure_deg` 30) ([Structure](background.md#structure)) |
 | DR | with the entropy, `thermal_wind` 1 or 2 needs `Beyonce` other than 0; `diff_rot_type = 'ferraro'` needs a poloidal B0 |
 | Cf, Sph | an eigenvalue problem; with the flow and a viscous fluid, `bco` and `bci` 0 or 1. The spheroid: `structure = 'Boussinesq'`, `diffusivity = 'uniform'`, `centrifugal_q = 0` and a flattening below 1 |
 | B | `Le > 0` and `Em > 0`, and the limits of [What is supported](magnetic.md#what-is-supported) |

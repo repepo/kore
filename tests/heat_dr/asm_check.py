@@ -2,7 +2,7 @@
 '''
 asm_check.py: check the assembled A matrix (A.npz) of a diff_rot = 1 run against the grid side of heat_check.py.
 The heat rows of A(diff_rot = 1) - A(diff_rot = 0), both runs otherwise identical, are exactly the new blocks as
-assemble.py packed them; paired with conj(s) they must give -G, G the (r, theta) quadrature of
+assemble.py packed them; paired with p0 conj(s) (ebal.py's pairing) they must give -G, G the (r, theta) quadrature of
 p0 conj(s) [i m Gaspard dOmega s + u_r dS_tw/dr + (u_theta/r) dS_tw/dtheta] from the same random fields.
 Run in the diff_rot = 1 run directory: python3 asm_check.py PATH_TO_A_npz_OF_THE_diff_rot_0_RUN [ntrials]
 With ThermaD = 0 and thermal_wind >= 1 the heat rows are r^2 (eq)/p in C^(1) (utils.adiab_tw), and a diff_rot = 0 (or

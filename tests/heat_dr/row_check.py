@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 '''
-row_check.py: independent check of the section-h rows of the assembled A and B of a ThermaD = 0 run (run in its directory).
+row_check.py: independent check of the section-h rows of the assembled A and B (run in its directory); NEW 2026-11-27 also
+with ThermaD > 0, whose rows are divided by p0 too.
 
 For random low-degree P_l, T_l, s_l (Chebyshev, right parity when ricb = 0) it builds x, computes A x and B x, and
 reads every section-h row block as a series in the C^(gb) Gegenbauer basis (gb and the first kept row index tried in
 all combinations), evaluated on an r grid. It compares with the physics evaluated directly in (r, theta):
     B row l' :  c r^w s_l'(r) / L'^3
-    A row l' :  c r^w [ -u_r S0' - i m G dOmega s - u . grad S_tw ]_l' / L'^3          (ThermaD = 0, rows (eq)/p0)
+    A row l' :  c r^w [ -u_r S0' - i m G dOmega s - u . grad S_tw + ThermaD D_l' ]_l' / L'^3          (rows (eq)/p0)
+    D_l = kappa s'' + (2 kappa/r + kappa' + kappa (ln p0)') s' - L kappa s/r^2   (ThermaD > 0: (1/p0) div(kappa p0 grad s); kappa
+    and (ln p0)' from the structure's raw functions, kappa' from a fit here; the first 2 rows of a block (1 at ricb = 0) are
+    the thermal bc rows, skipped)
 with w = 2 (claimed for the new mode) or 1 (old mode), c fitted once from B (the 1/Anorm of assemble.py).
 S_tw is integrated here in cos(theta) from the thermal-wind balance, eq. (2.8) of docs/differential_rotation_details.md, with
 F = 2 G^2 dOmega (thermal_wind 1) or G^2 [(1 + dOmega)^2 - 1] (thermal_wind 2), its l = 0 part removed (thermal_wind 3:
@@ -17,7 +21,7 @@ Unlike heat_check.py, asm_check.py and ru_insane.py, which pair the rows with p0
 test profiles), the comparison is unweighted (max over r of |row - reference| / max|reference|), so it sees the
 near-surface part of the rows. P is taken with P = 0 at the walls (as every kore velocity bc imposes) and, as a
 diagnostic, also free at the walls.
-usage: python3 row_check.py [tol] [ntrials]     (ThermaD = 0 runs only; tol defaults to 1e-8)
+usage: python3 row_check.py [tol] [ntrials]     (tol defaults to 1e-8)
 '''
 import sys, os, itertools
 sys.path.insert(0, os.path.abspath('bin'))
@@ -35,8 +39,10 @@ rng = np.random.default_rng(12345)   # the same fields for both wall variants: r
 N, N1, ricb, m, G, Bey = par.N, ut.N1, par.ricb, par.m, par.Gaspard, par.Beyonce
 lp, lt, ll = [list(a) for a in ut.ell(m, par.lmax, par.symm)]
 nb = len(lp)
-assert par.thermal == 1 and par.ThermaD == 0, 'row_check.py: ThermaD = 0 runs only'
-w_claim = 2 if ut.adiab_tw else 1
+assert par.thermal == 1, 'row_check.py: thermal runs only'
+TD = par.ThermaD
+w_claim = 2 if (ut.adiab_tw or TD > 0) else 1
+chop = (2 if ricb > 0 else 1) if TD > 0 else 0   # the thermal bc rows at the top of each block (ThermaD > 0)
 tw = par.thermal_wind if par.diff_rot else 0
 
 def load(f):
@@ -84,6 +90,10 @@ f2, f21 = fitd(f2f, 0), fitd(f2f, 1)
 g = rap.prf.gravity(r, 0)
 hp = (-4*par.r_out**2*r/(1 - (par.r_out*r)**2)) if par.structure == 'Wu 2005' else fitd(lambda rr: rap.prf.logrho(rr, 0), 1)   # (ln rho)' of ln((1 - (r_out r)^2)^2), analytic for 'Wu 2005'
 dS = np.sign(r)*rap.prf.gradS(np.abs(r))
+if TD > 0:   # NEW 2026-11-27: the diffusion of the rows divided by p0, from the raw kappa and (ln p0)'
+    kap = rap.prf.thermal_diffusivity(ab(r), 0)*np.ones_like(r)
+    kap1 = fitd(lambda rr: rap.prf.thermal_diffusivity(ab(rr), 0)*np.ones_like(rr), 1)
+    kpl = kap1 + kap*rap.prf.dlog_p(r)
 
 # ---------------------------------------------------------------- S_tw(r, x) by integration in x = cos(theta)
 def stw_sigma(rr):
@@ -150,6 +160,7 @@ def put(x, kind, l, c, start):
 def evalrows(v, gb, rstart):
     '''values on r of a section-h row block given as C^(gb) coefficients'''
     cf = np.zeros(N, dtype=complex)
+    v = np.concatenate([v[chop:], np.zeros(chop, dtype=complex)])   # (the bc rows skipped)
     if ricb > 0: cf[:] = v
     else: cf[rstart::2] = v
     k = np.arange(N)
@@ -165,7 +176,7 @@ def run(walls):
   res = {}
   for trial in range(ntr):
       x = np.zeros(A.shape[1], dtype=complex)
-      Pv = {}; Tv = {}; Sv = {}
+      Pv = {}; Tv = {}; Sv = {}; Sd1 = {}; Sd2 = {}
       for l in lp:
           cP = rand_cheb(iP); cS = rand_cheb(iP)
           if walls:   # P = 0 at both walls: times (1 - x^2)
@@ -173,6 +184,8 @@ def run(walls):
           put(x, 'P', l, cP, iP); put(x, 'S', l, cS, iP)
           Pv[l] = [C.chebval(xr, cP), C.chebval(xr, C.chebder(cP))*dxdr]
           Sv[l] = C.chebval(xr, cS)
+          if TD > 0:
+              Sd1[l] = C.chebval(xr, C.chebder(cS))*dxdr; Sd2[l] = C.chebval(xr, C.chebder(cS, 2))*dxdr**2
       for l in lt:
           cT = rand_cheb(iT); put(x, 'T', l, cT, iT); Tv[l] = C.chebval(xr, cT)
       Ax, Bx = A @ x, B @ x
@@ -199,6 +212,8 @@ def run(walls):
               L = l*(l + 1); b = 2*nb*N1 + lp.index(l)*N1
               fB = evalrows(Bx[b:b + N1], gb, rstart); fA = evalrows(Ax[b:b + N1], gb, rstart)
               refB = r**w*Sv[l]/L**3; refA = r**w*proj(rhs, l)/L**3
+              if TD > 0:
+                  refA = refA + r**w*TD*(kap*Sd2[l] + (2*kap/r + kpl)*Sd1[l] - L*kap*Sv[l]/r**2)/L**3
               cs.append((refB.conj() @ fB)/(refB.conj() @ refB))
               eB.append((fB, refB)); eA.append((fA, refA))
           c = np.median(np.real(cs))
@@ -209,7 +224,7 @@ def run(walls):
 
   return res
 
-claim = (1 if ut.adiab_tw else 0, (iP if w_claim == 2 else 1 - iP) if ricb == 0 else 0, w_claim)
+claim = (2 if TD > 0 else 1 if ut.adiab_tw else 0, (iP if w_claim == 2 else 1 - iP) if ricb == 0 else 0, w_claim)
 ok = True
 for walls in (True, False):
     res = run(walls)
@@ -220,5 +235,5 @@ for walls in (True, False):
           % (tag, claim[0], claim[1], claim[2], eB, eA, alt))
     if walls:
         ok = max(eB, eA) < tol and alt > 1e-3
-print('row_check: N=%d ricb=%g m=%d symm=%d thermal_wind=%d G=%g  -> %s' % (N, ricb, m, par.symm, tw, G, 'ok' if ok else 'FAIL'))
+print('row_check: N=%d ricb=%g m=%d symm=%d thermal_wind=%d G=%g ThermaD=%g  -> %s' % (N, ricb, m, par.symm, tw, G, TD, 'ok' if ok else 'FAIL'))
 sys.exit(not ok)   # (NEW 2026-11-09: the verdict is the exit code too, so run_all.sh stops at a FAIL)
