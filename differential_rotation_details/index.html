@@ -2451,7 +2451,7 @@ is <span class="arithmatex">\(\tau\)</span>, chosen by <code>par.timescale</code
 <tr>
 <td><span class="arithmatex">\(p_0\)</span></td>
 <td><span class="arithmatex">\(\rho_0 T_0\)</span> (not the pressure)</td>
-<td><code>pss</code></td>
+<td><code>prf.pressure</code></td>
 </tr>
 <tr>
 <td><span class="arithmatex">\(g(r)\)</span></td>
@@ -2461,7 +2461,7 @@ is <span class="arithmatex">\(\tau\)</span>, chosen by <code>par.timescale</code
 <tr>
 <td><span class="arithmatex">\(S_0(r)\)</span></td>
 <td>spherical background entropy, in units of <span class="arithmatex">\(c_p\)</span>; <span class="arithmatex">\(S_0'\)</span> its gradient</td>
-<td><code>dSd</code> (<span class="arithmatex">\(S_0'\)</span>), <code>pdS</code> (<span class="arithmatex">\(p_0 S_0'\)</span>)</td>
+<td><code>dSd</code> (<span class="arithmatex">\(S_0'\)</span>)</td>
 </tr>
 <tr>
 <td><span class="arithmatex">\(S_{tw}(r,\theta)\)</span></td>
@@ -2471,12 +2471,12 @@ is <span class="arithmatex">\(\tau\)</span>, chosen by <code>par.timescale</code
 <tr>
 <td><span class="arithmatex">\(\sigma_n(r)\)</span></td>
 <td>Legendre coefficients of <span class="arithmatex">\(S_{tw}\)</span></td>
-<td><code>tw2</code> = <span class="arithmatex">\(p_0\sigma_2\)</span>, <code>tp2</code> = <span class="arithmatex">\(p_0\sigma_2'\)</span>, …</td>
+<td><code>tw2</code> = <span class="arithmatex">\(\sigma_2\)</span>, <code>tp2</code> = <span class="arithmatex">\(\sigma_2'\)</span>, …</td>
 </tr>
 <tr>
 <td><span class="arithmatex">\(\nu, \kappa\)</span></td>
 <td>viscosity and thermal diffusivity profiles</td>
-<td><code>vsc</code>, <code>kps</code> = <span class="arithmatex">\(\kappa p_0\)</span></td>
+<td><code>vsc</code>, <code>kap</code> = <span class="arithmatex">\(\kappa\)</span>, <code>kpl</code> = <span class="arithmatex">\(\kappa' + \kappa(\ln p_0)'\)</span></td>
 </tr>
 <tr>
 <td>Beyonce</td>
@@ -2531,7 +2531,7 @@ is <span class="arithmatex">\(\tau\)</span>, chosen by <code>par.timescale</code
   component of the double curl of the momentum equation (one row block per poloidal degree), section <code>v</code> the rows of the
   radial component of its curl (one per toroidal degree), and section <code>h</code> the heat equation (one per degree of <span class="arithmatex">\(s\)</span>,
   which follows the poloidal degrees).</li>
-<li><strong>Row weights.</strong> Each row is multiplied by a power of <span class="arithmatex">\(r\)</span> and of <span class="arithmatex">\(\rho_0\)</span>, chosen so that every radial coefficient
+<li><strong>Row weights.</strong> Each row is multiplied by a power of <span class="arithmatex">\(r\)</span> and of <span class="arithmatex">\(\rho_0\)</span> (the heat rows are divided by <span class="arithmatex">\(p_0\)</span>, §7.2), chosen so that every radial coefficient
   is a polynomial, and divided by <span class="arithmatex">\(L'^3\)</span>, where <span class="arithmatex">\(l'\)</span> is the row degree.</li>
 </ul>
 <h2 id="1-physics">1. Physics</h2>
@@ -3171,7 +3171,7 @@ by <span class="arithmatex">\(P_n'(x)\)</span> the matrix <span class="arithmate
 by the momentum and heat terms.</p>
 <p>For one source degree, <span class="arithmatex">\(\partial_\theta S_{tw} = -\sin\theta\sum_n\sigma_n P_n'(x)\)</span>, and
 <span class="arithmatex">\(\sin\theta\thinspace \partial_\theta Y = -(1 - x^2)\thinspace dY/dx = -DY\)</span>. With (3.2), the three terms of (2.11) projected on degree
-<span class="arithmatex">\(l'\)</span> are, before the row weight and the <span class="arithmatex">\(p_0\)</span> factor,</p>
+<span class="arithmatex">\(l'\)</span> are, before the row weight (the heat rows are divided by <span class="arithmatex">\(p_0\)</span>, §7.2),</p>
 <div class="arithmatex">\[
 \begin{aligned}
 \text{(a)}\quad &amp; i m G\sum_n f_n\thinspace \left[P_n(X)\right]_ {l'l}\thinspace s_l ,\cr
@@ -3470,20 +3470,18 @@ predefined ones.</p>
 </tr>
 <tr>
 <td><code>tw2</code>, <code>tw4</code>, …</td>
-<td><span class="arithmatex">\(p_0\sigma_n\)</span></td>
-<td>Chebyshev fit of <span class="arithmatex">\(p_0\thinspace\)</span><code>sigmaX(n, r, 0)</code></td>
+<td><span class="arithmatex">\(\sigma_n\)</span></td>
+<td>Chebyshev fit of <code>sigmaX(n, r, 0)</code></td>
 </tr>
 <tr>
 <td><code>tp2</code>, <code>tp4</code>, …</td>
-<td><span class="arithmatex">\(p_0\sigma_n'\)</span> (odd in <span class="arithmatex">\(r\)</span>, in <code>utils.odd_profiles</code>)</td>
-<td>Chebyshev fit of <span class="arithmatex">\(p_0\thinspace\)</span><code>sigmaX(n, r, 1)</code></td>
+<td><span class="arithmatex">\(\sigma_n'\)</span> (odd in <span class="arithmatex">\(r\)</span>, in <code>utils.odd_profiles</code>)</td>
+<td>Chebyshev fit of <code>sigmaX(n, r, 1)</code></td>
 </tr>
 </tbody>
 </table>
 <p>They are not in <code>radial_profiles.proffdir</code> until <code>burrito</code> first meets one and adds <code>diff_rot.profile_functions()</code>.
-With <code>adiab_tw</code> (<code>ThermaD = 0</code> with the thermal wind) the <code>tw</code>, <code>tp</code> profiles are <span class="arithmatex">\(\sigma_n\)</span>, <span class="arithmatex">\(\sigma_n'\)</span> without <span class="arithmatex">\(p_0\)</span>
-(<code>diff_rot._ptw</code>), because those heat rows are divided by <span class="arithmatex">\(p_0\)</span> (§7.2). A separate <code>tp</code> code is needed: a label such as
-<code>h1tw21_D0</code> would mean <span class="arithmatex">\(r(p_0\sigma_2)'P\)</span>, the derivative of the product, not <span class="arithmatex">\(r p_0\sigma_2' P\)</span>.</p>
+The <code>tw</code>, <code>tp</code> profiles carry no <span class="arithmatex">\(p_0\)</span>, because the heat rows are divided by <span class="arithmatex">\(p_0\)</span> (§7.2).</p>
 <h3 id="54-the-thermal-wind-coefficients-sigma_n">5.4 The thermal-wind coefficients <span class="arithmatex">\(\sigma_n\)</span></h3>
 <p><code>diff_rot.sigma_coefficients(r)</code> solves (2.9) in Legendre space at all the radii at once, with the <span class="arithmatex">\(m = 0\)</span>
 matrices of <code>angular.py</code> (the Schmidt harmonics of order 0 are the Legendre polynomials):</p>
@@ -3513,7 +3511,7 @@ Chebyshev series of <span class="arithmatex">\(\sigma_n(r)\)</span> for <span cl
 <li><code>_DY</code>: the radial derivative order applied to the unknown.</li>
 </ul>
 <p>For example, with the defaults, <code>u2zd20lho1_D0</code> is <span class="arithmatex">\(r^3\rho_0\thinspace (r f_2')\thinspace h'\)</span> acting on <span class="arithmatex">\(P\)</span>, and <code>h1tw20lho1_D0</code> is
-<span class="arithmatex">\(r\thinspace p_0\sigma_2\thinspace h'\)</span> acting on <span class="arithmatex">\(P\)</span>. <code>rap.burrito</code> evaluates <span class="arithmatex">\(r^{\rm rpower}\rho_0^{\rm rhopower} f_1 f_2\)</span> on the
+<span class="arithmatex">\(r\thinspace\sigma_2\thinspace h'\)</span> acting on <span class="arithmatex">\(P\)</span>. <code>rap.burrito</code> evaluates <span class="arithmatex">\(r^{\rm rpower}\rho_0^{\rm rhopower} f_1 f_2\)</span> on the
 Chebyshev nodes, <code>utils.chebco_f</code> transforms it, and <code>utils.Mlam</code> builds the multiplication matrix in the Gegenbauer
 basis <span class="arithmatex">\(C^{(\lambda)}\)</span> of the section; <code>submatrices.py</code> then multiplies on the right by the derivative matrix and changes
 the basis: <code>u</code> is <span class="arithmatex">\(C^{(4)}\)</span>, <code>v</code> <span class="arithmatex">\(C^{(2)}\)</span>, <code>h</code> <span class="arithmatex">\(C^{(2)}\)</span> (<span class="arithmatex">\(C^{(0)}\)</span> if <code>ThermaD = 0</code>, <span class="arithmatex">\(C^{(1)}\)</span> with <code>adiab_tw</code>). The
@@ -3525,10 +3523,10 @@ the vector parity of their column (<code>vP</code> for <span class="arithmatex">
 <ul>
 <li>for each degree <span class="arithmatex">\(n\)</span> of <span class="arithmatex">\(\Delta\Omega\)</span>, the 18 momentum labels of the table of §3.4 (<code>diff_rot.MOMENTUM</code> with the codes
   of <span class="arithmatex">\(n\)</span>);</li>
-<li>with <code>thermal = 1</code> (<code>_heat_labels</code>): (a) <code>h0pss0zf{n}0_D0</code> (<span class="arithmatex">\(r^2 p_0 f_n\)</span>; <code>h0zf{n}0_D0</code> without <code>pss</code> if
-  <code>ThermaD = 0</code>) for each degree of <span class="arithmatex">\(\Delta\Omega\)</span>; and for each degree <span class="arithmatex">\(n\)</span> of <span class="arithmatex">\(S_{tw}\)</span>: (b) <code>h1tp{n}0_D0</code>
-  (<span class="arithmatex">\(r p_0\sigma_n'\)</span>, only if <code>thermal_wind_radial = 1</code>), (c) <code>h2tw{n}0_D0</code>, <code>h1tw{n}0_D1</code>, <code>h1tw{n}0lho1_D0</code>
-  (<span class="arithmatex">\(p_0\sigma_n\)</span> times <span class="arithmatex">\(P\)</span>, <span class="arithmatex">\(rP'\)</span>, <span class="arithmatex">\(rh'P\)</span>), (c′) <code>h1tw{n}0_D0</code> (<span class="arithmatex">\(r p_0\sigma_n\)</span> acting on <span class="arithmatex">\(T\)</span>, parity <code>vT</code>).</li>
+<li>with <code>thermal = 1</code> (<code>_heat_labels</code>): (a) <code>h0zf{n}0_D0</code> (<span class="arithmatex">\(r^2 f_n\)</span>, or <span class="arithmatex">\(r f_n\)</span> with <code>ThermaD = 0</code> without
+  <code>adiab_tw</code>) for each degree of <span class="arithmatex">\(\Delta\Omega\)</span>; and for each degree <span class="arithmatex">\(n\)</span> of <span class="arithmatex">\(S_{tw}\)</span>: (b) <code>h1tp{n}0_D0</code>
+  (<span class="arithmatex">\(r\sigma_n'\)</span>, only if <code>thermal_wind_radial = 1</code>), (c) <code>h2tw{n}0_D0</code>, <code>h1tw{n}0_D1</code>, <code>h1tw{n}0lho1_D0</code>
+  (<span class="arithmatex">\(\sigma_n\)</span> times <span class="arithmatex">\(P\)</span>, <span class="arithmatex">\(rP'\)</span>, <span class="arithmatex">\(rh'P\)</span>), (c′) <code>h1tw{n}0_D0</code> (<span class="arithmatex">\(r\sigma_n\)</span> acting on <span class="arithmatex">\(T\)</span>, parity <code>vT</code>).</li>
 </ul>
 <p>Like every other operator, each diff-rot matrix has its last <code>chop</code> rows dropped and that many zero rows added at the
 top, to make room for the boundary-condition rows of its row block, so the boundary conditions are unchanged by the
@@ -3561,7 +3559,7 @@ matrices and by diagonal (<code>angular.band</code>, <span class="arithmatex">\(
 whole set takes milliseconds at <code>lmax</code> 1025.</p>
 <h3 id="72-heat-diff_rotheat_block">7.2 Heat: <code>diff_rot.heat_block</code></h3>
 <p><code>operators.thermal_diffrot</code> calls <code>diff_rot.heat_block(l, component, offdiag, M)</code>, which returns
-the section-<code>h</code> blocks of (3.9) times the row weight. With <code>ThermaD &gt; 0</code> the rows are <span class="arithmatex">\(r^2 p_0\times\)</span>(eq)<span class="arithmatex">\(/L'^3\)</span>:</p>
+the section-<code>h</code> blocks of (3.9) times the row weight. With <code>ThermaD &gt; 0</code> the rows are <span class="arithmatex">\(r^2\times\)</span>(eq)<span class="arithmatex">\(/(p_0 L'^3)\)</span>:</p>
 <table>
 <thead>
 <tr>
@@ -3575,26 +3573,26 @@ the section-<code>h</code> blocks of (3.9) times the row weight. With <code>Ther
 <tr>
 <td>(a)</td>
 <td><code>'temp'</code>, even, <span class="arithmatex">\(\lvert\Delta l\rvert \le n\)</span></td>
-<td><code>1j*m*heat_coef('Pn')*M['h0pss0zf{n}0_D0']</code>, times <code>Gaspard</code></td>
-<td><span class="arithmatex">\(i m G\thinspace r^2 p_0 f_n\thinspace s\)</span></td>
+<td><code>1j*m*heat_coef('Pn')*M['h0zf{n}0_D0']</code>, times <code>Gaspard</code></td>
+<td><span class="arithmatex">\(i m G\thinspace r^2 f_n\thinspace s\)</span></td>
 </tr>
 <tr>
 <td>(b)</td>
 <td><code>'upol'</code>, even, <span class="arithmatex">\(\le\)</span> <code>tw_nmax</code></td>
 <td><code>Ls*heat_coef('Pn')*M['h1tp{n}0_D0']</code></td>
-<td><span class="arithmatex">\(L_l\thinspace r p_0\sigma_n'\thinspace P\)</span></td>
+<td><span class="arithmatex">\(L_l\thinspace r\sigma_n'\thinspace P\)</span></td>
 </tr>
 <tr>
 <td>(c)</td>
 <td><code>'upol'</code>, even, <span class="arithmatex">\(\le\)</span> <code>tw_nmax</code></td>
 <td><code>heat_coef('dPnD')*(M['h2tw{n}0_D0'] + M['h1tw{n}0_D1'] + M['h1tw{n}0lho1_D0'])</code></td>
-<td><span class="arithmatex">\(p_0\sigma_n(P + rP' + rh'P)\)</span></td>
+<td><span class="arithmatex">\(\sigma_n(P + rP' + rh'P)\)</span></td>
 </tr>
 <tr>
 <td>(c′)</td>
 <td><code>'utor'</code>, odd, <span class="arithmatex">\(&lt;\)</span> <code>tw_nmax</code></td>
 <td><code>-1j*m*heat_coef('dPn')*M['h1tw{n}0_D0']</code></td>
-<td><span class="arithmatex">\(-i m\thinspace r p_0\sigma_n\thinspace T\)</span></td>
+<td><span class="arithmatex">\(-i m\thinspace r\sigma_n\thinspace T\)</span></td>
 </tr>
 </tbody>
 </table>
@@ -3604,19 +3602,19 @@ degree (from <span class="arithmatex">\(u_r = L_l P/r\)</span>). The angular coe
 the highest degree of <span class="arithmatex">\(\Delta\Omega\)</span> and <span class="arithmatex">\(S_{tw}\)</span>, stored by diagonal. The column offset is the index difference in
 <code>utils.ell</code>.</p>
 <p><strong>Sign.</strong> The block is <span class="arithmatex">\(-\text{out}/L'^3\)</span>. The section-<code>h</code> rows of <span class="arithmatex">\(A\)</span> hold the right-hand side of the heat equation
-(<span class="arithmatex">\(B\)</span> = +<code>entropy</code>, <code>thermal_advection</code> = <span class="arithmatex">\(-r p_0 S_0' u_r\)</span>), so the left-hand-side terms (2.11) enter <span class="arithmatex">\(A\)</span> with a minus
+(<span class="arithmatex">\(B\)</span> = +<code>entropy</code>, <code>thermal_advection</code> = <span class="arithmatex">\(-r^2 S_0' u_r\)</span>), so the left-hand-side terms (2.11) enter <span class="arithmatex">\(A\)</span> with a minus
 sign. In the momentum rows it is the opposite: <span class="arithmatex">\(B\)</span> = −<code>inertia</code>, so the left-hand-side term <span class="arithmatex">\(\mathbf W\)</span> enters <span class="arithmatex">\(A\)</span> with
 a plus sign, as the Coriolis force does.</p>
 <p><strong>Factors of <span class="arithmatex">\(G\)</span>.</strong> (a) carries <code>Gaspard</code> explicitly; (b), (c), (c′) carry <span class="arithmatex">\(G^2\)</span> through <span class="arithmatex">\(\sigma_n\)</span>, except with
 <code>thermal_wind = 3</code>.</p>
-<p><strong>Without thermal diffusion.</strong> With <code>ThermaD = 0</code> the heat rows are divided by <span class="arithmatex">\(p_0\)</span>, which is about <span class="arithmatex">\(10^{-7}\)</span> near the
-surface of a solar model and spoils the conditioning otherwise.</p>
+<p><strong>Division by <span class="arithmatex">\(p_0\)</span>.</strong> The heat rows are divided by <span class="arithmatex">\(p_0\)</span>, which is a few times <span class="arithmatex">\(10^{-8}\)</span> at the outer wall of a solar
+model: rows weighted by <span class="arithmatex">\(p_0\)</span> lose their precision there. With thermal diffusion, <span class="arithmatex">\(p_0\)</span> must not vanish at a wall
+(kore stops if it does). Without thermal diffusion (<code>ThermaD = 0</code>):</p>
 <ul>
 <li>With <code>thermal_wind = 0</code> the rows are <span class="arithmatex">\(r\times\)</span>(eq)<span class="arithmatex">\(/p_0\)</span> in <span class="arithmatex">\(C^{(0)}\)</span>, and (a) is <code>h0zf{n}0_D0</code> (<span class="arithmatex">\(r f_n s\)</span>).</li>
 <li>With <code>thermal_wind ≥ 1</code> (<code>adiab_tw</code>), (b) and (c) do not fit there: the weight <span class="arithmatex">\(r\)</span> leaves <span class="arithmatex">\(P/r\)</span> in (c), and
   <span class="arithmatex">\(C^{(0)}\)</span> cannot hold <span class="arithmatex">\(P'\)</span>. The rows are then <span class="arithmatex">\(r^2\times\)</span>(eq)<span class="arithmatex">\(/p_0\)</span> in <span class="arithmatex">\(C^{(1)}\)</span> (<code>decode_label</code>,
-  <code>submatrices.py</code>), with the same labels, the <code>tw</code>, <code>tp</code> profiles without <span class="arithmatex">\(p_0\)</span> (§5.3), and still no
-  thermal boundary rows.</li>
+  <code>submatrices.py</code>), with the same labels as with diffusion, and still no thermal boundary rows.</li>
 </ul>
 <h3 id="73-assembly-assemblepy">7.3 Assembly: <code>assemble.py</code></h3>
 <p><code>assemble.py</code> loops over the row degrees of each MPI rank. The unknown vector is [<span class="arithmatex">\(P\)</span> blocks][<span class="arithmatex">\(T\)</span> blocks][<span class="arithmatex">\(s\)</span>

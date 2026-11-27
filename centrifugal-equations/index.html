@@ -1860,11 +1860,11 @@ unit mass (<a href="../anelastic/">Anelastic equations</a>), its covariant form 
 \]</div>
 <p>The second and third terms carry the force of the sphere along the displacement <span class="arithmatex">\(\boldsymbol\xi\)</span>; the last two come from
 <span class="arithmatex">\(\nu\)</span> and <span class="arithmatex">\(\rho_0\)</span>, which are constant on the level surfaces rather than on the spheres.</p>
-<p><strong>Thermal diffusion.</strong> The heat rows are the equation times <span class="arithmatex">\(J\)</span>, and the diffusion becomes</p>
+<p><strong>Thermal diffusion.</strong> The heat rows are the equation times <span class="arithmatex">\(J/p_0\)</span>, and the diffusion becomes</p>
 <div class="arithmatex">\[
-J\thinspace\nabla_X\cdot\left(\kappa p_0\nabla_X s\right) = \nabla\cdot\left(\kappa p_0\thinspace\mathsf M^{-1}\nabla s\right),
+\frac{J}{p_0}\nabla_X\cdot\left(\kappa p_0\nabla_X s\right) = \frac{1}{p_0}\nabla\cdot\left(\kappa p_0\thinspace\mathsf M^{-1}\nabla s\right),
 \]</div>
-<p>whose first-order part is <span class="arithmatex">\(-\nabla\cdot(\kappa p_0(\mathsf M - \mathsf I)\nabla s)\)</span>.</p>
+<p>whose first-order part is <span class="arithmatex">\(-p_0^{-1}\nabla\cdot(\kappa p_0(\mathsf M - \mathsf I)\nabla s)\)</span>.</p>
 <p><strong>Magnetic diffusion.</strong> The current of the body, carried back as a flux, is <span class="arithmatex">\(\nabla\times(\mathsf M\tilde{\mathbf b})\)</span>,
 and the covariant components of the electric field of the diffusion are MagnetD times
 <span class="arithmatex">\(\mathsf M\thinspace\nabla\times(\mathsf M\tilde{\mathbf b})\)</span>. Its first-order part is MagnetD times

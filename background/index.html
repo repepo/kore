@@ -1900,7 +1900,7 @@ rotation:</p>
 <tr>
 <td><code>'model S hydrostatic'</code></td>
 <td>the Sun: a smooth fit to the density of solar Model S, with gravity and pressure consistent with it. Recommended for solar work</td>
-<td><code>structure_deg</code> (30)</td>
+<td><code>structure_deg</code> (30); <code>r_out</code> below about 0.998 at <code>structure_deg</code> 30: beyond, its <span class="arithmatex">\(p_0\)</span> is not defined (kore stops there with <code>ThermaD</code> &gt; 0)</td>
 </tr>
 <tr>
 <td><code>'Wu 2005'</code></td>
@@ -1925,7 +1925,7 @@ rotation:</p>
 <tr>
 <td><code>'8-term fit'</code></td>
 <td>legacy solar fit, kept to reproduce old runs</td>
-<td>–</td>
+<td>with <code>ThermaD</code> &gt; 0 use <code>r_out</code> 0.99: its <span class="arithmatex">\(p_0\)</span> vanishes at <span class="arithmatex">\(x = 1\)</span> while its density does not, and closer to that point the heat rows converge slowly in <code>N</code></td>
 </tr>
 <tr>
 <td><code>'old model S prototype'</code></td>

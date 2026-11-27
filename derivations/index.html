@@ -2190,7 +2190,7 @@ its own primitives (<code>_induction_primitives</code>, the shapes <span class="
 (<span class="arithmatex">\(\hat{\mathbf{r}}\cdot\)</span>) sees only <span class="arithmatex">\(-im\Delta\Omega\,b_r\)</span>; the row g (<span class="arithmatex">\(\hat{\mathbf{r}}\cdot\nabla\times = L't/r\)</span>) sees the t components, including
 the <span class="arithmatex">\(\Omega\)</span>-effect from F (<code>induction_coefficients</code>, <code>induction_block</code>, <code>induction_dl_range</code>).</p>
 <p><strong>Step 8: into kore.</strong> Each radial operator is a label with the profile codes <code>zf</code>, <code>zd</code>, <code>zs</code> + degree for <span class="arithmatex">\(f_n\)</span>,
-<span class="arithmatex">\(rf_n'\)</span>, <span class="arithmatex">\(r^2f_n''\)</span> (and <code>tw</code>, <code>tp</code> for <span class="arithmatex">\(p_0\sigma_n\)</span>, <span class="arithmatex">\(p_0\sigma_n'\)</span>). <code>submatrices.py</code> builds its matrix. A block is then
+<span class="arithmatex">\(rf_n'\)</span>, <span class="arithmatex">\(r^2f_n''\)</span> (and <code>tw</code>, <code>tp</code> for <span class="arithmatex">\(\sigma_n\)</span>, <span class="arithmatex">\(\sigma_n'\)</span>). <code>submatrices.py</code> builds its matrix. A block is then
 <span class="arithmatex">\(G\)</span> times the sum, over the degrees <span class="arithmatex">\(n\)</span> and the terms, of coefficient × radial operator, divided by <span class="arithmatex">\(L'^3\)</span>; <code>assemble.py</code>
 places it at the <span class="arithmatex">\(\Delta l\)</span> of the selection rules.</p>
 <h3 id="b3-implementation">B.3 Implementation</h3>

@@ -1605,12 +1605,13 @@ or extend the code.</p>
   <span class="arithmatex">\(n\)</span> of <span class="arithmatex">\(\mathbf U\)</span> couples the degree <span class="arithmatex">\(l\)</span> of a row to <span class="arithmatex">\(l'\)</span> with <span class="arithmatex">\(\lvert l - l'\rvert \le n + 1\)</span>. <code>bgflow.build</code>
   writes each term as a sum of radial monomials times these matrices, in kore's rows: <span class="arithmatex">\(r^5\rho_0\)</span> and <span class="arithmatex">\(r^3\rho_0\)</span> times
   <span class="arithmatex">\(\hat{\mathbf r}\cdot\nabla\times\nabla\times\)</span> and <span class="arithmatex">\(\hat{\mathbf r}\cdot\nabla\times\)</span> of the momentum equation
-  (sections <code>u</code>, <code>v</code>), <span class="arithmatex">\(r^2\)</span> times the heat and composition equations (<code>h</code>, <code>c</code>), and the rows <code>f</code>, <code>g</code> of the induction.</li>
+  (sections <code>u</code>, <code>v</code>), <span class="arithmatex">\(r^2/p_0\)</span> times the heat equation and <span class="arithmatex">\(r^2\)</span> times that of the composition (<code>h</code>, <code>c</code>), and the
+  rows <code>f</code>, <code>g</code> of the induction.</li>
 <li>
 <p><strong>Labels and profile codes.</strong> A monomial <span class="arithmatex">\(r^p\thinspace w_B^{(j)}\thinspace X^{(d)}\)</span> of a row is the label
-  <code>{row}{q}w{B}{n}{j}[lho{k} | pss0 | dns0]_D{d}</code>, with <span class="arithmatex">\(q\)</span> the power of the row minus <span class="arithmatex">\(p\)</span>, <span class="arithmatex">\(w_B\)</span> a profile code of
-  degree <span class="arithmatex">\(n\)</span> and its <span class="arithmatex">\(j\)</span>-th derivative, <code>lho{k}</code> a factor <span class="arithmatex">\((\ln\rho_0)^{(k)}\)</span>, <code>pss0</code> and <code>dns0</code> a factor <span class="arithmatex">\(p_0\)</span> or
-  <span class="arithmatex">\(\rho_0\)</span>, and <span class="arithmatex">\(X^{(d)}\)</span> the <span class="arithmatex">\(d\)</span>-th derivative of the unknown. For example <code>v2wt10_D1</code> is
+  <code>{row}{q}w{B}{n}{j}[lho{k} | dns0]_D{d}</code>, with <span class="arithmatex">\(q\)</span> the power of the row minus <span class="arithmatex">\(p\)</span>, <span class="arithmatex">\(w_B\)</span> a profile code of
+  degree <span class="arithmatex">\(n\)</span> and its <span class="arithmatex">\(j\)</span>-th derivative, <code>lho{k}</code> a factor <span class="arithmatex">\((\ln\rho_0)^{(k)}\)</span>, <code>dns0</code> a factor <span class="arithmatex">\(\rho_0\)</span>, and <span class="arithmatex">\(X^{(d)}\)</span>
+  the <span class="arithmatex">\(d\)</span>-th derivative of the unknown. For example <code>v2wt10_D1</code> is
   <span class="arithmatex">\(r\thinspace\mathrm{Ro}\thinspace G\thinspace T_1 P_l'\)</span> in the rows of <span class="arithmatex">\(T_l\)</span>, times its angular coefficient. The profile codes, per degree <span class="arithmatex">\(n\)</span> (one character, 0–9 then a–z, up to
   degree 35; above it <code>W</code>, the letter and the degree in three digits, as <code>Wt037</code>, up to degree 999), are</p>
 <table>
@@ -1635,7 +1636,7 @@ or extend the code.</p>
 </tr>
 <tr>
 <td><code>wh</code>, <code>wd</code></td>
-<td><span class="arithmatex">\(\mathrm{Ro}\thinspace p_0\sigma_n\)</span>, <span class="arithmatex">\(\mathrm{Ro}\thinspace p_0\sigma_n'\)</span> (without <span class="arithmatex">\(p_0\)</span> where the heat rows are divided by it)</td>
+<td><span class="arithmatex">\(\mathrm{Ro}\thinspace\sigma_n\)</span>, <span class="arithmatex">\(\mathrm{Ro}\thinspace\sigma_n'\)</span> (the heat rows are divided by <span class="arithmatex">\(p_0\)</span>)</td>
 </tr>
 <tr>
 <td><code>wc</code>, <code>we</code></td>
